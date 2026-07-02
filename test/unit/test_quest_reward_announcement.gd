@@ -39,6 +39,19 @@ func test_item_names_resolve_through_item_system() -> void:
 	assert_true(display.length() > 0)
 
 
+func test_consume_fetch_removes_traded_items() -> void:
+	# Story ruling 2026-07-02: `"consume": true` on a fetch objective
+	# trades the item away at completion (thirty_seven's returned
+	# book); default (absent) keeps it (memento shape). Source pins —
+	# behavioral coverage needs a live GameLoop party.
+	var src: String = FileAccess.get_file_as_string("res://src/quests/QuestSystem.gd")
+	var idx: int = src.find("obj.get(\"consume\", false)")
+	assert_gt(idx, -1, "fetch consumption must be opt-in with a FALSE default")
+	var window: String = src.substr(idx, 400)
+	assert_true(window.contains("remove_item"),
+		"consume fetches must remove the traded items from the holder")
+
+
 func test_final_fetch_hands_quest_id_back_for_presentation() -> void:
 	# A quest ENDING on a fetch completes inside notify_talk's
 	# opportunistic check — the id must be returned so the caller

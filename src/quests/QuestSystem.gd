@@ -114,6 +114,18 @@ func _complete_objective(quest_id: String, index: int) -> void:
 	var q: Dictionary = get_quest(quest_id)
 	var obj: Dictionary = _objective(q, index)
 	last_progressed_quest_id = quest_id
+	# Fetch consumption (huddle + story ruling 2026-07-02): opt-in via
+	# `"consume": true` on the objective — the item is narratively
+	# TRADED (thirty_seven's returned book). Default keeps the item;
+	# memento-shaped fetches (Rowan's-ribbon pattern) stay possible.
+	if str(obj.get("type", "")) == "fetch" and bool(obj.get("consume", false)):
+		var iid: String = str(obj.get("item_id", ""))
+		var consume_count: int = int(obj.get("count", 1))
+		var game_loop = get_tree().root.get_node_or_null("GameLoop")
+		if iid != "" and game_loop and "party" in game_loop and not game_loop.party.is_empty():
+			var holder = game_loop.party[0]
+			if holder.has_method("remove_item"):
+				holder.remove_item(iid, consume_count)
 	var mirror: String = obj.get("flag_on_complete", "")
 	if mirror != "":
 		GameState.set_story_flag(mirror)
