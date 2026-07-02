@@ -107,6 +107,27 @@ func test_gated_talk_step_shows_nothing() -> void:
 		"required_flag-gated talk steps must not mark until the flag is earned")
 
 
+func test_markerless_quest_never_marks_its_giver() -> void:
+	# word_from_capital is "deliberately markerless" (authoring notes:
+	# Rowan only opens up on direct interact). The marker feature
+	# violated that the day it shipped — quests now opt out via
+	# "markerless": true, which giver_business_kind honors for BOTH
+	# offer and talk affordances. Dialogue routing stays untouched.
+	var q: Dictionary = QuestSystem.get_quest("world1_word_from_capital")
+	assert_true(bool(q.get("markerless", false)),
+		"word_from_capital must stay markerless — it's authored that way")
+	GameState.quests.erase("world1_word_from_capital")
+	var rowan: Node = NPCScript.new()
+	rowan.npc_name = "Rowan"
+	rowan.npc_id = str(q["giver"]["npc_id"])
+	add_child_autofree(rowan)
+	assert_false(rowan._quest_marker.visible,
+		"markerless giver must carry no '!' even while offerable")
+	# ...but interact routing still owns the dialogue:
+	assert_true(QuestSystem.has_giver_business(rowan.get_npc_id()) or not QuestSystem.is_offerable("world1_word_from_capital"),
+		"markerless must not break dialogue ownership when offerable")
+
+
 func test_non_giver_talk_target_gets_question_mark() -> void:
 	# fools_spread step 2 (index 1) targets Phil the Lost — NOT the
 	# giver. The '?' must follow the conversation, not the giver.

@@ -274,12 +274,22 @@ func has_giver_business(npc_id: String) -> bool:
 ##             step is elsewhere would only repeat flavor — no marker)
 ## The required_flag gate matches notify_talk's, so a "?" never points
 ## at a conversation that can't actually progress yet.
+## Quests may opt out of ALL marker affordances with `"markerless":
+## true` — word_from_capital is "deliberately markerless" per its
+## authoring notes (Rowan only opens up on direct interact; Aldrin is
+## found by asking around). Dialogue routing is unaffected.
 func giver_business_kind(npc_id: String) -> String:
 	for qid in _quests:
-		if get_quest(qid).get("giver", {}).get("npc_id", "") == npc_id and is_offerable(qid):
+		var q: Dictionary = get_quest(qid)
+		if bool(q.get("markerless", false)):
+			continue
+		if q.get("giver", {}).get("npc_id", "") == npc_id and is_offerable(qid):
 			return "offer"
 	for qid in get_active():
-		var obj: Dictionary = _objective(get_quest(qid), get_objective_index(qid))
+		var q: Dictionary = get_quest(qid)
+		if bool(q.get("markerless", false)):
+			continue
+		var obj: Dictionary = _objective(q, get_objective_index(qid))
 		if obj.get("type", "") != "talk" or obj.get("target_npc", "") != npc_id:
 			continue
 		var req: String = obj.get("required_flag", "")
