@@ -19,8 +19,20 @@ func after_each() -> void:
 			"quest_world1_fools_spread_paper_obtained",
 			"quest_world1_fools_spread_complete",
 			"cutscene_flag_rat_king_defeated",
-			"quest_world1_one_chicken_problem_all_chickens"]:
+			"quest_world1_one_chicken_problem_all_chickens",
+			"quest_world1_one_chicken_problem_complete",
+			"quest_wiring_chicken_catch_ready",
+			"quest_wiring_light_spell_ready"]:
 		GameState.set_story_flag(f, false)
+
+
+## Satisfy whatever prereq the DATA declares — fixture quests carry
+## temp wiring gates (2026-07-02) and may change again; tests that
+## exercise the state machine shouldn't hardcode the gate flag.
+func _make_offerable(qid: String) -> void:
+	var prereq: String = str(_qs.get_quest(qid).get("prereq_flag", ""))
+	if prereq != "":
+		GameState.set_story_flag(prereq)
 
 
 func test_w1_batch_loads_all_six() -> void:
@@ -49,15 +61,25 @@ func test_quest_data_integrity() -> void:
 
 
 func test_offerable_respects_prereq_flag() -> void:
-	# untested_edge is prereq-gated on rat_king_defeated.
-	assert_false(_qs.is_offerable("world1_untested_edge"), "gated before flag")
-	GameState.set_story_flag("cutscene_flag_rat_king_defeated")
-	assert_true(_qs.is_offerable("world1_untested_edge"), "offerable after flag")
-	# one_chicken has no prereq — always offerable when unstarted.
-	assert_true(_qs.is_offerable("world1_one_chicken_problem"))
+	# Data-driven over every prereq-gated quest: locked before its
+	# flag, offerable after. (Fixture-agnostic — the chicken/edge
+	# quests gained temp wiring gates 2026-07-02.)
+	var checked: int = 0
+	for qid in _qs.get_all_ids():
+		var prereq: String = str(_qs.get_quest(qid).get("prereq_flag", ""))
+		if prereq == "" or _qs.get_state(qid) != "":
+			continue
+		GameState.set_story_flag(prereq, false)
+		assert_false(_qs.is_offerable(qid), "%s gated before flag" % qid)
+		GameState.set_story_flag(prereq)
+		assert_true(_qs.is_offerable(qid), "%s offerable after flag" % qid)
+		GameState.set_story_flag(prereq, false)
+		checked += 1
+	assert_gt(checked, 0, "at least one prereq-gated quest must exist")
 
 
 func test_accept_completes_talk_to_giver_step_one() -> void:
+	_make_offerable("world1_one_chicken_problem")
 	_qs.accept("world1_one_chicken_problem")
 	assert_eq(_qs.get_state("world1_one_chicken_problem"), "active")
 	# Step 1 targets the giver, so accepting advances to step 2 (custom).
@@ -65,6 +87,7 @@ func test_accept_completes_talk_to_giver_step_one() -> void:
 
 
 func test_custom_flag_and_turn_in_complete_quest_with_rewards() -> void:
+	_make_offerable("world1_one_chicken_problem")
 	_qs.accept("world1_one_chicken_problem")
 	var gold_before: int = GameState.get_gold()
 	# External emitter sets the chicken flag → notify.
@@ -93,6 +116,7 @@ func test_talk_objective_requires_flag_gate() -> void:
 
 
 func test_quests_dict_round_trips_through_save() -> void:
+	_make_offerable("world1_one_chicken_problem")
 	_qs.accept("world1_one_chicken_problem")
 	var data: Dictionary = GameState._create_save_data()
 	assert_true(data.has("quests"))
