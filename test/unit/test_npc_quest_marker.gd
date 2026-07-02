@@ -107,6 +107,23 @@ func test_gated_talk_step_shows_nothing() -> void:
 		"required_flag-gated talk steps must not mark until the flag is earned")
 
 
+func test_marker_clears_scaled_sprite_top() -> void:
+	# Open-overworld NPCs render sprites at 3x (context scale) but
+	# labels don't scale — a fixed marker height sat on the sprite's
+	# face. The marker must sit above the SCALED sprite top.
+	var npc: Node = NPCScript.new()
+	npc.npc_name = "Madame Orrery"
+	add_child_autofree(npc)
+	var tex_h: float = float(npc.sprite.texture.get_height()) if npc.sprite and npc.sprite.texture else 0.0
+	if tex_h <= 0.0:
+		pass_test("procedural sprite has no texture in this env")
+		return
+	npc.sprite.scale = Vector2(3, 3)
+	npc._setup_quest_marker()  # re-run with the new scale
+	assert_true(npc._quest_marker_y <= -(tex_h * 0.5 * 3.0),
+		"marker (y=%.0f) must clear the 3x sprite top (%.0f)" % [npc._quest_marker_y, -(tex_h * 0.5 * 3.0)])
+
+
 func test_markerless_quest_never_marks_its_giver() -> void:
 	# word_from_capital is "deliberately markerless" (authoring notes:
 	# Rowan only opens up on direct interact). The marker feature

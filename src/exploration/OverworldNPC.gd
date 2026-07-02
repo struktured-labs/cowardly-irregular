@@ -18,6 +18,7 @@ signal dialogue_ended(npc_name: String)
 ## Quest "!" marker over givers with live quest business
 const QUEST_MARKER_BASE_Y: float = -46.0
 var _quest_marker: Label = null
+var _quest_marker_y: float = QUEST_MARKER_BASE_Y
 var _quest_bob_t: float = 0.0
 ## Sprite archetype override. If empty, auto-derived from npc_type.
 ## Available: old_man, old_woman, young_man, young_woman, child, guard, merchant, scholar.
@@ -257,7 +258,7 @@ func _process(delta: float) -> void:
 			_update_dance_sprite()
 	if _quest_marker != null and _quest_marker.visible:
 		_quest_bob_t += delta * 3.0
-		_quest_marker.position.y = QUEST_MARKER_BASE_Y + sin(_quest_bob_t) * 3.0
+		_quest_marker.position.y = _quest_marker_y + sin(_quest_bob_t) * 3.0
 
 
 ## Returns the sprite scale for our current scene context — same logic as
@@ -837,10 +838,18 @@ func _setup_name_label() -> void:
 ## talking to every NPC in the village. Always visible (unlike the
 ## proximity-gated name label) — that's the point of the affordance.
 func _setup_quest_marker() -> void:
+	# Only the SPRITE gets context scale (3x on open overworld) — a
+	# fixed marker height sat on the scaled sprite's face there. Clear
+	# the sprite's actual scaled top instead; villages (1x) keep the
+	# original height.
+	_quest_marker_y = QUEST_MARKER_BASE_Y
+	if sprite and is_instance_valid(sprite) and sprite.texture:
+		var scaled_half: float = sprite.texture.get_height() * 0.5 * sprite.scale.y
+		_quest_marker_y = minf(QUEST_MARKER_BASE_Y, -scaled_half - 14.0)
 	_quest_marker = Label.new()
 	_quest_marker.text = "!"
 	_quest_marker.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_quest_marker.position = Vector2(-40, QUEST_MARKER_BASE_Y)
+	_quest_marker.position = Vector2(-40, _quest_marker_y)
 	_quest_marker.size = Vector2(80, 22)
 	_quest_marker.add_theme_font_size_override("font_size", 18)
 	_quest_marker.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
