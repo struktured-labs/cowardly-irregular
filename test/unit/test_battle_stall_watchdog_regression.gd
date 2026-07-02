@@ -107,6 +107,31 @@ func test_progress_bumps_at_all_continuation_sites() -> void:
 		"group attacks must mark progress after their cinematics")
 
 
+func test_player_advance_rejects_empty_queue_as_defer() -> void:
+	# Upstream guard for the same freeze class: never let an empty
+	# advance into the action queue — convert to defer so the turn
+	# still does something for the player.
+	var body := _fn_body(_read(BM_PATH), "player_advance")
+	assert_true(body.contains("actions.is_empty()"),
+		"player_advance must guard empty queues")
+	assert_true(body.contains("player_defer()"),
+		"empty advance must fall back to defer, not queue a no-op")
+
+
+func test_command_menu_zero_valid_actions_ends_turn() -> void:
+	# BattleCommandMenu drops invalid queued actions at commit time
+	# (dead target, gone item). When ALL drop, the handler previously
+	# did NOTHING — no commit, no defer, no _end_selection_turn —
+	# softlocking the selection phase. Must defer like the autobattle
+	# zero-valid path does.
+	var src: String = FileAccess.get_file_as_string("res://src/battle/BattleCommandMenu.gd")
+	var anchor: int = src.find("advances with %d actions!")
+	assert_gt(anchor, -1, "advance commit site must exist")
+	var window: String = src.substr(anchor, 700)
+	assert_true(window.contains("player_defer()"),
+		"zero-valid-actions branch must defer or the selection phase softlocks")
+
+
 func test_goblin_hit_dead_avoid_crouch_twist_frames() -> void:
 	var manifest: Dictionary = JSON.parse_string(_read(MANIFEST_PATH))
 	assert_not_null(manifest, "sprite_manifest.json must parse")

@@ -1286,6 +1286,11 @@ func player_advance(actions: Array[Dictionary]) -> void:
 	"""Queue Advance action (multiple actions in sequence, each costs 1 AP)"""
 	if not _check_player_selecting_state("player_advance"):
 		return
+	if actions.is_empty():
+		# Belt-and-suspenders vs the EXECUTE-freeze class: never queue an empty advance — defer keeps the turn meaningful (+1 AP, damage reduction)
+		push_warning("player_advance called with no actions — deferring instead")
+		player_defer()
+		return
 	_track_manual_player_turn()
 
 	# Mark this as an advance with all actions

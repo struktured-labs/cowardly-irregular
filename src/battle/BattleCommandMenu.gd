@@ -1036,6 +1036,11 @@ func _on_win98_actions_submitted(actions: Array) -> void:
 		_scene.show_brave_quip(current, battle_actions.size())
 		BattleManager.player_advance(battle_actions)
 		_scene._update_ui()
+	else:
+		# All queued actions failed conversion — end the turn as a defer or selection softlocks (mirrors the autobattle zero-valid fallback)
+		_scene.log_message("[color=gray]No valid actions left — %s defers.[/color]" % current.combatant_name)
+		BattleManager.player_defer()
+		_scene._update_ui()
 
 
 func _on_win98_defer_requested() -> void:
