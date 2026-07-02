@@ -45,8 +45,11 @@ const ITEM_INVENTORY = [
 	"remedy", "repel", "x_potion", "hi_ether",
 	"arctic_wind", "mega_potion", "tent", "mega_ether", "elixir"
 ]
-const BLACK_MAGIC_INVENTORY = ["fire", "blizzard", "thunder", "fira"]
-const WHITE_MAGIC_INVENTORY = ["cure", "cura", "raise", "protect"]
+# Item 18: with lean starting kits these shelves are the buy-your-
+# spells-early path (level-up grants free later; buying is tempo).
+# The -ga tier stays off W1 shelves.
+const BLACK_MAGIC_INVENTORY = ["fire", "blizzard", "thunder", "fira", "blizzara", "thundara"]
+const WHITE_MAGIC_INVENTORY = ["cure", "cura", "raise", "protect", "esuna", "regen"]
 const BLACKSMITH_WEAPONS = [
 	"bronze_sword", "iron_dagger", "wooden_staff", "bone_staff",
 	"iron_sword", "poison_dagger", "oak_staff", "sleep_dagger",

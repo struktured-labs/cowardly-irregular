@@ -73,6 +73,7 @@ var learned_passives: Array[String] = []  # All unlocked passives
 
 ## Learned abilities (purchased from magic shops, persist across job changes)
 var learned_abilities: Array[String] = []
+var purchased_abilities: Array[String] = []  # shop-bought (item 18) — protected from the dev-toggle strip
 
 ## Equipment system
 var equipped_weapon: String = ""  # Weapon ID
@@ -1006,6 +1007,7 @@ func to_dict() -> Dictionary:
 		"permanent_injuries": permanent_injuries.duplicate(),
 		"is_alive": is_alive,
 		"learned_abilities": learned_abilities.duplicate(),
+		"purchased_abilities": purchased_abilities.duplicate(),
 		"job_profiles": job_profiles.duplicate(true),
 		"secondary_job_id": secondary_job_id,
 		"equipped_weapon": equipped_weapon,
@@ -1146,6 +1148,10 @@ func from_dict(data: Dictionary) -> void:
 		learned_abilities.clear()
 		for ability_id in data["learned_abilities"]:
 			learned_abilities.append(ability_id)
+	if data.has("purchased_abilities"):
+		purchased_abilities.clear()
+		for ability_id in data["purchased_abilities"]:
+			purchased_abilities.append(str(ability_id))
 	if data.has("job_profiles"):
 		job_profiles = data["job_profiles"].duplicate(true)
 	# Equipment + secondary job + inventory/passives (all expanded

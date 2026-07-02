@@ -558,6 +558,9 @@ func set_dev_full_kits(enabled: bool, party_members: Array) -> void:
 			if int(level_key) <= pc.job_level:
 				continue
 			for aid in unlocks[level_key]:
+				# Shop-bought spells are gold-paid knowledge — never strip.
+				if "purchased_abilities" in pc and str(aid) in pc.purchased_abilities:
+					continue
 				pc.learned_abilities.erase(str(aid))
 
 

@@ -779,6 +779,10 @@ func _attempt_magic_purchase(char_index_str: String) -> void:
 		var live_party: Array = _resolve_live_party()
 		if char_index < live_party.size() and live_party[char_index] and live_party[char_index].has_method("learn_ability"):
 			live_party[char_index].learn_ability(pending_spell_id)
+			# Item 18: bought spells are marked so the Dev Full-Kits
+			# toggle's OFF-strip never repossesses gold-paid knowledge.
+			if "purchased_abilities" in live_party[char_index] and pending_spell_id not in live_party[char_index].purchased_abilities:
+				live_party[char_index].purchased_abilities.append(pending_spell_id)
 
 		SoundManager.play_ui("menu_select")
 		_update_gold_display()
