@@ -241,12 +241,10 @@ func _exit_tree() -> void:
 		submenu = null
 	# Root menu leaving (turn submitted/cancelled) — restore the default
 	# hint so queue-context text never lingers into execution.
-	if parent_menu == null and is_inside_tree():
-		var bar = get_tree().root.find_child("InputHintBar", true, false)
-		if bar != null:
-			var label = bar.get_node_or_null("HintLabel")
-			if label != null:
-				label.text = HINT_DEFAULT_TEXT
+	if parent_menu == null:
+		var label := _find_hint_label()
+		if label != null:
+			label.text = HINT_DEFAULT_TEXT
 
 
 func _setup_timers() -> void:
@@ -1259,18 +1257,29 @@ func _apply_command_memory() -> void:
 
 const HINT_DEFAULT_TEXT := "[L] Defer  ·  [R] Advance  ·  [+/-] Speed  ·  [Select] Auto"
 
+var _hint_label_cache: Label = null
+
+
+func _find_hint_label() -> Label:
+	# Cached — the recursive find_child was a full-tree scan on every
+	# queue mutation (reviewer note 2026-07-02).
+	if _hint_label_cache != null and is_instance_valid(_hint_label_cache):
+		return _hint_label_cache
+	if not is_inside_tree():
+		return null
+	var bar = get_tree().root.find_child("InputHintBar", true, false)
+	if bar == null:
+		return null
+	_hint_label_cache = bar.get_node_or_null("HintLabel")
+	return _hint_label_cache
+
 
 ## Item 22 (user: "there should be a button to undo an advance with
 ## unwinding the menu") — the unwind EXISTED (B pops one queued action,
 ## L undoes-or-defers) but nothing surfaced it. While the queue is
 ## non-empty the battle hint bar swaps to queue context.
 func _update_hint_bar() -> void:
-	if not is_inside_tree():
-		return
-	var bar = get_tree().root.find_child("InputHintBar", true, false)
-	if bar == null:
-		return
-	var label = bar.get_node_or_null("HintLabel")
+	var label := _find_hint_label()
 	if label == null:
 		return
 	var root = _get_root_menu()
