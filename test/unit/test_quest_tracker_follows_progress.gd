@@ -54,6 +54,29 @@ func test_accept_marks_quest_as_last_progressed() -> void:
 			GameState.story_flags[prereq] = saved
 
 
+func test_tracker_reacts_to_quest_signals() -> void:
+	# Signal-driven feedback: the tracker must connect to QuestSystem
+	# and refresh instantly (the 2s poll was the only consumer before —
+	# mid-quest progress was silent and laggy).
+	var host := Node.new()
+	add_child_autofree(host)
+	var tracker: Node = TrackerScript.new()
+	host.add_child(tracker)
+	tracker.setup(host)
+	assert_true(QuestSystem.objective_advanced.is_connected(tracker._on_quest_progress),
+		"tracker must listen to objective_advanced")
+	assert_true(QuestSystem.quest_state_changed.is_connected(tracker._on_quest_progress),
+		"tracker must listen to quest_state_changed")
+	GameState.quests["world1_chapter_three"] = {"state": "active", "objective_index": 3}
+	QuestSystem.objective_advanced.emit("world1_chapter_three", 3)
+	assert_true(tracker._side_label.visible,
+		"signal must drive an instant refresh (no poll wait)")
+	# Pulse started: modulate deviates from plain white right after.
+	assert_ne(tracker._side_label.modulate, Color.WHITE,
+		"progress pulse must fire on the side line")
+	tracker.queue_free()
+
+
 func test_objective_completion_marks_quest() -> void:
 	QuestSystem.last_progressed_quest_id = ""
 	GameState.quests["world1_chapter_three"] = {"state": "active", "objective_index": 0}

@@ -101,6 +101,27 @@ func setup(parent: Node) -> void:
 
 	_update_objective()
 
+	# Signal-driven quest feedback (2026-07-02): objective_advanced /
+	# quest_state_changed had NO feedback consumer — mid-quest talk
+	# steps (Phil) advanced invisibly and the 2s poll caught up in
+	# silence. Now: instant refresh + side-line pulse + soft chime.
+	var qs = get_node_or_null("/root/QuestSystem")
+	if qs != null:
+		qs.objective_advanced.connect(_on_quest_progress)
+		qs.quest_state_changed.connect(_on_quest_progress)
+
+
+func _on_quest_progress(_a = null, _b = null) -> void:
+	if _label == null:
+		return
+	_update_objective()
+	if SoundManager:
+		SoundManager.play_ui("soft_chime")
+	if _side_label != null and _side_label.visible:
+		_side_label.modulate = Color(1.6, 1.4, 0.6)
+		var tw := create_tween()
+		tw.tween_property(_side_label, "modulate", Color.WHITE, 0.6)
+
 
 func _update_objective() -> void:
 	var best_text = OBJECTIVES[0]["text"]  # Default objective
