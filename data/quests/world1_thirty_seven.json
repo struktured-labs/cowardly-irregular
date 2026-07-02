@@ -1,0 +1,82 @@
+{
+  "id": "world1_thirty_seven",
+  "title": "Thirty-Seven",
+  "world": 1,
+  "prereq_flag": "cutscene_flag_world1_warden_encounter_complete",
+  "giver": {
+    "npc_id": "warden_tally_wall",
+    "display_name": "The Warden's Tally",
+    "location": {"map_id": "whispering_cave", "near": "warden_guardpost"},
+    "spawn_flag": "cutscene_flag_world1_warden_encounter_complete"
+  },
+  "description": "After the Warden falls, a faint mark on the guardpost wall becomes visible — a tally. Thirty-seven marks, one for each party that turned back. No marks for any party that continued. The marks go back centuries. Some go back further.",
+  "playstyle_tags": ["completionist", "lore", "backtracking"],
+  "dialogue": {
+    "offer": [
+      {"speaker": "", "text": "The wall behind the guardpost carries a tally, half-hidden by three hundred years of soot. Thirty-seven marks. Beside some of them, prayers — carved small, in more than one hand.", "theme": "narrator"},
+      {"speaker": "Mage", "text": "The wear on these is wrong. The deepest marks should be the oldest. They're not.", "theme": "mage"},
+      {"speaker": "Cleric", "text": "And these prayers — this isn't kingdom liturgy. This is older. This is older than the kingdom knowing how to write prayers down.", "theme": "cleric"}
+    ],
+    "accept": [
+      {"speaker": "Mage", "text": "The Scriptweaver's Guild keeps records of everything the kingdom has ever refused to explain. If this post predates the founding, it'll be in the restricted stacks — filed under something misleading.", "theme": "mage"}
+    ],
+    "decline": [
+      {"speaker": "", "text": "The tally stays where it is. It has been waiting three hundred years. It is good at waiting.", "theme": "narrator"}
+    ],
+    "in_progress": [
+      {"speaker": "Mage", "text": "The Guild scholar wants his overdue book found before he opens the restricted stacks. Academics. The palace district, he said. 'It was checked out and never returned.' He said it like a bereavement.", "theme": "mage"}
+    ],
+    "ready_to_turn_in": [
+      {"speaker": "Guild Scholar", "text": "My book! Where was — no. Don't tell me. The palace district. It's always the palace district. Nobody in that wing has ever respected a due date.", "theme": "villager"}
+    ],
+    "complete": [
+      {"speaker": "Guild Scholar", "text": "As promised. The record of the ancient post. It predates the capital's founding — predates every recorded history of the region. Someone put a guardian there before there was anything to guard.", "theme": "villager"},
+      {"speaker": "Guild Scholar", "text": "There's a note in the margin. Older ink. It reads: 'The post was designed. By whom: unclear. Purpose: to measure those who pass. Not to stop them.'", "theme": "villager"},
+      {"speaker": "Guild Scholar", "text": "I've read that note a hundred times. 'Designed.' Strange word for a guardpost. Take the record — and this research pass. One free translation, any Guild branch. You strike me as people who will find something worth translating.", "theme": "villager"}
+    ]
+  },
+  "objectives": [
+    {
+      "step": 1,
+      "description": "Examine the tally and the prayers carved beside it.",
+      "type": "custom",
+      "required_flag": "quest_world1_thirty_seven_tally_examined",
+      "flag_on_complete": "quest_world1_thirty_seven_tally_examined"
+    },
+    {
+      "step": 2,
+      "description": "Ask the Scriptweaver's Guild about posts older than the kingdom.",
+      "type": "talk",
+      "target_npc": "guild_scholar_scriptura",
+      "required_flag": "quest_world1_thirty_seven_tally_examined",
+      "flag_on_complete": "quest_world1_thirty_seven_favor_asked"
+    },
+    {
+      "step": 3,
+      "description": "Find the scholar's overdue book somewhere in the palace district.",
+      "type": "fetch",
+      "item_id": "overdue_guild_book",
+      "count": 1,
+      "required_flag": "quest_world1_thirty_seven_favor_asked"
+    },
+    {
+      "step": 4,
+      "description": "Trade the book for the record of the ancient post.",
+      "type": "talk",
+      "target_npc": "guild_scholar_scriptura",
+      "required_flag": "quest_world1_thirty_seven_favor_asked"
+    }
+  ],
+  "rewards": {
+    "gold": 0,
+    "exp": 250,
+    "items": [
+      {"item_id": "guild_record", "count": 1},
+      {"item_id": "research_pass", "count": 1}
+    ],
+    "job_variants": {}
+  },
+  "flag_on_complete": "quest_world1_thirty_seven_complete",
+  "cross_world_connection": "The margin note ('designed... to measure those who pass') is written in the same notation as the Calibrant's blueprints — the deepest meta tell in W1, visible only to players who did this quest AND reached W3. Time Mage variant reads the temporal layering: the marks were written simultaneously and aged artificially. 'This place was old before it existed.'",
+  "_wiring_notes": "Giver is an interactable (the tally wall), not an NPC — offering the quest = the examine interaction; overworld owns the interact hook and emits quest_world1_thirty_seven_tally_examined. The overdue_guild_book is a pickup placed in the palace district (chest or examine-point, overworld's call), obtainable only while quest_world1_thirty_seven_favor_asked is set. fetch validation at step-4 turn-in consumes the book from inventory. POST-COMPLETION BEAT (not an objective): re-examining the tally after completion offers an explicit player choice to add a thirty-eighth mark — emit quest_world1_thirty_seven_mark_added if taken; no reward, pure ritual. Time Mage job variant is dialogue-only at the tally examine: the marks were aged artificially, one of two W1 meta-bleed tells (the other is the Time Mage reading of returned_sword's inscription)."
+}

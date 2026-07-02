@@ -1536,6 +1536,76 @@
     "cost": 0,
     "flavor": "The fragment grows slowly less orderly the longer it is held, then stops, then begins again. It is, at all times, in the middle of becoming what it is."
   },
+  "unwritten_chord": {
+    "id": "unwritten_chord",
+    "name": "Unwritten Chord",
+    "category": 4,
+    "target_type": 4,
+    "description": "An accessory earned by playing something that doesn't exist yet. Intended mechanics: +5% to all Bard support effects (promote to real accessory in an equipment pass).",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Madame Orrery asked for a song that had never been played. The Bard played it. It has not been played since — which is different from saying it stopped."
+  },
+  "cluck_norris_egg": {
+    "id": "cluck_norris_egg",
+    "name": "Cluck Norris's Egg",
+    "category": 4,
+    "target_type": 4,
+    "description": "A rare egg from a hen named after a legend. Intended mechanics: combat throwable, stuns one enemy for one turn; only two obtainable in the game (promote to consumable in an items pass).",
+    "effects": {},
+    "cost": 0,
+    "flavor": "It is heavier than an egg should be. It is warmer than an egg should be. Farmer Aldwick's advice, verbatim: 'Careful with it. It's... spirited.'"
+  },
+  "returned_sword": {
+    "id": "returned_sword",
+    "name": "The Returned Sword",
+    "category": 4,
+    "target_type": 4,
+    "description": "Sold seventeen times. Returned seventeen times. Intended mechanics: weapon with good ATK and the Familiar Weight passive — +10% damage against any enemy the party has fought before (promote to real weapon in an equipment pass).",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The inscription on the hilt reads: 'Return me when you're done. I'll know where I belong.' Exploit-minded owners notice Familiar Weight triggering on enemies the party has never fought. The sword remembers enemies before you do."
+  },
+  "chapter_three_pages": {
+    "id": "chapter_three_pages",
+    "name": "Chapter Three Pages",
+    "category": 4,
+    "target_type": 4,
+    "description": "Milo's working pages. Intended mechanics: passive party buff, +5% autobattle efficiency AND +5% manual critical rate simultaneously — the only item in the game that buffs both playstyles at once (promote in a passives pass).",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The gap is where everything interesting happens."
+  },
+  "guild_record": {
+    "id": "guild_record",
+    "name": "Guild Record of the Ancient Post",
+    "category": 4,
+    "target_type": 4,
+    "description": "The oldest documentation of the Warden's guardpost — older than the capital, older than recorded history. A margin note in older ink: 'The post was designed. By whom: unclear. Purpose: to measure those who pass. Not to stop them.'",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The word 'designed' is doing more work in this sentence than any other word in the archive. Nobody at the Guild has ever asked it to explain itself."
+  },
+  "research_pass": {
+    "id": "research_pass",
+    "name": "Research Pass",
+    "category": 4,
+    "target_type": 4,
+    "description": "Grants one free translation at any Scriptweaver's Guild branch. In Scriptura it unlocks one otherwise-locked lore document.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Stamped, signed, and validated in three places. The Guild does not give these out. The Guild gave this one out. The scholar would prefer you not mention it."
+  },
+  "overdue_guild_book": {
+    "id": "overdue_guild_book",
+    "name": "Overdue Guild Book",
+    "category": 4,
+    "target_type": 4,
+    "description": "Checked out from the Scriptweaver's Guild and never returned. Found, at last, in the palace district — where nobody has ever respected a due date.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The stamped return date has weathered to illegibility, which the book appears to regard as a victory."
+  },
   "ERROR": {
     "id": "ERROR",
     "name": "ERROR",
