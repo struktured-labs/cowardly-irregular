@@ -390,6 +390,28 @@ func _setup_npcs() -> void:
 	])
 	npcs.add_child(kid)
 
+	# === SIDE-QUEST GIVERS (dialogue owned by QuestSystem when quest business exists) ===
+
+	# Farmer Aldwick — one_chicken_problem giver, north fence
+	var aldwick = _create_npc("Farmer Aldwick", "farmer", Vector2(7 * TILE_SIZE, 2 * TILE_SIZE), [
+		"Seven chickens. Seven names. One mistake per name.",
+	])
+	npcs.add_child(aldwick)
+
+	# Bram the smith's apprentice — untested_edge giver, by Ironclad Arms
+	var bram = _create_npc("Bram Smith", "blacksmith", Vector2(24 * TILE_SIZE, 6 * TILE_SIZE), [
+		"Master Brutus forges them. I catalogue them. One came BACK.",
+	])
+	bram.npc_id = "bram_smith"
+	npcs.add_child(bram)
+
+	# Rowan the courier — word_from_capital giver, by the fountain square
+	var rowan = _create_npc("Rowan", "traveler", Vector2(13 * TILE_SIZE, 7 * TILE_SIZE), [
+		"A letter for Scriptura. No stamp, no seal, no sender. Typical.",
+	])
+	rowan.npc_id = "rowan_harmonia"
+	npcs.add_child(rowan)
+
 	# Flower Lady
 	var flower = _create_npc("Flora", "villager", Vector2(17 * TILE_SIZE, 12 * TILE_SIZE), [
 		"*humming* La la la~",

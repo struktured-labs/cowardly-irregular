@@ -279,6 +279,7 @@ func _create_save_data() -> Dictionary:
 		"llm_rebalance_enabled": llm_rebalance_enabled,
 		"dash_always_on": dash_always_on,
 		"activated_crystals": activated_crystals.duplicate(),
+		"quests": quests.duplicate(true),
 		"event_log": event_log.serialize() if event_log != null else [],
 		"rebalance_daemon": rebalance_daemon.to_dict() if rebalance_daemon != null else {},
 		## Tick 418: persist the canonical battle counter so
@@ -479,6 +480,8 @@ func _apply_save_data(save_data: Dictionary) -> void:
 		dash_always_on = bool(save_data["dash_always_on"])
 	if save_data.has("activated_crystals") and save_data["activated_crystals"] is Dictionary:
 		activated_crystals = save_data["activated_crystals"].duplicate()
+	if save_data.has("quests") and save_data["quests"] is Dictionary:
+		quests = save_data["quests"].duplicate(true)
 	# Wave D: restore EventLog. We lazily instantiate if _ready() somehow
 	# hasn't run yet (defensive — _apply_save_data is normally called via
 	# SaveSystem after autoloads are live). EventLog.restore() handles the
@@ -801,6 +804,11 @@ func get_gold() -> int:
 ## ── Fast travel — save-crystal activation registry ──
 ## Keyed by map_id (one crystal per map in practice). Persists per-save.
 var activated_crystals: Dictionary = {}
+
+## ── Side quests — structured state (2026-07-01 huddle) ──
+## {quest_id: {"state": "active"|"complete", "objective_index": int}}
+## QuestSystem owns transitions; story flags mirror key milestones.
+var quests: Dictionary = {}
 
 
 func activate_crystal(map_id: String) -> void:
