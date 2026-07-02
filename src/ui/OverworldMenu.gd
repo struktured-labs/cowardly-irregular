@@ -454,7 +454,47 @@ func _create_menu_panel(panel_size: Vector2) -> Control:
 	location.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(location)
 
+	# Corruption readout (2026-07-02): outside autogrind UI the player
+	# had NO surface showing corruption — a save-threatening core
+	# mechanic. Hidden at zero so untouched players meet it diegetically.
+	var corr_lines: Array = _corruption_summary(GameState.corruption_level, GameState.corruption_effects)
+	if corr_lines.size() > 0:
+		var corr = Label.new()
+		corr.text = str(corr_lines[0])
+		corr.position = Vector2(8, info_y + 32)
+		corr.add_theme_font_size_override("font_size", 11)
+		corr.add_theme_color_override("font_color", Color(0.85, 0.3, 0.45))
+		panel.add_child(corr)
+		if corr_lines.size() > 1:
+			var fx_label = Label.new()
+			fx_label.text = str(corr_lines[1])
+			fx_label.position = Vector2(8, info_y + 48)
+			fx_label.size = Vector2(190, 14)
+			fx_label.clip_text = true
+			fx_label.add_theme_font_size_override("font_size", 10)
+			fx_label.add_theme_color_override("font_color", Color(0.7, 0.35, 0.45))
+			panel.add_child(fx_label)
+
 	return panel
+
+
+## [] at zero corruption; ["Corruption: N% (k effects)"] plus an
+## optional pretty-named effects line otherwise. Static for testability.
+static func _corruption_summary(level: float, effects: Array) -> Array:
+	if level <= 0.0:
+		return []
+	var pct: int = int(round(level * 100.0))
+	var fx: int = effects.size()
+	var head: String = "Corruption: %d%%" % pct
+	if fx > 0:
+		head += " (%d effect%s)" % [fx, "" if fx == 1 else "s"]
+	var lines: Array = [head]
+	if fx > 0:
+		var names: Array = []
+		for e in effects:
+			names.append(str(e).replace("_", " ").capitalize())
+		lines.append("  " + ", ".join(names))
+	return lines
 
 
 func _create_menu_item(option: Dictionary, index: int) -> Control:
