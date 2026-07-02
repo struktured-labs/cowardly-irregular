@@ -68,6 +68,18 @@ JOB_SOURCES = {
             "shoulder armor, cradling a steel sword, dark leather boots and gloves"
         ),
     },
+    "bard": {
+        "ase_rel": "BARD/Bard Base sprite.aseprite",
+        "idle_tag": "Idle",
+        "drive_dir": "BARD/claude",
+        "char_desc": (
+            "young female bard with long orange hair in a loose ponytail and a "
+            "distinctive curl on top, crimson-and-plum leather doublet with dark "
+            "purple accents, no hat, carrying her piano-key-bladed scythe "
+            "instrument slung on her back — exactly one instrument, kept small "
+            "and on the back so the body silhouette stays readable"
+        ),
+    },
     "cleric": {
         "ase_rel": "CLERIC/Cleric Main design.aseprite",
         "idle_tag": "idle",
@@ -536,8 +548,13 @@ def _strip_white_bg(img: Image.Image, color_tol: int = 28) -> Image.Image:
     alpha = arr[:, :, 3]
 
     # Combine: any pixel within `color_tol` of ANY corner is a BG candidate.
+    # Skip transparent corners: their RGB is meaningless (usually 0,0,0), and
+    # seeding from it marks every near-black character pixel (hair, boots) as
+    # BG — the alpha==0 rule below already covers transparent regions.
     bg_candidate = np.zeros((h, w), dtype=bool)
     for sy, sx in [(0, 0), (0, w - 1), (h - 1, 0), (h - 1, w - 1)]:
+        if alpha[sy, sx] == 0:
+            continue
         seed_rgb = rgb[sy, sx]
         diff = np.abs(rgb - seed_rgb).max(axis=2)
         bg_candidate |= (diff <= color_tol)
