@@ -39,6 +39,19 @@ func test_item_names_resolve_through_item_system() -> void:
 	assert_true(display.length() > 0)
 
 
+func test_dialogue_shaping_reads_own_portrait_key() -> void:
+	# Copy-paste slip: the portrait field read l.get("theme") — any
+	# authored "portrait" on a quest line was silently eaten. Latent
+	# (no data authored it yet) but exactly the silent-failure class:
+	# story would have written portraits that never render.
+	var src: String = FileAccess.get_file_as_string("res://src/quests/QuestSystem.gd")
+	var idx: int = src.find("\"portrait\": l.get(")
+	assert_gt(idx, -1, "line shaping must set a portrait")
+	var window: String = src.substr(idx, 60)
+	assert_true(window.contains("l.get(\"portrait\""),
+		"portrait must read its OWN key (theme stays the fallback)")
+
+
 func test_announce_consumes_the_summary_once() -> void:
 	QuestSystem._last_reward_summary = "Received: 5 gold."
 	# _announce_rewards plays dialogue (needs an npc node) — use a bare

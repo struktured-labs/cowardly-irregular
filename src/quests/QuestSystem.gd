@@ -334,7 +334,9 @@ func _play_lines(npc: Node, lines: Array) -> void:
 			"speaker": l.get("speaker", npc.npc_name if "npc_name" in npc else "???"),
 			"text": l.get("text", ""),
 			"theme": l.get("theme", "villager"),
-			"portrait": l.get("theme", "villager"),
+			# Own key first — this read `theme` (copy-paste slip), silently
+			# eating any authored portrait before story ever wrote one.
+			"portrait": l.get("portrait", l.get("theme", "villager")),
 		})
 	await dlg.say_lines(shaped)
 	dlg.queue_free()
