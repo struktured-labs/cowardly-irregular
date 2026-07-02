@@ -39,6 +39,21 @@ func test_item_names_resolve_through_item_system() -> void:
 	assert_true(display.length() > 0)
 
 
+func test_final_fetch_hands_quest_id_back_for_presentation() -> void:
+	# A quest ENDING on a fetch completes inside notify_talk's
+	# opportunistic check — the id must be returned so the caller
+	# presents completion + rewards (they landed silently before).
+	# Latent: no W1 quest ends on a fetch yet. Source pin.
+	var src: String = FileAccess.get_file_as_string("res://src/quests/QuestSystem.gd")
+	var idx: int = src.find("_fetch_satisfied(obj)")
+	assert_gt(idx, -1)
+	var window: String = src.substr(idx, 500)
+	assert_true(window.contains("get_state(qid) == \"complete\""),
+		"opportunistic fetch completion must detect quest completion")
+	assert_true(window.contains("return qid"),
+		"...and hand the id back for completion presentation")
+
+
 func test_dialogue_shaping_reads_own_portrait_key() -> void:
 	# Copy-paste slip: the portrait field read l.get("theme") — any
 	# authored "portrait" on a quest line was silently eaten. Latent

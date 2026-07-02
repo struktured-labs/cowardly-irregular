@@ -206,6 +206,13 @@ func notify_talk(npc_id: String) -> String:
 			# moment its items are in inventory and we're mid-conversation.
 			if obj.get("type", "") == "fetch" and _fetch_satisfied(obj):
 				_complete_objective(qid, idx)
+				# A FINAL fetch completes the quest right here — hand the
+				# id back so the caller presents completion dialogue +
+				# reward announcement (otherwise rewards landed silently
+				# and the stashed announcement stranded). Latent: no W1
+				# quest ends on a fetch yet.
+				if get_state(qid) == "complete":
+					return qid
 				idx = get_objective_index(qid)
 				obj = _objective(q, idx)
 				if obj.get("type", "") != "talk":
