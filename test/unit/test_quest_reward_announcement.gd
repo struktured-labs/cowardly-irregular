@@ -19,6 +19,27 @@ func after_each() -> void:
 	QuestSystem._last_reward_summary = ""
 
 
+func test_exp_grant_uses_the_real_combatant_method() -> void:
+	# Review find 2026-07-02: the grant called member.gain_exp behind a
+	# has_method guard — that method never existed (it's gain_job_exp),
+	# so quest EXP was silently never awarded while the completion line
+	# ANNOUNCED it. The announcement is also gated on an actual grant.
+	var src: String = FileAccess.get_file_as_string("res://src/quests/QuestSystem.gd")
+	assert_true(src.contains("gain_job_exp(exp_total)"),
+		"quest EXP must go through Combatant.gain_job_exp")
+	assert_false(src.contains("member.gain_exp(exp_total)"),
+		"the phantom gain_exp call must not return")
+	var idx: int = src.find("var exp_granted")
+	assert_gt(idx, -1)
+	var window: String = src.substr(idx, 400)
+	assert_true(window.contains("if exp_granted:"),
+		"the EXP announcement must be gated on an actual grant")
+	# And the real method exists on Combatant — the guard can't lie again.
+	var c := Combatant.new()
+	assert_true(c.has_method("gain_job_exp"))
+	c.free()
+
+
 func test_gold_reward_builds_summary() -> void:
 	QuestSystem._grant_rewards({"rewards": {"gold": 200}})
 	assert_eq(QuestSystem._last_reward_summary, "Received: 200 gold.")

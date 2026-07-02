@@ -163,10 +163,16 @@ func _grant_rewards(q: Dictionary) -> void:
 	var exp_total: int = int(rewards.get("exp", 0))
 	var game_loop = get_tree().root.get_node_or_null("GameLoop")
 	if exp_total > 0 and game_loop and "party" in game_loop:
+		# Combatant's EXP method is gain_job_exp — the original
+		# has_method("gain_exp") guard was ALWAYS false, so quest EXP
+		# was silently never granted while the summary announced it.
+		var exp_granted: bool = false
 		for member in game_loop.party:
-			if member.has_method("gain_exp"):
-				member.gain_exp(exp_total)
-		summary_parts.append("%d EXP" % exp_total)
+			if member.has_method("gain_job_exp"):
+				member.gain_job_exp(exp_total)
+				exp_granted = true
+		if exp_granted:
+			summary_parts.append("%d EXP" % exp_total)
 	if game_loop and game_loop.party.size() > 0:
 		for entry in items:
 			var iid: String = entry.get("item_id", "")
