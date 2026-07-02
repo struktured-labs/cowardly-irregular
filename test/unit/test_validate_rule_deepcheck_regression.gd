@@ -97,19 +97,23 @@ func test_deep_accepts_guarded_costed_rule() -> void:
 
 
 func test_deep_sums_multi_action_cost() -> void:
-	## fira ×2 = 32 MP on mage's 80 base pool = 40%. A single-cast guard (>=20)
-	## is NOT enough for the double-cast burst.
+	## fire ×3 = 24 MP on mage's 80 base pool = 30%. A single-cast guard
+	## (>=15) is NOT enough for the triple-cast burst. (Was fira ×2 —
+	## item 18 level-gated fira out of the level-1 kit the deep check
+	## resolves against; fire keeps the summed-cost semantics.)
 	var under := _rule(
-		[{"type": "ap", "op": ">=", "value": 2}, {"type": "mp_percent", "op": ">=", "value": 20}],
-		[{"type": "ability", "id": "fira", "target": "lowest_magic_defense_enemy"},
-		 {"type": "ability", "id": "fira", "target": "lowest_magic_defense_enemy"}])
+		[{"type": "ap", "op": ">=", "value": 3}, {"type": "mp_percent", "op": ">=", "value": 15}],
+		[{"type": "ability", "id": "fire", "target": "lowest_magic_defense_enemy"},
+		 {"type": "ability", "id": "fire", "target": "lowest_magic_defense_enemy"},
+		 {"type": "ability", "id": "fire", "target": "lowest_magic_defense_enemy"}])
 	var errors: Array = _ab.validate_rule(under, "vex")
 	assert_eq(errors.size(), 1, "guard below summed cost must fail")
-	assert_string_contains(errors[0], "32 MP")
+	assert_string_contains(errors[0], "24 MP")
 	var over := _rule(
-		[{"type": "ap", "op": ">=", "value": 2}, {"type": "mp_percent", "op": ">=", "value": 45}],
-		[{"type": "ability", "id": "fira", "target": "lowest_magic_defense_enemy"},
-		 {"type": "ability", "id": "fira", "target": "lowest_magic_defense_enemy"}])
+		[{"type": "ap", "op": ">=", "value": 3}, {"type": "mp_percent", "op": ">=", "value": 35}],
+		[{"type": "ability", "id": "fire", "target": "lowest_magic_defense_enemy"},
+		 {"type": "ability", "id": "fire", "target": "lowest_magic_defense_enemy"},
+		 {"type": "ability", "id": "fire", "target": "lowest_magic_defense_enemy"}])
 	assert_eq(_ab.validate_rule(over, "vex").size(), 0, "guard covering summed cost passes")
 
 

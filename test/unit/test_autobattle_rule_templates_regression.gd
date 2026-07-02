@@ -148,16 +148,20 @@ func test_every_rule_enabled_and_every_template_ends_with_always() -> void:
 
 func test_cleric_defensive_ordering_matches_user_ask() -> void:
 	## The user's literal playtest complaint: healing priorities were opaque.
-	## Pin the cleric Defensive order: emergency Cura → Esuna cleanse →
-	## proactive Cure → Pray refill → Defer idle.
+	## Rule ORDER is the user-validated part: emergency heal → status
+	## response → proactive heal → Pray refill → Defer idle.
+	## Item 18 (2026-07-02): cura/esuna are level-gated now, so the
+	## level-1-safe preset casts cure in all three heal slots (the
+	## CONDITIONS still differ: emergency / poison-response / proactive).
+	## Preset evolution per level is future work.
 	var t: Dictionary = TemplatesClass.find("cleric_defensive")
 	assert_false(t.is_empty(), "cleric_defensive must exist")
 	var got: Array = []
 	for rule in t.get("rules", []):
 		var a: Dictionary = rule.get("actions", [])[0]
 		got.append(str(a.get("id", a.get("type", ""))))
-	assert_eq(got, ["cura", "esuna", "cure", "pray", "defer"],
-		"cleric Defensive priority order regressed (user-validated ordering)")
+	assert_eq(got, ["cure", "cure", "cure", "pray", "defer"],
+		"cleric Defensive priority order regressed (user-validated ordering, level-1-safe kit)")
 
 
 ## ── Installer contract ───────────────────────────────────────────────────

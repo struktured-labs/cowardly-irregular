@@ -304,7 +304,7 @@
           "actions": [
             {
               "type": "ability",
-              "id": "cura",
+              "id": "cure",
               "target": "lowest_hp_ally"
             }
           ],
@@ -325,7 +325,7 @@
           "actions": [
             {
               "type": "ability",
-              "id": "esuna",
+              "id": "cure",
               "target": "lowest_hp_ally"
             }
           ],
@@ -408,7 +408,7 @@
           "actions": [
             {
               "type": "ability",
-              "id": "cura",
+              "id": "cure",
               "target": "lowest_hp_ally"
             }
           ],
@@ -429,7 +429,7 @@
           "actions": [
             {
               "type": "ability",
-              "id": "esuna",
+              "id": "cure",
               "target": "lowest_hp_ally"
             }
           ],
@@ -513,7 +513,7 @@
           "actions": [
             {
               "type": "ability",
-              "id": "cura",
+              "id": "cure",
               "target": "lowest_hp_ally"
             }
           ],
@@ -818,12 +818,12 @@
           "actions": [
             {
               "type": "ability",
-              "id": "fira",
+              "id": "fire",
               "target": "lowest_magic_defense_enemy"
             },
             {
               "type": "ability",
-              "id": "fira",
+              "id": "fire",
               "target": "lowest_magic_defense_enemy"
             }
           ],
@@ -838,7 +838,7 @@
           "actions": [
             {
               "type": "ability",
-              "id": "fira",
+              "id": "fire",
               "target": "lowest_magic_defense_enemy"
             }
           ],

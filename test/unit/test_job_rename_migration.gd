@@ -250,7 +250,12 @@ func test_lore_has_villain_framework() -> void:
 ## ---- Renamed Job Data Integrity ----
 
 func test_cleric_has_healing_abilities() -> void:
-	var abilities = _jobs["cleric"]["abilities"]
+	# Item 18: cura/raise moved to abilities_at_level — the migration
+	# pin cares that the RENAMED job kept its healing identity, so
+	# check reachability across base + level unlocks.
+	var abilities = (_jobs["cleric"]["abilities"] as Array).duplicate()
+	for lvl in _jobs["cleric"].get("abilities_at_level", {}):
+		abilities.append_array(_jobs["cleric"]["abilities_at_level"][lvl])
 	assert_true("cure" in abilities, "Cleric should have cure")
 	assert_true("cura" in abilities, "Cleric should have cura")
 	assert_true("raise" in abilities, "Cleric should have raise")

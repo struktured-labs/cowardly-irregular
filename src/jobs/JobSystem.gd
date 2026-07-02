@@ -186,7 +186,7 @@ func _create_default_jobs() -> void:
 				"magic": 18,
 				"speed": 10
 			},
-			"abilities": ["cure", "cura", "raise"],
+			"abilities": ["cure", "protect"],
 			"passive_abilities": ["healing_boost"]
 		},
 		"mage": {
@@ -493,6 +493,12 @@ func assign_job(combatant: Combatant, job_id: String) -> bool:
 	if combatant.job_level > 1:
 		learn_abilities_for_level(combatant, combatant.job_level)
 
+	# Item 18 (2026-07-02): base kits are lean now — grant all level-
+	# appropriate unlocks on EVERY assignment. Covers save-restore
+	# (GameLoop assigns after from_dict), mid-game job swaps (a level-12
+	# mage convert gets tier-appropriate spells), and new characters
+	# (level 1 grants nothing). Idempotent via learn_ability dedupe.
+	learn_abilities_for_level(combatant, combatant.job_level)
 	job_changed.emit(combatant, old_job, job)
 	return true
 

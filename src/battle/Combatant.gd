@@ -1296,7 +1296,6 @@ func from_dict(data: Dictionary) -> void:
 			resolved_profiles[resolved_key] = job_profiles[key]
 		job_profiles = resolved_profiles
 
-
 func learn_ability(ability_id: String) -> bool:
 	"""Learn a new ability (from magic shop purchase or level-up).
 	Returns true if the ability was newly granted, false if the
