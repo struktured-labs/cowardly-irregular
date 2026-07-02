@@ -105,6 +105,60 @@ var _win_condition: Dictionary = {}
 ## Turbo mode - minimize delays between actions for fastest execution
 var turbo_mode: bool = false
 
+## Execution stall watchdog (live playtest 2026-07-01): a battle froze
+## permanently at "Round 1 - EXECUTE: Bard" — an execution coroutine
+## died (empty-Advance dead return; any mid-coroutine script error does
+## the same) and nothing ever called _execute_next_action again. The
+## watchdog measures WALL-CLOCK time (Time.get_ticks_msec, immune to
+## Engine.time_scale) since the last execution progress mark and force-
+## kicks the chain when it exceeds the threshold. Threshold widens at
+## slow battle speeds (long legit animations at 0.25x must not trip it).
+const _WD_STALL_MS: int = 10000
+var _wd_last_progress_ms: int = 0
+## Armed ONLY between start_battle and end_battle. Unit tests poke
+## current_state directly without start_battle; an unarmed watchdog
+## must never fire there (it end_battle'd empty parties mid-suite and
+## poisoned the long-awaiting LLM tests when first shipped unarmed).
+var _wd_armed: bool = false
+## Hard-off under GUT: suites legitimately freeze/poke battle states
+## (start_battle without end_battle, direct current_state writes), and
+## a recovery firing mid-suite end_battles empty parties while other
+## tests await — cross-test contamination. Live gameplay only.
+var _wd_env_checked: bool = false
+var _wd_disabled_for_tests: bool = false
+
+
+func _wd_bump() -> void:
+	_wd_last_progress_ms = Time.get_ticks_msec()
+
+
+func _process(_delta: float) -> void:
+	if not _wd_armed:
+		return
+	if not _wd_env_checked:
+		_wd_env_checked = true
+		for arg in OS.get_cmdline_args():
+			if "gut_cmdln" in String(arg):
+				_wd_disabled_for_tests = true
+				break
+	if _wd_disabled_for_tests:
+		return
+	if current_state != BattleState.EXECUTION_PHASE and current_state != BattleState.PROCESSING_ACTION:
+		_wd_last_progress_ms = 0
+		return
+	var now: int = Time.get_ticks_msec()
+	if _wd_last_progress_ms == 0:
+		_wd_last_progress_ms = now
+		return
+	var slack: float = maxf(1.0, 1.0 / maxf(Engine.time_scale, 0.001))
+	if now - _wd_last_progress_ms < int(_WD_STALL_MS * slack):
+		return
+	var who: String = current_combatant.combatant_name if current_combatant else "?"
+	push_error("BattleManager: execution stalled %dms at %s — watchdog recovering" % [now - _wd_last_progress_ms, who])
+	battle_log_message.emit("[color=orange]⚠ Battle stalled — auto-recovering...[/color]")
+	_wd_last_progress_ms = now
+	_execute_next_action()
+
 ## Terrain modifiers for elemental damage
 var _current_terrain: String = "plains"
 var _terrain_modifiers: Dictionary = {"boost": [], "reduce": []}
@@ -223,6 +277,8 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	"""Initialize and start a new battle"""
 	current_state = BattleState.STARTING
 	current_round = 0
+	_wd_armed = true
+	_wd_last_progress_ms = 0
 	_party_line_cooldowns.clear()
 	if not damage_dealt.is_connected(_on_damage_dealt_for_party_dialogue):
 		damage_dealt.connect(_on_damage_dealt_for_party_dialogue)
@@ -460,6 +516,7 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 
 func end_battle(victory: bool) -> void:
 	"""End the current battle"""
+	_wd_armed = false
 	## Tick 472: clear the custom win_condition BEFORE any downstream
 	## work so a subsequent normal battle starts with default "all
 	## enemies dead" behavior. Set once per battle by GameLoop.
@@ -2516,6 +2573,7 @@ func _get_alive_enemies() -> Array[Combatant]:
 
 func _execute_next_action() -> void:
 	"""Execute the next action in the queue"""
+	_wd_bump()
 	# Check for victory/defeat
 	if _check_victory_conditions():
 		return
@@ -2787,6 +2845,7 @@ func _execute_group_action(action: Dictionary) -> void:
 		action,
 		alive_enemies
 	)
+	_wd_bump()
 
 	if _check_victory_conditions():
 		return
@@ -3167,6 +3226,12 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 	"""Execute advance action - all queued actions in sequence (each costs 1 AP)"""
 	var actions = advance_action.get("actions", []) as Array
 	if actions.is_empty():
+		## Live playtest freeze 2026-07-01 ("EXECUTE: Bard" hung forever):
+		## the caller returns after _execute_advance ("handles its own
+		## continuation"), so a bare return here permanently stalled the
+		## battle. An empty Advance must keep the execution chain alive.
+		push_warning("BattleManager: %s advanced with an empty action queue — skipping" % combatant.combatant_name)
+		_execute_next_action()
 		return
 
 	# Trash talk on 3+ action Advance from player characters (20% chance)
@@ -3207,6 +3272,7 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 		# Log player action for adaptive AI pattern detection
 		_log_player_action(combatant, action)
 		action_executed.emit(combatant, action, action.get("targets", [action.get("target")]))
+		_wd_bump()
 		if turbo_mode:
 			await get_tree().process_frame
 		else:
