@@ -4230,6 +4230,19 @@ func _on_monster_summoned(monster_type: String, summoner: Combatant) -> void:
 	var sprite = AnimatedSprite2D.new()
 	sprite.sprite_frames = _get_monster_sprite_frames(monster_type)
 
+	# Summon parity 2026-07-01: this path hardcoded scale 1.0 / no flip, so artist drops (<=128px) popped in 2.5x small facing away — mirror battle-start sizing
+	var size_bump: float = 1.0
+	var is_artist_monster := false
+	if sprite.sprite_frames and sprite.sprite_frames.has_animation(&"idle"):
+		if sprite.sprite_frames.get_frame_count(&"idle") > 0:
+			var ftex = sprite.sprite_frames.get_frame_texture(&"idle", 0)
+			if ftex and ftex.get_height() <= ENEMY_SMALL_FRAME_THRESHOLD:
+				size_bump = ENEMY_SCALE_BUMP
+				is_artist_monster = true
+	sprite.flip_h = is_artist_monster
+	var summon_depth_scale: float = 1.0 - float(new_idx) * 0.05
+	var final_scale: float = summon_depth_scale * size_bump
+
 	# Position near the summoner or in an available slot
 	var base_pos = Vector2(200, 300)
 	if enemy_positions.size() > new_idx:
@@ -4243,6 +4256,8 @@ func _on_monster_summoned(monster_type: String, summoner: Combatant) -> void:
 
 	$BattleField/EnemySprites.add_child(sprite)
 	enemy_sprite_nodes.append(sprite)
+	# Keep sway bookkeeping aligned — summons were skipped by the idle-sway index guard
+	_enemy_base_positions.append(sprite.position)
 
 	# Create animator
 	var animator = BattleAnimatorClass.new()
@@ -4256,14 +4271,14 @@ func _on_monster_summoned(monster_type: String, summoner: Combatant) -> void:
 	# Setup status icons for summoned enemy
 	_setup_status_icons(enemy, sprite)
 
-	# Spawn animation - pop in with flash
+	# Spawn animation - pop in with flash (overshoot and settle at the computed size, not 1.0)
 	var tween = create_tween()
-	tween.tween_property(sprite, "scale", Vector2(1.3, 1.3), 0.15)
-	tween.tween_property(sprite, "scale", Vector2(1.0, 1.0), 0.1)
+	tween.tween_property(sprite, "scale", Vector2(final_scale * 1.3, final_scale * 1.3), 0.15)
+	tween.tween_property(sprite, "scale", Vector2(final_scale, final_scale), 0.1)
 	# Guarantee final scale in case tween is interrupted
 	tween.finished.connect(func():
 		if is_instance_valid(sprite):
-			sprite.scale = Vector2(1.0, 1.0)
+			sprite.scale = Vector2(final_scale, final_scale)
 	)
 
 	# Flash effect at spawn position
