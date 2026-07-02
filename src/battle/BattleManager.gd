@@ -192,6 +192,7 @@ var _died_callbacks: Dictionary = {}
 
 ## Autobattle reward tracking
 var _full_autobattle: bool = true          # False if any player turn was manual
+var _c3_nonbasic_used: bool = false        # Milo's thesis quest: any player ability/item this battle (execution-level, so advance-embedded use counts)
 var _autobattle_player_turns: int = 0      # Player turns handled by autobattle
 var _manual_player_turns: int = 0          # Player turns handled manually
 
@@ -375,6 +376,7 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	_full_autobattle = true
 	_autobattle_player_turns = 0
 	_manual_player_turns = 0
+	_c3_nonbasic_used = false
 	_battle_results = {}
 	_ko_this_battle.clear()
 
@@ -514,6 +516,42 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	_start_new_round()
 
 
+## Milo's thesis-quest (world1_chapter_three) battle-telemetry emitters.
+## Spec: data/quests/world1_chapter_three.json _wiring_notes. Tracks
+## only while the quest is ACTIVE (exercises count once Milo assigns
+## them; pre-quest grinding doesn't). notify_flag re-fires on EVERY
+## qualifying occurrence, so a flag earned out of step order still
+## completes its step the next time the feat is performed.
+func _emit_c3_battle_telemetry(victory: bool, one_hp_survivor: bool) -> void:
+	var qs = get_node_or_null("/root/QuestSystem")
+	if qs == null or not GameState:
+		return
+	if qs.get_state("world1_chapter_three") != "active":
+		return
+	# Exercise 1 — letting go: two consecutive victories with zero
+	# manual actions. Streak persists across battles in game_constants;
+	# any manual win, defeat, or escape resets it.
+	var full_auto_win: bool = victory and _full_autobattle and _autobattle_player_turns > 0
+	var streak: int = int(GameState.game_constants.get("quest_c3_auto_streak", 0))
+	streak = streak + 1 if full_auto_win else 0
+	GameState.game_constants["quest_c3_auto_streak"] = streak
+	if streak >= 2:
+		GameState.set_story_flag("quest_world1_chapter_three_autobattle_run")
+		qs.notify_flag("quest_world1_chapter_three_autobattle_run")
+	# Exercise 2 — holding on: manual victory, zero autobattle turns,
+	# every player action a basic attack (defer/advance allowed; any
+	# ability or item use — even advance-embedded — disqualifies).
+	if victory and _manual_player_turns > 0 and _autobattle_player_turns == 0 and not _c3_nonbasic_used:
+		GameState.set_story_flag("quest_world1_chapter_three_basics_only")
+		qs.notify_flag("quest_world1_chapter_three_basics_only")
+	# Exercise 3 — the gap: v1 emitter is the one-HP victory (same
+	# condition as event_flag_one_hp_victory). Spec allows any subset;
+	# under-leveled and lucky-crit emitters are later polish.
+	if victory and one_hp_survivor:
+		GameState.set_story_flag("quest_world1_chapter_three_impossible")
+		qs.notify_flag("quest_world1_chapter_three_impossible")
+
+
 func end_battle(victory: bool) -> void:
 	"""End the current battle"""
 	_wd_armed = false
@@ -522,6 +560,13 @@ func end_battle(victory: bool) -> void:
 	## enemies dead" behavior. Set once per battle by GameLoop.
 	## start_solo_battle from the cutscene step's data.
 	_win_condition = {}
+	var c3_one_hp: bool = false
+	if victory:
+		for pc in player_party:
+			if pc and pc.is_alive and pc.current_hp == 1:
+				c3_one_hp = true
+				break
+	_emit_c3_battle_telemetry(victory, c3_one_hp)
 	if victory:
 		current_state = BattleState.VICTORY
 
@@ -3621,6 +3666,8 @@ func _apply_equipment_on_hit_status(attacker: Combatant, target: Combatant) -> v
 
 func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> void:
 	"""Execute an ability (costs 1 AP)"""
+	if caster in player_party:
+		_c3_nonbasic_used = true
 	var ability = JobSystem.get_ability(ability_id)
 	if ability.is_empty():
 		# Loud-fail: a bad ability_id silently consumed the caster's turn
@@ -5490,6 +5537,8 @@ func _execute_mp_restore_ability(caster: Combatant, ability: Dictionary, targets
 
 func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:
 	"""Execute item use (costs 1 AP)"""
+	if user in player_party:
+		_c3_nonbasic_used = true
 	if not user.has_item(item_id):
 		## Tick 184: surface to battle_log when user doesn't have
 		## the item. Common scenarios: autobattle script targets a
