@@ -423,7 +423,7 @@ func _create_equipment_status_panel(panel_size: Vector2) -> Control:
 
 		for injury in character.permanent_injuries:
 			var injury_label = Label.new()
-			injury_label.text = "- %s: -%d" % [injury.get("stat", "unknown").capitalize(), injury.get("penalty", 0)]
+			injury_label.text = _format_injury(injury)
 			injury_label.position = Vector2(16, y_offset)
 			injury_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 			injury_label.add_theme_color_override("font_color", AccessibilityPalette.injury())
@@ -431,6 +431,20 @@ func _create_equipment_status_panel(panel_size: Vector2) -> Control:
 			y_offset += 14
 
 	return panel
+
+
+## "- Fractured ribs (Max HP -8)" — injuries carry authored flavor
+## (BattleManager.INJURY_TYPES descriptions); rendering the raw stat
+## key ("Max_hp: -8") threw that away and read like debug output.
+static func _format_injury(injury: Dictionary) -> String:
+	var stat_names := {"max_hp": "Max HP", "max_mp": "Max MP"}
+	var stat_key: String = str(injury.get("stat", "unknown"))
+	var stat_pretty: String = stat_names.get(stat_key, stat_key.capitalize())
+	var penalty: int = int(injury.get("penalty", 0))
+	var desc: String = str(injury.get("description", ""))
+	if desc == "":
+		return "- %s -%d" % [stat_pretty, penalty]
+	return "- %s (%s -%d)" % [desc, stat_pretty, penalty]
 
 
 func _create_equip_row(slot_name: String, item_name: String, color: Color, y_pos: int) -> Control:
