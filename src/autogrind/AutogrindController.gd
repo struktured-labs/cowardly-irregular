@@ -386,6 +386,7 @@ func on_battle_ended(victory: bool, exp_gained: int = 0, items_gained: Dictionar
 		_state_before_pause = State.IDLE
 		_state = State.PAUSED
 		Engine.time_scale = 1.0
+		AutogrindSystem.set_automation_paused(true)
 		print("[AUTOGRIND] Deferred pause activated after battle end")
 		grind_paused.emit()
 
@@ -466,6 +467,7 @@ func pause_grind() -> void:
 	_state_before_pause = _state
 	_state = State.PAUSED
 	Engine.time_scale = 1.0
+	AutogrindSystem.set_automation_paused(true)
 	print("[AUTOGRIND] Controller paused (was %s)" % State.keys()[_state_before_pause])
 	grind_paused.emit()
 
@@ -477,6 +479,7 @@ func resume_grind() -> void:
 
 	_state = State.BETWEEN_BATTLES
 	_between_battle_timer = _get_between_battle_delay()
+	AutogrindSystem.set_automation_paused(false)
 
 	# Restore battle speed
 	if not headless_mode:
