@@ -540,6 +540,27 @@ func learn_abilities_for_level(combatant: Combatant, new_level: int) -> Array:
 	return granted
 
 
+## Item 18 dev toggle: ON grants every level-gated ability to the
+## party (test without grinding); OFF strips exactly the unlocks
+## ABOVE each member's current level — legitimately-earned spells
+## stay. Deterministic from data, no grant-markers needed.
+func set_dev_full_kits(enabled: bool, party_members: Array) -> void:
+	for pc in party_members:
+		if pc == null or not is_instance_valid(pc) or not (pc is Combatant):
+			continue
+		if pc.job == null or not (pc.job is Dictionary):
+			continue
+		if enabled:
+			learn_abilities_for_level(pc, 99)
+			continue
+		var unlocks: Dictionary = pc.job.get("abilities_at_level", {})
+		for level_key in unlocks:
+			if int(level_key) <= pc.job_level:
+				continue
+			for aid in unlocks[level_key]:
+				pc.learned_abilities.erase(str(aid))
+
+
 func assign_secondary_job(combatant: Combatant, job_id: String) -> bool:
 	"""Assign a secondary job to a combatant (visual accents + minor stat boost)."""
 	job_id = resolve_job_id(job_id)

@@ -55,6 +55,16 @@ var party_llm_dialogue_enabled: bool = false  # Party LLM combat-line toggle (op
 var llm_custom_backend_enabled: bool = false  # tick 40: BYOK master switch (opt-in; web build hides entirely)
 var llm_rebalance_enabled: bool = false  # tick 42: LLM-guided rebalance daemon (opt-in)
 var debug_all_pcs_unlocked: bool = false  # Bypass spotlight gates; only visible when debug_log_enabled
+var dev_full_kits: bool = false  # Item 18: grant all level-gated abilities to the party (testing)
+
+
+## Persist + apply the dev kit grant/strip to the live party.
+func _apply_dev_full_kits() -> void:
+	if GameState and "game_constants" in GameState:
+		GameState.game_constants["dev_full_kits"] = dev_full_kits
+	var game_loop = get_tree().root.get_node_or_null("GameLoop")
+	if game_loop and "party" in game_loop and JobSystem and JobSystem.has_method("set_dev_full_kits"):
+		JobSystem.set_dev_full_kits(dev_full_kits, game_loop.party)
 
 ## UI State
 var selected_index: int = 0
@@ -142,6 +152,8 @@ func _ready() -> void:
 			llm_rebalance_enabled = GameState.llm_rebalance_enabled
 		if "debug_all_pcs_unlocked" in GameState:
 			debug_all_pcs_unlocked = GameState.debug_all_pcs_unlocked
+		if "game_constants" in GameState:
+			dev_full_kits = bool(GameState.game_constants.get("dev_full_kits", false))
 	_build_ui()
 	_play_open_animation()
 
@@ -495,6 +507,22 @@ func _build_ui() -> void:
 	_settings_items.append({"control": debug_unlock_item, "type": "toggle", "id": "debug_all_pcs_unlocked"})
 	MenuMouseHelper.make_clickable(debug_unlock_item, debug_unlock_idx, 400, 60,
 		_on_setting_click.bind(debug_unlock_idx), _on_setting_hover.bind(debug_unlock_idx))
+
+	# Item 18 (user ask): "we can toggle that in settings though as
+	# 'developer mode' for me to test things easier." ON grants every
+	# level-gated ability to the party; OFF strips only above-level
+	# unlocks (earned spells stay). Persists via game_constants.
+	var dev_kits_idx: int = _settings_items.size()
+	var dev_kits_item = _create_toggle_setting(
+		"Dev: Full Job Kits",
+		"Grant all level-gated abilities to the party for testing",
+		dev_full_kits,
+		dev_kits_idx
+	)
+	vbox.add_child(dev_kits_item)
+	_settings_items.append({"control": dev_kits_item, "type": "toggle", "id": "dev_full_kits"})
+	MenuMouseHelper.make_clickable(dev_kits_item, dev_kits_idx, 400, 60,
+		_on_setting_click.bind(dev_kits_idx), _on_setting_hover.bind(dev_kits_idx))
 
 	# ── Action buttons ───────────────────────────────────────────────────
 	# Stacked in their own VBoxContainer inside the scroll area so any
@@ -1100,6 +1128,12 @@ func _adjust_setting(delta: int) -> void:
 		debug_all_pcs_unlocked = not debug_all_pcs_unlocked
 		_update_toggle_display(selected_index, debug_all_pcs_unlocked)
 		_save_debug_all_pcs_unlocked_setting()
+		if SoundManager:
+			SoundManager.play_ui("menu_move")
+	elif item["id"] == "dev_full_kits":
+		dev_full_kits = not dev_full_kits
+		_update_toggle_display(selected_index, dev_full_kits)
+		_apply_dev_full_kits()
 		if SoundManager:
 			SoundManager.play_ui("menu_move")
 	elif item["id"] == "music_volume":
