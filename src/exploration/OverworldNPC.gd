@@ -867,7 +867,16 @@ func _refresh_quest_marker() -> void:
 	if _quest_marker == null or not is_instance_valid(_quest_marker):
 		return
 	var qs = get_node_or_null("/root/QuestSystem")
-	_quest_marker.visible = qs != null and qs.has_giver_business(get_npc_id())
+	var kind: String = qs.giver_business_kind(get_npc_id()) if qs != null else ""
+	match kind:
+		"offer":
+			_quest_marker.text = "!"
+			_quest_marker.visible = true
+		"talk":
+			_quest_marker.text = "?"
+			_quest_marker.visible = true
+		_:
+			_quest_marker.visible = false
 
 
 func _setup_dialogue_box() -> void:

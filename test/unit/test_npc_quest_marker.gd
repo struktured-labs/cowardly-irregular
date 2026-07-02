@@ -76,3 +76,55 @@ func test_non_giver_npc_never_marks() -> void:
 	add_child_autofree(npc)
 	assert_false(npc._quest_marker.visible,
 		"NPCs with no quests must never show the marker")
+
+
+func test_offer_shows_exclamation() -> void:
+	GameState.quests.erase(QID)
+	if _prereq_flag != "":
+		GameState.story_flags[_prereq_flag] = true
+	var npc := _make_milo()
+	assert_eq(npc._quest_marker.text, "!",
+		"a NEW quest at this giver reads '!'")
+
+
+func test_active_talk_objective_shows_question_mark() -> void:
+	# c3 step 1 (index 0) is a talk targeting Milo — an active quest
+	# wanting a conversation here must read "?" not "!".
+	GameState.quests[QID] = {"state": "active", "objective_index": 0}
+	var npc := _make_milo()
+	assert_true(npc._quest_marker.visible)
+	assert_eq(npc._quest_marker.text, "?",
+		"active talk objective at this NPC reads '?'")
+
+
+func test_gated_talk_step_shows_nothing() -> void:
+	# c3 step 3 (index 2) is a talk at Milo REQUIRING the autobattle
+	# exercise flag — before the exercise is done, a "?" would lie.
+	GameState.quests[QID] = {"state": "active", "objective_index": 2}
+	GameState.story_flags.erase("quest_world1_chapter_three_autobattle_run")
+	var npc := _make_milo()
+	assert_false(npc._quest_marker.visible,
+		"required_flag-gated talk steps must not mark until the flag is earned")
+
+
+func test_non_giver_talk_target_gets_question_mark() -> void:
+	# fools_spread step 2 (index 1) targets Phil the Lost — NOT the
+	# giver. The '?' must follow the conversation, not the giver.
+	# Step 2 is gated on the reading-received flag (set by step 1) —
+	# earn it so the "?" is truthful, exactly as in real play.
+	var gate: String = str(QuestSystem.get_quest("world1_fools_spread")["objectives"][1].get("required_flag", ""))
+	var saved: Variant = GameState.story_flags.get(gate, null) if gate != "" else null
+	if gate != "":
+		GameState.story_flags[gate] = true
+	GameState.quests["world1_fools_spread"] = {"state": "active", "objective_index": 1}
+	var phil: Node = NPCScript.new()
+	phil.npc_name = "Phil the Lost"
+	add_child_autofree(phil)
+	assert_true(phil._quest_marker.visible, "talk target must be marked")
+	assert_eq(phil._quest_marker.text, "?")
+	GameState.quests.erase("world1_fools_spread")
+	if gate != "":
+		if saved == null:
+			GameState.story_flags.erase(gate)
+		else:
+			GameState.story_flags[gate] = saved

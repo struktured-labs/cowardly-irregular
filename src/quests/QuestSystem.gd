@@ -241,6 +241,29 @@ func has_giver_business(npc_id: String) -> bool:
 	return _giver_quest_for(npc_id) != ""
 
 
+## Marker affordance for this NPC:
+##   "offer" — has a new quest to give ("!")
+##   "talk"  — an active quest's CURRENT objective is a talk targeting
+##             this NPC — progress or turn-in, go speak to them ("?").
+##             Covers non-giver targets too (Phil, the scholar).
+##   ""      — nothing actionable (a giver whose active quest's current
+##             step is elsewhere would only repeat flavor — no marker)
+## The required_flag gate matches notify_talk's, so a "?" never points
+## at a conversation that can't actually progress yet.
+func giver_business_kind(npc_id: String) -> String:
+	for qid in _quests:
+		if get_quest(qid).get("giver", {}).get("npc_id", "") == npc_id and is_offerable(qid):
+			return "offer"
+	for qid in get_active():
+		var obj: Dictionary = _objective(get_quest(qid), get_objective_index(qid))
+		if obj.get("type", "") != "talk" or obj.get("target_npc", "") != npc_id:
+			continue
+		var req: String = obj.get("required_flag", "")
+		if req == "" or _flag(req):
+			return "talk"
+	return ""
+
+
 func _giver_quest_for(npc_id: String) -> String:
 	for qid in _quests:
 		var q: Dictionary = _quests[qid]
