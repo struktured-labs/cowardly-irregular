@@ -3034,9 +3034,30 @@ func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> v
 		await BattleTransition.play_battle_transition(enemy_types)
 		print("[GAMELOOP] Battle transition effect complete")
 
-		# Hide exploration scene (screenshot already taken)
+		# Hide exploration scene (screenshot already taken).
+		# LIVE PLAYTEST BUG 2026-07-02: the "first fight entirely
+		# broken" cap showed the Whispering Cave visible UNDER the
+		# battle UI — no party sprites, no enemy sprites, no HP bars —
+		# just the dungeon exploration overlaid with the command menu.
+		# Root cause was scenic scope: hide only touched the tracked
+		# _exploration_scene reference, but scenes are also parented
+		# via MapSystem (add_child to /root) and dungeon overlays can
+		# outlive the tracked reference. Belt-and-suspenders: hide the
+		# tracked ref, hide MapSystem.current_map, and hide every
+		# non-battle Node2D child of GameLoop as a last-resort sweep.
+		var expl_hidden: int = 0
 		if _exploration_scene and is_instance_valid(_exploration_scene):
 			_exploration_scene.visible = false
+			expl_hidden += 1
+		if MapSystem and "current_map" in MapSystem and MapSystem.current_map \
+				and is_instance_valid(MapSystem.current_map):
+			MapSystem.current_map.visible = false
+			expl_hidden += 1
+		for child in get_children():
+			if child is Node2D and not child.name.begins_with("BattleScene"):
+				child.visible = false
+				expl_hidden += 1
+		print("[GAMELOOP] Exploration hidden — %d scene(s)" % expl_hidden)
 
 		# Load battle scene (uses preloaded resource, always available)
 		await _start_battle_async(enemies, true)
