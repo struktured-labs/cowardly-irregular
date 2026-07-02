@@ -64,7 +64,7 @@ func test_alive_guard_precedes_emit() -> void:
 	# the dead PC's line never reaches the battle log.
 	var body := _run_async_body()
 	var alive_idx: int = body.find("if not combatant.is_alive:")
-	var emit_idx: int = body.find("_emit_party_line(combatant, line)")
+	var emit_idx: int = body.find("_emit_party_line(combatant, line, vt)")
 	assert_gt(alive_idx, -1, "is_alive guard must exist")
 	assert_gt(emit_idx, -1, "_emit_party_line call must exist")
 	assert_lt(alive_idx, emit_idx,

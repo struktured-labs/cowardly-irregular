@@ -1,3 +1,5 @@
+## 2026-07-01: _spawn_quip_bubble extracted into BattleSpeechBubble.gd
+## (speech-bubble brief msg 2101) — pins retargeted; behaviors preserved.
 extends GutTest
 
 ## tick 127 regression: the bubble's initial y offset must scale
@@ -12,7 +14,7 @@ extends GutTest
 ## sits ~28px above the sprite + 8px pointer = ~36px buffer above
 ## the sprite head regardless of line length.
 
-const BATTLE_SCENE := "res://src/battle/BattleScene.gd"
+const BATTLE_SCENE := "res://src/battle/BattleSpeechBubble.gd"  # extracted (msg 2101)
 
 
 func _read(p: String) -> String:
@@ -23,8 +25,8 @@ func _read(p: String) -> String:
 
 func _spawn_bubble_body() -> String:
 	var src := _read(BATTLE_SCENE)
-	var idx: int = src.find("func _spawn_quip_bubble")
-	assert_gt(idx, -1, "_spawn_quip_bubble must exist")
+	var idx: int = src.find("func _present")
+	assert_gt(idx, -1, "_present must exist in BattleSpeechBubble")
 	var next_fn: int = src.find("\nfunc ", idx + 1)
 	return src.substr(idx, next_fn - idx) if next_fn > -1 else src.substr(idx)
 
@@ -81,7 +83,7 @@ func test_ready_callback_no_longer_touches_y() -> void:
 	var end_idx: int = body.find(", CONNECT_ONE_SHOT)", lambda_idx)
 	assert_gt(end_idx, -1, "lambda end marker must exist")
 	var lambda_body: String = body.substr(lambda_idx, end_idx - lambda_idx)
-	assert_false(lambda_body.contains("container.position.y = "),
+	assert_false(lambda_body.contains("position.y = maxf"),
 		"bubble.ready callback must NOT mutate container.position.y — would clash with the tween that captures initial y")
 
 
@@ -90,12 +92,12 @@ func test_tween_still_animates_y_by_minus_10() -> void:
 	# the hold_time. With the new dynamic y, the tween animates from
 	# the corrected initial position which is the right behavior.
 	var body := _spawn_bubble_body()
-	assert_true(body.contains("tween_property(container, \"position:y\", container.position.y - 10, hold_time * 0.5)"),
+	assert_true(body.contains("tween_property(self, \"position:y\", position.y - 10, _hold_time * 0.5)"),
 		"tween must still animate container.position.y by -10 — preserves the float-up bubble animation")
 
 
 func test_x_centering_still_in_ready_callback() -> void:
 	# Tick 126's x centering must remain — only y handling moved.
 	var body := _spawn_bubble_body()
-	assert_true(body.contains("container.position.x = anchor_x - bw / 2.0"),
+	assert_true(body.contains("position.x = _clamped_x(anchor_x - bw / 2.0, bw)"),
 		"tick 126's x centering in ready callback must still be present")
