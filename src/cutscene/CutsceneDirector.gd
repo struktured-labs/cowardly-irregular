@@ -11,6 +11,12 @@ signal cutscene_skipped(cutscene_id: String)
 
 ## Current state
 var _active: bool = false
+## Abort ≠ skip: an aborted cutscene emits cutscene_finished (so
+## chained listeners/awaiters unblock) but reports itself via
+## last_finished_was_aborted() so the completion flag is NOT written —
+## the cutscene re-fires next gate check instead of never replaying.
+var _aborted: bool = false
+var _last_finished_aborted: bool = false
 var _cutscene_id: String = ""
 var _skipping: bool = false
 var _fast_forward: bool = false
@@ -254,13 +260,13 @@ func play_cutscene(cutscene_id: String) -> void:
 	var steps = data.get("steps", [])
 	var step_index := 0
 	for step in steps:
-		if _skipping:
+		if _skipping or _aborted:
 			break
 		await _execute_step(step)
 		step_index += 1
 
 	# When skipped, still apply all set_flag steps so cutscenes never replay.
-	if _skipping:
+	if _skipping and not _aborted:
 		_apply_remaining_set_flag_steps(steps, step_index)
 
 	# Cleanup
@@ -285,7 +291,7 @@ func play_cutscene_from_data(cutscene_id: String, data: Dictionary) -> void:
 	var steps = data.get("steps", [])
 	var step_index := 0
 	for step in steps:
-		if _skipping:
+		if _skipping or _aborted:
 			break
 		await _execute_step(step)
 		step_index += 1
@@ -293,7 +299,7 @@ func play_cutscene_from_data(cutscene_id: String, data: Dictionary) -> void:
 	# When skipped, still apply all set_flag steps so cutscenes never replay.
 	# Delegate to the shared helper so this path matches play_cutscene's
 	# behaviour byte-for-byte (the inline loop drifted from the helper).
-	if _skipping:
+	if _skipping and not _aborted:
 		_apply_remaining_set_flag_steps(steps, step_index)
 
 	await _end_cutscene()
@@ -1317,6 +1323,21 @@ func _apply_letterbox(show: bool) -> void:
 ## CUTSCENE LIFECYCLE
 ## =====================
 
+## Abort the in-flight cutscene: remaining steps stop, cutscene_finished
+## still emits (chains unblock), but the completion flag is skipped so
+## the cutscene RE-FIRES on the next gate check. For unrunnable states
+## (missing duel PC), not player skips.
+func abort_current(reason: String) -> void:
+	if not _active:
+		return
+	_aborted = true
+	push_error("CutsceneDirector: '%s' aborted — %s (completion flag NOT set; will replay when runnable)" % [_cutscene_id, reason])
+
+
+func last_finished_was_aborted() -> bool:
+	return _last_finished_aborted
+
+
 func _end_cutscene() -> void:
 	# Hide letterbox if still showing
 	if _letterbox_visible:
@@ -1354,10 +1375,12 @@ func _end_cutscene() -> void:
 	# listener runs, our member vars are already in the "between
 	# cutscenes" state and any new play_cutscene gets to fully own them.
 	var finished_id: String = _cutscene_id
+	_last_finished_aborted = _aborted
 	_active = false
 	visible = false
 	_cutscene_id = ""
 	_skipping = false
+	_aborted = false
 	cutscene_finished.emit(finished_id)
 
 
@@ -1436,9 +1459,12 @@ func _step_battle(step: Dictionary) -> void:
 			return
 		if result != "defeat":
 			# "unavailable" (missing PC) or any future sentinel: the duel
-			# CANNOT run — retrying forever was an infinite softlock that
-			# survived reload. Skip the step loudly instead.
-			push_error("CutsceneDirector: battle step cannot run (result '%s') — skipping step" % result)
+			# CANNOT run. Retrying forever was an infinite softlock; a
+			# plain skip was a quieter brick (completion flag set → the
+			# spotlight never replays → PC locked forever). Abort: the
+			# cutscene ends cleanly WITHOUT its completion flag and
+			# re-fires once the party is runnable again.
+			abort_current("battle step cannot run (result '%s')" % result)
 			return
 		match on_defeat:
 			"retry":

@@ -84,3 +84,35 @@ func test_victory_returns_immediately() -> void:
 func test_missing_data_never_calls_battle() -> void:
 	await _director()._step_battle({"type": "battle", "combatants": [], "enemies": []})
 	assert_eq(_stub.calls, 0, "empty step must warn and skip without battling")
+
+
+func test_unrunnable_duel_aborts_the_whole_cutscene() -> void:
+	# The quieter brick: a skipped duel used to still FINISH the
+	# cutscene → completion flag set → spotlight never replays → PC
+	# locked forever. Abort semantics: cutscene_finished still emits
+	# (chains unblock) but reports aborted so the flag-writer skips
+	# and remaining steps (incl. any set_flag) never run.
+	_stub.results = ["unavailable"]
+	var d: Node = _director()
+	var finished: Array = [false]
+	d.cutscene_finished.connect(func(_id): finished[0] = true)
+	var data := {"steps": [
+		{"type": "battle", "combatants": ["bard"], "enemies": ["bard_hostile_courtier"], "on_defeat": "retry"},
+		{"type": "set_flag", "flag": "test_abort_should_not_set"},
+	]}
+	await d.play_cutscene_from_data("test_abort_cutscene", data)
+	assert_true(finished[0], "aborted cutscene must STILL emit cutscene_finished (awaiters unblock)")
+	assert_true(d.last_finished_was_aborted(), "the run must report itself aborted")
+	assert_false(GameState.is_story_flag_set("test_abort_should_not_set"),
+		"steps after the abort — including set_flag — must not run")
+	GameState.story_flags.erase("test_abort_should_not_set")
+
+
+func test_normal_run_reports_not_aborted() -> void:
+	_stub.results = ["victory"]
+	var d: Node = _director()
+	var data := {"steps": [
+		{"type": "battle", "combatants": ["bard"], "enemies": ["bard_hostile_courtier"], "on_defeat": "retry"},
+	]}
+	await d.play_cutscene_from_data("test_normal_cutscene", data)
+	assert_false(d.last_finished_was_aborted())

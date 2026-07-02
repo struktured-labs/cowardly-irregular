@@ -1531,6 +1531,13 @@ func _play_story_cutscene(cutscene_id: String) -> void:
 		_cutscene_director = CutsceneDirector.new()
 		add_child(_cutscene_director)
 	_cutscene_director.cutscene_finished.connect(func(_id: String):
+		# Aborted runs (unrunnable duel — missing PC) must NOT complete:
+		# the flag would make the spotlight never replay, permanently
+		# locking that PC. Abort ends the cutscene cleanly and re-fires
+		# it on the next gate check once the party is runnable.
+		if _cutscene_director.has_method("last_finished_was_aborted") and _cutscene_director.last_finished_was_aborted():
+			push_warning("[GameLoop] '%s' was ABORTED — completion flag skipped; it will replay when runnable" % cutscene_id)
+			return
 		# Mark this story cutscene complete so it won't replay.
 		# (Bug 2026-05-20: chapter1_complete was never set, so Elder
 		# Theron's cutscene looped forever and quest log stayed stale.)
