@@ -31,6 +31,9 @@ func before_each() -> void:
 	assert_not_null(svc)
 	_orig_enabled = svc.llm_enabled
 	svc.llm_enabled = true
+	# Flake fix 2026-07-02: drain stale in-flight/queued requests first —
+	# see test_rule_composer_grammar_lint fixture note.
+	svc.cancel_all("composer fixture isolation")
 	fake_backend = FakeBackendScript.FakeBackend.new()
 	fake_backend.name = "FakeBE"
 	_orig_backends = svc._backends.duplicate()

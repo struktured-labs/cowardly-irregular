@@ -25,6 +25,13 @@ func before_each() -> void:
 	assert_not_null(svc)
 	_orig_enabled = svc.llm_enabled
 	svc.llm_enabled = true
+	# Flake fix 2026-07-02: drain in-flight + queued requests from earlier
+	# tests BEFORE installing the fake. A leftover queued request would
+	# dispatch first when the queue advances and CONSUME the primed fake
+	# response (→ invalid_json), or park this test's request behind a
+	# stale in-flight id until client timeout (→ "fallback"). Green in
+	# isolation, red in full suite — the classic ordering signature.
+	svc.cancel_all("composer fixture isolation")
 	fake_backend = FakeBackendScript.FakeBackend.new()
 	fake_backend.name = "FakeBE"
 	_orig_backends = svc._backends.duplicate()
