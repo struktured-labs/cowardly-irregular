@@ -1856,6 +1856,14 @@ func _restore_party_from_save_data() -> bool:
 		if not JobSystem.assign_job(c, job_id):
 			push_warning("[GameLoop] _restore_party_from_save_data: assign_job('%s') failed for %s — falling back to 'fighter'" % [job_id, c.combatant_name])
 			JobSystem.assign_job(c, "fighter")
+		# Grandfather clause (2026-07-02 kit pare): pre-pare saves owned
+		# the FULL stacked kit innately — the level-capped back-fill in
+		# assign_job would strip spells they had (a Lv.4 cleric loses
+		# cura/raise mid-playthrough). Saves WITHOUT purchased_abilities
+		# (the post-pare format marker) get the whole learnset restored.
+		# The pare paces NEW games; it never repossesses owned spells.
+		if not entry.has("purchased_abilities"):
+			JobSystem.learn_abilities_for_level(c, 99)
 		var sec_id = entry.get("secondary_job_id", "")
 		if sec_id != "":
 			# Secondary is optional — failure leaves it unset, no fallback.

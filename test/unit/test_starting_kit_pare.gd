@@ -74,6 +74,19 @@ func test_old_save_backfills_on_restore() -> void:
 		"level-13 unlock must NOT back-grant at level 12")
 
 
+func test_pre_pare_saves_are_grandfathered_in_restore() -> void:
+	# Pre-pare saves owned the full stacked kit innately — restore must
+	# not repossess it. Format discriminator: purchased_abilities key
+	# exists only in post-pare saves. Source pin on the GameLoop
+	# restore-loop clause (the flow needs a live save to drive whole).
+	var src: String = FileAccess.get_file_as_string("res://src/GameLoop.gd")
+	var idx: int = src.find("if not entry.has(\"purchased_abilities\")")
+	assert_gt(idx, -1, "restore loop must detect pre-pare save format")
+	var window: String = src.substr(idx, 200)
+	assert_true(window.contains("learn_abilities_for_level(c, 99)"),
+		"pre-pare saves get the whole learnset — the pare paces NEW games only")
+
+
 func test_fresh_level_one_gets_no_unlocks() -> void:
 	var c := Combatant.new()
 	add_child_autofree(c)
