@@ -239,6 +239,14 @@ func _exit_tree() -> void:
 	if submenu and is_instance_valid(submenu):
 		submenu.queue_free()
 		submenu = null
+	# Root menu leaving (turn submitted/cancelled) — restore the default
+	# hint so queue-context text never lingers into execution.
+	if parent_menu == null and is_inside_tree():
+		var bar = get_tree().root.find_child("InputHintBar", true, false)
+		if bar != null:
+			var label = bar.get_node_or_null("HintLabel")
+			if label != null:
+				label.text = HINT_DEFAULT_TEXT
 
 
 func _setup_timers() -> void:
@@ -1249,8 +1257,33 @@ func _apply_command_memory() -> void:
 	_initial_selection_id = ""
 
 
+const HINT_DEFAULT_TEXT := "[L] Defer  ·  [R] Advance  ·  [+/-] Speed  ·  [Select] Auto"
+
+
+## Item 22 (user: "there should be a button to undo an advance with
+## unwinding the menu") — the unwind EXISTED (B pops one queued action,
+## L undoes-or-defers) but nothing surfaced it. While the queue is
+## non-empty the battle hint bar swaps to queue context.
+func _update_hint_bar() -> void:
+	if not is_inside_tree():
+		return
+	var bar = get_tree().root.find_child("InputHintBar", true, false)
+	if bar == null:
+		return
+	var label = bar.get_node_or_null("HintLabel")
+	if label == null:
+		return
+	var root = _get_root_menu()
+	var n: int = root._queued_actions.size()
+	if n > 0:
+		label.text = "[A] Confirm  ·  [B]/[L] Undo last  ·  queued %d/%d" % [n, root._max_queue_size]
+	else:
+		label.text = HINT_DEFAULT_TEXT
+
+
 func _update_ap_label() -> void:
 	"""Update the AP display label showing current and pending cost"""
+	_update_hint_bar()
 	if not _ap_label or not is_instance_valid(_ap_label):
 		return
 
