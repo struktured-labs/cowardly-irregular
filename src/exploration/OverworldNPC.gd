@@ -14,6 +14,11 @@ signal dialogue_ended(npc_name: String)
 @export var facing_direction: int = 0  # 0=down, 1=up, 2=left, 3=right
 ## Quest-system identity; "" derives snake_case from npc_name ("Phil the Lost" → phil_the_lost).
 @export var npc_id: String = ""
+
+## Quest "!" marker over givers with live quest business
+const QUEST_MARKER_BASE_Y: float = -46.0
+var _quest_marker: Label = null
+var _quest_bob_t: float = 0.0
 ## Sprite archetype override. If empty, auto-derived from npc_type.
 ## Available: old_man, old_woman, young_man, young_woman, child, guard, merchant, scholar.
 @export var sprite_archetype: String = ""
@@ -144,6 +149,7 @@ func _ready() -> void:
 	_generate_sprite()
 	_setup_collision()
 	_setup_name_label()
+	_setup_quest_marker()
 	_setup_dialogue_box()
 
 	# Pre-generate animation frames for dancer
@@ -249,6 +255,9 @@ func _process(delta: float) -> void:
 			_dance_timer -= DANCE_SPEED
 			_dance_frame = (_dance_frame + 1) % DANCE_FRAMES
 			_update_dance_sprite()
+	if _quest_marker != null and _quest_marker.visible:
+		_quest_bob_t += delta * 3.0
+		_quest_marker.position.y = QUEST_MARKER_BASE_Y + sin(_quest_bob_t) * 3.0
 
 
 ## Returns the sprite scale for our current scene context — same logic as
@@ -821,6 +830,44 @@ func _setup_name_label() -> void:
 	name_label.add_theme_constant_override("shadow_offset_y", 1)
 	name_label.visible = false
 	add_child(name_label)
+
+
+## Gold "!" over NPCs with quest business (offerable or mid-quest
+## dialogue). Without a marker the W1 givers are only discoverable by
+## talking to every NPC in the village. Always visible (unlike the
+## proximity-gated name label) — that's the point of the affordance.
+func _setup_quest_marker() -> void:
+	_quest_marker = Label.new()
+	_quest_marker.text = "!"
+	_quest_marker.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_quest_marker.position = Vector2(-40, QUEST_MARKER_BASE_Y)
+	_quest_marker.size = Vector2(80, 22)
+	_quest_marker.add_theme_font_size_override("font_size", 18)
+	_quest_marker.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
+	_quest_marker.add_theme_color_override("font_shadow_color", Color.BLACK)
+	_quest_marker.add_theme_constant_override("shadow_offset_x", 1)
+	_quest_marker.add_theme_constant_override("shadow_offset_y", 1)
+	_quest_marker.visible = false
+	add_child(_quest_marker)
+	var qs = get_node_or_null("/root/QuestSystem")
+	if qs != null:
+		# Method callables (not lambdas) so Godot auto-disconnects when
+		# this NPC frees — village unloads must not leave dead listeners
+		# on the autoload's signals.
+		qs.quest_state_changed.connect(_on_quest_progress_changed)
+		qs.objective_advanced.connect(_on_quest_progress_changed)
+	_refresh_quest_marker()
+
+
+func _on_quest_progress_changed(_a = null, _b = null) -> void:
+	_refresh_quest_marker()
+
+
+func _refresh_quest_marker() -> void:
+	if _quest_marker == null or not is_instance_valid(_quest_marker):
+		return
+	var qs = get_node_or_null("/root/QuestSystem")
+	_quest_marker.visible = qs != null and qs.has_giver_business(get_npc_id())
 
 
 func _setup_dialogue_box() -> void:
