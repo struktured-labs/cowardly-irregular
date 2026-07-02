@@ -21,6 +21,9 @@ const QUEST_DIR := "res://data/quests"
 
 var _quests: Dictionary = {}  # id → parsed quest JSON
 var _last_reward_summary: String = ""  # set by _grant_rewards, consumed by _announce_rewards
+## Most recently accepted/progressed quest — the HUD tracker follows
+## this instead of arbitrary file-load order. Session-only (cosmetic).
+var last_progressed_quest_id: String = ""
 
 
 func _ready() -> void:
@@ -98,6 +101,7 @@ func accept(quest_id: String) -> void:
 	if not is_offerable(quest_id):
 		return
 	GameState.quests[quest_id] = {"state": "active", "objective_index": 0}
+	last_progressed_quest_id = quest_id
 	quest_state_changed.emit(quest_id, "active")
 	# Convention: when step 1 is talk-to-giver, accepting IS that talk.
 	var q: Dictionary = get_quest(quest_id)
@@ -109,6 +113,7 @@ func accept(quest_id: String) -> void:
 func _complete_objective(quest_id: String, index: int) -> void:
 	var q: Dictionary = get_quest(quest_id)
 	var obj: Dictionary = _objective(q, index)
+	last_progressed_quest_id = quest_id
 	var mirror: String = obj.get("flag_on_complete", "")
 	if mirror != "":
 		GameState.set_story_flag(mirror)

@@ -136,7 +136,7 @@ func _update_side_quest_line() -> void:
 		_side_label.visible = false
 		_bg.offset_bottom = 36
 		return
-	var qid: String = active[0]
+	var qid: String = _pick_tracked_quest(active, str(qs.last_progressed_quest_id))
 	var q: Dictionary = qs.get_quest(qid)
 	var idx: int = qs.get_objective_index(qid)
 	var objectives: Array = q.get("objectives", [])
@@ -146,6 +146,15 @@ func _update_side_quest_line() -> void:
 	_side_label.text = "◇ %s — %s" % [q.get("title", qid), desc]
 	_side_label.visible = true
 	_bg.offset_bottom = 58
+
+
+## The quest the player most recently touched wins the tracker line;
+## pre-fix it pinned active[0] (file-load order), so accepting a
+## second quest never changed the HUD until the first completed.
+static func _pick_tracked_quest(active: Array, last_progressed: String) -> String:
+	if last_progressed != "" and last_progressed in active:
+		return last_progressed
+	return str(active[0])
 
 
 func _process(delta: float) -> void:
