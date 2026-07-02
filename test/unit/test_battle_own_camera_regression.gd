@@ -16,4 +16,6 @@ func test_battle_scene_installs_its_own_camera() -> void:
 	assert_true(src.contains("_battle_cam.make_current()"),
 		"the camera must call make_current() so a stale foreign camera can't win the viewport")
 	assert_true(src.contains("_battle_cam.position = Vector2.ZERO"),
-		"battle content is authored around origin — camera must be centered")
+		"battle content is authored around origin — camera must sit at (0,0)")
+	assert_true(src.contains("ANCHOR_MODE_FIXED_TOP_LEFT"),
+		"camera must anchor top-left: DRAG_CENTER at (0,0) shifted the WHOLE battle (UI incl.) by half the viewport — 19:39 cap")

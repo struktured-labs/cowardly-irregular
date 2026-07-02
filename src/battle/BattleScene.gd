@@ -255,6 +255,11 @@ func _ready() -> void:
 	var _battle_cam := Camera2D.new()
 	_battle_cam.name = "BattleCamera"
 	_battle_cam.position = Vector2.ZERO
+	# FIXED_TOP_LEFT: world (0,0) = screen top-left, i.e. the identity
+	# transform the scene was authored against. The default DRAG_CENTER
+	# put world-origin at screen CENTER, shifting the whole battle
+	# (UI included) down-right by half the viewport — the 19:39 cap.
+	_battle_cam.anchor_mode = Camera2D.ANCHOR_MODE_FIXED_TOP_LEFT
 	_battle_cam.zoom = Vector2(1.0, 1.0)
 	add_child(_battle_cam)
 	_battle_cam.make_current()
