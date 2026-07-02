@@ -2276,6 +2276,12 @@ func start_solo_battle(job_id: String, enemy_id: String, _opts: Dictionary = {})
 	party = [spotlight_pc]
 	_pending_spotlight_unlock = job_id
 	_spotlight_duel_active = true
+	## Retry-proofing (2026-07-02): the spotlight short-circuit in
+	## _on_battle_ended SKIPS all healing, so after a defeat the PC
+	## re-entered the retry at 0 HP — instant re-defeat, infinite
+	## insta-loss loop on the first death in any duel. Every attempt
+	## starts at full fighting shape.
+	_restore_duelist(spotlight_pc)
 	## Tick 472: thread the cutscene's win_condition through to
 	## BattleManager. Empty {} = default HP-zero.
 	## Two-sources hardening (2026-07-01, cowir-story's find msg 2049):
@@ -2302,6 +2308,22 @@ func start_solo_battle(job_id: String, enemy_id: String, _opts: Dictionary = {})
 	_spotlight_duel_active = false
 	_pending_spotlight_unlock = ""
 	return "victory" if result else "defeat"
+
+
+## Full fighting shape for a duel attempt: alive, full HP/MP, statuses
+## cleared through the API (buff bookkeeping stays consistent).
+## Static: pure Combatant manipulation, testable without the scene.
+static func _restore_duelist(pc: Combatant) -> void:
+	if pc == null or not is_instance_valid(pc):
+		return
+	if not pc.is_alive and pc.has_method("revive"):
+		pc.revive(pc.max_hp)
+	pc.current_hp = pc.max_hp
+	pc.current_mp = pc.max_mp
+	if "status_effects" in pc:
+		for s in (pc.status_effects as Array).duplicate():
+			if pc.has_method("remove_status"):
+				pc.remove_status(str(s))
 
 
 func _on_battle_ended(victory: bool) -> void:

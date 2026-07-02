@@ -1436,6 +1436,10 @@ func _step_battle(step: Dictionary) -> void:
 			return
 		match on_defeat:
 			"retry":
+				# Breathing room before the rematch — instant restart on a
+				# fresh defeat read as a glitch, not a retry. (A story-voiced
+				# retry line can replace the bare beat later.)
+				await get_tree().create_timer(0.9).timeout
 				continue
 			"fail_forward", "skip":
 				return
