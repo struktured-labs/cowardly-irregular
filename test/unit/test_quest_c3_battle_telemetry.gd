@@ -181,6 +181,38 @@ func test_inactive_quest_emits_nothing() -> void:
 		assert_false(GameState.story_flags.get(f, false))
 
 
+func test_streak_progress_emits_feedback_on_exercise_step() -> void:
+	_activate_quest(1)
+	_set_battle(true, 5, 0, false)
+	watch_signals(BattleManager)
+	BattleManager._emit_c3_battle_telemetry(true, false)
+	assert_signal_emitted(BattleManager, "battle_log_message",
+		"first auto win on the exercise step must surface 1/2 progress in the log")
+
+
+func test_no_feedback_noise_off_the_exercise_step() -> void:
+	# Same streak progress while on a LATER step (e.g. talking to Milo)
+	# must stay silent — the exercise banter would be noise there.
+	_activate_quest(2)
+	_set_battle(true, 5, 0, false)
+	watch_signals(BattleManager)
+	BattleManager._emit_c3_battle_telemetry(true, false)
+	assert_signal_not_emitted(BattleManager, "battle_log_message",
+		"streak progress off-step must not emit log lines")
+
+
+func test_completion_line_fires_once() -> void:
+	_activate_quest(1)
+	_set_battle(true, 5, 0, false)
+	BattleManager._emit_c3_battle_telemetry(true, false)
+	BattleManager._emit_c3_battle_telemetry(true, false)  # completes, emits
+	# Third qualifying win: flag already set → no duplicate completion line.
+	watch_signals(BattleManager)
+	BattleManager._emit_c3_battle_telemetry(true, false)
+	assert_signal_not_emitted(BattleManager, "battle_log_message",
+		"completion feedback must fire once, not on every later re-qualification")
+
+
 func test_execution_hooks_mark_nonbasic_use() -> void:
 	# Source pins: the disqualifier must be set at EXECUTION level so
 	# advance-embedded ability/item use counts.

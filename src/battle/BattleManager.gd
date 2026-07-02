@@ -530,28 +530,47 @@ func _emit_c3_battle_telemetry(victory: bool, one_hp_survivor: bool) -> void:
 		return
 	if qs.get_state("world1_chapter_three") != "active":
 		return
+	# Exercise progress is invisible without feedback (the quest log
+	# only shows the step text) — emit battle-log lines gated to the
+	# step the player is actually ON so other steps stay noise-free.
+	# Lines are placeholder-voiced; cowir-story may re-voice.
+	var on_step: int = int(qs.get_objective_index("world1_chapter_three"))
 	# Exercise 1 — letting go: two consecutive victories with zero
 	# manual actions. Streak persists across battles in game_constants;
 	# any manual win, defeat, or escape resets it.
 	var full_auto_win: bool = victory and _full_autobattle and _autobattle_player_turns > 0
-	var streak: int = int(GameState.game_constants.get("quest_c3_auto_streak", 0))
-	streak = streak + 1 if full_auto_win else 0
+	var prev_streak: int = int(GameState.game_constants.get("quest_c3_auto_streak", 0))
+	var streak: int = prev_streak + 1 if full_auto_win else 0
 	GameState.game_constants["quest_c3_auto_streak"] = streak
 	if streak >= 2:
+		var auto_was_set: bool = GameState.story_flags.get("quest_world1_chapter_three_autobattle_run", false)
 		GameState.set_story_flag("quest_world1_chapter_three_autobattle_run")
 		qs.notify_flag("quest_world1_chapter_three_autobattle_run")
+		if not auto_was_set:
+			battle_log_message.emit("[color=cyan]Exercise complete: two victories without touching anything. Milo will want to hear about this.[/color]")
+	elif on_step == 1:
+		if streak == 1:
+			battle_log_message.emit("[color=cyan]Milo's exercise: one automated victory. One more, hands off.[/color]")
+		elif prev_streak > 0 and streak == 0:
+			battle_log_message.emit("[color=gray]Milo's exercise resets — that one wasn't hands-off.[/color]")
 	# Exercise 2 — holding on: manual victory, zero autobattle turns,
 	# every player action a basic attack (defer/advance allowed; any
 	# ability or item use — even advance-embedded — disqualifies).
 	if victory and _manual_player_turns > 0 and _autobattle_player_turns == 0 and not _c3_nonbasic_used:
+		var basic_was_set: bool = GameState.story_flags.get("quest_world1_chapter_three_basics_only", false)
 		GameState.set_story_flag("quest_world1_chapter_three_basics_only")
 		qs.notify_flag("quest_world1_chapter_three_basics_only")
+		if not basic_was_set and on_step == 3:
+			battle_log_message.emit("[color=cyan]Exercise complete: raw attacks only. Holding on, demonstrated.[/color]")
 	# Exercise 3 — the gap: full spec'd emitter set. One-HP victory,
 	# a crit landed from under 10% HP, or beating enemies ≥3 levels
 	# above the party average ("under-leveled vs a danger-zone enemy").
 	if victory and (one_hp_survivor or _c3_clutch_crit or _c3_underleveled_win()):
+		var imp_was_set: bool = GameState.story_flags.get("quest_world1_chapter_three_impossible", false)
 		GameState.set_story_flag("quest_world1_chapter_three_impossible")
 		qs.notify_flag("quest_world1_chapter_three_impossible")
+		if not imp_was_set and on_step == 5:
+			battle_log_message.emit("[color=cyan]That shouldn't have worked. Chapter Three material.[/color]")
 
 
 ## True when the strongest enemy this battle out-leveled the party
