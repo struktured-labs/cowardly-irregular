@@ -966,12 +966,35 @@ func _cleanup_battle() -> void:
 
 
 ## Round management
+## Rotate cycling weaknesses (mage duel's prismatic construct) — one element live at a time, shifting every weakness_cycle_turns rounds
+func _apply_weakness_cycles() -> void:
+	if EncounterSystem == null or EncounterSystem.monster_database.is_empty():
+		return
+	for enemy in enemy_party:
+		if enemy == null or not is_instance_valid(enemy) or not enemy.is_alive:
+			continue
+		var mt: String = str(enemy.get_meta("monster_type", "")) if enemy.has_meta("monster_type") else ""
+		var mdata: Dictionary = EncounterSystem.monster_database.get(mt, {})
+		var cycle: Array = mdata.get("weakness_cycle", [])
+		if cycle.is_empty():
+			continue
+		var every: int = maxi(1, int(mdata.get("weakness_cycle_turns", 1)))
+		var idx: int = int(float(maxi(0, current_round - 1)) / float(every)) % cycle.size()
+		var active: String = str(cycle[idx])
+		if enemy.elemental_weaknesses.size() == 1 and enemy.elemental_weaknesses[0] == active:
+			continue
+		enemy.elemental_weaknesses.clear()
+		enemy.elemental_weaknesses.append(active)
+		battle_log_message.emit("[color=cyan]%s's prism rotates — now vulnerable to %s![/color]" % [enemy.combatant_name, active.to_upper()])
+
+
 func _start_new_round() -> void:
 	"""Start a new round of combat"""
 	current_round += 1
 	selection_index = 0
 	pending_actions.clear()
 	execution_order.clear()
+	_apply_weakness_cycles()
 
 	# Reset combatants for new round and tick buff/debuff durations
 	for combatant in all_combatants:
@@ -5687,7 +5710,8 @@ func _execute_escape_ability(caster: Combatant, ability: Dictionary) -> void:
 		battle_log_message.emit("[color=gray]Cannot escape from this battle![/color]")
 		return
 
-	var success_rate = ability.get("success_rate", 0.5)
+	# smoke_bomb's description promises "guarantee escape" — honor the authored field instead of rolling
+	var success_rate = 1.0 if bool(ability.get("guaranteed_escape", false)) else ability.get("success_rate", 0.5)
 	if randf() < success_rate:
 		print("  → %s escaped successfully!" % caster.combatant_name)
 		# Tick 237: bonus BBCode (escape = positive outcome).
