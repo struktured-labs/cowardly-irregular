@@ -2396,6 +2396,32 @@ func _party_has_volatility_access() -> bool:
 ## path so it's safe to wrap any damage call. The check is
 ## per-Combatant attacker (not party-wide) — the bonus is the
 ## attacker's reward for remembering, not a party aura.
+## returned_sword's Familiar Weight: +10% (or whatever the special_effect
+## sums to) damage vs any enemy the party has already seen or defeated.
+## Story spec: the sword remembers who it's cut before. Uses BestiarySystem's
+## seen/defeated ledger — no per-weapon memory in v1.
+func _apply_familiar_weight_bonus(attacker: Combatant, target: Combatant, damage: int) -> int:
+	if attacker == null or target == null or damage <= 0:
+		return damage
+	var bonus: float = _sum_equipment_special_effect(attacker, "familiar_weight_bonus")
+	if bonus <= 0.0:
+		return damage
+	if not target.has_method("get_meta") or not target.has_meta("monster_type"):
+		return damage
+	var mtype: String = str(target.get_meta("monster_type", ""))
+	if mtype == "":
+		return damage
+	var bs: Node = get_node_or_null("/root/BestiarySystem")
+	if bs == null:
+		# Static-only API (BestiarySystem is a class_name, not just an
+		# autoload); call statically when no node is present.
+		if not (BestiarySystem.is_seen(mtype) or BestiarySystem.is_defeated(mtype)):
+			return damage
+	elif not (bs.is_seen(mtype) or bs.is_defeated(mtype)):
+		return damage
+	return int(round(damage * (1.0 + bonus)))
+
+
 func _apply_pattern_recognition_bonus(attacker: Combatant, target: Combatant, damage: int) -> int:
 	if attacker == null or target == null or damage <= 0:
 		return damage
@@ -3598,6 +3624,7 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 	## fought bosses") — applied per-hit, only when the target's
 	## monster_type lives in GameState.previously_fought_bosses.
 	damage = _apply_pattern_recognition_bonus(attacker, actual_target, damage)
+	damage = _apply_familiar_weight_bonus(attacker, actual_target, damage)
 
 	var actual_damage = actual_target.take_damage(damage, false)
 	damage_dealt.emit(actual_target, actual_damage, is_crit, "", 1.0)
@@ -3935,6 +3962,7 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 		## last time, then updates the meta tracker. Applied before
 		## take_damage so the adapted value is what lands.
 		damage = _apply_counter_repeated_damage_mod(target, ability.get("id", ""), damage)
+		damage = _apply_familiar_weight_bonus(caster, target, damage)
 
 		## Tick 431: multi-hit ability support. abilities.json authors
 		## `hits` on gold_scatter (3), recursive_strike (3),
