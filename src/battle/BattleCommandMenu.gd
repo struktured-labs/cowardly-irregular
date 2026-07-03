@@ -11,6 +11,7 @@ var _scene  # Reference to parent BattleScene (untyped to avoid circular depende
 ## Cached alive enemies list per selection turn to avoid recomputation
 var _cached_alive_enemies: Array[Combatant] = []
 var _alive_enemies_cache_valid: bool = false
+static var _spotlight_logged: Dictionary = {}
 
 
 func _init(scene) -> void:
@@ -52,7 +53,10 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 			# _scene (BattleScene) which is the natural hint host anyway.
 			if _scene and is_instance_valid(_scene):
 				TutorialHints.show(_scene, "spotlight_locked_intro")
-			push_warning("[CMD-MENU] silent-return: spotlight-locked %s (debug_all_pcs_unlocked=%s)" % [combatant.combatant_name, str(GameState.debug_all_pcs_unlocked if GameState else "no-GS")])
+			# by-design state, once per PC per session — fired every selection phase before, drowning real warnings
+			if not _spotlight_logged.has(combatant.combatant_name):
+				_spotlight_logged[combatant.combatant_name] = true
+				print("[CMD-MENU] silent-return: spotlight-locked %s (debug_all_pcs_unlocked=%s)" % [combatant.combatant_name, str(GameState.debug_all_pcs_unlocked if GameState else "no-GS")])
 			return
 
 	# Get character's sprite position (use BattleManager.player_party for correct object identity).

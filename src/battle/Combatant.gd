@@ -1501,7 +1501,8 @@ func gain_job_exp(amount: int) -> void:
 		job_exp -= job_level * 100
 		job_level += 1
 		did_level = true
-		print("%s reached job level %d!" % [combatant_name, job_level])
+		# deferred: this fires inside the caller's gain print, announcing the level before the EXP that caused it
+		call_deferred("_print_level_up_line", job_level)
 		leveled_up.emit(job_level)
 
 	if did_level:
@@ -1512,6 +1513,10 @@ func gain_job_exp(amount: int) -> void:
 		# abilities and emits ability_learned for each one.
 		if JobSystem and JobSystem.has_method("learn_abilities_for_level"):
 			JobSystem.learn_abilities_for_level(self, job_level)
+
+
+func _print_level_up_line(new_level: int) -> void:
+	print("%s reached job level %d!" % [combatant_name, new_level])
 
 
 func learn_passive(passive_id: String) -> void:
