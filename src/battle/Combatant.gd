@@ -87,6 +87,13 @@ var equipped_accessory: String = ""  # Accessory ID
 ## GameState.debug_all_pcs_unlocked overrides this for all PCs at once.
 var autobattle_locked: bool = false
 
+## Trust gate: player-owned per-PC delegation. When true, this PC's turn
+## routes through autobattle exactly like a spotlight lock, but the source
+## is the player's Settings/Trust toggle rather than the story. Kept as a
+## separate field so _reconcile_spotlight_locks (story-owned) can't wipe a
+## player-set Trust on cutscene completion or save-load.
+var player_trust: bool = false
+
 ## Job profiles - saves equipment, passives, and autobattle per job combo
 ## Key format: "primary_job_id:secondary_job_id" (e.g. "fighter:", "fighter:rogue")
 var job_profiles: Dictionary = {}
@@ -1020,6 +1027,7 @@ func to_dict() -> Dictionary:
 		"pinned_abilities": pinned_abilities.duplicate(),
 		"recent_abilities": recent_abilities.duplicate(),
 		"autobattle_locked": autobattle_locked,
+		"player_trust": player_trust,
 	}
 	# Job is a Dictionary; only its id is stable across runs (the full dict
 	# is reconstructed via JobSystem.assign_job in restore).
@@ -1278,6 +1286,8 @@ func from_dict(data: Dictionary) -> void:
 		recent_abilities = typed_recent
 	if data.has("autobattle_locked"):
 		autobattle_locked = bool(data["autobattle_locked"])
+	if data.has("player_trust"):
+		player_trust = bool(data["player_trust"])
 
 	# Resolve legacy job aliases in loaded data
 	var job_system = get_node_or_null("/root/JobSystem")

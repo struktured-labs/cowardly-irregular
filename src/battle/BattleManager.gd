@@ -1244,8 +1244,16 @@ func _process_next_selection() -> void:
 		is_spotlight_locked = true
 		if GameState and "debug_all_pcs_unlocked" in GameState and GameState.debug_all_pcs_unlocked:
 			is_spotlight_locked = false
+	# Trust gate: player-owned delegation. Separate field so reconciler
+	# doesn't wipe it. Same debug override so the "unlock" test bypass
+	# clears both sources at once.
+	var is_player_trusted = false
+	if "player_trust" in current_combatant and current_combatant.player_trust:
+		is_player_trusted = true
+		if GameState and "debug_all_pcs_unlocked" in GameState and GameState.debug_all_pcs_unlocked:
+			is_player_trusted = false
 
-	if current_state == BattleState.ENEMY_SELECTING or is_autobattle_enabled or is_char_autobattle or is_spotlight_locked:
+	if current_state == BattleState.ENEMY_SELECTING or is_autobattle_enabled or is_char_autobattle or is_spotlight_locked or is_player_trusted:
 		_process_ai_selection(current_combatant)
 
 
