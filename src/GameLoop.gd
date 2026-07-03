@@ -381,6 +381,18 @@ func _maybe_run_battle_smoke() -> void:
 		_smoke_shot("overworld_menu")
 		_smoke_tap("ui_cancel")
 		await get_tree().create_timer(0.5).timeout
+		# shop UI via the real VillageShop path — the progression item's purchase surface
+		var smoke_shop = load("res://src/exploration/VillageShop.gd").new()
+		smoke_shop.shop_type = VillageShop.ShopType.BLACK_MAGIC
+		smoke_shop.shop_name = "The Arcanum"
+		add_child(smoke_shop)
+		smoke_shop._show_shop_menu(null)
+		await get_tree().create_timer(1.2).timeout
+		_smoke_shot("shop")
+		if smoke_shop._shop_layer and is_instance_valid(smoke_shop._shop_layer):
+			smoke_shop._shop_layer.queue_free()
+		smoke_shop.queue_free()
+		await get_tree().create_timer(0.5).timeout
 		# cave, then battle FROM it — the scene that leaked under battle 2026-07-02
 		_cutscene_cooldown = true
 		_set_current_map_id("whispering_cave")
@@ -394,6 +406,11 @@ func _maybe_run_battle_smoke() -> void:
 	if xform.origin != Vector2.ZERO:
 		_smoke_failed = true
 	_smoke_shot("battle_smoke")
+	# the duel must wait for the live battle to end — a fixed sleep raced RNG-length battles
+	var _bwait := 0.0
+	while BattleManager.current_state != BattleManager.BattleState.INACTIVE and _bwait < 30.0:
+		await get_tree().create_timer(0.5).timeout
+		_bwait += 0.5
 	if full:
 		# spotlight duel leg: trust the fighter so turns auto-play, capture mid-duel
 		for m in party:
@@ -2396,6 +2413,10 @@ func _check_boot_canaries() -> void:
 ## Cutscene stays paused across attempts — _on_battle_ended skips its
 ## normal exploration-return flow while _spotlight_duel_active is on.
 func start_solo_battle(job_id: String, enemy_id: String, _opts: Dictionary = {}) -> String:
+	# entering mid-battle frees the live battle's combatants under BattleManager — freed-instance errors every frame
+	if BattleManager.current_state != BattleManager.BattleState.INACTIVE:
+		push_warning("GameLoop.start_solo_battle: refused — a battle is already active (state %d)" % BattleManager.current_state)
+		return "unavailable"
 	var spotlight_pc: Combatant = null
 	for m in party:
 		if m == null or not is_instance_valid(m):
