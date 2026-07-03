@@ -47,5 +47,5 @@ func test_combatant_name_flows_into_battle_log() -> void:
 	# the rendered output. A raw-id Combatant.name would surface in
 	# every log line. Pin one canonical site.
 	var scene_src: String = FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
-	assert_true(scene_src.contains("log_message(\"[color=yellow]%s has been defeated![/color]\" % enemy.combatant_name)"),
+	assert_true(scene_src.contains("call_deferred(\"log_message\", \"[color=yellow]%s has been defeated![/color]\" % enemy.combatant_name)"),
 		"battle log uses combatant_name verbatim — so the spawner fallback IS what the player sees on enemy defeat")

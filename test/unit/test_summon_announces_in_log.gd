@@ -42,8 +42,8 @@ func _summon_body() -> String:
 
 func test_summon_emits_battle_log() -> void:
 	var body := _summon_body()
-	assert_true(body.contains("[color=purple]%s summons a %s![/color]"),
-		"_execute_summon must emit '<X> summons a <Y>!' battle_log — purple matches the 'spawn/conjure' family")
+	assert_true(body.contains("[color=purple]%s summons %s %s![/color]"),
+		"_execute_summon must emit '<X> summons a/an <Y>!' battle_log — purple matches the 'spawn/conjure' family")
 
 
 func test_summon_log_emit_precedes_monster_summoned_signal() -> void:

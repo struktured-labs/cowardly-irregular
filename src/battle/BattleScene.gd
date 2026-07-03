@@ -3396,7 +3396,8 @@ func _on_enemy_died(enemy_idx: int) -> void:
 	SoundManager.play_battle("enemy_death")
 	if enemy_idx < test_enemies.size():
 		var enemy = test_enemies[enemy_idx]
-		log_message("[color=yellow]%s has been defeated![/color]" % enemy.combatant_name)
+		# deferred: died fires inside take_damage, before the killing blow's damage line prints
+		call_deferred("log_message", "[color=yellow]%s has been defeated![/color]" % enemy.combatant_name)
 
 		# Clean up status icons and buff visuals for dead enemy
 		if enemy in _status_icon_containers:

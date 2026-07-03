@@ -3052,8 +3052,9 @@ func _execute_summon(combatant: Combatant, monster_type: String) -> void:
 	## a new enemy showed up mid-battle. Standard snake_case →
 	## Title Case prettifier on the monster type for display.
 	var display_name: String = monster_type.replace("_", " ").capitalize()
-	battle_log_message.emit("[color=purple]%s summons a %s![/color]" % [combatant.combatant_name, display_name])
-	print("  → %s summons a %s!" % [combatant.combatant_name, display_name])
+	var article: String = "an" if display_name.substr(0, 1).to_lower() in ["a", "e", "i", "o", "u"] else "a"
+	battle_log_message.emit("[color=purple]%s summons %s %s![/color]" % [combatant.combatant_name, article, display_name])
+	print("  → %s summons %s %s!" % [combatant.combatant_name, article, display_name])
 	monster_summoned.emit(monster_type, combatant)
 
 
@@ -5965,10 +5966,15 @@ func _roll_permanent_injury(combatant: Combatant) -> Dictionary:
 
 
 func _on_combatant_died(combatant: Combatant) -> void:
-	print("%s has been defeated!" % combatant.combatant_name)
+	# deferred: died fires inside take_damage, before the killing blow's damage line prints
+	call_deferred("_print_defeat_line", combatant.combatant_name)
 	# Track party member KOs for permanent injury system
 	if combatant in player_party and combatant not in _ko_this_battle:
 		_ko_this_battle.append(combatant)
+
+
+func _print_defeat_line(name_text: String) -> void:
+	print("%s has been defeated!" % name_text)
 
 
 ## Tick 421: enforce the monsters.json `can_cause_permadeath` flag.
