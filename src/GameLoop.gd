@@ -2219,7 +2219,8 @@ func _on_party_leveled_up(new_level: int, member: Combatant) -> void:
 	# a parallel Toast would just be noise — but out-of-battle leveling
 	# from debug paths / future event-driven exp sources still wants
 	# a visible cue).
-	var in_battle: bool = BattleManager != null and BattleManager.is_battle_active()
+	# VICTORY/DEFEAT count as in-battle here — the results screen shows its own level rows, so toasts must stay suppressed through presentation
+	var in_battle: bool = BattleManager != null and BattleManager.current_state != BattleManager.BattleState.INACTIVE
 	if Toast and not in_battle and member != null:
 		Toast.show(self,
 			"%s reached job level %d!" % [member.combatant_name, new_level],

@@ -137,8 +137,9 @@ func test_handler_toasts_out_of_battle() -> void:
 func test_handler_suppresses_toast_during_battle() -> void:
 	# Battle has its own victory screen with per-character level info.
 	# A parallel Toast would just spam the UI.
+	# 2026-07-02: is_battle_active() dropped out during VICTORY — exactly when the results screen shows its own level rows
 	var body := _body_of(GAME_LOOP, "_on_party_leveled_up")
-	assert_true(body.contains("is_battle_active"),
-		"handler must check is_battle_active and suppress the Toast during battle — victory screen already surfaces the level-up")
+	assert_true(body.contains("BattleState.INACTIVE"),
+		"suppression must cover VICTORY/DEFEAT presentation, not just active combat")
 	assert_true(body.contains("not in_battle"),
 		"toast must be gated on 'not in_battle' so the suppression actually kicks in")
