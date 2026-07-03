@@ -46,6 +46,7 @@ const WORLD_PRESETS: Dictionary = {
 	"medieval": {
 		"curvature": 0.005,  # was 0.01 — mountain-edge parity tuning
 		"fog_color": Color(0.50, 0.60, 0.78),
+		"fog_strength": 0.35,  # clear open sky
 		"sky_top": Color(0.25, 0.35, 0.65),
 		"sky_bottom": Color(0.55, 0.65, 0.85),
 		"cloud_density": 0.7,  # Fluffy cumulus clouds
@@ -54,6 +55,7 @@ const WORLD_PRESETS: Dictionary = {
 	"suburban": {
 		"curvature": 0.005,
 		"fog_color": Color(0.72, 0.75, 0.80),
+		"fog_strength": 0.45,  # muggy sprawl
 		"sky_top": Color(0.45, 0.55, 0.75),
 		"sky_bottom": Color(0.70, 0.78, 0.90),
 		"cloud_density": 0.4,  # Light suburban haze clouds
@@ -62,6 +64,7 @@ const WORLD_PRESETS: Dictionary = {
 	"steampunk": {
 		"curvature": 0.02,
 		"fog_color": Color(0.60, 0.45, 0.25),
+		"fog_strength": 0.55,  # amber smog rolls in
 		"sky_top": Color(0.35, 0.25, 0.15),
 		"sky_bottom": Color(0.55, 0.45, 0.30),
 		"cloud_density": 0.6,
@@ -71,6 +74,7 @@ const WORLD_PRESETS: Dictionary = {
 	"industrial": {
 		"curvature": 0.0,
 		"fog_color": Color(0.42, 0.40, 0.38),
+		"fog_strength": 0.6,  # choking factory smog
 		"sky_top": Color(0.28, 0.27, 0.26),
 		"sky_bottom": Color(0.38, 0.37, 0.36),
 		"cloud_density": 0.8,  # Thick industrial smog
@@ -79,6 +83,7 @@ const WORLD_PRESETS: Dictionary = {
 	"digital": {
 		"curvature": 0.005,
 		"fog_color": Color(0.02, 0.40, 0.70),
+		"fog_strength": 0.25,  # crisp code — no atmosphere to speak of
 		"sky_top": Color(0.0, 0.05, 0.12),
 		"sky_bottom": Color(0.0, 0.15, 0.30),
 		"scanline_intensity": 0.3,
