@@ -821,7 +821,18 @@ func end_battle(victory: bool) -> void:
 		# meaning the daemon's primary XP knob was cosmetic. Defensive
 		# clamp keeps the multiplier in a sane band even if proposals
 		# slip past the daemon's SAFE_DELTA gates (e.g. via debug paths).
-		var base_exp = 50
+		# sum authored per-monster exp_reward — flat 50 paid Mordaine (900) like a slime pair and contradicted the bestiary display + autogrind parity
+		var base_exp: int = 0
+		var monsters_db: Dictionary = {}
+		if EncounterSystem and not EncounterSystem.monster_database.is_empty():
+			monsters_db = EncounterSystem.monster_database
+		for enemy in enemy_party:
+			if not is_instance_valid(enemy):
+				continue
+			var mt: String = str(enemy.get_meta("monster_type", "")) if enemy.has_meta("monster_type") else ""
+			base_exp += int(monsters_db.get(mt, {}).get("exp_reward", 25))
+		if base_exp <= 0:
+			base_exp = 50
 		var exp_multiplier: float = 1.0
 		if GameState and "game_constants" in GameState:
 			exp_multiplier = clampf(
