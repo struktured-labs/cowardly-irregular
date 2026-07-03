@@ -354,6 +354,7 @@ func _maybe_run_battle_smoke() -> void:
 	_create_party()
 	DirAccess.make_dir_recursive_absolute("user://smoke")
 	if full:
+		_cutscene_cooldown = true
 		_set_current_map_id("overworld")
 		await _start_exploration()
 		await get_tree().create_timer(1.5).timeout
@@ -363,6 +364,18 @@ func _maybe_run_battle_smoke() -> void:
 			await get_tree().create_timer(0.7).timeout
 			_smoke_shot("overworld_walk_%s" % dir_action.trim_prefix("ui_"))
 			Input.action_release(dir_action)
+		# village: NPC sheets + quest markers in one frame
+		_cutscene_cooldown = true
+		_set_current_map_id("harmonia_village")
+		await _start_exploration()
+		await get_tree().create_timer(1.5).timeout
+		_smoke_shot("village")
+		# cave, then battle FROM it — the scene that leaked under battle 2026-07-02
+		_cutscene_cooldown = true
+		_set_current_map_id("whispering_cave")
+		await _start_exploration()
+		await get_tree().create_timer(1.5).timeout
+		_smoke_shot("cave")
 	await _start_battle_async(["goblin"], true)
 	await get_tree().create_timer(2.5).timeout
 	var xform := get_viewport().get_canvas_transform()
