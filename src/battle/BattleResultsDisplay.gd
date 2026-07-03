@@ -66,9 +66,7 @@ func spawn_heal_glow(pos: Vector2) -> void:
 	_scene.add_child(panel)
 
 	# Tween 1: alpha fade in (0.18s) then out (0.62s), then cleanup.
-	# Explicit Tween type — _scene is Variant-typed (circular-dep workaround)
-	# so create_tween() returns Variant and := can't infer.
-	var fade: Tween = _scene.create_tween()
+	var fade: Tween = panel.create_tween()
 	fade.tween_property(panel, "modulate:a", 0.85, 0.18) \
 		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	fade.tween_property(panel, "modulate:a", 0.0, 0.62) \
@@ -76,7 +74,7 @@ func spawn_heal_glow(pos: Vector2) -> void:
 	fade.tween_callback(panel.queue_free)
 
 	# Tween 2: scale from 0.5 to 1.3 across the full 0.8s envelope.
-	var grow: Tween = _scene.create_tween()
+	var grow: Tween = panel.create_tween()
 	grow.tween_property(panel, "scale", Vector2(1.3, 1.3), 0.8) \
 		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
@@ -211,7 +209,7 @@ func show_victory_results() -> void:
 	vbox.add_child(sep)
 
 	# Animation tween for staggered reveals (parallel so delays are absolute from start)
-	var anim_tween = _scene.create_tween()
+	var anim_tween = vbox.create_tween()
 	anim_tween.set_parallel(true)
 	var bar_fill_delay = 0.5  # Delay before bars start filling (after panel slides in)
 
@@ -465,14 +463,14 @@ func show_victory_results() -> void:
 	overlay.modulate.a = 0.0
 	panel.offset_top += 30
 	panel.offset_bottom += 30
-	var tween = _scene.create_tween()
+	var tween = panel.create_tween()
 	tween.set_parallel(true)
 	tween.tween_property(overlay, "modulate:a", 1.0, 0.4)
 	tween.tween_property(panel, "offset_top", panel.offset_top - 30, 0.4).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	tween.tween_property(panel, "offset_bottom", panel.offset_bottom - 30, 0.4).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
 	# Blink the prompt text
-	var blink_tween = _scene.create_tween()
+	var blink_tween = prompt.create_tween()
 	blink_tween.set_loops()
 	blink_tween.tween_property(prompt, "modulate:a", 0.3, 0.8)
 	blink_tween.tween_property(prompt, "modulate:a", 1.0, 0.8)
