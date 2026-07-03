@@ -85,7 +85,8 @@ func _build_ui() -> void:
 	add_child(title)
 
 	# Slot panels
-	var slot_height = 120
+	# 96 so five rows (3 manual + quicksave + autosave) fit 720p
+	var slot_height = 96
 	var slot_width = vp_size.x - 64
 	var start_y = 60
 
@@ -109,6 +110,19 @@ func _build_ui() -> void:
 	quick_panel.position = Vector2(32, quick_save_y)
 	add_child(quick_panel)
 	_slot_panels.append(quick_panel)
+
+	# Autosave slot (98) — loadable here; save-mode selection is refused (system-managed)
+	var auto_y = quick_save_y + slot_height + 32
+	var as_label = Label.new()
+	as_label.text = "Autosave"
+	as_label.position = Vector2(32, auto_y - 18)
+	as_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
+	as_label.add_theme_color_override("font_color", DISABLED_COLOR)
+	add_child(as_label)
+	var auto_panel = _create_slot_panel(SaveSystem.AUTO_SAVE_SLOT, Vector2(slot_width, slot_height))
+	auto_panel.position = Vector2(32, auto_y)
+	add_child(auto_panel)
+	_slot_panels.append(auto_panel)
 
 	# Right-click cancel
 	MenuMouseHelper.add_right_click_cancel(bg, _close)
@@ -159,10 +173,18 @@ func _create_slot_panel(slot: int, panel_size: Vector2) -> Control:
 	return panel
 
 
+
+func _slot_label(slot: int) -> String:
+	if slot == SaveSystem.AUTO_SAVE_SLOT:
+		return "Autosave"
+	if slot == SaveSystem.QUICK_SAVE_SLOT:
+		return "Quick Save"
+	return "Slot %d" % (slot + 1)
+
 func _build_empty_slot(panel: Control, panel_size: Vector2, slot: int) -> void:
 	"""Build an empty slot display"""
 	var slot_label = Label.new()
-	var slot_text = "Slot %d" % (slot + 1) if slot < SaveSystem.QUICK_SAVE_SLOT else "Quick Save"
+	var slot_text = _slot_label(slot)
 	slot_label.text = slot_text
 	slot_label.position = Vector2(12, 8)
 	slot_label.add_theme_font_size_override("font_size", TextScale.scaled(14))
@@ -190,7 +212,7 @@ func _build_filled_slot(panel: Control, panel_size: Vector2, slot: int, save_inf
 	"""Build a filled slot display with party info"""
 	# Slot header
 	var slot_label = Label.new()
-	var slot_text = "Slot %d" % (slot + 1) if slot < SaveSystem.QUICK_SAVE_SLOT else "Quick Save"
+	var slot_text = _slot_label(slot)
 	slot_label.text = slot_text
 	slot_label.position = Vector2(12, 4)
 	slot_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
@@ -447,6 +469,10 @@ func _handle_confirm() -> void:
 	var slot = panel.get_meta("slot")
 
 	if current_mode == Mode.SAVE:
+		if slot == SaveSystem.AUTO_SAVE_SLOT:
+			SoundManager.play_ui("menu_error")
+			Toast.show_warning(self, "Autosave is system-managed — pick another slot")
+			return
 		# Check if slot already has data — show overwrite confirmation
 		if SaveSystem.save_exists(slot):
 			_show_overwrite_confirmation(slot)
@@ -508,7 +534,7 @@ func _show_overwrite_confirmation(slot: int) -> void:
 	_confirm_overlay.add_child(box)
 	_add_pixel_border(box, box.size)
 
-	var slot_name = "Slot %d" % (slot + 1) if slot < SaveSystem.QUICK_SAVE_SLOT else "Quick Save"
+	var slot_name = _slot_label(slot)
 	var msg = Label.new()
 	msg.text = "Overwrite %s?" % slot_name
 	msg.position = Vector2(box.position.x + 40, box.position.y + 20)

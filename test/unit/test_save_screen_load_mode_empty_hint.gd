@@ -90,8 +90,8 @@ func test_save_mode_no_subhint() -> void:
 func test_slot_label_unchanged() -> void:
 	var body := _empty_body()
 	# Slot N / Quick Save header still present, color still DISABLED_COLOR.
-	assert_true(body.contains("\"Slot %d\" % (slot + 1) if slot < SaveSystem.QUICK_SAVE_SLOT else \"Quick Save\""),
-		"slot header label preserved")
+	assert_true(body.contains("_slot_label(slot)"),
+		"slot header label preserved (unified helper covers Slot N / Quick Save / Autosave)")
 	assert_true(body.contains("slot_label.add_theme_color_override(\"font_color\", DISABLED_COLOR)"),
 		"slot header color preserved")
 
