@@ -651,7 +651,7 @@
             {
               "type": "mp_percent",
               "op": "<",
-              "value": 15
+              "value": 20
             }
           ],
           "actions": [
@@ -689,7 +689,10 @@
             {
               "type": "ability",
               "id": "fire",
-              "target": "lowest_magic_defense_enemy"
+              "target": "lowest_magic_defense_enemy",
+              "upgrades": [
+                "fira"
+              ]
             }
           ],
           "enabled": true
@@ -731,7 +734,7 @@
             {
               "type": "mp_percent",
               "op": "<",
-              "value": 15
+              "value": 20
             }
           ],
           "actions": [
@@ -769,7 +772,10 @@
             {
               "type": "ability",
               "id": "fire",
-              "target": "lowest_magic_defense_enemy"
+              "target": "lowest_magic_defense_enemy",
+              "upgrades": [
+                "fira"
+              ]
             }
           ],
           "enabled": true
