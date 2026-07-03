@@ -1110,7 +1110,12 @@ func from_dict(data: Dictionary) -> void:
 		var typed_injuries: Array[Dictionary] = []
 		for inj in data["permanent_injuries"]:
 			if inj is Dictionary:
-				typed_injuries.append(inj.duplicate(true))
+				var inj_copy: Dictionary = inj.duplicate(true)
+				# JSON parse floats these int fields — coerce back so saves are cycle-stable
+				for int_key in ["penalty", "battle_round"]:
+					if inj_copy.has(int_key):
+						inj_copy[int_key] = int(inj_copy[int_key])
+				typed_injuries.append(inj_copy)
 		permanent_injuries = typed_injuries
 	## Tick 152: typed Array[Dictionary] coercion for buffs/debuffs.
 	## Same pattern as permanent_injuries above. JSON.parse returns
