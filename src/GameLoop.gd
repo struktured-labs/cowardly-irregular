@@ -379,6 +379,12 @@ func _maybe_run_battle_smoke() -> void:
 		_smoke_key(KEY_X)
 		await get_tree().create_timer(1.0).timeout
 		_smoke_shot("overworld_menu")
+		# cursor rests on Quest Log — one confirm renders the QuestSystem UI
+		_smoke_tap("ui_accept")
+		await get_tree().create_timer(1.0).timeout
+		_smoke_shot("quest_log")
+		_smoke_tap("ui_cancel")
+		await get_tree().create_timer(0.4).timeout
 		_smoke_tap("ui_cancel")
 		await get_tree().create_timer(0.5).timeout
 		# shop UI via the real VillageShop path — the progression item's purchase surface
