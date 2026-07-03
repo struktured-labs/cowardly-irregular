@@ -104,7 +104,11 @@ func test_costed_ability_rules_cannot_fizzle() -> void:
 			var cost: int = 0
 			for action in rules[i].get("actions", []):
 				if str(action.get("type", "")) == "ability":
-					cost += int(abilities.get(str(action.get("id", "")), {}).get("mp_cost", 0))
+					var base_cost: int = int(abilities.get(str(action.get("id", "")), {}).get("mp_cost", 0))
+					var worst: int = base_cost
+					for up in (action.get("upgrades", []) as Array):
+						worst = maxi(worst, int(abilities.get(str(up), {}).get("mp_cost", 0)))
+					cost += worst
 			if cost <= 0:
 				continue
 			var need_pct: int = ceili(float(cost) / float(max_mp) * 100.0)
