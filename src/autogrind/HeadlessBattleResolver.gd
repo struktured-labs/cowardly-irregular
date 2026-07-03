@@ -767,10 +767,16 @@ func _all_dead(party: Array) -> bool:
 func _build_results(victory: bool) -> Dictionary:
 	var exp = 0
 	var gold = 0
+	# authored rewards, same as live battles — stat-derived formulas broke the full-parity ruling both directions
+	var mdb: Dictionary = {}
+	if EncounterSystem and not EncounterSystem.monster_database.is_empty():
+		mdb = EncounterSystem.monster_database
 	if victory:
 		for enemy in _enemy_party:
-			exp += int(enemy.max_hp * 0.5 + enemy.attack * 2)
-			gold += int(enemy.max_hp * 0.3 + enemy.defense)
+			var mt_key: String = str(enemy.get_meta("monster_type", "")) if enemy.has_method("get_meta") and enemy.has_meta("monster_type") else ""
+			var mrow: Dictionary = mdb.get(mt_key, {})
+			exp += int(mrow.get("exp_reward", 25))
+			gold += int(mrow.get("gold_reward", int(enemy.max_hp * 0.3 + enemy.defense)))
 			## Tick 146: mark defeated. mark_seen happened at the top
 			## of resolve_battle (tick 145); this is the kill credit.
 			# Tick 260: forward location through the defeat call too.

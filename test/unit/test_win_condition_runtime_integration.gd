@@ -131,8 +131,9 @@ func test_check_victory_fires_end_battle_on_survive_turns() -> void:
 	var ended: bool = _bm._check_victory_conditions()
 	assert_true(ended,
 		"_check_victory_conditions must report battle-ended when survive_turns met")
-	assert_eq(_bm.current_state, _bm.BattleState.VICTORY,
-		"custom win must land in VICTORY state even though the enemy is still alive")
+	# 2026-07-03: cleanup now returns the machine to INACTIVE, so the terminal observable is the cleaned state (VICTORY is transient during the battle_ended emit)
+	assert_eq(_bm.current_state, _bm.BattleState.INACTIVE,
+		"custom win must complete end_battle + cleanup even though the enemy is still alive")
 	assert_true(_bm._win_condition.is_empty(),
 		"end_battle must have cleared _win_condition (one-shot per battle)")
 

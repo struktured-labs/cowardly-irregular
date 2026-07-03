@@ -963,6 +963,8 @@ func _cleanup_battle() -> void:
 	selection_index = 0
 	current_combatant = null
 	volatility = null
+	# state stuck at VICTORY/DEFEAT forever without this — every != INACTIVE gate (toasts, spotlight reconcile) read "in battle" for the rest of the session
+	current_state = BattleState.INACTIVE
 
 
 ## Round management
