@@ -341,26 +341,41 @@ func _ready() -> void:
 	_maybe_run_battle_smoke()
 
 
-## `xvfb-run godot -- --battle-smoke`: render a real battle, save user://smoke/battle_smoke.png, quit — pixels catch what source pins can't
+## `xvfb-run godot -- --battle-smoke` (battle only) or `-- --render-smoke` (overworld walk frames + battle) — pixels catch what source pins can't
 func _maybe_run_battle_smoke() -> void:
-	if not ("--battle-smoke" in OS.get_cmdline_user_args()):
+	var full: bool = "--render-smoke" in OS.get_cmdline_user_args()
+	if not full and not ("--battle-smoke" in OS.get_cmdline_user_args()):
 		return
 	await get_tree().create_timer(1.0).timeout
-	print("[SMOKE] battle smoke starting")
+	print("[SMOKE] render smoke starting (full=%s)" % str(full))
 	_close_title_screen()
 	await get_tree().process_frame
 	await get_tree().process_frame
 	_create_party()
+	DirAccess.make_dir_recursive_absolute("user://smoke")
+	if full:
+		_set_current_map_id("overworld")
+		await _start_exploration()
+		await get_tree().create_timer(1.5).timeout
+		# mid-stride captures — the garbled-walk sprite class is only visible while moving
+		for dir_action in ["ui_right", "ui_left"]:
+			Input.action_press(dir_action)
+			await get_tree().create_timer(0.7).timeout
+			_smoke_shot("overworld_walk_%s" % dir_action.trim_prefix("ui_"))
+			Input.action_release(dir_action)
 	await _start_battle_async(["goblin"], true)
 	await get_tree().create_timer(2.5).timeout
 	var xform := get_viewport().get_canvas_transform()
 	print("[SMOKE] canvas transform origin=%s scale=%s" % [str(xform.origin), str(xform.get_scale())])
-	var img: Image = get_viewport().get_texture().get_image()
-	DirAccess.make_dir_recursive_absolute("user://smoke")
-	var err := img.save_png("user://smoke/battle_smoke.png")
-	print("[SMOKE] battle smoke saved err=%d size=%s" % [err, str(img.get_size())])
+	_smoke_shot("battle_smoke")
 	await get_tree().create_timer(0.2).timeout
 	get_tree().quit(0)
+
+
+func _smoke_shot(shot_name: String) -> void:
+	var img: Image = get_viewport().get_texture().get_image()
+	var err := img.save_png("user://smoke/%s.png" % shot_name)
+	print("[SMOKE] %s saved err=%d size=%s" % [shot_name, err, str(img.get_size())])
 
 
 func _connect_llm_breadcrumb() -> void:
