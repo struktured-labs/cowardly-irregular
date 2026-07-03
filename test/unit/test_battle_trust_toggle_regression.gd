@@ -1,12 +1,15 @@
 extends GutTest
 
 ## Regression: Trust toggle in BattleCommandMenu lets the player flip
-## the per-PC autobattle_locked field directly during their turn.
+## the per-PC player_trust field directly during their turn.
 ##
 ## User vocabulary (playtest 2026-06-04): "I thought 'Trust' was the
 ## menu option to make the character act autonomously." The toggle
 ## sits next to Auto / Auto Rules in the top of the command menu;
 ## label reads "Trust: ON" or "Trust: OFF" tracking current state.
+##
+## Queue #4 (2026-07-03): split off autobattle_locked to player_trust so
+## the story-side spotlight reconciler can't wipe player intent.
 ##
 ## Source-pin tests (cheap). End-to-end behavioural would need the full
 ## battle autoload + Win98Menu graph; we pin the surface instead.
@@ -34,21 +37,21 @@ func test_trust_menu_item_appended_after_autobattle_rules() -> void:
 	var trust_idx = body.find("\"trust_toggle\"")
 	assert_gt(trust_idx, -1,
 		"build_command_menu_items_with_targets must append a 'trust_toggle' menu item")
-	# Label must be dynamic — ON when autobattle_locked, OFF otherwise.
-	assert_true(body.find("\"Trust: ON\" if combatant.autobattle_locked else \"Trust: OFF\"") > -1,
-		"trust_toggle label must read state from combatant.autobattle_locked")
+	# Label must be dynamic — ON when player_trust, OFF otherwise.
+	assert_true(body.find("\"Trust: ON\" if combatant.player_trust else \"Trust: OFF\"") > -1,
+		"trust_toggle label must read state from combatant.player_trust")
 
 
 func test_trust_toggle_action_handler_flips_field() -> void:
 	var text = _read(BATTLE_COMMAND_MENU_PATH)
 	# The action handler must check item_id == "trust_toggle" and flip
-	# combatant.autobattle_locked.
+	# combatant.player_trust (split from autobattle_locked per queue #4).
 	var idx = text.find("if item_id == \"trust_toggle\"")
 	assert_gt(idx, -1, "Trust action handler must dispatch on item_id 'trust_toggle'")
 	var slice = text.substr(idx, 800)
-	assert_true(slice.find("autobattle_locked = not") > -1
-		or slice.find("autobattle_locked = !") > -1,
-		"Trust handler must flip combatant.autobattle_locked")
+	assert_true(slice.find("player_trust = not") > -1
+		or slice.find("player_trust = !") > -1,
+		"Trust handler must flip combatant.player_trust (queue #4 split from autobattle_locked)")
 	assert_true(slice.find("close_win98_menu()") > -1,
 		"Trust handler must close the menu after flipping so next-turn routing picks up the new state")
 

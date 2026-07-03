@@ -159,14 +159,14 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 		"label": "Auto Rules",
 		"data": {"action": "autobattle_edit", "combatant": combatant}
 	})
-	# Trust — per-PC delegation. Toggling ON sets autobattle_locked=true so
-	# the PC's stock script handles every future turn (not just this one,
-	# like Auto). User vocabulary from playtest 2026-06-04: "I thought
-	# 'Trust' was the menu option to make the character act autonomously."
-	# The menu only opens for unlocked PCs, so this toggle is one-way
-	# (untrust requires the Debug: Unlock All Party Settings toggle until
-	# the BDFFHD bottom HUD strip ships a persistent surface).
-	var trust_label: String = "Trust: ON" if combatant.autobattle_locked else "Trust: OFF"
+	# Trust — per-PC delegation. Toggling ON sets player_trust=true so the
+	# PC's stock script handles every future turn (not just this one, like
+	# Auto). Kept SEPARATE from autobattle_locked (spotlight) so the story
+	# reconciler can't wipe a player-set trust on cutscene completion or
+	# save-load. Off-surface for setting = this menu. Off-surface for
+	# CLEARING (queue #4): Settings → Party Trust per-PC row (added same
+	# ticket) so the toggle isn't one-way once ON.
+	var trust_label: String = "Trust: ON" if combatant.player_trust else "Trust: OFF"
 	items.append({
 		"id": "trust_toggle",
 		"label": trust_label,
@@ -728,20 +728,20 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 			_scene._update_ui()
 		return
 
-	# Trust toggle — flip the per-PC autobattle_locked flag (the same field that
-	# gates spotlight unlocks, BattleManager turn routing, command-menu UI
-	# suppression, and the autobattle editor tab). The menu can show for a
-	# locked PC when Debug: Unlock All Party is on, so this MUST handle BOTH
-	# directions or the turn soft-locks (bug 2026-06-14: untrust closed the
-	# menu and left the PC mid-selection with no input surface).
+	# Trust toggle — flip the per-PC player_trust flag (queue #4 split from
+	# autobattle_locked so the story reconciler doesn't wipe player intent).
+	# Menu can show for a locked PC when Debug: Unlock All Party is on, so
+	# this MUST handle BOTH directions or the turn soft-locks (bug 2026-
+	# 06-14: untrust closed the menu and left the PC mid-selection with no
+	# input surface).
 	if item_id == "trust_toggle" and item_data is Dictionary:
 		var combatant_for_trust = item_data.get("combatant", null)
-		if combatant_for_trust and "autobattle_locked" in combatant_for_trust:
-			combatant_for_trust.autobattle_locked = not combatant_for_trust.autobattle_locked
-			var new_state = "ON" if combatant_for_trust.autobattle_locked else "OFF"
-			SoundManager.play_ui("autobattle_on" if combatant_for_trust.autobattle_locked else "autobattle_off")
+		if combatant_for_trust and "player_trust" in combatant_for_trust:
+			combatant_for_trust.player_trust = not combatant_for_trust.player_trust
+			var new_state = "ON" if combatant_for_trust.player_trust else "OFF"
+			SoundManager.play_ui("autobattle_on" if combatant_for_trust.player_trust else "autobattle_off")
 			_scene.log_message("[color=cyan]%s: Trust %s[/color]" % [combatant_for_trust.combatant_name, new_state])
-			if combatant_for_trust.autobattle_locked:
+			if combatant_for_trust.player_trust:
 				# Trust ON → delegate this turn to the AI (queues an action and
 				# advances the selection order).
 				close_win98_menu()

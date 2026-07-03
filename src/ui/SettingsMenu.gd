@@ -508,6 +508,13 @@ func _build_ui() -> void:
 	MenuMouseHelper.make_clickable(debug_unlock_item, debug_unlock_idx, 400, 60,
 		_on_setting_click.bind(debug_unlock_idx), _on_setting_hover.bind(debug_unlock_idx))
 
+	# Queue #4 (2026-07-03): per-PC Party Trust rows. Answers "how do I
+	# untrust a PC without debug mode?" — settings-side surface for the
+	# player_trust field split from autobattle_locked. Rows always shown
+	# so untrust doesn't require reaching for the debug flag. When the
+	# party is empty (main-menu / no save loaded) the section skips.
+	_build_party_trust_rows(vbox)
+
 	# Item 18 (user ask): "we can toggle that in settings though as
 	# 'developer mode' for me to test things easier." ON grants every
 	# level-gated ability to the party; OFF strips only above-level
@@ -1136,6 +1143,8 @@ func _adjust_setting(delta: int) -> void:
 		_apply_dev_full_kits()
 		if SoundManager:
 			SoundManager.play_ui("menu_move")
+	elif str(item["id"]).begins_with("party_trust:"):
+		_toggle_party_trust(str(item["id"]).substr("party_trust:".length()), selected_index)
 	elif item["id"] == "music_volume":
 		music_volume_index = clampi(music_volume_index + delta, 0, VOLUME_PRESETS.size() - 1)
 		music_volume = VOLUME_PRESETS[music_volume_index]
@@ -1906,3 +1915,79 @@ func _create_confirm_button(label_text: String, text_color: Color) -> Control:
 	btn.add_child(lbl)
 
 	return btn
+
+
+## Queue #4: per-PC Party Trust rows. Reads from GameLoop.party (live)
+## when available, falls back to GameState.player_party (dict mirror) so
+## the section still renders from a save-loaded menu-only state.
+func _build_party_trust_rows(vbox: Container) -> void:
+	var party: Array = _get_party_snapshot()
+	if party.is_empty():
+		return
+	for entry in party:
+		var pc_id: String = str(entry.get("id", entry.get("combatant_name", "")))
+		if pc_id == "":
+			continue
+		var display: String = str(entry.get("name", entry.get("combatant_name", pc_id)))
+		var trusted: bool = bool(entry.get("player_trust", false))
+		var idx: int = _settings_items.size()
+		var item = _create_toggle_setting(
+			"%s: Trust" % display,
+			"Player-delegates %s's turn to their autoscript (untrust here without debug mode)" % display,
+			trusted, idx)
+		vbox.add_child(item)
+		_settings_items.append({"control": item, "type": "toggle", "id": "party_trust:%s" % pc_id})
+		MenuMouseHelper.make_clickable(item, idx, 400, 60,
+			_on_setting_click.bind(idx), _on_setting_hover.bind(idx))
+
+
+func _get_party_snapshot() -> Array:
+	# One shape for the row-builder + toggle handler: id + name + player_trust.
+	var out: Array = []
+	var game_loop = get_tree().root.get_node_or_null("GameLoop") if is_inside_tree() else null
+	if game_loop and "party" in game_loop and game_loop.party is Array and not game_loop.party.is_empty():
+		for member in game_loop.party:
+			if member == null or not "player_trust" in member:
+				continue
+			out.append({
+				"id": str(member.combatant_name).to_lower().replace(" ", "_"),
+				"name": str(member.combatant_name),
+				"player_trust": bool(member.player_trust),
+			})
+		return out
+	if GameState and not GameState.player_party.is_empty():
+		for entry in GameState.player_party:
+			if not (entry is Dictionary):
+				continue
+			out.append({
+				"id": str(entry.get("combatant_name", "")).to_lower().replace(" ", "_"),
+				"name": str(entry.get("combatant_name", "")),
+				"player_trust": bool(entry.get("player_trust", false)),
+			})
+	return out
+
+
+func _toggle_party_trust(pc_id: String, selected_index: int) -> void:
+	var flipped_to: bool = false
+	var game_loop = get_tree().root.get_node_or_null("GameLoop") if is_inside_tree() else null
+	if game_loop and "party" in game_loop and game_loop.party is Array:
+		for member in game_loop.party:
+			if member == null or not "player_trust" in member:
+				continue
+			var member_id: String = str(member.combatant_name).to_lower().replace(" ", "_")
+			if member_id == pc_id:
+				member.player_trust = not member.player_trust
+				flipped_to = member.player_trust
+				break
+	if GameState and not GameState.player_party.is_empty():
+		for entry in GameState.player_party:
+			if not (entry is Dictionary):
+				continue
+			var entry_id: String = str(entry.get("combatant_name", "")).to_lower().replace(" ", "_")
+			if entry_id == pc_id:
+				entry["player_trust"] = flipped_to if game_loop else not bool(entry.get("player_trust", false))
+				flipped_to = bool(entry["player_trust"])
+				break
+	_update_toggle_display(selected_index, flipped_to)
+	if SoundManager:
+		SoundManager.play_ui("menu_move")
