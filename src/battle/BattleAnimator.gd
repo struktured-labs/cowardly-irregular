@@ -64,6 +64,8 @@ const ANIM_SPEED: Dictionary = {
 	"defeat": 0.3
 }
 
+const ANIM_FALLBACKS: Dictionary = {"defeat": "dead", "dead": "defeat"}
+
 ## Sprite size configuration - delegates to SpriteUtils for shared constants
 const SPRITE_SIZE: int = _SpriteUtils.SPRITE_SIZE
 const BASE_SIZE: int = _SpriteUtils.BASE_SIZE
@@ -186,6 +188,12 @@ func play_animation(state: AnimState, loop: bool = false, on_complete: Callable 
 
 	# Map state to animation name
 	var anim_name = _get_animation_name(state)
+
+	# artist sheets ship "dead", procedural ships "defeat" — same pose, two vocabularies
+	if sprite.sprite_frames and not sprite.sprite_frames.has_animation(anim_name) \
+			and ANIM_FALLBACKS.has(anim_name) \
+			and sprite.sprite_frames.has_animation(ANIM_FALLBACKS[anim_name]):
+		anim_name = ANIM_FALLBACKS[anim_name]
 
 	if sprite.sprite_frames and sprite.sprite_frames.has_animation(anim_name):
 		sprite.play(anim_name)
