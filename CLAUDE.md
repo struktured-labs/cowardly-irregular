@@ -466,7 +466,7 @@ Channel delivery requires the host launched with `--dangerously-load-development
 - Web export: `godot --headless --export-release "Web" builds/web/index.html`
 - Itch push: `./butler-bin/butler push builds/web/ struktured/cowardly-irregular:web --userversion <tag>` (channel is `:web`, NOT `:html5`)
 - **NEVER deploy to itch.io without explicit user approval** — always ask first before pushing builds
-- Music OGGs compressed to 96kbps mono for web (~137 MB total, fits itch.io limits)
+- Music OGGs 96kbps mono; W4-W6 tracks are WEB-EXCLUDED via export_presets exclude_filter (procedural fallback) — itch.io HTML5 embeds cap single files at 200 MB; pipeline hard-fails on pck ≥ 190 MB
 - All *.ogg files tracked via Git LFS
 
 ## Author
