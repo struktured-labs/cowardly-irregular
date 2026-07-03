@@ -383,6 +383,14 @@ func _maybe_run_battle_smoke() -> void:
 	if xform.origin != Vector2.ZERO:
 		_smoke_failed = true
 	_smoke_shot("battle_smoke")
+	if full:
+		# spotlight duel leg: trust the fighter so turns auto-play, capture mid-duel
+		for m in party:
+			if m and is_instance_valid(m) and "player_trust" in m:
+				m.player_trust = true
+		start_solo_battle("fighter", "fighter_skeleton_knight")
+		await get_tree().create_timer(4.0).timeout
+		_smoke_shot("duel_smoke")
 	await get_tree().create_timer(0.2).timeout
 	print("[SMOKE] VERDICT: %s" % ("FAIL" if _smoke_failed else "PASS"))
 	get_tree().quit(1 if _smoke_failed else 0)
