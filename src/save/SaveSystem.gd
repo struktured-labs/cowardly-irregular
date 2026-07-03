@@ -1021,7 +1021,8 @@ func load_settings() -> void:
 			GameState.encounter_rate_multiplier = clampf(float(settings["encounter_rate_multiplier"]), 0.0, 2.0)
 		if settings.has("screen_shake_enabled"):
 			GameState.screen_shake_enabled = bool(settings["screen_shake_enabled"])
-		if settings.has("default_battle_speed"):
+		# v2-gated: a pre-v2 file's stale engine value silently UNDID the speed migration 40 lines above
+		if settings.has("default_battle_speed") and settings.get("speed_scale_v2", false):
 			# Validate against actual BATTLE_SPEEDS — fall back to 1.0 if drift.
 			var raw_speed = float(settings["default_battle_speed"])
 			GameState.default_battle_speed = raw_speed if (raw_speed in BATTLE_SCENE_SCRIPT.BATTLE_SPEEDS) else 1.0
