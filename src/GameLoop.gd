@@ -436,6 +436,10 @@ func _smoke_tap(action: String) -> void:
 
 func _smoke_shot(shot_name: String) -> void:
 	var img: Image = get_viewport().get_texture().get_image()
+	if img == null or img.is_empty():
+		# headless has no viewport texture — smoke there is for log mining, not pixels
+		print("[SMOKE] %s skipped (no viewport texture — headless run)" % shot_name)
+		return
 	var err := img.save_png("user://smoke/%s.png" % shot_name)
 	var dominant: float = _dominant_color_ratio(img)
 	# >92% one color = a void/black screen wearing a UI — the boot-canary class, but caught pre-deploy
@@ -2336,7 +2340,7 @@ func _reconcile_spotlight_locks() -> void:
 	# session dedupe). Out-of-battle flips are silent — the affordance
 	# only matters while a battle is on screen.
 	if any_flipped and BattleManager and BattleManager.current_state != BattleManager.BattleState.INACTIVE:
-		var scene = get_tree().current_scene if get_tree() else null
+		var scene = get_tree().current_scene if is_inside_tree() else null
 		if scene:
 			TutorialHints.show(scene, "spotlight_unlock")
 

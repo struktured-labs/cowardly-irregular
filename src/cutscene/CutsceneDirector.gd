@@ -500,7 +500,7 @@ func _set_choice_flag(option: Variant) -> void:
 	var flag_name: String = str((option as Dictionary).get("flag", ""))
 	if flag_name == "":
 		return
-	var gs: Node = get_tree().root.get_node_or_null("GameState") if get_tree() else null
+	var gs: Node = get_tree().root.get_node_or_null("GameState") if is_inside_tree() else null
 	if gs == null or not ("game_constants" in gs):
 		push_warning("CutsceneDirector._set_choice_flag: GameState unreachable — flag '%s' not persisted" % flag_name)
 		return

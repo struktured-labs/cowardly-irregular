@@ -52,7 +52,7 @@ func _check_encounter() -> bool:
 	# this file preload-safe for tests (GameState as a global identifier
 	# doesn't resolve in preload() parse contexts).
 	var rate_multiplier = 1.0
-	var gs = get_tree().root.get_node_or_null("GameState") if get_tree() else null
+	var gs = get_tree().root.get_node_or_null("GameState") if is_inside_tree() else null
 	if gs:
 		rate_multiplier = gs.encounter_rate_multiplier
 		# Tick 110: compose the RebalanceDaemon's encounter_rate knob into
@@ -76,7 +76,7 @@ func _check_encounter() -> bool:
 
 	# Use EncounterSystem autoload if present (Engine.has_singleton is ALWAYS
 	# FALSE for autoloads in Godot 4 — look up via scene tree root).
-	var es: Node = get_tree().root.get_node_or_null("EncounterSystem") if get_tree() else null
+	var es: Node = get_tree().root.get_node_or_null("EncounterSystem") if is_inside_tree() else null
 	if es != null:
 		# Compose the settings multiplier with ES's chance calculation by
 		# scaling encounter_rate_modifier for the duration of one check.
@@ -121,7 +121,7 @@ func _trigger_battle() -> void:
 func _generate_enemies() -> Array:
 	# Use EncounterSystem autoload if present (Engine.has_singleton is ALWAYS
 	# FALSE for autoloads in Godot 4 — look up via scene tree root).
-	var es: Node = get_tree().root.get_node_or_null("EncounterSystem") if get_tree() else null
+	var es: Node = get_tree().root.get_node_or_null("EncounterSystem") if is_inside_tree() else null
 	if es != null:
 		return es.generate_enemy_party()
 
@@ -145,7 +145,7 @@ func _on_menu_requested() -> void:
 ## Runtime lookup helper — DebugLogOverlay as a global identifier
 ## doesn't resolve in preload() parse contexts used by the test suite.
 func _dlog(msg: String) -> void:
-	var overlay = get_tree().root.get_node_or_null("DebugLogOverlay") if get_tree() else null
+	var overlay = get_tree().root.get_node_or_null("DebugLogOverlay") if is_inside_tree() else null
 	if overlay:
 		overlay.log(msg)
 
@@ -221,7 +221,7 @@ func _on_interaction_requested() -> void:
 ## requires Array[String]; passing a plain Array would silently no-op the
 ## inner .duplicate() call.
 func _push_pool_to_encounter_system(pool: Array) -> void:
-	var es: Node = get_tree().root.get_node_or_null("EncounterSystem") if get_tree() else null
+	var es: Node = get_tree().root.get_node_or_null("EncounterSystem") if is_inside_tree() else null
 	if es == null or not es.has_method("set_enemy_pool"):
 		return
 	var typed: Array[String] = []
@@ -297,7 +297,7 @@ func _load_enemy_pools() -> Dictionary:
 func resume_exploration() -> void:
 	_paused = false
 	# Runtime lookup for preload safety (see _dlog for rationale).
-	var ilm = get_tree().root.get_node_or_null("InputLockManager") if get_tree() else null
+	var ilm = get_tree().root.get_node_or_null("InputLockManager") if is_inside_tree() else null
 	if ilm:
 		ilm.pop_lock("exploration_paused")
 
@@ -305,6 +305,6 @@ func resume_exploration() -> void:
 ## Pause player control
 func pause_exploration() -> void:
 	_paused = true
-	var ilm = get_tree().root.get_node_or_null("InputLockManager") if get_tree() else null
+	var ilm = get_tree().root.get_node_or_null("InputLockManager") if is_inside_tree() else null
 	if ilm:
 		ilm.push_lock("exploration_paused")

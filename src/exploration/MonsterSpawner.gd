@@ -88,7 +88,7 @@ func _process(delta: float) -> void:
 	if not _enabled or not _player or not is_instance_valid(_player):
 		return
 	# Respect encounter rate setting — runtime lookup for preload safety.
-	var gs = get_tree().root.get_node_or_null("GameState") if get_tree() else null
+	var gs = get_tree().root.get_node_or_null("GameState") if is_inside_tree() else null
 	if gs and gs.encounter_rate_multiplier <= 0.0:
 		_despawn_all()
 		return

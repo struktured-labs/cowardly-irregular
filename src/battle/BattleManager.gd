@@ -7497,7 +7497,7 @@ func _route_drop_to_equipment_pool(item_id: String) -> bool:
 		pool_key = "accessories"
 	if pool_key == "":
 		return false
-	var game_loop = get_tree().root.get_node_or_null("GameLoop") if get_tree() else null
+	var game_loop = get_tree().root.get_node_or_null("GameLoop") if is_inside_tree() else null
 	if game_loop == null or not "equipment_pool" in game_loop:
 		return false
 	if not game_loop.equipment_pool.has(pool_key):

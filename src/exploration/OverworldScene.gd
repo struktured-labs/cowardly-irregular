@@ -138,7 +138,7 @@ func _ready() -> void:
 	_place_ambient_effects()
 
 	# Runtime lookup keeps this file preload-safe for tests.
-	var sm = get_tree().root.get_node_or_null("SoundManager") if get_tree() else null
+	var sm = get_tree().root.get_node_or_null("SoundManager") if is_inside_tree() else null
 	if sm:
 		sm.play_area_music("overworld")
 
@@ -804,7 +804,7 @@ func _place_ambient_effects() -> void:
 
 
 func _update_zone_ambient(zone: String) -> void:
-	var sm = get_tree().root.get_node_or_null("SoundManager") if get_tree() else null
+	var sm = get_tree().root.get_node_or_null("SoundManager") if is_inside_tree() else null
 	if sm == null:
 		return
 	var ambient_key = ""
@@ -872,7 +872,7 @@ func _get_objective_position() -> Vector2:
 ## Runtime lookup helper — GameState as a global identifier doesn't
 ## resolve in preload() parse contexts used by the test suite.
 func _get_game_state() -> Node:
-	if not get_tree():
+	if not is_inside_tree():
 		return null
 	return get_tree().root.get_node_or_null("GameState")
 
@@ -910,7 +910,7 @@ func _place_signposts() -> void:
 func _on_transition_triggered(target_map: String, spawn_point: String) -> void:
 	# Dissolve effect for world-to-world portal transitions
 	if "overworld" in target_map and _mode7:
-		var ilm = get_tree().root.get_node_or_null("InputLockManager") if get_tree() else null
+		var ilm = get_tree().root.get_node_or_null("InputLockManager") if is_inside_tree() else null
 		if ilm:
 			ilm.push_lock("world_transition")
 		await _mode7.play_dissolve_out()

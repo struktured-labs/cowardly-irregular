@@ -281,7 +281,7 @@ func take_damage(amount: int, is_magical: bool = false) -> int:
 	# .get(key, 1.0) + clampf [0.1, 10.0]. Runtime lookup keeps this
 	# function preload-safe for unit tests (GameState autoload may
 	# not be present in pure-class tests).
-	var gs_node: Node = get_tree().root.get_node_or_null("GameState") if get_tree() else null
+	var gs_node: Node = get_tree().root.get_node_or_null("GameState") if is_inside_tree() else null
 	if gs_node and "game_constants" in gs_node:
 		var dmg_mult: float = clampf(
 			float(gs_node.game_constants.get("damage_multiplier", 1.0)),
@@ -376,7 +376,7 @@ func heal(amount: int) -> int:
 		heal_amount = int(heal_amount * 0.5)
 
 	# Global healing multiplier — defensive pattern matching tick 109/110/113.
-	var gs_node: Node = get_tree().root.get_node_or_null("GameState") if get_tree() else null
+	var gs_node: Node = get_tree().root.get_node_or_null("GameState") if is_inside_tree() else null
 	if gs_node and "game_constants" in gs_node:
 		var heal_mult: float = clampf(
 			float(gs_node.game_constants.get("healing_multiplier", 1.0)),

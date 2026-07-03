@@ -330,7 +330,7 @@ func _can_move() -> bool:
 	# Layer 2: Named lock stack — NPC dialogue, shops, etc.
 	# Runtime lookup: InputLockManager as a global identifier doesn't
 	# resolve in preload() parse contexts (tests that preload this file).
-	var ilm = get_tree().root.get_node_or_null("InputLockManager") if get_tree() else null
+	var ilm = get_tree().root.get_node_or_null("InputLockManager") if is_inside_tree() else null
 	if ilm and ilm.is_locked():
 		return false
 	# Layer 3: Legacy flag — kept for compatibility during migration
@@ -461,7 +461,7 @@ func _physics_process(delta: float) -> void:
 		step_count += 1
 		moved.emit(step_count)
 		# Runtime lookup keeps this file preload-safe for the test suite.
-		var sm = get_tree().root.get_node_or_null("SoundManager") if get_tree() else null
+		var sm = get_tree().root.get_node_or_null("SoundManager") if is_inside_tree() else null
 		if sm:
 			# Tick 357: pass a terrain-derived footstep tag so caves don't
 			# sound like grass and metal industrial floors don't sound
