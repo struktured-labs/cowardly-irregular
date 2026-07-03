@@ -391,8 +391,12 @@ func _maybe_run_battle_smoke() -> void:
 		_smoke_key(KEY_F5)
 		await get_tree().create_timer(1.2).timeout
 		await _smoke_shot("autobattle_editor")
-		_smoke_key(KEY_F5)
-		await get_tree().create_timer(0.5).timeout
+		# verified close: the tutorial hint consumes one keypress, so a blind F5 left the editor ghosting under later screens
+		for close_try in range(3):
+			_smoke_key(KEY_F5)
+			await get_tree().create_timer(0.6).timeout
+			if _autobattle_editor == null or not is_instance_valid(_autobattle_editor):
+				break
 		# shop UI via the real VillageShop path — the progression item's purchase surface
 		var smoke_shop = load("res://src/exploration/VillageShop.gd").new()
 		smoke_shop.shop_type = VillageShop.ShopType.BLACK_MAGIC
@@ -431,6 +435,31 @@ func _maybe_run_battle_smoke() -> void:
 		start_solo_battle("fighter", "fighter_skeleton_knight")
 		await get_tree().create_timer(4.0).timeout
 		await _smoke_shot("duel_smoke")
+		# game-over leg: force-resolve the duel, cripple the party, lose to a dragon
+		BattleManager.end_battle(true)
+		var _gwait := 0.0
+		while BattleManager.current_state != BattleManager.BattleState.INACTIVE and _gwait < 20.0:
+			await get_tree().create_timer(0.5).timeout
+			_gwait += 0.5
+		for m in party:
+			if m and is_instance_valid(m):
+				m.current_hp = 1
+		await _start_battle_async(["shadow_dragon"], true)
+		_gwait = 0.0
+		var game_over_node: Node = null
+		while game_over_node == null and _gwait < 30.0:
+			await get_tree().create_timer(0.5).timeout
+			_gwait += 0.5
+			for c in get_children():
+				if c is GameOverScreen:
+					game_over_node = c
+					break
+		if game_over_node == null:
+			print("[SMOKE] game_over screen never appeared within 30s")
+			_smoke_failed = true
+		else:
+			await get_tree().create_timer(1.0).timeout
+			await _smoke_shot("game_over", 0.97)
 	await get_tree().create_timer(0.2).timeout
 	print("[SMOKE] VERDICT: %s" % ("FAIL" if _smoke_failed else "PASS"))
 	get_tree().quit(1 if _smoke_failed else 0)
@@ -463,7 +492,7 @@ func _smoke_tap(action: String) -> void:
 	Input.parse_input_event(up)
 
 
-func _smoke_shot(shot_name: String) -> void:
+func _smoke_shot(shot_name: String, max_dominant: float = 0.92) -> void:
 	var img: Image = null
 	var dominant: float = 1.0
 	# a solid frame is usually a capture racing a scene fade — ride it out before calling it a void
@@ -474,12 +503,12 @@ func _smoke_shot(shot_name: String) -> void:
 			print("[SMOKE] %s skipped (no viewport texture — headless run)" % shot_name)
 			return
 		dominant = _dominant_color_ratio(img)
-		if dominant < 0.92:
+		if dominant < max_dominant:
 			break
 		await get_tree().create_timer(0.7).timeout
 	var err := img.save_png("user://smoke/%s.png" % shot_name)
-	# >92% one color = a void/black screen wearing a UI — the boot-canary class, but caught pre-deploy
-	var ok: bool = err == OK and dominant < 0.92
+	# past the cap = a void/black screen wearing a UI — the boot-canary class, but caught pre-deploy
+	var ok: bool = err == OK and dominant < max_dominant
 	if not ok:
 		_smoke_failed = true
 	print("[SMOKE] %s saved err=%d size=%s dominant=%.2f %s" % [shot_name, err, str(img.get_size()), dominant, "OK" if ok else "FAIL"])
