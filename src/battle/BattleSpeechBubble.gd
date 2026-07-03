@@ -13,6 +13,10 @@ const SUPPRESS_TIME_SCALE: float = 4.0
 
 var _hold_time: float = 1.5
 
+## Victory frames stacked 4 bubbles from different triggers over the party panel — cap and evict oldest.
+const MAX_CONCURRENT: int = 2
+static var _live: Array = []
+
 
 ## Spawns a bubble above anchor_global_pos. Returns null when suppressed.
 ## audio_key: optional SFX/voice clip (phase-2 voice acting hook for cowir-sfx).
@@ -23,6 +27,15 @@ static func spawn(parent: Node, anchor_global_pos: Vector2, speaker_name: String
 		return null
 	if Engine.time_scale >= SUPPRESS_TIME_SCALE:
 		return null
+	_live = _live.filter(func(e): return is_instance_valid(e["bubble"]) and not e["bubble"].is_queued_for_deletion())
+	for e in _live.duplicate():
+		if e["speaker"] == speaker_name:
+			e["bubble"].queue_free()
+			_live.erase(e)
+	while _live.size() >= MAX_CONCURRENT:
+		var oldest: Dictionary = _live.pop_front()
+		if is_instance_valid(oldest["bubble"]):
+			oldest["bubble"].queue_free()
 	var b := BattleSpeechBubble.new()
 	# Faster battle speed shortens the hold so bubbles never outlive their turn.
 	b._hold_time = hold_time / maxf(1.0, Engine.time_scale)
@@ -31,6 +44,7 @@ static func spawn(parent: Node, anchor_global_pos: Vector2, speaker_name: String
 	parent.add_child(b)
 	b._present(anchor_global_pos, speaker_name, line, border_color)
 	b._play_voice(audio_key)
+	_live.append({"bubble": b, "speaker": speaker_name})
 	return b
 
 
