@@ -360,6 +360,10 @@ func _deep_check_rule(rule: Dictionary, character_id: String) -> Array[String]:
 	var free_move: Dictionary = job.get("free_move", {})
 	if free_move.has("ability_id"):
 		kit.append(free_move["ability_id"])
+	var full_kit: Array = kit.duplicate()
+	for lvl_key in (job.get("abilities_at_level", {}) as Dictionary).keys():
+		for aid in (job["abilities_at_level"][lvl_key] as Array):
+			full_kit.append(aid)
 	var max_mp: int = int(job.get("stat_modifiers", {}).get("max_mp", 1))
 	var mp_cost_sum: int = 0
 	for a in rule.get("actions", []):
@@ -372,7 +376,20 @@ func _deep_check_rule(rule: Dictionary, character_id: String) -> Array[String]:
 				continue
 			if not (aid in kit):
 				errors.append("ability '%s' not in %s's level-1 kit" % [aid, job_id])
-			mp_cost_sum += int(ability.get("mp_cost", 0))
+			var action_cost: int = int(ability.get("mp_cost", 0))
+			# Upgrades: baseline must be level-1-safe (above), each upgrade must be
+			# learnable somewhere in the job's roster, cost check uses worst case.
+			for up in (a.get("upgrades", []) as Array):
+				var up_id: String = str(up)
+				var up_ability: Dictionary = JobSystem.get_ability(up_id)
+				if up_ability.is_empty():
+					errors.append("unknown upgrade ability '%s'" % up_id)
+					continue
+				if not (up_id in full_kit):
+					errors.append("upgrade ability '%s' not learnable by %s at any level" % [up_id, job_id])
+					continue
+				action_cost = maxi(action_cost, int(up_ability.get("mp_cost", 0)))
+			mp_cost_sum += action_cost
 		elif atype == "item":
 			var iid: String = str(a.get("id", ""))
 			if ItemSystem.get_item(iid).is_empty():
@@ -441,7 +458,7 @@ func _action_def_to_action(combatant: Combatant, action_def: Dictionary) -> Dict
 			}
 
 		"ability":
-			var ability_id = action_def.get("id", "")
+			var ability_id: String = _resolve_ability_upgrade(combatant, action_def)
 			return {
 				"type": "ability",
 				"ability_id": ability_id,
@@ -467,6 +484,44 @@ func _action_def_to_action(combatant: Combatant, action_def: Dictionary) -> Dict
 				"type": "attack",
 				"target": _get_target_by_type(combatant, "lowest_hp_enemy")
 			}
+
+
+## Preset level-evolution: walk optional upgrades weakest→strongest, pick the
+## last one this combatant has learned; fall back to the baseline id when none
+## qualify. Same target_type required per upgrade (author responsibility).
+func _resolve_ability_upgrade(combatant: Combatant, action_def: Dictionary) -> String:
+	var baseline: String = str(action_def.get("id", ""))
+	var upgrades: Array = action_def.get("upgrades", []) as Array
+	if upgrades.is_empty():
+		return baseline
+	var chosen: String = baseline
+	for candidate in upgrades:
+		var cand_id: String = str(candidate)
+		if cand_id == "":
+			continue
+		if _combatant_has_learned(combatant, cand_id):
+			chosen = cand_id
+	return chosen
+
+
+func _combatant_has_learned(combatant: Combatant, ability_id: String) -> bool:
+	if combatant == null or ability_id == "":
+		return false
+	var character_id: String = _get_character_id(combatant)
+	var job_id: String = _resolve_job_for_character(character_id)
+	var job: Dictionary = JobSystem.get_job(job_id)
+	if job.is_empty():
+		return false
+	if ability_id in (job.get("abilities", []) as Array):
+		return true
+	if str(job.get("free_move", {}).get("ability_id", "")) == ability_id:
+		return true
+	var level: int = int(combatant.job_level) if "job_level" in combatant else 1
+	var at_level: Dictionary = job.get("abilities_at_level", {})
+	for key in at_level.keys():
+		if int(str(key)) <= level and ability_id in (at_level[key] as Array):
+			return true
+	return false
 
 
 func _get_target_by_type(combatant: Combatant, target_type: String) -> Combatant:

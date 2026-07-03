@@ -305,7 +305,10 @@
             {
               "type": "ability",
               "id": "cure",
-              "target": "lowest_hp_ally"
+              "target": "lowest_hp_ally",
+              "upgrades": [
+                "cura"
+              ]
             }
           ],
           "enabled": true
@@ -326,7 +329,10 @@
             {
               "type": "ability",
               "id": "cure",
-              "target": "lowest_hp_ally"
+              "target": "lowest_hp_ally",
+              "upgrades": [
+                "esuna"
+              ]
             }
           ],
           "enabled": true
@@ -341,14 +347,17 @@
             {
               "type": "mp_percent",
               "op": ">=",
-              "value": 10
+              "value": 20
             }
           ],
           "actions": [
             {
               "type": "ability",
               "id": "cure",
-              "target": "lowest_hp_ally"
+              "target": "lowest_hp_ally",
+              "upgrades": [
+                "cura"
+              ]
             }
           ],
           "enabled": true
@@ -409,7 +418,10 @@
             {
               "type": "ability",
               "id": "cure",
-              "target": "lowest_hp_ally"
+              "target": "lowest_hp_ally",
+              "upgrades": [
+                "cura"
+              ]
             }
           ],
           "enabled": true
@@ -430,7 +442,10 @@
             {
               "type": "ability",
               "id": "cure",
-              "target": "lowest_hp_ally"
+              "target": "lowest_hp_ally",
+              "upgrades": [
+                "esuna"
+              ]
             }
           ],
           "enabled": true
@@ -445,14 +460,17 @@
             {
               "type": "mp_percent",
               "op": ">=",
-              "value": 10
+              "value": 20
             }
           ],
           "actions": [
             {
               "type": "ability",
               "id": "cure",
-              "target": "lowest_hp_ally"
+              "target": "lowest_hp_ally",
+              "upgrades": [
+                "cura"
+              ]
             }
           ],
           "enabled": true
@@ -514,7 +532,10 @@
             {
               "type": "ability",
               "id": "cure",
-              "target": "lowest_hp_ally"
+              "target": "lowest_hp_ally",
+              "upgrades": [
+                "cura"
+              ]
             }
           ],
           "enabled": true
@@ -819,12 +840,18 @@
             {
               "type": "ability",
               "id": "fire",
-              "target": "lowest_magic_defense_enemy"
+              "target": "lowest_magic_defense_enemy",
+              "upgrades": [
+                "fira"
+              ]
             },
             {
               "type": "ability",
               "id": "fire",
-              "target": "lowest_magic_defense_enemy"
+              "target": "lowest_magic_defense_enemy",
+              "upgrades": [
+                "fira"
+              ]
             }
           ],
           "enabled": true
