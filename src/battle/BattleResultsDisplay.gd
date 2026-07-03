@@ -452,9 +452,9 @@ func show_victory_results() -> void:
 
 			vbox.add_child(bonus_row)
 
-	# "Press ENTER" prompt
+	# advance prompt (Z / A / Click)
 	var prompt = Label.new()
-	prompt.text = "Press ENTER to continue"
+	prompt.text = "Z / A / Click to continue"
 	prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	prompt.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	prompt.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))

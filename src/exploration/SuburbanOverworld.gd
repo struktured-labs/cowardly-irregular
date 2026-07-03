@@ -634,7 +634,7 @@ func _setup_npcs() -> void:
 
 	# === Mall Rat Mike - near arcade store ===
 	var mike = _create_npc("Mall Rat Mike", "villager", Vector2(12 * TILE_SIZE, 15 * TILE_SIZE), [
-		"Yo, you know about autobattle? Press F5, dude.",
+		"Yo, you know about autobattle? Press F5 — or squeeze both triggers, dude.",
 		"I set up my scripts to farm crows all day.",
 		"The XP isn't great but the drops are SICK.",
 		"Pro tip: condition 'Enemy HP < 25%' \u2192 Steal. Trust me."

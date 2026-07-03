@@ -2242,7 +2242,7 @@ func _on_battle_ended(victory: bool) -> void:
 		log_message("\n[color=%s]=== VICTORY ===[/color]" % AccessibilityPalette.bonus_bbcode())
 		_battle_victory = true
 		if not turbo_mode:
-			log_message("[color=gray]Press ENTER to continue...[/color]")
+			log_message("[color=gray]Z / A / Click to continue...[/color]")
 			SoundManager.play_battle("victory_stinger")
 			_play_staggered_victory_animations()
 			_show_victory_quip()
@@ -2254,7 +2254,7 @@ func _on_battle_ended(victory: bool) -> void:
 	else:
 		# Tick 239: penalty BBCode (defeat header).
 		log_message("\n[color=%s]=== DEFEAT ===[/color]" % AccessibilityPalette.penalty_bbcode())
-		log_message("[color=gray]Press ENTER to restart...[/color]")
+		log_message("[color=gray]Z / A / Click to restart...[/color]")
 		# Play defeat animation for all party members
 		for animator in party_animators:
 			if animator:
