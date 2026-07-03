@@ -541,6 +541,9 @@ func _on_llm_inference_succeeded(_mode: String) -> void:
 	# defer (not consume) during battle presentation — first inference is often the boss's own dialogue, and the toast landed center-screen mid-duel
 	if BattleManager and BattleManager.current_state != BattleManager.BattleState.INACTIVE:
 		return
+	# boss INTRO dialogue runs before BattleManager arms — gate on the loop state too or the toast slips in pre-battle
+	if current_state == LoopState.BATTLE:
+		return
 	_llm_success_notice_shown = true
 	if Toast:
 		Toast.show(self, "Dynamic dialogue active.", Toast.SUCCESS_COLOR)

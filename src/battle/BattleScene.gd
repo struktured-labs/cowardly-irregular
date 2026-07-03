@@ -1254,7 +1254,14 @@ func _add_sprite_label(sprite: AnimatedSprite2D, text: String, offset: Vector2) 
 	var label = Label.new()
 	label.text = text
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.position = offset
+	# a fixed +40 lands mid-body on 256px artist frames (SKELETON KNIGHT read at the waist) — drop below the frame
+	var half_h: float = offset.y
+	if sprite.sprite_frames and sprite.sprite_frames.has_animation(&"idle") \
+			and sprite.sprite_frames.get_frame_count(&"idle") > 0:
+		var idle_tex = sprite.sprite_frames.get_frame_texture(&"idle", 0)
+		if idle_tex:
+			half_h = maxf(offset.y, idle_tex.get_height() / 2.0 + 6.0)
+	label.position = Vector2(offset.x, half_h)
 	label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	# Tick 219: 1px outline + shadow — name labels sit below sprites on the Mode 7 floor and need edge protection vs grid lines (matches tick 218 contrast scheme, scaled down for 10pt).
 	label.add_theme_constant_override("outline_size", 1)

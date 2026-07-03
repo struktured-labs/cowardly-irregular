@@ -46,3 +46,13 @@ func test_latch_happens_only_where_toast_shows() -> void:
 	assert_gt(battle_gate, -1)
 	assert_true(consume > title_gate and consume > battle_gate,
 		"the one-shot must be consumed AFTER both defer gates — latch-before-show eats the notice")
+
+
+func test_battle_loop_state_defers_pre_battlemanager_window() -> void:
+	# Duel-smoke find: the boss INTRO dialogue runs before BattleManager
+	# arms, so gating on BattleState alone let the toast land mid-intro.
+	var gl = _make_gameloop()
+	gl.current_state = gl.LoopState.BATTLE
+	gl._on_llm_inference_succeeded("json")
+	assert_false(gl._llm_success_notice_shown,
+		"LoopState.BATTLE must defer even while BattleManager is still INACTIVE (intro window)")
