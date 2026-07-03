@@ -427,6 +427,10 @@ func _maybe_run_battle_smoke() -> void:
 	while BattleManager.current_state != BattleManager.BattleState.INACTIVE and _bwait < 30.0:
 		await get_tree().create_timer(0.5).timeout
 		_bwait += 0.5
+	# dismiss victory and walk the battle→exploration seam — the gray-screen regression class
+	_smoke_tap("ui_accept")
+	await get_tree().create_timer(2.0).timeout
+	await _smoke_shot("post_battle_return")
 	if full:
 		# spotlight duel leg: trust the fighter so turns auto-play, capture mid-duel
 		for m in party:
