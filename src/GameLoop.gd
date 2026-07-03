@@ -380,15 +380,41 @@ func _maybe_run_battle_smoke() -> void:
 	await get_tree().create_timer(2.5).timeout
 	var xform := get_viewport().get_canvas_transform()
 	print("[SMOKE] canvas transform origin=%s scale=%s" % [str(xform.origin), str(xform.get_scale())])
+	if xform.origin != Vector2.ZERO:
+		_smoke_failed = true
 	_smoke_shot("battle_smoke")
 	await get_tree().create_timer(0.2).timeout
-	get_tree().quit(0)
+	print("[SMOKE] VERDICT: %s" % ("FAIL" if _smoke_failed else "PASS"))
+	get_tree().quit(1 if _smoke_failed else 0)
+
+
+var _smoke_failed: bool = false
 
 
 func _smoke_shot(shot_name: String) -> void:
 	var img: Image = get_viewport().get_texture().get_image()
 	var err := img.save_png("user://smoke/%s.png" % shot_name)
-	print("[SMOKE] %s saved err=%d size=%s" % [shot_name, err, str(img.get_size())])
+	var dominant: float = _dominant_color_ratio(img)
+	# >92% one color = a void/black screen wearing a UI — the boot-canary class, but caught pre-deploy
+	var ok: bool = err == OK and dominant < 0.92
+	if not ok:
+		_smoke_failed = true
+	print("[SMOKE] %s saved err=%d size=%s dominant=%.2f %s" % [shot_name, err, str(img.get_size()), dominant, "OK" if ok else "FAIL"])
+
+
+func _dominant_color_ratio(img: Image) -> float:
+	var counts: Dictionary = {}
+	var total: int = 0
+	for y in range(0, img.get_height(), 8):
+		for x in range(0, img.get_width(), 8):
+			var c: Color = img.get_pixel(x, y)
+			var key: int = (int(c.r * 15) << 8) | (int(c.g * 15) << 4) | int(c.b * 15)
+			counts[key] = int(counts.get(key, 0)) + 1
+			total += 1
+	var best: int = 0
+	for k in counts:
+		best = maxi(best, int(counts[k]))
+	return float(best) / float(maxi(1, total))
 
 
 func _connect_llm_breadcrumb() -> void:
