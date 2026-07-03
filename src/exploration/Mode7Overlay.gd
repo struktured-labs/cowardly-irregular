@@ -17,6 +17,8 @@ var near_scale: float = 0.55  # was 0.45 — less horizontal compression
 var ground_y: float = 0.48
 var curvature: float = 0.005  # was 0.01 — less warp at player
 var fog_color: Color = Color(0.50, 0.60, 0.78, 1.0)
+# was hardcoded at shader's 0.7 max; 0.45 default per playtest — per-world preset can override
+var fog_strength: float = 0.45
 var sky_top: Color = Color(0.25, 0.35, 0.65, 1.0)
 var sky_bottom: Color = Color(0.55, 0.65, 0.85, 1.0)
 var scanline_intensity: float = 0.0
@@ -140,6 +142,8 @@ func apply_preset(world_id: String) -> void:
 		curvature = preset["curvature"]
 	if preset.has("fog_color"):
 		fog_color = preset["fog_color"]
+	if preset.has("fog_strength"):
+		fog_strength = float(preset["fog_strength"])
 	if preset.has("sky_top"):
 		sky_top = preset["sky_top"]
 	if preset.has("sky_bottom"):
@@ -198,6 +202,7 @@ func setup(scene: Node2D, player: Node2D) -> void:
 	_shader_mat.set_shader_parameter("ground_y", ground_y)
 	_shader_mat.set_shader_parameter("curvature", curvature)
 	_shader_mat.set_shader_parameter("fog_color", fog_color)
+	_shader_mat.set_shader_parameter("fog_strength", fog_strength)
 	_shader_mat.set_shader_parameter("sky_top", sky_top)
 	_shader_mat.set_shader_parameter("sky_bottom", sky_bottom)
 	_shader_mat.set_shader_parameter("scanline_intensity", scanline_intensity)

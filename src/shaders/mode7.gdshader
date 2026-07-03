@@ -12,6 +12,8 @@ uniform float world_rotation = 0.0;
 uniform vec4 sky_top : source_color = vec4(0.25, 0.35, 0.65, 1.0);
 uniform vec4 sky_bottom : source_color = vec4(0.55, 0.65, 0.85, 1.0);
 uniform vec4 fog_color : source_color = vec4(0.50, 0.60, 0.78, 1.0);
+// heavy-handed at the default 0.7 — playtest 2026-07-03; per-world override for dense worlds
+uniform float fog_strength : hint_range(0.0, 1.0) = 0.45;
 // Day/night tint (multiplied with final color)
 uniform vec4 time_tint : source_color = vec4(1.0, 1.0, 1.0, 1.0);
 // Per-world effects (default 0.0 = inactive)
@@ -95,14 +97,16 @@ void fragment() {
 		// h ranges from near_scale (horizon) to ~1.0 (camera feet)
 		float ground_range = 1.0 - near_scale;
 		float dist_t = 1.0 - clamp((h - near_scale) / ground_range, 0.0, 1.0);
-		float fog_amount = dist_t * dist_t * 0.7;  // Quadratic falloff, max 70% fog
+		float fog_amount = dist_t * dist_t * fog_strength;
 		result = mix(result, fog_color, fog_amount);
 
 		// Horizon fade zone (smooth transition from fog band to ground)
-		float fade_zone = near_scale * 0.5;
+		float fade_zone = near_scale * 0.3;
 		if (h_raw < near_scale + fade_zone) {
 			float t = (h_raw - near_scale) / fade_zone;
-			result = mix(fog_color, result, smoothstep(0.0, 1.0, t));
+			// scale the horizon-band mix by fog_strength so the two fog sources tune as one
+			float band = smoothstep(0.0, 1.0, t) + (1.0 - smoothstep(0.0, 1.0, t)) * (1.0 - fog_strength);
+			result = mix(fog_color, result, band);
 		}
 	}
 
