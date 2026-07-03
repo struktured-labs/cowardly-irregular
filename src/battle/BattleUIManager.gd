@@ -260,10 +260,14 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	var job_name = member.job.get("name", "None") if member.job else "None"
 	var char_id = member.combatant_name.to_lower().replace(" ", "_")
 	var auto_indicator = " [A]" if AutobattleSystem.is_autobattle_enabled(char_id) else ""
+	var tag_color: Color = Color(0.4, 1.0, 0.4)
+	if auto_indicator == "" and "player_trust" in member and member.player_trust:
+		auto_indicator = " [T]"
+		tag_color = Color(0.4, 0.85, 1.0)
 	name_label.text = "%s (%s)%s" % [member.combatant_name, job_name, auto_indicator]
 	name_label.add_theme_font_size_override("font_size", 13)
 	if auto_indicator != "":
-		name_label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4))
+		name_label.add_theme_color_override("font_color", tag_color)
 	name_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	header.add_child(name_label)
 
@@ -360,6 +364,10 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 				# Autobattle is on - show green [A]
 				auto_indicator = " [A]"
 				name_color = Color(0.4, 1.0, 0.4)  # Green for auto
+		elif "player_trust" in member and member.player_trust:
+			# trusted PCs auto-play too — invisible Trust was how the user got stuck asking "how do I disable it?"
+			auto_indicator = " [T]"
+			name_color = Color(0.4, 0.85, 1.0)
 
 		name_label.text = "%s (%s%s)%s" % [member.combatant_name, job_name, level_text, auto_indicator]
 		# Color the name based on autobattle state
