@@ -4,9 +4,13 @@ extends GutTest
 ## the suffix slot ("Slime A, Slime B (dead), Slime C → next summon = D").
 ## Result: live roster reads as A, C, D after a kill — confusing for the
 ## player and for any UI keyed on the name. Fix: only alive same-type enemies
-## consume a suffix slot.
+## consume a suffix slot. 2026-07-03: superseded by first-free-letter naming
+## (pick_summon_name — see test_summon_name_collision_regression) which keeps
+## the alive-only property; these pins now anchor on the collector loop.
 
 const BATTLE_SCENE_PATH := "res://src/battle/BattleScene.gd"
+
+const ANCHOR := "letter must be unique among LIVING same-types"
 
 
 func _read(p: String) -> String:
@@ -17,8 +21,8 @@ func _read(p: String) -> String:
 
 func test_summon_suffix_counter_filters_on_is_alive() -> void:
 	var text := _read(BATTLE_SCENE_PATH)
-	var idx := text.find("Count ALIVE enemies of this type")
-	assert_gt(idx, -1, "the alive-only counter comment must anchor the fix")
+	var idx := text.find(ANCHOR)
+	assert_gt(idx, -1, "the living-names collector comment must anchor the fix")
 	var window := text.substr(idx, 320)
 	assert_true(window.contains("e.is_alive"),
 		"summon naming loop must filter on e.is_alive — dead enemies must not consume a suffix letter")
@@ -28,9 +32,7 @@ func test_summon_suffix_counter_filters_on_is_alive() -> void:
 
 func test_legacy_dead_counting_path_is_gone() -> void:
 	var text := _read(BATTLE_SCENE_PATH)
-	# Walk non-comment lines, ensure there's no unguarded counter that
-	# reads only get_meta("monster_type", "") without is_alive.
-	var idx := text.find("# Count ALIVE enemies of this type")
+	var idx := text.find(ANCHOR)
 	var rest := text.substr(idx, 400)
 	var lines := rest.split("\n")
 	var saw_meta_check := false

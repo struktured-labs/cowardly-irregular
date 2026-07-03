@@ -4211,6 +4211,18 @@ func _show_victory_results() -> void:
 	_results_display.show_victory_results()
 
 
+static func pick_summon_name(base_name: String, living_same_type: Array) -> String:
+	if living_same_type.is_empty():
+		return base_name
+	var used: Dictionary = {}
+	for n in living_same_type:
+		used[str(n).trim_prefix(base_name).strip_edges()] = true
+	for letter in ["A", "B", "C", "D", "E"]:
+		if not used.has(letter):
+			return base_name + " " + letter
+	return base_name + " F"
+
+
 func _on_monster_summoned(monster_type: String, summoner: Combatant) -> void:
 	"""Handle monster summon - spawn new enemy mid-battle"""
 	# Find the monster type data
@@ -4228,15 +4240,12 @@ func _on_monster_summoned(monster_type: String, summoner: Combatant) -> void:
 	var enemy = Combatant.new()
 	var stats = monster_data["stats"].duplicate()
 
-	# Count ALIVE enemies of this type for the next suffix letter — dead ones must not consume a slot.
-	var type_count = 0
+	# letter must be unique among LIVING same-types — alive-count indexing collided (survivor "B" + new summon → second "B")
+	var living_names: Array = []
 	for e in test_enemies:
 		if is_instance_valid(e) and e.is_alive and e.get_meta("monster_type", "") == monster_type:
-			type_count += 1
-	if type_count > 0:
-		stats["name"] = monster_data["name"] + " " + ["A", "B", "C", "D", "E"][mini(type_count, 4)]
-	else:
-		stats["name"] = monster_data["name"]
+			living_names.append(e.combatant_name)
+	stats["name"] = pick_summon_name(monster_data["name"], living_names)
 
 	enemy.initialize(stats)
 	add_child(enemy)
