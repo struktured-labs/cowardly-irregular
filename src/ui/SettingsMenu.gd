@@ -19,7 +19,8 @@ const VOLUME_LABELS = ["0", "25", "50", "75", "100"]
 
 ## Battle speed presets
 const BATTLE_SPEED_PRESETS = [0.25, 0.5, 1.0, 2.0, 4.0]
-const BATTLE_SPEED_LABELS = ["0.25x", "0.5x", "1x", "2x", "4x"]
+# labels MUST match the in-battle scale (BattleScene.BATTLE_SPEED_LABELS head) — the old raw-engine labels made Settings "1x" mean twice the battle's "1x"
+const BATTLE_SPEED_LABELS = ["0.5x", "1x", "2x", "4x", "8x"]
 
 ## Text speed presets
 const TEXT_SPEED_PRESETS = ["slow", "normal", "fast", "instant"]

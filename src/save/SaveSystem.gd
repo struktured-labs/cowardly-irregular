@@ -884,6 +884,7 @@ func save_settings() -> void:
 	"""Save global game settings (battle speed, audio, display options)."""
 	var settings = {
 		"version": 2,
+		"speed_scale_v2": true,
 		"battle_speed_index": BATTLE_SCENE_SCRIPT._battle_speed_index,
 		"show_controller_overlay": GameState.show_controller_overlay if GameState else true,
 		"master_volume": AudioServer.get_bus_volume_db(0),
@@ -970,8 +971,15 @@ func load_settings() -> void:
 		return
 
 	var settings = json.data
-	# Battle speed
-	if settings.has("battle_speed_index"):
+	# Battle speed — speed_scale_v2 migration: pre-recalibration files
+	# persisted indexes chosen under raw-engine labels (user's file sat
+	# at engine 4.0 shown as "4x"; the battle scale calls that "8x").
+	# One-time reset to the true default; users re-pick if they want fast.
+	if not settings.get("speed_scale_v2", false):
+		BATTLE_SCENE_SCRIPT._battle_speed_index = 1
+		if GameState:
+			GameState.default_battle_speed = 0.5
+	elif settings.has("battle_speed_index"):
 		var idx = int(settings["battle_speed_index"])
 		if idx >= 0 and idx < BATTLE_SCENE_SCRIPT.BATTLE_SPEEDS.size():
 			BATTLE_SCENE_SCRIPT._battle_speed_index = idx

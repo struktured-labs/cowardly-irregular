@@ -370,6 +370,12 @@ func _maybe_run_battle_smoke() -> void:
 		await _start_exploration()
 		await get_tree().create_timer(1.5).timeout
 		_smoke_shot("village")
+		# overworld menu: party panels, corruption line, quest-log entry — the week's UI churn
+		_smoke_tap("ui_menu")
+		await get_tree().create_timer(1.0).timeout
+		_smoke_shot("menu")
+		_smoke_tap("ui_cancel")
+		await get_tree().create_timer(0.5).timeout
 		# cave, then battle FROM it — the scene that leaked under battle 2026-07-02
 		_cutscene_cooldown = true
 		_set_current_map_id("whispering_cave")
@@ -397,6 +403,18 @@ func _maybe_run_battle_smoke() -> void:
 
 
 var _smoke_failed: bool = false
+
+
+## real InputEventAction pair — Input.action_press only sets poll-state and never reaches event handlers
+func _smoke_tap(action: String) -> void:
+	var ev := InputEventAction.new()
+	ev.action = action
+	ev.pressed = true
+	Input.parse_input_event(ev)
+	var up := InputEventAction.new()
+	up.action = action
+	up.pressed = false
+	Input.parse_input_event(up)
 
 
 func _smoke_shot(shot_name: String) -> void:
