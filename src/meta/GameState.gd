@@ -437,7 +437,13 @@ func _apply_save_data(save_data: Dictionary) -> void:
 		if raw_meta is Dictionary:
 			var saved_meta: Dictionary = raw_meta
 			for key in saved_meta.keys():
-				meta_features[key] = saved_meta[key]
+				# anchor JSON's floats/truthiness to the default's type so saves stay cycle-stable
+				if meta_features.has(key) and meta_features[key] is int:
+					meta_features[key] = int(saved_meta[key])
+				elif meta_features.has(key) and meta_features[key] is bool:
+					meta_features[key] = bool(saved_meta[key])
+				else:
+					meta_features[key] = saved_meta[key]
 		else:
 			push_warning("[GameState] _apply_save_data: meta_features malformed (type=%s) — keeping defaults" % typeof(raw_meta))
 	if save_data.has("corruption_effects"):
