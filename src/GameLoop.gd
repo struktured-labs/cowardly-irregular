@@ -2522,6 +2522,9 @@ static func _restore_duelist(pc: Combatant) -> void:
 	pc.current_mp = pc.max_mp
 	if "status_effects" in pc:
 		for s in (pc.status_effects as Array).duplicate():
+			# the permadeath marker must survive every restore or a later Raise undoes it
+			if str(s) == "permakilled":
+				continue
 			if pc.has_method("remove_status"):
 				pc.remove_status(str(s))
 
@@ -2831,12 +2834,10 @@ func _show_game_over_screen() -> void:
 	if retry[0]:
 		# Retry the same battle with the same enemy formation
 		if _last_battle_enemies.size() > 0:
-			# Heal party to full for retry (no permanent death on retry)
+			# canonical restore: raw is_alive=true carried statuses into the retry AND resurrected permakilled PCs
 			for member in party:
 				if is_instance_valid(member):
-					member.is_alive = true
-					member.current_hp = member.max_hp
-					member.current_mp = member.max_mp
+					_restore_duelist(member)
 					member.current_ap = 0
 			await _start_battle_async(_last_battle_enemies, _last_battle_is_encounter)
 			if BattleTransition:
