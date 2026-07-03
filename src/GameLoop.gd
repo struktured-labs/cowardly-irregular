@@ -474,9 +474,12 @@ func _on_llm_inference_succeeded(_mode: String) -> void:
 	players who otherwise can't tell scripted from dynamic dialogue."""
 	if _llm_success_notice_shown:
 		return
-	_llm_success_notice_shown = true
 	if current_state == LoopState.TITLE:
 		return
+	# defer (not consume) during battle presentation — first inference is often the boss's own dialogue, and the toast landed center-screen mid-duel
+	if BattleManager and BattleManager.current_state != BattleManager.BattleState.INACTIVE:
+		return
+	_llm_success_notice_shown = true
 	if Toast:
 		Toast.show(self, "Dynamic dialogue active.", Toast.SUCCESS_COLOR)
 
