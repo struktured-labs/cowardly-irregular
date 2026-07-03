@@ -109,18 +109,21 @@ func setup(parent: Node, player: Node2D, map_w: int, map_h: int, tile_size: int,
 	]
 	for i in range(legend_items.size()):
 		var item = legend_items[i]
-		var y_off = legend_y + i * 11
+		var y_off = legend_y + i * 14
 		var dot = ColorRect.new()
 		dot.color = item[1]
-		dot.size = Vector2(4, 4)
-		dot.position = Vector2(legend_x + 4, y_off + 2)
+		dot.size = Vector2(6, 6)
+		dot.position = Vector2(legend_x + 4, y_off + 3)
 		dot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_canvas.add_child(dot)
 		var lbl = Label.new()
 		lbl.text = item[0]
-		lbl.add_theme_font_size_override("font_size", 7)
-		lbl.add_theme_color_override("font_color", item[1].lightened(0.2))
-		lbl.position = Vector2(legend_x + 12, y_off - 2)
+		# 7pt unoutlined was illegible in the 1280x720 smoke shot — match the tick-219 sprite-label scheme
+		lbl.add_theme_font_size_override("font_size", TextScale.scaled(10))
+		lbl.add_theme_color_override("font_color", item[1].lightened(0.35))
+		lbl.add_theme_constant_override("outline_size", 1)
+		lbl.add_theme_color_override("font_outline_color", Color.BLACK)
+		lbl.position = Vector2(legend_x + 14, y_off - 2)
 		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_canvas.add_child(lbl)
 
