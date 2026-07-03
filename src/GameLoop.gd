@@ -362,30 +362,36 @@ func _maybe_run_battle_smoke() -> void:
 		for dir_action in ["ui_right", "ui_left"]:
 			Input.action_press(dir_action)
 			await get_tree().create_timer(0.7).timeout
-			_smoke_shot("overworld_walk_%s" % dir_action.trim_prefix("ui_"))
+			await _smoke_shot("overworld_walk_%s" % dir_action.trim_prefix("ui_"))
 			Input.action_release(dir_action)
 		# village: NPC sheets + quest markers in one frame
 		_cutscene_cooldown = true
 		_set_current_map_id("harmonia_village")
 		await _start_exploration()
 		await get_tree().create_timer(1.5).timeout
-		_smoke_shot("village")
+		await _smoke_shot("village")
 		# settings (Start) then the overworld/party menu (X) — the week's UI churn surfaces
 		_smoke_tap("ui_menu")
 		await get_tree().create_timer(1.0).timeout
-		_smoke_shot("settings")
+		await _smoke_shot("settings")
 		_smoke_tap("ui_cancel")
 		await get_tree().create_timer(0.5).timeout
 		_smoke_key(KEY_X)
 		await get_tree().create_timer(1.0).timeout
-		_smoke_shot("overworld_menu")
+		await _smoke_shot("overworld_menu")
 		# cursor rests on Quest Log — one confirm renders the QuestSystem UI
 		_smoke_tap("ui_accept")
 		await get_tree().create_timer(1.0).timeout
-		_smoke_shot("quest_log")
+		await _smoke_shot("quest_log")
 		_smoke_tap("ui_cancel")
 		await get_tree().create_timer(0.4).timeout
 		_smoke_tap("ui_cancel")
+		await get_tree().create_timer(0.5).timeout
+		# autobattle grid editor (F5) — the design-pillar surface, never before in automation
+		_smoke_key(KEY_F5)
+		await get_tree().create_timer(1.2).timeout
+		await _smoke_shot("autobattle_editor")
+		_smoke_key(KEY_F5)
 		await get_tree().create_timer(0.5).timeout
 		# shop UI via the real VillageShop path — the progression item's purchase surface
 		var smoke_shop = load("res://src/exploration/VillageShop.gd").new()
@@ -394,7 +400,7 @@ func _maybe_run_battle_smoke() -> void:
 		add_child(smoke_shop)
 		smoke_shop._show_shop_menu(null)
 		await get_tree().create_timer(1.2).timeout
-		_smoke_shot("shop")
+		await _smoke_shot("shop")
 		if smoke_shop._shop_layer and is_instance_valid(smoke_shop._shop_layer):
 			smoke_shop._shop_layer.queue_free()
 		smoke_shop.queue_free()
@@ -404,14 +410,14 @@ func _maybe_run_battle_smoke() -> void:
 		_set_current_map_id("whispering_cave")
 		await _start_exploration()
 		await get_tree().create_timer(1.5).timeout
-		_smoke_shot("cave")
+		await _smoke_shot("cave")
 	await _start_battle_async(["goblin"], true)
 	await get_tree().create_timer(2.5).timeout
 	var xform := get_viewport().get_canvas_transform()
 	print("[SMOKE] canvas transform origin=%s scale=%s" % [str(xform.origin), str(xform.get_scale())])
 	if xform.origin != Vector2.ZERO:
 		_smoke_failed = true
-	_smoke_shot("battle_smoke")
+	await _smoke_shot("battle_smoke")
 	# the duel must wait for the live battle to end — a fixed sleep raced RNG-length battles
 	var _bwait := 0.0
 	while BattleManager.current_state != BattleManager.BattleState.INACTIVE and _bwait < 30.0:
@@ -424,7 +430,7 @@ func _maybe_run_battle_smoke() -> void:
 				m.player_trust = true
 		start_solo_battle("fighter", "fighter_skeleton_knight")
 		await get_tree().create_timer(4.0).timeout
-		_smoke_shot("duel_smoke")
+		await _smoke_shot("duel_smoke")
 	await get_tree().create_timer(0.2).timeout
 	print("[SMOKE] VERDICT: %s" % ("FAIL" if _smoke_failed else "PASS"))
 	get_tree().quit(1 if _smoke_failed else 0)
@@ -458,13 +464,20 @@ func _smoke_tap(action: String) -> void:
 
 
 func _smoke_shot(shot_name: String) -> void:
-	var img: Image = get_viewport().get_texture().get_image()
-	if img == null or img.is_empty():
-		# headless has no viewport texture — smoke there is for log mining, not pixels
-		print("[SMOKE] %s skipped (no viewport texture — headless run)" % shot_name)
-		return
+	var img: Image = null
+	var dominant: float = 1.0
+	# a solid frame is usually a capture racing a scene fade — ride it out before calling it a void
+	for attempt in range(4):
+		img = get_viewport().get_texture().get_image()
+		if img == null or img.is_empty():
+			# headless has no viewport texture — smoke there is for log mining, not pixels
+			print("[SMOKE] %s skipped (no viewport texture — headless run)" % shot_name)
+			return
+		dominant = _dominant_color_ratio(img)
+		if dominant < 0.92:
+			break
+		await get_tree().create_timer(0.7).timeout
 	var err := img.save_png("user://smoke/%s.png" % shot_name)
-	var dominant: float = _dominant_color_ratio(img)
 	# >92% one color = a void/black screen wearing a UI — the boot-canary class, but caught pre-deploy
 	var ok: bool = err == OK and dominant < 0.92
 	if not ok:
