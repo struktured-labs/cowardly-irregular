@@ -370,10 +370,15 @@ func _maybe_run_battle_smoke() -> void:
 		await _start_exploration()
 		await get_tree().create_timer(1.5).timeout
 		_smoke_shot("village")
-		# overworld menu: party panels, corruption line, quest-log entry — the week's UI churn
+		# settings (Start) then the overworld/party menu (X) — the week's UI churn surfaces
 		_smoke_tap("ui_menu")
 		await get_tree().create_timer(1.0).timeout
-		_smoke_shot("menu")
+		_smoke_shot("settings")
+		_smoke_tap("ui_cancel")
+		await get_tree().create_timer(0.5).timeout
+		_smoke_key(KEY_X)
+		await get_tree().create_timer(1.0).timeout
+		_smoke_shot("overworld_menu")
 		_smoke_tap("ui_cancel")
 		await get_tree().create_timer(0.5).timeout
 		# cave, then battle FROM it — the scene that leaked under battle 2026-07-02
@@ -403,6 +408,18 @@ func _maybe_run_battle_smoke() -> void:
 
 
 var _smoke_failed: bool = false
+
+
+## raw key event — the overworld menu binds to physical keys, not an action
+func _smoke_key(keycode: int) -> void:
+	var ev := InputEventKey.new()
+	ev.keycode = keycode
+	ev.pressed = true
+	Input.parse_input_event(ev)
+	var up := InputEventKey.new()
+	up.keycode = keycode
+	up.pressed = false
+	Input.parse_input_event(up)
 
 
 ## real InputEventAction pair — Input.action_press only sets poll-state and never reaches event handlers
