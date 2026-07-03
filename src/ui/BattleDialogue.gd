@@ -298,8 +298,9 @@ func show_boss_intro(boss_name: String, intro_lines: Array) -> void:
 				entry["portrait"] = "rat_king"
 				entry["theme"] = "rat_king"
 			else:
-				entry["portrait"] = "hero"
-				entry["theme"] = "hero"
+				# monsters.json intro speakers are the boss — the hero-face fallback had the skeleton speaking as the hero
+				entry["portrait"] = "enemy"
+				entry["theme"] = "enemy"
 		else:
 			# Plain narration
 			entry["speaker"] = ""
@@ -349,6 +350,14 @@ func _show_current_line() -> void:
 		for child in _portrait_frame.get_children():
 			if child.has_meta("custom_portrait"):
 				child.queue_free()
+
+	# narrator/enemy have no drawn face — hide the frame and reclaim its width rather than show the fallback blob
+	if custom_portrait == null and portrait_type in ["narrator", "enemy"]:
+		_portrait_frame.visible = false
+		var full_x: float = TILE_SIZE * 4
+		_speaker_label.position.x = full_x
+		_text_label.position.x = full_x
+		_text_label.size.x = _dialogue_box.size.x - full_x - TILE_SIZE * 4
 
 	# Start typing effect
 	_current_text = entry.get("text", "")
