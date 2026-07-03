@@ -130,7 +130,15 @@ func _process(_delta: float) -> void:
 				break
 	if _wd_disabled_for_tests:
 		return
-	if current_state != BattleState.EXECUTION_PHASE and current_state != BattleState.PROCESSING_ACTION:
+	# Queue #3 audit: ENEMY_SELECTING now watched alongside execution states.
+	# Enemy AI selection is normally sub-second, but the LLM boss intent path
+	# adds real awaits; a wedged network reply used to leave the battle
+	# permanently on the same enemy. Player-selecting is deliberately NOT
+	# watched — a thoughtful player can absolutely take >10s.
+	var is_watched: bool = (current_state == BattleState.EXECUTION_PHASE
+			or current_state == BattleState.PROCESSING_ACTION
+			or current_state == BattleState.ENEMY_SELECTING)
+	if not is_watched:
 		_wd_last_progress_ms = 0
 		return
 	var now: int = Time.get_ticks_msec()
@@ -141,10 +149,41 @@ func _process(_delta: float) -> void:
 	if now - _wd_last_progress_ms < int(_WD_STALL_MS * slack):
 		return
 	var who: String = current_combatant.combatant_name if current_combatant else "?"
-	push_error("BattleManager: execution stalled %dms at %s — watchdog recovering" % [now - _wd_last_progress_ms, who])
+	push_error("BattleManager: %s stalled %dms at %s — watchdog recovering" % [
+		BattleState.keys()[current_state], now - _wd_last_progress_ms, who])
 	battle_log_message.emit("[color=orange]⚠ Battle stalled — auto-recovering...[/color]")
 	_wd_last_progress_ms = now
-	_execute_next_action()
+	if current_state == BattleState.ENEMY_SELECTING:
+		_recover_enemy_selection_stall()
+	else:
+		_execute_next_action()
+
+
+## Watchdog recovery for a wedged ENEMY_SELECTING turn. Queues a basic
+## attack (enemies never defer per the AI convention at line ~1650) on
+## the first alive player, then advances the selection order so the
+## battle keeps moving. Safe no-op if current_combatant is gone / no
+## alive players remain.
+func _recover_enemy_selection_stall() -> void:
+	var enemy: Combatant = current_combatant
+	if enemy == null or not is_instance_valid(enemy) or not enemy.is_alive:
+		_end_selection_turn()
+		return
+	var target: Combatant = null
+	for pc in player_party:
+		if pc != null and is_instance_valid(pc) and pc.is_alive:
+			target = pc
+			break
+	if target == null:
+		_end_selection_turn()
+		return
+	_queue_action({
+		"type": "attack",
+		"combatant": enemy,
+		"target": target,
+		"speed": _compute_action_speed(enemy, "attack"),
+	})
+	_end_selection_turn()
 
 ## Terrain modifiers for elemental damage
 var _current_terrain: String = "plains"
