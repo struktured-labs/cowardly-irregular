@@ -314,6 +314,10 @@ func _ready() -> void:
 	BattleManager.damage_dealt.connect(_on_damage_dealt)
 	BattleManager.attack_missed.connect(_on_attack_missed)
 	BattleManager.healing_done.connect(_on_healing_done)
+	if BattleManager.has_signal("trust_interrupt_window_opened"):
+		BattleManager.trust_interrupt_window_opened.connect(_on_trust_interrupt_window_opened)
+	if BattleManager.has_signal("trust_interrupt_window_closed"):
+		BattleManager.trust_interrupt_window_closed.connect(_on_trust_interrupt_window_closed)
 	BattleManager.battle_log_message.connect(_on_battle_log_message)
 	BattleManager.monster_summoned.connect(_on_monster_summoned)
 	## Tick 409: Scriptweaver's create_autobattle_script meta-ability
@@ -3429,6 +3433,15 @@ func _on_enemy_died(enemy_idx: int) -> void:
 
 func _input(event: InputEvent) -> void:
 	"""Handle high-priority inputs: Select button, battle speed toggle, and repeat actions"""
+	# Trust interrupt: cancel during a trust-window claims the turn back.
+	# High priority so nothing else swallows the input while the window
+	# is armed. BM tracks the window and no-ops when nothing is armed.
+	if event.is_action_pressed("ui_cancel") and not event.is_echo() \
+			and BattleManager.is_trust_interrupt_window_open():
+		if BattleManager.request_trust_interrupt():
+			get_viewport().set_input_as_handled()
+			return
+
 	# Handle autobattle toggle with highest priority (Select button)
 	var is_select_pressed = event.is_action_pressed("battle_toggle_auto") and not event.is_echo()
 
@@ -3766,6 +3779,19 @@ func _on_battle_log_message(message: String) -> void:
 	if battle_log:
 		battle_log.append_text(message + "\n")
 		battle_log.scroll_to_line(battle_log.get_line_count())
+
+
+## Trust option (a): BM opens a short window before AI takes over on a
+## player-trusted PC. The battle log line from BM is the visible cue;
+## input capture lives in _input's ui_cancel guard so cancel during the
+## window claims the turn. Handlers here are hooks — if a future toast /
+## highlight is added, this is the anchor.
+func _on_trust_interrupt_window_opened(_pc: Combatant, _seconds: float) -> void:
+	pass
+
+
+func _on_trust_interrupt_window_closed(_pc: Combatant, _interrupted: bool) -> void:
+	pass
 
 
 func _on_advance_trash_talk(combatant: Combatant, line: String) -> void:

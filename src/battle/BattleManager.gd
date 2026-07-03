@@ -9,6 +9,8 @@ signal battle_ended(victory: bool)
 signal rare_drop_found(item_id: String, base_chance: float)
 signal selection_phase_started()
 signal selection_turn_started(combatant: Combatant)
+signal trust_interrupt_window_opened(combatant: Combatant, seconds: float)
+signal trust_interrupt_window_closed(combatant: Combatant, interrupted: bool)
 signal selection_turn_ended(combatant: Combatant)
 signal execution_phase_started()
 signal action_executing(combatant: Combatant, action: Dictionary)
@@ -1253,8 +1255,73 @@ func _process_next_selection() -> void:
 		if GameState and "debug_all_pcs_unlocked" in GameState and GameState.debug_all_pcs_unlocked:
 			is_player_trusted = false
 
+	# Trust option (a): open a short interrupt window before AI takes over
+	# so B/cancel = "actually, I want this turn." Skip the window in other
+	# auto paths (global autoscript on, spotlight-locked, enemy) — those
+	# aren't player-set intent and shouldn't offer a manual override here.
+	if is_player_trusted and current_state == BattleState.PLAYER_SELECTING \
+			and not is_autobattle_enabled and not is_char_autobattle and not is_spotlight_locked:
+		_run_trust_interrupt_window(current_combatant)
+		return
 	if current_state == BattleState.ENEMY_SELECTING or is_autobattle_enabled or is_char_autobattle or is_spotlight_locked or is_player_trusted:
 		_process_ai_selection(current_combatant)
+
+
+## Trust option (a) constants + window state. The window is deliberately
+## short so autobattle-fast pacing still feels snappy; long enough that a
+## player who fumbled a Trust toggle can catch it.
+const TRUST_INTERRUPT_WINDOW_SECONDS: float = 0.9
+var _trust_window_pc: Combatant = null
+
+
+## Emit the window signal (BattleScene renders the "press B to take
+## control" affordance + captures cancel input), then await the timeout.
+## If request_trust_interrupt() fired during the window, _trust_window_pc
+## was cleared and we return without kicking AI — the state is already
+## PLAYER_SELECTING and BattleScene's normal command-menu path picks up.
+func _run_trust_interrupt_window(pc: Combatant) -> void:
+	_trust_window_pc = pc
+	trust_interrupt_window_opened.emit(pc, TRUST_INTERRUPT_WINDOW_SECONDS)
+	battle_log_message.emit("[color=cyan]%s: Trusted — press B to take this turn[/color]" % pc.combatant_name)
+	var tree: SceneTree = get_tree()
+	if tree:
+		await tree.create_timer(TRUST_INTERRUPT_WINDOW_SECONDS).timeout
+	# Untrust intervened → early out (state / menu are handled there).
+	if _trust_window_pc != pc:
+		trust_interrupt_window_closed.emit(pc, true)
+		return
+	_trust_window_pc = null
+	trust_interrupt_window_closed.emit(pc, false)
+	if not is_instance_valid(pc) or not pc.is_alive:
+		return
+	# If the player picked a menu action during the window they've already
+	# advanced the selection; don't queue a stale AI action on top.
+	if current_combatant != pc:
+		return
+	# Trust survived the window intact; hand off to AI as originally routed.
+	_process_ai_selection(pc)
+
+
+## Called by BattleScene's cancel handler while a window is armed. Clears
+## player_trust on this PC (one-shot untrust — story-side spotlight lock
+## is untouched) and marks the window consumed. Returns true when a live
+## window was actually released, false otherwise (so the caller can decide
+## whether to swallow the input).
+func request_trust_interrupt() -> bool:
+	if _trust_window_pc == null or not is_instance_valid(_trust_window_pc):
+		return false
+	var pc: Combatant = _trust_window_pc
+	_trust_window_pc = null
+	if "player_trust" in pc:
+		pc.player_trust = false
+	battle_log_message.emit("[color=cyan]%s: Trust released. Take it.[/color]" % pc.combatant_name)
+	return true
+
+
+## True while a trust-interrupt window is armed. BattleScene's input
+## handler consults this before swallowing cancel input.
+func is_trust_interrupt_window_open() -> bool:
+	return _trust_window_pc != null and is_instance_valid(_trust_window_pc)
 
 
 func _end_selection_turn() -> void:
