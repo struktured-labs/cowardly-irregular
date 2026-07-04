@@ -107,3 +107,82 @@ func test_controller_serialize_snapshot() -> void:
 	assert_true(snapshot["headless_mode"], "Headless should be true")
 	assert_false(snapshot["auto_advance"], "Auto advance should be false")
 	assert_eq(snapshot["terrain"], "steampunk_overworld", "Terrain should match")
+
+
+## Session-scoped field round-trip (regression: resume re-fired corruption/rotation
+## toasts and reset the Iron Vigil streak because these weren't snapshotted).
+
+func test_session_fields_survive_save_load_roundtrip() -> void:
+	_system.is_grinding = true
+	_system._grind_stats["start_time"] = Time.get_unix_time_from_system() - 300.0
+	_system.battles_without_heal = 45
+	_system._corruption_bands_crossed = {"warning": true, "danger": true}
+	_system._rotation_suggested_regions = {"region_medieval": true}
+	_system._save_corruption_baseline = 0.12
+
+	assert_true(_system.save_grind_snapshot({}), "snapshot should save")
+	var loaded = _system.load_grind_snapshot()
+	var sys_data = loaded.get("system", {})
+	assert_eq(int(sys_data.get("battles_without_heal", -1)), 45,
+		"battles_without_heal must be written to the snapshot")
+	assert_true(sys_data.get("corruption_bands_crossed", {}).get("danger", false),
+		"corruption band dedup must be written to the snapshot")
+	assert_true(sys_data.get("rotation_suggested_regions", {}).get("region_medieval", false),
+		"rotation dedup must be written to the snapshot")
+	assert_almost_eq(float(sys_data.get("save_corruption_baseline", -1.0)), 0.12, 0.001,
+		"save-corruption baseline must be written to the snapshot")
+
+
+func test_restore_repopulates_session_fields_over_cleared_defaults() -> void:
+	# Simulate the real resume order: start_autogrind cleared these to defaults,
+	# then restore must put the saved values back on top.
+	_system.battles_without_heal = 0
+	_system._corruption_bands_crossed = {}
+	_system._rotation_suggested_regions = {}
+	_system._save_corruption_baseline = 0.0
+
+	_system.restore_system_from_snapshot({
+		"battles_completed": 60,
+		"meta_corruption_level": 4.2,
+		"battles_without_heal": 50,
+		"corruption_bands_crossed": {"warning": true, "danger": true},
+		"rotation_suggested_regions": {"region_a": true},
+		"save_corruption_baseline": 0.2,
+	})
+
+	assert_eq(_system.battles_without_heal, 50,
+		"Iron Vigil streak must survive resume (was silently reset to 0)")
+	assert_true(_system._corruption_bands_crossed.get("danger", false),
+		"corruption band dedup must survive resume — else danger toast re-fires immediately")
+	assert_true(_system._rotation_suggested_regions.get("region_a", false),
+		"rotation dedup must survive resume — else advisory re-fires")
+	assert_almost_eq(_system._save_corruption_baseline, 0.2, 0.001,
+		"save-corruption baseline must survive resume — else session delta under-reports")
+
+
+func test_restore_end_to_end_prevents_duplicate_corruption_band() -> void:
+	# The user-visible payoff: after resume at high corruption, _maybe_emit_corruption_band
+	# must NOT re-fire a band that already fired pre-save.
+	var fired: Array = []
+	_system.corruption_threshold_crossed.connect(func(band, _lvl): fired.append(band))
+	_system.restore_system_from_snapshot({
+		"meta_corruption_level": 4.2,
+		"corruption_bands_crossed": {"warning": true, "danger": true},
+	})
+	_system._maybe_emit_corruption_band()
+	assert_false("warning" in fired,
+		"warning band already crossed pre-save must not re-fire after resume")
+	assert_false("danger" in fired,
+		"danger band already crossed pre-save must not re-fire after resume")
+
+
+func test_old_snapshot_without_session_fields_keeps_defaults() -> void:
+	# Backward compat: a v1 snapshot written before these fields existed lacks the
+	# keys. restore must not crash and must keep the cleared defaults.
+	_system.battles_without_heal = 7
+	_system._save_corruption_baseline = 0.3
+	_system.restore_system_from_snapshot({"battles_completed": 10})
+	assert_eq(_system.battles_without_heal, 0,
+		"missing battles_without_heal key defaults to 0 (no crash)")
+	assert_almost_eq(_system._save_corruption_baseline, 0.3, 0.001,
+		"missing save_corruption_baseline key keeps the pre-restore value (start_autogrind re-baseline)")

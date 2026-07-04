@@ -2282,6 +2282,12 @@ func save_grind_snapshot(controller_snapshot: Dictionary) -> bool:
 			"elapsed_seconds": elapsed,
 			"grind_stats_gold": _grind_stats.get("total_gold", 0),
 			"grind_stats_encounters": _grind_stats.get("total_encounters", 0),
+			# Session-scoped dedup/streak state — without these, resume re-fires
+			# already-shown corruption/rotation toasts and resets the Iron Vigil streak.
+			"battles_without_heal": battles_without_heal,
+			"corruption_bands_crossed": _corruption_bands_crossed.duplicate(),
+			"rotation_suggested_regions": _rotation_suggested_regions.duplicate(),
+			"save_corruption_baseline": _save_corruption_baseline,
 		},
 	}
 
@@ -2356,6 +2362,15 @@ func restore_system_from_snapshot(system_data: Dictionary) -> void:
 	current_region_id = system_data.get("current_region_id", "")
 	permadeath_staking_enabled = system_data.get("permadeath_staking_enabled", false)
 	permadeath_enabled = permadeath_staking_enabled
+
+	# Session-scoped dedup/streak state. restore runs AFTER start_autogrind cleared
+	# these, so restored values win. Old (pre-field) snapshots lack the keys and
+	# keep the cleared defaults — same behavior they had before, no version bump.
+	battles_without_heal = int(system_data.get("battles_without_heal", 0))
+	_corruption_bands_crossed = (system_data.get("corruption_bands_crossed", {}) as Dictionary).duplicate()
+	_rotation_suggested_regions = (system_data.get("rotation_suggested_regions", {}) as Dictionary).duplicate()
+	# Missing key ⇒ keep start_autogrind's re-baseline (previous behavior).
+	_save_corruption_baseline = float(system_data.get("save_corruption_baseline", _save_corruption_baseline))
 
 	# Reconstruct grind_stats with adjusted start_time
 	var saved_elapsed = system_data.get("elapsed_seconds", 0.0)
