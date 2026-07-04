@@ -93,14 +93,15 @@ func test_autobattle_grid_editor_uses_status_names() -> void:
 
 func test_battle_manager_inflict_log_uses_status_names() -> void:
 	var src: String = FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
-	# Both sites must use StatusNames. Tick 354 renamed the argument
-	# from `effect` to `status_to_add` because the random_debuff
-	# special-case picks a real status from a pool — displaying the
-	# original `effect` value would surface "random_debuff" (inert
-	# sentinel) instead of "Poison" / "Blind" / etc.
-	var count: int = src.count("StatusNames.display(status_to_add)")
+	# Tick 354: display MUST reflect the resolved status, not the raw
+	# effect (random_debuff picks from a pool; showing "random_debuff"
+	# leaks the sentinel). 2026-07-03: log_effect captures the
+	# post-pool, PRE-alias name — random_debuff still displays its
+	# picked entry, and freeze displays "Frozen" (via
+	# DISPLAY_OVERRIDES) rather than the aliased "Stun".
+	var count: int = src.count("StatusNames.display(log_effect)")
 	assert_eq(count, 2,
-		"BattleManager must have exactly 2 StatusNames.display(status_to_add) calls (status inflict log + magic inflict log)")
+		"BattleManager must have exactly 2 StatusNames.display(log_effect) calls (status inflict log + magic inflict log)")
 	# Old bare effect.capitalize() pattern must be gone.
 	assert_false(src.contains("effect.capitalize()"),
 		"BattleManager's effect.capitalize() must be gone")

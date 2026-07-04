@@ -4179,11 +4179,12 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 				]
 				status_to_add = _RANDOM_DEBUFF_POOL[randi() % _RANDOM_DEBUFF_POOL.size()]
 			# freeze aliases to stun — 3 ice abilities authored "freeze" but no code path read it (audit 2026-07-03)
+			var log_effect: String = status_to_add
 			if status_to_add == "freeze":
 				status_to_add = "stun"
 			var duration: int = int(ability.get("duration", 3))
 			target.add_status(status_to_add, duration)
-			battle_log_message.emit("%s inflicted %s!" % [caster.combatant_name, StatusNames.display(status_to_add)])
+			battle_log_message.emit("%s inflicted %s!" % [caster.combatant_name, StatusNames.display(log_effect)])
 
 		_trigger_monster_counter(target, caster)
 
@@ -4392,11 +4393,12 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 				]
 				status_to_add = _RANDOM_DEBUFF_POOL[randi() % _RANDOM_DEBUFF_POOL.size()]
 			# freeze aliases to stun — 3 ice abilities authored "freeze" but no code path read it (audit 2026-07-03)
+			var log_effect: String = status_to_add
 			if status_to_add == "freeze":
 				status_to_add = "stun"
 			var duration: int = int(ability.get("duration", 3))
 			target.add_status(status_to_add, duration)
-			battle_log_message.emit("%s inflicted %s!" % [caster.combatant_name, StatusNames.display(status_to_add)])
+			battle_log_message.emit("%s inflicted %s!" % [caster.combatant_name, StatusNames.display(log_effect)])
 
 		_trigger_monster_counter(target, caster)
 

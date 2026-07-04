@@ -18,9 +18,9 @@ class_name StatusNames
 ## — extend as content needs.
 
 const DISPLAY_OVERRIDES := {
-	# Empty for now; add entries like:
-	#   "cannot_act": "Stunned (no action)",
-	# when content requires non-capitalize phrasing.
+	# ice-family flavor alias — freeze mechanically maps to stun (see BattleManager),
+	# but the log should read "Frozen" for the player.
+	"freeze": "Frozen",
 }
 
 
