@@ -64,7 +64,14 @@ const ANIM_SPEED: Dictionary = {
 	"defeat": 0.3
 }
 
-const ANIM_FALLBACKS: Dictionary = {"defeat": "dead", "dead": "defeat"}
+# spell anims degrade to a base pose; EXCLUDES windup/transition anims (lunge/advance/defer) which keep their synchronous-skip contract (cowir-main 2026-07-04)
+const ANIM_FALLBACKS: Dictionary = {
+	"defeat": "dead", "dead": "defeat",
+	"cast": "attack",
+	"cast_fire": "cast", "cast_ice": "cast", "cast_lightning": "cast", "cast_fira": "cast",
+	"heal": "cast", "raise": "cast", "buff": "cast",
+	"battle_hymn": "cast", "lullaby": "cast", "discord": "cast", "inspiring_melody": "cast",
+}
 
 ## Sprite size configuration - delegates to SpriteUtils for shared constants
 const SPRITE_SIZE: int = _SpriteUtils.SPRITE_SIZE
@@ -186,14 +193,8 @@ func play_animation(state: AnimState, loop: bool = false, on_complete: Callable 
 	is_playing = true
 	current_frame = 0
 
-	# Map state to animation name
-	var anim_name = _get_animation_name(state)
-
-	# artist sheets ship "dead", procedural ships "defeat" — same pose, two vocabularies
-	if sprite.sprite_frames and not sprite.sprite_frames.has_animation(anim_name) \
-			and ANIM_FALLBACKS.has(anim_name) \
-			and sprite.sprite_frames.has_animation(ANIM_FALLBACKS[anim_name]):
-		anim_name = ANIM_FALLBACKS[anim_name]
+	# Map state to animation name, degrading through the fallback chain if the sheet lacks it
+	var anim_name = _resolve_animation(_get_animation_name(state))
 
 	if sprite.sprite_frames and sprite.sprite_frames.has_animation(anim_name):
 		sprite.play(anim_name)
@@ -515,6 +516,22 @@ func _get_animation_name(state: AnimState) -> String:
 		AnimState.DISCORD: return "discord"
 		AnimState.INSPIRING_MELODY: return "inspiring_melody"
 	return "idle"
+
+
+## Walk the explicit ANIM_FALLBACKS chain (cycle-guarded); unmapped anims return unchanged so the caller's sync-skip path still runs
+func _resolve_animation(anim_name: String) -> String:
+	if sprite == null or sprite.sprite_frames == null:
+		return anim_name
+	if sprite.sprite_frames.has_animation(anim_name):
+		return anim_name
+	var seen: Dictionary = {}
+	var name: String = anim_name
+	while ANIM_FALLBACKS.has(name) and not seen.has(name):
+		seen[name] = true
+		name = ANIM_FALLBACKS[name]
+		if sprite.sprite_frames.has_animation(name):
+			return name
+	return anim_name  # no chain entry resolved — caller warns + fires on_complete
 
 
 func _on_sprite_animation_finished() -> void:
