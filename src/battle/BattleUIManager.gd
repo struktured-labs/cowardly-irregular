@@ -729,22 +729,34 @@ func _update_enemy_member_status(idx: int, enemy: Combatant) -> void:
 		# before (it's in the bestiary). Rewards fighting + aids autobattle
 		# planning ("you've beaten this, you know it's weak to fire").
 		if not is_dead:
-			hp_label.text += _weakness_hint(enemy)
+			hp_label.text += _enemy_intel_hint(enemy)
 
 
-## " · Weak: Fire, Ice" when this monster is in the bestiary as DEFEATED
-## and has authored weaknesses; empty otherwise (unfought = no intel).
-func _weakness_hint(enemy: Combatant) -> String:
+## Bestiary intel for a monster you've DEFEATED before: " · Weak: Fire ·
+## Immune: Ice". Empty for unfought monsters (you haven't earned it).
+## Immunity is the higher-value half — attacking an immune element wastes
+## the whole turn, so surfacing it proactively beats the reactive
+## in-battle "IMMUNE!" popup that only fires AFTER the wasted swing.
+func _enemy_intel_hint(enemy: Combatant) -> String:
 	if enemy == null or not enemy.has_meta("monster_type"):
 		return ""
-	if enemy.elemental_weaknesses.is_empty():
+	if enemy.elemental_weaknesses.is_empty() and enemy.elemental_immunities.is_empty():
 		return ""
 	if not BestiarySystem.is_defeated(str(enemy.get_meta("monster_type"))):
 		return ""
+	var out: String = ""
+	if not enemy.elemental_weaknesses.is_empty():
+		out += " · [color=orange]Weak: %s[/color]" % ", ".join(_capitalized(enemy.elemental_weaknesses))
+	if not enemy.elemental_immunities.is_empty():
+		out += " · [color=#88aaff]Immune: %s[/color]" % ", ".join(_capitalized(enemy.elemental_immunities))
+	return out
+
+
+func _capitalized(elements: Array) -> Array:
 	var names: Array = []
-	for w in enemy.elemental_weaknesses:
-		names.append(str(w).capitalize())
-	return " · [color=orange]Weak: %s[/color]" % ", ".join(names)
+	for e in elements:
+		names.append(str(e).capitalize())
+	return names
 
 
 func reveal_enemy_stats(enemy: Combatant) -> void:

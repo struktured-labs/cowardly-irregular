@@ -20,22 +20,26 @@ func after_each() -> void:
 	GameState.game_constants["defeated_monsters"] = _saved_defeated
 
 
-func _enemy(mtype: String, weaks: Array) -> Combatant:
+func _enemy(mtype: String, weaks: Array, immunes: Array = []) -> Combatant:
 	var c := Combatant.new()
 	autofree(c)
 	c.combatant_name = "Foe"
 	if mtype != "":
 		c.set_meta("monster_type", mtype)
-	var typed: Array[String] = []
+	var tw: Array[String] = []
 	for w in weaks:
-		typed.append(str(w))
-	c.elemental_weaknesses = typed
+		tw.append(str(w))
+	c.elemental_weaknesses = tw
+	var ti: Array[String] = []
+	for im in immunes:
+		ti.append(str(im))
+	c.elemental_immunities = ti
 	return c
 
 
 func _hint(enemy: Combatant) -> String:
 	var uim = UIM.new(null)
-	return uim._weakness_hint(enemy)
+	return uim._enemy_intel_hint(enemy)
 
 
 func test_defeated_monster_reveals_weakness() -> void:
@@ -69,3 +73,25 @@ func test_multiple_weaknesses_joined() -> void:
 	var e := _enemy("slime", ["fire", "ice"])
 	var h := _hint(e)
 	assert_string_contains(h, "Fire, Ice", "multiple weaknesses must be comma-joined")
+
+
+func test_defeated_monster_reveals_immunity() -> void:
+	# Immunity is the higher-value intel (attacking it wastes a turn).
+	BestiarySystem.mark_defeated("slime")
+	var e := _enemy("slime", [], ["holy"])
+	var h := _hint(e)
+	assert_string_contains(h, "Immune: Holy",
+		"a defeated monster's immunities must surface — don't waste a turn on 0x damage")
+
+
+func test_weak_and_immune_both_shown() -> void:
+	BestiarySystem.mark_defeated("slime")
+	var e := _enemy("slime", ["fire"], ["ice"])
+	var h := _hint(e)
+	assert_string_contains(h, "Weak: Fire")
+	assert_string_contains(h, "Immune: Ice")
+
+
+func test_unfought_hides_immunity_too() -> void:
+	var e := _enemy("goblin", [], ["dark"])
+	assert_eq(_hint(e), "", "unfought monster reveals neither weakness nor immunity")
