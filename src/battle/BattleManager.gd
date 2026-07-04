@@ -5822,13 +5822,19 @@ func _execute_mp_restore_ability(caster: Combatant, ability: Dictionary, targets
 				recipients.append(caster)
 		_:
 			recipients.append(caster)
+	var any_restored := false
 	for r in recipients:
 		var before: int = r.current_mp
 		r.current_mp = min(r.max_mp, r.current_mp + amount)
 		var restored: int = r.current_mp - before
+		if restored <= 0:
+			continue  # already full — skip the "+0 MP" popup/log noise (Riff on a full party spammed these)
+		any_restored = true
 		print("  → %s restores %d MP for %s" % [caster.combatant_name, restored, r.combatant_name])
 		battle_log_message.emit("[color=aqua]%s restores [color=cyan]%d MP[/color] for [color=white]%s[/color][/color]" % [caster.combatant_name, restored, r.combatant_name])
 		healing_done.emit(r, restored)
+	if not any_restored:
+		battle_log_message.emit("[color=gray]%s's MP restore fizzles — everyone's already full.[/color]" % caster.combatant_name)
 
 
 func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:

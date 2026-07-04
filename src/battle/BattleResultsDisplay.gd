@@ -32,6 +32,8 @@ func on_healing_done(target: Combatant, amount: int) -> void:
 	The glow gives healing visual parity with damage (which gets screen shake
 	+ a number). Previously a heal only spawned a green number — visually
 	indistinguishable from any other floaty popup. Now there's a moment."""
+	if amount <= 0:
+		return  # no "+0" popup/glow — a no-op heal (target already full) produces no feedback
 	var pos = _get_combatant_sprite_position(target)
 	if pos != Vector2.ZERO:
 		spawn_damage_number(pos, amount, true, false)
