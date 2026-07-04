@@ -63,17 +63,17 @@ func test_llm_path_returns_valid_composition() -> void:
 	var payload := {
 		"name": "Fire-heavy strategy",
 		"description": "Lead with fire on ice.",
-		"rules_json": "[{\"conditions\":[{\"type\":\"enemy_hp_percent\",\"op\":\">\",\"value\":50}],\"actions\":[{\"type\":\"ability\",\"id\":\"fire\",\"target\":\"lowest_hp_enemy\"}],\"enabled\":true}]"
+		"rules_json": "[{\"conditions\":[{\"type\":\"enemy_hp_percent\",\"op\":\">\",\"value\":50},{\"type\":\"mp_percent\",\"op\":\">=\",\"value\":15}],\"actions\":[{\"type\":\"ability\",\"id\":\"fire\",\"target\":\"lowest_hp_enemy\"}],\"enabled\":true}]"
 	}
 	fake_backend.prime_next(JSON.stringify(payload))
-	var result: Dictionary = await rc.compose_async(rc.DOMAIN_AUTOBATTLE, "always open with fire", "mage", [])
+	var result: Dictionary = await rc.compose_async(rc.DOMAIN_AUTOBATTLE, "always open with fire", "vex", [])
 	assert_eq(result.get("source", ""), "llm")
 	assert_eq(result.get("name", ""), "Fire-heavy strategy")
 	var rules: Array = result.get("rules", [])
 	assert_eq(rules.size(), 1, "must parse the one rule")
 	assert_eq(result.get("errors", []).size(), 0)
 	assert_eq(result.get("domain", ""), rc.DOMAIN_AUTOBATTLE)
-	assert_eq(result.get("character_id", ""), "mage")
+	assert_eq(result.get("character_id", ""), "vex")
 
 func test_autogrind_domain_disallows_character_id() -> void:
 	fake_backend.prime_next("{}")

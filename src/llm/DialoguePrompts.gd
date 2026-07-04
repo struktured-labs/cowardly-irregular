@@ -195,6 +195,15 @@ Canonical example:
    \"actions\":[{\"type\":\"ability\",\"id\":\"esuna\",\"target\":\"lowest_hp_ally\"}],
    \"enabled\":true}
 
+Ability cost / fizzle safety (autobattle only) — a validator rejects rules
+that would fizzle at runtime:
+- Every rule that uses a costed ability MUST have an mp_percent guard
+  covering the SUMMED MP cost of ALL that rule's ability actions
+  (e.g. fire ×3 at 8 MP each = 24 MP on 80 MP pool = 30%, so mp_percent >= 30).
+- 0-cost abilities (channel, pray, riff, strike) need no guard.
+- Ability ids must belong to THIS character's level-1 kit — when unsure,
+  prefer 'attack' actions over 'ability' actions (attack never fizzles).
+
 Prefer specific rules over general ones. Put the fallback (a rule with
 {type:'always'} condition and an attack action) last."""
 
