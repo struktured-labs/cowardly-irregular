@@ -20,6 +20,7 @@ var _current_music: String = ""
 var _stinger_resume_track: String = ""  # Track to resume after stinger finishes
 const CROSSFADE_DURATION: float = 0.5  # Seconds for crossfade
 var _music_base_db: float = -12.0  # Base volume for music (overwritten by set_music_volume)
+const AMBIENT_OFFSET_DB: float = -8.0  # ambient (weather/room tone) sits this far below music, tracking the slider
 # Music ceiling: at slider=100%, music plays at MUSIC_VOLUME_CEILING_DB.
 # -10 dB sits music well below the SFX peak so battle hits and footstep
 # clips stay audible. User feedback (2026-05-02): -6 dB still felt too
@@ -176,7 +177,8 @@ func _setup_audio_players() -> void:
 
 	_ambient_player = AudioStreamPlayer.new()
 	_ambient_player.name = "AmbientPlayer"
-	_ambient_player.volume_db = -20.0  # Subtle background layer, below music and SFX
+	# tracks the music slider a fixed amount below it — hardcoded -20.0 ignored the slider and could exceed music at low volume (cowir-sfx audit msg 2218)
+	_ambient_player.volume_db = _music_base_db + AMBIENT_OFFSET_DB
 	_ambient_player.bus = "Master"
 	add_child(_ambient_player)
 	_ambient_player.finished.connect(_on_ambient_finished)
@@ -2994,6 +2996,9 @@ func set_music_volume(normalized: float) -> void:
 	_music_base_db = db
 	if _music_player:
 		_music_player.volume_db = db
+	# ambient (weather / room tone) sits a fixed offset below music — keep it tracking the slider (cowir-sfx msg 2218)
+	if _ambient_player:
+		_ambient_player.volume_db = db + AMBIENT_OFFSET_DB
 
 
 func set_sfx_volume(normalized: float) -> void:
