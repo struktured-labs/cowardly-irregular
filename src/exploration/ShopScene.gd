@@ -387,6 +387,11 @@ func _attempt_purchase(item_id: String, item_data: Dictionary) -> void:
 
 func _attempt_sell(item_id: String, item_data: Dictionary) -> void:
 	"""Attempt to sell an item"""
+	# Defense-in-depth: even if a META/0-cost row leaks into the menu, refuse the sale (permanent quest-item loss)
+	if int(item_data.get("category", -1)) == 4 or int(item_data.get("cost", 0)) <= 0:
+		SoundManager.play_ui("menu_error")
+		description_label.text = "That item can't be sold."
+		return
 	var cost = item_data.get("cost", 0)
 	var sell_price = int(cost * 0.5)
 
@@ -456,8 +461,17 @@ func _get_sellable_inventory() -> Array:
 			if quantity > 0:
 				counted[item_id] = counted.get(item_id, 0) + quantity
 
-	# Convert to array
+	# Convert to array, excluding key/quest items and worthless junk.
 	for item_id in counted:
+		var item_data = _get_item_data(item_id)
+		if item_data.is_empty():
+			continue
+		# category 4 = ItemCategory.META (returned_sword, chapter_three_pages…) — selling these was permanent quest-item loss for 0 gold
+		if int(item_data.get("category", -1)) == 4:
+			continue
+		# 0-cost items sell for 0 gold — no reason to offer them (also the key-item signature)
+		if int(item_data.get("cost", 0)) <= 0:
+			continue
 		sellable.append({
 			"id": item_id,
 			"quantity": counted[item_id]
