@@ -385,6 +385,7 @@
 			"special_effects": {
 				"familiar_weight_bonus": 0.10
 			},
+			"familiar_weight_static_seed": ["slime", "bat", "goblin", "wolf", "spider", "cave_skeleton"],
 			"flavor": "The inscription on the hilt reads: 'Return me when you're done. I'll know where I belong.' Owners exploit-minded enough to notice claim Familiar Weight sometimes triggers on enemies the party has never fought. The sword remembers enemies before you do."
 		}
 	},
