@@ -725,6 +725,27 @@ func _update_enemy_member_status(idx: int, enemy: Combatant) -> void:
 			var hp_color = AccessibilityPalette.hp_bbcode_for_pct(hp_percent)
 			hp_label.text = "[color=%s]%s[/color]" % [hp_color, hp_hint]
 
+		# Elemental weakness intel — surfaced once you've DEFEATED this monster
+		# before (it's in the bestiary). Rewards fighting + aids autobattle
+		# planning ("you've beaten this, you know it's weak to fire").
+		if not is_dead:
+			hp_label.text += _weakness_hint(enemy)
+
+
+## " · Weak: Fire, Ice" when this monster is in the bestiary as DEFEATED
+## and has authored weaknesses; empty otherwise (unfought = no intel).
+func _weakness_hint(enemy: Combatant) -> String:
+	if enemy == null or not enemy.has_meta("monster_type"):
+		return ""
+	if enemy.elemental_weaknesses.is_empty():
+		return ""
+	if not BestiarySystem.is_defeated(str(enemy.get_meta("monster_type"))):
+		return ""
+	var names: Array = []
+	for w in enemy.elemental_weaknesses:
+		names.append(str(w).capitalize())
+	return " · [color=orange]Weak: %s[/color]" % ", ".join(names)
+
 
 func reveal_enemy_stats(enemy: Combatant) -> void:
 	"""Reveal an enemy's HP/MP (called by scan abilities)"""
