@@ -2571,9 +2571,11 @@ func _party_has_volatility_access() -> bool:
 ## per-Combatant attacker (not party-wide) — the bonus is the
 ## attacker's reward for remembering, not a party aura.
 ## returned_sword's Familiar Weight: +10% (or whatever the special_effect
-## sums to) damage vs any enemy the party has already seen or defeated.
-## Story spec: the sword remembers who it's cut before. Uses BestiarySystem's
-## seen/defeated ledger — no per-weapon memory in v1.
+## sums to) damage vs any enemy the party has seen/defeated OR that lives
+## in the equipped item's static ledger. Story spec (msg 2158): the sword
+## knows more than the party does — the exploit-mindset discovery gradient.
+## The static seed is data-only in equipment.json; description stays quiet
+## about it so the discovery moment stays earned.
 func _apply_familiar_weight_bonus(attacker: Combatant, target: Combatant, damage: int) -> int:
 	if attacker == null or target == null or damage <= 0:
 		return damage
@@ -2585,15 +2587,46 @@ func _apply_familiar_weight_bonus(attacker: Combatant, target: Combatant, damage
 	var mtype: String = str(target.get_meta("monster_type", ""))
 	if mtype == "":
 		return damage
-	var bs: Node = get_node_or_null("/root/BestiarySystem")
-	if bs == null:
-		# Static-only API (BestiarySystem is a class_name, not just an
-		# autoload); call statically when no node is present.
-		if not (BestiarySystem.is_seen(mtype) or BestiarySystem.is_defeated(mtype)):
-			return damage
-	elif not (bs.is_seen(mtype) or bs.is_defeated(mtype)):
+	# Story ledger (party awareness) — the honest, discoverable half.
+	var bestiary_hit: bool = BestiarySystem.is_seen(mtype) or BestiarySystem.is_defeated(mtype)
+	# Sword-ledger (per-item static seed) — the easter-egg half.
+	var seed_hit: bool = mtype in _familiar_weight_static_seed(attacker)
+	if not (bestiary_hit or seed_hit):
 		return damage
 	return int(round(damage * (1.0 + bonus)))
+
+
+## Union the familiar_weight_static_seed arrays authored on the attacker's
+## three equipment slots. Any equipped item can carry a seed — v1 uses only
+## returned_sword's, but the sum-across-slots shape means future accessories
+## with their own memory stack cleanly. Data-only: no id is authored today.
+func _familiar_weight_static_seed(combatant: Combatant) -> PackedStringArray:
+	var out: PackedStringArray = PackedStringArray()
+	if combatant == null:
+		return out
+	var es: Node = get_node_or_null("/root/EquipmentSystem")
+	if es == null:
+		return out
+	var slots := [
+		["equipped_weapon", "get_weapon"],
+		["equipped_armor", "get_armor"],
+		["equipped_accessory", "get_accessory"],
+	]
+	for slot in slots:
+		if not (slot[0] in combatant):
+			continue
+		var eid: String = str(combatant.get(slot[0]))
+		if eid == "":
+			continue
+		var entry: Dictionary = es.call(slot[1], eid)
+		var raw: Variant = entry.get("familiar_weight_static_seed", [])
+		if not (raw is Array):
+			continue
+		for m in raw:
+			var mstr: String = str(m)
+			if mstr != "" and not (mstr in out):
+				out.append(mstr)
+	return out
 
 
 func _apply_pattern_recognition_bonus(attacker: Combatant, target: Combatant, damage: int) -> int:
