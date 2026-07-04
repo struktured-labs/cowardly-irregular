@@ -1147,6 +1147,30 @@ func _apply_passive_mp_regen(combatant: Combatant) -> void:
 ## the meta when remaining hits 0 so subsequent summons (or none)
 ## get a clean slate. summon_boost passive's summon_duration_bonus
 ## was already baked into remaining_turns at setup time.
+## Play the spotlight miniboss identity SFX (bone rattle, prismatic
+## shatter, courtly rebuff…) once at first-action. cowir-sfx msg 2165
+## surfaced monsters.json's `signature_sfx` field with zero readers —
+## 5 W1 spotlight bosses declared identity hits that never played.
+## Fires once per battle per combatant; static _signature_fired meta
+## flag guards re-fire (dies with the combatant).
+func _maybe_play_signature_sfx(combatant: Combatant) -> void:
+	if combatant == null or not is_instance_valid(combatant):
+		return
+	if combatant.get_meta("_signature_fired", false):
+		return
+	if not combatant.has_meta("monster_type"):
+		return
+	if EncounterSystem == null or EncounterSystem.monster_database.is_empty():
+		return
+	var monster_id: String = str(combatant.get_meta("monster_type"))
+	var sfx: String = str(EncounterSystem.monster_database.get(monster_id, {}).get("signature_sfx", ""))
+	if sfx == "":
+		return
+	combatant.set_meta("_signature_fired", true)
+	if SoundManager:
+		SoundManager.play_battle(sfx)
+
+
 func _tick_summon_followup(combatant: Combatant) -> void:
 	if combatant == null or not is_instance_valid(combatant) or not combatant.is_alive:
 		return
@@ -2944,6 +2968,9 @@ func _execute_next_action() -> void:
 			action_executing.emit(combatant, {"type": "charm_skip"})
 			_execute_next_action()
 			return
+
+	# Boss identity SFX — spotlight-duel minibosses author signature_sfx in monsters.json; fire once on first action
+	_maybe_play_signature_sfx(combatant)
 
 	# Execute based on action type
 	match action.get("type", ""):
