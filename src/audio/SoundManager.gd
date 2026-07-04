@@ -120,6 +120,13 @@ func _ready() -> void:
 	_load_sfx_manifest()
 	_setup_audio_players()
 	_setup_default_ability_sounds()
+	# Headless runs (--headless, i.e. GUT test suites + CI) MUST NOT emit audio —
+	# multiple background agents can be running suites simultaneously and the
+	# user hears every one of them. Mute the master bus at boot so play_ui /
+	# play_battle / play_music become no-ops without needing per-caller guards.
+	if DisplayServer.get_name() == "headless" or OS.has_feature("headless"):
+		AudioServer.set_bus_mute(0, true)
+		print("[SoundManager] headless run detected — master bus muted")
 
 
 func _exit_tree() -> void:
