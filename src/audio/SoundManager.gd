@@ -1301,7 +1301,8 @@ func _apply_danger_intensity(intensity: float) -> void:
 
 	# Volume boost at high danger (slightly louder, more in-your-face)
 	var volume_boost = intensity * 3.0  # Up to +3dB at max danger
-	_music_player.volume_db = -12.0 + volume_boost
+	# relative to the user's music-volume setting — hardcoded -12.0 clobbered the slider whenever danger rose
+	_music_player.volume_db = _music_base_db + volume_boost
 
 
 func get_danger_intensity() -> float:
@@ -1313,7 +1314,7 @@ func reset_danger() -> void:
 	set_danger_intensity(0.0)
 	if _music_player:
 		_music_player.pitch_scale = 1.0
-		_music_player.volume_db = -12.0
+		_music_player.volume_db = _music_base_db  # restore to the user's volume, not the -12.0 default
 
 
 ## Corruption audio degradation - ties into autogrind meta-awareness theme.
