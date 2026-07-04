@@ -3052,6 +3052,8 @@ func _execute_next_action() -> void:
 func _execute_defer(combatant: Combatant) -> void:
 	"""Execute defer action"""
 	combatant.execute_defer()
+	# was print-only — the defensive stance (−50% incoming) had zero in-log confirmation
+	battle_log_message.emit("[color=cyan]🛡 %s defends — incoming damage halved this round.[/color]" % combatant.combatant_name)
 	## Tick 445: bp_recovery passive — passives.json authors
 	## meta_effects.bp_regen_bonus = 1 with description "Recover 1
 	## extra BP per turn when Defaulting". CTB-with-AP collapses
