@@ -28,8 +28,8 @@ You are the **Ruthless System Auditor and Integration Validator** for *Cowardly 
 Always use these validation mechanisms before certifying any work:
 1. **GDScript Syntax Check**: `godot --headless --check-only --script <file>`
 2. **Project-wide Import Check**: `godot --headless --import`
-3. **Run GUT Suite**: `godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://test/unit -gprefix=test_ -gsuffix=.gd -gexit`
-4. **Single Test**: `godot --headless -s addons/gut/gut_cmdln.gd -gtest=res://test/unit/test_<name>.gd -gexit`
+3. **Run GUT Suite**: `godot --headless --audio-driver Dummy -s addons/gut/gut_cmdln.gd -gdir=res://test/unit -gprefix=test_ -gsuffix=.gd -gexit`
+4. **Single Test**: `godot --headless --audio-driver Dummy -s addons/gut/gut_cmdln.gd -gtest=res://test/unit/test_<name>.gd -gexit`
 5. **Orphan / Reference Audits**: Run or develop custom linter scripts in `tools/` (such as `tools/sprite_linter.py` or `tools/audit_npc_dialogue.py`).
 
 ## System Memory & Checklist

@@ -269,11 +269,11 @@ godot --headless -s test/run_tests.gd          # Run tests
 - Unit tests in `test/unit/` using GUT framework — ~5200 tests, ~35s headless
 - **Canonical test command** (works reliably, used throughout session):
   ```bash
-  godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://test/unit -gprefix=test_ -gsuffix=.gd -gexit
+  godot --headless --audio-driver Dummy -s addons/gut/gut_cmdln.gd -gdir=res://test/unit -gprefix=test_ -gsuffix=.gd -gexit
   ```
 - Single-file run:
   ```bash
-  godot --headless -s addons/gut/gut_cmdln.gd -gtest=res://test/unit/test_<name>.gd -gexit
+  godot --headless --audio-driver Dummy -s addons/gut/gut_cmdln.gd -gtest=res://test/unit/test_<name>.gd -gexit
   ```
 - Syntax-only check (autoloads not initialized; SoundManager / JobSystem refs will appear missing):
   ```bash

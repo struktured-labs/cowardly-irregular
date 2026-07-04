@@ -20,7 +20,7 @@ BUTLER_BIN="$(command -v butler || echo ./butler-bin/butler)"
 echo "[deploy] target: $VERSION"
 
 echo "[deploy] gate 1/4: unit suite"
-FAILS=$(godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://test/unit -gprefix=test_ -gsuffix=.gd -gexit 2>&1 | grep -cE "\[Failed\]") || true
+FAILS=$(godot --headless --audio-driver Dummy -s addons/gut/gut_cmdln.gd -gdir=res://test/unit -gprefix=test_ -gsuffix=.gd -gexit 2>&1 | grep -cE "\[Failed\]") || true
 if [ "${FAILS}" != "0" ]; then
   echo "[deploy] BLOCKED: ${FAILS} test failure(s)" >&2; exit 1
 fi
