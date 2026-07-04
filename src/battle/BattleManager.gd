@@ -4677,15 +4677,21 @@ func _execute_healing_ability(caster: Combatant, ability: Dictionary, targets: A
 	heal_amount = int(heal_amount * multiplier)
 	heal_amount = int(heal_amount * (1.0 + caster.get_buffed_stat("magic", caster.magic) / 20.0))
 
+	var any_healed := false
 	for target in targets:
 		if not target or not is_instance_valid(target) or not target.is_alive:
 			continue
 
 		var healed = target.heal(heal_amount)
+		if healed <= 0:
+			continue  # already at full HP — skip the "recovers 0 HP" log + +0 popup (parity with the MP-restore fix)
+		any_healed = true
 		healing_done.emit(target, healed)
 		var heal_log = "  → [color=white]%s[/color] recovers [color=%s]%d[/color] HP!" % [target.combatant_name, AccessibilityPalette.bonus_bbcode(), healed]
 		battle_log_message.emit(heal_log)
 		print("  → %s recovers %d HP!" % [target.combatant_name, healed])
+	if not any_healed:
+		battle_log_message.emit("[color=gray]%s's heal fizzles — no one needed it.[/color]" % caster.combatant_name)
 
 
 func _execute_revival_ability(caster: Combatant, ability: Dictionary, targets: Array) -> void:
