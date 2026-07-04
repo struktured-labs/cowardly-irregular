@@ -835,23 +835,34 @@ func _update_turn_order_strip() -> void:
 	for child in _ctb_timeline.get_children():
 		child.queue_free()
 
-	# Build turn order
-	var order = BattleManager.selection_order
-	var current_idx = BattleManager.selection_index
-	if order.is_empty():
+	# Build the upcoming-combatant queue. During SELECTION it's who selects
+	# next (selection_order); during EXECUTION the strip used to go empty —
+	# now it shows execution_order (speed-sorted pending actions, front =
+	# next to act), so "who acts next" stays visible while actions resolve.
+	var queue: Array = []
+	var st = BattleManager.current_state
+	var in_execution: bool = st == BattleManager.BattleState.EXECUTION_PHASE or st == BattleManager.BattleState.PROCESSING_ACTION
+	if in_execution and "execution_order" in BattleManager and not BattleManager.execution_order.is_empty():
+		for action in BattleManager.execution_order:
+			var c = action.get("combatant")
+			if c is Combatant:
+				queue.append(c)
+	else:
+		var order = BattleManager.selection_order
+		var current_idx = BattleManager.selection_index
+		for i in range(order.size()):
+			if i >= current_idx:
+				queue.append(order[i])
+	if queue.is_empty():
 		return
 
 	var shown = 0
-	for i in range(order.size()):
+	for combatant in queue:
 		if shown >= 8:
 			break
-		var combatant = order[i]
 		if not is_instance_valid(combatant) or not combatant.is_alive:
 			continue
-		if i < current_idx:
-			continue
-
-		var is_current = (i == current_idx)
+		var is_current = (shown == 0)  # head of the queue = current selector / next to act
 		var is_player = combatant in BattleManager.player_party
 		var entry = _create_ctb_entry(combatant, is_current, is_player, shown)
 		_ctb_timeline.add_child(entry)
