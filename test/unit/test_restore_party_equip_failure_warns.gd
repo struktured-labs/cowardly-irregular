@@ -59,13 +59,20 @@ func test_equip_accessory_failure_pushes_warning() -> void:
 
 # ── Passive equip check ────────────────────────────────────────────────
 
-func test_equip_passive_failure_pushes_warning() -> void:
+func test_passive_validation_drops_dead_ids() -> void:
+	# 2026-07-04: the old per-passive equip_passive re-equip loop always
+	# tripped idempotency (from_dict pre-fills the array) — replaced with
+	# validate-and-recalc. A passive removed from json is now dropped +
+	# warned (the genuine failure the loop pretended to catch).
 	var body := _restore_body()
-	# Pin: per-passive loop checks the return.
-	assert_true(body.contains("if not PassiveSystem.equip_passive(c, pid):"),
-		"_restore_party_from_save_data passive loop must check equip_passive return")
-	assert_true(body.contains("push_warning(\"[GameLoop] _restore_party_from_save_data: equip_passive"),
-		"passive equip failure must push_warning")
+	assert_false(body.contains("PassiveSystem.equip_passive"),
+		"restore must not re-equip passives (from_dict already populated the array)")
+	assert_true(body.contains("PassiveSystem.get_passive(pid).is_empty()"),
+		"restore must validate each passive id against the table")
+	assert_true(body.contains("push_warning(\"[GameLoop] _restore_party_from_save_data: passive '%s' no longer in passives table"),
+		"a passive removed from json must be dropped + warned")
+	assert_true(body.contains("c.recalculate_stats()"),
+		"restore must recalc so passive mods attach from the array")
 
 
 # ── Warning content quality ────────────────────────────────────────────
@@ -79,10 +86,12 @@ func test_warnings_include_failing_id_and_character_name() -> void:
 		"equip_weapon('%s') failed for %s",
 		"equip_armor('%s') failed for %s",
 		"equip_accessory('%s') failed for %s",
-		"equip_passive('%s') failed for %s",
 	]:
 		assert_true(body.contains(fragment),
 			"warning must include failing id + combatant_name: %s" % fragment)
+	# passives use a distinct id+name shape now (dropped, not "failed")
+	assert_true(body.contains("passive '%s' no longer in passives table — dropped from %s"),
+		"dropped-passive warning must include both id and combatant_name")
 
 
 func test_warnings_state_consequence() -> void:
@@ -100,10 +109,9 @@ func test_warnings_state_consequence() -> void:
 		cursor = idx + 1
 	assert_gte(count, 3,
 		"all 3 equipment slot warnings must say 'slot left empty' (consequence statement)")
-	# Passive uses "passive skipped" (distinct — slot is reusable
-	# for the next passive in the loop).
-	assert_true(body.contains("passive skipped"),
-		"passive warning must say 'passive skipped'")
+	# Passive drop states its consequence: removed from the character.
+	assert_true(body.contains("dropped from %s"),
+		"passive warning must state the consequence ('dropped from <char>')")
 
 
 # ── No fallback (empty equipment is valid state) ───────────────────────

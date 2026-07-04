@@ -2079,11 +2079,12 @@ func _restore_party_from_save_data() -> bool:
 		var acc = entry.get("equipped_accessory", "")
 		if acc != "" and not EquipmentSystem.equip_accessory(c, acc):
 			push_warning("[GameLoop] _restore_party_from_save_data: equip_accessory('%s') failed for %s — slot left empty" % [acc, c.combatant_name])
-		# Re-equip passives so hooks attach; tick 189 warns on failure (passive removed from json, slot count shrunk).
-		for pid in entry.get("equipped_passives", []):
-			if pid is String:
-				if not PassiveSystem.equip_passive(c, pid):
-					push_warning("[GameLoop] _restore_party_from_save_data: equip_passive('%s') failed for %s — passive skipped" % [pid, c.combatant_name])
+		# from_dict already filled equipped_passives; re-equipping tripped idempotency (never applied mods) — validate ids + recalc once (cowir-main live-log 2026-07-04)
+		for pid in c.equipped_passives.duplicate():
+			if PassiveSystem.get_passive(pid).is_empty():
+				c.equipped_passives.erase(pid)
+				push_warning("[GameLoop] _restore_party_from_save_data: passive '%s' no longer in passives table — dropped from %s" % [pid, c.combatant_name])
+		c.recalculate_stats()
 		party.append(c)
 
 	# After equip/passive reapply, restore HP/MP/AP from the saved data
