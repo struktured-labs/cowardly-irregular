@@ -310,6 +310,7 @@ func _ready() -> void:
 	# attacks. Wire it to round_started too as a universal safety net
 	# so any interrupted tween gets caught at the top of every round.
 	BattleManager.round_started.connect(_on_round_started_snap_home)
+	BattleManager.round_started.connect(_refresh_all_status_icons)  # tick duration/doom counters down visibly
 	BattleManager.round_ended.connect(_on_round_ended)
 	BattleManager.damage_dealt.connect(_on_damage_dealt)
 	BattleManager.attack_missed.connect(_on_attack_missed)
@@ -397,6 +398,8 @@ func _exit_tree() -> void:
 		BattleManager.round_ended.disconnect(_on_round_ended)
 	if BattleManager.round_started.is_connected(_on_round_started_snap_home):
 		BattleManager.round_started.disconnect(_on_round_started_snap_home)
+	if BattleManager.round_started.is_connected(_refresh_all_status_icons):
+		BattleManager.round_started.disconnect(_refresh_all_status_icons)
 	if BattleManager.damage_dealt.is_connected(_on_damage_dealt):
 		BattleManager.damage_dealt.disconnect(_on_damage_dealt)
 	if BattleManager.attack_missed.is_connected(_on_attack_missed):
@@ -1333,7 +1336,7 @@ func _on_combatant_status_changed(_status: String, combatant: Combatant) -> void
 	_refresh_status_icons(combatant)
 
 
-func _refresh_status_icons(combatant: Combatant) -> void:
+func _refresh_status_icons(combatant: Combatant, animate: bool = true) -> void:
 	"""Rebuild the status icon row for a combatant"""
 	if combatant not in _status_icon_containers:
 		return
@@ -1358,11 +1361,22 @@ func _refresh_status_icons(combatant: Combatant) -> void:
 			display_text += " %d" % turns_left  # e.g. "STUN 2"
 		var icon = _create_status_icon_label(display_text, config["color"])
 		container.add_child(icon)
-		# Pop-in feedback so buffs/debuffs land with weight. _refresh_status_icons
-		# only fires on status_added/status_removed signals (not per-turn counter
-		# ticks), so an unconditional pop on every refresh is honest: it tells
-		# the player "something just changed in the status row." Subtle overshoot.
-		_animate_status_icon_pop_in(icon)
+		if animate:
+			_animate_status_icon_pop_in(icon)
+
+	# doom_counter is a Combatant int field, not a status_effect — surface the lethal countdown so it's trackable after the initial log scrolls away
+	if "doom_counter" in combatant and combatant.doom_counter > 0:
+		var doom_icon = _create_status_icon_label("☠ %d" % combatant.doom_counter, Color(0.6, 0.1, 0.7))
+		container.add_child(doom_icon)
+		if animate:
+			_animate_status_icon_pop_in(doom_icon)
+
+
+func _refresh_all_status_icons(_round_num: int = 0) -> void:
+	"""Per-round refresh (no pop animation) so duration counters + doom visibly tick down."""
+	for combatant in _status_icon_containers.keys():
+		if is_instance_valid(combatant):
+			_refresh_status_icons(combatant, false)
 
 
 func _animate_status_icon_pop_in(icon: Control) -> void:
