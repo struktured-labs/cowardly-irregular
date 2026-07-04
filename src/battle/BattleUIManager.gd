@@ -411,7 +411,14 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 		mp_bar.value = member.current_mp
 		var mp_label = mp_bar.get_node_or_null("MPLabel")
 		if mp_label:
-			mp_label.text = "MP: %d/%d" % [member.current_mp, member.max_mp]
+			if not member.is_alive:
+				# KO'd party can't cast — surfacing MP+AP invited misreading them as "still can act"
+				mp_label.text = "MP: --"
+				mp_label.add_theme_color_override("font_color", Color(0.55, 0.55, 0.55))
+			else:
+				mp_label.text = "MP: %d/%d" % [member.current_mp, member.max_mp]
+				mp_label.remove_theme_color_override("font_color")
+			mp_bar.modulate = Color(1, 1, 1, 0.35) if not member.is_alive else Color(1, 1, 1, 1)
 
 	# Update AP and status - try both RichTextLabel and regular Label
 	var ap_label = box.get_node_or_null("AP")
@@ -447,6 +454,16 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 					# Defer keeps the +1 natural gain
 					is_deferring = true
 				break
+
+		# KO'd party can't act — surfacing AP/status invited misreading "still can act"
+		if not member.is_alive:
+			if ap_label is RichTextLabel:
+				ap_label.bbcode_enabled = true
+				ap_label.text = "[color=gray]--[/color]"
+			else:
+				ap_label.text = "--"
+				ap_label.add_theme_color_override("font_color", Color(0.55, 0.55, 0.55))
+			return
 
 		if ap_label is RichTextLabel:
 			# Ensure BBCode is enabled
