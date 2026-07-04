@@ -516,28 +516,40 @@ func _apply_save_data(save_data: Dictionary) -> void:
 
 	## Tick 418: restore the canonical battle counter. max(0, ...)
 	## clamp defends against a corrupted save with a negative value.
+	# else-default (2026-07-04): a pre-tick-418 save lacks the key; without the else it kept the previously-loaded game's count (cross-slot leak)
 	if save_data.has("battles_won"):
 		battles_won = max(0, int(save_data["battles_won"]))
+	else:
+		battles_won = 0
 
 	## Tick 453: restore boss memory. Explicit Array[String] coercion
 	## via str() in a per-entry loop dodges the typed-array silent-
 	## fail trap (CLAUDE.md Common Pitfalls) so the field survives a
 	## roundtrip without being silently reset to [].
+	## else-default: an old save without the key must not inherit the
+	## prior-loaded game's boss memory (pattern_recognition bonus leak).
 	if save_data.has("previously_fought_bosses"):
 		var raw_bosses: Variant = save_data["previously_fought_bosses"]
 		previously_fought_bosses.clear()
 		if raw_bosses is Array:
 			for b in raw_bosses:
 				previously_fought_bosses.append(str(b))
+	else:
+		previously_fought_bosses.clear()
 
 	## Tick 454: restore speedrun splits + PBs. Dictionary fields
 	## don't need the typed-array dance, but a Variant guard keeps
 	## a malformed save from silently overwriting them with non-
-	## dict garbage.
+	## dict garbage. else-default: the loaded save is authoritative —
+	## an absent key means no record, not "keep the other slot's".
 	if save_data.has("boss_splits") and save_data["boss_splits"] is Dictionary:
 		boss_splits = (save_data["boss_splits"] as Dictionary).duplicate(true)
+	else:
+		boss_splits.clear()
 	if save_data.has("boss_personal_best") and save_data["boss_personal_best"] is Dictionary:
 		boss_personal_best = (save_data["boss_personal_best"] as Dictionary).duplicate(true)
+	else:
+		boss_personal_best.clear()
 
 	## Tick 413: restore save_history from the persisted snapshot.
 	## Type-guarded with explicit typed-Array coercion to dodge the
