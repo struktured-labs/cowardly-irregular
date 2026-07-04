@@ -116,7 +116,8 @@ func _on_quest_progress(_a = null, _b = null) -> void:
 		return
 	_update_objective()
 	if SoundManager:
-		SoundManager.play_ui("soft_chime")
+		# str() guards against int (objective_advanced sends int idx); only quest_state_changed sends "complete" (cowir-sfx msg 2160)
+		SoundManager.play_ui("quest_complete" if str(_b) == "complete" else "soft_chime")
 	if _side_label != null and _side_label.visible:
 		_side_label.modulate = Color(1.6, 1.4, 0.6)
 		var tw := create_tween()

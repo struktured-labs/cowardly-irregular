@@ -230,6 +230,8 @@ func _pick() -> void:
 		return
 	if SoundManager:
 		SoundManager.play_ui("menu_select")
+		# crystal-to-crystal dimensional whoosh (cowir-sfx msg 2160)
+		SoundManager.play_ui("portal_enter")
 	teleport_requested.emit(row["id"], row["spawn"])
 	closed.emit()
 	queue_free()

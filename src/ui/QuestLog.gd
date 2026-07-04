@@ -411,6 +411,8 @@ func _input(event: InputEvent) -> void:
 	# and accept are both echo-guarded so we don't rebuild the UI / play
 	# the close cue at echo rate.
 	if (event.is_action_pressed("ui_cancel") or event.is_action_pressed("ui_back")) and not event.is_echo():
+		if SoundManager:
+			SoundManager.play_ui("menu_cancel")
 		closed.emit()
 		queue_free()
 		get_viewport().set_input_as_handled()
@@ -419,11 +421,15 @@ func _input(event: InputEvent) -> void:
 		if _scroll_offset > 0:
 			_scroll_offset -= 3
 			_build_ui()
+			if SoundManager:
+				SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_down") and not event.is_echo():
 		if _scroll_offset + _max_visible_lines < _total_lines:
 			_scroll_offset += 3
 			_build_ui()
+			if SoundManager:
+				SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 	# Mouse wheel scrolling
 	elif event is InputEventMouseButton and event.pressed:
