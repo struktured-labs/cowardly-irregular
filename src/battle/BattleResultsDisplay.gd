@@ -160,6 +160,8 @@ func show_victory_results() -> void:
 		char_height_total += 52  # name row + exp bar
 		if cr.get("leveled_up", false):
 			char_height_total += 22
+			if not cr.get("stat_gains", {}).is_empty():
+				char_height_total += 18  # stat-gain line
 	var gold_height = 32 if total_gold > 0 else 0
 	var items_height = (item_drops.size() * 22 + 8) if item_drops.size() > 0 else 0
 	var injuries_height = (injuries.size() * 22 + 8) if injuries.size() > 0 else 0
@@ -353,6 +355,23 @@ func show_victory_results() -> void:
 			# Pulse effect
 			anim_tween.tween_property(lvl_label, "scale", Vector2(1.15, 1.15), 0.1).set_delay(lvl_delay)
 			anim_tween.tween_property(lvl_label, "scale", Vector2(1.0, 1.0), 0.15).set_delay(lvl_delay + 0.1)
+
+			# Stat gains — the classic RPG payoff ("HP +10  ATK +2"), fades in just after LEVEL UP!
+			var gains: Dictionary = cr.get("stat_gains", {})
+			if not gains.is_empty():
+				var parts: Array = []
+				for stat in ["HP", "MP", "ATK", "DEF", "MAG", "SPD"]:
+					if gains.has(stat) and int(gains[stat]) != 0:
+						parts.append("%s +%d" % [stat, int(gains[stat])])
+				if not parts.is_empty():
+					var gain_label = Label.new()
+					gain_label.text = "      " + "  ".join(parts)
+					gain_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
+					gain_label.add_theme_color_override("font_color", Color(0.6, 1.0, 0.6))
+					gain_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+					gain_label.modulate.a = 0.0
+					vbox.add_child(gain_label)
+					anim_tween.tween_property(gain_label, "modulate:a", 1.0, 0.2).set_delay(lvl_delay + 0.25)
 
 		char_idx += 1
 

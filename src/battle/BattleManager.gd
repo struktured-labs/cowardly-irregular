@@ -844,10 +844,25 @@ func end_battle(victory: bool) -> void:
 			var old_level = combatant.job_level
 			var old_exp = combatant.job_exp
 			var old_exp_max = combatant.job_level * 100
+			# snapshot core stats — gain_job_exp triggers recalculate_stats on a level-up, so diff to show the gains
+			var pre_stats := {
+				"HP": combatant.max_hp, "MP": combatant.max_mp, "ATK": combatant.attack,
+				"DEF": combatant.defense, "MAG": combatant.magic, "SPD": combatant.speed,
+			}
 			if combatant.is_alive:
 				exp_gained = int(base_exp * reward_multiplier * one_shot_exp_bonus * autobattle_exp_bonus * exp_multiplier)
 				combatant.gain_job_exp(exp_gained)
 			var leveled_up = combatant.job_level > old_level
+			var stat_gains: Dictionary = {}
+			if leveled_up:
+				var now := {
+					"HP": combatant.max_hp, "MP": combatant.max_mp, "ATK": combatant.attack,
+					"DEF": combatant.defense, "MAG": combatant.magic, "SPD": combatant.speed,
+				}
+				for k in pre_stats:
+					var delta: int = int(now[k]) - int(pre_stats[k])
+					if delta != 0:
+						stat_gains[k] = delta
 			char_results.append({
 				"name": combatant.combatant_name,
 				"exp_gained": exp_gained,
@@ -857,6 +872,7 @@ func end_battle(victory: bool) -> void:
 				"exp_to_next": old_exp_max,
 				"job_name": combatant.job.get("name", "Fighter") if combatant.job else "Fighter",
 				"leveled_up": leveled_up,
+				"stat_gains": stat_gains,
 				"is_alive": combatant.is_alive
 			})
 			if exp_gained > 0:
