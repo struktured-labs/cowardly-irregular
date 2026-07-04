@@ -1448,7 +1448,15 @@ func _step_battle(step: Dictionary) -> void:
 		push_warning("CutsceneDirector: GameLoop.start_solo_battle unavailable — cutscene battle step skipped")
 		return
 	while true:
+		# CutsceneDirector (layer 95) + CutsceneDialogue (96) render OVER the BattleScene (layer 0) —
+		# without hiding, the spotlight battle plays under the cutscene UI and the player can't see it.
+		visible = false
+		if _dialogue != null and is_instance_valid(_dialogue):
+			_dialogue.visible = false
 		var result: String = await game_loop.start_solo_battle(str(combatants[0]), str(enemies[0]), opts)
+		visible = true
+		if _dialogue != null and is_instance_valid(_dialogue):
+			_dialogue.visible = true
 		if result == "victory":
 			return
 		if result != "defeat":

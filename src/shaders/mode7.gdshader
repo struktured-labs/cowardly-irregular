@@ -66,8 +66,10 @@ void fragment() {
 			result = mix(result, cloud_color, cloud_mask * 0.6);
 		}
 	} else if (h_raw < near_scale) {
-		// Smooth gradient from sky_bottom → fog_color near horizon
-		float fog_t = smoothstep(0.0, near_scale, h_raw);
+		// Sky-side horizon band. Was hardcoded 100% fog at the horizon line —
+		// the ceiling of the "opaque strip" the ground-side fix (v3.32.61) missed.
+		// Now scaled by fog_strength so a clear world (medieval 0.35) shows only ~35% fog at the seam.
+		float fog_t = smoothstep(0.0, near_scale, h_raw) * fog_strength;
 		result = mix(sky_bottom, fog_color, fog_t);
 	} else {
 		float h = max(h_raw, 0.001);
