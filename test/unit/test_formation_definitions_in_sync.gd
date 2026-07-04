@@ -10,9 +10,12 @@ extends GutTest
 ## interactive, never be secretly cheaper/costlier). This ratchet fails
 ## the moment one copy is edited without the other. Only the gameplay
 ## fields are compared — the menu's display-only name/tooltip may differ.
+## Also covers ACTION_SPEEDS (BattleManager vs HeadlessBattleResolver) —
+## same interactive/autogrind mirror, drives speed-sorted turn order.
 
 const RESOLVER := preload("res://src/autogrind/HeadlessBattleResolver.gd")
 const MENU := preload("res://src/battle/BattleCommandMenu.gd")
+const BATTLE_MANAGER := preload("res://src/battle/BattleManager.gd")
 
 
 func _gameplay_map(formations: Array) -> Dictionary:
@@ -52,3 +55,23 @@ func test_gameplay_fields_match_per_formation() -> void:
 			drift.append("%s.ap_cost: resolver=%d menu=%d (autogrind/interactive AP parity break)" % [fid, r[fid]["ap_cost"], m[fid]["ap_cost"]])
 	assert_eq(drift.size(), 0,
 		"formation gameplay fields drifted between the two copies: %s" % str(drift))
+
+
+func test_action_speeds_match_across_battle_paths() -> void:
+	# ACTION_SPEEDS drives execution ORDER (speed-sorted). It's mirrored
+	# in BattleManager (interactive) and HeadlessBattleResolver
+	# (autogrind); a drift would resolve the same actions in a different
+	# order between the two paths — a silent parity break.
+	var bm: Dictionary = BATTLE_MANAGER.ACTION_SPEEDS
+	var res: Dictionary = RESOLVER.ACTION_SPEEDS
+	var drift: Array = []
+	for key in bm:
+		if not res.has(key):
+			drift.append("%s: missing from resolver" % key)
+		elif int(res[key]) != int(bm[key]):
+			drift.append("%s: manager=%d resolver=%d" % [key, int(bm[key]), int(res[key])])
+	for key in res:
+		if not bm.has(key):
+			drift.append("%s: missing from BattleManager" % key)
+	assert_eq(drift.size(), 0,
+		"ACTION_SPEEDS drifted between interactive + autogrind battle paths (turn-order parity break): %s" % str(drift))
