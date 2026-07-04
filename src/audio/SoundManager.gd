@@ -1123,6 +1123,14 @@ func play_music(track: String) -> void:
 	_stinger_resume_track = _current_music  # Save for stinger resume before overwriting
 	_current_music = track
 
+	# Clean slate for the new track: the danger-intensity system elevates
+	# _music_player pitch + volume during a tense battle; the cache branch
+	# reset neither and the manifest branch reset only volume, so a new
+	# track could inherit a stale higher pitch / boost. Reset both here
+	# (after the crossfade copied the old track's volume to B).
+	_music_player.pitch_scale = 1.0
+	_music_player.volume_db = _music_base_db
+
 	# Try manifest first — file-based music always takes priority
 	_load_music_manifest()
 	var manifest_track_id = track
