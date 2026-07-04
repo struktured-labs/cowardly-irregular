@@ -3590,6 +3590,8 @@ func _close_win98_menu() -> void:
 
 func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: String = "", elemental_mod: float = 1.0) -> void:
 	_results_display.on_damage_dealt(target, amount, is_crit)
+	# deplete the floating enemy HP bar in sync with the damage number — it lagged to the next _update_ui (action boundary)
+	_update_enemy_hp_bars()
 	if is_crit:
 		_crit_visual_burst(target, amount)
 		_show_hint("first_crit", "CRITICAL HIT! Fast characters and Rogues crit more often. Equip gear with crit bonuses to increase your chances.")
