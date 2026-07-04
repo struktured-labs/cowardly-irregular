@@ -4178,6 +4178,9 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 					"poison", "blind", "burn", "confuse", "fear", "silence", "curse",
 				]
 				status_to_add = _RANDOM_DEBUFF_POOL[randi() % _RANDOM_DEBUFF_POOL.size()]
+			# freeze aliases to stun — 3 ice abilities authored "freeze" but no code path read it (audit 2026-07-03)
+			if status_to_add == "freeze":
+				status_to_add = "stun"
 			var duration: int = int(ability.get("duration", 3))
 			target.add_status(status_to_add, duration)
 			battle_log_message.emit("%s inflicted %s!" % [caster.combatant_name, StatusNames.display(status_to_add)])
@@ -4388,6 +4391,9 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 					"poison", "blind", "burn", "confuse", "fear", "silence", "curse",
 				]
 				status_to_add = _RANDOM_DEBUFF_POOL[randi() % _RANDOM_DEBUFF_POOL.size()]
+			# freeze aliases to stun — 3 ice abilities authored "freeze" but no code path read it (audit 2026-07-03)
+			if status_to_add == "freeze":
+				status_to_add = "stun"
 			var duration: int = int(ability.get("duration", 3))
 			target.add_status(status_to_add, duration)
 			battle_log_message.emit("%s inflicted %s!" % [caster.combatant_name, StatusNames.display(status_to_add)])
@@ -5279,8 +5285,19 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
 					target.add_status("evasion", duration)
 					battle_log_message.emit("[color=cyan]%s gains Evasion![/color] (60%% dodge chance for %d turns)" % [target.combatant_name, duration])
+		"summon_clone":
+			# Effect audit 2026-07-03: clone_self authored effect=summon_clone
+			# but the ability just consumed MP and played the animation —
+			# "Forks a copy of itself" delivered zero forks. Reuse the
+			# existing monster_summoned signal (BattleScene handles sprite +
+			# party plumbing) with the caster's stored monster_type.
+			if caster != null and is_instance_valid(caster) and caster.has_meta("monster_type"):
+				var clone_type: String = str(caster.get_meta("monster_type"))
+				monster_summoned.emit(clone_type, caster)
+				battle_log_message.emit("[color=purple]%s forks a copy of itself![/color]" % caster.combatant_name)
+				print("  → %s summons a clone (%s)" % [caster.combatant_name, clone_type])
 		_:
-			# Authored-but-unimplemented support effect (dispel, summon_clone,
+			# Authored-but-unimplemented support effect (dispel,
 			# copy_last_ability, random_stat_change, adapt_resistance, etc.).
 			# These need bespoke handling — make the gap LOUD (push_warning)
 			# so it shows up in CI/test runs rather than silently no-opping.
