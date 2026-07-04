@@ -33,11 +33,9 @@ const CUTSCENES_DIR := "res://data/cutscenes"
 #     cutscene beats. cowir-sfx authoring needed; content-adjacent so
 #     each entry is its own design call (sample bank vs proc-gen).
 const KNOWN_ORPHAN_SFX := {
-	# 2026-07-04: cowir-sfx msg 2160 called for a quest_complete jingle
-	# (G-major heroic, sox-synth, 1.35s) but the asset lives on their
-	# branch — the wiring shipped ahead so it lights up on their merge.
-	# SoundManager.play_ui falls back silently to no-op in the meantime.
-	"quest_complete": true,
+	# 2026-07-04: allowlist empty — quest_complete asset landed alongside
+	# the QuestTracker branch (feature/sfx-quest-complete-relanding).
+	# New orphans still fail loud below.
 }
 
 
