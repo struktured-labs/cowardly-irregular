@@ -13,6 +13,9 @@ signal menu_requested()
 @export var encounter_enabled: bool = true
 @export var current_area_id: String = "overworld"
 
+## encounter_surge save-corruption boost — corruption = instability = more fights (was announced via Toast but inert)
+const ENCOUNTER_SURGE_MULT: float = 1.5
+
 ## Area configuration
 var _is_safe_zone: bool = false
 var _encounter_rate: float = 0.05
@@ -69,6 +72,9 @@ func _check_encounter() -> bool:
 				float(gs.game_constants.get("encounter_rate", 1.0)),
 				0.1, 10.0)
 			rate_multiplier *= daemon_rate
+		# encounter_surge save-corruption: inert before (announced, never read) — now it actually surges
+		if "corruption_effects" in gs and "encounter_surge" in gs.corruption_effects:
+			rate_multiplier *= ENCOUNTER_SURGE_MULT
 
 	# If multiplier is 0, no encounters
 	if rate_multiplier <= 0.0:
