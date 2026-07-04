@@ -3440,6 +3440,10 @@ func _area_cave_transition_in(location_name: String) -> void:
 		await _area_fade_to_black()
 		return
 
+	# door_close SFX layers under the stone-door slam animation (cowir-sfx msg 2165)
+	if SoundManager:
+		SoundManager.play_ui("door_close")
+
 	var screen_size = get_viewport().get_visible_rect().size
 
 	# Dim phase (0.25s)
@@ -3592,6 +3596,10 @@ func _area_interior_transition_in(location_name: String) -> void:
 	if not _area_fade_rect or not _area_fade_layer:
 		await _area_fade_to_black()
 		return
+
+	# door_open SFX cues the interior threshold (cowir-sfx msg 2165)
+	if SoundManager:
+		SoundManager.play_ui("door_open")
 
 	var fade_tween = create_tween()
 	fade_tween.tween_property(_area_fade_rect, "modulate:a", 1.0, 0.20).set_ease(Tween.EASE_IN)
