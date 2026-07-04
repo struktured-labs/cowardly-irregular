@@ -3569,6 +3569,8 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 	# test_advance_ap_cost_calculation comment "3 - 1 natural gain offset = 2 net").
 	# Bug fix (2026-04-30): removed the extra gain_ap(1).
 	print("%s advances with %d actions!" % [combatant.combatant_name, actions.size()])
+	# was print-only — Defer logs its stance (v3.32.90), so Advance's header should too (parity for the AP-spend pair)
+	battle_log_message.emit("[color=orange]⚡ %s advances — %d actions this turn![/color]" % [combatant.combatant_name, actions.size()])
 
 	# Execute all actions in sequence (each will spend 1 AP)
 	for action in actions:
