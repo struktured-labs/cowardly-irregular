@@ -100,9 +100,16 @@ func _build_ui() -> void:
 
 	# Compute panel height from row count
 	var row_h = 26.0
-	var badge_row_h := 40.0 if all_badges.size() > 0 else 0.0
-	var badge_header_h := 20.0 if all_badges.size() > 0 else 0.0
 	var panel_w = 520.0
+	# Pre-compute badge wrap so the panel grows to fit — the old flat 40px
+	# assumption silently dropped chips past panel_w-40 (a full catalog earned
+	# in one session would truncate to ~4 badges on a 520 panel).
+	var badge_layout: Array = _layout_badges(all_badges, panel_w)
+	var badge_rows: int = 0
+	if badge_layout.size() > 0:
+		badge_rows = int(badge_layout[badge_layout.size() - 1]["row"]) + 1
+	var badge_row_h: float = 40.0 * badge_rows
+	var badge_header_h := 20.0 if all_badges.size() > 0 else 0.0
 	var panel_h = 68.0 + stats_data.size() * row_h + badge_header_h + badge_row_h + 50.0
 	panel_h = min(panel_h, vp_size.y - 40)
 
@@ -166,29 +173,26 @@ func _build_ui() -> void:
 		panel.add_child(badge_header)
 		y += badge_header_h
 
-		var badges_x = 20.0
-		var chip_h = 30.0
-		var chip_pad = 8.0
-		for a in all_badges:
+		var chip_h := 30.0
+		for placement in badge_layout:
+			var a: Dictionary = placement["badge"]
+			var chip_x: float = placement["x"]
+			var chip_y: float = y + float(placement["row"]) * 40.0
+			var chip_w: float = placement["w"]
 			var is_new: bool = a in newly
-			var chip_w := _measure_badge_width(a)
 			var chip_bg = ColorRect.new()
 			chip_bg.color = BADGE_BG_NEW if is_new else BADGE_BG_EARNED
-			chip_bg.position = Vector2(badges_x, y)
+			chip_bg.position = Vector2(chip_x, chip_y)
 			chip_bg.size = Vector2(chip_w, chip_h)
 			panel.add_child(chip_bg)
 
 			var chip_lbl = Label.new()
 			chip_lbl.text = "%s %s" % [a.get("icon", "*"), a.get("name", a.get("id", "?"))]
-			chip_lbl.position = Vector2(badges_x + 6, y + 6)
+			chip_lbl.position = Vector2(chip_x + 6, chip_y + 6)
 			chip_lbl.add_theme_font_size_override("font_size", 12)
 			chip_lbl.add_theme_color_override("font_color", BADGE_NEW_COLOR if is_new else BADGE_EARNED_COLOR)
 			chip_lbl.tooltip_text = a.get("description", "")
 			panel.add_child(chip_lbl)
-
-			badges_x += chip_w + chip_pad
-			if badges_x > panel_w - 40:
-				break
 
 	var footer_sep = ColorRect.new()
 	footer_sep.color = BORDER_LIGHT
@@ -240,6 +244,27 @@ func _measure_badge_width(a: Dictionary) -> float:
 	# ~6.5 px per char at font_size 12; icon + space + name.
 	var text := "%s %s" % [a.get("icon", "*"), a.get("name", a.get("id", "?"))]
 	return maxf(72.0, text.length() * 6.5 + 16.0)
+
+
+## Precompute wrap positions so panel_h can grow to fit all chips.
+## Returns [{badge, row, x, w}] — one entry per input badge, never fewer.
+func _layout_badges(all_badges: Array, panel_w: float) -> Array:
+	var chip_pad := 8.0
+	var start_x := 20.0
+	var wrap_x := panel_w - 20.0
+	var out: Array = []
+	var row := 0
+	var x := start_x
+	for a in all_badges:
+		var w: float = _measure_badge_width(a)
+		# Only wrap when there's already content on this row — a very wide chip
+		# always occupies its own row starting at start_x rather than getting dropped.
+		if x + w > wrap_x and x > start_x:
+			row += 1
+			x = start_x
+		out.append({"badge": a, "row": row, "x": x, "w": w})
+		x += w + chip_pad
+	return out
 
 
 func _compute_grade() -> Dictionary:
