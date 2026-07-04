@@ -886,6 +886,20 @@ func reset_game_state() -> void:
 	quests.clear()
 	activated_crystals.clear()
 
+	# 2026-07-04: same leak class — these persist via to_dict but weren't
+	# reset, so a New Game inherited the prior run's battle count
+	# (battles_won → skews CutsceneDirector's "battles >= N" gates) and
+	# boss-memory (previously_fought_bosses → the fresh party gets the
+	# pattern_recognition damage bonus vs bosses it never fought). boss_
+	# splits are last-run defeat times (run-specific). boss_personal_best
+	# is deliberately cross-run (a PB survives New Game — see its docstring).
+	battles_won = 0
+	previously_fought_bosses.clear()
+	boss_splits.clear()
+	if rebalance_daemon != null:
+		rebalance_daemon.pending.clear()
+		rebalance_daemon.applied.clear()
+
 	# Reset game constants
 	game_constants = {
 		"exp_multiplier": 1.0,
