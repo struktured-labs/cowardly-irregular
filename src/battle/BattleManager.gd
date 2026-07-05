@@ -849,9 +849,20 @@ func end_battle(victory: bool) -> void:
 				"HP": combatant.max_hp, "MP": combatant.max_mp, "ATK": combatant.attack,
 				"DEF": combatant.defense, "MAG": combatant.magic, "SPD": combatant.speed,
 			}
+			# Collect abilities newly unlocked by any level-up this award — gain_job_exp
+			# fires ability_learned per new spell (learn_abilities_for_level). Resolved
+			# to display names so the victory screen can announce "Learned Fire!".
+			var learned_abilities: Array[String] = []
+			var _collect_learned := func(aid: String):
+				var nm: String = JobSystem.get_ability(aid).get("name", aid) if JobSystem else aid
+				learned_abilities.append(nm)
+			if combatant.has_signal("ability_learned"):
+				combatant.ability_learned.connect(_collect_learned)
 			if combatant.is_alive:
 				exp_gained = int(base_exp * reward_multiplier * one_shot_exp_bonus * autobattle_exp_bonus * exp_multiplier)
 				combatant.gain_job_exp(exp_gained)
+			if combatant.has_signal("ability_learned") and combatant.ability_learned.is_connected(_collect_learned):
+				combatant.ability_learned.disconnect(_collect_learned)
 			var leveled_up = combatant.job_level > old_level
 			var stat_gains: Dictionary = {}
 			if leveled_up:
@@ -873,6 +884,7 @@ func end_battle(victory: bool) -> void:
 				"job_name": combatant.job.get("name", "Fighter") if combatant.job else "Fighter",
 				"leveled_up": leveled_up,
 				"stat_gains": stat_gains,
+				"learned_abilities": learned_abilities,
 				"is_alive": combatant.is_alive
 			})
 			if exp_gained > 0:
