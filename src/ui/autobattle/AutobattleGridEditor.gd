@@ -1071,8 +1071,18 @@ func _short_target(target: String) -> String:
 			return "High HP Foe"
 		"random_enemy":
 			return "Rnd Foe"
+		"highest_speed_enemy":
+			return "Fast Foe"
+		"highest_atk_enemy":
+			return "Strong Foe"
+		"lowest_magic_defense_enemy":
+			return "Low DEF Foe"
+		"weakest_to_ability":
+			return "Weak Foe"
 		"lowest_hp_ally":
 			return "Low HP Ally"
+		"all_allies":
+			return "All Allies"
 		"self":
 			return "Self"
 		_:
