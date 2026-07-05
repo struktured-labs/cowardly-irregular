@@ -3237,7 +3237,7 @@ func _execute_physical_group(participants: Array, alive_enemies: Array[Combatant
 			# strike must justify its 4x AP cost vs All-Out Attack).
 			mitigated = max(1, int(raw_damage * lb_dmg_mult))
 		else:
-			mitigated = max(1, raw_damage - enemy.defense)
+			mitigated = max(1, raw_damage)
 		enemy.take_damage(mitigated)
 		damage_dealt.emit(enemy, mitigated, false, "", 1.0)
 		battle_log_message.emit("[color=orange]Group %s hits %s for %d![/color]" % [
@@ -3347,7 +3347,7 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 					total_power += (p.get_buffed_stat("attack", p.attack) + p.get_buffed_stat("magic", p.magic)) * 0.5
 			for enemy in alive_enemies:
 				if not enemy.is_alive: continue
-				var damage = max(1, int(total_power * scale / max(1.0, float(alive_enemies.size())) - enemy.defense * 0.5))
+				var damage = max(1, int(total_power * scale / max(1.0, float(alive_enemies.size()))))
 				enemy.take_damage(damage)
 				damage_dealt.emit(enemy, damage, false, "", 1.0)
 			# Heal party 25%
@@ -3387,7 +3387,7 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 				var is_crit = randf() < 0.3  # 30% crit chance per hit
 				if is_crit:
 					base_dmg = int(base_dmg * 1.5)
-				var damage = max(1, base_dmg - target.defense / 2)
+				var damage = max(1, base_dmg)
 				target.take_damage(damage)
 				damage_dealt.emit(target, damage, is_crit, "", 1.0)
 			battle_log_message.emit("[color=orange]★ Blade Storm — %d rapid strikes! ★[/color]" % hit_count)
@@ -3403,7 +3403,7 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 					total_atk += p.get_buffed_stat("attack", p.attack)
 			for enemy in alive_enemies:
 				if not enemy.is_alive: continue
-				var damage = max(1, int(total_atk * scale * 0.6 / max(1.0, float(alive_enemies.size())) - enemy.defense))
+				var damage = max(1, int(total_atk * scale * 0.6 / max(1.0, float(alive_enemies.size()))))
 				enemy.take_damage(damage)
 				damage_dealt.emit(enemy, damage, false, "", 1.0)
 			battle_log_message.emit("[color=cyan]★ Iron Wall — party DEF +50%% (3 turns) + crushing blow! ★[/color]")
@@ -3454,7 +3454,7 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 						total_power += p.get_buffed_stat("attack", p.attack)
 				for enemy in alive_enemies:
 					if not enemy.is_alive: continue
-					var damage = max(1, int(total_power * scale * 0.8 / max(1.0, float(alive_enemies.size())) - enemy.defense))
+					var damage = max(1, int(total_power * scale * 0.8 / max(1.0, float(alive_enemies.size()))))
 					enemy.take_damage(damage)
 					damage_dealt.emit(enemy, damage, false, "", 1.0)
 				for p in participants:
