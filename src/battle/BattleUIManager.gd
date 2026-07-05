@@ -560,6 +560,29 @@ func _update_stat_mods_label(label: RichTextLabel, member: Combatant) -> void:
 	label.text = " ".join(parts) if parts.size() > 0 else ""
 
 
+## Compact buff/debuff readout for the ENEMY panel (" · ATK-30%(2)"), so the
+## player can confirm a debuff landed and how long it lasts. Buffs aqua, debuffs
+## the penalty color; equipment mods omitted (enemies rarely carry them and the
+## panel is cramped). Empty when the enemy has no active stat multipliers.
+func _enemy_stat_mods_hint(enemy: Combatant) -> String:
+	var parts: Array[String] = []
+	if "active_buffs" in enemy:
+		for buff in enemy.active_buffs:
+			var s: String = buff.get("stat", "")
+			var m: float = buff.get("modifier", 1.0)
+			if s == "" or m == 1.0:
+				continue
+			parts.append("[color=aqua]%s%+d%%(%d)[/color]" % [StatNames.short_code(s), int((m - 1.0) * 100), int(buff.get("remaining_turns", 0))])
+	if "active_debuffs" in enemy:
+		for debuff in enemy.active_debuffs:
+			var s: String = debuff.get("stat", "")
+			var m: float = debuff.get("modifier", 1.0)
+			if s == "" or m == 1.0:
+				continue
+			parts.append("[color=%s]%s%+d%%(%d)[/color]" % [AccessibilityPalette.penalty_bbcode(), StatNames.short_code(s), int((m - 1.0) * 100), int(debuff.get("remaining_turns", 0))])
+	return (" · " + " ".join(parts)) if parts.size() > 0 else ""
+
+
 func _get_status_modulate(status_effects: Array) -> Color:
 	"""Return sprite modulate color for the highest-priority active status effect.
 	Returns Color.WHITE when no relevant statuses are present."""
@@ -716,6 +739,7 @@ func _update_enemy_member_status(idx: int, enemy: Combatant) -> void:
 						ap_text += ", "
 					ap_text += _status_label(enemy, enemy.status_effects[si])
 				ap_text += "]"
+			ap_text += _enemy_stat_mods_hint(enemy)
 			ap_label.text = ap_text
 
 	# Update HP (hidden unless revealed or dead)
