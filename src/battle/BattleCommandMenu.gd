@@ -468,6 +468,21 @@ func _lethal_tag(est_dmg: int, current_hp: int) -> String:
 	return " [KILL]" if current_hp > 0 and est_dmg >= current_hp else ""
 
 
+## Whether an ability actually deals HP damage, so the enemy-target submenu only
+## shows a "~N dmg" estimate where it means something. physical/magic damage by
+## definition; other types (support debuffs, steal, scan) deal none unless they
+## carry an explicit positive damage figure (some summon/meta abilities do).
+func _ability_deals_damage(ability: Dictionary) -> bool:
+	var t: String = str(ability.get("type", ""))
+	if t == "physical" or t == "magic":
+		return true
+	for key in ["power", "damage", "damage_multiplier"]:
+		var v = ability.get(key)
+		if v != null and float(v) > 0.0:
+			return true
+	return false
+
+
 func _build_ability_menu_item(ability_id: String, combatant: Combatant, alive_enemies: Array[Combatant], canvas_transform: Transform2D) -> Dictionary:
 	"""Build a single ability menu item (with target submenu if needed).
 	   Returns {} for invalid abilities so callers can skip empty entries."""
@@ -495,10 +510,15 @@ func _build_ability_menu_item(ability_id: String, combatant: Combatant, alive_en
 				var s = _scene.enemy_sprite_nodes[enemy_idx]
 				if is_instance_valid(s):
 					target_pos = canvas_transform * s.global_position
-			var est_ability_dmg: int = BattleManager.estimate_ability_damage(combatant, enemy, ability)
+			# Only damaging abilities get a "~N dmg" (and [KILL]) readout — a
+			# debuff/steal/scan deals 0, so the estimate would be a bogus number.
+			var enemy_label: String = "%s (%d HP)" % [enemy.combatant_name, enemy.current_hp]
+			if _ability_deals_damage(ability):
+				var est_ability_dmg: int = BattleManager.estimate_ability_damage(combatant, enemy, ability)
+				enemy_label += " ~%d dmg%s" % [est_ability_dmg, _lethal_tag(est_ability_dmg, enemy.current_hp)]
 			enemy_targets.append({
 				"id": "ability_" + ability_id + "_enemy_" + str(enemy_idx),
-				"label": "%s (%d HP) ~%d dmg%s" % [enemy.combatant_name, enemy.current_hp, est_ability_dmg, _lethal_tag(est_ability_dmg, enemy.current_hp)],
+				"label": enemy_label,
 				"data": {"ability_id": ability_id, "target_idx": enemy_idx, "target_type": "enemy", "target_pos": target_pos}
 			})
 		return {
