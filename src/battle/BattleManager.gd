@@ -4544,13 +4544,16 @@ func estimate_ability_damage(attacker: Combatant, target: Combatant, ability: Di
 		def_val = int(def_val * 0.5)
 	var mitigated = int((raw * raw) / float(max(1, raw + def_val)))
 
-	# Apply elemental modifier
-	var element = ability.get("element", "")
-	if element != "":
-		if element in target.elemental_weaknesses:
-			mitigated = int(mitigated * 1.5)
-		elif element in target.elemental_resistances:
-			mitigated = int(mitigated * 0.5)
+	# Elemental modifier — reuse the real hit's source of truth so the "~N dmg"
+	# preview matches reality (0.0x immune, 1.5x weak, 0.5x resist). Immunity
+	# returns a truthful 0, bypassing the min-1 floor, so an "Immune: Ice" enemy
+	# never previews phantom damage the swing won't actually deal.
+	var element_val = ability.get("element")
+	if element_val != null and str(element_val) != "":
+		var elem_mod: float = target.calculate_elemental_modifier(str(element_val))
+		mitigated = int(mitigated * elem_mod)
+		if elem_mod <= 0.0:
+			return 0
 
 	return max(1, mitigated)
 
