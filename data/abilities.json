@@ -293,7 +293,8 @@
 		"description": "Attack and steal in one action",
 		"damage_multiplier": 1.2,
 		"target_type": "single_enemy",
-		"success_rate": 0.4
+		"success_rate": 0.4,
+		"steals": true
 	},
 	"edit_formula": {
 		"id": "edit_formula",

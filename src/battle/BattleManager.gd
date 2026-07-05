@@ -4055,6 +4055,20 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 	match ability_type:
 		"physical":
 			_execute_physical_ability(caster, ability, retargeted)
+			# mug ("attack and steal in one action") authors success_rate + a
+			# steals flag, but the physical path never stole — the steal half was
+			# dead. Wire it here (same contained pattern as smoke_bomb's escape):
+			# after the hit, roll a gold steal per target.
+			if bool(ability.get("steals", false)):
+				var _steal_rate: float = clampf(float(ability.get("success_rate", 0.5)) + _sum_equipment_special_effect(caster, "steal_bonus"), 0.0, 1.0)
+				for _st in retargeted:
+					if _st is Combatant and is_instance_valid(_st) and _st.is_alive:
+						if randf() < _steal_rate:
+							var _g: int = randi_range(5, 50) * (1 + int(_st.max_hp / 50.0))
+							GameState.add_gold(_g)
+							battle_log_message.emit("[color=yellow]%s mugs %d gold from %s![/color]" % [caster.combatant_name, _g, _st.combatant_name])
+						else:
+							battle_log_message.emit("[color=gray]%s couldn't grab anything from %s.[/color]" % [caster.combatant_name, _st.combatant_name])
 		"magic":
 			_execute_magic_ability(caster, ability, retargeted)
 		"healing":
