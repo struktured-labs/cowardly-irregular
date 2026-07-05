@@ -15,13 +15,14 @@ extends GutTest
 ## id here to acknowledge it's intentionally inert). Surfaces the whole set in
 ## one place for review.
 
+## 2026-07-05 update (struktured ruling, F1): the 26 ENEMY abilities that were
+## here got effect_chance added (activated — table in intercom msg 2232, net
+## difficulty UP per "harder>easier"). Only death_sentence (the sole player
+## ability, doom) stays deliberately inert — keeping it inert avoids handing the
+## player a reliable delete button. So the snapshot is now a single acknowledged
+## entry; any OTHER ability going inert fails the test.
 const KNOWN_INERT := [
-	"acid_splash", "acid_spray", "armor_break", "cascade_failure", "chill",
-	"corrode", "corruption_wave", "cursed_strike", "death_sentence",
-	"disease_cloud", "fester", "filth_spray", "final_death", "hollow_echo",
-	"ice_breath", "memory_leak", "null_field", "null_touch", "oxidize",
-	"permakill_strike", "rending_bite", "soul_wail", "spectral_touch",
-	"stack_smash", "static_field", "subset_drain", "void_breath",
+	"death_sentence",
 ]
 
 
@@ -48,3 +49,14 @@ func test_no_new_ability_silently_gets_an_inert_effect() -> void:
 	assert_eq(new_inert.size(), 0,
 		"new damage ability(s) name an 'effect' but omit effect_chance, so the status is INERT " +
 		"(opt-in design). Add effect_chance to activate it, or add the id to KNOWN_INERT: %s" % str(new_inert))
+
+
+func test_f1_activation_ruling() -> void:
+	# struktured's F1 ruling (2026-07-05): the 26 enemy abilities are ACTIVE with
+	# a chance in (0,1]; death_sentence (player, doom) stays deliberately inert.
+	var a = JSON.parse_string(FileAccess.get_file_as_string("res://data/abilities.json"))
+	for id in ["armor_break", "cursed_strike", "hollow_echo", "final_death", "ice_breath"]:
+		var ec = float(a[id].get("effect_chance", 0.0))
+		assert_true(ec > 0.0 and ec <= 1.0, "%s must have an active effect_chance in (0,1]" % id)
+	assert_false(a["death_sentence"].has("effect_chance"),
+		"death_sentence stays inert per the ruling (no player delete-button)")
