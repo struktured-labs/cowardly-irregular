@@ -48,6 +48,7 @@ var text_size_scale: float = 1.0
 var text_size_index: int = 1
 # Tick 226: color-blind friendly palette for damage popups.
 var color_blind_mode: bool = false
+var reduce_flashes: bool = false
 var screen_shake_enabled: bool = true
 var dash_always_on: bool = false  # Item 9: dash without holding the button
 var llm_enabled: bool = not OS.has_feature("web")  # Wave C: dynamic dialogue toggle (off by default on web)
@@ -137,6 +138,8 @@ func _ready() -> void:
 		# Tick 226: color-blind friendly damage colors (accessibility).
 		if "color_blind_mode" in GameState:
 			color_blind_mode = bool(GameState.color_blind_mode)
+		if "reduce_flashes" in GameState:
+			reduce_flashes = bool(GameState.reduce_flashes)
 		if "screen_shake_enabled" in GameState:
 			screen_shake_enabled = GameState.screen_shake_enabled
 		if "dash_always_on" in GameState:
@@ -410,6 +413,21 @@ func _build_ui() -> void:
 	_settings_items.append({"control": cb_item, "type": "toggle", "id": "color_blind_mode"})
 	MenuMouseHelper.make_clickable(cb_item, cb_idx, 400, 60,
 		_on_setting_click.bind(cb_idx), _on_setting_hover.bind(cb_idx))
+
+	# Reduce screen flashes (accessibility / photosensitivity). Suppresses the
+	# battle-layer full-screen flashes: crits, group-attack combos, the corruption
+	# visual_glitch stutter, level-up. Default off (flashes on).
+	var flash_idx: int = _settings_items.size()
+	var flash_item = _create_toggle_setting(
+		"Reduce Flashes",
+		"Suppress full-screen flash effects in battle",
+		reduce_flashes,
+		flash_idx
+	)
+	vbox.add_child(flash_item)
+	_settings_items.append({"control": flash_item, "type": "toggle", "id": "reduce_flashes"})
+	MenuMouseHelper.make_clickable(flash_item, flash_idx, 400, 60,
+		_on_setting_click.bind(flash_idx), _on_setting_hover.bind(flash_idx))
 
 	# Wave C: Dynamic Dialogue (experimental) — gates the LLMService master
 	# enable flag. Default ON on desktop, OFF on web (no HTTP backend reachable
@@ -1102,6 +1120,12 @@ func _adjust_setting(delta: int) -> void:
 		_save_color_blind_mode_setting()
 		if SoundManager:
 			SoundManager.play_ui("menu_move")
+	elif item["id"] == "reduce_flashes":
+		reduce_flashes = not reduce_flashes
+		_update_toggle_display(selected_index, reduce_flashes)
+		_save_reduce_flashes_setting()
+		if SoundManager:
+			SoundManager.play_ui("menu_move")
 	elif item["id"] == "llm_enabled":
 		llm_enabled = not llm_enabled
 		_update_toggle_display(selected_index, llm_enabled)
@@ -1443,6 +1467,15 @@ func _save_color_blind_mode_setting() -> void:
 		GameState.color_blind_mode = color_blind_mode
 	settings_changed.emit("color_blind_mode", color_blind_mode)
 	print("[SETTINGS] Color-blind friendly mode: %s" % ("ON" if color_blind_mode else "OFF"))
+	_persist_settings()
+
+
+func _save_reduce_flashes_setting() -> void:
+	"""Save reduce-flashes accessibility setting"""
+	if GameState:
+		GameState.reduce_flashes = reduce_flashes
+	settings_changed.emit("reduce_flashes", reduce_flashes)
+	print("[SETTINGS] Reduce flashes: %s" % ("ON" if reduce_flashes else "OFF"))
 	_persist_settings()
 
 

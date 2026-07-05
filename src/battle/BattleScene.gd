@@ -3007,8 +3007,16 @@ func _try_play_formation_sfx(formation_key: String) -> bool:
 	return false
 
 
+## Accessibility (photosensitivity): the "Reduce Flashes" setting suppresses the
+## full-screen battle flashes. Static so the gate is unit-testable without a scene.
+static func _flashes_suppressed() -> bool:
+	return GameState.reduce_flashes if ("reduce_flashes" in GameState) else false
+
+
 func _spawn_screen_flash(color: Color, fade_duration: float, delay: float = 0.0) -> void:
 	"""Spawn a full-screen color flash that fades out"""
+	if _flashes_suppressed():
+		return
 	var flash = ColorRect.new()
 	flash.color = color
 	flash.anchors_preset = Control.PRESET_FULL_RECT
@@ -3808,6 +3816,8 @@ func _on_round_started_corruption_glitch() -> void:
 
 func _flash_screen(color: Color, duration: float) -> void:
 	"""Brief screen flash effect for impactful moments"""
+	if _flashes_suppressed():
+		return
 	var flash = ColorRect.new()
 	flash.color = color
 	flash.set_anchors_preset(Control.PRESET_FULL_RECT)
