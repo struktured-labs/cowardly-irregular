@@ -207,6 +207,15 @@ func _open_main_menu() -> void:
 	description_label.text = "Welcome to %s!\nWhat would you like to do?" % shop_name
 
 
+## Buy-menu suffix flagging the gold shortfall for an item. Empty when the
+## player can already afford it, so affordable rows stay unadorned and only the
+## out-of-reach items call out exactly how much more gold they need.
+func _affordability_suffix(cost: int, gold: int) -> String:
+	if cost > gold:
+		return " (need %dg)" % (cost - gold)
+	return ""
+
+
 func _open_buy_menu() -> void:
 	"""Open the buy menu with shop inventory"""
 	current_mode = ShopMode.BUY
@@ -230,6 +239,9 @@ func _open_buy_menu() -> void:
 				label += " [%d learned]" % owned
 			elif owned > 0:
 				label += " (%d)" % owned
+
+			if game_state:
+				label += _affordability_suffix(int(cost), game_state.get_gold())
 
 			items.append({
 				"id": item_id,
