@@ -198,6 +198,13 @@ Canonical example:
    \"actions\":[{\"type\":\"ability\",\"id\":\"esuna\",\"target\":\"lowest_hp_ally\"}],
    \"enabled\":true}
 
+Exploit-weakness example (fire the moment an enemy is stunned, aimed at whichever
+foe is weak to fire, with an mp guard for fire's 8 MP on an 80 pool = 10%):
+  {\"conditions\":[{\"type\":\"enemy_has_status\",\"status\":\"stun\"},
+                   {\"type\":\"mp_percent\",\"op\":\">=\",\"value\":10}],
+   \"actions\":[{\"type\":\"ability\",\"id\":\"fire\",\"target\":\"weakest_to_ability\"}],
+   \"enabled\":true}
+
 Ability cost / fizzle safety (autobattle only) — a validator rejects rules
 that would fizzle at runtime:
 - Every rule that uses a costed ability MUST have an mp_percent guard
