@@ -460,6 +460,14 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 	return items
 
 
+## " [KILL]" when the estimated hit meets or exceeds the target's current HP —
+## the highest-value targeting cue (finish this enemy). Empty otherwise. The
+## estimate is approximate (note the "~"), but est >= HP is the honest lethal
+## signal; immune targets estimate 0 dmg so they never earn the tag.
+func _lethal_tag(est_dmg: int, current_hp: int) -> String:
+	return " [KILL]" if current_hp > 0 and est_dmg >= current_hp else ""
+
+
 func _build_ability_menu_item(ability_id: String, combatant: Combatant, alive_enemies: Array[Combatant], canvas_transform: Transform2D) -> Dictionary:
 	"""Build a single ability menu item (with target submenu if needed).
 	   Returns {} for invalid abilities so callers can skip empty entries."""
@@ -490,7 +498,7 @@ func _build_ability_menu_item(ability_id: String, combatant: Combatant, alive_en
 			var est_ability_dmg: int = BattleManager.estimate_ability_damage(combatant, enemy, ability)
 			enemy_targets.append({
 				"id": "ability_" + ability_id + "_enemy_" + str(enemy_idx),
-				"label": "%s (%d HP) ~%d dmg" % [enemy.combatant_name, enemy.current_hp, est_ability_dmg],
+				"label": "%s (%d HP) ~%d dmg%s" % [enemy.combatant_name, enemy.current_hp, est_ability_dmg, _lethal_tag(est_ability_dmg, enemy.current_hp)],
 				"data": {"ability_id": ability_id, "target_idx": enemy_idx, "target_type": "enemy", "target_pos": target_pos}
 			})
 		return {
@@ -644,7 +652,7 @@ func _build_free_move_item(combatant: Combatant, alive_enemies: Array[Combatant]
 		var est_dmg: int = BattleManager.estimate_attack_damage(combatant, enemy)
 		enemy_targets.append({
 			"id": "attack_" + str(enemy_idx),
-			"label": "%s (%d HP) ~%d dmg" % [enemy.combatant_name, enemy.current_hp, est_dmg],
+			"label": "%s (%d HP) ~%d dmg%s" % [enemy.combatant_name, enemy.current_hp, est_dmg, _lethal_tag(est_dmg, enemy.current_hp)],
 			"data": {"target_idx": enemy_idx, "action": "attack", "target_pos": target_pos}
 		})
 	return {
