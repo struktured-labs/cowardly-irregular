@@ -17,6 +17,16 @@ func test_every_engine_target_is_documented_to_the_llm() -> void:
 			"target '%s' is a valid engine target but the LLM grammar never mentions it" % key)
 
 
+func test_every_engine_condition_is_documented_to_the_llm() -> void:
+	# Same drift guard as targets, for condition types: a condition the engine
+	# evaluates (like the new enemy_has_status) must appear in the LLM grammar or
+	# the Rule Composer can never emit it.
+	var grammar: String = PROMPTS.AUTOBATTLE_GRAMMAR_DESCRIPTION
+	for key in AutobattleSystem.CONDITION_TYPES.keys():
+		assert_string_contains(grammar, str(key),
+			"condition '%s' is a valid engine condition but the LLM grammar never mentions it" % key)
+
+
 func test_exploit_weakness_is_registered_and_documented() -> void:
 	assert_true(AutobattleSystem.TARGET_TYPES.has("weakest_to_ability"),
 		"engine must register the Exploit Weakness target")

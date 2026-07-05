@@ -93,6 +93,7 @@ const CONDITION_TYPES = {
 	"item_count": "Has Item",
 	"setup_complete": "Setup Complete",
 	"ally_has_status": "Ally Has Status",
+	"enemy_has_status": "Enemy Has Status",
 	"ally_mp_percent": "Ally MP %",
 	"always": "Always"
 }
@@ -220,6 +221,16 @@ func _evaluate_grid_condition(combatant: Combatant, condition: Dictionary) -> bo
 			allies.append(combatant)
 			for ally in allies:
 				if status in ally.status_effects:
+					return true
+			return false
+
+		"enemy_has_status":
+			# True if any living enemy has the given status — lets rules react to
+			# enemy state (all-out attack a stunned foe, dispel an enemy's regen,
+			# hold fire while a debuff is still ticking).
+			var enemy_status = condition.get("status", "")
+			for enemy in _get_enemies_for(combatant):
+				if enemy_status in enemy.status_effects:
 					return true
 			return false
 

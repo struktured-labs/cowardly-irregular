@@ -175,9 +175,10 @@ Each rule shape:
 Conditions (AND-chained). type is one of:
   hp_percent, mp_percent, ap, has_status, enemy_hp_percent, ally_hp_percent,
   turn, enemy_count, ally_count, item_count, setup_complete,
-  ally_has_status, ally_mp_percent, always
+  ally_has_status, enemy_has_status, ally_mp_percent, always
 Each numeric condition takes op ∈ {<, <=, ==, >=, >, !=} and value.
-has_status / ally_has_status take a 'status' field (e.g. 'poison').
+has_status / ally_has_status / enemy_has_status take a 'status' field (e.g.
+'poison'); enemy_has_status is true when ANY living enemy has that status.
 
 Actions (executed in order, up to 4 per rule). type is one of:
   attack, ability, item, defer
