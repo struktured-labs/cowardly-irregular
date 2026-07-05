@@ -1036,6 +1036,12 @@ func _format_condition(condition: Dictionary) -> String:
 			return "Enemies %s %d" % [op, value]
 		"ally_count":
 			return "Allies %s %d" % [op, value]
+		"ally_mp_percent":
+			return "Ally MP %s %d%%" % [op, value]
+		"item_count":
+			return "%s %s %d" % [str(condition.get("item_id", "Item")).capitalize(), op, value]
+		"setup_complete":
+			return "Setup Done"
 		"always":
 			return "ALWAYS"
 		_:

@@ -26,6 +26,18 @@ func test_ally_has_status_has_friendly_label() -> void:
 		"ally_has_status label was raw before — now friendly (sibling consistency)")
 
 
+func test_every_condition_type_has_a_friendly_label() -> void:
+	# Sync guard (mirrors the target-label guard): no engine condition may render
+	# as raw snake_case in the grid. Pre-fix ally_mp_percent / item_count /
+	# setup_complete (and the two status ones) fell through to the raw default.
+	var ed = GE.new()
+	autofree(ed)
+	for key in AutobattleSystem.CONDITION_TYPES.keys():
+		var label: String = ed._format_condition({"type": str(key)})
+		assert_ne(label, str(key),
+			"condition '%s' falls through to raw snake_case in the grid — add a _format_condition label" % key)
+
+
 func test_seeding_branch_covers_enemy_has_status() -> void:
 	# Source-pin: _apply_condition_type must seed a default 'status' for
 	# enemy_has_status, else the editor leaves it unset and the condition no-ops.
