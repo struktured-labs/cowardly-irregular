@@ -2591,6 +2591,22 @@ func _on_battle_ended(victory: bool) -> void:
 		if BattleTransition:
 			await BattleTransition.reveal_exploration()
 	else:
+		# Escape vs wipe: type="escape" abilities (Flee) call end_battle(false) —
+		# the SAME path as a party wipe — so a successful flee was hitting the
+		# game-over screen. A flee leaves LIVING party members; a true wipe leaves
+		# none. Gate the whole defeat/game-over flow on the party actually being
+		# down: any survivor means we escaped, so just return to the overworld.
+		var _escape_survivors := 0
+		for _m in party:
+			if _m is Combatant and _m.is_alive:
+				_escape_survivors += 1
+		if _escape_survivors > 0:
+			if BattleTransition:
+				await BattleTransition.play_exit_transition(true)
+			await _return_to_exploration()
+			if BattleTransition:
+				await BattleTransition.reveal_exploration()
+			return
 		## Tick 411: consume meta_auto_rewind_pending (set by the Time
 		## Mage temporal_shield meta-ability in tick 404). If the
 		## player armed the shield and the wipe just hit, fire the
