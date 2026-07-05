@@ -472,6 +472,10 @@ func _build_ability_menu_item(ability_id: String, combatant: Combatant, alive_en
 
 	var ability_desc: String = ability.get("description", "")
 	var ability_tooltip: String = ability_desc if ability_desc != "" else "MP: %d" % mp_cost
+	# Surface the element so it pairs with the enemy panel's "Weak: Fire" intel.
+	var element_val = ability.get("element")
+	if element_val != null and str(element_val).to_lower() != "none" and str(element_val) != "":
+		ability_tooltip = "%s · %s" % [str(element_val).capitalize(), ability_tooltip]
 
 	# Single-enemy targeting: build per-enemy submenu with damage estimates
 	if target_type == "single_enemy" and alive_enemies.size() > 0 and can_afford:
