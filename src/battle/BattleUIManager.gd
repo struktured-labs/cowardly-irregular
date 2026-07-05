@@ -490,7 +490,7 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 				for si in range(member.status_effects.size()):
 					if si > 0:
 						status_text += ", "
-					status_text += "[color=yellow]%s[/color]" % member.status_effects[si].capitalize()
+					status_text += _status_label(member, member.status_effects[si])
 				status_text += "]"
 
 			# Set BBCode text directly
@@ -578,6 +578,17 @@ func _get_status_modulate(status_effects: Array) -> Color:
 			"blind":
 				return Color(0.6, 0.6, 0.7)   # Dark blue-gray
 	return Color.WHITE
+
+
+## Status name plus its remaining turns ("Poison 3"). Permanent (-1) or absent
+## durations show just the name. Turn count dimmed so the yellow name stays lead.
+func _status_label(combatant, status: String) -> String:
+	var out: String = "[color=yellow]%s[/color]" % status.capitalize()
+	if combatant != null and "status_durations" in combatant:
+		var turns: int = int(combatant.status_durations.get(status, -1))
+		if turns > 0:
+			out += "[color=#bbbb77] %d[/color]" % turns
+	return out
 
 
 func update_enemy_status() -> void:
@@ -703,7 +714,7 @@ func _update_enemy_member_status(idx: int, enemy: Combatant) -> void:
 				for si in range(enemy.status_effects.size()):
 					if si > 0:
 						ap_text += ", "
-					ap_text += "[color=yellow]%s[/color]" % enemy.status_effects[si].capitalize()
+					ap_text += _status_label(enemy, enemy.status_effects[si])
 				ap_text += "]"
 			ap_label.text = ap_text
 
