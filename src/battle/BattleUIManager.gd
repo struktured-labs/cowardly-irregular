@@ -754,7 +754,10 @@ func _enemy_intel_hint(enemy: Combatant) -> String:
 	if enemy.elemental_weaknesses.is_empty() and enemy.elemental_immunities.is_empty() \
 			and enemy.elemental_resistances.is_empty():
 		return ""
-	if not BestiarySystem.is_defeated(str(enemy.get_meta("monster_type"))):
+	# Revealed by a prior defeat (bestiary) OR a Scan cast this battle.
+	var revealed: bool = enemy.get_meta("intel_revealed", false) \
+			or BestiarySystem.is_defeated(str(enemy.get_meta("monster_type")))
+	if not revealed:
 		return ""
 	var out: String = ""
 	if not enemy.elemental_weaknesses.is_empty():

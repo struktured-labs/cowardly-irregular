@@ -5078,6 +5078,8 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 				var band_name = volatility.get_band_name()
 				var tail_pct = volatility.get_tail_event_pct()
 				battle_log_message.emit("[color=gold]FORECAST: Band=%s, Tail=%.0f%%, Jitter=±%.1f[/color]" % [band_name, tail_pct, volatility.get_ctb_jitter()])
+		"scan":
+			_execute_scan_effect(caster, targets)
 		"circuit_breaker":
 			if volatility:
 				volatility.shift_band(-1)
@@ -5432,6 +5434,23 @@ const _SECONDARY_STAT_DEBUFF_MAP: Dictionary = {
 	"magic_down":   ["magic",   "Secondary Magic Down"],
 	"speed_down":   ["speed",   "Secondary Speed Down"],
 }
+
+
+## Scan reveals a live enemy's elemental intel for the rest of the battle — the
+## in-the-moment counterpart to the bestiary's defeat-gated reveal. Flags each
+## target with the intel_revealed meta the enemy panel reads (BattleUIManager
+## ._enemy_intel_hint); no damage — the MP + 1 AP were already spent upstream.
+func _execute_scan_effect(caster: Combatant, targets: Array) -> void:
+	var hit := false
+	for t in targets:
+		if t is Combatant and t.is_alive:
+			t.set_meta("intel_revealed", true)
+			hit = true
+			if t.has_meta("monster_type") and BestiarySystem:
+				BestiarySystem.mark_seen(str(t.get_meta("monster_type")))
+			battle_log_message.emit("[color=#88ccff]🔍 %s scans %s — weaknesses exposed![/color]" % [caster.combatant_name, t.combatant_name])
+	if not hit:
+		battle_log_message.emit("[color=gray]%s's scan finds nothing to read.[/color]" % caster.combatant_name)
 
 
 func _apply_secondary_effect(caster: Combatant, ability: Dictionary, primary_targets: Array) -> void:

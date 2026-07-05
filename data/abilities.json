@@ -697,6 +697,16 @@
 		"duration": 2,
 		"guaranteed_escape": true
 	},
+	"scan": {
+		"id": "scan",
+		"name": "Scan",
+		"type": "support",
+		"animation": "special",
+		"mp_cost": 3,
+		"description": "Read a foe's elemental weaknesses, immunities, and resistances for the rest of the battle.",
+		"target_type": "single_enemy",
+		"effect": "scan"
+	},
 	"shadow_step": {
 		"id": "shadow_step",
 		"name": "Shadow Step",

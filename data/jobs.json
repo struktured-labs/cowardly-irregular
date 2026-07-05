@@ -200,7 +200,8 @@
       "steal",
       "flee",
       "backstab",
-      "mug"
+      "mug",
+      "scan"
     ],
     "abilities_at_level": {
       "3": [
