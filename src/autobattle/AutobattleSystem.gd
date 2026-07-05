@@ -123,6 +123,7 @@ const TARGET_TYPES = {
 	"highest_speed_enemy": "Highest Speed Enemy",
 	"highest_atk_enemy": "Highest ATK Enemy",
 	"lowest_magic_defense_enemy": "Lowest M.DEF Enemy",
+	"weakest_to_ability": "Exploit Weakness",
 	"lowest_hp_ally": "Lowest HP Ally",
 	"all_allies": "All Allies",
 	"self": "Self"
@@ -544,6 +545,11 @@ func _get_target_by_type(combatant: Combatant, target_type: String) -> Combatant
 			return _get_highest_atk_enemy(combatant)
 		"highest_speed_enemy":
 			return _get_highest_speed_enemy(combatant)
+		"weakest_to_ability":
+			# Attack/item path has no ability element — collapse to lowest-HP of
+			# non-immune. Ability actions route through _resolve_ability_targets,
+			# which supplies the real element.
+			return _get_weakness_target(combatant, "")
 		"all_allies":
 			# Single-target fallback: first living ally (used when caller can't expand)
 			var allies = _get_all_alive_allies(combatant)
@@ -585,6 +591,18 @@ func _resolve_ability_targets(combatant: Combatant, ability_id: String, target_t
 				return _get_all_alive_allies(combatant)
 			if ab_target == "all_enemies":
 				return _get_enemies_for(combatant)
+	# "Exploit Weakness": aim this ability at the enemy weak to its own element.
+	if target_type == "weakest_to_ability":
+		var element: String = ""
+		if js and js.has_method("get_ability"):
+			var ab2 = js.get_ability(ability_id)
+			if ab2 is Dictionary and ab2.get("element") != null:
+				element = str(ab2.get("element"))
+		var wt: Combatant = _get_weakness_target(combatant, element)
+		var out: Array[Combatant] = []
+		if wt != null:
+			out.append(wt)
+		return out
 	return _get_targets_by_type(combatant, target_type)
 
 
@@ -2017,6 +2035,28 @@ func _get_lowest_hp_enemy(combatant: Combatant) -> Combatant:
 
 	enemies.sort_custom(func(a, b): return a.get_hp_percentage() < b.get_hp_percentage())
 	return enemies[0]
+
+
+func _get_weakness_target(combatant: Combatant, element: String) -> Combatant:
+	"""'Exploit Weakness' autobattle targeting. Prefers an enemy weak to `element`
+	(lowest HP among them, to secure a kill); failing that, the lowest-HP enemy
+	that is NOT immune (never waste the cast on a 0x wall); degenerate all-immune
+	falls back to lowest HP. Empty `element` collapses to lowest-HP-of-non-immune."""
+	var enemies := _get_enemies_for(combatant)
+	if enemies.is_empty():
+		return null
+	var weak: Array[Combatant] = []
+	var non_immune: Array[Combatant] = []
+	for e in enemies:
+		if element != "" and element in e.elemental_weaknesses:
+			weak.append(e)
+		if element == "" or not (element in e.elemental_immunities):
+			non_immune.append(e)
+	var pool: Array[Combatant] = weak
+	if pool.is_empty():
+		pool = non_immune if not non_immune.is_empty() else enemies
+	pool.sort_custom(func(a, b): return a.get_hp_percentage() < b.get_hp_percentage())
+	return pool[0]
 
 
 func _get_highest_hp_enemy(combatant: Combatant) -> Combatant:
