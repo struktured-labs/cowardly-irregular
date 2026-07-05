@@ -20,7 +20,7 @@ func after_each() -> void:
 	GameState.game_constants["defeated_monsters"] = _saved_defeated
 
 
-func _enemy(mtype: String, weaks: Array, immunes: Array = []) -> Combatant:
+func _enemy(mtype: String, weaks: Array, immunes: Array = [], resists: Array = []) -> Combatant:
 	var c := Combatant.new()
 	autofree(c)
 	c.combatant_name = "Foe"
@@ -34,6 +34,10 @@ func _enemy(mtype: String, weaks: Array, immunes: Array = []) -> Combatant:
 	for im in immunes:
 		ti.append(str(im))
 	c.elemental_immunities = ti
+	var tr: Array[String] = []
+	for r in resists:
+		tr.append(str(r))
+	c.elemental_resistances = tr
 	return c
 
 
@@ -95,3 +99,27 @@ func test_weak_and_immune_both_shown() -> void:
 func test_unfought_hides_immunity_too() -> void:
 	var e := _enemy("goblin", [], ["dark"])
 	assert_eq(_hint(e), "", "unfought monster reveals neither weakness nor immunity")
+
+
+func test_defeated_monster_reveals_resistance() -> void:
+	# Resistance (0.5x) is the low-priority third: worth avoiding, not fatal.
+	BestiarySystem.mark_defeated("slime")
+	var e := _enemy("slime", [], [], ["earth"])
+	var h := _hint(e)
+	assert_string_contains(h, "Resist: Earth",
+		"a defeated monster's resistances must surface so you skip the 0.5x element")
+
+
+func test_resistance_only_still_gated_on_defeat() -> void:
+	# A monster with ONLY resistances (no weak/immune) must still hide when unfought.
+	var e := _enemy("goblin", [], [], ["fire"])
+	assert_eq(_hint(e), "", "resistance-only intel is still earned by defeating the monster")
+
+
+func test_all_three_elemental_lines_shown() -> void:
+	BestiarySystem.mark_defeated("slime")
+	var e := _enemy("slime", ["fire"], ["ice"], ["earth"])
+	var h := _hint(e)
+	assert_string_contains(h, "Weak: Fire")
+	assert_string_contains(h, "Immune: Ice")
+	assert_string_contains(h, "Resist: Earth")

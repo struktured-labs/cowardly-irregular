@@ -733,14 +733,15 @@ func _update_enemy_member_status(idx: int, enemy: Combatant) -> void:
 
 
 ## Bestiary intel for a monster you've DEFEATED before: " · Weak: Fire ·
-## Immune: Ice". Empty for unfought monsters (you haven't earned it).
+## Immune: Ice · Resist: Dark". Empty for unfought monsters (unearned).
 ## Immunity is the higher-value half — attacking an immune element wastes
 ## the whole turn, so surfacing it proactively beats the reactive
 ## in-battle "IMMUNE!" popup that only fires AFTER the wasted swing.
 func _enemy_intel_hint(enemy: Combatant) -> String:
 	if enemy == null or not enemy.has_meta("monster_type"):
 		return ""
-	if enemy.elemental_weaknesses.is_empty() and enemy.elemental_immunities.is_empty():
+	if enemy.elemental_weaknesses.is_empty() and enemy.elemental_immunities.is_empty() \
+			and enemy.elemental_resistances.is_empty():
 		return ""
 	if not BestiarySystem.is_defeated(str(enemy.get_meta("monster_type"))):
 		return ""
@@ -749,6 +750,8 @@ func _enemy_intel_hint(enemy: Combatant) -> String:
 		out += " · [color=orange]Weak: %s[/color]" % ", ".join(_capitalized(enemy.elemental_weaknesses))
 	if not enemy.elemental_immunities.is_empty():
 		out += " · [color=#88aaff]Immune: %s[/color]" % ", ".join(_capitalized(enemy.elemental_immunities))
+	if not enemy.elemental_resistances.is_empty():
+		out += " · [color=#bbbb77]Resist: %s[/color]" % ", ".join(_capitalized(enemy.elemental_resistances))
 	return out
 
 
