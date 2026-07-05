@@ -4070,6 +4070,14 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 			# fizzled. Same authored-but-unimplemented class as the
 			# evasion_up gap in tick 350.
 			_execute_support_ability(caster, ability, retargeted)
+			# smoke_bomb authors guaranteed_escape alongside its blind effect —
+			# "guarantee escape or blind enemies". The support handler applied the
+			# blind but the escape half was dead (guaranteed_escape is only read in
+			# _execute_escape_ability, which type=support never reached). Trigger it
+			# here after the blind lands: non-boss = blind + flee to the overworld,
+			# boss (escape_allowed=false) = blind only, as the description promises.
+			if bool(ability.get("guaranteed_escape", false)):
+				_execute_escape_ability(caster, ability)
 		## Tick 392: Summoner job's 4 eidolon abilities (summon_ifrit,
 		## summon_shiva, summon_ramuh, summon_bahamut) all author
 		## type=summon with damage_multiplier + element +
