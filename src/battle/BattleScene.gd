@@ -311,6 +311,7 @@ func _ready() -> void:
 	# so any interrupted tween gets caught at the top of every round.
 	BattleManager.round_started.connect(_on_round_started_snap_home)
 	BattleManager.round_started.connect(_refresh_all_status_icons)  # tick duration/doom counters down visibly
+	BattleManager.round_started.connect(_on_round_started_corruption_glitch)  # save-corruption visual_glitch stutter
 	BattleManager.round_ended.connect(_on_round_ended)
 	BattleManager.damage_dealt.connect(_on_damage_dealt)
 	BattleManager.attack_missed.connect(_on_attack_missed)
@@ -400,6 +401,8 @@ func _exit_tree() -> void:
 		BattleManager.round_started.disconnect(_on_round_started_snap_home)
 	if BattleManager.round_started.is_connected(_refresh_all_status_icons):
 		BattleManager.round_started.disconnect(_refresh_all_status_icons)
+	if BattleManager.round_started.is_connected(_on_round_started_corruption_glitch):
+		BattleManager.round_started.disconnect(_on_round_started_corruption_glitch)
 	if BattleManager.damage_dealt.is_connected(_on_damage_dealt):
 		BattleManager.damage_dealt.disconnect(_on_damage_dealt)
 	if BattleManager.attack_missed.is_connected(_on_attack_missed):
@@ -3784,6 +3787,23 @@ func _spawn_crit_banner(pos: Vector2) -> void:
 	tween.tween_property(label, "position:y", pos.y - 100, 0.6).set_delay(0.2)
 	tween.parallel().tween_property(label, "modulate:a", 0.0, 0.4).set_delay(0.4)
 	tween.tween_callback(label.queue_free)
+
+
+## True when the save-corruption "visual_glitch" effect is active. Static so the
+## decision is unit-testable without standing up a whole BattleScene.
+static func _corruption_glitch_active() -> bool:
+	return "visual_glitch" in GameState.corruption_effects
+
+
+## Save-corruption reality-stutter: a cosmetic chromatic magenta/cyan flash at
+## the top of each round when visual_glitch is active. Purely visual — corruption
+## you SEE, never a balance change. (GameState._apply_random_corruption_effect
+## adds the effect; this is finally its runtime handler.)
+func _on_round_started_corruption_glitch() -> void:
+	if not _corruption_glitch_active():
+		return
+	_flash_screen(Color(1.0, 0.15, 0.9, 0.16), 0.10)   # magenta
+	_flash_screen(Color(0.15, 1.0, 0.95, 0.12), 0.14)  # cyan trail
 
 
 func _flash_screen(color: Color, duration: float) -> void:

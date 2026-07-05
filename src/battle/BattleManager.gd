@@ -1264,15 +1264,14 @@ func _apply_corruption_effects_on_round_start() -> void:
 		battle_log_message.emit("[color=purple]Corruption seeps in — party stats erode![/color]")
 
 	## Tick 179: surface authored-but-unimplemented corruption
-	## effects. GameState._apply_random_corruption_effect adds
-	## these 4 to corruption_effects but no runtime handler exists.
-	## Pre-fix they silently no-op'd — the player saw the tick-178
-	## Toast announcing the effect but NOTHING happened
-	## mechanically. push_warning makes the gap LOUD in CI/test
-	## runs so the unimplemented work surfaces during development.
-	## (CLAUDE.md design principle #7: silent failures are worse
-	## than crashes.)
-	for unimplemented in ["visual_glitch", "bp_instability", "encounter_surge", "ability_corruption"]:
+	## effects. GameState._apply_random_corruption_effect adds these
+	## to corruption_effects; push_warning makes any missing runtime
+	## handler LOUD in CI/test runs (CLAUDE.md principle #7: silent
+	## failures are worse than crashes). Now-handled effects are off
+	## this list: encounter_surge (OverworldController._check_encounter),
+	## visual_glitch (BattleScene._on_round_started_corruption_glitch).
+	## bp_instability + ability_corruption remain genuinely unwired.
+	for unimplemented in ["bp_instability", "ability_corruption"]:
 		if unimplemented in active_effects:
 			push_warning("[BattleManager] corruption effect '%s' is in active_effects but has NO runtime handler — added in GameState._apply_random_corruption_effect but never consumed" % unimplemented)
 
