@@ -187,7 +187,9 @@ item requires id (e.g. 'potion').
 Targets. Values:
   lowest_hp_enemy, highest_hp_enemy, random_enemy,
   highest_speed_enemy, highest_atk_enemy, lowest_magic_defense_enemy,
-  lowest_hp_ally, all_allies, self
+  weakest_to_ability, lowest_hp_ally, all_allies, self
+weakest_to_ability aims an elemental ability at the enemy weak to its element
+(and skips immune enemies) — pair it with an elemental ability id like fire.
 
 Canonical example:
   {\"conditions\":[{\"type\":\"ally_has_status\",\"status\":\"poison\"},
