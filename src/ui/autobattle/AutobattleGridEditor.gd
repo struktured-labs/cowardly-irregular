@@ -1022,6 +1022,10 @@ func _format_condition(condition: Dictionary) -> String:
 			var status = condition.get("status", "")
 			# Tick 215: shared StatusNames util.
 			return "Has %s" % StatusNames.display(status)
+		"ally_has_status":
+			return "Ally has %s" % StatusNames.display(condition.get("status", ""))
+		"enemy_has_status":
+			return "Enemy has %s" % StatusNames.display(condition.get("status", ""))
 		"enemy_hp_percent":
 			return "Enemy HP %s %d%%" % [op, value]
 		"ally_hp_percent":
@@ -1901,7 +1905,7 @@ func _apply_condition_type(new_type: String) -> void:
 	if new_type == "always":
 		cond.erase("op")
 		cond.erase("value")
-	elif new_type in ["has_status", "ally_has_status"]:
+	elif new_type in ["has_status", "ally_has_status", "enemy_has_status"]:
 		if not cond.has("status"):
 			cond["status"] = "poison"
 		cond.erase("op")
