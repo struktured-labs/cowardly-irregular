@@ -157,8 +157,8 @@ func _create_header_panel(panel_size: Vector2) -> Control:
 
 	# EXP (if applicable)
 	var exp_label = Label.new()
-	exp_label.text = "EXP: %d" % character.job_exp
-	exp_label.position = Vector2(panel_size.x - 100, 8)
+	exp_label.text = _exp_display(character.job_level, character.job_exp)
+	exp_label.position = Vector2(panel_size.x - 130, 8)
 	exp_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	exp_label.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(exp_label)
@@ -445,6 +445,15 @@ static func _format_injury(injury: Dictionary) -> String:
 	if desc == "":
 		return "- %s -%d" % [stat_pretty, penalty]
 	return "- %s (%s -%d)" % [desc, stat_pretty, penalty]
+
+
+## EXP readout showing progress to the next level. The gain_job_exp threshold is
+## job_level*100 and job_exp resets each level, so "150 / 300" reads as progress,
+## not a bare running total. Level 99 is the cap — show MAX instead of a target.
+static func _exp_display(job_level: int, job_exp: int) -> String:
+	if job_level >= 99:
+		return "EXP: MAX"
+	return "EXP: %d / %d" % [job_exp, job_level * 100]
 
 
 func _create_equip_row(slot_name: String, item_name: String, color: Color, y_pos: int) -> Control:
