@@ -165,6 +165,10 @@ func _update_side_quest_line() -> void:
 	var desc: String = ""
 	if idx < objectives.size():
 		desc = objectives[idx].get("description", "")
+		if qs.has_method("fetch_progress"):
+			var fp: Vector2i = qs.fetch_progress(objectives[idx])
+			if fp.y > 0:
+				desc += "  [%d/%d]" % [fp.x, fp.y]
 	_side_label.text = "◇ %s — %s" % [q.get("title", qid), desc]
 	_side_label.visible = true
 	_bg.offset_bottom = 58

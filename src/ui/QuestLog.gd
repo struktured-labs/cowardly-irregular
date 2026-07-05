@@ -321,6 +321,10 @@ func _build_side_quest_lines() -> Array:
 		lines.append({"text": "  ►  " + str(q.get("title", qid)), "indent": 32.0, "size": 14, "color": ACTIVE_COLOR})
 		if idx < objectives.size():
 			var desc: String = str(objectives[idx].get("description", ""))
+			if qs.has_method("fetch_progress"):
+				var fp: Vector2i = qs.fetch_progress(objectives[idx])
+				if fp.y > 0:
+					desc += "  [%d/%d]" % [fp.x, fp.y]
 			lines.append({"text": "      (%d/%d) %s" % [idx + 1, objectives.size(), desc], "indent": 48.0, "size": 13, "color": TEXT_COLOR})
 		var giver_name: String = str(q.get("giver", {}).get("display_name", ""))
 		if giver_name != "":
