@@ -3211,7 +3211,7 @@ func _execute_physical_group(participants: Array, alive_enemies: Array[Combatant
 		if not (p is Combatant) or not p.is_alive:
 			continue
 		p.spend_ap(ap_cost)
-		total_power += p.attack
+		total_power += p.get_buffed_stat("attack", p.attack)
 
 	var scale: float = pow(participants.size(), 1.5)
 	var lb_dmg_mult: float = 3.0
@@ -3332,7 +3332,7 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 			var total_power = 0.0
 			for p in participants:
 				if p is Combatant and p.is_alive:
-					total_power += (p.attack + p.get_buffed_stat("magic", p.magic)) * 0.5
+					total_power += (p.get_buffed_stat("attack", p.attack) + p.get_buffed_stat("magic", p.magic)) * 0.5
 			for enemy in alive_enemies:
 				if not enemy.is_alive: continue
 				var damage = max(1, int(total_power * scale / max(1.0, float(alive_enemies.size())) - enemy.defense * 0.5))
@@ -3371,7 +3371,7 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 					break
 				var attacker = living_participants[randi() % living_participants.size()]
 				var target = living_enemies[randi() % living_enemies.size()]
-				var base_dmg = int(attacker.attack * 0.7)
+				var base_dmg = int(attacker.get_buffed_stat("attack", attacker.attack) * 0.7)
 				var is_crit = randf() < 0.3  # 30% crit chance per hit
 				if is_crit:
 					base_dmg = int(base_dmg * 1.5)
@@ -3388,7 +3388,7 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 			var total_atk = 0.0
 			for p in participants:
 				if p is Combatant and p.is_alive:
-					total_atk += p.attack
+					total_atk += p.get_buffed_stat("attack", p.attack)
 			for enemy in alive_enemies:
 				if not enemy.is_alive: continue
 				var damage = max(1, int(total_atk * scale * 0.6 / max(1.0, float(alive_enemies.size())) - enemy.defense))
@@ -3401,7 +3401,7 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 			var total_atk = 0.0
 			for p in participants:
 				if p is Combatant and p.is_alive:
-					total_atk += p.attack
+					total_atk += p.get_buffed_stat("attack", p.attack)
 			for enemy in alive_enemies:
 				if not enemy.is_alive: continue
 				var full_hp_bonus = 2.0 if enemy.current_hp == enemy.max_hp else 1.0
@@ -3419,7 +3419,7 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 				var total_power = 0.0
 				for p in participants:
 					if p is Combatant and p.is_alive:
-						total_power += (p.attack + p.get_buffed_stat("magic", p.magic))
+						total_power += (p.get_buffed_stat("attack", p.attack) + p.get_buffed_stat("magic", p.magic))
 				for enemy in alive_enemies:
 					if not enemy.is_alive: continue
 					var damage = max(1, int(total_power * scale * 1.5 / max(1.0, float(alive_enemies.size()))))
@@ -3439,7 +3439,7 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 				var total_power = 0.0
 				for p in participants:
 					if p is Combatant and p.is_alive:
-						total_power += p.attack
+						total_power += p.get_buffed_stat("attack", p.attack)
 				for enemy in alive_enemies:
 					if not enemy.is_alive: continue
 					var damage = max(1, int(total_power * scale * 0.8 / max(1.0, float(alive_enemies.size())) - enemy.defense))
