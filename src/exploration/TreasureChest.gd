@@ -26,6 +26,12 @@ const TILE_SIZE: int = 32
 
 
 func _ready() -> void:
+	# Save-tracking footgun guard: a chest that never overrode chest_id shares
+	# its opened-flag ("chest_" + id) with every other forgetter — open one and
+	# all of them vanish. Nothing legitimately uses the "chest_001" default, so
+	# hitting it (or an empty id) means a scene forgot to assign a unique one.
+	if chest_id == "" or chest_id == "chest_001":
+		push_warning("[TreasureChest] '%s' still has the default/empty chest_id ('%s') — set a unique id or its opened state collides with other chests" % [name, chest_id])
 	_check_if_opened()
 	_generate_sprite()
 	_setup_collision()
