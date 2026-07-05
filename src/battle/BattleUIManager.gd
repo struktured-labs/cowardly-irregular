@@ -709,7 +709,7 @@ func _update_enemy_member_status(idx: int, enemy: Combatant) -> void:
 	if not is_instance_valid(box):
 		return
 
-	var is_revealed = _revealed_enemies.get(enemy, false)
+	var is_revealed = _enemy_hp_revealed(enemy)
 	var is_dead = not enemy.is_alive
 
 	# Update name with status indicator
@@ -798,6 +798,13 @@ func _capitalized(elements: Array) -> Array:
 	for e in elements:
 		names.append(str(e).capitalize())
 	return names
+
+
+## Exact enemy HP shows once the enemy has been attacked (_revealed_enemies) OR
+## Scanned this battle — a Scan reveals the full profile (HP + elemental intel),
+## not just weaknesses. (v3.33.11 Scan set intel_revealed but left HP vague.)
+func _enemy_hp_revealed(enemy: Combatant) -> bool:
+	return _revealed_enemies.get(enemy, false) or (enemy != null and enemy.get_meta("intel_revealed", false))
 
 
 func reveal_enemy_stats(enemy: Combatant) -> void:
