@@ -36,6 +36,8 @@ const FIELD_FOCUS := Color(0.30, 0.30, 0.40)
 
 var _base_url_field: LineEdit
 var _format_picker: OptionButton
+var _save_btn: Button
+var _cancel_btn: Button
 var _model_field: LineEdit
 var _api_key_field: LineEdit
 var _status_label: Label
@@ -167,19 +169,46 @@ func _build_ui() -> void:
 	_test_btn.pressed.connect(_on_test_pressed)
 	add_child(_test_btn)
 
-	var save_btn := Button.new()
-	save_btn.text = "Save & Apply"
-	save_btn.size = Vector2(160, 36)
-	save_btn.position = Vector2(panel_x + panel_w - 360, panel_y + panel_h - 56)
-	save_btn.pressed.connect(_on_save_pressed)
-	add_child(save_btn)
+	_save_btn = Button.new()
+	_save_btn.text = "Save & Apply"
+	_save_btn.size = Vector2(160, 36)
+	_save_btn.position = Vector2(panel_x + panel_w - 360, panel_y + panel_h - 56)
+	_save_btn.pressed.connect(_on_save_pressed)
+	add_child(_save_btn)
 
-	var cancel_btn := Button.new()
-	cancel_btn.text = "Cancel"
-	cancel_btn.size = Vector2(160, 36)
-	cancel_btn.position = Vector2(panel_x + panel_w - 184, panel_y + panel_h - 56)
-	cancel_btn.pressed.connect(_on_cancel_pressed)
-	add_child(cancel_btn)
+	_cancel_btn = Button.new()
+	_cancel_btn.text = "Cancel"
+	_cancel_btn.size = Vector2(160, 36)
+	_cancel_btn.position = Vector2(panel_x + panel_w - 184, panel_y + panel_h - 56)
+	_cancel_btn.pressed.connect(_on_cancel_pressed)
+	add_child(_cancel_btn)
+
+	_wire_focus_chain()
+
+
+## Controller-first fix (2026-07-09): the panel had NO initial focus and no
+## neighbor wiring — keyboard/gamepad users opened it and arrows did nothing.
+## Vertical spine top-to-bottom with wrap; Tab mirrors it; buttons row is
+## horizontal. LineEdits consume left/right (caret) but pass up/down.
+func _wire_focus_chain() -> void:
+	var spine: Array = [_base_url_field, _format_picker, _model_field, _api_key_field, _test_btn]
+	for i in spine.size():
+		var up: Control = spine[i - 1] if i > 0 else _save_btn
+		var down: Control = spine[i + 1] if i + 1 < spine.size() else _save_btn
+		spine[i].focus_neighbor_top = spine[i].get_path_to(up)
+		spine[i].focus_neighbor_bottom = spine[i].get_path_to(down)
+		spine[i].focus_next = spine[i].get_path_to(down if i + 1 < spine.size() else _save_btn)
+		spine[i].focus_previous = spine[i].get_path_to(up)
+	# bottom row: Test ↔ Save ↔ Cancel, up returns to the key field, down wraps to the top
+	_test_btn.focus_neighbor_right = _test_btn.get_path_to(_save_btn)
+	for pair in [[_save_btn, _test_btn, _cancel_btn], [_cancel_btn, _save_btn, _base_url_field]]:
+		pair[0].focus_neighbor_left = pair[0].get_path_to(pair[1])
+		pair[0].focus_neighbor_right = pair[0].get_path_to(pair[2])
+		pair[0].focus_neighbor_top = pair[0].get_path_to(_api_key_field)
+		pair[0].focus_neighbor_bottom = pair[0].get_path_to(_base_url_field)
+		pair[0].focus_next = pair[0].get_path_to(pair[2])
+		pair[0].focus_previous = pair[0].get_path_to(pair[1])
+	_base_url_field.grab_focus.call_deferred()
 
 
 func _add_label(text: String, x: float, y: float, w: float) -> void:
