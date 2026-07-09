@@ -3174,16 +3174,16 @@ func _on_action_executed(combatant: Combatant, action: Dictionary, targets: Arra
 			match effect:
 				"defense_up", "attack_up", "volatility_up_self", "volatility_down":
 					SoundManager.play_battle("buff")
-				"defense_down", "volatility_up":
+				# stat reductions share the generic debuff cue (cowir-sfx rec) — bespoke cues reserved for the scary/unique statuses
+				"defense_down", "volatility_up", "attack_down", "magic_down", "magic_defense_down", "speed_down", "all_stats_down", "random_debuff", "dispel", "pacify", "amplify_poison":
 					SoundManager.play_battle("debuff")
-				"poison":
-					SoundManager.play_status("poison")
-				"sleep":
-					SoundManager.play_status("sleep")
-				"confuse":
-					SoundManager.play_status("confuse")
-				"paralyze":
-					SoundManager.play_status("paralyze")
+				"ability_silence", "silence":
+					SoundManager.play_status("silence")
+				"":
+					pass
+				# every other status (poison/sleep/doom/curse/stun/burn/freeze/...) — play_status does status_<name> manifest lookup with a generic fallback, so F1-activated effects can't land silently again
+				_:
+					SoundManager.play_status(effect)
 
 
 func _check_masterite_phase2_music_swap() -> void:
