@@ -430,6 +430,11 @@ func run_giver_dialogue(npc_id: String, npc: Node) -> void:
 			await _play_lines(npc, dlg.get("decline", []))
 		return
 
+	# Prereq-locked giver (quest unstarted, not offerable): in-voice refusal instead of a silent non-offer or a wrong in_progress line
+	if get_state(qid) == "" and dlg.has("locked"):
+		await _play_lines(npc, dlg.get("locked", []))
+		return
+
 	# Active: is the current objective a talk targeting this giver?
 	var completed_qid := notify_talk(npc_id)
 	if completed_qid == qid:

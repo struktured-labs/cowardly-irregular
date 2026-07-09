@@ -82,6 +82,13 @@
         "text": "Find me in the next place I'm not supposed to be.",
         "theme": "mysterious"
       }
+    ],
+    "locked": [
+      {
+        "speaker": "Madame Orrery",
+        "text": "The report cites sources. One of them is a conversation you haven't had. Have it first.",
+        "theme": "mysterious"
+      }
     ]
   },
   "objectives": [

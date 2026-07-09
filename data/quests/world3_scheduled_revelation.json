@@ -82,6 +82,13 @@
         "text": "You're playing them in sequence. The author isn't.",
         "theme": "mysterious"
       }
+    ],
+    "locked": [
+      {
+        "speaker": "Madame Orrery",
+        "text": "The schedule says you're early. Not MY schedule \u2014 yours. There's a reading you haven't sat for yet.",
+        "theme": "mysterious"
+      }
     ]
   },
   "objectives": [
