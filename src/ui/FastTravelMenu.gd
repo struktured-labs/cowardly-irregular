@@ -19,6 +19,7 @@ const WORLD_TIERS: Dictionary = {
 	"overworld": 1, "harmonia": 1, "whispering": 1, "castle": 1,
 	"ice_dragon": 1, "fire_dragon": 1, "shadow_dragon": 1, "lightning_dragon": 1,
 	"frosthold": 1, "eldertree": 1, "grimhollow": 1, "sandrift": 1, "ironhaven": 1,
+	"scriptura": 1,
 	"tavern": 1, "inn_interior": 1, "shop_interior": 1, "blacksmith": 1,
 	"suburban": 2, "maple": 2,
 	"steampunk": 3, "brasston": 3,

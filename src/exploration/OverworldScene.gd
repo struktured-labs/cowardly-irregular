@@ -450,6 +450,16 @@ func _setup_transitions() -> void:
 		_add_area_transition("CastleHarmonia", "castle_harmonia", "castle_entrance",
 			spawn_points.get("castle_entrance", Vector2.ZERO), "Enter Castle Harmonia")
 
+		# Scriptura capital district — the capital notices Harmonia once the cave
+		# is cleared (Rowan's letter routes the player here). Anchored beside the
+		# Harmonia entrance on the central grassland so it's on known-walkable
+		# ground; nudge the offset if playtest wants it elsewhere.
+		var scriptura_pos: Vector2 = spawn_points.get("village_entrance", Vector2(320, 224)) \
+			+ Vector2(TILE_SIZE * 7, TILE_SIZE * 3)
+		_add_area_transition("ScripturaEntrance", "scriptura_plaza", "entrance",
+			scriptura_pos, "Road to Scriptura (Capital)")
+		spawn_points["scriptura_return"] = scriptura_pos + Vector2(0, TILE_SIZE * 3)
+
 
 func _add_area_transition(trans_name: String, target_map: String, target_spawn: String,
 		pos: Vector2, indicator: String) -> void:
