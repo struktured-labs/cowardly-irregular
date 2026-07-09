@@ -346,6 +346,8 @@ func _maybe_run_battle_smoke() -> void:
 	var full: bool = "--render-smoke" in OS.get_cmdline_user_args()
 	if not full and not ("--battle-smoke" in OS.get_cmdline_user_args()):
 		return
+	# Smoke runs are headed (xvfb) so the headless auto-mute never engages — mute here or music hits real speakers.
+	AudioServer.set_bus_mute(0, true)
 	await get_tree().create_timer(1.0).timeout
 	print("[SMOKE] render smoke starting (full=%s)" % str(full))
 	_close_title_screen()

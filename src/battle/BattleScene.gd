@@ -3807,7 +3807,7 @@ static func _corruption_glitch_active() -> bool:
 ## the top of each round when visual_glitch is active. Purely visual — corruption
 ## you SEE, never a balance change. (GameState._apply_random_corruption_effect
 ## adds the effect; this is finally its runtime handler.)
-func _on_round_started_corruption_glitch() -> void:
+func _on_round_started_corruption_glitch(_round_num: int) -> void:
 	if not _corruption_glitch_active():
 		return
 	_flash_screen(Color(1.0, 0.15, 0.9, 0.16), 0.10)   # magenta
