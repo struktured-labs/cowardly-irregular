@@ -77,6 +77,13 @@
         "text": "Look for something that feels like waiting.",
         "theme": "mysterious"
       }
+    ],
+    "locked": [
+      {
+        "speaker": "Madame Orrery",
+        "text": "Packet received out of order. Buffering. That's a joke. Come back when the card says four.",
+        "theme": "mysterious"
+      }
     ]
   },
   "objectives": [

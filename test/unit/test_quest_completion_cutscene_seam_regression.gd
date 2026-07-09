@@ -138,6 +138,21 @@ func test_chain_steps_enforce_sequential_order() -> void:
 	assert_eq(found, 4, "sanity: chain steps 2-5 all present")
 
 
+func test_gated_chain_steps_have_in_voice_refusals() -> void:
+	# Story's blessing (msg 2326): the closed door speaks — every prereq-gated
+	# chain step carries a dialogue.locked line, played by the QuestSystem
+	# locked branch instead of a silent non-offer.
+	var src := FileAccess.get_file_as_string("res://src/quests/QuestSystem.gd")
+	assert_true("dlg.has(\"locked\")" in src,
+		"run_giver_dialogue must have the locked-refusal branch")
+	for qid in ["world2_fine_print", "world3_scheduled_revelation", "world4_deviation_report", "world5_long_way_around"]:
+		var q = JSON.parse_string(FileAccess.get_file_as_string("res://data/quests/%s.json" % qid))
+		var locked: Array = q.get("dialogue", {}).get("locked", [])
+		assert_gt(locked.size(), 0, "%s must carry a locked refusal line" % qid)
+		assert_eq(str(locked[0].get("speaker", "")), "Madame Orrery",
+			"%s locked line is Orrery's voice" % qid)
+
+
 func test_finale_quest_gates_on_the_emitted_boolean() -> void:
 	var q = JSON.parse_string(FileAccess.get_file_as_string("res://data/quests/world6_last_appointment.json"))
 	assert_eq(str(q.get("prereq_flag", "")), "quest_wiring_fool_card_five_marks",
