@@ -239,6 +239,10 @@ func _open_buy_menu() -> void:
 				label += " [%d learned]" % owned
 			elif owned > 0:
 				label += " (%d)" % owned
+			# Equipped gear lives on combatants, not inventory — owned-count misses it and players re-buy what they're wearing
+			var wearers := _equipped_by(item_id)
+			if wearers != "":
+				label += " [on %s]" % wearers
 
 			if game_state:
 				label += _affordability_suffix(int(cost), game_state.get_gold())
@@ -653,6 +657,22 @@ func _update_description_for_item(item_id: String) -> void:
 		desc += "\nSell: %d G" % int(cost * 0.5)
 
 	description_label.text = desc
+
+
+## Names the party members currently wearing item_id ("" if nobody) — same
+## party access pattern as _compare_equipment below.
+func _equipped_by(item_id: String) -> String:
+	if not game_state or game_state.player_party.is_empty():
+		return ""
+	var wearers: PackedStringArray = []
+	for member in game_state.player_party:
+		if typeof(member) != TYPE_DICTIONARY:
+			continue
+		if str(member.get("equipped_weapon", "")) == item_id \
+				or str(member.get("equipped_armor", "")) == item_id \
+				or str(member.get("equipped_accessory", "")) == item_id:
+			wearers.append(str(member.get("name", "?")))
+	return ", ".join(wearers)
 
 
 func _compare_equipment(item_id: String, item_data: Dictionary) -> Dictionary:
