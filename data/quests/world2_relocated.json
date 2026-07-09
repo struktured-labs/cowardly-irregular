@@ -1,0 +1,89 @@
+{
+  "id": "world2_relocated",
+  "title": "Relocated",
+  "world": 2,
+  "prereq_flag": "cutscene_flag_world2_chapter1_complete",
+  "giver": {
+    "npc_id": "mail_carrier_w2",
+    "display_name": "The Mail Carrier",
+    "location": {"map_id": "maple_heights", "near": "mail_route"},
+    "spawn_flag": ""
+  },
+  "description": "Six children have been 'community-transferred' by HOA decision. Their parents accepted the notification without protest. The kids' things are still in their rooms. The mail carrier thinks something is wrong but has no formal standing to object.",
+  "playstyle_tags": ["story", "multi_path", "earthbound_register"],
+  "dialogue": {
+    "offer": [
+      {"speaker": "Mail Carrier", "text": "You asked about the relocated kids. Nobody asks. I've been waiting three weeks for somebody to ask.", "theme": "villager"},
+      {"speaker": "Mail Carrier", "text": "Six children. 'Community-transferred.' The paperwork is immaculate — that's the part that bothers me. Real things have mistakes in them.", "theme": "villager"},
+      {"speaker": "Mail Carrier", "text": "I deliver to all six families. The parents signed the acknowledgment forms. The kids' bikes are still on the lawns. Nobody moves a kid and leaves the bike.", "theme": "villager"}
+    ],
+    "accept": [
+      {"speaker": "Mail Carrier", "text": "The transfer slips say 'youth development center.' There is no youth development center on my route. I know my route. I know every building that gets mail. It doesn't get mail.", "theme": "villager"}
+    ],
+    "decline": [
+      {"speaker": "Mail Carrier", "text": "Sure. Okay. It's probably nothing. Everything here is probably nothing. That's the neighborhood's whole thing.", "theme": "villager"}
+    ],
+    "in_progress": [
+      {"speaker": "Mail Carrier", "text": "The other kids know something. Kids always know. Ask the ones still riding bikes — they know where the ones who aren't went.", "theme": "villager"}
+    ],
+    "ready_to_turn_in": [
+      {"speaker": "Mail Carrier", "text": "You got them out. All six? Casper too?", "theme": "villager"}
+    ],
+    "complete": [
+      {"speaker": "Mail Carrier", "text": "They're walking home. On the sidewalks. In front of everyone. And every adult on this street is going to wave at them and say 'welcome back' like they went to summer camp.", "theme": "villager"},
+      {"speaker": "Mail Carrier", "text": "Nobody will file anything. Nobody will mention it at the meeting. That's the thing about this place — the forgetting is load-bearing.", "theme": "villager"},
+      {"speaker": "Mail Carrier", "text": "But the kids will remember. Kids keep better records than the HOA. Ask them anything, anytime. They owe you. So do I.", "theme": "villager"}
+    ]
+  },
+  "objectives": [
+    {
+      "step": 1,
+      "description": "Hear the mail carrier out about the six transfers.",
+      "type": "talk",
+      "target_npc": "mail_carrier_w2",
+      "flag_on_complete": "quest_world2_relocated_accepted"
+    },
+    {
+      "step": 2,
+      "description": "Find the 'Community Enrichment Annex' — the building that gets no mail.",
+      "type": "custom",
+      "required_flag": "quest_world2_relocated_annex_found",
+      "flag_on_complete": "quest_world2_relocated_annex_found"
+    },
+    {
+      "step": 3,
+      "description": "Get the six kids out of the integration sessions.",
+      "type": "custom",
+      "required_flag": "quest_world2_relocated_kids_freed",
+      "flag_on_complete": "quest_world2_relocated_kids_freed"
+    },
+    {
+      "step": 4,
+      "description": "Tell the mail carrier they're coming home.",
+      "type": "talk",
+      "target_npc": "mail_carrier_w2",
+      "required_flag": "quest_world2_relocated_kids_freed"
+    }
+  ],
+  "rewards": {
+    "gold": 0,
+    "exp": 300,
+    "items": [],
+    "job_variants": {
+      "cleric": {
+        "description": "Dialogue-only: the center director waves the School Nurse straight in — 'Oh good, medical personnel. The children had some resistance to the integration module.' The Cleric can walk the kids out during a scheduled break, no fight.",
+        "items": []
+      },
+      "rogue": {
+        "description": "Dialogue-only: the Skater Kid takes the loading bay — wheels on polished concrete, no door code needed.",
+        "items": []
+      }
+    }
+  },
+  "flag_on_complete": "quest_world2_relocated_complete",
+  "unlocks_dialogue": [
+    {"npc_id": "casper_kid", "note": "Casper + the five other kids become an info network post-rescue: unapproved-question intel incl. the Coordinator's secondary office and the monitor ('It was showing a place with a cave. Someone was fighting a wizard. I thought it was a screensaver.') Casper's monitor line gates world2_wrong_blue."}
+  ],
+  "cross_world_connection": "Casper reappears in W3 Brasston as a 'visiting youth apprentice' who asks function-before-form questions; the Tempo of the Mainspring notes him in its environment profile: 'small human. Irregular. Keep monitoring.'",
+  "_wiring_notes": "Step 2 emitter quest_world2_relocated_annex_found: overworld owns — sources: (a) asking un-relocated kids (bike-kid NPCs), (b) Rogue-lead rumor shortcut, (c) mail carrier code hint after step 1. Step 3 emitter quest_world2_relocated_kids_freed is MULTI-PATH, any one fires it: (a) defeat hoa_compliance_officer (mid-tier encounter — cowir-battle authors if no fit exists), (b) Bard music disruption interact inside the annex, (c) Cleric-lead scheduled-break walkout (see job_variants). Annex = new small interior at neighborhood edge, 'COMMUNITY ENRICHMENT ANNEX' — beige, locked front, loading bay side entrance (Rogue path). Six kid NPCs inside pre-rescue, relocate to their six family homes post-rescue. Skiptrotter variant (design doc): arrives at the exit side, Casper: 'You skipped the locked part. I've been trying to figure out how to do that since I got here.' — wire only if skiptrotter lead-detection is cheap."
+}
