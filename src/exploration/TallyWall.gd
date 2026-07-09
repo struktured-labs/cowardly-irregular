@@ -122,12 +122,15 @@ func _examine() -> void:
 		player.set_can_move(false)
 
 	# First approach: the Warden encounter cutscene IS the tally reveal.
+	# CutsceneDirector is GameLoop-owned, NOT an autoload (msg 2314 catch —
+	# a /root/ lookup silently falls back and the encounter never plays).
 	if not GameState.is_story_flag_set(ENCOUNTER_FLAG):
-		var director = get_node_or_null("/root/CutsceneDirector")
+		var director = null
+		var game_loop = get_node_or_null("/root/GameLoop")
+		if game_loop and game_loop.has_method("get_cutscene_director"):
+			director = game_loop.get_cutscene_director()
 		if director and director.has_method("play_cutscene"):
-			director.play_cutscene("world1_warden_encounter")
-			if director.has_signal("cutscene_finished"):
-				await director.cutscene_finished
+			await director.play_cutscene("world1_warden_encounter")
 		else:
 			# Defensive: never strand the quest if the director is missing.
 			GameState.set_story_flag(ENCOUNTER_FLAG)

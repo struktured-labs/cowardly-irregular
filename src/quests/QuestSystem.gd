@@ -264,6 +264,9 @@ const DIALOGUE_EMITTERS: Dictionary = {
 	],
 	"mail_carrier_w2": [
 		{"quest": "world2_relocated", "flag": "quest_world2_relocated_annex_found"},
+		# forms step 3 path (c): she files third-party as a federal employee —
+		# the same talk then satisfies step 4's turn-in (one conversation).
+		{"quest": "world2_forms_in_triplicate", "flag": "quest_world2_forms_in_triplicate_complaints_processed"},
 	],
 }
 
@@ -435,6 +438,10 @@ func run_giver_dialogue(npc_id: String, npc: Node) -> void:
 		await _announce_rewards(npc)
 		await _flush_completion_cutscene()
 		return
+	# Cross-quest final at a giver NPC (the mail carrier files forms while
+	# she still owns relocated) — present it, don't let it land silently.
+	if completed_qid != "":
+		await run_completion_dialogue(completed_qid, npc)
 	# Otherwise still mid-quest — flavor line.
 	await _play_lines(npc, dlg.get("in_progress", []))
 
