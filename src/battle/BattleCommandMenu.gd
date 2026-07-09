@@ -1365,7 +1365,7 @@ const FORMATIONS = [
 	{
 		"id": "shadow_strike",
 		"name": "Shadow Strike",
-		"tooltip": "Ambush — ignores defense, 2x damage vs full-HP targets (2 AP each)",
+		"tooltip": "Ambush — 2x damage vs full-HP targets (2 AP each)",
 		"required_jobs": ["rogue", "ninja"],
 		"min_members": 2,
 		"ap_cost": 2,

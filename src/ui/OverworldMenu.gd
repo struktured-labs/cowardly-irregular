@@ -47,6 +47,7 @@ const BASE_MENU_OPTIONS = [
 	{"id": "autogrind", "label": "Autogrind", "enabled": true},
 	{"id": "cutscene_gallery", "label": "Theater", "enabled": true},
 	{"id": "bestiary", "label": "Bestiary", "enabled": true},
+	{"id": "formations", "label": "Formations", "enabled": true},
 	{"id": "world_map", "label": "World Map", "enabled": true},
 	{"id": "save", "label": "Save", "enabled": true},
 	{"id": "load", "label": "Load", "enabled": true},
@@ -729,6 +730,8 @@ func _handle_menu_action(action_id: String) -> void:
 			_open_cutscene_gallery()
 		"bestiary":
 			_open_bestiary()
+		"formations":
+			_open_formations()
 		"world_map":
 			_open_world_map()
 		"settings":
@@ -753,6 +756,16 @@ func _open_bestiary() -> void:
 	bestiary.closed.connect(_on_submenu_closed)
 	add_child(bestiary)
 	_hide_main_ui(bestiary)
+
+
+func _open_formations() -> void:
+	_submenu_open = true
+	var formations = load("res://src/ui/FormationsMenu.gd").new()
+	formations.party = party
+	formations.set_anchors_preset(Control.PRESET_FULL_RECT)
+	formations.closed.connect(_on_submenu_closed)
+	add_child(formations)
+	_hide_main_ui(formations)
 
 
 func _open_world_map() -> void:
