@@ -913,6 +913,27 @@
       "duration_seconds": 0.7,
       "prompt_influence": 0.6
     },
+    "status_doom": {
+      "file": "assets/audio/sfx/status_doom.ogg",
+      "source": "sox_synth",
+      "prompt": "Ominous low bell toll (A2 110Hz + octave partial) over a descending sub-bass dread glide + long echo — the countdown-to-death. For the doom status (final_death/permakill_strike/death_sentence). The scariest status; player needs a clear dread cue. 1.48s, ~-14 LUFS.",
+      "duration_seconds": 1.48,
+      "prompt_influence": 0.0
+    },
+    "status_curse": {
+      "file": "assets/audio/sfx/status_curse.ogg",
+      "source": "sox_synth",
+      "prompt": "Dissonant low minor-second grind (D3 146Hz vs D#3 155Hz beating) under an eerie descending shimmer + echo — unsettling hex. For the curse status (cursed_strike). 0.83s, ~-14 LUFS.",
+      "duration_seconds": 0.83,
+      "prompt_influence": 0.0
+    },
+    "status_silence": {
+      "file": "assets/audio/sfx/status_silence.ogg",
+      "source": "sox_synth",
+      "prompt": "A choked tone swept downward + pink noise, whole thing lowpassed so it 'closes off' into muffled quiet — the sound of ability access being cut. For the ability_silence status (null_field). 0.35s, ~-14 LUFS.",
+      "duration_seconds": 0.35,
+      "prompt_influence": 0.0
+    },
     "phase_select": {
       "file": "assets/audio/sfx/phase_select.ogg",
       "prompt": "Clear bell ding, single clean notification chime, present and noticeable, like a service bell tap",
