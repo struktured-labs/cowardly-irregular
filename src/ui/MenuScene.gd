@@ -1047,6 +1047,8 @@ func _on_item_use_pressed(item_id: String) -> void:
 		if block != "":
 			SoundManager.play_ui("menu_error")
 			Toast.show_warning(self, block)
+			if PartyChatSystem:
+				PartyChatSystem.fire_event_flag("event_flag_tent_blocked")
 			return
 		# Tick 190: only consume on successful use — pre-fix unknown-id / no-effects items got consumed for no benefit.
 		if ItemSystem.use_item(source_member, item_id, [member]):
