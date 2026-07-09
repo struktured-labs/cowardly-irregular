@@ -21,6 +21,8 @@ const QUEST_DIR := "res://data/quests"
 
 var _quests: Dictionary = {}  # id → parsed quest JSON
 var _last_reward_summary: String = ""  # set by _grant_rewards, consumed by _announce_rewards
+## Orrery seam: cutscene_on_complete id stashed by _complete_quest, fired only after the turn-in dialogue unwinds (never mid-dialogue — it would letterbox over an open NPCDialogue and race the movement-lock restore)
+var _pending_completion_cutscene: String = ""
 ## Most recently accepted/progressed quest — the HUD tracker follows
 ## this instead of arbitrary file-load order. Session-only (cosmetic).
 var last_progressed_quest_id: String = ""
@@ -158,7 +160,22 @@ func _complete_quest(quest_id: String) -> void:
 	if mirror != "":
 		GameState.set_story_flag(mirror)
 	_grant_rewards(q)
+	# Chain-quest cinematic (Orrery): stash only — the dialogue tail flushes it from a clean stack
+	_pending_completion_cutscene = str(q.get("cutscene_on_complete", ""))
 	quest_state_changed.emit(quest_id, "complete")
+
+
+## Fires the stashed turn-in cinematic. Awaitable: holds the caller (and its movement lock) until the cutscene ends. Idempotent — clears the stash before playing.
+func _flush_completion_cutscene() -> void:
+	if _pending_completion_cutscene == "":
+		return
+	var cs := _pending_completion_cutscene
+	_pending_completion_cutscene = ""
+	var director = get_node_or_null("/root/CutsceneDirector")
+	if director == null:
+		push_warning("[QuestSystem] cutscene_on_complete '%s' dropped — CutsceneDirector autoload missing" % cs)
+		return
+	await director.play_cutscene(cs)
 
 
 func _grant_rewards(q: Dictionary) -> void:
@@ -375,6 +392,7 @@ func run_giver_dialogue(npc_id: String, npc: Node) -> void:
 		await _play_lines(npc, dlg.get("ready_to_turn_in", []))
 		await _play_lines(npc, dlg.get("complete", []))
 		await _announce_rewards(npc)
+		await _flush_completion_cutscene()
 		return
 	# Otherwise still mid-quest — flavor line.
 	await _play_lines(npc, dlg.get("in_progress", []))
@@ -388,6 +406,7 @@ func run_completion_dialogue(quest_id: String, npc: Node) -> void:
 	await _play_lines(npc, dlg.get("ready_to_turn_in", []))
 	await _play_lines(npc, dlg.get("complete", []))
 	await _announce_rewards(npc)
+	await _flush_completion_cutscene()
 
 
 func _play_lines(npc: Node, lines: Array) -> void:
