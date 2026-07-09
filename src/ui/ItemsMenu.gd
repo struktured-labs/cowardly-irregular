@@ -148,7 +148,7 @@ func _build_ui() -> void:
 	var footer = Label.new()
 	footer.text = "↑↓: Select  A/Click: Use  B/RClick: Back" if mode == 0 else "↑↓: Select Target  A/Click: Confirm  B/RClick: Cancel"
 	footer.position = Vector2(16, viewport_size.y - 32)
-	footer.add_theme_font_size_override("font_size", 12)
+	footer.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
 	footer.name = "Footer"
 	add_child(footer)
@@ -172,7 +172,7 @@ func _create_items_panel(panel_size: Vector2) -> Control:
 	var title = Label.new()
 	title.text = "ITEMS"
 	title.position = Vector2(8, 4)
-	title.add_theme_font_size_override("font_size", 14)
+	title.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	title.add_theme_color_override("font_color", TEXT_COLOR)
 	panel.add_child(title)
 
@@ -185,7 +185,7 @@ func _create_items_panel(panel_size: Vector2) -> Control:
 		var empty_label = Label.new()
 		empty_label.text = "No items"
 		empty_label.position = Vector2(16, y_offset)
-		empty_label.add_theme_font_size_override("font_size", 12)
+		empty_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 		empty_label.add_theme_color_override("font_color", DISABLED_COLOR)
 		panel.add_child(empty_label)
 	else:
@@ -215,7 +215,7 @@ func _create_item_row(item: Dictionary, index: int) -> Control:
 	var cursor = Label.new()
 	cursor.text = ">" if index == selected_item_index and mode == 0 else " "
 	cursor.position = Vector2(4, 2)
-	cursor.add_theme_font_size_override("font_size", 12)
+	cursor.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	cursor.add_theme_color_override("font_color", Color.YELLOW)
 	cursor.name = "Cursor"
 	row.add_child(cursor)
@@ -224,7 +224,7 @@ func _create_item_row(item: Dictionary, index: int) -> Control:
 	var name_label = Label.new()
 	name_label.text = item["data"]["name"]
 	name_label.position = Vector2(20, 2)
-	name_label.add_theme_font_size_override("font_size", 12)
+	name_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	name_label.add_theme_color_override("font_color", _get_item_color(item["data"]))
 	name_label.name = "Name"
 	row.add_child(name_label)
@@ -233,7 +233,7 @@ func _create_item_row(item: Dictionary, index: int) -> Control:
 	var qty_label = Label.new()
 	qty_label.text = "x%d" % item["quantity"]
 	qty_label.position = Vector2(180, 2)
-	qty_label.add_theme_font_size_override("font_size", 12)
+	qty_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	qty_label.add_theme_color_override("font_color", DISABLED_COLOR)
 	qty_label.name = "Quantity"
 	row.add_child(qty_label)
@@ -303,7 +303,7 @@ func _populate_item_details(panel: Control, panel_size: Vector2) -> void:
 	var title = Label.new()
 	title.text = "DETAILS"
 	title.position = Vector2(8, 4)
-	title.add_theme_font_size_override("font_size", 14)
+	title.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	title.add_theme_color_override("font_color", TEXT_COLOR)
 	panel.add_child(title)
 
@@ -311,7 +311,7 @@ func _populate_item_details(panel: Control, panel_size: Vector2) -> void:
 		var empty = Label.new()
 		empty.text = "Select an item"
 		empty.position = Vector2(16, 32)
-		empty.add_theme_font_size_override("font_size", 12)
+		empty.add_theme_font_size_override("font_size", TextScale.scaled(12))
 		empty.add_theme_color_override("font_color", DISABLED_COLOR)
 		panel.add_child(empty)
 		return
@@ -323,7 +323,7 @@ func _populate_item_details(panel: Control, panel_size: Vector2) -> void:
 	var name_label = Label.new()
 	name_label.text = item_data["name"]
 	name_label.position = Vector2(16, 32)
-	name_label.add_theme_font_size_override("font_size", 14)
+	name_label.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	name_label.add_theme_color_override("font_color", _get_item_color(item_data))
 	panel.add_child(name_label)
 
@@ -331,7 +331,7 @@ func _populate_item_details(panel: Control, panel_size: Vector2) -> void:
 	var desc_label = Label.new()
 	desc_label.text = item_data.get("description", "No description")
 	desc_label.position = Vector2(16, 52)
-	desc_label.add_theme_font_size_override("font_size", 11)
+	desc_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	desc_label.add_theme_color_override("font_color", TEXT_COLOR)
 	desc_label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	desc_label.size = Vector2(panel_size.x - 32, 60)
@@ -350,7 +350,7 @@ func _populate_item_details(panel: Control, panel_size: Vector2) -> void:
 		var flavor_label = Label.new()
 		flavor_label.text = flavor_text
 		flavor_label.position = Vector2(16, 112)
-		flavor_label.add_theme_font_size_override("font_size", 10)
+		flavor_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 		# Dimmed text — flavor reads as background lore, not gameplay info.
 		flavor_label.add_theme_color_override("font_color", DISABLED_COLOR)
 		flavor_label.autowrap_mode = TextServer.AUTOWRAP_WORD
@@ -368,7 +368,7 @@ func _populate_item_details(panel: Control, panel_size: Vector2) -> void:
 			var eff_label = Label.new()
 			eff_label.text = "Restores %d HP" % effects["heal_hp"]
 			eff_label.position = Vector2(16, effects_y)
-			eff_label.add_theme_font_size_override("font_size", 11)
+			eff_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 			eff_label.add_theme_color_override("font_color", HEAL_COLOR)
 			panel.add_child(eff_label)
 			effects_y += 16
@@ -377,7 +377,7 @@ func _populate_item_details(panel: Control, panel_size: Vector2) -> void:
 			var eff_label = Label.new()
 			eff_label.text = "Restores %d%% HP" % effects["heal_hp_percent"]
 			eff_label.position = Vector2(16, effects_y)
-			eff_label.add_theme_font_size_override("font_size", 11)
+			eff_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 			eff_label.add_theme_color_override("font_color", HEAL_COLOR)
 			panel.add_child(eff_label)
 			effects_y += 16
@@ -386,7 +386,7 @@ func _populate_item_details(panel: Control, panel_size: Vector2) -> void:
 			var eff_label = Label.new()
 			eff_label.text = "Restores %d MP" % effects["heal_mp"]
 			eff_label.position = Vector2(16, effects_y)
-			eff_label.add_theme_font_size_override("font_size", 11)
+			eff_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 			eff_label.add_theme_color_override("font_color", MP_COLOR)
 			panel.add_child(eff_label)
 			effects_y += 16
@@ -395,7 +395,7 @@ func _populate_item_details(panel: Control, panel_size: Vector2) -> void:
 			var eff_label = Label.new()
 			eff_label.text = "Restores %d%% MP" % effects["heal_mp_percent"]
 			eff_label.position = Vector2(16, effects_y)
-			eff_label.add_theme_font_size_override("font_size", 11)
+			eff_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 			eff_label.add_theme_color_override("font_color", MP_COLOR)
 			panel.add_child(eff_label)
 			effects_y += 16
@@ -404,7 +404,7 @@ func _populate_item_details(panel: Control, panel_size: Vector2) -> void:
 			var eff_label = Label.new()
 			eff_label.text = "Cures: %s" % ", ".join(effects["cure_status"])
 			eff_label.position = Vector2(16, effects_y)
-			eff_label.add_theme_font_size_override("font_size", 11)
+			eff_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 			eff_label.add_theme_color_override("font_color", MP_COLOR)
 			panel.add_child(eff_label)
 			effects_y += 16
@@ -413,7 +413,7 @@ func _populate_item_details(panel: Control, panel_size: Vector2) -> void:
 			var eff_label = Label.new()
 			eff_label.text = "Cures all status effects"
 			eff_label.position = Vector2(16, effects_y)
-			eff_label.add_theme_font_size_override("font_size", 11)
+			eff_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 			eff_label.add_theme_color_override("font_color", MP_COLOR)
 			panel.add_child(eff_label)
 			effects_y += 16
@@ -422,7 +422,7 @@ func _populate_item_details(panel: Control, panel_size: Vector2) -> void:
 			var eff_label = Label.new()
 			eff_label.text = "Revives fallen ally"
 			eff_label.position = Vector2(16, effects_y)
-			eff_label.add_theme_font_size_override("font_size", 11)
+			eff_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 			eff_label.add_theme_color_override("font_color", Color.YELLOW)
 			panel.add_child(eff_label)
 			effects_y += 16
@@ -432,7 +432,7 @@ func _populate_item_details(panel: Control, panel_size: Vector2) -> void:
 			var eff_label = Label.new()
 			eff_label.text = "%s for %d turns" % [buff["type"].replace("_", " ").capitalize(), buff["duration"]]
 			eff_label.position = Vector2(16, effects_y)
-			eff_label.add_theme_font_size_override("font_size", 11)
+			eff_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 			eff_label.add_theme_color_override("font_color", BUFF_COLOR)
 			panel.add_child(eff_label)
 			effects_y += 16
@@ -443,7 +443,7 @@ func _populate_item_details(panel: Control, panel_size: Vector2) -> void:
 	var target_label = Label.new()
 	target_label.text = "Target: %s" % target_text
 	target_label.position = Vector2(16, effects_y + 8)
-	target_label.add_theme_font_size_override("font_size", 10)
+	target_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	target_label.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(target_label)
 
@@ -478,7 +478,7 @@ func _populate_target_selection(panel: Control, _panel_size: Vector2) -> void:
 	var title = Label.new()
 	title.text = "SELECT TARGET"
 	title.position = Vector2(8, 4)
-	title.add_theme_font_size_override("font_size", 14)
+	title.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	title.add_theme_color_override("font_color", Color.YELLOW)
 	panel.add_child(title)
 
@@ -491,14 +491,14 @@ func _populate_target_selection(panel: Control, _panel_size: Vector2) -> void:
 		var all_label = Label.new()
 		all_label.text = "Use %s on all party members?" % item_data["name"]
 		all_label.position = Vector2(16, 40)
-		all_label.add_theme_font_size_override("font_size", 12)
+		all_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 		all_label.add_theme_color_override("font_color", TEXT_COLOR)
 		panel.add_child(all_label)
 
 		var confirm_label = Label.new()
 		confirm_label.text = "[A] Confirm  [B] Cancel"
 		confirm_label.position = Vector2(16, 70)
-		confirm_label.add_theme_font_size_override("font_size", 11)
+		confirm_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 		confirm_label.add_theme_color_override("font_color", Color.YELLOW)
 		panel.add_child(confirm_label)
 		return
@@ -531,7 +531,7 @@ func _create_target_row(member: Combatant, index: int) -> Control:
 	var cursor = Label.new()
 	cursor.text = ">" if index == selected_target_index else " "
 	cursor.position = Vector2(4, 14)
-	cursor.add_theme_font_size_override("font_size", 14)
+	cursor.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	cursor.add_theme_color_override("font_color", Color.YELLOW)
 	cursor.name = "Cursor"
 	row.add_child(cursor)
@@ -540,7 +540,7 @@ func _create_target_row(member: Combatant, index: int) -> Control:
 	var name_label = Label.new()
 	name_label.text = member.combatant_name
 	name_label.position = Vector2(24, 4)
-	name_label.add_theme_font_size_override("font_size", 12)
+	name_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	name_label.add_theme_color_override("font_color", TEXT_COLOR if member.is_alive else Color.RED)
 	row.add_child(name_label)
 
@@ -548,7 +548,7 @@ func _create_target_row(member: Combatant, index: int) -> Control:
 	var hp_text = Label.new()
 	hp_text.text = "HP: %d/%d" % [member.current_hp, member.max_hp]
 	hp_text.position = Vector2(24, 20)
-	hp_text.add_theme_font_size_override("font_size", 10)
+	hp_text.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	hp_text.add_theme_color_override("font_color", HEAL_COLOR if member.get_hp_percentage() > 30 else Color.RED)
 	row.add_child(hp_text)
 
@@ -556,7 +556,7 @@ func _create_target_row(member: Combatant, index: int) -> Control:
 	var mp_text = Label.new()
 	mp_text.text = "MP: %d/%d" % [member.current_mp, member.max_mp]
 	mp_text.position = Vector2(24, 32)
-	mp_text.add_theme_font_size_override("font_size", 10)
+	mp_text.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	mp_text.add_theme_color_override("font_color", MP_COLOR)
 	row.add_child(mp_text)
 
@@ -565,7 +565,7 @@ func _create_target_row(member: Combatant, index: int) -> Control:
 		var ko_label = Label.new()
 		ko_label.text = "[KO]"
 		ko_label.position = Vector2(140, 4)
-		ko_label.add_theme_font_size_override("font_size", 12)
+		ko_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 		ko_label.add_theme_color_override("font_color", Color.RED)
 		row.add_child(ko_label)
 

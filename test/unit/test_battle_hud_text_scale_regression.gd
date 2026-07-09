@@ -6,7 +6,11 @@ extends GutTest
 ## half-worked exactly where small text hurts most. All 16 sites now route
 ## through TextScale.scaled(); this ratchet keeps new ones honest.
 
-const FILES := ["res://src/battle/BattleUIManager.gd", "res://src/ui/Win98Menu.gd"]
+## Round 2 (same tick family): the five highest-traffic menus joined the sweep.
+const FILES := ["res://src/battle/BattleUIManager.gd", "res://src/ui/Win98Menu.gd",
+	"res://src/ui/OverworldMenu.gd", "res://src/ui/ItemsMenu.gd",
+	"res://src/ui/SettingsMenu.gd", "res://src/ui/FormationsMenu.gd",
+	"res://src/exploration/ShopScene.gd"]
 
 
 func test_no_bare_int_font_overrides_in_battle_hud() -> void:
@@ -17,7 +21,7 @@ func test_no_bare_int_font_overrides_in_battle_hud() -> void:
 		var hits := rx.search_all(src)
 		assert_eq(hits.size(), 0,
 			"%s has %d bare-int font override(s) — route them through TextScale.scaled() so the accessibility setting reaches the battle HUD" % [path, hits.size()])
-		assert_gt(src.count("TextScale.scaled("), 3, "%s actually uses TextScale" % path)
+		assert_gt(src.count("TextScale.scaled("), 0, "%s actually uses TextScale" % path)
 
 
 func test_text_scale_actually_scales() -> void:

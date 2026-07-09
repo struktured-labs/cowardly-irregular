@@ -105,7 +105,7 @@ func _setup_ui() -> void:
 	gold_label.position = Vector2(get_viewport().get_visible_rect().size.x - 200, 20)
 	gold_label.size = Vector2(180, 30)
 	gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	gold_label.add_theme_font_size_override("font_size", 16)
+	gold_label.add_theme_font_size_override("font_size", TextScale.scaled(16))
 	gold_label.add_theme_color_override("font_color", Color(1.0, 0.9, 0.3))
 	add_child(gold_label)
 	_update_gold_display()
@@ -175,7 +175,7 @@ func _create_description_panel() -> Control:
 	description_label = Label.new()
 	description_label.position = Vector2(text_x, 16)
 	description_label.size = Vector2(panel.size.x - text_x - 16, panel.size.y - 32)
-	description_label.add_theme_font_size_override("font_size", 12)
+	description_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	description_label.add_theme_color_override("font_color", Color.WHITE)
 	description_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	description_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP

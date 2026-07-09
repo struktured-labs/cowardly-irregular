@@ -45,7 +45,7 @@ func _build_ui() -> void:
 
 	var title := Label.new()
 	title.text = "FORMATION SPECIALS"
-	title.add_theme_font_size_override("font_size", 20)
+	title.add_theme_font_size_override("font_size", TextScale.scaled(20))
 	title.add_theme_color_override("font_color", Color(1.0, 0.9, 0.5))
 	title.position = Vector2(panel_x, 28)
 	title.size = Vector2(panel_w, 30)
@@ -54,7 +54,7 @@ func _build_ui() -> void:
 
 	var note := Label.new()
 	note.text = "Pool the party's AP — every listed job must be alive and fielded. ✓ = your current party qualifies."
-	note.add_theme_font_size_override("font_size", 11)
+	note.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	note.add_theme_color_override("font_color", Color(0.65, 0.65, 0.75))
 	note.position = Vector2(panel_x, 58)
 	note.size = Vector2(panel_w, 18)
@@ -78,7 +78,7 @@ func _build_ui() -> void:
 
 	var hint := Label.new()
 	hint.text = "[Up/Down] Browse   [B/X] Close"
-	hint.add_theme_font_size_override("font_size", 11)
+	hint.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	hint.add_theme_color_override("font_color", Color(0.55, 0.55, 0.65))
 	hint.position = Vector2(panel_x, vp.y - 34)
 	hint.size = Vector2(panel_w, 18)
@@ -100,7 +100,7 @@ func _build_row(f: Dictionary, qualifies: bool, x: float, y: float, w: float) ->
 
 	var name_label := Label.new()
 	name_label.text = "%s %s" % ["✓" if qualifies else "✗", f.get("name", "?")]
-	name_label.add_theme_font_size_override("font_size", 15)
+	name_label.add_theme_font_size_override("font_size", TextScale.scaled(15))
 	name_label.add_theme_color_override("font_color",
 		Color(0.5, 1.0, 0.6) if qualifies else Color(0.85, 0.85, 0.9))
 	name_label.position = Vector2(14, 8)
@@ -109,7 +109,7 @@ func _build_row(f: Dictionary, qualifies: bool, x: float, y: float, w: float) ->
 
 	var cost := Label.new()
 	cost.text = "%d AP each · needs %d+" % [int(f.get("ap_cost", 0)), int(f.get("min_members", 0))]
-	cost.add_theme_font_size_override("font_size", 11)
+	cost.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	cost.add_theme_color_override("font_color", Color(0.75, 0.7, 0.5))
 	cost.position = Vector2(w - 220, 10)
 	cost.size = Vector2(206, 18)
@@ -118,7 +118,7 @@ func _build_row(f: Dictionary, qualifies: bool, x: float, y: float, w: float) ->
 
 	var tip := Label.new()
 	tip.text = str(f.get("tooltip", ""))
-	tip.add_theme_font_size_override("font_size", 11)
+	tip.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	tip.add_theme_color_override("font_color", Color(0.7, 0.7, 0.8))
 	tip.position = Vector2(14, 32)
 	tip.size = Vector2(w - 28, 18)
@@ -131,7 +131,7 @@ func _build_row(f: Dictionary, qualifies: bool, x: float, y: float, w: float) ->
 	for jid in f.get("required_jobs", []):
 		parts.append("%s%s" % ["✓" if jid in jobs else "✗", str(jid).capitalize()])
 	req.text = "Requires: " + ", ".join(parts)
-	req.add_theme_font_size_override("font_size", 11)
+	req.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	req.add_theme_color_override("font_color", Color(0.6, 0.65, 0.8))
 	req.position = Vector2(14, 52)
 	req.size = Vector2(w - 28, 18)
