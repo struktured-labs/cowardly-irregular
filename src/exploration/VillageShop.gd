@@ -50,17 +50,21 @@ const ITEM_INVENTORY = [
 # The -ga tier stays off W1 shelves.
 const BLACK_MAGIC_INVENTORY = ["fire", "blizzard", "thunder", "fira", "blizzara", "thundara"]
 const WHITE_MAGIC_INVENTORY = ["cure", "cura", "raise", "protect", "esuna", "regen"]
+## Shelves in strict ascending cost so the list reads as a progression
+## ladder (ratcheted by test_shop_shelf_cost_order). NOTE: every world's
+## blacksmith stocks this SAME catalog — per-world shelves are a design
+## call flagged to struktured, not changed here.
 const BLACKSMITH_WEAPONS = [
-	"bronze_sword", "iron_dagger", "wooden_staff", "bone_staff",
-	"iron_sword", "poison_dagger", "oak_staff", "sleep_dagger",
-	"steel_sword", "shadow_rod", "war_axe", "thunder_rod",
-	"mythril_dagger", "ice_blade", "flame_sword", "crystal_staff",
-	"assassin_blade", "mythril_sword", "holy_staff"
+	"bronze_sword", "wooden_staff", "iron_dagger", "bone_staff",
+	"iron_sword", "oak_staff", "poison_dagger", "shadow_rod",
+	"steel_sword", "sleep_dagger", "war_axe", "assassin_blade",
+	"thunder_rod", "mythril_dagger", "ice_blade", "flame_sword",
+	"crystal_staff", "mythril_sword", "holy_staff"
 ]
 const BLACKSMITH_ARMOR = [
 	"leather_armor", "cloth_robe", "thief_garb",
 	"bone_armor", "chain_mail", "dark_robe",
-	"iron_armor", "mage_robe", "ninja_garb",
+	"mage_robe", "iron_armor", "ninja_garb",
 	"sage_robe", "mythril_vest", "dragon_mail"
 ]
 
