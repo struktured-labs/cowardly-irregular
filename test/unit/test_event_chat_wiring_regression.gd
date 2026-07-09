@@ -34,14 +34,17 @@ func test_every_event_chat_is_reachable() -> void:
 	var src := _all_gd_sources()
 	var checked_files := 0
 	var checked_flags := 0
+	# 2026-07-09 extension: EVERY registry id (chapter + world chats too, not
+	# just event_chat_*) must have its cutscene file — verified all 37+ hold.
 	for id in PartyChatSystem.REGISTRY.keys():
-		if not str(id).begins_with("event_chat_"):
-			continue
 		var path := "res://data/cutscenes/%s.json" % id
 		assert_true(FileAccess.file_exists(path), "%s registered but %s missing — dead menu entry" % [id, path])
 		var data = JSON.parse_string(FileAccess.get_file_as_string(path))
 		assert_eq(typeof(data), TYPE_DICTIONARY, "%s must parse" % path)
-		assert_eq(str(data.get("trigger", "")), str(id), "%s trigger must equal its id" % id)
+		# trigger==id is the convention for event/pc chats; legacy chapter
+		# chats carry breadcrumb triggers (runtime-inert, cutscenes-lane ruling)
+		if str(id).begins_with("event_chat_") or "_pc_" in str(id):
+			assert_eq(str(data.get("trigger", "")), str(id), "%s trigger must equal its id" % id)
 		checked_files += 1
 		for flag in PartyChatSystem.REGISTRY[id].get("unlock", []):
 			if not str(flag).begins_with("event_flag_"):
@@ -49,7 +52,7 @@ func test_every_event_chat_is_reachable() -> void:
 			checked_flags += 1
 			assert_true(("fire_event_flag(\"%s\"" % flag) in src,
 				"chat %s unlocks on %s but NO fire_event_flag emitter exists in src/ — the chat can never unlock" % [id, flag])
-	assert_gt(checked_files, 9, "sanity: the event-chat roster was scanned (8 old + 3 new)")
+	assert_gt(checked_files, 35, "sanity: the FULL chat roster was scanned (37 pre-W2 + 3 W2)")
 	assert_gt(checked_flags, 5, "sanity: event_flag unlocks were emitter-checked")
 
 
