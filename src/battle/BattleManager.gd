@@ -849,9 +849,20 @@ func end_battle(victory: bool) -> void:
 				"HP": combatant.max_hp, "MP": combatant.max_mp, "ATK": combatant.attack,
 				"DEF": combatant.defense, "MAG": combatant.magic, "SPD": combatant.speed,
 			}
+			# Collect abilities newly unlocked by any level-up this award — gain_job_exp
+			# fires ability_learned per new spell (learn_abilities_for_level). Resolved
+			# to display names so the victory screen can announce "Learned Fire!".
+			var learned_abilities: Array[String] = []
+			var _collect_learned := func(aid: String):
+				var nm: String = JobSystem.get_ability(aid).get("name", aid) if JobSystem else aid
+				learned_abilities.append(nm)
+			if combatant.has_signal("ability_learned"):
+				combatant.ability_learned.connect(_collect_learned)
 			if combatant.is_alive:
 				exp_gained = int(base_exp * reward_multiplier * one_shot_exp_bonus * autobattle_exp_bonus * exp_multiplier)
 				combatant.gain_job_exp(exp_gained)
+			if combatant.has_signal("ability_learned") and combatant.ability_learned.is_connected(_collect_learned):
+				combatant.ability_learned.disconnect(_collect_learned)
 			var leveled_up = combatant.job_level > old_level
 			var stat_gains: Dictionary = {}
 			if leveled_up:
@@ -873,6 +884,7 @@ func end_battle(victory: bool) -> void:
 				"job_name": combatant.job.get("name", "Fighter") if combatant.job else "Fighter",
 				"leveled_up": leveled_up,
 				"stat_gains": stat_gains,
+				"learned_abilities": learned_abilities,
 				"is_alive": combatant.is_alive
 			})
 			if exp_gained > 0:
@@ -1264,15 +1276,14 @@ func _apply_corruption_effects_on_round_start() -> void:
 		battle_log_message.emit("[color=purple]Corruption seeps in — party stats erode![/color]")
 
 	## Tick 179: surface authored-but-unimplemented corruption
-	## effects. GameState._apply_random_corruption_effect adds
-	## these 4 to corruption_effects but no runtime handler exists.
-	## Pre-fix they silently no-op'd — the player saw the tick-178
-	## Toast announcing the effect but NOTHING happened
-	## mechanically. push_warning makes the gap LOUD in CI/test
-	## runs so the unimplemented work surfaces during development.
-	## (CLAUDE.md design principle #7: silent failures are worse
-	## than crashes.)
-	for unimplemented in ["visual_glitch", "bp_instability", "encounter_surge", "ability_corruption"]:
+	## effects. GameState._apply_random_corruption_effect adds these
+	## to corruption_effects; push_warning makes any missing runtime
+	## handler LOUD in CI/test runs (CLAUDE.md principle #7: silent
+	## failures are worse than crashes). Now-handled effects are off
+	## this list: encounter_surge (OverworldController._check_encounter),
+	## visual_glitch (BattleScene._on_round_started_corruption_glitch).
+	## bp_instability + ability_corruption remain genuinely unwired.
+	for unimplemented in ["bp_instability", "ability_corruption"]:
 		if unimplemented in active_effects:
 			push_warning("[BattleManager] corruption effect '%s' is in active_effects but has NO runtime handler — added in GameState._apply_random_corruption_effect but never consumed" % unimplemented)
 
@@ -3212,7 +3223,7 @@ func _execute_physical_group(participants: Array, alive_enemies: Array[Combatant
 		if not (p is Combatant) or not p.is_alive:
 			continue
 		p.spend_ap(ap_cost)
-		total_power += p.attack
+		total_power += p.get_buffed_stat("attack", p.attack)
 
 	var scale: float = pow(participants.size(), 1.5)
 	var lb_dmg_mult: float = 3.0
@@ -3226,7 +3237,7 @@ func _execute_physical_group(participants: Array, alive_enemies: Array[Combatant
 			# strike must justify its 4x AP cost vs All-Out Attack).
 			mitigated = max(1, int(raw_damage * lb_dmg_mult))
 		else:
-			mitigated = max(1, raw_damage - enemy.defense)
+			mitigated = max(1, raw_damage)
 		enemy.take_damage(mitigated)
 		damage_dealt.emit(enemy, mitigated, false, "", 1.0)
 		battle_log_message.emit("[color=orange]Group %s hits %s for %d![/color]" % [
@@ -3333,10 +3344,10 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 			var total_power = 0.0
 			for p in participants:
 				if p is Combatant and p.is_alive:
-					total_power += (p.attack + p.get_buffed_stat("magic", p.magic)) * 0.5
+					total_power += (p.get_buffed_stat("attack", p.attack) + p.get_buffed_stat("magic", p.magic)) * 0.5
 			for enemy in alive_enemies:
 				if not enemy.is_alive: continue
-				var damage = max(1, int(total_power * scale / max(1.0, float(alive_enemies.size())) - enemy.defense * 0.5))
+				var damage = max(1, int(total_power * scale / max(1.0, float(alive_enemies.size()))))
 				enemy.take_damage(damage)
 				damage_dealt.emit(enemy, damage, false, "", 1.0)
 			# Heal party 25%
@@ -3372,11 +3383,11 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 					break
 				var attacker = living_participants[randi() % living_participants.size()]
 				var target = living_enemies[randi() % living_enemies.size()]
-				var base_dmg = int(attacker.attack * 0.7)
+				var base_dmg = int(attacker.get_buffed_stat("attack", attacker.attack) * 0.7)
 				var is_crit = randf() < 0.3  # 30% crit chance per hit
 				if is_crit:
 					base_dmg = int(base_dmg * 1.5)
-				var damage = max(1, base_dmg - target.defense / 2)
+				var damage = max(1, base_dmg)
 				target.take_damage(damage)
 				damage_dealt.emit(target, damage, is_crit, "", 1.0)
 			battle_log_message.emit("[color=orange]★ Blade Storm — %d rapid strikes! ★[/color]" % hit_count)
@@ -3389,10 +3400,10 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 			var total_atk = 0.0
 			for p in participants:
 				if p is Combatant and p.is_alive:
-					total_atk += p.attack
+					total_atk += p.get_buffed_stat("attack", p.attack)
 			for enemy in alive_enemies:
 				if not enemy.is_alive: continue
-				var damage = max(1, int(total_atk * scale * 0.6 / max(1.0, float(alive_enemies.size())) - enemy.defense))
+				var damage = max(1, int(total_atk * scale * 0.6 / max(1.0, float(alive_enemies.size()))))
 				enemy.take_damage(damage)
 				damage_dealt.emit(enemy, damage, false, "", 1.0)
 			battle_log_message.emit("[color=cyan]★ Iron Wall — party DEF +50%% (3 turns) + crushing blow! ★[/color]")
@@ -3402,7 +3413,7 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 			var total_atk = 0.0
 			for p in participants:
 				if p is Combatant and p.is_alive:
-					total_atk += p.attack
+					total_atk += p.get_buffed_stat("attack", p.attack)
 			for enemy in alive_enemies:
 				if not enemy.is_alive: continue
 				var full_hp_bonus = 2.0 if enemy.current_hp == enemy.max_hp else 1.0
@@ -3420,7 +3431,7 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 				var total_power = 0.0
 				for p in participants:
 					if p is Combatant and p.is_alive:
-						total_power += (p.attack + p.get_buffed_stat("magic", p.magic))
+						total_power += (p.get_buffed_stat("attack", p.attack) + p.get_buffed_stat("magic", p.magic))
 				for enemy in alive_enemies:
 					if not enemy.is_alive: continue
 					var damage = max(1, int(total_power * scale * 1.5 / max(1.0, float(alive_enemies.size()))))
@@ -3440,10 +3451,10 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 				var total_power = 0.0
 				for p in participants:
 					if p is Combatant and p.is_alive:
-						total_power += p.attack
+						total_power += p.get_buffed_stat("attack", p.attack)
 				for enemy in alive_enemies:
 					if not enemy.is_alive: continue
-					var damage = max(1, int(total_power * scale * 0.8 / max(1.0, float(alive_enemies.size())) - enemy.defense))
+					var damage = max(1, int(total_power * scale * 0.8 / max(1.0, float(alive_enemies.size()))))
 					enemy.take_damage(damage)
 					damage_dealt.emit(enemy, damage, false, "", 1.0)
 				for p in participants:
@@ -4044,6 +4055,20 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 	match ability_type:
 		"physical":
 			_execute_physical_ability(caster, ability, retargeted)
+			# mug ("attack and steal in one action") authors success_rate + a
+			# steals flag, but the physical path never stole — the steal half was
+			# dead. Wire it here (same contained pattern as smoke_bomb's escape):
+			# after the hit, roll a gold steal per target.
+			if bool(ability.get("steals", false)):
+				var _steal_rate: float = clampf(float(ability.get("success_rate", 0.5)) + _sum_equipment_special_effect(caster, "steal_bonus"), 0.0, 1.0)
+				for _st in retargeted:
+					if _st is Combatant and is_instance_valid(_st) and _st.is_alive:
+						if randf() < _steal_rate:
+							var _g: int = randi_range(5, 50) * (1 + int(_st.max_hp / 50.0))
+							GameState.add_gold(_g)
+							battle_log_message.emit("[color=yellow]%s mugs %d gold from %s![/color]" % [caster.combatant_name, _g, _st.combatant_name])
+						else:
+							battle_log_message.emit("[color=gray]%s couldn't grab anything from %s.[/color]" % [caster.combatant_name, _st.combatant_name])
 		"magic":
 			_execute_magic_ability(caster, ability, retargeted)
 		"healing":
@@ -4059,6 +4084,14 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 			# fizzled. Same authored-but-unimplemented class as the
 			# evasion_up gap in tick 350.
 			_execute_support_ability(caster, ability, retargeted)
+			# smoke_bomb authors guaranteed_escape alongside its blind effect —
+			# "guarantee escape or blind enemies". The support handler applied the
+			# blind but the escape half was dead (guaranteed_escape is only read in
+			# _execute_escape_ability, which type=support never reached). Trigger it
+			# here after the blind lands: non-boss = blind + flee to the overworld,
+			# boss (escape_allowed=false) = blind only, as the description promises.
+			if bool(ability.get("guaranteed_escape", false)):
+				_execute_escape_ability(caster, ability)
 		## Tick 392: Summoner job's 4 eidolon abilities (summon_ifrit,
 		## summon_shiva, summon_ramuh, summon_bahamut) all author
 		## type=summon with damage_multiplier + element +
@@ -4544,13 +4577,16 @@ func estimate_ability_damage(attacker: Combatant, target: Combatant, ability: Di
 		def_val = int(def_val * 0.5)
 	var mitigated = int((raw * raw) / float(max(1, raw + def_val)))
 
-	# Apply elemental modifier
-	var element = ability.get("element", "")
-	if element != "":
-		if element in target.elemental_weaknesses:
-			mitigated = int(mitigated * 1.5)
-		elif element in target.elemental_resistances:
-			mitigated = int(mitigated * 0.5)
+	# Elemental modifier — reuse the real hit's source of truth so the "~N dmg"
+	# preview matches reality (0.0x immune, 1.5x weak, 0.5x resist). Immunity
+	# returns a truthful 0, bypassing the min-1 floor, so an "Immune: Ice" enemy
+	# never previews phantom damage the swing won't actually deal.
+	var element_val = ability.get("element")
+	if element_val != null and str(element_val) != "":
+		var elem_mod: float = target.calculate_elemental_modifier(str(element_val))
+		mitigated = int(mitigated * elem_mod)
+		if elem_mod <= 0.0:
+			return 0
 
 	return max(1, mitigated)
 
@@ -5075,6 +5111,8 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 				var band_name = volatility.get_band_name()
 				var tail_pct = volatility.get_tail_event_pct()
 				battle_log_message.emit("[color=gold]FORECAST: Band=%s, Tail=%.0f%%, Jitter=±%.1f[/color]" % [band_name, tail_pct, volatility.get_ctb_jitter()])
+		"scan":
+			_execute_scan_effect(caster, targets)
 		"circuit_breaker":
 			if volatility:
 				volatility.shift_band(-1)
@@ -5429,6 +5467,23 @@ const _SECONDARY_STAT_DEBUFF_MAP: Dictionary = {
 	"magic_down":   ["magic",   "Secondary Magic Down"],
 	"speed_down":   ["speed",   "Secondary Speed Down"],
 }
+
+
+## Scan reveals a live enemy's elemental intel for the rest of the battle — the
+## in-the-moment counterpart to the bestiary's defeat-gated reveal. Flags each
+## target with the intel_revealed meta the enemy panel reads (BattleUIManager
+## ._enemy_intel_hint); no damage — the MP + 1 AP were already spent upstream.
+func _execute_scan_effect(caster: Combatant, targets: Array) -> void:
+	var hit := false
+	for t in targets:
+		if t is Combatant and t.is_alive:
+			t.set_meta("intel_revealed", true)
+			hit = true
+			if t.has_meta("monster_type") and BestiarySystem:
+				BestiarySystem.mark_seen(str(t.get_meta("monster_type")))
+			battle_log_message.emit("[color=#88ccff]🔍 %s scans %s — weaknesses exposed![/color]" % [caster.combatant_name, t.combatant_name])
+	if not hit:
+		battle_log_message.emit("[color=gray]%s's scan finds nothing to read.[/color]" % caster.combatant_name)
 
 
 func _apply_secondary_effect(caster: Combatant, ability: Dictionary, primary_targets: Array) -> void:

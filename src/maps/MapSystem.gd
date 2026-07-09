@@ -8,12 +8,25 @@ extends Node
 signal map_loaded(map_id: String)
 signal map_unloaded(map_id: String)
 
-## Map types — kept for save-format compatibility and potential future use.
+## Map types — kept for save-format compatibility; DUNGEON is live via is_dungeon_map.
 enum MapType {
 	OVERWORLD,    # Main world map
 	VILLAGE,      # Safe towns with NPCs, shops
 	DUNGEON,      # Dangerous areas with encounters
 }
+
+## Every dungeon map id — the save_point_only gate (F3) keys off this list; completeness guarded by test_save_point_only_enforcement_regression.
+const DUNGEON_MAP_IDS: PackedStringArray = [
+	"whispering_cave", "fire_dragon_cave", "ice_dragon_cave",
+	"lightning_dragon_cave", "shadow_dragon_cave", "castle_harmonia",
+	"null_chamber", "root_process", "assembly_core",
+	"steampunk_mechanism", "suburban_underground",
+]
+
+
+## True when map_id is a dungeon (GameLoop.get_current_map_id() is the runtime authority).
+static func is_dungeon_map(map_id: String) -> bool:
+	return map_id in DUNGEON_MAP_IDS
 
 ## Current state
 var current_map: Node2D = null

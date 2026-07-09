@@ -9,14 +9,13 @@ extends GutTest
 ##      succeeded with no UI surface.
 ##
 ##   2. _apply_random_corruption_effect adds 5 effects to
-##      corruption_effects, but only `stat_drain` has a runtime
-##      handler in BattleManager._apply_corruption_effects_on_
-##      round_start. The other 4 (visual_glitch / bp_instability
-##      / encounter_surge / ability_corruption) are authored-but-
-##      unimplemented — silently no-op. Player saw the tick-178
-##      Toast announcing the effect but nothing happened
-##      mechanically. CLAUDE.md design principle #7: silent
-##      failures are worse than crashes.
+##      corruption_effects. stat_drain has a battle-round handler;
+##      encounter_surge (OverworldController) and visual_glitch
+##      (BattleScene round-start chromatic stutter, 2026-07-05) are
+##      now implemented too. The remaining bp_instability /
+##      ability_corruption are still authored-but-unimplemented and
+##      route to a LOUD push_warning (not a silent no-op). CLAUDE.md
+##      design principle #7: silent failures are worse than crashes.
 
 const GAME_STATE := "res://src/meta/GameState.gd"
 const GAME_LOOP := "res://src/GameLoop.gd"
@@ -89,11 +88,18 @@ func test_unimplemented_corruption_effects_push_warning() -> void:
 	# Pin the push_warning fragment.
 	assert_true(body.contains("push_warning(\"[BattleManager] corruption effect"),
 		"unimplemented corruption effects must push_warning so they surface in CI runs")
-	# Pin all 4 unimplemented names in the iterated list.
-	for name in ["visual_glitch", "bp_instability", "encounter_surge", "ability_corruption"]:
+	# Still-unimplemented effects must remain in the warned list.
+	for name in ["bp_instability", "ability_corruption"]:
 		var quoted: String = "\"" + name + "\""
 		assert_true(body.contains(quoted),
 			"unimplemented-list iteration must include '%s'" % name)
+	# Implemented effects must have GRADUATED off the warning list (2026-07-05):
+	# encounter_surge → OverworldController._check_encounter,
+	# visual_glitch → BattleScene._on_round_started_corruption_glitch.
+	for graduated in ["visual_glitch", "encounter_surge"]:
+		var q: String = "\"" + graduated + "\""
+		assert_false(body.contains(q),
+			"'%s' is implemented now — it must leave the unimplemented warning list" % graduated)
 
 
 func test_implemented_corruption_effects_still_handled() -> void:

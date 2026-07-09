@@ -278,6 +278,27 @@ func use_item(user: Combatant, item_id: String, targets: Array[Combatant]) -> bo
 	return true
 
 
+## F3 ruling (struktured, 2026-07-08): save_point_only items are FREE outside dungeons; inside a dungeon they only work beside a save crystal.
+static func save_point_gate_reason(item: Dictionary, in_dungeon: bool, at_crystal: bool) -> String:
+	if not item.get("effects", {}).get("save_point_only", false):
+		return ""
+	if not in_dungeon or at_crystal:
+		return ""
+	return "Too dangerous to camp here — %s only works beside a save crystal" % item.get("name", "this item")
+
+
+## Field-menu gate: "" = allowed, else the refusal message. Fails open outside a running game (no GameLoop).
+func field_use_blocked_reason(item_id: String) -> String:
+	var item = get_item(item_id)
+	if item.is_empty():
+		return ""
+	var game_loop = get_tree().root.get_node_or_null("GameLoop")
+	if game_loop == null or not game_loop.has_method("get_current_map_id"):
+		return ""
+	var in_dungeon: bool = MapSystem.is_dungeon_map(str(game_loop.get_current_map_id()))
+	return save_point_gate_reason(item, in_dungeon, SavePoint.player_at_any(get_tree()))
+
+
 func _apply_global_item_effects(item: Dictionary) -> void:
 	"""Apply item effects that act on world/battle state rather than a Combatant.
 
@@ -290,8 +311,8 @@ func _apply_global_item_effects(item: Dictionary) -> void:
 	coverage regression test:
 	  - escape_battle: gated by the battle caller (BattleManager._execute_item)
 	    before removing the item; non-battle use is a no-op.
-	  - save_point_only: gated by the menu use site, which must refuse use when
-	    the party is not at a save point.
+	  - save_point_only: gated by the field-menu use sites via
+	    field_use_blocked_reason (F3: free outside dungeons, crystal-gated inside).
 	  - all_party: redundant with target_type ALL_ALLIES (callers already expand
 	    targets to the whole party); no action needed here.
 	"""
@@ -509,7 +530,7 @@ const _LOCALLY_HANDLED_EFFECT_KEYS := [
 ## require a battle/menu context the system has no reference to. They are
 ## recognized (not silently consumed) and routed to a documented caller:
 ##   escape_battle  -> BattleManager._execute_item gates escape before consume
-##   save_point_only -> menu use site refuses use when not at a save point
+##   save_point_only -> field-menu sites gate via field_use_blocked_reason (F3)
 ##   all_party       -> redundant with target_type ALL_ALLIES (caller expands)
 const _CALLER_HANDLED_EFFECT_KEYS := [
 	"escape_battle", "save_point_only", "all_party",

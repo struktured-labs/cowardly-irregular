@@ -44,6 +44,8 @@ const HANDLED_EFFECTS := [
 	"attack_down", "speed_down", "all_stats_down", "buff", "debuff",
 	"barrier", "invisible", "blind", "charm", "stun", "pacify", "evasion",
 	"reflect", "physical_reflect", "prismatic_reflect", "magic_block",
+	# --- Scan (2026-07-05): routes to _execute_scan_effect (reveals intel) ---
+	"scan",
 ]
 
 # Effects that legitimately still need bespoke per-effect implementations.

@@ -43,7 +43,9 @@ fi
 
 echo "[deploy] gate 4/4: render smoke"
 mkdir -p tmp
-if ! xvfb-run -a timeout 220 godot --rendering-driver opengl3 -- --render-smoke > tmp/deploy_smoke.log 2>&1; then
+# --audio-driver Dummy: xvfb fakes the DISPLAY but not audio — without it the
+# smoke blasts game music through the user's speakers (2026-07-08 complaint).
+if ! xvfb-run -a timeout 220 godot --rendering-driver opengl3 --audio-driver Dummy -- --render-smoke > tmp/deploy_smoke.log 2>&1; then
   echo "[deploy] BLOCKED: render smoke failed — see tmp/deploy_smoke.log" >&2; exit 3
 fi
 grep "VERDICT" tmp/deploy_smoke.log

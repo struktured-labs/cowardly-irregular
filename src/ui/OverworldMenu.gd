@@ -380,8 +380,12 @@ func _create_exp_indicator(member: Combatant) -> Control:
 	container.size = Vector2(160, 14)
 
 	var job_level = member.job_level if "job_level" in member else 1
-	var current_exp = member.experience if "experience" in member else 0
-	var next_exp = member.exp_to_next_level if "exp_to_next_level" in member else 100
+	# Read the REAL Combatant fields. Pre-fix this read member.experience and
+	# member.exp_to_next_level — neither exists (the field is job_exp; the
+	# threshold is job_level*100), so both `in` checks failed and the pips were
+	# permanently stuck at 0/100 = empty regardless of actual level/EXP.
+	var current_exp = member.job_exp if "job_exp" in member else 0
+	var next_exp = job_level * 100  # gain_job_exp threshold; job_exp resets each level
 
 	var lbl = Label.new()
 	lbl.text = "Lv%d" % job_level

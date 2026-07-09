@@ -431,6 +431,27 @@ func _fetch_satisfied(obj: Dictionary) -> bool:
 	return int(member.inventory.get(iid, 0)) >= count
 
 
+## Public fetch progress for the Quest Log / HUD tracker: how many of the
+## required item the fetch holder (party[0], matching _fetch_satisfied) carries
+## vs the count the objective needs, capped at need. Returns Vector2i(-1, -1)
+## for non-fetch objectives so callers can skip the "have/need" readout.
+func fetch_progress(obj: Dictionary) -> Vector2i:
+	if str(obj.get("type", "")) != "fetch":
+		return Vector2i(-1, -1)
+	var iid: String = str(obj.get("item_id", ""))
+	var need: int = int(obj.get("count", 1))
+	if iid == "":
+		return Vector2i(-1, -1)
+	var game_loop = get_tree().root.get_node_or_null("GameLoop")
+	if game_loop == null or not ("party" in game_loop) or game_loop.party.is_empty():
+		return Vector2i(0, need)
+	var member = game_loop.party[0]
+	if not ("inventory" in member):
+		return Vector2i(0, need)
+	var have: int = int(member.inventory.get(iid, 0))
+	return Vector2i(mini(have, need), need)
+
+
 func _flag(flag: String) -> bool:
 	if GameState.has_method("is_story_flag_set"):
 		return GameState.is_story_flag_set(flag)

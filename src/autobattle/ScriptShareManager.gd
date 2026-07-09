@@ -112,10 +112,36 @@ static func import_file(filename: String) -> Dictionary:
 
 
 ## Apply an imported autobattle script to a character.
+## Validate an imported script's rules against the engine's grammar (shallow —
+## structure + registered condition/target types, NOT fizzle/kit checks, since a
+## shared script may have been authored for a different character/job). Returns
+## the flattened error list ([] = clean). Guards against a hand-edited, malformed,
+## or newer-version shared script silently misbehaving at runtime once applied.
+static func validate_imported_script(script: Dictionary) -> Array:
+	var errors: Array = []
+	if not script.has("rules"):
+		return ["script has no 'rules' key — not a valid export"]
+	var rules = script["rules"]
+	if typeof(rules) != TYPE_ARRAY:
+		return ["'rules' is not an array"]
+	for i in range(rules.size()):
+		var rule = rules[i]
+		if typeof(rule) != TYPE_DICTIONARY:
+			errors.append("rule %d is not a dictionary" % i)
+			continue
+		for e in AutobattleSystem.validate_rule(rule):
+			errors.append("rule %d: %s" % [i, str(e)])
+	return errors
+
+
 static func apply_character_script(character_id: String, data: Dictionary) -> bool:
 	if data.get("type") == "autobattle_script":
 		var script = data.get("script", {})
 		if script.is_empty():
+			return false
+		var errs := validate_imported_script(script)
+		if not errs.is_empty():
+			push_warning("[SHARE] Rejected import for %s — %d invalid rule(s): %s" % [character_id, errs.size(), str(errs)])
 			return false
 		AutobattleSystem.set_character_script(character_id, script)
 		print("[SHARE] Applied script to %s" % character_id)
@@ -124,6 +150,10 @@ static func apply_character_script(character_id: String, data: Dictionary) -> bo
 	if data.get("type") == "autobattle_bundle":
 		var scripts = data.get("scripts", {})
 		if scripts.has(character_id):
+			var errs := validate_imported_script(scripts[character_id])
+			if not errs.is_empty():
+				push_warning("[SHARE] Rejected bundled import for %s — %d invalid rule(s): %s" % [character_id, errs.size(), str(errs)])
+				return false
 			AutobattleSystem.set_character_script(character_id, scripts[character_id])
 			print("[SHARE] Applied bundled script to %s" % character_id)
 			return true
@@ -138,6 +168,12 @@ static func apply_script_bundle(data: Dictionary) -> int:
 	var scripts = data.get("scripts", {})
 	var count = 0
 	for char_id in scripts:
+		var errs := validate_imported_script(scripts[char_id])
+		if not errs.is_empty():
+			# Skip the malformed one, keep importing the rest — a single bad
+			# entry shouldn't sink an otherwise-good bundle.
+			push_warning("[SHARE] Skipped bundled script for %s — %d invalid rule(s): %s" % [char_id, errs.size(), str(errs)])
+			continue
 		AutobattleSystem.set_character_script(char_id, scripts[char_id])
 		count += 1
 	print("[SHARE] Applied %d scripts from bundle" % count)

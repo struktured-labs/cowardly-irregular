@@ -1022,6 +1022,10 @@ func _format_condition(condition: Dictionary) -> String:
 			var status = condition.get("status", "")
 			# Tick 215: shared StatusNames util.
 			return "Has %s" % StatusNames.display(status)
+		"ally_has_status":
+			return "Ally has %s" % StatusNames.display(condition.get("status", ""))
+		"enemy_has_status":
+			return "Enemy has %s" % StatusNames.display(condition.get("status", ""))
 		"enemy_hp_percent":
 			return "Enemy HP %s %d%%" % [op, value]
 		"ally_hp_percent":
@@ -1032,6 +1036,12 @@ func _format_condition(condition: Dictionary) -> String:
 			return "Enemies %s %d" % [op, value]
 		"ally_count":
 			return "Allies %s %d" % [op, value]
+		"ally_mp_percent":
+			return "Ally MP %s %d%%" % [op, value]
+		"item_count":
+			return "%s %s %d" % [str(condition.get("item_id", "Item")).capitalize(), op, value]
+		"setup_complete":
+			return "Setup Done"
 		"always":
 			return "ALWAYS"
 		_:
@@ -1067,8 +1077,18 @@ func _short_target(target: String) -> String:
 			return "High HP Foe"
 		"random_enemy":
 			return "Rnd Foe"
+		"highest_speed_enemy":
+			return "Fast Foe"
+		"highest_atk_enemy":
+			return "Strong Foe"
+		"lowest_magic_defense_enemy":
+			return "Low DEF Foe"
+		"weakest_to_ability":
+			return "Weak Foe"
 		"lowest_hp_ally":
 			return "Low HP Ally"
+		"all_allies":
+			return "All Allies"
 		"self":
 			return "Self"
 		_:
@@ -1901,7 +1921,7 @@ func _apply_condition_type(new_type: String) -> void:
 	if new_type == "always":
 		cond.erase("op")
 		cond.erase("value")
-	elif new_type in ["has_status", "ally_has_status"]:
+	elif new_type in ["has_status", "ally_has_status", "enemy_has_status"]:
 		if not cond.has("status"):
 			cond["status"] = "poison"
 		cond.erase("op")

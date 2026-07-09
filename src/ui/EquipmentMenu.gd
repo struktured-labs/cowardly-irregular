@@ -520,7 +520,10 @@ func _create_item_row(item_id: String, index: int) -> Control:
 			stat_text += "%d %s  " % [diff, _stat_short_name(stat_name)]
 			negative_count += 1
 
-	if stat_text.is_empty():
+	var special_text := _special_effects_summary(item_data)
+	if not special_text.is_empty():
+		stat_text += special_text
+	if stat_text.strip_edges().is_empty():
 		stat_text = "(no change)"
 
 	var stats_label = Label.new()
@@ -548,6 +551,25 @@ func _create_item_row(item_id: String, index: int) -> Control:
 		_on_equip_item_click.bind(index), _on_equip_item_hover.bind(index))
 
 	return row
+
+
+## Compact tokens for an item's special_effects so hidden value (elemental
+## damage, crit, on-hit procs) shows in the compare preview — not just raw
+## stat_mods. Empty string when the item has none. Appended to the stat line.
+func _special_effects_summary(item_data: Dictionary) -> String:
+	var se: Variant = item_data.get("special_effects", {})
+	if not (se is Dictionary) or (se as Dictionary).is_empty():
+		return ""
+	var tokens: Array[String] = []
+	for key in se:
+		tokens.append(_humanize_special_effect(str(key)))
+	return "  ✦ " + ", ".join(tokens) if not tokens.is_empty() else ""
+
+
+func _humanize_special_effect(key: String) -> String:
+	if key.ends_with("_damage_bonus"):
+		return key.trim_suffix("_damage_bonus").capitalize() + " Dmg"
+	return key.replace("_bonus", "").replace("_", " ").strip_edges().capitalize()
 
 
 func _get_current_equipped_mods() -> Dictionary:

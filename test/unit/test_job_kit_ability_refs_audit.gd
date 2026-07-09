@@ -28,5 +28,13 @@ func test_every_job_kit_ability_resolves() -> void:
 				for a in ladder[lvl]:
 					if not abilities.has(str(a)):
 						dangling.append("%s.lvl%s → %s" % [jid, lvl, a])
+		# Free Move (per-job 0-AP command). ability-type free moves reference an
+		# ability_id (Pray/Channel/Riff); basic_attack ones don't. A typo here
+		# breaks the job's signature button silently — was unguarded before.
+		var fm = j.get("free_move", {})
+		if fm is Dictionary and str(fm.get("type", "")) == "ability":
+			var fm_id = str(fm.get("ability_id", ""))
+			if fm_id != "" and not abilities.has(fm_id):
+				dangling.append("%s.free_move → %s" % [jid, fm_id])
 	assert_eq(dangling.size(), 0,
 		"job-kit ability ids that resolve NOWHERE (player levels up, spell never arrives): %s" % str(dangling))

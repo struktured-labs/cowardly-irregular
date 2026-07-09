@@ -346,6 +346,8 @@ func _maybe_run_battle_smoke() -> void:
 	var full: bool = "--render-smoke" in OS.get_cmdline_user_args()
 	if not full and not ("--battle-smoke" in OS.get_cmdline_user_args()):
 		return
+	# Smoke runs are headed (xvfb) so the headless auto-mute never engages — mute here or music hits real speakers.
+	AudioServer.set_bus_mute(0, true)
 	await get_tree().create_timer(1.0).timeout
 	print("[SMOKE] render smoke starting (full=%s)" % str(full))
 	_close_title_screen()
@@ -2591,6 +2593,22 @@ func _on_battle_ended(victory: bool) -> void:
 		if BattleTransition:
 			await BattleTransition.reveal_exploration()
 	else:
+		# Escape vs wipe: type="escape" abilities (Flee) call end_battle(false) —
+		# the SAME path as a party wipe — so a successful flee was hitting the
+		# game-over screen. A flee leaves LIVING party members; a true wipe leaves
+		# none. Gate the whole defeat/game-over flow on the party actually being
+		# down: any survivor means we escaped, so just return to the overworld.
+		var _escape_survivors := 0
+		for _m in party:
+			if _m is Combatant and _m.is_alive:
+				_escape_survivors += 1
+		if _escape_survivors > 0:
+			if BattleTransition:
+				await BattleTransition.play_exit_transition(true)
+			await _return_to_exploration()
+			if BattleTransition:
+				await BattleTransition.reveal_exploration()
+			return
 		## Tick 411: consume meta_auto_rewind_pending (set by the Time
 		## Mage temporal_shield meta-ability in tick 404). If the
 		## player armed the shield and the wipe just hit, fire the

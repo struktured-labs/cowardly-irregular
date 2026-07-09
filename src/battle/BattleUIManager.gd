@@ -490,7 +490,7 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 				for si in range(member.status_effects.size()):
 					if si > 0:
 						status_text += ", "
-					status_text += "[color=yellow]%s[/color]" % member.status_effects[si].capitalize()
+					status_text += _status_label(member, member.status_effects[si])
 				status_text += "]"
 
 			# Set BBCode text directly
@@ -560,6 +560,29 @@ func _update_stat_mods_label(label: RichTextLabel, member: Combatant) -> void:
 	label.text = " ".join(parts) if parts.size() > 0 else ""
 
 
+## Compact buff/debuff readout for the ENEMY panel (" · ATK-30%(2)"), so the
+## player can confirm a debuff landed and how long it lasts. Buffs aqua, debuffs
+## the penalty color; equipment mods omitted (enemies rarely carry them and the
+## panel is cramped). Empty when the enemy has no active stat multipliers.
+func _enemy_stat_mods_hint(enemy: Combatant) -> String:
+	var parts: Array[String] = []
+	if "active_buffs" in enemy:
+		for buff in enemy.active_buffs:
+			var s: String = buff.get("stat", "")
+			var m: float = buff.get("modifier", 1.0)
+			if s == "" or m == 1.0:
+				continue
+			parts.append("[color=aqua]%s%+d%%(%d)[/color]" % [StatNames.short_code(s), int((m - 1.0) * 100), int(buff.get("remaining_turns", 0))])
+	if "active_debuffs" in enemy:
+		for debuff in enemy.active_debuffs:
+			var s: String = debuff.get("stat", "")
+			var m: float = debuff.get("modifier", 1.0)
+			if s == "" or m == 1.0:
+				continue
+			parts.append("[color=%s]%s%+d%%(%d)[/color]" % [AccessibilityPalette.penalty_bbcode(), StatNames.short_code(s), int((m - 1.0) * 100), int(debuff.get("remaining_turns", 0))])
+	return (" · " + " ".join(parts)) if parts.size() > 0 else ""
+
+
 func _get_status_modulate(status_effects: Array) -> Color:
 	"""Return sprite modulate color for the highest-priority active status effect.
 	Returns Color.WHITE when no relevant statuses are present."""
@@ -578,6 +601,17 @@ func _get_status_modulate(status_effects: Array) -> Color:
 			"blind":
 				return Color(0.6, 0.6, 0.7)   # Dark blue-gray
 	return Color.WHITE
+
+
+## Status name plus its remaining turns ("Poison 3"). Permanent (-1) or absent
+## durations show just the name. Turn count dimmed so the yellow name stays lead.
+func _status_label(combatant, status: String) -> String:
+	var out: String = "[color=yellow]%s[/color]" % status.capitalize()
+	if combatant != null and "status_durations" in combatant:
+		var turns: int = int(combatant.status_durations.get(status, -1))
+		if turns > 0:
+			out += "[color=#bbbb77] %d[/color]" % turns
+	return out
 
 
 func update_enemy_status() -> void:
@@ -675,7 +709,7 @@ func _update_enemy_member_status(idx: int, enemy: Combatant) -> void:
 	if not is_instance_valid(box):
 		return
 
-	var is_revealed = _revealed_enemies.get(enemy, false)
+	var is_revealed = _enemy_hp_revealed(enemy)
 	var is_dead = not enemy.is_alive
 
 	# Update name with status indicator
@@ -703,8 +737,9 @@ func _update_enemy_member_status(idx: int, enemy: Combatant) -> void:
 				for si in range(enemy.status_effects.size()):
 					if si > 0:
 						ap_text += ", "
-					ap_text += "[color=yellow]%s[/color]" % enemy.status_effects[si].capitalize()
+					ap_text += _status_label(enemy, enemy.status_effects[si])
 				ap_text += "]"
+			ap_text += _enemy_stat_mods_hint(enemy)
 			ap_label.text = ap_text
 
 	# Update HP (hidden unless revealed or dead)
@@ -733,22 +768,28 @@ func _update_enemy_member_status(idx: int, enemy: Combatant) -> void:
 
 
 ## Bestiary intel for a monster you've DEFEATED before: " · Weak: Fire ·
-## Immune: Ice". Empty for unfought monsters (you haven't earned it).
+## Immune: Ice · Resist: Dark". Empty for unfought monsters (unearned).
 ## Immunity is the higher-value half — attacking an immune element wastes
 ## the whole turn, so surfacing it proactively beats the reactive
 ## in-battle "IMMUNE!" popup that only fires AFTER the wasted swing.
 func _enemy_intel_hint(enemy: Combatant) -> String:
 	if enemy == null or not enemy.has_meta("monster_type"):
 		return ""
-	if enemy.elemental_weaknesses.is_empty() and enemy.elemental_immunities.is_empty():
+	if enemy.elemental_weaknesses.is_empty() and enemy.elemental_immunities.is_empty() \
+			and enemy.elemental_resistances.is_empty():
 		return ""
-	if not BestiarySystem.is_defeated(str(enemy.get_meta("monster_type"))):
+	# Revealed by a prior defeat (bestiary) OR a Scan cast this battle.
+	var revealed: bool = enemy.get_meta("intel_revealed", false) \
+			or BestiarySystem.is_defeated(str(enemy.get_meta("monster_type")))
+	if not revealed:
 		return ""
 	var out: String = ""
 	if not enemy.elemental_weaknesses.is_empty():
 		out += " · [color=orange]Weak: %s[/color]" % ", ".join(_capitalized(enemy.elemental_weaknesses))
 	if not enemy.elemental_immunities.is_empty():
 		out += " · [color=#88aaff]Immune: %s[/color]" % ", ".join(_capitalized(enemy.elemental_immunities))
+	if not enemy.elemental_resistances.is_empty():
+		out += " · [color=#bbbb77]Resist: %s[/color]" % ", ".join(_capitalized(enemy.elemental_resistances))
 	return out
 
 
@@ -757,6 +798,13 @@ func _capitalized(elements: Array) -> Array:
 	for e in elements:
 		names.append(str(e).capitalize())
 	return names
+
+
+## Exact enemy HP shows once the enemy has been attacked (_revealed_enemies) OR
+## Scanned this battle — a Scan reveals the full profile (HP + elemental intel),
+## not just weaknesses. (v3.33.11 Scan set intel_revealed but left HP vague.)
+func _enemy_hp_revealed(enemy: Combatant) -> bool:
+	return _revealed_enemies.get(enemy, false) or (enemy != null and enemy.get_meta("intel_revealed", false))
 
 
 func reveal_enemy_stats(enemy: Combatant) -> void:

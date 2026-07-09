@@ -175,9 +175,10 @@ Each rule shape:
 Conditions (AND-chained). type is one of:
   hp_percent, mp_percent, ap, has_status, enemy_hp_percent, ally_hp_percent,
   turn, enemy_count, ally_count, item_count, setup_complete,
-  ally_has_status, ally_mp_percent, always
+  ally_has_status, enemy_has_status, ally_mp_percent, always
 Each numeric condition takes op ∈ {<, <=, ==, >=, >, !=} and value.
-has_status / ally_has_status take a 'status' field (e.g. 'poison').
+has_status / ally_has_status / enemy_has_status take a 'status' field (e.g.
+'poison'); enemy_has_status is true when ANY living enemy has that status.
 
 Actions (executed in order, up to 4 per rule). type is one of:
   attack, ability, item, defer
@@ -187,12 +188,21 @@ item requires id (e.g. 'potion').
 Targets. Values:
   lowest_hp_enemy, highest_hp_enemy, random_enemy,
   highest_speed_enemy, highest_atk_enemy, lowest_magic_defense_enemy,
-  lowest_hp_ally, all_allies, self
+  weakest_to_ability, lowest_hp_ally, all_allies, self
+weakest_to_ability aims an elemental ability at the enemy weak to its element
+(and skips immune enemies) — pair it with an elemental ability id like fire.
 
 Canonical example:
   {\"conditions\":[{\"type\":\"ally_has_status\",\"status\":\"poison\"},
                    {\"type\":\"mp_percent\",\"op\":\">=\",\"value\":15}],
    \"actions\":[{\"type\":\"ability\",\"id\":\"esuna\",\"target\":\"lowest_hp_ally\"}],
+   \"enabled\":true}
+
+Exploit-weakness example (fire the moment an enemy is stunned, aimed at whichever
+foe is weak to fire, with an mp guard for fire's 8 MP on an 80 pool = 10%):
+  {\"conditions\":[{\"type\":\"enemy_has_status\",\"status\":\"stun\"},
+                   {\"type\":\"mp_percent\",\"op\":\">=\",\"value\":10}],
+   \"actions\":[{\"type\":\"ability\",\"id\":\"fire\",\"target\":\"weakest_to_ability\"}],
    \"enabled\":true}
 
 Ability cost / fizzle safety (autobattle only) — a validator rejects rules

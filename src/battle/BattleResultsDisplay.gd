@@ -162,6 +162,8 @@ func show_victory_results() -> void:
 			char_height_total += 22
 			if not cr.get("stat_gains", {}).is_empty():
 				char_height_total += 18  # stat-gain line
+			if not cr.get("learned_abilities", []).is_empty():
+				char_height_total += 18  # learned-abilities line
 	var gold_height = 32 if total_gold > 0 else 0
 	var items_height = (item_drops.size() * 22 + 8) if item_drops.size() > 0 else 0
 	var injuries_height = (injuries.size() * 22 + 8) if injuries.size() > 0 else 0
@@ -372,6 +374,19 @@ func show_victory_results() -> void:
 					gain_label.modulate.a = 0.0
 					vbox.add_child(gain_label)
 					anim_tween.tween_property(gain_label, "modulate:a", 1.0, 0.2).set_delay(lvl_delay + 0.25)
+
+				# Newly-learned abilities — the OTHER level-up payoff ("Learned Fire!"),
+				# fades in just after the stat gains.
+				var learned: Array = cr.get("learned_abilities", [])
+				if not learned.is_empty():
+					var learn_label = Label.new()
+					learn_label.text = "      ✦ Learned: %s" % ", ".join(PackedStringArray(learned))
+					learn_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
+					learn_label.add_theme_color_override("font_color", Color(0.5, 0.85, 1.0))
+					learn_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+					learn_label.modulate.a = 0.0
+					vbox.add_child(learn_label)
+					anim_tween.tween_property(learn_label, "modulate:a", 1.0, 0.2).set_delay(lvl_delay + 0.4)
 
 		char_idx += 1
 
