@@ -1636,6 +1636,56 @@
     "cost": 0,
     "flavor": "The first thing anyone puts down when building a world is a sky. The sky shows where the world was when it was still being invented."
   },
+  "precision_tool_set": {
+    "id": "precision_tool_set",
+    "name": "Precision Tool Set",
+    "category": 4,
+    "target_type": 4,
+    "description": "Sprocket's own kit, given at normal speed. Intended mechanics: reduces AP cost of ability-based actions by 1 in World 3 battles (promote in an equipment pass).",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Every tool sits in a fitted recess. Every recess is labeled. One recess is empty and labeled 'THE ONE I ALWAYS NEED.' Sprocket says that one is intentional."
+  },
+  "substituted_gear": {
+    "id": "substituted_gear",
+    "name": "Substituted Gear",
+    "category": 4,
+    "target_type": 4,
+    "description": "The replacement gear from Sprocket's cluster — exactly one unit larger than standard. The depot record's margin reads: 'substituted — standard gauge unavailable. Approved: Calibrant Logistics.'",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Mistakes aren't this punctual. Kept as evidence for a case nobody has opened yet."
+  },
+  "mapped_route": {
+    "id": "mapped_route",
+    "name": "The Mapped Route",
+    "category": 4,
+    "target_type": 4,
+    "description": "Clem's twenty-year lamplighting route, drawn whole for the first time: the Grand Mechanism's secondary cooling circuit, scaled and rotated onto the streets of Brasston. In W4's maintenance tunnels it identifies a Cogsworth-era ventilation shaft.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "He only ever saw the next lamp. You saw the picture. Neither view is complete without the other."
+  },
+  "hartwick_notebook": {
+    "id": "hartwick_notebook",
+    "name": "Hartwick's Notebook",
+    "category": 4,
+    "target_type": 4,
+    "description": "The old chief engineer's schematics and notes — the most thorough technical documentation of the Grand Mechanism in existence. The last dated entry stops mid-sentence: 'I need to find the external input before—'",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The final page, added later, in steadier hand: 'They didn't take my life. They just displaced me. I'm in Brasston still. I'm fixing small things. I don't think they know I'm still here.'"
+  },
+  "mechanism_master_key": {
+    "id": "mechanism_master_key",
+    "name": "Mechanism Master Key",
+    "category": 4,
+    "target_type": 4,
+    "description": "Hartwick's key to the Grand Mechanism's restricted section — never rekeyed, because they assumed nobody remembered it existed. Intended mechanics: opens a blueprint shortcut compressing the dungeon's second half and skipping one mandatory fight.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "'I remember everything that exists. It's my whole problem.'"
+  },
   "ERROR": {
     "id": "ERROR",
     "name": "ERROR",

@@ -1,0 +1,86 @@
+{
+  "id": "world3_lamplighters_logic",
+  "title": "The Lamplighter's Logic",
+  "world": 3,
+  "giver": {
+    "npc_id": "clem_lamplighter",
+    "display_name": "Clem the Lamplighter",
+    "location": {"map_id": "brasston", "near": "lamp_route_start"},
+    "spawn_flag": ""
+  },
+  "description": "Clem lights the lamps of Brasston in an order that follows no geographic logic — doubling back, crossing streets twice, skipping sections and returning. He's followed the route for twenty years. His father followed it before him. Nobody knows why, including Clem.",
+  "playstyle_tags": ["observation", "exploration", "puzzle"],
+  "dialogue": {
+    "offer": [
+      {"speaker": "Clem", "text": "You're watching my route. Most people don't.", "theme": "villager"},
+      {"speaker": "Clem", "text": "It's a strange one, I'll grant. Double back at the mill, cross Copper Street twice, skip the arcade and come back to it after the bridge. Twenty years. My father taught me. His father taught him.", "theme": "villager"},
+      {"speaker": "Clem", "text": "If you want to know what it is, you'll have to walk it. All of it. I can't describe it — I've only ever seen it from inside.", "theme": "villager"}
+    ],
+    "accept": [
+      {"speaker": "Clem", "text": "Keep up, then. The lamps don't wait, and neither does whatever the lamps are for.", "theme": "villager"}
+    ],
+    "decline": [
+      {"speaker": "Clem", "text": "Fair enough. The route'll still be here tomorrow. It's been here longer than tomorrow's been a concept.", "theme": "villager"}
+    ],
+    "in_progress": [
+      {"speaker": "Clem", "text": "Halfway. The next stretch is the part that looks maddest — trust it. The route knows what it's doing even when I don't.", "theme": "villager"}
+    ],
+    "ready_to_turn_in": [
+      {"speaker": "Clem", "text": "So you walked it, mapped it, and showed it to the Brigadier. And? What does my route look like from outside?", "theme": "villager"}
+    ],
+    "complete": [
+      {"speaker": "Clem", "text": "The Mechanism's cooling circuit. Scaled onto the streets. Lit every night for — for generations.", "theme": "villager"},
+      {"speaker": "Clem", "text": "I've been helping the Mechanism my whole life. I didn't know.", "theme": "villager"},
+      {"speaker": "Clem", "text": "I don't think I mind. I just want to know the Mechanism is doing something good with the help. Here — take the map you made. It's yours. You're the first person who ever saw the whole picture. I only ever saw the next lamp.", "theme": "villager"}
+    ]
+  },
+  "objectives": [
+    {
+      "step": 1,
+      "description": "Ask Clem about the route nobody watches.",
+      "type": "talk",
+      "target_npc": "clem_lamplighter",
+      "flag_on_complete": "quest_world3_lamplighters_logic_accepted"
+    },
+    {
+      "step": 2,
+      "description": "Follow Clem's full route and document every lamp.",
+      "type": "custom",
+      "required_flag": "quest_world3_lamplighters_logic_route_documented",
+      "flag_on_complete": "quest_world3_lamplighters_logic_route_documented"
+    },
+    {
+      "step": 3,
+      "description": "Show the route map to Brigadier Flux.",
+      "type": "talk",
+      "target_npc": "brigadier_flux",
+      "required_flag": "quest_world3_lamplighters_logic_route_documented",
+      "flag_on_complete": "quest_world3_lamplighters_logic_pattern_identified"
+    },
+    {
+      "step": 4,
+      "description": "Tell Clem what his route looks like from outside.",
+      "type": "talk",
+      "target_npc": "clem_lamplighter",
+      "required_flag": "quest_world3_lamplighters_logic_pattern_identified"
+    }
+  ],
+  "rewards": {
+    "gold": 0,
+    "exp": 300,
+    "items": [
+      {"item_id": "mapped_route", "count": 1}
+    ],
+    "job_variants": {
+      "bard": {
+        "description": "Dialogue-only: each lamp, lit, produces a tone too faint and too spread out for anyone to hear more than one — but the Busker's musical sensitivity assembles the harmonic relationship. The full route plays a melody: a fragment the Bard heard in W1, from the Curator of the Flame's staff. Same melody. Different world. Same someone.",
+        "items": [
+          {"item_id": "mapped_route", "count": 1}
+        ]
+      }
+    }
+  },
+  "flag_on_complete": "quest_world3_lamplighters_logic_complete",
+  "cross_world_connection": "Flux, at step 3: 'The streets were laid out to echo the Mechanism. I always thought the Mechanism was built to serve the city. What if the city was built to serve the Mechanism?' If world3_fragment (Redundant Blueprint) is in inventory, its secondary diagrams label the lamp route 'surface cooling approximation — ornamental but functional': Brasston keeps the Mechanism cool. The mapped_route identifies a Cogsworth-era ventilation shaft in W4's maintenance tunnels (bypasses a guarded corridor).",
+  "_wiring_notes": "Step 2 emitter quest_world3_lamplighters_logic_route_documented: the follow-the-route sequence — Clem walks his ~5-minute loop, party must stay within follow range for the full circuit (or interact at each lamp in order — overworld's pick, whichever is cheaper; the chicken/interview counting pattern fits either). Breaking off pauses progress, not resets. Mage-in-party flavor: notes taken automatically. Route shape brief for the map artist/overworld: doubles back at the mill, crosses Copper Street twice, skips the arcade, returns after the bridge — when drawn, reads as a circuit diagram (Mage line) / a patrol route for a much larger building (Rogue line). Redundant-blueprint bonus dialogue keys on the W3 masterite fragment item in inventory. Clem's post-quest sit-down beat: he sits on a doorstep next to a lamp he's just lit — small idle animation moment if cheap, pure dialogue if not."
+}
