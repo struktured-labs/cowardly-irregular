@@ -171,11 +171,12 @@ func _flush_completion_cutscene() -> void:
 		return
 	var cs := _pending_completion_cutscene
 	_pending_completion_cutscene = ""
-	var director = get_node_or_null("/root/CutsceneDirector")
-	if director == null:
-		push_warning("[QuestSystem] cutscene_on_complete '%s' dropped — CutsceneDirector autoload missing" % cs)
+	# CutsceneDirector is GameLoop-owned (NOT an autoload) — reach it via the lazy accessor
+	var game_loop = get_tree().root.get_node_or_null("GameLoop")
+	if game_loop == null or not game_loop.has_method("get_cutscene_director"):
+		push_warning("[QuestSystem] cutscene_on_complete '%s' dropped — no GameLoop/get_cutscene_director in tree" % cs)
 		return
-	await director.play_cutscene(cs)
+	await game_loop.get_cutscene_director().play_cutscene(cs)
 
 
 func _grant_rewards(q: Dictionary) -> void:

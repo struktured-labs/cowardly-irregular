@@ -36,8 +36,10 @@ func test_seam_quests_author_no_item_rewards() -> void:
 		var rewards: Dictionary = seam[f].get("rewards", {})
 		assert_eq(rewards.get("items", []).size(), 0,
 			"%s has cutscene_on_complete — its cinematic owns item grants; quest items[] must be empty" % f)
-		assert_eq(rewards.get("job_variants", {}).size(), 0,
-			"%s: per-lead variants live in the cutscene (lead_job branch), not quest job_variants" % f)
+		# dialogue-only variants (items: []) are legal — the rule guards GRANTS, not presentation (W5 long_way_around's Time Mage read)
+		for job in rewards.get("job_variants", {}):
+			assert_eq(rewards["job_variants"][job].get("items", []).size(), 0,
+				"%s: variant '%s' authors ITEMS — grants live in the cutscene's lead_job branch" % [f, job])
 
 
 func test_seam_targets_exist_and_final_objective_is_talk() -> void:
@@ -68,9 +70,9 @@ func test_complete_quest_stashes_but_never_plays_directly() -> void:
 
 
 func test_orrery_chain_marks_actually_advance() -> void:
-	# The dead-seam bug: fool_card_marks never moved. Pin marks 1 and 2 on the
-	# two wired worlds (W3-W6 ride their future batch edits).
-	for pair in [["world1_orrery", 1], ["world2_orrery", 2]]:
+	# The dead-seam bug: fool_card_marks never moved. Pin the counter on all
+	# five mark-granting worlds (W6 is the payoff — it spends, not grants).
+	for pair in [["world1_orrery", 1], ["world2_orrery", 2], ["world3_orrery", 3], ["world4_orrery", 4], ["world5_orrery", 5]]:
 		var data = JSON.parse_string(FileAccess.get_file_as_string("res://data/cutscenes/%s.json" % pair[0]))
 		var found := false
 		var steps: Array = data.get("steps", [])
@@ -84,6 +86,39 @@ func test_orrery_chain_marks_actually_advance() -> void:
 					if str(cs.get("type", "")) == "set_flag" and str(cs.get("flag", "")) == "fool_card_marks" and int(cs.get("value", -1)) == int(pair[1]):
 						found = true
 		assert_true(found, "%s must set fool_card_marks=%d — that counter IS the chain" % [pair[0], pair[1]])
+
+
+func test_five_marks_emitter_fires_at_threshold() -> void:
+	# The finale (world6_last_appointment) gates prereq+spawn on the WIRING-OWNED
+	# boolean quest_wiring_fool_card_five_marks. Marks are int-valued and land in
+	# _step_set_flag, so the emitter lives there. Pin: 4 doesn't fire, 5 does.
+	# CutsceneDirector is GameLoop-owned, not an autoload — a bare instance works (_step_set_flag only touches GameState)
+	var director := CutsceneDirector.new()
+	add_child_autofree(director)
+	var had_bool: bool = GameState.story_flags.has("quest_wiring_fool_card_five_marks")
+	var had_marks: bool = GameState.game_constants.has("cutscene_flag_fool_card_marks")
+	GameState.story_flags.erase("quest_wiring_fool_card_five_marks")
+
+	director._step_set_flag({"flag": "fool_card_marks", "value": 4})
+	assert_false(GameState.get_story_flag("quest_wiring_fool_card_five_marks"),
+		"marks=4 must NOT arm the finale gate")
+	director._step_set_flag({"flag": "fool_card_marks", "value": 5})
+	assert_true(GameState.get_story_flag("quest_wiring_fool_card_five_marks"),
+		"marks=5 must emit quest_wiring_fool_card_five_marks — the chain finale is unreachable without it")
+
+	GameState.story_flags.erase("fool_card_marks")
+	if not had_bool:
+		GameState.story_flags.erase("quest_wiring_fool_card_five_marks")
+	if not had_marks:
+		GameState.game_constants.erase("cutscene_flag_fool_card_marks")
+
+
+func test_finale_quest_gates_on_the_emitted_boolean() -> void:
+	var q = JSON.parse_string(FileAccess.get_file_as_string("res://data/quests/world6_last_appointment.json"))
+	assert_eq(str(q.get("prereq_flag", "")), "quest_wiring_fool_card_five_marks",
+		"finale prereq must match the emitter's flag name exactly")
+	assert_eq(str(q.get("giver", {}).get("spawn_flag", "")), "quest_wiring_fool_card_five_marks",
+		"finale giver spawn must match the emitter's flag name exactly")
 
 
 func test_fools_spread_wired_to_world1_orrery() -> void:

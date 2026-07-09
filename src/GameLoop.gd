@@ -1293,6 +1293,14 @@ func _on_title_new_game() -> void:
 	_start_exploration()
 
 
+## Lazy accessor — CutsceneDirector is GameLoop-owned, NOT an autoload (QuestSystem's cutscene_on_complete flush + both internal lazy-create sites route here).
+func get_cutscene_director() -> CutsceneDirector:
+	if not _cutscene_director:
+		_cutscene_director = CutsceneDirector.new()
+		add_child(_cutscene_director)
+	return _cutscene_director
+
+
 func _play_new_game_cutscenes() -> void:
 	"""Play prologue cutscene on new game, then start exploration."""
 	current_state = LoopState.CUTSCENE
