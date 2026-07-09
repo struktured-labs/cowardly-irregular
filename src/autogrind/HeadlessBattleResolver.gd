@@ -395,7 +395,7 @@ func _execute_group_formation(participants: Array, formation: Dictionary) -> Dic
 				var damage = max(1, int(total_atk * scale * full_hp_bonus / max(1.0, float(alive_enemies.size()))))
 				enemy.take_damage(damage)
 				_log("Shadow Strike hits %s for %d!" % [enemy.combatant_name, damage])
-			_log("FORMATION: Shadow Strike — defense ignored, 2x on full HP!")
+			_log("FORMATION: Shadow Strike — 2x on full HP!")
 
 		"chaos_theory":
 			var roll = randf()

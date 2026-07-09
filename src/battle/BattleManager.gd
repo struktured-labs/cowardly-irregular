@@ -3409,7 +3409,7 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 			battle_log_message.emit("[color=cyan]★ Iron Wall — party DEF +50%% (3 turns) + crushing blow! ★[/color]")
 
 		"shadow_strike":
-			# Ignores defense, 2x vs full-HP targets
+			# 2x vs full-HP targets; defense applies via take_damage (log used to claim otherwise — honoring the flavor is a pending balance call)
 			var total_atk = 0.0
 			for p in participants:
 				if p is Combatant and p.is_alive:
@@ -3418,10 +3418,10 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 				if not enemy.is_alive: continue
 				var full_hp_bonus = 2.0 if enemy.current_hp == enemy.max_hp else 1.0
 				var damage = int(total_atk * scale * full_hp_bonus / max(1.0, float(alive_enemies.size())))
-				damage = max(1, damage)  # Defense ignored
+				damage = max(1, damage)
 				enemy.take_damage(damage)
 				damage_dealt.emit(enemy, damage, false, "", 1.0)
-			battle_log_message.emit("[color=purple]★ Shadow Strike — defense ignored! 2x on full HP targets! ★[/color]")
+			battle_log_message.emit("[color=purple]★ Shadow Strike — 2x on full HP targets! ★[/color]")
 
 		"chaos_theory":
 			# Random massive effect — could buff party, could nuke enemies, could backfire
