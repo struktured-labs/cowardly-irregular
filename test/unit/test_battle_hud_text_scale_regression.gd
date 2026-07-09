@@ -10,7 +10,8 @@ extends GutTest
 const FILES := ["res://src/battle/BattleUIManager.gd", "res://src/ui/Win98Menu.gd",
 	"res://src/ui/OverworldMenu.gd", "res://src/ui/ItemsMenu.gd",
 	"res://src/ui/SettingsMenu.gd", "res://src/ui/FormationsMenu.gd",
-	"res://src/exploration/ShopScene.gd"]
+	"res://src/exploration/ShopScene.gd",
+	"res://src/ui/RecordsMenu.gd"]
 
 
 func test_no_bare_int_font_overrides_in_battle_hud() -> void:

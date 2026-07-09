@@ -48,6 +48,7 @@ const BASE_MENU_OPTIONS = [
 	{"id": "cutscene_gallery", "label": "Theater", "enabled": true},
 	{"id": "bestiary", "label": "Bestiary", "enabled": true},
 	{"id": "formations", "label": "Formations", "enabled": true},
+	{"id": "records", "label": "Records", "enabled": true},
 	{"id": "world_map", "label": "World Map", "enabled": true},
 	{"id": "save", "label": "Save", "enabled": true},
 	{"id": "load", "label": "Load", "enabled": true},
@@ -732,6 +733,8 @@ func _handle_menu_action(action_id: String) -> void:
 			_open_bestiary()
 		"formations":
 			_open_formations()
+		"records":
+			_open_records()
 		"world_map":
 			_open_world_map()
 		"settings":
@@ -766,6 +769,15 @@ func _open_formations() -> void:
 	formations.closed.connect(_on_submenu_closed)
 	add_child(formations)
 	_hide_main_ui(formations)
+
+
+func _open_records() -> void:
+	_submenu_open = true
+	var records = load("res://src/ui/RecordsMenu.gd").new()
+	records.set_anchors_preset(Control.PRESET_FULL_RECT)
+	records.closed.connect(_on_submenu_closed)
+	add_child(records)
+	_hide_main_ui(records)
 
 
 func _open_world_map() -> void:
