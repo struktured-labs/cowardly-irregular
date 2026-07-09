@@ -127,6 +127,10 @@ func _setup_buildings() -> void:
 	# shadow dragon) — the room's payload.
 	spawn_points["witch_hut_exit"] = Vector2(4 * TILE_SIZE, 10 * TILE_SIZE)
 	_add_interior_door("WitchHutDoor", "grimhollow_witch_hut", "Enter Witch's Hut", Vector2(4 * TILE_SIZE, 9 * TILE_SIZE))
+	# === LANTERN DEBT OFFICE DOOR ===
+	# South face of the CCC building (cols 13-15, rows 6-8) — where the swamp's light is loaned.
+	spawn_points["lantern_exit"] = Vector2(14 * TILE_SIZE, 9.5 * TILE_SIZE)
+	_add_interior_door("LanternDebtDoor", "grimhollow_lantern_debt", "Enter Lantern Debt Office", Vector2(14 * TILE_SIZE, 8.5 * TILE_SIZE))
 
 
 func _setup_treasures() -> void:

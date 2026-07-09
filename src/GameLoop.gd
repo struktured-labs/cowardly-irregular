@@ -25,6 +25,7 @@ const EldertreeGraftingHouseInteriorScript = preload("res://src/maps/interiors/E
 const IronhavenStrikeRegistryInteriorScript = preload("res://src/maps/interiors/IronhavenStrikeRegistryInterior.gd")
 const FrostholdMeltwaterClockInteriorScript = preload("res://src/maps/interiors/FrostholdMeltwaterClockInterior.gd")
 const SandriftRainLedgerInteriorScript = preload("res://src/maps/interiors/SandriftRainLedgerInterior.gd")
+const GrimhollowLanternDebtInteriorScript = preload("res://src/maps/interiors/GrimhollowLanternDebtInterior.gd")
 const HarmoniaLibraryInteriorScript = preload("res://src/maps/interiors/HarmoniaLibraryInterior.gd")
 const EldertreeHollowTreeInteriorScript = preload("res://src/maps/interiors/EldertreeHollowTreeInterior.gd")
 const FrostholdWardenHutInteriorScript = preload("res://src/maps/interiors/FrostholdWardenHutInterior.gd")
@@ -2984,6 +2985,8 @@ func _start_exploration() -> void:
 			exploration_scene = SandriftRainLedgerInteriorScript.new()
 		"grimhollow_witch_hut":
 			exploration_scene = GrimhollowWitchHutInteriorScript.new()
+		"grimhollow_lantern_debt":
+			exploration_scene = GrimhollowLanternDebtInteriorScript.new()
 		"ironhaven_watchtower":
 			exploration_scene = IronhavenWatchtowerInteriorScript.new()
 		"ironhaven_strike_registry":
@@ -3448,7 +3451,7 @@ const INTERIOR_MAP_IDS: PackedStringArray = [
 	# + the Grafting House (Eldertree GGG garden) + the Strike Registry
 	# (Ironhaven MMM building).
 	"harmonia_cartographer", "eldertree_grafting_house", "ironhaven_strike_registry",
-	"frosthold_meltwater_clock", "sandrift_rain_ledger",
+	"frosthold_meltwater_clock", "sandrift_rain_ledger", "grimhollow_lantern_debt",
 ]
 
 
@@ -4067,7 +4070,7 @@ func _get_terrain_for_map(map_id: String) -> String:
 			return "ice"
 		"sandrift_glassmaker", "sandrift_rain_ledger":
 			return "desert"
-		"grimhollow_witch_hut":
+		"grimhollow_witch_hut", "grimhollow_lantern_debt":
 			return "swamp"
 		"ironhaven_watchtower", "ironhaven_strike_registry":
 			return "volcanic"

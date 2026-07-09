@@ -62,7 +62,8 @@ func test_game_loop_routes_grimhollow_witch_hut() -> void:
 		"GameLoop must preload the hut script")
 	assert_true(src.contains("\"grimhollow_witch_hut\":"),
 		"GameLoop scene routing must include grimhollow_witch_hut")
-	assert_true(src.contains("\"grimhollow_witch_hut\":\n\t\t\treturn \"swamp\""),
+	# 2026-07-09: arm grouped with the Lantern Debt Office — both Grimhollow interiors.
+	assert_true(src.contains("\"grimhollow_witch_hut\", \"grimhollow_lantern_debt\":\n\t\t\treturn \"swamp\""),
 		"grimhollow_witch_hut must map to 'swamp' terrain — Grimhollow's battle backdrop")
 
 
