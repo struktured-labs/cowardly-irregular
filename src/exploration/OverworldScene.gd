@@ -694,6 +694,15 @@ func _place_quest_npcs() -> void:
 		orrery.position = Vector2(14 * TILE_SIZE + TILE_SIZE / 2, 23 * TILE_SIZE + TILE_SIZE / 2)
 		add_child(orrery)
 
+	# one_chicken_problem: the wandering hen that strayed to the cave approach.
+	var ChickenScript = load("res://src/exploration/QuestChicken.gd")
+	if ChickenScript:
+		var cave_pos: Vector2 = spawn_points.get("cave_entrance", Vector2(96, 96))
+		var hen = ChickenScript.new()
+		hen.chicken_id = "chicken_cave_approach"
+		hen.position = cave_pos + Vector2(TILE_SIZE * 2, TILE_SIZE)
+		add_child(hen)
+
 
 func _place_village_markers() -> void:
 	var villages = [

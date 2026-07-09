@@ -398,6 +398,18 @@ func _setup_npcs() -> void:
 	])
 	npcs.add_child(aldwick)
 
+	# one_chicken_problem step-2 puzzle: 5 of the 7 hens roost in Harmonia.
+	# (cave approach + Inn kitchen carry the other two.) The guild hen is
+	# temp-placed here until the Scriptura scene lands, per its wiring note.
+	_place_chicken("chicken_harmonia_market", Vector2(15 * TILE_SIZE, 12 * TILE_SIZE))
+	_place_chicken("chicken_harmonia_flowerbed", Vector2(26 * TILE_SIZE, 2 * TILE_SIZE))
+	_place_chicken("chicken_harmonia_backlot", Vector2(3 * TILE_SIZE, 19 * TILE_SIZE))
+	_place_chicken("chicken_guild", Vector2(5 * TILE_SIZE, 8 * TILE_SIZE))
+	# The unnamed seventh — beside Phil the Lost at the well. Phil's line lands
+	# on catch (the hen keeps returning to him, mirroring Phil to Harmonia).
+	_place_chicken("chicken_phil_well", Vector2(21 * TILE_SIZE, 16 * TILE_SIZE),
+		"Phil: \"It keeps coming back to me. Maybe it knows something.\"")
+
 	# Bram the smith's apprentice — untested_edge giver, by Ironclad Arms
 	var bram = _create_npc("Bram Smith", "blacksmith", Vector2(24 * TILE_SIZE, 6 * TILE_SIZE), [
 		"Master Brutus forges them. I catalogue them. One came BACK.",
@@ -492,3 +504,15 @@ func _setup_npcs() -> void:
 		"scholar"
 	)
 	npcs.add_child(wandering_scholar)
+
+
+## Spawn a QuestChicken for the one_chicken_problem 7-catch puzzle.
+func _place_chicken(chicken_id: String, pos: Vector2, catch_line: String = "") -> void:
+	var ChickenScript = load("res://src/exploration/QuestChicken.gd")
+	if ChickenScript == null:
+		return
+	var hen = ChickenScript.new()
+	hen.chicken_id = chicken_id
+	hen.catch_line = catch_line
+	hen.position = pos
+	npcs.add_child(hen)

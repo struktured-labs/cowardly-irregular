@@ -1079,6 +1079,14 @@ func _setup_npcs() -> void:
 		"Tilly: That's genuine Harmonian weave. Costs more than your weapons.",
 	])
 
+	# one_chicken_problem: a hen got into the Inn's back kitchen nook.
+	var ChickenScript = load("res://src/exploration/QuestChicken.gd")
+	if ChickenScript:
+		var hen = ChickenScript.new()
+		hen.chicken_id = "chicken_inn_kitchen"
+		hen.position = Vector2(17, 10) * TILE_SIZE
+		npcs.add_child(hen)
+
 
 func _create_npc(npc_name: String, npc_type: String, grid_pos: Vector2, dialogue: Array) -> void:
 	var OverworldNPCScript = load("res://src/exploration/OverworldNPC.gd")
