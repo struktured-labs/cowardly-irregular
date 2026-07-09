@@ -14,6 +14,9 @@ const HarmoniaVillageRes = preload("res://src/maps/villages/HarmoniaVillage.tscn
 const WhisperingCaveRes = preload("res://src/maps/dungeons/WhisperingCave.tscn")
 const TavernInteriorScript = preload("res://src/maps/interiors/TavernInterior.gd")
 const InnInteriorScript = preload("res://src/maps/interiors/InnInterior.gd")
+const ScripturaPlazaScript = preload("res://src/maps/villages/ScripturaPlaza.gd")
+const ScripturaGuildInteriorScript = preload("res://src/maps/interiors/ScripturaGuildInterior.gd")
+const ScripturaBookshopInteriorScript = preload("res://src/maps/interiors/ScripturaBookshopInterior.gd")
 const ShopInteriorScript = preload("res://src/maps/interiors/ShopInterior.gd")
 const BlacksmithInteriorScript = preload("res://src/maps/interiors/BlacksmithInterior.gd")
 const HarmoniaChapelInteriorScript = preload("res://src/maps/interiors/HarmoniaChapelInterior.gd")
@@ -2939,6 +2942,12 @@ func _start_exploration() -> void:
 			exploration_scene = _create_shop_interior(3)
 		"blacksmith_interior":
 			exploration_scene = BlacksmithInteriorScript.new()
+		"scriptura_plaza":
+			exploration_scene = ScripturaPlazaScript.new()
+		"scriptura_guild":
+			exploration_scene = ScripturaGuildInteriorScript.new()
+		"scriptura_bookshop":
+			exploration_scene = ScripturaBookshopInteriorScript.new()
 		"harmonia_chapel":
 			exploration_scene = HarmoniaChapelInteriorScript.new()
 		"harmonia_library":
@@ -3399,6 +3408,8 @@ const INTERIOR_MAP_IDS: PackedStringArray = [
 	"shop_interior_white_magic", "shop_interior_blacksmith",
 	# Dedicated forge-experience scene (atmospheric, not the shop UI).
 	"blacksmith_interior",
+	# Scriptura capital-district interiors (Guild + bookshop).
+	"scriptura_guild", "scriptura_bookshop",
 ]
 
 
@@ -3413,7 +3424,7 @@ func _get_transition_type(map_id: String) -> String:
 			or "prime" in t or "vertex" in t or "brasston" in t \
 			or "harmonia" in t or "tavern" in t or "frosthold" in t \
 			or "eldertree" in t or "grimhollow" in t or "sandrift" in t \
-			or "ironhaven" in t:
+			or "ironhaven" in t or "scriptura_plaza" in t:
 		return "village"
 	if "overworld" in t or t == "overworld":
 		return "overworld"

@@ -113,9 +113,9 @@ func _on_body_entered(body: Node2D) -> void:
 		return
 	var qs := get_node_or_null("/root/QuestSystem")
 	if qs == null or qs.get_state(QUEST_ID) != "active":
-		# Ambient hen — a cluck, but no progress until the quest is taken.
+		# Ambient hen — a real cluck (cowir-sfx b38c890e), no progress until the quest is taken.
 		if SoundManager:
-			SoundManager.play_ui("menu_move")
+			SoundManager.play_ui("chicken_cluck")
 		return
 	_catch()
 
@@ -123,8 +123,9 @@ func _on_body_entered(body: Node2D) -> void:
 func _catch() -> void:
 	_caught = true
 	GameState.set_story_flag("chicken_caught_" + chicken_id)
+	# Startled squawk-flutter (cowir-sfx b38c890e) — on-theme for the roundup gag.
 	if SoundManager:
-		SoundManager.play_ui("secret_found")
+		SoundManager.play_ui("chicken_caught")
 	_poof()
 	_tally()
 

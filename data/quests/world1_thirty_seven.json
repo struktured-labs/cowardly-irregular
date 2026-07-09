@@ -57,6 +57,7 @@
       "type": "fetch",
       "item_id": "overdue_guild_book",
       "count": 1,
+      "consume": true,
       "required_flag": "quest_world1_thirty_seven_favor_asked"
     },
     {

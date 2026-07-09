@@ -63,6 +63,10 @@ const DESTINATIONS: Array = [
 	{"id": "rivet_row_union_hall",   "label": "Union Hall (RivetRow)", "spawn": "entrance",    "section": ""},
 	{"id": "node_prime_daemon_lounge","label": "Daemon Lounge (NodePrime)","spawn": "entrance","section": ""},
 	{"id": "vertex_threshold",       "label": "The Threshold (Vertex)","spawn": "entrance",   "section": ""},
+	# --- Scriptura capital district (W1) ---
+	{"id": "scriptura_plaza",        "label": "Scriptura Plaza",      "spawn": "entrance",    "section": "Scriptura (W1)"},
+	{"id": "scriptura_guild",        "label": "Scriptweaver's Guild", "spawn": "entrance",    "section": ""},
+	{"id": "scriptura_bookshop",     "label": "Aldrin's Books",       "spawn": "entrance",    "section": ""},
 ]
 
 const ROW_HEIGHT: int = 26
