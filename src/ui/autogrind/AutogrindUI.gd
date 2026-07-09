@@ -1290,6 +1290,14 @@ func _input(event: InputEvent) -> void:
 		_toggle_auto_advance()
 		get_viewport().set_input_as_handled()
 
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_E and event.shift_pressed and not event.is_echo():
+		_copy_rules_share_code()
+		get_viewport().set_input_as_handled()
+
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_I and event.shift_pressed and not event.is_echo():
+		_paste_rules_share_code()
+		get_viewport().set_input_as_handled()
+
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_E and not event.is_echo():
 		_export_scripts()
 		get_viewport().set_input_as_handled()
@@ -1675,6 +1683,36 @@ func _export_scripts() -> void:
 		_log_message("[color=%s]%d file(s) exported to script_exports/[/color]" % [AccessibilityPalette.bonus_bbcode(), exported])
 		TutorialHints.show(self, "autogrind_export")
 	SoundManager.play_ui("menu_select")
+
+
+## Shift+E: put an autogrind-rules share code on the clipboard — paste it anywhere.
+func _copy_rules_share_code() -> void:
+	var code := ScriptShareManager.encode_autogrind_share_code()
+	if code == "":
+		_log_message("[color=yellow]No autogrind rules to share.[/color]")
+		SoundManager.play_ui("menu_error")
+		return
+	DisplayServer.clipboard_set(code)
+	_log_message("[color=%s]Rules share code copied (%d chars) — paste it anywhere.[/color]" % [AccessibilityPalette.bonus_bbcode(), code.length()])
+	SoundManager.play_ui("menu_select")
+
+
+## Shift+I: apply an autogrind-rules share code from the clipboard.
+func _paste_rules_share_code() -> void:
+	if _is_grinding:
+		_log_message("[color=yellow]Cannot import while grinding.[/color]")
+		return
+	var data := ScriptShareManager.decode_share_code(DisplayServer.clipboard_get())
+	if data.is_empty() or data.get("type") != "autogrind_rules":
+		_log_message("[color=yellow]Clipboard has no valid autogrind share code.[/color]")
+		SoundManager.play_ui("menu_error")
+		return
+	if ScriptShareManager.apply_autogrind_rules(data):
+		_log_message("[color=%s]Autogrind rules applied from share code (%d rules).[/color]" % [AccessibilityPalette.bonus_bbcode(), data.get("rules", []).size()])
+		SoundManager.play_ui("menu_select")
+	else:
+		_log_message("[color=yellow]Share code valid but could not apply.[/color]")
+		SoundManager.play_ui("menu_error")
 
 
 func _import_scripts() -> void:
