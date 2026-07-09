@@ -468,6 +468,12 @@
       "duration_seconds": 6.0,
       "prompt_influence": 0.7
     },
+    "ambient_office": {
+      "file": "assets/audio/sfx/ambient_office.ogg",
+      "prompt": "Sterile institutional office room tone — fluorescent hum + low HVAC drone + faint distant muffled conversation/keyboard, EarthBound 'oppressive bureaucratic quiet', loop-friendly fades, mean ~-25 dB. For W2 (suburban) municipal interiors: the Community Enrichment Annex first, reusable across strip-mall offices / complaints dept.",
+      "duration_seconds": 6.0,
+      "prompt_influence": 0.7
+    },
     "anvil_strike": {
       "file": "assets/audio/sfx/anvil_strike.ogg",
       "prompt": "Blacksmith hammer striking hot metal on an anvil, bright ringing CLANG + quick spark sizzle tail, single strike, -15 LUFS. One-shot for the Master Smith's 4-frame hammer animation (sync to strike frame).",
