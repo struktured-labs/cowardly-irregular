@@ -1,0 +1,82 @@
+{
+  "id": "world2_fine_print",
+  "title": "Reading the Fine Print",
+  "world": 2,
+  "chain": "traveling_merchant",
+  "chain_step": 2,
+  "giver": {
+    "npc_id": "madame_orrery_w2",
+    "display_name": "Madame Orrery",
+    "location": {"map_id": "maple_heights_strip_mall", "near": "orrery_booth"},
+    "spawn_flag": ""
+  },
+  "description": "A booth has appeared next to Ye Olde Medieval Surplus: ORRERY LIFE COACHING — By Appointment or Walk-In. Madame Orrery is inside, wearing business casual. She has noticed something the HOA is hiding. She'll share — after you help with a small licensing problem.",
+  "playstyle_tags": ["dialogue_heavy", "bureaucratic_puzzle", "chain"],
+  "dialogue": {
+    "offer": [
+      {"speaker": "Madame Orrery", "text": "Ah. Your energy profile is familiar. Very familiar. From — let us say from a previous engagement, and leave the geometry out of it.", "theme": "mysterious"},
+      {"speaker": "Madame Orrery", "text": "I have a problem. The HOA filed a complaint against my business license, citing a form I have never heard of. Form 77-Gamma: Itinerant Wisdom Services. In thirty years of itinerant wisdom, no one has ever asked me for a form.", "theme": "mysterious"},
+      {"speaker": "Madame Orrery", "text": "Fetch me this form and I will tell you what I have noticed about this neighborhood. And I have noticed a great deal. Noticing is the business.", "theme": "mysterious"}
+    ],
+    "accept": [
+      {"speaker": "Madame Orrery", "text": "The form lives at the Community Center, which requires a resident ID to enter, which I do not have, because I am — as the complaint correctly notes — itinerant. The mail carrier can issue visitor credentials. She will want a favor. She always wants a favor. It's how she stays sane here.", "theme": "mysterious"}
+    ],
+    "decline": [
+      {"speaker": "Madame Orrery", "text": "No? The booth will keep. Bureaucracy has more patience than either of us. Find me when the fine print finds you.", "theme": "mysterious"}
+    ],
+    "in_progress": [
+      {"speaker": "Madame Orrery", "text": "Forty-seven pages, I'm told. Pages three through forty-six identical. Whoever wrote that form was not writing a form. They were building a wall out of paper.", "theme": "mysterious"}
+    ],
+    "ready_to_turn_in": [
+      {"speaker": "Madame Orrery", "text": "You have it. Page forty-seven. Read me the exemption clause — slowly. I want to enjoy this.", "theme": "mysterious"}
+    ],
+    "complete": [
+      {"speaker": "Madame Orrery", "text": "'Exemption granted for any vendor with documented inter-dimensional licensing.' Filed. Stamped. I am, it turns out, the single most compliant business in Maple Heights.", "theme": "mysterious"},
+      {"speaker": "Madame Orrery", "text": "Now. What I noticed: the Coordinator's memos reference calibration reports that predate this neighborhood by at least thirty years. Whoever built this place built it to specification. The specification existed before the place.", "theme": "mysterious"},
+      {"speaker": "Madame Orrery", "text": "Keep that somewhere safe in your head. And take my summary — every consultation comes with a summary. Section four is for you.", "theme": "mysterious"}
+    ]
+  },
+  "objectives": [
+    {
+      "step": 1,
+      "description": "Take Madame Orrery's licensing problem.",
+      "type": "talk",
+      "target_npc": "madame_orrery_w2",
+      "flag_on_complete": "quest_world2_fine_print_accepted"
+    },
+    {
+      "step": 2,
+      "description": "Get a visitor credential for the Community Center.",
+      "type": "custom",
+      "required_flag": "quest_world2_fine_print_credential_obtained",
+      "flag_on_complete": "quest_world2_fine_print_credential_obtained"
+    },
+    {
+      "step": 3,
+      "description": "Obtain Form 77-Gamma: Itinerant Wisdom Services.",
+      "type": "custom",
+      "required_flag": "quest_world2_fine_print_form_obtained",
+      "flag_on_complete": "quest_world2_fine_print_form_obtained"
+    },
+    {
+      "step": 4,
+      "description": "Bring Orrery the fine print.",
+      "type": "talk",
+      "target_npc": "madame_orrery_w2",
+      "required_flag": "quest_world2_fine_print_form_obtained"
+    }
+  ],
+  "rewards": {
+    "gold": 0,
+    "exp": 250,
+    "items": [],
+    "job_variants": {}
+  },
+  "cutscene_on_complete": "world2_orrery",
+  "flag_on_complete": "quest_world2_fine_print_complete",
+  "unlocks_dialogue": [
+    {"npc_id": "madame_orrery_w3", "note": "W3 chain step: precision futures consultation in Brasston, seven-second mandatory appointment delay."}
+  ],
+  "cross_world_connection": "Chain A step 2 of 6. The world2_orrery cutscene (fired at turn-in via cutscene_on_complete) grants life_coaching_summary and advances fool_card_marks to 2. The pre-neighborhood calibration reports lore seeds the Coordinator reveal.",
+  "_wiring_notes": "DEDUP RULE (cowir-main msg 2299): all item grants + fool_card_marks advancement live in the world2_orrery cutscene — this quest authors NO overlapping rewards (exp only). Step 2 emitter quest_world2_fine_print_credential_obtained, multi-path: (a) mail carrier's favor — find her missing package (defeat rogue_mailbox encounter, recover contents from a neighbor's yard), (b) Cleric-lead: the Community Center receptionist assumes any healthcare worker is pre-approved — credential free, no favor ('nobody questions this because the assumption has never been challenged'). Step 3 emitter quest_world2_fine_print_form_obtained: front-desk interact with credential. ROGUE SHORTCUT (design doc): a Skater Kid lead can enter the Community Center database via the back entrance, skipping the errand entirely — wire it to set BOTH step-2 AND step-3 flags at once (sequence preserved, shortcut honored) plus quest_world2_fine_print_rogue_gap_used; Orrery's turn-in gains a line when that flag is set: 'You found the gap. There's always a gap. That's either reassuring or troubling, I haven't decided.' The world2_orrery cutscene's own legacy progress flags (world2_orrery_find_credential / world2_orrery_mailbox_errand) are superseded by this quest's flags — cutscene plays as pure turn-in cinematic."
+}
