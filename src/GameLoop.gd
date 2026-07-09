@@ -38,6 +38,7 @@ const GrimhollowVillageScript = preload("res://src/maps/villages/GrimhollowVilla
 const SandriftVillageScript = preload("res://src/maps/villages/SandriftVillage.gd")
 const IronhavenVillageScript = preload("res://src/maps/villages/IronhavenVillage.gd")
 const MapleHeightsVillageScript = preload("res://src/maps/villages/MapleHeightsVillage.gd")
+const MapleStripMallScript = preload("res://src/maps/villages/MapleStripMall.gd")
 const BrasstonVillageScript = preload("res://src/maps/villages/BrasstonVillage.gd")
 const RivetRowVillageScript = preload("res://src/maps/villages/RivetRowVillage.gd")
 const NodePrimeVillageScript = preload("res://src/maps/villages/NodePrimeVillage.gd")
@@ -2964,6 +2965,8 @@ func _start_exploration() -> void:
 			exploration_scene = IronhavenWatchtowerInteriorScript.new()
 		"maple_heights_arcade":
 			exploration_scene = MapleHeightsArcadeInteriorScript.new()
+		"maple_heights_strip_mall":
+			exploration_scene = MapleStripMallScript.new()
 		"brasston_clockwork_loft":
 			exploration_scene = BrasstonClockworkLoftInteriorScript.new()
 		"rivet_row_union_hall":

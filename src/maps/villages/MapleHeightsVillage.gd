@@ -156,6 +156,12 @@ func _setup_buildings() -> void:
 	spawn_points["arcade_exit"] = Vector2(5 * TILE_SIZE, 11 * TILE_SIZE)
 	_add_interior_door("ArcadeDoor", "maple_heights_arcade", "Enter Glitch City Arcade", Vector2(5 * TILE_SIZE, 10 * TILE_SIZE))
 
+	# === STRIP MALL ROAD ===
+	# Birchwood Commons — the rearranging strip mall (configuration_pending's
+	# stage + Orrery's W2 booth). A road, not a door: it's its own lot.
+	spawn_points["strip_mall_return"] = Vector2(20 * TILE_SIZE, 13 * TILE_SIZE)
+	_add_interior_door("StripMallRoad", "maple_heights_strip_mall", "Birchwood Commons (Strip Mall)", Vector2(20 * TILE_SIZE, 12 * TILE_SIZE))
+
 
 func _setup_treasures() -> void:
 	# Hidden behind the house — a forgotten lunchbox with supplies
@@ -269,6 +275,15 @@ func _setup_npcs() -> void:
 	])
 	pemberton.npc_id = "mrs_pemberton_w2"
 	npcs.add_child(pemberton)
+
+	# Retired Surveyor — Birch Court; configuration_pending step-3 target.
+	# He measured this neighborhood when it was a field. Twice.
+	var surveyor = _create_npc("Retired Surveyor", "elder", Vector2(7 * TILE_SIZE, 10 * TILE_SIZE), [
+		"I surveyed this whole tract in '61. Then again in '84.",
+		"The numbers didn't match. Nobody wanted to hear that then either.",
+	])
+	surveyor.npc_id = "retired_surveyor_w2"
+	npcs.add_child(surveyor)
 
 	# Basement Developer — wrong_blue step 3; rarely surfaces.
 	var developer = _create_npc("Basement Developer", "villager", Vector2(4 * TILE_SIZE, 14 * TILE_SIZE), [

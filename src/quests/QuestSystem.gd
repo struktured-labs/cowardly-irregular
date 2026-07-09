@@ -266,6 +266,18 @@ const DIALOGUE_EMITTERS: Dictionary = {
 	],
 }
 
+## Talk-tally emitters: a custom objective satisfied by talking to ALL NPCs in
+## a set (any order) — the conversational sibling of the chicken 7-catch.
+## Per-NPC progress persists as story flags "talked_<group_flag>_<npc_id>".
+## v1 case: configuration_pending's three strip-mall owner interviews.
+## W3's lamplighter route-follow reuses this shape when that lane opens.
+const TALK_TALLY_EMITTERS: Dictionary = {
+	"quest_world2_configuration_pending_owners_interviewed": {
+		"quest": "world2_configuration_pending",
+		"npcs": ["candle_shop_owner_w2", "armory_owner_w2", "yogurt_owner_w2"],
+	},
+}
+
 
 ## Called at the START of any NPC interaction. Progresses active talk
 ## objectives silently (the NPC's own lines still play — e.g. Phil in
@@ -284,6 +296,26 @@ func notify_talk(npc_id: String) -> String:
 				and not _flag(emitter["flag"]):
 			GameState.set_story_flag(emitter["flag"])
 			notify_flag(emitter["flag"])
+
+	# Talk-tally pass: count this NPC toward any all-N-talks group objective.
+	for group_flag in TALK_TALLY_EMITTERS:
+		var tally: Dictionary = TALK_TALLY_EMITTERS[group_flag]
+		if npc_id not in tally["npcs"] or _flag(group_flag):
+			continue
+		if get_state(tally["quest"]) != "active":
+			continue
+		var tobj: Dictionary = _objective(get_quest(tally["quest"]), get_objective_index(tally["quest"]))
+		if tobj.get("type", "") != "custom" or tobj.get("required_flag", "") != group_flag:
+			continue
+		GameState.set_story_flag("talked_%s_%s" % [group_flag, npc_id])
+		var all_done := true
+		for n in tally["npcs"]:
+			if not _flag("talked_%s_%s" % [group_flag, n]):
+				all_done = false
+				break
+		if all_done:
+			GameState.set_story_flag(group_flag)
+			notify_flag(group_flag)
 
 	for qid in get_active():
 		var q: Dictionary = get_quest(qid)

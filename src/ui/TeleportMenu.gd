@@ -67,6 +67,8 @@ const DESTINATIONS: Array = [
 	{"id": "scriptura_plaza",        "label": "Scriptura Plaza",      "spawn": "entrance",    "section": "Scriptura (W1)"},
 	{"id": "scriptura_guild",        "label": "Scriptweaver's Guild", "spawn": "entrance",    "section": ""},
 	{"id": "scriptura_bookshop",     "label": "Aldrin's Books",       "spawn": "entrance",    "section": ""},
+	# --- W2 quest locations ---
+	{"id": "maple_heights_strip_mall", "label": "Birchwood Commons (Strip Mall)", "spawn": "entrance", "section": "W2 Quest Spots"},
 ]
 
 const ROW_HEIGHT: int = 26
