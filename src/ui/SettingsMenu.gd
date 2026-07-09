@@ -482,7 +482,7 @@ func _build_ui() -> void:
 		var byok_idx: int = _settings_items.size()
 		var byok_item = _create_toggle_setting(
 			"Custom LLM Backend / BYOK (experimental)",
-			"Use a custom HTTPBackend (OpenAI / Ollama). Set URL + model + key in settings.json for now.",
+			"Use a custom HTTPBackend (OpenAI / Ollama). Enter URL + model + key via 'Configure BYOK' below.",
 			llm_custom_backend_enabled,
 			byok_idx
 		)
