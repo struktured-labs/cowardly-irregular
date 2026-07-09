@@ -128,6 +128,10 @@ func _setup_buildings() -> void:
 	# the Glacius fight. Spawn-back point is just south of the door.
 	spawn_points["warden_hut_exit"] = Vector2(4 * TILE_SIZE, 12 * TILE_SIZE)
 	_add_interior_door("WardenHutDoor", "frosthold_warden_hut", "Enter Warden's Hut", Vector2(4 * TILE_SIZE, 11 * TILE_SIZE))
+	# === MELTWATER CLOCK DOOR ===
+	# South face of the CCC building (cols 12-14, rows 2-4) — Frosthold's timekeeping.
+	spawn_points["clock_exit"] = Vector2(13 * TILE_SIZE, 5.5 * TILE_SIZE)
+	_add_interior_door("MeltwaterClockDoor", "frosthold_meltwater_clock", "Enter Meltwater Clock", Vector2(13 * TILE_SIZE, 4.5 * TILE_SIZE))
 
 
 func _setup_treasures() -> void:

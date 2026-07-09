@@ -62,7 +62,8 @@ func test_game_loop_routes_frosthold_warden_hut() -> void:
 		"GameLoop scene routing must include frosthold_warden_hut")
 	# Ice terrain — Frosthold interior shares the ice world's battle
 	# backdrop, not 'village' (the medieval default).
-	assert_true(src.contains("\"frosthold_warden_hut\":\n\t\t\treturn \"ice\""),
+	# 2026-07-09: arm grouped with the Meltwater Clock — both Frosthold interiors.
+	assert_true(src.contains("\"frosthold_warden_hut\", \"frosthold_meltwater_clock\":\n\t\t\treturn \"ice\""),
 		"frosthold_warden_hut must map to 'ice' terrain")
 
 
