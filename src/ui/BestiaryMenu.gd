@@ -415,8 +415,8 @@ func _refresh_detail() -> void:
 			stats.get("magic", 0),
 			stats.get("speed", 0),
 		]
-		_detail_weak.text = "Weak: %s" % (", ".join(entry.weaknesses) if not entry.weaknesses.is_empty() else "—")
-		_detail_resist.text = "Resist: %s" % (", ".join(entry.resistances) if not entry.resistances.is_empty() else "—")
+		_detail_weak.text = "Weak: %s" % (", ".join(_caps(entry.weaknesses)) if not entry.weaknesses.is_empty() else "—")
+		_detail_resist.text = "Resist: %s" % (", ".join(_caps(entry.resistances)) if not entry.resistances.is_empty() else "—")
 		var exp_r: int = int(entry.get("exp_reward", 0))
 		var gold_r: int = int(entry.get("gold_reward", 0))
 		# Tick 262: per-monster kill counter — autobattle-planning hint
@@ -628,3 +628,11 @@ func _re_sort_and_refresh() -> void:
 	_build_ui()
 	_refresh_detail()
 	call_deferred("_scroll_to_selected")
+
+
+## Capitalize element ids for display — matches BattleUIManager's "Weak: Fire" casing.
+func _caps(ids: Array) -> PackedStringArray:
+	var out: PackedStringArray = []
+	for e in ids:
+		out.append(str(e).capitalize())
+	return out
