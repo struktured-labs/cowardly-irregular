@@ -32,13 +32,19 @@ func _initialize() -> void:
 		return
 	var battles := 300
 	var seed_val := int(Time.get_unix_time_from_system())
+	var mode := "fuzz"
 	for arg in OS.get_cmdline_user_args():
 		if arg.begins_with("battles="):
 			battles = int(arg.split("=")[1])
 		elif arg.begins_with("seed="):
 			seed_val = int(arg.split("=")[1])
+		elif arg.begins_with("mode="):
+			mode = arg.split("=")[1]
 	var rng := RandomNumberGenerator.new()
 	rng.seed = seed_val
+	if mode == "report":
+		_balance_report(rng)
+		return
 	print("[FUZZ] %d battles, seed=%d" % [battles, seed_val])
 
 	var pools: Array = _enc.enemy_pools.keys()
@@ -80,6 +86,72 @@ func _initialize() -> void:
 
 	print("[FUZZ] done: %d wins / %d losses / %d anomalies" % [wins, losses, anomalies])
 	quit(1 if anomalies > 0 else 0)
+
+
+## mode=report — balance telemetry: the CANONICAL 5-starter party vs every
+## pool at fixed level bands, K battles per cell. Measurement only; the
+## table goes to struktured for balance calls (post-F1 difficulty shift).
+func _balance_report(rng: RandomNumberGenerator) -> void:
+	const K := 40
+	const LEVELS := [5, 10, 15, 20]
+	print("[REPORT] canonical 5-starter party, %d battles/cell, seed=%d" % [K, rng.seed])
+	print("[REPORT] pool | " + " | ".join(LEVELS.map(func(l): return "L%d" % l)))
+	var pool_ids: Array = _enc.enemy_pools.keys()
+	pool_ids.sort()
+	for pool_id in pool_ids:
+		var cells: Array = []
+		for lvl in LEVELS:
+			var wins := 0
+			var ran := 0
+			for k in range(K):
+				var party := _starter_party(lvl)
+				var enemies := _pool_enemies(rng, pool_id)
+				if enemies.is_empty():
+					break
+				ran += 1
+				var resolver = HBR.new()
+				if bool(resolver.resolve_battle(party, enemies).get("victory", false)):
+					wins += 1
+				for c in party + enemies:
+					root.remove_child(c)
+					c.free()
+			cells.append("--" if ran == 0 else "%3d%%" % int(100.0 * wins / ran))
+		print("[REPORT] %-28s | %s" % [pool_id, " | ".join(cells)])
+	print("[REPORT] done")
+	quit(0)
+
+
+func _starter_party(lvl: int) -> Array:
+	var party := []
+	for job_id in ["fighter", "cleric", "mage", "rogue", "bard"]:
+		var c = Combatant.new()
+		root.add_child(c)
+		c.initialize({
+			"name": job_id.capitalize(),
+			"max_hp": 100 + lvl * 12, "max_mp": 40 + lvl * 4,
+			"attack": 12 + lvl * 2, "defense": 8 + lvl,
+			"magic": 10 + lvl * 2, "speed": 10 + lvl / 2,
+		})
+		c.job_level = lvl
+		_jobs.assign_job(c, job_id)
+		c.current_ap = 1
+		party.append(c)
+	return party
+
+
+func _pool_enemies(rng: RandomNumberGenerator, pool_id: String) -> Array:
+	var pool: Array = _enc.enemy_pools.get(pool_id, [])
+	if pool.is_empty():
+		return []
+	var enemies := []
+	for i in range(rng.randi_range(2, 3)):
+		var eid: String = str(pool[rng.randi_range(0, pool.size() - 1)])
+		var c = Combatant.new()
+		root.add_child(c)
+		c.initialize(_enc._create_enemy_data(eid))
+		c.set_meta("monster_type", eid)
+		enemies.append(c)
+	return enemies
 
 
 func _random_party(rng: RandomNumberGenerator) -> Array:
