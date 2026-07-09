@@ -1025,18 +1025,65 @@ func _create_ambient_light() -> void:
 # NPCs
 # ---------------------------------------------------------------------------
 
+## Per-world innkeeper register — the TRAVELERS recur across every inn (Fen
+## lampshades it as recursion; that's diegetic), but the innkeeper is local.
+## Pre-fix every world got Mira and "The Traveler's Rest", medieval sheets
+## jokes included, straight through the digital world.
+const INNKEEPERS := {
+	1: {"name": "Mira", "weave": "Harmonian", "lines": [
+		"Mira: Welcome to The Traveler's Rest!",
+		"Mira: A room is 50 gold a night. All party members, fully restored.",
+		"Mira: We change the sheets every Tuesday. Or Wednesday. Probably.",
+		"Mira: Talk to me again when you're ready to rest.",
+	]},
+	2: {"name": "Denise", "weave": "wall-to-wall", "lines": [
+		"Denise: Welcome to the Wayside Motor Lodge! Ice machine's broken.",
+		"Denise: Fifty gold a night. Continental breakfast is a bowl of mints.",
+		"Denise: Checkout is whenever. Time isn't real here, hon.",
+		"Denise: Talk to me again when you're ready to rest.",
+	]},
+	3: {"name": "Barnaby", "weave": "loom-calibrated", "lines": [
+		"Barnaby: The Cogsworth Hostelry welcomes you — mind the pressure valves.",
+		"Barnaby: Fifty gold. Rooms are steam-heated to exactly 19.4 degrees.",
+		"Barnaby: Checkout is at 9:41 sharp. The clock insists.",
+		"Barnaby: Talk to me again when you're ready to rest.",
+	]},
+	4: {"name": "Foreman Ada", "weave": "regulation-grade", "lines": [
+		"Foreman Ada: Bunk Block 7. Hard hats off past the yellow line.",
+		"Foreman Ada: Fifty gold a shift. Sleeping IS the shift.",
+		"Foreman Ada: Report all dreams to the safety board.",
+		"Foreman Ada: Talk to me again when you're ready to rest.",
+	]},
+	5: {"name": "HOST-3SS", "weave": "procedurally-woven", "lines": [
+		"HOST-3SS: Welcome to the Uptime Inn. Current uptime: 99.97%.",
+		"HOST-3SS: Fifty gold per sleep cycle. Rest is scheduled downtime.",
+		"HOST-3SS: Do not be alarmed if the pillows update overnight.",
+		"HOST-3SS: Talk to me again when you're ready to rest.",
+	]},
+	6: {"name": "The Concierge", "weave": "conceptual", "lines": [
+		"The Concierge: Welcome to The Rest. It is less a place than a pause.",
+		"The Concierge: Fifty gold, though the number is mostly a courtesy.",
+		"The Concierge: Your room is the idea of a room. It sleeps beautifully.",
+		"The Concierge: Talk to me again when you're ready to rest.",
+	]},
+}
+
+
+func _innkeeper() -> Dictionary:
+	var w: int = 1
+	if GameState and "current_world" in GameState:
+		w = clampi(int(GameState.current_world), 1, 6)
+	return INNKEEPERS.get(w, INNKEEPERS[1])
+
+
 func _setup_npcs() -> void:
 	npcs = Node2D.new()
 	npcs.name = "NPCs"
 	add_child(npcs)
 
-	# Innkeeper "Mira" at registration desk
-	_create_npc("Mira", "innkeeper", Vector2(2, 3), [
-		"Mira: Welcome to The Traveler's Rest!",
-		"Mira: A room is 50 gold a night. All party members, fully restored.",
-		"Mira: We change the sheets every Tuesday. Or Wednesday. Probably.",
-		"Mira: Talk to me again when you're ready to rest.",
-	])
+	# Local innkeeper at the registration desk — identity follows the world
+	var keeper := _innkeeper()
+	_create_npc(keeper["name"], "innkeeper", Vector2(2, 3), keeper["lines"])
 
 	# Sleeping merchant in armchair
 	_create_npc("Dorian", "merchant", Vector2(3, 8), [
@@ -1072,11 +1119,11 @@ func _setup_npcs() -> void:
 		"Brix: Kael: *shrugs* My script felt the tension. Did a great job.",
 	])
 
-	# Maid near stairs
+	# Maid near stairs — the carpet's provenance follows the world
 	_create_npc("Tilly", "maid", Vector2(16, 6), [
 		"Tilly: *sweeping* Morning.",
 		"Tilly: Don't track mud on the carpet.",
-		"Tilly: That's genuine Harmonian weave. Costs more than your weapons.",
+		"Tilly: That's genuine %s weave. Costs more than your weapons." % keeper["weave"],
 	])
 
 	# one_chicken_problem: a hen got into the Inn's back kitchen nook.
@@ -1214,7 +1261,7 @@ func _setup_controller() -> void:
 
 
 # ---------------------------------------------------------------------------
-# Rest service — invoked from a service-bell interactable next to Mira
+# Rest service — invoked from a service-bell interactable next to the innkeeper
 # ---------------------------------------------------------------------------
 
 func _create_rest_interactable() -> void:
