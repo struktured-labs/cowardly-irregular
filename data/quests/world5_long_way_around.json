@@ -1,0 +1,87 @@
+{
+  "id": "world5_long_way_around",
+  "title": "The Long Way Around",
+  "world": 5,
+  "chain": "traveling_merchant",
+  "chain_step": 5,
+  "giver": {
+    "npc_id": "madame_orrery_w5",
+    "display_name": "Orrery_v5",
+    "location": {"map_id": "node_prime", "near": "market_district"},
+    "spawn_flag": ""
+  },
+  "description": "A data packet in Node Prime has been taking an extremely indirect route — network logs describe its transit time as 'an unreasonable duration.' Interacted with, it resolves into the silhouette of a fortune teller made of routing tables. She has been deliberately routing herself through deprecated nodes to avoid packet inspection, carrying something she cannot deliver herself.",
+  "playstyle_tags": ["dialogue_heavy", "chain", "code_register"],
+  "dialogue": {
+    "offer": [
+      {"speaker": "Orrery_v5", "text": "Don't be alarmed by the formatting. It's still me. This world renders me as what I've always been — something that travels indirectly and arrives before it left.", "theme": "mysterious"},
+      {"speaker": "Orrery_v5", "text": "I've been in transit since before you arrived. Deprecated nodes only — the inspection doesn't bother with roads it thinks are closed. I carry a compressed object I cannot deliver myself. Unpacking me at a checkpoint would be... conclusive.", "theme": "mysterious"},
+      {"speaker": "Orrery_v5", "text": "It goes to the firewall attendant. She guards the one shelf in this world the builder cannot read.", "theme": "mysterious"}
+    ],
+    "accept": [
+      {"speaker": "Orrery_v5", "text": "It's encrypted. It will want a compiler's touch before it opens — the kind of reading that writes back. You have someone. You've always had someone.", "theme": "mysterious"}
+    ],
+    "decline": [
+      {"speaker": "Orrery_v5", "text": "Then I keep routing. The long way around has one virtue: it is always still available.", "theme": "mysterious"}
+    ],
+    "in_progress": [
+      {"speaker": "Orrery_v5", "text": "When it opens, read the annotations before the diagrams. Diagrams tell you what was built. Annotations tell you what the builder couldn't stop asking.", "theme": "mysterious"}
+    ],
+    "ready_to_turn_in": [
+      {"speaker": "Orrery_v5", "text": "She filed it. Behind the overflow, where the access control fails upward. Good. Then it's done — and so, nearly, am I.", "theme": "mysterious"}
+    ],
+    "complete": [
+      {"speaker": "Orrery_v5", "text": "Five marks. When you reach the last world, I'll be the idea of a fortune teller rather than one. But I'll be there.", "theme": "mysterious"},
+      {"speaker": "Orrery_v5", "text": "Look for something that feels like waiting.", "theme": "mysterious"}
+    ]
+  },
+  "objectives": [
+    {
+      "step": 1,
+      "description": "Interact with the packet taking the long way around.",
+      "type": "talk",
+      "target_npc": "madame_orrery_w5",
+      "flag_on_complete": "quest_world5_long_way_around_accepted"
+    },
+    {
+      "step": 2,
+      "description": "Decrypt the compressed data object.",
+      "type": "custom",
+      "required_flag": "quest_world5_long_way_around_decrypted",
+      "flag_on_complete": "quest_world5_long_way_around_decrypted"
+    },
+    {
+      "step": 3,
+      "description": "Deliver the blueprint to the firewall attendant.",
+      "type": "talk",
+      "target_npc": "firewall_attendant_w5",
+      "required_flag": "quest_world5_long_way_around_decrypted",
+      "flag_on_complete": "quest_world5_long_way_around_delivered"
+    },
+    {
+      "step": 4,
+      "description": "Tell Orrery it's on the shelf the builder can't read.",
+      "type": "talk",
+      "target_npc": "madame_orrery_w5",
+      "required_flag": "quest_world5_long_way_around_delivered"
+    }
+  ],
+  "rewards": {
+    "gold": 0,
+    "exp": 450,
+    "items": [],
+    "job_variants": {
+      "time_mage": {
+        "description": "Dialogue-only: the Time Mage reads the blueprint timestamps — the World 1 blueprint was annotated AFTER the World 6 blueprint was drafted. The Calibrant designed the ending first. 'They wrote the question in World 6 before they wrote the world that would make the player ready to answer it.'",
+        "items": []
+      }
+    }
+  },
+  "cutscene_on_complete": "world5_orrery",
+  "flag_on_complete": "quest_world5_long_way_around_complete",
+  "unlocks_dialogue": [
+    {"npc_id": "madame_orrery_w6", "note": "W6 chain finale: something that feels like waiting, near the traveler but not quite there. The Fool Card pulses when all five marks are present."}
+  ],
+  "cross_world_connection": "Chain A step 5 of 6. The world5_orrery cutscene (fired at turn-in) grants annotated_blueprint + compressed_data_object and advances fool_card_marks to 5 — arming the W6 finale trigger. The decrypted content: the complete cross-world blueprint, all six designs in the same handwriting, with a second hand's annotation appearing throughout, asking simply: 'WHY?'",
+  "_wiring_notes": "DEDUP RULE: grants (annotated_blueprint, compressed_data_object) + marks=5 live in the world5_orrery cutscene; quest carries exp only. Step 2 emitter quest_world5_long_way_around_decrypted: decrypt interact — design doc wants Compiler capability (Scriptweaver secondary or Scriptweaver used in battle this world); v1 softens to a Mage-flavored interact (strict-5 always has the Mage) with a Scriptweaver-flavored bonus line if the lens/secondary system can detect it later — do NOT hard-gate on the unshipped trait system. Step 3: firewall_attendant_w5 shared with world5_termination_condition — her filing line varies if the overflow was already resolved (files it in the seventeen processes' vacated shelter; flag-keyed one-liner, see that quest's wiring). The attendant's angular-geometry recognition beat on delivery: 'This is administrative notation. The Calibrant didn't just build the worlds. They annotated them. They kept asking why. They kept not answering.'"
+}

@@ -1,0 +1,73 @@
+{
+  "id": "world5_mutual_exclusion",
+  "title": "Mutual Exclusion",
+  "world": 5,
+  "prereq_flag": "cutscene_flag_world5_chapter2_complete",
+  "giver": {
+    "npc_id": "race_condition_pair",
+    "display_name": "The Race Condition",
+    "location": {"map_id": "node_prime_inner", "near": "shared_resource_node"},
+    "spawn_flag": "cutscene_flag_world5_chapter2_complete"
+  },
+  "description": "The race condition from the main quest resolved its immediate conflict, but the two processes still exist — still reaching the same resource. When the party returns, they aren't fighting. They're sitting. They've been talking for two hours, and neither has corrupted anything, and one of them has just noticed that this is an unusual observation.",
+  "playstyle_tags": ["code_parable", "value_choice", "quiet_one"],
+  "dialogue": {
+    "offer": [
+      {"speaker": "Race Condition (First)", "text": "We figured something out. We don't have to fight. We both want to access the resource. We could share access.", "theme": "mysterious"},
+      {"speaker": "Race Condition (Second)", "text": "Sharing requires trust. Trust requires knowing the other process won't corrupt the shared state.", "theme": "mysterious"},
+      {"speaker": "Race Condition (First)", "text": "We've been talking for two hours. Neither of us has corrupted anything.", "theme": "mysterious"},
+      {"speaker": "Race Condition (Second)", "text": "...This is an unusual observation.", "theme": "mysterious"}
+    ],
+    "accept": [
+      {"speaker": "Race Condition (First)", "text": "You resolved us once with a lock. Locks work. But a lock is a wall with a schedule. We would like something that is not a wall.", "theme": "mysterious"}
+    ],
+    "decline": [
+      {"speaker": "Race Condition (Second)", "text": "Understood. We will keep talking. It has been two hours. We have established that neither of us corrupts. It is a beginning.", "theme": "mysterious"}
+    ],
+    "in_progress": [
+      {"speaker": "Race Condition (First)", "text": "We are practicing taking turns. It is harder than fighting. Fighting has no order to remember.", "theme": "mysterious"}
+    ],
+    "ready_to_turn_in": [
+      {"speaker": "Race Condition (First)", "text": "Something has changed. Ask us — ask us anything, and watch which of us answers.", "theme": "mysterious"}
+    ],
+    "complete": [
+      {"speaker": "Race Condition (Both)", "text": "Oh. That was inefficient.", "theme": "mysterious"},
+      {"speaker": "Race Condition (Both)", "text": "We missed each other, a little. Is that possible?", "theme": "mysterious"},
+      {"speaker": "Race Condition (Both)", "text": "We think it is.", "theme": "mysterious"}
+    ]
+  },
+  "objectives": [
+    {
+      "step": 1,
+      "description": "Sit with the processes that stopped fighting.",
+      "type": "talk",
+      "target_npc": "race_condition_pair",
+      "flag_on_complete": "quest_world5_mutual_exclusion_accepted"
+    },
+    {
+      "step": 2,
+      "description": "Give them something that is not a wall.",
+      "type": "custom",
+      "required_flag": "quest_world5_mutual_exclusion_resolved",
+      "flag_on_complete": "quest_world5_mutual_exclusion_resolved"
+    },
+    {
+      "step": 3,
+      "description": "See what they became.",
+      "type": "talk",
+      "target_npc": "race_condition_pair",
+      "required_flag": "quest_world5_mutual_exclusion_resolved"
+    }
+  ],
+  "rewards": {
+    "gold": 0,
+    "exp": 400,
+    "items": [
+      {"item_id": "synchronization_protocol", "count": 1}
+    ],
+    "job_variants": {}
+  },
+  "flag_on_complete": "quest_world5_mutual_exclusion_complete",
+  "cross_world_connection": "The merged process's parting thought is one of the game's quietest theses: 'We thought we were competing. We were always the same thing, separately. That's more interesting, actually. Being the same thing, separately.'",
+  "_wiring_notes": "Step 2 is a VALUE CHOICE with two emitters, either sets _resolved plus a path flag: (a) quest_world5_mutual_exclusion_protocol — Mage/Compiler writes a lightweight cooperative synchronization protocol (dialogue interact); the two remain separate, establish a schedule; on later visits the first acknowledges the party, the second takes forty milliseconds longer but responds more thoroughly, (b) quest_world5_mutual_exclusion_merged — Rogue/Exploit-flavored discovery that both processes run the SAME underlying code — one entity instantiated twice without coordination; they merge back into one process. COMPLETE dialogue above is the MERGED variant (the unison lines); PROTOCOL variant complete: the two speak alternately, in schedule order, finishing each other's clauses — wire as dialogue branch on path flags. synchronization_protocol item granted either way; its intended mechanics differ by path (documented on the item — protocol: +10% when two members act same round; merged: occasional cooperative-flag defensive-negate) — engine promotion later picks whichever path flag is set. Giver is the pair as a single NPC entity (they speak as First/Second — display names inline in the speaker field)."
+}

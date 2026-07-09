@@ -1696,6 +1696,46 @@
     "cost": 0,
     "flavor": "'The Director's recalibration doesn't hold perfectly. There are always deviations.' They wrote that down. About her. She's keeping it."
   },
+  "synchronization_protocol": {
+    "id": "synchronization_protocol",
+    "name": "Synchronization Protocol",
+    "category": 4,
+    "target_type": 4,
+    "description": "What two processes wrote when they stopped fighting over the same resource. Intended mechanics: when two party members act in the same round, their actions gain a small bonus — +10% effectiveness (protocol path) or an occasional defensive-negate cooperative flag (merged path); promotion keys on the quest's path flag.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "'We thought we were competing. We were always the same thing, separately. That's more interesting, actually. Being the same thing, separately.'"
+  },
+  "mechanism_status_report": {
+    "id": "mechanism_status_report",
+    "name": "The Mechanism's Status Report",
+    "category": 4,
+    "target_type": 4,
+    "description": "The Grand Mechanism's complete three-year log, assembled from thousands of stack frames — a status report retried into a severed line since the day the Regulator cut it. Written in the bureaucratic notation of calibration reports.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Not malfunctioning. Faithful. It covers the transition from Hartwick to the Regulator in extreme technical detail, and never once complains."
+  },
+  "npc_interaction_log": {
+    "id": "npc_interaction_log",
+    "name": "The Interaction Log",
+    "category": 4,
+    "target_type": 4,
+    "description": "Every conversation in the game, timestamped, with a one-line summary — the archive built from remember_all()'s hoard before the memory was freed. The largest single lore item in the game.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Someone wanted every interaction remembered. They just never designed the letting-go. You designed it for them, and kept the remembering anyway."
+  },
+  "remainder_token": {
+    "id": "remainder_token",
+    "name": "The Remainder Token",
+    "category": 4,
+    "target_type": 4,
+    "description": "Proof that two entities built for motion and commerce chose to stay. Intended mechanics: in subsequent playthroughs, unlocks The Vertex as a revisitable location from the World 1 map.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The shopkeeper and the traveler are there each time, still sitting. They don't say much. But they're there."
+  },
   "ERROR": {
     "id": "ERROR",
     "name": "ERROR",
