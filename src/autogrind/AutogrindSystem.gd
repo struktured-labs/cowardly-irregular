@@ -981,8 +981,7 @@ func _increase_efficiency() -> void:
 
 	# Increase meta-corruption (danger!)
 	var corruption_gain = 0.02 * efficiency_multiplier
-	meta_corruption_level += corruption_gain
-	_maybe_emit_corruption_band()
+	_add_meta_corruption(corruption_gain)
 
 	# Increase meta-boss spawn chance
 	meta_boss_spawn_chance = min(meta_corruption_level * 0.05, 0.3)
@@ -1188,7 +1187,7 @@ func on_meta_boss_defeat(boss_data: Dictionary) -> void:
 	"""Called by AutogrindController after the party loses to a meta-boss.
 	Significantly increases corruption."""
 	var corruption_increase := 1.5
-	meta_corruption_level += corruption_increase
+	_add_meta_corruption(corruption_increase)
 	consecutive_wins = 0
 	print("[AUTOGRIND] Meta-boss defeated the party! Corruption increased by %.1f (now %.2f)" % [
 		corruption_increase, meta_corruption_level
@@ -1400,7 +1399,7 @@ func _apply_meta_adaptation(crack_level: int) -> void:
 	if crack_level >= 3:
 		print("  - Enemies exploit weaknesses in your script")
 		# Could trigger corruption increase
-		meta_corruption_level += 0.5
+		_add_meta_corruption(0.5)
 
 
 func _get_region_crack_penalty() -> float:
@@ -1889,6 +1888,15 @@ func _get_autoload_node(name_: String) -> Node:
 	if tree != null and tree.root != null:
 		return tree.root.get_node_or_null(name_)
 	return null
+
+
+## All meta-corruption INCREASES route here so the threshold-band warning is never skipped.
+## (Bands originally fired only on the efficiency path; meta-boss defeat +1.5 and region-crack +0.5 bypassed them.)
+func _add_meta_corruption(amount: float) -> void:
+	if amount <= 0.0:
+		return
+	meta_corruption_level += amount
+	_maybe_emit_corruption_band()
 
 
 func _maybe_emit_corruption_band() -> void:
