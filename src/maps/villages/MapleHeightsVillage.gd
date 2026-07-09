@@ -197,7 +197,10 @@ func _setup_npcs() -> void:
 	])
 	npcs.add_child(dad)
 
-	# Mail Carrier (gossip / rumors)
+	# Mail Carrier (gossip / rumors) — ALSO world2_relocated's giver + the
+	# forms_in_triplicate turn-in (quest data npc_id mail_carrier_w2). Her
+	# route sees everything; QuestSystem owns her dialogue when quest
+	# business exists, these lines are the idle fallback.
 	var mailman = _create_npc("Carriers Reg", "guard", Vector2(18 * TILE_SIZE, 4 * TILE_SIZE), [
 		"Mail call! Uh... none for you, actually.",
 		"But I heard some things on my route today.",
@@ -206,6 +209,7 @@ func _setup_npcs() -> void:
 		"And someone filed a complaint about reality 'feeling off'.",
 		"Probably nothing. Here's a coupon."
 	])
+	mailman.npc_id = "mail_carrier_w2"
 	npcs.add_child(mailman)
 
 	# Kid on Bike (weird stuff / comedy)
@@ -240,3 +244,45 @@ func _setup_npcs() -> void:
 		"*tail wagging intensifies*"
 	])
 	npcs.add_child(dogwalker)
+
+	# === W2 SIDE-QUEST CAST (QuestSystem owns dialogue when business exists) ===
+
+	# Gerald — acceptable_variance giver, defending one wildflower from the HOA.
+	var gerald = _create_npc("Gerald", "villager", Vector2(9 * TILE_SIZE, 6 * TILE_SIZE), [
+		"That flower is NOT a violation. It was here first.",
+	])
+	gerald.npc_id = "gerald_w2"
+	npcs.add_child(gerald)
+
+	# The wildflower itself — variance step-2 examine emitter, mid-lawn.
+	var FlowerScript = load("res://src/exploration/WildflowerPatch.gd")
+	if FlowerScript:
+		var flower = FlowerScript.new()
+		flower.position = Vector2(10 * TILE_SIZE + TILE_SIZE / 2, 7 * TILE_SIZE)
+		npcs.add_child(flower)
+
+	# Mrs. Pemberton — front porch next door; watching since before the HOA.
+	var pemberton = _create_npc("Mrs. Pemberton", "elder", Vector2(12 * TILE_SIZE, 5 * TILE_SIZE), [
+		"That flower was there before the houses. This was all a field.",
+		"Gerald's lawn is built on top of the field. The flower knows that.",
+		"It keeps trying to remind the ground what the ground used to be.",
+	])
+	pemberton.npc_id = "mrs_pemberton_w2"
+	npcs.add_child(pemberton)
+
+	# Basement Developer — wrong_blue step 3; rarely surfaces.
+	var developer = _create_npc("Basement Developer", "villager", Vector2(4 * TILE_SIZE, 14 * TILE_SIZE), [
+		"I don't come up much. The light out here is... configured wrong.",
+	])
+	developer.npc_id = "basement_developer_w2"
+	npcs.add_child(developer)
+
+	# Casper — wrong_blue giver; only home after the Annex rescue.
+	var gs = get_node_or_null("/root/GameState")
+	if gs and gs.has_method("is_story_flag_set") and gs.is_story_flag_set("quest_world2_relocated_complete"):
+		var casper = _create_npc("Casper", "child", Vector2(14 * TILE_SIZE, 8 * TILE_SIZE), [
+			"I'm home now. I keep looking at the sky though.",
+			"It's the wrong blue. It's been the wrong blue since Tuesday.",
+		])
+		casper.npc_id = "casper_kid"
+		npcs.add_child(casper)
