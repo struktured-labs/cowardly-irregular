@@ -276,7 +276,7 @@ func _build_ui() -> void:
 	add_child(help_label1)
 
 	var help_label2 = Label.new()
-	help_label2.text = "Y:CycleOp  Tab:Toggle  Sh+Tab:Profile  Sh+R:Rename  E:Export  I:Import  K:Compose  Sel:Auto  Start:Save"
+	help_label2.text = "Y:CycleOp  Tab:Toggle  Sh+Tab:Profile  Sh+R:Rename  E:Export  I:Import  Sh+E:CopyCode  Sh+I:PasteCode  K:Compose  Sel:Auto  Start:Save"
 	help_label2.position = Vector2(16, size.y - 28)
 	help_label2.add_theme_font_size_override("font_size", 10)
 	help_label2.add_theme_color_override("font_color", style.text.darkened(0.2))
@@ -1762,6 +1762,16 @@ func _input(event: InputEvent) -> void:
 		_open_share_picker()
 		get_viewport().set_input_as_handled()
 
+	# Shift+E - Copy a clipboard share code (paste it anywhere: Discord, forums)
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_E and event.shift_pressed and not event.is_echo():
+		_copy_share_code()
+		get_viewport().set_input_as_handled()
+
+	# Shift+I - Paste a share code from the clipboard onto this character
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_I and event.shift_pressed and not event.is_echo():
+		_paste_share_code()
+		get_viewport().set_input_as_handled()
+
 	# K - Open Rule Composer overlay (compose rules from a natural-language prompt)
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_K and not event.shift_pressed and not event.is_echo():
 		_open_rule_composer_overlay()
@@ -2844,8 +2854,12 @@ func _import_script_file(filename: String) -> bool:
 	var applied := ScriptShareManager.apply_character_script(character_id, data)
 	if not applied:
 		return false
+	_reload_applied_script()
+	return true
 
-	# Reload the freshly-applied script and rebuild the visible grid.
+
+func _reload_applied_script() -> void:
+	# Reload the freshly-applied script and rebuild the visible grid (shared by file-import and code-paste).
 	char_script = AutobattleSystem.get_character_script(character_id)
 	rules = char_script.get("rules", []).duplicate(true)
 	if rules.size() == 0:
@@ -2854,7 +2868,40 @@ func _import_script_file(filename: String) -> bool:
 	cursor_col = 0
 	_scroll_offset = 0.0
 	_refresh_grid()
-	return true
+
+
+## Shift+E: put a compact share code on the clipboard — paste it anywhere.
+func _copy_share_code() -> void:
+	_save_script()
+	var code := ScriptShareManager.encode_share_code(character_id)
+	if code == "":
+		_flash_status("Nothing to share — script is empty", Color.YELLOW)
+		SoundManager.play_ui("menu_error")
+		return
+	DisplayServer.clipboard_set(code)
+	_flash_status("Share code copied (%d chars) — paste it anywhere" % code.length(), Color.LIME)
+	SoundManager.play_ui("menu_select")
+
+
+## Shift+I: apply a share code from the clipboard to this character.
+func _paste_share_code() -> void:
+	var code := DisplayServer.clipboard_get()
+	if code.strip_edges() == "":
+		_flash_status("Clipboard is empty — copy a share code first", Color.YELLOW)
+		SoundManager.play_ui("menu_error")
+		return
+	var data := ScriptShareManager.decode_share_code(code)
+	if data.is_empty():
+		_flash_status("Not a valid share code", Color.YELLOW)
+		SoundManager.play_ui("menu_error")
+		return
+	if ScriptShareManager.apply_character_script(character_id, data):
+		_reload_applied_script()
+		_flash_status("Share code applied to %s" % character_name, Color.LIME)
+		SoundManager.play_ui("menu_select")
+	else:
+		_flash_status("Share code valid but could not apply", Color.YELLOW)
+		SoundManager.play_ui("menu_error")
 
 
 func _close_share_picker() -> void:

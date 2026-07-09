@@ -6,6 +6,47 @@ class_name ScriptShareManager
 
 const EXPORT_DIR = "user://script_exports/"
 const FILE_VERSION = 1
+## Clipboard share codes: "COWIR1:" + base64(gzip(json)) — the only sharing path that works on web (user:// is IndexedDB) and survives a Discord paste.
+const SHARE_CODE_PREFIX = "COWIR1:"
+const SHARE_CODE_MAX_DECOMPRESSED = 262144
+
+
+## Compact clipboard share code for one character's active script ("" if none).
+static func encode_share_code(character_id: String) -> String:
+	var script = AutobattleSystem.get_character_script(character_id)
+	if script.is_empty():
+		return ""
+	var data = {
+		"version": FILE_VERSION,
+		"type": "autobattle_script",
+		"character_id": character_id,
+		"script": script,
+	}
+	var raw: PackedByteArray = JSON.stringify(data).to_utf8_buffer()
+	var packed: PackedByteArray = raw.compress(FileAccess.COMPRESSION_GZIP)
+	return SHARE_CODE_PREFIX + Marshalls.raw_to_base64(packed)
+
+
+## Decode + validate a share code. Returns the export dict ({} on ANY failure —
+## bad prefix, bad base64, bad gzip, bad JSON, or rules failing the grammar).
+static func decode_share_code(code: String) -> Dictionary:
+	var c := code.strip_edges()
+	if not c.begins_with(SHARE_CODE_PREFIX):
+		return {}
+	var packed: PackedByteArray = Marshalls.base64_to_raw(c.substr(SHARE_CODE_PREFIX.length()))
+	if packed.is_empty():
+		return {}
+	var raw: PackedByteArray = packed.decompress_dynamic(SHARE_CODE_MAX_DECOMPRESSED, FileAccess.COMPRESSION_GZIP)
+	if raw.is_empty():
+		return {}
+	var parsed = JSON.parse_string(raw.get_string_from_utf8())
+	if typeof(parsed) != TYPE_DICTIONARY or parsed.get("type") != "autobattle_script":
+		return {}
+	var errs := validate_imported_script(parsed.get("script", {}))
+	if not errs.is_empty():
+		push_warning("[SHARE] Share code rejected — %d invalid rule(s): %s" % [errs.size(), str(errs)])
+		return {}
+	return parsed
 
 ## Export a character's active autobattle script to a JSON file.
 ## Returns the file path on success, empty string on failure.
