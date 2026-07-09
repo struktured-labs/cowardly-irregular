@@ -67,6 +67,33 @@ func test_decode_rejects_codes_carrying_invalid_rules() -> void:
 		"a code with grammar-invalid rules must be rejected at decode")
 
 
+func test_autogrind_share_code_round_trip() -> void:
+	var prev: Array = AutogrindSystem.get_autogrind_rules()
+	AutogrindSystem.set_autogrind_rules([
+		{"conditions": [{"type": "always"}], "actions": [{"type": "stop_grinding"}], "enabled": true},
+	])
+	var code := SSM.encode_autogrind_share_code()
+	assert_true(code.begins_with(SSM.SHARE_CODE_PREFIX), "autogrind code carries the same prefix")
+	var decoded := SSM.decode_share_code(code)
+	assert_eq(decoded.get("type"), "autogrind_rules", "decode branches on payload type")
+	assert_eq((decoded.get("rules", []) as Array).size(), 1, "rules survive the trip")
+	AutogrindSystem.set_autogrind_rules(prev)
+
+
+func test_apply_autogrind_rules_now_validates() -> void:
+	# The gap this tick closed: apply_autogrind_rules applied UNVALIDATED
+	# while the autobattle path validated — an untrusted paste with a bogus
+	# condition type would have applied raw.
+	var prev: Array = AutogrindSystem.get_autogrind_rules()
+	var bad := {"type": "autogrind_rules", "rules": [
+		{"conditions": [{"type": "definitely_not_a_condition_zzz"}], "actions": [{"type": "stop_grinding"}], "enabled": true},
+	]}
+	assert_false(SSM.apply_autogrind_rules(bad),
+		"grammar-invalid autogrind rules must be refused at apply")
+	assert_eq(str(AutogrindSystem.get_autogrind_rules()), str(prev),
+		"refused import must not mutate the active rules")
+
+
 func test_editor_wires_the_clipboard_bindings() -> void:
 	var src := FileAccess.get_file_as_string("res://src/ui/autobattle/AutobattleGridEditor.gd")
 	assert_true("_copy_share_code" in src and "_paste_share_code" in src, "handlers exist")

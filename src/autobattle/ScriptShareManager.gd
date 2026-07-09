@@ -40,9 +40,17 @@ static func decode_share_code(code: String) -> Dictionary:
 	if raw.is_empty():
 		return {}
 	var parsed = JSON.parse_string(raw.get_string_from_utf8())
-	if typeof(parsed) != TYPE_DICTIONARY or parsed.get("type") != "autobattle_script":
+	if typeof(parsed) != TYPE_DICTIONARY:
 		return {}
-	var errs := validate_imported_script(parsed.get("script", {}))
+	# One prefix, two payload types — validation branches per grammar
+	var errs: Array = []
+	match parsed.get("type"):
+		"autobattle_script":
+			errs = validate_imported_script(parsed.get("script", {}))
+		"autogrind_rules":
+			errs = validate_imported_autogrind_rules(parsed.get("rules", []))
+		_:
+			return {}
 	if not errs.is_empty():
 		push_warning("[SHARE] Share code rejected — %d invalid rule(s): %s" % [errs.size(), str(errs)])
 		return {}
@@ -221,16 +229,45 @@ static func apply_script_bundle(data: Dictionary) -> int:
 	return count
 
 
-## Apply imported autogrind rules.
+## Validate imported autogrind rules against the engine grammar (mirrors
+## validate_imported_script — the autobattle path validated, this one didn't).
+static func validate_imported_autogrind_rules(rules) -> Array:
+	if typeof(rules) != TYPE_ARRAY:
+		return ["'rules' is not an array"]
+	var errors: Array = []
+	for i in range(rules.size()):
+		if typeof(rules[i]) != TYPE_DICTIONARY:
+			errors.append("rule %d is not a dictionary" % i)
+			continue
+		for e in AutogrindSystem.validate_rule(rules[i]):
+			errors.append("rule %d: %s" % [i, str(e)])
+	return errors
+
+
+## Apply imported autogrind rules (validated — untrusted imports never apply raw).
 static func apply_autogrind_rules(data: Dictionary) -> bool:
 	if data.get("type") != "autogrind_rules":
 		return false
 	var rules = data.get("rules", [])
 	if rules.is_empty():
 		return false
+	var errs := validate_imported_autogrind_rules(rules)
+	if not errs.is_empty():
+		push_warning("[SHARE] Rejected autogrind import — %d invalid rule(s): %s" % [errs.size(), str(errs)])
+		return false
 	AutogrindSystem.set_autogrind_rules(rules)
 	print("[SHARE] Applied autogrind rules (%d rules)" % rules.size())
 	return true
+
+
+## Clipboard share code for the active autogrind rule set ("" if none).
+static func encode_autogrind_share_code() -> String:
+	var rules = AutogrindSystem.get_autogrind_rules()
+	if rules.is_empty():
+		return ""
+	var data = {"version": FILE_VERSION, "type": "autogrind_rules", "rules": rules}
+	var raw: PackedByteArray = JSON.stringify(data).to_utf8_buffer()
+	return SHARE_CODE_PREFIX + Marshalls.raw_to_base64(raw.compress(FileAccess.COMPRESSION_GZIP))
 
 
 ## List all available export files.
