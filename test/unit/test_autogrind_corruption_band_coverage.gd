@@ -100,3 +100,61 @@ func test_helper_defined_and_efficiency_path_uses_it() -> void:
 		"_increase_efficiency must route corruption through the helper")
 	assert_false(body.contains("meta_corruption_level +="),
 		"_increase_efficiency must NOT do a bare corruption increment")
+
+
+## Parallel coverage: region-rotation advisory must fire on EVERY adaptation
+## increase, not just the efficiency path. Same bug class as the corruption bands —
+## region-crack (+crack_level*0.3) bumped monster_adaptation_level without the
+## rotation check, so the "monsters have adapted" hint was silent exactly when a
+## region cracked. All increases now route through _add_monster_adaptation.
+
+var _rotation_fired: Array = []
+
+
+func _capture_rotation(region_id: String, suggested: Dictionary, level: float) -> void:
+	_rotation_fired.append({"region": region_id, "level": level})
+
+
+func test_add_monster_adaptation_fires_rotation() -> void:
+	_system.region_rotation_suggested.connect(_capture_rotation)
+	_rotation_fired.clear()
+	_system.current_region_id = "test_region"
+	_system.monster_adaptation_level = _system.ROTATION_SUGGEST_THRESHOLD - 0.1
+	_system._rotation_suggested_regions.clear()
+	_system._add_monster_adaptation(0.5)  # crosses ROTATION_SUGGEST_THRESHOLD
+	assert_eq(_rotation_fired.size(), 1,
+		"crossing the rotation threshold via the helper must fire the advisory")
+
+
+func test_add_monster_adaptation_ignores_nonpositive() -> void:
+	_system.monster_adaptation_level = 2.0
+	_system._add_monster_adaptation(0.0)
+	_system._add_monster_adaptation(-1.0)
+	assert_eq(_system.monster_adaptation_level, 2.0,
+		"non-positive adaptation deltas must be a no-op")
+
+
+func test_region_crack_adaptation_fires_rotation_advisory() -> void:
+	# THE regression: region-crack bumps adaptation (+crack_level*0.3); if that
+	# crosses the rotation threshold the advisory must fire (was silent pre-fix).
+	_system.region_rotation_suggested.connect(_capture_rotation)
+	_rotation_fired.clear()
+	_system.current_region_id = "test_region"
+	_system.monster_adaptation_level = _system.ROTATION_SUGGEST_THRESHOLD - 0.2
+	_system._rotation_suggested_regions.clear()
+	_system._apply_meta_adaptation(3)  # +3*0.3 = +0.9, crosses threshold
+	assert_eq(_rotation_fired.size(), 1,
+		"region-crack adaptation crossing the rotation threshold must fire the advisory (was silent pre-fix)")
+
+
+func test_source_ratchet_no_bare_adaptation_increment() -> void:
+	# Structural guard mirroring the corruption ratchet: exactly ONE
+	# `monster_adaptation_level +=` (inside _add_monster_adaptation).
+	var src: String = load("res://src/autogrind/AutogrindSystem.gd").source_code
+	var count := 0
+	var idx := src.find("monster_adaptation_level +=")
+	while idx != -1:
+		count += 1
+		idx = src.find("monster_adaptation_level +=", idx + 1)
+	assert_eq(count, 1,
+		"exactly ONE `monster_adaptation_level +=` must exist (inside _add_monster_adaptation); a bare increment re-opens the silent-advisory gap")

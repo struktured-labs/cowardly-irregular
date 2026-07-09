@@ -976,8 +976,7 @@ func _increase_efficiency() -> void:
 	efficiency_multiplier = min(efficiency_multiplier + efficiency_growth_rate, max_efficiency)
 
 	# Increase monster adaptation
-	monster_adaptation_level += 0.05
-	_maybe_suggest_region_rotation()
+	_add_monster_adaptation(0.05)
 
 	# Increase meta-corruption (danger!)
 	var corruption_gain = 0.02 * efficiency_multiplier
@@ -1387,8 +1386,8 @@ func _check_region_crack() -> void:
 
 func _apply_meta_adaptation(crack_level: int) -> void:
 	"""Apply meta-adaptation when region is cracked"""
-	# Increase monster adaptation significantly
-	monster_adaptation_level += crack_level * 0.3  # +30% stats per crack level
+	# Increase monster adaptation significantly (+30% stats per crack level)
+	_add_monster_adaptation(crack_level * 0.3)
 
 	# Monsters gain new behaviors
 	print("[color=purple]Monsters are adapting...[/color]")
@@ -1897,6 +1896,16 @@ func _add_meta_corruption(amount: float) -> void:
 		return
 	meta_corruption_level += amount
 	_maybe_emit_corruption_band()
+
+
+## All monster-adaptation INCREASES route here so the region-rotation advisory is never skipped.
+## (Advisory originally fired only on the efficiency path; region-crack +crack_level*0.3 bypassed it — the
+## very moment the "monsters have adapted, consider moving" hint is most apt.)
+func _add_monster_adaptation(amount: float) -> void:
+	if amount <= 0.0:
+		return
+	monster_adaptation_level += amount
+	_maybe_suggest_region_rotation()
 
 
 func _maybe_emit_corruption_band() -> void:
