@@ -14,6 +14,10 @@
       "duration": 0.5
     },
     {
+      "type": "play_sfx",
+      "sfx": "boss_intro_stinger"
+    },
+    {
       "type": "boss_intro",
       "name": "Umbraxis",
       "title": "The Void Render"

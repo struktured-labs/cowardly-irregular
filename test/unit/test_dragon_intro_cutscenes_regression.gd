@@ -67,3 +67,60 @@ func test_each_dragon_intro_cutscene_file_exists_and_parses() -> void:
 				has_dialogue = true
 				break
 		assert_true(has_dialogue, "%s must contain a 'dialogue' step" % path)
+
+
+## Boss-intro-stinger sweep (msg 2175/2284, 2026-07-09). The 4 dragon intros
+## used to stop_music then reveal the dragon (boss_intro step) in total
+## silence — dead air at the dramatic beat. rat_king + mordaine intros
+## already had play_sfx; these 4 were the gap. Each now fires the 2.5s
+## boss_intro_stinger doom-hit immediately BEFORE the boss_intro reveal so
+## it lands on the name-drop.
+func test_each_dragon_intro_fires_stinger_before_reveal() -> void:
+	for cls in DRAGON_TO_CUTSCENE.keys():
+		var cid: String = DRAGON_TO_CUTSCENE[cls]
+		var path: String = CUTSCENE_DIR + cid + ".json"
+		var f: FileAccess = FileAccess.open(path, FileAccess.READ)
+		assert_not_null(f, "could not open %s" % path)
+		if f == null:
+			continue
+		var parsed: Variant = JSON.parse_string(f.get_as_text())
+		f.close()
+		if not (parsed is Dictionary):
+			continue
+		var steps: Array = (parsed as Dictionary).get("steps", [])
+		# Find the boss_intro reveal step; the stinger must be the step
+		# immediately before it (playing on the reveal, not before the
+		# letterbox has framed it).
+		var reveal_idx: int = -1
+		for i in steps.size():
+			if steps[i] is Dictionary and str(steps[i].get("type", "")) == "boss_intro":
+				reveal_idx = i
+				break
+		assert_gt(reveal_idx, 0, "%s must have a boss_intro reveal step (not at index 0)" % cid)
+		if reveal_idx <= 0:
+			continue
+		var prev: Dictionary = steps[reveal_idx - 1]
+		assert_eq(str(prev.get("type", "")), "play_sfx",
+			"%s: step before boss_intro reveal must be play_sfx (the stinger)" % cid)
+		assert_eq(str(prev.get("sfx", "")), "boss_intro_stinger",
+			"%s: reveal stinger must be boss_intro_stinger" % cid)
+
+
+## The stinger key must resolve in the SFX manifest — otherwise it plays
+## into silence (ghost sfx), which is the exact dead-air bug this sweep
+## fixes. The global test_sfx_key_orphan_audit also catches this, but a
+## local pin documents the dependency for this feature.
+func test_boss_intro_stinger_resolves_in_manifest() -> void:
+	var f: FileAccess = FileAccess.open("res://data/sfx_manifest.json", FileAccess.READ)
+	assert_not_null(f, "sfx_manifest.json must be readable")
+	if f == null:
+		return
+	var parsed: Variant = JSON.parse_string(f.get_as_text())
+	f.close()
+	assert_true(parsed is Dictionary and (parsed as Dictionary).has("sfx"),
+		"sfx_manifest.json must have an 'sfx' section")
+	if not (parsed is Dictionary):
+		return
+	var sfx: Dictionary = (parsed as Dictionary).get("sfx", {})
+	assert_true(sfx.has("boss_intro_stinger"),
+		"boss_intro_stinger must exist in sfx_manifest — dragon intros reference it")
