@@ -1,0 +1,98 @@
+{
+  "id": "world3_delay_in_everything",
+  "title": "The Delay in Everything",
+  "world": 3,
+  "giver": {
+    "npc_id": "sprocket_brasston",
+    "display_name": "Sprocket",
+    "location": {"map_id": "brasston", "near": "maintenance_yard"},
+    "spawn_flag": ""
+  },
+  "description": "Sprocket, the clockwork maintenance worker, is seven seconds behind every conversation — his answers arrive slightly after they would naturally. He's consulted four clock-doctors. None of them can find the problem. It doesn't affect his work. It affects everything else.",
+  "playstyle_tags": ["puzzle", "technical", "first_calibrant_mention"],
+  "dialogue": {
+    "offer": [
+      {"speaker": "Sprocket", "text": "...I know about the delay. I've been trying to fix it for three months.", "theme": "villager"},
+      {"speaker": "Sprocket", "text": "...Gear cluster was replaced six months back, after a maintenance incident. Since then, everything I think takes seven extra seconds to arrive at my mouth. Four clock-doctors. Nothing.", "theme": "villager"},
+      {"speaker": "Sprocket", "text": "...You look like people who solve things that don't want to be solved. Look at the cluster. I'll hold still. Holding still is the one thing I'm never late at.", "theme": "villager"}
+    ],
+    "accept": [
+      {"speaker": "Sprocket", "text": "...Thank you. Sorry. That thank-you was for the thing you said seven seconds ago.", "theme": "villager"}
+    ],
+    "decline": [
+      {"speaker": "Sprocket", "text": "...Understood. Seven seconds is livable. Everything's livable if you shift your schedule seven seconds.", "theme": "villager"}
+    ],
+    "in_progress": [
+      {"speaker": "Sprocket", "text": "...The depot keeps records of every part in Brasston. If the gear's wrong, the record will be wrong in writing, which is the only way anything is ever wrong here.", "theme": "villager"}
+    ],
+    "ready_to_turn_in": [
+      {"speaker": "Sprocket", "text": "...Flux's old-spec gear? He kept those? Of course he kept those. Fit it. Please. I'd like to hear a conversation land on time before I die.", "theme": "villager"}
+    ],
+    "complete": [
+      {"speaker": "Sprocket", "text": "Say something.", "theme": "villager"},
+      {"speaker": "Sprocket", "text": "That was — I heard that NOW. It happened now and I heard it now. Three months of grease and guessing and it was one gear-tooth of lag the whole time.", "theme": "villager"},
+      {"speaker": "Sprocket", "text": "Take my precision kit. And keep that wrong gear somewhere safe — a part that's exactly one unit off standard isn't a mistake. Mistakes aren't that punctual.", "theme": "villager"}
+    ]
+  },
+  "objectives": [
+    {
+      "step": 1,
+      "description": "Hear Sprocket out — seven seconds late.",
+      "type": "talk",
+      "target_npc": "sprocket_brasston",
+      "flag_on_complete": "quest_world3_delay_in_everything_accepted"
+    },
+    {
+      "step": 2,
+      "description": "Examine Sprocket's replacement gear cluster.",
+      "type": "custom",
+      "required_flag": "quest_world3_delay_in_everything_gear_examined",
+      "flag_on_complete": "quest_world3_delay_in_everything_gear_examined"
+    },
+    {
+      "step": 3,
+      "description": "Find the depot record for the replacement gear.",
+      "type": "custom",
+      "required_flag": "quest_world3_delay_in_everything_record_found",
+      "flag_on_complete": "quest_world3_delay_in_everything_record_found"
+    },
+    {
+      "step": 4,
+      "description": "Source a correctly-sized gear from Brigadier Flux.",
+      "type": "talk",
+      "target_npc": "brigadier_flux",
+      "required_flag": "quest_world3_delay_in_everything_record_found",
+      "flag_on_complete": "quest_world3_delay_in_everything_gear_sourced"
+    },
+    {
+      "step": 5,
+      "description": "Install the gear and hear Sprocket land on time.",
+      "type": "talk",
+      "target_npc": "sprocket_brasston",
+      "required_flag": "quest_world3_delay_in_everything_gear_sourced"
+    }
+  ],
+  "rewards": {
+    "gold": 0,
+    "exp": 350,
+    "items": [
+      {"item_id": "precision_tool_set", "count": 1},
+      {"item_id": "substituted_gear", "count": 1}
+    ],
+    "job_variants": {
+      "time_mage": {
+        "description": "Dialogue-only: the Time Mage traces the replacement backward and finds the order date PRECEDES Sprocket's maintenance incident. 'The incident was scheduled. Someone planned for him to need a replacement, and they had the wrong part ready.'",
+        "items": [
+          {"item_id": "precision_tool_set", "count": 1},
+          {"item_id": "substituted_gear", "count": 1}
+        ]
+      }
+    }
+  },
+  "flag_on_complete": "quest_world3_delay_in_everything_complete",
+  "unlocks_dialogue": [
+    {"npc_id": "sprocket_brasston", "note": "Post-quest, at normal speed, Sprocket becomes a full mechanical-lore source for Cogsworth Junction — main-quest support dialogue without the delay making it confusing."}
+  ],
+  "cross_world_connection": "The depot record's margin note — 'substituted — standard gauge unavailable. Approved: Calibrant Logistics' — is the FIRST time the Calibrant's name appears in-world before the reveal. Deliberately unhighlighted. Players who noticed the notation on the W1 Orrery chain's blueprints connect it; others won't. W4: the Lab Technician analyzes substituted_gear and confirms the Regulator's standardization program planted slightly-off-spec parts across the city — low-grade friction, everywhere, on purpose.",
+  "_wiring_notes": "Step 2 emitter quest_world3_delay_in_everything_gear_examined: examine interact on Sprocket, any technically-inclined party (Mage/Alchemist flavored line: the replacement gear is one unit too large — exactly one gear-tooth of lag per cycle. Too precise to be accidental). Step 3 emitter quest_world3_delay_in_everything_record_found: depot record interact — a supply depot ledger in Brasston (new examine point, overworld's placement); the readable record carries the Calibrant Logistics margin note VERBATIM — do not paraphrase it, the exact phrase is the cross-world tell. brigadier_flux already exists in main-quest dialogue; step 4 rides his interact. Sprocket's 7-second delay as a presentation gimmick pre-completion: if cheap, prefix his pre-completion lines with a beat/ellipsis pause (already written with leading '...'); post-completion lines drop it — the fix is audible in the text rhythm."
+}

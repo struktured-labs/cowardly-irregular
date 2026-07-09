@@ -2,7 +2,7 @@
   "id": "world5_orrery",
   "title": "The Latency Traveler",
   "world": 5,
-  "trigger": "world5_market_district_visit",
+  "trigger": "quest_turn_in:world5_long_way_around",
   "background": "node_prime",
   "quest": "chain_a_traveling_merchant",
   "description": "A data packet taking an unreasonable route in Node Prime's market district. Orrery_v5. The annotated blueprint. A firewall attendant who recognizes the handwriting.",
@@ -32,13 +32,13 @@
       "lines": [
         {
           "speaker": "Rogue",
-          "text": "That packet. It's \u2014 aware. It's looking at us.",
+          "text": "That packet. It's — aware. It's looking at us.",
           "theme": "rogue",
           "portrait": "rogue"
         },
         {
           "speaker": "Mage",
-          "text": "It's flagged itself as high-priority but routed itself through every deprecated node in the network to stay off the main inspection pipeline. That's \u2014 that's deliberate. Somebody is that packet on purpose.",
+          "text": "It's flagged itself as high-priority but routed itself through every deprecated node in the network to stay off the main inspection pipeline. That's — that's deliberate. Somebody is that packet on purpose.",
           "theme": "mage",
           "portrait": "mage"
         }
@@ -46,7 +46,7 @@
     },
     {
       "type": "narration",
-      "text": "When the party interacted with it, the packet resolved. Not into a person exactly \u2014 into the silhouette of one. The outline of a fortune teller, assembled from routing tables and cached lookups, wearing something that had been a coat in five previous worlds."
+      "text": "When the party interacted with it, the packet resolved. Not into a person exactly — into the silhouette of one. The outline of a fortune teller, assembled from routing tables and cached lookups, wearing something that had been a coat in five previous worlds."
     },
     {
       "type": "dialogue",
@@ -86,7 +86,7 @@
       "lines": [
         {
           "speaker": "Orrery",
-          "text": "I've been carrying a compressed data object since before Node Prime. I can't deliver it myself without triggering the Calibrant's packet inspection \u2014 my routing signature is by now very recognizable to anyone watching for anomalous behavior. But you aren't flagged. Would you take it?",
+          "text": "I've been carrying a compressed data object since before Node Prime. I can't deliver it myself without triggering the Calibrant's packet inspection — my routing signature is by now very recognizable to anyone watching for anomalous behavior. But you aren't flagged. Would you take it?",
           "theme": "mysterious",
           "portrait": "mysterious"
         },
@@ -144,7 +144,7 @@
       "lines": [
         {
           "speaker": "Mage",
-          "text": "These are the blueprints. All of them. World 1 through World 6, in order, complete schematics. And in the margins \u2014 a second handwriting, smaller, asking \u2014 'Why?'",
+          "text": "These are the blueprints. All of them. World 1 through World 6, in order, complete schematics. And in the margins — a second handwriting, smaller, asking — 'Why?'",
           "theme": "mage",
           "portrait": "mage"
         },
@@ -165,13 +165,13 @@
       "lines": [
         {
           "speaker": "Firewall Attendant",
-          "text": "The Calibrant didn't just build the worlds. They annotated them. The second-hand notation \u2014 the 'why' \u2014 that was added after the first draft. The architect kept asking themselves why they were building it, and kept not writing down the answer.",
+          "text": "The Calibrant didn't just build the worlds. They annotated them. The second-hand notation — the 'why' — that was added after the first draft. The architect kept asking themselves why they were building it, and kept not writing down the answer.",
           "theme": "mysterious",
           "portrait": "mysterious"
         },
         {
           "speaker": "Firewall Attendant",
-          "text": "I'm going to file this behind the stack overflow. It's a maintenance location \u2014 legitimate access from either side requires triggering the overflow first, which is its own event that draws attention. The Calibrant won't look there without reason.",
+          "text": "I'm going to file this behind the stack overflow. It's a maintenance location — legitimate access from either side requires triggering the overflow first, which is its own event that draws attention. The Calibrant won't look there without reason.",
           "theme": "mysterious",
           "portrait": "mysterious"
         }
@@ -199,7 +199,7 @@
     },
     {
       "type": "narration",
-      "text": "She was less resolved than she'd been \u2014 the packet form already starting to break up at the edges, routing table dissolving back into the network like a sentence returning to words returning to letters."
+      "text": "She was less resolved than she'd been — the packet form already starting to break up at the edges, routing table dissolving back into the network like a sentence returning to words returning to letters."
     },
     {
       "type": "dialogue",
@@ -212,7 +212,7 @@
         },
         {
           "speaker": "Orrery",
-          "text": "They're getting shorter. World 1's code is extensively commented \u2014 long explanations, careful notation, the kind of documentation a person writes when they still believe the project is worth explaining to their future self. By World 4 the comments are terse. By World 5 some functions have no comments at all.",
+          "text": "They're getting shorter. World 1's code is extensively commented — long explanations, careful notation, the kind of documentation a person writes when they still believe the project is worth explaining to their future self. By World 4 the comments are terse. By World 5 some functions have no comments at all.",
           "theme": "mysterious",
           "portrait": "mysterious"
         },
@@ -230,7 +230,7 @@
         },
         {
           "speaker": "Orrery",
-          "text": "It means they're tired. A tired programmer stops naming things carefully. When you're building something with real conviction, you name the pieces \u2014 you give them weight. When you're building something out of inertia, the names start not to matter.",
+          "text": "It means they're tired. A tired programmer stops naming things carefully. When you're building something with real conviction, you name the pieces — you give them weight. When you're building something out of inertia, the names start not to matter.",
           "theme": "mysterious",
           "portrait": "mysterious"
         },
@@ -263,7 +263,7 @@
     },
     {
       "type": "narration",
-      "text": "The Fool Card was in the party's inventory. Five marks appeared on it at once \u2014 not sequentially, all together, as though they had been waiting for this moment to become visible. The card began to emit a faint light, the color of something about to become a question."
+      "text": "The Fool Card was in the party's inventory. Five marks appeared on it at once — not sequentially, all together, as though they had been waiting for this moment to become visible. The card began to emit a faint light, the color of something about to become a question."
     },
     {
       "type": "dialogue",
@@ -284,7 +284,7 @@
     },
     {
       "type": "narration",
-      "text": "She dissolved back into the network. Not abruptly \u2014 gradually, the way a story stops not when it ends but when the next thing begins."
+      "text": "She dissolved back into the network. Not abruptly — gradually, the way a story stops not when it ends but when the next thing begins."
     },
     {
       "type": "letterbox_out",
