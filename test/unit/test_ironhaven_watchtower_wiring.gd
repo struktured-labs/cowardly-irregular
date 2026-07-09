@@ -68,7 +68,8 @@ func test_game_loop_routes_ironhaven_watchtower() -> void:
 		"GameLoop must preload the tower script")
 	assert_true(src.contains("\"ironhaven_watchtower\":"),
 		"GameLoop scene routing must include ironhaven_watchtower")
-	assert_true(src.contains("\"ironhaven_watchtower\":\n\t\t\treturn \"volcanic\""),
+	# 2026-07-09: arm grouped with the Strike Registry — both Ironhaven interiors.
+	assert_true(src.contains("\"ironhaven_watchtower\", \"ironhaven_strike_registry\":\n\t\t\treturn \"volcanic\""),
 		"ironhaven_watchtower must map to 'volcanic' terrain — Ironhaven's battle backdrop")
 
 

@@ -137,6 +137,10 @@ func _setup_buildings() -> void:
 	# get an interior NPC.
 	spawn_points["watchtower_exit"] = Vector2(18 * TILE_SIZE, 12 * TILE_SIZE)
 	_add_interior_door("WatchtowerDoor", "ironhaven_watchtower", "Enter Storm Watchtower", Vector2(18 * TILE_SIZE, 11 * TILE_SIZE))
+	# === STRIKE REGISTRY DOOR ===
+	# South face of the MMM building (cols 3-5, rows 11-13) — lightning paperwork.
+	spawn_points["registry_exit"] = Vector2(4 * TILE_SIZE, 14.5 * TILE_SIZE)
+	_add_interior_door("StrikeRegistryDoor", "ironhaven_strike_registry", "Enter Strike Registry", Vector2(4 * TILE_SIZE, 13.5 * TILE_SIZE))
 
 
 func _setup_treasures() -> void:
