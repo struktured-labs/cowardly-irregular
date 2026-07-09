@@ -121,19 +121,29 @@ func _balance_report(rng: RandomNumberGenerator) -> void:
 	quit(0)
 
 
+## Canonical starter base stats — mirrors GameLoop._create_party exactly.
+const STARTER_BASES := {
+	"fighter": {"max_hp": 150, "max_mp": 50, "attack": 25, "defense": 15, "magic": 12, "speed": 12},
+	"cleric": {"max_hp": 100, "max_mp": 120, "attack": 10, "defense": 12, "magic": 28, "speed": 14},
+	"mage": {"max_hp": 80, "max_mp": 150, "attack": 8, "defense": 8, "magic": 35, "speed": 12},
+	"rogue": {"max_hp": 90, "max_mp": 40, "attack": 18, "defense": 10, "magic": 8, "speed": 22},
+	"bard": {"max_hp": 95, "max_mp": 90, "attack": 12, "defense": 9, "magic": 22, "speed": 16},
+}
+
+
 func _starter_party(lvl: int) -> Array:
 	var party := []
-	for job_id in ["fighter", "cleric", "mage", "rogue", "bard"]:
+	for job_id in STARTER_BASES:
 		var c = Combatant.new()
 		root.add_child(c)
-		c.initialize({
-			"name": job_id.capitalize(),
-			"max_hp": 100 + lvl * 12, "max_mp": 40 + lvl * 4,
-			"attack": 12 + lvl * 2, "defense": 8 + lvl,
-			"magic": 10 + lvl * 2, "speed": 10 + lvl / 2,
-		})
-		c.job_level = lvl
+		var base: Dictionary = STARTER_BASES[job_id].duplicate()
+		base["name"] = job_id.capitalize()
+		c.initialize(base)
 		_jobs.assign_job(c, job_id)
+		# Level through the game's OWN growth path (stat gains + ability
+		# unlocks land exactly as live play) — threshold is level*100.
+		if lvl > 1:
+			c.gain_job_exp(100 * lvl * (lvl - 1) / 2)
 		c.current_ap = 1
 		party.append(c)
 	return party
