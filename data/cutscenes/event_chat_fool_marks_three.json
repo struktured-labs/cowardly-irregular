@@ -1,0 +1,55 @@
+{
+  "id": "event_chat_fool_marks_three",
+  "title": "The Card Is Counting",
+  "world": 1,
+  "trigger": "event_chat_fool_marks_three",
+  "background": "prologue_forest",
+  "description": "fool_card_marks reached 3 of 5. The blank card is filling itself in.",
+  "steps": [
+    {
+      "type": "letterbox_in",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "The blank card has three marks now. Nobody in the party has drawn them."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Bard",
+          "text": "It itches when she stamps it. From inside the bag.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "Two more. Then what?",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "Then someone we've met five times explains it was an appointment.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "Keep walking.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        }
+      ]
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.3
+    }
+  ]
+}

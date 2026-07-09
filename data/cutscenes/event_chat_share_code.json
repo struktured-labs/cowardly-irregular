@@ -1,0 +1,61 @@
+{
+  "id": "event_chat_share_code",
+  "title": "Borrowed Reflexes",
+  "world": 1,
+  "trigger": "event_chat_share_code",
+  "background": "prologue_forest",
+  "description": "A pasted share code just took over the autobattle. The party discusses running a stranger's strategy.",
+  "steps": [
+    {
+      "type": "letterbox_in",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "A stranger's strategy, pasted whole into the party's reflexes."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mage",
+          "text": "We are now executing instructions from someone we have never met.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "That's called a book, Mage.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Mage",
+          "text": "Books don't swing YOUR sword.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "It swings fine. Better cadence than mine, actually.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Bard",
+          "text": "I'd like it noted the stranger gave me more solos.",
+          "theme": "bard",
+          "portrait": "bard"
+        }
+      ]
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.3
+    }
+  ]
+}

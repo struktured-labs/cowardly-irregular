@@ -718,6 +718,8 @@ func _use_selected_item() -> void:
 	if block != "":
 		SoundManager.play_ui("menu_error")
 		Toast.show_warning(self, block)
+		if PartyChatSystem:
+			PartyChatSystem.fire_event_flag("event_flag_tent_blocked")
 		return
 
 	# Use the item

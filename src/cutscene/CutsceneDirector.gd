@@ -653,6 +653,9 @@ func _step_set_flag(step: Dictionary) -> void:
 			# completion-flag write at cutscene_finished.
 			if GameState.has_method("set_story_flag"):
 				GameState.set_story_flag(flag, bool(value))
+			# Party reacts when the card is more than half full (event chat)
+			if flag == "fool_card_marks" and int(value) >= 3 and PartyChatSystem:
+				PartyChatSystem.fire_event_flag("event_flag_fool_marks_three")
 			# Orrery finale gate: marks are int-valued (story_flags mirror is bool-coerced) so the five-marks boolean must be emitted where the value lands
 			if flag == "fool_card_marks" and int(value) >= 5:
 				GameState.set_story_flag("quest_wiring_fool_card_five_marks")
