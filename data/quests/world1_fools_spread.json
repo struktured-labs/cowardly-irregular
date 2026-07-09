@@ -4,37 +4,88 @@
   "world": 1,
   "chain": "traveling_merchant",
   "chain_step": 1,
+  "cutscene_on_complete": "world1_orrery",
   "giver": {
     "npc_id": "madame_orrery_w1",
     "display_name": "Madame Orrery",
-    "location": {"map_id": "world1_overworld", "near": "harmonia_east_road"},
+    "location": {
+      "map_id": "world1_overworld",
+      "near": "harmonia_east_road"
+    },
     "spawn_flag": "cutscene_flag_rat_king_defeated"
   },
   "description": "A traveling fortune teller has parked her wagon on the eastern road out of Harmonia. It was not there before the cave. She offers a reading; one of the cards she turns over doesn't belong to her deck.",
-  "playstyle_tags": ["dialogue_heavy", "completionist"],
+  "playstyle_tags": [
+    "dialogue_heavy",
+    "completionist"
+  ],
   "dialogue": {
     "offer": [
-      {"speaker": "Madame Orrery", "text": "You have a road behind you and a road ahead of you. I can read both for a small fee. Sit down. Don't touch the cards.", "theme": "mysterious"},
-      {"speaker": "Madame Orrery", "text": "Five cards. One for your past, three for your present, one for your... what's that word. Outcome.", "theme": "mysterious"}
+      {
+        "speaker": "Madame Orrery",
+        "text": "You have a road behind you and a road ahead of you. I can read both for a small fee. Sit down. Don't touch the cards.",
+        "theme": "mysterious"
+      },
+      {
+        "speaker": "Madame Orrery",
+        "text": "Five cards. One for your past, three for your present, one for your... what's that word. Outcome.",
+        "theme": "mysterious"
+      }
     ],
     "accept": [
-      {"speaker": "Madame Orrery", "text": "Good. Hands on the table. Palms down. Try not to think about anything in particular, which of course means you will now think about nothing else.", "theme": "mysterious"},
-      {"speaker": "Madame Orrery", "text": "Four cards of journeys and transformation. Standard. The fifth card is blank. That has never happened before.", "theme": "mysterious"},
-      {"speaker": "Madame Orrery", "text": "Tell me — have you seen a man who knows too much and says it wrong? Ask him if he is missing a piece of paper.", "theme": "mysterious"}
+      {
+        "speaker": "Madame Orrery",
+        "text": "Good. Hands on the table. Palms down. Try not to think about anything in particular, which of course means you will now think about nothing else.",
+        "theme": "mysterious"
+      },
+      {
+        "speaker": "Madame Orrery",
+        "text": "Four cards of journeys and transformation. Standard. The fifth card is blank. That has never happened before.",
+        "theme": "mysterious"
+      },
+      {
+        "speaker": "Madame Orrery",
+        "text": "Tell me \u2014 have you seen a man who knows too much and says it wrong? Ask him if he is missing a piece of paper.",
+        "theme": "mysterious"
+      }
     ],
     "decline": [
-      {"speaker": "Madame Orrery", "text": "No? Fair. The cards will keep. They have more patience than I do. Find me when curiosity wins.", "theme": "mysterious"}
+      {
+        "speaker": "Madame Orrery",
+        "text": "No? Fair. The cards will keep. They have more patience than I do. Find me when curiosity wins.",
+        "theme": "mysterious"
+      }
     ],
     "in_progress": [
-      {"speaker": "Madame Orrery", "text": "The blank card is still on my table. It has not decided yet what to be. The man who talks wrong — he has something of mine. Or something of somebody's.", "theme": "mysterious"}
+      {
+        "speaker": "Madame Orrery",
+        "text": "The blank card is still on my table. It has not decided yet what to be. The man who talks wrong \u2014 he has something of mine. Or something of somebody's.",
+        "theme": "mysterious"
+      }
     ],
     "ready_to_turn_in": [
-      {"speaker": "Madame Orrery", "text": "You have it. Put it on the table. Do not unfold it.", "theme": "mysterious"}
+      {
+        "speaker": "Madame Orrery",
+        "text": "You have it. Put it on the table. Do not unfold it.",
+        "theme": "mysterious"
+      }
     ],
     "complete": [
-      {"speaker": "Madame Orrery", "text": "This is notation. It is not mine. It is not from any system I know. Which means one of two things: either the system is new, or I am older than I thought.", "theme": "mysterious"},
-      {"speaker": "Madame Orrery", "text": "Take this card. It is a real card. It is heavy for its size. It will matter, later. I will not tell you how. I do not know how either. I only know that it will.", "theme": "mysterious"},
-      {"speaker": "Madame Orrery", "text": "Come find me when you have seen more of the world. I would like to compare notes. I travel in directions the maps do not include.", "theme": "mysterious"}
+      {
+        "speaker": "Madame Orrery",
+        "text": "This is notation. It is not mine. It is not from any system I know. Which means one of two things: either the system is new, or I am older than I thought.",
+        "theme": "mysterious"
+      },
+      {
+        "speaker": "Madame Orrery",
+        "text": "Take this card. It is a real card. It is heavy for its size. It will matter, later. I will not tell you how. I do not know how either. I only know that it will.",
+        "theme": "mysterious"
+      },
+      {
+        "speaker": "Madame Orrery",
+        "text": "Come find me when you have seen more of the world. I would like to compare notes. I travel in directions the maps do not include.",
+        "theme": "mysterious"
+      }
     ]
   },
   "objectives": [
@@ -64,24 +115,16 @@
   "rewards": {
     "gold": 150,
     "exp": 300,
-    "items": [
-      {"item_id": "fool_card", "count": 1},
-      {"item_id": "luck_charm_minor", "count": 1}
-    ],
-    "job_variants": {
-      "bard": {
-        "description": "If the lead is a Bard, Orrery reacts differently to the blank card — she asks the Bard to 'play something that doesn't exist yet.' Brief musical interlude; the luck charm is replaced by the Unwritten Chord.",
-        "items": [
-          {"item_id": "fool_card", "count": 1},
-          {"item_id": "unwritten_chord", "count": 1}
-        ]
-      }
-    }
+    "items": [],
+    "job_variants": {}
   },
   "flag_on_complete": "quest_world1_fools_spread_complete",
   "unlocks_dialogue": [
-    {"npc_id": "madame_orrery_w2", "note": "W2 chain step recognizes the party ('your energy profile')"}
+    {
+      "npc_id": "madame_orrery_w2",
+      "note": "W2 chain step recognizes the party ('your energy profile')"
+    }
   ],
   "cross_world_connection": "The symbol on Phil's paper matches the notation on the Calibrant's blueprints in W3. The Fool Card accrues one mark per completed Orrery chain step; five marks + W6 completes the chain (fool_card -> wild_card transform, already authored in world6_orrery.json).",
-  "_wiring_notes": "Phil the Lost already exists in Harmonia (near the well). Step 2 grants nothing to inventory — the folded paper is narrative-carried. Orrery's wagon spawns on the east road only after cutscene_flag_rat_king_defeated."
+  "_wiring_notes": "Phil the Lost already exists in Harmonia (near the well). Step 2 grants nothing to inventory \u2014 the folded paper is narrative-carried. Orrery's wagon spawns on the east road only after cutscene_flag_rat_king_defeated. Orrery ruling 2026-07-08: item grants (fool_card, charm/unwritten_chord Bard branch) live in world1_orrery via cutscene_on_complete; quest keeps gold/exp only."
 }

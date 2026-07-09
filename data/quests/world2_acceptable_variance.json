@@ -1,0 +1,96 @@
+{
+  "id": "world2_acceptable_variance",
+  "title": "Acceptable Variance",
+  "world": 2,
+  "giver": {
+    "npc_id": "gerald_w2",
+    "display_name": "Gerald",
+    "location": {"map_id": "maple_heights", "near": "gerald_front_lawn"},
+    "spawn_flag": ""
+  },
+  "description": "Gerald has a wildflower growing in his front lawn. It is out of compliance with HOA lawn standards. He has tried mowing it, pulling it, four approved products, and — at his wife's suggestion — asking it politely to stop. It keeps growing back. He is not opposed to the flower on principle. Just operationally.",
+  "playstyle_tags": ["story", "multiple_resolutions", "quiet_one"],
+  "dialogue": {
+    "offer": [
+      {"speaker": "Gerald", "text": "I was wondering if you might be able to assist with a yard-related situation.", "theme": "villager"},
+      {"speaker": "Gerald", "text": "There's a wildflower in my lawn. Out of compliance. Quarterly inspection's coming. I've mowed it, pulled it, applied all four approved products. My wife suggested asking it politely. She's not wrong that I hadn't tried everything.", "theme": "villager"},
+      {"speaker": "Gerald", "text": "It grows back by morning. Every time. Three weeks now. I'm not opposed to the flower on principle, you understand. Just operationally.", "theme": "villager"}
+    ],
+    "accept": [
+      {"speaker": "Gerald", "text": "Anything you can figure out. I'll be here. Mowing around it, for now, which the HOA counts as 'partial compliance,' which is somehow worse than none.", "theme": "villager"}
+    ],
+    "decline": [
+      {"speaker": "Gerald", "text": "Understood. It's a lot to ask. It's one flower. It's just also, somehow, not.", "theme": "villager"}
+    ],
+    "in_progress": [
+      {"speaker": "Gerald", "text": "Mrs. Pemberton next door watches everything. Has since before the HOA. If anyone knows what the deal with that patch of lawn is, it's her.", "theme": "villager"}
+    ],
+    "ready_to_turn_in": [
+      {"speaker": "Gerald", "text": "Form 44-Omega. You actually — that's the variance form. That's been granted twice in HOA history. You're holding a third one.", "theme": "villager"}
+    ],
+    "complete": [
+      {"speaker": "Gerald", "text": "I thought about the HOA's response a lot. They granted it because the field pre-dated the neighborhood. The flower has more right to be here than the lawn.", "theme": "villager"},
+      {"speaker": "Gerald", "text": "That felt important somehow. I keep almost knowing why.", "theme": "villager"},
+      {"speaker": "Gerald", "text": "Anyway. It stays. I'll mow around it — officially, this time. Thank you. Genuinely.", "theme": "villager"}
+    ]
+  },
+  "objectives": [
+    {
+      "step": 1,
+      "description": "Hear Gerald out about the yard-related situation.",
+      "type": "talk",
+      "target_npc": "gerald_w2",
+      "flag_on_complete": "quest_world2_acceptable_variance_accepted"
+    },
+    {
+      "step": 2,
+      "description": "Examine the wildflower.",
+      "type": "custom",
+      "required_flag": "quest_world2_acceptable_variance_flower_examined",
+      "flag_on_complete": "quest_world2_acceptable_variance_flower_examined"
+    },
+    {
+      "step": 3,
+      "description": "Ask Mrs. Pemberton what was here before the houses.",
+      "type": "talk",
+      "target_npc": "mrs_pemberton_w2",
+      "required_flag": "quest_world2_acceptable_variance_flower_examined",
+      "flag_on_complete": "quest_world2_acceptable_variance_history_learned"
+    },
+    {
+      "step": 4,
+      "description": "Get the flower an HOA variance — Form 44-Omega.",
+      "type": "custom",
+      "required_flag": "quest_world2_acceptable_variance_variance_granted",
+      "flag_on_complete": "quest_world2_acceptable_variance_variance_granted"
+    },
+    {
+      "step": 5,
+      "description": "Bring Gerald the third variance in HOA history.",
+      "type": "talk",
+      "target_npc": "gerald_w2",
+      "required_flag": "quest_world2_acceptable_variance_variance_granted"
+    }
+  ],
+  "rewards": {
+    "gold": 0,
+    "exp": 200,
+    "items": [
+      {"item_id": "wildflower_variance", "count": 1}
+    ],
+    "job_variants": {
+      "cleric": {
+        "description": "Dialogue-only, and the only W2 quest where the Cleric sees what others can't: 'This isn't magic. This is memory. The earth remembers the field. The flower is the memory expressing itself.'",
+        "items": [
+          {"item_id": "wildflower_variance", "count": 1}
+        ]
+      }
+    }
+  },
+  "flag_on_complete": "quest_world2_acceptable_variance_complete",
+  "unlocks_dialogue": [
+    {"npc_id": "gerald_w2", "note": "Post-quest: Gerald's yard becomes a minor landmark — a single wildflower in a sea of regulation grass; neighbor NPCs occasionally stop to look at it."}
+  ],
+  "cross_world_connection": "W6: The Vertex's ground is uniform white except one small patch near the edge where a faint color persists — the exact color of Gerald's wildflower. With wildflower_variance in inventory, the Bard (Voice): 'Someone remembered the field all the way here.'",
+  "_wiring_notes": "Step 2 emitter quest_world2_acceptable_variance_flower_examined: examine interact at the flower; any magic-capable party detects 'local persistence — established in a way normal flowers aren't. Older than the lawn. Possibly older than the neighborhood.' Mrs. Pemberton (new NPC, front porch next door, watching since before the HOA): 'That flower was there before the houses. This was all a field. Gerald's lawn is built on top of the field. The flower knows that. It keeps trying to remind the ground what the ground used to be.' Step 4 emitter quest_world2_acceptable_variance_variance_granted: Form 44-Omega bureaucracy at the community center (front-desk interact chain; granted-twice-in-history flavor in the clerk's reaction). DESIGN DOC ALTERNATES deliberately NOT modeled as quest paths in v1: 'remove the flower permanently' (high-tier spell) and 'do nothing' ('Alright. I'll just mow around it.') — the variance is the canonical quest resolution; the alternates can land later as decline-side dialogue outcomes without touching this file."
+}

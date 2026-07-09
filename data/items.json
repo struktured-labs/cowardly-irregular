@@ -1606,6 +1606,36 @@
     "cost": 0,
     "flavor": "The stamped return date has weathered to illegibility, which the book appears to regard as a victory."
   },
+  "configuration_log": {
+    "id": "configuration_log",
+    "name": "The Configuration Log",
+    "category": 4,
+    "target_type": 4,
+    "description": "Forty-seven strip mall configurations, logged on a teenager's phone over two months. The forty-seventh is annotated: STABLE — CLOSE.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "One configuration, several weeks back, had the armory directly adjacent to a gap. The gap is a parking space now. The gap is where the portal showed up."
+  },
+  "wildflower_variance": {
+    "id": "wildflower_variance",
+    "name": "Form 44-Omega (Granted)",
+    "category": 4,
+    "target_type": 4,
+    "description": "An HOA lawn variance — the third granted in the organization's history. The subject field reads: 'One (1) wildflower, pre-existing.'",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Justification, as approved: the field pre-dated the neighborhood. The flower has more right to be here than the lawn."
+  },
+  "hex_code_photo": {
+    "id": "hex_code_photo",
+    "name": "The Hex Code Photo",
+    "category": 4,
+    "target_type": 4,
+    "description": "A phone photo of a monitor showing another world's sky. Analysis: #4A7FD4 — default-sky blue, the color you get when you don't specify a sky. This world's sky is #4B80D5. One digit off. Someone picked it very carefully.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The first thing anyone puts down when building a world is a sky. The sky shows where the world was when it was still being invented."
+  },
   "ERROR": {
     "id": "ERROR",
     "name": "ERROR",

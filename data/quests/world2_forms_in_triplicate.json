@@ -1,0 +1,79 @@
+{
+  "id": "world2_forms_in_triplicate",
+  "title": "Forms in Triplicate",
+  "world": 2,
+  "giver": {
+    "npc_id": "community_bulletin_board",
+    "display_name": "Community Bulletin Board",
+    "location": {"map_id": "maple_heights_community_center", "near": "front_entrance"},
+    "spawn_flag": ""
+  },
+  "description": "One notice on the community center board reads: CITIZEN COMPLAINT RESOLUTION — ESTIMATED WAIT TIME 14-18 MONTHS. Forty-seven unresolved complaints sit in the HOA's backlog. Seven are flagged red. None have ever been processed.",
+  "playstyle_tags": ["bureaucratic_puzzle", "multi_path", "no_marker"],
+  "dialogue": {
+    "offer": [
+      {"speaker": "", "text": "The notice is laminated, level, and centered. CITIZEN COMPLAINT RESOLUTION: ESTIMATED WAIT TIME 14-18 MONTHS.", "theme": "narrator"},
+      {"speaker": "Rogue", "text": "That's not a wait time. That's a system designed to not resolve anything. You don't laminate a number you intend to improve.", "theme": "rogue"}
+    ],
+    "accept": [
+      {"speaker": "Mage", "text": "Public records are requestable. Form 22-B. We'll need proof of residency — or whatever this neighborhood accepts as proof of being a person.", "theme": "mage"}
+    ],
+    "decline": [
+      {"speaker": "", "text": "The board stays where it is. The wait time does not change. The wait time has never changed. That is arguably the point of laminating it.", "theme": "narrator"}
+    ],
+    "in_progress": [
+      {"speaker": "Mage", "text": "Forty-seven complaints. Seven flagged red, auto-escalated to a review queue that has never contained an item. The system is a loop wearing a filing cabinet.", "theme": "mage"}
+    ],
+    "ready_to_turn_in": [
+      {"speaker": "Mail Carrier", "text": "You processed them? All seven? Let me see the receipt stamps. I've never actually seen one before. I want to know what they look like.", "theme": "villager"}
+    ],
+    "complete": [
+      {"speaker": "Mail Carrier", "text": "Official public record. Seven complaints, fourteen to eighteen months early. The HOA is going to be very polite about this and then very quiet about this.", "theme": "villager"},
+      {"speaker": "Mail Carrier", "text": "The one from Phil — the old man's complaint. 'Something is wrong with the counting.' I hand-delivered that one myself, years ago. I always wondered where it went. Now I know: nowhere. It went nowhere on purpose.", "theme": "villager"},
+      {"speaker": "Mail Carrier", "text": "Show him it's filed, if you're ever back that way. I think it would matter to him. Things that are written down matter to him.", "theme": "villager"}
+    ]
+  },
+  "objectives": [
+    {
+      "step": 1,
+      "description": "Read the laminated notice on the bulletin board.",
+      "type": "custom",
+      "required_flag": "quest_world2_forms_in_triplicate_notice_read",
+      "flag_on_complete": "quest_world2_forms_in_triplicate_notice_read"
+    },
+    {
+      "step": 2,
+      "description": "Obtain the complaint backlog via Form 22-B.",
+      "type": "custom",
+      "required_flag": "quest_world2_forms_in_triplicate_backlog_obtained",
+      "flag_on_complete": "quest_world2_forms_in_triplicate_backlog_obtained"
+    },
+    {
+      "step": 3,
+      "description": "Get the seven flagged complaints processed — somehow.",
+      "type": "custom",
+      "required_flag": "quest_world2_forms_in_triplicate_complaints_processed",
+      "flag_on_complete": "quest_world2_forms_in_triplicate_complaints_processed"
+    },
+    {
+      "step": 4,
+      "description": "Show the mail carrier the receipt stamps.",
+      "type": "talk",
+      "target_npc": "mail_carrier_w2",
+      "required_flag": "quest_world2_forms_in_triplicate_complaints_processed"
+    }
+  ],
+  "rewards": {
+    "gold": 0,
+    "exp": 250,
+    "items": [],
+    "job_variants": {}
+  },
+  "flag_on_complete": "quest_world2_forms_in_triplicate_complete",
+  "unlocks_dialogue": [
+    {"npc_id": "phil_the_lost", "note": "W1 Phil, shown his own filed complaint: 'I wrote this. I don't remember writing this. But I wrote this.' Folds it into his pocket. 'Good. If I wrote it down, then it happened.'"},
+    {"npc_id": "coordinator_w2", "note": "Coordinator's final-confrontation opening gains a line if complete: 'You filed the complaints. I see. I'd hoped the backlog would absorb them. It usually does.'"}
+  ],
+  "cross_world_connection": "W4: the monitors briefly display Phil's complaint as an archived document — 'REVIEW REQUIRED. STATUS: PERPETUALLY PENDING.' The foreman: 'That complaint's been in the system for years. It was escalated before the factory was built. How is that possible?'",
+  "_wiring_notes": "Giver is an interactable (bulletin board), tally-wall pattern — examine = offer, emits quest_world2_forms_in_triplicate_notice_read. Step 2 emitter quest_world2_forms_in_triplicate_backlog_obtained: front-desk interact gated on a credential — visitor credential from the mail carrier counts (shared with the Orrery-chain errand if that lands later; grant it here standalone via a brief front-desk sub-dialogue if not). Step 3 emitter quest_world2_forms_in_triplicate_complaints_processed is MULTI-PATH, any one: (a) Bard-lead composes the formal complaint narrative (dialogue interact), (b) Rogue-lead finds and enters the processing code directly, (c) anyone: bring it to the mail carrier who files third-party as a federal employee. The seven flagged complaints as readable content: 3× rearranging strip mall, 2× missing children, 1× the monitor visible through the Coordinator's window, 1× Phil the Lost: 'I keep seeing this village. Different every time. Same people. Something is wrong with the counting.' Phil's is the load-bearing one — it cross-references W1 and seeds the counting motif."
+}
