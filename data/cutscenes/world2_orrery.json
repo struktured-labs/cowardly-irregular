@@ -2,7 +2,7 @@
   "id": "world2_orrery",
   "title": "Reading the Fine Print",
   "world": 2,
-  "trigger": "world2_strip_mall_visit",
+  "trigger": "quest_turn_in:world2_fine_print",
   "background": "suburban_neighborhood",
   "quest": "chain_a_traveling_merchant",
   "description": "Orrery's life coaching booth at the Maple Heights strip mall. Form 77-Gamma. The Coordinator's memos. A specification that predates what it specifies.",
@@ -23,7 +23,7 @@
       "type": "narration",
       "lines": [
         "The strip mall between the medieval surplus store and the nail salon contained, as of this week, a new booth.",
-        "The sign was laminated. ORRERY LIFE COACHING \u2014 BY APPOINTMENT OR WALK-IN. FIRST SESSION FREE.",
+        "The sign was laminated. ORRERY LIFE COACHING — BY APPOINTMENT OR WALK-IN. FIRST SESSION FREE.",
         "The booth was slightly larger inside than outside. Nobody had filed a complaint about this yet, but someone was working up to it."
       ]
     },
@@ -38,13 +38,13 @@
         },
         {
           "speaker": "Rogue",
-          "text": "Are you \u2014 you're Orrery. From the wagon. From Harmonia.",
+          "text": "Are you — you're Orrery. From the wagon. From Harmonia.",
           "theme": "rogue",
           "portrait": "rogue"
         },
         {
           "speaker": "Orrery",
-          "text": "I'm Orrery, yes. The wagon is contextually unavailable here \u2014 zoning. I've adapted. Life coaching is essentially the same as fortune telling with better insurance language.",
+          "text": "I'm Orrery, yes. The wagon is contextually unavailable here — zoning. I've adapted. Life coaching is essentially the same as fortune telling with better insurance language.",
           "theme": "mysterious",
           "portrait": "mysterious"
         },
@@ -56,7 +56,7 @@
         },
         {
           "speaker": "Orrery",
-          "text": "But first \u2014 I need a small favor.",
+          "text": "But first — I need a small favor.",
           "theme": "mysterious",
           "portrait": "mysterious"
         }
@@ -71,7 +71,7 @@
       "lines": [
         {
           "speaker": "Orrery",
-          "text": "The HOA filed a complaint about my business license. Not an unusual complaint \u2014 I've had many, in many places \u2014 but this one cites a form I've never encountered. Form 77-Gamma: Itinerant Wisdom Services.",
+          "text": "The HOA filed a complaint about my business license. Not an unusual complaint — I've had many, in many places — but this one cites a form I've never encountered. Form 77-Gamma: Itinerant Wisdom Services.",
           "theme": "mysterious",
           "portrait": "mysterious"
         },
@@ -89,13 +89,13 @@
         },
         {
           "speaker": "Fighter",
-          "text": "We could get a visitor credential. The mail carrier mentioned she could arrange one. She needs help finding a package first \u2014 something about a rogue mailbox on Sycamore.",
+          "text": "We could get a visitor credential. The mail carrier mentioned she could arrange one. She needs help finding a package first — something about a rogue mailbox on Sycamore.",
           "theme": "fighter",
           "portrait": "fighter"
         },
         {
           "speaker": "Orrery",
-          "text": "That would be enormously helpful. I'd do it myself, but I have a client in \u2014 she checks something that isn't quite a watch \u2014 eleven minutes.",
+          "text": "That would be enormously helpful. I'd do it myself, but I have a client in — she checks something that isn't quite a watch — eleven minutes.",
           "theme": "mysterious",
           "portrait": "mysterious"
         }
@@ -131,7 +131,7 @@
         },
         {
           "speaker": "Orrery",
-          "text": "Thank you. Genuinely. Now \u2014 what I noticed.",
+          "text": "Thank you. Genuinely. Now — what I noticed.",
           "theme": "mysterious",
           "portrait": "mysterious"
         }
@@ -150,7 +150,7 @@
       "lines": [
         {
           "speaker": "Orrery",
-          "text": "The Coordinator sends memos. Many memos. They reference documents \u2014 calibration reports, mainly \u2014 that I've been trying to locate. I found some of the originals in the Community Center archive.",
+          "text": "The Coordinator sends memos. Many memos. They reference documents — calibration reports, mainly — that I've been trying to locate. I found some of the originals in the Community Center archive.",
           "theme": "mysterious",
           "portrait": "mysterious"
         },
@@ -210,7 +210,7 @@
     },
     {
       "type": "narration",
-      "text": "She handed over a laminated document. 'Life Coaching Summary \u2014 Session Notes.' It was professionally formatted. The 'client goals' section contained specific notes about the Coordinator's office monitor's blind spot and the hours the archive desk was unattended."
+      "text": "She handed over a laminated document. 'Life Coaching Summary — Session Notes.' It was professionally formatted. The 'client goals' section contained specific notes about the Coordinator's office monitor's blind spot and the hours the archive desk was unattended."
     },
     {
       "type": "give_item",
@@ -240,7 +240,7 @@
     },
     {
       "type": "narration",
-      "text": "She held it for a moment. A second mark appeared on it \u2014 not drawn, exactly. More like it had always been there and the card was only now admitting it."
+      "text": "She held it for a moment. A second mark appeared on it — not drawn, exactly. More like it had always been there and the card was only now admitting it."
     },
     {
       "type": "dialogue",
