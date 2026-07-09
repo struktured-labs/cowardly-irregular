@@ -2,7 +2,7 @@
   "id": "world1_orrery",
   "title": "A Fool's Spread",
   "world": 1,
-  "trigger": "world1_after_whispering_cave",
+  "trigger": "quest_turn_in:world1_fools_spread",
   "background": "prologue_village",
   "quest": "chain_a_traveling_merchant",
   "description": "Madame Orrery's wagon on the eastern road out of Harmonia. A tarot reading, a blank card, and a crumpled paper Phil has been carrying since before.",
@@ -24,7 +24,7 @@
       "lines": [
         "The wagon was not there on the way into Harmonia. It was there on the way out.",
         "This was only strange if you thought about it. Most people didn't.",
-        "A hand-lettered sign hung above the door: MADAME ORRERY \u2014 CONSULTATIONS, FORTUNES, MISCELLANEOUS TRUTHS."
+        "A hand-lettered sign hung above the door: MADAME ORRERY — CONSULTATIONS, FORTUNES, MISCELLANEOUS TRUTHS."
       ]
     },
     {
@@ -44,7 +44,7 @@
         },
         {
           "speaker": "Orrery",
-          "text": "No. I know the shape of someone who's just learned something. It's a distinct silhouette. Sit down. Five cards. No charge for the first reading \u2014 I have a professional curiosity about this group.",
+          "text": "No. I know the shape of someone who's just learned something. It's a distinct silhouette. Sit down. Five cards. No charge for the first reading — I have a professional curiosity about this group.",
           "theme": "mysterious",
           "portrait": "mysterious"
         }
@@ -58,7 +58,7 @@
       "type": "narration",
       "lines": [
         "She laid the cards slowly, one at a time, face down on a small table that seemed too large for the wagon's interior.",
-        "The wagon smelled like cedar and something older \u2014 old paper, old starlight, old knowing."
+        "The wagon smelled like cedar and something older — old paper, old starlight, old knowing."
       ]
     },
     {
@@ -121,13 +121,13 @@
         },
         {
           "speaker": "Orrery",
-          "text": "I genuinely don't know. The blank card isn't in my deck. It arrived. Recently \u2014 within the last week, I think. Before that, there were exactly seventy-eight cards and now there are seventy-nine, and the seventy-ninth has nothing on it.",
+          "text": "I genuinely don't know. The blank card isn't in my deck. It arrived. Recently — within the last week, I think. Before that, there were exactly seventy-eight cards and now there are seventy-nine, and the seventy-ninth has nothing on it.",
           "theme": "mysterious",
           "portrait": "mysterious"
         },
         {
           "speaker": "Orrery",
-          "text": "Have you seen, in your travels around Harmonia, a man who knows too much and says it wrong? Not a liar \u2014 someone who has the right information but the wrong syntax for it. Like he learned the words but not the order.",
+          "text": "Have you seen, in your travels around Harmonia, a man who knows too much and says it wrong? Not a liar — someone who has the right information but the wrong syntax for it. Like he learned the words but not the order.",
           "theme": "mysterious",
           "portrait": "mysterious"
         },
@@ -139,7 +139,7 @@
         },
         {
           "speaker": "Orrery",
-          "text": "Yes. That's the one. I've been trying to find him for two days, but he moves in ways that don't respond well to maps. Would you be willing to bring him something from me? Or \u2014 no. Ask him if he has something that doesn't belong to him. Something he's been carrying. He'll know.",
+          "text": "Yes. That's the one. I've been trying to find him for two days, but he moves in ways that don't respond well to maps. Would you be willing to bring him something from me? Or — no. Ask him if he has something that doesn't belong to him. Something he's been carrying. He'll know.",
           "theme": "mysterious",
           "portrait": "mysterious"
         }
@@ -159,7 +159,7 @@
       "lines": [
         {
           "speaker": "Phil",
-          "text": "You're from the wagon. Not her wagon \u2014 you're from her direction. That's different. That means she sent you, which means the card is in the right sequence, which means \u2014 here.",
+          "text": "You're from the wagon. Not her wagon — you're from her direction. That's different. That means she sent you, which means the card is in the right sequence, which means — here.",
           "theme": "villager",
           "portrait": "villager"
         },
@@ -197,7 +197,7 @@
     },
     {
       "type": "narration",
-      "text": "She studied the paper for a long time. Not reading it \u2014 reading around it, as though the symbol was an absence that told you something about the presence it displaced."
+      "text": "She studied the paper for a long time. Not reading it — reading around it, as though the symbol was an absence that told you something about the presence it displaced."
     },
     {
       "type": "dialogue",
@@ -228,7 +228,7 @@
         },
         {
           "speaker": "Orrery",
-          "text": "I'll keep the paper. In exchange \u2014 take this.",
+          "text": "I'll keep the paper. In exchange — take this.",
           "theme": "mysterious",
           "portrait": "mysterious"
         }
@@ -273,16 +273,58 @@
       "duration": 0.3
     },
     {
-      "type": "narration",
-      "lines": [
-        "She handed over a small charm \u2014 a chip of polished amber with something suspended inside it that wasn't quite visible.",
-        "As the party left, the wagon door closed behind them. When they looked back, the wagon had not moved. It was simply less there than it had been."
-      ]
+      "type": "branch",
+      "condition": "lead_job",
+      "cases": {
+        "bard": [
+          {
+            "type": "dialogue",
+            "lines": [
+              {
+                "speaker": "Orrery",
+                "text": "One more thing. You. The one who narrates. Play me something that doesn't exist yet.",
+                "theme": "mysterious",
+                "portrait": "mysterious"
+              }
+            ]
+          },
+          {
+            "type": "narration",
+            "text": "The Bard did not ask what that meant. Asking would have been a way of not playing. She lifted the lute, waited for a phrase that had never been anywhere, and played it. It lasted eleven seconds. Nobody who heard it could hum it afterward, including her."
+          },
+          {
+            "type": "dialogue",
+            "lines": [
+              {
+                "speaker": "Orrery",
+                "text": "Yes. That one. Keep the fingering. You'll need it somewhere there are no songs yet.",
+                "theme": "mysterious",
+                "portrait": "mysterious"
+              }
+            ]
+          },
+          {
+            "type": "give_item",
+            "item": "unwritten_chord",
+            "quantity": 1
+          }
+        ],
+        "default": [
+          {
+            "type": "narration",
+            "text": "She handed over a small charm — a chip of polished amber with something suspended inside it that wasn't quite visible."
+          },
+          {
+            "type": "give_item",
+            "item": "luck_charm_minor",
+            "quantity": 1
+          }
+        ]
+      }
     },
     {
-      "type": "give_item",
-      "item": "luck_charm_minor",
-      "quantity": 1
+      "type": "narration",
+      "text": "As the party left, the wagon door closed behind them. When they looked back, the wagon had not moved. It was simply less there than it had been."
     },
     {
       "type": "set_flag",
