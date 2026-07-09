@@ -113,6 +113,31 @@ func test_five_marks_emitter_fires_at_threshold() -> void:
 		GameState.game_constants.erase("cutscene_flag_fool_card_marks")
 
 
+func test_chain_steps_enforce_sequential_order() -> void:
+	# 2026-07-09 fix: steps 2-5 were orderless — a skip-ahead player could do
+	# W5's chain quest first and hard-set marks=5 (early-armed finale), or
+	# back-fill W1 and REGRESS the counter. Each step now prereqs the prior
+	# world's orrery completion flag, matching story's "sequential model".
+	var expected := {
+		2: "world1_orrery_complete", 3: "world2_orrery_complete",
+		4: "world3_orrery_complete", 5: "world4_orrery_complete",
+	}
+	var dir := DirAccess.open("res://data/quests")
+	var found := 0
+	for f in dir.get_files():
+		if not f.ends_with(".json"):
+			continue
+		var q = JSON.parse_string(FileAccess.get_file_as_string("res://data/quests/" + f))
+		if typeof(q) != TYPE_DICTIONARY or str(q.get("chain", "")) != "traveling_merchant":
+			continue
+		var step := int(q.get("chain_step", 0))
+		if expected.has(step):
+			found += 1
+			assert_eq(str(q.get("prereq_flag", "")), str(expected[step]),
+				"chain step %d (%s) must prereq the prior world's orrery completion — orderless steps let marks hard-set out of order" % [step, f])
+	assert_eq(found, 4, "sanity: chain steps 2-5 all present")
+
+
 func test_finale_quest_gates_on_the_emitted_boolean() -> void:
 	var q = JSON.parse_string(FileAccess.get_file_as_string("res://data/quests/world6_last_appointment.json"))
 	assert_eq(str(q.get("prereq_flag", "")), "quest_wiring_fool_card_five_marks",

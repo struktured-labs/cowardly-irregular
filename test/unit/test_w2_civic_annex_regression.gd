@@ -33,10 +33,13 @@ func before_each() -> void:
 		GameState.set_story_flag(f, false)
 	GameState.game_constants.erase("relocated_officer_baseline")
 	GameState.game_constants.erase("fine_print_mailbox_baseline")
+	# 2026-07-09 chain-ordering fix: fine_print now prereqs the W1 chain step
+	GameState.set_story_flag("world1_orrery_complete")
 
 
 func after_each() -> void:
 	before_each()
+	GameState.set_story_flag("world1_orrery_complete", false)
 
 
 # ── Registration ──
