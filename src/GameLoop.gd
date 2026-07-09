@@ -411,6 +411,25 @@ func _maybe_run_battle_smoke() -> void:
 			await get_tree().create_timer(0.6).timeout
 			if _autobattle_editor == null or not is_instance_valid(_autobattle_editor):
 				break
+		# Formations + Records reference pages (v3.33.66/.72) — direct-instanced so
+		# render coverage doesn't depend on brittle menu-cursor driving
+		var FormationsScript = load("res://src/ui/FormationsMenu.gd")
+		if FormationsScript:
+			var fm = FormationsScript.new()
+			fm.party = party
+			add_child(fm)
+			await get_tree().create_timer(0.6).timeout
+			await _smoke_shot("formations_page")
+			fm.queue_free()
+			await get_tree().process_frame
+		var RecordsScript = load("res://src/ui/RecordsMenu.gd")
+		if RecordsScript:
+			var rm = RecordsScript.new()
+			add_child(rm)
+			await get_tree().create_timer(0.6).timeout
+			await _smoke_shot("records_page")
+			rm.queue_free()
+			await get_tree().process_frame
 		# shop UI via the real VillageShop path — the progression item's purchase surface
 		var smoke_shop = load("res://src/exploration/VillageShop.gd").new()
 		smoke_shop.shop_type = VillageShop.ShopType.BLACK_MAGIC
