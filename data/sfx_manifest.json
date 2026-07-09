@@ -462,6 +462,12 @@
       "duration_seconds": 6.0,
       "prompt_influence": 0.7
     },
+    "ambient_scriptorium": {
+      "file": "assets/audio/sfx/ambient_scriptorium.ogg",
+      "prompt": "Arcane archive room tone — library hush + faint low mystical hum + occasional quill-scratch/page-turn + latent-magic shimmer, loop-friendly fades, -24 LUFS. For the Scriptweaver's Guild interior in the Scriptura stub scene (where reality/game-constants get rewritten). Distinct from the mundane ambient_library.",
+      "duration_seconds": 6.0,
+      "prompt_influence": 0.7
+    },
     "anvil_strike": {
       "file": "assets/audio/sfx/anvil_strike.ogg",
       "prompt": "Blacksmith hammer striking hot metal on an anvil, bright ringing CLANG + quick spark sizzle tail, single strike, -15 LUFS. One-shot for the Master Smith's 4-frame hammer animation (sync to strike frame).",
