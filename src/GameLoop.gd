@@ -21,6 +21,7 @@ const ShopInteriorScript = preload("res://src/maps/interiors/ShopInterior.gd")
 const BlacksmithInteriorScript = preload("res://src/maps/interiors/BlacksmithInterior.gd")
 const HarmoniaChapelInteriorScript = preload("res://src/maps/interiors/HarmoniaChapelInterior.gd")
 const HarmoniaCartographerInteriorScript = preload("res://src/maps/interiors/HarmoniaCartographerInterior.gd")
+const EldertreeGraftingHouseInteriorScript = preload("res://src/maps/interiors/EldertreeGraftingHouseInterior.gd")
 const HarmoniaLibraryInteriorScript = preload("res://src/maps/interiors/HarmoniaLibraryInterior.gd")
 const EldertreeHollowTreeInteriorScript = preload("res://src/maps/interiors/EldertreeHollowTreeInterior.gd")
 const FrostholdWardenHutInteriorScript = preload("res://src/maps/interiors/FrostholdWardenHutInterior.gd")
@@ -2968,6 +2969,8 @@ func _start_exploration() -> void:
 			exploration_scene = HarmoniaCartographerInteriorScript.new()
 		"eldertree_hollow":
 			exploration_scene = EldertreeHollowTreeInteriorScript.new()
+		"eldertree_grafting_house":
+			exploration_scene = EldertreeGraftingHouseInteriorScript.new()
 		"frosthold_warden_hut":
 			exploration_scene = FrostholdWardenHutInteriorScript.new()
 		"sandrift_glassmaker":
@@ -3432,8 +3435,9 @@ const INTERIOR_MAP_IDS: PackedStringArray = [
 	"blacksmith_interior",
 	# Scriptura capital-district interiors (Guild + bookshop).
 	"scriptura_guild", "scriptura_bookshop",
-	# Village-interior expansion: Cartographer's Attic (Harmonia PPP building).
-	"harmonia_cartographer",
+	# Village-interior expansion: Cartographer's Attic (Harmonia PPP building)
+	# + the Grafting House (Eldertree GGG garden).
+	"harmonia_cartographer", "eldertree_grafting_house",
 ]
 
 
@@ -4046,7 +4050,7 @@ func _get_terrain_for_map(map_id: String) -> String:
 			return "cave"
 		"harmonia_village", "tavern_interior", "harmonia_chapel", "harmonia_library", "harmonia_cartographer":
 			return "village"
-		"eldertree_hollow":
+		"eldertree_hollow", "eldertree_grafting_house":
 			return "forest"
 		"frosthold_warden_hut":
 			return "ice"
