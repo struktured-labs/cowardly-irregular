@@ -181,7 +181,7 @@ func _build_ui() -> void:
 	var footer = Label.new()
 	footer.text = "↑↓: Select  A/Click: Confirm  B/RClick: Close  ←→: Character  L/R: Leader"
 	footer.position = Vector2(16, viewport_size.y - 32)
-	footer.add_theme_font_size_override("font_size", 12)
+	footer.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
 	add_child(footer)
 
@@ -212,7 +212,7 @@ func _create_party_panel(panel_size: Vector2) -> Control:
 	var title = Label.new()
 	title.text = "PARTY"
 	title.position = Vector2(8, 4)
-	title.add_theme_font_size_override("font_size", 14)
+	title.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	title.add_theme_color_override("font_color", TEXT_COLOR)
 	panel.add_child(title)
 
@@ -271,7 +271,7 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 	leader_label.name = "LeaderStar"
 	leader_label.text = "★" if is_leader else ""
 	leader_label.position = Vector2(4, 82)
-	leader_label.add_theme_font_size_override("font_size", 10)
+	leader_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	leader_label.add_theme_color_override("font_color", Color.YELLOW)
 	card.add_child(leader_label)
 
@@ -287,7 +287,7 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 	name_label.name = "NameLabel"
 	name_label.text = member.combatant_name
 	name_label.position = Vector2(58, 4)
-	name_label.add_theme_font_size_override("font_size", 14)
+	name_label.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	name_label.add_theme_color_override("font_color", TEXT_COLOR)
 	card.add_child(name_label)
 
@@ -295,7 +295,7 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 	job_label.name = "JobLabel"
 	job_label.text = member.job.get("name", "Fighter") if member.job else "Fighter"
 	job_label.position = Vector2(58, 20)
-	job_label.add_theme_font_size_override("font_size", 10)
+	job_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	job_label.add_theme_color_override("font_color", DISABLED_COLOR)
 	card.add_child(job_label)
 
@@ -327,7 +327,7 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 		var dead_label = Label.new()
 		dead_label.text = "KO"
 		dead_label.position = Vector2(4, 56)
-		dead_label.add_theme_font_size_override("font_size", 12)
+		dead_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 		dead_label.add_theme_color_override("font_color", Color.RED)
 		card.add_child(dead_label)
 
@@ -343,7 +343,7 @@ func _create_stat_bar(label: String, current: int, maximum: int, color_full: Col
 	var lbl = Label.new()
 	lbl.text = label
 	lbl.position = Vector2(0, 0)
-	lbl.add_theme_font_size_override("font_size", 10)
+	lbl.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	lbl.add_theme_color_override("font_color", TEXT_COLOR)
 	container.add_child(lbl)
 
@@ -368,7 +368,7 @@ func _create_stat_bar(label: String, current: int, maximum: int, color_full: Col
 	value.name = "Value"
 	value.text = "%d/%d" % [current, maximum]
 	value.position = Vector2(88, 0)
-	value.add_theme_font_size_override("font_size", 10)
+	value.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	value.add_theme_color_override("font_color", TEXT_COLOR)
 	container.add_child(value)
 
@@ -391,7 +391,7 @@ func _create_exp_indicator(member: Combatant) -> Control:
 	var lbl = Label.new()
 	lbl.text = "Lv%d" % job_level
 	lbl.position = Vector2(0, 0)
-	lbl.add_theme_font_size_override("font_size", 10)
+	lbl.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	lbl.add_theme_color_override("font_color", Color(0.8, 0.8, 1.0))
 	container.add_child(lbl)
 
@@ -405,7 +405,7 @@ func _create_exp_indicator(member: Combatant) -> Control:
 	var pips = Label.new()
 	pips.text = pip_str
 	pips.position = Vector2(30, 0)
-	pips.add_theme_font_size_override("font_size", 10)
+	pips.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	pips.add_theme_color_override("font_color", Color(0.6, 0.9, 0.6))
 	container.add_child(pips)
 
@@ -428,7 +428,7 @@ func _create_menu_panel(panel_size: Vector2) -> Control:
 	var title = Label.new()
 	title.text = "MENU"
 	title.position = Vector2(8, 4)
-	title.add_theme_font_size_override("font_size", 14)
+	title.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	title.add_theme_color_override("font_color", TEXT_COLOR)
 	panel.add_child(title)
 
@@ -448,14 +448,14 @@ func _create_menu_panel(panel_size: Vector2) -> Control:
 	var play_time = Label.new()
 	play_time.text = "Play Time: %s" % _format_play_time()
 	play_time.position = Vector2(8, info_y)
-	play_time.add_theme_font_size_override("font_size", 11)
+	play_time.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	play_time.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(play_time)
 
 	var location = Label.new()
 	location.text = "Location: Overworld"
 	location.position = Vector2(8, info_y + 16)
-	location.add_theme_font_size_override("font_size", 11)
+	location.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	location.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(location)
 
@@ -467,7 +467,7 @@ func _create_menu_panel(panel_size: Vector2) -> Control:
 		var corr = Label.new()
 		corr.text = str(corr_lines[0])
 		corr.position = Vector2(8, info_y + 32)
-		corr.add_theme_font_size_override("font_size", 11)
+		corr.add_theme_font_size_override("font_size", TextScale.scaled(11))
 		corr.add_theme_color_override("font_color", Color(0.85, 0.3, 0.45))
 		panel.add_child(corr)
 		if corr_lines.size() > 1:
@@ -476,7 +476,7 @@ func _create_menu_panel(panel_size: Vector2) -> Control:
 			fx_label.position = Vector2(8, info_y + 48)
 			fx_label.size = Vector2(190, 14)
 			fx_label.clip_text = true
-			fx_label.add_theme_font_size_override("font_size", 10)
+			fx_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 			fx_label.add_theme_color_override("font_color", Color(0.7, 0.35, 0.45))
 			panel.add_child(fx_label)
 
@@ -518,7 +518,7 @@ func _create_menu_item(option: Dictionary, index: int) -> Control:
 	var cursor = Label.new()
 	cursor.text = "▶" if index == selected_index else " "
 	cursor.position = Vector2(4, 2)
-	cursor.add_theme_font_size_override("font_size", 14)
+	cursor.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	cursor.add_theme_color_override("font_color", Color.YELLOW if option["enabled"] else DISABLED_COLOR)
 	cursor.name = "Cursor"
 	item.add_child(cursor)
@@ -527,7 +527,7 @@ func _create_menu_item(option: Dictionary, index: int) -> Control:
 	var label = Label.new()
 	label.text = option["label"]
 	label.position = Vector2(24, 2)
-	label.add_theme_font_size_override("font_size", 14)
+	label.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	label.add_theme_color_override("font_color", TEXT_COLOR if option["enabled"] else DISABLED_COLOR)
 	label.name = "Label"
 	item.add_child(label)

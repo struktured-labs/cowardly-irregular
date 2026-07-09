@@ -250,7 +250,7 @@ func _build_ui() -> void:
 	var title = Label.new()
 	title.text = "SETTINGS"
 	title.position = Vector2(16, 8)
-	title.add_theme_font_size_override("font_size", 18)
+	title.add_theme_font_size_override("font_size", TextScale.scaled(18))
 	title.add_theme_color_override("font_color", TEXT_COLOR)
 	panel.add_child(title)
 
@@ -618,7 +618,7 @@ func _build_ui() -> void:
 	var footer = Label.new()
 	footer.text = "←→: Adjust  A/Click: Select  B/RClick: Back"
 	footer.position = Vector2(16, panel.size.y - FOOTER_H + 18)
-	footer.add_theme_font_size_override("font_size", 12)
+	footer.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(footer)
 
@@ -641,7 +641,7 @@ func _create_option_setting(label_text: String, description: String, options: Ar
 	var label = Label.new()
 	label.text = label_text
 	label.position = Vector2(8, 4)
-	label.add_theme_font_size_override("font_size", 14)
+	label.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	label.add_theme_color_override("font_color", TEXT_COLOR)
 	container.add_child(label)
 
@@ -649,7 +649,7 @@ func _create_option_setting(label_text: String, description: String, options: Ar
 	var desc = Label.new()
 	desc.text = description
 	desc.position = Vector2(8, 22)
-	desc.add_theme_font_size_override("font_size", 10)
+	desc.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	desc.add_theme_color_override("font_color", DISABLED_COLOR)
 	container.add_child(desc)
 
@@ -672,7 +672,7 @@ func _create_option_setting(label_text: String, description: String, options: Ar
 		option_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		option_label.size = Vector2(40, 24)
 		option_label.position = Vector2(0, 0)
-		option_label.add_theme_font_size_override("font_size", 10)  # Smaller font
+		option_label.add_theme_font_size_override("font_size", TextScale.scaled(10))  # Smaller font
 		option_label.add_theme_color_override("font_color", Color.YELLOW if i == current_index else TEXT_COLOR)
 		option_label.name = "OptionLabel_%d" % i
 		option_bg.add_child(option_label)
@@ -702,7 +702,7 @@ func _create_volume_setting(label_text: String, description: String, options: Ar
 	var label = Label.new()
 	label.text = label_text
 	label.position = Vector2(8, 4)
-	label.add_theme_font_size_override("font_size", 14)
+	label.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	label.add_theme_color_override("font_color", TEXT_COLOR)
 	container.add_child(label)
 
@@ -710,7 +710,7 @@ func _create_volume_setting(label_text: String, description: String, options: Ar
 	var desc = Label.new()
 	desc.text = description
 	desc.position = Vector2(8, 22)
-	desc.add_theme_font_size_override("font_size", 10)
+	desc.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	desc.add_theme_color_override("font_color", DISABLED_COLOR)
 	container.add_child(desc)
 
@@ -732,7 +732,7 @@ func _create_volume_setting(label_text: String, description: String, options: Ar
 		option_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		option_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		option_label.size = Vector2(50, 20)
-		option_label.add_theme_font_size_override("font_size", 10)
+		option_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 		option_label.add_theme_color_override("font_color", Color.YELLOW if i == current_index else TEXT_COLOR)
 		option_label.name = "OptionLabel_%d" % i
 		option_bg.add_child(option_label)
@@ -761,7 +761,7 @@ func _create_option_setting_small(label_text: String, description: String, optio
 	var label = Label.new()
 	label.text = label_text
 	label.position = Vector2(8, 4)
-	label.add_theme_font_size_override("font_size", 14)
+	label.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	label.add_theme_color_override("font_color", TEXT_COLOR)
 	container.add_child(label)
 
@@ -769,7 +769,7 @@ func _create_option_setting_small(label_text: String, description: String, optio
 	var desc = Label.new()
 	desc.text = description
 	desc.position = Vector2(8, 22)
-	desc.add_theme_font_size_override("font_size", 10)
+	desc.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	desc.add_theme_color_override("font_color", DISABLED_COLOR)
 	container.add_child(desc)
 
@@ -791,7 +791,7 @@ func _create_option_setting_small(label_text: String, description: String, optio
 		option_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		option_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		option_label.size = Vector2(60, 20)
-		option_label.add_theme_font_size_override("font_size", 10)
+		option_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 		option_label.add_theme_color_override("font_color", Color.YELLOW if i == current_index else TEXT_COLOR)
 		option_label.name = "OptionLabel_%d" % i
 		option_bg.add_child(option_label)
@@ -820,7 +820,7 @@ func _create_toggle_setting(label_text: String, description: String, is_on: bool
 	var label = Label.new()
 	label.text = label_text
 	label.position = Vector2(8, 4)
-	label.add_theme_font_size_override("font_size", 14)
+	label.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	label.add_theme_color_override("font_color", TEXT_COLOR)
 	container.add_child(label)
 
@@ -828,7 +828,7 @@ func _create_toggle_setting(label_text: String, description: String, is_on: bool
 	var desc = Label.new()
 	desc.text = description
 	desc.position = Vector2(8, 22)
-	desc.add_theme_font_size_override("font_size", 10)
+	desc.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	desc.add_theme_color_override("font_color", DISABLED_COLOR)
 	container.add_child(desc)
 
@@ -850,7 +850,7 @@ func _create_toggle_setting(label_text: String, description: String, is_on: bool
 	off_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	off_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	off_label.size = Vector2(50, 20)
-	off_label.add_theme_font_size_override("font_size", 11)
+	off_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	off_label.add_theme_color_override("font_color", TEXT_COLOR if is_on else Color.YELLOW)
 	off_label.name = "OffLabel"
 	off_bg.add_child(off_label)
@@ -872,7 +872,7 @@ func _create_toggle_setting(label_text: String, description: String, is_on: bool
 	on_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	on_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	on_label.size = Vector2(50, 20)
-	on_label.add_theme_font_size_override("font_size", 11)
+	on_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	on_label.add_theme_color_override("font_color", Color.YELLOW if is_on else TEXT_COLOR)
 	on_label.name = "OnLabel"
 	on_bg.add_child(on_label)
@@ -894,21 +894,21 @@ func _create_action_button_neutral(label_text: String, description: String, inde
 	var label = Label.new()
 	label.text = label_text
 	label.position = Vector2(8, 4)
-	label.add_theme_font_size_override("font_size", 14)
+	label.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	label.add_theme_color_override("font_color", Color(0.7, 0.85, 1.0))
 	container.add_child(label)
 
 	var desc = Label.new()
 	desc.text = description
 	desc.position = Vector2(8, 22)
-	desc.add_theme_font_size_override("font_size", 10)
+	desc.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	desc.add_theme_color_override("font_color", DISABLED_COLOR)
 	container.add_child(desc)
 
 	var hint = Label.new()
 	hint.text = "[Press A]"
 	hint.position = Vector2(310, 16)
-	hint.add_theme_font_size_override("font_size", 10)
+	hint.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	hint.add_theme_color_override("font_color", Color.YELLOW)
 	hint.name = "ActionHint"
 	container.add_child(hint)
@@ -932,7 +932,7 @@ func _create_action_button(label_text: String, description: String, index: int) 
 	var label = Label.new()
 	label.text = label_text
 	label.position = Vector2(8, 4)
-	label.add_theme_font_size_override("font_size", 14)
+	label.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	label.add_theme_color_override("font_color", Color(1.0, 0.6, 0.6))  # Reddish for quit action
 	container.add_child(label)
 
@@ -940,7 +940,7 @@ func _create_action_button(label_text: String, description: String, index: int) 
 	var desc = Label.new()
 	desc.text = description
 	desc.position = Vector2(8, 22)
-	desc.add_theme_font_size_override("font_size", 10)
+	desc.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	desc.add_theme_color_override("font_color", DISABLED_COLOR)
 	container.add_child(desc)
 
@@ -948,7 +948,7 @@ func _create_action_button(label_text: String, description: String, index: int) 
 	var hint = Label.new()
 	hint.text = "[Press A]"
 	hint.position = Vector2(310, 16)
-	hint.add_theme_font_size_override("font_size", 10)
+	hint.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	hint.add_theme_color_override("font_color", Color.YELLOW)
 	hint.name = "ActionHint"
 	container.add_child(hint)
@@ -1822,7 +1822,7 @@ func _show_quit_confirmation() -> void:
 	msg.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	msg.position = Vector2(0, 16)
 	msg.size = Vector2(dialog_w, 20)
-	msg.add_theme_font_size_override("font_size", 14)
+	msg.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	msg.add_theme_color_override("font_color", TEXT_COLOR)
 	dialog.add_child(msg)
 
@@ -1831,7 +1831,7 @@ func _show_quit_confirmation() -> void:
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	sub.position = Vector2(0, 36)
 	sub.size = Vector2(dialog_w, 16)
-	sub.add_theme_font_size_override("font_size", 10)
+	sub.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	sub.add_theme_color_override("font_color", DISABLED_COLOR)
 	dialog.add_child(sub)
 
@@ -1944,7 +1944,7 @@ func _create_confirm_button(label_text: String, text_color: Color) -> Control:
 	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lbl.position = Vector2(0, 6)
 	lbl.size = Vector2(96, 20)
-	lbl.add_theme_font_size_override("font_size", 12)
+	lbl.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	lbl.add_theme_color_override("font_color", text_color)
 	btn.add_child(lbl)
 
