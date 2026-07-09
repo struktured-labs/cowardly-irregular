@@ -86,7 +86,8 @@ func test_game_loop_routes_eldertree_hollow() -> void:
 	assert_true(src.contains("\"eldertree_hollow\":"),
 		"GameLoop scene routing must include eldertree_hollow")
 	# Forest terrain — battle backdrop / music differ from village.
-	assert_true(src.contains("\"eldertree_hollow\":\n\t\t\treturn \"forest\""),
+	# 2026-07-09: arm grouped with the Grafting House — both forest interiors.
+	assert_true(src.contains("\"eldertree_hollow\", \"eldertree_grafting_house\":\n\t\t\treturn \"forest\""),
 		"eldertree_hollow must map to 'forest' terrain (NOT 'village' like Harmonia interiors) — same world as the village it sits in")
 
 
