@@ -14,6 +14,10 @@ uniform vec4 sky_bottom : source_color = vec4(0.55, 0.65, 0.85, 1.0);
 uniform vec4 fog_color : source_color = vec4(0.50, 0.60, 0.78, 1.0);
 // heavy-handed at the default 0.7 — playtest 2026-07-03; per-world override for dense worlds
 uniform float fog_strength : hint_range(0.0, 1.0) = 0.45;
+// Sky-side horizon band height, decoupled from near_scale (which owns ground
+// perspective). Was implicitly near_scale (~0.55 → top ~55% of screen, an opaque
+// slab); now a slim atmospheric strip. Playtest 2026-07-05 — per-world overridable.
+uniform float horizon_band : hint_range(0.02, 0.6) = 0.18;
 // Day/night tint (multiplied with final color)
 uniform vec4 time_tint : source_color = vec4(1.0, 1.0, 1.0, 1.0);
 // Per-world effects (default 0.0 = inactive)
@@ -65,11 +69,14 @@ void fragment() {
 			cloud_mask *= smoothstep(0.0, 0.3, sky_t) * smoothstep(1.0, 0.7, sky_t);
 			result = mix(result, cloud_color, cloud_mask * 0.6);
 		}
-	} else if (h_raw < near_scale) {
-		// Sky-side horizon band. Was hardcoded 100% fog at the horizon line —
-		// the ceiling of the "opaque strip" the ground-side fix (v3.32.61) missed.
-		// Now scaled by fog_strength so a clear world (medieval 0.35) shows only ~35% fog at the seam.
-		float fog_t = smoothstep(0.0, near_scale, h_raw) * fog_strength;
+	} else if (h_raw < horizon_band) {
+		// Thin atmospheric haze strip. Height = horizon_band (0.18), decoupled
+		// from near_scale — that coupling made this a ~55% opaque slab. The
+		// smoothstep now spans the SLIM band so the sky→fog gradient reads over
+		// 18% not 55%. Still * fog_strength: cowir-main's dial (v3.32.61) keeps a
+		// clear world's strip faint. The receding fogged ground below supplies
+		// the atmosphere; this is just the sky-to-ground seam.
+		float fog_t = smoothstep(0.0, horizon_band, h_raw) * fog_strength;
 		result = mix(sky_bottom, fog_color, fog_t);
 	} else {
 		float h = max(h_raw, 0.001);
@@ -102,10 +109,13 @@ void fragment() {
 		float fog_amount = dist_t * dist_t * fog_strength;
 		result = mix(result, fog_color, fog_amount);
 
-		// Horizon fade zone (smooth transition from fog band to ground)
-		float fade_zone = near_scale * 0.3;
-		if (h_raw < near_scale + fade_zone) {
-			float t = (h_raw - near_scale) / fade_zone;
+		// Horizon fade zone: dissolve the thin haze strip into the ground over a
+		// generous gradient above the seam (densest fog at the horizon line,
+		// thinning toward the player). Anchored to horizon_band, not near_scale,
+		// so the seam tracks the new thinner band.
+		float fade_zone = horizon_band * 1.5;
+		if (h_raw < horizon_band + fade_zone) {
+			float t = (h_raw - horizon_band) / fade_zone;
 			// scale the horizon-band mix by fog_strength so the two fog sources tune as one
 			float band = smoothstep(0.0, 1.0, t) + (1.0 - smoothstep(0.0, 1.0, t)) * (1.0 - fog_strength);
 			result = mix(fog_color, result, band);
