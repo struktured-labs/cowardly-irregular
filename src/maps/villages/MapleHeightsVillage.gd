@@ -162,6 +162,18 @@ func _setup_buildings() -> void:
 	spawn_points["strip_mall_return"] = Vector2(20 * TILE_SIZE, 13 * TILE_SIZE)
 	_add_interior_door("StripMallRoad", "maple_heights_strip_mall", "Birchwood Commons (Strip Mall)", Vector2(20 * TILE_SIZE, 12 * TILE_SIZE))
 
+	# === COMMUNITY CENTER ===
+	# Civic heart of the W2 quest hub — bulletin board (forms giver) +
+	# front desk (forms / variance / fine_print turn-ins) live inside.
+	spawn_points["community_center_exit"] = Vector2(14 * TILE_SIZE, 14 * TILE_SIZE)
+	_add_interior_door("CommunityCenterDoor", "maple_community_center", "Maple Heights Community Center", Vector2(14 * TILE_SIZE, 13 * TILE_SIZE))
+
+	# === ENRICHMENT ANNEX ===
+	# At the neighborhood edge, past the last lawn — where the
+	# "community-transferred" kids actually are (relocated step 2+).
+	spawn_points["annex_exit"] = Vector2(21 * TILE_SIZE, 4 * TILE_SIZE)
+	_add_interior_door("AnnexDoor", "enrichment_annex", "Enrichment Annex", Vector2(21 * TILE_SIZE, 3 * TILE_SIZE))
+
 
 func _setup_treasures() -> void:
 	# Hidden behind the house — a forgotten lunchbox with supplies
@@ -284,6 +296,21 @@ func _setup_npcs() -> void:
 	])
 	surveyor.npc_id = "retired_surveyor_w2"
 	npcs.add_child(surveyor)
+
+	# The carrier's missing package — fine_print step-2 path A, a neighbor's
+	# yard where a mailbox has stopped accepting the concept of routes.
+	var PackageScript = load("res://src/exploration/MissingPackage.gd")
+	if PackageScript:
+		var pkg = PackageScript.new()
+		pkg.position = Vector2(7 * TILE_SIZE, 15 * TILE_SIZE)
+		npcs.add_child(pkg)
+
+	# Service alley behind the Community Center — fine_print's Rogue gap.
+	var AlleyScript = load("res://src/exploration/CivicBackDoor.gd")
+	if AlleyScript:
+		var alley = AlleyScript.new()
+		alley.position = Vector2(11 * TILE_SIZE, 15 * TILE_SIZE)
+		npcs.add_child(alley)
 
 	# Basement Developer — wrong_blue step 3; rarely surfaces.
 	var developer = _create_npc("Basement Developer", "villager", Vector2(4 * TILE_SIZE, 14 * TILE_SIZE), [

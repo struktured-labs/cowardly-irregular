@@ -1921,7 +1921,7 @@
     },
     "dialogue": {
       "intro": [
-        "*The cavern has no light. Not darkness \u2014 an absence of light*",
+        "*The cavern has no light. Not darkness — an absence of light*",
         "*Something vast shifts in the void*",
         "Umbraxis: ...Do you ever wonder what we are?",
         "Hero: A dragon?",
@@ -2216,7 +2216,7 @@
   "brass_golem": {
     "id": "brass_golem",
     "name": "Brass Golem",
-    "description": "A hulking automaton forged from salvaged boiler plate. Extremely durable but slow \u2014 its coal furnace heart needs time to build pressure between swings.",
+    "description": "A hulking automaton forged from salvaged boiler plate. Extremely durable but slow — its coal furnace heart needs time to build pressure between swings.",
     "level": 6,
     "stats": {
       "max_hp": 240,
@@ -2683,7 +2683,7 @@
   "data_wraith": {
     "id": "data_wraith",
     "name": "Data Wraith",
-    "description": "A ghost in the machine \u2014 fragmented code that achieved consciousness and chose violence. High magic, devastating attacks, but held together by barely a thread.",
+    "description": "A ghost in the machine — fragmented code that achieved consciousness and chose violence. High magic, devastating attacks, but held together by barely a thread.",
     "level": 14,
     "stats": {
       "max_hp": 200,
@@ -2730,7 +2730,7 @@
   "recursive_loop": {
     "id": "recursive_loop",
     "name": "Recursive Loop",
-    "description": "An infinite loop made manifest \u2014 a spiraling entity that calls itself endlessly. Medium stats across the board, but its 'stack overflow' self-destruct deals massive damage to everything.",
+    "description": "An infinite loop made manifest — a spiraling entity that calls itself endlessly. Medium stats across the board, but its 'stack overflow' self-destruct deals massive damage to everything.",
     "level": 12,
     "stats": {
       "max_hp": 320,
@@ -4305,7 +4305,7 @@
   "chancellor_mordaine": {
     "id": "chancellor_mordaine",
     "name": "Chancellor Mordaine",
-    "description": "Sorceress-usurper of Castle Harmonia. The architect of World 1 \u2014 and the first mask of the Calibrant. Cold, deliberate, and somehow already knows your build.",
+    "description": "Sorceress-usurper of Castle Harmonia. The architect of World 1 — and the first mask of the Calibrant. Cold, deliberate, and somehow already knows your build.",
     "level": 20,
     "boss": true,
     "stats": {
@@ -4350,7 +4350,7 @@
     "meta_enemy": true,
     "one_shot": {
       "hp_threshold": 1500,
-      "setup_hint": "She's calibrated for the average party \u2014 bring something she didn't expect. Holy magic, stacked Bard buffs, and an Advance chain are the canonical answers.",
+      "setup_hint": "She's calibrated for the average party — bring something she didn't expect. Holy magic, stacked Bard buffs, and an Advance chain are the canonical answers.",
       "reward_item": "calibrant_token"
     },
     "dialogue": {
@@ -4723,5 +4723,38 @@
     },
     "learns_from": [],
     "counter_abilities": []
+  },
+  "rogue_mailbox": {
+    "id": "rogue_mailbox",
+    "name": "Rogue Mailbox",
+    "description": "A regulation blue mailbox that has stopped accepting the concept of routes. It keeps what it's given. The mail carrier wants her package back.",
+    "level": 5,
+    "stats": {
+      "max_hp": 130,
+      "max_mp": 20,
+      "attack": 24,
+      "defense": 18,
+      "magic": 10,
+      "speed": 8
+    },
+    "abilities": [
+      "tackle",
+      "slam",
+      "thrown_newspaper"
+    ],
+    "exp_reward": 48,
+    "gold_reward": 25,
+    "drop_table": [
+      {
+        "item": "newspaper",
+        "chance": 0.4
+      }
+    ],
+    "weaknesses": [
+      "lightning"
+    ],
+    "resistances": [
+      "ice"
+    ]
   }
 }

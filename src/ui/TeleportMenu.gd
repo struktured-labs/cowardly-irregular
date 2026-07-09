@@ -69,6 +69,8 @@ const DESTINATIONS: Array = [
 	{"id": "scriptura_bookshop",     "label": "Aldrin's Books",       "spawn": "entrance",    "section": ""},
 	# --- W2 quest locations ---
 	{"id": "maple_heights_strip_mall", "label": "Birchwood Commons (Strip Mall)", "spawn": "entrance", "section": "W2 Quest Spots"},
+	{"id": "maple_community_center",   "label": "Community Center (MapleHeights)", "spawn": "entrance", "section": ""},
+	{"id": "enrichment_annex",         "label": "Enrichment Annex", "spawn": "entrance", "section": ""},
 ]
 
 const ROW_HEIGHT: int = 26
