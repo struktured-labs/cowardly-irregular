@@ -1,0 +1,61 @@
+{
+  "id": "world2_pc_zoning",
+  "title": "Zoning",
+  "world": 2,
+  "trigger": "world2_pc_zoning",
+  "background": "prologue_forest",
+  "description": "First steps in the suburban world. The party processes the lawns.",
+  "steps": [
+    {
+      "type": "letterbox_in",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "The portal's afterimage faded. The grass was mowed. All of it. Simultaneously."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mage",
+          "text": "The ambient mana here is... carbonated?",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "Every house is the same house. Tactically, that's either useless or brilliant.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "There's a small shrine on each lawn. Plastic. A bird bath, I think. Nobody prays at it, but everybody trims around it.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "Stay close. The mailboxes are numbered. That means someone is COUNTING.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Bard",
+          "text": "I already love it here and I refuse to apologize.",
+          "theme": "bard",
+          "portrait": "bard"
+        }
+      ]
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.3
+    }
+  ]
+}

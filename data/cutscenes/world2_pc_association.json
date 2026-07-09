@@ -1,0 +1,61 @@
+{
+  "id": "world2_pc_association",
+  "title": "The Association",
+  "world": 2,
+  "trigger": "world2_pc_association",
+  "background": "prologue_forest",
+  "description": "Three HOA notices in one day. The party considers its compliance posture.",
+  "steps": [
+    {
+      "type": "letterbox_in",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "Three notices arrived today. The party has not told the Association where it sleeps."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mage",
+          "text": "Form 12-B: 'Unregistered Weaponry (Decorative?)'. They think the swords are decorative.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "Let them.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "The fine print says noncompliance is 'community-addressed'. What does that mean?",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "It means we keep the tent packed.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Bard",
+          "text": "I filed an appeal. In ballad form. We'll know by Thursday.",
+          "theme": "bard",
+          "portrait": "bard"
+        }
+      ]
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.3
+    }
+  ]
+}

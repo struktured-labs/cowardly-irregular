@@ -235,6 +235,22 @@ const REGISTRY := {
 		"world": 1,
 		"unlock": ["event_flag_fool_marks_three"],
 	},
+	# ===== WORLD 2 — suburban register =====
+	"world2_pc_zoning": {
+		"title": "Zoning",
+		"world": 2,
+		"unlock": ["cutscene_flag_world2_prologue_complete"],
+	},
+	"world2_pc_maintenance": {
+		"title": "Maintenance",
+		"world": 2,
+		"unlock": ["cutscene_flag_world2_chapter1_complete"],
+	},
+	"world2_pc_association": {
+		"title": "The Association",
+		"world": 2,
+		"unlock": ["cutscene_flag_world2_chapter2_complete"],
+	},
 }
 
 
