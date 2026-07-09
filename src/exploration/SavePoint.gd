@@ -22,6 +22,15 @@ func _ready() -> void:
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
 	add_to_group("interactables")
+	add_to_group("save_points")
+
+
+## True when the player stands in ANY crystal's zone — the save_point_only item gate (F3) reads this.
+static func player_at_any(tree: SceneTree) -> bool:
+	for sp in tree.get_nodes_in_group("save_points"):
+		if sp is SavePoint and sp._player_in_zone:
+			return true
+	return false
 
 
 func _process(delta: float) -> void:

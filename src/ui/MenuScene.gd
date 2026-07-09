@@ -1042,6 +1042,12 @@ func _on_item_use_pressed(item_id: String) -> void:
 			break
 
 	if source_member:
+		# F3: save_point_only items refuse deep-dungeon use (fine at crystals and outside dungeons).
+		var block: String = ItemSystem.field_use_blocked_reason(item_id)
+		if block != "":
+			SoundManager.play_ui("menu_error")
+			Toast.show_warning(self, block)
+			return
 		# Tick 190: only consume on successful use — pre-fix unknown-id / no-effects items got consumed for no benefit.
 		if ItemSystem.use_item(source_member, item_id, [member]):
 			source_member.remove_item(item_id, 1)

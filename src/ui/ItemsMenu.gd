@@ -713,6 +713,13 @@ func _use_selected_item() -> void:
 			Toast.show_warning(self, "Cannot revive — no KO'd target")
 			return
 
+	# F3: save_point_only items refuse deep-dungeon use (fine at crystals and outside dungeons).
+	var block: String = ItemSystem.field_use_blocked_reason(item.get("id", ""))
+	if block != "":
+		SoundManager.play_ui("menu_error")
+		Toast.show_warning(self, block)
+		return
+
 	# Use the item
 	if party.is_empty():
 		return

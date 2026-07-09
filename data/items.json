@@ -212,7 +212,7 @@
     "name": "Tent",
     "category": 0,
     "target_type": 1,
-    "description": "Restores 50% HP and MP to all allies. Use at save points.",
+    "description": "Restores 50% HP and MP to all allies. In dungeons, only works beside a save crystal.",
     "effects": {
       "heal_hp_percent": 50,
       "heal_mp_percent": 50,
