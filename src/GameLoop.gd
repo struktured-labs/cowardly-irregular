@@ -22,6 +22,7 @@ const BlacksmithInteriorScript = preload("res://src/maps/interiors/BlacksmithInt
 const HarmoniaChapelInteriorScript = preload("res://src/maps/interiors/HarmoniaChapelInterior.gd")
 const HarmoniaCartographerInteriorScript = preload("res://src/maps/interiors/HarmoniaCartographerInterior.gd")
 const EldertreeGraftingHouseInteriorScript = preload("res://src/maps/interiors/EldertreeGraftingHouseInterior.gd")
+const IronhavenStrikeRegistryInteriorScript = preload("res://src/maps/interiors/IronhavenStrikeRegistryInterior.gd")
 const HarmoniaLibraryInteriorScript = preload("res://src/maps/interiors/HarmoniaLibraryInterior.gd")
 const EldertreeHollowTreeInteriorScript = preload("res://src/maps/interiors/EldertreeHollowTreeInterior.gd")
 const FrostholdWardenHutInteriorScript = preload("res://src/maps/interiors/FrostholdWardenHutInterior.gd")
@@ -2979,6 +2980,8 @@ func _start_exploration() -> void:
 			exploration_scene = GrimhollowWitchHutInteriorScript.new()
 		"ironhaven_watchtower":
 			exploration_scene = IronhavenWatchtowerInteriorScript.new()
+		"ironhaven_strike_registry":
+			exploration_scene = IronhavenStrikeRegistryInteriorScript.new()
 		"maple_heights_arcade":
 			exploration_scene = MapleHeightsArcadeInteriorScript.new()
 		"maple_heights_strip_mall":
@@ -3436,8 +3439,9 @@ const INTERIOR_MAP_IDS: PackedStringArray = [
 	# Scriptura capital-district interiors (Guild + bookshop).
 	"scriptura_guild", "scriptura_bookshop",
 	# Village-interior expansion: Cartographer's Attic (Harmonia PPP building)
-	# + the Grafting House (Eldertree GGG garden).
-	"harmonia_cartographer", "eldertree_grafting_house",
+	# + the Grafting House (Eldertree GGG garden) + the Strike Registry
+	# (Ironhaven MMM building).
+	"harmonia_cartographer", "eldertree_grafting_house", "ironhaven_strike_registry",
 ]
 
 
@@ -4058,7 +4062,7 @@ func _get_terrain_for_map(map_id: String) -> String:
 			return "desert"
 		"grimhollow_witch_hut":
 			return "swamp"
-		"ironhaven_watchtower":
+		"ironhaven_watchtower", "ironhaven_strike_registry":
 			return "volcanic"
 		"maple_heights_arcade":
 			return "suburban"
