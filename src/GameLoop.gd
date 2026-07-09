@@ -20,6 +20,7 @@ const ScripturaBookshopInteriorScript = preload("res://src/maps/interiors/Script
 const ShopInteriorScript = preload("res://src/maps/interiors/ShopInterior.gd")
 const BlacksmithInteriorScript = preload("res://src/maps/interiors/BlacksmithInterior.gd")
 const HarmoniaChapelInteriorScript = preload("res://src/maps/interiors/HarmoniaChapelInterior.gd")
+const HarmoniaCartographerInteriorScript = preload("res://src/maps/interiors/HarmoniaCartographerInterior.gd")
 const HarmoniaLibraryInteriorScript = preload("res://src/maps/interiors/HarmoniaLibraryInterior.gd")
 const EldertreeHollowTreeInteriorScript = preload("res://src/maps/interiors/EldertreeHollowTreeInterior.gd")
 const FrostholdWardenHutInteriorScript = preload("res://src/maps/interiors/FrostholdWardenHutInterior.gd")
@@ -2963,6 +2964,8 @@ func _start_exploration() -> void:
 			exploration_scene = HarmoniaChapelInteriorScript.new()
 		"harmonia_library":
 			exploration_scene = HarmoniaLibraryInteriorScript.new()
+		"harmonia_cartographer":
+			exploration_scene = HarmoniaCartographerInteriorScript.new()
 		"eldertree_hollow":
 			exploration_scene = EldertreeHollowTreeInteriorScript.new()
 		"frosthold_warden_hut":
@@ -3429,6 +3432,8 @@ const INTERIOR_MAP_IDS: PackedStringArray = [
 	"blacksmith_interior",
 	# Scriptura capital-district interiors (Guild + bookshop).
 	"scriptura_guild", "scriptura_bookshop",
+	# Village-interior expansion: Cartographer's Attic (Harmonia PPP building).
+	"harmonia_cartographer",
 ]
 
 
@@ -4039,7 +4044,7 @@ func _get_terrain_for_map(map_id: String) -> String:
 			return "plains"
 		"whispering_cave":
 			return "cave"
-		"harmonia_village", "tavern_interior", "harmonia_chapel", "harmonia_library":
+		"harmonia_village", "tavern_interior", "harmonia_chapel", "harmonia_library", "harmonia_cartographer":
 			return "village"
 		"eldertree_hollow":
 			return "forest"
