@@ -417,6 +417,14 @@ func _setup_npcs() -> void:
 	bram.npc_id = "bram_smith"
 	npcs.add_child(bram)
 
+	# The Returned Sword on its rack beside Bram (untested_edge step-2
+	# emitter, Mage light-spell path; the Guild-scholar path is the alt).
+	var SwordScript = load("res://src/exploration/SwordInscription.gd")
+	if SwordScript:
+		var sword = SwordScript.new()
+		sword.position = Vector2(26 * TILE_SIZE, 6 * TILE_SIZE)
+		npcs.add_child(sword)
+
 	# Rowan the courier — word_from_capital giver, by the fountain square
 	var rowan = _create_npc("Rowan", "traveler", Vector2(13 * TILE_SIZE, 7 * TILE_SIZE), [
 		"A letter for Scriptura. No stamp, no seal, no sender. Typical.",

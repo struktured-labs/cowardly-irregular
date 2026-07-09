@@ -2,7 +2,7 @@
   "id": "world1_untested_edge",
   "title": "The Untested Edge",
   "world": 1,
-  "prereq_flag": "quest_wiring_light_spell_ready",
+  "prereq_flag": "cutscene_flag_rat_king_defeated",
   "giver": {
     "npc_id": "bram_smith",
     "display_name": "Bram",
@@ -138,5 +138,5 @@
     }
   ],
   "cross_world_connection": "W5 Node Prime packet vendor sells 'Sword_v17.exe' — 'a legacy item with an unusual return policy: it ships back to origin.' Extra line if returned_sword is in inventory.",
-  "_wiring_notes": "Step 2's flag quest_world1_untested_edge_inscription_read has TWO emitters, either satisfies: (a) Mage in party uses a light-spell interact on the sword (overworld interact hook), (b) Scriptweaver's Guild scholar in Scriptura translates it (dialogue hook). The returned_sword item is granted at COMPLETION in v1 (schema grants rewards at turn-in), not at accept — the step-1 'take the sword' is narrative-carried until then. Item is authored as a key item with the intended weapon mechanics (Familiar Weight: +10% damage vs enemies the party has fought before) documented in its description for cowir-battle to promote to a real weapon later. || TEMP GATE 2026-07-02 (cowir-main): offer hidden behind unset flag 'quest_wiring_light_spell_ready' because the step-2 custom emitter doesn't exist yet — accepting dead-ended the quest. When building the emitter, restore prereq_flag to 'cutscene_flag_rat_king_defeated' (and delete this note)."
+  "_wiring_notes": "Step 2's flag quest_world1_untested_edge_inscription_read has TWO emitters, either satisfies (wired 2026-07-08): (a) SwordInscription rack beside Bram in Harmonia — Mage in party casts light on the blade (magic_surge cue); (b) guild_scholar_scriptura translates it via QuestSystem.DIALOGUE_EMITTERS on talk. The returned_sword item is granted at COMPLETION in v1 (schema grants rewards at turn-in), not at accept — the step-1 'take the sword' is narrative-carried until then. Item is authored as a key item with the intended weapon mechanics (Familiar Weight: +10% damage vs enemies the party has fought before) documented in its description for cowir-battle to promote to a real weapon later."
 }

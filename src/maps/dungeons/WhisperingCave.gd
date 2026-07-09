@@ -306,6 +306,16 @@ func _setup_transitions_for_floor(floor_num: int) -> void:
 	# Place treasure chest per floor (progressively better loot)
 	_place_floor_treasure(floor_num)
 
+	# The Warden's tally wall (world1_thirty_seven giver) — floor 5's spiral
+	# heart, beside the treasure chamber. First approach plays the Warden
+	# encounter cutscene; after that the wall offers the quest.
+	if floor_num == 5:
+		var TallyWallScript = load("res://src/exploration/TallyWall.gd")
+		if TallyWallScript:
+			var wall = TallyWallScript.new()
+			wall.position = Vector2(11 * TILE_SIZE + TILE_SIZE / 2, 9 * TILE_SIZE)
+			transitions.add_child(wall)
+
 	# Save crystal on floor 3 (midway rest point)
 	if floor_num == 3:
 		var save_pt = SavePoint.new()

@@ -230,12 +230,36 @@ func _announce_rewards(npc: Node) -> void:
 
 ## ── Objective progression hooks (called by the plumbing) ──
 
+## Dialogue emitters: talking to an NPC can satisfy a CUSTOM objective's flag
+## (distinct from talk objectives, which target the NPC directly). The one v1
+## case: the Guild scholar translating the Returned Sword's inscription —
+## untested_edge step 2's dual-emitter path B (path A is the Mage light-spell
+## interact at the rack). Table-driven so future dual-emitters slot in as data.
+const DIALOGUE_EMITTERS: Dictionary = {
+	"guild_scholar_scriptura": [
+		{"quest": "world1_untested_edge", "flag": "quest_world1_untested_edge_inscription_read"},
+	],
+}
+
+
 ## Called at the START of any NPC interaction. Progresses active talk
 ## objectives silently (the NPC's own lines still play — e.g. Phil in
 ## fools_spread step 2). Returns the quest_id it COMPLETED (final step)
 ## so the caller can run the completion dialogue with this NPC as
 ## presenter (thirty_seven turns in at the scholar, not the giver).
 func notify_talk(npc_id: String) -> String:
+	# Dialogue-emitter pass first: an NPC whose expertise satisfies a custom
+	# objective sets its flag when talked to mid-quest.
+	for emitter in DIALOGUE_EMITTERS.get(npc_id, []):
+		var eq: String = emitter["quest"]
+		if get_state(eq) != "active":
+			continue
+		var eobj: Dictionary = _objective(get_quest(eq), get_objective_index(eq))
+		if eobj.get("type", "") == "custom" and eobj.get("required_flag", "") == emitter["flag"] \
+				and not _flag(emitter["flag"]):
+			GameState.set_story_flag(emitter["flag"])
+			notify_flag(emitter["flag"])
+
 	for qid in get_active():
 		var q: Dictionary = get_quest(qid)
 		var idx := get_objective_index(qid)
