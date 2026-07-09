@@ -391,7 +391,7 @@ cowardly-irregular/
 7. **Silent failures are worse than crashes** - Always add a runtime test that would have caught the bug (see Data Integrity Tests section). The 180-broken-drops audit and the typed-array save-load bug are canonical examples.
 
 ## Cutscene System
-- **CutsceneDirector** (autoload, layer 95) orchestrates story cutscenes from `data/cutscenes/*.json`
+- **CutsceneDirector** (GameLoop-owned CanvasLayer, layer 95 — NOT an autoload; reach it via `GameLoop.get_cutscene_director()`) orchestrates story cutscenes from `data/cutscenes/*.json`
 - **CutsceneDialogue** (CanvasLayer) renders the dialogue panel — screen-anchored, gamepad-friendly
 - **NPCDialogue** is a thin wrapper around CutsceneDialogue used by overworld NPCs (avoids the cut-off bug local panels had)
 - **Story flow gating**: `GameLoop._get_pending_story_cutscene()` is the single source of truth for which cutscene plays next. Each gate is a flag-pair: `if X happened AND not <cutscene>_complete: return "<cutscene_id>"`

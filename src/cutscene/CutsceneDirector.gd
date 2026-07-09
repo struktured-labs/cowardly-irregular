@@ -653,6 +653,12 @@ func _step_set_flag(step: Dictionary) -> void:
 			# completion-flag write at cutscene_finished.
 			if GameState.has_method("set_story_flag"):
 				GameState.set_story_flag(flag, bool(value))
+			# Orrery finale gate: marks are int-valued (story_flags mirror is bool-coerced) so the five-marks boolean must be emitted where the value lands
+			if flag == "fool_card_marks" and int(value) >= 5:
+				GameState.set_story_flag("quest_wiring_fool_card_five_marks")
+				var qs = get_node_or_null("/root/QuestSystem")
+				if qs and qs.has_method("notify_flag"):
+					qs.notify_flag("quest_wiring_fool_card_five_marks")
 
 
 func _step_grant_item(step: Dictionary) -> void:

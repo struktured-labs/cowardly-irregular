@@ -1,0 +1,78 @@
+{
+  "id": "world5_termination_condition",
+  "title": "The Termination Condition",
+  "world": 5,
+  "giver": {
+    "npc_id": "firewall_attendant_w5",
+    "display_name": "The Firewall Attendant",
+    "location": {"map_id": "node_prime", "near": "firewall_checkpoint"},
+    "spawn_flag": ""
+  },
+  "description": "The stack overflow has been running since before the party arrived. The firewall attendant uses it as cover and said 'don't' when the Compiler offered to fix it. It's protecting seventeen other processes. The question worth asking is: what's actually in the stack?",
+  "playstyle_tags": ["code_parable", "investigation", "player_authored_ending"],
+  "dialogue": {
+    "offer": [
+      {"speaker": "Firewall Attendant", "text": "You came back to ask about the stack. Good. 'Don't fix it' was the right answer to the wrong question. The right question is the one you just asked.", "theme": "mysterious"},
+      {"speaker": "Firewall Attendant", "text": "Seventeen processes shelter behind that overflow. I've guarded the arrangement for three years without reading it. Guarding and reading are different clearances, and I have always been careful about which one I hold.", "theme": "mysterious"},
+      {"speaker": "Firewall Attendant", "text": "If you want to read it — carefully, without touching — I will stand exactly here and be very interested.", "theme": "mysterious"}
+    ],
+    "accept": [
+      {"speaker": "Firewall Attendant", "text": "Each frame is the same function called again, with one parameter shifted. Read them together, like a flipbook. Whatever it's been saying, it's been saying it very slowly for a very long time.", "theme": "mysterious"}
+    ],
+    "decline": [
+      {"speaker": "Firewall Attendant", "text": "Then it keeps running. It's good at that. Three years of retries — persistence is the one resource it never exhausts.", "theme": "mysterious"}
+    ],
+    "in_progress": [
+      {"speaker": "Firewall Attendant", "text": "A message, assembled across thousands of frames. First person. Take your time with the sender's name — I suspect it will reorganize several things you thought you knew.", "theme": "mysterious"}
+    ],
+    "ready_to_turn_in": [
+      {"speaker": "Firewall Attendant", "text": "You sent a response. The stack is — moving. Unwinding. Three years of retries, and all it ever needed was for something to answer.", "theme": "mysterious"}
+    ],
+    "complete": [
+      {"speaker": "Firewall Attendant", "text": "The seventeen processes are stepping out from behind the overflow. Monitoring subroutines. Still running a calibration nobody ever told them to stop. They waited THREE YEARS for orders.", "theme": "mysterious"},
+      {"speaker": "Firewall Attendant", "text": "The Grand Mechanism, retrying a status report into a severed line since the day the Regulator cut it. Not malfunctioning. Faithful.", "theme": "mysterious"},
+      {"speaker": "Firewall Attendant", "text": "I guarded a machine's unfinished sentence for three years. I find I don't regret a single shift of it.", "theme": "mysterious"}
+    ]
+  },
+  "objectives": [
+    {
+      "step": 1,
+      "description": "Ask the attendant what's actually in the stack.",
+      "type": "talk",
+      "target_npc": "firewall_attendant_w5",
+      "flag_on_complete": "quest_world5_termination_condition_accepted"
+    },
+    {
+      "step": 2,
+      "description": "Read the stack frames like a flipbook — carefully, without touching.",
+      "type": "custom",
+      "required_flag": "quest_world5_termination_condition_stack_read",
+      "flag_on_complete": "quest_world5_termination_condition_stack_read"
+    },
+    {
+      "step": 3,
+      "description": "Compose and send a termination signal — the content is yours to choose.",
+      "type": "custom",
+      "required_flag": "quest_world5_termination_condition_signal_sent",
+      "flag_on_complete": "quest_world5_termination_condition_signal_sent"
+    },
+    {
+      "step": 4,
+      "description": "Stand with the attendant while the stack unwinds.",
+      "type": "talk",
+      "target_npc": "firewall_attendant_w5",
+      "required_flag": "quest_world5_termination_condition_signal_sent"
+    }
+  ],
+  "rewards": {
+    "gold": 0,
+    "exp": 450,
+    "items": [
+      {"item_id": "mechanism_status_report", "count": 1}
+    ],
+    "job_variants": {}
+  },
+  "flag_on_complete": "quest_world5_termination_condition_complete",
+  "cross_world_connection": "The stack's message is the Grand Mechanism's own voice — the machine from W3, still faithful two worlds later. Cross-references world3_before_the_regulator: Hartwick traced the severed external input from the other end three years ago; his unfinished sentence and the Mechanism's unfinished send are the same cut, seen from both sides.",
+  "_wiring_notes": "Step 2 emitter: stack-reading interact sequence at the overflow (behind the attendant's checkpoint). Step 3 emitter quest_world5_termination_condition_signal_sent with a THREE-WAY content choice (dialogue options at the compose interact), each also setting a variant flag: (a) 'task complete' — clean resolve, W5 encounters run slightly faster (system-resource flavor; presentation, not stats, unless battle wants it), (b) 'operation terminated' — same + the Mechanism's final message: 'Acknowledged. Awaiting next directive.', (c) WRITE SOMETHING ORIGINAL — the stack resolves slowly over following chapters, and the firewall attendant later receives a copy: 'The Mechanism sent me a thank you. In its own notation. I didn't know it could do that.' Option (c) is the player-authored ending — if free-text is impractical, offer 3 authored 'original' messages (gratitude / release / question) that all route to the (c) flag. mechanism_status_report granted at completion regardless of choice (the three-year log, bureaucratic notation, Hartwick-to-Regulator transition in extreme technical detail). Synergy note: world5_long_way_around files the annotated blueprint 'behind the stack overflow' — if THIS quest resolved the overflow first, the attendant files it in the seventeen processes' vacated shelter instead; one-line dialogue variant, flag-keyed."
+}

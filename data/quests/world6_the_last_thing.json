@@ -1,0 +1,70 @@
+{
+  "id": "world6_the_last_thing",
+  "title": "The Last Thing",
+  "world": 6,
+  "giver": {
+    "npc_id": "last_shopkeeper_w6",
+    "display_name": "The Shopkeeper",
+    "location": {"map_id": "the_vertex", "near": "the_counter"},
+    "spawn_flag": ""
+  },
+  "description": "In six worlds, the shopkeeper has sold things, given things, stocked things — and never once been asked what they need. The quest is not the counter or the goods. The quest is the question.",
+  "playstyle_tags": ["conversation", "memory", "no_task"],
+  "dialogue": {
+    "offer": [
+      {"speaker": "Shopkeeper", "text": "...", "theme": "mysterious"},
+      {"speaker": "Shopkeeper", "text": "Nobody has ever asked me that. Not in six worlds. I've been a shopkeeper in all of them. I've sold things, given things, stocked things. Nobody has asked.", "theme": "mysterious"},
+      {"speaker": "Shopkeeper", "text": "I think what I need is — I need someone to tell me what I sold that mattered. Not what was most useful. What mattered.", "theme": "mysterious"}
+    ],
+    "accept": [
+      {"speaker": "Shopkeeper", "text": "Take your time. Six worlds is a lot of inventory. I'll be here. Being here is the part I've always been good at.", "theme": "mysterious"}
+    ],
+    "decline": [
+      {"speaker": "Shopkeeper", "text": "That's alright. The question was already more than I've been given. I'll keep it on the shelf.", "theme": "mysterious"}
+    ],
+    "in_progress": [
+      {"speaker": "Shopkeeper", "text": "Not the most powerful thing. The one that made a difference. They're almost never the same object.", "theme": "mysterious"}
+    ],
+    "ready_to_turn_in": [
+      {"speaker": "Shopkeeper", "text": "You've remembered. I can see it — people hold remembered things differently than carried ones.", "theme": "mysterious"}
+    ],
+    "complete": [
+      {"speaker": "Shopkeeper", "text": "Good. That's what I needed. To know that something I offered was the right thing at the right moment.", "theme": "mysterious"},
+      {"speaker": "Shopkeeper", "text": "Commerce requires a difference in value between buyer and seller. In this world, you have more value than anything I can offer. But you gave me something anyway. That's not commerce. That's—", "theme": "mysterious"},
+      {"speaker": "Bard", "text": "It's friendship. Or the thing before friendship that makes friendship possible.", "theme": "bard"},
+      {"speaker": "Shopkeeper", "text": "I'll keep that. Tell them I said so — any of me. Tell them the one at the end said everything is already paid for.", "theme": "mysterious"}
+    ]
+  },
+  "objectives": [
+    {
+      "step": 1,
+      "description": "Ask the shopkeeper what THEY need.",
+      "type": "talk",
+      "target_npc": "last_shopkeeper_w6",
+      "flag_on_complete": "quest_world6_the_last_thing_accepted"
+    },
+    {
+      "step": 2,
+      "description": "Remember what you bought that mattered — up to three things.",
+      "type": "custom",
+      "required_flag": "quest_world6_the_last_thing_items_recalled",
+      "flag_on_complete": "quest_world6_the_last_thing_items_recalled"
+    },
+    {
+      "step": 3,
+      "description": "Give the shopkeeper the word for what this is.",
+      "type": "talk",
+      "target_npc": "last_shopkeeper_w6",
+      "required_flag": "quest_world6_the_last_thing_items_recalled"
+    }
+  ],
+  "rewards": {
+    "gold": 0,
+    "exp": 500,
+    "items": [],
+    "job_variants": {}
+  },
+  "flag_on_complete": "quest_world6_the_last_thing_complete",
+  "cross_world_connection": "Post-quest: ALL shop prices in any backtracked world drop to zero. Bram, Grut's successor, and the Medieval Surplus teenager each say, on backtrack or NG+: 'The one at the end told us. You've already paid.'",
+  "_wiring_notes": "Step 2 emitter quest_world6_the_last_thing_items_recalled: a recall dialogue — offer the player up to 3 picks. Implementation freedom: (a) menu of notable purchase-history items if purchase tracking exists, or (b) authored list of candidate memories keyed on completed-quest/inventory flags (returned_sword owned -> 'That sword. Yes. That was me, then. Every version of me. The sword that came back was mine.'; potion-heavy history -> Grut's road potion; W2 surplus purchases -> the teenager's shop). NOTHING NAMED IS ALSO VALID: 'Nothing. That's fine too. Some people pass through without taking anything. Sometimes that's the right choice.' — same reward regardless, BY DESIGN (do not gate the price-zero gift on recall count). The zero-prices gift: global shop-price flag quest_world6_the_last_thing_complete consulted by ShopScene on backtracked worlds — engine wiring later, documented intent. The Bard's 'friendship' line in complete-dialogue: under strict-5 she is always present; if lead IS the Bard, the line lands as the lead speaking — no branch needed."
+}

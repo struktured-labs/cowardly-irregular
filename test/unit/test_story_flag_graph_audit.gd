@@ -43,6 +43,7 @@ func _collect_writers() -> Dictionary:
 	var rx := RegEx.new()
 	rx.compile("set_story_flag\\(\"([a-z0-9_]+)\"|fire_event_flag\\(\"([a-z0-9_]+)\"|game_constants\\[\"([a-z0-9_]+)\"\\]\\s*=|\"(cutscene_flag_[a-z0-9_]+)\"")
 	for src_path in ["res://src/GameLoop.gd", "res://src/quests/QuestSystem.gd",
+			"res://src/cutscene/CutsceneDirector.gd",
 			"res://src/battle/BattleManager.gd", "res://src/exploration/OverworldPlayer.gd",
 			"res://src/maps/dungeons/DragonCave.gd", "res://src/cutscene/PartyChatSystem.gd",
 			"res://src/exploration/OverworldScene.gd", "res://src/exploration/SuburbanOverworld.gd",

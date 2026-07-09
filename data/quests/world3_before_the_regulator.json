@@ -1,0 +1,82 @@
+{
+  "id": "world3_before_the_regulator",
+  "title": "Before the Regulator",
+  "world": 3,
+  "giver": {
+    "npc_id": "brigadier_flux",
+    "display_name": "Brigadier Flux",
+    "location": {"map_id": "brasston", "near": "flux_workshop"},
+    "spawn_flag": ""
+  },
+  "description": "The old chief engineer vanished the day the Regulator arrived. Nobody looked into it, because the Regulator was immediately so much more competent than the old engineer had been. Nobody looks for what the Regulator replaced.",
+  "playstyle_tags": ["story", "investigation", "no_marker"],
+  "dialogue": {
+    "offer": [
+      {"speaker": "Brigadier Flux", "text": "The old chief engineer? Cornelius Hartwick. Sixty-two. Couldn't leave a gear un-improved and couldn't stop explaining why. I miss him more than I say out loud, which until just now was never.", "theme": "villager"},
+      {"speaker": "Brigadier Flux", "text": "He vanished the morning the Regulator arrived. Same day. And nobody asked, because the Regulator ran everything better by lunchtime. That's the trick of being replaced by something competent — nobody checks where you went.", "theme": "villager"},
+      {"speaker": "Brigadier Flux", "text": "He left me a notebook that morning. 'For safekeeping.' I've never opened it past the first page. Felt like reading a man's unfinished sentence. Maybe it's time somebody finished it.", "theme": "villager"}
+    ],
+    "accept": [
+      {"speaker": "Brigadier Flux", "text": "Take it. Last entry's dated the day before the Regulator came. If it says what I've been afraid it says, come tell me anyway.", "theme": "villager"}
+    ],
+    "decline": [
+      {"speaker": "Brigadier Flux", "text": "Aye. It's kept three years. It'll keep. Unfinished sentences are patient — that's what makes them unbearable.", "theme": "villager"}
+    ],
+    "in_progress": [
+      {"speaker": "Brigadier Flux", "text": "The trace he was following — 'external calibration inputs.' If those words mean anything, they mean somewhere under the Mechanism. Be careful in the deep sections.", "theme": "villager"}
+    ],
+    "ready_to_turn_in": [
+      {"speaker": "Cornelius Hartwick", "text": "You've got my notebook. Both halves of it — the written half and the found-out half.", "theme": "villager"}
+    ],
+    "complete": [
+      {"speaker": "Cornelius Hartwick", "text": "I was waiting for someone to ask. Not the Regulator — someone else. You'll do.", "theme": "villager"},
+      {"speaker": "Cornelius Hartwick", "text": "They didn't take my life. They just... displaced me. Made it so there wasn't space for me to be the engineer anymore. So I fix clocks now, under a name that isn't mine, and honestly the clocks are grateful and the name doesn't mind.", "theme": "villager"},
+      {"speaker": "Cornelius Hartwick", "text": "Take the master key. There's a restricted section in the Mechanism they never rekeyed — they assumed nobody remembered it existed. I remember everything that exists. It's my whole problem.", "theme": "villager"}
+    ]
+  },
+  "objectives": [
+    {
+      "step": 1,
+      "description": "Press Brigadier Flux about the engineer the Regulator replaced.",
+      "type": "talk",
+      "target_npc": "brigadier_flux",
+      "flag_on_complete": "quest_world3_before_the_regulator_accepted"
+    },
+    {
+      "step": 2,
+      "description": "Trace the external input Hartwick was following — beneath the Grand Mechanism.",
+      "type": "custom",
+      "required_flag": "quest_world3_before_the_regulator_junction_traced",
+      "flag_on_complete": "quest_world3_before_the_regulator_junction_traced"
+    },
+    {
+      "step": 3,
+      "description": "Find the man who is not hiding — just not being looked for.",
+      "type": "custom",
+      "required_flag": "quest_world3_before_the_regulator_hartwick_found",
+      "flag_on_complete": "quest_world3_before_the_regulator_hartwick_found"
+    },
+    {
+      "step": 4,
+      "description": "Return the notebook to its author.",
+      "type": "talk",
+      "target_npc": "cornelius_hartwick",
+      "required_flag": "quest_world3_before_the_regulator_hartwick_found"
+    }
+  ],
+  "rewards": {
+    "gold": 0,
+    "exp": 400,
+    "items": [
+      {"item_id": "hartwick_notebook", "count": 1},
+      {"item_id": "mechanism_master_key", "count": 1}
+    ],
+    "job_variants": {}
+  },
+  "flag_on_complete": "quest_world3_before_the_regulator_complete",
+  "unlocks_dialogue": [
+    {"npc_id": "cornelius_hartwick", "note": "W4: Hartwick reappears as 'external consultant, legacy systems' at the factory — he recognized its construction as identical to the Grand Mechanism and asked for work. Hands the party his W4 notebook unprompted: 'I've been waiting for whoever found my other notebook.'"}
+  ],
+  "cross_world_connection": "Hartwick's final trace — 'The Mechanism is not running Cogsworth Junction. Cogsworth Junction is running the Mechanism. Or something outside both is running both.' — is the sharpest pre-reveal statement of the game's structure available in W3. The comm junction's signal source is the Regulator's chamber; a Mage (Compiler-adjacent) identifies the sending address as 'not in this world's network.'",
+  "_wiring_notes": "Step 2 emitter quest_world3_before_the_regulator_junction_traced: communication junction interactable beneath the Grand Mechanism, placed on the main-quest dungeon route (accessible during the dungeon run — no separate unlock; examining it mid-dungeon fires the flag). Step 3 emitter quest_world3_before_the_regulator_hartwick_found: Hartwick sits in a small clock-repair shop near the Brasston station, going by a different name — the notebook's last page is the pointer ('I'm in Brasston still. I'm fixing small things. I don't think they know I'm still here.'). He is NOT hidden behind a puzzle; he's hidden behind nobody-ever-asking — first interact with the clock-shop repairman after step 2 fires it. mechanism_master_key's intended mechanics (documented on the item): opens the Mechanism's restricted section during the dungeon — blueprint shortcut that compresses the second half and skips one mandatory fight; speedrun/Skiptrotter-relevant. cornelius_hartwick npc_id stays canonical even though he introduces himself under an alias — display name pre-reveal can read 'Clock Repairman' if the dialogue system supports per-state display names; cosmetic, not blocking."
+}
