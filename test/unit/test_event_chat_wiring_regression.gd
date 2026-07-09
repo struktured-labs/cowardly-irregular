@@ -52,7 +52,7 @@ func test_every_event_chat_is_reachable() -> void:
 			checked_flags += 1
 			assert_true(("fire_event_flag(\"%s\"" % flag) in src,
 				"chat %s unlocks on %s but NO fire_event_flag emitter exists in src/ — the chat can never unlock" % [id, flag])
-	assert_gt(checked_files, 35, "sanity: the FULL chat roster was scanned (37 pre-W2 + 3 W2)")
+	assert_gt(checked_files, 42, "sanity: the FULL chat roster was scanned (40 + 4 world-arrival)")
 	assert_gt(checked_flags, 5, "sanity: event_flag unlocks were emitter-checked")
 
 
