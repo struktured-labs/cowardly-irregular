@@ -91,7 +91,7 @@ func _create_auto_toggle_button() -> void:
 	_auto_toggle_button.offset_top = 6
 	_auto_toggle_button.offset_right = -210
 	_auto_toggle_button.offset_bottom = 36
-	_auto_toggle_button.add_theme_font_size_override("font_size", 14)
+	_auto_toggle_button.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	# Themed background so it doesn't fade into the battlefield. Two
 	# styleboxes — one for normal/hover, one for pressed.
 	var sb_normal := StyleBoxFlat.new()
@@ -265,7 +265,7 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 		auto_indicator = " [T]"
 		tag_color = Color(0.4, 0.85, 1.0)
 	name_label.text = "%s (%s)%s" % [member.combatant_name, job_name, auto_indicator]
-	name_label.add_theme_font_size_override("font_size", 13)
+	name_label.add_theme_font_size_override("font_size", TextScale.scaled(13))
 	if auto_indicator != "":
 		name_label.add_theme_color_override("font_color", tag_color)
 	name_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -286,7 +286,7 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	var hp_label = Label.new()
 	hp_label.name = "HPLabel"
 	hp_label.text = "HP: %d/%d" % [member.current_hp, member.max_hp]
-	hp_label.add_theme_font_size_override("font_size", 12)
+	hp_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hp_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	hp_label.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -305,7 +305,7 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	var mp_label = Label.new()
 	mp_label.name = "MPLabel"
 	mp_label.text = "MP: %d/%d" % [member.current_mp, member.max_mp]
-	mp_label.add_theme_font_size_override("font_size", 11)
+	mp_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	mp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	mp_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	mp_label.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -317,8 +317,8 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	ap_label.bbcode_enabled = true
 	ap_label.fit_content = true
 	ap_label.custom_minimum_size = Vector2(0, 20)
-	ap_label.add_theme_font_size_override("normal_font_size", 13)
-	ap_label.add_theme_font_size_override("bold_font_size", 13)
+	ap_label.add_theme_font_size_override("normal_font_size", TextScale.scaled(13))
+	ap_label.add_theme_font_size_override("bold_font_size", TextScale.scaled(13))
 	ap_label.text = "AP: 0"
 	box.add_child(ap_label)
 
@@ -328,7 +328,7 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	stat_label.bbcode_enabled = true
 	stat_label.fit_content = true
 	stat_label.custom_minimum_size = Vector2(0, 16)
-	stat_label.add_theme_font_size_override("normal_font_size", 10)
+	stat_label.add_theme_font_size_override("normal_font_size", TextScale.scaled(10))
 	stat_label.text = ""
 	box.add_child(stat_label)
 	_update_stat_mods_label(stat_label, member)
@@ -895,7 +895,7 @@ func _update_turn_order_strip() -> void:
 		# Header
 		var header = Label.new()
 		header.text = "TURN ORDER"
-		header.add_theme_font_size_override("font_size", 9)
+		header.add_theme_font_size_override("font_size", TextScale.scaled(9))
 		header.add_theme_color_override("font_color", Color(0.6, 0.55, 0.8))
 		header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		header.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -967,7 +967,7 @@ func _create_ctb_entry(combatant: Combatant, is_current: bool, is_player: bool, 
 	else:
 		indicator.text = "·"
 		indicator.add_theme_color_override("font_color", Color(0.4, 0.4, 0.4))
-	indicator.add_theme_font_size_override("font_size", 12)
+	indicator.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	indicator.custom_minimum_size = Vector2(12, 0)
 	indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(indicator)
@@ -982,7 +982,7 @@ func _create_ctb_entry(combatant: Combatant, is_current: bool, is_player: bool, 
 	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var name_size = 11 if is_current else 10
-	name_label.add_theme_font_size_override("font_size", name_size)
+	name_label.add_theme_font_size_override("font_size", TextScale.scaled(name_size))
 
 	if is_current:
 		name_label.add_theme_color_override("font_color", Color(1.0, 0.95, 0.7))
@@ -995,7 +995,7 @@ func _create_ctb_entry(combatant: Combatant, is_current: bool, is_player: bool, 
 	# Speed value (smaller, right-aligned)
 	var spd_label = Label.new()
 	spd_label.text = "%d" % combatant.speed
-	spd_label.add_theme_font_size_override("font_size", 9)
+	spd_label.add_theme_font_size_override("font_size", TextScale.scaled(9))
 	spd_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.6))
 	spd_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(spd_label)

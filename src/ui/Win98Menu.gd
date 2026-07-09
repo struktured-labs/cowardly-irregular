@@ -383,7 +383,7 @@ func _build_target_highlight_box(target_pos: Vector2) -> void:
 	pointer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	pointer.position = Vector2(box_width / 2 - 8, -18)
 	pointer.add_theme_color_override("font_color", border_color)
-	pointer.add_theme_font_size_override("font_size", 24)
+	pointer.add_theme_font_size_override("font_size", TextScale.scaled(24))
 	_target_highlight.add_child(pointer)
 
 
@@ -401,7 +401,7 @@ func _update_tooltip() -> void:
 	if not _tooltip_label or not is_instance_valid(_tooltip_label):
 		_tooltip_label = Label.new()
 		_tooltip_label.name = "TooltipLabel"
-		_tooltip_label.add_theme_font_size_override("font_size", 13)
+		_tooltip_label.add_theme_font_size_override("font_size", TextScale.scaled(13))
 		_tooltip_label.add_theme_color_override("font_color", style.get("text", Color.WHITE).lightened(0.2))
 		_tooltip_label.z_index = z_index + 2
 		_tooltip_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -576,7 +576,7 @@ func _build_menu() -> void:
 		_ap_label.position = Vector2(MENU_PADDING + TILE_SIZE, MENU_PADDING)
 		_ap_label.size = Vector2(menu_width - MENU_PADDING * 2 - TILE_SIZE * 2, 18)
 		_ap_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		_ap_label.add_theme_font_size_override("font_size", 13)
+		_ap_label.add_theme_font_size_override("font_size", TextScale.scaled(13))
 		_update_ap_label()
 		menu_panel.add_child(_ap_label)
 
@@ -735,7 +735,7 @@ func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -
 	cursor.text = "▶"  # Filled triangle for better visibility
 	cursor.position = Vector2(-4, 0)
 	cursor.add_theme_color_override("font_color", style.cursor)
-	cursor.add_theme_font_size_override("font_size", 15)
+	cursor.add_theme_font_size_override("font_size", TextScale.scaled(15))
 	cursor.visible = false
 	row.add_child(cursor)
 
@@ -760,7 +760,7 @@ func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -
 	else:
 		text_label.add_theme_color_override("font_color", style.text)
 
-	text_label.add_theme_font_size_override("font_size", 16)
+	text_label.add_theme_font_size_override("font_size", TextScale.scaled(16))
 	row.add_child(text_label)
 
 	# Make clickable
