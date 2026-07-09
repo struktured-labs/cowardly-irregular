@@ -256,6 +256,14 @@ const DIALOGUE_EMITTERS: Dictionary = {
 	"guild_scholar_scriptura": [
 		{"quest": "world1_untested_edge", "flag": "quest_world1_untested_edge_inscription_read"},
 	],
+	# world2_relocated step 2 — learning where the Annex is. Any source fires:
+	# Tyler's bike-kid intel or the mail carrier's route hint post-accept.
+	"tyler_on_bike": [
+		{"quest": "world2_relocated", "flag": "quest_world2_relocated_annex_found"},
+	],
+	"mail_carrier_w2": [
+		{"quest": "world2_relocated", "flag": "quest_world2_relocated_annex_found"},
+	],
 }
 
 
