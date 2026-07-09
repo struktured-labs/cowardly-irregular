@@ -379,8 +379,13 @@ func show_victory_results() -> void:
 				# fades in just after the stat gains.
 				var learned: Array = cr.get("learned_abilities", [])
 				if not learned.is_empty():
+					# Resolve ids to display names — "Learned: Fira", not "Learned: fira"
+					var learned_names: PackedStringArray = []
+					for aid in learned:
+						var ab: Dictionary = JobSystem.get_ability(str(aid)) if JobSystem else {}
+						learned_names.append(str(ab.get("name", str(aid).capitalize())))
 					var learn_label = Label.new()
-					learn_label.text = "      ✦ Learned: %s" % ", ".join(PackedStringArray(learned))
+					learn_label.text = "      ✦ Learned: %s" % ", ".join(learned_names)
 					learn_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 					learn_label.add_theme_color_override("font_color", Color(0.5, 0.85, 1.0))
 					learn_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
