@@ -663,6 +663,18 @@
       "duration_seconds": 1.0,
       "prompt_influence": 0.7
     },
+    "chicken_cluck": {
+      "file": "assets/audio/sfx/chicken_cluck.ogg",
+      "prompt": "Single warm comedic hen cluck (bok-bok), farmyard, dry and clean. Replaces the menu_move placeholder QuestChicken plays when you bump an ambient hen (the code comment already says 'a cluck'). Also reusable for any farm/village ambience.",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.7
+    },
+    "chicken_caught": {
+      "file": "assets/audio/sfx/chicken_caught.ogg",
+      "prompt": "Startled chicken squawk-flutter (comedic bwak + wing flap), a hen being scooped up. For QuestChicken._catch — more thematic than the reused secret_found sting for the 7-chicken roundup puzzle.",
+      "duration_seconds": 0.6,
+      "prompt_influence": 0.7
+    },
     "exp_tick": {
       "file": "assets/audio/sfx/exp_tick.ogg",
       "prompt": "Ultra short soft digital pip, tiny progress bar increment tick, minimal quiet blip like a meter filling up one notch",
