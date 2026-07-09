@@ -251,6 +251,27 @@ const REGISTRY := {
 		"world": 2,
 		"unlock": ["cutscene_flag_world2_chapter2_complete"],
 	},
+	# ===== WORLDS 3-6 — arrival chats, one register each =====
+	"world3_pc_calibration": {
+		"title": "Calibration",
+		"world": 3,
+		"unlock": ["cutscene_flag_world3_prologue_complete"],
+	},
+	"world4_pc_shift_change": {
+		"title": "Shift Change",
+		"world": 4,
+		"unlock": ["cutscene_flag_world4_prologue_complete"],
+	},
+	"world5_pc_login": {
+		"title": "Login",
+		"world": 5,
+		"unlock": ["cutscene_flag_world5_prologue_complete"],
+	},
+	"world6_pc_negative_space": {
+		"title": "Negative Space",
+		"world": 6,
+		"unlock": ["cutscene_flag_world6_prologue_complete"],
+	},
 }
 
 
