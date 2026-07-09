@@ -30,6 +30,9 @@ const FLAG_TO_CHAT: Dictionary = {
 	"event_flag_first_autobattle_enabled":  "event_chat_first_autobattle",
 	"event_flag_first_group_attack":        "event_chat_first_group_attack",
 	"event_flag_one_hp_victory":            "event_chat_one_hp_victory",
+	"event_flag_tent_blocked":              "event_chat_tent_rules",
+	"event_flag_share_code_used":           "event_chat_share_code",
+	"event_flag_fool_marks_three":          "event_chat_fool_marks_three",
 }
 
 

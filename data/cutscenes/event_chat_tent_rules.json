@@ -1,0 +1,55 @@
+{
+  "id": "event_chat_tent_rules",
+  "title": "Site Regulations",
+  "world": 1,
+  "trigger": "event_chat_tent_rules",
+  "background": "prologue_forest",
+  "description": "The Tent refused to deploy inside a dungeon (F3 rule). The party takes it up with the canvas.",
+  "steps": [
+    {
+      "type": "letterbox_in",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "The Tent refused to deploy. It cited conditions."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Cleric",
+          "text": "It's canvas. How does canvas decline?",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "There's a tag. 'Not rated for ambient dread.' Crystal light counts as a permit.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "We sleep at the crystal or we don't sleep.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Bard",
+          "text": "The tent has a union. Honestly? I respect it.",
+          "theme": "bard",
+          "portrait": "bard"
+        }
+      ]
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.3
+    }
+  ]
+}

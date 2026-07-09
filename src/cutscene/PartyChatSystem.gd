@@ -220,6 +220,21 @@ const REGISTRY := {
 		"world": 1,
 		"unlock": ["event_flag_one_hp_victory"],
 	},
+	"event_chat_tent_rules": {
+		"title": "Site Regulations",
+		"world": 1,
+		"unlock": ["event_flag_tent_blocked"],
+	},
+	"event_chat_share_code": {
+		"title": "Borrowed Reflexes",
+		"world": 1,
+		"unlock": ["event_flag_share_code_used"],
+	},
+	"event_chat_fool_marks_three": {
+		"title": "The Card Is Counting",
+		"world": 1,
+		"unlock": ["event_flag_fool_marks_three"],
+	},
 }
 
 

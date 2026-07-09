@@ -2899,6 +2899,8 @@ func _paste_share_code() -> void:
 		_reload_applied_script()
 		_flash_status("Share code applied to %s" % character_name, Color.LIME)
 		SoundManager.play_ui("menu_select")
+		if PartyChatSystem:
+			PartyChatSystem.fire_event_flag("event_flag_share_code_used")
 	else:
 		_flash_status("Share code valid but could not apply", Color.YELLOW)
 		SoundManager.play_ui("menu_error")
