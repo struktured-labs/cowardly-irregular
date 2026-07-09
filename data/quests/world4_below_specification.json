@@ -1,0 +1,92 @@
+{
+  "id": "world4_below_specification",
+  "title": "Below Specification",
+  "world": 4,
+  "giver": {
+    "npc_id": "rat_patrol_junction",
+    "display_name": "Clockwork Rat Patrol Junction",
+    "location": {"map_id": "rivet_row_tunnels", "near": "hot_section"},
+    "spawn_flag": "cutscene_flag_world4_chapter2_complete"
+  },
+  "description": "The clockwork rats from World 3 are deteriorating in the World 4 tunnels. They aren't malicious — they're stressed. The tunnels run hotter than Cogsworth Junction and their springs are winding too fast in an environment they weren't designed for. The ones that detonate aren't attacking. They're overloading.",
+  "playstyle_tags": ["compassion_puzzle", "cross_world", "fast_travel_showcase"],
+  "dialogue": {
+    "offer": [
+      {"speaker": "", "text": "The junction is scored with tiny wheel-tracks, looping endlessly. A rat clatters past on its patrol — springs audibly overwound, ticking fast and wrong, like a heart that can't find its resting rate.", "theme": "narrator"},
+      {"speaker": "Mage", "text": "The springs are stressed. This heat — they weren't built for it. The detonations aren't aggression. They're overload.", "theme": "mage"},
+      {"speaker": "Cleric", "text": "Is there somewhere they could run that isn't a combat encounter?", "theme": "cleric"}
+    ],
+    "accept": [
+      {"speaker": "Mage", "text": "Cooler section, older air circulation — the Cogsworth-era construction breathes differently. If we can find it, they could survive there.", "theme": "mage"}
+    ],
+    "decline": [
+      {"speaker": "", "text": "The rats keep looping. The loops keep tightening. The tunnels keep the heat.", "theme": "narrator"}
+    ],
+    "in_progress": [
+      {"speaker": "Mage", "text": "They can't be herded — they follow their patrol routes. But patrols orient on resonance. Give them a sound that reads as Brasston, and the routes will drift toward it on their own.", "theme": "mage"}
+    ],
+    "ready_to_turn_in": [
+      {"speaker": "Sprocket", "text": "The chip held? The little ones found it?", "theme": "villager"}
+    ],
+    "complete": [
+      {"speaker": "Sprocket", "text": "Ha! My calibration chip is a lighthouse for clockwork rats two worlds from home. That's the best thing any part of mine has ever done, and I once fixed the Junction's grand chime blindfolded.", "theme": "villager"},
+      {"speaker": "Sprocket", "text": "They moved toward what sounded familiar. Everything does. That's not a mechanism thing — that's just true, and mechanisms are honest about it.", "theme": "villager"},
+      {"speaker": "Sprocket", "text": "Check on them when you pass through. Things that loop still notice who visits.", "theme": "villager"}
+    ]
+  },
+  "objectives": [
+    {
+      "step": 1,
+      "description": "Understand what the detonating rats actually are.",
+      "type": "custom",
+      "required_flag": "quest_world4_below_specification_problem_identified",
+      "flag_on_complete": "quest_world4_below_specification_problem_identified"
+    },
+    {
+      "step": 2,
+      "description": "Find the cooler Cogsworth-era tunnel section.",
+      "type": "custom",
+      "required_flag": "quest_world4_below_specification_cool_section_found",
+      "flag_on_complete": "quest_world4_below_specification_cool_section_found"
+    },
+    {
+      "step": 3,
+      "description": "Ask Sprocket for a resonance calibration chip that sounds like home.",
+      "type": "talk",
+      "target_npc": "sprocket_brasston",
+      "required_flag": "quest_world4_below_specification_cool_section_found",
+      "flag_on_complete": "quest_world4_below_specification_beacon_obtained"
+    },
+    {
+      "step": 4,
+      "description": "Place the beacon in the cool section.",
+      "type": "custom",
+      "required_flag": "quest_world4_below_specification_beacon_placed",
+      "flag_on_complete": "quest_world4_below_specification_beacon_placed"
+    },
+    {
+      "step": 5,
+      "description": "Tell Sprocket what his chip became.",
+      "type": "talk",
+      "target_npc": "sprocket_brasston",
+      "required_flag": "quest_world4_below_specification_beacon_placed"
+    }
+  ],
+  "rewards": {
+    "gold": 0,
+    "exp": 300,
+    "items": [],
+    "job_variants": {
+      "cleric": {
+        "description": "Dialogue-only (Safety Officer): 'I wasn't sure this counted as medicine. I think it might. I think keeping things from breaking down is the same as healing them.'",
+        "items": []
+      }
+    }
+  },
+  "flag_on_complete": "quest_world4_below_specification_complete",
+  "unlocks_dialogue": [
+    {"npc_id": "rat_colony_beacon", "note": "The settled cluster near the beacon becomes a recurring passive: occasionally drops a random rare component when the party passes through that tunnel section. Ongoing-drop wiring is overworld/battle's when convenient — documented here, not blocking."}
+  ],
+  "cross_world_connection": "The Tempo of the Mainspring's fragment (Chain B W3), if collected after this quest, includes one additional line: 'They moved toward something that felt like home. A sound they recognized. I think that's what most motion is — moving toward what sounds familiar.'",
+  "_wiring_notes": "Giver is an interactable (rat patrol junction, TallyWall pattern) spawning post rat-encounter chapter flag. Step 1 emitter: examine interact at the junction (the offer dialogue IS the identification — emit on offer-accept). Step 2 emitter quest_world4_below_specification_cool_section_found: entering the Cogsworth-era ventilated section; if mapped_route (W3 lamplighter quest) is in inventory it's marked on the map directly — without it, findable by exploration (slower, not blocked). Step 3+5 are CROSS-WORLD talk targets — sprocket_brasston lives in Brasston (W3): this quest deliberately exercises fast-travel/backtracking (crystal warp W4→W3 is 150g per the tier pricing). Sprocket's chip line varies if world3_delay_in_everything is incomplete: he still helps, seven seconds late, and the ready_to_turn_in/complete lines gain the leading '...' delay markers. Step 4 emitter: beacon placement interact in the cool section. SLOW-BURN per doc: rat population shift happens over following chapters — presentation detail (decreasing hot-section spawns, growing beacon cluster), not quest state."
+}

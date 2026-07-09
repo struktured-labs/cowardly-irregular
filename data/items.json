@@ -1686,6 +1686,16 @@
     "cost": 0,
     "flavor": "'I remember everything that exists. It's my whole problem.'"
   },
+  "exception_record": {
+    "id": "exception_record",
+    "name": "The Exception Record",
+    "category": 4,
+    "target_type": 4,
+    "description": "Dorrit's complete training history with the exception notation appended: 'Exception granted. Training records flagged for review.' It changes nothing immediately. It exists. It's in the record.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "'The Director's recalibration doesn't hold perfectly. There are always deviations.' They wrote that down. About her. She's keeping it."
+  },
   "ERROR": {
     "id": "ERROR",
     "name": "ERROR",
