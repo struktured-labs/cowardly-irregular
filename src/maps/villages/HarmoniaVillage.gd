@@ -99,6 +99,8 @@ func _generate_map() -> void:
 	spawn_points["chapel_exit"] = Vector2(4 * TILE_SIZE, 16 * TILE_SIZE)
 	# Library exit spawn (in front of the top-left H cluster at cols 3-5, rows 2-4)
 	spawn_points["library_exit"] = Vector2(4 * TILE_SIZE, 5 * TILE_SIZE)
+	# Cartographer exit spawn (in front of the top-right PPP cluster at cols 22-24, rows 2-4)
+	spawn_points["cartographer_exit"] = Vector2(23 * TILE_SIZE, 5 * TILE_SIZE)
 
 
 func _char_to_tile_type(char: String) -> int:
@@ -221,6 +223,9 @@ func _setup_buildings() -> void:
 	# Top-left H cluster (cols 3-5, rows 2-4). Door on the south face
 	# at row 4.5 so the player walking on path row 5 hits it.
 	_add_interior_door("LibraryDoor", "harmonia_library", "Enter Library", Vector2(4 * TILE_SIZE, 4.5 * TILE_SIZE))
+	# === CARTOGRAPHER DOOR ===
+	# Top-right PPP cluster (cols 22-24, rows 2-4), mirroring the library corner.
+	_add_interior_door("CartographerDoor", "harmonia_cartographer", "Enter Attic", Vector2(23 * TILE_SIZE, 4.5 * TILE_SIZE))
 
 
 ## tick 37: _add_interior_door moved up to BaseVillage so every village

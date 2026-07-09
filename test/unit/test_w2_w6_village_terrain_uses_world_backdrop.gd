@@ -64,7 +64,7 @@ func test_w1_harmonia_still_uses_village_terrain() -> void:
 	# Don't regress: W1 Harmonia village must still map to "village"
 	# terrain. It IS the medieval village.
 	var body := _terrain_for_map_body()
-	assert_true(body.contains("\"harmonia_village\", \"tavern_interior\", \"harmonia_chapel\", \"harmonia_library\":"),
+	assert_true(body.contains("\"harmonia_village\", \"tavern_interior\", \"harmonia_chapel\", \"harmonia_library\", \"harmonia_cartographer\":"),
 		"W1 Harmonia + its interiors must keep the village-arm grouping")
 	# Pin that the W1 arm returns "village".
 	var idx: int = body.find("\"harmonia_village\", \"tavern_interior\"")
