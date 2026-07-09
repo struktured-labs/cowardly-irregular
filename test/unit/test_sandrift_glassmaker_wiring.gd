@@ -54,7 +54,8 @@ func test_game_loop_routes_sandrift_glassmaker() -> void:
 		"GameLoop must preload the shop script")
 	assert_true(src.contains("\"sandrift_glassmaker\":"),
 		"GameLoop scene routing must include sandrift_glassmaker")
-	assert_true(src.contains("\"sandrift_glassmaker\":\n\t\t\treturn \"desert\""),
+	# 2026-07-09: arm grouped with the Rain Ledger — both Sandrift interiors.
+	assert_true(src.contains("\"sandrift_glassmaker\", \"sandrift_rain_ledger\":\n\t\t\treturn \"desert\""),
 		"sandrift_glassmaker must map to 'desert' terrain — Sandrift's battle backdrop")
 
 

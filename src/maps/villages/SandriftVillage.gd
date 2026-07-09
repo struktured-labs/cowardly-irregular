@@ -129,6 +129,10 @@ func _setup_buildings() -> void:
 	# glass she collects from sand fused by the dragon's breath.
 	spawn_points["glassmaker_exit"] = Vector2(8 * TILE_SIZE, 11 * TILE_SIZE)
 	_add_interior_door("GlassmakerDoor", "sandrift_glassmaker", "Enter Glassmaker's Workshop", Vector2(8 * TILE_SIZE, 10 * TILE_SIZE))
+	# === RAIN LEDGER DOOR ===
+	# South face of the BBB building (cols 13-15, rows 2-4) — four centuries of hope, one entry.
+	spawn_points["ledger_exit"] = Vector2(14 * TILE_SIZE, 5.5 * TILE_SIZE)
+	_add_interior_door("RainLedgerDoor", "sandrift_rain_ledger", "Enter Rain Ledger", Vector2(14 * TILE_SIZE, 4.5 * TILE_SIZE))
 
 
 func _setup_treasures() -> void:
