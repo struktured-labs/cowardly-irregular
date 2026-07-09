@@ -45,8 +45,16 @@ echo "[deploy] gate 4/4: render smoke"
 mkdir -p tmp
 # --audio-driver Dummy: xvfb fakes the DISPLAY but not audio — without it the
 # smoke blasts game music through the user's speakers (2026-07-08 complaint).
-if ! xvfb-run -a timeout 220 godot --rendering-driver opengl3 --audio-driver Dummy -- --render-smoke > tmp/deploy_smoke.log 2>&1; then
-  echo "[deploy] BLOCKED: render smoke failed — see tmp/deploy_smoke.log" >&2; exit 3
+# Retry once: Xvfb intermittently dies mid-run on this box ("X connection
+# broken", 3 distinct steps 2026-07-08/09) — a REAL regression fails twice;
+# first attempt's log is kept as deploy_smoke.attempt1.log for comparison.
+SMOKE_CMD=(xvfb-run -a timeout 220 godot --rendering-driver opengl3 --audio-driver Dummy -- --render-smoke)
+if ! "${SMOKE_CMD[@]}" > tmp/deploy_smoke.log 2>&1; then
+  cp tmp/deploy_smoke.log tmp/deploy_smoke.attempt1.log
+  echo "[deploy] smoke attempt 1 failed (xvfb flake?) — retrying once"
+  if ! "${SMOKE_CMD[@]}" > tmp/deploy_smoke.log 2>&1; then
+    echo "[deploy] BLOCKED: render smoke failed TWICE — see tmp/deploy_smoke.log (+ attempt1)" >&2; exit 3
+  fi
 fi
 grep "VERDICT" tmp/deploy_smoke.log
 
