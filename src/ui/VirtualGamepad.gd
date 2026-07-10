@@ -57,8 +57,10 @@ func _compute_scale() -> void:
 
 
 func _is_touch_device() -> bool:
-	# Show on web builds and when no gamepad connected
-	return OS.has_feature("web") or DisplayServer.is_touchscreen_available()
+	# REAL touch detection only — the old `web` blanket painted permanent
+	# touch buttons over every desktop-browser player's screen. A false
+	# negative recovers instantly: the first ScreenTouch event shows the pad.
+	return DisplayServer.is_touchscreen_available()
 
 
 func _create_buttons() -> void:
@@ -202,7 +204,14 @@ func _draw_dpad() -> void:
 
 
 func _input(event: InputEvent) -> void:
+	# First-touch recovery: a real finger on a device we mis-detected as
+	# non-touch summons the pad immediately (covers touch laptops + web quirks)
 	if not _visible:
+		if event is InputEventScreenTouch and event.pressed:
+			_visible = true
+			_compute_scale()
+			_create_buttons()
+			_draw_dpad()
 		return
 
 	if event is InputEventScreenTouch:
