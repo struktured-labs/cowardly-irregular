@@ -142,6 +142,10 @@ func _setup_buildings() -> void:
 	# Assembly Core dungeon AND the warden_industrial boss.
 	spawn_points["union_hall_exit"] = Vector2(7 * TILE_SIZE, 11 * TILE_SIZE)
 	_add_interior_door("UnionHallDoor", "rivet_row_union_hall", "Enter Union Hall", Vector2(7 * TILE_SIZE, 10 * TILE_SIZE))
+	# === INCIDENT BOARD DOOR ===
+	# South face of the GGG building (cols 12-14, rows 2-4) — the safety office.
+	spawn_points["incident_exit"] = Vector2(13 * TILE_SIZE, 5.5 * TILE_SIZE)
+	_add_interior_door("IncidentBoardDoor", "rivet_row_incident_board", "Enter Incident Board", Vector2(13 * TILE_SIZE, 4.5 * TILE_SIZE))
 
 
 func _setup_treasures() -> void:
