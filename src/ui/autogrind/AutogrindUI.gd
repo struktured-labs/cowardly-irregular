@@ -616,7 +616,7 @@ func _create_party_status_row(member: Combatant, width: float) -> Control:
 func _build_footer(vp_size: Vector2) -> void:
 	"""Build footer with controls help, ludicrous speed toggle, and permadeath staking toggle"""
 	var footer = Label.new()
-	footer.text = "[Start/+]: Grind  [B]: Close  [1/2/3]: Presets  [4-6]: Custom  [S]: Save  [D]: Del"
+	footer.text = "[Start/+]: Grind  [B]: Close  [1/2/3]: Presets  [4-6]: Custom  [S]: Save  [D]: Del  [E/I]: Files  [Sh+E/I]: Codes"
 	footer.position = Vector2(8, vp_size.y - 24)
 	footer.add_theme_font_size_override("font_size", 10)
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)

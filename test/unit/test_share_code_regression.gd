@@ -94,6 +94,14 @@ func test_apply_autogrind_rules_now_validates() -> void:
 		"refused import must not mutate the active rules")
 
 
+func test_autogrind_footer_documents_the_bindings() -> void:
+	# Discoverability: the console's footer must list the file AND code flows
+	# (they existed with zero mention — undiscoverable features are half-built).
+	var src := FileAccess.get_file_as_string("res://src/ui/autogrind/AutogrindUI.gd")
+	assert_true("[E/I]: Files" in src and "[Sh+E/I]: Codes" in src,
+		"the autogrind footer documents export/import and share codes")
+
+
 func test_editor_wires_the_clipboard_bindings() -> void:
 	var src := FileAccess.get_file_as_string("res://src/ui/autobattle/AutobattleGridEditor.gd")
 	assert_true("_copy_share_code" in src and "_paste_share_code" in src, "handlers exist")
