@@ -1,17 +1,13 @@
 extends GutTest
 
-## Story-spine walk (2026-07-09, extended to the FULL CAMPAIGN same-day):
-## drives _get_pending_story_cutscene from New Game state all the way to
-## world6_ending, completing each pending cutscene via
-## _CUTSCENE_COMPLETION_FLAGS exactly as the runtime does. Map-sweep walker:
-## each round tries every story map until one yields a pending; when a full
-## sweep goes quiet, the next playthrough BEAT (boss defeat / npc event) is
-## injected. Campaign-scale invariants:
-##   1. NO LOOP: a completed cutscene never returns (the Elder Theron class)
-##   2. NO DEAD END: the walk never stalls with beats remaining
-##   3. THE SPINE CONNECTS: prologue → Rat King → Mordaine → W2..W5 → ENDING
-## A spine cutscene missing from the completion map fails here — in-game
-## that's the infinite-replay bug.
+## Story-spine walks (2026-07-09): drives _get_pending_story_cutscene from
+## New Game through EVERY world's gates to world6_ending, completing each
+## pending cutscene via _CUTSCENE_COMPLETION_FLAGS exactly as the runtime
+## does. Campaign-scale invariants: no completed cutscene ever returns (the
+## Elder Theron class), no stall with beats remaining, every world connects,
+## missing completion-map entries fail loudly. Second test proves the spine
+## SURVIVES A SAVE/LOAD mid-campaign — the flag cascade must round-trip
+## through the JSON save format and keep walking to the ending.
 
 const GameLoopScript := preload("res://src/GameLoop.gd")
 
@@ -38,16 +34,17 @@ const BEATS := [
 ]
 
 
-func test_full_campaign_spine_walks_to_the_ending() -> void:
+func _clean_story_state() -> Dictionary:
 	var saved: Dictionary = GameState.game_constants.duplicate(true)
 	for k in GameState.game_constants.keys():
 		if str(k).begins_with("cutscene_flag_") or str(k) == "talked_to_theron":
 			GameState.game_constants.erase(k)
+	return saved
 
-	var gl = GameLoopScript.new()
-	var seen := {}
-	var beat_idx := 0
-	for round_guard in range(160):
+
+## Walks up to max_rounds; mutates seen + returns the beat index reached.
+func _walk(gl, seen: Dictionary, beat_idx: int, max_rounds: int) -> int:
+	for round_guard in range(max_rounds):
 		var progressed := false
 		for m in MAPS:
 			gl._current_map_id = m
@@ -57,17 +54,13 @@ func test_full_campaign_spine_walks_to_the_ending() -> void:
 			assert_false(seen.has(pending),
 				"LOOP: '%s' returned again after completion (map %s) — the Elder Theron class" % [pending, m])
 			if seen.has(pending):
-				gl.free()
-				GameState.game_constants = saved
-				return
+				return beat_idx
 			seen[pending] = true
 			var completion: String = GameLoopScript._CUTSCENE_COMPLETION_FLAGS.get(pending, "")
 			assert_ne(completion, "",
 				"spine cutscene '%s' MISSING from _CUTSCENE_COMPLETION_FLAGS — in-game this replays forever" % pending)
 			if completion == "":
-				gl.free()
-				GameState.game_constants = saved
-				return
+				return beat_idx
 			GameState.game_constants[completion] = true
 			# Spotlight dual-signal: cutscene sets watched_*, the DUEL WIN sets
 			# unlocked_* (replay-until-won is designed) — the walker wins the duel.
@@ -82,17 +75,47 @@ func test_full_campaign_spine_walks_to_the_ending() -> void:
 					GameState.game_constants[flag] = true
 				beat_idx += 1
 			else:
-				break
+				return beat_idx
+	return beat_idx
+
+
+func test_full_campaign_spine_walks_to_the_ending() -> void:
+	var saved := _clean_story_state()
+	var gl = GameLoopScript.new()
+	var seen := {}
+	_walk(gl, seen, 0, 160)
 
 	assert_true(seen.has("world1_prologue"), "the walk started at the beginning")
 	assert_true(seen.has("world1_rat_king_defeat"), "the Rat King beat is on the spine")
-	assert_true(seen.has("world2_prologue"), "W1 connects to W2")
-	assert_true(seen.has("world3_prologue"), "W2 connects to W3")
-	assert_true(seen.has("world4_prologue"), "W3 connects to W4")
-	assert_true(seen.has("world5_prologue"), "W4 connects to W5")
-	assert_true(seen.has("world6_prologue"), "W5 connects to W6")
+	for w in range(2, 7):
+		assert_true(seen.has("world%d_prologue" % w), "world %d connects" % w)
 	assert_true(seen.has("world6_ending"),
 		"THE SPINE CONNECTS END TO END: New Game walks to the ending (%d cutscenes)" % seen.size())
+
+	gl.free()
+	GameState.game_constants = saved
+
+
+func test_spine_survives_a_midcampaign_save_load() -> void:
+	var saved := _clean_story_state()
+	var gl = GameLoopScript.new()
+	var seen := {}
+	# First half: walk into W2-W3 territory (4 beats ≈ Mordaine + suburbs)
+	var beat_idx := _walk(gl, seen, 0, 24)
+	assert_true(seen.has("world2_prologue"), "mid-campaign checkpoint reached before saving")
+
+	# Save, wipe the live flags, load — the JSON round-trip the real save uses
+	var save: Dictionary = GameState.to_dict()
+	var reloaded = JSON.parse_string(JSON.stringify(save))
+	for k in GameState.game_constants.keys():
+		if str(k).begins_with("cutscene_flag_") or str(k) == "talked_to_theron":
+			GameState.game_constants.erase(k)
+	GameState._apply_save_data(reloaded)
+
+	# Second half: the walk must RESUME (not restart, not stall) to the ending
+	_walk(gl, seen, beat_idx, 160)
+	assert_true(seen.has("world6_ending"),
+		"the spine survives a mid-campaign save/load and still reaches the ending (%d cutscenes)" % seen.size())
 
 	gl.free()
 	GameState.game_constants = saved
