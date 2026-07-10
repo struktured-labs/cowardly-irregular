@@ -64,13 +64,15 @@ func test_formula_modification_emits_log() -> void:
 
 func test_constant_modification_emits_log() -> void:
 	var body := _fn_body("_execute_meta_ability")
-	assert_true(body.contains("[color=magenta]✦ %s accesses the game constants"),
+	# 2026-07-09: line updated when the ability became REAL (dial + values in the log)
+	assert_true(body.contains("[color=magenta]✦ %s reaches into the constants"),
 		"constant_modification must emit a magenta + ✦ log")
 
 
 func test_code_inspection_emits_log() -> void:
 	var body := _fn_body("_execute_meta_ability")
-	assert_true(body.contains("analyzes the battle code — execution order revealed"),
+	# 2026-07-09: the reveal now lists the actual order, not just claims it
+	assert_true(body.contains("reads the battle code. Execution order"),
 		"code_inspection must emit a log line surfacing the execution-order reveal")
 
 

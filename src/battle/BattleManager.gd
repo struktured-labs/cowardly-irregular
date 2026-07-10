@@ -5550,17 +5550,32 @@ func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Arra
 	## the tick 137/138 color audit).
 	match meta_effect:
 		"formula_modification":
+			# Honest atmospherics until the formula-rewrite design lands: the editor opens, the formulas resist, the corruption is real
 			print("  → %s opens the formula editor..." % caster.combatant_name)
-			battle_log_message.emit("[color=magenta]✦ %s opens the formula editor...[/color]" % caster.combatant_name)
+			battle_log_message.emit("[color=magenta]✦ %s opens the formula editor... the formulas RESIST. Version lock. The attempt is logged.[/color]" % caster.combatant_name)
 			GameState.add_corruption(corruption_risk)
 		"constant_modification":
-			print("  → %s accesses game constants..." % caster.combatant_name)
-			battle_log_message.emit("[color=magenta]✦ %s accesses the game constants...[/color]" % caster.combatant_name)
+			# The flagship promise, finally real: turn ONE tunable dial ±10% (clamped 0.5..2.0). modify_constant adds delta-proportional corruption on top of the cast risk.
+			var dials: Array = ["exp_multiplier", "gold_multiplier", "damage_multiplier", "healing_multiplier", "drop_rate_multiplier", "encounter_rate"]
+			var dial: String = dials[randi() % dials.size()]
+			var old_v: float = float(GameState.game_constants.get(dial, 1.0))
+			var new_v: float = clampf(old_v * (1.1 if randf() < 0.5 else 0.9), 0.5, 2.0)
+			GameState.modify_constant(dial, new_v)
+			print("  → %s modified %s: %.2f → %.2f" % [caster.combatant_name, dial, old_v, new_v])
+			battle_log_message.emit("[color=magenta]✦ %s reaches into the constants: %s  %.2f → %.2f[/color]" % [caster.combatant_name, dial, old_v, new_v])
 			GameState.add_corruption(corruption_risk)
 		"code_inspection":
-			print("  → %s analyzes the battle code..." % caster.combatant_name)
-			print("  → [META] Revealing execution order...")
-			battle_log_message.emit("[color=magenta]✦ %s analyzes the battle code — execution order revealed.[/color]" % caster.combatant_name)
+			# Actually reveal something: the speed-sorted execution order, buffed stats included
+			var order: Array = []
+			for c in player_party + enemy_party:
+				if c and is_instance_valid(c) and c.is_alive:
+					order.append(c)
+			order.sort_custom(func(a, b): return a.get_buffed_stat("speed", a.speed) > b.get_buffed_stat("speed", b.speed))
+			var names: PackedStringArray = []
+			for c in order:
+				names.append("%s(%d)" % [c.combatant_name, c.get_buffed_stat("speed", c.speed)])
+			print("  → [META] Execution order: %s" % " → ".join(names))
+			battle_log_message.emit("[color=magenta]✦ %s reads the battle code. Execution order: %s[/color]" % [caster.combatant_name, " → ".join(names)])
 		## Tick 396: alias "rewind_turn" to the same rewind path.
 		## Pre-fix the rewind_turn meta_effect (used by rewind_turn
 		## ability — Time Mage advanced) fell through to `_:`
