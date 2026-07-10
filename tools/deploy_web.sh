@@ -58,6 +58,18 @@ if ! "${SMOKE_CMD[@]}" > tmp/deploy_smoke.log 2>&1; then
 fi
 grep "VERDICT" tmp/deploy_smoke.log
 
+echo "[deploy] gate 5/5: web boot smoke (the ACTUAL WASM build in headless chromium)"
+if ./tools/web_smoke.sh > tmp/deploy_web_smoke.log 2>&1; then
+  grep "WEB-SMOKE" tmp/deploy_web_smoke.log
+else
+  RC=$?
+  if [ "$RC" = "3" ]; then
+    echo "[deploy] WARNING: web smoke SKIPPED (no playwright on this machine) — desktop smoke still gated"
+  else
+    echo "[deploy] BLOCKED: web build failed to boot in chromium — see tmp/deploy_web_smoke.log" >&2; exit 5
+  fi
+fi
+
 echo "[deploy] pushing to ${ITCH_TARGET} (userversion ${VERSION})"
 "${BUTLER_BIN}" push builds/web/ "${ITCH_TARGET}" --userversion "${VERSION}"
 until "${BUTLER_BIN}" status "${ITCH_TARGET}" 2>/dev/null | grep -q "${VERSION}"; do sleep 8; done
