@@ -182,6 +182,10 @@ func _trigger_encounter() -> void:
 
 	# Generate enemy party
 	var enemy_data = _generate_enemy_party()
+	if enemy_data.is_empty():
+		# every species here was permakilled — the silence IS the reward
+		print("=== The area is quiet. Nothing left here remembers how to attack. ===")
+		return
 
 	encounter_triggered.emit(enemy_data, current_terrain)
 	print("=== ENCOUNTER! (%s terrain) ===" % current_terrain)
@@ -234,12 +238,25 @@ func _generate_enemy_party() -> Array:
 	elif size_roll < 0.4:  # 10% chance for 3 enemies
 		party_size = 3
 
+	# Necromancer permakill: exterminated species never spawn again
+	var draw_pool: Array = _filter_permakilled(current_enemy_pool)
+	if draw_pool.is_empty():
+		return []  # whole pool exterminated — _trigger_encounter grants the free pass
+
 	var enemy_party = []
 	for i in range(party_size):
-		var enemy_id = current_enemy_pool[randi() % current_enemy_pool.size()]
+		var enemy_id = draw_pool[randi() % draw_pool.size()]
 		enemy_party.append(_create_enemy_data(enemy_id))
 
 	return enemy_party
+
+
+## Strips permakilled species from a draw pool (permakill's second promise).
+func _filter_permakilled(pool: Array) -> Array:
+	if GameState == null or not ("permakilled_monster_types" in GameState) \
+			or GameState.permakilled_monster_types.is_empty():
+		return pool
+	return pool.filter(func(id): return not str(id) in GameState.permakilled_monster_types)
 
 
 func _try_generate_miniboss() -> Array:
@@ -259,6 +276,9 @@ func _try_generate_miniboss() -> Array:
 	if miniboss_pool.is_empty():
 		return []
 
+	miniboss_pool = _filter_permakilled(miniboss_pool)
+	if miniboss_pool.is_empty():
+		return []
 	var miniboss_id = miniboss_pool[randi() % miniboss_pool.size()]
 	var miniboss_data = _create_enemy_data(miniboss_id)
 

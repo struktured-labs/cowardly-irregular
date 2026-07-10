@@ -5863,6 +5863,11 @@ func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Arra
 				if target and is_instance_valid(target) and target.is_alive:
 					target.die()
 					target.add_status("permakilled")
+					# permakill's second promise: the SPECIES never spawns again (enemies only — PCs carry no monster_type)
+					var pk_type: String = str(target.get_meta("monster_type", "")) if target.has_meta("monster_type") else ""
+					if pk_type != "" and GameState and not pk_type in GameState.permakilled_monster_types:
+						GameState.permakilled_monster_types.append(pk_type)
+						battle_log_message.emit("[color=magenta]The %s species has been UNWRITTEN. It will not respawn.[/color]" % pk_type.capitalize())
 					print("  → %s has been PERMANENTLY KILLED!" % target.combatant_name)
 					# Tick 238: penalty BBCode (permadeath).
 					battle_log_message.emit("[color=%s]☠ %s has been PERMANENTLY KILLED![/color]" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name])

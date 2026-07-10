@@ -167,6 +167,8 @@ var corruption_effects: Array[String] = []
 
 ## World progression — tracks which worlds are unlocked and story flags
 var current_world: int = 1  # 1-6
+## Necromancer permakill exterminations — species filtered from encounter draws forever (per-save)
+var permakilled_monster_types: Array[String] = []
 var worlds_unlocked: int = 1  # Highest world unlocked (1 = only medieval)
 var story_flags: Dictionary = {}  # Generic flag store: "w1_boss_defeated": true, etc.
 
@@ -264,6 +266,7 @@ func _create_save_data() -> Dictionary:
 		"player_party": player_party.duplicate(true),
 		"party_leader_index": party_leader_index,
 		"game_constants": game_constants.duplicate(),
+		"permakilled_monster_types": permakilled_monster_types.duplicate(),
 		"meta_features": meta_features.duplicate(),
 		"corruption_effects": corruption_effects.duplicate(),
 		"current_world": current_world,
@@ -412,6 +415,13 @@ func _apply_save_data(save_data: Dictionary) -> void:
 	## crashing _apply_save_data with `Trying to assign a value of type
 	## 'X' to a variable of type 'Dictionary'`. Same defensive shape as
 	## tick 362's player.position guard in SaveSystem.
+	if save_data.has("permakilled_monster_types"):
+		# typed-array coercion (JSON gives generic Array — direct assign silently keeps [])
+		permakilled_monster_types.clear()
+		var raw_pk: Variant = save_data["permakilled_monster_types"]
+		if raw_pk is Array:
+			for x in raw_pk:
+				permakilled_monster_types.append(str(x))
 	if save_data.has("game_constants"):
 		# Tick 112: MERGE saved values onto the default dict instead of
 		# replacing the dict wholesale. Old saves predate later-added keys
@@ -898,6 +908,7 @@ func reset_game_state() -> void:
 	# every crystal lit — same leak class as the 2026-04-30 fix above.
 	quests.clear()
 	activated_crystals.clear()
+	permakilled_monster_types.clear()
 
 	# 2026-07-04: same leak class — these persist via to_dict but weren't
 	# reset, so a New Game inherited the prior run's battle count
