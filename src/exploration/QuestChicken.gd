@@ -123,6 +123,13 @@ func _on_body_entered(body: Node2D) -> void:
 func _catch() -> void:
 	_caught = true
 	GameState.set_story_flag("chicken_caught_" + chicken_id)
+	# Skiptrotter's Bypass Puzzle (meta_auto_solve_puzzle_pending was armed with
+	# no consumer — 20 MP for nothing): the next catch solves the WHOLE roundup.
+	if GameState and bool(GameState.game_constants.get("meta_auto_solve_puzzle_pending", false)):
+		GameState.game_constants["meta_auto_solve_puzzle_pending"] = false
+		for cid in ALL_CHICKEN_IDS:
+			GameState.set_story_flag("chicken_caught_" + cid)
+		_toast("The puzzle concedes. All seven chickens agree they were already caught.")
 	# Startled squawk-flutter (cowir-sfx b38c890e) — on-theme for the roundup gag.
 	if SoundManager:
 		SoundManager.play_ui("chicken_caught")
