@@ -61,7 +61,8 @@ func test_game_loop_routes_brasston_clockwork_loft() -> void:
 		"GameLoop must preload the loft script")
 	assert_true(src.contains("\"brasston_clockwork_loft\":"),
 		"GameLoop scene routing must include brasston_clockwork_loft")
-	assert_true(src.contains("\"brasston_clockwork_loft\":\n\t\t\treturn \"steampunk\""),
+	# 2026-07-10: arm grouped with the Redundancy Archive — both Brasston interiors.
+	assert_true(src.contains("\"brasston_clockwork_loft\", \"brasston_redundancy_archive\":\n\t\t\treturn \"steampunk\""),
 		"brasston_clockwork_loft must map to 'steampunk' terrain — W3's battle backdrop")
 
 

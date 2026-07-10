@@ -157,6 +157,10 @@ func _setup_buildings() -> void:
 	# SteampunkMechanism dungeon (W3).
 	spawn_points["clockwork_loft_exit"] = Vector2(7 * TILE_SIZE, 11 * TILE_SIZE)
 	_add_interior_door("ClockworkLoftDoor", "brasston_clockwork_loft", "Enter Clockwork Loft", Vector2(7 * TILE_SIZE, 10 * TILE_SIZE))
+	# === REDUNDANCY ARCHIVE DOOR ===
+	# South face of the BBB building (cols 13-15, rows 2-5) — where Brasston keeps the spares.
+	spawn_points["archive_exit"] = Vector2(14 * TILE_SIZE, 6.5 * TILE_SIZE)
+	_add_interior_door("RedundancyArchiveDoor", "brasston_redundancy_archive", "Enter Redundancy Archive", Vector2(14 * TILE_SIZE, 5.5 * TILE_SIZE))
 
 
 func _setup_treasures() -> void:
