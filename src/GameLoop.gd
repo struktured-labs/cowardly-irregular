@@ -26,6 +26,7 @@ const IronhavenStrikeRegistryInteriorScript = preload("res://src/maps/interiors/
 const FrostholdMeltwaterClockInteriorScript = preload("res://src/maps/interiors/FrostholdMeltwaterClockInterior.gd")
 const SandriftRainLedgerInteriorScript = preload("res://src/maps/interiors/SandriftRainLedgerInterior.gd")
 const MapleGarageSaleInteriorScript = preload("res://src/maps/interiors/MapleGarageSaleInterior.gd")
+const BrasstonRedundancyArchiveInteriorScript = preload("res://src/maps/interiors/BrasstonRedundancyArchiveInterior.gd")
 const GrimhollowLanternDebtInteriorScript = preload("res://src/maps/interiors/GrimhollowLanternDebtInterior.gd")
 const HarmoniaLibraryInteriorScript = preload("res://src/maps/interiors/HarmoniaLibraryInterior.gd")
 const EldertreeHollowTreeInteriorScript = preload("res://src/maps/interiors/EldertreeHollowTreeInterior.gd")
@@ -3023,6 +3024,8 @@ func _start_exploration() -> void:
 			exploration_scene = EnrichmentAnnexInteriorScript.new()
 		"brasston_clockwork_loft":
 			exploration_scene = BrasstonClockworkLoftInteriorScript.new()
+		"brasston_redundancy_archive":
+			exploration_scene = BrasstonRedundancyArchiveInteriorScript.new()
 		"rivet_row_union_hall":
 			exploration_scene = RivetRowUnionHallInteriorScript.new()
 		"node_prime_daemon_lounge":
@@ -3474,7 +3477,7 @@ const INTERIOR_MAP_IDS: PackedStringArray = [
 	# (Ironhaven MMM building).
 	"harmonia_cartographer", "eldertree_grafting_house", "ironhaven_strike_registry",
 	"frosthold_meltwater_clock", "sandrift_rain_ledger", "grimhollow_lantern_debt",
-	"maple_garage_sale",
+	"maple_garage_sale", "brasston_redundancy_archive",
 ]
 
 
@@ -4099,7 +4102,7 @@ func _get_terrain_for_map(map_id: String) -> String:
 			return "volcanic"
 		"maple_heights_arcade", "maple_garage_sale":
 			return "suburban"
-		"brasston_clockwork_loft":
+		"brasston_clockwork_loft", "brasston_redundancy_archive":
 			return "steampunk"
 		"rivet_row_union_hall":
 			return "industrial"
