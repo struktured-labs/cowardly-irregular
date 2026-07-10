@@ -62,7 +62,8 @@ func test_game_loop_routes_rivet_row_union_hall() -> void:
 		"GameLoop must preload the hall script")
 	assert_true(src.contains("\"rivet_row_union_hall\":"),
 		"GameLoop scene routing must include rivet_row_union_hall")
-	assert_true(src.contains("\"rivet_row_union_hall\":\n\t\t\treturn \"industrial\""),
+	# 2026-07-10: arm grouped with the Incident Board — both Rivet Row interiors.
+	assert_true(src.contains("\"rivet_row_union_hall\", \"rivet_row_incident_board\":\n\t\t\treturn \"industrial\""),
 		"rivet_row_union_hall must map to 'industrial' terrain — W4's battle backdrop")
 
 
