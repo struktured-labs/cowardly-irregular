@@ -67,7 +67,8 @@ func test_game_loop_routes_maple_heights_arcade() -> void:
 		"GameLoop must preload the arcade script")
 	assert_true(src.contains("\"maple_heights_arcade\":"),
 		"GameLoop scene routing must include maple_heights_arcade")
-	assert_true(src.contains("\"maple_heights_arcade\":\n\t\t\treturn \"suburban\""),
+	# 2026-07-09: arm grouped with the Garage Sale — both Maple Heights interiors.
+	assert_true(src.contains("\"maple_heights_arcade\", \"maple_garage_sale\":\n\t\t\treturn \"suburban\""),
 		"maple_heights_arcade must map to 'suburban' terrain — W2 battle backdrop, distinct from W1's 'village'/'forest'/'ice'/etc.")
 
 

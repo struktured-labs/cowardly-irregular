@@ -155,6 +155,10 @@ func _setup_buildings() -> void:
 	# from tick 37. First enterable W2 interior.
 	spawn_points["arcade_exit"] = Vector2(5 * TILE_SIZE, 11 * TILE_SIZE)
 	_add_interior_door("ArcadeDoor", "maple_heights_arcade", "Enter Glitch City Arcade", Vector2(5 * TILE_SIZE, 10 * TILE_SIZE))
+	# === GARAGE SALE DOOR ===
+	# South face of the HHH building (cols 2-4, rows 2-4) — the sale that never ends.
+	spawn_points["garage_sale_exit"] = Vector2(3 * TILE_SIZE, 5.5 * TILE_SIZE)
+	_add_interior_door("GarageSaleDoor", "maple_garage_sale", "Enter Garage Sale", Vector2(3 * TILE_SIZE, 4.5 * TILE_SIZE))
 
 	# === STRIP MALL ROAD ===
 	# Birchwood Commons — the rearranging strip mall (configuration_pending's
