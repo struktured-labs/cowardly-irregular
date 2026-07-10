@@ -84,6 +84,13 @@ func open(domain: String, character_id: String, current_rules: Array) -> void:
 	if _regen_button != null:
 		_regen_button.disabled = true
 	show()
+	# Upfront honesty for the no-backend case (every web player): say WHY
+	# Compose will fail BEFORE they type an essay — the grid stays fully manual.
+	var rc = get_node_or_null("/root/RuleComposer")
+	if rc == null or not rc.has_method("has_llm") or not rc.has_llm():
+		if _status_label != null:
+			_status_label.text = "No LLM backend reachable — Compose needs one (Settings → Configure BYOK, or local Ollama). The rule grid and presets work fine without it."
+			_status_label.add_theme_color_override("font_color", Color(0.95, 0.80, 0.40))
 	if _prompt_field != null:
 		_prompt_field.grab_focus()
 	elif _compose_button != null:
