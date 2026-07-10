@@ -30,6 +30,17 @@ while (!booted && errors.length === 0 && Date.now() - start < BOOT_BUDGET_MS) {
 // settle a few seconds past boot so early-frame fatals surface
 if (booted) await page.waitForTimeout(6000);
 await page.screenshot({ path: 'tmp/web_smoke.png' });
+
+// Stage 2: drive INTO the game — the web-only bug surface (IndexedDB saves,
+// audio worklets, input pipeline) lives past the title screen. Fresh browser
+// context has no saves, so Enter lands on NEW GAME; the prologue starts.
+if (booted && errors.length === 0) {
+  await page.keyboard.press('Enter');   // Press Start
+  await page.waitForTimeout(2000);
+  await page.keyboard.press('Enter');   // confirm first menu row (New Game)
+  await page.waitForTimeout(12000);     // prologue cutscene / scene load
+  await page.screenshot({ path: 'tmp/web_smoke_ingame.png' });
+}
 await browser.close();
 
 if (errors.length) {
@@ -41,4 +52,4 @@ if (!booted) {
   console.log('[WEB-SMOKE] FAIL — engine banner never appeared within ' + BOOT_BUDGET_MS + 'ms');
   process.exit(2);
 }
-console.log('[WEB-SMOKE] PASS — engine booted, no fatals, screenshot at tmp/web_smoke.png');
+console.log('[WEB-SMOKE] PASS — booted + entered gameplay, no fatals (tmp/web_smoke.png, tmp/web_smoke_ingame.png)');
