@@ -145,6 +145,10 @@ func _setup_buildings() -> void:
 	# duty.
 	spawn_points["daemon_lounge_exit"] = Vector2(6 * TILE_SIZE, 9 * TILE_SIZE)
 	_add_interior_door("DaemonLoungeDoor", "node_prime_daemon_lounge", "Enter Daemon Lounge", Vector2(6 * TILE_SIZE, 8 * TILE_SIZE))
+	# === CACHE DOOR ===
+	# South face of the CCC building (cols 9-11, rows 2-4) — where the world keeps what it might render again.
+	spawn_points["cache_exit"] = Vector2(10 * TILE_SIZE, 5.5 * TILE_SIZE)
+	_add_interior_door("CacheDoor", "node_prime_cache", "Enter The Cache", Vector2(10 * TILE_SIZE, 4.5 * TILE_SIZE))
 
 
 func _setup_treasures() -> void:

@@ -64,7 +64,8 @@ func test_game_loop_interior_terrain_strings_match_resolver_keys() -> void:
 	var src := _read(GAME_LOOP)
 	# Find the terrain-mapping occurrence specifically by looking for
 	# the `return "digital"` immediately after the map_id.
-	var idx := src.find("\"node_prime_daemon_lounge\":\n\t\t\treturn ")
+	# 2026-07-10: arm grouped with node_prime_cache — both Node Prime interiors.
+	var idx := src.find("\"node_prime_daemon_lounge\", \"node_prime_cache\":\n\t\t\treturn ")
 	assert_gt(idx, -1, "interior terrain map must include node_prime_daemon_lounge with a return arm")
 	var window: String = src.substr(idx, 120)
 	assert_false(window.contains("\"futuristic\""),
