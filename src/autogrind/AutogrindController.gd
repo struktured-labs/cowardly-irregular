@@ -250,6 +250,11 @@ func _request_next_battle() -> void:
 	_current_battle_is_collapse_boss = false
 	_current_meta_boss_data = {}
 	var enemies = _generate_scaled_enemies()
+	if enemies.is_empty():
+		# Every species is permakilled — the grind stops CLEANLY instead of
+		# hanging on an empty battle (the original stuck-in-battle-mode class).
+		stop_grind("Nothing left to grind — every species here has been unwritten.")
+		return
 	_state = State.BATTLE_RUNNING
 	grind_battle_requested.emit(enemies, _terrain)
 
@@ -291,6 +296,11 @@ func _generate_scaled_enemies() -> Array:
 	# so it cannot be read off the GDScript Resource — read the const where it
 	# actually lives (BattleEnemySpawner, a global class with const MONSTER_TYPES).
 	var monster_types = BattleEnemySpawner.MONSTER_TYPES
+	# Necromancer permakill holds in grinds too — unwritten species never spawn
+	if GameState and "permakilled_monster_types" in GameState and not GameState.permakilled_monster_types.is_empty():
+		monster_types = monster_types.filter(func(mt): return not str(mt.get("id", "")) in GameState.permakilled_monster_types)
+	if monster_types.is_empty():
+		return []
 
 	var num_enemies = randi_range(2, 3)
 	var selected: Array = []
