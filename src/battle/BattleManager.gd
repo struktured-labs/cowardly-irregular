@@ -1282,8 +1282,11 @@ func _apply_corruption_effects_on_round_start() -> void:
 	## failures are worse than crashes). Now-handled effects are off
 	## this list: encounter_surge (OverworldController._check_encounter),
 	## visual_glitch (BattleScene._on_round_started_corruption_glitch).
-	## bp_instability + ability_corruption remain genuinely unwired.
-	for unimplemented in ["bp_instability", "ability_corruption"]:
+	## 2026-07-10: bp_instability (AP-gain jitter, _tick round start) and
+	## ability_corruption (10% player-cast misfire, _execute_ability) are
+	## now WIRED — the corruption roster is fully implemented. The loud-warn
+	## stays as a ratchet for any FUTURE effect added without a handler.
+	for unimplemented in []:
 		if unimplemented in active_effects:
 			push_warning("[BattleManager] corruption effect '%s' is in active_effects but has NO runtime handler — added in GameState._apply_random_corruption_effect but never consumed" % unimplemented)
 
@@ -1347,9 +1350,17 @@ func _process_next_selection() -> void:
 	# Start this combatant's selection
 	current_combatant.start_turn()
 
-	# Natural AP gain: +1 AP at start of each turn
-	current_combatant.gain_ap(1)
-	print("%s gains +1 AP (natural gain, now AP: %d)" % [current_combatant.combatant_name, current_combatant.current_ap])
+	# Natural AP gain: +1 AP at start of each turn.
+	# bp_instability (corruption): the gain jitters 0/+1/+2 for PLAYER turns — the resource economy itself is corrupted (symmetric chaos, not a drain)
+	var ap_gain := 1
+	if current_combatant in player_party and GameState \
+			and "corruption_effects" in GameState and "bp_instability" in GameState.corruption_effects:
+		var roll := randf()
+		ap_gain = 0 if roll < 0.3 else (2 if roll > 0.7 else 1)
+		if ap_gain != 1:
+			battle_log_message.emit("[color=magenta]%s's AP flickers %s — the economy is corrupted.[/color]" % [current_combatant.combatant_name, "+2" if ap_gain == 2 else "+0"])
+	current_combatant.gain_ap(ap_gain)
+	print("%s gains +%d AP (natural gain, now AP: %d)" % [current_combatant.combatant_name, ap_gain, current_combatant.current_ap])
 
 	if current_combatant in player_party:
 		current_state = BattleState.PLAYER_SELECTING
@@ -3981,6 +3992,17 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 	"""Execute an ability (costs 1 AP)"""
 	if caster in player_party:
 		_c3_nonbasic_used = true
+	# ability_corruption (corruption): 10% of PLAYER casts misfire into another
+	# ability the caster knows — the routing itself is corrupted
+	if caster in player_party and GameState and "corruption_effects" in GameState \
+			and "ability_corruption" in GameState.corruption_effects \
+			and "learned_abilities" in caster and caster.learned_abilities.size() > 1 \
+			and randf() < 0.1:
+		var others: Array = caster.learned_abilities.filter(func(a): return str(a) != ability_id)
+		if not others.is_empty():
+			var swapped: String = str(others[randi() % others.size()])
+			battle_log_message.emit("[color=magenta]✦ CORRUPTED CAST — %s's %s comes out as %s![/color]" % [caster.combatant_name, ability_id.capitalize(), swapped.capitalize()])
+			ability_id = swapped
 	var ability = JobSystem.get_ability(ability_id)
 	if ability.is_empty():
 		# Loud-fail: a bad ability_id silently consumed the caster's turn

@@ -89,14 +89,12 @@ func test_unimplemented_corruption_effects_push_warning() -> void:
 	assert_true(body.contains("push_warning(\"[BattleManager] corruption effect"),
 		"unimplemented corruption effects must push_warning so they surface in CI runs")
 	# Still-unimplemented effects must remain in the warned list.
-	for name in ["bp_instability", "ability_corruption"]:
-		var quoted: String = "\"" + name + "\""
-		assert_true(body.contains(quoted),
-			"unimplemented-list iteration must include '%s'" % name)
-	# Implemented effects must have GRADUATED off the warning list (2026-07-05):
-	# encounter_surge → OverworldController._check_encounter,
-	# visual_glitch → BattleScene._on_round_started_corruption_glitch.
-	for graduated in ["visual_glitch", "encounter_surge"]:
+	# 2026-07-10: the last two effects GRADUATED (bp_instability -> AP-gain
+	# jitter at the natural-gain site; ability_corruption -> 10% player-cast
+	# misfire in _execute_ability). The whole roster is wired — every effect
+	# must now be OFF the warning list; the empty loop stays as the ratchet
+	# for future hollow effects.
+	for graduated in ["visual_glitch", "encounter_surge", "bp_instability", "ability_corruption"]:
 		var q: String = "\"" + graduated + "\""
 		assert_false(body.contains(q),
 			"'%s' is implemented now — it must leave the unimplemented warning list" % graduated)
