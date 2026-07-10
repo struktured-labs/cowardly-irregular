@@ -117,6 +117,11 @@ func set_enabled(enabled: bool) -> void:
 
 
 func _fill_monsters() -> void:
+	# Dissolve any roamer whose species was unwritten since it spawned — the extermination is visible, not just statistical
+	if GameState and "permakilled_monster_types" in GameState and not GameState.permakilled_monster_types.is_empty():
+		for m in _monsters:
+			if is_instance_valid(m) and str(m.monster_id) in GameState.permakilled_monster_types:
+				m.queue_free()
 	var target = randi_range(SPAWN_COUNT_MIN, SPAWN_COUNT_MAX)
 	var alive = _monsters.filter(func(m): return is_instance_valid(m))
 	_monsters = alive
@@ -134,6 +139,9 @@ func _try_spawn_monster() -> void:
 		return
 
 	var pool = _get_valid_pool_for_overworld()
+	# Necromancer permakill holds for roaming spawns too — the THIRD spawn path (encounter pools + autogrind roster already filter)
+	if EncounterSystem and EncounterSystem.has_method("_filter_permakilled"):
+		pool = EncounterSystem._filter_permakilled(pool)
 	if pool.is_empty():
 		return
 

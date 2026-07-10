@@ -54,6 +54,25 @@ func test_encounter_draws_exclude_exterminated_species() -> void:
 		"fully exterminated pool draws empty (free pass upstream)")
 
 
+func test_roaming_spawner_filters_the_third_path() -> void:
+	# W2-W6 use VISIBLE roaming monsters — a third spawn path that leaked
+	# permakilled species (encounter pools + autogrind roster already filter).
+	var src := FileAccess.get_file_as_string("res://src/exploration/MonsterSpawner.gd")
+	var i := src.find("_get_valid_pool_for_overworld()")
+	var draw := src.find("randi() % pool.size()", i)
+	var between := src.substr(i, draw - i)
+	assert_true("_filter_permakilled" in between,
+		"MonsterSpawner must filter permakilled species BETWEEN pool fetch and draw — the roaming path leaked the extermination promise")
+
+
+func test_existing_roamers_dissolve_on_extermination() -> void:
+	var src := FileAccess.get_file_as_string("res://src/exploration/MonsterSpawner.gd")
+	var i := src.find("func _fill_monsters")
+	var block := src.substr(i, 500)
+	assert_true("permakilled_monster_types" in block and "queue_free()" in block,
+		"_fill_monsters must dissolve live roamers of unwritten species — the extermination is visible, not just statistical")
+
+
 func test_extermination_survives_save_and_dies_on_new_game() -> void:
 	GameState.permakilled_monster_types.append("slime")
 	var save: Dictionary = GameState.to_dict()
