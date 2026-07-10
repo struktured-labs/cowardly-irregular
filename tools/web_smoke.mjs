@@ -1,0 +1,44 @@
+// Web-boot smoke: executes the ACTUAL WASM build in headless chromium.
+// PASS = the Godot engine banner appears in console within the budget and
+// no page error / fatal console error fires. Screenshot always saved.
+// Usage: node tools/web_smoke.mjs [url] (default http://127.0.0.1:8371)
+// playwright is imported from an absolute path (PW_MODULE) so no project-local
+// install is needed — ESM ignores NODE_PATH, so the runner passes a file:// URL.
+const pwModule = process.env.PW_MODULE || 'playwright';
+const { chromium } = await import(pwModule);
+
+const url = process.argv[2] || 'http://127.0.0.1:8371';
+const BOOT_BUDGET_MS = 45000;
+const FATAL = /RuntimeError|abort\(|out of memory|failed to (load|instantiate|fetch)|wasm.*error|Unable to load/i;
+
+const browser = await chromium.launch();
+const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
+let booted = false;
+const errors = [];
+page.on('console', (msg) => {
+  const t = msg.text();
+  if (t.includes('Godot Engine v')) booted = true;
+  if (msg.type() === 'error' && FATAL.test(t)) errors.push('console: ' + t.slice(0, 300));
+});
+page.on('pageerror', (e) => errors.push('pageerror: ' + String(e).slice(0, 300)));
+
+await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 30000 });
+const start = Date.now();
+while (!booted && errors.length === 0 && Date.now() - start < BOOT_BUDGET_MS) {
+  await page.waitForTimeout(500);
+}
+// settle a few seconds past boot so early-frame fatals surface
+if (booted) await page.waitForTimeout(6000);
+await page.screenshot({ path: 'tmp/web_smoke.png' });
+await browser.close();
+
+if (errors.length) {
+  console.log('[WEB-SMOKE] FAIL — ' + errors.length + ' fatal(s):');
+  for (const e of errors) console.log('  ' + e);
+  process.exit(1);
+}
+if (!booted) {
+  console.log('[WEB-SMOKE] FAIL — engine banner never appeared within ' + BOOT_BUDGET_MS + 'ms');
+  process.exit(2);
+}
+console.log('[WEB-SMOKE] PASS — engine booted, no fatals, screenshot at tmp/web_smoke.png');
