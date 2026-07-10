@@ -28,6 +28,7 @@ const SandriftRainLedgerInteriorScript = preload("res://src/maps/interiors/Sandr
 const MapleGarageSaleInteriorScript = preload("res://src/maps/interiors/MapleGarageSaleInterior.gd")
 const BrasstonRedundancyArchiveInteriorScript = preload("res://src/maps/interiors/BrasstonRedundancyArchiveInterior.gd")
 const RivetRowIncidentBoardInteriorScript = preload("res://src/maps/interiors/RivetRowIncidentBoardInterior.gd")
+const NodePrimeCacheInteriorScript = preload("res://src/maps/interiors/NodePrimeCacheInterior.gd")
 const GrimhollowLanternDebtInteriorScript = preload("res://src/maps/interiors/GrimhollowLanternDebtInterior.gd")
 const HarmoniaLibraryInteriorScript = preload("res://src/maps/interiors/HarmoniaLibraryInterior.gd")
 const EldertreeHollowTreeInteriorScript = preload("res://src/maps/interiors/EldertreeHollowTreeInterior.gd")
@@ -3033,6 +3034,8 @@ func _start_exploration() -> void:
 			exploration_scene = RivetRowIncidentBoardInteriorScript.new()
 		"node_prime_daemon_lounge":
 			exploration_scene = NodePrimeDaemonLoungeInteriorScript.new()
+		"node_prime_cache":
+			exploration_scene = NodePrimeCacheInteriorScript.new()
 		"vertex_threshold":
 			exploration_scene = VertexThresholdInteriorScript.new()
 		"frosthold_village":
@@ -3481,6 +3484,7 @@ const INTERIOR_MAP_IDS: PackedStringArray = [
 	"harmonia_cartographer", "eldertree_grafting_house", "ironhaven_strike_registry",
 	"frosthold_meltwater_clock", "sandrift_rain_ledger", "grimhollow_lantern_debt",
 	"maple_garage_sale", "brasston_redundancy_archive", "rivet_row_incident_board",
+	"node_prime_cache",
 ]
 
 
@@ -4109,7 +4113,7 @@ func _get_terrain_for_map(map_id: String) -> String:
 			return "steampunk"
 		"rivet_row_union_hall", "rivet_row_incident_board":
 			return "industrial"
-		"node_prime_daemon_lounge":
+		"node_prime_daemon_lounge", "node_prime_cache":
 			return "digital"
 		"vertex_threshold":
 			return "abstract"
