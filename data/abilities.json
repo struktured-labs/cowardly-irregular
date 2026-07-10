@@ -302,7 +302,7 @@
     "type": "meta",
     "animation": "cast_meta",
     "mp_cost": 30,
-    "description": "Temporarily modify a damage or healing formula for this battle",
+    "description": "Attempt to rewrite a damage formula. The formulas resist. The corruption is real.",
     "target_type": "self",
     "meta_effect": "formula_modification",
     "corruption_risk": 0.15

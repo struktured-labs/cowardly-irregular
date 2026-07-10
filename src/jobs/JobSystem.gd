@@ -350,7 +350,7 @@ func _create_default_abilities() -> void:
 			"name": "Edit Formula",
 			"type": "meta",
 			"mp_cost": 30,
-			"description": "Temporarily modify a damage or healing formula",
+			"description": "Attempt to rewrite a damage formula. The formulas resist. The corruption is real.",
 			"target_type": "self",
 			"meta_effect": "formula_modification"
 		},
