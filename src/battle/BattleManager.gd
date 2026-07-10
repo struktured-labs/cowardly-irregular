@@ -1817,6 +1817,15 @@ func _process_ai_selection(combatant: Combatant) -> void:
 	var allies = player_party if is_player_controlled else enemy_party
 	var enemies = enemy_party if is_player_controlled else player_party
 
+	# Bossbinder: a controlled / mind-swapped enemy fights its OWN side while
+	# the status holds (pre-fix both statuses applied and the AI ignored them —
+	# the ability's whole promise). Solo boss with nobody else to hit turns on itself.
+	if not is_player_controlled and (combatant.has_status("controlled") or combatant.has_status("mind_swap")):
+		allies = player_party
+		var own_side: Array = enemy_party.filter(func(e): return e != combatant and e.is_alive)
+		enemies = own_side if not own_side.is_empty() else [combatant]
+		battle_log_message.emit("[color=magenta]✦ %s turns on its own side![/color]" % combatant.combatant_name)
+
 	var alive_allies = allies.filter(func(a): return a.is_alive)
 	var alive_enemies = enemies.filter(func(e): return e.is_alive)
 

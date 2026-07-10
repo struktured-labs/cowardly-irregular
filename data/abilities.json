@@ -820,7 +820,7 @@
     "type": "meta",
     "animation": "cast_meta",
     "mp_cost": 35,
-    "description": "Swap control with target boss - you control it, AI controls you. If the boss wins, your save corrupts!",
+    "description": "Bind the boss to your will \u2014 it fights its own side while the swap holds. The bond cuts both ways.",
     "target_type": "single_enemy",
     "meta_effect": "boss_control_swap",
     "corruption_risk": 0.3
@@ -842,7 +842,7 @@
     "type": "meta",
     "animation": "cast_meta",
     "mp_cost": 40,
-    "description": "Take full control of boss for 1 turn - choose its action",
+    "description": "Seize the boss for a turn \u2014 it turns on its own side. A solo boss turns on itself.",
     "target_type": "single_enemy",
     "meta_effect": "full_boss_control",
     "duration": 1,
