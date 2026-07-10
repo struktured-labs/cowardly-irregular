@@ -2,7 +2,7 @@
 
 A meta-aware JRPG where automation isn't cheating — it's enlightenment.
 
-## Project Status: Advanced Prototype (v3.32-alpha track, continuous deploys 2026-07-02)
+## Project Status: Advanced Prototype (v3.33-alpha track, continuous deploys through 2026-07-10)
 
 Playable end-to-end through World 1:
 
@@ -18,11 +18,16 @@ Playable end-to-end through World 1:
   - **Boss Strategic Intent** for all 5 W1 bosses (Settings → LLM Boss Strategy). LLM picks intent/posture per phase, deterministic ladder still owns ability choice.
   - **Party Combat Dialogue** for all 5 starter jobs, rendered as speech bubbles anchored to the speaker (suppressed only at ≥4x speed); `voice_<job>_<trigger>` audio-handle convention ready for the voice pack. Scripted `trigger_voices` fallback per job when LLM off.
   - Rebalance daemon (opt-in), LLM Rule Composer, Learning Monsters. Ollama / OpenAI-compat backends via HTTPBackend; BYOK desktop-only (settings.json) pending field-input UI.
-- **Data**: 14 jobs, 286 abilities, 93 monsters (artist art for slime/bat/goblin + 5 duel minibosses T2), 150+ items, 33 encounter pools, 170+ cutscenes, 151 music tracks, 210 SFX
-- **Tests**: ~5200 passing / 0 failing in GUT (full suite ~35s headless; hard-gate every commit on the [Failed] count)
+- **Data**: 14 jobs, 287 abilities, 94 monsters (artist art for slime/bat/goblin + 5 duel minibosses T2), 153+ items, 33 encounter pools, 190+ cutscenes (44 party/event chats, guarded: every registry chat needs its JSON + a live emitter), 151 music tracks, 218 SFX
+- **Tests**: ~5800 passing / 0 failing in GUT (full suite ~40s headless; hard-gate every commit on the [Failed] count). Campaign-scale integration: the story spine walks New Game → world6_ending under test (incl. a mid-campaign save/load), battle mini-fuzz every run, live/headless group-attack parity-by-construction.
+- **Sharing (pillar complete)**: autobattle scripts AND autogrind rule sets travel as `COWIR1:` clipboard codes (Shift+E copy / Shift+I paste in grid editor + autogrind console), grammar-validated at decode; file-based E/I flows unchanged
+- **Meta jobs (all five REAL)**: Scriptweaver turns a bounded game-constant dial + reveals execution order; Necromancer permakill EXTERMINATES species from all three spawn paths (encounter pools, autogrind roster, roaming — save-persisted, New-Game-reset, live roamers dissolve); Time Mage full (quicksave/restore/temporal shield/undo_death); Skiptrotter Bypass Puzzle concedes the chicken roundup; Bossbinder controlled/mind-swapped enemies fight their own side
+- **Corruption (fully wired)**: visual_glitch, stat_drain (1%/round erosion), encounter_surge, bp_instability (player AP-gain jitter 0/+1/+2), ability_corruption (10% player-cast misfire within the learned kit) — every roster entry has a live consumer, ratcheted
+- **Reference pages**: Formations (live party-qualification checks) + Records (nine live-read stats with editorial quips) in the overworld menu; both in the deploy render smoke
+- **Interiors**: every W1 dragon village has 2+ interiors (test-enforced), W2-W5 expansion villages have 2 each, Vertex stays single-room BY DESIGN (pinned) — most rooms read real game state (crystals, playtime, battles_won, injuries, saves, inventory, bestiary)
 - **Save**: Full JSON save with typed-array roundtrip protection, quests/crystals reset on New Game AND on old-save load (leak fixes 2026-07-02), MRU/pin ability persistence, permanent injuries, corruption effects (menu readout), story-flag gates. Real-save hydration smoke runs against local saves.
 - **Version**: `Version.SEMVER` is the single source; bump at every deploy (tag-aware ratchet test). Title screen shows the git short-hash in dev runs.
-- **Deployment**: continuous per-fix deploys during authorized windows; `v3.32.x-alpha` line live on itch.io. Pipeline: gate → bump SEMVER → tag → export Web → `butler push ... :web --userversion <tag>` → verify `butler status`.
+- **Deployment**: continuous per-fix deploys during authorized windows; `v3.33.x-alpha` line live on itch.io. Pipeline: `tools/deploy_web.sh <tag>` (suite → export → 199MB pck gate → muted render smoke w/ auto-retry → butler push :web).
 
 Deployed via butler to itch.io `:web` channel (NEVER without user approval — 2026-07-02 window was explicitly granted).
 
@@ -266,7 +271,7 @@ godot --headless -s test/run_tests.gd          # Run tests
 ```
 
 ### Testing
-- Unit tests in `test/unit/` using GUT framework — ~5200 tests, ~35s headless
+- Unit tests in `test/unit/` using GUT framework — ~5800 tests, ~40s headless
 - **Canonical test command** (works reliably, used throughout session):
   ```bash
   godot --headless --audio-driver Dummy -s addons/gut/gut_cmdln.gd -gdir=res://test/unit -gprefix=test_ -gsuffix=.gd -gexit
@@ -377,7 +382,7 @@ cowardly-irregular/
 │   ├── job_aliases.json    # white_mage→cleric, black_mage→mage, thief→rogue
 │   └── cutscenes/          # 166 cutscene JSON files
 └── test/
-    └── unit/            # GUT tests (~5200, runs ~35s headless)
+    └── unit/            # GUT tests (~5800, runs ~40s headless)
 ```
 
 ## Key Design Principles
