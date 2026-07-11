@@ -104,7 +104,7 @@
         "walk"
       ],
       "tier": "T2",
-      "source": "artist aseprite \u2014 Game graphics - Characters/BARD/Bard Base sprite.aseprite (idle 0-3, cast 4-7, attack 8-11; 2x nearest-neighbor upscale to 256px). Remaining anims (walk/hit/dead/defend/item/victory) still T1 AI-gen until artist drops them."
+      "source": "artist aseprite — Game graphics - Characters/BARD/Bard Base sprite.aseprite (idle 0-3, cast 4-7, attack 8-11; 2x nearest-neighbor upscale to 256px). Remaining anims (walk/hit/dead/defend/item/victory) still T1 AI-gen until artist drops them."
     },
     "bard_sdxl": {
       "path": "res://assets/sprites/jobs/bard_sdxl",
@@ -618,7 +618,7 @@
         }
       },
       "tier": "T2",
-      "source": "artist aseprite \u2014 Game graphics - Characters/enemies/SLIME 1.aseprite (Idle + Atk tags)"
+      "source": "artist aseprite — Game graphics - Characters/enemies/SLIME 1.aseprite (Idle + Atk tags)"
     },
     "slime_suburban": {
       "path": "res://assets/sprites/monsters/slime_suburban.png",
@@ -644,7 +644,7 @@
         }
       },
       "tier": "T2",
-      "source": "deterministic HSV hue-shift of artist slime \u2014 world 2 (suburban, sky-blue)"
+      "source": "deterministic HSV hue-shift of artist slime — world 2 (suburban, sky-blue)"
     },
     "slime_steampunk": {
       "path": "res://assets/sprites/monsters/slime_steampunk.png",
@@ -670,7 +670,7 @@
         }
       },
       "tier": "T2",
-      "source": "deterministic HSV hue-shift of artist slime \u2014 world 3 (steampunk, brass)"
+      "source": "deterministic HSV hue-shift of artist slime — world 3 (steampunk, brass)"
     },
     "slime_industrial": {
       "path": "res://assets/sprites/monsters/slime_industrial.png",
@@ -696,7 +696,7 @@
         }
       },
       "tier": "T2",
-      "source": "deterministic HSV hue-shift of artist slime \u2014 world 4 (industrial, rust)"
+      "source": "deterministic HSV hue-shift of artist slime — world 4 (industrial, rust)"
     },
     "slime_digital": {
       "path": "res://assets/sprites/monsters/slime_digital.png",
@@ -722,7 +722,7 @@
         }
       },
       "tier": "T2",
-      "source": "deterministic HSV hue-shift of artist slime \u2014 world 5 (digital, neon magenta)"
+      "source": "deterministic HSV hue-shift of artist slime — world 5 (digital, neon magenta)"
     },
     "slime_abstract": {
       "path": "res://assets/sprites/monsters/slime_abstract.png",
@@ -748,7 +748,7 @@
         }
       },
       "tier": "T2",
-      "source": "deterministic HSV hue-shift of artist slime \u2014 world 6 (abstract, monochrome)"
+      "source": "deterministic HSV hue-shift of artist slime — world 6 (abstract, monochrome)"
     },
     "bat": {
       "path": "res://assets/sprites/monsters/bat.png",
@@ -774,7 +774,7 @@
         }
       },
       "tier": "T2",
-      "source": "artist aseprite \u2014 Game graphics - Characters/enemies/BAT 1.aseprite (Idle + Atk tags)"
+      "source": "artist aseprite — Game graphics - Characters/enemies/BAT 1.aseprite (Idle + Atk tags)"
     },
     "goblin": {
       "path": "res://assets/sprites/monsters/goblin.png",
@@ -800,7 +800,7 @@
         }
       },
       "tier": "T2",
-      "source": "artist aseprite \u2014 Game graphics - Characters/enemies/Goblin 1 anims.aseprite (Idle + ATK tags; hit/dead remapped off late-ATK crouch-twist frames 6-8 per live playtest 2026-07-01 \u2014 dedicated hit/dead frames wanted from artist)"
+      "source": "artist aseprite — Game graphics - Characters/enemies/Goblin 1 anims.aseprite (Idle + ATK tags; hit/dead remapped off late-ATK crouch-twist frames 6-8 per live playtest 2026-07-01 — dedicated hit/dead frames wanted from artist)"
     },
     "wolf": {
       "path": "res://assets/sprites/monsters/wolf.png",
@@ -2956,7 +2956,7 @@
         }
       },
       "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). chivalric plate skeleton \u2014 Fighter spotlight-duel miniboss (msg 1950)"
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). chivalric plate skeleton — Fighter spotlight-duel miniboss (msg 1950)"
     },
     "cleric_survive_target": {
       "path": "res://assets/sprites/monsters/cleric_survive_target.png",
@@ -2982,7 +2982,7 @@
         }
       },
       "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). spectral sustained-pressure target \u2014 Cleric spotlight-duel miniboss (msg 1950). Non-HP win: outlast, not defeat."
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). spectral sustained-pressure target — Cleric spotlight-duel miniboss (msg 1950). Non-HP win: outlast, not defeat."
     },
     "rogue_lockward": {
       "path": "res://assets/sprites/monsters/rogue_lockward.png",
@@ -3008,7 +3008,7 @@
         }
       },
       "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). chained treasure-guardian construct \u2014 Rogue spotlight-duel miniboss (msg 1950). High-evade + Steal/backstab-solves."
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). chained treasure-guardian construct — Rogue spotlight-duel miniboss (msg 1950). High-evade + Steal/backstab-solves."
     },
     "mage_prismatic_construct": {
       "path": "res://assets/sprites/monsters/mage_prismatic_construct.png",
@@ -3034,7 +3034,7 @@
         }
       },
       "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). crystalline prism construct \u2014 Mage spotlight-duel miniboss (msg 1950). Rotating elemental weakness, read-and-exploit-live."
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). crystalline prism construct — Mage spotlight-duel miniboss (msg 1950). Rotating elemental weakness, read-and-exploit-live."
     },
     "bard_hostile_courtier": {
       "path": "res://assets/sprites/monsters/bard_hostile_courtier.png",
@@ -3060,7 +3060,7 @@
         }
       },
       "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). aristocratic courtier NPC \u2014 Bard spotlight-duel miniboss (msg 1950). Non-HP win: talked-down via status/song thresholds."
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). aristocratic courtier NPC — Bard spotlight-duel miniboss (msg 1950). Non-HP win: talked-down via status/song thresholds."
     }
   },
   "npc_sheets": {
@@ -3161,6 +3161,658 @@
         "gesture": {
           "start": 6,
           "end": 7
+        }
+      }
+    }
+  },
+  "overworld_npc_sheets": {
+    "blacksmith": {
+      "path": "res://assets/sprites/npcs/blacksmith/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "bram": {
+      "path": "res://assets/sprites/npcs/bram/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "child": {
+      "path": "res://assets/sprites/npcs/child/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "dr_temporal": {
+      "path": "res://assets/sprites/npcs/dr_temporal/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "elder_theron": {
+      "path": "res://assets/sprites/npcs/elder_theron/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "farmer": {
+      "path": "res://assets/sprites/npcs/farmer/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "fisherman": {
+      "path": "res://assets/sprites/npcs/fisherman/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "guard": {
+      "path": "res://assets/sprites/npcs/guard/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "innkeeper": {
+      "path": "res://assets/sprites/npcs/innkeeper/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "king": {
+      "path": "res://assets/sprites/npcs/king/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "marta": {
+      "path": "res://assets/sprites/npcs/marta/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "merchant": {
+      "path": "res://assets/sprites/npcs/merchant/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "monk": {
+      "path": "res://assets/sprites/npcs/monk/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "noble": {
+      "path": "res://assets/sprites/npcs/noble/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "noblewoman": {
+      "path": "res://assets/sprites/npcs/noblewoman/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "old_man": {
+      "path": "res://assets/sprites/npcs/old_man/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "old_woman": {
+      "path": "res://assets/sprites/npcs/old_woman/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "phil": {
+      "path": "res://assets/sprites/npcs/phil/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "priestess": {
+      "path": "res://assets/sprites/npcs/priestess/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "queen": {
+      "path": "res://assets/sprites/npcs/queen/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "scholar": {
+      "path": "res://assets/sprites/npcs/scholar/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "scholar_milo": {
+      "path": "res://assets/sprites/npcs/scholar_milo/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "soldier": {
+      "path": "res://assets/sprites/npcs/soldier/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "traveler": {
+      "path": "res://assets/sprites/npcs/traveler/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "young_man": {
+      "path": "res://assets/sprites/npcs/young_man/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "young_woman": {
+      "path": "res://assets/sprites/npcs/young_woman/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
         }
       }
     }
@@ -3268,6 +3920,231 @@
     },
     "bard": {
       "path": "res://assets/sprites/jobs/bard/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "bossbinder": {
+      "path": "res://assets/sprites/jobs/bossbinder/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "guardian": {
+      "path": "res://assets/sprites/jobs/guardian/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "necromancer": {
+      "path": "res://assets/sprites/jobs/necromancer/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "ninja": {
+      "path": "res://assets/sprites/jobs/ninja/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "scriptweaver": {
+      "path": "res://assets/sprites/jobs/scriptweaver/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "skiptrotter": {
+      "path": "res://assets/sprites/jobs/skiptrotter/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "speculator": {
+      "path": "res://assets/sprites/jobs/speculator/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "summoner": {
+      "path": "res://assets/sprites/jobs/summoner/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "time_mage": {
+      "path": "res://assets/sprites/jobs/time_mage/overworld.png",
       "frame_width": 32,
       "frame_height": 32,
       "fps": 8,
