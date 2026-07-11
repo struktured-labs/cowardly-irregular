@@ -37,15 +37,15 @@ func _write_settings(d: Dictionary) -> void:
 func test_pre_v2_stale_speed_no_longer_undoes_migration() -> void:
 	_write_settings({"battle_speed_index": 4, "default_battle_speed": 0.25})
 	SaveSystem.load_settings()
-	assert_eq(GameState.default_battle_speed, 0.5,
-		"pre-v2 file: migration's 0.5 must stand — the stale 0.25 restore was the bug")
+	assert_eq(GameState.default_battle_speed, 0.25,
+		"pre-v3 file: migration's 0.25 must stand — a stale engine value must not undo it")
 	var scene_script = load("res://src/battle/BattleScene.gd")
-	assert_eq(scene_script._battle_speed_index, 1,
-		"pre-v2 file: battle-scene static resets to index 1 (label 1x)")
+	assert_eq(scene_script._battle_speed_index, 0,
+		"pre-v3 file: battle-scene static resets to index 0 (label 1x)")
 
 
 func test_v2_file_speed_restores_normally() -> void:
-	_write_settings({"speed_scale_v2": true, "battle_speed_index": 2, "default_battle_speed": 1.0})
+	_write_settings({"speed_scale_v2": true, "speed_scale_v3": true, "battle_speed_index": 2, "default_battle_speed": 1.0})
 	SaveSystem.load_settings()
 	assert_eq(GameState.default_battle_speed, 1.0)
 	var scene_script = load("res://src/battle/BattleScene.gd")

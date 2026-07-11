@@ -885,6 +885,7 @@ func save_settings() -> void:
 	var settings = {
 		"version": 2,
 		"speed_scale_v2": true,
+		"speed_scale_v3": true,
 		"battle_speed_index": BATTLE_SCENE_SCRIPT._battle_speed_index,
 		"show_controller_overlay": GameState.show_controller_overlay if GameState else true,
 		"master_volume": AudioServer.get_bus_volume_db(0),
@@ -973,14 +974,14 @@ func load_settings() -> void:
 		return
 
 	var settings = json.data
-	# Battle speed — speed_scale_v2 migration: pre-recalibration files
-	# persisted indexes chosen under raw-engine labels (user's file sat
-	# at engine 4.0 shown as "4x"; the battle scale calls that "8x").
-	# One-time reset to the true default; users re-pick if they want fast.
-	if not settings.get("speed_scale_v2", false):
-		BATTLE_SCENE_SCRIPT._battle_speed_index = 1
+	# Battle speed — speed_scale_v3 migration (struktured 2026-07-11: the
+	# old "0.5x" pacing IS the correct default, relabeled "1x" = engine
+	# 0.25). Pre-v3 files one-time reset to the new default; users re-pick
+	# if they want fast. Same pattern as the v2 raw-engine-label reset.
+	if not settings.get("speed_scale_v3", false):
+		BATTLE_SCENE_SCRIPT._battle_speed_index = 0
 		if GameState:
-			GameState.default_battle_speed = 0.5
+			GameState.default_battle_speed = 0.25
 	elif settings.has("battle_speed_index"):
 		var idx = int(settings["battle_speed_index"])
 		if idx >= 0 and idx < BATTLE_SCENE_SCRIPT.BATTLE_SPEEDS.size():
@@ -1025,11 +1026,11 @@ func load_settings() -> void:
 			GameState.encounter_rate_multiplier = clampf(float(settings["encounter_rate_multiplier"]), 0.0, 2.0)
 		if settings.has("screen_shake_enabled"):
 			GameState.screen_shake_enabled = bool(settings["screen_shake_enabled"])
-		# v2-gated: a pre-v2 file's stale engine value silently UNDID the speed migration 40 lines above
-		if settings.has("default_battle_speed") and settings.get("speed_scale_v2", false):
-			# Validate against actual BATTLE_SPEEDS — fall back to 1.0 if drift.
+		# v3-gated: a pre-v3 file's stale engine value silently UNDID the speed migration 40 lines above
+		if settings.has("default_battle_speed") and settings.get("speed_scale_v3", false):
+			# Validate against actual BATTLE_SPEEDS — fall back to the 0.25 default if drift.
 			var raw_speed = float(settings["default_battle_speed"])
-			GameState.default_battle_speed = raw_speed if (raw_speed in BATTLE_SCENE_SCRIPT.BATTLE_SPEEDS) else 1.0
+			GameState.default_battle_speed = raw_speed if (raw_speed in BATTLE_SCENE_SCRIPT.BATTLE_SPEEDS) else 0.25
 		if settings.has("debug_log_enabled"):
 			GameState.debug_log_enabled = bool(settings["debug_log_enabled"])
 			if DebugLogOverlay and DebugLogOverlay.has_method("set_enabled"):

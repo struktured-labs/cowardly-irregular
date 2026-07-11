@@ -46,7 +46,7 @@ var debug_all_pcs_unlocked: bool = false  # Bypass spotlight gates (autobattle_l
 var show_controller_overlay: bool = true  # Show controller hint overlay during autogrind/battle
 var music_volume: int = 100  # 0-100 percent
 var sfx_volume: int = 100  # 0-100 percent
-var default_battle_speed: float = 1.0  # Default speed index value
+var default_battle_speed: float = 0.25  # engine scale; labeled "1x" — struktured 2026-07-11: the old 0.5x pacing is the correct default
 var text_speed: String = "normal"  # slow | normal | fast | instant
 # Tick 222: accessibility text-size multiplier. Consumers (CutsceneDialogue etc.) multiply base font sizes by this. 1.0 = default, 0.8 = compact, 1.25/1.5/2.0 = larger for readability.
 var text_size_scale: float = 1.0  # 0.8 | 1.0 | 1.25 | 1.5 | 2.0
