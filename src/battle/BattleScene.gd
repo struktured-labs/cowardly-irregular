@@ -60,6 +60,10 @@ const ENEMY_SMALL_FRAME_THRESHOLD: int = 128
 var active_win98_menu: Win98MenuClass = null
 var use_win98_menus: bool = true  # Toggle for Win98 style menus
 
+## Watchdog for the "menu never spawned" soft-lock class (msg 2372).
+const MENU_WATCHDOG_MS: int = 2500
+var _menu_wd_started_ms: int = 0
+
 ## Party status UI
 @onready var char1_name: Label = $UI/PartyStatusPanel/VBoxContainer/Character1/Name
 @onready var char1_hp: ProgressBar = $UI/PartyStatusPanel/VBoxContainer/Character1/HP
@@ -2300,6 +2304,8 @@ func _process(delta: float) -> void:
 	# Idle sway/breathing animations
 	_process_idle_animations(delta)
 
+	_tick_menu_watchdog()
+
 	if _battle_ended and not managed_by_game_loop:
 		if Input.is_action_just_pressed("ui_accept"):
 			_battle_ended = false
@@ -2311,6 +2317,46 @@ func _process(delta: float) -> void:
 				# Defeat - restart
 				log_message("[color=cyan]Retrying battle...[/color]")
 				_restart_battle()
+
+
+## Self-heal for a bug class we've now hit live: PLAYER_SELECTING sits without
+## a menu (msg 2372 rogue-battle soft-lock) → force-spawn if elapsed exceeds
+## MENU_WATCHDOG_MS. Skip enemy turns, spotlight-locked auto routes, trust
+## windows, and any state where a menu is already up.
+func _tick_menu_watchdog() -> void:
+	var bm = BattleManager
+	if bm == null:
+		_menu_wd_started_ms = 0
+		return
+	if bm.current_state != bm.BattleState.PLAYER_SELECTING:
+		_menu_wd_started_ms = 0
+		return
+	if bm.has_method("is_trust_interrupt_window_open") and bm.is_trust_interrupt_window_open():
+		_menu_wd_started_ms = 0
+		return
+	var pc = bm.current_combatant
+	if pc == null or not is_instance_valid(pc) or not pc.is_alive:
+		_menu_wd_started_ms = 0
+		return
+	if not (pc in bm.player_party):
+		_menu_wd_started_ms = 0
+		return
+	if is_instance_valid(active_win98_menu) and active_win98_menu.visible:
+		_menu_wd_started_ms = 0
+		return
+	var now: int = Time.get_ticks_msec()
+	if _menu_wd_started_ms == 0:
+		_menu_wd_started_ms = now
+		return
+	if now - _menu_wd_started_ms < MENU_WATCHDOG_MS:
+		return
+	# Elapsed threshold reached — the menu should be up by now. Force a
+	# spawn and log so the class of bug doesn't soft-lock silently again.
+	var elapsed: int = now - _menu_wd_started_ms
+	push_warning("[MENU-WATCHDOG] %s PLAYER_SELECTING sat %dms without menu — force-spawn" % [pc.combatant_name, elapsed])
+	log_message("[color=orange]⚠ Menu recovery — spawning command menu for %s[/color]" % pc.combatant_name)
+	_menu_wd_started_ms = 0
+	_show_win98_command_menu(pc)
 
 
 func _process_hold_a(delta: float) -> void:
