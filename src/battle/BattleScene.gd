@@ -2987,10 +2987,8 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 	# Safety net: force-reset all party sprites to home positions after rush animations
 	# This catches any case where a return-home tween gets interrupted or killed
 	if group_type in ["all_out_attack", "combo_magic", "limit_break", "formation"]:
-		get_tree().create_timer(1.5).timeout.connect(func():
-			if not is_instance_valid(self): return
-			_snap_party_sprites_home()
-		)
+		# Bound method (not lambda): auto-disconnects when self frees — lambda captures logged "capture was freed" engine errors at battle teardown.
+		get_tree().create_timer(1.5).timeout.connect(_snap_party_sprites_home)
 
 
 ## Safety-net reset for a single attacker after their action resolves.
@@ -3004,16 +3002,31 @@ func _reset_attacker_home(combatant: Combatant) -> void:
 	var animator = _get_combatant_animator(combatant)
 	# Give the existing return-home tween a bit of time to complete before
 	# we forcibly snap — otherwise we fight it and look jittery.
-	get_tree().create_timer(0.7).timeout.connect(func():
-		if not is_instance_valid(self):
-			return
-		if sprite and is_instance_valid(sprite) and sprite.has_meta("home_position"):
-			var home = sprite.get_meta("home_position")
-			if sprite.position.distance_to(home) > 2.0:
-				sprite.position = home
-		if animator and is_instance_valid(animator):
-			animator.set_idle()
-	)
+	get_tree().create_timer(0.7).timeout.connect(_delayed_snap_and_idle.bind(sprite, animator))
+
+
+## Timer-safe helpers: bound methods auto-disconnect when self frees, so battle teardown can't fire them with freed captures (smoke-log engine-error class, 2026-07-11).
+func _delayed_snap_and_idle(sprite, animator) -> void:
+	if sprite and is_instance_valid(sprite) and sprite.has_meta("home_position"):
+		var home = sprite.get_meta("home_position")
+		if sprite.position.distance_to(home) > 2.0:
+			sprite.position = home
+	if animator and is_instance_valid(animator):
+		animator.set_idle()
+
+
+func _delayed_play_hit_fx(target_anim, target_sprite) -> void:
+	if target_anim and is_instance_valid(target_anim) and is_instance_valid(target_sprite):
+		target_anim.play_hit()
+		EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, target_sprite.global_position)
+		var kb_dir = -1.0 if enemy_sprite_nodes.has(target_sprite) else 1.0
+		_apply_hit_knockback(target_sprite, kb_dir)
+		_apply_hit_flash(target_sprite)
+
+
+func _delayed_play_victory(animator) -> void:
+	if is_instance_valid(animator):
+		animator.play_victory()
 
 
 func _snap_party_sprites_home() -> void:
@@ -3127,18 +3140,7 @@ func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attac
 		if attacker_anim and is_instance_valid(attacker_anim):
 			attacker_anim.play_attack()
 		# Brief delay then play hit
-		get_tree().create_timer(0.1).timeout.connect(func():
-			if not is_instance_valid(self):
-				return
-			if target_anim and is_instance_valid(target_anim) and is_instance_valid(target_sprite):
-				target_anim.play_hit()
-				# Spawn physical hit effect
-				EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, target_sprite.global_position)
-				# Knockback: enemies knocked left (-1), party members knocked right (+1)
-				var kb_dir = -1.0 if enemy_sprite_nodes.has(target_sprite) else 1.0
-				_apply_hit_knockback(target_sprite, kb_dir)
-				_apply_hit_flash(target_sprite)
-		)
+		get_tree().create_timer(0.1).timeout.connect(_delayed_play_hit_fx.bind(target_anim, target_sprite))
 	)
 
 	# Wait for attack animation
@@ -4279,10 +4281,7 @@ func _play_staggered_victory_animations() -> void:
 		if delay <= 0.0:
 			animator.play_victory()
 		else:
-			get_tree().create_timer(delay).timeout.connect(func():
-				if is_instance_valid(animator):
-					animator.play_victory()
-			)
+			get_tree().create_timer(delay).timeout.connect(_delayed_play_victory.bind(animator))
 
 	# Background brightening on victory (brief warm flash)
 	if _battle_background and is_instance_valid(_battle_background):
