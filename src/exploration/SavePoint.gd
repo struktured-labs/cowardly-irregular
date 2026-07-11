@@ -134,6 +134,10 @@ func _on_body_exited(body: Node2D) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	# Cutscene/dialogue lock: this handler grabs ui_accept directly, so without the gate the A-press that advances dialogue ALSO hit the crystal ("Cannot save mid-cutscene" spam — struktured 2026-07-11, second report).
+	var ilm = get_tree().root.get_node_or_null("InputLockManager") if is_inside_tree() else null
+	if ilm and ilm.is_locked():
+		return
 	if _player_in_zone and not _is_saving and event.is_action_pressed("ui_accept"):
 		_is_saving = true
 		SoundManager.play_ui("save_crystal_activate")

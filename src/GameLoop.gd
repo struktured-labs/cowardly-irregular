@@ -1351,6 +1351,17 @@ func _on_title_new_game() -> void:
 	AutobattleSystem.autobattle_enabled.clear()
 	AutobattleSystem.cancel_all_next_turn = false
 	BattleManager.is_autobattle_enabled = false
+	# Per-RUN gameplay settings reset (struktured 2026-07-11: "started a new
+	# game, battle speed was 16x, encounter rate 50%... prob not the right
+	# choice"). System settings (volumes, text, accessibility) persist;
+	# run-pacing choices start fresh.
+	if GameState:
+		GameState.default_battle_speed = 0.25
+		GameState.encounter_rate_multiplier = 1.0
+	var BattleSceneScript = load("res://src/battle/BattleScene.gd")
+	BattleSceneScript._battle_speed_index = 0
+	if SaveSystem and SaveSystem.has_method("save_settings"):
+		SaveSystem.save_settings()
 	# Wipe persistent GameState so a fresh playthrough doesn't inherit
 	# story flags / unlocked worlds / meta features from the prior session.
 	# Bug fix (2026-04-30): pre-fix, New Game on a save where you'd beaten

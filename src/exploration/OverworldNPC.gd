@@ -1001,7 +1001,15 @@ func _start_dialogue() -> void:
 	# the showcase W1 NPCs (dynamic = true with authored persona) take this
 	# branch; every other NPC continues through the static dialogue_lines
 	# pipeline below.
-	if dynamic and persona != "" and _llm_conversation_available():
+	# Story beats outrank freeform chat: Theron's first talk arms the
+	# chapter1 cutscene, and the LLM prompt hijacked it (struktured
+	# 2026-07-11). With a story cutscene pending, fall through to static
+	# lines so dialogue_ended → check_pending_cutscene plays the beat.
+	var gl_story = get_node_or_null("/root/GameLoop")
+	var story_pending: bool = gl_story != null \
+		and gl_story.has_method("_get_pending_story_cutscene") \
+		and str(gl_story._get_pending_story_cutscene()) != ""
+	if dynamic and persona != "" and not story_pending and _llm_conversation_available():
 		var player := _get_nearby_player()
 		await _run_dynamic_conversation(player)
 		_end_dialogue()

@@ -46,8 +46,9 @@ func test_results_display_renders_and_sizes_the_gain_line() -> void:
 		"the results row must read stat_gains")
 	assert_true(src.contains("%s +%d"),
 		"gains must render as 'STAT +N'")
-	# The panel height must grow for the extra line or it clips.
+	# Compact layout (2026-07-11): gains ride the single level-up line;
+	# the height budget is one 20px line per leveled character.
 	var h_idx: int = src.find("char_height_total += 52")
 	var h_window: String = src.substr(h_idx, 300)
-	assert_true(h_window.contains("stat_gains") and h_window.contains("+= 18"),
-		"panel height must account for the stat-gain line so it doesn't clip")
+	assert_true(h_window.contains("+= 20"),
+		"panel height must budget the compact level-up line")

@@ -21,10 +21,10 @@ func test_results_display_renders_and_sizes_learned_line() -> void:
 	var src: String = FileAccess.get_file_as_string("res://src/battle/BattleResultsDisplay.gd")
 	assert_true(src.contains("cr.get(\"learned_abilities\", [])"),
 		"the results row must read learned_abilities")
-	assert_true(src.contains("Learned:"),
-		"learned abilities must render as a 'Learned:' line")
-	assert_gt(src.find("char_height_total += 18  # learned-abilities line"), -1,
-		"panel height must account for the learned-abilities line so it doesn't clip")
+	assert_true(src.contains("✦ %s") and src.contains("learned_names"),
+		"learned abilities must render inline on the compact level-up line (2026-07-11 too-vertical fix)")
+	assert_gt(src.find("char_height_total += 20  # single compact level-up line"), -1,
+		"panel height must budget the compact level-up line")
 
 
 func test_ability_learned_signal_collection_pattern() -> void:
