@@ -77,6 +77,10 @@ func set_patrol(points: Array[Vector2]) -> void:
 func _process(delta: float) -> void:
 	if _patrol_points.size() < 2:
 		return
+	# Freeze while dialogue/cutscenes hold the input lock — a patroller strolling through the staged party mid-cutscene reads as a bug (struktured playtest 2026-07-11).
+	var ilm = get_tree().root.get_node_or_null("InputLockManager") if is_inside_tree() else null
+	if ilm and ilm.is_locked():
+		return
 
 	if _paused:
 		_pause_timer -= delta

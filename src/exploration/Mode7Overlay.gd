@@ -501,6 +501,8 @@ func _update_billboards() -> void:
 
 
 func cleanup() -> void:
+	# Static leak: stale true gave VILLAGES the 2x horizontal boost after visiting the overworld — movement overshoot made doors near-impossible to hit (struktured playtest 2026-07-11).
+	is_active = false
 	camera_angle = 0.0
 	_current_rotation = 0.0
 	# Free billboard sprites

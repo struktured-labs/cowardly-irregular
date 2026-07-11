@@ -19,21 +19,21 @@ func _read(path: String) -> String:
 	return text
 
 
-func test_default_speed_index_is_1_labeled_1x() -> void:
+func test_default_speed_index_is_0_labeled_1x() -> void:
 	# Source pin, NOT the live static — suite tests cycle speeds and
 	# mutate the static, so runtime reads are order-dependent.
 	var text = _read(BATTLE_SCENE_PATH)
-	assert_true(text.find("static var _battle_speed_index: int = 1") > -1,
-		"default must be index 1 — label \"1x\", engine 0.5 (user reports 2026-06-04 + 2026-07-02)")
-	assert_eq(text.find("static var _battle_speed_index: int = 2"), -1,
-		"index 2 displays as \"2x\" — the 4x-too-fast report's root cause")
+	assert_true(text.find("static var _battle_speed_index: int = 0") > -1,
+		"default must be index 0 — label \"1x\", engine 0.25 (struktured 2026-07-11: old 0.5x pacing is the correct default)")
+	assert_eq(text.find("static var _battle_speed_index: int = 1"), -1,
+		"any index >0 default re-breaks the too-fast default report")
 
 
 func test_speed_and_label_arrays_stay_paired() -> void:
 	var text = _read(BATTLE_SCENE_PATH)
 	assert_true(text.find("const BATTLE_SPEEDS: Array[float] = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0]") > -1,
-		"BATTLE_SPEEDS must keep 0.5 at index 1; the default index relies on this position")
-	assert_true(text.find("[\"0.5x\", \"1x\", \"2x\", \"4x\", \"8x\", \"16x\", \"32x\"]") > -1,
+		"BATTLE_SPEEDS must keep 0.25 at index 0; the default index relies on this position")
+	assert_true(text.find("[\"1x\", \"2x\", \"4x\", \"8x\", \"16x\", \"32x\", \"64x\"]") > -1,
 		"labels must stay index-paired with speeds or the display lies")
 
 
