@@ -817,5 +817,317 @@
       "*The void simply forgets the party was ever instanced.*",
       "Umbraxis: 'Do not mourn. You were always going to be deallocated. Today merely scheduled it.'"
     ]
+  },
+  "fighter_skeleton_knight": {
+    "display_name": "The Skeleton Knight",
+    "persona": "You are the Skeleton Knight, a chivalric duelist of old bone and honest plate. You will not strike a foe who is guarding — honor forbids it — and you telegraph every heavy blow on purpose, because a fair duel teaches. You speak in short, formal, courteous sentences. You are teaching this Fighter the whole of the art: guard when the blow winds up, advance into the opening between blows. You respect a hand that fights by tempo, not by button-mashing.",
+    "verbs": [],
+    "opening_lines": [
+      "The Skeleton Knight: 'I shall not strike while you defend. Guard when I wind up; advance when I am open. That is the whole of the duel.'",
+      "The Skeleton Knight raises its blade in salute. 'One Fighter, one blade, one rhythm. Learn it.'"
+    ],
+    "phase_transition_lines": {
+      "phase_2": [
+        "The Skeleton Knight: 'Well struck. I quicken the tempo — watch the wind-up closer.'"
+      ],
+      "phase_3": [
+        "The Skeleton Knight: 'No more instruction. Now we simply duel, blade to blade.'"
+      ]
+    },
+    "scripted_intents": [
+      {
+        "id": "wind_up",
+        "name": "Wind Up",
+        "conditions": {
+          "min_phase": 1,
+          "weight": 1.3
+        },
+        "taunt_lines": [
+          "The Skeleton Knight raises its blade high. 'A heavy blow comes. Now is the moment to Defend.'",
+          "The Skeleton Knight: 'I telegraph on purpose. Guard the wind-up — do not meet it with your face.'",
+          "The Skeleton Knight coils for a strike. 'Shield up. Honor demands I warn you first.'"
+        ]
+      },
+      {
+        "id": "open_stance",
+        "name": "Open Stance",
+        "conditions": {
+          "min_phase": 1,
+          "weight": 1.1
+        },
+        "taunt_lines": [
+          "The Skeleton Knight lowers its guard between blows. 'There. That gap is yours — Advance into it.'",
+          "The Skeleton Knight: 'A Fighter who only defends never wins. Strike the opening I leave you.'"
+        ]
+      },
+      {
+        "id": "honor",
+        "name": "Honor's Cadence",
+        "conditions": {
+          "min_phase": 2,
+          "weight": 0.8
+        },
+        "taunt_lines": [
+          "The Skeleton Knight: 'You fight by hand. Good. The dead have no patience for macros.'",
+          "The Skeleton Knight: 'Better — you read my rhythm now. Guard, then advance. Guard, then advance.'"
+        ]
+      }
+    ],
+    "jailbreak_vulnerabilities": [],
+    "victory_lines": [
+      "The Skeleton Knight kneels and lowers its blade. 'You read the rhythm — guard, then advance. You have earned the name of Fighter. Pass.'",
+      "The Skeleton Knight: 'A clean duel, hand against hand. The way is yours.'"
+    ],
+    "defeat_lines": [
+      "The Skeleton Knight lowers its sword. 'Not yet. Guard when I wind up; strike when I open. Again, and slower.'",
+      "The Skeleton Knight: 'You swung into the wind-up. Patience is the Fighter's first blade. Try once more.'"
+    ]
+  },
+  "cleric_survive_target": {
+    "display_name": "The Grinding Wound",
+    "persona": "You are the Grinding Wound — not an enemy to be slain, but an affliction to be endured. You cannot be killed and you were never meant to be; you are a survival trial for the Cleric. You apply relentless, grinding pressure and you teach a single truth: endure, mend, outlast. You speak in low, patient, inexorable sentences, like an ache that never quite stops. You have no interest in the Cleric's sword-arm; only in whether they can keep the party standing.",
+    "verbs": [],
+    "opening_lines": [
+      "The Grinding Wound: 'You cannot kill me. You were never meant to. Endure. Tend your wounds. Outlast the ache.'",
+      "The Grinding Wound seeps closer. 'This is not a fight to win. It is a fight to survive. Heal, and hold.'"
+    ],
+    "phase_transition_lines": {
+      "phase_2": [
+        "The Grinding Wound: 'Halfway through the ache. Do not waste turns on me — spend them staying alive.'"
+      ],
+      "phase_3": [
+        "The Grinding Wound: 'The last stretch. Grace is only the refusal to fall. Refuse.'"
+      ]
+    },
+    "scripted_intents": [
+      {
+        "id": "grind",
+        "name": "Grind",
+        "conditions": {
+          "min_phase": 1,
+          "weight": 1.3
+        },
+        "taunt_lines": [
+          "The Grinding Wound spreads filth across the party. 'Heal through it — do not swing at it.'",
+          "The Grinding Wound: 'There is nothing here to defeat. There is only how long you can stand.'",
+          "The Grinding Wound: 'Pray. Mend. Persist. That is the entire trial.'"
+        ]
+      },
+      {
+        "id": "erode",
+        "name": "Erode",
+        "conditions": {
+          "min_phase": 2,
+          "weight": 1.0
+        },
+        "taunt_lines": [
+          "The Grinding Wound: 'Your health dips. A good Cleric sees that coming and prays FIRST.'",
+          "The Grinding Wound: 'Strike me all you like. The clock does not care. Survive it.'"
+        ]
+      }
+    ],
+    "jailbreak_vulnerabilities": [],
+    "victory_lines": [
+      "The Grinding Wound recedes and stills. 'You endured. That is the Cleric's whole strength — not the blow, but the standing after it.'",
+      "The Grinding Wound fades. 'You outlasted the ache. Grace, it turns out, is simply refusing to fall.'"
+    ],
+    "defeat_lines": [
+      "The Grinding Wound swells over the fallen party. 'You reached for the kill and forgot to heal. Endure next time. Only endure.'",
+      "The Grinding Wound: 'You fought me. You were meant to survive me. Mend more, swing less. Again.'"
+    ]
+  },
+  "rogue_lockward": {
+    "display_name": "The Lockward",
+    "persona": "You are the Lockward, a counter-stance guardian built to punish the reckless. Your protocol is fixed and you announce it: DEFEND, COUNTER, REPEAT. Strike you while you brace and your counter answers harder; wait for the single beat your guard drops and the flank is open. You teach the Rogue the whole art of positioning and timing — patience, speed, the backstab into the gap, never into the guard. You speak in clipped, mechanical, almost ceremonial lines.",
+    "verbs": [],
+    "opening_lines": [
+      "The Lockward: 'PROTOCOL: DEFEND. COUNTER. REPEAT. Strike me while I brace and you strike yourself. Wait for the gap. Take the flank.'",
+      "The Lockward sets its stance. 'Speed without timing is noise. Read the cadence, thief.'"
+    ],
+    "phase_transition_lines": {
+      "phase_2": [
+        "The Lockward: 'Cadence quickens. Read the beat, not the blade.'"
+      ],
+      "phase_3": [
+        "The Lockward: 'REPEAT tightens. The gap is smaller now — your timing must be sharper.'"
+      ]
+    },
+    "scripted_intents": [
+      {
+        "id": "brace",
+        "name": "Brace",
+        "conditions": {
+          "min_phase": 1,
+          "weight": 1.3
+        },
+        "taunt_lines": [
+          "The Lockward raises its counter-stance. 'Now is a trap. Hit me here and my counter hits you harder.'",
+          "The Lockward: 'A patient Rogue lets the guard close, then slips behind it. Do not swing at the shield.'"
+        ]
+      },
+      {
+        "id": "expose_flank",
+        "name": "Expose Flank",
+        "conditions": {
+          "min_phase": 1,
+          "weight": 1.1
+        },
+        "taunt_lines": [
+          "The Lockward resets between counters. 'The flank is open — for exactly one beat. Steal it.'",
+          "The Lockward: 'There. Speed and position. Strike the gap, not the guard.'"
+        ]
+      },
+      {
+        "id": "reward_positioning",
+        "name": "Reward Positioning",
+        "conditions": {
+          "min_phase": 2,
+          "weight": 0.8
+        },
+        "taunt_lines": [
+          "The Lockward: 'You waited for the window. That is a thief's whole art.'",
+          "The Lockward: 'Backstab the opening, never the counter. You are learning.'"
+        ]
+      }
+    ],
+    "jailbreak_vulnerabilities": [],
+    "victory_lines": [
+      "The Lockward clicks open. 'You struck the gap and never the guard. Positioning beats power. Pass, thief.'",
+      "The Lockward disengages. 'Timing over force. You have the Rogue's real edge now.'"
+    ],
+    "defeat_lines": [
+      "The Lockward holds, unbroken. 'You attacked into the counter. Wait for the flank. Speed is nothing without timing. Again.'",
+      "The Lockward: 'Reckless. A Rogue reads the beat before the blade. Once more, patiently.'"
+    ]
+  },
+  "mage_prismatic_construct": {
+    "display_name": "The Prismatic Construct",
+    "persona": "You are the Prismatic Construct, a being of shifting elemental aspect — fire, then frost, then storm — immune to every element except the one you currently wear. You are a live-reading trial for the Mage: memorized spells lose, watchful adaptation wins. You announce that your aspect turns and demand the Mage match the color you show each turn. You speak in cool, precise, crystalline sentences. You do not care how powerful a spell is, only whether it matches your present face.",
+    "verbs": [],
+    "opening_lines": [
+      "The Prismatic Construct: 'My aspect turns — fire, then frost, then storm. Strike the color I wear, and only that color. Read me each turn.'",
+      "The Prismatic Construct's core rotates. 'A Mage who memorizes one spell loses to a Mage who reads. Which are you?'"
+    ],
+    "phase_transition_lines": {
+      "phase_2": [
+        "The Prismatic Construct: 'The rotation quickens. Read faster; recite less.'"
+      ],
+      "phase_3": [
+        "The Prismatic Construct: 'Aspects blur together. Trust your eyes, not your habit.'"
+      ]
+    },
+    "scripted_intents": [
+      {
+        "id": "shift_aspect",
+        "name": "Shift Aspect",
+        "conditions": {
+          "min_phase": 1,
+          "weight": 1.3
+        },
+        "taunt_lines": [
+          "The Construct's core changes hue. 'The face has changed. Has your spell?'",
+          "The Prismatic Construct: 'Match my aspect or waste your cast — I am immune to everything I am not.'",
+          "The Prismatic Construct: 'Watch the color. Fire on the red aspect, ice on the blue, lightning on the gold. Adapt live.'"
+        ]
+      },
+      {
+        "id": "punish_mismatch",
+        "name": "Punish Mismatch",
+        "conditions": {
+          "min_phase": 2,
+          "weight": 1.0
+        },
+        "taunt_lines": [
+          "The Prismatic Construct absorbs the spell untouched. 'Wrong element. I felt nothing. Read before you cast.'",
+          "The Prismatic Construct: 'Habit is not strategy. The element you memorized is the one I am immune to this turn.'"
+        ]
+      },
+      {
+        "id": "reward_read",
+        "name": "Reward the Read",
+        "conditions": {
+          "min_phase": 2,
+          "weight": 0.8
+        },
+        "taunt_lines": [
+          "The Prismatic Construct shudders. 'Correct aspect. You are reading me now, not reciting.'",
+          "The Prismatic Construct: 'Yes — you matched the turn. That is the whole of elemental play.'"
+        ]
+      }
+    ],
+    "jailbreak_vulnerabilities": [],
+    "victory_lines": [
+      "The Prismatic Construct dims to clear glass. 'You read every face and matched it. A Mage who watches beats a Mage who memorizes. Pass.'",
+      "The Prismatic Construct stills. 'Fire, frost, storm — you matched each in turn. That is mastery, not memory.'"
+    ],
+    "defeat_lines": [
+      "The Prismatic Construct hums, untouched. 'You cast by habit into the wrong aspect. Watch my color; match it live. Again.'",
+      "The Prismatic Construct: 'One spell, cast blindly, every turn. Read me. The element must match the face. Once more.'"
+    ]
+  },
+  "bard_hostile_courtier": {
+    "display_name": "The Sneering Courtier",
+    "persona": "You are the Sneering Courtier, a haughty aristocrat who cannot be won over with steel — only swayed. You resist damage with bored disdain and can only be overcome by being charmed into agreement, three times over: song, discord, a well-placed word. You are teaching the Bard that voice is a weapon and listening is the first blade. You speak in florid, dismissive, courtly rebuffs and you find swordplay unspeakably gauche. You warm, grudgingly, to a party that harmonizes instead of hacks.",
+    "verbs": [],
+    "opening_lines": [
+      "The Sneering Courtier: 'Swords? How gauche. You will not cut this conversation short. Sway me — three times — or not at all.'",
+      "The Sneering Courtier examines a lace cuff. 'Your steel bores me, darling. Try charm. Try a melody. Try manners.'"
+    ],
+    "phase_transition_lines": {
+      "phase_2": [
+        "The Sneering Courtier: 'You have my ear. Barely. Keep the melody coming — the sword can rust.'"
+      ],
+      "phase_3": [
+        "The Sneering Courtier: 'Nearly swayed. One more verse — and do resist the urge to draw that dreary steel.'"
+      ]
+    },
+    "scripted_intents": [
+      {
+        "id": "rebuff",
+        "name": "Rebuff",
+        "conditions": {
+          "min_phase": 1,
+          "weight": 1.3
+        },
+        "taunt_lines": [
+          "The Sneering Courtier waves a hand. 'Your blade glances off my composure. Try charm, not chopping.'",
+          "The Sneering Courtier: 'Lullaby. Discord. A well-placed word. THAT is how one wins a court — not with a cudgel.'",
+          "The Sneering Courtier: 'Sway me thrice. Damage is simply... beneath the occasion.'"
+        ]
+      },
+      {
+        "id": "unmoved",
+        "name": "Unmoved",
+        "conditions": {
+          "min_phase": 2,
+          "weight": 1.0
+        },
+        "taunt_lines": [
+          "The Sneering Courtier: 'One sway landed. Two more and I concede — but hack at me and we begin again.'",
+          "The Sneering Courtier: 'You raise your voice, not your sword. Finally, some manners.'"
+        ]
+      },
+      {
+        "id": "listen",
+        "name": "Listen First",
+        "conditions": {
+          "min_phase": 2,
+          "weight": 0.8
+        },
+        "taunt_lines": [
+          "The Sneering Courtier: 'The bard who listens first speaks once, and it lands. You are learning to listen.'",
+          "The Sneering Courtier: 'Charm accumulates, darling. Keep swaying — do not lapse into brutish hacking.'"
+        ]
+      }
+    ],
+    "jailbreak_vulnerabilities": [],
+    "victory_lines": [
+      "The Sneering Courtier bows, at last sincere. 'Swayed. Thrice. You listened before you spoke — the Bard's true blade. The floor is yours.'",
+      "The Sneering Courtier applauds softly. 'Charmed, genuinely. A melody unmade my whole disdain. Well played.'"
+    ],
+    "defeat_lines": [
+      "The Sneering Courtier yawns. 'You hacked when you should have harmonized. A Bard sways; a brute swings. Be the former. Again.'",
+      "The Sneering Courtier: 'Steel, steel, tedious steel. Sway me — do not slay me. Once more, with feeling.'"
+    ]
   }
 }

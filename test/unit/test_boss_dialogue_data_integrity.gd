@@ -50,6 +50,14 @@ const _REQUIRED_WIDENED_TAGS: Array[String] = [
 	"focus_healer", "defense_boost", "rotate_aggro",
 ]
 
+# 5 spotlight-duel minibosses — teach-the-kit taunt entries, keyed by monster_type
+# so BattleManager._update_boss_dialogue_phase fires them. NOT persuade bosses:
+# empty verbs (suppresses the 'Address' menu action) + empty jailbreak_vulnerabilities.
+const _MINIBOSSES: Array[String] = [
+	"fighter_skeleton_knight", "cleric_survive_target", "rogue_lockward",
+	"mage_prismatic_construct", "bard_hostile_courtier",
+]
+
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -223,3 +231,58 @@ func test_mordaine_covers_all_six_widened_tags() -> void:
 			"focus_healer", "defense_boost", "rotate_aggro"]:
 		assert_true(tag in ids,
 			"chancellor_mordaine.scripted_intents must include '%s'" % tag)
+
+
+# ── Spotlight-duel miniboss coverage ─────────────────────────────────────────
+
+func test_all_minibosses_present() -> void:
+	var data: Dictionary = _load_data()
+	for mid in _MINIBOSSES:
+		assert_true(data.has(mid), "boss_dialogue.json missing spotlight miniboss '%s'" % mid)
+
+
+func test_minibosses_are_teach_not_persuade() -> void:
+	# verbs:[] suppresses the 'Address the Boss' battle action (BattleCommandMenu
+	# gate needs non-empty get_verbs); jailbreak_vulnerabilities:[] means no
+	# persuade path. Spotlight duels teach the kit — they are not talked down.
+	var data: Dictionary = _load_data()
+	for mid in _MINIBOSSES:
+		if not data.has(mid):
+			continue
+		var entry: Dictionary = data[mid]
+		var verbs: Array = entry.get("verbs", [])
+		assert_eq(verbs.size(), 0, "miniboss '%s' must have empty verbs (no Address action)" % mid)
+		var vulns: Array = entry.get("jailbreak_vulnerabilities", [])
+		assert_eq(vulns.size(), 0, "miniboss '%s' must have empty jailbreak_vulnerabilities (teach-not-persuade)" % mid)
+
+
+func test_minibosses_have_scripted_intents_with_taunts() -> void:
+	var data: Dictionary = _load_data()
+	for mid in _MINIBOSSES:
+		if not data.has(mid):
+			continue
+		var intents: Array = data[mid].get("scripted_intents", [])
+		assert_gt(intents.size(), 0, "miniboss '%s' must author at least one scripted_intent (the taunt-as-teach hook)" % mid)
+		for it in intents:
+			var iid: String = str((it as Dictionary).get("id", "?"))
+			var taunts: Array = (it as Dictionary).get("taunt_lines", [])
+			assert_gt(taunts.size(), 0, "miniboss '%s' intent '%s' has no taunt_lines" % [mid, iid])
+
+
+func test_prismatic_construct_taunts_teach_the_weakness_read() -> void:
+	# The mage duel's whole lesson is reading the live elemental aspect; its
+	# taunts must surface that cue diegetically (not a generic gloat).
+	var data: Dictionary = _load_data()
+	var pc: Dictionary = data.get("mage_prismatic_construct", {})
+	var blob: String = ""
+	for line in pc.get("opening_lines", []):
+		blob += str(line).to_lower() + " "
+	for it in pc.get("scripted_intents", []):
+		for t in (it as Dictionary).get("taunt_lines", []):
+			blob += str(t).to_lower() + " "
+	var cue_hit := false
+	for cue in ["fire", "ice", "frost", "lightning", "storm", "aspect", "color", "element"]:
+		if blob.find(cue) != -1:
+			cue_hit = true
+			break
+	assert_true(cue_hit, "mage_prismatic_construct taunts must teach the read-the-weakness cue (fire/ice/lightning/aspect/color)")
