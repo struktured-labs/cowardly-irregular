@@ -14,10 +14,14 @@ const FATAL = /RuntimeError|abort\(|out of memory|failed to (load|instantiate|fe
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 let booted = false;
+let saved = false;
+let loaded = false;
 const errors = [];
 page.on('console', (msg) => {
   const t = msg.text();
   if (t.includes('Godot Engine v')) booted = true;
+  if (t.includes('Game saved to slot')) saved = true;
+  if (t.includes('Game loaded from slot')) loaded = true;
   if (msg.type() === 'error' && FATAL.test(t)) errors.push('console: ' + t.slice(0, 300));
 });
 page.on('pageerror', (e) => errors.push('pageerror: ' + String(e).slice(0, 300)));
@@ -50,6 +54,42 @@ if (booted && errors.length === 0) {
   await page.waitForTimeout(2500);
   await page.screenshot({ path: 'tmp/web_smoke_menu.png' });
 }
+
+// Stage 4: save → reload → Continue. THE web-only stakes path: user:// on
+// web is IndexedDB with async flush — if the flush never lands, players
+// lose their saves on tab close and no desktop test can catch it.
+// Menu is open from stage 3 with the cursor on row 0; Save is row 15.
+if (booted && errors.length === 0) {
+  for (let i = 0; i < 15; i++) {
+    await page.keyboard.press('ArrowDown');
+    await page.waitForTimeout(120);
+  }
+  await page.keyboard.press('Enter');        // open the save screen
+  await page.waitForTimeout(1500);
+  await page.keyboard.press('Enter');        // save to slot 1 (empty, no confirm)
+  await page.waitForTimeout(4000);           // write + IndexedDB syncfs window
+  await page.screenshot({ path: 'tmp/web_smoke_save.png' });
+  if (!saved) errors.push('stage4: no "Game saved to slot" console line — menu row order changed or save was refused');
+}
+if (booted && errors.length === 0 && saved) {
+  booted = false;
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  const t0 = Date.now();
+  while (!booted && errors.length === 0 && Date.now() - t0 < BOOT_BUDGET_MS) {
+    await page.waitForTimeout(500);
+  }
+  if (booted) {
+    await page.waitForTimeout(5000);
+    await page.keyboard.press('Enter');      // Press Start
+    await page.waitForTimeout(2000);
+    await page.keyboard.press('Enter');      // first row = Continue when a save exists
+    await page.waitForTimeout(9000);
+    await page.screenshot({ path: 'tmp/web_smoke_resume.png' });
+    if (!loaded) errors.push('stage4: save did NOT survive the page reload (no "Game loaded from slot" after Continue) — IndexedDB persistence is broken');
+  } else if (errors.length === 0) {
+    errors.push('stage4: engine never re-booted after page reload');
+  }
+}
 await browser.close();
 
 if (errors.length) {
@@ -61,4 +101,4 @@ if (!booted) {
   console.log('[WEB-SMOKE] FAIL — engine banner never appeared within ' + BOOT_BUDGET_MS + 'ms');
   process.exit(2);
 }
-console.log('[WEB-SMOKE] PASS — booted + gameplay + menu, no fatals (tmp/web_smoke{,_ingame,_menu}.png)');
+console.log('[WEB-SMOKE] PASS — boot + gameplay + menu + save/reload/continue, no fatals (tmp/web_smoke{,_ingame,_menu,_save,_resume}.png)');
