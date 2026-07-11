@@ -400,7 +400,7 @@ def build_batch_queue(world_arg: str | int | None, shared: bool) -> list[dict]:
 def convert_to_ogg(src: Path, dest: Path) -> None:
     print(f"  Converting to OGG: {dest.name}")
     result = subprocess.run(
-        ["ffmpeg", "-y", "-i", str(src), "-c:a", "libvorbis", "-q:a", "6", str(dest)],
+        ["ffmpeg", "-y", "-i", str(src), "-ac", "1", "-c:a", "libvorbis", "-b:a", "96k", str(dest)],
         capture_output=True, text=True,
     )
     if result.returncode != 0:
