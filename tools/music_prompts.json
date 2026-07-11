@@ -29,6 +29,31 @@
           "title_template": "The Usurper's Shadow",
           "style": "SNES boss battle, intense, dramatic, pipe organ, aggressive drums, minor key",
           "prompt": "Epic boss confrontation, towering enemy, high stakes battle, intense pipe organ and aggressive percussion, dramatic key changes, sense of overwhelming power and desperate resistance"
+        },
+        "spotlight_fighter_skeleton_knight": {
+          "title_template": "Bones Remember Discipline",
+          "style": "SNES 16-bit orchestral martial, funeral-march tempo 80 BPM, taiko + timpani, brass stabs, low choir, disciplined 4/4, minor key, no melodic drift",
+          "prompt": "Chivalric bone-knight duel. Every beat is a clock the player is beating — no wandering harmony, no fills, just steady percussion carrying tempo and brass stabs punctuating the advance/defend rhythm. Plate armor rattles between hits. Rewards patience: the music itself is a discipline check."
+        },
+        "spotlight_cleric_survive_target": {
+          "title_template": "Grace Under Ordeal",
+          "style": "SNES 16-bit sacred choral, slow 60 BPM, sustained pad, choir, subtle bell pulse, slow melodic descent then rise, minor-to-major modal ambiguity, hymnic, contemplative",
+          "prompt": "A test of endurance framed as prayer. The bell pulse is what the player is beating — every second between chimes is a heal earned. Sustained pads and slow choir descend, then rise. No violence in the melody, only patience. The enemy's presence is felt as pressure, not aggression."
+        },
+        "spotlight_rogue_lockward": {
+          "title_template": "Ledger of Traps",
+          "style": "SNES 16-bit noir-jazz cat-and-mouse, 110 BPM syncopated, pizzicato strings, muted trumpet, brushed snare, off-beat hi-hat, sparse arrangement with long silences, minor key",
+          "prompt": "A locked ward guarding hoarded gold. Syncopated snare and off-beat plucks with SILENCES between hits telegraphing positioning windows. Muted trumpet phrases sparse and taunting. Every rest is an opportunity, every fill is a trap closing. Rewards reading the pattern."
+        },
+        "spotlight_mage_prismatic_construct": {
+          "title_template": "Kaleidoscope, Turning",
+          "style": "SNES 16-bit prismatic elemental arpeggio, 120 BPM, three-phase 8-bar cycle: fire (warm bass + brass shimmer) → ice (glassy pad + bell) → lightning (sizzling arp + snare rolls), crystalline plucks throughout, kaleidoscopic register shifts",
+          "prompt": "A prismatic construct rotating through elemental phases. The arpeggio itself carries the fire/ice/lightning rotation, cycling color and register every 8 bars. The music tells the player which element to cast — a listening mage can read the fight. Warm bass for fire, glassy pad for ice, sizzling arp for lightning. The cycle IS the mechanic, made audible."
+        },
+        "spotlight_bard_hostile_courtier": {
+          "title_template": "The Courtier Who Wouldn't Listen (Yet)",
+          "style": "SNES 16-bit baroque courtly duet, 100 BPM, solo lyre + wordless vocal fragment (courtier's voice), harpsichord, minimal percussion, mode-shifting from proud major to warmer defeated minor across the track",
+          "prompt": "A duet between the bard's lyre and the courtier's voice — call-and-response, two voices trading lines. The fight IS the conversation. When the courtier's vocal line drops out and only the lyre continues, THAT is the debuff landing — the listener HEARS the fight resolving. Harpsichord fills the space between exchanges. Mode shifts from proud baroque major to something warmer as the courtier begins to listen. A musical conversation, not a battle."
         }
       }
     },

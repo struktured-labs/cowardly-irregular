@@ -4071,6 +4071,13 @@ func play_area_music(area_type: String) -> void:
 	if _current_area == area_type and _music_playing:
 		return  # Already playing
 
+	# Interior sub-area keys inherit the current (village) bed when their track
+	# is absent — checked BEFORE stop_music so an unauthored room never goes silent.
+	if area_type.begins_with("interior_") and _music_playing:
+		_load_music_manifest()
+		if _resolve_interior_track(area_type) == "":
+			return
+
 	_current_area = area_type
 	_current_world_suffix = _get_current_world_suffix()
 	_pending_music_area = area_type
@@ -4083,6 +4090,10 @@ func _start_area_music_deferred(area_type: String) -> void:
 	"""Actually generate and start music - called deferred so scene renders first."""
 	if _pending_music_area != area_type:
 		return  # A newer area was requested before this ran; skip stale call
+
+	if area_type.begins_with("interior_"):
+		_start_interior_music(area_type)
+		return
 
 	match area_type:
 		"overworld":
@@ -4192,6 +4203,27 @@ func _start_village_world_music(world_suffix: String) -> void:
 	if _try_play_from_manifest("village_" + world_suffix):
 		return
 	_start_village_music()
+
+
+func _resolve_interior_track(key: String) -> String:
+	"""Manifest key for an interior_ sub-area: per-world variant first, then base."""
+	var variant := key + "_" + _get_current_world_suffix()
+	if _music_manifest.has(variant):
+		return variant
+	if _music_manifest.has(key):
+		return key
+	return ""
+
+
+func _start_interior_music(key: String) -> void:
+	"""Play a sub-area room track; unauthored keys fall back to this world's village bed."""
+	_load_music_manifest()
+	_music_playing = true
+	var resolved := _resolve_interior_track(key)
+	if resolved != "" and _try_play_from_manifest(resolved):
+		return
+	# Cold start only: nothing was playing to inherit, and no track authored yet.
+	_start_village_world_music(_get_current_world_suffix())
 
 
 func _start_dungeon_music(world_id: String) -> void:

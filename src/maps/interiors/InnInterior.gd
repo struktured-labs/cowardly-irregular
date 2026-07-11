@@ -80,7 +80,7 @@ func _ready() -> void:
 	_setup_controller()
 
 	if SoundManager:
-		SoundManager.play_area_music("village")
+		SoundManager.play_area_music("interior_inn")
 
 
 func _process(delta: float) -> void:
