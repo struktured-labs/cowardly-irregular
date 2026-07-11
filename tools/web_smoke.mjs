@@ -17,12 +17,20 @@ let booted = false;
 let saved = false;
 let loaded = false;
 const errors = [];
+// Non-fatal error budget: godot ERROR/SCRIPT ERROR lines that reach the JS
+// console without matching FATAL. Not gating (variance), but the summary
+// makes web-only error spam visible in every deploy log.
+const softErrors = new Map();
 page.on('console', (msg) => {
   const t = msg.text();
   if (t.includes('Godot Engine v')) booted = true;
   if (t.includes('Game saved to slot')) saved = true;
   if (t.includes('Game loaded from slot')) loaded = true;
   if (msg.type() === 'error' && FATAL.test(t)) errors.push('console: ' + t.slice(0, 300));
+  else if (/ERROR|SCRIPT ERROR|WARNING/.test(t) && !/Godot Engine|Feature/.test(t)) {
+    const key = t.slice(0, 120);
+    softErrors.set(key, (softErrors.get(key) || 0) + 1);
+  }
 });
 page.on('pageerror', (e) => errors.push('pageerror: ' + String(e).slice(0, 300)));
 
@@ -100,5 +108,13 @@ if (errors.length) {
 if (!booted) {
   console.log('[WEB-SMOKE] FAIL — engine banner never appeared within ' + BOOT_BUDGET_MS + 'ms');
   process.exit(2);
+}
+const softTotal = [...softErrors.values()].reduce((a, b) => a + b, 0);
+if (softTotal > 0) {
+  const top = [...softErrors.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
+  console.log('[WEB-SMOKE] soft-error budget: ' + softTotal + ' non-fatal console error line(s), top offenders:');
+  for (const [line, n] of top) console.log('[WEB-SMOKE]   ' + n + 'x ' + line);
+} else {
+  console.log('[WEB-SMOKE] soft-error budget: clean (0 non-fatal console errors)');
 }
 console.log('[WEB-SMOKE] PASS — boot + gameplay + menu + save/reload/continue, no fatals (tmp/web_smoke{,_ingame,_menu,_save,_resume}.png)');

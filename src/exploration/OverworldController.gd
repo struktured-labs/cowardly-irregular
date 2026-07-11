@@ -32,6 +32,11 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
 	"""Disconnect from player signals when freed"""
+	# A controller freed while paused stranded its GLOBAL lock — the player sat frozen until the 10s stale-expiry (web-smoke soft-error budget find 2026-07-11).
+	if _paused:
+		var ilm = get_tree().root.get_node_or_null("InputLockManager") if is_inside_tree() else null
+		if ilm:
+			ilm.pop_lock("exploration_paused")
 	if player and is_instance_valid(player):
 		if player.moved.is_connected(_on_player_moved):
 			player.moved.disconnect(_on_player_moved)
