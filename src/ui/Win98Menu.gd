@@ -166,6 +166,7 @@ var selected_index: int = 0
 var submenu: Win98Menu = null
 var parent_menu: Win98Menu = null
 var anchor_position: Vector2 = Vector2.ZERO
+var _character_class: String = "fighter"
 var menu_title: String = ""
 var expand_left: bool = true  # Submenus expand to the left (tree style)
 var expand_up: bool = true  # Submenus expand upward (tree style)
@@ -465,9 +466,14 @@ func _play_expand_sound() -> void:
 	SoundManager.play_ui("menu_expand")
 
 
-func _play_advance_sound() -> void:
+func _play_advance_sound(depth: int = 1) -> void:
 	"""Play sound when queueing an action (Advance mode)"""
-	SoundManager.play_battle("advance_queue")
+	# Per-job escalation ladder (struktured-approved pilot: fighter taiko tiers); jobs without a ladder key fall back to the arcade credit.
+	var key := "advance_%s_%d" % [_character_class, clampi(depth, 1, 3)]
+	if SoundManager._sfx_manifest.has(key):
+		SoundManager.play_battle(key)
+	else:
+		SoundManager.play_battle("advance_queue")
 
 
 func _play_undo_sound() -> void:
@@ -516,6 +522,7 @@ func _on_submenu_timer_timeout() -> void:
 
 func setup(title: String, items: Array, pos: Vector2, character_class: String = "fighter") -> void:
 	"""Setup the menu with items and position"""
+	_character_class = character_class
 	menu_title = title
 	menu_items = items
 	anchor_position = pos
@@ -1061,7 +1068,7 @@ func _handle_advance_input() -> void:
 	var root = _get_root_menu()
 	if root._queued_actions.size() >= root._max_queue_size - 1:
 		# At or near limit - this will be the last action, so submit
-		_play_advance_sound()  # Consistent advance sound even when auto-submitting
+		_play_advance_sound(root._queued_actions.size() + 1)  # Consistent advance sound even when auto-submitting
 		_submit_actions()
 		return
 
@@ -1113,7 +1120,7 @@ func _queue_current_action(item: Dictionary) -> void:
 		"label": item.get("label", "")
 	}
 	root._queued_actions.append(action)
-	_play_advance_sound()
+	_play_advance_sound(root._queued_actions.size())
 
 	# Update AP display to show pending cost
 	root._update_ap_label()
