@@ -12,6 +12,8 @@ var _scene  # Reference to parent BattleScene (untyped to avoid circular depende
 var _cached_alive_enemies: Array[Combatant] = []
 var _alive_enemies_cache_valid: bool = false
 static var _spotlight_logged: Dictionary = {}
+## Last reason show_win98_command_menu silent-returned (cowir-main msg 2400 diag).
+var last_silent_return_reason: String = ""
 
 
 func _init(scene) -> void:
@@ -56,7 +58,7 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 			# _scene (BattleScene) which is the natural hint host anyway.
 			if _scene and is_instance_valid(_scene):
 				TutorialHints.show(_scene, "spotlight_locked_intro")
-			# by-design state, once per PC per session — fired every selection phase before, drowning real warnings
+			last_silent_return_reason = "spotlight_locked"
 			if not _spotlight_logged.has(combatant.combatant_name):
 				_spotlight_logged[combatant.combatant_name] = true
 				print("[CMD-MENU] silent-return: spotlight-locked %s (debug_all_pcs_unlocked=%s)" % [combatant.combatant_name, str(GameState.debug_all_pcs_unlocked if GameState else "no-GS")])
@@ -65,13 +67,17 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 	# Get character's sprite position (use BattleManager.player_party for correct object identity).
 	var combatant_idx = BattleManager.player_party.find(combatant)
 	if combatant_idx < 0 or combatant_idx >= _scene.party_sprite_nodes.size():
+		last_silent_return_reason = "combatant_idx_out_of_range(idx=%d, party=%d, sprites=%d)" % [combatant_idx, BattleManager.player_party.size(), _scene.party_sprite_nodes.size()]
 		push_warning("[CMD-MENU] silent-return: %s not found in player_party (idx=%d, party_size=%d, sprite_nodes=%d)" % [combatant.combatant_name, combatant_idx, BattleManager.player_party.size(), _scene.party_sprite_nodes.size()])
 		return
 
 	var sprite = _scene.party_sprite_nodes[combatant_idx]
 	if not is_instance_valid(sprite):
+		last_silent_return_reason = "sprite_invalid(idx=%d)" % combatant_idx
 		push_warning("[CMD-MENU] silent-return: %s sprite invalid at idx %d" % [combatant.combatant_name, combatant_idx])
 		return
+
+	last_silent_return_reason = ""
 
 	var viewport_size = _scene.get_viewport_rect().size
 
