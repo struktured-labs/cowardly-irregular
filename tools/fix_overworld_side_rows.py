@@ -216,7 +216,11 @@ def fix_job(client, job: str, quality: str, hsv_match: bool = True) -> None:
     fixed = paste_rows(sheet, frames)
     if hsv_match:
         fixed = hsv_match_side_rows(fixed)
-    backup = sheet_path.with_name("overworld.pre_side_fix.png")
+    # Backups go to the game repo's gitignored tmp/, NEVER next to the
+    # shipping sheet (they've snuck into commits twice).
+    backup_dir = GAME_REPO / "tmp" / "side_fix_backups"
+    backup_dir.mkdir(parents=True, exist_ok=True)
+    backup = backup_dir / f"{job}.overworld.pre_side_fix.png"
     if not backup.exists():
         sheet.save(backup)
     fixed.save(sheet_path)
