@@ -32,6 +32,8 @@ var spawn_points: Dictionary = {}
 
 
 func _ready() -> void:
+	# Interiors are never Mode 7 — clear the static so the overworld boost cannot leak in.
+	Mode7Overlay.is_active = false
 	_init_spawn_points()
 	_setup_tilemap()
 	_setup_decorations()

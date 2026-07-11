@@ -1551,12 +1551,19 @@ func _trigger_skip() -> void:
 ## =====================
 
 func _freeze_player() -> void:
+	# Canonical gate FIRST: set_can_move relies on MapSystem.get_player(), which is null on overworld scenes — A-presses leaked to save points + NPC dialogue mid-cutscene (struktured playtest 2026-07-11).
+	var ilm = get_tree().root.get_node_or_null("InputLockManager")
+	if ilm:
+		ilm.push_lock("cutscene")
 	var player = MapSystem.get_player() if MapSystem else null
 	if player and player.has_method("set_can_move"):
 		player.set_can_move(false)
 
 
 func _unfreeze_player() -> void:
+	var ilm = get_tree().root.get_node_or_null("InputLockManager")
+	if ilm:
+		ilm.pop_lock("cutscene")
 	var player = MapSystem.get_player() if MapSystem else null
 	if player and player.has_method("set_can_move"):
 		player.set_can_move(true)

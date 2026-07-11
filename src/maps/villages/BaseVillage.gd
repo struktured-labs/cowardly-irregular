@@ -59,6 +59,8 @@ var spawn_points: Dictionary = {}
 
 
 func _ready() -> void:
+	# Villages are never Mode 7 — clear the static so the overworld boost cannot leak in.
+	Mode7Overlay.is_active = false
 	_setup_scene()
 	_generate_map()
 	_setup_transitions()
