@@ -36,15 +36,14 @@ func _read(p: String) -> String:
 
 func test_savesystem_writes_map_id_unconditionally() -> void:
 	var src := _read(SAVE_SYSTEM_PATH)
-	# Must contain the unconditional assignment BEFORE the load_map call.
+	# 2026-07-11: the legacy load_map call is GONE — it double-built the
+	# overworld on Continue (stacked Mode 7 overlays). The hand-off is now
+	# assignment-only; GameLoop owns every scene build.
 	var assign_idx: int = src.find("MapSystem.current_map_id = saved_map_id")
-	var load_idx: int = src.find("MapSystem.load_map(saved_map_id)")
 	assert_gt(assign_idx, -1,
 		"SaveSystem must write MapSystem.current_map_id directly from saved value")
-	assert_gt(load_idx, -1,
-		"SaveSystem must still call MapSystem.load_map for the 3 mapped paths")
-	assert_lt(assign_idx, load_idx,
-		"Assignment must come BEFORE load_map so its success path can overwrite (harmless) and its failure path leaves our value intact")
+	assert_eq(src.find("MapSystem.load_map(saved_map_id)"), -1,
+		"state restore must never build scenes — the legacy call double-built the overworld")
 
 
 # ── Source pin: GameLoop reads MapSystem.current_map_id after restore ─
