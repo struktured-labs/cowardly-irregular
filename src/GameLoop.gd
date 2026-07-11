@@ -799,16 +799,22 @@ func _input(event: InputEvent) -> void:
 					_toggle_autobattle_editor()
 				get_viewport().set_input_as_handled()
 		elif current_state == LoopState.EXPLORATION:
-			# Block during battle transition (encounter fired but state
-			# hasn't flipped to BATTLE yet — that flip happens after the
-			# transition await in _on_exploration_battle_triggered, so
-			# raw state-check leaves a ~0.5s window where Start would
-			# open settings UNDER the loading battle scene).
-			if InputLockManager and InputLockManager.is_locked():
+			# Escape belongs to the overworld menu (x_pressed block below).
+			# ui_menu ALSO binds it, so one press opened Settings stacked
+			# OVER the overworld menu (web-smoke stage-3 find 2026-07-11).
+			if event is InputEventKey and event.keycode == KEY_ESCAPE:
+				pass
+			else:
+				# Block during battle transition (encounter fired but state
+				# hasn't flipped to BATTLE yet — that flip happens after the
+				# transition await in _on_exploration_battle_triggered, so
+				# raw state-check leaves a ~0.5s window where Start would
+				# open settings UNDER the loading battle scene).
+				if InputLockManager and InputLockManager.is_locked():
+					get_viewport().set_input_as_handled()
+					return
+				_open_settings_menu()
 				get_viewport().set_input_as_handled()
-				return
-			_open_settings_menu()
-			get_viewport().set_input_as_handled()
 
 	# X key or gamepad X/Y button = Open overworld menu (only in exploration mode)
 	# Note: JOY_BUTTON_X=2 (Xbox X), JOY_BUTTON_Y=3 (Xbox Y) - support both for different controllers

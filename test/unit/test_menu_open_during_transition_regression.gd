@@ -48,7 +48,7 @@ func test_settings_open_still_checks_lock() -> void:
 	# first member of the family. If a future cleanup removes it, the
 	# whole sweep regresses.
 	var src := _read(GAME_LOOP_PATH)
-	var block := _body_after(src, "elif current_state == LoopState.EXPLORATION:\n\t\t\t# Block during battle transition", 800)
+	var block := _body_after(src, "elif current_state == LoopState.EXPLORATION:\n\t\t\t# Escape belongs to the overworld menu", 800)
 	assert_ne(block, "", "Start → settings transition guard from tick 15 must still be in place")
 	assert_true(block.contains("InputLockManager.is_locked()"),
 		"Start → settings must still consult InputLockManager.is_locked()")

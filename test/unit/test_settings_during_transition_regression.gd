@@ -33,7 +33,7 @@ func _block_around(text: String, anchor: String, span: int) -> String:
 func test_start_handler_checks_input_lock_before_opening_settings() -> void:
 	var src := _read(GAME_LOOP_PATH)
 	# Anchor on the EXPLORATION branch of the Start-key dispatcher.
-	var block := _block_around(src, "elif current_state == LoopState.EXPLORATION:\n\t\t\t# Block during battle transition", 800)
+	var block := _block_around(src, "elif current_state == LoopState.EXPLORATION:\n\t\t\t# Escape belongs to the overworld menu", 800)
 	assert_ne(block, "", "EXPLORATION branch must have the transition-block guard")
 	assert_true(block.contains("InputLockManager.is_locked()"),
 		"Start→settings must consult InputLockManager.is_locked() before opening")
