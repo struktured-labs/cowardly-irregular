@@ -319,3 +319,11 @@ func pause_exploration() -> void:
 	var ilm = get_tree().root.get_node_or_null("InputLockManager") if is_inside_tree() else null
 	if ilm:
 		ilm.push_lock("exploration_paused")
+
+
+func _process(_delta: float) -> void:
+	# Heartbeat while paused: push_lock refreshes the timestamp, so a menu held open >10s no longer trips the stale expiry and unfreezes the player behind the open menu (web-smoke budget find #2, 2026-07-11). Dead holders release via _exit_tree.
+	if _paused and is_inside_tree():
+		var ilm = get_tree().root.get_node_or_null("InputLockManager")
+		if ilm:
+			ilm.push_lock("exploration_paused")
