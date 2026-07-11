@@ -5,10 +5,13 @@ extends GutTest
 ## advance_<job>_<depth 1..3> when the manifest has it; every other job
 ## falls back to the arcade credit. Depth = queue size AFTER the press.
 
-func test_ladder_keys_exist_for_fighter() -> void:
+func test_ladder_assets_parked_pending_rework() -> void:
+	# struktured verdict 2026-07-11 post-listen: "needs more work, I'll
+	# think on it" — fighter tiers pulled; the ENGINE seam stays so
+	# reworked ladders wire by manifest entry alone.
 	for i in [1, 2, 3]:
-		assert_true(SoundManager._sfx_manifest.has("advance_fighter_%d" % i),
-			"fighter tier %d must be in the manifest" % i)
+		assert_false(SoundManager._sfx_manifest.has("advance_fighter_%d" % i),
+			"fighter tier %d must stay parked until the rework ships" % i)
 
 
 func test_win98_menu_wires_depth_and_fallback() -> void:
