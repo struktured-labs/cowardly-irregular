@@ -13,6 +13,7 @@ var _canvas: CanvasLayer
 var _bg: ColorRect
 var _player_dot: ColorRect
 var _dots: Array[ColorRect] = []
+var _label_rects: Array[Rect2] = []
 var _player_ref: Node2D
 var _map_width: float
 var _map_height: float
@@ -152,13 +153,39 @@ func _add_dot(world_pos: Vector2, color: Color, label_text: String = "") -> void
 	_dots.append(dot)
 
 	if label_text != "":
-		var lbl = Label.new()
-		lbl.text = label_text
-		lbl.add_theme_font_size_override("font_size", 7)
-		lbl.add_theme_color_override("font_color", color.lightened(0.3))
-		lbl.position = map_pos + Vector2(DOT_SIZE, -4)
-		lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_canvas.add_child(lbl)
+		_place_poi_label(map_pos, label_text, color)
+
+
+func _place_poi_label(map_pos: Vector2, label_text: String, color: Color) -> void:
+	# Clamp inside the panel + stack below colliding neighbors — right-edge labels (Shadow/Fire) bled past the border and cave+village pairs overlapped in the v3.33.94 web-smoke shot.
+	var est := Vector2(label_text.length() * 4.5 + 2.0, 9.0)
+	var panel := Rect2(_bg.position + Vector2(4, 4), Vector2(MAP_SIZE, MAP_SIZE))
+	var pos := map_pos + Vector2(DOT_SIZE, -4)
+	pos.x = clampf(pos.x, panel.position.x, panel.end.x - est.x)
+	pos.y = clampf(pos.y, panel.position.y, panel.end.y - est.y)
+	var guard := 0
+	while guard < 8 and _overlaps_placed_label(Rect2(pos, est)):
+		pos.y += est.y
+		if pos.y + est.y > panel.end.y:
+			pos.y = panel.position.y
+		guard += 1
+	_label_rects.append(Rect2(pos, est))
+	var lbl = Label.new()
+	lbl.text = label_text
+	lbl.add_theme_font_size_override("font_size", 7)
+	lbl.add_theme_color_override("font_color", color.lightened(0.3))
+	lbl.add_theme_constant_override("outline_size", 1)
+	lbl.add_theme_color_override("font_outline_color", Color.BLACK)
+	lbl.position = pos
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_canvas.add_child(lbl)
+
+
+func _overlaps_placed_label(r: Rect2) -> bool:
+	for placed in _label_rects:
+		if placed.intersects(r):
+			return true
+	return false
 
 
 func _world_to_minimap(world_pos: Vector2) -> Vector2:
