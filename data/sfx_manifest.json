@@ -64,6 +64,30 @@
       "prompt_influence": 0.0,
       "fallback_to": "menu_select"
     },
+    "advance_fighter_1": {
+      "file": "assets/audio/sfx/advance_fighter_1.ogg",
+      "source": "lmms_sf2_fluidr3",
+      "prompt": "Fighter advance press 1 — single small taiko set (E3), slightly distant, stops dead. Essence: stillness under pressure (hands set on the pommel). Escalating per-character advance ladder, tier 1/3. ~-24 dB mean.",
+      "duration_seconds": 0.65,
+      "prompt_influence": 0.0,
+      "fallback_to": "advance_queue"
+    },
+    "advance_fighter_2": {
+      "file": "assets/audio/sfx/advance_fighter_2.ogg",
+      "source": "lmms_sf2_fluidr3",
+      "prompt": "Fighter advance press 2 — 'set... SET' deliberate double (taiko + timpani + sub), closer and heavier, still dead-stopped. Tier 2/3. ~-15 dB mean.",
+      "duration_seconds": 0.9,
+      "prompt_influence": 0.0,
+      "fallback_to": "advance_queue"
+    },
+    "advance_fighter_3": {
+      "file": "assets/audio/sfx/advance_fighter_3.ogg",
+      "source": "lmms_sf2_fluidr3_plus_elevenlabs",
+      "prompt": "Fighter advance press 3 (full ham) — audible 3-hit rising taiko roll -> snare + stacked taiko/timpani/sub stopping DEAD + a real crash cymbal (ElevenLabs sample layered over the LMMS drums; soundfont crash was spectrally too weak, 1.6% vs 13.6% tail brilliance) ringing past the stop. Tier 3/3. ~-13 dB mean.",
+      "duration_seconds": 2.3,
+      "prompt_influence": 0.0,
+      "fallback_to": "advance_queue"
+    },
     "advance_undo": {
       "file": "assets/audio/sfx/advance_undo.ogg",
       "prompt": "Gun slide racking backward, mechanical metal slide retraction, weapon uncocking click-clack",
