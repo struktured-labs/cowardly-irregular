@@ -1437,7 +1437,7 @@ func _get_pending_story_cutscene() -> String:
 	# permanently locked into autobattle. Gating on chapter1_complete +
 	# being in harmonia_village makes the cleric unlock at the natural
 	# story moment, matching the design comment at line ~1607.
-	if flags.get("cutscene_flag_chapter1_complete", false) and not flags.get("cutscene_flag_spotlight_unlocked_cleric", false):
+	if flags.get("cutscene_flag_chapter1_complete", false) and not flags.get("cutscene_flag_spotlight_unlocked_cleric", false) and not _chaining_story_cutscene:
 		if _current_map_id == "harmonia_village":
 			return "world1_spotlight_cleric_ch1"
 	if flags.get("cutscene_flag_chapter1_complete", false) and not flags.get("cutscene_flag_chapter2_complete", false):
@@ -1457,7 +1457,7 @@ func _get_pending_story_cutscene() -> String:
 	if flags.get("cutscene_flag_chapter3_complete", false) and not flags.get("cutscene_flag_spotlight_unlocked_rogue", false):
 		if _current_map_id == "whispering_cave":
 			return "world1_spotlight_rogue_ch3"
-	if flags.get("cutscene_flag_spotlight_unlocked_rogue", false) and not flags.get("cutscene_flag_spotlight_unlocked_mage", false):
+	if flags.get("cutscene_flag_spotlight_unlocked_rogue", false) and not flags.get("cutscene_flag_spotlight_unlocked_mage", false) and not _chaining_story_cutscene:
 		if _current_map_id == "whispering_cave":
 			return "world1_spotlight_mage_ch3"
 	# Fighter spotlight — the antechamber skeleton duel (Spotlight Duels
@@ -1469,7 +1469,7 @@ func _get_pending_story_cutscene() -> String:
 	# purely the duel-completion gate, not a control unlock. Pre-fix this
 	# cutscene was authored + mapped but NO gate fired it — the exact
 	# authored-but-never-wired class the tick-97/98/99 comments describe.
-	if flags.get("cutscene_flag_spotlight_unlocked_mage", false) and not flags.get("cutscene_flag_spotlight_unlocked_fighter", false):
+	if flags.get("cutscene_flag_spotlight_unlocked_mage", false) and not flags.get("cutscene_flag_spotlight_unlocked_fighter", false) and not _chaining_story_cutscene:
 		if _current_map_id == "whispering_cave":
 			return "world1_spotlight_fighter_ch2"
 	# Rat king defeat cutscene: plays IN the cave right after victory, before chapter4.
@@ -1490,7 +1490,7 @@ func _get_pending_story_cutscene() -> String:
 	# set by world1_chapter4 (post-rat-king cutscene in overworld),
 	# so the player heading back to town for re-supply gets Bard's
 	# join cutscene next.
-	if flags.get("cutscene_flag_chapter4_complete", false) and not flags.get("cutscene_flag_spotlight_unlocked_bard", false):
+	if flags.get("cutscene_flag_chapter4_complete", false) and not flags.get("cutscene_flag_spotlight_unlocked_bard", false) and not _chaining_story_cutscene:
 		if _current_map_id == "harmonia_village":
 			return "world1_spotlight_bard_ch7"
 	# Chapters 5-9: auto-set flags — party commentary now opt-in via NPCs
@@ -1700,6 +1700,24 @@ func _get_pending_story_cutscene() -> String:
 ## Prevents back-to-back story cutscenes on same map entry
 var _cutscene_cooldown: bool = false
 
+## Live-playtest fix 2026-07-11 (intercom 2359): completing a story cutscene can satisfy the NEXT gate on the same entry (chapter3 → rogue spotlight), but the completion path's _start_exploration consumed _cutscene_cooldown and skipped the recheck — the player had to exit/re-enter the cave.
+const _STORY_CHAIN_CAP: int = 3
+var _story_chain_depth: int = 0
+## True only while the post-completion recheck runs; gates authored for cross-entry pacing (cleric/mage/fighter/bard spotlights) refuse to fire as chain targets.
+var _chaining_story_cutscene: bool = false
+
+
+## Pure decision: the cutscene to chain after finished_id, or "" (capped, same-id, or nothing pending).
+func _next_chained_story_cutscene(finished_id: String) -> String:
+	if _story_chain_depth >= _STORY_CHAIN_CAP:
+		return ""
+	_chaining_story_cutscene = true
+	var next: String = _get_pending_story_cutscene()
+	_chaining_story_cutscene = false
+	if next == finished_id:
+		return ""
+	return next
+
 ## Maps cutscene_id → GameState flag that marks it complete.
 ## Without this, _get_pending_story_cutscene returns the same id every
 ## map-enter forever (talked-to-theron + !chapter1_complete loops).
@@ -1820,6 +1838,7 @@ func _play_story_cutscene(cutscene_id: String) -> void:
 		# completing an aborted run would lock the spotlight PC forever (flag blocks the replay)
 		if _cutscene_director.has_method("last_finished_was_aborted") and _cutscene_director.last_finished_was_aborted():
 			push_warning("[GameLoop] '%s' was ABORTED — completion flag skipped; it will replay when runnable" % cutscene_id)
+			_story_chain_depth = 0
 			return
 		# Mark this story cutscene complete so it won't replay.
 		# (Bug 2026-05-20: chapter1_complete was never set, so Elder
@@ -1860,6 +1879,14 @@ func _play_story_cutscene(cutscene_id: String) -> void:
 				"Cutscene complete: %s" % cutscene_id,
 				{"cutscene_id": cutscene_id, "flag": completion_flag}
 			)
+		# Chain a newly-satisfied gate NOW — _start_exploration's own recheck is eaten by the cooldown this play just set (intercom 2359: chapter3 → rogue needed an exit/re-enter).
+		var chained: String = _next_chained_story_cutscene(cutscene_id)
+		if chained != "":
+			_story_chain_depth += 1
+			print("[CUTSCENE] chaining '%s' after '%s' (depth %d/%d)" % [chained, cutscene_id, _story_chain_depth, _STORY_CHAIN_CAP])
+			_play_story_cutscene(chained)
+			return
+		_story_chain_depth = 0
 		_start_exploration()
 	, CONNECT_ONE_SHOT)
 	_cutscene_director.play_cutscene(cutscene_id)
