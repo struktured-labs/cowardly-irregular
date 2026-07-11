@@ -86,3 +86,40 @@ func test_danger_music_switchback_is_stateless() -> void:
 	var src := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
 	assert_true("_current_music) == \"danger\"" in src,
 		"switch-back must consult SoundManager's live track, not only the per-scene flag")
+
+
+func test_select_toggles_autobattle_on_victory_screen() -> void:
+	# struktured: "should be able to disable autobattle in the victory
+	# sequence/screen... but I cant" — the Select handler had no VICTORY
+	# branch, so the press fell through silently.
+	var src := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
+	var i := src.find("BattleManager.BattleState.VICTORY:")
+	assert_gt(i, -1, "Select handler must branch on the VICTORY state")
+	var window := src.substr(i, 700)
+	assert_true("_cancel_all_autobattle()" in window and "_enable_all_autobattle()" in window,
+		"victory branch must toggle for the NEXT battle")
+
+
+func test_ticker_sits_clear_of_the_bard_slot() -> void:
+	# The widened ticker (520px centered) met the new diagonal's bottom
+	# slot (Bard, ~x680-860) — "its cutting into the bard". Ticker now
+	# ends at x<=660.
+	var src := FileAccess.get_file_as_string("res://src/battle/BattleScene.tscn")
+	var i := src.find("[node name=\"BattleLogPanel\"")
+	var window := src.substr(i, 400)
+	var right := float(window.substr(window.find("offset_right = ") + 15, 8).split("\n")[0])
+	assert_lte(640.0 + right, 660.0,
+		"ticker right edge must clear the bottom party slot (x>680)")
+
+
+func test_encounter_roll_yields_to_critical_events() -> void:
+	# An encounter fired the SAME STEP as the village-entry cutscene —
+	# battle and cutscene raced. Rolls must consult locks + pending story
+	# beats FIRST ("turn off the RE system before any critical event").
+	var src := FileAccess.get_file_as_string("res://src/exploration/OverworldController.gd")
+	var fn := src.substr(src.find("func _on_player_moved"))
+	var head := fn.substr(0, fn.find("encounter_check") if fn.find("encounter_check") > 0 else 900)
+	assert_true("is_locked()" in head,
+		"encounter roll must yield while any input lock (cutscene/transition) is held")
+	assert_true("_get_pending_story_cutscene" in head,
+		"encounter roll must yield while a story beat is pending")

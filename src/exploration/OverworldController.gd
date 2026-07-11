@@ -49,6 +49,13 @@ func _exit_tree() -> void:
 func _on_player_moved(steps: int) -> void:
 	if not encounter_enabled or _is_safe_zone or _paused:
 		return
+	# struktured 2026-07-11: the RE system must be OFF before any critical overworld event — an encounter roll raced the village-entry cutscene on the same step. Locks (cutscene/transition) and a pending story beat both suppress rolls.
+	var ilm = get_tree().root.get_node_or_null("InputLockManager") if is_inside_tree() else null
+	if ilm and ilm.is_locked():
+		return
+	var gl = get_tree().root.get_node_or_null("GameLoop") if is_inside_tree() else null
+	if gl and gl.has_method("_get_pending_story_cutscene") and str(gl._get_pending_story_cutscene()) != "":
+		return
 
 	# Check for random encounter
 	if _check_encounter():

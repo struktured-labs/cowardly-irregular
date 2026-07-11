@@ -3569,6 +3569,20 @@ func _input(event: InputEvent) -> void:
 				_enable_all_autobattle()
 			get_viewport().set_input_as_handled()
 			return
+		elif BattleManager.current_state == BattleManager.BattleState.VICTORY:
+			# Victory screen: toggle applies to the NEXT battle — struktured 2026-07-11: "should be able to disable autobattle in the victory sequence... but I cant".
+			var any_on_v := false
+			for member in party_members:
+				var char_id_v := member.combatant_name.to_lower().replace(" ", "_")
+				if AutobattleSystem.is_autobattle_enabled(char_id_v):
+					any_on_v = true
+					break
+			if any_on_v:
+				_cancel_all_autobattle()
+			else:
+				_enable_all_autobattle()
+			get_viewport().set_input_as_handled()
+			return
 		elif is_executing:
 			# During execution: queue/revoke a cancel for next turn.
 			# (Mid-execution flip would race with already-running actions.)
