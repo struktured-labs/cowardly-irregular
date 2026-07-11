@@ -49,7 +49,12 @@ func _collect_records() -> Array:
 		["Autogrind Sessions", str(sessions), "Enlightenment, quantified."],
 		["Gold", "%d G" % (GameState.party_gold if GameState else 0), "The economy notices."],
 		["Corruption", "%.1f" % (GameState.corruption_level if GameState else 0.0), "Within acceptable variance." if (GameState and GameState.corruption_level < 2.0) else "The variance is no longer acceptable."],
+		["Calibration", "COMPLETE" if _game_complete() else "IN PROGRESS", "You saw the credits and came back anyway." if _game_complete() else "The system remains uncalibrated."],
 	]
+
+
+func _game_complete() -> bool:
+	return GameState != null and bool(GameState.game_constants.get("game_complete", false))
 
 
 func _build_ui() -> void:
