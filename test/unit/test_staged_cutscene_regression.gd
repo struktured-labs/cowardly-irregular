@@ -340,12 +340,12 @@ func _staged_cutscene_paths() -> Array:
 ## Canonical archetype per Harmonia story NPC. Live map AND staged puppets
 ## must both resolve to these — the name-hash fallback once rendered Theron
 ## as old_woman and Phil as young_woman, so puppets visibly transformed the
-## NPC at scene start.
+## NPC at scene start. Now the named sheets from 2fd985bb.
 const HARMONIA_NPC_CANON := {
-	"Elder Theron": "old_man",
-	"Scholar Milo": "scholar",
-	"Phil the Lost": "traveler",
-	"Bram Smith": "blacksmith",
+	"Elder Theron": "elder_theron",
+	"Scholar Milo": "scholar_milo",
+	"Phil the Lost": "phil",
+	"Bram Smith": "bram",
 }
 
 

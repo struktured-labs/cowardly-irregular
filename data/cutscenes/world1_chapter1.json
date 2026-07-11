@@ -22,7 +22,10 @@
     },
     {
       "type": "camera_focus",
-      "target": [544, 352],
+      "target": [
+        544,
+        352
+      ],
       "duration": 0.8
     },
     {
@@ -30,7 +33,10 @@
       "id": "fighter",
       "kind": "party",
       "job": "fighter",
-      "at": [496, 352],
+      "at": [
+        496,
+        352
+      ],
       "facing": "down"
     },
     {
@@ -42,7 +48,10 @@
       "id": "bard",
       "kind": "party",
       "job": "bard",
-      "at": [448, 352],
+      "at": [
+        448,
+        352
+      ],
       "facing": "down"
     },
     {
@@ -54,7 +63,10 @@
       "id": "cleric",
       "kind": "party",
       "job": "cleric",
-      "at": [544, 352],
+      "at": [
+        544,
+        352
+      ],
       "facing": "down"
     },
     {
@@ -66,7 +78,10 @@
       "id": "mage",
       "kind": "party",
       "job": "mage",
-      "at": [592, 352],
+      "at": [
+        592,
+        352
+      ],
       "facing": "down"
     },
     {
@@ -78,7 +93,10 @@
       "id": "rogue",
       "kind": "party",
       "job": "rogue",
-      "at": [640, 352],
+      "at": [
+        640,
+        352
+      ],
       "facing": "down"
     },
     {
@@ -89,7 +107,7 @@
       "type": "spawn_actor",
       "id": "elder",
       "kind": "npc",
-      "archetype": "old_man",
+      "archetype": "elder_theron",
       "replace_npc": "Elder Theron",
       "facing": "down"
     },
@@ -97,19 +115,25 @@
       "type": "spawn_actor",
       "id": "milo",
       "kind": "npc",
-      "archetype": "scholar",
+      "archetype": "scholar_milo",
       "replace_npc": "Scholar Milo",
       "facing": "down"
     },
     {
       "type": "move_actor",
       "id": "elder",
-      "to": [256, 352]
+      "to": [
+        256,
+        352
+      ]
     },
     {
       "type": "move_actor",
       "id": "elder",
-      "to": [400, 352]
+      "to": [
+        400,
+        352
+      ]
     },
     {
       "type": "face_actor",
@@ -202,7 +226,10 @@
     {
       "type": "move_actor",
       "id": "milo",
-      "to": [512, 320]
+      "to": [
+        512,
+        320
+      ]
     },
     {
       "type": "face_actor",
@@ -320,7 +347,7 @@
       "type": "spawn_actor",
       "id": "phil",
       "kind": "npc",
-      "archetype": "traveler",
+      "archetype": "phil",
       "replace_npc": "Phil the Lost",
       "facing": "up"
     },
@@ -332,12 +359,18 @@
     {
       "type": "move_actor",
       "id": "mage",
-      "to": [640, 352]
+      "to": [
+        640,
+        352
+      ]
     },
     {
       "type": "move_actor",
       "id": "mage",
-      "to": [640, 464]
+      "to": [
+        640,
+        464
+      ]
     },
     {
       "type": "face_actor",
@@ -399,7 +432,7 @@
       "type": "spawn_actor",
       "id": "bram",
       "kind": "npc",
-      "archetype": "blacksmith",
+      "archetype": "bram",
       "replace_npc": "Bram Smith",
       "facing": "down"
     },
@@ -411,13 +444,19 @@
     {
       "type": "move_actor",
       "id": "rogue",
-      "to": [640, 224],
+      "to": [
+        640,
+        224
+      ],
       "speed": 160
     },
     {
       "type": "move_actor",
       "id": "rogue",
-      "to": [768, 224],
+      "to": [
+        768,
+        224
+      ],
       "speed": 160
     },
     {
@@ -450,7 +489,10 @@
     },
     {
       "type": "camera_focus",
-      "target": [544, 352],
+      "target": [
+        544,
+        352
+      ],
       "duration": 0.9
     },
     {

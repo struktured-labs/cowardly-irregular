@@ -293,8 +293,8 @@ func _setup_npcs() -> void:
 		"May the light guide your path."
 	])
 	elder.dynamic = true
-	# Story-canon look (name-hash fallback rolled old_woman); matches his staged-cutscene puppet.
-	elder.sprite_archetype = "old_man"
+	# Named canon sheet (2fd985bb); must match his staged-cutscene puppet (HARMONIA_NPC_CANON).
+	elder.sprite_archetype = "elder_theron"
 	npcs.add_child(elder)
 
 	# === AUTOBATTLE HINT NPCs ===
@@ -311,8 +311,8 @@ func _setup_npcs() -> void:
 		"It's not cheating - it's ENLIGHTENMENT!"
 	])
 	scholar.dynamic = true
-	# A scholar should use the scholar sheet, not a hash-picked villager; matches his puppet.
-	scholar.sprite_archetype = "scholar"
+	# Named canon sheet (2fd985bb); must match his staged-cutscene puppet (HARMONIA_NPC_CANON).
+	scholar.sprite_archetype = "scholar_milo"
 	npcs.add_child(scholar)
 
 	# Retired Adventurer (autogrind hints)
@@ -337,8 +337,8 @@ func _setup_npcs() -> void:
 		"...",
 		"Nah, that's ridiculous. Carry on!"
 	])
-	# Story-canon look (name-hash fallback rolled young_woman); matches his staged-cutscene puppet.
-	existential.sprite_archetype = "traveler"
+	# Named canon sheet (2fd985bb); must match his staged-cutscene puppet (HARMONIA_NPC_CANON).
+	existential.sprite_archetype = "phil"
 	npcs.add_child(existential)
 
 	# Chicken Chaser wannabe
@@ -426,6 +426,8 @@ func _setup_npcs() -> void:
 		"Master Brutus forges them. I catalogue them. One came BACK.",
 	])
 	bram.npc_id = "bram_smith"
+	# Named canon sheet (2fd985bb); must match his staged-cutscene puppet (HARMONIA_NPC_CANON).
+	bram.sprite_archetype = "bram"
 	npcs.add_child(bram)
 
 	# The Returned Sword on its rack beside Bram (untested_edge step-2
