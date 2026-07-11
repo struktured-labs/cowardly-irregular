@@ -1100,7 +1100,7 @@
     "animation": "skill",
     "mp_cost": 20,
     "description": "A precisely measured strike targeting the weakest point",
-    "damage_multiplier": 2.5,
+    "damage_multiplier": 1.8,
     "target_type": "single_enemy"
   },
   "masterite_measured_blow": {
