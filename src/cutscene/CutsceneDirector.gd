@@ -84,6 +84,12 @@ var _timer_label: Label = null
 var _timer_remaining: float = 0.0
 var _timer_flag: String = ""
 
+## Staged-mode state (presentation:"staged" — CT-style live-world scene direction).
+var _staged: bool = false
+var _actors: Dictionary = {}
+var _stage_hidden: Array = []
+var _stage_cam_base_offset: Vector2 = Vector2.INF
+
 
 func _ready() -> void:
 	layer = 95  # Above game (50), below battle transitions (100)
@@ -234,8 +240,11 @@ func play_cutscene(cutscene_id: String) -> void:
 	_current_world = data.get("world", 0)
 	visible = true
 
-	# Load backdrop: prefer explicit image, then viewport capture, then world gradient
-	if not _try_load_backdrop_image(data):
+	# Staged mode: live world stays visible — no backdrop, no dim, puppets act in-scene.
+	_staged = str(data.get("presentation", "")) == "staged"
+	if _staged:
+		_begin_staging()
+	elif not _try_load_backdrop_image(data):
 		await _capture_background()
 
 	# Fade out current music before cutscene begins (smooth transition).
@@ -280,7 +289,11 @@ func play_cutscene_from_data(cutscene_id: String, data: Dictionary) -> void:
 	_current_world = data.get("world", 0)
 	visible = true
 
-	if not _try_load_backdrop_image(data):
+	# Same staged-mode gate as play_cutscene — keep the two entry points in sync.
+	_staged = str(data.get("presentation", "")) == "staged"
+	if _staged:
+		_begin_staging()
+	elif not _try_load_backdrop_image(data):
 		await _capture_background()
 	cutscene_started.emit(cutscene_id)
 	_freeze_player()
@@ -359,6 +372,22 @@ func _execute_step(step: Dictionary) -> void:
 			await _step_choice(step)
 		"battle":
 			await _step_battle(step)
+		"spawn_actor":
+			_step_spawn_actor(step)
+		"despawn_actor":
+			_step_despawn_actor(step)
+		"move_actor":
+			await _step_move_actor(step)
+		"face_actor":
+			_step_face_actor(step)
+		"emote":
+			await _step_emote(step)
+		"hop":
+			await _step_hop(step)
+		"camera_focus":
+			await _step_camera_focus(step)
+		"camera_restore":
+			await _step_camera_restore(step)
 		_:
 			push_warning("CutsceneDirector: Unknown step type '%s'" % step_type)
 
@@ -839,6 +868,221 @@ func _add_item_to_party_leader(item_id: String, quantity: int) -> void:
 		var leader = game_loop.party[0]
 		if leader and leader.has_method("add_item"):
 			leader.add_item(item_id, quantity)
+
+
+## =====================
+## STAGED SCENE DIRECTION (presentation:"staged")
+## =====================
+
+## The live Node2D the puppets act in. Null in headless/no-scene contexts —
+## every staged step treats null as "resolve instantly" (spine-walker safety).
+func _get_live_stage() -> Node2D:
+	if MapSystem and MapSystem.current_map and is_instance_valid(MapSystem.current_map):
+		return MapSystem.current_map
+	var gl = get_tree().root.get_node_or_null("GameLoop")
+	if gl and "current_scene" in gl and gl.current_scene is Node2D and is_instance_valid(gl.current_scene):
+		return gl.current_scene
+	var cs = get_tree().current_scene
+	if cs is Node2D:
+		return cs
+	return null
+
+
+func _get_live_player() -> Node2D:
+	var p = get_tree().get_first_node_in_group("player")
+	if p is Node2D and is_instance_valid(p):
+		return p
+	if MapSystem and MapSystem.has_method("get_player"):
+		var mp = MapSystem.get_player()
+		if mp is Node2D and is_instance_valid(mp):
+			return mp
+	return null
+
+
+## Staged entry: hide the real player + best-effort HUD so puppets own the frame.
+func _begin_staging() -> void:
+	_actors.clear()
+	_stage_hidden.clear()
+	_stage_cam_base_offset = Vector2.INF
+	var player := _get_live_player()
+	if player and player.visible:
+		player.visible = false
+		_stage_hidden.append(player)
+	var stage := _get_live_stage()
+	if stage == null:
+		return
+	# Known HUD widget fields on exploration scenes — hide if present + visible.
+	for prop in ["_minimap", "_threat_meter", "_quest_tracker", "_objective_arrow", "_border_indicator", "_danger_zone"]:
+		if prop in stage:
+			var w = stage.get(prop)
+			if w is CanvasItem and is_instance_valid(w) and w.visible:
+				w.visible = false
+				_stage_hidden.append(w)
+
+
+## Staged teardown: despawn puppets, restore hidden nodes + camera. Idempotent —
+## _end_cutscene calls it unconditionally so skip/abort paths clean up too.
+func _end_staging() -> void:
+	for id in _actors:
+		var a = _actors[id]
+		if a and is_instance_valid(a):
+			a.queue_free()
+	_actors.clear()
+	for n in _stage_hidden:
+		if n and is_instance_valid(n):
+			n.visible = true
+	_stage_hidden.clear()
+	if _stage_cam_base_offset != Vector2.INF:
+		var cam := get_viewport().get_camera_2d() if get_viewport() else null
+		if cam:
+			cam.offset = _stage_cam_base_offset
+	_stage_cam_base_offset = Vector2.INF
+	_staged = false
+
+
+func _get_actor(id: String) -> CutsceneActor:
+	var a = _actors.get(id)
+	if a and is_instance_valid(a):
+		return a
+	return null
+
+
+## {"type":"spawn_actor","id":"elder","kind":"npc","archetype":"old_man",
+##  "at":[x,y],"facing":"down","replace_npc":"Elder Theron"}
+## replace_npc hides the live OverworldNPC of that name and inherits its
+## position (restored at teardown) so scenes don't show doubled NPCs.
+func _step_spawn_actor(step: Dictionary) -> void:
+	var id: String = str(step.get("id", ""))
+	if id == "":
+		push_warning("CutsceneDirector spawn_actor: missing 'id'")
+		return
+	var stage := _get_live_stage()
+	if stage == null:
+		return
+	_step_despawn_actor({"id": id})
+	var spawn_pos := Vector2.INF
+	var replace_name: String = str(step.get("replace_npc", ""))
+	if replace_name != "":
+		var live_npc := _find_live_npc(stage, replace_name)
+		if live_npc:
+			spawn_pos = live_npc.global_position
+			if live_npc.visible:
+				live_npc.visible = false
+				_stage_hidden.append(live_npc)
+	var at = step.get("at", null)
+	if at is Array and at.size() >= 2:
+		spawn_pos = Vector2(float(at[0]), float(at[1]))
+	if spawn_pos == Vector2.INF:
+		var player := _get_live_player()
+		spawn_pos = player.global_position if player else Vector2.ZERO
+	var actor := CutsceneActor.build(id, step)
+	stage.add_child(actor)
+	actor.global_position = spawn_pos
+	_actors[id] = actor
+
+
+func _find_live_npc(stage: Node2D, npc_name: String) -> Node2D:
+	for n in stage.find_children("*", "Area2D", true, false):
+		if "npc_name" in n and str(n.npc_name) == npc_name:
+			return n
+	return null
+
+
+func _step_despawn_actor(step: Dictionary) -> void:
+	var id: String = str(step.get("id", ""))
+	var a := _get_actor(id)
+	if a:
+		a.queue_free()
+	_actors.erase(id)
+
+
+## Awaited walk; skip/headless snaps to the target instantly (skip contract).
+func _step_move_actor(step: Dictionary) -> void:
+	var a := _get_actor(str(step.get("id", "")))
+	if a == null:
+		return
+	var to = step.get("to", null)
+	if not (to is Array and to.size() >= 2):
+		push_warning("CutsceneDirector move_actor: missing 'to' [x,y]")
+		return
+	var target := Vector2(float(to[0]), float(to[1]))
+	if _skipping:
+		a.global_position = target
+		a.stand()
+		return
+	var speed: float = float(step.get("speed", CutsceneActor.DEFAULT_WALK_SPEED))
+	await a.walk_to(target, speed)
+
+
+func _step_face_actor(step: Dictionary) -> void:
+	var a := _get_actor(str(step.get("id", "")))
+	if a == null:
+		return
+	var toward: String = str(step.get("toward", ""))
+	if toward != "":
+		var other := _get_actor(toward)
+		if other:
+			a.face_toward(other.position)
+		return
+	a.set_facing_name(str(step.get("dir", "down")))
+
+
+func _step_emote(step: Dictionary) -> void:
+	var a := _get_actor(str(step.get("id", "")))
+	if a == null or _skipping:
+		return
+	var duration: float = float(step.get("duration", 1.0))
+	a.show_emote(str(step.get("emote", "exclaim")), duration)
+	if duration > 0.0:
+		await get_tree().create_timer(duration).timeout
+
+
+func _step_hop(step: Dictionary) -> void:
+	var a := _get_actor(str(step.get("id", "")))
+	if a == null or _skipping:
+		return
+	await a.hop(int(step.get("times", 1)))
+
+
+## Pan the live camera to frame an actor or point; offset-tween holds because
+## nothing re-snaps camera position per frame (only rotation is forced).
+func _step_camera_focus(step: Dictionary) -> void:
+	if _skipping:
+		return
+	var vp := get_viewport()
+	var cam := vp.get_camera_2d() if vp else null
+	if cam == null:
+		return
+	var target := Vector2.INF
+	var target_id: String = str(step.get("target", ""))
+	var a := _get_actor(target_id)
+	if a:
+		target = a.global_position
+	else:
+		var at = step.get("target", null)
+		if at is Array and at.size() >= 2:
+			target = Vector2(float(at[0]), float(at[1]))
+	if target == Vector2.INF:
+		return
+	if _stage_cam_base_offset == Vector2.INF:
+		_stage_cam_base_offset = cam.offset
+	var new_offset: Vector2 = cam.offset + (target - cam.get_screen_center_position())
+	var tween := create_tween()
+	tween.tween_property(cam, "offset", new_offset, float(step.get("duration", 0.8)))
+	await tween.finished
+
+
+func _step_camera_restore(step: Dictionary) -> void:
+	var vp := get_viewport()
+	var cam := vp.get_camera_2d() if vp else null
+	if cam == null or _stage_cam_base_offset == Vector2.INF:
+		return
+	if _skipping:
+		cam.offset = _stage_cam_base_offset
+		return
+	var tween := create_tween()
+	tween.tween_property(cam, "offset", _stage_cam_base_offset, float(step.get("duration", 0.8)))
+	await tween.finished
 
 
 func _apply_remaining_set_flag_steps(steps: Array, from_index: int) -> void:
@@ -1368,6 +1612,9 @@ func _end_cutscene() -> void:
 	# a matching stop_timer (skip path or malformed cutscene script). Without
 	# this, a lingering _timer_label would float over post-cutscene gameplay.
 	_clear_timer_hud()
+
+	# Staged-mode teardown: puppets, hidden nodes, camera. Idempotent no-op for overlay scenes.
+	_end_staging()
 
 	# Snapshot then clear BEFORE the emit. Otherwise: a listener that
 	# synchronously chains into the next cutscene (e.g. prologue → chapter1
