@@ -132,7 +132,7 @@ func _ready() -> void:
 
 	# Play tavern music
 	if SoundManager:
-		SoundManager.play_area_music("village")
+		SoundManager.play_area_music("interior_tavern")
 
 
 func _process(delta: float) -> void:

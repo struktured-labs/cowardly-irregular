@@ -94,7 +94,7 @@ func _ready() -> void:
 	if SoundManager:
 		if SoundManager.has_method("play_area_music"):
 			# Try shop music, fall back to village
-			SoundManager.play_area_music("shop")
+			SoundManager.play_area_music("interior_shop")
 
 
 func _process(delta: float) -> void:

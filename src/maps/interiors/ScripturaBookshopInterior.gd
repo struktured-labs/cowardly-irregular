@@ -89,7 +89,7 @@ func _init_spawn_points() -> void:
 
 
 func _get_music_track() -> String:
-	return "village"
+	return "interior_library"
 
 
 func _draw_floor_tile(image: Image) -> void:

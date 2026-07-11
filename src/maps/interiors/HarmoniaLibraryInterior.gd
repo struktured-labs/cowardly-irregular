@@ -75,6 +75,10 @@ func _get_ambient_key() -> String:
 	return "ambient_library"
 
 
+func _get_music_track() -> String:
+	return "interior_library"
+
+
 func _get_map_width() -> int:
 	return 20
 
