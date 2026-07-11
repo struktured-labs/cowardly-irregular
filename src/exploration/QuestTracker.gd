@@ -136,7 +136,7 @@ func _update_objective() -> void:
 
 	if best_text != _current_objective:
 		_current_objective = best_text
-		_label.text = "► " + best_text
+		_label.text = "> " + best_text
 		# Resize background to fit text
 		_bg.offset_right = _label.offset_left + _label.get_theme_font("font").get_string_size(
 			_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1,
@@ -169,7 +169,7 @@ func _update_side_quest_line() -> void:
 			var fp: Vector2i = qs.fetch_progress(objectives[idx])
 			if fp.y > 0:
 				desc += "  [%d/%d]" % [fp.x, fp.y]
-	_side_label.text = "◇ %s — %s" % [q.get("title", qid), desc]
+	_side_label.text = "* %s — %s" % [q.get("title", qid), desc]
 	_side_label.visible = true
 	_bg.offset_bottom = 58
 
