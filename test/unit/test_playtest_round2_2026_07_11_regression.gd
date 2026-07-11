@@ -175,3 +175,12 @@ func test_all_zone_listeners_honor_the_input_lock() -> void:
 		var accept_idx := fn.find("is_action_pressed(\"ui_accept\")")
 		assert_gt(lock_idx, -1, "%s _input must consult InputLockManager" % path)
 		assert_lt(lock_idx, accept_idx, "%s lock gate must precede ui_accept" % path)
+
+
+func test_title_version_label_has_room() -> void:
+	# "v3.33.118-alpha" ran off the title screen's right edge — the label
+	# box was 80px for a ~130px string. Right-aligned in a 280px box now.
+	var src := FileAccess.get_file_as_string("res://src/ui/TitleScreen.gd")
+	assert_true("HORIZONTAL_ALIGNMENT_RIGHT" in src.substr(src.find("_version_label.position"), 300),
+		"version label must right-align inside a sized box")
+	assert_false("Vector2(vp.x - 80, vp.y - 28)" in src, "the 80px clip box must be gone")
