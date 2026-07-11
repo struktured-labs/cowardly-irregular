@@ -215,6 +215,7 @@ var _area_fade_rect: ColorRect = null
 ## Overworld menu
 var _overworld_menu: Control = null
 var _overworld_menu_layer: CanvasLayer = null
+var _menu_hidden_hud: Array = []
 
 ## Party Chat (opt-in flavor cutscenes)
 var _party_chat_menu: Control = null
@@ -1059,6 +1060,7 @@ func _open_overworld_menu() -> void:
 	# Pause exploration
 	if _exploration_scene and _exploration_scene.has_method("pause"):
 		_exploration_scene.pause()
+	_set_field_hud_hidden(true)
 
 	# Create menu in CanvasLayer
 	_overworld_menu_layer = CanvasLayer.new()
@@ -1095,6 +1097,38 @@ func _on_overworld_menu_closed() -> void:
 	# Resume exploration
 	if _exploration_scene and _exploration_scene.has_method("resume"):
 		_exploration_scene.resume()
+	_set_field_hud_hidden(false)
+
+
+## Field-HUD props on exploration scenes; each is either a CanvasItem or a Node wrapping a _canvas CanvasLayer (minimap/tracker/arrows all sit on layers ABOVE the menu's 50).
+const _FIELD_HUD_PROPS := ["_minimap", "_quest_tracker", "_objective_arrow", "_border_indicator", "_threat_meter", "_danger_zone"]
+
+
+func _set_field_hud_hidden(hidden: bool) -> void:
+	# JRPG convention: field HUD must not paint over the pause menu — the quest tracker covered the PARTY header and the objective arrow crossed the Mage row (web-smoke stage-3 find 2026-07-11).
+	if not hidden:
+		for n in _menu_hidden_hud:
+			if n and is_instance_valid(n):
+				n.visible = true
+		_menu_hidden_hud.clear()
+		return
+	_menu_hidden_hud.clear()
+	if _exploration_scene == null or not is_instance_valid(_exploration_scene):
+		return
+	for prop in _FIELD_HUD_PROPS:
+		if not (prop in _exploration_scene):
+			continue
+		var w = _exploration_scene.get(prop)
+		if w == null or (w is Object and not is_instance_valid(w)):
+			continue
+		var target = null
+		if w is CanvasItem or w is CanvasLayer:
+			target = w
+		elif w is Node and "_canvas" in w and w._canvas is CanvasLayer:
+			target = w._canvas
+		if target and is_instance_valid(target) and target.visible:
+			target.visible = false
+			_menu_hidden_hud.append(target)
 
 
 ## Party Chat helpers
