@@ -110,7 +110,10 @@ func _build_ui() -> void:
 	# Version
 	_version_label = Label.new()
 	_version_label.text = Version.display()
-	_version_label.position = Vector2(vp.x - 80, vp.y - 28)
+	# 80px clipped "v3.33.1xx-alpha (hash)" off the right edge (title smoke shot 2026-07-11) — right-align in a real box.
+	_version_label.position = Vector2(vp.x - 292, vp.y - 28)
+	_version_label.size = Vector2(280, 20)
+	_version_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_version_label.add_theme_font_size_override("font_size", 10)
 	_version_label.add_theme_color_override("font_color", Color(0.4, 0.35, 0.5, 0.6))
 	add_child(_version_label)
