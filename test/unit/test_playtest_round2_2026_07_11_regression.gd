@@ -148,3 +148,12 @@ func test_cutscene_director_refuses_reentry() -> void:
 	var i := gl.find("func check_pending_cutscene")
 	assert_true("_cutscene_director._active" in gl.substr(i, 400),
 		"pending check must no-op while a scene is already playing")
+
+
+func test_save_zone_is_beside_the_crystal() -> void:
+	# One A-press from ~6 tiles away fired the SAVE and an NPC dialogue
+	# together — the crystal zone was a 128px (4-tile) circle.
+	var src := FileAccess.get_file_as_string("res://src/exploration/SavePoint.gd")
+	assert_true("shape.radius = 48.0" in src,
+		"save zone must be ~1.5 tiles — 128 was a cross-plaza grabber")
+	assert_false("shape.radius = 128.0" in src, "the old 4-tile radius must be gone")

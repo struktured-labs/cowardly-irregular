@@ -74,7 +74,8 @@ func _setup_collision() -> void:
 
 	var col = CollisionShape2D.new()
 	var shape = CircleShape2D.new()
-	shape.radius = 128.0
+	# 128 read as a 4-tile grabber — the [A] Save prompt + save fired from across the plaza (struktured cap 2026-07-11); 48 = stand beside the crystal.
+	shape.radius = 48.0
 	col.shape = shape
 	col.position = Vector2(0, 0)
 	col.scale = Vector2(1.0, 1.67)  # Y-stretch: matches Mode 7 billboard Y:X ratio (0.3:0.5)
