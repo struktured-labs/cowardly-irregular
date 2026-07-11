@@ -1383,6 +1383,12 @@ func _process_next_selection() -> void:
 		is_spotlight_locked = true
 		if GameState and "debug_all_pcs_unlocked" in GameState and GameState.debug_all_pcs_unlocked:
 			is_spotlight_locked = false
+		# Their own spotlight duel is the moment they're supposed to play —
+		# _unlocked flag only fires on victory, so the lock is still on
+		# during the duel. Solo player_party ⇒ this IS their spotlight
+		# turn, override so the player controls it manually.
+		if is_spotlight_locked and player_party.size() == 1 and current_combatant in player_party:
+			is_spotlight_locked = false
 	# Trust gate: player-owned delegation. Separate field so reconciler
 	# doesn't wipe it. Same debug override so the "unlock" test bypass
 	# clears both sources at once.
