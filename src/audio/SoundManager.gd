@@ -215,6 +215,13 @@ func _setup_default_ability_sounds() -> void:
 	_ability_sounds["slash"] = "ability_physical"
 	_ability_sounds["steal"] = "ability_physical"
 	_ability_sounds["mug"] = "ability_physical"
+	# Meta-job signature cues (cowir-sfx 2026-07-11) — reality edits must not sound like sword hits.
+	_ability_sounds["constant_modification"] = "ability_constant_modification"
+	_ability_sounds["analyze_code"] = "ability_analyze_code"
+	_ability_sounds["permakill"] = "ability_permakill"
+	_ability_sounds["permakill_strike"] = "ability_permakill"
+	_ability_sounds["mind_swap"] = "ability_mind_swap"
+	_ability_sounds["bypass_puzzle"] = "ability_bypass_puzzle"
 
 
 ## SFX Manifest (file-based SFX take priority over procedural)
