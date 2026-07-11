@@ -245,6 +245,50 @@ func test_begin_staging_hides_canvaslayer_wrapped_hud_widgets() -> void:
 	assert_true(plain.visible, "_end_staging must restore CanvasItem widgets")
 
 
+func test_begin_staging_hides_ambient_npcs_but_not_props() -> void:
+	# Live playtest 2026-07-11 (msg 2388): ambient villagers/wanderers stayed
+	# visible inside the puppet blocking ("some other character in between the
+	# split-out party"). Puppets play everyone — live character NPCs hide;
+	# npc_name-bearing PROPS (bulletin board, tally wall) are scenery and stay.
+	var stage := _new_stage()
+	var ambient := OverworldNPC.new()
+	ambient.npc_name = "Random Villager"
+	stage.add_child(ambient)
+	var wanderer := WanderingNPC.new()
+	wanderer.npc_name = "Patrolling Trader"
+	stage.add_child(wanderer)
+	var prop := BulletinBoard.new()
+	stage.add_child(prop)
+	var d = _new_director()
+	d._begin_staging()
+	assert_false(ambient.visible, "ambient OverworldNPC must hide during staged scenes")
+	assert_false(wanderer.visible, "WanderingNPC (frozen mid-patrol) must hide during staged scenes")
+	assert_true(prop.visible, "npc_name-bearing props (BulletinBoard/TallyWall) must stay on stage")
+	d._end_staging()
+	assert_true(ambient.visible, "_end_staging must restore ambient NPCs")
+	assert_true(wanderer.visible, "_end_staging must restore wanderers")
+
+
+func test_replace_npc_inherits_position_even_when_prehidden() -> void:
+	# _begin_staging now hides ambient NPCs BEFORE spawn steps run — the
+	# replace_npc position inheritance must survive an already-hidden target
+	# (and teardown must not double-restore).
+	var stage := _new_stage()
+	var npc := OverworldNPC.new()
+	npc.npc_name = "Elder Theron"
+	stage.add_child(npc)
+	npc.position = Vector2(256, 192)
+	var d = _new_director()
+	d._begin_staging()
+	assert_false(npc.visible, "ambient hide covers the elder pre-spawn")
+	d._step_spawn_actor({"id": "elder", "kind": "npc", "archetype": "elder_theron", "replace_npc": "Elder Theron"})
+	var a = d._actors.get("elder")
+	assert_not_null(a, "puppet must spawn")
+	assert_eq(a.global_position, Vector2(256, 192), "position inheritance must work on a pre-hidden NPC")
+	d._end_staging()
+	assert_true(npc.visible, "teardown must restore the pre-hidden replaced NPC exactly once")
+
+
 func test_begin_staging_hides_player_and_end_staging_restores() -> void:
 	var player := Node2D.new()
 	player.add_to_group("player")

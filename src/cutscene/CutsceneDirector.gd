@@ -931,6 +931,11 @@ func _begin_staging() -> void:
 		if target and is_instance_valid(target) and target.visible:
 			target.visible = false
 			_stage_hidden.append(target)
+	# Live-playtest 2026-07-11 (msg 2388): ambient villagers/wanderers loitered inside the puppet blocking — puppets play EVERYONE, so hide live character NPCs (npc_name-bearing PROPS like BulletinBoard/TallyWall stay on stage).
+	for n in stage.find_children("*", "Area2D", true, false):
+		if (n is OverworldNPC or n is WanderingNPC) and n.visible:
+			n.visible = false
+			_stage_hidden.append(n)
 
 
 ## Staged teardown: despawn puppets, restore hidden nodes + camera. Idempotent —
