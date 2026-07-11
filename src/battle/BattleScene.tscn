@@ -185,10 +185,10 @@ anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -200.0
-offset_top = -76.0
-offset_right = 200.0
-offset_bottom = -10.0
+offset_left = -260.0
+offset_top = -128.0
+offset_right = 260.0
+offset_bottom = -38.0
 grow_horizontal = 2
 grow_vertical = 0
 
@@ -203,7 +203,7 @@ theme_override_constants/margin_bottom = 4
 layout_mode = 2
 
 [node name="BattleLog" type="RichTextLabel" parent="UI/BattleLogPanel/MarginContainer/VBoxContainer"]
-custom_minimum_size = Vector2(0, 56)
+custom_minimum_size = Vector2(0, 80)
 layout_mode = 2
 size_flags_vertical = 3
 bbcode_enabled = true
