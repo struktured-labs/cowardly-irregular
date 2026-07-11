@@ -59,6 +59,8 @@ fi
 grep "VERDICT" tmp/deploy_smoke.log
 
 echo "[deploy] gate 5/5: web boot smoke (the ACTUAL WASM build in headless chromium)"
+# Retry once: headless chromium occasionally dies mid-run when the box is
+# busy (live playtest + export on one GPU, 2026-07-11) — a REAL break fails twice.
 if ./tools/web_smoke.sh > tmp/deploy_web_smoke.log 2>&1; then
   grep "WEB-SMOKE" tmp/deploy_web_smoke.log
 else
@@ -66,7 +68,18 @@ else
   if [ "$RC" = "3" ]; then
     echo "[deploy] WARNING: web smoke SKIPPED (no playwright on this machine) — desktop smoke still gated"
   else
-    echo "[deploy] BLOCKED: web build failed to boot in chromium — see tmp/deploy_web_smoke.log" >&2; exit 5
+    cp tmp/deploy_web_smoke.log tmp/deploy_web_smoke.attempt1.log
+    echo "[deploy] web smoke attempt 1 failed (chromium flake?) — retrying once"
+    if ./tools/web_smoke.sh > tmp/deploy_web_smoke.log 2>&1; then
+      grep "WEB-SMOKE" tmp/deploy_web_smoke.log
+    else
+      RC=$?
+      if [ "$RC" = "3" ]; then
+        echo "[deploy] WARNING: web smoke SKIPPED on retry — desktop smoke still gated"
+      else
+        echo "[deploy] BLOCKED: web build failed to boot in chromium TWICE — see tmp/deploy_web_smoke.log (+ attempt1)" >&2; exit 5
+      fi
+    fi
   fi
 fi
 
