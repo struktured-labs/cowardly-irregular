@@ -181,17 +181,18 @@ func _on_interaction_requested() -> void:
 	var space = player.get_world_2d().direct_space_state
 	var query = PhysicsPointQueryParameters2D.new()
 
-	# Check in front of player based on facing direction — large range for Mode 7 perspective
+	# 80px suits the Mode 7 overworld's perspective; flat villages/interiors read the same probe as a 3-4 tile grabber arm ("opened a chest from 3-4 squares away" — struktured 2026-07-11).
+	var reach: float = 80.0 if Mode7Overlay.is_active else 40.0
 	var check_offset = Vector2.ZERO
 	match player.current_direction:
 		OverworldPlayerScript.Direction.DOWN:
-			check_offset = Vector2(0, 80)
+			check_offset = Vector2(0, reach)
 		OverworldPlayerScript.Direction.UP:
-			check_offset = Vector2(0, -80)
+			check_offset = Vector2(0, -reach)
 		OverworldPlayerScript.Direction.LEFT:
-			check_offset = Vector2(-80, 0)
+			check_offset = Vector2(-reach, 0)
 		OverworldPlayerScript.Direction.RIGHT:
-			check_offset = Vector2(80, 0)
+			check_offset = Vector2(reach, 0)
 
 	query.position = player.global_position + check_offset
 	query.collide_with_areas = true

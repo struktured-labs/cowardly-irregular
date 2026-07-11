@@ -1408,6 +1408,9 @@ func _on_chapter1_finished(_cutscene_id: String) -> void:
 
 
 func check_pending_cutscene() -> void:
+	# One at a time: pending checks fired while a scene was ALREADY playing double-played it (the completion flag only lands at the end).
+	if _cutscene_director and is_instance_valid(_cutscene_director) and "_active" in _cutscene_director and _cutscene_director._active:
+		return
 	"""Public: called by NPCs after setting story flags to trigger pending cutscenes."""
 	var pending = _get_pending_story_cutscene()
 	if pending != "":

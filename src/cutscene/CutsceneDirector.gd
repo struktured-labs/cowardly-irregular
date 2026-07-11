@@ -232,6 +232,10 @@ func is_active() -> bool:
 
 func play_cutscene(cutscene_id: String) -> void:
 	"""Load and play a cutscene from data/cutscenes/<cutscene_id>.json"""
+	# Re-entry guard: a second play mid-scene stacked a second step-runner over the first — hidden dialogue typing (phantom blips), repeats, desync (struktured 2026-07-11).
+	if _active:
+		push_warning("CutsceneDirector: refused '%s' — '%s' is already playing" % [cutscene_id, _cutscene_id])
+		return
 	var data = _load_cutscene_data(cutscene_id)
 	if data.is_empty():
 		push_error("CutsceneDirector: Failed to load cutscene '%s'" % cutscene_id)
@@ -286,6 +290,9 @@ func play_cutscene(cutscene_id: String) -> void:
 
 func play_cutscene_from_data(cutscene_id: String, data: Dictionary) -> void:
 	"""Play a cutscene from an in-memory dictionary (no file load)."""
+	if _active:
+		push_warning("CutsceneDirector: refused '%s' — '%s' is already playing" % [cutscene_id, _cutscene_id])
+		return
 	_cutscene_id = cutscene_id
 	_active = true
 	_skipping = false

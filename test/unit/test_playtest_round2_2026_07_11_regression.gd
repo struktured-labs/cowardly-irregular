@@ -123,3 +123,28 @@ func test_encounter_roll_yields_to_critical_events() -> void:
 		"encounter roll must yield while any input lock (cutscene/transition) is held")
 	assert_true("_get_pending_story_cutscene" in head,
 		"encounter roll must yield while a story beat is pending")
+
+
+func test_interact_reach_scales_by_context() -> void:
+	# "obj detection in the village is STILL TERRIBLE... opened a chest
+	# from 3-4 squares away" — the 80px Mode 7 probe applied to flat
+	# villages too. Flat scenes probe 40px.
+	var src := FileAccess.get_file_as_string("res://src/exploration/OverworldController.gd")
+	assert_true("80.0 if Mode7Overlay.is_active else 40.0" in src,
+		"interact probe must be 80px only under Mode 7 perspective; 40px flat")
+	assert_true("Vector2(0, reach)" in src and "Vector2(-reach, 0)" in src,
+		"all four facing probes must use the scaled reach")
+
+
+func test_cutscene_director_refuses_reentry() -> void:
+	# "hidden text box beeping along the characters... parts started
+	# repeating" — a second play_cutscene mid-scene stacked a second
+	# step-runner (two dialogue tracks). Both entry points must refuse
+	# while active, and GameLoop's pending check must not even ask.
+	var src := FileAccess.get_file_as_string("res://src/cutscene/CutsceneDirector.gd")
+	assert_eq(src.count("already playing"), 2,
+		"both play entry points must carry the re-entry refusal")
+	var gl := FileAccess.get_file_as_string("res://src/GameLoop.gd")
+	var i := gl.find("func check_pending_cutscene")
+	assert_true("_cutscene_director._active" in gl.substr(i, 400),
+		"pending check must no-op while a scene is already playing")
