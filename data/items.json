@@ -1736,6 +1736,16 @@
     "cost": 0,
     "flavor": "The shopkeeper and the traveler are there each time, still sitting. They don't say much. But they're there."
   },
+  "untested_shield": {
+    "id": "untested_shield",
+    "name": "The Untested Shield",
+    "category": 4,
+    "target_type": 4,
+    "description": "Bram's gift, from under the counter — never tested, never failed. Intended mechanics: Fighter-equippable shield (armor/accessory slot, ~+8 DEF +10 max HP, leather-armor tier) — promote in an equipment pass, returned_sword precedent.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "'Consider it an investment in your surviving long enough to come back and buy more.' Shields that come back in one piece weren't doing their job."
+  },
   "ERROR": {
     "id": "ERROR",
     "name": "ERROR",
