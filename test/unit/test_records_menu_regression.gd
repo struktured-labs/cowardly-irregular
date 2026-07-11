@@ -31,6 +31,18 @@ func test_records_read_live_state() -> void:
 	assert_eq(str(by_name["Fool Card Marks"][1]), "4 / 5", "marks read live")
 	assert_true("counting" in str(by_name["Fool Card Marks"][2]), "the card knows it's counting")
 	assert_gt(recs.size(), 7, "the full record roster renders")
+	# Calibration row (2026-07-11): game_complete's first player-facing consumer.
+	assert_eq(str(by_name["Calibration"][1]), "IN PROGRESS", "pre-ending state reads IN PROGRESS")
+	assert_true("uncalibrated" in str(by_name["Calibration"][2]), "pre-ending quip")
+	GameState.game_constants["game_complete"] = true
+	var recs2: Array = menu._collect_records()
+	var cal2: Array = []
+	for r in recs2:
+		if str(r[0]) == "Calibration":
+			cal2 = r
+	assert_eq(str(cal2[1]), "COMPLETE", "post-ending state reads COMPLETE")
+	assert_true("came back anyway" in str(cal2[2]), "post-ending quip")
+	GameState.game_constants.erase("game_complete")
 
 	GameState.battles_won = prev_battles
 	GameState.party_gold = prev_gold
