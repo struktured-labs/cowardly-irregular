@@ -2083,6 +2083,11 @@ func _create_party_from_customizations(customizations: Array) -> void:
 			CustomizationScript.get_personality_name(custom.personality)
 		])
 
+	# Fresh party starts at FULL — same init-order gap as the default path (personality bonuses + jobs raise max after initialize).
+	for m in party:
+		m.current_hp = m.max_hp
+		m.current_mp = m.max_mp
+
 	# Tick 82: wire leveled_up + ability_learned signals so the new
 	# party fires Toast on every level-up and ability unlock. Without
 	# this, character-creation players got silent level-ups —
@@ -2396,6 +2401,10 @@ func _create_party() -> void:
 	PassiveSystem.equip_passive(bard, "mp_boost")
 	bard.autobattle_locked = true  # spotlight unlock via world1_spotlight_bard_ch7
 	party.append(bard)
+	# Fresh party starts at FULL: passives/equipment raise max_hp AFTER initialize set current=max, so Fighter spawned visibly damaged at 132/181 (web-smoke shot, 2026-07-11).
+	for m in party:
+		m.current_hp = m.max_hp
+		m.current_mp = m.max_mp
 	# Apply any spotlight unlocks already in flags (relevant for NG+ or
 	# debug fast-travel — usually a no-op on a fresh game).
 	_reconcile_spotlight_locks()
