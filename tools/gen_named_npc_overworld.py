@@ -143,7 +143,37 @@ def gen_one(client, name: str, quality: str) -> None:
     dest_dir.mkdir(parents=True, exist_ok=True)
     out = dest_dir / "overworld.png"
     grid.save(out)
-    print(f"  → {out.relative_to(GAME_REPO)}")
+    register_manifest_entry(name)
+    print(f"  → {out.relative_to(GAME_REPO)} (+ manifest overworld_npc_sheets entry)")
+
+
+def register_manifest_entry(name: str) -> None:
+    """Register the sheet under manifest overworld_npc_sheets (PR #89 ratchet:
+    test_overworld_sheet_manifest_audit fails the suite on untracked sheets).
+    Entry shape mirrors overworld_player_sheets; T1 until artist review."""
+    import json
+
+    manifest_path = GAME_REPO / "data" / "sprite_manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    section = manifest.setdefault("overworld_npc_sheets", {})
+    if name in section:
+        return
+    section[name] = {
+        "path": f"res://assets/sprites/npcs/{name}/overworld.png",
+        "frame_width": 32,
+        "frame_height": 32,
+        "fps": 8,
+        "tier": "T1",
+        "animations": {
+            "walk_down":  {"row": 0, "frames": 4},
+            "walk_left":  {"row": 1, "frames": 4},
+            "walk_right": {"row": 2, "frames": 4},
+            "walk_up":    {"row": 3, "frames": 4},
+        },
+        "source": "gpt-image-1 anchored to named battle strip "
+                  "(tools/gen_named_npc_overworld.py)",
+    }
+    manifest_path.write_text(json.dumps(manifest, indent=2))
 
 
 def main() -> int:
