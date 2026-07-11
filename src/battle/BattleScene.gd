@@ -2276,8 +2276,13 @@ func _on_battle_ended(victory: bool) -> void:
 		for animator in party_animators:
 			if animator:
 				animator.play_defeat()
-		# Play game over ditty
-		SoundManager.play_music("game_over")
+		# Spotlight duels have their own retry loop and the game_over ditty
+		# stacks over every cycle, so skip it — retry-entry battle music
+		# transitions cleanly. Non-spotlight defeats keep the ditty.
+		var gl: Node = get_node_or_null("/root/GameLoop")
+		var in_spotlight: bool = gl != null and "_spotlight_duel_active" in gl and bool(gl._spotlight_duel_active)
+		if not in_spotlight:
+			SoundManager.play_music("game_over")
 
 	_update_ui()
 	_battle_ended = true
