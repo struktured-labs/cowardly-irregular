@@ -1442,6 +1442,12 @@ func _get_pending_story_cutscene() -> String:
 	if flags.get("talked_to_theron", false) and not flags.get("cutscene_flag_chapter1_complete", false):
 		if _current_map_id == "harmonia_village":
 			return "world1_chapter1"
+	# Bram's shield gift (struktured 2026-07-11): first smith talk, gated
+	# after chapter1 so the opening beat always wins the race.
+	if flags.get("talked_to_bram_smith", false) and flags.get("cutscene_flag_chapter1_complete", false) \
+			and not flags.get("cutscene_flag_world1_bram_shield_complete", false):
+		if _current_map_id == "harmonia_village":
+			return "world1_bram_shield"
 	# Chapter 2: SKIPPED — party road commentary now opt-in
 	# Auto-set the flag so chapter 3 can trigger
 	# Tick 97: cleric spotlight unlock — fires in Harmonia village after
@@ -1770,6 +1776,7 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	# World 1 (medieval) — flags drop the "world1_" prefix
 	"world1_prologue":                  "cutscene_flag_prologue_complete",
 	"world1_chapter1":                  "cutscene_flag_chapter1_complete",
+	"world1_bram_shield":               "cutscene_flag_world1_bram_shield_complete",
 	"world1_chapter3":                  "cutscene_flag_chapter3_complete",
 	"world1_chapter4":                  "cutscene_flag_chapter4_complete",
 	"world1_rat_king_defeat":           "cutscene_flag_world1_rat_king_defeat_complete",

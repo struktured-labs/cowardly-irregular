@@ -960,6 +960,14 @@ func _start_dialogue() -> void:
 		SoundManager.play_ui("menu_open")
 
 	# Set story flags for key NPC interactions and trigger pending cutscenes
+	if npc_name == "Bram Smith" and GameState:
+		GameState.game_constants["talked_to_bram_smith"] = true
+		dialogue_ended.connect(func(_name):
+			var game_loop_b = get_node_or_null("/root/GameLoop")
+			if game_loop_b and game_loop_b.has_method("check_pending_cutscene"):
+				game_loop_b.check_pending_cutscene()
+		, CONNECT_ONE_SHOT)
+
 	if npc_name == "Elder Theron" and GameState:
 		GameState.game_constants["talked_to_theron"] = true
 		# Notify GameLoop to check for pending cutscenes after dialogue finishes
