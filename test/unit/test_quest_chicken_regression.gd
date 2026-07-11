@@ -86,11 +86,16 @@ func test_caught_hen_starts_hidden() -> void:
 	assert_false(hen.visible, "already-caught hen starts hidden")
 
 
-func test_placement_sites_across_three_scenes() -> void:
+func test_placement_sites_across_four_scenes() -> void:
 	var harmonia: String = FileAccess.get_file_as_string("res://src/maps/villages/HarmoniaVillage.gd")
 	for cid in ["chicken_harmonia_market", "chicken_harmonia_flowerbed",
-			"chicken_harmonia_backlot", "chicken_guild", "chicken_phil_well"]:
+			"chicken_harmonia_backlot", "chicken_phil_well"]:
 		assert_true(harmonia.contains(cid), "Harmonia must place %s" % cid)
+	# The guild hen moved home 2026-07-11 — her Harmonia temp spot was inside
+	# the Inn wall block (live playtest: uncatchable). Same id, state carries.
+	assert_false(harmonia.contains("chicken_guild"), "guild hen no longer temp-placed in Harmonia")
+	var guild: String = FileAccess.get_file_as_string("res://src/maps/interiors/ScripturaGuildInterior.gd")
+	assert_true(guild.contains("chicken_guild"), "Scriptura Guild must place the guild hen")
 	var overworld: String = FileAccess.get_file_as_string("res://src/exploration/OverworldScene.gd")
 	assert_true(overworld.contains("chicken_cave_approach"), "overworld must place the cave-approach hen")
 	var inn: String = FileAccess.get_file_as_string("res://src/maps/interiors/InnInterior.gd")

@@ -155,7 +155,8 @@ func _setup_buildings() -> void:
 	# === CLOCKWORK LOFT DOOR ===
 	# Magister Clavis's retired-clockmaker workshop. Foreshadows the
 	# SteampunkMechanism dungeon (W3).
-	spawn_points["clockwork_loft_exit"] = Vector2(7 * TILE_SIZE, 11 * TILE_SIZE)
+	# (7,11) was inside the house block below the door — player spawned in a wall.
+	spawn_points["clockwork_loft_exit"] = Vector2(7 * TILE_SIZE, 9 * TILE_SIZE)
 	_add_interior_door("ClockworkLoftDoor", "brasston_clockwork_loft", "Enter Clockwork Loft", Vector2(7 * TILE_SIZE, 10 * TILE_SIZE))
 	# === REDUNDANCY ARCHIVE DOOR ===
 	# South face of the BBB building (cols 13-15, rows 2-5) — where Brasston keeps the spares.

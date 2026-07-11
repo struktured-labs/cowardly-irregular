@@ -1172,6 +1172,21 @@ func _setup_npcs() -> void:
 	_create_scribe_narrow(OverworldNPCScript)
 	_create_apprentice_fenwick(OverworldNPCScript)
 	_create_archivist_vane(OverworldNPCScript)
+	_place_guild_hen()
+
+
+## The Guild hen (one_chicken_problem) — home at last. She was temp-placed
+## in Harmonia pending this scene and spawned INSIDE the Inn wall block
+## there (live playtest 2026-07-11); same id, so caught-state carries over.
+func _place_guild_hen() -> void:
+	var ChickenScript = load("res://src/exploration/QuestChicken.gd")
+	if ChickenScript == null:
+		return
+	var hen = ChickenScript.new()
+	hen.chicken_id = "chicken_guild"
+	hen.catch_line = "The Guild hen surrenders with dignity. The archivists pretend not to see."
+	hen.position = Vector2(4 * TILE_SIZE, 6 * TILE_SIZE)
+	npcs.add_child(hen)
 
 
 func _create_scholar_quill(NPCScript) -> void:

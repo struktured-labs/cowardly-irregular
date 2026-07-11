@@ -74,6 +74,11 @@ func set_patrol(points: Array[Vector2]) -> void:
 		global_position = _patrol_points[0]
 
 
+## Read-back for BaseVillage's placement validation sweep.
+func get_patrol() -> Array[Vector2]:
+	return _patrol_points.duplicate()
+
+
 func _process(delta: float) -> void:
 	if _patrol_points.size() < 2:
 		return
