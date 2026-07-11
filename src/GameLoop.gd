@@ -5828,7 +5828,9 @@ func _on_game_constant_modified(constant_name: String, old_value, new_value) -> 
 ## fires from fire_event_flag the moment a registry entry transitions
 ## from locked to available.
 func _on_event_chat_unlocked(_chat_id: String, title: String) -> void:
-	Toast.show_success(self, "New party chat: %s" % title)
+	# Exploration-only: this toast fired over the GAME OVER screen (smoke-shot find 2026-07-11).
+	if current_state == LoopState.EXPLORATION:
+		Toast.show_success(self, "New party chat: %s" % title)
 
 
 ## Tick 264: visible feedback for bestiary kill milestones (10/50/100
