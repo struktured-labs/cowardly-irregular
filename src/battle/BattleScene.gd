@@ -4470,7 +4470,8 @@ func _check_danger_music() -> void:
 			print("[MUSIC] Switched to DANGER music - party member down!")
 		else:
 			print("[MUSIC] Switched to DANGER music - player critically low!")
-	elif not any_in_danger and _is_danger_music:
+	elif not any_in_danger and (_is_danger_music or str(SoundManager._current_music) == "danger"):
+		# Stateless check: a duel-retry rebuilds this scene with the flag fresh while SoundManager still plays danger — the flag-only check left doom music over a full-HP party (struktured 2026-07-11).
 		_is_danger_music = false
 		SoundManager.play_music(_base_music_track)
 		print("[MUSIC] Switched back to %s music - party recovered" % _base_music_track)

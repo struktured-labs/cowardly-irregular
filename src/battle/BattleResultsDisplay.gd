@@ -161,15 +161,12 @@ func show_victory_results() -> void:
 	for cr in char_results:
 		char_height_total += 52  # name row + exp bar
 		if cr.get("leveled_up", false):
-			char_height_total += 22
-			if not cr.get("stat_gains", {}).is_empty():
-				char_height_total += 18  # stat-gain line
-			if not cr.get("learned_abilities", []).is_empty():
-				char_height_total += 18  # learned-abilities line
+			char_height_total += 20  # single compact level-up line
 	var gold_height = 32 if total_gold > 0 else 0
 	var items_height = (item_drops.size() * 22 + 8) if item_drops.size() > 0 else 0
 	var injuries_height = (injuries.size() * 22 + 8) if injuries.size() > 0 else 0
 	var panel_height = 60 + char_height_total + gold_height + items_height + injuries_height + (bonuses.size() * 28 if bonuses.size() > 0 else 0) + 40
+	panel_height = mini(panel_height, 680)
 	# x 200..600: clear of the battle log (x<180) AND the party victory sprites (x>800) per struktured's 2026-07-11 cap.
 	panel.offset_left = 200
 	panel.offset_right = 200 + panel_width
@@ -347,56 +344,37 @@ func show_victory_results() -> void:
 
 		# Level up indicator (revealed with flash)
 		if cr.get("leveled_up", false):
+			# One compact line — the old 3-line block (LEVEL UP! / gains / learned) made 5 simultaneous level-ups ~700px tall and clipped off-screen (struktured cap 2026-07-11).
 			var lvl_label = Label.new()
-			lvl_label.text = "    LEVEL UP!"
-			lvl_label.add_theme_font_size_override("font_size", TextScale.scaled(14))
+			var lvl_text := "    LEVEL UP!"
+			var gains: Dictionary = cr.get("stat_gains", {})
+			var parts: Array = []
+			for stat in ["HP", "MP", "ATK", "DEF", "MAG", "SPD"]:
+				if gains.has(stat) and int(gains[stat]) != 0:
+					parts.append("%s +%d" % [stat, int(gains[stat])])
+			if not parts.is_empty():
+				lvl_text += "   " + "  ".join(parts)
+			var learned: Array = cr.get("learned_abilities", [])
+			if not learned.is_empty():
+				var learned_names: PackedStringArray = []
+				for aid in learned:
+					var ab: Dictionary = JobSystem.get_ability(str(aid)) if JobSystem else {}
+					learned_names.append(str(ab.get("name", str(aid).capitalize())))
+				lvl_text += "   ✦ %s" % ", ".join(learned_names)
+			lvl_label.text = lvl_text
+			lvl_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 			lvl_label.add_theme_color_override("font_color", Color(1.0, 1.0, 0.3))
 			lvl_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			lvl_label.modulate.a = 0.0
+			lvl_label.clip_text = true
 			vbox.add_child(lvl_label)
 
 			var lvl_delay = bar_fill_delay + char_idx * 0.3 + 0.5
 			anim_tween.tween_property(lvl_label, "modulate:a", 1.0, 0.2).set_delay(lvl_delay)
 			anim_tween.tween_callback(func(): SoundManager.play_music("stinger_level_up")).set_delay(lvl_delay)
 			anim_tween.tween_callback(func(): SoundManager.play_battle("level_up")).set_delay(lvl_delay)
-			# Pulse effect
 			anim_tween.tween_property(lvl_label, "scale", Vector2(1.15, 1.15), 0.1).set_delay(lvl_delay)
 			anim_tween.tween_property(lvl_label, "scale", Vector2(1.0, 1.0), 0.15).set_delay(lvl_delay + 0.1)
-
-			# Stat gains — the classic RPG payoff ("HP +10  ATK +2"), fades in just after LEVEL UP!
-			var gains: Dictionary = cr.get("stat_gains", {})
-			if not gains.is_empty():
-				var parts: Array = []
-				for stat in ["HP", "MP", "ATK", "DEF", "MAG", "SPD"]:
-					if gains.has(stat) and int(gains[stat]) != 0:
-						parts.append("%s +%d" % [stat, int(gains[stat])])
-				if not parts.is_empty():
-					var gain_label = Label.new()
-					gain_label.text = "      " + "  ".join(parts)
-					gain_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
-					gain_label.add_theme_color_override("font_color", Color(0.6, 1.0, 0.6))
-					gain_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-					gain_label.modulate.a = 0.0
-					vbox.add_child(gain_label)
-					anim_tween.tween_property(gain_label, "modulate:a", 1.0, 0.2).set_delay(lvl_delay + 0.25)
-
-				# Newly-learned abilities — the OTHER level-up payoff ("Learned Fire!"),
-				# fades in just after the stat gains.
-				var learned: Array = cr.get("learned_abilities", [])
-				if not learned.is_empty():
-					# Resolve ids to display names — "Learned: Fira", not "Learned: fira"
-					var learned_names: PackedStringArray = []
-					for aid in learned:
-						var ab: Dictionary = JobSystem.get_ability(str(aid)) if JobSystem else {}
-						learned_names.append(str(ab.get("name", str(aid).capitalize())))
-					var learn_label = Label.new()
-					learn_label.text = "      ✦ Learned: %s" % ", ".join(learned_names)
-					learn_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
-					learn_label.add_theme_color_override("font_color", Color(0.5, 0.85, 1.0))
-					learn_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-					learn_label.modulate.a = 0.0
-					vbox.add_child(learn_label)
-					anim_tween.tween_property(learn_label, "modulate:a", 1.0, 0.2).set_delay(lvl_delay + 0.4)
 
 		char_idx += 1
 

@@ -52,8 +52,8 @@ func test_hint_only_fires_when_gate_actually_blocks() -> void:
 	# the hint call — that's the gate that guarantees the hint only
 	# fires on the real locked path.
 	var window_before: String = src.substr(max(0, idx - 1500), 1500)
-	assert_true(window_before.contains("if not debug_override:"),
-		"hint must fire inside the `if not debug_override:` block (real locked path only)")
+	assert_true(window_before.contains("if not debug_override and not own_solo_duel:"),
+		"hint must fire inside the locked-path block (debug + own-solo-duel overrides both skip it)")
 
 
 func test_hint_shows_dedupes_via_tutorial_hints_static() -> void:
