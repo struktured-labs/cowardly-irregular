@@ -143,16 +143,18 @@ func show_victory_results() -> void:
 	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_scene.add_child(overlay)
 
-	# Semi-transparent backdrop
+	# Light backdrop only — the old 0.7 full-screen dim buried the party's
+	# victory animations (struktured playtest 2026-07-11); they must stay lit.
 	var backdrop = ColorRect.new()
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	backdrop.color = Color(0.0, 0.0, 0.05, 0.7)
+	backdrop.color = Color(0.0, 0.0, 0.05, 0.22)
 	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	overlay.add_child(backdrop)
 
-	# Results panel (centered, fixed size)
+	# Results panel, LEFT-anchored over the vacated enemy side — centered it
+	# overlapped the party sprites mid-victory-animation.
 	var panel = PanelContainer.new()
-	panel.set_anchors_preset(Control.PRESET_CENTER)
+	panel.set_anchors_preset(Control.PRESET_CENTER_LEFT)
 	var panel_width = 400
 	# Each character: name row (26) + EXP bar row (20) + spacing, level-up adds 20 more
 	var char_height_total = 0
@@ -168,15 +170,16 @@ func show_victory_results() -> void:
 	var items_height = (item_drops.size() * 22 + 8) if item_drops.size() > 0 else 0
 	var injuries_height = (injuries.size() * 22 + 8) if injuries.size() > 0 else 0
 	var panel_height = 60 + char_height_total + gold_height + items_height + injuries_height + (bonuses.size() * 28 if bonuses.size() > 0 else 0) + 40
-	panel.offset_left = -panel_width / 2
-	panel.offset_right = panel_width / 2
+	# x 200..600: clear of the battle log (x<180) AND the party victory sprites (x>800) per struktured's 2026-07-11 cap.
+	panel.offset_left = 200
+	panel.offset_right = 200 + panel_width
 	panel.offset_top = -panel_height / 2
 	panel.offset_bottom = panel_height / 2
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	# Dark panel style
 	var style = StyleBoxFlat.new()
-	style.bg_color = Color(0.08, 0.06, 0.15, 0.95)
+	style.bg_color = Color(0.08, 0.06, 0.15, 0.90)
 	style.border_color = Color(0.6, 0.5, 0.2)
 	style.border_width_top = 2
 	style.border_width_bottom = 2
