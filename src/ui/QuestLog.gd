@@ -414,7 +414,7 @@ func _input(event: InputEvent) -> void:
 	# (non-standard — Enter is usually confirm, not close). Holding cancel
 	# and accept are both echo-guarded so we don't rebuild the UI / play
 	# the close cue at echo rate.
-	if (event.is_action_pressed("ui_cancel") or event.is_action_pressed("ui_back")) and not event.is_echo():
+	if event.is_action_pressed("ui_cancel") and not event.is_echo():
 		if SoundManager:
 			SoundManager.play_ui("menu_cancel")
 		closed.emit()

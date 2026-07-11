@@ -217,6 +217,8 @@ func show_victory_results() -> void:
 	# Animation tween for staggered reveals (parallel so delays are absolute from start)
 	var anim_tween = vbox.create_tween()
 	anim_tween.set_parallel(true)
+	# Every real tweener below is conditional — a 0-exp-bar/0-gold/no-item victory (solo spotlight) left it empty, erroring "started with no Tweeners".
+	anim_tween.tween_interval(0.01)
 	var bar_fill_delay = 0.5  # Delay before bars start filling (after panel slides in)
 
 	# Per-character results with EXP bars

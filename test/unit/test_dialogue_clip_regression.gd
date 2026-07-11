@@ -61,8 +61,12 @@ func test_quest_log_handler_is_input_not_unhandled() -> void:
 		"QuestLog should NOT use _unhandled_input (events may be consumed elsewhere)")
 
 
-func test_quest_log_input_accepts_cancel_back_and_accept() -> void:
-	# The close path must cover all three actions.
+func test_quest_log_input_closes_on_cancel_only() -> void:
+	# History: d3f28bf wanted cancel/back/accept, 2026-04-30 removed accept
+	# (Enter = confirm, not close), 2026-07-10 removed ui_back (never existed
+	# in the InputMap — errored on every keypress, contributed nothing).
 	var src = _read_source(QUEST_LOG_PATH)
-	assert_true(src.contains("ui_cancel") and src.contains("ui_back") and src.contains("ui_accept"),
-		"QuestLog._input must close on ui_cancel OR ui_back OR ui_accept (fix for d3f28bf)")
+	assert_true(src.contains("is_action_pressed(\"ui_cancel\")"),
+		"QuestLog._input must close on ui_cancel")
+	assert_false(src.contains("is_action_pressed(\"ui_back\")"),
+		"ui_back is not a real action — querying it errors every keypress")
