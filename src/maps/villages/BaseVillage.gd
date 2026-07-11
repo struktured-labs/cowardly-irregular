@@ -67,6 +67,7 @@ func _ready() -> void:
 	_setup_buildings()
 	_setup_treasures()
 	_setup_npcs()
+	_validate_placements()
 	_setup_player()
 	_setup_camera()
 	_setup_controller()
@@ -169,6 +170,87 @@ func _add_interior_door(node_name: String, target_map: String, label: String, po
 
 func _setup_treasures() -> void:
 	pass
+
+
+## ---- Placement validation (live playtest 2026-07-11, msg 2360) ----
+## A quest hen spawned inside Harmonia's Inn wall block and some wanderers
+## pathed through building footprints. Every npcs-container child gets its
+## spawn snapped to a walkable cell; wanderer patrol legs get clipped at
+## the first impassable tile. Doors live in `buildings` and are exempt —
+## they intentionally hug wall faces.
+
+## Impassable = the cell's TileSet data carries collision polygons, so this
+## inherits every generator's _get_impassable_types() without a second list.
+func _is_cell_walkable(cell: Vector2i) -> bool:
+	if tile_map == null:
+		return true
+	var td := tile_map.get_cell_tile_data(cell)
+	if td == null:
+		return false
+	return td.get_collision_polygons_count(0) == 0
+
+
+## Nearest walkable cell center via ring search (radius ≤ 5 tiles);
+## returns the input unchanged if it is already walkable or nothing is found.
+func _find_walkable_near(pos: Vector2) -> Vector2:
+	var cell := Vector2i(int(floor(pos.x / TILE_SIZE)), int(floor(pos.y / TILE_SIZE)))
+	if _is_cell_walkable(cell):
+		return pos
+	for radius in range(1, 6):
+		for dy in range(-radius, radius + 1):
+			for dx in range(-radius, radius + 1):
+				if maxi(absi(dx), absi(dy)) != radius:
+					continue
+				var c := cell + Vector2i(dx, dy)
+				if _is_cell_walkable(c):
+					return Vector2((c.x + 0.5) * TILE_SIZE, (c.y + 0.5) * TILE_SIZE)
+	push_warning("[%s] no walkable cell within 5 tiles of %s" % [_get_area_id(), pos])
+	return pos
+
+
+func _validate_placements() -> void:
+	if npcs == null:
+		return
+	for n in npcs.get_children():
+		if not (n is Node2D):
+			continue
+		if n.has_method("set_patrol"):
+			_validate_patrol(n)
+		else:
+			var fixed := _find_walkable_near(n.position)
+			if fixed != n.position:
+				push_warning("[%s] relocated '%s' off impassable tile %s -> %s" % [_get_area_id(), n.name, n.position, fixed])
+				n.position = fixed
+
+
+## Snap patrol endpoints, then clip any leg at the last clear half-tile
+## sample before it would cross an impassable cell (wanderers lerp in
+## _process with no physics, so authored legs must be walkable end-to-end).
+func _validate_patrol(w: Node2D) -> void:
+	var raw: Array[Vector2] = w.get_patrol() if w.has_method("get_patrol") else []
+	if raw.size() < 2:
+		return
+	var pts: Array[Vector2] = []
+	for p in raw:
+		pts.append(_find_walkable_near(p))
+	var changed := pts != raw
+	for i in range(pts.size()):
+		var a: Vector2 = pts[i]
+		var j := (i + 1) % pts.size()
+		var b: Vector2 = pts[j]
+		var steps := int(ceil(a.distance_to(b) / (TILE_SIZE * 0.5)))
+		var last_clear := a
+		for s in range(1, steps + 1):
+			var sample := a.lerp(b, float(s) / float(steps))
+			var cell := Vector2i(int(floor(sample.x / TILE_SIZE)), int(floor(sample.y / TILE_SIZE)))
+			if not _is_cell_walkable(cell):
+				pts[j] = last_clear
+				changed = true
+				break
+			last_clear = sample
+	if changed:
+		push_warning("[%s] adjusted patrol for '%s' around impassable tiles" % [_get_area_id(), w.name])
+		w.set_patrol(pts)
 
 
 func _setup_npcs() -> void:

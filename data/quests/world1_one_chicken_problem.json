@@ -85,7 +85,7 @@
     },
     {
       "step": 2,
-      "description": "Corner all seven chickens around Harmonia.",
+      "description": "Corner all seven chickens — around Harmonia, and wherever the strays got to.",
       "type": "custom",
       "required_flag": "quest_world1_one_chicken_problem_all_chickens",
       "flag_on_complete": "quest_world1_one_chicken_problem_all_chickens"
@@ -129,6 +129,6 @@
   },
   "flag_on_complete": "quest_world1_one_chicken_problem_complete",
   "cross_world_connection": "W2 Maple Heights has a chicken weathervane the HOA has no record of approving. Rogue (Skater Kid) examine text: 'Phil.' No further explanation.",
-  "_wiring_notes": "Step 2 is a 7-part movement mini-puzzle owned by overworld (QuestChicken.gd + placements 2026-07-08): 7 hens — chicken_cave_approach (overworld, by the cave), chicken_inn_kitchen (InnInterior back nook), chicken_guild (TEMP in Harmonia until the Scriptura scene lands, relocate to the Guild lore section then), chicken_harmonia_market / _flowerbed / _backlot (Harmonia), chicken_phil_well (beside Phil the Lost — his line lands on catch). Walking into a hen while the quest is active corners it (flag chicken_caught_<id>); at 7, QuestChicken emits quest_world1_one_chicken_problem_all_chickens → step 2 completes. Second-layer reading (replay): the unnamed chicken returning to Phil mirrors Phil returning to Harmonia — both staying in a place others pass through. Cosmetic 'Chicken Wrangler' title deferred (no title system).",
+  "_wiring_notes": "Step 2 is a 7-part movement mini-puzzle owned by overworld (QuestChicken.gd + placements 2026-07-08): 7 hens — chicken_cave_approach (overworld, by the cave), chicken_inn_kitchen (InnInterior back nook), chicken_guild (Scriptura Guild reading floor — relocated home 2026-07-11; the Harmonia temp spot sat inside the Inn wall block), chicken_harmonia_market / _flowerbed / _backlot (Harmonia), chicken_phil_well (beside Phil the Lost — his line lands on catch). Walking into a hen while the quest is active corners it (flag chicken_caught_<id>); at 7, QuestChicken emits quest_world1_one_chicken_problem_all_chickens → step 2 completes. Second-layer reading (replay): the unnamed chicken returning to Phil mirrors Phil returning to Harmonia — both staying in a place others pass through. Cosmetic 'Chicken Wrangler' title deferred (no title system).",
   "prereq_flag": ""
 }
