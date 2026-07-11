@@ -293,6 +293,8 @@ func _setup_npcs() -> void:
 		"May the light guide your path."
 	])
 	elder.dynamic = true
+	# Story-canon look (name-hash fallback rolled old_woman); matches his staged-cutscene puppet.
+	elder.sprite_archetype = "old_man"
 	npcs.add_child(elder)
 
 	# === AUTOBATTLE HINT NPCs ===
@@ -309,6 +311,8 @@ func _setup_npcs() -> void:
 		"It's not cheating - it's ENLIGHTENMENT!"
 	])
 	scholar.dynamic = true
+	# A scholar should use the scholar sheet, not a hash-picked villager; matches his puppet.
+	scholar.sprite_archetype = "scholar"
 	npcs.add_child(scholar)
 
 	# Retired Adventurer (autogrind hints)
@@ -333,6 +337,8 @@ func _setup_npcs() -> void:
 		"...",
 		"Nah, that's ridiculous. Carry on!"
 	])
+	# Story-canon look (name-hash fallback rolled young_woman); matches his staged-cutscene puppet.
+	existential.sprite_archetype = "traveler"
 	npcs.add_child(existential)
 
 	# Chicken Chaser wannabe
