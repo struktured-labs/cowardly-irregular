@@ -38,16 +38,21 @@ func test_watchdog_helper_defined_and_wired_into_process() -> void:
 
 
 func test_watchdog_resets_on_wrong_state() -> void:
-	# The elapsed timer must reset whenever the situation stops being "player
-	# turn without a menu" — otherwise a stale ms carries into the next real
-	# PLAYER_SELECTING and force-spawns instantly with 0 grace period.
+	# Every early-out branch must call _reset_menu_watchdog() so a stale
+	# timer/retry count can't carry into the next real PLAYER_SELECTING and
+	# force-spawn instantly with 0 grace period.
 	var src: String = FileAccess.get_file_as_string(BS_PATH)
 	var wd_idx: int = src.find("func _tick_menu_watchdog() -> void:")
 	assert_gt(wd_idx, -1)
-	var body: String = src.substr(wd_idx, 2000)
-	# Count reset sites (each early return must clear _menu_wd_started_ms).
-	assert_gt(body.count("_menu_wd_started_ms = 0"), 5,
-		"every early-out branch in the watchdog must reset the timer — 6+ reset sites expected")
+	var body: String = src.substr(wd_idx, 3000)
+	assert_gt(body.count("_reset_menu_watchdog()"), 5,
+		"every early-out branch in the watchdog must reset — 6+ reset sites expected")
+	# The helper itself must clear both the timestamp and retry counter.
+	assert_string_contains(src, "func _reset_menu_watchdog() -> void:")
+	var reset_idx: int = src.find("func _reset_menu_watchdog() -> void:")
+	var reset_body: String = src.substr(reset_idx, 200)
+	assert_string_contains(reset_body, "_menu_wd_started_ms = 0")
+	assert_string_contains(reset_body, "_menu_wd_retries = 0")
 
 
 func test_watchdog_skips_trust_interrupt_window() -> void:

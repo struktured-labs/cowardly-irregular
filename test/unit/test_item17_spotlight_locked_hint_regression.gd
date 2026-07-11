@@ -48,12 +48,14 @@ func test_hint_only_fires_when_gate_actually_blocks() -> void:
 	var src := _read(BATTLE_COMMAND_MENU_PATH)
 	var idx: int = src.find("spotlight_locked_intro")
 	assert_gt(idx, -1)
-	# The nearest preceding `if not debug_override:` must exist before
-	# the hint call — that's the gate that guarantees the hint only
-	# fires on the real locked path.
+	# The nearest preceding gate must include the debug_override check
+	# so the hint only fires on the real locked path. Msg 2379 added a
+	# solo_duel_override sibling on the same line — both must be present.
 	var window_before: String = src.substr(max(0, idx - 1500), 1500)
-	assert_true(window_before.contains("if not debug_override:"),
-		"hint must fire inside the `if not debug_override:` block (real locked path only)")
+	assert_true(window_before.contains("not debug_override"),
+		"hint must fire behind the debug_override gate (real locked path only)")
+	assert_true(window_before.contains("not solo_duel_override"),
+		"solo-duel override must ALSO gate the hint — otherwise the duelist sees a spotlight-lock explainer they aren't subject to")
 
 
 func test_hint_shows_dedupes_via_tutorial_hints_static() -> void:

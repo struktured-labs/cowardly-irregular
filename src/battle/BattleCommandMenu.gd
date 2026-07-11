@@ -41,9 +41,11 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 	close_win98_menu()
 
 	# Spotlight gate: locked PCs route through autobattle. Debug override wins.
+	# Solo-player_party override mirrors BattleManager._process_next_selection (msg 2372/2376): a duelist inside their own spotlight duel plays their turn.
 	if "autobattle_locked" in combatant and combatant.autobattle_locked:
 		var debug_override = GameState and "debug_all_pcs_unlocked" in GameState and GameState.debug_all_pcs_unlocked
-		if not debug_override:
+		var solo_duel_override: bool = BattleManager and BattleManager.player_party.size() == 1 and combatant in BattleManager.player_party
+		if not debug_override and not solo_duel_override:
 			# Item 17 UX polish: user playtest report said "the game defaults
 			# to autobattle for all" — actually spotlight-lock forcing autobattle
 			# on 4/5 non-Fighter PCs is the design (msg 1950). Fire a first-
