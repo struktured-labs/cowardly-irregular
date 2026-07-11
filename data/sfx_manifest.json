@@ -1042,6 +1042,41 @@
       "duration_seconds": 1.5,
       "prompt_influence": 0.7
     },
+    "ability_constant_modification": {
+      "file": "assets/audio/sfx/ability_constant_modification.ogg",
+      "source": "sox_synth",
+      "prompt": "Scriptweaver Modify Constant — glitchy pitch-bending square sweep + two data blips + a 'value set' confirm chime. The sound of editing a game-rule dial. For the now-real meta ability (v3.33.77); replaces the generic ability_physical fallback.",
+      "duration_seconds": 0.68,
+      "prompt_influence": 0.0
+    },
+    "ability_analyze_code": {
+      "file": "assets/audio/sfx/ability_analyze_code.ogg",
+      "source": "sox_synth",
+      "prompt": "Scriptweaver Analyze Code — ascending terminal-scan square-wave readout + a done chime. Reading the execution order. Meta ability cast cue.",
+      "duration_seconds": 0.44,
+      "prompt_influence": 0.0
+    },
+    "ability_permakill": {
+      "file": "assets/audio/sfx/ability_permakill.ogg",
+      "source": "sox_synth",
+      "prompt": "Necromancer permakill — a descending sine into the void + a swallowing brown-noise rumble that fades to nothing + a final low toll. The species exterminated, 'the area is quiet, nothing left remembers how to attack'. Meta ability; unmaking, not violence.",
+      "duration_seconds": 1.15,
+      "prompt_influence": 0.0
+    },
+    "ability_mind_swap": {
+      "file": "assets/audio/sfx/ability_mind_swap.ogg",
+      "source": "sox_synth",
+      "prompt": "Bossbinder mind-swap — a disorienting rising sine warp with a pulsator tremolo + echo. Possession/control seizing the enemy. Meta ability cast cue.",
+      "duration_seconds": 0.61,
+      "prompt_influence": 0.0
+    },
+    "ability_bypass_puzzle": {
+      "file": "assets/audio/sfx/ability_bypass_puzzle.ogg",
+      "source": "sox_synth",
+      "prompt": "Skiptrotter Bypass Puzzle — a quick rising glitch-skip whoosh + a data glitch tick. Warping past content. Meta ability cast cue.",
+      "duration_seconds": 0.34,
+      "prompt_influence": 0.0
+    },
     "ability_physical": {
       "file": "assets/audio/sfx/ability_physical.ogg",
       "prompt": "Quick clean sword unsheathing and slicing through air, sharp steel ring fading, precise blade technique",
