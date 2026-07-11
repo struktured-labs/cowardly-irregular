@@ -289,7 +289,7 @@ func _build_sparkline_panel(panel_size: Vector2, pos: Vector2) -> void:
 
 	# Legend for the amber adaptation-event ticks drawn on each chart
 	var legend = Label.new()
-	legend.text = "▏ = monsters adapted"
+	legend.text = "| = monsters adapted"
 	legend.position = Vector2(panel_size.x - 132, 2)
 	legend.add_theme_font_size_override("font_size", 9)
 	legend.add_theme_color_override("font_color", Color(1.0, 0.55, 0.15, 0.85))
