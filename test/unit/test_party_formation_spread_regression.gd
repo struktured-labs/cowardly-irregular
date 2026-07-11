@@ -38,6 +38,6 @@ func test_party_chat_toast_is_exploration_only() -> void:
 	var src := FileAccess.get_file_as_string("res://src/GameLoop.gd")
 	var i := src.find("New party chat: %s")
 	assert_gt(i, -1)
-	var window := src.substr(maxi(0, i - 260), 260)
-	assert_true("current_state == LoopState.EXPLORATION" in window,
-		"the unlock toast must not paint over GAME OVER / battles")
+	var window := src.substr(maxi(0, i - 700), 700)
+	assert_true("current_state != LoopState.EXPLORATION" in window and "_pending_chat_toasts" in window,
+		"unlock toasts must defer to a clean exploration moment (they fired over GAME OVER, then the shop)")

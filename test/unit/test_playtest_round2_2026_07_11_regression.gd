@@ -86,3 +86,65 @@ func test_danger_music_switchback_is_stateless() -> void:
 	var src := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
 	assert_true("_current_music) == \"danger\"" in src,
 		"switch-back must consult SoundManager's live track, not only the per-scene flag")
+
+
+func test_select_toggles_autobattle_on_victory_screen() -> void:
+	# struktured: "should be able to disable autobattle in the victory
+	# sequence/screen... but I cant" — the Select handler had no VICTORY
+	# branch, so the press fell through silently.
+	var src := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
+	var i := src.find("BattleManager.BattleState.VICTORY:")
+	assert_gt(i, -1, "Select handler must branch on the VICTORY state")
+	var window := src.substr(i, 700)
+	assert_true("_cancel_all_autobattle()" in window and "_enable_all_autobattle()" in window,
+		"victory branch must toggle for the NEXT battle")
+
+
+func test_ticker_sits_clear_of_the_bard_slot() -> void:
+	# The widened ticker (520px centered) met the new diagonal's bottom
+	# slot (Bard, ~x680-860) — "its cutting into the bard". Ticker now
+	# ends at x<=660.
+	var src := FileAccess.get_file_as_string("res://src/battle/BattleScene.tscn")
+	var i := src.find("[node name=\"BattleLogPanel\"")
+	var window := src.substr(i, 400)
+	var right := float(window.substr(window.find("offset_right = ") + 15, 8).split("\n")[0])
+	assert_lte(640.0 + right, 660.0,
+		"ticker right edge must clear the bottom party slot (x>680)")
+
+
+func test_encounter_roll_yields_to_critical_events() -> void:
+	# An encounter fired the SAME STEP as the village-entry cutscene —
+	# battle and cutscene raced. Rolls must consult locks + pending story
+	# beats FIRST ("turn off the RE system before any critical event").
+	var src := FileAccess.get_file_as_string("res://src/exploration/OverworldController.gd")
+	var fn := src.substr(src.find("func _on_player_moved"))
+	var head := fn.substr(0, fn.find("encounter_check") if fn.find("encounter_check") > 0 else 900)
+	assert_true("is_locked()" in head,
+		"encounter roll must yield while any input lock (cutscene/transition) is held")
+	assert_true("_get_pending_story_cutscene" in head,
+		"encounter roll must yield while a story beat is pending")
+
+
+func test_interact_reach_scales_by_context() -> void:
+	# "obj detection in the village is STILL TERRIBLE... opened a chest
+	# from 3-4 squares away" — the 80px Mode 7 probe applied to flat
+	# villages too. Flat scenes probe 40px.
+	var src := FileAccess.get_file_as_string("res://src/exploration/OverworldController.gd")
+	assert_true("80.0 if Mode7Overlay.is_active else 40.0" in src,
+		"interact probe must be 80px only under Mode 7 perspective; 40px flat")
+	assert_true("Vector2(0, reach)" in src and "Vector2(-reach, 0)" in src,
+		"all four facing probes must use the scaled reach")
+
+
+func test_cutscene_director_refuses_reentry() -> void:
+	# "hidden text box beeping along the characters... parts started
+	# repeating" — a second play_cutscene mid-scene stacked a second
+	# step-runner (two dialogue tracks). Both entry points must refuse
+	# while active, and GameLoop's pending check must not even ask.
+	var src := FileAccess.get_file_as_string("res://src/cutscene/CutsceneDirector.gd")
+	assert_eq(src.count("already playing"), 2,
+		"both play entry points must carry the re-entry refusal")
+	var gl := FileAccess.get_file_as_string("res://src/GameLoop.gd")
+	var i := gl.find("func check_pending_cutscene")
+	assert_true("_cutscene_director._active" in gl.substr(i, 400),
+		"pending check must no-op while a scene is already playing")

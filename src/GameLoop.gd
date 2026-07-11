@@ -1098,6 +1098,7 @@ func _on_overworld_menu_closed() -> void:
 	if _exploration_scene and _exploration_scene.has_method("resume"):
 		_exploration_scene.resume()
 	_set_field_hud_hidden(false)
+	_flush_chat_toasts()
 
 
 ## Field-HUD props on exploration scenes; each is either a CanvasItem or a Node wrapping a _canvas CanvasLayer (minimap/tracker/arrows all sit on layers ABOVE the menu's 50).
@@ -1407,6 +1408,9 @@ func _on_chapter1_finished(_cutscene_id: String) -> void:
 
 
 func check_pending_cutscene() -> void:
+	# One at a time: pending checks fired while a scene was ALREADY playing double-played it (the completion flag only lands at the end).
+	if _cutscene_director and is_instance_valid(_cutscene_director) and "_active" in _cutscene_director and _cutscene_director._active:
+		return
 	"""Public: called by NPCs after setting story flags to trigger pending cutscenes."""
 	var pending = _get_pending_story_cutscene()
 	if pending != "":
@@ -1899,6 +1903,7 @@ func _play_story_cutscene(cutscene_id: String) -> void:
 			return
 		_story_chain_depth = 0
 		_start_exploration()
+		_flush_chat_toasts()
 	, CONNECT_ONE_SHOT)
 	_cutscene_director.play_cutscene(cutscene_id)
 
@@ -5828,9 +5833,24 @@ func _on_game_constant_modified(constant_name: String, old_value, new_value) -> 
 ## fires from fire_event_flag the moment a registry entry transitions
 ## from locked to available.
 func _on_event_chat_unlocked(_chat_id: String, title: String) -> void:
-	# Exploration-only: this toast fired over the GAME OVER screen (smoke-shot find 2026-07-11).
-	if current_state == LoopState.EXPLORATION:
+	# Defer to a CLEAN exploration moment — it fired over GAME OVER, then over the shop Buy menu (smoke-shot finds 2026-07-11). Unlock announcements aren't time-critical.
+	_pending_chat_toasts.append(title)
+	_flush_chat_toasts()
+
+
+var _pending_chat_toasts: Array[String] = []
+
+
+func _flush_chat_toasts() -> void:
+	if _pending_chat_toasts.is_empty() or current_state != LoopState.EXPLORATION:
+		return
+	if InputLockManager and InputLockManager.is_locked():
+		return
+	if _overworld_menu and is_instance_valid(_overworld_menu):
+		return
+	for title in _pending_chat_toasts:
 		Toast.show_success(self, "New party chat: %s" % title)
+	_pending_chat_toasts.clear()
 
 
 ## Tick 264: visible feedback for bestiary kill milestones (10/50/100

@@ -96,16 +96,16 @@ func test_watchdog_force_spawn_logs_loudly() -> void:
 ## ── Ticker widen ───────────────────────────────────────────────────────
 
 func test_ticker_widened_to_hint_bar_width() -> void:
-	# Hint bar is offset_left=-260 / offset_right=260 (520px). The ticker
+	# Ticker is 520px slid LEFT (x 130..650) clear of the Bard slot (2026-07-11). The ticker
 	# must match so "Fighter selecting..." can't clip like it did in the
 	# 2026-07-11 cap.
 	var scene_src: String = FileAccess.get_file_as_string(BS_SCENE_PATH)
 	var panel_idx: int = scene_src.find("[node name=\"BattleLogPanel\"")
 	assert_gt(panel_idx, -1)
 	var panel_block: String = scene_src.substr(panel_idx, 600)
-	assert_string_contains(panel_block, "offset_left = -260.0",
+	assert_string_contains(panel_block, "offset_left = -510.0",
 		"widen to hint-bar left offset")
-	assert_string_contains(panel_block, "offset_right = 260.0",
+	assert_string_contains(panel_block, "offset_right = 10.0",
 		"widen to hint-bar right offset")
 
 
