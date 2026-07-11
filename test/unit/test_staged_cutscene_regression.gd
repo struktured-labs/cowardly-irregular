@@ -331,3 +331,58 @@ func _staged_cutscene_paths() -> Array:
 			paths.append(p)
 	assert_true(paths.size() >= 1, "at least world1_chapter1 must be staged")
 	return paths
+
+
+## =====================
+## LIVE-NPC / PUPPET LOOK CONSISTENCY
+## =====================
+
+## Canonical archetype per Harmonia story NPC. Live map AND staged puppets
+## must both resolve to these — the name-hash fallback once rendered Theron
+## as old_woman and Phil as young_woman, so puppets visibly transformed the
+## NPC at scene start.
+const HARMONIA_NPC_CANON := {
+	"Elder Theron": "old_man",
+	"Scholar Milo": "scholar",
+	"Phil the Lost": "traveler",
+	"Bram Smith": "blacksmith",
+}
+
+
+func test_harmonia_story_npcs_resolve_canon_archetypes() -> void:
+	var packed: PackedScene = load("res://src/maps/villages/HarmoniaVillage.tscn")
+	assert_not_null(packed, "HarmoniaVillage scene must load")
+	var scene: Node = packed.instantiate()
+	add_child_autofree(scene)
+	await get_tree().process_frame
+	var found := {}
+	_collect_named_npcs(scene, found)
+	for npc_name in HARMONIA_NPC_CANON:
+		var npc = found.get(npc_name)
+		assert_not_null(npc, "Harmonia must contain NPC '%s'" % npc_name)
+		if npc == null:
+			continue
+		assert_eq(npc._resolve_archetype(), HARMONIA_NPC_CANON[npc_name],
+			"'%s' must resolve archetype '%s' on the live map (hash fallback drifted from story canon before)" % [npc_name, HARMONIA_NPC_CANON[npc_name]])
+
+
+func test_staged_puppets_match_live_npc_archetypes() -> void:
+	# replace_npc swaps live NPC → puppet mid-frame; differing sheets read
+	# as the character transforming. Pin puppet archetype == live canon.
+	for path in _staged_cutscene_paths():
+		var data := _load_json(path)
+		for step in data.get("steps", []):
+			if str(step.get("type", "")) != "spawn_actor":
+				continue
+			var replaced := str(step.get("replace_npc", ""))
+			if replaced == "" or not HARMONIA_NPC_CANON.has(replaced):
+				continue
+			assert_eq(str(step.get("archetype", "")), HARMONIA_NPC_CANON[replaced],
+				"%s: puppet for '%s' must use live-map archetype '%s'" % [path, replaced, HARMONIA_NPC_CANON[replaced]])
+
+
+func _collect_named_npcs(root: Node, out: Dictionary) -> void:
+	for child in root.get_children():
+		if "npc_name" in child and child.has_method("_resolve_archetype"):
+			out[str(child.npc_name)] = child
+		_collect_named_npcs(child, out)
