@@ -1631,7 +1631,7 @@
       "loop": true,
       "generated_at": "2026-04-14"
     },
-    "shop": {
+    "interior_shop": {
       "file": "assets/audio/music/shop.ogg",
       "tier": "T1",
       "provider": "suno",

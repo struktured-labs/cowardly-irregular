@@ -49,7 +49,7 @@ func _init_spawn_points() -> void:
 ## tick 68: route music through SoundManager's rivet_row_village arm so
 ## the hall plays W4 industrial music instead of medieval.
 func _get_music_track() -> String:
-	return "rivet_row_village"
+	return "interior_union_hall"
 
 
 func _draw_floor_tile(image: Image) -> void:

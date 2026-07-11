@@ -50,7 +50,7 @@ func _init_spawn_points() -> void:
 ## so the arcade plays W2 suburban music instead of BaseInterior's
 ## default 'village' (medieval Harmonia music — wrong world).
 func _get_music_track() -> String:
-	return "maple_heights_village"
+	return "interior_arcade"
 
 
 func _draw_floor_tile(image: Image) -> void:

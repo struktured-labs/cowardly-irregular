@@ -34,8 +34,8 @@ func test_interior_contract() -> void:
 	for row in layout:
 		assert_eq(str(row).length(), interior._get_map_width(), "layout cols match width")
 	assert_true("D" in str(layout[layout.size() - 1]), "south wall has the exit doorway")
-	assert_true(interior._get_music_track() == "village_harmonia",
-		"attic plays the Harmonia village track")
+	assert_true(interior._get_music_track() == "harmonia_village",
+		"attic plays the Harmonia village track — must be a real play_area_music arm (old 'village_harmonia' fell through to overworld music)")
 
 
 func test_room_has_its_memorable_thing() -> void:

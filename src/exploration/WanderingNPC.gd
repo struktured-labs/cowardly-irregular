@@ -331,6 +331,10 @@ func _on_body_exited(body: Node2D) -> void:
 func _input(event: InputEvent) -> void:
 	if not _player_nearby or _in_conversation:
 		return
+	# Zone-listener lock gate: this handler grabs ui_accept directly — mid-cutscene presses opened phantom dialogue over the scene (struktured 2026-07-11, SavePoint-class leak).
+	var ilm_gate = get_tree().root.get_node_or_null("InputLockManager") if is_inside_tree() else null
+	if ilm_gate and ilm_gate.is_locked():
+		return
 
 	if event.is_action_pressed("ui_accept"):
 		get_viewport().set_input_as_handled()

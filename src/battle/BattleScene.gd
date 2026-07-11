@@ -2352,17 +2352,32 @@ func _tick_menu_watchdog() -> void:
 	var elapsed: int = now - _menu_wd_started_ms
 	if _menu_wd_retries >= MENU_WATCHDOG_MAX_RETRIES:
 		# Terminal fallback (msg 2379): the menu is genuinely wedged; route via autobattle so the battle continues.
-		push_error("[MENU-WATCHDOG] %s force-spawn failed %dx — routing via autobattle terminal fallback" % [pc.combatant_name, _menu_wd_retries])
+		push_error("[MENU-WATCHDOG] %s force-spawn failed %dx — routing via autobattle terminal fallback%s" % [pc.combatant_name, _menu_wd_retries, _menu_wd_diag(pc)])
 		log_message("[color=red]⚠ Menu wedged after %d retries — routing via autobattle[/color]" % _menu_wd_retries)
 		_reset_menu_watchdog()
 		if bm.has_method("execute_autobattle_for_current"):
 			bm.execute_autobattle_for_current()
 		return
-	push_warning("[MENU-WATCHDOG] %s PLAYER_SELECTING sat %dms without menu — force-spawn attempt %d/%d" % [pc.combatant_name, elapsed, _menu_wd_retries + 1, MENU_WATCHDOG_MAX_RETRIES])
+	push_warning("[MENU-WATCHDOG] %s PLAYER_SELECTING sat %dms without menu — force-spawn attempt %d/%d%s" % [pc.combatant_name, elapsed, _menu_wd_retries + 1, MENU_WATCHDOG_MAX_RETRIES, _menu_wd_diag(pc)])
 	log_message("[color=orange]⚠ Menu recovery — spawning command menu for %s (attempt %d/%d)[/color]" % [pc.combatant_name, _menu_wd_retries + 1, MENU_WATCHDOG_MAX_RETRIES])
 	_menu_wd_started_ms = now
 	_menu_wd_retries += 1
 	_show_win98_command_menu(pc)
+
+
+## Diagnostic string dumped on watchdog trip (msg 2400 root-hunt): why the menu didn't spawn on the last _show_win98_command_menu call, plus known contributing state.
+func _menu_wd_diag(pc: Combatant) -> String:
+	var reason: String = "unknown"
+	if _command_menu and "last_silent_return_reason" in _command_menu:
+		reason = _command_menu.last_silent_return_reason
+		if reason == "":
+			reason = "spawn_ok_then_closed"
+	var char_id: String = pc.combatant_name.to_lower().replace(" ", "_") if pc else "?"
+	var ab_locked: bool = "autobattle_locked" in pc and pc.autobattle_locked
+	var ab_enabled: bool = AutobattleSystem.is_autobattle_enabled(char_id) if AutobattleSystem else false
+	var in_party: bool = pc in BattleManager.player_party if BattleManager else false
+	var sprite_ct: int = party_sprite_nodes.size()
+	return " [reason=%s ab_locked=%s ab_enabled=%s in_party=%s sprite_ct=%d]" % [reason, ab_locked, ab_enabled, in_party, sprite_ct]
 
 
 func _reset_menu_watchdog() -> void:
