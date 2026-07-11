@@ -157,3 +157,21 @@ func test_save_zone_is_beside_the_crystal() -> void:
 	assert_true("shape.radius = 48.0" in src,
 		"save zone must be ~1.5 tiles — 128 was a cross-plaza grabber")
 	assert_false("shape.radius = 128.0" in src, "the old 4-tile radius must be gone")
+
+
+func test_all_zone_listeners_honor_the_input_lock() -> void:
+	# "mystery dialogue boxes while in the cutscene" on a gamepad press —
+	# every zone-listening _input handler that grabs ui_accept directly
+	# must gate on InputLockManager (SavePoint-class leak; four total).
+	for path in ["res://src/exploration/SavePoint.gd",
+			"res://src/exploration/OverworldNPC.gd",
+			"res://src/exploration/WanderingNPC.gd",
+			"res://src/exploration/AreaTransition.gd"]:
+		var src := FileAccess.get_file_as_string(path)
+		var i := src.find("func _input")
+		assert_gt(i, -1, "%s must have _input" % path)
+		var fn := src.substr(i)
+		var lock_idx := fn.find("is_locked()")
+		var accept_idx := fn.find("is_action_pressed(\"ui_accept\")")
+		assert_gt(lock_idx, -1, "%s _input must consult InputLockManager" % path)
+		assert_lt(lock_idx, accept_idx, "%s lock gate must precede ui_accept" % path)
