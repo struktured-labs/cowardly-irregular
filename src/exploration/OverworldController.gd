@@ -32,6 +32,11 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
 	"""Disconnect from player signals when freed"""
+	# A controller freed while paused stranded its GLOBAL lock — the player sat frozen until the 10s stale-expiry (web-smoke soft-error budget find 2026-07-11).
+	if _paused:
+		var ilm = get_tree().root.get_node_or_null("InputLockManager") if is_inside_tree() else null
+		if ilm:
+			ilm.pop_lock("exploration_paused")
 	if player and is_instance_valid(player):
 		if player.moved.is_connected(_on_player_moved):
 			player.moved.disconnect(_on_player_moved)
@@ -314,3 +319,11 @@ func pause_exploration() -> void:
 	var ilm = get_tree().root.get_node_or_null("InputLockManager") if is_inside_tree() else null
 	if ilm:
 		ilm.push_lock("exploration_paused")
+
+
+func _process(_delta: float) -> void:
+	# Heartbeat while paused: push_lock refreshes the timestamp, so a menu held open >10s no longer trips the stale expiry and unfreezes the player behind the open menu (web-smoke budget find #2, 2026-07-11). Dead holders release via _exit_tree.
+	if _paused and is_inside_tree():
+		var ilm = get_tree().root.get_node_or_null("InputLockManager")
+		if ilm:
+			ilm.push_lock("exploration_paused")

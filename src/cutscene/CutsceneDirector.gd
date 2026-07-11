@@ -193,6 +193,11 @@ func _process(delta: float) -> void:
 	if not _active:
 		return
 
+	# Heartbeat the input lock: cutscenes routinely run >10s, and the stale-lock expiry would otherwise re-open the mid-cutscene interact leak fixed at v3.33.108 (web-smoke budget find #2 class).
+	var ilm_hb = get_tree().root.get_node_or_null("InputLockManager")
+	if ilm_hb:
+		ilm_hb.push_lock("cutscene")
+
 	# Handle skip input (hold B/X/Escape)
 	var skip_pressed = Input.is_action_pressed("ui_cancel")
 	if skip_pressed and not _skipping:
