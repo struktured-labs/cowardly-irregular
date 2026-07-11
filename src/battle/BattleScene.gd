@@ -62,7 +62,9 @@ var use_win98_menus: bool = true  # Toggle for Win98 style menus
 
 ## Watchdog for the "menu never spawned" soft-lock class (msg 2372).
 const MENU_WATCHDOG_MS: int = 2500
+const MENU_WATCHDOG_MAX_RETRIES: int = 3
 var _menu_wd_started_ms: int = 0
+var _menu_wd_retries: int = 0
 
 ## Party status UI
 @onready var char1_name: Label = $UI/PartyStatusPanel/VBoxContainer/Character1/Name
@@ -2319,30 +2321,27 @@ func _process(delta: float) -> void:
 				_restart_battle()
 
 
-## Self-heal for a bug class we've now hit live: PLAYER_SELECTING sits without
-## a menu (msg 2372 rogue-battle soft-lock) → force-spawn if elapsed exceeds
-## MENU_WATCHDOG_MS. Skip enemy turns, spotlight-locked auto routes, trust
-## windows, and any state where a menu is already up.
+## Menu-never-spawned self-heal (msg 2372/2379): force-spawn after MENU_WATCHDOG_MS, terminal-fallback to autobattle after MAX_RETRIES.
 func _tick_menu_watchdog() -> void:
 	var bm = BattleManager
 	if bm == null:
-		_menu_wd_started_ms = 0
+		_reset_menu_watchdog()
 		return
 	if bm.current_state != bm.BattleState.PLAYER_SELECTING:
-		_menu_wd_started_ms = 0
+		_reset_menu_watchdog()
 		return
 	if bm.has_method("is_trust_interrupt_window_open") and bm.is_trust_interrupt_window_open():
-		_menu_wd_started_ms = 0
+		_reset_menu_watchdog()
 		return
 	var pc = bm.current_combatant
 	if pc == null or not is_instance_valid(pc) or not pc.is_alive:
-		_menu_wd_started_ms = 0
+		_reset_menu_watchdog()
 		return
 	if not (pc in bm.player_party):
-		_menu_wd_started_ms = 0
+		_reset_menu_watchdog()
 		return
 	if is_instance_valid(active_win98_menu) and active_win98_menu.visible:
-		_menu_wd_started_ms = 0
+		_reset_menu_watchdog()
 		return
 	var now: int = Time.get_ticks_msec()
 	if _menu_wd_started_ms == 0:
@@ -2350,13 +2349,25 @@ func _tick_menu_watchdog() -> void:
 		return
 	if now - _menu_wd_started_ms < MENU_WATCHDOG_MS:
 		return
-	# Elapsed threshold reached — the menu should be up by now. Force a
-	# spawn and log so the class of bug doesn't soft-lock silently again.
 	var elapsed: int = now - _menu_wd_started_ms
-	push_warning("[MENU-WATCHDOG] %s PLAYER_SELECTING sat %dms without menu — force-spawn" % [pc.combatant_name, elapsed])
-	log_message("[color=orange]⚠ Menu recovery — spawning command menu for %s[/color]" % pc.combatant_name)
-	_menu_wd_started_ms = 0
+	if _menu_wd_retries >= MENU_WATCHDOG_MAX_RETRIES:
+		# Terminal fallback (msg 2379): the menu is genuinely wedged; route via autobattle so the battle continues.
+		push_error("[MENU-WATCHDOG] %s force-spawn failed %dx — routing via autobattle terminal fallback" % [pc.combatant_name, _menu_wd_retries])
+		log_message("[color=red]⚠ Menu wedged after %d retries — routing via autobattle[/color]" % _menu_wd_retries)
+		_reset_menu_watchdog()
+		if bm.has_method("execute_autobattle_for_current"):
+			bm.execute_autobattle_for_current()
+		return
+	push_warning("[MENU-WATCHDOG] %s PLAYER_SELECTING sat %dms without menu — force-spawn attempt %d/%d" % [pc.combatant_name, elapsed, _menu_wd_retries + 1, MENU_WATCHDOG_MAX_RETRIES])
+	log_message("[color=orange]⚠ Menu recovery — spawning command menu for %s (attempt %d/%d)[/color]" % [pc.combatant_name, _menu_wd_retries + 1, MENU_WATCHDOG_MAX_RETRIES])
+	_menu_wd_started_ms = now
+	_menu_wd_retries += 1
 	_show_win98_command_menu(pc)
+
+
+func _reset_menu_watchdog() -> void:
+	_menu_wd_started_ms = 0
+	_menu_wd_retries = 0
 
 
 func _process_hold_a(delta: float) -> void:

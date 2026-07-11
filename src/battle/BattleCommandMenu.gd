@@ -41,6 +41,7 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 	close_win98_menu()
 
 	# Spotlight gate: locked PCs route through autobattle. Debug override wins.
+	# Solo-player_party override mirrors BattleManager._process_next_selection (msg 2372/2376): a duelist inside their own spotlight duel plays their turn.
 	if "autobattle_locked" in combatant and combatant.autobattle_locked:
 		var debug_override = GameState and "debug_all_pcs_unlocked" in GameState and GameState.debug_all_pcs_unlocked
 		# Their OWN duel is the one place a locked PC plays manually: routing (BattleManager) already overrides for solo duels, but this independent gate still refused the menu — watchdog looped 'Menu recovery' forever and the duel was unplayable (struktured cap 2026-07-11).
