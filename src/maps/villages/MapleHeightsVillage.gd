@@ -270,7 +270,10 @@ func _setup_npcs() -> void:
 	# === W2 SIDE-QUEST CAST (QuestSystem owns dialogue when business exists) ===
 
 	# Gerald — acceptable_variance giver, defending one wildflower from the HOA.
-	var gerald = _create_npc("Gerald", "villager", Vector2(9 * TILE_SIZE, 6 * TILE_SIZE), [
+	# (He and the flower were inside the Suburban Mart block pre-2026-07-11 —
+	# the giver was unreachable and the emitter sprite invisible. Now on the
+	# garden row fronting the south houses.)
+	var gerald = _create_npc("Gerald", "villager", Vector2(7 * TILE_SIZE, 13 * TILE_SIZE), [
 		"That flower is NOT a violation. It was here first.",
 	])
 	gerald.npc_id = "gerald_w2"
@@ -280,7 +283,7 @@ func _setup_npcs() -> void:
 	var FlowerScript = load("res://src/exploration/WildflowerPatch.gd")
 	if FlowerScript:
 		var flower = FlowerScript.new()
-		flower.position = Vector2(10 * TILE_SIZE + TILE_SIZE / 2, 7 * TILE_SIZE)
+		flower.position = Vector2(10 * TILE_SIZE, 13 * TILE_SIZE)
 		npcs.add_child(flower)
 
 	# Mrs. Pemberton — front porch next door; watching since before the HOA.

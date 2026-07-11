@@ -316,7 +316,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(scholar)
 
 	# Retired Adventurer (autogrind hints)
-	var retired = _create_npc("Greta the Grey", "elder", Vector2(4 * TILE_SIZE, 15 * TILE_SIZE), [
+	var retired = _create_npc("Greta the Grey", "elder", Vector2(2 * TILE_SIZE, 16 * TILE_SIZE), [
 		"*cough* In my day, we ground levels by HAND!",
 		"But these young folk... they let the game PLAY ITSELF.",
 		"Press F6 or Select to toggle autobattle for everyone!",
@@ -342,7 +342,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(existential)
 
 	# Chicken Chaser wannabe
-	var chicken = _create_npc("Cluck Norris", "villager", Vector2(6 * TILE_SIZE, 19 * TILE_SIZE), [
+	var chicken = _create_npc("Cluck Norris", "villager", Vector2(8 * TILE_SIZE, 19 * TILE_SIZE), [
 		"HAVE YOU SEEN MY CHICKENS?!",
 		"They escaped during the last monster attack!",
 		"I had SEVENTEEN of them!",
@@ -364,7 +364,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(meta)
 
 	# Sleeping NPC
-	var sleepy = _create_npc("Zzz...", "villager", Vector2(3.5 * TILE_SIZE, 3 * TILE_SIZE), [
+	var sleepy = _create_npc("Zzz...", "villager", Vector2(2 * TILE_SIZE, 5 * TILE_SIZE), [
 		"Zzz...",
 		"Zzz... five more minutes...",
 		"Zzz... no... I don't want to fight slimes...",
@@ -409,13 +409,13 @@ func _setup_npcs() -> void:
 	])
 	npcs.add_child(aldwick)
 
-	# one_chicken_problem step-2 puzzle: 5 of the 7 hens roost in Harmonia.
-	# (cave approach + Inn kitchen carry the other two.) The guild hen is
-	# temp-placed here until the Scriptura scene lands, per its wiring note.
+	# one_chicken_problem step-2 puzzle: 4 of the 7 hens roost in Harmonia.
+	# (Cave approach + Inn kitchen + the Scriptura Guild carry the other
+	# three — the guild hen moved home 2026-07-11; its temp spot here sat
+	# inside the Inn wall block and was uncatchable, live playtest find.)
 	_place_chicken("chicken_harmonia_market", Vector2(15 * TILE_SIZE, 12 * TILE_SIZE))
 	_place_chicken("chicken_harmonia_flowerbed", Vector2(26 * TILE_SIZE, 2 * TILE_SIZE))
 	_place_chicken("chicken_harmonia_backlot", Vector2(3 * TILE_SIZE, 19 * TILE_SIZE))
-	_place_chicken("chicken_guild", Vector2(5 * TILE_SIZE, 8 * TILE_SIZE))
 	# The unnamed seventh — beside Phil the Lost at the well. Phil's line lands
 	# on catch (the hen keeps returning to him, mirroring Phil to Harmonia).
 	_place_chicken("chicken_phil_well", Vector2(21 * TILE_SIZE, 16 * TILE_SIZE),
@@ -439,7 +439,7 @@ func _setup_npcs() -> void:
 		npcs.add_child(sword)
 
 	# Rowan the courier — word_from_capital giver, by the fountain square
-	var rowan = _create_npc("Rowan", "traveler", Vector2(13 * TILE_SIZE, 7 * TILE_SIZE), [
+	var rowan = _create_npc("Rowan", "traveler", Vector2(13 * TILE_SIZE, 5 * TILE_SIZE), [
 		"A letter for Scriptura. No stamp, no seal, no sender. Typical.",
 	])
 	rowan.npc_id = "rowan_harmonia"
