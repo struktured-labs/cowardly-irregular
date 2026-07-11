@@ -911,13 +911,21 @@ func _begin_staging() -> void:
 	var stage := _get_live_stage()
 	if stage == null:
 		return
-	# Known HUD widget fields on exploration scenes — hide if present + visible.
+	# Field-HUD widgets are Nodes wrapping a _canvas CanvasLayer (not CanvasItems) — resolve like GameLoop._set_field_hud_hidden or the hide silently no-ops.
 	for prop in ["_minimap", "_threat_meter", "_quest_tracker", "_objective_arrow", "_border_indicator", "_danger_zone"]:
-		if prop in stage:
-			var w = stage.get(prop)
-			if w is CanvasItem and is_instance_valid(w) and w.visible:
-				w.visible = false
-				_stage_hidden.append(w)
+		if not (prop in stage):
+			continue
+		var w = stage.get(prop)
+		if w == null or (w is Object and not is_instance_valid(w)):
+			continue
+		var target = null
+		if w is CanvasItem or w is CanvasLayer:
+			target = w
+		elif w is Node and "_canvas" in w and w._canvas is CanvasLayer:
+			target = w._canvas
+		if target and is_instance_valid(target) and target.visible:
+			target.visible = false
+			_stage_hidden.append(target)
 
 
 ## Staged teardown: despawn puppets, restore hidden nodes + camera. Idempotent —

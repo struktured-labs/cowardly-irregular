@@ -209,6 +209,42 @@ func test_replace_npc_hides_live_npc_and_inherits_position() -> void:
 	assert_true(d._actors.is_empty(), "_end_staging must clear the actor registry")
 
 
+class FakeHudWidget extends Node:
+	var _canvas: CanvasLayer
+
+
+class FakeHudStage extends Node2D:
+	var _minimap = null
+	var _quest_tracker = null
+
+
+func test_begin_staging_hides_canvaslayer_wrapped_hud_widgets() -> void:
+	# All six field-HUD widgets are Nodes wrapping a _canvas CanvasLayer, NOT
+	# CanvasItems — an `is CanvasItem` filter silently skips every one, so an
+	# overworld staged scene would keep the minimap/tracker painted over the
+	# puppets (same gap GameLoop._set_field_hud_hidden fixed in v3.33.105).
+	var stage := FakeHudStage.new()
+	add_child_autofree(stage)
+	var widget := FakeHudWidget.new()
+	widget._canvas = CanvasLayer.new()
+	widget.add_child(widget._canvas)
+	stage.add_child(widget)
+	stage._minimap = widget
+	var plain := ColorRect.new()
+	stage.add_child(plain)
+	stage._quest_tracker = plain
+	MapSystem.current_map = stage
+	var d = _new_director()
+	d._begin_staging()
+	assert_false(widget._canvas.visible,
+		"_begin_staging must hide the wrapped _canvas CanvasLayer, not skip Node-based widgets")
+	assert_false(plain.visible,
+		"_begin_staging must still hide plain CanvasItem widgets")
+	d._end_staging()
+	assert_true(widget._canvas.visible, "_end_staging must restore the wrapped CanvasLayer")
+	assert_true(plain.visible, "_end_staging must restore CanvasItem widgets")
+
+
 func test_begin_staging_hides_player_and_end_staging_restores() -> void:
 	var player := Node2D.new()
 	player.add_to_group("player")
