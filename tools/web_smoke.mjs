@@ -41,6 +41,15 @@ if (booted && errors.length === 0) {
   await page.waitForTimeout(12000);     // prologue cutscene / scene load
   await page.screenshot({ path: 'tmp/web_smoke_ingame.png' });
 }
+
+// Stage 3: open the overworld menu (Escape = ui_menu) — UI chrome is where
+// theme fonts/symbols render, so this screenshot is the font-chain + menu
+// layout regression surface. Escape (not Enter) so no NPC interaction fires.
+if (booted && errors.length === 0) {
+  await page.keyboard.press('Escape');
+  await page.waitForTimeout(2500);
+  await page.screenshot({ path: 'tmp/web_smoke_menu.png' });
+}
 await browser.close();
 
 if (errors.length) {
@@ -52,4 +61,4 @@ if (!booted) {
   console.log('[WEB-SMOKE] FAIL — engine banner never appeared within ' + BOOT_BUDGET_MS + 'ms');
   process.exit(2);
 }
-console.log('[WEB-SMOKE] PASS — booted + entered gameplay, no fatals (tmp/web_smoke.png, tmp/web_smoke_ingame.png)');
+console.log('[WEB-SMOKE] PASS — booted + gameplay + menu, no fatals (tmp/web_smoke{,_ingame,_menu}.png)');
