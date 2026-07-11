@@ -312,6 +312,13 @@ func take_damage(amount: int, is_magical: bool = false) -> int:
 	var old_hp = current_hp
 	current_hp = max(0, current_hp - actual_damage)
 
+	# Spotlight-duel clutch floor (struktured ruling 2026-07-11 msg 2376).
+	if current_hp <= 0 and old_hp == max_hp and is_inside_tree():
+		var gl_floor: Node = get_tree().root.get_node_or_null("GameLoop")
+		if gl_floor and "_spotlight_duel_active" in gl_floor and bool(gl_floor._spotlight_duel_active):
+			current_hp = 1
+			print("[SPOTLIGHT-FLOOR] %s clutch-survived a full-HP one-shot at 1 HP" % combatant_name)
+
 	## Tick 439: death_resistance passive — meta_effects.death_resist
 	## _chance gives a roll to survive a killing blow at 1 HP.
 	## Pre-fix the passive description claimed "75% chance to survive
