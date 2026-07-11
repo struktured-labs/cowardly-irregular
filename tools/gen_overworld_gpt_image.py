@@ -47,7 +47,7 @@ from PIL import Image
 
 REPO = Path(__file__).resolve().parent.parent
 DRIVE_LOCAL = REPO / "assets" / "sprites" / "drive_archive" / "Game graphics - Characters"
-GAME_JOBS = Path(os.environ.get("GAME_REPO", "/home/struktured/projects/cowardly-irregular")) / "assets" / "sprites" / "jobs"
+GAME_JOBS = Path(os.environ.get("GAME_REPO", "/home/struktured/projects/cowardly-irregular-artist-ship")) / "assets" / "sprites" / "jobs"
 TMP = REPO / "tmp" / "overworld_gpt_image"
 TMP.mkdir(parents=True, exist_ok=True)
 
@@ -465,7 +465,7 @@ def export_idle_frame(ase_path: Path, idle_tag: str, out_png: Path) -> None:
 
 def get_proc_gen_chibi(job: str, out_png: Path) -> bool:
     """Recover the proc-gen 128x128 chibi reference from git HEAD of the game repo."""
-    game_repo = Path(os.environ.get("GAME_REPO", "/home/struktured/projects/cowardly-irregular"))
+    game_repo = Path(os.environ.get("GAME_REPO", "/home/struktured/projects/cowardly-irregular-artist-ship"))
     rel = f"assets/sprites/jobs/{job}/overworld.png"
     res = subprocess.run(
         ["git", "show", f"HEAD:{rel}"],
@@ -958,7 +958,7 @@ def main():
         print("[5] skipping upload (--no-upload)")
 
     # 6. Deploy to game
-    dest = Path(os.environ.get("GAME_REPO", "/home/struktured/projects/cowardly-irregular")) \
+    dest = Path(os.environ.get("GAME_REPO", "/home/struktured/projects/cowardly-irregular-artist-ship")) \
         / "assets" / "sprites" / dest_root / args.entity / "overworld.png"
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_bytes(grid_out.read_bytes())
