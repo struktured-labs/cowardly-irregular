@@ -3,10 +3,10 @@ extends GutTest
 ## Advance escalation ladder (struktured-approved via cowir-sfx, 2026-07-11/12).
 ## Each Advance press plays advance_<job>_<depth 1..3> when the manifest has
 ## it; every other job falls back to the arcade credit. Depth = queue size
-## AFTER the press. Fighter STEEL + Cleric Faith + Rogue inverted tiers
-## shipped v3.33.133-134; the fighter STEEL set replaced the drum-v1 pilot.
+## AFTER the press. Fighter STEEL / Cleric Faith / Rogue inverted / Mage
+## arcane tiers shipped v3.33.133-135; STEEL replaced the drum-v1 pilot.
 
-const LADDERED_JOBS := ["fighter", "cleric", "rogue"]
+const LADDERED_JOBS := ["fighter", "cleric", "rogue", "mage"]
 
 
 func test_laddered_jobs_have_all_three_tiers() -> void:
