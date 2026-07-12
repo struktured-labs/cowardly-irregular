@@ -367,6 +367,9 @@ func _maybe_run_battle_smoke() -> void:
 	AudioServer.set_bus_mute(0, true)
 	await get_tree().create_timer(1.0).timeout
 	print("[SMOKE] render smoke starting (full=%s)" % str(full))
+	# Deterministic smoke: neutralize this box's dev flags — debug_all_pcs_unlocked force-clears is_player_trusted (BattleManager) and breaks the game-over leg's auto-play.
+	if GameState and "debug_all_pcs_unlocked" in GameState:
+		GameState.debug_all_pcs_unlocked = false
 	_close_title_screen()
 	await get_tree().process_frame
 	await get_tree().process_frame

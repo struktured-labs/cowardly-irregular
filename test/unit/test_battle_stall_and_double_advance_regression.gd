@@ -57,6 +57,18 @@ func test_advance_defer_have_no_drifting_trigger_axis() -> void:
 	assert_true("button_index\":9" in dfr, "battle_defer keeps LB (button 9)")
 
 
+func test_render_smoke_neutralizes_debug_unlock() -> void:
+	# A dev box's settings.json can carry debug_all_pcs_unlocked=true, which
+	# force-clears is_player_trusted (BattleManager) and stalls the smoke's
+	# game-over auto-play leg. The smoke must reset it for determinism.
+	var src := FileAccess.get_file_as_string("res://src/GameLoop.gd")
+	var i := src.find("func _maybe_run_battle_smoke")
+	assert_gt(i, -1, "smoke entry must exist")
+	var body := src.substr(i, 900)
+	assert_true("debug_all_pcs_unlocked = false" in body,
+		"render smoke must force debug_all_pcs_unlocked=false so dev settings can't break the game-over leg")
+
+
 func test_advance_debounce_suppresses_rapid_double_fire() -> void:
 	var menu = Win98MenuClass.new()
 	add_child_autofree(menu)
