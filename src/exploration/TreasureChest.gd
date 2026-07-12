@@ -251,9 +251,14 @@ func _draw_chest(image: Image) -> void:
 func _setup_collision() -> void:
 	var collision = CollisionShape2D.new()
 	var shape = CircleShape2D.new()
-	shape.radius = 128.0
+	# Mode 7 overworld needs the tall billboard grab zone; flat villages read that as a 4-tile grabber arm (struktured 2026-07-12: "opened a chest 5 tiles away").
+	if Mode7Overlay.is_active:
+		shape.radius = 128.0
+		collision.scale = Vector2(1.0, 1.67)  # Mode 7 billboard Y:X ratio (0.3:0.5)
+	else:
+		shape.radius = 40.0  # ~1.25 tiles for flat villages/interiors
+		collision.scale = Vector2.ONE
 	collision.shape = shape
-	collision.scale = Vector2(1.0, 1.67)  # Y-stretch: matches Mode 7 billboard Y:X ratio (0.3:0.5)
 	add_child(collision)
 
 	collision_layer = 4

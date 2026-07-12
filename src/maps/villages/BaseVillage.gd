@@ -158,7 +158,9 @@ func _add_interior_door(node_name: String, target_map: String, label: String, po
 	door.position = pos
 	var collision = CollisionShape2D.new()
 	var shape = RectangleShape2D.new()
-	shape.size = Vector2(TILE_SIZE * 2, TILE_SIZE)
+	# Centered on the door origin the box sits in the impassable wall row; shift it DOWN onto the walkable approach or body_entered never fires (struktured 2026-07-12: "can't enter the library even on the arrow").
+	shape.size = Vector2(TILE_SIZE * 2, TILE_SIZE * 1.5)
+	collision.position = Vector2(0, TILE_SIZE * 0.75)
 	collision.shape = shape
 	door.add_child(collision)
 	door.collision_layer = 4
