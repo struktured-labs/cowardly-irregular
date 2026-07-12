@@ -64,6 +64,30 @@
       "prompt_influence": 0.0,
       "fallback_to": "menu_select"
     },
+    "advance_fighter_1": {
+      "file": "assets/audio/sfx/advance_fighter_1.ogg",
+      "source": "elevenlabs_foley",
+      "prompt": "Fighter advance press 1 (STEEL interpretation) — single confident blade tap + a touch of low body, present and clear. Essence: Resolve, the weapon readied and held. Ladder tier 1/3, ~-17.5 dB mean (loud floor; the drum-v1 tier-1 was too quiet in-game).",
+      "duration_seconds": 0.45,
+      "prompt_influence": 0.0,
+      "fallback_to": "advance_queue"
+    },
+    "advance_fighter_2": {
+      "file": "assets/audio/sfx/advance_fighter_2.ogg",
+      "source": "elevenlabs_foley",
+      "prompt": "Fighter advance press 2 (STEEL) — sword drawn (metallic slide into ring) + shield braced with weight + sub. Heavier, closer. Tier 2/3, ~-14.7 dB.",
+      "duration_seconds": 0.75,
+      "prompt_influence": 0.0,
+      "fallback_to": "advance_queue"
+    },
+    "advance_fighter_3": {
+      "file": "assets/audio/sfx/advance_fighter_3.ogg",
+      "source": "elevenlabs_foley",
+      "prompt": "Fighter advance press 3 full ham (STEEL) — full draw + a big ringing steel CLANG (sustained, spectrally verified 65% high-mid tail) over the shield thunk + sub punch. The ring is the payoff. Tier 3/3, ~-13.9 dB, PCM peak -0.8.",
+      "duration_seconds": 1.03,
+      "prompt_influence": 0.0,
+      "fallback_to": "advance_queue"
+    },
     "advance_undo": {
       "file": "assets/audio/sfx/advance_undo.ogg",
       "prompt": "Gun slide racking backward, mechanical metal slide retraction, weapon uncocking click-clack",
