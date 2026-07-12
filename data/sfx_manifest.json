@@ -136,6 +136,30 @@
       "prompt_influence": 0.0,
       "fallback_to": "advance_queue"
     },
+    "advance_mage_1": {
+      "file": "assets/audio/sfx/advance_mage_1.ogg",
+      "source": "lmms_sf2_fluidr3",
+      "prompt": "Mage advance press 1 — single clean CORRECT celesta chime, precise, no error (he's sure). Essence: Logic / forensic mathematics. Arcane crystalline interpretation. Tier 1/3, ~-15 dB.",
+      "duration_seconds": 1.0,
+      "prompt_influence": 0.0,
+      "fallback_to": "advance_queue"
+    },
+    "advance_mage_2": {
+      "file": "assets/audio/sfx/advance_mage_2.ogg",
+      "source": "lmms_sf2_fluidr3",
+      "prompt": "Mage advance press 2 — a WRONG celesta chime (F#5), then the RIGHT one (G5) re-strikes over its shimmer: 'No—wait. Then it's the other thing.' Revision without flinching; the wrong note stays hearable. Tier 2/3, ~-13 dB.",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.0,
+      "fallback_to": "advance_queue"
+    },
+    "advance_mage_3": {
+      "file": "assets/audio/sfx/advance_mage_3.ogg",
+      "source": "lmms_sf2_fluidr3",
+      "prompt": "Mage advance press 3 full ham — an ascending cascade of celesta computations (C-E-G-B), the LAST one self-corrects (C#6 wrong -> D6 right) and rings out. Tier 3/3, ~-11 dB.",
+      "duration_seconds": 1.7,
+      "prompt_influence": 0.0,
+      "fallback_to": "advance_queue"
+    },
     "advance_undo": {
       "file": "assets/audio/sfx/advance_undo.ogg",
       "prompt": "Gun slide racking backward, mechanical metal slide retraction, weapon uncocking click-clack",
