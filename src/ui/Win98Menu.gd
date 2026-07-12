@@ -468,7 +468,7 @@ func _play_expand_sound() -> void:
 
 func _play_advance_sound(depth: int = 1) -> void:
 	"""Play sound when queueing an action (Advance mode)"""
-	# Per-job escalation ladder (struktured-approved: fighter STEEL + cleric Faith tiers); jobs without a ladder key fall back to the arcade credit.
+	# Per-job escalation ladder (struktured-approved: fighter STEEL + cleric Faith + rogue inverted tiers); jobs without a ladder key fall back to the arcade credit.
 	var key := "advance_%s_%d" % [_character_class, clampi(depth, 1, 3)]
 	if SoundManager._sfx_manifest.has(key):
 		SoundManager.play_battle(key)
