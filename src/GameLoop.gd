@@ -2657,6 +2657,10 @@ func start_solo_battle(job_id: String, enemy_id: String, _opts: Dictionary = {})
 	_spotlight_saved_party.clear()
 	_spotlight_duel_active = false
 	_pending_spotlight_unlock = ""
+	# Tear the stale BattleScene down under the cutscene's opaque layer so aftermath narration doesn't overlay a live battle: boss music kept playing + survive_turns re-fired end_battle every tick (the "background restart"), and _unfreeze_player at cutscene end had no player behind the layer (Rogue "frozen" after "everyone back"). Skip on defeat: the retry loop owns the next _start_battle_async which frees the scene itself.
+	if result:
+		_cutscene_cooldown = true  # skip pending-story re-fire from _start_exploration
+		await _return_to_exploration()
 	return "victory" if result else "defeat"
 
 
