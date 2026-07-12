@@ -1461,7 +1461,8 @@ func _get_pending_story_cutscene() -> String:
 	# permanently locked into autobattle. Gating on chapter1_complete +
 	# being in harmonia_village makes the cleric unlock at the natural
 	# story moment, matching the design comment at line ~1607.
-	if flags.get("cutscene_flag_chapter1_complete", false) and not flags.get("cutscene_flag_spotlight_unlocked_cleric", false) and not _chaining_story_cutscene:
+	# 2026-07-12: previously guarded on `not _chaining_story_cutscene` which blocked chapter1→cleric chain, leaving the player wondering "wait, what now?" after Theron's briefing. Drop the guard so the spotlight fires as chapter1's payoff.
+	if flags.get("cutscene_flag_chapter1_complete", false) and not flags.get("cutscene_flag_spotlight_unlocked_cleric", false):
 		if _current_map_id == "harmonia_village":
 			return "world1_spotlight_cleric_ch1"
 	if flags.get("cutscene_flag_chapter1_complete", false) and not flags.get("cutscene_flag_chapter2_complete", false):

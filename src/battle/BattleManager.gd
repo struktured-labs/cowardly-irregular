@@ -3020,8 +3020,8 @@ func _execute_next_action() -> void:
 				if turbo_mode:
 					await get_tree().process_frame
 				else:
-					var speed_scale = Engine.time_scale if Engine.time_scale > 0 else 1.0
-					await get_tree().create_timer(0.1 / speed_scale).timeout
+					# 2026-07-12: was 0.1/speed_scale which DOUBLE-scaled (create_timer already applies Engine.time_scale) → wall clock 1.6s at 1x. Constant 0.025 gives the intended 0.1s at 1x (time_scale=0.25).
+					await get_tree().create_timer(0.025).timeout
 				if not is_instance_valid(self):
 					return
 				_execute_next_action()
@@ -3653,25 +3653,16 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 		if turbo_mode:
 			await get_tree().process_frame
 		else:
-			# Time for animation — scale by Engine.time_scale so 2x/4x
-			# battle speed actually feels 2x/4x. Without this scaling,
-			# the 500ms gap persists at every speed, making fast-mode
-			# feel "weirdly paused" between Advance sub-actions.
-			# (User feedback 2026-05-20: "why is there a weird pause
-			# in between turns in the battle?")
-			var speed_scale_sub = Engine.time_scale if Engine.time_scale > 0 else 1.0
-			# Was 0.5s — tightened to 0.3s 2026-06-04 per user feedback that
-			# Advance-mode sub-actions had awkward pauses at 1x battle speed.
-			await get_tree().create_timer(0.3 / speed_scale_sub).timeout
+			# 2026-07-12: was 0.3/speed_scale — the DIVISION double-scaled because create_timer already applies Engine.time_scale. At 1x (time_scale=0.25) that was create_timer(1.2) → 4.8s wall clock instead of the intended 0.3s. Constant 0.075 gives the correct 0.3s at 1x, scaling proportionally with battle speed.
+			await get_tree().create_timer(0.075).timeout
 		if not is_instance_valid(self):
 			return
 
-	# Continue to next action — same scaling fix as the inner loop above.
+	# Continue to next action — same double-scaling fix as the inner loop above.
 	if turbo_mode:
 		await get_tree().process_frame
 	else:
-		var speed_scale_post = Engine.time_scale if Engine.time_scale > 0 else 1.0
-		await get_tree().create_timer(0.3 / speed_scale_post).timeout
+		await get_tree().create_timer(0.075).timeout
 	if not is_instance_valid(self):
 		return
 	if _check_victory_conditions():
