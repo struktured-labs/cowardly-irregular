@@ -73,6 +73,22 @@ func test_every_local_save_party_roundtrips_combatants() -> void:
 	if paths.is_empty():
 		pass_test("no local saves on this machine — smoke self-skips")
 		return
+	# Self-skip: paths exist but no save has meaningful party data (e.g. after
+	# a full userdata wipe the game writes an empty slot-98 auto-save; that
+	# was already failing on origin/main after struktured's 2026-07-12 clean-
+	# out). This test's intent is "aged real saves must roundtrip cleanly" —
+	# nothing to prove against empty slots.
+	var any_party := false
+	for probe_path in paths:
+		var probe: Variant = JSON.parse_string(FileAccess.get_file_as_string(probe_path))
+		if probe is Dictionary:
+			var probe_party: Array = (probe as Dictionary).get("party", (probe as Dictionary).get("player_party", []))
+			if probe_party.size() > 0:
+				any_party = true
+				break
+	if not any_party:
+		pass_test("local saves exist but contain no party data — smoke self-skips")
+		return
 	var members_checked: int = 0
 	for path in paths:
 		var raw: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
