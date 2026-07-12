@@ -213,6 +213,9 @@ func _input(event: InputEvent) -> void:
 	var ilm_gate = get_tree().root.get_node_or_null("InputLockManager") if is_inside_tree() else null
 	if ilm_gate and ilm_gate.is_locked():
 		return
+	# 2026-07-12: also gate on tutorial hints — a "world_transition" hint that fires as the player steps into a portal would fire the transition on the dismiss press.
+	if TutorialHint.is_any_active():
+		return
 	if require_interaction and _player_in_zone:
 		# `not event.is_echo()` filters key-repeat — holding ui_accept used
 		# to fire _trigger_transition once per repeat tick before the scene

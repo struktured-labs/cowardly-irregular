@@ -183,7 +183,9 @@ var _queued_actions: Array = []  # Actions queued via Advance mode
 var _max_queue_size: int = 4  # Max actions (limited by AP)
 var _is_closing: bool = false  # Prevent double-close
 var _last_advance_ms: int = 0  # Debounce battle_advance vs dual button+axis / drifting-trigger double-fire
+var _last_defer_ms: int = 0  # Debounce battle_defer for the same reason (LB button + LT axis 4)
 const ADVANCE_DEBOUNCE_MS: int = 120
+const DEFER_DEBOUNCE_MS: int = 120
 var _current_ap: int = 0  # Current AP for display
 var _ap_label: Label = null  # AP display label
 var _can_go_back: bool = false  # Whether B button can go to previous player
@@ -1087,6 +1089,11 @@ func _handle_advance_input() -> void:
 func _handle_defer_input() -> void:
 	"""Handle L button release - undo last queued action, or defer if no queue"""
 	var root = _get_root_menu()
+	# Same debounce as advance: LB button + LT axis 4 can both fire on one squeeze; drifting trigger jitters.
+	var now_ms := Time.get_ticks_msec()
+	if now_ms - root._last_defer_ms < DEFER_DEBOUNCE_MS:
+		return
+	root._last_defer_ms = now_ms
 	if root._queued_actions.size() > 0:
 		# Undo last queued action (from any menu depth)
 		_undo_last_action()

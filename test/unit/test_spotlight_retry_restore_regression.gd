@@ -51,11 +51,13 @@ func test_solo_battle_calls_restore_every_attempt() -> void:
 
 
 func test_retry_loop_has_a_beat() -> void:
-	# Instant restart on a fresh defeat read as a glitch — the retry
-	# branch must wait a beat before relaunching.
+	# Instant restart on a fresh defeat read as a glitch — the retry branch
+	# must wait a beat before relaunching. 2026-07-12: the raw create_timer
+	# pause is replaced by _play_spotlight_retry_sting (SFX + shake + red
+	# flash → black tween) which IS the beat, richer than a dead pause.
 	var src: String = FileAccess.get_file_as_string("res://src/cutscene/CutsceneDirector.gd")
 	var idx: int = src.find("\"retry\":")
 	assert_gt(idx, -1)
 	var window: String = src.substr(idx, 400)
-	assert_true(window.contains("create_timer"),
-		"retry must breathe before relaunching the duel")
+	assert_true(window.contains("_play_spotlight_retry_sting()"),
+		"retry must breathe before relaunching the duel — the sting owns the pacing now")

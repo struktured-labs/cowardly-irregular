@@ -12,14 +12,25 @@ extends GutTest
 
 const TILE := 32
 
-## Extend this list as villages gain interiors — the framework is village-agnostic.
+## All authored villages (W1-W6) — framework is village-agnostic; keep in sync
+## with src/maps/villages/*.gd. Validates the interior-door fix + chest sizing
+## across every village, not just W1 where the bug was reported.
 const VILLAGE_SCRIPTS := [
+	# W1
 	"res://src/maps/villages/HarmoniaVillage.gd",
 	"res://src/maps/villages/SandriftVillage.gd",
 	"res://src/maps/villages/EldertreeVillage.gd",
 	"res://src/maps/villages/GrimhollowVillage.gd",
 	"res://src/maps/villages/IronhavenVillage.gd",
 	"res://src/maps/villages/FrostholdVillage.gd",
+	# W2+ (suburban / steampunk / industrial / futuristic / abstract)
+	"res://src/maps/villages/MapleHeightsVillage.gd",
+	"res://src/maps/villages/MapleStripMall.gd",
+	"res://src/maps/villages/BrasstonVillage.gd",
+	"res://src/maps/villages/ScripturaPlaza.gd",
+	"res://src/maps/villages/RivetRowVillage.gd",
+	"res://src/maps/villages/NodePrimeVillage.gd",
+	"res://src/maps/villages/VertexVillage.gd",
 ]
 
 
