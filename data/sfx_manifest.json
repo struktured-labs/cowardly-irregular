@@ -88,6 +88,30 @@
       "prompt_influence": 0.0,
       "fallback_to": "advance_queue"
     },
+    "advance_cleric_1": {
+      "file": "assets/audio/sfx/advance_cleric_1.ogg",
+      "source": "lmms_sf2_fluidr3",
+      "prompt": "Cleric advance press 1 — soft latch-click, a genuine PAUSE (the half-second before the prayer, cowir-story), then a single warm tubular-bell chime over an open church-organ fifth. Essence: Faith. Tier 1/3, ~-18 dB (present floor).",
+      "duration_seconds": 1.68,
+      "prompt_influence": 0.0,
+      "fallback_to": "advance_queue"
+    },
+    "advance_cleric_2": {
+      "file": "assets/audio/sfx/advance_cleric_2.ogg",
+      "source": "lmms_sf2_fluidr3",
+      "prompt": "Cleric advance press 2 — pause SHORTENS (she's surer), bell chime + B over a SUSPENDED organ chord (Csus, unresolved tension). Tier 2/3, ~-13 dB.",
+      "duration_seconds": 1.83,
+      "prompt_influence": 0.0,
+      "fallback_to": "advance_queue"
+    },
+    "advance_cleric_3": {
+      "file": "assets/audio/sfx/advance_cleric_3.ogg",
+      "source": "lmms_sf2_fluidr3",
+      "prompt": "Cleric advance press 3 full ham — tiny pause, then the suspension RESOLVES: full C-major chord (organ + choir Aahs) + a bright tubular-bell peal ringing out (spectral-verified C-E-G-C-E). 'Teaches wounds to be over with.' Tier 3/3, ~-12 dB.",
+      "duration_seconds": 2.45,
+      "prompt_influence": 0.0,
+      "fallback_to": "advance_queue"
+    },
     "advance_undo": {
       "file": "assets/audio/sfx/advance_undo.ogg",
       "prompt": "Gun slide racking backward, mechanical metal slide retraction, weapon uncocking click-clack",
