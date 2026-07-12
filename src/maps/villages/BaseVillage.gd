@@ -61,6 +61,7 @@ var spawn_points: Dictionary = {}
 func _ready() -> void:
 	# Villages are never Mode 7 — clear the static so the overworld boost cannot leak in.
 	Mode7Overlay.is_active = false
+	Mode7Overlay.camera_angle = 0.0  # Defense-in-depth: OverworldPlayer reads this UNCONDITIONALLY, so a leaked non-zero angle would rotate village movement.
 	_setup_scene()
 	_generate_map()
 	_setup_transitions()

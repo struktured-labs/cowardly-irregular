@@ -104,6 +104,12 @@ func _on_body_exited(body: Node2D) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	# Zone-listener class fix (subagent 2026-07-12): a cutscene/dialogue A-press must not also fire the interactable, and a tutorial-hint dismiss press must not either.
+	if TutorialHint.is_any_active():
+		return
+	var ilm = get_tree().root.get_node_or_null("InputLockManager") if is_inside_tree() else null
+	if ilm and ilm.is_locked():
+		return
 	if _player_in_zone and not _busy and event.is_action_pressed("ui_accept"):
 		get_viewport().set_input_as_handled()
 		_busy = true

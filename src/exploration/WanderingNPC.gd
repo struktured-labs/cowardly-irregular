@@ -335,6 +335,9 @@ func _input(event: InputEvent) -> void:
 	var ilm_gate = get_tree().root.get_node_or_null("InputLockManager") if is_inside_tree() else null
 	if ilm_gate and ilm_gate.is_locked():
 		return
+	# 2026-07-12: also gate on tutorial hints — a hint dismiss press near a wandering NPC would fire dialogue.
+	if TutorialHint.is_any_active():
+		return
 
 	if event.is_action_pressed("ui_accept"):
 		get_viewport().set_input_as_handled()
