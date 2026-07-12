@@ -1339,6 +1339,12 @@ func _step_selection(delta: int) -> void:
 
 func _input(event: InputEvent) -> void:
 	"""Handle input for menu navigation"""
+	# A closing/queued-free menu still receives _input until freed — bail so one press isn't handled twice (double Advance / menu overlap).
+	if is_queued_for_deletion() or _is_closing:
+		return
+	# A tutorial hint is capturing input, or another handler already consumed this event — don't double-fire a menu action.
+	if TutorialHint.is_any_active() or get_viewport().is_input_handled():
+		return
 	# Wait for input delay to prevent accidental selection
 	if not _can_accept_input:
 		return

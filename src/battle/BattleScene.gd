@@ -3545,6 +3545,9 @@ func _on_enemy_died(enemy_idx: int) -> void:
 
 func _input(event: InputEvent) -> void:
 	"""Handle high-priority inputs: Select button, battle speed toggle, and repeat actions"""
+	# Tutorial hint capturing input — its dismiss press must not also toggle autobattle/speed/formation.
+	if TutorialHint.is_any_active():
+		return
 	# Trust interrupt: cancel during a trust-window claims the turn back.
 	# High priority so nothing else swallows the input while the window
 	# is armed. BM tracks the window and no-ops when nothing is armed.
