@@ -37,24 +37,22 @@ func test_menu_wd_diag_reports_debug_unlock_flag() -> void:
 		"_menu_wd_diag must report debug_all_pcs_unlocked so the next cap is unambiguous")
 
 
-func test_advance_defer_have_no_drifting_trigger_axis() -> void:
+func test_advance_double_fire_guarded_by_debounce() -> void:
+	# 2026-07-12: dropping the trigger-axis binding BROKE Advance for trigger
+	# users (they advance with the RT axis, not the RB button). So we KEEP all
+	# bindings (RB/LB buttons + RT/LT axes + keys) and guard the drifting-
+	# trigger double-fire with a wall-clock debounce instead.
+	var w := FileAccess.get_file_as_string("res://src/ui/Win98Menu.gd")
+	assert_true("const ADVANCE_DEBOUNCE_MS" in w, "advance debounce const must exist")
+	var i := w.find("func _handle_advance_input")
+	assert_gt(i, -1)
+	var body := w.substr(i, 600)
+	assert_true("_last_advance_ms" in body and "ADVANCE_DEBOUNCE_MS" in body,
+		"_handle_advance_input must debounce rapid duplicate advances (cross-source button+axis / trigger jitter)")
+	# All Advance bindings remain so RB, RT, and keyboard all work.
 	var pg := FileAccess.get_file_as_string("res://project.godot")
-	var adv_start := pg.find("battle_advance=")
-	var adv_end := pg.find("battle_defer=")
-	assert_gt(adv_start, -1)
-	assert_gt(adv_end, adv_start)
-	var adv := pg.substr(adv_start, adv_end - adv_start)
-	assert_false("InputEventJoypadMotion" in adv,
-		"battle_advance must not bind an analog trigger axis (drifts on cheap pads → phantom Advances); keep RB button + key")
-	var dfr_start := pg.find("battle_defer=")
-	var dfr_end := pg.find("ui_up=")
-	assert_gt(dfr_end, dfr_start)
-	var dfr := pg.substr(dfr_start, dfr_end - dfr_start)
-	assert_false("InputEventJoypadMotion" in dfr,
-		"battle_defer must not bind an analog trigger axis; keep LB button + key")
-	# The digital shoulder buttons must survive the axis removal.
+	var adv := pg.substr(pg.find("battle_advance="), pg.find("battle_defer=") - pg.find("battle_advance="))
 	assert_true("button_index\":10" in adv, "battle_advance keeps RB (button 10)")
-	assert_true("button_index\":9" in dfr, "battle_defer keeps LB (button 9)")
 
 
 func test_render_smoke_neutralizes_debug_unlock() -> void:
