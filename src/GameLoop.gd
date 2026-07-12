@@ -367,6 +367,9 @@ func _maybe_run_battle_smoke() -> void:
 	AudioServer.set_bus_mute(0, true)
 	await get_tree().create_timer(1.0).timeout
 	print("[SMOKE] render smoke starting (full=%s)" % str(full))
+	# Deterministic smoke: neutralize this box's dev flags — debug_all_pcs_unlocked force-clears is_player_trusted (BattleManager) and breaks the game-over leg's auto-play.
+	if GameState and "debug_all_pcs_unlocked" in GameState:
+		GameState.debug_all_pcs_unlocked = false
 	_close_title_screen()
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -2654,6 +2657,10 @@ func start_solo_battle(job_id: String, enemy_id: String, _opts: Dictionary = {})
 	_spotlight_saved_party.clear()
 	_spotlight_duel_active = false
 	_pending_spotlight_unlock = ""
+	# Tear the stale BattleScene down under the cutscene's opaque layer so aftermath narration doesn't overlay a live battle: boss music kept playing + survive_turns re-fired end_battle every tick (the "background restart"), and _unfreeze_player at cutscene end had no player behind the layer (Rogue "frozen" after "everyone back"). Skip on defeat: the retry loop owns the next _start_battle_async which frees the scene itself.
+	if result:
+		_cutscene_cooldown = true  # skip pending-story re-fire from _start_exploration
+		await _return_to_exploration()
 	return "victory" if result else "defeat"
 
 

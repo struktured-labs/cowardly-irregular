@@ -13,6 +13,7 @@ var _glow_timer: float = 0.0
 var _indicator: Label
 var _player_in_zone: bool = false
 var _is_saving: bool = false
+var _last_fasttrav_ms: int = 0  # Debounce battle_advance (RB button + RT axis 5 both fire on one squeeze)
 
 
 func _ready() -> void:
@@ -139,6 +140,9 @@ func _input(event: InputEvent) -> void:
 	var ilm = get_tree().root.get_node_or_null("InputLockManager") if is_inside_tree() else null
 	if ilm and ilm.is_locked():
 		return
+	# The "save_crystal" tutorial hint fires on _on_body_entered — without this gate the dismiss A-press ALSO fires a save.
+	if TutorialHint.is_any_active():
+		return
 	if _player_in_zone and not _is_saving and event.is_action_pressed("ui_accept"):
 		_is_saving = true
 		SoundManager.play_ui("save_crystal_activate")
@@ -149,6 +153,11 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		_show_save_confirmation()
 	elif _player_in_zone and not _is_saving and event.is_action_pressed("battle_advance"):
+		# Debounce: RB button + RT axis 5 both fire on one squeeze; a drifting trigger would open FastTravelMenu twice on top of itself.
+		var now_ms := Time.get_ticks_msec()
+		if now_ms - _last_fasttrav_ms < 200:
+			return
+		_last_fasttrav_ms = now_ms
 		if _open_fast_travel():
 			get_viewport().set_input_as_handled()
 

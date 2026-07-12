@@ -170,8 +170,9 @@ func show_victory_results() -> void:
 	# x 200..600: clear of the battle log (x<180) AND the party victory sprites (x>800) per struktured's 2026-07-11 cap.
 	panel.offset_left = 200
 	panel.offset_right = 200 + panel_width
-	panel.offset_top = -panel_height / 2
-	panel.offset_bottom = panel_height / 2
+	# Raised 50px so the panel bottom clears the bottom status/log bar (struktured 2026-07-12).
+	panel.offset_top = -panel_height / 2 - 50
+	panel.offset_bottom = panel_height / 2 - 50
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	# Dark panel style
