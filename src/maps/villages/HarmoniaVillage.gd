@@ -284,14 +284,27 @@ func _setup_npcs() -> void:
 	# W1 prologue via talked_to_theron). Persona text + fallback lines
 	# live in data/cutscenes/npc_showcase_personas.json and are hydrated
 	# at _ready() via OverworldNPC._setup_persona_data().
-	var elder = _create_npc("Elder Theron", "elder", Vector2(8 * TILE_SIZE, 6 * TILE_SIZE), [
-		"Welcome to Harmonia Village, young adventurer.",
-		"Our peaceful village has stood for generations...",
-		"But dark rumors spread from the Whispering Cave to the north.",
-		"Many brave souls have ventured there... few return.",
-		"If you seek glory, be warned: the cave adapts to those who challenge it.",
-		"May the light guide your path."
-	])
+	# Pre-chapter1: anticipation hook — no reveals, plant a question the
+	# cutscene pays off. The rehearsed-sentence line is the tell; when
+	# chapter1's briefing lands ("you'll do" + the changed-monsters beat),
+	# the player recognizes it AS the rehearsed thing. Post-chapter1:
+	# quiet ambient, no reruns of the briefing, tired-curmudgeon warmth.
+	# Branch selects at NPC creation; village scene re-instances on entry
+	# so the flag is picked up on the next visit after chapter1 lands.
+	var _theron_pre := [
+		"Hm. Wait by the square.",
+		"There's a thing that needs saying.",
+		"I've been rehearsing it, and it only works once."
+	]
+	var _theron_post := [
+		"You've heard the once. I don't do second versions.",
+		"Come back when there's something. I'll be sitting."
+	]
+	var _theron_chapter1_done: bool = false
+	var _theron_gs = get_node_or_null("/root/GameState")
+	if _theron_gs:
+		_theron_chapter1_done = bool(_theron_gs.game_constants.get("cutscene_flag_chapter1_complete", false))
+	var elder = _create_npc("Elder Theron", "elder", Vector2(8 * TILE_SIZE, 6 * TILE_SIZE), _theron_post if _theron_chapter1_done else _theron_pre)
 	elder.dynamic = true
 	# Named canon sheet (2fd985bb); must match his staged-cutscene puppet (HARMONIA_NPC_CANON).
 	elder.sprite_archetype = "elder_theron"
