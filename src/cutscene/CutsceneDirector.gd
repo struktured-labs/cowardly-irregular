@@ -1753,11 +1753,31 @@ func _step_battle(step: Dictionary) -> void:
 			return
 		match on_defeat:
 			"retry":
-				# instant restart reads as a glitch, not a retry
-				await get_tree().create_timer(0.9).timeout
+				# Silent 0.9s read as a glitch (struktured playtest 2026-07-12); sting: SFX + shake + red flash → black on the director's effects rect.
+				await _play_spotlight_retry_sting()
 				continue
 			"fail_forward", "skip":
 				return
 			_:
 				push_warning("CutsceneDirector: unknown on_defeat '%s' — defaulting to retry" % on_defeat)
 				continue
+
+
+## Spotlight-duel defeat sting: replace the silent 0.9s wait so the retry doesn't feel like a bug. Red flash → black on the director's own _effects_rect (auto-hides when the director hides at loop top), plus defeat SFX + screen shake. Reset after the tween so the aftermath (visible=true after next battle) isn't covered by leftover opaque.
+func _play_spotlight_retry_sting() -> void:
+	if SoundManager:
+		SoundManager.play_battle("defeat")
+	if EffectSystem:
+		EffectSystem._trigger_screen_shake(8.0, 0.35)
+	if _effects_rect == null or not is_instance_valid(_effects_rect):
+		await get_tree().create_timer(0.7).timeout
+		return
+	_effects_rect.visible = true
+	_effects_rect.color = Color(0.75, 0.05, 0.05, 0.0)
+	var tw := create_tween()
+	tw.tween_property(_effects_rect, "color:a", 0.55, 0.15)
+	tw.tween_interval(0.25)
+	tw.tween_property(_effects_rect, "color", Color(0.0, 0.0, 0.0, 1.0), 0.30)
+	await tw.finished
+	_effects_rect.color = Color(1, 1, 1, 0)
+	_effects_rect.visible = false
