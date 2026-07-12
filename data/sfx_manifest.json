@@ -160,6 +160,30 @@
       "prompt_influence": 0.0,
       "fallback_to": "advance_queue"
     },
+    "advance_bard_1": {
+      "file": "assets/audio/sfx/advance_bard_1.ogg",
+      "source": "lmms_sf2_fluidr3",
+      "prompt": "Bard advance press 1 — a soft breath (she LISTENS first), then a single warm lute note. Speaks once. Essence: Voice / the Unwritten Chord. Tier 1/3, ~-18 dB.",
+      "duration_seconds": 2.45,
+      "prompt_influence": 0.0,
+      "fallback_to": "advance_queue"
+    },
+    "advance_bard_2": {
+      "file": "assets/audio/sfx/advance_bard_2.ogg",
+      "source": "lmms_sf2_fluidr3",
+      "prompt": "Bard advance press 2 — a lute flourish + a bright piano note SLICED off mid-decay (the piano_scythe cutting it short). Tier 2/3, ~-15 dB.",
+      "duration_seconds": 1.84,
+      "prompt_influence": 0.0,
+      "fallback_to": "advance_queue"
+    },
+    "advance_bard_3": {
+      "file": "assets/audio/sfx/advance_bard_3.ogg",
+      "source": "lmms_sf2_fluidr3",
+      "prompt": "Bard advance press 3 full ham — a rising gesture into the UNWRITTEN CHORD: a lush Cmaj9(#11) that hangs, beautiful but refuses to resolve the way the ear predicts (un-hummable). Per cowir-story canon. Tier 3/3, ~-13 dB.",
+      "duration_seconds": 2.86,
+      "prompt_influence": 0.0,
+      "fallback_to": "advance_queue"
+    },
     "advance_undo": {
       "file": "assets/audio/sfx/advance_undo.ogg",
       "prompt": "Gun slide racking backward, mechanical metal slide retraction, weapon uncocking click-clack",
