@@ -5393,10 +5393,12 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 		"buff":
 			# Generic stat buff (masterite_* family). Reads the stat field
 			# from the ability dict; defaults to attack if unspecified.
+			# threat_class threads through to the buff (empty = unclassified) so BattleScene's THREAT_CLASS_BUFFS visual can key off it — e.g. Counter Stance = "reprisal" gets the amber sigil (msg 2462).
 			var buff_stat = str(ability.get("stat", "attack"))
+			var threat_class: String = str(ability.get("threat_class", ""))
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
-					target.add_buff("Empower", buff_stat, stat_modifier, duration)
+					target.add_buff("Empower", buff_stat, stat_modifier, duration, threat_class)
 					battle_log_message.emit("[color=cyan]%s is empowered![/color] (%s +%d%% for %d turns)" % [target.combatant_name, buff_stat.to_upper(), int((stat_modifier - 1.0) * 100), duration])
 		"debuff":
 			# Generic stat debuff (masterite_* family). Reads the stat field

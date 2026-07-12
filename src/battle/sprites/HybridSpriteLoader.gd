@@ -8,6 +8,7 @@ const _SnesPartySprites = preload("res://src/battle/sprites/SnesPartySprites.gd"
 
 static var _manifest: Dictionary = {}
 static var _monster_manifest: Dictionary = {}
+static var _battle_effects: Dictionary = {}
 static var _manifest_loaded: bool = false
 
 static func _load_manifest() -> void:
@@ -40,7 +41,8 @@ static func _load_manifest() -> void:
 		return
 	_manifest = json.data.get("sheets", {})
 	_monster_manifest = json.data.get("monster_sheets", {})
-	print("[SPRITES] Loaded sprite manifest: %d sheets, %d monster sheets" % [_manifest.size(), _monster_manifest.size()])
+	_battle_effects = json.data.get("battle_effects", {})
+	print("[SPRITES] Loaded sprite manifest: %d sheets, %d monster sheets, %d battle effects" % [_manifest.size(), _monster_manifest.size(), _battle_effects.size()])
 	_manifest_loaded = true
 
 
@@ -48,7 +50,23 @@ static func reload_manifest() -> void:
 	"""Force reload the manifest (call after adding new sprite sheets)"""
 	_manifest_loaded = false
 	_manifest = {}
+	_monster_manifest = {}
+	_battle_effects = {}
 	_load_manifest()
+
+
+## Load a battle-effect texture registered under manifest.battle_effects — returns null if the key is absent or the texture load fails so callers can fall back gracefully. cowir-main's norm: HybridSpriteLoader is the single source, no direct load() bypass (msg 4ec21a07 commit note).
+static func load_battle_effect_texture(key: String) -> Texture2D:
+	_load_manifest()
+	if not _battle_effects.has(key):
+		return null
+	var entry: Dictionary = _battle_effects[key]
+	var path: String = str(entry.get("path", ""))
+	if path == "" or not ResourceLoader.exists(path):
+		push_warning("[SPRITES] battle_effect '%s' path missing or unloadable: %s" % [key, path])
+		return null
+	var tex: Resource = load(path)
+	return tex if tex is Texture2D else null
 
 
 static func has_artist_sheet(job_id: String) -> bool:
