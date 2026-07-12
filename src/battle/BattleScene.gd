@@ -216,8 +216,13 @@ static var _hints_shown: Dictionary = {}  # {"hint_id": true}  # Static: persist
 ## Status effect icon containers (combatant -> HBoxContainer of icons)
 var _status_icon_containers: Dictionary = {}  # {Combatant: HBoxContainer}
 
-## Buff/debuff visual overlay nodes (combatant -> {glow: ColorRect, particles: Array})
+## Buff/debuff visual overlay nodes (combatant -> {glow: ColorRect, particles: Array, sigil: Sprite2D})
 var _buff_visual_nodes: Dictionary = {}  # {Combatant: Dictionary}
+
+## Buff class_tag values that promote the visual to threat-class read: amber-red glow overrides cyan-green + sigil badge shows above sprite + particles hide. Extend as story lane authors more reprisal-family abilities. cowir-sprites msg 2462: string not bool so future abilities (Reflect, Truth Refuses You, etc.) coalesce under one tag without redecoration.
+const THREAT_CLASS_BUFFS: Dictionary = {"reprisal": true}
+const THREAT_GLOW_COLOR: Color = Color(1.0, 0.5, 0.15, 1.0)
+const THREAT_SIGIL_OFFSET: Vector2 = Vector2(0, -40)
 
 ## Enemy floating HP bars (enemy Combatant -> {bar_bg: ColorRect, bar_fill: ColorRect})
 var _enemy_hp_bars: Dictionary = {}  # {Combatant: Dictionary}
@@ -3417,11 +3422,16 @@ func _update_buff_debuff_visuals(_delta: float) -> void:
 		if visuals.is_empty():
 			continue
 
-		# Update glow color based on buff/debuff state
+		# Threat-class check: any buff carrying a class_tag we recognize promotes the read to "reprisal incoming — defer" — amber glow overrides the cyan-green + sigil badge above the head + particles suppressed (they'd fight the sigil's silhouette read). (msg 2455/2462)
+		var has_threat: bool = _combatant_has_threat_buff(combatant)
+		var pulse = (sin(_idle_time * 3.0) + 1.0) * 0.5  # 0-1 pulse
+
+		# Update glow color based on buff/debuff state (threat wins over all).
 		var glow: ColorRect = visuals.get("glow")
 		if glow and is_instance_valid(glow):
-			var pulse = (sin(_idle_time * 3.0) + 1.0) * 0.5  # 0-1 pulse
-			if has_buffs and has_debuffs:
+			if has_threat:
+				glow.color = Color(THREAT_GLOW_COLOR.r, THREAT_GLOW_COLOR.g, THREAT_GLOW_COLOR.b, 0.15 + pulse * 0.15)
+			elif has_buffs and has_debuffs:
 				# Mixed: yellow pulse
 				glow.color = Color(0.8, 0.8, 0.0, 0.12 + pulse * 0.1)
 			elif has_buffs:
@@ -3431,10 +3441,20 @@ func _update_buff_debuff_visuals(_delta: float) -> void:
 				# Debuff: red pulse
 				glow.color = Color(0.9, 0.2, 0.2, 0.1 + pulse * 0.08)
 
-		# Animate particles
+		# Sigil badge — show above sprite when threat-class buff is active. Pulse-fade modulate alpha 0.6→1.0 on the existing sin drive. Hidden entirely otherwise.
+		var sigil: Sprite2D = visuals.get("sigil")
+		if sigil and is_instance_valid(sigil):
+			sigil.visible = has_threat
+			if has_threat:
+				sigil.modulate.a = 0.6 + pulse * 0.4
+
+		# Animate particles — suppressed under a threat buff so the sigil owns the "watch this enemy" read.
 		var particles: Array = visuals.get("particles", [])
 		for p_node in particles:
 			if not is_instance_valid(p_node):
+				continue
+			p_node.visible = not has_threat
+			if has_threat:
 				continue
 			# Drift upward for buffs, downward for debuffs
 			var drift_dir = -1.0 if has_buffs else 1.0
@@ -3474,7 +3494,26 @@ func _create_buff_visual(combatant: Combatant, sprite: Node2D) -> void:
 		sprite.add_child(p)
 		particles.append(p)
 
-	_buff_visual_nodes[combatant] = {"glow": glow, "particles": particles}
+	# Threat-class sigil — always created, hidden until _update_buff_debuff_visuals detects a matching class_tag. Loaded once via HybridSpriteLoader.load_battle_effect_texture ("threat_buff_sigil" — cowir-sprites 4ec21a07). Missing texture leaves the sigil node as a no-op so the buff visual still shows the amber glow.
+	var sigil: Sprite2D = Sprite2D.new()
+	sigil.name = "ThreatSigil"
+	sigil.texture = HybridSpriteLoaderClass.load_battle_effect_texture("threat_buff_sigil")
+	sigil.position = THREAT_SIGIL_OFFSET
+	sigil.z_index = 2
+	sigil.visible = false
+	sprite.add_child(sigil)
+
+	_buff_visual_nodes[combatant] = {"glow": glow, "particles": particles, "sigil": sigil}
+
+
+## True when any active_buff on the combatant carries a class_tag in THREAT_CLASS_BUFFS. Non-Combatants and combatants without active_buffs return false.
+func _combatant_has_threat_buff(combatant) -> bool:
+	if not "active_buffs" in combatant:
+		return false
+	for buff in combatant.active_buffs:
+		if THREAT_CLASS_BUFFS.get(buff.get("class", ""), false):
+			return true
+	return false
 
 
 func _remove_buff_visual(combatant) -> void:
@@ -3488,6 +3527,9 @@ func _remove_buff_visual(combatant) -> void:
 	for p in visuals.get("particles", []):
 		if is_instance_valid(p):
 			p.queue_free()
+	var sigil = visuals.get("sigil")
+	if sigil and is_instance_valid(sigil):
+		sigil.queue_free()
 	_buff_visual_nodes.erase(combatant)
 
 
