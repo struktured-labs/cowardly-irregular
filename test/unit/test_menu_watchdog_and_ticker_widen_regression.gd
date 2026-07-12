@@ -71,7 +71,7 @@ func test_watchdog_skips_spotlight_locked_pc() -> void:
 	# implicitly covers "current is an enemy" but we also require alive.
 	var src: String = FileAccess.get_file_as_string(BS_PATH)
 	var wd_idx: int = src.find("func _tick_menu_watchdog() -> void:")
-	var body: String = src.substr(wd_idx, 2000)
+	var body: String = src.substr(wd_idx, 2800)
 	assert_string_contains(body, "pc in bm.player_party",
 		"guard against enemy-turn false trips")
 	assert_string_contains(body, "pc.is_alive",
@@ -84,7 +84,7 @@ func test_watchdog_force_spawn_logs_loudly() -> void:
 	# hit is diagnosable even if the immediate recovery worked.
 	var src: String = FileAccess.get_file_as_string(BS_PATH)
 	var wd_idx: int = src.find("func _tick_menu_watchdog() -> void:")
-	var body: String = src.substr(wd_idx, 2000)
+	var body: String = src.substr(wd_idx, 2800)
 	assert_string_contains(body, "push_warning(\"[MENU-WATCHDOG]",
 		"loud CI signal")
 	assert_string_contains(body, "log_message(\"[color=orange]",

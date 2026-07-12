@@ -182,6 +182,8 @@ var _pending_target_pos: Vector2 = Vector2.ZERO  # Target position for line
 var _queued_actions: Array = []  # Actions queued via Advance mode
 var _max_queue_size: int = 4  # Max actions (limited by AP)
 var _is_closing: bool = false  # Prevent double-close
+var _last_advance_ms: int = 0  # Debounce battle_advance vs dual button+axis / drifting-trigger double-fire
+const ADVANCE_DEBOUNCE_MS: int = 120
 var _current_ap: int = 0  # Current AP for display
 var _ap_label: Label = null  # AP display label
 var _can_go_back: bool = false  # Whether B button can go to previous player
@@ -1052,6 +1054,13 @@ func _cleanup_tooltip() -> void:
 
 func _handle_advance_input() -> void:
 	"""Handle R button / Shift+Enter - queue current action or confirm if at limit"""
+	var root = _get_root_menu()
+	# Debounce: one R squeeze emits BOTH a button and a trigger-axis event, and a drifting trigger jitters across the deadzone — ignore a duplicate advance within ADVANCE_DEBOUNCE_MS so one press queues one action.
+	var now_ms := Time.get_ticks_msec()
+	if now_ms - root._last_advance_ms < ADVANCE_DEBOUNCE_MS:
+		return
+	root._last_advance_ms = now_ms
+
 	var current_item = menu_items[selected_index] if selected_index >= 0 and selected_index < menu_items.size() else {}
 
 	if current_item.has("submenu"):
@@ -1065,7 +1074,6 @@ func _handle_advance_input() -> void:
 		return
 
 	# Check if we're at the queue limit - if so, act as confirm
-	var root = _get_root_menu()
 	if root._queued_actions.size() >= root._max_queue_size - 1:
 		# At or near limit - this will be the last action, so submit
 		_play_advance_sound(root._queued_actions.size() + 1)  # Consistent advance sound even when auto-submitting

@@ -18,6 +18,10 @@ class SceneStub extends Node:
 
 func before_each() -> void:
 	MenuScript._spotlight_logged.clear()
+	# Hermetic: this box's settings.json may have debug_all_pcs_unlocked=true,
+	# which bypasses the spotlight silent-return this test asserts on.
+	if GameState:
+		GameState.debug_all_pcs_unlocked = false
 
 
 func _locked_pc(pc_name: String) -> Combatant:

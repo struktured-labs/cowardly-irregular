@@ -2349,6 +2349,14 @@ func _tick_menu_watchdog() -> void:
 		return
 	if now - _menu_wd_started_ms < MENU_WATCHDOG_MS:
 		return
+	# A spotlight-locked PC can't hold a manual menu — skip the 3x force-spawn ladder (~10s) and autobattle-resolve now. EXCEPT its own solo duel: the duelist plays manually there, so keep retrying rather than stealing the turn.
+	var own_solo_duel: bool = bm.player_party.size() == 1 and pc in bm.player_party
+	if "autobattle_locked" in pc and pc.autobattle_locked and not own_solo_duel:
+		log_message("[color=orange]⚠ %s auto-resolving turn (spotlight-locked, no manual menu)[/color]" % pc.combatant_name)
+		_reset_menu_watchdog()
+		if bm.has_method("execute_autobattle_for_current"):
+			bm.execute_autobattle_for_current()
+		return
 	var elapsed: int = now - _menu_wd_started_ms
 	if _menu_wd_retries >= MENU_WATCHDOG_MAX_RETRIES:
 		# Terminal fallback (msg 2379): the menu is genuinely wedged; route via autobattle so the battle continues.
@@ -2375,9 +2383,10 @@ func _menu_wd_diag(pc: Combatant) -> String:
 	var char_id: String = pc.combatant_name.to_lower().replace(" ", "_") if pc else "?"
 	var ab_locked: bool = "autobattle_locked" in pc and pc.autobattle_locked
 	var ab_enabled: bool = AutobattleSystem.is_autobattle_enabled(char_id) if AutobattleSystem else false
+	var dbg_unlocked: bool = GameState.debug_all_pcs_unlocked if (GameState and "debug_all_pcs_unlocked" in GameState) else false
 	var in_party: bool = pc in BattleManager.player_party if BattleManager else false
 	var sprite_ct: int = party_sprite_nodes.size()
-	return " [reason=%s ab_locked=%s ab_enabled=%s in_party=%s sprite_ct=%d]" % [reason, ab_locked, ab_enabled, in_party, sprite_ct]
+	return " [reason=%s ab_locked=%s ab_enabled=%s dbg_unlocked=%s in_party=%s sprite_ct=%d]" % [reason, ab_locked, ab_enabled, dbg_unlocked, in_party, sprite_ct]
 
 
 func _reset_menu_watchdog() -> void:
