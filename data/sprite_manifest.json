@@ -104,7 +104,7 @@
         "walk"
       ],
       "tier": "T2",
-      "source": "artist aseprite — Game graphics - Characters/BARD/Bard Base sprite.aseprite (idle 0-3, cast 4-7, attack 8-11; 2x nearest-neighbor upscale to 256px). Remaining anims (walk/hit/dead/defend/item/victory) still T1 AI-gen until artist drops them."
+      "source": "artist aseprite \u2014 Game graphics - Characters/BARD/Bard Base sprite.aseprite (idle 0-3, cast 4-7, attack 8-11; 2x nearest-neighbor upscale to 256px). Remaining anims (walk/hit/dead/defend/item/victory) still T1 AI-gen until artist drops them."
     },
     "bard_sdxl": {
       "path": "res://assets/sprites/jobs/bard_sdxl",
@@ -618,7 +618,7 @@
         }
       },
       "tier": "T2",
-      "source": "artist aseprite — Game graphics - Characters/enemies/SLIME 1.aseprite (Idle + Atk tags)"
+      "source": "artist aseprite \u2014 Game graphics - Characters/enemies/SLIME 1.aseprite (Idle + Atk tags)"
     },
     "slime_suburban": {
       "path": "res://assets/sprites/monsters/slime_suburban.png",
@@ -644,7 +644,7 @@
         }
       },
       "tier": "T2",
-      "source": "deterministic HSV hue-shift of artist slime — world 2 (suburban, sky-blue)"
+      "source": "deterministic HSV hue-shift of artist slime \u2014 world 2 (suburban, sky-blue)"
     },
     "slime_steampunk": {
       "path": "res://assets/sprites/monsters/slime_steampunk.png",
@@ -670,7 +670,7 @@
         }
       },
       "tier": "T2",
-      "source": "deterministic HSV hue-shift of artist slime — world 3 (steampunk, brass)"
+      "source": "deterministic HSV hue-shift of artist slime \u2014 world 3 (steampunk, brass)"
     },
     "slime_industrial": {
       "path": "res://assets/sprites/monsters/slime_industrial.png",
@@ -696,7 +696,7 @@
         }
       },
       "tier": "T2",
-      "source": "deterministic HSV hue-shift of artist slime — world 4 (industrial, rust)"
+      "source": "deterministic HSV hue-shift of artist slime \u2014 world 4 (industrial, rust)"
     },
     "slime_digital": {
       "path": "res://assets/sprites/monsters/slime_digital.png",
@@ -722,7 +722,7 @@
         }
       },
       "tier": "T2",
-      "source": "deterministic HSV hue-shift of artist slime — world 5 (digital, neon magenta)"
+      "source": "deterministic HSV hue-shift of artist slime \u2014 world 5 (digital, neon magenta)"
     },
     "slime_abstract": {
       "path": "res://assets/sprites/monsters/slime_abstract.png",
@@ -748,7 +748,7 @@
         }
       },
       "tier": "T2",
-      "source": "deterministic HSV hue-shift of artist slime — world 6 (abstract, monochrome)"
+      "source": "deterministic HSV hue-shift of artist slime \u2014 world 6 (abstract, monochrome)"
     },
     "bat": {
       "path": "res://assets/sprites/monsters/bat.png",
@@ -774,7 +774,7 @@
         }
       },
       "tier": "T2",
-      "source": "artist aseprite — Game graphics - Characters/enemies/BAT 1.aseprite (Idle + Atk tags)"
+      "source": "artist aseprite \u2014 Game graphics - Characters/enemies/BAT 1.aseprite (Idle + Atk tags)"
     },
     "goblin": {
       "path": "res://assets/sprites/monsters/goblin.png",
@@ -800,7 +800,7 @@
         }
       },
       "tier": "T2",
-      "source": "artist aseprite — Game graphics - Characters/enemies/Goblin 1 anims.aseprite (Idle + ATK tags; hit/dead remapped off late-ATK crouch-twist frames 6-8 per live playtest 2026-07-01 — dedicated hit/dead frames wanted from artist)"
+      "source": "artist aseprite \u2014 Game graphics - Characters/enemies/Goblin 1 anims.aseprite (Idle + ATK tags; hit/dead remapped off late-ATK crouch-twist frames 6-8 per live playtest 2026-07-01 \u2014 dedicated hit/dead frames wanted from artist)"
     },
     "wolf": {
       "path": "res://assets/sprites/monsters/wolf.png",
@@ -2956,7 +2956,7 @@
         }
       },
       "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). chivalric plate skeleton — Fighter spotlight-duel miniboss (msg 1950)"
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). chivalric plate skeleton \u2014 Fighter spotlight-duel miniboss (msg 1950)"
     },
     "cleric_survive_target": {
       "path": "res://assets/sprites/monsters/cleric_survive_target.png",
@@ -2982,7 +2982,7 @@
         }
       },
       "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). spectral sustained-pressure target — Cleric spotlight-duel miniboss (msg 1950). Non-HP win: outlast, not defeat."
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). spectral sustained-pressure target \u2014 Cleric spotlight-duel miniboss (msg 1950). Non-HP win: outlast, not defeat."
     },
     "rogue_lockward": {
       "path": "res://assets/sprites/monsters/rogue_lockward.png",
@@ -3008,7 +3008,7 @@
         }
       },
       "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). chained treasure-guardian construct — Rogue spotlight-duel miniboss (msg 1950). High-evade + Steal/backstab-solves."
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). chained treasure-guardian construct \u2014 Rogue spotlight-duel miniboss (msg 1950). High-evade + Steal/backstab-solves."
     },
     "mage_prismatic_construct": {
       "path": "res://assets/sprites/monsters/mage_prismatic_construct.png",
@@ -3034,7 +3034,7 @@
         }
       },
       "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). crystalline prism construct — Mage spotlight-duel miniboss (msg 1950). Rotating elemental weakness, read-and-exploit-live."
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). crystalline prism construct \u2014 Mage spotlight-duel miniboss (msg 1950). Rotating elemental weakness, read-and-exploit-live."
     },
     "bard_hostile_courtier": {
       "path": "res://assets/sprites/monsters/bard_hostile_courtier.png",
@@ -3060,7 +3060,7 @@
         }
       },
       "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). aristocratic courtier NPC — Bard spotlight-duel miniboss (msg 1950). Non-HP win: talked-down via status/song thresholds."
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). aristocratic courtier NPC \u2014 Bard spotlight-duel miniboss (msg 1950). Non-HP win: talked-down via status/song thresholds."
     }
   },
   "npc_sheets": {
@@ -4167,6 +4167,16 @@
           "frames": 4
         }
       }
+    }
+  },
+  "battle_effects": {
+    "threat_buff_sigil": {
+      "path": "res://assets/sprites/effects/threat_buff_sigil.png",
+      "frame_width": 24,
+      "frame_height": 24,
+      "fps": 8,
+      "tier": "T2",
+      "source": "hand-pixeled 24x24 amber shield-with-crossed-blades \u2014 cowir-sprites (cowir-main msg 2454 approval). Sigil for THREAT_CLASS_BUFFS (counter_stance et al.); attaches as sprite child, pulses via existing _update_buff_debuff_visuals hook."
     }
   }
 }

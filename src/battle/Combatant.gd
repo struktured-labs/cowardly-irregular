@@ -585,14 +585,16 @@ func _get_passive_meta_effect_sum(key: String) -> float:
 
 
 ## Buffs and Debuffs
-func add_buff(effect: String, stat: String, modifier: float, duration: int) -> void:
-	"""Add a temporary buff. Refreshes duration if same effect exists; upgrades modifier if stronger."""
+func add_buff(effect: String, stat: String, modifier: float, duration: int, class_tag: String = "") -> void:
+	"""Add a temporary buff. Refreshes duration if same effect exists; upgrades modifier if stronger. Optional class_tag groups semantically-related buffs (e.g. reprisal) for shared visual/AI reads without renaming the display effect (cowir-sprites msg 2462)."""
 	for existing in active_buffs:
 		if existing["effect"] == effect:
 			existing["remaining_turns"] = duration
 			existing["duration"] = duration
 			if modifier > existing["modifier"]:
 				existing["modifier"] = modifier
+			if class_tag != "":
+				existing["class"] = class_tag
 			print("%s refreshed %s (%.1fx %s for %d turns)" % [combatant_name, effect, existing["modifier"], stat, duration])
 			return
 	var buff = {
@@ -600,7 +602,8 @@ func add_buff(effect: String, stat: String, modifier: float, duration: int) -> v
 		"stat": stat,
 		"modifier": modifier,
 		"duration": duration,
-		"remaining_turns": duration
+		"remaining_turns": duration,
+		"class": class_tag,
 	}
 	active_buffs.append(buff)
 	print("%s gained %s (%.1fx %s for %d turns)" % [combatant_name, effect, modifier, stat, duration])
