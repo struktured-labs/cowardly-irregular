@@ -200,22 +200,21 @@ func _on_interaction_requested() -> void:
 	query.collision_mask = 4  # Layer 4 = interactables (NPCs, transitions, etc.)
 
 	var results = space.intersect_point(query)
-	for result in results:
-		var collider = result["collider"]
-		if collider.has_method("interact"):
-			_dlog("[INTERACT] Found: %s (physics)" % collider.name)
-			collider.interact(player)
-			return
+	# 2026-07-13: was first-hit-wins — but overworld portals with overlapping AABBs (Castle Harmonia + Cave Entrance 2 tiles apart, dragon caves next to their villages) let the earlier sibling steal every ui_accept. Pick the NEAREST interactable to the player, not the first iteration hit.
+	var nearest = _pick_nearest_interactable(results, player.global_position)
+	if nearest:
+		_dlog("[INTERACT] Found: %s (physics, nearest)" % nearest.name)
+		nearest.interact(player)
+		return
 
-	# Also check at player's position (for when standing on/in interactable)
+	# Also check at player's position (for when standing on/in interactable) — same nearest-hit selection.
 	query.position = player.global_position
 	results = space.intersect_point(query)
-	for result in results:
-		var collider = result["collider"]
-		if collider.has_method("interact"):
-			_dlog("[INTERACT] Found: %s (standing)" % collider.name)
-			collider.interact(player)
-			return
+	nearest = _pick_nearest_interactable(results, player.global_position)
+	if nearest:
+		_dlog("[INTERACT] Found: %s (standing, nearest)" % nearest.name)
+		nearest.interact(player)
+		return
 
 	# Fallback: check interactables group by distance (more reliable than physics queries)
 	var interactables = player.get_tree().get_nodes_in_group("interactables")
@@ -229,6 +228,21 @@ func _on_interaction_requested() -> void:
 				return
 
 	_dlog("[INTERACT] Nothing found")
+
+
+## Overlap-safe interactable pick — returns the nearest collider that has an interact() method, or null. Overworld transitions with adjacent-tile spacing have overlapping AABBs by design (dragon cave next to its village); this disambiguates by distance instead of iteration order.
+func _pick_nearest_interactable(results: Array, from_pos: Vector2) -> Node2D:
+	var best: Node2D = null
+	var best_d2: float = INF
+	for result in results:
+		var collider = result.get("collider", null)
+		if collider == null or not is_instance_valid(collider) or not collider.has_method("interact"):
+			continue
+		var d2: float = collider.global_position.distance_squared_to(from_pos)
+		if d2 < best_d2:
+			best_d2 = d2
+			best = collider
+	return best
 
 
 ## Tick 326: push the current pool into the EncounterSystem autoload so
