@@ -4523,6 +4523,11 @@
     "signature_ability": "masterite_counter_stance",
     "signature_sfx": "spotlight_rogue_signature",
     "victory_sfx": "spotlight_rogue_victory",
+    "steal_response": {
+      "type": "defense_break",
+      "modifier": 0.5,
+      "message": "You lifted the Warden's Key from its plate — the guard falls slack."
+    },
     "stats": {
       "max_hp": 260,
       "max_mp": 30,
