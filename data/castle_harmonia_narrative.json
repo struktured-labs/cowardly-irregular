@@ -1,0 +1,73 @@
+{
+  "description": "Castle Harmonia narrative content for the multi-floor W1 climax redesign. NPC dialogue arrays (corrupt guards + witness servant) and one optional mid-castle puzzle gate. Voice matches Theron post-chapter1 (tired-elder register). Guard hollowing escalates by floor: floor 1 = fresh, sentences mostly intact; floor 2 = bureaucratic memo-voice; floor 3 = fragments, dissolving. cowir-overworld consumes these in the map script.",
+  "schema_version": 1,
+
+  "npcs": {
+    "castle_guard_young": {
+      "floor": 1,
+      "role": "corrupt_guard",
+      "note": "Freshly hollowed. Sentences still mostly intact but the person under them has already left. Player should feel unease, not menace.",
+      "lines": [
+        "You. Halt. ...I have said halt. That is enough of me, then.",
+        "The chancellor is not to be disturbed. Do not disturb her.",
+        "I was told what to say. I am saying it. Move along."
+      ]
+    },
+
+    "castle_guard_captain": {
+      "floor": 1,
+      "role": "corrupt_guard",
+      "note": "Mid-hollow. Functional but administrative. Speaks like a filing system.",
+      "lines": [
+        "Present your business. I will estimate whether it is business.",
+        "I remember opening this door for people. I do not remember any of them.",
+        "You may pass. That was not a choice on my part. I have observed you passing."
+      ]
+    },
+
+    "castle_guard_bureaucrat": {
+      "floor": 2,
+      "role": "corrupt_guard",
+      "note": "Quietly hollowed. Memo-voice. The bureaucratic-violence beat — 'act accordingly' as a threat that is also a procedure.",
+      "lines": [
+        "Papers. I need to see papers.",
+        "You have none? Then you are not here.",
+        "I am obliged to consider you no longer here, and to act accordingly. This is not a warning. It is a procedure."
+      ]
+    },
+
+    "castle_servant_witness": {
+      "floor": 3,
+      "role": "witness",
+      "note": "NOT hollowed. A servant who has been in the room. Terrified, sentient, and the only real witness the party gets before the throne room. Last line echoes Guard Boris's 'not paid in eight weeks' (Harmonia gate) — running callback of the failing regime, quiet joke.",
+      "lines": [
+        "Please. Don't ask. I don't know anything.",
+        "I brought him his meals. He signed what she put in front of him. That's all I ever saw.",
+        "He used to look at me. He doesn't now. She says he's just tired.",
+        "If you're going up there — the door doesn't lock from the inside anymore. That was the last change.",
+        "Go on then. I've said enough for eight weeks of pay."
+      ]
+    },
+
+    "castle_guard_husk": {
+      "floor": 3,
+      "role": "corrupt_guard",
+      "note": "Mostly gone. Fragments of function. The most disturbing of the four — a job description that walks. This is the last guard between the party and Mordaine; combat likely follows.",
+      "lines": [
+        "The chancellor has business.",
+        "You are the business.",
+        "..."
+      ]
+    }
+  },
+
+  "puzzles": {
+    "castle_sealed_gate": {
+      "floor": 2,
+      "note": "Optional mid-castle gate. cowir-overworld picks the actual ability/item combination that breaks the seal — my flavor points at something the Warden taught in the W1 cave sequence (seeds the earlier examine 'castle_harmonia_broken_seal'). Rewards players who paid attention to hints in W1. If cowir-overworld skips the puzzle, these strings are unused — no dependency.",
+      "attempt_text": "The seal was drawn in a hand you've seen before. It waits for what it waited for then. The Warden showed you this once, in the cave. Whether you remember is between you and the seal.",
+      "solved_text": "The seal answers. Whatever it was written by, this thing you carry knows the answer to it. That is not a comfort. It means the writer expected you.",
+      "hint_line": "The seal is old, the way the cave was old. The Warden gave you what breaks old things."
+    }
+  }
+}
