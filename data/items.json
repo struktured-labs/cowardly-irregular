@@ -1746,6 +1746,56 @@
     "cost": 0,
     "flavor": "'Consider it an investment in your surviving long enough to come back and buy more.' Shields that come back in one piece weren't doing their job."
   },
+  "waterskin": {
+    "id": "waterskin",
+    "name": "Traveller's Waterskin",
+    "category": 4,
+    "target_type": 4,
+    "description": "A caravan-tanned waterskin, filled once and sealed. Intended mechanics: field consumable, restores ~30 HP + ~10 MP to a single party member outside battle — desert traveller's kit tier. Promote in a consumables pass.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "From the Sandrift caravan-master. 'It's not much. It's what a caravan pays when a caravan can pay again.'"
+  },
+  "rangers_cloak": {
+    "id": "rangers_cloak",
+    "name": "Ranger's Cloak",
+    "category": 4,
+    "target_type": 4,
+    "description": "The cloak of an Eldertree ranger who did not come home. Warm, well-oiled, hood cut to see through. Intended mechanics: light-armor slot, +4 EVA +3 DEF, leather-armor tier — Rogue/Bard-equippable — promote in equipment pass.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "There are three left, and none of them belong to anyone anymore. It fits you. That is not a comfort."
+  },
+  "grimhollow_pick": {
+    "id": "grimhollow_pick",
+    "name": "Grimhollow Pick",
+    "category": 4,
+    "target_type": 4,
+    "description": "A working pickaxe. Handle polished by three shifts a day for eleven years. Intended mechanics: two-handed weapon, Fighter-equippable, ATK-focused (iron-sword-adjacent tier) — promote in equipment pass.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "'He'd want it swung, not stored. So swing it.' — Trude."
+  },
+  "leaning_ember": {
+    "id": "leaning_ember",
+    "name": "Leaning Ember",
+    "category": 4,
+    "target_type": 4,
+    "description": "An ember that leans, without any wind or heat source, toward the direction Mordaine's magic reach is currently touching. In Sella's pocket it pointed east. In your pack it will do the same. Intended mechanics: key item / diegetic compass — inspect-view line updates when the party is near Mordaine's presence. cowir-cutscenes may wire an inspect handler in Castle Harmonia F3+ to fire the leaning-observation line (\"the ember, in your pack, is pointing at the plain chair beside the throne\"). No combat effect. Cannot be dropped once received.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Warm to the touch. Not lit. 'If it starts to lean, in your pocket, in your pack — put it down and look east.'"
+  },
+  "watchers_charm": {
+    "id": "watchers_charm",
+    "name": "Watcher's Charm",
+    "category": 4,
+    "target_type": 4,
+    "description": "A charm against being watched from a distance. Clockkeeper Yara's grandmother's, from a mountain older than this one. Intended mechanics: accessory slot, minor MDF or Luck boost (leather-armor tier), narrative flag for detection-resistant beats in W2+ (surveillance mechanics not yet implemented). Promote in equipment pass.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "'It has never worked, in my experience. It has also never been tested against something that was actually watching.' — Yara."
+  },
   "ERROR": {
     "id": "ERROR",
     "name": "ERROR",
