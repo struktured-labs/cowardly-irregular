@@ -1,0 +1,139 @@
+{
+  "id": "w1_eldertree_rangers_empty_house",
+  "title": "The Rangers' Empty House",
+  "world": 1,
+  "giver": {
+    "npc_id": "elder_vesper",
+    "display_name": "Elder Vesper",
+    "location": {
+      "map_id": "eldertree_village",
+      "near": "village_hall"
+    },
+    "spawn_flag": ""
+  },
+  "description": "Eldertree's four rangers have not returned from their patrol. They are never late. Their house at the top of the path is empty, and someone came back afterward to tidy it.",
+  "playstyle_tags": [
+    "exploration",
+    "combat",
+    "story"
+  ],
+  "dialogue": {
+    "offer": [
+      {
+        "speaker": "Elder Vesper",
+        "text": "The rangers are late. They are never late. They know the trees better than the trees know themselves. So: not lost.",
+        "theme": "villager"
+      },
+      {
+        "speaker": "Elder Vesper",
+        "text": "I will not say what I think has happened, because saying it invites it to be true. I will ask you to go look.",
+        "theme": "villager"
+      }
+    ],
+    "accept": [
+      {
+        "speaker": "Elder Vesper",
+        "text": "Their house is at the top of the path. Look through it. Look for what's NOT there. That's where they'll be.",
+        "theme": "villager"
+      },
+      {
+        "speaker": "Elder Vesper",
+        "text": "If the woods talk while you're in them, walk quicker. If the woods stop talking, walk quicker still.",
+        "theme": "villager"
+      }
+    ],
+    "decline": [
+      {
+        "speaker": "Elder Vesper",
+        "text": "You have your reasons. So do the woods. The rangers used to have theirs, too.",
+        "theme": "villager"
+      }
+    ],
+    "in_progress": [
+      {
+        "speaker": "Elder Vesper",
+        "text": "Any sign? The forest is quiet. Not empty — quiet. Something is being quiet through it.",
+        "theme": "villager"
+      }
+    ],
+    "ready_to_turn_in": [
+      {
+        "speaker": "Elder Vesper",
+        "text": "You came back. The woods let you. That is a thing worth noticing.",
+        "theme": "villager"
+      }
+    ],
+    "complete": [
+      {
+        "speaker": "Elder Vesper",
+        "text": "You met the hunter. Then he is not our rangers' hunter. Our rangers were his prey. That is a distinction that only matters if you count the difference between hunted and gone.",
+        "theme": "villager"
+      },
+      {
+        "speaker": "Elder Vesper",
+        "text": "The house you found tidied — that wasn't the rangers. That was someone who wanted us to notice they were tidying. That's a message. I'll pretend I haven't received it, for now.",
+        "theme": "villager"
+      },
+      {
+        "speaker": "Elder Vesper",
+        "text": "Take one of their cloaks. There are three left, and none of them belong to anyone anymore.",
+        "theme": "villager"
+      }
+    ]
+  },
+  "objectives": [
+    {
+      "step": 1,
+      "description": "Hear Elder Vesper's request in Eldertree.",
+      "type": "talk",
+      "target_npc": "elder_vesper",
+      "flag_on_complete": "quest_w1_eldertree_rangers_empty_house_accepted"
+    },
+    {
+      "step": 2,
+      "description": "Search the rangers' empty house at the top of the village path.",
+      "type": "custom",
+      "required_flag": "quest_w1_eldertree_rangers_empty_house_accepted",
+      "flag_on_complete": "quest_w1_eldertree_rangers_house_searched"
+    },
+    {
+      "step": 3,
+      "description": "Enter the forest. Find what is hunting there.",
+      "type": "custom",
+      "required_flag": "quest_w1_eldertree_rangers_house_searched",
+      "flag_on_complete": "w1_tempo_defeated"
+    },
+    {
+      "step": 4,
+      "description": "Return to Elder Vesper.",
+      "type": "talk",
+      "target_npc": "elder_vesper",
+      "required_flag": "w1_tempo_defeated"
+    }
+  ],
+  "rewards": {
+    "gold": 130,
+    "exp": 275,
+    "items": [
+      {
+        "item_id": "rangers_cloak",
+        "count": 1
+      }
+    ],
+    "job_variants": {
+      "rogue": {
+        "description": "Rogue examine text at the rangers' house: the tidying is TOO careful. Every arrow in the quiver is in the same rotation. Rangers never store arrows like that — the pattern is administrative, not martial. 'Someone who has never held a bow arranged these.' No mechanical effect.",
+        "items": [
+          {
+            "item_id": "rangers_cloak",
+            "count": 1
+          }
+        ]
+      }
+    }
+  },
+  "flag_on_complete": "quest_w1_eldertree_rangers_empty_house_complete",
+  "cross_world_connection": "The 'tidied' pattern at the ranger house — every object placed at the exact same angle — reappears in W2 as the HOA's compliance-inspection markers. The person who tidied the rangers' house was practicing.",
+  "_wiring_notes": "Step 2 custom flag emitted by an examine tile inside the rangers' house (cowir-overworld places the tile; text hook = 'Someone came back after and tidied.'). Step 3 shared flag w1_tempo_defeated wired to the Tempo Masterite encounter (Lane B). If Tempo not placed, quest sits at step 3. Design doc: docs/design/w1-progression-expansion.md, Lane C row 2. Item rangers_cloak = new item, will need to be added to items.json (defer to items-lane or overworld's fold — flavor: 'Cloak of a ranger who did not come home. Warm. Not comforting.').",
+  "prereq_flag": "cutscene_flag_rat_king_defeated"
+}

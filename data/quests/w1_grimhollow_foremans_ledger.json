@@ -1,0 +1,138 @@
+{
+  "id": "w1_grimhollow_foremans_ledger",
+  "title": "The Foreman's Ledger",
+  "world": 1,
+  "giver": {
+    "npc_id": "miner_trude",
+    "display_name": "Trude",
+    "location": {
+      "map_id": "grimhollow_village",
+      "near": "mine_gate"
+    },
+    "spawn_flag": ""
+  },
+  "description": "Trude's husband is three days missing from the Grimhollow mine. The foreman's ledger says he was 'reallocated.' The foreman does not know what that word means. He is still using it.",
+  "playstyle_tags": [
+    "story",
+    "combat"
+  ],
+  "dialogue": {
+    "offer": [
+      {
+        "speaker": "Trude",
+        "text": "My husband is missing three days. The foreman's ledger says he was 'reallocated.' The foreman does not know what that word means. He is still using it.",
+        "theme": "villager"
+      },
+      {
+        "speaker": "Trude",
+        "text": "The mine has been closed since. There is a man at the gate in judgment robes. I have never seen judgment robes at a mine. Neither has anyone here.",
+        "theme": "villager"
+      }
+    ],
+    "accept": [
+      {
+        "speaker": "Trude",
+        "text": "The ledger's on the foreman's desk in the office by the gate. Read it. Then tell me who is really writing it.",
+        "theme": "villager"
+      },
+      {
+        "speaker": "Trude",
+        "text": "The math adds up. The words don't. That's the thing I want you to confirm before I trust myself on it.",
+        "theme": "villager"
+      }
+    ],
+    "decline": [
+      {
+        "speaker": "Trude",
+        "text": "Then I'll ask someone else. It's the third day. There won't be a fourth on which I do nothing.",
+        "theme": "villager"
+      }
+    ],
+    "in_progress": [
+      {
+        "speaker": "Trude",
+        "text": "You read the ledger? Say what you think it says. Say it plain.",
+        "theme": "villager"
+      }
+    ],
+    "ready_to_turn_in": [
+      {
+        "speaker": "Trude",
+        "text": "The mine is open. You look like someone who has seen the inside of it. Sit down.",
+        "theme": "villager"
+      }
+    ],
+    "complete": [
+      {
+        "speaker": "Trude",
+        "text": "'Reallocated.' You saw where. That word is going to mean something wrong forever, now that I've heard it used right.",
+        "theme": "villager"
+      },
+      {
+        "speaker": "Trude",
+        "text": "The judge at the gate — you sent him off. He'll be back. His kind always are. But not for us. Whoever taught him that vocabulary is who I'd like to have a word with.",
+        "theme": "villager"
+      },
+      {
+        "speaker": "Trude",
+        "text": "Take this. It was my husband's. A pick, well kept. He'd want it swung, not stored. So swing it.",
+        "theme": "villager"
+      }
+    ]
+  },
+  "objectives": [
+    {
+      "step": 1,
+      "description": "Hear Trude out at the Grimhollow mine gate.",
+      "type": "talk",
+      "target_npc": "miner_trude",
+      "flag_on_complete": "quest_w1_grimhollow_foremans_ledger_accepted"
+    },
+    {
+      "step": 2,
+      "description": "Read the foreman's ledger in the mine office.",
+      "type": "custom",
+      "required_flag": "quest_w1_grimhollow_foremans_ledger_accepted",
+      "flag_on_complete": "quest_w1_grimhollow_ledger_read"
+    },
+    {
+      "step": 3,
+      "description": "Confront the judgment-robed man at the mine gate.",
+      "type": "custom",
+      "required_flag": "quest_w1_grimhollow_ledger_read",
+      "flag_on_complete": "w1_arbiter_defeated"
+    },
+    {
+      "step": 4,
+      "description": "Return to Trude.",
+      "type": "talk",
+      "target_npc": "miner_trude",
+      "required_flag": "w1_arbiter_defeated"
+    }
+  ],
+  "rewards": {
+    "gold": 140,
+    "exp": 300,
+    "items": [
+      {
+        "item_id": "grimhollow_pick",
+        "count": 1
+      }
+    ],
+    "job_variants": {
+      "mage": {
+        "description": "Mage examine text on the ledger: the entries scan as a legal template someone lifted from a capital-court proceeding and then repurposed as bookkeeping. 'This is the wrong document dressed as the right one.' No mechanical effect.",
+        "items": [
+          {
+            "item_id": "grimhollow_pick",
+            "count": 1
+          }
+        ]
+      }
+    }
+  },
+  "flag_on_complete": "quest_w1_grimhollow_foremans_ledger_complete",
+  "cross_world_connection": "The word 'reallocated' — foreman's ledger version — is the same term used by the Rivet Row union proposal in W4 ('overtime pay for workers who did not clock in'). The vocabulary is administrative-capital. Both usages have the same author, one generation removed.",
+  "_wiring_notes": "Step 2 custom flag emitted by ledger examine tile in the mine office (cowir-overworld places; hook text = 'The math adds up. The words don't.'). Step 3 shared flag w1_arbiter_defeated wired to Arbiter Masterite encounter (Lane B). Item grimhollow_pick = new item, needs items.json entry (flavor: 'A working pickaxe. Handle polished by three shifts a day for eleven years.'). Design doc: Lane C row 3.",
+  "prereq_flag": "cutscene_flag_rat_king_defeated"
+}
