@@ -6,7 +6,8 @@ extends GutTest
 ## across all 6 worlds' cutscenes) but was previously not implementable
 ## as a fightable boss. This scaffold adds:
 ##   - monsters.json entry `chancellor_mordaine`
-##   - CastleHarmonia.gd scene (extends DragonCave, single-floor arena)
+##   - CastleHarmonia.gd scene (extends DragonCave; four floors as of the
+##     v3.33.147 playtest redesign — see test_castle_harmonia_multi_floor_regression)
 ##   - GameLoop transition wire-up for "castle_harmonia" map_id
 ##   - TeleportMenu entry for debug access
 ##
@@ -92,15 +93,18 @@ func test_castle_harmonia_in_teleport_menu() -> void:
 		"TeleportMenu must list castle_harmonia for debug access")
 
 
-func test_castle_harmonia_extends_dragon_cave_with_single_floor() -> void:
-	# Mordaine is a single-room throne confrontation, not a multi-floor
-	# dungeon crawl. Setting total_floors=1 means the down-stairs `D`
-	# on floor 1 exits the castle directly rather than descending.
+func test_castle_harmonia_extends_dragon_cave_with_four_floors() -> void:
+	# 2026-07-13 (v3.33.147 playtest, msg 2525): single-floor throne room
+	# trivialized the W1 climax. Redesigned as a four-floor climb (Great
+	# Hall → Antechamber → Corrupted Throne Room → Inner Sanctum). Down-
+	# stairs `D` on F1 still exits to the overworld — DragonCave routes
+	# floor-1 D to overworld_exit_map, only D on F2+ descends internally.
+	# Full-shape pins live in test_castle_harmonia_multi_floor_regression.
 	var castle_src = _read("res://src/maps/dungeons/CastleHarmonia.gd")
 	assert_true(castle_src.find("extends DragonCave") != -1,
 		"CastleHarmonia should extend DragonCave for free boss-trigger/cutscene/flag wiring")
-	assert_true(castle_src.find("total_floors = 1") != -1,
-		"CastleHarmonia should be single-floor (boss arena, not dungeon crawl)")
+	assert_true(castle_src.find("total_floors = 4") != -1,
+		"CastleHarmonia should be four floors (v3.33.147 playtest redesign)")
 
 
 func test_mordaine_unlocks_world_2() -> void:
