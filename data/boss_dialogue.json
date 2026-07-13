@@ -998,6 +998,14 @@
     "defeat_lines": [
       "The Lockward holds, unbroken. 'You attacked into the counter. Wait for the flank. Speed is nothing without timing. Again.'",
       "The Lockward: 'Reckless. A Rogue reads the beat before the blade. Once more, patiently.'"
+    ],
+    "steal_success_lines": [
+      "The Lockward locks mid-stance. 'You did not attack. You... you took. The protocol has no answer for that.'",
+      "The Lockward's sigil dims. 'A thief does not fight. A thief unwrites the fight. — Correction: precise.'"
+    ],
+    "victory_lines_stolen_key": [
+      "The Lockward opens without ceremony. 'You did not overpower me. You made the fight I was built for stop existing. Pass, thief.'",
+      "The Lockward's stance releases. 'I defended the vault. You took the vault. Positioning beats power. Absence beats positioning.'"
     ]
   },
   "mage_prismatic_construct": {
