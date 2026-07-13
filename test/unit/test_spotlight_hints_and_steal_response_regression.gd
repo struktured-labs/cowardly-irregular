@@ -126,7 +126,8 @@ func test_menu_wd_diag_includes_spotlight_losses() -> void:
 	var src: String = FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
 	var idx: int = src.find("func _menu_wd_diag(pc: Combatant) -> String:")
 	assert_gt(idx, -1)
-	var body: String = src.substr(idx, 1500)
+	# Widened for msg 2503 additions (menu_status branch).
+	var body: String = src.substr(idx, 2200)
 	assert_string_contains(body, "\"spotlight_losses_\" + pc_job_id",
 		"diag must key the loss counter on the CURRENT PC's job — not a random one")
 	assert_string_contains(body, "spotlight_losses=%d",

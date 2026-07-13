@@ -48,7 +48,7 @@ func test_interior_door_trigger_shifted_onto_walkable_row() -> void:
 	var src := FileAccess.get_file_as_string("res://src/maps/villages/BaseVillage.gd")
 	var i := src.find("func _add_interior_door")
 	assert_gt(i, -1, "_add_interior_door must exist")
-	var body := src.substr(i, 1000)
+	var body := src.substr(i, 1500)
 	assert_true("collision.position = Vector2(0, TILE_SIZE * 0.75)" in body,
 		"door trigger must shift DOWN out of the wall row onto the walkable approach, or body_entered never fires")
 	assert_true("TILE_SIZE * 1.5" in body,

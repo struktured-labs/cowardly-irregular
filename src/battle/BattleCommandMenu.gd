@@ -78,6 +78,8 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 		return
 
 	last_silent_return_reason = ""
+	# msg 2503 diagnostic — pin the exact moment a menu is added to the tree so subsequent [MENU-NULL] / [MENU-HIDE] tags correlate against a known spawn.
+	print("[MENU-SPAWN] t=%dms combatant=%s pre-close-then-rebuild=OK" % [Time.get_ticks_msec(), combatant.combatant_name])
 
 	var viewport_size = _scene.get_viewport_rect().size
 
@@ -987,11 +989,13 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 
 func _on_win98_menu_closed() -> void:
 	"""Handle Win98 menu being closed"""
+	print("[MENU-NULL] t=%dms path=menu_closed_signal" % Time.get_ticks_msec())
 	_scene.active_win98_menu = null
 
 
 func _on_win98_actions_submitted(actions: Array) -> void:
 	"""Handle multiple actions submitted via Advance mode (Brave)"""
+	print("[MENU-NULL] t=%dms path=actions_submitted count=%d" % [Time.get_ticks_msec(), actions.size()])
 	_scene.active_win98_menu = null
 	var current = BattleManager.current_combatant
 	if not current:
@@ -1090,6 +1094,7 @@ func _on_win98_actions_submitted(actions: Array) -> void:
 
 func _on_win98_defer_requested() -> void:
 	"""Handle L button defer request (no queue)"""
+	print("[MENU-NULL] t=%dms path=defer_requested" % Time.get_ticks_msec())
 	_scene.active_win98_menu = null
 	var current = BattleManager.current_combatant
 	if not current:
@@ -1103,6 +1108,7 @@ func _on_win98_defer_requested() -> void:
 func _on_win98_go_back_requested() -> void:
 	"""Handle B button request to go back to previous player"""
 	if _scene.active_win98_menu and is_instance_valid(_scene.active_win98_menu):
+		print("[MENU-NULL] t=%dms path=go_back_requested" % Time.get_ticks_msec())
 		_scene.active_win98_menu.force_close()
 		_scene.active_win98_menu = null
 	BattleManager.go_back_to_previous_player()
@@ -1333,6 +1339,7 @@ func _create_element_badge(element: String, is_weakness: bool) -> PanelContainer
 func close_win98_menu() -> void:
 	"""Close the active Win98 menu"""
 	if _scene.active_win98_menu and is_instance_valid(_scene.active_win98_menu):
+		print("[MENU-NULL] t=%dms path=close_win98_menu" % Time.get_ticks_msec())
 		_scene.active_win98_menu.force_close()
 		_scene.active_win98_menu = null
 
