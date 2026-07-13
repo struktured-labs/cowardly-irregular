@@ -4711,6 +4711,43 @@ func _sum_equipment_special_effect(combatant: Combatant, key: String) -> float:
 	return total
 
 
+## Boss-specific Steal response (cowir-main msg 2474, struktured's artist pitch): a target with a monsters.json `steal_response` definition applies its mechanical effect once per fight on a successful steal. Lockward's tier-1 shape: {type:"defense_break", modifier:0.5, message:"..."} = permanent -50% defense debuff ("Vault-Cracked"). Extensible via new type strings. One-shot guarded via a per-target meta so re-steals still succeed for gold but don't stack the response.
+func _apply_steal_response(target: Combatant) -> void:
+	if target == null or not is_instance_valid(target):
+		return
+	if not target.has_method("get_meta") or not target.has_meta("monster_type"):
+		return
+	if target.has_meta("_steal_response_consumed") and bool(target.get_meta("_steal_response_consumed", false)):
+		return
+	var mtype: String = str(target.get_meta("monster_type", ""))
+	if mtype == "" or not EncounterSystem or not EncounterSystem.monster_database.has(mtype):
+		return
+	var mdata: Dictionary = EncounterSystem.monster_database[mtype]
+	var response: Variant = mdata.get("steal_response", {})
+	if not (response is Dictionary) or (response as Dictionary).is_empty():
+		return
+	var r: Dictionary = response
+	var rtype: String = str(r.get("type", ""))
+	var message: String = str(r.get("message", ""))
+	match rtype:
+		"defense_break":
+			var modifier: float = float(r.get("modifier", 0.5))
+			# 99 turns ≈ rest of fight; distinct effect name keeps refresh-in-place from stacking further even if the once-per-fight guard is ever bypassed.
+			target.add_debuff("Vault-Cracked", "defense", modifier, 99)
+			if message != "":
+				battle_log_message.emit("[color=yellow]%s[/color]" % message)
+			target.set_meta("_steal_response_consumed", true)
+			# Emit cowir-story's steal_success_line (msg 2478) via boss_taunt — same channel phase-transition/masterite-intent quips use, so BattleScene bubbles it as boss speech. Empty pool = degrades silently to just the yellow flavor message above.
+			var boss_dlg = get_node_or_null("/root/BossDialogue")
+			if boss_dlg and boss_dlg.has_method("get_steal_success_line"):
+				var line: String = str(boss_dlg.get_steal_success_line(mtype))
+				if line != "":
+					boss_taunt.emit(target, line)
+			print("[STEAL-RESPONSE] %s: defense_break x%.2f applied to %s" % [mtype, modifier, target.combatant_name])
+		_:
+			push_warning("[STEAL-RESPONSE] unknown steal_response type '%s' on %s" % [rtype, mtype])
+
+
 func _get_crit_multiplier(attacker: Combatant) -> float:
 	"""Get critical hit damage multiplier"""
 	# Base crit multiplier is 1.5x
@@ -5320,6 +5357,8 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 						GameState.add_gold(gold_amount)
 						print("  → Stole %d gold from %s!" % [gold_amount, target.combatant_name])
 						battle_log_message.emit("[color=yellow]%s stole %d gold from %s![/color]" % [caster.combatant_name, gold_amount, target.combatant_name])
+						# Boss-specific steal_response (msg 2474): a successful steal against a target with a monsters.json steal_response definition triggers its mechanical effect exactly once per fight (Lockward's vault-crack = defense-break to 50%). Cowir-main's Option 2. Subsequent steals still succeed for gold; only the response is one-shot.
+						_apply_steal_response(target)
 					else:
 						print("  → %s failed to steal from %s!" % [caster.combatant_name, target.combatant_name])
 						battle_log_message.emit("[color=gray]%s couldn't steal anything from %s.[/color]" % [caster.combatant_name, target.combatant_name])
@@ -7275,6 +7314,20 @@ func _resolve_gloat_boss_persona() -> String:
 	return ""
 
 
+## True iff any enemy matching this persona_id had its steal-response consumed this fight (Warden's Key). Consulted by _dispatch_boss_gloat to route the victory line to the differentiated pool. Match by monster_type meta so a bespoke persona override doesn't false-match a different combatant sharing the same llm_persona_id.
+func _resolved_boss_had_key_stolen(persona_id: String) -> bool:
+	if persona_id == "":
+		return false
+	for e in enemy_party:
+		if not is_instance_valid(e):
+			continue
+		if str(e.get_meta("monster_type", "")) != persona_id:
+			continue
+		if e.has_meta("_steal_response_consumed") and bool(e.get_meta("_steal_response_consumed", false)):
+			return true
+	return false
+
+
 ## Fire-and-forget gloat dispatcher called from end_battle. Resolves the boss
 ## persona, computes the DETERMINISTIC scripted fallback synchronously, and:
 ##   - LLM unavailable → emits boss_gloat_line immediately with the fallback.
@@ -7296,9 +7349,13 @@ func _dispatch_boss_gloat(victory: bool) -> void:
 
 	# victory == party won → boss concedes (victory_lines).
 	# victory == false     → boss wiped the party (defeat_lines).
+	# Special: victory + the boss got its Warden's Key stolen (msg 2478 cowir-story) → route to victory_lines_stolen_key which differentiates the loss beat when the guardian identity is what actually broke. Falls back to standard victory_lines if the pool isn't authored.
 	var fallback: String = ""
 	if victory:
-		fallback = boss_dlg.get_victory_line(persona_id)
+		if _resolved_boss_had_key_stolen(persona_id) and boss_dlg.has_method("get_victory_line_stolen_key"):
+			fallback = boss_dlg.get_victory_line_stolen_key(persona_id)
+		if fallback == "":
+			fallback = boss_dlg.get_victory_line(persona_id)
 	else:
 		fallback = boss_dlg.get_defeat_line(persona_id)
 

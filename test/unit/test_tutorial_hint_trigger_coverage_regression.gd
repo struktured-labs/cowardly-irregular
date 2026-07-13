@@ -22,6 +22,27 @@ const KNOWN_UNFIRED_EXCEPTIONS := {
 	# remove from the catalog. Tracked here so this test doesn't fail
 	# loud-by-default while the decision is pending.
 	"autobattle_intro": true,
+	# spotlight_hint_<job>_<tier> — fired dynamically by
+	# GameLoop._maybe_fire_spotlight_hint via a templated string, so this
+	# static grep can't detect the trigger. Wired at start_solo_battle
+	# per msg 2472/2478. If cowir-story adds a tier 4 entry, add it here
+	# AND (optionally, if the loss shape wants a new threshold) extend
+	# GameLoop.SPOTLIGHT_HINT_THRESHOLDS.
+	"spotlight_hint_fighter_1": true,
+	"spotlight_hint_fighter_2": true,
+	"spotlight_hint_fighter_3": true,
+	"spotlight_hint_cleric_1": true,
+	"spotlight_hint_cleric_2": true,
+	"spotlight_hint_cleric_3": true,
+	"spotlight_hint_rogue_1": true,
+	"spotlight_hint_rogue_2": true,
+	"spotlight_hint_rogue_3": true,
+	"spotlight_hint_mage_1": true,
+	"spotlight_hint_mage_2": true,
+	"spotlight_hint_mage_3": true,
+	"spotlight_hint_bard_1": true,
+	"spotlight_hint_bard_2": true,
+	"spotlight_hint_bard_3": true,
 }
 
 
