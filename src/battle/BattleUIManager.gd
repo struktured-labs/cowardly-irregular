@@ -265,7 +265,7 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 		auto_indicator = " [T]"
 		tag_color = Color(0.4, 0.85, 1.0)
 	name_label.text = "%s (%s)%s" % [member.combatant_name, job_name, auto_indicator]
-	name_label.add_theme_font_size_override("font_size", TextScale.scaled(13))
+	name_label.add_theme_font_size_override("font_size", TextScale.scaled(15))
 	if auto_indicator != "":
 		name_label.add_theme_color_override("font_color", tag_color)
 	name_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
@@ -286,7 +286,7 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	var hp_label = Label.new()
 	hp_label.name = "HPLabel"
 	hp_label.text = "HP: %d/%d" % [member.current_hp, member.max_hp]
-	hp_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
+	hp_label.add_theme_font_size_override("font_size", TextScale.scaled(15))
 	hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hp_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	hp_label.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -305,7 +305,7 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	var mp_label = Label.new()
 	mp_label.name = "MPLabel"
 	mp_label.text = "MP: %d/%d" % [member.current_mp, member.max_mp]
-	mp_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
+	mp_label.add_theme_font_size_override("font_size", TextScale.scaled(13))
 	mp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	mp_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	mp_label.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -317,8 +317,8 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	ap_label.bbcode_enabled = true
 	ap_label.fit_content = true
 	ap_label.custom_minimum_size = Vector2(0, 20)
-	ap_label.add_theme_font_size_override("normal_font_size", TextScale.scaled(13))
-	ap_label.add_theme_font_size_override("bold_font_size", TextScale.scaled(13))
+	ap_label.add_theme_font_size_override("normal_font_size", TextScale.scaled(15))
+	ap_label.add_theme_font_size_override("bold_font_size", TextScale.scaled(15))
 	ap_label.text = "AP: 0"
 	box.add_child(ap_label)
 
@@ -328,7 +328,7 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	stat_label.bbcode_enabled = true
 	stat_label.fit_content = true
 	stat_label.custom_minimum_size = Vector2(0, 16)
-	stat_label.add_theme_font_size_override("normal_font_size", TextScale.scaled(10))
+	stat_label.add_theme_font_size_override("normal_font_size", TextScale.scaled(12))
 	stat_label.text = ""
 	box.add_child(stat_label)
 	_update_stat_mods_label(stat_label, member)
@@ -385,10 +385,17 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 		if hp_label:
 			if not member.is_alive:
 				hp_label.text = "-- KO --"
-				hp_label.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
+				hp_label.add_theme_color_override("font_color", AccessibilityPalette.hp_low())
 			else:
 				hp_label.text = "HP: %d/%d" % [member.current_hp, member.max_hp]
-				hp_label.remove_theme_color_override("font_color")
+				# 2026-07-13: color-per-tier on the RHS party panel so a struggling ally reads at a glance without squinting at the number. Uses AccessibilityPalette so colorblind mode works.
+				var _hp_pct: float = float(member.current_hp) / float(maxi(1, member.max_hp))
+				var _hp_color: Color = AccessibilityPalette.hp_high()
+				if _hp_pct <= 0.25:
+					_hp_color = AccessibilityPalette.hp_low()
+				elif _hp_pct <= 0.5:
+					_hp_color = AccessibilityPalette.hp_mid()
+				hp_label.add_theme_color_override("font_color", _hp_color)
 
 	# Gray out the name label if KO'd
 	if name_label:
