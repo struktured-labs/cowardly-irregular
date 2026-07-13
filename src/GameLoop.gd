@@ -208,6 +208,9 @@ var _pending_spotlight_unlock: String = ""  # PC job id ("fighter", etc.); "" wh
 var _spotlight_saved_party: Array[Combatant] = []
 signal spotlight_battle_ended(victory: bool)
 
+## Loss thresholds that promote a duelist to the next hint tier (msg 2472). Fires TutorialHints spotlight_hint_<job>_<tier> at start_solo_battle. Struktured's morale-friendly cadence: player gets 2 losses to figure it out themselves before tier-1 fires; extend the array to add tier 4+ later. Explicit thresholds over a formula so per-boss tuning is one edit.
+const SPOTLIGHT_HINT_THRESHOLDS: Array = [2, 4, 6]
+
 ## Area transition fade overlay (reused across all area transitions)
 var _area_fade_layer: CanvasLayer = null
 var _area_fade_rect: ColorRect = null
@@ -2641,6 +2644,8 @@ func start_solo_battle(job_id: String, enemy_id: String, _opts: Dictionary = {})
 	_spotlight_duel_active = true
 	# the spotlight short-circuit skips post-battle healing, so a retry would re-enter at 0 HP
 	_restore_duelist(spotlight_pc)
+	# Progressive death-tiered hint (msg 2472): if prior attempts against this job's duel have accrued past a threshold, fire the matching spotlight_hint_<job>_<tier> before combat starts. Missing content in the TutorialHints catalog logs a push_warning that CI catches — cowir-story owns the copy.
+	_maybe_fire_spotlight_hint(job_id)
 	# step win_condition overrides; monsters.json is the data fallback (agreement ratchet-tested)
 	if BattleManager:
 		var wc: Variant = _opts.get("win_condition", {})
@@ -2682,6 +2687,29 @@ static func _restore_duelist(pc: Combatant) -> void:
 				pc.remove_status(str(s))
 
 
+## Loss count → hint tier (msg 2472). Returns 0 for "no hint" (first attempts), 1..N when the count crosses successive thresholds. Static so tests can exercise it without spinning up the whole GameLoop.
+static func _spotlight_hint_tier(losses: int) -> int:
+	var tier: int = 0
+	for t in SPOTLIGHT_HINT_THRESHOLDS:
+		if losses >= int(t):
+			tier += 1
+	return tier
+
+
+## Fire every threshold-met spotlight_hint_<job>_<tier> that hasn't been shown yet. cowir-story's gate (msg 2478): tier N fires iff `losses >= threshold_N AND not tutorial_<hint_id>`. TutorialHints.show dedupes internally via game_constants.tutorial_<id> — so if a player's counter jumps past threshold_1 without seeing tier 1 (save-load edge, bug, etc.), tier 1 still catches up on the next duel start. Monotone non-decreasing per tier; no "== threshold" comparison anywhere.
+func _maybe_fire_spotlight_hint(job_id: String) -> void:
+	if not GameState or not "game_constants" in GameState:
+		return
+	var loss_key: String = "spotlight_losses_" + job_id
+	var losses: int = int(GameState.game_constants.get(loss_key, 0))
+	for i in range(SPOTLIGHT_HINT_THRESHOLDS.size()):
+		var threshold: int = int(SPOTLIGHT_HINT_THRESHOLDS[i])
+		if losses >= threshold:
+			var tier: int = i + 1
+			var hint_id: String = "spotlight_hint_%s_%d" % [job_id, tier]
+			TutorialHints.show(self, hint_id)
+
+
 func _on_battle_ended(victory: bool) -> void:
 	"""Handle battle end"""
 	## Tick 471: spotlight-duel short-circuit. When a cutscene owns the
@@ -2695,8 +2723,17 @@ func _on_battle_ended(victory: bool) -> void:
 		if victory and _pending_spotlight_unlock != "" and GameState and "game_constants" in GameState:
 			var flag: String = "cutscene_flag_spotlight_unlocked_" + _pending_spotlight_unlock
 			GameState.game_constants[flag] = true
-			print("[SPOTLIGHT] battle won → set %s" % flag)
+			# Clear the loss counter so a hypothetical replay starts fresh (msg 2472). Erase over set-to-0 keeps game_constants tidy — future consumers reading via .get(key, 0) get the same answer.
+			var loss_key: String = "spotlight_losses_" + _pending_spotlight_unlock
+			GameState.game_constants.erase(loss_key)
+			print("[SPOTLIGHT] battle won → set %s + cleared %s" % [flag, loss_key])
 			_reconcile_spotlight_locks()
+		elif not victory and _pending_spotlight_unlock != "" and GameState and "game_constants" in GameState:
+			# Death-tier hint counter (msg 2472). Persisted via game_constants so a save+quit between attempts preserves the tier. start_solo_battle reads it on the next attempt and fires the appropriate spotlight_hint_<job>_<tier> via TutorialHints.
+			var loss_key: String = "spotlight_losses_" + _pending_spotlight_unlock
+			var current: int = int(GameState.game_constants.get(loss_key, 0))
+			GameState.game_constants[loss_key] = current + 1
+			print("[SPOTLIGHT] battle lost → %s = %d" % [loss_key, current + 1])
 		spotlight_battle_ended.emit(victory)
 		return
 	if victory:

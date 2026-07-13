@@ -155,6 +155,16 @@ func get_defeat_line(boss_id: String) -> String:
 	return _random_pool_line(boss_id, "defeat_lines")
 
 
+## Beat the boss says WHEN THE ROGUE STEALS ITS KEY — Lockward's steal-response mechanic firing (cowir-main/cowir-story msg 2474/2478). Empty when boss has no pool authored; caller degrades to no dialogue.
+func get_steal_success_line(boss_id: String) -> String:
+	return _random_pool_line(boss_id, "steal_success_lines")
+
+
+## Differentiated win line for the "you stole the key this fight" path — Lockward reads the loss differently when the guardian identity is what broke. Empty when the pool isn't authored; caller falls back to standard get_victory_line().
+func get_victory_line_stolen_key(boss_id: String) -> String:
+	return _random_pool_line(boss_id, "victory_lines_stolen_key")
+
+
 ## Shared helper for the optional victory_lines / defeat_lines pools. Returns a
 ## random non-empty string from the named pool, or "" when the boss has no
 ## section, the pool key is absent, the value is not an Array, or the Array is

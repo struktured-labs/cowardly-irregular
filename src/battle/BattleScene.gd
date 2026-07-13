@@ -2391,7 +2391,14 @@ func _menu_wd_diag(pc: Combatant) -> String:
 	var dbg_unlocked: bool = GameState.debug_all_pcs_unlocked if (GameState and "debug_all_pcs_unlocked" in GameState) else false
 	var in_party: bool = pc in BattleManager.player_party if BattleManager else false
 	var sprite_ct: int = party_sprite_nodes.size()
-	return " [reason=%s ab_locked=%s ab_enabled=%s dbg_unlocked=%s in_party=%s sprite_ct=%d]" % [reason, ab_locked, ab_enabled, dbg_unlocked, in_party, sprite_ct]
+	# msg 2472 bonus: dump the per-job loss counter so tuning caps see the current tier at trip time. Reads pc.job.id; empty if the combatant has no job dict.
+	var pc_job_id: String = ""
+	if pc and pc.job is Dictionary:
+		pc_job_id = str((pc.job as Dictionary).get("id", ""))
+	var spotlight_losses: int = 0
+	if pc_job_id != "" and GameState and "game_constants" in GameState:
+		spotlight_losses = int(GameState.game_constants.get("spotlight_losses_" + pc_job_id, 0))
+	return " [reason=%s ab_locked=%s ab_enabled=%s dbg_unlocked=%s in_party=%s sprite_ct=%d spotlight_losses=%d]" % [reason, ab_locked, ab_enabled, dbg_unlocked, in_party, sprite_ct, spotlight_losses]
 
 
 func _reset_menu_watchdog() -> void:
