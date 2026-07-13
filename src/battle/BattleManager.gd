@@ -4095,6 +4095,8 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 							var _g: int = randi_range(5, 50) * (1 + int(_st.max_hp / 50.0))
 							GameState.add_gold(_g)
 							battle_log_message.emit("[color=yellow]%s mugs %d gold from %s![/color]" % [caster.combatant_name, _g, _st.combatant_name])
+							# msg 2483: Mug is attack + steal in one action, so its steal-success branch fires the same steal_response the pure Steal handler does — Warden's Key path opens either way. Guarded once per fight by _steal_response_consumed inside the helper.
+							_apply_steal_response(_st)
 						else:
 							battle_log_message.emit("[color=gray]%s couldn't grab anything from %s.[/color]" % [caster.combatant_name, _st.combatant_name])
 		"magic":
@@ -4284,6 +4286,10 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 			## says: "Status effects, debuffs, and holy magic bypass this
 			## absorption"). Element gate at the helper covers holy magic.
 			_maybe_heal_from_damage(target, hit_damage, "")
+
+		# Warden's Key crescendo (msg 2481/2483): if Backstab or Mug landed against a target whose steal_response was already consumed, halve the Vault-Cracked debuff modifier — "the crack widens." Fires once per ability cast, not per internal hit, and only when damage actually landed. Engine 25% floor caps meaningful stacks (Steal 0.5 → Backstab 1 = 0.25 → floor); subsequent hits no-op silently.
+		if actual_damage > 0:
+			_maybe_deepen_warden_crack(caster, target, str(ability.get("id", "")))
 
 		# Track first damage for one-shot detection
 		if target in enemy_party:
@@ -4746,6 +4752,44 @@ func _apply_steal_response(target: Combatant) -> void:
 			print("[STEAL-RESPONSE] %s: defense_break x%.2f applied to %s" % [mtype, modifier, target.combatant_name])
 		_:
 			push_warning("[STEAL-RESPONSE] unknown steal_response type '%s' on %s" % [rtype, mtype])
+
+
+## Ability ids whose successful hit deepens the Warden's Key crack (msg 2481/2483). Backstab is the specialized escalator; Mug counts too so it stays a valid mid-fight tool after Turn 1's opener rather than becoming Steal-only cover.
+const WARDEN_CRACK_DEEPENERS: Array = ["backstab", "mug"]
+
+## Post-hit crescendo on the Warden's Key path: halve the target's Vault-Cracked debuff modifier on each successful Backstab/Mug hit, up to the engine's 25% stat-floor cap (Combatant._get_effective_stat clamps to base×0.25). Silently no-op past that — no log spam once the floor is hit. Guards: ability must be in WARDEN_CRACK_DEEPENERS, target must have already consumed steal_response this fight, and a Vault-Cracked debuff must exist to deepen.
+func _maybe_deepen_warden_crack(caster: Combatant, target: Combatant, ability_id: String) -> void:
+	if target == null or not is_instance_valid(target):
+		return
+	if ability_id == "" or not WARDEN_CRACK_DEEPENERS.has(ability_id):
+		return
+	if not target.has_method("get_meta") or not target.has_meta("_steal_response_consumed"):
+		return
+	if not bool(target.get_meta("_steal_response_consumed", false)):
+		return
+	var current_modifier: float = -1.0
+	for debuff in target.active_debuffs:
+		if str(debuff.get("effect", "")) == "Vault-Cracked" and str(debuff.get("stat", "")) == "defense":
+			current_modifier = float(debuff.get("modifier", 1.0))
+			break
+	# No Vault-Cracked debuff = nothing to deepen (steal_response was of a non-defense_break type on this target).
+	if current_modifier <= 0.0:
+		return
+	# Engine floor: base × 0.25. Compute the target's floor-modifier and skip if we're already at it. This is 0.25 for the standard defense-break shape; changes only if a future response_type sets a different base multiplier.
+	if current_modifier <= 0.25 + 0.001:
+		return
+	var new_modifier: float = maxf(current_modifier * 0.5, 0.25)
+	target.add_debuff("Vault-Cracked", "defense", new_modifier, 99)
+	battle_log_message.emit("[color=yellow]The crack widens — the Warden's guard falls further.[/color]")
+	# Optional cowir-story flavor pool per msg 2481. Same graceful-empty pattern as steal_success_lines.
+	var boss_dlg = get_node_or_null("/root/BossDialogue")
+	if boss_dlg and boss_dlg.has_method("get_backstab_widens_crack_line"):
+		var mtype: String = str(target.get_meta("monster_type", ""))
+		if mtype != "":
+			var line: String = str(boss_dlg.get_backstab_widens_crack_line(mtype))
+			if line != "":
+				boss_taunt.emit(target, line)
+	print("[WARDEN-CRACK] %s→%s (%s): modifier %.3f → %.3f" % [caster.combatant_name if caster else "?", target.combatant_name, ability_id, current_modifier, new_modifier])
 
 
 func _get_crit_multiplier(attacker: Combatant) -> float:
