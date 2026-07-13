@@ -476,7 +476,8 @@ func _add_area_transition(trans_name: String, target_map: String, target_spawn: 
 	# Mode 7 renders the player lower on screen than their collision position,
 	# so the player has to walk "above" targets. Shifting zones up fixes the mismatch.
 	trans.position = pos + Vector2(0, -TILE_SIZE * 3)  # 3 tiles up — Mode 7 log-warp shifts visual north
-	_setup_transition_collision(trans, Vector2(TILE_SIZE * 4, TILE_SIZE * 10))  # 4 wide × 10 tall — tall to catch Mode 7 vertical offset
+	# 2026-07-13: was 4×10 tiles — but Castle Harmonia sits only 2 tiles east of CaveEntrance, so their 4-tile-wide boxes overlapped by 2 tiles and the earlier sibling (Cave) stole every ui_accept in the shared cells → player trying to enter castle got warped to cave. 2×6 is wide enough to catch the player and tall enough for Mode 7's -3-tile Y-offset.
+	_setup_transition_collision(trans, Vector2(TILE_SIZE * 2, TILE_SIZE * 6))
 	trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(trans)
 
