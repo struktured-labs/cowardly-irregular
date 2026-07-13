@@ -260,6 +260,13 @@ func take_damage(amount: int, is_magical: bool = false) -> int:
 					amount = max(0, amount - redirect_amount)
 					print("[SHARED_DAMAGE] %d redirected to controller %s" % [redirect_amount, ctrl.combatant_name])
 
+	# Vulnerability multiplier (msg 2485 Warden's Key crescendo): applied to raw incoming amount BEFORE the defense formula so the crack semantically amplifies incoming damage rather than reducing defense (avoids the base×0.25 stat-clamp in _get_effective_stat). Stacked additively across debuffs with stat="incoming_damage" — each stack's modifier is a percentage bonus, unclamped, so multi-hit crescendos scale smoothly.
+	if amount > 0:
+		var vuln: float = get_incoming_damage_multiplier()
+		if vuln != 1.0:
+			amount = int(round(amount * vuln))
+			amount = max(0, amount)
+
 	var def_value = get_buffed_stat("defense", defense) if not is_magical else int(get_buffed_stat("defense", defense) * 0.5)
 	var denom = max(1, amount + def_value)
 	var actual_damage = int((amount * amount) / float(denom))
@@ -628,6 +635,35 @@ func add_debuff(effect: String, stat: String, modifier: float, duration: int) ->
 	}
 	active_debuffs.append(debuff)
 	print("%s suffered %s (%.1fx %s for %d turns)" % [combatant_name, effect, modifier, stat, duration])
+
+
+## Vulnerability stacking helper (msg 2485 Warden's Key crescendo). Unlike add_debuff (which refreshes duration and only upgrades to a stronger modifier), this ADDS `delta` to the existing modifier — semantic of "each crack widens the wound." Uses stat="incoming_damage" which get_incoming_damage_multiplier reads to amplify take_damage. Unclamped — the base×0.25 stat floor doesn't apply because this doesn't go through _get_effective_stat.
+func add_stacking_vulnerability(effect: String, delta: float, duration: int) -> void:
+	for existing in active_debuffs:
+		if existing["effect"] == effect:
+			existing["modifier"] = float(existing.get("modifier", 0.0)) + delta
+			existing["remaining_turns"] = duration
+			existing["duration"] = duration
+			print("%s: %s stacks to +%.0f%% incoming damage" % [combatant_name, effect, existing["modifier"] * 100.0])
+			return
+	var vuln = {
+		"effect": effect,
+		"stat": "incoming_damage",
+		"modifier": delta,
+		"duration": duration,
+		"remaining_turns": duration,
+	}
+	active_debuffs.append(vuln)
+	print("%s: %s applied — +%.0f%% incoming damage" % [combatant_name, effect, delta * 100.0])
+
+
+## Total incoming-damage multiplier — 1.0 baseline plus the sum of all active_debuffs where stat=="incoming_damage". Consulted at take_damage's pre-defense stage to amplify raw amount. Additive stacking is the whole point (each Warden crack widens the wound; two independent vulnerability effects would still stack cleanly).
+func get_incoming_damage_multiplier() -> float:
+	var total: float = 1.0
+	for d in active_debuffs:
+		if str(d.get("stat", "")) == "incoming_damage":
+			total += float(d.get("modifier", 0.0))
+	return total
 
 
 func get_buffed_stat(stat_name: String, base_value: int) -> int:

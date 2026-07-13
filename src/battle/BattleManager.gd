@@ -4095,6 +4095,8 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 							var _g: int = randi_range(5, 50) * (1 + int(_st.max_hp / 50.0))
 							GameState.add_gold(_g)
 							battle_log_message.emit("[color=yellow]%s mugs %d gold from %s![/color]" % [caster.combatant_name, _g, _st.combatant_name])
+							# msg 2483: Mug is attack + steal in one action, so its steal-success branch fires the same steal_response the pure Steal handler does — Warden's Key path opens either way. Guarded once per fight by _steal_response_consumed inside the helper.
+							_apply_steal_response(_st)
 						else:
 							battle_log_message.emit("[color=gray]%s couldn't grab anything from %s.[/color]" % [caster.combatant_name, _st.combatant_name])
 		"magic":
@@ -4284,6 +4286,10 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 			## says: "Status effects, debuffs, and holy magic bypass this
 			## absorption"). Element gate at the helper covers holy magic.
 			_maybe_heal_from_damage(target, hit_damage, "")
+
+		# Warden's Key crescendo (msg 2481/2483): if Backstab or Mug landed against a target whose steal_response was already consumed, halve the Vault-Cracked debuff modifier — "the crack widens." Fires once per ability cast, not per internal hit, and only when damage actually landed. Engine 25% floor caps meaningful stacks (Steal 0.5 → Backstab 1 = 0.25 → floor); subsequent hits no-op silently.
+		if actual_damage > 0:
+			_maybe_deepen_warden_crack(caster, target, str(ability.get("id", "")))
 
 		# Track first damage for one-shot detection
 		if target in enemy_party:
@@ -4730,10 +4736,10 @@ func _apply_steal_response(target: Combatant) -> void:
 	var rtype: String = str(r.get("type", ""))
 	var message: String = str(r.get("message", ""))
 	match rtype:
-		"defense_break":
-			var modifier: float = float(r.get("modifier", 0.5))
-			# 99 turns ≈ rest of fight; distinct effect name keeps refresh-in-place from stacking further even if the once-per-fight guard is ever bypassed.
-			target.add_debuff("Vault-Cracked", "defense", modifier, 99)
+		"vulnerability":
+			# msg 2485 Option 3: initial vulnerability stack. `modifier` here is the ADDITIVE percentage-bonus incoming damage (0.5 = +50%). Applied via add_stacking_vulnerability so subsequent Backstab/Mug hits stack additively rather than replacing the modifier.
+			var initial: float = float(r.get("modifier", 0.5))
+			target.add_stacking_vulnerability("Vault Crack", initial, 99)
 			if message != "":
 				battle_log_message.emit("[color=yellow]%s[/color]" % message)
 			target.set_meta("_steal_response_consumed", true)
@@ -4743,9 +4749,46 @@ func _apply_steal_response(target: Combatant) -> void:
 				var line: String = str(boss_dlg.get_steal_success_line(mtype))
 				if line != "":
 					boss_taunt.emit(target, line)
-			print("[STEAL-RESPONSE] %s: defense_break x%.2f applied to %s" % [mtype, modifier, target.combatant_name])
+			print("[STEAL-RESPONSE] %s: vulnerability +%.0f%% applied to %s" % [mtype, initial * 100.0, target.combatant_name])
 		_:
 			push_warning("[STEAL-RESPONSE] unknown steal_response type '%s' on %s" % [rtype, mtype])
+
+
+## Ability ids whose successful hit deepens the Warden's Key crack (msg 2481/2483). Backstab is the specialized escalator; Mug counts too so it stays a valid mid-fight tool after Turn 1's opener rather than becoming Steal-only cover.
+const WARDEN_CRACK_DEEPENERS: Array = ["backstab", "mug"]
+
+## msg 2485 Option 3 tuning: each Backstab/Mug hit adds +25% incoming damage on top of Steal's +50% initial vulnerability. Additive, unclamped — the smooth crescendo struktured picked over the plateau shape.
+const WARDEN_CRACK_STACK_DELTA: float = 0.25
+
+## Post-hit crescendo on the Warden's Key path: add another WARDEN_CRACK_STACK_DELTA (+25%) to the target's Vault Crack vulnerability on each successful Backstab/Mug hit. No plateau — vulnerability sits outside _get_effective_stat's base×0.25 clamp, so each hit lands harder than the last. Guards: ability must be in WARDEN_CRACK_DEEPENERS, target must have already consumed steal_response this fight, and a Vault Crack vulnerability must already exist (steal_response was of the vulnerability type).
+func _maybe_deepen_warden_crack(caster: Combatant, target: Combatant, ability_id: String) -> void:
+	if target == null or not is_instance_valid(target):
+		return
+	if ability_id == "" or not WARDEN_CRACK_DEEPENERS.has(ability_id):
+		return
+	if not target.has_method("get_meta") or not target.has_meta("_steal_response_consumed"):
+		return
+	if not bool(target.get_meta("_steal_response_consumed", false)):
+		return
+	# Only deepen if Vault Crack is already present (steal_response was of the vulnerability type — future steal_response types stay unaffected).
+	var has_crack: bool = false
+	for debuff in target.active_debuffs:
+		if str(debuff.get("effect", "")) == "Vault Crack":
+			has_crack = true
+			break
+	if not has_crack:
+		return
+	target.add_stacking_vulnerability("Vault Crack", WARDEN_CRACK_STACK_DELTA, 99)
+	battle_log_message.emit("[color=yellow]The crack widens — the Warden takes the hit harder.[/color]")
+	# Optional cowir-story flavor pool per msg 2481. Same graceful-empty pattern as steal_success_lines.
+	var boss_dlg = get_node_or_null("/root/BossDialogue")
+	if boss_dlg and boss_dlg.has_method("get_backstab_widens_crack_line"):
+		var mtype: String = str(target.get_meta("monster_type", ""))
+		if mtype != "":
+			var line: String = str(boss_dlg.get_backstab_widens_crack_line(mtype))
+			if line != "":
+				boss_taunt.emit(target, line)
+	print("[WARDEN-CRACK] %s→%s (%s): +%.0f%% incoming (stacked)" % [caster.combatant_name if caster else "?", target.combatant_name, ability_id, WARDEN_CRACK_STACK_DELTA * 100.0])
 
 
 func _get_crit_multiplier(attacker: Combatant) -> float:

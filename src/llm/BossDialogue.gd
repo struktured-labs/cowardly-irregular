@@ -165,6 +165,11 @@ func get_victory_line_stolen_key(boss_id: String) -> String:
 	return _random_pool_line(boss_id, "victory_lines_stolen_key")
 
 
+## Optional flavor beat each successful Backstab/Mug after the key is stolen (msg 2481 crescendo). Empty when unauthored; the crack-widens log line still fires unconditionally.
+func get_backstab_widens_crack_line(boss_id: String) -> String:
+	return _random_pool_line(boss_id, "backstab_widens_crack_lines")
+
+
 ## Shared helper for the optional victory_lines / defeat_lines pools. Returns a
 ## random non-empty string from the named pool, or "" when the boss has no
 ## section, the pool key is absent, the value is not an Array, or the Array is
