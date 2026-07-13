@@ -153,6 +153,8 @@ func _setup_treasures() -> void:
 
 
 func _setup_npcs() -> void:
+	_place_masterite_arbiter()
+
 	# Fortune Teller Madame Hex (dramatic)
 	var hex = _create_npc("Madame Hex", "elder", Vector2(8 * TILE_SIZE, 5 * TILE_SIZE), [
 		"I see your future...",
@@ -209,3 +211,19 @@ func _setup_npcs() -> void:
 		"...Just kidding. Probably."
 	])
 	npcs.add_child(murk)
+
+
+## Arbiter of Steel — L8 masterite guarding the mine approach as a
+## corrupted foreman-cum-judge. Placed south of the CCC block (chapel /
+## mine head) so the encounter meets the party on the approach path.
+## Doc: docs/design/w1-progression-expansion.md.
+func _place_masterite_arbiter() -> void:
+	var MasteriteScript = load("res://src/exploration/MasteriteEncounter.gd")
+	if MasteriteScript == null:
+		return
+	var arbiter = MasteriteScript.new()
+	arbiter.archetype = "arbiter"
+	arbiter.monster_id = "masterite_arbiter_medieval"
+	arbiter.display_name = "Arbiter of Steel"
+	arbiter.position = Vector2(14 * TILE_SIZE, 10 * TILE_SIZE)
+	npcs.add_child(arbiter)
