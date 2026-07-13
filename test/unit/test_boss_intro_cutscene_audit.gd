@@ -1,31 +1,20 @@
 extends GutTest
 
-## tick 213: audit boss_cutscene_id wiring across all DragonCave
-## subclasses + surface silent-failure paths in _show_boss_intro.
+## tick 213 + 2026-07-13 director-lookup fix: audit boss_cutscene_id
+## wiring across all DragonCave subclasses and pin the correct director
+## routing. CutsceneDirector is GameLoop-owned, NOT an autoload — the
+## previous `/root/CutsceneDirector` lookup silently returned null and
+## every W1 boss intro (Mordaine + 4 dragons) fell back to console print.
+## Same class as the TallyWall bug (2026-07-08). Fix routes through
+## GameLoop.get_cutscene_director(), matching QuestSystem and TallyWall.
 ##
-## Pre-fix the cutscene playback flow:
-##   if boss_cutscene_id != "":
-##     if FileAccess.file_exists(cutscene_path):
-##       var director = get_node_or_null("/root/CutsceneDirector")
-##       if director and director.has_method("play_cutscene"):
-##         await director.play_cutscene(boss_cutscene_id)
-##         return
-##   # Fallback: console print
+## Silent-failure paths that still fall to console (each push_warnings):
+##   (a) boss_cutscene_id set, JSON missing on disk
+##   (b) GameLoop.get_cutscene_director() returned null
+##   (c) director lacks play_cutscene method
 ##
-## Three silent-failure paths fell through to the console fallback:
-##   (a) boss_cutscene_id set, JSON missing on disk (typo, data
-##       drift, file not yet authored)
-##   (b) JSON present, CutsceneDirector autoload null
-##   (c) JSON present, CutsceneDirector lacks play_cutscene method
-##
-## Production builds don't surface console output. A boss intro
-## that should play would silently drop the player into the fight
-## with no narrative beat — exactly the surprise-bug class CLAUDE.md
-## warns about ("silent failures are worse than crashes").
-##
-## Fix: push_warning on each path so any drift surfaces during
-## dev play AND in CI logs. Static coverage audit verifies every
-## subclass's boss_cutscene_id points to a real JSON file on disk.
+## Static coverage audit verifies every subclass's boss_cutscene_id
+## points to a real JSON file on disk.
 
 const DRAGON_CAVE := "res://src/maps/dungeons/DragonCave.gd"
 const DUNGEONS_DIR := "res://src/maps/dungeons/"
@@ -50,8 +39,8 @@ func test_missing_json_pushes_warning() -> void:
 
 func test_null_director_pushes_warning() -> void:
 	var src := _read(DRAGON_CAVE)
-	assert_true(src.contains("but CutsceneDirector autoload is null"),
-		"_show_boss_intro must push_warning when CutsceneDirector is null")
+	assert_true(src.contains("GameLoop.get_cutscene_director() returned null"),
+		"_show_boss_intro must push_warning when the director is null")
 
 
 func test_missing_play_cutscene_method_pushes_warning() -> void:
@@ -60,11 +49,20 @@ func test_missing_play_cutscene_method_pushes_warning() -> void:
 		"_show_boss_intro must push_warning when director lacks play_cutscene")
 
 
-func test_director_check_via_get_node_or_null_preserved() -> void:
-	# Pre-existing safety: defensive get_node_or_null pattern preserved.
+func test_director_routes_through_game_loop() -> void:
+	# 2026-07-13 director-lookup fix: CutsceneDirector is NOT autoloaded, so
+	# `/root/CutsceneDirector` returned null and every boss intro silently
+	# fell back to console print. The routing now goes through GameLoop's
+	# lazy accessor (matches QuestSystem and TallyWall).
 	var src := _read(DRAGON_CAVE)
-	assert_true(src.contains("get_node_or_null(\"/root/CutsceneDirector\")"),
-		"get_node_or_null defensive lookup preserved")
+	assert_false(src.contains("get_node_or_null(\"/root/CutsceneDirector\")"),
+		"stale /root/CutsceneDirector lookup must not resurface")
+	var fn_idx := src.find("func _show_boss_intro")
+	assert_gt(fn_idx, 0, "boss intro function present")
+	var next_fn := src.find("\nfunc ", fn_idx + 1)
+	var body: String = src.substr(fn_idx, next_fn - fn_idx) if next_fn > 0 else src.substr(fn_idx)
+	assert_true(body.contains("get_cutscene_director"),
+		"_show_boss_intro reaches GameLoop.get_cutscene_director()")
 
 
 # ── Static coverage audit: each subclass's id points to an existing file ──

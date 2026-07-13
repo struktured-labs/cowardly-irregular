@@ -494,9 +494,13 @@ func _show_boss_intro() -> void:
 		if not FileAccess.file_exists(cutscene_path):
 			push_warning("[DragonCave] boss_cutscene_id='%s' but %s does not exist — falling back to console intro (boss will play, but with no cutscene)" % [boss_cutscene_id, cutscene_path])
 		else:
-			var director = get_node_or_null("/root/CutsceneDirector")
+			# CutsceneDirector is GameLoop-owned, NOT an autoload — a /root/ lookup silently falls back, and every W1 boss intro (Mordaine + 4 dragons) has been dropping to the console-print fallback. Same class as the TallyWall fix (2026-07-08); route through GameLoop.get_cutscene_director() so the authored intros actually play.
+			var game_loop = get_node_or_null("/root/GameLoop")
+			var director = null
+			if game_loop != null and game_loop.has_method("get_cutscene_director"):
+				director = game_loop.get_cutscene_director()
 			if director == null:
-				push_warning("[DragonCave] boss_cutscene_id='%s' configured but CutsceneDirector autoload is null — falling back to console intro" % boss_cutscene_id)
+				push_warning("[DragonCave] boss_cutscene_id='%s' configured but GameLoop.get_cutscene_director() returned null — falling back to console intro" % boss_cutscene_id)
 			elif not director.has_method("play_cutscene"):
 				push_warning("[DragonCave] boss_cutscene_id='%s' configured but CutsceneDirector lacks play_cutscene method — falling back to console intro" % boss_cutscene_id)
 			else:
