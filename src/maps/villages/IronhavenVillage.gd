@@ -163,6 +163,8 @@ func _setup_treasures() -> void:
 
 
 func _setup_npcs() -> void:
+	_place_masterite_curator()
+
 	# Blacksmith Magda (eager)
 	var magda = _create_npc("Blacksmith Magda", "villager", Vector2(14 * TILE_SIZE, 6 * TILE_SIZE), [
 		"Dragon scales, you say?",
@@ -232,3 +234,18 @@ func _setup_npcs() -> void:
 		"...Don't answer that. It was rhetorical. Also, probably no."
 	])
 	npcs.add_child(stranger)
+
+
+## Curator of the Flame — L8 masterite tending the warped temple flame in
+## a duel-of-belief encounter. Placed south of the FFF temple block on the
+## approach walkway. Doc: docs/design/w1-progression-expansion.md.
+func _place_masterite_curator() -> void:
+	var MasteriteScript = load("res://src/exploration/MasteriteEncounter.gd")
+	if MasteriteScript == null:
+		return
+	var curator = MasteriteScript.new()
+	curator.archetype = "curator"
+	curator.monster_id = "masterite_curator_medieval"
+	curator.display_name = "Curator of the Flame"
+	curator.position = Vector2(12 * TILE_SIZE, 6 * TILE_SIZE)
+	npcs.add_child(curator)

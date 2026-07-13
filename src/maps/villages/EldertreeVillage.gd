@@ -157,6 +157,8 @@ func _setup_treasures() -> void:
 
 
 func _setup_npcs() -> void:
+	_place_masterite_tempo()
+
 	# Tutorial Fairy Pip (unwanted help)
 	var pip = _create_npc("Tutorial Fairy Pip", "villager", Vector2(12 * TILE_SIZE, 5 * TILE_SIZE), [
 		"HEY! LISTEN!",
@@ -215,3 +217,19 @@ func _setup_npcs() -> void:
 		"...I should probably stop eating them."
 	])
 	npcs.add_child(spore)
+
+
+## Tempo of the Hunt — L7 masterite ranging Eldertree's forest edge after
+## the village's own rangers were hunted. Placed in the mid-village grass
+## clearing so the party walks into the encounter while exploring the woods.
+## Doc: docs/design/w1-progression-expansion.md.
+func _place_masterite_tempo() -> void:
+	var MasteriteScript = load("res://src/exploration/MasteriteEncounter.gd")
+	if MasteriteScript == null:
+		return
+	var tempo = MasteriteScript.new()
+	tempo.archetype = "tempo"
+	tempo.monster_id = "masterite_tempo_medieval"
+	tempo.display_name = "Tempo of the Hunt"
+	tempo.position = Vector2(12 * TILE_SIZE, 12 * TILE_SIZE)
+	npcs.add_child(tempo)

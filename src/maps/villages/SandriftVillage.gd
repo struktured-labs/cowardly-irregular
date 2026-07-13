@@ -154,6 +154,8 @@ func _setup_treasures() -> void:
 
 
 func _setup_npcs() -> void:
+	_place_masterite_warden()
+
 	# Conspiracy Theorist Rex (paranoid)
 	var rex = _create_npc("Conspiracy Theorist Rex", "villager", Vector2(6 * TILE_SIZE, 6 * TILE_SIZE), [
 		"The encounter rate is RIGGED!",
@@ -212,3 +214,20 @@ func _setup_npcs() -> void:
 		"...As soon as I figure out how conditions work."
 	])
 	npcs.add_child(kit)
+
+
+## Warden of the Old Guard — L7 masterite blocking the trade road until
+## the party can prove "legitimate business" (Rat King defeated). Placement
+## on the south exit tile so a first entry post-Harmonia walks straight into
+## the encounter. Doc: docs/design/w1-progression-expansion.md.
+func _place_masterite_warden() -> void:
+	var MasteriteScript = load("res://src/exploration/MasteriteEncounter.gd")
+	if MasteriteScript == null:
+		return
+	var warden = MasteriteScript.new()
+	warden.archetype = "warden"
+	warden.monster_id = "masterite_warden_medieval"
+	warden.prereq_flag = "cave_rat_king_defeated"
+	warden.display_name = "Warden of the Old Guard"
+	warden.position = Vector2(11 * TILE_SIZE, 14 * TILE_SIZE)
+	npcs.add_child(warden)
