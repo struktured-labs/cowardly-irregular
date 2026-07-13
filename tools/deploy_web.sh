@@ -11,6 +11,11 @@
 set -euo pipefail
 cd "$(cd "$(dirname "$0")/.." && pwd)"
 
+# 2026-07-13: exit-code marker files — the standard invocation `./deploy_web.sh v | tee log` pipes through tee, which always exits 0 → callers can't distinguish success from a mid-gate BLOCKED. Marker files break the ambiguity: check `[ -f tmp/.deploy_success ]` instead of $?. Also survives xtrace/set-e edge cases.
+mkdir -p tmp
+rm -f tmp/.deploy_success tmp/.deploy_failure
+trap 'if [ -z "${_DEPLOY_OK:-}" ]; then touch tmp/.deploy_failure; fi' EXIT
+
 VERSION="${1:-$(git tag --sort=-creatordate | head -1)}"
 ITCH_TARGET="struktured/cowardly-irregular:web"
 PCK_LIMIT=199000000   # itch refuses HTML5 embeds with any file >= 200 MB
@@ -90,3 +95,5 @@ echo "[deploy] pushing to ${ITCH_TARGET} (userversion ${VERSION})"
 until "${BUTLER_BIN}" status "${ITCH_TARGET}" 2>/dev/null | grep -q "${VERSION}"; do sleep 8; done
 "${BUTLER_BIN}" status "${ITCH_TARGET}" | grep web
 echo "[deploy] LIVE: ${VERSION} — https://struktured.itch.io/cowardly-irregular"
+_DEPLOY_OK=1
+touch tmp/.deploy_success
