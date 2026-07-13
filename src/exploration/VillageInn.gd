@@ -247,11 +247,12 @@ func _draw_inn(image: Image) -> void:
 
 
 func _setup_collision() -> void:
+	# 2026-07-13: 1-tile-tall box was 8px short of reach=40 for buildings with >1-tile wall buffer (Harmonia Inn unreachable from south approach). Grow to 3 tiles tall so at least one walkable row is always inside the box.
 	var collision = CollisionShape2D.new()
 	var shape = RectangleShape2D.new()
-	shape.size = Vector2(TILE_SIZE * 2, TILE_SIZE)  # Interaction zone at bottom
+	shape.size = Vector2(TILE_SIZE * 2, TILE_SIZE * 3)  # Interaction zone at bottom, deep enough to cover multi-tile-buffer buildings
 	collision.shape = shape
-	collision.position = Vector2(0, TILE_SIZE / 2)  # Offset to building front
+	collision.position = Vector2(0, TILE_SIZE * 1.5)  # Offset to building front
 	add_child(collision)
 
 	collision_layer = 4  # Interactable

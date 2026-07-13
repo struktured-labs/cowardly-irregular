@@ -153,7 +153,8 @@ func _add_interior_door(node_name: String, target_map: String, label: String, po
 	door.name = node_name
 	door.target_map = target_map
 	door.target_spawn = "entrance"
-	door.require_interaction = false
+	# 2026-07-13: auto-warp trigger eating row-5 promenade tiles blocked forge/blacksmith reach in Harmonia (Library door at col 3-5, Cartographer door at col 22-23 both intersect row 5 after the earlier trigger-box-shift fix). Press A/Z to enter — indicator already draws when _player_in_zone.
+	door.require_interaction = true
 	door.indicator_text = label
 	door.show_gate_visual = true
 	door.position = pos
