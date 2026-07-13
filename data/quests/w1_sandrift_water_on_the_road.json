@@ -1,0 +1,116 @@
+{
+  "id": "w1_sandrift_water_on_the_road",
+  "title": "Water on the Road",
+  "world": 1,
+  "giver": {
+    "npc_id": "caravan_master_kes",
+    "display_name": "Caravan Master Kes",
+    "location": {
+      "map_id": "sandrift_village",
+      "near": "bazaar_edge"
+    },
+    "spawn_flag": ""
+  },
+  "description": "A trade caravan has been camped at Sandrift's edge for nine days. A man in gold armor sits on the road east and will not let anyone pass without 'proof of legitimate business.' The road did not have a checkpoint before the cave.",
+  "playstyle_tags": [
+    "combat",
+    "story"
+  ],
+  "dialogue": {
+    "offer": [
+      {
+        "speaker": "Caravan Master Kes",
+        "text": "The road's been closed nine days. Not by weather. By a man in gold armor who won't move until we present something he calls 'proof of legitimate business.' Which is not, historically, how roads work.",
+        "theme": "villager"
+      },
+      {
+        "speaker": "Caravan Master Kes",
+        "text": "He carries paperwork. It's new paperwork. The seals on it are new. It cites laws that we have looked up and cannot find. Nobody around here has that kind of ink.",
+        "theme": "villager"
+      }
+    ],
+    "accept": [
+      {
+        "speaker": "Caravan Master Kes",
+        "text": "Good. Take my papers — they're worthless, he's rejected them four times. But you can offer him a story instead. He seems to want a story more than a stamp.",
+        "theme": "villager"
+      },
+      {
+        "speaker": "Caravan Master Kes",
+        "text": "You came from the cave? Then you have a story that stamps itself. Try that one.",
+        "theme": "villager"
+      }
+    ],
+    "decline": [
+      {
+        "speaker": "Caravan Master Kes",
+        "text": "Fine. The camels have opinions about the delay. I have run out of opinions.",
+        "theme": "villager"
+      }
+    ],
+    "in_progress": [
+      {
+        "speaker": "Caravan Master Kes",
+        "text": "Nine days become ten. The camels are past patient. I am past useful advice.",
+        "theme": "villager"
+      }
+    ],
+    "ready_to_turn_in": [
+      {
+        "speaker": "Caravan Master Kes",
+        "text": "The road is quiet. The road has not been quiet in a very long time. That's the sound of you having done something.",
+        "theme": "villager"
+      }
+    ],
+    "complete": [
+      {
+        "speaker": "Caravan Master Kes",
+        "text": "You did — what did you do — never mind. The road is open. Take this. It's not much. It's what a caravan pays when a caravan can pay again.",
+        "theme": "villager"
+      },
+      {
+        "speaker": "Caravan Master Kes",
+        "text": "One thing. The paperwork he was carrying — it wasn't drafted for him. Someone drafted it, then handed it to a soldier and told him to be a lawyer. That someone is who I would like a word with. But not today.",
+        "theme": "villager"
+      }
+    ]
+  },
+  "objectives": [
+    {
+      "step": 1,
+      "description": "Hear Caravan Master Kes out about the blocked road.",
+      "type": "talk",
+      "target_npc": "caravan_master_kes",
+      "flag_on_complete": "quest_w1_sandrift_water_on_the_road_accepted"
+    },
+    {
+      "step": 2,
+      "description": "Meet the man on the road east of Sandrift. Present a story he can accept.",
+      "type": "custom",
+      "required_flag": "quest_w1_sandrift_water_on_the_road_accepted",
+      "flag_on_complete": "w1_warden_defeated"
+    },
+    {
+      "step": 3,
+      "description": "Return to Kes at the Sandrift bazaar.",
+      "type": "talk",
+      "target_npc": "caravan_master_kes",
+      "required_flag": "w1_warden_defeated"
+    }
+  ],
+  "rewards": {
+    "gold": 120,
+    "exp": 250,
+    "items": [
+      {
+        "item_id": "waterskin",
+        "count": 1
+      }
+    ],
+    "job_variants": {}
+  },
+  "flag_on_complete": "quest_w1_sandrift_water_on_the_road_complete",
+  "cross_world_connection": "The Warden's paperwork uses the same phrasing that later appears on the council-chamber desks in Castle Harmonia ('authority derives from —' + blank). Someone at the capital drafted both, and handed one to a soldier and told him to be a lawyer.",
+  "_wiring_notes": "Step 2 uses w1_warden_defeated as a shared flag with the Warden encounter (Lane B places the Masterite; Lane C consumes their defeat). If the Warden encounter isn't placed yet, this step is unreachable — quest sits at active-step-2, gracefully. Kes spawn on Sandrift entry; no prereq_flag needed at load, but a prereq of cutscene_flag_rat_king_defeated is recommended so the quest appears AFTER the cave is beaten (empty spawn_flag = always visible, which is fine if Sandrift entry itself is gated). Design doc: docs/design/w1-progression-expansion.md, Lane C row 1.",
+  "prereq_flag": "cutscene_flag_rat_king_defeated"
+}
