@@ -1,0 +1,139 @@
+{
+  "id": "w1_ironhaven_flame_speaks_wrong",
+  "title": "The Flame That Speaks Wrong",
+  "world": 1,
+  "giver": {
+    "npc_id": "temple_keeper_sella",
+    "display_name": "Temple Keeper Sella",
+    "location": {
+      "map_id": "ironhaven_village",
+      "near": "temple_entrance"
+    },
+    "spawn_flag": ""
+  },
+  "description": "Ironhaven's temple flame has burned straight up for six centuries. Three weeks ago it started to lean. East. Precisely east. It has a direction now. Sella can hear it saying something, in pieces.",
+  "playstyle_tags": [
+    "story",
+    "combat",
+    "dialogue_heavy"
+  ],
+  "dialogue": {
+    "offer": [
+      {
+        "speaker": "Temple Keeper Sella",
+        "text": "The flame has burned straight up for six centuries. Three weeks ago it started to lean. East. Precisely east. It has not moved since. It has a direction now.",
+        "theme": "villager"
+      },
+      {
+        "speaker": "Temple Keeper Sella",
+        "text": "I am not asking whether that is normal. I am asking what is on the other side of the direction it is pointing.",
+        "theme": "villager"
+      }
+    ],
+    "accept": [
+      {
+        "speaker": "Temple Keeper Sella",
+        "text": "Go and stand in front of it. Do not stand too close. The flame is *saying something*. In pieces. I have not been able to hear the whole sentence.",
+        "theme": "villager"
+      },
+      {
+        "speaker": "Temple Keeper Sella",
+        "text": "If someone is at the flame when you arrive, listen to what THEY say too. The two might be the same sentence at different speeds.",
+        "theme": "villager"
+      }
+    ],
+    "decline": [
+      {
+        "speaker": "Temple Keeper Sella",
+        "text": "Then I will keep listening. The flame is patient. So am I. So, I suspect, is whatever is on the other end of it.",
+        "theme": "villager"
+      }
+    ],
+    "in_progress": [
+      {
+        "speaker": "Temple Keeper Sella",
+        "text": "There is a woman at the flame now. She is tending it. I did not appoint her. Nobody appointed her. She is tending anyway.",
+        "theme": "villager"
+      }
+    ],
+    "ready_to_turn_in": [
+      {
+        "speaker": "Temple Keeper Sella",
+        "text": "The flame is straight again. It is quiet. I have thoughts. Come sit with them.",
+        "theme": "villager"
+      }
+    ],
+    "complete": [
+      {
+        "speaker": "Temple Keeper Sella",
+        "text": "The flame is straight. It does not speak now. I miss it more than I expected to. What she said before you sent her away — did she say it in words, at the end? She rarely used words at the beginning.",
+        "theme": "villager"
+      },
+      {
+        "speaker": "Temple Keeper Sella",
+        "text": "The flame was pointing at the capital. I have looked at the map three times to be certain. The capital. I would like to be uncertain about this. I am not.",
+        "theme": "villager"
+      },
+      {
+        "speaker": "Temple Keeper Sella",
+        "text": "Take this ember. It is not lit, but it is warm. If it starts to lean, in your pocket, in your pack — put it down and look east.",
+        "theme": "villager"
+      }
+    ]
+  },
+  "objectives": [
+    {
+      "step": 1,
+      "description": "Hear Temple Keeper Sella out at the Ironhaven temple.",
+      "type": "talk",
+      "target_npc": "temple_keeper_sella",
+      "flag_on_complete": "quest_w1_ironhaven_flame_speaks_wrong_accepted"
+    },
+    {
+      "step": 2,
+      "description": "Approach the tilted flame at the temple altar. Listen.",
+      "type": "custom",
+      "required_flag": "quest_w1_ironhaven_flame_speaks_wrong_accepted",
+      "flag_on_complete": "quest_w1_ironhaven_flame_heard"
+    },
+    {
+      "step": 3,
+      "description": "Confront the woman tending the flame — the one no one appointed.",
+      "type": "custom",
+      "required_flag": "quest_w1_ironhaven_flame_heard",
+      "flag_on_complete": "w1_curator_defeated"
+    },
+    {
+      "step": 4,
+      "description": "Return to Sella at the temple entrance.",
+      "type": "talk",
+      "target_npc": "temple_keeper_sella",
+      "required_flag": "w1_curator_defeated"
+    }
+  ],
+  "rewards": {
+    "gold": 130,
+    "exp": 300,
+    "items": [
+      {
+        "item_id": "leaning_ember",
+        "count": 1
+      }
+    ],
+    "job_variants": {
+      "bard": {
+        "description": "Bard examine text at the flame: the fragments the flame is speaking are in a meter. Trochaic. The Bard recognizes the meter — it's the same meter as the chancellor's edicts, the ones the town crier reads. Someone is teaching a flame to recite. 'That's not a flame's cadence. That's a court's cadence.' No mechanical effect.",
+        "items": [
+          {
+            "item_id": "leaning_ember",
+            "count": 1
+          }
+        ]
+      }
+    }
+  },
+  "flag_on_complete": "quest_w1_ironhaven_flame_speaks_wrong_complete",
+  "cross_world_connection": "The leaning_ember item, if kept, leans in the party's pack whenever they enter a chamber where Mordaine's magic is present. In Castle Harmonia's throne room, it points straight at the plain chair beside the overturned throne (world1_throne_room_approach beat). Diegetic compass to the actual power center.",
+  "_wiring_notes": "Step 2 custom flag emitted by an examine tile in front of the flame (cowir-overworld places; hook = 'The flame is saying something. In pieces.'). Step 3 shared flag w1_curator_defeated wired to Curator Masterite encounter (Lane B). Item leaning_ember = new item (flavor: 'An ember that leans. In your pack. Warm to the touch. Not lit.'). Design doc: Lane C row 4.",
+  "prereq_flag": "cutscene_flag_rat_king_defeated"
+}

@@ -106,6 +106,86 @@
       "prop": "footprint",
       "name": "Single Footprint",
       "text": "A single footprint in the white sand. It is your size exactly. The angle of the toe matches your gait. You have not walked here. Your party agrees. The footprint does not argue."
+    },
+
+    "castle_harmonia_foyer_narration": {
+      "world": 1,
+      "scene": "castle_harmonia",
+      "prop": "room_beat",
+      "name": "The Grand Foyer",
+      "text": "The foyer used to be where the palace made you feel welcomed. Now it makes you feel counted. Whatever you brought in, someone here has already estimated the weight of it."
+    },
+    "castle_harmonia_petrified_courtier": {
+      "world": 1,
+      "scene": "castle_harmonia",
+      "prop": "statue",
+      "name": "Petrified Courtier",
+      "text": "A woman in court dress, mid-objection. Her mouth is still shaped around the word she was saying. It looks like the letter O. The stone under her feet is a different color than the stone around it, as if it grew from her, not the other way."
+    },
+    "castle_harmonia_overpainted_tapestry": {
+      "world": 1,
+      "scene": "castle_harmonia",
+      "prop": "tapestry",
+      "name": "Overpainted Tapestry",
+      "text": "The old crest — a crown atop a book — is nearly gone under new paint. The paint is still tacky. You can see the crown through it if you tilt your head. Someone was in a hurry to cover it, and not much of a hurry to hide the work."
+    },
+    "castle_harmonia_frozen_captain": {
+      "world": 1,
+      "scene": "castle_harmonia",
+      "prop": "statue",
+      "name": "Captain of the Guard",
+      "text": "The captain's spear is raised. His eyes track you as you pass. Neither the spear nor the eyes have moved in some time. On the floor by his boots there is a coin. It was likely his, and he was likely going to pick it up."
+    },
+
+    "castle_harmonia_council_narration": {
+      "world": 1,
+      "scene": "castle_harmonia",
+      "prop": "room_beat",
+      "name": "The Council Chambers",
+      "text": "The council chambers used to draft laws. Now they draft memos to themselves about what a law is. The ink is fresher on the memos than on the laws."
+    },
+    "castle_harmonia_abandoned_desk": {
+      "world": 1,
+      "scene": "castle_harmonia",
+      "prop": "desk",
+      "name": "Scriptweaver's Desk",
+      "text": "The page in front of the empty chair has one line: 'The chancellor's authority derives from —' and then nothing. Whoever was writing knew the next word mattered, and left rather than write it."
+    },
+    "castle_harmonia_broken_seal": {
+      "world": 1,
+      "scene": "castle_harmonia",
+      "prop": "sigil",
+      "name": "Half-Broken Seal",
+      "text": "The seal was set to hold a door closed. Someone tried to break it and mostly succeeded. What's left of the sigils spells nothing you can read, but you have seen the hand that drew them. Twice, in the cave, on walls the Warden guided you past."
+    },
+    "castle_harmonia_worn_wax": {
+      "world": 1,
+      "scene": "castle_harmonia",
+      "prop": "trinket",
+      "name": "The King's Seal",
+      "text": "The king's personal seal, in its case, unused. Beside it, a stack of correspondence, all stamped. The wax stick on the desk is worn to nothing. Someone has been stamping. It has not been the king."
+    },
+
+    "castle_harmonia_apartments_narration": {
+      "world": 1,
+      "scene": "castle_harmonia",
+      "prop": "room_beat",
+      "name": "The Royal Apartments",
+      "text": "The apartments are quiet in the way private rooms are quiet when the person who used to live in them has been asked, very politely, to stop."
+    },
+    "castle_harmonia_relocked_door": {
+      "world": 1,
+      "scene": "castle_harmonia",
+      "prop": "door",
+      "name": "The Prince's Door",
+      "text": "The lock on the door is a new one. The old lock is on the floor beside it, still closed. Someone changed the lock without ever opening the door. Whoever was inside is inside twice now."
+    },
+    "castle_harmonia_glyphs": {
+      "world": 1,
+      "scene": "castle_harmonia",
+      "prop": "sigil",
+      "name": "Red Glyphs",
+      "text": "The glyphs are fresh. The paint is red the way paint is red when it isn't paint. They are drawn very neatly. The neatness is the part that unsettles."
     }
   }
 }
