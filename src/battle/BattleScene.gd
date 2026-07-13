@@ -477,6 +477,7 @@ func _create_battle_background() -> void:
 func set_command_menu_visible(visible: bool) -> void:
 	"""Public method to show/hide the command menu (called by GameLoop for autobattle editor)"""
 	if active_win98_menu and is_instance_valid(active_win98_menu):
+		print("[MENU-HIDE] t=%dms visible=%s (called from set_command_menu_visible)" % [Time.get_ticks_msec(), visible])
 		active_win98_menu.visible = visible
 		# Restore focus when making visible again
 		if visible:
@@ -2241,6 +2242,7 @@ func _on_battle_ended(victory: bool) -> void:
 
 	# Clean up any open menus
 	if active_win98_menu and is_instance_valid(active_win98_menu):
+		print("[MENU-NULL] t=%dms path=battle_ended_cleanup" % Time.get_ticks_msec())
 		active_win98_menu.queue_free()
 		active_win98_menu = null
 
@@ -2398,7 +2400,15 @@ func _menu_wd_diag(pc: Combatant) -> String:
 	var spotlight_losses: int = 0
 	if pc_job_id != "" and GameState and "game_constants" in GameState:
 		spotlight_losses = int(GameState.game_constants.get("spotlight_losses_" + pc_job_id, 0))
-	return " [reason=%s ab_locked=%s ab_enabled=%s dbg_unlocked=%s in_party=%s sprite_ct=%d spotlight_losses=%d]" % [reason, ab_locked, ab_enabled, dbg_unlocked, in_party, sprite_ct, spotlight_losses]
+	# msg 2503 diagnostic — distinguish "menu freed" (invalid) from "menu valid but hidden" (someone called set_command_menu_visible(false) or set .visible=false directly). "valid-but-invisible" fingerprints the autobattle-editor-still-open / hidden-menu class specifically.
+	var menu_status: String
+	if not is_instance_valid(active_win98_menu):
+		menu_status = "invalid"
+	elif not active_win98_menu.visible:
+		menu_status = "valid_but_invisible"
+	else:
+		menu_status = "valid_visible"  # should be unreachable — watchdog would have reset
+	return " [reason=%s menu=%s ab_locked=%s ab_enabled=%s dbg_unlocked=%s in_party=%s sprite_ct=%d spotlight_losses=%d]" % [reason, menu_status, ab_locked, ab_enabled, dbg_unlocked, in_party, sprite_ct, spotlight_losses]
 
 
 func _reset_menu_watchdog() -> void:
@@ -2638,6 +2648,7 @@ func _restart_battle() -> void:
 
 	# Clean up any stray menus
 	if active_win98_menu and is_instance_valid(active_win98_menu):
+		print("[MENU-NULL] t=%dms path=restart_battle_cleanup" % Time.get_ticks_msec())
 		active_win98_menu.queue_free()
 		active_win98_menu = null
 
