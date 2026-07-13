@@ -10,8 +10,9 @@ extends GutTest
 ##
 ## 2. Steal-triggers-weakness (Lockward's vault-crack): a successful Rogue
 ##    Steal against a target with monsters.json steal_response applies its
-##    mechanical effect once per fight. Lockward's shape: defense_break /
-##    modifier=0.5 → permanent Vault-Cracked debuff. Design: rewards Rogue's
+##    mechanical effect once per fight. Lockward's shape (msg 2485 Option 3
+##    rewrite): vulnerability / modifier=0.5 → +50% incoming damage via
+##    "Vault Crack" debuff. Design: rewards Rogue's
 ##    signature-ability read, tunes the fight from impossible to fair.
 
 const GameLoopScript = preload("res://src/GameLoop.gd")
@@ -162,37 +163,35 @@ func test_lockward_data_has_steal_response() -> void:
 	assert_true(lockward.has("steal_response"),
 		"Lockward's data must define steal_response")
 	var r: Dictionary = lockward["steal_response"]
-	assert_eq(str(r.get("type", "")), "defense_break",
-		"tier-1 shape (Option 2): defense_break")
+	assert_eq(str(r.get("type", "")), "vulnerability",
+		"msg 2485 Option 3 rewrite: type is vulnerability (was defense_break)")
 	assert_almost_eq(float(r.get("modifier", 0.0)), 0.5, 0.001,
-		"modifier 0.5 = defense halved — tuned so backstabs land ~60 vs prior ~30")
+		"modifier 0.5 = +50% incoming damage — initial crack; Backstab/Mug stack +25% each")
 	assert_ne(str(r.get("message", "")), "",
 		"message must be non-empty for player feedback (cowir-story owns final copy)")
 
 
-func test_apply_steal_response_defense_break_applies_vault_cracked_debuff() -> void:
+func test_apply_steal_response_vulnerability_applies_vault_crack_debuff() -> void:
+	# msg 2485 Option 3 rewrite: response type is "vulnerability" and the
+	# installed debuff is "Vault Crack" with stat="incoming_damage" (not
+	# stat="defense").
 	var t := _make_target("test_monster")
-	# Fake the mdata by installing a stub monster_database entry the same
-	# way EncounterSystem does at runtime. We can't easily construct a full
-	# EncounterSystem here, so exercise the code path against the real one
-	# by using rogue_lockward's live entry.
 	t.set_meta("monster_type", "rogue_lockward")
-	# Have to lookup BM instance to call the helper. Guard for headless.
 	var bm: Node = get_tree().root.get_node_or_null("BattleManager")
 	if bm == null:
 		pending("BattleManager autoload not available in headless — behavioral coverage skipped, source pin below still holds")
 		return
 	bm._apply_steal_response(t)
 	assert_true(t.active_debuffs.size() > 0,
-		"Vault-Cracked debuff must be applied")
+		"Vault Crack vulnerability must be applied")
 	var found_debuff: bool = false
 	for d in t.active_debuffs:
-		if str(d.get("effect", "")) == "Vault-Cracked" and str(d.get("stat", "")) == "defense":
+		if str(d.get("effect", "")) == "Vault Crack" and str(d.get("stat", "")) == "incoming_damage":
 			found_debuff = true
 			assert_almost_eq(float(d.get("modifier", 0.0)), 0.5, 0.001,
-				"defense modifier matches monsters.json")
+				"initial vulnerability +50% matches monsters.json modifier")
 			break
-	assert_true(found_debuff, "debuff must be named Vault-Cracked and target defense")
+	assert_true(found_debuff, "debuff must be named 'Vault Crack' with stat='incoming_damage'")
 	assert_true(t.has_meta("_steal_response_consumed") and bool(t.get_meta("_steal_response_consumed")),
 		"one-shot guard meta must be set")
 
