@@ -825,8 +825,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist bat reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "spider": {
       "path": "res://assets/sprites/monsters/spider.png",
@@ -875,8 +875,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "ghost": {
       "path": "res://assets/sprites/monsters/ghost.png",
@@ -901,8 +901,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "imp": {
       "path": "res://assets/sprites/monsters/imp.png",
@@ -927,8 +927,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "troll": {
       "path": "res://assets/sprites/monsters/troll.png",
@@ -953,8 +953,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "snake": {
       "path": "res://assets/sprites/monsters/snake.png",
@@ -979,8 +979,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "cave_rat": {
       "path": "res://assets/sprites/monsters/cave_rat.png",
@@ -1005,15 +1005,15 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "rat_guard": {
       "path": "res://assets/sprites/monsters/rat_guard.png",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 6,
-      "tier": "T2",
+      "tier": "T1",
       "animations": {
         "idle": {
           "start": 0,
@@ -1032,14 +1032,14 @@
           "end": 7
         }
       },
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "mushroom": {
       "path": "res://assets/sprites/monsters/mushroom.png",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 5,
-      "tier": "T2",
+      "tier": "T1",
       "animations": {
         "idle": {
           "start": 0,
@@ -1058,14 +1058,14 @@
           "end": 7
         }
       },
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "cave_troll": {
       "path": "res://assets/sprites/monsters/cave_troll.png",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 5,
-      "tier": "T2",
+      "tier": "T1",
       "animations": {
         "idle": {
           "start": 0,
@@ -1084,14 +1084,14 @@
           "end": 7
         }
       },
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "shadow_knight": {
       "path": "res://assets/sprites/monsters/shadow_knight.png",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 6,
-      "tier": "T2",
+      "tier": "T1",
       "animations": {
         "idle": {
           "start": 0,
@@ -1110,14 +1110,14 @@
           "end": 7
         }
       },
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist main reference (tools/regen_monster_artist_style.py)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "fire_dragon": {
       "path": "res://assets/sprites/monsters/fire_dragon.png",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 5,
-      "tier": "T2",
+      "tier": "T1",
       "animations": {
         "idle": {
           "start": 0,
@@ -1136,14 +1136,14 @@
           "end": 7
         }
       },
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist bat reference (tools/regen_monster_artist_style.py)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "ice_dragon": {
       "path": "res://assets/sprites/monsters/ice_dragon.png",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 5,
-      "tier": "T2",
+      "tier": "T1",
       "animations": {
         "idle": {
           "start": 0,
@@ -1162,14 +1162,14 @@
           "end": 7
         }
       },
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist bat reference (tools/regen_monster_artist_style.py)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "lightning_dragon": {
       "path": "res://assets/sprites/monsters/lightning_dragon.png",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 6,
-      "tier": "T2",
+      "tier": "T1",
       "animations": {
         "idle": {
           "start": 0,
@@ -1188,14 +1188,14 @@
           "end": 7
         }
       },
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist bat reference (tools/regen_monster_artist_style.py)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "shadow_dragon": {
       "path": "res://assets/sprites/monsters/shadow_dragon.png",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 5,
-      "tier": "T2",
+      "tier": "T1",
       "animations": {
         "idle": {
           "start": 0,
@@ -1214,7 +1214,7 @@
           "end": 7
         }
       },
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist bat reference (tools/regen_monster_artist_style.py)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "fungoid": {
       "path": "res://assets/sprites/monsters/fungoid.png",
@@ -1239,8 +1239,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "viper": {
       "path": "res://assets/sprites/monsters/viper.png",
@@ -1265,8 +1265,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "elemental": {
       "path": "res://assets/sprites/monsters/elemental.png",
@@ -1291,8 +1291,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "corrupted_sprite": {
       "path": "res://assets/sprites/monsters/corrupted_sprite.png",
@@ -1317,8 +1317,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "giant_bat": {
       "path": "res://assets/sprites/monsters/giant_bat.png",
@@ -1343,8 +1343,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "diseased_rat": {
       "path": "res://assets/sprites/monsters/diseased_rat.png",
@@ -1369,8 +1369,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "cave_rat_king": {
       "path": "res://assets/sprites/monsters/cave_rat_king.png",
@@ -1395,8 +1395,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "ice_wolf": {
       "path": "res://assets/sprites/monsters/ice_wolf.png",
@@ -1421,8 +1421,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "specter": {
       "path": "res://assets/sprites/monsters/specter.png",
@@ -1447,8 +1447,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "treasure_mimic": {
       "path": "res://assets/sprites/monsters/treasure_mimic.png",
@@ -1473,8 +1473,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "ironback_beetle": {
       "path": "res://assets/sprites/monsters/ironback_beetle.png",
@@ -1499,8 +1499,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "cursed_armor": {
       "path": "res://assets/sprites/monsters/cursed_armor.png",
@@ -1525,8 +1525,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist main reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "blood_wolf_alpha": {
       "path": "res://assets/sprites/monsters/blood_wolf_alpha.png",
@@ -1551,8 +1551,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "crystal_golem": {
       "path": "res://assets/sprites/monsters/crystal_golem.png",
@@ -1577,8 +1577,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "elder_mushroom": {
       "path": "res://assets/sprites/monsters/elder_mushroom.png",
@@ -1603,8 +1603,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "corrupted_guardian": {
       "path": "res://assets/sprites/monsters/corrupted_guardian.png",
@@ -1629,8 +1629,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_warden_medieval": {
       "path": "res://assets/sprites/monsters/masterite_warden_medieval.png",
@@ -1655,8 +1655,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_arbiter_medieval": {
       "path": "res://assets/sprites/monsters/masterite_arbiter_medieval.png",
@@ -1681,8 +1681,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_tempo_medieval": {
       "path": "res://assets/sprites/monsters/masterite_tempo_medieval.png",
@@ -1707,8 +1707,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_curator_medieval": {
       "path": "res://assets/sprites/monsters/masterite_curator_medieval.png",
@@ -1733,8 +1733,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_warden_suburban": {
       "path": "res://assets/sprites/monsters/masterite_warden_suburban.png",
@@ -1759,8 +1759,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_arbiter_suburban": {
       "path": "res://assets/sprites/monsters/masterite_arbiter_suburban.png",
@@ -1785,8 +1785,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_tempo_suburban": {
       "path": "res://assets/sprites/monsters/masterite_tempo_suburban.png",
@@ -1811,8 +1811,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_curator_suburban": {
       "path": "res://assets/sprites/monsters/masterite_curator_suburban.png",
@@ -1837,8 +1837,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_warden_industrial": {
       "path": "res://assets/sprites/monsters/masterite_warden_industrial.png",
@@ -1863,8 +1863,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_arbiter_industrial": {
       "path": "res://assets/sprites/monsters/masterite_arbiter_industrial.png",
@@ -1889,8 +1889,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_tempo_industrial": {
       "path": "res://assets/sprites/monsters/masterite_tempo_industrial.png",
@@ -1915,8 +1915,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_curator_industrial": {
       "path": "res://assets/sprites/monsters/masterite_curator_industrial.png",
@@ -1941,8 +1941,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_warden_futuristic": {
       "path": "res://assets/sprites/monsters/masterite_warden_futuristic.png",
@@ -1967,8 +1967,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_arbiter_futuristic": {
       "path": "res://assets/sprites/monsters/masterite_arbiter_futuristic.png",
@@ -1993,8 +1993,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_tempo_futuristic": {
       "path": "res://assets/sprites/monsters/masterite_tempo_futuristic.png",
@@ -2019,8 +2019,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_curator_futuristic": {
       "path": "res://assets/sprites/monsters/masterite_curator_futuristic.png",
@@ -2045,8 +2045,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_warden_abstract": {
       "path": "res://assets/sprites/monsters/masterite_warden_abstract.png",
@@ -2071,8 +2071,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_arbiter_abstract": {
       "path": "res://assets/sprites/monsters/masterite_arbiter_abstract.png",
@@ -2097,8 +2097,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_tempo_abstract": {
       "path": "res://assets/sprites/monsters/masterite_tempo_abstract.png",
@@ -2123,8 +2123,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_curator_abstract": {
       "path": "res://assets/sprites/monsters/masterite_curator_abstract.png",
@@ -2149,8 +2149,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "new_age_retro_hippie": {
       "path": "res://assets/sprites/monsters/new_age_retro_hippie.png",
@@ -2175,8 +2175,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "spiteful_crow": {
       "path": "res://assets/sprites/monsters/spiteful_crow.png",
@@ -2201,8 +2201,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "skate_punk": {
       "path": "res://assets/sprites/monsters/skate_punk.png",
@@ -2227,8 +2227,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "unassuming_dog": {
       "path": "res://assets/sprites/monsters/unassuming_dog.png",
@@ -2253,8 +2253,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "cranky_lady": {
       "path": "res://assets/sprites/monsters/cranky_lady.png",
@@ -2279,8 +2279,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "clockwork_sentinel": {
       "path": "res://assets/sprites/monsters/clockwork_sentinel.png",
@@ -2305,8 +2305,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "steam_rat": {
       "path": "res://assets/sprites/monsters/steam_rat.png",
@@ -2331,8 +2331,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "brass_golem": {
       "path": "res://assets/sprites/monsters/brass_golem.png",
@@ -2357,8 +2357,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "cog_swarm": {
       "path": "res://assets/sprites/monsters/cog_swarm.png",
@@ -2383,8 +2383,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "pipe_phantom": {
       "path": "res://assets/sprites/monsters/pipe_phantom.png",
@@ -2409,8 +2409,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "assembly_line_automaton": {
       "path": "res://assets/sprites/monsters/assembly_line_automaton.png",
@@ -2435,8 +2435,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "shift_supervisor": {
       "path": "res://assets/sprites/monsters/shift_supervisor.png",
@@ -2461,8 +2461,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "rust_elemental": {
       "path": "res://assets/sprites/monsters/rust_elemental.png",
@@ -2487,8 +2487,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "toxic_sludge": {
       "path": "res://assets/sprites/monsters/toxic_sludge.png",
@@ -2513,8 +2513,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "conveyor_gremlin": {
       "path": "res://assets/sprites/monsters/conveyor_gremlin.png",
@@ -2539,8 +2539,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "rogue_process": {
       "path": "res://assets/sprites/monsters/rogue_process.png",
@@ -2565,8 +2565,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "memory_leak": {
       "path": "res://assets/sprites/monsters/memory_leak.png",
@@ -2591,8 +2591,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "firewall_sentinel": {
       "path": "res://assets/sprites/monsters/firewall_sentinel.png",
@@ -2617,8 +2617,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "data_wraith": {
       "path": "res://assets/sprites/monsters/data_wraith.png",
@@ -2643,8 +2643,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "recursive_loop": {
       "path": "res://assets/sprites/monsters/recursive_loop.png",
@@ -2669,8 +2669,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "null_entity": {
       "path": "res://assets/sprites/monsters/null_entity.png",
@@ -2695,8 +2695,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "forgotten_variable": {
       "path": "res://assets/sprites/monsters/forgotten_variable.png",
@@ -2721,8 +2721,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "empty_set": {
       "path": "res://assets/sprites/monsters/empty_set.png",
@@ -2747,8 +2747,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "the_absence": {
       "path": "res://assets/sprites/monsters/the_absence.png",
@@ -2773,8 +2773,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "optimization_itself": {
       "path": "res://assets/sprites/monsters/optimization_itself.png",
@@ -2799,8 +2799,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "glitch_entity": {
       "path": "res://assets/sprites/monsters/glitch_entity.png",
@@ -2825,8 +2825,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "adaptive_slime": {
       "path": "res://assets/sprites/monsters/adaptive_slime.png",
@@ -2851,8 +2851,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "meta_knight": {
       "path": "res://assets/sprites/monsters/meta_knight.png",
@@ -2877,8 +2877,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "permadeath_reaper": {
       "path": "res://assets/sprites/monsters/permadeath_reaper.png",
@@ -2903,8 +2903,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "script_error": {
       "path": "res://assets/sprites/monsters/script_error.png",
@@ -2929,8 +2929,8 @@
           "end": 7
         }
       },
-      "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py)"
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "fighter_skeleton_knight": {
       "path": "res://assets/sprites/monsters/fighter_skeleton_knight.png",
