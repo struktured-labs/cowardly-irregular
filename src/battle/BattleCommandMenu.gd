@@ -110,9 +110,9 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 	_scene.add_child(_scene.active_win98_menu)
 	_scene.active_win98_menu.setup(combatant.combatant_name, menu_items, menu_pos, job_id)
 
-	# Connect signals
+	# Connect signals — bind THIS menu instance to _on_win98_menu_closed so the handler can identity-guard the null-write. Root cause of msg 2503 two-menus bug (repro cap timeline named it, msg 2529): actions_submitted returns → BM dispatches turn end → next PC's menu spawns → control returns to _submit_actions:1230 → force_close(old menu) → menu_closed fires → handler blindly null'd active_win98_menu which by then was the NEW menu, orphaning it and triggering watchdog respawn on top.
 	_scene.active_win98_menu.item_selected.connect(_on_win98_menu_selection)
-	_scene.active_win98_menu.menu_closed.connect(_on_win98_menu_closed)
+	_scene.active_win98_menu.menu_closed.connect(_on_win98_menu_closed.bind(_scene.active_win98_menu))
 	_scene.active_win98_menu.actions_submitted.connect(_on_win98_actions_submitted)
 	_scene.active_win98_menu.defer_requested.connect(_on_win98_defer_requested)
 	_scene.active_win98_menu.go_back_requested.connect(_on_win98_go_back_requested)
@@ -987,10 +987,22 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 		return
 
 
-func _on_win98_menu_closed() -> void:
-	"""Handle Win98 menu being closed"""
-	print("[MENU-NULL] t=%dms path=menu_closed_signal" % Time.get_ticks_msec())
+func _on_win98_menu_closed(closing_menu: Node = null) -> void:
+	"""Handle Win98 menu being closed. Identity guard (msg 2529): the bound closing_menu is the specific instance that emitted menu_closed. Only null active_win98_menu if it still references THIS closing menu — otherwise the next PC's menu already spawned and we'd orphan it. The bind() at the connect site passes the menu instance in; a plain connect() would fall back to closing_menu=null and skip the guard (safe default preserving pre-fix behavior for any future emit path that doesn't go through the standard connect)."""
+	print("[MENU-NULL] t=%dms path=menu_closed_signal closing=%s active=%s" % [Time.get_ticks_msec(), _instance_id(closing_menu), _instance_id(_scene.active_win98_menu)])
+	if closing_menu != null and _scene.active_win98_menu != null and _scene.active_win98_menu != closing_menu:
+		# The closing menu is stale — a later menu is already active. Don't null the active ref or the watchdog force-spawns a duplicate.
+		return
 	_scene.active_win98_menu = null
+
+
+## Helper for the [MENU-NULL] diagnostic line — a compact identity for a Node so the repro cap timeline can correlate emitter vs active. Returns "null" for null refs, "invalid" for freed instances, "<class#id>" otherwise.
+func _instance_id(n: Object) -> String:
+	if n == null:
+		return "null"
+	if not is_instance_valid(n):
+		return "invalid"
+	return "%s#%d" % [n.get_class(), n.get_instance_id()]
 
 
 func _on_win98_actions_submitted(actions: Array) -> void:
