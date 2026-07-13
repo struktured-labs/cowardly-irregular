@@ -63,6 +63,31 @@ MONSTER_CATEGORY_TO_REF = {
     "dragon":     ["bat", "goblin"],
 }
 
+# NAMED-BOSS OVERRIDES — bosses opt out of archetype defaults so future
+# regens can't silently drift them back into goblin-family. When
+# refs_for() sees a key here, it wins over any MONSTER_CATEGORY_TO_REF
+# entry. Rescued from the July 2 bulk-regen homogenization (cowir-main
+# msg 2516): five Tempos + Rat King all shared source string
+# "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference"
+# despite being wildly different concepts. Anchor picked per-boss for
+# silhouette/palette fit.
+_NAMED_BOSS_OVERRIDES = {
+    # Rat King: anchor to SLIME (the only non-humanoid enemy in the
+    # artist canon). Slime is the closest "small chunky non-humanoid"
+    # shape available — between the slime scale/palette anchor and the
+    # description text (explicitly quadruped, whiskers, tail, four legs
+    # firmly on the ground, tiny crown), the AI should land far from
+    # goblin-family. Alternative would be prompt-only (no ref) but
+    # gpt-image-1 lands more consistently with SOME anchor than none.
+    "cave_rat_king":              ["slime"],
+    # Tempos — five distinct concepts, one anchor each
+    "masterite_tempo_medieval":   ["rogue"],   # hooded scout/ranger silhouette
+    "masterite_tempo_suburban":   ["cleric"],  # standing humanoid, non-armored proportions
+    "masterite_tempo_industrial": ["fighter"], # worker with tools, sturdy build
+    "masterite_tempo_futuristic": ["mage"],    # geometric/arcane feel, robed silhouette
+    "masterite_tempo_abstract":   ["mage"],    # style-anchor only (implied humanoid)
+}
+
 # Explicit per-monster overrides where the archetype match isn't obvious
 MONSTER_ID_TO_REF = {
     # W1 medieval — targeted for item 29 pilot regen
@@ -93,14 +118,22 @@ MONSTER_ID_TO_REF = {
 def refs_for(monster_id: str, category: str | None = None) -> list[Path]:
     """Return artist reference paths for a monster.
 
-    Priority: explicit id override → category map → default to goblin
-    (broadest-applicable humanoid archetype).
+    Priority:
+      1. NAMED_BOSS_OVERRIDES — beats everything, including empty-list
+         (prompt-only, no anchor) for bosses whose identity is
+         description-driven and any humanoid ref drags them off-model.
+      2. explicit id override in MONSTER_ID_TO_REF
+      3. category map
+      4. default to goblin (broadest-applicable humanoid archetype)
     """
-    keys = (
-        MONSTER_ID_TO_REF.get(monster_id)
-        or (MONSTER_CATEGORY_TO_REF.get(category or "") if category else None)
-        or ["goblin"]
-    )
+    if monster_id in _NAMED_BOSS_OVERRIDES:
+        keys = _NAMED_BOSS_OVERRIDES[monster_id]
+    else:
+        keys = (
+            MONSTER_ID_TO_REF.get(monster_id)
+            or (MONSTER_CATEGORY_TO_REF.get(category or "") if category else None)
+            or ["goblin"]
+        )
     out = []
     for k in keys:
         p = ARTIST_ENEMY_REFS.get(k) or ARTIST_PARTY_REFS.get(k)

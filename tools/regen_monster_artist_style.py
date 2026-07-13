@@ -67,7 +67,7 @@ POSE_PROMPTS = [
 # Per-monster identity notes (fold into prompt to reinforce reference)
 MONSTER_DESC = {
     "cave_rat":       "large dark gray cave rat with scruffy fur, red eyes, exposed teeth, small clawed paws",
-    "cave_rat_king":  "huge alpha cave rat wearing a scavenged bronze crown, matted brown fur, glowing red eyes, torn cloak",
+    "cave_rat_king":  "a DISAPPOINTINGLY LARGE quadruped rat, four legs firmly on the ground (NOT bipedal, NOT humanoid, NOT goblin-shaped), fat rotund pear-shaped body, matted brown-gray fur, tiny beady black eyes, whiskers, a long naked pink tail, small clawed paws, and — sitting comically small and lopsided on his head — a TINY bronze crown that is obviously too small for him. Whimsical menace: he looks silly but not friendly. Read: the joke IS the sprite. NO cloak, NO weapon, NO armor, NO humanoid stance. He is a rat wearing a bad crown",
     "rat_guard":      "bipedal humanoid rat guard wearing tattered leather armor, gripping a rusty short sword in two paws, hunched aggressive stance",
     "skeleton":       "undead human skeleton warrior with a tarnished rusted iron sword and battered wooden shield, hollow eye sockets, cracked yellowed bones, tattered belt cloth",
     "wolf":           "gaunt gray timber wolf with tangled fur, glowing amber eyes, curled black lips exposing white fangs",
@@ -88,6 +88,58 @@ MONSTER_DESC = {
     "rogue_lockward":           "hulking treasure-guardian construct wrapped in chains and lockplates, cracked stone body with steel banding, a heavy iron padlock sealing its chest cavity, ember-orange eyes, high-guard defensive stance with a giant iron key clutched as a mace",
     "mage_prismatic_construct": "geometric crystalline construct made of interlocking floating faceted prism shards in shifting fire-red / ice-blue / lightning-yellow hues, no organic body, central glowing core, arcane sigils floating in the negative space between shards",
     "bard_hostile_courtier":    "haughty aristocratic courtier in an elaborate deep-purple velvet doublet with gold trim, powdered gray wig with a small ribbon bow, holding a lace kerchief in one hand and a folded fan in the other, disdainful sneer — not a fighter, a talker",
+    # Masterite Tempo family — 5 bosses, each a different concept of "time
+    # applied against you." Bespoke identities so they DON'T homogenize into
+    # the goblin-family read that the July bulk regen caused (playtest bug,
+    # cowir-main msg 2516).
+    "masterite_tempo_medieval": (
+        "Tempo of the Hunt — lean human huntsman/scout in dark forest-green "
+        "hooded leather cloak with the hood UP, face partly shadowed, sharp "
+        "amber eyes glinting from under the hood, drawing a longbow with an "
+        "arrow nocked, a quiver strapped diagonally across his back, worn "
+        "leather boots and gloves, a low crouched stalking stance. "
+        "NOT armored, NOT goblin-shaped, NOT a warrior — a predator that hunts "
+        "by patience. Silhouette must read as 'ranger with drawn bow' at a "
+        "glance"
+    ),
+    "masterite_tempo_suburban": (
+        "Tempo of the Rush Hour — a harried modern middle-manager human man "
+        "in a crumpled navy suit jacket with the tie loosened and askew, "
+        "shirt untucked at the front, disheveled brown hair, a briefcase held "
+        "up in one hand like a bludgeon (mid-swing) and a paper coffee cup "
+        "clutched in the other, running/lunging forward, exhausted furious "
+        "expression, dress shoes. NOT fantasy, NOT armored — modern office "
+        "attire. Silhouette must read as 'stressed commuter attacking with "
+        "briefcase' at a glance"
+    ),
+    "masterite_tempo_industrial": (
+        "Tempo of the Shift — a factory shift-supervisor human man in a "
+        "high-visibility neon-orange safety vest over a gray work coverall, "
+        "a yellow hard hat with a small numeral 'B' on the front, "
+        "steel-toe boots, holding a heavy metal clipboard in one hand and a "
+        "punch-card timesheet in the other, oil-smudged face, tired angry "
+        "expression, a wristwatch prominently visible on the raised arm. "
+        "Silhouette must read as 'foreman on the clock' at a glance"
+    ),
+    "masterite_tempo_futuristic": (
+        "Tempo of the Clock Cycle — a humanoid digital daemon whose BODY "
+        "is a translucent clock face (roman numerals visible on the torso, "
+        "spinning clock hands where the heart would be), head is a floating "
+        "monospaced terminal-cursor block (a solid glowing rectangle for a "
+        "face, no organic features), thin geometric limbs made of stacked "
+        "digital-numeric segments, hovering slightly off the ground, "
+        "cool cyan and violet neon palette. NOT organic, NOT armored. "
+        "Silhouette must read as 'CPU-scheduler ghost' at a glance"
+    ),
+    "masterite_tempo_abstract": (
+        "Tempo of Sequence — pure ORDER-as-form: a semi-transparent "
+        "humanoid outline (a suggestion of a person, not a body) filled with "
+        "cascading downward arrows, dashed timeline segments, and numbered "
+        "sequence marks (1→2→3→) glowing in soft white and pale gold. The "
+        "figure is more implied than drawn — motion-blur trails follow the "
+        "silhouette. NOT a character, an INDEX. Silhouette must read as "
+        "'sequence itself, given a shape' at a glance"
+    ),
 }
 
 
