@@ -1091,14 +1091,19 @@ func _open_overworld_menu() -> void:
 	print("Overworld menu opened")
 
 
-func _on_overworld_menu_closed() -> void:
-	"""Handle overworld menu close"""
+func _teardown_overworld_menu_widget() -> void:
+	"""Free the OverworldMenu widget + its CanvasLayer WITHOUT resuming exploration. Use this from menu-action handlers that will immediately open a submenu (autobattle editor, autogrind UI, etc.) — else the brief resume-then-repause lets the player move for one frame ("artist saw overworld went live" 2026-07-13)."""
 	if _overworld_menu and is_instance_valid(_overworld_menu):
 		_overworld_menu.queue_free()
 		_overworld_menu = null
 	if _overworld_menu_layer and is_instance_valid(_overworld_menu_layer):
 		_overworld_menu_layer.queue_free()
 		_overworld_menu_layer = null
+
+
+func _on_overworld_menu_closed() -> void:
+	"""Handle overworld menu close — teardown + resume exploration. Called when user backs out to the field (no submenu follows)."""
+	_teardown_overworld_menu_widget()
 
 	# Resume exploration
 	if _exploration_scene and _exploration_scene.has_method("resume"):
@@ -1259,8 +1264,8 @@ func _on_overworld_menu_action(action: String, target: Combatant) -> void:
 	"""Handle menu action from overworld menu"""
 	match action:
 		"autobattle":
-			# Close menu first, then open autobattle editor
-			_on_overworld_menu_closed()
+			# Teardown widget only — do NOT resume exploration. Autobattle editor pauses again immediately; the old close-plus-resume path let the player move for one frame between resume and re-pause.
+			_teardown_overworld_menu_widget()
 			if target:
 				var char_id = target.combatant_name.to_lower().replace(" ", "_")
 				_open_autobattle_for_character(char_id, target.combatant_name, target)
@@ -1270,8 +1275,8 @@ func _on_overworld_menu_action(action: String, target: Combatant) -> void:
 			# _toggle_all_autobattle itself when not in BATTLE state.
 			_toggle_all_autobattle()
 		"autogrind":
-			# Close menu first, then open autogrind config UI
-			_on_overworld_menu_closed()
+			# Teardown widget only — do NOT resume exploration; autogrind UI pauses again.
+			_teardown_overworld_menu_widget()
 			_open_autogrind_ui()
 
 
@@ -3565,8 +3570,8 @@ func _start_battle_async(specific_enemies: Array = [], is_encounter: bool = fals
 
 func _on_teleport_requested(target_map: String, spawn_point: String) -> void:
 	"""Handle debug teleport from overworld menu"""
-	# Close the overworld menu first
-	_on_overworld_menu_closed()
+	# Teardown widget only — the scene is about to be replaced by the transition, so resuming the OLD exploration briefly would just let the player move for one frame before it's freed. Same class as the autobattle/autogrind menu-action paths.
+	_teardown_overworld_menu_widget()
 	# Then transition
 	_on_area_transition(target_map, spawn_point)
 
