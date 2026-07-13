@@ -240,21 +240,26 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 			var quantity = combatant.inventory[item_id]
 			var target_type = item.get("target_type", ItemSystem.TargetType.SINGLE_ALLY)
 
-			# For SINGLE_ALLY items, add party member target submenu
+			# For SINGLE_ALLY items, add party member target submenu.
+			# Items with effects.revive (Phoenix Down) include KO'd allies — otherwise a revive item silently drops its whole target list. Struktured playtest 2026-07-13.
 			if target_type == ItemSystem.TargetType.SINGLE_ALLY:
+				var can_target_dead: bool = bool(item.get("effects", {}).get("revive", false))
 				var ally_targets = []
 				for i in range(_scene.party_members.size()):
 					var member = _scene.party_members[i]
-					if not is_instance_valid(member) or not member.is_alive:
+					if not is_instance_valid(member):
+						continue
+					if not member.is_alive and not can_target_dead:
 						continue
 					var target_pos = Vector2.ZERO
 					if i < _scene.party_sprite_nodes.size():
 						var s = _scene.party_sprite_nodes[i]
 						if is_instance_valid(s):
 							target_pos = canvas_transform * s.global_position
+					var hp_label: String = "KO'd" if not member.is_alive else "%d/%d HP" % [member.current_hp, member.max_hp]
 					ally_targets.append({
 						"id": "item_" + item_id + "_ally_" + str(i),
-						"label": "%s (%d/%d HP)" % [member.combatant_name, member.current_hp, member.max_hp],
+						"label": "%s (%s)" % [member.combatant_name, hp_label],
 						"data": {"item_id": item_id, "target_idx": i, "target_type": "ally", "target_pos": target_pos}
 					})
 				if ally_targets.size() > 0:
