@@ -32,20 +32,21 @@ func test_default_near_scale_relaxed() -> void:
 
 func test_default_curvature_softened() -> void:
 	var src := _read(MODE7_PATH)
-	assert_true(src.contains("var curvature: float = 0.005"),
-		"default curvature must be 0.005 (was 0.01 pre-tuning) — less warp near player, better feel for new worlds added without their own preset")
+	# 2026-07-14 horizon-tune pass: curvature 0.005 → 0.003 (still non-zero for the SNES tilt).
+	assert_true(src.contains("var curvature: float = 0.003"),
+		"default curvature must be 0.003 (was 0.005 → 0.01 pre-tuning) — horizon-tune pass, less fisheye warp")
 
 
 func test_medieval_preset_matches_default() -> void:
-	# Medieval was the world user was playtesting. Must have the
-	# softened 0.005 (not the pre-tuning 0.01) because per-world
-	# presets override the default at apply_world_preset time.
+	# Medieval was the world user was playtesting. Must match the tuned
+	# default (2026-07-14: 0.003) because per-world presets override at
+	# apply_world_preset time.
 	var src := _read(MODE7_PATH)
 	var idx: int = src.find("\"medieval\":")
 	assert_gt(idx, -1)
 	var window: String = src.substr(idx, 300)
-	assert_true(window.contains("\"curvature\": 0.005"),
-		"medieval world preset must set curvature = 0.005 to match the tuned default (per playtest report)")
+	assert_true(window.contains("\"curvature\": 0.003"),
+		"medieval world preset must set curvature = 0.003 to match the tuned default")
 
 
 func test_other_worlds_keep_their_curvature() -> void:

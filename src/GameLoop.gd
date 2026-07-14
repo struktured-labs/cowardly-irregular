@@ -3091,6 +3091,7 @@ func _start_exploration() -> void:
 			return
 
 	current_state = LoopState.EXPLORATION
+	_battle_transition_starting = false  # safety pop — never leak the mutex if a battle bailed mid-transition
 	InputLockManager.pop_all()  # Clear any leaked locks from previous state
 
 	# Ensure normal speed in exploration (battle speed is separate)
@@ -3407,10 +3408,15 @@ func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> v
 	if _autogrind_ui and is_instance_valid(_autogrind_ui):
 		print("[GAMELOOP] BLOCKED — autogrind UI is open")
 		return
+	# 2026-07-14: reciprocal mutex against _on_area_transition. If the player is mid-scene-load (walked into a village) and an encounter fires the same frame, drop the encounter — the transition owns the scene state.
+	if _transition_in_progress:
+		print("[GAMELOOP] BLOCKED — area transition in flight, dropping encounter")
+		return
 
 	# Dead-stop player during transition; pop_all in _start_exploration clears it.
 	if InputLockManager:
 		InputLockManager.push_lock("encounter_transition")
+	_battle_transition_starting = true
 
 	# LoopState.BATTLE blocks player movement — set in _start_battle_async after transition.
 	# Do NOT set it here — transition needs EXPLORATION state to render the screenshot.
@@ -3495,6 +3501,7 @@ func _hide_exploration_scenes() -> void:
 func _start_battle_async(specific_enemies: Array = [], is_encounter: bool = false) -> void:
 	"""Start battle using async-loaded scene"""
 	current_state = LoopState.BATTLE
+	_battle_transition_starting = false  # state=BATTLE now owns the mutex vs area transitions
 	_remove_party_chat_indicator()
 	# every battle-entry path funnels through here — sweep once, not per call site
 	_hide_exploration_scenes()
@@ -4010,9 +4017,14 @@ func _area_overworld_transition_out() -> void:
 
 
 var _transition_in_progress: bool = false
+var _battle_transition_starting: bool = false  # set by _on_exploration_battle_triggered — mutex against area transitions
 
 func _on_area_transition(target_map: String, spawn_point: String) -> void:
 	"""Handle contextual area transition based on destination type."""
+	# 2026-07-14: struktured playtest — a random encounter can fire the same physics frame the player crosses into an auto-enter AreaTransition; both scene changes race, screen freezes. Bail here if the battle transition already committed.
+	if _battle_transition_starting:
+		push_warning("[GAMELOOP] Area transition to '%s' suppressed — battle transition already in flight" % target_map)
+		return
 	if _transition_in_progress:
 		return
 	_transition_in_progress = true
