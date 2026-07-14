@@ -4,6 +4,8 @@ extends Node
 ## Also captures right stick input for Mode 7 camera rotation.
 
 const IGNORED_NAME: String = "SNES30"
+const RIGHT_STICK_X_AXIS: JoyAxis = JOY_AXIS_RIGHT_X
+const STICK_DEADZONE: float = 0.2
 
 var preferred_device: int = -1
 var right_stick_x: float = 0.0
@@ -19,20 +21,10 @@ func _ready() -> void:
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventJoypadMotion:
-		var e = event as InputEventJoypadMotion
-		# Only axis 2 = Right Stick X (was 2-5 which included Y, triggers)
-		if e.axis == 2:
-			if abs(e.axis_value) > 0.2:
-				right_stick_x = e.axis_value
-			else:
-				right_stick_x = 0.0
-	# Debug: log every gamepad button press so we can identify which physical
-	# button maps to which Godot index. Important for the 8BitDo Ultimate 2
-	# (non-Pro) controller where the L shoulder may not report as button 9.
-	# Bug-tracking-aid 2026-06-04 user playtest.
-	elif event is InputEventJoypadButton and event.pressed:
-		var jb = event as InputEventJoypadButton
-		print("[GAMEPAD-DEBUG] JoyButton press: device=%d index=%d" % [jb.device, jb.button_index])
+		var motion := event as InputEventJoypadMotion
+		if motion.device != preferred_device or motion.axis != RIGHT_STICK_X_AXIS:
+			return
+		right_stick_x = motion.axis_value if absf(motion.axis_value) > STICK_DEADZONE else 0.0
 
 
 func _process(_delta: float) -> void:
@@ -48,6 +40,8 @@ func _process(_delta: float) -> void:
 
 
 func _on_joy_connection_changed(_device: int, _connected: bool) -> void:
+	right_stick_x = 0.0
+	shoulder_rotate = 0.0
 	_scan_controllers()
 
 

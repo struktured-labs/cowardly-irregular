@@ -25,7 +25,6 @@ signal menu_action(action: String, target: Combatant)
 signal quit_to_title()
 signal start_boss_battle(boss_id: String)
 signal teleport_requested(target_map: String, spawn_point: String)
-signal play_next_spotlight_requested()
 signal party_leader_changed(new_index: int)
 
 ## Menu options (built dynamically in setup to include debug options)
@@ -884,20 +883,8 @@ func _open_settings() -> void:
 		# Teleport silently does nothing. Fixed 2026-05-03.
 		if settings.has_signal("teleport_requested"):
 			settings.teleport_requested.connect(_on_settings_teleport_chosen)
-		# Same forwarding shape for the spotlight cutscene trigger added
-		# 2026-06-04 — let the user fire the next still-locked PC's
-		# spotlight from Settings while the in-world triggers are not yet
-		# wired (cowir-overworld's pending work).
-		if settings.has_signal("play_next_spotlight_requested"):
-			settings.play_next_spotlight_requested.connect(_on_settings_play_next_spotlight)
 		add_child(settings)
 		_hide_main_ui(settings)
-
-
-func _on_settings_play_next_spotlight() -> void:
-	"""Relay the spotlight request up to GameLoop. SettingsMenu auto-closes
-	on action; we just re-emit on our level so GameLoop's listener fires."""
-	play_next_spotlight_requested.emit()
 
 
 func _on_settings_teleport_chosen(map_id: String, spawn_point: String) -> void:

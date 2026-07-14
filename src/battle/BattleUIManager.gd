@@ -46,27 +46,25 @@ func _apply_panel_transparency() -> void:
 	(Original user feedback 2026-05-02: 'monster stat screen overlays
 	awkwardly on the monster sprites'; BDFFHD integration 2026-06-09:
 	PartyStatusPanel retired in favour of BattleBDFFHDHudStrip.)"""
-	# Only theme the EnemyStatusPanel; guard with visibility check.
-	for panel_path in ["UI/EnemyStatusPanel"]:
-		var panel = _scene.get_node_or_null(panel_path)
-		if not panel or not panel.visible:
-			continue
-		var sb := StyleBoxFlat.new()
-		sb.bg_color = Color(0.05, 0.04, 0.10, 0.72)  # deep purple, ~72% alpha
-		sb.border_color = Color(0.4, 0.35, 0.6, 0.5)
-		sb.border_width_left = 1
-		sb.border_width_top = 1
-		sb.border_width_right = 1
-		sb.border_width_bottom = 1
-		sb.corner_radius_top_left = 4
-		sb.corner_radius_top_right = 4
-		sb.corner_radius_bottom_left = 4
-		sb.corner_radius_bottom_right = 4
-		sb.content_margin_left = 6
-		sb.content_margin_right = 6
-		sb.content_margin_top = 4
-		sb.content_margin_bottom = 4
-		panel.add_theme_stylebox_override("panel", sb)
+	var panel := _scene.get_node_or_null("UI/EnemyStatusPanel") as PanelContainer
+	if not panel or not panel.visible:
+		return
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.05, 0.04, 0.10, 0.72)  # deep purple, ~72% alpha
+	sb.border_color = Color(0.4, 0.35, 0.6, 0.5)
+	sb.border_width_left = 1
+	sb.border_width_top = 1
+	sb.border_width_right = 1
+	sb.border_width_bottom = 1
+	sb.corner_radius_top_left = 4
+	sb.corner_radius_top_right = 4
+	sb.corner_radius_bottom_left = 4
+	sb.corner_radius_bottom_right = 4
+	sb.content_margin_left = 6
+	sb.content_margin_right = 6
+	sb.content_margin_top = 4
+	sb.content_margin_bottom = 4
+	panel.add_theme_stylebox_override("panel", sb)
 
 
 func _create_auto_toggle_button() -> void:
