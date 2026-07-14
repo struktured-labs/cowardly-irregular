@@ -40,9 +40,21 @@ const WEAPON_COLOR = Color(1.0, 0.6, 0.3)
 const ARMOR_COLOR = Color(0.5, 0.7, 1.0)
 const ACCESSORY_COLOR = Color(0.9, 0.5, 0.9)
 
+# Tick 211: stat display maps extracted to StatNames (src/ui/StatNames.gd) — same surfaces should display the same names. Local helpers below now delegate.
+
 
 func _ready() -> void:
 	call_deferred("_build_ui")
+
+
+# Tick 210/211: long-form stat name with HP/MP acronym preservation. Delegates to StatNames (the shared map source-of-truth).
+func _stat_display_name(stat_name: String) -> String:
+	return StatNames.display_name(stat_name)
+
+
+# Tick 210/211: compact stat code for per-item comparison rows. Delegates to StatNames.
+func _stat_short_name(stat_name: String) -> String:
+	return StatNames.short_code(stat_name)
 
 
 func setup(target: Combatant, weapons: Array = [], armors: Array = [], accessories: Array = []) -> void:
@@ -257,27 +269,44 @@ func _create_slot_row(slot_index: int) -> Control:
 
 
 func _get_equipped_name(slot_index: int) -> String:
-	"""Get name of currently equipped item"""
+	## Tick 140: pre-fix an equipped item not found in EquipmentSystem
+	## (deleted entry, custom Scriptweaver item, save-format drift)
+	## rendered as "(empty)" — implying the slot was empty when it
+	## actually held something. Player couldn't tell whether their
+	## character was wearing armor or not. Now: fall back to
+	## ItemNameResolver for any non-empty-id case, so the player at
+	## least sees the item's id (prettified) instead of the
+	## misleading "(empty)".
 	if not character:
 		return "(empty)"
 
+	var equipped_id: String = ""
 	match slot_index:
-		0:  # Weapon
-			if character.equipped_weapon.is_empty():
+		0:
+			equipped_id = character.equipped_weapon
+			if equipped_id.is_empty():
 				return "(empty)"
-			var weapon = EquipmentSystem.get_weapon(character.equipped_weapon)
-			return weapon.get("name", "(empty)")
-		1:  # Armor
-			if character.equipped_armor.is_empty():
+			var weapon = EquipmentSystem.get_weapon(equipped_id)
+			if not weapon.is_empty():
+				return weapon.get("name", ItemNameResolver.resolve(equipped_id))
+		1:
+			equipped_id = character.equipped_armor
+			if equipped_id.is_empty():
 				return "(empty)"
-			var armor = EquipmentSystem.get_armor(character.equipped_armor)
-			return armor.get("name", "(empty)")
-		2:  # Accessory
-			if character.equipped_accessory.is_empty():
+			var armor = EquipmentSystem.get_armor(equipped_id)
+			if not armor.is_empty():
+				return armor.get("name", ItemNameResolver.resolve(equipped_id))
+		2:
+			equipped_id = character.equipped_accessory
+			if equipped_id.is_empty():
 				return "(empty)"
-			var acc = EquipmentSystem.get_accessory(character.equipped_accessory)
-			return acc.get("name", "(empty)")
+			var acc = EquipmentSystem.get_accessory(equipped_id)
+			if not acc.is_empty():
+				return acc.get("name", ItemNameResolver.resolve(equipped_id))
 
+	# Equipped id is non-empty but EquipmentSystem doesn't know it.
+	if not equipped_id.is_empty():
+		return ItemNameResolver.resolve(equipped_id)
 	return "(empty)"
 
 
@@ -355,10 +384,10 @@ func _create_stats_panel(panel_size: Vector2) -> Control:
 		var mod_value = equip_mods[stat_name]
 		if mod_value != 0:
 			var mod_label = Label.new()
-			mod_label.text = "%s: %s%d" % [stat_name.capitalize(), "+" if mod_value > 0 else "", mod_value]
+			mod_label.text = "%s: %s%d" % [_stat_display_name(stat_name), "+" if mod_value > 0 else "", mod_value]
 			mod_label.position = Vector2(16, bonus_y)
 			mod_label.add_theme_font_size_override("font_size", 10)
-			mod_label.add_theme_color_override("font_color", POSITIVE_COLOR if mod_value > 0 else NEGATIVE_COLOR)
+			mod_label.add_theme_color_override("font_color", AccessibilityPalette.bonus() if mod_value > 0 else AccessibilityPalette.penalty())
 			panel.add_child(mod_label)
 			bonus_y += 16
 
@@ -401,9 +430,13 @@ func _create_items_panel(panel_size: Vector2) -> Control:
 	var item_height = 60
 	var max_visible = int((panel_size.y - 50) / item_height)
 
-	for i in range(min(items.size(), max_visible)):
-		var item_id = items[i]
-		var item_row = _create_item_row(item_id, i)
+	# Handle scroll offset so the selection always stays in view
+	var scroll_offset = max(0, selected_item_index - max_visible + 1)
+
+	for i in range(min(items.size() - scroll_offset, max_visible)):
+		var item_idx = i + scroll_offset
+		var item_id = items[item_idx]
+		var item_row = _create_item_row(item_id, item_idx)
 		item_row.position = Vector2(4, y_offset + i * item_height)
 		item_row.size = Vector2(panel_size.x - 8, item_height - 4)
 		panel.add_child(item_row)
@@ -450,8 +483,14 @@ func _create_item_row(item_id: String, index: int) -> Control:
 	row.add_child(cursor)
 
 	# Item name
+	## Tick 140: prefer canonical name from item_data when available;
+	## fall back to ItemNameResolver (canonical from any data source)
+	## before raw snake_case id. Affects equipment pool entries that
+	## came from external sources (chest drops via save-format drift,
+	## Scriptweaver custom items) — pre-fix those rendered as e.g.
+	## "iron_sword" instead of "Iron Sword".
 	var name_label = Label.new()
-	name_label.text = item_data.get("name", item_id)
+	name_label.text = item_data.get("name", ItemNameResolver.resolve(item_id))
 	name_label.position = Vector2(24, 4)
 	name_label.add_theme_font_size_override("font_size", 12)
 	name_label.add_theme_color_override("font_color", _get_slot_color(selected_slot))
@@ -475,13 +514,16 @@ func _create_item_row(item_id: String, index: int) -> Control:
 		var diff = new_val - current_val
 
 		if diff > 0:
-			stat_text += "+%d %s  " % [diff, stat_name.substr(0, 3).to_upper()]
+			stat_text += "+%d %s  " % [diff, _stat_short_name(stat_name)]
 			positive_count += 1
 		elif diff < 0:
-			stat_text += "%d %s  " % [diff, stat_name.substr(0, 3).to_upper()]
+			stat_text += "%d %s  " % [diff, _stat_short_name(stat_name)]
 			negative_count += 1
 
-	if stat_text.is_empty():
+	var special_text := _special_effects_summary(item_data)
+	if not special_text.is_empty():
+		stat_text += special_text
+	if stat_text.strip_edges().is_empty():
 		stat_text = "(no change)"
 
 	var stats_label = Label.new()
@@ -489,9 +531,9 @@ func _create_item_row(item_id: String, index: int) -> Control:
 	stats_label.position = Vector2(24, 20)
 	stats_label.add_theme_font_size_override("font_size", 10)
 	if positive_count > 0 and negative_count == 0:
-		stats_label.add_theme_color_override("font_color", POSITIVE_COLOR)
+		stats_label.add_theme_color_override("font_color", AccessibilityPalette.bonus())
 	elif negative_count > 0 and positive_count == 0:
-		stats_label.add_theme_color_override("font_color", NEGATIVE_COLOR)
+		stats_label.add_theme_color_override("font_color", AccessibilityPalette.penalty())
 	else:
 		stats_label.add_theme_color_override("font_color", TEXT_COLOR)
 	row.add_child(stats_label)
@@ -509,6 +551,25 @@ func _create_item_row(item_id: String, index: int) -> Control:
 		_on_equip_item_click.bind(index), _on_equip_item_hover.bind(index))
 
 	return row
+
+
+## Compact tokens for an item's special_effects so hidden value (elemental
+## damage, crit, on-hit procs) shows in the compare preview — not just raw
+## stat_mods. Empty string when the item has none. Appended to the stat line.
+func _special_effects_summary(item_data: Dictionary) -> String:
+	var se: Variant = item_data.get("special_effects", {})
+	if not (se is Dictionary) or (se as Dictionary).is_empty():
+		return ""
+	var tokens: Array[String] = []
+	for key in se:
+		tokens.append(_humanize_special_effect(str(key)))
+	return "  ✦ " + ", ".join(tokens) if not tokens.is_empty() else ""
+
+
+func _humanize_special_effect(key: String) -> String:
+	if key.ends_with("_damage_bonus"):
+		return key.trim_suffix("_damage_bonus").capitalize() + " Dmg"
+	return key.replace("_bonus", "").replace("_", " ").strip_edges().capitalize()
 
 
 func _get_current_equipped_mods() -> Dictionary:

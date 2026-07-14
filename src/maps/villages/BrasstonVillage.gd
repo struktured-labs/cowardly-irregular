@@ -23,6 +23,10 @@ func _get_village_display_name() -> String:
 	return "Brasston"
 
 
+func _get_music_area_id() -> String:
+	return "brasston_village"
+
+
 func _get_map_pixel_size() -> Vector2i:
 	return Vector2i(MAP_WIDTH * TILE_SIZE, MAP_HEIGHT * TILE_SIZE)
 
@@ -147,6 +151,17 @@ func _setup_buildings() -> void:
 	magic.keeper_name = "Alembic"
 	magic.position = Vector2(11 * TILE_SIZE, 8 * TILE_SIZE)
 	buildings.add_child(magic)
+
+	# === CLOCKWORK LOFT DOOR ===
+	# Magister Clavis's retired-clockmaker workshop. Foreshadows the
+	# SteampunkMechanism dungeon (W3).
+	# (7,11) was inside the house block below the door — player spawned in a wall.
+	spawn_points["clockwork_loft_exit"] = Vector2(7 * TILE_SIZE, 9 * TILE_SIZE)
+	_add_interior_door("ClockworkLoftDoor", "brasston_clockwork_loft", "Enter Clockwork Loft", Vector2(7 * TILE_SIZE, 10 * TILE_SIZE))
+	# === REDUNDANCY ARCHIVE DOOR ===
+	# South face of the BBB building (cols 13-15, rows 2-5) — where Brasston keeps the spares.
+	spawn_points["archive_exit"] = Vector2(14 * TILE_SIZE, 6.5 * TILE_SIZE)
+	_add_interior_door("RedundancyArchiveDoor", "brasston_redundancy_archive", "Enter Redundancy Archive", Vector2(14 * TILE_SIZE, 5.5 * TILE_SIZE))
 
 
 func _setup_treasures() -> void:

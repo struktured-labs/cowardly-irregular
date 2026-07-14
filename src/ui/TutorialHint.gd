@@ -15,6 +15,13 @@ signal hint_dismissed(hint_id: String)
 ## Singleton-style — hints shown across the session
 static var _shown_hints: Dictionary = {}
 
+## Active-hint count; battle _input handlers gate on is_any_active() so a dismiss press doesn't also fire a menu action.
+static var _active_count: int = 0
+
+
+static func is_any_active() -> bool:
+	return _active_count > 0
+
 var _panel: PanelContainer
 var _title_label: Label
 var _body_label: Label
@@ -77,10 +84,13 @@ func _build_ui() -> void:
 
 func show_hint(hint_id: String, title: String, body: String) -> void:
 	"""Show a tutorial hint if it hasn't been shown before."""
-	# Check if already shown (static + GameState)
+	# Belt-and-suspenders queue_free on early-return: hint_dismissed will not fire
+	# (since _active stays false) so callers that depend on it for cleanup leak.
 	if _shown_hints.get(hint_id, false):
+		queue_free()
 		return
 	if GameState and GameState.game_constants.get("tutorial_" + hint_id, false):
+		queue_free()
 		return
 
 	# Mark as shown
@@ -96,12 +106,14 @@ func show_hint(hint_id: String, title: String, body: String) -> void:
 
 	# Input is blocked by _input consuming all events while _active
 	_active = true
+	_active_count += 1
 
 
 func _dismiss() -> void:
 	if not _active:
 		return
 	_active = false
+	_active_count = maxi(0, _active_count - 1)
 
 	# Input unblocked — _active = false stops consuming events
 
@@ -112,6 +124,13 @@ func _dismiss() -> void:
 	visible = false
 	hint_dismissed.emit(_current_hint_id)
 	_current_hint_id = ""
+
+
+func _exit_tree() -> void:
+	# Freed while active (battle end / scene change) — release the input gate so it never sticks.
+	if _active:
+		_active = false
+		_active_count = maxi(0, _active_count - 1)
 
 
 func _process(delta: float) -> void:

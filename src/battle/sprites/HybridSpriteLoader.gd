@@ -8,21 +8,41 @@ const _SnesPartySprites = preload("res://src/battle/sprites/SnesPartySprites.gd"
 
 static var _manifest: Dictionary = {}
 static var _monster_manifest: Dictionary = {}
+static var _battle_effects: Dictionary = {}
 static var _manifest_loaded: bool = false
 
 static func _load_manifest() -> void:
 	if _manifest_loaded:
 		return
+	# Always set the loaded flag at the END so a failure mid-load
+	# doesn't poison the cache — but mark it loaded BEFORE any
+	# early-return on failure so we don't re-warn every lookup.
 	var file_path = "res://data/sprite_manifest.json"
-	if FileAccess.file_exists(file_path):
-		var file = FileAccess.open(file_path, FileAccess.READ)
-		if file:
-			var json = JSON.new()
-			if json.parse(file.get_as_text()) == OK and json.data is Dictionary:
-				_manifest = json.data.get("sheets", {})
-				_monster_manifest = json.data.get("monster_sheets", {})
-				print("[SPRITES] Loaded sprite manifest: %d sheets" % _manifest.size())
-			file.close()
+	if not FileAccess.file_exists(file_path):
+		push_warning("[SPRITES] sprite_manifest.json not found at %s — all jobs/monsters will use procedural fallbacks (artist sheets invisible)" % file_path)
+		_manifest_loaded = true
+		return
+	var file = FileAccess.open(file_path, FileAccess.READ)
+	if not file:
+		push_warning("[SPRITES] sprite_manifest.json exists but FileAccess.open failed — artist sheets invisible")
+		_manifest_loaded = true
+		return
+	var raw := file.get_as_text()
+	file.close()
+	var json = JSON.new()
+	var parse_result := json.parse(raw)
+	if parse_result != OK:
+		push_warning("[SPRITES] sprite_manifest.json parse error: %s — artist sheets invisible" % json.get_error_message())
+		_manifest_loaded = true
+		return
+	if not (json.data is Dictionary):
+		push_warning("[SPRITES] sprite_manifest.json parsed but root is not a Dictionary — artist sheets invisible")
+		_manifest_loaded = true
+		return
+	_manifest = json.data.get("sheets", {})
+	_monster_manifest = json.data.get("monster_sheets", {})
+	_battle_effects = json.data.get("battle_effects", {})
+	print("[SPRITES] Loaded sprite manifest: %d sheets, %d monster sheets, %d battle effects" % [_manifest.size(), _monster_manifest.size(), _battle_effects.size()])
 	_manifest_loaded = true
 
 
@@ -30,7 +50,23 @@ static func reload_manifest() -> void:
 	"""Force reload the manifest (call after adding new sprite sheets)"""
 	_manifest_loaded = false
 	_manifest = {}
+	_monster_manifest = {}
+	_battle_effects = {}
 	_load_manifest()
+
+
+## Load a battle-effect texture registered under manifest.battle_effects — returns null if the key is absent or the texture load fails so callers can fall back gracefully. cowir-main's norm: HybridSpriteLoader is the single source, no direct load() bypass (msg 4ec21a07 commit note).
+static func load_battle_effect_texture(key: String) -> Texture2D:
+	_load_manifest()
+	if not _battle_effects.has(key):
+		return null
+	var entry: Dictionary = _battle_effects[key]
+	var path: String = str(entry.get("path", ""))
+	if path == "" or not ResourceLoader.exists(path):
+		push_warning("[SPRITES] battle_effect '%s' path missing or unloadable: %s" % [key, path])
+		return null
+	var tex: Resource = load(path)
+	return tex if tex is Texture2D else null
 
 
 static func has_artist_sheet(job_id: String) -> bool:

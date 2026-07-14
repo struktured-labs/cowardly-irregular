@@ -34,6 +34,25 @@ func resolve_battle(player_party: Array, enemy_party: Array) -> Dictionary:
 	_battle_log.clear()
 	_rounds_since_group_attack = 99
 
+	## Tick 145: mark encountered monsters as seen in the bestiary,
+	## mirroring BattleScene._show_battle_quip. Pre-fix autogrind
+	## battles never updated the bestiary — a player running
+	## autogrind for hours could face hundreds of monster types
+	## without any of them showing up in their bestiary.
+	# Tick 260: pass current map id so the "Last seen: <location>"
+	# bestiary hint reflects autogrind encounters too.
+	var loc: String = ""
+	if MapSystem and "current_map_id" in MapSystem:
+		loc = str(MapSystem.current_map_id)
+	for enemy in _enemy_party:
+		if not is_instance_valid(enemy):
+			continue
+		var mtype: String = ""
+		if enemy.has_method("get_meta") and enemy.has_meta("monster_type"):
+			mtype = str(enemy.get_meta("monster_type", ""))
+		if mtype != "":
+			BestiarySystem.mark_seen(mtype, loc)
+
 	# Edge case: empty or all-dead party = immediate defeat
 	var alive_players = _player_party.filter(func(c): return c.is_alive)
 	if alive_players.is_empty():
@@ -47,7 +66,13 @@ func resolve_battle(player_party: Array, enemy_party: Array) -> Dictionary:
 
 	# Temporarily register parties in BattleManager so AutobattleSystem
 	# target-resolution (_get_enemies_for / _get_allies_for) works correctly.
-	var bm = Engine.get_singleton("BattleManager") if Engine.has_singleton("BattleManager") else null
+	# Engine.has_singleton("BattleManager") is ALWAYS FALSE for autoloads in
+	# Godot 4 — fetch from scene tree root, then fall back to _get_autoload
+	# for the test harness path.
+	var tree = Engine.get_main_loop()
+	var bm: Node = null
+	if tree is SceneTree and (tree as SceneTree).root != null:
+		bm = (tree as SceneTree).root.get_node_or_null("BattleManager")
 	if not bm:
 		bm = _get_autoload("BattleManager")
 	var _bm_player_backup: Array = []
@@ -273,14 +298,14 @@ func _execute_group_physical(participants: Array, group_type: String) -> Diction
 	for p in participants:
 		if p is Combatant and p.is_alive:
 			p.spend_ap(1)
-			total_power += p.attack
+			total_power += p.get_buffed_stat("attack", p.attack)
 
 	var scale = pow(participants.size(), 1.5)
 	var alive_enemies = _enemy_party.filter(func(e): return e.is_alive)
 
 	for enemy in alive_enemies:
 		var raw_damage = int(total_power * scale / max(1.0, float(alive_enemies.size())))
-		var mitigated = max(1, raw_damage - enemy.defense)
+		var mitigated = max(1, raw_damage)
 		enemy.take_damage(mitigated)
 		_log("%s hits %s for %d!" % [group_type, enemy.combatant_name, mitigated])
 
@@ -305,10 +330,10 @@ func _execute_group_formation(participants: Array, formation: Dictionary) -> Dic
 			var total_power = 0.0
 			for p in participants:
 				if p is Combatant and p.is_alive:
-					total_power += (p.attack + p.get_buffed_stat("magic", p.magic)) * 0.5
+					total_power += (p.get_buffed_stat("attack", p.attack) + p.get_buffed_stat("magic", p.magic)) * 0.5
 			for enemy in alive_enemies:
 				if not enemy.is_alive: continue
-				var damage = max(1, int(total_power * scale / max(1.0, float(alive_enemies.size())) - enemy.defense * 0.5))
+				var damage = max(1, int(total_power * scale / max(1.0, float(alive_enemies.size()))))
 				enemy.take_damage(damage)
 				_log("Four Heroes strikes %s for %d!" % [enemy.combatant_name, damage])
 			for p in participants:
@@ -336,10 +361,10 @@ func _execute_group_formation(participants: Array, formation: Dictionary) -> Dic
 				if alive_enemies.is_empty(): break
 				var target = alive_enemies[randi() % alive_enemies.size()]
 				if not target.is_alive: continue
-				var base_dmg = int(attacker.attack * 0.7)
+				var base_dmg = int(attacker.get_buffed_stat("attack", attacker.attack) * 0.7)
 				if randf() < 0.3:
 					base_dmg = int(base_dmg * 1.5)
-				var damage = max(1, base_dmg - target.defense / 2)
+				var damage = max(1, base_dmg)
 				target.take_damage(damage)
 				_log("Blade Storm hits %s for %d!" % [target.combatant_name, damage])
 			_log("FORMATION: Blade Storm — %d rapid strikes!" % hit_count)
@@ -351,10 +376,10 @@ func _execute_group_formation(participants: Array, formation: Dictionary) -> Dic
 			var total_atk = 0.0
 			for p in participants:
 				if p is Combatant and p.is_alive:
-					total_atk += p.attack
+					total_atk += p.get_buffed_stat("attack", p.attack)
 			for enemy in alive_enemies:
 				if not enemy.is_alive: continue
-				var damage = max(1, int(total_atk * scale * 0.6 / max(1.0, float(alive_enemies.size())) - enemy.defense))
+				var damage = max(1, int(total_atk * scale * 0.6 / max(1.0, float(alive_enemies.size()))))
 				enemy.take_damage(damage)
 				_log("Iron Wall crushes %s for %d!" % [enemy.combatant_name, damage])
 			_log("FORMATION: Iron Wall — DEF +50%% (3 turns) + crushing blow!")
@@ -363,14 +388,14 @@ func _execute_group_formation(participants: Array, formation: Dictionary) -> Dic
 			var total_atk = 0.0
 			for p in participants:
 				if p is Combatant and p.is_alive:
-					total_atk += p.attack
+					total_atk += p.get_buffed_stat("attack", p.attack)
 			for enemy in alive_enemies:
 				if not enemy.is_alive: continue
 				var full_hp_bonus = 2.0 if enemy.current_hp == enemy.max_hp else 1.0
 				var damage = max(1, int(total_atk * scale * full_hp_bonus / max(1.0, float(alive_enemies.size()))))
 				enemy.take_damage(damage)
 				_log("Shadow Strike hits %s for %d!" % [enemy.combatant_name, damage])
-			_log("FORMATION: Shadow Strike — defense ignored, 2x on full HP!")
+			_log("FORMATION: Shadow Strike — 2x on full HP!")
 
 		"chaos_theory":
 			var roll = randf()
@@ -378,7 +403,7 @@ func _execute_group_formation(participants: Array, formation: Dictionary) -> Dic
 				var total_power = 0.0
 				for p in participants:
 					if p is Combatant and p.is_alive:
-						total_power += (p.attack + p.get_buffed_stat("magic", p.magic))
+						total_power += (p.get_buffed_stat("attack", p.attack) + p.get_buffed_stat("magic", p.magic))
 				for enemy in alive_enemies:
 					if not enemy.is_alive: continue
 					var damage = max(1, int(total_power * scale * 1.5 / max(1.0, float(alive_enemies.size()))))
@@ -395,10 +420,10 @@ func _execute_group_formation(participants: Array, formation: Dictionary) -> Dic
 				var total_power = 0.0
 				for p in participants:
 					if p is Combatant and p.is_alive:
-						total_power += p.attack
+						total_power += p.get_buffed_stat("attack", p.attack)
 				for enemy in alive_enemies:
 					if not enemy.is_alive: continue
-					var damage = max(1, int(total_power * scale * 0.8 / max(1.0, float(alive_enemies.size())) - enemy.defense))
+					var damage = max(1, int(total_power * scale * 0.8 / max(1.0, float(alive_enemies.size()))))
 					enemy.take_damage(damage)
 				for p in participants:
 					if p is Combatant and p.is_alive:
@@ -586,7 +611,13 @@ func _resolve_attack(attacker, target) -> int:
 		_log("Critical hit!")
 
 	var def_val = float(target.get_buffed_stat("defense", target.defense))
-	var actual = int((damage * damage) / (damage + def_val))
+	# Guard divisor (mirrors Combatant.take_damage). attack 0 + defense 0
+	# combinations are reachable: get_buffed_stat returns 0 for base 0
+	# (the maxi(1, …) clamp only applies when base > 0), so a base-0
+	# attack stat × base-0 defense produces a 0/0 NaN that int() casts
+	# to a sentinel — silent garbage damage in autogrind sims.
+	var denom = maxf(1.0, damage + def_val)
+	var actual = int((damage * damage) / denom)
 	actual = max(1, actual)
 	if target.is_defending:
 		actual = actual / 2
@@ -606,8 +637,21 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 		_log("%s has no MP for %s" % [caster.combatant_name, ability_id])
 		return
 
-	var category = ability.get("category", "magic")
-	var power = ability.get("power", 1.0)
+	## Tick 393: dispatch on `type` (the canonical abilities.json
+	## schema field) instead of `category` (which no ability authors).
+	## Pre-fix `ability.get("category", "magic")` always returned the
+	## "magic" default for every ability, so the `match category:` arm
+	## always fired the magic-damage branch — heal abilities dealt
+	## magic damage to the target instead of healing, support abilities
+	## did nothing useful, etc. Major divergence between live combat
+	## and autogrind simulation that silently corrupted reward
+	## calculations whenever a non-physical-non-magic ability fired.
+	##
+	## Also accept `damage_multiplier` as a power fallback so abilities
+	## that author the canonical magic-shape field aren't reading the
+	## default 1.0 (which would silently nerf eidolon casts and similar).
+	var category = ability.get("type", ability.get("category", "magic"))
+	var power = ability.get("power", ability.get("damage_multiplier", 1.0))
 	var element = ability.get("element", "")
 
 	match category:
@@ -663,7 +707,9 @@ func _resolve_attack_with_power(attacker, target, base_damage: int) -> int:
 		return 0
 	var def_val = float(target.get_buffed_stat("defense", target.defense))
 	var dmg = float(base_damage)
-	var actual = int((dmg * dmg) / (dmg + def_val))
+	# Same divisor guard as _resolve_attack — see comment there.
+	var denom = maxf(1.0, dmg + def_val)
+	var actual = int((dmg * dmg) / denom)
 	actual = max(1, actual)
 	if target.is_defending:
 		actual = actual / 2
@@ -676,27 +722,39 @@ func _resolve_item(user, item_id: String, target) -> void:
 		return
 	user.remove_item(item_id)
 
+	## Tick 394: route through ItemSystem.use_item so autogrind item
+	## use matches live battle exactly. Pre-fix hardcoded handlers
+	## for potion (50), hi_potion (200), ether (30), hi_ether (100)
+	## and a unconditional heal(50) default. The default silently
+	## mishandled every other item:
+	##   - mega_potion silently healed 50 instead of 100
+	##   - phoenix_down silently healed 50 instead of reviving
+	##   - holy_water / bomb_fragment / etc silently healed 50
+	##     instead of damaging an enemy
+	##   - power_drink / speed_tonic silently healed 50 instead of
+	##     applying their buff
+	## All silently corrupted autogrind reward / tier calculations.
+	if target == null or not target.is_alive:
+		return
+	var its = _get_autoload("ItemSystem")
+	if its != null and its.has_method("use_item"):
+		var typed_targets: Array[Combatant] = [target]
+		its.use_item(user, item_id, typed_targets)
+		_log("%s uses %s on %s" % [user.combatant_name, item_id, target.combatant_name])
+		return
+	# Fallback: ItemSystem unavailable. Original hardcoded list.
 	match item_id:
 		"potion":
-			if target and target.is_alive:
-				target.heal(50)
-				_log("%s uses Potion on %s" % [user.combatant_name, target.combatant_name])
+			target.heal(50)
 		"hi_potion":
-			if target and target.is_alive:
-				target.heal(200)
-				_log("%s uses Hi-Potion on %s" % [user.combatant_name, target.combatant_name])
+			target.heal(200)
 		"ether":
-			if target and target.is_alive:
-				target.restore_mp(30)
-				_log("%s uses Ether on %s" % [user.combatant_name, target.combatant_name])
+			target.restore_mp(30)
 		"hi_ether":
-			if target and target.is_alive:
-				target.restore_mp(100)
-				_log("%s uses Hi-Ether on %s" % [user.combatant_name, target.combatant_name])
+			target.restore_mp(100)
 		_:
-			if target and target.is_alive:
-				target.heal(50)
-				_log("%s uses %s on %s" % [user.combatant_name, item_id, target.combatant_name])
+			target.heal(50)
+	_log("%s uses %s on %s (fallback path — ItemSystem missing)" % [user.combatant_name, item_id, target.combatant_name])
 
 
 func _all_dead(party: Array) -> bool:
@@ -709,20 +767,110 @@ func _all_dead(party: Array) -> bool:
 func _build_results(victory: bool) -> Dictionary:
 	var exp = 0
 	var gold = 0
+	# authored rewards, same as live battles — stat-derived formulas broke the full-parity ruling both directions
+	var mdb: Dictionary = {}
+	if EncounterSystem and not EncounterSystem.monster_database.is_empty():
+		mdb = EncounterSystem.monster_database
 	if victory:
 		for enemy in _enemy_party:
-			exp += int(enemy.max_hp * 0.5 + enemy.attack * 2)
-			gold += int(enemy.max_hp * 0.3 + enemy.defense)
+			var mt_key: String = str(enemy.get_meta("monster_type", "")) if enemy.has_method("get_meta") and enemy.has_meta("monster_type") else ""
+			var mrow: Dictionary = mdb.get(mt_key, {})
+			exp += int(mrow.get("exp_reward", 25))
+			gold += int(mrow.get("gold_reward", int(enemy.max_hp * 0.3 + enemy.defense)))
+			## Tick 146: mark defeated. mark_seen happened at the top
+			## of resolve_battle (tick 145); this is the kill credit.
+			# Tick 260: forward location through the defeat call too.
+			if not is_instance_valid(enemy):
+				continue
+			if enemy.has_method("get_meta") and enemy.has_meta("monster_type"):
+				var mtype: String = str(enemy.get_meta("monster_type", ""))
+				if mtype != "":
+					var defeat_loc: String = ""
+					if MapSystem and "current_map_id" in MapSystem:
+						defeat_loc = str(MapSystem.current_map_id)
+					BestiarySystem.mark_defeated(mtype, defeat_loc)
+		# Tick 341: parallel to tick 340 — apply game_constants
+		# ["exp_multiplier"] and ["gold_multiplier"] so Scriptweaver /
+		# RebalanceDaemon nudges affect the headless autogrind path too.
+		# Pre-fix this returned raw enemy-stat sums; AutogrindSystem.on_
+		# battle_victory consumed exp directly via gain_job_exp without
+		# the multiplier, so a knob set to 2.0 had ZERO effect on
+		# headless autogrind. Same defensive clampf([0.1, 10.0]) band
+		# as BattleManager line ~431 and the live-autogrind fix in
+		# GameLoop._on_autogrind_battle_ended.
+		var gs: Object = null
+		var tree: SceneTree = Engine.get_main_loop() as SceneTree
+		if tree != null and tree.root != null:
+			gs = tree.root.get_node_or_null("GameState")
+		if gs != null and "game_constants" in gs:
+			var exp_mult: float = clampf(
+				float(gs.game_constants.get("exp_multiplier", 1.0)),
+				0.1, 10.0)
+			var gold_mult: float = clampf(
+				float(gs.game_constants.get("gold_multiplier", 1.0)),
+				0.1, 10.0)
+			exp = int(exp * exp_mult)
+			gold = int(gold * gold_mult)
+
+	# Drop parity with BattleManager (~line 596): pre-fix ludicrous mode gave EXP+gold
+	# but ZERO item drops — rare_item_found never fired and inventory_items interrupts
+	# were dead in headless. Same chance * drop_rate_mult * reward_multiplier math.
+	var drops: Dictionary = {"item_drops": {}, "rare_drops": []}
+	if victory:
+		var enemy_types: Array = []
+		for enemy in _enemy_party:
+			if is_instance_valid(enemy) and enemy.has_method("get_meta") and enemy.has_meta("monster_type"):
+				var mt: String = str(enemy.get_meta("monster_type", ""))
+				if mt != "":
+					enemy_types.append(mt)
+		var monsters_data: Dictionary = {}
+		var drop_rate_mult: float = 1.0
+		var tree2: SceneTree = Engine.get_main_loop() as SceneTree
+		if tree2 != null and tree2.root != null:
+			var enc: Node = tree2.root.get_node_or_null("EncounterSystem")
+			if enc != null and "monster_database" in enc:
+				monsters_data = enc.monster_database
+			var gs2: Node = tree2.root.get_node_or_null("GameState")
+			if gs2 != null and "game_constants" in gs2:
+				drop_rate_mult = clampf(
+					float(gs2.game_constants.get("drop_rate_multiplier", 1.0)),
+					0.1, 10.0)
+		drops = _roll_drop_tables(enemy_types, monsters_data, drop_rate_mult)
 
 	return {
 		"victory": victory,
 		"rounds": _current_round,
 		"exp_gained": exp,
 		"gold_gained": gold,
+		"item_drops": drops["item_drops"],
+		"rare_drops": drops["rare_drops"],
 		"log": _battle_log.duplicate(),
 		"player_party": _player_party,
 		"enemy_party": _enemy_party,
 	}
+
+
+## Pure drop-roll over monster drop_tables. rand_func injectable for deterministic tests.
+## Returns {"item_drops": {item_id: qty}, "rare_drops": [{item, chance}]} — rare = base chance < 0.10.
+static func _roll_drop_tables(enemy_types: Array, monsters_data: Dictionary, drop_rate_mult: float, rand_func: Callable = Callable()) -> Dictionary:
+	var item_drops: Dictionary = {}
+	var rare_drops: Array = []
+	for mt in enemy_types:
+		if not monsters_data.has(mt):
+			continue
+		var record: Dictionary = monsters_data[mt]
+		var reward_mult: float = float(record.get("reward_multiplier", 1.0))
+		for drop in record.get("drop_table", []):
+			var chance: float = float(drop.get("chance", 0.0))
+			var roll: float = rand_func.call() if rand_func.is_valid() else randf()
+			if roll < chance * drop_rate_mult * reward_mult:
+				var item_id: String = str(drop.get("item", ""))
+				if item_id == "":
+					continue
+				item_drops[item_id] = int(item_drops.get(item_id, 0)) + 1
+				if chance < 0.10:
+					rare_drops.append({"item": item_id, "chance": chance})
+	return {"item_drops": item_drops, "rare_drops": rare_drops}
 
 
 func _log(text: String) -> void:

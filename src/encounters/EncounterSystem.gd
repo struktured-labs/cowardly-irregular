@@ -69,9 +69,37 @@ func check_for_encounter() -> bool:
 
 	# Roll for encounter
 	var chance = encounter_rate * encounter_rate_modifier
+	## Tick 468: Ninja job's overworld_abilities.reduced_encounter_rate.
+	## jobs.json authors Ninja with overworld_abilities = {... ,
+	## reduced_encounter_rate: 0.5 ...} ("Ninja: half encounters")
+	## but pre-tick no code read the field. Apply the strongest
+	## party-wide reduction to the rolled chance so a Ninja primary
+	## or secondary actually slows the encounter cadence. Multiplied
+	## (not added) so a 0.5 + 0.5 stack still floors at 0.25 (no
+	## free silence). Independent from passive encounter_skip — the
+	## passive rolls AFTER the rate roll, the job reduces the rate
+	## BEFORE the roll, so both layers compose cleanly.
+	var enc_reduction: float = _party_encounter_rate_reduction()
+	if enc_reduction < 1.0:
+		chance *= enc_reduction
 	var roll = randf()
 
 	if roll < chance:
+		## Tick 440: passive encounter_skip_chance — passives.json
+		## authors encounter_skip's meta_effects.encounter_skip_chance
+		## = 0.25 ("25% chance to skip random encounters entirely")
+		## but pre-fix no code read it. The encounter that would have
+		## fired now rolls against the highest party-wide skip chance
+		## first; on success, the encounter is silently consumed
+		## without firing _trigger_encounter (still advances the
+		## minimum-steps gate so the player can't farm repeated rolls
+		## by staying still). Maximum-wins so multiple skip-passive
+		## bundles take the strongest single source, not stacked.
+		var skip_chance: float = _party_encounter_skip_chance()
+		if skip_chance > 0.0 and randf() < clampf(skip_chance, 0.0, 1.0):
+			steps_since_last_encounter += 1
+			encounter_check_passed.emit()
+			return false
 		_trigger_encounter()
 		return true
 	else:
@@ -80,12 +108,84 @@ func check_for_encounter() -> bool:
 		return false
 
 
+## Tick 468: walk the party for the strongest reduced_encounter_
+## rate among each member's job overworld_abilities. Returns 1.0
+## (no reduction) when no member has the field; a Ninja member
+## drops this to 0.5. Multiplicative compose with the rate so two
+## Ninjas in party would give 0.25 reduction (down from 0.5).
+## Actually we take the MIN here so two Ninjas still grant the
+## authored 0.5x — design intent is "one Ninja halves encounters",
+## not "two compound to 0.25".
+func _party_encounter_rate_reduction() -> float:
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs == null or not ("player_party" in gs):
+		return 1.0
+	var js: Node = get_node_or_null("/root/JobSystem")
+	if js == null or not js.has_method("get_job"):
+		return 1.0
+	var best: float = 1.0
+	for member in gs.player_party:
+		if not (member is Dictionary):
+			continue
+		for slot_key in ["job_id", "secondary_job_id"]:
+			var jid_v: Variant = member.get(slot_key, "")
+			if not (jid_v is String) or (jid_v as String) == "":
+				continue
+			var job_data: Dictionary = js.get_job(str(jid_v))
+			if job_data.is_empty():
+				continue
+			var oa: Variant = job_data.get("overworld_abilities", {})
+			if not (oa is Dictionary):
+				continue
+			var r: float = float(oa.get("reduced_encounter_rate", 1.0))
+			if r > 0.0 and r < best:
+				best = r
+	return best
+
+
+## Tick 440: look up the strongest encounter_skip_chance among the
+## party's equipped passives. Returns 0.0 when GameState isn't
+## available (tests / preload context) or no party member carries a
+## skip passive. Max-wins so multiple skip passives don't stack to
+## near-100% silence — design intent is "one slot can grant the
+## chance", not "stack three to skip everything".
+func _party_encounter_skip_chance() -> float:
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs == null or not ("player_party" in gs):
+		return 0.0
+	var ps: Node = get_node_or_null("/root/PassiveSystem")
+	if ps == null or not ps.has_method("get_passive"):
+		return 0.0
+	var max_chance: float = 0.0
+	for member in gs.player_party:
+		if not (member is Dictionary):
+			continue
+		var ep: Variant = member.get("equipped_passives", [])
+		if not (ep is Array):
+			continue
+		for passive_id in ep:
+			var passive: Dictionary = ps.get_passive(str(passive_id))
+			if passive.is_empty():
+				continue
+			var me: Variant = passive.get("meta_effects", {})
+			if not (me is Dictionary):
+				continue
+			var c: float = float(me.get("encounter_skip_chance", 0.0))
+			if c > max_chance:
+				max_chance = c
+	return max_chance
+
+
 func _trigger_encounter() -> void:
 	"""Trigger a random encounter"""
 	steps_since_last_encounter = 0
 
 	# Generate enemy party
 	var enemy_data = _generate_enemy_party()
+	if enemy_data.is_empty():
+		# every species here was permakilled — the silence IS the reward
+		print("=== The area is quiet. Nothing left here remembers how to attack. ===")
+		return
 
 	encounter_triggered.emit(enemy_data, current_terrain)
 	print("=== ENCOUNTER! (%s terrain) ===" % current_terrain)
@@ -97,6 +197,21 @@ func set_terrain(terrain: String) -> void:
 	"""Set the current terrain type for encounters"""
 	current_terrain = terrain
 	print("Terrain set to: %s" % terrain)
+
+
+## Tick 325: public alias for _generate_enemy_party. OverworldController
+## ._generate_enemies (line 126) calls es.generate_enemy_party() expecting
+## a public API, but EncounterSystem only had the underscore-prefixed
+## private variant — every call hit "Invalid call. Nonexistent function
+## 'generate_enemy_party'" and returned null. The controller's
+## battle_triggered emit then carried an empty/null enemies array, but
+## the parallel ES.encounter_triggered → SceneTransition path provided
+## proper enemy data, so the bug stayed invisible while still spamming
+## errors to the console on every encounter. Exposing the public alias
+## lets the controller call site work as authored without changing
+## the call site (or removing the redundant emit).
+func generate_enemy_party() -> Array:
+	return _generate_enemy_party()
 
 
 func _generate_enemy_party() -> Array:
@@ -123,12 +238,25 @@ func _generate_enemy_party() -> Array:
 	elif size_roll < 0.4:  # 10% chance for 3 enemies
 		party_size = 3
 
+	# Necromancer permakill: exterminated species never spawn again
+	var draw_pool: Array = _filter_permakilled(current_enemy_pool)
+	if draw_pool.is_empty():
+		return []  # whole pool exterminated — _trigger_encounter grants the free pass
+
 	var enemy_party = []
 	for i in range(party_size):
-		var enemy_id = current_enemy_pool[randi() % current_enemy_pool.size()]
+		var enemy_id = draw_pool[randi() % draw_pool.size()]
 		enemy_party.append(_create_enemy_data(enemy_id))
 
 	return enemy_party
+
+
+## Strips permakilled species from a draw pool (permakill's second promise).
+func _filter_permakilled(pool: Array) -> Array:
+	if GameState == null or not ("permakilled_monster_types" in GameState) \
+			or GameState.permakilled_monster_types.is_empty():
+		return pool
+	return pool.filter(func(id): return not str(id) in GameState.permakilled_monster_types)
 
 
 func _try_generate_miniboss() -> Array:
@@ -148,6 +276,9 @@ func _try_generate_miniboss() -> Array:
 	if miniboss_pool.is_empty():
 		return []
 
+	miniboss_pool = _filter_permakilled(miniboss_pool)
+	if miniboss_pool.is_empty():
+		return []
 	var miniboss_id = miniboss_pool[randi() % miniboss_pool.size()]
 	var miniboss_data = _create_enemy_data(miniboss_id)
 
@@ -285,6 +416,14 @@ func _create_enemy_data(enemy_id: String) -> Dictionary:
 			}
 
 		_:
+			# Tick 306: surface unknown enemy_id via push_warning. Pre-fix
+			# silent slime-fallback meant a typo'd id in enemy_pools.json
+			# (or save-format drift with a renamed monster) spawned slimes
+			# everywhere with no diagnostic. To QA the area "wrong
+			# monsters" symptom was downstream from a totally invisible
+			# miss. Same silent-fail class as tick 304's set_enemy_pool
+			# _for_area fix.
+			push_warning("[EncounterSystem] _create_enemy_data: unknown enemy_id '%s' — falling back to slime (typo? monsters.json drift? new id in enemy_pools.json without DB entry?)" % enemy_id)
 			# Unknown enemy, return basic slime from database or hardcoded
 			if monster_database.has("slime"):
 				return _create_enemy_data("slime")
@@ -323,16 +462,55 @@ func set_enemy_pool(enemy_ids: Array[String]) -> void:
 func set_enemy_pool_for_area(area_id: String) -> void:
 	"""Set enemy pool based on area/dungeon"""
 	if enemy_pools.has(area_id):
-		current_enemy_pool = enemy_pools[area_id].duplicate()
-		print("Enemy pool loaded for area: %s" % area_id)
+		## Tick 366: explicit Array → Array[String] coercion. Pre-fix
+		## the plain-Array `.duplicate()` from enemy_pools[area_id]
+		## silently failed to assign into the typed `current_enemy_pool:
+		## Array[String]` field — same documented silent-fail class as
+		## the typed-array JSON save-roundtrip trap (CLAUDE.md Common
+		## Pitfalls). Same coercion idiom as OverworldController._push_
+		## pool_to_encounter_system. With no callers in production code
+		## this was a latent bug; if anything calls this in the future
+		## (Scriptweaver, debug console, save-migration tooling), the
+		## old code would have silently no-op'd while the print()
+		## claimed success.
+		var raw_pool: Variant = enemy_pools[area_id]
+		if raw_pool is Array:
+			var typed: Array[String] = []
+			for entry in raw_pool:
+				typed.append(str(entry))
+			current_enemy_pool = typed
+			print("Enemy pool loaded for area: %s" % area_id)
+		else:
+			push_warning("[EncounterSystem] set_enemy_pool_for_area: enemy_pools['%s'] is not an Array (type=%s) — current_enemy_pool unchanged" % [area_id, typeof(raw_pool)])
 	else:
-		print("Warning: No enemy pool defined for area: %s" % area_id)
+		# Tick 304: surface unknown area_id via push_warning. Pre-fix
+		# print() only — silent in Debugger Errors panel. A typo'd
+		# area_id (or save-format drift with renamed area) returned
+		# silently with current_enemy_pool unchanged, so encounters
+		# stayed on the previous area's pool — invisible to QA.
+		push_warning("[EncounterSystem] set_enemy_pool_for_area: no enemy pool defined for area '%s' — current_enemy_pool unchanged (typo? data/enemy_pools.json drift?)" % area_id)
+
+
+## Sane upper bound for the encounter-rate modifier. Cursed items / debuff
+## abilities can crank encounters up, but >10x base (50%/step at default rate)
+## is already absurd; anything past this is almost certainly a bug. NaN, inf
+## and negative values clamp to 0.0 — equivalent to "no encounters this step",
+## the safest no-op when caller code is malformed.
+const ENCOUNTER_RATE_MODIFIER_MAX: float = 10.0
 
 
 func set_encounter_rate_modifier(modifier: float) -> void:
-	"""Set encounter rate modifier (for items/abilities that affect encounter rate)"""
-	encounter_rate_modifier = modifier
-	print("Encounter rate modifier: %.1fx" % modifier)
+	"""Set encounter rate modifier (for items/abilities that affect encounter rate).
+
+	Clamped to [0.0, ENCOUNTER_RATE_MODIFIER_MAX]. A buggy caller (ability with
+	a sign bug, a corrupted save) could otherwise lock the player into
+	permanent no-encounters (negative product) or NaN math downstream — see
+	get_steps_until_guaranteed_encounter for the log() that breaks under
+	product == 1.0 / out-of-range values."""
+	if is_nan(modifier) or is_inf(modifier):
+		modifier = 0.0
+	encounter_rate_modifier = clampf(modifier, 0.0, ENCOUNTER_RATE_MODIFIER_MAX)
+	print("Encounter rate modifier: %.1fx" % encounter_rate_modifier)
 
 
 ## Special encounters
@@ -343,9 +521,22 @@ func force_next_encounter() -> void:
 
 
 func use_repel(steps: int) -> void:
-	"""Prevent encounters for a number of steps (from repel item)"""
-	repel_steps_remaining = steps
-	print("Repel active for %d steps" % steps)
+	"""Prevent encounters for a number of steps (from repel item).
+
+	Tick 365: STACK with any remaining repel instead of overwriting.
+	Pre-fix using a fresh Repel mid-active-repel discarded the
+	remaining steps from the first one (player burned a 50-step Repel
+	at 47 steps remaining and only got 50, losing 47 effective steps).
+
+	Tick 365: clamp negative inputs to 0. Pre-fix a corrupted /
+	mis-authored repel_steps value (e.g. -10) silently set
+	repel_steps_remaining negative, which `> 0` then read as "no
+	repel active" — the player lost the item for zero effect.
+	"""
+	var add: int = max(0, steps)
+	var prior: int = max(0, repel_steps_remaining)
+	repel_steps_remaining = prior + add
+	print("Repel active for %d steps (added %d to %d remaining)" % [repel_steps_remaining, add, prior])
 
 
 ## Enemy pool loading
@@ -353,20 +544,34 @@ func _load_enemy_pools() -> void:
 	"""Load enemy pools for different areas"""
 	var data_path = "res://data/enemy_pools.json"
 
-	if FileAccess.file_exists(data_path):
-		var file = FileAccess.open(data_path, FileAccess.READ)
-		if file:
-			var json_string = file.get_as_text()
-			file.close()
+	if not FileAccess.file_exists(data_path):
+		push_warning("[EncounterSystem] enemy_pools.json not found at %s — falling back to 7-pool hardcoded defaults (33 real pools missing)" % data_path)
+		_create_default_enemy_pools()
+		return
 
-			var json = JSON.new()
-			if json.parse(json_string) == OK:
-				enemy_pools = json.data
-				print("Loaded %d enemy pools" % enemy_pools.size())
-				return
+	var file = FileAccess.open(data_path, FileAccess.READ)
+	if not file:
+		push_warning("[EncounterSystem] enemy_pools.json exists but FileAccess.open failed — permissions issue? — falling back to defaults")
+		_create_default_enemy_pools()
+		return
 
-	# Create default enemy pools
-	_create_default_enemy_pools()
+	var json_string = file.get_as_text()
+	file.close()
+
+	var json = JSON.new()
+	var parse_result := json.parse(json_string)
+	if parse_result != OK:
+		push_warning("[EncounterSystem] enemy_pools.json parse error: %s — falling back to defaults" % json.get_error_message())
+		_create_default_enemy_pools()
+		return
+
+	if not (json.data is Dictionary):
+		push_warning("[EncounterSystem] enemy_pools.json parsed but root is not a Dictionary — falling back to defaults")
+		_create_default_enemy_pools()
+		return
+
+	enemy_pools = json.data
+	print("Loaded %d enemy pools" % enemy_pools.size())
 
 
 func _create_default_enemy_pools() -> void:
@@ -388,30 +593,54 @@ func _load_monster_database() -> void:
 	"""Load monster data from monsters.json"""
 	var data_path = "res://data/monsters.json"
 
-	if FileAccess.file_exists(data_path):
-		var file = FileAccess.open(data_path, FileAccess.READ)
-		if file:
-			var json_string = file.get_as_text()
-			file.close()
+	if not FileAccess.file_exists(data_path):
+		push_warning("[EncounterSystem] monsters.json not found at %s — monster_database empty, all encounters will use hardcoded BattleManager fallbacks" % data_path)
+		return
 
-			var json = JSON.new()
-			if json.parse(json_string) == OK:
-				monster_database = json.data
-				print("Loaded %d monsters from database" % monster_database.size())
-				return
+	var file = FileAccess.open(data_path, FileAccess.READ)
+	if not file:
+		push_warning("[EncounterSystem] monsters.json exists but FileAccess.open failed — monster_database empty")
+		return
 
-	print("Warning: Could not load monster database")
+	var json_string = file.get_as_text()
+	file.close()
+
+	var json = JSON.new()
+	var parse_result := json.parse(json_string)
+	if parse_result != OK:
+		push_warning("[EncounterSystem] monsters.json parse error: %s — monster_database empty" % json.get_error_message())
+		return
+
+	if not (json.data is Dictionary):
+		push_warning("[EncounterSystem] monsters.json parsed but root is not a Dictionary — monster_database empty")
+		return
+
+	monster_database = json.data
+	print("Loaded %d monsters from database" % monster_database.size())
 
 
 ## Utility
 func get_steps_until_guaranteed_encounter() -> int:
-	"""Get approximate steps until an encounter is very likely (statistical)"""
-	if encounter_rate <= 0:
+	"""Approximate steps until an encounter is very likely (statistical).
+
+	Uses the effective per-step probability (encounter_rate * modifier) so
+	abilities that suppress (modifier=0) or amplify (modifier>1) encounters
+	are reflected in the estimate.
+
+	Returns -1 when effective probability is <= 0 (encounters are off /
+	suppressed). Returns 1 when effective probability is >= 1 (every step
+	guarantees an encounter). The interior log() math is undefined at the
+	0 and 1 boundaries — guarding those at the API edge is cleaner than
+	hoping callers never observe a stray NaN."""
+	var effective: float = encounter_rate * encounter_rate_modifier
+	if effective <= 0.0:
 		return -1  # Never
+	if effective >= 1.0:
+		return 1  # Guaranteed every step
 	# After N steps, probability of at least one encounter is high
 	# P(encounter in N steps) = 1 - (1 - rate)^N
 	# For 99% chance: N = log(0.01) / log(1 - rate)
-	return int(ceil(log(0.01) / log(1.0 - encounter_rate * encounter_rate_modifier)))
+	return int(ceil(log(0.01) / log(1.0 - effective)))
 
 
 func reset_encounter_counter() -> void:

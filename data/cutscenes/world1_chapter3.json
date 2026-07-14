@@ -40,68 +40,12 @@
       "duration": 0.3
     },
     {
-      "type": "play_sfx",
-      "sfx": "armor_clank"
-    },
-    {
       "type": "narration",
-      "lines": [
-        "In the second chamber, a skeleton in ancient knight's plate stood at parade rest.",
-        "It turned to face the Fighter. It raised one gauntleted fist to the side of its skull.",
-        "It saluted."
-      ]
-    },
-    {
-      "type": "dialogue",
-      "lines": [
-        {
-          "speaker": "Rogue",
-          "text": "What.",
-          "theme": "rogue",
-          "portrait": "rogue"
-        },
-        {
-          "speaker": "Cleric",
-          "text": "It's being chivalric.",
-          "theme": "cleric",
-          "portrait": "cleric"
-        },
-        {
-          "speaker": "Mage",
-          "text": "It's a skeleton.",
-          "theme": "mage",
-          "portrait": "mage"
-        },
-        {
-          "speaker": "Bard",
-          "text": "Chivalric skeletons are not documented. And yet here we are.",
-          "theme": "bard",
-          "portrait": "bard"
-        }
-      ]
-    },
-    {
-      "type": "narration",
-      "text": "The Fighter returned the salute. Without hesitation. Without irony."
+      "text": "The antechamber held a knight in ancient plate — still at parade rest, waiting. The party moved past. It was the Fighter's duel to answer, when the moment came."
     },
     {
       "type": "wait",
-      "duration": 0.8
-    },
-    {
-      "type": "narration",
-      "lines": [
-        "The fight was the most courteous exchange of violence the cave had ever witnessed.",
-        "When it finally fell, the Fighter found an inscription on the inside of the visor: SERVE WITH HONOR. REST WITH PEACE."
-      ]
-    },
-    {
-      "type": "narration",
-      "text": "The Fighter stood without speaking. The Bard, for once, didn't narrate."
-    },
-    {
-      "type": "wait",
-      "duration": 0.8
+      "duration": 0.6
     },
     {
       "type": "dialogue",

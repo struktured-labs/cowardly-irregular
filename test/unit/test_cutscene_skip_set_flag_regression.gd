@@ -53,19 +53,20 @@ func test_skip_path_calls_apply_remaining_set_flag_steps() -> void:
 	# extracted helper (not be inlined). Catches anyone re-inlining the
 	# loop, which is fine logically but loses the unit-test surface and
 	# makes future refactors riskier.
+	# 2026-07-02 abort semantics: the guard is now
+	# `if _skipping and not _aborted:` — player skips still apply the
+	# remaining flags; ABORTED runs apply nothing (an aborted spotlight
+	# must replay, so its flags must not set).
 	var text = _read(DIRECTOR_PATH)
-	var skip_idx = text.find("if _skipping:")
-	assert_true(skip_idx > -1, "_start_cutscene must still have an `if _skipping:` block after the step loop")
-	# Need to find the right one — there are multiple. Look for the one
-	# that's followed by the helper call within ~200 chars.
+	var skip_idx = text.find("if _skipping and not _aborted:")
+	assert_true(skip_idx > -1, "step loop must apply remaining flags on skip but NOT on abort")
 	while skip_idx > -1:
 		var window = text.substr(skip_idx, 200)
 		if window.find("_apply_remaining_set_flag_steps(steps") > -1:
-			# Found it.
 			return
-		skip_idx = text.find("if _skipping:", skip_idx + 1)
+		skip_idx = text.find("if _skipping and not _aborted:", skip_idx + 1)
 	assert_true(false,
-		"No `if _skipping:` block calls _apply_remaining_set_flag_steps(steps, ...) — helper is orphaned")
+		"No skip-not-abort block calls _apply_remaining_set_flag_steps(steps, ...) — helper is orphaned")
 
 
 func test_helper_fires_set_flag_for_each_remaining_set_flag_step() -> void:
@@ -127,3 +128,38 @@ func test_helper_handles_empty_remaining_steps() -> void:
 	# Empty steps array entirely
 	d._apply_remaining_set_flag_steps([], 0)
 	# No crash → pass
+
+
+func test_skip_path_still_arms_five_marks_finale_gate() -> void:
+	# Orrery finale-gate interaction (v3.33.49): the five-marks emitter
+	# lives inside _step_set_flag, and the skip path routes through the
+	# same function — so a player who SKIPS an orrery cinematic must
+	# still arm quest_wiring_fool_card_five_marks when marks hit 5.
+	# Without this pin, a refactor that moves the emitter out of
+	# _step_set_flag (e.g. into the cutscene-finished handler) would
+	# silently break skipped-cutscene chain progression.
+	var prev_marks = GameState.game_constants.get("cutscene_flag_fool_card_marks", null)
+	var prev_gate: bool = GameState.get_story_flag("quest_wiring_fool_card_five_marks")
+
+	GameState.game_constants.erase("cutscene_flag_fool_card_marks")
+	GameState.set_story_flag("quest_wiring_fool_card_five_marks", false)
+
+	var script = load(DIRECTOR_PATH)
+	var d = script.new()
+	add_child_autofree(d)
+
+	# Simulate skipping mid-cutscene with the marks-5 set_flag still ahead.
+	var steps: Array = [
+		{"type": "dialogue", "speaker": "Orrery", "text": "The fifth mark."},
+		{"type": "set_flag", "flag": "fool_card_marks", "value": 5},
+	]
+	d._apply_remaining_set_flag_steps(steps, 1)
+
+	assert_true(GameState.get_story_flag("quest_wiring_fool_card_five_marks"),
+		"Skipping the finale-adjacent orrery cinematic must still arm the five-marks gate — marks landed via the skip path")
+
+	# Restore
+	GameState.game_constants.erase("cutscene_flag_fool_card_marks")
+	if prev_marks != null:
+		GameState.game_constants["cutscene_flag_fool_card_marks"] = prev_marks
+	GameState.set_story_flag("quest_wiring_fool_card_five_marks", prev_gate)

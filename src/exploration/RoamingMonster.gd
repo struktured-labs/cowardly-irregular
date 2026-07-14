@@ -94,10 +94,14 @@ func _apply_frame(row: int, col: int) -> void:
 	_sprite.region_rect = Rect2(col * FRAME_W, row * FRAME_H, FRAME_W, FRAME_H)
 
 
+## Touch radius tuned to ~1.4x the 32px sprite half-width — encounter fires only on actual sprite overlap.
+const TOUCH_RADIUS_PX: float = 48.0
+
+
 func _setup_collision() -> void:
 	_collision = CollisionShape2D.new()
 	var shape = CircleShape2D.new()
-	shape.radius = 112.0  # Compensates for Mode 7 perspective foreshortening
+	shape.radius = TOUCH_RADIUS_PX
 	_collision.shape = shape
 	add_child(_collision)
 

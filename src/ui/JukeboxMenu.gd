@@ -6,38 +6,10 @@ class_name JukeboxMenu
 
 signal closed()
 
-## All available tracks: [id, display_name]
-const TRACKS = [
-	["title", "Title Screen"],
-	["battle", "Battle (Generic)"],
-	["boss", "Boss Battle"],
-	["boss_rat_king", "Boss - Rat King"],
-	["danger", "Danger / Near Death"],
-	["victory", "Victory Fanfare"],
-	["game_over", "Game Over"],
-	["overworld", "Overworld (Generic)"],
-	["overworld_suburban", "Overworld - Suburban"],
-	["overworld_steampunk", "Overworld - Steampunk"],
-	["overworld_industrial", "Overworld - Industrial"],
-	["overworld_futuristic", "Overworld - Futuristic"],
-	["overworld_abstract", "Overworld - Abstract"],
-	["village", "Village"],
-	["cave", "Cave / Dungeon"],
-	["battle_suburban", "Battle - Suburban"],
-	["battle_urban", "Battle - Urban"],
-	["battle_industrial", "Battle - Industrial"],
-	["battle_digital", "Battle - Digital"],
-	["battle_void", "Battle - Void"],
-	["battle_slime", "Battle - Slime"],
-	["battle_bat", "Battle - Bat"],
-	["battle_mushroom", "Battle - Mushroom"],
-	["battle_imp", "Battle - Imp"],
-	["battle_goblin", "Battle - Goblin"],
-	["battle_skeleton", "Battle - Skeleton"],
-	["battle_wolf", "Battle - Wolf"],
-	["battle_ghost", "Battle - Ghost"],
-	["battle_snake", "Battle - Snake"],
-]
+const MUSIC_MANIFEST := "res://data/music_manifest.json"
+
+# Tick 199: TRACKS now loads from music_manifest.json. Pre-fix the const had 29 stale entries — many ids ("battle", "boss", "overworld", "cave", "battle_urban", "battle_void") didn't match the live 150-entry manifest, so half the jukebox played nothing or fell to procedural fallback.
+var TRACKS: Array = []  # [[id, display_name], ...] populated by _load_manifest_tracks() in _ready
 
 ## How many rows to show at once in the scroll window
 const VISIBLE_ROWS = 14
@@ -52,6 +24,13 @@ const SELECTED_COLOR = Color(0.2, 0.3, 0.5)
 const TEXT_COLOR = Color(1.0, 1.0, 1.0)
 const DISABLED_COLOR = Color(0.4, 0.4, 0.4)
 const PLAYING_COLOR = Color(0.3, 1.0, 0.4)
+# Tick 201: per-category tints — vertical color bands in the sorted list show category boundaries at a glance. PLAYING_COLOR still overrides for the active track.
+const CAT_BATTLE_COLOR := Color(0.95, 0.55, 0.55)   # muted red — combat
+const CAT_BOSS_COLOR := Color(0.95, 0.80, 0.40)     # gold — boss
+const CAT_OVERWORLD_COLOR := Color(0.50, 0.85, 0.95) # cyan — open world
+const CAT_VILLAGE_COLOR := Color(0.65, 0.80, 1.00)  # pastel blue — settlement
+const CAT_DUNGEON_COLOR := Color(0.80, 0.65, 1.00)  # purple — interior dungeon
+const CAT_DANGER_COLOR := Color(0.95, 0.65, 0.30)   # orange — alert
 
 ## UI State
 var selected_index: int = 0
@@ -74,11 +53,90 @@ var _now_playing_label: Label
 
 
 func _ready() -> void:
+	# Tick 199: load tracks from manifest before _build_ui so the list reflects live music.
+	TRACKS = _load_manifest_tracks()
 	# Snapshot the currently-playing music so _close_menu can restore it
 	# instead of leaving silence behind.
 	if SoundManager and "_current_music" in SoundManager:
 		_resume_track = SoundManager._current_music
 	_build_ui()
+
+
+# Tick 199: load + sort tracks from music_manifest.json. Loud-fail on missing/malformed file so a broken manifest doesn't silently render an empty jukebox.
+static func _load_manifest_tracks() -> Array:
+	if not FileAccess.file_exists(MUSIC_MANIFEST):
+		push_warning("[JukeboxMenu] music_manifest.json not found — jukebox empty")
+		return []
+	var f := FileAccess.open(MUSIC_MANIFEST, FileAccess.READ)
+	if not f:
+		push_warning("[JukeboxMenu] music_manifest.json open failed (error %d)" % FileAccess.get_open_error())
+		return []
+	var raw := f.get_as_text()
+	f.close()
+	var json := JSON.new()
+	if json.parse(raw) != OK:
+		push_warning("[JukeboxMenu] music_manifest.json parse error: %s" % json.get_error_message())
+		return []
+	if not (json.data is Dictionary) or not json.data.has("tracks"):
+		push_warning("[JukeboxMenu] music_manifest.json missing 'tracks' root key")
+		return []
+	var tracks_map = json.data["tracks"]
+	if not (tracks_map is Dictionary):
+		push_warning("[JukeboxMenu] music_manifest.json 'tracks' is not a Dictionary")
+		return []
+	var ids: Array = tracks_map.keys()
+	ids.sort()
+	var out: Array = []
+	for id in ids:
+		var entry = tracks_map.get(id, {})
+		var title: String = ""
+		var duration: float = 0.0
+		if entry is Dictionary:
+			title = str(entry.get("title", ""))
+			duration = float(entry.get("duration", 0.0))
+		var display: String = title if title != "" else _titlecase(str(id))
+		# Tick 200: duration helps the player skim 150 entries — append "M:SS" when authored (>0 means rendered).
+		out.append([str(id), display, duration])
+	return out
+
+
+# Tick 201: prefix-based category lookup so the sorted list reads as vertical color bands. Unknown ids (title, victory, game_over, autogrind, ...) stay TEXT_COLOR.
+static func _category_color(track_id: String) -> Color:
+	if track_id.begins_with("boss_") or track_id == "boss":
+		return CAT_BOSS_COLOR
+	if track_id.begins_with("battle_") or track_id == "battle":
+		return CAT_BATTLE_COLOR
+	if track_id.begins_with("overworld_") or track_id == "overworld":
+		return CAT_OVERWORLD_COLOR
+	if track_id.begins_with("village_") or track_id == "village":
+		return CAT_VILLAGE_COLOR
+	if track_id.begins_with("dungeon_") or track_id == "dungeon":
+		return CAT_DUNGEON_COLOR
+	if track_id.begins_with("danger_") or track_id == "danger":
+		return CAT_DANGER_COLOR
+	return TEXT_COLOR
+
+
+# Tick 200: M:SS for non-zero durations; empty string when unrendered (duration 0.0 in manifest signals pending/no-audio).
+static func _format_duration(sec: float) -> String:
+	if sec <= 0.0:
+		return ""
+	var total: int = int(round(sec))
+	var minutes: int = total / 60
+	var seconds: int = total % 60
+	return "%d:%02d" % [minutes, seconds]
+
+
+# Tick 199: proper multi-word title-case (String.capitalize() only does first letter — see tick 186).
+static func _titlecase(s: String) -> String:
+	if s == "":
+		return ""
+	var parts: PackedStringArray = s.split("_")
+	for i in parts.size():
+		if parts[i].length() == 0:
+			continue
+		parts[i] = parts[i][0].to_upper() + parts[i].substr(1).to_lower()
+	return " ".join(parts)
 
 
 func _build_ui() -> void:
@@ -107,14 +165,14 @@ func _build_ui() -> void:
 	var title = Label.new()
 	title.text = "JUKEBOX"
 	title.position = Vector2(16, 8)
-	title.add_theme_font_size_override("font_size", 18)
+	title.add_theme_font_size_override("font_size", TextScale.scaled(18))
 	title.add_theme_color_override("font_color", TEXT_COLOR)
 	_panel.add_child(title)
 
 	var subtitle = Label.new()
 	subtitle.text = "[DEBUG] Music track browser"
 	subtitle.position = Vector2(16, 30)
-	subtitle.add_theme_font_size_override("font_size", 10)
+	subtitle.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	subtitle.add_theme_color_override("font_color", DISABLED_COLOR)
 	_panel.add_child(subtitle)
 
@@ -131,7 +189,7 @@ func _build_ui() -> void:
 
 		var lbl = Label.new()
 		lbl.position = Vector2(10, 6)
-		lbl.add_theme_font_size_override("font_size", 13)
+		lbl.add_theme_font_size_override("font_size", TextScale.scaled(13))
 		lbl.add_theme_color_override("font_color", TEXT_COLOR)
 		highlight.add_child(lbl)
 		_row_labels.append(lbl)
@@ -144,7 +202,7 @@ func _build_ui() -> void:
 	scroll_up_lbl.name = "ScrollUp"
 	scroll_up_lbl.text = ""
 	scroll_up_lbl.position = Vector2(_panel.size.x - 24, 52)
-	scroll_up_lbl.add_theme_font_size_override("font_size", 12)
+	scroll_up_lbl.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	scroll_up_lbl.add_theme_color_override("font_color", DISABLED_COLOR)
 	_panel.add_child(scroll_up_lbl)
 
@@ -152,7 +210,7 @@ func _build_ui() -> void:
 	scroll_dn_lbl.name = "ScrollDown"
 	scroll_dn_lbl.text = ""
 	scroll_dn_lbl.position = Vector2(_panel.size.x - 24, 52 + VISIBLE_ROWS * ROW_HEIGHT - ROW_HEIGHT)
-	scroll_dn_lbl.add_theme_font_size_override("font_size", 12)
+	scroll_dn_lbl.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	scroll_dn_lbl.add_theme_color_override("font_color", DISABLED_COLOR)
 	_panel.add_child(scroll_dn_lbl)
 
@@ -160,7 +218,7 @@ func _build_ui() -> void:
 	_now_playing_label = Label.new()
 	_now_playing_label.position = Vector2(16, _panel.size.y - 48)
 	_now_playing_label.size = Vector2(_panel.size.x - 32, 18)
-	_now_playing_label.add_theme_font_size_override("font_size", 11)
+	_now_playing_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	_now_playing_label.add_theme_color_override("font_color", PLAYING_COLOR)
 	_now_playing_label.name = "NowPlaying"
 	_panel.add_child(_now_playing_label)
@@ -170,7 +228,7 @@ func _build_ui() -> void:
 	var footer = Label.new()
 	footer.text = "Up/Down: Navigate   A: Play   B: Stop & Back"
 	footer.position = Vector2(16, _panel.size.y - 28)
-	footer.add_theme_font_size_override("font_size", 12)
+	footer.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
 	_panel.add_child(footer)
 
@@ -185,10 +243,14 @@ func _refresh_list() -> void:
 	for i in range(VISIBLE_ROWS):
 		var track_idx = scroll_offset + i
 		if track_idx < total:
-			_row_labels[i].text = TRACKS[track_idx][1]
+			# Tick 200: append M:SS duration so the player can spot long vs short loops at a glance.
+			var display: String = TRACKS[track_idx][1]
+			var dur_str: String = _format_duration(TRACKS[track_idx][2] if TRACKS[track_idx].size() > 2 else 0.0)
+			_row_labels[i].text = ("%s   ·   %s" % [display, dur_str]) if dur_str != "" else display
 			var track_id = TRACKS[track_idx][0]
+			# Tick 201: category color band replaces the bare TEXT_COLOR fallback. PLAYING_COLOR still wins for the active track.
 			_row_labels[i].add_theme_color_override("font_color",
-				PLAYING_COLOR if track_id == _currently_playing else TEXT_COLOR)
+				PLAYING_COLOR if track_id == _currently_playing else _category_color(track_id))
 			_row_highlights[i].modulate.a = 1.0
 		else:
 			_row_labels[i].text = ""
@@ -328,12 +390,24 @@ func _on_row_hover(local_row: int) -> void:
 
 func _close_menu() -> void:
 	if SoundManager:
+		# Compare against what's ACTUALLY playing right now, not against
+		# _currently_playing (which is only set when the user clicks Play
+		# inside the jukebox). Pre-fix: if the player opened the jukebox
+		# while music was playing and closed without clicking anything,
+		# the branch below saw _currently_playing == "" and re-fired
+		# play_music(_resume_track) — restarting the SAME track that was
+		# already playing seamlessly. Audible hitch on every "just
+		# browsed and backed out" close. Comparing against the live
+		# current_music makes this branch a true no-op in that case.
+		var current_track: String = ""
+		if "_current_music" in SoundManager:
+			current_track = str(SoundManager._current_music)
 		# Resume the track that was playing before the jukebox opened, if any.
 		# Falls back to stopping music if there was no prior track.
-		if _resume_track != "" and _resume_track != _currently_playing:
+		if _resume_track != "" and _resume_track != current_track:
 			if SoundManager.has_method("play_music"):
 				SoundManager.play_music(_resume_track)
-		elif _resume_track == "":
+		elif _resume_track == "" and current_track != "":
 			# Smooth fade rather than hard cut — the jukebox was playing
 			# but the player opened it from silent context, so we're
 			# returning them to silence. Fade keeps the close from feeling

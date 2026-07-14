@@ -1,0 +1,88 @@
+{
+  "id": "world2_configuration_pending",
+  "title": "Configuration Pending",
+  "world": 2,
+  "giver": {
+    "npc_id": "surplus_teen_w2",
+    "display_name": "Medieval Surplus Teenager",
+    "location": {"map_id": "maple_heights_strip_mall", "near": "medieval_surplus_counter"},
+    "spawn_flag": ""
+  },
+  "description": "The strip mall keeps rearranging. The candle shop is where the armory was. The armory is where the yogurt place was. The yogurt place is gone, but its owner waits in the parking lot. The strip mall is trying to find the right configuration. Nobody knows what it's looking for.",
+  "playstyle_tags": ["completionist", "observation", "meta_forward"],
+  "dialogue": {
+    "offer": [
+      {"speaker": "Surplus Teen", "text": "It does this. The whole mall. Nobody knows why. The HOA filed seventeen cease-and-desist orders at itself by accident because the addresses kept changing.", "theme": "villager"},
+      {"speaker": "Surplus Teen", "text": "I've been logging it. Two months, forty-seven configurations. If you actually want to understand it — and literally nobody has wanted to before you — go talk to the owners. Document what moved.", "theme": "villager"}
+    ],
+    "accept": [
+      {"speaker": "Surplus Teen", "text": "Candle lady's furious, armory guy's philosophical, and the yogurt man just... stands where his shop used to be. Start with them. I'll cross-reference.", "theme": "villager"}
+    ],
+    "decline": [
+      {"speaker": "Surplus Teen", "text": "Yeah, fair. It's a mall that moves. You get used to it, which is honestly the weird part.", "theme": "villager"}
+    ],
+    "in_progress": [
+      {"speaker": "Surplus Teen", "text": "Get the old survey maps too — there's a retired surveyor on Birch Court. His maps show the mall in two different places on two different official dates. OFFICIAL dates.", "theme": "villager"}
+    ],
+    "ready_to_turn_in": [
+      {"speaker": "Surplus Teen", "text": "Okay. With your owner statements plus the surveyor's maps plus my log — I can actually finish the model now.", "theme": "villager"}
+    ],
+    "complete": [
+      {"speaker": "Surplus Teen", "text": "It's an optimization loop. The mall is testing configurations to maximize... something. Foot traffic. Adjacency. Something I don't have a word for.", "theme": "villager"},
+      {"speaker": "Surplus Teen", "text": "Configuration forty-seven has been stable longer than any other. It's close to whatever it's looking for. It's like it knows the answer is nearby — it's in the neighborhood of the answer.", "theme": "villager"},
+      {"speaker": "Surplus Teen", "text": "One config, weeks back, had the armory right up against an empty gap. The gap is a parking space now. The gap is where the portal showed up. Take the log. I have it memorized anyway.", "theme": "villager"}
+    ]
+  },
+  "objectives": [
+    {
+      "step": 1,
+      "description": "Take the teenager's documentation job.",
+      "type": "talk",
+      "target_npc": "surplus_teen_w2",
+      "flag_on_complete": "quest_world2_configuration_pending_accepted"
+    },
+    {
+      "step": 2,
+      "description": "Interview the shop owners about what moved.",
+      "type": "custom",
+      "required_flag": "quest_world2_configuration_pending_owners_interviewed",
+      "flag_on_complete": "quest_world2_configuration_pending_owners_interviewed"
+    },
+    {
+      "step": 3,
+      "description": "Borrow the retired surveyor's old maps.",
+      "type": "talk",
+      "target_npc": "retired_surveyor_w2",
+      "required_flag": "quest_world2_configuration_pending_owners_interviewed",
+      "flag_on_complete": "quest_world2_configuration_pending_maps_obtained"
+    },
+    {
+      "step": 4,
+      "description": "Bring everything back for the teenager's model.",
+      "type": "talk",
+      "target_npc": "surplus_teen_w2",
+      "required_flag": "quest_world2_configuration_pending_maps_obtained"
+    }
+  ],
+  "rewards": {
+    "gold": 0,
+    "exp": 250,
+    "items": [
+      {"item_id": "configuration_log", "count": 1}
+    ],
+    "job_variants": {
+      "mage": {
+        "description": "Dialogue-only: the Science Nerd runs the configuration data statistically — each configuration converges on a mathematical attractor whose final geometry matches the Corrupted Forest's map from W1. The strip mall is trying to become a map of somewhere it's never been.",
+        "items": [
+          {"item_id": "configuration_log", "count": 1}
+        ]
+      }
+    }
+  },
+  "flag_on_complete": "quest_world2_configuration_pending_complete",
+  "unlocks_dialogue": [
+    {"npc_id": "madame_orrery_w2", "note": "Showing Orrery the log: 'It's not optimizing for foot traffic. It's orienting toward the portal. Something here wants to be close to the in-between.'"}
+  ],
+  "cross_world_connection": "W3: the Grand Mechanism's gear layout shifts subtly between visits. With the configuration_log in inventory the Lab Technician notices: 'The mechanism is rearranging. Not randomly. Same pattern as the strip mall.' Cogsworth blueprints carry seventeen configuration variations in the margin.",
+  "_wiring_notes": "Step 2 emitter quest_world2_configuration_pending_owners_interviewed: fires after talking to all three owner NPCs — candle_shop_owner_w2 (furious), armory_owner_w2 (philosophical), yogurt_owner_w2 (standing in the parking lot where his shop used to be: 'It'll come back. It always comes back. Just not where I left it.'). Same all-N-talks counting pattern as the chicken puzzle. retired_surveyor_w2 is a new Birch Court NPC. Post-quest flavor (optional, cheap): on subsequent strip-mall visits, nudge the mall's entrance orientation toward wherever the party entered from — the log's 'STABLE — CLOSE' annotation made literal."
+}

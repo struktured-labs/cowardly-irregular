@@ -137,7 +137,7 @@ func _create_character_panel(panel_size: Vector2) -> Control:
 	if character.secondary_job_id != "":
 		var sec_job = JobSystem.get_job(character.secondary_job_id)
 		var sec_label = Label.new()
-		sec_label.text = "/ %s" % sec_job.get("name", character.secondary_job_id)
+		sec_label.text = "/ %s" % sec_job.get("name", character.secondary_job_id.replace("_", " ").capitalize())
 		sec_label.position = Vector2(8, 42)
 		sec_label.add_theme_font_size_override("font_size", 10)
 		sec_label.add_theme_color_override("font_color", SECONDARY_COLOR)
@@ -267,7 +267,7 @@ func _get_current_job_name(slot_index: int) -> String:
 		1:  # Secondary
 			if character.secondary_job_id != "":
 				var sec_job = JobSystem.get_job(character.secondary_job_id)
-				return sec_job.get("name", character.secondary_job_id)
+				return sec_job.get("name", character.secondary_job_id.replace("_", " ").capitalize())
 			return "(none)"
 	return "(none)"
 
@@ -350,7 +350,7 @@ func _create_stats_panel(panel_size: Vector2) -> Control:
 		for ability_id in character.job["abilities"]:
 			var ability = JobSystem.get_ability(ability_id)
 			var ability_label = Label.new()
-			ability_label.text = ability.get("name", ability_id)
+			ability_label.text = ability.get("name", ability_id.replace("_", " ").capitalize())
 			ability_label.position = Vector2(16, abilities_y)
 			ability_label.add_theme_font_size_override("font_size", 10)
 			ability_label.add_theme_color_override("font_color", TEXT_COLOR)
@@ -432,11 +432,15 @@ func _get_available_jobs() -> Array:
 	for job_id in JobSystem.jobs:
 		if job_id == exclude_id:
 			continue
-		var job_data = JobSystem.get_job(job_id)
-		var job_type = job_data.get("type", 0)
-		# Starter jobs (type 0) always available
-		# Advanced (1) and Meta (2) require debug mode or unlock
-		if job_type > 0 and not debug_mode:
+		## Tick 467: route through JobSystem.is_job_unlocked instead
+		## of the old debug-mode-only gate. The helper reads
+		## jobs.json's unlock_condition field (story chapter / boss
+		## count / completion / achievement) so progressing through
+		## the story actually surfaces advanced + meta jobs at the
+		## right narrative beats. Debug mode still passes the check
+		## (preserves the dev shortcut). debug_mode local kept as a
+		## belt-and-suspenders for callers that toggle mid-frame.
+		if not JobSystem.is_job_unlocked(job_id) and not debug_mode:
 			continue
 		jobs_list.append(job_id)
 
@@ -482,8 +486,12 @@ func _create_job_row(job_id: String, index: int) -> Control:
 		row.add_child(none_desc)
 		return row
 
-	# Job name with type tag
-	var job_type = job_data.get("type", 0)
+	## Tick 139: same JSON-float-vs-int-enum class as the ItemsMenu
+	## tick 138 fix. job_data.get("type") returns float from JSON;
+	## match against int literals never matches, so advanced and
+	## meta jobs silently rendered with NO type tag — players couldn't
+	## distinguish them in the menu. int() coercion fixes the match.
+	var job_type: int = int(job_data.get("type", 0))
 	var type_tag = ""
 	var tag_color = PRIMARY_COLOR if selected_slot == 0 else SECONDARY_COLOR
 	match job_type:
@@ -495,7 +503,7 @@ func _create_job_row(job_id: String, index: int) -> Control:
 			tag_color = Color(0.9, 0.4, 0.9)  # Purple for meta
 
 	var name_label = Label.new()
-	name_label.text = job_data.get("name", job_id) + type_tag
+	name_label.text = job_data.get("name", job_id.replace("_", " ").capitalize()) + type_tag
 	name_label.position = Vector2(24, 4)
 	name_label.add_theme_font_size_override("font_size", 12)
 	name_label.add_theme_color_override("font_color", tag_color)
@@ -518,7 +526,7 @@ func _create_job_row(job_id: String, index: int) -> Control:
 		var ability_names = []
 		for ability_id in job_data["abilities"]:
 			var ability = JobSystem.get_ability(ability_id)
-			ability_names.append(ability.get("name", ability_id))
+			ability_names.append(ability.get("name", ability_id.replace("_", " ").capitalize()))
 		abilities_text = ", ".join(ability_names)
 
 	if abilities_text != "":
@@ -560,10 +568,8 @@ func _get_stat_comparison(new_job: Dictionary) -> String:
 		var new_val = new_mods.get(stat_name, 0)
 		var diff = new_val - current_val
 		if diff != 0:
-			var short_name = stat_name.substr(0, 3).to_upper()
-			if stat_name == "max_hp":
-				short_name = "HP"
-			parts.append("%s%d %s" % ["+" if diff > 0 else "", diff, short_name])
+			# Tick 211: shared StatNames handles HP/MP acronyms — local max_hp guard no longer needed.
+			parts.append("%s%d %s" % ["+" if diff > 0 else "", diff, StatNames.short_code(stat_name)])
 
 	return "  ".join(parts)
 

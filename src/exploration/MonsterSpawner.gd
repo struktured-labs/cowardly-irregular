@@ -16,15 +16,58 @@ const MIN_MONSTER_SEPARATION: float = 64.0
 const DESPAWN_DISTANCE: float = 640.0
 const SPAWN_BUFFER: float = 480.0
 const CHECK_INTERVAL: float = 3.0
-const MAP_WIDTH: int = 100
-const MAP_HEIGHT: int = 70
+## Per-instance map dimensions (in tiles). Default to the W1 OverworldScene
+## size (100x70), but each overworld script should call set_map_size with its
+## own MAP_WIDTH / MAP_HEIGHT after add_child so candidate spawn positions
+## clamp to the actual playable area.
+##
+## Tick 84: pre-fix these were `const`, so W2-W6 (smaller maps: 40x35 to
+## 60x50) tried to spawn monsters in coordinates well outside their actual
+## bounds. _is_impassable_tile rejected most of them via "no tile data" but
+## that meant ~50-70% of spawn attempts were wasted, reducing effective
+## monster density in the smaller worlds (worst case W6 Abstract: 40*35 /
+## 100*70 = 20% of attempted area was real).
+var map_width: int = 100
+var map_height: int = 70
+
+
+func set_map_size(w: int, h: int) -> void:
+	"""Configure per-overworld map dimensions. Called by each overworld
+	script after add_child. Spawn-position picker clamps candidates to
+	(TILE_SIZE, map_width*TILE_SIZE - TILE_SIZE) so attempts land
+	inside the actual playable area instead of wasting on dead space."""
+	if w > 0:
+		map_width = w
+	if h > 0:
+		map_height = h
 
 ## Safe zones (tile rect) where no monsters spawn. Format: Rect2(tile_x, tile_y, w, h)
+## Safe-zone rectangles in TILE coordinates: [tile_x, tile_y, width, height].
+## Spawner walks every rect and refuses to spawn monsters inside any of them.
+##
+## Tick 83: extended from W1-Harmonia-only to cover every world's village
+## entrance. Pre-fix, the rects only protected W1 Harmonia coords; roaming
+## monsters could spawn ON or adjacent to W2 (Maple Heights), W4 (Rivet Row),
+## W5 (Node Prime), W6 (Vertex) entrances. W3 Brasston @ (5, 26) was
+## coincidentally inside the W1 rect [0,21,12,10] so happened to be protected.
+##
+## A single global list (rather than per-world setter) means W2 coords are
+## technically "safe" while in W1, but at tile positions that don't matter
+## to W1's map layout — harmless extra coverage. Cheaper than threading
+## per-world rects through five overworld scripts.
 const SAFE_ZONE_RECTS: Array = [
-	# Harmonia village area — rows 21-29, cols 0-10 approx
+	# W1 Harmonia village area — rows 21-29, cols 0-10 approx
 	[0, 21, 12, 10],
-	# Village gate tile region
+	# W1 Harmonia gate tile region
 	[20, 22, 16, 10],
+	# W2 Maple Heights entrance @ tile (38, 3) — 10x8 buffer
+	[34, 0, 10, 8],
+	# W4 Rivet Row entrance @ tile (55, 17) — 10x8 buffer
+	[51, 13, 10, 8],
+	# W5 Node Prime entrance @ tile (50, 20) — 10x8 buffer
+	[46, 16, 10, 8],
+	# W6 Vertex Threshold entrance @ tile (19, 16) — 10x8 buffer
+	[15, 12, 10, 8],
 ]
 
 var _player: Node2D = null
@@ -45,7 +88,7 @@ func _process(delta: float) -> void:
 	if not _enabled or not _player or not is_instance_valid(_player):
 		return
 	# Respect encounter rate setting — runtime lookup for preload safety.
-	var gs = get_tree().root.get_node_or_null("GameState") if get_tree() else null
+	var gs = get_tree().root.get_node_or_null("GameState") if is_inside_tree() else null
 	if gs and gs.encounter_rate_multiplier <= 0.0:
 		_despawn_all()
 		return
@@ -74,6 +117,11 @@ func set_enabled(enabled: bool) -> void:
 
 
 func _fill_monsters() -> void:
+	# Dissolve any roamer whose species was unwritten since it spawned — the extermination is visible, not just statistical
+	if GameState and "permakilled_monster_types" in GameState and not GameState.permakilled_monster_types.is_empty():
+		for m in _monsters:
+			if is_instance_valid(m) and str(m.monster_id) in GameState.permakilled_monster_types:
+				m.queue_free()
 	var target = randi_range(SPAWN_COUNT_MIN, SPAWN_COUNT_MAX)
 	var alive = _monsters.filter(func(m): return is_instance_valid(m))
 	_monsters = alive
@@ -91,6 +139,9 @@ func _try_spawn_monster() -> void:
 		return
 
 	var pool = _get_valid_pool_for_overworld()
+	# Necromancer permakill holds for roaming spawns too — the THIRD spawn path (encounter pools + autogrind roster already filter)
+	if EncounterSystem and EncounterSystem.has_method("_filter_permakilled"):
+		pool = EncounterSystem._filter_permakilled(pool)
 	if pool.is_empty():
 		return
 
@@ -107,8 +158,8 @@ func _try_spawn_monster() -> void:
 
 func _find_spawn_position() -> Vector2:
 	var player_pos = _player.global_position
-	var map_px_w = MAP_WIDTH * TILE_SIZE
-	var map_px_h = MAP_HEIGHT * TILE_SIZE
+	var map_px_w = map_width * TILE_SIZE
+	var map_px_h = map_height * TILE_SIZE
 
 	for _attempt in range(20):
 		var angle = randf() * TAU
@@ -172,6 +223,15 @@ func _cull_far_monsters() -> void:
 		if not is_instance_valid(m):
 			continue
 		if m.global_position.distance_to(player_pos) > DESPAWN_DISTANCE:
+			# Tick 85: deactivate BEFORE queue_free — matches _despawn_all.
+			# queue_free is end-of-frame, so without deactivate() any
+			# body_entered signal queued for this physics frame can still
+			# trigger a battle for a monster that's already being culled.
+			# Worst case: player walks past the DESPAWN_DISTANCE edge and
+			# brushes a culling monster, getting a battle for an enemy
+			# that should have vanished.
+			if m.has_method("deactivate"):
+				m.deactivate()
 			m.queue_free()
 		else:
 			alive.append(m)

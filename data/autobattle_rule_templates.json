@@ -1,0 +1,1432 @@
+{
+  "_comment": "Starter autobattle presets — item 13 from the 2026-07-01 playtest backlog. 3 stances per starter job. Design rules: (1) survival-floor rules always sit above damage rules, (2) every costed-ability rule carries an mp_percent guard OR sits below a 0-cost MP-refill rule, so a preset can never burn a turn on an unaffordable ability, (3) prefer 1-2 conditions per rule for grid-editor readability, (4) only level-1 base-kit abilities — nothing level-gated that would fizzle for a fresh character.",
+  "templates": [
+    {
+      "id": "fighter_defensive",
+      "job_id": "fighter",
+      "stance": "defensive",
+      "name": "Defensive",
+      "description": "Cure poison, heal early, taunt the biggest threat on turn 1, recover AP when in debt.",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "type": "has_status",
+              "status": "poison"
+            },
+            {
+              "type": "item_count",
+              "item_id": "antidote",
+              "op": ">",
+              "value": 0
+            }
+          ],
+          "actions": [
+            {
+              "type": "item",
+              "id": "antidote",
+              "target": "self"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "hp_percent",
+              "op": "<",
+              "value": 60
+            },
+            {
+              "type": "item_count",
+              "item_id": "potion",
+              "op": ">",
+              "value": 0
+            }
+          ],
+          "actions": [
+            {
+              "type": "item",
+              "id": "potion",
+              "target": "self"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "turn",
+              "op": "==",
+              "value": 1
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 20
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "provoke",
+              "target": "highest_atk_enemy"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "ap",
+              "op": "<",
+              "value": 0
+            }
+          ],
+          "actions": [
+            {
+              "type": "defer"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "always"
+            }
+          ],
+          "actions": [
+            {
+              "type": "attack",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "fighter_balanced",
+      "job_id": "fighter",
+      "stance": "balanced",
+      "name": "Balanced",
+      "description": "Cure poison, heal below half, Power Strike wounded enemies, attack.",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "type": "has_status",
+              "status": "poison"
+            },
+            {
+              "type": "item_count",
+              "item_id": "antidote",
+              "op": ">",
+              "value": 0
+            }
+          ],
+          "actions": [
+            {
+              "type": "item",
+              "id": "antidote",
+              "target": "self"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "hp_percent",
+              "op": "<",
+              "value": 50
+            },
+            {
+              "type": "item_count",
+              "item_id": "potion",
+              "op": ">",
+              "value": 0
+            }
+          ],
+          "actions": [
+            {
+              "type": "item",
+              "id": "potion",
+              "target": "self"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "enemy_hp_percent",
+              "op": "<",
+              "value": 40
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 30
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "power_strike",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "always"
+            }
+          ],
+          "actions": [
+            {
+              "type": "attack",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "fighter_aggressive",
+      "job_id": "fighter",
+      "stance": "aggressive",
+      "name": "Aggressive",
+      "description": "Cleave crowds, Power Strike while MP lasts, only heal when nearly down.",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "type": "hp_percent",
+              "op": "<",
+              "value": 25
+            },
+            {
+              "type": "item_count",
+              "item_id": "potion",
+              "op": ">",
+              "value": 0
+            }
+          ],
+          "actions": [
+            {
+              "type": "item",
+              "id": "potion",
+              "target": "self"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "enemy_count",
+              "op": ">=",
+              "value": 3
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 45
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "cleave",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 30
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "power_strike",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "always"
+            }
+          ],
+          "actions": [
+            {
+              "type": "attack",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "cleric_defensive",
+      "job_id": "cleric",
+      "stance": "defensive",
+      "name": "Defensive",
+      "description": "Emergency Cura first, cleanse poison, heal early, Pray when MP runs dry, Defer between crises.",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "type": "ally_hp_percent",
+              "op": "<=",
+              "value": 35
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 20
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "cure",
+              "target": "lowest_hp_ally",
+              "upgrades": [
+                "cura"
+              ]
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "ally_has_status",
+              "status": "poison"
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 15
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "cure",
+              "target": "lowest_hp_ally",
+              "upgrades": [
+                "esuna"
+              ]
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "ally_hp_percent",
+              "op": "<=",
+              "value": 65
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 20
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "cure",
+              "target": "lowest_hp_ally",
+              "upgrades": [
+                "cura"
+              ]
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "mp_percent",
+              "op": "<",
+              "value": 15
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "pray",
+              "target": "self"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "always"
+            }
+          ],
+          "actions": [
+            {
+              "type": "defer"
+            }
+          ],
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "cleric_balanced",
+      "job_id": "cleric",
+      "stance": "balanced",
+      "name": "Balanced",
+      "description": "Heal emergencies and poison, top allies up, Pray when dry, attack when the party is safe.",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "type": "ally_hp_percent",
+              "op": "<=",
+              "value": 40
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 20
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "cure",
+              "target": "lowest_hp_ally",
+              "upgrades": [
+                "cura"
+              ]
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "ally_has_status",
+              "status": "poison"
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 15
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "cure",
+              "target": "lowest_hp_ally",
+              "upgrades": [
+                "esuna"
+              ]
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "ally_hp_percent",
+              "op": "<=",
+              "value": 60
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 20
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "cure",
+              "target": "lowest_hp_ally",
+              "upgrades": [
+                "cura"
+              ]
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "mp_percent",
+              "op": "<",
+              "value": 15
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "pray",
+              "target": "self"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "always"
+            }
+          ],
+          "actions": [
+            {
+              "type": "attack",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "cleric_aggressive",
+      "job_id": "cleric",
+      "stance": "aggressive",
+      "name": "Aggressive",
+      "description": "Battle cleric — heal only true emergencies, Protect self on turn 1, swing every other turn.",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "type": "ally_hp_percent",
+              "op": "<=",
+              "value": 30
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 20
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "cure",
+              "target": "lowest_hp_ally",
+              "upgrades": [
+                "cura"
+              ]
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "hp_percent",
+              "op": "<",
+              "value": 40
+            },
+            {
+              "type": "item_count",
+              "item_id": "potion",
+              "op": ">",
+              "value": 0
+            }
+          ],
+          "actions": [
+            {
+              "type": "item",
+              "id": "potion",
+              "target": "self"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "turn",
+              "op": "==",
+              "value": 1
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 15
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "protect",
+              "target": "self"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "always"
+            }
+          ],
+          "actions": [
+            {
+              "type": "attack",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "mage_defensive",
+      "job_id": "mage",
+      "stance": "defensive",
+      "name": "Defensive",
+      "description": "Heal early, recover AP debt, Channel MP back, finish weak enemies with the staff to save MP.",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "type": "hp_percent",
+              "op": "<",
+              "value": 45
+            },
+            {
+              "type": "item_count",
+              "item_id": "potion",
+              "op": ">",
+              "value": 0
+            }
+          ],
+          "actions": [
+            {
+              "type": "item",
+              "id": "potion",
+              "target": "self"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "ap",
+              "op": "<",
+              "value": 0
+            }
+          ],
+          "actions": [
+            {
+              "type": "defer"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "mp_percent",
+              "op": "<",
+              "value": 20
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "channel",
+              "target": "self"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "enemy_hp_percent",
+              "op": "<",
+              "value": 15
+            }
+          ],
+          "actions": [
+            {
+              "type": "attack",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "always"
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "fire",
+              "target": "lowest_magic_defense_enemy",
+              "upgrades": [
+                "fira"
+              ]
+            }
+          ],
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "mage_balanced",
+      "job_id": "mage",
+      "stance": "balanced",
+      "name": "Balanced",
+      "description": "Fire at the squishiest target, Channel when dry, save MP on nearly-dead enemies.",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "type": "hp_percent",
+              "op": "<",
+              "value": 35
+            },
+            {
+              "type": "item_count",
+              "item_id": "potion",
+              "op": ">",
+              "value": 0
+            }
+          ],
+          "actions": [
+            {
+              "type": "item",
+              "id": "potion",
+              "target": "self"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "mp_percent",
+              "op": "<",
+              "value": 20
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "channel",
+              "target": "self"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "enemy_hp_percent",
+              "op": "<",
+              "value": 15
+            }
+          ],
+          "actions": [
+            {
+              "type": "attack",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "always"
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "fire",
+              "target": "lowest_magic_defense_enemy",
+              "upgrades": [
+                "fira"
+              ]
+            }
+          ],
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "mage_aggressive",
+      "job_id": "mage",
+      "stance": "aggressive",
+      "name": "Aggressive",
+      "description": "Fira spam, double-cast burst with spare AP, Channel just enough to keep casting.",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "type": "hp_percent",
+              "op": "<",
+              "value": 20
+            },
+            {
+              "type": "item_count",
+              "item_id": "potion",
+              "op": ">",
+              "value": 0
+            }
+          ],
+          "actions": [
+            {
+              "type": "item",
+              "id": "potion",
+              "target": "self"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "mp_percent",
+              "op": "<",
+              "value": 25
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "channel",
+              "target": "self"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "ap",
+              "op": ">=",
+              "value": 2
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 45
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "fire",
+              "target": "lowest_magic_defense_enemy",
+              "upgrades": [
+                "fira"
+              ]
+            },
+            {
+              "type": "ability",
+              "id": "fire",
+              "target": "lowest_magic_defense_enemy",
+              "upgrades": [
+                "fira"
+              ]
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "always"
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "fire",
+              "target": "lowest_magic_defense_enemy"
+            }
+          ],
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "rogue_defensive",
+      "job_id": "rogue",
+      "stance": "defensive",
+      "name": "Defensive",
+      "description": "Steal on turn 1, heal early, recover AP debt, chip away safely.",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "type": "hp_percent",
+              "op": "<",
+              "value": 45
+            },
+            {
+              "type": "item_count",
+              "item_id": "potion",
+              "op": ">",
+              "value": 0
+            }
+          ],
+          "actions": [
+            {
+              "type": "item",
+              "id": "potion",
+              "target": "self"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "turn",
+              "op": "==",
+              "value": 1
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 10
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "steal",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "ap",
+              "op": "<",
+              "value": 0
+            }
+          ],
+          "actions": [
+            {
+              "type": "defer"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "always"
+            }
+          ],
+          "actions": [
+            {
+              "type": "attack",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "rogue_balanced",
+      "job_id": "rogue",
+      "stance": "balanced",
+      "name": "Balanced",
+      "description": "Steal first, Backstab wounded enemies, heal below a third.",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "type": "hp_percent",
+              "op": "<",
+              "value": 35
+            },
+            {
+              "type": "item_count",
+              "item_id": "potion",
+              "op": ">",
+              "value": 0
+            }
+          ],
+          "actions": [
+            {
+              "type": "item",
+              "id": "potion",
+              "target": "self"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "turn",
+              "op": "==",
+              "value": 1
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 10
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "steal",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "enemy_hp_percent",
+              "op": "<",
+              "value": 35
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 40
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "backstab",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "always"
+            }
+          ],
+          "actions": [
+            {
+              "type": "attack",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "rogue_aggressive",
+      "job_id": "rogue",
+      "stance": "aggressive",
+      "name": "Aggressive",
+      "description": "Double Backstab burst with spare AP, hunt the biggest threat, heal only at the brink.",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "type": "hp_percent",
+              "op": "<",
+              "value": 20
+            },
+            {
+              "type": "item_count",
+              "item_id": "potion",
+              "op": ">",
+              "value": 0
+            }
+          ],
+          "actions": [
+            {
+              "type": "item",
+              "id": "potion",
+              "target": "self"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "ap",
+              "op": ">=",
+              "value": 2
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 75
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "backstab",
+              "target": "lowest_hp_enemy"
+            },
+            {
+              "type": "ability",
+              "id": "backstab",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "enemy_hp_percent",
+              "op": "<",
+              "value": 50
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 40
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "backstab",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "always"
+            }
+          ],
+          "actions": [
+            {
+              "type": "attack",
+              "target": "highest_atk_enemy"
+            }
+          ],
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "bard_defensive",
+      "job_id": "bard",
+      "stance": "defensive",
+      "name": "Defensive",
+      "description": "Battle Hymn on turn 1, keep the biggest threat asleep, Riff MP back for the party.",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "type": "hp_percent",
+              "op": "<",
+              "value": 40
+            },
+            {
+              "type": "item_count",
+              "item_id": "potion",
+              "op": ">",
+              "value": 0
+            }
+          ],
+          "actions": [
+            {
+              "type": "item",
+              "id": "potion",
+              "target": "self"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "turn",
+              "op": "==",
+              "value": 1
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 15
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "battle_hymn",
+              "target": "all_allies"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "mp_percent",
+              "op": "<",
+              "value": 20
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "riff",
+              "target": "all_allies"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "always"
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "lullaby",
+              "target": "highest_atk_enemy"
+            }
+          ],
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "bard_balanced",
+      "job_id": "bard",
+      "stance": "balanced",
+      "name": "Balanced",
+      "description": "Battle Hymn opener, Lullaby the biggest threat in crowds, Riff when MP dips, attack otherwise.",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "type": "hp_percent",
+              "op": "<",
+              "value": 35
+            },
+            {
+              "type": "item_count",
+              "item_id": "potion",
+              "op": ">",
+              "value": 0
+            }
+          ],
+          "actions": [
+            {
+              "type": "item",
+              "id": "potion",
+              "target": "self"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "turn",
+              "op": "==",
+              "value": 1
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 15
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "battle_hymn",
+              "target": "all_allies"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "mp_percent",
+              "op": "<",
+              "value": 15
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "riff",
+              "target": "all_allies"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "enemy_count",
+              "op": ">=",
+              "value": 2
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 20
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "lullaby",
+              "target": "highest_atk_enemy"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "always"
+            }
+          ],
+          "actions": [
+            {
+              "type": "attack",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "bard_aggressive",
+      "job_id": "bard",
+      "stance": "aggressive",
+      "name": "Aggressive",
+      "description": "Hymn the party up, then double-strike with spare AP and keep swinging.",
+      "rules": [
+        {
+          "conditions": [
+            {
+              "type": "hp_percent",
+              "op": "<",
+              "value": 25
+            },
+            {
+              "type": "item_count",
+              "item_id": "potion",
+              "op": ">",
+              "value": 0
+            }
+          ],
+          "actions": [
+            {
+              "type": "item",
+              "id": "potion",
+              "target": "self"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "turn",
+              "op": "==",
+              "value": 1
+            },
+            {
+              "type": "mp_percent",
+              "op": ">=",
+              "value": 15
+            }
+          ],
+          "actions": [
+            {
+              "type": "ability",
+              "id": "battle_hymn",
+              "target": "all_allies"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "ap",
+              "op": ">=",
+              "value": 2
+            }
+          ],
+          "actions": [
+            {
+              "type": "attack",
+              "target": "lowest_hp_enemy"
+            },
+            {
+              "type": "attack",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        },
+        {
+          "conditions": [
+            {
+              "type": "always"
+            }
+          ],
+          "actions": [
+            {
+              "type": "attack",
+              "target": "lowest_hp_enemy"
+            }
+          ],
+          "enabled": true
+        }
+      ]
+    }
+  ]
+}

@@ -11,6 +11,11 @@ func _init() -> void:
 	boss_id = "masterite_arbiter_futuristic"
 	boss_flag_key = "root_process_cleared"
 	boss_cutscene_id = "world5_root_process_boss"
+	# Tick 103/105: bridge to game_constants so GameLoop's defeat-cutscene
+	# gate fires world5_arbiter_defeat after victory return to root_process.
+	# (The legacy defeat_cutscene field — read only by the now-removed
+	# DragonCave._on_boss_defeated — was deleted in tick 105.)
+	defeat_cutscene_flags = ["cutscene_flag_arbiter_futuristic_defeated"]
 	total_floors = 3
 	overworld_exit_spawn = "glitch_sector"
 	overworld_exit_map = "futuristic_overworld"
@@ -104,3 +109,7 @@ func _get_boss_intro_dialogue() -> Array:
 		"Masterite Arbiter: *opens a terminal*",
 		"Masterite Arbiter: 'Running validation on your process...'",
 	]
+
+
+func _get_music_area_id() -> String:
+	return "digital_dungeon"

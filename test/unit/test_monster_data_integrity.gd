@@ -34,20 +34,27 @@ func _read_json(path: String) -> Dictionary:
 
 
 func test_every_monster_drop_resolves_to_a_real_item() -> void:
-	"""Each monster's drop_table[].item must exist in items.json,
-	otherwise the drop silently no-ops on victory (player sees a
-	humanized ID string in inventory that does nothing)."""
+	"""Each monster's drop_table[].item must exist in items.json OR in
+	equipment.json (weapons/armors/accessories) — BattleManager's drop
+	routing handles both classes. Pre-fix this test only consulted
+	items.json, which is why the speed_boots-only-in-equipment regression
+	went undetected. Slice 47bf8a49 broadened the check."""
 	var monsters = _read_json("res://data/monsters.json")
 	var items = _read_json("res://data/items.json")
+	var equipment = _read_json("res://data/equipment.json")
+	var eq_ids: Dictionary = {}
+	for cat in ["weapons", "armors", "accessories"]:
+		for eid in equipment.get(cat, {}).keys():
+			eq_ids[eid] = true
 	var bad: Array = []
 	for mid in monsters:
 		var m = monsters[mid]
 		for entry in m.get("drop_table", []):
 			var item_id = entry.get("item", "")
-			if item_id != "" and not items.has(item_id):
+			if item_id != "" and not items.has(item_id) and not eq_ids.has(item_id):
 				bad.append("%s -> %s" % [mid, item_id])
 	assert_eq(bad.size(), 0,
-		"All monster drop_table items must resolve. Broken refs: %s" % str(bad.slice(0, 10)))
+		"All monster drop_table items must resolve in items.json or equipment.json. Broken refs: %s" % str(bad.slice(0, 10)))
 
 
 func test_every_one_shot_reward_resolves_to_a_real_item() -> void:

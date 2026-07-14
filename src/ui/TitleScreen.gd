@@ -26,6 +26,8 @@ var _press_tween: Tween = null
 var _version_label: Label = null
 var _stars: Array[ColorRect] = []
 var _help_overlay: Control = null
+var _help_scroll_target: RichTextLabel = null
+const HELP_SCROLL_STEP_PX: float = 48.0
 
 ## Colors
 const MENU_COLOR := Color(0.95, 0.95, 1.0)
@@ -36,6 +38,9 @@ const CURSOR_COLOR := Color(1.0, 0.9, 0.3)
 ## Cursor blink
 var _cursor_blink: bool = true
 var _blink_timer: float = 0.0
+
+# Tick 203: single source of truth for Continue's target slot. Pre-fix _check_for_save (file-existence) and _build_continue_subtitle (metadata-driven get_most_recent_slot) could disagree — a save with missing metadata showed Continue, subtitle was empty, and load attempts went to slot -1.
+var _cached_continue_slot: int = -1
 
 
 func _ready() -> void:
@@ -105,7 +110,10 @@ func _build_ui() -> void:
 	# Version
 	_version_label = Label.new()
 	_version_label.text = Version.display()
-	_version_label.position = Vector2(vp.x - 80, vp.y - 28)
+	# 80px clipped "v3.33.1xx-alpha (hash)" off the right edge (title smoke shot 2026-07-11) — right-align in a real box.
+	_version_label.position = Vector2(vp.x - 292, vp.y - 28)
+	_version_label.size = Vector2(280, 20)
+	_version_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_version_label.add_theme_font_size_override("font_size", 10)
 	_version_label.add_theme_color_override("font_color", Color(0.4, 0.35, 0.5, 0.6))
 	add_child(_version_label)
@@ -275,11 +283,21 @@ func _input(event: InputEvent) -> void:
 	if not _can_input:
 		return
 
-	# Help overlay intercept
-	if _help_overlay and event.is_action_pressed("ui_cancel"):
-		_close_help_overlay()
-		get_viewport().set_input_as_handled()
-		return
+	# Help overlay intercept — cancel closes; up/down scroll the long content via controller.
+	if _help_overlay:
+		if event.is_action_pressed("ui_cancel"):
+			_close_help_overlay()
+			get_viewport().set_input_as_handled()
+			return
+		var dy: float = 0.0
+		if event.is_action_pressed("ui_down"):
+			dy = HELP_SCROLL_STEP_PX
+		elif event.is_action_pressed("ui_up"):
+			dy = -HELP_SCROLL_STEP_PX
+		if dy != 0.0:
+			_scroll_help(dy)
+			get_viewport().set_input_as_handled()
+			return
 
 	if _phase == Phase.PRESS_START:
 		# Accept gamepad/keyboard confirm/start, OR a mouse click anywhere
@@ -368,6 +386,17 @@ func _on_menu_click(event: InputEvent, index: int) -> void:
 ## — Helpers —
 
 func _check_for_save() -> bool:
+	# Tick 203: use get_most_recent_slot as the single source of truth — its
+	# semantics (a save WITH METADATA exists) match what Continue actually
+	# needs. has_save() (file-existence only) could disagree, showing
+	# Continue for a save the load path couldn't actually parse.
+	_cached_continue_slot = -1
+	if SaveSystem and SaveSystem.has_method("get_most_recent_slot"):
+		_cached_continue_slot = SaveSystem.get_most_recent_slot()
+		return _cached_continue_slot >= 0
+	# Fallback when SaveSystem isn't ready yet (very early boot path). These
+	# file-existence checks remain as a safety net — better to show Continue
+	# than to hide it on a transient autoload race.
 	if FileAccess.file_exists("user://save_data.json"):
 		return true
 	if FileAccess.file_exists("user://saves/save_00.json"):
@@ -380,25 +409,49 @@ func _build_continue_subtitle() -> String:
 	## resume?" on the title screen. Returns an empty string if the save
 	## is missing, lacks metadata, or SaveSystem isn't available — in
 	## which case the row falls back to the bare "CONTINUE" label.
-	if not SaveSystem or not SaveSystem.has_method("get_most_recent_slot"):
+	if not SaveSystem:
 		return ""
-	var slot: int = SaveSystem.get_most_recent_slot()
-	if slot < 0 or not SaveSystem.has_method("get_save_info"):
+	# Tick 203: prefer the cached slot from _check_for_save (called immediately before this by _build_menu) so subtitle and load target stay consistent. Fall back to a fresh lookup if cache is empty (e.g., very early boot path).
+	var slot: int = _cached_continue_slot
+	if slot < 0 and SaveSystem.has_method("get_most_recent_slot"):
+		slot = SaveSystem.get_most_recent_slot()
+	if slot < 0:
 		return ""
+	# Tick 202: slot label is always shown when we have one — players need to know whether Continue resumes Slot 2, a Quick Save, or an Auto-Save. Pre-fix the choice was silent.
+	var slot_label: String = _format_continue_slot_label(slot)
+	if not SaveSystem.has_method("get_save_info"):
+		return slot_label
 	var info: Dictionary = SaveSystem.get_save_info(slot)
 	if info.is_empty():
-		return ""
+		return slot_label
 	# Prefer chapter + location together when both exist; degrade gracefully
 	# to whichever piece IS available so the subtitle is never half-formed.
 	var location: String = str(info.get("location_name", "")).strip_edges()
 	var chapter: String = str(info.get("chapter_title", "")).strip_edges()
+	var detail: String = ""
 	if chapter != "" and location != "":
-		return "%s — %s" % [chapter, location]
-	if location != "":
-		return location
-	if chapter != "":
-		return chapter
-	return ""
+		detail = "%s — %s" % [chapter, location]
+	elif location != "":
+		detail = location
+	elif chapter != "":
+		detail = chapter
+	if slot_label == "":
+		return detail
+	if detail == "":
+		return slot_label
+	return "%s · %s" % [slot_label, detail]
+
+
+# Tick 202: map slot int → human label. SaveSystem.AUTO_SAVE_SLOT=98, QUICK_SAVE_SLOT=99, 0..2 are manual.
+static func _format_continue_slot_label(slot: int) -> String:
+	if slot < 0:
+		return ""
+	if SaveSystem:
+		if "QUICK_SAVE_SLOT" in SaveSystem and slot == SaveSystem.QUICK_SAVE_SLOT:
+			return "Quick Save"
+		if "AUTO_SAVE_SLOT" in SaveSystem and slot == SaveSystem.AUTO_SAVE_SLOT:
+			return "Auto-Save"
+	return "Slot %d" % (slot + 1)
 
 
 func _vp_size() -> Vector2:
@@ -436,6 +489,7 @@ func _show_help_overlay() -> void:
 	_help_overlay.add_child(title)
 
 	var content := RichTextLabel.new()
+	_help_scroll_target = content
 	content.bbcode_enabled = true
 	content.scroll_active = true
 	content.position = Vector2(60, 75)
@@ -500,4 +554,22 @@ func _close_help_overlay() -> void:
 	if _help_overlay:
 		_help_overlay.queue_free()
 		_help_overlay = null
+		_help_scroll_target = null
 		_can_input = true  # Restore input ability after close
+
+
+## Scroll the open help overlay's content by `dy` pixels (positive = down).
+func _scroll_help(dy: float) -> void:
+	if _help_scroll_target == null or not is_instance_valid(_help_scroll_target):
+		return
+	var sb := _help_scroll_target.get_v_scroll_bar()
+	if sb == null:
+		return
+	sb.value = clampf(sb.value + dy, sb.min_value, max(sb.min_value, sb.max_value - sb.page))
+
+
+func _exit_tree() -> void:
+	# Kill any looping press-start pulse tween so it doesn't outlive the node.
+	if _press_tween and _press_tween.is_valid():
+		_press_tween.kill()
+	_press_tween = null

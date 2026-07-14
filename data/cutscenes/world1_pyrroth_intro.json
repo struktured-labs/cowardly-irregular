@@ -1,0 +1,109 @@
+{
+  "id": "world1_pyrroth_intro",
+  "title": "Pyrroth, the Ember Wyrm",
+  "world": 1,
+  "trigger": "boss_fire_dragon",
+  "background": "fire_cave",
+  "description": "Boss intro for Pyrroth in the Infernal Grotto. A meta-aware fire dragon questions whether the player is actually playing the game.",
+  "steps": [
+    {
+      "type": "stop_music"
+    },
+    {
+      "type": "letterbox_in",
+      "duration": 0.5
+    },
+    {
+      "type": "play_sfx",
+      "sfx": "boss_intro_stinger"
+    },
+    {
+      "type": "boss_intro",
+      "name": "Pyrroth",
+      "title": "The Ember Wyrm"
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The ground trembles. Magma bubbles through cracks in the stone.",
+        "A dragon of molten rock rises from a pool of lava."
+      ]
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Pyrroth",
+          "text": "Oh. Another one.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Pyrroth",
+          "text": "Tell me something.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Pyrroth",
+          "text": "Are you actually PLAYING this game?",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "What do you mean?",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Pyrroth",
+          "text": "I mean... are YOU making the decisions? Or is it the autobattle script?",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Pyrroth",
+          "text": "Because if it's the script... then I'm not really fighting YOU, am I? I'm fighting a JSON file.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "I wrote that JSON file!",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Pyrroth",
+          "text": "Did you though? Or did you copy it from a guide?",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Pyrroth",
+          "text": "Let's find out what happens when the script breaks.",
+          "theme": "enemy",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "screen_shake",
+      "duration": 0.3,
+      "intensity": 3.0
+    },
+    {
+      "type": "screen_flash",
+      "duration": 0.15
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.3
+    }
+  ]
+}

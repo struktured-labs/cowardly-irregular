@@ -7,6 +7,11 @@ class_name CutsceneDialogue
 
 signal dialogue_finished()
 signal dialogue_advanced()
+## Emitted when the LLM "thinking" indicator activates / deactivates. Lets
+## consumers observe the bridge that DynamicConversation drives during awaited
+## LLM calls (Wave C).
+signal thinking_started()
+signal thinking_ended()
 
 ## Dialogue queue
 var _dialogue_queue: Array = []
@@ -50,6 +55,8 @@ const VOICE_BLIP_ALIASES := {
 	"scholar": "scholar",
 	"shopkeeper": "generic_npc",
 	"villager": "generic_npc",
+	"merchant": "generic_npc",
+	"guard": "generic_npc",
 }
 
 ## UI Elements
@@ -60,6 +67,16 @@ var _portrait_image: TextureRect
 var _speaker_label: Label
 var _text_label: RichTextLabel
 var _advance_hint: Label
+
+## Wave C: thinking indicator. Renders animated dots ("·", "··", "···") in
+## place of the dialogue body while the LLM is fetching a line. The advance
+## hint is hidden and input is swallowed so the player can't blow past an
+## empty box. Toggled by set_thinking(active: bool).
+var _thinking_label: Label
+var _thinking_timer: Timer
+var _thinking_dots_step: int = 0
+const THINKING_FRAMES: Array[String] = ["·", "··", "···"]
+const THINKING_TICK_SEC: float = 0.25
 
 ## Styling
 const TILE_SIZE = 4
@@ -165,6 +182,13 @@ const CHARACTER_THEMES = {
 		"name": Color(0.9, 0.75, 0.35),
 		"portrait_bg": Color(0.12, 0.1, 0.05)
 	},
+	"guard": {
+		"bg": Color(0.06, 0.08, 0.10),
+		"border": Color(0.55, 0.62, 0.72),
+		"text": Color(0.92, 0.95, 1.0),
+		"name": Color(0.75, 0.85, 0.95),
+		"portrait_bg": Color(0.08, 0.10, 0.13)
+	},
 	"mysterious": {
 		"bg": Color(0.03, 0.02, 0.06),
 		"border": Color(0.5, 0.3, 0.6),
@@ -192,7 +216,78 @@ const CHARACTER_THEMES = {
 		"text": Color(0.0, 1.0, 0.7),
 		"name": Color(0.0, 0.8, 0.5),
 		"portrait_bg": Color(0.0, 0.03, 0.06)
-	}
+	},
+	# Tick 294: per-job dialogue themes for the advanced + meta jobs.
+	# Pre-fix any cutscene line tagged with one of these jobs as
+	# `theme` fell through to "narrator"'s flat gray (line 585
+	## fallback), losing the per-job voice carrying through ticks
+	## 124 (JOB_QUIP_COLORS) and 293 (Win98Menu CHARACTER_STYLES).
+	## Each scheme anchors on JOB_QUIP_COLORS base color.
+	# ---- Advanced jobs ----
+	"guardian": {
+		"bg": Color(0.10, 0.09, 0.06),
+		"border": Color(0.85, 0.78, 0.55),
+		"text": Color(1.0, 0.95, 0.85),
+		"name": Color(0.95, 0.85, 0.55),
+		"portrait_bg": Color(0.12, 0.10, 0.07)
+	},
+	"ninja": {
+		"bg": Color(0.05, 0.05, 0.08),
+		"border": Color(0.65, 0.65, 0.75),
+		"text": Color(0.92, 0.92, 0.98),
+		"name": Color(0.85, 0.85, 0.95),
+		"portrait_bg": Color(0.06, 0.06, 0.10)
+	},
+	"summoner": {
+		"bg": Color(0.05, 0.12, 0.12),
+		"border": Color(0.4, 0.9, 0.8),
+		"text": Color(0.85, 1.0, 0.95),
+		"name": Color(0.55, 0.95, 0.85),
+		"portrait_bg": Color(0.06, 0.13, 0.13)
+	},
+	"speculator": {
+		"bg": Color(0.06, 0.12, 0.06),
+		"border": Color(0.4, 0.85, 0.4),
+		"text": Color(0.92, 1.0, 0.92),
+		"name": Color(0.55, 0.9, 0.50),
+		"portrait_bg": Color(0.07, 0.13, 0.07)
+	},
+	# ---- Meta jobs ----
+	"scriptweaver": {
+		"bg": Color(0.0, 0.08, 0.04),
+		"border": Color(0.0, 0.95, 0.55),
+		"text": Color(0.7, 1.0, 0.75),
+		"name": Color(0.4, 1.0, 0.65),
+		"portrait_bg": Color(0.0, 0.09, 0.05)
+	},
+	"time_mage": {
+		"bg": Color(0.06, 0.08, 0.14),
+		"border": Color(0.75, 0.88, 1.0),
+		"text": Color(0.9, 0.95, 1.0),
+		"name": Color(0.85, 0.92, 1.0),
+		"portrait_bg": Color(0.07, 0.09, 0.15)
+	},
+	"necromancer": {
+		"bg": Color(0.06, 0.02, 0.08),
+		"border": Color(0.65, 0.35, 0.75),
+		"text": Color(0.92, 0.85, 1.0),
+		"name": Color(0.80, 0.55, 0.95),
+		"portrait_bg": Color(0.07, 0.03, 0.09)
+	},
+	"bossbinder": {
+		"bg": Color(0.10, 0.02, 0.04),
+		"border": Color(0.95, 0.25, 0.35),
+		"text": Color(1.0, 0.92, 0.92),
+		"name": Color(1.0, 0.45, 0.50),
+		"portrait_bg": Color(0.11, 0.03, 0.05)
+	},
+	"skiptrotter": {
+		"bg": Color(0.10, 0.10, 0.02),
+		"border": Color(0.95, 0.85, 0.35),
+		"text": Color(1.0, 1.0, 0.85),
+		"name": Color(1.0, 0.95, 0.55),
+		"portrait_bg": Color(0.11, 0.11, 0.03)
+	},
 }
 
 
@@ -215,6 +310,16 @@ func _setup_typing_timer() -> void:
 	_typing_timer.process_mode = Node.PROCESS_MODE_ALWAYS
 	_typing_timer.timeout.connect(_on_typing_tick)
 	add_child(_typing_timer)
+
+	# Wave C: thinking-indicator tick. Driven only while set_thinking(true)
+	# is active so it doesn't waste frames during normal dialogue. PROCESS_MODE_ALWAYS
+	# so it ticks through pause / input-locked states.
+	_thinking_timer = Timer.new()
+	_thinking_timer.one_shot = false
+	_thinking_timer.wait_time = THINKING_TICK_SEC
+	_thinking_timer.process_mode = Node.PROCESS_MODE_ALWAYS
+	_thinking_timer.timeout.connect(_on_thinking_tick)
+	add_child(_thinking_timer)
 
 	# Dedicated stream player for voice blips — bypasses SoundManager
 	# cooldown so rapid per-character beeps play cleanly.
@@ -242,19 +347,22 @@ func _resolve_voice_blip_key(portrait_type: String, theme_name: String) -> Strin
 	return VOICE_BLIP_FALLBACK
 
 
-func _load_voice_blip(speaker_key: String) -> void:
+func _load_voice_blip(speaker_key: String, speaker_name: String = "") -> void:
 	"""Load and cache the voice blip stream for a speaker. Falls back to
-	VOICE_BLIP_FALLBACK if the speaker-specific file is missing. When the
-	fallback is used, derive a deterministic pitch offset from the speaker
-	name so unnamed NPCs still feel distinct."""
+	VOICE_BLIP_FALLBACK if the speaker-specific file is missing. Pitch
+	always derives from the speaker name (when provided) so two NPCs
+	sharing a blip family — eight scholars, two guards — still sound
+	individually distinct. speaker_name="" reverts to the legacy
+	speaker_key hash for back-compat with callers that don't plumb the
+	name through."""
+	var pitch_source: String = speaker_name if speaker_name != "" else speaker_key
+	_voice_blip_pitch_base = _hash_pitch(pitch_source)
 	if speaker_key == _voice_blip_speaker_key and _voice_blip_stream != null:
 		return
 	_voice_blip_speaker_key = speaker_key
 	_voice_blip_stream = _load_voice_blip_stream(speaker_key)
-	_voice_blip_pitch_base = 1.0
 	if _voice_blip_stream == null and speaker_key != VOICE_BLIP_FALLBACK:
 		_voice_blip_stream = _load_voice_blip_stream(VOICE_BLIP_FALLBACK)
-		_voice_blip_pitch_base = _hash_pitch(speaker_key)
 
 
 static func _hash_pitch(key: String) -> float:
@@ -293,12 +401,16 @@ func _play_voice_blip() -> void:
 	_voice_blip_player.play()
 
 
+# Tick 222/223: scale a base font size via the shared TextScale util.
+func _scaled_font_size(base: int) -> int:
+	return TextScale.scaled(base)
+
+
 func _build_ui() -> void:
 	# Semi-transparent overlay (dimmer than battle - cutscenes are more immersive)
 	_background = ColorRect.new()
 	_background.color = Color(0, 0, 0, 0.3)
-	_background.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_background.size = get_viewport().get_visible_rect().size
+	_background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_background)
 
@@ -368,7 +480,8 @@ func _create_dialogue_visuals(theme: Dictionary) -> void:
 	_speaker_label.size = Vector2(text_width, 20)
 	_speaker_label.clip_text = false
 	_speaker_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
-	_speaker_label.add_theme_font_size_override("font_size", 14)
+	# Tick 222: scale via GameState.text_size_scale (accessibility). Reads live so a SettingsMenu change applies on next cutscene.
+	_speaker_label.add_theme_font_size_override("font_size", _scaled_font_size(14))
 	_speaker_label.add_theme_color_override("font_color", theme["name"])
 	_dialogue_box.add_child(_speaker_label)
 
@@ -381,7 +494,8 @@ func _create_dialogue_visuals(theme: Dictionary) -> void:
 	_text_label.bbcode_enabled = true
 	_text_label.scroll_active = false
 	_text_label.clip_contents = true
-	_text_label.add_theme_font_size_override("normal_font_size", 13)
+	# Tick 222: scale.
+	_text_label.add_theme_font_size_override("normal_font_size", _scaled_font_size(13))
 	_text_label.add_theme_color_override("default_color", theme["text"])
 	_dialogue_box.add_child(_text_label)
 
@@ -390,10 +504,28 @@ func _create_dialogue_visuals(theme: Dictionary) -> void:
 	_advance_hint = Label.new()
 	_advance_hint.text = "Z / A / Click ▶"
 	_advance_hint.position = Vector2(box_width - 140, box_height - 20)
-	_advance_hint.add_theme_font_size_override("font_size", 10)
+	# Tick 222: scale.
+	_advance_hint.add_theme_font_size_override("font_size", _scaled_font_size(10))
 	_advance_hint.add_theme_color_override("font_color", theme["text"].darkened(0.4))
 	_advance_hint.visible = false
 	_dialogue_box.add_child(_advance_hint)
+
+	# Wave C: thinking indicator. Same anchor + size as _text_label so the
+	# animated dots replace the body content without re-flowing the panel.
+	# Hidden by default; surfaced by set_thinking(true) during awaited LLM
+	# calls so the player can see "the NPC is composing a reply" instead of
+	# a blank box (or a stuck player) for the full HTTPRequest timeout.
+	_thinking_label = Label.new()
+	_thinking_label.position = _text_label.position
+	_thinking_label.size = _text_label.size
+	_thinking_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_thinking_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	# Tick 222: scale.
+	_thinking_label.add_theme_font_size_override("font_size", _scaled_font_size(18))
+	_thinking_label.add_theme_color_override("font_color", theme["text"].darkened(0.2))
+	_thinking_label.visible = false
+	_thinking_label.text = THINKING_FRAMES[0]
+	_dialogue_box.add_child(_thinking_label)
 
 
 func _draw_retro_border(parent: Control, width: float, height: float, color: Color) -> void:
@@ -452,6 +584,64 @@ func skip_all() -> void:
 	_finish_dialogue()
 
 
+## Wave C: toggle the LLM "thinking" indicator.
+##
+## When active=true:
+##   - the dialogue text + advance hint are hidden
+##   - the typing timer is paused so any in-flight typewriter doesn't race
+##   - an animated "·" / "··" / "···" cycle renders in the body area
+##   - _input() ignores ui_accept / mouse-advance so the player can't blow past
+##
+## When active=false:
+##   - the indicator disappears and the panel returns to its prior state
+##     (the next line is shown by _show_current_line or by the caller)
+##
+## Safe to call before the UI is built; toggles a flag and exits.
+## Idempotent — successive true→true / false→false calls are no-ops.
+func set_thinking(active: bool) -> void:
+	if _thinking_label == null:
+		# UI not built yet (e.g. called before show_dialogue). Defer; the next
+		# show_current_line rebuild will reflect the desired state through the
+		# stored typing-state machinery if needed.
+		return
+	if active == _thinking_label.visible:
+		return  # Idempotent.
+
+	if active:
+		# Pause the typewriter so the line under construction doesn't keep
+		# rendering behind the indicator.
+		if _typing_timer and is_instance_valid(_typing_timer):
+			_typing_timer.stop()
+		# Blank the body and hide the advance hint.
+		if _text_label and is_instance_valid(_text_label):
+			_text_label.text = ""
+		if _advance_hint and is_instance_valid(_advance_hint):
+			_advance_hint.visible = false
+		_thinking_dots_step = 0
+		_thinking_label.text = THINKING_FRAMES[0]
+		_thinking_label.visible = true
+		if _thinking_timer and is_instance_valid(_thinking_timer):
+			_thinking_timer.start()
+		visible = true  # Make sure the dialogue panel is on-screen.
+		thinking_started.emit()
+	else:
+		_thinking_label.visible = false
+		if _thinking_timer and is_instance_valid(_thinking_timer):
+			_thinking_timer.stop()
+		thinking_ended.emit()
+
+
+func is_thinking() -> bool:
+	return _thinking_label != null and _thinking_label.visible
+
+
+func _on_thinking_tick() -> void:
+	if _thinking_label == null or not _thinking_label.visible:
+		return
+	_thinking_dots_step = (_thinking_dots_step + 1) % THINKING_FRAMES.size()
+	_thinking_label.text = THINKING_FRAMES[_thinking_dots_step]
+
+
 ## =====================
 ## DIALOGUE FLOW
 ## =====================
@@ -483,8 +673,10 @@ func _show_current_line() -> void:
 	# Apply expression tint to portrait
 	_portrait_image.modulate = EXPRESSION_TINTS.get(expression, Color.WHITE)
 
-	# Load voice blip for this speaker
-	_load_voice_blip(_resolve_voice_blip_key(portrait_type, theme_name))
+	# Load voice blip for this speaker — pitch derived from the speaker
+	# NAME so NPCs sharing a blip family (8 scholars / 2 guards) still
+	# sound individually distinct.
+	_load_voice_blip(_resolve_voice_blip_key(portrait_type, theme_name), entry.get("speaker", ""))
 
 	# Hide portrait frame for narrator (no-portrait mode)
 	var hide_portrait = entry.get("hide_portrait", false)
@@ -605,6 +797,26 @@ func _input(event: InputEvent) -> void:
 	if not visible:
 		return
 
+	# Wave C: while the LLM "thinking" indicator is active, swallow advance
+	# input so the player can't blow past the empty box. This is the chokepoint
+	# that pairs with set_thinking(true) elsewhere — DynamicConversation toggles
+	# the flag, this guard enforces it. We still apply `not event.is_echo()` to
+	# the ui_accept branch so OS key-repeat doesn't fire menu_select / sfx via
+	# a chained handler — matches the post-2026-04-30 regression bar.
+	if _thinking_label != null and _thinking_label.visible:
+		if event.is_action_pressed("ui_accept") and not event.is_echo():
+			get_viewport().set_input_as_handled()
+			return
+		# Also swallow ui_cancel (B / Esc) so the player can't skip the queue
+		# out from under an in-flight LLM response — the thinking guard must
+		# block fast-exit just as it blocks advance.
+		if event.is_action_pressed("ui_cancel") and not event.is_echo():
+			get_viewport().set_input_as_handled()
+			return
+		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+			get_viewport().set_input_as_handled()
+			return
+
 	# Bug fix (2026-04-30): added `not event.is_echo()` so holding Enter
 	# doesn't rapid-fire _advance_dialogue at echo rate (was burning past
 	# multiple lines per held key, also spamming the menu_select cue).
@@ -617,6 +829,7 @@ func _input(event: InputEvent) -> void:
 	# cutscenes CutsceneDirector renders a hold-B-to-skip pill — for plain
 	# NPC dialogue (no Director) this is the only way to fast-exit.
 	# Bug user-reported 2026-06-04: "can't skip Elder Theron dialogue."
+	# (Guarded above while the LLM "thinking" indicator is active.)
 	if event.is_action_pressed("ui_cancel") and not event.is_echo():
 		_finish_dialogue()
 		get_viewport().set_input_as_handled()
@@ -646,6 +859,7 @@ const PORTRAIT_SPRITES = {
 	"scholar": "res://assets/sprites/portraits/npcs/scholar.png",
 	"shopkeeper": "res://assets/sprites/portraits/npcs/shopkeeper.png",
 	"brigadier": "res://assets/sprites/portraits/npcs/brigadier.png",
+	"guard": "res://assets/sprites/portraits/npcs/brigadier.png",
 }
 
 ## Cache loaded portrait textures to avoid repeated disk reads
@@ -695,6 +909,8 @@ func _create_portrait(portrait_type: String) -> Texture2D:
 			_draw_scholar_portrait(img, size)
 		"shopkeeper", "merchant":
 			_draw_shopkeeper_portrait(img, size)
+		"guard", "brigadier":
+			_draw_elder_portrait(img, size)
 		"goblin":
 			_draw_goblin_portrait(img, size)
 		"mysterious":

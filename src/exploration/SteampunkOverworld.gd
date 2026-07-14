@@ -112,6 +112,8 @@ func _ready() -> void:
 	monster_spawner = MonsterSpawner.new()
 	monster_spawner.name = "MonsterSpawner"
 	add_child(monster_spawner)
+	monster_spawner.set_map_size(MAP_WIDTH, MAP_HEIGHT)
+	monster_spawner.monster_touched.connect(_on_roaming_monster_touched)
 	monster_spawner.setup(player, ["steam_rat", "cog_swarm", "clockwork_sentinel", "pipe_phantom", "brass_golem"])
 
 	_threat_meter = ThreatMeter.new()
@@ -133,7 +135,7 @@ func _ready() -> void:
 
 func _get_objective_position() -> Vector2:
 	## W3: reach rail station (Forward Portal) after visiting Brasston
-	if GameState.get_story_flag("w3_boss_defeated"):
+	if GameState.game_constants.get("cutscene_flag_tempo_steampunk_defeated", false):
 		return spawn_points.get("station", Vector2.ZERO)
 	if GameState.get_story_flag("visited_brasston"):
 		return spawn_points.get("station", Vector2.ZERO)
@@ -240,7 +242,7 @@ func _place_wanderers() -> void:
 			"path": [Vector2(25, 20), Vector2(30, 20), Vector2(30, 25), Vector2(25, 25)],
 			"hints": [
 				{"flag": "w3_entered", "text": "Brasston is west of here. The Grand Mechanism runs everything."},
-				{"flag": "w3_boss_defeated", "text": "The mechanism broke. Something opened up... smells like soot and iron."},
+				{"flag": "tempo_steampunk_defeated", "text": "The mechanism broke. Something opened up... smells like soot and iron."},
 			],
 		},
 		{
@@ -250,7 +252,7 @@ func _place_wanderers() -> void:
 			"path": [Vector2(40, 10), Vector2(45, 10), Vector2(45, 15), Vector2(40, 15)],
 			"hints": [
 				{"flag": "w3_entered", "text": "The pipes all lead to the Mechanism. Follow them if you're brave."},
-				{"flag": "w3_boss_defeated", "text": "Beyond the Dominion lies a world of pure industry. No craftsmanship. Just output."},
+				{"flag": "tempo_steampunk_defeated", "text": "Beyond the Dominion lies a world of pure industry. No craftsmanship. Just output."},
 			],
 		},
 	]
@@ -511,7 +513,7 @@ func _setup_transitions() -> void:
 	transitions.add_child(back_portal)
 
 	# Forward portal to W4 Industrial (gated on world unlock)
-	if GameState.is_world_unlocked(4) or GameState.get_story_flag("w3_boss_defeated"):
+	if GameState.is_world_unlocked(4) or GameState.game_constants.get("cutscene_flag_tempo_steampunk_defeated", false):
 		var forward_portal = AreaTransitionScript.new()
 		forward_portal.name = "WorldPortal"
 		forward_portal.target_map = "industrial_overworld"
@@ -667,7 +669,7 @@ func _setup_controller() -> void:
 	controller = OverworldControllerScript.new()
 	controller.name = "Controller"
 	controller.player = player
-	controller.encounter_enabled = true
+	controller.encounter_enabled = false  # Roaming monsters handle encounters, not step-based random
 	controller.current_area_id = "steampunk_overworld"
 
 	# W3 Steampunk encounters — clockwork enemies, avg lv 5
@@ -692,6 +694,15 @@ func _on_transition_triggered(target_map: String, spawn_point: String) -> void:
 
 func _on_battle_triggered(enemies: Array) -> void:
 	battle_triggered.emit(enemies, "steampunk")
+
+
+## Tick 86: see SuburbanOverworld._on_roaming_monster_touched for rationale.
+func _on_roaming_monster_touched(monster_id: String, _monster_types: Array) -> void:
+	var enemies: Array = [monster_id]
+	var extra: int = randi_range(0, 2)
+	for _i in range(extra):
+		enemies.append(monster_id)
+	_on_battle_triggered(enemies)
 
 
 func _on_menu_requested() -> void:
@@ -736,15 +747,17 @@ func _create_map_boundaries() -> void:
 	var map_w = MAP_WIDTH * TILE_SIZE
 	var map_h = MAP_HEIGHT * TILE_SIZE
 	var wall_thickness = 32.0
+	# Playtest 2026-07-11: flush walls let the sprite clip past the Mode 7 render edge — stop one tile inside (tunable).
+	var edge_inset = float(TILE_SIZE)
 
 	# Top wall
-	_add_boundary_wall(bounds, Vector2(map_w / 2, -wall_thickness / 2), Vector2(map_w + wall_thickness * 2, wall_thickness))
+	_add_boundary_wall(bounds, Vector2(map_w / 2, edge_inset - wall_thickness / 2), Vector2(map_w + wall_thickness * 2, wall_thickness))
 	# Bottom wall
-	_add_boundary_wall(bounds, Vector2(map_w / 2, map_h + wall_thickness / 2), Vector2(map_w + wall_thickness * 2, wall_thickness))
+	_add_boundary_wall(bounds, Vector2(map_w / 2, map_h - edge_inset + wall_thickness / 2), Vector2(map_w + wall_thickness * 2, wall_thickness))
 	# Left wall
-	_add_boundary_wall(bounds, Vector2(-wall_thickness / 2, map_h / 2), Vector2(wall_thickness, map_h + wall_thickness * 2))
+	_add_boundary_wall(bounds, Vector2(edge_inset - wall_thickness / 2, map_h / 2), Vector2(wall_thickness, map_h + wall_thickness * 2))
 	# Right wall
-	_add_boundary_wall(bounds, Vector2(map_w + wall_thickness / 2, map_h / 2), Vector2(wall_thickness, map_h + wall_thickness * 2))
+	_add_boundary_wall(bounds, Vector2(map_w - edge_inset + wall_thickness / 2, map_h / 2), Vector2(wall_thickness, map_h + wall_thickness * 2))
 
 
 func _add_boundary_wall(parent: StaticBody2D, pos: Vector2, size: Vector2) -> void:

@@ -6,10 +6,23 @@ var player_display_size: float = 120.0  # Scaled down from 160 — less oversize
 var player_screen_pos: Vector2 = Vector2(640, 540)
 
 var horizon: float = 0.0
-var near_scale: float = 0.45  # Higher = less horizontal compression near player feet
-var ground_y: float = 0.48  # Lower = sample from closer to center (less warp at player)
-var curvature: float = 0.01
+## Playtest tuning (2026-07-01, per cowir-overworld msg 2008): the
+## visual/collision mismatch on mountain edges is a fundamental
+## Mode 7 property — log() depth compression means no fixed collision
+## margin matches at all distances. Option-1 fix: raise near_scale +
+## lower default curvature so foreshortening is less aggressive and
+## visual/physics parity is closer. Reversible if playtest wants the
+## old feel back.
+var near_scale: float = 0.55  # was 0.45 — less horizontal compression
+var ground_y: float = 0.48
+var curvature: float = 0.005  # was 0.01 — less warp at player
 var fog_color: Color = Color(0.50, 0.60, 0.78, 1.0)
+# was hardcoded at shader's 0.7 max; 0.45 default per playtest — per-world preset can override
+var fog_strength: float = 0.45
+## Sky-side horizon-band height (0.02–0.6), decoupled from near_scale. The band
+## used to be near_scale tall (~55% of screen) = an opaque blue slab; 0.18 is a
+## slim atmospheric strip. Playtest 2026-07-05 (struktured). Per-world overridable.
+var horizon_band: float = 0.18
 var sky_top: Color = Color(0.25, 0.35, 0.65, 1.0)
 var sky_bottom: Color = Color(0.55, 0.65, 0.85, 1.0)
 var scanline_intensity: float = 0.0
@@ -35,8 +48,9 @@ const TINT_NIGHT: Color = Color(0.6, 0.65, 0.9)
 ## W1 classic SNES → W5 wireframe/data → W6 shader dissolves entirely.
 const WORLD_PRESETS: Dictionary = {
 	"medieval": {
-		"curvature": 0.01,
+		"curvature": 0.005,  # was 0.01 — mountain-edge parity tuning
 		"fog_color": Color(0.50, 0.60, 0.78),
+		"fog_strength": 0.35,  # clear open sky
 		"sky_top": Color(0.25, 0.35, 0.65),
 		"sky_bottom": Color(0.55, 0.65, 0.85),
 		"cloud_density": 0.7,  # Fluffy cumulus clouds
@@ -45,6 +59,7 @@ const WORLD_PRESETS: Dictionary = {
 	"suburban": {
 		"curvature": 0.005,
 		"fog_color": Color(0.72, 0.75, 0.80),
+		"fog_strength": 0.45,  # muggy sprawl
 		"sky_top": Color(0.45, 0.55, 0.75),
 		"sky_bottom": Color(0.70, 0.78, 0.90),
 		"cloud_density": 0.4,  # Light suburban haze clouds
@@ -53,6 +68,7 @@ const WORLD_PRESETS: Dictionary = {
 	"steampunk": {
 		"curvature": 0.02,
 		"fog_color": Color(0.60, 0.45, 0.25),
+		"fog_strength": 0.55,  # amber smog rolls in
 		"sky_top": Color(0.35, 0.25, 0.15),
 		"sky_bottom": Color(0.55, 0.45, 0.30),
 		"cloud_density": 0.6,
@@ -62,6 +78,7 @@ const WORLD_PRESETS: Dictionary = {
 	"industrial": {
 		"curvature": 0.0,
 		"fog_color": Color(0.42, 0.40, 0.38),
+		"fog_strength": 0.6,  # choking factory smog
 		"sky_top": Color(0.28, 0.27, 0.26),
 		"sky_bottom": Color(0.38, 0.37, 0.36),
 		"cloud_density": 0.8,  # Thick industrial smog
@@ -70,6 +87,7 @@ const WORLD_PRESETS: Dictionary = {
 	"digital": {
 		"curvature": 0.005,
 		"fog_color": Color(0.02, 0.40, 0.70),
+		"fog_strength": 0.25,  # crisp code — no atmosphere to speak of
 		"sky_top": Color(0.0, 0.05, 0.12),
 		"sky_bottom": Color(0.0, 0.15, 0.30),
 		"scanline_intensity": 0.3,
@@ -112,6 +130,15 @@ var _player_moving: bool = false
 
 static var camera_angle: float = 0.0
 static var _pending_dissolve_in: bool = false
+## Tick 348: static flag mirroring the most-recently-applied `mode7` param
+## from apply_camera. OverworldPlayer reads this to gate its Mode 7
+## horizontal compensation — pre-fix the 2x X boost (input_dir.x *= 2.0)
+## fired unconditionally, so non-Mode-7 contexts (villages, interiors,
+## dungeons rendered with the flat camera) saw their diagonal movement
+## biased toward horizontal. Diagonal up-right would visibly walk more
+## right than up. Defaults to false so the boost stays OFF until an
+## overworld explicitly turns Mode 7 on.
+static var is_active: bool = false
 
 
 ## Apply a per-world visual preset. Call BEFORE setup().
@@ -124,6 +151,10 @@ func apply_preset(world_id: String) -> void:
 		curvature = preset["curvature"]
 	if preset.has("fog_color"):
 		fog_color = preset["fog_color"]
+	if preset.has("fog_strength"):
+		fog_strength = float(preset["fog_strength"])
+	if preset.has("horizon_band"):
+		horizon_band = float(preset["horizon_band"])
 	if preset.has("sky_top"):
 		sky_top = preset["sky_top"]
 	if preset.has("sky_bottom"):
@@ -182,6 +213,8 @@ func setup(scene: Node2D, player: Node2D) -> void:
 	_shader_mat.set_shader_parameter("ground_y", ground_y)
 	_shader_mat.set_shader_parameter("curvature", curvature)
 	_shader_mat.set_shader_parameter("fog_color", fog_color)
+	_shader_mat.set_shader_parameter("fog_strength", fog_strength)
+	_shader_mat.set_shader_parameter("horizon_band", horizon_band)
 	_shader_mat.set_shader_parameter("sky_top", sky_top)
 	_shader_mat.set_shader_parameter("sky_bottom", sky_bottom)
 	_shader_mat.set_shader_parameter("scanline_intensity", scanline_intensity)
@@ -468,6 +501,8 @@ func _update_billboards() -> void:
 
 
 func cleanup() -> void:
+	# Static leak: stale true gave VILLAGES the 2x horizontal boost after visiting the overworld — movement overshoot made doors near-impossible to hit (struktured playtest 2026-07-11).
+	is_active = false
 	camera_angle = 0.0
 	_current_rotation = 0.0
 	# Free billboard sprites
@@ -489,6 +524,9 @@ func cleanup() -> void:
 
 
 static func apply_camera(cam: Camera2D, mode7: bool) -> void:
+	# Tick 348: surface mode7 state via the static is_active flag so
+	# OverworldPlayer can gate its 2x horizontal-compensation boost.
+	is_active = mode7
 	if mode7:
 		cam.zoom = Vector2(0.85, 0.85)  # Closer zoom = tiles near player match collision size
 		cam.offset = Vector2(0, -20)

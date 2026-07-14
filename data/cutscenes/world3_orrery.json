@@ -2,7 +2,7 @@
   "id": "world3_orrery",
   "title": "The Scheduled Revelation",
   "world": 3,
-  "trigger": "world3_brasston_visit",
+  "trigger": "quest_turn_in:world3_scheduled_revelation",
   "background": "steampunk_workshop",
   "quest": "chain_a_traveling_merchant",
   "description": "Orrery's precision futures consultation in Brasston. An eleven-minute scheduling offset. A letter carried across decades in a retired engineer's filing cabinet. The worlds were written simultaneously.",
@@ -22,7 +22,7 @@
     {
       "type": "narration",
       "lines": [
-        "The booth was clockwork. Of course it was \u2014 everything in Brasston was clockwork.",
+        "The booth was clockwork. Of course it was — everything in Brasston was clockwork.",
         "The sign read: ORRERY PRECISION FUTURES CONSULTATION. Below that, in smaller type: MANDATORY 7-SECOND SCHEDULING DELAY. PER REGULATORY CODE 44-B.",
         "Below that, in smaller type still: I know. I know. Please sit."
       ]
@@ -71,7 +71,7 @@
         },
         {
           "speaker": "Orrery",
-          "text": "Our schedules are offset by exactly eleven minutes. Every slot I have available, he is already committed. Every slot he has available, I am obligated elsewhere. The offset is consistent across three weeks. That is \u2014 in a clockwork city where everything runs to the gear \u2014 not an accident.",
+          "text": "Our schedules are offset by exactly eleven minutes. Every slot I have available, he is already committed. Every slot he has available, I am obligated elsewhere. The offset is consistent across three weeks. That is — in a clockwork city where everything runs to the gear — not an accident.",
           "theme": "mysterious",
           "portrait": "mysterious"
         }
@@ -86,7 +86,7 @@
       "lines": [
         {
           "speaker": "Orrery",
-          "text": "I've written him a letter. I need someone to deliver it in person \u2014 not through the scheduling system, which will insert the delay, but directly, by hand. Would you bring it to him? His atelier is on Mainspring Street. He's there most mornings.",
+          "text": "I've written him a letter. I need someone to deliver it in person — not through the scheduling system, which will insert the delay, but directly, by hand. Would you bring it to him? His atelier is on Mainspring Street. He's there most mornings.",
           "theme": "mysterious",
           "portrait": "mysterious"
         },
@@ -121,7 +121,7 @@
       "lines": [
         {
           "speaker": "Flux",
-          "text": "I found this in a batch of old maintenance logs. Harmonia Cave system \u2014 I know that doesn't make geographic sense, but the filing code indicated they came from a medieval administration archive. They were misfiled here decades ago and I never knew what to do with them.",
+          "text": "I found this in a batch of old maintenance logs. Harmonia Cave system — I know that doesn't make geographic sense, but the filing code indicated they came from a medieval administration archive. They were misfiled here decades ago and I never knew what to do with them.",
           "theme": "mysterious",
           "portrait": "mysterious"
         },
@@ -133,7 +133,7 @@
         },
         {
           "speaker": "Flux",
-          "text": "The cave logs are dated forty years before the Mechanism was designed. Which means \u2014 the same person who designed the Mechanism was maintaining caves in a world that, by my understanding of geography, shouldn't be in the same administrative region as Brasston at all.",
+          "text": "The cave logs are dated forty years before the Mechanism was designed. Which means — the same person who designed the Mechanism was maintaining caves in a world that, by my understanding of geography, shouldn't be in the same administrative region as Brasston at all.",
           "theme": "mysterious",
           "portrait": "mysterious"
         }
@@ -178,7 +178,7 @@
         },
         {
           "speaker": "Orrery",
-          "text": "But the Mechanism is World 3. The cave is World 1. Phil had the paper before there was a World 1 \u2014 he said so himself. Before. Before Harmonia. Before Phil.",
+          "text": "But the Mechanism is World 3. The cave is World 1. Phil had the paper before there was a World 1 — he said so himself. Before. Before Harmonia. Before Phil.",
           "theme": "mysterious",
           "portrait": "mysterious"
         },
@@ -217,7 +217,7 @@
         },
         {
           "speaker": "Orrery",
-          "text": "That's the next question, yes. I'm still on this one. Take this \u2014 it will open something in World 4 that has no apparent function without it. Old tunnels. Pre-factory. Someone dug them before the factory was planned.",
+          "text": "That's the next question, yes. I'm still on this one. Take this — it will open something in World 4 that has no apparent function without it. Old tunnels. Pre-factory. Someone dug them before the factory was planned.",
           "theme": "mysterious",
           "portrait": "mysterious"
         }
@@ -247,7 +247,7 @@
       "lines": [
         {
           "speaker": "Orrery",
-          "text": "Three marks. The Fool is starting to know something. That's the dangerous part of the journey \u2014 when the Fool becomes aware enough to understand how lost they are.",
+          "text": "Three marks. The Fool is starting to know something. That's the dangerous part of the journey — when the Fool becomes aware enough to understand how lost they are.",
           "theme": "mysterious",
           "portrait": "mysterious"
         },

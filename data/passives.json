@@ -26,6 +26,15 @@
 			"crit_chance": 0.25
 		}
 	},
+	"devastating_criticals": {
+		"id": "devastating_criticals",
+		"name": "Devastating Criticals",
+		"category": 0,
+		"description": "+0.5x critical hit damage (1.5x -> 2.0x base)",
+		"stat_mods": {
+			"crit_damage_bonus": 0.5
+		}
+	},
 	"iron_skin": {
 		"id": "iron_skin",
 		"name": "Iron Skin",

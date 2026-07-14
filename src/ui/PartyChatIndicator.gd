@@ -2,11 +2,21 @@ extends Control
 
 ## PartyChatIndicator
 ##
-## Small bottom-right "[L] Party Chat (N)" indicator that appears during
+## Small bottom-right "Party Chat (N)" indicator that appears during
 ## exploration when PartyChatSystem has one or more available chats.
 ## Pulses gently to draw attention without being intrusive.
+##
+## Tick 470: now clickable (mouse) and no longer advertises a bare
+## "[L]" glyph — that collided with the battle hint-bar's [L] =
+## L-shoulder, and the joypad binding (button 9) reads as L1 on a
+## standard pad but the left-stick click on a Joy-Con, so the glyph
+## was wrong depending on controller. Emits `clicked` so GameLoop
+## can open the chat menu on a mouse press, matching the L-key /
+## gamepad-button paths.
 
-const PANEL_W := 180
+signal clicked()
+
+const PANEL_W := 190
 const PANEL_H := 40
 const MARGIN := 16
 
@@ -16,7 +26,9 @@ var _pulse_tween: Tween = null
 
 
 func _ready() -> void:
-	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Tick 470: STOP (was IGNORE) so mouse clicks reach _gui_input.
+	mouse_filter = Control.MOUSE_FILTER_STOP
+	mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	custom_minimum_size = Vector2(PANEL_W, PANEL_H)
 	size = custom_minimum_size
 	_build()
@@ -41,6 +53,8 @@ func _build() -> void:
 	add_child(_panel)
 
 	_label = Label.new()
+	# Tick 470: IGNORE so clicks bubble to the root Control's _gui_input.
+	_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_label.position = Vector2(10, 8)
 	_label.size = Vector2(PANEL_W - 20, PANEL_H - 16)
 	_label.add_theme_color_override("font_color", Color(0.85, 0.95, 1.0))
@@ -62,8 +76,19 @@ func _refresh() -> void:
 		visible = false
 		return
 	visible = true
-	_label.text = "[L] Party Chat (%d)" % n
+	# Tick 470: 💬 icon instead of the ambiguous [L] glyph. Clickable
+	# now; L key + gamepad button still open it too.
+	_label.text = "💬 Party Chat (%d)" % n
 	_start_pulse()
+
+
+func _gui_input(event: InputEvent) -> void:
+	# Tick 470: mouse-click support. Left press opens the chat menu
+	# via the `clicked` signal (GameLoop wires it to _open_party_chat_menu).
+	if event is InputEventMouseButton and event.pressed \
+			and event.button_index == MOUSE_BUTTON_LEFT:
+		clicked.emit()
+		accept_event()
 
 
 func _reposition() -> void:
@@ -84,3 +109,8 @@ func _stop_pulse() -> void:
 		_pulse_tween.kill()
 	_pulse_tween = null
 	modulate.a = 1.0
+
+
+func _exit_tree() -> void:
+	# Stop any dangling pulse tween before the node is freed.
+	_stop_pulse()

@@ -138,7 +138,7 @@ func _ready() -> void:
 	_place_ambient_effects()
 
 	# Runtime lookup keeps this file preload-safe for tests.
-	var sm = get_tree().root.get_node_or_null("SoundManager") if get_tree() else null
+	var sm = get_tree().root.get_node_or_null("SoundManager") if is_inside_tree() else null
 	if sm:
 		sm.play_area_music("overworld")
 
@@ -228,7 +228,7 @@ func _generate_map() -> void:
 		# Row 0-9: Northern region (Ice NW, Forest N, Swamp NE)
 		"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",  # 0
 		"~~MMMMMMiiiiiiiiii~~~FFFFFFFFFFFFFFFFFFFFFFFFFFFFF~~~~~~~~~~~~~SSSSSSSSSSdddddddddddd~~~~~~~~~~~~~~~",  # 1
-		"~~MMMMMiiiiiiiiiii~~~FFFFFFFFFFFFFFFFFFFFFFFFFFFF~~~~~~~~~~~~~~SSSSSSSSSdddddddddddddd~~~~~~~~~~~~~~",  # 2
+		"~~MMM.Hiiiiiiiiiii~~~FFFFFFFFFFFFFFFFFFFFFFFFFFFF~~~~~~~~~~~~~~SSSSSSSSSdddddddddddddd~~~~~~~~~~~~~~",  # 2 (H = hidden passage → ice hollow pocket)
 		"~~MMMMiiii.iiiiiii~~FFFFFFFFFFgFFFFFFFFFFFFFFFFF~~~~~~~~~~~~~~~SSSSSSSSddddddddddddddd~~~~~~~~~~~~~~",  # 3
 		"~~MMMiii..1.iiiiii~~FFFFFFFgggggFFFFFFFFFFFFFFFF~~~~~~~~~~~~~~~SSSSSSSdddddd..ddddddddd~~~~~~~~~~~~~",  # 4
 		"~~MMiiii....iiiiiii~FFFFFFgggggggFFFFFFFFFFFFFFF~~~~~~~~~~~~~~~SSSSSSddddd.....dddddddd~~~~~~~~~~~~~",  # 5
@@ -242,47 +242,47 @@ func _generate_map() -> void:
 		"~~~~MMMii~~~~~..B..~~g..............gFFFFFFF~~~~~~~~~~~~~~~~~~~Sddddd......ddddddd~~~~~~~~~~~~~~~~~~",  # 12
 		"~~~~~MMi~~~~~~.....~~g..............gFFFFFF~~~~~~~~~~~~~~~~~~~~SSddd.....ddddddd~~~~~~~~~~~~~~~~~~~~",  # 13
 		"~~~~~~M~~~~~~~..B..~~................FFFFF~~~~~~~~~~~~~~~~~~~~~SSdd....ddddddd~~~~~~~~~~~~~~~~~~~~~~",  # 14
-		"..........................................................................................dd..ddddd",  # 15
+		"..........................................................................................dd..dddddd",  # 15
 		"....................................................................................................",  # 16
 		"....................................................................................................",  # 17
 		"....................................................................................................",  # 18
 		"....................................................................................................",  # 19
 		# Row 20-29: Central grassland (Harmonia Village + Whispering Cave)
-		"...C..........................gggggggggggggg.........gggggg........................................",  # 20
-		"..C...........................ggggggggggggggg........gggggggg....................................",  # 21
-		"..............................ggggggggggggggggg.....gggggggggg...................................",  # 22
-		".............BB........BB.....ggggggggggggggggg....ggggggggggg................................ccc",  # 23
-		".............BB........BB.....gggggggggggggggg....gggggggggggg...............................cccc",  # 24
-		"....V........BB........BB.....ggggggggggggggg....ggggggggggg................................ccccc",  # 25
-		".............BB........BB.....gggggggggggggg....gggggggggg..................................cccccc",  # 26
-		"..............................ggggggggggggg....ggggggggg....................................ccccccc",  # 27
-		"..........gggggg..............ggggggggggg....gggggggg......................................cccccccc",  # 28
-		"~~~~~~~~.....gggggggg..............ggggggggg...ggggggg....................................ccccccccc",  # 29
+		"...C..........................gggggggggggggg.........gggggg.........................................",  # 20
+		"..C...........................ggggggggggggggg........gggggggg.......................................",  # 21
+		"..............................ggggggggggggggggg.....gggggggggg......................................",  # 22
+		".............BB........BB.....ggggggggggggggggg....ggggggggggg................................cccccc",  # 23
+		".............BB........BB.....gggggggggggggggg....gggggggggggg...............................ccccccc",  # 24
+		"....V........BB........BB.....ggggggggggggggg....ggggggggggg................................cccccccc",  # 25
+		".............BB........BB.....gggggggggggggg....gggggggggg..................................cccccccc",  # 26
+		"..............................ggggggggggggg....ggggggggg....................................cccccccc",  # 27
+		"..........gggggg..............ggggggggggg....gggggggg......................................ccccccccc",  # 28
+		"~~~~~~~~.....gggggggg..............ggggggggg...ggggggg....................................cccccccccc",  # 29
 		# Row 30-39: Central-south transition
-		"~~~~~~~~....ggggggggggg.............gggggggg..ggggggg....................................cccccccccc",  # 30
-		"~~~~~~~~~..ggggggggggggg............ggggggg..gggggg.....................................ccccccccccc",  # 31
-		"~~~~~~~~~~ggggggggggggggg...........gggggg..ggggg......................................cccccccccccc",  # 32
-		"~~~~~~~~~~ggggggggggggggg............ggggg.gggg.......................................ccccccc~~~ccc",  # 33
-		"~~~~~~~~~ggggggggggggggg.............gggg.ggg........................................cccccc~~~~~cc",  # 34
-		"~~~~~~~~gggggggggggggg................ggg.gg........................................ccccc~~~~~~~~c",  # 35
-		"~~~~~~~ggggggggggggg...................gg.g........................................ccccc~~~~~~~~~~",  # 36
-		"~~~~~~gggggggggggg..........................................................................~~~~~~",  # 37
-		"~~~~~ggggggggg.................................................................................~~~~",  # 38
-		"~~~~gggggggg....................................................................................~~~",  # 39
+		"~~~~~~~~....ggggggggggg.............gggggggg..ggggggg....................................ccccccccccc",  # 30
+		"~~~~~~~~~..ggggggggggggg............ggggggg..gggggg.....................................cccccccccccc",  # 31
+		"~~~~~~~~~~ggggggggggggggg...........gggggg..ggggg......................................ccccccccccccc",  # 32
+		"~~~~~~~~~~ggggggggggggggg............ggggg.gggg.......................................ccccccc~~~cccc",  # 33
+		"~~~~~~~~~ggggggggggggggg.............gggg.ggg........................................cccccc~~~~~cccc",  # 34
+		"~~~~~~~~gggggggggggggg................ggg.gg........................................ccccc~~~~~~~~ccc",  # 35
+		"~~~~~~~ggggggggggggg...................gg.g........................................ccccc~~~~~~~~~~~~",  # 36
+		"~~~~~~gggggggggggg..........................................................................~~~~~~~~",  # 37
+		"~~~~~ggggggggg.................................................................................~~~~~",  # 38
+		"~~~~gggggggg....................................................................................~~~~",  # 39
 		# Row 40-49: Southern transition (Desert SW, Rivers, Volcanic SE)
-		"~~~ggggggg.......................................................................................~~",  # 40
-		"~~gggggg.........................................................................................~",  # 41
-		"~ggggg............................................................................................",  # 42
-		"gggg..............................................................................................",  # 43
-		"ggg...............................................................................................",  # 44
-		"gg................................................................................................",  # 45
-		"g..............................~~...............~~.............................................~~~~",  # 46
+		"~~~ggggggg.......................................................................................~~~",  # 40
+		"~~gggggg.........................................................................................~~~",  # 41
+		"~ggggg..............................................................................................",  # 42
+		"gggg................................................................................................",  # 43
+		"ggg.................................................................................................",  # 44
+		"gg..................................................................................................",  # 45
+		"g..............................~~...............~~.............................................~~~~~",  # 46
 		"..............................~~~~.............~~~~...........................................~~~~~~",  # 47
-		".............................~~~~~~...........~~~~~~.........................................~~~~~~~~",  # 48
-		"............................~~~~~~~~.........~~~~~~~~........................................~~~~~~~~",  # 49
+		".............................~~~~~~...........~~~~~~.........................................~~~~~~~",  # 48
+		"............................~~~~~~~~.........~~~~~~~~........................................~~~~~~~",  # 49
 		# Row 50-59: Desert and Volcanic regions
-		"ssssssssssssssss............~~~~~~~~~~BBB~~~~~~~~~~............................MMMMMM~~~~MMM~~~~~~~~",  # 50
-		"sssssssssssssssss..........~~~~~~~~~~~...~~~~~~~~~~...........................MMMMMMlllMMMMM~~~~~~~~",  # 51
+		"ssssssssssssssss............~~~~~~~~~~BBB~~~~~~~~~~............................MMHMMM~~~~MMM~~~~~~~~",  # 50 (H = hidden passage → magma vault)
+		"sssssssssssssssss..........~~~~~~~~~~~...~~~~~~~~~~...........................MMM.MMlllMMMMM~~~~~~~~",  # 51 (pocket behind the H above)
 		"ssssssssssssssssss.........~~~~~~~~~~~...~~~~~~~~~~..........................MMMMMlllllMMMMM~~~~~~~~",  # 52
 		"ssssssssss..sssssss........~~~~~~~~~~~...~~~~~~~~~~.........................MMMMlllllll.MMMMM~~~~~~~",  # 53
 		"sssssssss....sssssss.......~~~~~~~~~~~...~~~~~~~~~~........................MMMlllll.llll.MMMM~~~~~~~",  # 54
@@ -293,14 +293,14 @@ func _generate_map() -> void:
 		"ssssssssss..sssssssss......~~~~~~~~~~~...~~~~~~~~~~...................MMlllllll.....lllMM~~~~~~~~~~~",  # 59
 		# Row 60-69: Southern edge
 		"sssssssssssssssssssss......~~~~~~~~~~~~.~~~~~~~~~~~~..................MMMllllllllllllllMM~~~~~~~~~~~",  # 60
-		"ssssssssssssssssssssss.....~~~~~~~~~~~~~~~~~~~~~~~~~.................MMMMlllllllllllMMM~~~~~~~~~~~~",  # 61
-		"sssssssssssssssssssssss....~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.............MMMMMlllllllMMMMM~~~~~~~~~~~~~",  # 62
-		"ssssssssssssssssssssssss...~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~............MMMMMMlllllMMMMMM~~~~~~~~~~~~~",  # 63
+		"ssssssssssssssssssssss.....~~~~~~~~~~~~~~~~~~~~~~~~~.................MMMMlllllllllllMMM~~~~~~~~~~~~~",  # 61
+		"sssssssssssssssssssssss....~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.............MMMMMlllllllMMMMM~~~~~~~~~~~~~~",  # 62
+		"ssssssssssssssssssssssss...~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~............MMMMMMlllllMMMMMM~~~~~~~~~~~~~~",  # 63
 		"sssssssssssssssssssssssss..~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...........MMMMMMMlllMMMMMMM~~~~~~~~~~~~~~",  # 64
-		"ssssssssssssssssssssssssss.~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~..........MMMMMMMMMMMMMMMM~~~~~~~~~~~~~~",  # 65
-		"ssssssssssssssssssssssssss~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.........MMMMMMMMMMMMMM~~~~~~~~~~~~~~~~",  # 66
-		"ssssssssssssssssssssssssss~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~........MMMMMMMMMMMMM~~~~~~~~~~~~~~~~~",  # 67
-		"ssssssssssssssssssssssssss~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.......MMMMMMMMMMMM~~~~~~~~~~~~~~~~~~",  # 68
+		"ssssssssssssssssssssssssss.~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~..........MMMMMMMMMMMMMMMM~~~~~~~~~~~~~~~",  # 65
+		"ssssssssssssssssssssssssss~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.........MMMMMMMMMMMMMM~~~~~~~~~~~~~~~~~",  # 66
+		"ssssssssssssssssssssssssss~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~........MMMMMMMMMMMMM~~~~~~~~~~~~~~~~~~",  # 67
+		"ssssssssssssssssssssssssss~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.......MMMMMMMMMMMM~~~~~~~~~~~~~~~~~~~",  # 68
 		"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",  # 69
 	]
 
@@ -337,10 +337,18 @@ func _register_spawn_point(char: String, x: int, y: int) -> void:
 	match char:
 		"C": spawn_points["cave_entrance"] = pos
 		"V": spawn_points["village_entrance"] = pos
-		"1": spawn_points["ice_dragon_cave"] = pos
-		"2": spawn_points["shadow_dragon_cave"] = pos
-		"3": spawn_points["lightning_dragon_cave"] = pos
-		"4": spawn_points["fire_dragon_cave"] = pos
+		"1":
+			spawn_points["ice_dragon_cave"] = pos
+			spawn_points["ice_cave_entrance"] = pos
+		"2":
+			spawn_points["shadow_dragon_cave"] = pos
+			spawn_points["shadow_cave_entrance"] = pos
+		"3":
+			spawn_points["lightning_dragon_cave"] = pos
+			spawn_points["lightning_cave_entrance"] = pos
+		"4":
+			spawn_points["fire_dragon_cave"] = pos
+			spawn_points["fire_cave_entrance"] = pos
 		"W": spawn_points["frosthold_entrance"] = pos
 		"E": spawn_points["eldertree_entrance"] = pos
 		"G": spawn_points["grimhollow_entrance"] = pos
@@ -348,8 +356,14 @@ func _register_spawn_point(char: String, x: int, y: int) -> void:
 		"I": spawn_points["ironhaven_entrance"] = pos
 		"P":
 			spawn_points["steampunk_portal"] = pos
-			# Alias: W2's return portal targets "suburban_portal" — same physical spot
+			# W2 return portal aliases — same physical spot.
 			spawn_points["suburban_portal"] = pos
+	# Castle Harmonia portal — placed adjacent to Whispering Cave on the central map.
+	# 'C' is the cave marker; we anchor the castle portal one tile east of it.
+	if char == "C":
+		var castle_pos = Vector2((x + 2) * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
+		spawn_points["castle_entrance"] = castle_pos
+		spawn_points["castle_harmonia_entrance"] = castle_pos
 
 
 func _char_to_tile_type(char: String) -> int:
@@ -373,6 +387,7 @@ func _char_to_tile_type(char: String) -> int:
 		"1", "2", "3", "4": return TileGeneratorScript.TileType.CAVE_ENTRANCE
 		"W", "E", "G", "D", "I": return TileGeneratorScript.TileType.VILLAGE_GATE
 		"P": return TileGeneratorScript.TileType.BRIDGE  # Portal uses bridge tile
+		"H": return TileGeneratorScript.TileType.PATH  # Hidden passage — walkable; HiddenPassage sprite disguises it
 		_: return TileGeneratorScript.TileType.GRASS
 
 
@@ -414,11 +429,36 @@ func _setup_transitions() -> void:
 		spawn_points.get("ironhaven_entrance", Vector2.ZERO), "Enter Ironhaven")
 
 	# World progression portal — leads to next world (W2 Suburban)
-	# Only visible after W1 boss is defeated (or world 2+ is unlocked)
+	# Only visible after W1 boss (Mordaine) is defeated, or world 2+ is unlocked.
+	# Tick 278: was reading dead story_flag "w1_boss_defeated" (no
+	# writer in src/) — the alternative path was permanently false.
+	# Mordaine's real defeat flag is cutscene_flag_world1_mordaine
+	# _defeated in game_constants (set by CastleHarmonia's
+	# defeat_cutscene_flags ratchet).
 	var gs = _get_game_state()
-	if gs and (gs.is_world_unlocked(2) or gs.get_story_flag("w1_boss_defeated")):
+	if gs and (gs.is_world_unlocked(2) or gs.game_constants.get("cutscene_flag_world1_mordaine_defeated", false)):
 		_add_area_transition("WorldPortal", "suburban_overworld", "entrance",
 			spawn_points.get("steampunk_portal", Vector2.ZERO), "Enter the Mundane Sprawl")
+
+	# Castle Harmonia — gated on rat_king_defeated (Rat King reveals castle).
+	# Tick 335: dual-namespace check via GameState.is_story_flag_set so a
+	# save-format migration or debug toggle that set ONLY cutscene_flag_
+	# rat_king_defeated still reveals the castle. Pre-fix bare
+	# get_story_flag would silently miss that and the player would be
+	# stranded mid-W1.
+	if gs and gs.has_method("is_story_flag_set") and gs.is_story_flag_set("rat_king_defeated"):
+		_add_area_transition("CastleHarmonia", "castle_harmonia", "castle_entrance",
+			spawn_points.get("castle_entrance", Vector2.ZERO), "Enter Castle Harmonia")
+
+		# Scriptura capital district — the capital notices Harmonia once the cave
+		# is cleared (Rowan's letter routes the player here). Anchored beside the
+		# Harmonia entrance on the central grassland so it's on known-walkable
+		# ground; nudge the offset if playtest wants it elsewhere.
+		var scriptura_pos: Vector2 = spawn_points.get("village_entrance", Vector2(320, 224)) \
+			+ Vector2(TILE_SIZE * 7, TILE_SIZE * 3)
+		_add_area_transition("ScripturaEntrance", "scriptura_plaza", "entrance",
+			scriptura_pos, "Road to Scriptura (Capital)")
+		spawn_points["scriptura_return"] = scriptura_pos + Vector2(0, TILE_SIZE * 3)
 
 
 func _add_area_transition(trans_name: String, target_map: String, target_spawn: String,
@@ -436,7 +476,8 @@ func _add_area_transition(trans_name: String, target_map: String, target_spawn: 
 	# Mode 7 renders the player lower on screen than their collision position,
 	# so the player has to walk "above" targets. Shifting zones up fixes the mismatch.
 	trans.position = pos + Vector2(0, -TILE_SIZE * 3)  # 3 tiles up — Mode 7 log-warp shifts visual north
-	_setup_transition_collision(trans, Vector2(TILE_SIZE * 4, TILE_SIZE * 10))  # 4 wide × 10 tall — tall to catch Mode 7 vertical offset
+	# 2026-07-13: was 4×10 tiles — but Castle Harmonia sits only 2 tiles east of CaveEntrance, so their 4-tile-wide boxes overlapped by 2 tiles and the earlier sibling (Cave) stole every ui_accept in the shared cells → player trying to enter castle got warped to cave. 2×6 is wide enough to catch the player and tall enough for Mode 7's -3-tile Y-offset.
+	_setup_transition_collision(trans, Vector2(TILE_SIZE * 2, TILE_SIZE * 6))
 	trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(trans)
 
@@ -500,6 +541,7 @@ func _setup_monster_spawner() -> void:
 	monster_spawner.name = "MonsterSpawner"
 	monster_spawner.monster_touched.connect(_on_roaming_monster_touched)
 	add_child(monster_spawner)
+	monster_spawner.set_map_size(MAP_WIDTH, MAP_HEIGHT)
 	monster_spawner.setup(player, ["slime", "bat", "goblin"])
 
 
@@ -544,31 +586,43 @@ func _get_zone_for_tile(tx: int, ty: int) -> String:
 
 
 func _apply_zone_encounters(zone: String) -> void:
-	var pool: Array = []
-	match zone:
-		"central":
-			pool = ["slime", "bat", "goblin"]
-			controller.set_area_config("overworld_central", false, 0.05, pool)
-		"forest":
-			pool = ["wolf", "spider", "goblin"]
-			controller.set_area_config("overworld_forest", false, 0.06, pool)
-		"ice":
-			pool = ["skeleton", "wolf", "goblin"]
-			controller.set_area_config("overworld_ice", false, 0.06, pool)
-		"swamp":
-			pool = ["snake", "ghost", "imp"]
-			controller.set_area_config("overworld_swamp", false, 0.06, pool)
-		"desert":
-			pool = ["skeleton", "snake", "goblin"]
-			controller.set_area_config("overworld_desert", false, 0.06, pool)
-		"volcanic":
-			pool = ["imp", "skeleton", "troll"]
-			controller.set_area_config("overworld_volcanic", false, 0.065, pool)
-		"coast":
-			pool = ["slime", "bat", "spider"]
-			controller.set_area_config("overworld_coast", false, 0.05, pool)
+	# Source of truth: enemy_pools.json. Zone -> pool_id mapping below.
+	var pool_id_map = {
+		"central": "overworld_central",
+		"forest": "overworld_forest",
+		"ice": "overworld_ice",
+		"swamp": "overworld_swamp",
+		"desert": "overworld_desert",
+		"volcanic": "overworld_volcanic",
+		"coast": "overworld_coast",
+	}
+	var rate_map = {
+		"central": 0.05, "forest": 0.06, "ice": 0.06,
+		"swamp": 0.06, "desert": 0.06, "volcanic": 0.065, "coast": 0.05,
+	}
+	var pool_id: String = pool_id_map.get(zone, "")
+	if pool_id == "":
+		return
+	var pool: Array = _load_zone_pool(pool_id)
+	controller.set_area_config(pool_id, false, rate_map.get(zone, 0.05), pool)
 	if monster_spawner and not pool.is_empty():
 		monster_spawner.set_enemy_pool(pool)
+
+
+func _load_zone_pool(pool_id: String) -> Array:
+	# Read pool from data/enemy_pools.json. Falls back to empty Array on miss.
+	var path = "res://data/enemy_pools.json"
+	if not FileAccess.file_exists(path):
+		return []
+	var f = FileAccess.open(path, FileAccess.READ)
+	if f == null:
+		return []
+	var txt = f.get_as_text()
+	f.close()
+	var parsed = JSON.parse_string(txt)
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return []
+	return parsed.get(pool_id, [])
 
 
 func _place_wanderers() -> void:
@@ -630,6 +684,36 @@ func _place_wanderers() -> void:
 		npc.set_patrol(patrol)
 		add_child(npc)
 
+	_place_quest_npcs()
+
+
+func _place_quest_npcs() -> void:
+	## Madame Orrery's wagon — fools_spread giver on the east road out of
+	## Harmonia. Spawn-gated: appears only after the Rat King falls
+	## ("It was not there before the cave.").
+	var gs = get_node_or_null("/root/GameState")
+	var orrery_gate := false
+	if gs and gs.has_method("is_story_flag_set"):
+		orrery_gate = gs.is_story_flag_set("cutscene_flag_rat_king_defeated")
+	if orrery_gate:
+		var OverworldNPCScript = load("res://src/exploration/OverworldNPC.gd")
+		var orrery = OverworldNPCScript.new()
+		orrery.npc_name = "Madame Orrery"
+		orrery.npc_id = "madame_orrery_w1"
+		orrery.npc_type = "mysterious"
+		orrery.dialogue_lines = ["The cards will keep. They have more patience than I do."]
+		orrery.position = Vector2(14 * TILE_SIZE + TILE_SIZE / 2, 23 * TILE_SIZE + TILE_SIZE / 2)
+		add_child(orrery)
+
+	# one_chicken_problem: the wandering hen that strayed to the cave approach.
+	var ChickenScript = load("res://src/exploration/QuestChicken.gd")
+	if ChickenScript:
+		var cave_pos: Vector2 = spawn_points.get("cave_entrance", Vector2(96, 96))
+		var hen = ChickenScript.new()
+		hen.chicken_id = "chicken_cave_approach"
+		hen.position = cave_pos + Vector2(TILE_SIZE * 2, TILE_SIZE)
+		add_child(hen)
+
 
 func _place_village_markers() -> void:
 	var villages = [
@@ -671,6 +755,9 @@ func _place_treasure_chests() -> void:
 		{"id": "w1_iron_gold", "pos": Vector2(80, 56), "type": "gold", "gold": 500},
 		# Swamp region — hidden reward
 		{"id": "w1_swamp_remedy", "pos": Vector2(72, 8), "type": "item", "item": "remedy", "amount": 2},
+		# Secret-passage pockets — sealed behind HiddenPassage walls
+		{"id": "w1_secret_ice_hollow", "pos": Vector2(5, 2), "type": "item", "item": "x_potion", "amount": 2},
+		{"id": "w1_secret_magma_vault", "pos": Vector2(81, 51), "type": "gold", "gold": 999},
 	]
 	for c in chests:
 		var chest = TreasureChestScript.new()
@@ -684,6 +771,23 @@ func _place_treasure_chests() -> void:
 			chest.contents_id = c["item"]
 			chest.contents_amount = c["amount"]
 		add_child(chest)
+
+	_place_hidden_passages()
+
+
+func _place_hidden_passages() -> void:
+	## Disguised wall sections at the H map markers — each seals a
+	## secret pocket carved into the mountain clusters above.
+	var passages = [
+		{"id": "w1_ice_hollow", "pos": Vector2(6, 2), "disguise": "mountain"},
+		{"id": "w1_magma_vault", "pos": Vector2(81, 50), "disguise": "mountain"},
+	]
+	for p in passages:
+		var passage = HiddenPassage.new()
+		passage.passage_id = p["id"]
+		passage.disguise = p["disguise"]
+		passage.position = Vector2(p["pos"].x * TILE_SIZE + TILE_SIZE / 2, p["pos"].y * TILE_SIZE + TILE_SIZE / 2)
+		add_child(passage)
 
 
 func _place_ambient_effects() -> void:
@@ -720,7 +824,7 @@ func _place_ambient_effects() -> void:
 
 
 func _update_zone_ambient(zone: String) -> void:
-	var sm = get_tree().root.get_node_or_null("SoundManager") if get_tree() else null
+	var sm = get_tree().root.get_node_or_null("SoundManager") if is_inside_tree() else null
 	if sm == null:
 		return
 	var ambient_key = ""
@@ -769,9 +873,18 @@ func _get_objective_position() -> Vector2:
 	## Return the world position of the current quest objective for minimap highlighting.
 	var gs = _get_game_state()
 	if gs:
-		if gs.get_story_flag("rat_king_defeated") or gs.get_story_flag("w1_boss_defeated"):
+		# Tick 278: w1_boss_defeated is a dead story_flag (no writer in src/);
+		# Mordaine's real flag is cutscene_flag_world1_mordaine_defeated in
+		# game_constants. rat_king_defeated still works (set by WhisperingCave).
+		if gs.get_story_flag("rat_king_defeated") or gs.game_constants.get("cutscene_flag_world1_mordaine_defeated", false):
 			return spawn_points.get("steampunk_portal", Vector2.ZERO)
-		if gs.get_story_flag("chapter1_complete"):
+		# chapter1_complete is only ever written to game_constants as
+		# "cutscene_flag_chapter1_complete" (by GameLoop on cutscene finish),
+		# never to story_flags. Check both namespaces — same dual-namespace
+		# guard QuestTracker.gd already uses — so the cave marker appears
+		# right after the Elder Theron / chapter1 cutscene, not only after
+		# the cave is already cleared (rat_king_defeated / w1_boss_defeated).
+		if gs.get_story_flag("chapter1_complete") or gs.game_constants.get("cutscene_flag_chapter1_complete", false):
 			return spawn_points.get("cave_entrance", Vector2.ZERO)
 	return spawn_points.get("village_entrance", Vector2.ZERO)
 
@@ -779,7 +892,7 @@ func _get_objective_position() -> Vector2:
 ## Runtime lookup helper — GameState as a global identifier doesn't
 ## resolve in preload() parse contexts used by the test suite.
 func _get_game_state() -> Node:
-	if not get_tree():
+	if not is_inside_tree():
 		return null
 	return get_tree().root.get_node_or_null("GameState")
 
@@ -817,7 +930,7 @@ func _place_signposts() -> void:
 func _on_transition_triggered(target_map: String, spawn_point: String) -> void:
 	# Dissolve effect for world-to-world portal transitions
 	if "overworld" in target_map and _mode7:
-		var ilm = get_tree().root.get_node_or_null("InputLockManager") if get_tree() else null
+		var ilm = get_tree().root.get_node_or_null("InputLockManager") if is_inside_tree() else null
 		if ilm:
 			ilm.push_lock("world_transition")
 		await _mode7.play_dissolve_out()
@@ -899,11 +1012,13 @@ func _create_map_boundaries() -> void:
 	var map_w = MAP_WIDTH * TILE_SIZE
 	var map_h = MAP_HEIGHT * TILE_SIZE
 	var wall_thickness = 32.0
+	# Playtest 2026-07-11: flush walls let the sprite clip past the Mode 7 render edge — stop one tile inside (tunable).
+	var edge_inset = float(TILE_SIZE)
 
-	_add_boundary_wall(bounds, Vector2(map_w / 2, -wall_thickness / 2), Vector2(map_w + wall_thickness * 2, wall_thickness))
-	_add_boundary_wall(bounds, Vector2(map_w / 2, map_h + wall_thickness / 2), Vector2(map_w + wall_thickness * 2, wall_thickness))
-	_add_boundary_wall(bounds, Vector2(-wall_thickness / 2, map_h / 2), Vector2(wall_thickness, map_h + wall_thickness * 2))
-	_add_boundary_wall(bounds, Vector2(map_w + wall_thickness / 2, map_h / 2), Vector2(wall_thickness, map_h + wall_thickness * 2))
+	_add_boundary_wall(bounds, Vector2(map_w / 2, edge_inset - wall_thickness / 2), Vector2(map_w + wall_thickness * 2, wall_thickness))
+	_add_boundary_wall(bounds, Vector2(map_w / 2, map_h - edge_inset + wall_thickness / 2), Vector2(map_w + wall_thickness * 2, wall_thickness))
+	_add_boundary_wall(bounds, Vector2(edge_inset - wall_thickness / 2, map_h / 2), Vector2(wall_thickness, map_h + wall_thickness * 2))
+	_add_boundary_wall(bounds, Vector2(map_w - edge_inset + wall_thickness / 2, map_h / 2), Vector2(wall_thickness, map_h + wall_thickness * 2))
 
 
 func _add_boundary_wall(parent: StaticBody2D, pos: Vector2, size: Vector2) -> void:

@@ -32,12 +32,16 @@ var cancel_all_next_turn: bool = false
 ## Max profiles per character (GBA-like limit)
 const MAX_PROFILES_PER_CHARACTER: int = 8
 
-## Default profile names for each job
-const DEFAULT_PROFILE_TEMPLATES: Dictionary = {
-	"hero": ["Aggressive", "Defensive", "Balanced"],
-	"mira": ["Healer", "Support", "Offensive"],
-	"zack": ["Steal First", "DPS", "Cautious"],
-	"vex": ["Nuke", "Conserve MP", "AoE Focus"]
+## character_id → job_id for the named starter party. Item 13: used to seed
+## real Defensive/Aggressive preset profiles from AutobattleRuleTemplates
+## (pre-fix the named profiles existed but held empty attack-only scripts —
+## "Defensive" contained nothing defensive, user playtest complaint).
+const CHARACTER_JOB_IDS: Dictionary = {
+	"hero": "fighter",
+	"mira": "cleric",
+	"zack": "rogue",
+	"vex": "mage",
+	"bard": "bard",
 }
 
 ## Condition types
@@ -89,6 +93,7 @@ const CONDITION_TYPES = {
 	"item_count": "Has Item",
 	"setup_complete": "Setup Complete",
 	"ally_has_status": "Ally Has Status",
+	"enemy_has_status": "Enemy Has Status",
 	"ally_mp_percent": "Ally MP %",
 	"always": "Always"
 }
@@ -108,8 +113,7 @@ const ACTION_TYPES = {
 	"attack": "Attack",
 	"ability": "Ability",
 	"item": "Item",
-	"defer": "Defer",
-	"all_out_attack": "All-Out Attack"
+	"defer": "Defer"
 }
 
 ## Target types
@@ -117,7 +121,12 @@ const TARGET_TYPES = {
 	"lowest_hp_enemy": "Lowest HP Enemy",
 	"highest_hp_enemy": "Highest HP Enemy",
 	"random_enemy": "Random Enemy",
+	"highest_speed_enemy": "Highest Speed Enemy",
+	"highest_atk_enemy": "Highest ATK Enemy",
+	"lowest_magic_defense_enemy": "Lowest M.DEF Enemy",
+	"weakest_to_ability": "Exploit Weakness",
 	"lowest_hp_ally": "Lowest HP Ally",
+	"all_allies": "All Allies",
 	"self": "Self"
 }
 
@@ -215,6 +224,16 @@ func _evaluate_grid_condition(combatant: Combatant, condition: Dictionary) -> bo
 					return true
 			return false
 
+		"enemy_has_status":
+			# True if any living enemy has the given status — lets rules react to
+			# enemy state (all-out attack a stunned foe, dispel an enemy's regen,
+			# hold fire while a debuff is still ticking).
+			var enemy_status = condition.get("status", "")
+			for enemy in _get_enemies_for(combatant):
+				if enemy_status in enemy.status_effects:
+					return true
+			return false
+
 		"enemy_hp_percent":
 			var target = _get_lowest_hp_enemy(combatant)
 			if target:
@@ -293,6 +312,112 @@ func _evaluate_grid_condition(combatant: Combatant, condition: Dictionary) -> bo
 	return false
 
 
+func validate_rule(rule: Dictionary, deep_check_character_id: String = "") -> Array[String]:
+	var errors: Array[String] = []
+	if not rule.has("conditions"):
+		errors.append("missing 'conditions' array")
+	elif typeof(rule["conditions"]) != TYPE_ARRAY:
+		errors.append("'conditions' must be an array")
+	if not rule.has("actions"):
+		errors.append("missing 'actions' array")
+	elif typeof(rule["actions"]) != TYPE_ARRAY:
+		errors.append("'actions' must be an array")
+	if errors.size() > 0:
+		return errors
+	for c in rule["conditions"]:
+		if typeof(c) != TYPE_DICTIONARY:
+			errors.append("condition must be a dictionary: %s" % [c])
+			continue
+		var ctype: String = str(c.get("type", ""))
+		if not CONDITION_TYPES.has(ctype):
+			errors.append("unknown condition type: '%s'" % ctype)
+			continue
+		if c.has("op") and not OPERATORS.has(str(c["op"])):
+			errors.append("unknown operator: '%s'" % c["op"])
+	for a in rule["actions"]:
+		if typeof(a) != TYPE_DICTIONARY:
+			errors.append("action must be a dictionary: %s" % [a])
+			continue
+		var atype: String = str(a.get("type", ""))
+		if not ACTION_TYPES.has(atype):
+			errors.append("unknown action type: '%s'" % atype)
+			continue
+		if atype == "ability" and not a.has("id"):
+			errors.append("action type 'ability' requires 'id'")
+		if atype == "item" and not a.has("id"):
+			errors.append("action type 'item' requires 'id'")
+		if a.has("target") and not TARGET_TYPES.has(str(a["target"])):
+			errors.append("unknown target type: '%s'" % a["target"])
+	if errors.is_empty() and deep_check_character_id != "":
+		errors.append_array(_deep_check_rule(rule, deep_check_character_id))
+	return errors
+
+
+## Item 13 fast-follow (cowir-ai convergence, msg 2038): fizzle-correctness
+## deep-check for one rule against one character. Catches what grammar can't:
+## hallucinated ability/item ids, abilities outside the character's level-1
+## kit, and MP-starved rules — all three fizzle-consume a turn at runtime via
+## BM's can_use_ability path. RuleComposer's second-pass lint opts in with
+## validate_rule(rule, character_id). Per-rule scope is deliberately STRICTER
+## than the preset catalog's whole-script lint (no earlier-refill-rule
+## credit): stricter = safer for LLM-composed output.
+func _deep_check_rule(rule: Dictionary, character_id: String) -> Array[String]:
+	var errors: Array[String] = []
+	var job_id: String = _resolve_job_for_character(character_id)
+	var job: Dictionary = JobSystem.get_job(job_id)
+	if job.is_empty():
+		errors.append("cannot resolve job for character '%s' — deep check unavailable" % character_id)
+		return errors
+	var kit: Array = (job.get("abilities", []) as Array).duplicate()
+	var free_move: Dictionary = job.get("free_move", {})
+	if free_move.has("ability_id"):
+		kit.append(free_move["ability_id"])
+	var full_kit: Array = kit.duplicate()
+	for lvl_key in (job.get("abilities_at_level", {}) as Dictionary).keys():
+		for aid in (job["abilities_at_level"][lvl_key] as Array):
+			full_kit.append(aid)
+	var max_mp: int = int(job.get("stat_modifiers", {}).get("max_mp", 1))
+	var mp_cost_sum: int = 0
+	for a in rule.get("actions", []):
+		var atype: String = str(a.get("type", ""))
+		if atype == "ability":
+			var aid: String = str(a.get("id", ""))
+			var ability: Dictionary = JobSystem.get_ability(aid)
+			if ability.is_empty():
+				errors.append("unknown ability '%s'" % aid)
+				continue
+			if not (aid in kit):
+				errors.append("ability '%s' not in %s's level-1 kit" % [aid, job_id])
+			var action_cost: int = int(ability.get("mp_cost", 0))
+			# Upgrades: baseline must be level-1-safe (above), each upgrade must be
+			# learnable somewhere in the job's roster, cost check uses worst case.
+			for up in (a.get("upgrades", []) as Array):
+				var up_id: String = str(up)
+				var up_ability: Dictionary = JobSystem.get_ability(up_id)
+				if up_ability.is_empty():
+					errors.append("unknown upgrade ability '%s'" % up_id)
+					continue
+				if not (up_id in full_kit):
+					errors.append("upgrade ability '%s' not learnable by %s at any level" % [up_id, job_id])
+					continue
+				action_cost = maxi(action_cost, int(up_ability.get("mp_cost", 0)))
+			mp_cost_sum += action_cost
+		elif atype == "item":
+			var iid: String = str(a.get("id", ""))
+			if ItemSystem.get_item(iid).is_empty():
+				errors.append("unknown item '%s'" % iid)
+	if mp_cost_sum > 0 and max_mp > 0:
+		var need_pct: int = ceili(float(mp_cost_sum) / float(max_mp) * 100.0)
+		var guarded: bool = false
+		for c in rule.get("conditions", []):
+			if str(c.get("type", "")) == "mp_percent" and str(c.get("op", "")) == ">=" \
+					and int(c.get("value", 0)) >= need_pct:
+				guarded = true
+		if not guarded:
+			errors.append("rule costs %d MP (%d%% of %s's base pool) with no mp_percent >= %d guard — would fizzle-consume the turn" % [mp_cost_sum, need_pct, job_id, need_pct])
+	return errors
+
+
 func _compare_str(a: float, op: String, b: float) -> bool:
 	"""Compare two values with a string operator"""
 	match op:
@@ -308,6 +433,8 @@ func _compare_str(a: float, op: String, b: float) -> bool:
 			return a > b
 		"!=":
 			return a != b
+	# Tick 216: unknown comparison operator — symmetry with the existing _evaluate_grid_condition unknown-type warning at line ~295. Pre-fix a corrupt op like "=" or ">>" silently returned false; rules never matched and players had no way to diagnose.
+	push_warning("[AutobattleSystem] _compare_str: unknown op='%s' (expected <, <=, ==, >=, >, !=) — comparison treated as false" % op)
 	return false
 
 
@@ -343,11 +470,11 @@ func _action_def_to_action(combatant: Combatant, action_def: Dictionary) -> Dict
 			}
 
 		"ability":
-			var ability_id = action_def.get("id", "")
+			var ability_id: String = _resolve_ability_upgrade(combatant, action_def)
 			return {
 				"type": "ability",
 				"ability_id": ability_id,
-				"targets": [_get_target_by_type(combatant, target_type)]
+				"targets": _resolve_ability_targets(combatant, ability_id, target_type)
 			}
 
 		"item":
@@ -363,13 +490,6 @@ func _action_def_to_action(combatant: Combatant, action_def: Dictionary) -> Dict
 				"type": "defer"
 			}
 
-		"all_out_attack":
-			# Queue max actions on lowest HP enemy (signals advance mode)
-			return {
-				"type": "attack",
-				"target": _get_target_by_type(combatant, "lowest_hp_enemy"),
-				"force_advance": true  # Signal to queue max actions
-			}
 		_:
 			push_warning("AutobattleSystem: Unknown action type '%s', defaulting to attack" % action_type)
 			return {
@@ -378,8 +498,48 @@ func _action_def_to_action(combatant: Combatant, action_def: Dictionary) -> Dict
 			}
 
 
+## Preset level-evolution: walk optional upgrades weakest→strongest, pick the
+## last one this combatant has learned; fall back to the baseline id when none
+## qualify. Same target_type required per upgrade (author responsibility).
+func _resolve_ability_upgrade(combatant: Combatant, action_def: Dictionary) -> String:
+	var baseline: String = str(action_def.get("id", ""))
+	var upgrades: Array = action_def.get("upgrades", []) as Array
+	if upgrades.is_empty():
+		return baseline
+	var chosen: String = baseline
+	for candidate in upgrades:
+		var cand_id: String = str(candidate)
+		if cand_id == "":
+			continue
+		if _combatant_has_learned(combatant, cand_id):
+			chosen = cand_id
+	return chosen
+
+
+func _combatant_has_learned(combatant: Combatant, ability_id: String) -> bool:
+	if combatant == null or ability_id == "":
+		return false
+	var character_id: String = _get_character_id(combatant)
+	var job_id: String = _resolve_job_for_character(character_id)
+	var job: Dictionary = JobSystem.get_job(job_id)
+	if job.is_empty():
+		return false
+	if ability_id in (job.get("abilities", []) as Array):
+		return true
+	if str(job.get("free_move", {}).get("ability_id", "")) == ability_id:
+		return true
+	var level: int = int(combatant.job_level) if "job_level" in combatant else 1
+	var at_level: Dictionary = job.get("abilities_at_level", {})
+	for key in at_level.keys():
+		if int(str(key)) <= level and ability_id in (at_level[key] as Array):
+			return true
+	return false
+
+
 func _get_target_by_type(combatant: Combatant, target_type: String) -> Combatant:
-	"""Get target based on target type string"""
+	"""Get target based on target type string. For multi-target types like all_allies,
+	returns the first member of the group; callers needing the full array should call
+	_get_targets_by_type or rely on _resolve_ability_targets for ability execution."""
 	match target_type:
 		"lowest_hp_enemy":
 			return _get_lowest_hp_enemy(combatant)
@@ -394,10 +554,75 @@ func _get_target_by_type(combatant: Combatant, target_type: String) -> Combatant
 			return _get_lowest_magic_defense_enemy(combatant)
 		"highest_atk_enemy":
 			return _get_highest_atk_enemy(combatant)
+		"highest_speed_enemy":
+			return _get_highest_speed_enemy(combatant)
+		"weakest_to_ability":
+			# Attack/item path has no ability element — collapse to lowest-HP of
+			# non-immune. Ability actions route through _resolve_ability_targets,
+			# which supplies the real element.
+			return _get_weakness_target(combatant, "")
+		"all_allies":
+			# Single-target fallback: first living ally (used when caller can't expand)
+			var allies = _get_all_alive_allies(combatant)
+			return allies[0] if allies.size() > 0 else combatant
 		"self":
 			return combatant
 		_:
+			push_warning("AutobattleSystem: Unknown target type '%s', defaulting to lowest_hp_enemy" % target_type)
 			return _get_lowest_hp_enemy(combatant)
+
+
+func _get_targets_by_type(combatant: Combatant, target_type: String) -> Array[Combatant]:
+	"""Multi-target resolver. Returns the full party for 'all_allies' / 'all_enemies',
+	otherwise wraps the single _get_target_by_type result in a one-element array."""
+	match target_type:
+		"all_allies":
+			return _get_all_alive_allies(combatant)
+		"all_enemies":
+			return _get_enemies_for(combatant)
+		_:
+			var t = _get_target_by_type(combatant, target_type)
+			var arr: Array[Combatant] = []
+			if t != null:
+				arr.append(t)
+			return arr
+
+
+func _resolve_ability_targets(combatant: Combatant, ability_id: String, target_type: String) -> Array[Combatant]:
+	"""Resolve the targets array for an ability action.
+	If the ability's own target_type is 'all_allies' / 'all_enemies', expand to the
+	full group regardless of the script target string — fixes Bard Battle Hymn /
+	Inspiring Melody silently hitting one enemy."""
+	var js = get_node_or_null("/root/JobSystem")
+	if js and js.has_method("get_ability"):
+		var ability = js.get_ability(ability_id)
+		if ability is Dictionary and not ability.is_empty():
+			var ab_target = ability.get("target_type", "")
+			if ab_target == "all_allies":
+				return _get_all_alive_allies(combatant)
+			if ab_target == "all_enemies":
+				return _get_enemies_for(combatant)
+	# "Exploit Weakness": aim this ability at the enemy weak to its own element.
+	if target_type == "weakest_to_ability":
+		var element: String = ""
+		if js and js.has_method("get_ability"):
+			var ab2 = js.get_ability(ability_id)
+			if ab2 is Dictionary and ab2.get("element") != null:
+				element = str(ab2.get("element"))
+		var wt: Combatant = _get_weakness_target(combatant, element)
+		var out: Array[Combatant] = []
+		if wt != null:
+			out.append(wt)
+		return out
+	return _get_targets_by_type(combatant, target_type)
+
+
+func _get_all_alive_allies(combatant: Combatant) -> Array[Combatant]:
+	"""Living allies for a combatant, including the combatant itself when alive."""
+	var allies := _get_allies_for(combatant)
+	if combatant.is_alive and not (combatant in allies):
+		allies.append(combatant)
+	return allies
 
 
 func _get_character_id(combatant: Combatant) -> String:
@@ -428,6 +653,10 @@ func set_autobattle_enabled(character_id: String, enabled: bool) -> void:
 	"""Enable or disable autobattle for a character"""
 	autobattle_enabled[character_id] = enabled
 	character_script_changed.emit(character_id)
+	# Tick 247 / 254: centralized event-flag ratchet so a toast fires
+	# the first time the player enables autobattle for any character.
+	if enabled and PartyChatSystem:
+		PartyChatSystem.fire_event_flag("event_flag_first_autobattle_enabled")
 
 
 func toggle_autobattle(character_id: String) -> bool:
@@ -479,16 +708,39 @@ func _ensure_character_profiles(character_id: String) -> void:
 
 
 func _create_default_profiles(character_id: String) -> Dictionary:
-	"""Create default profile set for a character"""
-	var profile_names = DEFAULT_PROFILE_TEMPLATES.get(character_id, ["Default", "Custom 1", "Custom 2"])
-	var profiles = []
-
-	for i in range(profile_names.size()):
-		var name = profile_names[i]
-		var script = create_default_character_script(character_id) if i == 0 else _create_empty_script(character_id)
-		profiles.append({"name": name, "script": script})
-
+	"""Create default profile set for a character.
+	Item 13: profile 0 stays the tuned per-job default script; profiles 1-2
+	seed the job's Defensive/Aggressive presets from AutobattleRuleTemplates
+	so their names promise what they contain. Jobs without catalog presets
+	(advanced/meta) fall back to legacy empty custom slots."""
+	var profiles = [
+		{"name": "Default", "script": create_default_character_script(character_id)}
+	]
+	var job_id: String = _resolve_job_for_character(character_id)
+	for template in AutobattleRuleTemplates.find_for_job(job_id):
+		var stance: String = str(template.get("stance", ""))
+		if stance == "balanced":
+			continue  # profile 0's tuned default already covers the balanced stance
+		profiles.append({
+			"name": str(template.get("name", "Preset")),
+			"script": AutobattleRuleTemplates.build_script(template, character_id)
+		})
+	while profiles.size() < 3:
+		profiles.append({"name": "Custom %d" % profiles.size(), "script": _create_empty_script(character_id)})
 	return {"profiles": profiles, "active": 0}
+
+
+func _resolve_job_for_character(character_id: String) -> String:
+	"""character_id → job_id: named starters first, then GameState lookup,
+	then the id itself (covers job-named characters like 'bard')."""
+	if CHARACTER_JOB_IDS.has(character_id):
+		return CHARACTER_JOB_IDS[character_id]
+	var game_state = get_node_or_null("/root/GameState") if is_inside_tree() else null
+	if game_state and game_state.has_method("get_character_job_id"):
+		var job_id: String = game_state.get_character_job_id(character_id)
+		if job_id != "":
+			return job_id
+	return character_id
 
 
 func _create_empty_script(character_id: String) -> Dictionary:
@@ -625,6 +877,34 @@ func copy_profile(character_id: String, source_index: int, new_name: String = ""
 	})
 
 	_save_character_profiles()
+	return profiles.size() - 1
+
+
+func install_composition_as_new_profile(character_id: String, composition: Dictionary) -> int:
+	"""Install an LLM-composed script as a brand-new profile; never overwrites, -1 if at max"""
+	_ensure_character_profiles(character_id)
+	var profiles = character_profiles[character_id].get("profiles", [])
+
+	if profiles.size() >= MAX_PROFILES_PER_CHARACTER:
+		return -1
+
+	var comp_name: String = str(composition.get("name", ""))
+	if comp_name.is_empty() or comp_name == "<null>":
+		comp_name = "Composed %d" % (profiles.size() + 1)
+	var raw_rules = composition.get("rules", [])
+	var rules: Array = raw_rules if raw_rules is Array else []
+	profiles.append({
+		"name": comp_name,
+		"script": {
+			"character_id": character_id,
+			"name": comp_name,
+			"description": str(composition.get("description", "")),
+			"rules": rules.duplicate(true)
+		}
+	})
+
+	_save_character_profiles()
+	character_script_changed.emit(character_id)
 	return profiles.size() - 1
 
 
@@ -1401,19 +1681,43 @@ func _load_character_scripts() -> void:
 		dir.make_dir("autobattle")
 
 	# Load new profiles format first
+	## Tick 167: surface each failure mode. Pre-fix the primary
+	## profiles load had THREE silent fall-throughs (open fail,
+	## parse fail, root not Dictionary) — if any failed, the code
+	## dropped through to the legacy fallback without surfacing
+	## the real cause. Players who'd authored custom autobattle
+	## scripts could lose them silently.
 	if FileAccess.file_exists(profiles_path):
 		var file = FileAccess.open(profiles_path, FileAccess.READ)
-		if file:
+		if not file:
+			push_warning("[AutobattleSystem] profiles exists at %s but FileAccess.open failed — falling back to legacy format" % profiles_path)
+		else:
 			var json_string = file.get_as_text()
 			file.close()
 			var json = JSON.new()
-			if json.parse(json_string) == OK:
-				var data = json.data
-				if data is Dictionary:
-					character_profiles = data.get("profiles", {})
-					autobattle_enabled = data.get("enabled", {})
-					print("Loaded profiles for %d characters" % character_profiles.size())
-					return
+			if json.parse(json_string) != OK:
+				push_warning("[AutobattleSystem] profiles.json parse error: %s — falling back to legacy format" % json.get_error_message())
+			elif not (json.data is Dictionary):
+				push_warning("[AutobattleSystem] profiles.json parsed but root is not a Dictionary — falling back to legacy format")
+			else:
+				## Tick 367: type-guard the .get() return value before
+				## typed-Dict assignment. Pre-fix a profiles.json with
+				## profiles=null or enabled=null (hand-edited corruption,
+				## migration drift) crashed with the typed-Dictionary
+				## assignment error and dropped the player's autobattle
+				## scripts onto the legacy fallback unannounced.
+				var raw_profiles: Variant = json.data.get("profiles", {})
+				var raw_enabled: Variant = json.data.get("enabled", {})
+				if raw_profiles is Dictionary:
+					character_profiles = raw_profiles
+				else:
+					push_warning("[AutobattleSystem] profiles.json profiles field malformed (type=%s) — keeping empty dict" % typeof(raw_profiles))
+				if raw_enabled is Dictionary:
+					autobattle_enabled = raw_enabled
+				else:
+					push_warning("[AutobattleSystem] profiles.json enabled field malformed (type=%s) — keeping empty dict" % typeof(raw_enabled))
+				print("Loaded profiles for %d characters" % character_profiles.size())
+				return
 
 	# Fallback: load legacy format for migration
 	if not FileAccess.file_exists(save_path):
@@ -1428,8 +1732,18 @@ func _load_character_scripts() -> void:
 		if json.parse(json_string) == OK:
 			var data = json.data
 			if data is Dictionary:
-				character_scripts = data.get("scripts", {})
-				autobattle_enabled = data.get("enabled", {})
+				## Tick 367: same type guard as the profiles path above
+				## for the legacy characters.json migration.
+				var raw_scripts: Variant = data.get("scripts", {})
+				var raw_legacy_enabled: Variant = data.get("enabled", {})
+				if raw_scripts is Dictionary:
+					character_scripts = raw_scripts
+				else:
+					push_warning("[AutobattleSystem] legacy characters.json scripts field malformed (type=%s) — keeping empty dict" % typeof(raw_scripts))
+				if raw_legacy_enabled is Dictionary:
+					autobattle_enabled = raw_legacy_enabled
+				else:
+					push_warning("[AutobattleSystem] legacy characters.json enabled field malformed (type=%s) — keeping empty dict" % typeof(raw_legacy_enabled))
 				# Migrate old format scripts to new format
 				_migrate_old_format_scripts()
 				print("Loaded %d character autobattle scripts (legacy)" % character_scripts.size())
@@ -1576,6 +1890,8 @@ func _evaluate_condition(combatant: Combatant, condition: Dictionary) -> bool:
 			push_warning("AutobattleSystem: CUSTOM conditions not yet implemented")
 			return false
 
+	# Tick 216: unknown ConditionType enum value — save drift, deprecated value left in a rule, Scriptweaver custom condition not registered. Pre-fix this returned false silently and the autobattle rule never matched — player thinks their script is broken and can't diagnose.
+	push_warning("[AutobattleSystem] _evaluate_condition: unknown ConditionType=%s — rule will NOT match (autobattle may silently misbehave; check rule JSON for stale type values)" % str(type))
 	return false
 
 
@@ -1594,6 +1910,8 @@ func _compare(a: float, op: CompareOp, b: float) -> bool:
 			return a > b
 		CompareOp.NOT_EQUAL:
 			return a != b
+	# Tick 216: unknown CompareOp — same silent-fail class as above. A condition with a bad op silently never matches.
+	push_warning("[AutobattleSystem] _compare: unknown CompareOp=%s — comparison treated as false (check rule JSON for stale op values)" % str(op))
 	return false
 
 
@@ -1629,6 +1947,10 @@ func _rule_to_action(combatant: Combatant, rule: Dictionary) -> Dictionary:
 		ActionType.SKIP:
 			action["type"] = "skip"
 
+		_:
+			# Tick 217: unknown ActionType enum value. Pre-fix the function returned an action with only {"type": ...} but no target/ability/item — execution would misbehave silently. Same silent-fail class as tick 216's _evaluate_condition.
+			push_warning("[AutobattleSystem] _rule_to_action: unknown ActionType=%s — action will lack target data (check rule JSON for stale action_type values)" % str(action_type))
+
 	return action
 
 
@@ -1649,6 +1971,8 @@ func _get_target_for_rule(combatant: Combatant, rule: Dictionary) -> Combatant:
 		"self":
 			return combatant
 		_:
+			# Tick 217: unknown target_type silently picks lowest_hp_enemy — could mislead player about what their rule actually targets. Same warning shape as _get_target_by_type at line ~406 (which has had the warning since the grid format landed).
+			push_warning("[AutobattleSystem] _get_target_for_rule: unknown target_type='%s' — defaulting to lowest_hp_enemy (check rule JSON for stale target_type values)" % target_type)
 			return _get_lowest_hp_enemy(combatant)
 
 
@@ -1660,8 +1984,16 @@ func _get_default_action(combatant: Combatant) -> Dictionary:
 			"type": "attack",
 			"target": enemies[0]
 		}
+	# Tick 330: return "defer" instead of "skip". Pre-fix the no-enemies
+	# fallback returned {"type": "skip"} — a string BattleManager's
+	# action dispatch at line ~1972 has no arm for. The default `_:` arm
+	# fired push_warning("Unknown action type 'skip'") and recovered by
+	# advancing the chain, but every "all enemies dead before this turn
+	# fires" path produced a misleading runtime warning. Defer's semantics
+	# ("skip turn, gain AP, defend") match what we actually want here:
+	# the combatant has nothing to attack, so step back and bank AP.
 	return {
-		"type": "skip"
+		"type": "defer"
 	}
 
 
@@ -1680,6 +2012,8 @@ func _action_type_to_string(action_type: ActionType) -> String:
 			return "brave"
 		ActionType.SKIP:
 			return "skip"
+	# Tick 217: unknown ActionType silently became "attack" — the rule would attack instead of doing whatever the player intended. Warn loudly so a save with a stale enum surfaces.
+	push_warning("[AutobattleSystem] _action_type_to_string: unknown ActionType=%s — falling back to 'attack' (rule may behave unexpectedly; check rule JSON for stale action_type values)" % str(action_type))
 	return "attack"
 
 
@@ -1714,13 +2048,35 @@ func _get_lowest_hp_enemy(combatant: Combatant) -> Combatant:
 	return enemies[0]
 
 
+func _get_weakness_target(combatant: Combatant, element: String) -> Combatant:
+	"""'Exploit Weakness' autobattle targeting. Prefers an enemy weak to `element`
+	(lowest HP among them, to secure a kill); failing that, the lowest-HP enemy
+	that is NOT immune (never waste the cast on a 0x wall); degenerate all-immune
+	falls back to lowest HP. Empty `element` collapses to lowest-HP-of-non-immune."""
+	var enemies := _get_enemies_for(combatant)
+	if enemies.is_empty():
+		return null
+	var weak: Array[Combatant] = []
+	var non_immune: Array[Combatant] = []
+	for e in enemies:
+		if element != "" and element in e.elemental_weaknesses:
+			weak.append(e)
+		if element == "" or not (element in e.elemental_immunities):
+			non_immune.append(e)
+	var pool: Array[Combatant] = weak
+	if pool.is_empty():
+		pool = non_immune if not non_immune.is_empty() else enemies
+	pool.sort_custom(func(a, b): return a.get_hp_percentage() < b.get_hp_percentage())
+	return pool[0]
+
+
 func _get_highest_hp_enemy(combatant: Combatant) -> Combatant:
-	"""Get enemy with highest HP"""
+	"""Get enemy with highest HP percentage (symmetric with _get_lowest_hp_* — the 'healthy targets first' picker)."""
 	var enemies = _get_enemies_for(combatant)
 	if enemies.size() == 0:
 		return null
 
-	enemies.sort_custom(func(a, b): return a.current_hp > b.current_hp)
+	enemies.sort_custom(func(a, b): return a.get_hp_percentage() > b.get_hp_percentage())
 	return enemies[0]
 
 
@@ -1755,6 +2111,16 @@ func _get_highest_atk_enemy(combatant: Combatant) -> Combatant:
 		return null
 
 	enemies.sort_custom(func(a, b): return a.base_attack > b.base_attack)
+	return enemies[0]
+
+
+func _get_highest_speed_enemy(combatant: Combatant) -> Combatant:
+	"""Get enemy with highest speed — the Time Mage's Slow/Rewind target"""
+	var enemies = _get_enemies_for(combatant)
+	if enemies.size() == 0:
+		return null
+
+	enemies.sort_custom(func(a, b): return a.speed > b.speed)
 	return enemies[0]
 
 
@@ -1847,7 +2213,10 @@ func _load_saved_scripts() -> void:
 			saved_scripts = json.data
 			print("Loaded %d autobattle scripts" % saved_scripts.size())
 		else:
-			print("Error parsing autobattle scripts")
+			## Tick 181: surface autobattle script parse failures.
+			## Pre-fix print() only — player's custom scripts
+			## silently reverted to defaults with zero hint why.
+			push_warning("[AutobattleSystem] failed to parse autobattle scripts JSON: %s — falling back to defaults" % json.get_error_message())
 			_create_default_scripts()
 	else:
 		_create_default_scripts()

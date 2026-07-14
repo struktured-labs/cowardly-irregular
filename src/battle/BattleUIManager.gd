@@ -90,7 +90,7 @@ func _create_auto_toggle_button() -> void:
 	_auto_toggle_button.offset_top = 6
 	_auto_toggle_button.offset_right = -210
 	_auto_toggle_button.offset_bottom = 36
-	_auto_toggle_button.add_theme_font_size_override("font_size", 14)
+	_auto_toggle_button.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	# Themed background so it doesn't fade into the battlefield. Two
 	# styleboxes — one for normal/hover, one for pressed.
 	var sb_normal := StyleBoxFlat.new()
@@ -234,8 +234,14 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	offset_bottom=460 is pinned by test_battle_4bug_22bd71e_regression to
 	prevent CTB overlap, so the fix has to be on the per-box side."""
 	var party_size: int = BattleManager.player_party.size() if BattleManager.player_party.size() > 0 else _scene.party_members.size()
-	var hp_bar_h: int = 22 if party_size <= 4 else 18
-	var mp_bar_h: int = 18 if party_size <= 4 else 14
+	## Live playtest 2026-07-01: with 5 boxes + portrait header rows the
+	## content exceeded the panel's 420px slot; grow_vertical=BOTH then
+	## expanded the panel ABOVE the screen top, decapitating the Fighter
+	## (first box) header. Scene now grows downward only (grow_vertical=1)
+	## and the 5-party heights below are tightened further so the stack
+	## actually fits the slot instead of relying on overflow.
+	var hp_bar_h: int = 22 if party_size <= 4 else 16
+	var mp_bar_h: int = 18 if party_size <= 4 else 12
 	var box = VBoxContainer.new()
 	box.name = "Character%d" % (idx + 1)
 
@@ -260,10 +266,14 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	var job_name = member.job.get("name", "None") if member.job else "None"
 	var char_id = member.combatant_name.to_lower().replace(" ", "_")
 	var auto_indicator = " [A]" if AutobattleSystem.is_autobattle_enabled(char_id) else ""
+	var tag_color: Color = Color(0.4, 1.0, 0.4)
+	if auto_indicator == "" and "player_trust" in member and member.player_trust:
+		auto_indicator = " [T]"
+		tag_color = Color(0.4, 0.85, 1.0)
 	name_label.text = "%s (%s)%s" % [member.combatant_name, job_name, auto_indicator]
-	name_label.add_theme_font_size_override("font_size", 13)
+	name_label.add_theme_font_size_override("font_size", TextScale.scaled(15))
 	if auto_indicator != "":
-		name_label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4))
+		name_label.add_theme_color_override("font_color", tag_color)
 	name_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	header.add_child(name_label)
 
@@ -282,7 +292,7 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	var hp_label = Label.new()
 	hp_label.name = "HPLabel"
 	hp_label.text = "HP: %d/%d" % [member.current_hp, member.max_hp]
-	hp_label.add_theme_font_size_override("font_size", 12)
+	hp_label.add_theme_font_size_override("font_size", TextScale.scaled(15))
 	hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hp_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	hp_label.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -301,7 +311,7 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	var mp_label = Label.new()
 	mp_label.name = "MPLabel"
 	mp_label.text = "MP: %d/%d" % [member.current_mp, member.max_mp]
-	mp_label.add_theme_font_size_override("font_size", 11)
+	mp_label.add_theme_font_size_override("font_size", TextScale.scaled(13))
 	mp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	mp_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	mp_label.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -313,8 +323,8 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	ap_label.bbcode_enabled = true
 	ap_label.fit_content = true
 	ap_label.custom_minimum_size = Vector2(0, 20)
-	ap_label.add_theme_font_size_override("normal_font_size", 13)
-	ap_label.add_theme_font_size_override("bold_font_size", 13)
+	ap_label.add_theme_font_size_override("normal_font_size", TextScale.scaled(15))
+	ap_label.add_theme_font_size_override("bold_font_size", TextScale.scaled(15))
 	ap_label.text = "AP: 0"
 	box.add_child(ap_label)
 
@@ -324,7 +334,7 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	stat_label.bbcode_enabled = true
 	stat_label.fit_content = true
 	stat_label.custom_minimum_size = Vector2(0, 16)
-	stat_label.add_theme_font_size_override("normal_font_size", 10)
+	stat_label.add_theme_font_size_override("normal_font_size", TextScale.scaled(12))
 	stat_label.text = ""
 	box.add_child(stat_label)
 	_update_stat_mods_label(stat_label, member)
@@ -360,6 +370,10 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 				# Autobattle is on - show green [A]
 				auto_indicator = " [A]"
 				name_color = Color(0.4, 1.0, 0.4)  # Green for auto
+		elif "player_trust" in member and member.player_trust:
+			# trusted PCs auto-play too — invisible Trust was how the user got stuck asking "how do I disable it?"
+			auto_indicator = " [T]"
+			name_color = Color(0.4, 0.85, 1.0)
 
 		name_label.text = "%s (%s%s)%s" % [member.combatant_name, job_name, level_text, auto_indicator]
 		# Color the name based on autobattle state
@@ -377,10 +391,17 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 		if hp_label:
 			if not member.is_alive:
 				hp_label.text = "-- KO --"
-				hp_label.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
+				hp_label.add_theme_color_override("font_color", AccessibilityPalette.hp_low())
 			else:
 				hp_label.text = "HP: %d/%d" % [member.current_hp, member.max_hp]
-				hp_label.remove_theme_color_override("font_color")
+				# 2026-07-13: color-per-tier on the RHS party panel so a struggling ally reads at a glance without squinting at the number. Uses AccessibilityPalette so colorblind mode works.
+				var _hp_pct: float = float(member.current_hp) / float(maxi(1, member.max_hp))
+				var _hp_color: Color = AccessibilityPalette.hp_high()
+				if _hp_pct <= 0.25:
+					_hp_color = AccessibilityPalette.hp_low()
+				elif _hp_pct <= 0.5:
+					_hp_color = AccessibilityPalette.hp_mid()
+				hp_label.add_theme_color_override("font_color", _hp_color)
 
 	# Gray out the name label if KO'd
 	if name_label:
@@ -403,7 +424,14 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 		mp_bar.value = member.current_mp
 		var mp_label = mp_bar.get_node_or_null("MPLabel")
 		if mp_label:
-			mp_label.text = "MP: %d/%d" % [member.current_mp, member.max_mp]
+			if not member.is_alive:
+				# KO'd party can't cast — surfacing MP+AP invited misreading them as "still can act"
+				mp_label.text = "MP: --"
+				mp_label.add_theme_color_override("font_color", Color(0.55, 0.55, 0.55))
+			else:
+				mp_label.text = "MP: %d/%d" % [member.current_mp, member.max_mp]
+				mp_label.remove_theme_color_override("font_color")
+			mp_bar.modulate = Color(1, 1, 1, 0.35) if not member.is_alive else Color(1, 1, 1, 1)
 
 	# Update AP and status - try both RichTextLabel and regular Label
 	var ap_label = box.get_node_or_null("AP")
@@ -440,6 +468,16 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 					is_deferring = true
 				break
 
+		# KO'd party can't act — surfacing AP/status invited misreading "still can act"
+		if not member.is_alive:
+			if ap_label is RichTextLabel:
+				ap_label.bbcode_enabled = true
+				ap_label.text = "[color=gray]--[/color]"
+			else:
+				ap_label.text = "--"
+				ap_label.add_theme_color_override("font_color", Color(0.55, 0.55, 0.55))
+			return
+
 		if ap_label is RichTextLabel:
 			# Ensure BBCode is enabled
 			ap_label.bbcode_enabled = true
@@ -465,7 +503,7 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 				for si in range(member.status_effects.size()):
 					if si > 0:
 						status_text += ", "
-					status_text += "[color=yellow]%s[/color]" % member.status_effects[si].capitalize()
+					status_text += _status_label(member, member.status_effects[si])
 				status_text += "]"
 
 			# Set BBCode text directly
@@ -499,7 +537,8 @@ func _update_stat_mods_label(label: RichTextLabel, member: Combatant) -> void:
 		for stat in ["attack", "defense", "magic", "speed"]:
 			var val = equip_mods.get(stat, 0)
 			if val != 0:
-				var abbrev = {"attack": "ATK", "defense": "DEF", "magic": "MAG", "speed": "SPD"}[stat]
+				# Tick 211: shared StatNames map.
+				var abbrev: String = StatNames.short_code(stat)
 				var color = "lime" if val > 0 else "red"
 				equip_parts.append("[color=%s]%s%+d[/color]" % [color, abbrev, val])
 		if equip_parts.size() > 0:
@@ -513,7 +552,8 @@ func _update_stat_mods_label(label: RichTextLabel, member: Combatant) -> void:
 			var turns: int = buff.get("remaining_turns", 0)
 			if stat_name == "" or modifier == 1.0:
 				continue
-			var abbrev = {"attack": "ATK", "defense": "DEF", "magic": "MAG", "speed": "SPD"}.get(stat_name, stat_name.substr(0, 3).to_upper())
+			# Tick 211: shared StatNames map adds HP/MP coverage the inline dict missed.
+			var abbrev: String = StatNames.short_code(stat_name)
 			var pct = int((modifier - 1.0) * 100)
 			var color = "aqua" if pct > 0 else "orange"
 			parts.append("[color=%s]%s%+d%%(%d)[/color]" % [color, abbrev, pct, turns])
@@ -525,11 +565,35 @@ func _update_stat_mods_label(label: RichTextLabel, member: Combatant) -> void:
 			var turns: int = debuff.get("remaining_turns", 0)
 			if stat_name == "" or modifier == 1.0:
 				continue
-			var abbrev = {"attack": "ATK", "defense": "DEF", "magic": "MAG", "speed": "SPD"}.get(stat_name, stat_name.substr(0, 3).to_upper())
+			# Tick 211: shared StatNames map adds HP/MP coverage the inline dict missed.
+			var abbrev: String = StatNames.short_code(stat_name)
 			var pct = int((modifier - 1.0) * 100)
-			parts.append("[color=red]%s%+d%%(%d)[/color]" % [abbrev, pct, turns])
+			parts.append("[color=%s]%s%+d%%(%d)[/color]" % [AccessibilityPalette.penalty_bbcode(), abbrev, pct, turns])
 
 	label.text = " ".join(parts) if parts.size() > 0 else ""
+
+
+## Compact buff/debuff readout for the ENEMY panel (" · ATK-30%(2)"), so the
+## player can confirm a debuff landed and how long it lasts. Buffs aqua, debuffs
+## the penalty color; equipment mods omitted (enemies rarely carry them and the
+## panel is cramped). Empty when the enemy has no active stat multipliers.
+func _enemy_stat_mods_hint(enemy: Combatant) -> String:
+	var parts: Array[String] = []
+	if "active_buffs" in enemy:
+		for buff in enemy.active_buffs:
+			var s: String = buff.get("stat", "")
+			var m: float = buff.get("modifier", 1.0)
+			if s == "" or m == 1.0:
+				continue
+			parts.append("[color=aqua]%s%+d%%(%d)[/color]" % [StatNames.short_code(s), int((m - 1.0) * 100), int(buff.get("remaining_turns", 0))])
+	if "active_debuffs" in enemy:
+		for debuff in enemy.active_debuffs:
+			var s: String = debuff.get("stat", "")
+			var m: float = debuff.get("modifier", 1.0)
+			if s == "" or m == 1.0:
+				continue
+			parts.append("[color=%s]%s%+d%%(%d)[/color]" % [AccessibilityPalette.penalty_bbcode(), StatNames.short_code(s), int((m - 1.0) * 100), int(debuff.get("remaining_turns", 0))])
+	return (" · " + " ".join(parts)) if parts.size() > 0 else ""
 
 
 func _get_status_modulate(status_effects: Array) -> Color:
@@ -550,6 +614,17 @@ func _get_status_modulate(status_effects: Array) -> Color:
 			"blind":
 				return Color(0.6, 0.6, 0.7)   # Dark blue-gray
 	return Color.WHITE
+
+
+## Status name plus its remaining turns ("Poison 3"). Permanent (-1) or absent
+## durations show just the name. Turn count dimmed so the yellow name stays lead.
+func _status_label(combatant, status: String) -> String:
+	var out: String = "[color=yellow]%s[/color]" % status.capitalize()
+	if combatant != null and "status_durations" in combatant:
+		var turns: int = int(combatant.status_durations.get(status, -1))
+		if turns > 0:
+			out += "[color=#bbbb77] %d[/color]" % turns
+	return out
 
 
 func update_enemy_status() -> void:
@@ -647,7 +722,7 @@ func _update_enemy_member_status(idx: int, enemy: Combatant) -> void:
 	if not is_instance_valid(box):
 		return
 
-	var is_revealed = _revealed_enemies.get(enemy, false)
+	var is_revealed = _enemy_hp_revealed(enemy)
 	var is_dead = not enemy.is_alive
 
 	# Update name with status indicator
@@ -675,25 +750,74 @@ func _update_enemy_member_status(idx: int, enemy: Combatant) -> void:
 				for si in range(enemy.status_effects.size()):
 					if si > 0:
 						ap_text += ", "
-					ap_text += "[color=yellow]%s[/color]" % enemy.status_effects[si].capitalize()
+					ap_text += _status_label(enemy, enemy.status_effects[si])
 				ap_text += "]"
+			ap_text += _enemy_stat_mods_hint(enemy)
 			ap_label.text = ap_text
 
 	# Update HP (hidden unless revealed or dead)
 	var hp_label = box.get_node_or_null("HP")
 	if hp_label and hp_label is RichTextLabel:
 		if is_dead:
-			hp_label.text = "[color=red]DEFEATED[/color]"
+			hp_label.text = "[color=%s]DEFEATED[/color]" % AccessibilityPalette.penalty_bbcode()
 		elif is_revealed:
 			var hp_percent = float(enemy.current_hp) / float(enemy.max_hp)
-			var hp_color = "lime" if hp_percent > 0.5 else ("yellow" if hp_percent > 0.25 else "red")
+			# Tick 230: BBCode color via AccessibilityPalette so the enemy HP tooltip matches the colorblind-aware visual HP bar palette (cyan/yellow/magenta in accessibility mode).
+			var hp_color = AccessibilityPalette.hp_bbcode_for_pct(hp_percent)
 			hp_label.text = "[color=%s]HP: %d/%d[/color]" % [hp_color, enemy.current_hp, enemy.max_hp]
 		else:
 			# Show vague HP indicator based on percentage
 			var hp_percent = float(enemy.current_hp) / float(enemy.max_hp)
 			var hp_hint = "Healthy" if hp_percent > 0.75 else ("Wounded" if hp_percent > 0.5 else ("Hurt" if hp_percent > 0.25 else "Critical"))
-			var hp_color = "lime" if hp_percent > 0.5 else ("yellow" if hp_percent > 0.25 else "red")
+			# Tick 230: BBCode color via AccessibilityPalette (matches the revealed-HP branch above).
+			var hp_color = AccessibilityPalette.hp_bbcode_for_pct(hp_percent)
 			hp_label.text = "[color=%s]%s[/color]" % [hp_color, hp_hint]
+
+		# Elemental weakness intel — surfaced once you've DEFEATED this monster
+		# before (it's in the bestiary). Rewards fighting + aids autobattle
+		# planning ("you've beaten this, you know it's weak to fire").
+		if not is_dead:
+			hp_label.text += _enemy_intel_hint(enemy)
+
+
+## Bestiary intel for a monster you've DEFEATED before: " · Weak: Fire ·
+## Immune: Ice · Resist: Dark". Empty for unfought monsters (unearned).
+## Immunity is the higher-value half — attacking an immune element wastes
+## the whole turn, so surfacing it proactively beats the reactive
+## in-battle "IMMUNE!" popup that only fires AFTER the wasted swing.
+func _enemy_intel_hint(enemy: Combatant) -> String:
+	if enemy == null or not enemy.has_meta("monster_type"):
+		return ""
+	if enemy.elemental_weaknesses.is_empty() and enemy.elemental_immunities.is_empty() \
+			and enemy.elemental_resistances.is_empty():
+		return ""
+	# Revealed by a prior defeat (bestiary) OR a Scan cast this battle.
+	var revealed: bool = enemy.get_meta("intel_revealed", false) \
+			or BestiarySystem.is_defeated(str(enemy.get_meta("monster_type")))
+	if not revealed:
+		return ""
+	var out: String = ""
+	if not enemy.elemental_weaknesses.is_empty():
+		out += " · [color=orange]Weak: %s[/color]" % ", ".join(_capitalized(enemy.elemental_weaknesses))
+	if not enemy.elemental_immunities.is_empty():
+		out += " · [color=#88aaff]Immune: %s[/color]" % ", ".join(_capitalized(enemy.elemental_immunities))
+	if not enemy.elemental_resistances.is_empty():
+		out += " · [color=#bbbb77]Resist: %s[/color]" % ", ".join(_capitalized(enemy.elemental_resistances))
+	return out
+
+
+func _capitalized(elements: Array) -> Array:
+	var names: Array = []
+	for e in elements:
+		names.append(str(e).capitalize())
+	return names
+
+
+## Exact enemy HP shows once the enemy has been attacked (_revealed_enemies) OR
+## Scanned this battle — a Scan reveals the full profile (HP + elemental intel),
+## not just weaknesses. (v3.33.11 Scan set intel_revealed but left HP vague.)
+func _enemy_hp_revealed(enemy: Combatant) -> bool:
+	return _revealed_enemies.get(enemy, false) or (enemy != null and enemy.get_meta("intel_revealed", false))
 
 
 func reveal_enemy_stats(enemy: Combatant) -> void:
@@ -762,35 +886,29 @@ func _update_turn_order_strip() -> void:
 		var panel_style = StyleBoxFlat.new()
 		panel_style.bg_color = Color(0.05, 0.03, 0.1, 0.75)
 		panel_style.border_color = Color(0.4, 0.35, 0.6, 0.6)
-		panel_style.border_width_left = 1
-		panel_style.corner_radius_top_left = 4
-		panel_style.corner_radius_bottom_left = 4
+		panel_style.border_width_right = 1
+		panel_style.corner_radius_top_right = 4
+		panel_style.corner_radius_bottom_right = 4
 		panel_style.content_margin_left = 6
 		panel_style.content_margin_right = 6
 		panel_style.content_margin_top = 4
 		panel_style.content_margin_bottom = 4
 		_ctb_panel.add_theme_stylebox_override("panel", panel_style)
-		# Bottom-right, anchored so it tracks viewport size instead of
-		# the hardcoded 1280x720. PartyStatusPanel ends at y=460, so
-		# TURN ORDER sits below at y=540..710 with a 80px buffer (was
-		# y=480..710 with 20px buffer — too tight: dynamic content in
-		# the party panel pushed the last member's AP label into the
-		# turn-order area, user feedback 2026-05-02).
-		# Height of 170 fits up to ~6 entries comfortably.
-		_ctb_panel.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-		_ctb_panel.offset_left = -110
-		_ctb_panel.offset_right = -5
+		# Bottom-LEFT — moved 2026-06-17 to clear the right-side party panel.
+		_ctb_panel.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+		_ctb_panel.offset_left = 5
+		_ctb_panel.offset_right = 110
 		_ctb_panel.offset_bottom = -10
 		_ctb_panel.offset_top = -180
 		_ctb_panel.custom_minimum_size = Vector2(100, 0)
-		_ctb_panel.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+		_ctb_panel.grow_horizontal = Control.GROW_DIRECTION_END
 		_ctb_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
 		_scene.get_node("UI").add_child(_ctb_panel)
 
 		# Header
 		var header = Label.new()
 		header.text = "TURN ORDER"
-		header.add_theme_font_size_override("font_size", 9)
+		header.add_theme_font_size_override("font_size", TextScale.scaled(9))
 		header.add_theme_color_override("font_color", Color(0.6, 0.55, 0.8))
 		header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		header.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -811,23 +929,34 @@ func _update_turn_order_strip() -> void:
 	for child in _ctb_timeline.get_children():
 		child.queue_free()
 
-	# Build turn order
-	var order = BattleManager.selection_order
-	var current_idx = BattleManager.selection_index
-	if order.is_empty():
+	# Build the upcoming-combatant queue. During SELECTION it's who selects
+	# next (selection_order); during EXECUTION the strip used to go empty —
+	# now it shows execution_order (speed-sorted pending actions, front =
+	# next to act), so "who acts next" stays visible while actions resolve.
+	var queue: Array = []
+	var st = BattleManager.current_state
+	var in_execution: bool = st == BattleManager.BattleState.EXECUTION_PHASE or st == BattleManager.BattleState.PROCESSING_ACTION
+	if in_execution and "execution_order" in BattleManager and not BattleManager.execution_order.is_empty():
+		for action in BattleManager.execution_order:
+			var c = action.get("combatant")
+			if c is Combatant:
+				queue.append(c)
+	else:
+		var order = BattleManager.selection_order
+		var current_idx = BattleManager.selection_index
+		for i in range(order.size()):
+			if i >= current_idx:
+				queue.append(order[i])
+	if queue.is_empty():
 		return
 
 	var shown = 0
-	for i in range(order.size()):
+	for combatant in queue:
 		if shown >= 8:
 			break
-		var combatant = order[i]
 		if not is_instance_valid(combatant) or not combatant.is_alive:
 			continue
-		if i < current_idx:
-			continue
-
-		var is_current = (i == current_idx)
+		var is_current = (shown == 0)  # head of the queue = current selector / next to act
 		var is_player = combatant in BattleManager.player_party
 		var entry = _create_ctb_entry(combatant, is_current, is_player, shown)
 		_ctb_timeline.add_child(entry)
@@ -851,7 +980,7 @@ func _create_ctb_entry(combatant: Combatant, is_current: bool, is_player: bool, 
 	else:
 		indicator.text = "·"
 		indicator.add_theme_color_override("font_color", Color(0.4, 0.4, 0.4))
-	indicator.add_theme_font_size_override("font_size", 12)
+	indicator.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	indicator.custom_minimum_size = Vector2(12, 0)
 	indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(indicator)
@@ -866,7 +995,7 @@ func _create_ctb_entry(combatant: Combatant, is_current: bool, is_player: bool, 
 	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var name_size = 11 if is_current else 10
-	name_label.add_theme_font_size_override("font_size", name_size)
+	name_label.add_theme_font_size_override("font_size", TextScale.scaled(name_size))
 
 	if is_current:
 		name_label.add_theme_color_override("font_color", Color(1.0, 0.95, 0.7))
@@ -879,7 +1008,7 @@ func _create_ctb_entry(combatant: Combatant, is_current: bool, is_player: bool, 
 	# Speed value (smaller, right-aligned)
 	var spd_label = Label.new()
 	spd_label.text = "%d" % combatant.speed
-	spd_label.add_theme_font_size_override("font_size", 9)
+	spd_label.add_theme_font_size_override("font_size", TextScale.scaled(9))
 	spd_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.6))
 	spd_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(spd_label)

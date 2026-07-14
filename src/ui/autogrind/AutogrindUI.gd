@@ -49,6 +49,10 @@ const CONDITION_TYPES = [
 	{"id": "corruption", "label": "Corruption", "has_value": true, "default_op": ">=", "default_value": 3.0},
 	{"id": "efficiency", "label": "Efficiency", "has_value": true, "default_op": ">=", "default_value": 5.0},
 	{"id": "time_elapsed", "label": "Minutes", "has_value": true, "default_op": ">=", "default_value": 30},
+	{"id": "inventory_items", "label": "Inv Items", "has_value": true, "default_op": ">=", "default_value": 20},
+	{"id": "ability_learned", "label": "New Ability", "has_value": false, "default_op": "==", "default_value": 0},
+	{"id": "reached_level", "label": "Reached Lv", "has_value": true, "default_op": ">=", "default_value": 10},
+	{"id": "rare_item_found", "label": "Rare Drop", "has_value": false, "default_op": "==", "default_value": 0},
 	{"id": "always", "label": "ALWAYS", "has_value": false, "default_op": "==", "default_value": 0},
 ]
 
@@ -478,8 +482,11 @@ func _build_status_panel(panel_size: Vector2) -> Control:
 	panel.add_child(title)
 
 	# Party status
+	# Tick 269: strict-5 party — was capped at 4, silently truncating
+	# the 5th member from the autogrind status panel. Same bug class
+	# as tick 268's SaveScreen fix.
 	var y = 28
-	for i in range(min(_party.size(), 4)):
+	for i in range(min(_party.size(), 5)):
 		var member = _party[i]
 		if member is Combatant:
 			var row = _create_party_status_row(member, panel_size.x - 16)
@@ -609,7 +616,7 @@ func _create_party_status_row(member: Combatant, width: float) -> Control:
 func _build_footer(vp_size: Vector2) -> void:
 	"""Build footer with controls help, ludicrous speed toggle, and permadeath staking toggle"""
 	var footer = Label.new()
-	footer.text = "[Start/+]: Grind  [B]: Close  [1/2/3]: Presets  [4-6]: Custom  [S]: Save  [D]: Del"
+	footer.text = "[Start/+]: Grind  [B]: Close  [1/2/3]: Presets  [4-6]: Custom  [S]: Save  [D]: Del  [E/I]: Files  [Sh+E/I]: Codes"
 	footer.position = Vector2(8, vp_size.y - 24)
 	footer.add_theme_font_size_override("font_size", 10)
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
@@ -1021,6 +1028,14 @@ func _format_condition(condition: Dictionary) -> String:
 			return "Efficiency\n%s %.1f" % [op, value]
 		"member_dead":
 			return "Member\nDead"
+		"inventory_items":
+			return "Inv Items\n%s %d" % [op, value]
+		"ability_learned":
+			return "New\nAbility"
+		"reached_level":
+			return "Level\n%s %d" % [op, value]
+		"rare_item_found":
+			return "Rare\nDrop"
 		"always":
 			return "ALWAYS"
 		_:
@@ -1273,6 +1288,14 @@ func _input(event: InputEvent) -> void:
 
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_W and not event.is_echo():
 		_toggle_auto_advance()
+		get_viewport().set_input_as_handled()
+
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_E and event.shift_pressed and not event.is_echo():
+		_copy_rules_share_code()
+		get_viewport().set_input_as_handled()
+
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_I and event.shift_pressed and not event.is_echo():
+		_paste_rules_share_code()
 		get_viewport().set_input_as_handled()
 
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_E and not event.is_echo():
@@ -1555,7 +1578,7 @@ func _toggle_grinding() -> void:
 		# Persist current rules to AutogrindSystem so the controller evaluates them
 		AutogrindSystem.set_autogrind_rules(rules.duplicate(true))
 		_is_grinding = true
-		_log_message("[color=lime]Autogrind started![/color]")
+		_log_message("[color=%s]Autogrind started![/color]" % AccessibilityPalette.bonus_bbcode())
 		# Hide config UI FIRST, then start grinding on next frame
 		visible = false
 		var config = _get_grind_config()
@@ -1587,7 +1610,7 @@ func _toggle_ludicrous_speed() -> void:
 	if _ludicrous_speed_enabled:
 		_log_message("[color=magenta]LUDICROUS SPEED enabled! Battles resolve instantly via math.[/color]")
 	else:
-		_log_message("[color=lime]Ludicrous speed disabled. Normal battle rendering.[/color]")
+		_log_message("[color=%s]Ludicrous speed disabled. Normal battle rendering.[/color]" % AccessibilityPalette.bonus_bbcode())
 	_build_ui()
 	SoundManager.play_ui("menu_select")
 
@@ -1646,20 +1669,50 @@ func _export_scripts() -> void:
 		var path = ScriptShareManager.export_all_scripts(_party)
 		if path != "":
 			exported += 1
-			_log_message("[color=lime]Exported party autobattle scripts[/color]")
+			_log_message("[color=%s]Exported party autobattle scripts[/color]" % AccessibilityPalette.bonus_bbcode())
 
 	# Export autogrind rules
 	var rules_path = ScriptShareManager.export_autogrind_rules()
 	if rules_path != "":
 		exported += 1
-		_log_message("[color=lime]Exported autogrind rules[/color]")
+		_log_message("[color=%s]Exported autogrind rules[/color]" % AccessibilityPalette.bonus_bbcode())
 
 	if exported == 0:
 		_log_message("[color=yellow]Nothing to export.[/color]")
 	else:
-		_log_message("[color=lime]%d file(s) exported to script_exports/[/color]" % exported)
+		_log_message("[color=%s]%d file(s) exported to script_exports/[/color]" % [AccessibilityPalette.bonus_bbcode(), exported])
 		TutorialHints.show(self, "autogrind_export")
 	SoundManager.play_ui("menu_select")
+
+
+## Shift+E: put an autogrind-rules share code on the clipboard — paste it anywhere.
+func _copy_rules_share_code() -> void:
+	var code := ScriptShareManager.encode_autogrind_share_code()
+	if code == "":
+		_log_message("[color=yellow]No autogrind rules to share.[/color]")
+		SoundManager.play_ui("menu_error")
+		return
+	DisplayServer.clipboard_set(code)
+	_log_message("[color=%s]Rules share code copied (%d chars) — paste it anywhere.[/color]" % [AccessibilityPalette.bonus_bbcode(), code.length()])
+	SoundManager.play_ui("menu_select")
+
+
+## Shift+I: apply an autogrind-rules share code from the clipboard.
+func _paste_rules_share_code() -> void:
+	if _is_grinding:
+		_log_message("[color=yellow]Cannot import while grinding.[/color]")
+		return
+	var data := ScriptShareManager.decode_share_code(DisplayServer.clipboard_get())
+	if data.is_empty() or data.get("type") != "autogrind_rules":
+		_log_message("[color=yellow]Clipboard has no valid autogrind share code.[/color]")
+		SoundManager.play_ui("menu_error")
+		return
+	if ScriptShareManager.apply_autogrind_rules(data):
+		_log_message("[color=%s]Autogrind rules applied from share code (%d rules).[/color]" % [AccessibilityPalette.bonus_bbcode(), data.get("rules", []).size()])
+		SoundManager.play_ui("menu_select")
+	else:
+		_log_message("[color=yellow]Share code valid but could not apply.[/color]")
+		SoundManager.play_ui("menu_error")
 
 
 func _import_scripts() -> void:
@@ -1683,17 +1736,17 @@ func _import_scripts() -> void:
 				var count = ScriptShareManager.apply_script_bundle(data)
 				if count > 0:
 					imported += count
-					_log_message("[color=lime]Imported %d autobattle scripts from %s[/color]" % [count, filename])
+					_log_message("[color=%s]Imported %d autobattle scripts from %s[/color]" % [AccessibilityPalette.bonus_bbcode(), count, filename])
 			"autobattle_script":
 				var char_id = data.get("character_id", "")
 				if char_id != "" and ScriptShareManager.apply_character_script(char_id, data):
 					imported += 1
-					_log_message("[color=lime]Imported script for %s[/color]" % char_id)
+					_log_message("[color=%s]Imported script for %s[/color]" % [AccessibilityPalette.bonus_bbcode(), char_id])
 			"autogrind_rules":
 				if ScriptShareManager.apply_autogrind_rules(data):
 					imported += 1
 					rules = AutogrindSystem.get_autogrind_rules()
-					_log_message("[color=lime]Imported autogrind rules from %s[/color]" % filename)
+					_log_message("[color=%s]Imported autogrind rules from %s[/color]" % [AccessibilityPalette.bonus_bbcode(), filename])
 
 	if imported == 0:
 		_log_message("[color=yellow]No compatible files to import.[/color]")
@@ -1713,7 +1766,7 @@ func _toggle_permadeath_staking() -> void:
 		# Disable immediately — no confirmation needed to turn it off
 		_permadeath_staking_enabled = false
 		AutogrindSystem.enable_permadeath_staking(false)
-		_log_message("[color=lime]Permadeath staking disabled.[/color]")
+		_log_message("[color=%s]Permadeath staking disabled.[/color]" % AccessibilityPalette.bonus_bbcode())
 		_build_ui()
 		SoundManager.play_ui("menu_select")
 		return
@@ -1755,7 +1808,8 @@ func _show_permadeath_confirmation() -> void:
 
 	var warn_lbl := RichTextLabel.new()
 	warn_lbl.bbcode_enabled = true
-	warn_lbl.text = "[color=white]Enabling [color=red]PERMADEATH STAKES[/color] means:\n\n- If your party is wiped, the lowest-HP member [color=red]DIES PERMANENTLY[/color]\n- Their death is saved to disk and cannot be undone\n- Rewards grow 50% faster as compensation\n\n[color=yellow]Are you sure?[/color][/color]"
+	var _danger: String = AccessibilityPalette.penalty_bbcode()
+	warn_lbl.text = "[color=white]Enabling [color=%s]PERMADEATH STAKES[/color] means:\n\n- If your party is wiped, the lowest-HP member [color=%s]DIES PERMANENTLY[/color]\n- Their death is saved to disk and cannot be undone\n- Rewards grow 50%% faster as compensation\n\n[color=yellow]Are you sure?[/color][/color]" % [_danger, _danger]
 	warn_lbl.position = Vector2(12, 36)
 	warn_lbl.size = Vector2(dialog.size.x - 24, 108)
 	warn_lbl.add_theme_font_size_override("normal_font_size", 11)
@@ -1783,7 +1837,7 @@ func _show_permadeath_confirmation() -> void:
 		func() -> void:
 			_permadeath_staking_enabled = true
 			AutogrindSystem.enable_permadeath_staking(true)
-			_log_message("[color=red]PERMADEATH STAKES ENABLED! +50% efficiency growth.[/color]")
+			_log_message("[color=%s]PERMADEATH STAKES ENABLED! +50%% efficiency growth.[/color]" % AccessibilityPalette.penalty_bbcode())
 			overlay.queue_free()
 			_build_ui()
 			SoundManager.play_ui("menu_select"),
@@ -2050,8 +2104,9 @@ func _rebuild_party_rows() -> void:
 		child.queue_free()
 
 	# Re-add party rows
+	# Tick 269: strict-5 party — was capped at 4.
 	var y = 28
-	for i in range(min(_party.size(), 4)):
+	for i in range(min(_party.size(), 5)):
 		var member = _party[i]
 		if member is Combatant:
 			var row = _create_party_status_row(member, _status_panel.size.x - 16)
@@ -2145,7 +2200,7 @@ func _on_battle_completed(battle_num: int, results: Dictionary) -> void:
 		if _monitor and is_instance_valid(_monitor):
 			_monitor.add_highlight("META-BOSS DEFEATED: %s! Corruption -" % boss_name, "success")
 	elif victory:
-		_log_message("[color=lime]Battle #%d: +%d EXP[/color]" % [battle_num, exp_gained])
+		_log_message("[color=%s]Battle #%d: +%d EXP[/color]" % [AccessibilityPalette.bonus_bbcode(), battle_num, exp_gained])
 		# Forward victory to monitor highlight
 		if _monitor and is_instance_valid(_monitor):
 			var yield_mult = results.get("yield_multiplier", 1.0)
@@ -2157,7 +2212,7 @@ func _on_battle_completed(battle_num: int, results: Dictionary) -> void:
 				if item_id != "gold":
 					_monitor.add_highlight("Drop: %s x%d" % [item_id, items[item_id]], "success")
 	else:
-		_log_message("[color=red]Battle #%d: Defeat![/color]" % battle_num)
+		_log_message("[color=%s]Battle #%d: Defeat![/color]" % [AccessibilityPalette.penalty_bbcode(), battle_num])
 		if _monitor and is_instance_valid(_monitor):
 			_monitor.add_highlight("DEFEAT at battle #%d!" % battle_num, "danger")
 
@@ -2169,7 +2224,7 @@ func _on_efficiency_increased(new_multiplier: float) -> void:
 func _on_corruption_increased(level: float) -> void:
 	_corruption = level
 	if level >= 4.0:
-		_log_message("[color=red]Corruption critical: %.1f[/color]" % level)
+		_log_message("[color=%s]Corruption critical: %.1f[/color]" % [AccessibilityPalette.penalty_bbcode(), level])
 
 
 func _on_interrupt_triggered(reason: String) -> void:
@@ -2188,7 +2243,7 @@ func _on_meta_boss_spawned(boss_name: String) -> void:
 
 
 func _on_system_collapse() -> void:
-	_log_message("[color=red]=== SYSTEM COLLAPSE! Reality is fragmenting... ===[/color]")
+	_log_message("[color=%s]=== SYSTEM COLLAPSE! Reality is fragmenting... ===[/color]" % AccessibilityPalette.penalty_bbcode())
 	if _monitor and is_instance_valid(_monitor):
 		_monitor.add_highlight("SYSTEM COLLAPSE (#%d)!" % AutogrindSystem.collapse_count, "danger")
 
@@ -2231,7 +2286,7 @@ func _save_current_as_preset() -> void:
 	_custom_presets.append(preset)
 	_persist_custom_presets()
 
-	_log_message("[color=lime]Saved as '%s' (slot [%d])[/color]" % [preset["name"], slot + 4])
+	_log_message("[color=%s]Saved as '%s' (slot [%d])[/color]" % [AccessibilityPalette.bonus_bbcode(), preset["name"], slot + 4])
 	_build_ui()
 	SoundManager.play_ui("menu_select")
 
@@ -2290,15 +2345,30 @@ func _persist_custom_presets() -> void:
 
 
 func _load_custom_presets() -> void:
-	"""Load custom presets from user://"""
+	"""Load custom presets from user://.
+
+	Tick 323: every failure mode surfaces via push_warning instead of
+	silently returning empty. User-authored data file — if the user
+	edits it by hand and breaks the JSON, they should see WHY their
+	presets vanished. Same 4-stage loud-fail pattern as tick 322
+	(BattleEnemySpawner.load_monsters_data).
+
+	The missing-file case stays silent — first-time players have no
+	presets file, and warning every launch would be noise."""
 	if not FileAccess.file_exists(CUSTOM_PRESETS_PATH):
 		return
 	var file = FileAccess.open(CUSTOM_PRESETS_PATH, FileAccess.READ)
 	if not file:
+		push_warning("[AUTOGRIND] Custom presets file at %s exists but FileAccess.open failed (error %d) — file likely locked or permission-denied; presets will not load this session" % [CUSTOM_PRESETS_PATH, FileAccess.get_open_error()])
 		return
 	var text = file.get_as_text()
 	file.close()
 	var json = JSON.new()
-	if json.parse(text) == OK and json.data is Array:
-		_custom_presets = json.data
-		print("[AUTOGRIND] Loaded %d custom presets" % _custom_presets.size())
+	if json.parse(text) != OK:
+		push_warning("[AUTOGRIND] Custom presets JSON parse error: %s — user-edited file likely has a syntax error; presets will not load this session" % json.get_error_message())
+		return
+	if not (json.data is Array):
+		push_warning("[AUTOGRIND] Custom presets parsed but root is not an Array (got %s) — file shape changed or hand-edited to wrong root; presets will not load this session" % typeof(json.data))
+		return
+	_custom_presets = json.data
+	print("[AUTOGRIND] Loaded %d custom presets" % _custom_presets.size())

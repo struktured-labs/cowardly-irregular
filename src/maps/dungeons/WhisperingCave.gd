@@ -193,6 +193,22 @@ func _ready() -> void:
 	# Load boss defeated state BEFORE generating map (so boss trigger is set correctly)
 	_load_boss_state()
 
+	# Restore floor from save. Without this, a player who quits on floor
+	# 5 reloads on floor 1 and has to re-descend — the cave doesn't
+	# survive save/load. GameLoop's _current_cave_floor handles in-session
+	# battle re-entry; this handles full save/load cycles.
+	if GameState and GameState.game_constants.has("whispering_cave_floor"):
+		var saved_floor: int = int(GameState.game_constants["whispering_cave_floor"])
+		if saved_floor >= 1 and saved_floor <= 6:
+			current_floor = saved_floor
+	## Tick 153: if the Cave Rat King is already dead, reset the
+	## saved floor to 1 so re-entering doesn't drop the player in
+	## the empty floor-6 boss room. Same UX rationale as the
+	## DragonCave base — completed dungeons re-entry from floor 1.
+	if boss_defeated and current_floor != 1 and GameState:
+		current_floor = 1
+		GameState.game_constants["whispering_cave_floor"] = 1
+
 	_generate_map_for_floor(current_floor)
 	_setup_player()
 	_setup_camera()
@@ -289,6 +305,16 @@ func _setup_transitions_for_floor(floor_num: int) -> void:
 
 	# Place treasure chest per floor (progressively better loot)
 	_place_floor_treasure(floor_num)
+
+	# The Warden's tally wall (world1_thirty_seven giver) — floor 5's spiral
+	# heart, beside the treasure chamber. First approach plays the Warden
+	# encounter cutscene; after that the wall offers the quest.
+	if floor_num == 5:
+		var TallyWallScript = load("res://src/exploration/TallyWall.gd")
+		if TallyWallScript:
+			var wall = TallyWallScript.new()
+			wall.position = Vector2(11 * TILE_SIZE + TILE_SIZE / 2, 9 * TILE_SIZE)
+			transitions.add_child(wall)
 
 	# Save crystal on floor 3 (midway rest point)
 	if floor_num == 3:
@@ -475,6 +501,12 @@ func _transition_to_floor(target_floor: int, direction: String = "") -> void:
 
 	# Update floor
 	current_floor = target_floor
+	# Quest-tracking flag — set once the player descends past floor 2.
+	if current_floor >= 3 and GameState:
+		GameState.game_constants["reached_cave_floor_3"] = true
+	# Persist current floor so save/load restores deep-in-cave progress.
+	if GameState:
+		GameState.game_constants["whispering_cave_floor"] = current_floor
 
 	# Clear and regenerate map
 	tile_map.clear()
@@ -551,12 +583,26 @@ func _trigger_boss_battle() -> void:
 	# flags on victory. Without this, the cave instance gets freed by
 	# _return_to_exploration before any defeat handler can fire, so the
 	# Rat King flag silently never gets set.
+	# Rat King is mid-boss — only reveals Castle Harmonia portal, no W2 unlock.
+	# 'constants' also back-fills the prereq flags that the boss fight
+	# logically implies: you cannot reach the rat king without descending
+	# past floor 2 AND triggering the chapter-3 cave intro cutscene. The
+	# normal setters (in _change_floor / _get_pending_story_cutscene) cover
+	# fresh playthroughs; back-fill catches saves that predate either
+	# setter so the quest log doesn't stay yellow forever.
+	# Tick 106: removed the "defeat_cutscene" key — it was never read by
+	# any spec consumer (GameLoop._apply_pending_boss_defeat ignores it).
+	# The world1_rat_king_defeat cutscene plays via
+	# GameLoop._get_pending_story_cutscene's gate on
+	# cutscene_flag_rat_king_defeated in whispering_cave.
 	GameState.pending_boss_defeat = {
-		"story_flags": ["rat_king_defeated", "w1_boss_defeated"],
-		"constants": ["cutscene_flag_rat_king_defeated"],
+		"story_flags": ["rat_king_defeated"],
+		"constants": [
+			"cutscene_flag_rat_king_defeated",
+			"reached_cave_floor_3",
+			"cutscene_flag_chapter3_complete",
+		],
 		"dungeon_flag": "cave_rat_king_defeated",
-		"unlock_world": true,
-		"defeat_cutscene": "world1_rat_king_defeat",
 	}
 
 	# Play boss intro cutscene, then trigger battle
@@ -599,44 +645,38 @@ func _place_floor_treasure(floor_num: int) -> void:
 	transitions.add_child(chest)
 
 
-func _on_boss_defeated() -> void:
-	"""Handle boss defeat — play defeat cutscene, then unlock W2"""
-	boss_defeated = true
-	_save_boss_state()
-
-	# Play defeat cutscene, then unlock W2
-	var director = CutsceneDirector.new()
-	add_child(director)
-	director.cutscene_finished.connect(func(_id: String):
-		director.queue_free()
-		# Unlock W2 — Cave Rat King is the W1 gatekeeper boss
-		GameState.set_story_flag("w1_boss_defeated")
-		GameState.set_story_flag("rat_king_defeated")
-		GameState.game_constants["cutscene_flag_rat_king_defeated"] = true
-		GameState.unlock_next_world()
-		# Spawn exit stairs
-		print("Cave Rat King defeated! W2 portal unlocked. Exit stairs appear.")
-		_setup_transitions_for_floor(current_floor)
-		controller.resume_exploration()
-	, CONNECT_ONE_SHOT)
-	director.play_cutscene("world1_rat_king_defeat")
+# (Tick 106: removed dead _on_boss_defeated. No caller anywhere — the same
+# class of dead code as DragonCave._on_boss_defeated (removed in tick 105).
+# The actual flag-setting work happens via GameLoop._apply_pending_boss_defeat
+# reading the pending_boss_defeat spec assembled in _trigger_boss above. The
+# world1_rat_king_defeat cutscene plays via GameLoop._get_pending_story_cutscene
+# gating on cutscene_flag_rat_king_defeated in whispering_cave.)
 
 
 func _load_boss_state() -> void:
 	"""Load boss defeated state from GameState"""
 	var game_state = get_node_or_null("/root/GameState")
-	if game_state and game_state.player_party.size() > 0:
-		var flags = game_state.player_party[0].get("dungeon_flags", {})
+	if game_state:
+		## Tick 154: read from game_constants["dungeon_flags"]
+		## (party-leader-independent). Fall back to legacy
+		## player_party[0] location for save-format migration.
+		var flags: Dictionary = {}
+		if game_state.game_constants.has("dungeon_flags"):
+			flags = game_state.game_constants["dungeon_flags"]
+		elif game_state.player_party.size() > 0 and game_state.player_party[0].has("dungeon_flags"):
+			flags = game_state.player_party[0]["dungeon_flags"]
 		boss_defeated = flags.get("cave_rat_king_defeated", false)
 
 
 func _save_boss_state() -> void:
 	"""Save boss defeated state to GameState"""
 	var game_state = get_node_or_null("/root/GameState")
-	if game_state and game_state.player_party.size() > 0:
-		if not game_state.player_party[0].has("dungeon_flags"):
-			game_state.player_party[0]["dungeon_flags"] = {}
-		game_state.player_party[0]["dungeon_flags"]["cave_rat_king_defeated"] = true
+	if game_state:
+		## Tick 154: write to game_constants["dungeon_flags"] so the
+		## flag survives a party-leader change.
+		if not game_state.game_constants.has("dungeon_flags"):
+			game_state.game_constants["dungeon_flags"] = {}
+		game_state.game_constants["dungeon_flags"]["cave_rat_king_defeated"] = true
 
 
 func _setup_player() -> void:
@@ -687,6 +727,11 @@ func _setup_controller() -> void:
 
 
 func _on_transition_triggered(target_map: String, spawn_point: String) -> void:
+	# Clear the persisted floor when the player walks back to the overworld
+	# — re-entering the cave should start from floor 1, not pop them
+	# back to whichever floor they previously left at.
+	if target_map != "" and target_map != "whispering_cave" and GameState:
+		GameState.game_constants.erase("whispering_cave_floor")
 	area_transition.emit(target_map, spawn_point)
 
 

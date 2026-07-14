@@ -29,6 +29,13 @@ var _state: State = State.IDLE
 var _party: Array = []
 var _config: Dictionary = {}
 var _saved_autobattle_states: Dictionary = {}
+## Per-character pre-grind script snapshot, populated ONLY for characters
+## where _force_autobattle_on overwrote an empty script with a default.
+## Restored on stop_grind so the autogrind doesn't silently mutate the
+## player's authored autobattle config. (Bug: prior to this, an empty
+## script became the autogrind default permanently — players had to
+## manually clear it after their first grind session.)
+var _autogrind_authored_scripts: Dictionary = {}
 var _terrain: String = "plains"
 var _between_battle_timer: float = 0.0
 var _skip_next_battle: bool = false
@@ -243,6 +250,11 @@ func _request_next_battle() -> void:
 	_current_battle_is_collapse_boss = false
 	_current_meta_boss_data = {}
 	var enemies = _generate_scaled_enemies()
+	if enemies.is_empty():
+		# Every species is permakilled — the grind stops CLEANLY instead of
+		# hanging on an empty battle (the original stuck-in-battle-mode class).
+		stop_grind("Nothing left to grind — every species here has been unwritten.")
+		return
 	_state = State.BATTLE_RUNNING
 	grind_battle_requested.emit(enemies, _terrain)
 
@@ -279,9 +291,16 @@ func _launch_collapse_boss_battle() -> void:
 
 ## Generate enemies with adaptation scaling
 func _generate_scaled_enemies() -> Array:
-	# Pick random enemies from BattleScene.MONSTER_TYPES
-	var BattleSceneScript = load("res://src/battle/BattleScene.gd")
-	var monster_types = BattleSceneScript.MONSTER_TYPES
+	# Pick random enemies from the spawner's MONSTER_TYPES const.
+	# BattleScene.MONSTER_TYPES is an instance property getter (not static),
+	# so it cannot be read off the GDScript Resource — read the const where it
+	# actually lives (BattleEnemySpawner, a global class with const MONSTER_TYPES).
+	var monster_types = BattleEnemySpawner.MONSTER_TYPES
+	# Necromancer permakill holds in grinds too — unwritten species never spawn
+	if GameState and "permakilled_monster_types" in GameState and not GameState.permakilled_monster_types.is_empty():
+		monster_types = monster_types.filter(func(mt): return not str(mt.get("id", "")) in GameState.permakilled_monster_types)
+	if monster_types.is_empty():
+		return []
 
 	var num_enemies = randi_range(2, 3)
 	var selected: Array = []
@@ -377,6 +396,7 @@ func on_battle_ended(victory: bool, exp_gained: int = 0, items_gained: Dictionar
 		_state_before_pause = State.IDLE
 		_state = State.PAUSED
 		Engine.time_scale = 1.0
+		AutogrindSystem.set_automation_paused(true)
 		print("[AUTOGRIND] Deferred pause activated after battle end")
 		grind_paused.emit()
 
@@ -415,6 +435,16 @@ func stop_grind(reason: String = "Manual stop") -> void:
 	_current_battle_is_collapse_boss = false
 	_current_meta_boss_data = {}
 	_pending_tier_switch = -1
+	# Reset deferred next-battle modifiers. _evaluate_and_apply_rules and
+	# fatigue events set these in _request_next_battle; they are consumed
+	# only when the NEXT battle actually launches. If the player stops the
+	# grind in between (between fatigue trigger and battle launch), the
+	# flags would otherwise leak into the next grind session — first
+	# battle skipped, enemies arbitrarily +20% buff, or EXP arbitrarily
+	# +50% bonus, depending on which was pending.
+	_skip_next_battle = false
+	_next_battle_enemy_boost = 0.0
+	_next_battle_exp_bonus = 0.0
 
 	# Disconnect region_cracked signal
 	if AutogrindSystem.region_cracked.is_connected(_on_region_cracked):
@@ -447,6 +477,7 @@ func pause_grind() -> void:
 	_state_before_pause = _state
 	_state = State.PAUSED
 	Engine.time_scale = 1.0
+	AutogrindSystem.set_automation_paused(true)
 	print("[AUTOGRIND] Controller paused (was %s)" % State.keys()[_state_before_pause])
 	grind_paused.emit()
 
@@ -458,6 +489,7 @@ func resume_grind() -> void:
 
 	_state = State.BETWEEN_BATTLES
 	_between_battle_timer = _get_between_battle_delay()
+	AutogrindSystem.set_automation_paused(false)
 
 	# Restore battle speed
 	if not headless_mode:
@@ -477,6 +509,7 @@ func is_paused() -> bool:
 ## Save current autobattle toggle states for all party members
 func _save_autobattle_states() -> void:
 	_saved_autobattle_states.clear()
+	_autogrind_authored_scripts.clear()
 	for member in _party:
 		if member is Combatant:
 			var char_id = member.combatant_name.to_lower().replace(" ", "_")
@@ -491,6 +524,11 @@ func _force_autobattle_on() -> void:
 			AutobattleSystem.set_autobattle_enabled(char_id, true)
 			var active_script = AutobattleSystem.get_character_script(char_id)
 			if active_script.is_empty() or not active_script.has("rules") or active_script["rules"].is_empty():
+				# Snapshot the pre-existing (empty / unfinished) script BEFORE
+				# overwriting so stop_grind can put it back. Without this,
+				# autogrind's default script would persist after the session,
+				# silently replacing whatever the player had drafted.
+				_autogrind_authored_scripts[char_id] = active_script.duplicate(true) if active_script is Dictionary else {}
 				var default_script = AutobattleSystem.create_default_character_script(char_id)
 				AutobattleSystem.set_character_script(char_id, default_script)
 				print("[AUTOGRIND] Created default autobattle script for %s" % char_id)
@@ -501,7 +539,15 @@ func _force_autobattle_on() -> void:
 func _restore_autobattle_states() -> void:
 	for char_id in _saved_autobattle_states:
 		AutobattleSystem.set_autobattle_enabled(char_id, _saved_autobattle_states[char_id])
+	# Restore the pre-grind script for any character we overwrote with the
+	# autogrind default. We only entered this branch when the player's
+	# original script was empty / had no rules — putting it back keeps the
+	# authored-state surface clean and the autobattle editor reflects
+	# pre-grind state on the next open.
+	for char_id in _autogrind_authored_scripts:
+		AutobattleSystem.set_character_script(char_id, _autogrind_authored_scripts[char_id])
 	_saved_autobattle_states.clear()
+	_autogrind_authored_scripts.clear()
 	print("[AUTOGRIND] Restored autobattle states")
 
 
@@ -527,6 +573,10 @@ func get_grind_stats() -> Dictionary:
 		"per_character_exp": AutogrindSystem.per_character_exp.duplicate(),
 		"items_consumed": AutogrindSystem.items_consumed.duplicate(),
 		"elapsed_seconds": sys_stats.get("elapsed_seconds", 0.0),
+		"battles_without_heal": AutogrindSystem.battles_without_heal,
+		"corruption_threshold": AutogrindSystem.corruption_threshold,
+		"save_corruption": sys_stats.get("save_corruption", 0.0),
+		"save_corruption_delta": sys_stats.get("save_corruption_delta", 0.0),
 	}
 
 

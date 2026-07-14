@@ -49,13 +49,12 @@ static func clear_sprite_cache() -> void:
 static func _load_equipment_data() -> void:
 	if _equipment_loaded:
 		return
-	# Prefer EquipmentSystem autoload (already cached at startup)
-	var equip_sys = Engine.get_singleton("EquipmentSystem") if Engine.has_singleton("EquipmentSystem") else null
-	if equip_sys == null:
-		# Try autoload tree access
-		var tree = Engine.get_main_loop()
-		if tree and tree is SceneTree and tree.root.has_node("EquipmentSystem"):
-			equip_sys = tree.root.get_node("EquipmentSystem")
+	# Engine.has_singleton("EquipmentSystem") is ALWAYS FALSE for autoloads in
+	# Godot 4 — go straight to the scene tree root.
+	var equip_sys: Node = null
+	var tree = Engine.get_main_loop()
+	if tree and tree is SceneTree and tree.root != null:
+		equip_sys = tree.root.get_node_or_null("EquipmentSystem")
 	if equip_sys and not equip_sys.weapons.is_empty():
 		_equipment_data = {
 			"weapons": equip_sys.weapons,
@@ -175,14 +174,21 @@ static func _safe_pixel(img: Image, x: int, y: int, color: Color) -> void:
 ## Draw an outlined pixel (adds dark outline around it)
 static func _outlined_pixel(img: Image, x: int, y: int, color: Color, outline_color: Color = Color(0.1, 0.1, 0.1, 0.8)) -> void:
 	"""Set pixel with outline effect for more definition"""
-	var s = img.get_width()
+	# Bounds: width for x, height for y. Pre-fix this used `s = get_width()`
+	# for both — wrong on non-square images (SNES party sprites are 32×48).
+	# If width > height, py could exceed image bounds and set_pixel logs an
+	# error; if width < height, the bottom rows weren't reachable for
+	# outlining. The other static drawing helpers in this file all use
+	# (get_width / get_height) correctly — _outlined_pixel was the outlier.
+	var w := img.get_width()
+	var h := img.get_height()
 	# Draw outline first
 	for ox in [-1, 0, 1]:
 		for oy in [-1, 0, 1]:
 			if ox != 0 or oy != 0:
 				var px = x + ox
 				var py = y + oy
-				if px >= 0 and px < s and py >= 0 and py < s:
+				if px >= 0 and px < w and py >= 0 and py < h:
 					var existing = img.get_pixel(px, py)
 					if existing.a < 0.1:  # Only outline on transparent pixels
 						img.set_pixel(px, py, outline_color)
@@ -663,11 +669,27 @@ static func get_job_visual(job_id: String) -> Dictionary:
 
 
 static func _load_job_visuals() -> void:
-	"""Load job visual data from jobs.json."""
+	"""Load job visual data from jobs.json.
+
+	Tick 346: 3-stage loud-fail on the JSON load so a missing /
+	corrupted / wrong-shape jobs.json doesn't silently leave
+	_job_visuals empty — pre-fix every job rendered with its sprite
+	loader's hard-coded fallback color/outfit and the dev had no clue
+	the visual data was actually missing. Same loud-fail pattern as
+	ticks 322 (load_monsters_data), 323 (load_custom_presets), 344
+	(load_grind_snapshot)."""
 	var file = FileAccess.open("res://data/jobs.json", FileAccess.READ)
-	if file:
+	if not file:
+		push_warning("[SpriteUtils] _load_job_visuals: FileAccess.open(jobs.json) failed (error %d) — all jobs will use procedural-fallback visual data" % FileAccess.get_open_error())
+	else:
 		var json = JSON.new()
-		if json.parse(file.get_as_text()) == OK and json.data is Dictionary:
+		var parse_result: int = json.parse(file.get_as_text())
+		file.close()
+		if parse_result != OK:
+			push_warning("[SpriteUtils] _load_job_visuals: jobs.json parse error: %s — visual data will be empty" % json.get_error_message())
+		elif not (json.data is Dictionary):
+			push_warning("[SpriteUtils] _load_job_visuals: jobs.json parsed but root is not a Dictionary (got %s) — visual data will be empty" % typeof(json.data))
+		else:
 			for job_id in json.data:
 				var job = json.data[job_id]
 				if job.has("visual"):
@@ -678,7 +700,6 @@ static func _load_job_visuals() -> void:
 						"outfit_color": Color(color_arr[0], color_arr[1], color_arr[2]),
 						"headgear": vis.get("headgear", "none")
 					}
-		file.close()
 	# Backward-compat aliases: old job IDs point to new visual data
 	var _aliases = {"white_mage": "cleric", "black_mage": "mage", "thief": "rogue"}
 	for old_id in _aliases:

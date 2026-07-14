@@ -14,14 +14,14 @@ var _pulse_time: float = 0.0
 const ARROW_MARGIN: float = 60.0
 const ARROW_COLOR = Color(1.0, 0.85, 0.3)
 const ARROWS = {
-	"up": "▲ Objective",
-	"down": "▼ Objective",
-	"left": "◄ Objective",
-	"right": "Objective ►",
-	"up_left": "◤ Objective",
-	"up_right": "Objective ◥",
-	"down_left": "◣ Objective",
-	"down_right": "Objective ◢",
+	"up": "^ Objective",
+	"down": "v Objective",
+	"left": "< Objective",
+	"right": "Objective >",
+	"up_left": "<^ Objective",
+	"up_right": "Objective ^>",
+	"down_left": "<v Objective",
+	"down_right": "Objective v>",
 }
 
 
@@ -85,7 +85,7 @@ func update(player_pos: Vector2) -> void:
 	else:
 		dir_key = "left"
 
-	_arrow_label.text = ARROWS.get(dir_key, "► Objective")
+	_arrow_label.text = ARROWS.get(dir_key, "> Objective")
 	_arrow_label.add_theme_color_override("font_color", Color(ARROW_COLOR.r, ARROW_COLOR.g, ARROW_COLOR.b, alpha))
 
 	# Position at screen edge

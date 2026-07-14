@@ -43,6 +43,9 @@ var _profile_label: Label
 var _details_panel: Control
 var _keyboard: Control = null
 const VirtualKeyboardClass = preload("res://src/ui/VirtualKeyboard.gd")
+var _rule_composer_overlay: Control = null # RuleComposerOverlay instance; blocks grid input while open
+var _splash_shown: bool = false # Latches the empty-grid composer splash to once per setup() call
+const _RuleComposerOverlayScene := preload("res://src/ui/autobattle/RuleComposerOverlay.tscn")
 
 ## Grid layout constants
 const CELL_WIDTH = 120
@@ -83,6 +86,7 @@ func _ready() -> void:
 
 func setup(party_members: Array = []) -> void:
 	"""Setup editor with party context"""
+	_splash_shown = false
 	party = party_members
 
 	# Build known_characters from party if available
@@ -95,6 +99,15 @@ func setup(party_members: Array = []) -> void:
 	# Load rules from active autogrind profile
 	var loaded_rules = AutogrindSystem.get_autogrind_rules()
 	rules = loaded_rules.duplicate(true)
+
+	# Fresh/empty profile: invite composing rules instead of silently seeding the default.
+	if rules.size() == 0 and not _splash_shown:
+		_splash_shown = true
+		if is_inside_tree():
+			_show_empty_grid_splash()
+		else:
+			call_deferred("_show_empty_grid_splash")
+		return
 
 	if rules.size() == 0:
 		rules.append(_create_default_rule())
@@ -176,7 +189,7 @@ func _build_ui() -> void:
 	add_child(help1)
 
 	var help2 = Label.new()
-	help2.text = "C:Cycle  W/S:Adjust  Tab:Toggle  Sh+Tab:Profile  Start:Save"
+	help2.text = "C:Cycle  W/S:Adjust  Tab:Toggle  Sh+Tab:Profile  K:Compose  Start:Save"
 	help2.position = Vector2(16, size.y - 28)
 	help2.add_theme_font_size_override("font_size", 10)
 	help2.add_theme_color_override("font_color", style.text.darkened(0.2))
@@ -698,6 +711,14 @@ func _format_condition(condition: Dictionary) -> String:
 			return "Corrupt %s %.1f" % [op, value]
 		"efficiency":
 			return "Effic %s %.1f" % [op, value]
+		"inventory_items":
+			return "Inv Items %s %d" % [op, value]
+		"ability_learned":
+			return "New Ability"
+		"reached_level":
+			return "Level %s %d" % [op, value]
+		"rare_item_found":
+			return "Rare Drop"
 		"always":
 			return "ALWAYS"
 		_:
@@ -918,6 +939,10 @@ func _input(event: InputEvent) -> void:
 	if _keyboard and is_instance_valid(_keyboard) and _keyboard.visible:
 		return
 
+	# Rule Composer overlay handles its own input (A/B/R) when open
+	if _rule_composer_overlay and is_instance_valid(_rule_composer_overlay) and _rule_composer_overlay.visible:
+		return
+
 	if is_editing:
 		return
 
@@ -982,6 +1007,11 @@ func _input(event: InputEvent) -> void:
 	# Shift+R - Rename profile
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_R and event.shift_pressed:
 		_open_rename_profile()
+		get_viewport().set_input_as_handled()
+
+	# K - Open Rule Composer overlay (compose rules from a natural-language prompt)
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_K and not event.shift_pressed and not event.is_echo():
+		_open_rule_composer_overlay()
 		get_viewport().set_input_as_handled()
 
 	# C key - Cycle operator (conditions) or character (actions)
@@ -1082,13 +1112,14 @@ func _cycle_condition_type() -> void:
 		return
 
 	var cond = conditions[cursor_col]
-	var types = ["party_hp_avg", "party_mp_avg", "party_hp_min", "alive_count", "battles_done", "corruption", "efficiency", "always"]
+	var types = ["party_hp_avg", "party_mp_avg", "party_hp_min", "alive_count", "battles_done", "corruption", "efficiency", "inventory_items", "ability_learned", "reached_level", "rare_item_found", "always"]
 	var current_type = cond.get("type", "always")
 	var idx = types.find(current_type)
 	idx = (idx + 1) % types.size()
 	cond["type"] = types[idx]
 
-	if types[idx] != "always":
+	var value_less_types := ["always", "ability_learned", "rare_item_found"]
+	if not (types[idx] in value_less_types):
 		if not cond.has("op"):
 			cond["op"] = "<"
 		if not cond.has("value"):
@@ -1104,6 +1135,10 @@ func _cycle_condition_type() -> void:
 					cond["value"] = 3.0
 				"efficiency":
 					cond["value"] = 5.0
+				"inventory_items":
+					cond["value"] = 20
+				"reached_level":
+					cond["value"] = 10
 				_:
 					cond["value"] = 50
 
@@ -1141,7 +1176,8 @@ func _adjust_condition_value(delta: int) -> void:
 
 	var cond = conditions[cursor_col]
 	var cond_type = cond.get("type", "always")
-	if cond_type == "always":
+	# ability_learned + rare_item_found are boolean flags — no value to adjust
+	if cond_type == "always" or cond_type == "ability_learned" or cond_type == "rare_item_found":
 		return
 
 	var current_value = cond.get("value", 50)
@@ -1154,6 +1190,10 @@ func _adjust_condition_value(delta: int) -> void:
 			step = 1
 		"battles_done":
 			step = 10
+		"inventory_items":
+			step = 5
+		"reached_level":
+			step = 1
 
 	# Different clamp ranges per type
 	var min_val = 0
@@ -1167,6 +1207,11 @@ func _adjust_condition_value(delta: int) -> void:
 			max_val = 10
 		"battles_done":
 			max_val = 999
+		"inventory_items":
+			max_val = 200
+		"reached_level":
+			min_val = 1
+			max_val = 99
 
 	current_value = clamp(current_value + delta * step, min_val, max_val)
 	cond["value"] = current_value
@@ -1482,6 +1527,49 @@ func _create_default_rule() -> Dictionary:
 		"actions": [{"type": "switch_profile", "character_id": "hero", "profile_index": 0}],
 		"enabled": true
 	}
+
+
+## ═══════════════════════════════════════════════════════════════════════
+## RULE COMPOSER
+## ═══════════════════════════════════════════════════════════════════════
+
+func _open_rule_composer_overlay() -> void:
+	"""Open the Rule Composer overlay for the party-level autogrind rules"""
+	if _rule_composer_overlay and is_instance_valid(_rule_composer_overlay):
+		return
+	_rule_composer_overlay = _RuleComposerOverlayScene.instantiate()
+	add_child(_rule_composer_overlay)
+	_rule_composer_overlay.installed.connect(_on_composer_installed)
+	_rule_composer_overlay.cancelled.connect(func() -> void:
+		if _rule_composer_overlay and is_instance_valid(_rule_composer_overlay):
+			_rule_composer_overlay.queue_free()
+		_rule_composer_overlay = null
+	)
+	_rule_composer_overlay.open("autogrind", "", rules.duplicate(true))
+	SoundManager.play_ui("menu_select")
+
+
+func _on_composer_installed(profile_index: int) -> void:
+	"""RuleComposerOverlay confirmed a composition -- reload the grid from the resulting profile"""
+	if _rule_composer_overlay and is_instance_valid(_rule_composer_overlay):
+		_rule_composer_overlay.queue_free()
+	_rule_composer_overlay = null
+	if profile_index >= 0:
+		AutogrindSystem.set_active_autogrind_profile(profile_index)
+	rules = AutogrindSystem.get_autogrind_rules().duplicate(true)
+	if rules.size() == 0:
+		rules.append(_create_default_rule())
+	cursor_row = 0
+	cursor_col = 0
+	_build_ui()
+	_refresh_grid()
+	if _status_label and is_instance_valid(_status_label):
+		_status_label.text = "Composed autogrind rules installed"
+
+
+func _show_empty_grid_splash() -> void:
+	"""Fresh/empty autogrind profile -- open the composer directly"""
+	_open_rule_composer_overlay()
 
 
 ## ═══════════════════════════════════════════════════════════════════════

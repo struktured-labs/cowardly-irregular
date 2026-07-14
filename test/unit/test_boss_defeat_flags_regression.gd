@@ -42,8 +42,9 @@ func test_whispering_cave_registers_pending_boss_defeat() -> void:
 		"_trigger_boss_battle must set GameState.pending_boss_defeat (regression: rat_king_defeated never set)")
 	assert_true(body.find("rat_king_defeated") != -1,
 		"WhisperingCave spec must include rat_king_defeated story flag")
-	assert_true(body.find("w1_boss_defeated") != -1,
-		"WhisperingCave spec must include w1_boss_defeated story flag")
+	# Rat King is mid-boss now — Mordaine (CastleHarmonia) owns w1_boss_defeated.
+	assert_false(body.find("w1_boss_defeated") != -1,
+		"WhisperingCave (mid-boss) must NOT set w1_boss_defeated — Mordaine does")
 	assert_true(body.find("cutscene_flag_rat_king_defeated") != -1,
 		"WhisperingCave spec must include cutscene_flag_rat_king_defeated constant (gates chapter4)")
 	assert_true(body.find("cave_rat_king_defeated") != -1,
@@ -54,7 +55,7 @@ func test_dragon_cave_registers_pending_boss_defeat() -> void:
 	var text = _read("res://src/maps/dungeons/DragonCave.gd")
 	var idx = text.find("func _trigger_boss_battle")
 	assert_gt(idx, -1, "_trigger_boss_battle must exist")
-	var body = text.substr(idx, 1500)
+	var body = text.substr(idx, 2500)
 	assert_true(body.find("GameState.pending_boss_defeat") != -1,
 		"DragonCave._trigger_boss_battle must set GameState.pending_boss_defeat")
 	assert_true(body.find("boss_flag_key") != -1,
@@ -69,7 +70,9 @@ func test_gameloop_applies_pending_boss_defeat_on_victory() -> void:
 	var text = _read("res://src/GameLoop.gd")
 	var idx = text.find("func _on_battle_ended")
 	assert_gt(idx, -1, "_on_battle_ended must exist")
-	var body = text.substr(idx, 2000)
+	# Tick 472+ spotlight defeat-branch (msg 2472 loss counter) pushed the
+	# _apply_pending_boss_defeat call past the old 2000-char window.
+	var body = text.substr(idx, 3000)
 	assert_true(body.find("_apply_pending_boss_defeat") != -1,
 		"_on_battle_ended must call _apply_pending_boss_defeat() on victory")
 
@@ -103,7 +106,14 @@ func test_gameloop_clears_pending_on_defeat() -> void:
 	# accidentally fire flags from a battle the player didn't actually win.
 	var text = _read("res://src/GameLoop.gd")
 	var idx = text.find("func _on_battle_ended")
-	var body = text.substr(idx, 2000)
+	# Tick 411 added a meta_auto_rewind_pending consumer block before
+	# the defeat-branch's pending_boss_defeat clear, pushing the
+	# literal past the 2000-char window. Widened.
+	# Tick 471 added a spotlight-duel short-circuit block at the top
+	# of _on_battle_ended, pushing the literal past 3500 too. Widened
+	# to 5000. Msg 2472 spotlight defeat-branch (loss counter) pushed
+	# it further — widened to 6000.
+	var body = text.substr(idx, 6000)
 	# Defeat branch: look in the `else` clause for pending clear
 	assert_true(body.find("pending_boss_defeat = {}") != -1,
 		"On battle defeat, pending_boss_defeat must be cleared (prevent false-flag on retry)")

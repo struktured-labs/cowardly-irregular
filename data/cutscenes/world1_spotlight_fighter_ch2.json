@@ -3,36 +3,130 @@
   "title": "In Front",
   "world": 1,
   "trigger": "world1_spotlight_fighter_trigger",
-  "background": "prologue_forest",
-  "description": "Road North, ch.2. First real fight. The Fighter takes the front position without being asked.",
+  "background": "cave_entrance",
+  "description": "Whispering Cave, ch.3. The chivalric skeleton knight in the antechamber. Fighter's solo duel — the fight the ch.3 prose has been narrating in past-tense until now. Filename _ch2 is vestigial; location is the cave.",
   "steps": [
-    {"type": "letterbox_in", "duration": 0.3},
-
-    {"type": "narration", "text": "A pair of slimes had come down the road, iridescent in the wrong way, moving with more purpose than slimes had any right to. They were two paces out and closing."},
-
-    {"type": "branch", "condition": "lead_job", "cases": {
-      "fighter": [
-        {"type": "narration", "text": "The lead had already stepped forward. They had been moving toward the front since before anyone said the word *slime.* This was not new. This was the lead being the lead."}
+    {
+      "type": "letterbox_in",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "The chamber opened wide enough that the torchlight didn't reach the far wall. In the middle of the floor, on a chalk-line that must have been drawn once and re-drawn many times, a skeleton in old plate armor was waiting. It was, when it saw them, standing up."
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "narration",
+      "text": "The skeleton did not attack. The skeleton bowed. It was not the bow of something that had forgotten what a bow was. It was the bow of something that had done the same bow, in the same room, to a great many parties, over a great many years."
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "branch",
+      "condition": "lead_job",
+      "cases": {
+        "fighter": [
+          {
+            "type": "narration",
+            "text": "The lead was already unbuckling the shield strap for a tighter fit. They had understood what the bow was before the bow was finished."
+          }
+        ],
+        "default": [
+          {
+            "type": "dialogue",
+            "lines": [
+              {
+                "speaker": "Bard",
+                "text": "It's a *duel.* Look at the chalk line.",
+                "theme": "bard",
+                "portrait": "bard"
+              },
+              {
+                "speaker": "Fighter",
+                "text": "I saw the chalk line.",
+                "theme": "fighter",
+                "portrait": "fighter"
+              }
+            ]
+          },
+          {
+            "type": "narration",
+            "text": "The Fighter stepped past the chalk line without ceremony, drew his sword, and returned the bow. His bow was less practiced. He had not been doing this for years. He had, however, been preparing to do this for years — which was, the skeleton seemed to accept, close enough."
+          },
+          {
+            "type": "dialogue",
+            "lines": [
+              {
+                "speaker": "Fighter",
+                "text": "The rest of you — back. This one is mine.",
+                "theme": "fighter",
+                "portrait": "fighter"
+              }
+            ]
+          },
+          {
+            "type": "narration",
+            "text": "He didn't argue for it. He didn't explain why. The skeleton had asked for a duel and the Fighter was the one who understood what a duel meant. Somebody had to be. Somebody usually was."
+          }
+        ]
+      }
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "battle",
+      "combatants": [
+        "fighter"
       ],
-      "default": [
-        {"type": "dialogue", "lines": [
-          {"speaker": "Fighter", "text": "Back. I've got the front.", "theme": "fighter", "portrait": "fighter"}
-        ]},
-        {"type": "narration", "text": "He didn't argue. He didn't explain. He didn't ask. He simply moved between the party and the road, sword up, shield angled, weight on the back foot like someone who had done this in a yard for years and now finally got to do it for real."},
-        {"type": "wait", "duration": 0.3},
-        {"type": "narration", "text": "The slimes hit the shield. The shield held. The Fighter held. The party had a half-second longer to decide what to do, and a half-second was the entire fight."},
-        {"type": "dialogue", "lines": [
-          {"speaker": "Fighter", "text": "It's fine. I'm fine. Anyone hurt?", "theme": "fighter", "portrait": "fighter"},
-          {"speaker": "Fighter", "text": "Good. Keep moving.", "theme": "fighter", "portrait": "fighter"}
-        ]},
-        {"type": "narration", "text": "He had not looked at anyone while he asked, because looking would have meant taking his eyes off the road."},
-        {"type": "wait", "duration": 0.4},
-        {"type": "narration", "text": "Later, when the others were checking the slime remains and arguing about iridescence, the Fighter looked at his own hands. They were shaking. He watched them for the space of a breath. Then he set them on the pommel of the sword and they were not shaking. He had not decided to do that. It was simply what the hands did when they were told."},
-        {"type": "narration", "text": "The Fighter was, the party would learn, the kind of person who counted what mattered and trusted the rest."},
-        {"type": "set_flag", "flag": "spotlight_unlocked_fighter", "value": true}
-      ]
-    }},
-
-    {"type": "letterbox_out", "duration": 0.4}
+      "enemies": [
+        "fighter_skeleton_knight"
+      ],
+      "on_defeat": "retry",
+      "music": "boss_medieval",
+      "background": "cave_entrance"
+    },
+    {
+      "type": "play_sfx",
+      "sfx": "spotlight_fighter_victory"
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "text": "The skeleton fell the way it had bowed — deliberately, without flourish, in a manner that suggested the falling had also been rehearsed. Its plate armor rang against the stone once, and then was quiet."
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "The Fighter stood over it for a moment longer than the moment required. Then he sheathed the sword, turned toward the party, and did not, for a beat, quite meet anyone's eyes."
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "narration",
+      "text": "Later, when the others were examining the chalk line and the Bard was writing down the shape of the skeleton's bow, the Fighter looked at his own hands. They were shaking. He watched them for the space of a breath. Then he set them on the pommel of the sword and they were not shaking. He had not decided to do that. It was simply what the hands did when they were told."
+    },
+    {
+      "type": "narration",
+      "text": "The Fighter was, the party would learn, the kind of person who counted what mattered and trusted the rest."
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.4
+    }
   ]
 }

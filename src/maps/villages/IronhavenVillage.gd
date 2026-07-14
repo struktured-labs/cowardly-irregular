@@ -131,13 +131,24 @@ func _setup_buildings() -> void:
 	tavern.position = Vector2(3.5 * TILE_SIZE, 12 * TILE_SIZE)
 	buildings.add_child(tavern)
 
+	# === STORM WATCHTOWER DOOR ===
+	# Drogal's tower on the open eastern side of the village. He
+	# foreshadows Voltharion — the last of the four W1 dragons to
+	# get an interior NPC.
+	spawn_points["watchtower_exit"] = Vector2(18 * TILE_SIZE, 12 * TILE_SIZE)
+	_add_interior_door("WatchtowerDoor", "ironhaven_watchtower", "Enter Storm Watchtower", Vector2(18 * TILE_SIZE, 11 * TILE_SIZE))
+	# === STRIKE REGISTRY DOOR ===
+	# South face of the MMM building (cols 3-5, rows 11-13) — lightning paperwork.
+	spawn_points["registry_exit"] = Vector2(4 * TILE_SIZE, 14.5 * TILE_SIZE)
+	_add_interior_door("StrikeRegistryDoor", "ironhaven_strike_registry", "Enter Strike Registry", Vector2(4 * TILE_SIZE, 13.5 * TILE_SIZE))
+
 
 func _setup_treasures() -> void:
 	# Iron Shield near forge
 	var chest1 = TreasureChestScript.new()
 	chest1.chest_id = "ironhaven_chest_1"
 	chest1.contents_type = "equipment"
-	chest1.contents_id = "iron_shield"
+	chest1.contents_id = "iron_armor"
 	chest1.position = Vector2(10 * TILE_SIZE, 2 * TILE_SIZE)
 	treasures.add_child(chest1)
 
@@ -152,6 +163,8 @@ func _setup_treasures() -> void:
 
 
 func _setup_npcs() -> void:
+	_place_masterite_curator()
+
 	# Blacksmith Magda (eager)
 	var magda = _create_npc("Blacksmith Magda", "villager", Vector2(14 * TILE_SIZE, 6 * TILE_SIZE), [
 		"Dragon scales, you say?",
@@ -221,3 +234,18 @@ func _setup_npcs() -> void:
 		"...Don't answer that. It was rhetorical. Also, probably no."
 	])
 	npcs.add_child(stranger)
+
+
+## Curator of the Flame — L8 masterite tending the warped temple flame in
+## a duel-of-belief encounter. Placed south of the FFF temple block on the
+## approach walkway. Doc: docs/design/w1-progression-expansion.md.
+func _place_masterite_curator() -> void:
+	var MasteriteScript = load("res://src/exploration/MasteriteEncounter.gd")
+	if MasteriteScript == null:
+		return
+	var curator = MasteriteScript.new()
+	curator.archetype = "curator"
+	curator.monster_id = "masterite_curator_medieval"
+	curator.display_name = "Curator of the Flame"
+	curator.position = Vector2(12 * TILE_SIZE, 6 * TILE_SIZE)
+	npcs.add_child(curator)

@@ -424,14 +424,20 @@ func test_job_profiles_restored_from_dict() -> void:
 
 
 func test_serialization_round_trip_preserves_multiple_profiles() -> void:
-	# SKIP: Job profile system (save_current_profile, job_profiles dict) not yet implemented
-	pending("Job profile switching is a future feature — save_current_profile() not implemented")
-	return
+	# Tick 259: removed stale pending(). The skip message said
+	# "save_current_profile not implemented" but the function IS
+	# implemented (Combatant.gd:940) and used by sibling test
+	# test_serialization_deep_independence right below this one.
+	# The skip rot was caught during the pending-sweep audit.
 	_combatant.job = {"id": "fighter", "name": "Fighter"}
 	_combatant.secondary_job_id = ""
 	_combatant.save_current_profile()
 
-	_combatant.secondary_job_id = "thief"
+	# Profile #2: fighter primary + rogue secondary. (Test originally
+	# used "thief"; canonical id is now "rogue" per job_aliases.json
+	# but either resolves identically. Keep "rogue" to match current
+	# data.)
+	_combatant.secondary_job_id = "rogue"
 	_combatant.equipped_weapon = "poison_dagger"
 	_set_passives(_combatant, ["steal_boost", "evasion_up"])
 	_combatant.save_current_profile()
@@ -444,9 +450,9 @@ func test_serialization_round_trip_preserves_multiple_profiles() -> void:
 
 	assert_eq(restored.job_profiles.size(), 2, "Should have 2 profiles after round-trip")
 	assert_true(restored.job_profiles.has("fighter:"), "Should have fighter: profile")
-	assert_true(restored.job_profiles.has("fighter:thief"), "Should have fighter:thief profile")
+	assert_true(restored.job_profiles.has("fighter:rogue"), "Should have fighter:rogue profile")
 	assert_eq(restored.job_profiles["fighter:"]["weapon"], "iron_sword")
-	assert_eq(restored.job_profiles["fighter:thief"]["weapon"], "poison_dagger")
+	assert_eq(restored.job_profiles["fighter:rogue"]["weapon"], "poison_dagger")
 
 
 func test_serialization_deep_independence() -> void:

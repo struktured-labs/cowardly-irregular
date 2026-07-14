@@ -38,8 +38,8 @@ const DESTINATIONS: Array = [
 	{"id": "abstract_overworld",     "label": "Abstract Domain",      "spawn": "entrance",    "section": "World 6: Abstract"},
 	{"id": "vertex_village",         "label": "The Vertex",           "spawn": "default",     "section": ""},
 	{"id": "null_chamber",           "label": "Null Chamber",         "spawn": "default",     "section": ""},
-	# --- Dragon caves (W2 sub-dungeons) ---
-	{"id": "ice_dragon_cave",        "label": "Ice Dragon Cave",      "spawn": "default",     "section": "Dragon Caves"},
+	# --- Dragon caves (W1 sub-dungeons placed on the medieval overworld) ---
+	{"id": "ice_dragon_cave",        "label": "Ice Dragon Cave",      "spawn": "default",     "section": "Dragon Caves (W1)"},
 	{"id": "fire_dragon_cave",       "label": "Fire Dragon Cave",     "spawn": "default",     "section": ""},
 	{"id": "shadow_dragon_cave",     "label": "Shadow Dragon Cave",   "spawn": "default",     "section": ""},
 	{"id": "lightning_dragon_cave",  "label": "Lightning Dragon Cave","spawn": "default",     "section": ""},
@@ -51,6 +51,26 @@ const DESTINATIONS: Array = [
 	{"id": "ironhaven_village",      "label": "Ironhaven Village",    "spawn": "default",     "section": ""},
 	# --- Interiors ---
 	{"id": "tavern_interior",        "label": "Tavern (Harmonia)",    "spawn": "default",     "section": "Interiors"},
+	{"id": "harmonia_chapel",        "label": "Chapel (Harmonia)",    "spawn": "entrance",    "section": ""},
+	{"id": "harmonia_library",       "label": "Library (Harmonia)",   "spawn": "entrance",    "section": ""},
+	{"id": "eldertree_hollow",       "label": "The Hollow (Eldertree)","spawn": "entrance",   "section": ""},
+	{"id": "frosthold_warden_hut",   "label": "Warden's Hut (Frosthold)","spawn": "entrance", "section": ""},
+	{"id": "sandrift_glassmaker",    "label": "Glassmaker (Sandrift)", "spawn": "entrance",    "section": ""},
+	{"id": "grimhollow_witch_hut",   "label": "Witch's Hut (Grimhollow)","spawn": "entrance",  "section": ""},
+	{"id": "ironhaven_watchtower",   "label": "Watchtower (Ironhaven)","spawn": "entrance",  "section": ""},
+	{"id": "maple_heights_arcade",   "label": "Arcade (MapleHeights)","spawn": "entrance",   "section": ""},
+	{"id": "brasston_clockwork_loft","label": "Clockwork Loft (Brasston)","spawn": "entrance","section": ""},
+	{"id": "rivet_row_union_hall",   "label": "Union Hall (RivetRow)", "spawn": "entrance",    "section": ""},
+	{"id": "node_prime_daemon_lounge","label": "Daemon Lounge (NodePrime)","spawn": "entrance","section": ""},
+	{"id": "vertex_threshold",       "label": "The Threshold (Vertex)","spawn": "entrance",   "section": ""},
+	# --- Scriptura capital district (W1) ---
+	{"id": "scriptura_plaza",        "label": "Scriptura Plaza",      "spawn": "entrance",    "section": "Scriptura (W1)"},
+	{"id": "scriptura_guild",        "label": "Scriptweaver's Guild", "spawn": "entrance",    "section": ""},
+	{"id": "scriptura_bookshop",     "label": "Aldrin's Books",       "spawn": "entrance",    "section": ""},
+	# --- W2 quest locations ---
+	{"id": "maple_heights_strip_mall", "label": "Birchwood Commons (Strip Mall)", "spawn": "entrance", "section": "W2 Quest Spots"},
+	{"id": "maple_community_center",   "label": "Community Center (MapleHeights)", "spawn": "entrance", "section": ""},
+	{"id": "enrichment_annex",         "label": "Enrichment Annex", "spawn": "entrance", "section": ""},
 ]
 
 const ROW_HEIGHT: int = 26

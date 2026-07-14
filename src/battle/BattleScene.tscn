@@ -1,7 +1,6 @@
-[gd_scene load_steps=3 format=3 uid="uid://cpr8dwmxfqwv3"]
+[gd_scene load_steps=2 format=3 uid="uid://cpr8dwmxfqwv3"]
 
 [ext_resource type="Script" path="res://src/battle/BattleScene.gd" id="1_j7c8k"]
-[ext_resource type="Script" path="res://src/ui/autogrind/BattleBDFFHDHudStrip.gd" id="2_bdffhd"]
 
 [node name="BattleScene" type="Control"]
 layout_mode = 3
@@ -48,26 +47,26 @@ anchor_top = 0.5
 anchor_right = 1.0
 anchor_bottom = 0.5
 offset_left = -480.0
-offset_top = -250.0
+offset_top = -280.0
 offset_right = -130.0
-offset_bottom = 250.0
+offset_bottom = 280.0
 grow_horizontal = 0
 grow_vertical = 2
 
 [node name="Player1Pos" type="Marker2D" parent="BattleField/PartyArea"]
-position = Vector2(120, 0)
+position = Vector2(150, 60)
 
 [node name="Player2Pos" type="Marker2D" parent="BattleField/PartyArea"]
-position = Vector2(40, 110)
+position = Vector2(105, 170)
 
 [node name="Player3Pos" type="Marker2D" parent="BattleField/PartyArea"]
-position = Vector2(120, 220)
+position = Vector2(60, 280)
 
 [node name="Player4Pos" type="Marker2D" parent="BattleField/PartyArea"]
-position = Vector2(40, 330)
+position = Vector2(15, 390)
 
 [node name="Player5Pos" type="Marker2D" parent="BattleField/PartyArea"]
-position = Vector2(120, 440)
+position = Vector2(-30, 500)
 
 [node name="EnemySprites" type="Node2D" parent="BattleField"]
 
@@ -116,8 +115,7 @@ offset_top = 40.0
 offset_right = -5.0
 offset_bottom = 460.0
 grow_horizontal = 0
-grow_vertical = 2
-visible = false
+grow_vertical = 1
 
 [node name="VBoxContainer" type="VBoxContainer" parent="UI/PartyStatusPanel"]
 layout_mode = 2
@@ -187,34 +185,25 @@ anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -310.0
-offset_top = -202.0
-offset_right = 310.0
-offset_bottom = -82.0
+offset_left = -510.0
+offset_top = -128.0
+offset_right = 10.0
+offset_bottom = -38.0
 grow_horizontal = 2
 grow_vertical = 0
 
 [node name="MarginContainer" type="MarginContainer" parent="UI/BattleLogPanel"]
 layout_mode = 2
-theme_override_constants/margin_left = 8
-theme_override_constants/margin_top = 8
-theme_override_constants/margin_right = 8
-theme_override_constants/margin_bottom = 8
+theme_override_constants/margin_left = 6
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 6
+theme_override_constants/margin_bottom = 4
 
 [node name="VBoxContainer" type="VBoxContainer" parent="UI/BattleLogPanel/MarginContainer"]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="UI/BattleLogPanel/MarginContainer/VBoxContainer"]
-layout_mode = 2
-theme_type_variation = &"HeaderSmall"
-text = "BATTLE LOG"
-horizontal_alignment = 1
-
-[node name="HSeparator" type="HSeparator" parent="UI/BattleLogPanel/MarginContainer/VBoxContainer"]
-layout_mode = 2
-
 [node name="BattleLog" type="RichTextLabel" parent="UI/BattleLogPanel/MarginContainer/VBoxContainer"]
-custom_minimum_size = Vector2(0, 70)
+custom_minimum_size = Vector2(0, 80)
 layout_mode = 2
 size_flags_vertical = 3
 bbcode_enabled = true
@@ -230,9 +219,9 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = 350.0
-offset_top = -292.0
+offset_top = -220.0
 offset_right = 630.0
-offset_bottom = -82.0
+offset_bottom = -10.0
 grow_horizontal = 2
 grow_vertical = 0
 
@@ -298,10 +287,6 @@ grow_horizontal = 2
 [node name="TurnInfo" type="Label" parent="UI/TurnInfoPanel"]
 layout_mode = 2
 theme_type_variation = &"HeaderMedium"
-text = "Round 1 - Hero's Turn"
+text = "Round 1"
 horizontal_alignment = 1
 vertical_alignment = 1
-
-[node name="BottomHUDStrip" type="Control" parent="UI"]
-layout_mode = 1
-script = ExtResource("2_bdffhd")

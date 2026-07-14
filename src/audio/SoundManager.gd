@@ -20,6 +20,7 @@ var _current_music: String = ""
 var _stinger_resume_track: String = ""  # Track to resume after stinger finishes
 const CROSSFADE_DURATION: float = 0.5  # Seconds for crossfade
 var _music_base_db: float = -12.0  # Base volume for music (overwritten by set_music_volume)
+const AMBIENT_OFFSET_DB: float = -8.0  # ambient (weather/room tone) sits this far below music, tracking the slider
 # Music ceiling: at slider=100%, music plays at MUSIC_VOLUME_CEILING_DB.
 # -10 dB sits music well below the SFX peak so battle hits and footstep
 # clips stay audible. User feedback (2026-05-02): -6 dB still felt too
@@ -120,6 +121,13 @@ func _ready() -> void:
 	_load_sfx_manifest()
 	_setup_audio_players()
 	_setup_default_ability_sounds()
+	# Headless runs (--headless, i.e. GUT test suites + CI) MUST NOT emit audio —
+	# multiple background agents can be running suites simultaneously and the
+	# user hears every one of them. Mute the master bus at boot so play_ui /
+	# play_battle / play_music become no-ops without needing per-caller guards.
+	if DisplayServer.get_name() == "headless" or OS.has_feature("headless"):
+		AudioServer.set_bus_mute(0, true)
+		print("[SoundManager] headless run detected — master bus muted")
 
 
 func _exit_tree() -> void:
@@ -169,7 +177,8 @@ func _setup_audio_players() -> void:
 
 	_ambient_player = AudioStreamPlayer.new()
 	_ambient_player.name = "AmbientPlayer"
-	_ambient_player.volume_db = -20.0  # Subtle background layer, below music and SFX
+	# tracks the music slider a fixed amount below it — hardcoded -20.0 ignored the slider and could exceed music at low volume (cowir-sfx audit msg 2218)
+	_ambient_player.volume_db = _music_base_db + AMBIENT_OFFSET_DB
 	_ambient_player.bus = "Master"
 	add_child(_ambient_player)
 	_ambient_player.finished.connect(_on_ambient_finished)
@@ -206,6 +215,13 @@ func _setup_default_ability_sounds() -> void:
 	_ability_sounds["slash"] = "ability_physical"
 	_ability_sounds["steal"] = "ability_physical"
 	_ability_sounds["mug"] = "ability_physical"
+	# Meta-job signature cues (cowir-sfx 2026-07-11) — reality edits must not sound like sword hits.
+	_ability_sounds["constant_modification"] = "ability_constant_modification"
+	_ability_sounds["analyze_code"] = "ability_analyze_code"
+	_ability_sounds["permakill"] = "ability_permakill"
+	_ability_sounds["permakill_strike"] = "ability_permakill"
+	_ability_sounds["mind_swap"] = "ability_mind_swap"
+	_ability_sounds["bypass_puzzle"] = "ability_bypass_puzzle"
 
 
 ## SFX Manifest (file-based SFX take priority over procedural)
@@ -213,15 +229,33 @@ func _setup_default_ability_sounds() -> void:
 static func _load_sfx_manifest() -> void:
 	if _sfx_manifest_loaded:
 		return
-	var file = FileAccess.open("res://data/sfx_manifest.json", FileAccess.READ)
+	## Tick 166: surface each failure mode. Pre-fix every gap was
+	## silent — open fail, parse fail, missing "sfx" key all
+	## degraded to procedural-only audio with zero console hint.
+	## Players (and devs) had no way to tell whether the manifest
+	## was loading or being silently rejected.
+	var file_path: String = "res://data/sfx_manifest.json"
+	if not FileAccess.file_exists(file_path):
+		push_warning("[SFX] sfx_manifest.json not found at %s — falling back to procedural audio only" % file_path)
+		return
+	var file = FileAccess.open(file_path, FileAccess.READ)
 	if not file:
+		push_warning("[SFX] sfx_manifest.json exists but FileAccess.open failed — falling back to procedural audio only")
 		return
 	var parsed = JSON.parse_string(file.get_as_text())
-	if parsed and parsed.has("sfx"):
-		_sfx_manifest = parsed["sfx"]
-		_sfx_manifest_loaded = true
-		if _sfx_manifest.size() > 0:
-			print("[SFX] Loaded sfx manifest: %d sounds" % _sfx_manifest.size())
+	if parsed == null:
+		push_warning("[SFX] sfx_manifest.json parse error — falling back to procedural audio only")
+		return
+	if not (parsed is Dictionary):
+		push_warning("[SFX] sfx_manifest.json parsed but root is not a Dictionary — falling back to procedural audio only")
+		return
+	if not parsed.has("sfx"):
+		push_warning("[SFX] sfx_manifest.json parsed but missing 'sfx' key — manifest empty")
+		return
+	_sfx_manifest = parsed["sfx"]
+	_sfx_manifest_loaded = true
+	if _sfx_manifest.size() > 0:
+		print("[SFX] Loaded sfx manifest: %d sounds" % _sfx_manifest.size())
 
 
 func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, volume_db_override: float = NAN, pitch_scale: float = 1.0) -> bool:
@@ -266,15 +300,19 @@ func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, v
 			player.pitch_scale = final_pitch
 			player.play()
 			return true
-		else:
-			# Cached null = file doesn't exist, fall through to procedural
-			return false
+		var cached_fallback: String = str(entry.get("fallback_to", ""))
+		if cached_fallback != "" and cached_fallback != sound_key and _sfx_manifest.has(cached_fallback):
+			return _try_play_sfx_from_manifest(player, cached_fallback, volume_db_override, pitch_scale)
+		return false
 
 	# Try loading directly — skip existence checks that can fail in web/PCK exports
 	var stream = load(path) as AudioStream
 	if not stream:
-		push_warning("[SFX] Failed to load: %s (key: %s)" % [path, resolved_key])
 		_sfx_stream_cache[resolved_key] = null
+		var fallback_key: String = str(entry.get("fallback_to", ""))
+		if fallback_key != "" and fallback_key != sound_key and _sfx_manifest.has(fallback_key):
+			return _try_play_sfx_from_manifest(player, fallback_key, volume_db_override, pitch_scale)
+		push_warning("[SFX] Failed to load: %s (key: %s)" % [path, resolved_key])
 		return false
 	_sfx_stream_cache[resolved_key] = stream
 	player.stream = stream
@@ -947,18 +985,37 @@ static func _load_music_manifest() -> void:
 	if _manifest_loaded:
 		return
 	# Do NOT set _manifest_loaded until successful — allows retry if PCK isn't ready yet
-	var file = FileAccess.open("res://data/music_manifest.json", FileAccess.READ)
+	# Tick 276: added the file_exists pre-check (was missing — pre-fix
+	# a deleted/moved music_manifest.json conflated with a permission
+	# issue under the single "Cannot open" warning, no path printed).
+	# Aligns with _load_sfx_manifest's 5-stage shape from tick 166.
+	var file_path: String = "res://data/music_manifest.json"
+	if not FileAccess.file_exists(file_path):
+		push_warning("[MUSIC] music_manifest.json not found at %s — procedural fallbacks only, will retry next call" % file_path)
+		return
+	var file = FileAccess.open(file_path, FileAccess.READ)
 	if not file:
-		push_warning("[MUSIC] Cannot open music_manifest.json — will retry next call")
+		push_warning("[MUSIC] music_manifest.json exists but FileAccess.open failed at %s — will retry next call" % file_path)
 		return
 	var parsed = JSON.parse_string(file.get_as_text())
-	if parsed and parsed.has("tracks"):
-		_music_manifest = parsed["tracks"]
-		_manifest_loaded = true  # Only set after successful load
-		if _music_manifest.size() > 0:
-			print("[MUSIC] Loaded music manifest: %d tracks" % _music_manifest.size())
-	else:
-		push_warning("[MUSIC] Failed to parse music_manifest.json — will retry")
+	## Tick 166: split the conflated failure modes. Pre-fix the
+	## fallback warning ("Failed to parse") fired for parse failure
+	## AND root-type mismatch AND missing "tracks" key — devs
+	## couldn't tell which was the real cause. Now each surfaces
+	## distinctly.
+	if parsed == null:
+		push_warning("[MUSIC] music_manifest.json parse error — will retry")
+		return
+	if not (parsed is Dictionary):
+		push_warning("[MUSIC] music_manifest.json parsed but root is not a Dictionary — will retry")
+		return
+	if not parsed.has("tracks"):
+		push_warning("[MUSIC] music_manifest.json parsed but missing 'tracks' key — manifest empty, will retry")
+		return
+	_music_manifest = parsed["tracks"]
+	_manifest_loaded = true  # Only set after successful load
+	if _music_manifest.size() > 0:
+		print("[MUSIC] Loaded music manifest: %d tracks" % _music_manifest.size())
 
 
 func _try_play_from_manifest(track_id: String) -> bool:
@@ -1009,21 +1066,35 @@ func _try_play_from_manifest(track_id: String) -> bool:
 func _get_current_world_suffix() -> String:
 	"""Map current area to world suffix for manifest track lookup.
 	When _current_area is empty (cleared by play_music for battle/victory),
-	returns the last known world suffix so battle music stays world-aware."""
+	returns the last known world suffix so battle music stays world-aware.
+
+	Tick 359: added the canonical `<world>_overworld` map_id forms
+	(suburban_overworld, steampunk_overworld, etc.) alongside the
+	legacy `overworld_<world>` strings. GameLoop._on_area_transition
+	calls play_area_music(_current_map_id), passing the canonical
+	`<world>_overworld` form. Pre-fix the match arms only listed the
+	legacy reversed form, so the canonical-form call fell through to
+	the `_:` arm and returned the cached `_current_world_suffix`
+	(initialized to "medieval"). Result: every battle in
+	suburban/steampunk/industrial/futuristic/abstract overworlds used
+	MEDIEVAL battle music regardless of where the player actually was.
+	"""
 	match _current_area:
 		"overworld", "village", "harmonia_village", "cave", "whispering_cave":
 			return "medieval"
 		"ice_dragon_cave", "shadow_dragon_cave", "lightning_dragon_cave", "fire_dragon_cave":
 			return "medieval"
-		"overworld_suburban", "maple_heights_village", "suburban_dungeon":
+		"castle_harmonia":
+			return "medieval"
+		"overworld_suburban", "suburban_overworld", "maple_heights_village", "suburban_dungeon", "suburban_underground":
 			return "suburban"
-		"overworld_steampunk", "brasston_village", "steampunk_dungeon":
+		"overworld_steampunk", "steampunk_overworld", "brasston_village", "steampunk_dungeon", "steampunk_mechanism":
 			return "steampunk"
-		"overworld_industrial", "rivet_row_village", "industrial_dungeon":
+		"overworld_industrial", "industrial_overworld", "rivet_row_village", "industrial_dungeon", "assembly_core":
 			return "industrial"
-		"overworld_futuristic", "node_prime_village", "digital_dungeon":
+		"overworld_futuristic", "futuristic_overworld", "node_prime_village", "digital_dungeon", "root_process":
 			return "digital"
-		"overworld_abstract", "vertex_village", "abstract_dungeon":
+		"overworld_abstract", "abstract_overworld", "vertex_village", "abstract_dungeon", "null_chamber":
 			return "abstract"
 		_:
 			# During battles, _current_area is cleared — use persisted suffix
@@ -1058,6 +1129,14 @@ func play_music(track: String) -> void:
 
 	_stinger_resume_track = _current_music  # Save for stinger resume before overwriting
 	_current_music = track
+
+	# Clean slate for the new track: the danger-intensity system elevates
+	# _music_player pitch + volume during a tense battle; the cache branch
+	# reset neither and the manifest branch reset only volume, so a new
+	# track could inherit a stale higher pitch / boost. Reset both here
+	# (after the crossfade copied the old track's volume to B).
+	_music_player.pitch_scale = 1.0
+	_music_player.volume_db = _music_base_db
 
 	# Try manifest first — file-based music always takes priority
 	_load_music_manifest()
@@ -1126,7 +1205,12 @@ func play_music(track: String) -> void:
 		# Terrain-specific battle themes
 		"battle_suburban":
 			_start_suburban_battle_music()
-		"battle_urban":
+		# Tick 91: W3 Steampunk battles emit 'battle_steampunk' but
+		# pre-fix the match arm only knew 'battle_urban'. The
+		# _start_urban_battle_music helper actually plays the
+		# battle_steampunk.ogg manifest track (confusingly named) —
+		# so both keys route to it.
+		"battle_steampunk", "battle_urban":
 			_start_urban_battle_music()
 		"battle_industrial":
 			_start_industrial_battle_music()
@@ -1234,7 +1318,8 @@ func _apply_danger_intensity(intensity: float) -> void:
 
 	# Volume boost at high danger (slightly louder, more in-your-face)
 	var volume_boost = intensity * 3.0  # Up to +3dB at max danger
-	_music_player.volume_db = -12.0 + volume_boost
+	# relative to the user's music-volume setting — hardcoded -12.0 clobbered the slider whenever danger rose
+	_music_player.volume_db = _music_base_db + volume_boost
 
 
 func get_danger_intensity() -> float:
@@ -1246,7 +1331,7 @@ func reset_danger() -> void:
 	set_danger_intensity(0.0)
 	if _music_player:
 		_music_player.pitch_scale = 1.0
-		_music_player.volume_db = -12.0
+		_music_player.volume_db = _music_base_db  # restore to the user's volume, not the -12.0 default
 
 
 ## Corruption audio degradation - ties into autogrind meta-awareness theme.
@@ -2926,6 +3011,9 @@ func set_music_volume(normalized: float) -> void:
 	_music_base_db = db
 	if _music_player:
 		_music_player.volume_db = db
+	# ambient (weather / room tone) sits a fixed offset below music — keep it tracking the slider (cowir-sfx msg 2218)
+	if _ambient_player:
+		_ambient_player.volume_db = db + AMBIENT_OFFSET_DB
 
 
 func set_sfx_volume(normalized: float) -> void:
@@ -3983,6 +4071,13 @@ func play_area_music(area_type: String) -> void:
 	if _current_area == area_type and _music_playing:
 		return  # Already playing
 
+	# Interior sub-area keys inherit the current (village) bed when their track
+	# is absent — checked BEFORE stop_music so an unauthored room never goes silent.
+	if area_type.begins_with("interior_") and _music_playing:
+		_load_music_manifest()
+		if _resolve_interior_track(area_type) == "":
+			return
+
 	_current_area = area_type
 	_current_world_suffix = _get_current_world_suffix()
 	_pending_music_area = area_type
@@ -3995,6 +4090,10 @@ func _start_area_music_deferred(area_type: String) -> void:
 	"""Actually generate and start music - called deferred so scene renders first."""
 	if _pending_music_area != area_type:
 		return  # A newer area was requested before this ran; skip stale call
+
+	if area_type.begins_with("interior_"):
+		_start_interior_music(area_type)
+		return
 
 	match area_type:
 		"overworld":
@@ -4025,8 +4124,14 @@ func _start_area_music_deferred(area_type: String) -> void:
 			_start_village_location_music("vertex", "abstract")
 		"cave", "whispering_cave":
 			_start_dungeon_music("medieval")
-		"ice_dragon_cave", "shadow_dragon_cave", "lightning_dragon_cave", "fire_dragon_cave":
+		"fire_dragon_cave":
+			_start_dungeon_music("dragon_fire")
+		"ice_dragon_cave":
 			_start_dungeon_music("dragon_ice")
+		"lightning_dragon_cave":
+			_start_dungeon_music("dragon_lightning")
+		"shadow_dragon_cave":
+			_start_dungeon_music("dragon_shadow")
 		"suburban_dungeon":
 			_start_dungeon_music("suburban")
 		"steampunk_dungeon":
@@ -4098,6 +4203,27 @@ func _start_village_world_music(world_suffix: String) -> void:
 	if _try_play_from_manifest("village_" + world_suffix):
 		return
 	_start_village_music()
+
+
+func _resolve_interior_track(key: String) -> String:
+	"""Manifest key for an interior_ sub-area: per-world variant first, then base."""
+	var variant := key + "_" + _get_current_world_suffix()
+	if _music_manifest.has(variant):
+		return variant
+	if _music_manifest.has(key):
+		return key
+	return ""
+
+
+func _start_interior_music(key: String) -> void:
+	"""Play a sub-area room track; unauthored keys fall back to this world's village bed."""
+	_load_music_manifest()
+	_music_playing = true
+	var resolved := _resolve_interior_track(key)
+	if resolved != "" and _try_play_from_manifest(resolved):
+		return
+	# Cold start only: nothing was playing to inherit, and no track authored yet.
+	_start_village_world_music(_get_current_world_suffix())
 
 
 func _start_dungeon_music(world_id: String) -> void:

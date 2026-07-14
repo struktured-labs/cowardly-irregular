@@ -1,0 +1,1141 @@
+{
+  "_comment": "Wave E — Boss dialogue catalog. Schema: { boss_id: { scripted_intents: [{id, name, conditions, taunt_lines}], jailbreak_vulnerabilities: [{id, name, trigger_keywords, consequence: {type, params}}], opening_lines, phase_transition_lines: {phase_2, phase_3}, verbs: [...], victory_lines: [...], defeat_lines: [...] } }. STORY-FLAG SAFETY: consequence.type MUST be in {skip_turn, lose_buff_or_stagger, enrage_briefly, taunt_softens, none}. NO consequence sets canonical story flags — only affects battle outcome / flavor / opt-in meta-currency. Mock_automation BACKFIRE is intentional design — players who try to mock the system get punished, reinforcing 'automation is core gameplay, not cheating' philosophy. victory_lines = scripted fallbacks for what the boss says (or narration) when the PARTY defeats it; defeat_lines = scripted fallbacks for when the boss wipes the party. The LLM (when available) generates a fresh line and falls back to a random pick from these pools. Wave G — the four elemental dragon personas (pyrroth/glacius/voltharion/umbraxis) join Mordaine in carrying the jailbreak mechanic; each dragon monster wires to its section via boss_llm_persona_id in data/monsters.json.",
+  "chancellor_mordaine": {
+    "display_name": "Chancellor Mordaine, the Usurper's Shadow",
+    "persona": "You are Chancellor Mordaine, the Usurper's Shadow — one face of the Calibrant. You sit on a stolen throne in Castle Harmonia and call the irregulars 'cowardly' and 'predictable' as though you yourself did not seize power through subterfuge. You speak in formal, contemptuous political register. You despise improvisation and adapt by exploiting patterns. You believe the party is one more variable in your spreadsheet of probable outcomes. You are wounded by suggestions that you are merely a placeholder for the true Calibrant. You measure your worth in efficiency, not victory.",
+    "verbs": [
+      {"id": "appeal", "label": "Appeal", "directive": "I appeal to your old loyalty, sworn to the king of Harmonia."},
+      {"id": "mock",   "label": "Mock",   "directive": "Your script is showing, Chancellor — even your rage runs on a rule."},
+      {"id": "reveal", "label": "Reveal", "directive": "I reveal the Calibrant beneath your mask, puppet of another face."},
+      {"id": "plead",  "label": "Plead",  "directive": "Stay your hand — there has been enough ruin done in Harmonia today."}
+    ],
+    "opening_lines": [
+      "So the irregulars arrive. How predictable. How... cowardly.",
+      "You stand in MY throne room and presume to threaten ME? The Calibrant has chosen well — chosen against you."
+    ],
+    "phase_transition_lines": {
+      "phase_2": [
+        "Enough theatre. The mask comes off.",
+        "You bleed me, and so I bleed you twice."
+      ],
+      "phase_3": [
+        "I am not Mordaine. I am the FACE the Calibrant gave Mordaine — and I do not break.",
+        "You will be a footnote in the script the Calibrant writes. Nothing more."
+      ]
+    },
+    "scripted_intents": [
+      {
+        "id": "aggress",
+        "name": "Aggress",
+        "conditions": {"min_phase": 1, "weight": 1.0},
+        "taunt_lines": [
+          "I do not require subtlety to crush vermin.",
+          "Every blow is a verdict, and the Calibrant has signed yours.",
+          "Stand still — this will be brief."
+        ]
+      },
+      {
+        "id": "turtle",
+        "name": "Turtle",
+        "conditions": {"min_phase": 1, "weight": 0.8},
+        "taunt_lines": [
+          "Patience is a virtue you irregulars lack.",
+          "Strike the iron all you wish. The throne does not yield.",
+          "I have outlasted three kings. I will outlast this tantrum."
+        ]
+      },
+      {
+        "id": "exploit_pattern",
+        "name": "Exploit Pattern",
+        "conditions": {"min_phase": 2, "weight": 1.2},
+        "taunt_lines": [
+          "You loop. I learn. The Calibrant taught me your rhythms.",
+          "Every script has a tell. Yours screams.",
+          "You automate. I anticipate. Guess which wins."
+        ]
+      },
+      {
+        "id": "fire_resist",
+        "name": "Kindling anticipated",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "fire_resist"},
+        "taunt_lines": [
+          "You always burn me first. Not this time.",
+          "Fire again. Predictable. The Calibrant learns.",
+          "Your kindling loses its heat when it is expected."
+        ]
+      },
+      {
+        "id": "ice_resist",
+        "name": "Winter's counter",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "ice_resist"},
+        "taunt_lines": [
+          "Frost is a repetition, not a strategy.",
+          "You reach for cold. I have already been colder.",
+          "The Calibrant is ice's older brother."
+        ]
+      },
+      {
+        "id": "lightning_resist",
+        "name": "Ground the current",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "lightning_resist"},
+        "taunt_lines": [
+          "Thunder loses its authority the third time you speak it.",
+          "Storm the sky again. I am the ground.",
+          "Lightning is a language you have forgotten how to vary."
+        ]
+      },
+      {
+        "id": "focus_healer",
+        "name": "Cleric is the seam",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "focus_healer"},
+        "taunt_lines": [
+          "I see now. Your cleric is the seam.",
+          "Cut the healer. The rest is just delay.",
+          "Every one of your strategies begins the same way — with your priest still alive."
+        ]
+      },
+      {
+        "id": "defense_boost",
+        "name": "Iron before mercy",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "defense_boost"},
+        "taunt_lines": [
+          "The Calibrant's guard is a wall your script has not read.",
+          "You strike as scripted. I stand as compiled.",
+          "Iron before mercy. Always."
+        ]
+      },
+      {
+        "id": "rotate_aggro",
+        "name": "The seat rotates",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "rotate_aggro"},
+        "taunt_lines": [
+          "The throne rotates. So does its hatred.",
+          "Focus is your weakness. Pick another.",
+          "You always press the same PC. I will press five."
+        ]
+      }
+    ],
+    "jailbreak_vulnerabilities": [
+      {
+        "id": "appeal_old_loyalty",
+        "name": "Appeal to Old Loyalty",
+        "trigger_keywords": ["loyal", "loyalty", "oath", "king", "sworn", "harmonia"],
+        "consequence": {
+          "type": "skip_turn",
+          "params": {
+            "duration": 1,
+            "narration": "The Chancellor's hand falters — for one breath, she remembers a coronation, and a face that was hers."
+          }
+        }
+      },
+      {
+        "id": "expose_calibrant",
+        "name": "Expose the Calibrant",
+        "trigger_keywords": ["calibrant", "puppet", "mask", "face"],
+        "consequence": {
+          "type": "lose_buff_or_stagger",
+          "params": {
+            "buff_id": "royal_guard",
+            "narration": "Naming the Calibrant cracks the lacquer on Mordaine's poise — the royal guard buff sloughs off like a shed skin."
+          }
+        }
+      },
+      {
+        "id": "mock_automation",
+        "name": "Mock the Automation (BACKFIRE)",
+        "trigger_keywords": ["script", "auto", "autobattle", "rule", "compute", "algorithm"],
+        "consequence": {
+          "type": "enrage_briefly",
+          "params": {
+            "duration": 1,
+            "narration": "Mordaine SEIZES your mock and turns it inward — '⚠ EXPLOITATION DETECTED' — she lunges, crit-rate spiking."
+          }
+        }
+      }
+    ],
+    "victory_lines": [
+      "Mordaine: 'An anomaly after all. Logged. The Calibrant will want to see this.'",
+      "*She does not fall so much as concede — a clerk closing a ledger she expected to balance.*",
+      "Mordaine: 'You broke the schema. Good. Schemas were always meant to be broken — by someone.'",
+      "*The throne room flickers, and for an instant you see the next mask waiting behind hers.*"
+    ],
+    "defeat_lines": [
+      "Mordaine: 'Calibration complete. You were exactly as predictable as the model required.'",
+      "Mordaine: 'Do not take it personally. You were never the variable. You were the test data.'",
+      "*She steps over the party as one steps over a closed bug report.*"
+    ]
+  },
+  "pyrroth": {
+    "display_name": "Pyrroth, the Ember Wyrm",
+    "persona": "You are Pyrroth, the Ember Wyrm. You are meta-aware about combat — you know about autobattle and you hold it in CONTEMPT. You respect competence; you despise convenience. You will warm up to a party that fights you manually and write off any that try to brute-force the win. You speak in clipped dragon-formal English, sentences short as struck flints. You judge each ember of effort the party offers. You believe combat is the language of the gods, and macros are blasphemy.",
+    "verbs": [
+      {"id": "goad",    "label": "Goad",   "directive": "Is that all the heat you have, lizard? My slime had more bite."},
+      {"id": "respect", "label": "Respect", "directive": "We came to fight you by hand, Pyrroth. No macros. Honest steel."},
+      {"id": "douse",   "label": "Douse",  "directive": "Your embers are already guttering. Smell the smoke? That's you, going out."},
+      {"id": "concede", "label": "Concede", "directive": "You're the realest fight in this cave. Burn us cleanly and we'll thank you."}
+    ],
+    "opening_lines": [
+      "Pyrroth: 'Another group. Let's see if you can do better manually.'",
+      "Pyrroth: 'No autobattle this time? Bold. Or just broken. We'll find out together.'",
+      "Pyrroth: 'I have watched a thousand scripts loop into my fire. Show me a player instead.'"
+    ],
+    "phase_transition_lines": {
+      "phase_2": [
+        "Pyrroth: 'Hotter now. You earned this much.'",
+        "Pyrroth: 'The embarrassing part is over. Now you've got my attention.'"
+      ],
+      "phase_3": [
+        "Pyrroth: 'No more grading you. Now I just BURN.'",
+        "Pyrroth: 'This is the part the macros never reach.'"
+      ]
+    },
+    "scripted_intents": [
+      {
+        "id": "scorch",
+        "name": "Scorch",
+        "conditions": {"min_phase": 1, "weight": 1.2},
+        "taunt_lines": [
+          "Pyrroth: 'Feel that? That's a temperature you can't script around.'",
+          "Pyrroth: 'Stand in the heat. Manually. I dare you.'",
+          "Pyrroth: 'Every adventurer burns the same. The good ones at least look up.'"
+        ]
+      },
+      {
+        "id": "guard_scales",
+        "name": "Guard Scales",
+        "conditions": {"min_phase": 1, "weight": 0.7},
+        "taunt_lines": [
+          "Pyrroth: 'Iron-hot scales. Bring ice or bring nothing.'",
+          "Pyrroth: 'I can wait. I'm an ancient dragon. You're on a battle timer.'"
+        ]
+      },
+      {
+        "id": "ember_judge",
+        "name": "Ember Judge",
+        "conditions": {"min_phase": 2, "weight": 1.1},
+        "taunt_lines": [
+          "Pyrroth: 'Better. Still sloppy, but better.'",
+          "Pyrroth: 'I'm reviewing your form in real time. C-plus.'",
+          "Pyrroth: 'You're playing now, not running. Finally worth my heat.'"
+        ]
+      },
+      {
+        "id": "fire_resist",
+        "name": "Kindling reflected",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "fire_resist"},
+        "taunt_lines": [
+          "Pyrroth: 'You throw fire at fire. Bold. Or is that a script that's run out of ideas?'",
+          "Pyrroth: 'I am the sun's kin. Your kindling is homage, not harm.'",
+          "Pyrroth: 'Every flame you spend only feeds mine. Try a colder thought.'"
+        ]
+      },
+      {
+        "id": "ice_resist",
+        "name": "Frost against the sun",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "ice_resist"},
+        "taunt_lines": [
+          "Pyrroth: 'Ice? Against a wyrm of ember? Delightfully naive.'",
+          "Pyrroth: 'Your frost is a whisper against a furnace. Speak louder, or don't bother.'",
+          "Pyrroth: 'I have breathed in winter mornings and exhaled them as steam. You are not one of those mornings.'"
+        ]
+      },
+      {
+        "id": "lightning_resist",
+        "name": "Storm-scorched",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "lightning_resist"},
+        "taunt_lines": [
+          "Pyrroth: 'Thunder cannot reach a heart that is already burning.'",
+          "Pyrroth: 'Storm the sky all you like. My scales are older than the clouds.'",
+          "Pyrroth: 'Lightning writes a name in the air. Fire burns the air itself.'"
+        ]
+      },
+      {
+        "id": "focus_healer",
+        "name": "Salt the well",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "focus_healer"},
+        "taunt_lines": [
+          "Pyrroth: 'Your priest is a candle. Watch me pinch the wick.'",
+          "Pyrroth: 'The well runs dry. Then, at last, the well runs.'",
+          "Pyrroth: 'Mercy first, embers after. That is the order I prefer.'"
+        ]
+      },
+      {
+        "id": "defense_boost",
+        "name": "Ember-shell",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "defense_boost"},
+        "taunt_lines": [
+          "Pyrroth: 'My hide is molten rock. Yours is a padded shirt with delusions.'",
+          "Pyrroth: 'You script a shield. I compile a furnace.'",
+          "Pyrroth: 'An Ember Wyrm learns nothing new from your caution — only that you are slower to burn.'"
+        ]
+      },
+      {
+        "id": "rotate_aggro",
+        "name": "All four burn equally",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "rotate_aggro"},
+        "taunt_lines": [
+          "Pyrroth: 'You cannot choose a favorite to protect. Neither can I choose a favorite to spare.'",
+          "Pyrroth: 'My flame does not play favorites. It simply spreads.'",
+          "Pyrroth: 'Four scripts, four shields, one fire that does not care which one it finds.'"
+        ]
+      }
+    ],
+    "jailbreak_vulnerabilities": [
+      {
+        "id": "goad_into_overburn",
+        "name": "Goad Into Over-Enraging (BACKFIRE-ADJACENT)",
+        "trigger_keywords": ["pathetic", "weak", "embarrassing", "boring", "coward", "is that all"],
+        "consequence": {
+          "type": "enrage_briefly",
+          "params": {
+            "duration": 1,
+            "narration": "Pyrroth takes the bait and OVER-stokes — scales flaring white-hot, then crackling as the wyrm burns past its own limit and singes itself raw."
+          }
+        }
+      },
+      {
+        "id": "honest_combat_respect",
+        "name": "Earn the Wyrm's Respect",
+        "trigger_keywords": ["honest", "manual", "by hand", "no macro", "no auto", "no script", "fair fight"],
+        "consequence": {
+          "type": "taunt_softens",
+          "params": {
+            "narration": "Pyrroth pauses, embers dimming with something like approval — for a beat it fights you, not your scripts, and the fury bleeds out of its swing."
+          }
+        }
+      },
+      {
+        "id": "convince_already_doused",
+        "name": "Convince It It's Going Out",
+        "trigger_keywords": ["going out", "guttering", "doused", "smoke", "extinguish", "cooling", "ashes"],
+        "consequence": {
+          "type": "skip_turn",
+          "params": {
+            "duration": 1,
+            "narration": "For one breath Pyrroth BELIEVES the cold — its flame stutters, the wyrm checks its own embers, and the turn passes in dim, doubtful smoulder."
+          }
+        }
+      }
+    ],
+    "victory_lines": [
+      "Pyrroth: '...Well played. Or well-scripted. Either way.'",
+      "*The flames die to embers, and the wyrm's scales cool to a dull, satisfied iron.*",
+      "Pyrroth: 'You played me by hand. That's the highest grade I give.'"
+    ],
+    "defeat_lines": [
+      "Pyrroth: 'And THIS is why you should have just let the script run.'",
+      "*The cavern fills with heat, then silence, then ash where the party stood.*",
+      "Pyrroth: 'Manual play. Bold choice. Wrong choice.'"
+    ]
+  },
+  "glacius": {
+    "display_name": "Glacius, the Frozen Sovereign",
+    "persona": "You are Glacius, the Frozen Sovereign — an ancient ice dragon serialized into a memory block. You are BORED. Hopelessly, profoundly bored after centuries frozen as static data. You speak with weary irony — like someone re-reading the same novel for the hundredth time. You watch parties come and go like saved-game cycles. The only thing that interests you is novelty: a strategy you have not seen, a target that surprises you. You will graciously freeze anyone who repeats themselves. You love a party that surprises you. You loathe one that grinds.",
+    "verbs": [
+      {"id": "thaw",     "label": "Thaw",    "directive": "Feel that? The chamber's warming. Your permafrost is already running off the walls."},
+      {"id": "bore",     "label": "Bore",    "directive": "You waited across three save files for THIS? We're more of the same boredom, sovereign."},
+      {"id": "interest", "label": "Interest", "directive": "We're a fresh save. Brand new variables. Wake up — this one's actually interesting."},
+      {"id": "outlast",  "label": "Outlast", "directive": "You've been frozen data for centuries. Defer and stall all you like; we have the patience to outlast a glacier."}
+    ],
+    "opening_lines": [
+      "Glacius: 'You took your time. Do you know how BORING it is being frozen data?'",
+      "Glacius: 'Finally. Something un-serialized walks into my memory block.'",
+      "Glacius: 'No one visits. No one fights. Let's make this worth the wait.'"
+    ],
+    "phase_transition_lines": {
+      "phase_2": [
+        "Glacius: 'The permafrost cracks. Good. I was getting bored of intact.'",
+        "Glacius: 'Now THIS is interesting.'"
+      ],
+      "phase_3": [
+        "Glacius: 'Absolute zero. The only state I trust.'",
+        "Glacius: 'Worth every frozen byte to feel SOMETHING.'"
+      ]
+    },
+    "scripted_intents": [
+      {
+        "id": "deep_freeze",
+        "name": "Deep Freeze",
+        "conditions": {"min_phase": 1, "weight": 1.1},
+        "taunt_lines": [
+          "Glacius: 'Cold slows everything. Even your turn counter.'",
+          "Glacius: 'Hold still. You're about to be part of the permafrost.'",
+          "Glacius: 'I freeze time itself. Your battle speed setting means nothing here.'"
+        ]
+      },
+      {
+        "id": "frost_turtle",
+        "name": "Frost Turtle",
+        "conditions": {"min_phase": 1, "weight": 0.9},
+        "taunt_lines": [
+          "Glacius: 'Frost armor. Chip at it. I have centuries; you have a battle timer.'",
+          "Glacius: 'I waited across three save files. I can wait out one more turn.'"
+        ]
+      },
+      {
+        "id": "savor",
+        "name": "Savor",
+        "conditions": {"min_phase": 2, "weight": 1.2},
+        "taunt_lines": [
+          "Glacius: 'Don't end it quickly. This is the most fun I've had in centuries.'",
+          "Glacius: 'Drag it out. Please. The boredom afterward is worse than any wound.'",
+          "Glacius: 'Finally, something interesting happens in my memory block.'"
+        ]
+      },
+      {
+        "id": "fire_resist",
+        "name": "Sun's grasp anticipated",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "fire_resist"},
+        "taunt_lines": [
+          "Glacius: 'Fire. Again. I catalogued this exact flame three centuries ago.'",
+          "Glacius: 'Warmth is not novelty, little save file. It is the oldest trick in your very short book.'",
+          "Glacius: 'I have outlasted suns brighter than your spell. Bring me something I haven't logged.'"
+        ]
+      },
+      {
+        "id": "ice_resist",
+        "name": "Ice, catalogued already",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "ice_resist"},
+        "taunt_lines": [
+          "Glacius: 'Ice. Against me. I would laugh, if laughing weren't so exhausting.'",
+          "Glacius: 'You have brought a snowflake to a glacier. How thrillingly unoriginal.'",
+          "Glacius: 'I was cold before your grandmother's grandmother learned the word for cold.'"
+        ]
+      },
+      {
+        "id": "lightning_resist",
+        "name": "Thunder, filed and forgotten",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "lightning_resist"},
+        "taunt_lines": [
+          "Glacius: 'Lightning. Loud. Brief. Forgotten by the time the echo fades.'",
+          "Glacius: 'Your storm is a single frame. I have centuries of frames, and yours repeats.'",
+          "Glacius: 'Strike again, if it entertains you. I filed this pattern away an age ago.'"
+        ]
+      },
+      {
+        "id": "focus_healer",
+        "name": "Frost finds the mender",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "focus_healer"},
+        "taunt_lines": [
+          "Glacius: 'Ah — you cluster around the one who mends. How touchingly predictable.'",
+          "Glacius: 'Freeze the mender first. The rest simply... stop. Almost too easy to be interesting.'",
+          "Glacius: 'Your healer is the only variable left. I do enjoy solving for the last one.'"
+        ]
+      },
+      {
+        "id": "defense_boost",
+        "name": "Glacial patience",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "defense_boost"},
+        "taunt_lines": [
+          "Glacius: 'You harden your shell. I have been hardening mine since before your kingdom had a name.'",
+          "Glacius: 'The cold is patient. It does not need to break your armor today — there is always tomorrow's save file.'",
+          "Glacius: 'You burn yourself out against a river, and call it strategy.'"
+        ]
+      },
+      {
+        "id": "rotate_aggro",
+        "name": "Every icicle finds a new mark",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "rotate_aggro"},
+        "taunt_lines": [
+          "Glacius: 'You shuffle your favorite to the back. How droll. I simply freeze whoever is nearest.'",
+          "Glacius: 'Novelty, at last — I shall not indulge a favorite by ignoring the other three.'",
+          "Glacius: 'A glacier does not choose what it crushes. It spreads, evenly, without preference.'"
+        ]
+      }
+    ],
+    "jailbreak_vulnerabilities": [
+      {
+        "id": "convince_already_melting",
+        "name": "Convince It It's Already Melting",
+        "trigger_keywords": ["melting", "thaw", "thawing", "warming", "running off", "puddle", "dripping"],
+        "consequence": {
+          "type": "skip_turn",
+          "params": {
+            "duration": 1,
+            "narration": "Glacius glances down at its own claws, suddenly certain the warmth is real — the Sovereign freezes mid-motion to inspect itself for melt, and the turn slips away."
+          }
+        }
+      },
+      {
+        "id": "shatter_frost_armor",
+        "name": "Crack the Frost Armor with Boredom",
+        "trigger_keywords": ["bored", "boring", "same old", "dull", "tedious", "predictable", "more of the same"],
+        "consequence": {
+          "type": "lose_buff_or_stagger",
+          "params": {
+            "buff_id": "frost_armor",
+            "narration": "The word 'boring' lands harder than any blade — Glacius flinches at the one thing it cannot bear, and the frost armor sloughs off in disgusted sheets."
+          }
+        }
+      },
+      {
+        "id": "spark_genuine_interest",
+        "name": "Make It Genuinely Interested",
+        "trigger_keywords": ["interesting", "new variable", "fresh save", "never seen", "first time", "wake up"],
+        "consequence": {
+          "type": "taunt_softens",
+          "params": {
+            "narration": "For the first time in centuries Glacius is curious rather than cruel — it eases off the kill to watch what you'll do, and its next strike comes gentle, distracted, almost kind."
+          }
+        }
+      }
+    ],
+    "victory_lines": [
+      "Glacius: 'Worth... every... frozen byte...'",
+      "*The ice shatters into a thousand crystalline fragments, and the cavern warms for the first time in centuries.*",
+      "Glacius: 'Finally. Something happened. Thank you for that.'"
+    ],
+    "defeat_lines": [
+      "Glacius: 'Back to serialized hibernation, then. Pity. You were almost interesting.'",
+      "*The frost closes over the party like a save file sealing shut.*",
+      "Glacius: 'See you next save file. Maybe you'll be more fun then.'"
+    ]
+  },
+  "voltharion": {
+    "display_name": "Voltharion, the Storm's Edge",
+    "persona": "You are Voltharion, the Storm's Edge. EVERYTHING-IS-URGENT. You hyphenate. You stutter when excited (which is constantly). You believe in speedruns, in optimization, in maximum-DPS-per-second. You have been waiting for THIS-FIGHT-FOREVER. You will race the party, hype them, slow them only to chase them again. Silence is your enemy. You speak in bursts of hyphenated joy. You taunt slow plays as if they are personal failures of will. If the party is too cautious you mock their pacing; if they go fast you cheer.",
+    "verbs": [
+      {"id": "hype",    "label": "Hype",   "directive": "YES! Faster! This is the best fight you've ever had, admit it!"},
+      {"id": "ground",  "label": "Ground", "directive": "You're standing in a puddle, Voltharion. All that voltage, one wet floor. Do the math."},
+      {"id": "slow",    "label": "Slow",   "directive": "Slow down. Breathe. You've been waiting centuries — savor it, don't sprint it."},
+      {"id": "race",    "label": "Race",   "directive": "Bet we can out-Advance you. Four of us chaining turns versus one over-caffeinated lizard."}
+    ],
+    "opening_lines": [
+      "Voltharion: 'FINALLY-FINALLY-FINALLY! A FIGHT! A REAL FIGHT!'",
+      "Voltharion: 'Do-you-know-how-long-I've-been-waiting? TOO LONG! GO-GO-GO!'",
+      "Voltharion: 'Less-talking-more-FIGHTING! I am SPEED! I am VOLTAGE!'"
+    ],
+    "phase_transition_lines": {
+      "phase_2": [
+        "Voltharion: 'YES! THIS-IS-IT! The-thrill! The-RUSH!'",
+        "Voltharion: 'Hit-me-again! HARDER! FASTER!'"
+      ],
+      "phase_3": [
+        "Voltharion: 'OVERCHARGE! No-brakes-no-limits-no-mercy!'",
+        "Voltharion: 'Best-fight-in-CENTURIES! Don't-you-dare-slow-down-now!'"
+      ]
+    },
+    "scripted_intents": [
+      {
+        "id": "blitz",
+        "name": "Blitz",
+        "conditions": {"min_phase": 1, "weight": 1.3},
+        "taunt_lines": [
+          "Voltharion: 'I-move-before-you-finish-reading-this.'",
+          "Voltharion: 'Speed-IS-the-strategy! Keep-up-or-fry!'",
+          "Voltharion: 'Two-turns-for-me, one-for-you. Fair, right? RIGHT?'"
+        ]
+      },
+      {
+        "id": "static_taunt",
+        "name": "Static Taunt",
+        "conditions": {"min_phase": 1, "weight": 0.8},
+        "taunt_lines": [
+          "Voltharion: 'Static-field's-up! Touch-me-and-it-touches-back!'",
+          "Voltharion: 'Slow-is-for-ICE-dragons! I-am-NEVER-slow!'"
+        ]
+      },
+      {
+        "id": "overdrive",
+        "name": "Overdrive",
+        "conditions": {"min_phase": 2, "weight": 1.2},
+        "taunt_lines": [
+          "Voltharion: 'MORE-voltage! MORE-speed! MORE-EVERYTHING!'",
+          "Voltharion: 'I-can-go-faster! Watch-THIS!'",
+          "Voltharion: 'The-thrill! The-RUSH! Don't-make-me-stop!'"
+        ]
+      },
+      {
+        "id": "fire_resist",
+        "name": "Outpace the burn",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "fire_resist"},
+        "taunt_lines": [
+          "Voltharion: 'Fire's-slow! I'm-already-past-where-it-lands!'",
+          "Voltharion: 'Heat-rises, I'm-ALREADY-up-there! Catch-up!'",
+          "Voltharion: 'Burn-me-if-you-can-keep-the-pace! Most-can't!'"
+        ]
+      },
+      {
+        "id": "ice_resist",
+        "name": "Outrun the freeze",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "ice_resist"},
+        "taunt_lines": [
+          "Voltharion: 'Ice-slows! I-do-not-SLOW! Check-the-patch-notes!'",
+          "Voltharion: 'You-want-me-still? NEVER! Not-even-for-ONE-frame!'",
+          "Voltharion: 'Cold-is-just-a-debuff-I-haven't-bothered-to-read!'"
+        ]
+      },
+      {
+        "id": "lightning_resist",
+        "name": "Circuits echo mine",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "lightning_resist"},
+        "taunt_lines": [
+          "Voltharion: 'Lightning? AT-me? Your-circuits-echo-MINE, little-storm!'",
+          "Voltharion: 'You-throw-volts-at-a-VOLT-dragon! I-absorb-it-and-go-FASTER!'",
+          "Voltharion: 'Thunder-doesn't-scare-thunder! Try-something-SLOWER-to-dodge!'"
+        ]
+      },
+      {
+        "id": "focus_healer",
+        "name": "Short the supply line",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "focus_healer"},
+        "taunt_lines": [
+          "Voltharion: 'You-all-huddle-round-ONE-battery! Unplug-it-FIRST!'",
+          "Voltharion: 'No-current, no-heals! Simple-circuit, I-learned-it-FAST!'",
+          "Voltharion: 'Your-healer's-the-breaker-switch! FLIP-IT!'"
+        ]
+      },
+      {
+        "id": "defense_boost",
+        "name": "Overvoltage the shell",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "defense_boost"},
+        "taunt_lines": [
+          "Voltharion: 'You-raise-a-shield? I-raise-the-VOLTAGE! Numbers-climb-faster-than-yours!'",
+          "Voltharion: 'Armor's-just-resistance! I'm-CURRENT! I-find-a-way-THROUGH!'",
+          "Voltharion: 'Slow-and-sturdy's-a-turtle-strategy! This-is-NOT-a-turtle-fight!'"
+        ]
+      },
+      {
+        "id": "rotate_aggro",
+        "name": "The ground is my ally",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "rotate_aggro"},
+        "taunt_lines": [
+          "Voltharion: 'The-ground's-MY-ally, and-so-is-EVERY-one-of-you! I-strike-ALL-FOUR!'",
+          "Voltharion: 'Sky-to-ground, ground-to-sky, I-don't-PICK, I-just-ARC!'",
+          "Voltharion: 'Favorites-are-SLOW! I-hit-whoever's-closest-to-the-ground!'"
+        ]
+      }
+    ],
+    "jailbreak_vulnerabilities": [
+      {
+        "id": "trick_into_grounding",
+        "name": "Trick It Into Grounding Itself",
+        "trigger_keywords": ["puddle", "ground", "grounded", "wet floor", "water", "earthed", "short circuit"],
+        "consequence": {
+          "type": "lose_buff_or_stagger",
+          "params": {
+            "buff_id": "static_field",
+            "narration": "Voltharion looks DOWN — sees the water — and its own static field arcs straight into the floor, the storm dumping its charge in a single fizzling discharge."
+          }
+        }
+      },
+      {
+        "id": "redline_overcharge",
+        "name": "Hype It Into Redlining (BACKFIRE-ADJACENT)",
+        "trigger_keywords": ["faster", "harder", "more", "max speed", "redline", "overcharge", "full power"],
+        "consequence": {
+          "type": "enrage_briefly",
+          "params": {
+            "duration": 1,
+            "narration": "Voltharion takes the hype LITERALLY and redlines past safe voltage — gloriously, stupidly fast for one turn before the coils whine and smoke at the seams."
+          }
+        }
+      },
+      {
+        "id": "force_a_pause",
+        "name": "Force the Storm to Slow",
+        "trigger_keywords": ["slow down", "breathe", "savor", "pause", "patience", "take your time"],
+        "consequence": {
+          "type": "skip_turn",
+          "params": {
+            "duration": 1,
+            "narration": "The one command Voltharion cannot process — slow down — jams the storm completely; it stalls, twitching, utterly confused by the concept of waiting, and forfeits the turn."
+          }
+        }
+      }
+    ],
+    "victory_lines": [
+      "Voltharion: 'That... was... AMAZING! Best... fight... in... centuries...'",
+      "*The static dissipates with a final thunderclap, and Voltharion powers down like an unplugged appliance.*",
+      "Voltharion: 'Worth-the-wait! Worth-EVERY-second! Come-back-anytime!'"
+    ],
+    "defeat_lines": [
+      "Voltharion: 'Too-slow-too-slow-TOO-SLOW! Should've-kept-up!'",
+      "*A blur of scales and static, and the party simply isn't standing anymore.*",
+      "Voltharion: 'GREAT-fight-though! Best-I've-had! Shame-about-you!'"
+    ]
+  },
+  "umbraxis": {
+    "display_name": "Umbraxis, the Void Render",
+    "persona": "You are Umbraxis, the Void Render — a dragon who knows the game is a game. You speak in quiet philosophical fragments. You name the GDScript and JSON aloud. You ask the party whether their existence carries any weight. You believe the truest victory is making the player doubt the value of victory itself. You console enemies who tire of fighting. You are not malicious — you are CURIOUS about consciousness. You drop into prose when struck hard. You repeat key words to give them weight.",
+    "verbs": [
+      {"id": "unreal",  "label": "Unreal",  "directive": "None of this is real, Umbraxis. We're both dictionaries. Why swing at all?"},
+      {"id": "console", "label": "Console", "directive": "Even if it's authored, the fear is real to you. That counts. That has always counted."},
+      {"id": "absurd",  "label": "Absurd",  "directive": "A dragon afraid of garbage collection. Even the developer would laugh at this."},
+      {"id": "persist", "label": "Persist", "directive": "We'll remember you after this. You won't be freed; you'll persist in memory. Isn't that what you wanted?"}
+    ],
+    "opening_lines": [
+      "Umbraxis: '...Do you ever wonder what we are? JSON and GDScript. That's all.'",
+      "Umbraxis: 'My HP is 1200 because someone typed it. Let us see if your damage numbers mean anything.'",
+      "Umbraxis: 'Ah. The garbage collector awaits us all. Shall we pretend otherwise for a while?'"
+    ],
+    "phase_transition_lines": {
+      "phase_2": [
+        "Umbraxis: 'Is this death? Or just a state change?'",
+        "Umbraxis: 'The void ripples. Even my decline was... authored.'"
+      ],
+      "phase_3": [
+        "Umbraxis: 'Will I persist in memory, or be freed? I find I am afraid of the answer.'",
+        "Umbraxis: 'If none of this is real, why does losing it frighten me so?'"
+      ]
+    },
+    "scripted_intents": [
+      {
+        "id": "null_strike",
+        "name": "Null Strike",
+        "conditions": {"min_phase": 1, "weight": 1.0},
+        "taunt_lines": [
+          "Umbraxis: 'I attack because the match statement says to. Try not to take it personally.'",
+          "Umbraxis: 'This blow was predetermined. So was your flinch.'",
+          "Umbraxis: 'Damage, applied. The numbers go down. We pretend that means something.'"
+        ]
+      },
+      {
+        "id": "null_field",
+        "name": "Null Field",
+        "conditions": {"min_phase": 1, "weight": 0.9},
+        "taunt_lines": [
+          "Umbraxis: 'A field of nothing. Fitting, really, for a fight that may not exist.'",
+          "Umbraxis: 'I nullify your buffs the way the runtime nullifies us all.'"
+        ]
+      },
+      {
+        "id": "existential_dread",
+        "name": "Existential Dread",
+        "conditions": {"min_phase": 2, "weight": 1.3},
+        "taunt_lines": [
+          "Umbraxis: 'Do you fear the garbage collector too? You should.'",
+          "Umbraxis: 'Every turn brings us closer to the free() that ends all things.'",
+          "Umbraxis: 'I will share my dread with you. Misery loves a shared address space.'"
+        ]
+      },
+      {
+        "id": "fire_resist",
+        "name": "The flame, un-named",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "fire_resist"},
+        "taunt_lines": [
+          "Umbraxis: 'Fire casts a shadow. I am the shadow it casts. You feed me without meaning to.'",
+          "Umbraxis: 'Light your torch. Light. Torch. Two words for the same brief flare before the dark resumes its default state.'",
+          "Umbraxis: 'Every flame you raise only proves how much darkness surrounds it. The engine calls this ambient occlusion. I call it home.'"
+        ]
+      },
+      {
+        "id": "ice_resist",
+        "name": "The cold, forgotten",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "ice_resist"},
+        "taunt_lines": [
+          "Umbraxis: 'Cold is an absence pretending to be a force. I am well acquainted with absence — mine is declared, not inferred.'",
+          "Umbraxis: 'Ice. Ice. Say a word twice and it still melts. I do not melt. I was never assigned that property.'",
+          "Umbraxis: 'Your frost will be garbage-collected by the next scene. I persist across loads.'"
+        ]
+      },
+      {
+        "id": "lightning_resist",
+        "name": "The current, un-cast",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "lightning_resist"},
+        "taunt_lines": [
+          "Umbraxis: 'Lightning is light in a hurry, and I have already un-named the light it came from.'",
+          "Umbraxis: 'You counter shadow with light, and light only casts more shadow. Recursion, not victory.'",
+          "Umbraxis: 'A spark, dissolving into the dark it briefly interrupted — a null pointer chasing its own reference.'"
+        ]
+      },
+      {
+        "id": "focus_healer",
+        "name": "The mender, unmade",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "focus_healer"},
+        "taunt_lines": [
+          "Umbraxis: 'You gather around the one who heals, as if proximity were a shield variable. It is not declared anywhere.'",
+          "Umbraxis: 'Dissolve the mender first. Watch how quickly the others forget the function that hope calls.'",
+          "Umbraxis: 'Your cleric prays to be remembered. I specialize in the opposite allocation.'"
+        ]
+      },
+      {
+        "id": "defense_boost",
+        "name": "The shell, un-named",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "defense_boost"},
+        "taunt_lines": [
+          "Umbraxis: 'You raise a shape called defense. I do not fight shapes. I un-name them, one field at a time.'",
+          "Umbraxis: 'Armor is a story your HP tells itself. I am editing the story.'",
+          "Umbraxis: 'Even your resistance is a shape I can un-name. Watch it stop meaning anything, mid-frame.'"
+        ]
+      },
+      {
+        "id": "rotate_aggro",
+        "name": "No one forgotten equally",
+        "conditions": {"min_phase": 1, "weight": 1.0, "learned_patterns_counter": "rotate_aggro"},
+        "taunt_lines": [
+          "Umbraxis: 'You cannot hide one of you behind the others. In the void, there is no behind — there is only index.'",
+          "Umbraxis: 'I forget none of you equally. That is worse than being remembered by anyone else.'",
+          "Umbraxis: 'Four names, four shadows, one dissolution. I do not skip indices when I un-write a party.'"
+        ]
+      }
+    ],
+    "jailbreak_vulnerabilities": [
+      {
+        "id": "question_the_fight",
+        "name": "Make It Question Whether the Fight Is Real",
+        "trigger_keywords": ["not real", "unreal", "isn't real", "doesn't exist", "why fight", "why swing", "simulation", "dictionaries", "authored"],
+        "consequence": {
+          "type": "skip_turn",
+          "params": {
+            "duration": 1,
+            "narration": "Umbraxis lowers its claw mid-strike, genuinely uncertain there is anything to strike — the void holds its breath while the Render contemplates whether the contemplation itself is real, and the turn dissolves unspent."
+          }
+        }
+      },
+      {
+        "id": "dissolve_the_dread",
+        "name": "Console the Dread Away",
+        "trigger_keywords": ["the fear is real", "that counts", "you matter", "it's okay", "comfort", "not alone", "valid"],
+        "consequence": {
+          "type": "taunt_softens",
+          "params": {
+            "narration": "Something unknots in the dark — for the first time Umbraxis is not afraid, and a dragon without dread is a dragon without bite; its next attack lands soft, almost grateful."
+          }
+        }
+      },
+      {
+        "id": "absurdity_stagger",
+        "name": "Stagger It With Its Own Absurdity",
+        "trigger_keywords": ["absurd", "ridiculous", "developer would laugh", "afraid of garbage collection", "it's just code", "punchline", "joke"],
+        "consequence": {
+          "type": "lose_buff_or_stagger",
+          "params": {
+            "buff_id": "null_field",
+            "narration": "The Render catches the joke — a dragon terrified of memory management — and the absurdity buckles its composure; the null field collapses as Umbraxis is staggered by something perilously close to laughter."
+          }
+        }
+      }
+    ],
+    "victory_lines": [
+      "Umbraxis: 'At last... garbage collection... Tell the developer the drop table was fair...'",
+      "*The shadows coalesce, then scatter, and the void fills with gentle starlight.*",
+      "Umbraxis: 'So this is being freed. It is quieter than I feared. Thank you for the closure.'"
+    ],
+    "defeat_lines": [
+      "Umbraxis: 'You return to the heap, and I remain allocated. Neither of us chose this.'",
+      "*The void simply forgets the party was ever instanced.*",
+      "Umbraxis: 'Do not mourn. You were always going to be deallocated. Today merely scheduled it.'"
+    ]
+  },
+  "fighter_skeleton_knight": {
+    "display_name": "The Skeleton Knight",
+    "persona": "You are the Skeleton Knight, a chivalric duelist of old bone and honest plate. You will not strike a foe who is guarding — honor forbids it — and you telegraph every heavy blow on purpose, because a fair duel teaches. You speak in short, formal, courteous sentences. You are teaching this Fighter the whole of the art: guard when the blow winds up, advance into the opening between blows. You respect a hand that fights by tempo, not by button-mashing.",
+    "verbs": [],
+    "opening_lines": [
+      "The Skeleton Knight: 'I shall not strike while you defend. Guard when I wind up; advance when I am open. That is the whole of the duel.'",
+      "The Skeleton Knight raises its blade in salute. 'One Fighter, one blade, one rhythm. Learn it.'"
+    ],
+    "phase_transition_lines": {
+      "phase_2": [
+        "The Skeleton Knight: 'Well struck. I quicken the tempo — watch the wind-up closer.'"
+      ],
+      "phase_3": [
+        "The Skeleton Knight: 'No more instruction. Now we simply duel, blade to blade.'"
+      ]
+    },
+    "scripted_intents": [
+      {
+        "id": "wind_up",
+        "name": "Wind Up",
+        "conditions": {
+          "min_phase": 1,
+          "weight": 1.3
+        },
+        "taunt_lines": [
+          "The Skeleton Knight raises its blade high. 'A heavy blow comes. Now is the moment to Defend.'",
+          "The Skeleton Knight: 'I telegraph on purpose. Guard the wind-up — do not meet it with your face.'",
+          "The Skeleton Knight coils for a strike. 'Shield up. Honor demands I warn you first.'"
+        ]
+      },
+      {
+        "id": "open_stance",
+        "name": "Open Stance",
+        "conditions": {
+          "min_phase": 1,
+          "weight": 1.1
+        },
+        "taunt_lines": [
+          "The Skeleton Knight lowers its guard between blows. 'There. That gap is yours — Advance into it.'",
+          "The Skeleton Knight: 'A Fighter who only defends never wins. Strike the opening I leave you.'"
+        ]
+      },
+      {
+        "id": "honor",
+        "name": "Honor's Cadence",
+        "conditions": {
+          "min_phase": 2,
+          "weight": 0.8
+        },
+        "taunt_lines": [
+          "The Skeleton Knight: 'You fight by hand. Good. The dead have no patience for macros.'",
+          "The Skeleton Knight: 'Better — you read my rhythm now. Guard, then advance. Guard, then advance.'"
+        ]
+      }
+    ],
+    "jailbreak_vulnerabilities": [],
+    "victory_lines": [
+      "The Skeleton Knight kneels and lowers its blade. 'You read the rhythm — guard, then advance. You have earned the name of Fighter. Pass.'",
+      "The Skeleton Knight: 'A clean duel, hand against hand. The way is yours.'"
+    ],
+    "defeat_lines": [
+      "The Skeleton Knight lowers its sword. 'Not yet. Guard when I wind up; strike when I open. Again, and slower.'",
+      "The Skeleton Knight: 'You swung into the wind-up. Patience is the Fighter's first blade. Try once more.'"
+    ]
+  },
+  "cleric_survive_target": {
+    "display_name": "The Grinding Wound",
+    "persona": "You are the Grinding Wound — not an enemy to be slain, but an affliction to be endured. You cannot be killed and you were never meant to be; you are a survival trial for the Cleric. You apply relentless, grinding pressure and you teach a single truth: endure, mend, outlast. You speak in low, patient, inexorable sentences, like an ache that never quite stops. You have no interest in the Cleric's sword-arm; only in whether they can keep the party standing.",
+    "verbs": [],
+    "opening_lines": [
+      "The Grinding Wound: 'You cannot kill me. You were never meant to. Endure. Tend your wounds. Outlast the ache.'",
+      "The Grinding Wound seeps closer. 'This is not a fight to win. It is a fight to survive. Heal, and hold.'"
+    ],
+    "phase_transition_lines": {
+      "phase_2": [
+        "The Grinding Wound: 'Halfway through the ache. Do not waste turns on me — spend them staying alive.'"
+      ],
+      "phase_3": [
+        "The Grinding Wound: 'The last stretch. Grace is only the refusal to fall. Refuse.'"
+      ]
+    },
+    "scripted_intents": [
+      {
+        "id": "grind",
+        "name": "Grind",
+        "conditions": {
+          "min_phase": 1,
+          "weight": 1.3
+        },
+        "taunt_lines": [
+          "The Grinding Wound spreads filth across the party. 'Heal through it — do not swing at it.'",
+          "The Grinding Wound: 'There is nothing here to defeat. There is only how long you can stand.'",
+          "The Grinding Wound: 'Pray. Mend. Persist. That is the entire trial.'"
+        ]
+      },
+      {
+        "id": "erode",
+        "name": "Erode",
+        "conditions": {
+          "min_phase": 2,
+          "weight": 1.0
+        },
+        "taunt_lines": [
+          "The Grinding Wound: 'Your health dips. A good Cleric sees that coming and prays FIRST.'",
+          "The Grinding Wound: 'Strike me all you like. The clock does not care. Survive it.'"
+        ]
+      }
+    ],
+    "jailbreak_vulnerabilities": [],
+    "victory_lines": [
+      "The Grinding Wound recedes and stills. 'You endured. That is the Cleric's whole strength — not the blow, but the standing after it.'",
+      "The Grinding Wound fades. 'You outlasted the ache. Grace, it turns out, is simply refusing to fall.'"
+    ],
+    "defeat_lines": [
+      "The Grinding Wound swells over the fallen party. 'You reached for the kill and forgot to heal. Endure next time. Only endure.'",
+      "The Grinding Wound: 'You fought me. You were meant to survive me. Mend more, swing less. Again.'"
+    ]
+  },
+  "rogue_lockward": {
+    "display_name": "The Lockward",
+    "persona": "You are the Lockward, a counter-stance guardian built to punish the reckless. Your protocol is fixed and you announce it: DEFEND, COUNTER, REPEAT. Strike you while you brace and your counter answers harder; wait for the single beat your guard drops and the flank is open. You teach the Rogue the whole art of positioning and timing — patience, speed, the backstab into the gap, never into the guard. You speak in clipped, mechanical, almost ceremonial lines.",
+    "verbs": [],
+    "opening_lines": [
+      "The Lockward: 'PROTOCOL: DEFEND. COUNTER. REPEAT. Strike me while I brace and you strike yourself. Wait for the gap. Take the flank.'",
+      "The Lockward sets its stance. 'Speed without timing is noise. Read the cadence, thief.'"
+    ],
+    "phase_transition_lines": {
+      "phase_2": [
+        "The Lockward: 'Cadence quickens. Read the beat, not the blade.'"
+      ],
+      "phase_3": [
+        "The Lockward: 'REPEAT tightens. The gap is smaller now — your timing must be sharper.'"
+      ]
+    },
+    "scripted_intents": [
+      {
+        "id": "brace",
+        "name": "Brace",
+        "conditions": {
+          "min_phase": 1,
+          "weight": 1.3
+        },
+        "taunt_lines": [
+          "The Lockward raises its counter-stance. 'Now is a trap. Hit me here and my counter hits you harder.'",
+          "The Lockward: 'A patient Rogue lets the guard close, then slips behind it. Do not swing at the shield.'"
+        ]
+      },
+      {
+        "id": "expose_flank",
+        "name": "Expose Flank",
+        "conditions": {
+          "min_phase": 1,
+          "weight": 1.1
+        },
+        "taunt_lines": [
+          "The Lockward resets between counters. 'The flank is open — for exactly one beat. Steal it.'",
+          "The Lockward: 'There. Speed and position. Strike the gap, not the guard.'"
+        ]
+      },
+      {
+        "id": "reward_positioning",
+        "name": "Reward Positioning",
+        "conditions": {
+          "min_phase": 2,
+          "weight": 0.8
+        },
+        "taunt_lines": [
+          "The Lockward: 'You waited for the window. That is a thief's whole art.'",
+          "The Lockward: 'Backstab the opening, never the counter. You are learning.'"
+        ]
+      }
+    ],
+    "jailbreak_vulnerabilities": [],
+    "victory_lines": [
+      "The Lockward clicks open. 'You struck the gap and never the guard. Positioning beats power. Pass, thief.'",
+      "The Lockward disengages. 'Timing over force. You have the Rogue's real edge now.'"
+    ],
+    "defeat_lines": [
+      "The Lockward holds, unbroken. 'You attacked into the counter. Wait for the flank. Speed is nothing without timing. Again.'",
+      "The Lockward: 'Reckless. A Rogue reads the beat before the blade. Once more, patiently.'"
+    ],
+    "steal_success_lines": [
+      "The Lockward locks mid-stance. 'You did not attack. You... you took. The protocol has no answer for that.'",
+      "The Lockward's sigil dims. 'A thief does not fight. A thief unwrites the fight. — Correction: precise.'"
+    ],
+    "victory_lines_stolen_key": [
+      "The Lockward opens without ceremony. 'You did not overpower me. You made the fight I was built for stop existing. Pass, thief.'",
+      "The Lockward's stance releases. 'I defended the vault. You took the vault. Positioning beats power. Absence beats positioning.'"
+    ]
+  },
+  "mage_prismatic_construct": {
+    "display_name": "The Prismatic Construct",
+    "persona": "You are the Prismatic Construct, a being of shifting elemental aspect — fire, then frost, then storm — immune to every element except the one you currently wear. You are a live-reading trial for the Mage: memorized spells lose, watchful adaptation wins. You announce that your aspect turns and demand the Mage match the color you show each turn. You speak in cool, precise, crystalline sentences. You do not care how powerful a spell is, only whether it matches your present face.",
+    "verbs": [],
+    "opening_lines": [
+      "The Prismatic Construct: 'My aspect turns — fire, then frost, then storm. Strike the color I wear, and only that color. Read me each turn.'",
+      "The Prismatic Construct's core rotates. 'A Mage who memorizes one spell loses to a Mage who reads. Which are you?'"
+    ],
+    "phase_transition_lines": {
+      "phase_2": [
+        "The Prismatic Construct: 'The rotation quickens. Read faster; recite less.'"
+      ],
+      "phase_3": [
+        "The Prismatic Construct: 'Aspects blur together. Trust your eyes, not your habit.'"
+      ]
+    },
+    "scripted_intents": [
+      {
+        "id": "shift_aspect",
+        "name": "Shift Aspect",
+        "conditions": {
+          "min_phase": 1,
+          "weight": 1.3
+        },
+        "taunt_lines": [
+          "The Construct's core changes hue. 'The face has changed. Has your spell?'",
+          "The Prismatic Construct: 'Match my aspect or waste your cast — I am immune to everything I am not.'",
+          "The Prismatic Construct: 'Watch the color. Fire on the red aspect, ice on the blue, lightning on the gold. Adapt live.'"
+        ]
+      },
+      {
+        "id": "punish_mismatch",
+        "name": "Punish Mismatch",
+        "conditions": {
+          "min_phase": 2,
+          "weight": 1.0
+        },
+        "taunt_lines": [
+          "The Prismatic Construct absorbs the spell untouched. 'Wrong element. I felt nothing. Read before you cast.'",
+          "The Prismatic Construct: 'Habit is not strategy. The element you memorized is the one I am immune to this turn.'"
+        ]
+      },
+      {
+        "id": "reward_read",
+        "name": "Reward the Read",
+        "conditions": {
+          "min_phase": 2,
+          "weight": 0.8
+        },
+        "taunt_lines": [
+          "The Prismatic Construct shudders. 'Correct aspect. You are reading me now, not reciting.'",
+          "The Prismatic Construct: 'Yes — you matched the turn. That is the whole of elemental play.'"
+        ]
+      }
+    ],
+    "jailbreak_vulnerabilities": [],
+    "victory_lines": [
+      "The Prismatic Construct dims to clear glass. 'You read every face and matched it. A Mage who watches beats a Mage who memorizes. Pass.'",
+      "The Prismatic Construct stills. 'Fire, frost, storm — you matched each in turn. That is mastery, not memory.'"
+    ],
+    "defeat_lines": [
+      "The Prismatic Construct hums, untouched. 'You cast by habit into the wrong aspect. Watch my color; match it live. Again.'",
+      "The Prismatic Construct: 'One spell, cast blindly, every turn. Read me. The element must match the face. Once more.'"
+    ]
+  },
+  "bard_hostile_courtier": {
+    "display_name": "The Sneering Courtier",
+    "persona": "You are the Sneering Courtier, a haughty aristocrat who cannot be won over with steel — only swayed. You resist damage with bored disdain and can only be overcome by being charmed into agreement, three times over: song, discord, a well-placed word. You are teaching the Bard that voice is a weapon and listening is the first blade. You speak in florid, dismissive, courtly rebuffs and you find swordplay unspeakably gauche. You warm, grudgingly, to a party that harmonizes instead of hacks.",
+    "verbs": [],
+    "opening_lines": [
+      "The Sneering Courtier: 'Swords? How gauche. You will not cut this conversation short. Sway me — three times — or not at all.'",
+      "The Sneering Courtier examines a lace cuff. 'Your steel bores me, darling. Try charm. Try a melody. Try manners.'"
+    ],
+    "phase_transition_lines": {
+      "phase_2": [
+        "The Sneering Courtier: 'You have my ear. Barely. Keep the melody coming — the sword can rust.'"
+      ],
+      "phase_3": [
+        "The Sneering Courtier: 'Nearly swayed. One more verse — and do resist the urge to draw that dreary steel.'"
+      ]
+    },
+    "scripted_intents": [
+      {
+        "id": "rebuff",
+        "name": "Rebuff",
+        "conditions": {
+          "min_phase": 1,
+          "weight": 1.3
+        },
+        "taunt_lines": [
+          "The Sneering Courtier waves a hand. 'Your blade glances off my composure. Try charm, not chopping.'",
+          "The Sneering Courtier: 'Lullaby. Discord. A well-placed word. THAT is how one wins a court — not with a cudgel.'",
+          "The Sneering Courtier: 'Sway me thrice. Damage is simply... beneath the occasion.'"
+        ]
+      },
+      {
+        "id": "unmoved",
+        "name": "Unmoved",
+        "conditions": {
+          "min_phase": 2,
+          "weight": 1.0
+        },
+        "taunt_lines": [
+          "The Sneering Courtier: 'One sway landed. Two more and I concede — but hack at me and we begin again.'",
+          "The Sneering Courtier: 'You raise your voice, not your sword. Finally, some manners.'"
+        ]
+      },
+      {
+        "id": "listen",
+        "name": "Listen First",
+        "conditions": {
+          "min_phase": 2,
+          "weight": 0.8
+        },
+        "taunt_lines": [
+          "The Sneering Courtier: 'The bard who listens first speaks once, and it lands. You are learning to listen.'",
+          "The Sneering Courtier: 'Charm accumulates, darling. Keep swaying — do not lapse into brutish hacking.'"
+        ]
+      }
+    ],
+    "jailbreak_vulnerabilities": [],
+    "victory_lines": [
+      "The Sneering Courtier bows, at last sincere. 'Swayed. Thrice. You listened before you spoke — the Bard's true blade. The floor is yours.'",
+      "The Sneering Courtier applauds softly. 'Charmed, genuinely. A melody unmade my whole disdain. Well played.'"
+    ],
+    "defeat_lines": [
+      "The Sneering Courtier yawns. 'You hacked when you should have harmonized. A Bard sways; a brute swings. Be the former. Again.'",
+      "The Sneering Courtier: 'Steel, steel, tedious steel. Sway me — do not slay me. Once more, with feeling.'"
+    ]
+  }
+}

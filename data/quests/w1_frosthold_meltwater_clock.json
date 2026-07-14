@@ -1,0 +1,131 @@
+{
+  "id": "w1_frosthold_meltwater_clock",
+  "title": "Meltwater Clock, Broken Again",
+  "world": 1,
+  "giver": {
+    "npc_id": "clockkeeper_yara",
+    "display_name": "Clockkeeper Yara",
+    "location": {
+      "map_id": "frosthold_village",
+      "near": "clock_tower"
+    },
+    "spawn_flag": ""
+  },
+  "description": "Frosthold's meltwater clock — an ancient timepiece run by controlled ice melt from the mountain above — is wrong. It is wrong by exactly two minutes and then correct and then wrong by exactly two minutes and then correct. Rain doesn't work like that. Time doesn't work like that.",
+  "playstyle_tags": [
+    "exploration",
+    "story"
+  ],
+  "dialogue": {
+    "offer": [
+      {
+        "speaker": "Clockkeeper Yara",
+        "text": "The clock is wrong. It is wrong by exactly two minutes and then correct and then wrong by exactly two minutes and then correct. Rain doesn't work like that. Time doesn't work like that. Someone is working like that.",
+        "theme": "villager"
+      },
+      {
+        "speaker": "Clockkeeper Yara",
+        "text": "I have been the clockkeeper for thirty-one years. I have kept the clock through droughts and blizzards and the year of the two moons. This is the first time the clock has been wrong on a schedule.",
+        "theme": "villager"
+      }
+    ],
+    "accept": [
+      {
+        "speaker": "Clockkeeper Yara",
+        "text": "Go to the source pool, at the top of the mountain. Look at the ice. Look at what's melting it. If it's the sun, I'll pay you nothing and thank you anyway.",
+        "theme": "villager"
+      },
+      {
+        "speaker": "Clockkeeper Yara",
+        "text": "If it's a rune, or a sigil, or a mark cut into the stone — leave it. Don't touch it. Come back. We'll talk about what leaving it means before we do anything else.",
+        "theme": "villager"
+      }
+    ],
+    "decline": [
+      {
+        "speaker": "Clockkeeper Yara",
+        "text": "Fair enough. It'll go on being wrong on a schedule. I'll go on winding it against the schedule. That's a whole way of living, at this point.",
+        "theme": "villager"
+      }
+    ],
+    "in_progress": [
+      {
+        "speaker": "Clockkeeper Yara",
+        "text": "The clock is off by four minutes now. And then correct. And then off by four minutes. The pattern is holding. Patterns are only comforting when you're the one making them.",
+        "theme": "villager"
+      }
+    ],
+    "ready_to_turn_in": [
+      {
+        "speaker": "Clockkeeper Yara",
+        "text": "You came down from the mountain. You look like someone who saw something they'd rather not have. Come inside. It's warmer in.",
+        "theme": "villager"
+      }
+    ],
+    "complete": [
+      {
+        "speaker": "Clockkeeper Yara",
+        "text": "A rune. Cut fresh. Cut careful. Cut by someone who has never been to this mountain, but who knows where it is.",
+        "theme": "villager"
+      },
+      {
+        "speaker": "Clockkeeper Yara",
+        "text": "The clock is right. It is right the way it was right before. Which means we know now what it was wrong TO. That's not comfort. That's just a name for the thing we're afraid of.",
+        "theme": "villager"
+      },
+      {
+        "speaker": "Clockkeeper Yara",
+        "text": "Take this. My grandmother's, from a mountain older than this one. A charm against being watched from a distance. It has never worked, in my experience. It has also never been tested against something that was actually watching.",
+        "theme": "villager"
+      }
+    ]
+  },
+  "objectives": [
+    {
+      "step": 1,
+      "description": "Hear Clockkeeper Yara out at the Frosthold clock tower.",
+      "type": "talk",
+      "target_npc": "clockkeeper_yara",
+      "flag_on_complete": "quest_w1_frosthold_meltwater_clock_accepted"
+    },
+    {
+      "step": 2,
+      "description": "Climb to the source pool above Frosthold. Look at what is melting the ice.",
+      "type": "custom",
+      "required_flag": "quest_w1_frosthold_meltwater_clock_accepted",
+      "flag_on_complete": "quest_w1_frosthold_source_seen"
+    },
+    {
+      "step": 3,
+      "description": "Return to Yara at the clock tower.",
+      "type": "talk",
+      "target_npc": "clockkeeper_yara",
+      "required_flag": "quest_w1_frosthold_source_seen"
+    }
+  ],
+  "rewards": {
+    "gold": 100,
+    "exp": 250,
+    "items": [
+      {
+        "item_id": "watchers_charm",
+        "count": 1
+      }
+    ],
+    "job_variants": {
+      "cleric": {
+        "description": "Cleric examine text at the source pool: the rune is drawn in a hand that is meant to LAST, not to work. It is elegant. It is finished. Whoever cut it was showing off, and they are not the person who commissioned it. 'The one who cut this is a hired hand. The one who ordered it is not here. Neither ever came here in person.' No mechanical effect.",
+        "items": [
+          {
+            "item_id": "watchers_charm",
+            "count": 1
+          }
+        ]
+      }
+    }
+  },
+  "flag_on_complete": "quest_w1_frosthold_meltwater_clock_complete",
+  "cross_world_connection": "The rune cut into the source pool matches — line for line — a mark on the wall of Mordaine's council chamber (Castle Harmonia F2). She has been reaching. The clock's cadence — two minutes wrong, correct, two minutes wrong, correct — is the cadence of Mordaine's edict-stamping rhythm (audible only in the throne room, if the party lingers). W1 does not name this connection; W2 confirms it.",
+  "_wiring_notes": "Step 2 custom flag emitted by examine tile at the source pool (cowir-overworld places; hook = 'A rune, cut fresh in the ice, cut careful.'). No Masterite in this quest — Frosthold's tie is to Mordaine directly, per design doc. Item watchers_charm = new item (flavor: 'A charm against being watched from a distance. Grandmother's, from a mountain older than this one. Has never worked. Also never been tested.'). Design doc: Lane C row 5 — 'Frost failing in Mordaine's presence' — the connection is deliberately unstated in W1 dialogue and confirmed only later.",
+  "prereq_flag": "cutscene_flag_rat_king_defeated"
+}

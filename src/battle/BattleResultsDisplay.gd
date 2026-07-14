@@ -28,10 +28,57 @@ func on_damage_dealt(target: Combatant, amount: int, is_crit: bool, _element: St
 
 
 func on_healing_done(target: Combatant, amount: int) -> void:
-	"""Show floating heal number near target"""
+	"""Show floating heal number AND a soft expanding glow under target.
+	The glow gives healing visual parity with damage (which gets screen shake
+	+ a number). Previously a heal only spawned a green number — visually
+	indistinguishable from any other floaty popup. Now there's a moment."""
+	if amount <= 0:
+		return  # no "+0" popup/glow — a no-op heal (target already full) produces no feedback
 	var pos = _get_combatant_sprite_position(target)
 	if pos != Vector2.ZERO:
 		spawn_damage_number(pos, amount, true, false)
+		spawn_heal_glow(pos)
+
+
+## Spawn a soft expanding green glow under the target sprite. Tweens alpha
+## up over 0.18s and back down over 0.62s while scaling 0.5 → 1.3, then
+## queue_frees. Two independent tweens because chain()/parallel()/set_parallel
+## are easy to mis-stage; two tweens against the same target are robust.
+func spawn_heal_glow(pos: Vector2) -> void:
+	var panel := PanelContainer.new()
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.35, 1.0, 0.5, 0.32)
+	sb.corner_radius_top_left = 40
+	sb.corner_radius_top_right = 40
+	sb.corner_radius_bottom_left = 40
+	sb.corner_radius_bottom_right = 40
+	sb.border_width_top = 2
+	sb.border_width_bottom = 2
+	sb.border_width_left = 2
+	sb.border_width_right = 2
+	sb.border_color = Color(0.6, 1.0, 0.7, 0.8)
+	panel.add_theme_stylebox_override("panel", sb)
+	panel.size = Vector2(90.0, 90.0)
+	panel.pivot_offset = panel.size / 2.0
+	# Anchored slightly below sprite center so the glow reads as ground-up.
+	panel.position = pos - panel.size / 2.0 + Vector2(0.0, 10.0)
+	panel.scale = Vector2(0.5, 0.5)
+	panel.modulate.a = 0.0
+	_scene.add_child(panel)
+
+	# Tween 1: alpha fade in (0.18s) then out (0.62s), then cleanup.
+	var fade: Tween = panel.create_tween()
+	fade.tween_property(panel, "modulate:a", 0.85, 0.18) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	fade.tween_property(panel, "modulate:a", 0.0, 0.62) \
+		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	fade.tween_callback(panel.queue_free)
+
+	# Tween 2: scale from 0.5 to 1.3 across the full 0.8s envelope.
+	var grow: Tween = panel.create_tween()
+	grow.tween_property(panel, "scale", Vector2(1.3, 1.3), 0.8) \
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
 
 func on_attack_missed(target: Combatant) -> void:
@@ -45,8 +92,9 @@ func spawn_damage_number(pos: Vector2, amount: int, is_heal: bool, is_crit: bool
 	"""Spawn a floating damage/heal number"""
 	var dmg_num = DamageNumber.new()
 	dmg_num.setup(amount, is_heal, is_crit)
-	# Offset slightly upward from sprite center
-	dmg_num.position = pos + Vector2(randf_range(-10, 10), -30)
+	# Tick 208: stagger near-duplicate positions so multi-hit attacks don't cluster into one mushy popup pile.
+	var stagger_y: float = _count_recent_popups_near(pos) * STAGGER_STEP
+	dmg_num.position = pos + Vector2(randf_range(-10, 10), -30 - stagger_y)
 	_scene.add_child(dmg_num)
 
 
@@ -54,8 +102,26 @@ func spawn_miss_number(pos: Vector2) -> void:
 	"""Spawn a floating MISS text"""
 	var dmg_num = DamageNumber.new()
 	dmg_num.setup_miss()
-	dmg_num.position = pos + Vector2(randf_range(-10, 10), -30)
+	# Tick 208: same stagger logic as damage popups — multiple misses on one target (e.g., blind) shouldn't overlap.
+	var stagger_y: float = _count_recent_popups_near(pos) * STAGGER_STEP
+	dmg_num.position = pos + Vector2(randf_range(-10, 10), -30 - stagger_y)
 	_scene.add_child(dmg_num)
+
+
+# Tick 208: 18px per stacked popup — readable separation without flying immediately off-screen.
+const STAGGER_STEP := 18.0
+# Tick 208: any DamageNumber within 40px (~0.6s of float time) of the spawn pos counts as a "fresh overlap" and pushes the new one upward.
+const STAGGER_RADIUS_SQUARED := 40.0 * 40.0
+
+
+# Tick 208: count live DamageNumber children near pos. O(N) but N is tiny (4-8 max typically) and runs once per spawn.
+func _count_recent_popups_near(pos: Vector2) -> int:
+	var count: int = 0
+	for child in _scene.get_children():
+		if child is DamageNumber and is_instance_valid(child):
+			if child.position.distance_squared_to(pos) < STAGGER_RADIUS_SQUARED:
+				count += 1
+	return count
 
 
 func show_victory_results() -> void:
@@ -77,36 +143,41 @@ func show_victory_results() -> void:
 	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_scene.add_child(overlay)
 
-	# Semi-transparent backdrop
+	# Light backdrop only — the old 0.7 full-screen dim buried the party's
+	# victory animations (struktured playtest 2026-07-11); they must stay lit.
 	var backdrop = ColorRect.new()
 	backdrop.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	backdrop.color = Color(0.0, 0.0, 0.05, 0.7)
+	backdrop.color = Color(0.0, 0.0, 0.05, 0.22)
 	backdrop.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	overlay.add_child(backdrop)
 
-	# Results panel (centered, fixed size)
+	# Results panel, LEFT-anchored over the vacated enemy side — centered it
+	# overlapped the party sprites mid-victory-animation.
 	var panel = PanelContainer.new()
-	panel.set_anchors_preset(Control.PRESET_CENTER)
+	panel.set_anchors_preset(Control.PRESET_CENTER_LEFT)
 	var panel_width = 400
 	# Each character: name row (26) + EXP bar row (20) + spacing, level-up adds 20 more
 	var char_height_total = 0
 	for cr in char_results:
 		char_height_total += 52  # name row + exp bar
 		if cr.get("leveled_up", false):
-			char_height_total += 22
+			char_height_total += 20  # single compact level-up line
 	var gold_height = 32 if total_gold > 0 else 0
 	var items_height = (item_drops.size() * 22 + 8) if item_drops.size() > 0 else 0
 	var injuries_height = (injuries.size() * 22 + 8) if injuries.size() > 0 else 0
 	var panel_height = 60 + char_height_total + gold_height + items_height + injuries_height + (bonuses.size() * 28 if bonuses.size() > 0 else 0) + 40
-	panel.offset_left = -panel_width / 2
-	panel.offset_right = panel_width / 2
-	panel.offset_top = -panel_height / 2
-	panel.offset_bottom = panel_height / 2
+	panel_height = mini(panel_height, 680)
+	# x 200..600: clear of the battle log (x<180) AND the party victory sprites (x>800) per struktured's 2026-07-11 cap.
+	panel.offset_left = 200
+	panel.offset_right = 200 + panel_width
+	# Raised 50px so the panel bottom clears the bottom status/log bar (struktured 2026-07-12).
+	panel.offset_top = -panel_height / 2 - 50
+	panel.offset_bottom = panel_height / 2 - 50
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	# Dark panel style
 	var style = StyleBoxFlat.new()
-	style.bg_color = Color(0.08, 0.06, 0.15, 0.95)
+	style.bg_color = Color(0.08, 0.06, 0.15, 0.90)
 	style.border_color = Color(0.6, 0.5, 0.2)
 	style.border_width_top = 2
 	style.border_width_bottom = 2
@@ -133,7 +204,7 @@ func show_victory_results() -> void:
 	var header = Label.new()
 	header.text = "VICTORY"
 	header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	header.add_theme_font_size_override("font_size", 24)
+	header.add_theme_font_size_override("font_size", TextScale.scaled(24))
 	header.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
 	header.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(header)
@@ -145,8 +216,10 @@ func show_victory_results() -> void:
 	vbox.add_child(sep)
 
 	# Animation tween for staggered reveals (parallel so delays are absolute from start)
-	var anim_tween = _scene.create_tween()
+	var anim_tween = vbox.create_tween()
 	anim_tween.set_parallel(true)
+	# Every real tweener below is conditional — a 0-exp-bar/0-gold/no-item victory (solo spotlight) left it empty, erroring "started with no Tweeners".
+	anim_tween.tween_interval(0.01)
 	var bar_fill_delay = 0.5  # Delay before bars start filling (after panel slides in)
 
 	# Per-character results with EXP bars
@@ -160,7 +233,7 @@ func show_victory_results() -> void:
 		var name_label = Label.new()
 		name_label.text = cr["name"]
 		name_label.custom_minimum_size.x = 90
-		name_label.add_theme_font_size_override("font_size", 15)
+		name_label.add_theme_font_size_override("font_size", TextScale.scaled(15))
 		var name_color = Color(0.5, 0.5, 0.5) if not cr["is_alive"] else Color(1.0, 1.0, 1.0)
 		name_label.add_theme_color_override("font_color", name_color)
 		name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -173,14 +246,14 @@ func show_victory_results() -> void:
 		else:
 			exp_label.text = "KO"
 		exp_label.custom_minimum_size.x = 90
-		exp_label.add_theme_font_size_override("font_size", 15)
+		exp_label.add_theme_font_size_override("font_size", TextScale.scaled(15))
 		exp_label.add_theme_color_override("font_color", Color(0.5, 1.0, 0.5) if cr["is_alive"] else Color(0.8, 0.3, 0.3))
 		exp_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.add_child(exp_label)
 
 		var job_label = Label.new()
 		job_label.text = "%s Lv.%d" % [cr["job_name"], cr["job_level"]]
-		job_label.add_theme_font_size_override("font_size", 13)
+		job_label.add_theme_font_size_override("font_size", TextScale.scaled(13))
 		job_label.add_theme_color_override("font_color", Color(0.7, 0.7, 0.9))
 		job_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		row.add_child(job_label)
@@ -211,7 +284,7 @@ func show_victory_results() -> void:
 
 			# EXP fraction label (right-aligned after bar)
 			var exp_frac = Label.new()
-			exp_frac.add_theme_font_size_override("font_size", 10)
+			exp_frac.add_theme_font_size_override("font_size", TextScale.scaled(10))
 			exp_frac.add_theme_color_override("font_color", Color(0.6, 0.6, 0.7))
 			exp_frac.position = Vector2(314, -2)
 			exp_frac.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -272,19 +345,35 @@ func show_victory_results() -> void:
 
 		# Level up indicator (revealed with flash)
 		if cr.get("leveled_up", false):
+			# One compact line — the old 3-line block (LEVEL UP! / gains / learned) made 5 simultaneous level-ups ~700px tall and clipped off-screen (struktured cap 2026-07-11).
 			var lvl_label = Label.new()
-			lvl_label.text = "    LEVEL UP!"
-			lvl_label.add_theme_font_size_override("font_size", 14)
+			var lvl_text := "    LEVEL UP!"
+			var gains: Dictionary = cr.get("stat_gains", {})
+			var parts: Array = []
+			for stat in ["HP", "MP", "ATK", "DEF", "MAG", "SPD"]:
+				if gains.has(stat) and int(gains[stat]) != 0:
+					parts.append("%s +%d" % [stat, int(gains[stat])])
+			if not parts.is_empty():
+				lvl_text += "   " + "  ".join(parts)
+			var learned: Array = cr.get("learned_abilities", [])
+			if not learned.is_empty():
+				var learned_names: PackedStringArray = []
+				for aid in learned:
+					var ab: Dictionary = JobSystem.get_ability(str(aid)) if JobSystem else {}
+					learned_names.append(str(ab.get("name", str(aid).capitalize())))
+				lvl_text += "   ✦ %s" % ", ".join(learned_names)
+			lvl_label.text = lvl_text
+			lvl_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 			lvl_label.add_theme_color_override("font_color", Color(1.0, 1.0, 0.3))
 			lvl_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			lvl_label.modulate.a = 0.0
+			lvl_label.clip_text = true
 			vbox.add_child(lvl_label)
 
 			var lvl_delay = bar_fill_delay + char_idx * 0.3 + 0.5
 			anim_tween.tween_property(lvl_label, "modulate:a", 1.0, 0.2).set_delay(lvl_delay)
 			anim_tween.tween_callback(func(): SoundManager.play_music("stinger_level_up")).set_delay(lvl_delay)
 			anim_tween.tween_callback(func(): SoundManager.play_battle("level_up")).set_delay(lvl_delay)
-			# Pulse effect
 			anim_tween.tween_property(lvl_label, "scale", Vector2(1.15, 1.15), 0.1).set_delay(lvl_delay)
 			anim_tween.tween_property(lvl_label, "scale", Vector2(1.0, 1.0), 0.15).set_delay(lvl_delay + 0.1)
 
@@ -300,7 +389,7 @@ func show_victory_results() -> void:
 		var gold_label = Label.new()
 		gold_label.text = "0 G"
 		gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		gold_label.add_theme_font_size_override("font_size", 18)
+		gold_label.add_theme_font_size_override("font_size", TextScale.scaled(18))
 		gold_label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
 		gold_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		vbox.add_child(gold_label)
@@ -329,7 +418,7 @@ func show_victory_results() -> void:
 			var item_label = Label.new()
 			var qty_text = " x%d" % drop["qty"] if drop["qty"] > 1 else ""
 			item_label.text = "  + %s%s" % [drop["name"], qty_text]
-			item_label.add_theme_font_size_override("font_size", 13)
+			item_label.add_theme_font_size_override("font_size", TextScale.scaled(13))
 			item_label.add_theme_color_override("font_color", Color(0.6, 0.9, 1.0))
 			item_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			item_label.modulate.a = 0.0
@@ -356,7 +445,7 @@ func show_victory_results() -> void:
 			inj_label.text = "  ⚠ %s: %s (-%d %s)" % [
 				inj["name"], injury_data.get("description", "Injury"),
 				injury_data.get("penalty", 0), injury_data.get("stat", "").capitalize()]
-			inj_label.add_theme_font_size_override("font_size", 12)
+			inj_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 			inj_label.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
 			inj_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			inj_label.modulate.a = 0.0
@@ -374,7 +463,7 @@ func show_victory_results() -> void:
 
 		for bonus in bonuses:
 			var bonus_row = Label.new()
-			bonus_row.add_theme_font_size_override("font_size", 14)
+			bonus_row.add_theme_font_size_override("font_size", TextScale.scaled(14))
 			bonus_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 			if bonus["type"] == "one_shot":
@@ -386,11 +475,11 @@ func show_victory_results() -> void:
 
 			vbox.add_child(bonus_row)
 
-	# "Press ENTER" prompt
+	# advance prompt (Z / A / Click)
 	var prompt = Label.new()
-	prompt.text = "Press ENTER to continue"
+	prompt.text = "Z / A / Click to continue"
 	prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	prompt.add_theme_font_size_override("font_size", 12)
+	prompt.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	prompt.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
 	prompt.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(prompt)
@@ -399,14 +488,14 @@ func show_victory_results() -> void:
 	overlay.modulate.a = 0.0
 	panel.offset_top += 30
 	panel.offset_bottom += 30
-	var tween = _scene.create_tween()
+	var tween = panel.create_tween()
 	tween.set_parallel(true)
 	tween.tween_property(overlay, "modulate:a", 1.0, 0.4)
 	tween.tween_property(panel, "offset_top", panel.offset_top - 30, 0.4).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 	tween.tween_property(panel, "offset_bottom", panel.offset_bottom - 30, 0.4).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
 	# Blink the prompt text
-	var blink_tween = _scene.create_tween()
+	var blink_tween = prompt.create_tween()
 	blink_tween.set_loops()
 	blink_tween.tween_property(prompt, "modulate:a", 0.3, 0.8)
 	blink_tween.tween_property(prompt, "modulate:a", 1.0, 0.8)

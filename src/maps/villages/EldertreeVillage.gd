@@ -125,6 +125,17 @@ func _setup_buildings() -> void:
 	training.position = Vector2(19 * TILE_SIZE, 3 * TILE_SIZE)
 	buildings.add_child(training)
 
+	# === HOLLOW TREE DOOR ===
+	# One of the 'T' tiles (row 5 col 11) hides Greenleaf's sanctum.
+	# Player walks up to it and gets the 'Enter The Hollow' prompt.
+	# Spawn-back point is just south of the tree on walkable floor.
+	spawn_points["hollow_exit"] = Vector2(11 * TILE_SIZE, 6 * TILE_SIZE)
+	_add_interior_door("HollowTreeDoor", "eldertree_hollow", "Enter The Hollow", Vector2(11 * TILE_SIZE + TILE_SIZE / 2, 5 * TILE_SIZE + TILE_SIZE / 2))
+	# === GRAFTING HOUSE DOOR ===
+	# South face of the GGG herb garden (cols 7-9, rows 7-9) — Marrow Root's workshop grows out of it.
+	spawn_points["grafting_exit"] = Vector2(8 * TILE_SIZE, 10.5 * TILE_SIZE)
+	_add_interior_door("GraftingHouseDoor", "eldertree_grafting_house", "Enter Grafting House", Vector2(8 * TILE_SIZE, 9.5 * TILE_SIZE))
+
 
 func _setup_treasures() -> void:
 	# 3x Ether in herb garden
@@ -140,12 +151,14 @@ func _setup_treasures() -> void:
 	var chest2 = TreasureChestScript.new()
 	chest2.chest_id = "eldertree_chest_2"
 	chest2.contents_type = "equipment"
-	chest2.contents_id = "forest_amulet"
+	chest2.contents_id = "elven_cloak"
 	chest2.position = Vector2(22 * TILE_SIZE, 2 * TILE_SIZE)
 	treasures.add_child(chest2)
 
 
 func _setup_npcs() -> void:
+	_place_masterite_tempo()
+
 	# Tutorial Fairy Pip (unwanted help)
 	var pip = _create_npc("Tutorial Fairy Pip", "villager", Vector2(12 * TILE_SIZE, 5 * TILE_SIZE), [
 		"HEY! LISTEN!",
@@ -204,3 +217,19 @@ func _setup_npcs() -> void:
 		"...I should probably stop eating them."
 	])
 	npcs.add_child(spore)
+
+
+## Tempo of the Hunt — L7 masterite ranging Eldertree's forest edge after
+## the village's own rangers were hunted. Placed in the mid-village grass
+## clearing so the party walks into the encounter while exploring the woods.
+## Doc: docs/design/w1-progression-expansion.md.
+func _place_masterite_tempo() -> void:
+	var MasteriteScript = load("res://src/exploration/MasteriteEncounter.gd")
+	if MasteriteScript == null:
+		return
+	var tempo = MasteriteScript.new()
+	tempo.archetype = "tempo"
+	tempo.monster_id = "masterite_tempo_medieval"
+	tempo.display_name = "Tempo of the Hunt"
+	tempo.position = Vector2(12 * TILE_SIZE, 12 * TILE_SIZE)
+	npcs.add_child(tempo)

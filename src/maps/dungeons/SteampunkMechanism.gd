@@ -11,6 +11,16 @@ func _init() -> void:
 	cave_id = "steampunk_mechanism"
 	boss_id = "meta_knight"
 	boss_flag_key = "steampunk_mechanism_cleared"
+	boss_cutscene_id = "world3_tempo_intro"
+	# (Tick 105: defeat_cutscene removed — see DragonCave for rationale.
+	# The W3 tempo defeat plays via the GameLoop gate on
+	# cutscene_flag_tempo_steampunk_defeated in steampunk_mechanism.)
+	# Bridge to game_constants — GameLoop:1067 gates world3_chapter4 on
+	# `cutscene_flag_tempo_steampunk_defeated`. Pre-tick-96 the gate
+	# was checking `warden_industrial_defeated` (a W4 flag), so W3
+	# chapter4 only triggered AFTER the player beat W4's AssemblyCore
+	# boss — skipping the W3 narrative closer entirely.
+	defeat_cutscene_flags = ["cutscene_flag_tempo_steampunk_defeated"]
 	total_floors = 3
 	overworld_exit_spawn = "plaza"
 	overworld_exit_map = "steampunk_overworld"
@@ -106,3 +116,7 @@ func _get_boss_intro_dialogue() -> Array:
 		"Meta Knight: *taps the pocketwatch — it's a frame counter*",
 		"Meta Knight: 'I AM the dropped frame. Pleasure to finally fight you.'",
 	]
+
+
+func _get_music_area_id() -> String:
+	return "steampunk_dungeon"

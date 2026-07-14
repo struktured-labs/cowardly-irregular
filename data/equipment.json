@@ -367,6 +367,26 @@
 				"speed": 2
 			},
 			"flavor": "Eighty-eight keys, one curved edge. Hums when carried, sings when swung, screams when it lands. Refuses to be tuned."
+		},
+		"returned_sword": {
+			"id": "returned_sword",
+			"name": "The Returned Sword",
+			"description": "A blade that has been sold seventeen times and returned seventeen times. It remembers every hand and every fight. Familiar Weight: +10% damage against any enemy the party has seen before.",
+			"cost": 0,
+			"weapon_type": "sword",
+			"visual": {
+				"blade_color": [0.55, 0.58, 0.52],
+				"blade_light": [0.85, 0.86, 0.78],
+				"blade_dark": [0.28, 0.32, 0.28]
+			},
+			"stat_mods": {
+				"attack": 14
+			},
+			"special_effects": {
+				"familiar_weight_bonus": 0.10
+			},
+			"familiar_weight_static_seed": ["slime", "bat", "goblin", "wolf", "spider", "cave_skeleton"],
+			"flavor": "The inscription on the hilt reads: 'Return me when you're done. I'll know where I belong.' Owners exploit-minded enough to notice claim Familiar Weight sometimes triggers on enemies the party has never fought. The sword remembers enemies before you do."
 		}
 	},
 	"armors": {

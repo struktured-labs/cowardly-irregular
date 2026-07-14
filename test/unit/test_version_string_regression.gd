@@ -22,8 +22,15 @@ func _read(path: String) -> String:
 func test_version_display_prefixes_semver_with_v() -> void:
 	var v = load(VERSION_PATH)
 	assert_not_null(v, "Version.gd must load")
-	assert_eq(v.display(), "v" + v.semver(),
-		"Version.display() must prepend 'v' to Version.semver()")
+	# 2026-07-02: display() may append " (githash)" in dev runs so
+	# playtest screenshots self-document the build — the pin is now
+	# prefix + optional dev-marker shape (exact values in
+	# test_version_display_regression).
+	assert_true(v.display().begins_with("v" + v.semver()),
+		"Version.display() must start with 'v' + Version.semver()")
+	var suffix: String = v.display().trim_prefix("v" + v.semver())
+	assert_true(suffix == "" or (suffix.begins_with(" (") and suffix.ends_with(")")),
+		"display() may only append the ' (githash)' dev marker, got: '%s'" % suffix)
 	assert_false(v.semver().begins_with("v"),
 		"Version.semver() must NOT include the 'v' prefix — save tooling parses this as raw semver")
 

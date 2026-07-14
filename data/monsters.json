@@ -1635,6 +1635,7 @@
     "id": "fire_dragon",
     "name": "Pyrroth, the Ember Wyrm",
     "description": "An ancient fire dragon whose scales radiate unbearable heat. The cave walls glow red in its presence.",
+    "boss_llm_persona_id": "pyrroth",
     "level": 14,
     "boss": true,
     "stats": {
@@ -1711,6 +1712,7 @@
     "id": "ice_dragon",
     "name": "Glacius, the Frozen Sovereign",
     "description": "A majestic ice dragon entombed in permafrost for centuries. Its breath freezes time itself.",
+    "boss_llm_persona_id": "glacius",
     "level": 15,
     "boss": true,
     "stats": {
@@ -1789,6 +1791,7 @@
     "id": "lightning_dragon",
     "name": "Voltharion, the Storm's Edge",
     "description": "A crackling dragon made of pure electrical fury. It speaks faster than you can think.",
+    "boss_llm_persona_id": "voltharion",
     "level": 16,
     "boss": true,
     "stats": {
@@ -1868,6 +1871,7 @@
     "id": "shadow_dragon",
     "name": "Umbraxis, the Void Render",
     "description": "A dragon of living shadow that questions its own existence between attacks. Dangerously philosophical.",
+    "boss_llm_persona_id": "umbraxis",
     "level": 18,
     "boss": true,
     "stats": {
@@ -1917,7 +1921,7 @@
     },
     "dialogue": {
       "intro": [
-        "*The cavern has no light. Not darkness \u2014 an absence of light*",
+        "*The cavern has no light. Not darkness — an absence of light*",
         "*Something vast shifts in the void*",
         "Umbraxis: ...Do you ever wonder what we are?",
         "Hero: A dragon?",
@@ -2212,7 +2216,7 @@
   "brass_golem": {
     "id": "brass_golem",
     "name": "Brass Golem",
-    "description": "A hulking automaton forged from salvaged boiler plate. Extremely durable but slow \u2014 its coal furnace heart needs time to build pressure between swings.",
+    "description": "A hulking automaton forged from salvaged boiler plate. Extremely durable but slow — its coal furnace heart needs time to build pressure between swings.",
     "level": 6,
     "stats": {
       "max_hp": 240,
@@ -2679,7 +2683,7 @@
   "data_wraith": {
     "id": "data_wraith",
     "name": "Data Wraith",
-    "description": "A ghost in the machine \u2014 fragmented code that achieved consciousness and chose violence. High magic, devastating attacks, but held together by barely a thread.",
+    "description": "A ghost in the machine — fragmented code that achieved consciousness and chose violence. High magic, devastating attacks, but held together by barely a thread.",
     "level": 14,
     "stats": {
       "max_hp": 200,
@@ -2726,7 +2730,7 @@
   "recursive_loop": {
     "id": "recursive_loop",
     "name": "Recursive Loop",
-    "description": "An infinite loop made manifest \u2014 a spiraling entity that calls itself endlessly. Medium stats across the board, but its 'stack overflow' self-destruct deals massive damage to everything.",
+    "description": "An infinite loop made manifest — a spiraling entity that calls itself endlessly. Medium stats across the board, but its 'stack overflow' self-destruct deals massive damage to everything.",
     "level": 12,
     "stats": {
       "max_hp": 320,
@@ -4301,7 +4305,7 @@
   "chancellor_mordaine": {
     "id": "chancellor_mordaine",
     "name": "Chancellor Mordaine",
-    "description": "Sorceress-usurper of Castle Harmonia. The architect of World 1 \u2014 and the first mask of the Calibrant. Cold, deliberate, and somehow already knows your build.",
+    "description": "Sorceress-usurper of Castle Harmonia. The architect of World 1 — and the first mask of the Calibrant. Cold, deliberate, and somehow already knows your build.",
     "level": 20,
     "boss": true,
     "stats": {
@@ -4346,7 +4350,7 @@
     "meta_enemy": true,
     "one_shot": {
       "hp_threshold": 1500,
-      "setup_hint": "She's calibrated for the average party \u2014 bring something she didn't expect. Holy magic, stacked Bard buffs, and an Advance chain are the canonical answers.",
+      "setup_hint": "She's calibrated for the average party — bring something she didn't expect. Holy magic, stacked Bard buffs, and an Advance chain are the canonical answers.",
       "reward_item": "calibrant_token"
     },
     "dialogue": {
@@ -4372,5 +4376,390 @@
       "all"
     ],
     "counter_abilities": []
+  },
+  "fighter_skeleton_knight": {
+    "id": "fighter_skeleton_knight",
+    "name": "Skeleton Knight",
+    "description": "A chivalric plate-armored skeleton who insists on an honorable duel. Alternates advance and defend in a telegraphed tempo. The Fighter's stand-in-front resolve is the answer.",
+    "level": 4,
+    "boss": true,
+    "spotlight_duel": true,
+    "spotlight_pc": "fighter",
+    "signature_ability": "power_strike",
+    "signature_sfx": "spotlight_fighter_signature",
+    "victory_sfx": "spotlight_fighter_victory",
+    "stats": {
+      "max_hp": 220,
+      "max_mp": 40,
+      "attack": 42,
+      "defense": 22,
+      "magic": 10,
+      "speed": 12
+    },
+    "abilities": [
+      "power_strike",
+      "masterite_iron_guard",
+      "bone_throw",
+      "shield_bash"
+    ],
+    "exp_reward": 180,
+    "gold_reward": 120,
+    "drop_table": [
+      {
+        "item": "hi_potion",
+        "chance": 1.0
+      }
+    ],
+    "weaknesses": [
+      "holy"
+    ],
+    "resistances": [
+      "physical"
+    ],
+    "one_shot": {
+      "hp_threshold": 220,
+      "setup_hint": "Defend when he raises his shield, Advance when he telegraphs the swing. His tempo is honor-bound and predictable.",
+      "reward_item": "boss_trophy"
+    },
+    "dialogue": {
+      "intro": [
+        "*A skeleton in polished plate steps forward, bows once, and raises his sword.*",
+        "Skeleton Knight: I offer you a proper duel. Blade to blade.",
+        "Skeleton Knight: I shall not strike while you defend. Nor shall you strike while I raise my shield.",
+        "Skeleton Knight: This is how it is done."
+      ],
+      "low_hp": [
+        "Skeleton Knight: Ah. You have found my tempo.",
+        "*He nods, as if pleased to be beaten well.*"
+      ],
+      "defeat": [
+        "Skeleton Knight: A worthy blow. I concede.",
+        "*He kneels, then crumbles into a pile of bones and one dented shield.*"
+      ]
+    },
+    "learns_from": [],
+    "counter_abilities": [
+      "masterite_iron_guard"
+    ]
+  },
+  "cleric_survive_target": {
+    "id": "cleric_survive_target",
+    "name": "The Grinding Wound",
+    "description": "A slow, relentless miasma that presses on the wounded villager. It cannot be defeated — only outlasted. The Cleric's grace-under-pressure is the answer. Faith as endurance, not violence.",
+    "level": 2,
+    "boss": true,
+    "spotlight_duel": true,
+    "spotlight_pc": "cleric",
+    "signature_ability": "filth_spray",
+    "signature_sfx": "spotlight_cleric_signature",
+    "victory_sfx": "spotlight_cleric_victory",
+    "win_condition": {
+      "type": "survive_turns",
+      "value": 8
+    },
+    "stats": {
+      "max_hp": 999,
+      "max_mp": 60,
+      "attack": 22,
+      "defense": 40,
+      "magic": 18,
+      "speed": 8
+    },
+    "abilities": [
+      "filth_spray",
+      "desperate_bite",
+      "masterite_endurance_test"
+    ],
+    "exp_reward": 160,
+    "gold_reward": 100,
+    "drop_table": [
+      {
+        "item": "hi_potion",
+        "chance": 1.0
+      }
+    ],
+    "weaknesses": [
+      "holy"
+    ],
+    "resistances": [
+      "physical",
+      "fire",
+      "ice",
+      "lightning"
+    ],
+    "one_shot": {
+      "hp_threshold": 999,
+      "setup_hint": "Do not attack. Heal, Pray, and endure. The villager must live to the eighth round.",
+      "reward_item": "boss_trophy"
+    },
+    "dialogue": {
+      "intro": [
+        "*The wounded villager gasps. His breath is failing.*",
+        "*The Cleric kneels. There is nothing here to fight — only a wound that will not stop bleeding.*",
+        "Villager: Please... just... stay with me...",
+        "*The Cleric's hands hover a half-second above his chest. Then she begins the prayer.*"
+      ],
+      "low_hp": [
+        "*The villager's breath steadies. Just a little.*",
+        "*But the pressure has not left.*"
+      ],
+      "defeat": [
+        "*The villager sleeps. The pressure lifts.*",
+        "Villager: You... stayed with me.",
+        "*The Cleric nods. She does not say she almost didn't.*"
+      ]
+    },
+    "learns_from": [],
+    "counter_abilities": []
+  },
+  "rogue_lockward": {
+    "id": "rogue_lockward",
+    "name": "The Lockward",
+    "description": "A treasure-guardian construct that ambushes any who reach for the vault. Every round it briefly exposes its flank — the Rogue's Steal, Backstab, and speed are the answer.",
+    "level": 5,
+    "boss": true,
+    "spotlight_duel": true,
+    "spotlight_pc": "rogue",
+    "signature_ability": "masterite_counter_stance",
+    "signature_sfx": "spotlight_rogue_signature",
+    "victory_sfx": "spotlight_rogue_victory",
+    "steal_response": {
+      "type": "vulnerability",
+      "modifier": 0.5,
+      "message": "You lifted the Warden's Key from its plate — the guard falls slack."
+    },
+    "stats": {
+      "max_hp": 200,
+      "max_mp": 30,
+      "attack": 44,
+      "defense": 30,
+      "magic": 8,
+      "speed": 20
+    },
+    "abilities": [
+      "masterite_counter_stance",
+      "masterite_precise_strike",
+      "masterite_measured_blow",
+      "power_strike"
+    ],
+    "exp_reward": 220,
+    "gold_reward": 160,
+    "drop_table": [
+      {
+        "item": "hi_potion",
+        "chance": 1.0
+      }
+    ],
+    "weaknesses": [],
+    "resistances": [
+      "physical"
+    ],
+    "one_shot": {
+      "hp_threshold": 260,
+      "setup_hint": "Wait for the flank to expose. Steal breaks its guard; Backstab lands the answer. Speed matters more than power.",
+      "reward_item": "boss_trophy"
+    },
+    "dialogue": {
+      "intro": [
+        "*The vault door hums. From its frame steps a ward-construct of interlocking bronze.*",
+        "Lockward: THIEF DETECTED.",
+        "Lockward: PROTOCOL: DEFEND. COUNTER. PROTOCOL: REPEAT.",
+        "*Its stance is perfect — except for one moment each cycle when the counter resets.*"
+      ],
+      "low_hp": [
+        "Lockward: PROTOCOL COMPROMISED.",
+        "*Its rotation stutters. The flank exposure lengthens.*"
+      ],
+      "defeat": [
+        "Lockward: ...vault open...",
+        "*It falls apart into gears and one folded slip of paper.*",
+        "*The others crowd around the visible loot. The Rogue pockets the paper.*"
+      ]
+    },
+    "learns_from": [],
+    "counter_abilities": [
+      "masterite_counter_stance"
+    ]
+  },
+  "mage_prismatic_construct": {
+    "id": "mage_prismatic_construct",
+    "name": "Prismatic Construct",
+    "description": "A crystal automaton whose elemental core rotates each round — fire, then ice, then lightning. The Mage must READ which face is showing and cast the opposing element. Logic as correctable reading.",
+    "level": 5,
+    "boss": true,
+    "spotlight_duel": true,
+    "spotlight_pc": "mage",
+    "signature_ability": "fire",
+    "signature_sfx": "spotlight_mage_signature",
+    "victory_sfx": "spotlight_mage_victory",
+    "weakness_cycle": [
+      "fire",
+      "ice",
+      "lightning"
+    ],
+    "weakness_cycle_turns": 1,
+    "stats": {
+      "max_hp": 280,
+      "max_mp": 120,
+      "attack": 22,
+      "defense": 28,
+      "magic": 34,
+      "speed": 14
+    },
+    "abilities": [
+      "fire",
+      "blizzard",
+      "thunder",
+      "masterite_iron_guard"
+    ],
+    "exp_reward": 240,
+    "gold_reward": 180,
+    "drop_table": [
+      {
+        "item": "hi_potion",
+        "chance": 1.0
+      },
+      {
+        "item": "ether",
+        "chance": 0.5
+      }
+    ],
+    "weaknesses": [
+      "fire",
+      "ice",
+      "lightning"
+    ],
+    "resistances": [
+      "physical"
+    ],
+    "one_shot": {
+      "hp_threshold": 280,
+      "setup_hint": "Its face rotates each round. Read the color, cast the opposing element. Wrong element does nothing. Right element ends it.",
+      "reward_item": "boss_trophy"
+    },
+    "dialogue": {
+      "intro": [
+        "*A crystal automaton descends from the cave ceiling. Its core flickers red, then blue, then gold.*",
+        "Prismatic Construct: PRISM ACTIVE. CYCLE INITIATED.",
+        "Prismatic Construct: RED FACE — WEAKNESS: FIRE.",
+        "Prismatic Construct: OBSERVE. ADAPT."
+      ],
+      "low_hp": [
+        "Prismatic Construct: CORE FRACTURED. CYCLE UNSTABLE.",
+        "*The colors shift faster now.*"
+      ],
+      "defeat": [
+        "Prismatic Construct: THEORY... REVISED.",
+        "*The crystal shatters into a small pile of dust and one intact prism.*",
+        "*The Mage retrieves it. He was wrong about the second face. Then he was right about the other thing.*"
+      ]
+    },
+    "learns_from": [],
+    "counter_abilities": []
+  },
+  "bard_hostile_courtier": {
+    "id": "bard_hostile_courtier",
+    "name": "The Sneering Courtier",
+    "description": "A haughty capital-city functionary who refuses to yield. He cannot be killed — only talked down. The Bard's listen-first-then-speak-once is the answer. Voice as the naming of what is true.",
+    "level": 6,
+    "boss": true,
+    "spotlight_duel": true,
+    "spotlight_pc": "bard",
+    "signature_ability": "lullaby",
+    "signature_sfx": "spotlight_bard_signature",
+    "victory_sfx": "spotlight_bard_victory",
+    "win_condition": {
+      "type": "status_threshold",
+      "status": "swayed",
+      "value": 3
+    },
+    "stats": {
+      "max_hp": 999,
+      "max_mp": 50,
+      "attack": 26,
+      "defense": 44,
+      "magic": 20,
+      "speed": 14
+    },
+    "abilities": [
+      "provoke",
+      "masterite_iron_guard",
+      "power_strike"
+    ],
+    "exp_reward": 200,
+    "gold_reward": 140,
+    "drop_table": [
+      {
+        "item": "hi_potion",
+        "chance": 1.0
+      }
+    ],
+    "weaknesses": [
+      "holy"
+    ],
+    "resistances": [
+      "physical",
+      "fire",
+      "ice",
+      "lightning"
+    ],
+    "one_shot": {
+      "hp_threshold": 999,
+      "setup_hint": "Blades will do nothing. Sing to him. Discord loosens his composure; Lullaby lands the truth. Three sways and he yields.",
+      "reward_item": "boss_trophy"
+    },
+    "dialogue": {
+      "intro": [
+        "*A tall figure in embroidered velvet turns his back on the party as they enter.*",
+        "Courtier: I do not treat with mercenaries. My hall is not a market.",
+        "*The Fighter reaches for his sword. The Bard puts a hand on his wrist.*",
+        "Bard: Let me try something.",
+        "*She listens to the courtier for a long moment before she speaks.*"
+      ],
+      "low_hp": [
+        "Courtier: You... know that word?",
+        "*His posture shifts, just a fraction.*"
+      ],
+      "defeat": [
+        "Courtier: ...I had not thought anyone remembered that name.",
+        "*He bows once, slowly, and steps aside.*",
+        "*The Bard writes something in her journal. She does not read it aloud.*"
+      ]
+    },
+    "learns_from": [],
+    "counter_abilities": []
+  },
+  "rogue_mailbox": {
+    "id": "rogue_mailbox",
+    "name": "Rogue Mailbox",
+    "description": "A regulation blue mailbox that has stopped accepting the concept of routes. It keeps what it's given. The mail carrier wants her package back.",
+    "level": 5,
+    "stats": {
+      "max_hp": 130,
+      "max_mp": 20,
+      "attack": 24,
+      "defense": 18,
+      "magic": 10,
+      "speed": 8
+    },
+    "abilities": [
+      "tackle",
+      "slam",
+      "thrown_newspaper"
+    ],
+    "exp_reward": 48,
+    "gold_reward": 25,
+    "drop_table": [
+      {
+        "item": "newspaper",
+        "chance": 0.4
+      }
+    ],
+    "weaknesses": [
+      "lightning"
+    ],
+    "resistances": [
+      "ice"
+    ]
   }
 }

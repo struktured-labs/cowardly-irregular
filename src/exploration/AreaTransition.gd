@@ -57,6 +57,11 @@ var _player_in_zone: bool = false
 var _indicator_label: Label
 var _arrow_blink: float = 0.0
 var _redraw_timer: float = 0.0
+## True after _trigger_transition fires once. Prevents double-emit of
+## transition_triggered if the player mashes ui_accept (no echo guard),
+## the auto-enter path AND a manual interact() call collide, or any
+## other re-entry that races the scene-change pipeline.
+var _triggered: bool = false
 
 
 func _ready() -> void:
@@ -204,8 +209,18 @@ func _is_player(body: Node2D) -> bool:
 
 
 func _input(event: InputEvent) -> void:
+	# Zone-listener lock gate: this handler grabs ui_accept directly — mid-cutscene presses opened phantom dialogue over the scene (struktured 2026-07-11, SavePoint-class leak).
+	var ilm_gate = get_tree().root.get_node_or_null("InputLockManager") if is_inside_tree() else null
+	if ilm_gate and ilm_gate.is_locked():
+		return
+	# 2026-07-12: also gate on tutorial hints — a "world_transition" hint that fires as the player steps into a portal would fire the transition on the dismiss press.
+	if TutorialHint.is_any_active():
+		return
 	if require_interaction and _player_in_zone:
-		if event.is_action_pressed("ui_accept"):
+		# `not event.is_echo()` filters key-repeat — holding ui_accept used
+		# to fire _trigger_transition once per repeat tick before the scene
+		# change pipeline processed the first emit, racing the loader.
+		if event.is_action_pressed("ui_accept") and not event.is_echo():
 			var player = _get_player_in_zone()
 			if player:
 				_trigger_transition(player)
@@ -226,6 +241,23 @@ func _get_player_in_zone() -> Node2D:
 
 
 func _trigger_transition(_player: Node2D) -> void:
+	# Double-fire guard — see _triggered docstring. Without this, holding
+	# ui_accept on auto-enter zones, or any race between the auto-enter
+	# path and a manual interact() call, would emit transition_triggered
+	# twice in quick succession. GameLoop's loader is not idempotent
+	# under that condition (it could chain into two scene loads).
+	if _triggered:
+		return
+
+	# Tick 233: validate target_map BEFORE emitting. Pre-fix an empty target_map (designer typo, forgotten override on a new transition node) cascaded through GameLoop's loader as an unknown map_id — player walked into a doorway, screen faded, then NOTHING happened (or the loader silently fell back to a default scene). Now refuses to emit and surfaces the wiring bug.
+	if target_map == "":
+		push_warning("[AreaTransition] '%s' has empty target_map — refusing to emit transition_triggered (likely an @export var unwired in the scene)" % name)
+		return
+	# target_spawn empty is non-fatal — most maps support a "default" spawn point — but still worth surfacing as a probable wiring miss.
+	if target_spawn == "":
+		push_warning("[AreaTransition] '%s' has empty target_spawn — emitting anyway, but most maps expect a non-empty spawn point" % name)
+
+	_triggered = true
 	print("[TRANSITION] Triggering: %s → %s (target_spawn: %s)" % [name, target_map, target_spawn])
 
 	# Hide indicator

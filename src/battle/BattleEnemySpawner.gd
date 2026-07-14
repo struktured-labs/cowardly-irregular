@@ -122,16 +122,19 @@ func _init(scene) -> void:
 
 func spawn_enemies() -> void:
 	"""Spawn 1-3 random enemies for the battle - sometimes mixed groups"""
-	# Clear any existing enemies
+	# Clear any existing enemies. Disconnect known signals before freeing to
+	# prevent dangling connections — must cover EVERY signal connected at
+	# spawn time (hp_changed, died, status_added, status_removed; see the
+	# four .connect() calls at the bottom of this function). Asymmetric
+	# cleanup (only the first two) leaves status listeners potentially
+	# called with a stale enemy reference if queue_free flushes mid-emit.
 	for enemy in _scene.test_enemies:
 		if is_instance_valid(enemy):
-			# Disconnect known signals before freeing to prevent dangling connections
-			if enemy.hp_changed.get_connections().size() > 0:
-				for conn in enemy.hp_changed.get_connections():
-					enemy.hp_changed.disconnect(conn.callable)
-			if enemy.died.get_connections().size() > 0:
-				for conn in enemy.died.get_connections():
-					enemy.died.disconnect(conn.callable)
+			for sig_name in ["hp_changed", "died", "status_added", "status_removed"]:
+				var sig: Signal = enemy.get(sig_name)
+				if sig.get_connections().size() > 0:
+					for conn in sig.get_connections():
+						sig.disconnect(conn.callable)
 			enemy.queue_free()
 	_scene.test_enemies.clear()
 
@@ -190,10 +193,14 @@ func spawn_enemies() -> void:
 				type_count += 1
 
 		var stats = monster_type["stats"].duplicate()
-		# Only add suffix if there are multiple of the same type
+		# Only add suffix if there are multiple of the same type. % 3 guards
+		# against an out-of-bounds read if num_enemies ever grows past 3
+		# (live cap is enemy_positions.size() == 3 today; the modulo matches
+		# spawn_from_data and spawn_encounter_enemies so all three spawn
+		# paths use the same suffix rule).
 		var same_type_total = monster_types_for_encounter.count(monster_type)
 		if same_type_total > 1:
-			stats["name"] = monster_type["name"] + " " + ["A", "B", "C"][type_count]
+			stats["name"] = monster_type["name"] + " " + ["A", "B", "C"][type_count % 3]
 		else:
 			stats["name"] = monster_type["name"]
 
@@ -216,6 +223,9 @@ func spawn_enemies() -> void:
 		enemy.died.connect(_scene._on_enemy_died.bind(i))
 		enemy.status_added.connect(_scene._on_status_added.bind(enemy))
 		enemy.status_removed.connect(_scene._on_status_removed.bind(enemy))
+		## Tick 143: status-tick damage/heal popups on enemies too.
+		enemy.status_tick_damage.connect(_scene._on_status_tick_damage.bind(enemy))
+		enemy.status_tick_heal.connect(_scene._on_status_tick_heal.bind(enemy))
 
 		_scene.test_enemies.append(enemy)
 
@@ -306,6 +316,9 @@ func spawn_from_data(enemy_data_array: Array) -> void:
 		enemy.died.connect(_scene._on_enemy_died.bind(i))
 		enemy.status_added.connect(_scene._on_status_added.bind(enemy))
 		enemy.status_removed.connect(_scene._on_status_removed.bind(enemy))
+		## Tick 143: status-tick damage/heal popups on enemies too.
+		enemy.status_tick_damage.connect(_scene._on_status_tick_damage.bind(enemy))
+		enemy.status_tick_heal.connect(_scene._on_status_tick_heal.bind(enemy))
 
 		_scene.test_enemies.append(enemy)
 
@@ -349,8 +362,12 @@ func spawn_forced_enemies() -> void:
 
 		var monster_data = monsters_data[enemy_id]
 		var enemy = Combatant.new()
+		## Tick 142: prettify enemy_id when monsters.json lacks a "name".
+		## The Combatant.name field flows into the battle log, damage
+		## popups, gloat lines, and bestiary entries — a raw snake_case
+		## leak here surfaces in dozens of player-facing places.
 		var stats = {
-			"name": monster_data.get("name", enemy_id),
+			"name": monster_data.get("name", enemy_id.replace("_", " ").capitalize()),
 			"max_hp": monster_data["stats"].get("max_hp", 100),
 			"max_mp": monster_data["stats"].get("max_mp", 0),
 			"attack": monster_data["stats"].get("attack", 10),
@@ -373,7 +390,7 @@ func spawn_forced_enemies() -> void:
 
 		# Set abilities from monster data so AI can use them
 		if monster_data.has("abilities"):
-			enemy.job = {"abilities": monster_data["abilities"], "name": monster_data.get("name", enemy_id)}
+			enemy.job = {"abilities": monster_data["abilities"], "name": monster_data.get("name", enemy_id.replace("_", " ").capitalize())}
 
 		# Store Masterite metadata for specialized AI
 		if monster_data.get("masterite", false):
@@ -381,23 +398,50 @@ func spawn_forced_enemies() -> void:
 			enemy.set_meta("masterite_type", monster_data.get("masterite_type", ""))
 			enemy.set_meta("masterite_phase", monster_data.get("masterite_phase", 1))
 
+		# Wave E — BossDialogue persona handle. Source priority:
+		#   1) GameState.pending_boss_defeat.boss_llm_persona_id (dungeon override)
+		#   2) monster_data.boss_llm_persona_id (per-monster data)
+		# Falls back to monster_type at runtime (no meta needed if persona
+		# id equals monster_type, e.g. chancellor_mordaine).
+		var persona_id: String = monster_data.get("boss_llm_persona_id", "")
+		if GameState and GameState.pending_boss_defeat is Dictionary:
+			var pbd_persona: String = str(GameState.pending_boss_defeat.get("boss_llm_persona_id", ""))
+			if pbd_persona != "":
+				persona_id = pbd_persona
+		if persona_id != "":
+			enemy.set_meta("llm_persona_id", persona_id)
+
 		# Connect signals
 		enemy.hp_changed.connect(_scene._on_enemy_hp_changed.bind(i))
 		enemy.died.connect(_scene._on_enemy_died.bind(i))
 		enemy.status_added.connect(_scene._on_status_added.bind(enemy))
 		enemy.status_removed.connect(_scene._on_status_removed.bind(enemy))
+		## Tick 143: status-tick damage/heal popups on enemies too.
+		enemy.status_tick_damage.connect(_scene._on_status_tick_damage.bind(enemy))
+		enemy.status_tick_heal.connect(_scene._on_status_tick_heal.bind(enemy))
 
 		_scene.test_enemies.append(enemy)
 		enemy_names.append(stats["name"])
 
+	# Zero valid ids must NEVER reach start_battle: an empty enemy
+	# party trips "all enemies dead" on the first victory check and the
+	# battle reports an instant WIN — a typo'd boss/duel id would set
+	# defeat flags for a fight that never happened. Mirror the
+	# encounter path's fallback so the battle is real and diagnosable.
+	if _scene.test_enemies.is_empty():
+		push_error("BattleEnemySpawner: forced_enemies %s produced ZERO spawns — falling back to random encounter" % str(_scene.forced_enemies))
+		_scene.forced_enemies.clear()
+		spawn_enemies()
+		return
+
 	# Announcement based on battle type
 	if is_boss_battle:
 		_scene.log_message("")
-		_scene.log_message("[color=red]═══════════════════════════════[/color]")
+		_scene.log_message("[color=%s]═══════════════════════════════[/color]" % AccessibilityPalette.penalty_bbcode())
 		_scene.log_message("[color=orange]   👑  BOSS BATTLE!  👑[/color]")
 		for enemy_name in enemy_names:
 			_scene.log_message("[color=yellow]   %s appeared![/color]" % enemy_name)
-		_scene.log_message("[color=red]═══════════════════════════════[/color]")
+		_scene.log_message("[color=%s]═══════════════════════════════[/color]" % AccessibilityPalette.penalty_bbcode())
 		_scene.log_message("")
 	else:
 		for enemy_name in enemy_names:
@@ -433,7 +477,7 @@ func spawn_encounter_enemies() -> void:
 		var enemy = Combatant.new()
 
 		var stats = {
-			"name": monster_data.get("name", enemy_id),
+			"name": monster_data.get("name", enemy_id.replace("_", " ").capitalize()),
 			"max_hp": monster_data["stats"].get("max_hp", 100),
 			"max_mp": monster_data["stats"].get("max_mp", 0),
 			"attack": monster_data["stats"].get("attack", 10),
@@ -462,7 +506,7 @@ func spawn_encounter_enemies() -> void:
 
 		# Set abilities from monster data so AI can use them
 		if monster_data.has("abilities"):
-			enemy.job = {"abilities": monster_data["abilities"], "name": monster_data.get("name", enemy_id)}
+			enemy.job = {"abilities": monster_data["abilities"], "name": monster_data.get("name", enemy_id.replace("_", " ").capitalize())}
 
 		# Store Masterite metadata for specialized AI
 		if monster_data.get("masterite", false):
@@ -480,11 +524,14 @@ func spawn_encounter_enemies() -> void:
 		enemy.died.connect(_scene._on_enemy_died.bind(i))
 		enemy.status_added.connect(_scene._on_status_added.bind(enemy))
 		enemy.status_removed.connect(_scene._on_status_removed.bind(enemy))
+		## Tick 143: status-tick damage/heal popups on enemies too.
+		enemy.status_tick_damage.connect(_scene._on_status_tick_damage.bind(enemy))
+		enemy.status_tick_heal.connect(_scene._on_status_tick_heal.bind(enemy))
 
 		_scene.test_enemies.append(enemy)
 
 		# Track for encounter message
-		var display_name = monster_data.get("name", enemy_id)
+		var display_name = monster_data.get("name", enemy_id.replace("_", " ").capitalize())
 		if display_name in enemy_names:
 			enemy_names[display_name] += 1
 		else:
@@ -508,18 +555,32 @@ func load_monsters_data() -> Dictionary:
 	if EncounterSystem and not EncounterSystem.monster_database.is_empty():
 		return EncounterSystem.monster_database
 	# Fallback: load from disk if autoload unavailable (e.g., tests)
+	# Tick 322: every failure mode push_warns instead of silently returning
+	# an empty dict. Pre-fix all 4 disk-load failures (file missing / open
+	# fail / parse fail / non-Dict root) just returned {}; callers fell
+	# through to "no valid IDs found" or "Failed to load monsters.json"
+	# with no insight into which step actually broke. Symptom looked like
+	# "encounter spawning is broken" but the root cause (file gone, file
+	# locked, syntax error, wrong root type) was invisible. Same silent-
+	# fallback class as ticks 303-306.
 	var file_path = "res://data/monsters.json"
 	if not FileAccess.file_exists(file_path):
+		push_warning("[BattleEnemySpawner] load_monsters_data: monsters.json not found at %s — encounter spawning will fall back to MONSTER_TYPES defaults" % file_path)
 		return {}
 	var file = FileAccess.open(file_path, FileAccess.READ)
 	if not file:
+		push_warning("[BattleEnemySpawner] load_monsters_data: monsters.json exists but FileAccess.open failed (error: %s) — file likely locked or permission-denied" % FileAccess.get_open_error())
 		return {}
 	var json_string = file.get_as_text()
 	file.close()
 	var json = JSON.new()
-	if json.parse(json_string) == OK:
-		return json.data
-	return {}
+	if json.parse(json_string) != OK:
+		push_warning("[BattleEnemySpawner] load_monsters_data: monsters.json parse error: %s — encounter spawning will fall back to MONSTER_TYPES defaults" % json.get_error_message())
+		return {}
+	if not (json.data is Dictionary):
+		push_warning("[BattleEnemySpawner] load_monsters_data: monsters.json parsed but root is not a Dictionary (got %s) — encounter spawning will fall back to MONSTER_TYPES defaults" % typeof(json.data))
+		return {}
+	return json.data
 
 
 func spawn_miniboss() -> void:
@@ -548,15 +609,18 @@ func spawn_miniboss() -> void:
 	enemy.died.connect(_scene._on_enemy_died.bind(0))
 	enemy.status_added.connect(_scene._on_status_added.bind(enemy))
 	enemy.status_removed.connect(_scene._on_status_removed.bind(enemy))
+	## Tick 143: status-tick damage/heal popups (single-boss path).
+	enemy.status_tick_damage.connect(_scene._on_status_tick_damage.bind(enemy))
+	enemy.status_tick_heal.connect(_scene._on_status_tick_heal.bind(enemy))
 
 	_scene.test_enemies.append(enemy)
 
 	# Epic announcement!
 	_scene.log_message("")
-	_scene.log_message("[color=red]═══════════════════════════════[/color]")
+	_scene.log_message("[color=%s]═══════════════════════════════[/color]" % AccessibilityPalette.penalty_bbcode())
 	_scene.log_message("[color=orange]   ⚔️  MINIBOSS BATTLE!  ⚔️[/color]")
 	_scene.log_message("[color=yellow]   %s appeared![/color]" % boss_type["name"])
-	_scene.log_message("[color=red]═══════════════════════════════[/color]")
+	_scene.log_message("[color=%s]═══════════════════════════════[/color]" % AccessibilityPalette.penalty_bbcode())
 	_scene.log_message("")
 
 	_scene._update_ui()

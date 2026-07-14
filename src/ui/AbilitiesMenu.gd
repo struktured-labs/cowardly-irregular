@@ -32,6 +32,11 @@ const DISABLED_COLOR = Color(0.4, 0.4, 0.4)
 const MAGIC_COLOR = Color(0.6, 0.4, 1.0)
 const PHYSICAL_COLOR = Color(1.0, 0.5, 0.3)
 const SUPPORT_COLOR = Color(0.4, 0.9, 0.4)
+## Tick 137: distinct color for Scriptweaver/Time Mage/Necromancer
+## meta abilities — they manipulate save/code/reality and shouldn't
+## share the physical color. Magenta sits visually between magic
+## and support.
+const META_COLOR = Color(0.95, 0.4, 0.95)
 const PASSIVE_EQUIPPED = Color(1.0, 0.8, 0.3)
 const PASSIVE_AVAILABLE = Color(0.7, 0.7, 0.8)
 const TAB_ACTIVE = Color(0.3, 0.4, 0.6)
@@ -79,12 +84,15 @@ func _sort_abilities(a: Dictionary, b: Dictionary) -> bool:
 
 
 func _get_ability_data(ability_id: String) -> Dictionary:
-	"""Synthesize basic ability data from an id.
-
-	This previously deferred to a `/root/AbilitySystem` autoload that
-	was never actually registered, so the branch was dead. If that
-	system ever ships, reintroduce it here via the autoload global
-	name rather than a has_node() probe."""
+	## Tick 132: prefer JobSystem.get_ability (data/abilities.json) over
+	## the synthesized stub. Pre-fix this menu showed every learned
+	## ability as generic "physical" type / "A combat ability" desc —
+	## type-coloring + descriptions silently wrong for all magic/support
+	## abilities. Stub remains as fallback for unknown ids.
+	if JobSystem and JobSystem.has_method("get_ability"):
+		var data: Dictionary = JobSystem.get_ability(ability_id)
+		if not data.is_empty():
+			return data
 	return {
 		"id": ability_id,
 		"name": ability_id.replace("_", " ").capitalize(),
@@ -295,9 +303,13 @@ func _create_abilities_panel(panel_size: Vector2) -> Control:
 	var item_height = 24
 	var max_visible = int((panel_size.y - 40) / item_height)
 
-	for i in range(min(_abilities_list.size(), max_visible)):
-		var ability = _abilities_list[i]
-		var row = _create_ability_row(ability, i)
+	# Handle scroll offset so the selected row stays visible
+	var scroll_offset = clampi(selected_index - max_visible + 1, 0, max(0, _abilities_list.size() - max_visible))
+
+	for i in range(min(_abilities_list.size() - scroll_offset, max_visible)):
+		var idx = i + scroll_offset
+		var ability = _abilities_list[idx]
+		var row = _create_ability_row(ability, idx)
 		row.position = Vector2(4, y_offset + i * item_height)
 		row.size = Vector2(panel_size.x - 8, item_height)
 		panel.add_child(row)
@@ -329,8 +341,11 @@ func _create_ability_row(ability: Dictionary, index: int) -> Control:
 	row.add_child(cursor)
 
 	# Ability name
+	## Tick 141: prettify the fallback id when JobSystem doesn't
+	## know the ability. Pre-fix unknown ability ids leaked as raw
+	## snake_case ("power_strike" not "Power Strike").
 	var name_label = Label.new()
-	name_label.text = data.get("name", ability["id"])
+	name_label.text = data.get("name", str(ability["id"]).replace("_", " ").capitalize())
 	name_label.position = Vector2(20, 2)
 	name_label.add_theme_font_size_override("font_size", 11)
 	name_label.add_theme_color_override("font_color", _get_ability_color(data))
@@ -354,13 +369,23 @@ func _create_ability_row(ability: Dictionary, index: int) -> Control:
 
 
 func _get_ability_color(data: Dictionary) -> Color:
-	"""Get color based on ability type"""
+	## Tick 137: previous match only covered 4 explicit types; the
+	## other 6 in abilities.json (escape, meta, mp_restore, revival,
+	## song, summon) all silently rendered as PHYSICAL_COLOR. Now
+	## every type from data/abilities.json has an explicit branch,
+	## chosen by semantic role:
+	##   - MAGIC for caster-style (magic/healing/mp_restore/revival/summon)
+	##   - SUPPORT for ally-aid (support/buff/song/escape)
+	##   - META for reality manipulation (meta — Scriptweaver/etc)
+	##   - PHYSICAL as the safe default for physical or unknown
 	var ability_type = data.get("type", "physical")
 	match ability_type:
-		"magic", "offensive_magic", "healing":
+		"magic", "offensive_magic", "healing", "mp_restore", "revival", "summon":
 			return MAGIC_COLOR
-		"support", "buff":
+		"support", "buff", "song", "escape":
 			return SUPPORT_COLOR
+		"meta":
+			return META_COLOR
 		_:
 			return PHYSICAL_COLOR
 
@@ -399,7 +424,7 @@ func _create_ability_details_panel(panel_size: Vector2) -> Control:
 
 	# Ability name
 	var name_label = Label.new()
-	name_label.text = data.get("name", ability["id"])
+	name_label.text = data.get("name", str(ability["id"]).replace("_", " ").capitalize())
 	name_label.position = Vector2(12, 28)
 	name_label.add_theme_font_size_override("font_size", 14)
 	name_label.add_theme_color_override("font_color", _get_ability_color(data))
@@ -467,9 +492,13 @@ func _create_passives_panel(panel_size: Vector2) -> Control:
 	var item_height = 28
 	var max_visible = int((panel_size.y - 40) / item_height)
 
-	for i in range(min(_passives_list.size(), max_visible)):
-		var passive = _passives_list[i]
-		var row = _create_passive_row(passive, i)
+	# Handle scroll offset so the selected row stays visible
+	var scroll_offset = clampi(selected_index - max_visible + 1, 0, max(0, _passives_list.size() - max_visible))
+
+	for i in range(min(_passives_list.size() - scroll_offset, max_visible)):
+		var idx = i + scroll_offset
+		var passive = _passives_list[idx]
+		var row = _create_passive_row(passive, idx)
 		row.position = Vector2(4, y_offset + i * item_height)
 		row.size = Vector2(panel_size.x - 8, item_height - 2)
 		panel.add_child(row)
@@ -510,7 +539,7 @@ func _create_passive_row(passive: Dictionary, index: int) -> Control:
 
 	# Passive name
 	var name_label = Label.new()
-	name_label.text = data.get("name", passive["id"])
+	name_label.text = data.get("name", str(passive["id"]).replace("_", " ").capitalize())
 	name_label.position = Vector2(44, 4)
 	name_label.add_theme_font_size_override("font_size", 11)
 	name_label.add_theme_color_override("font_color", PASSIVE_EQUIPPED if passive["equipped"] else PASSIVE_AVAILABLE)
@@ -557,7 +586,7 @@ func _create_passive_details_panel(panel_size: Vector2) -> Control:
 
 	# Passive name
 	var name_label = Label.new()
-	name_label.text = data.get("name", passive["id"])
+	name_label.text = data.get("name", str(passive["id"]).replace("_", " ").capitalize())
 	name_label.position = Vector2(12, 28)
 	name_label.add_theme_font_size_override("font_size", 14)
 	name_label.add_theme_color_override("font_color", PASSIVE_EQUIPPED if passive["equipped"] else TEXT_COLOR)
@@ -609,9 +638,10 @@ func _create_passive_details_panel(panel_size: Vector2) -> Control:
 			if mod_name.ends_with("_multiplier"):
 				var stat = mod_name.replace("_multiplier", "")
 				var pct = int((mod_value - 1.0) * 100)
-				mod_text = "%s%d%% %s" % ["+" if pct > 0 else "", pct, stat.capitalize()]
+				# Tick 211: shared StatNames preserves HP/MP acronyms.
+				mod_text = "%s%d%% %s" % ["+" if pct > 0 else "", pct, StatNames.display_name(stat)]
 			else:
-				mod_text = "%s%.2f %s" % ["+" if mod_value > 0 else "", mod_value, mod_name.capitalize()]
+				mod_text = "%s%.2f %s" % ["+" if mod_value > 0 else "", mod_value, StatNames.display_name(mod_name)]
 
 			var mod_label = Label.new()
 			mod_label.text = mod_text
@@ -693,10 +723,12 @@ func _toggle_passive() -> void:
 			_build_ui()
 		else:
 			SoundManager.play_ui("menu_error")
+			Toast.show_warning(self, "Unequip failed")
 	else:
 		# Equip (check slot availability)
 		if character.equipped_passives.size() >= character.max_passive_slots:
 			SoundManager.play_ui("menu_error")
+			Toast.show_warning(self, "All passive slots full (%d/%d)" % [character.equipped_passives.size(), character.max_passive_slots])
 			return
 
 		if PassiveSystem.equip_passive(character, passive_id):
@@ -706,6 +738,7 @@ func _toggle_passive() -> void:
 			_build_ui()
 		else:
 			SoundManager.play_ui("menu_error")
+			Toast.show_warning(self, "Equip failed (passive requirements not met)")
 
 
 func _on_tab_click(tab_index: int) -> void:

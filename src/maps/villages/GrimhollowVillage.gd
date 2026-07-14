@@ -122,6 +122,16 @@ func _setup_buildings() -> void:
 	chapel.position = Vector2(11 * TILE_SIZE, 3 * TILE_SIZE)
 	buildings.add_child(chapel)
 
+	# === WITCH'S HUT DOOR ===
+	# Old Mire's hut at the bog's edge. She foreshadows Umbraxis (W1
+	# shadow dragon) — the room's payload.
+	spawn_points["witch_hut_exit"] = Vector2(4 * TILE_SIZE, 10 * TILE_SIZE)
+	_add_interior_door("WitchHutDoor", "grimhollow_witch_hut", "Enter Witch's Hut", Vector2(4 * TILE_SIZE, 9 * TILE_SIZE))
+	# === LANTERN DEBT OFFICE DOOR ===
+	# South face of the CCC building (cols 13-15, rows 6-8) — where the swamp's light is loaned.
+	spawn_points["lantern_exit"] = Vector2(14 * TILE_SIZE, 9.5 * TILE_SIZE)
+	_add_interior_door("LanternDebtDoor", "grimhollow_lantern_debt", "Enter Lantern Debt Office", Vector2(14 * TILE_SIZE, 8.5 * TILE_SIZE))
+
 
 func _setup_treasures() -> void:
 	# Phoenix Down in cemetery
@@ -137,12 +147,14 @@ func _setup_treasures() -> void:
 	var chest2 = TreasureChestScript.new()
 	chest2.chest_id = "grimhollow_chest_2"
 	chest2.contents_type = "equipment"
-	chest2.contents_id = "shadow_ring"
+	chest2.contents_id = "magic_ring"
 	chest2.position = Vector2(14 * TILE_SIZE, 2 * TILE_SIZE)
 	treasures.add_child(chest2)
 
 
 func _setup_npcs() -> void:
+	_place_masterite_arbiter()
+
 	# Fortune Teller Madame Hex (dramatic)
 	var hex = _create_npc("Madame Hex", "elder", Vector2(8 * TILE_SIZE, 5 * TILE_SIZE), [
 		"I see your future...",
@@ -199,3 +211,19 @@ func _setup_npcs() -> void:
 		"...Just kidding. Probably."
 	])
 	npcs.add_child(murk)
+
+
+## Arbiter of Steel — L8 masterite guarding the mine approach as a
+## corrupted foreman-cum-judge. Placed south of the CCC block (chapel /
+## mine head) so the encounter meets the party on the approach path.
+## Doc: docs/design/w1-progression-expansion.md.
+func _place_masterite_arbiter() -> void:
+	var MasteriteScript = load("res://src/exploration/MasteriteEncounter.gd")
+	if MasteriteScript == null:
+		return
+	var arbiter = MasteriteScript.new()
+	arbiter.archetype = "arbiter"
+	arbiter.monster_id = "masterite_arbiter_medieval"
+	arbiter.display_name = "Arbiter of Steel"
+	arbiter.position = Vector2(14 * TILE_SIZE, 10 * TILE_SIZE)
+	npcs.add_child(arbiter)

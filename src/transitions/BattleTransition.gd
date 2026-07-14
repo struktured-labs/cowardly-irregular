@@ -126,6 +126,13 @@ func play_battle_transition(enemy_types: Array) -> void:
 	_viewport_size = get_viewport().get_visible_rect().size
 	_current_enemy_types = enemy_types  # Store for sound generation
 
+	# Resolve transition type up-front so the sound can fire in sync with the flash.
+	var transition_type = _get_transition_for_enemies(enemy_types)
+	var type_name = TransitionType.keys()[transition_type]
+
+	# Fire encounter sound before screen capture so audio lands at the flash, not after.
+	_play_encounter_sound(transition_type)
+
 	# Capture screen before any effects are drawn
 	await _capture_screen()
 
@@ -138,15 +145,8 @@ func play_battle_transition(enemy_types: Array) -> void:
 	# Keep overlay visible for effects
 	_overlay.modulate.a = 0.0
 
-	# Determine transition type from first enemy
-	var transition_type = _get_transition_for_enemies(enemy_types)
-	var type_name = TransitionType.keys()[transition_type]
-
 	print("[TRANSITION] Playing %s transition for enemies: %s" % [type_name, enemy_types])
 	transition_started.emit(type_name)
-
-	# Play monster-specific encounter sound
-	_play_encounter_sound(transition_type)
 
 	# Execute the transition — fragments/slices sit on top of the battle scene
 	# and animate away, revealing it naturally underneath
@@ -461,6 +461,19 @@ func _generate_monster_sound(profile: Dictionary, transition_type: TransitionTyp
 	var base_freq = profile.get("base_freq", 400)
 	var mod_type = profile.get("mod", "growl")
 	var pitch = profile.get("pitch", 1.0)
+
+	# Tick 305: validate mod_type ONCE before the sample loop. The
+	# match below has 11 arms but no `_:` default — an unknown
+	# mod_type left `sample = 0.0` for every iteration, producing
+	# silent audio that played back inaudibly. Symptom looked like
+	# the SFX channel was muted. Now: warn + fall back to "growl"
+	# (the same default the .get() above uses).
+	const _KNOWN_MOD_TYPES := ["gloop", "screech", "growl", "rattle",
+		"wail", "skitter", "howl", "hiss", "roar", "squelch",
+		"cackle", "rumble", "doom"]
+	if not (mod_type in _KNOWN_MOD_TYPES):
+		push_warning("[BattleTransition] _generate_monster_sound: unknown mod_type '%s' — falling back to 'growl' (typo? new mod_type added to monster profile without match arm?)" % mod_type)
+		mod_type = "growl"
 
 	for i in range(samples):
 		var t = float(i) / sample_rate

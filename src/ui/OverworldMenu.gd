@@ -48,6 +48,8 @@ const BASE_MENU_OPTIONS = [
 	{"id": "autogrind", "label": "Autogrind", "enabled": true},
 	{"id": "cutscene_gallery", "label": "Theater", "enabled": true},
 	{"id": "bestiary", "label": "Bestiary", "enabled": true},
+	{"id": "formations", "label": "Formations", "enabled": true},
+	{"id": "records", "label": "Records", "enabled": true},
 	{"id": "world_map", "label": "World Map", "enabled": true},
 	{"id": "save", "label": "Save", "enabled": true},
 	{"id": "load", "label": "Load", "enabled": true},
@@ -181,7 +183,7 @@ func _build_ui() -> void:
 	var footer = Label.new()
 	footer.text = "↑↓: Select  A/Click: Confirm  B/RClick: Close  ←→: Character  L/R: Leader"
 	footer.position = Vector2(16, viewport_size.y - 32)
-	footer.add_theme_font_size_override("font_size", 12)
+	footer.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
 	add_child(footer)
 
@@ -212,24 +214,42 @@ func _create_party_panel(panel_size: Vector2) -> Control:
 	var title = Label.new()
 	title.text = "PARTY"
 	title.position = Vector2(8, 4)
-	title.add_theme_font_size_override("font_size", 14)
+	title.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	title.add_theme_color_override("font_color", TEXT_COLOR)
 	panel.add_child(title)
 
 	# Party member cards
 	var card_height = 100
 	var y_offset = 28
+	var card_pitch = card_height + 8
+
+	# Wrap cards in a ScrollContainer when 5+ party members would overflow the
+	# panel at 480p (5 * 108 + 28 = 568 > 400). The scroll viewport sits below
+	# the PARTY title, so cards still scroll vertically without clipping art.
+	var card_host: Node = panel
+	var needs_scroll: bool = party.size() >= 5
+	if needs_scroll:
+		var scroll := ScrollContainer.new()
+		scroll.position = Vector2(0, y_offset)
+		scroll.size = Vector2(panel_size.x, panel_size.y - y_offset - 4)
+		scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+		var inner := Control.new()
+		inner.custom_minimum_size = Vector2(panel_size.x - 8, party.size() * card_pitch + 4)
+		scroll.add_child(inner)
+		panel.add_child(scroll)
+		card_host = inner
+		y_offset = 0  # cards are now positioned relative to the scroll content
 
 	for i in range(party.size()):
 		var member = party[i]
 		var card = _create_character_card(member, i)
-		card.position = Vector2(4, y_offset + i * (card_height + 8))
+		card.position = Vector2(4, y_offset + i * card_pitch)
 		card.size = Vector2(panel_size.x - 8, card_height)
 		# Beveled border using job color
 		var job_color = _get_job_color(member).lightened(0.5)
 		var job_shadow = _get_job_color(member).darkened(0.3)
 		RetroPanel.add_border(card, card.size, job_color, job_shadow)
-		panel.add_child(card)
+		card_host.add_child(card)
 		_party_panels.append(card)
 
 	return panel
@@ -253,7 +273,7 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 	leader_label.name = "LeaderStar"
 	leader_label.text = "★" if is_leader else ""
 	leader_label.position = Vector2(4, 82)
-	leader_label.add_theme_font_size_override("font_size", 10)
+	leader_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	leader_label.add_theme_color_override("font_color", Color.YELLOW)
 	card.add_child(leader_label)
 
@@ -269,7 +289,7 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 	name_label.name = "NameLabel"
 	name_label.text = member.combatant_name
 	name_label.position = Vector2(58, 4)
-	name_label.add_theme_font_size_override("font_size", 14)
+	name_label.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	name_label.add_theme_color_override("font_color", TEXT_COLOR)
 	card.add_child(name_label)
 
@@ -277,7 +297,7 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 	job_label.name = "JobLabel"
 	job_label.text = member.job.get("name", "Fighter") if member.job else "Fighter"
 	job_label.position = Vector2(58, 20)
-	job_label.add_theme_font_size_override("font_size", 10)
+	job_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	job_label.add_theme_color_override("font_color", DISABLED_COLOR)
 	card.add_child(job_label)
 
@@ -309,7 +329,7 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 		var dead_label = Label.new()
 		dead_label.text = "KO"
 		dead_label.position = Vector2(4, 56)
-		dead_label.add_theme_font_size_override("font_size", 12)
+		dead_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 		dead_label.add_theme_color_override("font_color", Color.RED)
 		card.add_child(dead_label)
 
@@ -325,7 +345,7 @@ func _create_stat_bar(label: String, current: int, maximum: int, color_full: Col
 	var lbl = Label.new()
 	lbl.text = label
 	lbl.position = Vector2(0, 0)
-	lbl.add_theme_font_size_override("font_size", 10)
+	lbl.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	lbl.add_theme_color_override("font_color", TEXT_COLOR)
 	container.add_child(lbl)
 
@@ -350,7 +370,7 @@ func _create_stat_bar(label: String, current: int, maximum: int, color_full: Col
 	value.name = "Value"
 	value.text = "%d/%d" % [current, maximum]
 	value.position = Vector2(88, 0)
-	value.add_theme_font_size_override("font_size", 10)
+	value.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	value.add_theme_color_override("font_color", TEXT_COLOR)
 	container.add_child(value)
 
@@ -363,13 +383,17 @@ func _create_exp_indicator(member: Combatant) -> Control:
 	container.size = Vector2(160, 14)
 
 	var job_level = member.job_level if "job_level" in member else 1
-	var current_exp = member.experience if "experience" in member else 0
-	var next_exp = member.exp_to_next_level if "exp_to_next_level" in member else 100
+	# Read the REAL Combatant fields. Pre-fix this read member.experience and
+	# member.exp_to_next_level — neither exists (the field is job_exp; the
+	# threshold is job_level*100), so both `in` checks failed and the pips were
+	# permanently stuck at 0/100 = empty regardless of actual level/EXP.
+	var current_exp = member.job_exp if "job_exp" in member else 0
+	var next_exp = job_level * 100  # gain_job_exp threshold; job_exp resets each level
 
 	var lbl = Label.new()
 	lbl.text = "Lv%d" % job_level
 	lbl.position = Vector2(0, 0)
-	lbl.add_theme_font_size_override("font_size", 10)
+	lbl.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	lbl.add_theme_color_override("font_color", Color(0.8, 0.8, 1.0))
 	container.add_child(lbl)
 
@@ -383,7 +407,7 @@ func _create_exp_indicator(member: Combatant) -> Control:
 	var pips = Label.new()
 	pips.text = pip_str
 	pips.position = Vector2(30, 0)
-	pips.add_theme_font_size_override("font_size", 10)
+	pips.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	pips.add_theme_color_override("font_color", Color(0.6, 0.9, 0.6))
 	container.add_child(pips)
 
@@ -406,7 +430,7 @@ func _create_menu_panel(panel_size: Vector2) -> Control:
 	var title = Label.new()
 	title.text = "MENU"
 	title.position = Vector2(8, 4)
-	title.add_theme_font_size_override("font_size", 14)
+	title.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	title.add_theme_color_override("font_color", TEXT_COLOR)
 	panel.add_child(title)
 
@@ -426,18 +450,58 @@ func _create_menu_panel(panel_size: Vector2) -> Control:
 	var play_time = Label.new()
 	play_time.text = "Play Time: %s" % _format_play_time()
 	play_time.position = Vector2(8, info_y)
-	play_time.add_theme_font_size_override("font_size", 11)
+	play_time.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	play_time.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(play_time)
 
 	var location = Label.new()
 	location.text = "Location: Overworld"
 	location.position = Vector2(8, info_y + 16)
-	location.add_theme_font_size_override("font_size", 11)
+	location.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	location.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(location)
 
+	# Corruption readout (2026-07-02): outside autogrind UI the player
+	# had NO surface showing corruption — a save-threatening core
+	# mechanic. Hidden at zero so untouched players meet it diegetically.
+	var corr_lines: Array = _corruption_summary(GameState.corruption_level, GameState.corruption_effects)
+	if corr_lines.size() > 0:
+		var corr = Label.new()
+		corr.text = str(corr_lines[0])
+		corr.position = Vector2(8, info_y + 32)
+		corr.add_theme_font_size_override("font_size", TextScale.scaled(11))
+		corr.add_theme_color_override("font_color", Color(0.85, 0.3, 0.45))
+		panel.add_child(corr)
+		if corr_lines.size() > 1:
+			var fx_label = Label.new()
+			fx_label.text = str(corr_lines[1])
+			fx_label.position = Vector2(8, info_y + 48)
+			fx_label.size = Vector2(190, 14)
+			fx_label.clip_text = true
+			fx_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
+			fx_label.add_theme_color_override("font_color", Color(0.7, 0.35, 0.45))
+			panel.add_child(fx_label)
+
 	return panel
+
+
+## [] at zero corruption; ["Corruption: N% (k effects)"] plus an
+## optional pretty-named effects line otherwise. Static for testability.
+static func _corruption_summary(level: float, effects: Array) -> Array:
+	if level <= 0.0:
+		return []
+	var pct: int = int(round(level * 100.0))
+	var fx: int = effects.size()
+	var head: String = "Corruption: %d%%" % pct
+	if fx > 0:
+		head += " (%d effect%s)" % [fx, "" if fx == 1 else "s"]
+	var lines: Array = [head]
+	if fx > 0:
+		var names: Array = []
+		for e in effects:
+			names.append(str(e).replace("_", " ").capitalize())
+		lines.append("  " + ", ".join(names))
+	return lines
 
 
 func _create_menu_item(option: Dictionary, index: int) -> Control:
@@ -456,7 +520,7 @@ func _create_menu_item(option: Dictionary, index: int) -> Control:
 	var cursor = Label.new()
 	cursor.text = "▶" if index == selected_index else " "
 	cursor.position = Vector2(4, 2)
-	cursor.add_theme_font_size_override("font_size", 14)
+	cursor.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	cursor.add_theme_color_override("font_color", Color.YELLOW if option["enabled"] else DISABLED_COLOR)
 	cursor.name = "Cursor"
 	item.add_child(cursor)
@@ -465,7 +529,7 @@ func _create_menu_item(option: Dictionary, index: int) -> Control:
 	var label = Label.new()
 	label.text = option["label"]
 	label.position = Vector2(24, 2)
-	label.add_theme_font_size_override("font_size", 14)
+	label.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	label.add_theme_color_override("font_color", TEXT_COLOR if option["enabled"] else DISABLED_COLOR)
 	label.name = "Label"
 	item.add_child(label)
@@ -547,6 +611,11 @@ func _update_selection() -> void:
 func _input(event: InputEvent) -> void:
 	"""Handle menu input"""
 	if not visible:
+		return
+
+	# Ignore input during the 0.15s fade-in tween so a held confirm can't
+	# pick a stale option while the panel is invisible.
+	if modulate.a < 1.0:
 		return
 
 	# Submenus handle their own input now (including the standalone
@@ -663,6 +732,10 @@ func _handle_menu_action(action_id: String) -> void:
 			_open_cutscene_gallery()
 		"bestiary":
 			_open_bestiary()
+		"formations":
+			_open_formations()
+		"records":
+			_open_records()
 		"world_map":
 			_open_world_map()
 		"settings":
@@ -687,6 +760,25 @@ func _open_bestiary() -> void:
 	bestiary.closed.connect(_on_submenu_closed)
 	add_child(bestiary)
 	_hide_main_ui(bestiary)
+
+
+func _open_formations() -> void:
+	_submenu_open = true
+	var formations = load("res://src/ui/FormationsMenu.gd").new()
+	formations.party = party
+	formations.set_anchors_preset(Control.PRESET_FULL_RECT)
+	formations.closed.connect(_on_submenu_closed)
+	add_child(formations)
+	_hide_main_ui(formations)
+
+
+func _open_records() -> void:
+	_submenu_open = true
+	var records = load("res://src/ui/RecordsMenu.gd").new()
+	records.set_anchors_preset(Control.PRESET_FULL_RECT)
+	records.closed.connect(_on_submenu_closed)
+	add_child(records)
+	_hide_main_ui(records)
 
 
 func _open_world_map() -> void:
@@ -735,8 +827,44 @@ func _on_save_completed(_slot: int) -> void:
 
 
 func _on_load_completed(_slot: int) -> void:
-	"""Load completed - close menu and refresh game state"""
+	"""Load completed from the in-game Save/Load screen.
+
+	Bug fix (2026-06-14): SaveSystem.load_game(slot) (fired by SaveScreen in
+	Mode.LOAD) writes into GameState — including GameState.player_party (the
+	dict array), gold, story flags and the saved map/position — but it does
+	NOT rebuild GameLoop.party, the live Array[Combatant] that battles and
+	menus consume. The title-screen Continue, Game-Over Continue and F3
+	quick-load paths all call GameLoop._restore_party_from_save_data() after
+	load_game; the in-game menu Load path never did, so the player kept their
+	pre-load Combatants (post-mistake HP/MP/level/job/equipment) while the
+	rest of the world reflected the loaded save — a silent state desync
+	(CLAUDE.md: "silent failures are worse than crashes"). We mirror the
+	quick-load flow here without touching GameLoop: locate the GameLoop scene
+	root and ask it to rehydrate the live party (+ restart exploration so the
+	player warps to the saved position) before closing the menu.
+	"""
+	_rehydrate_party_after_load()
+	# Confirm to the player the load actually landed (the in-game menu Load
+	# path had no equivalent of the F3 quick-load toast).
+	if Toast:
+		Toast.show(get_tree().current_scene, "Game Loaded", Toast.SUCCESS_COLOR)
 	_close_menu()
+
+
+func _rehydrate_party_after_load() -> void:
+	"""Rebuild GameLoop.party from the just-loaded GameState and re-enter the
+	saved map. Mirrors GameLoop._quick_load_with_toast. Safe no-op if the
+	GameLoop root can't be reached (e.g. menu opened outside the normal loop).
+	Uses the canonical /root/GameLoop lookup (same idiom as OverworldPlayer)."""
+	var game_loop = get_node_or_null("/root/GameLoop")
+	if game_loop == null or not game_loop.has_method("_restore_party_from_save_data"):
+		return
+	# Rehydrate the live Array[Combatant] from GameState.player_party.
+	game_loop._restore_party_from_save_data()
+	# Restart exploration so the player teleports to the saved map/position,
+	# exactly as the F3 quick-load path does. Only when actually exploring.
+	if game_loop.current_state == game_loop.LoopState.EXPLORATION and game_loop.has_method("_start_exploration"):
+		game_loop._start_exploration()
 
 
 func _open_settings() -> void:

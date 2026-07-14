@@ -28,26 +28,41 @@ func _load_passive_data() -> void:
 	var file_path = "res://data/passives.json"
 
 	if not FileAccess.file_exists(file_path):
-		print("Warning: passives.json not found, using default passives")
+		push_warning("[PassiveSystem] passives.json not found at %s — falling back to hardcoded defaults" % file_path)
 		_create_default_passives()
 		return
 
 	var file = FileAccess.open(file_path, FileAccess.READ)
-	if file:
-		var json_string = file.get_as_text()
-		file.close()
-
-		var json = JSON.new()
-		var parse_result = json.parse(json_string)
-
-		if parse_result == OK:
-			passives = json.data
-			print("Loaded %d passives" % passives.size())
-		else:
-			print("Error parsing passives.json: ", json.get_error_message())
-			_create_default_passives()
-	else:
+	if not file:
+		## Tick 165: surface the file-open failure (silent fallback
+		## pre-fix). Same canonical pattern as JobSystem +
+		## EquipmentSystem after this tick.
+		push_warning("[PassiveSystem] passives.json exists but FileAccess.open failed — falling back to hardcoded defaults")
 		_create_default_passives()
+		return
+
+	var json_string = file.get_as_text()
+	file.close()
+
+	var json = JSON.new()
+	var parse_result = json.parse(json_string)
+
+	if parse_result != OK:
+		push_warning("[PassiveSystem] passives.json parse error: %s — falling back to hardcoded defaults" % json.get_error_message())
+		_create_default_passives()
+		return
+	## Tick 165: Dictionary check — pre-fix `passives = json.data`
+	## directly assigned without verifying shape. An Array root
+	## would make passives.size() report a count but every
+	## get_passive() call would fail. push_warning surfaces the
+	## real cause instead of letting downstream null derefs cascade.
+	if not (json.data is Dictionary):
+		push_warning("[PassiveSystem] passives.json parsed but root is not a Dictionary — falling back to hardcoded defaults")
+		_create_default_passives()
+		return
+
+	passives = json.data
+	print("Loaded %d passives" % passives.size())
 
 
 func _create_default_passives() -> void:
@@ -101,6 +116,24 @@ func _create_default_passives() -> void:
 				"max_hp_multiplier": 1.3
 			}
 		},
+		# Tick 327: mp_boost was the natural pair to hp_boost (same
+		# category, same +30% pattern) but was MISSING from the defaults
+		# fallback. Mage-class passive selection in passives.json
+		# references it. If both jobs.json and passives.json failed to
+		# load, mp_boost equips silently failed (push_warning in
+		# equip_passive's "passive_id not found" path), but a player who
+		# DOES have passives.json loaded successfully could still hit
+		# the JSON happy path — the defaults gap is a fallback-only
+		# bug. Same omission class as tick 319 (encore).
+		"mp_boost": {
+			"id": "mp_boost",
+			"name": "MP Boost",
+			"category": PassiveCategory.DEFENSIVE,
+			"description": "+30% max MP",
+			"stat_mods": {
+				"max_mp_multiplier": 1.3
+			}
+		},
 		"evasion_up": {
 			"id": "evasion_up",
 			"name": "Evasion Up",
@@ -137,6 +170,23 @@ func _create_default_passives() -> void:
 			"description": "+50% healing power",
 			"stat_mods": {
 				"healing_multiplier": 1.5
+			}
+		},
+		# Tick 319: encore is Bard's default passive (referenced by
+		# JobSystem._create_default_jobs:209) but was MISSING from this
+		# defaults fallback. If both jobs.json AND passives.json failed
+		# to load (push_warning on each), equip_passive("encore") would
+		# fire its "passive_id not found in passives table" warning and
+		# the Bard's passive slot would stay empty. Mirrors data/passives.json
+		# exactly: stat_mods empty, meta_effects.song_duration_bonus=1.
+		"encore": {
+			"id": "encore",
+			"name": "Encore",
+			"category": PassiveCategory.UTILITY,
+			"description": "Song buffs and debuffs last 1 extra turn",
+			"stat_mods": {},
+			"meta_effects": {
+				"song_duration_bonus": 1
 			}
 		},
 
@@ -237,18 +287,19 @@ func _create_default_passives() -> void:
 
 ## Passive management
 func equip_passive(combatant: Combatant, passive_id: String) -> bool:
-	"""Equip a passive to a combatant"""
+	"""Equip a passive to a combatant."""
+	if not combatant or not is_instance_valid(combatant):
+		push_warning("[PassiveSystem] equip_passive: invalid combatant — equip failed")
+		return false
 	if not can_equip_passive(combatant, passive_id):
-		if not combatant or not is_instance_valid(combatant):
-			print("Error: Invalid combatant")
-		elif not passives.has(passive_id):
-			print("Error: Passive '%s' not found" % passive_id)
+		if not passives.has(passive_id):
+			push_warning("[PassiveSystem] equip_passive: passive_id '%s' not found in passives table — equip failed" % passive_id)
 		elif combatant.equipped_passives.size() >= combatant.max_passive_slots:
-			print("Error: No passive slots available")
+			push_warning("[PassiveSystem] equip_passive: %s slot full (%d/%d) — equip of '%s' failed" % [combatant.combatant_name, combatant.equipped_passives.size(), combatant.max_passive_slots, passive_id])
 		elif passive_id in combatant.equipped_passives:
-			print("Error: Passive already equipped")
+			push_warning("[PassiveSystem] equip_passive: '%s' already equipped on %s — equip failed (idempotency check)" % [passive_id, combatant.combatant_name])
 		else:
-			print("Error: Cannot equip passive '%s'" % passive_id)
+			push_warning("[PassiveSystem] equip_passive: '%s' cannot equip on %s (unknown reason — can_equip_passive returned false but no specific cause matched)" % [passive_id, combatant.combatant_name])
 		return false
 
 	combatant.equipped_passives.append(passive_id)
@@ -264,7 +315,7 @@ func unequip_passive(combatant: Combatant, passive_id: String) -> bool:
 	if not combatant or not is_instance_valid(combatant):
 		return false
 	if not passive_id in combatant.equipped_passives:
-		print("Error: Passive not equipped")
+		push_warning("[PassiveSystem] unequip_passive: '%s' not currently equipped on %s — unequip failed" % [passive_id, combatant.combatant_name])
 		return false
 
 	combatant.equipped_passives.erase(passive_id)
@@ -306,25 +357,82 @@ func get_passive_mods(combatant: Combatant) -> Dictionary:
 		if passive.has("stat_mods"):
 			for mod_key in passive["stat_mods"]:
 				var mod_value = passive["stat_mods"][mod_key]
-
-				# Multiplicative mods
-				if mod_key.ends_with("_multiplier"):
-					total_mods[mod_key] *= mod_value
-				# Additive mods
-				else:
-					total_mods[mod_key] += mod_value
+				_compose_mod(total_mods, mod_key, mod_value)
 
 		# Apply conditional mods (like Last Stand)
+		## Tick 377: generalize the condition parser. Pre-fix only
+		## `hp_below_25` was recognized — any other passive condition
+		## key (hp_below_50, hp_above_75, mp_below_25, etc.) was
+		## silently ignored. The single-threshold limitation made
+		## conditional_mods a graveyard for future authoring: write a
+		## hp_below_50 conditional and watch it never fire.
+		##
+		## New key shape (backward-compatible with hp_below_25):
+		##   <stat>_<comparator>_<threshold_int>
+		## where stat ∈ {hp, mp}, comparator ∈ {below, above}, threshold
+		## ∈ [0, 100]. Examples: hp_below_25, hp_above_75, mp_below_30.
+		## Unknown keys are skipped silently per the old contract; the
+		## generic shape just removes the hardcoded 25-only ceiling.
 		if passive.has("conditional_mods"):
-			var hp_pct = combatant.get_hp_percentage() / 100.0
-
-			if passive["conditional_mods"].has("hp_below_25") and hp_pct < 0.25:
-				for mod_key in passive["conditional_mods"]["hp_below_25"]:
-					var mod_value = passive["conditional_mods"]["hp_below_25"][mod_key]
-					if mod_key.ends_with("_multiplier"):
-						total_mods[mod_key] *= mod_value
+			var hp_pct: float = combatant.get_hp_percentage() / 100.0
+			var mp_pct: float = combatant.get_mp_percentage() / 100.0 if combatant.has_method("get_mp_percentage") else 1.0
+			for cond_key in passive["conditional_mods"].keys():
+				if not _conditional_key_satisfied(str(cond_key), hp_pct, mp_pct):
+					continue
+				for mod_key in passive["conditional_mods"][cond_key]:
+					var mod_value = passive["conditional_mods"][cond_key][mod_key]
+					_compose_mod(total_mods, mod_key, mod_value)
 
 	return total_mods
+
+
+## Tick 377: parse a conditional_mods key like "hp_below_25" /
+## "mp_above_50" and return true if the combatant satisfies the
+## comparison. Returns false for unknown shape (preserves the
+## silent-ignore behavior the old code had for non-hp_below_25 keys).
+static func _conditional_key_satisfied(key: String, hp_pct: float, mp_pct: float) -> bool:
+	var parts: PackedStringArray = key.split("_")
+	if parts.size() != 3:
+		return false
+	var stat: String = parts[0]
+	var comparator: String = parts[1]
+	var threshold_raw: String = parts[2]
+	if not threshold_raw.is_valid_int():
+		return false
+	var threshold: float = float(threshold_raw.to_int()) / 100.0
+	var value: float = 1.0
+	match stat:
+		"hp":
+			value = hp_pct
+		"mp":
+			value = mp_pct
+		_:
+			return false
+	match comparator:
+		"below":
+			return value < threshold
+		"above":
+			return value > threshold
+		_:
+			return false
+
+
+## Compose a single passive stat-mod into the accumulator dict, initializing
+## any key that isn't yet present with the appropriate identity element
+## (1.0 for *_multiplier keys, 0.0 for additive keys). Without this guard,
+## stat_mods that introduce a new key (e.g. data/passives.json's
+## `steal_boost` adds `steal_chance` — not in the initial defaults dict)
+## triggered `null +=`/`null *=` runtime errors when the passive was
+## equipped, because Dictionary[missing_key] returns null in Godot 4.
+static func _compose_mod(total_mods: Dictionary, mod_key: String, mod_value: float) -> void:
+	if mod_key.ends_with("_multiplier"):
+		if not total_mods.has(mod_key):
+			total_mods[mod_key] = 1.0
+		total_mods[mod_key] *= mod_value
+	else:
+		if not total_mods.has(mod_key):
+			total_mods[mod_key] = 0.0
+		total_mods[mod_key] += mod_value
 
 
 func get_passives_by_category(category: PassiveCategory) -> Array:

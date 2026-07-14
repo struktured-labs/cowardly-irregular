@@ -1,41 +1,187 @@
 {
   "id": "world1_spotlight_bard_ch7",
-  "title": "A Stubborn Man",
+  "title": "The Courtier at the Inn",
   "world": 1,
   "trigger": "world1_spotlight_bard_trigger",
   "background": "prologue_village",
-  "description": "The Capital, ch.7. A guard at a gate who has been told to stop people and does not bend to argument. The Bard tries something else.",
+  "description": "Harmonia, post-Rat King. A well-dressed woman from Scriptura sits at the inn asking questions that aren't quite questions. The Bard's solo duel — talk her down before she catalogues the party. Voice-as-mechanic. First pre-echo of Mordaine's measure. Filename _ch7 is vestigial; location is Harmonia.",
   "steps": [
-    {"type": "letterbox_in", "duration": 0.3},
-
-    {"type": "narration", "text": "The guard at the inner gate was a man whose job was to say no, and whose pride in that job was the kind of pride that calcifies a person from the inside out. Three of the party had tried. Three had failed."},
-
-    {"type": "branch", "condition": "lead_job", "cases": {
-      "bard": [
-        {"type": "narration", "text": "The lead was already at the gate. They had been at the gate for a few minutes. The guard was crying, very gently, and was nodding at something the lead had said, and the lead was already writing a verse about him in the margin of an existing verse, because of course they were."},
-        {"type": "wait", "duration": 0.3},
-        {"type": "narration", "text": "The gate, eventually, opened. The lead never showed anyone what they had said."}
-      ],
-      "default": [
-        {"type": "dialogue", "lines": [
-          {"speaker": "Fighter", "text": "We could go around.", "theme": "fighter", "portrait": "fighter"},
-          {"speaker": "Mage", "text": "There is no around. This is the only gate. I checked.", "theme": "mage", "portrait": "mage"}
-        ]},
-        {"type": "narration", "text": "The Bard had been listening. The Bard had been listening for a long time, in fact — she had been listening since before the Fighter started arguing with the guard, and through the Mage's appeal to procedure, and through the Rogue's quiet survey of which crates might be climbable. She had not interrupted any of it. She had been listening."},
-        {"type": "wait", "duration": 0.3},
-        {"type": "narration", "text": "She stepped up to the gate, leaned on the railing in a way that was structurally unnecessary, and said one thing."},
-        {"type": "dialogue", "lines": [
-          {"speaker": "Bard", "text": "What's the worst part of standing here all day?", "theme": "bard", "portrait": "bard"}
-        ]},
-        {"type": "narration", "text": "The guard, who had been ready for a bribe and ready for a fight and ready for a forged document, was not ready for this. He answered. He kept answering. Twelve minutes later he was telling her about his daughter, and fifteen minutes later he was unlocking the gate, and seventeen minutes later he was apologizing for the delay."},
-        {"type": "dialogue", "lines": [
-          {"speaker": "Bard", "text": "Thank you. I'll remember your daughter's name. I write down the names of people who help me.", "theme": "bard", "portrait": "bard"}
-        ]},
-        {"type": "narration", "text": "She would, in fact, remember. She had listened first. She had spoken once. The Bard was, the party would learn, the kind of person whose attention was the rare and dangerous thing that people did not realize they had been waiting for."},
-        {"type": "set_flag", "flag": "spotlight_unlocked_bard", "value": true}
+    {
+      "type": "letterbox_in",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "The party came back to Harmonia expecting bread. What they got was a woman at the good table by the window, dressed in Scriptura colors, drinking the inn's second-best wine and writing in a small blue-bound book."
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "narration",
+      "text": "She rose when they entered. Her rising was correct — the exact amount of respect that a middling official owed a group whose deeds she had heard about but not yet decided the meaning of. She said her name. It was a name that neither the Fighter nor the Rogue would remember by dinner. The Bard remembered it. The Bard remembered everyone's name."
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Courtier",
+          "text": "The Rat King, they say. Congratulations. The road is materially safer for your trouble. May I ask a few questions — for the record, purely — on how you did it? So many parties have failed at this exact task.",
+          "theme": "villager",
+          "portrait": "villager"
+        }
       ]
-    }},
-
-    {"type": "letterbox_out", "duration": 0.4}
+    },
+    {
+      "type": "narration",
+      "text": "The questions did not, at first, sound like questions. They sounded like conversation. The Fighter answered one. The Mage answered two. Something in the pattern of the answering felt, to the Bard, like being measured."
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "branch",
+      "condition": "lead_job",
+      "cases": {
+        "bard": [
+          {
+            "type": "narration",
+            "text": "The lead was already reading the pen. The angle of the pen, more precisely. The way the pen paused between certain kinds of answers and did not pause between others. This is what the lead has always noticed. This is why the lead is the lead."
+          }
+        ],
+        "default": [
+          {
+            "type": "narration",
+            "text": "The Bard was, at that moment, not saying anything. The Bard had said one thing since the woman started asking, which was hello. The Bard was doing something else. The Bard was watching the pen."
+          },
+          {
+            "type": "narration",
+            "text": "The pen paused between certain kinds of answers and did not pause between others. It was a small pattern. It was the kind of small pattern that only a person who wrote for a living would notice a stranger's pen making."
+          }
+        ]
+      }
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Bard",
+          "text": "May I speak to you a moment. Just the two of us.",
+          "theme": "bard",
+          "portrait": "bard"
+        }
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "The others understood, without discussion, that this was not their scene anymore. The Fighter took his ale to the far wall. The Mage found a book. The Rogue, who had been standing already, was standing somewhere else. The Bard and the courtier sat down."
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "battle",
+      "combatants": [
+        "bard"
+      ],
+      "enemies": [
+        "bard_hostile_courtier"
+      ],
+      "on_defeat": "retry",
+      "music": "boss_medieval",
+      "background": "prologue_village",
+      "win_condition": {
+        "type": "status_threshold",
+        "status": "swayed",
+        "value": 3
+      }
+    },
+    {
+      "type": "play_sfx",
+      "sfx": "spotlight_bard_victory"
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "narration",
+      "text": "The courtier closed the blue-bound book. Slowly. It was not a defeated closing. It was, in fact, a graceful one — the closing of a book by someone who has decided that the useful pages are not the ones she came here to write."
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Courtier",
+          "text": "I will report that you are... unremarkable. Ordinary irregulars, no pattern, no doctrine, no ambition beyond the next road. Is that fair?",
+          "theme": "villager",
+          "portrait": "villager"
+        },
+        {
+          "speaker": "Bard",
+          "text": "It's more than fair. It's kind. I don't often meet reports that leave room for a person.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Courtier",
+          "text": "Then I have been kind exactly once, and I did it to you.",
+          "theme": "villager",
+          "portrait": "villager"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "The Courtier left. Her leaving was correct. She would ride back to Scriptura, and the ledger would record what she chose to write, and the ledger would be one entry lighter than it should have been, and the party would not know for some time who had asked it to be lighter."
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Fighter",
+          "text": "What did you say to her?",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Bard",
+          "text": "Not very much. She was already saying most of it. She just hadn't heard it yet.",
+          "theme": "bard",
+          "portrait": "bard"
+        }
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "She had listened first. She had spoken once. The Bard was, the party would learn, the kind of person whose attention was the rare and dangerous thing that people did not realize they had been waiting for."
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.4
+    }
   ]
 }

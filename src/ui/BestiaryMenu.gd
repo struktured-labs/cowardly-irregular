@@ -16,12 +16,20 @@ const HIGHLIGHT_COLOR := Color(0.2, 0.3, 0.5)
 const TEXT_COLOR := Color(1.0, 1.0, 1.0)
 const DIM_COLOR := Color(0.6, 0.65, 0.75)
 const ACCENT := Color(0.6, 0.85, 1.0)
+# Tick 194: dark blue-gray silhouette for undefeated entries (classic Pokémon-style "you've seen it but haven't dropped it").
+const SILHOUETTE_COLOR := Color(0.12, 0.14, 0.20, 1.0)
 
 var _entries: Array = []  # from BestiarySystem.get_seen_entries_sorted()
+# Tick 267: sort-mode cycle. Press Left to advance: Level → Kills →
+# Name → Level. Header gains a "(Sort: <mode>)" suffix when not on
+# the default Level mode (avoid noise on first open).
+const _SORT_CYCLE: Array[String] = ["level", "kills", "name"]
+var _sort_mode_idx: int = 0
 var _selected: int = 0
 var _row_nodes: Array = []
 
 var _list_container: VBoxContainer = null
+var _scroll: ScrollContainer = null
 var _detail_name: Label = null
 var _detail_epithet: Label = null
 var _detail_level: Label = null
@@ -40,9 +48,12 @@ var _count_label: Label = null
 func _ready() -> void:
 	set_anchors_preset(PRESET_FULL_RECT)
 	mouse_filter = MOUSE_FILTER_STOP
-	_entries = BestiarySystem.get_seen_entries_sorted()
+	_entries = BestiarySystem.get_seen_entries_sorted(_SORT_CYCLE[_sort_mode_idx])
 	_build_ui()
 	_refresh_detail()
+	# Sizes aren't valid during _build_ui, so defer the first scroll-to-selected
+	# until after layout settles to avoid scrolling against zero-size rows.
+	call_deferred("_scroll_to_selected")
 
 
 func _build_ui() -> void:
@@ -61,18 +72,50 @@ func _build_ui() -> void:
 	header.text = "Bestiary"
 	header.position = Vector2(24, 16)
 	header.size = Vector2(300, 32)
-	header.add_theme_font_size_override("font_size", 26)
+	header.add_theme_font_size_override("font_size", TextScale.scaled(26))
 	header.add_theme_color_override("font_color", ACCENT)
 	header.clip_text = false
 	header.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 	add_child(header)
 
+	## Tick 148: header now reports BOTH seen and defeated counts so
+	## the autobattle player has a progression metric they can scan
+	## at a glance. Seen = encountered (full bestiary list size).
+	## Defeated = killed (full intel unlocked). Format: "12/88 seen
+	## · 7/88 defeated" — em-dash visually anchors the split.
+	## Tick 149: narrow viewport (<= 720px wide) collapses to the
+	## short form "12/88 seen" to avoid overlap with the "Bestiary"
+	## title label (which ends at x=324). Web build can render at
+	## arbitrary viewport sizes; without this guard the count text
+	## ran into the title at viewports ≤ ~600px.
 	var counts: Vector2i = BestiarySystem.discovery_counts()
+	var defeated_counts: Vector2i = BestiarySystem.defeat_counts()
+	# Tick 263: total kills aggregate. Reads as "· 124 kills" appended
+	# to the seen/defeated line so the player sees their cumulative
+	# grind tally at a glance — autobattle planners care about this.
+	# Hidden when zero (no "· 0 kills" noise) and on narrow viewports
+	# where the seen/defeated split is already collapsed for space.
+	var total_kills: int = BestiarySystem.total_kills()
 	_count_label = Label.new()
-	_count_label.text = "%d / %d discovered" % [counts.x, counts.y]
-	_count_label.position = Vector2(viewport.x - 260, 22)
-	_count_label.size = Vector2(240, 24)
-	_count_label.add_theme_font_size_override("font_size", 16)
+	var narrow_viewport: bool = viewport.x <= 720
+	if narrow_viewport:
+		_count_label.text = "%d/%d seen" % [counts.x, counts.y]
+		_count_label.size = Vector2(200, 24)
+		_count_label.position = Vector2(viewport.x - 220, 22)
+	else:
+		var base_text: String = "%d/%d seen · %d/%d defeated" % [counts.x, counts.y, defeated_counts.x, defeated_counts.y]
+		if total_kills > 0:
+			base_text += " · %d kills" % total_kills
+		# Tick 267: surface current sort mode when non-default.
+		# Press Left to cycle. Skipped on the default "level" mode
+		# to keep the header clean for fresh save / first-open UX.
+		var sort_mode: String = _SORT_CYCLE[_sort_mode_idx]
+		if sort_mode != "level":
+			base_text += " · [Sort: %s]" % sort_mode.capitalize()
+		_count_label.text = base_text
+		_count_label.size = Vector2(540, 24)
+		_count_label.position = Vector2(viewport.x - 560, 22)
+	_count_label.add_theme_font_size_override("font_size", TextScale.scaled(16))
 	_count_label.add_theme_color_override("font_color", DIM_COLOR)
 	_count_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_count_label.clip_text = false
@@ -83,16 +126,16 @@ func _build_ui() -> void:
 	var list_panel := _make_panel(Vector2(24, 64), Vector2(viewport.x * 0.35, viewport.y - 112))
 	add_child(list_panel)
 
-	var scroll := ScrollContainer.new()
-	scroll.position = Vector2(12, 12)
-	scroll.size = list_panel.size - Vector2(24, 24)
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	list_panel.add_child(scroll)
+	_scroll = ScrollContainer.new()
+	_scroll.position = Vector2(12, 12)
+	_scroll.size = list_panel.size - Vector2(24, 24)
+	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	list_panel.add_child(_scroll)
 
 	_list_container = VBoxContainer.new()
 	_list_container.size_flags_horizontal = SIZE_EXPAND_FILL
 	_list_container.add_theme_constant_override("separation", 2)
-	scroll.add_child(_list_container)
+	_scroll.add_child(_list_container)
 
 	_populate_list()
 
@@ -111,7 +154,7 @@ func _build_ui() -> void:
 	footer.text = "↑↓ / Wheel: Select    B / Esc / RClick: Close    (hover to preview)"
 	footer.position = Vector2(24, viewport.y - 32)
 	footer.size = Vector2(viewport.x - 48, 24)
-	footer.add_theme_font_size_override("font_size", 14)
+	footer.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	footer.add_theme_color_override("font_color", DIM_COLOR)
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	add_child(footer)
@@ -152,7 +195,7 @@ func _populate_list() -> void:
 	if _entries.is_empty():
 		var empty := Label.new()
 		empty.text = "No monsters discovered yet.\nEncounter them in battle to fill the Bestiary."
-		empty.add_theme_font_size_override("font_size", 15)
+		empty.add_theme_font_size_override("font_size", TextScale.scaled(15))
 		empty.add_theme_color_override("font_color", DIM_COLOR)
 		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		empty.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -163,7 +206,7 @@ func _populate_list() -> void:
 	for entry in _entries:
 		var row := Label.new()
 		row.text = "  Lv %d  %s" % [entry.level, entry.name]
-		row.add_theme_font_size_override("font_size", 17)
+		row.add_theme_font_size_override("font_size", TextScale.scaled(17))
 		row.add_theme_color_override("font_color", TEXT_COLOR)
 		row.custom_minimum_size = Vector2(0, 28)
 		row.mouse_filter = Control.MOUSE_FILTER_STOP
@@ -188,17 +231,37 @@ func _populate_list() -> void:
 
 
 func _highlight_row() -> void:
+	## Tick 147: dimmed text + leading "?" for seen-but-not-defeated.
+	## Quick visual scan reveals which entries are full-intel vs
+	## sighting-only.
 	for i in _row_nodes.size():
 		var row: Label = _row_nodes[i]
 		if not is_instance_valid(row):
 			continue
 		var entry: Dictionary = _entries[i]
+		var defeated: bool = bool(entry.get("defeated", false))
+		var name_token: String = entry.name if defeated else "? " + entry.name
 		if i == _selected:
 			row.add_theme_color_override("font_color", ACCENT)
-			row.text = "▸ Lv %d  %s" % [entry.level, entry.name]
+			row.text = "▸ Lv %d  %s" % [entry.level, name_token]
 		else:
-			row.add_theme_color_override("font_color", TEXT_COLOR)
-			row.text = "  Lv %d  %s" % [entry.level, entry.name]
+			## Dim un-defeated entries to ~55% brightness so the list
+			## visually separates "killed" from "merely seen".
+			var color: Color = TEXT_COLOR if defeated else Color(TEXT_COLOR.r * 0.55, TEXT_COLOR.g * 0.55, TEXT_COLOR.b * 0.55, TEXT_COLOR.a)
+			row.add_theme_color_override("font_color", color)
+			row.text = "  Lv %d  %s" % [entry.level, name_token]
+
+
+func _scroll_to_selected() -> void:
+	# Keep the highlighted row inside the visible window so keyboard/gamepad
+	# navigation doesn't lose track of the selection as it scrolls off-screen.
+	if _scroll == null:
+		return
+	if _selected < 0 or _selected >= _row_nodes.size():
+		return
+	if not is_instance_valid(_row_nodes[_selected]):
+		return
+	_scroll.ensure_control_visible(_row_nodes[_selected])
 
 
 func _build_detail(parent: Control) -> void:
@@ -220,7 +283,7 @@ func _build_detail(parent: Control) -> void:
 	_detail_placeholder.text = "?"
 	_detail_placeholder.position = _detail_sprite_bg.position
 	_detail_placeholder.size = _detail_sprite_bg.size
-	_detail_placeholder.add_theme_font_size_override("font_size", 96)
+	_detail_placeholder.add_theme_font_size_override("font_size", TextScale.scaled(96))
 	_detail_placeholder.add_theme_color_override("font_color", Color(0.35, 0.4, 0.5))
 	_detail_placeholder.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_detail_placeholder.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -233,7 +296,7 @@ func _build_detail(parent: Control) -> void:
 	_detail_name = Label.new()
 	_detail_name.position = Vector2(text_x, margin)
 	_detail_name.size = Vector2(text_w, 32)
-	_detail_name.add_theme_font_size_override("font_size", 24)
+	_detail_name.add_theme_font_size_override("font_size", TextScale.scaled(24))
 	_detail_name.add_theme_color_override("font_color", ACCENT)
 	_detail_name.clip_text = false
 	_detail_name.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
@@ -242,7 +305,7 @@ func _build_detail(parent: Control) -> void:
 	_detail_epithet = Label.new()
 	_detail_epithet.position = Vector2(text_x, margin + 32)
 	_detail_epithet.size = Vector2(text_w, 22)
-	_detail_epithet.add_theme_font_size_override("font_size", 15)
+	_detail_epithet.add_theme_font_size_override("font_size", TextScale.scaled(15))
 	_detail_epithet.add_theme_color_override("font_color", DIM_COLOR)
 	_detail_epithet.clip_text = false
 	_detail_epithet.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
@@ -251,7 +314,7 @@ func _build_detail(parent: Control) -> void:
 	_detail_level = Label.new()
 	_detail_level.position = Vector2(text_x, margin + 58)
 	_detail_level.size = Vector2(text_w, 22)
-	_detail_level.add_theme_font_size_override("font_size", 14)
+	_detail_level.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	_detail_level.add_theme_color_override("font_color", TEXT_COLOR)
 	_detail_level.clip_text = false
 	_detail_level.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
@@ -260,7 +323,7 @@ func _build_detail(parent: Control) -> void:
 	_detail_stats = Label.new()
 	_detail_stats.position = Vector2(text_x, margin + 86)
 	_detail_stats.size = Vector2(text_w, 48)
-	_detail_stats.add_theme_font_size_override("font_size", 14)
+	_detail_stats.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	_detail_stats.add_theme_color_override("font_color", TEXT_COLOR)
 	_detail_stats.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	parent.add_child(_detail_stats)
@@ -268,7 +331,7 @@ func _build_detail(parent: Control) -> void:
 	_detail_weak = Label.new()
 	_detail_weak.position = Vector2(text_x, margin + 140)
 	_detail_weak.size = Vector2(text_w, 24)
-	_detail_weak.add_theme_font_size_override("font_size", 14)
+	_detail_weak.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	_detail_weak.add_theme_color_override("font_color", Color(1.0, 0.6, 0.6))
 	_detail_weak.clip_text = false
 	_detail_weak.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
@@ -277,7 +340,7 @@ func _build_detail(parent: Control) -> void:
 	_detail_resist = Label.new()
 	_detail_resist.position = Vector2(text_x, margin + 164)
 	_detail_resist.size = Vector2(text_w, 24)
-	_detail_resist.add_theme_font_size_override("font_size", 14)
+	_detail_resist.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	_detail_resist.add_theme_color_override("font_color", Color(0.6, 0.8, 1.0))
 	_detail_resist.clip_text = false
 	_detail_resist.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
@@ -289,7 +352,7 @@ func _build_detail(parent: Control) -> void:
 	_detail_rewards = Label.new()
 	_detail_rewards.position = Vector2(text_x, margin + 188)
 	_detail_rewards.size = Vector2(text_w, 22)
-	_detail_rewards.add_theme_font_size_override("font_size", 14)
+	_detail_rewards.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	_detail_rewards.add_theme_color_override("font_color", Color(0.95, 0.85, 0.45))
 	_detail_rewards.clip_text = false
 	_detail_rewards.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
@@ -300,7 +363,7 @@ func _build_detail(parent: Control) -> void:
 	_detail_drops = Label.new()
 	_detail_drops.position = Vector2(text_x, margin + 212)
 	_detail_drops.size = Vector2(text_w, 32)
-	_detail_drops.add_theme_font_size_override("font_size", 12)
+	_detail_drops.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	_detail_drops.add_theme_color_override("font_color", Color(0.85, 0.9, 0.75))
 	_detail_drops.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	parent.add_child(_detail_drops)
@@ -309,7 +372,7 @@ func _build_detail(parent: Control) -> void:
 	_detail_flavor = Label.new()
 	_detail_flavor.position = Vector2(margin, margin + sprite_size + 20)
 	_detail_flavor.size = Vector2(parent.size.x - margin * 2, parent.size.y - sprite_size - margin * 3 - 12)
-	_detail_flavor.add_theme_font_size_override("font_size", 15)
+	_detail_flavor.add_theme_font_size_override("font_size", TextScale.scaled(15))
 	_detail_flavor.add_theme_color_override("font_color", Color(0.85, 0.9, 1.0))
 	_detail_flavor.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_detail_flavor.vertical_alignment = VERTICAL_ALIGNMENT_TOP
@@ -332,40 +395,72 @@ func _refresh_detail() -> void:
 		return
 
 	var entry: Dictionary = _entries[_selected]
+	## Tick 147: seen-but-not-defeated = intel withheld. Player sees
+	## the silhouette + name + level (gleaned from sighting) but
+	## stats / weaknesses / resistances / rewards / drops show "???"
+	## until they actually kill it. Makes the bestiary feel like
+	## progression — discover → defeat → unlock full intel.
+	var defeated: bool = bool(entry.get("defeated", false))
 	_detail_name.text = entry.name
 	_detail_epithet.text = entry.epithet if entry.epithet != "" else ""
 	_detail_level.text = "Level %d" % entry.level
 
-	var stats: Dictionary = entry.stats
-	_detail_stats.text = "HP %d   MP %d   ATK %d   DEF %d   MAG %d   SPD %d" % [
-		stats.get("max_hp", 0),
-		stats.get("max_mp", 0),
-		stats.get("attack", 0),
-		stats.get("defense", 0),
-		stats.get("magic", 0),
-		stats.get("speed", 0),
-	]
+	if defeated:
+		var stats: Dictionary = entry.stats
+		_detail_stats.text = "HP %d   MP %d   ATK %d   DEF %d   MAG %d   SPD %d" % [
+			stats.get("max_hp", 0),
+			stats.get("max_mp", 0),
+			stats.get("attack", 0),
+			stats.get("defense", 0),
+			stats.get("magic", 0),
+			stats.get("speed", 0),
+		]
+		_detail_weak.text = "Weak: %s" % (", ".join(_caps(entry.weaknesses)) if not entry.weaknesses.is_empty() else "—")
+		_detail_resist.text = "Resist: %s" % (", ".join(_caps(entry.resistances)) if not entry.resistances.is_empty() else "—")
+		var exp_r: int = int(entry.get("exp_reward", 0))
+		var gold_r: int = int(entry.get("gold_reward", 0))
+		# Tick 262: per-monster kill counter — autobattle-planning hint
+		# ("how many bones have I farmed off this slime?"). Only shown
+		# in the defeated branch since the count is by definition 0 for
+		# seen-but-not-killed. Reads "Killed: X" appended to rewards.
+		var defeat_count: int = int(entry.get("defeat_count", 0))
+		var rewards_text: String = "EXP: %d   Gold: %d G" % [exp_r, gold_r]
+		if defeat_count > 0:
+			rewards_text += "   Killed: %d" % defeat_count
+		_detail_rewards.text = rewards_text
+		_detail_drops.text = _format_drops(entry.get("drops", []), entry.get("one_shot_reward", null))
+	else:
+		_detail_stats.text = "HP ???   MP ???   ATK ???   DEF ???   MAG ???   SPD ???"
+		_detail_weak.text = "Weak: ???"
+		_detail_resist.text = "Resist: ???"
+		_detail_rewards.text = "EXP: ???   Gold: ???"
+		_detail_drops.text = "Drops: ???   (defeat to unlock)"
 
-	_detail_weak.text = "Weak: %s" % (", ".join(entry.weaknesses) if not entry.weaknesses.is_empty() else "—")
-	_detail_resist.text = "Resist: %s" % (", ".join(entry.resistances) if not entry.resistances.is_empty() else "—")
-
-	# Rewards line — EXP + Gold from victory. Players designing autobattle
-	# scripts use this to plan farming loops.
-	var exp_r: int = int(entry.get("exp_reward", 0))
-	var gold_r: int = int(entry.get("gold_reward", 0))
-	_detail_rewards.text = "EXP: %d   Gold: %d G" % [exp_r, gold_r]
-
-	# Drop table — formatted as "item_name N%" entries, comma-separated.
-	# Handles empty drop tables ("—") and one_shot_reward (rare bonus drop
-	# shown in parentheses to distinguish from regular drops). Names get
-	# the standard snake_case → Title Case treatment used elsewhere in UI.
-	_detail_drops.text = _format_drops(entry.get("drops", []), entry.get("one_shot_reward", null))
+	# Tick 193: flavor area now actually displays flavor (silent bug — never assigned in positive path) + prepends location hint for completionist navigation.
+	# Tick 260: adds "Last seen: <location>" derived from the most recent
+	# encounter (mark_seen / mark_defeated forwards MapSystem.current_map
+	# _id). Shown only when non-empty AND the player has actually engaged
+	# (defeated path or any seen-record carrying location data).
+	var pools: Array = entry.get("pools", [])
+	var last_location: String = str(entry.get("last_location", ""))
+	var flavor: String = str(entry.get("flavor", ""))
+	var blocks: PackedStringArray = []
+	if pools.size() > 0:
+		blocks.append("Found in: %s" % ", ".join(PackedStringArray(pools)))
+	if last_location != "":
+		blocks.append("Last seen: %s" % last_location)
+	if flavor != "":
+		blocks.append(flavor)
+	_detail_flavor.text = "\n\n".join(blocks)
 
 	_load_sprite(entry.id)
+	# Tick 194: silhouette undefeated entries so the visual gate matches the text intel gate (tick 147 docstring said "silhouette" but sprite shipped full-color).
+	_detail_sprite.modulate = Color.WHITE if defeated else SILHOUETTE_COLOR
 
 
 func _format_drops(drops: Array, one_shot) -> String:
-	var parts: PackedStringArray = []
+	# Tick 195: explicit chance-DESC sort with name-ASC tiebreak so display is stable across saves and monsters.json reorders. Common drops first matches autobattle-planning mental model.
+	var rows: Array = []
 	for d in drops:
 		if not d is Dictionary:
 			continue
@@ -373,17 +468,43 @@ func _format_drops(drops: Array, one_shot) -> String:
 		var chance: float = float(d.get("chance", 0.0))
 		if item == "":
 			continue
-		var pct: int = int(round(chance * 100.0))
-		parts.append("%s %d%%" % [item.replace("_", " ").capitalize(), pct])
+		rows.append({"item": item, "chance": chance, "name": _resolve_item_display_name(item)})
+	rows.sort_custom(func(a, b):
+		if a.chance != b.chance:
+			return a.chance > b.chance
+		return a.name < b.name
+	)
+	# Tick 256: ★ marks any drop with base chance < 10% (same threshold
+	# as tick 250's event_flag_rare_drop_found — consistent semantics
+	# across "this is a rare drop" UX). Legend appended only when at
+	# least one rare row exists so the legend isn't noise on common-
+	# only drop tables.
+	var parts: PackedStringArray = []
+	var has_rare: bool = false
+	for r in rows:
+		var pct: int = int(round(r.chance * 100.0))
+		var marker: String = " ★" if r.chance < 0.10 else ""
+		if marker != "":
+			has_rare = true
+		parts.append("%s %d%%%s" % [r.name, pct, marker])
 	var base: String = "Drops: %s" % (", ".join(parts) if parts.size() > 0 else "—")
+	if has_rare:
+		base += "   (★ = rare)"
 	# one_shot_reward (rare bonus, set in monsters.json for special enemies)
 	# appended as "(one-shot: <item>)" so it's visually distinct from the
 	# regular percentage drops.
 	if one_shot != null and str(one_shot) != "":
 		var os_str: String = str(one_shot)
 		if os_str != "Null" and os_str != "null":
-			base += "   (One-shot: %s)" % os_str.replace("_", " ").capitalize()
+			base += "   (One-shot: %s)" % _resolve_item_display_name(os_str)
 	return base
+
+
+## Tick 135: thin wrapper around ItemNameResolver. Local helper
+## stays to preserve the existing call sites; logic moved to the
+## shared resolver so future leak fixes touch one file.
+func _resolve_item_display_name(item_id: String) -> String:
+	return ItemNameResolver.resolve(item_id)
 
 
 func _load_sprite(monster_id: String) -> void:
@@ -421,15 +542,24 @@ func _input(event: InputEvent) -> void:
 			_close()
 			get_viewport().set_input_as_handled()
 		return
-	if event.is_action_pressed("ui_up"):
+	if event.is_action_pressed("ui_up") and not event.is_echo():
 		_selected = (_selected - 1 + _row_nodes.size()) % _row_nodes.size()
 		_highlight_row()
+		_scroll_to_selected()
 		_refresh_detail()
 		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("ui_down"):
+	elif event.is_action_pressed("ui_down") and not event.is_echo():
 		_selected = (_selected + 1) % _row_nodes.size()
 		_highlight_row()
+		_scroll_to_selected()
 		_refresh_detail()
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("ui_left") and not event.is_echo():
+		# Tick 267: cycle sort mode (Level → Kills → Name → Level).
+		# Press Left advances; Right could un-cycle but most one-axis
+		# cycle UIs are direction-agnostic, so we keep input minimal.
+		_sort_mode_idx = (_sort_mode_idx + 1) % _SORT_CYCLE.size()
+		_re_sort_and_refresh()
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_cancel"):
 		_close()
@@ -439,11 +569,13 @@ func _input(event: InputEvent) -> void:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
 			_selected = (_selected - 1 + _row_nodes.size()) % _row_nodes.size()
 			_highlight_row()
+			_scroll_to_selected()
 			_refresh_detail()
 			get_viewport().set_input_as_handled()
 		elif event.button_index == MOUSE_BUTTON_WHEEL_DOWN:
 			_selected = (_selected + 1) % _row_nodes.size()
 			_highlight_row()
+			_scroll_to_selected()
 			_refresh_detail()
 			get_viewport().set_input_as_handled()
 		elif event.button_index == MOUSE_BUTTON_RIGHT:
@@ -458,6 +590,7 @@ func _on_row_hover(idx: int) -> void:
 		return
 	_selected = idx
 	_highlight_row()
+	_scroll_to_selected()
 	_refresh_detail()
 	if SoundManager:
 		SoundManager.play_ui("menu_move")
@@ -474,9 +607,32 @@ func _on_row_click(idx: int) -> void:
 	else:
 		_selected = idx
 		_highlight_row()
+		_scroll_to_selected()
 		_refresh_detail()
 
 
 func _close() -> void:
 	closed.emit()
 	queue_free()
+
+
+# Tick 267: re-fetch entries with the current sort mode then rebuild
+# the list. Resets selection to top so the player sees the new
+# leader of the sort. Detail panel + scroll re-sync via the normal
+# _build_ui flow.
+func _re_sort_and_refresh() -> void:
+	_entries = BestiarySystem.get_seen_entries_sorted(_SORT_CYCLE[_sort_mode_idx])
+	_selected = 0
+	for child in get_children():
+		child.queue_free()
+	_build_ui()
+	_refresh_detail()
+	call_deferred("_scroll_to_selected")
+
+
+## Capitalize element ids for display — matches BattleUIManager's "Weak: Fire" casing.
+func _caps(ids: Array) -> PackedStringArray:
+	var out: PackedStringArray = []
+	for e in ids:
+		out.append(str(e).capitalize())
+	return out

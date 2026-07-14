@@ -51,9 +51,35 @@ func is_active() -> bool:
 	return _active
 
 
+## Wave C: pass-through for the LLM "thinking" indicator. DynamicConversation
+## toggles this on before each awaited LLM call (opening / reply / choices)
+## and off when the call resolves (success, fallback, or 6s client timeout)
+## so the player sees animated dots instead of a frozen blank panel.
+##
+## Lazy-instantiates the underlying CutsceneDialogue so callers don't have to
+## pre-warm the visual stack just to flash the indicator. If the load fails
+## (e.g. unit-test context without the resource pipeline), the call is a no-op.
+func set_thinking(active: bool) -> void:
+	_ensure_dialogue()
+	if _dialogue == null or not is_instance_valid(_dialogue):
+		return
+	if _dialogue.has_method("set_thinking"):
+		_dialogue.set_thinking(active)
+
+
+func is_thinking() -> bool:
+	if _dialogue == null or not is_instance_valid(_dialogue):
+		return false
+	if _dialogue.has_method("is_thinking"):
+		return _dialogue.is_thinking()
+	return false
+
+
 func _ensure_dialogue() -> void:
 	if _dialogue and is_instance_valid(_dialogue):
 		return
 	var CutsceneDialogueClass = load("res://src/cutscene/CutsceneDialogue.gd")
+	if CutsceneDialogueClass == null:
+		return
 	_dialogue = CutsceneDialogueClass.new()
 	add_child(_dialogue)

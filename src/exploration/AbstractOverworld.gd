@@ -123,6 +123,8 @@ func _ready() -> void:
 	monster_spawner = MonsterSpawner.new()
 	monster_spawner.name = "MonsterSpawner"
 	add_child(monster_spawner)
+	monster_spawner.set_map_size(MAP_WIDTH, MAP_HEIGHT)
+	monster_spawner.monster_touched.connect(_on_roaming_monster_touched)
 	monster_spawner.setup(player, ["null_entity", "forgotten_variable", "empty_set", "the_absence", "optimization_itself"])
 
 	_threat_meter = ThreatMeter.new()
@@ -142,8 +144,17 @@ func _ready() -> void:
 
 
 func _get_objective_position() -> Vector2:
-	# W6: The Vertex village is the final destination. Everything before it fades.
-	if GameState.get_story_flag("w6_boss_defeated"):
+	# W6: The Vertex village is the final destination. Once the
+	# Calibrant has fallen, the next objective is "the_question"
+	# (the post-game ending sequence).
+	# Tick 277: was reading the bare story_flag "w6_boss_defeated"
+	# which NOTHING in the game ever set — so the objective arrow
+	# stayed pointed at vertex_entrance even after the Calibrant
+	# cutscene finished. The real flag is in game_constants under
+	# the "cutscene_flag_" prefix, set by the post-cutscene hook in
+	# GameLoop._play_story_cutscene when world6_calibrant_defeat
+	# completes (see _CUTSCENE_COMPLETION_FLAGS map).
+	if GameState.game_constants.get("cutscene_flag_world6_calibrant_defeat_complete", false):
 		return spawn_points.get("the_question", Vector2.ZERO)
 	return spawn_points.get("vertex_entrance", Vector2.ZERO)
 
@@ -627,7 +638,7 @@ func _setup_controller() -> void:
 	controller = OverworldControllerScript.new()
 	controller.name = "Controller"
 	controller.player = player
-	controller.encounter_enabled = true
+	controller.encounter_enabled = false  # Roaming monsters handle encounters, not step-based random
 	controller.current_area_id = "abstract_overworld"
 
 	# W6 Abstract encounters — avg lv 15, endgame
@@ -653,6 +664,15 @@ func _on_transition_triggered(target_map: String, spawn_point: String) -> void:
 
 func _on_battle_triggered(enemies: Array) -> void:
 	battle_triggered.emit(enemies, "void")
+
+
+## Tick 86: see SuburbanOverworld._on_roaming_monster_touched for rationale.
+func _on_roaming_monster_touched(monster_id: String, _monster_types: Array) -> void:
+	var enemies: Array = [monster_id]
+	var extra: int = randi_range(0, 2)
+	for _i in range(extra):
+		enemies.append(monster_id)
+	_on_battle_triggered(enemies)
 
 
 func _on_menu_requested() -> void:
@@ -697,15 +717,17 @@ func _create_map_boundaries() -> void:
 	var map_w = MAP_WIDTH * TILE_SIZE
 	var map_h = MAP_HEIGHT * TILE_SIZE
 	var wall_thickness = 32.0
+	# Playtest 2026-07-11: flush walls let the sprite clip past the Mode 7 render edge — stop one tile inside (tunable).
+	var edge_inset = float(TILE_SIZE)
 
 	# Top wall
-	_add_boundary_wall(bounds, Vector2(map_w / 2, -wall_thickness / 2), Vector2(map_w + wall_thickness * 2, wall_thickness))
+	_add_boundary_wall(bounds, Vector2(map_w / 2, edge_inset - wall_thickness / 2), Vector2(map_w + wall_thickness * 2, wall_thickness))
 	# Bottom wall
-	_add_boundary_wall(bounds, Vector2(map_w / 2, map_h + wall_thickness / 2), Vector2(map_w + wall_thickness * 2, wall_thickness))
+	_add_boundary_wall(bounds, Vector2(map_w / 2, map_h - edge_inset + wall_thickness / 2), Vector2(map_w + wall_thickness * 2, wall_thickness))
 	# Left wall
-	_add_boundary_wall(bounds, Vector2(-wall_thickness / 2, map_h / 2), Vector2(wall_thickness, map_h + wall_thickness * 2))
+	_add_boundary_wall(bounds, Vector2(edge_inset - wall_thickness / 2, map_h / 2), Vector2(wall_thickness, map_h + wall_thickness * 2))
 	# Right wall
-	_add_boundary_wall(bounds, Vector2(map_w + wall_thickness / 2, map_h / 2), Vector2(wall_thickness, map_h + wall_thickness * 2))
+	_add_boundary_wall(bounds, Vector2(map_w - edge_inset + wall_thickness / 2, map_h / 2), Vector2(wall_thickness, map_h + wall_thickness * 2))
 
 
 func _add_boundary_wall(parent: StaticBody2D, pos: Vector2, size: Vector2) -> void:

@@ -75,7 +75,7 @@ func _build_ui() -> void:
 	var footer = Label.new()
 	footer.text = "B/RClick: Back"
 	footer.position = Vector2(16, viewport_size.y - 32)
-	footer.add_theme_font_size_override("font_size", 12)
+	footer.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
 	add_child(footer)
 
@@ -99,7 +99,7 @@ func _create_header_panel(panel_size: Vector2) -> Control:
 	var name_label = Label.new()
 	name_label.text = character.combatant_name
 	name_label.position = Vector2(16, 8)
-	name_label.add_theme_font_size_override("font_size", 20)
+	name_label.add_theme_font_size_override("font_size", TextScale.scaled(20))
 	name_label.add_theme_color_override("font_color", TEXT_COLOR)
 	panel.add_child(name_label)
 
@@ -108,7 +108,7 @@ func _create_header_panel(panel_size: Vector2) -> Control:
 	var job_label = Label.new()
 	job_label.text = "%s  Lv %d" % [job_name, character.job_level]
 	job_label.position = Vector2(16, 34)
-	job_label.add_theme_font_size_override("font_size", 12)
+	job_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	job_label.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(job_label)
 
@@ -121,7 +121,8 @@ func _create_header_panel(panel_size: Vector2) -> Control:
 
 	var hp_pct = float(character.current_hp) / max(1, character.max_hp)
 	var hp_bar = ColorRect.new()
-	hp_bar.color = HP_COLOR if hp_pct > 0.3 else PENALTY_COLOR
+	# Tick 229: HP bar fill color via AccessibilityPalette — color-blind mode swaps green/red to cyan/magenta.
+	hp_bar.color = AccessibilityPalette.hp_high() if hp_pct > 0.3 else AccessibilityPalette.hp_low()
 	hp_bar.position = Vector2(16, 54)
 	hp_bar.size = Vector2(200 * hp_pct, 12)
 	panel.add_child(hp_bar)
@@ -129,7 +130,7 @@ func _create_header_panel(panel_size: Vector2) -> Control:
 	var hp_text = Label.new()
 	hp_text.text = "HP: %d / %d" % [character.current_hp, character.max_hp]
 	hp_text.position = Vector2(224, 52)
-	hp_text.add_theme_font_size_override("font_size", 11)
+	hp_text.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	hp_text.add_theme_color_override("font_color", HP_COLOR)
 	panel.add_child(hp_text)
 
@@ -150,15 +151,15 @@ func _create_header_panel(panel_size: Vector2) -> Control:
 	var mp_text = Label.new()
 	mp_text.text = "MP: %d / %d" % [character.current_mp, character.max_mp]
 	mp_text.position = Vector2(508, 52)
-	mp_text.add_theme_font_size_override("font_size", 11)
+	mp_text.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	mp_text.add_theme_color_override("font_color", MP_COLOR)
 	panel.add_child(mp_text)
 
 	# EXP (if applicable)
 	var exp_label = Label.new()
-	exp_label.text = "EXP: %d" % character.job_exp
-	exp_label.position = Vector2(panel_size.x - 100, 8)
-	exp_label.add_theme_font_size_override("font_size", 11)
+	exp_label.text = _exp_display(character.job_level, character.job_exp)
+	exp_label.position = Vector2(panel_size.x - 130, 8)
+	exp_label.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	exp_label.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(exp_label)
 
@@ -181,7 +182,7 @@ func _create_stats_panel(panel_size: Vector2) -> Control:
 	var title = Label.new()
 	title.text = "STATS"
 	title.position = Vector2(8, 4)
-	title.add_theme_font_size_override("font_size", 14)
+	title.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	title.add_theme_color_override("font_color", TEXT_COLOR)
 	panel.add_child(title)
 
@@ -219,7 +220,7 @@ func _create_stats_panel(panel_size: Vector2) -> Control:
 	var secondary_title = Label.new()
 	secondary_title.text = "Combat Stats"
 	secondary_title.position = Vector2(8, y_offset)
-	secondary_title.add_theme_font_size_override("font_size", 11)
+	secondary_title.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	secondary_title.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(secondary_title)
 	y_offset += 18
@@ -239,7 +240,7 @@ func _create_stats_panel(panel_size: Vector2) -> Control:
 		var sec_label = Label.new()
 		sec_label.text = "%s: %s" % [sec_stat["name"], sec_stat["value"]]
 		sec_label.position = Vector2(16, y_offset)
-		sec_label.add_theme_font_size_override("font_size", 10)
+		sec_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 		sec_label.add_theme_color_override("font_color", STAT_COLOR)
 		panel.add_child(sec_label)
 		y_offset += 16
@@ -255,7 +256,7 @@ func _create_stat_row(stat: Dictionary, y_pos: int) -> Control:
 	var name_label = Label.new()
 	name_label.text = stat["name"]
 	name_label.position = Vector2(16, y_pos)
-	name_label.add_theme_font_size_override("font_size", 12)
+	name_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	name_label.add_theme_color_override("font_color", STAT_COLOR)
 	row.add_child(name_label)
 
@@ -263,7 +264,7 @@ func _create_stat_row(stat: Dictionary, y_pos: int) -> Control:
 	var value_label = Label.new()
 	value_label.text = str(stat["current"])
 	value_label.position = Vector2(100, y_pos)
-	value_label.add_theme_font_size_override("font_size", 12)
+	value_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	value_label.add_theme_color_override("font_color", TEXT_COLOR)
 	row.add_child(value_label)
 
@@ -273,8 +274,9 @@ func _create_stat_row(stat: Dictionary, y_pos: int) -> Control:
 		var breakdown_label = Label.new()
 		breakdown_label.text = "(%d %s%d)" % [stat["base"], "+" if diff > 0 else "", diff]
 		breakdown_label.position = Vector2(140, y_pos)
-		breakdown_label.add_theme_font_size_override("font_size", 10)
-		breakdown_label.add_theme_color_override("font_color", BONUS_COLOR if diff > 0 else PENALTY_COLOR)
+		breakdown_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
+		# Tick 236: AccessibilityPalette so bonus/penalty colors swap to cyan/magenta in color-blind mode.
+		breakdown_label.add_theme_color_override("font_color", AccessibilityPalette.bonus() if diff > 0 else AccessibilityPalette.penalty())
 		row.add_child(breakdown_label)
 
 	return row
@@ -301,7 +303,7 @@ func _create_equipment_status_panel(panel_size: Vector2) -> Control:
 	var equip_title = Label.new()
 	equip_title.text = "EQUIPMENT"
 	equip_title.position = Vector2(8, y_offset)
-	equip_title.add_theme_font_size_override("font_size", 14)
+	equip_title.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	equip_title.add_theme_color_override("font_color", TEXT_COLOR)
 	panel.add_child(equip_title)
 	y_offset += 24
@@ -348,7 +350,7 @@ func _create_equipment_status_panel(panel_size: Vector2) -> Control:
 	var passive_title = Label.new()
 	passive_title.text = "PASSIVES (%d/%d)" % [character.equipped_passives.size(), character.max_passive_slots]
 	passive_title.position = Vector2(8, y_offset)
-	passive_title.add_theme_font_size_override("font_size", 12)
+	passive_title.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	passive_title.add_theme_color_override("font_color", TEXT_COLOR)
 	panel.add_child(passive_title)
 	y_offset += 18
@@ -357,7 +359,7 @@ func _create_equipment_status_panel(panel_size: Vector2) -> Control:
 		var none_label = Label.new()
 		none_label.text = "(none equipped)"
 		none_label.position = Vector2(16, y_offset)
-		none_label.add_theme_font_size_override("font_size", 10)
+		none_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 		none_label.add_theme_color_override("font_color", DISABLED_COLOR)
 		panel.add_child(none_label)
 		y_offset += 16
@@ -365,10 +367,14 @@ func _create_equipment_status_panel(panel_size: Vector2) -> Control:
 		for passive_id in character.equipped_passives:
 			var passive_data = PassiveSystem.get_passive(passive_id)
 			var passive_label = Label.new()
-			passive_label.text = "- %s" % passive_data.get("name", passive_id)
+			## Tick 185: prettify raw-id fallback (snake_case → Title
+			## Case). Same treatment as the MenuScene passive
+			## display sites and tick 141's JobMenu.
+			passive_label.text = "- %s" % passive_data.get("name", passive_id.replace("_", " ").capitalize())
 			passive_label.position = Vector2(16, y_offset)
-			passive_label.add_theme_font_size_override("font_size", 10)
-			passive_label.add_theme_color_override("font_color", BONUS_COLOR)
+			passive_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
+			# Tick 236: AccessibilityPalette.
+			passive_label.add_theme_color_override("font_color", AccessibilityPalette.bonus())
 			panel.add_child(passive_label)
 			y_offset += 14
 
@@ -378,7 +384,7 @@ func _create_equipment_status_panel(panel_size: Vector2) -> Control:
 	var status_title = Label.new()
 	status_title.text = "STATUS EFFECTS"
 	status_title.position = Vector2(8, y_offset)
-	status_title.add_theme_font_size_override("font_size", 12)
+	status_title.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	status_title.add_theme_color_override("font_color", TEXT_COLOR)
 	panel.add_child(status_title)
 	y_offset += 18
@@ -387,16 +393,17 @@ func _create_equipment_status_panel(panel_size: Vector2) -> Control:
 		var none_label = Label.new()
 		none_label.text = "(none)"
 		none_label.position = Vector2(16, y_offset)
-		none_label.add_theme_font_size_override("font_size", 10)
+		none_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 		none_label.add_theme_color_override("font_color", DISABLED_COLOR)
 		panel.add_child(none_label)
 		y_offset += 16
 	else:
 		for status in character.status_effects:
 			var status_label = Label.new()
-			status_label.text = "- %s" % status.capitalize()
+			# Tick 215: shared StatusNames util — single source of truth across 4 sites + override hook for future custom phrasing.
+			status_label.text = "- %s" % StatusNames.display(status)
 			status_label.position = Vector2(16, y_offset)
-			status_label.add_theme_font_size_override("font_size", 10)
+			status_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 			status_label.add_theme_color_override("font_color", STATUS_BAD_COLOR)
 			panel.add_child(status_label)
 			y_offset += 14
@@ -408,21 +415,45 @@ func _create_equipment_status_panel(panel_size: Vector2) -> Control:
 		var injury_title = Label.new()
 		injury_title.text = "PERMANENT INJURIES"
 		injury_title.position = Vector2(8, y_offset)
-		injury_title.add_theme_font_size_override("font_size", 12)
-		injury_title.add_theme_color_override("font_color", INJURY_COLOR)
+		injury_title.add_theme_font_size_override("font_size", TextScale.scaled(12))
+		# Tick 236: AccessibilityPalette injury color.
+		injury_title.add_theme_color_override("font_color", AccessibilityPalette.injury())
 		panel.add_child(injury_title)
 		y_offset += 18
 
 		for injury in character.permanent_injuries:
 			var injury_label = Label.new()
-			injury_label.text = "- %s: -%d" % [injury.get("stat", "unknown").capitalize(), injury.get("penalty", 0)]
+			injury_label.text = _format_injury(injury)
 			injury_label.position = Vector2(16, y_offset)
-			injury_label.add_theme_font_size_override("font_size", 10)
-			injury_label.add_theme_color_override("font_color", INJURY_COLOR)
+			injury_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
+			injury_label.add_theme_color_override("font_color", AccessibilityPalette.injury())
 			panel.add_child(injury_label)
 			y_offset += 14
 
 	return panel
+
+
+## "- Fractured ribs (Max HP -8)" — injuries carry authored flavor
+## (BattleManager.INJURY_TYPES descriptions); rendering the raw stat
+## key ("Max_hp: -8") threw that away and read like debug output.
+static func _format_injury(injury: Dictionary) -> String:
+	var stat_names := {"max_hp": "Max HP", "max_mp": "Max MP"}
+	var stat_key: String = str(injury.get("stat", "unknown"))
+	var stat_pretty: String = stat_names.get(stat_key, stat_key.capitalize())
+	var penalty: int = int(injury.get("penalty", 0))
+	var desc: String = str(injury.get("description", ""))
+	if desc == "":
+		return "- %s -%d" % [stat_pretty, penalty]
+	return "- %s (%s -%d)" % [desc, stat_pretty, penalty]
+
+
+## EXP readout showing progress to the next level. The gain_job_exp threshold is
+## job_level*100 and job_exp resets each level, so "150 / 300" reads as progress,
+## not a bare running total. Level 99 is the cap — show MAX instead of a target.
+static func _exp_display(job_level: int, job_exp: int) -> String:
+	if job_level >= 99:
+		return "EXP: MAX"
+	return "EXP: %d / %d" % [job_exp, job_level * 100]
 
 
 func _create_equip_row(slot_name: String, item_name: String, color: Color, y_pos: int) -> Control:
@@ -432,14 +463,14 @@ func _create_equip_row(slot_name: String, item_name: String, color: Color, y_pos
 	var slot_label = Label.new()
 	slot_label.text = "%s:" % slot_name
 	slot_label.position = Vector2(16, y_pos)
-	slot_label.add_theme_font_size_override("font_size", 10)
+	slot_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	slot_label.add_theme_color_override("font_color", DISABLED_COLOR)
 	row.add_child(slot_label)
 
 	var item_label = Label.new()
 	item_label.text = item_name
 	item_label.position = Vector2(80, y_pos)
-	item_label.add_theme_font_size_override("font_size", 10)
+	item_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	item_label.add_theme_color_override("font_color", color if item_name != "(none)" else DISABLED_COLOR)
 	row.add_child(item_label)
 

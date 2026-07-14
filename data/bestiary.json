@@ -17,7 +17,7 @@
   },
   "goblin": {
     "epithet": "Knife-Heavy Pessimist",
-    "flavor": "Short, mean, carries four knives \u2014 three of which it refuses to use because they are, quote, for emergencies. The current fight apparently does not count."
+    "flavor": "Short, mean, carries four knives — three of which it refuses to use because they are, quote, for emergencies. The current fight apparently does not count."
   },
   "wolf": {
     "epithet": "Pack Mathematician",
@@ -117,7 +117,7 @@
   },
   "crystal_golem": {
     "epithet": "Prismatic Bulwark",
-    "flavor": "Carved from a single piece of geological time, animated by a spell some wizard forgot to un-cast. It reflects magic the way a cathedral reflects candlelight \u2014 beautifully, and back at you."
+    "flavor": "Carved from a single piece of geological time, animated by a spell some wizard forgot to un-cast. It reflects magic the way a cathedral reflects candlelight — beautifully, and back at you."
   },
   "rogue_automaton": {
     "epithet": "Error Walker",
@@ -245,7 +245,7 @@
   },
   "recursive_loop": {
     "epithet": "Function That Calls Itself",
-    "flavor": "An entity that exists by calling itself, which exists by calling itself, which exists by \u2014 its own self-destruct ability is called Stack Overflow. You will know when it fires."
+    "flavor": "An entity that exists by calling itself, which exists by calling itself, which exists by — its own self-destruct ability is called Stack Overflow. You will know when it fires."
   },
   "null_entity": {
     "epithet": "Shape of the Deleted",
@@ -257,7 +257,7 @@
   },
   "empty_set": {
     "epithet": "Contains Nothing",
-    "flavor": "A set with no elements. How do you hit a set with no elements? You do not. It attacks by taking things away from you \u2014 buffs, statuses, the certainty you had about your plan."
+    "flavor": "A set with no elements. How do you hit a set with no elements? You do not. It attacks by taking things away from you — buffs, statuses, the certainty you had about your plan."
   },
   "the_absence": {
     "epithet": "Where Something Was",
@@ -277,7 +277,7 @@
   },
   "masterite_tempo_medieval": {
     "epithet": "The Swift Ranger",
-    "flavor": "A hunter who has decided the deepest part of this forest is his country. He opens with a courtesy shot \u2014 not to hit, to announce. Then he closes. He is fast enough that first and last blur."
+    "flavor": "A hunter who has decided the deepest part of this forest is his country. He opens with a courtesy shot — not to hit, to announce. Then he closes. He is fast enough that first and last blur."
   },
   "masterite_curator_medieval": {
     "epithet": "The Ember Judge",
@@ -333,7 +333,7 @@
   },
   "masterite_warden_abstract": {
     "epithet": "The Form",
-    "flavor": "Not a defender \u2014 defense itself, as a shape, as a law. It is the immovability against which movement is defined. Hitting it does not feel like hitting something. It feels like a proof refusing to close."
+    "flavor": "Not a defender — defense itself, as a shape, as a law. It is the immovability against which movement is defined. Hitting it does not feel like hitting something. It feels like a proof refusing to close."
   },
   "masterite_arbiter_abstract": {
     "epithet": "The Function",
@@ -341,7 +341,7 @@
   },
   "masterite_tempo_abstract": {
     "epithet": "The Sequence",
-    "flavor": "Sequence itself, given an agenda. It controls what comes first, what follows, and what \u2014 after sufficient escalation \u2014 is struck from the record entirely."
+    "flavor": "Sequence itself, given an agenda. It controls what comes first, what follows, and what — after sufficient escalation — is struck from the record entirely."
   },
   "masterite_curator_abstract": {
     "epithet": "The Entropy",
@@ -349,6 +349,30 @@
   },
   "chancellor_mordaine": {
     "epithet": "Sorceress-Usurper of Harmonia",
-    "flavor": "She does not draw a sword. She does not raise her voice. She simply notes that you arrived later than her schedule predicted, and adjusts the schedule. The throne room is exactly the temperature of a server room. She does not so much fight you as audit you \u2014 testing variables, recording responses, allowing some attacks through to confirm the damage formula still holds. Defeat her and you do not feel victorious. You feel like you passed an evaluation that was never explained to you, conducted by an evaluator who is already designing the next one."
+    "flavor": "She does not draw a sword. She does not raise her voice. She simply notes that you arrived later than her schedule predicted, and adjusts the schedule. The throne room is exactly the temperature of a server room. She does not so much fight you as audit you — testing variables, recording responses, allowing some attacks through to confirm the damage formula still holds. Defeat her and you do not feel victorious. You feel like you passed an evaluation that was never explained to you, conducted by an evaluator who is already designing the next one."
+  },
+  "fighter_skeleton_knight": {
+    "epithet": "The Honorable Bone",
+    "flavor": "A skeleton who insists, politely, on the old forms. He will not strike you while you defend. He will bow before the duel. He will nod when you find his tempo. There is no malice in him — only the memory of a code that outlived the body that upheld it. The Fighter meets him blade to blade because that is what the Skeleton Knight is for: to teach a young resolve that resolve is a rhythm, not a shout."
+  },
+  "cleric_survive_target": {
+    "epithet": "The Grinding Wound",
+    "flavor": "Not a monster in any conventional sense. A wound that will not stop bleeding. A miasma that presses on the villager as if it has all the time in the world — which it does. The Cleric cannot defeat it. No one can. She can only hold the villager's hand and pray, and pray, and pray, until the pressure lifts of its own accord. Faith, it turns out, is a form of endurance."
+  },
+  "rogue_lockward": {
+    "epithet": "Bronze Protocol",
+    "flavor": "A treasure-guardian construct built to defend the vault by executing exactly one program: DEFEND, COUNTER, REPEAT. Every cycle, for one heartbeat, its rotation exposes a flank. The Rogue watches. She has always watched. When she moves, she moves for the paper no one else notices — not for the vault's obvious loot. The Lockward, in defeat, does not seem to mind."
+  },
+  "mage_prismatic_construct": {
+    "epithet": "Crystalline Metronome",
+    "flavor": "A crystal automaton whose elemental face rotates in strict sequence — red, blue, gold. Its taunt is its telegraph: the color it names is the element that undoes it. The Mage does not need to be clever. He needs to READ. And when his first reading is wrong, he needs to say 'then it's the other thing' without flinching. That, the construct notes, is logic."
+  },
+  "bard_hostile_courtier": {
+    "epithet": "The Sneering Velvet",
+    "flavor": "A capital-city functionary who refuses to treat with mercenaries. Blades will not move him — his court armor is embroidered with heirloom protection charms. Insult him and he escalates. Threaten him and he calls the guard. He can only be talked down, and only by someone who listens first — who hears the name he thought no one remembered — and then speaks once, at the exact right moment. The Bard writes what she hears down. She does not read it aloud."
+  },
+  "rogue_mailbox": {
+    "epithet": "Undelivered",
+    "flavor": "Regulation blue. Bolted down, allegedly. It has decided that everything placed inside it is, legally speaking, its. The flag is up. That means it has mail for you."
   }
 }

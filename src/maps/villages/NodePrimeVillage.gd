@@ -23,6 +23,10 @@ func _get_village_display_name() -> String:
 	return "Node Prime"
 
 
+func _get_music_area_id() -> String:
+	return "node_prime_village"
+
+
 func _get_map_pixel_size() -> Vector2i:
 	return Vector2i(MAP_WIDTH * TILE_SIZE, MAP_HEIGHT * TILE_SIZE)
 
@@ -134,6 +138,17 @@ func _setup_buildings() -> void:
 	smith.keeper_name = "COMPILE-R"
 	smith.position = Vector2(14 * TILE_SIZE, 3 * TILE_SIZE)
 	buildings.add_child(smith)
+
+	# === DAEMON LOUNGE DOOR ===
+	# SUDO-1's terminal room. Foreshadows RootProcess (W5) AND
+	# NullChamber (W6) — the only W5 interior, so it does double
+	# duty.
+	spawn_points["daemon_lounge_exit"] = Vector2(6 * TILE_SIZE, 9 * TILE_SIZE)
+	_add_interior_door("DaemonLoungeDoor", "node_prime_daemon_lounge", "Enter Daemon Lounge", Vector2(6 * TILE_SIZE, 8 * TILE_SIZE))
+	# === CACHE DOOR ===
+	# South face of the CCC building (cols 9-11, rows 2-4) — where the world keeps what it might render again.
+	spawn_points["cache_exit"] = Vector2(10 * TILE_SIZE, 5.5 * TILE_SIZE)
+	_add_interior_door("CacheDoor", "node_prime_cache", "Enter The Cache", Vector2(10 * TILE_SIZE, 4.5 * TILE_SIZE))
 
 
 func _setup_treasures() -> void:

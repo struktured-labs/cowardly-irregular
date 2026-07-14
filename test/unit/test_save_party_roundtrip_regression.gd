@@ -70,7 +70,7 @@ func test_combatant_to_dict_includes_full_state() -> void:
 		"equipped_weapon", "equipped_armor", "equipped_accessory",
 		"secondary_job_id", "learned_abilities", "learned_passives",
 		"equipped_passives", "inventory", "doom_counter",
-		"pinned_abilities", "recent_abilities",
+		"pinned_abilities", "recent_abilities", "purchased_abilities",
 		"status_effects", "permanent_injuries", "job_profiles"]:
 		assert_true(d.has(key),
 			"Combatant.to_dict() must include '%s' (was missing pre-fix)" % key)

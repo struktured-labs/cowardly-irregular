@@ -883,14 +883,20 @@ func test_cleric_has_esuna_and_regen() -> void:
 	assert_eq(err, OK, "jobs.json should parse")
 	var jobs = json.data
 
+	# Item 18 (2026-07-02): base kits pared — spells beyond cure/protect
+	# are now level-gated via abilities_at_level. The completeness pin
+	# checks REACHABILITY (base + level unlocks), not innate-at-1.
 	var cleric = jobs.get("cleric", {})
-	var abilities = cleric.get("abilities", [])
+	var abilities = (cleric.get("abilities", []) as Array).duplicate()
+	for lvl in cleric.get("abilities_at_level", {}):
+		abilities.append_array(cleric["abilities_at_level"][lvl])
 	assert_true("esuna" in abilities, "Cleric should have Esuna")
 	assert_true("regen" in abilities, "Cleric should have Regen")
 	assert_true("cure" in abilities, "Cleric should have Cure")
 	assert_true("cura" in abilities, "Cleric should have Cura")
 	assert_true("raise" in abilities, "Cleric should have Raise")
 	assert_true("protect" in abilities, "Cleric should have Protect")
+	assert_true("cure" in cleric.get("abilities", []), "Cure stays innate — the duel + presets depend on it")
 
 
 # ---- Mage tier 2 spell completeness ----
@@ -904,14 +910,20 @@ func test_mage_has_all_tier2_spells() -> void:
 	assert_eq(err, OK, "jobs.json should parse")
 	var jobs = json.data
 
+	# Item 18: tier-2 spells are level-gated now — completeness =
+	# reachable through base + abilities_at_level.
 	var mage = jobs.get("mage", {})
-	var abilities = mage.get("abilities", [])
+	var abilities = (mage.get("abilities", []) as Array).duplicate()
+	for lvl in mage.get("abilities_at_level", {}):
+		abilities.append_array(mage["abilities_at_level"][lvl])
 	assert_true("fire" in abilities, "Mage should have Fire")
 	assert_true("fira" in abilities, "Mage should have Fira")
 	assert_true("blizzard" in abilities, "Mage should have Blizzard")
 	assert_true("blizzara" in abilities, "Mage should have Blizzara")
 	assert_true("thunder" in abilities, "Mage should have Thunder")
 	assert_true("thundara" in abilities, "Mage should have Thundara")
+	for base_spell in ["fire", "blizzard", "thunder"]:
+		assert_true(base_spell in mage.get("abilities", []), "%s stays innate — the prismatic duel depends on it" % base_spell)
 
 
 # ===========================================================================
@@ -997,8 +1009,11 @@ func test_mage_has_all_tier3_spells() -> void:
 	assert_eq(err, OK, "jobs.json should parse")
 	var jobs = json.data
 
+	# Item 18: -ga tier is level-gated (11/12/13) — reachability check.
 	var mage = jobs.get("mage", {})
-	var abilities = mage.get("abilities", [])
+	var abilities = (mage.get("abilities", []) as Array).duplicate()
+	for lvl in mage.get("abilities_at_level", {}):
+		abilities.append_array(mage["abilities_at_level"][lvl])
 	for spell in ["firaga", "blizzaga", "thundaga"]:
 		assert_true(spell in abilities, "Mage should have %s" % spell)
 

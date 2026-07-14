@@ -400,7 +400,7 @@ def build_batch_queue(world_arg: str | int | None, shared: bool) -> list[dict]:
 def convert_to_ogg(src: Path, dest: Path) -> None:
     print(f"  Converting to OGG: {dest.name}")
     result = subprocess.run(
-        ["ffmpeg", "-y", "-i", str(src), "-c:a", "libvorbis", "-q:a", "6", str(dest)],
+        ["ffmpeg", "-y", "-i", str(src), "-ac", "1", "-c:a", "libvorbis", "-b:a", "96k", str(dest)],
         capture_output=True, text=True,
     )
     if result.returncode != 0:
@@ -821,8 +821,12 @@ class SunoBrowser:
         print(f"  Create clicked, waiting for generation...")
 
         # Wait for generation API response — extract only NEW clip IDs
+        # Headed mode gets a long window so a human can solve a visual captcha
         clip_ids = []
-        deadline = time.monotonic() + 30
+        detect_sec = 30 if self._headless else 180
+        if not self._headless:
+            print("  Headed mode: solve any captcha in the browser window (waiting up to 180s)...")
+        deadline = time.monotonic() + detect_sec
         while time.monotonic() < deadline:
             page.wait_for_timeout(2000)
             # Check all responses for NEW clip IDs we haven't seen before
@@ -949,7 +953,8 @@ def main() -> None:
 
     # Generation args
     gen = parser.add_argument_group("generation")
-    gen.add_argument("--track-id", metavar="ID", help="Track ID")
+    gen.add_argument("--track-id", metavar="ID", nargs="+", default=None,
+                     help="Track ID(s) — multiple ride one browser session (one captcha solve)")
     gen.add_argument("--title", default="")
     gen.add_argument("--style", default="")
     gen.add_argument("--prompt", default="")
@@ -1059,23 +1064,24 @@ def main() -> None:
         queue = []
     else:
         world = int(args.world) if args.world else None
-        title, style, prompt = args.title, args.style, args.prompt
-        if world:
-            template = load_world_template(world, args.track_id)
-            title = title or template.get("title", "")
-            style = style or template.get("style", "")
-            prompt = prompt or template.get("prompt", "")
-        else:
-            shared = load_prompts().get("shared_tracks", {})
-            if args.track_id in shared:
-                entry = shared[args.track_id]
-                title = title or entry.get("title_template", "")
-                style = style or entry.get("style", "")
-                prompt = prompt or entry.get("prompt", "")
-        # Single track: check if pinned
-        if is_pinned(args.track_id):
-            die(f"Track '{args.track_id}' is pinned. Use --unpin first.")
-        queue = [{"track_id": args.track_id, "title": title, "style": style, "prompt": prompt}]
+        queue = []
+        for track_id in args.track_id:
+            title, style, prompt = args.title, args.style, args.prompt
+            if world:
+                template = load_world_template(world, track_id)
+                title = title or template.get("title", "")
+                style = style or template.get("style", "")
+                prompt = prompt or template.get("prompt", "")
+            else:
+                shared = load_prompts().get("shared_tracks", {})
+                if track_id in shared:
+                    entry = shared[track_id]
+                    title = title or entry.get("title_template", "")
+                    style = style or entry.get("style", "")
+                    prompt = prompt or entry.get("prompt", "")
+            if is_pinned(track_id):
+                die(f"Track '{track_id}' is pinned. Use --unpin first.")
+            queue.append({"track_id": track_id, "title": title, "style": style, "prompt": prompt})
 
     if not args.login and not queue:
         print("Nothing to generate.")

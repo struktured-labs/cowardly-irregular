@@ -12,6 +12,12 @@ const HEADER_COLOR = Color(1.0, 1.0, 0.4)
 const LABEL_COLOR = Color(0.6, 0.6, 0.7)
 const VALUE_COLOR = Color(0.4, 0.9, 0.4)
 const BAD_COLOR = Color(0.9, 0.3, 0.3)
+const BADGE_NEW_COLOR = Color(1.0, 0.85, 0.2)
+const BADGE_EARNED_COLOR = Color(0.55, 0.55, 0.65)
+const BADGE_BG_NEW = Color(0.15, 0.13, 0.06)
+const BADGE_BG_EARNED = Color(0.08, 0.08, 0.12)
+
+const AutogrindAchievementsScript = preload("res://src/autogrind/AutogrindAchievements.gd")
 
 var _stats: Dictionary = {}
 var _reason: String = ""
@@ -52,7 +58,8 @@ func _build_ui() -> void:
 		{"label": "Battles/Min", "value": "%.1f" % bpm, "color": VALUE_COLOR},
 		{"label": "Consecutive Wins", "value": str(_stats.get("consecutive_wins", 0)), "color": VALUE_COLOR},
 		{"label": "Efficiency", "value": "%.1fx" % _stats.get("efficiency", 1.0), "color": VALUE_COLOR},
-		{"label": "Corruption", "value": "%.2f" % _stats.get("corruption", 0.0), "color": BAD_COLOR if _stats.get("corruption", 0.0) > 2.0 else VALUE_COLOR},
+		{"label": "Corruption", "value": "%.2f / %.1f" % [_stats.get("corruption", 0.0), _stats.get("corruption_threshold", 5.0)], "color": BAD_COLOR if _stats.get("corruption", 0.0) > 2.0 else VALUE_COLOR},
+		{"label": "Save Corruption", "value": _format_save_corruption(_stats), "color": _save_corruption_color(_stats)},
 		{"label": "Adaptation", "value": "%.2f" % _stats.get("adaptation", 0.0), "color": LABEL_COLOR},
 		{"label": "Collapses", "value": str(_stats.get("collapse_count", 0)), "color": BAD_COLOR if _stats.get("collapse_count", 0) > 0 else VALUE_COLOR},
 	]
@@ -68,7 +75,7 @@ func _build_ui() -> void:
 	if not items_consumed.is_empty():
 		var item_parts: Array = []
 		for item_id in items_consumed:
-			item_parts.append("%s x%d" % [item_id.replace("_", " ").capitalize(), items_consumed[item_id]])
+			item_parts.append("%s x%d" % [_resolve_item_display_name(item_id), items_consumed[item_id]])
 		stats_data.append({"label": "Items Used", "value": ", ".join(item_parts), "color": LABEL_COLOR})
 	else:
 		stats_data.append({"label": "Items Used", "value": "None", "color": LABEL_COLOR})
@@ -84,10 +91,26 @@ func _build_ui() -> void:
 	if permadead.size() > 0:
 		stats_data.append({"label": "PERMADEAD", "value": ", ".join(permadead), "color": BAD_COLOR})
 
+	# newly earned this run render gold; already-unlocked render dim.
+	var gs := _get_game_state()
+	var split := AutogrindAchievementsScript.check_and_award(_stats, gs)
+	var newly: Array = split[0]
+	var previously: Array = split[1]
+	var all_badges: Array = newly + previously
+
 	# Compute panel height from row count
 	var row_h = 26.0
 	var panel_w = 520.0
-	var panel_h = 68.0 + stats_data.size() * row_h + 50.0  # header + rows + footer
+	# Pre-compute badge wrap so the panel grows to fit — the old flat 40px
+	# assumption silently dropped chips past panel_w-40 (a full catalog earned
+	# in one session would truncate to ~4 badges on a 520 panel).
+	var badge_layout: Array = _layout_badges(all_badges, panel_w)
+	var badge_rows: int = 0
+	if badge_layout.size() > 0:
+		badge_rows = int(badge_layout[badge_layout.size() - 1]["row"]) + 1
+	var badge_row_h: float = 40.0 * badge_rows
+	var badge_header_h := 20.0 if all_badges.size() > 0 else 0.0
+	var panel_h = 68.0 + stats_data.size() * row_h + badge_header_h + badge_row_h + 50.0
 	panel_h = min(panel_h, vp_size.y - 40)
 
 	var panel = Control.new()
@@ -141,6 +164,36 @@ func _build_ui() -> void:
 
 		y += row_h
 
+	if all_badges.size() > 0:
+		var badge_header = Label.new()
+		badge_header.text = "ACHIEVEMENTS  (%d new)" % newly.size() if newly.size() > 0 else "ACHIEVEMENTS"
+		badge_header.position = Vector2(20, y)
+		badge_header.add_theme_font_size_override("font_size", 12)
+		badge_header.add_theme_color_override("font_color", BADGE_NEW_COLOR if newly.size() > 0 else LABEL_COLOR)
+		panel.add_child(badge_header)
+		y += badge_header_h
+
+		var chip_h := 30.0
+		for placement in badge_layout:
+			var a: Dictionary = placement["badge"]
+			var chip_x: float = placement["x"]
+			var chip_y: float = y + float(placement["row"]) * 40.0
+			var chip_w: float = placement["w"]
+			var is_new: bool = a in newly
+			var chip_bg = ColorRect.new()
+			chip_bg.color = BADGE_BG_NEW if is_new else BADGE_BG_EARNED
+			chip_bg.position = Vector2(chip_x, chip_y)
+			chip_bg.size = Vector2(chip_w, chip_h)
+			panel.add_child(chip_bg)
+
+			var chip_lbl = Label.new()
+			chip_lbl.text = "%s %s" % [a.get("icon", "*"), a.get("name", a.get("id", "?"))]
+			chip_lbl.position = Vector2(chip_x + 6, chip_y + 6)
+			chip_lbl.add_theme_font_size_override("font_size", 12)
+			chip_lbl.add_theme_color_override("font_color", BADGE_NEW_COLOR if is_new else BADGE_EARNED_COLOR)
+			chip_lbl.tooltip_text = a.get("description", "")
+			panel.add_child(chip_lbl)
+
 	var footer_sep = ColorRect.new()
 	footer_sep.color = BORDER_LIGHT
 	footer_sep.position = Vector2(16, panel_h - 40)
@@ -155,6 +208,63 @@ func _build_ui() -> void:
 	dismiss_lbl.add_theme_color_override("font_color", LABEL_COLOR)
 	dismiss_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	panel.add_child(dismiss_lbl)
+
+
+## Tick 135: thin wrapper around ItemNameResolver.
+func _resolve_item_display_name(item_id: String) -> String:
+	return ItemNameResolver.resolve(item_id)
+
+
+func _format_save_corruption(stats: Dictionary) -> String:
+	var current: float = float(stats.get("save_corruption", 0.0))
+	var delta: float = float(stats.get("save_corruption_delta", 0.0))
+	if delta > 0.0001:
+		return "%.3f (+%.3f this session)" % [current, delta]
+	return "%.3f" % current
+
+
+func _save_corruption_color(stats: Dictionary) -> Color:
+	var current: float = float(stats.get("save_corruption", 0.0))
+	# GameState.corruption_level is clamped 0.0-1.0; >0.6 is the "save at risk" band.
+	if current > 0.6:
+		return BAD_COLOR
+	if current > 0.3:
+		return Color(1.0, 0.85, 0.2)
+	return VALUE_COLOR
+
+
+func _get_game_state() -> Node:
+	var tree: SceneTree = Engine.get_main_loop() as SceneTree
+	if tree != null and tree.root != null:
+		return tree.root.get_node_or_null("GameState")
+	return null
+
+
+func _measure_badge_width(a: Dictionary) -> float:
+	# ~6.5 px per char at font_size 12; icon + space + name.
+	var text := "%s %s" % [a.get("icon", "*"), a.get("name", a.get("id", "?"))]
+	return maxf(72.0, text.length() * 6.5 + 16.0)
+
+
+## Precompute wrap positions so panel_h can grow to fit all chips.
+## Returns [{badge, row, x, w}] — one entry per input badge, never fewer.
+func _layout_badges(all_badges: Array, panel_w: float) -> Array:
+	var chip_pad := 8.0
+	var start_x := 20.0
+	var wrap_x := panel_w - 20.0
+	var out: Array = []
+	var row := 0
+	var x := start_x
+	for a in all_badges:
+		var w: float = _measure_badge_width(a)
+		# Only wrap when there's already content on this row — a very wide chip
+		# always occupies its own row starting at start_x rather than getting dropped.
+		if x + w > wrap_x and x > start_x:
+			row += 1
+			x = start_x
+		out.append({"badge": a, "row": row, "x": x, "w": w})
+		x += w + chip_pad
+	return out
 
 
 func _compute_grade() -> Dictionary:

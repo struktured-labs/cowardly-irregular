@@ -13,6 +13,7 @@ var _glow_timer: float = 0.0
 var _indicator: Label
 var _player_in_zone: bool = false
 var _is_saving: bool = false
+var _last_fasttrav_ms: int = 0  # Debounce battle_advance (RB button + RT axis 5 both fire on one squeeze)
 
 
 func _ready() -> void:
@@ -22,6 +23,15 @@ func _ready() -> void:
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
 	add_to_group("interactables")
+	add_to_group("save_points")
+
+
+## True when the player stands in ANY crystal's zone — the save_point_only item gate (F3) reads this.
+static func player_at_any(tree: SceneTree) -> bool:
+	for sp in tree.get_nodes_in_group("save_points"):
+		if sp is SavePoint and sp._player_in_zone:
+			return true
+	return false
 
 
 func _process(delta: float) -> void:
@@ -65,7 +75,8 @@ func _setup_collision() -> void:
 
 	var col = CollisionShape2D.new()
 	var shape = CircleShape2D.new()
-	shape.radius = 128.0
+	# 128 read as a 4-tile grabber — the [A] Save prompt + save fired from across the plaza (struktured cap 2026-07-11); 48 = stand beside the crystal.
+	shape.radius = 48.0
 	col.shape = shape
 	col.position = Vector2(0, 0)
 	col.scale = Vector2(1.0, 1.67)  # Y-stretch: matches Mode 7 billboard Y:X ratio (0.3:0.5)
@@ -80,15 +91,31 @@ func _setup_indicator() -> void:
 	## to mash buttons to discover the interaction). Width grew to fit
 	## the [A] glyph cleanly without truncation.
 	_indicator = Label.new()
-	_indicator.text = "[A] Save"
+	_indicator.text = _indicator_text()
 	_indicator.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_indicator.position = Vector2(-32, -28)
-	_indicator.size = Vector2(64, 14)
+	_indicator.position = Vector2(-56, -28)
+	_indicator.size = Vector2(112, 14)
 	_indicator.add_theme_font_size_override("font_size", 10)
 	_indicator.add_theme_color_override("font_color", Color(0.7, 0.85, 1.0))
 	_indicator.visible = false
 	_indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_indicator)
+
+
+## "[R] Warp" appears once another crystal is attuned somewhere else.
+func _indicator_text() -> String:
+	var others: int = 0
+	for map_id in GameState.activated_crystals:
+		if map_id != _current_map_id():
+			others += 1
+	return "[A] Save · [R] Warp" if others > 0 else "[A] Save"
+
+
+func _current_map_id() -> String:
+	var game_loop = get_tree().root.get_node_or_null("GameLoop")
+	if game_loop and "_current_map_id" in game_loop:
+		return str(game_loop._current_map_id)
+	return ""
 
 
 func _on_body_entered(body: Node2D) -> void:
@@ -109,12 +136,68 @@ func _on_body_exited(body: Node2D) -> void:
 
 
 func _input(event: InputEvent) -> void:
+	# Cutscene/dialogue lock: this handler grabs ui_accept directly, so without the gate the A-press that advances dialogue ALSO hit the crystal ("Cannot save mid-cutscene" spam — struktured 2026-07-11, second report).
+	var ilm = get_tree().root.get_node_or_null("InputLockManager") if is_inside_tree() else null
+	if ilm and ilm.is_locked():
+		return
+	# The "save_crystal" tutorial hint fires on _on_body_entered — without this gate the dismiss A-press ALSO fires a save.
+	if TutorialHint.is_any_active():
+		return
 	if _player_in_zone and not _is_saving and event.is_action_pressed("ui_accept"):
 		_is_saving = true
 		SoundManager.play_ui("save_crystal_activate")
+		# Attune this crystal for fast travel the first time it's used.
+		GameState.activate_crystal(_current_map_id())
+		_indicator.text = _indicator_text()
 		save_requested.emit()
 		get_viewport().set_input_as_handled()
 		_show_save_confirmation()
+	elif _player_in_zone and not _is_saving and event.is_action_pressed("battle_advance"):
+		# Debounce: RB button + RT axis 5 both fire on one squeeze; a drifting trigger would open FastTravelMenu twice on top of itself.
+		var now_ms := Time.get_ticks_msec()
+		if now_ms - _last_fasttrav_ms < 200:
+			return
+		_last_fasttrav_ms = now_ms
+		if _open_fast_travel():
+			get_viewport().set_input_as_handled()
+
+
+## R at an attuned crystal opens the warp menu. battle_advance is battle-only
+## elsewhere, so the binding is free in exploration context.
+func _open_fast_travel() -> bool:
+	var others: int = 0
+	for map_id in GameState.activated_crystals:
+		if map_id != _current_map_id():
+			others += 1
+	if others == 0:
+		return false
+
+	var player_node = get_tree().get_first_node_in_group("player")
+	if player_node and player_node.has_method("set_can_move"):
+		player_node.set_can_move(false)
+
+	var menu = FastTravelMenu.new()
+	menu.current_map_id = _current_map_id()
+	menu.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var layer = CanvasLayer.new()
+	layer.layer = 50
+	get_tree().root.add_child(layer)
+	layer.add_child(menu)
+	menu.size = get_viewport().get_visible_rect().size
+
+	menu.teleport_requested.connect(func(map_id: String, spawn: String):
+		layer.queue_free()
+		var game_loop = get_tree().root.get_node_or_null("GameLoop")
+		if game_loop and game_loop.has_method("_on_area_transition"):
+			game_loop._on_area_transition(map_id, spawn)
+	)
+	menu.closed.connect(func():
+		if is_instance_valid(layer):
+			layer.queue_free()
+		if is_instance_valid(player_node) and player_node.has_method("set_can_move"):
+			player_node.set_can_move(true)
+	)
+	return true
 
 
 func _show_save_confirmation() -> void:

@@ -1,0 +1,128 @@
+{
+  "id": "world1_word_from_capital",
+  "title": "Word From the Capital",
+  "world": 1,
+  "markerless": true,
+  "giver": {
+    "npc_id": "rowan_harmonia",
+    "display_name": "Rowan",
+    "location": {
+      "map_id": "harmonia_village",
+      "near": "well"
+    },
+    "spawn_flag": ""
+  },
+  "description": "Rowan's brother Aldrin went to Scriptura six months ago and stopped writing. She wants word of him but can't leave the village. No marker. No reward indicator. This quest exists for the player who talks to everyone.",
+  "playstyle_tags": [
+    "story",
+    "no_marker",
+    "talks_to_everyone"
+  ],
+  "dialogue": {
+    "offer": [
+      {
+        "speaker": "Rowan",
+        "text": "Sorry — I'm not usually... I've started this letter eleven times. My brother's in Scriptura. Six months, no word. He always wrote. Every week, then every month, then.",
+        "theme": "villager"
+      },
+      {
+        "speaker": "Rowan",
+        "text": "I can't leave. The farm doesn't run itself and mother can't — anyway. If your road ever goes that far. His name is Aldrin. He has my chin and no sense.",
+        "theme": "villager"
+      }
+    ],
+    "accept": [
+      {
+        "speaker": "Rowan",
+        "text": "Take the family ring. He'll know it. He gave it to me when he left and I'm giving it right back, which he'll understand, because it means come home or write, one or the other.",
+        "theme": "villager"
+      }
+    ],
+    "decline": [
+      {
+        "speaker": "Rowan",
+        "text": "Of course. You've got your own road. Forget I said anything — I'll finish the letter one of these days.",
+        "theme": "villager"
+      }
+    ],
+    "in_progress": [
+      {
+        "speaker": "Rowan",
+        "text": "The capital's big, I hear. He'd be somewhere with books. He was always somewhere with books.",
+        "theme": "villager"
+      }
+    ],
+    "ready_to_turn_in": [
+      {
+        "speaker": "Rowan",
+        "text": "You're back. You have the look of someone carrying something. Is it — is he—",
+        "theme": "villager"
+      }
+    ],
+    "complete": [
+      {
+        "speaker": "Rowan",
+        "text": "...",
+        "theme": "villager"
+      },
+      {
+        "speaker": "Rowan",
+        "text": "He's embarrassed. That means he's fine.",
+        "theme": "villager"
+      },
+      {
+        "speaker": "Rowan",
+        "text": "My old ribbon. He kept it. That absolute — thank you. Thank you for carrying this.",
+        "theme": "villager"
+      }
+    ]
+  },
+  "objectives": [
+    {
+      "step": 1,
+      "description": "Take Rowan's ring and her half-finished worry to the capital.",
+      "type": "talk",
+      "target_npc": "rowan_harmonia",
+      "flag_on_complete": "quest_world1_word_from_capital_accepted"
+    },
+    {
+      "step": 2,
+      "description": "Find Aldrin somewhere in Scriptura.",
+      "type": "talk",
+      "target_npc": "aldrin_scriptura",
+      "required_flag": "quest_world1_word_from_capital_accepted",
+      "flag_on_complete": "quest_world1_word_from_capital_letter_obtained"
+    },
+    {
+      "step": 3,
+      "description": "Bring the letter and the ribbon back to Rowan.",
+      "type": "talk",
+      "target_npc": "rowan_harmonia",
+      "required_flag": "quest_world1_word_from_capital_letter_obtained"
+    }
+  ],
+  "rewards": {
+    "gold": 0,
+    "exp": 0,
+    "items": [],
+    "job_variants": {
+      "bard": {
+        "description": "Dialogue-only: the Bard offers to compose Aldrin's letter in verse — saying what he can't figure out how to say in prose. Rowan laughs reading it ('he always did hide behind jokes when he was scared') and reties the ribbon in a sailor's knot meaning 'safe passage home,' which the Bard recognizes.",
+        "items": []
+      }
+    }
+  },
+  "flag_on_complete": "quest_world1_word_from_capital_complete",
+  "unlocks_dialogue": [
+    {
+      "npc_id": "rowan_w2",
+      "note": "W2: Rowan has been 'relocated' — she's a librarian in Maple Heights. Extended dialogue about relationships preserved across a discontinuity."
+    },
+    {
+      "npc_id": "aldrin_w2",
+      "note": "W2: Aldrin works in the independent bookshop. 'I didn't know if she'd still be there when I was ready to write. I'm glad someone carried the letter.'"
+    }
+  ],
+  "cross_world_connection": "W5 Node Prime: a cached memory in a deprecated packet holds four lines of the letter. The Mage (Compiler) reads it: 'Someone cared enough that this made it here.'",
+  "_wiring_notes": "Deliberately markerless — Rowan has no quest indicator; she only opens up on direct interact. Aldrin is placed in the Scriptweaver's Guild area of Scriptura, findable by asking 4 citizen NPCs (each points a direction) or spotted directly by a Rogue lead in the market crowd — both are overworld placement/dialogue flavor, engine-wise step 2 is a plain talk objective. The signet ring / letter / ribbon are narrative-carried, no inventory objects. Design doc has Rowan leave after Mordaine's defeat (quest expires end of Act 4) — v1 has no expiry support; she simply stays. If expiry ships later, gate her despawn on cutscene_flag_chapter10_complete. Zero mechanical reward is intentional per the design doc; do not add gold to 'fix' it."
+}

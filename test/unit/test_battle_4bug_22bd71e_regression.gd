@@ -242,8 +242,8 @@ func test_monster_spawner_calls_deactivate_before_queue_free() -> void:
 # ===========================================================================
 # Bug #1: CTB timeline panel position (layout integrity)
 # ===========================================================================
-## Turn order overlapped the PartyStatusPanel. Fix: CTB panel anchors to
-## PRESET_BOTTOM_RIGHT with offset_top <= -240; party panel bottom at 460.
+## Turn order originally moved to BOTTOM_RIGHT, then to BOTTOM_LEFT 2026-06-17
+## (user feedback) so it no longer overlaps the right-side party panel at all.
 
 func test_battle_scene_party_panel_offset_bottom_is_460() -> void:
 	var file = FileAccess.open("res://src/battle/BattleScene.tscn", FileAccess.READ)
@@ -256,14 +256,14 @@ func test_battle_scene_party_panel_offset_bottom_is_460() -> void:
 		"BattleScene.tscn PartyStatusPanel offset_bottom should be 460.0 (regression: CTB/party overlap)")
 
 
-func test_battle_ui_manager_ctb_panel_bottom_right_anchor() -> void:
+func test_battle_ui_manager_ctb_panel_bottom_left_anchor() -> void:
 	var file = FileAccess.open("res://src/battle/BattleUIManager.gd", FileAccess.READ)
 	assert_not_null(file, "BattleUIManager.gd should exist")
 	var text = file.get_as_text()
 	file.close()
 
-	assert_true(text.find("PRESET_BOTTOM_RIGHT") != -1,
-		"BattleUIManager must anchor CTB panel via PRESET_BOTTOM_RIGHT")
+	assert_true(text.find("PRESET_BOTTOM_LEFT") != -1,
+		"BattleUIManager must anchor CTB panel via PRESET_BOTTOM_LEFT (moved 2026-06-17)")
 	# Updated 2026-05-02: CTB shrunk from offset_top=-240 (height 230)
 	# to offset_top=-180 (height 170) AFTER the user reported that the
 	# turn-order panel still clipped over the last party member when

@@ -17,10 +17,10 @@ const ARROW_FONT_SIZE: int = 14
 const TEXT_FONT_SIZE: int = 10
 
 const EDGE_CONFIG = {
-	"north": {"arrow": "▲", "text": "Edge of world", "anchor_x": 0.5, "anchor_y": 0.0, "offset": Vector2(0, 50)},
-	"south": {"arrow": "▼", "text": "Edge of world", "anchor_x": 0.5, "anchor_y": 1.0, "offset": Vector2(0, -30)},
-	"west": {"arrow": "◄", "text": "Edge", "anchor_x": 0.0, "anchor_y": 0.5, "offset": Vector2(20, 0)},
-	"east": {"arrow": "►", "text": "Edge", "anchor_x": 1.0, "anchor_y": 0.5, "offset": Vector2(-40, 0)},
+	"north": {"arrow": "^", "text": "Edge of world", "anchor_x": 0.5, "anchor_y": 0.0, "offset": Vector2(0, 50)},
+	"south": {"arrow": "v", "text": "Edge of world", "anchor_x": 0.5, "anchor_y": 1.0, "offset": Vector2(0, -30)},
+	"west": {"arrow": "<", "text": "Edge", "anchor_x": 0.0, "anchor_y": 0.5, "offset": Vector2(20, 0)},
+	"east": {"arrow": ">", "text": "Edge", "anchor_x": 1.0, "anchor_y": 0.5, "offset": Vector2(-40, 0)},
 }
 
 

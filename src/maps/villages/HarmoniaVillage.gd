@@ -95,6 +95,12 @@ func _generate_map() -> void:
 	spawn_points["default"] = spawn_points["entrance"]
 	# Bar exit spawn (in front of The Dancing Tonberry)
 	spawn_points["bar_exit"] = Vector2(26 * TILE_SIZE, 16 * TILE_SIZE)
+	# Chapel exit spawn (in front of the H cluster at columns 3-5, rows 13-15)
+	spawn_points["chapel_exit"] = Vector2(4 * TILE_SIZE, 16 * TILE_SIZE)
+	# Library exit spawn (in front of the top-left H cluster at cols 3-5, rows 2-4)
+	spawn_points["library_exit"] = Vector2(4 * TILE_SIZE, 5 * TILE_SIZE)
+	# Cartographer exit spawn (in front of the top-right PPP cluster at cols 22-24, rows 2-4)
+	spawn_points["cartographer_exit"] = Vector2(23 * TILE_SIZE, 5 * TILE_SIZE)
 
 
 func _char_to_tile_type(char: String) -> int:
@@ -129,17 +135,36 @@ func _setup_transitions() -> void:
 	exit_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(exit_trans)
 
-	# Suburban portal - mysterious glowing teleporter pad
-	var suburban_portal = AreaTransitionScript.new()
-	suburban_portal.name = "SuburbanPortal"
-	suburban_portal.target_map = "suburban_overworld"
-	suburban_portal.target_spawn = "entrance"
-	suburban_portal.require_interaction = true
-	suburban_portal.indicator_text = "Strange Device (90s???)"
-	suburban_portal.position = Vector2(20 * TILE_SIZE, 11 * TILE_SIZE)
-	_setup_transition_collision(suburban_portal, Vector2(TILE_SIZE, TILE_SIZE))
-	suburban_portal.transition_triggered.connect(_on_transition_triggered)
-	transitions.add_child(suburban_portal)
+	# Rear entrance to the working forge behind Ironclad Arms — the
+	# atmospheric BlacksmithInterior scene, not the shop buy-menu.
+	var forge_entrance = AreaTransitionScript.new()
+	forge_entrance.name = "ForgeEntrance"
+	forge_entrance.target_map = "blacksmith_interior"
+	forge_entrance.target_spawn = "entrance"
+	forge_entrance.require_interaction = true
+	forge_entrance.indicator_text = "The Forge (rear entrance)"
+	forge_entrance.position = Vector2(27 * TILE_SIZE, 4 * TILE_SIZE)
+	_setup_transition_collision(forge_entrance, Vector2(TILE_SIZE, TILE_SIZE))
+	forge_entrance.transition_triggered.connect(_on_transition_triggered)
+	transitions.add_child(forge_entrance)
+
+	# Suburban portal — only spawned after W1 final boss (Mordaine) is defeated.
+	var gs = get_node_or_null("/root/GameState")
+	# Tick 335: dual-namespace check via is_story_flag_set — same rationale
+	# as the OverworldScene Castle Harmonia gate. Pre-fix bare
+	# get_story_flag would silently fail to spawn the Suburban portal
+	# if w1_boss_defeated lived only in game_constants.
+	if gs and gs.has_method("is_story_flag_set") and gs.is_story_flag_set("w1_boss_defeated"):
+		var suburban_portal = AreaTransitionScript.new()
+		suburban_portal.name = "SuburbanPortal"
+		suburban_portal.target_map = "suburban_overworld"
+		suburban_portal.target_spawn = "entrance"
+		suburban_portal.require_interaction = true
+		suburban_portal.indicator_text = "Strange Device (90s???)"
+		suburban_portal.position = Vector2(20 * TILE_SIZE, 11 * TILE_SIZE)
+		_setup_transition_collision(suburban_portal, Vector2(TILE_SIZE, TILE_SIZE))
+		suburban_portal.transition_triggered.connect(_on_transition_triggered)
+		transitions.add_child(suburban_portal)
 
 
 func _setup_buildings() -> void:
@@ -187,6 +212,25 @@ func _setup_buildings() -> void:
 	bar.position = Vector2(26 * TILE_SIZE, 14.5 * TILE_SIZE)
 	bar.transition_triggered.connect(_on_transition_triggered)
 	buildings.add_child(bar)
+
+	# === CHAPEL DOOR ===
+	# The H cluster at cols 3-5 rows 13-15 is the chapel exterior.
+	# Door sits on the south face so the player walks into it from
+	# the path at row 16. show_gate_visual draws the archway so the
+	# player can SEE there's an interior here.
+	_add_interior_door("ChapelDoor", "harmonia_chapel", "Enter Chapel", Vector2(4 * TILE_SIZE, 15.5 * TILE_SIZE))
+	# === LIBRARY DOOR ===
+	# Top-left H cluster (cols 3-5, rows 2-4). Door on the south face
+	# at row 4.5 so the player walking on path row 5 hits it.
+	_add_interior_door("LibraryDoor", "harmonia_library", "Enter Library", Vector2(4 * TILE_SIZE, 4.5 * TILE_SIZE))
+	# === CARTOGRAPHER DOOR ===
+	# Top-right PPP cluster (cols 22-24, rows 2-4), mirroring the library corner.
+	_add_interior_door("CartographerDoor", "harmonia_cartographer", "Enter Attic", Vector2(23 * TILE_SIZE, 4.5 * TILE_SIZE))
+
+
+## tick 37: _add_interior_door moved up to BaseVillage so every village
+## can reuse it. Harmonia's calls are unchanged — inheritance does the
+## rest.
 
 	# === FOUNTAIN ===
 	var fountain = VillageFountainScript.new()
@@ -236,19 +280,41 @@ func _setup_npcs() -> void:
 	# === STORY/LORE NPCs ===
 
 	# Village Elder (near fountain)
-	var elder = _create_npc("Elder Theron", "elder", Vector2(8 * TILE_SIZE, 6 * TILE_SIZE), [
-		"Welcome to Harmonia Village, young adventurer.",
-		"Our peaceful village has stood for generations...",
-		"But dark rumors spread from the Whispering Cave to the north.",
-		"Many brave souls have ventured there... few return.",
-		"If you seek glory, be warned: the cave adapts to those who challenge it.",
-		"May the light guide your path."
-	])
+	# Wave D showcase NPC #1 — lore-load-bearing elder (already gates the
+	# W1 prologue via talked_to_theron). Persona text + fallback lines
+	# live in data/cutscenes/npc_showcase_personas.json and are hydrated
+	# at _ready() via OverworldNPC._setup_persona_data().
+	# Pre-chapter1: anticipation hook — no reveals, plant a question the
+	# cutscene pays off. The rehearsed-sentence line is the tell; when
+	# chapter1's briefing lands ("you'll do" + the changed-monsters beat),
+	# the player recognizes it AS the rehearsed thing. Post-chapter1:
+	# quiet ambient, no reruns of the briefing, tired-curmudgeon warmth.
+	# Branch selects at NPC creation; village scene re-instances on entry
+	# so the flag is picked up on the next visit after chapter1 lands.
+	var _theron_pre := [
+		"Hm. Wait by the square.",
+		"There's a thing that needs saying.",
+		"I've been rehearsing it, and it only works once."
+	]
+	var _theron_post := [
+		"You've heard the once. I don't do second versions.",
+		"Come back when there's something. I'll be sitting."
+	]
+	var _theron_chapter1_done: bool = false
+	var _theron_gs = get_node_or_null("/root/GameState")
+	if _theron_gs:
+		_theron_chapter1_done = bool(_theron_gs.game_constants.get("cutscene_flag_chapter1_complete", false))
+	var elder = _create_npc("Elder Theron", "elder", Vector2(8 * TILE_SIZE, 6 * TILE_SIZE), _theron_post if _theron_chapter1_done else _theron_pre)
+	elder.dynamic = true
+	# Named canon sheet (2fd985bb); must match his staged-cutscene puppet (HARMONIA_NPC_CANON).
+	elder.sprite_archetype = "elder_theron"
 	npcs.add_child(elder)
 
 	# === AUTOBATTLE HINT NPCs ===
 
 	# Scholar (hints about automation)
+	# Wave D showcase NPC #2 — fourth-wall-aware autobattle townie.
+	# Persona text + fallback lines hydrated from the same JSON cache.
 	var scholar = _create_npc("Scholar Milo", "villager", Vector2(16 * TILE_SIZE, 6 * TILE_SIZE), [
 		"Ah, a fellow seeker of knowledge!",
 		"I've been studying an ancient art called 'AUTOBATTLE'.",
@@ -257,10 +323,13 @@ func _setup_npcs() -> void:
 		"The system executes your script when it's your turn.",
 		"It's not cheating - it's ENLIGHTENMENT!"
 	])
+	scholar.dynamic = true
+	# Named canon sheet (2fd985bb); must match his staged-cutscene puppet (HARMONIA_NPC_CANON).
+	scholar.sprite_archetype = "scholar_milo"
 	npcs.add_child(scholar)
 
 	# Retired Adventurer (autogrind hints)
-	var retired = _create_npc("Greta the Grey", "elder", Vector2(4 * TILE_SIZE, 15 * TILE_SIZE), [
+	var retired = _create_npc("Greta the Grey", "elder", Vector2(2 * TILE_SIZE, 16 * TILE_SIZE), [
 		"*cough* In my day, we ground levels by HAND!",
 		"But these young folk... they let the game PLAY ITSELF.",
 		"Press F6 or Select to toggle autobattle for everyone!",
@@ -281,10 +350,12 @@ func _setup_npcs() -> void:
 		"...",
 		"Nah, that's ridiculous. Carry on!"
 	])
+	# Named canon sheet (2fd985bb); must match his staged-cutscene puppet (HARMONIA_NPC_CANON).
+	existential.sprite_archetype = "phil"
 	npcs.add_child(existential)
 
 	# Chicken Chaser wannabe
-	var chicken = _create_npc("Cluck Norris", "villager", Vector2(6 * TILE_SIZE, 19 * TILE_SIZE), [
+	var chicken = _create_npc("Cluck Norris", "villager", Vector2(8 * TILE_SIZE, 19 * TILE_SIZE), [
 		"HAVE YOU SEEN MY CHICKENS?!",
 		"They escaped during the last monster attack!",
 		"I had SEVENTEEN of them!",
@@ -306,7 +377,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(meta)
 
 	# Sleeping NPC
-	var sleepy = _create_npc("Zzz...", "villager", Vector2(3.5 * TILE_SIZE, 3 * TILE_SIZE), [
+	var sleepy = _create_npc("Zzz...", "villager", Vector2(2 * TILE_SIZE, 5 * TILE_SIZE), [
 		"Zzz...",
 		"Zzz... five more minutes...",
 		"Zzz... no... I don't want to fight slimes...",
@@ -319,6 +390,9 @@ func _setup_npcs() -> void:
 	# === HELPFUL NPCs ===
 
 	# Guard near exit
+	# Wave D showcase NPC #3 — gruff skeptic guard at the south gate
+	# (foreshadows the Whispering Cave). Persona text + fallback lines
+	# hydrated from npc_showcase_personas.json.
 	var guard = _create_npc("Guard Boris", "guard", Vector2(8 * TILE_SIZE, 21 * TILE_SIZE), [
 		"Halt! ...Oh, you're heading OUT? Carry on then.",
 		"I'm here to keep monsters from getting IN.",
@@ -326,6 +400,7 @@ func _setup_npcs() -> void:
 		"Slimes, bats, goblins - nothing you can't handle.",
 		"But the cave... *shudder* ...don't ask."
 	])
+	guard.dynamic = true
 	npcs.add_child(guard)
 
 	# Kid by fountain
@@ -338,6 +413,50 @@ func _setup_npcs() -> void:
 		"Whatever that means!"
 	])
 	npcs.add_child(kid)
+
+	# === SIDE-QUEST GIVERS (dialogue owned by QuestSystem when quest business exists) ===
+
+	# Farmer Aldwick — one_chicken_problem giver, north fence
+	var aldwick = _create_npc("Farmer Aldwick", "farmer", Vector2(7 * TILE_SIZE, 2 * TILE_SIZE), [
+		"Seven chickens. Seven names. One mistake per name.",
+	])
+	npcs.add_child(aldwick)
+
+	# one_chicken_problem step-2 puzzle: 4 of the 7 hens roost in Harmonia.
+	# (Cave approach + Inn kitchen + the Scriptura Guild carry the other
+	# three — the guild hen moved home 2026-07-11; its temp spot here sat
+	# inside the Inn wall block and was uncatchable, live playtest find.)
+	_place_chicken("chicken_harmonia_market", Vector2(15 * TILE_SIZE, 12 * TILE_SIZE))
+	_place_chicken("chicken_harmonia_flowerbed", Vector2(26 * TILE_SIZE, 2 * TILE_SIZE))
+	_place_chicken("chicken_harmonia_backlot", Vector2(3 * TILE_SIZE, 19 * TILE_SIZE))
+	# The unnamed seventh — beside Phil the Lost at the well. Phil's line lands
+	# on catch (the hen keeps returning to him, mirroring Phil to Harmonia).
+	_place_chicken("chicken_phil_well", Vector2(21 * TILE_SIZE, 16 * TILE_SIZE),
+		"Phil: \"It keeps coming back to me. Maybe it knows something.\"")
+
+	# Bram the smith's apprentice — untested_edge giver, by Ironclad Arms
+	var bram = _create_npc("Bram Smith", "blacksmith", Vector2(24 * TILE_SIZE, 6 * TILE_SIZE), [
+		"Master Brutus forges them. I catalogue them. One came BACK.",
+	])
+	bram.npc_id = "bram_smith"
+	# Named canon sheet (2fd985bb); must match his staged-cutscene puppet (HARMONIA_NPC_CANON).
+	bram.sprite_archetype = "bram"
+	npcs.add_child(bram)
+
+	# The Returned Sword on its rack beside Bram (untested_edge step-2
+	# emitter, Mage light-spell path; the Guild-scholar path is the alt).
+	var SwordScript = load("res://src/exploration/SwordInscription.gd")
+	if SwordScript:
+		var sword = SwordScript.new()
+		sword.position = Vector2(26 * TILE_SIZE, 6 * TILE_SIZE)
+		npcs.add_child(sword)
+
+	# Rowan the courier — word_from_capital giver, by the fountain square
+	var rowan = _create_npc("Rowan", "traveler", Vector2(13 * TILE_SIZE, 5 * TILE_SIZE), [
+		"A letter for Scriptura. No stamp, no seal, no sender. Typical.",
+	])
+	rowan.npc_id = "rowan_harmonia"
+	npcs.add_child(rowan)
 
 	# Flower Lady
 	var flower = _create_npc("Flora", "villager", Vector2(17 * TILE_SIZE, 12 * TILE_SIZE), [
@@ -419,3 +538,15 @@ func _setup_npcs() -> void:
 		"scholar"
 	)
 	npcs.add_child(wandering_scholar)
+
+
+## Spawn a QuestChicken for the one_chicken_problem 7-catch puzzle.
+func _place_chicken(chicken_id: String, pos: Vector2, catch_line: String = "") -> void:
+	var ChickenScript = load("res://src/exploration/QuestChicken.gd")
+	if ChickenScript == null:
+		return
+	var hen = ChickenScript.new()
+	hen.chicken_id = chicken_id
+	hen.catch_line = catch_line
+	hen.position = pos
+	npcs.add_child(hen)

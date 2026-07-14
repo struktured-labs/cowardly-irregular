@@ -5,6 +5,11 @@ class_name ShopScene
 ## Fullscreen overlay with buy/sell menus
 
 signal shop_closed()
+## Tick 257: emitted after a successful purchase (gold spent + item
+## received). Lets external listeners (quest hooks, achievements,
+## VillageShop bridge for the overworld trigger) react without
+## reaching into the buy-menu plumbing.
+signal item_purchased(item_id: String, cost: int)
 
 enum ShopMode { MAIN, BUY, SELL, QUANTITY, CHAR_SELECT }
 enum ShopType { ITEM, BLACK_MAGIC, WHITE_MAGIC, BLACKSMITH }
@@ -30,6 +35,13 @@ var description_panel: Control
 var description_label: Label
 var current_menu: Win98Menu = null
 
+## Last item id whose description we painted, so we only refresh the
+## description panel when the menu cursor actually moves to a new row.
+## Win98Menu emits no cursor-moved signal, so ShopScene polls the menu's
+## selected item id each frame and reacts on change (regression: panel was
+## frozen on item 0 while navigating the buy/sell list).
+var _last_described_item_id: String = ""
+
 ## Systems
 @onready var game_state = GameState
 @onready var equipment_system = EquipmentSystem
@@ -48,6 +60,22 @@ func _ready() -> void:
 	_open_main_menu()
 
 
+func _process(_delta: float) -> void:
+	# Win98Menu emits no cursor-moved signal, so poll its selected item id and
+	# refresh the description panel when the highlighted buy/sell row changes.
+	if current_mode != ShopMode.BUY and current_mode != ShopMode.SELL:
+		return
+	if not (current_menu and is_instance_valid(current_menu)):
+		return
+	var item_id: String = current_menu.get_selected_item_id()
+	if item_id == _last_described_item_id:
+		return
+	_last_described_item_id = item_id
+	if item_id.is_empty() or item_id == "none":
+		return
+	_update_description_for_item(item_id)
+
+
 func setup(type: ShopType, name: String, inventory: Array, keeper_custom = null) -> void:
 	"""Configure shop before opening"""
 	shop_type = type
@@ -56,6 +84,10 @@ func setup(type: ShopType, name: String, inventory: Array, keeper_custom = null)
 	for item in inventory:
 		shop_inventory.append(item)
 	shopkeeper_customization = keeper_custom
+	# Tick 250/254: ratchet "Magic as Merchandise" via centralized helper.
+	if (type == ShopType.BLACK_MAGIC or type == ShopType.WHITE_MAGIC) \
+			and PartyChatSystem:
+		PartyChatSystem.fire_event_flag("event_flag_first_magic_shop_visited")
 
 
 func _setup_ui() -> void:
@@ -73,7 +105,7 @@ func _setup_ui() -> void:
 	gold_label.position = Vector2(get_viewport().get_visible_rect().size.x - 200, 20)
 	gold_label.size = Vector2(180, 30)
 	gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	gold_label.add_theme_font_size_override("font_size", 16)
+	gold_label.add_theme_font_size_override("font_size", TextScale.scaled(16))
 	gold_label.add_theme_color_override("font_color", Color(1.0, 0.9, 0.3))
 	add_child(gold_label)
 	_update_gold_display()
@@ -143,7 +175,7 @@ func _create_description_panel() -> Control:
 	description_label = Label.new()
 	description_label.position = Vector2(text_x, 16)
 	description_label.size = Vector2(panel.size.x - text_x - 16, panel.size.y - 32)
-	description_label.add_theme_font_size_override("font_size", 12)
+	description_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	description_label.add_theme_color_override("font_color", Color.WHITE)
 	description_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	description_label.vertical_alignment = VERTICAL_ALIGNMENT_TOP
@@ -175,6 +207,15 @@ func _open_main_menu() -> void:
 	description_label.text = "Welcome to %s!\nWhat would you like to do?" % shop_name
 
 
+## Buy-menu suffix flagging the gold shortfall for an item. Empty when the
+## player can already afford it, so affordable rows stay unadorned and only the
+## out-of-reach items call out exactly how much more gold they need.
+func _affordability_suffix(cost: int, gold: int) -> String:
+	if cost > gold:
+		return " (need %dg)" % (cost - gold)
+	return ""
+
+
 func _open_buy_menu() -> void:
 	"""Open the buy menu with shop inventory"""
 	current_mode = ShopMode.BUY
@@ -187,11 +228,24 @@ func _open_buy_menu() -> void:
 		if item_data:
 			var cost = item_data.get("cost", 0)
 			var owned = _get_owned_count(item_id)
-			var label = "%s - %dG" % [item_data.get("name", "???"), cost]
+			## Tick 187: fallback through ItemNameResolver instead of
+			## sentinel "???". Surfaces a meaningful name for items
+			## where the shop's _get_item_data found the entry but it
+			## lacks a "name" field (Scriptweaver custom items / save-
+			## format drift / authoring error). Player sees "Iron
+			## Sword" instead of "???" for unknown-name items.
+			var label = "%s - %dG" % [item_data.get("name", ItemNameResolver.resolve(item_id)), cost]
 			if _is_magic_shop() and owned > 0:
 				label += " [%d learned]" % owned
 			elif owned > 0:
 				label += " (%d)" % owned
+			# Equipped gear lives on combatants, not inventory — owned-count misses it and players re-buy what they're wearing
+			var wearers := _equipped_by(item_id)
+			if wearers != "":
+				label += " [on %s]" % wearers
+
+			if game_state:
+				label += _affordability_suffix(int(cost), game_state.get_gold())
 
 			items.append({
 				"id": item_id,
@@ -203,6 +257,9 @@ func _open_buy_menu() -> void:
 		items.append({"id": "none", "label": "(No items available)", "disabled": true})
 
 	_show_menu("Buy", items, Vector2(100, 100))
+	# Sync the poll tracker to the menu's actual first row so the description
+	# stays correct as the cursor moves (and isn't double-painted on open).
+	_last_described_item_id = current_menu.get_selected_item_id()
 	_update_description_for_item(shop_inventory[0] if shop_inventory.size() > 0 else "")
 
 
@@ -222,7 +279,9 @@ func _open_sell_menu() -> void:
 		if item_data:
 			var cost = item_data.get("cost", 0)
 			var sell_price = int(cost * 0.5)  # 50% sell price
-			var label = "%s - %dG (x%d)" % [item_data.get("name", "???"), sell_price, quantity]
+			## Tick 187: same ItemNameResolver fallback as the Buy
+			## path. Avoids "???" sentinel for missing-name items.
+			var label = "%s - %dG (x%d)" % [item_data.get("name", ItemNameResolver.resolve(item_id)), sell_price, quantity]
 
 			items.append({
 				"id": item_id,
@@ -234,6 +293,9 @@ func _open_sell_menu() -> void:
 		items.append({"id": "none", "label": "(No items to sell)", "disabled": true})
 
 	_show_menu("Sell", items, Vector2(100, 100))
+	# Sync the poll tracker to the menu's actual first row so the description
+	# stays correct as the cursor moves (and isn't double-painted on open).
+	_last_described_item_id = current_menu.get_selected_item_id()
 	if sellable_items.size() > 0:
 		_update_description_for_item(sellable_items[0]["id"])
 
@@ -310,11 +372,25 @@ func _attempt_purchase(item_id: String, item_data: Dictionary) -> void:
 		description_label.text = "Insufficient gold!\nYou need %d G but only have %d G." % [cost, current_gold]
 		return
 
-	# Purchase successful
+	# Purchase successful — atomic: if the item can't actually be received
+	# (no party member to hold it, save corruption mid-shop, etc.), refund
+	# the gold and surface the failure. Pre-fix, _add_item_to_inventory
+	# silently no-op'd when player_party was empty — the gold was already
+	# spent and the UI showed "Purchased X!" but no item appeared.
 	if game_state.spend_gold(cost):
-		_add_item_to_inventory(item_id)
+		var added: bool = _add_item_to_inventory(item_id)
+		if not added:
+			game_state.add_gold(cost)  # Refund the failed transaction.
+			SoundManager.play_ui("menu_error")
+			_update_gold_display()
+			description_label.text = "No party to receive item — gold refunded."
+			return
 		SoundManager.play_ui("menu_select")
 		_update_gold_display()
+		# Tick 257: emit only after the gold spend AND the item handoff
+		# both succeeded — refund path above returns early so we don't
+		# spuriously fire on failed transactions.
+		item_purchased.emit(item_id, cost)
 
 		description_label.text = "Purchased %s for %d G!" % [item_data.get("name", "item"), cost]
 
@@ -327,6 +403,11 @@ func _attempt_purchase(item_id: String, item_data: Dictionary) -> void:
 
 func _attempt_sell(item_id: String, item_data: Dictionary) -> void:
 	"""Attempt to sell an item"""
+	# Defense-in-depth: even if a META/0-cost row leaks into the menu, refuse the sale (permanent quest-item loss)
+	if int(item_data.get("category", -1)) == 4 or int(item_data.get("cost", 0)) <= 0:
+		SoundManager.play_ui("menu_error")
+		description_label.text = "That item can't be sold."
+		return
 	var cost = item_data.get("cost", 0)
 	var sell_price = int(cost * 0.5)
 
@@ -396,8 +477,17 @@ func _get_sellable_inventory() -> Array:
 			if quantity > 0:
 				counted[item_id] = counted.get(item_id, 0) + quantity
 
-	# Convert to array
+	# Convert to array, excluding key/quest items and worthless junk.
 	for item_id in counted:
+		var item_data = _get_item_data(item_id)
+		if item_data.is_empty():
+			continue
+		# category 4 = ItemCategory.META (returned_sword, chapter_three_pages…) — selling these was permanent quest-item loss for 0 gold
+		if int(item_data.get("category", -1)) == 4:
+			continue
+		# 0-cost items sell for 0 gold — no reason to offer them (also the key-item signature)
+		if int(item_data.get("cost", 0)) <= 0:
+			continue
 		sellable.append({
 			"id": item_id,
 			"quantity": counted[item_id]
@@ -406,35 +496,111 @@ func _get_sellable_inventory() -> Array:
 	return sellable
 
 
-func _add_item_to_inventory(item_id: String) -> void:
-	"""Add item to party inventory"""
+## Tick 314: resolve the LIVE party (Array[Combatant]) so shop writes
+## land on the source-of-truth inventory. Pre-fix shop only mutated
+## game_state.player_party (the serialized snapshot dict). On the next
+## menu open / pre-save sync, _sync_party_to_game_state copied LIVE
+## inventory back over the snapshot, OVERWRITING every shop change.
+## Net effect: purchases vanished (gold spent, item gone — refund flow
+## couldn't catch this because the dict update technically "succeeded");
+## sales were a free-money exploit (gold credited, item kept).
+##
+## Falls back to null in test envs without a GameLoop in the tree —
+## callers handle null by writing only to the snapshot (legacy behavior),
+## which keeps the existing unit tests passing.
+func _resolve_live_party() -> Array:
+	var tree: SceneTree = get_tree()
+	if tree == null or tree.root == null:
+		return []
+	var gl: Node = tree.root.get_node_or_null("GameLoop")
+	if gl == null or not ("party" in gl):
+		return []
+	return gl.party
+
+
+func _add_item_to_inventory(item_id: String) -> bool:
+	"""Add item to party inventory. Returns true if a recipient was found
+	and the item was added; false if no party member exists to hold it
+	(empty player_party). _attempt_purchase relies on this return value to
+	refund the spent gold when no recipient is reachable.
+
+	Tick 314: writes to BOTH the live Combatant.inventory (source of
+	truth) AND the snapshot dict (still consumed by other shop code +
+	the next _sync_party_to_game_state's seed value). Without the live
+	write, the snapshot mutation gets overwritten on the next sync."""
 	if shop_type == ShopType.ITEM:
-		# Add to first party member's inventory
-		if game_state.player_party.size() > 0:
-			var party_leader = game_state.player_party[0]
-			if not party_leader.has("inventory"):
-				party_leader["inventory"] = {}
-			var inventory = party_leader["inventory"]
-			inventory[item_id] = inventory.get(item_id, 0) + 1
+		# Add to first party member's inventory.
+		if game_state.player_party.size() == 0:
+			return false
+		var party_leader = game_state.player_party[0]
+		if not party_leader.has("inventory"):
+			party_leader["inventory"] = {}
+		var inventory = party_leader["inventory"]
+		inventory[item_id] = inventory.get(item_id, 0) + 1
+		# Tick 314: also write to the LIVE Combatant so the next sync
+		# doesn't clobber the purchase.
+		var live_party: Array = _resolve_live_party()
+		if live_party.size() > 0 and live_party[0] and live_party[0].has_method("add_item"):
+			live_party[0].add_item(item_id, 1)
+		return true
 	elif shop_type == ShopType.BLACKSMITH:
-		# Add equipment to party leader's equipment pool
-		if game_state.player_party.size() > 0:
-			var party_leader = game_state.player_party[0]
-			if not party_leader.has("equipment_inventory"):
-				party_leader["equipment_inventory"] = []
-			party_leader["equipment_inventory"].append(item_id)
-	# Magic purchases handled separately in _attempt_magic_purchase
+		# Add equipment to party leader's equipment pool.
+		if game_state.player_party.size() == 0:
+			return false
+		var party_leader = game_state.player_party[0]
+		if not party_leader.has("equipment_inventory"):
+			party_leader["equipment_inventory"] = []
+		party_leader["equipment_inventory"].append(item_id)
+		# Tick 314: equipment_pool lives on GameLoop, not the snapshot
+		# dict (per the BattleManager._route_drop_to_equipment_pool
+		# pattern at line ~4979). Without this the same overwrite class
+		# applies to blacksmith purchases.
+		var tree: SceneTree = get_tree()
+		if tree != null and tree.root != null:
+			var gl: Node = tree.root.get_node_or_null("GameLoop")
+			if gl != null and "equipment_pool" in gl:
+				var pool: Dictionary = gl.equipment_pool
+				var eq = get_node_or_null("/root/EquipmentSystem")
+				if eq != null:
+					var key: String = ""
+					if eq.has_method("get_weapon") and not eq.get_weapon(item_id).is_empty():
+						key = "weapons"
+					elif eq.has_method("get_armor") and not eq.get_armor(item_id).is_empty():
+						key = "armors"
+					elif eq.has_method("get_accessory") and not eq.get_accessory(item_id).is_empty():
+						key = "accessories"
+					if key != "":
+						if not pool.has(key):
+							pool[key] = []
+						pool[key].append(item_id)
+		return true
+	# Magic purchases handled separately in _attempt_magic_purchase. Any
+	# other shop_type values reaching here are an authoring error — refuse
+	# so the caller refunds the gold rather than silently accepting a
+	# half-applied transaction.
+	return false
 
 
 func _remove_item_from_inventory(item_id: String) -> bool:
-	"""Remove item from party inventory (returns false if not found)"""
-	# Find first party member with this item
-	for member_data in game_state.player_party:
-		var inventory = member_data.get("inventory", {})
+	"""Remove item from party inventory (returns false if not found).
+
+	Tick 314: removes from BOTH the snapshot dict (where the sell menu
+	reads quantities) AND the LIVE Combatant.inventory (source of truth).
+	Pre-fix the snapshot-only decrement was overwritten on the next sync,
+	so the player got the sell-price gold while keeping the item — a
+	free-money exploit triggered every time a sell was confirmed."""
+	# Find first party member with this item in the snapshot.
+	var live_party: Array = _resolve_live_party()
+	for i in range(game_state.player_party.size()):
+		var member_data: Dictionary = game_state.player_party[i]
+		var inventory: Dictionary = member_data.get("inventory", {})
 		if inventory.has(item_id) and inventory[item_id] > 0:
 			inventory[item_id] -= 1
 			if inventory[item_id] == 0:
 				inventory.erase(item_id)
+			# Tick 314: mirror on the matching live Combatant.
+			if i < live_party.size() and live_party[i] and live_party[i].has_method("remove_item"):
+				live_party[i].remove_item(item_id, 1)
 			return true
 	return false
 
@@ -462,7 +628,8 @@ func _update_description_for_item(item_id: String) -> void:
 				for stat in stat_mods:
 					var value = stat_mods[stat]
 					if value != 0:
-						desc += "  %s: %+d\n" % [stat.capitalize(), value]
+						# Tick 211: shared StatNames preserves HP/MP acronyms.
+						desc += "  %s: %+d\n" % [StatNames.display_name(stat), value]
 			else:
 				desc += "Stats (vs equipped):\n"
 				for stat in stat_mods:
@@ -471,11 +638,11 @@ func _update_description_for_item(item_id: String) -> void:
 						continue
 					var delta: int = comparison.get(stat, 0)
 					if delta > 0:
-						desc += "  %s: %+d  (+%d)\n" % [stat.capitalize(), value, delta]
+						desc += "  %s: %+d  (+%d)\n" % [StatNames.display_name(stat), value, delta]
 					elif delta < 0:
-						desc += "  %s: %+d  (%d)\n" % [stat.capitalize(), value, delta]
+						desc += "  %s: %+d  (%d)\n" % [StatNames.display_name(stat), value, delta]
 					elif value != 0:
-						desc += "  %s: %+d  (=)\n" % [stat.capitalize(), value]
+						desc += "  %s: %+d  (=)\n" % [StatNames.display_name(stat), value]
 
 	# Show MP cost for magic
 	if _is_magic_shop():
@@ -490,6 +657,22 @@ func _update_description_for_item(item_id: String) -> void:
 		desc += "\nSell: %d G" % int(cost * 0.5)
 
 	description_label.text = desc
+
+
+## Names the party members currently wearing item_id ("" if nobody) — same
+## party access pattern as _compare_equipment below.
+func _equipped_by(item_id: String) -> String:
+	if not game_state or game_state.player_party.is_empty():
+		return ""
+	var wearers: PackedStringArray = []
+	for member in game_state.player_party:
+		if typeof(member) != TYPE_DICTIONARY:
+			continue
+		if str(member.get("equipped_weapon", "")) == item_id \
+				or str(member.get("equipped_armor", "")) == item_id \
+				or str(member.get("equipped_accessory", "")) == item_id:
+			wearers.append(str(member.get("name", "?")))
+	return ", ".join(wearers)
 
 
 func _compare_equipment(item_id: String, item_data: Dictionary) -> Dictionary:
@@ -615,12 +798,50 @@ func _attempt_magic_purchase(char_index_str: String) -> void:
 		description_label.text = "Insufficient gold!\nYou need %d G but only have %d G." % [cost, current_gold]
 		return
 
+	# Guard against double-purchase: the character-select menu disables
+	# already-known options, but a stale menu (rebuild race after a job
+	# change) or a future direct-call path could still reach here. Spend
+	# THEN no-op-append silently consumed the gold for nothing.
+	var existing_member: Dictionary = game_state.player_party[char_index]
+	var existing_learned: Array = existing_member.get("learned_abilities", [])
+	if pending_spell_id in existing_learned:
+		SoundManager.play_ui("menu_error")
+		var name_str: String = str(existing_member.get("name", "Character"))
+		description_label.text = "%s already knows %s." % [name_str, pending_spell_data.get("name", "this spell")]
+		return
+
+	# Silent-failure audit 2026-07-02: verify the LIVE mirror is
+	# reachable BEFORE spending — the snapshot-only append gets
+	# clobbered by the next _sync_party_to_game_state (tick 315), so
+	# spend-then-fail-to-mirror was "paid, confirmed, revoked": the
+	# most misleading outcome a shop can produce. No live target →
+	# refuse the sale loudly, gold untouched.
+	var live_party: Array = _resolve_live_party()
+	var live_ok: bool = char_index < live_party.size() and live_party[char_index] != null \
+		and live_party[char_index].has_method("learn_ability")
+	if not live_ok:
+		push_error("ShopScene: no live Combatant for char_index %d — spell sale refused (gold untouched)" % char_index)
+		SoundManager.play_ui("menu_error")
+		description_label.text = "The spell fizzles — try again outside the shop."
+		return
+
 	if game_state.spend_gold(cost):
 		var member = game_state.player_party[char_index]
 		if not member.has("learned_abilities"):
 			member["learned_abilities"] = []
 		if pending_spell_id not in member["learned_abilities"]:
 			member["learned_abilities"].append(pending_spell_id)
+
+		# Tick 315: mirror to the LIVE Combatant. Same overwrite class as
+		# tick 314's potion-purchase fix — pre-fix the snapshot-only
+		# append was clobbered on the next _sync_party_to_game_state,
+		# silently un-learning the just-purchased spell while keeping
+		# the gold spent.
+		live_party[char_index].learn_ability(pending_spell_id)
+		# Item 18: bought spells are marked so the Dev Full-Kits
+		# toggle's OFF-strip never repossesses gold-paid knowledge.
+		if "purchased_abilities" in live_party[char_index] and pending_spell_id not in live_party[char_index].purchased_abilities:
+			live_party[char_index].purchased_abilities.append(pending_spell_id)
 
 		SoundManager.play_ui("menu_select")
 		_update_gold_display()

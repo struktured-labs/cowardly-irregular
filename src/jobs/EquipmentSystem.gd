@@ -28,32 +28,37 @@ func _load_equipment_data() -> void:
 	var file_path = "res://data/equipment.json"
 
 	if not FileAccess.file_exists(file_path):
-		print("Warning: equipment.json not found, using default equipment")
+		push_warning("[EquipmentSystem] equipment.json not found at %s — falling back to hardcoded defaults" % file_path)
 		_create_default_equipment()
 		return
 
 	var file = FileAccess.open(file_path, FileAccess.READ)
-	if file:
-		var json_string = file.get_as_text()
-		file.close()
+	if not file:
+		## Tick 165: surface the file-open failure. Pre-fix this fell
+		## through to _create_default_equipment silently — devs would
+		## see truncated equipment lists without a hint of why.
+		push_warning("[EquipmentSystem] equipment.json exists but FileAccess.open failed — falling back to hardcoded defaults")
+		_create_default_equipment()
+		return
 
-		var json = JSON.new()
-		var parse_result = json.parse(json_string)
+	var json_string = file.get_as_text()
+	file.close()
 
-		if parse_result == OK:
-			var data = json.data
-			if data is Dictionary:
-				weapons = data.get("weapons", {})
-				armors = data.get("armors", {})
-				accessories = data.get("accessories", {})
-				print("Loaded equipment: %d weapons, %d armors, %d accessories" % [weapons.size(), armors.size(), accessories.size()])
-			else:
-				print("Error: equipment.json data is not a valid dictionary")
-				_create_default_equipment()
+	var json = JSON.new()
+	var parse_result = json.parse(json_string)
+
+	if parse_result == OK:
+		var data = json.data
+		if data is Dictionary:
+			weapons = data.get("weapons", {})
+			armors = data.get("armors", {})
+			accessories = data.get("accessories", {})
+			print("Loaded equipment: %d weapons, %d armors, %d accessories" % [weapons.size(), armors.size(), accessories.size()])
 		else:
-			print("Error parsing equipment.json: ", json.get_error_message())
+			push_warning("[EquipmentSystem] equipment.json parsed but root is not a Dictionary — falling back to hardcoded defaults")
 			_create_default_equipment()
 	else:
+		push_warning("[EquipmentSystem] equipment.json parse error: %s — falling back to hardcoded defaults" % json.get_error_message())
 		_create_default_equipment()
 
 
@@ -105,6 +110,58 @@ func _create_default_equipment() -> void:
 				"magic": 20,
 				"max_mp": 15
 			}
+		},
+		# Tick 320: Bard's signature instrument-weapon. JobSystem.assign_job
+		# at line ~487 auto-equips it on every Bard pick — but the check
+		# guards on `weapons.has("piano_scythe")`, so a missing entry just
+		# silently skipped the equip. Pre-fix, if equipment.json failed to
+		# load (push_warning paths in EquipmentSystem:31/40/58/61), every
+		# Bard joined unarmed and the player wouldn't know why. Stats
+		# mirror data/equipment.json exactly (attack 8 / magic 6 / speed 2).
+		"piano_scythe": {
+			"id": "piano_scythe",
+			"name": "Piano Scythe",
+			"description": "A bard's signature instrument-weapon — sweeps with dissonant chords on every swing",
+			"stat_mods": {
+				"attack": 8,
+				"magic": 6,
+				"speed": 2
+			}
+		},
+		# Tick 321: weapons referenced by GameLoop._create_party for the
+		# default party (mira/rogue/vex starter loadouts). Pre-fix every
+		# call to EquipmentSystem.equip_weapon('oak_staff' / 'iron_dagger'
+		# / 'shadow_rod') push_warning'd if equipment.json failed to load,
+		# leaving mira/rogue/vex unarmed on new game. Stats mirror
+		# data/equipment.json exactly. Same gap class as piano_scythe
+		# above (tick 320) and as JobSystem default abilities (tick 296).
+		"oak_staff": {
+			"id": "oak_staff",
+			"name": "Oak Staff",
+			"description": "A polished oak staff",
+			"stat_mods": {
+				"magic": 12,
+				"attack": 3,
+				"max_mp": 10
+			}
+		},
+		"iron_dagger": {
+			"id": "iron_dagger",
+			"name": "Iron Dagger",
+			"description": "A quick-strike dagger",
+			"stat_mods": {
+				"attack": 8,
+				"speed": 5
+			}
+		},
+		"shadow_rod": {
+			"id": "shadow_rod",
+			"name": "Shadow Rod",
+			"description": "A rod that channels dark energy",
+			"stat_mods": {
+				"magic": 15,
+				"attack": 2
+			}
 		}
 	}
 
@@ -136,6 +193,38 @@ func _create_default_equipment() -> void:
 				"defense": 5,
 				"magic": 10,
 				"max_mp": 20
+			}
+		},
+		# Tick 321: armors referenced by GameLoop._create_party. Same gap
+		# class as the weapons above — pre-fix new game with equipment.json
+		# failure left mira/rogue/vex/bard unarmored.
+		"cloth_robe": {
+			"id": "cloth_robe",
+			"name": "Cloth Robe",
+			"description": "A simple cloth robe",
+			"stat_mods": {
+				"defense": 4,
+				"magic": 5,
+				"max_mp": 10
+			}
+		},
+		"thief_garb": {
+			"id": "thief_garb",
+			"name": "Thief Garb",
+			"description": "Light, sneak-friendly attire",
+			"stat_mods": {
+				"defense": 6,
+				"speed": 8
+			}
+		},
+		"dark_robe": {
+			"id": "dark_robe",
+			"name": "Dark Robe",
+			"description": "A shadow-woven robe",
+			"stat_mods": {
+				"defense": 5,
+				"magic": 8,
+				"max_mp": 15
 			}
 		},
 		"dragon_mail": {
@@ -210,8 +299,17 @@ func _create_default_equipment() -> void:
 ## Equipment management
 func equip_weapon(combatant: Combatant, weapon_id: String) -> bool:
 	"""Equip a weapon"""
+	# Defensive: PassiveSystem.equip_passive validates the combatant; this
+	# sister API didn't, so equip_weapon(null, ...) crashed at the
+	# `.equipped_weapon = ...` write below. Same for armor / accessory.
+	if not combatant or not is_instance_valid(combatant):
+		return false
 	if not weapons.has(weapon_id):
-		print("Error: Weapon '%s' not found" % weapon_id)
+		## Tick 180: surface unknown-id failures via push_warning
+		## (was print-only — silent). Catches Scriptweaver custom
+		## items / save-format drift / dropped equipment that
+		## EquipmentMenu accepted but EquipmentSystem doesn't know.
+		push_warning("[EquipmentSystem] equip_weapon: weapon_id '%s' not found — equip failed silently pre-tick-180" % weapon_id)
 		return false
 
 	combatant.equipped_weapon = weapon_id
@@ -224,8 +322,10 @@ func equip_weapon(combatant: Combatant, weapon_id: String) -> bool:
 
 func equip_armor(combatant: Combatant, armor_id: String) -> bool:
 	"""Equip armor"""
+	if not combatant or not is_instance_valid(combatant):
+		return false
 	if not armors.has(armor_id):
-		print("Error: Armor '%s' not found" % armor_id)
+		push_warning("[EquipmentSystem] equip_armor: armor_id '%s' not found — equip failed silently pre-tick-180" % armor_id)
 		return false
 
 	combatant.equipped_armor = armor_id
@@ -238,8 +338,10 @@ func equip_armor(combatant: Combatant, armor_id: String) -> bool:
 
 func equip_accessory(combatant: Combatant, accessory_id: String) -> bool:
 	"""Equip accessory"""
+	if not combatant or not is_instance_valid(combatant):
+		return false
 	if not accessories.has(accessory_id):
-		print("Error: Accessory '%s' not found" % accessory_id)
+		push_warning("[EquipmentSystem] equip_accessory: accessory_id '%s' not found — equip failed silently pre-tick-180" % accessory_id)
 		return false
 
 	combatant.equipped_accessory = accessory_id
@@ -252,6 +354,12 @@ func equip_accessory(combatant: Combatant, accessory_id: String) -> bool:
 
 func unequip_slot(combatant: Combatant, slot: EquipSlot) -> bool:
 	"""Unequip equipment from a slot"""
+	if not combatant or not is_instance_valid(combatant):
+		return false
+	# Guard slot range so an out-of-band int (e.g. -1 from a UI bug) can't
+	# crash EquipSlot.keys()[slot] below.
+	if slot < 0 or slot >= EquipSlot.size():
+		return false
 	match slot:
 		EquipSlot.WEAPON:
 			combatant.equipped_weapon = ""
@@ -266,7 +374,11 @@ func unequip_slot(combatant: Combatant, slot: EquipSlot) -> bool:
 
 
 func get_equipment_mods(combatant: Combatant) -> Dictionary:
-	"""Calculate total equipment modifiers for a combatant"""
+	"""Calculate total equipment modifiers for a combatant."""
+	# Mirror PassiveSystem.get_passive_mods's contract: empty dict for
+	# invalid combatants so callers don't crash dereferencing a stat.
+	if not combatant or not is_instance_valid(combatant):
+		return {}
 	var total_mods = {
 		"attack": 0,
 		"defense": 0,

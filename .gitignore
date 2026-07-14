@@ -70,3 +70,13 @@ assets/audio/music/*.wav
 captcha-key.txt
 __pycache__/
 tools/test_*.py
+
+# Sprite pipeline intermediates — written by palette_lock.py /
+# normalize_sprites.py as rollback backups. Not shipped (web
+# export_presets excludes them via *.pre_*.png), not referenced by
+# any manifest, and they belong to the cowir-sprites worktree.
+# Excluded from git so the game repo doesn't carry ~70MB of derived
+# artifacts, and so cowir-sprites can leave locally-usable backups
+# in their working tree without dirtying commits here.
+assets/sprites/**/*.pre_normalize.png
+assets/sprites/**/*.pre_palette.png

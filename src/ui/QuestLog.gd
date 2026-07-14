@@ -24,51 +24,60 @@ const CHAPTERS: Array = [
 		"world_flag": "",
 		"objectives": [
 			{"flag": "", "text": "Explore Harmonia Village to the west"},
-			{"flag": "prologue_complete", "text": "Speak with Elder Theron in Harmonia"},
-			{"flag": "chapter1_complete", "text": "Investigate the Whispering Cave"},
-			{"flag": "chapter2_complete", "text": "Descend deeper into the Whispering Cave"},
-			{"flag": "chapter3_complete", "text": "Defeat the Cave Rat King"},
-			{"flag": "rat_king_defeated", "text": "Find the portal to the next world"},
-			{"flag": "w1_boss_defeated", "text": "Enter the Mundane Sprawl"},
+			{"flag": "talked_to_theron", "text": "Speak with Elder Theron in Harmonia"},
+			{"flag": "chapter3_complete", "text": "Investigate the Whispering Cave"},
+			{"flag": "reached_cave_floor_3", "text": "Descend deeper into the Whispering Cave"},
+			{"flag": "rat_king_defeated", "text": "Defeat the Cave Rat King"},
+			{"flag": "world1_rat_king_defeat_complete", "text": "Find the portal to the next world"},
+			{"flag": "world2_prologue_complete", "text": "Enter the Mundane Sprawl"},
 		]
 	},
+	# Tick 271: W2-W6 entries previously used `w2_entered` /
+	# `w2_dungeon_cleared` (and equivalents for W3-W6) — flags that
+	# NOTHING in the game ever sets. Every entry past W1 was permanently
+	# locked from the player's POV; the entire QuestLog past chapter 1
+	# was dead config. The actual flags are `cutscene_flag_world<N>
+	# _prologue_complete` (world entry) and `cutscene_flag_world<N>
+	# _complete` (world clear). _is_quest_flag_set handles the
+	# `cutscene_flag_` prefix automatically, so bare names like
+	# `world2_prologue_complete` resolve correctly.
 	{
 		"title": "Chapter 2 — The Mundane Sprawl",
-		"world_flag": "w2_entered",
+		"world_flag": "world2_prologue_complete",
 		"objectives": [
-			{"flag": "w2_entered", "text": "Explore the suburban neighborhood"},
-			{"flag": "w2_boss_defeated", "text": "Find the portal to the Clockwork Dominion"},
+			{"flag": "world2_prologue_complete", "text": "Explore the suburban neighborhood"},
+			{"flag": "world2_complete", "text": "Find the portal to the Clockwork Dominion"},
 		]
 	},
 	{
 		"title": "Chapter 3 — The Clockwork Dominion",
-		"world_flag": "w3_entered",
+		"world_flag": "world3_prologue_complete",
 		"objectives": [
-			{"flag": "w3_entered", "text": "Explore the steampunk city"},
-			{"flag": "w3_boss_defeated", "text": "Find the portal to the Assembly Line"},
+			{"flag": "world3_prologue_complete", "text": "Explore the steampunk city"},
+			{"flag": "world3_complete", "text": "Find the portal to the Assembly Line"},
 		]
 	},
 	{
 		"title": "Chapter 4 — The Assembly Line",
-		"world_flag": "w4_entered",
+		"world_flag": "world4_prologue_complete",
 		"objectives": [
-			{"flag": "w4_entered", "text": "Navigate the industrial complex"},
-			{"flag": "w4_boss_defeated", "text": "Find the portal to the Source Layer"},
+			{"flag": "world4_prologue_complete", "text": "Navigate the industrial complex"},
+			{"flag": "world4_complete", "text": "Find the portal to the Source Layer"},
 		]
 	},
 	{
 		"title": "Chapter 5 — The Source Layer",
-		"world_flag": "w5_entered",
+		"world_flag": "world5_prologue_complete",
 		"objectives": [
-			{"flag": "w5_entered", "text": "Explore the digital realm"},
-			{"flag": "w5_boss_defeated", "text": "Find the portal to the Remainder"},
+			{"flag": "world5_prologue_complete", "text": "Explore the digital realm"},
+			{"flag": "world5_complete", "text": "Find the portal to the Remainder"},
 		]
 	},
 	{
 		"title": "Chapter 6 — The Remainder",
-		"world_flag": "w6_entered",
+		"world_flag": "world6_prologue_complete",
 		"objectives": [
-			{"flag": "w6_entered", "text": "Reach the Vertex"},
+			{"flag": "world6_prologue_complete", "text": "Reach the Vertex"},
 		]
 	},
 ]
@@ -110,7 +119,7 @@ func _build_ui() -> void:
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.position = Vector2(0, 12)
 	title.size = Vector2(vp_size.x, 30)
-	title.add_theme_font_size_override("font_size", 18)
+	title.add_theme_font_size_override("font_size", TextScale.scaled(18))
 	title.add_theme_color_override("font_color", HEADER_COLOR)
 	add_child(title)
 
@@ -140,7 +149,7 @@ func _build_ui() -> void:
 		next_label.text = "▶ Next: " + next_text
 		next_label.position = Vector2(32, 56)
 		next_label.size = Vector2(vp_size.x - 64, 20)
-		next_label.add_theme_font_size_override("font_size", 13)
+		next_label.add_theme_font_size_override("font_size", TextScale.scaled(13))
 		next_label.add_theme_color_override("font_color", ACTIVE_COLOR)
 		add_child(next_label)
 		banner_h = 36.0
@@ -177,7 +186,7 @@ func _build_ui() -> void:
 		lbl.text = line["text"]
 		lbl.position = Vector2(line["indent"], y)
 		lbl.size = Vector2(vp_size.x - line["indent"] - 20, line_height)
-		lbl.add_theme_font_size_override("font_size", line["size"])
+		lbl.add_theme_font_size_override("font_size", TextScale.scaled(int(line["size"])))
 		lbl.add_theme_color_override("font_color", line["color"])
 		lbl.clip_text = true
 		add_child(lbl)
@@ -188,7 +197,7 @@ func _build_ui() -> void:
 		var up_arrow = Label.new()
 		up_arrow.text = "▲ More"
 		up_arrow.position = Vector2(vp_size.x - 80, content_y - 2)
-		up_arrow.add_theme_font_size_override("font_size", 10)
+		up_arrow.add_theme_font_size_override("font_size", TextScale.scaled(10))
 		up_arrow.add_theme_color_override("font_color", LOCKED_COLOR)
 		add_child(up_arrow)
 
@@ -196,7 +205,7 @@ func _build_ui() -> void:
 		var dn_arrow = Label.new()
 		dn_arrow.text = "▼ More"
 		dn_arrow.position = Vector2(vp_size.x - 80, vp_size.y - 44)
-		dn_arrow.add_theme_font_size_override("font_size", 10)
+		dn_arrow.add_theme_font_size_override("font_size", TextScale.scaled(10))
 		dn_arrow.add_theme_color_override("font_color", LOCKED_COLOR)
 		add_child(dn_arrow)
 
@@ -206,7 +215,7 @@ func _build_ui() -> void:
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	footer.position = Vector2(0, vp_size.y - 28)
 	footer.size = Vector2(vp_size.x, 20)
-	footer.add_theme_font_size_override("font_size", 12)
+	footer.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	footer.add_theme_color_override("font_color", LOCKED_COLOR)
 	add_child(footer)
 
@@ -225,7 +234,12 @@ func _build_quest_lines() -> Array:
 	for ch_idx in range(CHAPTERS.size()):
 		var chapter = CHAPTERS[ch_idx]
 		var world_flag = chapter["world_flag"]
-		var chapter_unlocked = (world_flag == "" or GameState.get_story_flag(world_flag))
+		# Tick 337: route through _is_quest_flag_set (delegates to
+		# GameState.is_story_flag_set) so a save-format migration that
+		# left world2_prologue_complete in only one namespace still
+		# unlocks the chapter. Pre-fix bare get_story_flag silently
+		# locked the entire chapter section behind a single-store check.
+		var chapter_unlocked = (world_flag == "" or _is_quest_flag_set(world_flag))
 
 		# Chapter header
 		if chapter_unlocked:
@@ -242,7 +256,7 @@ func _build_quest_lines() -> Array:
 			# Objectives
 			for obj in chapter["objectives"]:
 				var flag = obj["flag"]
-				var is_complete = (flag == "" and ch_idx == 0) or (flag != "" and GameState.get_story_flag(flag))
+				var is_complete = (flag == "" and ch_idx == 0) or _is_quest_flag_set(flag)
 
 				if is_complete:
 					lines.append({
@@ -280,12 +294,61 @@ func _build_quest_lines() -> Array:
 			})
 			lines.append({"text": "", "indent": 0.0, "size": 10, "color": LOCKED_COLOR})
 
+	lines.append_array(_build_side_quest_lines())
+	return lines
+
+
+## Side quests (QuestSystem v1, 2026-07-01): the W1 batch shipped with
+## only the HUD tracker line — this section makes the log page the
+## canonical review spot. Undiscovered quests stay hidden (spoiler-
+## safe: only "active" and "complete" states render).
+func _build_side_quest_lines() -> Array:
+	var lines: Array = []
+	var qs = get_node_or_null("/root/QuestSystem")
+	if qs == null:
+		return lines
+	var active: Array = qs.get_by_state("active")
+	var complete: Array = qs.get_by_state("complete")
+	lines.append({"text": "SIDE QUESTS", "indent": 24.0, "size": 15, "color": HEADER_COLOR})
+	if active.is_empty() and complete.is_empty():
+		lines.append({"text": "  ·  None discovered yet.", "indent": 40.0, "size": 13, "color": LOCKED_COLOR})
+		lines.append({"text": "", "indent": 0.0, "size": 10, "color": LOCKED_COLOR})
+		return lines
+	for qid in active:
+		var q: Dictionary = qs.get_quest(qid)
+		var objectives: Array = q.get("objectives", [])
+		var idx: int = qs.get_objective_index(qid)
+		lines.append({"text": "  ►  " + str(q.get("title", qid)), "indent": 32.0, "size": 14, "color": ACTIVE_COLOR})
+		if idx < objectives.size():
+			var desc: String = str(objectives[idx].get("description", ""))
+			if qs.has_method("fetch_progress"):
+				var fp: Vector2i = qs.fetch_progress(objectives[idx])
+				if fp.y > 0:
+					desc += "  [%d/%d]" % [fp.x, fp.y]
+			lines.append({"text": "      (%d/%d) %s" % [idx + 1, objectives.size(), desc], "indent": 48.0, "size": 13, "color": TEXT_COLOR})
+		var giver_name: String = str(q.get("giver", {}).get("display_name", ""))
+		if giver_name != "":
+			lines.append({"text": "      from " + giver_name, "indent": 48.0, "size": 11, "color": LOCKED_COLOR})
+	for qid in complete:
+		var q: Dictionary = qs.get_quest(qid)
+		lines.append({"text": "  ✓  " + str(q.get("title", qid)), "indent": 32.0, "size": 13, "color": COMPLETE_COLOR})
+	lines.append({"text": "", "indent": 0.0, "size": 10, "color": LOCKED_COLOR})
 	return lines
 
 
 func _is_chapter_complete(chapter: Dictionary) -> bool:
+	# Tick 334: route through _is_quest_flag_set (same file, line ~334)
+	# instead of the bare get_story_flag check. Pre-fix this method
+	# silently disagreed with _is_quest_flag_set's dual-namespace lookup:
+	# a chapter could have every objective rendered as complete by the
+	# objective-paint path (which uses the dual check) yet still appear
+	# "in progress" here (which only checked story_flags). The disagreement
+	# was invisible until a single objective's flag happened to live ONLY
+	# in game_constants["cutscene_flag_..."] — e.g. boss-defeat flags
+	# written via _apply_pending_boss_defeat before tick 220 mirrored
+	# them. Now the two paths share the same authority.
 	for obj in chapter["objectives"]:
-		if obj["flag"] != "" and not GameState.get_story_flag(obj["flag"]):
+		if obj["flag"] != "" and not _is_quest_flag_set(obj["flag"]):
 			return false
 	return true
 
@@ -307,7 +370,12 @@ func _find_active_objective_text() -> String:
 	## game is fully complete or no chapter is yet unlocked.
 	for chapter in CHAPTERS:
 		var world_flag = chapter["world_flag"]
-		var chapter_unlocked = (world_flag == "" or GameState.get_story_flag(world_flag))
+		# Tick 337: route through _is_quest_flag_set (delegates to
+		# GameState.is_story_flag_set) so a save-format migration that
+		# left world2_prologue_complete in only one namespace still
+		# unlocks the chapter. Pre-fix bare get_story_flag silently
+		# locked the entire chapter section behind a single-store check.
+		var chapter_unlocked = (world_flag == "" or _is_quest_flag_set(world_flag))
 		if not chapter_unlocked:
 			continue
 		for obj in chapter["objectives"]:
@@ -316,9 +384,26 @@ func _find_active_objective_text() -> String:
 			# (it's the implicit starting state), so skip it here.
 			if flag == "":
 				continue
-			if not GameState.get_story_flag(flag):
+			if not _is_quest_flag_set(flag):
 				return str(obj["text"])
 	return ""
+
+
+## Triple-bucket completion check — story_flags, game_constants[cutscene_flag_X], game_constants[X].
+func _is_quest_flag_set(flag: String) -> bool:
+	if flag == "":
+		return false
+	# Tick 336: delegate to GameState.is_story_flag_set (canonical
+	# dual-namespace helper). See WanderingNPC._flag_set for the same
+	# rationale — collapse three near-identical copies of the 3-way
+	# check into one source of truth. Wrapper kept so call sites in
+	# this file don't churn.
+	if GameState.has_method("is_story_flag_set"):
+		return GameState.is_story_flag_set(flag)
+	# Defensive fallback for partial test harnesses without the helper.
+	return GameState.get_story_flag(flag) \
+		or GameState.game_constants.get("cutscene_flag_" + flag, false) \
+		or GameState.game_constants.get(flag, false)
 
 
 func _input(event: InputEvent) -> void:
@@ -329,7 +414,9 @@ func _input(event: InputEvent) -> void:
 	# (non-standard — Enter is usually confirm, not close). Holding cancel
 	# and accept are both echo-guarded so we don't rebuild the UI / play
 	# the close cue at echo rate.
-	if (event.is_action_pressed("ui_cancel") or event.is_action_pressed("ui_back")) and not event.is_echo():
+	if event.is_action_pressed("ui_cancel") and not event.is_echo():
+		if SoundManager:
+			SoundManager.play_ui("menu_cancel")
 		closed.emit()
 		queue_free()
 		get_viewport().set_input_as_handled()
@@ -338,11 +425,15 @@ func _input(event: InputEvent) -> void:
 		if _scroll_offset > 0:
 			_scroll_offset -= 3
 			_build_ui()
+			if SoundManager:
+				SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_down") and not event.is_echo():
 		if _scroll_offset + _max_visible_lines < _total_lines:
 			_scroll_offset += 3
 			_build_ui()
+			if SoundManager:
+				SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 	# Mouse wheel scrolling
 	elif event is InputEventMouseButton and event.pressed:

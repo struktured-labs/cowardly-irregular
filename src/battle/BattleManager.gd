@@ -5,8 +5,12 @@ extends Node
 
 signal battle_started()
 signal battle_ended(victory: bool)
+## Fires next to the "The Glow" flag ratchet (drop with <10% base chance). Signal so autogrind can listen without plumbing drops through GameLoop.
+signal rare_drop_found(item_id: String, base_chance: float)
 signal selection_phase_started()
 signal selection_turn_started(combatant: Combatant)
+signal trust_interrupt_window_opened(combatant: Combatant, seconds: float)
+signal trust_interrupt_window_closed(combatant: Combatant, interrupted: bool)
 signal selection_turn_ended(combatant: Combatant)
 signal execution_phase_started()
 signal action_executing(combatant: Combatant, action: Dictionary)
@@ -18,10 +22,40 @@ signal attack_missed(target: Combatant)
 signal healing_done(target: Combatant, amount: int)
 signal battle_log_message(message: String)
 signal monster_summoned(monster_type: String, summoner: Combatant)
+## Tick 409: meta_autobattle_editor_requested fires when the
+## Scriptweaver create_autobattle_script ability lands. BattleScene
+## listens to surface the editor overlay. Pairs with the existing
+## meta_autobattle_editor_requested game_constant flag — flag is the
+## durable signal for post-battle / mid-frame readers; this signal
+## is the immediate hook for the BattleScene UI.
+signal meta_autobattle_editor_requested(caster: Combatant)
 signal one_shot_achieved(rank: String, setup_turns: int)
 signal autobattle_victory(multiplier: float, total_turns: int)
 signal group_attack_executing(participants: Array, group_type: String, targets: Array, formation_id: String)
 signal advance_trash_talk(combatant: Combatant, line: String)
+## Tick 122: party combat dialogue lines (turn_start/low_hp/big_hit_taken
+## /used_signature_ability/victory) want a quip-bubble surface so they
+## read as actual character speech, not just battle-log text. Listener
+## is BattleScene._on_party_combat_line which calls _spawn_quip_bubble.
+signal party_combat_line(combatant: Combatant, line: String, voice_trigger: String)
+## Wave E — Boss dialogue / jailbreak signals.
+## boss_taunt: emitted when a boss intent picker produces a phase-transition
+## taunt or when a jailbreak narration line is generated. BattleScene listens
+## and pops a small bubble above the enemy sprite (non-blocking).
+signal boss_taunt(boss: Combatant, line: String)
+## boss_jailbreak_landed: emitted after a player directive trips a
+## vulnerability and the consequence has been applied to the boss. The UI
+## shows the diegetic '⚠ DIRECTIVE OVERRIDE ACCEPTED' banner.
+signal boss_jailbreak_landed(boss: Combatant, vulnerability_id: String, consequence: Dictionary)
+## boss_gloat_line: emitted once at battle end when a boss with a
+## data/boss_dialogue.json section was involved — a personality-driven gloat.
+## is_victory=true means the PARTY won (the boss concedes/gloats in defeat);
+## is_victory=false means the boss WIPED the party (the boss gloats in triumph).
+## The line is LLM-narrated when available, otherwise a scripted-pool fallback
+## from BossDialogue.get_victory_line / get_defeat_line. NON-BLOCKING: the
+## deterministic battle-end flow never awaits the LLM — the fallback ships
+## immediately and an LLM re-narration (when available) replaces it on arrival.
+signal boss_gloat_line(text: String, is_victory: bool)
 
 enum BattleState {
 	INACTIVE,
@@ -62,18 +96,114 @@ var previous_round_actions: Dictionary = {}  # {combatant_id: Array[actions]}
 var is_autobattle_enabled: bool = false  # Legacy global flag
 var autobattle_script: Dictionary = {}  # Legacy script
 var escape_allowed: bool = true
+
+## Tick 472: custom win_condition seam for the Spotlight Duels'
+## non-HP minibosses. Set by GameLoop.start_solo_battle before
+## start_battle fires. Empty {} = default "all enemies dead" HP-
+## zero behavior. Shape: {"type": "survive_turns"|"status_
+## threshold"|"flee_target", "value": int, "status": String}.
+## Cleared in end_battle so subsequent normal battles use default.
+var _win_condition: Dictionary = {}
 ## Turbo mode - minimize delays between actions for fastest execution
 var turbo_mode: bool = false
+
+# wall-clock (not time_scale'd) so 32x battle speed can't distort the stall threshold
+const _WD_STALL_MS: int = 10000
+var _wd_last_progress_ms: int = 0
+# armed only inside start_battle..end_battle — tests poke states without the lifecycle
+var _wd_armed: bool = false
+# hard-off under gut_cmdln: a mid-suite recovery end_battles empty parties and poisons awaiting tests
+var _wd_env_checked: bool = false
+var _wd_disabled_for_tests: bool = false
+
+
+func _wd_bump() -> void:
+	_wd_last_progress_ms = Time.get_ticks_msec()
+
+
+func _process(_delta: float) -> void:
+	if not _wd_armed:
+		return
+	if not _wd_env_checked:
+		_wd_env_checked = true
+		for arg in OS.get_cmdline_args():
+			if "gut_cmdln" in String(arg):
+				_wd_disabled_for_tests = true
+				break
+	if _wd_disabled_for_tests:
+		return
+	# Queue #3 audit: ENEMY_SELECTING now watched alongside execution states.
+	# Enemy AI selection is normally sub-second, but the LLM boss intent path
+	# adds real awaits; a wedged network reply used to leave the battle
+	# permanently on the same enemy. Player-selecting is deliberately NOT
+	# watched — a thoughtful player can absolutely take >10s.
+	var is_watched: bool = (current_state == BattleState.EXECUTION_PHASE
+			or current_state == BattleState.PROCESSING_ACTION
+			or current_state == BattleState.ENEMY_SELECTING)
+	if not is_watched:
+		_wd_last_progress_ms = 0
+		return
+	var now: int = Time.get_ticks_msec()
+	if _wd_last_progress_ms == 0:
+		_wd_last_progress_ms = now
+		return
+	var slack: float = maxf(1.0, 1.0 / maxf(Engine.time_scale, 0.001))
+	if now - _wd_last_progress_ms < int(_WD_STALL_MS * slack):
+		return
+	var who: String = current_combatant.combatant_name if current_combatant else "?"
+	push_error("BattleManager: %s stalled %dms at %s — watchdog recovering" % [
+		BattleState.keys()[current_state], now - _wd_last_progress_ms, who])
+	battle_log_message.emit("[color=orange]⚠ Battle stalled — auto-recovering...[/color]")
+	_wd_last_progress_ms = now
+	if current_state == BattleState.ENEMY_SELECTING:
+		_recover_enemy_selection_stall()
+	else:
+		_execute_next_action()
+
+
+## Watchdog recovery for a wedged ENEMY_SELECTING turn. Queues a basic
+## attack (enemies never defer per the AI convention at line ~1650) on
+## the first alive player, then advances the selection order so the
+## battle keeps moving. Safe no-op if current_combatant is gone / no
+## alive players remain.
+func _recover_enemy_selection_stall() -> void:
+	var enemy: Combatant = current_combatant
+	if enemy == null or not is_instance_valid(enemy) or not enemy.is_alive:
+		_end_selection_turn()
+		return
+	var target: Combatant = null
+	for pc in player_party:
+		if pc != null and is_instance_valid(pc) and pc.is_alive:
+			target = pc
+			break
+	if target == null:
+		_end_selection_turn()
+		return
+	_queue_action({
+		"type": "attack",
+		"combatant": enemy,
+		"target": target,
+		"speed": _compute_action_speed(enemy, "attack"),
+	})
+	_end_selection_turn()
 
 ## Terrain modifiers for elemental damage
 var _current_terrain: String = "plains"
 var _terrain_modifiers: Dictionary = {"boost": [], "reduce": []}
 const TERRAIN_MODIFIER_VALUE: float = 0.25  # +25% or -25% damage
 
-## Autobattle toggle signal
-signal autobattle_toggled(character_id: String, enabled: bool)
+## Tick 416: removed dead `autobattle_toggled` signal that was never
+## emitted from BattleManager — the live signal of the same name
+## lives on AutobattleToggleUI (src/ui/autobattle/AutobattleToggleUI.gd)
+## where the toggle UI emits it. Keeping a same-named no-op signal
+## here caused confusion when readers tried to trace toggle events.
 
 ## One-shot tracking
+## Tick 406: per-battle last ability cast by ANY combatant. Reads
+## by the mimic_ability path so copy_last_ability has a real target
+## to replay. Reset in start_battle alongside other per-battle state.
+var _last_ability_cast_id: String = ""
+var _last_ability_cast_caster: Combatant = null
 var _first_damage_round: int = -1    # Round when first damage was dealt to any enemy
 var _first_damage_phase: int = -1    # Execution phase when first damage was dealt
 var _execution_phase_count: int = 0  # Number of execution phases so far
@@ -90,8 +220,16 @@ var _died_callbacks: Dictionary = {}
 
 ## Autobattle reward tracking
 var _full_autobattle: bool = true          # False if any player turn was manual
+var _c3_nonbasic_used: bool = false        # Milo's thesis quest: any player ability/item this battle (execution-level, so advance-embedded use counts)
+var _c3_clutch_crit: bool = false          # Milo's thesis quest: a player landed a crit while under 10% HP this battle
 var _autobattle_player_turns: int = 0      # Player turns handled by autobattle
 var _manual_player_turns: int = 0          # Player turns handled manually
+
+## Boss-gloat context tracking — deterministic facts about how the fight went,
+## woven into the LLM gloat prompt (and harmless when LLM is off). Reset per
+## battle alongside the autobattle counters.
+var _jailbreak_landed_this_battle: bool = false  # A player directive tripped a vuln.
+var _all_out_attack_this_battle: bool = false    # The party used a pooled group attack.
 
 ## Battle results (populated in end_battle before signal, cleared on next battle)
 var _battle_results: Dictionary = {}  # {exp_per_char: int, bonuses: Array, char_results: Array}
@@ -101,7 +239,12 @@ var _ko_this_battle: Array[Combatant] = []
 
 ## Adaptive AI - Action logging
 var _battle_action_log: Array[Dictionary] = []  # Log every player action per battle
-signal battle_actions_logged(summary: Dictionary)
+## Tick 416: removed dead `battle_actions_logged` signal — the
+## autogrind path at GameLoop:4185 already calls
+## _summarize_battle_actions() synchronously and feeds the result
+## into AutogrindSystem.update_learned_patterns. The signal had no
+## listeners, and emitting it from end_battle just computed the
+## summary a second time per battle for no reader.
 
 ## Action speed modifiers (lower = faster)
 const ACTION_SPEEDS = {
@@ -114,7 +257,14 @@ const ACTION_SPEEDS = {
 
 
 func _ready() -> void:
-	pass
+	# Wave E — listen for player jailbreak landings so we can apply the
+	# consequence to the live boss combatant. BossDialogue is autoloaded
+	# AFTER BattleManager in project.godot order, so this deferred connect
+	# is guarded by a get_node_or_null pass.
+	var boss_dlg = get_node_or_null("/root/BossDialogue")
+	if boss_dlg and boss_dlg.has_signal("jailbreak_succeeded"):
+		if not boss_dlg.jailbreak_succeeded.is_connected(_on_boss_jailbreak_succeeded):
+			boss_dlg.jailbreak_succeeded.connect(_on_boss_jailbreak_succeeded)
 
 
 func set_terrain(terrain: String) -> void:
@@ -157,9 +307,30 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	"""Initialize and start a new battle"""
 	current_state = BattleState.STARTING
 	current_round = 0
+	_wd_armed = true
+	_wd_last_progress_ms = 0
+	_party_line_cooldowns.clear()
+	if not damage_dealt.is_connected(_on_damage_dealt_for_party_dialogue):
+		damage_dealt.connect(_on_damage_dealt_for_party_dialogue)
+	## Tick 414: feed the rewind ring buffer at battle start so
+	## rewind_to_previous_save can "undo this battle". Documented
+	## hook from record_history_checkpoint's docstring. Soft call
+	## (force=false) respects rewind_enabled — pre-Time-Mage battles
+	## skip the deep-duplicate cost.
+	if GameState and GameState.has_method("record_history_checkpoint"):
+		GameState.record_history_checkpoint(false)
 
 	player_party = players.duplicate()
 	enemy_party = enemies.duplicate()
+	## Tick 144: connect each party member's status_tick_damage so
+	## poison/burn ticks can trigger low_hp + big_hit_taken party
+	## lines just like regular damage. Pre-fix a burning Cleric who
+	## crossed below 25% from a tick got no reaction quip.
+	for member in player_party:
+		if not is_instance_valid(member):
+			continue
+		if not member.status_tick_damage.is_connected(_on_status_tick_damage_for_party_dialogue):
+			member.status_tick_damage.connect(_on_status_tick_damage_for_party_dialogue.bind(member))
 	all_combatants = players + enemies
 
 	# Reset one-shot tracking
@@ -170,12 +341,78 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	_setup_turns_used = 0
 	_all_enemies_initial_count = enemies.size()
 
+	## Tick 406: reset per-battle mimic tracking.
+	_last_ability_cast_id = ""
+	_last_ability_cast_caster = null
+
+	## Tick 419: gate escape on boss presence. Pre-fix escape_allowed
+	## defaulted to true and no code path ever set it false — players
+	## could flee from boss battles (Cave Rat King, Mordaine, dragons,
+	## etc.). Now reads monsters.json `boss: true` flag on each enemy
+	## and disables flee when ANY boss is in the party. Monster
+	## database lookup via EncounterSystem since BestiarySystem doesn't
+	## carry the boss flag directly; EncounterSystem.monster_database
+	## holds the parsed monsters.json.
+	escape_allowed = true
+	for enemy in enemies:
+		if enemy == null or not is_instance_valid(enemy):
+			continue
+		var monster_type: String = enemy.get_meta("monster_type", "") if enemy.has_method("get_meta") else ""
+		if monster_type == "":
+			continue
+		if EncounterSystem and EncounterSystem.monster_database.has(monster_type):
+			var data: Dictionary = EncounterSystem.monster_database[monster_type]
+			if bool(data.get("boss", false)):
+				escape_allowed = false
+				print("[BATTLE] Escape disabled — boss '%s' detected in enemy party" % monster_type)
+				break
+
+	## Tick 425: forgotten_variable randomize_stats. monsters.json
+	## authors special_behavior = {randomize_stats: true,
+	## stat_variance: 0.4, ...} on forgotten_variable (W6 abstract)
+	## as the "you never know what you're dealing with" mechanic.
+	## Pre-fix the flag was authored but no code read it — every
+	## encounter rolled identical stats. Multiplies each combat stat
+	## by a random factor in [1-variance, 1+variance] at battle
+	## start so each fight feels different. Clamped to [0.1, 4.0]
+	## defensively so a typo'd variance like 5.0 can't make stats
+	## negative or absurd.
+	for enemy in enemies:
+		if enemy == null or not is_instance_valid(enemy) or not enemy.has_method("get_meta"):
+			continue
+		var mtype: String = enemy.get_meta("monster_type", "")
+		if mtype == "":
+			continue
+		if not (EncounterSystem and EncounterSystem.monster_database.has(mtype)):
+			continue
+		var mdata: Dictionary = EncounterSystem.monster_database[mtype]
+		var msb: Variant = mdata.get("special_behavior", {})
+		if not (msb is Dictionary):
+			continue
+		if not bool(msb.get("randomize_stats", false)):
+			continue
+		var variance: float = clampf(float(msb.get("stat_variance", 0.4)), 0.0, 1.0)
+		for stat_name in ["attack", "defense", "magic", "speed"]:
+			if not (stat_name in enemy):
+				continue
+			var base: int = int(enemy.get(stat_name))
+			var factor: float = clampf(randf_range(1.0 - variance, 1.0 + variance), 0.1, 4.0)
+			enemy.set(stat_name, max(1, int(round(base * factor))))
+		print("[BATTLE] %s's stats randomized — atk=%d def=%d mag=%d spd=%d" % [enemy.combatant_name, enemy.attack, enemy.defense, enemy.magic, enemy.speed])
+		battle_log_message.emit("[color=cyan]%s's stats shift wildly![/color]" % enemy.combatant_name)
+
 	# Reset autobattle tracking
 	_full_autobattle = true
 	_autobattle_player_turns = 0
 	_manual_player_turns = 0
+	_c3_nonbasic_used = false
+	_c3_clutch_crit = false
 	_battle_results = {}
 	_ko_this_battle.clear()
+
+	# Reset boss-gloat context tracking.
+	_jailbreak_landed_this_battle = false
+	_all_out_attack_this_battle = false
 
 	# Clear per-battle combatant state: buffs/debuffs/status effects don't
 	# persist across encounters (was a leak — GameLoop reuses party Combatant
@@ -226,15 +463,240 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	# Initialize volatility system
 	volatility = VolatilitySystem.new()
 	volatility.reset_battle()
+	## Tick 469: Speculator job's volatility_access. jobs.json
+	## authors speculator with `volatility_access: true` but pre-
+	## tick no code read the field. The Speculator's market_sense
+	## passive scales damage with the volatility band — but with
+	## no way to access higher bands, the Speculator's "embraces
+	## chaos" fantasy never landed. A Speculator party member now
+	## shifts the starting band up one tier (Stable → Shifting,
+	## Shifting → Unstable, etc.) so the market_sense scaling
+	## actually has room to swing. Multiple Speculators don't
+	## compound — one is enough to unlock the next tier per the
+	## "access" framing (you have the keys or you don't).
+	if _party_has_volatility_access():
+		volatility.shift_band(1)
+		battle_log_message.emit("[color=purple]✦ Speculator presence — volatility climbs one tier.[/color]")
+
+	## Tick 420: surface authored-but-unread danger flags. monsters.json
+	## authors `very_dangerous` (script_error) and `extremely_dangerous`
+	## (permadeath_reaper) as warnings — but pre-fix the flags were
+	## copied into enemy data by EncounterSystem and never read. Players
+	## ran into these without any signal. Emit a distinctive battle_log
+	## line so players see "the air smells wrong" before committing.
+	## Highest-tier wins (extremely > very) when multiple dangerous
+	## enemies share a party.
+	var max_danger: int = 0
+	var danger_source: String = ""
+	for enemy in enemies:
+		if enemy == null or not is_instance_valid(enemy):
+			continue
+		var monster_type: String = enemy.get_meta("monster_type", "") if enemy.has_method("get_meta") else ""
+		if monster_type == "" or not (EncounterSystem and EncounterSystem.monster_database.has(monster_type)):
+			continue
+		var data: Dictionary = EncounterSystem.monster_database[monster_type]
+		if bool(data.get("extremely_dangerous", false)) and max_danger < 2:
+			max_danger = 2
+			danger_source = enemy.combatant_name
+		elif bool(data.get("very_dangerous", false)) and max_danger < 1:
+			max_danger = 1
+			danger_source = enemy.combatant_name
+	match max_danger:
+		2:
+			battle_log_message.emit("[color=red]☠ EXTREME DANGER: %s ☠[/color]" % danger_source)
+		1:
+			battle_log_message.emit("[color=orange]⚠ Danger: %s ⚠[/color]" % danger_source)
+
+	## Tick 466: monsters.json top-level time_manipulation flag.
+	## time_phantom authors `time_manipulation: true` ("A meta-boss
+	## that exists between save states. Can rewind its own actions.")
+	## but pre-tick the field was decoration — the abilities
+	## themselves (rewind_turn, time_stop, temporal_strike,
+	## future_sight) were already wired through their effect/meta
+	## paths, but the flag itself gave players no signal that the
+	## boss they're facing CAN manipulate time. Now emit a cyan
+	## "⧗ TEMPORAL ANOMALY" line alongside the danger warnings
+	## above. Doesn't share the max_danger tier because the
+	## time_phantom IS extremely_dangerous and BOTH lines should
+	## fire — players see "you're in trouble" AND "specifically
+	## the time-manipulation flavor".
+	for enemy in enemies:
+		if enemy == null or not is_instance_valid(enemy):
+			continue
+		var monster_type_t: String = enemy.get_meta("monster_type", "") if enemy.has_method("get_meta") else ""
+		if monster_type_t == "" or not (EncounterSystem and EncounterSystem.monster_database.has(monster_type_t)):
+			continue
+		var data_t: Dictionary = EncounterSystem.monster_database[monster_type_t]
+		if bool(data_t.get("time_manipulation", false)):
+			battle_log_message.emit("[color=cyan]⧗ TEMPORAL ANOMALY: %s warps the moment[/color]" % enemy.combatant_name)
+			break  # one announce per battle even if multiple time-manipulators
 
 	battle_started.emit()
+	## Tick 452: boss_insight passive — passives.json authors
+	## meta_effects.show_boss_hp / show_boss_weakness /
+	## show_boss_intent. Pre-fix all three were decoration. At
+	## battle start (after the danger banner above so the order
+	## of log lines reads naturally), emit a "[Boss Insight]"
+	## line surfacing the requested intel for any boss combatant.
+	## show_boss_intent fires per-execution-phase via the time_
+	## sense path (already wired tick 451) — keeping it here
+	## opens the door to a dedicated intent reveal but for now
+	## the HP/weakness reveal is the high-leverage half.
+	_maybe_emit_boss_insight()
 	_start_new_round()
+
+
+## Milo's thesis-quest emitters (spec: world1_chapter_three.json _wiring_notes); active-only, notify re-fires per occurrence
+func _emit_c3_battle_telemetry(victory: bool, one_hp_survivor: bool) -> void:
+	var qs = get_node_or_null("/root/QuestSystem")
+	if qs == null or not GameState:
+		return
+	if qs.get_state("world1_chapter_three") != "active":
+		return
+	# Exercise progress is invisible without feedback (the quest log
+	# only shows the step text) — emit battle-log lines gated to the
+	# step the player is actually ON so other steps stay noise-free.
+	# Lines are placeholder-voiced; cowir-story may re-voice.
+	var on_step: int = int(qs.get_objective_index("world1_chapter_three"))
+	# Exercise 1 — letting go: two consecutive victories with zero
+	# manual actions. Streak persists across battles in game_constants;
+	# any manual win, defeat, or escape resets it.
+	var full_auto_win: bool = victory and _full_autobattle and _autobattle_player_turns > 0
+	var prev_streak: int = int(GameState.game_constants.get("quest_c3_auto_streak", 0))
+	var streak: int = prev_streak + 1 if full_auto_win else 0
+	GameState.game_constants["quest_c3_auto_streak"] = streak
+	if streak >= 2:
+		var auto_was_set: bool = GameState.story_flags.get("quest_world1_chapter_three_autobattle_run", false)
+		GameState.set_story_flag("quest_world1_chapter_three_autobattle_run")
+		qs.notify_flag("quest_world1_chapter_three_autobattle_run")
+		if not auto_was_set:
+			battle_log_message.emit("[color=cyan]Exercise complete: two victories without touching anything. Milo will want to hear about this.[/color]")
+	elif on_step == 1:
+		if streak == 1:
+			battle_log_message.emit("[color=cyan]Milo's exercise: one automated victory. One more, hands off.[/color]")
+		elif prev_streak > 0 and streak == 0:
+			battle_log_message.emit("[color=gray]Milo's exercise resets — that one wasn't hands-off.[/color]")
+	# Exercise 2 — holding on: manual victory, zero autobattle turns,
+	# every player action a basic attack (defer/advance allowed; any
+	# ability or item use — even advance-embedded — disqualifies).
+	if victory and _manual_player_turns > 0 and _autobattle_player_turns == 0 and not _c3_nonbasic_used:
+		var basic_was_set: bool = GameState.story_flags.get("quest_world1_chapter_three_basics_only", false)
+		GameState.set_story_flag("quest_world1_chapter_three_basics_only")
+		qs.notify_flag("quest_world1_chapter_three_basics_only")
+		if not basic_was_set and on_step == 3:
+			battle_log_message.emit("[color=cyan]Exercise complete: raw attacks only. Holding on, demonstrated.[/color]")
+	# Exercise 3 — the gap: full spec'd emitter set. One-HP victory,
+	# a crit landed from under 10% HP, or beating enemies ≥3 levels
+	# above the party average ("under-leveled vs a danger-zone enemy").
+	if victory and (one_hp_survivor or _c3_clutch_crit or _c3_underleveled_win()):
+		var imp_was_set: bool = GameState.story_flags.get("quest_world1_chapter_three_impossible", false)
+		GameState.set_story_flag("quest_world1_chapter_three_impossible")
+		qs.notify_flag("quest_world1_chapter_three_impossible")
+		if not imp_was_set and on_step == 5:
+			battle_log_message.emit("[color=cyan]That shouldn't have worked. Chapter Three material.[/color]")
+
+
+## True when the strongest enemy this battle out-leveled the party
+## average by 3+. Enemy levels come from monsters.json via
+## EncounterSystem (enemy Combatants don't reliably carry job_level).
+func _c3_underleveled_win() -> bool:
+	if player_party.is_empty() or EncounterSystem == null:
+		return false
+	var total: int = 0
+	var count: int = 0
+	for pc in player_party:
+		if pc and is_instance_valid(pc):
+			total += int(pc.job_level)
+			count += 1
+	if count == 0:
+		return false
+	var avg_party: float = float(total) / float(count)
+	var max_enemy: int = 0
+	for enemy in enemy_party:
+		if enemy == null or not is_instance_valid(enemy):
+			continue
+		var mtype: String = str(enemy.get_meta("monster_type", "")) if enemy.has_meta("monster_type") else ""
+		if mtype != "" and EncounterSystem.monster_database.has(mtype):
+			max_enemy = maxi(max_enemy, int(EncounterSystem.monster_database[mtype].get("level", 0)))
+	return max_enemy > 0 and float(max_enemy) - avg_party >= 3.0
 
 
 func end_battle(victory: bool) -> void:
 	"""End the current battle"""
+	_wd_armed = false
+	## Tick 472: clear the custom win_condition BEFORE any downstream
+	## work so a subsequent normal battle starts with default "all
+	## enemies dead" behavior. Set once per battle by GameLoop.
+	## start_solo_battle from the cutscene step's data.
+	_win_condition = {}
+	var c3_one_hp: bool = false
+	if victory:
+		for pc in player_party:
+			if pc and pc.is_alive and pc.current_hp == 1:
+				c3_one_hp = true
+				break
+	_emit_c3_battle_telemetry(victory, c3_one_hp)
 	if victory:
 		current_state = BattleState.VICTORY
+
+		# Tick 249/254: ratchet "Close" via centralized helper if any
+		# survivor walked out at exactly 1 HP. Strict ==1 — 0 is KO.
+		if PartyChatSystem:
+			for pc in player_party:
+				if pc and pc.is_alive and pc.current_hp == 1:
+					PartyChatSystem.fire_event_flag("event_flag_one_hp_victory")
+					break
+
+		## Tick 146: mark each enemy as defeated in the bestiary.
+		## Pre-fix mark_seen happened at battle start, but there was
+		## no notion of "killed" — encountered ≠ defeated. This loop
+		## iterates the original enemy roster (not just survivors)
+		## because we need to credit each unique monster_type the
+		## party brought down. Routes through BestiarySystem which
+		## auto-mark_seen as well (defeat implies seen invariant).
+		# Tick 260: capture current map id once for the kill loop so
+		# the "Last seen: <location>" hint reflects where the kill
+		# happened (encounter location often matters more to the
+		# autobattle planner than the static enemy_pools mapping).
+		var defeat_loc: String = ""
+		if MapSystem and "current_map_id" in MapSystem:
+			defeat_loc = str(MapSystem.current_map_id)
+		for enemy in enemy_party:
+			if not is_instance_valid(enemy):
+				continue
+			if enemy.has_method("get_meta") and enemy.has_meta("monster_type"):
+				var mtype: String = str(enemy.get_meta("monster_type", ""))
+				if mtype != "":
+					BestiarySystem.mark_defeated(mtype, defeat_loc)
+
+		## Tick 453: record any defeated boss/miniboss so the
+		## pattern_recognition passive's boss_pattern_memory bonus
+		## fires on the NEXT encounter with the same opponent. We
+		## append to GameState.previously_fought_bosses (persisted
+		## via to_dict so it survives quit-and-resume).
+		## Tick 454: while we're walking the enemy_party for boss
+		## detection, also stamp the speedrun split + PB. show_splits
+		## fires a "[Splits]" battle-log line ONLY when the party has
+		## speedrun_timer equipped; the underlying data is always
+		## tracked so the player can flip the passive on later and
+		## see existing PBs.
+		if GameState and "previously_fought_bosses" in GameState:
+			for enemy in enemy_party:
+				if not is_instance_valid(enemy):
+					continue
+				var is_boss_or_mini: bool = false
+				if enemy.has_meta("is_boss") and enemy.get_meta("is_boss"):
+					is_boss_or_mini = true
+				elif enemy.has_meta("is_miniboss") and enemy.get_meta("is_miniboss"):
+					is_boss_or_mini = true
+				if not is_boss_or_mini:
+					continue
+				var boss_id: String = str(enemy.get_meta("monster_type", ""))
+				if boss_id == "":
+					continue
+				if not (boss_id in GameState.previously_fought_bosses):
+					GameState.previously_fought_bosses.append(boss_id)
+				_record_boss_split(boss_id, enemy.combatant_name)
 
 		# Check for one-shot achievement
 		_check_one_shot()
@@ -265,30 +727,65 @@ func end_battle(victory: bool) -> void:
 			var mt = enemy.get_meta("monster_type", "")
 			if mt in monsters_data:
 				var gold = monsters_data[mt].get("gold_reward", 0)
-				total_gold += int(gold * one_shot_gold_bonus)
+				# Tick 338: factor reward_multiplier into gold (was EXP-only).
+				# Pre-fix rare-encounter monsters (Hero Mimics et al with
+				# data.reward_multiplier > 1.0) gave extra EXP but ZERO extra
+				# gold — same enemy data, asymmetric reward application.
+				# Symptom: "the rare mimic gives me bonus EXP but the same
+				# gold as a regular encounter." Aligns with line 441's EXP
+				# formula where reward_multiplier IS applied.
+				total_gold += int(gold * one_shot_gold_bonus * reward_multiplier)
 		if total_gold > 0:
 			GameState.add_gold(total_gold)
 			print("Party earned %d gold!" % total_gold)
 
-		# Roll item drops from defeated enemies' drop tables
+		# Roll item drops from defeated enemies' drop tables.
+		# Tick 115: apply the global drop_rate_multiplier from
+		# game_constants — the last unwired knob in the
+		# game_constants multiplier set. Scriptweaver writes to this
+		# knob were cosmetic pre-fix. Defensive .get + clampf pattern
+		# matches tick 109/110/113/114. Computed ONCE per battle since
+		# game_constants doesn't change mid-victory.
+		var drop_rate_mult: float = 1.0
+		if GameState and "game_constants" in GameState:
+			drop_rate_mult = clampf(
+				float(GameState.game_constants.get("drop_rate_multiplier", 1.0)),
+				0.1, 10.0)
 		var item_drops: Array = []  # [{item: "potion", name: "Potion", qty: 1}]
 		for enemy in enemy_party:
 			var mt = enemy.get_meta("monster_type", "")
 			if mt in monsters_data:
 				var drop_table = monsters_data[mt].get("drop_table", [])
 				for drop in drop_table:
-					if randf() < drop.get("chance", 0.0):
+					# Tick 339: factor reward_multiplier into drop chance too,
+					# matching the EXP (line 441) and gold (tick 338) chains.
+					# Pre-fix rare-encounter monsters with
+					# data.reward_multiplier > 1.0 gave bonus EXP and gold but
+					# the SAME drop rate as a regular encounter — the third
+					# reward axis was the only one not respecting the
+					# rarity flag. Closes the rare-reward asymmetry trio.
+					if randf() < drop.get("chance", 0.0) * drop_rate_mult * reward_multiplier:
 						var item_id = drop.get("item", "")
 						if item_id == "":
 							continue
-						# Add to party leader's inventory
-						if player_party.size() > 0 and player_party[0].is_alive:
-							player_party[0].add_item(item_id)
-						# Track for display
-						var item_name = item_id.replace("_", " ").capitalize()
-						var item_data = ItemSystem.get_item(item_id) if ItemSystem else {}
-						if not item_data.is_empty():
-							item_name = item_data.get("name", item_name)
+						# Tick 250/254: ratchet "The Glow" via centralized helper
+						# on first sub-10%-base-chance drop. Pre-multiplier so a
+						# boosted-2x roll on a 5% base still counts as rare.
+						if drop.get("chance", 0.0) < 0.10:
+							if PartyChatSystem:
+								PartyChatSystem.fire_event_flag("event_flag_rare_drop_found")
+							rare_drop_found.emit(item_id, drop.get("chance", 0.0))
+						# Equipment IDs route to GameLoop.equipment_pool so they
+						# end up in the shared equipment inventory (where the
+						# Equipment menu reads from); consumables stay on the
+						# party leader's inventory dict. Pre-fix EVERY drop went
+						# into add_item, leaving equipment as unusable lore items.
+						var routed_as_equipment = _route_drop_to_equipment_pool(item_id)
+						if not routed_as_equipment:
+							if player_party.size() > 0 and player_party[0].is_alive:
+								player_party[0].add_item(item_id)
+						# Track for display via shared resolver (tick 135).
+						var item_name = ItemNameResolver.resolve(item_id)
 						# Merge duplicates
 						var found = false
 						for existing in item_drops:
@@ -300,19 +797,83 @@ func end_battle(victory: bool) -> void:
 							item_drops.append({"item": item_id, "name": item_name, "qty": 1})
 		if item_drops.size() > 0:
 			print("Items dropped: %s" % [item_drops])
+			# Tick 253: record obtained items in EventLog for the LLM
+			# rebalance context. TYPE_ITEM_OBTAINED was defined since
+			# tick 41 but no upstream site emitted it — daemon's prompt
+			# only saw wipe/defeat/level_up/area events when items were
+			# also high-signal (a rare drop is the bigger evidence that
+			# the player out-grew the zone than the kill itself).
+			if GameState and "event_log" in GameState and GameState.event_log != null:
+				for drop_entry in item_drops:
+					GameState.event_log.record(
+						EventLog.TYPE_ITEM_OBTAINED,
+						"Obtained %s x%d" % [drop_entry["name"], drop_entry["qty"]],
+						{
+							"item": drop_entry["item"],
+							"qty":  drop_entry["qty"],
+						}
+					)
 
-		# Award job EXP to player party and store results
-		var base_exp = 50
+		# Award job EXP to player party and store results.
+		# Tick 109: factor in GameState.game_constants["exp_multiplier"]
+		# so RebalanceDaemon nudges actually affect XP gain. Pre-fix, the
+		# multiplier was set+persisted but never consumed by combat —
+		# meaning the daemon's primary XP knob was cosmetic. Defensive
+		# clamp keeps the multiplier in a sane band even if proposals
+		# slip past the daemon's SAFE_DELTA gates (e.g. via debug paths).
+		# sum authored per-monster exp_reward — flat 50 paid Mordaine (900) like a slime pair and contradicted the bestiary display + autogrind parity
+		var base_exp: int = 0
+		var monsters_db: Dictionary = {}
+		if EncounterSystem and not EncounterSystem.monster_database.is_empty():
+			monsters_db = EncounterSystem.monster_database
+		for enemy in enemy_party:
+			if not is_instance_valid(enemy):
+				continue
+			var mt: String = str(enemy.get_meta("monster_type", "")) if enemy.has_meta("monster_type") else ""
+			base_exp += int(monsters_db.get(mt, {}).get("exp_reward", 25))
+		if base_exp <= 0:
+			base_exp = 50
+		var exp_multiplier: float = 1.0
+		if GameState and "game_constants" in GameState:
+			exp_multiplier = clampf(
+				float(GameState.game_constants.get("exp_multiplier", 1.0)),
+				0.1, 10.0)
 		var char_results: Array = []
 		for combatant in player_party:
 			var exp_gained = 0
 			var old_level = combatant.job_level
 			var old_exp = combatant.job_exp
 			var old_exp_max = combatant.job_level * 100
+			# snapshot core stats — gain_job_exp triggers recalculate_stats on a level-up, so diff to show the gains
+			var pre_stats := {
+				"HP": combatant.max_hp, "MP": combatant.max_mp, "ATK": combatant.attack,
+				"DEF": combatant.defense, "MAG": combatant.magic, "SPD": combatant.speed,
+			}
+			# Collect abilities newly unlocked by any level-up this award — gain_job_exp
+			# fires ability_learned per new spell (learn_abilities_for_level). Resolved
+			# to display names so the victory screen can announce "Learned Fire!".
+			var learned_abilities: Array[String] = []
+			var _collect_learned := func(aid: String):
+				var nm: String = JobSystem.get_ability(aid).get("name", aid) if JobSystem else aid
+				learned_abilities.append(nm)
+			if combatant.has_signal("ability_learned"):
+				combatant.ability_learned.connect(_collect_learned)
 			if combatant.is_alive:
-				exp_gained = int(base_exp * reward_multiplier * one_shot_exp_bonus * autobattle_exp_bonus)
+				exp_gained = int(base_exp * reward_multiplier * one_shot_exp_bonus * autobattle_exp_bonus * exp_multiplier)
 				combatant.gain_job_exp(exp_gained)
+			if combatant.has_signal("ability_learned") and combatant.ability_learned.is_connected(_collect_learned):
+				combatant.ability_learned.disconnect(_collect_learned)
 			var leveled_up = combatant.job_level > old_level
+			var stat_gains: Dictionary = {}
+			if leveled_up:
+				var now := {
+					"HP": combatant.max_hp, "MP": combatant.max_mp, "ATK": combatant.attack,
+					"DEF": combatant.defense, "MAG": combatant.magic, "SPD": combatant.speed,
+				}
+				for k in pre_stats:
+					var delta: int = int(now[k]) - int(pre_stats[k])
+					if delta != 0:
+						stat_gains[k] = delta
 			char_results.append({
 				"name": combatant.combatant_name,
 				"exp_gained": exp_gained,
@@ -322,6 +883,8 @@ func end_battle(victory: bool) -> void:
 				"exp_to_next": old_exp_max,
 				"job_name": combatant.job.get("name", "Fighter") if combatant.job else "Fighter",
 				"leveled_up": leveled_up,
+				"stat_gains": stat_gains,
+				"learned_abilities": learned_abilities,
 				"is_alive": combatant.is_alive
 			})
 			if exp_gained > 0:
@@ -346,8 +909,8 @@ func end_battle(victory: bool) -> void:
 				var injury = _roll_permanent_injury(combatant)
 				combatant.apply_permanent_injury(injury)
 				injuries.append({"name": combatant.combatant_name, "injury": injury})
-				battle_log_message.emit("[color=red]%s sustained a permanent injury: %s (-%d %s)[/color]" % [
-					combatant.combatant_name, injury["description"], injury["penalty"], injury["stat"].capitalize()])
+				battle_log_message.emit("[color=%s]%s sustained a permanent injury: %s (-%d %s)[/color]" % [
+					AccessibilityPalette.penalty_bbcode(), combatant.combatant_name, injury["description"], injury["penalty"], injury["stat"].capitalize()])
 
 		_battle_results = {
 			"char_results": char_results,
@@ -380,10 +943,17 @@ func end_battle(victory: bool) -> void:
 	else:
 		current_state = BattleState.DEFEAT
 
-	# Emit battle action summary for adaptive AI pattern learning
+	# Tick 416: removed the dead battle_actions_logged signal emit.
+	# The autogrind path at GameLoop:4185 already calls
+	# _summarize_battle_actions() and feeds it directly into
+	# AutogrindSystem.update_learned_patterns.
+
+	# Boss gloat — fire-and-forget; scripted ships now, async LLM re-narration may replace it.
+	_dispatch_boss_gloat(victory)
+
+	# Party line on victory — one PC speaks first; cooldown still applies.
 	if victory:
-		var summary = _summarize_battle_actions()
-		battle_actions_logged.emit(summary)
+		_dispatch_victory_party_line()
 
 	battle_ended.emit(victory)
 	_cleanup_battle()
@@ -421,15 +991,40 @@ func _cleanup_battle() -> void:
 	selection_index = 0
 	current_combatant = null
 	volatility = null
+	# state stuck at VICTORY/DEFEAT forever without this — every != INACTIVE gate (toasts, spotlight reconcile) read "in battle" for the rest of the session
+	current_state = BattleState.INACTIVE
 
 
 ## Round management
+## Rotate cycling weaknesses (mage duel's prismatic construct) — one element live at a time, shifting every weakness_cycle_turns rounds
+func _apply_weakness_cycles() -> void:
+	if EncounterSystem == null or EncounterSystem.monster_database.is_empty():
+		return
+	for enemy in enemy_party:
+		if enemy == null or not is_instance_valid(enemy) or not enemy.is_alive:
+			continue
+		var mt: String = str(enemy.get_meta("monster_type", "")) if enemy.has_meta("monster_type") else ""
+		var mdata: Dictionary = EncounterSystem.monster_database.get(mt, {})
+		var cycle: Array = mdata.get("weakness_cycle", [])
+		if cycle.is_empty():
+			continue
+		var every: int = maxi(1, int(mdata.get("weakness_cycle_turns", 1)))
+		var idx: int = int(float(maxi(0, current_round - 1)) / float(every)) % cycle.size()
+		var active: String = str(cycle[idx])
+		if enemy.elemental_weaknesses.size() == 1 and enemy.elemental_weaknesses[0] == active:
+			continue
+		enemy.elemental_weaknesses.clear()
+		enemy.elemental_weaknesses.append(active)
+		battle_log_message.emit("[color=cyan]%s's prism rotates — now vulnerable to %s![/color]" % [enemy.combatant_name, active.to_upper()])
+
+
 func _start_new_round() -> void:
 	"""Start a new round of combat"""
 	current_round += 1
 	selection_index = 0
 	pending_actions.clear()
 	execution_order.clear()
+	_apply_weakness_cycles()
 
 	# Reset combatants for new round and tick buff/debuff durations
 	for combatant in all_combatants:
@@ -437,14 +1032,210 @@ func _start_new_round() -> void:
 			combatant.end_turn()
 			combatant.reset_for_new_round()
 
+	## Tick 438: passive MP regen — wires mp_recovery's
+	## meta_effects.mp_regen_percent (5% per round) into the round
+	## start so the passive's "Recover 5% MP at end of each turn"
+	## promise actually fires. Pre-fix the meta_effect was authored
+	## but no code path read it. Sums across multiple mp_regen
+	## passives a future Scriptweaver build might stack.
+	for combatant in all_combatants:
+		if not combatant.is_alive:
+			continue
+		_apply_passive_mp_regen(combatant)
+
+	## Tick 456: lingering eidolons. abilities.json authors
+	## summon_duration on the four summoner eidolons (ifrit/shiva/
+	## ramuh/bahamut) and Pyrroth's Royal Summon etc. Pre-tick the
+	## field was unread — the eidolon hit once and vanished, no
+	## "lingers for N turns" payoff. Now each summoner with a live
+	## _summon_followup meta fires a reduced-damage follow-up hit
+	## on all opposing enemies at the start of each new round.
+	## summon_boost.summon_duration_bonus extends remaining_turns
+	## at setup time so the bonus shows up at the next tick.
+	for combatant in all_combatants:
+		if not combatant.is_alive:
+			continue
+		_tick_summon_followup(combatant)
+
 	# Apply corruption effects from enemies that carry them
 	_apply_corruption_effects_on_round_start()
+
+	## Tick 426: optimization_itself.strip_buffs — runs each round
+	## if the enemy is alive. monsters.json authored:
+	##   special_behavior: {strip_buffs: true, strip_buffs_per_turn: 1, ...}
+	## Pre-fix nothing read these — the "buffs are unnecessary
+	## overhead to be eliminated" gimmick was pure flavor.
+	_apply_strip_buffs_on_round_start()
 
 	# Calculate selection order (players first, then enemies, sorted by speed)
 	_calculate_selection_order()
 
 	round_started.emit(current_round)
 	_start_selection_phase()
+
+
+## Tick 426: scan the alive enemy_party for monsters with
+## special_behavior.strip_buffs and strip strip_buffs_per_turn random
+## buffs from the player party each round. Skips silently when no
+## qualifying enemy or no buffed party member exists.
+func _apply_strip_buffs_on_round_start() -> void:
+	if enemy_party.is_empty():
+		return
+	# Sum strip counts across ALL alive flagged enemies (multiple
+	# optimization_itself in one party would stack).
+	var total_strips: int = 0
+	for enemy in enemy_party:
+		if enemy == null or not is_instance_valid(enemy) or not enemy.is_alive:
+			continue
+		if not enemy.has_method("get_meta"):
+			continue
+		var monster_type: String = enemy.get_meta("monster_type", "")
+		if monster_type == "":
+			continue
+		if not (EncounterSystem and EncounterSystem.monster_database.has(monster_type)):
+			continue
+		var data: Dictionary = EncounterSystem.monster_database[monster_type]
+		var sb: Variant = data.get("special_behavior", {})
+		if not (sb is Dictionary):
+			continue
+		if not bool(sb.get("strip_buffs", false)):
+			continue
+		total_strips += max(1, int(sb.get("strip_buffs_per_turn", 1)))
+	if total_strips <= 0:
+		return
+	# Build pool of (party_member, buff_index) pairs from buffed alive PCs.
+	var candidates: Array = []
+	for member in player_party:
+		if member == null or not is_instance_valid(member) or not member.is_alive:
+			continue
+		if not ("active_buffs" in member):
+			continue
+		for i in range(member.active_buffs.size()):
+			candidates.append([member, i])
+	if candidates.is_empty():
+		return
+	# Strip up to total_strips random buffs from the pool. Each strip
+	# may invalidate later indices in the same member's buff list, so
+	# we re-scan candidates after each removal to keep indices fresh.
+	var stripped_count: int = 0
+	while stripped_count < total_strips and not candidates.is_empty():
+		var pick: Array = candidates[randi() % candidates.size()]
+		var member: Combatant = pick[0]
+		var buff_idx: int = pick[1]
+		if buff_idx < member.active_buffs.size():
+			var buff_label: String = str(member.active_buffs[buff_idx].get("effect", "buff"))
+			member.active_buffs.remove_at(buff_idx)
+			member.recalculate_stats() if member.has_method("recalculate_stats") else null
+			battle_log_message.emit("[color=cyan]Optimization removes %s from %s — overhead eliminated.[/color]" % [buff_label, member.combatant_name])
+			stripped_count += 1
+		# Re-scan to keep indices in sync after a removal.
+		candidates.clear()
+		for m in player_party:
+			if m == null or not is_instance_valid(m) or not m.is_alive:
+				continue
+			if not ("active_buffs" in m):
+				continue
+			for i in range(m.active_buffs.size()):
+				candidates.append([m, i])
+
+
+## Tick 438: read mp_regen_percent meta_effect across all equipped
+## passives and restore MP. Sums across multiple sources so future
+## stacked passives all contribute. Floors at 1 MP when any regen
+## is active so a tiny percent on a low max_mp doesn't round to 0.
+func _apply_passive_mp_regen(combatant: Combatant) -> void:
+	if combatant == null or not is_instance_valid(combatant):
+		return
+	if not ("equipped_passives" in combatant) or not (combatant.equipped_passives is Array):
+		return
+	var ps: Node = get_node_or_null("/root/PassiveSystem")
+	if ps == null:
+		return
+	var total_pct: float = 0.0
+	for passive_id in combatant.equipped_passives:
+		var passive: Dictionary = ps.get_passive(str(passive_id))
+		if passive.is_empty():
+			continue
+		var me: Variant = passive.get("meta_effects", {})
+		if not (me is Dictionary):
+			continue
+		total_pct += float(me.get("mp_regen_percent", 0.0))
+	if total_pct <= 0.0:
+		return
+	var amount: int = max(1, int(round(combatant.max_mp * total_pct)))
+	var restored: int = combatant.restore_mp(amount)
+	if restored > 0:
+		healing_done.emit(combatant, restored)
+
+
+## Tick 456: fire the lingering-eidolon follow-up. Reads
+## _summon_followup meta set by _execute_magic_ability for summon-
+## type abilities, applies a reduced-multiplier elemental hit on
+## all opposing combatants, and decrements remaining_turns. Clears
+## the meta when remaining hits 0 so subsequent summons (or none)
+## get a clean slate. summon_boost passive's summon_duration_bonus
+## was already baked into remaining_turns at setup time.
+## Play the spotlight miniboss identity SFX (bone rattle, prismatic
+## shatter, courtly rebuff…) once at first-action. cowir-sfx msg 2165
+## surfaced monsters.json's `signature_sfx` field with zero readers —
+## 5 W1 spotlight bosses declared identity hits that never played.
+## Fires once per battle per combatant; static _signature_fired meta
+## flag guards re-fire (dies with the combatant).
+func _maybe_play_signature_sfx(combatant: Combatant) -> void:
+	if combatant == null or not is_instance_valid(combatant):
+		return
+	if combatant.get_meta("_signature_fired", false):
+		return
+	if not combatant.has_meta("monster_type"):
+		return
+	if EncounterSystem == null or EncounterSystem.monster_database.is_empty():
+		return
+	var monster_id: String = str(combatant.get_meta("monster_type"))
+	var sfx: String = str(EncounterSystem.monster_database.get(monster_id, {}).get("signature_sfx", ""))
+	if sfx == "":
+		return
+	combatant.set_meta("_signature_fired", true)
+	if SoundManager:
+		SoundManager.play_battle(sfx)
+
+
+func _tick_summon_followup(combatant: Combatant) -> void:
+	if combatant == null or not is_instance_valid(combatant) or not combatant.is_alive:
+		return
+	if not combatant.has_meta("_summon_followup"):
+		return
+	var meta_val: Variant = combatant.get_meta("_summon_followup")
+	if not (meta_val is Dictionary):
+		combatant.remove_meta("_summon_followup")
+		return
+	var followup: Dictionary = meta_val
+	var remaining: int = int(followup.get("remaining_turns", 0))
+	if remaining <= 0:
+		combatant.remove_meta("_summon_followup")
+		return
+	var element: String = str(followup.get("element", ""))
+	var multiplier: float = float(followup.get("multiplier", 0.5))
+	var base: int = combatant.get_buffed_stat("magic", combatant.magic)
+	var damage: int = max(1, int(round(base * multiplier)))
+	var opponents: Array[Combatant] = enemy_party if combatant in player_party else player_party
+	var hit_any: bool = false
+	for target in opponents:
+		if target == null or not is_instance_valid(target) or not target.is_alive:
+			continue
+		var dealt: int = 0
+		if element != "":
+			dealt = target.take_elemental_damage(damage, element)
+		else:
+			dealt = target.take_damage(damage, true)
+		var elem_text: String = element if element != "" else "magic"
+		battle_log_message.emit("[color=cyan]Eidolon lingers — %s takes %d %s damage![/color]" % [target.combatant_name, dealt, elem_text])
+		damage_dealt.emit(target, dealt, false, element, 1.0)
+		hit_any = true
+	followup["remaining_turns"] = remaining - 1
+	if followup["remaining_turns"] <= 0:
+		combatant.remove_meta("_summon_followup")
+	else:
+		combatant.set_meta("_summon_followup", followup)
 
 
 func _apply_corruption_effects_on_round_start() -> void:
@@ -483,6 +1274,21 @@ func _apply_corruption_effects_on_round_start() -> void:
 				member.defense = maxi(1, member.defense - maxi(1, int(member.defense * 0.01)))
 				member.magic = maxi(1, member.magic - maxi(1, int(member.magic * 0.01)))
 		battle_log_message.emit("[color=purple]Corruption seeps in — party stats erode![/color]")
+
+	## Tick 179: surface authored-but-unimplemented corruption
+	## effects. GameState._apply_random_corruption_effect adds these
+	## to corruption_effects; push_warning makes any missing runtime
+	## handler LOUD in CI/test runs (CLAUDE.md principle #7: silent
+	## failures are worse than crashes). Now-handled effects are off
+	## this list: encounter_surge (OverworldController._check_encounter),
+	## visual_glitch (BattleScene._on_round_started_corruption_glitch).
+	## 2026-07-10: bp_instability (AP-gain jitter, _tick round start) and
+	## ability_corruption (10% player-cast misfire, _execute_ability) are
+	## now WIRED — the corruption roster is fully implemented. The loud-warn
+	## stays as a ratchet for any FUTURE effect added without a handler.
+	for unimplemented in []:
+		if unimplemented in active_effects:
+			push_warning("[BattleManager] corruption effect '%s' is in active_effects but has NO runtime handler — added in GameState._apply_random_corruption_effect but never consumed" % unimplemented)
 
 
 func _calculate_selection_order() -> void:
@@ -544,9 +1350,17 @@ func _process_next_selection() -> void:
 	# Start this combatant's selection
 	current_combatant.start_turn()
 
-	# Natural AP gain: +1 AP at start of each turn
-	current_combatant.gain_ap(1)
-	print("%s gains +1 AP (natural gain, now AP: %d)" % [current_combatant.combatant_name, current_combatant.current_ap])
+	# Natural AP gain: +1 AP at start of each turn.
+	# bp_instability (corruption): the gain jitters 0/+1/+2 for PLAYER turns — the resource economy itself is corrupted (symmetric chaos, not a drain)
+	var ap_gain := 1
+	if current_combatant in player_party and GameState \
+			and "corruption_effects" in GameState and "bp_instability" in GameState.corruption_effects:
+		var roll := randf()
+		ap_gain = 0 if roll < 0.3 else (2 if roll > 0.7 else 1)
+		if ap_gain != 1:
+			battle_log_message.emit("[color=magenta]%s's AP flickers %s — the economy is corrupted.[/color]" % [current_combatant.combatant_name, "+2" if ap_gain == 2 else "+0"])
+	current_combatant.gain_ap(ap_gain)
+	print("%s gains +%d AP (natural gain, now AP: %d)" % [current_combatant.combatant_name, ap_gain, current_combatant.current_ap])
 
 	if current_combatant in player_party:
 		current_state = BattleState.PLAYER_SELECTING
@@ -554,6 +1368,10 @@ func _process_next_selection() -> void:
 		current_state = BattleState.ENEMY_SELECTING
 
 	selection_turn_started.emit(current_combatant)
+
+	# Party-line hook: fire on PC turn start (cooldown-gated, opt-in via GameState flag).
+	if current_combatant in player_party:
+		_maybe_fire_party_line(current_combatant, "turn_start", {})
 
 	# AI selects automatically for enemies and autobattle players
 	var char_id = _get_character_id(current_combatant)
@@ -565,9 +1383,88 @@ func _process_next_selection() -> void:
 		is_spotlight_locked = true
 		if GameState and "debug_all_pcs_unlocked" in GameState and GameState.debug_all_pcs_unlocked:
 			is_spotlight_locked = false
+		# Their own spotlight duel is the moment they're supposed to play —
+		# _unlocked flag only fires on victory, so the lock is still on
+		# during the duel. Solo player_party ⇒ this IS their spotlight
+		# turn, override so the player controls it manually.
+		if is_spotlight_locked and player_party.size() == 1 and current_combatant in player_party:
+			is_spotlight_locked = false
+	# Trust gate: player-owned delegation. Separate field so reconciler
+	# doesn't wipe it. Same debug override so the "unlock" test bypass
+	# clears both sources at once.
+	var is_player_trusted = false
+	if "player_trust" in current_combatant and current_combatant.player_trust:
+		is_player_trusted = true
+		if GameState and "debug_all_pcs_unlocked" in GameState and GameState.debug_all_pcs_unlocked:
+			is_player_trusted = false
 
-	if current_state == BattleState.ENEMY_SELECTING or is_autobattle_enabled or is_char_autobattle or is_spotlight_locked:
+	# Trust option (a): open a short interrupt window before AI takes over
+	# so B/cancel = "actually, I want this turn." Skip the window in other
+	# auto paths (global autoscript on, spotlight-locked, enemy) — those
+	# aren't player-set intent and shouldn't offer a manual override here.
+	if is_player_trusted and current_state == BattleState.PLAYER_SELECTING \
+			and not is_autobattle_enabled and not is_char_autobattle and not is_spotlight_locked:
+		_run_trust_interrupt_window(current_combatant)
+		return
+	if current_state == BattleState.ENEMY_SELECTING or is_autobattle_enabled or is_char_autobattle or is_spotlight_locked or is_player_trusted:
 		_process_ai_selection(current_combatant)
+
+
+## Trust option (a) constants + window state. The window is deliberately
+## short so autobattle-fast pacing still feels snappy; long enough that a
+## player who fumbled a Trust toggle can catch it.
+const TRUST_INTERRUPT_WINDOW_SECONDS: float = 0.9
+var _trust_window_pc: Combatant = null
+
+
+## Emit the window signal (BattleScene renders the "press B to take
+## control" affordance + captures cancel input), then await the timeout.
+## If request_trust_interrupt() fired during the window, _trust_window_pc
+## was cleared and we return without kicking AI — the state is already
+## PLAYER_SELECTING and BattleScene's normal command-menu path picks up.
+func _run_trust_interrupt_window(pc: Combatant) -> void:
+	_trust_window_pc = pc
+	trust_interrupt_window_opened.emit(pc, TRUST_INTERRUPT_WINDOW_SECONDS)
+	battle_log_message.emit("[color=cyan]%s: Trusted — press B to take this turn[/color]" % pc.combatant_name)
+	var tree: SceneTree = get_tree()
+	if tree:
+		await tree.create_timer(TRUST_INTERRUPT_WINDOW_SECONDS).timeout
+	# Untrust intervened → early out (state / menu are handled there).
+	if _trust_window_pc != pc:
+		trust_interrupt_window_closed.emit(pc, true)
+		return
+	_trust_window_pc = null
+	trust_interrupt_window_closed.emit(pc, false)
+	if not is_instance_valid(pc) or not pc.is_alive:
+		return
+	# If the player picked a menu action during the window they've already
+	# advanced the selection; don't queue a stale AI action on top.
+	if current_combatant != pc:
+		return
+	# Trust survived the window intact; hand off to AI as originally routed.
+	_process_ai_selection(pc)
+
+
+## Called by BattleScene's cancel handler while a window is armed. Clears
+## player_trust on this PC (one-shot untrust — story-side spotlight lock
+## is untouched) and marks the window consumed. Returns true when a live
+## window was actually released, false otherwise (so the caller can decide
+## whether to swallow the input).
+func request_trust_interrupt() -> bool:
+	if _trust_window_pc == null or not is_instance_valid(_trust_window_pc):
+		return false
+	var pc: Combatant = _trust_window_pc
+	_trust_window_pc = null
+	if "player_trust" in pc:
+		pc.player_trust = false
+	battle_log_message.emit("[color=cyan]%s: Trust released. Take it.[/color]" % pc.combatant_name)
+	return true
+
+
+## True while a trust-interrupt window is armed. BattleScene's input
+## handler consults this before swallowing cancel input.
+func is_trust_interrupt_window_open() -> bool:
+	return _trust_window_pc != null and is_instance_valid(_trust_window_pc)
 
 
 func _end_selection_turn() -> void:
@@ -585,10 +1482,18 @@ func _track_manual_player_turn() -> void:
 	_manual_player_turns += 1
 
 
+# Tick 231: surface state-machine bugs when player input arrives in the wrong state. Pre-fix 8 player_* entry points silently `return` on state mismatch — UI race conditions or misgated menus disappear without diagnostic. Returns false (caller should also return) so callers stay terse.
+func _check_player_selecting_state(action_name: String) -> bool:
+	if current_state == BattleState.PLAYER_SELECTING:
+		return true
+	push_warning("[BattleManager] %s called outside PLAYER_SELECTING (current=%s) — input dropped, likely UI state-machine bug" % [action_name, BattleState.keys()[current_state]])
+	return false
+
+
 ## Player actions (called from UI)
 func player_attack(target: Combatant) -> void:
 	"""Queue a basic attack"""
-	if current_state != BattleState.PLAYER_SELECTING:
+	if not _check_player_selecting_state("player_attack"):
 		return
 	_track_manual_player_turn()
 
@@ -604,7 +1509,7 @@ func player_attack(target: Combatant) -> void:
 
 func player_use_ability(ability_id: String, targets: Array) -> void:
 	"""Queue an ability"""
-	if current_state != BattleState.PLAYER_SELECTING:
+	if not _check_player_selecting_state("player_use_ability"):
 		return
 	_track_manual_player_turn()
 
@@ -632,10 +1537,11 @@ func player_use_ability(ability_id: String, targets: Array) -> void:
 
 func player_defer() -> void:
 	"""Queue Defer action (skip turn, gain AP, defend)"""
-	if current_state != BattleState.PLAYER_SELECTING:
+	if not _check_player_selecting_state("player_defer"):
 		return
 	if current_combatant.has_status("cannot_defer"):
-		battle_log_message.emit("[color=red]%s cannot defer while exposed![/color]" % current_combatant.combatant_name)
+		# Tick 237: BBCode color via AccessibilityPalette so red↔magenta swap follows the color-blind setting.
+		battle_log_message.emit("[color=%s]%s cannot defer while exposed![/color]" % [AccessibilityPalette.penalty_bbcode(), current_combatant.combatant_name])
 		# Re-show menu instead of silently returning (prevents battle freeze)
 		current_state = BattleState.PLAYER_SELECTING
 		selection_turn_started.emit(current_combatant)
@@ -648,6 +1554,16 @@ func player_defer() -> void:
 		"speed": _compute_action_speed(current_combatant, "defer")
 	}
 	_queue_action(action)
+	## Tick 174: emit the defer log here so EVERY caller gets it.
+	## Pre-fix three callers (BattleScene R-key, BattleCommandMenu
+	## win98 defer, BattleCommandMenu address-action) emitted their
+	## own log lines before calling, but two other callers (legacy
+	## button and the Bossbinder Mind Swap path) silently entered
+	## without logging. Centralizing here ensures consistent
+	## feedback and prevents the "did my defer go through?"
+	## confusion the pre-fix silent callers caused. The three
+	## pre-emit sites are cleaned up to prevent double-logging.
+	battle_log_message.emit("[color=cyan]%s defers![/color]" % current_combatant.combatant_name)
 	print("%s chooses to defer" % current_combatant.combatant_name)
 	_end_selection_turn()
 
@@ -659,7 +1575,12 @@ func player_default() -> void:
 
 func player_advance(actions: Array[Dictionary]) -> void:
 	"""Queue Advance action (multiple actions in sequence, each costs 1 AP)"""
-	if current_state != BattleState.PLAYER_SELECTING:
+	if not _check_player_selecting_state("player_advance"):
+		return
+	if actions.is_empty():
+		# Belt-and-suspenders vs the EXECUTE-freeze class: never queue an empty advance — defer keeps the turn meaningful (+1 AP, damage reduction)
+		push_warning("player_advance called with no actions — deferring instead")
+		player_defer()
 		return
 	_track_manual_player_turn()
 
@@ -688,46 +1609,45 @@ func player_group_attack(group_type: String, formation_id: String = "") -> void:
 	Combo Magic requires >= 2 AP each and >= 2 distinct magic elements across party.
 	The calling combatant's action is queued immediately; remaining alive players are
 	auto-queued as participants (their individual selection turns are skipped)."""
-	if current_state != BattleState.PLAYER_SELECTING:
+	if not _check_player_selecting_state("player_group_attack"):
 		return
 	_track_manual_player_turn()
 
-	var alive_players: Array[Combatant] = player_party.filter(func(c): return c.is_alive)
+	# Participants are the only PCs whose AP/element should gate group attacks.
+	var participants: Array[Combatant] = []
+	participants.append(current_combatant)
+	for i in range(selection_index + 1, selection_order.size()):
+		var c = selection_order[i]
+		if c in player_party and c.is_alive:
+			participants.append(c)
 
-	# Limit Break requires full AP (>= 4) from every party member
+	# Limit Break requires full AP (>= 4) from every PARTICIPATING member.
 	if group_type == "limit_break":
-		for member in alive_players:
+		for member in participants:
 			if member.current_ap < 4:
-				battle_log_message.emit("[color=red]Limit Break requires ALL party members at full AP (4)![/color]")
+				# Tick 237: penalty BBCode.
+				battle_log_message.emit("[color=%s]Limit Break requires ALL participants at full AP (4)![/color]" % AccessibilityPalette.penalty_bbcode())
 				print("[GROUP] Limit Break blocked — %s has AP %d" % [member.combatant_name, member.current_ap])
 				current_state = BattleState.PLAYER_SELECTING
 				selection_turn_started.emit(current_combatant)
 				return
 
-	# Combo Magic requires >= 2 AP each and >= 2 distinct magic elements
+	# Combo Magic requires >= 2 AP each and >= 2 distinct elements across participants.
 	if group_type == "combo_magic":
-		for member in alive_players:
+		for member in participants:
 			if member.current_ap < 2:
-				battle_log_message.emit("[color=red]Combo Magic requires ALL party members to have >= 2 AP![/color]")
+				# Tick 237: penalty BBCode.
+				battle_log_message.emit("[color=%s]Combo Magic requires ALL participants to have >= 2 AP![/color]" % AccessibilityPalette.penalty_bbcode())
 				current_state = BattleState.PLAYER_SELECTING
 				selection_turn_started.emit(current_combatant)
 				return
-		var elements = _get_party_elements(alive_players)
+		var elements = _get_party_elements(participants)
 		if elements.size() < 2:
-			battle_log_message.emit("[color=red]Combo Magic requires at least 2 different magic elements![/color]")
+			# Tick 237: penalty BBCode.
+			battle_log_message.emit("[color=%s]Combo Magic requires at least 2 different magic elements![/color]" % AccessibilityPalette.penalty_bbcode())
 			current_state = BattleState.PLAYER_SELECTING
 			selection_turn_started.emit(current_combatant)
 			return
-
-	# Collect participants: current combatant + remaining unselected alive players
-	var participants: Array[Combatant] = []
-	participants.append(current_combatant)
-
-	# Determine remaining players who haven't selected yet (index after current)
-	for i in range(selection_index + 1, selection_order.size()):
-		var c = selection_order[i]
-		if c in player_party and c.is_alive:
-			participants.append(c)
 
 	var action = {
 		"type": "group",
@@ -760,7 +1680,12 @@ func player_group_attack(group_type: String, formation_id: String = "") -> void:
 func go_back_to_previous_player() -> void:
 	"""Go back to the previous player's selection (undo their action), skipping those in AP debt"""
 	if current_state != BattleState.PLAYER_SELECTING:
+		## Tick 183: emit to battle log so player sees feedback.
+		## Pre-fix print() only — player hit Go Back, nothing
+		## happened, no explanation. Player-action failures belong
+		## in the visible log, not push_warning.
 		print("Cannot go back - not in player selection state")
+		battle_log_message.emit("[color=gray]Can't go back — not currently in selection phase.[/color]")
 		return
 
 	# Undo the natural AP gain for current player (they didn't actually take their turn)
@@ -768,6 +1693,13 @@ func go_back_to_previous_player() -> void:
 	print("%s's natural AP gain reverted (AP: %d)" % [current_combatant.combatant_name, current_combatant.current_ap])
 
 	# Find a previous player who can actually act (not in AP debt)
+	# Snapshot selection_index so we can restore it if no eligible previous
+	# player is found — the backward-scan loop below decrements it (and
+	# `continue`s past non-players / AP-debt entries) without restoring it,
+	# which would otherwise leave selection_index misaligned from the still-
+	# current original combatant and re-process earlier PCs (double AP /
+	# duplicate action) when the round resumes. (Bug 2026-06-04.)
+	var saved_index := selection_index
 	var found_player = false
 	while selection_index > 0:
 		selection_index -= 1
@@ -796,9 +1728,20 @@ func go_back_to_previous_player() -> void:
 		break
 
 	if not found_player:
+		## Tick 183: emit to battle log so player sees feedback.
+		## "No previous player" can mean first PC of round or all
+		## prior PCs in AP debt — either way the player needs to
+		## see why their Go Back didn't work.
 		print("Cannot go back - no previous player available")
+		battle_log_message.emit("[color=gray]Can't go back — no earlier PC available.[/color]")
 		# Restore current player's AP since we couldn't go back
 		current_combatant.gain_ap(1)
+		# Restore selection_index so it stays aligned with the still-current
+		# original combatant. The backward-scan loop decremented it (often to
+		# 0) while skipping non-players / AP-debt entries; without this the
+		# round would resume from the wrong (earlier) position and re-process
+		# combatants who already selected (double AP / duplicate action).
+		selection_index = saved_index
 		# Re-emit the turn signal so the command menu re-opens. Without this,
 		# the caller in BattleCommandMenu._on_win98_go_back_requested has
 		# already force-closed the menu, leaving the game in PLAYER_SELECTING
@@ -813,7 +1756,7 @@ func go_back_to_previous_player() -> void:
 
 func player_item(item_id: String, targets: Array) -> void:
 	"""Queue an item use"""
-	if current_state != BattleState.PLAYER_SELECTING:
+	if not _check_player_selecting_state("player_item"):
 		return
 	_track_manual_player_turn()
 
@@ -891,6 +1834,15 @@ func _process_ai_selection(combatant: Combatant) -> void:
 	var allies = player_party if is_player_controlled else enemy_party
 	var enemies = enemy_party if is_player_controlled else player_party
 
+	# Bossbinder: a controlled / mind-swapped enemy fights its OWN side while
+	# the status holds (pre-fix both statuses applied and the AI ignored them —
+	# the ability's whole promise). Solo boss with nobody else to hit turns on itself.
+	if not is_player_controlled and (combatant.has_status("controlled") or combatant.has_status("mind_swap")):
+		allies = player_party
+		var own_side: Array = enemy_party.filter(func(e): return e != combatant and e.is_alive)
+		enemies = own_side if not own_side.is_empty() else [combatant]
+		battle_log_message.emit("[color=magenta]✦ %s turns on its own side![/color]" % combatant.combatant_name)
+
 	var alive_allies = allies.filter(func(a): return a.is_alive)
 	var alive_enemies = enemies.filter(func(e): return e.is_alive)
 
@@ -966,8 +1918,22 @@ func _make_ai_decision(combatant: Combatant, alive_allies: Array, alive_enemies:
 	if combatant.job and combatant.job.has("abilities"):
 		for ability_id in combatant.job["abilities"]:
 			var ability = JobSystem.get_ability(ability_id)
-			if not ability.is_empty() and combatant.current_mp >= ability.get("mp_cost", 0):
+			# Tick 374: route through JobSystem.get_ability_mp_cost so
+			# any passive mp_cost_multiplier on enemy combatants (rare
+			# but possible for bosses with equipped passives) affects
+			# their affordability check too.
+			if not ability.is_empty() and combatant.current_mp >= JobSystem.get_ability_mp_cost(combatant, ability_id):
 				available_abilities.append(ability)
+
+	# Wave E — BossDialogue intent picker. Fires for ANY boss with a
+	# data/boss_dialogue.json entry (Masterites OR bespoke bosses like
+	# Mordaine). Scripted-floor deterministic — picks an intent on phase
+	# transition (1→2 at 66% HP, 2→3 at 33% HP), stores it on combatant
+	# meta, and emits a non-blocking boss_taunt for BattleScene to bubble.
+	# Result of pick_intent feeds the existing archetype/masterite match
+	# ladders via combatant.get_meta("llm_intent"); those ladders read
+	# the meta to bias their weighted choices (no abilities invented).
+	_update_boss_dialogue_phase(combatant)
 
 	# Masterite bosses use specialized AI
 	if combatant.has_meta("masterite") and combatant.get_meta("masterite"):
@@ -975,10 +1941,29 @@ func _make_ai_decision(combatant: Combatant, alive_allies: Array, alive_enemies:
 
 	# Check for adaptive behavior (enemy AI learns from player patterns)
 	var adaptation_level = _get_current_adaptation_level()
-	var counter_strategy = _get_current_counter_strategy()
+	var region_id: String = AutogrindSystem.current_region_id if AutogrindSystem else ""
+	var intent: String = combatant.get_meta("llm_intent", "")
+	# Task 4: widened tags force the counter path even at adaptation_level 0.
+	var intent_forces_counter: bool = _intent_forces_counter(intent)
+	var counter_strategy: String = _resolve_counter_strategy(region_id, intent)
 
-	if adaptation_level > 0 and not counter_strategy.is_empty():
-		var counter_chance = 0.3 * adaptation_level  # 30%/60%/90%
+	if (adaptation_level > 0 or intent_forces_counter) and not counter_strategy.is_empty():
+		var ci_bias: Dictionary = _bias_by_intent(combatant.get_meta("llm_intent", ""))
+		var counter_chance: float
+		if intent_forces_counter:
+			# Fresh region (adaptation_level 0): floor so LLM/scripted intent still fires.
+			counter_chance = _intent_forced_counter_chance(ci_bias)
+		else:
+			counter_chance = 0.3 * adaptation_level  # 30%/60%/90%
+			# Tick 116: scale counter_chance by the LLM intent's
+			# counter_action_chance bias. The "exploit_pattern" intent is
+			# specifically about countering the player's patterns — pre-fix
+			# its counter_action_chance bias (1.6x) was set in the bias dict
+			# but NOTHING read it, so picking "exploit_pattern" produced
+			# the same counter rate as no intent at all. Now an LLM that
+			# chooses "exploit_pattern" actually counters more often
+			# (30/60/90% × 1.6 = 48/96/100% clamped).
+			counter_chance = clampf(counter_chance * float(ci_bias.get("counter_action_chance", 1.0)), 0.0, 1.0)
 		if randf() < counter_chance:
 			var counter_action = _get_counter_action(combatant, counter_strategy, alive_allies, alive_enemies, available_abilities)
 			if not counter_action.is_empty():
@@ -1080,8 +2065,17 @@ func _ai_caster(combatant: Combatant, abilities: Array, alive_enemies: Array) ->
 	"""Caster AI: strongly prefer magic abilities, target weaknesses when possible"""
 	var magic_abilities = abilities.filter(func(a): return a.get("type", "") == "magic")
 
-	# 75% chance to cast a spell if MP allows
-	if magic_abilities.size() > 0 and randf() < 0.75:
+	# Wave E — BossDialogue intent bias. Scales the 75% spell-cast roll
+	# by the intent's "attack_weight" multiplier (default 1.0 = no change).
+	# 'aggress' tilts toward more spells, 'turtle' tilts away. The roll
+	# remains randomized — the LLM never names the spell.
+	var intent_id: String = combatant.get_meta("llm_intent", "")
+	var bias: Dictionary = _bias_by_intent(intent_id)
+	var cast_chance: float = 0.75 * float(bias.get("attack_weight", 1.0))
+	cast_chance = clampf(cast_chance, 0.1, 0.99)
+
+	# 75% chance (intent-biased) to cast a spell if MP allows
+	if magic_abilities.size() > 0 and randf() < cast_chance:
 		# Prefer spells that exploit target weaknesses
 		var best_spell = magic_abilities[0]
 		var best_score = 0.0
@@ -1272,7 +2266,7 @@ func _make_masterite_decision(combatant: Combatant, alive_allies: Array, alive_e
 	if new_phase > battle_phase:
 		combatant.set_meta("masterite_battle_phase", new_phase)
 		var phase_names = {2: "enraged", 3: "desperate"}
-		battle_log_message.emit("[color=red]★ %s becomes %s! ★[/color]" % [combatant.combatant_name, phase_names.get(new_phase, "?")])
+		battle_log_message.emit("[color=%s]★ %s becomes %s! ★[/color]" % [AccessibilityPalette.penalty_bbcode(), combatant.combatant_name, phase_names.get(new_phase, "?")])
 		# Phase transition: refresh proclamation buff
 		combatant.active_buffs.clear()
 
@@ -1288,6 +2282,13 @@ func _make_masterite_decision(combatant: Combatant, alive_allies: Array, alive_e
 		var proc = find_ability.call("masterite_proclamation")
 		if not proc.is_empty():
 			return {"type": "ability", "combatant": combatant, "ability_id": "masterite_proclamation", "targets": [combatant], "speed": _compute_action_speed(combatant, "ability", proc)}
+
+	# Wave E — BossDialogue intent bias. Reads the intent stashed by
+	# `_update_boss_dialogue_phase` and scales the masterite-specific
+	# probability tables below. Default 1.0 keeps the existing weighted
+	# match ladder identical when no intent is active.
+	var llm_intent: String = combatant.get_meta("llm_intent", "")
+	var llm_bias: Dictionary = _bias_by_intent(llm_intent, masterite_type)
 
 	match masterite_type:
 		"warden":
@@ -1306,14 +2307,17 @@ func _make_masterite_decision(combatant: Combatant, alive_allies: Array, alive_e
 						{"type": "ability", "ability_id": "masterite_iron_guard", "targets": [combatant]},
 						{"type": "ability", "ability_id": "masterite_crushing_blow", "targets": [target]},
 					], "speed": _compute_action_speed(combatant, "attack")}
-			if hp_pct < warden_guard_threshold and not find_ability.call("masterite_iron_guard").is_empty():
+			# Wave E — bias 'turtle' UP / 'aggress' DOWN on iron_guard threshold.
+			var guard_bias: float = float(llm_bias.get("iron_guard", 1.0))
+			if hp_pct < (warden_guard_threshold * guard_bias) and not find_ability.call("masterite_iron_guard").is_empty():
 				battle_log_message.emit("[color=gray]The Warden raises its shield...[/color]")
 				return {"type": "ability", "combatant": combatant, "ability_id": "masterite_iron_guard", "targets": [combatant], "speed": _compute_action_speed(combatant, "ability")}
-			var endurance_chance = [0.4, 0.6, 0.85][battle_phase - 1]
+			var endurance_chance = [0.4, 0.6, 0.85][battle_phase - 1] * float(llm_bias.get("endurance_test", 1.0))
 			if randf() < endurance_chance and not find_ability.call("masterite_endurance_test").is_empty():
 				battle_log_message.emit("[color=gray]The Warden tests your resolve...[/color]")
 				return {"type": "ability", "combatant": combatant, "ability_id": "masterite_endurance_test", "targets": alive_enemies, "speed": _compute_action_speed(combatant, "ability")}
-			if randf() < 0.6 and not find_ability.call("masterite_crushing_blow").is_empty():
+			var crush_chance: float = 0.6 * float(llm_bias.get("crushing_blow", 1.0))
+			if randf() < crush_chance and not find_ability.call("masterite_crushing_blow").is_empty():
 				var target = _choose_target(combatant, alive_enemies, {})
 				return {"type": "ability", "combatant": combatant, "ability_id": "masterite_crushing_blow", "targets": [target], "speed": _compute_action_speed(combatant, "ability")}
 			if battle_phase >= 2 and not find_ability.call("masterite_judgment").is_empty():
@@ -1346,11 +2350,19 @@ func _make_masterite_decision(combatant: Combatant, alive_allies: Array, alive_e
 						{"type": "ability", "ability_id": "masterite_precise_strike", "targets": [target]},
 						{"type": "ability", "ability_id": "masterite_measured_blow", "targets": alive_enemies},
 					], "speed": _compute_action_speed(combatant, "attack")}
-			var strike_chance = [0.5, 0.65, 0.8][battle_phase - 1]
+			# Tick 117: arbiter consumes attack_weight bias on its
+			# primary offensive rolls. Pre-fix, the arbiter ladder
+			# ignored llm_bias entirely (only the warden ladder read
+			# it) — so a "aggress" intent on an arbiter boss had ZERO
+			# effect on its attack frequency. Now strike + AoE roll
+			# rates scale with the same bias the generic spell-cast
+			# rate already uses elsewhere.
+			var arb_attack_bias: float = float(llm_bias.get("attack_weight", 1.0))
+			var strike_chance = clampf([0.5, 0.65, 0.8][battle_phase - 1] * arb_attack_bias, 0.0, 1.0)
 			if randf() < strike_chance and not find_ability.call("masterite_precise_strike").is_empty():
 				var target = _choose_target(combatant, alive_enemies, {})
 				return {"type": "ability", "combatant": combatant, "ability_id": "masterite_precise_strike", "targets": [target], "speed": _compute_action_speed(combatant, "ability")}
-			var aoe_chance = [0.4, 0.55, 0.75][battle_phase - 1]
+			var aoe_chance = clampf([0.4, 0.55, 0.75][battle_phase - 1] * arb_attack_bias, 0.0, 1.0)
 			if randf() < aoe_chance and not find_ability.call("masterite_measured_blow").is_empty():
 				return {"type": "ability", "combatant": combatant, "ability_id": "masterite_measured_blow", "targets": alive_enemies, "speed": _compute_action_speed(combatant, "ability")}
 
@@ -1358,12 +2370,19 @@ func _make_masterite_decision(combatant: Combatant, alive_allies: Array, alive_e
 			# SPEED MANIPULATOR — haste self, slow enemies, rapid strikes
 			# Phase 2+: time tax more frequent, multi-slow
 			# Phase 3: advance double-strike, relentless speed control
+			# Tick 118: tempo consumes attack_weight bias. The "aggress"
+			# intent (1.4x) pushes the boss toward more strikes + faster
+			# debuffs; "turtle" (0.6x) trims them down. Pre-fix this
+			# ladder ignored llm_bias entirely.
+			var tempo_attack_bias: float = float(llm_bias.get("attack_weight", 1.0))
 			var has_spd_buff = combatant.active_buffs.any(func(b): return b.get("stat") == "speed")
 			if not has_spd_buff and not find_ability.call("masterite_haste").is_empty():
 				battle_log_message.emit("[color=gray]Time warps around the Tempo...[/color]")
 				return {"type": "ability", "combatant": combatant, "ability_id": "masterite_haste", "targets": [combatant], "speed": _compute_action_speed(combatant, "ability")}
 			# Phase 3: advance combo — haste + double quick strike
-			if battle_phase >= 3 and combatant.current_ap >= 1 and randf() < 0.45:
+			# Bias the entry roll so aggress intent makes the double-strike combo more likely.
+			var tempo_combo_chance: float = clampf(0.45 * tempo_attack_bias, 0.0, 1.0)
+			if battle_phase >= 3 and combatant.current_ap >= 1 and randf() < tempo_combo_chance:
 				var quick = find_ability.call("masterite_quick_strike")
 				if not quick.is_empty() and alive_enemies.size() > 0:
 					var t1 = _choose_target(combatant, alive_enemies, {})
@@ -1373,11 +2392,11 @@ func _make_masterite_decision(combatant: Combatant, alive_allies: Array, alive_e
 						{"type": "ability", "ability_id": "masterite_quick_strike", "targets": [t1]},
 						{"type": "ability", "ability_id": "masterite_quick_strike", "targets": [t2]},
 					], "speed": _compute_action_speed(combatant, "attack")}
-			var tax_chance = [0.35, 0.5, 0.7][battle_phase - 1]
+			var tax_chance = clampf([0.35, 0.5, 0.7][battle_phase - 1] * tempo_attack_bias, 0.0, 1.0)
 			if randf() < tax_chance and not find_ability.call("masterite_time_tax").is_empty():
 				battle_log_message.emit("[color=gray]The Tempo steals your time...[/color]")
 				return {"type": "ability", "combatant": combatant, "ability_id": "masterite_time_tax", "targets": alive_enemies, "speed": _compute_action_speed(combatant, "ability")}
-			var slow_chance = [0.4, 0.55, 0.7][battle_phase - 1]
+			var slow_chance = clampf([0.4, 0.55, 0.7][battle_phase - 1] * tempo_attack_bias, 0.0, 1.0)
 			if randf() < slow_chance and not find_ability.call("masterite_slow").is_empty():
 				var fastest = alive_enemies.duplicate()
 				fastest.sort_custom(func(a, b): return a.speed > b.speed)
@@ -1392,13 +2411,20 @@ func _make_masterite_decision(combatant: Combatant, alive_allies: Array, alive_e
 			# TACTICAL RESOURCE DENIAL — dispel buffs, drain MP, audit for damage
 			# Phase 2+: targets highest-threat player, multi-dispel
 			# Phase 3: advance drain+audit combo, total resource starvation
+			# Tick 119: curator consumes attack_weight bias — closes the
+			# masterite intent bias series (warden in tick 116, arbiter in
+			# 117, tempo in 118, curator now). aggress pushes the curator
+			# to drain + cut more often; turtle damps both.
+			var curator_attack_bias: float = float(llm_bias.get("attack_weight", 1.0))
 			var buffed_targets = alive_enemies.filter(func(e): return e.active_buffs.size() > 0)
 			if buffed_targets.size() > 0 and not find_ability.call("masterite_dispel").is_empty():
 				var dispel_targets = [buffed_targets[0]] if battle_phase < 3 else buffed_targets.slice(0, mini(3, buffed_targets.size()))
 				battle_log_message.emit("[color=gray]The Curator nullifies your enhancements...[/color]")
 				return {"type": "ability", "combatant": combatant, "ability_id": "masterite_dispel", "targets": dispel_targets, "speed": _compute_action_speed(combatant, "ability")}
-			# Phase 3: advance combo — mana drain then audit the drained target
-			if battle_phase >= 3 and combatant.current_ap >= 1 and randf() < 0.45:
+			# Phase 3: advance combo — mana drain then audit the drained target.
+			# Bias the combo entry so aggress intent makes the advance more likely.
+			var curator_combo_chance: float = clampf(0.45 * curator_attack_bias, 0.0, 1.0)
+			if battle_phase >= 3 and combatant.current_ap >= 1 and randf() < curator_combo_chance:
 				var drain = find_ability.call("masterite_mana_drain")
 				var audit = find_ability.call("masterite_audit")
 				if not drain.is_empty() and not audit.is_empty():
@@ -1409,13 +2435,13 @@ func _make_masterite_decision(combatant: Combatant, alive_allies: Array, alive_e
 						{"type": "ability", "ability_id": "masterite_mana_drain", "targets": [mp_sorted[0]]},
 						{"type": "ability", "ability_id": "masterite_audit", "targets": [mp_sorted[0]]},
 					], "speed": _compute_action_speed(combatant, "attack")}
-			var drain_chance = [0.45, 0.6, 0.8][battle_phase - 1]
+			var drain_chance = clampf([0.45, 0.6, 0.8][battle_phase - 1] * curator_attack_bias, 0.0, 1.0)
 			if randf() < drain_chance and not find_ability.call("masterite_mana_drain").is_empty():
 				var mp_sorted = alive_enemies.duplicate()
 				mp_sorted.sort_custom(func(a, b): return a.current_mp > b.current_mp)
 				battle_log_message.emit("[color=gray]The Curator eyes %s's mana reserves...[/color]" % mp_sorted[0].combatant_name)
 				return {"type": "ability", "combatant": combatant, "ability_id": "masterite_mana_drain", "targets": [mp_sorted[0]], "speed": _compute_action_speed(combatant, "ability")}
-			var cut_chance = [0.4, 0.55, 0.7][battle_phase - 1]
+			var cut_chance = clampf([0.4, 0.55, 0.7][battle_phase - 1] * curator_attack_bias, 0.0, 1.0)
 			if randf() < cut_chance and not find_ability.call("masterite_resource_cut").is_empty():
 				var target = _choose_target(combatant, alive_enemies, {})
 				return {"type": "ability", "combatant": combatant, "ability_id": "masterite_resource_cut", "targets": [target], "speed": _compute_action_speed(combatant, "ability")}
@@ -1433,6 +2459,11 @@ func _choose_target(attacker: Combatant, targets: Array, ability: Dictionary = {
 	if targets.size() == 0:
 		return null
 
+	# Taunt: if attacker is taunted by any alive target, lock onto that taunter.
+	var taunter = _find_taunter(attacker, targets)
+	if taunter:
+		return taunter
+
 	# Prefer lowest HP target (60% chance)
 	if randf() < 0.6:
 		var sorted_targets = targets.duplicate()
@@ -1440,6 +2471,24 @@ func _choose_target(attacker: Combatant, targets: Array, ability: Dictionary = {
 		return sorted_targets[0]
 
 	return targets[randi() % targets.size()]
+
+
+func _find_taunter(attacker: Combatant, targets: Array) -> Combatant:
+	"""Return the alive target whose taunt status is currently locking the attacker, or null."""
+	if not attacker or not is_instance_valid(attacker):
+		return null
+	if not "status_effects" in attacker:
+		return null
+	for status in attacker.status_effects:
+		if typeof(status) != TYPE_STRING:
+			continue
+		if not status.begins_with("taunted_"):
+			continue
+		var taunter_name = status.substr(len("taunted_"))
+		for t in targets:
+			if t is Combatant and is_instance_valid(t) and t.is_alive and t.combatant_name == taunter_name:
+				return t
+	return null
 
 
 ## Execution Phase
@@ -1457,10 +2506,324 @@ func _start_execution_phase() -> void:
 	execution_order = pending_actions.duplicate()
 	execution_order.sort_custom(func(a, b): return a["speed"] < b["speed"])
 
+	## Tick 451: time_sense passive — passives.json authors
+	## meta_effects.preview_enemy_actions = true and preview_turns
+	## = 1 with description "Preview enemy actions 1 turn ahead",
+	## but pre-fix nothing read those keys. Players equipped Time
+	## Sense and got no intel. Emit a battle-log preview of the
+	## enemies' queued actions right before execution begins so
+	## the player sees what's coming for THIS round (the AP-cost
+	## CTB collapse means the queue is the next-N-turns equivalent
+	## of the BD preview the description implies). One emit per
+	## execution phase — won't spam.
+	if _party_wants_action_preview():
+		_emit_enemy_action_preview()
+
 	print("\n[color=yellow]>>> Actions executing![/color]")
 	execution_phase_started.emit()
 
 	_execute_next_action()
+
+
+## Tick 454: stamp a split + PB for the just-defeated boss. The
+## split is the playtime at defeat (a monotonic counter, perfect
+## for a "splits" view that compares first-clear vs PB). When the
+## party has speedrun_timer.show_splits equipped, emit a battle-log
+## line — new PBs get a gold ★ marker so the player feels the win.
+func _record_boss_split(boss_id: String, display_name: String) -> void:
+	if boss_id == "":
+		return
+	if GameState == null or not ("playtime_seconds" in GameState):
+		return
+	var now: float = float(GameState.playtime_seconds)
+	if not (boss_id in GameState.boss_splits):
+		GameState.boss_splits[boss_id] = now
+	var prior_pb: float = float(GameState.boss_personal_best.get(boss_id, 0.0))
+	var new_pb: bool = false
+	if prior_pb <= 0.0 or now < prior_pb:
+		GameState.boss_personal_best[boss_id] = now
+		new_pb = true
+	if not _party_wants_splits_emit():
+		return
+	var pb_disp: float = float(GameState.boss_personal_best.get(boss_id, now))
+	var marker: String = " [color=gold]★ NEW PB[/color]" if new_pb else ""
+	battle_log_message.emit("[color=cyan][Splits] %s @ %s (PB %s)%s[/color]" % [
+		display_name,
+		_format_split(now),
+		_format_split(pb_disp),
+		marker])
+
+
+## Tick 454: gate. show_splits flag scan, any-wins.
+func _party_wants_splits_emit() -> bool:
+	var ps: Node = get_node_or_null("/root/PassiveSystem")
+	if ps == null or not ps.has_method("get_passive"):
+		return false
+	for member in player_party:
+		if not (member is Combatant):
+			continue
+		for passive_id in member.equipped_passives:
+			var passive: Dictionary = ps.get_passive(str(passive_id))
+			if passive.is_empty():
+				continue
+			var me: Variant = passive.get("meta_effects", {})
+			if me is Dictionary and bool(me.get("show_splits", false)):
+				return true
+	return false
+
+
+## Tick 454: split formatter — HH:MM:SS for long runs, M:SS for
+## short. Inlined locally rather than reaching into GameState's
+## get_playtime_formatted (which always emits the long form).
+func _format_split(t: float) -> String:
+	var total: int = int(t)
+	var h: int = total / 3600
+	var m: int = (total / 60) % 60
+	var s: int = total % 60
+	if h > 0:
+		return "%d:%02d:%02d" % [h, m, s]
+	return "%d:%02d" % [m, s]
+
+
+## Tick 469: any party member's job (primary OR secondary) authoring
+## volatility_access=true triggers the one-tier band bump in
+## start_battle. Returns false cleanly when JobSystem isn't
+## available. Reads the battle-shape party (Combatant instances)
+## rather than the dict-shape GameState.player_party so we honor
+## any temporary mid-battle job swaps (jobs.json's per-Combatant
+## job field).
+func _party_has_volatility_access() -> bool:
+	var js: Node = get_node_or_null("/root/JobSystem")
+	if js == null or not js.has_method("get_job"):
+		return false
+	for member in player_party:
+		if not (member is Combatant):
+			continue
+		var job_ids: Array[String] = []
+		if member.job is Dictionary:
+			var jid: String = str((member.job as Dictionary).get("id", ""))
+			if jid != "":
+				job_ids.append(jid)
+		if "secondary_job_id" in member:
+			var sid: String = str(member.secondary_job_id)
+			if sid != "":
+				job_ids.append(sid)
+		for jid in job_ids:
+			var job_data: Dictionary = js.get_job(jid)
+			if job_data.is_empty():
+				continue
+			if bool(job_data.get("volatility_access", false)):
+				return true
+	return false
+
+
+## Tick 453: apply the pattern_recognition bonus when the attacker
+## has boss_pattern_memory equipped AND the target is a recorded
+## boss/miniboss. Returns the unmodified damage on the no-bonus
+## path so it's safe to wrap any damage call. The check is
+## per-Combatant attacker (not party-wide) — the bonus is the
+## attacker's reward for remembering, not a party aura.
+## returned_sword's Familiar Weight: +10% (or whatever the special_effect
+## sums to) damage vs any enemy the party has seen/defeated OR that lives
+## in the equipped item's static ledger. Story spec (msg 2158): the sword
+## knows more than the party does — the exploit-mindset discovery gradient.
+## The static seed is data-only in equipment.json; description stays quiet
+## about it so the discovery moment stays earned.
+func _apply_familiar_weight_bonus(attacker: Combatant, target: Combatant, damage: int) -> int:
+	if attacker == null or target == null or damage <= 0:
+		return damage
+	var bonus: float = _sum_equipment_special_effect(attacker, "familiar_weight_bonus")
+	if bonus <= 0.0:
+		return damage
+	if not target.has_method("get_meta") or not target.has_meta("monster_type"):
+		return damage
+	var mtype: String = str(target.get_meta("monster_type", ""))
+	if mtype == "":
+		return damage
+	# Story ledger (party awareness) — the honest, discoverable half.
+	var bestiary_hit: bool = BestiarySystem.is_seen(mtype) or BestiarySystem.is_defeated(mtype)
+	# Sword-ledger (per-item static seed) — the easter-egg half.
+	var seed_hit: bool = mtype in _familiar_weight_static_seed(attacker)
+	if not (bestiary_hit or seed_hit):
+		return damage
+	return int(round(damage * (1.0 + bonus)))
+
+
+## Union the familiar_weight_static_seed arrays authored on the attacker's
+## three equipment slots. Any equipped item can carry a seed — v1 uses only
+## returned_sword's, but the sum-across-slots shape means future accessories
+## with their own memory stack cleanly. Data-only: no id is authored today.
+func _familiar_weight_static_seed(combatant: Combatant) -> PackedStringArray:
+	var out: PackedStringArray = PackedStringArray()
+	if combatant == null:
+		return out
+	var es: Node = get_node_or_null("/root/EquipmentSystem")
+	if es == null:
+		return out
+	var slots := [
+		["equipped_weapon", "get_weapon"],
+		["equipped_armor", "get_armor"],
+		["equipped_accessory", "get_accessory"],
+	]
+	for slot in slots:
+		if not (slot[0] in combatant):
+			continue
+		var eid: String = str(combatant.get(slot[0]))
+		if eid == "":
+			continue
+		var entry: Dictionary = es.call(slot[1], eid)
+		var raw: Variant = entry.get("familiar_weight_static_seed", [])
+		if not (raw is Array):
+			continue
+		for m in raw:
+			var mstr: String = str(m)
+			if mstr != "" and not (mstr in out):
+				out.append(mstr)
+	return out
+
+
+func _apply_pattern_recognition_bonus(attacker: Combatant, target: Combatant, damage: int) -> int:
+	if attacker == null or target == null or damage <= 0:
+		return damage
+	if attacker.equipped_passives.is_empty():
+		return damage
+	if not target.has_meta("monster_type"):
+		return damage
+	var is_boss_like: bool = false
+	if target.has_meta("is_boss") and target.get_meta("is_boss"):
+		is_boss_like = true
+	elif target.has_meta("is_miniboss") and target.get_meta("is_miniboss"):
+		is_boss_like = true
+	if not is_boss_like:
+		return damage
+	var ps: Node = get_node_or_null("/root/PassiveSystem")
+	if ps == null or not ps.has_method("get_passive"):
+		return damage
+	var has_memory: bool = false
+	for passive_id in attacker.equipped_passives:
+		var passive: Dictionary = ps.get_passive(str(passive_id))
+		if passive.is_empty():
+			continue
+		var me: Variant = passive.get("meta_effects", {})
+		if me is Dictionary and bool(me.get("boss_pattern_memory", false)):
+			has_memory = true
+			break
+	if not has_memory:
+		return damage
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs == null or not ("previously_fought_bosses" in gs):
+		return damage
+	var boss_id: String = str(target.get_meta("monster_type", ""))
+	if boss_id == "" or not (boss_id in gs.previously_fought_bosses):
+		return damage
+	return int(round(damage * 1.2))
+
+
+## Tick 452: scan the party's equipped_passives for the boss_insight
+## flags. Returns the OR-union across members so a member with just
+## show_boss_hp and another with just show_boss_weakness combine
+## cleanly. Empty dict ({}) when no flags are on.
+func _party_boss_insight_flags() -> Dictionary:
+	var result: Dictionary = {}
+	var ps: Node = get_node_or_null("/root/PassiveSystem")
+	if ps == null or not ps.has_method("get_passive"):
+		return result
+	for member in player_party:
+		if not (member is Combatant) or not member.is_alive:
+			continue
+		if member.equipped_passives.is_empty():
+			continue
+		for passive_id in member.equipped_passives:
+			var passive: Dictionary = ps.get_passive(str(passive_id))
+			if passive.is_empty():
+				continue
+			var me: Variant = passive.get("meta_effects", {})
+			if not (me is Dictionary):
+				continue
+			for key in ["show_boss_hp", "show_boss_weakness", "show_boss_intent"]:
+				if bool(me.get(key, false)):
+					result[key] = true
+	return result
+
+
+## Tick 452: emit a single battle-log line summarizing boss HP /
+## weaknesses for any boss combatant in enemy_party. Skipped
+## cleanly when no party member has the relevant flags or no boss
+## is in play (non-boss encounters don't surface anything).
+func _maybe_emit_boss_insight() -> void:
+	var flags: Dictionary = _party_boss_insight_flags()
+	if flags.is_empty():
+		return
+	var lines: Array[String] = []
+	for e in enemy_party:
+		if not is_instance_valid(e) or not e.is_alive:
+			continue
+		var is_boss: bool = false
+		if e.has_meta("is_boss") and e.get_meta("is_boss"):
+			is_boss = true
+		elif e.has_meta("is_miniboss") and e.get_meta("is_miniboss"):
+			is_boss = true
+		if not is_boss:
+			continue
+		var parts: Array[String] = []
+		if bool(flags.get("show_boss_hp", false)):
+			parts.append("HP %d/%d" % [e.current_hp, e.max_hp])
+		if bool(flags.get("show_boss_weakness", false)):
+			var weak: Array = e.elemental_weaknesses
+			if weak.size() > 0:
+				parts.append("weak: %s" % ", ".join(weak))
+			else:
+				parts.append("no elemental weakness")
+		if parts.is_empty():
+			continue
+		lines.append("[color=white]%s[/color] (%s)" % [e.combatant_name, " · ".join(parts)])
+	if lines.is_empty():
+		return
+	battle_log_message.emit("[color=cyan][Boss Insight] %s[/color]" % " | ".join(lines))
+
+
+## Tick 451: scan party equipped_passives for preview_enemy_actions.
+## Any-wins. Combatant-shape lookup (party here is Combatant
+## instances during battle, not Dictionaries).
+func _party_wants_action_preview() -> bool:
+	var ps: Node = get_node_or_null("/root/PassiveSystem")
+	if ps == null or not ps.has_method("get_passive"):
+		return false
+	for member in player_party:
+		if not (member is Combatant) or not member.is_alive:
+			continue
+		if member.equipped_passives.is_empty():
+			continue
+		for passive_id in member.equipped_passives:
+			var passive: Dictionary = ps.get_passive(str(passive_id))
+			if passive.is_empty():
+				continue
+			var me: Variant = passive.get("meta_effects", {})
+			if not (me is Dictionary):
+				continue
+			if bool(me.get("preview_enemy_actions", false)):
+				return true
+	return false
+
+
+## Tick 451: emit a single battle-log line summarizing the enemies'
+## queued actions for the upcoming execution phase. Cyan
+## "[Time Sense]" badge keeps the source legible.
+func _emit_enemy_action_preview() -> void:
+	var parts: Array[String] = []
+	for action in execution_order:
+		var c: Variant = action.get("combatant")
+		if not (c is Combatant) or c in player_party or not (c as Combatant).is_alive:
+			continue
+		var atype: String = str(action.get("type", "act"))
+		var label: String = atype
+		if atype == "advance":
+			var sub: Array = action.get("actions", [])
+			label = "advance×%d" % sub.size()
+		parts.append("[color=white]%s[/color]→%s" % [(c as Combatant).combatant_name, label])
+	if parts.is_empty():
+		return
+	battle_log_message.emit("[color=cyan][Time Sense] %s[/color]" % " · ".join(parts))
 
 
 func _save_previous_actions() -> void:
@@ -1505,7 +2868,7 @@ func repeat_previous_actions() -> bool:
 				"combatant": combatant,
 				"type": "attack",
 				"target": alive[0] if alive.size() > 0 else null,
-				"speed": ACTION_SPEEDS["attack"] + combatant.speed
+				"speed": _compute_action_speed(combatant, "attack")
 			})
 			print("[REPEAT] %s: no previous action, using attack" % combatant.combatant_name)
 			repeated_any = true
@@ -1517,18 +2880,20 @@ func repeat_previous_actions() -> bool:
 			var action = saved_action.duplicate()
 			action["combatant"] = combatant
 
-			# Retarget if target is dead, freed, or carries over from a
-			# previous battle (target IS valid + alive but belongs to the
-			# stale enemy_party from the prior encounter — Y-button replay
-			# would otherwise hit ghosts of last battle's monsters).
+			# Validity check MUST happen before `is Combatant` — a freed
+			# reference makes `is` error with 'Left operand of is is a
+			# previously freed instance' (Godot 4 behaviour, seen in log
+			# during Y-button repeat across battles).
 			if action.has("target"):
 				var target = action["target"]
-				var is_stale = (target is Combatant
-					and is_instance_valid(target)
+				var target_valid: bool = is_instance_valid(target)
+				var is_stale = (target_valid
+					and target is Combatant
 					and target.is_alive
 					and target not in player_party
 					and target not in enemy_party)
-				if not is_instance_valid(target) or (target is Combatant and not target.is_alive) or is_stale:
+				var target_dead: bool = target_valid and target is Combatant and not target.is_alive
+				if not target_valid or target_dead or is_stale:
 					var alive_enemies = _get_alive_enemies()
 					action["target"] = alive_enemies[0] if alive_enemies.size() > 0 else null
 
@@ -1536,8 +2901,8 @@ func repeat_previous_actions() -> bool:
 			if action.has("targets"):
 				var new_targets = []
 				for target in action["targets"]:
-					var is_alive_in_battle = (target is Combatant
-						and is_instance_valid(target)
+					var is_alive_in_battle = (is_instance_valid(target)
+						and target is Combatant
 						and target.is_alive
 						and (target in player_party or target in enemy_party))
 					if is_alive_in_battle:
@@ -1572,6 +2937,7 @@ func _get_alive_enemies() -> Array[Combatant]:
 
 func _execute_next_action() -> void:
 	"""Execute the next action in the queue"""
+	_wd_bump()
 	# Check for victory/defeat
 	if _check_victory_conditions():
 		return
@@ -1599,6 +2965,23 @@ func _execute_next_action() -> void:
 		combatant.remove_status("stun")
 		battle_log_message.emit("[color=yellow]%s[/color] is [color=orange]stunned[/color] and cannot act!" % combatant.combatant_name)
 		action_executing.emit(combatant, {"type": "stun_skip"})
+		_execute_next_action()
+		return
+
+	# Wave F R1 fix — "cannot_act" is the status applied by landed boss
+	# jailbreaks (skip_turn / lose_buff_or_stagger fallback). Without this
+	# consumer the boss would gain the status but still take its turn
+	# normally, silently dropping the mechanical effect of every landed
+	# jailbreak that maps to skip_turn.
+	if combatant.has_status("cannot_act"):
+		# Tick down — we consume one unit of duration per turn skipped.
+		var remaining: int = int(combatant.status_durations.get("cannot_act", 1))
+		if remaining <= 1:
+			combatant.remove_status("cannot_act")
+		else:
+			combatant.status_durations["cannot_act"] = remaining - 1
+		battle_log_message.emit("[color=yellow]%s[/color] cannot act!" % combatant.combatant_name)
+		action_executing.emit(combatant, {"type": "cannot_act_skip"})
 		_execute_next_action()
 		return
 
@@ -1637,8 +3020,8 @@ func _execute_next_action() -> void:
 				if turbo_mode:
 					await get_tree().process_frame
 				else:
-					var speed_scale = Engine.time_scale if Engine.time_scale > 0 else 1.0
-					await get_tree().create_timer(0.1 / speed_scale).timeout
+					# 2026-07-12: was 0.1/speed_scale which DOUBLE-scaled (create_timer already applies Engine.time_scale) → wall clock 1.6s at 1x. Constant 0.025 gives the intended 0.1s at 1x (time_scale=0.25).
+					await get_tree().create_timer(0.025).timeout
 				if not is_instance_valid(self):
 					return
 				_execute_next_action()
@@ -1671,6 +3054,9 @@ func _execute_next_action() -> void:
 			action_executing.emit(combatant, {"type": "charm_skip"})
 			_execute_next_action()
 			return
+
+	# Boss identity SFX — spotlight-duel minibosses author signature_sfx in monsters.json; fire once on first action
+	_maybe_play_signature_sfx(combatant)
 
 	# Execute based on action type
 	match action.get("type", ""):
@@ -1719,6 +3105,20 @@ func _execute_next_action() -> void:
 func _execute_defer(combatant: Combatant) -> void:
 	"""Execute defer action"""
 	combatant.execute_defer()
+	# was print-only — the defensive stance (−50% incoming) had zero in-log confirmation
+	battle_log_message.emit("[color=cyan]🛡 %s defends — incoming damage halved this round.[/color]" % combatant.combatant_name)
+	## Tick 445: bp_recovery passive — passives.json authors
+	## meta_effects.bp_regen_bonus = 1 with description "Recover 1
+	## extra BP per turn when Defaulting". CTB-with-AP collapses
+	## BP/AP into one resource here, so the bonus grants extra AP
+	## at defer time on top of the natural +1 next-turn gain.
+	## Pre-fix the meta_effect was decoration. Generic — any
+	## future passive authoring bp_regen_bonus stacks via the
+	## sum-across-passives helper.
+	var bp_bonus: int = int(combatant._get_passive_meta_effect_sum("bp_regen_bonus"))
+	if bp_bonus > 0:
+		combatant.gain_ap(bp_bonus)
+		battle_log_message.emit("[color=cyan]%s recovers %d extra AP (BP Recovery)![/color]" % [combatant.combatant_name, bp_bonus])
 	print("%s defers (AP: %d)" % [combatant.combatant_name, combatant.current_ap])
 
 
@@ -1761,7 +3161,15 @@ func _get_summon_type(combatant: Combatant) -> String:
 
 func _execute_summon(combatant: Combatant, monster_type: String) -> void:
 	"""Execute summon action - spawn a new enemy"""
-	print("  → %s summons a %s!" % [combatant.combatant_name, monster_type.capitalize()])
+	## Tick 177: announce in the battle log. Pre-fix the new enemy
+	## sprite appeared via the monster_summoned signal but no log
+	## line said "X summons a Goblin!" — players got confused why
+	## a new enemy showed up mid-battle. Standard snake_case →
+	## Title Case prettifier on the monster type for display.
+	var display_name: String = monster_type.replace("_", " ").capitalize()
+	var article: String = "an" if display_name.substr(0, 1).to_lower() in ["a", "e", "i", "o", "u"] else "a"
+	battle_log_message.emit("[color=purple]%s summons %s %s![/color]" % [combatant.combatant_name, article, display_name])
+	print("  → %s summons %s %s!" % [combatant.combatant_name, article, display_name])
 	monster_summoned.emit(monster_type, combatant)
 
 
@@ -1776,6 +3184,13 @@ func _execute_group_action(action: Dictionary) -> void:
 		return
 
 	var _formation_id: String = action.get("formation_id", "")
+	# Boss-gloat context: remember the party pooled AP into a combined strike so
+	# the end-of-fight gloat can reference it ("…an all-out attack, how brutish").
+	_all_out_attack_this_battle = true
+	# Tick 247/248/254: ratchet "All at Once" via the centralized helper
+	# on any pooled strike type (all_out / limit_break / combo / formation).
+	if PartyChatSystem:
+		PartyChatSystem.fire_event_flag("event_flag_first_group_attack")
 	group_attack_executing.emit(participants, group_type, alive_enemies, _formation_id)
 	print("[GROUP] Executing %s with %d participants vs %d enemies" % [
 		group_type, participants.size(), alive_enemies.size()])
@@ -1800,6 +3215,7 @@ func _execute_group_action(action: Dictionary) -> void:
 		action,
 		alive_enemies
 	)
+	_wd_bump()
 
 	if _check_victory_conditions():
 		return
@@ -1817,23 +3233,57 @@ func _execute_group_action(action: Dictionary) -> void:
 
 func _execute_physical_group(participants: Array, alive_enemies: Array[Combatant], group_type: String, ap_cost: int) -> void:
 	"""Execute All-Out Attack or Limit Break — physical combined damage"""
+	var is_limit_break: bool = group_type == "limit_break"
+	## Tick 175: announce the group attack name at the top. Pre-fix
+	## physical group attacks went straight to per-enemy hit lines
+	## ("Group all_out_attack hits X for N!") with no opener — the
+	## combo magic path DOES announce ("★ Steam Burst! ★") so this
+	## closes the parity gap. Limit Break is the more dramatic
+	## variant; gold + ★★★ markers signal the 4-AP commitment.
+	if is_limit_break:
+		battle_log_message.emit("[color=gold]★★★ LIMIT BREAK! ★★★[/color]")
+	else:
+		battle_log_message.emit("[color=orange]All-Out Attack![/color] (%d participants)" % participants.size())
 	var total_power: float = 0.0
 	for p in participants:
 		if not (p is Combatant) or not p.is_alive:
 			continue
 		p.spend_ap(ap_cost)
-		total_power += p.attack
+		total_power += p.get_buffed_stat("attack", p.attack)
 
 	var scale: float = pow(participants.size(), 1.5)
+	var lb_dmg_mult: float = 3.0
 	for enemy in alive_enemies:
 		if not enemy.is_alive:
 			continue
 		var raw_damage: int = int(total_power * scale / max(1.0, float(alive_enemies.size())))
-		var mitigated: int = max(1, raw_damage - enemy.defense)
+		var mitigated: int = 0
+		if is_limit_break:
+			# Limit Break: 3x damage, ignore defense (project rule: ultimate
+			# strike must justify its 4x AP cost vs All-Out Attack).
+			mitigated = max(1, int(raw_damage * lb_dmg_mult))
+		else:
+			mitigated = max(1, raw_damage)
 		enemy.take_damage(mitigated)
 		damage_dealt.emit(enemy, mitigated, false, "", 1.0)
 		battle_log_message.emit("[color=orange]Group %s hits %s for %d![/color]" % [
 			group_type, enemy.combatant_name, mitigated])
+
+	if is_limit_break:
+		_limit_break_cleanse(participants)
+
+
+func _limit_break_cleanse(participants: Array) -> void:
+	## Limit Break post-effect: cleanse negative statuses from all participants.
+	var cleansable: Array[String] = ["poison", "burning", "blind", "fear", "sleep", "stun", "curse", "charm", "pacify", "silence"]
+	for p in participants:
+		if not (p is Combatant) or not p.is_alive:
+			continue
+		for status in cleansable:
+			if p.has_status(status):
+				p.remove_status(status)
+		# Tick 238: bonus BBCode (Limit Break cleanse).
+		battle_log_message.emit("[color=%s]%s is cleansed by the Limit Break![/color]" % [AccessibilityPalette.bonus_bbcode(), p.combatant_name])
 
 
 func _execute_combo_magic(participants: Array, alive_enemies: Array[Combatant], ap_cost: int) -> void:
@@ -1898,6 +3348,14 @@ func _execute_combo_magic(participants: Array, alive_enemies: Array[Combatant], 
 
 func _execute_formation_special(participants: Array, alive_enemies: Array[Combatant], formation_id: String) -> void:
 	"""Execute a Formation Special — unique effect based on party job composition"""
+	## Tick 175: announce that a formation special is starting.
+	## Tick 176: reworded to NOT name the formation — each of the
+	## six formation branches already emits a descriptor line at
+	## the END that names + describes the effect ("★ Four Heroes
+	## — balanced strike + party healed 25%! ★"). Repeating the
+	## name in both lines read as duplicate logging. The opener
+	## now signals the dramatic moment WITHOUT redundancy.
+	battle_log_message.emit("[color=gold]✦ FORMATION SPECIAL ✦[/color]")
 	# Spend AP (2 per participant for most formations, 3 for arcane_tempest/chaos_theory)
 	var ap_cost = 3 if formation_id in ["arcane_tempest", "chaos_theory"] else 2
 	for p in participants:
@@ -1912,10 +3370,10 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 			var total_power = 0.0
 			for p in participants:
 				if p is Combatant and p.is_alive:
-					total_power += (p.attack + p.get_buffed_stat("magic", p.magic)) * 0.5
+					total_power += (p.get_buffed_stat("attack", p.attack) + p.get_buffed_stat("magic", p.magic)) * 0.5
 			for enemy in alive_enemies:
 				if not enemy.is_alive: continue
-				var damage = max(1, int(total_power * scale / max(1.0, float(alive_enemies.size())) - enemy.defense * 0.5))
+				var damage = max(1, int(total_power * scale / max(1.0, float(alive_enemies.size()))))
 				enemy.take_damage(damage)
 				damage_dealt.emit(enemy, damage, false, "", 1.0)
 			# Heal party 25%
@@ -1951,11 +3409,11 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 					break
 				var attacker = living_participants[randi() % living_participants.size()]
 				var target = living_enemies[randi() % living_enemies.size()]
-				var base_dmg = int(attacker.attack * 0.7)
+				var base_dmg = int(attacker.get_buffed_stat("attack", attacker.attack) * 0.7)
 				var is_crit = randf() < 0.3  # 30% crit chance per hit
 				if is_crit:
 					base_dmg = int(base_dmg * 1.5)
-				var damage = max(1, base_dmg - target.defense / 2)
+				var damage = max(1, base_dmg)
 				target.take_damage(damage)
 				damage_dealt.emit(target, damage, is_crit, "", 1.0)
 			battle_log_message.emit("[color=orange]★ Blade Storm — %d rapid strikes! ★[/color]" % hit_count)
@@ -1968,28 +3426,28 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 			var total_atk = 0.0
 			for p in participants:
 				if p is Combatant and p.is_alive:
-					total_atk += p.attack
+					total_atk += p.get_buffed_stat("attack", p.attack)
 			for enemy in alive_enemies:
 				if not enemy.is_alive: continue
-				var damage = max(1, int(total_atk * scale * 0.6 / max(1.0, float(alive_enemies.size())) - enemy.defense))
+				var damage = max(1, int(total_atk * scale * 0.6 / max(1.0, float(alive_enemies.size()))))
 				enemy.take_damage(damage)
 				damage_dealt.emit(enemy, damage, false, "", 1.0)
 			battle_log_message.emit("[color=cyan]★ Iron Wall — party DEF +50%% (3 turns) + crushing blow! ★[/color]")
 
 		"shadow_strike":
-			# Ignores defense, 2x vs full-HP targets
+			# 2x vs full-HP targets; defense applies via take_damage (log used to claim otherwise — honoring the flavor is a pending balance call)
 			var total_atk = 0.0
 			for p in participants:
 				if p is Combatant and p.is_alive:
-					total_atk += p.attack
+					total_atk += p.get_buffed_stat("attack", p.attack)
 			for enemy in alive_enemies:
 				if not enemy.is_alive: continue
 				var full_hp_bonus = 2.0 if enemy.current_hp == enemy.max_hp else 1.0
 				var damage = int(total_atk * scale * full_hp_bonus / max(1.0, float(alive_enemies.size())))
-				damage = max(1, damage)  # Defense ignored
+				damage = max(1, damage)
 				enemy.take_damage(damage)
 				damage_dealt.emit(enemy, damage, false, "", 1.0)
-			battle_log_message.emit("[color=purple]★ Shadow Strike — defense ignored! 2x on full HP targets! ★[/color]")
+			battle_log_message.emit("[color=purple]★ Shadow Strike — 2x on full HP targets! ★[/color]")
 
 		"chaos_theory":
 			# Random massive effect — could buff party, could nuke enemies, could backfire
@@ -1999,7 +3457,7 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 				var total_power = 0.0
 				for p in participants:
 					if p is Combatant and p.is_alive:
-						total_power += (p.attack + p.get_buffed_stat("magic", p.magic))
+						total_power += (p.get_buffed_stat("attack", p.attack) + p.get_buffed_stat("magic", p.magic))
 				for enemy in alive_enemies:
 					if not enemy.is_alive: continue
 					var damage = max(1, int(total_power * scale * 1.5 / max(1.0, float(alive_enemies.size()))))
@@ -2019,10 +3477,10 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 				var total_power = 0.0
 				for p in participants:
 					if p is Combatant and p.is_alive:
-						total_power += p.attack
+						total_power += p.get_buffed_stat("attack", p.attack)
 				for enemy in alive_enemies:
 					if not enemy.is_alive: continue
-					var damage = max(1, int(total_power * scale * 0.8 / max(1.0, float(alive_enemies.size())) - enemy.defense))
+					var damage = max(1, int(total_power * scale * 0.8 / max(1.0, float(alive_enemies.size()))))
 					enemy.take_damage(damage)
 					damage_dealt.emit(enemy, damage, false, "", 1.0)
 				for p in participants:
@@ -2037,7 +3495,8 @@ func _execute_formation_special(participants: Array, alive_enemies: Array[Combat
 						var self_dmg = int(p.max_hp * 0.1)
 						p.take_damage(self_dmg)
 						damage_dealt.emit(p, self_dmg, false, "", 1.0)
-				battle_log_message.emit("[color=red]★ Chaos Theory — BACKFIRE! Party takes recoil damage! ★[/color]")
+				# Tick 238: penalty BBCode (Chaos Theory backfire).
+				battle_log_message.emit("[color=%s]★ Chaos Theory — BACKFIRE! Party takes recoil damage! ★[/color]" % AccessibilityPalette.penalty_bbcode())
 
 		_:
 			# Unknown formation — fallback to physical group
@@ -2064,7 +3523,8 @@ func _apply_vulnerability_window(participants: Array) -> void:
 		p.current_ap = clampi(p.current_ap - 2, -4, 4)
 		if p.has_signal("ap_changed"):
 			p.ap_changed.emit(old_ap, p.current_ap)
-	battle_log_message.emit("[color=red]All participants are now exposed! (-2 AP, 1.5x damage taken)[/color]")
+	# Tick 238: penalty BBCode (group-exposure debuff).
+	battle_log_message.emit("[color=%s]All participants are now exposed! (-2 AP, 1.5x damage taken)[/color]" % AccessibilityPalette.penalty_bbcode())
 
 
 func _get_party_elements(participants: Array) -> Array[String]:
@@ -2120,6 +3580,15 @@ const ADVANCE_TRASH_TALK = {
 	"ninja": ["Shadow combo!", "You won't see this coming!", "Swift as the wind!", "Vanishing strike!"],
 	"summoner": ["All of us, together!", "Lend me your power!", "Convergence!", "United we strike!"],
 	"speculator": ["All in!", "High risk, high reward!", "The market favors the bold!", "Leveraged to the max!"],
+	# Tick 292: meta-job lines + _default fallback. Pre-fix the get
+	# fell back to ADVANCE_TRASH_TALK["fighter"] when the job_id was
+	# unknown — meta-job PCs trash-talked in the wrong voice.
+	"scriptweaver": ["Chained calls.", "Stack trace incoming.", "Queue length: three.", "git stash, git smash, git ship!"],
+	"time_mage": ["Three turns at once.", "I already finished this.", "Sequenced across the timeline.", "Wait for the rewind."],
+	"necromancer": ["Three verses, one funeral.", "The chorus rises.", "I have three names ready for the ledger.", "Three steps to the grave."],
+	"bossbinder": ["Phase one, two, three.", "Their pattern, mine to play.", "I wore three masks for this.", "Boss-script: triple casting."],
+	"skiptrotter": ["Three-action combo, no skip.", "Frame-perfect chain.", "Already past your iframes.", "Speedrun finisher!"],
+	"_default": ["Multi-hit incoming!", "Going all out!", "Combo time!", "Take this!"],
 }
 
 
@@ -2127,12 +3596,21 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 	"""Execute advance action - all queued actions in sequence (each costs 1 AP)"""
 	var actions = advance_action.get("actions", []) as Array
 	if actions.is_empty():
+		## Live playtest freeze 2026-07-01 ("EXECUTE: Bard" hung forever):
+		## the caller returns after _execute_advance ("handles its own
+		## continuation"), so a bare return here permanently stalled the
+		## battle. An empty Advance must keep the execution chain alive.
+		push_warning("BattleManager: %s advanced with an empty action queue — skipping" % combatant.combatant_name)
+		_execute_next_action()
 		return
 
 	# Trash talk on 3+ action Advance from player characters (20% chance)
 	if actions.size() >= 3 and combatant in player_party and randf() < 0.2:
+		# Tick 292: fall back to "_default" (was "fighter" — wrong
+		# voice for any unknown / non-starter job; meta-job PCs were
+		# trash-talking in fighter lines).
 		var job_id = combatant.job.get("id", "fighter") if combatant.job else "fighter"
-		var lines = ADVANCE_TRASH_TALK.get(job_id, ADVANCE_TRASH_TALK["fighter"])
+		var lines = ADVANCE_TRASH_TALK.get(job_id, ADVANCE_TRASH_TALK["_default"])
 		var line = lines[randi() % lines.size()]
 		advance_trash_talk.emit(combatant, line)
 
@@ -2144,6 +3622,8 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 	# test_advance_ap_cost_calculation comment "3 - 1 natural gain offset = 2 net").
 	# Bug fix (2026-04-30): removed the extra gain_ap(1).
 	print("%s advances with %d actions!" % [combatant.combatant_name, actions.size()])
+	# was print-only — Defer logs its stance (v3.32.90), so Advance's header should too (parity for the AP-spend pair)
+	battle_log_message.emit("[color=orange]⚡ %s advances — %d actions this turn![/color]" % [combatant.combatant_name, actions.size()])
 
 	# Execute all actions in sequence (each will spend 1 AP)
 	for action in actions:
@@ -2160,32 +3640,29 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 				_execute_ability(combatant, action.get("ability_id", ""), action.get("targets", []))
 			"item":
 				_execute_item(combatant, action.get("item_id", ""), action.get("targets", []))
+			_:
+				# Shared/imported autobattle scripts are player-editable
+				# JSON — a typo'd sub-action type was silently eaten
+				# ("advances with 3 actions!" but only 2 happen).
+				push_warning("BattleManager: unknown Advance sub-action type '%s' — skipped" % action.get("type", ""))
 
 		# Log player action for adaptive AI pattern detection
 		_log_player_action(combatant, action)
 		action_executed.emit(combatant, action, action.get("targets", [action.get("target")]))
+		_wd_bump()
 		if turbo_mode:
 			await get_tree().process_frame
 		else:
-			# Time for animation — scale by Engine.time_scale so 2x/4x
-			# battle speed actually feels 2x/4x. Without this scaling,
-			# the 500ms gap persists at every speed, making fast-mode
-			# feel "weirdly paused" between Advance sub-actions.
-			# (User feedback 2026-05-20: "why is there a weird pause
-			# in between turns in the battle?")
-			var speed_scale_sub = Engine.time_scale if Engine.time_scale > 0 else 1.0
-			# Was 0.5s — tightened to 0.3s 2026-06-04 per user feedback that
-			# Advance-mode sub-actions had awkward pauses at 1x battle speed.
-			await get_tree().create_timer(0.3 / speed_scale_sub).timeout
+			# 2026-07-12: was 0.3/speed_scale — the DIVISION double-scaled because create_timer already applies Engine.time_scale. At 1x (time_scale=0.25) that was create_timer(1.2) → 4.8s wall clock instead of the intended 0.3s. Constant 0.075 gives the correct 0.3s at 1x, scaling proportionally with battle speed.
+			await get_tree().create_timer(0.075).timeout
 		if not is_instance_valid(self):
 			return
 
-	# Continue to next action — same scaling fix as the inner loop above.
+	# Continue to next action — same double-scaling fix as the inner loop above.
 	if turbo_mode:
 		await get_tree().process_frame
 	else:
-		var speed_scale_post = Engine.time_scale if Engine.time_scale > 0 else 1.0
-		await get_tree().create_timer(0.3 / speed_scale_post).timeout
+		await get_tree().create_timer(0.075).timeout
 	if not is_instance_valid(self):
 		return
 	if _check_victory_conditions():
@@ -2215,6 +3692,48 @@ func _retarget_enemy(attacker: Combatant, original_target: Combatant) -> Combata
 	return new_target
 
 
+## Tick 444: Guardian-style auto-cover. If the resolved target is
+## a player whose HP% is below another live party member's
+## auto_cover_threshold (passive meta_effect), redirect the hit
+## to that covering ally. Pre-fix the cover_ally passive's
+## meta_effect was decoration. Bias toward the highest threshold
+## (the most committed protector wins). Self-cover is excluded
+## (a unit can't cover itself). Skipped when attacker is also
+## a party member (friendly fire / mind_swap weirdness).
+func _maybe_cover_ally(attacker: Combatant, target: Combatant) -> Combatant:
+	if attacker == null or target == null:
+		return target
+	if not is_instance_valid(target) or not target.is_alive:
+		return target
+	if attacker in player_party:
+		return target
+	if not (target in player_party):
+		return target
+	if target.max_hp <= 0:
+		return target
+	var target_hp_pct: float = float(target.current_hp) / float(target.max_hp)
+	var best_coverer: Combatant = null
+	var best_threshold: float = 0.0
+	for ally in player_party:
+		if ally == null or not is_instance_valid(ally) or not ally.is_alive:
+			continue
+		if ally == target:
+			continue
+		var threshold: float = ally._get_passive_meta_effect_sum("auto_cover_threshold")
+		if threshold <= 0.0:
+			continue
+		if target_hp_pct >= threshold:
+			continue
+		if threshold > best_threshold:
+			best_threshold = threshold
+			best_coverer = ally
+	if best_coverer == null:
+		return target
+	battle_log_message.emit("[color=cyan]%s covers %s![/color]" % [best_coverer.combatant_name, target.combatant_name])
+	print("[COVER_ALLY] %s intercepts the hit meant for %s" % [best_coverer.combatant_name, target.combatant_name])
+	return best_coverer
+
+
 func _retarget_ally(caster: Combatant, original_target: Combatant, include_dead: bool = false) -> Combatant:
 	"""Find a new ally target if original is invalid"""
 	if original_target and (original_target.is_alive or include_dead):
@@ -2234,16 +3753,45 @@ func _retarget_ally(caster: Combatant, original_target: Combatant, include_dead:
 
 func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 	"""Execute a basic physical attack (costs 1 AP)"""
-	# AP is spent FIRST so a fizzled action (e.g. all enemies dead) still
-	# commits the cost. Otherwise an Advance with mixed valid/invalid
-	# targets would leave AP elevated above what the player chose to spend
-	# (bug fix 2026-04-30 — caught by combat audit).
+	# AP spent FIRST so fizzled action still commits cost (bug fix 2026-04-30).
 	attacker.spend_ap(1)
-
 	# Auto-retarget if original target is dead/invalid
 	var actual_target = _retarget_enemy(attacker, target)
+	## Tick 444: cover_ally passive — passives.json authors
+	## meta_effects.auto_cover_threshold = 0.25 with description
+	## "Automatically take hits for allies below 25% HP", but
+	## pre-fix the field was decoration. Apply only on basic
+	## attacks (multi-target abilities don't sensibly cover) and
+	## only when an enemy is attacking a player (Guardian role).
+	actual_target = _maybe_cover_ally(attacker, actual_target)
+	# Pacify silences offensive actions (consumer for add_status pacify).
+	if attacker.has_status("pacify"):
+		battle_log_message.emit("[color=cyan]%s is pacified and cannot attack![/color]" % attacker.combatant_name)
+		return
 	if not actual_target or not is_instance_valid(actual_target):
+		## Tick 173: basic attack fizzle in the log (symmetric with
+		## ability fizzle). Common: queued attack, target dies first
+		## via someone else's action, retargeter finds nobody. Pre-fix
+		## the AP was spent silently.
 		print("%s's attack fizzles - no valid targets!" % attacker.combatant_name)
+		battle_log_message.emit("[color=gray]%s's attack fizzles — no valid targets.[/color]" % attacker.combatant_name)
+		return
+
+	# Invisible/evasion give the target untouchable/dodge windows.
+	if _target_dodges_physical(attacker, actual_target):
+		return
+
+	## Tick 463: monsters.json top-level immunities list. null_entity
+	## authors immunities=["physical"] — the W6 abstract boss
+	## ignores physical entirely. Pre-tick the field was decoration;
+	## every Combatant hit (and the physical_reflect/barrier paths)
+	## still landed on physical attacks. Skipped at this point in
+	## the flow so the miss preserves the per-hit log line and AP
+	## (already spent above). Doesn't burn turn-on-hit hooks
+	## (counter, debuff_on_attack) because those expect a real hit.
+	if _monster_immune_to_category(actual_target, "physical"):
+		attack_missed.emit(actual_target)
+		battle_log_message.emit("[color=cyan]%s is IMMUNE to physical — %s's attack passes through nothing![/color]" % [actual_target.combatant_name, attacker.combatant_name])
 		return
 
 	action_executing.emit(attacker, {"type": "attack", "target": actual_target})
@@ -2256,7 +3804,7 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 	var miss_rate = clamp(base_miss_rate - speed_diff * 0.05, 0.02, 0.60)
 	if randf() < miss_rate:
 		attack_missed.emit(actual_target)
-		var log_msg = "[color=white]%s[/color] attacks [color=red]%s[/color]... [color=gray]MISS![/color]" % [attacker.combatant_name, actual_target.combatant_name]
+		var log_msg = "[color=white]%s[/color] attacks [color=%s]%s[/color]... [color=gray]MISS![/color]" % [attacker.combatant_name, AccessibilityPalette.penalty_bbcode(), actual_target.combatant_name]
 		battle_log_message.emit(log_msg)
 		print("%s attacks %s... MISS!" % [attacker.combatant_name, actual_target.combatant_name])
 		return
@@ -2275,9 +3823,22 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 		is_crit = true
 		var crit_multiplier = _get_crit_multiplier(attacker)
 		damage = int(damage * crit_multiplier)
+		if attacker in player_party and attacker.max_hp > 0 and attacker.current_hp * 10 < attacker.max_hp:
+			_c3_clutch_crit = true
 
 	# Market Sense passive: scaling damage bonus based on volatility band
 	damage = _apply_market_sense(attacker, damage)
+
+	## Tick 435: consume the next_attack_multiplier set by burrow (or
+	## any future stored-multiplier support ability). One-shot — clear
+	## the meta after applying so subsequent attacks don't keep the
+	## bonus. Distinct emerge log line lets the player see the bonus
+	## land.
+	var stored_nam: float = float(attacker.get_meta("_next_attack_multiplier", 0.0))
+	if stored_nam > 0.0:
+		damage = int(damage * stored_nam)
+		attacker.set_meta("_next_attack_multiplier", 0.0)
+		battle_log_message.emit("[color=cyan]%s emerges with a charged strike![/color] (×%.1f)" % [attacker.combatant_name, stored_nam])
 
 	# Tail event check
 	if volatility and volatility.check_tail_event():
@@ -2296,6 +3857,34 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 		damage += actual_target.defense
 		battle_log_message.emit("[color=purple]Reality bends — %s's defenses shatter![/color]" % actual_target.combatant_name)
 
+	# Barrier nullifies the next incoming hit, then expires.
+	if actual_target.has_status("barrier"):
+		actual_target.remove_status("barrier")
+		battle_log_message.emit("[color=cyan]%s's Barrier absorbs the attack![/color]" % actual_target.combatant_name)
+		# Counter-on-hit hook fires even on nullified hits — boss reads it
+		# as a tactical pressure event (the boss WAS attacked).
+		_trigger_monster_counter(actual_target, attacker)
+		return
+
+	# Physical reflect (reflect or physical_reflect): bounce dmg to attacker.
+	if actual_target.has_status("reflect") or actual_target.has_status("physical_reflect"):
+		var reflected = attacker.take_damage(damage, false)
+		damage_dealt.emit(attacker, reflected, false, "", 1.0)
+		battle_log_message.emit("[color=magenta]%s's Reflect bounces %d damage back to %s![/color]" % [actual_target.combatant_name, reflected, attacker.combatant_name])
+		_trigger_monster_counter(actual_target, attacker)
+		return
+
+	## Tick 453: pattern_recognition passive's meta_effects.boss_
+	## pattern_memory. The passive's stat_mods.attack_multiplier =
+	## 1.2 is already a flat baseline boost on the attacker's
+	## attack stat (via PassiveSystem.get_passive_mods, applied at
+	## Combatant init time). The meta_effect is the ADDITIONAL
+	## bonus the description promises ("+20% damage vs previously
+	## fought bosses") — applied per-hit, only when the target's
+	## monster_type lives in GameState.previously_fought_bosses.
+	damage = _apply_pattern_recognition_bonus(attacker, actual_target, damage)
+	damage = _apply_familiar_weight_bonus(attacker, actual_target, damage)
+
 	var actual_damage = actual_target.take_damage(damage, false)
 	damage_dealt.emit(actual_target, actual_damage, is_crit, "", 1.0)
 
@@ -2304,20 +3893,129 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 		_record_first_damage()
 
 	var crit_text = " [color=orange]CRITICAL![/color]" if is_crit else ""
-	var log_msg = "[color=white]%s[/color] attacks [color=red]%s[/color] for [color=yellow]%d[/color] damage!%s" % [attacker.combatant_name, actual_target.combatant_name, actual_damage, crit_text]
+	var log_msg = "[color=white]%s[/color] attacks [color=%s]%s[/color] for [color=yellow]%d[/color] damage!%s" % [attacker.combatant_name, AccessibilityPalette.penalty_bbcode(), actual_target.combatant_name, actual_damage, crit_text]
 	battle_log_message.emit(log_msg)
 	print("%s attacks %s for %d damage!%s" % [attacker.combatant_name, actual_target.combatant_name, actual_damage, " CRIT!" if is_crit else ""])
+
+	## Tick 421: enforce can_cause_permadeath. If the attacker's
+	## monster data carries the flag and the target just died, mark
+	## the target permakilled so Phoenix Down / revival abilities
+	## can't bring them back.
+	_maybe_apply_permadeath_on_kill(attacker, actual_target)
+
+	## Tick 423: the_absence heals from physical damage. Called
+	## AFTER damage is dealt — uses actual_damage so the heal scales
+	## with the mitigated number that landed, not the raw value.
+	_maybe_heal_from_damage(actual_target, actual_damage, "")
+
+	## Tick 424: empty_set applies a random debuff from its pool
+	## on every attack. Authored as W6 abstract's signature mechanic
+	## ("erases what you have"). Called AFTER the damage lands so
+	## the debuff also stacks on top.
+	_maybe_apply_debuff_on_attack(attacker, actual_target)
+
+	## Tick 461: equipment.json special_effects.poison_chance /
+	## sleep_chance — poison_dagger authors 0.25, sleep_dagger
+	## authors 0.20. Pre-tick neither field was read; the weapons
+	## gave the attack stat bonus from stat_mods but their
+	## headline gimmick was decoration. Applied AFTER damage lands
+	## (matches the empty_set debuff_on_attack pattern above) so
+	## the status piles on top of the hit. Each on-hit chance
+	## rolls independently — a poison_dagger upgraded with a
+	## sleep_dagger off-hand (future dual-wield) could apply both.
+	_apply_equipment_on_hit_status(attacker, actual_target)
+
+	# Counter-on-hit: monsters with counter_abilities defined in monsters.json
+	# fire a free retaliatory ability after taking a real hit.
+	_trigger_monster_counter(actual_target, attacker)
+
+
+## Tick 463: check the target's monster_data.immunities list for
+## a damage-class immunity (e.g. "physical", "magic"). null_entity
+## (W6 abstract boss) authors immunities=["physical"]. Returns
+## false cleanly when EncounterSystem isn't available or the
+## target isn't a monster (player party members never carry this
+## field). Designed generically: passing "magic" or any future
+## category works as long as monsters.json authors it.
+func _monster_immune_to_category(target: Combatant, category: String) -> bool:
+	if target == null or not is_instance_valid(target):
+		return false
+	if not target.has_meta("monster_type"):
+		return false
+	if EncounterSystem == null or not (EncounterSystem.monster_database is Dictionary):
+		return false
+	var mtype: String = str(target.get_meta("monster_type", ""))
+	if mtype == "" or not EncounterSystem.monster_database.has(mtype):
+		return false
+	var mdata: Dictionary = EncounterSystem.monster_database[mtype]
+	var immunities: Variant = mdata.get("immunities", [])
+	if not (immunities is Array):
+		return false
+	return category in immunities
+
+
+## Tick 461: on-hit status apply driven by equipment special_effects.
+## Generic over status names — each entry in ON_HIT_STATUSES maps
+## an equipment key to (status_name, duration, color). New on-hit
+## chances (e.g. confuse_chance, burn_chance) drop in by extending
+## the const without touching the loop.
+const ON_HIT_STATUSES: Array = [
+	{"key": "poison_chance", "status": "poison", "duration": 3, "color": "green", "verb": "poisons"},
+	{"key": "sleep_chance", "status": "sleep", "duration": 2, "color": "cyan", "verb": "lulls"},
+]
+
+
+func _apply_equipment_on_hit_status(attacker: Combatant, target: Combatant) -> void:
+	if attacker == null or target == null or not is_instance_valid(target) or not target.is_alive:
+		return
+	for entry in ON_HIT_STATUSES:
+		var chance: float = _sum_equipment_special_effect(attacker, entry["key"])
+		if chance <= 0.0:
+			continue
+		## Tick 461: also respect target's status_resistance equipment
+		## (resist_ring authors 0.3 = 30% resist). Subtract the resist
+		## from the chance so a poison_dagger swing against a
+		## resist_ring wearer drops from 0.25 → 0.175.
+		var resist: float = _sum_equipment_special_effect(target, "status_resistance")
+		var effective: float = clampf(chance - resist, 0.0, 1.0)
+		if effective <= 0.0 or randf() >= effective:
+			continue
+		target.add_status(entry["status"], entry["duration"])
+		battle_log_message.emit("[color=%s]%s %s %s![/color]" % [
+			entry["color"], attacker.combatant_name, entry["verb"], target.combatant_name])
 
 
 func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> void:
 	"""Execute an ability (costs 1 AP)"""
+	if caster in player_party:
+		_c3_nonbasic_used = true
+	# ability_corruption (corruption): 10% of PLAYER casts misfire into another
+	# ability the caster knows — the routing itself is corrupted
+	if caster in player_party and GameState and "corruption_effects" in GameState \
+			and "ability_corruption" in GameState.corruption_effects \
+			and "learned_abilities" in caster and caster.learned_abilities.size() > 1 \
+			and randf() < 0.1:
+		var others: Array = caster.learned_abilities.filter(func(a): return str(a) != ability_id)
+		if not others.is_empty():
+			var swapped: String = str(others[randi() % others.size()])
+			battle_log_message.emit("[color=magenta]✦ CORRUPTED CAST — %s's %s comes out as %s![/color]" % [caster.combatant_name, ability_id.capitalize(), swapped.capitalize()])
+			ability_id = swapped
 	var ability = JobSystem.get_ability(ability_id)
 	if ability.is_empty():
+		# Loud-fail: a bad ability_id silently consumed the caster's turn
+		# with print-only feedback before. Now surfaces in GUT runs and
+		# CI logs so a typo in abilities.json / a stale job_aliases.json
+		# entry doesn't ship as 'this ability does nothing'.
 		print("Error: Unknown ability %s" % ability_id)
+		push_warning("BattleManager._execute_ability: unknown ability_id '%s' (caster '%s') — turn consumed, no effect" % [ability_id, caster.combatant_name])
 		return
 
 	if not JobSystem.can_use_ability(caster, ability_id):
+		## Tick 173: surface in the log. Pre-fix the ability was
+		## blocked (insufficient MP, missing prerequisite, etc.) and
+		## the player saw nothing — character appeared to pass turn.
 		print("%s cannot use %s" % [caster.combatant_name, ability["name"]])
+		battle_log_message.emit("[color=gray]%s can't use %s right now.[/color]" % [caster.combatant_name, ability["name"]])
 		return
 
 	# Auto-retarget dead targets based on ability type
@@ -2342,12 +4040,28 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 				retargeted.append(new_target)
 
 	if retargeted.size() == 0 and targets.size() > 0:
+		## Tick 173: ability fizzle in the log. Common scenario:
+		## party member queues an attack on an enemy, that enemy
+		## dies before the action fires (group_attack KO), and
+		## retargeting can't find a survivor. Pre-fix this was
+		## print-only — character's AP was spent, turn passed,
+		## nothing happened, no log explanation.
 		print("%s's %s fizzles - no valid targets!" % [caster.combatant_name, ability["name"]])
+		battle_log_message.emit("[color=gray]%s's %s fizzles — no valid targets.[/color]" % [caster.combatant_name, ability["name"]])
 		return
 
-	var mp_cost = ability.get("mp_cost", 0)
+	# Tick 374: route through JobSystem.get_ability_mp_cost so passives
+	# like mp_efficiency / magic_amplifier / elemental_affinity that
+	# multiply MP cost actually affect spending. Pre-fix this read the
+	# bare ability.mp_cost while can_use_ability (post-tick-374) checks
+	# the multiplied cost — a divergence that would let mp_efficiency
+	# pass the affordability gate then spend the unmultiplied amount.
+	var mp_cost = JobSystem.get_ability_mp_cost(caster, ability_id)
 	if not caster.spend_mp(mp_cost):
+		# Tick 221: surface MP shortfall to battle_log + push_warning. If we reach here, can_use_ability (line ~2653) said yes but spend_mp said no — that's a real divergence worth surfacing. Pre-fix print-only and the player saw nothing.
 		print("%s doesn't have enough MP!" % caster.combatant_name)
+		battle_log_message.emit("[color=gray]%s lacks MP for %s.[/color]" % [caster.combatant_name, ability["name"]])
+		push_warning("[BattleManager] _execute_ability: '%s' insufficient MP after can_use_ability check passed (cost=%d, have=%d) — can_use_ability / spend_mp divergence" % [ability_id, mp_cost, caster.current_mp])
 		return
 
 	# Actions cost 1 AP (cancels out natural gain for net 0)
@@ -2358,32 +4072,123 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 	battle_log_message.emit(ability_log)
 	print("%s uses %s!" % [caster.combatant_name, ability["name"]])
 
+	## Tick 406: track last cast so mimic_ability (copy_last_ability)
+	## can replay. Skip when the ability IS mimic_ability so a mimic
+	## of a mimic doesn't infinite-recurse on itself; mimic still
+	## reads the prior cast.
+	if ability_id != "mimic_ability":
+		_last_ability_cast_id = ability_id
+		_last_ability_cast_caster = caster
+
 	match ability_type:
 		"physical":
 			_execute_physical_ability(caster, ability, retargeted)
+			# mug ("attack and steal in one action") authors success_rate + a
+			# steals flag, but the physical path never stole — the steal half was
+			# dead. Wire it here (same contained pattern as smoke_bomb's escape):
+			# after the hit, roll a gold steal per target.
+			if bool(ability.get("steals", false)):
+				var _steal_rate: float = clampf(float(ability.get("success_rate", 0.5)) + _sum_equipment_special_effect(caster, "steal_bonus"), 0.0, 1.0)
+				for _st in retargeted:
+					if _st is Combatant and is_instance_valid(_st) and _st.is_alive:
+						if randf() < _steal_rate:
+							var _g: int = randi_range(5, 50) * (1 + int(_st.max_hp / 50.0))
+							GameState.add_gold(_g)
+							battle_log_message.emit("[color=yellow]%s mugs %d gold from %s![/color]" % [caster.combatant_name, _g, _st.combatant_name])
+							# msg 2483: Mug is attack + steal in one action, so its steal-success branch fires the same steal_response the pure Steal handler does — Warden's Key path opens either way. Guarded once per fight by _steal_response_consumed inside the helper.
+							_apply_steal_response(_st)
+						else:
+							battle_log_message.emit("[color=gray]%s couldn't grab anything from %s.[/color]" % [caster.combatant_name, _st.combatant_name])
 		"magic":
 			_execute_magic_ability(caster, ability, retargeted)
 		"healing":
 			_execute_healing_ability(caster, ability, retargeted)
 		"revival":
 			_execute_revival_ability(caster, ability, retargeted)
-		"support":
+		"support", "song", "status":
+			# Tick 351: "song" (Bard's lullaby/discord/inspiring_melody in
+			# abilities.json) and "status" (JobSystem default fallback for
+			# lullaby/discord when abilities.json fails to load) both route
+			# to the support handler. Pre-fix neither had an arm — every
+			# Bard cast fell into the `_:` push_warning and silently
+			# fizzled. Same authored-but-unimplemented class as the
+			# evasion_up gap in tick 350.
 			_execute_support_ability(caster, ability, retargeted)
+			# smoke_bomb authors guaranteed_escape alongside its blind effect —
+			# "guarantee escape or blind enemies". The support handler applied the
+			# blind but the escape half was dead (guaranteed_escape is only read in
+			# _execute_escape_ability, which type=support never reached). Trigger it
+			# here after the blind lands: non-boss = blind + flee to the overworld,
+			# boss (escape_allowed=false) = blind only, as the description promises.
+			if bool(ability.get("guaranteed_escape", false)):
+				_execute_escape_ability(caster, ability)
+		## Tick 392: Summoner job's 4 eidolon abilities (summon_ifrit,
+		## summon_shiva, summon_ramuh, summon_bahamut) all author
+		## type=summon with damage_multiplier + element +
+		## target_type=all_enemies — magic-ability shape exactly. Pre-
+		## fix every eidolon cast burned 30 MP and silently fizzled to
+		## the `_:` push_warning default. Route through the magic
+		## execution path so the eidolon damage actually lands. The
+		## ally-spawning summons (rat_swarm, pack_call) are not in any
+		## player job — only enemy AI uses them via _execute_summon at
+		## line 2076 — so routing all "summon" ability_types to magic
+		## doesn't break any player path.
+		"summon":
+			_execute_magic_ability(caster, ability, retargeted)
 		"meta":
 			_execute_meta_ability(caster, ability, retargeted)
 		"escape":
 			_execute_escape_ability(caster, ability)
 		"mp_restore":
-			_execute_mp_restore_ability(caster, ability)
+			_execute_mp_restore_ability(caster, ability, retargeted)
 		_:
+			# Loud-fail: a new ability_type added to abilities.json
+			# without a matching handler used to print-only and
+			# silently consume the turn. Same loud-fail pattern as
+			# tick 26 (meta_ability) and the support sibling.
 			print("Unknown ability type: %s" % ability_type)
+			push_warning("BattleManager._execute_ability: unhandled ability_type '%s' (ability '%s') — no execution branch matched" % [ability_type, ability.get("id", "?")])
 
 
 func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: Array) -> void:
-	var base_damage = caster.get_buffed_stat("attack", caster.attack)
+	# Pacify silences offensive abilities entirely.
+	if caster.has_status("pacify"):
+		battle_log_message.emit("[color=cyan]%s is pacified and cannot strike![/color]" % caster.combatant_name)
+		return
+
+	## Tick 437: scales_with field swaps the base stat. abilities.json
+	## authors:
+	##   guard_strike: scales_with=defense
+	##   throw_shuriken: scales_with=speed
+	##   last_stand_ability: scales_with=missing_hp (special — adds a
+	##     multiplier scaling with caster's missing HP)
+	## Pre-fix the field was never read — all three abilities used
+	## the default attack stat as base, so guard_strike on a high-
+	## defense tank dealt poverty damage instead of leveraging the
+	## tank's signature stat.
+	var scales_with: String = str(ability.get("scales_with", ""))
+	var base_damage: int
+	match scales_with:
+		"defense":
+			base_damage = caster.get_buffed_stat("defense", caster.defense)
+		"speed":
+			base_damage = caster.get_buffed_stat("speed", caster.speed)
+		_:
+			base_damage = caster.get_buffed_stat("attack", caster.attack)
 	if caster.has_status("fear"):
 		base_damage = int(base_damage * 0.5)
 	var multiplier = ability.get("damage_multiplier", 1.0)
+	## Tick 437: missing_hp scaling — last_stand_ability authors this.
+	## Caster damage scales linearly from 1.0x to max_multiplier as
+	## current_hp drops from full to 0. Pre-fix max_multiplier was
+	## also unread, so last_stand was a flat 1.0x ability regardless
+	## of HP state — the "more damage the lower your HP" promise
+	## silently dropped.
+	if scales_with == "missing_hp" and caster.max_hp > 0:
+		var hp_pct: float = float(caster.current_hp) / float(caster.max_hp)
+		var max_mult: float = float(ability.get("max_multiplier", 5.0))
+		var missing_factor: float = 1.0 + (1.0 - hp_pct) * (max_mult - 1.0)
+		multiplier *= missing_factor
 	var crit_chance = ability.get("crit_chance", 0.0)
 
 	for target in targets:
@@ -2395,8 +4200,27 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 			var blind_miss_rate = 0.40
 			if randf() < blind_miss_rate:
 				attack_missed.emit(target)
-				battle_log_message.emit("[color=white]%s[/color]'s attack misses [color=red]%s[/color]! [color=gray](Blind)[/color]" % [caster.combatant_name, target.combatant_name])
+				battle_log_message.emit("[color=white]%s[/color]'s attack misses [color=%s]%s[/color]! [color=gray](Blind)[/color]" % [caster.combatant_name, AccessibilityPalette.penalty_bbcode(), target.combatant_name])
 				continue
+
+		# Invisible/evasion give the target untouchable/dodge windows.
+		## Tick 434: ignores_evasion bypasses the dodge check. authored
+		## on glitch_strike — the W6 "you can't dodge a glitch" beat.
+		## Pre-fix the field was authored but no code read it, so
+		## glitch_strike still missed against invisible/evasion/shadow_
+		## step targets.
+		if not bool(ability.get("ignores_evasion", false)):
+			if _target_dodges_physical(caster, target):
+				continue
+
+		## Tick 463: top-level immunities — same gate as basic
+		## attack. null_entity authors immunities=["physical"] so
+		## every physical ability (Slash, Whirlwind, etc.) should
+		## be a no-op against it.
+		if _monster_immune_to_category(target, "physical"):
+			attack_missed.emit(target)
+			battle_log_message.emit("[color=cyan]%s is IMMUNE to physical — %s's strike passes through nothing![/color]" % [target.combatant_name, caster.combatant_name])
+			continue
 
 		var damage = int(base_damage * multiplier)
 		var is_crit = false
@@ -2405,43 +4229,181 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 			damage = int(damage * _get_crit_multiplier(caster))
 			is_crit = true
 			print("Critical hit!")
+			if caster in player_party and caster.max_hp > 0 and caster.current_hp * 10 < caster.max_hp:
+				_c3_clutch_crit = true
 
 		var phys_vrange = volatility.get_variance_range(caster) if volatility else Vector2(0.9, 1.1)
 		damage = int(damage * randf_range(phys_vrange.x, phys_vrange.y))
 		damage = _apply_market_sense(caster, damage)
-		var actual_damage = target.take_damage(damage, false)
-		damage_dealt.emit(target, actual_damage, is_crit, "", 1.0)
+
+		# Barrier absorbs the next hit.
+		if target.has_status("barrier"):
+			target.remove_status("barrier")
+			battle_log_message.emit("[color=cyan]%s's Barrier absorbs the hit![/color]" % target.combatant_name)
+			_trigger_monster_counter(target, caster)
+			continue
+
+		# Physical reflect bounces the swing back.
+		if target.has_status("reflect") or target.has_status("physical_reflect"):
+			var reflected = caster.take_damage(damage, false)
+			damage_dealt.emit(caster, reflected, false, "", 1.0)
+			battle_log_message.emit("[color=magenta]%s's Reflect bounces %d damage to %s![/color]" % [target.combatant_name, reflected, caster.combatant_name])
+			_trigger_monster_counter(target, caster)
+			continue
+
+		## Tick 427: optimization_itself adapts to repeated abilities.
+		## Reduces damage if the target was hit by the same ability
+		## last time, then updates the meta tracker. Applied before
+		## take_damage so the adapted value is what lands.
+		damage = _apply_counter_repeated_damage_mod(target, ability.get("id", ""), damage)
+		damage = _apply_familiar_weight_bonus(caster, target, damage)
+
+		## Tick 431: multi-hit ability support. abilities.json authors
+		## `hits` on gold_scatter (3), recursive_strike (3),
+		## repetitive_strike (3), temporal_strike (2), thread_slash (3)
+		## with low damage_multiplier each — but pre-fix the field was
+		## never read, so each multi-hit ability dealt one hit instead
+		## of N. Run the damage step `hits` times when authored. Each
+		## hit is independent (separate take_damage call → separate
+		## absorb/death/permadeath checks), matching the "barrage of
+		## smaller hits" design vs one big hit.
+		var hits: int = max(1, int(ability.get("hits", 1)))
+		var actual_damage: int = 0
+		for hit_idx in range(hits):
+			if not target.is_alive:
+				break  # don't keep hitting after a kill
+			var hit_damage: int = target.take_damage(damage, false)
+			actual_damage += hit_damage
+			damage_dealt.emit(target, hit_damage, is_crit, "", 1.0)
+
+			## Tick 421: permadeath enforcement for physical ability path —
+			## permakill_strike from the reaper lands here. Per-hit so a
+			## single hit in a multi-hit volley can permakill.
+			_maybe_apply_permadeath_on_kill(caster, target)
+
+			## Tick 423: the_absence heals from physical damage. Magic
+			## abilities and holy-element are intentionally NOT here (data
+			## says: "Status effects, debuffs, and holy magic bypass this
+			## absorption"). Element gate at the helper covers holy magic.
+			_maybe_heal_from_damage(target, hit_damage, "")
+
+		# Warden's Key crescendo (msg 2481/2483): if Backstab or Mug landed against a target whose steal_response was already consumed, halve the Vault-Cracked debuff modifier — "the crack widens." Fires once per ability cast, not per internal hit, and only when damage actually landed. Engine 25% floor caps meaningful stacks (Steal 0.5 → Backstab 1 = 0.25 → floor); subsequent hits no-op silently.
+		if actual_damage > 0:
+			_maybe_deepen_warden_crack(caster, target, str(ability.get("id", "")))
 
 		# Track first damage for one-shot detection
 		if target in enemy_party:
 			_record_first_damage()
 
 		var crit_text = " [color=orange]CRITICAL![/color]" if is_crit else ""
-		var log_msg = "  → [color=red]%s[/color] takes [color=yellow]%d[/color] damage!%s" % [target.combatant_name, actual_damage, crit_text]
+		var hits_text = (" ×%d" % hits) if hits > 1 else ""
+		var log_msg = "  → [color=%s]%s[/color] takes [color=yellow]%d[/color] damage!%s%s" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, actual_damage, hits_text, crit_text]
 		battle_log_message.emit(log_msg)
 		print("  → %s takes %d damage!" % [target.combatant_name, actual_damage])
 
 		# Apply status effect if ability has one
 		var effect = ability.get("effect", "")
-		var effect_chance = ability.get("effect_chance", 0.0)
+		# Tick 354: special-case "random_debuff" — pre-fix add_status
+		# ("random_debuff") wrote a literal "random_debuff" string into
+		# status_effects, an inert sentinel no downstream consumer
+		# recognizes. corrupting_touch / data_corruption JSON descriptions
+		# present the debuff as the headline behavior, but omitted
+		# effect_chance — which defaulted to 0.0, so the apply never
+		# fired even if random_debuff were a real status. Default the
+		# chance to 1.0 for random_debuff specifically; other abilities
+		# keep their 0.0 default to preserve "you must opt in explicitly"
+		# semantics for status_effect.
+		var effect_chance: float
+		if effect == "random_debuff":
+			effect_chance = float(ability.get("effect_chance", 1.0))
+		else:
+			effect_chance = float(ability.get("effect_chance", 0.0))
 		if effect != "" and effect_chance > 0.0 and randf() < effect_chance:
-			target.add_status(effect)
-			battle_log_message.emit("%s inflicted %s!" % [caster.combatant_name, effect.capitalize()])
+			var status_to_add: String = effect
+			if effect == "random_debuff":
+				const _RANDOM_DEBUFF_POOL := [
+					"poison", "blind", "burn", "confuse", "fear", "silence", "curse",
+				]
+				status_to_add = _RANDOM_DEBUFF_POOL[randi() % _RANDOM_DEBUFF_POOL.size()]
+			# freeze aliases to stun — 3 ice abilities authored "freeze" but no code path read it (audit 2026-07-03)
+			var log_effect: String = status_to_add
+			if status_to_add == "freeze":
+				status_to_add = "stun"
+			var duration: int = int(ability.get("duration", 3))
+			target.add_status(status_to_add, duration)
+			battle_log_message.emit("%s inflicted %s!" % [caster.combatant_name, StatusNames.display(log_effect)])
+
+		_trigger_monster_counter(target, caster)
 
 
 func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Array) -> void:
+	# Pacify silences offensive magic too.
+	if caster.has_status("pacify"):
+		battle_log_message.emit("[color=cyan]%s is pacified — the spell fizzles![/color]" % caster.combatant_name)
+		return
+
 	var base_damage = caster.get_buffed_stat("magic", caster.magic)
 	var multiplier = ability.get("damage_multiplier", 1.0)
 	var element = ability.get("element", "")
 	var drain_pct = ability.get("drain_percentage", 0)
 
+	## Tick 458: equipment.json special_effects.<element>_damage_bonus
+	## family. fire_damage_bonus is authored on flame_sword (1.5);
+	## ice/lightning/dark/holy were authored on themed gear but no
+	## code path read the fields. Now the caster's three equipment
+	## slots get scanned for the matching <element>_damage_bonus and
+	## the resulting multiplier bakes into damage_multiplier ABOVE
+	## the per-target loop so all targets benefit. Generic key
+	## construction (element + "_damage_bonus") reuses the helper
+	## from tick 457 without per-element wiring. Skipped when the
+	## ability is element-less (matches "no fire scroll, no fire
+	## bonus" intent).
+	if element != "":
+		var elem_bonus: float = _sum_equipment_special_effect(caster, element + "_damage_bonus")
+		if elem_bonus > 0.0:
+			multiplier *= elem_bonus
+
+	## Tick 432: track total damage dealt this cast so
+	## damage_to_self_pct (stack_overflow's caster recoil) can apply
+	## proportional self-damage after the loop. Pre-fix the field was
+	## authored but no code read it — stack_overflow dealt 3.0x to
+	## all enemies for free, defeating the "catastrophic damage" /
+	## "20% recoil" tradeoff design.
+	var total_dealt_for_recoil: int = 0
+
 	for target in targets:
 		if not target or not is_instance_valid(target) or not target.is_alive:
+			continue
+
+		# Invisible makes target untargetable; magic_block cancels the spell.
+		if target.has_status("invisible"):
+			battle_log_message.emit("[color=gray]%s is invisible — the spell finds nothing![/color]" % target.combatant_name)
+			continue
+		## Tick 422: phase_out also misses spells. null_entity's
+		## phase_out_description says "all actions targeting it this
+		## turn fail" — meaning physical AND magical. Wired here
+		## symmetric to _target_dodges_physical.
+		if _monster_phase_out_check(target):
+			battle_log_message.emit("[color=cyan]%s phases out — %s's spell finds nothing![/color]" % [target.combatant_name, caster.combatant_name])
+			continue
+		if target.has_status("magic_block"):
+			target.remove_status("magic_block")
+			battle_log_message.emit("[color=cyan]%s's Magic Block cancels the spell![/color]" % target.combatant_name)
+			_trigger_monster_counter(target, caster)
 			continue
 
 		var damage = int(base_damage * multiplier)
 		var mag_vrange = volatility.get_variance_range(caster) if volatility else Vector2(0.9, 1.1)
 		damage = int(damage * randf_range(mag_vrange.x, mag_vrange.y))
+		## Tick 437: damage_variance amplifies the magic-damage roll
+		## randomness. type_error authors 2.0 — "causes random damage"
+		## per its description, so the roll spans [0, 2x] instead of
+		## the default ~[0.9, 1.1]. Pre-fix the field was authored
+		## and described but no code read it; type_error rolled at
+		## the normal narrow variance like every other magic spell.
+		var dmg_variance: float = float(ability.get("damage_variance", 0.0))
+		if dmg_variance > 0.0:
+			damage = int(damage * randf_range(0.0, dmg_variance))
 		damage = _apply_market_sense(caster, damage)
 
 		# Apply terrain modifier for elemental damage
@@ -2450,14 +4412,86 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 			terrain_mod = get_terrain_damage_modifier(element)
 			damage = int(damage * terrain_mod)
 
+		# Barrier nullifies the next hit (magic counts).
+		if target.has_status("barrier"):
+			target.remove_status("barrier")
+			battle_log_message.emit("[color=cyan]%s's Barrier absorbs the spell![/color]" % target.combatant_name)
+			_trigger_monster_counter(target, caster)
+			continue
+
+		# Prismatic reflect bounces magic back at the caster.
+		if target.has_status("prismatic_reflect"):
+			var reflected = caster.take_damage(damage, true)
+			damage_dealt.emit(caster, reflected, false, element, 1.0)
+			battle_log_message.emit("[color=magenta]%s's Prismatic Reflect bounces %d magic damage to %s![/color]" % [target.combatant_name, reflected, caster.combatant_name])
+			_trigger_monster_counter(target, caster)
+			continue
+
+		## Tick 427: optimization_itself adapts to repeated magic too.
+		damage = _apply_counter_repeated_damage_mod(target, ability.get("id", ""), damage)
+
+		## Tick 434: ignores_defense doubles damage as a rough
+		## compensation for take_damage's defense formula. phantom_byte
+		## authors this — "ghosts through armor". A true-damage path
+		## would bypass the formula entirely, but doubling produces
+		## the same effective +damage boost without restructuring the
+		## take_damage call. ignores_resistance suppresses the
+		## elemental_mod reduction (resistance and immunity both clamp
+		## up to 1.0; weakness 1.5x stays). exploit_weakness +
+		## fourth_wall_break author it.
+		var ignores_defense: bool = bool(ability.get("ignores_defense", false))
+		var ignores_resistance: bool = bool(ability.get("ignores_resistance", false))
+		if ignores_defense:
+			damage *= 2
+
 		var actual_damage = 0
 		var elemental_mod = target.calculate_elemental_modifier(element) if element != "" else 1.0
+		if ignores_resistance and elemental_mod < 1.0:
+			elemental_mod = 1.0
 		if element:
-			actual_damage = target.take_elemental_damage(damage, element)
+			if ignores_resistance:
+				# Skip the elemental damage path so 0.5x resistance and
+				# 0.0x immunity don't get re-applied inside take_elemental_damage.
+				actual_damage = target.take_damage(damage, true)
+			else:
+				actual_damage = target.take_elemental_damage(damage, element)
 		else:
 			actual_damage = target.take_damage(damage, true)
+		if ignores_defense or ignores_resistance:
+			battle_log_message.emit("[color=magenta]✦ %s pierces through %s's defenses![/color]" % [caster.combatant_name, target.combatant_name])
 
 		damage_dealt.emit(target, actual_damage, false, element, elemental_mod)
+		## Tick 432: accumulate for damage_to_self_pct recoil.
+		total_dealt_for_recoil += actual_damage
+
+		## Tick 435: drain_mp restores caster MP per damaging hit.
+		## data_drain (drain_mp=20) and memory_drain (drain_mp=15)
+		## advertise MP siphon but pre-fix the field was authored and
+		## never read — caster paid 15-16 MP to cast and got nothing
+		## back. Applied per-target so memory_drain (all_enemies)
+		## stacks the restore across the hit count, matching the
+		## "drains memories and MP from all enemies" description.
+		var drain_mp_amount: int = int(ability.get("drain_mp", 0))
+		if drain_mp_amount > 0 and actual_damage > 0 and caster != null and caster.is_alive:
+			var restored: int = caster.restore_mp(drain_mp_amount)
+			if restored > 0:
+				healing_done.emit(caster, restored)
+				battle_log_message.emit("[color=cyan]%s drains %d MP from %s![/color]" % [caster.combatant_name, restored, target.combatant_name])
+
+		## Tick 421: permadeath enforcement for magic ability path —
+		## soul_reap / final_death from the reaper land here.
+		_maybe_apply_permadeath_on_kill(caster, target)
+
+		## Tick 423: the_absence heals from damage — but the data
+		## explicitly says holy magic bypasses ("Status effects,
+		## debuffs, and holy magic bypass this absorption"). Pass the
+		## element so the helper can skip when element=="holy".
+		_maybe_heal_from_damage(target, actual_damage, element)
+
+		## Tick 429: learns_from adaptive resistance. Increments the
+		## per-element counter for the target and adds a resistance
+		## once the threshold is met.
+		_maybe_apply_elemental_adaptation(target, element)
 
 		# Track first damage for one-shot detection
 		if target in enemy_party:
@@ -2466,10 +4500,10 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 		var elem_text = element if element else "magic"
 		var terrain_text = ""
 		if terrain_mod > 1.0:
-			terrain_text = " [color=lime](terrain +%d%%)[/color]" % int((terrain_mod - 1.0) * 100)
+			terrain_text = " [color=%s](terrain +%d%%)[/color]" % [AccessibilityPalette.bonus_bbcode(), int((terrain_mod - 1.0) * 100)]
 		elif terrain_mod < 1.0:
 			terrain_text = " [color=gray](terrain -%d%%)[/color]" % int((1.0 - terrain_mod) * 100)
-		var log_msg = "  → [color=red]%s[/color] takes [color=cyan]%d[/color] %s damage!%s" % [target.combatant_name, actual_damage, elem_text, terrain_text]
+		var log_msg = "  → [color=%s]%s[/color] takes [color=cyan]%d[/color] %s damage!%s" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, actual_damage, elem_text, terrain_text]
 		battle_log_message.emit(log_msg)
 		print("  → %s takes %d %s damage! (terrain: %.2fx)" % [target.combatant_name, actual_damage, elem_text, terrain_mod])
 
@@ -2477,16 +4511,75 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 			var drained = int(actual_damage * drain_pct / 100.0)
 			caster.heal(drained)
 			healing_done.emit(caster, drained)
-			var drain_log = "  → [color=white]%s[/color] drains [color=lime]%d[/color] HP!" % [caster.combatant_name, drained]
+			var drain_log = "  → [color=white]%s[/color] drains [color=%s]%d[/color] HP!" % [caster.combatant_name, AccessibilityPalette.bonus_bbcode(), drained]
 			battle_log_message.emit(drain_log)
 			print("  → %s drains %d HP!" % [caster.combatant_name, drained])
 
 		# Apply status effect if ability has one
 		var effect = ability.get("effect", "")
-		var effect_chance = ability.get("effect_chance", 0.0)
+		# Tick 354: special-case "random_debuff" — pre-fix add_status
+		# ("random_debuff") wrote a literal "random_debuff" string into
+		# status_effects, an inert sentinel no downstream consumer
+		# recognizes. corrupting_touch / data_corruption JSON descriptions
+		# present the debuff as the headline behavior, but omitted
+		# effect_chance — which defaulted to 0.0, so the apply never
+		# fired even if random_debuff were a real status. Default the
+		# chance to 1.0 for random_debuff specifically; other abilities
+		# keep their 0.0 default to preserve "you must opt in explicitly"
+		# semantics for status_effect.
+		var effect_chance: float
+		if effect == "random_debuff":
+			effect_chance = float(ability.get("effect_chance", 1.0))
+		else:
+			effect_chance = float(ability.get("effect_chance", 0.0))
 		if effect != "" and effect_chance > 0.0 and randf() < effect_chance:
-			target.add_status(effect)
-			battle_log_message.emit("%s inflicted %s!" % [caster.combatant_name, effect.capitalize()])
+			var status_to_add: String = effect
+			if effect == "random_debuff":
+				const _RANDOM_DEBUFF_POOL := [
+					"poison", "blind", "burn", "confuse", "fear", "silence", "curse",
+				]
+				status_to_add = _RANDOM_DEBUFF_POOL[randi() % _RANDOM_DEBUFF_POOL.size()]
+			# freeze aliases to stun — 3 ice abilities authored "freeze" but no code path read it (audit 2026-07-03)
+			var log_effect: String = status_to_add
+			if status_to_add == "freeze":
+				status_to_add = "stun"
+			var duration: int = int(ability.get("duration", 3))
+			target.add_status(status_to_add, duration)
+			battle_log_message.emit("%s inflicted %s!" % [caster.combatant_name, StatusNames.display(log_effect)])
+
+		_trigger_monster_counter(target, caster)
+
+	## Tick 432: damage_to_self_pct caster recoil. Applied AFTER the
+	## per-target loop so the caster takes proportional damage to the
+	## total dealt across all targets. stack_overflow authors 0.2
+	## (20% of total dealt → self). Skips when caster is dead from
+	## another effect this cast or no damage was dealt.
+	var dmg_to_self_pct: float = float(ability.get("damage_to_self_pct", 0.0))
+	if dmg_to_self_pct > 0.0 and total_dealt_for_recoil > 0 and caster != null and is_instance_valid(caster) and caster.is_alive:
+		var recoil: int = max(1, int(round(total_dealt_for_recoil * dmg_to_self_pct)))
+		caster.take_damage(recoil, true)
+		damage_dealt.emit(caster, recoil, false, "", 1.0)
+		battle_log_message.emit("[color=magenta]%s takes %d recoil from the overflow![/color]" % [caster.combatant_name, recoil])
+
+	## Tick 456: summon ability lingering eidolon. abilities.json
+	## authors summon_duration on summon_ifrit/shiva/ramuh/bahamut
+	## and the rat king's royal_summon — pre-tick the field was
+	## decoration, the eidolon hit once and vanished. Stamp a
+	## _summon_followup meta on the caster so _start_new_round
+	## fires a reduced follow-up hit. summon_boost passive's
+	## meta_effects.summon_duration_bonus extends remaining_turns
+	## at setup so the bonus applies to THIS cast (not "next
+	## summon"). Also gated on type=="summon" so non-summon
+	## elemental hits don't accidentally linger.
+	var summon_duration: int = int(ability.get("summon_duration", 0))
+	if summon_duration > 0 and str(ability.get("type", "")) == "summon" and caster != null and caster.is_alive:
+		var bonus_turns: int = int(caster._get_passive_meta_effect_sum("summon_duration_bonus"))
+		var followup: Dictionary = {
+			"element": element,
+			"multiplier": float(ability.get("damage_multiplier", 1.0)) * 0.5,
+			"remaining_turns": summon_duration + bonus_turns,
+		}
+		caster.set_meta("_summon_followup", followup)
 
 
 ## Critical hit system
@@ -2518,45 +4611,206 @@ func estimate_ability_damage(attacker: Combatant, target: Combatant, ability: Di
 		def_val = int(def_val * 0.5)
 	var mitigated = int((raw * raw) / float(max(1, raw + def_val)))
 
-	# Apply elemental modifier
-	var element = ability.get("element", "")
-	if element != "":
-		if element in target.elemental_weaknesses:
-			mitigated = int(mitigated * 1.5)
-		elif element in target.elemental_resistances:
-			mitigated = int(mitigated * 0.5)
+	# Elemental modifier — reuse the real hit's source of truth so the "~N dmg"
+	# preview matches reality (0.0x immune, 1.5x weak, 0.5x resist). Immunity
+	# returns a truthful 0, bypassing the min-1 floor, so an "Immune: Ice" enemy
+	# never previews phantom damage the swing won't actually deal.
+	var element_val = ability.get("element")
+	if element_val != null and str(element_val) != "":
+		var elem_mod: float = target.calculate_elemental_modifier(str(element_val))
+		mitigated = int(mitigated * elem_mod)
+		if elem_mod <= 0.0:
+			return 0
 
 	return max(1, mitigated)
 
 
 func _calculate_crit_chance(attacker: Combatant) -> float:
 	"""Calculate critical hit chance based on speed and equipment"""
+	## Tick 381: shadow_step status → guaranteed crit. Return 1.0 up
+	## front and skip the rest of the calc. Consumed when the attacker
+	## next attacks (the status removes itself in _target_dodges_physical
+	## OR via the natural duration tick — duration=1 from the ability).
+	if attacker != null and is_instance_valid(attacker) and attacker.has_status("shadow_step"):
+		return 1.0
+
 	# Base crit chance is 5%
 	var base_crit = 0.05
 
 	# Speed adds to crit chance (each 10 speed = +1% crit)
 	var speed_bonus = attacker.speed * 0.01
 
-	# Check for crit-boosting passives
-	var passive_bonus = 0.0
-	if "critical_strike" in attacker.equipped_passives:
-		passive_bonus += 0.10  # +10% from passive
+	## Tick 375: read PassiveSystem's accumulated crit_chance mod
+	## instead of hardcoding a check for the "critical_strike" passive.
+	## Pre-fix the code granted +0.10 when critical_strike was equipped,
+	## but data/passives.json authored crit_chance=0.25 — a 15-point
+	## code/data divergence that silently nerfed the passive (and
+	## ignored any future passive adding crit_chance entirely). Now
+	## reads the accumulated mod, so a passive bundle with mixed crit
+	## stat_mods stacks correctly.
+	var passive_bonus: float = 0.0
+	var tree: SceneTree = get_tree() if has_method("get_tree") else null
+	var ps: Node = tree.root.get_node_or_null("PassiveSystem") if tree else null
+	if ps != null and ps.has_method("get_passive_mods"):
+		var mods: Dictionary = ps.get_passive_mods(attacker)
+		passive_bonus = clampf(float(mods.get("crit_chance", 0.0)), 0.0, 0.50)
 
-	# Check for equipment bonuses (could add this later)
-	var equip_bonus = 0.0
+	## Tick 457: equipment special_effects.critical_bonus —
+	## equipment.json authors this on assassin_blade, lucky_charm,
+	## and similar gear ("+15% crit chance" copy implied by the
+	## kit). Pre-tick the field was decoration — _calculate_crit_
+	## chance held a stubbed `equip_bonus = 0.0` with a "could add
+	## this later" comment. The helper sums across weapon + armor +
+	## accessory slots so a build that stacks two crit-bonus items
+	## scales naturally (max-clamped at 0.50 to dodge a one-shot
+	## crit chain).
+	var equip_bonus: float = _sum_equipment_special_effect(attacker, "critical_bonus")
+	equip_bonus = clampf(equip_bonus, 0.0, 0.50)
+
+	# Check for active crit_rate buffs (e.g. the jailbreak BACKFIRE
+	# "enrage_briefly" consequence stacks a "crit_rate" buff so Mordaine's
+	# next turn genuinely hits harder — see _on_boss_jailbreak_succeeded).
+	# get_buffed_stat only multiplies attack/magic/defense/speed, so the
+	# crit calc must read crit_rate buffs itself or the punishment is a
+	# silent no-op. A modifier of 1.5 contributes +0.5 (additive), which
+	# the 0.50 cap below pins to a 50% crit spike for the enraged turn.
+	var crit_buff = 0.0
+	if "active_buffs" in attacker:
+		for b in attacker.active_buffs:
+			if str(b.get("stat", "")) == "crit_rate":
+				crit_buff += (float(b.get("modifier", 1.0)) - 1.0)
 
 	# Cap at 50% crit chance
-	return min(base_crit + speed_bonus + passive_bonus + equip_bonus, 0.50)
+	return min(base_crit + speed_bonus + passive_bonus + equip_bonus + crit_buff, 0.50)
+
+
+## Tick 457: walk the attacker's three equipment slots, look up
+## each piece's special_effects in EquipmentSystem, and sum the
+## requested key. Returns 0.0 cleanly when the attacker has no
+## equipment, the autoload isn't available, or the key isn't
+## authored. Designed generically so the unwired companions
+## (evasion_bonus, poison_chance, sleep_chance, status_resistance,
+## steal_bonus, <elem>_damage_bonus, <elem>_resistance) can reuse
+## the same helper as they get wired in follow-up ticks.
+func _sum_equipment_special_effect(combatant: Combatant, key: String) -> float:
+	if combatant == null or not is_instance_valid(combatant):
+		return 0.0
+	var es: Node = get_node_or_null("/root/EquipmentSystem")
+	if es == null:
+		return 0.0
+	var total: float = 0.0
+	if "equipped_weapon" in combatant and combatant.equipped_weapon != "":
+		var w: Dictionary = es.get_weapon(str(combatant.equipped_weapon))
+		var w_se: Variant = w.get("special_effects", {})
+		if w_se is Dictionary:
+			total += float(w_se.get(key, 0.0))
+	if "equipped_armor" in combatant and combatant.equipped_armor != "":
+		var a: Dictionary = es.get_armor(str(combatant.equipped_armor))
+		var a_se: Variant = a.get("special_effects", {})
+		if a_se is Dictionary:
+			total += float(a_se.get(key, 0.0))
+	if "equipped_accessory" in combatant and combatant.equipped_accessory != "":
+		var ac: Dictionary = es.get_accessory(str(combatant.equipped_accessory))
+		var ac_se: Variant = ac.get("special_effects", {})
+		if ac_se is Dictionary:
+			total += float(ac_se.get(key, 0.0))
+	return total
+
+
+## Boss-specific Steal response (cowir-main msg 2474, struktured's artist pitch): a target with a monsters.json `steal_response` definition applies its mechanical effect once per fight on a successful steal. Lockward's tier-1 shape: {type:"defense_break", modifier:0.5, message:"..."} = permanent -50% defense debuff ("Vault-Cracked"). Extensible via new type strings. One-shot guarded via a per-target meta so re-steals still succeed for gold but don't stack the response.
+func _apply_steal_response(target: Combatant) -> void:
+	if target == null or not is_instance_valid(target):
+		return
+	if not target.has_method("get_meta") or not target.has_meta("monster_type"):
+		return
+	if target.has_meta("_steal_response_consumed") and bool(target.get_meta("_steal_response_consumed", false)):
+		return
+	var mtype: String = str(target.get_meta("monster_type", ""))
+	if mtype == "" or not EncounterSystem or not EncounterSystem.monster_database.has(mtype):
+		return
+	var mdata: Dictionary = EncounterSystem.monster_database[mtype]
+	var response: Variant = mdata.get("steal_response", {})
+	if not (response is Dictionary) or (response as Dictionary).is_empty():
+		return
+	var r: Dictionary = response
+	var rtype: String = str(r.get("type", ""))
+	var message: String = str(r.get("message", ""))
+	match rtype:
+		"vulnerability":
+			# msg 2485 Option 3: initial vulnerability stack. `modifier` here is the ADDITIVE percentage-bonus incoming damage (0.5 = +50%). Applied via add_stacking_vulnerability so subsequent Backstab/Mug hits stack additively rather than replacing the modifier.
+			var initial: float = float(r.get("modifier", 0.5))
+			target.add_stacking_vulnerability("Vault Crack", initial, 99)
+			if message != "":
+				battle_log_message.emit("[color=yellow]%s[/color]" % message)
+			target.set_meta("_steal_response_consumed", true)
+			# Emit cowir-story's steal_success_line (msg 2478) via boss_taunt — same channel phase-transition/masterite-intent quips use, so BattleScene bubbles it as boss speech. Empty pool = degrades silently to just the yellow flavor message above.
+			var boss_dlg = get_node_or_null("/root/BossDialogue")
+			if boss_dlg and boss_dlg.has_method("get_steal_success_line"):
+				var line: String = str(boss_dlg.get_steal_success_line(mtype))
+				if line != "":
+					boss_taunt.emit(target, line)
+			print("[STEAL-RESPONSE] %s: vulnerability +%.0f%% applied to %s" % [mtype, initial * 100.0, target.combatant_name])
+		_:
+			push_warning("[STEAL-RESPONSE] unknown steal_response type '%s' on %s" % [rtype, mtype])
+
+
+## Ability ids whose successful hit deepens the Warden's Key crack (msg 2481/2483). Backstab is the specialized escalator; Mug counts too so it stays a valid mid-fight tool after Turn 1's opener rather than becoming Steal-only cover.
+const WARDEN_CRACK_DEEPENERS: Array = ["backstab", "mug"]
+
+## msg 2485 Option 3 tuning: each Backstab/Mug hit adds +25% incoming damage on top of Steal's +50% initial vulnerability. Additive, unclamped — the smooth crescendo struktured picked over the plateau shape.
+const WARDEN_CRACK_STACK_DELTA: float = 0.25
+
+## Post-hit crescendo on the Warden's Key path: add another WARDEN_CRACK_STACK_DELTA (+25%) to the target's Vault Crack vulnerability on each successful Backstab/Mug hit. No plateau — vulnerability sits outside _get_effective_stat's base×0.25 clamp, so each hit lands harder than the last. Guards: ability must be in WARDEN_CRACK_DEEPENERS, target must have already consumed steal_response this fight, and a Vault Crack vulnerability must already exist (steal_response was of the vulnerability type).
+func _maybe_deepen_warden_crack(caster: Combatant, target: Combatant, ability_id: String) -> void:
+	if target == null or not is_instance_valid(target):
+		return
+	if ability_id == "" or not WARDEN_CRACK_DEEPENERS.has(ability_id):
+		return
+	if not target.has_method("get_meta") or not target.has_meta("_steal_response_consumed"):
+		return
+	if not bool(target.get_meta("_steal_response_consumed", false)):
+		return
+	# Only deepen if Vault Crack is already present (steal_response was of the vulnerability type — future steal_response types stay unaffected).
+	var has_crack: bool = false
+	for debuff in target.active_debuffs:
+		if str(debuff.get("effect", "")) == "Vault Crack":
+			has_crack = true
+			break
+	if not has_crack:
+		return
+	target.add_stacking_vulnerability("Vault Crack", WARDEN_CRACK_STACK_DELTA, 99)
+	battle_log_message.emit("[color=yellow]The crack widens — the Warden takes the hit harder.[/color]")
+	# Optional cowir-story flavor pool per msg 2481. Same graceful-empty pattern as steal_success_lines.
+	var boss_dlg = get_node_or_null("/root/BossDialogue")
+	if boss_dlg and boss_dlg.has_method("get_backstab_widens_crack_line"):
+		var mtype: String = str(target.get_meta("monster_type", ""))
+		if mtype != "":
+			var line: String = str(boss_dlg.get_backstab_widens_crack_line(mtype))
+			if line != "":
+				boss_taunt.emit(target, line)
+	print("[WARDEN-CRACK] %s→%s (%s): +%.0f%% incoming (stacked)" % [caster.combatant_name if caster else "?", target.combatant_name, ability_id, WARDEN_CRACK_STACK_DELTA * 100.0])
 
 
 func _get_crit_multiplier(attacker: Combatant) -> float:
 	"""Get critical hit damage multiplier"""
 	# Base crit multiplier is 1.5x
-	var base_mult = 1.5
+	var base_mult: float = 1.5
 
-	# Check for enhanced crit passives
-	if "devastating_criticals" in attacker.equipped_passives:
-		base_mult = 2.0
+	## Tick 376: route through PassiveSystem.get_passive_mods's
+	## crit_damage_bonus accumulator. Pre-fix the function hardcoded
+	## a check for the "devastating_criticals" passive name, but that
+	## passive didn't exist in data/passives.json — the +2.0 multiplier
+	## was dead code (the `in equipped_passives` check could never be
+	## true). Generic accumulator read realizes the latent design
+	## intent and lets any future passive add to crit damage. Clamped
+	## so a stacked passive bundle can't produce absurd crit damage —
+	## [0.0, 1.5] band caps total at base 1.5 + 1.5 = 3.0x.
+	var tree: SceneTree = get_tree() if has_method("get_tree") else null
+	var ps: Node = tree.root.get_node_or_null("PassiveSystem") if tree else null
+	if ps != null and ps.has_method("get_passive_mods"):
+		var mods: Dictionary = ps.get_passive_mods(attacker)
+		var bonus: float = clampf(float(mods.get("crit_damage_bonus", 0.0)), 0.0, 1.5)
+		base_mult += bonus
 
 	return base_mult
 
@@ -2587,18 +4841,31 @@ func _execute_healing_ability(caster: Combatant, ability: Dictionary, targets: A
 	heal_amount = int(heal_amount * multiplier)
 	heal_amount = int(heal_amount * (1.0 + caster.get_buffed_stat("magic", caster.magic) / 20.0))
 
+	var any_healed := false
 	for target in targets:
 		if not target or not is_instance_valid(target) or not target.is_alive:
 			continue
 
 		var healed = target.heal(heal_amount)
+		if healed <= 0:
+			continue  # already at full HP — skip the "recovers 0 HP" log + +0 popup (parity with the MP-restore fix)
+		any_healed = true
 		healing_done.emit(target, healed)
-		var heal_log = "  → [color=white]%s[/color] recovers [color=lime]%d[/color] HP!" % [target.combatant_name, healed]
+		var heal_log = "  → [color=white]%s[/color] recovers [color=%s]%d[/color] HP!" % [target.combatant_name, AccessibilityPalette.bonus_bbcode(), healed]
 		battle_log_message.emit(heal_log)
 		print("  → %s recovers %d HP!" % [target.combatant_name, healed])
+	if not any_healed:
+		battle_log_message.emit("[color=gray]%s's heal fizzles — no one needed it.[/color]" % caster.combatant_name)
 
 
 func _execute_revival_ability(caster: Combatant, ability: Dictionary, targets: Array) -> void:
+	## Tick 169: emit healing_done + battle_log_message after a
+	## revive lands. Pre-fix revive only called target.revive()
+	## (which updates HP via hp_changed) and print()'d to the
+	## debug console — so the player saw the HP bar pop up but
+	## had no battle-log line and no green floating popup. Phoenix
+	## Down felt invisible despite working mechanically.
+	## Matches the _execute_healing_ability emit shape.
 	var revive_pct = ability.get("revive_percentage", 50)
 
 	for target in targets:
@@ -2607,7 +4874,14 @@ func _execute_revival_ability(caster: Combatant, ability: Dictionary, targets: A
 
 		var revive_hp = int(target.max_hp * revive_pct / 100.0)
 		target.revive(revive_hp)
-		print("  → %s is revived with %d HP!" % [target.combatant_name, revive_hp])
+		# The actual HP after revive may differ from revive_hp due
+		# to max_hp clamps. healing_done uses the real current HP
+		# so the floating number matches the bar.
+		healing_done.emit(target, target.current_hp)
+		var _bonus: String = AccessibilityPalette.bonus_bbcode()
+		var revive_log: String = "  → [color=%s]%s[/color] is revived with [color=%s]%d[/color] HP!" % [_bonus, target.combatant_name, _bonus, target.current_hp]
+		battle_log_message.emit(revive_log)
+		print("  → %s is revived with %d HP!" % [target.combatant_name, target.current_hp])
 
 
 func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: Array) -> void:
@@ -2616,30 +4890,296 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 	var stat_modifier = ability.get("stat_modifier", 1.0)
 	var success_rate = ability.get("success_rate", 1.0)
 
+	## Tick 441: encore passive — passives.json authors
+	## meta_effects.song_duration_bonus = 1 with description
+	## "Song buffs and debuffs last 1 extra turn", but no code
+	## path read the field. Players equipped encore on a Bard
+	## expecting +1 turn on every song and got base duration.
+	## Apply only when the ability is a song (ability.type == "song")
+	## so non-song supports (defensive_stance, dispel, blink, etc.)
+	## don't pick up free duration. _get_passive_meta_effect_sum
+	## already sums across all equipped passives so a future
+	## stacked-bonus build scales naturally.
+	if caster != null and str(ability.get("type", "")) == "song":
+		var bonus: int = int(caster._get_passive_meta_effect_sum("song_duration_bonus"))
+		if bonus > 0:
+			duration += bonus
+
+	## Tick 472 follow-up: Bard's swayed-stack counter for the
+	## bard_hostile_courtier duel win_condition (status_threshold:
+	## swayed >= 3). Every song landed on a "sway-listening" target
+	## (opt-in via monster_data.tracks_sway_stacks=true, or the
+	## specific bard_hostile_courtier monster_type) increments the
+	## _swayed_stacks meta counter that _evaluate_custom_win_condition
+	## reads for status_threshold. Voice-as-mechanic per cowir-story
+	## msg 1931 — any song (lullaby / discord / battle_hymn / inspiring
+	## melody) counts as an offered voice, not just the debuff pool.
+	if caster != null and str(ability.get("type", "")) == "song":
+		for target in targets:
+			if target == null or not is_instance_valid(target) or not target.is_alive:
+				continue
+			var m_type: String = ""
+			if target.has_method("get_meta") and target.has_meta("monster_type"):
+				m_type = str(target.get_meta("monster_type", ""))
+			var tracks_sway: bool = m_type == "bard_hostile_courtier"
+			if not tracks_sway and EncounterSystem and EncounterSystem.monster_database.has(m_type):
+				var mdata: Dictionary = EncounterSystem.monster_database[m_type]
+				if bool(mdata.get("tracks_sway_stacks", false)):
+					tracks_sway = true
+			if not tracks_sway:
+				continue
+			var current: int = int(target.get_meta("_swayed_stacks", 0))
+			target.set_meta("_swayed_stacks", current + 1)
+			print("[SWAY] %s absorbs %s — swayed stacks: %d" % [target.combatant_name, ability.get("id", "song"), current + 1])
+			var need: int = int(_win_condition.get("value", 0)) if not _win_condition.is_empty() else 0
+			var progress_suffix: String = " (%d/%d)" % [current + 1, need] if need > 0 else " (%d)" % (current + 1)
+			battle_log_message.emit("[color=magenta]%s is swayed...%s[/color]" % [target.combatant_name, progress_suffix])
+
 	match effect:
+		## Tick 170: 10 support-ability branches lacked
+		## battle_log_message emits — buff/debuff/taunt/doom applied
+		## silently. Player had no log feedback (only the buff icon
+		## eventually appearing, which is easy to miss mid-battle).
+		## Lime/cyan for buffs, red for debuffs — matches the
+		## healing/elemental palette family.
 		"taunt":
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
 					target.add_status("taunted_%s" % caster.combatant_name)
-					print("  → %s is now targeting %s!" % [target.combatant_name, caster.combatant_name])
+					battle_log_message.emit("[color=yellow]%s taunts %s into focusing on them![/color]" % [caster.combatant_name, target.combatant_name])
 		"defense_up":
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
 					target.add_buff("Protect", "defense", stat_modifier, duration)
+					battle_log_message.emit("[color=cyan]%s gains Protect![/color] (DEF +%d%% for %d turns)" % [target.combatant_name, int((stat_modifier - 1.0) * 100), duration])
 		"attack_up":
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
 					target.add_buff("Berserk", "attack", stat_modifier, duration)
+					battle_log_message.emit("[color=orange]%s enters Berserk![/color] (ATK +%d%% for %d turns)" % [target.combatant_name, int((stat_modifier - 1.0) * 100), duration])
 		"defense_down":
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
 					target.add_debuff("Armor Break", "defense", stat_modifier, duration)
+					battle_log_message.emit("[color=%s]%s's armor is broken![/color] (DEF -%d%% for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, int((1.0 - stat_modifier) * 100), duration])
+		## Tick 378: magic_defense_down handler. Pre-fix soul_wail
+		## (effect=magic_defense_down, stat_modifier=0.7, duration=2)
+		## fell through to the `_:` push_warning default and silently
+		## fizzled. take_damage reads the same `defense` stat for both
+		## physical and magical attacks (just halved in the magical
+		## case), so a defense debuff with a distinct effect label is
+		## the right mechanical fit: the buff system keys on the
+		## effect name (not the stat), so "Soul Sap" coexists cleanly
+		## with a regular "Armor Break" defense_down — both reduce the
+		## stat in get_buffed_stat. Distinct label keeps the UI source-
+		## of-debuff legible.
+		"magic_defense_down":
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
+					target.add_debuff("Soul Sap", "defense", stat_modifier, duration)
+					battle_log_message.emit("[color=%s]%s's magic defense is sapped![/color] (DEF -%d%% for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, int((1.0 - stat_modifier) * 100), duration])
+		## Tick 380: amplify_poison handler. Pre-fix fester
+		## (effect=amplify_poison, multiplier=2.0) fell through to the
+		## `_:` push_warning default and silently fizzled. The ability
+		## consumed MP+AP, ran the animation, and did nothing.
+		##
+		## Mechanism: apply a "festered" status to the target. The
+		## Combatant.update_buff_durations poison block reads
+		## has_status("festered") and doubles poison tick damage when
+		## set. Per the data description "Worsen existing poison
+		## effects", we apply unconditionally — even to non-poisoned
+		## targets — so a fester pre-poison combo amplifies poison
+		## applied later (within festered's duration). Skipping the
+		## status on non-poisoned targets would also be valid; the
+		## current shape rewards strategic ordering more.
+		##
+		## Default duration 3 turns when the ability doesn't author one.
+		## Hardcoded 2x amplification matches the data multiplier; if
+		## future abilities want different amplification, that lives in
+		## a follow-up tick (status_modifiers dict on Combatant).
+		"amplify_poison":
+			var amp_duration: int = int(ability.get("duration", 3))
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
+					target.add_status("festered", amp_duration)
+					battle_log_message.emit("[color=%s]%s festers![/color] (poison damage doubled for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, amp_duration])
+		## Tick 382: ability_silence handler — aliases to the existing
+		## "silence" status. Pre-fix null_field (effect=ability_silence,
+		## duration=1, target=all_enemies) fell through to the `_:`
+		## push_warning default. Multiple downstream consumers already
+		## gate offensive actions on has_status("silence") (e.g. cast
+		## path at line ~2834, magic-ability path); applying "silence"
+		## reuses all of them rather than introducing a parallel
+		## "ability_silence" status with new consumers.
+		"ability_silence":
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
+					target.add_status("silence", duration)
+					battle_log_message.emit("[color=%s]%s is silenced![/color] (abilities blocked for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, duration])
+		## Tick 391: counter_next_action handler — aliases to the
+		## existing "reflect" status. Pre-fix future_sight
+		## (effect=counter_next_action, duration=1, target=self) fell
+		## through to `_:` push_warning default. Description "Reads
+		## the future to counter the next action perfectly" maps to
+		## reflect's bounce-incoming-damage semantic. duration=1 lines
+		## up with reflect's typical short window — fires on the next
+		## physical attack against the caster and bounces 100%.
+		"counter_next_action":
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive:
+					target.add_status("reflect", duration)
+					battle_log_message.emit("[color=%s]%s reads the future![/color] (reflect next attack, %d turns)" % [AccessibilityPalette.bonus_bbcode(), target.combatant_name, duration])
+		## Tick 390: random_stat_change handler. Pre-fix reassign
+		## (effect=random_stat_change, duration=3, target=self) fell
+		## through to `_:` push_warning default. Description:
+		## "Reassigns its own value, randomly altering its stats."
+		## Picks a random stat from the 4-stat list and applies a
+		## ±25% modifier — the "randomly" part means the result is
+		## sometimes a buff, sometimes a debuff (matches meta-job
+		## chaos vibe). Pulled from a small list so each cast has a
+		## predictable shape but unpredictable outcome.
+		"random_stat_change":
+			const _RANDOM_STAT_POOL: Array[String] = ["attack", "defense", "magic", "speed"]
+			for target in targets:
+				if target == null or not is_instance_valid(target) or not target.is_alive:
+					continue
+				var stat: String = _RANDOM_STAT_POOL[randi() % _RANDOM_STAT_POOL.size()]
+				# 50/50 buff vs debuff. Modifier 1.25x or 0.75x.
+				var is_buff: bool = randf() < 0.5
+				var mod: float = 1.25 if is_buff else 0.75
+				if is_buff:
+					target.add_buff("Reassigned (+)", stat, mod, duration)
+					battle_log_message.emit("[color=%s]%s reassigns![/color] (%s +25%% for %d turns)" % [AccessibilityPalette.bonus_bbcode(), target.combatant_name, stat.to_upper(), duration])
+				else:
+					target.add_debuff("Reassigned (-)", stat, mod, duration)
+					battle_log_message.emit("[color=%s]%s reassigns![/color] (%s -25%% for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, stat.to_upper(), duration])
+		## Tick 389: adapt_resistance handler — applies a defense buff.
+		## Pre-fix adapt (effect=adapt_resistance, duration=999,
+		## target=self) fell through to `_:` push_warning default.
+		## Full "learn from last ability type" tracking would require
+		## per-target last-hit-element state on Combatant — out of
+		## scope for this tick. Simpler mechanical fit: defense up
+		## across the board (covers physical and magical damage via
+		## the existing get_buffed_stat path; magic ticks at 0.5x
+		## defense in take_damage so still benefits). 1.3x default
+		## (30% reduction roughly) for the authored duration.
+		"adapt_resistance":
+			var adapt_mod: float = float(ability.get("stat_modifier", 1.3))
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive:
+					target.add_buff("Adapted", "defense", adapt_mod, duration)
+					battle_log_message.emit("[color=%s]%s adapts![/color] (DEF +%d%% for %d turns)" % [AccessibilityPalette.bonus_bbcode(), target.combatant_name, int((adapt_mod - 1.0) * 100), duration])
+		## Tick 388: ability_weaken handler — applies combined attack
+		## + magic debuff. Pre-fix deprecate (effect=ability_weaken,
+		## duration=3) fell through to `_:` push_warning default.
+		## "Marks a target ability as deprecated, reducing its
+		## effectiveness" maps cleanly to a damage-output reduction —
+		## stacked attack and magic debuff with the distinct
+		## "Deprecated" label so the UI source is legible. Default
+		## 30% reduction (stat_modifier=0.7) unless data overrides.
+		"ability_weaken":
+			var weaken_mod: float = float(ability.get("stat_modifier", 0.7))
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
+					target.add_debuff("Deprecated (Atk)", "attack", weaken_mod, duration)
+					target.add_debuff("Deprecated (Mag)", "magic", weaken_mod, duration)
+					battle_log_message.emit("[color=%s]%s is deprecated![/color] (ATK/MAG -%d%% for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, int((1.0 - weaken_mod) * 100), duration])
+		## Tick 387: brave_actions handler. Pre-fix brave
+		## (effect=brave_actions, mp_cost=0, bp_cost=1, target=self)
+		## fell through to `_:` push_warning default. The Bravely-
+		## Default-derived BP system doesn't exist in this engine; the
+		## closest mechanical fit is "extra actions this turn" = grant
+		## AP to the caster so they can Advance an additional action
+		## without paying the natural-gain offset. gain_ap(2) is the
+		## documented "extra actions" interpretation; gain_ap clamps
+		## at +4 so a maxed-AP combatant gets nothing — fine, brave's
+		## value is mid-battle when AP is scarce.
+		"brave_actions":
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive and target.has_method("gain_ap"):
+					var ap_grant: int = int(ability.get("ap_grant", 2))
+					target.gain_ap(ap_grant)
+					battle_log_message.emit("[color=%s]%s braves the moment![/color] (+%d AP)" % [AccessibilityPalette.bonus_bbcode(), target.combatant_name, ap_grant])
+		## Tick 386: damage_absorb handler. Pre-fix fill_the_void
+		## (effect=damage_absorb, duration=2, absorb_amount=100) fell
+		## through to `_:` push_warning default — the 12 MP cast was
+		## pure flavor. Now applies the "damage_absorb" status; the
+		## sister Combatant.take_damage block intercepts incoming
+		## damage and converts it 1:1 to healing while the status
+		## holds. Duration handles wear-off; absorb_amount is
+		## documented in the data but not enforced (duration is the
+		## limiter).
+		"damage_absorb":
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive:
+					target.add_status("damage_absorb", duration)
+					battle_log_message.emit("[color=%s]%s will absorb damage as healing![/color] (%d turns)" % [AccessibilityPalette.bonus_bbcode(), target.combatant_name, duration])
+		## Tick 385: dispel_and_self_buff handler. Pre-fix
+		## reduce_overhead (effect=dispel_and_self_buff,
+		## target=single_ally) fell through to `_:` push_warning
+		## default — 15 MP + AP wasted. Description: "Strips all buffs
+		## from a party member to improve its own performance." Two
+		## composite mechanics: dispel target ally + self-buff caster.
+		## Defaults (no data fields authored): attack_up 1.3x for 3
+		## turns on caster — modest but meaningful. Future abilities
+		## with this effect can author `self_buff_stat`, `self_buff_
+		## modifier`, `self_buff_duration` to override.
+		"dispel_and_self_buff":
+			# Step 1: strip the target ally's buffs (sacrifice).
+			for target in targets:
+				if target == null or not is_instance_valid(target) or not target.is_alive:
+					continue
+				var stripped: int = 0
+				if "active_buffs" in target:
+					stripped = target.active_buffs.size()
+					target.active_buffs.clear()
+				if target.has_method("recalculate_stats"):
+					target.recalculate_stats()
+				if stripped > 0:
+					battle_log_message.emit("[color=%s]%s's buffs are stripped![/color] (%d cleared)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, stripped])
+			# Step 2: self-buff the caster (the "improved performance" part).
+			if caster != null and is_instance_valid(caster) and caster.is_alive:
+				var self_stat: String = str(ability.get("self_buff_stat", "attack"))
+				var self_mod: float = float(ability.get("self_buff_modifier", 1.3))
+				var self_dur: int = int(ability.get("self_buff_duration", 3))
+				caster.add_buff("Overhead Reduced", self_stat, self_mod, self_dur)
+				battle_log_message.emit("[color=%s]%s's performance is improved![/color] (%s +%d%% for %d turns)" % [AccessibilityPalette.bonus_bbcode(), caster.combatant_name, self_stat.to_upper(), int((self_mod - 1.0) * 100), self_dur])
+		## Tick 383: memory_leak_status handler. Pre-fix memory_leak
+		## (effect=memory_leak_status, duration=4) fell through to the
+		## `_:` push_warning default — the upfront cast damage (0.5x
+		## multiplier) landed but the 4-turn DOT it advertised was
+		## silently dropped. Applies the "memory_leak" status; the
+		## sister Combatant.update_buff_durations block ticks 3%
+		## max_hp per turn (lighter than burn 8%/poison 5%/static 4%
+		## since the ability also lands upfront damage and runs longer).
+		"memory_leak_status":
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
+					target.add_status("memory_leak", duration)
+					battle_log_message.emit("[color=%s]%s starts leaking memory![/color] (HP drain for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, duration])
+		## Tick 381: shadow_step handler. Pre-fix the shadow_step
+		## ability (effect=shadow_step, duration=1) fell through to
+		## the `_:` push_warning default. The description "Vanish into
+		## shadows, gaining evasion and guaranteeing next attack crits"
+		## maps to two existing mechanics:
+		##   - 100% dodge: piggyback on the existing invisible / dodge
+		##     check path via a status the dodge helper recognizes.
+		##   - Guaranteed crit: _calculate_crit_chance returns 1.0 when
+		##     the attacker has the shadow_step status.
+		##
+		## Self-buff target. Default duration 1 turn per the data.
+		"shadow_step":
+			var ss_duration: int = int(ability.get("duration", 1))
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive:
+					target.add_status("shadow_step", ss_duration)
+					battle_log_message.emit("[color=cyan]%s vanishes into shadow![/color] (evade + guaranteed crit, %d turns)" % [target.combatant_name, ss_duration])
 		"doom":
 			var countdown = ability.get("countdown", 3)
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
 					target.doom_counter = countdown
-					print("  → %s is doomed! %d turns remaining..." % [target.combatant_name, countdown])
+					battle_log_message.emit("[color=purple]☠ %s is doomed![/color] (%d turns to KO)" % [target.combatant_name, countdown])
 		"volatility_up_self":
 			if volatility:
 				caster.add_buff("Leveraged", "volatility", stat_modifier, duration)
@@ -2660,7 +5200,8 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 				for target in targets:
 					if target and is_instance_valid(target) and target.is_alive:
 						target.add_buff("Hedged", "volatility", stat_modifier, duration)
-						battle_log_message.emit("[color=green]%s is hedged![/color]" % target.combatant_name)
+						# Tick 238: bonus BBCode (hedge buff).
+					battle_log_message.emit("[color=%s]%s is hedged![/color]" % [AccessibilityPalette.bonus_bbcode(), target.combatant_name])
 		"press_the_edge":
 			if volatility:
 				var band = volatility.global_band
@@ -2678,19 +5219,189 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 				var band_name = volatility.get_band_name()
 				var tail_pct = volatility.get_tail_event_pct()
 				battle_log_message.emit("[color=gold]FORECAST: Band=%s, Tail=%.0f%%, Jitter=±%.1f[/color]" % [band_name, tail_pct, volatility.get_ctb_jitter()])
+		"scan":
+			_execute_scan_effect(caster, targets)
 		"circuit_breaker":
 			if volatility:
 				volatility.shift_band(-1)
 				caster.gain_ap(1)
-				battle_log_message.emit("[color=green]CIRCUIT BREAKER![/color] Band reduced, %s gains +1 AP" % caster.combatant_name)
-		"steal":
+				# Tick 238: bonus BBCode (CIRCUIT BREAKER — band-reduce + AP gain).
+				battle_log_message.emit("[color=%s]CIRCUIT BREAKER![/color] Band reduced, %s gains +1 AP" % [AccessibilityPalette.bonus_bbcode(), caster.combatant_name])
+		"default_stance":
+			# Tick 356: the `default` ability (Bravely Default-style
+			# defensive stance) sets is_defending = true on the caster,
+			# which take_damage already reads at line ~212 for 50% damage
+			# reduction. Pre-fix no arm matched and the entire ability
+			# fizzled: 0 MP cost, but no defending flag set, no log line.
+			# The bp_gain field (Bravely Default's brave-points bank) is
+			# not implemented yet — see Combat System Mutation in
+			# CLAUDE.md — so we don't read it here. When BP lands, this
+			# arm grows by one line.
+			for target in targets:
+				if target == null or not is_instance_valid(target) or not target.is_alive:
+					continue
+				target.is_defending = true
+				battle_log_message.emit("[color=%s]%s takes a defensive stance![/color]" % [AccessibilityPalette.bonus_bbcode(), target.combatant_name])
+		"dispel_one":
+			# Tick 355: weaker variant of dispel — removes ONE random buff
+			# or positive status from the target. Used by remove_element
+			# (abilities.json: "Removes a random buff or positive effect
+			# from the target"). Pre-fix no arm matched and every cast
+			# silently fizzled. Pool combines active_buffs entries with
+			# the same positive-status list dispel uses (tick 353).
+			for target in targets:
+				if target == null or not is_instance_valid(target) or not target.is_alive:
+					continue
+				# Build the candidate pool: each buff is one candidate;
+				# each positive status the target currently has is one
+				# candidate.
+				var candidates: Array = []  # [{"type": "buff", "index": int} or {"type": "status", "name": String}]
+				if "active_buffs" in target:
+					for i in range(target.active_buffs.size()):
+						candidates.append({"type": "buff", "index": i})
+				const _POSITIVE_FOR_DISPEL_ONE := [
+					"barrier", "invisible", "evasion", "reflect",
+					"physical_reflect", "prismatic_reflect", "magic_block",
+					"regen",
+				]
+				for s in _POSITIVE_FOR_DISPEL_ONE:
+					if target.has_status(s):
+						candidates.append({"type": "status", "name": s})
+				if candidates.is_empty():
+					battle_log_message.emit("[color=gray]%s had nothing to dispel.[/color]" % target.combatant_name)
+					continue
+				var pick: Dictionary = candidates[randi() % candidates.size()]
+				var picked_label: String = ""
+				if pick["type"] == "buff":
+					# Buff index might have shifted? No — we built the
+					# pool just now, no mutations between. Safe to index.
+					var buff_data: Dictionary = target.active_buffs[pick["index"]]
+					picked_label = str(buff_data.get("effect", "buff"))
+					target.active_buffs.remove_at(pick["index"])
+					if target.has_method("recalculate_stats"):
+						target.recalculate_stats()
+				else:
+					picked_label = pick["name"]
+					target.remove_status(pick["name"])
+				battle_log_message.emit("[color=%s]%s loses %s![/color]" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, picked_label])
+		## Tick 407: negate_last_ability (rules_lawyer support ability).
+		## "Invokes obscure rules that negate the last ability used
+		## against it." Pre-fix fell through to `_:` push_warning.
+		## Uses tick 406's last-cast tracker. Refunds the last cast's
+		## MP cost AND consumes the tracker so a second cast can't
+		## negate the same ability twice. If no recent cast exists,
+		## surfaces a gray "nothing to cite" line.
+		"negate_last_ability":
+			if _last_ability_cast_id == "" or _last_ability_cast_caster == null or not is_instance_valid(_last_ability_cast_caster):
+				battle_log_message.emit("[color=gray]%s invokes the rules... but there's nothing to cite.[/color]" % caster.combatant_name)
+			else:
+				var negated_ability: Dictionary = JobSystem.get_ability(_last_ability_cast_id) if JobSystem else {}
+				var cost_refund: int = int(negated_ability.get("mp_cost", 0))
+				if cost_refund > 0:
+					_last_ability_cast_caster.restore_mp(cost_refund)
+				battle_log_message.emit("[color=magenta]✦ %s negates %s's %s![/color]" % [caster.combatant_name, _last_ability_cast_caster.combatant_name, _last_ability_cast_id.capitalize().replace("_", " ")])
+				_last_ability_cast_id = ""
+				_last_ability_cast_caster = null
+		## Tick 405: break_mind_swap (release_binding ability — Time
+		## Mage / Bossbinder release). Pre-fix the support effect fell
+		## through to `_:` push_warning. Tick 404 introduced the
+		## mind_swap status (applied by boss_control_swap meta_effect)
+		## that this ability is supposed to remove — finally wirable
+		## end-to-end. Removes mind_swap from the caster (target=self
+		## per ability data) and any allies the caller passes; the
+		## simple-loop handles both target_type=self and broader scopes.
+		"break_mind_swap":
+			for target in targets:
+				if target and is_instance_valid(target) and target.has_status("mind_swap"):
+					target.remove_status("mind_swap")
+					## Tick 442: also clear the controller meta set by
+					## boss_control_swap so a future hit on the released
+					## boss doesn't redirect damage to a stale controller.
+					if target.has_meta("_mind_swap_controller"):
+						target.remove_meta("_mind_swap_controller")
+					battle_log_message.emit("[color=cyan]%s breaks the mind swap![/color]" % target.combatant_name)
+		## Tick 384: erase aliases dispel. Pre-fix null_touch
+		## (effect=erase) fell through to the `_:` push_warning default
+		## even though the description ("erases the target's existence
+		## temporarily") matches dispel's strip-all-enhancements semantic
+		## exactly. Sharing the case label drops both effect names into
+		## the same code path with no behavioral divergence.
+		"erase", "dispel":
+			# Tick 353: strips active_buffs + positive statuses from the
+			# target. Used by 7 abilities (masterite_dispel, cardinality_
+			# zero, garbage_collect_all, intersection_null, optimize_away,
+			# undefine, void_breath) — all of which silently fizzled
+			# pre-fix because no arm matched. Symptom: a W5/W6 boss casts
+			# a defensive buff stack and the player's dispel does NOTHING
+			# to remove it.
+			#
+			# Implementation: clear active_buffs (all of them — dispel is
+			# the strong version; dispel_one would remove a single random
+			# one) and remove any positive statuses from status_effects.
+			# Defining "positive" via an inclusion list rather than
+			# exclusion so adding a new debuff later doesn't accidentally
+			# make dispel start removing it.
+			const _POSITIVE_STATUSES_DISPELLABLE := [
+				"barrier", "invisible", "evasion", "reflect",
+				"physical_reflect", "prismatic_reflect", "magic_block",
+				"regen",
+			]
+			for target in targets:
+				if target == null or not is_instance_valid(target) or not target.is_alive:
+					continue
+				var cleared_count: int = 0
+				if "active_buffs" in target:
+					cleared_count += target.active_buffs.size()
+					target.active_buffs.clear()
+				for s in _POSITIVE_STATUSES_DISPELLABLE:
+					if target.has_status(s):
+						target.remove_status(s)
+						cleared_count += 1
+				if cleared_count > 0:
+					target.recalculate_stats() if target.has_method("recalculate_stats") else null
+					battle_log_message.emit("[color=%s]%s's enhancements stripped away![/color] (%d cleared)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, cleared_count])
+				else:
+					battle_log_message.emit("[color=gray]%s had nothing to dispel.[/color]" % target.combatant_name)
+		"mp_restore_and_ap":
+			# Tick 352: Bard's inspiring_melody (abilities.json line ~437)
+			# uses this effect to restore MP + grant AP to all allies.
+			# Pre-fix the effect had no handler — inspiring_melody fell
+			# through to the `_:` push_warning default and the ability
+			# silently fizzled. ap_gain defaults to 1 (matches the
+			# canonical data), mp_restore_percent defaults to 5% so a
+			# minimal {effect: "mp_restore_and_ap"} ability still does
+			# something sensible.
+			var mp_pct: float = float(ability.get("mp_restore_percent", 0.05))
+			var ap_gain: int = int(ability.get("ap_gain", 1))
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
-					if randf() < success_rate:
+					if mp_pct > 0.0 and "max_mp" in target:
+						var mp_restored: int = int(target.max_mp * mp_pct)
+						if mp_restored > 0 and target.has_method("restore_mp"):
+							target.restore_mp(mp_restored)
+					if ap_gain != 0 and target.has_method("gain_ap"):
+						target.gain_ap(ap_gain)
+			battle_log_message.emit("[color=%s]%s's inspiring melody rallies the party![/color] (+%d AP, +%d%% MP)" % [AccessibilityPalette.bonus_bbcode(), caster.combatant_name, ap_gain, int(mp_pct * 100)])
+		"steal":
+			## Tick 462: equipment.json special_effects.steal_bonus
+			## (thiefs_glove authors 0.25). Pre-tick the field was
+			## decoration — the glove gave the stat boost but not the
+			## headline +25% steal success the name promised. Add the
+			## bonus to the per-cast success rate. Clamp the sum at
+			## 1.0 so a future stacked-glove build doesn't go above
+			## 100% (the bound also dodges the > 1.0 randf check
+			## becoming always-true edge).
+			var steal_bonus: float = _sum_equipment_special_effect(caster, "steal_bonus")
+			var effective_rate: float = clampf(success_rate + steal_bonus, 0.0, 1.0)
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive:
+					if randf() < effective_rate:
 						var gold_amount = randi_range(5, 50) * (1 + int(target.max_hp / 50.0))
 						GameState.add_gold(gold_amount)
 						print("  → Stole %d gold from %s!" % [gold_amount, target.combatant_name])
 						battle_log_message.emit("[color=yellow]%s stole %d gold from %s![/color]" % [caster.combatant_name, gold_amount, target.combatant_name])
+						# Boss-specific steal_response (msg 2474): a successful steal against a target with a monsters.json steal_response definition triggers its mechanical effect exactly once per fight (Lockward's vault-crack = defense-break to 50%). Cowir-main's Option 2. Subsequent steals still succeed for gold; only the response is one-shot.
+						_apply_steal_response(target)
 					else:
 						print("  → %s failed to steal from %s!" % [caster.combatant_name, target.combatant_name])
 						battle_log_message.emit("[color=gray]%s couldn't steal anything from %s.[/color]" % [caster.combatant_name, target.combatant_name])
@@ -2712,12 +5423,228 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 					else:
 						battle_log_message.emit("[color=gray]%s has no ailments to cleanse.[/color]" % target.combatant_name)
 		"regen":
+			## Tick 436: honor authored regen_per_turn override.
+			## regenerate ability authors 40 (flat) but pre-fix the
+			## regen-status tick in Combatant.update_buff_durations
+			## was hardcoded to 5% max_hp. Always set the meta (even
+			## to 0 when no override) so a previous regen with an
+			## override doesn't leak into a subsequent regen without
+			## one. Combatant's tick falls back to the 5% default
+			## when the meta is 0.
+			var per_turn: int = int(ability.get("regen_per_turn", 0))
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
 					target.add_status("regen", duration)
-					battle_log_message.emit("[color=green]%s gains Regen![/color] (HP restore for %d turns)" % [target.combatant_name, duration])
+					if target.has_method("set_meta"):
+						target.set_meta("_regen_per_turn", per_turn)
+					# Tick 238: bonus BBCode (Regen buff).
+					battle_log_message.emit("[color=%s]%s gains Regen![/color] (HP restore for %d turns)" % [AccessibilityPalette.bonus_bbcode(), target.combatant_name, duration])
+		"attack_down":
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
+					target.add_debuff("Weaken", "attack", stat_modifier, duration)
+					# Tick 238: penalty BBCode (ATK debuff).
+					battle_log_message.emit("[color=%s]%s is weakened![/color] (ATK -%d%% for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, int((1.0 - stat_modifier) * 100), duration])
+		"speed_down":
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
+					target.add_debuff("Slow", "speed", stat_modifier, duration)
+					# Tick 238: penalty BBCode (SPD debuff).
+					battle_log_message.emit("[color=%s]%s slows down![/color] (SPD -%d%% for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, int((1.0 - stat_modifier) * 100), duration])
+		"all_stats_down":
+			# Distinct effect names per stat — add_debuff keys on the effect
+			# name and refreshes-in-place, so reusing one name would only
+			# debuff a single stat.
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
+					target.add_debuff("Despair (ATK)", "attack", stat_modifier, duration)
+					target.add_debuff("Despair (DEF)", "defense", stat_modifier, duration)
+					target.add_debuff("Despair (SPD)", "speed", stat_modifier, duration)
+					target.add_debuff("Despair (MAG)", "magic", stat_modifier, duration)
+					# Tick 238: penalty BBCode (Despair — all-stat debuff).
+					battle_log_message.emit("[color=%s]%s sinks into Despair![/color] (all stats -%d%% for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, int((1.0 - stat_modifier) * 100), duration])
+		"buff":
+			# Generic stat buff (masterite_* family). Reads the stat field
+			# from the ability dict; defaults to attack if unspecified.
+			# threat_class threads through to the buff (empty = unclassified) so BattleScene's THREAT_CLASS_BUFFS visual can key off it — e.g. Counter Stance = "reprisal" gets the amber sigil (msg 2462).
+			var buff_stat = str(ability.get("stat", "attack"))
+			var threat_class: String = str(ability.get("threat_class", ""))
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive:
+					target.add_buff("Empower", buff_stat, stat_modifier, duration, threat_class)
+					battle_log_message.emit("[color=cyan]%s is empowered![/color] (%s +%d%% for %d turns)" % [target.combatant_name, buff_stat.to_upper(), int((stat_modifier - 1.0) * 100), duration])
+		"debuff":
+			# Generic stat debuff (masterite_* family). Reads the stat field
+			# from the ability dict; defaults to attack if unspecified.
+			var debuff_stat = str(ability.get("stat", "attack"))
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
+					target.add_debuff("Sap", debuff_stat, stat_modifier, duration)
+					battle_log_message.emit("[color=%s]%s is sapped![/color] (%s -%d%% for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, debuff_stat.to_upper(), int((1.0 - stat_modifier) * 100), duration])
+		# Tick 351: added sleep/poison/burn/confuse/fear/silence/curse to
+		# the simple-status arm. These are referenced by abilities.json
+		# (lullaby's effect="sleep", etc.) but pre-fix the arm only
+		# listed defensive/CC statuses (barrier/invisible/etc.) — every
+		# offensive-status effect fell through to the `_:` push_warning
+		# default and the casting ability silently fizzled. add_status
+		# treats them all the same; the differentiation is in the
+		# downstream consumers (take_damage wakes sleepers, DOT ticks
+		# in update_buff_durations, has_status("blind") in miss math,
+		# etc.).
+		## Tick 379: added "static" to the simple-status arm. Pre-fix
+		## static_field (effect="static", duration=3) fell through to
+		## the `_:` push_warning default and silently fizzled. The
+		## status is now applied via add_status; Combatant.update_buff_
+		## durations sister-fix processes the lightning DOT tick.
+		"barrier", "invisible", "blind", "charm", "stun", "pacify", "evasion", "reflect", "physical_reflect", "prismatic_reflect", "magic_block", "sleep", "poison", "burn", "burning", "static", "confuse", "fear", "silence", "curse":
+			# Simple status effects — applied as a named status the rest of
+			# the battle engine can read via has_status(). Maps the data
+			# effect string directly to the status name.
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
+					target.add_status(effect, duration)
+					## Tick 186: prettify the effect name. Pre-fix the
+					## multi-word ones (physical_reflect / prismatic_
+					## reflect / magic_block) surfaced as raw snake_case
+					## in the log. capitalize() alone only handles the
+					## first letter; replace+capitalize gives proper
+					## Title Case across all 11 listed effects.
+					battle_log_message.emit("[color=cyan]%s is afflicted with %s![/color]" % [target.combatant_name, effect.replace("_", " ").capitalize()])
+		"evasion_up":
+			# Tick 350: dedicated arm for the "_up" variant used by
+			# Rogue's smoke_bomb (jobs.json line 409) and any other
+			# evasion-granting ability. Pre-fix this fell through to
+			# the `_:` push_warning default and the rogue's signature
+			# crowd-control did nothing — every smoke_bomb cast was a
+			# silent fizzle. The "_up" variant maps to the canonical
+			# "evasion" status name so _target_dodges_physical (line
+			# 5017) actually fires the 60% dodge roll.
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
+					target.add_status("evasion", duration)
+					battle_log_message.emit("[color=cyan]%s gains Evasion![/color] (60%% dodge chance for %d turns)" % [target.combatant_name, duration])
+		"summon_clone":
+			# Effect audit 2026-07-03: clone_self authored effect=summon_clone
+			# but the ability just consumed MP and played the animation —
+			# "Forks a copy of itself" delivered zero forks. Reuse the
+			# existing monster_summoned signal (BattleScene handles sprite +
+			# party plumbing) with the caster's stored monster_type.
+			if caster != null and is_instance_valid(caster) and caster.has_meta("monster_type"):
+				var clone_type: String = str(caster.get_meta("monster_type"))
+				monster_summoned.emit(clone_type, caster)
+				battle_log_message.emit("[color=purple]%s forks a copy of itself![/color]" % caster.combatant_name)
+				print("  → %s summons a clone (%s)" % [caster.combatant_name, clone_type])
 		_:
-			print("  → Unknown support effect: %s" % effect)
+			# Authored-but-unimplemented support effect (dispel,
+			# copy_last_ability, random_stat_change, adapt_resistance, etc.).
+			# These need bespoke handling — make the gap LOUD (push_warning)
+			# so it shows up in CI/test runs rather than silently no-opping.
+			# (Silent failure is the project's canonical worst failure class.)
+			print("  → Unhandled support effect: %s" % effect)
+			push_warning("BattleManager._execute_support_ability: unhandled support effect '%s' (ability '%s') applied no mechanical change" % [effect, ability.get("id", "?")])
+
+	## Tick 433: secondary_effect handler. 9 abilities author a
+	## follow-up debuff/status on top of their primary effect (enrage's
+	## attack_up + defense_down tradeoff, web_shot's speed_down +
+	## stun chance, etc.). Pre-fix none were read — every secondary
+	## was silently dropped, so enrage was a free 2.0x attack buff
+	## with no defense penalty, web_shot only slowed without the
+	## stun, howl never frightened any enemies, and so on.
+	_apply_secondary_effect(caster, ability, targets)
+
+	## Tick 435: next_attack_multiplier stored on caster meta for the
+	## basic-attack path to consume. burrow authors 1.5 — emerge
+	## from underground for 1.5x damage. Pre-fix the field was
+	## authored but no code read it.
+	var nam: float = float(ability.get("next_attack_multiplier", 0.0))
+	if nam > 0.0 and caster != null and is_instance_valid(caster):
+		caster.set_meta("_next_attack_multiplier", nam)
+
+
+## Tick 433: secondary_effect dispatcher. Applies the authored
+## secondary effect to either secondary_target (e.g. "all_enemies"
+## on howl) or the original primary targets. Probability-gated by
+## secondary_chance (default 1.0). Maps stat_up/stat_down strings
+## to add_buff/add_debuff; other names (fear, stun, etc.) route
+## through add_status.
+const _SECONDARY_STAT_BUFF_MAP: Dictionary = {
+	"attack_up":  ["attack",  "Secondary Attack Up"],
+	"defense_up": ["defense", "Secondary Defense Up"],
+	"magic_up":   ["magic",   "Secondary Magic Up"],
+	"speed_up":   ["speed",   "Secondary Speed Up"],
+}
+const _SECONDARY_STAT_DEBUFF_MAP: Dictionary = {
+	"attack_down":  ["attack",  "Secondary Attack Down"],
+	"defense_down": ["defense", "Secondary Defense Down"],
+	"magic_down":   ["magic",   "Secondary Magic Down"],
+	"speed_down":   ["speed",   "Secondary Speed Down"],
+}
+
+
+## Scan reveals a live enemy's elemental intel for the rest of the battle — the
+## in-the-moment counterpart to the bestiary's defeat-gated reveal. Flags each
+## target with the intel_revealed meta the enemy panel reads (BattleUIManager
+## ._enemy_intel_hint); no damage — the MP + 1 AP were already spent upstream.
+func _execute_scan_effect(caster: Combatant, targets: Array) -> void:
+	var hit := false
+	for t in targets:
+		if t is Combatant and t.is_alive:
+			t.set_meta("intel_revealed", true)
+			hit = true
+			if t.has_meta("monster_type") and BestiarySystem:
+				BestiarySystem.mark_seen(str(t.get_meta("monster_type")))
+			battle_log_message.emit("[color=#88ccff]🔍 %s scans %s — weaknesses exposed![/color]" % [caster.combatant_name, t.combatant_name])
+	if not hit:
+		battle_log_message.emit("[color=gray]%s's scan finds nothing to read.[/color]" % caster.combatant_name)
+
+
+func _apply_secondary_effect(caster: Combatant, ability: Dictionary, primary_targets: Array) -> void:
+	var sec_effect: String = str(ability.get("secondary_effect", ""))
+	if sec_effect == "":
+		return
+	var sec_chance: float = clampf(float(ability.get("secondary_chance", 1.0)), 0.0, 1.0)
+	if sec_chance <= 0.0:
+		return
+	# Resolve secondary target group.
+	var sec_target_tag: String = str(ability.get("secondary_target", ""))
+	var sec_targets: Array = []
+	match sec_target_tag:
+		"all_enemies":
+			for e in enemy_party:
+				if e is Combatant and e.is_alive:
+					sec_targets.append(e)
+		"all_allies":
+			for a in player_party:
+				if a is Combatant and a.is_alive:
+					sec_targets.append(a)
+		"self":
+			if caster != null and caster.is_alive:
+				sec_targets.append(caster)
+		_:
+			# Default: re-use the primary target list.
+			for t in primary_targets:
+				if t is Combatant and t.is_alive:
+					sec_targets.append(t)
+	if sec_targets.is_empty():
+		return
+	var sec_modifier: float = float(ability.get("secondary_modifier", 0.7))
+	var sec_duration: int = int(ability.get("duration", 3))
+	for t in sec_targets:
+		if randf() >= sec_chance:
+			continue
+		if _SECONDARY_STAT_BUFF_MAP.has(sec_effect):
+			var bentry: Array = _SECONDARY_STAT_BUFF_MAP[sec_effect]
+			t.add_buff(bentry[1], bentry[0], sec_modifier, sec_duration)
+			battle_log_message.emit("[color=cyan]%s gains secondary %s![/color]" % [t.combatant_name, bentry[0].to_upper()])
+		elif _SECONDARY_STAT_DEBUFF_MAP.has(sec_effect):
+			var dentry: Array = _SECONDARY_STAT_DEBUFF_MAP[sec_effect]
+			t.add_debuff(dentry[1], dentry[0], sec_modifier, sec_duration)
+			battle_log_message.emit("[color=magenta]%s suffers secondary %s![/color]" % [t.combatant_name, dentry[0].to_upper()])
+		else:
+			# Status effect (fear, stun, poison, etc.) — let downstream
+			# consumers gate on the name via has_status.
+			t.add_status(sec_effect, sec_duration)
+			battle_log_message.emit("[color=cyan]%s is afflicted with %s![/color]" % [t.combatant_name, StatusNames.display(sec_effect)])
 
 
 func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Array) -> void:
@@ -2725,66 +5652,418 @@ func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Arra
 	var corruption_risk = ability.get("corruption_risk", 0.0)
 	var corruption_amount = ability.get("corruption_amount", 0.0)
 
+	## Tick 172: every meta branch now emits battle_log_message.
+	## Meta abilities are reality manipulation (Scriptweaver / Time
+	## Mage / Necromancer / Bossbinder) — they should feel DRAMATIC
+	## in the log, not silent. Pre-fix EVERY branch only printed to
+	## debug console; player saw nothing in the visible log even as
+	## save state mutated. Magenta palette matches the META category
+	## color (AbilitiesMenu META_COLOR, ItemsMenu META_COLOR from
+	## the tick 137/138 color audit).
 	match meta_effect:
 		"formula_modification":
+			# Honest atmospherics until the formula-rewrite design lands: the editor opens, the formulas resist, the corruption is real
 			print("  → %s opens the formula editor..." % caster.combatant_name)
+			battle_log_message.emit("[color=magenta]✦ %s opens the formula editor... the formulas RESIST. Version lock. The attempt is logged.[/color]" % caster.combatant_name)
 			GameState.add_corruption(corruption_risk)
 		"constant_modification":
-			print("  → %s accesses game constants..." % caster.combatant_name)
+			# The flagship promise, finally real: turn ONE tunable dial ±10% (clamped 0.5..2.0). modify_constant adds delta-proportional corruption on top of the cast risk.
+			var dials: Array = ["exp_multiplier", "gold_multiplier", "damage_multiplier", "healing_multiplier", "drop_rate_multiplier", "encounter_rate"]
+			var dial: String = dials[randi() % dials.size()]
+			var old_v: float = float(GameState.game_constants.get(dial, 1.0))
+			var new_v: float = clampf(old_v * (1.1 if randf() < 0.5 else 0.9), 0.5, 2.0)
+			GameState.modify_constant(dial, new_v)
+			print("  → %s modified %s: %.2f → %.2f" % [caster.combatant_name, dial, old_v, new_v])
+			battle_log_message.emit("[color=magenta]✦ %s reaches into the constants: %s  %.2f → %.2f[/color]" % [caster.combatant_name, dial, old_v, new_v])
 			GameState.add_corruption(corruption_risk)
 		"code_inspection":
-			print("  → %s analyzes the battle code..." % caster.combatant_name)
-			print("  → [META] Revealing execution order...")
-		"time_rewind":
+			# Actually reveal something: the speed-sorted execution order, buffed stats included
+			var order: Array = []
+			for c in player_party + enemy_party:
+				if c and is_instance_valid(c) and c.is_alive:
+					order.append(c)
+			order.sort_custom(func(a, b): return a.get_buffed_stat("speed", a.speed) > b.get_buffed_stat("speed", b.speed))
+			var names: PackedStringArray = []
+			for c in order:
+				names.append("%s(%d)" % [c.combatant_name, c.get_buffed_stat("speed", c.speed)])
+			print("  → [META] Execution order: %s" % " → ".join(names))
+			battle_log_message.emit("[color=magenta]✦ %s reads the battle code. Execution order: %s[/color]" % [caster.combatant_name, " → ".join(names)])
+		## Tick 396: alias "rewind_turn" to the same rewind path.
+		## Pre-fix the rewind_turn meta_effect (used by rewind_turn
+		## ability — Time Mage advanced) fell through to `_:`
+		## push_warning. Mechanically rewind_turn IS time_rewind from
+		## the engine's perspective — both restore the previous save
+		## state. The narrative distinction (one turn vs deeper rewind)
+		## lives in the dialogue / ability description, not the
+		## engine. Sharing the case label drops both effect names into
+		## the same code path.
+		"time_rewind", "rewind_turn":
 			print("  → %s attempts to rewind time..." % caster.combatant_name)
 			if GameState.rewind_to_previous_save():
 				print("  → [META] Time has been rewound!")
+				battle_log_message.emit("[color=magenta]✦ %s rewinds time![/color]" % caster.combatant_name)
 			else:
 				print("  → [META] No previous save state to rewind to")
+				battle_log_message.emit("[color=gray]%s reaches for the timeline... but no rewind point exists.[/color]" % caster.combatant_name)
 		"add_corruption":
 			print("  → %s channels corrupted power!" % caster.combatant_name)
+			battle_log_message.emit("[color=magenta]✦ %s channels corrupted power![/color]" % caster.combatant_name)
 			GameState.add_corruption(corruption_amount)
 			_execute_magic_ability(caster, ability, targets)
-		"permanent_death":
-			print("  → %s casts PERMAKILL!" % caster.combatant_name)
+		## Tick 408: recursive_summon (Summoner meta ability).
+		## "Summon another Summoner who summons another... (up to 3
+		## deep). Exponential power!" Pre-fix the meta_effect fell
+		## through to `_:` push_warning. 45 MP wasted.
+		##
+		## Implementation: count existing "Recursive Summon N" buffs;
+		## each cast adds the next stack up to max_depth. Distinct
+		## effect names so add_buff doesn't refresh-in-place — three
+		## separate 2.0x buffs on magic stack multiplicatively in
+		## get_buffed_stat (capped at 4x base by the existing clamp,
+		## matching the engine's overall power ceiling).
+		"recursive_summon":
+			var max_depth: int = int(ability.get("max_depth", 3))
+			var per_stack_mult: float = float(ability.get("damage_multiplier", 2.0))
+			var stack_duration: int = int(ability.get("duration", 3))
+			var existing_stacks: int = 0
+			if "active_buffs" in caster:
+				for b in caster.active_buffs:
+					if str(b.get("effect", "")).begins_with("Recursive Summon"):
+						existing_stacks += 1
+			if existing_stacks >= max_depth:
+				battle_log_message.emit("[color=gray]The spiral collapses on itself — no further recursion.[/color]")
+			else:
+				var new_stack: int = existing_stacks + 1
+				caster.add_buff("Recursive Summon %d" % new_stack, "magic", per_stack_mult, stack_duration)
+				battle_log_message.emit("[color=magenta]✦ %s summons another summoner![/color] (stack %d/%d, MAG ×%.1f for %d turns)" % [caster.combatant_name, new_stack, max_depth, per_stack_mult, stack_duration])
+		## Tick 406: copy_last_ability (mimic_ability). Replay the last
+		## ability cast by ANY combatant this battle. Pre-fix fell
+		## through to `_:` push_warning — 10 MP burned, no copy.
+		## _execute_ability tracks _last_ability_cast_id, skipping
+		## mimic_ability itself so a mimic-of-a-mimic doesn't recurse;
+		## the mimic still reads the prior cast.
+		"copy_last_ability":
+			if _last_ability_cast_id == "":
+				battle_log_message.emit("[color=gray]%s reaches for a memory... but there's nothing to mimic yet.[/color]" % caster.combatant_name)
+			else:
+				battle_log_message.emit("[color=magenta]✦ %s mimics %s![/color]" % [caster.combatant_name, _last_ability_cast_id.capitalize().replace("_", " ")])
+				# Replay the ability using the caster as the new source.
+				# Pass the same targets — semantically "do what they did".
+				_execute_ability(caster, _last_ability_cast_id, targets)
+		## Tick 404: batch-wire 5 flag-write meta_effects so the casts
+		## stop silently fizzling. Actual mechanical implementations
+		## live downstream; this tick writes the canonical flags +
+		## battle_log so the player sees the cast fire AND so future
+		## consumers have a clean signal to read.
+		"auto_rewind_on_death":
+			# Temporal Shield: 1-shot auto-rewind protection on party wipe.
+			if GameState and "game_constants" in GameState:
+				GameState.game_constants["meta_auto_rewind_pending"] = true
+			battle_log_message.emit("[color=magenta]✦ %s arms the temporal shield![/color] (next wipe → rewind)" % caster.combatant_name)
+		"auto_solve_puzzle":
+			# Bypass Puzzle: flag the next puzzle to auto-solve.
+			if GameState and "game_constants" in GameState:
+				GameState.game_constants["meta_auto_solve_puzzle_pending"] = true
+			battle_log_message.emit("[color=magenta]✦ %s primes the puzzle bypass.[/color]" % caster.combatant_name)
+		"boss_control_swap":
+			# Mind Swap: applies a "mind_swap" status on the target so the
+			# release_binding ability (effect=break_mind_swap, sister tick
+			# candidate) has something to release. Also applies the
+			# authored corruption_risk per the boss-control gamble design.
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive:
+					target.add_status("mind_swap", int(ability.get("duration", 5)))
+					## Tick 442: stash the controller so the
+					## shared_damage passive (boss_damage_share
+					## meta_effect) can find them when the boss takes
+					## damage. set_meta is per-instance, lives until
+					## release_binding clears the status or the battle
+					## ends (Combatants are freed by the scene tree).
+					target.set_meta("_mind_swap_controller", caster)
+					battle_log_message.emit("[color=magenta]✦ %s mind-swaps with %s![/color]" % [caster.combatant_name, target.combatant_name])
+			GameState.add_corruption(corruption_risk)
+		"create_restore_point":
+			## Tick 412: actually create the restore point via the
+			## existing record_history_checkpoint helper. Pre-fix
+			## (tick 404) only set a meta_restore_point_pending flag
+			## with no consumer — burning 35 MP for a flag that
+			## nothing read. record_history_checkpoint(true) bypasses
+			## the rewind_enabled gate (the meta ability IS the
+			## override), pushes a snapshot onto save_history, and
+			## becomes the next rewind_to_previous_save target.
+			## Flag is kept for downstream awareness (e.g. UI badges).
+			var checkpointed: bool = false
+			if GameState and GameState.has_method("record_history_checkpoint"):
+				checkpointed = GameState.record_history_checkpoint(true)
+			if GameState and "game_constants" in GameState:
+				GameState.game_constants["meta_restore_point_pending"] = true
+			if checkpointed:
+				battle_log_message.emit("[color=magenta]✦ %s anchors a restore point.[/color]" % caster.combatant_name)
+			else:
+				battle_log_message.emit("[color=gray]%s reaches for a restore point... but the timeline refuses.[/color]" % caster.combatant_name)
+		"full_boss_control":
+			# Control Override: apply a "controlled" status on the target
+			# for the authored duration. Downstream AI path can read it
+			# and yield turn choice to the player.
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive:
+					target.add_status("controlled", int(ability.get("duration", 1)))
+					battle_log_message.emit("[color=magenta]✦ %s overrides %s's control![/color]" % [caster.combatant_name, target.combatant_name])
+			GameState.add_corruption(corruption_risk)
+		"ng_plus_warp":
+			# NG+ Warp: flag for the world-warp UI. Pure marker for now.
+			if GameState and "game_constants" in GameState:
+				GameState.game_constants["meta_ng_plus_warp_pending"] = true
+			battle_log_message.emit("[color=magenta]✦ %s opens the NG+ warp.[/color]" % caster.combatant_name)
+		## Tick 403: dungeon_skip (Skiptrotter warp_to_boss ability).
+		## "Skip the dungeon and warp directly to the boss room.
+		## Missed loot!" Pre-fix the meta_effect fell through to `_:`
+		## push_warning. Writes meta_dungeon_skip_pending flag that
+		## future dungeon-warp wiring can read on next exploration
+		## return. Penalty (no_dungeon_loot) is documented in the
+		## ability data but enforcement lives in the warp implementation
+		## (a future tick).
+		"dungeon_skip":
+			if GameState and "game_constants" in GameState:
+				GameState.game_constants["meta_dungeon_skip_pending"] = true
+			print("  → %s ruptures dungeon space!" % caster.combatant_name)
+			battle_log_message.emit("[color=magenta]✦ %s warps past the dungeon — boss room ahead.[/color]" % caster.combatant_name)
+		## Tick 402: sequence_break (Skiptrotter sequence_break
+		## ability). Pre-fix the meta_effect fell through to `_:`
+		## push_warning. Mechanically: writes a meta_sequence_break
+		## flag that future world-warp paths can read, and applies the
+		## authored corruption_risk (sequence-breaking is dangerous —
+		## that's the design payoff). The actual world-skip
+		## implementation lives in a future tick; this tick stops the
+		## silent fizzle and surfaces the cast.
+		"sequence_break":
+			if GameState and "game_constants" in GameState:
+				GameState.game_constants["meta_sequence_break_pending"] = true
+			print("  → %s ruptures the sequence!" % caster.combatant_name)
+			battle_log_message.emit("[color=magenta]✦ %s breaks the intended sequence — reality glitches.[/color]" % caster.combatant_name)
+			GameState.add_corruption(corruption_risk)
+		## Tick 402: autobattle_editor (Scriptweaver create_autobattle_
+		## script ability). "Open the autobattle scripting interface
+		## mid-battle." Pre-fix the meta_effect fell through to `_:`
+		## push_warning. Sets meta_autobattle_editor_requested flag
+		## that BattleScene can poll between turns to surface the
+		## editor overlay. Actual overlay wiring is downstream; this
+		## tick stops the silent fizzle and gives BattleScene a hook.
+		"autobattle_editor":
+			if GameState and "game_constants" in GameState:
+				GameState.game_constants["meta_autobattle_editor_requested"] = true
+			print("  → %s pulls open the autobattle editor!" % caster.combatant_name)
+			battle_log_message.emit("[color=magenta]✦ %s opens the autobattle editor — script the next sequence.[/color]" % caster.combatant_name)
+			## Tick 409: emit the immediate-hook signal so BattleScene
+			## can surface the editor without having to poll the flag.
+			meta_autobattle_editor_requested.emit(caster)
+		## Tick 401: skip_dialogue (Skiptrotter skip_cutscene ability).
+		## Pre-fix the meta_effect fell through to `_:` push_warning.
+		## Sets game_constants.meta_skip_next_cutscene = true; GameLoop
+		## consumes the flag when picking the next pending cutscene
+		## (in a follow-up wiring or via a future check) — for now the
+		## flag write itself documents the intent and the toast lands
+		## so the player sees their ability fire. The actual skip
+		## consumption is a downstream concern; this tick stops the
+		## silent fizzle and writes the flag that downstream paths
+		## can read.
+		"skip_dialogue":
+			if GameState and "game_constants" in GameState:
+				GameState.game_constants["meta_skip_next_cutscene"] = true
+			print("  → %s skips the dialogue queue!" % caster.combatant_name)
+			battle_log_message.emit("[color=magenta]✦ %s skips the next cutscene![/color]" % caster.combatant_name)
+		## Tick 400: reverse_permadeath (Time Mage undo_death ability).
+		## "Undo a permanent death". Pre-fix the meta_effect fell
+		## through to `_:` push_warning — the 40-MP rescue was a
+		## complete no-op. Mechanically: remove permakilled status +
+		## revive at 50% max HP, mirroring revival ability shape.
+		## target_type=dead_ally filters to dead allies; the for-loop
+		## guards on `not is_alive` for the revive (vs the alive guard
+		## the kill effects use).
+		"reverse_permadeath":
+			for target in targets:
+				if target == null or not is_instance_valid(target):
+					continue
+				if target.is_alive:
+					continue  # the ability filters target_type=dead_ally; defensive
+				# Remove permakilled marker so the death isn't re-applied.
+				if "permakilled" in target.status_effects:
+					target.remove_status("permakilled")
+				target.revive(int(target.max_hp * 0.5))
+				healing_done.emit(target, target.current_hp)
+				battle_log_message.emit("[color=magenta]✦ %s undoes %s's death![/color]" % [caster.combatant_name, target.combatant_name])
+		## Tick 399: mutual_permadeath (Bossbinder's mutual_destruction
+		## ability). "Kill both you and the bound boss instantly.
+		## Permanent. No takebacks." Pre-fix the meta_effect fell
+		## through to `_:` push_warning — the 99-MP terminal sacrifice
+		## did absolutely nothing. Mirrors permanent_death's mechanic
+		## but applies to caster as well as targets.
+		"mutual_permadeath":
+			print("  → %s casts MUTUAL DESTRUCTION!" % caster.combatant_name)
+			battle_log_message.emit("[color=magenta]✦ %s casts MUTUAL DESTRUCTION![/color]" % caster.combatant_name)
+			# Caster dies + permakilled.
+			if caster != null and is_instance_valid(caster) and caster.is_alive:
+				caster.die()
+				caster.add_status("permakilled")
+				battle_log_message.emit("[color=%s]☠ %s has been PERMANENTLY KILLED![/color]" % [AccessibilityPalette.penalty_bbcode(), caster.combatant_name])
+			# Targets die + permakilled (same shape as permanent_death).
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
 					target.die()
 					target.add_status("permakilled")
+					battle_log_message.emit("[color=%s]☠ %s has been PERMANENTLY KILLED![/color]" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name])
+			GameState.add_corruption(corruption_risk)
+		## Tick 398: corrupt_save (save_deletion ability — boss-only
+		## terror move). Pre-fix the meta_effect fell through to `_:`
+		## push_warning, so a boss using this ability had no real
+		## consequence beyond its damage_multiplier=3.0 magic damage
+		## (which routes via the add_corruption sister branch since
+		## save_deletion is target=all_enemies). The corruption_amount
+		## (0.5 — half a corruption point in one cast) was authored but
+		## never applied. Wire it through GameState.add_corruption,
+		## which clamps to [0, 1] and fires save_corrupted on increase.
+		## Damage doesn't fire here — the save_deletion ability also
+		## carries damage_multiplier=3.0, and the magic-damage path is
+		## the right home for that. This arm is for the corruption
+		## side-effect only.
+		"corrupt_save":
+			print("  → %s attempts to delete the save..." % caster.combatant_name)
+			battle_log_message.emit("[color=magenta]✦ %s threatens save corruption![/color]" % caster.combatant_name)
+			GameState.add_corruption(corruption_amount)
+		## Tick 397: create_save (Time Mage quicksave ability). Pre-fix
+		## the meta_effect fell through to push_warning even though the
+		## ability description literally says "Create a quicksave during
+		## battle". SaveSystem.quick_save / save_game block during
+		## battle via can_quick_save — this is the meta-job override.
+		## Routed through the new SaveSystem.force_quick_save which
+		## bypasses the gate, writes to QUICK_SAVE_SLOT (matches normal
+		## quicksave's slot choice), and self-clears the bypass flag.
+		"create_save":
+			print("  → %s rewinds reality to fork a save..." % caster.combatant_name)
+			var save_system: Node = get_node_or_null("/root/SaveSystem")
+			if save_system != null and save_system.has_method("force_quick_save"):
+				var ok: bool = save_system.force_quick_save()
+				if ok:
+					battle_log_message.emit("[color=magenta]✦ %s forks a quicksave![/color]" % caster.combatant_name)
+				else:
+					battle_log_message.emit("[color=gray]%s reaches for a save slot... but the timeline refuses.[/color]" % caster.combatant_name)
+			else:
+				push_warning("[BattleManager] create_save meta_effect: SaveSystem unavailable")
+		## Tick 396: force_weak_attack — applies attack debuff to target.
+		## boss_puppet ability uses this. Maps to existing add_debuff
+		## on "attack" stat with default 0.5x for 3 turns.
+		"force_weak_attack":
+			var fw_mod: float = float(ability.get("stat_modifier", 0.5))
+			var fw_dur: int = int(ability.get("duration", 3))
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive:
+					target.add_debuff("Forced Weak", "attack", fw_mod, fw_dur)
+					battle_log_message.emit("[color=magenta]✦ %s forces %s into a weak attack![/color] (ATK -%d%% for %d turns)" % [caster.combatant_name, target.combatant_name, int((1.0 - fw_mod) * 100), fw_dur])
+		## Tick 396: time_stop — applies stun to all targets for 1 turn.
+		## Time Mage's time_stop ability uses this. Stun status already
+		## has engine support (CC arm in support effects).
+		"time_stop":
+			var ts_dur: int = int(ability.get("duration", 1))
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive:
+					target.add_status("stun", ts_dur)
+					battle_log_message.emit("[color=magenta]✦ Time stops for %s![/color] (stunned for %d turns)" % [target.combatant_name, ts_dur])
+		"permanent_death":
+			print("  → %s casts PERMAKILL!" % caster.combatant_name)
+			battle_log_message.emit("[color=magenta]✦ %s casts PERMAKILL![/color]" % caster.combatant_name)
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive:
+					target.die()
+					target.add_status("permakilled")
+					# permakill's second promise: the SPECIES never spawns again (enemies only — PCs carry no monster_type)
+					var pk_type: String = str(target.get_meta("monster_type", "")) if target.has_meta("monster_type") else ""
+					if pk_type != "" and GameState and not pk_type in GameState.permakilled_monster_types:
+						GameState.permakilled_monster_types.append(pk_type)
+						battle_log_message.emit("[color=magenta]The %s species has been UNWRITTEN. It will not respawn.[/color]" % pk_type.capitalize())
 					print("  → %s has been PERMANENTLY KILLED!" % target.combatant_name)
+					# Tick 238: penalty BBCode (permadeath).
+					battle_log_message.emit("[color=%s]☠ %s has been PERMANENTLY KILLED![/color]" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name])
 			GameState.add_corruption(corruption_risk)
 		_:
+			# Loud-fail symmetry with _execute_support_ability (line ~3026):
+			# a typo'd meta_effect in abilities.json used to silently consume
+			# AP and do nothing — print-only feedback never reached CI or
+			# the unit test suite. push_warning surfaces it in GUT runs and
+			# during runtime audit logs so the gap gets fixed instead of
+			# shipped.
 			print("  → Unknown meta effect: %s" % meta_effect)
+			push_warning("BattleManager._execute_meta_ability: unknown meta_effect '%s' (ability '%s') applied no mechanical change" % [meta_effect, ability.get("id", "?")])
 
 
 func _execute_escape_ability(caster: Combatant, ability: Dictionary) -> void:
+	## Tick 172: every branch now emits battle_log_message. Pre-fix
+	## the player tried to escape and saw NOTHING in the visible log
+	## — only print() to debug console. The escape result is one of
+	## the most important per-turn outcomes; player needs to see it.
 	if not escape_allowed:
 		print("  → Cannot escape from this battle!")
+		battle_log_message.emit("[color=gray]Cannot escape from this battle![/color]")
 		return
 
-	var success_rate = ability.get("success_rate", 0.5)
+	# smoke_bomb's description promises "guarantee escape" — honor the authored field instead of rolling
+	var success_rate = 1.0 if bool(ability.get("guaranteed_escape", false)) else ability.get("success_rate", 0.5)
 	if randf() < success_rate:
 		print("  → %s escaped successfully!" % caster.combatant_name)
+		# Tick 237: bonus BBCode (escape = positive outcome).
+		battle_log_message.emit("[color=%s]%s escaped successfully![/color]" % [AccessibilityPalette.bonus_bbcode(), caster.combatant_name])
 		end_battle(false)
 	else:
 		print("  → %s failed to escape!" % caster.combatant_name)
+		battle_log_message.emit("[color=gray]%s failed to escape.[/color]" % caster.combatant_name)
 
 
-func _execute_mp_restore_ability(caster: Combatant, ability: Dictionary) -> void:
-	"""Free-Move style ability that restores a small amount of MP to the caster."""
+func _execute_mp_restore_ability(caster: Combatant, ability: Dictionary, targets: Array = []) -> void:
+	"""Free-Move MP restore: honors ability.target_type (self / single_ally / all_allies)."""
 	var amount: int = ability.get("mp_amount", 5)
-	var before: int = caster.current_mp
-	caster.current_mp = min(caster.max_mp, caster.current_mp + amount)
-	var restored: int = caster.current_mp - before
-	print("  → %s restores %d MP" % [caster.combatant_name, restored])
-	battle_log_message.emit("[color=aqua]%s restores [color=cyan]%d MP[/color][/color]" % [caster.combatant_name, restored])
-	healing_done.emit(caster, restored)
+	var target_type: String = ability.get("target_type", "self")
+	var recipients: Array[Combatant] = []
+	match target_type:
+		"all_allies":
+			for ally in player_party:
+				if ally and is_instance_valid(ally) and ally.is_alive:
+					recipients.append(ally)
+		"single_ally":
+			for t in targets:
+				if t is Combatant and is_instance_valid(t) and t.is_alive:
+					recipients.append(t)
+			if recipients.is_empty():
+				recipients.append(caster)
+		_:
+			recipients.append(caster)
+	var any_restored := false
+	for r in recipients:
+		var before: int = r.current_mp
+		r.current_mp = min(r.max_mp, r.current_mp + amount)
+		var restored: int = r.current_mp - before
+		if restored <= 0:
+			continue  # already full — skip the "+0 MP" popup/log noise (Riff on a full party spammed these)
+		any_restored = true
+		print("  → %s restores %d MP for %s" % [caster.combatant_name, restored, r.combatant_name])
+		battle_log_message.emit("[color=aqua]%s restores [color=cyan]%d MP[/color] for [color=white]%s[/color][/color]" % [caster.combatant_name, restored, r.combatant_name])
+		healing_done.emit(r, restored)
+	if not any_restored:
+		battle_log_message.emit("[color=gray]%s's MP restore fizzles — everyone's already full.[/color]" % caster.combatant_name)
 
 
 func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:
 	"""Execute item use (costs 1 AP)"""
+	if user in player_party:
+		_c3_nonbasic_used = true
 	if not user.has_item(item_id):
+		## Tick 184: surface to battle_log when user doesn't have
+		## the item. Common scenarios: autobattle script targets a
+		## consumable that ran out mid-grind, or save-state drift
+		## where the item was consumed but the script wasn't told.
+		## Pre-fix print() only — character's turn was silently
+		## wasted with no in-game explanation.
 		print("%s doesn't have item: %s" % [user.combatant_name, item_id])
+		var item_display: String = item_id.replace("_", " ").capitalize()
+		battle_log_message.emit("[color=gray]%s has no %s left.[/color]" % [user.combatant_name, item_display])
 		return
 
 	# Check if this is a revival item (e.g. Phoenix Down)
@@ -2792,7 +6071,22 @@ func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:
 	var item_effects = item_data.get("effects", {})
 	var is_revival_item = item_effects.get("revive", false)
 
-	# Auto-retarget: revival items need dead allies, others need alive allies
+	## Tick 361: route enemy-targeting damage items (holy_water,
+	## bomb_fragment, arctic_wind, lightning_bolt) through
+	## _retarget_enemy instead of _retarget_ally. Pre-fix every
+	## non-revival item was retargeted as an ally — throwing Holy
+	## Water at a skeleton via autobattle silently redirected to the
+	## party's lowest-HP ally and HEALED the enemy (zero damage)
+	## while applying holy damage to the wrong target. Read the
+	## item's authored target_type to pick the right retargeter.
+	var item_target_type: int = int(item_data.get("target_type", ItemSystem.TargetType.SINGLE_ALLY))
+	var targets_enemies: bool = (
+		item_target_type == ItemSystem.TargetType.SINGLE_ENEMY
+		or item_target_type == ItemSystem.TargetType.ALL_ENEMIES
+	)
+
+	# Auto-retarget: revival items need dead allies; damage items need
+	# alive enemies; everything else (heals/cures/buffs) needs alive allies.
 	var retargeted: Array[Combatant] = []
 	for t in targets:
 		if t is Combatant:
@@ -2800,13 +6094,20 @@ func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:
 				# Revival items should keep dead targets, not retarget to alive
 				if not t.is_alive:
 					retargeted.append(t)
+			elif targets_enemies:
+				var new_enemy = _retarget_enemy(user, t)
+				if new_enemy and not retargeted.has(new_enemy):
+					retargeted.append(new_enemy)
 			else:
 				var new_target = _retarget_ally(user, t, false)
 				if new_target:
 					retargeted.append(new_target)
 
 	if retargeted.size() == 0 and targets.size() > 0:
+		# Tick 221: symmetric battle-log surface with _execute_ability's fizzle path (line ~2690). Item targets all died between selection and execution — player needs to know why nothing happened.
 		print("%s's item fizzles - no valid targets!" % user.combatant_name)
+		var item_display: String = item_id.replace("_", " ").capitalize()
+		battle_log_message.emit("[color=gray]%s's %s fizzles — no valid targets.[/color]" % [user.combatant_name, item_display])
 		return
 
 	# Actions cost 1 AP (cancels out natural gain for net 0)
@@ -2817,7 +6118,17 @@ func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:
 	if ItemSystem and ItemSystem.use_item(user, item_id, retargeted):
 		user.remove_item(item_id, 1)
 	else:
+		## Tick 183: surface item-use failures to both push_warning
+		## (dev/CI surface) and battle_log_message (player surface).
+		## Pre-fix print() only — player tried Use Item, nothing
+		## happened, no explanation. The most common cause is
+		## ItemSystem.use_item returning false (item not found,
+		## invalid effects) which tick 181's ItemSystem warnings
+		## already surface, but adding it here gives the failure a
+		## battle-log surface too.
 		print("Failed to use item: %s" % item_id)
+		push_warning("[BattleManager] _execute_item: ItemSystem.use_item returned false for '%s' — item not consumed, turn wasted" % item_id)
+		battle_log_message.emit("[color=gray]Failed to use %s.[/color]" % item_id.replace("_", " ").capitalize())
 
 
 ## Victory/defeat conditions
@@ -2826,20 +6137,107 @@ func _check_victory_conditions() -> bool:
 	var enemies_alive = enemy_party.any(func(e): return e.is_alive)
 
 	if not players_alive:
+		# Tick 247/248/254: ratchet "After the First Time" via the
+		# centralized helper. Fires at the wipe trigger (not in
+		# end_battle, which also serves the escape path).
+		if PartyChatSystem:
+			PartyChatSystem.fire_event_flag("event_flag_first_party_wipe")
 		end_battle(false)
 		return true
-	elif not enemies_alive:
+
+	## Tick 472: custom win_condition for the Spotlight Duels'
+	## non-HP minibosses (Cleric survive_turns, Bard status_
+	## threshold). Set by GameLoop.start_solo_battle from the
+	## cutscene step's data. Consulted BEFORE the standard
+	## "all enemies dead" check so a Cleric who accidentally KOs
+	## the survive-target still gets the intended survive-turns
+	## victory (edge case; unlikely with a tuned boss but real
+	## for a very early Cleric build). Falls through to standard
+	## on unset / hp_zero.
+	if not _win_condition.is_empty() and _win_condition.get("type", "hp_zero") != "hp_zero":
+		if _evaluate_custom_win_condition():
+			end_battle(true)
+			return true
+
+	if not enemies_alive:
 		end_battle(true)
 		return true
 
 	return false
 
 
+## Tick 472: dispatch on _win_condition.type. Return true when the
+## custom victory condition is met so the caller triggers end_battle.
+## Types supported today:
+##   - "survive_turns" — victory when current_round >= value AND at
+##     least one player still standing (checked already by the caller)
+##   - "status_threshold" — victory when target enemy has >= value
+##     stacks of `status`. Uses stack via has_status count workaround
+##     since Combatant doesn't track stacks per status; falls back to
+##     "status present" check for boolean statuses.
+##   - "flee_target" — victory when the target enemy leaves via any
+##     path (dead or removed). Deferred stub for future authors.
+## Extensible: new types drop into the match block.
+func _evaluate_custom_win_condition() -> bool:
+	var wc_type: String = str(_win_condition.get("type", ""))
+	match wc_type:
+		"survive_turns":
+			var target_round: int = int(_win_condition.get("value", 0))
+			return current_round >= target_round
+		"status_threshold":
+			var status_name: String = str(_win_condition.get("status", ""))
+			var need: int = int(_win_condition.get("value", 1))
+			if status_name == "":
+				return false
+			## Bard's hostile_courtier duel uses status="swayed"; each
+			## lullaby / discord land on the courtier increments a
+			## `_<status>_stacks` meta counter on the target (wired by
+			## the ability handlers). Check the meta counter first —
+			## it's the authoritative stack count. Fall back to
+			## status_effects list count for statuses that DO stack
+			## via multiple add_status calls (rare) but haven't grown
+			## a meta counter.
+			var meta_key: String = "_" + status_name + "_stacks"
+			for e in enemy_party:
+				if e == null or not is_instance_valid(e) or not e.is_alive:
+					continue
+				if e.has_meta(meta_key):
+					if int(e.get_meta(meta_key, 0)) >= need:
+						return true
+					continue
+				if not e.has_status(status_name):
+					continue
+				var stacks: int = 0
+				if "status_effects" in e and e.status_effects is Array:
+					for s in e.status_effects:
+						if str(s) == status_name:
+							stacks += 1
+				if stacks >= need:
+					return true
+			return false
+		"flee_target":
+			# All target enemies dead OR removed. Delegates to the
+			# standard "enemies_alive" check in the caller.
+			return false
+		_:
+			return false
+
+
 ## Signal handlers
 ## Permanent injury definitions — weighted by stat, scaled by level
+## Tick 317: added max_mp arms so MP-heavy classes (Cleric/Mage/Bard)
+## have a real injury risk profile. Pre-fix INJURY_TYPES had only
+## max_hp/attack/defense/magic/speed — Combatant.apply_permanent_injury
+## supported max_mp (tick 287) and recalculate_stats now persists it
+## (tick 316), but the natural injury roll never produced one because
+## no template existed. Penalties 5/7 ≈ 7-10% of typical caster
+## max_mp (Cleric 70, Mage 80), matching the 8-12% calibration of
+## the max_hp arms vs Fighter's 100 base.
 const INJURY_TYPES = [
 	{"stat": "max_hp", "description": "Fractured ribs", "base_penalty": 8},
 	{"stat": "max_hp", "description": "Internal bleeding", "base_penalty": 12},
+	{"stat": "max_mp", "description": "Mana drain wound", "base_penalty": 5},
+	{"stat": "max_mp", "description": "Spirit fracture", "base_penalty": 7},
 	{"stat": "attack", "description": "Torn muscle", "base_penalty": 2},
 	{"stat": "attack", "description": "Damaged nerve", "base_penalty": 3},
 	{"stat": "defense", "description": "Cracked armor plates", "base_penalty": 2},
@@ -2866,10 +6264,43 @@ func _roll_permanent_injury(combatant: Combatant) -> Dictionary:
 
 
 func _on_combatant_died(combatant: Combatant) -> void:
-	print("%s has been defeated!" % combatant.combatant_name)
+	# deferred: died fires inside take_damage, before the killing blow's damage line prints
+	call_deferred("_print_defeat_line", combatant.combatant_name)
 	# Track party member KOs for permanent injury system
 	if combatant in player_party and combatant not in _ko_this_battle:
 		_ko_this_battle.append(combatant)
+
+
+func _print_defeat_line(name_text: String) -> void:
+	print("%s has been defeated!" % name_text)
+
+
+## Tick 421: enforce the monsters.json `can_cause_permadeath` flag.
+## Pre-fix the flag was authored on permadeath_reaper but no code
+## path read it — players who lost a PC to the reaper revived them
+## normally with Phoenix Down, defeating the design "HIGH RISK"
+## promise. Called from damage paths that know the attacker.
+## Permakilled status is the same marker meta-ability permanent_death
+## uses (tick 354); it persists into the save and blocks revival.
+func _maybe_apply_permadeath_on_kill(attacker: Combatant, target: Combatant) -> void:
+	if attacker == null or target == null or target.is_alive:
+		return
+	if not (target in player_party):
+		return  # only PCs can be permakilled by monster attacks
+	if not attacker.has_method("get_meta"):
+		return
+	var monster_type: String = attacker.get_meta("monster_type", "")
+	if monster_type == "":
+		return
+	if not (EncounterSystem and EncounterSystem.monster_database.has(monster_type)):
+		return
+	var data: Dictionary = EncounterSystem.monster_database[monster_type]
+	if not bool(data.get("can_cause_permadeath", false)):
+		return
+	if not target.has_status("permakilled"):
+		target.add_status("permakilled")
+		battle_log_message.emit("[color=red]☠ %s has been PERMANENTLY ERASED by %s ☠[/color]" % [target.combatant_name, attacker.combatant_name])
+		print("[PERMADEATH] %s permakilled by %s" % [target.combatant_name, attacker.combatant_name])
 
 
 ## Utility functions
@@ -2908,7 +6339,10 @@ func toggle_autobattle(enabled: bool) -> void:
 
 func execute_autobattle_for_current() -> void:
 	"""Execute autobattle for the current selecting combatant (called from UI)"""
-	if current_state != BattleState.PLAYER_SELECTING or not current_combatant:
+	# Tick 231: route state check through the warning helper; current_combatant check stays inline (warning for that would be too noisy if combatant was just freed mid-frame).
+	if not _check_player_selecting_state("execute_autobattle_for_current"):
+		return
+	if not current_combatant:
 		return
 	# Process using AI selection which handles autobattle
 	_process_ai_selection(current_combatant)
@@ -2937,6 +6371,11 @@ func _log_player_action(combatant: Combatant, action: Dictionary) -> void:
 		"target_type": _classify_target(action),
 		"ap_before": combatant.current_ap
 	})
+
+	# Signature-ability dialogue trigger; cooldown handled inside _maybe_fire.
+	var ability_id: String = str(action.get("ability_id", ""))
+	if ability_id != "" and _is_signature_ability(combatant, ability_id):
+		_maybe_fire_party_line(combatant, "used_signature_ability", {"ability_id": ability_id})
 
 
 func _classify_target(action: Dictionary) -> String:
@@ -3216,6 +6655,17 @@ func _convert_autobattle_action(combatant: Combatant, action_data: Dictionary, a
 			if not JobSystem.can_use_ability(combatant, ability_id):
 				print("[AUTOBATTLE] Cannot use ability: %s (MP: %d)" % [ability_id, combatant.current_mp])
 				return {}
+			# Tick 111: if the action explicitly carries a `targets` key
+			# (AutobattleSystem always does for abilities) but the array
+			# is empty, respect that — it means the rule's target_type
+			# couldn't resolve to anyone (e.g. "lowest_hp_ally" when the
+			# party is full HP and the resolver returned []). DON'T fall
+			# back to lowest_hp_enemy: that turns a Cleric's heal rule
+			# into a Cleric attack at the lowest-HP enemy, which is the
+			# opposite of what the player scripted. Return {} so the
+			# autobattle scheduler defers this turn cleanly.
+			if action_data.has("targets") and action_targets.size() == 0:
+				return {}
 			var targets_to_use = action_targets if has_direct_targets else ([resolved_target] if resolved_target else [])
 			return {
 				"type": "ability",
@@ -3231,6 +6681,13 @@ func _convert_autobattle_action(combatant: Combatant, action_data: Dictionary, a
 			if item_id.is_empty():
 				return {}
 			if not combatant.has_item(item_id):
+				return {}
+			# Tick 111: same empty-targets handling as ability — if the
+			# autobattle rule explicitly produced an empty targets list,
+			# fall back to defer rather than re-targeting the item at
+			# lowest_hp_enemy (which turns a Phoenix Down rule into
+			# "throw it at the enemy" when no ally is down).
+			if action_data.has("targets") and action_targets.size() == 0:
 				return {}
 			var targets_to_use = action_targets if has_direct_targets else ([resolved_target] if resolved_target else [])
 			return {
@@ -3406,6 +6863,29 @@ func get_autobattle_achieved() -> bool:
 	return _full_autobattle and _autobattle_player_turns > 0
 
 
+## Bundle the just-finished battle's tactic fingerprints so external systems
+## (EventLog, NPC dialogue context, achievements) can react to HOW the player
+## won, not just THAT they won. These flags reset at start_battle, so the
+## "current/last" snapshot is what callers get between battles.
+##
+## Keys:
+##   pure_autobattle     — every player turn went through the AI selector
+##   autobattle_used     — at least one AI-selected turn occurred (mixed counts)
+##   manual_turns        — count of manually-issued commands
+##   autobattle_turns    — count of AI-selected commands
+##   jailbreak_landed    — a player directive tripped a boss vulnerability
+##   all_out_attack_used — the party fired a pooled group attack
+func get_battle_tactics_snapshot() -> Dictionary:
+	return {
+		"pure_autobattle":     get_autobattle_achieved(),
+		"autobattle_used":     _autobattle_player_turns > 0,
+		"manual_turns":        _manual_player_turns,
+		"autobattle_turns":    _autobattle_player_turns,
+		"jailbreak_landed":    _jailbreak_landed_this_battle,
+		"all_out_attack_used": _all_out_attack_this_battle,
+	}
+
+
 func get_autobattle_exp_multiplier() -> float:
 	"""Get the autobattle EXP multiplier for the current/last battle"""
 	if get_autobattle_achieved():
@@ -3421,3 +6901,1281 @@ func get_autobattle_turns() -> int:
 func get_battle_results() -> Dictionary:
 	"""Get battle results (populated after victory, cleared on next battle start)"""
 	return _battle_results
+
+
+# ── Wave E — BossDialogue glue ───────────────────────────────────────────────
+
+## Detect phase 1→2→3 transitions for ANY boss combatant. Called once at the
+## start of each AI selection turn from `_make_ai_decision`. When a boss has
+## an entry in data/boss_dialogue.json we ask BossDialogue for an intent (the
+## scripted floor is deterministic; the LLM hook is wired but synchronous),
+## stash it on the combatant via set_meta("llm_intent", …), and emit a
+## non-blocking taunt for BattleScene to bubble.
+##
+## STAKES GUARDRAIL: intent_id only biases existing weighted choices in the
+## per-archetype AI ladders — it never invents new abilities or sets story
+## flags. The LLM is never the rules engine here.
+func _update_boss_dialogue_phase(combatant: Combatant) -> void:
+	var boss_dlg = get_node_or_null("/root/BossDialogue")
+	if boss_dlg == null:
+		return
+	# Persona lookup: explicit override first (set by dungeon subclass via
+	# llm_persona_id meta), else monster_type, else combatant_name.
+	var persona_id: String = combatant.get_meta("llm_persona_id", "")
+	if persona_id == "":
+		persona_id = combatant.get_meta("monster_type", "")
+	if persona_id == "":
+		return
+	if not boss_dlg.has_entry(persona_id):
+		return
+
+	# Compute the current phase (mirrors the Masterite thresholds so
+	# bespoke bosses share the 66% / 33% HP gates).
+	var hp_pct: float = combatant.get_hp_percentage()
+	var new_phase: int = 1
+	if hp_pct < 33.0:
+		new_phase = 3
+	elif hp_pct < 66.0:
+		new_phase = 2
+
+	var last_phase: int = combatant.get_meta("boss_dialogue_phase", 0)
+	if new_phase <= last_phase:
+		return  # No transition this turn — nothing to do.
+
+	combatant.set_meta("boss_dialogue_phase", new_phase)
+	var llm_available: bool = false
+	var llm_node = get_node_or_null("/root/LLMService")
+	if llm_node and llm_node.has_method("is_available"):
+		llm_available = llm_node.is_available()
+	var pick: Dictionary = boss_dlg.pick_intent(persona_id, new_phase, null, llm_available)
+	var intent_id: String = pick.get("intent_id", "")
+	if intent_id != "":
+		combatant.set_meta("llm_intent", intent_id)
+	var taunt: String = pick.get("taunt_line", "")
+	# On the very first phase advance also surface a phase-transition line
+	# from data (if authored) — gives bosses a vocal "you bleed me twice"
+	# moment instead of only an intent taunt.
+	var transition_line: String = boss_dlg.get_phase_transition_line(persona_id, new_phase)
+	if transition_line != "" and last_phase > 0:
+		battle_log_message.emit("[color=%s]%s: \"%s\"[/color]" % [AccessibilityPalette.penalty_bbcode(), combatant.combatant_name, transition_line])
+		boss_taunt.emit(combatant, transition_line)
+	if taunt != "":
+		battle_log_message.emit("[color=%s]%s: \"%s\"[/color]" % [AccessibilityPalette.penalty_bbcode(), combatant.combatant_name, taunt])
+		boss_taunt.emit(combatant, taunt)
+
+	# Phase 1: strategic-intent refinement. The deterministic pick above
+	# fires immediately (no UX stall); when GameState.boss_llm_strategy_enabled
+	# is on AND a ready LLM backend is reachable, kick off an async
+	# refinement that may override `llm_intent` for the REMAINDER of this
+	# phase. The first phase-N turn uses the scripted intent; later turns
+	# in the same phase use the LLM-chosen posture. The function is async
+	# and intentionally NOT awaited so the enemy's current decision flow
+	# isn't blocked by a 1–5s HTTP round-trip.
+	if llm_available and _should_use_llm_strategy(persona_id):
+		_refine_boss_intent_async(combatant, persona_id, new_phase, boss_dlg)
+
+
+## Returns true when LLM strategy is opt-in AND the persona is on the
+## showcase list. Currently every W1 boss with both a persona block and
+## scripted_intents (verified by test_boss_persona_coverage_regression).
+## Extending past W1: add the persona block + 3+ scripted_intents to
+## data/boss_dialogue.json, then add the key here.
+func _should_use_llm_strategy(persona_id: String) -> bool:
+	var gs = get_node_or_null("/root/GameState")
+	if gs == null:
+		return false
+	if not ("boss_llm_strategy_enabled" in gs) or not gs.boss_llm_strategy_enabled:
+		return false
+	const ALLOWLIST: Array[String] = [
+		"chancellor_mordaine",  # W1 final boss — first showcase
+		"pyrroth",              # W1 fire dragon
+		"glacius",              # W1 ice dragon
+		"voltharion",           # W1 lightning dragon
+		"umbraxis",             # W1 shadow dragon
+	]
+	return persona_id in ALLOWLIST
+
+
+## Async refinement — builds a BossIntentContext snapshot and awaits
+## BossDialogue.pick_intent_async. On success, overrides combatant's
+## `llm_intent` meta and emits the LLM-authored taunt. On failure the
+## deterministic pick already in place stays — no UI artifact, no NPC
+## confusion. Caller MUST NOT await this; it's intentionally fire-and-
+## forget so the current turn isn't held up.
+##
+## Out-of-order guard: if a phase 1→3 swing fires two transitions back
+## to back and the phase-2 LLM call lands AFTER the phase-3 one, the
+## stale phase-2 result would otherwise overwrite phase 3's intent.
+## We pin the snapshot phase against combatant.boss_dialogue_phase when
+## the refined result lands — anything stale is dropped silently.
+func _refine_boss_intent_async(
+	combatant: Combatant,
+	persona_id: String,
+	phase: int,
+	boss_dlg: Node,
+) -> void:
+	if combatant == null or not is_instance_valid(combatant):
+		return
+	var ctx := _build_boss_intent_context(combatant, persona_id, phase, boss_dlg)
+	if ctx == null:
+		return
+	var refined: Dictionary = await boss_dlg.pick_intent_async(ctx)
+	if not is_instance_valid(combatant):
+		return  # Boss died / battle ended while the LLM was thinking.
+	# Tick 123: also drop the refined taunt if the boss died during
+	# the await. is_instance_valid above only catches the freed-node
+	# case (battle scene tore down); a boss that's dead but not yet
+	# freed is still memory-valid but shouldn't taunt. Symmetric with
+	# tick 121's party-line is_alive guard.
+	if not combatant.is_alive:
+		return
+	# Stale-phase guard: drop the result if the boss has already
+	# advanced past the phase this refinement was launched for.
+	var current_phase: int = int(combatant.get_meta("boss_dialogue_phase", 0))
+	if current_phase > phase:
+		return
+	var refined_id: String = str(refined.get("intent_id", ""))
+	if refined_id.is_empty():
+		return
+	# Compare against the currently-set intent. If they match, no taunt
+	# (the deterministic taunt already surfaced — don't echo).
+	var current_id: String = str(combatant.get_meta("llm_intent", ""))
+	combatant.set_meta("llm_intent", refined_id)
+	if refined_id == current_id:
+		return
+	var refined_taunt: String = str(refined.get("taunt_line", ""))
+	if refined_taunt.is_empty():
+		return
+	battle_log_message.emit("[color=%s]%s: \"%s\"[/color]" % [AccessibilityPalette.penalty_bbcode(), combatant.combatant_name, refined_taunt])
+	boss_taunt.emit(combatant, refined_taunt)
+
+
+## Snapshot the live battle into a BossIntentContext for LLM prompting.
+## Strips Node refs — the LLM input is pure data (names, HP%, IDs).
+func _build_boss_intent_context(
+	combatant: Combatant,
+	persona_id: String,
+	phase: int,
+	boss_dlg: Node,
+) -> BossIntentContext:
+	var ctx := BossIntentContext.new()
+	ctx.boss_id = persona_id
+	ctx.phase = phase
+	ctx.boss_hp_pct = combatant.get_hp_percentage()
+	ctx.boss_mp_pct = float(combatant.current_mp) / float(maxi(combatant.max_mp, 1)) * 100.0
+	ctx.boss_ap = combatant.current_ap
+	ctx.boss_status = combatant.status_effects.duplicate() if combatant.status_effects != null else []
+
+	for member in player_party:
+		if member == null:
+			continue
+		ctx.party.append({
+			"name":    str(member.combatant_name),
+			"job_id":  str(member.job_id) if "job_id" in member else "",
+			"hp_pct":  member.get_hp_percentage(),
+			"mp_pct":  float(member.current_mp) / float(maxi(member.max_mp, 1)) * 100.0,
+			"ap":      member.current_ap,
+			"is_alive": member.is_alive,
+			"status":  member.status_effects.duplicate() if member.status_effects != null else [],
+		})
+
+	# Available intents — pre-filtered by phase, mirrors the deterministic
+	# pick_intent eligibility logic. The validator gates on this list.
+	if boss_dlg != null and boss_dlg.has_method("has_entry") and boss_dlg.has_entry(persona_id):
+		var entry: Dictionary = boss_dlg._data.get(persona_id, {})
+		var scripted: Array = entry.get("scripted_intents", [])
+		for it in scripted:
+			if not (it is Dictionary):
+				continue
+			var cond: Dictionary = it.get("conditions", {})
+			var min_phase: int = int(cond.get("min_phase", 1))
+			if phase >= min_phase:
+				ctx.available_intents.append(str(it.get("id", "")))
+		# Pull persona text from the showcase personas data if present —
+		# falls back to display_name + "boss" if no persona block authored.
+		# Tick 137: route through _resolve_boss_display_name so a dungeon-
+		# subclass-set combatant_name (e.g. "Mordaine the Usurper") wins
+		# over BossDialogue's bare display_name.
+		ctx.persona = str(entry.get("persona", ""))
+		if ctx.persona.is_empty():
+			ctx.persona = "%s, a boss in Cowardly Irregular." % _resolve_boss_display_name(persona_id)
+
+	# Recent actions — feed the player action log so the LLM can see what
+	# the party keeps doing (mirrors the prompt's "Recent exchange" block).
+	for entry_dict in _battle_action_log:
+		if not (entry_dict is Dictionary):
+			continue
+		ctx.push_recent({
+			"kind":       "party_action",
+			"actor":      str(entry_dict.get("character_id", "?")),
+			"ability_id": str(entry_dict.get("ability_id", "")),
+			"target":     str(entry_dict.get("target_type", "")),
+			"damage":     0,
+		})
+
+	# Task 8: lead PC's autobattle rules, sliced for prompt-budget hygiene.
+	if player_party.size() > 0 and player_party[0] != null:
+		var autobattle = get_node_or_null("/root/AutobattleSystem")
+		if autobattle != null:
+			var lead_script: Dictionary = autobattle.get_character_script(_get_character_id(player_party[0]))
+			var rules: Array = lead_script.get("rules", [])
+			ctx.player_lead_pc_rules = rules.slice(0, min(5, rules.size()))
+
+	# Task 8: region's derived counter strategy + top-3 pattern samples.
+	var autogrind = get_node_or_null("/root/AutogrindSystem")
+	if autogrind != null:
+		var region_id: String = autogrind.current_region_id
+		ctx.learned_patterns_counter = autogrind.get_counter_strategy(region_id)
+		var full_patterns: Dictionary = autogrind.get_learned_patterns_for_region(region_id)
+		var sample: Dictionary = {}
+		if full_patterns.has("ability_frequency"):
+			sample["ability_frequency"] = _top_n(full_patterns["ability_frequency"], 3)
+		if full_patterns.has("target_priority"):
+			sample["target_priority"] = _top_n(full_patterns["target_priority"], 3)
+		ctx.learned_patterns_sample = sample
+
+	return ctx
+
+
+## Returns the top-N entries of a numeric-valued Dictionary, highest first.
+func _top_n(source: Dictionary, n: int) -> Dictionary:
+	var pairs: Array = []
+	for k in source.keys():
+		pairs.append([source[k], k])
+	pairs.sort_custom(func(a, b): return a[0] > b[0])
+	var out: Dictionary = {}
+	for i in range(min(n, pairs.size())):
+		out[pairs[i][1]] = pairs[i][0]
+	return out
+
+
+## Probability multiplier ladder. Returns a Dictionary {ability_id_or_role: float}
+## that ladders downstream of the existing weighted match — _ai_caster /
+## _ai_brute / _make_masterite_decision can call this and multiply their
+## existing roll thresholds. Default of 1.0 (no bias) is returned for any
+## intent/archetype combo we haven't explicitly authored, so the bias is
+## strictly additive — the existing ladder remains the source of truth.
+##
+## DESIGN: LLM picks INTENT (a role direction), code chooses the exact
+## ability. We never let the LLM name an ability.
+func _bias_by_intent(intent_id: String, masterite_type: String = "") -> Dictionary:
+	if intent_id == "":
+		return {}
+	# Mordaine bias table — applied to *any* boss that uses these intents
+	# (the masterite_type arg is for masterite-specific scaling, optional).
+	match intent_id:
+		"aggress":
+			return {
+				# Heavy hitters get amplified, defensive picks dampened.
+				"attack_weight": 1.4,
+				"crushing_blow": 1.5,
+				"intimidate": 1.3,
+				"iron_guard": 0.4,
+			}
+		"turtle":
+			return {
+				"iron_guard": 1.6,
+				"endurance_test": 1.4,
+				"royal_guard": 1.4,
+				"attack_weight": 0.6,
+			}
+		"exploit_pattern":
+			# Mordaine reading the player's autobattle: bias toward counter
+			# play. The existing _get_counter_action path already exists in
+			# BattleManager; this just nudges its chance up.
+			return {
+				"counter_action_chance": 1.6,
+				"attack_weight": 0.9,
+			}
+		"fire_resist", "ice_resist", "lightning_resist", "focus_healer", "defense_boost", "rotate_aggro":
+			return {"counter_action_chance": 2.0}
+		_:
+			return {}
+
+
+## Widened counter-strategy intent tags (Task 3 bias table). A boss whose
+## llm_intent is one of these forces the counter path at _make_ai_decision.
+const _COUNTER_INTENT_TAGS := ["fire_resist", "ice_resist", "lightning_resist",
+								"focus_healer", "defense_boost", "rotate_aggro"]
+
+
+## True when intent_id is one of the widened counter-strategy tags.
+func _intent_forces_counter(intent_id: String) -> bool:
+	return intent_id in _COUNTER_INTENT_TAGS
+
+
+## Strategy to feed _get_counter_action: the intent itself when it forces a
+## counter, else the deterministic AutogrindSystem strategy for region_id.
+func _resolve_counter_strategy(region_id: String, intent_id: String) -> String:
+	if _intent_forces_counter(intent_id):
+		return intent_id
+	var autogrind = get_node_or_null("/root/AutogrindSystem")
+	if autogrind == null:
+		return ""
+	return autogrind.get_counter_strategy(region_id)
+
+
+## counter_chance floor for intent-forced turns: 0.3 base x widened bias (e.g. 2.0 -> 0.6), independent of adaptation_level.
+func _intent_forced_counter_chance(ci_bias: Dictionary) -> float:
+	return clampf(0.3 * float(ci_bias.get("counter_action_chance", 1.0)), 0.0, 1.0)
+
+
+## Apply a landed jailbreak consequence to the boss combatant. Connected to
+## BossDialogue.jailbreak_succeeded in `_ready`. STAKES GUARDRAIL: only the
+## allowlisted consequence types are honored — anything else is a no-op.
+func _on_boss_jailbreak_succeeded(boss_id: String, vulnerability_id: String, consequence: Dictionary) -> void:
+	# Find the live boss combatant in enemy_party by persona match.
+	var boss: Combatant = null
+	for e in enemy_party:
+		if not is_instance_valid(e) or not e.is_alive:
+			continue
+		var persona_id: String = e.get_meta("llm_persona_id", "")
+		if persona_id == "":
+			persona_id = e.get_meta("monster_type", "")
+		if persona_id == boss_id:
+			boss = e
+			break
+	if boss == null:
+		print("[BossDialogue] jailbreak landed for %s but no live boss combatant found" % boss_id)
+		return
+
+	var ctype: String = str(consequence.get("type", ""))
+	var params: Dictionary = consequence.get("params", {}) if consequence.has("params") else {}
+	var narration: String = str(params.get("narration", ""))
+
+	match ctype:
+		"skip_turn":
+			# Apply a "cannot_act" status for the configured duration. The
+			# Combatant's existing add_status hooks handle round expiry.
+			var dur: int = int(params.get("duration", 1))
+			boss.add_status("cannot_act", dur)
+			battle_log_message.emit("[color=yellow]%s falters![/color]" % boss.combatant_name)
+		"lose_buff_or_stagger":
+			var buff_id: String = str(params.get("buff_id", ""))
+			var stripped: bool = false
+			if buff_id != "" and "active_buffs" in boss:
+				for i in range(boss.active_buffs.size() - 1, -1, -1):
+					var b: Dictionary = boss.active_buffs[i]
+					if str(b.get("effect", "")) == buff_id:
+						boss.active_buffs.remove_at(i)
+						stripped = true
+						break
+			if not stripped:
+				# Fallback: pop the most recently-added buff (any).
+				if "active_buffs" in boss and boss.active_buffs.size() > 0:
+					boss.active_buffs.pop_back()
+					stripped = true
+			if not stripped:
+				# No buffs to lose — apply a tiny stagger via cannot_act 1.
+				boss.add_status("cannot_act", 1)
+			battle_log_message.emit("[color=yellow]%s is staggered![/color]" % boss.combatant_name)
+		"enrage_briefly":
+			# BACKFIRE — Mordaine seizes the mock. Stack a crit-rate
+			# buff so the next turn hits harder. Wave F B6 fix — guard
+			# the buff so a boss without active_buffs (e.g. a generic
+			# monster used as boss stand-in) doesn't crash on add_buff.
+			var dur: int = int(params.get("duration", 1))
+			if "active_buffs" in boss:
+				boss.add_buff("enraged", "crit_rate", 1.5, dur)
+			else:
+				# Fallback — at least let the player see the narrative beat.
+				boss.add_status("cannot_act", 0)  # no-op status; ensures the path is exercised
+			battle_log_message.emit("[color=%s]%s ENRAGES! ★[/color]" % [AccessibilityPalette.penalty_bbcode(), boss.combatant_name])
+		"taunt_softens":
+			# Pure narration; no mechanical change.
+			pass
+		"none":
+			pass
+		_:
+			# Defensive — BossDialogue should already reject unknown types,
+			# but if one slipped through we no-op.
+			push_warning("[BattleManager] unknown jailbreak consequence type '%s' — ignored" % ctype)
+			return
+
+	if narration != "":
+		battle_log_message.emit("[color=#88ccff]%s[/color]" % narration)
+		boss_taunt.emit(boss, narration)
+
+	# Boss-gloat context: a player directive landed this battle. The end-of-fight
+	# gloat can reference the player having gotten under the boss's skin.
+	_jailbreak_landed_this_battle = true
+
+	boss_jailbreak_landed.emit(boss, vulnerability_id, consequence)
+
+
+## Player-callable entry point invoked from BattleScene when the player
+## selects an "Address the Boss" verb directive. Returns true if a
+## vulnerability landed (the consequence has already been applied via the
+## jailbreak_succeeded signal chain).
+func try_player_jailbreak_directive(directive_text: String) -> bool:
+	var boss_dlg = get_node_or_null("/root/BossDialogue")
+	if boss_dlg == null:
+		return false
+	# Find the first live boss in enemy_party that has a BossDialogue entry.
+	for e in enemy_party:
+		if not is_instance_valid(e) or not e.is_alive:
+			continue
+		var persona_id: String = e.get_meta("llm_persona_id", "")
+		if persona_id == "":
+			persona_id = e.get_meta("monster_type", "")
+		if persona_id != "" and boss_dlg.has_entry(persona_id):
+			return boss_dlg.try_apply_jailbreak(persona_id, directive_text)
+	return false
+
+
+# ── Wave G — Boss gloat lines (victory / defeat) ─────────────────────────────
+
+## Resolve the boss persona id for the gloat. Unlike the jailbreak path (which
+## needs a LIVE boss), the gloat fires at battle end where the boss may already
+## be dead (victory) — so we DON'T filter on is_alive. We look for the enemy
+## flagged as a boss/miniboss (or any enemy carrying an explicit llm_persona_id)
+## that has a data/boss_dialogue.json section. Returns "" if none qualifies —
+## the gloat is then skipped entirely (graceful: ordinary trash mobs stay quiet).
+func _resolve_gloat_boss_persona() -> String:
+	var boss_dlg = get_node_or_null("/root/BossDialogue")
+	if boss_dlg == null:
+		return ""
+	for e in enemy_party:
+		if not is_instance_valid(e):
+			continue
+		var is_boss: bool = false
+		if e.has_meta("is_boss") and e.get_meta("is_boss"):
+			is_boss = true
+		elif e.has_meta("is_miniboss") and e.get_meta("is_miniboss"):
+			is_boss = true
+		var persona_id: String = e.get_meta("llm_persona_id", "")
+		if persona_id == "":
+			persona_id = e.get_meta("monster_type", "")
+		if persona_id == "":
+			continue
+		# An explicit persona handle (set by a dungeon subclass) counts as a boss
+		# even without the is_boss meta; otherwise require the boss/miniboss flag.
+		if not is_boss and not e.has_meta("llm_persona_id"):
+			continue
+		if boss_dlg.has_entry(persona_id):
+			return persona_id
+	return ""
+
+
+## True iff any enemy matching this persona_id had its steal-response consumed this fight (Warden's Key). Consulted by _dispatch_boss_gloat to route the victory line to the differentiated pool. Match by monster_type meta so a bespoke persona override doesn't false-match a different combatant sharing the same llm_persona_id.
+func _resolved_boss_had_key_stolen(persona_id: String) -> bool:
+	if persona_id == "":
+		return false
+	for e in enemy_party:
+		if not is_instance_valid(e):
+			continue
+		if str(e.get_meta("monster_type", "")) != persona_id:
+			continue
+		if e.has_meta("_steal_response_consumed") and bool(e.get_meta("_steal_response_consumed", false)):
+			return true
+	return false
+
+
+## Fire-and-forget gloat dispatcher called from end_battle. Resolves the boss
+## persona, computes the DETERMINISTIC scripted fallback synchronously, and:
+##   - LLM unavailable → emits boss_gloat_line immediately with the fallback.
+##   - LLM available    → kicks off an async coroutine (NOT awaited here, so the
+##                        battle-end flow never blocks) that re-narrates the line
+##                        and emits boss_gloat_line on arrival. The coroutine's
+##                        own fallback is the same scripted pool line, so even an
+##                        LLM failure mid-flight yields a non-empty line.
+## No-op (no signal) when there is no qualifying boss or no scripted line exists
+## for the resolved persona — graceful degradation, never an empty gloat.
+func _dispatch_boss_gloat(victory: bool) -> void:
+	var persona_id: String = _resolve_gloat_boss_persona()
+	if persona_id == "":
+		return
+
+	var boss_dlg = get_node_or_null("/root/BossDialogue")
+	if boss_dlg == null:
+		return
+
+	# victory == party won → boss concedes (victory_lines).
+	# victory == false     → boss wiped the party (defeat_lines).
+	# Special: victory + the boss got its Warden's Key stolen (msg 2478 cowir-story) → route to victory_lines_stolen_key which differentiates the loss beat when the guardian identity is what actually broke. Falls back to standard victory_lines if the pool isn't authored.
+	var fallback: String = ""
+	if victory:
+		if _resolved_boss_had_key_stolen(persona_id) and boss_dlg.has_method("get_victory_line_stolen_key"):
+			fallback = boss_dlg.get_victory_line_stolen_key(persona_id)
+		if fallback == "":
+			fallback = boss_dlg.get_victory_line(persona_id)
+	else:
+		fallback = boss_dlg.get_defeat_line(persona_id)
+
+	# No scripted line authored for this boss yet → stay silent rather than
+	# emit an empty gloat. The data agent fills these pools concurrently.
+	if fallback.strip_edges() == "":
+		return
+
+	var llm_node = get_node_or_null("/root/LLMService")
+	var llm_available: bool = false
+	if llm_node and llm_node.has_method("is_available"):
+		llm_available = llm_node.is_available()
+
+	if not llm_available:
+		# Deterministic path — ship the scripted pool line immediately.
+		boss_gloat_line.emit(fallback, victory)
+		return
+
+	# LLM available — capture the context snapshot NOW (enemy_party is about to
+	# be cleared by _cleanup_battle) and hand off to the async producer. We do
+	# NOT await: end_battle stays synchronous and non-blocking.
+	var boss_name: String = _resolve_boss_display_name(persona_id)
+	var prompt: String = _build_gloat_prompt(persona_id, boss_name, victory)
+	_produce_boss_gloat_async(prompt, fallback, victory)
+
+
+## Async LLM producer. Awaits LLMService.complete with the scripted line as the
+## guaranteed fallback, then emits boss_gloat_line. Detached from end_battle so
+## the main thread is never blocked. If the LLM is cancelled (scene change) or
+## times out, complete() returns the fallback — so the emitted line is ALWAYS
+## non-empty and ALWAYS personality-appropriate.
+func _produce_boss_gloat_async(prompt: String, fallback: String, victory: bool) -> void:
+	var llm_node = get_node_or_null("/root/LLMService")
+	if llm_node == null or not llm_node.has_method("complete"):
+		boss_gloat_line.emit(fallback, victory)
+		return
+	var line: Variant = await llm_node.complete(prompt, fallback)
+	var text: String = str(line).strip_edges()
+	if text == "":
+		text = fallback
+	boss_gloat_line.emit(text, victory)
+
+
+## Build the LLM gloat prompt, enriched with deterministic EventLog context and
+## the how-the-fight-went facts tracked this battle (jailbreak landed?
+## autobattle-only? all-out attack?). The scripted pool line is the fallback so
+## the LLM only ever RE-NARRATES a line that already works — it is never the
+## rules engine and never touches story flags.
+func _build_gloat_prompt(persona_id: String, boss_name: String, victory: bool) -> String:
+	var recent_events: Array = []
+	var gs = get_node_or_null("/root/GameState")
+	if gs and "event_log" in gs and gs.event_log != null:
+		recent_events = gs.event_log.recent(5)
+
+	# Deterministic how-the-fight-went facts.
+	var facts: Array[String] = []
+	if _full_autobattle and _autobattle_player_turns > 0:
+		facts.append("the party never lifted a finger — every move was automated (autobattle)")
+	if _all_out_attack_this_battle:
+		facts.append("the party pooled their power into an all-out group attack")
+	if _jailbreak_landed_this_battle:
+		facts.append("the player got under the boss's skin with a directive that landed")
+
+	var facts_block: String = ""
+	if facts.size() > 0:
+		facts_block = "\nHow the fight went:\n"
+		for fact in facts:
+			facts_block += "  - %s\n" % fact
+
+	var events_block: String = ""
+	if recent_events.size() > 0:
+		events_block = "\nRecent events:\n"
+		var n: int = mini(recent_events.size(), 5)
+		var start: int = recent_events.size() - n
+		for i in range(start, recent_events.size()):
+			var entry: Dictionary = recent_events[i]
+			var summary: String = str(entry.get("summary", ""))
+			if summary.is_empty():
+				continue
+			events_block += "  [%s] %s\n" % [str(entry.get("type", "")), summary]
+
+	var situation: String = ""
+	if victory:
+		situation = (
+			"The PARTY has just DEFEATED this boss. Write what the boss says as it "
+			+ "falls — a final gloat, concession, or dark joke. Meta-aware: it may "
+			+ "remark on the player automating their way to victory."
+		)
+	else:
+		situation = (
+			"The boss has just WIPED the entire party. Write its triumphant gloat "
+			+ "over the fallen heroes — cruel, smug, and meta-aware."
+		)
+
+	return (
+		"You are voicing a boss in a meta-aware JRPG called 'Cowardly Irregular'.\n"
+		+ "%s\n" % situation
+		+ "\n"
+		+ "Boss: %s\n" % boss_name
+		+ facts_block
+		+ events_block
+		+ "\n"
+		+ "Rules:\n"
+		+ "- Stay fully in character as the boss; first person.\n"
+		+ "- ONE short line, maximum 140 characters.\n"
+		+ "- Do NOT include the boss name or a speaker label.\n"
+		+ "- Respond with ONLY the line itself, no quotes, no JSON.\n"
+	)
+
+
+## Tick 137: renamed from _gloat_boss_display_name. Used by the
+## gloat path (line 4299), the intent-picker context (line 4057),
+## and BattleCommandMenu's 'does not react' log line. Single
+## canonical resolver for "the player-facing name of a boss
+## persona". Resolution order:
+##   1. enemy_party combatant_name (e.g. "Mordaine the Usurper")
+##   2. BossDialogue.get_display_name (canonical from JSON)
+##   3. persona_id prettified (graceful fallback)
+## Pure flavour — never affects the deterministic fallback.
+func _resolve_boss_display_name(persona_id: String) -> String:
+	for e in enemy_party:
+		if not is_instance_valid(e):
+			continue
+		var pid: String = e.get_meta("llm_persona_id", "")
+		if pid == "":
+			pid = e.get_meta("monster_type", "")
+		if pid == persona_id and e.combatant_name != "":
+			return e.combatant_name
+	var boss_dlg = get_node_or_null("/root/BossDialogue")
+	if boss_dlg and boss_dlg.has_method("get_display_name"):
+		var dn: String = boss_dlg.get_display_name(persona_id)
+		if dn != "":
+			return dn
+	return persona_id.replace("_", " ").capitalize()
+
+
+# ── Party LLM combat dialogue ────────────────────────────────────────────────
+
+## Per-character cooldown: combatant_name → round_when_last_spoke. Cleared on battle start.
+var _party_line_cooldowns: Dictionary = {}
+const PARTY_LINE_COOLDOWN_ROUNDS: int = 8
+
+## Iconic ability per starter job — used to gate the used_signature_ability trigger.
+const SIGNATURE_ABILITIES: Dictionary = {
+	"fighter": "power_strike",
+	"cleric":  "cure",
+	"mage":    "fire",
+	"rogue":   "backstab",
+	"bard":    "inspiring_melody",
+}
+
+## Damage threshold (% of max HP) above which a hit fires the big_hit_taken trigger.
+const BIG_HIT_HP_PCT_THRESHOLD: float = 0.30
+
+## HP-fraction below which a downward crossing fires the low_hp trigger.
+const LOW_HP_PCT_THRESHOLD: float = 25.0
+
+
+func _is_signature_ability(combatant: Combatant, ability_id: String) -> bool:
+	if combatant == null:
+		return false
+	var job_id: String = _resolve_party_job_id(combatant)
+	if job_id.is_empty():
+		return false
+	return str(SIGNATURE_ABILITIES.get(job_id, "")) == ability_id
+
+
+## Gate-and-fire a single PC dialogue line at a battle event. Async + non-awaited by caller.
+func _maybe_fire_party_line(combatant: Combatant, event_kind: String, event_data: Dictionary) -> void:
+	if combatant == null or not is_instance_valid(combatant):
+		return
+	if not (combatant in player_party):
+		return
+	if not combatant.is_alive:
+		return
+	# Tick 120: do NOT short-circuit on party_llm_dialogue_enabled here.
+	# Pre-fix, this early-return blocked even the scripted trigger_voices
+	# fallback — so when the toggle was off (the default), party
+	# dialogue went completely silent. CLAUDE.md design says scripted
+	# lines play even without LLM. _run_party_line_async now decides
+	# LLM-vs-scripted based on the flag + LLM availability.
+	var name_key: String = str(combatant.combatant_name)
+	var last_round: int = int(_party_line_cooldowns.get(name_key, -PARTY_LINE_COOLDOWN_ROUNDS - 1))
+	if event_kind != "victory" and current_round - last_round < PARTY_LINE_COOLDOWN_ROUNDS:
+		return
+	_party_line_cooldowns[name_key] = current_round
+	_run_party_line_async(combatant, event_kind, event_data)
+
+
+## Pick the freshest alive PC to deliver the post-battle victory line.
+func _dispatch_victory_party_line() -> void:
+	if player_party.is_empty():
+		return
+	var speaker: Combatant = null
+	for m in player_party:
+		if m == null or not is_instance_valid(m):
+			continue
+		if not m.is_alive:
+			continue
+		if speaker == null or m.get_hp_percentage() > speaker.get_hp_percentage():
+			speaker = m
+	if speaker == null:
+		return
+	_maybe_fire_party_line(speaker, "victory", {})
+
+
+## Awaitable producer — kicks off the LLM call OR ships the scripted fallback line.
+func _run_party_line_async(combatant: Combatant, event_kind: String, event_data: Dictionary) -> void:
+	var pp = get_node_or_null("/root/PartyPersonas")
+	var job_id: String = _resolve_party_job_id(combatant)
+	var fallback: String = ""
+	if pp != null and pp.has_method("get_trigger_voice"):
+		fallback = str(pp.get_trigger_voice(job_id, event_kind))
+	if fallback.is_empty():
+		fallback = ""
+
+	# Tick 120: party_llm_dialogue_enabled gates the LLM call but NOT
+	# the scripted fallback. When the toggle is off (default), we
+	# still surface the trigger_voices line so party dialogue isn't
+	# completely silent. Same path the LLM-unavailable case takes
+	# below.
+	var gs = get_node_or_null("/root/GameState")
+	var llm_dialogue_on: bool = gs != null and ("party_llm_dialogue_enabled" in gs) and gs.party_llm_dialogue_enabled
+	if not llm_dialogue_on:
+		if not fallback.is_empty():
+			_emit_party_line(combatant, fallback, event_kind)
+		return
+
+	var llm = get_node_or_null("/root/LLMService")
+	if llm == null or not llm.has_method("is_available") or not llm.is_available():
+		if not fallback.is_empty():
+			_emit_party_line(combatant, fallback, event_kind)
+		return
+
+	var ctx := _build_party_line_context(combatant, event_kind, event_data)
+	if ctx == null:
+		if not fallback.is_empty():
+			_emit_party_line(combatant, fallback, event_kind)
+		return
+	var persona: String = ""
+	var sig: Array = []
+	if pp != null:
+		persona = str(pp.get_persona(job_id))
+		sig = pp.get_signature_phrases(job_id)
+	if persona.is_empty():
+		if not fallback.is_empty():
+			_emit_party_line(combatant, fallback, event_kind)
+		return
+
+	var DialoguePromptsScript = load("res://src/llm/DialoguePrompts.gd")
+	if DialoguePromptsScript == null:
+		if not fallback.is_empty():
+			_emit_party_line(combatant, fallback, event_kind)
+		return
+
+	var prompt: String = DialoguePromptsScript.build_party_line(persona, sig, ctx.to_dict())
+	var raw: Variant = await llm.complete_json(
+		prompt,
+		DialoguePromptsScript.SCHEMA_PARTY_LINE,
+		DialoguePromptsScript.FALLBACK_PARTY_LINE,
+	)
+	if not is_instance_valid(combatant):
+		return
+	# Tick 121: if the PC died during the LLM await, suppress the line.
+	# Pre-fix, a Cleric crit-killed mid-cast could surface "Mira: 'Cure
+	# is just polite negotiation...'" AFTER her HP bar zeroed and the
+	# death animation played. The LLM call is several hundred ms;
+	# plenty of time for an enemy turn to land a fatal hit.
+	# Victory lines are the exception — _dispatch_victory_party_line
+	# picks an alive PC explicitly, so this guard is a no-op there too.
+	if not combatant.is_alive:
+		return
+	var validated: Dictionary = DialoguePromptsScript.validate_party_line(raw)
+	var line: String = str(validated.get("line", ""))
+	if line.is_empty():
+		line = fallback
+	if line.is_empty():
+		return
+	# msg 2105: deterministic trigger_voices lines get voice; LLM lines stay text-only.
+	var vt: String = event_kind if (not fallback.is_empty() and line == fallback) else ""
+	_emit_party_line(combatant, line, vt)
+
+
+func _resolve_party_job_id(combatant: Combatant) -> String:
+	if combatant == null:
+		return ""
+	if combatant.job and combatant.job is Dictionary:
+		var jid: String = str(combatant.job.get("id", ""))
+		if not jid.is_empty():
+			return jid
+	if "job_id" in combatant:
+		return str(combatant.job_id)
+	return ""
+
+
+func _emit_party_line(combatant: Combatant, line: String, voice_trigger: String = "") -> void:
+	if combatant == null or not is_instance_valid(combatant):
+		return
+	battle_log_message.emit("[color=#9bbfff]%s: \"%s\"[/color]" % [combatant.combatant_name, line])
+	# Tick 122: also surface as a speech bubble over the PC's sprite.
+	# Pre-fix, party combat lines only appeared in the battle log
+	# (scrolling text) — players might not realize a specific PC said
+	# it. The quip-bubble path auto-suppresses at high speed / turbo
+	# so it doesn't interrupt autogrind.
+	party_combat_line.emit(combatant, line, voice_trigger)
+
+
+## Build a snapshot for the LLM party-line prompt.
+func _build_party_line_context(combatant: Combatant, event_kind: String, event_data: Dictionary) -> PartyCombatLineContext:
+	var ctx := PartyCombatLineContext.new()
+	ctx.event_kind = event_kind
+	ctx.event_data = event_data.duplicate() if event_data != null else {}
+	ctx.speaker_name = str(combatant.combatant_name)
+	ctx.speaker_job_id = _resolve_party_job_id(combatant)
+	ctx.speaker_personality = str(combatant.get_meta("personality", "")) if combatant.has_meta("personality") else ""
+	ctx.speaker_hp_pct = combatant.get_hp_percentage()
+	ctx.speaker_mp_pct = float(combatant.current_mp) / float(maxi(combatant.max_mp, 1)) * 100.0
+	ctx.speaker_ap = combatant.current_ap
+	ctx.speaker_status = combatant.status_effects.duplicate() if combatant.status_effects != null else []
+
+	for m in player_party:
+		if m == null or not is_instance_valid(m):
+			continue
+		ctx.party.append({
+			"name":     str(m.combatant_name),
+			"job_id":   _resolve_party_job_id(m),
+			"hp_pct":   m.get_hp_percentage(),
+			"is_alive": m.is_alive,
+		})
+
+	for e in enemy_party:
+		if e == null or not is_instance_valid(e):
+			continue
+		ctx.enemies.append({
+			"name":   str(e.combatant_name),
+			"hp_pct": e.get_hp_percentage(),
+		})
+
+	for entry_dict in _battle_action_log:
+		if not (entry_dict is Dictionary):
+			continue
+		ctx.push_recent({
+			"actor":      str(entry_dict.get("character_id", "?")),
+			"ability_id": str(entry_dict.get("ability_id", "")),
+			"target":     str(entry_dict.get("target_type", "")),
+			"damage":     0,
+		})
+
+	return ctx
+
+
+## Subscribed to damage_dealt at start_battle; fires low_hp + big_hit_taken party-line triggers.
+func _on_damage_dealt_for_party_dialogue(target: Combatant, amount: int, is_crit: bool, _element: String, _elemental_mod: float) -> void:
+	if target == null or not is_instance_valid(target):
+		return
+	if not (target in player_party):
+		return
+	if not target.is_alive:
+		return
+	if amount <= 0:
+		return
+	var post_hp_pct: float = target.get_hp_percentage()
+	var pre_hp_pct: float = clampf(float(target.current_hp + amount) / float(maxi(target.max_hp, 1)) * 100.0, 0.0, 100.0)
+	var big: bool = is_crit or amount > int(float(target.max_hp) * BIG_HIT_HP_PCT_THRESHOLD)
+	if big:
+		_maybe_fire_party_line(target, "big_hit_taken", {"damage": amount, "is_crit": is_crit})
+		return
+	if pre_hp_pct >= LOW_HP_PCT_THRESHOLD and post_hp_pct < LOW_HP_PCT_THRESHOLD:
+		_maybe_fire_party_line(target, "low_hp", {"hp_pct": post_hp_pct})
+
+
+## Tick 144: parallel handler for status-tick damage (poison/burn).
+## Same trigger semantics as _on_damage_dealt_for_party_dialogue but
+## is_crit is forced false (DoTs don't crit) and the source string
+## ends up in the context dict for any future per-source dialogue
+## variations. Without this a burning party member's tick that
+## drops them to 24% HP would silently skip the low_hp quip.
+func _on_status_tick_damage_for_party_dialogue(amount: int, source: String, target: Combatant) -> void:
+	if target == null or not is_instance_valid(target):
+		return
+	if not (target in player_party):
+		return
+	if not target.is_alive:
+		return
+	if amount <= 0:
+		return
+	var post_hp_pct: float = target.get_hp_percentage()
+	var pre_hp_pct: float = clampf(float(target.current_hp + amount) / float(maxi(target.max_hp, 1)) * 100.0, 0.0, 100.0)
+	var big: bool = amount > int(float(target.max_hp) * BIG_HIT_HP_PCT_THRESHOLD)
+	if big:
+		_maybe_fire_party_line(target, "big_hit_taken", {"damage": amount, "is_crit": false, "source": source})
+		return
+	if pre_hp_pct >= LOW_HP_PCT_THRESHOLD and post_hp_pct < LOW_HP_PCT_THRESHOLD:
+		_maybe_fire_party_line(target, "low_hp", {"hp_pct": post_hp_pct, "source": source})
+
+
+## Drop routing helpers — equipment IDs go to GameLoop.equipment_pool, not
+## the consumable inventory dict. Pre-fix every monster drop went through
+## add_item even when the ID resolved to equipment.json (e.g. speed_boots).
+
+## Public seam for battle paths that bypass BattleManager (headless autogrind drop routing).
+func route_drop_to_equipment_pool(item_id: String) -> bool:
+	return _route_drop_to_equipment_pool(item_id)
+
+
+func _route_drop_to_equipment_pool(item_id: String) -> bool:
+	## Returns true when the drop was routed as equipment. False means the
+	## caller should fall back to add_item (consumable).
+	var eq = get_node_or_null("/root/EquipmentSystem")
+	if eq == null:
+		return false
+	var pool_key: String = ""
+	if eq.has_method("get_weapon") and not eq.get_weapon(item_id).is_empty():
+		pool_key = "weapons"
+	elif eq.has_method("get_armor") and not eq.get_armor(item_id).is_empty():
+		pool_key = "armors"
+	elif eq.has_method("get_accessory") and not eq.get_accessory(item_id).is_empty():
+		pool_key = "accessories"
+	if pool_key == "":
+		return false
+	var game_loop = get_tree().root.get_node_or_null("GameLoop") if is_inside_tree() else null
+	if game_loop == null or not "equipment_pool" in game_loop:
+		return false
+	if not game_loop.equipment_pool.has(pool_key):
+		game_loop.equipment_pool[pool_key] = []
+	game_loop.equipment_pool[pool_key].append(item_id)
+	return true
+
+
+func _equipment_display_name(item_id: String, fallback: String) -> String:
+	## Pull the display name from equipment.json when items.json doesn't know it.
+	var eq = get_node_or_null("/root/EquipmentSystem")
+	if eq == null:
+		return fallback
+	for getter in ["get_weapon", "get_armor", "get_accessory"]:
+		if eq.has_method(getter):
+			var data: Dictionary = eq.call(getter, item_id)
+			if not data.is_empty():
+				return str(data.get("name", fallback))
+	return fallback
+
+
+## Support-status consumers (barrier/reflect/evasion/invisible/etc.) and
+## monster counter_abilities hook. Reads statuses applied via add_status in
+## _execute_support_ability so the support tree is no longer a silent no-op.
+
+func _target_dodges_physical(attacker: Combatant, target: Combatant) -> bool:
+	## True if a physical strike misses due to invisible (cannot be targeted)
+	## or evasion (chance-based dodge). Both consume one use; invisible falls
+	## off only on a hit attempt (lore: the swing reveals them).
+	if target == null or not is_instance_valid(target):
+		return false
+	if target.has_status("invisible"):
+		target.remove_status("invisible")
+		attack_missed.emit(target)
+		battle_log_message.emit("[color=gray]%s strikes thin air — %s was invisible![/color]" % [attacker.combatant_name, target.combatant_name])
+		return true
+	## Tick 381: shadow_step status grants 100% dodge — same falls-off-
+	## on-hit semantic as invisible. The caster also gets a guaranteed
+	## crit when THEY attack (consumed in _calculate_crit_chance).
+	## Pre-fix the shadow_step ability silently fizzled.
+	if target.has_status("shadow_step"):
+		target.remove_status("shadow_step")
+		attack_missed.emit(target)
+		battle_log_message.emit("[color=gray]%s strikes thin air — %s was in shadow![/color]" % [attacker.combatant_name, target.combatant_name])
+		return true
+	if target.has_status("evasion") and randf() < 0.6:
+		attack_missed.emit(target)
+		battle_log_message.emit("[color=gray]%s evades %s's attack![/color]" % [target.combatant_name, attacker.combatant_name])
+		return true
+	## Tick 422: monsters.json special_behavior.phase_out gates a
+	## chance-based "ceases to exist" miss. null_entity authors this
+	## (phase_out_chance: 0.2) but pre-fix no code read it — players
+	## hit the null_entity with 100% reliability instead of 80%.
+	## Read the monster_database for the target's monster_type.
+	if _monster_phase_out_check(target):
+		attack_missed.emit(target)
+		battle_log_message.emit("[color=cyan]%s phases out — %s's attack passes through nothing![/color]" % [target.combatant_name, attacker.combatant_name])
+		return true
+	## Tick 375: read PassiveSystem's accumulated `evasion` stat_mod.
+	## Pre-fix passive `evasion_up` (data/passives.json: evasion=0.20)
+	## was a silent no-op — StatusMenu rendered the "+20% evasion" line
+	## but the dodge check never read it. Now passive evasion gives a
+	## chance-based miss on every physical strike (separate from the
+	## evasion STATUS effect above, which is the temporary 60% dodge
+	## from abilities like Smoke Bomb). Clamped at 50% so a stacked
+	## passive bundle can't make a target untouchable.
+	var tree: SceneTree = get_tree() if has_method("get_tree") else null
+	var ps: Node = tree.root.get_node_or_null("PassiveSystem") if tree else null
+	if ps != null and ps.has_method("get_passive_mods"):
+		var mods: Dictionary = ps.get_passive_mods(target)
+		var passive_dodge: float = clampf(float(mods.get("evasion", 0.0)), 0.0, 0.50)
+		if passive_dodge > 0.0 and randf() < passive_dodge:
+			attack_missed.emit(target)
+			battle_log_message.emit("[color=gray]%s evades %s's attack![/color]" % [target.combatant_name, attacker.combatant_name])
+			return true
+	## Tick 459: equipment.json special_effects.evasion_bonus —
+	## elven_cloak, thiefs_glove, speed_boots, etc. author this
+	## but pre-tick no code path read the field. The dodge chance
+	## the gear name promised was decoration. Walks all three
+	## equipment slots via the generic helper from tick 457 and
+	## clamps the combined contribution at 50% so a stacked-evade
+	## build can't make the target untouchable. Stacks ADDITIVELY
+	## with the passive_dodge above — they're separate rolls so a
+	## monk with both passive evasion_up and an elven_cloak gets
+	## two independent chances to miss the hit.
+	var equip_dodge: float = clampf(_sum_equipment_special_effect(target, "evasion_bonus"), 0.0, 0.50)
+	if equip_dodge > 0.0 and randf() < equip_dodge:
+		attack_missed.emit(target)
+		battle_log_message.emit("[color=gray]%s evades %s's attack![/color]" % [target.combatant_name, attacker.combatant_name])
+		return true
+	return false
+
+
+## Tick 424: empty_set-style debuff_on_attack. Reads
+## special_behavior.debuff_on_attack + debuff_types from monster
+## data. Pre-fix empty_set (W6 abstract) authored a random-debuff
+## pool but no code path read it — its attacks dealt regular damage
+## instead of the "erases what you have" design. Picks one debuff
+## from the authored debuff_types pool, applies via add_debuff with
+## a -25% stat_modifier and 3-turn duration (matches the existing
+## debuff arms' default shape).
+##
+## Maps each debuff_type string to (stat, label):
+##   attack_down  → ("attack", "Attack Erased")
+##   defense_down → ("defense", "Defense Erased")
+##   magic_down   → ("magic", "Magic Erased")
+##   speed_down   → ("speed", "Speed Erased")
+const _DEBUFF_ON_ATTACK_MAP: Dictionary = {
+	"attack_down":  ["attack",  "Attack Erased"],
+	"defense_down": ["defense", "Defense Erased"],
+	"magic_down":   ["magic",   "Magic Erased"],
+	"speed_down":   ["speed",   "Speed Erased"],
+}
+
+
+func _maybe_apply_debuff_on_attack(attacker: Combatant, target: Combatant) -> void:
+	if attacker == null or target == null or not is_instance_valid(target) or not target.is_alive:
+		return
+	if not attacker.has_method("get_meta"):
+		return
+	var monster_type: String = attacker.get_meta("monster_type", "")
+	if monster_type == "":
+		return
+	if not (EncounterSystem and EncounterSystem.monster_database.has(monster_type)):
+		return
+	var data: Dictionary = EncounterSystem.monster_database[monster_type]
+	var sb: Variant = data.get("special_behavior", {})
+	if not (sb is Dictionary):
+		return
+	if not bool(sb.get("debuff_on_attack", false)):
+		return
+	var pool: Variant = sb.get("debuff_types", [])
+	if not (pool is Array) or pool.size() == 0:
+		return
+	var pick: String = str(pool[randi() % pool.size()])
+	if not _DEBUFF_ON_ATTACK_MAP.has(pick):
+		return  # unknown debuff type — skip silently
+	var entry: Array = _DEBUFF_ON_ATTACK_MAP[pick]
+	var stat: String = entry[0]
+	var label: String = entry[1]
+	# 0.75x for 3 turns — matches the existing debuff arms' defaults.
+	target.add_debuff(label, stat, 0.75, 3)
+	battle_log_message.emit("[color=cyan]%s erases %s's %s![/color]" % [attacker.combatant_name, target.combatant_name, stat.to_upper()])
+
+
+## Tick 423: the_absence-style heal-from-damage. Reads
+## special_behavior.heals_from_damage + heal_percentage from monster
+## data. Pre-fix the_absence (W6 abstract) authored a 30% damage→heal
+## conversion but no code read it — hitting the_absence was just
+## damage, not the design's "you're feeding it". Holy element bypasses
+## per the authored description.
+func _maybe_heal_from_damage(target: Combatant, damage_amount: int, element: String) -> void:
+	if target == null or not is_instance_valid(target) or not target.is_alive:
+		return
+	if damage_amount <= 0:
+		return
+	if not target.has_method("get_meta"):
+		return
+	var monster_type: String = target.get_meta("monster_type", "")
+	if monster_type == "":
+		return
+	if not (EncounterSystem and EncounterSystem.monster_database.has(monster_type)):
+		return
+	var data: Dictionary = EncounterSystem.monster_database[monster_type]
+	var sb: Variant = data.get("special_behavior", {})
+	if not (sb is Dictionary):
+		return
+	if not bool(sb.get("heals_from_damage", false)):
+		return
+	# Holy element bypass per the_absence's authored description.
+	if element == "holy":
+		return
+	var pct: float = clampf(float(sb.get("heal_percentage", 0.3)), 0.0, 1.0)
+	if pct <= 0.0:
+		return
+	var heal_amount: int = int(round(damage_amount * pct))
+	if heal_amount <= 0:
+		return
+	var actual_healed: int = target.heal(heal_amount)
+	if actual_healed > 0:
+		healing_done.emit(target, actual_healed)
+		battle_log_message.emit("[color=cyan]%s absorbs the impact — heals %d HP![/color]" % [target.combatant_name, actual_healed])
+
+
+## Tick 429: learns_from adaptive-resistance. monsters.json authors
+## `learns_from: ["all"]` (all bosses + dragons + Mordaine + reaper)
+## or `["abilities"]` (elite enemies) on 22 monsters as the "this
+## fight learns from your tactics" promise. Pre-fix no code path
+## read it — boss fights were as static as random encounters.
+##
+## Implementation: when a flagged enemy gets hit with an elemental
+## attack, increment a per-element counter on enemy meta. On the
+## third hit with the same element, add it to elemental_resistances
+## so the enemy halves further damage from that element. Threshold
+## of 3 means a 1-2 cast burst still lands full damage; the
+## adaptation only kicks in when the player is over-relying on one
+## element. Caps element_resistances accumulation to one resistance
+## per battle per enemy so even a 10-fireball spam can't make the
+## enemy fully immune.
+const _LEARNS_FROM_THRESHOLD: int = 3
+
+
+func _maybe_apply_elemental_adaptation(target: Combatant, element: String) -> void:
+	if target == null or not is_instance_valid(target) or not target.is_alive:
+		return
+	if element == "" or element == "physical":
+		return
+	if not target.has_method("get_meta"):
+		return
+	var monster_type: String = target.get_meta("monster_type", "")
+	if monster_type == "":
+		return
+	if not (EncounterSystem and EncounterSystem.monster_database.has(monster_type)):
+		return
+	var data: Dictionary = EncounterSystem.monster_database[monster_type]
+	var lf: Variant = data.get("learns_from", [])
+	if not (lf is Array) or (lf as Array).is_empty():
+		return
+	# Bail if not "all" or "abilities".
+	var qualifies: bool = false
+	for tag in lf:
+		var t: String = str(tag)
+		if t == "all" or t == "abilities":
+			qualifies = true
+			break
+	if not qualifies:
+		return
+	# One adaptation per battle per enemy — once it's added a
+	# resistance, don't keep growing the list.
+	if target.get_meta("_learned_adaptation", false):
+		return
+	# Increment per-element counter on meta.
+	var counts: Dictionary = target.get_meta("_learns_element_counts", {})
+	var current: int = int(counts.get(element, 0)) + 1
+	counts[element] = current
+	target.set_meta("_learns_element_counts", counts)
+	## Tick 465: per-monster adaptation_speed override.
+	## monsters.json authors adaptation_speed=2 on adaptive_slime —
+	## faster than the global default 3. Pre-tick the field was
+	## decoration: the slime's "I adapt quickly" gimmick was no
+	## quicker than any other learns_from monster. When unauthored,
+	## fall back to _LEARNS_FROM_THRESHOLD (3) so the bulk of
+	## bosses keep their current pacing.
+	var threshold: int = _LEARNS_FROM_THRESHOLD
+	if data.has("adaptation_speed"):
+		threshold = max(1, int(data.get("adaptation_speed", _LEARNS_FROM_THRESHOLD)))
+	if current >= threshold:
+		target.set_meta("_learned_adaptation", true)
+		if not (element in target.elemental_resistances):
+			target.elemental_resistances.append(element)
+			battle_log_message.emit("[color=cyan]%s adapts — now resistant to %s![/color]" % [target.combatant_name, element])
+
+
+## Tick 427: optimization_itself.counter_repeated_actions. monsters.json
+## authors counter_description: "If the same ability is used twice in
+## a row, Optimization Itself adapts and takes reduced damage from
+## it." Pre-fix the flag was authored but no code read it — repeating
+## an ability did normal damage. Helper checks the target's monster
+## flag + meta-tracked last ability used against it. On match, returns
+## a reduced damage value; always updates the meta so the next call
+## sees the current ability as the "previous". 50% reduction matches
+## typical FF-style adapt mechanics (and is conservatively below 100%
+## so the player still gets some value from repeated casts).
+func _apply_counter_repeated_damage_mod(target: Combatant, ability_id: String, damage: int) -> int:
+	if target == null or not is_instance_valid(target) or ability_id == "":
+		return damage
+	if not target.has_method("get_meta"):
+		return damage
+	var monster_type: String = target.get_meta("monster_type", "")
+	if monster_type == "":
+		return damage
+	if not (EncounterSystem and EncounterSystem.monster_database.has(monster_type)):
+		return damage
+	var data: Dictionary = EncounterSystem.monster_database[monster_type]
+	var sb: Variant = data.get("special_behavior", {})
+	if not (sb is Dictionary):
+		return damage
+	if not bool(sb.get("counter_repeated_actions", false)):
+		return damage
+	var adjusted: int = damage
+	var prior: String = target.get_meta("_last_ability_against", "")
+	if prior == ability_id:
+		# 50% reduction on a repeat. Floor at 1 so the player still
+		# lands a hit (and triggers downstream signals like
+		# damage_dealt) — the design wants reduced, not negated.
+		adjusted = max(1, int(round(damage * 0.5)))
+		battle_log_message.emit("[color=cyan]%s adapts to %s — damage reduced![/color]" % [target.combatant_name, ability_id.capitalize().replace("_", " ")])
+	target.set_meta("_last_ability_against", ability_id)
+	return adjusted
+
+
+## Tick 422: roll the null_entity-style phase_out chance. monsters.json
+## authors special_behavior = {"phase_out": true, "phase_out_chance":
+## 0.2, ...} on null_entity (W6 abstract). The attack/spell misses on
+## a successful phase-out roll — no consumption, just a chance miss.
+## Defensively scoped: only reads the flag from the monster_database
+## (the EncounterSystem-loaded copy of monsters.json) and only if the
+## target is actually a monster with that flag.
+func _monster_phase_out_check(target: Combatant) -> bool:
+	if target == null or not is_instance_valid(target):
+		return false
+	if not target.has_method("get_meta"):
+		return false
+	var monster_type: String = target.get_meta("monster_type", "")
+	if monster_type == "":
+		return false
+	if not (EncounterSystem and EncounterSystem.monster_database.has(monster_type)):
+		return false
+	var data: Dictionary = EncounterSystem.monster_database[monster_type]
+	var sb: Variant = data.get("special_behavior", {})
+	if not (sb is Dictionary):
+		return false
+	if not bool(sb.get("phase_out", false)):
+		return false
+	var chance: float = clampf(float(sb.get("phase_out_chance", 0.2)), 0.0, 1.0)
+	return randf() < chance
+
+
+func _trigger_monster_counter(monster: Combatant, attacker: Combatant) -> void:
+	## Reads counter_abilities from monsters.json and fires a free retaliatory
+	## strike at the attacker. Boss-only field on 13 W1/meta encounters; was
+	## defined but never read until this hook.
+	if monster == null or not is_instance_valid(monster) or not monster.is_alive:
+		return
+	if attacker == null or not is_instance_valid(attacker) or not attacker.is_alive:
+		return
+	if not (monster in enemy_party):
+		return
+	var monster_type: String = monster.get_meta("monster_type", "")
+	if monster_type == "":
+		return
+	if not EncounterSystem or EncounterSystem.monster_database.is_empty():
+		return
+	var entry: Dictionary = EncounterSystem.monster_database.get(monster_type, {})
+	var counters = entry.get("counter_abilities", [])
+	if counters == null or counters.is_empty():
+		return
+	var ability_id: String = str(counters[randi() % counters.size()])
+	if ability_id == "":
+		return
+	# Probabilistic to avoid every hit triggering a full counter chain.
+	if randf() > 0.4:
+		return
+	var ability: Dictionary = JobSystem.get_ability(ability_id) if JobSystem else {}
+	if ability.is_empty():
+		return
+	## Tick 186: prettify raw-id fallback for missing-name. Pre-fix
+	## a Scriptweaver-custom ability without a "name" field would
+	## surface as "monster counters with raw_snake_id!" in the
+	## log. Standard prettifier as fallback.
+	battle_log_message.emit("[color=%s]%s counters with %s![/color]" % [AccessibilityPalette.penalty_bbcode(), monster.combatant_name, ability.get("name", ability_id.replace("_", " ").capitalize())])
+	# Reuse the existing physical/magic ability path; targets = [attacker].
+	# Skipping AP and MP costs — counters are reactive freebies by design.
+	var atype: String = str(ability.get("type", "physical"))
+	match atype:
+		"magic":
+			_execute_magic_ability(monster, ability, [attacker])
+		_:
+			_execute_physical_ability(monster, ability, [attacker])

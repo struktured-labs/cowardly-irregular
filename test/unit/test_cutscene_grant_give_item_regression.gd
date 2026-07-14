@@ -56,17 +56,15 @@ func test_grant_item_handler_exists_with_popup_wiring() -> void:
 
 
 func test_grant_item_actually_adds_to_party_leader() -> void:
-	if not GameState:
-		pending("GameState autoload missing")
-		return
-	# Need a GameLoop autoload for the inventory routing to land.
-	var game_loop = get_tree().root.get_node_or_null("GameLoop")
-	if game_loop == null or not "party" in game_loop or game_loop.party.is_empty():
-		pending("GameLoop with non-empty party not available — skipping behavioral test")
-		return
+	# Tick 258: previously skipped via pending() because no GameLoop was
+	# instantiated in headless GUT. The director only needs a node at
+	# /root/GameLoop exposing a `party` Array[Combatant] — we build a
+	# minimal stub instead of pulling in the whole scene.
+	var fixture: Dictionary = _make_game_loop_stub_with_leader()
+	var stub: Node = fixture["stub"]
+	var leader = fixture["leader"]
 
-	var leader = game_loop.party[0]
-	var prev_quantity = leader.get_item_count("phoenix_down") if leader.has_method("get_item_count") else 0
+	var prev_quantity: int = leader.get_item_count("phoenix_down")
 
 	# Drive _step_grant_item via direct instance call (skipping the cutscene
 	# UI/timing entirely).
@@ -82,14 +80,52 @@ func test_grant_item_actually_adds_to_party_leader() -> void:
 		"quantity": 2,
 	})
 
-	var new_quantity = leader.get_item_count("phoenix_down") if leader.has_method("get_item_count") else -1
+	var new_quantity: int = leader.get_item_count("phoenix_down")
 	assert_eq(new_quantity, prev_quantity + 2,
 		"grant_item must add quantity to party leader inventory (was %d, now %d, expected delta=2)" % [
 			prev_quantity, new_quantity])
 
-	# Cleanup
-	if leader.has_method("remove_item"):
-		leader.remove_item("phoenix_down", 2)
+	# Cleanup the fixture (otherwise /root/GameLoop survives to the next test
+	# and shadows the real autoload if a later test boots the full scene).
+	_teardown_game_loop_stub(stub)
+
+
+# ── Test fixture: minimal /root/GameLoop stub with a single Combatant ─
+
+# Builds the smallest node graph CutsceneDirector requires for inventory
+# routing: a Node at /root/GameLoop whose `party` Array[Combatant]
+# contains one freshly-constructed Combatant. Returns the stub + leader
+# so callers can teardown + read inventory.
+func _make_game_loop_stub_with_leader() -> Dictionary:
+	# Guard: refuse to overwrite a real GameLoop if one is already in
+	# the tree (e.g. someone boots the full scene before running tests).
+	var existing := get_tree().root.get_node_or_null("GameLoop")
+	if existing != null:
+		# Real GameLoop present — use it iff it has a party.
+		if "party" in existing and not existing.party.is_empty():
+			return {"stub": null, "leader": existing.party[0]}
+		# Real GameLoop with empty party — we can't safely tack a stub
+		# on top, so reuse it with an injected leader and clean up after.
+		var leader_real: Combatant = Combatant.new()
+		leader_real.combatant_name = "Test Leader"
+		existing.party.append(leader_real)
+		return {"stub": null, "leader": leader_real, "_appended_to": existing}
+	# No real GameLoop — build a stub from the pre-compiled fixture
+	# script (inline-script + reload doesn't give a freshly-typed property
+	# on the live instance, so we use a file-backed GDScript).
+	var stub_script: GDScript = load("res://test/unit/_test_game_loop_stub.gd")
+	var stub: Node = stub_script.new()
+	stub.name = "GameLoop"
+	get_tree().root.add_child(stub)
+	var leader: Combatant = Combatant.new()
+	leader.combatant_name = "Test Leader"
+	stub.party.append(leader)
+	return {"stub": stub, "leader": leader}
+
+
+func _teardown_game_loop_stub(stub: Node) -> void:
+	if stub != null and is_instance_valid(stub):
+		stub.queue_free()
 
 
 func test_give_item_handler_silent_no_popup() -> void:

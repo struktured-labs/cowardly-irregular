@@ -15,7 +15,6 @@ const BattleEnemySpawnerClass = preload("res://src/battle/BattleEnemySpawner.gd"
 const BattleUIManagerClass = preload("res://src/battle/BattleUIManager.gd")
 const BattleCommandMenuClass = preload("res://src/battle/BattleCommandMenu.gd")
 const BattleResultsDisplayClass = preload("res://src/battle/BattleResultsDisplay.gd")
-const BattleBDFFHDHudStripClass = preload("res://src/ui/autogrind/BattleBDFFHDHudStrip.gd")
 
 ## Base display height for party sprites. Aseprite frames are ground truth —
 ## we don't compensate for non-uniform character fill within the artist's
@@ -32,7 +31,9 @@ const PARTY_SPRITE_HEIGHT: float = 210.0
 ## 1.5 picked as the visible-but-not-too-big sweet spot after fighter override
 ## was removed.
 const SPRITE_SCALE_BUMP: float = 1.5
-const JOB_SCALE_OVERRIDES: Dictionary = {}
+const JOB_SCALE_OVERRIDES: Dictionary = {
+	"fighter": 1.4,
+}
 
 ## Bump applied ONLY to artist-style small-frame enemies (<=128px) so they
 ## don't read as half the size of the proc-gen 256x256 monsters they sit
@@ -59,9 +60,19 @@ const ENEMY_SMALL_FRAME_THRESHOLD: int = 128
 var active_win98_menu: Win98MenuClass = null
 var use_win98_menus: bool = true  # Toggle for Win98 style menus
 
-## BDFFHD Bottom HUD Strip — replaces the legacy per-character status panel.
-## The scene node is registered in BattleScene.tscn; we grab it via @onready.
-@onready var _hud_strip: BattleBDFFHDHudStripClass = $UI/BottomHUDStrip
+## Watchdog for the "menu never spawned" soft-lock class (msg 2372).
+const MENU_WATCHDOG_MS: int = 2500
+const MENU_WATCHDOG_MAX_RETRIES: int = 3
+var _menu_wd_started_ms: int = 0
+var _menu_wd_retries: int = 0
+
+## Party status UI
+@onready var char1_name: Label = $UI/PartyStatusPanel/VBoxContainer/Character1/Name
+@onready var char1_hp: ProgressBar = $UI/PartyStatusPanel/VBoxContainer/Character1/HP
+@onready var char1_hp_label: Label = $UI/PartyStatusPanel/VBoxContainer/Character1/HP/HPLabel
+@onready var char1_mp: ProgressBar = $UI/PartyStatusPanel/VBoxContainer/Character1/MP
+@onready var char1_mp_label: Label = $UI/PartyStatusPanel/VBoxContainer/Character1/MP/MPLabel
+@onready var char1_ap: Label = $UI/PartyStatusPanel/VBoxContainer/Character1/AP
 
 ## Sprite containers
 @onready var enemy_sprites: Node2D = $BattleField/EnemySprites
@@ -123,8 +134,8 @@ var autogrind_enemy_data: Array = []  # When set, spawn pre-configured enemies f
 ## Battle speed settings
 ## Battle speed recalibrated: old 0.5x is now labeled "1x" (the comfortable default)
 const BATTLE_SPEEDS: Array[float] = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
-const BATTLE_SPEED_LABELS: Array[String] = ["0.5x", "1x", "2x", "4x", "8x", "16x", "32x"]
-static var _battle_speed_index: int = 2  # Persists across battles; default is 1x (BATTLE_SPEEDS[2]). Per user feedback 2026-06-04: new-game default must be 1.0x, was incorrectly 1 (= 0.5x).
+const BATTLE_SPEED_LABELS: Array[String] = ["1x", "2x", "4x", "8x", "16x", "32x", "64x"]
+static var _battle_speed_index: int = 0  # persists across battles; index 0 = label "1x" (engine 0.25) — struktured 2026-07-11: the old 0.5x pacing IS the correct default
 var _speed_indicator: RichTextLabel = null
 var _battle_counter_label: RichTextLabel = null
 
@@ -166,7 +177,16 @@ var _battle_dialogue: BattleDialogueClass = null
 var _boss_dialogue_data: Dictionary = {}  # Stores dialogue for current boss
 var _waiting_for_dialogue: bool = false  # Pauses battle during dialogue
 var _base_music_track: String = "battle"  # "battle" or "boss"
+var _masterite_phase2_swapped: bool = false  # One-shot: latch when phase2 music kicks in
 const DANGER_HP_THRESHOLD: float = 0.25  # Switch to danger music below 25% HP
+
+## Tick 428: per-battle latches so the boss `low_hp` and `defeat`
+## dialogue lines fire ONCE per battle. Pre-fix monsters.json
+## authored intro/low_hp/defeat triples on cave_rat_king, the 4
+## dragons, optimization_itself, etc. but only `intro` was wired —
+## the other two never spoke regardless of the fight state.
+var _boss_low_hp_spoken: bool = false
+var _boss_defeat_spoken: bool = false
 
 ## Autobattle state
 var _all_autobattle_enabled: bool = false  # True when all players are on autobattle
@@ -196,8 +216,13 @@ static var _hints_shown: Dictionary = {}  # {"hint_id": true}  # Static: persist
 ## Status effect icon containers (combatant -> HBoxContainer of icons)
 var _status_icon_containers: Dictionary = {}  # {Combatant: HBoxContainer}
 
-## Buff/debuff visual overlay nodes (combatant -> {glow: ColorRect, particles: Array})
+## Buff/debuff visual overlay nodes (combatant -> {glow: ColorRect, particles: Array, sigil: Sprite2D})
 var _buff_visual_nodes: Dictionary = {}  # {Combatant: Dictionary}
+
+## Buff class_tag values that promote the visual to threat-class read: amber-red glow overrides cyan-green + sigil badge shows above sprite + particles hide. Extend as story lane authors more reprisal-family abilities. cowir-sprites msg 2462: string not bool so future abilities (Reflect, Truth Refuses You, etc.) coalesce under one tag without redecoration.
+const THREAT_CLASS_BUFFS: Dictionary = {"reprisal": true}
+const THREAT_GLOW_COLOR: Color = Color(1.0, 0.5, 0.15, 1.0)
+const THREAT_SIGIL_OFFSET: Vector2 = Vector2(0, -40)
 
 ## Enemy floating HP bars (enemy Combatant -> {bar_bg: ColorRect, bar_fill: ColorRect})
 var _enemy_hp_bars: Dictionary = {}  # {Combatant: Dictionary}
@@ -231,7 +256,15 @@ func _ready() -> void:
 	_command_menu = BattleCommandMenuClass.new(self)
 	_results_display = BattleResultsDisplayClass.new(self)
 
-	# Reset any camera zoom from exploration scenes
+	# own camera or the viewport keeps exploration's (player-world position)
+	var _battle_cam := Camera2D.new()
+	_battle_cam.name = "BattleCamera"
+	_battle_cam.position = Vector2.ZERO
+	# FIXED_TOP_LEFT at (0,0) = identity transform; DRAG_CENTER shifts everything by half the viewport
+	_battle_cam.anchor_mode = Camera2D.ANCHOR_MODE_FIXED_TOP_LEFT
+	_battle_cam.zoom = Vector2(1.0, 1.0)
+	add_child(_battle_cam)
+	_battle_cam.make_current()
 	var viewport = get_viewport()
 	if viewport:
 		var current_camera = viewport.get_camera_2d()
@@ -244,11 +277,26 @@ func _ready() -> void:
 	# Apply retro font styling
 	RetroFontClass.configure_battle_log(battle_log)
 
-	# Legacy PartyStatusPanel is hidden in the tscn (replaced by BottomHUDStrip).
-	# Kept here as a guard so nothing silently crashes if the node still exists.
-	var party_panel = get_node_or_null("UI/PartyStatusPanel")
+	# Add padding to PartyStatusPanel so labels don't hug the panel
+	# borders. PanelContainer uses its stylebox content_margin_* for
+	# inner padding; the default theme has no left/top margin which
+	# made character names touch the edges.
+	var party_panel = $UI/PartyStatusPanel
 	if party_panel:
-		party_panel.visible = false
+		var party_style = StyleBoxFlat.new()
+		party_style.bg_color = Color(0.08, 0.08, 0.12, 0.85)
+		party_style.border_color = Color(0.35, 0.35, 0.5, 0.7)
+		party_style.border_width_left = 1
+		party_style.border_width_top = 1
+		party_style.border_width_right = 1
+		party_style.border_width_bottom = 1
+		party_style.corner_radius_top_left = 4
+		party_style.corner_radius_bottom_left = 4
+		party_style.content_margin_left = 10
+		party_style.content_margin_right = 8
+		party_style.content_margin_top = 8
+		party_style.content_margin_bottom = 8
+		party_panel.add_theme_stylebox_override("panel", party_style)
 
 	# Permanent input-hint bar at the bottom of the battle UI. Tutorial
 	# hints fire once and disappear, leaving players who missed them
@@ -266,16 +314,48 @@ func _ready() -> void:
 	BattleManager.execution_phase_started.connect(_on_execution_phase_started)
 	BattleManager.action_executing.connect(_on_action_executing)
 	BattleManager.action_executed.connect(_on_action_executed)
+	# Item 19: user report "bard was briefly stuck for a turn next to
+	# the monsters on the left he presumably recently attacked" —
+	# stray displaced sprite from an interrupted return-home tween.
+	# `_snap_party_sprites_home` existed but only fired after group
+	# attacks. Wire it to round_started too as a universal safety net
+	# so any interrupted tween gets caught at the top of every round.
+	BattleManager.round_started.connect(_on_round_started_snap_home)
+	BattleManager.round_started.connect(_refresh_all_status_icons)  # tick duration/doom counters down visibly
+	BattleManager.round_started.connect(_on_round_started_corruption_glitch)  # save-corruption visual_glitch stutter
 	BattleManager.round_ended.connect(_on_round_ended)
 	BattleManager.damage_dealt.connect(_on_damage_dealt)
 	BattleManager.attack_missed.connect(_on_attack_missed)
 	BattleManager.healing_done.connect(_on_healing_done)
+	if BattleManager.has_signal("trust_interrupt_window_opened"):
+		BattleManager.trust_interrupt_window_opened.connect(_on_trust_interrupt_window_opened)
+	if BattleManager.has_signal("trust_interrupt_window_closed"):
+		BattleManager.trust_interrupt_window_closed.connect(_on_trust_interrupt_window_closed)
 	BattleManager.battle_log_message.connect(_on_battle_log_message)
 	BattleManager.monster_summoned.connect(_on_monster_summoned)
+	## Tick 409: Scriptweaver's create_autobattle_script meta-ability
+	## surfaces the autobattle editor for the caster. Wired via
+	## has_signal guard for partial-autoload boot scenarios.
+	if BattleManager.has_signal("meta_autobattle_editor_requested"):
+		BattleManager.meta_autobattle_editor_requested.connect(_on_meta_autobattle_editor_requested)
 	BattleManager.one_shot_achieved.connect(_on_one_shot_achieved)
 	BattleManager.autobattle_victory.connect(_on_autobattle_victory)
 	BattleManager.group_attack_executing.connect(_on_group_attack_executing)
 	BattleManager.advance_trash_talk.connect(_on_advance_trash_talk)
+	# Tick 122: party combat dialogue (turn_start/low_hp/big_hit_taken/
+	# used_signature_ability/victory) — surface as speech bubbles too,
+	# not just as battle-log text. Uses has_signal guard for safety
+	# during partial autoload boot scenarios.
+	if BattleManager.has_signal("party_combat_line"):
+		BattleManager.party_combat_line.connect(_on_party_combat_line)
+	# Wave E — Boss dialogue / jailbreak signals.
+	if BattleManager.has_signal("boss_taunt"):
+		BattleManager.boss_taunt.connect(_on_boss_taunt)
+	if BattleManager.has_signal("boss_jailbreak_landed"):
+		BattleManager.boss_jailbreak_landed.connect(_on_boss_jailbreak_landed)
+	# Wave G — end-of-fight boss gloat line (victory / defeat).
+	if BattleManager.has_signal("boss_gloat_line"):
+		BattleManager.boss_gloat_line.connect(_on_boss_gloat_line)
 
 	# Connect button signals (for legacy mode)
 	btn_attack.pressed.connect(_on_attack_pressed)
@@ -328,6 +408,12 @@ func _exit_tree() -> void:
 		BattleManager.action_executed.disconnect(_on_action_executed)
 	if BattleManager.round_ended.is_connected(_on_round_ended):
 		BattleManager.round_ended.disconnect(_on_round_ended)
+	if BattleManager.round_started.is_connected(_on_round_started_snap_home):
+		BattleManager.round_started.disconnect(_on_round_started_snap_home)
+	if BattleManager.round_started.is_connected(_refresh_all_status_icons):
+		BattleManager.round_started.disconnect(_refresh_all_status_icons)
+	if BattleManager.round_started.is_connected(_on_round_started_corruption_glitch):
+		BattleManager.round_started.disconnect(_on_round_started_corruption_glitch)
 	if BattleManager.damage_dealt.is_connected(_on_damage_dealt):
 		BattleManager.damage_dealt.disconnect(_on_damage_dealt)
 	if BattleManager.attack_missed.is_connected(_on_attack_missed):
@@ -346,6 +432,10 @@ func _exit_tree() -> void:
 		BattleManager.group_attack_executing.disconnect(_on_group_attack_executing)
 	if BattleManager.advance_trash_talk.is_connected(_on_advance_trash_talk):
 		BattleManager.advance_trash_talk.disconnect(_on_advance_trash_talk)
+	if BattleManager.has_signal("party_combat_line") and BattleManager.party_combat_line.is_connected(_on_party_combat_line):
+		BattleManager.party_combat_line.disconnect(_on_party_combat_line)
+	if BattleManager.has_signal("boss_gloat_line") and BattleManager.boss_gloat_line.is_connected(_on_boss_gloat_line):
+		BattleManager.boss_gloat_line.disconnect(_on_boss_gloat_line)
 
 	# Reset engine time scale in case battle speed was altered
 	Engine.time_scale = 1.0
@@ -387,6 +477,7 @@ func _create_battle_background() -> void:
 func set_command_menu_visible(visible: bool) -> void:
 	"""Public method to show/hide the command menu (called by GameLoop for autobattle editor)"""
 	if active_win98_menu and is_instance_valid(active_win98_menu):
+		print("[MENU-HIDE] t=%dms visible=%s (called from set_command_menu_visible)" % [Time.get_ticks_msec(), visible])
 		active_win98_menu.visible = visible
 		# Restore focus when making visible again
 		if visible:
@@ -429,7 +520,7 @@ func _create_speed_indicator() -> void:
 	_speed_indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	# Style it
-	_speed_indicator.add_theme_font_size_override("normal_font_size", 16)
+	_speed_indicator.add_theme_font_size_override("normal_font_size", TextScale.scaled(16))
 
 	panel.add_child(_speed_indicator)
 
@@ -440,7 +531,7 @@ func _create_speed_indicator() -> void:
 	_battle_counter_label.fit_content = true
 	_battle_counter_label.scroll_active = false
 	_battle_counter_label.custom_minimum_size = Vector2(120, 24)
-	_battle_counter_label.add_theme_font_size_override("normal_font_size", 14)
+	_battle_counter_label.add_theme_font_size_override("normal_font_size", TextScale.scaled(14))
 	_battle_counter_label.position = Vector2(8, 34)
 	_battle_counter_label.visible = false
 	$UI.add_child(_battle_counter_label)
@@ -457,19 +548,19 @@ func _update_speed_indicator() -> void:
 	var text = ""
 
 	match _battle_speed_index:
-		0:  # 0.5x - slow (purple)
-			text = "[color=#8866aa]▸[/color] [color=#aa88cc]%s[/color] [color=#664488]◂[/color]" % speed_label
-		1:  # 1x - normal (white/cyan) — the new default
+		0:  # 1x - normal (white/cyan) — the default
 			text = "[color=#88cccc]▸[/color] [color=#ffffff]%s[/color] [color=#66aaaa]◂[/color]" % speed_label
-		2:  # 2x - fast (yellow)
+		1:  # 2x - brisk (green)
+			text = "[color=#66cc88]▸▸[/color] [color=#88ffaa]%s[/color] [color=#44aa66]◂◂[/color]" % speed_label
+		2:  # 4x - fast (yellow)
 			text = "[color=#ccaa44]▸▸[/color] [color=#ffcc00]%s[/color] [color=#aa8822]◂◂[/color]" % speed_label
-		3:  # 4x - turbo (orange)
+		3:  # 8x - turbo (orange)
 			text = "[color=#cc6622]▸▸▸[/color] [color=#ff6600]%s[/color] [color=#aa4400]◂◂◂[/color]" % speed_label
-		4:  # 8x - extreme (red)
+		4:  # 16x - extreme (red)
 			text = "[color=#cc2222]▸▸▸▸[/color] [color=#ff3300]%s[/color] [color=#aa1100]◂◂◂◂[/color]" % speed_label
-		5:  # 16x - very extreme (magenta)
+		5:  # 32x - very extreme (magenta)
 			text = "[color=#cc22cc]▸▸▸▸▸[/color] [color=#ff00ff]%s[/color] [color=#aa00aa]◂◂◂◂◂[/color]" % speed_label
-		6:  # 32x - maximum (bright magenta)
+		6:  # 64x - maximum (bright magenta)
 			text = "[color=#ff22ff]▸▸▸▸▸▸[/color] [color=#ff44ff]%s[/color] [color=#cc00cc]◂◂◂◂◂◂[/color]" % speed_label
 
 	if turbo_mode:
@@ -479,11 +570,11 @@ func _update_speed_indicator() -> void:
 
 	if turbo_mode:
 		if _speed_indicator:
-			_speed_indicator.add_theme_font_size_override("normal_font_size", 22)
+			_speed_indicator.add_theme_font_size_override("normal_font_size", TextScale.scaled(22))
 			_speed_indicator.custom_minimum_size = Vector2(160, 32)
 	else:
 		if _speed_indicator:
-			_speed_indicator.add_theme_font_size_override("normal_font_size", 16)
+			_speed_indicator.add_theme_font_size_override("normal_font_size", TextScale.scaled(16))
 			_speed_indicator.custom_minimum_size = Vector2(80, 24)
 
 
@@ -511,7 +602,17 @@ func _show_boss_intro_dialogue() -> void:
 	"""Show boss intro dialogue if available"""
 	if _boss_dialogue_data.has("intro") and _boss_dialogue_data["intro"].size() > 0:
 		_waiting_for_dialogue = true
-		_battle_dialogue.show_boss_intro("Boss", _boss_dialogue_data["intro"])
+		_battle_dialogue.show_boss_intro(_get_boss_intro_speaker(), _boss_dialogue_data["intro"])
+
+
+func _get_boss_intro_speaker() -> String:
+	# Prefer the actual boss combatant name over the generic "Boss" placeholder.
+	for enemy in test_enemies:
+		if enemy and is_instance_valid(enemy) and enemy.has_meta("is_boss"):
+			return enemy.combatant_name
+	if test_enemies.size() > 0 and is_instance_valid(test_enemies[0]):
+		return test_enemies[0].combatant_name
+	return "Boss"
 
 
 func _start_battle_after_dialogue() -> void:
@@ -543,7 +644,7 @@ func _animate_speed_change() -> void:
 	# Ensure full opacity when changed
 	panel.modulate.a = 1.0
 	# Auto-fade at normal speed (1x) after 3 seconds
-	if _battle_speed_index == 2:  # 1x = normal
+	if _battle_speed_index == 0:  # label "1x" = normal, matches the indicator's per-index colors
 		var fade_tween = create_tween()
 		fade_tween.tween_property(panel, "modulate:a", 0.3, 0.5).set_delay(3.0)
 	else:
@@ -586,6 +687,13 @@ func _start_test_battle() -> void:
 			member.status_added.connect(_on_status_added.bind(member))
 		if not member.status_removed.is_connected(_on_status_removed):
 			member.status_removed.connect(_on_status_removed.bind(member))
+		## Tick 143: spawn damage/heal popups on status-effect ticks
+		## (poison/burn/regen). Without this the HP bar dropped but no
+		## floating number appeared, so status ticks felt invisible.
+		if not member.status_tick_damage.is_connected(_on_status_tick_damage):
+			member.status_tick_damage.connect(_on_status_tick_damage.bind(member))
+		if not member.status_tick_heal.is_connected(_on_status_tick_heal):
+			member.status_tick_heal.connect(_on_status_tick_heal.bind(member))
 
 	# Create sprites
 	_create_battle_sprites()
@@ -820,7 +928,16 @@ func _create_battle_sprites() -> void:
 		sprite.position = base_pos
 		_party_base_positions.append(base_pos)
 
-		sprite.flip_h = true  # Flip to face left
+		# Procedural sprites are drawn facing right and need flip_h to face the
+		# enemy line; artist sheets are already authored facing left and the
+		# flip rotates them BACK to wrong-way. Detect via the same large-frame
+		# heuristic used for scale (>128 px frame height = artist sheet).
+		var _is_artist_sheet := false
+		if sprite.sprite_frames and sprite.sprite_frames.has_animation(&"idle"):
+			if sprite.sprite_frames.get_frame_count(&"idle") > 0:
+				var _ft = sprite.sprite_frames.get_frame_texture(&"idle", 0)
+				_is_artist_sheet = _ft != null and _ft.get_height() > 128
+		sprite.flip_h = not _is_artist_sheet
 		sprite.play("idle")
 		party_sprites.add_child(sprite)
 		party_sprite_nodes.append(sprite)
@@ -853,11 +970,15 @@ func _create_battle_sprites() -> void:
 		# Per-frame-size bump: artist drops at <=128px get ENEMY_SCALE_BUMP so
 		# they don't read as tiny next to proc-gen 256-frame monsters.
 		var size_bump = 1.0
+		var _is_artist_monster := false
 		if sprite.sprite_frames and sprite.sprite_frames.has_animation(&"idle"):
 			if sprite.sprite_frames.get_frame_count(&"idle") > 0:
 				var _enemy_ftex = sprite.sprite_frames.get_frame_texture(&"idle", 0)
 				if _enemy_ftex and _enemy_ftex.get_height() <= ENEMY_SMALL_FRAME_THRESHOLD:
 					size_bump = ENEMY_SCALE_BUMP
+					_is_artist_monster = true
+		# Artist monsters (slime/bat/goblin) are authored facing LEFT; flip so they face the party on the right. Procedurals already face right.
+		sprite.flip_h = _is_artist_monster
 		var base_enemy_pos = enemy_positions[i].global_position if i < enemy_positions.size() else Vector2(200 + i * 100, 300)
 		base_enemy_pos.y += enemy_y_stagger
 		sprite.position = base_enemy_pos
@@ -1011,13 +1132,13 @@ func _update_enemy_hp_bars() -> void:
 			continue
 		var ratio = float(enemy.current_hp) / float(max(1, enemy.max_hp))
 		bar_fill.size.x = 40.0 * ratio
-		# Color: green > 50%, yellow 25-50%, red < 25%
+		# Tick 230: floating enemy HP bar via AccessibilityPalette — color-blind mode swaps green/red to cyan/magenta, matching the SaveScreen + StatusMenu HP bar palette.
 		if ratio > 0.5:
-			bar_fill.color = Color(0.3, 0.8, 0.3)
+			bar_fill.color = AccessibilityPalette.hp_high()
 		elif ratio > 0.25:
-			bar_fill.color = Color(0.9, 0.8, 0.2)
+			bar_fill.color = AccessibilityPalette.hp_mid()
 		else:
-			bar_fill.color = Color(0.8, 0.2, 0.2)
+			bar_fill.color = AccessibilityPalette.hp_low()
 
 
 func _get_monster_sprite_frames(monster_id: String) -> SpriteFrames:
@@ -1151,8 +1272,18 @@ func _add_sprite_label(sprite: AnimatedSprite2D, text: String, offset: Vector2) 
 	var label = Label.new()
 	label.text = text
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.position = offset
-	label.add_theme_font_size_override("font_size", 10)
+	# a fixed +40 lands mid-body on 256px artist frames (SKELETON KNIGHT read at the waist) — drop below the frame
+	var half_h: float = offset.y
+	if sprite.sprite_frames and sprite.sprite_frames.has_animation(&"idle") \
+			and sprite.sprite_frames.get_frame_count(&"idle") > 0:
+		var idle_tex = sprite.sprite_frames.get_frame_texture(&"idle", 0)
+		if idle_tex:
+			half_h = maxf(offset.y, idle_tex.get_height() / 2.0 + 6.0)
+	label.position = Vector2(offset.x, half_h)
+	label.add_theme_font_size_override("font_size", TextScale.scaled(10))
+	# Tick 219: 1px outline + shadow — name labels sit below sprites on the Mode 7 floor and need edge protection vs grid lines (matches tick 218 contrast scheme, scaled down for 10pt).
+	label.add_theme_constant_override("outline_size", 1)
+	label.add_theme_color_override("font_outline_color", Color.BLACK)
 	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
 	label.add_theme_constant_override("shadow_offset_x", 1)
 	label.add_theme_constant_override("shadow_offset_y", 1)
@@ -1161,6 +1292,7 @@ func _add_sprite_label(sprite: AnimatedSprite2D, text: String, offset: Vector2) 
 
 ## Status effect icon display system
 const STATUS_ICON_CONFIG = {
+	# Crowd control / debuffs
 	"exposed": {"label": "EXP", "color": Color(1.0, 0.3, 0.3)},
 	"cannot_defer": {"label": "LOCK", "color": Color(0.8, 0.2, 0.2)},
 	"stun": {"label": "STUN", "color": Color(1.0, 1.0, 0.2)},
@@ -1172,6 +1304,26 @@ const STATUS_ICON_CONFIG = {
 	"curse": {"label": "CURS", "color": Color(0.5, 0.0, 0.5)},
 	"regen": {"label": "REGN", "color": Color(0.3, 1.0, 0.3)},
 	"permakilled": {"label": "DEAD", "color": Color(0.3, 0.0, 0.0)},
+	# Tick 129: common stat buffs/debuffs from abilities.json. Pre-fix,
+	# 25+ distinct statuses fell through to the `status.substr(0, 3).to_upper()`
+	# fallback, giving the player vague "ATT" both for attack_up AND
+	# attack_down — same icon for opposite effects. Buffs get green
+	# (+suffix), debuffs get red (-suffix).
+	"attack_up": {"label": "ATK+", "color": Color(0.3, 1.0, 0.3)},
+	"attack_down": {"label": "ATK-", "color": Color(1.0, 0.3, 0.3)},
+	"defense_up": {"label": "DEF+", "color": Color(0.3, 1.0, 0.3)},
+	"defense_down": {"label": "DEF-", "color": Color(1.0, 0.3, 0.3)},
+	"magic_up": {"label": "MAG+", "color": Color(0.3, 1.0, 0.3)},
+	"magic_down": {"label": "MAG-", "color": Color(1.0, 0.3, 0.3)},
+	"speed_up": {"label": "SPD+", "color": Color(0.3, 1.0, 0.3)},
+	"speed_down": {"label": "SPD-", "color": Color(1.0, 0.3, 0.3)},
+	# Standalone damage-over-time + utility effects
+	"burn": {"label": "BURN", "color": Color(1.0, 0.5, 0.1)},
+	"poison": {"label": "PSN", "color": Color(0.6, 0.9, 0.3)},
+	"silence": {"label": "SLNC", "color": Color(0.6, 0.6, 0.6)},
+	"barrier": {"label": "BARR", "color": Color(0.4, 0.8, 1.0)},
+	"haste": {"label": "HAST", "color": Color(0.3, 1.0, 0.5)},
+	"slow": {"label": "SLOW", "color": Color(0.7, 0.3, 0.8)},
 }
 
 
@@ -1199,7 +1351,7 @@ func _on_combatant_status_changed(_status: String, combatant: Combatant) -> void
 	_refresh_status_icons(combatant)
 
 
-func _refresh_status_icons(combatant: Combatant) -> void:
+func _refresh_status_icons(combatant: Combatant, animate: bool = true) -> void:
 	"""Rebuild the status icon row for a combatant"""
 	if combatant not in _status_icon_containers:
 		return
@@ -1224,6 +1376,36 @@ func _refresh_status_icons(combatant: Combatant) -> void:
 			display_text += " %d" % turns_left  # e.g. "STUN 2"
 		var icon = _create_status_icon_label(display_text, config["color"])
 		container.add_child(icon)
+		if animate:
+			_animate_status_icon_pop_in(icon)
+
+	# doom_counter is a Combatant int field, not a status_effect — surface the lethal countdown so it's trackable after the initial log scrolls away
+	if "doom_counter" in combatant and combatant.doom_counter > 0:
+		var doom_icon = _create_status_icon_label("☠ %d" % combatant.doom_counter, Color(0.6, 0.1, 0.7))
+		container.add_child(doom_icon)
+		if animate:
+			_animate_status_icon_pop_in(doom_icon)
+
+
+func _refresh_all_status_icons(_round_num: int = 0) -> void:
+	"""Per-round refresh (no pop animation) so duration counters + doom visibly tick down."""
+	for combatant in _status_icon_containers.keys():
+		if is_instance_valid(combatant):
+			_refresh_status_icons(combatant, false)
+
+
+func _animate_status_icon_pop_in(icon: Control) -> void:
+	# Defer one frame so the PanelContainer has a real size for pivot_offset
+	# (mirrors the deferred-pivot pattern noted in CLAUDE.md polish item #24).
+	await get_tree().process_frame
+	if not is_instance_valid(icon):
+		return
+	icon.pivot_offset = icon.size / 2.0
+	icon.scale = Vector2(0.55, 0.55)
+	var tween := create_tween()
+	tween.tween_property(icon, "scale", Vector2.ONE, 0.12) \
+		.set_trans(Tween.TRANS_BACK) \
+		.set_ease(Tween.EASE_OUT)
 
 
 func _create_status_icon_label(text: String, color: Color) -> PanelContainer:
@@ -1250,7 +1432,7 @@ func _create_status_icon_label(text: String, color: Color) -> PanelContainer:
 
 	var label = Label.new()
 	label.text = text
-	label.add_theme_font_size_override("font_size", 8)
+	label.add_theme_font_size_override("font_size", TextScale.scaled(8))
 	label.add_theme_color_override("font_color", color)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	panel.add_child(label)
@@ -1261,10 +1443,6 @@ func _create_status_icon_label(text: String, color: Color) -> PanelContainer:
 func _update_ui() -> void:
 	_ui_manager.update_ui()
 	_update_enemy_hp_bars()
-	# Update the BDFFHD bottom HUD strip with current party state
-	if _hud_strip and is_instance_valid(_hud_strip):
-		var members = BattleManager.player_party if BattleManager.player_party.size() > 0 else party_members
-		_hud_strip.update_hud(members)
 
 
 func _update_danger_music() -> void:
@@ -1362,7 +1540,7 @@ func _build_input_hint_bar() -> void:
 	# Use [L]/[R] notation that works for both gamepad (shoulder)
 	# and keyboard (L/R keys per InputMap).
 	label.text = "[L] Defer  ·  [R] Advance  ·  [+/-] Speed  ·  [Select] Auto"
-	label.add_theme_font_size_override("font_size", 12)
+	label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.95, 0.95))
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
@@ -1396,8 +1574,8 @@ func enable_autogrind_console() -> void:
 	_autogrind_console.scroll_active = true
 	_autogrind_console.scroll_following = true
 	_autogrind_console.set_anchors_preset(Control.PRESET_FULL_RECT)
-	_autogrind_console.add_theme_font_size_override("normal_font_size", 13)
-	_autogrind_console.add_theme_font_size_override("bold_font_size", 14)
+	_autogrind_console.add_theme_font_size_override("normal_font_size", TextScale.scaled(13))
+	_autogrind_console.add_theme_font_size_override("bold_font_size", TextScale.scaled(14))
 	_autogrind_console.add_theme_color_override("default_color", Color(0.8, 0.8, 0.9))
 
 	var margin = log_panel.get_node_or_null("MarginContainer")
@@ -1774,7 +1952,8 @@ func _on_autobattle_toggled(enabled: bool) -> void:
 	"""Handle autobattle toggle"""
 	BattleManager.toggle_autobattle(enabled)
 	if enabled:
-		log_message("[color=green]Autobattle enabled - AI will control your turns[/color]")
+		# Tick 239: bonus BBCode (autobattle-enabled feedback).
+		log_message("[color=%s]Autobattle enabled - AI will control your turns[/color]" % AccessibilityPalette.bonus_bbcode())
 	else:
 		log_message("[color=gray]Autobattle disabled - manual control[/color]")
 
@@ -1793,7 +1972,8 @@ func _enable_all_autobattle() -> void:
 
 	# Play enable sound
 	SoundManager.play_ui("autobattle_on")
-	log_message("[color=lime]>>> AUTOBATTLE: ALL PLAYERS ENABLED[/color]")
+	# Tick 239: bonus BBCode (all-players autobattle announcement).
+	log_message("[color=%s]>>> AUTOBATTLE: ALL PLAYERS ENABLED[/color]" % AccessibilityPalette.bonus_bbcode())
 
 	# Close any open menu
 	_close_win98_menu()
@@ -1961,6 +2141,10 @@ func _on_battle_started() -> void:
 			if terrain_track != "battle":
 				print("[MUSIC] Playing %s terrain battle theme" % _current_terrain)
 	_is_danger_music = false
+	_masterite_phase2_swapped = false
+	## Tick 428: reset per-battle boss-dialogue latches.
+	_boss_low_hp_spoken = false
+	_boss_defeat_spoken = false
 
 
 func _get_dominant_monster_type() -> String:
@@ -2016,10 +2200,17 @@ func _get_masterite_type() -> String:
 
 func _get_terrain_battle_track() -> String:
 	"""Get terrain-specific battle music track, or 'battle' for generic.
-	   Areas with unique battle themes return 'battle_<terrain>'."""
+	   Areas with unique battle themes return 'battle_<terrain>'.
+	   Tick 91: added 'steampunk' arm — W3 SteampunkOverworld emits
+	   'steampunk' as the terrain string, which previously fell
+	   through to generic 'battle' music despite SoundManager having
+	   a dedicated _start_urban_battle_music helper that DID play the
+	   manifest's battle_steampunk.ogg."""
 	match _current_terrain:
 		"suburban":
 			return "battle_suburban"
+		"steampunk":
+			return "battle_steampunk"
 		"urban":
 			return "battle_urban"
 		"industrial":
@@ -2034,8 +2225,24 @@ func _get_terrain_battle_track() -> String:
 
 func _on_battle_ended(victory: bool) -> void:
 	"""Handle battle end"""
+	## Tick 428: boss defeat dialogue line. Pre-fix only `intro` was
+	## wired — cave_rat_king, the dragons, etc. never spoke their
+	## "you've bested me" beat. Fires on player victory ONLY if the
+	## dialogue["defeat"] array is present. Find the boss combatant
+	## (first enemy with is_boss meta) for the speaker name.
+	if victory and not _boss_defeat_spoken and _boss_dialogue_data.has("defeat") and _boss_dialogue_data["defeat"].size() > 0:
+		_boss_defeat_spoken = true
+		var boss_name: String = "Boss"
+		for enemy in test_enemies:
+			if enemy and is_instance_valid(enemy) and enemy.has_meta("is_boss"):
+				boss_name = enemy.combatant_name
+				break
+		if _battle_dialogue and _battle_dialogue.has_method("show_boss_intro"):
+			_battle_dialogue.show_boss_intro(boss_name, _boss_dialogue_data["defeat"])
+
 	# Clean up any open menus
 	if active_win98_menu and is_instance_valid(active_win98_menu):
+		print("[MENU-NULL] t=%dms path=battle_ended_cleanup" % Time.get_ticks_msec())
 		active_win98_menu.queue_free()
 		active_win98_menu = null
 
@@ -2061,10 +2268,11 @@ func _on_battle_ended(victory: bool) -> void:
 				member.active_debuffs.remove_at(debuff_idx)
 
 	if victory:
-		log_message("\n[color=lime]=== VICTORY ===[/color]")
+		# Tick 239: bonus BBCode (victory header).
+		log_message("\n[color=%s]=== VICTORY ===[/color]" % AccessibilityPalette.bonus_bbcode())
 		_battle_victory = true
 		if not turbo_mode:
-			log_message("[color=gray]Press ENTER to continue...[/color]")
+			log_message("[color=gray]Z / A / Click to continue...[/color]")
 			SoundManager.play_battle("victory_stinger")
 			_play_staggered_victory_animations()
 			_show_victory_quip()
@@ -2074,14 +2282,20 @@ func _on_battle_ended(victory: bool) -> void:
 				SoundManager.play_music("victory")
 			_show_victory_results()
 	else:
-		log_message("\n[color=red]=== DEFEAT ===[/color]")
-		log_message("[color=gray]Press ENTER to restart...[/color]")
+		# Tick 239: penalty BBCode (defeat header).
+		log_message("\n[color=%s]=== DEFEAT ===[/color]" % AccessibilityPalette.penalty_bbcode())
+		log_message("[color=gray]Z / A / Click to restart...[/color]")
 		# Play defeat animation for all party members
 		for animator in party_animators:
 			if animator:
 				animator.play_defeat()
-		# Play game over ditty
-		SoundManager.play_music("game_over")
+		# Spotlight duels have their own retry loop and the game_over ditty
+		# stacks over every cycle, so skip it — retry-entry battle music
+		# transitions cleanly. Non-spotlight defeats keep the ditty.
+		var gl: Node = get_node_or_null("/root/GameLoop")
+		var in_spotlight: bool = gl != null and "_spotlight_duel_active" in gl and bool(gl._spotlight_duel_active)
+		if not in_spotlight:
+			SoundManager.play_music("game_over")
 
 	_update_ui()
 	_battle_ended = true
@@ -2099,6 +2313,8 @@ func _process(delta: float) -> void:
 	# Idle sway/breathing animations
 	_process_idle_animations(delta)
 
+	_tick_menu_watchdog()
+
 	if _battle_ended and not managed_by_game_loop:
 		if Input.is_action_just_pressed("ui_accept"):
 			_battle_ended = false
@@ -2110,6 +2326,94 @@ func _process(delta: float) -> void:
 				# Defeat - restart
 				log_message("[color=cyan]Retrying battle...[/color]")
 				_restart_battle()
+
+
+## Menu-never-spawned self-heal (msg 2372/2379): force-spawn after MENU_WATCHDOG_MS, terminal-fallback to autobattle after MAX_RETRIES.
+func _tick_menu_watchdog() -> void:
+	var bm = BattleManager
+	if bm == null:
+		_reset_menu_watchdog()
+		return
+	if bm.current_state != bm.BattleState.PLAYER_SELECTING:
+		_reset_menu_watchdog()
+		return
+	if bm.has_method("is_trust_interrupt_window_open") and bm.is_trust_interrupt_window_open():
+		_reset_menu_watchdog()
+		return
+	var pc = bm.current_combatant
+	if pc == null or not is_instance_valid(pc) or not pc.is_alive:
+		_reset_menu_watchdog()
+		return
+	if not (pc in bm.player_party):
+		_reset_menu_watchdog()
+		return
+	if is_instance_valid(active_win98_menu) and active_win98_menu.visible:
+		_reset_menu_watchdog()
+		return
+	var now: int = Time.get_ticks_msec()
+	if _menu_wd_started_ms == 0:
+		_menu_wd_started_ms = now
+		return
+	if now - _menu_wd_started_ms < MENU_WATCHDOG_MS:
+		return
+	# A spotlight-locked PC can't hold a manual menu — skip the 3x force-spawn ladder (~10s) and autobattle-resolve now. EXCEPT its own solo duel: the duelist plays manually there, so keep retrying rather than stealing the turn.
+	var own_solo_duel: bool = bm.player_party.size() == 1 and pc in bm.player_party
+	if "autobattle_locked" in pc and pc.autobattle_locked and not own_solo_duel:
+		log_message("[color=orange]⚠ %s auto-resolving turn (spotlight-locked, no manual menu)[/color]" % pc.combatant_name)
+		_reset_menu_watchdog()
+		if bm.has_method("execute_autobattle_for_current"):
+			bm.execute_autobattle_for_current()
+		return
+	var elapsed: int = now - _menu_wd_started_ms
+	if _menu_wd_retries >= MENU_WATCHDOG_MAX_RETRIES:
+		# Terminal fallback (msg 2379): the menu is genuinely wedged; route via autobattle so the battle continues.
+		push_error("[MENU-WATCHDOG] %s force-spawn failed %dx — routing via autobattle terminal fallback%s" % [pc.combatant_name, _menu_wd_retries, _menu_wd_diag(pc)])
+		log_message("[color=red]⚠ Menu wedged after %d retries — routing via autobattle[/color]" % _menu_wd_retries)
+		_reset_menu_watchdog()
+		if bm.has_method("execute_autobattle_for_current"):
+			bm.execute_autobattle_for_current()
+		return
+	push_warning("[MENU-WATCHDOG] %s PLAYER_SELECTING sat %dms without menu — force-spawn attempt %d/%d%s" % [pc.combatant_name, elapsed, _menu_wd_retries + 1, MENU_WATCHDOG_MAX_RETRIES, _menu_wd_diag(pc)])
+	log_message("[color=orange]⚠ Menu recovery — spawning command menu for %s (attempt %d/%d)[/color]" % [pc.combatant_name, _menu_wd_retries + 1, MENU_WATCHDOG_MAX_RETRIES])
+	_menu_wd_started_ms = now
+	_menu_wd_retries += 1
+	_show_win98_command_menu(pc)
+
+
+## Diagnostic string dumped on watchdog trip (msg 2400 root-hunt): why the menu didn't spawn on the last _show_win98_command_menu call, plus known contributing state.
+func _menu_wd_diag(pc: Combatant) -> String:
+	var reason: String = "unknown"
+	if _command_menu and "last_silent_return_reason" in _command_menu:
+		reason = _command_menu.last_silent_return_reason
+		if reason == "":
+			reason = "spawn_ok_then_closed"
+	var char_id: String = pc.combatant_name.to_lower().replace(" ", "_") if pc else "?"
+	var ab_locked: bool = "autobattle_locked" in pc and pc.autobattle_locked
+	var ab_enabled: bool = AutobattleSystem.is_autobattle_enabled(char_id) if AutobattleSystem else false
+	var dbg_unlocked: bool = GameState.debug_all_pcs_unlocked if (GameState and "debug_all_pcs_unlocked" in GameState) else false
+	var in_party: bool = pc in BattleManager.player_party if BattleManager else false
+	var sprite_ct: int = party_sprite_nodes.size()
+	# msg 2472 bonus: dump the per-job loss counter so tuning caps see the current tier at trip time. Reads pc.job.id; empty if the combatant has no job dict.
+	var pc_job_id: String = ""
+	if pc and pc.job is Dictionary:
+		pc_job_id = str((pc.job as Dictionary).get("id", ""))
+	var spotlight_losses: int = 0
+	if pc_job_id != "" and GameState and "game_constants" in GameState:
+		spotlight_losses = int(GameState.game_constants.get("spotlight_losses_" + pc_job_id, 0))
+	# msg 2503 diagnostic — distinguish "menu freed" (invalid) from "menu valid but hidden" (someone called set_command_menu_visible(false) or set .visible=false directly). "valid-but-invisible" fingerprints the autobattle-editor-still-open / hidden-menu class specifically.
+	var menu_status: String
+	if not is_instance_valid(active_win98_menu):
+		menu_status = "invalid"
+	elif not active_win98_menu.visible:
+		menu_status = "valid_but_invisible"
+	else:
+		menu_status = "valid_visible"  # should be unreachable — watchdog would have reset
+	return " [reason=%s menu=%s ab_locked=%s ab_enabled=%s dbg_unlocked=%s in_party=%s sprite_ct=%d spotlight_losses=%d]" % [reason, menu_status, ab_locked, ab_enabled, dbg_unlocked, in_party, sprite_ct, spotlight_losses]
+
+
+func _reset_menu_watchdog() -> void:
+	_menu_wd_started_ms = 0
+	_menu_wd_retries = 0
 
 
 func _process_hold_a(delta: float) -> void:
@@ -2155,37 +2459,40 @@ func _get_formation_offset(member_idx: int, party_size: int) -> Vector2:
 	match current_formation:
 		PartyFormation.V_FORMATION:
 			# Classic JRPG V-shape: front members lower, back higher.
-			# 5 evenly-spaced steps so Bard sits cleanly between the previous
-			# 4-shape's outermost members.
-			var y_offsets = [12.0, 6.0, 0.0, -6.0, -12.0]
+			# Offsets scaled to 110px Y-gap so the stagger reads cleanly
+			# at the wider party spacing (previously ±12 at 75px gap).
+			var y_offsets = [18.0, 9.0, 0.0, -9.0, -18.0]
 			return Vector2(0, y_offsets[member_idx] if member_idx < y_offsets.size() else 0.0)
 
 		PartyFormation.FRONT_LINE:
-			# All in a row, pushed forward (left toward enemies)
-			var y_spread = [-20.0, -10.0, 0.0, 10.0, 20.0]
+			# All in a row, pushed forward (left toward enemies).
+			# y-spread widened from ±20 to ±30 to match 110px base gap.
+			var y_spread = [-30.0, -15.0, 0.0, 15.0, 30.0]
 			var y = y_spread[member_idx] if member_idx < y_spread.size() else 0.0
 			return Vector2(-30, y)
 
 		PartyFormation.BACK_ROW:
-			# All pushed back (right away from enemies)
-			var y_spread = [-20.0, -10.0, 0.0, 10.0, 20.0]
+			# All pushed back (right away from enemies).
+			# y-spread widened from ±20 to ±30 to match 110px base gap.
+			var y_spread = [-30.0, -15.0, 0.0, 15.0, 30.0]
 			var y = y_spread[member_idx] if member_idx < y_spread.size() else 0.0
 			return Vector2(30, y)
 
 		PartyFormation.DIAMOND:
 			# 1 front, 2 mid, 2 back — tank formation expanded for strict-5.
-			# Back-pair (3,4) staggered y so they don't overlap the mid row.
+			# y offsets scaled to 110px gap (±20→±30, ±12→±18).
 			match member_idx:
 				0: return Vector2(-25, 0)    # Front (tank)
-				1: return Vector2(0, -20)    # Mid-top
-				2: return Vector2(0, 20)     # Mid-bottom
-				3: return Vector2(25, -12)   # Back-top
-				4: return Vector2(25, 12)    # Back-bottom
+				1: return Vector2(0, -30)    # Mid-top
+				2: return Vector2(0, 30)     # Mid-bottom
+				3: return Vector2(25, -18)   # Back-top
+				4: return Vector2(25, 18)    # Back-bottom
 				_: return Vector2.ZERO
 
 		PartyFormation.SPREAD:
 			# Wide spacing to resist AoE — 5-member staggered pattern.
-			var y_offsets = [-40.0, -20.0, 0.0, 20.0, 40.0]
+			# y-spread widened from ±40 to ±55 to match 110px base gap.
+			var y_offsets = [-55.0, -27.0, 0.0, 27.0, 55.0]
 			var x_offsets = [-15.0, 0.0, -15.0, 0.0, -15.0]
 			var y = y_offsets[member_idx] if member_idx < y_offsets.size() else 0.0
 			var x = x_offsets[member_idx] if member_idx < x_offsets.size() else 0.0
@@ -2306,6 +2613,18 @@ func _open_autobattle_editor_for(combatant: Combatant) -> void:
 	print("Autobattle editor opened for %s (hold-A)" % char_name)
 
 
+## Tick 409: Scriptweaver's create_autobattle_script meta-ability fires
+## this. Opens the editor for the caster (target_type=self per ability
+## data) and clears the meta_autobattle_editor_requested flag so a
+## subsequent in-battle save doesn't re-trigger the editor.
+func _on_meta_autobattle_editor_requested(caster: Combatant) -> void:
+	if caster == null or not is_instance_valid(caster):
+		return
+	_open_autobattle_editor_for(caster)
+	if GameState and "game_constants" in GameState:
+		GameState.game_constants["meta_autobattle_editor_requested"] = false
+
+
 func _on_inline_autobattle_editor_closed(editor: Control) -> void:
 	"""Handle inline autobattle editor closing"""
 	if editor and is_instance_valid(editor):
@@ -2329,6 +2648,7 @@ func _restart_battle() -> void:
 
 	# Clean up any stray menus
 	if active_win98_menu and is_instance_valid(active_win98_menu):
+		print("[MENU-NULL] t=%dms path=restart_battle_cleanup" % Time.get_ticks_msec())
 		active_win98_menu.queue_free()
 		active_win98_menu = null
 
@@ -2397,8 +2717,9 @@ func _on_selection_phase_started() -> void:
 ## of their selection turn, then slides back into formation when the
 ## turn ends. Clear who's-up signal without needing a portrait highlight
 ## or arrow indicator. Per cowir-battle's design lock 2026-06-04.
-const ACTIVE_PC_STEP_OUT_OFFSET: float = -42.0
+const ACTIVE_PC_STEP_OUT_OFFSET: float = -80.0
 const ACTIVE_PC_STEP_TWEEN_TIME: float = 0.18
+const ACTIVE_PC_DIM_COLOR: Color = Color(0.55, 0.55, 0.65, 1.0)
 
 
 func _step_active_pc(combatant: Combatant, step_out: bool) -> void:
@@ -2416,6 +2737,19 @@ func _step_active_pc(combatant: Combatant, step_out: bool) -> void:
 	tween.tween_property(sprite, "position", target, ACTIVE_PC_STEP_TWEEN_TIME) \
 		.set_trans(Tween.TRANS_QUAD) \
 		.set_ease(Tween.EASE_OUT if step_out else Tween.EASE_IN)
+	_dim_inactive_party(idx, step_out)
+
+
+func _dim_inactive_party(active_idx: int, dim_others: bool) -> void:
+	for i in party_sprite_nodes.size():
+		var s = party_sprite_nodes[i]
+		if not is_instance_valid(s):
+			continue
+		var target_mod: Color = Color.WHITE
+		if dim_others and i != active_idx:
+			target_mod = ACTIVE_PC_DIM_COLOR
+		var t = create_tween()
+		t.tween_property(s, "modulate", target_mod, ACTIVE_PC_STEP_TWEEN_TIME)
 
 
 func _on_selection_turn_started(combatant: Combatant) -> void:
@@ -2711,10 +3045,8 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 	# Safety net: force-reset all party sprites to home positions after rush animations
 	# This catches any case where a return-home tween gets interrupted or killed
 	if group_type in ["all_out_attack", "combo_magic", "limit_break", "formation"]:
-		get_tree().create_timer(1.5).timeout.connect(func():
-			if not is_instance_valid(self): return
-			_snap_party_sprites_home()
-		)
+		# Bound method (not lambda): auto-disconnects when self frees — lambda captures logged "capture was freed" engine errors at battle teardown.
+		get_tree().create_timer(1.5).timeout.connect(_snap_party_sprites_home)
 
 
 ## Safety-net reset for a single attacker after their action resolves.
@@ -2728,16 +3060,31 @@ func _reset_attacker_home(combatant: Combatant) -> void:
 	var animator = _get_combatant_animator(combatant)
 	# Give the existing return-home tween a bit of time to complete before
 	# we forcibly snap — otherwise we fight it and look jittery.
-	get_tree().create_timer(0.7).timeout.connect(func():
-		if not is_instance_valid(self):
-			return
-		if sprite and is_instance_valid(sprite) and sprite.has_meta("home_position"):
-			var home = sprite.get_meta("home_position")
-			if sprite.position.distance_to(home) > 2.0:
-				sprite.position = home
-		if animator and is_instance_valid(animator):
-			animator.set_idle()
-	)
+	get_tree().create_timer(0.7).timeout.connect(_delayed_snap_and_idle.bind(sprite, animator))
+
+
+## Timer-safe helpers: bound methods auto-disconnect when self frees, so battle teardown can't fire them with freed captures (smoke-log engine-error class, 2026-07-11).
+func _delayed_snap_and_idle(sprite, animator) -> void:
+	if sprite and is_instance_valid(sprite) and sprite.has_meta("home_position"):
+		var home = sprite.get_meta("home_position")
+		if sprite.position.distance_to(home) > 2.0:
+			sprite.position = home
+	if animator and is_instance_valid(animator):
+		animator.set_idle()
+
+
+func _delayed_play_hit_fx(target_anim, target_sprite) -> void:
+	if target_anim and is_instance_valid(target_anim) and is_instance_valid(target_sprite):
+		target_anim.play_hit()
+		EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, target_sprite.global_position)
+		var kb_dir = -1.0 if enemy_sprite_nodes.has(target_sprite) else 1.0
+		_apply_hit_knockback(target_sprite, kb_dir)
+		_apply_hit_flash(target_sprite)
+
+
+func _delayed_play_victory(animator) -> void:
+	if is_instance_valid(animator):
+		animator.play_victory()
 
 
 func _snap_party_sprites_home() -> void:
@@ -2754,6 +3101,26 @@ func _snap_party_sprites_home() -> void:
 				tween.tween_property(sprite, "position", home, 0.15).set_trans(Tween.TRANS_CUBIC)
 
 
+## Item 19: round-start universal sprite snap. Extends the existing
+## group-attack safety net to run on EVERY round_started so a stray
+## displaced sprite from an interrupted single-attacker return-home
+## tween (user report: Bard "stuck for a turn next to the monsters
+## on the left") gets caught at the top of the next round instead of
+## rendering wrong for a full turn. Covers party AND enemies since
+## monsters can also step out and get interrupted.
+func _on_round_started_snap_home(_round_num: int) -> void:
+	_snap_party_sprites_home()
+	for i in range(enemy_sprite_nodes.size()):
+		var sprite = enemy_sprite_nodes[i]
+		if not is_instance_valid(sprite):
+			continue
+		if sprite.has_meta("home_position"):
+			var home = sprite.get_meta("home_position")
+			if sprite.position.distance_to(home) > 20:
+				var tween = create_tween()
+				tween.tween_property(sprite, "position", home, 0.15).set_trans(Tween.TRANS_CUBIC)
+
+
 func _try_play_formation_sfx(formation_key: String) -> bool:
 	"""Try to play a formation-specific SFX. Returns true if found in manifest."""
 	if SoundManager._sfx_manifest.has(formation_key):
@@ -2762,8 +3129,16 @@ func _try_play_formation_sfx(formation_key: String) -> bool:
 	return false
 
 
+## Accessibility (photosensitivity): the "Reduce Flashes" setting suppresses the
+## full-screen battle flashes. Static so the gate is unit-testable without a scene.
+static func _flashes_suppressed() -> bool:
+	return GameState.reduce_flashes if ("reduce_flashes" in GameState) else false
+
+
 func _spawn_screen_flash(color: Color, fade_duration: float, delay: float = 0.0) -> void:
 	"""Spawn a full-screen color flash that fades out"""
+	if _flashes_suppressed():
+		return
 	var flash = ColorRect.new()
 	flash.color = color
 	flash.anchors_preset = Control.PRESET_FULL_RECT
@@ -2823,18 +3198,7 @@ func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attac
 		if attacker_anim and is_instance_valid(attacker_anim):
 			attacker_anim.play_attack()
 		# Brief delay then play hit
-		get_tree().create_timer(0.1).timeout.connect(func():
-			if not is_instance_valid(self):
-				return
-			if target_anim and is_instance_valid(target_anim) and is_instance_valid(target_sprite):
-				target_anim.play_hit()
-				# Spawn physical hit effect
-				EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, target_sprite.global_position)
-				# Knockback: enemies knocked left (-1), party members knocked right (+1)
-				var kb_dir = -1.0 if enemy_sprite_nodes.has(target_sprite) else 1.0
-				_apply_hit_knockback(target_sprite, kb_dir)
-				_apply_hit_flash(target_sprite)
-		)
+		get_tree().create_timer(0.1).timeout.connect(_delayed_play_hit_fx.bind(target_anim, target_sprite))
 	)
 
 	# Wait for attack animation
@@ -2905,6 +3269,7 @@ func _on_round_ended(round_num: int) -> void:
 func _on_action_executed(combatant: Combatant, action: Dictionary, targets: Array) -> void:
 	"""Handle action execution — play buff/debuff/status sounds based on ability effect"""
 	_update_ui()
+	_check_masterite_phase2_music_swap()
 	# Safety net: if the attacker's melee-attack tween was interrupted
 	# (target died mid-animation, scene refresh, battle-speed change,
 	# etc.), force the sprite back to its stored home position and
@@ -2920,16 +3285,33 @@ func _on_action_executed(combatant: Combatant, action: Dictionary, targets: Arra
 			match effect:
 				"defense_up", "attack_up", "volatility_up_self", "volatility_down":
 					SoundManager.play_battle("buff")
-				"defense_down", "volatility_up":
+				# stat reductions share the generic debuff cue (cowir-sfx rec) — bespoke cues reserved for the scary/unique statuses
+				"defense_down", "volatility_up", "attack_down", "magic_down", "magic_defense_down", "speed_down", "all_stats_down", "random_debuff", "dispel", "pacify", "amplify_poison":
 					SoundManager.play_battle("debuff")
-				"poison":
-					SoundManager.play_status("poison")
-				"sleep":
-					SoundManager.play_status("sleep")
-				"confuse":
-					SoundManager.play_status("confuse")
-				"paralyze":
-					SoundManager.play_status("paralyze")
+				"ability_silence", "silence":
+					SoundManager.play_status("silence")
+				"":
+					pass
+				# every other status (poison/sleep/doom/curse/stun/burn/freeze/...) — play_status does status_<name> manifest lookup with a generic fallback, so F1-activated effects can't land silently again
+				_:
+					SoundManager.play_status(effect)
+
+
+func _check_masterite_phase2_music_swap() -> void:
+	# Latch once per battle when a Masterite boss escalates to phase 2.
+	if _masterite_phase2_swapped or _is_danger_music:
+		return
+	for enemy in test_enemies:
+		if enemy == null or not is_instance_valid(enemy):
+			continue
+		var phase: int = int(enemy.get_meta("masterite_battle_phase", 1))
+		var mtype: String = str(enemy.get_meta("masterite_type", ""))
+		if phase >= 2 and mtype != "":
+			var track: String = "boss_phase2_%s" % mtype
+			_base_music_track = track
+			SoundManager.play_music(track)
+			_masterite_phase2_swapped = true
+			return
 
 
 ## Combatant event handlers
@@ -2941,6 +3323,18 @@ func _on_party_hp_changed(old_value: int, new_value: int, member_idx: int) -> vo
 		party_animators[member_idx].play_hit()
 	# Ally KO quip — when a party member drops to 0 HP, a living ally reacts
 	if new_value <= 0 and old_value > 0:
+		## Tick 176: announce the KO in the battle log. Pre-fix party
+		## member deaths were silent in the log — the HP bar dropped to
+		## 0, an optional ally quip fired ("Hero, no!"), but no clear
+		## line said "X has fallen!" Enemy deaths emit
+		## "X has been defeated!" via _on_enemy_died at line 3296;
+		## this closes the parity gap so the player gets the same
+		## scannable feedback when one of THEIR members goes down.
+		if member_idx < party_members.size():
+			var member = party_members[member_idx]
+			if member is Combatant:
+				# Tick 239: penalty BBCode (party member fallen).
+				log_message("[color=%s]✖ %s has fallen![/color]" % [AccessibilityPalette.penalty_bbcode(), member.combatant_name])
 		var alive_allies = party_members.filter(func(m): return m is Combatant and m.is_alive and party_members.find(m) != member_idx)
 		if alive_allies.size() > 0:
 			var reactor = alive_allies[randi() % alive_allies.size()]
@@ -3046,11 +3440,16 @@ func _update_buff_debuff_visuals(_delta: float) -> void:
 		if visuals.is_empty():
 			continue
 
-		# Update glow color based on buff/debuff state
+		# Threat-class check: any buff carrying a class_tag we recognize promotes the read to "reprisal incoming — defer" — amber glow overrides the cyan-green + sigil badge above the head + particles suppressed (they'd fight the sigil's silhouette read). (msg 2455/2462)
+		var has_threat: bool = _combatant_has_threat_buff(combatant)
+		var pulse = (sin(_idle_time * 3.0) + 1.0) * 0.5  # 0-1 pulse
+
+		# Update glow color based on buff/debuff state (threat wins over all).
 		var glow: ColorRect = visuals.get("glow")
 		if glow and is_instance_valid(glow):
-			var pulse = (sin(_idle_time * 3.0) + 1.0) * 0.5  # 0-1 pulse
-			if has_buffs and has_debuffs:
+			if has_threat:
+				glow.color = Color(THREAT_GLOW_COLOR.r, THREAT_GLOW_COLOR.g, THREAT_GLOW_COLOR.b, 0.15 + pulse * 0.15)
+			elif has_buffs and has_debuffs:
 				# Mixed: yellow pulse
 				glow.color = Color(0.8, 0.8, 0.0, 0.12 + pulse * 0.1)
 			elif has_buffs:
@@ -3060,10 +3459,20 @@ func _update_buff_debuff_visuals(_delta: float) -> void:
 				# Debuff: red pulse
 				glow.color = Color(0.9, 0.2, 0.2, 0.1 + pulse * 0.08)
 
-		# Animate particles
+		# Sigil badge — show above sprite when threat-class buff is active. Pulse-fade modulate alpha 0.6→1.0 on the existing sin drive. Hidden entirely otherwise.
+		var sigil: Sprite2D = visuals.get("sigil")
+		if sigil and is_instance_valid(sigil):
+			sigil.visible = has_threat
+			if has_threat:
+				sigil.modulate.a = 0.6 + pulse * 0.4
+
+		# Animate particles — suppressed under a threat buff so the sigil owns the "watch this enemy" read.
 		var particles: Array = visuals.get("particles", [])
 		for p_node in particles:
 			if not is_instance_valid(p_node):
+				continue
+			p_node.visible = not has_threat
+			if has_threat:
 				continue
 			# Drift upward for buffs, downward for debuffs
 			var drift_dir = -1.0 if has_buffs else 1.0
@@ -3103,7 +3512,26 @@ func _create_buff_visual(combatant: Combatant, sprite: Node2D) -> void:
 		sprite.add_child(p)
 		particles.append(p)
 
-	_buff_visual_nodes[combatant] = {"glow": glow, "particles": particles}
+	# Threat-class sigil — always created, hidden until _update_buff_debuff_visuals detects a matching class_tag. Loaded once via HybridSpriteLoader.load_battle_effect_texture ("threat_buff_sigil" — cowir-sprites 4ec21a07). Missing texture leaves the sigil node as a no-op so the buff visual still shows the amber glow.
+	var sigil: Sprite2D = Sprite2D.new()
+	sigil.name = "ThreatSigil"
+	sigil.texture = HybridSpriteLoaderClass.load_battle_effect_texture("threat_buff_sigil")
+	sigil.position = THREAT_SIGIL_OFFSET
+	sigil.z_index = 2
+	sigil.visible = false
+	sprite.add_child(sigil)
+
+	_buff_visual_nodes[combatant] = {"glow": glow, "particles": particles, "sigil": sigil}
+
+
+## True when any active_buff on the combatant carries a class_tag in THREAT_CLASS_BUFFS. Non-Combatants and combatants without active_buffs return false.
+func _combatant_has_threat_buff(combatant) -> bool:
+	if not "active_buffs" in combatant:
+		return false
+	for buff in combatant.active_buffs:
+		if THREAT_CLASS_BUFFS.get(buff.get("class", ""), false):
+			return true
+	return false
 
 
 func _remove_buff_visual(combatant) -> void:
@@ -3117,6 +3545,9 @@ func _remove_buff_visual(combatant) -> void:
 	for p in visuals.get("particles", []):
 		if is_instance_valid(p):
 			p.queue_free()
+	var sigil = visuals.get("sigil")
+	if sigil and is_instance_valid(sigil):
+		sigil.queue_free()
 	_buff_visual_nodes.erase(combatant)
 
 
@@ -3145,7 +3576,8 @@ func _on_enemy_died(enemy_idx: int) -> void:
 	SoundManager.play_battle("enemy_death")
 	if enemy_idx < test_enemies.size():
 		var enemy = test_enemies[enemy_idx]
-		log_message("[color=yellow]%s has been defeated![/color]" % enemy.combatant_name)
+		# deferred: died fires inside take_damage, before the killing blow's damage line prints
+		call_deferred("log_message", "[color=yellow]%s has been defeated![/color]" % enemy.combatant_name)
 
 		# Clean up status icons and buff visuals for dead enemy
 		if enemy in _status_icon_containers:
@@ -3182,6 +3614,18 @@ func _on_enemy_died(enemy_idx: int) -> void:
 
 func _input(event: InputEvent) -> void:
 	"""Handle high-priority inputs: Select button, battle speed toggle, and repeat actions"""
+	# Tutorial hint capturing input — its dismiss press must not also toggle autobattle/speed/formation.
+	if TutorialHint.is_any_active():
+		return
+	# Trust interrupt: cancel during a trust-window claims the turn back.
+	# High priority so nothing else swallows the input while the window
+	# is armed. BM tracks the window and no-ops when nothing is armed.
+	if event.is_action_pressed("ui_cancel") and not event.is_echo() \
+			and BattleManager.is_trust_interrupt_window_open():
+		if BattleManager.request_trust_interrupt():
+			get_viewport().set_input_as_handled()
+			return
+
 	# Handle autobattle toggle with highest priority (Select button)
 	var is_select_pressed = event.is_action_pressed("battle_toggle_auto") and not event.is_echo()
 
@@ -3207,6 +3651,20 @@ func _input(event: InputEvent) -> void:
 					any_on = true
 					break
 			if any_on:
+				_cancel_all_autobattle()
+			else:
+				_enable_all_autobattle()
+			get_viewport().set_input_as_handled()
+			return
+		elif BattleManager.current_state == BattleManager.BattleState.VICTORY:
+			# Victory screen: toggle applies to the NEXT battle — struktured 2026-07-11: "should be able to disable autobattle in the victory sequence... but I cant".
+			var any_on_v := false
+			for member in party_members:
+				var char_id_v := member.combatant_name.to_lower().replace(" ", "_")
+				if AutobattleSystem.is_autobattle_enabled(char_id_v):
+					any_on_v = true
+					break
+			if any_on_v:
 				_cancel_all_autobattle()
 			else:
 				_enable_all_autobattle()
@@ -3274,7 +3732,9 @@ func _unhandled_input(event: InputEvent) -> void:
 		# R key = Defer (skip turn, gain AP) during selection
 		if event.keycode == KEY_R and is_player_selecting and current:
 			_close_win98_menu()
-			log_message("[color=cyan]%s defers![/color]" % current.combatant_name)
+			## Tick 174: defer log emit moved into BattleManager.
+			## player_defer so every caller path gets it once. Don't
+			## re-emit here.
 			BattleManager.player_defer()
 			get_viewport().set_input_as_handled()
 			return
@@ -3306,6 +3766,8 @@ func _close_win98_menu() -> void:
 
 func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: String = "", elemental_mod: float = 1.0) -> void:
 	_results_display.on_damage_dealt(target, amount, is_crit)
+	# deplete the floating enemy HP bar in sync with the damage number — it lagged to the next _update_ui (action boundary)
+	_update_enemy_hp_bars()
 	if is_crit:
 		_crit_visual_burst(target, amount)
 		_show_hint("first_crit", "CRITICAL HIT! Fast characters and Rogues crit more often. Equip gear with crit bonuses to increase your chances.")
@@ -3332,6 +3794,19 @@ func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: St
 	if target in BattleManager.player_party and target.is_alive and target.get_hp_percentage() < 25.0:
 		_try_combat_quip(LOW_HP_QUIPS, target)
 
+	## Tick 428: boss low_hp dialogue line. Authored on cave_rat_king,
+	## the 4 dragons, optimization_itself, etc. but pre-fix only
+	## `intro` was wired — bosses never spoke their "I'm wounded"
+	## line. Fires once per battle when an enemy boss drops below
+	## 25%. Same threshold as the player LOW_HP_QUIPS so the moment
+	## feels symmetric.
+	if not _boss_low_hp_spoken and target in BattleManager.enemy_party and target.is_alive:
+		if _boss_dialogue_data.has("low_hp") and _boss_dialogue_data["low_hp"].size() > 0:
+			if target.get_hp_percentage() < 25.0 and target.has_meta("is_boss"):
+				_boss_low_hp_spoken = true
+				if _battle_dialogue and _battle_dialogue.has_method("show_boss_intro"):
+					_battle_dialogue.show_boss_intro(target.combatant_name, _boss_dialogue_data["low_hp"])
+
 	# Skip hit sounds for abilities — ability sound already played at cast time
 	if _current_ability_id != "":
 		return
@@ -3346,34 +3821,62 @@ func _spawn_elemental_indicator(target: Combatant, element: String, modifier: fl
 	var color: Color
 	if modifier == 0.0:
 		text = "IMMUNE!"
-		color = Color(0.7, 0.7, 0.7)  # Gray
+		color = Color(0.7, 0.7, 0.7)  # Gray (colorblind-safe)
 	elif modifier > 1.0:
 		text = "WEAK!"
-		color = Color(1.0, 0.3, 0.3)  # Red
+		# Tick 227: WEAK uses a color-blind aware palette. Default red sits in the red-green spectrum that deuteranopia/protanopia (~5% of males) struggles with; accessibility mode swaps to magenta which is distinguishable from blue RESIST, yellow crits, and cyan heals.
+		color = _elem_weak_color()
 	elif modifier < 1.0:
 		text = "RESIST"
-		color = Color(0.3, 0.5, 1.0)  # Blue
+		color = Color(0.3, 0.5, 1.0)  # Blue (colorblind-safe)
 	else:
 		return
 
 	var pos = _results_display._get_combatant_sprite_position(target)
 	pos.y -= 30  # Offset above damage number
+	# Tick 209: stagger so multi-element hits (formation combos, weakness chains) don't pile labels on top of each other.
+	pos.y -= _count_recent_elem_indicators_near(pos) * ELEM_STAGGER_STEP
 
 	var label = Label.new()
 	label.text = text
-	label.add_theme_font_size_override("font_size", 14)
+	label.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	label.add_theme_color_override("font_color", color)
+	# Tick 218: add full-perimeter outline so RESIST/IMMUNE colors don't blend into the Mode 7 floor grid lines. Shadow alone is offset (lower-right only) — top-left edges go unprotected against busy backgrounds. Matches the contrast scheme DamageNumber uses.
+	label.add_theme_constant_override("outline_size", 2)
+	label.add_theme_color_override("font_outline_color", Color.BLACK)
 	label.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
 	label.add_theme_constant_override("shadow_offset_x", 1)
 	label.add_theme_constant_override("shadow_offset_y", 1)
 	label.position = pos
 	label.z_index = 100
+	# Tick 209: tag for the stagger counter — bare Labels at BattleScene root would otherwise match generic Label checks.
+	label.set_meta("elem_indicator", true)
 	add_child(label)
 
 	var tween = create_tween()
 	tween.tween_property(label, "position:y", pos.y - 30, 0.8)
 	tween.parallel().tween_property(label, "modulate:a", 0.0, 0.8).set_delay(0.3)
 	tween.tween_callback(label.queue_free)
+
+
+# Tick 209: stagger constants for elemental indicator labels. Same insight as tick 205 (Toast) + tick 208 (damage popups), different node type.
+const ELEM_STAGGER_STEP := 18.0
+const ELEM_STAGGER_RADIUS_SQUARED := 40.0 * 40.0
+
+
+# Tick 227/228: color-blind-aware WEAK indicator color via shared AccessibilityPalette util.
+func _elem_weak_color() -> Color:
+	return AccessibilityPalette.elem_weak()
+
+
+# Tick 209: count live elemental-indicator labels near pos. Tagged via has_meta("elem_indicator") so we don't match unrelated Labels at BattleScene root.
+func _count_recent_elem_indicators_near(pos: Vector2) -> int:
+	var count: int = 0
+	for child in get_children():
+		if child is Label and is_instance_valid(child) and child.has_meta("elem_indicator"):
+			if child.position.distance_squared_to(pos) < ELEM_STAGGER_RADIUS_SQUARED:
+				count += 1
+	return count
 
 
 func _on_attack_missed(target: Combatant) -> void:
@@ -3387,6 +3890,24 @@ func _on_attack_missed(target: Combatant) -> void:
 func _on_healing_done(target: Combatant, amount: int) -> void:
 	_results_display.on_healing_done(target, amount)
 	SoundManager.play_battle("heal")
+
+
+## Tick 143: spawn floating damage/healing popups when poison /
+## burn / regen ticks fire on a Combatant. Pre-fix only hp_changed
+## emitted on these ticks, so the HP bar dropped but no number
+## floated up — players couldn't see status effects ticking unless
+## they watched the HP bar carefully. The `source` arg distinguishes
+## the cause (could drive icon color/text in the future).
+func _on_status_tick_damage(amount: int, _source: String, target: Combatant) -> void:
+	if not is_instance_valid(target) or not is_instance_valid(_results_display):
+		return
+	_results_display.on_damage_dealt(target, amount, false)
+
+
+func _on_status_tick_heal(amount: int, _source: String, target: Combatant) -> void:
+	if not is_instance_valid(target) or not is_instance_valid(_results_display):
+		return
+	_results_display.on_healing_done(target, amount)
 
 
 func _crit_visual_burst(target: Combatant, _amount: int) -> void:
@@ -3419,7 +3940,7 @@ func _spawn_crit_banner(pos: Vector2) -> void:
 	"""Spawn a large 'CRITICAL!' text that scales up and fades"""
 	var label = Label.new()
 	label.text = "CRITICAL!"
-	label.add_theme_font_size_override("font_size", 22)
+	label.add_theme_font_size_override("font_size", TextScale.scaled(22))
 	label.add_theme_color_override("font_color", Color(1.0, 0.8, 0.1))
 	label.add_theme_constant_override("outline_size", 3)
 	label.add_theme_color_override("font_outline_color", Color(0.6, 0.2, 0.0))
@@ -3441,8 +3962,27 @@ func _spawn_crit_banner(pos: Vector2) -> void:
 	tween.tween_callback(label.queue_free)
 
 
+## True when the save-corruption "visual_glitch" effect is active. Static so the
+## decision is unit-testable without standing up a whole BattleScene.
+static func _corruption_glitch_active() -> bool:
+	return "visual_glitch" in GameState.corruption_effects
+
+
+## Save-corruption reality-stutter: a cosmetic chromatic magenta/cyan flash at
+## the top of each round when visual_glitch is active. Purely visual — corruption
+## you SEE, never a balance change. (GameState._apply_random_corruption_effect
+## adds the effect; this is finally its runtime handler.)
+func _on_round_started_corruption_glitch(_round_num: int) -> void:
+	if not _corruption_glitch_active():
+		return
+	_flash_screen(Color(1.0, 0.15, 0.9, 0.16), 0.10)   # magenta
+	_flash_screen(Color(0.15, 1.0, 0.95, 0.12), 0.14)  # cyan trail
+
+
 func _flash_screen(color: Color, duration: float) -> void:
 	"""Brief screen flash effect for impactful moments"""
+	if _flashes_suppressed():
+		return
 	var flash = ColorRect.new()
 	flash.color = color
 	flash.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -3460,6 +4000,19 @@ func _on_battle_log_message(message: String) -> void:
 		battle_log.scroll_to_line(battle_log.get_line_count())
 
 
+## Trust option (a): BM opens a short window before AI takes over on a
+## player-trusted PC. The battle log line from BM is the visible cue;
+## input capture lives in _input's ui_cancel guard so cancel during the
+## window claims the turn. Handlers here are hooks — if a future toast /
+## highlight is added, this is the anchor.
+func _on_trust_interrupt_window_opened(_pc: Combatant, _seconds: float) -> void:
+	pass
+
+
+func _on_trust_interrupt_window_closed(_pc: Combatant, _interrupted: bool) -> void:
+	pass
+
+
 func _on_advance_trash_talk(combatant: Combatant, line: String) -> void:
 	"""Show a brief cocky one-liner before a big Advance combo"""
 	if turbo_mode:
@@ -3471,88 +4024,140 @@ func _on_advance_trash_talk(combatant: Combatant, line: String) -> void:
 	log_message('[color=yellow]%s: "%s"[/color]' % [combatant.combatant_name, line])
 
 
-func _spawn_quip_bubble(sprite: Node2D, speaker_name: String, line: String, border_color: Color = Color(1.0, 0.85, 0.2), hold_time: float = 1.5) -> void:
-	"""Show a speech bubble above a sprite — reused for quips, trash talk, encounter reactions.
-	Suppressed at high speed (4x+), during autogrind, or turbo mode."""
-	if turbo_mode or Engine.time_scale >= 2.0:
+## Tick 122: party combat dialogue lines (turn_start/low_hp/big_hit_taken/
+## used_signature_ability/victory). BattleManager._emit_party_line emits
+## both this signal AND a battle_log_message, so the log retains the line
+## as text scrollback while the bubble plays over the sprite. The
+## quip-bubble code auto-suppresses at turbo / 4x+ / autogrind console.
+func _on_party_combat_line(combatant: Combatant, line: String, voice_trigger: String = "") -> void:
+	if turbo_mode:
 		return
-	if autogrind_console_mode:
-		return
-	# Container for bubble + pointer triangle
-	var container = Control.new()
-	container.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	container.z_index = 120
+	var sprite = _get_combatant_sprite(combatant)
+	if sprite and is_instance_valid(sprite):
+		# msg 2105: voice key derived as voice_<job>_<trigger>; manifest-gated
+		# in SoundManager (silent skip when the voice pack isn't authored).
+		var audio_key: String = ""
+		if voice_trigger != "" and combatant.job is Dictionary:
+			var job_id: String = str(combatant.job.get("id", ""))
+			if job_id != "":
+				audio_key = "voice_%s_%s" % [job_id, voice_trigger]
+		_spawn_quip_bubble(sprite, combatant.combatant_name, line, _get_job_quip_color(combatant), 2.0, audio_key)
 
-	var bubble = PanelContainer.new()
-	bubble.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+# ── Wave E — Boss dialogue surface ───────────────────────────────────────────
+
+func _on_boss_taunt(boss: Combatant, line: String) -> void:
+	"""Show a non-blocking taunt bubble above the boss sprite. Reuses the
+	existing _spawn_quip_bubble infrastructure (Option A — non-blocking
+	autodismiss; preferred over CutsceneDialogue for mid-battle interrupts
+	per Wave E plan)."""
+	if turbo_mode:
+		return
+	if not is_instance_valid(boss):
+		return
+	# Look up the enemy sprite (enemy_party indexing matches enemy_sprite_nodes).
+	var sprite: Node2D = null
+	var idx = test_enemies.find(boss)
+	if idx >= 0 and idx < enemy_sprite_nodes.size():
+		sprite = enemy_sprite_nodes[idx]
+	if sprite == null or not is_instance_valid(sprite):
+		return
+	# Crimson border distinguishes boss taunts from party quips.
+	_spawn_quip_bubble(sprite, boss.combatant_name, line, Color(0.95, 0.25, 0.25), 2.5)
+
+
+func _on_boss_jailbreak_landed(_boss: Combatant, _vulnerability_id: String, _consequence: Dictionary) -> void:
+	"""Diegetic '⚠ DIRECTIVE OVERRIDE ACCEPTED' banner. Non-blocking
+	autodismiss via tween. Triggered after BattleManager has already
+	applied the consequence — this is purely visual feedback."""
+	_show_address_banner("⚠ DIRECTIVE OVERRIDE ACCEPTED")
+
+
+func _on_boss_gloat_line(text: String, is_victory: bool) -> void:
+	"""Wave G — surface the end-of-fight boss gloat in the battle log. The boss
+	(victory) or the party (defeat) may already be dead, so the sprite-bubble
+	path is unreliable here — the log is the dependable display surface, sitting
+	right alongside the VICTORY/DEFEAT banner. LLM-narrated when available,
+	scripted-pool fallback otherwise; this handler treats both identically."""
+	if text.strip_edges() == "":
+		return
+	# Crimson for a triumphant boss gloat (party wiped); muted gold for a boss
+	# conceding in defeat (party won). Both are tagged so the line reads as the
+	# boss speaking, not narration.
+	var color: String = "#cc4444" if not is_victory else "#d8b860"
+	log_message('[color=%s]%s: "%s"[/color]' % [color, _gloat_speaker_name(is_victory), text])
+
+
+func _gloat_speaker_name(_is_victory: bool) -> String:
+	"""Best-effort boss display name for the gloat log line. Reads from the live
+	boss combatant if one is still around; falls back to a neutral label."""
+	for enemy in test_enemies:
+		if enemy and is_instance_valid(enemy):
+			if (enemy.has_meta("is_boss") and enemy.get_meta("is_boss")) \
+					or (enemy.has_meta("is_miniboss") and enemy.get_meta("is_miniboss")):
+				if enemy.combatant_name != "":
+					return enemy.combatant_name
+	return "The Boss"
+
+
+func _show_address_banner(text: String) -> void:
+	"""Spawns a transient banner Label centered at the top of the viewport,
+	fades in/holds/fades out via create_tween. Suppressed during turbo /
+	autogrind console (no-op for headless tests)."""
+	if turbo_mode or autogrind_console_mode:
+		return
+	if not is_inside_tree():
+		return
+	var panel = PanelContainer.new()
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var style = StyleBoxFlat.new()
-	style.bg_color = Color(0.0, 0.0, 0.0, 0.8)
-	style.border_color = border_color
+	style.bg_color = Color(0.05, 0.05, 0.08, 0.92)
+	style.border_color = Color(1.0, 0.85, 0.2)
 	style.border_width_top = 2
 	style.border_width_bottom = 2
 	style.border_width_left = 2
 	style.border_width_right = 2
-	style.corner_radius_top_left = 4
-	style.corner_radius_top_right = 4
-	style.corner_radius_bottom_left = 4
-	style.corner_radius_bottom_right = 4
-	style.content_margin_left = 8
-	style.content_margin_right = 8
-	style.content_margin_top = 3
-	style.content_margin_bottom = 3
-	bubble.add_theme_stylebox_override("panel", style)
-
-	var vbox = VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 0)
-	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	bubble.add_child(vbox)
-
-	# Speaker name header (small, colored)
-	var name_label = Label.new()
-	name_label.text = speaker_name
-	name_label.add_theme_font_size_override("font_size", 9)
-	name_label.add_theme_color_override("font_color", border_color)
-	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	vbox.add_child(name_label)
-
-	# Quote text
+	style.corner_radius_top_left = 6
+	style.corner_radius_top_right = 6
+	style.corner_radius_bottom_left = 6
+	style.corner_radius_bottom_right = 6
+	style.content_margin_left = 18
+	style.content_margin_right = 18
+	style.content_margin_top = 8
+	style.content_margin_bottom = 8
+	panel.add_theme_stylebox_override("panel", style)
 	var label = Label.new()
-	label.text = '"%s"' % line
-	label.add_theme_font_size_override("font_size", 13)
-	label.add_theme_color_override("font_color", Color(1.0, 0.95, 0.7))
-	label.add_theme_constant_override("outline_size", 1)
-	label.add_theme_color_override("font_outline_color", Color(0.2, 0.15, 0.0))
-	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	vbox.add_child(label)
-
-	container.add_child(bubble)
-
-	# Small triangle pointer below bubble pointing to sprite
-	var pointer = Polygon2D.new()
-	pointer.polygon = PackedVector2Array([Vector2(15, 0), Vector2(25, 0), Vector2(20, 8)])
-	pointer.color = border_color
-	pointer.position = Vector2(0, 0)
-	# Polygon2D doesn't inherit from Control, so it has no mouse_filter property.
-	# We can't assign mouse_filter directly to Polygon2D. Instead, we skip assigning it entirely since polygons don't consume mouse events by default.
-	# pointer.mouse_filter = Control.MOUSE_FILTER_IGNORE if pointer.has_method("set") else 0
-	container.add_child(pointer)
-
-	container.position = sprite.global_position + Vector2(-40, -90)
-	container.modulate.a = 0.0
-	add_child(container)
-
-	# Position pointer below the bubble panel
-	bubble.ready.connect(func():
-		if is_instance_valid(pointer) and is_instance_valid(bubble):
-			pointer.position.y = bubble.size.y
-	, CONNECT_ONE_SHOT)
-
+	label.text = text
+	label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
+	label.add_theme_font_size_override("font_size", TextScale.scaled(18))
+	panel.add_child(label)
+	# Anchor at top-center.
+	panel.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	panel.position = Vector2(-150, 60)
+	panel.size = Vector2(300, 0)  # auto-resize via child
+	panel.modulate = Color(1, 1, 1, 0)
+	panel.z_index = 200
+	add_child(panel)
 	var tween = create_tween()
-	tween.tween_property(container, "modulate:a", 1.0, 0.15)
-	tween.tween_property(container, "position:y", container.position.y - 10, hold_time * 0.5)
-	tween.parallel().tween_property(container, "modulate:a", 0.0, 0.3).set_delay(hold_time)
-	tween.tween_callback(container.queue_free)
+	tween.set_parallel(false)
+	tween.tween_property(panel, "modulate:a", 1.0, 0.18)
+	tween.tween_interval(1.6)
+	tween.tween_property(panel, "modulate:a", 0.0, 0.35)
+	tween.tween_callback(panel.queue_free)
 
+
+func _spawn_quip_bubble(sprite: Node2D, speaker_name: String, line: String, border_color: Color = Color(1.0, 0.85, 0.2), hold_time: float = 1.5, audio_key: String = "") -> void:
+	"""Speech bubble above a sprite — party lines, boss taunts, quips, trash talk.
+	Delegates to BattleSpeechBubble (playtest brief msg 2101): viewport-clamped
+	out of the top-right party-panel column, suppressed only at 4x+ (pre-fix
+	2x+ silently hid ALL bubbles for anyone playing at 2x battle speed — the
+	"I can't see the text" playtest complaint), hold scaled by time_scale,
+	optional audio_key voice hook for phase-2 voice acting."""
+	if turbo_mode or autogrind_console_mode:
+		return
+	if sprite == null or not is_instance_valid(sprite):
+		return
+	BattleSpeechBubble.spawn(self, sprite.global_position, speaker_name, line, border_color, hold_time, audio_key)
 
 func _on_one_shot_achieved(rank: String, setup_turns: int) -> void:
 	"""Display one-shot visual feedback when all enemies are defeated in a single execution phase"""
@@ -3588,8 +4193,11 @@ func _on_one_shot_achieved(rank: String, setup_turns: int) -> void:
 	one_shot_label.offset_bottom = 0
 	one_shot_label.offset_left = -200
 	one_shot_label.offset_right = 200
-	one_shot_label.add_theme_font_size_override("font_size", 48)
+	one_shot_label.add_theme_font_size_override("font_size", TextScale.scaled(48))
 	one_shot_label.add_theme_color_override("font_color", Color(1.0, 0.9, 0.0))
+	# Tick 219: 2px outline matches the floating-text contrast scheme; flash_bg fades quickly so the label spends most of its life over the Mode 7 floor.
+	one_shot_label.add_theme_constant_override("outline_size", 2)
+	one_shot_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	one_shot_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.8))
 	one_shot_label.add_theme_constant_override("shadow_offset_x", 3)
 	one_shot_label.add_theme_constant_override("shadow_offset_y", 3)
@@ -3606,9 +4214,12 @@ func _on_one_shot_achieved(rank: String, setup_turns: int) -> void:
 	rank_label.offset_bottom = 40
 	rank_label.offset_left = -200
 	rank_label.offset_right = 200
-	rank_label.add_theme_font_size_override("font_size", 28)
+	rank_label.add_theme_font_size_override("font_size", TextScale.scaled(28))
 	var rank_color = Color(1.0, 0.9, 0.0) if rank == "S" else Color(0.6, 1.0, 0.6) if rank == "A" else Color(0.6, 0.8, 1.0)
 	rank_label.add_theme_color_override("font_color", rank_color)
+	# Tick 219: floating-text contrast — outline + shadow.
+	rank_label.add_theme_constant_override("outline_size", 2)
+	rank_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	rank_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.8))
 	rank_label.add_theme_constant_override("shadow_offset_x", 2)
 	rank_label.add_theme_constant_override("shadow_offset_y", 2)
@@ -3625,8 +4236,11 @@ func _on_one_shot_achieved(rank: String, setup_turns: int) -> void:
 	bonus_label.offset_bottom = 75
 	bonus_label.offset_left = -200
 	bonus_label.offset_right = 200
-	bonus_label.add_theme_font_size_override("font_size", 22)
+	bonus_label.add_theme_font_size_override("font_size", TextScale.scaled(22))
 	bonus_label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4))
+	# Tick 219: floating-text contrast — outline + shadow.
+	bonus_label.add_theme_constant_override("outline_size", 2)
+	bonus_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	bonus_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.8))
 	bonus_label.add_theme_constant_override("shadow_offset_x", 2)
 	bonus_label.add_theme_constant_override("shadow_offset_y", 2)
@@ -3692,8 +4306,11 @@ func _on_autobattle_victory(multiplier: float, total_turns: int) -> void:
 	auto_label.offset_bottom = 0 + y_offset
 	auto_label.offset_left = -200
 	auto_label.offset_right = 200
-	auto_label.add_theme_font_size_override("font_size", 42)
+	auto_label.add_theme_font_size_override("font_size", TextScale.scaled(42))
 	auto_label.add_theme_color_override("font_color", Color(0.3, 0.9, 1.0))
+	# Tick 219: floating-text contrast — outline + shadow.
+	auto_label.add_theme_constant_override("outline_size", 2)
+	auto_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	auto_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.8))
 	auto_label.add_theme_constant_override("shadow_offset_x", 3)
 	auto_label.add_theme_constant_override("shadow_offset_y", 3)
@@ -3710,8 +4327,11 @@ func _on_autobattle_victory(multiplier: float, total_turns: int) -> void:
 	turns_label.offset_bottom = 35 + y_offset
 	turns_label.offset_left = -200
 	turns_label.offset_right = 200
-	turns_label.add_theme_font_size_override("font_size", 22)
+	turns_label.add_theme_font_size_override("font_size", TextScale.scaled(22))
 	turns_label.add_theme_color_override("font_color", Color(0.9, 0.9, 1.0))
+	# Tick 219: floating-text contrast — outline + shadow.
+	turns_label.add_theme_constant_override("outline_size", 2)
+	turns_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	turns_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.8))
 	turns_label.add_theme_constant_override("shadow_offset_x", 2)
 	turns_label.add_theme_constant_override("shadow_offset_y", 2)
@@ -3728,8 +4348,11 @@ func _on_autobattle_victory(multiplier: float, total_turns: int) -> void:
 	bonus_label.offset_bottom = 70 + y_offset
 	bonus_label.offset_left = -200
 	bonus_label.offset_right = 200
-	bonus_label.add_theme_font_size_override("font_size", 22)
+	bonus_label.add_theme_font_size_override("font_size", TextScale.scaled(22))
 	bonus_label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4))
+	# Tick 219: floating-text contrast — outline + shadow.
+	bonus_label.add_theme_constant_override("outline_size", 2)
+	bonus_label.add_theme_color_override("font_outline_color", Color.BLACK)
 	bonus_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.8))
 	bonus_label.add_theme_constant_override("shadow_offset_x", 2)
 	bonus_label.add_theme_constant_override("shadow_offset_y", 2)
@@ -3770,10 +4393,7 @@ func _play_staggered_victory_animations() -> void:
 		if delay <= 0.0:
 			animator.play_victory()
 		else:
-			get_tree().create_timer(delay).timeout.connect(func():
-				if is_instance_valid(animator):
-					animator.play_victory()
-			)
+			get_tree().create_timer(delay).timeout.connect(_delayed_play_victory.bind(animator))
 
 	# Background brightening on victory (brief warm flash)
 	if _battle_background and is_instance_valid(_battle_background):
@@ -3795,7 +4415,8 @@ func _show_victory_quip() -> void:
 	if pool.is_empty():
 		return
 	var line = pool[randi() % pool.size()]
-	log_message("[color=lime]%s:[/color] \"%s\"" % [speaker.combatant_name, line])
+	# Tick 239: bonus BBCode (PC dialogue speaker — positive valence by convention).
+	log_message("[color=%s]%s:[/color] \"%s\"" % [AccessibilityPalette.bonus_bbcode(), speaker.combatant_name, line])
 	var sprite = _get_combatant_sprite(speaker)
 	if sprite and is_instance_valid(sprite):
 		_spawn_quip_bubble(sprite, speaker.combatant_name, line, _get_job_quip_color(speaker), 2.5)
@@ -3803,6 +4424,18 @@ func _show_victory_quip() -> void:
 
 func _show_victory_results() -> void:
 	_results_display.show_victory_results()
+
+
+static func pick_summon_name(base_name: String, living_same_type: Array) -> String:
+	if living_same_type.is_empty():
+		return base_name
+	var used: Dictionary = {}
+	for n in living_same_type:
+		used[str(n).trim_prefix(base_name).strip_edges()] = true
+	for letter in ["A", "B", "C", "D", "E"]:
+		if not used.has(letter):
+			return base_name + " " + letter
+	return base_name + " F"
 
 
 func _on_monster_summoned(monster_type: String, summoner: Combatant) -> void:
@@ -3822,15 +4455,12 @@ func _on_monster_summoned(monster_type: String, summoner: Combatant) -> void:
 	var enemy = Combatant.new()
 	var stats = monster_data["stats"].duplicate()
 
-	# Count existing enemies of this type for naming
-	var type_count = 0
+	# letter must be unique among LIVING same-types — alive-count indexing collided (survivor "B" + new summon → second "B")
+	var living_names: Array = []
 	for e in test_enemies:
-		if e.get_meta("monster_type", "") == monster_type:
-			type_count += 1
-	if type_count > 0:
-		stats["name"] = monster_data["name"] + " " + ["A", "B", "C", "D", "E"][mini(type_count, 4)]
-	else:
-		stats["name"] = monster_data["name"]
+		if is_instance_valid(e) and e.is_alive and e.get_meta("monster_type", "") == monster_type:
+			living_names.append(e.combatant_name)
+	stats["name"] = pick_summon_name(monster_data["name"], living_names)
 
 	enemy.initialize(stats)
 	add_child(enemy)
@@ -3859,6 +4489,19 @@ func _on_monster_summoned(monster_type: String, summoner: Combatant) -> void:
 	var sprite = AnimatedSprite2D.new()
 	sprite.sprite_frames = _get_monster_sprite_frames(monster_type)
 
+	# summons must mirror battle-start sizing or artist drops (<=128px) pop in 2.5x small, facing away
+	var size_bump: float = 1.0
+	var is_artist_monster := false
+	if sprite.sprite_frames and sprite.sprite_frames.has_animation(&"idle"):
+		if sprite.sprite_frames.get_frame_count(&"idle") > 0:
+			var ftex = sprite.sprite_frames.get_frame_texture(&"idle", 0)
+			if ftex and ftex.get_height() <= ENEMY_SMALL_FRAME_THRESHOLD:
+				size_bump = ENEMY_SCALE_BUMP
+				is_artist_monster = true
+	sprite.flip_h = is_artist_monster
+	var summon_depth_scale: float = 1.0 - float(new_idx) * 0.05
+	var final_scale: float = summon_depth_scale * size_bump
+
 	# Position near the summoner or in an available slot
 	var base_pos = Vector2(200, 300)
 	if enemy_positions.size() > new_idx:
@@ -3872,6 +4515,8 @@ func _on_monster_summoned(monster_type: String, summoner: Combatant) -> void:
 
 	$BattleField/EnemySprites.add_child(sprite)
 	enemy_sprite_nodes.append(sprite)
+	# Keep sway bookkeeping aligned — summons were skipped by the idle-sway index guard
+	_enemy_base_positions.append(sprite.position)
 
 	# Create animator
 	var animator = BattleAnimatorClass.new()
@@ -3885,21 +4530,21 @@ func _on_monster_summoned(monster_type: String, summoner: Combatant) -> void:
 	# Setup status icons for summoned enemy
 	_setup_status_icons(enemy, sprite)
 
-	# Spawn animation - pop in with flash
+	# Spawn animation - pop in with flash (overshoot and settle at the computed size, not 1.0)
 	var tween = create_tween()
-	tween.tween_property(sprite, "scale", Vector2(1.3, 1.3), 0.15)
-	tween.tween_property(sprite, "scale", Vector2(1.0, 1.0), 0.1)
+	tween.tween_property(sprite, "scale", Vector2(final_scale * 1.3, final_scale * 1.3), 0.15)
+	tween.tween_property(sprite, "scale", Vector2(final_scale, final_scale), 0.1)
 	# Guarantee final scale in case tween is interrupted
 	tween.finished.connect(func():
 		if is_instance_valid(sprite):
-			sprite.scale = Vector2(1.0, 1.0)
+			sprite.scale = Vector2(final_scale, final_scale)
 	)
 
 	# Flash effect at spawn position
 	EffectSystem.spawn_effect(EffectSystem.EffectType.BUFF, sprite.global_position)
 
 	# Log message
-	log_message("[color=red]%s appears![/color]" % stats["name"])
+	log_message("[color=%s]%s appears![/color]" % [AccessibilityPalette.penalty_bbcode(), stats["name"]])
 
 	_update_ui()
 
@@ -3937,7 +4582,8 @@ func _check_danger_music() -> void:
 			print("[MUSIC] Switched to DANGER music - party member down!")
 		else:
 			print("[MUSIC] Switched to DANGER music - player critically low!")
-	elif not any_in_danger and _is_danger_music:
+	elif not any_in_danger and (_is_danger_music or str(SoundManager._current_music) == "danger"):
+		# Stateless check: a duel-retry rebuilds this scene with the flag fresh while SoundManager still plays danger — the flag-only check left doom music over a full-HP party (struktured 2026-07-11).
 		_is_danger_music = false
 		SoundManager.play_music(_base_music_track)
 		print("[MUSIC] Switched back to %s music - party recovered" % _base_music_track)
@@ -3956,6 +4602,14 @@ const BATTLE_START_QUIPS: Dictionary = {
 	"ninja": ["Already behind them.", "Too slow.", "This ends quickly.", "..."],
 	"summoner": ["I sense their weakness.", "Spirits, attend me!", "The ether stirs...", "Let's call for backup."],
 	"speculator": ["I'm betting on us.", "The odds look good.", "Risk assessment: favorable.", "All in."],
+	# Tick 290: meta-job lines (mirrors tick 289's VICTORY_QUIPS extension).
+	"scriptweaver": ["Pushing combat-v2 to prod.", "Forking this encounter.", "Stack trace ready.", "git battle origin/main"],
+	"time_mage": ["I've seen this fight before.", "Loading the right branch.", "Cue intro music.", "Time's already on our side."],
+	"necromancer": ["Their grave is open.", "Add them to the ledger.", "I hear the bones humming.", "Endings rehearse here."],
+	"bossbinder": ["Mask up, everyone.", "We answer their script.", "Their pattern is mine to wear.", "Boss music? In my head."],
+	"skiptrotter": ["Speedrun start.", "I've got the route.", "Cutscene → skip.", "Next checkpoint, now."],
+	# `_default` fallback for unknown jobs (debug, modded, etc.).
+	"_default": ["Battle begins!", "Here we go.", "Stay sharp.", "Engage!"],
 }
 
 const NEW_MONSTER_QUIPS: Dictionary = {
@@ -3968,6 +4622,13 @@ const NEW_MONSTER_QUIPS: Dictionary = {
 	"ninja": ["Hmm. Unfamiliar.", "No entry in the bestiary.", "...interesting."],
 	"summoner": ["The spirits don't recognize it either.", "A new entity... fascinating.", "What plane did YOU come from?"],
 	"speculator": ["No market data on this one.", "Unpriced asset. Could be valuable.", "Unknown risk profile."],
+	# Tick 290: meta-job lines for first-encounter bestiary triggers.
+	"scriptweaver": ["No schema for that.", "404 — monster type unknown.", "Patching bestiary on the fly."],
+	"time_mage": ["I haven't seen this one yet.", "Future-me will recognize it.", "A new variable in the timeline."],
+	"necromancer": ["A fresh page in the ledger.", "I don't know its name. Yet.", "Its bones will tell me later."],
+	"bossbinder": ["A new mask to study.", "Their pattern is unread.", "Catalog it before I wear it."],
+	"skiptrotter": ["Wasn't in the route notes.", "Hold up — undocumented spawn.", "Recompiling the speedrun."],
+	"_default": ["What's that?", "I don't recognize it.", "Unknown threat!"],
 }
 
 ## Monster-specific encounter flavor text (shown alongside quips)
@@ -3997,6 +4658,13 @@ const BRAVE_QUIPS: Dictionary = {
 	"ninja": ["Shadow rush.", "Multi-strike.", "Vanishing barrage."],
 	"summoner": ["Spirits, converge!", "All together now!", "Full summoning circle!"],
 	"speculator": ["Going all in!", "Double or nothing!", "Maximum leverage!"],
+	# Tick 290: meta-job brave lines (advance/pool AP burst).
+	"scriptweaver": ["Buffer overflow incoming.", "Unrolled the loop.", "Inlined."],
+	"time_mage": ["All my futures, at once.", "Stacked turns.", "Fast-forward."],
+	"necromancer": ["Chorus, sing.", "All the dead in one note.", "Open the ledger wide."],
+	"bossbinder": ["Boss-phase, NOW.", "Their finisher is mine.", "Mask glows."],
+	"skiptrotter": ["Skipping every cooldown.", "Glitch jump.", "OOB combo."],
+	"_default": ["Going all out!", "Full force!", "Now!"],
 }
 
 ## Combat reaction quips — triggered by battle events (30% chance each)
@@ -4006,6 +4674,12 @@ const CRIT_QUIPS: Dictionary = {
 	"mage": ["Critical resonance!", "The formula was perfect!", "Maximum efficiency!"],
 	"rogue": ["Bullseye!", "Right where it hurts!", "Too easy."],
 	"bard": ["♪ And the crowd goes wild! ♪", "Standing ovation!", "Hit the high note!"],
+	# Tick 291: meta-job CRIT lines (continues the 289/290 sweep).
+	"scriptweaver": ["Asserted maximum.", "Force-pushed.", "RNG seed: optimal."],
+	"time_mage": ["Yes — this branch.", "Saw it. Took it.", "Caught the moment."],
+	"necromancer": ["Bones split clean.", "Their record closes loudly.", "The ledger snapped shut."],
+	"bossbinder": ["Boss-grade strike.", "Their finisher, returned.", "Through the mask."],
+	"skiptrotter": ["Frame-perfect.", "Crit chain — no skip.", "Optimal RNG."],
 	"_default": ["Critical hit!", "Nice shot!", "That's a big one!"],
 }
 
@@ -4013,6 +4687,12 @@ const OVERKILL_QUIPS: Dictionary = {
 	"fighter": ["Overkill? No such thing.", "Rest in pieces.", "Didn't even need that much."],
 	"rogue": ["That was excessive. I love it.", "Wasted resources, but style points.", "Oops. Too hard."],
 	"mage": ["Miscalculated... in our favor.", "Excessive force noted.", "The math says: very dead."],
+	# Tick 291: meta-job OVERKILL lines.
+	"scriptweaver": ["Memory leak — theirs.", "Catastrophic stack overflow.", "Buffer is theirs now."],
+	"time_mage": ["Erased from three timelines.", "Won't exist in the next one either.", "Past tense, future tense."],
+	"necromancer": ["Their afterlife flinched.", "Ledger marked TWICE.", "Even the bones are gone."],
+	"bossbinder": ["Boss-killed twice.", "Their mask shattered in my hand.", "Whatever script they had — gone."],
+	"skiptrotter": ["Skipped past dead.", "Out of bounds.", "Cleared. Next."],
 	"_default": ["Overkill!", "That was more than enough!", "Obliterated!"],
 }
 
@@ -4021,6 +4701,12 @@ const TAKE_BIG_DAMAGE_QUIPS: Dictionary = {
 	"cleric": ["Ouch! I need a moment!", "That really hurt...", "Someone cover me!"],
 	"mage": ["My barrier failed!", "Ow! Physical pain! My weakness!", "I need distance!"],
 	"rogue": ["Should've dodged that!", "Okay, THAT hurt.", "Lucky shot..."],
+	# Tick 291: meta-job TAKE_BIG_DAMAGE lines.
+	"scriptweaver": ["Segfault!", "Stack trace incoming.", "Unhandled exception!"],
+	"time_mage": ["Roll back, roll back!", "That timeline hurt.", "Wrong branch!"],
+	"necromancer": ["Adding myself to the ledger?", "The chorus heard that.", "Not yet, not yet."],
+	"bossbinder": ["Boss-level damage.", "Mask cracked.", "Whose pattern WAS that?"],
+	"skiptrotter": ["Hitbox bigger than the wiki said.", "Frame skip didn't save me.", "Hold up — that's a phase change."],
 	"_default": ["Ow!", "That hurt!", "I'm in trouble!"],
 }
 
@@ -4028,6 +4714,12 @@ const DODGE_QUIPS: Dictionary = {
 	"fighter": ["Ha! Missed!", "Too slow!", "I saw that coming!"],
 	"rogue": ["Not even close.", "Like I'd stand still.", "You'll have to be faster than THAT."],
 	"ninja": ["Already moved.", "Predictable.", "..."],
+	# Tick 291: meta-job DODGE lines.
+	"scriptweaver": ["Conditional: false.", "Early-return.", "Branch not taken."],
+	"time_mage": ["Wasn't there. Already moved.", "Read your past.", "I left the timeline."],
+	"necromancer": ["The dead don't predict me.", "Their swing was already over.", "Their ghost mourns the miss."],
+	"bossbinder": ["Read your pattern.", "Boss tells, all of them.", "Their script is mine."],
+	"skiptrotter": ["i-frames.", "OOB.", "Pixel-perfect skip."],
 	"_default": ["Missed me!", "Nice try!", "Dodged!"],
 }
 
@@ -4036,6 +4728,12 @@ const LOW_HP_QUIPS: Dictionary = {
 	"cleric": ["I need healing... ironic.", "My faith is being tested!", "This isn't good..."],
 	"mage": ["Running low on everything...", "My concentration is slipping!", "Need to retreat!"],
 	"rogue": ["Things are looking grim.", "Time to get creative...", "Escape plan forming..."],
+	# Tick 291: meta-job LOW_HP lines.
+	"scriptweaver": ["Memory critical.", "GC me later — finish this.", "OOM warning."],
+	"time_mage": ["Time to rewind.", "Need a save point...", "Bad branch — pivoting."],
+	"necromancer": ["My own ledger is open.", "I can hear my chorus.", "Soon — but not yet."],
+	"bossbinder": ["Mask cracking.", "Phase change coming.", "One more strike — theirs or mine."],
+	"skiptrotter": ["One frame from death.", "Need a glitch jump.", "Skip skip skip!"],
 	"_default": ["I'm in trouble...", "Someone help!", "Not looking good..."],
 }
 
@@ -4044,6 +4742,12 @@ const ALLY_KO_QUIPS: Dictionary = {
 	"cleric": ["I failed them...", "Hold on! I'll revive you!", "No... not again!"],
 	"mage": ["We lost one! Recalculating...", "This changes the equation.", "Focus! We must continue!"],
 	"rogue": ["They got one of ours!", "That's gonna cost them.", "Now I'm angry."],
+	# Tick 291: meta-job ALLY_KO lines.
+	"scriptweaver": ["Process terminated.", "Their thread crashed.", "Reverting their last commit later."],
+	"time_mage": ["I can rewind.", "Give me one turn.", "This isn't final."],
+	"necromancer": ["I'll keep their voice.", "Their chorus gains a member.", "The ledger grows."],
+	"bossbinder": ["They wore the mask too long.", "Their script ran out.", "Boss-phase reversed."],
+	"skiptrotter": ["Need a respawn here!", "Save state, load!", "Not in the route notes..."],
 	"_default": ["We lost someone!", "No!", "Avenge them!"],
 }
 
@@ -4060,21 +4764,42 @@ const VICTORY_QUIPS: Dictionary = {
 	"ninja": ["Clean.", "Already done.", "Efficient.", "...moving on."],
 	"summoner": ["The spirits are pleased.", "A worthy offering.", "The pact grows stronger.", "Well fought, all of us."],
 	"speculator": ["Profit margins looking good.", "Return on investment: excellent.", "The market rewards the bold.", "Portfolio up."],
+	# Tick 289: meta jobs now have diegetic quips matching their
+	# schtick. Pre-fix all 5 fell through to "_default" / "Victory!"
+	# which broke the per-job voice for debug-unlocked playthroughs.
+	# Mirrors the tick-124 JOB_QUIP_COLORS extension (colors were
+	# fixed; lines weren't).
+	"scriptweaver": ["return WIN;", "Commit. Push. Merge.", "Patch deployed.", "// TODO: feel something"],
+	"time_mage": ["Rewinding for the highlight reel.", "Knew this round before it began.", "Threading the timeline.", "Some battles end before they start."],
+	"necromancer": ["The dead are louder than ever.", "Another for the choir.", "Even endings have endings.", "I'll lend their bones a new song."],
+	"bossbinder": ["I felt them lose.", "We were them, briefly.", "Mask off. Next.", "Their script is now mine."],
+	"skiptrotter": ["Skipped the cutscene, kept the EXP.", "Speed-pace cleared.", "Filing this under: handled.", "Already on the next map."],
 	"_default": ["Victory!", "We did it!", "Well fought!"],
 }
 
 
 ## Per-job bubble colors for quip identity
 const JOB_QUIP_COLORS: Dictionary = {
+	# Starter jobs
 	"fighter": Color(0.9, 0.5, 0.2),    # Orange — aggressive
 	"cleric": Color(1.0, 0.95, 0.6),    # Warm gold — holy
 	"mage": Color(0.5, 0.4, 1.0),       # Purple — arcane
 	"rogue": Color(0.4, 0.9, 0.4),      # Green — sneaky
 	"bard": Color(1.0, 0.6, 0.8),       # Pink — performer
+	# Advanced jobs
 	"guardian": Color(0.6, 0.55, 0.4),   # Bronze — armored
 	"ninja": Color(0.5, 0.5, 0.6),      # Dark gray — shadow
 	"summoner": Color(0.3, 0.8, 0.7),   # Teal — ethereal
 	"speculator": Color(0.3, 0.7, 0.3), # Money green — market
+	# Tick 124: meta jobs — each colored to its diegetic schtick.
+	# Pre-fix, all 5 fell through to the default gray Color(0.8, 0.8, 0.8)
+	# in _get_job_quip_color, breaking the per-job visual story for
+	# anyone unlocking them via debug mode.
+	"scriptweaver": Color(0.0, 0.95, 0.55), # Neon green — terminal/code
+	"time_mage": Color(0.7, 0.85, 1.0),     # Pale blue — chronal shimmer
+	"necromancer": Color(0.45, 0.2, 0.55),  # Deep violet — undeath
+	"bossbinder": Color(0.95, 0.25, 0.35),  # Boss-red — they BECOME the boss
+	"skiptrotter": Color(0.95, 0.85, 0.35), # Glitchy yellow — frame-skip
 }
 
 
@@ -4099,15 +4824,22 @@ func _try_combat_quip(quip_dict: Dictionary, combatant: Combatant) -> void:
 		_spawn_quip_bubble(sprite, combatant.combatant_name, line, _get_job_quip_color(combatant), 1.0)
 
 
-## Track which monster types the player has encountered (persists in GameState)
+## Track which monster types the player has encountered (persists in GameState).
+## Delegates to BestiarySystem so the discovery dict has a single owner.
+## Pre-fix this inlined the same `GameState.game_constants["seen_monsters"]…`
+## lines that BestiarySystem.is_seen / mark_seen already implemented byte-for-
+## byte; the BestiarySystem versions sat as dead code (zero callers) and would
+## have drifted from these inlined copies on any future refactor.
 func _is_new_monster(monster_type: String) -> bool:
-	var seen = GameState.game_constants.get("seen_monsters", {})
-	return not seen.has(monster_type)
+	return not BestiarySystem.is_seen(monster_type)
 
 func _mark_monster_seen(monster_type: String) -> void:
-	if not GameState.game_constants.has("seen_monsters"):
-		GameState.game_constants["seen_monsters"] = {}
-	GameState.game_constants["seen_monsters"][monster_type] = true
+	# Tick 260: pass current map id so BestiaryMenu can show
+	# "Last seen: <location>" — autobattle-planning hint.
+	var loc: String = ""
+	if MapSystem and "current_map_id" in MapSystem:
+		loc = str(MapSystem.current_map_id)
+	BestiarySystem.mark_seen(monster_type, loc)
 
 func _show_battle_quip() -> void:
 	"""Show a party member quip at battle start."""

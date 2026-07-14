@@ -160,11 +160,14 @@ func test_status_box_height_shrinks_for_5pc_party() -> void:
 	# the per-box bars instead).
 	# Pin: _create_character_status_box must size HP/MP bars conditionally
 	# on party_size so 5-PC fits the same panel.
+	# 2026-07-01: 18/14 still overflowed once portrait header rows landed
+	# (Fighter header clipped off-screen) — tightened to 16/12; exact
+	# values pinned in test_party_panel_top_clip_regression.
 	var text = _read("res://src/battle/BattleUIManager.gd")
-	assert_true(text.find("var hp_bar_h: int = 22 if party_size <= 4 else 18") > -1,
-		"HP bar height must shrink to 18 when party_size > 4 (strict-5 layout)")
-	assert_true(text.find("var mp_bar_h: int = 18 if party_size <= 4 else 14") > -1,
-		"MP bar height must shrink to 14 when party_size > 4 (strict-5 layout)")
+	assert_true(text.find("var hp_bar_h: int = 22 if party_size <= 4 else 16") > -1,
+		"HP bar height must shrink to 16 when party_size > 4 (strict-5 layout)")
+	assert_true(text.find("var mp_bar_h: int = 18 if party_size <= 4 else 12") > -1,
+		"MP bar height must shrink to 12 when party_size > 4 (strict-5 layout)")
 	# Anti-pattern: the old unconditional `custom_minimum_size = Vector2(0, 22)`
 	# must NOT appear for the HP bar (would re-introduce the overflow).
 	assert_eq(text.find("hp_bar.custom_minimum_size = Vector2(0, 22)"), -1,
@@ -183,10 +186,11 @@ func test_party_sprite_height_set_for_5pc() -> void:
 	assert_gt(idx, -1, "PARTY_SPRITE_HEIGHT must be declared")
 	var line_end = text.find("\n", idx)
 	var line = text.substr(idx, line_end - idx)
-	# Extract number after `=`.
-	# Parse the numeric value after `=`. Don't rstrip ".0" — that strips
-	# the trailing 0 from "210.0" → "21". The .to_float() handles trailing
-	# whitespace + comment text fine on its own.
+	# Extract number after `=`. Take the substring after '=', strip
+	# surrounding whitespace, split on whitespace and read the first token.
+	# NOTE: do NOT rstrip(".0") here — String.rstrip strips the *set* of
+	# chars '.' and '0' from the end, turning "210.0" into "21" (the bug
+	# this test previously masked). "210.0".to_float() == 210.0 directly.
 	var val_str = line.substr(line.find("=") + 1).strip_edges()
 	var val = val_str.split(" ")[0].to_float()
 	assert_gte(val, 200.0, "PARTY_SPRITE_HEIGHT must be >= 200 (BDFFHD layout target); got: %f" % val)

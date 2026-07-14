@@ -33,7 +33,7 @@ func test_start_battle_clears_active_buffs() -> void:
 	# Find start_battle body
 	var idx = text.find("func start_battle(")
 	assert_gt(idx, -1, "start_battle must exist")
-	var body = text.substr(idx, 3000)  # Read generous body chunk
+	var body = text.substr(idx, 7000)  # Read generous body chunk
 	assert_true(body.find("active_buffs.clear()") != -1,
 		"start_battle must clear active_buffs (regression: buff leak across encounters)")
 
@@ -41,7 +41,7 @@ func test_start_battle_clears_active_buffs() -> void:
 func test_start_battle_clears_active_debuffs() -> void:
 	var text = _read("res://src/battle/BattleManager.gd")
 	var idx = text.find("func start_battle(")
-	var body = text.substr(idx, 3000)
+	var body = text.substr(idx, 7000)
 	assert_true(body.find("active_debuffs.clear()") != -1,
 		"start_battle must clear active_debuffs")
 
@@ -49,7 +49,7 @@ func test_start_battle_clears_active_debuffs() -> void:
 func test_start_battle_clears_status_effects() -> void:
 	var text = _read("res://src/battle/BattleManager.gd")
 	var idx = text.find("func start_battle(")
-	var body = text.substr(idx, 3000)
+	var body = text.substr(idx, 7000)
 	assert_true(body.find("status_effects.clear()") != -1,
 		"start_battle must clear status_effects")
 
@@ -57,7 +57,7 @@ func test_start_battle_clears_status_effects() -> void:
 func test_start_battle_clears_status_durations() -> void:
 	var text = _read("res://src/battle/BattleManager.gd")
 	var idx = text.find("func start_battle(")
-	var body = text.substr(idx, 3000)
+	var body = text.substr(idx, 7000)
 	assert_true(body.find("status_durations.clear()") != -1,
 		"start_battle must clear status_durations")
 
@@ -65,7 +65,7 @@ func test_start_battle_clears_status_durations() -> void:
 func test_start_battle_resets_is_defending() -> void:
 	var text = _read("res://src/battle/BattleManager.gd")
 	var idx = text.find("func start_battle(")
-	var body = text.substr(idx, 3000)
+	var body = text.substr(idx, 7000)
 	assert_true(body.find("is_defending = false") != -1,
 		"start_battle must reset is_defending")
 
@@ -73,7 +73,7 @@ func test_start_battle_resets_is_defending() -> void:
 func test_start_battle_resets_doom_counter() -> void:
 	var text = _read("res://src/battle/BattleManager.gd")
 	var idx = text.find("func start_battle(")
-	var body = text.substr(idx, 3000)
+	var body = text.substr(idx, 7000)
 	# Updated 2026-04-30: doom_counter is now reset to -1 (the "not doomed"
 	# sentinel from Combatant.gd:84) instead of 0. Setting to 0 was clobbering
 	# the sentinel design even though the >0 guard in update_buff_durations
@@ -106,7 +106,7 @@ func test_cleanup_uses_defensive_in_guards() -> void:
 	# array. Verify the cleanup loop uses `in combatant` guards.
 	var text = _read("res://src/battle/BattleManager.gd")
 	var idx = text.find("func start_battle(")
-	var body = text.substr(idx, 3000)
+	var body = text.substr(idx, 7000)
 	assert_true(body.find('"active_buffs" in combatant') != -1,
 		"Cleanup must guard with \"active_buffs\" in combatant per CLAUDE.md convention")
 
@@ -118,7 +118,7 @@ func test_start_battle_resets_current_ap() -> void:
 	# normalize AP to 0 as a centralized safety net.
 	var text = _read("res://src/battle/BattleManager.gd")
 	var idx = text.find("func start_battle(")
-	var body = text.substr(idx, 3000)
+	var body = text.substr(idx, 7000)
 	assert_true(body.find("current_ap = 0") != -1,
 		"start_battle must reset current_ap to 0 (regression: AP leak via edge-case battle entry)")
 	# Verify the same `in combatant` defensive guard is applied.
@@ -132,6 +132,9 @@ func test_start_battle_clears_queued_actions() -> void:
 	# leak. start_battle.clear() prevents accumulation.
 	var text = _read("res://src/battle/BattleManager.gd")
 	var idx = text.find("func start_battle(")
-	var body = text.substr(idx, 3000)
+	# Tick 406 added per-battle mimic tracker reset which pushed the
+	# queued_actions clear further down. Tick 419 added boss-escape
+	# detection, pushing it further still. Widened window again.
+	var body = text.substr(idx, 7000)
 	assert_true(body.find("queued_actions.clear()") != -1,
 		"start_battle must clear queued_actions (prevent unbounded growth across battles)")

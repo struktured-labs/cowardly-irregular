@@ -9,6 +9,7 @@ func _init() -> void:
 	cave_id = "lightning_dragon_cave"
 	boss_id = "lightning_dragon"
 	boss_flag_key = "lightning_dragon_defeated"
+	boss_cutscene_id = "world1_voltharion_intro"
 	total_floors = 2
 	overworld_exit_spawn = "lightning_cave_entrance"
 

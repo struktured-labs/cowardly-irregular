@@ -1,0 +1,101 @@
+{
+  "id": "world1_chapter_three",
+  "title": "The Gap Between Letting Go",
+  "world": 1,
+  "prereq_flag": "cutscene_flag_rat_king_defeated",
+  "giver": {
+    "npc_id": "scholar_milo",
+    "display_name": "Scholar Milo",
+    "location": {"map_id": "harmonia_village", "near": "village_square"},
+    "spawn_flag": ""
+  },
+  "description": "Milo has Chapter One (letting go) and Chapter Two (letting go faster). Chapter Three has been blank for a year. He wants the party to fill it in — not through writing, but through doing.",
+  "playstyle_tags": ["meta", "multi_playstyle", "thesis"],
+  "dialogue": {
+    "offer": [
+      {"speaker": "Scholar Milo", "text": "You read the guide. Or carried it, which is the first step toward reading. I have a confession: Chapter Three doesn't exist. I've been trying to write it for a year.", "theme": "villager"},
+      {"speaker": "Scholar Milo", "text": "It's about the gap. Between letting go and having it taken from you. I know it's there. I can't articulate it. Words are a terrible technology for gaps.", "theme": "villager"},
+      {"speaker": "Scholar Milo", "text": "So you'll write it for me. Not with a quill. With doing. Three exercises. Report back after each.", "theme": "villager"}
+    ],
+    "accept": [
+      {"speaker": "Scholar Milo", "text": "First: let the system fight twice in a row. No hands. Second: fight once with nothing but your hands — no abilities, no cleverness. Third: do something that should fail. And don't fail.", "theme": "villager"},
+      {"speaker": "Scholar Milo", "text": "In that order. The order is the argument.", "theme": "villager"}
+    ],
+    "decline": [
+      {"speaker": "Scholar Milo", "text": "Chapter Three waits. It's very patient. It's been blank for a year — blankness is mostly patience.", "theme": "villager"}
+    ],
+    "in_progress": [
+      {"speaker": "Scholar Milo", "text": "The exercises aren't tests. Tests have right answers. These have true ones. Different thing.", "theme": "villager"}
+    ],
+    "ready_to_turn_in": [
+      {"speaker": "Scholar Milo", "text": "You did all three. I can see it in how you're standing. People stand differently on both sides of the gap at once.", "theme": "villager"}
+    ],
+    "complete": [
+      {"speaker": "Scholar Milo", "text": "Chapter Three: 'The gap between letting go and having it taken from you is exactly as wide as you decide it is. Letting go is a choice. Having it taken is also a choice, made by the part of you that stopped choosing.'", "theme": "villager"},
+      {"speaker": "Scholar Milo", "text": "'The gap is where you live. The gap is where everything interesting happens. I'm not sure this is a chapter. It might be a life.'", "theme": "villager"},
+      {"speaker": "Scholar Milo", "text": "I'm going to publish it anyway. Here — the working pages. Keep them. They function better as an object than as a manuscript, which is true of most philosophy.", "theme": "villager"}
+    ]
+  },
+  "objectives": [
+    {
+      "step": 1,
+      "description": "Hear Milo's three exercises.",
+      "type": "talk",
+      "target_npc": "scholar_milo",
+      "flag_on_complete": "quest_world1_chapter_three_accepted"
+    },
+    {
+      "step": 2,
+      "description": "Complete two consecutive encounters on full autobattle, no manual intervention.",
+      "type": "custom",
+      "required_flag": "quest_world1_chapter_three_autobattle_run",
+      "flag_on_complete": "quest_world1_chapter_three_autobattle_run"
+    },
+    {
+      "step": 3,
+      "description": "Tell Milo how letting go went.",
+      "type": "talk",
+      "target_npc": "scholar_milo",
+      "required_flag": "quest_world1_chapter_three_autobattle_run"
+    },
+    {
+      "step": 4,
+      "description": "Win a manual battle using only basic attacks — no abilities.",
+      "type": "custom",
+      "required_flag": "quest_world1_chapter_three_basics_only",
+      "flag_on_complete": "quest_world1_chapter_three_basics_only"
+    },
+    {
+      "step": 5,
+      "description": "Tell Milo how holding on went.",
+      "type": "talk",
+      "target_npc": "scholar_milo",
+      "required_flag": "quest_world1_chapter_three_basics_only"
+    },
+    {
+      "step": 6,
+      "description": "Do something in battle that should fail — and don't fail.",
+      "type": "custom",
+      "required_flag": "quest_world1_chapter_three_impossible",
+      "flag_on_complete": "quest_world1_chapter_three_impossible"
+    },
+    {
+      "step": 7,
+      "description": "Bring Milo his chapter.",
+      "type": "talk",
+      "target_npc": "scholar_milo",
+      "required_flag": "quest_world1_chapter_three_impossible"
+    }
+  ],
+  "rewards": {
+    "gold": 0,
+    "exp": 300,
+    "items": [
+      {"item_id": "chapter_three_pages", "count": 1}
+    ],
+    "job_variants": {}
+  },
+  "flag_on_complete": "quest_world1_chapter_three_complete",
+  "cross_world_connection": "W4: the foreman's hidden watercolors include an abstract piece that is a visual rendering of 'the gap' — a space between two solid forms, lit from the inside. Extra line if chapter_three_pages is in inventory.",
+  "_wiring_notes": "The three custom flags are BATTLE-TELEMETRY emissions, owned by cowir-battle/cowir-main, wire when convenient: (1) quest_world1_chapter_three_autobattle_run = two consecutive battle victories with zero manual actions taken (autobattle active for all PCs, no player input mid-battle); (2) quest_world1_chapter_three_basics_only = battle victory where every player action was a basic attack (no abilities, no items, no defer/advance is fine to allow); (3) quest_world1_chapter_three_impossible = interpretively wide by design — acceptable emitters: victory while under-leveled vs a danger-zone enemy, victory with a lucky crit from <10% HP, a one-HP victory (event_flag_one_hp_victory can double-emit), or an exploit-flagged win. Milo's reaction dialogue can branch on which emitter fired (later polish). The quest is authored data-first: it sits inert in the log until the flags get wired — QuestSystem simply won't progress steps 2/4/6. Sequential order is a v1 simplification of the doc's any-order design; the order IS thematically motivated (let go -> hold on -> the gap), noted in accept dialogue."
+}

@@ -159,5 +159,113 @@
 		"has_inn": true,
 		"has_save_point": true,
 		"npcs": ["the_last_shopkeeper", "a_traveler", "someone", "no_one"]
+	},
+
+	"harmonia_chapel": {
+		"id": "harmonia_chapel",
+		"name": "Chapel",
+		"type": "interior",
+		"description": "Sister Concord's chapel in Harmonia. Quiet, devotional, lit by a single candle.",
+		"map_id": "harmonia_chapel",
+		"npcs": ["sister_concord"]
+	},
+
+	"harmonia_library": {
+		"id": "harmonia_library",
+		"name": "Library",
+		"type": "interior",
+		"description": "Cantor Vell's library. Maps of the four dragons line the walls.",
+		"map_id": "harmonia_library",
+		"npcs": ["cantor_vell"]
+	},
+
+	"eldertree_hollow": {
+		"id": "eldertree_hollow",
+		"name": "The Hollow",
+		"type": "interior",
+		"description": "Inside the ancient tree. Greenleaf speaks of a world of square houses and loud roads.",
+		"map_id": "eldertree_hollow",
+		"npcs": ["greenleaf"]
+	},
+
+	"frosthold_warden_hut": {
+		"id": "frosthold_warden_hut",
+		"name": "Warden's Hut",
+		"type": "interior",
+		"description": "Warden Trygg's hut. The fire never quite warms the room — Glacius is close.",
+		"map_id": "frosthold_warden_hut",
+		"npcs": ["warden_trygg"]
+	},
+
+	"sandrift_glassmaker": {
+		"id": "sandrift_glassmaker",
+		"name": "Glassmaker's Workshop",
+		"type": "interior",
+		"description": "Senga's glassmaking workshop. Furnace heat, sand, and warnings about Pyrroth.",
+		"map_id": "sandrift_glassmaker",
+		"npcs": ["senga"]
+	},
+
+	"grimhollow_witch_hut": {
+		"id": "grimhollow_witch_hut",
+		"name": "Witch's Hut",
+		"type": "interior",
+		"description": "Old Mire's hut. She IS the cave that holds Umbraxis. The walls listen.",
+		"map_id": "grimhollow_witch_hut",
+		"npcs": ["old_mire"]
+	},
+
+	"ironhaven_watchtower": {
+		"id": "ironhaven_watchtower",
+		"name": "Storm Watchtower",
+		"type": "interior",
+		"description": "Drogal's watchtower. He speaks in current — Voltharion's tongue is half his own now.",
+		"map_id": "ironhaven_watchtower",
+		"npcs": ["drogal"]
+	},
+
+	"maple_heights_arcade": {
+		"id": "maple_heights_arcade",
+		"name": "Glitch City Arcade",
+		"type": "interior",
+		"description": "Crusher Pete runs the arcade — and remembers Greenleaf, somehow, in a world of square houses.",
+		"map_id": "maple_heights_arcade",
+		"npcs": ["crusher_pete"]
+	},
+
+	"brasston_clockwork_loft": {
+		"id": "brasston_clockwork_loft",
+		"name": "Clockwork Loft",
+		"type": "interior",
+		"description": "Magister Clavis's clockwork loft. Brass gears tick out the schedule of the Mechanism below.",
+		"map_id": "brasston_clockwork_loft",
+		"npcs": ["magister_clavis"]
+	},
+
+	"rivet_row_union_hall": {
+		"id": "rivet_row_union_hall",
+		"name": "Local 8743 Union Hall",
+		"type": "interior",
+		"description": "Steward Vetch's union hall. The grievance ledger is open — the Warden has been cataloguing again.",
+		"map_id": "rivet_row_union_hall",
+		"npcs": ["steward_vetch"]
+	},
+
+	"node_prime_daemon_lounge": {
+		"id": "node_prime_daemon_lounge",
+		"name": "Daemon Lounge",
+		"type": "interior",
+		"description": "SUDO-1 keeps the legacy terminal alive. The Root remembers what they used to do here.",
+		"map_id": "node_prime_daemon_lounge",
+		"npcs": ["sudo_1"]
+	},
+
+	"vertex_threshold": {
+		"id": "vertex_threshold",
+		"name": "The Threshold",
+		"type": "interior",
+		"description": "The Witness sits on a single bench. She has seen all five prior worlds — and knows what comes next.",
+		"map_id": "vertex_threshold",
+		"npcs": ["the_witness"]
 	}
 }

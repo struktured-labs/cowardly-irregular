@@ -212,7 +212,7 @@
     "name": "Tent",
     "category": 0,
     "target_type": 1,
-    "description": "Restores 50% HP and MP to all allies. Use at save points.",
+    "description": "Restores 50% HP and MP to all allies. In dungeons, only works beside a save crystal.",
     "effects": {
       "heal_hp_percent": 50,
       "heal_mp_percent": 50,
@@ -1222,16 +1222,6 @@
     "cost": 0,
     "flavor": ""
   },
-  "speed_boots": {
-    "id": "speed_boots",
-    "name": "Speed Boots",
-    "category": 4,
-    "target_type": 4,
-    "description": "Lightweight boots \u2014 wearer moves quicker (lore-only, not equippable yet).",
-    "effects": {},
-    "cost": 0,
-    "flavor": ""
-  },
   "megalixir": {
     "id": "megalixir",
     "name": "Megalixir",
@@ -1545,6 +1535,266 @@
     "effects": {},
     "cost": 0,
     "flavor": "The fragment grows slowly less orderly the longer it is held, then stops, then begins again. It is, at all times, in the middle of becoming what it is."
+  },
+  "unwritten_chord": {
+    "id": "unwritten_chord",
+    "name": "Unwritten Chord",
+    "category": 4,
+    "target_type": 4,
+    "description": "An accessory earned by playing something that doesn't exist yet. Intended mechanics: +5% to all Bard support effects (promote to real accessory in an equipment pass).",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Madame Orrery asked for a song that had never been played. The Bard played it. It has not been played since — which is different from saying it stopped."
+  },
+  "cluck_norris_egg": {
+    "id": "cluck_norris_egg",
+    "name": "Cluck Norris's Egg",
+    "category": 4,
+    "target_type": 4,
+    "description": "A rare egg from a hen named after a legend. Intended mechanics: combat throwable, stuns one enemy for one turn; only two obtainable in the game (promote to consumable in an items pass).",
+    "effects": {},
+    "cost": 0,
+    "flavor": "It is heavier than an egg should be. It is warmer than an egg should be. Farmer Aldwick's advice, verbatim: 'Careful with it. It's... spirited.'"
+  },
+  "returned_sword": {
+    "id": "returned_sword",
+    "name": "The Returned Sword",
+    "category": 4,
+    "target_type": 4,
+    "description": "Sold seventeen times. Returned seventeen times. Intended mechanics: weapon with good ATK and the Familiar Weight passive — +10% damage against any enemy the party has fought before (promote to real weapon in an equipment pass).",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The inscription on the hilt reads: 'Return me when you're done. I'll know where I belong.' Exploit-minded owners notice Familiar Weight triggering on enemies the party has never fought. The sword remembers enemies before you do."
+  },
+  "chapter_three_pages": {
+    "id": "chapter_three_pages",
+    "name": "Chapter Three Pages",
+    "category": 4,
+    "target_type": 4,
+    "description": "Milo's working pages. Intended mechanics: passive party buff, +5% autobattle efficiency AND +5% manual critical rate simultaneously — the only item in the game that buffs both playstyles at once (promote in a passives pass).",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The gap is where everything interesting happens."
+  },
+  "guild_record": {
+    "id": "guild_record",
+    "name": "Guild Record of the Ancient Post",
+    "category": 4,
+    "target_type": 4,
+    "description": "The oldest documentation of the Warden's guardpost — older than the capital, older than recorded history. A margin note in older ink: 'The post was designed. By whom: unclear. Purpose: to measure those who pass. Not to stop them.'",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The word 'designed' is doing more work in this sentence than any other word in the archive. Nobody at the Guild has ever asked it to explain itself."
+  },
+  "research_pass": {
+    "id": "research_pass",
+    "name": "Research Pass",
+    "category": 4,
+    "target_type": 4,
+    "description": "Grants one free translation at any Scriptweaver's Guild branch. In Scriptura it unlocks one otherwise-locked lore document.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Stamped, signed, and validated in three places. The Guild does not give these out. The Guild gave this one out. The scholar would prefer you not mention it."
+  },
+  "overdue_guild_book": {
+    "id": "overdue_guild_book",
+    "name": "Overdue Guild Book",
+    "category": 4,
+    "target_type": 4,
+    "description": "Checked out from the Scriptweaver's Guild and never returned. Found, at last, in the palace district — where nobody has ever respected a due date.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The stamped return date has weathered to illegibility, which the book appears to regard as a victory."
+  },
+  "configuration_log": {
+    "id": "configuration_log",
+    "name": "The Configuration Log",
+    "category": 4,
+    "target_type": 4,
+    "description": "Forty-seven strip mall configurations, logged on a teenager's phone over two months. The forty-seventh is annotated: STABLE — CLOSE.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "One configuration, several weeks back, had the armory directly adjacent to a gap. The gap is a parking space now. The gap is where the portal showed up."
+  },
+  "wildflower_variance": {
+    "id": "wildflower_variance",
+    "name": "Form 44-Omega (Granted)",
+    "category": 4,
+    "target_type": 4,
+    "description": "An HOA lawn variance — the third granted in the organization's history. The subject field reads: 'One (1) wildflower, pre-existing.'",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Justification, as approved: the field pre-dated the neighborhood. The flower has more right to be here than the lawn."
+  },
+  "hex_code_photo": {
+    "id": "hex_code_photo",
+    "name": "The Hex Code Photo",
+    "category": 4,
+    "target_type": 4,
+    "description": "A phone photo of a monitor showing another world's sky. Analysis: #4A7FD4 — default-sky blue, the color you get when you don't specify a sky. This world's sky is #4B80D5. One digit off. Someone picked it very carefully.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The first thing anyone puts down when building a world is a sky. The sky shows where the world was when it was still being invented."
+  },
+  "precision_tool_set": {
+    "id": "precision_tool_set",
+    "name": "Precision Tool Set",
+    "category": 4,
+    "target_type": 4,
+    "description": "Sprocket's own kit, given at normal speed. Intended mechanics: reduces AP cost of ability-based actions by 1 in World 3 battles (promote in an equipment pass).",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Every tool sits in a fitted recess. Every recess is labeled. One recess is empty and labeled 'THE ONE I ALWAYS NEED.' Sprocket says that one is intentional."
+  },
+  "substituted_gear": {
+    "id": "substituted_gear",
+    "name": "Substituted Gear",
+    "category": 4,
+    "target_type": 4,
+    "description": "The replacement gear from Sprocket's cluster — exactly one unit larger than standard. The depot record's margin reads: 'substituted — standard gauge unavailable. Approved: Calibrant Logistics.'",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Mistakes aren't this punctual. Kept as evidence for a case nobody has opened yet."
+  },
+  "mapped_route": {
+    "id": "mapped_route",
+    "name": "The Mapped Route",
+    "category": 4,
+    "target_type": 4,
+    "description": "Clem's twenty-year lamplighting route, drawn whole for the first time: the Grand Mechanism's secondary cooling circuit, scaled and rotated onto the streets of Brasston. In W4's maintenance tunnels it identifies a Cogsworth-era ventilation shaft.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "He only ever saw the next lamp. You saw the picture. Neither view is complete without the other."
+  },
+  "hartwick_notebook": {
+    "id": "hartwick_notebook",
+    "name": "Hartwick's Notebook",
+    "category": 4,
+    "target_type": 4,
+    "description": "The old chief engineer's schematics and notes — the most thorough technical documentation of the Grand Mechanism in existence. The last dated entry stops mid-sentence: 'I need to find the external input before—'",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The final page, added later, in steadier hand: 'They didn't take my life. They just displaced me. I'm in Brasston still. I'm fixing small things. I don't think they know I'm still here.'"
+  },
+  "mechanism_master_key": {
+    "id": "mechanism_master_key",
+    "name": "Mechanism Master Key",
+    "category": 4,
+    "target_type": 4,
+    "description": "Hartwick's key to the Grand Mechanism's restricted section — never rekeyed, because they assumed nobody remembered it existed. Intended mechanics: opens a blueprint shortcut compressing the dungeon's second half and skipping one mandatory fight.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "'I remember everything that exists. It's my whole problem.'"
+  },
+  "exception_record": {
+    "id": "exception_record",
+    "name": "The Exception Record",
+    "category": 4,
+    "target_type": 4,
+    "description": "Dorrit's complete training history with the exception notation appended: 'Exception granted. Training records flagged for review.' It changes nothing immediately. It exists. It's in the record.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "'The Director's recalibration doesn't hold perfectly. There are always deviations.' They wrote that down. About her. She's keeping it."
+  },
+  "synchronization_protocol": {
+    "id": "synchronization_protocol",
+    "name": "Synchronization Protocol",
+    "category": 4,
+    "target_type": 4,
+    "description": "What two processes wrote when they stopped fighting over the same resource. Intended mechanics: when two party members act in the same round, their actions gain a small bonus — +10% effectiveness (protocol path) or an occasional defensive-negate cooperative flag (merged path); promotion keys on the quest's path flag.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "'We thought we were competing. We were always the same thing, separately. That's more interesting, actually. Being the same thing, separately.'"
+  },
+  "mechanism_status_report": {
+    "id": "mechanism_status_report",
+    "name": "The Mechanism's Status Report",
+    "category": 4,
+    "target_type": 4,
+    "description": "The Grand Mechanism's complete three-year log, assembled from thousands of stack frames — a status report retried into a severed line since the day the Regulator cut it. Written in the bureaucratic notation of calibration reports.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Not malfunctioning. Faithful. It covers the transition from Hartwick to the Regulator in extreme technical detail, and never once complains."
+  },
+  "npc_interaction_log": {
+    "id": "npc_interaction_log",
+    "name": "The Interaction Log",
+    "category": 4,
+    "target_type": 4,
+    "description": "Every conversation in the game, timestamped, with a one-line summary — the archive built from remember_all()'s hoard before the memory was freed. The largest single lore item in the game.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Someone wanted every interaction remembered. They just never designed the letting-go. You designed it for them, and kept the remembering anyway."
+  },
+  "remainder_token": {
+    "id": "remainder_token",
+    "name": "The Remainder Token",
+    "category": 4,
+    "target_type": 4,
+    "description": "Proof that two entities built for motion and commerce chose to stay. Intended mechanics: in subsequent playthroughs, unlocks The Vertex as a revisitable location from the World 1 map.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The shopkeeper and the traveler are there each time, still sitting. They don't say much. But they're there."
+  },
+  "untested_shield": {
+    "id": "untested_shield",
+    "name": "The Untested Shield",
+    "category": 4,
+    "target_type": 4,
+    "description": "Bram's gift, from under the counter — never tested, never failed. Intended mechanics: Fighter-equippable shield (armor/accessory slot, ~+8 DEF +10 max HP, leather-armor tier) — promote in an equipment pass, returned_sword precedent.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "'Consider it an investment in your surviving long enough to come back and buy more.' Shields that come back in one piece weren't doing their job."
+  },
+  "waterskin": {
+    "id": "waterskin",
+    "name": "Traveller's Waterskin",
+    "category": 4,
+    "target_type": 4,
+    "description": "A caravan-tanned waterskin, filled once and sealed. Intended mechanics: field consumable, restores ~30 HP + ~10 MP to a single party member outside battle — desert traveller's kit tier. Promote in a consumables pass.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "From the Sandrift caravan-master. 'It's not much. It's what a caravan pays when a caravan can pay again.'"
+  },
+  "rangers_cloak": {
+    "id": "rangers_cloak",
+    "name": "Ranger's Cloak",
+    "category": 4,
+    "target_type": 4,
+    "description": "The cloak of an Eldertree ranger who did not come home. Warm, well-oiled, hood cut to see through. Intended mechanics: light-armor slot, +4 EVA +3 DEF, leather-armor tier — Rogue/Bard-equippable — promote in equipment pass.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "There are three left, and none of them belong to anyone anymore. It fits you. That is not a comfort."
+  },
+  "grimhollow_pick": {
+    "id": "grimhollow_pick",
+    "name": "Grimhollow Pick",
+    "category": 4,
+    "target_type": 4,
+    "description": "A working pickaxe. Handle polished by three shifts a day for eleven years. Intended mechanics: two-handed weapon, Fighter-equippable, ATK-focused (iron-sword-adjacent tier) — promote in equipment pass.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "'He'd want it swung, not stored. So swing it.' — Trude."
+  },
+  "leaning_ember": {
+    "id": "leaning_ember",
+    "name": "Leaning Ember",
+    "category": 4,
+    "target_type": 4,
+    "description": "An ember that leans, without any wind or heat source, toward the direction Mordaine's magic reach is currently touching. In Sella's pocket it pointed east. In your pack it will do the same. Intended mechanics: key item / diegetic compass — inspect-view line updates when the party is near Mordaine's presence. cowir-cutscenes may wire an inspect handler in Castle Harmonia F3+ to fire the leaning-observation line (\"the ember, in your pack, is pointing at the plain chair beside the throne\"). No combat effect. Cannot be dropped once received.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Warm to the touch. Not lit. 'If it starts to lean, in your pocket, in your pack — put it down and look east.'"
+  },
+  "watchers_charm": {
+    "id": "watchers_charm",
+    "name": "Watcher's Charm",
+    "category": 4,
+    "target_type": 4,
+    "description": "A charm against being watched from a distance. Clockkeeper Yara's grandmother's, from a mountain older than this one. Intended mechanics: accessory slot, minor MDF or Luck boost (leather-armor tier), narrative flag for detection-resistant beats in W2+ (surveillance mechanics not yet implemented). Promote in equipment pass.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "'It has never worked, in my experience. It has also never been tested against something that was actually watching.' — Yara."
   },
   "ERROR": {
     "id": "ERROR",

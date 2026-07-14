@@ -73,13 +73,23 @@ func _scan_cutscenes() -> void:
 
 	for filename in files:
 		var path := "res://data/cutscenes/" + filename
+		# Tick 274: 4-stage loud-fail (matches BestiarySystem._load_json
+		# pattern from ticks 28-31). Pre-fix every error path silently
+		# skipped, so a malformed cutscene file vanished from the gallery
+		# without any diagnostic surface — symptom looked like "the
+		# cutscene was never authored" when in fact it just failed to
+		# parse.
 		var f := FileAccess.open(path, FileAccess.READ)
 		if f == null:
+			push_warning("[CutsceneGallery] %s exists but FileAccess.open failed — entry skipped" % path)
 			continue
 		var json := JSON.new()
-		if json.parse(f.get_as_text()) != OK:
+		var parse_result := json.parse(f.get_as_text())
+		if parse_result != OK:
+			push_warning("[CutsceneGallery] %s parse error: %s — entry skipped" % [path, json.get_error_message()])
 			continue
 		if not (json.data is Dictionary):
+			push_warning("[CutsceneGallery] %s parsed but root is not a Dictionary — entry skipped" % path)
 			continue
 		var data: Dictionary = json.data
 		var id: String = data.get("id", "")

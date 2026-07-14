@@ -5,9 +5,14 @@ class_name VillageInn
 ## Classic JRPG inn functionality
 
 signal rest_completed()
+signal transition_triggered(target_map: String, target_spawn: String)
 
 @export var inn_name: String = "Inn"
 @export var rest_cost: int = 50  # Gold cost to rest
+
+## Set to "" to keep the legacy outdoor rest menu instead of transitioning
+## to an interior scene. Defaults to the generic InnInterior.
+@export var interior_target: String = "inn_interior"
 
 ## Visual
 var sprite: Sprite2D
@@ -31,6 +36,20 @@ func _ready() -> void:
 
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
+
+	# Auto-connect to a parent that knows how to relay area transitions
+	# (i.e. the village scene) so the inn can request scene changes without
+	# every village having to wire it up explicitly.
+	call_deferred("_auto_connect_transition_relay")
+
+
+func _auto_connect_transition_relay() -> void:
+	var node = get_parent()
+	while node:
+		if node.has_method("_on_transition_triggered") and not transition_triggered.is_connected(node._on_transition_triggered):
+			transition_triggered.connect(node._on_transition_triggered)
+			return
+		node = node.get_parent()
 
 
 func _generate_sprite() -> void:
@@ -228,11 +247,12 @@ func _draw_inn(image: Image) -> void:
 
 
 func _setup_collision() -> void:
+	# 2026-07-13: 1-tile-tall box was 8px short of reach=40 for buildings with >1-tile wall buffer (Harmonia Inn unreachable from south approach). Grow to 3 tiles tall so at least one walkable row is always inside the box.
 	var collision = CollisionShape2D.new()
 	var shape = RectangleShape2D.new()
-	shape.size = Vector2(TILE_SIZE * 2, TILE_SIZE)  # Interaction zone at bottom
+	shape.size = Vector2(TILE_SIZE * 2, TILE_SIZE * 3)  # Interaction zone at bottom, deep enough to cover multi-tile-buffer buildings
 	collision.shape = shape
-	collision.position = Vector2(0, TILE_SIZE / 2)  # Offset to building front
+	collision.position = Vector2(0, TILE_SIZE * 1.5)  # Offset to building front
 	add_child(collision)
 
 	collision_layer = 4  # Interactable
@@ -300,6 +320,13 @@ func _on_body_exited(body: Node2D) -> void:
 
 func interact(player: Node2D) -> void:
 	_current_player = player
+	# Prefer transitioning into the interior scene if configured.
+	if interior_target != "":
+		if SoundManager:
+			SoundManager.play_ui("menu_open")
+		transition_triggered.emit(interior_target, "entrance")
+		return
+	# Legacy outdoor rest menu (for installs that prefer the quick path).
 	if _is_showing_menu:
 		_rest_party()
 	else:
@@ -309,21 +336,50 @@ func interact(player: Node2D) -> void:
 func _show_inn_menu() -> void:
 	_is_showing_menu = true
 	dialogue_box.visible = true
-	dialogue_label.text = "Welcome to %s!\nRest and restore your party?\n[Press again to rest, move away to cancel]" % inn_name
+	# Surface the cost so the player can decide before confirming. Pre-fix
+	# the dialog didn't mention rest_cost at all — combined with the
+	# missing spend_gold call below, every inn rest was silently free.
+	dialogue_label.text = "Welcome to %s!\nRest and restore your party? (%d G)\n[Press again to rest, move away to cancel]" % [inn_name, rest_cost]
 	if SoundManager:
 		SoundManager.play_ui("menu_open")
 
 
 func _rest_party() -> void:
+	# Charge gold for the rest. Pre-fix this whole block was missing —
+	# the rest_cost @export was declared but never enforced, so inns
+	# healed the party for free regardless of party_gold. Insufficient
+	# gold now surfaces a clear message instead of silently restoring.
+	if GameState and GameState.has_method("get_gold"):
+		var current_gold: int = GameState.get_gold()
+		if current_gold < rest_cost:
+			dialogue_label.text = "Not enough gold!\nNeed %d G, you have %d G." % [rest_cost, current_gold]
+			if SoundManager:
+				SoundManager.play_ui("menu_error")
+			# Close after a beat so the player can read the failure.
+			await get_tree().create_timer(1.5).timeout
+			_close_menu()
+			return
+		# Spend gold via the canonical accessor so the gold_multiplier
+		# game_constant stays consistent with shop transactions.
+		if GameState.has_method("spend_gold"):
+			GameState.spend_gold(rest_cost)
+
 	# Restore all party members to full HP/MP
 	var game_loop = get_tree().root.get_node_or_null("GameLoop")
 	if game_loop and game_loop.party:
 		for member in game_loop.party:
-			member.current_hp = member.max_hp
+			# Direct current_hp assignment leaves is_alive=false on dead
+			# members — they end up at full HP but still flagged dead, so
+			# they sit out of battles until a Phoenix Down. Call revive()
+			# to flip is_alive AND set HP atomically.
+			if not member.is_alive:
+				member.revive(member.max_hp)
+			else:
+				member.current_hp = member.max_hp
 			member.current_mp = member.max_mp
 			member.current_ap = 0  # Reset AP too
 
-	dialogue_label.text = "Your party is fully rested!\nHP and MP restored."
+	dialogue_label.text = "Your party is fully rested!\nHP and MP restored. (-%d G)" % rest_cost
 
 	if SoundManager:
 		SoundManager.play_ui("heal")

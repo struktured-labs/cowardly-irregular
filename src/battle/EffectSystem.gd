@@ -45,7 +45,7 @@ func _ready() -> void:
 
 
 func _exit_tree() -> void:
-	"""Cleanup effects container when node is freed"""
+	"""Cleanup effects container + in-flight shake when node is freed."""
 	if _effects_container and is_instance_valid(_effects_container):
 		# Free all child effects
 		for child in _effects_container.get_children():
@@ -53,6 +53,20 @@ func _exit_tree() -> void:
 				child.queue_free()
 		_effects_container.queue_free()
 	_effects_container = null
+	# Kill any in-flight shake tween. The tween's terminal callback
+	# (func: _is_shaking = false) holds a reference to self; if we're freed
+	# before it fires, the tween calls into a stale instance. Kill it
+	# AND best-effort restore the camera so we don't leave it offset.
+	if _shake_tween != null and _shake_tween.is_valid():
+		_shake_tween.kill()
+	_shake_tween = null
+	if _is_shaking:
+		var viewport := get_viewport() if is_inside_tree() else null
+		if viewport != null:
+			var camera := viewport.get_camera_2d()
+			if camera != null:
+				camera.offset = _original_camera_offset
+	_is_shaking = false
 
 
 ## Get a cached texture or generate and cache it
@@ -367,6 +381,12 @@ func _trigger_screen_shake(intensity: float, duration: float) -> void:
 		return
 	var viewport = get_viewport()
 	if not viewport:
+		# Camera no longer reachable. If we were mid-shake, the previous
+		# tween's terminal callback is lost (camera went away). Reset state
+		# so the NEXT shake records a fresh baseline instead of stamping on
+		# top of a stale flag — without this, losing the camera mid-shake
+		# leaves _is_shaking pinned true forever.
+		_is_shaking = false
 		return
 
 	var camera = viewport.get_camera_2d()
@@ -375,6 +395,11 @@ func _trigger_screen_shake(intensity: float, duration: float) -> void:
 		var cameras = get_tree().get_nodes_in_group("camera")
 		if cameras.size() > 0:
 			camera = cameras[0]
+
+	if not camera:
+		# Same stuck-state rationale as the no-viewport branch above.
+		_is_shaking = false
+		return
 
 	if camera:
 		# Kill any in-progress shake and restore the camera before starting a new one

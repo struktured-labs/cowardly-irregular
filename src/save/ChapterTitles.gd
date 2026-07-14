@@ -15,6 +15,8 @@ const CHAPTERS := [
 	{"flag": "cutscene_flag_chapter1_complete",         "world": 1, "chapter": 1, "title": "The Summons"},
 	{"flag": "cutscene_flag_chapter2_complete",         "world": 1, "chapter": 2, "title": "The Road North"},
 	{"flag": "cutscene_flag_chapter3_complete",         "world": 1, "chapter": 3, "title": "The Whispering Cave"},
+	# Tick 240: bridge the W1 ch3 boss → ch4 gap. Pre-fix the title stayed "The Whispering Cave" after defeating Rat King until the chapter4 cutscene fired, leaving a stale "in cave" feeling on save slots.
+	{"flag": "cutscene_flag_world1_rat_king_defeat_complete", "world": 1, "chapter": 3, "title": "Rat King Falls"},
 	{"flag": "cutscene_flag_chapter4_complete",         "world": 1, "chapter": 4, "title": "The Warden's Chain"},
 	{"flag": "cutscene_flag_chapter5_complete",         "world": 1, "chapter": 5, "title": "Into the Forest"},
 	{"flag": "cutscene_flag_chapter5_forest_entered",   "world": 1, "chapter": 5, "title": "Tempo's Chase"},
@@ -26,6 +28,8 @@ const CHAPTERS := [
 	{"flag": "cutscene_flag_world2_chapter1_complete",  "world": 2, "chapter": 1, "title": "Maple Heights"},
 	{"flag": "cutscene_flag_world2_chapter2_complete",  "world": 2, "chapter": 2, "title": "Mail & Malice"},
 	{"flag": "cutscene_flag_world2_chapter3_complete",  "world": 2, "chapter": 3, "title": "Warden of Routine"},
+	# Tick 241: missing boss-defeat title for W2 Warden. Mirrors W1 mordaine_defeated and W3 tempo_steampunk_defeated entries — fires immediately on boss KO via defeat_cutscene_flags (set by SuburbanUnderground subclass).
+	{"flag": "cutscene_flag_warden_suburban_defeated",  "world": 2, "chapter": 3, "title": "Warden of Routine Falls"},
 	{"flag": "cutscene_flag_chapter4_garage_complete",  "world": 2, "chapter": 4, "title": "The Garage Sale"},
 	{"flag": "cutscene_flag_arbiter_suburban_intro_complete", "world": 2, "chapter": 4, "title": "Arbiter's Appeal"},
 	{"flag": "cutscene_flag_arbiter_suburban_defeated", "world": 2, "chapter": 5, "title": "The Community Center"},
@@ -39,7 +43,8 @@ const CHAPTERS := [
 	{"flag": "cutscene_flag_world3_chapter1_complete",  "world": 3, "chapter": 1, "title": "Brasston Village"},
 	{"flag": "cutscene_flag_world3_chapter2_complete",  "world": 3, "chapter": 2, "title": "The Mechanism"},
 	{"flag": "cutscene_flag_world3_chapter3_complete",  "world": 3, "chapter": 3, "title": "Industrial Dissent"},
-	{"flag": "cutscene_flag_warden_industrial_defeated", "world": 3, "chapter": 4, "title": "Warden of Steam"},
+	# Tick 241: BUG FIX. Pre-fix this entry used the W4 industrial-warden flag (cutscene_flag_warden_industrial_defeated) — likely a copy-paste error since W3's actual boss is Tempo. A player defeating the W4 Industrial Warden before completing W4 chapter4 would see their chapter title silently rewind to W3 ch4 "Warden of Steam". W3's actual boss-defeat flag is cutscene_flag_tempo_steampunk_defeated.
+	{"flag": "cutscene_flag_tempo_steampunk_defeated",  "world": 3, "chapter": 4, "title": "Tempo Falls"},
 	{"flag": "cutscene_flag_world3_chapter4_complete",  "world": 3, "chapter": 4, "title": "The Steam Core"},
 	{"flag": "cutscene_flag_world3_chapter5_complete",  "world": 3, "chapter": 5, "title": "Airship Departure"},
 	{"flag": "cutscene_flag_world3_complete",           "world": 3, "chapter": 6, "title": "Steampunk Falls"},
@@ -47,6 +52,8 @@ const CHAPTERS := [
 	{"flag": "cutscene_flag_world4_chapter1_complete",  "world": 4, "chapter": 1, "title": "Rivet Row"},
 	{"flag": "cutscene_flag_world4_chapter2_complete",  "world": 4, "chapter": 2, "title": "Assembly Lines"},
 	{"flag": "cutscene_flag_world4_chapter3_complete",  "world": 4, "chapter": 3, "title": "The Director"},
+	# Tick 241: missing boss-defeat title for W4 Industrial Warden. Set by AssemblyCore subclass's defeat_cutscene_flags. Pre-fix the title silently rewound to W3 "Warden of Steam" because the SAME flag was misplaced there (now fixed).
+	{"flag": "cutscene_flag_warden_industrial_defeated", "world": 4, "chapter": 3, "title": "Warden of Industrial Falls"},
 	{"flag": "cutscene_flag_world4_chapter4_complete",  "world": 4, "chapter": 4, "title": "Logic Gates"},
 	{"flag": "cutscene_flag_world4_chapter5_complete",  "world": 4, "chapter": 5, "title": "Industrial Collapse"},
 	{"flag": "cutscene_flag_world4_complete",           "world": 4, "chapter": 6, "title": "The Factory Falls"},
@@ -54,6 +61,8 @@ const CHAPTERS := [
 	{"flag": "cutscene_flag_world5_chapter1_complete",  "world": 5, "chapter": 1, "title": "Node Prime"},
 	{"flag": "cutscene_flag_world5_chapter2_complete",  "world": 5, "chapter": 2, "title": "Packet Storms"},
 	{"flag": "cutscene_flag_world5_chapter3_complete",  "world": 5, "chapter": 3, "title": "The Core"},
+	# Tick 241: missing boss-defeat title for W5 Arbiter. Set by RootProcess subclass's defeat_cutscene_flags.
+	{"flag": "cutscene_flag_arbiter_futuristic_defeated", "world": 5, "chapter": 3, "title": "Arbiter Falls"},
 	{"flag": "cutscene_flag_world5_chapter4_complete",  "world": 5, "chapter": 4, "title": "Digital Reformation"},
 	{"flag": "cutscene_flag_world5_chapter5_complete",  "world": 5, "chapter": 5, "title": "System Collapse"},
 	{"flag": "cutscene_flag_world5_complete",           "world": 5, "chapter": 6, "title": "The Network Falls"},
@@ -61,6 +70,9 @@ const CHAPTERS := [
 	{"flag": "cutscene_flag_world6_chapter1_complete",  "world": 6, "chapter": 1, "title": "Abstract Seas"},
 	{"flag": "cutscene_flag_world6_chapter2_complete",  "world": 6, "chapter": 2, "title": "The Question"},
 	{"flag": "cutscene_flag_world6_chapter3_complete",  "world": 6, "chapter": 3, "title": "The Answer"},
+	# Tick 240: post-game progression. Pre-fix a player who beat the Calibrant or finished the game still saw "Chapter 3: The Answer" on their save slot — incomplete-feeling end state. The completion flags are durable (set by _play_story_cutscene's post-cutscene hook) so they persist across saves/sessions.
+	{"flag": "cutscene_flag_world6_calibrant_defeat_complete", "world": 6, "chapter": 4, "title": "Calibrant Falls"},
+	{"flag": "cutscene_flag_world6_ending_complete",    "world": 6, "chapter": 5, "title": "The End"},
 ]
 
 const WORLD_NAMES := {

@@ -18,6 +18,10 @@ signal meta_boss_spawned(boss_name: String)
 signal system_collapse()
 signal region_cracked(region_id: String, crack_level: int)
 signal region_advanced(from_region: String, to_region: String, world_num: int)
+## Fires once per region per session when monster_adaptation_level crosses ROTATION_SUGGEST_THRESHOLD; suggested may be empty if no next region exists.
+signal region_rotation_suggested(current_region_id: String, suggested: Dictionary, adaptation_level: float)
+## Fires once per band per session when meta_corruption crosses WARNING/DANGER/CRITICAL. Band is "warning" | "danger" | "critical".
+signal corruption_threshold_crossed(band: String, level: float)
 signal autobattle_interrupted(reason: String)
 signal autogrind_rules_changed()
 signal fatigue_event(event_type: String, description: String)
@@ -46,6 +50,12 @@ var items_consumed: Dictionary = {}  # {item_id: count} — tracks items used du
 var per_character_exp: Dictionary = {}  # {char_name: total_exp_gained} — per-character EXP tracking
 var injuries_this_session: int = 0  # Tracks new injuries sustained during grind
 var _injury_baseline: int = 0  # Total injuries at session start (to detect new ones)
+var _ability_learned_this_session: bool = false
+var _rare_drop_this_session: bool = false
+var _ability_learned_conns: Array = []
+var _rare_drop_conn: Callable
+var _automation_paused: bool = false
+var battles_without_heal: int = 0  # Longest un-broken run of victorious battles with no healing consumed
 
 ## Efficiency system
 var efficiency_multiplier: float = 1.0  # Increases rewards but also danger
@@ -66,6 +76,17 @@ var adaptation_on_crack: bool = true  # Monsters adapt when region cracked
 var monster_adaptation_level: float = 0.0  # Enemies get stronger
 var meta_corruption_level: float = 0.0     # Reality starts breaking
 var corruption_threshold: float = 5.0      # When system collapse occurs
+
+## Region rotation advisory — fire the suggestion once per region per session
+const ROTATION_SUGGEST_THRESHOLD: float = 3.0
+var _rotation_suggested_regions: Dictionary = {}
+
+## Corruption threshold bands — fired at most once per band per session so a bumpy corruption graph doesn't repeat-spam the same warning.
+const CORRUPTION_BAND_WARNING: float = 3.0
+const CORRUPTION_BAND_DANGER: float = 4.0
+const CORRUPTION_BAND_CRITICAL: float = 4.5
+var _corruption_bands_crossed: Dictionary = {}
+var _save_corruption_baseline: float = 0.0
 
 ## Interrupt conditions
 var interrupt_rules: Dictionary = {
@@ -253,6 +274,45 @@ func get_learned_patterns_for_region(region_id: String) -> Dictionary:
 	return learned_patterns[region_id]
 
 
+func validate_rule(rule: Dictionary) -> Array[String]:
+	## Accepts against PARTY_CONDITION_TYPES / OPERATORS / AUTOGRIND_ACTION_TYPES below, the single source of truth.
+	var errors: Array[String] = []
+	if not rule.has("conditions"):
+		errors.append("missing 'conditions' array")
+	elif typeof(rule["conditions"]) != TYPE_ARRAY:
+		errors.append("'conditions' must be an array")
+	if not rule.has("actions"):
+		errors.append("missing 'actions' array")
+	elif typeof(rule["actions"]) != TYPE_ARRAY:
+		errors.append("'actions' must be an array")
+	if errors.size() > 0:
+		return errors
+	for c in rule["conditions"]:
+		if typeof(c) != TYPE_DICTIONARY:
+			errors.append("condition must be a dictionary: %s" % [c])
+			continue
+		var ctype: String = str(c.get("type", ""))
+		if not PARTY_CONDITION_TYPES.has(ctype):
+			errors.append("unknown autogrind condition type: '%s'" % ctype)
+			continue
+		if c.has("op") and not OPERATORS.has(str(c["op"])):
+			errors.append("unknown operator: '%s'" % c["op"])
+	for a in rule["actions"]:
+		if typeof(a) != TYPE_DICTIONARY:
+			errors.append("action must be a dictionary: %s" % [a])
+			continue
+		var atype: String = str(a.get("type", ""))
+		if not AUTOGRIND_ACTION_TYPES.has(atype):
+			errors.append("unknown autogrind action type: '%s'" % atype)
+			continue
+		if atype == "switch_profile":
+			if not a.has("character_id"):
+				errors.append("action type 'switch_profile' requires 'character_id'")
+			if not a.has("profile_index"):
+				errors.append("action type 'switch_profile' requires 'profile_index'")
+	return errors
+
+
 ## ═══════════════════════════════════════════════════════════════════════
 ## COMBAT SATURATION INDEX (CSI) - Diminishing Returns Per Region
 ## ═══════════════════════════════════════════════════════════════════════
@@ -406,6 +466,10 @@ func get_grind_stats() -> Dictionary:
 		"items_consumed": items_consumed.duplicate(),
 		"per_character_exp": per_character_exp.duplicate(),
 		"injuries_this_session": injuries_this_session,
+		"battles_without_heal": battles_without_heal,
+		"corruption_threshold": corruption_threshold,
+		"save_corruption": _get_save_corruption(),
+		"save_corruption_delta": _get_save_corruption() - _save_corruption_baseline,
 	}
 
 
@@ -479,6 +543,7 @@ func on_battle_victory(exp_gained: int, items_gained: Dictionary = {}) -> void:
 	Updates stats, CSI, efficiency, checks thresholds."""
 	battles_completed += 1
 	consecutive_wins += 1
+	battles_without_heal += 1
 	tick_post_collapse_debuff()
 
 	# Apply yield multiplier from CSI
@@ -496,7 +561,15 @@ func on_battle_victory(exp_gained: int, items_gained: Dictionary = {}) -> void:
 	total_exp_gained += adjusted_exp
 
 	# Track items
+	# Tick 343: skip the "gold" key — tick 342 added it to items_gained as
+	# the gold-forwarding channel, but it's NOT an item ID. AutogrindController
+	# .get_grind_stats counts total_items_gained values as item drops (line
+	# ~568); without this filter the gold amount would be misreported as a
+	# huge fake item count ("you got 5000 'gold' items this session"). The
+	# gold value is handled separately below in the party_gold credit path.
 	for item_id in items_gained:
+		if item_id == "gold":
+			continue
 		var quantity = items_gained[item_id]
 		if total_items_gained.has(item_id):
 			total_items_gained[item_id] += quantity
@@ -513,7 +586,23 @@ func on_battle_victory(exp_gained: int, items_gained: Dictionary = {}) -> void:
 
 	# Update grind stats tracking
 	_grind_stats["total_exp"] += adjusted_exp
-	_grind_stats["total_gold"] += int(items_gained.get("gold", 0) * reward_scale)
+	# Tick 342: gold actually credits the player's pool now. Pre-fix
+	# this line tracked total_gold for the autogrind display but the
+	# player's party_gold never moved — autogrind farms gave EXP but
+	# ZERO gold despite the display implying otherwise. Now both the
+	# display tracker AND GameState.party_gold receive the gold. Skip
+	# GameState.add_gold to avoid re-applying gold_multiplier — incoming
+	# gold already had it applied at the source (HeadlessBattleResolver
+	# tick 341 / live-autogrind tick 342).
+	var raw_gold_in: int = int(items_gained.get("gold", 0))
+	var scaled_gold: int = int(raw_gold_in * reward_scale)
+	_grind_stats["total_gold"] += scaled_gold
+	var gs: Node = null
+	var tree: SceneTree = Engine.get_main_loop() as SceneTree
+	if tree != null and tree.root != null:
+		gs = tree.root.get_node_or_null("GameState")
+	if gs != null and "party_gold" in gs and scaled_gold > 0:
+		gs.party_gold += scaled_gold
 	_grind_stats["total_jp"] += jp_gained
 	_grind_stats["total_encounters"] += 1
 
@@ -590,6 +679,14 @@ const PARTY_CONDITION_TYPES = {
 	"battles_done": "Battles Done",
 	"corruption": "Corruption",
 	"efficiency": "Efficiency",
+	"member_dead": "Member Dead",
+	"member_injured": "Member Injured",
+	"win_streak": "Win Streak",
+	"time_elapsed": "Time Elapsed",
+	"inventory_items": "Inventory Items",
+	"ability_learned": "Ability Learned",
+	"reached_level": "Reached Level",
+	"rare_item_found": "Rare Item Found",
 	"always": "Always"
 }
 
@@ -606,7 +703,10 @@ const OPERATORS = {
 ## Autogrind action types
 const AUTOGRIND_ACTION_TYPES = {
 	"switch_profile": "Switch Profile",
-	"stop_grinding": "Stop Grinding"
+	"stop_grinding": "Stop Grinding",
+	"heal_party": "Heal Party",
+	"restore_mp": "Restore MP",
+	"flee_battle": "Flee Battle"
 }
 
 ## Default autogrind profile templates
@@ -635,11 +735,25 @@ func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config
 	items_consumed.clear()
 	per_character_exp.clear()
 	injuries_this_session = 0
+	# Reset session-scoped fatigue counter. fatigue_events_triggered is
+	# displayed as a SESSION stat in AutogrindSummary (label "Fatigue
+	# Events") and is the gate for check_fatigue_collapse (requires >= 5
+	# alongside >= 50 battles this session). Without this reset, the
+	# lifetime count carried across sessions — collapse could fire on
+	# battle 50 of a fresh grind with no new fatigue events, just because
+	# the lifetime tally had already crossed the threshold months ago.
+	fatigue_events_triggered = 0
+	battles_without_heal = 0
+	_rotation_suggested_regions.clear()
+	_corruption_bands_crossed.clear()
+	_save_corruption_baseline = _get_save_corruption()
+	_automation_paused = false
 	# Capture injury baseline to detect new injuries
 	_injury_baseline = 0
 	for member in party:
 		if member is Combatant:
 			_injury_baseline += member.permanent_injuries.size()
+	_wire_smart_interrupt_signals(party)
 	efficiency_multiplier = 1.0
 	monster_adaptation_level = 0.0
 	meta_corruption_level = 0.0
@@ -692,6 +806,8 @@ func stop_autogrind(reason: String = "Manual stop") -> void:
 		return
 
 	is_grinding = false
+	_automation_paused = false
+	_unwire_smart_interrupt_signals()
 
 	# Finalize grind stats elapsed time
 	if _grind_stats["start_time"] > 0.0:
@@ -860,11 +976,11 @@ func _increase_efficiency() -> void:
 	efficiency_multiplier = min(efficiency_multiplier + efficiency_growth_rate, max_efficiency)
 
 	# Increase monster adaptation
-	monster_adaptation_level += 0.05
+	_add_monster_adaptation(0.05)
 
 	# Increase meta-corruption (danger!)
 	var corruption_gain = 0.02 * efficiency_multiplier
-	meta_corruption_level += corruption_gain
+	_add_meta_corruption(corruption_gain)
 
 	# Increase meta-boss spawn chance
 	meta_boss_spawn_chance = min(meta_corruption_level * 0.05, 0.3)
@@ -1070,7 +1186,7 @@ func on_meta_boss_defeat(boss_data: Dictionary) -> void:
 	"""Called by AutogrindController after the party loses to a meta-boss.
 	Significantly increases corruption."""
 	var corruption_increase := 1.5
-	meta_corruption_level += corruption_increase
+	_add_meta_corruption(corruption_increase)
 	consecutive_wins = 0
 	print("[AUTOGRIND] Meta-boss defeated the party! Corruption increased by %.1f (now %.2f)" % [
 		corruption_increase, meta_corruption_level
@@ -1270,8 +1386,8 @@ func _check_region_crack() -> void:
 
 func _apply_meta_adaptation(crack_level: int) -> void:
 	"""Apply meta-adaptation when region is cracked"""
-	# Increase monster adaptation significantly
-	monster_adaptation_level += crack_level * 0.3  # +30% stats per crack level
+	# Increase monster adaptation significantly (+30% stats per crack level)
+	_add_monster_adaptation(crack_level * 0.3)
 
 	# Monsters gain new behaviors
 	print("[color=purple]Monsters are adapting...[/color]")
@@ -1282,7 +1398,7 @@ func _apply_meta_adaptation(crack_level: int) -> void:
 	if crack_level >= 3:
 		print("  - Enemies exploit weaknesses in your script")
 		# Could trigger corruption increase
-		meta_corruption_level += 0.5
+		_add_meta_corruption(0.5)
 
 
 func _get_region_crack_penalty() -> float:
@@ -1626,6 +1742,18 @@ func _evaluate_party_condition(party: Array, condition: Dictionary) -> bool:
 				elapsed_min = (Time.get_unix_time_from_system() - _grind_stats["start_time"]) / 60.0
 			return _compare_op(elapsed_min, op, value)
 
+		"inventory_items":
+			return _compare_op(_get_party_unique_item_count(party), op, value)
+
+		"ability_learned":
+			return _ability_learned_this_session
+
+		"reached_level":
+			return _compare_op(_get_party_max_job_level(party), op, value)
+
+		"rare_item_found":
+			return _rare_drop_this_session
+
 		"always":
 			return true
 
@@ -1682,6 +1810,137 @@ func _get_alive_count(party: Array) -> int:
 		if member is Combatant and member.is_alive:
 			count += 1
 	return count
+
+
+func _get_party_unique_item_count(party: Array) -> int:
+	var seen: Dictionary = {}
+	for member in party:
+		if member is Combatant:
+			for item_id in member.inventory:
+				seen[item_id] = true
+	return seen.size()
+
+
+func _get_party_max_job_level(party: Array) -> int:
+	var top: int = 0
+	for member in party:
+		if member is Combatant and member.job_level > top:
+			top = member.job_level
+	return top
+
+
+func _wire_smart_interrupt_signals(party: Array) -> void:
+	_ability_learned_this_session = false
+	_rare_drop_this_session = false
+	_ability_learned_conns.clear()
+	for member in party:
+		if member is Combatant and member.has_signal("ability_learned"):
+			var cb: Callable = Callable(self, "_on_smart_interrupt_ability_learned")
+			member.ability_learned.connect(cb)
+			_ability_learned_conns.append({"combatant": member, "callable": cb})
+	var bm: Node = _get_autoload_node("BattleManager")
+	if bm != null and bm.has_signal("rare_drop_found"):
+		_rare_drop_conn = Callable(self, "_on_smart_interrupt_rare_drop")
+		bm.rare_drop_found.connect(_rare_drop_conn)
+
+
+func _unwire_smart_interrupt_signals() -> void:
+	for entry in _ability_learned_conns:
+		var member = entry.get("combatant")
+		var cb: Callable = entry.get("callable")
+		if member != null and is_instance_valid(member) and member.ability_learned.is_connected(cb):
+			member.ability_learned.disconnect(cb)
+	_ability_learned_conns.clear()
+	var bm: Node = _get_autoload_node("BattleManager")
+	if bm != null and _rare_drop_conn.is_valid() and bm.rare_drop_found.is_connected(_rare_drop_conn):
+		bm.rare_drop_found.disconnect(_rare_drop_conn)
+
+
+func _on_smart_interrupt_ability_learned(_ability_id: String) -> void:
+	_ability_learned_this_session = true
+
+
+func _on_smart_interrupt_rare_drop(_item_id: String, _base_chance: float) -> void:
+	_rare_drop_this_session = true
+
+
+## Public seam for battle paths that bypass BattleManager's rare_drop_found signal (headless).
+func notify_rare_drop(item_id: String, base_chance: float) -> void:
+	_on_smart_interrupt_rare_drop(item_id, base_chance)
+
+
+## Controller bridge — set true when the controller actually ENTERS PAUSED (deferred pause included), false on resume.
+func set_automation_paused(paused: bool) -> void:
+	_automation_paused = paused
+
+
+## "Was THIS battle automated?" — the quest manual_only credit gate (kill_n hook) predicate.
+## True only while the controller actively chains. A paused grind is NOT automated: manual
+## encounters fought during pause credit normally. Headless battles only run while chaining,
+## so headless ⇒ automated by construction — refactors must preserve that invariant.
+func is_battle_automated() -> bool:
+	return is_grinding and not _automation_paused
+
+
+func _get_autoload_node(name_: String) -> Node:
+	var tree: SceneTree = Engine.get_main_loop() as SceneTree
+	if tree != null and tree.root != null:
+		return tree.root.get_node_or_null(name_)
+	return null
+
+
+## All meta-corruption INCREASES route here so the threshold-band warning is never skipped.
+## (Bands originally fired only on the efficiency path; meta-boss defeat +1.5 and region-crack +0.5 bypassed them.)
+func _add_meta_corruption(amount: float) -> void:
+	if amount <= 0.0:
+		return
+	meta_corruption_level += amount
+	_maybe_emit_corruption_band()
+
+
+## All monster-adaptation INCREASES route here so the region-rotation advisory is never skipped.
+## (Advisory originally fired only on the efficiency path; region-crack +crack_level*0.3 bypassed it — the
+## very moment the "monsters have adapted, consider moving" hint is most apt.)
+func _add_monster_adaptation(amount: float) -> void:
+	if amount <= 0.0:
+		return
+	monster_adaptation_level += amount
+	_maybe_suggest_region_rotation()
+
+
+func _maybe_emit_corruption_band() -> void:
+	# Fire the signal once per band per session — a bumpy corruption graph shouldn't repeat-spam the same warning.
+	var bands := [
+		["critical", CORRUPTION_BAND_CRITICAL],
+		["danger", CORRUPTION_BAND_DANGER],
+		["warning", CORRUPTION_BAND_WARNING],
+	]
+	for entry in bands:
+		var name: String = entry[0]
+		var threshold: float = entry[1]
+		if meta_corruption_level >= threshold and not _corruption_bands_crossed.get(name, false):
+			_corruption_bands_crossed[name] = true
+			corruption_threshold_crossed.emit(name, meta_corruption_level)
+
+
+func _get_save_corruption() -> float:
+	var gs: Node = _get_autoload_node("GameState")
+	if gs != null and "corruption_level" in gs:
+		return float(gs.corruption_level)
+	return 0.0
+
+
+func _maybe_suggest_region_rotation() -> void:
+	# Once-per-region-per-session advisory — Suggest moving before the region cracks + the danger multiplier kicks in.
+	if current_region_id.is_empty():
+		return
+	if monster_adaptation_level < ROTATION_SUGGEST_THRESHOLD:
+		return
+	if _rotation_suggested_regions.get(current_region_id, false):
+		return
+	_rotation_suggested_regions[current_region_id] = true
+	var suggested: Dictionary = get_next_region()
+	region_rotation_suggested.emit(current_region_id, suggested, monster_adaptation_level)
 
 
 func apply_autogrind_actions(actions: Array) -> void:
@@ -1747,6 +2006,26 @@ func apply_autogrind_actions(actions: Array) -> void:
 func _track_item_consumed(item_id: String) -> void:
 	"""Track an item consumed during the grind session."""
 	items_consumed[item_id] = items_consumed.get(item_id, 0) + 1
+	# Iron Vigil streak breaks if any healing item is used, in or between battles.
+	if _is_healing_item(item_id):
+		battles_without_heal = 0
+
+
+const _HEAL_EFFECT_KEYS := ["heal_hp", "heal_mp", "heal_hp_percent", "heal_mp_percent", "revive"]
+
+
+## Effects-driven so new healing items in items.json break the streak with zero code change.
+func _is_healing_item(item_id: String) -> bool:
+	var item_system: Node = _get_autoload_node("ItemSystem")
+	if item_system == null or not item_system.has_method("get_item"):
+		# Fallback for bare-instance tests without autoloads — the original hardcoded set.
+		return item_id in ["potion", "hi_potion", "mega_potion", "ether", "hi_ether", "phoenix_down"]
+	var rec: Dictionary = item_system.get_item(item_id)
+	var effects = rec.get("effects", {})
+	for key in _HEAL_EFFECT_KEYS:
+		if key in effects:
+			return true
+	return false
 
 
 func track_item_consumed(item_id: String) -> void:
@@ -1775,7 +2054,7 @@ func get_items_consumed_summary() -> String:
 		return "None"
 	var parts: Array = []
 	for item_id in items_consumed:
-		var name = item_id.replace("_", " ").capitalize()
+		var name = ItemNameResolver.resolve(item_id)
 		parts.append("%s x%d" % [name, items_consumed[item_id]])
 	return ", ".join(parts)
 
@@ -2020,6 +2299,12 @@ func save_grind_snapshot(controller_snapshot: Dictionary) -> bool:
 			"elapsed_seconds": elapsed,
 			"grind_stats_gold": _grind_stats.get("total_gold", 0),
 			"grind_stats_encounters": _grind_stats.get("total_encounters", 0),
+			# Session-scoped dedup/streak state — without these, resume re-fires
+			# already-shown corruption/rotation toasts and resets the Iron Vigil streak.
+			"battles_without_heal": battles_without_heal,
+			"corruption_bands_crossed": _corruption_bands_crossed.duplicate(),
+			"rotation_suggested_regions": _rotation_suggested_regions.duplicate(),
+			"save_corruption_baseline": _save_corruption_baseline,
 		},
 	}
 
@@ -2034,18 +2319,33 @@ func save_grind_snapshot(controller_snapshot: Dictionary) -> bool:
 
 
 func load_grind_snapshot() -> Dictionary:
-	"""Load a saved grind snapshot. Returns empty if none exists."""
+	"""Load a saved grind snapshot. Returns empty if none exists.
+
+	Tick 344: every failure mode AFTER existence push_warns instead of
+	silently returning {}. Pre-fix a corrupted snapshot (e.g., game
+	crashed mid-write, hand-edited JSON, version-bump migration) just
+	returned {} — the player's resume button vanished with zero
+	diagnostic. The file-missing case stays silent (most players never
+	have a snapshot). Same loud-fail pattern as tick 322 (load_monsters_
+	data) and tick 323 (load_custom_presets).
+	"""
 	if not FileAccess.file_exists(SNAPSHOT_PATH):
 		return {}
 	var file = FileAccess.open(SNAPSHOT_PATH, FileAccess.READ)
 	if not file:
+		push_warning("[AUTOGRIND] grind snapshot at %s exists but FileAccess.open failed (error %d) — resume disabled this session" % [SNAPSHOT_PATH, FileAccess.get_open_error()])
 		return {}
 	var json = JSON.new()
-	if json.parse(file.get_as_text()) != OK:
-		file.close()
-		return {}
+	var parse_result: int = json.parse(file.get_as_text())
 	file.close()
-	if not json.data is Dictionary or json.data.get("version", 0) != 1:
+	if parse_result != OK:
+		push_warning("[AUTOGRIND] grind snapshot JSON parse error: %s — file likely corrupted by interrupted write; resume disabled" % json.get_error_message())
+		return {}
+	if not (json.data is Dictionary):
+		push_warning("[AUTOGRIND] grind snapshot parsed but root is not a Dictionary (got %s) — file shape changed; resume disabled" % typeof(json.data))
+		return {}
+	if json.data.get("version", 0) != 1:
+		push_warning("[AUTOGRIND] grind snapshot version mismatch (expected 1, got %s) — snapshot from a different game version; resume disabled" % str(json.data.get("version", 0)))
 		return {}
 	return json.data
 
@@ -2079,6 +2379,15 @@ func restore_system_from_snapshot(system_data: Dictionary) -> void:
 	current_region_id = system_data.get("current_region_id", "")
 	permadeath_staking_enabled = system_data.get("permadeath_staking_enabled", false)
 	permadeath_enabled = permadeath_staking_enabled
+
+	# Session-scoped dedup/streak state. restore runs AFTER start_autogrind cleared
+	# these, so restored values win. Old (pre-field) snapshots lack the keys and
+	# keep the cleared defaults — same behavior they had before, no version bump.
+	battles_without_heal = int(system_data.get("battles_without_heal", 0))
+	_corruption_bands_crossed = (system_data.get("corruption_bands_crossed", {}) as Dictionary).duplicate()
+	_rotation_suggested_regions = (system_data.get("rotation_suggested_regions", {}) as Dictionary).duplicate()
+	# Missing key ⇒ keep start_autogrind's re-baseline (previous behavior).
+	_save_corruption_baseline = float(system_data.get("save_corruption_baseline", _save_corruption_baseline))
 
 	# Reconstruct grind_stats with adjusted start_time
 	var saved_elapsed = system_data.get("elapsed_seconds", 0.0)

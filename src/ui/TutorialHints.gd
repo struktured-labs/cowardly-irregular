@@ -81,6 +81,79 @@ const HINTS = {
 		"title": "Spotlight Unlocked",
 		"body": "This party member just stepped out from autopilot — you now have direct control of their turn. Locked members still follow their autobattle rules until their spotlight scene plays.",
 	},
+	"spotlight_locked_intro": {
+		"title": "Why the auto-turns?",
+		"body": "Only the Fighter starts with manual control. Cleric, Mage, Rogue, and Bard follow their autobattle rules until you unlock them by winning their Spotlight Duel — a 1v1 miniboss that showcases what THAT character does best. Look for their spotlight beat in the villages and cave.",
+	},
+
+	# Spotlight-duel tiered death hints. Convention: tier 1 = the DOOR (what to
+	# notice), tier 2 = the RULE (what wins), tier 3 = the RECIPE (exact loop).
+	# cowir-battle wires the loss-counter → show hook by tier.
+
+	"spotlight_hint_fighter_1": {
+		"title": "The Skeleton Knight — I",
+		"body": "Not every strike deserves an answer. Watch how it moves before you commit.",
+	},
+	"spotlight_hint_fighter_2": {
+		"title": "The Skeleton Knight — II",
+		"body": "It braces before it swings. Braced turns are yours to prepare. Unbraced turns are yours to spend.",
+	},
+	"spotlight_hint_fighter_3": {
+		"title": "The Skeleton Knight — III",
+		"body": "Power Strike on clean turns. Defend when it braces. The opening comes every third round — bank Advance for it. Rhythm beats reflex.",
+	},
+
+	"spotlight_hint_cleric_1": {
+		"title": "The Grinding Wound — I",
+		"body": "Nothing you swing lands. The Wound doesn't take damage. It isn't asking you to hit it.",
+	},
+	"spotlight_hint_cleric_2": {
+		"title": "The Grinding Wound — II",
+		"body": "You aren't fighting it — you're outlasting it. Keep the party alive to turn eight. Attacks waste the turn you could have healed.",
+	},
+	"spotlight_hint_cleric_3": {
+		"title": "The Grinding Wound — III",
+		"body": "Cure at half HP. Pray refills MP. Protect the exposed. Defer the safe turns. Faith isn't loud — it's on time.",
+	},
+
+	"spotlight_hint_rogue_1": {
+		"title": "The Lockward — I",
+		"body": "The vault is what he shows you. The key is what he hides.",
+	},
+	"spotlight_hint_rogue_2": {
+		"title": "The Lockward — II",
+		"body": "The fight isn't the fight. Fingers first — take what he thinks he's guarding. Then the vault opens on its own.",
+	},
+	"spotlight_hint_rogue_3": {
+		"title": "The Lockward — III",
+		"body": "Steal turn one — the key, not the coin. His guard breaks with the vault. Backstab the unguarded turns; Defer the sigil turns. He kept every rule but the one you wrote.",
+	},
+
+	"spotlight_hint_mage_1": {
+		"title": "The Prismatic Construct — I",
+		"body": "It changes color for a reason. Watch first, cast second.",
+	},
+	"spotlight_hint_mage_2": {
+		"title": "The Prismatic Construct — II",
+		"body": "Fire when it burns. Ice when it frosts. Thunder when it sparks. The wrong element is worse than doing nothing — it wastes the turn.",
+	},
+	"spotlight_hint_mage_3": {
+		"title": "The Prismatic Construct — III",
+		"body": "Read the color. Cast to match. Save MP for the cycle you can't skip. The color is a sentence — finish it with the matching element.",
+	},
+
+	"spotlight_hint_bard_1": {
+		"title": "The Hostile Courtier — I",
+		"body": "Not every fight is a fight. Listen for what he's actually saying.",
+	},
+	"spotlight_hint_bard_2": {
+		"title": "The Hostile Courtier — II",
+		"body": "HP doesn't win this. Swayed does. Sing until the pile reaches the threshold.",
+	},
+	"spotlight_hint_bard_3": {
+		"title": "The Hostile Courtier — III",
+		"body": "Lullaby stacks Swayed. Discord stacks Swayed. Ignore his HP; watch the count. He listens when the pile fills — not one turn earlier, not one turn late.",
+	},
 }
 
 
@@ -89,6 +162,17 @@ static func show(parent: Node, hint_id: String) -> void:
 	if not HINTS.has(hint_id):
 		push_warning("TutorialHints: Unknown hint '%s'" % hint_id)
 		return
+
+	# Guard BEFORE instancing/add_child — prior code leaked a node every call
+	# for an already-seen hint (TutorialHint.show_hint short-circuited but the
+	# CanvasLayer had already been parented and nothing freed it).
+	if TutorialHint._shown_hints.get(hint_id, false):
+		return
+	var ml := Engine.get_main_loop()
+	if ml and ml is SceneTree:
+		var gs := (ml as SceneTree).root.get_node_or_null("GameState")
+		if gs and gs.game_constants.get("tutorial_" + hint_id, false):
+			return
 
 	var hint_data = HINTS[hint_id]
 	var hint = TutorialHint.new()

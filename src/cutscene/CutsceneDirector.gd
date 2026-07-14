@@ -11,6 +11,9 @@ signal cutscene_skipped(cutscene_id: String)
 
 ## Current state
 var _active: bool = false
+# abort ≠ skip: finished still emits (awaiters unblock) but the completion flag is withheld so the cutscene replays
+var _aborted: bool = false
+var _last_finished_aborted: bool = false
 var _cutscene_id: String = ""
 var _skipping: bool = false
 var _fast_forward: bool = false
@@ -80,6 +83,12 @@ var _pre_cutscene_music: String = ""
 var _timer_label: Label = null
 var _timer_remaining: float = 0.0
 var _timer_flag: String = ""
+
+## Staged-mode state (presentation:"staged" — CT-style live-world scene direction).
+var _staged: bool = false
+var _actors: Dictionary = {}
+var _stage_hidden: Array = []
+var _stage_cam_base_offset: Vector2 = Vector2.INF
 
 
 func _ready() -> void:
@@ -184,6 +193,11 @@ func _process(delta: float) -> void:
 	if not _active:
 		return
 
+	# Heartbeat the input lock: cutscenes routinely run >10s, and the stale-lock expiry would otherwise re-open the mid-cutscene interact leak fixed at v3.33.108 (web-smoke budget find #2 class).
+	var ilm_hb = get_tree().root.get_node_or_null("InputLockManager")
+	if ilm_hb:
+		ilm_hb.push_lock("cutscene")
+
 	# Handle skip input (hold B/X/Escape)
 	var skip_pressed = Input.is_action_pressed("ui_cancel")
 	if skip_pressed and not _skipping:
@@ -218,6 +232,10 @@ func is_active() -> bool:
 
 func play_cutscene(cutscene_id: String) -> void:
 	"""Load and play a cutscene from data/cutscenes/<cutscene_id>.json"""
+	# Re-entry guard: a second play mid-scene stacked a second step-runner over the first — hidden dialogue typing (phantom blips), repeats, desync (struktured 2026-07-11).
+	if _active:
+		push_warning("CutsceneDirector: refused '%s' — '%s' is already playing" % [cutscene_id, _cutscene_id])
+		return
 	var data = _load_cutscene_data(cutscene_id)
 	if data.is_empty():
 		push_error("CutsceneDirector: Failed to load cutscene '%s'" % cutscene_id)
@@ -231,8 +249,11 @@ func play_cutscene(cutscene_id: String) -> void:
 	_current_world = data.get("world", 0)
 	visible = true
 
-	# Load backdrop: prefer explicit image, then viewport capture, then world gradient
-	if not _try_load_backdrop_image(data):
+	# Staged mode: live world stays visible — no backdrop, no dim, puppets act in-scene.
+	_staged = str(data.get("presentation", "")) == "staged"
+	if _staged:
+		_begin_staging()
+	elif not _try_load_backdrop_image(data):
 		await _capture_background()
 
 	# Fade out current music before cutscene begins (smooth transition).
@@ -254,13 +275,13 @@ func play_cutscene(cutscene_id: String) -> void:
 	var steps = data.get("steps", [])
 	var step_index := 0
 	for step in steps:
-		if _skipping:
+		if _skipping or _aborted:
 			break
 		await _execute_step(step)
 		step_index += 1
 
 	# When skipped, still apply all set_flag steps so cutscenes never replay.
-	if _skipping:
+	if _skipping and not _aborted:
 		_apply_remaining_set_flag_steps(steps, step_index)
 
 	# Cleanup
@@ -269,6 +290,9 @@ func play_cutscene(cutscene_id: String) -> void:
 
 func play_cutscene_from_data(cutscene_id: String, data: Dictionary) -> void:
 	"""Play a cutscene from an in-memory dictionary (no file load)."""
+	if _active:
+		push_warning("CutsceneDirector: refused '%s' — '%s' is already playing" % [cutscene_id, _cutscene_id])
+		return
 	_cutscene_id = cutscene_id
 	_active = true
 	_skipping = false
@@ -277,7 +301,11 @@ func play_cutscene_from_data(cutscene_id: String, data: Dictionary) -> void:
 	_current_world = data.get("world", 0)
 	visible = true
 
-	if not _try_load_backdrop_image(data):
+	# Same staged-mode gate as play_cutscene — keep the two entry points in sync.
+	_staged = str(data.get("presentation", "")) == "staged"
+	if _staged:
+		_begin_staging()
+	elif not _try_load_backdrop_image(data):
 		await _capture_background()
 	cutscene_started.emit(cutscene_id)
 	_freeze_player()
@@ -285,16 +313,16 @@ func play_cutscene_from_data(cutscene_id: String, data: Dictionary) -> void:
 	var steps = data.get("steps", [])
 	var step_index := 0
 	for step in steps:
-		if _skipping:
+		if _skipping or _aborted:
 			break
 		await _execute_step(step)
 		step_index += 1
 
-	# When skipped, still apply all set_flag steps so cutscenes never replay
-	if _skipping:
-		for i in range(step_index, steps.size()):
-			if steps[i].get("type", "") == "set_flag":
-				_step_set_flag(steps[i])
+	# When skipped, still apply all set_flag steps so cutscenes never replay.
+	# Delegate to the shared helper so this path matches play_cutscene's
+	# behaviour byte-for-byte (the inline loop drifted from the helper).
+	if _skipping and not _aborted:
+		_apply_remaining_set_flag_steps(steps, step_index)
 
 	await _end_cutscene()
 
@@ -352,6 +380,26 @@ func _execute_step(step: Dictionary) -> void:
 			await _step_boss_intro(step)
 		"roll_credits":
 			await _step_roll_credits(step)
+		"choice":
+			await _step_choice(step)
+		"battle":
+			await _step_battle(step)
+		"spawn_actor":
+			_step_spawn_actor(step)
+		"despawn_actor":
+			_step_despawn_actor(step)
+		"move_actor":
+			await _step_move_actor(step)
+		"face_actor":
+			_step_face_actor(step)
+		"emote":
+			await _step_emote(step)
+		"hop":
+			await _step_hop(step)
+		"camera_focus":
+			await _step_camera_focus(step)
+		"camera_restore":
+			await _step_camera_restore(step)
 		_:
 			push_warning("CutsceneDirector: Unknown step type '%s'" % step_type)
 
@@ -397,6 +445,112 @@ func _step_narration(step: Dictionary) -> void:
 	var dialogue = _get_or_create_dialogue()
 	dialogue.show_dialogue(lines_array)
 	await dialogue.dialogue_finished
+
+
+## Tick 331: handle "choice" step type. Pre-fix the type was used by
+## world6_orrery.json but had no handler — every play hit the unknown-
+## step-type push_warning and silently skipped the prompt, never setting
+## any response flag. Implementation:
+##   1. Show the prompt as a single narration line so the player has
+##      context (mirrors how dialogue → choice flows in classic JRPGs).
+##   2. Hand the option strings to DialogueChoiceMenu and await.
+##   3. Find the matched option by text and set its declared flag in
+##      GameState.game_constants.
+## When _skipping is true (player held the skip button) we still set
+## the FIRST option's flag so the cutscene state machine doesn't get
+## stuck waiting for a response that never arrives, matching the
+## skip-resilient pattern used elsewhere in the director.
+func _step_choice(step: Dictionary) -> void:
+	var prompt: String = str(step.get("prompt", ""))
+	var options: Array = step.get("options", [])
+	if options.is_empty():
+		push_warning("CutsceneDirector._step_choice: 'options' array empty — choice has nothing to present, skipping")
+		return
+
+	# Show the prompt as narration first (skipped if empty).
+	if prompt != "":
+		var narration_line: Dictionary = {
+			"speaker": "",
+			"text": prompt,
+			"theme": "narrator",
+			"portrait": "narrator",
+		}
+		var dialogue = _get_or_create_dialogue()
+		dialogue.show_dialogue([narration_line])
+		await dialogue.dialogue_finished
+
+	# Build the choice text list. Drop options without text — they
+	# can't be displayed.
+	var choice_texts: Array[String] = []
+	for opt in options:
+		if not (opt is Dictionary):
+			continue
+		var t: String = str((opt as Dictionary).get("text", ""))
+		if t.strip_edges() != "":
+			choice_texts.append(t)
+	if choice_texts.is_empty():
+		push_warning("CutsceneDirector._step_choice: no valid option texts after filtering — skipping")
+		return
+
+	# Skip path: set the first option's flag deterministically. Avoids
+	# leaving the cutscene state machine waiting on input that won't
+	# come when the player hits skip.
+	if _skipping:
+		_set_choice_flag(options[0])
+		return
+
+	# Present the menu and await selection.
+	var DialogueChoiceMenuScript = load("res://src/llm/DialogueChoiceMenu.gd")
+	if DialogueChoiceMenuScript == null:
+		push_warning("CutsceneDirector._step_choice: DialogueChoiceMenu script unloadable — setting first option's flag and continuing")
+		_set_choice_flag(options[0])
+		return
+	var menu: Node = DialogueChoiceMenuScript.new()
+	# Anchor to a CanvasLayer so it renders above the cutscene UI.
+	var layer := CanvasLayer.new()
+	layer.layer = 96  # Above CutsceneDirector layer (95).
+	get_tree().root.add_child(layer)
+	layer.add_child(menu)
+
+	var result: String = await menu.present(choice_texts)
+	layer.queue_free()
+
+	# Find the matched option. Empty (cancel) falls back to first.
+	var matched: Dictionary = options[0]
+	if result != "":
+		for opt in options:
+			if opt is Dictionary and str((opt as Dictionary).get("text", "")) == result:
+				matched = opt
+				break
+	_set_choice_flag(matched)
+
+
+## Apply a choice option's flag to GameState.game_constants. Safe-noop
+## when the option has no flag (the player picks a "do nothing" option)
+## or when GameState isn't reachable (test environments).
+##
+## Tick 332: prefix flag name with "cutscene_flag_" to match
+## _step_set_flag's convention (line ~627). Pre-fix tick 331 wrote
+## the bare name — so a branch step reading `cutscene_flag_<flag>`
+## (the format _step_branch uses at line ~1004) never saw the choice
+## response. The whole "choice → set flag → branch on flag" loop
+## was broken by a one-prefix naming gap.
+func _set_choice_flag(option: Variant) -> void:
+	if not (option is Dictionary):
+		return
+	var flag_name: String = str((option as Dictionary).get("flag", ""))
+	if flag_name == "":
+		return
+	var gs: Node = get_tree().root.get_node_or_null("GameState") if is_inside_tree() else null
+	if gs == null or not ("game_constants" in gs):
+		push_warning("CutsceneDirector._set_choice_flag: GameState unreachable — flag '%s' not persisted" % flag_name)
+		return
+	gs.game_constants["cutscene_flag_" + flag_name] = true
+	# Tick 333: mirror to story_flags too (see _step_set_flag for
+	# rationale — QuestLog and other bare-flag consumers don't fall
+	# back to game_constants).
+	if gs.has_method("set_story_flag"):
+		gs.set_story_flag(flag_name, true)
 
 
 func _step_fade_to_black(step: Dictionary) -> void:
@@ -529,6 +683,26 @@ func _step_set_flag(step: Dictionary) -> void:
 		# Store cutscene flags in game_constants for now
 		if GameState:
 			GameState.game_constants["cutscene_flag_" + flag] = value
+			# Tick 333: also mirror to story_flags so QuestLog (reads
+			# get_story_flag, no game_constants fallback) and other
+			# bare-flag consumers see the value. Pre-fix a cutscene
+			# set_flag step that flipped a quest objective flag (e.g.
+			# "talked_to_theron") never updated story_flags — QuestLog
+			# kept showing the objective as incomplete even after the
+			# Theron dialogue played. Mirrors the helper at GameLoop
+			# ._set_cutscene_flag_and_mirror that's used for the
+			# completion-flag write at cutscene_finished.
+			if GameState.has_method("set_story_flag"):
+				GameState.set_story_flag(flag, bool(value))
+			# Party reacts when the card is more than half full (event chat)
+			if flag == "fool_card_marks" and int(value) >= 3 and PartyChatSystem:
+				PartyChatSystem.fire_event_flag("event_flag_fool_marks_three")
+			# Orrery finale gate: marks are int-valued (story_flags mirror is bool-coerced) so the five-marks boolean must be emitted where the value lands
+			if flag == "fool_card_marks" and int(value) >= 5:
+				GameState.set_story_flag("quest_wiring_fool_card_five_marks")
+				var qs = get_node_or_null("/root/QuestSystem")
+				if qs and qs.has_method("notify_flag"):
+					qs.notify_flag("quest_wiring_fool_card_five_marks")
 
 
 func _step_grant_item(step: Dictionary) -> void:
@@ -668,10 +842,14 @@ func _step_update_item(step: Dictionary) -> void:
 		var qty: int = member.get_item_count(old_id)
 		if qty <= 0:
 			continue
-		if member.has_method("remove_item"):
-			member.remove_item(old_id, qty)
-		if member.has_method("add_item"):
-			member.add_item(new_id, qty)
+		# Tick 191: guard add_item on remove_item success — pre-fix a failed remove still ran add, producing duplication (player keeps old AND gets new).
+		if not member.has_method("remove_item") or not member.has_method("add_item"):
+			push_warning("CutsceneDirector update_item: party member '%s' missing remove_item/add_item — swap skipped" % member.combatant_name)
+			return
+		if not member.remove_item(old_id, qty):
+			push_warning("CutsceneDirector update_item: remove_item('%s', %d) failed on %s — swap aborted, no duplication" % [old_id, qty, member.combatant_name])
+			return
+		member.add_item(new_id, qty)
 		return  # First match wins — don't double-swap if item exists in multiple members
 	# Not found anywhere — log so a malformed cutscene script doesn't
 	# silently fail to transform.
@@ -702,6 +880,234 @@ func _add_item_to_party_leader(item_id: String, quantity: int) -> void:
 		var leader = game_loop.party[0]
 		if leader and leader.has_method("add_item"):
 			leader.add_item(item_id, quantity)
+
+
+## =====================
+## STAGED SCENE DIRECTION (presentation:"staged")
+## =====================
+
+## The live Node2D the puppets act in. Null in headless/no-scene contexts —
+## every staged step treats null as "resolve instantly" (spine-walker safety).
+func _get_live_stage() -> Node2D:
+	if MapSystem and MapSystem.current_map and is_instance_valid(MapSystem.current_map):
+		return MapSystem.current_map
+	var gl = get_tree().root.get_node_or_null("GameLoop")
+	if gl and "current_scene" in gl and gl.current_scene is Node2D and is_instance_valid(gl.current_scene):
+		return gl.current_scene
+	var cs = get_tree().current_scene
+	if cs is Node2D:
+		return cs
+	return null
+
+
+func _get_live_player() -> Node2D:
+	var p = get_tree().get_first_node_in_group("player")
+	if p is Node2D and is_instance_valid(p):
+		return p
+	if MapSystem and MapSystem.has_method("get_player"):
+		var mp = MapSystem.get_player()
+		if mp is Node2D and is_instance_valid(mp):
+			return mp
+	return null
+
+
+## Staged entry: hide the real player + best-effort HUD so puppets own the frame.
+func _begin_staging() -> void:
+	_actors.clear()
+	_stage_hidden.clear()
+	_stage_cam_base_offset = Vector2.INF
+	var player := _get_live_player()
+	if player and player.visible:
+		player.visible = false
+		_stage_hidden.append(player)
+	var stage := _get_live_stage()
+	if stage == null:
+		return
+	# Field-HUD widgets are Nodes wrapping a _canvas CanvasLayer (not CanvasItems) — resolve like GameLoop._set_field_hud_hidden or the hide silently no-ops.
+	for prop in ["_minimap", "_threat_meter", "_quest_tracker", "_objective_arrow", "_border_indicator", "_danger_zone"]:
+		if not (prop in stage):
+			continue
+		var w = stage.get(prop)
+		if w == null or (w is Object and not is_instance_valid(w)):
+			continue
+		var target = null
+		if w is CanvasItem or w is CanvasLayer:
+			target = w
+		elif w is Node and "_canvas" in w and w._canvas is CanvasLayer:
+			target = w._canvas
+		if target and is_instance_valid(target) and target.visible:
+			target.visible = false
+			_stage_hidden.append(target)
+	# Live-playtest 2026-07-11 (msg 2388): ambient villagers/wanderers loitered inside the puppet blocking — puppets play EVERYONE, so hide live character NPCs (npc_name-bearing PROPS like BulletinBoard/TallyWall stay on stage).
+	for n in stage.find_children("*", "Area2D", true, false):
+		if (n is OverworldNPC or n is WanderingNPC) and n.visible:
+			n.visible = false
+			_stage_hidden.append(n)
+
+
+## Staged teardown: despawn puppets, restore hidden nodes + camera. Idempotent —
+## _end_cutscene calls it unconditionally so skip/abort paths clean up too.
+func _end_staging() -> void:
+	for id in _actors:
+		var a = _actors[id]
+		if a and is_instance_valid(a):
+			a.queue_free()
+	_actors.clear()
+	for n in _stage_hidden:
+		if n and is_instance_valid(n):
+			n.visible = true
+	_stage_hidden.clear()
+	if _stage_cam_base_offset != Vector2.INF:
+		var cam := get_viewport().get_camera_2d() if get_viewport() else null
+		if cam:
+			cam.offset = _stage_cam_base_offset
+	_stage_cam_base_offset = Vector2.INF
+	_staged = false
+
+
+func _get_actor(id: String) -> CutsceneActor:
+	var a = _actors.get(id)
+	if a and is_instance_valid(a):
+		return a
+	return null
+
+
+## {"type":"spawn_actor","id":"elder","kind":"npc","archetype":"old_man",
+##  "at":[x,y],"facing":"down","replace_npc":"Elder Theron"}
+## replace_npc hides the live OverworldNPC of that name and inherits its
+## position (restored at teardown) so scenes don't show doubled NPCs.
+func _step_spawn_actor(step: Dictionary) -> void:
+	var id: String = str(step.get("id", ""))
+	if id == "":
+		push_warning("CutsceneDirector spawn_actor: missing 'id'")
+		return
+	var stage := _get_live_stage()
+	if stage == null:
+		return
+	_step_despawn_actor({"id": id})
+	var spawn_pos := Vector2.INF
+	var replace_name: String = str(step.get("replace_npc", ""))
+	if replace_name != "":
+		var live_npc := _find_live_npc(stage, replace_name)
+		if live_npc:
+			spawn_pos = live_npc.global_position
+			if live_npc.visible:
+				live_npc.visible = false
+				_stage_hidden.append(live_npc)
+	var at = step.get("at", null)
+	if at is Array and at.size() >= 2:
+		spawn_pos = Vector2(float(at[0]), float(at[1]))
+	if spawn_pos == Vector2.INF:
+		var player := _get_live_player()
+		spawn_pos = player.global_position if player else Vector2.ZERO
+	var actor := CutsceneActor.build(id, step)
+	stage.add_child(actor)
+	actor.global_position = spawn_pos
+	_actors[id] = actor
+
+
+func _find_live_npc(stage: Node2D, npc_name: String) -> Node2D:
+	for n in stage.find_children("*", "Area2D", true, false):
+		if "npc_name" in n and str(n.npc_name) == npc_name:
+			return n
+	return null
+
+
+func _step_despawn_actor(step: Dictionary) -> void:
+	var id: String = str(step.get("id", ""))
+	var a := _get_actor(id)
+	if a:
+		a.queue_free()
+	_actors.erase(id)
+
+
+## Awaited walk; skip/headless snaps to the target instantly (skip contract).
+func _step_move_actor(step: Dictionary) -> void:
+	var a := _get_actor(str(step.get("id", "")))
+	if a == null:
+		return
+	var to = step.get("to", null)
+	if not (to is Array and to.size() >= 2):
+		push_warning("CutsceneDirector move_actor: missing 'to' [x,y]")
+		return
+	var target := Vector2(float(to[0]), float(to[1]))
+	if _skipping:
+		a.global_position = target
+		a.stand()
+		return
+	var speed: float = float(step.get("speed", CutsceneActor.DEFAULT_WALK_SPEED))
+	await a.walk_to(target, speed)
+
+
+func _step_face_actor(step: Dictionary) -> void:
+	var a := _get_actor(str(step.get("id", "")))
+	if a == null:
+		return
+	var toward: String = str(step.get("toward", ""))
+	if toward != "":
+		var other := _get_actor(toward)
+		if other:
+			a.face_toward(other.position)
+		return
+	a.set_facing_name(str(step.get("dir", "down")))
+
+
+func _step_emote(step: Dictionary) -> void:
+	var a := _get_actor(str(step.get("id", "")))
+	if a == null or _skipping:
+		return
+	var duration: float = float(step.get("duration", 1.0))
+	a.show_emote(str(step.get("emote", "exclaim")), duration)
+	if duration > 0.0:
+		await get_tree().create_timer(duration).timeout
+
+
+func _step_hop(step: Dictionary) -> void:
+	var a := _get_actor(str(step.get("id", "")))
+	if a == null or _skipping:
+		return
+	await a.hop(int(step.get("times", 1)))
+
+
+## Pan the live camera to frame an actor or point; offset-tween holds because
+## nothing re-snaps camera position per frame (only rotation is forced).
+func _step_camera_focus(step: Dictionary) -> void:
+	if _skipping:
+		return
+	var vp := get_viewport()
+	var cam := vp.get_camera_2d() if vp else null
+	if cam == null:
+		return
+	var target := Vector2.INF
+	var target_id: String = str(step.get("target", ""))
+	var a := _get_actor(target_id)
+	if a:
+		target = a.global_position
+	else:
+		var at = step.get("target", null)
+		if at is Array and at.size() >= 2:
+			target = Vector2(float(at[0]), float(at[1]))
+	if target == Vector2.INF:
+		return
+	if _stage_cam_base_offset == Vector2.INF:
+		_stage_cam_base_offset = cam.offset
+	var new_offset: Vector2 = cam.offset + (target - cam.get_screen_center_position())
+	var tween := create_tween()
+	tween.tween_property(cam, "offset", new_offset, float(step.get("duration", 0.8)))
+	await tween.finished
+
+
+func _step_camera_restore(step: Dictionary) -> void:
+	var vp := get_viewport()
+	var cam := vp.get_camera_2d() if vp else null
+	if cam == null or _stage_cam_base_offset == Vector2.INF:
+		return
+	if _skipping:
+		cam.offset = _stage_cam_base_offset
+		return
+	var tween := create_tween()
+	tween.tween_property(cam, "offset", _stage_cam_base_offset, float(step.get("duration", 0.8)))
+	await tween.finished
 
 
 func _apply_remaining_set_flag_steps(steps: Array, from_index: int) -> void:
@@ -945,8 +1351,15 @@ func _detect_playstyle() -> String:
 		var auto_count: int = 0
 		for key in SaveSystem.autobattle_records:
 			auto_count += SaveSystem.autobattle_records[key].get("count", 0)
-		if BattleManager and "total_battles_won" in BattleManager:
-			total_battles = BattleManager.total_battles_won
+		## Tick 418: read GameState.battles_won (the canonical
+		## persistent counter) instead of the dead BattleManager
+		## reference that never existed — the old read always took
+		## the false branch, leaving total_battles = 0 forever. The
+		## autobattle-ratio playstyle gating below (>= 20 battles
+		## for "automator", > 100 for veteran) silently never fired
+		## pre-fix.
+		if GameState and "battles_won" in GameState:
+			total_battles = GameState.battles_won
 		if total_battles > 0:
 			autobattle_ratio = float(auto_count) / float(total_battles)
 
@@ -1155,12 +1568,19 @@ func _trigger_skip() -> void:
 ## =====================
 
 func _freeze_player() -> void:
+	# Canonical gate FIRST: set_can_move relies on MapSystem.get_player(), which is null on overworld scenes — A-presses leaked to save points + NPC dialogue mid-cutscene (struktured playtest 2026-07-11).
+	var ilm = get_tree().root.get_node_or_null("InputLockManager")
+	if ilm:
+		ilm.push_lock("cutscene")
 	var player = MapSystem.get_player() if MapSystem else null
 	if player and player.has_method("set_can_move"):
 		player.set_can_move(false)
 
 
 func _unfreeze_player() -> void:
+	var ilm = get_tree().root.get_node_or_null("InputLockManager")
+	if ilm:
+		ilm.pop_lock("cutscene")
 	var player = MapSystem.get_player() if MapSystem else null
 	if player and player.has_method("set_can_move"):
 		player.set_can_move(true)
@@ -1184,6 +1604,18 @@ func _apply_letterbox(show: bool) -> void:
 ## =====================
 ## CUTSCENE LIFECYCLE
 ## =====================
+
+## For unrunnable states (missing duel PC), not player skips — see _aborted var note
+func abort_current(reason: String) -> void:
+	if not _active:
+		return
+	_aborted = true
+	push_error("CutsceneDirector: '%s' aborted — %s (completion flag NOT set; will replay when runnable)" % [_cutscene_id, reason])
+
+
+func last_finished_was_aborted() -> bool:
+	return _last_finished_aborted
+
 
 func _end_cutscene() -> void:
 	# Hide letterbox if still showing
@@ -1213,11 +1645,25 @@ func _end_cutscene() -> void:
 	# this, a lingering _timer_label would float over post-cutscene gameplay.
 	_clear_timer_hud()
 
+	# Staged-mode teardown: puppets, hidden nodes, camera. Idempotent no-op for overlay scenes.
+	_end_staging()
+
+	# Snapshot then clear BEFORE the emit. Otherwise: a listener that
+	# synchronously chains into the next cutscene (e.g. prologue → chapter1
+	# via GameLoop._on_prologue_finished) sets _cutscene_id to the new id
+	# inside the emit's stack, but as soon as the listener yields on an
+	# await, control returns here and `_cutscene_id = ""` below would
+	# clobber the chained id. Snapshot + clear-first fixes that — when the
+	# listener runs, our member vars are already in the "between
+	# cutscenes" state and any new play_cutscene gets to fully own them.
+	var finished_id: String = _cutscene_id
+	_last_finished_aborted = _aborted
 	_active = false
 	visible = false
-	cutscene_finished.emit(_cutscene_id)
 	_cutscene_id = ""
 	_skipping = false
+	_aborted = false
+	cutscene_finished.emit(finished_id)
 
 
 ## =====================
@@ -1243,4 +1689,95 @@ func _load_cutscene_data(cutscene_id: String) -> Dictionary:
 		push_error("CutsceneDirector: JSON parse error in %s: %s" % [path, json.get_error_message()])
 		return {}
 
-	return json.data if json.data is Dictionary else {}
+	# Out-of-family loud-fail gap: pre-fix this silently swallowed a
+	# non-Dict root (e.g. someone wraps the cutscene in an Array by
+	# mistake, or a corrupted file parses as a string). play_cutscene
+	# would then receive {} and silently no-op the whole cutscene,
+	# leaving the story flag uncompleted forever — the same loop class
+	# tick 12 had to back-fill for the rat king flag.
+	if not (json.data is Dictionary):
+		push_error("CutsceneDirector: %s parsed but root is not a Dictionary (type=%s) — cutscene will not play" % [path, typeof(json.data)])
+		return {}
+
+	return json.data
+
+
+## Tick 471: cutscene→battle→resume step type for the Spotlight Duels
+## directive. Runs a solo-duel battle inline in the cutscene, retrying
+## on defeat by default. Step schema:
+##   {"type":"battle","combatants":["<pc_job_id>"],"enemies":["<mob_id>"],
+##    "on_defeat":"retry"|"fail_forward"|"skip",
+##    "music":"<track>", "background":"<terrain>"}
+## Delegates to GameLoop.start_solo_battle which benches all but the
+## spotlight PC, awaits BattleManager.battle_ended, and returns
+## "victory" | "defeat". The retry loop lives HERE (not in GameLoop) so
+## the cutscene stays paused across attempts and the intro cutscene
+## never replays (matches cowir-story's UX requirement, msg 1931 #4).
+func _step_battle(step: Dictionary) -> void:
+	var combatants: Array = step.get("combatants", [])
+	var enemies: Array = step.get("enemies", [])
+	var on_defeat: String = str(step.get("on_defeat", "retry"))
+	var opts: Dictionary = {
+		"music": str(step.get("music", "")),
+		"background": str(step.get("background", "")),
+	}
+	## Tick 472: thread the step's custom win_condition (if any)
+	## through GameLoop.start_solo_battle → BattleManager. Shape:
+	## {"type": "survive_turns"|"status_threshold", "value": int,
+	## "status": String}. Cutscene author drops it inline on the
+	## battle step; empty {} = default HP-zero (backwards compat).
+	if step.has("win_condition") and step["win_condition"] is Dictionary:
+		opts["win_condition"] = (step["win_condition"] as Dictionary).duplicate()
+	if combatants.is_empty() or enemies.is_empty():
+		push_warning("CutsceneDirector: battle step missing combatants or enemies — skipping")
+		return
+	var game_loop: Node = get_node_or_null("/root/GameLoop")
+	if game_loop == null or not game_loop.has_method("start_solo_battle"):
+		push_warning("CutsceneDirector: GameLoop.start_solo_battle unavailable — cutscene battle step skipped")
+		return
+	while true:
+		# CutsceneDirector (layer 95) + CutsceneDialogue (96) render OVER the BattleScene (layer 0) —
+		# without hiding, the spotlight battle plays under the cutscene UI and the player can't see it.
+		visible = false
+		if _dialogue != null and is_instance_valid(_dialogue):
+			_dialogue.visible = false
+		var result: String = await game_loop.start_solo_battle(str(combatants[0]), str(enemies[0]), opts)
+		visible = true
+		if _dialogue != null and is_instance_valid(_dialogue):
+			_dialogue.visible = true
+		if result == "victory":
+			return
+		if result != "defeat":
+			# not retryable and must not complete-flag, or the duel gate never re-fires
+			abort_current("battle step cannot run (result '%s')" % result)
+			return
+		match on_defeat:
+			"retry":
+				# Silent 0.9s read as a glitch (struktured playtest 2026-07-12); sting: SFX + shake + red flash → black on the director's effects rect.
+				await _play_spotlight_retry_sting()
+				continue
+			"fail_forward", "skip":
+				return
+			_:
+				push_warning("CutsceneDirector: unknown on_defeat '%s' — defaulting to retry" % on_defeat)
+				continue
+
+
+## Spotlight-duel defeat sting: replace the silent 0.9s wait so the retry doesn't feel like a bug. Red flash → black on the director's own _effects_rect (auto-hides when the director hides at loop top), plus defeat SFX + screen shake. Reset after the tween so the aftermath (visible=true after next battle) isn't covered by leftover opaque.
+func _play_spotlight_retry_sting() -> void:
+	if SoundManager:
+		SoundManager.play_battle("defeat")
+	if EffectSystem:
+		EffectSystem._trigger_screen_shake(8.0, 0.35)
+	if _effects_rect == null or not is_instance_valid(_effects_rect):
+		await get_tree().create_timer(0.7).timeout
+		return
+	_effects_rect.visible = true
+	_effects_rect.color = Color(0.75, 0.05, 0.05, 0.0)
+	var tw := create_tween()
+	tw.tween_property(_effects_rect, "color:a", 0.55, 0.15)
+	tw.tween_interval(0.25)
+	tw.tween_property(_effects_rect, "color", Color(0.0, 0.0, 0.0, 1.0), 0.30)
+	await tw.finished
+	_effects_rect.color = Color(1, 1, 1, 0)
+	_effects_rect.visible = false

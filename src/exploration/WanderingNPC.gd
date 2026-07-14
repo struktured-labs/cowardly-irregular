@@ -28,11 +28,19 @@ var _sprite: Sprite2D
 var _label: Label
 var _player_nearby: bool = false
 var _npc_dialogue: Node = null  # NPCDialogue instance for proper dialogue boxes
+var _dynamic_conv: DynamicConversation = null  # LLM-driven conversation, lazy-init
 var _in_conversation: bool = false
 
 ## NPC theme/portrait for dialogue boxes (defaults to "mysterious")
 @export var dialogue_theme: String = "mysterious"
 @export var dialogue_portrait: String = "mysterious"
+
+## LLM dynamic dialogue opt-in (per docs/llm-integration-design.md:157).
+## Mirrors OverworldNPC: only NPCs with `dynamic = true` AND a non-empty
+## `persona` participate in the LLM-driven DynamicConversation path.
+## Default OFF — ambient wanderers stay on the static single-line path.
+@export var dynamic: bool = false
+@export_multiline var persona: String = ""
 
 # Patrol state
 var _patrol_points: Array[Vector2] = []
@@ -66,8 +74,17 @@ func set_patrol(points: Array[Vector2]) -> void:
 		global_position = _patrol_points[0]
 
 
+## Read-back for BaseVillage's placement validation sweep.
+func get_patrol() -> Array[Vector2]:
+	return _patrol_points.duplicate()
+
+
 func _process(delta: float) -> void:
 	if _patrol_points.size() < 2:
+		return
+	# Freeze while dialogue/cutscenes hold the input lock — a patroller strolling through the staged party mid-cutscene reads as a bug (struktured playtest 2026-07-11).
+	var ilm = get_tree().root.get_node_or_null("InputLockManager") if is_inside_tree() else null
+	if ilm and ilm.is_locked():
 		return
 
 	if _paused:
@@ -269,10 +286,33 @@ func _get_current_dialogue() -> String:
 		return dialogue
 	var best = dialogue
 	for hint in dialogue_hints:
-		var flag = hint.get("flag", "")
-		if flag == "" or GameState.get_story_flag(flag):
+		var flag: String = hint.get("flag", "")
+		# Tick 280: dual-namespace check (matches QuestLog._is_quest_flag_set).
+		# Pre-fix only get_story_flag fired — every bare-name flag that
+		# actually lives in game_constants ("chapter1_complete" →
+		# "cutscene_flag_chapter1_complete") silently never matched, so
+		# wanderer hints stayed on the default text forever.
+		if flag == "" or _flag_set(flag):
 			best = hint.get("text", dialogue)
 	return best
+
+
+func _flag_set(flag: String) -> bool:
+	# Tick 336: delegate to GameState.is_story_flag_set (the canonical
+	# dual-namespace helper added in tick 335). Pre-fix this file
+	# duplicated the 3-way check inline; QuestLog and QuestTracker had
+	# their own near-identical copies. Three copies meant three drift
+	# surfaces — a future namespace addition (e.g. a 4th flag store)
+	# would need to land in all three. Delegating to GameState
+	# collapses the surface to one source of truth. Kept as a local
+	# wrapper to preserve the existing call signature in this file.
+	if GameState == null or not GameState.has_method("is_story_flag_set"):
+		# Defensive fallback so a partial test harness without the helper
+		# doesn't false-negative. Same 3-way check as pre-tick-336.
+		return GameState.get_story_flag(flag) \
+			or GameState.game_constants.get("cutscene_flag_" + flag, false) \
+			or GameState.game_constants.get(flag, false)
+	return GameState.is_story_flag_set(flag)
 
 
 func _on_body_entered(body: Node2D) -> void:
@@ -291,6 +331,13 @@ func _on_body_exited(body: Node2D) -> void:
 func _input(event: InputEvent) -> void:
 	if not _player_nearby or _in_conversation:
 		return
+	# Zone-listener lock gate: this handler grabs ui_accept directly — mid-cutscene presses opened phantom dialogue over the scene (struktured 2026-07-11, SavePoint-class leak).
+	var ilm_gate = get_tree().root.get_node_or_null("InputLockManager") if is_inside_tree() else null
+	if ilm_gate and ilm_gate.is_locked():
+		return
+	# 2026-07-12: also gate on tutorial hints — a hint dismiss press near a wandering NPC would fire dialogue.
+	if TutorialHint.is_any_active():
+		return
 
 	if event.is_action_pressed("ui_accept"):
 		get_viewport().set_input_as_handled()
@@ -303,8 +350,23 @@ func _start_conversation() -> void:
 	_in_conversation = true
 	_label.visible = false
 
-	# Freeze player during conversation
 	var player = _get_player()
+
+	# ── LLM-driven path: use DynamicConversation when LLMService is available
+	# AND this wanderer is opt-in for dynamic dialogue. Per design doc :157,
+	# only the showcase set takes this branch. Ambient wanderers default
+	# `dynamic = false` and continue through the single-line NPCDialogue
+	# pipeline below. ───────────────────────────────────────────────────────
+	if dynamic and persona != "" and _llm_conversation_available():
+		await _run_dynamic_conversation(player)
+		_in_conversation = false
+		if _player_nearby:
+			_label.text = "[A] %s" % npc_name
+			_label.visible = true
+		return
+
+	# ── Static path: single-line NPCDialogue box. ──
+	# Freeze player during conversation
 	if player and player.has_method("set_can_move"):
 		player.set_can_move(false)
 
@@ -332,7 +394,57 @@ func _get_player() -> Node:
 	var players = get_tree().get_nodes_in_group("player")
 	if players.size() > 0:
 		return players[0]
-	# Try MapSystem
-	if Engine.has_singleton("MapSystem"):
-		return Engine.get_singleton("MapSystem").get_player()
+	# Try MapSystem autoload (Engine.has_singleton is ALWAYS FALSE for autoloads
+	# in Godot 4 — look up via the scene tree root).
+	var ms: Node = get_node_or_null("/root/MapSystem")
+	if ms != null and ms.has_method("get_player"):
+		return ms.get_player()
 	return null
+
+
+func _llm_conversation_available() -> bool:
+	"""Returns true when LLMService is present and reporting availability."""
+	var svc: Node = get_node_or_null("/root/LLMService")
+	return svc != null and svc.is_available()
+
+
+func _run_dynamic_conversation(player: Node) -> void:
+	"""Spin up (or reuse) a DynamicConversation and run a full LLM-driven exchange."""
+	if not _dynamic_conv or not is_instance_valid(_dynamic_conv):
+		_dynamic_conv = DynamicConversation.new()
+		_dynamic_conv.name = "DynamicConversation"
+		add_child(_dynamic_conv)
+
+	# Resolve EventLog from the GameState autoload via the scene tree root
+	# (Engine.has_singleton is ALWAYS FALSE for autoloads in Godot 4).
+	var event_log: EventLog = null
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs != null and "event_log" in gs:
+		event_log = gs.event_log
+
+	# Resolve location name from parent scene.
+	var location: String = _resolve_location_name()
+
+	# WanderingNPCs have a single dialogue line — wrap it as the fallback array.
+	var fallback_lines: Array = [_get_current_dialogue()]
+
+	# Use the authored @export persona directly. The caller (`_start_conversation`)
+	# already gated on `dynamic and persona != ""`, so the fake-persona
+	# derivation from dialogue_theme is no longer needed (and was misleading
+	# anyway — dialogue_theme is a portrait key, not a character description).
+	_dynamic_conv.setup(npc_name, persona, location, event_log, fallback_lines)
+	await _dynamic_conv.run(player)
+
+
+func _resolve_location_name() -> String:
+	var p = get_parent()
+	if p:
+		var n: String = p.name
+		if n != "" and n != "Node":
+			return n
+		var gp = p.get_parent()
+		if gp:
+			var gn: String = gp.name
+			if gn != "" and gn != "Node":
+				return gn
+	return "Unknown Land"

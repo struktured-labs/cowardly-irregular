@@ -50,9 +50,12 @@ func test_completion_flag_map_covers_world1_critical_cutscenes() -> void:
 	chapter3, chapter4) MUST have entries in the completion-flag map.
 	If chapter1 is removed, Elder Theron's loop bug reappears."""
 	var text = _read("res://src/GameLoop.gd")
-	# Find the const map definition
-	var map_idx = text.find("_CUTSCENE_COMPLETION_FLAGS")
-	assert_gt(map_idx, -1, "_CUTSCENE_COMPLETION_FLAGS const must exist")
+	# Anchor on the const DEFINITION specifically — tick 214 added other
+	# const/var declarations elsewhere in the file that reference the
+	# name in comments, so the bare `find("_CUTSCENE_COMPLETION_FLAGS")`
+	# returns the wrong position.
+	var map_idx = text.find("const _CUTSCENE_COMPLETION_FLAGS")
+	assert_gt(map_idx, -1, "const _CUTSCENE_COMPLETION_FLAGS must exist")
 	# Body between the const decl and the next "}" close
 	var close_idx = text.find("}", map_idx)
 	var map_body = text.substr(map_idx, close_idx - map_idx)

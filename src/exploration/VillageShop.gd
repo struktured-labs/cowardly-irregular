@@ -4,11 +4,23 @@ class_name VillageShop
 ## VillageShop - Buy weapons, armor, or items
 ## Different shop types with different inventories
 
+## Tick 257: public bridge for the ShopScene's item_purchased signal.
+## Quest hooks / achievements / event flag ratchets (e.g. the
+## first_magic_shop_visited flag wired in ShopScene.setup) can listen
+## here on the overworld Area2D rather than reaching into the
+## ShopScene that this trigger spawns.
+signal item_purchased(item_id: String, cost: int)
+signal transition_triggered(target_map: String, target_spawn: String)
+
 enum ShopType { ITEM, BLACK_MAGIC, WHITE_MAGIC, BLACKSMITH }
 
 @export var shop_name: String = "Shop"
 @export var shop_type: ShopType = ShopType.ITEM
 @export var keeper_name: String = "Shopkeeper"
+
+## Set to false to keep the legacy outdoor shop menu instead of transitioning
+## to the ShopInterior scene keyed by shop_type.
+@export var use_interior: bool = true
 
 ## Visual
 var sprite: Sprite2D
@@ -33,19 +45,26 @@ const ITEM_INVENTORY = [
 	"remedy", "repel", "x_potion", "hi_ether",
 	"arctic_wind", "mega_potion", "tent", "mega_ether", "elixir"
 ]
-const BLACK_MAGIC_INVENTORY = ["fire", "blizzard", "thunder", "fira"]
-const WHITE_MAGIC_INVENTORY = ["cure", "cura", "raise", "protect"]
+# Item 18: with lean starting kits these shelves are the buy-your-
+# spells-early path (level-up grants free later; buying is tempo).
+# The -ga tier stays off W1 shelves.
+const BLACK_MAGIC_INVENTORY = ["fire", "blizzard", "thunder", "fira", "blizzara", "thundara"]
+const WHITE_MAGIC_INVENTORY = ["cure", "cura", "raise", "protect", "esuna", "regen"]
+## Shelves in strict ascending cost so the list reads as a progression
+## ladder (ratcheted by test_shop_shelf_cost_order). NOTE: every world's
+## blacksmith stocks this SAME catalog — per-world shelves are a design
+## call flagged to struktured, not changed here.
 const BLACKSMITH_WEAPONS = [
-	"bronze_sword", "iron_dagger", "wooden_staff", "bone_staff",
-	"iron_sword", "poison_dagger", "oak_staff", "sleep_dagger",
-	"steel_sword", "shadow_rod", "war_axe", "thunder_rod",
-	"mythril_dagger", "ice_blade", "flame_sword", "crystal_staff",
-	"assassin_blade", "mythril_sword", "holy_staff"
+	"bronze_sword", "wooden_staff", "iron_dagger", "bone_staff",
+	"iron_sword", "oak_staff", "poison_dagger", "shadow_rod",
+	"steel_sword", "sleep_dagger", "war_axe", "assassin_blade",
+	"thunder_rod", "mythril_dagger", "ice_blade", "flame_sword",
+	"crystal_staff", "mythril_sword", "holy_staff"
 ]
 const BLACKSMITH_ARMOR = [
 	"leather_armor", "cloth_robe", "thief_garb",
 	"bone_armor", "chain_mail", "dark_robe",
-	"iron_armor", "mage_robe", "ninja_garb",
+	"mage_robe", "iron_armor", "ninja_garb",
 	"sage_robe", "mythril_vest", "dragon_mail"
 ]
 
@@ -58,6 +77,26 @@ func _ready() -> void:
 
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
+
+	call_deferred("_auto_connect_transition_relay")
+
+
+func _auto_connect_transition_relay() -> void:
+	var node = get_parent()
+	while node:
+		if node.has_method("_on_transition_triggered") and not transition_triggered.is_connected(node._on_transition_triggered):
+			transition_triggered.connect(node._on_transition_triggered)
+			return
+		node = node.get_parent()
+
+
+func _interior_target() -> String:
+	match shop_type:
+		ShopType.ITEM:        return "shop_interior_item"
+		ShopType.BLACK_MAGIC: return "shop_interior_black_magic"
+		ShopType.WHITE_MAGIC: return "shop_interior_white_magic"
+		ShopType.BLACKSMITH:  return "shop_interior_blacksmith"
+		_: return "shop_interior_item"
 
 
 func _generate_sprite() -> void:
@@ -312,11 +351,12 @@ func _draw_shop(image: Image) -> void:
 
 
 func _setup_collision() -> void:
+	# 2026-07-13: 1-tile-tall box was 8px short of reach=40 for buildings with >1-tile wall buffer (Harmonia Inn + Item Shop unreachable from south approach). Grow to 3 tiles tall so at least one walkable row is always inside the box.
 	var collision = CollisionShape2D.new()
 	var shape = RectangleShape2D.new()
-	shape.size = Vector2(TILE_SIZE * 2, TILE_SIZE)
+	shape.size = Vector2(TILE_SIZE * 2, TILE_SIZE * 3)
 	collision.shape = shape
-	collision.position = Vector2(0, TILE_SIZE / 2)
+	collision.position = Vector2(0, TILE_SIZE * 1.5)
 	add_child(collision)
 
 	collision_layer = 4
@@ -394,6 +434,13 @@ func _on_body_exited(body: Node2D) -> void:
 
 
 func interact(player: Node2D) -> void:
+	# Prefer transitioning into the interior scene if configured.
+	if use_interior:
+		if SoundManager:
+			SoundManager.play_ui("menu_open")
+		transition_triggered.emit(_interior_target(), "entrance")
+		return
+	# Legacy outdoor shop UI.
 	if _is_showing_menu:
 		_advance_dialogue()
 	else:
@@ -420,9 +467,18 @@ func _show_shop_menu(player: Node2D) -> void:
 	shop_scene.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_shop_layer.add_child(shop_scene)
 	shop_scene.shop_closed.connect(_on_shop_closed.bind(player))
+	# Tick 257: bridge purchase events up to overworld listeners.
+	shop_scene.item_purchased.connect(_on_shop_item_purchased)
 
 	if SoundManager:
 		SoundManager.play_ui("menu_open")
+
+
+func _on_shop_item_purchased(item_id: String, cost: int) -> void:
+	# Tick 257: bridge ShopScene's item_purchased up to VillageShop's
+	# public signal. Listeners on the overworld trigger don't need to
+	# know about the inner ShopScene at all.
+	item_purchased.emit(item_id, cost)
 
 
 func _on_shop_closed(player: Node) -> void:
@@ -497,11 +553,16 @@ func _get_type_name() -> String:
 func _format_inventory(items: Array) -> String:
 	var result = ""
 	for i in range(min(items.size(), 4)):
-		var item_name = items[i].replace("_", " ").capitalize()
+		var item_name = _resolve_inventory_name(items[i])
 		result += "- %s\n" % item_name
 	if items.size() > 4:
 		result += "...and more!"
 	return result
+
+
+## Tick 135: thin wrapper around ItemNameResolver.
+func _resolve_inventory_name(item_id: String) -> String:
+	return ItemNameResolver.resolve(item_id)
 
 
 func _close_menu() -> void:

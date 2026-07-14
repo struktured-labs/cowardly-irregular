@@ -103,3 +103,7 @@ func _get_boss_intro_dialogue() -> Array:
 		"Masterite Curator: *raises the label maker*",
 		"Masterite Curator: 'Hold still. This won't take.'",
 	]
+
+
+func _get_music_area_id() -> String:
+	return "abstract_dungeon"

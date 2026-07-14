@@ -1,0 +1,55 @@
+{
+  "id": "world2_pc_maintenance",
+  "title": "Maintenance",
+  "world": 2,
+  "trigger": "world2_pc_maintenance",
+  "background": "prologue_forest",
+  "description": "Suburban ritual observed: watering a plastic hedge in the rain.",
+  "steps": [
+    {
+      "type": "letterbox_in",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "A resident watered a hedge in the rain. The party observed protocol from across the street."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Rogue",
+          "text": "The hedge is plastic.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "The rain isn't. So the ritual is real. It just doesn't do anything.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Bard",
+          "text": "That's most rituals, honestly.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "Voices down. He waved at us. Wave BACK.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        }
+      ]
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.3
+    }
+  ]
+}

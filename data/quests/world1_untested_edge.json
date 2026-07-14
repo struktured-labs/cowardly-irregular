@@ -1,0 +1,142 @@
+{
+  "id": "world1_untested_edge",
+  "title": "The Untested Edge",
+  "world": 1,
+  "prereq_flag": "cutscene_flag_rat_king_defeated",
+  "giver": {
+    "npc_id": "bram_smith",
+    "display_name": "Bram",
+    "location": {
+      "map_id": "harmonia_village",
+      "near": "weapon_shop"
+    },
+    "spawn_flag": ""
+  },
+  "description": "Bram has never tested a sword in thirty years of selling them. There is one sword in his shop he is afraid to test. Seventeen adventurers bought it. All seventeen returned it. None of them said why.",
+  "playstyle_tags": [
+    "story",
+    "shopkeeper_depth"
+  ],
+  "dialogue": {
+    "offer": [
+      {
+        "speaker": "Bram",
+        "text": "You came back from the cave. Good. Most of my customers do, which I attribute to the quality of the merchandise and not, as my sister says, to luck.",
+        "theme": "villager"
+      },
+      {
+        "speaker": "Bram",
+        "text": "There's a sword on that rack I've sold seventeen times. Seventeen adventurers. All of them brought it back. Not one of them said why. I call it the Returned Sword, because I am a literal man.",
+        "theme": "villager"
+      },
+      {
+        "speaker": "Bram",
+        "text": "I'll sell it to you. But I want to know why it keeps coming back. There's writing on the hilt too faint for my eyes. Get it read. Then tell me.",
+        "theme": "villager"
+      }
+    ],
+    "accept": [
+      {
+        "speaker": "Bram",
+        "text": "Take it. Mind the balance — it's better than it has any right to be. That's part of what unsettles me.",
+        "theme": "villager"
+      }
+    ],
+    "decline": [
+      {
+        "speaker": "Bram",
+        "text": "Suit yourself. It'll be here. It's always here. That's the whole problem.",
+        "theme": "villager"
+      }
+    ],
+    "in_progress": [
+      {
+        "speaker": "Bram",
+        "text": "Inscription's too faint for shop light. A mage could raise it, or the Guild scribes in Scriptura read worse every day.",
+        "theme": "villager"
+      }
+    ],
+    "ready_to_turn_in": [
+      {
+        "speaker": "Bram",
+        "text": "You read it. I can tell. You've got the look of a person holding someone else's mail.",
+        "theme": "villager"
+      }
+    ],
+    "complete": [
+      {
+        "speaker": "Bram",
+        "text": "'Return me when you're done. I'll know where I belong.'",
+        "theme": "villager"
+      },
+      {
+        "speaker": "Bram",
+        "text": "Seventeen people returned it. Every one of them thought they were returning it because it didn't suit them. But the sword told them to return it. The sword decided it wasn't done with the shop.",
+        "theme": "villager"
+      },
+      {
+        "speaker": "Bram",
+        "text": "Thirty years I've said testing dulls the edge. Watch this.",
+        "theme": "villager"
+      },
+      {
+        "speaker": "Bram",
+        "text": "...It's a very good sword. Half price. It told me to.",
+        "theme": "villager"
+      }
+    ]
+  },
+  "objectives": [
+    {
+      "step": 1,
+      "description": "Take the Returned Sword from Bram.",
+      "type": "talk",
+      "target_npc": "bram_smith",
+      "flag_on_complete": "quest_world1_untested_edge_accepted"
+    },
+    {
+      "step": 2,
+      "description": "Have the inscription on the hilt read.",
+      "type": "custom",
+      "required_flag": "quest_world1_untested_edge_inscription_read",
+      "flag_on_complete": "quest_world1_untested_edge_inscription_read"
+    },
+    {
+      "step": 3,
+      "description": "Tell Bram what the sword says.",
+      "type": "talk",
+      "target_npc": "bram_smith",
+      "required_flag": "quest_world1_untested_edge_inscription_read"
+    }
+  ],
+  "rewards": {
+    "gold": 0,
+    "exp": 200,
+    "items": [
+      {
+        "item_id": "returned_sword",
+        "count": 1
+      }
+    ],
+    "job_variants": {
+      "cleric": {
+        "description": "Dialogue-only: the Cleric identifies the inscription language as predating the kingdom, matching one other document — Harmonia's founding charter, which names no founder, only that the founder 'left when the work was complete and said to return when called.'",
+        "items": [
+          {
+            "item_id": "returned_sword",
+            "count": 1
+          }
+        ]
+      }
+    }
+  },
+  "flag_on_complete": "quest_world1_untested_edge_complete",
+  "unlocks_dialogue": [
+    {
+      "npc_id": "bram_smith",
+      "note": "Post-quest: Bram talks about the swords he's never tested and why — pre-game Harmonia lore."
+    }
+  ],
+  "cross_world_connection": "W5 Node Prime packet vendor sells 'Sword_v17.exe' — 'a legacy item with an unusual return policy: it ships back to origin.' Extra line if returned_sword is in inventory.",
+  "_wiring_notes": "Step 2's flag quest_world1_untested_edge_inscription_read has TWO emitters, either satisfies (wired 2026-07-08): (a) SwordInscription rack beside Bram in Harmonia — Mage in party casts light on the blade (magic_surge cue); (b) guild_scholar_scriptura translates it via QuestSystem.DIALOGUE_EMITTERS on talk. The returned_sword item is granted at COMPLETION in v1 (schema grants rewards at turn-in), not at accept — the step-1 'take the sword' is narrative-carried until then. Item is authored as a key item with the intended weapon mechanics (Familiar Weight: +10% damage vs enemies the party has fought before) documented in its description for cowir-battle to promote to a real weapon later."
+}

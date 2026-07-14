@@ -12,6 +12,9 @@ func _init() -> void:
 	boss_id = "masterite_warden_industrial"
 	boss_flag_key = "assembly_core_cleared"
 	boss_cutscene_id = "world4_assembly_boss"
+	# (Tick 105: defeat_cutscene removed. The W4 warden defeat plays via
+	# the GameLoop gate on cutscene_flag_warden_industrial_defeated in
+	# assembly_core.)
 	total_floors = 3
 	overworld_exit_spawn = "chemical_zone"
 	overworld_exit_map = "industrial_overworld"
@@ -109,3 +112,7 @@ func _get_boss_intro_dialogue() -> Array:
 		"Masterite Warden: *unclips a time clock and winds it back*",
 		"Masterite Warden: 'We're going to work overtime.'",
 	]
+
+
+func _get_music_area_id() -> String:
+	return "industrial_dungeon"

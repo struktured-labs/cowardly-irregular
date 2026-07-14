@@ -9,6 +9,7 @@ func _init() -> void:
 	cave_id = "ice_dragon_cave"
 	boss_id = "ice_dragon"
 	boss_flag_key = "ice_dragon_defeated"
+	boss_cutscene_id = "world1_glacius_intro"
 	total_floors = 3
 	overworld_exit_spawn = "ice_cave_entrance"
 
@@ -27,8 +28,8 @@ func _init() -> void:
 			"M.T...MM...MM......M",
 			"M..................M",
 			"M..................M",
-			"M.......DDDD.......M",
-			"M..................M",
+			"M.......DDDD....MMMM",
+			"M...............HT.M",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
 		2: [

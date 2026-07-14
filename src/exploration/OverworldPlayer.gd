@@ -12,6 +12,7 @@ signal menu_requested()
 @export var move_speed: float = 240.0  # Overworld Mode 7 speed
 @export var interior_speed: float = 120.0  # Villages/interiors (no Mode 7)
 var _is_interior: bool = false  # Set by scene setup
+const DASH_MULTIPLIER: float = 1.7  # Item 9; single hook point for future rogue-passive boosts
 
 ## Direction enum
 enum Direction { DOWN, UP, LEFT, RIGHT }
@@ -205,6 +206,20 @@ var _custom_skin_color: Color = Color(0.85, 0.70, 0.55)
 var _use_custom_colors: bool = false
 
 
+## Tick 449: periodic autosave timer (autosave.auto_save_interval).
+var _autosave_timer: Timer = null
+
+## Tick 450: speedrun playtime HUD (speedrun_mode.show_timer +
+## speedrun_timer.show_splits both author this flag — gated below).
+var _speedrun_hud_layer: CanvasLayer = null
+var _speedrun_hud_label: Label = null
+var _speedrun_hud_check_timer: Timer = null
+
+## Tick 455: content_radar HUD label — sits right below the timer
+## label, shows nearby unopened treasure when content_radar is on.
+var _content_radar_label: Label = null
+
+
 func _ready() -> void:
 	# Register to the "player" group so WanderingNPC, SaveSystem, and other
 	# systems can locate us via get_nodes_in_group("player") regardless of
@@ -218,6 +233,16 @@ func _ready() -> void:
 	_setup_sprite()
 	_generate_all_sprites()
 	_update_sprite()
+	## Tick 464: defer the tick 449/450/455 HUD + timer setup to the
+	## next idle frame. Allocating Timer / CanvasLayer / Label nodes
+	## inside _ready blocked the player scene's first-frame paint on
+	## slow browsers (Brave on Android), which was a contributing
+	## suspect for the post-battle "black screen freezes" report.
+	## Deferring lets the scene become visible immediately while the
+	## passive-driven hooks finish wiring on the next process_frame.
+	## Timers and labels are still owned by the OverworldPlayer so
+	## they die with the scene cleanly.
+	call_deferred("_init_passive_hooks")
 
 
 func _setup_sprite() -> void:
@@ -237,6 +262,41 @@ func _setup_sprite() -> void:
 	# Set collision layers: layer 1 = walls, layer 2 = player (for NPC detection)
 	collision_layer = 2  # Player is on layer 2 so NPCs can detect us
 	collision_mask = 1   # Player collides with walls (layer 1)
+
+
+## Tick 357: map GameLoop._current_terrain (battle-terrain vocabulary)
+## to the 6 footstep-audio variants the SFX manifest provides
+## (grass, stone, sand, snow, metal, wood). Falls back to "grass"
+## when GameLoop is unavailable (test runs) or the terrain string
+## is unknown, matching the historical default.
+const _FOOTSTEP_TERRAIN_MAP := {
+	"plains": "grass",
+	"forest": "grass",
+	"swamp": "grass",
+	"village": "stone",   # village paths are stone-paved
+	"suburban": "stone",  # sidewalks
+	"cave": "stone",
+	"lava_cave": "stone",
+	"dark_cave": "stone",
+	"storm_cave": "stone",
+	"volcanic": "stone",
+	"void": "stone",
+	"abstract": "stone",
+	"desert": "sand",
+	"ice": "snow",
+	"ice_cave": "snow",
+	"steampunk": "metal",
+	"industrial": "metal",
+	"digital": "metal",
+}
+
+
+func _resolve_footstep_terrain() -> String:
+	var gl = get_node_or_null("/root/GameLoop")
+	if gl == null or not ("_current_terrain" in gl):
+		return "grass"
+	var battle_terrain: String = str(gl._current_terrain)
+	return _FOOTSTEP_TERRAIN_MAP.get(battle_terrain, "grass")
 
 
 func _get_terrain_speed_modifier() -> float:
@@ -270,7 +330,7 @@ func _can_move() -> bool:
 	# Layer 2: Named lock stack — NPC dialogue, shops, etc.
 	# Runtime lookup: InputLockManager as a global identifier doesn't
 	# resolve in preload() parse contexts (tests that preload this file).
-	var ilm = get_tree().root.get_node_or_null("InputLockManager") if get_tree() else null
+	var ilm = get_tree().root.get_node_or_null("InputLockManager") if is_inside_tree() else null
 	if ilm and ilm.is_locked():
 		return false
 	# Layer 3: Legacy flag — kept for compatibility during migration
@@ -281,6 +341,11 @@ func _physics_process(delta: float) -> void:
 	if not _can_move():
 		velocity = Vector2.ZERO
 		is_moving = false
+		# Snap to idle frame so encounter halt shows a still pose, not mid-stride.
+		if _anim_frame != 0:
+			_anim_frame = 0
+			_anim_timer = 0.0
+			_update_sprite()
 		return
 
 	var input_dir = Vector2.ZERO
@@ -293,6 +358,31 @@ func _physics_process(delta: float) -> void:
 	if Input.is_action_pressed("ui_down"):
 		input_dir.y += 1
 
+	# Click-to-move: when no keyboard/gamepad direction is held AND the
+	# input layer (_unhandled_input) flagged a click target, derive an
+	# input_dir that walks toward it. Pre-fix this consumer didn't exist
+	# — _click_target / _moving_to_click / _interact_on_arrival were SET
+	# by the mouse handler but never READ anywhere, so the click-to-move
+	# UX promised by the input branch was silently dead.
+	if input_dir == Vector2.ZERO and _moving_to_click:
+		var to_target := _click_target - global_position
+		var arrive_dist := INTERACT_ARRIVE_DIST if _interact_on_arrival else CLICK_ARRIVE_DIST
+		if to_target.length() <= arrive_dist:
+			# Arrived. Fire the interact if we were heading to an NPC,
+			# then clear the click-walk state.
+			_moving_to_click = false
+			if _interact_on_arrival:
+				_interact_on_arrival = false
+				interaction_requested.emit()
+		else:
+			input_dir = to_target.normalized()
+	elif input_dir != Vector2.ZERO and _moving_to_click:
+		# Player took the wheel — cancel the click-walk so manual input
+		# wins (matches the JRPG / RTS convention where any explicit move
+		# overrides queued click-to-move).
+		_moving_to_click = false
+		_interact_on_arrival = false
+
 	# Rotate input to match camera direction so "up" moves forward visually
 	if input_dir != Vector2.ZERO and Mode7Overlay.camera_angle != 0.0:
 		input_dir = input_dir.rotated(Mode7Overlay.camera_angle)
@@ -300,7 +390,14 @@ func _physics_process(delta: float) -> void:
 	if input_dir != Vector2.ZERO:
 		# Compensate for Mode 7 horizontal compression before normalizing.
 		# Shader compresses horizontal visually — boost X to feel equal to vertical.
-		input_dir.x *= 2.0
+		# Tick 348: gate the boost on Mode7Overlay.is_active. Pre-fix the 2x
+		# multiplier applied UNCONDITIONALLY — non-Mode-7 contexts (villages,
+		# interiors, flat-camera dungeons) saw diagonal movement biased
+		# toward horizontal. Diagonal up-right visibly walked more right
+		# than up because input_dir.x was 2x boosted before normalize. With
+		# Mode 7 off there's no horizontal compression to compensate for.
+		if Mode7Overlay.is_active:
+			input_dir.x *= 2.0
 		input_dir = input_dir.normalized()
 		# Terrain speed modifier — rough terrain slows you down instead of blocking
 		var terrain_speed = _get_terrain_speed_modifier()
@@ -329,7 +426,18 @@ func _physics_process(delta: float) -> void:
 					_is_interior = true
 					break
 		var base_speed = interior_speed if _is_interior else move_speed
-		velocity = input_dir * base_speed * terrain_speed
+		## Tick 448: speedrun_mode passive — passives.json authors
+		## meta_effects.movement_speed_bonus = 1.5 with description
+		## "+50% movement speed on overworld", but pre-fix the
+		## field was decoration — equipping speedrun_mode did
+		## nothing to player velocity. Max-wins across the party
+		## so duplicate equips don't compound into teleport speed.
+		## Applies on top of terrain_speed (rough terrain still
+		## slows you, just less catastrophically).
+		var move_bonus: float = _party_movement_speed_bonus()
+		if move_bonus > 1.0:
+			base_speed *= move_bonus
+		velocity = input_dir * base_speed * terrain_speed * _dash_multiplier()
 		is_moving = true
 
 		if abs(input_dir.x) > abs(input_dir.y):
@@ -353,9 +461,16 @@ func _physics_process(delta: float) -> void:
 		step_count += 1
 		moved.emit(step_count)
 		# Runtime lookup keeps this file preload-safe for the test suite.
-		var sm = get_tree().root.get_node_or_null("SoundManager") if get_tree() else null
+		var sm = get_tree().root.get_node_or_null("SoundManager") if is_inside_tree() else null
 		if sm:
-			sm.play_footstep()
+			# Tick 357: pass a terrain-derived footstep tag so caves don't
+			# sound like grass and metal industrial floors don't sound
+			# like grass either. Pre-fix every call was bare and defaulted
+			# to "grass" in SoundManager.play_footstep regardless of where
+			# the player actually was — 5 worlds' worth of distinctive
+			# footstep audio (sand / stone / snow / metal / wood) sat in
+			# the manifest unused.
+			sm.play_footstep(_resolve_footstep_terrain())
 
 	# Update animation
 	_update_animation(delta)
@@ -1512,6 +1627,350 @@ func teleport(new_position: Vector2) -> void:
 func reset_step_count() -> void:
 	step_count = 0
 	distance_walked = 0.0
+
+
+## Tick 448: read the strongest movement_speed_bonus across the
+## party's equipped passives. Returns 1.0 when GameState or
+## PassiveSystem aren't available (tests / preload context) or
+## no member has a speed passive equipped. Max-wins so a triple-
+## speedrun stack doesn't compound to 3.375× — it stays at 1.5.
+func _party_movement_speed_bonus() -> float:
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs == null or not ("player_party" in gs):
+		return 1.0
+	var ps: Node = get_node_or_null("/root/PassiveSystem")
+	if ps == null or not ps.has_method("get_passive"):
+		return 1.0
+	var best: float = 1.0
+	for member in gs.player_party:
+		if not (member is Dictionary):
+			continue
+		var ep: Variant = member.get("equipped_passives", [])
+		if not (ep is Array):
+			continue
+		for passive_id in ep:
+			var passive: Dictionary = ps.get_passive(str(passive_id))
+			if passive.is_empty():
+				continue
+			var me: Variant = passive.get("meta_effects", {})
+			if not (me is Dictionary):
+				continue
+			var b: float = float(me.get("movement_speed_bonus", 1.0))
+			if b > best:
+				best = b
+	## Tick 468: also consult job overworld_abilities.movement_
+	## speed_bonus. jobs.json authors Ninja with
+	## overworld_abilities = {movement_speed_bonus: 1.5,
+	## reduced_encounter_rate: 0.5, can_skip_cutscenes: true} but
+	## pre-tick no code path read overworld_abilities at all. A
+	## Ninja primary/secondary now nudges the speed via the same
+	## max-wins lane as the speedrun_mode passive.
+	var js: Node = get_node_or_null("/root/JobSystem")
+	if js != null and js.has_method("get_job"):
+		for member in gs.player_party:
+			if not (member is Dictionary):
+				continue
+			for slot_key in ["job_id", "secondary_job_id"]:
+				var jid_v: Variant = member.get(slot_key, "")
+				if not (jid_v is String) or (jid_v as String) == "":
+					continue
+				var job_data: Dictionary = js.get_job(str(jid_v))
+				if job_data.is_empty():
+					continue
+				var oa: Variant = job_data.get("overworld_abilities", {})
+				if not (oa is Dictionary):
+					continue
+				var jb: float = float(oa.get("movement_speed_bonus", 1.0))
+				if jb > best:
+					best = jb
+	return best
+
+
+## Item 9: 1.7× while `dash` held (or Settings "Dash: always on"); composes with terrain + party bonus.
+func _dash_multiplier() -> float:
+	if InputMap.has_action("dash") and Input.is_action_pressed("dash"):
+		return DASH_MULTIPLIER
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs != null and "dash_always_on" in gs and gs.dash_always_on:
+		return DASH_MULTIPLIER
+	return 1.0
+
+
+## Tick 464: combined deferred setup for the tick 449/450/455 passive
+## hooks. _ready stays lightweight (sprite + group registration); this
+## runs on the next process_frame so first-frame paint isn't blocked
+## by Timer / CanvasLayer / Label allocations. Guarded so a scene
+## torn down between _ready and the deferred call is a clean no-op.
+func _init_passive_hooks() -> void:
+	if not is_inside_tree():
+		return
+	_init_autosave_timer()
+	_init_speedrun_hud()
+
+
+## Tick 449: build a Timer child that fires the periodic autosave.
+## Walks the party at start to set the interval from the strongest
+## auto_save_interval meta_effect; defaults to disabled when no
+## party member has the passive equipped.
+func _init_autosave_timer() -> void:
+	_autosave_timer = Timer.new()
+	_autosave_timer.name = "AutosaveTimer"
+	_autosave_timer.one_shot = false
+	_autosave_timer.timeout.connect(_on_autosave_timer_timeout)
+	add_child(_autosave_timer)
+	var interval: float = _party_auto_save_interval()
+	if interval > 0.0:
+		_autosave_timer.wait_time = interval
+		_autosave_timer.start()
+
+
+## Tick 449: read the smallest non-zero auto_save_interval across
+## the party (most-frequent saves win — Speedrunner intent). Returns
+## 0.0 when no passive is equipped so the timer stays idle.
+func _party_auto_save_interval() -> float:
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs == null or not ("player_party" in gs):
+		return 0.0
+	var ps: Node = get_node_or_null("/root/PassiveSystem")
+	if ps == null or not ps.has_method("get_passive"):
+		return 0.0
+	var best: float = 0.0
+	for member in gs.player_party:
+		if not (member is Dictionary):
+			continue
+		var ep: Variant = member.get("equipped_passives", [])
+		if not (ep is Array):
+			continue
+		for passive_id in ep:
+			var passive: Dictionary = ps.get_passive(str(passive_id))
+			if passive.is_empty():
+				continue
+			var me: Variant = passive.get("meta_effects", {})
+			if not (me is Dictionary):
+				continue
+			var v: float = float(me.get("auto_save_interval", 0.0))
+			if v > 0.0 and (best == 0.0 or v < best):
+				best = v
+	return best
+
+
+## Tick 449: timer tick. Skip when the game isn't in a safe save
+## state (battle, cutscene) — force_quick_save's _meta_save_bypass
+## would override the gate, but a battle save mid-encounter would
+## clobber the rewind point cover_ally / bp_recovery were just
+## promised. The safer rule: defer the autosave to the next overworld
+## tick by leaving the timer alone — it'll re-fire next interval.
+func _on_autosave_timer_timeout() -> void:
+	var bm: Node = get_node_or_null("/root/BattleManager")
+	if bm != null and "current_state" in bm:
+		var st: int = int(bm.current_state)
+		if st != 0:  # not INACTIVE (BattleState.INACTIVE = 0)
+			return
+	var ss: Node = get_node_or_null("/root/SaveSystem")
+	if ss != null and ss.has_method("force_quick_save"):
+		ss.force_quick_save()
+		print("[AUTOSAVE] Periodic quicksave fired (autosave passive)")
+
+
+## Tick 450: spawn a CanvasLayer + Label and a 1s polling Timer
+## that drives both visibility (re-checks the passive each second
+## so a passive un/equipped mid-run reflects immediately) and the
+## live elapsed time. Layer 90 keeps the HUD above gameplay but
+## below menus (layer 50+ menus already exist; the existing
+## title/overworld_menu sit at layer 50 — 90 stacks above without
+## colliding with menu input).
+func _init_speedrun_hud() -> void:
+	_speedrun_hud_layer = CanvasLayer.new()
+	_speedrun_hud_layer.name = "SpeedrunHUD"
+	_speedrun_hud_layer.layer = 90
+	add_child(_speedrun_hud_layer)
+	_speedrun_hud_label = Label.new()
+	_speedrun_hud_label.name = "PlaytimeLabel"
+	_speedrun_hud_label.anchor_left = 1.0
+	_speedrun_hud_label.anchor_top = 0.0
+	_speedrun_hud_label.anchor_right = 1.0
+	_speedrun_hud_label.anchor_bottom = 0.0
+	_speedrun_hud_label.offset_left = -160.0
+	_speedrun_hud_label.offset_top = 12.0
+	_speedrun_hud_label.offset_right = -12.0
+	_speedrun_hud_label.offset_bottom = 36.0
+	_speedrun_hud_label.add_theme_color_override("font_color", Color(1.0, 1.0, 0.4))
+	_speedrun_hud_label.add_theme_color_override("font_outline_color", Color(0, 0, 0))
+	_speedrun_hud_label.add_theme_constant_override("outline_size", 4)
+	_speedrun_hud_label.text = ""
+	_speedrun_hud_layer.add_child(_speedrun_hud_label)
+	## Tick 455: content_radar label — same anchor as the timer
+	## label but offset 18px down so they stack cleanly. Lighter
+	## green tint distinguishes it from the timer's yellow.
+	_content_radar_label = Label.new()
+	_content_radar_label.name = "RadarLabel"
+	_content_radar_label.anchor_left = 1.0
+	_content_radar_label.anchor_top = 0.0
+	_content_radar_label.anchor_right = 1.0
+	_content_radar_label.anchor_bottom = 0.0
+	_content_radar_label.offset_left = -200.0
+	_content_radar_label.offset_top = 36.0
+	_content_radar_label.offset_right = -12.0
+	_content_radar_label.offset_bottom = 60.0
+	_content_radar_label.add_theme_color_override("font_color", Color(0.6, 1.0, 0.6))
+	_content_radar_label.add_theme_color_override("font_outline_color", Color(0, 0, 0))
+	_content_radar_label.add_theme_constant_override("outline_size", 4)
+	_content_radar_label.text = ""
+	_speedrun_hud_layer.add_child(_content_radar_label)
+	_speedrun_hud_check_timer = Timer.new()
+	_speedrun_hud_check_timer.name = "SpeedrunHUDTimer"
+	_speedrun_hud_check_timer.one_shot = false
+	_speedrun_hud_check_timer.wait_time = 1.0
+	_speedrun_hud_check_timer.timeout.connect(_on_speedrun_hud_tick)
+	add_child(_speedrun_hud_check_timer)
+	_speedrun_hud_check_timer.start()
+	_on_speedrun_hud_tick()  # initial paint
+
+
+## Tick 450: 1Hz HUD refresh. Reads the visibility gate and
+## current elapsed playtime each tick.
+## Tick 455: also refreshes the content_radar treasure label.
+func _on_speedrun_hud_tick() -> void:
+	if _speedrun_hud_label == null:
+		return
+	var visible_now: bool = _party_wants_show_timer()
+	_speedrun_hud_label.visible = visible_now
+	if visible_now:
+		var gs_t: Node = get_node_or_null("/root/GameState")
+		if gs_t == null:
+			_speedrun_hud_label.text = ""
+		elif gs_t.has_method("get_playtime_formatted"):
+			_speedrun_hud_label.text = str(gs_t.get_playtime_formatted())
+		elif "playtime_seconds" in gs_t:
+			_speedrun_hud_label.text = "%.1fs" % float(gs_t.playtime_seconds)
+	## Tick 455: content_radar refresh. Independent gate from the
+	## timer so a party can run with one without the other.
+	## show_secrets wire (2026-07-01): either radar flag lights the
+	## label; _build_radar_text gates each segment internally.
+	if _content_radar_label != null:
+		var radar_on: bool = _party_wants_show_treasure() or _party_wants_show_secrets()
+		_content_radar_label.visible = radar_on
+		if radar_on:
+			_content_radar_label.text = _build_radar_text()
+
+
+## Tick 450: gate. Mirrors the autosave_before_boss / movement_
+## speed_bonus party-walk pattern. Any-wins — one party member
+## with show_timer = true is enough to turn the HUD on.
+func _party_wants_show_timer() -> bool:
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs == null or not ("player_party" in gs):
+		return false
+	var ps: Node = get_node_or_null("/root/PassiveSystem")
+	if ps == null or not ps.has_method("get_passive"):
+		return false
+	for member in gs.player_party:
+		if not (member is Dictionary):
+			continue
+		var ep: Variant = member.get("equipped_passives", [])
+		if not (ep is Array):
+			continue
+		for passive_id in ep:
+			var passive: Dictionary = ps.get_passive(str(passive_id))
+			if passive.is_empty():
+				continue
+			var me: Variant = passive.get("meta_effects", {})
+			if not (me is Dictionary):
+				continue
+			if bool(me.get("show_timer", false)):
+				return true
+	return false
+
+
+## Tick 455: gate — content_radar's show_treasure flag. Any-wins
+## across the dict-shaped player_party (mirrors show_timer's
+## helper). Returns false cleanly when autoloads are absent.
+func _party_wants_show_treasure() -> bool:
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs == null or not ("player_party" in gs):
+		return false
+	var ps: Node = get_node_or_null("/root/PassiveSystem")
+	if ps == null or not ps.has_method("get_passive"):
+		return false
+	for member in gs.player_party:
+		if not (member is Dictionary):
+			continue
+		var ep: Variant = member.get("equipped_passives", [])
+		if not (ep is Array):
+			continue
+		for passive_id in ep:
+			var passive: Dictionary = ps.get_passive(str(passive_id))
+			if passive.is_empty():
+				continue
+			var me: Variant = passive.get("meta_effects", {})
+			if not (me is Dictionary):
+				continue
+			if bool(me.get("show_treasure", false)):
+				return true
+	return false
+
+
+## show_secrets gate (2026-07-01): clone of _party_wants_show_treasure
+## for content_radar's OTHER meta_effect — unwired since tick 455 for
+## lack of secret entities; cowir-overworld's HiddenPassage (3a5ac00f)
+## made them first-class, mirroring the treasure-group contract.
+func _party_wants_show_secrets() -> bool:
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs == null or not ("player_party" in gs):
+		return false
+	var ps: Node = get_node_or_null("/root/PassiveSystem")
+	if ps == null or not ps.has_method("get_passive"):
+		return false
+	for member in gs.player_party:
+		if not (member is Dictionary):
+			continue
+		var ep: Variant = member.get("equipped_passives", [])
+		if not (ep is Array):
+			continue
+		for passive_id in ep:
+			var passive: Dictionary = ps.get_passive(str(passive_id))
+			if passive.is_empty():
+				continue
+			var me: Variant = passive.get("meta_effects", {})
+			if not (me is Dictionary):
+				continue
+			if bool(me.get("show_secrets", false)):
+				return true
+	return false
+
+
+## Tick 455: count unopened chests in the "treasure" group. Each
+## TreasureChest._ready adds itself to that group; opened chests
+## set _is_opened so we skip them. Returns a short labelled string
+## or "" when nothing is around (no point showing 0).
+## show_secrets wire (2026-07-01): second segment counts undiscovered
+## HiddenPassages in the "secrets" group (same contract: group
+## registration in _ready, public _is_discovered, story-flag persist).
+## Each segment is gated on ITS passive flag so a future passive that
+## authors only one of the two lights only its own segment.
+func _build_radar_text() -> String:
+	var parts: Array[String] = []
+	if _party_wants_show_treasure():
+		var chests: Array = get_tree().get_nodes_in_group("treasure")
+		var unopened: int = 0
+		for c in chests:
+			if not is_instance_valid(c):
+				continue
+			if "_is_opened" in c and not c._is_opened:
+				unopened += 1
+		if unopened > 0:
+			parts.append("♦ %d treasure" % unopened)
+	if _party_wants_show_secrets():
+		var secrets: Array = get_tree().get_nodes_in_group("secrets")
+		var undiscovered: int = 0
+		for s in secrets:
+			if not is_instance_valid(s):
+				continue
+			if "_is_discovered" in s and not s._is_discovered:
+				undiscovered += 1
+		if undiscovered > 0:
+			parts.append("◈ %d secrets" % undiscovered)
+	return " · ".join(parts)
 
 
 ## Find an interactable (NPC, sign, chest, etc.) near the click position

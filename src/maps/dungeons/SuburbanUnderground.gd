@@ -10,6 +10,10 @@ func _init() -> void:
 	cave_id = "suburban_underground"
 	boss_id = "masterite_warden_suburban"
 	boss_flag_key = "suburban_underground_cleared"
+	boss_cutscene_id = "world2_warden_routine"
+	# (Tick 105: legacy defeat_cutscene field removed. The W2 warden defeat
+	# cutscene now plays via GameLoop._get_pending_story_cutscene's gate
+	# on cutscene_flag_warden_suburban_defeated in suburban_underground.)
 	# Bridge to game_constants — GameLoop:840 gates world2_chapter3 on
 	# `cutscene_flag_warden_suburban_defeated`. Without this declaration
 	# the cutscene never triggers post-victory (same class as the Mordaine
@@ -108,3 +112,7 @@ func _get_boss_intro_dialogue() -> Array:
 		"Masterite Warden: *snaps a clipboard in half*",
 		"Masterite Warden: 'This is why we have DOCUMENTATION.'",
 	]
+
+
+func _get_music_area_id() -> String:
+	return "suburban_dungeon"

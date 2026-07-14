@@ -33,31 +33,9 @@ const CUTSCENES_DIR := "res://data/cutscenes"
 #     cutscene beats. cowir-sfx authoring needed; content-adjacent so
 #     each entry is its own design call (sample bank vs proc-gen).
 const KNOWN_ORPHAN_SFX := {
-	# Code-side (high priority UX)
-	"item_obtain": true,
-	"menu_error": true,
-	# Cutscene atmospheric SFX (alphabetical)
-	"acrobatic_leap": true,
-	"bell_shift": true,
-	"bicycle_bell": true,
-	"boss_spawn": true,
-	"calibrant_true_name": true,
-	"chalk_tap": true,
-	"clock_chime": true,
-	"data_hum": true,
-	"digital_synthesize": true,
-	"heartbeat": true,
-	"intercom_click": true,
-	"magic_surge": true,
-	"paper_shuffle": true,
-	"respawn_chime": true,
-	"rooftop_drop": true,
-	"soft_chime": true,
-	"sprint_start": true,
-	"static_burst": true,
-	"steam_hiss": true,
-	"surprised_chime": true,
-	"throne_room_doors": true,
+	# 2026-07-04: allowlist empty — quest_complete asset landed alongside
+	# the QuestTracker branch (feature/sfx-quest-complete-relanding).
+	# New orphans still fail loud below.
 }
 
 

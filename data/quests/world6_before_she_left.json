@@ -1,0 +1,75 @@
+{
+  "id": "world6_before_she_left",
+  "title": "Before She Left",
+  "world": 6,
+  "prereq_flag": "quest_world6_the_last_thing_complete",
+  "giver": {
+    "npc_id": "traveler_w6",
+    "display_name": "The Traveler",
+    "location": {"map_id": "the_vertex", "near": "calibrant_approach"},
+    "spawn_flag": ""
+  },
+  "description": "The traveler has been walking between worlds since before the party started. They can describe every world after the party passed through it. They cannot describe where they started. They think they started somewhere specific. It's just very far back.",
+  "playstyle_tags": ["conversation", "memory", "no_task"],
+  "dialogue": {
+    "offer": [
+      {"speaker": "Traveler", "text": "Home. I've been asking that for a long time.", "theme": "mysterious"},
+      {"speaker": "Traveler", "text": "I can tell you what every world looks like after you've passed through it. I can tell you the Mechanism's secondary cooling route. I can tell you the hex code for the suburban sky and why it's one digit off from the medieval one. What I can't tell you is where I started.", "theme": "mysterious"},
+      {"speaker": "Traveler", "text": "I think I started somewhere specific. It's just very far back.", "theme": "mysterious"}
+    ],
+    "accept": [
+      {"speaker": "Traveler", "text": "Ask me what I remember. Not where — what. The where is gone, but the what might still be carrying it.", "theme": "mysterious"}
+    ],
+    "decline": [
+      {"speaker": "Traveler", "text": "That's fair. Walking is still available. Walking is always still available. That's been the whole problem.", "theme": "mysterious"}
+    ],
+    "in_progress": [
+      {"speaker": "Traveler", "text": "A language with different vowels than any world I've walked. A light warmer than medieval and softer than suburban. A word for weather that none of the six vocabularies can hold. Fragments. But fragments of SOMEWHERE.", "theme": "mysterious"}
+    ],
+    "ready_to_turn_in": [
+      {"speaker": "Traveler", "text": "You've put it together. I can see it. Say it — I've been unable to say it for longer than these worlds have existed.", "theme": "mysterious"}
+    ],
+    "complete": [
+      {"speaker": "Traveler", "text": "Before the worlds. Yes. I remember now. I was there. When there was only — only the nothing. I was in it too. We all were, I think. Everyone who ended up in the worlds started in the nothing.", "theme": "mysterious"},
+      {"speaker": "Traveler", "text": "They're still trying to fill it. I've been walking through their attempts ever since.", "theme": "mysterious"},
+      {"speaker": "Traveler", "text": "I don't think I want to go back to the nothing. But I think I can stop walking now.", "theme": "mysterious"}
+    ]
+  },
+  "objectives": [
+    {
+      "step": 1,
+      "description": "Ask the traveler how you get home from here.",
+      "type": "talk",
+      "target_npc": "traveler_w6",
+      "flag_on_complete": "quest_world6_before_she_left_accepted"
+    },
+    {
+      "step": 2,
+      "description": "Gather the fragments of somewhere.",
+      "type": "custom",
+      "required_flag": "quest_world6_before_she_left_fragments_gathered",
+      "flag_on_complete": "quest_world6_before_she_left_fragments_gathered"
+    },
+    {
+      "step": 3,
+      "description": "Tell the traveler where they started.",
+      "type": "talk",
+      "target_npc": "traveler_w6",
+      "required_flag": "quest_world6_before_she_left_fragments_gathered"
+    }
+  ],
+  "rewards": {
+    "gold": 0,
+    "exp": 500,
+    "items": [
+      {"item_id": "remainder_token", "count": 1}
+    ],
+    "job_variants": {}
+  },
+  "flag_on_complete": "quest_world6_before_she_left_complete",
+  "unlocks_dialogue": [
+    {"npc_id": "last_shopkeeper_w6", "note": "With both W6 quests complete, the traveler sits down NEXT TO the shopkeeper — the only two NPCs in The Vertex who talk to each other. Eavesdroppable: 'Do you know what I sold?' / 'No.' / 'Good. Neither do I. Doesn't matter.' / 'Do you know where you started?' / 'Before everything.' / 'Me too.' ... 'Would you like to stay here?' / 'I think so. Would you?' / 'I think so.' They stay."}
+  ],
+  "cross_world_connection": "The fragments describe the place that predates all six worlds — the white the Calibrant sat in before building. Two entities built for motion and commerce choosing to stay, in a world where staying is a choice and not the default, is the quietest ending the game offers. remainder_token unlocks The Vertex as revisitable from the W1 map in subsequent playthroughs — the shopkeeper and traveler are there each time, still sitting. They don't say much. But they're there.",
+  "_wiring_notes": "prereq_flag on the QUEST (not the NPC) = quest_world6_the_last_thing_complete: the design doc ties the pair-payoff (the eavesdrop conversation + remainder_token) to BOTH quests being done, and v1's linear reward model can't conditionally grant — so the traveler's quest simply offers after the shopkeeper's completes. Thematic cover: you learn to ask what someone needs before you can tell someone where they're from. Step 2 emitter quest_world6_before_she_left_fragments_gathered: a 3-beat recall dialogue chain (the vowels / the light / the weather-word), each beat one interact — no fetching, the fragments are conversation. The sit-down staging post-completion: traveler relocates beside the shopkeeper at the counter; eavesdrop interact plays the paired conversation (unlocks_dialogue note has the verbatim script). remainder_token's NG+/revisit mechanics documented on the item — engine wiring later."
+}

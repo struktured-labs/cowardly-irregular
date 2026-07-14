@@ -104,7 +104,7 @@
         "walk"
       ],
       "tier": "T2",
-      "source": "artist aseprite — Game graphics - Characters/BARD/Bard Base sprite.aseprite (idle 0-3, cast 4-7, attack 8-11; 2x nearest-neighbor upscale to 256px). Remaining anims (walk/hit/dead/defend/item/victory) still T1 AI-gen until artist drops them."
+      "source": "artist aseprite \u2014 Game graphics - Characters/BARD/Bard Base sprite.aseprite (idle 0-3, cast 4-7, attack 8-11; 2x nearest-neighbor upscale to 256px). Remaining anims (walk/hit/dead/defend/item/victory) still T1 AI-gen until artist drops them."
     },
     "bard_sdxl": {
       "path": "res://assets/sprites/jobs/bard_sdxl",
@@ -618,7 +618,7 @@
         }
       },
       "tier": "T2",
-      "source": "artist aseprite — Game graphics - Characters/enemies/SLIME 1.aseprite (Idle + Atk tags)"
+      "source": "artist aseprite \u2014 Game graphics - Characters/enemies/SLIME 1.aseprite (Idle + Atk tags)"
     },
     "slime_suburban": {
       "path": "res://assets/sprites/monsters/slime_suburban.png",
@@ -626,13 +626,25 @@
       "frame_height": 128,
       "fps": 8,
       "animations": {
-        "idle": {"start": 0, "end": 3},
-        "attack": {"start": 4, "end": 10},
-        "hit": {"start": 8, "end": 10},
-        "dead": {"start": 10, "end": 10}
+        "idle": {
+          "start": 0,
+          "end": 3
+        },
+        "attack": {
+          "start": 4,
+          "end": 10
+        },
+        "hit": {
+          "start": 8,
+          "end": 10
+        },
+        "dead": {
+          "start": 10,
+          "end": 10
+        }
       },
       "tier": "T2",
-      "source": "deterministic HSV hue-shift of artist slime — world 2 (suburban, sky-blue)"
+      "source": "deterministic HSV hue-shift of artist slime \u2014 world 2 (suburban, sky-blue)"
     },
     "slime_steampunk": {
       "path": "res://assets/sprites/monsters/slime_steampunk.png",
@@ -640,13 +652,25 @@
       "frame_height": 128,
       "fps": 8,
       "animations": {
-        "idle": {"start": 0, "end": 3},
-        "attack": {"start": 4, "end": 10},
-        "hit": {"start": 8, "end": 10},
-        "dead": {"start": 10, "end": 10}
+        "idle": {
+          "start": 0,
+          "end": 3
+        },
+        "attack": {
+          "start": 4,
+          "end": 10
+        },
+        "hit": {
+          "start": 8,
+          "end": 10
+        },
+        "dead": {
+          "start": 10,
+          "end": 10
+        }
       },
       "tier": "T2",
-      "source": "deterministic HSV hue-shift of artist slime — world 3 (steampunk, brass)"
+      "source": "deterministic HSV hue-shift of artist slime \u2014 world 3 (steampunk, brass)"
     },
     "slime_industrial": {
       "path": "res://assets/sprites/monsters/slime_industrial.png",
@@ -654,13 +678,25 @@
       "frame_height": 128,
       "fps": 8,
       "animations": {
-        "idle": {"start": 0, "end": 3},
-        "attack": {"start": 4, "end": 10},
-        "hit": {"start": 8, "end": 10},
-        "dead": {"start": 10, "end": 10}
+        "idle": {
+          "start": 0,
+          "end": 3
+        },
+        "attack": {
+          "start": 4,
+          "end": 10
+        },
+        "hit": {
+          "start": 8,
+          "end": 10
+        },
+        "dead": {
+          "start": 10,
+          "end": 10
+        }
       },
       "tier": "T2",
-      "source": "deterministic HSV hue-shift of artist slime — world 4 (industrial, rust)"
+      "source": "deterministic HSV hue-shift of artist slime \u2014 world 4 (industrial, rust)"
     },
     "slime_digital": {
       "path": "res://assets/sprites/monsters/slime_digital.png",
@@ -668,13 +704,25 @@
       "frame_height": 128,
       "fps": 8,
       "animations": {
-        "idle": {"start": 0, "end": 3},
-        "attack": {"start": 4, "end": 10},
-        "hit": {"start": 8, "end": 10},
-        "dead": {"start": 10, "end": 10}
+        "idle": {
+          "start": 0,
+          "end": 3
+        },
+        "attack": {
+          "start": 4,
+          "end": 10
+        },
+        "hit": {
+          "start": 8,
+          "end": 10
+        },
+        "dead": {
+          "start": 10,
+          "end": 10
+        }
       },
       "tier": "T2",
-      "source": "deterministic HSV hue-shift of artist slime — world 5 (digital, neon magenta)"
+      "source": "deterministic HSV hue-shift of artist slime \u2014 world 5 (digital, neon magenta)"
     },
     "slime_abstract": {
       "path": "res://assets/sprites/monsters/slime_abstract.png",
@@ -682,65 +730,77 @@
       "frame_height": 128,
       "fps": 8,
       "animations": {
-        "idle": {"start": 0, "end": 3},
-        "attack": {"start": 4, "end": 10},
-        "hit": {"start": 8, "end": 10},
-        "dead": {"start": 10, "end": 10}
+        "idle": {
+          "start": 0,
+          "end": 3
+        },
+        "attack": {
+          "start": 4,
+          "end": 10
+        },
+        "hit": {
+          "start": 8,
+          "end": 10
+        },
+        "dead": {
+          "start": 10,
+          "end": 10
+        }
       },
       "tier": "T2",
-      "source": "deterministic HSV hue-shift of artist slime — world 6 (abstract, monochrome)"
+      "source": "deterministic HSV hue-shift of artist slime \u2014 world 6 (abstract, monochrome)"
     },
     "bat": {
       "path": "res://assets/sprites/monsters/bat.png",
-      "frame_width": 256,
-      "frame_height": 256,
+      "frame_width": 128,
+      "frame_height": 128,
       "fps": 8,
       "animations": {
         "idle": {
           "start": 0,
-          "end": 1
-        },
-        "attack": {
-          "start": 2,
           "end": 3
         },
-        "hit": {
+        "attack": {
           "start": 4,
-          "end": 5
+          "end": 12
+        },
+        "hit": {
+          "start": 10,
+          "end": 12
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 12,
+          "end": 12
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "artist aseprite \u2014 Game graphics - Characters/enemies/BAT 1.aseprite (Idle + Atk tags)"
     },
     "goblin": {
       "path": "res://assets/sprites/monsters/goblin.png",
-      "frame_width": 256,
-      "frame_height": 256,
+      "frame_width": 128,
+      "frame_height": 128,
       "fps": 8,
       "animations": {
         "idle": {
           "start": 0,
-          "end": 1
+          "end": 2
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 3,
+          "end": 8
         },
         "hit": {
-          "start": 4,
-          "end": 5
+          "start": 3,
+          "end": 3
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
-      "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "source": "artist aseprite \u2014 Game graphics - Characters/enemies/Goblin 1 anims.aseprite (Idle + ATK tags; hit/dead remapped off late-ATK crouch-twist frames 6-8 per live playtest 2026-07-01 \u2014 dedicated hit/dead frames wanted from artist)"
     },
     "wolf": {
       "path": "res://assets/sprites/monsters/wolf.png",
@@ -766,7 +826,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "spider": {
       "path": "res://assets/sprites/monsters/spider.png",
@@ -816,7 +876,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "ghost": {
       "path": "res://assets/sprites/monsters/ghost.png",
@@ -842,7 +902,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "imp": {
       "path": "res://assets/sprites/monsters/imp.png",
@@ -868,7 +928,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "troll": {
       "path": "res://assets/sprites/monsters/troll.png",
@@ -894,7 +954,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "snake": {
       "path": "res://assets/sprites/monsters/snake.png",
@@ -920,7 +980,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "cave_rat": {
       "path": "res://assets/sprites/monsters/cave_rat.png",
@@ -946,7 +1006,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "rat_guard": {
       "path": "res://assets/sprites/monsters/rat_guard.png",
@@ -971,7 +1031,8 @@
           "start": 6,
           "end": 7
         }
-      }
+      },
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "mushroom": {
       "path": "res://assets/sprites/monsters/mushroom.png",
@@ -996,7 +1057,8 @@
           "start": 6,
           "end": 7
         }
-      }
+      },
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "cave_troll": {
       "path": "res://assets/sprites/monsters/cave_troll.png",
@@ -1021,7 +1083,8 @@
           "start": 6,
           "end": 7
         }
-      }
+      },
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "shadow_knight": {
       "path": "res://assets/sprites/monsters/shadow_knight.png",
@@ -1046,7 +1109,8 @@
           "start": 6,
           "end": 7
         }
-      }
+      },
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "fire_dragon": {
       "path": "res://assets/sprites/monsters/fire_dragon.png",
@@ -1071,7 +1135,8 @@
           "start": 6,
           "end": 7
         }
-      }
+      },
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "ice_dragon": {
       "path": "res://assets/sprites/monsters/ice_dragon.png",
@@ -1096,7 +1161,8 @@
           "start": 6,
           "end": 7
         }
-      }
+      },
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "lightning_dragon": {
       "path": "res://assets/sprites/monsters/lightning_dragon.png",
@@ -1121,7 +1187,8 @@
           "start": 6,
           "end": 7
         }
-      }
+      },
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "shadow_dragon": {
       "path": "res://assets/sprites/monsters/shadow_dragon.png",
@@ -1146,7 +1213,8 @@
           "start": 6,
           "end": 7
         }
-      }
+      },
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "fungoid": {
       "path": "res://assets/sprites/monsters/fungoid.png",
@@ -1172,7 +1240,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "viper": {
       "path": "res://assets/sprites/monsters/viper.png",
@@ -1198,7 +1266,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "elemental": {
       "path": "res://assets/sprites/monsters/elemental.png",
@@ -1224,7 +1292,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "corrupted_sprite": {
       "path": "res://assets/sprites/monsters/corrupted_sprite.png",
@@ -1250,7 +1318,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "giant_bat": {
       "path": "res://assets/sprites/monsters/giant_bat.png",
@@ -1276,7 +1344,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "diseased_rat": {
       "path": "res://assets/sprites/monsters/diseased_rat.png",
@@ -1302,7 +1370,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "cave_rat_king": {
       "path": "res://assets/sprites/monsters/cave_rat_king.png",
@@ -1328,7 +1396,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "ice_wolf": {
       "path": "res://assets/sprites/monsters/ice_wolf.png",
@@ -1354,7 +1422,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "specter": {
       "path": "res://assets/sprites/monsters/specter.png",
@@ -1380,7 +1448,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "treasure_mimic": {
       "path": "res://assets/sprites/monsters/treasure_mimic.png",
@@ -1406,7 +1474,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "ironback_beetle": {
       "path": "res://assets/sprites/monsters/ironback_beetle.png",
@@ -1432,7 +1500,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "cursed_armor": {
       "path": "res://assets/sprites/monsters/cursed_armor.png",
@@ -1458,7 +1526,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "blood_wolf_alpha": {
       "path": "res://assets/sprites/monsters/blood_wolf_alpha.png",
@@ -1484,7 +1552,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "crystal_golem": {
       "path": "res://assets/sprites/monsters/crystal_golem.png",
@@ -1510,7 +1578,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "elder_mushroom": {
       "path": "res://assets/sprites/monsters/elder_mushroom.png",
@@ -1536,7 +1604,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "corrupted_guardian": {
       "path": "res://assets/sprites/monsters/corrupted_guardian.png",
@@ -1562,7 +1630,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_warden_medieval": {
       "path": "res://assets/sprites/monsters/masterite_warden_medieval.png",
@@ -1588,7 +1656,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_arbiter_medieval": {
       "path": "res://assets/sprites/monsters/masterite_arbiter_medieval.png",
@@ -1614,7 +1682,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_tempo_medieval": {
       "path": "res://assets/sprites/monsters/masterite_tempo_medieval.png",
@@ -1640,7 +1708,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_curator_medieval": {
       "path": "res://assets/sprites/monsters/masterite_curator_medieval.png",
@@ -1666,7 +1734,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_warden_suburban": {
       "path": "res://assets/sprites/monsters/masterite_warden_suburban.png",
@@ -1692,7 +1760,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_arbiter_suburban": {
       "path": "res://assets/sprites/monsters/masterite_arbiter_suburban.png",
@@ -1718,7 +1786,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_tempo_suburban": {
       "path": "res://assets/sprites/monsters/masterite_tempo_suburban.png",
@@ -1744,7 +1812,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_curator_suburban": {
       "path": "res://assets/sprites/monsters/masterite_curator_suburban.png",
@@ -1770,7 +1838,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_warden_industrial": {
       "path": "res://assets/sprites/monsters/masterite_warden_industrial.png",
@@ -1796,7 +1864,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_arbiter_industrial": {
       "path": "res://assets/sprites/monsters/masterite_arbiter_industrial.png",
@@ -1822,7 +1890,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_tempo_industrial": {
       "path": "res://assets/sprites/monsters/masterite_tempo_industrial.png",
@@ -1848,7 +1916,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_curator_industrial": {
       "path": "res://assets/sprites/monsters/masterite_curator_industrial.png",
@@ -1874,7 +1942,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_warden_futuristic": {
       "path": "res://assets/sprites/monsters/masterite_warden_futuristic.png",
@@ -1900,7 +1968,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_arbiter_futuristic": {
       "path": "res://assets/sprites/monsters/masterite_arbiter_futuristic.png",
@@ -1926,7 +1994,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_tempo_futuristic": {
       "path": "res://assets/sprites/monsters/masterite_tempo_futuristic.png",
@@ -1952,7 +2020,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_curator_futuristic": {
       "path": "res://assets/sprites/monsters/masterite_curator_futuristic.png",
@@ -1978,7 +2046,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_warden_abstract": {
       "path": "res://assets/sprites/monsters/masterite_warden_abstract.png",
@@ -2004,7 +2072,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_arbiter_abstract": {
       "path": "res://assets/sprites/monsters/masterite_arbiter_abstract.png",
@@ -2030,7 +2098,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_tempo_abstract": {
       "path": "res://assets/sprites/monsters/masterite_tempo_abstract.png",
@@ -2056,7 +2124,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "masterite_curator_abstract": {
       "path": "res://assets/sprites/monsters/masterite_curator_abstract.png",
@@ -2082,7 +2150,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "new_age_retro_hippie": {
       "path": "res://assets/sprites/monsters/new_age_retro_hippie.png",
@@ -2108,7 +2176,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "spiteful_crow": {
       "path": "res://assets/sprites/monsters/spiteful_crow.png",
@@ -2134,7 +2202,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "skate_punk": {
       "path": "res://assets/sprites/monsters/skate_punk.png",
@@ -2160,7 +2228,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "unassuming_dog": {
       "path": "res://assets/sprites/monsters/unassuming_dog.png",
@@ -2186,7 +2254,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "cranky_lady": {
       "path": "res://assets/sprites/monsters/cranky_lady.png",
@@ -2212,7 +2280,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "clockwork_sentinel": {
       "path": "res://assets/sprites/monsters/clockwork_sentinel.png",
@@ -2238,7 +2306,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "steam_rat": {
       "path": "res://assets/sprites/monsters/steam_rat.png",
@@ -2264,7 +2332,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "brass_golem": {
       "path": "res://assets/sprites/monsters/brass_golem.png",
@@ -2290,7 +2358,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "cog_swarm": {
       "path": "res://assets/sprites/monsters/cog_swarm.png",
@@ -2316,7 +2384,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "pipe_phantom": {
       "path": "res://assets/sprites/monsters/pipe_phantom.png",
@@ -2342,7 +2410,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "assembly_line_automaton": {
       "path": "res://assets/sprites/monsters/assembly_line_automaton.png",
@@ -2368,7 +2436,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "shift_supervisor": {
       "path": "res://assets/sprites/monsters/shift_supervisor.png",
@@ -2394,7 +2462,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "rust_elemental": {
       "path": "res://assets/sprites/monsters/rust_elemental.png",
@@ -2420,7 +2488,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "toxic_sludge": {
       "path": "res://assets/sprites/monsters/toxic_sludge.png",
@@ -2446,7 +2514,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "conveyor_gremlin": {
       "path": "res://assets/sprites/monsters/conveyor_gremlin.png",
@@ -2472,7 +2540,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "rogue_process": {
       "path": "res://assets/sprites/monsters/rogue_process.png",
@@ -2498,7 +2566,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "memory_leak": {
       "path": "res://assets/sprites/monsters/memory_leak.png",
@@ -2524,7 +2592,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "firewall_sentinel": {
       "path": "res://assets/sprites/monsters/firewall_sentinel.png",
@@ -2550,7 +2618,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "data_wraith": {
       "path": "res://assets/sprites/monsters/data_wraith.png",
@@ -2576,7 +2644,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "recursive_loop": {
       "path": "res://assets/sprites/monsters/recursive_loop.png",
@@ -2602,7 +2670,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "null_entity": {
       "path": "res://assets/sprites/monsters/null_entity.png",
@@ -2628,7 +2696,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "forgotten_variable": {
       "path": "res://assets/sprites/monsters/forgotten_variable.png",
@@ -2654,7 +2722,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "empty_set": {
       "path": "res://assets/sprites/monsters/empty_set.png",
@@ -2680,7 +2748,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "the_absence": {
       "path": "res://assets/sprites/monsters/the_absence.png",
@@ -2706,7 +2774,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "optimization_itself": {
       "path": "res://assets/sprites/monsters/optimization_itself.png",
@@ -2732,7 +2800,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "glitch_entity": {
       "path": "res://assets/sprites/monsters/glitch_entity.png",
@@ -2758,7 +2826,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "adaptive_slime": {
       "path": "res://assets/sprites/monsters/adaptive_slime.png",
@@ -2784,7 +2852,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "meta_knight": {
       "path": "res://assets/sprites/monsters/meta_knight.png",
@@ -2810,7 +2878,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "permadeath_reaper": {
       "path": "res://assets/sprites/monsters/permadeath_reaper.png",
@@ -2836,7 +2904,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
     },
     "script_error": {
       "path": "res://assets/sprites/monsters/script_error.png",
@@ -2862,7 +2930,137 @@
         }
       },
       "tier": "T1",
-      "generator": "gen_monster_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+    },
+    "fighter_skeleton_knight": {
+      "path": "res://assets/sprites/monsters/fighter_skeleton_knight.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). chivalric plate skeleton \u2014 Fighter spotlight-duel miniboss (msg 1950)"
+    },
+    "cleric_survive_target": {
+      "path": "res://assets/sprites/monsters/cleric_survive_target.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). spectral sustained-pressure target \u2014 Cleric spotlight-duel miniboss (msg 1950). Non-HP win: outlast, not defeat."
+    },
+    "rogue_lockward": {
+      "path": "res://assets/sprites/monsters/rogue_lockward.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). chained treasure-guardian construct \u2014 Rogue spotlight-duel miniboss (msg 1950). High-evade + Steal/backstab-solves."
+    },
+    "mage_prismatic_construct": {
+      "path": "res://assets/sprites/monsters/mage_prismatic_construct.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). crystalline prism construct \u2014 Mage spotlight-duel miniboss (msg 1950). Rotating elemental weakness, read-and-exploit-live."
+    },
+    "bard_hostile_courtier": {
+      "path": "res://assets/sprites/monsters/bard_hostile_courtier.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). aristocratic courtier NPC \u2014 Bard spotlight-duel miniboss (msg 1950). Non-HP win: talked-down via status/song thresholds."
     }
   },
   "npc_sheets": {
@@ -2963,6 +3161,658 @@
         "gesture": {
           "start": 6,
           "end": 7
+        }
+      }
+    }
+  },
+  "overworld_npc_sheets": {
+    "blacksmith": {
+      "path": "res://assets/sprites/npcs/blacksmith/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "bram": {
+      "path": "res://assets/sprites/npcs/bram/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "child": {
+      "path": "res://assets/sprites/npcs/child/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "dr_temporal": {
+      "path": "res://assets/sprites/npcs/dr_temporal/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "elder_theron": {
+      "path": "res://assets/sprites/npcs/elder_theron/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "farmer": {
+      "path": "res://assets/sprites/npcs/farmer/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "fisherman": {
+      "path": "res://assets/sprites/npcs/fisherman/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "guard": {
+      "path": "res://assets/sprites/npcs/guard/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "innkeeper": {
+      "path": "res://assets/sprites/npcs/innkeeper/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "king": {
+      "path": "res://assets/sprites/npcs/king/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "marta": {
+      "path": "res://assets/sprites/npcs/marta/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "merchant": {
+      "path": "res://assets/sprites/npcs/merchant/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "monk": {
+      "path": "res://assets/sprites/npcs/monk/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "noble": {
+      "path": "res://assets/sprites/npcs/noble/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "noblewoman": {
+      "path": "res://assets/sprites/npcs/noblewoman/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "old_man": {
+      "path": "res://assets/sprites/npcs/old_man/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "old_woman": {
+      "path": "res://assets/sprites/npcs/old_woman/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "phil": {
+      "path": "res://assets/sprites/npcs/phil/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "priestess": {
+      "path": "res://assets/sprites/npcs/priestess/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "queen": {
+      "path": "res://assets/sprites/npcs/queen/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "scholar": {
+      "path": "res://assets/sprites/npcs/scholar/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "scholar_milo": {
+      "path": "res://assets/sprites/npcs/scholar_milo/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "soldier": {
+      "path": "res://assets/sprites/npcs/soldier/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "traveler": {
+      "path": "res://assets/sprites/npcs/traveler/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "young_man": {
+      "path": "res://assets/sprites/npcs/young_man/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "young_woman": {
+      "path": "res://assets/sprites/npcs/young_woman/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
         }
       }
     }
@@ -3092,6 +3942,241 @@
           "frames": 4
         }
       }
+    },
+    "bossbinder": {
+      "path": "res://assets/sprites/jobs/bossbinder/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "guardian": {
+      "path": "res://assets/sprites/jobs/guardian/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "necromancer": {
+      "path": "res://assets/sprites/jobs/necromancer/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "ninja": {
+      "path": "res://assets/sprites/jobs/ninja/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "scriptweaver": {
+      "path": "res://assets/sprites/jobs/scriptweaver/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "skiptrotter": {
+      "path": "res://assets/sprites/jobs/skiptrotter/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "speculator": {
+      "path": "res://assets/sprites/jobs/speculator/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "summoner": {
+      "path": "res://assets/sprites/jobs/summoner/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "time_mage": {
+      "path": "res://assets/sprites/jobs/time_mage/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    }
+  },
+  "battle_effects": {
+    "threat_buff_sigil": {
+      "path": "res://assets/sprites/effects/threat_buff_sigil.png",
+      "frame_width": 24,
+      "frame_height": 24,
+      "fps": 8,
+      "tier": "T2",
+      "source": "hand-pixeled 24x24 amber shield-with-crossed-blades \u2014 cowir-sprites (cowir-main msg 2454 approval). Sigil for THREAT_CLASS_BUFFS (counter_stance et al.); attaches as sprite child, pulses via existing _update_buff_debuff_visuals hook."
     }
   }
 }

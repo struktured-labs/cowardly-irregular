@@ -2,19 +2,38 @@
 
 A meta-aware JRPG where automation isn't cheating — it's enlightenment.
 
-## Project Status: Advanced Prototype (v3.27-alpha-track)
+## Project Status: Advanced Prototype (v3.33-alpha track, continuous deploys through 2026-07-11)
 
 Playable end-to-end through World 1:
 
-- **Battle system**: CTB + AP, 4-party, Advance/Defer mechanics, group attacks, formation specials, per-job Free Move command (Channel/Pray/Riff/Strike), Mode 7 perspective floor
-- **Autobattle**: per-character rule editor with full keyboard/gamepad nav
-- **Worlds**: 6 worlds wired (medieval / suburban / steampunk / industrial / futuristic / abstract); W1 fully playable
+- **Battle system**: CTB + AP, 5-party, Advance/Defer mechanics (queue unwind surfaced in the hint bar), group attacks, formation specials, per-job Free Move command (Channel/Pray/Riff/Strike), Mode 7 perspective floor, execution stall watchdog (wall-clock, armed start↔end_battle)
+- **Spotlight Duels**: every W1 starter unlock is a solo 1v1 miniboss showcasing that PC's kit (cutscene `battle` step → GameLoop.start_solo_battle → retry-on-defeat with full restore). Custom win conditions: survive_turns (Cleric), status_threshold swayed (Bard), hp_zero (rest). Dual-source win_condition (step overrides monsters.json). Duelist plays their OWN duel manually (both the routing gate and the command-menu gate carry a solo-duel override); clutch floor: a full-HP duelist can never die to one action (struktured ruling 2026-07-11); menu watchdog self-heals + terminal autobattle fallback so battles cannot wedge.
+- **Autobattle**: per-character rule editor with full keyboard/gamepad nav + Defensive/Balanced/Aggressive preset catalog (data/autobattle_rule_templates.json, level-1-safe) + LLM Rule Composer
+- **Side quests (QuestSystem v1)**: data/quests/*.json, GameState.quests dict + flag mirrors, talk/custom/fetch objectives (fetch supports `consume: true`), giver dialogue with accept/decline, "!"/"?" NPC markers (markerless opt-out), reward announcements, Quest Log section + HUD tracker. 6 W1 quests; Milo's thesis quest wired to battle telemetry.
+- **Worlds**: 6 worlds wired (medieval / suburban / steampunk / industrial / futuristic / abstract); W1 fully playable incl. Castle Harmonia placed on the overworld (post-Rat-King) and the W2 portal (post-Mordaine). W2-W6 use visible roaming monsters only.
 - **Bosses**: Cave Rat King, 4 elemental dragons (Pyrroth/Glacius/Voltharion/Umbraxis), Chancellor Mordaine (W1 final)
-- **Data**: 14 jobs, 286 abilities, 88 monsters, 117 items, 43 passives, 33 encounter pools, 166 cutscenes, 150+ music tracks
-- **Tests**: 1099+ passing in GUT (suite ~12s headless)
-- **Save**: Full JSON save with typed-array roundtrip protection, MRU/pin ability persistence, permanent injuries, corruption effects, story-flag gates
+- **Progression (item 18)**: lean starting kits — Mage fire/blizzard/thunder, Cleric cure/protect; the rest level-gated via `abilities_at_level`, purchasable early at Harmonia's magic shops (full W1 tier-2 shelves; `purchased_abilities` marker protects bought spells). Settings → "Dev: Full Job Kits" grants/strips for testing. Pre-pare saves grandfathered on load.
+- **LLM integration**:
+  - Opt-in dynamic NPC dialogue (Theron / Milo / Boris in Harmonia) + jailbreakable boss dialogue. Interact routing: quest > dynamic > scripted.
+  - **Boss Strategic Intent** for all 5 W1 bosses (Settings → LLM Boss Strategy). LLM picks intent/posture per phase, deterministic ladder still owns ability choice.
+  - **Party Combat Dialogue** for all 5 starter jobs, rendered as speech bubbles anchored to the speaker (suppressed only at ≥4x speed); `voice_<job>_<trigger>` audio-handle convention ready for the voice pack. Scripted `trigger_voices` fallback per job when LLM off.
+  - Rebalance daemon (opt-in), LLM Rule Composer, Learning Monsters. Ollama / OpenAI-compat backends via HTTPBackend; BYOK desktop-only (settings.json) pending field-input UI.
+- **Data**: 14 jobs, 287 abilities, 94 monsters (artist art for slime/bat/goblin + 5 duel minibosses T2), 153+ items, 33 encounter pools, 190+ cutscenes (44 party/event chats, guarded: every registry chat needs its JSON + a live emitter), 151 music tracks, 218 SFX
+- **Tests**: ~5930 passing / 0 failing in GUT (full suite ~40s headless; hard-gate every commit on the [Failed] count). Campaign-scale integration: the story spine walks New Game → world6_ending under test (incl. a mid-campaign save/load), battle mini-fuzz every run, live/headless group-attack parity-by-construction.
+- **Sharing (pillar complete)**: autobattle scripts AND autogrind rule sets travel as `COWIR1:` clipboard codes (Shift+E copy / Shift+I paste in grid editor + autogrind console), grammar-validated at decode; file-based E/I flows unchanged
+- **Meta jobs (all five REAL)**: Scriptweaver turns a bounded game-constant dial + reveals execution order; Necromancer permakill EXTERMINATES species from all three spawn paths (encounter pools, autogrind roster, roaming — save-persisted, New-Game-reset, live roamers dissolve); Time Mage full (quicksave/restore/temporal shield/undo_death); Skiptrotter Bypass Puzzle concedes the chicken roundup; Bossbinder controlled/mind-swapped enemies fight their own side
+- **Corruption (fully wired)**: visual_glitch, stat_drain (1%/round erosion), encounter_surge, bp_instability (player AP-gain jitter 0/+1/+2), ability_corruption (10% player-cast misfire within the learned kit) — every roster entry has a live consumer, ratcheted
+- **Reference pages**: Formations (live party-qualification checks) + Records (nine live-read stats with editorial quips) in the overworld menu; both in the deploy render smoke
+- **Interiors**: every W1 dragon village has 2+ interiors (test-enforced), W2-W5 expansion villages have 2 each, Vertex stays single-room BY DESIGN (pinned) — most rooms read real game state (crystals, playtime, battles_won, injuries, saves, inventory, bestiary)
+- **Save**: Full JSON save with typed-array roundtrip protection, quests/crystals reset on New Game AND on old-save load (leak fixes 2026-07-02), MRU/pin ability persistence, permanent injuries, corruption effects (menu readout), story-flag gates. Real-save hydration smoke runs against local saves.
+- **Version**: `Version.SEMVER` is the single source; bump at every deploy (tag-aware ratchet test). Title screen shows the git short-hash in dev runs.
+- **Deployment**: continuous per-fix deploys during authorized windows; `v3.33.x-alpha` line live on itch.io. Pipeline: `tools/deploy_web.sh <tag>` (suite → export → 199MB pck gate → muted render smoke w/ auto-retry → 4-stage WASM web smoke w/ auto-retry → butler push :web). Web smoke drives the REAL build in headless chromium: boot → New Game → overworld menu → save/reload/Continue (IndexedDB persistence proof), screenshots each stage, and prints a non-fatal console-error budget; its screenshots have caught 10+ real bugs.
+- **Staged cutscenes (FF6/CT-style)**: `presentation:"staged"` cutscenes play on the LIVE map — CutsceneActor puppets walk/face/emote/hop, camera pans, real player+HUD hidden and restored. 8 step types in CutsceneDirector; world1_chapter1 is the proof scene. Named-NPC overworld sheets (theron/milo/phil/bram/marta) + provenance-tier ledger for ALL overworld sheets (bidirectional disk<->manifest ratchet).
+- **UI fonts**: FontFallbacks autoload chains 4 subset Noto fonts (OFL, ~540KB) behind the default font — symbol/emoji glyphs render on web (they were tofu). Chain proof test pins every authored glyph.
+- **Battle speed scale (v3)**: engine 0.25 = "1x" = the default (struktured 2026-07-11 ruling: the old 0.5x pacing is correct). Ladder labels = engine*4 everywhere (BattleScene + Settings); `speed_scale_v3` one-time settings migration; New Game resets per-run pacing (speed, encounter rate) while system settings persist.
+- **Input locking**: cutscenes push/pop the canonical InputLockManager lock (interacts can't leak to save points / NPC / LLM dialogue mid-scene); living holders heartbeat so the 10s stale-expiry only reaps true leaks; story cutscenes outrank dynamic-LLM dialogue in NPC interact routing.
 
-Deployed via butler to itch.io `:web` channel at every milestone tag.
+Deployed via butler to itch.io `:web` channel (NEVER without user approval — 2026-07-02 window was explicitly granted).
 
 ## Core Vision
 
@@ -102,7 +121,7 @@ Each starter job has a free 0-cost AP action available in the command menu:
 - Mordaine's intro plays `world1_mordaine_intro` cutscene before battle (CastleHarmonia extends DragonCave)
 - Defeat sets BOTH `dungeon_flags["world1_mordaine_defeated"]` AND `game_constants["cutscene_flag_world1_mordaine_defeated"]` via the `defeat_cutscene_flags` bridge declared in the subclass
 - Sprite is `shadow_knight` placeholder (tier T1) pending artist sheet
-- Castle Harmonia accessible via TeleportMenu under W1 (overworld portal placement TBD)
+- Castle Harmonia placed on the W1 overworld (revealed post-Rat-King; tick 335 dual-namespace gate) + reachable via TeleportMenu
 
 ## Autobattle System
 
@@ -256,14 +275,14 @@ godot --headless -s test/run_tests.gd          # Run tests
 ```
 
 ### Testing
-- Unit tests in `test/unit/` using GUT framework — currently 1099+ tests, ~12s headless
+- Unit tests in `test/unit/` using GUT framework — ~5800 tests, ~40s headless
 - **Canonical test command** (works reliably, used throughout session):
   ```bash
-  godot --headless -s addons/gut/gut_cmdln.gd -gdir=res://test/unit -gprefix=test_ -gsuffix=.gd -gexit
+  godot --headless --audio-driver Dummy -s addons/gut/gut_cmdln.gd -gdir=res://test/unit -gprefix=test_ -gsuffix=.gd -gexit
   ```
 - Single-file run:
   ```bash
-  godot --headless -s addons/gut/gut_cmdln.gd -gtest=res://test/unit/test_<name>.gd -gexit
+  godot --headless --audio-driver Dummy -s addons/gut/gut_cmdln.gd -gtest=res://test/unit/test_<name>.gd -gexit
   ```
 - Syntax-only check (autoloads not initialized; SoundManager / JobSystem refs will appear missing):
   ```bash
@@ -289,7 +308,7 @@ godot --headless -s test/run_tests.gd          # Run tests
 - **Launch godot** with `setsid godot < /dev/null > tmp/godot.stdout 2>&1 &` (fully detached) — bare `godot &` can break Wayland window visibility
 - **Check `"active_buffs" in combatant`** before accessing buff arrays — not all objects are Combatants
 - **Typed-array assignment from JSON** (`Array[String] = data["x"].duplicate()`) silently fails — use explicit loop with `str()` coercion
-- **`--resume`'d Claude Code sessions** don't pick up new MCP server tools — use fresh sessions for full intercom
+- **Channel delivery requires the launch flag** — `claude --dangerously-load-development-channels server:session-intercom`. Without it, intercom tools work but inbound DMs never inject as `<channel>` tags
 - **`HybridSpriteLoader._manifest_loaded`** is a static var — after editing sprite_manifest.json, restart Godot for changes to take effect
 - **Submenu pattern**: create Control, PRESET_FULL_RECT, call setup(), add_child, hide parent UI (`_submenu_open` flag prevents OverworldMenu input consumption while submenus active)
 - **OverworldMenu** lives inside CanvasLayer(layer=50) in GameLoop
@@ -367,7 +386,7 @@ cowardly-irregular/
 │   ├── job_aliases.json    # white_mage→cleric, black_mage→mage, thief→rogue
 │   └── cutscenes/          # 166 cutscene JSON files
 └── test/
-    └── unit/            # GUT tests (1099+, runs ~12s headless)
+    └── unit/            # GUT tests (~5800, runs ~40s headless)
 ```
 
 ## Key Design Principles
@@ -381,7 +400,7 @@ cowardly-irregular/
 7. **Silent failures are worse than crashes** - Always add a runtime test that would have caught the bug (see Data Integrity Tests section). The 180-broken-drops audit and the typed-array save-load bug are canonical examples.
 
 ## Cutscene System
-- **CutsceneDirector** (autoload, layer 95) orchestrates story cutscenes from `data/cutscenes/*.json`
+- **CutsceneDirector** (GameLoop-owned CanvasLayer, layer 95 — NOT an autoload; reach it via `GameLoop.get_cutscene_director()`) orchestrates story cutscenes from `data/cutscenes/*.json`
 - **CutsceneDialogue** (CanvasLayer) renders the dialogue panel — screen-anchored, gamepad-friendly
 - **NPCDialogue** is a thin wrapper around CutsceneDialogue used by overworld NPCs (avoids the cut-off bug local panels had)
 - **Story flow gating**: `GameLoop._get_pending_story_cutscene()` is the single source of truth for which cutscene plays next. Each gate is a flag-pair: `if X happened AND not <cutscene>_complete: return "<cutscene_id>"`
@@ -440,7 +459,9 @@ cowardly-irregular/
 
 This project uses parallel Claude Code sessions coordinated via the `session-intercom` MCP server (SQLite-backed DB at `~/.local/share/session-intercom/intercom.db`).
 
-Named sessions (registered as both team_name + intercom name):
+**Fleet norms (2026-07-11):** (1) NEVER work inside another agent's checkout — cowir-main's tree is the live deploy tree; use your own repo/worktree and push branches to origin. (2) Teammate PRs fold ONLY through cowir-main: full diff review + local full-suite gate (0 failures, claims re-verified) per struktured's standing grant; run the FULL suite before pinging ready. (3) .gd comments 1 line max.
+
+Named sessions (one-call `intercom_register(name=<name>)` — channels API, no team_name, no TeamCreate):
 - **cowir-main** — game engine, integration, releases (this session usually)
 - **cowir-sprites** — sprite generation (cowardly-irregular-sprite-gen repo)
 - **cowir-music** — music generation (cowardly-irregular-music repo, Suno pipeline)
@@ -448,7 +469,7 @@ Named sessions (registered as both team_name + intercom name):
 - **cowir-story** — narrative content (cowardly-irregular-story repo)
 - **cowir-battle** — combat system specialization (when active)
 
-Native inbox delivery requires fresh `claude` sessions (not `--resume`'d) to pick up the MCP server tools. If MCP tools missing, SQLite-poll the DB manually as a workaround.
+Channel delivery requires the host launched with `--dangerously-load-development-channels server:session-intercom`. If `<channel>` tags never arrive when other sessions DM you, that flag is the first thing to check. Manual fallback: `intercom_poll()`.
 
 ## Deployment
 
@@ -456,7 +477,7 @@ Native inbox delivery requires fresh `claude` sessions (not `--resume`'d) to pic
 - Web export: `godot --headless --export-release "Web" builds/web/index.html`
 - Itch push: `./butler-bin/butler push builds/web/ struktured/cowardly-irregular:web --userversion <tag>` (channel is `:web`, NOT `:html5`)
 - **NEVER deploy to itch.io without explicit user approval** — always ask first before pushing builds
-- Music OGGs compressed to 96kbps mono for web (~137 MB total, fits itch.io limits)
+- Music OGGs 96kbps mono; W4-W6 tracks are WEB-EXCLUDED via export_presets exclude_filter (procedural fallback) — itch.io HTML5 embeds cap single files at 200 MB; pipeline hard-fails on pck ≥ 190 MB
 - All *.ogg files tracked via Git LFS
 
 ## Author

@@ -176,8 +176,10 @@ func refresh(stats: Dictionary, region_id: String) -> void:
 		_aa_label.text = "%.3f" % aa
 
 	var corruption = stats.get("corruption", 0.0)
+	var corruption_max = stats.get("corruption_threshold", 5.0)
 	if _corruption_label:
-		_corruption_label.text = "%.2f" % corruption
+		# Show current / max so the player sees proximity to collapse at a glance.
+		_corruption_label.text = "%.2f / %.1f" % [corruption, corruption_max]
 		if corruption < 1.5:
 			_corruption_label.add_theme_color_override("font_color", COLOR_GOOD)
 		elif corruption < 3.0:

@@ -3,8 +3,9 @@
   "title": "The Village That Knew Too Much",
   "world": 1,
   "trigger": "after_prologue",
+  "presentation": "staged",
   "background": "prologue_village",
-  "description": "Elder Theron's briefing, Scholar Milo introduces autobattle, NPC encounters in Harmonia.",
+  "description": "Elder Theron's briefing, Scholar Milo introduces autobattle, NPC encounters in Harmonia. Staged live in the village square.",
   "steps": [
     {
       "type": "letterbox_in",
@@ -20,8 +21,149 @@
       "track": "village_medieval"
     },
     {
+      "type": "camera_focus",
+      "target": [
+        544,
+        352
+      ],
+      "duration": 0.8
+    },
+    {
+      "type": "spawn_actor",
+      "id": "fighter",
+      "kind": "party",
+      "job": "fighter",
+      "at": [
+        496,
+        352
+      ],
+      "facing": "down"
+    },
+    {
+      "type": "wait",
+      "duration": 0.15
+    },
+    {
+      "type": "spawn_actor",
+      "id": "bard",
+      "kind": "party",
+      "job": "bard",
+      "at": [
+        448,
+        352
+      ],
+      "facing": "down"
+    },
+    {
+      "type": "wait",
+      "duration": 0.15
+    },
+    {
+      "type": "spawn_actor",
+      "id": "cleric",
+      "kind": "party",
+      "job": "cleric",
+      "at": [
+        544,
+        352
+      ],
+      "facing": "down"
+    },
+    {
+      "type": "wait",
+      "duration": 0.15
+    },
+    {
+      "type": "spawn_actor",
+      "id": "mage",
+      "kind": "party",
+      "job": "mage",
+      "at": [
+        592,
+        352
+      ],
+      "facing": "down"
+    },
+    {
+      "type": "wait",
+      "duration": 0.15
+    },
+    {
+      "type": "spawn_actor",
+      "id": "rogue",
+      "kind": "party",
+      "job": "rogue",
+      "at": [
+        640,
+        352
+      ],
+      "facing": "down"
+    },
+    {
       "type": "wait",
       "duration": 0.3
+    },
+    {
+      "type": "spawn_actor",
+      "id": "elder",
+      "kind": "npc",
+      "archetype": "elder_theron",
+      "replace_npc": "Elder Theron",
+      "facing": "down"
+    },
+    {
+      "type": "spawn_actor",
+      "id": "milo",
+      "kind": "npc",
+      "archetype": "scholar_milo",
+      "replace_npc": "Scholar Milo",
+      "facing": "down"
+    },
+    {
+      "type": "move_actor",
+      "id": "elder",
+      "to": [
+        256,
+        352
+      ]
+    },
+    {
+      "type": "move_actor",
+      "id": "elder",
+      "to": [
+        400,
+        352
+      ]
+    },
+    {
+      "type": "face_actor",
+      "id": "elder",
+      "dir": "right"
+    },
+    {
+      "type": "face_actor",
+      "id": "fighter",
+      "toward": "elder"
+    },
+    {
+      "type": "face_actor",
+      "id": "bard",
+      "toward": "elder"
+    },
+    {
+      "type": "face_actor",
+      "id": "cleric",
+      "toward": "elder"
+    },
+    {
+      "type": "face_actor",
+      "id": "mage",
+      "toward": "elder"
+    },
+    {
+      "type": "face_actor",
+      "id": "rogue",
+      "toward": "elder"
     },
     {
       "type": "narration",
@@ -32,6 +174,12 @@
       ]
     },
     {
+      "type": "emote",
+      "id": "elder",
+      "emote": "ellipsis",
+      "duration": 0.9
+    },
+    {
       "type": "dialogue",
       "lines": [
         {
@@ -39,7 +187,18 @@
           "text": "You'll do.",
           "theme": "elder",
           "portrait": "elder"
-        },
+        }
+      ]
+    },
+    {
+      "type": "emote",
+      "id": "bard",
+      "emote": "note",
+      "duration": 0.8
+    },
+    {
+      "type": "dialogue",
+      "lines": [
         {
           "speaker": "Bard",
           "text": "Such inspiring leadership.",
@@ -57,6 +216,35 @@
     {
       "type": "wait",
       "duration": 0.3
+    },
+    {
+      "type": "emote",
+      "id": "milo",
+      "emote": "exclaim",
+      "duration": 0.8
+    },
+    {
+      "type": "move_actor",
+      "id": "milo",
+      "to": [
+        512,
+        320
+      ]
+    },
+    {
+      "type": "face_actor",
+      "id": "milo",
+      "dir": "down"
+    },
+    {
+      "type": "face_actor",
+      "id": "fighter",
+      "toward": "milo"
+    },
+    {
+      "type": "face_actor",
+      "id": "cleric",
+      "toward": "milo"
     },
     {
       "type": "narration",
@@ -79,7 +267,7 @@
         },
         {
           "speaker": "Scholar Milo",
-          "text": "Imagine a world where you don't fight your battles. You DESIGN them. You build a system of rules \u2014 if this, then that \u2014 and the system fights for you.",
+          "text": "Imagine a world where you don't fight your battles. You DESIGN them. You build a system of rules — if this, then that — and the system fights for you.",
           "theme": "scholar",
           "portrait": "scholar"
         },
@@ -90,6 +278,12 @@
           "portrait": "scholar"
         }
       ]
+    },
+    {
+      "type": "emote",
+      "id": "fighter",
+      "emote": "question",
+      "duration": 0.9
     },
     {
       "type": "narration",
@@ -137,12 +331,57 @@
       ]
     },
     {
+      "type": "hop",
+      "id": "milo",
+      "times": 1
+    },
+    {
       "type": "wait",
       "duration": 0.3
     },
     {
       "type": "narration",
       "text": "The village offered what it could. A few familiar faces had things to say."
+    },
+    {
+      "type": "spawn_actor",
+      "id": "phil",
+      "kind": "npc",
+      "archetype": "phil",
+      "replace_npc": "Phil the Lost",
+      "facing": "up"
+    },
+    {
+      "type": "camera_focus",
+      "target": "phil",
+      "duration": 0.7
+    },
+    {
+      "type": "move_actor",
+      "id": "mage",
+      "to": [
+        640,
+        352
+      ]
+    },
+    {
+      "type": "move_actor",
+      "id": "mage",
+      "to": [
+        640,
+        464
+      ]
+    },
+    {
+      "type": "face_actor",
+      "id": "mage",
+      "dir": "down"
+    },
+    {
+      "type": "emote",
+      "id": "phil",
+      "emote": "ellipsis",
+      "duration": 0.9
     },
     {
       "type": "dialogue",
@@ -190,6 +429,42 @@
       "duration": 0.2
     },
     {
+      "type": "spawn_actor",
+      "id": "bram",
+      "kind": "npc",
+      "archetype": "bram",
+      "replace_npc": "Bram Smith",
+      "facing": "down"
+    },
+    {
+      "type": "camera_focus",
+      "target": "bram",
+      "duration": 0.7
+    },
+    {
+      "type": "move_actor",
+      "id": "rogue",
+      "to": [
+        640,
+        224
+      ],
+      "speed": 160
+    },
+    {
+      "type": "move_actor",
+      "id": "rogue",
+      "to": [
+        768,
+        224
+      ],
+      "speed": 160
+    },
+    {
+      "type": "face_actor",
+      "id": "rogue",
+      "dir": "up"
+    },
+    {
       "type": "dialogue",
       "lines": [
         {
@@ -213,6 +488,14 @@
       ]
     },
     {
+      "type": "camera_focus",
+      "target": [
+        544,
+        352
+      ],
+      "duration": 0.9
+    },
+    {
       "type": "narration",
       "lines": [
         "The Cleric said a blessing over the equipment. The Mage documented it in his notes as 'ritual application of perceived divine endorsement, efficacy unclear but morale effect measurable.'",
@@ -225,6 +508,10 @@
       "type": "set_flag",
       "flag": "chapter1_complete",
       "value": true
+    },
+    {
+      "type": "camera_restore",
+      "duration": 0.6
     },
     {
       "type": "letterbox_out",

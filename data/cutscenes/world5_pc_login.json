@@ -1,0 +1,61 @@
+{
+  "id": "world5_pc_login",
+  "title": "Login",
+  "world": 5,
+  "trigger": "world5_pc_login",
+  "background": "prologue_forest",
+  "description": "First steps in the digital world. Everything renders slightly late.",
+  "steps": [
+    {
+      "type": "letterbox_in",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "The horizon loaded last. The party pretended not to notice."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mage",
+          "text": "Don't look at the mountains too fast. They need a moment.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "I moved before the world was ready for me. It CORRECTED me. Politely.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "My sword casts two shadows. One of them is a frame behind.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "When I pray here, something answers 200 OK. I have decided to find that comforting.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Bard",
+          "text": "The birdsong loops every eleven seconds. I checked. It's a good loop. Whoever wrote it got PAID.",
+          "theme": "bard",
+          "portrait": "bard"
+        }
+      ]
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.3
+    }
+  ]
+}

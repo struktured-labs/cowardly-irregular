@@ -62,11 +62,11 @@ func _create_label() -> void:
 		if is_critical:
 			base_size += 6
 
-		# Color: green for heal, orange for crit, white for normal
+		# Tick 226: color-blind friendly palette swaps green→cyan (heal) and orange→yellow (crit). Both are distinguishable for deuteranopia/protanopia (red-green color blindness, ~5% of males).
 		if is_heal:
-			color = Color.LIME_GREEN
+			color = _heal_color()
 		elif is_critical:
-			color = Color.ORANGE
+			color = _crit_color()
 		else:
 			color = Color.WHITE
 
@@ -97,6 +97,16 @@ func _create_label() -> void:
 		_high_damage_pulse_effect()
 
 
+# Tick 226/228: heal popup color via shared AccessibilityPalette util.
+func _heal_color() -> Color:
+	return AccessibilityPalette.heal()
+
+
+# Tick 226/228: crit popup color via shared AccessibilityPalette util.
+func _crit_color() -> Color:
+	return AccessibilityPalette.crit()
+
+
 func _flash_effect() -> void:
 	"""Flash the number for emphasis"""
 	if _flash_tween and _flash_tween.is_valid():
@@ -118,9 +128,9 @@ func _crit_wobble_effect() -> void:
 	_polish_tween.tween_property(_label, "rotation", deg_to_rad(8.0), 0.08)
 	_polish_tween.tween_property(_label, "rotation", deg_to_rad(-8.0), 0.08)
 	_polish_tween.tween_property(_label, "rotation", 0.0, 0.10)
-	# Color cycle: orange -> yellow-white -> orange for extra punch
+	# Tick 226: crit cycle returns to crit color (ORANGE default, yellow in color-blind mode) for consistency with the initial setup color.
 	_polish_tween.parallel().tween_property(_label, "theme_override_colors/font_color", Color(1.0, 1.0, 0.7), 0.08)
-	_polish_tween.tween_property(_label, "theme_override_colors/font_color", Color.ORANGE, 0.15)
+	_polish_tween.tween_property(_label, "theme_override_colors/font_color", _crit_color(), 0.15)
 
 
 func _heal_bounce_effect() -> void:

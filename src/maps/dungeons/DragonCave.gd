@@ -25,6 +25,11 @@ var cave_id: String = "dragon_cave"
 var boss_id: String = "dragon"
 var boss_flag_key: String = "dragon_defeated"
 var boss_cutscene_id: String = ""  # Cutscene JSON ID to play before boss fight (empty = console fallback)
+# LLM dialogue persona handle — empty for plain monster bosses, set by
+# subclasses (e.g. CastleHarmonia sets "chancellor_mordaine") so BattleManager's
+# intent picker has a key into data/boss_dialogue.json. Stashed on the boss
+# combatant via set_meta("llm_persona_id", ...) right before battle_triggered.
+var boss_llm_persona_id: String = ""
 var total_floors: int = 3
 var overworld_exit_spawn: String = "cave_entrance"
 ## Which overworld map this cave exits back to (default = W1 overworld)
@@ -33,12 +38,21 @@ var overworld_exit_map: String = "overworld"
 var unlock_story_flag: String = ""
 var unlock_world: int = 0
 # Optional list of cutscene_flag_* constants to set on boss defeat. Distinct
-# from boss_flag_key (which writes to player_party[0].dungeon_flags) — these
-# go into GameState.game_constants which is what _get_pending_story_cutscene
-# reads. Required for story-gate flags like cutscene_flag_world1_mordaine_defeated.
-# (2026-05-23: identified after Mordaine scaffold; rat king's WhisperingCave
-# uses a custom pending_boss_defeat spec to bridge the same gap.)
+# from boss_flag_key (which writes to game_constants["dungeon_flags"] —
+# tick 154 moved off player_party[0] to survive party-leader changes) —
+# these cutscene_flag_* constants are flat keys on game_constants which is
+# what _get_pending_story_cutscene reads. Required for story-gate flags like
+# cutscene_flag_world1_mordaine_defeated. (2026-05-23: identified after
+# Mordaine scaffold; rat king's WhisperingCave uses a custom
+# pending_boss_defeat spec to bridge the same gap.)
 var defeat_cutscene_flags: Array[String] = []
+# (Tick 105: the legacy `defeat_cutscene` field was removed. It was set by
+# subclasses but read only by _on_boss_defeated which had no caller — pure
+# dead code. The actual post-victory cutscene mechanism lives in
+# GameLoop._get_pending_story_cutscene's defeat-cutscene gates (e.g.
+# world1_mordaine_defeat, world2_warden_defeat, …); each gate fires when
+# the matching boss-defeat flag is set and the player is in the dungeon's
+# map. Wire new defeat cutscenes there, not here.)
 
 ## Override in subclass: floor number -> Array of ASCII rows (20 chars × 16 rows)
 var floor_layouts: Dictionary = {}
@@ -74,13 +88,57 @@ var spawn_points: Dictionary = {}
 func _ready() -> void:
 	_setup_scene()
 	_load_boss_state()
+	# Restore floor from save. Without this, a player who quits deep in
+	# any dragon cave / Castle Harmonia / Assembly Core / Null Chamber
+	# reloads on floor 1 and has to re-descend. The key is scoped by
+	# cave_id so each dungeon persists independently.
+	if GameState and cave_id != "":
+		var floor_key := cave_id + "_floor"
+		if GameState.game_constants.has(floor_key):
+			var saved_floor: int = int(GameState.game_constants[floor_key])
+			if saved_floor >= 1 and saved_floor <= total_floors:
+				current_floor = saved_floor
+		## Tick 153: if the boss is already defeated, reset the saved
+		## floor to 1 so re-entering a completed dungeon spawns the
+		## player at the entrance, NOT in the empty boss room they
+		## last won the fight in. Saved floor reflects "where you
+		## were last" — once the boss is dead, the cave's progression
+		## arc is complete and players who revisit want grinding
+		## access from floor 1, not insta-warp to a depopulated
+		## boss arena.
+		if boss_defeated and current_floor != 1:
+			current_floor = 1
+			GameState.game_constants[floor_key] = 1
+		## Tick 410: consume the Skiptrotter dungeon_skip flag here so
+		## the next dungeon entry warps straight to the boss room.
+		## Tick 403 wrote the flag from BattleManager.dungeon_skip arm;
+		## this is the single-shot consumer that clears it and jumps
+		## to total_floors before _generate_map_for_floor renders the
+		## level. Refuses if the boss is already defeated (skipping to
+		## an empty boss room would strand the player). Also skips for
+		## non-dragon DragonCave subclasses where boss completion is
+		## tracked differently — the cave_id "_floor" key gate above
+		## already validates this is a dragon-style dungeon.
+		var skip_pending: bool = bool(GameState.game_constants.get("meta_dungeon_skip_pending", false))
+		if skip_pending and not boss_defeated and total_floors >= 1:
+			current_floor = total_floors
+			GameState.game_constants[floor_key] = total_floors
+			GameState.game_constants["meta_dungeon_skip_pending"] = false
+			print("[DUNGEON_SKIP] meta-ability consumed — warped to boss floor %d of %s" % [current_floor, cave_id])
 	_generate_map_for_floor(current_floor)
 	_setup_player()
 	_setup_camera()
 	_setup_controller()
 
 	if SoundManager:
-		SoundManager.play_area_music("cave")
+		SoundManager.play_area_music(_get_music_area_id())
+
+	# Tick 249/254: ratchet "At the Cave Mouth" via the centralized
+	# helper. Filters to ids containing "dragon_cave" so non-dragon
+	# DragonCave subclasses (castle_harmonia / null_chamber / etc.)
+	# don't qualify.
+	if "dragon_cave" in cave_id and PartyChatSystem:
+		PartyChatSystem.fire_event_flag("event_flag_dragon_cave_entered")
 
 	exploration_ready.emit()
 
@@ -128,6 +186,9 @@ func _generate_map_for_floor(floor_num: int) -> void:
 				spawn_points[key] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
 			elif char == "B":
 				spawn_points["boss"] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
+			elif char == "H":
+				var hkey = "secret_%d" % spawn_points.size()
+				spawn_points[hkey] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
 
 	var spawn_pos = floor_spawn_points.get(floor_num, {}).get("entrance", Vector2(10, 12))
 	spawn_points["default"] = Vector2(spawn_pos.x * TILE_SIZE, spawn_pos.y * TILE_SIZE)
@@ -155,6 +216,9 @@ func _setup_transitions_for_floor(floor_num: int) -> void:
 
 	# Treasure chests at each T marker on the floor (plus boss-floor drop)
 	_place_floor_treasure(floor_num)
+
+	# Hidden passages at each H marker (disguised cave-wall sections)
+	_place_hidden_passages(floor_num)
 
 	# In-dungeon orientation signposts (floor indicator, stair directions)
 	_place_dungeon_signposts(floor_num)
@@ -315,6 +379,10 @@ func _transition_to_floor(target_floor: int, direction: String = "") -> void:
 	controller.pause_exploration()
 
 	current_floor = target_floor
+	# Persist floor across save/load. Scoped by cave_id so each dungeon
+	# tracks independently.
+	if GameState and cave_id != "":
+		GameState.game_constants[cave_id + "_floor"] = current_floor
 
 	tile_map.clear()
 	_generate_map_for_floor(current_floor)
@@ -372,6 +440,21 @@ func _update_floor_encounters(floor_num: int) -> void:
 func _trigger_boss_battle() -> void:
 	controller.pause_exploration()
 
+	## Tick 447: autosave passive — passives.json authors
+	## meta_effects.auto_save_before_boss = true with description
+	## "Automatically save before boss fights and dangerous
+	## encounters", but pre-fix the field was decoration. If any
+	## party member equips autosave, force a quicksave RIGHT NOW
+	## (before the cutscene + battle_triggered emit) so a wipe
+	## rewinds to the moment the boss appeared, not the last
+	## village save point. Uses force_quick_save to bypass the
+	## interior/battle gate (we're entering the boss intro).
+	if _party_wants_auto_save_before_boss():
+		var ss: Node = get_node_or_null("/root/SaveSystem")
+		if ss != null and ss.has_method("force_quick_save"):
+			ss.force_quick_save()
+			print("[AUTOSAVE] Pre-boss quicksave fired (autosave passive)")
+
 	# Register pending boss defeat so GameLoop._on_battle_ended applies the
 	# flags on victory. The DragonCave instance gets freed during the battle
 	# transition, so any handler attached to `self` would never fire.
@@ -390,6 +473,12 @@ func _trigger_boss_battle() -> void:
 	if unlock_world > 0:
 		spec["unlock_world"] = true
 		spec["unlock_world_target"] = unlock_world
+	# Wave E — pass LLM persona through pending_boss_defeat. Falls back to
+	# monster_type in BattleManager so monsters tagged in
+	# data/boss_dialogue.json don't strictly need the override; this is
+	# belt-and-suspenders for non-monster_type bosses.
+	if boss_llm_persona_id != "":
+		spec["boss_llm_persona_id"] = boss_llm_persona_id
 	GameState.pending_boss_defeat = spec
 
 	await _show_boss_intro()
@@ -401,9 +490,20 @@ func _show_boss_intro() -> void:
 	# Try CutsceneDirector with JSON cutscene
 	if boss_cutscene_id != "":
 		var cutscene_path = "res://data/cutscenes/%s.json" % boss_cutscene_id
-		if FileAccess.file_exists(cutscene_path):
-			var director = get_node_or_null("/root/CutsceneDirector")
-			if director and director.has_method("play_cutscene"):
+		# Tick 213: surface the silent-failure modes that drop the player to a console-only fallback. boss_cutscene_id is set but: (a) JSON missing on disk (typo, data drift, file not yet authored), (b) CutsceneDirector autoload unavailable, (c) director missing play_cutscene method.
+		if not FileAccess.file_exists(cutscene_path):
+			push_warning("[DragonCave] boss_cutscene_id='%s' but %s does not exist — falling back to console intro (boss will play, but with no cutscene)" % [boss_cutscene_id, cutscene_path])
+		else:
+			# CutsceneDirector is GameLoop-owned, NOT an autoload — a /root/ lookup silently falls back, and every W1 boss intro (Mordaine + 4 dragons) has been dropping to the console-print fallback. Same class as the TallyWall fix (2026-07-08); route through GameLoop.get_cutscene_director() so the authored intros actually play.
+			var game_loop = get_node_or_null("/root/GameLoop")
+			var director = null
+			if game_loop != null and game_loop.has_method("get_cutscene_director"):
+				director = game_loop.get_cutscene_director()
+			if director == null:
+				push_warning("[DragonCave] boss_cutscene_id='%s' configured but GameLoop.get_cutscene_director() returned null — falling back to console intro" % boss_cutscene_id)
+			elif not director.has_method("play_cutscene"):
+				push_warning("[DragonCave] boss_cutscene_id='%s' configured but CutsceneDirector lacks play_cutscene method — falling back to console intro" % boss_cutscene_id)
+			else:
 				await director.play_cutscene(boss_cutscene_id)
 				return
 
@@ -423,6 +523,18 @@ func _show_boss_intro() -> void:
 ## Virtual - subclass MUST override to provide boss dialogue
 func _get_boss_intro_dialogue() -> Array:
 	return ["A dragon blocks the path!"]
+
+
+## Tick 93: per-dungeon music routing. Default returns "cave" which
+## SoundManager.play_area_music maps to _start_dungeon_music("medieval")
+## — correct for W1 dragon caves (fire, ice, lightning, shadow) and
+## the whispering cave. W2-W6 dungeons (SuburbanUnderground,
+## SteampunkMechanism, AssemblyCore, RootProcess, NullChamber) MUST
+## override this to return their per-world dungeon key, otherwise
+## stepping into them plays the W1 medieval dungeon theme instead
+## of the world's own track.
+func _get_music_area_id() -> String:
+	return "cave"
 
 
 func _place_floor_treasure(floor_num: int) -> void:
@@ -463,6 +575,20 @@ func _place_floor_treasure(floor_num: int) -> void:
 		transitions.add_child(chest)
 
 
+func _place_hidden_passages(floor_num: int) -> void:
+	"""One HiddenPassage per H marker — the tile parses as floor, the sprite disguises it as wall."""
+	var idx: int = 0
+	for key in spawn_points:
+		if not key.begins_with("secret_"):
+			continue
+		var passage = HiddenPassage.new()
+		passage.passage_id = "%s_f%d_h%d" % [cave_id, floor_num, idx]
+		passage.disguise = "cave"
+		passage.position = spawn_points[key]
+		transitions.add_child(passage)
+		idx += 1
+
+
 func _place_dungeon_signposts(floor_num: int) -> void:
 	"""Orientation helpers inside the cave: floor number, stair direction, boss warning."""
 	var floor_label = Signpost.new()
@@ -490,32 +616,42 @@ func _place_dungeon_signposts(floor_num: int) -> void:
 		transitions.add_child(down_sign)
 
 
-func _on_boss_defeated() -> void:
-	boss_defeated = true
-	_save_boss_state()
-	# Unlock next world if configured
-	if unlock_story_flag != "":
-		GameState.set_story_flag(unlock_story_flag)
-	if unlock_world > 0:
-		while GameState.worlds_unlocked < unlock_world:
-			GameState.unlock_next_world()
-	print("%s defeated! Exit stairs appear." % boss_id)
-	_setup_transitions_for_floor(current_floor)
+# (Tick 105: _on_boss_defeated removed. It was dead code with no caller in
+# the entire codebase. The boss_defeated state + unlock_story_flag + unlock_world
+# + dungeon_flag are all set via GameState.pending_boss_defeat (assembled in
+# _trigger_boss before the battle, applied by GameLoop._apply_pending_boss_defeat
+# on victory). The defeat cutscene is played by
+# GameLoop._get_pending_story_cutscene's per-dungeon defeat-cutscene gates on
+# the next pending-cutscene check after victory return. Adding any new boss
+# defeat side-effect goes into the pending spec, not here.)
 
 
 func _load_boss_state() -> void:
 	var game_state = get_node_or_null("/root/GameState")
 	if game_state and game_state.player_party.size() > 0:
-		var flags = game_state.player_party[0].get("dungeon_flags", {})
+		## Tick 154: read from game_constants["dungeon_flags"] (party-
+		## leader-independent). Fall back to the legacy player_party[0]
+		## location for save-format migration — old saves stored these
+		## on the leader, which silently broke when the player changed
+		## leader via cycle_party_leader.
+		var flags: Dictionary = {}
+		if game_state.game_constants.has("dungeon_flags"):
+			flags = game_state.game_constants["dungeon_flags"]
+		elif game_state.player_party.size() > 0 and game_state.player_party[0].has("dungeon_flags"):
+			flags = game_state.player_party[0]["dungeon_flags"]
 		boss_defeated = flags.get(boss_flag_key, false)
 
 
 func _save_boss_state() -> void:
 	var game_state = get_node_or_null("/root/GameState")
 	if game_state and game_state.player_party.size() > 0:
-		if not game_state.player_party[0].has("dungeon_flags"):
-			game_state.player_party[0]["dungeon_flags"] = {}
-		game_state.player_party[0]["dungeon_flags"][boss_flag_key] = true
+		## Tick 154: write to game_constants["dungeon_flags"] so the
+		## flag survives a party-leader change. Legacy player_party[0]
+		## location ignored on write; load-side fallback handles old
+		## saves so progress doesn't vanish on migration.
+		if not game_state.game_constants.has("dungeon_flags"):
+			game_state.game_constants["dungeon_flags"] = {}
+		game_state.game_constants["dungeon_flags"][boss_flag_key] = true
 
 
 func _setup_player() -> void:
@@ -559,6 +695,11 @@ func _setup_controller() -> void:
 
 
 func _on_transition_triggered(target_map: String, spawn_point: String) -> void:
+	# Walking back to the overworld clears the persisted floor so a
+	# fresh re-entry starts at floor 1 (dungeon-reset semantic). Same
+	# behavior as WhisperingCave.
+	if target_map != "" and target_map != cave_id and GameState and cave_id != "":
+		GameState.game_constants.erase(cave_id + "_floor")
 	area_transition.emit(target_map, spawn_point)
 
 
@@ -592,3 +733,33 @@ func set_player_job(job_name: String) -> void:
 func set_player_appearance(leader) -> void:
 	if player and player.has_method("set_appearance_from_leader"):
 		player.set_appearance_from_leader(leader)
+
+
+## Tick 447: check the dict-shaped player_party for any equipped
+## passive that authors meta_effects.auto_save_before_boss. Returns
+## false cleanly when GameState / PassiveSystem aren't available
+## (tests / preload). Any-wins (one passive on one party member
+## is enough to trigger the save — it's a safety net).
+func _party_wants_auto_save_before_boss() -> bool:
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs == null or not ("player_party" in gs):
+		return false
+	var ps: Node = get_node_or_null("/root/PassiveSystem")
+	if ps == null or not ps.has_method("get_passive"):
+		return false
+	for member in gs.player_party:
+		if not (member is Dictionary):
+			continue
+		var ep: Variant = member.get("equipped_passives", [])
+		if not (ep is Array):
+			continue
+		for passive_id in ep:
+			var passive: Dictionary = ps.get_passive(str(passive_id))
+			if passive.is_empty():
+				continue
+			var me: Variant = passive.get("meta_effects", {})
+			if not (me is Dictionary):
+				continue
+			if bool(me.get("auto_save_before_boss", false)):
+				return true
+	return false

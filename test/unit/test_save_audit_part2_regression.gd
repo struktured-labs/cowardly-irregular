@@ -22,7 +22,12 @@ func test_apply_save_data_loads_map_before_position() -> void:
 	var src = _read_file("res://src/save/SaveSystem.gd")
 	var idx = src.find("func _apply_save_data")
 	assert_gt(idx, -1)
-	var body = src.substr(idx, 1500)
+	# Slice ends at the next top-level func so the test is robust to
+	# in-function comment / code growth (tick 308 expanded the map block
+	# with ~17 lines of comment + new assignment; old 1500-char slice
+	# silently dropped the load_map call out of the window).
+	var next_fn = src.find("\nfunc ", idx + 1)
+	var body = src.substr(idx, (next_fn - idx) if next_fn > 0 else 4000)
 	var map_idx = body.find("MapSystem.load_map(")
 	var pos_teleport_idx = body.find("player.teleport(")
 	assert_gt(map_idx, -1, "_apply_save_data must call MapSystem.load_map")
@@ -84,11 +89,20 @@ func test_save_game_refuses_during_battle() -> void:
 	var idx = src.find("func save_game")
 	assert_gt(idx, -1)
 	var body = src.substr(idx, 1500)
-	assert_string_contains(body, "if not can_quick_save():",
+	# Tick 397 added a `bypass_gate` flag for the Time Mage quicksave
+	# meta-ability, changing the literal to "if not bypass_gate and
+	# not can_quick_save():". The substring "can_quick_save()" is
+	# still load-bearing.
+	assert_string_contains(body, "can_quick_save():",
 		"save_game must invoke can_quick_save() (battle gate) before " +
 		"writing — pre-fix, only quick_save and auto_save were gated")
-	assert_string_contains(body, "Cannot save during battle",
-		"Failure message must explain the battle gate")
+	# Tick 75: the literal "Cannot save during battle" string moved
+	# into _save_block_reason() so save_game can also surface the
+	# interior blocker. Pin it there instead.
+	assert_string_contains(src, "Cannot save during battle",
+		"_save_block_reason() must still emit 'Cannot save during battle' for the battle case")
+	assert_string_contains(body, "_save_block_reason()",
+		"save_game must derive its failure message via _save_block_reason() — keeps the surfaced reason in sync with the actual blocker")
 
 
 # reset_game_state must also reset macro_volatility — already tested in

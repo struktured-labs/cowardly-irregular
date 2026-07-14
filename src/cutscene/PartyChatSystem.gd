@@ -20,6 +20,12 @@ extends Node
 ## hides it from the Party Chat menu.
 
 signal chats_changed()
+## Tick 254: fired the moment an event_chat_* transitions from
+## unavailable → available (i.e. fire_event_flag set its last missing
+## unlock flag). Lets a UI listener show a "New chat unlocked: <title>"
+## toast so the player gets visible feedback instead of silently
+## seeing the menu item next time they open it.
+signal event_chat_unlocked(chat_id: String, title: String)
 
 ## Optional override for tests — points at a GameState-like node with
 ## a `game_constants: Dictionary` property. When null, falls back to the
@@ -214,6 +220,58 @@ const REGISTRY := {
 		"world": 1,
 		"unlock": ["event_flag_one_hp_victory"],
 	},
+	"event_chat_tent_rules": {
+		"title": "Site Regulations",
+		"world": 1,
+		"unlock": ["event_flag_tent_blocked"],
+	},
+	"event_chat_share_code": {
+		"title": "Borrowed Reflexes",
+		"world": 1,
+		"unlock": ["event_flag_share_code_used"],
+	},
+	"event_chat_fool_marks_three": {
+		"title": "The Card Is Counting",
+		"world": 1,
+		"unlock": ["event_flag_fool_marks_three"],
+	},
+	# ===== WORLD 2 — suburban register =====
+	"world2_pc_zoning": {
+		"title": "Zoning",
+		"world": 2,
+		"unlock": ["cutscene_flag_world2_prologue_complete"],
+	},
+	"world2_pc_maintenance": {
+		"title": "Maintenance",
+		"world": 2,
+		"unlock": ["cutscene_flag_world2_chapter1_complete"],
+	},
+	"world2_pc_association": {
+		"title": "The Association",
+		"world": 2,
+		"unlock": ["cutscene_flag_world2_chapter2_complete"],
+	},
+	# ===== WORLDS 3-6 — arrival chats, one register each =====
+	"world3_pc_calibration": {
+		"title": "Calibration",
+		"world": 3,
+		"unlock": ["cutscene_flag_world3_prologue_complete"],
+	},
+	"world4_pc_shift_change": {
+		"title": "Shift Change",
+		"world": 4,
+		"unlock": ["cutscene_flag_world4_prologue_complete"],
+	},
+	"world5_pc_login": {
+		"title": "Login",
+		"world": 5,
+		"unlock": ["cutscene_flag_world5_prologue_complete"],
+	},
+	"world6_pc_negative_space": {
+		"title": "Negative Space",
+		"world": 6,
+		"unlock": ["cutscene_flag_world6_prologue_complete"],
+	},
 }
 
 
@@ -254,8 +312,72 @@ func is_available(id: String) -> bool:
 	return _is_unlocked(id) and not _is_viewed(id)
 
 
+## Tick 254: centralized helper for ratcheting one-shot event flags.
+## Idempotent: if the flag is already set, returns "" without re-emitting
+## signals. If the flag is new AND its setting makes a registry entry
+## available, emits event_chat_unlocked(chat_id, title) so a UI handler
+## can surface a toast.
+##
+## Returns the chat_id that just unlocked (or "" if none, e.g. flag set
+## but no chat depends on it).
+##
+## Pre-tick-254 every ratchet site did:
+##   if GameState and "game_constants" in GameState \
+##           and not GameState.game_constants.get(flag, false):
+##       GameState.game_constants[flag] = true
+## across 8 sites — copy-paste, easy to drift, no signal hook.
+func fire_event_flag(flag: String) -> String:
+	if not _flags_reachable():
+		# No GameState reachable — common in headless test paths without
+		# the autoload. Caller's flag was never persistent; quietly no-op.
+		return ""
+	var flags := _flags()
+	if flags.get(flag, false):
+		return ""
+	flags[flag] = true
+	# Walk the registry — does this flag unlock any previously-locked
+	# entry? An entry can have multiple unlock flags; only count as
+	# "unlocked NOW" if the entry references THIS flag AND every other
+	# required flag was already set.
+	for id in REGISTRY.keys():
+		var entry: Dictionary = REGISTRY[id]
+		var unlock: Array = entry.get("unlock", [])
+		if not (flag in unlock):
+			continue
+		if _is_viewed(id):
+			continue
+		var all_other_set := true
+		for f in unlock:
+			if str(f) == flag:
+				continue
+			if not flags.get(f, false):
+				all_other_set = false
+				break
+		if all_other_set:
+			var title: String = str(entry.get("title", id))
+			event_chat_unlocked.emit(str(id), title)
+			chats_changed.emit()
+			return str(id)
+	return ""
+
+
 func mark_viewed(id: String) -> void:
+	# Tick 246: surface silent-skip when caller passes an unregistered id
+	# (typo, dropped registry entry, stale cutscene reference). Silent
+	# skip was protective but masked the bug class where a UI menu
+	# fires mark_viewed and the chat stays "available" forever because
+	# the write was a no-op.
 	if not REGISTRY.has(id):
+		push_warning("[PartyChatSystem] mark_viewed('%s') — id not in REGISTRY (typo? dropped entry?). Skipped — chat will remain in 'available' state if it was unlocked." % id)
+		return
+	# Tick 255: same silent-fail class fire_event_flag had at tick 254.
+	# When _flags() falls back to a throwaway {} (no GameState wired),
+	# the write here is dropped on the floor and the chat would stay
+	# "available" forever in headless tests / debug paths. Skip-with-
+	# warning is the safer behavior — the caller's UI would otherwise
+	# think the viewed-state landed.
+	if not _flags_reachable():
+		push_warning("[PartyChatSystem] mark_viewed('%s') — no GameState reachable; viewed-state not persisted" % id)
 		return
 	_flags()["party_chat_viewed_" + id] = true
 	chats_changed.emit()
@@ -285,3 +407,14 @@ func _flags() -> Dictionary:
 	if root is SceneTree and root.root.has_node("GameState"):
 		return root.root.get_node("GameState").game_constants
 	return {}
+
+
+# Tick 254: distinguishes "no GameState wired" from "GameState present
+# with empty game_constants". fire_event_flag needs to no-op only in
+# the former case; the latter is the common pre-tick-1 state where
+# the first ratchet should write its first flag.
+func _flags_reachable() -> bool:
+	if game_state_override:
+		return true
+	var root := Engine.get_main_loop()
+	return root is SceneTree and root.root.has_node("GameState")

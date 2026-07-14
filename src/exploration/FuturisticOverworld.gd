@@ -116,6 +116,8 @@ func _ready() -> void:
 	monster_spawner = MonsterSpawner.new()
 	monster_spawner.name = "MonsterSpawner"
 	add_child(monster_spawner)
+	monster_spawner.set_map_size(MAP_WIDTH, MAP_HEIGHT)
+	monster_spawner.monster_touched.connect(_on_roaming_monster_touched)
 	monster_spawner.setup(player, ["memory_leak", "rogue_process", "recursive_loop", "data_wraith", "firewall_sentinel"])
 
 	_threat_meter = ThreatMeter.new()
@@ -136,7 +138,7 @@ func _ready() -> void:
 
 
 func _get_objective_position() -> Vector2:
-	if GameState.get_story_flag("w5_boss_defeated"):
+	if GameState.game_constants.get("cutscene_flag_arbiter_futuristic_defeated", false):
 		return spawn_points.get("server_farm", Vector2.ZERO)
 	if GameState.get_story_flag("visited_node_prime"):
 		return spawn_points.get("server_farm", Vector2.ZERO)
@@ -241,7 +243,7 @@ func _place_wanderers() -> void:
 			"path": [Vector2(20, 15), Vector2(25, 15), Vector2(25, 20), Vector2(20, 20)],
 			"hints": [
 				{"flag": "w5_entered", "text": "Node Prime is east. The core processes run there. Don't benchmark them."},
-				{"flag": "w5_boss_defeated", "text": "The Source Layer is dissolving. Something beyond the code... the Remainder."},
+				{"flag": "arbiter_futuristic_defeated", "text": "The Source Layer is dissolving. Something beyond the code... the Remainder."},
 			],
 		},
 		{
@@ -251,7 +253,7 @@ func _place_wanderers() -> void:
 			"path": [Vector2(35, 30), Vector2(40, 30), Vector2(40, 35), Vector2(35, 35)],
 			"hints": [
 				{"flag": "w5_entered", "text": "The Masterites built all of this. Or compiled it. Same thing here."},
-				{"flag": "w5_boss_defeated", "text": "Beyond the code there's... nothing? Everything? I can't parse it."},
+				{"flag": "arbiter_futuristic_defeated", "text": "Beyond the code there's... nothing? Everything? I can't parse it."},
 			],
 		},
 	]
@@ -530,7 +532,7 @@ func _setup_transitions() -> void:
 	transitions.add_child(back_portal)
 
 	# Forward portal to W6 Abstract (gated on world unlock)
-	if GameState.is_world_unlocked(6) or GameState.get_story_flag("w5_boss_defeated"):
+	if GameState.is_world_unlocked(6) or GameState.game_constants.get("cutscene_flag_arbiter_futuristic_defeated", false):
 		var forward_portal = AreaTransitionScript.new()
 		forward_portal.name = "WorldPortal"
 		forward_portal.target_map = "abstract_overworld"
@@ -694,7 +696,7 @@ func _setup_controller() -> void:
 	controller = OverworldControllerScript.new()
 	controller.name = "Controller"
 	controller.player = player
-	controller.encounter_enabled = true
+	controller.encounter_enabled = false  # Roaming monsters handle encounters, not step-based random
 	controller.current_area_id = "futuristic_overworld"
 
 	# W5 Digital encounters — data-themed, avg lv 12 (big jump from W4)
@@ -719,6 +721,15 @@ func _on_transition_triggered(target_map: String, spawn_point: String) -> void:
 
 func _on_battle_triggered(enemies: Array) -> void:
 	battle_triggered.emit(enemies, "digital")
+
+
+## Tick 86: see SuburbanOverworld._on_roaming_monster_touched for rationale.
+func _on_roaming_monster_touched(monster_id: String, _monster_types: Array) -> void:
+	var enemies: Array = [monster_id]
+	var extra: int = randi_range(0, 2)
+	for _i in range(extra):
+		enemies.append(monster_id)
+	_on_battle_triggered(enemies)
 
 
 func _on_menu_requested() -> void:
@@ -763,15 +774,17 @@ func _create_map_boundaries() -> void:
 	var map_w = MAP_WIDTH * TILE_SIZE
 	var map_h = MAP_HEIGHT * TILE_SIZE
 	var wall_thickness = 32.0
+	# Playtest 2026-07-11: flush walls let the sprite clip past the Mode 7 render edge — stop one tile inside (tunable).
+	var edge_inset = float(TILE_SIZE)
 
 	# Top wall
-	_add_boundary_wall(bounds, Vector2(map_w / 2, -wall_thickness / 2), Vector2(map_w + wall_thickness * 2, wall_thickness))
+	_add_boundary_wall(bounds, Vector2(map_w / 2, edge_inset - wall_thickness / 2), Vector2(map_w + wall_thickness * 2, wall_thickness))
 	# Bottom wall
-	_add_boundary_wall(bounds, Vector2(map_w / 2, map_h + wall_thickness / 2), Vector2(map_w + wall_thickness * 2, wall_thickness))
+	_add_boundary_wall(bounds, Vector2(map_w / 2, map_h - edge_inset + wall_thickness / 2), Vector2(map_w + wall_thickness * 2, wall_thickness))
 	# Left wall
-	_add_boundary_wall(bounds, Vector2(-wall_thickness / 2, map_h / 2), Vector2(wall_thickness, map_h + wall_thickness * 2))
+	_add_boundary_wall(bounds, Vector2(edge_inset - wall_thickness / 2, map_h / 2), Vector2(wall_thickness, map_h + wall_thickness * 2))
 	# Right wall
-	_add_boundary_wall(bounds, Vector2(map_w + wall_thickness / 2, map_h / 2), Vector2(wall_thickness, map_h + wall_thickness * 2))
+	_add_boundary_wall(bounds, Vector2(map_w - edge_inset + wall_thickness / 2, map_h / 2), Vector2(wall_thickness, map_h + wall_thickness * 2))
 
 
 func _add_boundary_wall(parent: StaticBody2D, pos: Vector2, size: Vector2) -> void:

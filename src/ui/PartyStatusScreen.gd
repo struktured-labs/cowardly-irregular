@@ -64,7 +64,7 @@ func _build_ui() -> void:
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.position = Vector2(0, 14)
 	title.size = Vector2(vp.x, 24)
-	title.add_theme_font_size_override("font_size", 20)
+	title.add_theme_font_size_override("font_size", TextScale.scaled(20))
 	title.add_theme_color_override("font_color", TEXT)
 	add_child(title)
 
@@ -83,7 +83,7 @@ func _build_ui() -> void:
 	gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	gold_label.position = Vector2(vp.x - 200, 18)
 	gold_label.size = Vector2(180, 20)
-	gold_label.add_theme_font_size_override("font_size", 14)
+	gold_label.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	gold_label.add_theme_color_override("font_color", Color(0.95, 0.85, 0.45))
 	add_child(gold_label)
 
@@ -117,7 +117,7 @@ func _build_ui() -> void:
 	footer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	footer.position = Vector2(0, vp.y - 28)
 	footer.size = Vector2(vp.x, 18)
-	footer.add_theme_font_size_override("font_size", 11)
+	footer.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	footer.add_theme_color_override("font_color", MUTED)
 	add_child(footer)
 
@@ -144,7 +144,7 @@ func _build_card(member, w: float, h: float, index: int) -> Control:
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	name_label.position = Vector2(0, 6)
 	name_label.size = Vector2(w, 18)
-	name_label.add_theme_font_size_override("font_size", 14)
+	name_label.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	name_label.add_theme_color_override("font_color", TEXT)
 	card.add_child(name_label)
 
@@ -156,7 +156,7 @@ func _build_card(member, w: float, h: float, index: int) -> Control:
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	sub.position = Vector2(0, 26)
 	sub.size = Vector2(w, 16)
-	sub.add_theme_font_size_override("font_size", 11)
+	sub.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	sub.add_theme_color_override("font_color", LABEL)
 	card.add_child(sub)
 
@@ -187,7 +187,7 @@ func _build_card(member, w: float, h: float, index: int) -> Control:
 	]
 	stats.position = Vector2(12, 124)
 	stats.size = Vector2(w - 24, 40)
-	stats.add_theme_font_size_override("font_size", 11)
+	stats.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	stats.add_theme_color_override("font_color", TEXT)
 	card.add_child(stats)
 
@@ -209,7 +209,7 @@ func _build_card(member, w: float, h: float, index: int) -> Control:
 		badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		badge.position = Vector2(w - 50, 4)
 		badge.size = Vector2(46, 14)
-		badge.add_theme_font_size_override("font_size", 9)
+		badge.add_theme_font_size_override("font_size", TextScale.scaled(9))
 		badge.add_theme_color_override("font_color", AUTO_BADGE_TEXT)
 		card.add_child(badge)
 
@@ -245,7 +245,7 @@ func _add_bar(parent: Control, x: float, y: float, w: float, h: float, cur: int,
 	txt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	txt.position = Vector2(x, y - 2)
 	txt.size = Vector2(w, h + 4)
-	txt.add_theme_font_size_override("font_size", 10)
+	txt.add_theme_font_size_override("font_size", TextScale.scaled(10))
 	txt.add_theme_color_override("font_color", TEXT)
 	parent.add_child(txt)
 
@@ -255,7 +255,11 @@ func _rebuild_detail() -> void:
 		return
 	for child in _detail_panel.get_children():
 		child.queue_free()
-	if focused_index >= party.size():
+	# Defense in depth — the _input nav guards already keep focused_index in
+	# [0, party.size()), but a future input path or a setup() race could
+	# leave it negative. Guard both directions so party[focused_index]
+	# below can't blow up on `party[-1]`.
+	if focused_index < 0 or focused_index >= party.size():
 		return
 	var member = party[focused_index]
 
@@ -276,7 +280,7 @@ func _build_equipment_column(member, x: float, y: float, w: float, h: float) -> 
 	var section_title := Label.new()
 	section_title.text = "EQUIPMENT"
 	section_title.position = Vector2(x, y)
-	section_title.add_theme_font_size_override("font_size", 14)
+	section_title.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	section_title.add_theme_color_override("font_color", LABEL)
 	_detail_panel.add_child(section_title)
 
@@ -292,7 +296,7 @@ func _add_equipment_row(slot_label: String, item_id: String, color: Color, x: fl
 	var slot := Label.new()
 	slot.text = slot_label
 	slot.position = Vector2(x, y)
-	slot.add_theme_font_size_override("font_size", 11)
+	slot.add_theme_font_size_override("font_size", TextScale.scaled(11))
 	slot.add_theme_color_override("font_color", MUTED)
 	_detail_panel.add_child(slot)
 
@@ -300,13 +304,14 @@ func _add_equipment_row(slot_label: String, item_id: String, color: Color, x: fl
 	var item_desc := ""
 	if item_id != "":
 		var info := _resolve_equipment(item_id)
-		item_name = info.get("name", item_id)
+		# Tick 141/204: prettify fallback through _format_id so multi-word ids ("iron_sword" → "Iron Sword") proper-case correctly.
+		item_name = info.get("name", _format_id(item_id))
 		item_desc = info.get("description", "")
 
 	var name_label := Label.new()
 	name_label.text = item_name
 	name_label.position = Vector2(x, y + 14)
-	name_label.add_theme_font_size_override("font_size", 14)
+	name_label.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	name_label.add_theme_color_override("font_color", color)
 	_detail_panel.add_child(name_label)
 
@@ -316,7 +321,7 @@ func _add_equipment_row(slot_label: String, item_id: String, color: Color, x: fl
 		desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		desc.position = Vector2(x, y + 32)
 		desc.size = Vector2(w, 30)
-		desc.add_theme_font_size_override("font_size", 10)
+		desc.add_theme_font_size_override("font_size", TextScale.scaled(10))
 		desc.add_theme_color_override("font_color", MUTED)
 		_detail_panel.add_child(desc)
 
@@ -332,7 +337,7 @@ func _build_abilities_column(member, x: float, y: float, w: float, h: float) -> 
 	var header := Label.new()
 	header.text = "ABILITIES"
 	header.position = Vector2(x, y)
-	header.add_theme_font_size_override("font_size", 14)
+	header.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	header.add_theme_color_override("font_color", LABEL)
 	_detail_panel.add_child(header)
 
@@ -341,17 +346,17 @@ func _build_abilities_column(member, x: float, y: float, w: float, h: float) -> 
 		var none := Label.new()
 		none.text = "— None learned —"
 		none.position = Vector2(x, cy)
-		none.add_theme_font_size_override("font_size", 11)
+		none.add_theme_font_size_override("font_size", TextScale.scaled(11))
 		none.add_theme_color_override("font_color", MUTED)
 		_detail_panel.add_child(none)
 		cy += 20
 	else:
 		for ability_id in abilities:
 			var row := Label.new()
-			row.text = "• " + _format_id(str(ability_id))
+			row.text = "• " + _resolve_ability_name(str(ability_id))
 			row.position = Vector2(x, cy)
 			row.size = Vector2(w, 16)
-			row.add_theme_font_size_override("font_size", 12)
+			row.add_theme_font_size_override("font_size", TextScale.scaled(12))
 			row.add_theme_color_override("font_color", TEXT)
 			_detail_panel.add_child(row)
 			cy += 18
@@ -362,7 +367,7 @@ func _build_abilities_column(member, x: float, y: float, w: float, h: float) -> 
 	var passives_header := Label.new()
 	passives_header.text = "PASSIVES"
 	passives_header.position = Vector2(x, y + h * 0.5)
-	passives_header.add_theme_font_size_override("font_size", 14)
+	passives_header.add_theme_font_size_override("font_size", TextScale.scaled(14))
 	passives_header.add_theme_color_override("font_color", LABEL)
 	_detail_panel.add_child(passives_header)
 
@@ -371,16 +376,16 @@ func _build_abilities_column(member, x: float, y: float, w: float, h: float) -> 
 		var none_p := Label.new()
 		none_p.text = "— None equipped —"
 		none_p.position = Vector2(x, cy)
-		none_p.add_theme_font_size_override("font_size", 11)
+		none_p.add_theme_font_size_override("font_size", TextScale.scaled(11))
 		none_p.add_theme_color_override("font_color", MUTED)
 		_detail_panel.add_child(none_p)
 	else:
 		for passive_id in passives:
 			var row := Label.new()
-			row.text = "◦ " + _format_id(str(passive_id))
+			row.text = "◦ " + _resolve_passive_name(str(passive_id))
 			row.position = Vector2(x, cy)
 			row.size = Vector2(w, 16)
-			row.add_theme_font_size_override("font_size", 12)
+			row.add_theme_font_size_override("font_size", TextScale.scaled(12))
 			row.add_theme_color_override("font_color", TEXT)
 			_detail_panel.add_child(row)
 			cy += 18
@@ -389,12 +394,19 @@ func _build_abilities_column(member, x: float, y: float, w: float, h: float) -> 
 
 
 func _job_label(member) -> String:
+	# Tick 207: cascade name → prettified id → "(no job)". Pre-fix the bare "Job" fallback looked like a UI label, not a value, so a briefly-unassigned or data-drifted combatant rendered as the literal word "Job" in their card.
 	if "job" in member and member.job != null:
-		if member.job is Dictionary and member.job.has("name"):
-			return str(member.job["name"])
-		if member.job is Object and "name" in member.job:
-			return str(member.job.name)
-	return "Job"
+		if member.job is Dictionary:
+			if member.job.has("name") and str(member.job["name"]) != "":
+				return str(member.job["name"])
+			if member.job.has("id") and str(member.job["id"]) != "":
+				return _format_id(str(member.job["id"]))
+		elif member.job is Object:
+			if "name" in member.job and str(member.job.name) != "":
+				return str(member.job.name)
+			if "id" in member.job and str(member.job.id) != "":
+				return _format_id(str(member.job.id))
+	return "(no job)"
 
 
 func _get_level(member) -> int:
@@ -406,13 +418,51 @@ func _get_level(member) -> int:
 
 
 func _format_id(id: String) -> String:
-	return id.replace("_", " ").capitalize()
+	# Tick 204: proper multi-word title-case — String.capitalize() only uppercases the first letter (tick 186 finding). "power_strike" → "Power Strike" not "Power strike".
+	if id == "":
+		return ""
+	var parts: PackedStringArray = id.split("_")
+	for i in parts.size():
+		if parts[i].length() == 0:
+			continue
+		parts[i] = parts[i][0].to_upper() + parts[i].substr(1).to_lower()
+	return " ".join(parts)
+
+
+## Tick 136: prefer canonical names from JobSystem/PassiveSystem
+## over the raw prettifier for the abilities + passives lists.
+## Pre-fix the party status menu rendered "Power strike" instead
+## of "Power Strike" (data/abilities.json), and every passive id
+## got prettified instead of resolving its designer-set name.
+## High-visibility: party menu opens multiple times per session.
+func _resolve_ability_name(ability_id: String) -> String:
+	if ability_id == "":
+		return ""
+	var js: Node = get_node_or_null("/root/JobSystem")
+	if js != null and js.has_method("get_ability"):
+		var data: Dictionary = js.get_ability(ability_id)
+		if not data.is_empty() and data.has("name"):
+			return str(data["name"])
+	return _format_id(ability_id)
+
+
+func _resolve_passive_name(passive_id: String) -> String:
+	if passive_id == "":
+		return ""
+	var ps: Node = get_node_or_null("/root/PassiveSystem")
+	if ps != null and ps.has_method("get_passive"):
+		var data: Dictionary = ps.get_passive(passive_id)
+		if not data.is_empty() and data.has("name"):
+			return str(data["name"])
+	return _format_id(passive_id)
 
 
 func _resolve_equipment(item_id: String) -> Dictionary:
 	## Best-effort lookup: try EquipmentSystem, then item data files.
-	if Engine.has_singleton("EquipmentSystem"):
-		var eq = Engine.get_singleton("EquipmentSystem")
+	# Engine.has_singleton("EquipmentSystem") is ALWAYS FALSE for autoloads in
+	# Godot 4 — fetch the autoload via the scene tree root.
+	var eq: Node = get_node_or_null("/root/EquipmentSystem")
+	if eq != null:
 		for method in ["get_item", "get_weapon", "get_armor", "get_accessory"]:
 			if eq.has_method(method):
 				var data = eq.call(method, item_id)
@@ -446,7 +496,16 @@ func _on_card_hover(index: int) -> void:
 func _input(event: InputEvent) -> void:
 	if not visible:
 		return
+	# Nav guards: party.size() can be 0 if the screen opens against a freshly
+	# wiped state (test path, mid-load race). max(0, focused_index - 1) is
+	# safe on its own, but `min(party.size() - 1, …)` is NOT — empty party
+	# means min(-1, focused_index + 1) → -1 → _rebuild_detail's
+	# `if focused_index >= party.size()` guard misses (-1 < 0) and
+	# `party[-1]` crashes. Gate both nav paths on a non-empty party.
 	if event.is_action_pressed("ui_left") and not event.is_echo():
+		if party.size() == 0:
+			get_viewport().set_input_as_handled()
+			return
 		focused_index = max(0, focused_index - 1)
 		_update_focus()
 		_rebuild_detail()
@@ -454,6 +513,9 @@ func _input(event: InputEvent) -> void:
 			SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_right") and not event.is_echo():
+		if party.size() == 0:
+			get_viewport().set_input_as_handled()
+			return
 		focused_index = min(party.size() - 1, focused_index + 1)
 		_update_focus()
 		_rebuild_detail()

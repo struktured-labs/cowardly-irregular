@@ -11,6 +11,9 @@ var _scene  # Reference to parent BattleScene (untyped to avoid circular depende
 ## Cached alive enemies list per selection turn to avoid recomputation
 var _cached_alive_enemies: Array[Combatant] = []
 var _alive_enemies_cache_valid: bool = false
+static var _spotlight_logged: Dictionary = {}
+## Last reason show_win98_command_menu silent-returned (cowir-main msg 2400 diag).
+var last_silent_return_reason: String = ""
 
 
 func _init(scene) -> void:
@@ -39,23 +42,44 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 	# Close any existing menu
 	close_win98_menu()
 
-	# Spotlight gate: locked PCs route through autobattle (BattleManager
-	# handles this in _process_next_selection), but if a manual-control
-	# path slips through, suppress the menu so the player can't issue
-	# orders to a PC they haven't unlocked yet. Debug override wins.
+	# Spotlight gate: locked PCs route through autobattle. Debug override wins.
+	# Solo-player_party override mirrors BattleManager._process_next_selection (msg 2372/2376): a duelist inside their own spotlight duel plays their turn.
 	if "autobattle_locked" in combatant and combatant.autobattle_locked:
 		var debug_override = GameState and "debug_all_pcs_unlocked" in GameState and GameState.debug_all_pcs_unlocked
-		if not debug_override:
+		# Their OWN duel is the one place a locked PC plays manually: routing (BattleManager) already overrides for solo duels, but this independent gate still refused the menu — watchdog looped 'Menu recovery' forever and the duel was unplayable (struktured cap 2026-07-11).
+		var own_solo_duel: bool = BattleManager.player_party.size() == 1 and combatant in BattleManager.player_party
+		if not debug_override and not own_solo_duel:
+			# Item 17 UX polish: user playtest report said "the game defaults
+			# to autobattle for all" — actually spotlight-lock forcing autobattle
+			# on 4/5 non-Fighter PCs is the design (msg 1950). Fire a first-
+			# battle explainer so a new player sees WHY, not just watches turns
+			# auto-resolve. TutorialHints.show dedupes per hint id per session.
+			# BattleCommandMenu extends RefCounted so no get_tree — reach through
+			# _scene (BattleScene) which is the natural hint host anyway.
+			if _scene and is_instance_valid(_scene):
+				TutorialHints.show(_scene, "spotlight_locked_intro")
+			last_silent_return_reason = "spotlight_locked"
+			if not _spotlight_logged.has(combatant.combatant_name):
+				_spotlight_logged[combatant.combatant_name] = true
+				print("[CMD-MENU] silent-return: spotlight-locked %s (debug_all_pcs_unlocked=%s)" % [combatant.combatant_name, str(GameState.debug_all_pcs_unlocked if GameState else "no-GS")])
 			return
 
-	# Get character's sprite position (use BattleManager.player_party for correct object identity)
+	# Get character's sprite position (use BattleManager.player_party for correct object identity).
 	var combatant_idx = BattleManager.player_party.find(combatant)
 	if combatant_idx < 0 or combatant_idx >= _scene.party_sprite_nodes.size():
+		last_silent_return_reason = "combatant_idx_out_of_range(idx=%d, party=%d, sprites=%d)" % [combatant_idx, BattleManager.player_party.size(), _scene.party_sprite_nodes.size()]
+		push_warning("[CMD-MENU] silent-return: %s not found in player_party (idx=%d, party_size=%d, sprite_nodes=%d)" % [combatant.combatant_name, combatant_idx, BattleManager.player_party.size(), _scene.party_sprite_nodes.size()])
 		return
 
 	var sprite = _scene.party_sprite_nodes[combatant_idx]
 	if not is_instance_valid(sprite):
+		last_silent_return_reason = "sprite_invalid(idx=%d)" % combatant_idx
+		push_warning("[CMD-MENU] silent-return: %s sprite invalid at idx %d" % [combatant.combatant_name, combatant_idx])
 		return
+
+	last_silent_return_reason = ""
+	# msg 2503 diagnostic — pin the exact moment a menu is added to the tree so subsequent [MENU-NULL] / [MENU-HIDE] tags correlate against a known spawn.
+	print("[MENU-SPAWN] t=%dms combatant=%s pre-close-then-rebuild=OK" % [Time.get_ticks_msec(), combatant.combatant_name])
 
 	var viewport_size = _scene.get_viewport_rect().size
 
@@ -86,9 +110,9 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 	_scene.add_child(_scene.active_win98_menu)
 	_scene.active_win98_menu.setup(combatant.combatant_name, menu_items, menu_pos, job_id)
 
-	# Connect signals
+	# Connect signals — bind THIS menu instance to _on_win98_menu_closed so the handler can identity-guard the null-write. Root cause of msg 2503 two-menus bug (repro cap timeline named it, msg 2529): actions_submitted returns → BM dispatches turn end → next PC's menu spawns → control returns to _submit_actions:1230 → force_close(old menu) → menu_closed fires → handler blindly null'd active_win98_menu which by then was the NEW menu, orphaning it and triggering watchdog respawn on top.
 	_scene.active_win98_menu.item_selected.connect(_on_win98_menu_selection)
-	_scene.active_win98_menu.menu_closed.connect(_on_win98_menu_closed)
+	_scene.active_win98_menu.menu_closed.connect(_on_win98_menu_closed.bind(_scene.active_win98_menu))
 	_scene.active_win98_menu.actions_submitted.connect(_on_win98_actions_submitted)
 	_scene.active_win98_menu.defer_requested.connect(_on_win98_defer_requested)
 	_scene.active_win98_menu.go_back_requested.connect(_on_win98_go_back_requested)
@@ -150,14 +174,14 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 		"label": "Auto Rules",
 		"data": {"action": "autobattle_edit", "combatant": combatant}
 	})
-	# Trust — per-PC delegation. Toggling ON sets autobattle_locked=true so
-	# the PC's stock script handles every future turn (not just this one,
-	# like Auto). User vocabulary from playtest 2026-06-04: "I thought
-	# 'Trust' was the menu option to make the character act autonomously."
-	# The menu only opens for unlocked PCs, so this toggle is one-way
-	# (untrust requires the Debug: Unlock All Party Settings toggle until
-	# the BDFFHD bottom HUD strip ships a persistent surface).
-	var trust_label: String = "Trust: ON" if combatant.autobattle_locked else "Trust: OFF"
+	# Trust — per-PC delegation. Toggling ON sets player_trust=true so the
+	# PC's stock script handles every future turn (not just this one, like
+	# Auto). Kept SEPARATE from autobattle_locked (spotlight) so the story
+	# reconciler can't wipe a player-set trust on cutscene completion or
+	# save-load. Off-surface for setting = this menu. Off-surface for
+	# CLEARING (queue #4): Settings → Party Trust per-PC row (added same
+	# ticket) so the toggle isn't one-way once ON.
+	var trust_label: String = "Trust: ON" if combatant.player_trust else "Trust: OFF"
 	items.append({
 		"id": "trust_toggle",
 		"label": trust_label,
@@ -216,21 +240,26 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 			var quantity = combatant.inventory[item_id]
 			var target_type = item.get("target_type", ItemSystem.TargetType.SINGLE_ALLY)
 
-			# For SINGLE_ALLY items, add party member target submenu
+			# For SINGLE_ALLY items, add party member target submenu.
+			# Items with effects.revive (Phoenix Down) include KO'd allies — otherwise a revive item silently drops its whole target list. Struktured playtest 2026-07-13.
 			if target_type == ItemSystem.TargetType.SINGLE_ALLY:
+				var can_target_dead: bool = bool(item.get("effects", {}).get("revive", false))
 				var ally_targets = []
 				for i in range(_scene.party_members.size()):
 					var member = _scene.party_members[i]
-					if not is_instance_valid(member) or not member.is_alive:
+					if not is_instance_valid(member):
+						continue
+					if not member.is_alive and not can_target_dead:
 						continue
 					var target_pos = Vector2.ZERO
 					if i < _scene.party_sprite_nodes.size():
 						var s = _scene.party_sprite_nodes[i]
 						if is_instance_valid(s):
 							target_pos = canvas_transform * s.global_position
+					var hp_label: String = "KO'd" if not member.is_alive else "%d/%d HP" % [member.current_hp, member.max_hp]
 					ally_targets.append({
 						"id": "item_" + item_id + "_ally_" + str(i),
-						"label": "%s (%d/%d HP)" % [member.combatant_name, member.current_hp, member.max_hp],
+						"label": "%s (%s)" % [member.combatant_name, hp_label],
 						"data": {"item_id": item_id, "target_idx": i, "target_type": "ally", "target_pos": target_pos}
 					})
 				if ally_targets.size() > 0:
@@ -376,6 +405,66 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 			"submenu": scan_targets
 		})
 
+	# Wave E — 'Address' command. Gated on the active boss having an entry
+	# in data/boss_dialogue.json. Opens a verb-picker submenu; selecting a
+	# verb sends a deterministic directive_text to BossDialogue. Mock-class
+	# verbs can BACKFIRE — by design (see jailbreak_vulnerabilities).
+	var boss_dlg = combatant.get_tree().root.get_node_or_null("BossDialogue") if combatant.is_inside_tree() else null
+	if boss_dlg and alive_enemies.size() > 0:
+		var address_targets: Array = []
+		for enemy in alive_enemies:
+			var persona_id: String = enemy.get_meta("llm_persona_id", "")
+			if persona_id == "":
+				persona_id = enemy.get_meta("monster_type", "")
+			if persona_id == "" or not boss_dlg.has_entry(persona_id):
+				continue
+			var verbs = boss_dlg.get_verbs(persona_id)
+			if not (verbs is Array) or verbs.size() == 0:
+				continue
+			var enemy_idx = _scene.test_enemies.find(enemy)
+			var verb_items: Array = []
+			for v in verbs:
+				if not (v is Dictionary):
+					continue
+				var verb_id: String = str(v.get("id", ""))
+				var verb_label: String = str(v.get("label", verb_id.capitalize()))
+				var directive: String = str(v.get("directive", ""))
+				if verb_id == "" or directive == "":
+					continue
+				verb_items.append({
+					"id": "address_" + str(enemy_idx) + "_" + verb_id,
+					"label": verb_label,
+					"data": {
+						"action": "address",
+						"target_idx": enemy_idx,
+						"persona_id": persona_id,
+						"directive": directive,
+					}
+				})
+			if verb_items.size() > 0:
+				if alive_enemies.size() == 1:
+					# Single eligible boss — surface verbs as the submenu.
+					items.append({
+						"id": "address_menu",
+						"label": "Address",
+						"tooltip": "Speak a directive at the boss. Some land — some BACKFIRE.",
+						"submenu": verb_items,
+					})
+					break
+				else:
+					address_targets.append({
+						"id": "address_target_" + str(enemy_idx),
+						"label": enemy.combatant_name,
+						"submenu": verb_items,
+					})
+		if address_targets.size() > 0:
+			items.append({
+				"id": "address_menu",
+				"label": "Address",
+				"tooltip": "Speak a directive at the boss. Some land — some BACKFIRE.",
+				"submenu": address_targets,
+			})
+
 	# Defer - skip turn, gain +1 AP (only available if AP < 4 and not exposed)
 	items.append({
 		"id": "defer",
@@ -385,6 +474,29 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 	})
 
 	return items
+
+
+## " [KILL]" when the estimated hit meets or exceeds the target's current HP —
+## the highest-value targeting cue (finish this enemy). Empty otherwise. The
+## estimate is approximate (note the "~"), but est >= HP is the honest lethal
+## signal; immune targets estimate 0 dmg so they never earn the tag.
+func _lethal_tag(est_dmg: int, current_hp: int) -> String:
+	return " [KILL]" if current_hp > 0 and est_dmg >= current_hp else ""
+
+
+## Whether an ability actually deals HP damage, so the enemy-target submenu only
+## shows a "~N dmg" estimate where it means something. physical/magic damage by
+## definition; other types (support debuffs, steal, scan) deal none unless they
+## carry an explicit positive damage figure (some summon/meta abilities do).
+func _ability_deals_damage(ability: Dictionary) -> bool:
+	var t: String = str(ability.get("type", ""))
+	if t == "physical" or t == "magic":
+		return true
+	for key in ["power", "damage", "damage_multiplier"]:
+		var v = ability.get(key)
+		if v != null and float(v) > 0.0:
+			return true
+	return false
 
 
 func _build_ability_menu_item(ability_id: String, combatant: Combatant, alive_enemies: Array[Combatant], canvas_transform: Transform2D) -> Dictionary:
@@ -399,6 +511,10 @@ func _build_ability_menu_item(ability_id: String, combatant: Combatant, alive_en
 
 	var ability_desc: String = ability.get("description", "")
 	var ability_tooltip: String = ability_desc if ability_desc != "" else "MP: %d" % mp_cost
+	# Surface the element so it pairs with the enemy panel's "Weak: Fire" intel.
+	var element_val = ability.get("element")
+	if element_val != null and str(element_val).to_lower() != "none" and str(element_val) != "":
+		ability_tooltip = "%s · %s" % [str(element_val).capitalize(), ability_tooltip]
 
 	# Single-enemy targeting: build per-enemy submenu with damage estimates
 	if target_type == "single_enemy" and alive_enemies.size() > 0 and can_afford:
@@ -410,10 +526,15 @@ func _build_ability_menu_item(ability_id: String, combatant: Combatant, alive_en
 				var s = _scene.enemy_sprite_nodes[enemy_idx]
 				if is_instance_valid(s):
 					target_pos = canvas_transform * s.global_position
-			var est_ability_dmg: int = BattleManager.estimate_ability_damage(combatant, enemy, ability)
+			# Only damaging abilities get a "~N dmg" (and [KILL]) readout — a
+			# debuff/steal/scan deals 0, so the estimate would be a bogus number.
+			var enemy_label: String = "%s (%d HP)" % [enemy.combatant_name, enemy.current_hp]
+			if _ability_deals_damage(ability):
+				var est_ability_dmg: int = BattleManager.estimate_ability_damage(combatant, enemy, ability)
+				enemy_label += " ~%d dmg%s" % [est_ability_dmg, _lethal_tag(est_ability_dmg, enemy.current_hp)]
 			enemy_targets.append({
 				"id": "ability_" + ability_id + "_enemy_" + str(enemy_idx),
-				"label": "%s (%d HP) ~%d dmg" % [enemy.combatant_name, enemy.current_hp, est_ability_dmg],
+				"label": enemy_label,
 				"data": {"ability_id": ability_id, "target_idx": enemy_idx, "target_type": "enemy", "target_pos": target_pos}
 			})
 		return {
@@ -542,9 +663,10 @@ func _build_free_move_item(combatant: Combatant, alive_enemies: Array[Combatant]
 		var item = _build_ability_menu_item(ability_id, combatant, alive_enemies, canvas_transform)
 		if item.is_empty():
 			return {}
-		# Override the label so the per-job free move uses its canon name
-		# (e.g. "Channel" instead of the ability's standard name).
-		item["label"] = label
+		# Tick 192: append compact hint (effect+scope) so flavor names like "Riff" hint at what they do.
+		var ability_data: Dictionary = JobSystem.get_ability(ability_id) if JobSystem else {}
+		var hint: String = _free_move_hint(ability_data)
+		item["label"] = ("%s (%s)" % [label, hint]) if hint != "" else label
 		return item
 
 	# Default: basic_attack (Fighter/Rogue path — same data shape as legacy "Attack")
@@ -566,7 +688,7 @@ func _build_free_move_item(combatant: Combatant, alive_enemies: Array[Combatant]
 		var est_dmg: int = BattleManager.estimate_attack_damage(combatant, enemy)
 		enemy_targets.append({
 			"id": "attack_" + str(enemy_idx),
-			"label": "%s (%d HP) ~%d dmg" % [enemy.combatant_name, enemy.current_hp, est_dmg],
+			"label": "%s (%d HP) ~%d dmg%s" % [enemy.combatant_name, enemy.current_hp, est_dmg, _lethal_tag(est_dmg, enemy.current_hp)],
 			"data": {"target_idx": enemy_idx, "action": "attack", "target_pos": target_pos}
 		})
 	return {
@@ -574,6 +696,29 @@ func _build_free_move_item(combatant: Combatant, alive_enemies: Array[Combatant]
 		"label": label,
 		"submenu": enemy_targets
 	}
+
+
+# Tick 192: derive a compact effect+scope hint from ability data so per-job Free Move labels self-document. Returns "" for unknown shapes (label stays bare).
+func _free_move_hint(ability: Dictionary) -> String:
+	if ability.is_empty():
+		return ""
+	var symbol: String = ""
+	match str(ability.get("type", "")):
+		"mp_restore":
+			symbol = "MP+"
+		"heal":
+			symbol = "HP+"
+		_:
+			return ""
+	match str(ability.get("target_type", "")):
+		"self":
+			return "%s self" % symbol
+		"single_ally":
+			return "%s ally" % symbol
+		"all_allies":
+			return "%s party" % symbol
+		_:
+			return symbol
 
 
 func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
@@ -626,7 +771,7 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 			var was_enabled = AutobattleSystem.is_autobattle_enabled(char_id)
 			AutobattleSystem.set_autobattle_enabled(char_id, true)
 			SoundManager.play_ui("autobattle_on")
-			_scene.log_message("[color=lime]%s: Auto (this turn)[/color]" % combatant_for_auto.combatant_name)
+			_scene.log_message("[color=%s]%s: Auto (this turn)[/color]" % [AccessibilityPalette.bonus_bbcode(), combatant_for_auto.combatant_name])
 			print("[AUTOBATTLE] %s — one-shot auto turn (sticky was %s)" % [combatant_for_auto.combatant_name, was_enabled])
 			BattleManager.execute_autobattle_for_current()
 			# Restore the sticky state so the [A] indicator and future-turn
@@ -635,24 +780,31 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 			_scene._update_ui()
 		return
 
-	# Trust toggle — flip the per-PC autobattle_locked flag. The same field
-	# that gates spotlight unlocks (BattleManager turn routing, BattleCommandMenu
-	# UI suppression, AutobattleGridEditor tab visibility all key off it). One-
-	# way flip from the menu context (menu doesn't open for locked PCs). Closes
-	# the menu after flipping so the next-turn routing picks up the new state.
+	# Trust toggle — flip the per-PC player_trust flag (queue #4 split from
+	# autobattle_locked so the story reconciler doesn't wipe player intent).
+	# Menu can show for a locked PC when Debug: Unlock All Party is on, so
+	# this MUST handle BOTH directions or the turn soft-locks (bug 2026-
+	# 06-14: untrust closed the menu and left the PC mid-selection with no
+	# input surface).
 	if item_id == "trust_toggle" and item_data is Dictionary:
 		var combatant_for_trust = item_data.get("combatant", null)
-		if combatant_for_trust and "autobattle_locked" in combatant_for_trust:
-			combatant_for_trust.autobattle_locked = not combatant_for_trust.autobattle_locked
-			var new_state = "ON" if combatant_for_trust.autobattle_locked else "OFF"
-			SoundManager.play_ui("autobattle_on" if combatant_for_trust.autobattle_locked else "autobattle_off")
+		if combatant_for_trust and "player_trust" in combatant_for_trust:
+			combatant_for_trust.player_trust = not combatant_for_trust.player_trust
+			var new_state = "ON" if combatant_for_trust.player_trust else "OFF"
+			SoundManager.play_ui("autobattle_on" if combatant_for_trust.player_trust else "autobattle_off")
 			_scene.log_message("[color=cyan]%s: Trust %s[/color]" % [combatant_for_trust.combatant_name, new_state])
-			close_win98_menu()
-			# Force the current selection to proceed via AI when Trust ON
-			# was just set — caller of the menu was the in-flight selection
-			# for this combatant, so the AI eval should kick in now.
-			if combatant_for_trust.autobattle_locked:
+			if combatant_for_trust.player_trust:
+				# Trust ON → delegate this turn to the AI (queues an action and
+				# advances the selection order).
+				close_win98_menu()
 				BattleManager.execute_autobattle_for_current()
+			else:
+				# Trust OFF → player keeps manual control of this turn. Reopen
+				# the command menu (deferred to avoid re-entrancy with the
+				# in-flight selection callback) with the refreshed Trust label,
+				# so the turn isn't left soft-locked with no input surface.
+				close_win98_menu()
+				call_deferred("show_win98_command_menu", combatant_for_trust)
 			_scene._update_ui()
 		return
 
@@ -775,7 +927,15 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 					targets = [alive_enemies[0]]
 			ItemSystem.TargetType.ALL_ENEMIES:
 				targets = alive_enemies
-			ItemSystem.TargetType.SINGLE_ALLY, ItemSystem.TargetType.ALL_ALLIES, ItemSystem.TargetType.SELF:
+			ItemSystem.TargetType.ALL_ALLIES:
+				# Mega Potion / Mega Ether / Megalixir / Tent — expand to the
+				# whole alive party. Was collapsed into the single-ally arm
+				# pre-fix, so a 400g Mega Potion healed only the leader
+				# (regression test_battle_all_allies_item_regression.gd).
+				for m in _scene.party_members:
+					if is_instance_valid(m) and m.is_alive:
+						targets.append(m)
+			ItemSystem.TargetType.SINGLE_ALLY, ItemSystem.TargetType.SELF:
 				var it_target = current if current else (_scene.party_members[0] if _scene.party_members.size() > 0 else null)
 				if it_target:
 					targets = [it_target]
@@ -802,21 +962,57 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 		_scene._update_ui()
 		return
 
+	# Wave E — Address the Boss (jailbreak attempt). Sends the deterministic
+	# directive_text to BattleManager.try_player_jailbreak_directive, which
+	# defers to BossDialogue.check_jailbreak (substring keyword match). On
+	# hit, BattleManager applies the consequence — story-flag safe via
+	# CONSEQUENCE_ALLOWLIST. The address action consumes the turn (defer).
+	if item_id.begins_with("address_") and item_data is Dictionary and item_data.get("action", "") == "address":
+		var directive: String = str(item_data.get("directive", ""))
+		var persona_id: String = str(item_data.get("persona_id", ""))
+		_scene.log_message("[color=#88ccff]%s: \"%s\"[/color]" % [current.combatant_name, directive])
+		var landed: bool = BattleManager.try_player_jailbreak_directive(directive)
+		if landed:
+			_scene.log_message("[color=yellow]⚠ DIRECTIVE OVERRIDE ACCEPTED[/color]")
+			if _scene.has_method("_show_address_banner"):
+				_scene._show_address_banner("⚠ DIRECTIVE OVERRIDE ACCEPTED")
+		else:
+			_scene.log_message("[color=gray]%s does not react.[/color]" % BattleManager._resolve_boss_display_name(persona_id))
+		# Address consumes the turn.
+		BattleManager.player_defer()
+		_scene._update_ui()
+		return
+
 	# Defer - skip turn, gain +1 AP
 	if item_id == "defer":
-		_scene.log_message("[color=cyan]%s defers![/color]" % current.combatant_name)
+		## Tick 174: defer log emit centralized in BattleManager.
+		## player_defer — don't pre-emit here.
 		BattleManager.player_defer()
 		_scene._update_ui()
 		return
 
 
-func _on_win98_menu_closed() -> void:
-	"""Handle Win98 menu being closed"""
+func _on_win98_menu_closed(closing_menu: Node = null) -> void:
+	"""Handle Win98 menu being closed. Identity guard (msg 2529): the bound closing_menu is the specific instance that emitted menu_closed. Only null active_win98_menu if it still references THIS closing menu — otherwise the next PC's menu already spawned and we'd orphan it. The bind() at the connect site passes the menu instance in; a plain connect() would fall back to closing_menu=null and skip the guard (safe default preserving pre-fix behavior for any future emit path that doesn't go through the standard connect)."""
+	print("[MENU-NULL] t=%dms path=menu_closed_signal closing=%s active=%s" % [Time.get_ticks_msec(), _instance_id(closing_menu), _instance_id(_scene.active_win98_menu)])
+	if closing_menu != null and _scene.active_win98_menu != null and _scene.active_win98_menu != closing_menu:
+		# The closing menu is stale — a later menu is already active. Don't null the active ref or the watchdog force-spawns a duplicate.
+		return
 	_scene.active_win98_menu = null
+
+
+## Helper for the [MENU-NULL] diagnostic line — a compact identity for a Node so the repro cap timeline can correlate emitter vs active. Returns "null" for null refs, "invalid" for freed instances, "<class#id>" otherwise.
+func _instance_id(n: Object) -> String:
+	if n == null:
+		return "null"
+	if not is_instance_valid(n):
+		return "invalid"
+	return "%s#%d" % [n.get_class(), n.get_instance_id()]
 
 
 func _on_win98_actions_submitted(actions: Array) -> void:
 	"""Handle multiple actions submitted via Advance mode (Brave)"""
+	print("[MENU-NULL] t=%dms path=actions_submitted count=%d" % [Time.get_ticks_msec(), actions.size()])
 	_scene.active_win98_menu = null
 	var current = BattleManager.current_combatant
 	if not current:
@@ -906,16 +1102,22 @@ func _on_win98_actions_submitted(actions: Array) -> void:
 		_scene.show_brave_quip(current, battle_actions.size())
 		BattleManager.player_advance(battle_actions)
 		_scene._update_ui()
+	else:
+		# All queued actions failed conversion — end the turn as a defer or selection softlocks (mirrors the autobattle zero-valid fallback)
+		_scene.log_message("[color=gray]No valid actions left — %s defers.[/color]" % current.combatant_name)
+		BattleManager.player_defer()
+		_scene._update_ui()
 
 
 func _on_win98_defer_requested() -> void:
 	"""Handle L button defer request (no queue)"""
+	print("[MENU-NULL] t=%dms path=defer_requested" % Time.get_ticks_msec())
 	_scene.active_win98_menu = null
 	var current = BattleManager.current_combatant
 	if not current:
 		return
 
-	_scene.log_message("[color=cyan]%s defers![/color]" % current.combatant_name)
+	## Tick 174: defer log emit centralized in BattleManager.player_defer.
 	BattleManager.player_defer()
 	_scene._update_ui()
 
@@ -923,6 +1125,7 @@ func _on_win98_defer_requested() -> void:
 func _on_win98_go_back_requested() -> void:
 	"""Handle B button request to go back to previous player"""
 	if _scene.active_win98_menu and is_instance_valid(_scene.active_win98_menu):
+		print("[MENU-NULL] t=%dms path=go_back_requested" % Time.get_ticks_msec())
 		_scene.active_win98_menu.force_close()
 		_scene.active_win98_menu = null
 	BattleManager.go_back_to_previous_player()
@@ -1029,7 +1232,7 @@ func _show_scan_popup(enemy: Combatant) -> void:
 			for drop in drops:
 				var item_id = drop.get("item", "")
 				var chance = drop.get("chance", 0.0)
-				var item_name = item_id.replace("_", " ").capitalize()
+				var item_name = ItemNameResolver.resolve(item_id)
 				drop_names.append("%s (%d%%)" % [item_name, int(chance * 100)])
 			var drop_label = Label.new()
 			drop_label.text = "Drops: %s" % ", ".join(drop_names)
@@ -1153,6 +1356,7 @@ func _create_element_badge(element: String, is_weakness: bool) -> PanelContainer
 func close_win98_menu() -> void:
 	"""Close the active Win98 menu"""
 	if _scene.active_win98_menu and is_instance_valid(_scene.active_win98_menu):
+		print("[MENU-NULL] t=%dms path=close_win98_menu" % Time.get_ticks_msec())
 		_scene.active_win98_menu.force_close()
 		_scene.active_win98_menu = null
 
@@ -1194,7 +1398,7 @@ const FORMATIONS = [
 	{
 		"id": "shadow_strike",
 		"name": "Shadow Strike",
-		"tooltip": "Ambush — ignores defense, 2x damage vs full-HP targets (2 AP each)",
+		"tooltip": "Ambush — 2x damage vs full-HP targets (2 AP each)",
 		"required_jobs": ["rogue", "ninja"],
 		"min_members": 2,
 		"ap_cost": 2,

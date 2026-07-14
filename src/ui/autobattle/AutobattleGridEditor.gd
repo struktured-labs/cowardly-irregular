@@ -33,6 +33,7 @@ var cursor_row: int = 0  # Current rule (row)
 var cursor_col: int = 0  # Current cell in row (conditions then actions)
 var is_editing: bool = false  # Currently editing a cell
 var _portrait_focused: bool = false  # True when cursor is on character portrait panel
+var _scroll_offset: float = 0.0  # Vertical scroll so >9 rules / off-screen rows follow the cursor
 
 ## Visual elements
 var _title_label: Label
@@ -45,6 +46,13 @@ const VirtualKeyboardClass = preload("res://src/ui/VirtualKeyboard.gd")
 const CharacterPortraitClass = preload("res://src/ui/CharacterPortrait.gd")
 var _profile_label: Label
 var _stats_panel: Control
+var _share_picker: Control = null  # Import file-picker overlay (acts as a submenu; blocks grid input while open)
+var _option_picker: Control = null # Generic option-picker overlay (condition/action/item/target)
+var _rule_composer_overlay: Control = null # RuleComposerOverlay instance; blocks grid input while open
+var _splash_shown: bool = false    # Latches the empty-grid composer splash to once per setup() call
+var _flash_label: Label = null     # Transient status flash for export/import feedback
+var _flash_timer: float = 0.0
+const _RuleComposerOverlayScene := preload("res://src/ui/autobattle/RuleComposerOverlay.tscn")
 
 ## Grid layout constants
 const CELL_WIDTH = 110
@@ -58,6 +66,8 @@ const CONNECTOR_COLOR = Color(0.6, 0.6, 0.7)
 const CURSOR_COLOR = Color(1.0, 1.0, 0.3)
 const MAX_CONDITIONS = 3  # Max AND conditions per rule
 const MAX_ACTIONS = 4  # Max actions per rule
+const MAX_RULES = 32  # Cap OR rule rows so scripts stay bounded (still scrollable)
+const GRID_BASE_POS = Vector2(120, 50)  # Anchor for _grid_container before scroll offset
 
 ## Character class color schemes (matching Win98Menu exactly)
 ## Maps character_id -> job class style
@@ -136,10 +146,17 @@ func _exit_tree() -> void:
 	if _keyboard and is_instance_valid(_keyboard):
 		_keyboard.queue_free()
 	_keyboard = null
+	if _share_picker and is_instance_valid(_share_picker):
+		_share_picker.queue_free()
+	_share_picker = null
+	if _option_picker and is_instance_valid(_option_picker):
+		_option_picker.queue_free()
+	_option_picker = null
 
 
 func setup(char_id: String, char_name: String, char_combatant: Combatant = null, char_party: Array = []) -> void:
 	"""Setup editor for a specific character"""
+	_splash_shown = false
 	character_id = char_id
 	character_name = char_name
 	combatant = char_combatant
@@ -164,12 +181,22 @@ func setup(char_id: String, char_name: String, char_combatant: Combatant = null,
 	char_script = AutobattleSystem.get_character_script(character_id)
 	rules = char_script.get("rules", []).duplicate(true)
 
+	# Fresh/empty script: invite the player to compose rules via prompt instead of silently seeding the generic default rule.
+	if rules.size() == 0 and not _splash_shown:
+		_splash_shown = true
+		if is_inside_tree():
+			_show_empty_grid_splash()
+		else:
+			call_deferred("_show_empty_grid_splash")
+		return
+
 	# Ensure at least one rule exists
 	if rules.size() == 0:
 		rules.append(_create_default_rule())
 
 	cursor_row = 0
 	cursor_col = 0
+	_scroll_offset = 0.0
 
 	# Rebuild UI and grid - defer if not in tree yet
 	if is_inside_tree():
@@ -223,8 +250,10 @@ func _build_ui() -> void:
 
 	# Grid container (shifted right to make room for stats)
 	_grid_container = Control.new()
-	_grid_container.position = Vector2(120, 50)
+	_grid_container.position = GRID_BASE_POS
 	_grid_container.size = Vector2(size.x - 136, size.y - 100)
+	# Clip scrolled-out rows so they don't bleed over the stats panel / legend strip
+	_grid_container.clip_contents = true
 	add_child(_grid_container)
 
 	# Cursor (animated highlight)
@@ -247,11 +276,21 @@ func _build_ui() -> void:
 	add_child(help_label1)
 
 	var help_label2 = Label.new()
-	help_label2.text = "Y:CycleOp  Tab:Toggle  Sh+Tab:Profile  Sh+R:Rename  Sel:Auto  Start:Save"
+	help_label2.text = "Y:CycleOp  Tab:Toggle  Sh+Tab:Profile  Sh+R:Rename  E:Export  I:Import  Sh+E:CopyCode  Sh+I:PasteCode  K:Compose  Sel:Auto  Start:Save"
 	help_label2.position = Vector2(16, size.y - 28)
 	help_label2.add_theme_font_size_override("font_size", 10)
 	help_label2.add_theme_color_override("font_color", style.text.darkened(0.2))
 	add_child(help_label2)
+
+	# Transient status flash (export/import feedback), centered above the legend strip
+	_flash_label = Label.new()
+	_flash_label.position = Vector2(16, size.y - 66)
+	_flash_label.size = Vector2(size.x - 32, 18)
+	_flash_label.add_theme_font_size_override("font_size", 12)
+	_flash_label.add_theme_color_override("font_color", Color.LIME)
+	_flash_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_flash_label.visible = false
+	add_child(_flash_label)
 
 
 func _build_profile_panel() -> void:
@@ -981,7 +1020,12 @@ func _format_condition(condition: Dictionary) -> String:
 			return "AP %s %d" % [op, value]
 		"has_status":
 			var status = condition.get("status", "")
-			return "Has %s" % status.capitalize()
+			# Tick 215: shared StatusNames util.
+			return "Has %s" % StatusNames.display(status)
+		"ally_has_status":
+			return "Ally has %s" % StatusNames.display(condition.get("status", ""))
+		"enemy_has_status":
+			return "Enemy has %s" % StatusNames.display(condition.get("status", ""))
 		"enemy_hp_percent":
 			return "Enemy HP %s %d%%" % [op, value]
 		"ally_hp_percent":
@@ -992,6 +1036,12 @@ func _format_condition(condition: Dictionary) -> String:
 			return "Enemies %s %d" % [op, value]
 		"ally_count":
 			return "Allies %s %d" % [op, value]
+		"ally_mp_percent":
+			return "Ally MP %s %d%%" % [op, value]
+		"item_count":
+			return "%s %s %d" % [str(condition.get("item_id", "Item")).capitalize(), op, value]
+		"setup_complete":
+			return "Setup Done"
 		"always":
 			return "ALWAYS"
 		_:
@@ -1027,12 +1077,49 @@ func _short_target(target: String) -> String:
 			return "High HP Foe"
 		"random_enemy":
 			return "Rnd Foe"
+		"highest_speed_enemy":
+			return "Fast Foe"
+		"highest_atk_enemy":
+			return "Strong Foe"
+		"lowest_magic_defense_enemy":
+			return "Low DEF Foe"
+		"weakest_to_ability":
+			return "Weak Foe"
 		"lowest_hp_ally":
 			return "Low HP Ally"
+		"all_allies":
+			return "All Allies"
 		"self":
 			return "Self"
 		_:
 			return target
+
+
+func _update_scroll_offset() -> void:
+	"""Scroll the grid container vertically so the selected rule row stays on-screen.
+
+	The grid is hand-positioned into a plain (non-ScrollContainer) Control, so we
+	follow the JobMenu pattern: shift _grid_container.position.y by -_scroll_offset.
+	The animated cursor reads _grid_container.position (see _update_cursor), so both
+	rows and cursor shift together. clip_contents on the container hides the overflow.
+	"""
+	if not _grid_container or not is_instance_valid(_grid_container):
+		return
+
+	var row_stride = CELL_HEIGHT + ROW_SPACING
+	var cursor_y = cursor_row * row_stride
+	var view_h = _grid_container.size.y
+
+	# Clamp the selected row into the visible viewport.
+	if cursor_y - _scroll_offset < 0:
+		_scroll_offset = cursor_y
+	elif cursor_y + CELL_HEIGHT - _scroll_offset > view_h:
+		_scroll_offset = cursor_y + CELL_HEIGHT - view_h
+
+	# Never scroll past the top (negative offset would push row 0 down off the anchor).
+	_scroll_offset = max(0.0, _scroll_offset)
+
+	_grid_container.position.y = GRID_BASE_POS.y - _scroll_offset
 
 
 func _update_cursor() -> void:
@@ -1040,6 +1127,10 @@ func _update_cursor() -> void:
 	# Clear and redraw cursor
 	for child in _cursor.get_children():
 		child.queue_free()
+
+	# Keep the selected row in view (no-op in portrait focus mode below).
+	if not _portrait_focused:
+		_update_scroll_offset()
 
 	# Portrait focus mode - draw cursor around portrait area
 	if _portrait_focused:
@@ -1545,8 +1636,28 @@ func _input(event: InputEvent) -> void:
 	if not visible:
 		return
 
+	# F5 must toggle CLOSED too — the modal grid swallowed it, so the documented open key couldn't close
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F5:
+		save_and_close()
+		get_viewport().set_input_as_handled()
+		return
+
 	# Keyboard handles its own input when open
 	if _keyboard and is_instance_valid(_keyboard) and _keyboard.visible:
+		return
+
+	# Import file-picker submenu handles its own input when open (don't steal grid input)
+	if _share_picker and is_instance_valid(_share_picker) and _share_picker.visible:
+		_handle_share_picker_input(event)
+		return
+
+	# Generic option picker (condition/action/item/target) handles its own input
+	if _option_picker and is_instance_valid(_option_picker) and _option_picker.visible:
+		_handle_option_picker_input(event)
+		return
+
+	# Rule Composer overlay handles its own input (A/B/R) when open
+	if _rule_composer_overlay and is_instance_valid(_rule_composer_overlay) and _rule_composer_overlay.visible:
 		return
 
 	if is_editing:
@@ -1639,6 +1750,39 @@ func _input(event: InputEvent) -> void:
 	# Shift+R - Rename current profile
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_R and event.shift_pressed:
 		_open_rename_profile()
+		get_viewport().set_input_as_handled()
+
+	# E - Export current character's script (+ party bundle) to user://script_exports/
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_E and not event.shift_pressed and not event.is_echo():
+		_export_script()
+		get_viewport().set_input_as_handled()
+
+	# I - Import: open a controller-navigable picker of exported files
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_I and not event.shift_pressed and not event.is_echo():
+		_open_share_picker()
+		get_viewport().set_input_as_handled()
+
+	# Shift+E - Copy a clipboard share code (paste it anywhere: Discord, forums)
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_E and event.shift_pressed and not event.is_echo():
+		_copy_share_code()
+		get_viewport().set_input_as_handled()
+
+	# Shift+I - Paste a share code from the clipboard onto this character
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_I and event.shift_pressed and not event.is_echo():
+		_paste_share_code()
+		get_viewport().set_input_as_handled()
+
+	# K - Open Rule Composer overlay (compose rules from a natural-language prompt)
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_K and not event.shift_pressed and not event.is_echo():
+		_open_rule_composer_overlay()
+		get_viewport().set_input_as_handled()
+
+	# T - Open target picker for the action under the cursor
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_T and not event.shift_pressed and not event.is_echo():
+		if _is_on_action_group():
+			_open_target_picker()
+		else:
+			SoundManager.play_ui("menu_error")
 		get_viewport().set_input_as_handled()
 
 	# Tab / Y - Toggle current row enabled/disabled
@@ -1742,28 +1886,77 @@ func _edit_current_cell() -> void:
 
 
 func _open_condition_editor() -> void:
-	"""Open condition editor - A button cycles condition type"""
-	is_editing = true
-	_update_cursor()
-
+	"""Open condition picker — submenu listing all 14 supported condition types.
+	Idx==-1 (current type not in the canonical list) leaves the type unchanged
+	and plays menu_error, so editing a cell with an unrecognized type can never
+	silently overwrite it (prior bug: hitting A on 'ally_has_status' wiped it
+	to 'hp_percent' via the 6-type cycle)."""
 	var rule = rules[cursor_row]
 	var conditions = rule.get("conditions", [])
-	if cursor_col < conditions.size():
-		var cond = conditions[cursor_col]
-		var types = ["hp_percent", "mp_percent", "ap", "turn", "enemy_count", "always"]
-		var current_type = cond.get("type", "always")
-		var idx = types.find(current_type)
-		idx = (idx + 1) % types.size()
-		cond["type"] = types[idx]
-		if types[idx] != "always":
-			if not cond.has("op"):
-				cond["op"] = "<"
-			if not cond.has("value"):
-				cond["value"] = 50
-		_refresh_grid()
+	if cursor_col >= conditions.size():
+		return
+	var cond = conditions[cursor_col]
+	var current_type = cond.get("type", "always")
+	var type_keys: Array = AutobattleSystem.CONDITION_TYPES.keys()
+	var idx = type_keys.find(current_type)
+	if idx == -1:
+		SoundManager.play_ui("menu_error")
+		return
+	_open_option_picker({
+		"title": "Condition Type",
+		"kind": "condition_type",
+		"options": _build_condition_type_options(type_keys),
+		"selected": idx,
+	})
 
-	is_editing = false
-	_update_cursor()
+
+func _build_condition_type_options(type_keys: Array) -> Array:
+	"""Display rows for the condition picker — label + machine key for each type."""
+	var rows: Array = []
+	for k in type_keys:
+		rows.append({"id": k, "label": AutobattleSystem.CONDITION_TYPES.get(k, k)})
+	return rows
+
+
+func _apply_condition_type(new_type: String) -> void:
+	"""Commit a chosen condition type to the current cell, seeding sane defaults
+	(op, value, status name, item id, stat) so the new condition is immediately
+	evaluable without a follow-up edit."""
+	var rule = rules[cursor_row]
+	var conditions = rule.get("conditions", [])
+	if cursor_col >= conditions.size():
+		return
+	var cond = conditions[cursor_col]
+	cond["type"] = new_type
+	if new_type == "always":
+		cond.erase("op")
+		cond.erase("value")
+	elif new_type in ["has_status", "ally_has_status", "enemy_has_status"]:
+		if not cond.has("status"):
+			cond["status"] = "poison"
+		cond.erase("op")
+		cond.erase("value")
+	elif new_type == "item_count":
+		if not cond.has("item_id"):
+			cond["item_id"] = "potion"
+		if not cond.has("op"):
+			cond["op"] = ">"
+		if not cond.has("value"):
+			cond["value"] = 0
+	elif new_type in ["has_buff", "not_has_buff"]:
+		if not cond.has("stat"):
+			cond["stat"] = "defense"
+		cond.erase("op")
+		cond.erase("value")
+	elif new_type == "setup_complete":
+		cond.erase("op")
+		cond.erase("value")
+	else:
+		if not cond.has("op"):
+			cond["op"] = "<"
+		if not cond.has("value"):
+			cond["value"] = 50
+	_refresh_grid()
 
 
 func _cycle_condition_operator() -> void:
@@ -1823,106 +2016,381 @@ func _adjust_condition_value(delta: int) -> void:
 
 
 func _open_action_editor() -> void:
-	"""Open action editor modal - cycles through action types and abilities"""
-	is_editing = true
-	_update_cursor()
+	"""Open action picker — submenu over the supported action types
+	(attack, ability, item, defer). Selecting 'ability' / 'item' opens a
+	sub-picker scoped to the character's known abilities or inventory items.
+	'all_out_attack' was removed as a dead branch (no consumer reads its
+	force_advance flag)."""
+	var action_ctx = _resolve_current_action_context()
+	if action_ctx.is_empty():
+		return
+	var action: Dictionary = action_ctx["action"]
+	var current_type: String = action.get("type", "attack")
+	var rows: Array = []
+	rows.append({"id": "attack", "label": "Attack"})
+	rows.append({"id": "ability", "label": "Ability..."})
+	rows.append({"id": "item", "label": "Item..."})
+	rows.append({"id": "defer", "label": "Defer"})
+	var selected = 0
+	for i in range(rows.size()):
+		if rows[i]["id"] == current_type:
+			selected = i
+			break
+	_open_option_picker({
+		"title": "Action",
+		"kind": "action_type",
+		"options": rows,
+		"selected": selected,
+		"action_ctx": action_ctx,
+	})
 
+
+func _resolve_current_action_context() -> Dictionary:
+	"""Resolve the action group under the cursor — returns the underlying actions
+	array slice + the first action to drive the picker. Returns {} when the
+	cursor isn't on an action group."""
 	var rule = rules[cursor_row]
 	var conditions = rule.get("conditions", [])
 	var actions = rule.get("actions", [])
-
-	# Check if any condition is ALWAYS (affects slot count)
 	var has_always = false
 	for cond in conditions:
 		if cond.get("type", "") == "always":
 			has_always = true
 			break
-
-	# Account for empty condition slot (but not if ALWAYS)
 	var condition_slots = conditions.size()
 	if conditions.size() < MAX_CONDITIONS and not has_always:
 		condition_slots += 1
-
-	# cursor_col counts groups, not individual actions - convert to actual action index
 	var group_idx = cursor_col - condition_slots
 	var action_groups = _group_actions(actions)
+	if group_idx < 0 or group_idx >= action_groups.size():
+		return {}
+	var group = action_groups[group_idx]
+	var action_idx = group.get("start_idx", 0)
+	var group_count = group.get("count", 1)
+	if action_idx < 0 or action_idx >= actions.size():
+		return {}
+	return {
+		"actions": actions,
+		"action": actions[action_idx],
+		"action_idx": action_idx,
+		"group_count": group_count,
+	}
 
-	if group_idx < action_groups.size():
-		var group = action_groups[group_idx]
-		var action_idx = group.get("start_idx", 0)
-		var group_count = group.get("count", 1)
-		# Validate action_idx is within bounds
-		if action_idx < 0 or action_idx >= actions.size():
-			return
-		var action = actions[action_idx]
-		var current_type = action.get("type", "attack")
-		var current_ability_id = action.get("id", "")
 
-		# Get character-specific abilities
-		var char_abilities = _get_character_abilities()
-
-		# Defer is now allowed at any position (removed AP restriction)
-
-		# Determine the new action type/id
-		var new_type = current_type
-		var new_id = current_ability_id
-		var new_target = action.get("target", "lowest_hp_enemy")
-
-		if current_type == "ability" and char_abilities.size() > 0:
-			# Cycle through abilities
-			var ability_idx = -1
-			for i in range(char_abilities.size()):
-				if char_abilities[i]["id"] == current_ability_id:
-					ability_idx = i
-					break
-
-			if ability_idx >= 0 and ability_idx < char_abilities.size() - 1:
-				# Next ability - use smart target based on ability type
-				new_id = char_abilities[ability_idx + 1]["id"]
-				new_target = _get_target_for_ability(new_id)
-			else:
-				# After last ability, go to defer
-				new_type = "defer"
-				new_id = ""
-				new_target = ""
-		elif current_type == "defer":
-			# Back to attack
-			new_type = "attack"
-			new_id = ""
-			new_target = "lowest_hp_enemy"
-		elif current_type == "attack":
-			if char_abilities.size() > 0:
-				# Move to first ability - use smart target based on ability type
-				new_type = "ability"
-				new_id = char_abilities[0]["id"]
-				new_target = _get_target_for_ability(new_id)
-			else:
-				# No abilities, go to defer
-				new_type = "defer"
-				new_id = ""
-				new_target = ""
+func _apply_action_type(new_type: String, ctx: Dictionary) -> void:
+	"""Commit a chosen action type for the action group at ctx.
+	For 'ability' / 'item' the value is staged and a sub-picker over the
+	character's abilities/inventory opens; the sub-picker writes the id."""
+	if new_type == "ability":
+		_open_ability_subpicker(ctx)
+		return
+	if new_type == "item":
+		_open_item_subpicker(ctx)
+		return
+	var action: Dictionary = ctx["action"]
+	var actions: Array = ctx["actions"]
+	var start: int = ctx["action_idx"]
+	var count: int = ctx["group_count"]
+	var new_target = ""
+	if new_type == "attack":
+		new_target = "lowest_hp_enemy"
+	for i in range(count):
+		var idx = start + i
+		actions[idx]["type"] = new_type
+		actions[idx].erase("id")
+		if new_target != "":
+			actions[idx]["target"] = new_target
 		else:
-			# Unknown type, reset to attack
-			new_type = "attack"
-			new_id = ""
-			new_target = "lowest_hp_enemy"
+			actions[idx].erase("target")
+	_refresh_grid()
 
-		# Apply change to ALL actions in the group
-		for i in range(group_count):
-			var idx = action_idx + i
-			actions[idx]["type"] = new_type
-			if new_id != "":
-				actions[idx]["id"] = new_id
-			else:
-				actions[idx].erase("id")
-			if new_target != "":
-				actions[idx]["target"] = new_target
-			else:
-				actions[idx].erase("target")
 
-		_refresh_grid()
+func _open_ability_subpicker(ctx: Dictionary) -> void:
+	"""Sub-picker over the current character's ability list."""
+	var char_abilities = _get_character_abilities()
+	if char_abilities.is_empty():
+		SoundManager.play_ui("menu_error")
+		_flash_status("No abilities available for %s" % character_name, Color.YELLOW)
+		return
+	var rows: Array = []
+	for ab in char_abilities:
+		rows.append({"id": ab["id"], "label": ab.get("name", ab["id"])})
+	var current_id: String = ctx["action"].get("id", "")
+	var selected = 0
+	for i in range(rows.size()):
+		if rows[i]["id"] == current_id:
+			selected = i
+			break
+	_open_option_picker({
+		"title": "Ability",
+		"kind": "ability_id",
+		"options": rows,
+		"selected": selected,
+		"action_ctx": ctx,
+	})
 
-	is_editing = false
+
+func _apply_ability_id(ability_id: String, ctx: Dictionary) -> void:
+	"""Commit an ability id; pick a sensible target from the ability target_type."""
+	var actions: Array = ctx["actions"]
+	var start: int = ctx["action_idx"]
+	var count: int = ctx["group_count"]
+	var target = _get_target_for_ability(ability_id)
+	for i in range(count):
+		var idx = start + i
+		actions[idx]["type"] = "ability"
+		actions[idx]["id"] = ability_id
+		actions[idx]["target"] = target
+	_refresh_grid()
+
+
+func _open_item_subpicker(ctx: Dictionary) -> void:
+	"""Sub-picker over consumable items the character can currently use."""
+	var items := _get_character_consumables()
+	if items.is_empty():
+		SoundManager.play_ui("menu_error")
+		_flash_status("No consumable items available", Color.YELLOW)
+		return
+	var rows: Array = []
+	for it in items:
+		rows.append({"id": it["id"], "label": it.get("name", it["id"])})
+	var current_id: String = ctx["action"].get("id", "")
+	var selected = 0
+	for i in range(rows.size()):
+		if rows[i]["id"] == current_id:
+			selected = i
+			break
+	_open_option_picker({
+		"title": "Item",
+		"kind": "item_id",
+		"options": rows,
+		"selected": selected,
+		"action_ctx": ctx,
+	})
+
+
+func _apply_item_id(item_id: String, ctx: Dictionary) -> void:
+	"""Commit a chosen item id to the action group; default to self target
+	(matches the default-script convention for potions/antidotes)."""
+	var actions: Array = ctx["actions"]
+	var start: int = ctx["action_idx"]
+	var count: int = ctx["group_count"]
+	for i in range(count):
+		var idx = start + i
+		actions[idx]["type"] = "item"
+		actions[idx]["id"] = item_id
+		actions[idx]["target"] = "self"
+	_refresh_grid()
+
+
+func _get_character_consumables() -> Array:
+	"""Return consumable items available to the character — filters ItemSystem
+	for category CONSUMABLE/CURATIVE/BUFF/OFFENSIVE and intersects with the
+	combatant's known inventory when possible."""
+	var rows: Array = []
+	var item_sys = get_node_or_null("/root/ItemSystem")
+	if not item_sys or not ("items" in item_sys):
+		return rows
+	var all_items: Dictionary = item_sys.items
+	var allowed_categories: Array = [0, 1, 2, 3]
+	if "ItemCategory" in item_sys:
+		var cat = item_sys.ItemCategory
+		allowed_categories = [cat.CONSUMABLE, cat.CURATIVE, cat.BUFF, cat.OFFENSIVE]
+	for item_id in all_items.keys():
+		var entry: Dictionary = all_items[item_id]
+		var cat_val = entry.get("category", 0)
+		if cat_val in allowed_categories:
+			rows.append({"id": item_id, "name": entry.get("name", item_id)})
+	rows.sort_custom(func(a, b): return str(a.get("name", "")) < str(b.get("name", "")))
+	return rows
+
+
+# --- Target picker --------------------------------------------------------
+# Right-pane target picker on action focus: lets the player override the
+# heuristic target for an action. Triggered via the T key on action cells.
+
+func _open_target_picker() -> void:
+	"""Open a picker over AutobattleSystem.TARGET_TYPES for the focused action."""
+	var ctx = _resolve_current_action_context()
+	if ctx.is_empty():
+		SoundManager.play_ui("menu_error")
+		return
+	var action: Dictionary = ctx["action"]
+	if action.get("type", "") == "defer":
+		SoundManager.play_ui("menu_error")
+		return
+	var target_keys: Array = AutobattleSystem.TARGET_TYPES.keys()
+	var rows: Array = []
+	for k in target_keys:
+		rows.append({"id": k, "label": AutobattleSystem.TARGET_TYPES.get(k, k)})
+	var current: String = action.get("target", "lowest_hp_enemy")
+	var selected = target_keys.find(current)
+	if selected == -1:
+		selected = 0
+	_open_option_picker({
+		"title": "Target",
+		"kind": "target_type",
+		"options": rows,
+		"selected": selected,
+		"action_ctx": ctx,
+	})
+
+
+func _apply_target_type(target: String, ctx: Dictionary) -> void:
+	"""Commit a chosen target type to every action in the group."""
+	var actions: Array = ctx["actions"]
+	var start: int = ctx["action_idx"]
+	var count: int = ctx["group_count"]
+	for i in range(count):
+		actions[start + i]["target"] = target
+	_refresh_grid()
+
+
+# --- Generic option picker overlay ----------------------------------------
+# Mirrors _open_share_picker's pattern: a dim backdrop + bordered panel +
+# scrollable row list. Drives all four kinds of picker (condition_type,
+# action_type, ability_id, item_id, target_type) through _handle_option_picker_input.
+
+func _open_option_picker(spec: Dictionary) -> void:
+	"""Open the generic picker overlay. spec keys:
+	  title (String), kind (String), options (Array of {id,label}),
+	  selected (int), action_ctx (Dictionary, optional)."""
+	if _option_picker and is_instance_valid(_option_picker):
+		_option_picker.queue_free()
+		_option_picker = null
+	_option_picker = Control.new()
+	_option_picker.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_option_picker.set_meta("spec", spec)
+	add_child(_option_picker)
+	_build_option_picker()
+	SoundManager.play_ui("menu_select")
+
+
+func _build_option_picker() -> void:
+	"""(Re)build the option picker visuals from the stored spec dictionary."""
+	for child in _option_picker.get_children():
+		child.queue_free()
+	var spec: Dictionary = _option_picker.get_meta("spec")
+	var options: Array = spec.get("options", [])
+	var selected: int = spec.get("selected", 0)
+	var title_text: String = spec.get("title", "Select")
+	var backdrop := ColorRect.new()
+	backdrop.color = Color(0.0, 0.0, 0.0, 0.7)
+	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_option_picker.add_child(backdrop)
+	var panel_w := 360.0
+	var panel_h := minf(80.0 + options.size() * 24.0, size.y - 80.0)
+	var panel := ColorRect.new()
+	panel.color = style.bg
+	panel.position = Vector2((size.x - panel_w) / 2.0, (size.y - panel_h) / 2.0)
+	panel.size = Vector2(panel_w, panel_h)
+	_option_picker.add_child(panel)
+	_add_pixel_border(panel, panel_w, panel_h)
+	var title := Label.new()
+	title.text = title_text
+	title.position = panel.position + Vector2(12, 8)
+	title.add_theme_font_size_override("font_size", 13)
+	title.add_theme_color_override("font_color", style.get("highlight_text", Color.YELLOW))
+	_option_picker.add_child(title)
+	var list_y := panel.position.y + 34.0
+	var max_visible := int((panel_h - 50.0) / 22.0)
+	var scroll_start := 0
+	if options.size() > max_visible:
+		scroll_start = clampi(selected - max_visible / 2, 0, options.size() - max_visible)
+	var end := mini(options.size(), scroll_start + max_visible)
+	for i in range(scroll_start, end):
+		var opt: Dictionary = options[i]
+		var is_sel := i == selected
+		var row_bg := ColorRect.new()
+		row_bg.position = Vector2(panel.position.x + 8, list_y - 2)
+		row_bg.size = Vector2(panel_w - 16, 22)
+		row_bg.color = style.get("highlight_bg", Color(0.3, 0.3, 0.5)) if is_sel else Color(0, 0, 0, 0)
+		_option_picker.add_child(row_bg)
+		var row := Label.new()
+		row.text = "%s %s" % ["▶" if is_sel else "  ", opt.get("label", opt.get("id", ""))]
+		row.position = Vector2(panel.position.x + 12, list_y)
+		row.size = Vector2(panel_w - 24, 20)
+		row.add_theme_font_size_override("font_size", 11)
+		row.add_theme_color_override("font_color", style.get("highlight_text", Color.YELLOW) if is_sel else style.text)
+		row.clip_text = true
+		_option_picker.add_child(row)
+		list_y += 22.0
+	var help := Label.new()
+	help.text = "D-Pad:Select   A:Confirm   B:Cancel"
+	help.position = Vector2(panel.position.x + 12, panel.position.y + panel_h - 22)
+	help.add_theme_font_size_override("font_size", 10)
+	help.add_theme_color_override("font_color", style.text.darkened(0.2))
+	_option_picker.add_child(help)
+
+
+func _handle_option_picker_input(event: InputEvent) -> void:
+	"""Self-contained input for the generic picker (mirrors _handle_share_picker_input)."""
+	if not _option_picker or not is_instance_valid(_option_picker):
+		return
+	var spec: Dictionary = _option_picker.get_meta("spec")
+	var options: Array = spec.get("options", [])
+	var selected: int = spec.get("selected", 0)
+	if options.is_empty():
+		_close_option_picker()
+		return
+	if event.is_action_pressed("ui_up") and not event.is_echo():
+		spec["selected"] = (selected - 1 + options.size()) % options.size()
+		_option_picker.set_meta("spec", spec)
+		_build_option_picker()
+		SoundManager.play_ui("menu_move")
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("ui_down") and not event.is_echo():
+		spec["selected"] = (selected + 1) % options.size()
+		_option_picker.set_meta("spec", spec)
+		_build_option_picker()
+		SoundManager.play_ui("menu_move")
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("ui_accept") and not event.is_echo():
+		_apply_option_picker_selection()
+		get_viewport().set_input_as_handled()
+	elif (event.is_action_pressed("ui_cancel") or event.is_action_pressed("ui_menu")) and not event.is_echo():
+		_close_option_picker()
+		SoundManager.play_ui("menu_close")
+		get_viewport().set_input_as_handled()
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+		_close_option_picker()
+		SoundManager.play_ui("menu_close")
+		get_viewport().set_input_as_handled()
+
+
+func _apply_option_picker_selection() -> void:
+	"""Dispatch the picker's selection to the kind-specific apply handler."""
+	if not _option_picker or not is_instance_valid(_option_picker):
+		return
+	var spec: Dictionary = _option_picker.get_meta("spec")
+	var options: Array = spec.get("options", [])
+	var selected: int = spec.get("selected", 0)
+	if selected < 0 or selected >= options.size():
+		_close_option_picker()
+		return
+	var chosen: Dictionary = options[selected]
+	var kind: String = spec.get("kind", "")
+	var ctx: Dictionary = spec.get("action_ctx", {})
+	_close_option_picker()
+	match kind:
+		"condition_type":
+			_apply_condition_type(chosen["id"])
+		"action_type":
+			_apply_action_type(chosen["id"], ctx)
+		"ability_id":
+			_apply_ability_id(chosen["id"], ctx)
+		"item_id":
+			_apply_item_id(chosen["id"], ctx)
+		"target_type":
+			_apply_target_type(chosen["id"], ctx)
+	SoundManager.play_ui("menu_select")
+
+
+func _close_option_picker() -> void:
+	"""Tear down the generic picker overlay and return focus to the grid."""
+	if _option_picker and is_instance_valid(_option_picker):
+		_option_picker.queue_free()
+	_option_picker = null
 	_update_cursor()
 
 
@@ -1991,6 +2459,9 @@ func _add_and_condition() -> void:
 
 func _add_or_row() -> void:
 	"""Add a new OR rule row"""
+	if rules.size() >= MAX_RULES:
+		SoundManager.play_ui("menu_error")
+		return
 	var new_rule = _create_default_rule()
 	rules.insert(cursor_row + 1, new_rule)
 	cursor_row += 1
@@ -2001,6 +2472,9 @@ func _add_or_row() -> void:
 
 func _insert_row_after(row_idx: int) -> void:
 	"""Insert a new rule row after the specified row index"""
+	if rules.size() >= MAX_RULES:
+		SoundManager.play_ui("menu_error")
+		return
 	var new_rule = {
 		"conditions": [{"type": "always"}],
 		"actions": [{"type": "attack", "target": "lowest_hp_enemy"}],
@@ -2191,3 +2665,323 @@ func _on_rename_cancelled() -> void:
 		_keyboard.queue_free()
 		_keyboard = null
 	SoundManager.play_ui("menu_close")
+
+
+# --- Script sharing (export / import) -------------------------------------
+# Surfaces the existing ScriptShareManager API so players can save, load, and
+# share autobattle scripts. Files live in user://script_exports/. Mirrors the
+# established pattern in AutogrindUI (_export_scripts / _import_scripts).
+
+func _export_script() -> void:
+	"""Export the current character's script (and the whole party bundle) to JSON."""
+	# Persist any in-progress edits first so the exported file is current.
+	_save_script()
+
+	var exported := 0
+	var char_path := ScriptShareManager.export_character_script(character_id)
+	if char_path != "":
+		exported += 1
+
+	# Also write a party bundle when a party is available — enables one-file sharing.
+	if party.size() > 0:
+		var bundle_path := ScriptShareManager.export_all_scripts(party)
+		if bundle_path != "":
+			exported += 1
+
+	if exported > 0:
+		_flash_status("Exported %d file(s) to script_exports/" % exported, Color.LIME)
+		SoundManager.play_ui("menu_select")
+	else:
+		_flash_status("Nothing to export", Color.YELLOW)
+		SoundManager.play_ui("menu_error")
+
+
+func _open_share_picker() -> void:
+	"""Open a controller-navigable picker listing exported files to import."""
+	if _share_picker and is_instance_valid(_share_picker):
+		_share_picker.queue_free()
+		_share_picker = null
+
+	var files := ScriptShareManager.list_exports()
+	if files.is_empty():
+		_flash_status("No export files found — press E to export first", Color.YELLOW)
+		SoundManager.play_ui("menu_error")
+		return
+
+	_share_picker = Control.new()
+	_share_picker.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_share_picker.set_meta("files", files)
+	_share_picker.set_meta("selected", 0)
+	add_child(_share_picker)
+	_build_share_picker(files)
+	SoundManager.play_ui("menu_select")
+
+
+func _build_share_picker(files: Array) -> void:
+	"""(Re)build the import picker overlay visuals from the file list."""
+	for child in _share_picker.get_children():
+		child.queue_free()
+
+	var selected: int = _share_picker.get_meta("selected")
+
+	# Dim backdrop
+	var backdrop := ColorRect.new()
+	backdrop.color = Color(0.0, 0.0, 0.0, 0.7)
+	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_share_picker.add_child(backdrop)
+
+	# Right-click anywhere cancels the picker (mouse parity with the rest of the editor)
+	MenuMouseHelper.add_right_click_cancel(backdrop, func() -> void: _close_share_picker())
+
+	# Panel
+	var panel_w := 460.0
+	var panel_h := minf(80.0 + files.size() * 26.0, size.y - 80.0)
+	var panel := ColorRect.new()
+	panel.color = style.bg
+	panel.position = Vector2((size.x - panel_w) / 2.0, (size.y - panel_h) / 2.0)
+	panel.size = Vector2(panel_w, panel_h)
+	_share_picker.add_child(panel)
+	_add_pixel_border(panel, panel_w, panel_h)
+
+	var title := Label.new()
+	title.text = "IMPORT SCRIPT  -  apply to %s" % character_name
+	title.position = panel.position + Vector2(12, 8)
+	title.add_theme_font_size_override("font_size", 13)
+	title.add_theme_color_override("font_color", style.get("highlight_text", Color.YELLOW))
+	_share_picker.add_child(title)
+
+	var list_y := panel.position.y + 34.0
+	for i in range(files.size()):
+		var filename: String = files[i]
+		var is_sel := i == selected
+
+		var row_bg := ColorRect.new()
+		row_bg.position = Vector2(panel.position.x + 8, list_y - 2)
+		row_bg.size = Vector2(panel_w - 16, 24)
+		row_bg.color = style.get("highlight_bg", Color(0.3, 0.3, 0.5)) if is_sel else Color(0, 0, 0, 0)
+		_share_picker.add_child(row_bg)
+
+		var row := Label.new()
+		row.text = "%s %s" % ["▶" if is_sel else "  ", ScriptShareManager.get_export_summary(filename)]
+		row.position = Vector2(panel.position.x + 12, list_y)
+		row.size = Vector2(panel_w - 24, 22)
+		row.add_theme_font_size_override("font_size", 11)
+		row.add_theme_color_override("font_color", style.get("highlight_text", Color.YELLOW) if is_sel else style.text)
+		row.clip_text = true
+		_share_picker.add_child(row)
+
+		# Mouse: click a row to import it immediately
+		var idx := i
+		MenuMouseHelper.make_clickable(row_bg, idx, panel_w - 16, 24,
+			func() -> void:
+				_share_picker.set_meta("selected", idx)
+				_apply_share_selection(),
+			func() -> void:
+				_share_picker.set_meta("selected", idx)
+				_build_share_picker(_share_picker.get_meta("files")))
+
+		list_y += 26.0
+
+	var help := Label.new()
+	help.text = "D-Pad:Select   A:Import   B:Cancel"
+	help.position = Vector2(panel.position.x + 12, panel.position.y + panel_h - 22)
+	help.add_theme_font_size_override("font_size", 10)
+	help.add_theme_color_override("font_color", style.text.darkened(0.2))
+	_share_picker.add_child(help)
+
+
+func _handle_share_picker_input(event: InputEvent) -> void:
+	"""Self-contained input for the import picker (keeps grid input frozen while open)."""
+	if not _share_picker or not is_instance_valid(_share_picker):
+		return
+
+	var files: Array = _share_picker.get_meta("files")
+	var selected: int = _share_picker.get_meta("selected")
+
+	if event.is_action_pressed("ui_up") and not event.is_echo():
+		_share_picker.set_meta("selected", (selected - 1 + files.size()) % files.size())
+		_build_share_picker(files)
+		SoundManager.play_ui("menu_move")
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("ui_down") and not event.is_echo():
+		_share_picker.set_meta("selected", (selected + 1) % files.size())
+		_build_share_picker(files)
+		SoundManager.play_ui("menu_move")
+		get_viewport().set_input_as_handled()
+	elif event.is_action_pressed("ui_accept") and not event.is_echo():
+		_apply_share_selection()
+		get_viewport().set_input_as_handled()
+	elif (event.is_action_pressed("ui_cancel") or event.is_action_pressed("ui_menu")) and not event.is_echo():
+		_close_share_picker()
+		get_viewport().set_input_as_handled()
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+		_close_share_picker()
+		get_viewport().set_input_as_handled()
+
+
+func _apply_share_selection() -> void:
+	"""Apply the highlighted export file to the current character, then rebuild the grid."""
+	if not _share_picker or not is_instance_valid(_share_picker):
+		return
+	var files: Array = _share_picker.get_meta("files")
+	var selected: int = _share_picker.get_meta("selected")
+	if selected < 0 or selected >= files.size():
+		_close_share_picker()
+		return
+
+	var filename: String = files[selected]
+	var ok := _import_script_file(filename)
+	_close_share_picker()
+
+	if ok:
+		_flash_status("Imported %s" % filename, Color.LIME)
+		SoundManager.play_ui("menu_select")
+	else:
+		_flash_status("Could not apply %s to %s" % [filename, character_name], Color.YELLOW)
+		SoundManager.play_ui("menu_error")
+
+
+func _import_script_file(filename: String) -> bool:
+	"""Load filename via ScriptShareManager, apply to current character, reload rules + grid.
+
+	Handles both single-character exports and party bundles (applies the matching
+	character's slice). Returns true when the current character's script changed.
+	"""
+	var data := ScriptShareManager.import_file(filename)
+	if data.is_empty():
+		return false
+
+	var applied := ScriptShareManager.apply_character_script(character_id, data)
+	if not applied:
+		return false
+	_reload_applied_script()
+	return true
+
+
+func _reload_applied_script() -> void:
+	# Reload the freshly-applied script and rebuild the visible grid (shared by file-import and code-paste).
+	char_script = AutobattleSystem.get_character_script(character_id)
+	rules = char_script.get("rules", []).duplicate(true)
+	if rules.size() == 0:
+		rules.append(_create_default_rule())
+	cursor_row = 0
+	cursor_col = 0
+	_scroll_offset = 0.0
+	_refresh_grid()
+
+
+## Shift+E: put a compact share code on the clipboard — paste it anywhere.
+func _copy_share_code() -> void:
+	_save_script()
+	var code := ScriptShareManager.encode_share_code(character_id)
+	if code == "":
+		_flash_status("Nothing to share — script is empty", Color.YELLOW)
+		SoundManager.play_ui("menu_error")
+		return
+	DisplayServer.clipboard_set(code)
+	_flash_status("Share code copied (%d chars) — paste it anywhere" % code.length(), Color.LIME)
+	SoundManager.play_ui("menu_select")
+
+
+## Shift+I: apply a share code from the clipboard to this character.
+func _paste_share_code() -> void:
+	var code := DisplayServer.clipboard_get()
+	if code.strip_edges() == "":
+		_flash_status("Clipboard is empty — copy a share code first", Color.YELLOW)
+		SoundManager.play_ui("menu_error")
+		return
+	var data := ScriptShareManager.decode_share_code(code)
+	if data.is_empty():
+		_flash_status("Not a valid share code", Color.YELLOW)
+		SoundManager.play_ui("menu_error")
+		return
+	if ScriptShareManager.apply_character_script(character_id, data):
+		_reload_applied_script()
+		_flash_status("Share code applied to %s" % character_name, Color.LIME)
+		SoundManager.play_ui("menu_select")
+		if PartyChatSystem:
+			PartyChatSystem.fire_event_flag("event_flag_share_code_used")
+	else:
+		_flash_status("Share code valid but could not apply", Color.YELLOW)
+		SoundManager.play_ui("menu_error")
+
+
+func _close_share_picker() -> void:
+	"""Tear down the import picker overlay and return control to the grid."""
+	if _share_picker and is_instance_valid(_share_picker):
+		_share_picker.queue_free()
+	_share_picker = null
+	_update_cursor()
+
+
+func _open_rule_composer_overlay() -> void:
+	"""Open the Rule Composer overlay for the current character's autobattle script."""
+	if _rule_composer_overlay and is_instance_valid(_rule_composer_overlay):
+		return
+	_rule_composer_overlay = _RuleComposerOverlayScene.instantiate()
+	add_child(_rule_composer_overlay)
+	_rule_composer_overlay.installed.connect(_on_composer_installed)
+	_rule_composer_overlay.cancelled.connect(_on_composer_cancelled)
+	_rule_composer_overlay.open("autobattle", character_id, rules.duplicate(true))
+	SoundManager.play_ui("menu_select")
+
+
+func _on_composer_installed(profile_index: int) -> void:
+	"""RuleComposerOverlay confirmed a composition -- reload the grid from the resulting profile."""
+	if _rule_composer_overlay and is_instance_valid(_rule_composer_overlay):
+		_rule_composer_overlay.queue_free()
+	_rule_composer_overlay = null
+	if profile_index >= 0:
+		AutobattleSystem.set_active_profile(character_id, profile_index)
+	char_script = AutobattleSystem.get_character_script(character_id)
+	rules = char_script.get("rules", []).duplicate(true)
+	if rules.size() == 0:
+		rules.append(_create_default_rule())
+	cursor_row = 0
+	cursor_col = 0
+	_scroll_offset = 0.0
+	_build_ui()
+	_refresh_grid()
+	if profile_index >= 0:
+		_flash_status("Composed profile installed (slot %d)" % profile_index)
+	else:
+		_flash_status("Composed rules applied to current profile")
+
+
+func _on_composer_cancelled() -> void:
+	"""RuleComposerOverlay was dismissed without installing -- resume the grid."""
+	if _rule_composer_overlay and is_instance_valid(_rule_composer_overlay):
+		_rule_composer_overlay.queue_free()
+	_rule_composer_overlay = null
+	if _grid_container == null:
+		if rules.size() == 0:
+			rules.append(_create_default_rule())
+		cursor_row = 0
+		cursor_col = 0
+		_scroll_offset = 0.0
+		_build_ui()
+		_refresh_grid()
+	else:
+		_update_cursor()
+
+
+func _show_empty_grid_splash() -> void:
+	"""Fresh character with no rules yet -- open the composer directly."""
+	_open_rule_composer_overlay()
+
+
+func _flash_status(text: String, color: Color = Color.LIME) -> void:
+	"""Show a transient status message above the legend strip (export/import feedback)."""
+	if not _flash_label or not is_instance_valid(_flash_label):
+		return
+	_flash_label.text = text
+	_flash_label.add_theme_color_override("font_color", color)
+	_flash_label.visible = true
+	_flash_timer = 2.5
+
+
+func _process(delta: float) -> void:
+	if _flash_timer > 0.0:
+		_flash_timer -= delta
+		if _flash_timer <= 0.0 and _flash_label and is_instance_valid(_flash_label):
+			_flash_label.visible = false

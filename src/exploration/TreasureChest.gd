@@ -26,11 +26,23 @@ const TILE_SIZE: int = 32
 
 
 func _ready() -> void:
+	# Save-tracking footgun guard: a chest that never overrode chest_id shares
+	# its opened-flag ("chest_" + id) with every other forgetter — open one and
+	# all of them vanish. Nothing legitimately uses the "chest_001" default, so
+	# hitting it (or an empty id) means a scene forgot to assign a unique one.
+	if chest_id == "" or chest_id == "chest_001":
+		push_warning("[TreasureChest] '%s' still has the default/empty chest_id ('%s') — set a unique id or its opened state collides with other chests" % [name, chest_id])
 	_check_if_opened()
 	_generate_sprite()
 	_setup_collision()
 	_setup_name_label()
 	_setup_dialogue_box()
+
+	## Tick 455: register the chest in a "treasure" group so the
+	## content_radar passive can find and count nearby unopened
+	## chests for its HUD readout. Plain group membership avoids
+	## any scene-specific coupling.
+	add_to_group("treasure")
 
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
@@ -239,9 +251,14 @@ func _draw_chest(image: Image) -> void:
 func _setup_collision() -> void:
 	var collision = CollisionShape2D.new()
 	var shape = CircleShape2D.new()
-	shape.radius = 128.0
+	# Mode 7 overworld needs the tall billboard grab zone; flat villages read that as a 4-tile grabber arm (struktured 2026-07-12: "opened a chest 5 tiles away").
+	if Mode7Overlay.is_active:
+		shape.radius = 128.0
+		collision.scale = Vector2(1.0, 1.67)  # Mode 7 billboard Y:X ratio (0.3:0.5)
+	else:
+		shape.radius = 40.0  # ~1.25 tiles for flat villages/interiors
+		collision.scale = Vector2.ONE
 	collision.shape = shape
-	collision.scale = Vector2(1.0, 1.67)  # Y-stretch: matches Mode 7 billboard Y:X ratio (0.3:0.5)
 	add_child(collision)
 
 	collision_layer = 4
@@ -271,9 +288,13 @@ func _setup_dialogue_box() -> void:
 	dialogue_box.visible = false
 	dialogue_box.z_index = 100
 
+	# Item 14 (2026-07-01 playtest): panel was 200×50 @ y=-70 — bottom at
+	# y=-20 sat 4px above the 32px chest sprite, reading as "on the chest".
+	# Enlarged + lifted so it floats clearly above with visible air. Chest
+	# center → panel bottom is now 46px, plenty of separation.
 	var panel = Panel.new()
-	panel.position = Vector2(-100, -70)
-	panel.size = Vector2(200, 50)
+	panel.position = Vector2(-120, -110)
+	panel.size = Vector2(240, 60)
 
 	var style = StyleBoxFlat.new()
 	style.bg_color = Color(0.1, 0.08, 0.05, 0.95)
@@ -283,10 +304,12 @@ func _setup_dialogue_box() -> void:
 	panel.add_theme_stylebox_override("panel", style)
 	dialogue_box.add_child(panel)
 
+	# Item 14: label geometry follows the enlarged panel — 224×44 inside
+	# the 240×60 panel, 8px inset all around.
 	dialogue_label = Label.new()
-	dialogue_label.position = Vector2(-92, -62)
-	dialogue_label.size = Vector2(184, 34)
-	dialogue_label.add_theme_font_size_override("font_size", 11)
+	dialogue_label.position = Vector2(-112, -102)
+	dialogue_label.size = Vector2(224, 44)
+	dialogue_label.add_theme_font_size_override("font_size", 12)
 	dialogue_label.add_theme_color_override("font_color", Color.WHITE)
 	dialogue_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	dialogue_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -355,14 +378,14 @@ func _open_chest(player: Node2D) -> void:
 			if GameState and GameState.has_method("add_gold"):
 				GameState.add_gold(gold_amount)
 		"item":
-			var item_name = contents_id.replace("_", " ").capitalize()
+			var item_name = _resolve_display_name(contents_id)
 			contents_text = "Found %s x%d!" % [item_name, contents_amount]
 			# Add items to party
 			var game_loop = get_tree().root.get_node_or_null("GameLoop")
 			if game_loop and game_loop.party.size() > 0:
 				game_loop.party[0].add_item(contents_id, contents_amount)
 		"equipment":
-			var equip_name = contents_id.replace("_", " ").capitalize()
+			var equip_name = _resolve_display_name(contents_id)
 			contents_text = "Found %s!" % equip_name
 			# Add to equipment pool. Slot is resolved against EquipmentSystem's
 			# weapons/armors/accessories dicts so the categorization is correct
@@ -384,14 +407,30 @@ func _open_chest(player: Node2D) -> void:
 	dialogue_label.text = contents_text
 
 	chest_opened.emit({"type": contents_type, "id": contents_id, "amount": contents_amount})
-	# Play item found as a UI sound, not a music stinger — avoids music loop bug
-	SoundManager.play_ui("chest_open")
+	# Content-aware "loot received" cue. Pre-fix this also played
+	# "chest_open" — the same sound the opening at line 331 already fired,
+	# so every chest played chest_open TWICE. The comment hinted that this
+	# slot was intended as a content-specific reward chime (a music stinger
+	# here caused a loop bug, hence the play_ui form). Gold gets the
+	# canonical gold_pickup chime (matches BattleResultsDisplay's gold
+	# count-up); item/equipment chests stay silent on this slot — the
+	# opening sound + on-screen text already communicate the reward.
+	if SoundManager:
+		match contents_type:
+			"gold":
+				SoundManager.play_ui("gold_pickup")
 
 	# Hide after delay
 	await get_tree().create_timer(2.0).timeout
 	if not is_instance_valid(self) or not is_instance_valid(dialogue_box):
 		return
 	dialogue_box.visible = false
+
+
+## Tick 135: thin wrapper around ItemNameResolver. Local helper
+## stays so call sites don't change shape.
+func _resolve_display_name(contents_id: String) -> String:
+	return ItemNameResolver.resolve(contents_id)
 
 
 func _resolve_equipment_pool(item_id: String) -> String:
@@ -401,15 +440,9 @@ func _resolve_equipment_pool(item_id: String) -> String:
 	## doesn't know the item — better than silently dropping the chest
 	## reward. The fallback matches pre-fix default behavior so existing
 	## save data with mis-pooled items doesn't change shape.
-	if Engine.has_singleton("EquipmentSystem"):
-		var eq = Engine.get_singleton("EquipmentSystem")
-		if eq.has_method("get_weapon") and not eq.get_weapon(item_id).is_empty():
-			return "weapons"
-		if eq.has_method("get_armor") and not eq.get_armor(item_id).is_empty():
-			return "armors"
-		if eq.has_method("get_accessory") and not eq.get_accessory(item_id).is_empty():
-			return "accessories"
-	# EquipmentSystem also lives as an autoload on /root in many contexts.
+	# Engine.has_singleton("EquipmentSystem") is ALWAYS FALSE for autoloads in
+	# Godot 4. The autoload lookup below (eq_node) is the only path that ever
+	# fires; keep it as the sole source of truth.
 	var eq_node = get_node_or_null("/root/EquipmentSystem")
 	if eq_node:
 		if eq_node.has_method("get_weapon") and not eq_node.get_weapon(item_id).is_empty():

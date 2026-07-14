@@ -160,20 +160,30 @@ static func get_personality_description(p: Personality) -> String:
 	return ""
 
 
-## Apply personality stat bonus to a combatant
+## Apply personality stat bonus to a combatant.
+##
+## Pre-fix this mutated the DERIVED stat (combatant.attack += 2) then
+## immediately called recalculate_stats(), which rebuilds derived stats
+## from base_X — so the +2 was wiped the same frame it landed. Every
+## personality bonus in the UI ("+2 ATK" / "+2 DEF" / "+2 MAG" / "+2 SPD"
+## / "+2 MAG +1 SPD") was effectively dead at character creation.
+##
+## Fix: modify the BASE stat so recalculate_stats picks the bonus up
+## like any other source (job mods, level multiplier, passives). The
+## bonus persists across stat recalcs and is intrinsic to the character.
 func apply_stat_bonus(combatant: Combatant) -> void:
 	match personality:
 		Personality.BRAVE:
-			combatant.attack += 2
+			combatant.base_attack += 2
 		Personality.CAUTIOUS:
-			combatant.defense += 2
+			combatant.base_defense += 2
 		Personality.SCHOLARLY:
-			combatant.magic += 2
+			combatant.base_magic += 2
 		Personality.QUICK:
-			combatant.speed += 2
+			combatant.base_speed += 2
 		Personality.CHARISMATIC:
-			combatant.magic += 2
-			combatant.speed += 1
+			combatant.base_magic += 2
+			combatant.base_speed += 1
 	combatant.recalculate_stats()
 
 

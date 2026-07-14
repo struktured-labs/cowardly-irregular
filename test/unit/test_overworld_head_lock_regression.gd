@@ -61,6 +61,32 @@ func _frame_bbox_y(img: Image, row_idx: int, col_idx: int) -> Vector2i:
     return Vector2i(y_top, y_bot)
 
 
+func _head_pixels_match_shifted(img: Image, row_idx: int, col_a: int, col_b: int, y_top: int, y_lock_end: int, dy: int) -> int:
+    # Like _head_pixels_match but frame B is sampled dy pixels lower —
+    # a UNIFORM 1px stride bob (2026-07-11 robed-walker fix) is deliberate
+    # whole-sprite rhythm, not garble; garbled heads match NO shift.
+    var diffs := 0
+    var oy := row_idx * FRAME_SIZE
+    var oxa := col_a * FRAME_SIZE
+    var oxb := col_b * FRAME_SIZE
+    for y in range(y_top, y_lock_end):
+        var yb := y + dy
+        if yb < 0 or yb >= FRAME_SIZE:
+            continue
+        for x in range(FRAME_SIZE):
+            var pa := img.get_pixel(oxa + x, oy + y)
+            var pb := img.get_pixel(oxb + x, oy + yb)
+            if abs(pa.a - pb.a) > 0.02:
+                diffs += 1
+                continue
+            if pa.a < 0.05 and pb.a < 0.05:
+                continue
+            var d: float = abs(pa.r - pb.r) + abs(pa.g - pb.g) + abs(pa.b - pb.b)
+            if d > 0.02:
+                diffs += 1
+    return diffs
+
+
 func _head_pixels_match(img: Image, row_idx: int, col_a: int, col_b: int, y_top: int, y_lock_end: int) -> int:
     # Counts mismatched pixels in the head region between two frames.
     # Compares alpha + only-opaque RGB (Godot's fix_alpha_border setting bleeds
@@ -98,6 +124,8 @@ func _assert_head_locked(path: String, label: String) -> void:
         var y_lock_end := mini(FRAME_SIZE, bbox.x + head_h)
         for col in [1, 2, 3]:
             var diffs := _head_pixels_match(img, row, 0, col, bbox.x, y_lock_end)
+            for dy in [-1, 1]:
+                diffs = mini(diffs, _head_pixels_match_shifted(img, row, 0, col, bbox.x, y_lock_end, dy))
             assert_lt(diffs, 4,
                 "%s row %d frame %d: head region (y=%d..%d) should be pixel-identical to frame 0. Got %d diffs (expected <4)." %
                 [label, row, col, bbox.x, y_lock_end, diffs])
