@@ -14,8 +14,8 @@ var horizon: float = 0.0
 ## visual/physics parity is closer. Reversible if playtest wants the
 ## old feel back.
 var near_scale: float = 0.55  # was 0.45 — less horizontal compression
-var ground_y: float = 0.48
-var curvature: float = 0.005  # was 0.01 — less warp at player
+var ground_y: float = 0.52
+var curvature: float = 0.003  # 2026-07-14 — less warp at player
 var fog_color: Color = Color(0.50, 0.60, 0.78, 1.0)
 # was hardcoded at shader's 0.7 max; 0.45 default per playtest — per-world preset can override
 var fog_strength: float = 0.45
@@ -48,7 +48,7 @@ const TINT_NIGHT: Color = Color(0.6, 0.65, 0.9)
 ## W1 classic SNES → W5 wireframe/data → W6 shader dissolves entirely.
 const WORLD_PRESETS: Dictionary = {
 	"medieval": {
-		"curvature": 0.005,  # was 0.01 — mountain-edge parity tuning
+		"curvature": 0.003,  # 2026-07-14 — mountain-edge parity tuning
 		"fog_color": Color(0.50, 0.60, 0.78),
 		"fog_strength": 0.35,  # clear open sky
 		"sky_top": Color(0.25, 0.35, 0.65),
