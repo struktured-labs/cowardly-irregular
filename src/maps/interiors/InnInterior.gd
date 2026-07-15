@@ -1319,6 +1319,9 @@ func _do_rest() -> void:
 	var game_loop = get_tree().root.get_node_or_null("GameLoop")
 	if game_loop and game_loop.party:
 		for member in game_loop.party:
+			# 2026-07-15 playtest: "slept at inn, bard still KO'd" — HP was maxed but is_alive stayed false. Revive KO'd members first so the inn actually raises them, then top off HP/MP.
+			if not member.is_alive and member.has_method("revive"):
+				member.revive(member.max_hp)
 			member.current_hp = member.max_hp
 			member.current_mp = member.max_mp
 			member.current_ap = 0
@@ -1337,8 +1340,10 @@ func _make_inn_dialog(text: String) -> Control:
 	var holder = Control.new()
 	holder.name = "RestDialog"
 	holder.z_index = 100
-	holder.position = Vector2(3 * TILE_SIZE - 120, 3 * TILE_SIZE - 90)
+	# 2026-07-15 playtest: was `3*TILE_SIZE - 120` = -24px, i.e. off-screen LEFT half the width of the dialog was clipped ("st at the inn?"). Anchor screen-center via viewport size so the dialog always renders on-screen regardless of the innkeeper's tile.
 	holder.size = Vector2(240, 70)
+	var _vp := get_viewport().get_visible_rect().size if get_viewport() else Vector2(1280, 720)
+	holder.position = Vector2((_vp.x - holder.size.x) / 2, _vp.y * 0.35)
 
 	var panel = Panel.new()
 	panel.position = Vector2.ZERO

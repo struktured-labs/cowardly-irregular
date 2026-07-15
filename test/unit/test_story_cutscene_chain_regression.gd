@@ -73,24 +73,34 @@ func test_mage_spotlight_does_not_chain_after_rogue() -> void:
 
 
 func test_mage_spotlight_still_fires_on_fresh_check() -> void:
-	# The cross-entry guard must only affect CHAIN rechecks — a fresh map
-	# entry (plain _get_pending_story_cutscene) still returns mage.
+	# 2026-07-15 story pacing: mage now floor-gated (>=3). At floor 1 it must
+	# NOT fire; at floor 3+ it must. The cross-entry guard must still let it
+	# reach the player when the gate is satisfied.
 	var gl = _detached_loop()
 	_arm_cave_first_entry(gl)
 	GameState.game_constants["cutscene_flag_spotlight_unlocked_rogue"] = true
+	gl._current_cave_floor = 1
+	assert_eq(gl._get_pending_story_cutscene(), "",
+		"floor-1 must NOT fire mage after story-pacing gate — descent required")
+	gl._current_cave_floor = 3
 	assert_eq(gl._get_pending_story_cutscene(), "world1_spotlight_mage_ch3",
-		"mage spotlight must still fire on the next cave entry — the guard must not make it unreachable")
+		"floor-3 must fire mage — gate satisfied, spotlight reachable")
 
 
 func test_fighter_spotlight_guard_matches_mage() -> void:
+	# 2026-07-15 story pacing: fighter now floor-gated (>=5).
 	var gl = _detached_loop()
 	_arm_cave_first_entry(gl)
 	GameState.game_constants["cutscene_flag_spotlight_unlocked_rogue"] = true
 	GameState.game_constants["cutscene_flag_spotlight_unlocked_mage"] = true
 	assert_eq(gl._next_chained_story_cutscene("world1_spotlight_mage_ch3"), "",
 		"fighter spotlight must NOT chain after mage (third duel on one entry)")
+	gl._current_cave_floor = 3
+	assert_eq(gl._get_pending_story_cutscene(), "",
+		"floor-3 must NOT fire fighter — descent to floor 5 required")
+	gl._current_cave_floor = 5
 	assert_eq(gl._get_pending_story_cutscene(), "world1_spotlight_fighter_ch2",
-		"fighter spotlight must fire on the following fresh entry")
+		"floor-5 must fire fighter — antechamber floor per struktured's pacing spec")
 
 
 func test_chain_returns_empty_at_cap() -> void:
