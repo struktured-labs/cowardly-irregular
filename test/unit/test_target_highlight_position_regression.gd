@@ -24,6 +24,7 @@ func test_target_pos_captures_raw_global_position_not_canvas_mapped() -> void:
 	var canvas_mul_count: int = src.count("target_pos = canvas_transform * s.global_position")
 	assert_eq(canvas_mul_count, 0,
 		"no target_pos site may pre-apply canvas_transform — the renderer applies it once, pre-multiplying double-applies and shoves the highlight")
-	var raw_count: int = src.count("target_pos = s.global_position")
-	assert_gte(raw_count, 6,
-		"all six target_pos sites (attack + ability enemy/ally/dead + item ally/enemy) must use raw global_position")
+	# 2026-07-15 iteration: raw global_position was still transient during a target's attack tween — Mage spotlight repro'd the misalignment. Prefer home_position meta (stamped by BattleScene at sprite spawn) with global_position as fallback for edge cases.
+	var home_meta_count: int = src.count("s.get_meta(\"home_position\", s.global_position)")
+	assert_gte(home_meta_count, 6,
+		"all six target_pos sites must resolve via s.get_meta(\"home_position\", s.global_position) — plain global_position is transient during attack tweens and re-opens the Mage-spotlight misalignment")
