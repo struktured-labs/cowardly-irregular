@@ -255,7 +255,7 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 					if i < _scene.party_sprite_nodes.size():
 						var s = _scene.party_sprite_nodes[i]
 						if is_instance_valid(s):
-							target_pos = canvas_transform * s.global_position
+							target_pos = s.global_position  # 2026-07-14: no canvas_transform mul — Node2D under Control tree, mul double-applied and shoved the highlight box off-target (playtest bug)
 					var hp_label: String = "KO'd" if not member.is_alive else "%d/%d HP" % [member.current_hp, member.max_hp]
 					ally_targets.append({
 						"id": "item_" + item_id + "_ally_" + str(i),
@@ -277,7 +277,7 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 					if enemy_idx >= 0 and enemy_idx < _scene.enemy_sprite_nodes.size():
 						var s = _scene.enemy_sprite_nodes[enemy_idx]
 						if is_instance_valid(s):
-							target_pos = canvas_transform * s.global_position
+							target_pos = s.global_position  # 2026-07-14: no canvas_transform mul — Node2D under Control tree, mul double-applied and shoved the highlight box off-target (playtest bug)
 					enemy_targets.append({
 						"id": "item_" + item_id + "_enemy_" + str(enemy_idx),
 						"label": "%s (%d HP)" % [enemy.combatant_name, enemy.current_hp],
@@ -525,7 +525,7 @@ func _build_ability_menu_item(ability_id: String, combatant: Combatant, alive_en
 			if enemy_idx >= 0 and enemy_idx < _scene.enemy_sprite_nodes.size():
 				var s = _scene.enemy_sprite_nodes[enemy_idx]
 				if is_instance_valid(s):
-					target_pos = canvas_transform * s.global_position
+					target_pos = s.global_position  # 2026-07-14: no canvas_transform mul — Node2D under Control tree, mul double-applied and shoved the highlight box off-target (playtest bug)
 			# Only damaging abilities get a "~N dmg" (and [KILL]) readout — a
 			# debuff/steal/scan deals 0, so the estimate would be a bogus number.
 			var enemy_label: String = "%s (%d HP)" % [enemy.combatant_name, enemy.current_hp]
@@ -556,7 +556,7 @@ func _build_ability_menu_item(ability_id: String, combatant: Combatant, alive_en
 			if i < _scene.party_sprite_nodes.size():
 				var s = _scene.party_sprite_nodes[i]
 				if is_instance_valid(s):
-					target_pos = canvas_transform * s.global_position
+					target_pos = s.global_position  # 2026-07-14: no canvas_transform mul — Node2D under Control tree, mul double-applied and shoved the highlight box off-target (playtest bug)
 			var heal_preview: String = ""
 			if ability.get("type", "") == "healing" and ability.has("heal_amount"):
 				var est_heal: int = int(ability["heal_amount"] * (1.0 + combatant.get_buffed_stat("magic", combatant.magic) / 20.0))
@@ -585,7 +585,7 @@ func _build_ability_menu_item(ability_id: String, combatant: Combatant, alive_en
 			if i < _scene.party_sprite_nodes.size():
 				var s = _scene.party_sprite_nodes[i]
 				if is_instance_valid(s):
-					target_pos = canvas_transform * s.global_position
+					target_pos = s.global_position  # 2026-07-14: no canvas_transform mul — Node2D under Control tree, mul double-applied and shoved the highlight box off-target (playtest bug)
 			dead_targets.append({
 				"id": "ability_" + ability_id + "_dead_" + str(i),
 				"label": "%s (KO)" % member.combatant_name,
@@ -684,7 +684,7 @@ func _build_free_move_item(combatant: Combatant, alive_enemies: Array[Combatant]
 		if enemy_idx >= 0 and enemy_idx < _scene.enemy_sprite_nodes.size():
 			var s = _scene.enemy_sprite_nodes[enemy_idx]
 			if is_instance_valid(s):
-				target_pos = canvas_transform * s.global_position
+				target_pos = s.global_position  # 2026-07-14: no canvas_transform mul — Node2D under Control tree, mul double-applied and shoved the highlight box off-target (playtest bug)
 		var est_dmg: int = BattleManager.estimate_attack_damage(combatant, enemy)
 		enemy_targets.append({
 			"id": "attack_" + str(enemy_idx),
