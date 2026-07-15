@@ -318,19 +318,22 @@ func _create_character_card(member: Combatant, index: int) -> Control:
 	exp_row.position = Vector2(58, 68)
 	card.add_child(exp_row)
 
-	# Dead indicator
-	if not member.is_alive:
-		var dead_overlay = ColorRect.new()
-		dead_overlay.color = Color(0.3, 0.0, 0.0, 0.5)
-		dead_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
-		card.add_child(dead_overlay)
+	# Dead indicator — always-present, visibility toggled per is_alive so a later Phoenix Down refresh (via _update_party_stats) can clear the overlay without a full rebuild (playtest 2026-07-15: Bard KO status persisted after in-menu revive because the overlay/label were only appended on first build).
+	var dead_overlay = ColorRect.new()
+	dead_overlay.name = "DeadOverlay"
+	dead_overlay.color = Color(0.3, 0.0, 0.0, 0.5)
+	dead_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dead_overlay.visible = not member.is_alive
+	card.add_child(dead_overlay)
 
-		var dead_label = Label.new()
-		dead_label.text = "KO"
-		dead_label.position = Vector2(4, 56)
-		dead_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
-		dead_label.add_theme_color_override("font_color", Color.RED)
-		card.add_child(dead_label)
+	var dead_label = Label.new()
+	dead_label.name = "DeadLabel"
+	dead_label.text = "KO"
+	dead_label.position = Vector2(4, 56)
+	dead_label.add_theme_font_size_override("font_size", TextScale.scaled(12))
+	dead_label.add_theme_color_override("font_color", Color.RED)
+	dead_label.visible = not member.is_alive
+	card.add_child(dead_label)
 
 	return card
 
@@ -595,6 +598,14 @@ func _update_party_stats() -> void:
 				mp_fill.color = Color.CYAN if mp_pct > 0.3 else Color.DARK_CYAN
 			if mp_value:
 				mp_value.text = "%d/%d" % [member.current_mp, member.max_mp]
+
+		# Refresh KO overlay + label — matches the always-present nodes stamped by _create_party_card.
+		var dead_overlay = card.get_node_or_null("DeadOverlay")
+		if dead_overlay:
+			dead_overlay.visible = not member.is_alive
+		var dead_label = card.get_node_or_null("DeadLabel")
+		if dead_label:
+			dead_label.visible = not member.is_alive
 
 
 func _update_selection() -> void:
