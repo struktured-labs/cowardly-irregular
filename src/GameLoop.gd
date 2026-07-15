@@ -5217,7 +5217,12 @@ func _show_autogrind_summary(stats: Dictionary, reason: String) -> void:
 	summary_layer.add_child(_autogrind_summary)
 
 	_autogrind_summary.setup(stats, reason)
+	# 2026-07-14 playtest: _stop_autogrind pops all locks + resumes exploration, so without this the player was walking the overworld with the summary modal on top of them.
+	if InputLockManager:
+		InputLockManager.push_lock("autogrind_summary")
 	_autogrind_summary.dismissed.connect(func():
+		if InputLockManager:
+			InputLockManager.pop_lock("autogrind_summary")
 		summary_layer.queue_free()
 		_autogrind_summary = null
 	)

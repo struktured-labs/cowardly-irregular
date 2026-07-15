@@ -910,7 +910,10 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 			elif target_type_str == "enemy" and target_idx >= 0 and target_idx < _scene.test_enemies.size():
 				target = _scene.test_enemies[target_idx]
 
-			if is_instance_valid(target) and target.is_alive:
+			# 2026-07-14 playtest: Phoenix Down was firing "Target no longer valid!" on KO'd allies — revive items EXPECT dead targets; mirror the same gate the menu-build uses (line 246).
+			var can_revive: bool = bool(ItemSystem.get_item(i_id).get("effects", {}).get("revive", false))
+			var valid: bool = is_instance_valid(target) and (target.is_alive or (can_revive and target_type_str == "ally"))
+			if valid:
 				BattleManager.player_item(i_id, [target])
 			else:
 				_scene.log_message("Target no longer valid!")
