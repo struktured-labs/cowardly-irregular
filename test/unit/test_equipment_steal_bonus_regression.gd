@@ -39,8 +39,10 @@ func test_steal_loop_uses_effective_rate() -> void:
 	var src := _read(BATTLE_MANAGER_PATH)
 	var idx: int = src.find("\"steal\":")
 	var window: String = src.substr(idx, 1500)
-	# The randf check must use effective_rate, not success_rate.
-	assert_true(window.contains("if randf() < effective_rate:"),
+	# The randf check must use effective_rate, not success_rate. 2026-07-15: the
+	# first-steal-guaranteed gate wraps this in an OR clause for Lockward — the
+	# effective_rate rand check still has to be present as the FALLBACK path.
+	assert_true(window.contains("randf() < effective_rate"),
 		"steal randf check must consult the bonus-adjusted effective_rate (not the raw success_rate)")
 
 

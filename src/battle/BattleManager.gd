@@ -4118,7 +4118,7 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 				var _steal_rate: float = clampf(float(ability.get("success_rate", 0.5)) + _sum_equipment_special_effect(caster, "steal_bonus"), 0.0, 1.0)
 				for _st in retargeted:
 					if _st is Combatant and is_instance_valid(_st) and _st.is_alive:
-						if randf() < _steal_rate:
+						if _first_steal_guaranteed(_st) or randf() < _steal_rate:
 							var _g: int = randi_range(5, 50) * (1 + int(_st.max_hp / 50.0))
 							GameState.add_gold(_g)
 							battle_log_message.emit("[color=yellow]%s mugs %d gold from %s![/color]" % [caster.combatant_name, _g, _st.combatant_name])
@@ -4742,6 +4742,20 @@ func _sum_equipment_special_effect(combatant: Combatant, key: String) -> float:
 		if ac_se is Dictionary:
 			total += float(ac_se.get(key, 0.0))
 	return total
+
+
+## 2026-07-15 playtest: Lockward is a knife-edge — a first-turn Steal miss lets Counter Stance one-shot the solo Rogue and no recovery is possible. When a target's monsters.json entry sets `first_steal_guaranteed: true`, the FIRST steal/mug this fight always lands (rate-roll bypassed). Subsequent steals fall back to the normal rate. One-shot only, so grinding doesn't turn Rogue into an infinite-steal turret.
+func _first_steal_guaranteed(target: Combatant) -> bool:
+	if target == null or not is_instance_valid(target):
+		return false
+	if not target.has_method("get_meta") or not target.has_meta("monster_type"):
+		return false
+	if target.has_meta("_steal_response_consumed") and bool(target.get_meta("_steal_response_consumed", false)):
+		return false
+	var mtype: String = str(target.get_meta("monster_type", ""))
+	if mtype == "" or not EncounterSystem or not EncounterSystem.monster_database.has(mtype):
+		return false
+	return bool((EncounterSystem.monster_database[mtype] as Dictionary).get("first_steal_guaranteed", false))
 
 
 ## Boss-specific Steal response (cowir-main msg 2474, struktured's artist pitch): a target with a monsters.json `steal_response` definition applies its mechanical effect once per fight on a successful steal. Lockward's tier-1 shape: {type:"defense_break", modifier:0.5, message:"..."} = permanent -50% defense debuff ("Vault-Cracked"). Extensible via new type strings. One-shot guarded via a per-target meta so re-steals still succeed for gold but don't stack the response.
@@ -5422,7 +5436,7 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 			var effective_rate: float = clampf(success_rate + steal_bonus, 0.0, 1.0)
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
-					if randf() < effective_rate:
+					if _first_steal_guaranteed(target) or randf() < effective_rate:
 						var gold_amount = randi_range(5, 50) * (1 + int(target.max_hp / 50.0))
 						GameState.add_gold(gold_amount)
 						print("  → Stole %d gold from %s!" % [gold_amount, target.combatant_name])

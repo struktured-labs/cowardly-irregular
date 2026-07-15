@@ -1921,7 +1921,7 @@
     },
     "dialogue": {
       "intro": [
-        "*The cavern has no light. Not darkness — an absence of light*",
+        "*The cavern has no light. Not darkness \u2014 an absence of light*",
         "*Something vast shifts in the void*",
         "Umbraxis: ...Do you ever wonder what we are?",
         "Hero: A dragon?",
@@ -2216,7 +2216,7 @@
   "brass_golem": {
     "id": "brass_golem",
     "name": "Brass Golem",
-    "description": "A hulking automaton forged from salvaged boiler plate. Extremely durable but slow — its coal furnace heart needs time to build pressure between swings.",
+    "description": "A hulking automaton forged from salvaged boiler plate. Extremely durable but slow \u2014 its coal furnace heart needs time to build pressure between swings.",
     "level": 6,
     "stats": {
       "max_hp": 240,
@@ -2683,7 +2683,7 @@
   "data_wraith": {
     "id": "data_wraith",
     "name": "Data Wraith",
-    "description": "A ghost in the machine — fragmented code that achieved consciousness and chose violence. High magic, devastating attacks, but held together by barely a thread.",
+    "description": "A ghost in the machine \u2014 fragmented code that achieved consciousness and chose violence. High magic, devastating attacks, but held together by barely a thread.",
     "level": 14,
     "stats": {
       "max_hp": 200,
@@ -2730,7 +2730,7 @@
   "recursive_loop": {
     "id": "recursive_loop",
     "name": "Recursive Loop",
-    "description": "An infinite loop made manifest — a spiraling entity that calls itself endlessly. Medium stats across the board, but its 'stack overflow' self-destruct deals massive damage to everything.",
+    "description": "An infinite loop made manifest \u2014 a spiraling entity that calls itself endlessly. Medium stats across the board, but its 'stack overflow' self-destruct deals massive damage to everything.",
     "level": 12,
     "stats": {
       "max_hp": 320,
@@ -4305,7 +4305,7 @@
   "chancellor_mordaine": {
     "id": "chancellor_mordaine",
     "name": "Chancellor Mordaine",
-    "description": "Sorceress-usurper of Castle Harmonia. The architect of World 1 — and the first mask of the Calibrant. Cold, deliberate, and somehow already knows your build.",
+    "description": "Sorceress-usurper of Castle Harmonia. The architect of World 1 \u2014 and the first mask of the Calibrant. Cold, deliberate, and somehow already knows your build.",
     "level": 20,
     "boss": true,
     "stats": {
@@ -4350,7 +4350,7 @@
     "meta_enemy": true,
     "one_shot": {
       "hp_threshold": 1500,
-      "setup_hint": "She's calibrated for the average party — bring something she didn't expect. Holy magic, stacked Bard buffs, and an Advance chain are the canonical answers.",
+      "setup_hint": "She's calibrated for the average party \u2014 bring something she didn't expect. Holy magic, stacked Bard buffs, and an Advance chain are the canonical answers.",
       "reward_item": "calibrant_token"
     },
     "dialogue": {
@@ -4445,7 +4445,7 @@
   "cleric_survive_target": {
     "id": "cleric_survive_target",
     "name": "The Grinding Wound",
-    "description": "A slow, relentless miasma that presses on the wounded villager. It cannot be defeated — only outlasted. The Cleric's grace-under-pressure is the answer. Faith as endurance, not violence.",
+    "description": "A slow, relentless miasma that presses on the wounded villager. It cannot be defeated \u2014 only outlasted. The Cleric's grace-under-pressure is the answer. Faith as endurance, not violence.",
     "level": 2,
     "boss": true,
     "spotlight_duel": true,
@@ -4495,7 +4495,7 @@
     "dialogue": {
       "intro": [
         "*The wounded villager gasps. His breath is failing.*",
-        "*The Cleric kneels. There is nothing here to fight — only a wound that will not stop bleeding.*",
+        "*The Cleric kneels. There is nothing here to fight \u2014 only a wound that will not stop bleeding.*",
         "Villager: Please... just... stay with me...",
         "*The Cleric's hands hover a half-second above his chest. Then she begins the prayer.*"
       ],
@@ -4515,7 +4515,7 @@
   "rogue_lockward": {
     "id": "rogue_lockward",
     "name": "The Lockward",
-    "description": "A treasure-guardian construct that ambushes any who reach for the vault. Every round it briefly exposes its flank — the Rogue's Steal, Backstab, and speed are the answer.",
+    "description": "A treasure-guardian construct that ambushes any who reach for the vault. Every round it briefly exposes its flank \u2014 the Rogue's Steal, Backstab, and speed are the answer.",
     "level": 5,
     "boss": true,
     "spotlight_duel": true,
@@ -4526,7 +4526,7 @@
     "steal_response": {
       "type": "vulnerability",
       "modifier": 0.5,
-      "message": "You lifted the Warden's Key from its plate — the guard falls slack."
+      "message": "You lifted the Warden's Key from its plate \u2014 the guard falls slack."
     },
     "stats": {
       "max_hp": 200,
@@ -4564,7 +4564,7 @@
         "*The vault door hums. From its frame steps a ward-construct of interlocking bronze.*",
         "Lockward: THIEF DETECTED.",
         "Lockward: PROTOCOL: DEFEND. COUNTER. PROTOCOL: REPEAT.",
-        "*Its stance is perfect — except for one moment each cycle when the counter resets.*"
+        "*Its stance is perfect \u2014 except for one moment each cycle when the counter resets.*"
       ],
       "low_hp": [
         "Lockward: PROTOCOL COMPROMISED.",
@@ -4579,12 +4579,13 @@
     "learns_from": [],
     "counter_abilities": [
       "masterite_counter_stance"
-    ]
+    ],
+    "first_steal_guaranteed": true
   },
   "mage_prismatic_construct": {
     "id": "mage_prismatic_construct",
     "name": "Prismatic Construct",
-    "description": "A crystal automaton whose elemental core rotates each round — fire, then ice, then lightning. The Mage must READ which face is showing and cast the opposing element. Logic as correctable reading.",
+    "description": "A crystal automaton whose elemental core rotates each round \u2014 fire, then ice, then lightning. The Mage must READ which face is showing and cast the opposing element. Logic as correctable reading.",
     "level": 5,
     "boss": true,
     "spotlight_duel": true,
@@ -4641,7 +4642,7 @@
       "intro": [
         "*A crystal automaton descends from the cave ceiling. Its core flickers red, then blue, then gold.*",
         "Prismatic Construct: PRISM ACTIVE. CYCLE INITIATED.",
-        "Prismatic Construct: RED FACE — WEAKNESS: FIRE.",
+        "Prismatic Construct: RED FACE \u2014 WEAKNESS: FIRE.",
         "Prismatic Construct: OBSERVE. ADAPT."
       ],
       "low_hp": [
@@ -4660,7 +4661,7 @@
   "bard_hostile_courtier": {
     "id": "bard_hostile_courtier",
     "name": "The Sneering Courtier",
-    "description": "A haughty capital-city functionary who refuses to yield. He cannot be killed — only talked down. The Bard's listen-first-then-speak-once is the answer. Voice as the naming of what is true.",
+    "description": "A haughty capital-city functionary who refuses to yield. He cannot be killed \u2014 only talked down. The Bard's listen-first-then-speak-once is the answer. Voice as the naming of what is true.",
     "level": 6,
     "boss": true,
     "spotlight_duel": true,
