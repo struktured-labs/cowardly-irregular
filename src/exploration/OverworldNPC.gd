@@ -84,6 +84,24 @@ const NPC_TYPE_TO_ARCHETYPE: Dictionary = {
 	"traveler": "traveler",
 	"noble": "noble",
 	"noblewoman": "noblewoman",
+	# ShopInterior + tavern + role-specific customer types — map onto
+	# existing archetype sheets so they stop falling to the generic
+	# villager procedural render (playtest 2026-07-15: cowir-main msg 2551,
+	# "tall red humanoid" was herbalist/pilgrim/apprentice sharing the
+	# proc-gen chibi shape).
+	"herbalist": "priestess",     # robed, gentle, gathers-things silhouette
+	"hooded_mage": "scholar",     # hooded scholarly figure (deep-navy scholar reads as arcane)
+	"nervous": "young_woman",     # generic customer, gendered by name-hash if empty preferred
+	"pilgrim": "monk",            # hooded traveling holy figure
+	"apprentice": "young_man",    # blacksmith journeyman, plain workwear
+	"knight": "soldier",          # armored infantry — closest existing sheet
+	"mysterious": "traveler",     # hooded stranger — traveler sheet has the cloak silhouette
+	"bartender": "innkeeper",     # apron behind counter, same silhouette family
+	"maid": "young_woman",        # apron-and-dress silhouette
+	"adventurer": "traveler",     # cloaked wanderer
+	"bard": "traveler",           # NPC bards in cutscenes — cloak+lute reads as traveler
+	"rogue": "traveler",          # NPC rogues — hooded generic
+	"scholarly": "scholar",       # alias (a few files use "scholarly" instead of "scholar")
 	# "dancer" stays procedural — it has its own animation system
 }
 
