@@ -198,13 +198,18 @@ func _setup_npcs() -> void:
 		npcs.add_child(spotter)
 
 	# ── Ambient texture (2, lean; cowir-story may enrich later) ──
+	# Originals sat inside the guild (7,6) and bookshop (16,6) building
+	# blocks (pre-existing bug; the runtime walkability sweep was silently
+	# relocating them). Moved onto the mid-plaza walkway so the placement
+	# matches intent — clerk south of the guild, warden south of the
+	# bookshop — and stays walkable across the 2026-07-14 village grow.
 	var clerk = _create_npc("Records Clerk", "scholar",
-		Vector2(7, 6) * TILE_SIZE, [
+		Vector2(5, 12) * TILE_SIZE, [
 			"Everything is recorded. Everything is fine. Please move along politely.",
 		])
 	npcs.add_child(clerk)
 	var sweeper = _create_npc("Plaza Warden", "guard",
-		Vector2(16, 6) * TILE_SIZE, [
+		Vector2(18, 12) * TILE_SIZE, [
 			"The plaza is swept twice daily. The district beyond the gate is not for visitors.",
 		])
 	npcs.add_child(sweeper)
