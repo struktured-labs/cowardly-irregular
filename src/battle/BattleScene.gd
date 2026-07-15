@@ -151,6 +151,7 @@ var _autogrind_console: RichTextLabel = null
 
 ## Autobattle toggle UI
 var _autobattle_toggle_ui: AutobattleToggleUIClass = null
+var _active_inline_editor: Control = null  # 2026-07-14 (cowir-music msg 2539): tracked so battle hotkeys don't leak into open autobattle grid editor
 
 ## Danger music state
 var _is_danger_music: bool = false
@@ -926,6 +927,7 @@ func _create_battle_sprites() -> void:
 		var offset = _get_formation_offset(i, party_members.size())
 		base_pos += offset
 		sprite.position = base_pos
+		sprite.set_meta("home_position", base_pos)  # 2026-07-14: attack tweens target this so a party-attack against a monster still in its lunge-return tween lands where the monster WILL be (not chases its transient position, playtest bug)
 		_party_base_positions.append(base_pos)
 
 		# Procedural sprites are drawn facing right and need flip_h to face the
@@ -982,6 +984,7 @@ func _create_battle_sprites() -> void:
 		var base_enemy_pos = enemy_positions[i].global_position if i < enemy_positions.size() else Vector2(200 + i * 100, 300)
 		base_enemy_pos.y += enemy_y_stagger
 		sprite.position = base_enemy_pos
+		sprite.set_meta("home_position", base_enemy_pos)  # 2026-07-14: attack tweens read this so a hit landing while target is mid-return still aims for the settled home
 		sprite.scale = Vector2(depth_scale * size_bump, depth_scale * size_bump)
 		_enemy_base_positions.append(base_enemy_pos)
 
@@ -2610,6 +2613,7 @@ func _open_autobattle_editor_for(combatant: Combatant) -> void:
 	add_child(editor)
 	editor.setup(char_id, char_name, combatant)
 	editor.closed.connect(_on_inline_autobattle_editor_closed.bind(editor))
+	_active_inline_editor = editor
 	print("Autobattle editor opened for %s (hold-A)" % char_name)
 
 
@@ -2629,6 +2633,8 @@ func _on_inline_autobattle_editor_closed(editor: Control) -> void:
 	"""Handle inline autobattle editor closing"""
 	if editor and is_instance_valid(editor):
 		editor.queue_free()
+	if _active_inline_editor == editor:
+		_active_inline_editor = null
 	# Show menu again
 	set_command_menu_visible(true)
 
@@ -3158,7 +3164,8 @@ func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attac
 	if not attacker_sprite.has_meta("home_position"):
 		attacker_sprite.set_meta("home_position", attacker_sprite.position)
 	var home_pos = attacker_sprite.get_meta("home_position")
-	var target_pos = target_sprite.position
+	# 2026-07-14 playtest: don't chase the target's transient tween position — if the target is still returning home from its own attack, aim at where it settles.
+	var target_pos = target_sprite.get_meta("home_position", target_sprite.position)
 
 	# Kill any existing tween on this sprite to prevent conflicts
 	if attacker_sprite.has_meta("attack_tween"):
@@ -3616,6 +3623,9 @@ func _input(event: InputEvent) -> void:
 	"""Handle high-priority inputs: Select button, battle speed toggle, and repeat actions"""
 	# Tutorial hint capturing input — its dismiss press must not also toggle autobattle/speed/formation.
 	if TutorialHint.is_any_active():
+		return
+	# 2026-07-14 (cowir-music msg 2539): editor owns its input; battle hotkeys (Y-repeat, X-speed, F-formation) leak through otherwise and fire mid-edit.
+	if _active_inline_editor and is_instance_valid(_active_inline_editor) and _active_inline_editor.visible:
 		return
 	# Trust interrupt: cancel during a trust-window claims the turn back.
 	# High priority so nothing else swallows the input while the window

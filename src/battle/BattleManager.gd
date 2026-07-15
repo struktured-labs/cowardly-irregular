@@ -2893,19 +2893,26 @@ func repeat_previous_actions() -> bool:
 					and target not in player_party
 					and target not in enemy_party)
 				var target_dead: bool = target_valid and target is Combatant and not target.is_alive
-				if not target_valid or target_dead or is_stale:
+				# 2026-07-14: revive-capable actions EXPECT dead targets — don't invalidate them (cowir-music msg 2539). Phoenix Down + revival-type abilities carried this trap.
+				var _revives: bool = _action_revives(action)
+				if not target_valid or is_stale or (target_dead and not _revives):
 					var alive_enemies = _get_alive_enemies()
 					action["target"] = alive_enemies[0] if alive_enemies.size() > 0 else null
 
 			# Retarget for abilities/items
 			if action.has("targets"):
 				var new_targets = []
+				var revives: bool = _action_revives(action)
 				for target in action["targets"]:
 					var is_alive_in_battle = (is_instance_valid(target)
 						and target is Combatant
 						and target.is_alive
 						and (target in player_party or target in enemy_party))
-					if is_alive_in_battle:
+					var is_dead_ally_in_battle = (is_instance_valid(target)
+						and target is Combatant
+						and not target.is_alive
+						and target in player_party)
+					if is_alive_in_battle or (revives and is_dead_ally_in_battle):
 						new_targets.append(target)
 					else:
 						# Replace dead/freed/stale targets with first alive enemy
@@ -2924,6 +2931,26 @@ func repeat_previous_actions() -> bool:
 		_process_next_selection()
 
 	return repeated_any
+
+
+## 2026-07-14 (cowir-music msg 2539): a repeated action against a KO'd ally was routed to the first alive enemy — Phoenix Down + Raise-family abilities EXPECT dead targets. True when the action revives.
+func _action_revives(action: Dictionary) -> bool:
+	var item_id: String = action.get("item_id", "")
+	if item_id != "":
+		var item := ItemSystem.get_item(item_id)
+		if item and bool(item.get("effects", {}).get("revive", false)):
+			return true
+	var ability_id: String = action.get("ability_id", "")
+	if ability_id != "":
+		var ability := JobSystem.get_ability(ability_id)
+		if ability:
+			if str(ability.get("type", "")) == "revival":
+				return true
+			if str(ability.get("target_type", "")) == "dead_ally":
+				return true
+			if ability.has("revive_percentage"):
+				return true
+	return false
 
 
 func _get_alive_enemies() -> Array[Combatant]:
