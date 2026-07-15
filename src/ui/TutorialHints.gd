@@ -80,6 +80,7 @@ const HINTS = {
 	"spotlight_unlock": {
 		"title": "Spotlight Unlocked",
 		"body": "This party member just stepped out from autopilot — you now have direct control of their turn. Locked members still follow their autobattle rules until their spotlight scene plays.",
+		"min_dismiss": 2.0,  # Load-bearing unlock — playtest 2026-07-15 msg 2555, mid-battle button-mashers were skipping it
 	},
 	"spotlight_locked_intro": {
 		"title": "Why the auto-turns?",
@@ -177,6 +178,6 @@ static func show(parent: Node, hint_id: String) -> void:
 	var hint_data = HINTS[hint_id]
 	var hint = TutorialHint.new()
 	parent.add_child(hint)
-	hint.show_hint(hint_id, hint_data["title"], hint_data["body"])
+	hint.show_hint(hint_id, hint_data["title"], hint_data["body"], float(hint_data.get("min_dismiss", 0.0)))
 	# Auto-cleanup after dismissal
 	hint.hint_dismissed.connect(func(_id): hint.queue_free())

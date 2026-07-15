@@ -29,7 +29,10 @@ var _dismiss_label: Label
 var _active: bool = false
 var _current_hint_id: String = ""
 var _auto_dismiss_timer: float = 0.0
+## Blocks dismiss input for this many seconds after show — prevents mid-battle button-mashers from skipping a load-bearing hint (spotlight_unlock: playtest 2026-07-15 msg 2555).
+var _min_dismiss_timer: float = 0.0
 const AUTO_DISMISS_TIME: float = 8.0
+const READY_DISMISS_TEXT: String = "Press any button to dismiss"
 
 
 var _saved_time_scale: float = 1.0
@@ -82,7 +85,7 @@ func _build_ui() -> void:
 	vbox.add_child(_dismiss_label)
 
 
-func show_hint(hint_id: String, title: String, body: String) -> void:
+func show_hint(hint_id: String, title: String, body: String, min_dismiss: float = 0.0) -> void:
 	"""Show a tutorial hint if it hasn't been shown before."""
 	# Belt-and-suspenders queue_free on early-return: hint_dismissed will not fire
 	# (since _active stays false) so callers that depend on it for cleanup leak.
@@ -102,11 +105,23 @@ func show_hint(hint_id: String, title: String, body: String) -> void:
 	_title_label.text = title
 	_body_label.text = body
 	_auto_dismiss_timer = AUTO_DISMISS_TIME
+	_min_dismiss_timer = maxf(0.0, min_dismiss)
+	_update_dismiss_label()
 	visible = true
 
 	# Input is blocked by _input consuming all events while _active
 	_active = true
 	_active_count += 1
+
+
+## Countdown while _min_dismiss_timer > 0; standard prompt otherwise.
+func _update_dismiss_label() -> void:
+	if not is_instance_valid(_dismiss_label):
+		return
+	if _min_dismiss_timer > 0.0:
+		_dismiss_label.text = "▶ [in %ds]" % ceili(_min_dismiss_timer)
+	else:
+		_dismiss_label.text = READY_DISMISS_TEXT
 
 
 func _dismiss() -> void:
@@ -137,6 +152,10 @@ func _process(delta: float) -> void:
 	if not _active:
 		return
 
+	if _min_dismiss_timer > 0.0:
+		_min_dismiss_timer = maxf(0.0, _min_dismiss_timer - delta)
+		_update_dismiss_label()
+
 	_auto_dismiss_timer -= delta
 	if _auto_dismiss_timer <= 0:
 		_dismiss()
@@ -148,6 +167,10 @@ func _input(event: InputEvent) -> void:
 
 	# Block ALL input while hint is showing — nothing passes to battle
 	get_viewport().set_input_as_handled()
+
+	# Min-dismiss window: consume input (nothing leaks to battle) but do NOT dismiss yet.
+	if _min_dismiss_timer > 0.0:
+		return
 
 	# Any keyboard / gamepad / mouse button dismisses
 	# (Audit-fix 2026-05-04: mouse-only players had no way to close
