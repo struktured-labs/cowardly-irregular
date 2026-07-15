@@ -9,8 +9,8 @@ const VillageShopScript = preload("res://src/exploration/VillageShop.gd")
 const TreasureChestScript = preload("res://src/exploration/TreasureChest.gd")
 
 ## Map dimensions (22x18 ice village)
-const MAP_WIDTH: int = 22
-const MAP_HEIGHT: int = 18
+const MAP_WIDTH: int = 26
+const MAP_HEIGHT: int = 22
 
 
 ## ---- BaseVillage hooks ----
@@ -28,11 +28,11 @@ func _get_map_pixel_size() -> Vector2i:
 
 
 func _get_save_point_position() -> Vector2:
-	return Vector2(8 * TILE_SIZE, 8 * TILE_SIZE)
+	return Vector2(10 * TILE_SIZE,10 * TILE_SIZE)
 
 
 func _get_player_spawn_fallback() -> Vector2:
-	return Vector2(256, 416)
+	return Vector2(320, 480)
 
 
 func _generate_map() -> void:
@@ -40,24 +40,28 @@ func _generate_map() -> void:
 	# W = wall, . = floor, L = lodge (inn), F = fur trader, C = chapel
 	# I = ice/snow decoration, X = exit
 	var map_data: Array[String] = [
-		"WWWWWWWWWWWWWWWWWWWWWW",
-		"W....................W",
-		"W..LLL......CCC.....W",
-		"W..LLL......CCC.....W",
-		"W..LLL......CCC.....W",
-		"W....................W",
-		"W......IIII..........W",
-		"W......IIII..FFF.....W",
-		"W......IIII..FFF.....W",
-		"W......IIII..FFF.....W",
-		"W....................W",
-		"W....................W",
-		"W....................W",
-		"W....................W",
-		"W....................W",
-		"W.....XXXXXX.........W",
-		"W.....XXXXXX.........W",
-		"WWWWWWWWWWWWWWWWWWWWWW",
+		"WWWWWWWWWWWWWWWWWWWWWWWWWW",
+		"W........................W",
+		"W........................W",
+		"W........................W",
+		"W....LLL......CCC.....W..W",
+		"W....LLL......CCC.....W..W",
+		"W....LLL......CCC.....W..W",
+		"W........................W",
+		"W........IIII............W",
+		"W........IIII..FFF.......W",
+		"W........IIII..FFF.......W",
+		"W........IIII..FFF.......W",
+		"W........................W",
+		"W........................W",
+		"W........................W",
+		"W........................W",
+		"W........................W",
+		"W.......XXXXXX...........W",
+		"W.......XXXXXX...........W",
+		"W........................W",
+		"W........................W",
+		"WWWWWWWWWWWWWWWWWWWWWWWWWW",
 	]
 
 	for y in range(MAP_HEIGHT):
@@ -71,7 +75,7 @@ func _generate_map() -> void:
 			if char == "X" and not spawn_points.has("exit"):
 				spawn_points["exit"] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
 
-	spawn_points["entrance"] = Vector2(8 * TILE_SIZE, 13 * TILE_SIZE)
+	spawn_points["entrance"] = Vector2(10 * TILE_SIZE,15 * TILE_SIZE)
 	spawn_points["default"] = spawn_points["entrance"]
 	spawn_points["frosthold_entrance"] = spawn_points["entrance"]
 
@@ -94,7 +98,7 @@ func _setup_transitions() -> void:
 	exit_trans.target_map = "overworld"
 	exit_trans.target_spawn = "frosthold_entrance"
 	exit_trans.require_interaction = false
-	exit_trans.position = spawn_points.get("exit", Vector2(256, 512))
+	exit_trans.position = spawn_points.get("exit", Vector2(320, 576))
 	_setup_transition_collision(exit_trans, Vector2(TILE_SIZE * 6, TILE_SIZE))
 	exit_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(exit_trans)
@@ -104,7 +108,7 @@ func _setup_buildings() -> void:
 	# === NORDIC LODGE (Inn) ===
 	var inn = VillageInnScript.new()
 	inn.inn_name = "Nordic Lodge"
-	inn.position = Vector2(3.5 * TILE_SIZE, 3 * TILE_SIZE)
+	inn.position = Vector2(5.5 * TILE_SIZE,5 * TILE_SIZE)
 	buildings.add_child(inn)
 
 	# === FUR TRADER (Item Shop) ===
@@ -112,7 +116,7 @@ func _setup_buildings() -> void:
 	fur_trader.shop_name = "Fur Trader"
 	fur_trader.shop_type = VillageShopScript.ShopType.ITEM
 	fur_trader.keeper_name = "Helga"
-	fur_trader.position = Vector2(15 * TILE_SIZE, 8 * TILE_SIZE)
+	fur_trader.position = Vector2(17 * TILE_SIZE,10 * TILE_SIZE)
 	buildings.add_child(fur_trader)
 
 	# === ICE CHAPEL (Magic Shop) ===
@@ -120,18 +124,18 @@ func _setup_buildings() -> void:
 	chapel.shop_name = "Ice Chapel"
 	chapel.shop_type = VillageShopScript.ShopType.WHITE_MAGIC
 	chapel.keeper_name = "Brother Frost"
-	chapel.position = Vector2(14 * TILE_SIZE, 3 * TILE_SIZE)
+	chapel.position = Vector2(16 * TILE_SIZE,5 * TILE_SIZE)
 	buildings.add_child(chapel)
 
 	# === WARDEN'S HUT DOOR ===
 	# Standalone hut on the empty south-west tundra. Trygg foreshadows
 	# the Glacius fight. Spawn-back point is just south of the door.
-	spawn_points["warden_hut_exit"] = Vector2(4 * TILE_SIZE, 12 * TILE_SIZE)
-	_add_interior_door("WardenHutDoor", "frosthold_warden_hut", "Enter Warden's Hut", Vector2(4 * TILE_SIZE, 11 * TILE_SIZE))
+	spawn_points["warden_hut_exit"] = Vector2(6 * TILE_SIZE,14 * TILE_SIZE)
+	_add_interior_door("WardenHutDoor", "frosthold_warden_hut", "Enter Warden's Hut", Vector2(6 * TILE_SIZE,13 * TILE_SIZE))
 	# === MELTWATER CLOCK DOOR ===
 	# South face of the CCC building (cols 12-14, rows 2-4) — Frosthold's timekeeping.
-	spawn_points["clock_exit"] = Vector2(13 * TILE_SIZE, 5.5 * TILE_SIZE)
-	_add_interior_door("MeltwaterClockDoor", "frosthold_meltwater_clock", "Enter Meltwater Clock", Vector2(13 * TILE_SIZE, 4.5 * TILE_SIZE))
+	spawn_points["clock_exit"] = Vector2(15 * TILE_SIZE,7.5 * TILE_SIZE)
+	_add_interior_door("MeltwaterClockDoor", "frosthold_meltwater_clock", "Enter Meltwater Clock", Vector2(15 * TILE_SIZE,6.5 * TILE_SIZE))
 
 
 func _setup_treasures() -> void:
@@ -141,7 +145,7 @@ func _setup_treasures() -> void:
 	chest1.contents_type = "item"
 	chest1.contents_id = "hi_potion"
 	chest1.contents_amount = 2
-	chest1.position = Vector2(1.5 * TILE_SIZE, 5 * TILE_SIZE)
+	chest1.position = Vector2(3.5 * TILE_SIZE,7 * TILE_SIZE)
 	treasures.add_child(chest1)
 
 	# Ice Charm in chapel corner
@@ -149,13 +153,13 @@ func _setup_treasures() -> void:
 	chest2.chest_id = "frosthold_chest_2"
 	chest2.contents_type = "equipment"
 	chest2.contents_id = "resist_ring"
-	chest2.position = Vector2(17 * TILE_SIZE, 2 * TILE_SIZE)
+	chest2.position = Vector2(19 * TILE_SIZE,4 * TILE_SIZE)
 	treasures.add_child(chest2)
 
 
 func _setup_npcs() -> void:
 	# Old Man Björn (exposition)
-	var bjorn = _create_npc("Old Man Björn", "elder", Vector2(6 * TILE_SIZE, 6 * TILE_SIZE), [
+	var bjorn = _create_npc("Old Man Björn", "elder", Vector2(8 * TILE_SIZE,8 * TILE_SIZE), [
 		"The ice dragon Glacius has been here since the first compile...",
 		"I mean, the first winter.",
 		"It guards the frozen peak with breath that freezes code— er, BONE.",
@@ -164,7 +168,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(bjorn)
 
 	# Guard Ingrid (pessimistic)
-	var ingrid = _create_npc("Guard Ingrid", "guard", Vector2(8 * TILE_SIZE, 14 * TILE_SIZE), [
+	var ingrid = _create_npc("Guard Ingrid", "guard", Vector2(10 * TILE_SIZE,16 * TILE_SIZE), [
 		"Turn back. You're clearly not high enough level.",
 		"I can see your stats from here.",
 		"...What? No, I can't literally SEE them.",
@@ -173,7 +177,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(ingrid)
 
 	# Hermit Kael (autobattle)
-	var kael = _create_npc("Hermit Kael", "villager", Vector2(10 * TILE_SIZE, 10 * TILE_SIZE), [
+	var kael = _create_npc("Hermit Kael", "villager", Vector2(12 * TILE_SIZE,12 * TILE_SIZE), [
 		"I automated my entire LIFE, friend.",
 		"Breakfast? Automated. Conversations? Scripted.",
 		"Do I regret it? ...That's also scripted.",
@@ -183,7 +187,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(kael)
 
 	# Merchant Helga (shivering)
-	var helga = _create_npc("Merchant Helga", "villager", Vector2(16 * TILE_SIZE, 11 * TILE_SIZE), [
+	var helga = _create_npc("Merchant Helga", "villager", Vector2(18 * TILE_SIZE,13 * TILE_SIZE), [
 		"B-buy something warm, please.",
 		"The d-developer forgot to add heating.",
 		"I've been standing here since the scene loaded.",
@@ -192,7 +196,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(helga)
 
 	# Scholar Fynn (lore)
-	var fynn = _create_npc("Scholar Fynn", "villager", Vector2(4 * TILE_SIZE, 11 * TILE_SIZE), [
+	var fynn = _create_npc("Scholar Fynn", "villager", Vector2(6 * TILE_SIZE,13 * TILE_SIZE), [
 		"Legend says four dragons guard four elemental scales.",
 		"Collect them all and... actually, nobody remembers what happens next.",
 		"The ancient texts just say 'TODO: implement endgame.'",
@@ -201,7 +205,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(fynn)
 
 	# Child Lumi (cheerful)
-	var lumi = _create_npc("Child Lumi", "villager", Vector2(12 * TILE_SIZE, 4 * TILE_SIZE), [
+	var lumi = _create_npc("Child Lumi", "villager", Vector2(14 * TILE_SIZE,6 * TILE_SIZE), [
 		"I built a snowman! I named him 'Null Reference.'",
 		"He keeps crashing.",
 		"Every time I try to give him a nose, he throws an exception!",

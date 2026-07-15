@@ -9,8 +9,8 @@ const VillageShopScript = preload("res://src/exploration/VillageShop.gd")
 const TreasureChestScript = preload("res://src/exploration/TreasureChest.gd")
 
 ## Map dimensions (25x20 industrial town)
-const MAP_WIDTH: int = 25
-const MAP_HEIGHT: int = 20
+const MAP_WIDTH: int = 30
+const MAP_HEIGHT: int = 24
 
 
 ## ---- BaseVillage hooks ----
@@ -28,11 +28,11 @@ func _get_map_pixel_size() -> Vector2i:
 
 
 func _get_save_point_position() -> Vector2:
-	return Vector2(10 * TILE_SIZE, 8 * TILE_SIZE)
+	return Vector2(12 * TILE_SIZE,10 * TILE_SIZE)
 
 
 func _get_player_spawn_fallback() -> Vector2:
-	return Vector2(384, 480)
+	return Vector2(448, 544)
 
 
 func _generate_map() -> void:
@@ -40,26 +40,30 @@ func _generate_map() -> void:
 	# W = wall, . = floor, V = lava, I = ironclad inn, F = master forge
 	# S = steamworks, M = miner's tavern, X = exit
 	var map_data: Array[String] = [
-		"WWWWWWWWWWWWWWWWWWWWWWWWW",
-		"W.......................W",
-		"W..III.....FFF..........W",
-		"W..III.....FFF...SSS....W",
-		"W..III.....FFF...SSS....W",
-		"W..........FFF...SSS....W",
-		"W.......................W",
-		"W.........VVV...........W",
-		"W.........VVV...........W",
-		"W.........VVV...........W",
-		"W.......................W",
-		"W..MMM..................W",
-		"W..MMM..................W",
-		"W..MMM..................W",
-		"W.......................W",
-		"W.......................W",
-		"W.......................W",
-		"W........XXXXXX.........W",
-		"W........XXXXXX.........W",
-		"WWWWWWWWWWWWWWWWWWWWWWWWW",
+		"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+		"W............................W",
+		"W............................W",
+		"W............................W",
+		"W....III.....FFF.............W",
+		"W....III.....FFF...SSS.......W",
+		"W....III.....FFF...SSS.......W",
+		"W............FFF...SSS.......W",
+		"W............................W",
+		"W...........VVV..............W",
+		"W...........VVV..............W",
+		"W...........VVV..............W",
+		"W............................W",
+		"W....MMM.....................W",
+		"W....MMM.....................W",
+		"W....MMM.....................W",
+		"W............................W",
+		"W............................W",
+		"W............................W",
+		"W..........XXXXXX............W",
+		"W..........XXXXXX............W",
+		"W............................W",
+		"W............................W",
+		"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
 	]
 
 	for y in range(MAP_HEIGHT):
@@ -73,7 +77,7 @@ func _generate_map() -> void:
 			if char == "X" and not spawn_points.has("exit"):
 				spawn_points["exit"] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
 
-	spawn_points["entrance"] = Vector2(12 * TILE_SIZE, 15 * TILE_SIZE)
+	spawn_points["entrance"] = Vector2(14 * TILE_SIZE,17 * TILE_SIZE)
 	spawn_points["default"] = spawn_points["entrance"]
 	spawn_points["ironhaven_entrance"] = spawn_points["entrance"]
 
@@ -96,7 +100,7 @@ func _setup_transitions() -> void:
 	exit_trans.target_map = "overworld"
 	exit_trans.target_spawn = "ironhaven_entrance"
 	exit_trans.require_interaction = false
-	exit_trans.position = spawn_points.get("exit", Vector2(384, 576))
+	exit_trans.position = spawn_points.get("exit", Vector2(448, 640))
 	_setup_transition_collision(exit_trans, Vector2(TILE_SIZE * 6, TILE_SIZE))
 	exit_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(exit_trans)
@@ -106,7 +110,7 @@ func _setup_buildings() -> void:
 	# === IRONCLAD INN ===
 	var inn = VillageInnScript.new()
 	inn.inn_name = "Ironclad Inn"
-	inn.position = Vector2(3.5 * TILE_SIZE, 3 * TILE_SIZE)
+	inn.position = Vector2(5.5 * TILE_SIZE,5 * TILE_SIZE)
 	buildings.add_child(inn)
 
 	# === MASTER FORGE (Weapon Shop) ===
@@ -114,7 +118,7 @@ func _setup_buildings() -> void:
 	forge.shop_name = "Master Forge"
 	forge.shop_type = VillageShopScript.ShopType.BLACKSMITH
 	forge.keeper_name = "Magda"
-	forge.position = Vector2(12.5 * TILE_SIZE, 4 * TILE_SIZE)
+	forge.position = Vector2(14.5 * TILE_SIZE,6 * TILE_SIZE)
 	buildings.add_child(forge)
 
 	# === STEAMWORKS (Item Shop - unique tech items) ===
@@ -122,25 +126,25 @@ func _setup_buildings() -> void:
 	steamworks.shop_name = "Steamworks"
 	steamworks.shop_type = VillageShopScript.ShopType.ITEM
 	steamworks.keeper_name = "Dr. Cog"
-	steamworks.position = Vector2(20 * TILE_SIZE, 4 * TILE_SIZE)
+	steamworks.position = Vector2(22 * TILE_SIZE,6 * TILE_SIZE)
 	buildings.add_child(steamworks)
 
 	# === MINER'S TAVERN ===
 	var tavern = VillageInnScript.new()
 	tavern.inn_name = "Miner's Tavern"
-	tavern.position = Vector2(3.5 * TILE_SIZE, 12 * TILE_SIZE)
+	tavern.position = Vector2(5.5 * TILE_SIZE,14 * TILE_SIZE)
 	buildings.add_child(tavern)
 
 	# === STORM WATCHTOWER DOOR ===
 	# Drogal's tower on the open eastern side of the village. He
 	# foreshadows Voltharion — the last of the four W1 dragons to
 	# get an interior NPC.
-	spawn_points["watchtower_exit"] = Vector2(18 * TILE_SIZE, 12 * TILE_SIZE)
-	_add_interior_door("WatchtowerDoor", "ironhaven_watchtower", "Enter Storm Watchtower", Vector2(18 * TILE_SIZE, 11 * TILE_SIZE))
+	spawn_points["watchtower_exit"] = Vector2(20 * TILE_SIZE,14 * TILE_SIZE)
+	_add_interior_door("WatchtowerDoor", "ironhaven_watchtower", "Enter Storm Watchtower", Vector2(20 * TILE_SIZE,13 * TILE_SIZE))
 	# === STRIKE REGISTRY DOOR ===
 	# South face of the MMM building (cols 3-5, rows 11-13) — lightning paperwork.
-	spawn_points["registry_exit"] = Vector2(4 * TILE_SIZE, 14.5 * TILE_SIZE)
-	_add_interior_door("StrikeRegistryDoor", "ironhaven_strike_registry", "Enter Strike Registry", Vector2(4 * TILE_SIZE, 13.5 * TILE_SIZE))
+	spawn_points["registry_exit"] = Vector2(6 * TILE_SIZE,16.5 * TILE_SIZE)
+	_add_interior_door("StrikeRegistryDoor", "ironhaven_strike_registry", "Enter Strike Registry", Vector2(6 * TILE_SIZE,15.5 * TILE_SIZE))
 
 
 func _setup_treasures() -> void:
@@ -149,7 +153,7 @@ func _setup_treasures() -> void:
 	chest1.chest_id = "ironhaven_chest_1"
 	chest1.contents_type = "equipment"
 	chest1.contents_id = "iron_armor"
-	chest1.position = Vector2(10 * TILE_SIZE, 2 * TILE_SIZE)
+	chest1.position = Vector2(12 * TILE_SIZE,4 * TILE_SIZE)
 	treasures.add_child(chest1)
 
 	# 3x Hi-Potion in tavern cellar
@@ -158,7 +162,7 @@ func _setup_treasures() -> void:
 	chest2.contents_type = "item"
 	chest2.contents_id = "hi_potion"
 	chest2.contents_amount = 3
-	chest2.position = Vector2(1.5 * TILE_SIZE, 14 * TILE_SIZE)
+	chest2.position = Vector2(3.5 * TILE_SIZE,16 * TILE_SIZE)
 	treasures.add_child(chest2)
 
 
@@ -166,7 +170,7 @@ func _setup_npcs() -> void:
 	_place_masterite_curator()
 
 	# Blacksmith Magda (eager)
-	var magda = _create_npc("Blacksmith Magda", "villager", Vector2(14 * TILE_SIZE, 6 * TILE_SIZE), [
+	var magda = _create_npc("Blacksmith Magda", "villager", Vector2(16 * TILE_SIZE,8 * TILE_SIZE), [
 		"Dragon scales, you say?",
 		"Oh, I could forge LEGENDARY equipment from those.",
 		"Come back with four. Bring receipts.",
@@ -176,7 +180,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(magda)
 
 	# War Veteran Koss (mysterious)
-	var koss = _create_npc("War Veteran Koss", "guard", Vector2(18 * TILE_SIZE, 10 * TILE_SIZE), [
+	var koss = _create_npc("War Veteran Koss", "guard", Vector2(20 * TILE_SIZE,12 * TILE_SIZE), [
 		"I've seen what lies beyond the southern gate.",
 		"Concrete. Streetlights. ...Saxophone music.",
 		"The future is WEIRD.",
@@ -186,7 +190,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(koss)
 
 	# Automation Researcher Dr. Cog (philosophical)
-	var cog = _create_npc("Dr. Cog", "villager", Vector2(21 * TILE_SIZE, 6 * TILE_SIZE), [
+	var cog = _create_npc("Dr. Cog", "villager", Vector2(23 * TILE_SIZE,8 * TILE_SIZE), [
 		"What if the NPCs could automate too?",
 		"What if I already HAVE and this dialogue is just my script running?",
 		"...Hypothesis confirmed.",
@@ -196,7 +200,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(cog)
 
 	# Miner Pete (tired)
-	var pete = _create_npc("Miner Pete", "villager", Vector2(6 * TILE_SIZE, 10 * TILE_SIZE), [
+	var pete = _create_npc("Miner Pete", "villager", Vector2(8 * TILE_SIZE,12 * TILE_SIZE), [
 		"The volcanic caves are brutal.",
 		"My pickaxe melted. MY BOOTS melted.",
 		"The dragon just laughed.",
@@ -206,7 +210,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(pete)
 
 	# Apprentice Bolt (eager)
-	var bolt = _create_npc("Apprentice Bolt", "villager", Vector2(8 * TILE_SIZE, 14 * TILE_SIZE), [
+	var bolt = _create_npc("Apprentice Bolt", "villager", Vector2(10 * TILE_SIZE,16 * TILE_SIZE), [
 		"I'm building a machine that plays the game FOR you!",
 		"...Wait, isn't that just autobattle?",
 		"Oh NO.",
@@ -216,7 +220,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(bolt)
 
 	# Barkeep Ember (warm)
-	var ember = _create_npc("Barkeep Ember", "villager", Vector2(4 * TILE_SIZE, 14 * TILE_SIZE), [
+	var ember = _create_npc("Barkeep Ember", "villager", Vector2(6 * TILE_SIZE,16 * TILE_SIZE), [
 		"Welcome to the last inn before the fire cave.",
 		"We serve drinks and existential dread.",
 		"Both are on the house.",
@@ -226,7 +230,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(ember)
 
 	# Mysterious Stranger (foreshadowing)
-	var stranger = _create_npc("Mysterious Stranger", "villager", Vector2(20 * TILE_SIZE, 16 * TILE_SIZE), [
+	var stranger = _create_npc("Mysterious Stranger", "villager", Vector2(22 * TILE_SIZE,18 * TILE_SIZE), [
 		"The portal to the south...",
 		"It leads to a place where magic runs on coal...",
 		"And dreams run on rails.",
@@ -247,5 +251,5 @@ func _place_masterite_curator() -> void:
 	curator.archetype = "curator"
 	curator.monster_id = "masterite_curator_medieval"
 	curator.display_name = "Curator of the Flame"
-	curator.position = Vector2(12 * TILE_SIZE, 6 * TILE_SIZE)
+	curator.position = Vector2(14 * TILE_SIZE,8 * TILE_SIZE)
 	npcs.add_child(curator)

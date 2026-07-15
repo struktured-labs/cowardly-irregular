@@ -9,8 +9,8 @@ const VillageShopScript = preload("res://src/exploration/VillageShop.gd")
 const TreasureChestScript = preload("res://src/exploration/TreasureChest.gd")
 
 ## Map dimensions
-const MAP_WIDTH: int = 22
-const MAP_HEIGHT: int = 16
+const MAP_WIDTH: int = 26
+const MAP_HEIGHT: int = 20
 
 
 ## ---- BaseVillage hooks ----
@@ -32,11 +32,11 @@ func _get_map_pixel_size() -> Vector2i:
 
 
 func _get_save_point_position() -> Vector2:
-	return Vector2(10 * TILE_SIZE, 6 * TILE_SIZE)
+	return Vector2(12 * TILE_SIZE,8 * TILE_SIZE)
 
 
 func _get_player_spawn_fallback() -> Vector2:
-	return Vector2(352, 320)
+	return Vector2(416, 384)
 
 
 func _generate_map() -> void:
@@ -46,22 +46,26 @@ func _generate_map() -> void:
 	# V = lava channel (industrial runoff), X = exit
 	# Each row is exactly MAP_WIDTH (22) characters
 	var map_data: Array[String] = [
-		"WWWWWWWWWWWWWWWWWWWWWW",
-		"W....................W",
-		"W.III..ddd..GGG......W",
-		"W.III..ddd..GGG......W",
-		"W.III..ddd..GGG......W",
-		"W....................W",
-		"W....VVVVVVV.........W",
-		"W....VVVVVVV.........W",
-		"W....................W",
-		"W.CCC................W",
-		"W.CCC................W",
-		"W.CCC................W",
-		"W....................W",
-		"W.......XXXXXX.......W",
-		"W.......XXXXXX.......W",
-		"WWWWWWWWWWWWWWWWWWWWWW",
+		"WWWWWWWWWWWWWWWWWWWWWWWWWW",
+		"W........................W",
+		"W........................W",
+		"W........................W",
+		"W...III..ddd..GGG........W",
+		"W...III..ddd..GGG........W",
+		"W...III..ddd..GGG........W",
+		"W........................W",
+		"W......VVVVVVV...........W",
+		"W......VVVVVVV...........W",
+		"W........................W",
+		"W...CCC..................W",
+		"W...CCC..................W",
+		"W...CCC..................W",
+		"W........................W",
+		"W.........XXXXXX.........W",
+		"W.........XXXXXX.........W",
+		"W........................W",
+		"W........................W",
+		"WWWWWWWWWWWWWWWWWWWWWWWWWW",
 	]
 
 	for y in range(MAP_HEIGHT):
@@ -75,7 +79,7 @@ func _generate_map() -> void:
 			if char == "X" and not spawn_points.has("exit"):
 				spawn_points["exit"] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
 
-	spawn_points["entrance"] = Vector2(11 * TILE_SIZE, 10 * TILE_SIZE)
+	spawn_points["entrance"] = Vector2(13 * TILE_SIZE,12 * TILE_SIZE)
 	spawn_points["default"] = spawn_points["entrance"]
 	spawn_points["rivet_row_entrance"] = spawn_points["entrance"]
 
@@ -100,7 +104,7 @@ func _setup_transitions() -> void:
 	exit_trans.target_map = "industrial_overworld"
 	exit_trans.target_spawn = "rivet_row_entrance"
 	exit_trans.require_interaction = false
-	exit_trans.position = spawn_points.get("exit", Vector2(352, 448))
+	exit_trans.position = spawn_points.get("exit", Vector2(416, 512))
 	_setup_transition_collision(exit_trans, Vector2(TILE_SIZE * 6, TILE_SIZE))
 	exit_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(exit_trans)
@@ -110,7 +114,7 @@ func _setup_buildings() -> void:
 	# === WORKERS' BARRACKS (Inn) ===
 	var inn = VillageInnScript.new()
 	inn.inn_name = "Workers' Barracks"
-	inn.position = Vector2(2.5 * TILE_SIZE, 3 * TILE_SIZE)
+	inn.position = Vector2(4.5 * TILE_SIZE,5 * TILE_SIZE)
 	buildings.add_child(inn)
 
 	# === COMPANY STORE (Item Shop) ===
@@ -118,7 +122,7 @@ func _setup_buildings() -> void:
 	store.shop_name = "Company Store"
 	store.shop_type = VillageShopScript.ShopType.ITEM
 	store.keeper_name = "Overseer Brack"
-	store.position = Vector2(12.5 * TILE_SIZE, 3 * TILE_SIZE)
+	store.position = Vector2(14.5 * TILE_SIZE,5 * TILE_SIZE)
 	buildings.add_child(store)
 
 	# === SHOP FLOOR FORGE (Equipment) ===
@@ -126,7 +130,7 @@ func _setup_buildings() -> void:
 	forge.shop_name = "Shop Floor Forge"
 	forge.shop_type = VillageShopScript.ShopType.BLACKSMITH
 	forge.keeper_name = "Mag"
-	forge.position = Vector2(12.5 * TILE_SIZE, 8 * TILE_SIZE)
+	forge.position = Vector2(14.5 * TILE_SIZE,10 * TILE_SIZE)
 	buildings.add_child(forge)
 
 	# === BOILERMAN'S APOTHECARY (Magic) ===
@@ -134,18 +138,18 @@ func _setup_buildings() -> void:
 	magic.shop_name = "Boilerman's Apothecary"
 	magic.shop_type = VillageShopScript.ShopType.BLACK_MAGIC
 	magic.keeper_name = "Slag"
-	magic.position = Vector2(6 * TILE_SIZE, 8 * TILE_SIZE)
+	magic.position = Vector2(8 * TILE_SIZE,10 * TILE_SIZE)
 	buildings.add_child(magic)
 
 	# === UNION HALL DOOR ===
 	# Steward Vetch keeps the strike ledgers. Foreshadows the
 	# Assembly Core dungeon AND the warden_industrial boss.
-	spawn_points["union_hall_exit"] = Vector2(7 * TILE_SIZE, 11 * TILE_SIZE)
-	_add_interior_door("UnionHallDoor", "rivet_row_union_hall", "Enter Union Hall", Vector2(7 * TILE_SIZE, 10 * TILE_SIZE))
+	spawn_points["union_hall_exit"] = Vector2(9 * TILE_SIZE,13 * TILE_SIZE)
+	_add_interior_door("UnionHallDoor", "rivet_row_union_hall", "Enter Union Hall", Vector2(9 * TILE_SIZE,12 * TILE_SIZE))
 	# === INCIDENT BOARD DOOR ===
 	# South face of the GGG building (cols 12-14, rows 2-4) — the safety office.
-	spawn_points["incident_exit"] = Vector2(13 * TILE_SIZE, 5.5 * TILE_SIZE)
-	_add_interior_door("IncidentBoardDoor", "rivet_row_incident_board", "Enter Incident Board", Vector2(13 * TILE_SIZE, 4.5 * TILE_SIZE))
+	spawn_points["incident_exit"] = Vector2(15 * TILE_SIZE,7.5 * TILE_SIZE)
+	_add_interior_door("IncidentBoardDoor", "rivet_row_incident_board", "Enter Incident Board", Vector2(15 * TILE_SIZE,6.5 * TILE_SIZE))
 
 
 func _setup_treasures() -> void:
@@ -155,7 +159,7 @@ func _setup_treasures() -> void:
 	chest1.contents_type = "item"
 	chest1.contents_id = "potion"
 	chest1.contents_amount = 2
-	chest1.position = Vector2(1.5 * TILE_SIZE, 1.5 * TILE_SIZE)
+	chest1.position = Vector2(3.5 * TILE_SIZE,3.5 * TILE_SIZE)
 	treasures.add_child(chest1)
 
 	# Union dues hidden under canteen floorboard
@@ -163,13 +167,13 @@ func _setup_treasures() -> void:
 	chest2.chest_id = "rivet_row_chest_2"
 	chest2.contents_type = "gold"
 	chest2.gold_amount = 80
-	chest2.position = Vector2(1.5 * TILE_SIZE, 11 * TILE_SIZE)
+	chest2.position = Vector2(3.5 * TILE_SIZE,13 * TILE_SIZE)
 	treasures.add_child(chest2)
 
 
 func _setup_npcs() -> void:
 	# Shift Foreman (work-related hints)
-	var foreman = _create_npc("Shift Foreman Grix", "guard", Vector2(8 * TILE_SIZE, 3 * TILE_SIZE), [
+	var foreman = _create_npc("Shift Foreman Grix", "guard", Vector2(10 * TILE_SIZE,5 * TILE_SIZE), [
 		"Shift starts when the whistle blows. No excuses.",
 		"We run three shifts here: early, late, and 'extended late'.",
 		"Management calls it 'optimization.' I call it Tuesday.",
@@ -179,7 +183,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(foreman)
 
 	# Union Rep (subversive)
-	var union_rep = _create_npc("Union Rep Voss", "villager", Vector2(17 * TILE_SIZE, 9 * TILE_SIZE), [
+	var union_rep = _create_npc("Union Rep Voss", "villager", Vector2(19 * TILE_SIZE,11 * TILE_SIZE), [
 		"*whispers* Keep your voice down.",
 		"The foreman tracks output. Every action you take is LOGGED.",
 		"They called it 'optimization gone wrong' — I call it working as designed.",
@@ -190,7 +194,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(union_rep)
 
 	# Canteen Cook (heals party, humor)
-	var cook = _create_npc("Canteen Cook Murl", "villager", Vector2(3 * TILE_SIZE, 11 * TILE_SIZE), [
+	var cook = _create_npc("Canteen Cook Murl", "villager", Vector2(5 * TILE_SIZE,13 * TILE_SIZE), [
 		"Welcome to the canteen! Today's special is Mystery Stew.",
 		"Yesterday's special was also Mystery Stew.",
 		"Every day is Mystery Stew. We haven't solved the mystery yet.",
@@ -200,7 +204,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(cook)
 
 	# Factory Kid (aspirational)
-	var kid = _create_npc("Factory Kid Pell", "villager", Vector2(15 * TILE_SIZE, 6 * TILE_SIZE), [
+	var kid = _create_npc("Factory Kid Pell", "villager", Vector2(17 * TILE_SIZE,8 * TILE_SIZE), [
 		"I'm gonna be Employee of the Month someday!",
 		"I swept the east corridor TWICE yesterday.",
 		"The quota is once. I am TWICE the worker.",
@@ -210,7 +214,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(kid)
 
 	# Graffiti Wall (interactable object)
-	var graffiti = _create_npc("Graffiti Wall", "villager", Vector2(19 * TILE_SIZE, 2 * TILE_SIZE), [
+	var graffiti = _create_npc("Graffiti Wall", "villager", Vector2(21 * TILE_SIZE,4 * TILE_SIZE), [
 		"Scrawled on the wall:",
 		"'AUTOMATE THE FOREMAN'",
 		"'QUOTA IS A LIE'",
