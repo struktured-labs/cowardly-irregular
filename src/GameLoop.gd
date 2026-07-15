@@ -1487,11 +1487,21 @@ func _get_pending_story_cutscene() -> String:
 	# unlocked so they sequence cleanly across map re-entries instead
 	# of stacking on a single trigger). _cutscene_cooldown prevents
 	# back-to-back firing on the same entry.
+	# 2026-07-15 pacing fix (v3.33.167 playtest, task #23): stacked all
+	# three at the entrance regardless of exploration — struktured
+	# "I would imagine going up floors of the dungeon first, not just
+	# all at the dungeon entrance." Floor gates now spread duels 1→3→5
+	# so 2 floors of exploration/battles separate each one. Floor comes
+	# from _get_current_cave_floor() (live from the scene when possible;
+	# falls back to the battle-synced _current_cave_floor). Fires on
+	# floor descent via floor_changed → check_pending_cutscene() wired
+	# in _create_cave_scene().
+	var _cave_floor: int = _get_current_cave_floor()
 	if flags.get("cutscene_flag_chapter3_complete", false) and not flags.get("cutscene_flag_spotlight_unlocked_rogue", false):
-		if _current_map_id == "whispering_cave":
+		if _current_map_id == "whispering_cave" and _cave_floor >= 1:
 			return "world1_spotlight_rogue_ch3"
 	if flags.get("cutscene_flag_spotlight_unlocked_rogue", false) and not flags.get("cutscene_flag_spotlight_unlocked_mage", false) and not _chaining_story_cutscene:
-		if _current_map_id == "whispering_cave":
+		if _current_map_id == "whispering_cave" and _cave_floor >= 3:
 			return "world1_spotlight_mage_ch3"
 	# Fighter spotlight — the antechamber skeleton duel (Spotlight Duels
 	# spec msg 1950: skeleton duel is Fighter's; chapter3's prose beat was
@@ -1503,7 +1513,7 @@ func _get_pending_story_cutscene() -> String:
 	# cutscene was authored + mapped but NO gate fired it — the exact
 	# authored-but-never-wired class the tick-97/98/99 comments describe.
 	if flags.get("cutscene_flag_spotlight_unlocked_mage", false) and not flags.get("cutscene_flag_spotlight_unlocked_fighter", false) and not _chaining_story_cutscene:
-		if _current_map_id == "whispering_cave":
+		if _current_map_id == "whispering_cave" and _cave_floor >= 5:
 			return "world1_spotlight_fighter_ch2"
 	# Rat king defeat cutscene: plays IN the cave right after victory, before chapter4.
 	if flags.get("cutscene_flag_rat_king_defeated", false) and not flags.get("cutscene_flag_world1_rat_king_defeat_complete", false):
@@ -4366,7 +4376,28 @@ func _create_cave_scene() -> Node:
 	if _current_cave_floor > 1 and "current_floor" in cave_scene:
 		cave_scene.current_floor = _current_cave_floor
 		print("[CAVE] Restoring to floor %d" % _current_cave_floor)
+	# 2026-07-15 (task #23): floor descent must re-trigger the story
+	# cutscene check so the floor-gated ch.3 spotlights (rogue→mage→
+	# fighter at floors 1/3/5) fire when the player crosses their
+	# threshold, not just on cave (re)entry. Without this, a descent
+	# with no interposed battle would skip the check.
+	if cave_scene.has_signal("floor_changed"):
+		cave_scene.floor_changed.connect(_on_cave_floor_changed)
 	return cave_scene
+
+
+func _on_cave_floor_changed(new_floor: int) -> void:
+	_current_cave_floor = new_floor
+	check_pending_cutscene()
+
+
+func _get_current_cave_floor() -> int:
+	# Live-read from the exploration scene when the cave is loaded;
+	# fall back to the battle-synced _current_cave_floor otherwise.
+	# Default 1 lets rogue's floor-1 gate fire on first entry.
+	if _exploration_scene and "current_floor" in _exploration_scene:
+		return int(_exploration_scene.current_floor)
+	return _current_cave_floor
 
 
 func _create_script_scene(script_path: String) -> Node:
