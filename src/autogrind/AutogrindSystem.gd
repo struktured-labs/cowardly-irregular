@@ -113,6 +113,9 @@ var post_collapse_debuff_battles: int = 0      # Remaining battles with reduced 
 var permadead_characters: Array[String] = []
 var permadeath_enabled: bool = false  # Alias for permadeath_staking_enabled (for UI binding)
 
+## Set to true in tests to prevent writes to user://autogrind/*.json — otherwise test-suite runs overwrite the user's real save data with fixture content ("TestChar0" in permadead, test presets in profiles, etc.). No-op in production.
+var _test_disable_persistence: bool = false
+
 ## Adaptive AI pattern database
 ## {region_id: {ability_frequency: {}, target_priority: {}, common_opener: "", counter_strategy: "", battles_analyzed: int}}
 var learned_patterns: Dictionary = {}
@@ -1297,6 +1300,7 @@ func is_character_permadead(character_name: String) -> bool:
 
 func _save_permadead_characters() -> void:
 	"""Write the permadead list to user://autogrind/permadead.json"""
+	if _test_disable_persistence: return
 	var dir := DirAccess.open("user://")
 	if dir and not dir.dir_exists("autogrind"):
 		dir.make_dir("autogrind")
@@ -2090,6 +2094,7 @@ func _load_autogrind_profiles() -> void:
 
 func _save_autogrind_profiles() -> void:
 	"""Save autogrind profiles to file"""
+	if _test_disable_persistence: return
 	var save_path = "user://autogrind/profiles.json"
 
 	var dir = DirAccess.open("user://")
@@ -2109,6 +2114,7 @@ func _save_autogrind_profiles() -> void:
 
 func _save_learned_patterns() -> void:
 	"""Save learned patterns to file"""
+	if _test_disable_persistence: return
 	var save_path = "user://autogrind/learned_patterns.json"
 
 	var dir = DirAccess.open("user://")
@@ -2149,6 +2155,7 @@ func _load_learned_patterns() -> void:
 
 func _save_csi_data() -> void:
 	"""Save CSI and automation affinity data to file"""
+	if _test_disable_persistence: return
 	var save_path = "user://autogrind/csi_data.json"
 
 	var dir = DirAccess.open("user://")
@@ -2269,6 +2276,7 @@ const SNAPSHOT_PATH: String = "user://autogrind_snapshot.json"
 
 func save_grind_snapshot(controller_snapshot: Dictionary) -> bool:
 	"""Save current grind state for resume after game close."""
+	if _test_disable_persistence: return false
 	if not is_grinding:
 		return false
 
@@ -2437,6 +2445,7 @@ func get_session_history() -> Array:
 
 func _save_session_history() -> void:
 	"""Persist session history to file."""
+	if _test_disable_persistence: return
 	var file = FileAccess.open(SESSION_HISTORY_PATH, FileAccess.WRITE)
 	if not file:
 		print("[AUTOGRIND] Warning: could not save session history")

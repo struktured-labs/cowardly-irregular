@@ -11,6 +11,7 @@ func before_each() -> void:
 	# Create a fresh AutogrindSystem instance for isolated testing
 	_system = preload("res://src/autogrind/AutogrindSystem.gd").new()
 	add_child_autofree(_system)
+	_system._test_disable_persistence = true  # Prevent test writes to user://autogrind/*.json (leaked TestChar0 into struktured's save, 2026-07-14)
 
 	# Reset state (after _ready which loads profiles)
 	_system.is_grinding = false

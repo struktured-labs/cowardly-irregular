@@ -8,6 +8,9 @@ var _system: Node = null
 func before_each() -> void:
 	_system = preload("res://src/autogrind/AutogrindSystem.gd").new()
 	add_child_autofree(_system)
+	# NOT setting _test_disable_persistence: these tests exercise the actual snapshot
+	# save/load roundtrip on disk. The existing before_each+after_each clear_grind_snapshot()
+	# pair is the isolation mechanism for this file — it was the well-behaved test path all along.
 	_system.clear_grind_snapshot()
 
 

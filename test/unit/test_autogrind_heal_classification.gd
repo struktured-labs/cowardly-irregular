@@ -11,6 +11,7 @@ var _system: Node
 func before_each() -> void:
 	_system = preload("res://src/autogrind/AutogrindSystem.gd").new()
 	add_child_autofree(_system)
+	_system._test_disable_persistence = true  # Prevent test writes to user://autogrind/*.json (leaked TestChar0 into struktured's save, 2026-07-14)
 	_system.battles_without_heal = 10
 	_system.items_consumed.clear()
 

@@ -106,6 +106,7 @@ func test_resolver_results_include_drop_keys() -> void:
 func test_notify_rare_drop_flips_interrupt_flag() -> void:
 	var system = preload("res://src/autogrind/AutogrindSystem.gd").new()
 	add_child_autofree(system)
+	system._test_disable_persistence = true
 	system._rare_drop_this_session = false
 	system.notify_rare_drop("rare_gem", 0.05)
 	assert_true(system._rare_drop_this_session,

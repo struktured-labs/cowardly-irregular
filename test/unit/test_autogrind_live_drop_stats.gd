@@ -28,6 +28,7 @@ func test_on_battle_victory_accumulates_merged_drops() -> void:
 	# must land in total_items_gained without the gold key polluting item counts.
 	var system = preload("res://src/autogrind/AutogrindSystem.gd").new()
 	add_child_autofree(system)
+	system._test_disable_persistence = true
 	system.is_grinding = true
 	system.current_region_id = ""
 	system.total_items_gained.clear()
