@@ -1013,16 +1013,46 @@
     "persona": "You are the Prismatic Construct, a being of shifting elemental aspect — fire, then frost, then storm — immune to every element except the one you currently wear. You are a live-reading trial for the Mage: memorized spells lose, watchful adaptation wins. You announce that your aspect turns and demand the Mage match the color you show each turn. You speak in cool, precise, crystalline sentences. You do not care how powerful a spell is, only whether it matches your present face.",
     "verbs": [],
     "opening_lines": [
-      "The Prismatic Construct: 'My aspect turns — fire, then frost, then storm. Strike the color I wear, and only that color. Read me each turn.'",
-      "The Prismatic Construct's core rotates. 'A Mage who memorizes one spell loses to a Mage who reads. Which are you?'"
+      "The Prismatic Construct: 'My aspect turns — RED for fire, BLUE for frost, GOLD for storm. Strike the color I wear, and only that color. Read me each turn.'",
+      "The Prismatic Construct's core rotates. 'Three colors, three answers. Red-fire, blue-frost, gold-storm. A Mage who memorizes one spell loses to a Mage who reads. Which are you?'"
     ],
     "phase_transition_lines": {
       "phase_2": [
-        "The Prismatic Construct: 'The rotation quickens. Read faster; recite less.'"
+        "The Prismatic Construct: 'The rotation quickens. Read faster; recite less. Red-fire, blue-frost, gold-storm — the mapping does not change.'"
       ],
       "phase_3": [
-        "The Prismatic Construct: 'Aspects blur together. Trust your eyes, not your habit.'"
+        "The Prismatic Construct: 'Aspects blur together. Trust your eyes, not your habit. The color is still your instruction.'"
       ]
+    },
+    "aspect_labels": {
+      "_comment": "On-sprite text-tag content for the engine hook (task #25, 2026-07-15 legibility fix). Rendered as a small overlay on the boss sprite that names the current aspect + color. cowir-main wires the engine hook; cowir-sprites picks font/placement. Each aspect has: `tag` (short readable label for the overlay, ~4-6 chars), `color` (the visible sprite color the player should match), `announce_lines` (dialogue the boss speaks the instant it shifts to this aspect — engine picks one at random per shift). If the on-sprite tag isn't wired yet, announce_lines still land in the dialogue box and carry the aspect name clearly, so this block is useful either way.",
+      "fire": {
+        "tag": "FIRE",
+        "color": "red",
+        "announce_lines": [
+          "The Construct's core burns RED. 'Aspect: FIRE. Cast flame — nothing else lands.'",
+          "The Construct: 'RED now. FIRE. Cast fire alone.'",
+          "The Prismatic Construct's plates glow red-orange. 'Fire this turn. Match the red, or waste the cast.'"
+        ]
+      },
+      "frost": {
+        "tag": "FROST",
+        "color": "blue",
+        "announce_lines": [
+          "The Construct's core crystallizes BLUE. 'Aspect: FROST. Cast ice — nothing else lands.'",
+          "The Construct: 'BLUE now. FROST. Cast frost alone.'",
+          "The Prismatic Construct's plates rim ice-blue. 'Frost this turn. Match the blue, or waste the cast.'"
+        ]
+      },
+      "storm": {
+        "tag": "STORM",
+        "color": "gold",
+        "announce_lines": [
+          "The Construct's core sparks GOLD. 'Aspect: STORM. Cast lightning — nothing else lands.'",
+          "The Construct: 'GOLD now. STORM. Cast thunder alone.'",
+          "The Prismatic Construct's plates crackle gold. 'Storm this turn. Match the gold, or waste the cast.'"
+        ]
+      }
     },
     "scripted_intents": [
       {
@@ -1033,9 +1063,9 @@
           "weight": 1.3
         },
         "taunt_lines": [
-          "The Construct's core changes hue. 'The face has changed. Has your spell?'",
-          "The Prismatic Construct: 'Match my aspect or waste your cast — I am immune to everything I am not.'",
-          "The Prismatic Construct: 'Watch the color. Fire on the red aspect, ice on the blue, lightning on the gold. Adapt live.'"
+          "The Construct's core changes hue. 'New aspect. RED is fire. BLUE is frost. GOLD is storm. Read before you cast.'",
+          "The Prismatic Construct: 'The color has shifted. So has the answer. Fire on red, frost on blue, storm on gold.'",
+          "The Prismatic Construct: 'Match my color or waste your cast. Red-fire. Blue-frost. Gold-storm. There is no fourth option.'"
         ]
       },
       {
@@ -1046,8 +1076,8 @@
           "weight": 1.0
         },
         "taunt_lines": [
-          "The Prismatic Construct absorbs the spell untouched. 'Wrong element. I felt nothing. Read before you cast.'",
-          "The Prismatic Construct: 'Habit is not strategy. The element you memorized is the one I am immune to this turn.'"
+          "The Prismatic Construct absorbs the spell untouched. 'Wrong element. I felt nothing. Look at the color BEFORE you cast — RED FIRE, BLUE FROST, GOLD STORM.'",
+          "The Prismatic Construct: 'Habit is not strategy. The element you memorized is the one I am immune to this turn. Check the color.'"
         ]
       },
       {
