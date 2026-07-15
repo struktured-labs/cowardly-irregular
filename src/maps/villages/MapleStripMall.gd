@@ -7,8 +7,8 @@ class_name MapleStripMall
 ## yogurt shop stood yesterday, a parking lot with regulation stalls, and a
 ## fortune-teller's booth the mall's paperwork has never once acknowledged.
 
-const MAP_WIDTH: int = 24
-const MAP_HEIGHT: int = 16
+const MAP_WIDTH: int = 30
+const MAP_HEIGHT: int = 20
 
 
 func _get_area_id() -> String:
@@ -28,11 +28,11 @@ func _get_map_pixel_size() -> Vector2i:
 
 
 func _get_save_point_position() -> Vector2:
-	return Vector2(3 * TILE_SIZE, 12 * TILE_SIZE)
+	return Vector2(6 * TILE_SIZE,14 * TILE_SIZE)
 
 
 func _get_player_spawn_fallback() -> Vector2:
-	return Vector2(12 * TILE_SIZE, 13 * TILE_SIZE)
+	return Vector2(15 * TILE_SIZE,15 * TILE_SIZE)
 
 
 func _generate_map() -> void:
@@ -41,22 +41,26 @@ func _generate_map() -> void:
 	# p = sidewalk, k = parking lot, d = worn dirt, X = exit road (south).
 	# Every row exactly MAP_WIDTH (24) chars.
 	var map_data: Array[String] = [
-		"WWWWWWWWWWWWWWWWWWWWWWWW",  # 0
-		"WppppppppppppppppppppppW",  # 1
-		"WpSSSSSpSSSSSpYYYYYppppW",  # 2  storefront row + the gap
-		"WpSSSSSpSSSSSpYYYYYpOOpW",  # 3  Orrery's booth east end
-		"WpSSSSSpSSSSSpYYYYYpOOpW",  # 4
-		"WppppppppppppppppppppppW",  # 5  sidewalk
-		"WppppppppppppppppppppppW",  # 6
-		"WkkkkkkkkkkkkkkkkkkkkkkW",  # 7  parking lot
-		"WkkkkkkkkkkkkkkkkkkkkkkW",  # 8
-		"WkkkkkkkkkkkkkkkkkkkkkkW",  # 9
-		"WkkkkkkkkkkkkkkkkkkkkkkW",  # 10
-		"WppppppppppppppppppppppW",  # 11
-		"WppppppppppppppppppppppW",  # 12
-		"WppppppppppppppppppppppW",  # 13
-		"WpppppppppXXXXpppppppppW",  # 14  exit road
-		"WWWWWWWWWWWWWWWWWWWWWWWW",  # 15
+		"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+		"W............................W",
+		"W............................W",
+		"W...pppppppppppppppppppppp...W",
+		"W...pSSSSSpSSSSSpYYYYYpppp...W",
+		"W...pSSSSSpSSSSSpYYYYYpOOp...W",
+		"W...pSSSSSpSSSSSpYYYYYpOOp...W",
+		"W...pppppppppppppppppppppp...W",
+		"W...pppppppppppppppppppppp...W",
+		"W...kkkkkkkkkkkkkkkkkkkkkk...W",
+		"W...kkkkkkkkkkkkkkkkkkkkkk...W",
+		"W...kkkkkkkkkkkkkkkkkkkkkk...W",
+		"W...kkkkkkkkkkkkkkkkkkkkkk...W",
+		"W...pppppppppppppppppppppp...W",
+		"W...pppppppppppppppppppppp...W",
+		"W...pppppppppppppppppppppp...W",
+		"W...pppppppppXXXXppppppppp...W",
+		"W............................W",
+		"W............................W",
+		"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
 	]
 	for y in range(MAP_HEIGHT):
 		var row: String = map_data[y] if y < map_data.size() else ""
@@ -68,7 +72,7 @@ func _generate_map() -> void:
 			if ch == "X" and not spawn_points.has("exit"):
 				spawn_points["exit"] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
 
-	spawn_points["entrance"] = Vector2(12 * TILE_SIZE, 13 * TILE_SIZE)
+	spawn_points["entrance"] = Vector2(15 * TILE_SIZE,15 * TILE_SIZE)
 	spawn_points["default"] = spawn_points["entrance"]
 
 
@@ -94,7 +98,7 @@ func _setup_transitions() -> void:
 	exit_trans.target_map = "maple_heights_village"
 	exit_trans.target_spawn = "strip_mall_return"
 	exit_trans.require_interaction = false
-	exit_trans.position = spawn_points.get("exit", Vector2(12 * TILE_SIZE, 14 * TILE_SIZE))
+	exit_trans.position = spawn_points.get("exit", Vector2(15 * TILE_SIZE,16 * TILE_SIZE))
 	_setup_transition_collision(exit_trans, Vector2(TILE_SIZE * 4, TILE_SIZE))
 	exit_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(exit_trans)
@@ -133,7 +137,7 @@ func _paint_storefront_signs() -> void:
 
 func _setup_npcs() -> void:
 	# Surplus teen — configuration_pending giver, outside the surplus store.
-	var teen = _create_npc("Surplus Teen", "villager", Vector2(4 * TILE_SIZE, 6 * TILE_SIZE), [
+	var teen = _create_npc("Surplus Teen", "villager", Vector2(7 * TILE_SIZE,8 * TILE_SIZE), [
 		"The mall rearranged again last night. Third time this month.",
 		"I keep a log. Nobody asked me to. Somebody should.",
 	])
@@ -141,21 +145,21 @@ func _setup_npcs() -> void:
 	npcs.add_child(teen)
 
 	# The three owners (talk-tally: owners_interviewed).
-	var candle = _create_npc("Candle Shop Owner", "shopkeeper", Vector2(10 * TILE_SIZE, 6 * TILE_SIZE), [
+	var candle = _create_npc("Candle Shop Owner", "shopkeeper", Vector2(13 * TILE_SIZE,8 * TILE_SIZE), [
 		"My shop faced EAST yesterday. East! Do you know what morning light does to inventory?",
 		"Forty years of retail and I have never ONCE been consulted about the layout.",
 	])
 	candle.npc_id = "candle_shop_owner_w2"
 	npcs.add_child(candle)
 
-	var armory = _create_npc("Armory Owner", "shopkeeper", Vector2(12 * TILE_SIZE, 6 * TILE_SIZE), [
+	var armory = _create_npc("Armory Owner", "shopkeeper", Vector2(15 * TILE_SIZE,8 * TILE_SIZE), [
 		"The mall moves. The stock stays sorted. I've made my peace.",
 		"A sword doesn't care which wall it hangs on. There's a lesson in that.",
 	])
 	armory.npc_id = "armory_owner_w2"
 	npcs.add_child(armory)
 
-	var yogurt = _create_npc("Yogurt Shop Owner", "villager", Vector2(16 * TILE_SIZE, 9 * TILE_SIZE), [
+	var yogurt = _create_npc("Yogurt Shop Owner", "villager", Vector2(19 * TILE_SIZE,11 * TILE_SIZE), [
 		"This is where my shop was. I'm standing in the freezer section. Roughly.",
 		"It'll come back. It always comes back. Just not where I left it.",
 	])
@@ -163,7 +167,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(yogurt)
 
 	# Madame Orrery's W2 booth — the mall's paperwork has never logged it.
-	var orrery = _create_npc("Madame Orrery", "mysterious", Vector2(20 * TILE_SIZE + TILE_SIZE / 2, 5 * TILE_SIZE), [
+	var orrery = _create_npc("Madame Orrery", "mysterious", Vector2(23 * TILE_SIZE + TILE_SIZE / 2,7 * TILE_SIZE), [
 		"Your energy profile is familiar. The cards remember you even here.",
 		"The mall rearranges. My booth does not. Draw your own conclusions.",
 	])

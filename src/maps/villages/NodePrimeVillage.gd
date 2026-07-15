@@ -9,8 +9,8 @@ const VillageShopScript = preload("res://src/exploration/VillageShop.gd")
 const TreasureChestScript = preload("res://src/exploration/TreasureChest.gd")
 
 ## Map dimensions
-const MAP_WIDTH: int = 20
-const MAP_HEIGHT: int = 18
+const MAP_WIDTH: int = 24
+const MAP_HEIGHT: int = 22
 
 
 ## ---- BaseVillage hooks ----
@@ -32,11 +32,11 @@ func _get_map_pixel_size() -> Vector2i:
 
 
 func _get_save_point_position() -> Vector2:
-	return Vector2(8 * TILE_SIZE, 8 * TILE_SIZE)
+	return Vector2(10 * TILE_SIZE,10 * TILE_SIZE)
 
 
 func _get_player_spawn_fallback() -> Vector2:
-	return Vector2(320, 320)
+	return Vector2(384, 384)
 
 
 func _generate_map() -> void:
@@ -46,24 +46,28 @@ func _generate_map() -> void:
 	# X = exit, W = water (coolant channels)
 	# Each row is exactly MAP_WIDTH (20) characters
 	var map_data: Array[String] = [
-		"WWWWWWWWWWWWWWWWWWWW",
-		"W..................W",
-		"W.III....CCC.......W",
-		"W.III....CCC.......W",
-		"W.III....CCC.......W",
-		"W..................W",
-		"W...pppppppp.......W",
-		"W...pppppppp.......W",
-		"W..................W",
-		"W..................W",
-		"W..FFFF............W",
-		"W..FFFF............W",
-		"W..FFFF............W",
-		"W..................W",
-		"W..................W",
-		"W......XXXXXX......W",
-		"W......XXXXXX......W",
-		"WWWWWWWWWWWWWWWWWWWW",
+		"WWWWWWWWWWWWWWWWWWWWWWWW",
+		"W......................W",
+		"W......................W",
+		"W......................W",
+		"W...III....CCC.........W",
+		"W...III....CCC.........W",
+		"W...III....CCC.........W",
+		"W......................W",
+		"W.....pppppppp.........W",
+		"W.....pppppppp.........W",
+		"W......................W",
+		"W......................W",
+		"W....FFFF..............W",
+		"W....FFFF..............W",
+		"W....FFFF..............W",
+		"W......................W",
+		"W......................W",
+		"W........XXXXXX........W",
+		"W........XXXXXX........W",
+		"W......................W",
+		"W......................W",
+		"WWWWWWWWWWWWWWWWWWWWWWWW",
 	]
 
 	for y in range(MAP_HEIGHT):
@@ -77,7 +81,7 @@ func _generate_map() -> void:
 			if char == "X" and not spawn_points.has("exit"):
 				spawn_points["exit"] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
 
-	spawn_points["entrance"] = Vector2(10 * TILE_SIZE, 10 * TILE_SIZE)
+	spawn_points["entrance"] = Vector2(12 * TILE_SIZE,12 * TILE_SIZE)
 	spawn_points["default"] = spawn_points["entrance"]
 	spawn_points["node_prime_entrance"] = spawn_points["entrance"]
 
@@ -102,7 +106,7 @@ func _setup_transitions() -> void:
 	exit_trans.target_map = "futuristic_overworld"
 	exit_trans.target_spawn = "node_prime_entrance"
 	exit_trans.require_interaction = false
-	exit_trans.position = spawn_points.get("exit", Vector2(320, 512))
+	exit_trans.position = spawn_points.get("exit", Vector2(384, 576))
 	_setup_transition_collision(exit_trans, Vector2(TILE_SIZE * 6, TILE_SIZE))
 	exit_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(exit_trans)
@@ -112,7 +116,7 @@ func _setup_buildings() -> void:
 	# === SLEEP.EXE (Inn) ===
 	var inn = VillageInnScript.new()
 	inn.inn_name = "Sleep.exe"
-	inn.position = Vector2(2.5 * TILE_SIZE, 3 * TILE_SIZE)
+	inn.position = Vector2(4.5 * TILE_SIZE,5 * TILE_SIZE)
 	buildings.add_child(inn)
 
 	# === CACHE STORE (White Magic Shop) ===
@@ -120,7 +124,7 @@ func _setup_buildings() -> void:
 	cache_store.shop_name = "Cache Store"
 	cache_store.shop_type = VillageShopScript.ShopType.WHITE_MAGIC
 	cache_store.keeper_name = "CACHE-1"
-	cache_store.position = Vector2(10 * TILE_SIZE, 3 * TILE_SIZE)
+	cache_store.position = Vector2(12 * TILE_SIZE,5 * TILE_SIZE)
 	buildings.add_child(cache_store)
 
 	# === HEAP (Item Shop) ===
@@ -128,7 +132,7 @@ func _setup_buildings() -> void:
 	heap.shop_name = "Heap Allocator"
 	heap.shop_type = VillageShopScript.ShopType.ITEM
 	heap.keeper_name = "MALLOC-7"
-	heap.position = Vector2(6 * TILE_SIZE, 3 * TILE_SIZE)
+	heap.position = Vector2(8 * TILE_SIZE,5 * TILE_SIZE)
 	buildings.add_child(heap)
 
 	# === KERNEL SMITHY (Equipment) ===
@@ -136,19 +140,19 @@ func _setup_buildings() -> void:
 	smith.shop_name = "Kernel Smithy"
 	smith.shop_type = VillageShopScript.ShopType.BLACKSMITH
 	smith.keeper_name = "COMPILE-R"
-	smith.position = Vector2(14 * TILE_SIZE, 3 * TILE_SIZE)
+	smith.position = Vector2(16 * TILE_SIZE,5 * TILE_SIZE)
 	buildings.add_child(smith)
 
 	# === DAEMON LOUNGE DOOR ===
 	# SUDO-1's terminal room. Foreshadows RootProcess (W5) AND
 	# NullChamber (W6) — the only W5 interior, so it does double
 	# duty.
-	spawn_points["daemon_lounge_exit"] = Vector2(6 * TILE_SIZE, 9 * TILE_SIZE)
-	_add_interior_door("DaemonLoungeDoor", "node_prime_daemon_lounge", "Enter Daemon Lounge", Vector2(6 * TILE_SIZE, 8 * TILE_SIZE))
+	spawn_points["daemon_lounge_exit"] = Vector2(8 * TILE_SIZE,11 * TILE_SIZE)
+	_add_interior_door("DaemonLoungeDoor", "node_prime_daemon_lounge", "Enter Daemon Lounge", Vector2(8 * TILE_SIZE,10 * TILE_SIZE))
 	# === CACHE DOOR ===
 	# South face of the CCC building (cols 9-11, rows 2-4) — where the world keeps what it might render again.
-	spawn_points["cache_exit"] = Vector2(10 * TILE_SIZE, 5.5 * TILE_SIZE)
-	_add_interior_door("CacheDoor", "node_prime_cache", "Enter The Cache", Vector2(10 * TILE_SIZE, 4.5 * TILE_SIZE))
+	spawn_points["cache_exit"] = Vector2(12 * TILE_SIZE,7.5 * TILE_SIZE)
+	_add_interior_door("CacheDoor", "node_prime_cache", "Enter The Cache", Vector2(12 * TILE_SIZE,6.5 * TILE_SIZE))
 
 
 func _setup_treasures() -> void:
@@ -158,7 +162,7 @@ func _setup_treasures() -> void:
 	chest1.contents_type = "item"
 	chest1.contents_id = "ether"
 	chest1.contents_amount = 2
-	chest1.position = Vector2(17 * TILE_SIZE, 1.5 * TILE_SIZE)
+	chest1.position = Vector2(19 * TILE_SIZE,3.5 * TILE_SIZE)
 	treasures.add_child(chest1)
 
 	# Archived gold — old transaction log
@@ -166,13 +170,13 @@ func _setup_treasures() -> void:
 	chest2.chest_id = "node_prime_chest_2"
 	chest2.contents_type = "gold"
 	chest2.gold_amount = 200
-	chest2.position = Vector2(17 * TILE_SIZE, 13 * TILE_SIZE)
+	chest2.position = Vector2(19 * TILE_SIZE,15 * TILE_SIZE)
 	treasures.add_child(chest2)
 
 
 func _setup_npcs() -> void:
 	# System Admin ADMIN-01 (terminal commands)
-	var admin = _create_npc("ADMIN-01", "guard", Vector2(7 * TILE_SIZE, 2 * TILE_SIZE), [
+	var admin = _create_npc("ADMIN-01", "guard", Vector2(9 * TILE_SIZE,4 * TILE_SIZE), [
 		"> QUERY: purpose_of_visit",
 		"> INPUT RECEIVED: adventurer",
 		"> STATUS: access_granted",
@@ -183,7 +187,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(admin)
 
 	# Debugger DEBUG-7 (glitches)
-	var debugger = _create_npc("DEBUG-7", "villager", Vector2(14 * TILE_SIZE, 7 * TILE_SIZE), [
+	var debugger = _create_npc("DEBUG-7", "villager", Vector2(16 * TILE_SIZE,9 * TILE_SIZE), [
 		"Oh good, you can see me. That means the render pass is working.",
 		"I've been flagging anomalies in sector nine for three cycles.",
 		"Something keeps rewriting the encounter tables.",
@@ -194,7 +198,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(debugger)
 
 	# Tourist Program TOURIST.EXE (confused)
-	var tourist = _create_npc("TOURIST.EXE", "villager", Vector2(10 * TILE_SIZE, 12 * TILE_SIZE), [
+	var tourist = _create_npc("TOURIST.EXE", "villager", Vector2(12 * TILE_SIZE,14 * TILE_SIZE), [
 		"ERROR: context_mismatch — expected 'scenic overlook', received 'data hub'",
 		"I booked a package tour. The brochure said 'breathtaking vistas.'",
 		"This is a floor. It is very flat. I am not taking breath.",
@@ -205,7 +209,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(tourist)
 
 	# Data Archivist (lore keeper)
-	var archivist = _create_npc("Data Archivist", "elder", Vector2(3 * TILE_SIZE, 9 * TILE_SIZE), [
+	var archivist = _create_npc("Data Archivist", "elder", Vector2(5 * TILE_SIZE,11 * TILE_SIZE), [
 		"Before the optimization, this place had a name.",
 		"A real name. Not a designation.",
 		"People lived here. They had routines that were not mandated.",
@@ -216,7 +220,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(archivist)
 
 	# Firewall Guard (blocks path, future content hint)
-	var firewall = _create_npc("FIREWALL-ALPHA", "guard", Vector2(3 * TILE_SIZE, 13 * TILE_SIZE), [
+	var firewall = _create_npc("FIREWALL-ALPHA", "guard", Vector2(5 * TILE_SIZE,15 * TILE_SIZE), [
 		"HALT. Access to sector twelve is restricted.",
 		"Clearance level required: DELTA.",
 		"Your current clearance level: NONE.",

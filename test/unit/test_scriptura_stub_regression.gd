@@ -39,7 +39,10 @@ func test_plaza_map_rows_are_uniform_width() -> void:
 	add_child_autofree(plaza)
 	await get_tree().process_frame
 	assert_eq(plaza._get_area_id(), "scriptura_plaza")
-	assert_eq(plaza.MAP_WIDTH, 24)
+	# Village layouts bumped ~20% for playtest breathing room (msg 2542/2543);
+	# plaza went 24 → 30. Test guards against ragged rows via the runtime build
+	# check above; the exact width just needs to reflect the current authored dims.
+	assert_eq(plaza.MAP_WIDTH, 30)
 	assert_true(plaza.spawn_points.has("entrance"), "entrance spawn registered")
 	assert_true(plaza.spawn_points.has("guild_exit"), "guild return spawn registered")
 	assert_true(plaza.spawn_points.has("bookshop_exit"), "bookshop return spawn registered")

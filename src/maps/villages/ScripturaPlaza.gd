@@ -9,8 +9,8 @@ class_name ScripturaPlaza
 ## untested_edge's guild-scholar translation path.
 
 # TILE_SIZE + spawn_points inherit from BaseVillage — do not redeclare.
-const MAP_WIDTH: int = 24
-const MAP_HEIGHT: int = 18
+const MAP_WIDTH: int = 30
+const MAP_HEIGHT: int = 22
 
 
 func _get_area_id() -> String:
@@ -30,11 +30,11 @@ func _get_map_pixel_size() -> Vector2i:
 
 
 func _get_save_point_position() -> Vector2:
-	return Vector2(12 * TILE_SIZE, 13 * TILE_SIZE)
+	return Vector2(15 * TILE_SIZE,15 * TILE_SIZE)
 
 
 func _get_player_spawn_fallback() -> Vector2:
-	return Vector2(12 * TILE_SIZE, 15 * TILE_SIZE)
+	return Vector2(15 * TILE_SIZE,17 * TILE_SIZE)
 
 
 func _generate_map() -> void:
@@ -42,24 +42,28 @@ func _generate_map() -> void:
 	# impassable), F = fountain, p = stone plaza path, d = worn dirt, f = flower,
 	# X = exit road (south). Every row is exactly MAP_WIDTH (24) chars.
 	var map_data: Array[String] = [
-		"WWWWWWWWWWWWWWWWWWWWWWWW",  # 0
-		"WppppppPPPPPPPPPPppppppW",  # 1  palace facade
-		"WppppppPPPPPPPPPPppppppW",  # 2
-		"WpppppppPPPPPPPPpppppppW",  # 3  gate opening (landmark)
-		"WppppppppppppppppppppppW",  # 4
-		"WppGGGGGppppppppBBBBBppW",  # 5  guild (left) / bookshop (right)
-		"WppGGGGGppppppppBBBBBppW",  # 6
-		"WppGGGGGppppppppBBBBBppW",  # 7
-		"WppGGGGGppppppppBBBBBppW",  # 8
-		"WpppppppppFFFFpppppppppW",  # 9  central fountain
-		"WpppppppppFFFFpppppppppW",  # 10
-		"WppppppppppppppppppppppW",  # 11
-		"WppffppppppppppppppffppW",  # 12
-		"WppppppppppppppppppppppW",  # 13
-		"WppppppppppppppppppppppW",  # 14
-		"WppppppppppppppppppppppW",  # 15
-		"WpppppppppXXXXpppppppppW",  # 16  exit road
-		"WWWWWWWWWWWWWWWWWWWWWWWW",  # 17
+		"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+		"W............................W",
+		"W............................W",
+		"W...ppppppPPPPPPPPPPpppppp...W",
+		"W...ppppppPPPPPPPPPPpppppp...W",
+		"W...pppppppPPPPPPPPppppppp...W",
+		"W...pppppppppppppppppppppp...W",
+		"W...ppGGGGGppppppppBBBBBpp...W",
+		"W...ppGGGGGppppppppBBBBBpp...W",
+		"W...ppGGGGGppppppppBBBBBpp...W",
+		"W...ppGGGGGppppppppBBBBBpp...W",
+		"W...pppppppppFFFFppppppppp...W",
+		"W...pppppppppFFFFppppppppp...W",
+		"W...pppppppppppppppppppppp...W",
+		"W...ppffppppppppppppppffpp...W",
+		"W...pppppppppppppppppppppp...W",
+		"W...pppppppppppppppppppppp...W",
+		"W...pppppppppppppppppppppp...W",
+		"W...pppppppppXXXXppppppppp...W",
+		"W............................W",
+		"W............................W",
+		"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
 	]
 	for y in range(MAP_HEIGHT):
 		var row: String = map_data[y] if y < map_data.size() else ""
@@ -71,11 +75,11 @@ func _generate_map() -> void:
 			if ch == "X" and not spawn_points.has("exit"):
 				spawn_points["exit"] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
 
-	spawn_points["entrance"] = Vector2(12 * TILE_SIZE, 15 * TILE_SIZE)
+	spawn_points["entrance"] = Vector2(15 * TILE_SIZE,17 * TILE_SIZE)
 	spawn_points["default"] = spawn_points["entrance"]
 	# Interiors return here (guild_exit / bookshop_exit) just below their doors.
-	spawn_points["guild_exit"] = Vector2(4 * TILE_SIZE, 9 * TILE_SIZE)
-	spawn_points["bookshop_exit"] = Vector2(19 * TILE_SIZE, 9 * TILE_SIZE)
+	spawn_points["guild_exit"] = Vector2(7 * TILE_SIZE,11 * TILE_SIZE)
+	spawn_points["bookshop_exit"] = Vector2(22 * TILE_SIZE,11 * TILE_SIZE)
 
 
 func _char_to_tile_type(ch: String) -> int:
@@ -102,7 +106,7 @@ func _setup_transitions() -> void:
 	exit_trans.target_map = "overworld"
 	exit_trans.target_spawn = "scriptura_return"
 	exit_trans.require_interaction = false
-	exit_trans.position = spawn_points.get("exit", Vector2(12 * TILE_SIZE, 16 * TILE_SIZE))
+	exit_trans.position = spawn_points.get("exit", Vector2(15 * TILE_SIZE,18 * TILE_SIZE))
 	_setup_transition_collision(exit_trans, Vector2(TILE_SIZE * 4, TILE_SIZE))
 	exit_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(exit_trans)
@@ -111,9 +115,9 @@ func _setup_transitions() -> void:
 func _setup_buildings() -> void:
 	# Scriptweaver's Guild (left facade) and Aldrin's Books (right facade).
 	_add_interior_door("GuildDoor", "scriptura_guild", "Scriptweaver's Guild",
-		Vector2(4 * TILE_SIZE, 8 * TILE_SIZE))
+		Vector2(7 * TILE_SIZE,10 * TILE_SIZE))
 	_add_interior_door("BookshopDoor", "scriptura_bookshop", "Aldrin's Books",
-		Vector2(19 * TILE_SIZE, 8 * TILE_SIZE))
+		Vector2(22 * TILE_SIZE,10 * TILE_SIZE))
 	_build_palace_gate()
 
 
@@ -146,7 +150,7 @@ func _build_palace_gate() -> void:
 				img.set_pixel(x, y, dark)  # the archway (into the district, closed)
 	gate.texture = ImageTexture.create_from_image(img)
 	gate.centered = true
-	gate.position = Vector2(12 * TILE_SIZE, 2 * TILE_SIZE)
+	gate.position = Vector2(15 * TILE_SIZE,4 * TILE_SIZE)
 	buildings.add_child(gate)
 
 
@@ -163,14 +167,18 @@ func _setup_npcs() -> void:
 	# Capital locals point obliquely — helpful in form, evasive in substance;
 	# they geometrically converge on the (east-side) bookshop. Authored lines
 	# by cowir-story (msg 2278), placed against the fountain/east geometry.
+	# Positions shifted +3,+2 alongside the 2026-07-14 plaza grow (msg 2542/2543)
+	# to keep the citizens aligned with the fountain + shop geometry they were
+	# authored against. citizen_4 at old (16,11) landed in the shifted fountain
+	# without this shift — the walkability sweep caught it, this is the fix.
 	var breadcrumb := [
-		{"id": "scriptura_citizen_1", "pos": Vector2(6, 12),
+		{"id": "scriptura_citizen_1", "pos": Vector2(9, 14),
 			"line": "Books? There's a shop, east side, past the notary. I'd point you exactly, only — one doesn't like to be too *specific*. Someone might write it down."},
-		{"id": "scriptura_citizen_2", "pos": Vector2(15, 13),
+		{"id": "scriptura_citizen_2", "pos": Vector2(18, 15),
 			"line": "The bookseller? Kept to himself. Came up from the provinces a few years back, quiet as a closed drawer. His door's the little one nobody's repainted — the only thing on the row that isn't trying."},
-		{"id": "scriptura_citizen_3", "pos": Vector2(9, 14),
+		{"id": "scriptura_citizen_3", "pos": Vector2(12, 16),
 			"line": "Go toward the fountain, then don't stop at the fountain. Everyone stops at the fountain. The row behind it — those shops keep regulation hours. That one keeps *his*. I didn't say it."},
-		{"id": "scriptura_citizen_4", "pos": Vector2(16, 11),
+		{"id": "scriptura_citizen_4", "pos": Vector2(19, 13),
 			"line": "Aldrin's? — I mean, the bookshop, yes. It's right there, honestly. Past the good bench. Little sign you have to already know how to read."},
 	]
 	for c in breadcrumb:
@@ -184,7 +192,7 @@ func _setup_npcs() -> void:
 	# not-mentioning is the tell — the Rogue's "sees the second thing" essence).
 	if _lead_is_rogue():
 		var spotter = _create_npc("(the door the plaza walks around)", "villager",
-			Vector2(19 * TILE_SIZE, 11 * TILE_SIZE), [
+			Vector2(22 * TILE_SIZE,13 * TILE_SIZE), [
 				"There. The small door the whole plaza's walking around. Four people gave me directions to it and not one of them looked at it. That's not a shop nobody knows — that's a shop everybody's decided not to mention.",
 			])
 		npcs.add_child(spotter)
@@ -212,7 +220,7 @@ func _place_book_pickup() -> void:
 	bin.contents_type = "item"
 	bin.contents_id = "overdue_guild_book"
 	bin.contents_amount = 1
-	bin.position = Vector2(9 * TILE_SIZE, 4 * TILE_SIZE)
+	bin.position = Vector2(12 * TILE_SIZE,6 * TILE_SIZE)
 	treasures.add_child(bin)
 
 

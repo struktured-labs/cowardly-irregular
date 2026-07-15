@@ -9,8 +9,8 @@ const VillageShopScript = preload("res://src/exploration/VillageShop.gd")
 const TreasureChestScript = preload("res://src/exploration/TreasureChest.gd")
 
 ## Map dimensions
-const MAP_WIDTH: int = 24
-const MAP_HEIGHT: int = 18
+const MAP_WIDTH: int = 30
+const MAP_HEIGHT: int = 22
 
 
 ## ---- BaseVillage hooks ----
@@ -32,11 +32,11 @@ func _get_map_pixel_size() -> Vector2i:
 
 
 func _get_save_point_position() -> Vector2:
-	return Vector2(10 * TILE_SIZE, 8 * TILE_SIZE)
+	return Vector2(13 * TILE_SIZE,10 * TILE_SIZE)
 
 
 func _get_player_spawn_fallback() -> Vector2:
-	return Vector2(384, 448)
+	return Vector2(480, 512)
 
 
 func _generate_map() -> void:
@@ -53,24 +53,28 @@ func _generate_map() -> void:
 	# X = exit path (sidewalk leading out)
 	# Each row is exactly MAP_WIDTH (24) characters
 	var map_data: Array[String] = [
-		"WWWWWWWWWWWWWWWWWWWWWWWW",
-		"WggggppppppppppppggfggggW",
-		"WgHHHggggfggggggfgggggggW",
-		"WgHHHggggggfgggggfggfgggW",
-		"WgHHHgggfggggggggggggfggW",
-		"WggggppppppppppppppppgggW",
-		"WggfgpgggSSSggggIIIgpfggW",
-		"WgggepgggSSSggggIIIgpgggW",
-		"WgfgepgggSSSggggIIIgpfggW",
-		"WggggppppppppppppppppgggW",
-		"WgfgggggfggHHHggggggfgggW",
-		"WgggggfgggHHHgggfgggggggW",
-		"WggfgggggfHHHgggggfgggfgW",
-		"WgggggggggggggggggggggggW",
-		"WggfggggfggggfgggggfggggW",
-		"WgggggggggggggggfgggggggW",
-		"WgfggggggggXXXXXXgggfgggW",
-		"WWWWWWWWWWWWWWWWWWWWWWWW",
+		"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+		"W............................W",
+		"W............................W",
+		"W...ggggppppppppppppggfggg...W",
+		"W...gHHHggggfggggggfgggggg...W",
+		"W...gHHHggggggfgggggfggfgg...W",
+		"W...gHHHgggfggggggggggggfg...W",
+		"W...ggggppppppppppppppppgg...W",
+		"W...ggfgpgggSSSggggIIIgpfg...W",
+		"W...gggepgggSSSggggIIIgpgg...W",
+		"W...gfgepgggSSSggggIIIgpfg...W",
+		"W...ggggppppppppppppppppgg...W",
+		"W...gfgggggfggHHHggggggfgg...W",
+		"W...gggggfgggHHHgggfgggggg...W",
+		"W...ggfgggggfHHHgggggfgggf...W",
+		"W...gggggggggggggggggggggg...W",
+		"W...ggfggggfggggfgggggfggg...W",
+		"W...gggggggggggggggfgggggg...W",
+		"W...gfggggggggXXXXXXgggfgg...W",
+		"W............................W",
+		"W............................W",
+		"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
 	]
 
 	for y in range(MAP_HEIGHT):
@@ -84,7 +88,7 @@ func _generate_map() -> void:
 			if char == "X" and not spawn_points.has("exit"):
 				spawn_points["exit"] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
 
-	spawn_points["entrance"] = Vector2(12 * TILE_SIZE, 14 * TILE_SIZE)
+	spawn_points["entrance"] = Vector2(15 * TILE_SIZE,16 * TILE_SIZE)
 	spawn_points["default"] = spawn_points["entrance"]
 	spawn_points["maple_heights_entrance"] = spawn_points["entrance"]
 
@@ -113,7 +117,7 @@ func _setup_transitions() -> void:
 	exit_trans.target_map = "suburban_overworld"
 	exit_trans.target_spawn = "maple_heights_entrance"
 	exit_trans.require_interaction = false
-	exit_trans.position = spawn_points.get("exit", Vector2(352, 544))
+	exit_trans.position = spawn_points.get("exit", Vector2(448, 608))
 	_setup_transition_collision(exit_trans, Vector2(TILE_SIZE * 6, TILE_SIZE))
 	exit_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(exit_trans)
@@ -123,7 +127,7 @@ func _setup_buildings() -> void:
 	# === INN (Mom's Guest Room) ===
 	var inn = VillageInnScript.new()
 	inn.inn_name = "Mom's Guest Room"
-	inn.position = Vector2(17.5 * TILE_SIZE, 7 * TILE_SIZE)
+	inn.position = Vector2(20.5 * TILE_SIZE,9 * TILE_SIZE)
 	buildings.add_child(inn)
 
 	# === ITEM SHOP (Suburban Mart) ===
@@ -131,7 +135,7 @@ func _setup_buildings() -> void:
 	shop.shop_name = "Suburban Mart"
 	shop.shop_type = VillageShopScript.ShopType.ITEM
 	shop.keeper_name = "Donna"
-	shop.position = Vector2(10 * TILE_SIZE, 7 * TILE_SIZE)
+	shop.position = Vector2(13 * TILE_SIZE,9 * TILE_SIZE)
 	buildings.add_child(shop)
 
 	# === EQUIPMENT (Handyman's Garage) ===
@@ -139,7 +143,7 @@ func _setup_buildings() -> void:
 	smith.shop_name = "Handyman's Garage"
 	smith.shop_type = VillageShopScript.ShopType.BLACKSMITH
 	smith.keeper_name = "Greg"
-	smith.position = Vector2(13 * TILE_SIZE, 7 * TILE_SIZE)
+	smith.position = Vector2(16 * TILE_SIZE,9 * TILE_SIZE)
 	buildings.add_child(smith)
 
 	# === MAGIC (Crystal Therapy Studio) ===
@@ -147,36 +151,36 @@ func _setup_buildings() -> void:
 	magic.shop_name = "Crystal Therapy Studio"
 	magic.shop_type = VillageShopScript.ShopType.WHITE_MAGIC
 	magic.keeper_name = "Luna"
-	magic.position = Vector2(6 * TILE_SIZE, 7 * TILE_SIZE)
+	magic.position = Vector2(9 * TILE_SIZE,9 * TILE_SIZE)
 	buildings.add_child(magic)
 
 	# === ARCADE DOOR ===
 	# Pete's Glitch City Arcade — pays off Greenleaf's foreshadowing
 	# from tick 37. First enterable W2 interior.
-	spawn_points["arcade_exit"] = Vector2(5 * TILE_SIZE, 11 * TILE_SIZE)
-	_add_interior_door("ArcadeDoor", "maple_heights_arcade", "Enter Glitch City Arcade", Vector2(5 * TILE_SIZE, 10 * TILE_SIZE))
+	spawn_points["arcade_exit"] = Vector2(8 * TILE_SIZE,13 * TILE_SIZE)
+	_add_interior_door("ArcadeDoor", "maple_heights_arcade", "Enter Glitch City Arcade", Vector2(8 * TILE_SIZE,12 * TILE_SIZE))
 	# === GARAGE SALE DOOR ===
 	# South face of the HHH building (cols 2-4, rows 2-4) — the sale that never ends.
-	spawn_points["garage_sale_exit"] = Vector2(3 * TILE_SIZE, 5.5 * TILE_SIZE)
-	_add_interior_door("GarageSaleDoor", "maple_garage_sale", "Enter Garage Sale", Vector2(3 * TILE_SIZE, 4.5 * TILE_SIZE))
+	spawn_points["garage_sale_exit"] = Vector2(6 * TILE_SIZE,7.5 * TILE_SIZE)
+	_add_interior_door("GarageSaleDoor", "maple_garage_sale", "Enter Garage Sale", Vector2(6 * TILE_SIZE,6.5 * TILE_SIZE))
 
 	# === STRIP MALL ROAD ===
 	# Birchwood Commons — the rearranging strip mall (configuration_pending's
 	# stage + Orrery's W2 booth). A road, not a door: it's its own lot.
-	spawn_points["strip_mall_return"] = Vector2(20 * TILE_SIZE, 13 * TILE_SIZE)
-	_add_interior_door("StripMallRoad", "maple_heights_strip_mall", "Birchwood Commons (Strip Mall)", Vector2(20 * TILE_SIZE, 12 * TILE_SIZE))
+	spawn_points["strip_mall_return"] = Vector2(23 * TILE_SIZE,15 * TILE_SIZE)
+	_add_interior_door("StripMallRoad", "maple_heights_strip_mall", "Birchwood Commons (Strip Mall)", Vector2(23 * TILE_SIZE,14 * TILE_SIZE))
 
 	# === COMMUNITY CENTER ===
 	# Civic heart of the W2 quest hub — bulletin board (forms giver) +
 	# front desk (forms / variance / fine_print turn-ins) live inside.
-	spawn_points["community_center_exit"] = Vector2(14 * TILE_SIZE, 14 * TILE_SIZE)
-	_add_interior_door("CommunityCenterDoor", "maple_community_center", "Maple Heights Community Center", Vector2(14 * TILE_SIZE, 13 * TILE_SIZE))
+	spawn_points["community_center_exit"] = Vector2(17 * TILE_SIZE,16 * TILE_SIZE)
+	_add_interior_door("CommunityCenterDoor", "maple_community_center", "Maple Heights Community Center", Vector2(17 * TILE_SIZE,15 * TILE_SIZE))
 
 	# === ENRICHMENT ANNEX ===
 	# At the neighborhood edge, past the last lawn — where the
 	# "community-transferred" kids actually are (relocated step 2+).
-	spawn_points["annex_exit"] = Vector2(21 * TILE_SIZE, 4 * TILE_SIZE)
-	_add_interior_door("AnnexDoor", "enrichment_annex", "Enrichment Annex", Vector2(21 * TILE_SIZE, 3 * TILE_SIZE))
+	spawn_points["annex_exit"] = Vector2(24 * TILE_SIZE,6 * TILE_SIZE)
+	_add_interior_door("AnnexDoor", "enrichment_annex", "Enrichment Annex", Vector2(24 * TILE_SIZE,5 * TILE_SIZE))
 
 
 func _setup_treasures() -> void:
@@ -186,7 +190,7 @@ func _setup_treasures() -> void:
 	chest1.contents_type = "item"
 	chest1.contents_id = "potion"
 	chest1.contents_amount = 2
-	chest1.position = Vector2(1.5 * TILE_SIZE, 3 * TILE_SIZE)
+	chest1.position = Vector2(4.5 * TILE_SIZE,5 * TILE_SIZE)
 	treasures.add_child(chest1)
 
 	# Buried in the backyard — someone's old allowance
@@ -194,7 +198,7 @@ func _setup_treasures() -> void:
 	chest2.chest_id = "maple_heights_chest_2"
 	chest2.contents_type = "gold"
 	chest2.gold_amount = 80
-	chest2.position = Vector2(20 * TILE_SIZE, 11 * TILE_SIZE)
+	chest2.position = Vector2(23 * TILE_SIZE,13 * TILE_SIZE)
 	treasures.add_child(chest2)
 
 	# Under a garden flower patch — a dusty ether
@@ -203,13 +207,13 @@ func _setup_treasures() -> void:
 	chest3.contents_type = "item"
 	chest3.contents_id = "ether"
 	chest3.contents_amount = 1
-	chest3.position = Vector2(4 * TILE_SIZE, 14 * TILE_SIZE)
+	chest3.position = Vector2(7 * TILE_SIZE,16 * TILE_SIZE)
 	treasures.add_child(chest3)
 
 
 func _setup_npcs() -> void:
 	# Neighborhood Dad (BBQ tips / gameplay hints)
-	var dad = _create_npc("Neighborhood Dad", "villager", Vector2(6 * TILE_SIZE, 12 * TILE_SIZE), [
+	var dad = _create_npc("Neighborhood Dad", "villager", Vector2(9 * TILE_SIZE,14 * TILE_SIZE), [
 		"Hey there, sport! You look like you could use some LIFE ADVICE.",
 		"Always grill on medium heat. Never rush the char.",
 		"Same applies to leveling up, by the way.",
@@ -223,7 +227,7 @@ func _setup_npcs() -> void:
 	# forms_in_triplicate turn-in (quest data npc_id mail_carrier_w2). Her
 	# route sees everything; QuestSystem owns her dialogue when quest
 	# business exists, these lines are the idle fallback.
-	var mailman = _create_npc("Carriers Reg", "guard", Vector2(18 * TILE_SIZE, 4 * TILE_SIZE), [
+	var mailman = _create_npc("Carriers Reg", "guard", Vector2(21 * TILE_SIZE,6 * TILE_SIZE), [
 		"Mail call! Uh... none for you, actually.",
 		"But I heard some things on my route today.",
 		"Old Mrs. Petrov says the caves north of here started HUMMING.",
@@ -235,7 +239,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(mailman)
 
 	# Kid on Bike (weird stuff / comedy)
-	var kid = _create_npc("Tyler on Bike", "villager", Vector2(12 * TILE_SIZE, 9 * TILE_SIZE), [
+	var kid = _create_npc("Tyler on Bike", "villager", Vector2(15 * TILE_SIZE,11 * TILE_SIZE), [
 		"WHOOOOOAAA—",
 		"*skids to stop*",
 		"Dude. DUDE. There's something in the storm drain.",
@@ -246,7 +250,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(kid)
 
 	# Retired Teacher (lore about how the world changed)
-	var teacher = _create_npc("Ms. Finch", "elder", Vector2(3 * TILE_SIZE, 9 * TILE_SIZE), [
+	var teacher = _create_npc("Ms. Finch", "elder", Vector2(6 * TILE_SIZE,11 * TILE_SIZE), [
 		"Ah, a young traveler. Sit down. I used to teach history.",
 		"Not the history in your textbooks — the REAL history.",
 		"This neighborhood wasn't always... suburban.",
@@ -257,7 +261,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(teacher)
 
 	# Dog Walker (comedy relief)
-	var dogwalker = _create_npc("Doug & Pretzel", "villager", Vector2(16 * TILE_SIZE, 12 * TILE_SIZE), [
+	var dogwalker = _create_npc("Doug & Pretzel", "villager", Vector2(19 * TILE_SIZE,14 * TILE_SIZE), [
 		"Oh, don't mind Pretzel. He barks at adventurers.",
 		"*BORK BORK BORK*",
 		"He once defeated a Level 12 Goblin by sitting on it.",
@@ -273,7 +277,7 @@ func _setup_npcs() -> void:
 	# (He and the flower were inside the Suburban Mart block pre-2026-07-11 —
 	# the giver was unreachable and the emitter sprite invisible. Now on the
 	# garden row fronting the south houses.)
-	var gerald = _create_npc("Gerald", "villager", Vector2(7 * TILE_SIZE, 13 * TILE_SIZE), [
+	var gerald = _create_npc("Gerald", "villager", Vector2(10 * TILE_SIZE,15 * TILE_SIZE), [
 		"That flower is NOT a violation. It was here first.",
 	])
 	gerald.npc_id = "gerald_w2"
@@ -283,11 +287,11 @@ func _setup_npcs() -> void:
 	var FlowerScript = load("res://src/exploration/WildflowerPatch.gd")
 	if FlowerScript:
 		var flower = FlowerScript.new()
-		flower.position = Vector2(10 * TILE_SIZE, 13 * TILE_SIZE)
+		flower.position = Vector2(13 * TILE_SIZE,15 * TILE_SIZE)
 		npcs.add_child(flower)
 
 	# Mrs. Pemberton — front porch next door; watching since before the HOA.
-	var pemberton = _create_npc("Mrs. Pemberton", "elder", Vector2(12 * TILE_SIZE, 5 * TILE_SIZE), [
+	var pemberton = _create_npc("Mrs. Pemberton", "elder", Vector2(15 * TILE_SIZE,7 * TILE_SIZE), [
 		"That flower was there before the houses. This was all a field.",
 		"Gerald's lawn is built on top of the field. The flower knows that.",
 		"It keeps trying to remind the ground what the ground used to be.",
@@ -297,7 +301,7 @@ func _setup_npcs() -> void:
 
 	# Retired Surveyor — Birch Court; configuration_pending step-3 target.
 	# He measured this neighborhood when it was a field. Twice.
-	var surveyor = _create_npc("Retired Surveyor", "elder", Vector2(7 * TILE_SIZE, 10 * TILE_SIZE), [
+	var surveyor = _create_npc("Retired Surveyor", "elder", Vector2(10 * TILE_SIZE,12 * TILE_SIZE), [
 		"I surveyed this whole tract in '61. Then again in '84.",
 		"The numbers didn't match. Nobody wanted to hear that then either.",
 	])
@@ -309,18 +313,18 @@ func _setup_npcs() -> void:
 	var PackageScript = load("res://src/exploration/MissingPackage.gd")
 	if PackageScript:
 		var pkg = PackageScript.new()
-		pkg.position = Vector2(7 * TILE_SIZE, 15 * TILE_SIZE)
+		pkg.position = Vector2(10 * TILE_SIZE,17 * TILE_SIZE)
 		npcs.add_child(pkg)
 
 	# Service alley behind the Community Center — fine_print's Rogue gap.
 	var AlleyScript = load("res://src/exploration/CivicBackDoor.gd")
 	if AlleyScript:
 		var alley = AlleyScript.new()
-		alley.position = Vector2(11 * TILE_SIZE, 15 * TILE_SIZE)
+		alley.position = Vector2(14 * TILE_SIZE,17 * TILE_SIZE)
 		npcs.add_child(alley)
 
 	# Basement Developer — wrong_blue step 3; rarely surfaces.
-	var developer = _create_npc("Basement Developer", "villager", Vector2(4 * TILE_SIZE, 14 * TILE_SIZE), [
+	var developer = _create_npc("Basement Developer", "villager", Vector2(7 * TILE_SIZE,16 * TILE_SIZE), [
 		"I don't come up much. The light out here is... configured wrong.",
 	])
 	developer.npc_id = "basement_developer_w2"
@@ -329,7 +333,7 @@ func _setup_npcs() -> void:
 	# Casper — wrong_blue giver; only home after the Annex rescue.
 	var gs = get_node_or_null("/root/GameState")
 	if gs and gs.has_method("is_story_flag_set") and gs.is_story_flag_set("quest_world2_relocated_complete"):
-		var casper = _create_npc("Casper", "child", Vector2(14 * TILE_SIZE, 8 * TILE_SIZE), [
+		var casper = _create_npc("Casper", "child", Vector2(17 * TILE_SIZE,10 * TILE_SIZE), [
 			"I'm home now. I keep looking at the sky though.",
 			"It's the wrong blue. It's been the wrong blue since Tuesday.",
 		])

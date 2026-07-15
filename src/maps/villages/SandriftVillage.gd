@@ -9,8 +9,8 @@ const VillageShopScript = preload("res://src/exploration/VillageShop.gd")
 const TreasureChestScript = preload("res://src/exploration/TreasureChest.gd")
 
 ## Map dimensions (24x18 desert oasis)
-const MAP_WIDTH: int = 24
-const MAP_HEIGHT: int = 18
+const MAP_WIDTH: int = 30
+const MAP_HEIGHT: int = 22
 
 
 ## ---- BaseVillage hooks ----
@@ -28,11 +28,11 @@ func _get_map_pixel_size() -> Vector2i:
 
 
 func _get_save_point_position() -> Vector2:
-	return Vector2(10 * TILE_SIZE, 8 * TILE_SIZE)
+	return Vector2(13 * TILE_SIZE,10 * TILE_SIZE)
 
 
 func _get_player_spawn_fallback() -> Vector2:
-	return Vector2(384, 416)
+	return Vector2(480, 480)
 
 
 func _generate_map() -> void:
@@ -40,24 +40,28 @@ func _generate_map() -> void:
 	# W = wall, . = floor (sand base), O = oasis water, I = oasis inn, B = bazaar, E = elder tent
 	# T = hidden tent, X = exit
 	var map_data: Array[String] = [
-		"WWWWWWWWWWWWWWWWWWWWWWWW",
-		"W......................W",
-		"W..III.......BBB.......W",
-		"W..III.......BBB.......W",
-		"W..III.......BBB.......W",
-		"W......................W",
-		"W.......OOOO...........W",
-		"W.......OOOO...EEE.....W",
-		"W.......OOOO...EEE.....W",
-		"W.......OOOO...EEE.....W",
-		"W......................W",
-		"W..TT..................W",
-		"W..TT..................W",
-		"W......................W",
-		"W......................W",
-		"W.......XXXXXX.........W",
-		"W.......XXXXXX.........W",
-		"WWWWWWWWWWWWWWWWWWWWWWWW",
+		"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+		"W............................W",
+		"W............................W",
+		"W............................W",
+		"W.....III.......BBB..........W",
+		"W.....III.......BBB..........W",
+		"W.....III.......BBB..........W",
+		"W............................W",
+		"W..........OOOO..............W",
+		"W..........OOOO...EEE........W",
+		"W..........OOOO...EEE........W",
+		"W..........OOOO...EEE........W",
+		"W............................W",
+		"W.....TT.....................W",
+		"W.....TT.....................W",
+		"W............................W",
+		"W............................W",
+		"W..........XXXXXX............W",
+		"W..........XXXXXX............W",
+		"W............................W",
+		"W............................W",
+		"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
 	]
 
 	for y in range(MAP_HEIGHT):
@@ -71,7 +75,7 @@ func _generate_map() -> void:
 			if char == "X" and not spawn_points.has("exit"):
 				spawn_points["exit"] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
 
-	spawn_points["entrance"] = Vector2(12 * TILE_SIZE, 13 * TILE_SIZE)
+	spawn_points["entrance"] = Vector2(15 * TILE_SIZE,15 * TILE_SIZE)
 	spawn_points["default"] = spawn_points["entrance"]
 	spawn_points["sandrift_entrance"] = spawn_points["entrance"]
 
@@ -95,7 +99,7 @@ func _setup_transitions() -> void:
 	exit_trans.target_map = "overworld"
 	exit_trans.target_spawn = "sandrift_entrance"
 	exit_trans.require_interaction = false
-	exit_trans.position = spawn_points.get("exit", Vector2(352, 512))
+	exit_trans.position = spawn_points.get("exit", Vector2(448, 576))
 	_setup_transition_collision(exit_trans, Vector2(TILE_SIZE * 6, TILE_SIZE))
 	exit_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(exit_trans)
@@ -105,7 +109,7 @@ func _setup_buildings() -> void:
 	# === OASIS INN ===
 	var inn = VillageInnScript.new()
 	inn.inn_name = "Oasis Inn"
-	inn.position = Vector2(3.5 * TILE_SIZE, 3 * TILE_SIZE)
+	inn.position = Vector2(6.5 * TILE_SIZE,5 * TILE_SIZE)
 	buildings.add_child(inn)
 
 	# === BAZAAR (Item + Weapon Shop) ===
@@ -113,26 +117,26 @@ func _setup_buildings() -> void:
 	bazaar_items.shop_name = "Desert Bazaar"
 	bazaar_items.shop_type = VillageShopScript.ShopType.ITEM
 	bazaar_items.keeper_name = "Shifty"
-	bazaar_items.position = Vector2(14 * TILE_SIZE, 3 * TILE_SIZE)
+	bazaar_items.position = Vector2(17 * TILE_SIZE,5 * TILE_SIZE)
 	buildings.add_child(bazaar_items)
 
 	var bazaar_weapons = VillageShopScript.new()
 	bazaar_weapons.shop_name = "Bazaar Arms"
 	bazaar_weapons.shop_type = VillageShopScript.ShopType.BLACKSMITH
 	bazaar_weapons.keeper_name = "Dune"
-	bazaar_weapons.position = Vector2(14 * TILE_SIZE, 5.5 * TILE_SIZE)
+	bazaar_weapons.position = Vector2(17 * TILE_SIZE,7.5 * TILE_SIZE)
 	buildings.add_child(bazaar_weapons)
 
 	# === GLASSMAKER'S WORKSHOP DOOR ===
 	# Senga's hut on the open south-east tundra of the village map.
 	# She foreshadows Pyrroth (W1 fire dragon) through the desert
 	# glass she collects from sand fused by the dragon's breath.
-	spawn_points["glassmaker_exit"] = Vector2(8 * TILE_SIZE, 11 * TILE_SIZE)
-	_add_interior_door("GlassmakerDoor", "sandrift_glassmaker", "Enter Glassmaker's Workshop", Vector2(8 * TILE_SIZE, 10 * TILE_SIZE))
+	spawn_points["glassmaker_exit"] = Vector2(11 * TILE_SIZE,13 * TILE_SIZE)
+	_add_interior_door("GlassmakerDoor", "sandrift_glassmaker", "Enter Glassmaker's Workshop", Vector2(11 * TILE_SIZE,12 * TILE_SIZE))
 	# === RAIN LEDGER DOOR ===
 	# South face of the BBB building (cols 13-15, rows 2-4) — four centuries of hope, one entry.
-	spawn_points["ledger_exit"] = Vector2(14 * TILE_SIZE, 5.5 * TILE_SIZE)
-	_add_interior_door("RainLedgerDoor", "sandrift_rain_ledger", "Enter Rain Ledger", Vector2(14 * TILE_SIZE, 4.5 * TILE_SIZE))
+	spawn_points["ledger_exit"] = Vector2(17 * TILE_SIZE,7.5 * TILE_SIZE)
+	_add_interior_door("RainLedgerDoor", "sandrift_rain_ledger", "Enter Rain Ledger", Vector2(17 * TILE_SIZE,6.5 * TILE_SIZE))
 
 
 func _setup_treasures() -> void:
@@ -141,7 +145,7 @@ func _setup_treasures() -> void:
 	chest1.chest_id = "sandrift_chest_1"
 	chest1.contents_type = "gold"
 	chest1.gold_amount = 500
-	chest1.position = Vector2(2 * TILE_SIZE, 12 * TILE_SIZE)
+	chest1.position = Vector2(5 * TILE_SIZE,14 * TILE_SIZE)
 	treasures.add_child(chest1)
 
 	# Speed Boots in bazaar back room
@@ -149,7 +153,7 @@ func _setup_treasures() -> void:
 	chest2.chest_id = "sandrift_chest_2"
 	chest2.contents_type = "equipment"
 	chest2.contents_id = "speed_boots"
-	chest2.position = Vector2(17 * TILE_SIZE, 2 * TILE_SIZE)
+	chest2.position = Vector2(20 * TILE_SIZE,4 * TILE_SIZE)
 	treasures.add_child(chest2)
 
 
@@ -157,7 +161,7 @@ func _setup_npcs() -> void:
 	_place_masterite_warden()
 
 	# Conspiracy Theorist Rex (paranoid)
-	var rex = _create_npc("Conspiracy Theorist Rex", "villager", Vector2(6 * TILE_SIZE, 6 * TILE_SIZE), [
+	var rex = _create_npc("Conspiracy Theorist Rex", "villager", Vector2(9 * TILE_SIZE,8 * TILE_SIZE), [
 		"The encounter rate is RIGGED!",
 		"I've done the math. It's supposed to be 5%...",
 		"But I SWEAR it's higher when you're low on potions!",
@@ -167,7 +171,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(rex)
 
 	# Retired Hero Gramps (nostalgic)
-	var gramps = _create_npc("Retired Hero Gramps", "elder", Vector2(18 * TILE_SIZE, 8 * TILE_SIZE), [
+	var gramps = _create_npc("Retired Hero Gramps", "elder", Vector2(21 * TILE_SIZE,10 * TILE_SIZE), [
 		"Back in MY game, we walked BOTH ways through the dungeon.",
 		"Uphill. In 8-bit. And we LIKED it.",
 		"No autobattle, no save states, no 'quality of life.'",
@@ -177,7 +181,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(gramps)
 
 	# Script Dealer Shifty (shady)
-	var shifty = _create_npc("Script Dealer Shifty", "villager", Vector2(16 * TILE_SIZE, 6 * TILE_SIZE), [
+	var shifty = _create_npc("Script Dealer Shifty", "villager", Vector2(19 * TILE_SIZE,8 * TILE_SIZE), [
 		"Psst. Got some premium autogrind configs.",
 		"One-shot setups. Very efficient.",
 		"...Totally not stolen from the dev console.",
@@ -187,7 +191,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(shifty)
 
 	# Caravan Leader Dune (practical)
-	var dune = _create_npc("Caravan Leader Dune", "villager", Vector2(10 * TILE_SIZE, 10 * TILE_SIZE), [
+	var dune = _create_npc("Caravan Leader Dune", "villager", Vector2(13 * TILE_SIZE,12 * TILE_SIZE), [
 		"The desert teaches patience.",
 		"Also, bring water. Lots of water.",
 		"The game doesn't have a thirst mechanic yet, but still.",
@@ -196,7 +200,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(dune)
 
 	# Sand Sage Mirage (cryptic)
-	var mirage = _create_npc("Sand Sage Mirage", "elder", Vector2(5 * TILE_SIZE, 14 * TILE_SIZE), [
+	var mirage = _create_npc("Sand Sage Mirage", "elder", Vector2(8 * TILE_SIZE,16 * TILE_SIZE), [
 		"The lightning dragon moves at the speed of thought.",
 		"Which, if your thoughts are anything like mine...",
 		"...isn't that fast.",
@@ -206,7 +210,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(mirage)
 
 	# Young Adventurer Kit (enthusiastic)
-	var kit = _create_npc("Young Adventurer Kit", "villager", Vector2(20 * TILE_SIZE, 12 * TILE_SIZE), [
+	var kit = _create_npc("Young Adventurer Kit", "villager", Vector2(23 * TILE_SIZE,14 * TILE_SIZE), [
 		"I'm gonna be the very best!",
 		"Like no one ever-- wait, wrong franchise.",
 		"I mean, I'm gonna automate the very best!",
@@ -229,5 +233,5 @@ func _place_masterite_warden() -> void:
 	warden.monster_id = "masterite_warden_medieval"
 	warden.prereq_flag = "cave_rat_king_defeated"
 	warden.display_name = "Warden of the Old Guard"
-	warden.position = Vector2(11 * TILE_SIZE, 14 * TILE_SIZE)
+	warden.position = Vector2(14 * TILE_SIZE,16 * TILE_SIZE)
 	npcs.add_child(warden)

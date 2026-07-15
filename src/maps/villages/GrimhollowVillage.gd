@@ -9,8 +9,8 @@ const VillageShopScript = preload("res://src/exploration/VillageShop.gd")
 const TreasureChestScript = preload("res://src/exploration/TreasureChest.gd")
 
 ## Map dimensions (20x16 swamp hamlet)
-const MAP_WIDTH: int = 20
-const MAP_HEIGHT: int = 16
+const MAP_WIDTH: int = 24
+const MAP_HEIGHT: int = 20
 
 
 ## ---- BaseVillage hooks ----
@@ -28,11 +28,11 @@ func _get_map_pixel_size() -> Vector2i:
 
 
 func _get_save_point_position() -> Vector2:
-	return Vector2(8 * TILE_SIZE, 6 * TILE_SIZE)
+	return Vector2(10 * TILE_SIZE,8 * TILE_SIZE)
 
 
 func _get_player_spawn_fallback() -> Vector2:
-	return Vector2(320, 352)
+	return Vector2(384, 416)
 
 
 func _generate_map() -> void:
@@ -40,22 +40,26 @@ func _generate_map() -> void:
 	# W = wall, . = floor, S = swamp pools, R = restless inn, C = cursed curios, D = decrepit chapel
 	# G = graveyard area, X = exit
 	var map_data: Array[String] = [
-		"WWWWWWWWWWWWWWWWWWWW",
-		"W..................W",
-		"W..RRR....DDD......W",
-		"W..RRR....DDD......W",
-		"W..RRR....DDD......W",
-		"W..................W",
-		"W.....SS.....CCC...W",
-		"W.....SS.....CCC...W",
-		"W.....SS.....CCC...W",
-		"W..................W",
-		"W..GGG.............W",
-		"W..GGG.............W",
-		"W..................W",
-		"W......XXXXXX......W",
-		"W......XXXXXX......W",
-		"WWWWWWWWWWWWWWWWWWWW",
+		"WWWWWWWWWWWWWWWWWWWWWWWW",
+		"W......................W",
+		"W......................W",
+		"W......................W",
+		"W....RRR....DDD........W",
+		"W....RRR....DDD........W",
+		"W....RRR....DDD........W",
+		"W......................W",
+		"W.......SS.....CCC.....W",
+		"W.......SS.....CCC.....W",
+		"W.......SS.....CCC.....W",
+		"W......................W",
+		"W....GGG...............W",
+		"W....GGG...............W",
+		"W......................W",
+		"W........XXXXXX........W",
+		"W........XXXXXX........W",
+		"W......................W",
+		"W......................W",
+		"WWWWWWWWWWWWWWWWWWWWWWWW",
 	]
 
 	for y in range(MAP_HEIGHT):
@@ -69,7 +73,7 @@ func _generate_map() -> void:
 			if char == "X" and not spawn_points.has("exit"):
 				spawn_points["exit"] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
 
-	spawn_points["entrance"] = Vector2(10 * TILE_SIZE, 11 * TILE_SIZE)
+	spawn_points["entrance"] = Vector2(12 * TILE_SIZE,13 * TILE_SIZE)
 	spawn_points["default"] = spawn_points["entrance"]
 	spawn_points["grimhollow_entrance"] = spawn_points["entrance"]
 
@@ -93,7 +97,7 @@ func _setup_transitions() -> void:
 	exit_trans.target_map = "overworld"
 	exit_trans.target_spawn = "grimhollow_entrance"
 	exit_trans.require_interaction = false
-	exit_trans.position = spawn_points.get("exit", Vector2(288, 448))
+	exit_trans.position = spawn_points.get("exit", Vector2(352, 512))
 	_setup_transition_collision(exit_trans, Vector2(TILE_SIZE * 6, TILE_SIZE))
 	exit_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(exit_trans)
@@ -103,7 +107,7 @@ func _setup_buildings() -> void:
 	# === RESTLESS INN ===
 	var inn = VillageInnScript.new()
 	inn.inn_name = "The Restless Inn"
-	inn.position = Vector2(3.5 * TILE_SIZE, 3 * TILE_SIZE)
+	inn.position = Vector2(5.5 * TILE_SIZE,5 * TILE_SIZE)
 	buildings.add_child(inn)
 
 	# === CURSED CURIOS (Item Shop) ===
@@ -111,7 +115,7 @@ func _setup_buildings() -> void:
 	curios.shop_name = "Cursed Curios"
 	curios.shop_type = VillageShopScript.ShopType.ITEM
 	curios.keeper_name = "Mort"
-	curios.position = Vector2(15 * TILE_SIZE, 7 * TILE_SIZE)
+	curios.position = Vector2(17 * TILE_SIZE,9 * TILE_SIZE)
 	buildings.add_child(curios)
 
 	# === DECREPIT CHAPEL (Magic Shop) ===
@@ -119,18 +123,18 @@ func _setup_buildings() -> void:
 	chapel.shop_name = "Decrepit Chapel"
 	chapel.shop_type = VillageShopScript.ShopType.BLACK_MAGIC
 	chapel.keeper_name = "Sister Shadow"
-	chapel.position = Vector2(11 * TILE_SIZE, 3 * TILE_SIZE)
+	chapel.position = Vector2(13 * TILE_SIZE,5 * TILE_SIZE)
 	buildings.add_child(chapel)
 
 	# === WITCH'S HUT DOOR ===
 	# Old Mire's hut at the bog's edge. She foreshadows Umbraxis (W1
 	# shadow dragon) — the room's payload.
-	spawn_points["witch_hut_exit"] = Vector2(4 * TILE_SIZE, 10 * TILE_SIZE)
-	_add_interior_door("WitchHutDoor", "grimhollow_witch_hut", "Enter Witch's Hut", Vector2(4 * TILE_SIZE, 9 * TILE_SIZE))
+	spawn_points["witch_hut_exit"] = Vector2(6 * TILE_SIZE,12 * TILE_SIZE)
+	_add_interior_door("WitchHutDoor", "grimhollow_witch_hut", "Enter Witch's Hut", Vector2(6 * TILE_SIZE,11 * TILE_SIZE))
 	# === LANTERN DEBT OFFICE DOOR ===
 	# South face of the CCC building (cols 13-15, rows 6-8) — where the swamp's light is loaned.
-	spawn_points["lantern_exit"] = Vector2(14 * TILE_SIZE, 9.5 * TILE_SIZE)
-	_add_interior_door("LanternDebtDoor", "grimhollow_lantern_debt", "Enter Lantern Debt Office", Vector2(14 * TILE_SIZE, 8.5 * TILE_SIZE))
+	spawn_points["lantern_exit"] = Vector2(16 * TILE_SIZE,11.5 * TILE_SIZE)
+	_add_interior_door("LanternDebtDoor", "grimhollow_lantern_debt", "Enter Lantern Debt Office", Vector2(16 * TILE_SIZE,10.5 * TILE_SIZE))
 
 
 func _setup_treasures() -> void:
@@ -140,7 +144,7 @@ func _setup_treasures() -> void:
 	chest1.contents_type = "item"
 	chest1.contents_id = "phoenix_down"
 	chest1.contents_amount = 1
-	chest1.position = Vector2(1.5 * TILE_SIZE, 11 * TILE_SIZE)
+	chest1.position = Vector2(3.5 * TILE_SIZE,13 * TILE_SIZE)
 	treasures.add_child(chest1)
 
 	# Shadow Ring behind chapel
@@ -148,7 +152,7 @@ func _setup_treasures() -> void:
 	chest2.chest_id = "grimhollow_chest_2"
 	chest2.contents_type = "equipment"
 	chest2.contents_id = "magic_ring"
-	chest2.position = Vector2(14 * TILE_SIZE, 2 * TILE_SIZE)
+	chest2.position = Vector2(16 * TILE_SIZE,4 * TILE_SIZE)
 	treasures.add_child(chest2)
 
 
@@ -156,7 +160,7 @@ func _setup_npcs() -> void:
 	_place_masterite_arbiter()
 
 	# Fortune Teller Madame Hex (dramatic)
-	var hex = _create_npc("Madame Hex", "elder", Vector2(8 * TILE_SIZE, 5 * TILE_SIZE), [
+	var hex = _create_npc("Madame Hex", "elder", Vector2(10 * TILE_SIZE,7 * TILE_SIZE), [
 		"I see your future...",
 		"BOSS FIGHT!",
 		"...That's all futures, really.",
@@ -166,7 +170,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(hex)
 
 	# Undead Shopkeeper Mort (deadpan)
-	var mort = _create_npc("Undead Shopkeeper Mort", "villager", Vector2(16 * TILE_SIZE, 5 * TILE_SIZE), [
+	var mort = _create_npc("Undead Shopkeeper Mort", "villager", Vector2(18 * TILE_SIZE,7 * TILE_SIZE), [
 		"Being dead is great for overhead.",
 		"No rent, no food costs. 10/10 would die again.",
 		"I used to be an adventurer. Then I died.",
@@ -175,7 +179,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(mort)
 
 	# Creepy Child Wednesday (meta-horror)
-	var wednesday = _create_npc("Creepy Child Wednesday", "villager", Vector2(6 * TILE_SIZE, 9 * TILE_SIZE), [
+	var wednesday = _create_npc("Creepy Child Wednesday", "villager", Vector2(8 * TILE_SIZE,11 * TILE_SIZE), [
 		"I can see the save file from here.",
 		"There's something... WRITTEN between the bytes.",
 		"Can you hear it too?",
@@ -185,7 +189,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(wednesday)
 
 	# Ghost Barkeep Claude (friendly)
-	var claude = _create_npc("Ghost Barkeep Claude", "villager", Vector2(4 * TILE_SIZE, 7 * TILE_SIZE), [
+	var claude = _create_npc("Ghost Barkeep Claude", "villager", Vector2(6 * TILE_SIZE,9 * TILE_SIZE), [
 		"The usual? One Spectral Ale?",
 		"...Oh right, you're alive. That limits the menu.",
 		"I can offer water. Ghostly water. It's just regular water.",
@@ -194,7 +198,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(claude)
 
 	# Nervous Gravedigger Earl (anxious)
-	var earl = _create_npc("Gravedigger Earl", "villager", Vector2(3 * TILE_SIZE, 12 * TILE_SIZE), [
+	var earl = _create_npc("Gravedigger Earl", "villager", Vector2(5 * TILE_SIZE,14 * TILE_SIZE), [
 		"Please don't use Raise on the graves.",
 		"Last time someone did that, we had a UNION issue.",
 		"The undead demanded dental coverage.",
@@ -203,7 +207,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(earl)
 
 	# Swamp Witch Murk (warnings)
-	var murk = _create_npc("Swamp Witch Murk", "elder", Vector2(12 * TILE_SIZE, 10 * TILE_SIZE), [
+	var murk = _create_npc("Swamp Witch Murk", "elder", Vector2(14 * TILE_SIZE,12 * TILE_SIZE), [
 		"The shadow dragon speaks in null pointers and broken promises.",
 		"Fun at parties though.",
 		"It lives in the darkest cave to the northeast.",
@@ -225,5 +229,5 @@ func _place_masterite_arbiter() -> void:
 	arbiter.archetype = "arbiter"
 	arbiter.monster_id = "masterite_arbiter_medieval"
 	arbiter.display_name = "Arbiter of Steel"
-	arbiter.position = Vector2(14 * TILE_SIZE, 10 * TILE_SIZE)
+	arbiter.position = Vector2(16 * TILE_SIZE,12 * TILE_SIZE)
 	npcs.add_child(arbiter)
