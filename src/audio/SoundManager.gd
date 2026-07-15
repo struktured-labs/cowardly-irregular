@@ -325,9 +325,17 @@ func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, v
 
 ## Public API
 
+## 2026-07-14 playtest: menu_select was ~25% too loud vs the rest of the UI bank. Per-key offset in dB — 20*log10(0.75) ≈ -2.5.
+const _UI_VOLUME_TRIM_DB: Dictionary = {
+	"menu_select": -2.5,
+}
+
+
 func play_ui(sound_key: String) -> void:
 	"""Play a UI sound effect — file-based if available, else procedural"""
-	if _try_play_sfx_from_manifest(_ui_player, sound_key):
+	# Always pass an explicit volume — otherwise a prior trimmed play sticks (volume_db persists on the AudioStreamPlayer).
+	var trim: float = float(_UI_VOLUME_TRIM_DB.get(sound_key, 0.0))
+	if _try_play_sfx_from_manifest(_ui_player, sound_key, SFX_UI_BASE_DB + trim):
 		return
 	if not SOUNDS.has(sound_key):
 		return

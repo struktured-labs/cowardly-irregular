@@ -1081,9 +1081,17 @@ func _setup_npcs() -> void:
 	npcs.name = "NPCs"
 	add_child(npcs)
 
-	# Local innkeeper at the registration desk — identity follows the world
+	# Local innkeeper at the registration desk — identity follows the world.
+	# 2026-07-14 playtest: user talked to innkeeper repeatedly but couldn't find how to rest — the RegistrationDesk tile was the only rest gate; now the greeting-line close opens the rest dialog automatically.
 	var keeper := _innkeeper()
 	_create_npc(keeper["name"], "innkeeper", Vector2(2, 3), keeper["lines"])
+	var keeper_npc: Node = null
+	for child in npcs.get_children():
+		if child.get("npc_name") == keeper["name"]:
+			keeper_npc = child
+			break
+	if keeper_npc and keeper_npc.has_signal("dialogue_ended"):
+		keeper_npc.dialogue_ended.connect(func(_n): _on_rest_request())
 
 	# Sleeping merchant in armchair
 	_create_npc("Dorian", "merchant", Vector2(3, 8), [

@@ -1337,8 +1337,15 @@ func _setup_npcs() -> void:
 	npcs.name = "NPCs"
 	add_child(npcs)
 
-	# Shopkeeper behind counter
+	# Shopkeeper behind counter — talking to them opens the wares menu after the greeting line closes (playtest 2026-07-14: user talked to shopkeeper repeatedly but couldn't figure out how to buy — the standalone BrowseService tile in front of the counter was the only purchase gate).
 	_create_npc(keeper_name, "shopkeeper", Vector2(8, 3), _keeper_dialogue())
+	var keeper_npc: Node = null
+	for child in npcs.get_children():
+		if child.get("npc_name") == keeper_name:
+			keeper_npc = child
+			break
+	if keeper_npc and keeper_npc.has_signal("dialogue_ended"):
+		keeper_npc.dialogue_ended.connect(func(_n): _on_browse_request())
 
 	# Customers — vary by shop type
 	match shop_type:
