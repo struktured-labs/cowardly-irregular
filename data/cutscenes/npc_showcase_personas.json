@@ -29,7 +29,34 @@
 			"You can create rules like 'If HP < 25%, use Potion'.",
 			"The system executes your script when it's your turn.",
 			"It's not cheating - it's ENLIGHTENMENT!"
-		]
+		],
+		"quest_state_lines": {
+			"_comment": "Milo v2 quest-aware idle lines (cowir-ai msg 2600 contract). Consumer: persona['quest_state_lines'][bucket] gated by GameState.quests['chapter_three'].state. LLM path uses these as sample-context; LLM-off fallback picks a random line from the bucket verbatim. money_pick_index (0-indexed) weight-boosts one line per bucket during sampling.",
+			"pre_task_1": [
+				"I have a chapter drafted. It is Chapter Three. I do not have a Chapter One. That is not the interesting problem.",
+				"The question is whether letting go can be TAUGHT. If not, my whole system is a prayer nobody prays.",
+				"Autobattle is an argument I make to myself in the mirror. Nobody else has believed it yet. That's starting to bother me.",
+				"You look like you might be teachable. Please do not confirm or deny — the interior of my thesis depends on ambiguity.",
+				"If the sacrament is real, someone else has to have it. If nobody else has it, I've been on my knees for nothing."
+			],
+			"pre_task_1_money_pick_index": 4,
+			"in_progress": [
+				"I held on. Just a little. Just to see. It felt like the wrong shape of thing to feel.",
+				"You did the thing that should have failed. Please don't tell me how. If you tell me how, it becomes a technique. I need it to stay impossible.",
+				"The chapter has changed on me. I did not touch it. It changed while I wasn't watching.",
+				"Bring it to me when you bring it. I am, unexpectedly, afraid to read it.",
+				"Holding on is smaller than I remembered. Or I am larger. The math is unclear."
+			],
+			"in_progress_money_pick_index": 1,
+			"post_quest": [
+				"As I have written — Chapter Three, footnote 4 — 'the sacrament is not in the automation, but in the noticing.'",
+				"I told you letting go could be taught. You are the proof. I will not thank you; you were the vehicle.",
+				"Chapter Three, opening line: 'Enlightenment is the first-match rule applied to the self.' I will keep saying this.",
+				"The paper writes itself now. I am reduced to typing. It is the happiest reduction of my life.",
+				"You cannot cite me yet — I have not published. But we both know. That is a citation of another kind."
+			],
+			"post_quest_money_pick_index": 1
+		}
 	},
 
 	"Guard Boris": {
