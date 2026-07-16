@@ -155,11 +155,8 @@ func _setup_transitions() -> void:
 
 	# Suburban portal — only spawned after W1 final boss (Mordaine) is defeated.
 	var gs = get_node_or_null("/root/GameState")
-	# Tick 335: dual-namespace check via is_story_flag_set — same rationale
-	# as the OverworldScene Castle Harmonia gate. Pre-fix bare
-	# get_story_flag would silently fail to spawn the Suburban portal
-	# if w1_boss_defeated lived only in game_constants.
-	if gs and gs.has_method("is_story_flag_set") and gs.is_story_flag_set("w1_boss_defeated"):
+	# 2026-07-16 dead-flag sweep: was gated on w1_boss_defeated, a flag with NO setter since the progression rework — this portal could NEVER spawn (the overworld WorldPortal got the tick-278 fix; this one was missed). Gate now mirrors the overworld portal exactly.
+	if gs and (gs.is_world_unlocked(2) or gs.game_constants.get("cutscene_flag_world1_mordaine_defeated", false)):
 		var suburban_portal = AreaTransitionScript.new()
 		suburban_portal.name = "SuburbanPortal"
 		suburban_portal.target_map = "suburban_overworld"

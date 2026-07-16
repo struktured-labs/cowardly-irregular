@@ -62,9 +62,10 @@ func test_overworld_castle_gate_uses_helper() -> void:
 
 
 func test_harmonia_suburban_gate_uses_helper() -> void:
+	# 2026-07-16 dead-flag sweep: w1_boss_defeated had NO setter — tick-335's helper call was correct plumbing on a permanently-false flag (portal never spawned). Gate now mirrors the overworld WorldPortal condition; pin follows the fix.
 	var src := _read(HARMONIA_VILLAGE_PATH)
-	assert_true(src.contains("is_story_flag_set(\"w1_boss_defeated\")"),
-		"HarmoniaVillage Suburban portal gate must use is_story_flag_set (post-tick-335)")
+	assert_true(src.contains("gs.is_world_unlocked(2) or gs.game_constants.get(\"cutscene_flag_world1_mordaine_defeated\", false)"),
+		"HarmoniaVillage Suburban portal gate must mirror the overworld WorldPortal's live condition")
 
 
 # ── Behavioral: helper returns true for each store independently ───
