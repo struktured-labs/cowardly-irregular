@@ -12,6 +12,16 @@ extends GutTest
 ##    shrinks the panel by the fractional line post-layout.
 
 
+func test_quip_bubble_suppressed_over_victory_panel() -> void:
+	# 2026-07-16 smoke: victory quips rendered OVER the results panel's EXP
+	# rows. Bubbles must bail while VictoryResults is up (line still logs).
+	var src := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
+	var i := src.find("func _spawn_quip_bubble")
+	var body := src.substr(i, 1600)
+	assert_true("get_node_or_null(\"VictoryResults\")" in body,
+		"bubble spawn must consult the VictoryResults overlay — quips over the EXP rows obscured the payout")
+
+
 func test_quip_bubble_anchors_above_head_not_center() -> void:
 	var src := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
 	var i := src.find("func _spawn_quip_bubble")

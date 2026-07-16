@@ -4240,6 +4240,9 @@ func _spawn_quip_bubble(sprite: Node2D, speaker_name: String, line: String, bord
 		return
 	if sprite == null or not is_instance_valid(sprite):
 		return
+	# 2026-07-16 smoke: victory quips ("Too easy.") rendered OVER the results panel's EXP rows — suppress bubbles while VictoryResults is up; the line still lands in the battle log.
+	if get_node_or_null("VictoryResults") != null:
+		return
 	# 2026-07-15 playtest: bubbles anchored at sprite CENTER — mid-body on a 300px monster, covering its head and drifting into the command menu. Anchor above the head instead, biased left for enemies (left half of screen) so wide bubbles stay clear of the center menu.
 	var anchor: Vector2 = sprite.global_position
 	if sprite is AnimatedSprite2D:
