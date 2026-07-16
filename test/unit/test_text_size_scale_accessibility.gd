@@ -143,13 +143,13 @@ func test_cutscene_dialogue_4_font_sites_use_helper() -> void:
 	# Pin: all 4 font_size overrides in _build_ui route through the helper.
 	var src := _read(CUTSCENE_DIALOGUE)
 	# 14pt speaker label
-	assert_true(src.contains("_speaker_label.add_theme_font_size_override(\"font_size\", _scaled_font_size(14))"),
+	assert_true(src.contains("_speaker_label.add_theme_font_size_override(\"font_size\", _scaled_font_size(18))"),
 		"speaker label (14pt) must use _scaled_font_size")
 	# 13pt text label
-	assert_true(src.contains("_text_label.add_theme_font_size_override(\"normal_font_size\", _scaled_font_size(13))"),
+	assert_true(src.contains("_text_label.add_theme_font_size_override(\"normal_font_size\", _scaled_font_size(16))"),
 		"text label (13pt) must use _scaled_font_size")
 	# 10pt advance hint
-	assert_true(src.contains("_advance_hint.add_theme_font_size_override(\"font_size\", _scaled_font_size(10))"),
+	assert_true(src.contains("_advance_hint.add_theme_font_size_override(\"font_size\", _scaled_font_size(12))"),
 		"advance hint (10pt) must use _scaled_font_size")
 	# 18pt thinking label
 	assert_true(src.contains("_thinking_label.add_theme_font_size_override(\"font_size\", _scaled_font_size(18))"),

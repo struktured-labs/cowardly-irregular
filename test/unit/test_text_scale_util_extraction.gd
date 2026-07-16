@@ -156,9 +156,9 @@ func test_cutscene_dialogue_call_sites_preserved() -> void:
 	# Pin: tick 222's 4 call sites still use _scaled_font_size (which
 	# now delegates).
 	var src := _read(CUTSCENE_DIALOGUE)
-	assert_true(src.contains("_scaled_font_size(14)"), "speaker label call preserved")
-	assert_true(src.contains("_scaled_font_size(13)"), "text label call preserved")
-	assert_true(src.contains("_scaled_font_size(10)"), "advance hint call preserved")
+	assert_true(src.contains("_scaled_font_size(18)"), "speaker label call preserved (2026-07-15: +25% per struktured)")
+	assert_true(src.contains("_scaled_font_size(16)"), "text label call preserved (2026-07-15: +25%)")
+	assert_true(src.contains("_scaled_font_size(12)"), "advance hint call preserved (2026-07-15: +25%)")
 	assert_true(src.contains("_scaled_font_size(18)"), "thinking label call preserved")
 
 

@@ -481,7 +481,7 @@ func _create_dialogue_visuals(theme: Dictionary) -> void:
 	_speaker_label.clip_text = false
 	_speaker_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 	# Tick 222: scale via GameState.text_size_scale (accessibility). Reads live so a SettingsMenu change applies on next cutscene.
-	_speaker_label.add_theme_font_size_override("font_size", _scaled_font_size(14))
+	_speaker_label.add_theme_font_size_override("font_size", _scaled_font_size(18))
 	_speaker_label.add_theme_color_override("font_color", theme["name"])
 	_dialogue_box.add_child(_speaker_label)
 
@@ -495,7 +495,7 @@ func _create_dialogue_visuals(theme: Dictionary) -> void:
 	_text_label.scroll_active = false
 	_text_label.clip_contents = true
 	# Tick 222: scale.
-	_text_label.add_theme_font_size_override("normal_font_size", _scaled_font_size(13))
+	_text_label.add_theme_font_size_override("normal_font_size", _scaled_font_size(16))
 	_text_label.add_theme_color_override("default_color", theme["text"])
 	_dialogue_box.add_child(_text_label)
 
@@ -505,7 +505,7 @@ func _create_dialogue_visuals(theme: Dictionary) -> void:
 	_advance_hint.text = "Z / A / Click ▶"
 	_advance_hint.position = Vector2(box_width - 140, box_height - 20)
 	# Tick 222: scale.
-	_advance_hint.add_theme_font_size_override("font_size", _scaled_font_size(10))
+	_advance_hint.add_theme_font_size_override("font_size", _scaled_font_size(12))
 	_advance_hint.add_theme_color_override("font_color", theme["text"].darkened(0.4))
 	_advance_hint.visible = false
 	_dialogue_box.add_child(_advance_hint)
