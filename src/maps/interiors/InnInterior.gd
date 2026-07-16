@@ -459,6 +459,18 @@ func _create_fireplace_surround() -> void:
 	shelf.position = Vector2(3.0 * TILE_SIZE, 3.5 * TILE_SIZE)
 	node.add_child(shelf)
 
+	# 2026-07-16 (task #26): hearth collision — player could walk INTO the arch opening and stand in the fire (struktured cap 07-15 15:11). Solid box over the surround footprint.
+	var hearth_body := StaticBody2D.new()
+	hearth_body.name = "HearthCollision"
+	hearth_body.collision_layer = 1
+	var hearth_col := CollisionShape2D.new()
+	var hearth_shape := RectangleShape2D.new()
+	hearth_shape.size = Vector2(TILE_SIZE * 3, TILE_SIZE * 2)
+	hearth_col.shape = hearth_shape
+	hearth_body.add_child(hearth_col)
+	hearth_body.position = Vector2(4.5 * TILE_SIZE, 4.5 * TILE_SIZE)
+	node.add_child(hearth_body)
+
 	decorations.add_child(node)
 
 
@@ -466,7 +478,8 @@ func _setup_fireplace_anim() -> void:
 	_fire_sprite = Sprite2D.new()
 	_fire_sprite.name = "FireFlame"
 	_fire_sprite.z_index = 5
-	_fire_sprite.position = Vector2(5.5 * TILE_SIZE, 5.0 * TILE_SIZE)
+	# 2026-07-16 (task #26): x 5.5→4.5 tiles — the mantle arch is centered on the surround sprite at 4.5; the flame hung one full tile right of the opening (struktured cap 07-15 15:11).
+	_fire_sprite.position = Vector2(4.5 * TILE_SIZE, 5.0 * TILE_SIZE)
 	add_child(_fire_sprite)
 
 	_fire_frames.clear()
@@ -481,7 +494,7 @@ func _setup_fireplace_anim() -> void:
 	# Fireplace light
 	_fire_light = PointLight2D.new()
 	_fire_light.name = "FireLight"
-	_fire_light.position = Vector2(5.5 * TILE_SIZE, 5.5 * TILE_SIZE)
+	_fire_light.position = Vector2(4.5 * TILE_SIZE, 5.5 * TILE_SIZE)
 	_fire_light.color = Color(1.0, 0.55, 0.15, 0.8)
 	_fire_light.energy = 0.9
 	_fire_light.texture = _create_light_texture(160)
