@@ -1537,6 +1537,10 @@ func _get_pending_story_cutscene() -> String:
 	# set by world1_chapter4 (post-rat-king cutscene in overworld),
 	# so the player heading back to town for re-supply gets Bard's
 	# join cutscene next.
+	# 2026-07-15 (task #27, struktured ask): staged village-reaction scene on FIRST Harmonia entry post-Rat-King. Above the Bard gate so the reaction beat wins entry 1; Bard follows on the next visit (option B per cowir-story msg 2567 — chapter4's overworld auto-cascade runs in parallel, different map, no race).
+	if flags.get("cutscene_flag_rat_king_defeated", false) and not flags.get("cutscene_flag_world1_harmonia_after_cave_complete", false) and not _chaining_story_cutscene:
+		if _current_map_id == "harmonia_village":
+			return "world1_harmonia_after_cave"
 	if flags.get("cutscene_flag_chapter4_complete", false) and not flags.get("cutscene_flag_spotlight_unlocked_bard", false) and not _chaining_story_cutscene:
 		if _current_map_id == "harmonia_village":
 			return "world1_spotlight_bard_ch7"
@@ -1806,6 +1810,8 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	"world1_chapter3":                  "cutscene_flag_chapter3_complete",
 	"world1_chapter4":                  "cutscene_flag_chapter4_complete",
 	"world1_rat_king_defeat":           "cutscene_flag_world1_rat_king_defeat_complete",
+	# 2026-07-15 (task #27): staged village-reaction scene after the Rat King falls
+	"world1_harmonia_after_cave":       "cutscene_flag_world1_harmonia_after_cave_complete",
 	# Tick 104: W1 Mordaine final post-defeat dialogue
 	"world1_mordaine_defeat":           "cutscene_flag_world1_mordaine_defeat_complete",
 	# W1 spotlight cutscenes — dual-signal per Spotlight Duels spec (cowir-
