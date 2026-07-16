@@ -23,6 +23,8 @@ func _make_player(pos: Vector2) -> CharacterBody2D:
 	p.position = pos
 	p.current_job = "fighter"
 	p.can_move = true
+	# 2026-07-15: the node's own _physics_process reads LIVE Input — a gamepad in use on the host (struktured playtesting during deploys) steered the test player and broke every parity assert. The test drives velocity manually; the node must not.
+	p.set_physics_process(false)
 	return p
 
 
