@@ -279,6 +279,16 @@ func _setup_treasures() -> void:
 
 
 func _setup_npcs() -> void:
+	# Shared post-cave state check — consumed by the Greta / Pip / Flora
+	# pre/post branches below. Single lookup so all three read the same
+	# GameState at spawn time. Village re-instances on entry, so state
+	# refreshes on the next Harmonia visit after world1_harmonia_after_cave
+	# has fired. Theron uses his own chapter1 gate (see his block).
+	var _after_cave_gs = get_node_or_null("/root/GameState")
+	var _after_cave_done: bool = false
+	if _after_cave_gs:
+		_after_cave_done = bool(_after_cave_gs.game_constants.get("cutscene_flag_world1_harmonia_after_cave_complete", false))
+
 	# === STORY/LORE NPCs ===
 
 	# Village Elder (near fountain)
@@ -331,14 +341,24 @@ func _setup_npcs() -> void:
 	npcs.add_child(scholar)
 
 	# Retired Adventurer (autogrind hints)
-	var retired = _create_npc("Greta the Grey", "elder", Vector2(5 * TILE_SIZE,18 * TILE_SIZE), [
+	# Post-cave: her "be careful, it adapts" pre-warning reads stale after
+	# the party has clearly out-adapted it. Post lines carry retired-
+	# adventurer respect + a hook to come back for her stashed cave-story.
+	var _greta_pre := [
 		"*cough* In my day, we ground levels by HAND!",
 		"But these young folk... they let the game PLAY ITSELF.",
 		"Press F6 or Select to toggle autobattle for everyone!",
 		"Some say it's lazy. I say it's WISDOM.",
 		"Why waste time when monsters await?",
 		"Just... be careful in that cave. It... adapts."
-	])
+	]
+	var _greta_post := [
+		"*cough* So it did adapt. And you adapted back. That's not many people's answer to a cave.",
+		"In my day we would have said you got lucky. In my day we would have been jealous.",
+		"I'm going to sit here with my cough and hope you keep doing what you're doing.",
+		"Come back later. I have a story about the cave from *my* year. Now I finally know whether to tell it."
+	]
+	var retired = _create_npc("Greta the Grey", "elder", Vector2(5 * TILE_SIZE,18 * TILE_SIZE), _greta_post if _after_cave_done else _greta_pre)
 	npcs.add_child(retired)
 
 	# === HUMOROUS NPCs ===
@@ -406,14 +426,26 @@ func _setup_npcs() -> void:
 	npcs.add_child(guard)
 
 	# Kid by fountain
-	var kid = _create_npc("Young Pip", "villager", Vector2(19 * TILE_SIZE,12 * TILE_SIZE), [
+	# Post-cave: child logic of a world-updating claim — his mom's
+	# Tuesday quote will have to be revised. The unfinished imaginary
+	# swing lands the awe as a body motion, not a sentence.
+	var _pip_pre := [
 		"Wow! A real adventurer!",
 		"I'm gonna be just like you when I grow up!",
 		"I practice swinging my stick every day!",
 		"Mom says I can't go near the cave though.",
 		"Something about 'infinite loops'?",
 		"Whatever that means!"
-	])
+	]
+	var _pip_post := [
+		"You did it. You actually went in there.",
+		"Mom said nobody had ever come out. She said that on TUESDAY. She'll have to change what she says.",
+		"Can I see your sword? *pause* Just the handle. The handle-part. I'm not allowed to touch swords.",
+		"I'm gonna go to the cave when I'm older. Just to look at where you were.",
+		"Not IN. Just at.",
+		"*swings imaginary sword, one time, at nothing*"
+	]
+	var kid = _create_npc("Young Pip", "villager", Vector2(19 * TILE_SIZE,12 * TILE_SIZE), _pip_post if _after_cave_done else _pip_pre)
 	npcs.add_child(kid)
 
 	# === SIDE-QUEST GIVERS (dialogue owned by QuestSystem when quest business exists) ===
@@ -461,14 +493,26 @@ func _setup_npcs() -> void:
 	npcs.add_child(rowan)
 
 	# Flower Lady
-	var flower = _create_npc("Flora", "villager", Vector2(20 * TILE_SIZE,14 * TILE_SIZE), [
+	# Post-cave: the world REACTS. Her flowers opened for the first time
+	# in weeks. Object-doing-exposition beat that echoes leaning_ember
+	# (Ironhaven) — small things in Harmonia start reacting to the
+	# resolution the party made in the cave.
+	var _flora_pre := [
 		"*humming* La la la~",
 		"Oh! Would you like to buy some flowers?",
 		"...I don't actually sell them. Just ask.",
 		"They remind me of the old days.",
 		"Before the cave started... changing.",
 		"Take care of yourself out there."
-	])
+	]
+	var _flora_post := [
+		"Oh — you're back! *the humming trails off, then picks back up softly*",
+		"The cave changed. Whatever you did, the cave changed *again*.",
+		"I picked these ones this morning. They opened. They haven't opened in weeks.",
+		"You can have one. They mean more when they cost nothing.",
+		"Take care of yourself. The story isn't finished."
+	]
+	var flower = _create_npc("Flora", "villager", Vector2(20 * TILE_SIZE,14 * TILE_SIZE), _flora_post if _after_cave_done else _flora_pre)
 	npcs.add_child(flower)
 
 	# === PORTAL GUIDE ===
