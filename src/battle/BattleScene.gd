@@ -279,6 +279,9 @@ func _ready() -> void:
 	RetroFontClass.configure_battle_log(battle_log)
 	# 2026-07-15 playtest: log viewport was ~4.8 lines tall so the top visible line was permanently half-clipped — snap the panel to a whole line count once layout settles.
 	call_deferred("_snap_battle_log_height")
+	# 2026-07-16 smoke: the deferred call can still land before PanelContainer layout settles (size 0 → no-op) — the top log line stayed half-clipped. resized fires after REAL layout; re-snap then. Guard flag keeps it one-shot.
+	if battle_log:
+		battle_log.resized.connect(_snap_battle_log_height)
 
 	# Add padding to PartyStatusPanel so labels don't hug the panel
 	# borders. PanelContainer uses its stylebox content_margin_* for
@@ -4248,6 +4251,8 @@ func _spawn_quip_bubble(sprite: Node2D, speaker_name: String, line: String, bord
 	var vp_w: float = get_viewport_rect().size.x
 	if anchor.x < vp_w * 0.45:
 		anchor.x -= 50.0
+	elif anchor.x > vp_w * 0.55:
+		anchor.x -= 70.0  # 2026-07-16 smoke: party-side bubbles crowded the right party panel + AUTO button — bias toward open mid-field
 	BattleSpeechBubble.spawn(self, anchor, speaker_name, line, border_color, hold_time, audio_key)
 
 func _on_one_shot_achieved(rank: String, setup_turns: int) -> void:

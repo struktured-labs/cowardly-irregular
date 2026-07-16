@@ -24,6 +24,8 @@ func test_quip_bubble_anchors_above_head_not_center() -> void:
 		"anchor must lift by half the rendered frame height so the bubble clears the head")
 	assert_true("anchor.x -= 50.0" in body,
 		"enemy-side bubbles (left 45% of viewport) must bias left, clear of the center command menu")
+	assert_true("anchor.x -= 70.0" in body,
+		"party-side bubbles (right 55%+) must bias toward mid-field — smoke showed them colliding with the AUTO button + party panel")
 	assert_false("BattleSpeechBubble.spawn(self, sprite.global_position" in body,
 		"the raw-global-position spawn is the bug — must pass the adjusted anchor")
 
@@ -32,6 +34,9 @@ func test_battle_log_height_snap_wired() -> void:
 	var src := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
 	assert_true("call_deferred(\"_snap_battle_log_height\")" in src,
 		"log-height snap must be deferred post-layout — measuring before layout settles reads a zero size")
+	# 2026-07-16 smoke: deferred alone still raced PanelContainer layout (size 0 → no-op → top line stayed clipped) — resized fires after REAL layout.
+	assert_true("battle_log.resized.connect(_snap_battle_log_height)" in src,
+		"snap must ALSO hook battle_log.resized — the deferred call can run before layout settles")
 	var i := src.find("func _snap_battle_log_height")
 	assert_gt(i, -1, "_snap_battle_log_height must exist")
 	var next: int = src.find("\nfunc ", i + 1)

@@ -7,6 +7,7 @@ class_name BattleSpeechBubble
 ## Right column reserved for UI/PartyStatusPanel (200px) + margin — never occlude it.
 const RESERVED_RIGHT_PX: float = 210.0
 const EDGE_MARGIN: float = 8.0
+const TOP_MARGIN: float = 48.0  # 2026-07-16 smoke: head-anchored bubbles on tall party sprites climbed into the AUTO button row (y 6..36) — keep bubbles below it
 const MAX_TEXT_WIDTH: float = 260.0
 ## Suppress only at 4x+ (doc'd intent); pre-fix code suppressed at 2x so users at 2x saw no bubbles.
 const SUPPRESS_TIME_SCALE: float = 4.0
@@ -103,7 +104,7 @@ func _present(anchor_global_pos: Vector2, speaker_name: String, line: String, bo
 	var est_height: int = est_lines * 16 + 24
 	position = anchor_global_pos + Vector2(-40, -float(est_height + 28))
 	# Top clamp happens HERE (pre-tween) so the float-up tween's captured y never jumps.
-	position.y = maxf(position.y, EDGE_MARGIN)
+	position.y = maxf(position.y, TOP_MARGIN)
 	modulate.a = 0.0
 
 	var anchor_x: float = anchor_global_pos.x
