@@ -140,7 +140,48 @@ func _ready() -> void:
 	if "dragon_cave" in cave_id and PartyChatSystem:
 		PartyChatSystem.fire_event_flag("event_flag_dragon_cave_entered")
 
+	# struktured 2026-07-15: out-of-league warning — a party remark, never a block ("you should be allowed to fight it of course").
+	_maybe_warn_out_of_league()
+
 	exploration_ready.emit()
+
+
+const OUT_OF_LEAGUE_LEVEL_GAP: int = 5
+const OUT_OF_LEAGUE_REMARKS: Array = [
+	"Cleric: The air here is wrong. We are not ready for what waits below.",
+	"Fighter: Whatever rules this place is leagues beyond us. We can still walk away.",
+	"Rogue: My instincts say run. My instincts are usually right.",
+	"Mage: The ambient power here exceeds anything we've faced. Noted. Loudly.",
+	"Bard: I'd sing our eulogy but I'd rather not need to. Tread carefully.",
+]
+
+## Non-blocking soft-gate (struktured 2026-07-15): when the resident boss out-levels the party average by OUT_OF_LEAGUE_LEVEL_GAP+, a party member remarks on entry. Warning only — the fight stays available.
+func _maybe_warn_out_of_league() -> void:
+	if boss_defeated:
+		return
+	var es = get_node_or_null("/root/EncounterSystem")
+	if es == null or not es.monster_database.has(boss_id):
+		return
+	var boss_level: int = int((es.monster_database[boss_id] as Dictionary).get("level", 0))
+	if boss_level <= 0:
+		return
+	var gl = get_tree().root.get_node_or_null("GameLoop") if is_inside_tree() else null
+	if gl == null or not ("party" in gl) or (gl.party as Array).is_empty():
+		return
+	var total: int = 0
+	var count: int = 0
+	for m in gl.party:
+		if is_instance_valid(m) and "job_level" in m:
+			total += int(m.job_level)
+			count += 1
+	if count == 0:
+		return
+	if boss_level - (float(total) / float(count)) < float(OUT_OF_LEAGUE_LEVEL_GAP):
+		return
+	var line: String = OUT_OF_LEAGUE_REMARKS[randi() % OUT_OF_LEAGUE_REMARKS.size()]
+	Toast.show_warning(self, line)
+	if SoundManager:
+		SoundManager.play_ui("menu_error")
 
 
 func _setup_scene() -> void:
