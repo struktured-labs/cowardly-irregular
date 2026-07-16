@@ -1018,16 +1018,26 @@ func _format_condition(condition: Dictionary) -> String:
 	match cond_type:
 		"party_hp_avg":
 			return "Party HP\n%s %d%%" % [op, value]
+		"party_hp_min":
+			return "Lowest HP\n%s %d%%" % [op, value]
+		"party_mp_avg":
+			return "Party MP\n%s %d%%" % [op, value]
 		"alive_count":
 			return "Alive\n%s %d" % [op, value]
 		"battles_done":
 			return "Battles\n%s %d" % [op, value]
+		"win_streak":
+			return "Win Streak\n%s %d" % [op, value]
 		"corruption":
 			return "Corruption\n%s %.1f" % [op, value]
 		"efficiency":
 			return "Efficiency\n%s %.1f" % [op, value]
+		"time_elapsed":
+			return "Minutes\n%s %d" % [op, value]
 		"member_dead":
 			return "Member\nDead"
+		"member_injured":
+			return "New\nInjury"
 		"inventory_items":
 			return "Inv Items\n%s %d" % [op, value]
 		"ability_learned":
@@ -1053,7 +1063,9 @@ func _format_action(action: Dictionary) -> String:
 			var target = action.get("target", "all")
 			return "Switch\nProfile (%s)" % target
 		"heal_party":
-			return "Use\nHealing"
+			return "Use\nPotions"
+		"restore_mp":
+			return "Use\nEthers"
 		"flee_battle":
 			return "Flee\nNext"
 		_:
