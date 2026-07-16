@@ -81,6 +81,8 @@ func test_data_still_authors_field() -> void:
 func test_runtime_helper_false_for_empty_party() -> void:
 	var dc_script: GDScript = load(DRAGON_CAVE_PATH)
 	var dc: Node = dc_script.new()
+	# Minimal layout so _ready's map-gen doesn't warn "No layout for floor 1" — base DragonCave has none (subclasses author them); this test exercises the autosave passive, not map gen.
+	dc.floor_layouts = {1: ["P"]}
 	add_child_autofree(dc)
 	var gs = Engine.get_main_loop().root.get_node_or_null("GameState")
 	assert_not_null(gs, "GameState autoload must be present")
@@ -101,6 +103,8 @@ func test_runtime_helper_false_for_empty_party() -> void:
 func test_runtime_helper_true_when_equipped() -> void:
 	var dc_script: GDScript = load(DRAGON_CAVE_PATH)
 	var dc: Node = dc_script.new()
+	# Minimal layout so _ready's map-gen doesn't warn "No layout for floor 1" — base DragonCave has none (subclasses author them); this test exercises the autosave passive, not map gen.
+	dc.floor_layouts = {1: ["P"]}
 	add_child_autofree(dc)
 	var gs = Engine.get_main_loop().root.get_node_or_null("GameState")
 	assert_not_null(gs, "GameState autoload must be present")
