@@ -57,6 +57,6 @@ func test_mutex_flag_declared_and_toggled_at_state_boundaries() -> void:
 	# Safety pop on return to exploration — leak proof.
 	var j := src.find("func _start_exploration")
 	assert_gt(j, -1)
-	var body2 := src.substr(j, 500)
+	var body2 := src.substr(j, 1200)
 	assert_true("_battle_transition_starting = false" in body2,
 		"_start_exploration must clear the mutex — leak-proof against a mid-transition bail")

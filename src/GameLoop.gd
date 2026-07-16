@@ -3100,6 +3100,11 @@ func _show_game_over_screen() -> void:
 
 func _start_exploration() -> void:
 	"""Start exploration mode (overworld or interior)"""
+	# 2026-07-16 smoke find: a stale _return_to_exploration racing a NEW battle spawned its scene VISIBLE under the live battle (village Exit gate bled into the game-over screen) and stomped current_state. If a battle owns the screen, this return is stale — bail; the live battle's own teardown drives the next return.
+	if current_state == LoopState.BATTLE and BattleManager \
+			and BattleManager.current_state != BattleManager.BattleState.INACTIVE:
+		print("[GAMELOOP] _start_exploration bailed — a live battle owns the screen (stale return)")
+		return
 	# Check for pending story cutscenes before entering free roam
 	# Skip if we just played one (prevents back-to-back on same map entry)
 	if _cutscene_cooldown:
