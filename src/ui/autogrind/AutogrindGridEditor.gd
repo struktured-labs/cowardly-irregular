@@ -711,6 +711,14 @@ func _format_condition(condition: Dictionary) -> String:
 			return "Corrupt %s %.1f" % [op, value]
 		"efficiency":
 			return "Effic %s %.1f" % [op, value]
+		"member_dead":
+			return "Member Dead"
+		"member_injured":
+			return "New Injury"
+		"win_streak":
+			return "Wins %s %d" % [op, value]
+		"time_elapsed":
+			return "Minutes %s %d" % [op, value]
 		"inventory_items":
 			return "Inv Items %s %d" % [op, value]
 		"ability_learned":
@@ -741,6 +749,15 @@ func _format_action(action: Dictionary) -> String:
 
 		"stop_grinding":
 			return "STOP\nGRINDING"
+
+		"heal_party":
+			return "Use\nPotions"
+
+		"restore_mp":
+			return "Use\nEthers"
+
+		"flee_battle":
+			return "Flee\nNext"
 
 		_:
 			return action_type
