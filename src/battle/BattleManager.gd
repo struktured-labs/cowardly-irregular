@@ -3118,12 +3118,11 @@ func _execute_next_action() -> void:
 	# 0.1s base lets each action's animation breathe but doesn't add dead
 	# air after the tween finishes. Was 0.2s; user reported awkward pauses
 	# between monster attacks (2026-06-04).
+	# 2026-07-16 msg 2570/2581: was 0.1/speed_scale which DOUBLE-scaled (create_timer already applies Engine.time_scale) → 1.6s wall clock at 1x instead of the intended 0.1s. Constant 0.025 mirrors the 3051 confused-attack fix and restores the authored pacing.
 	if turbo_mode:
 		await get_tree().process_frame
 	else:
-		var speed_scale = Engine.time_scale if Engine.time_scale > 0 else 1.0
-		var delay = 0.1 / speed_scale
-		await get_tree().create_timer(delay).timeout
+		await get_tree().create_timer(0.025).timeout
 	if not is_instance_valid(self):
 		return
 	_execute_next_action()
@@ -3247,12 +3246,11 @@ func _execute_group_action(action: Dictionary) -> void:
 	if _check_victory_conditions():
 		return
 
+	# 2026-07-16 msg 2570/2581: same double-scale fix as _execute_next_action's inter-action delay — constant 0.025 respects Engine.time_scale to land at the intended 0.1s wall at 1x.
 	if turbo_mode:
 		await get_tree().process_frame
 	else:
-		var speed_scale = Engine.time_scale if Engine.time_scale > 0 else 1.0
-		var delay = 0.1 / speed_scale
-		await get_tree().create_timer(delay).timeout
+		await get_tree().create_timer(0.025).timeout
 	if not is_instance_valid(self):
 		return
 	_execute_next_action()
