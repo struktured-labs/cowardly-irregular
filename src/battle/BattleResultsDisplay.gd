@@ -502,12 +502,14 @@ func show_victory_results() -> void:
 
 
 func _get_combatant_sprite_position(combatant: Combatant) -> Vector2:
-	"""Get the screen position of a combatant's sprite"""
+	"""Get the anchor position of a combatant's sprite for damage/heal popups. Prefers the stable base position (idle rest) so a target mid-tween (knockback, lunge, group-attack return) doesn't drag the number off with it. Falls back to live global_position when the base isn't tracked. msg 2569 sprite-misplacement sweep — same class as v3.33.158/167/170 fixes."""
 	# Check party members (use BattleManager's array for consistency)
 	var party_idx = BattleManager.player_party.find(combatant)
 	if party_idx >= 0 and party_idx < _scene.party_sprite_nodes.size():
 		var sprite = _scene.party_sprite_nodes[party_idx]
 		if is_instance_valid(sprite):
+			if party_idx < _scene._party_base_positions.size():
+				return _scene._party_base_positions[party_idx]
 			return sprite.global_position
 
 	# Check enemies (use BattleManager's array for consistency)
@@ -515,6 +517,8 @@ func _get_combatant_sprite_position(combatant: Combatant) -> Vector2:
 	if enemy_idx >= 0 and enemy_idx < _scene.enemy_sprite_nodes.size():
 		var sprite = _scene.enemy_sprite_nodes[enemy_idx]
 		if is_instance_valid(sprite):
+			if enemy_idx < _scene._enemy_base_positions.size():
+				return _scene._enemy_base_positions[enemy_idx]
 			return sprite.global_position
 
 	return Vector2.ZERO
