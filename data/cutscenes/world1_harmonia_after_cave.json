@@ -1,0 +1,151 @@
+{
+  "id": "world1_harmonia_after_cave",
+  "title": "The Village That Already Knew",
+  "world": 1,
+  "trigger": "harmonia_first_entry_after_rat_king",
+  "presentation": "staged",
+  "background": "prologue_village",
+  "description": "Staged puppet cutscene. Fires on FIRST return to Harmonia after cutscene_flag_rat_king_defeated. Beats: (1) the news is spreading — villagers murmuring as the party walks in, (2) Theron emerges, delivers the 'you came back, and with something' recognition, (3) the castle reveal — Castle Harmonia is now visible on the horizon because someone stopped hiding it, (4) Theron sends the party into normal beats before going, (5) Bard easter egg — quiet marginalia sketch to close. Voice: Theron post-chapter1 (tired-elder register) plus a scattered chorus of villagers overheard-not-addressed. Cross-lane: cowir-main gates in _get_pending_story_cutscene + adds cutscene_flag_world1_harmonia_after_cave_complete to _CUTSCENE_COMPLETION_FLAGS. Staging kit precedent: world1_chapter1 (proof-scene), world1_bram_shield (single-interaction shipped precedent).",
+
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.4},
+    {"type": "play_music", "track": "village_medieval"},
+    {"type": "camera_focus", "target": [448, 352], "duration": 0.8},
+
+    {"type": "spawn_actor", "id": "fighter", "kind": "party", "job": "fighter", "at": [400, 400], "facing": "up"},
+    {"type": "wait", "duration": 0.1},
+    {"type": "spawn_actor", "id": "cleric", "kind": "party", "job": "cleric", "at": [448, 400], "facing": "up"},
+    {"type": "wait", "duration": 0.1},
+    {"type": "spawn_actor", "id": "mage", "kind": "party", "job": "mage", "at": [496, 400], "facing": "up"},
+    {"type": "wait", "duration": 0.1},
+    {"type": "spawn_actor", "id": "rogue", "kind": "party", "job": "rogue", "at": [544, 400], "facing": "up"},
+    {"type": "wait", "duration": 0.1},
+    {"type": "spawn_actor", "id": "bard", "kind": "party", "job": "bard", "at": [592, 400], "facing": "up"},
+    {"type": "wait", "duration": 0.2},
+
+    {"type": "spawn_actor", "id": "well_villager", "kind": "npc", "archetype": "villager", "at": [240, 384], "facing": "right"},
+    {"type": "spawn_actor", "id": "pump_villager", "kind": "npc", "archetype": "villager", "at": [656, 400], "facing": "left"},
+    {"type": "spawn_actor", "id": "child", "kind": "npc", "archetype": "child", "at": [720, 384], "facing": "left"},
+    {"type": "spawn_actor", "id": "child_mother", "kind": "npc", "archetype": "villager", "at": [752, 384], "facing": "left"},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "narration", "text": "The village had a quality it hadn't had before, and it took the party a moment to name. It was the quality of being *watched carefully by people pretending not to watch*."},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "camera_focus", "target": [240, 384], "duration": 0.6},
+    {"type": "dialogue", "lines": [
+      {"speaker": "Villager at the well", "text": "You heard? Someone came out of the cave.", "theme": "villager", "portrait": "villager"}
+    ]},
+
+    {"type": "camera_focus", "target": [656, 400], "duration": 0.6},
+    {"type": "dialogue", "lines": [
+      {"speaker": "Villager at the pump", "text": "With something. Nobody's saying what.", "theme": "villager", "portrait": "villager"}
+    ]},
+
+    {"type": "camera_focus", "target": [544, 400], "duration": 0.5},
+    {"type": "emote", "id": "rogue", "emote": "ellipsis", "duration": 0.6},
+    {"type": "dialogue", "lines": [
+      {"speaker": "Rogue", "text": "Everyone here talks like a chorus.", "theme": "rogue", "portrait": "rogue"}
+    ]},
+
+    {"type": "camera_focus", "target": [720, 384], "duration": 0.6},
+    {"type": "hop", "id": "child", "duration": 0.3},
+    {"type": "wait", "duration": 0.1},
+    {"type": "hop", "id": "child", "duration": 0.3},
+    {"type": "move_actor", "id": "child", "to": [744, 384]},
+    {"type": "dialogue", "lines": [
+      {"speaker": "Child's mother", "text": "Not now, sweet. Let them breathe. They just came out of the ground.", "theme": "villager", "portrait": "villager"}
+    ]},
+
+    {"type": "camera_focus", "target": [448, 400], "duration": 0.6},
+    {"type": "narration", "text": "An old villager, seated on the stoop by the well, said nothing at all. She looked at the party the way you look at a story that has changed since you last checked."},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "spawn_actor", "id": "elder", "kind": "npc", "archetype": "elder_theron", "at": [180, 320], "facing": "down"},
+    {"type": "wait", "duration": 0.2},
+    {"type": "move_actor", "id": "elder", "to": [352, 384]},
+    {"type": "camera_focus", "target": [352, 384], "duration": 0.6},
+    {"type": "face_actor", "id": "elder", "dir": "right"},
+
+    {"type": "dialogue", "lines": [
+      {"speaker": "Elder Theron", "text": "You came back. That's the first noteworthy thing.", "theme": "villager", "portrait": "villager"},
+      {"speaker": "Elder Theron", "text": "The second is the something you came back *with*. I won't ask what. I have my guesses. I have had my guesses since the morning the birds went quiet.", "theme": "villager", "portrait": "villager"}
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {"speaker": "Elder Theron", "text": "Turn around. Look east. Past the well. Past the road. Past the treeline. Tell me what you see.", "theme": "villager", "portrait": "villager"}
+    ]},
+
+    {"type": "face_actor", "id": "fighter", "dir": "up"},
+    {"type": "face_actor", "id": "cleric", "dir": "up"},
+    {"type": "face_actor", "id": "mage", "dir": "up"},
+    {"type": "face_actor", "id": "rogue", "dir": "up"},
+    {"type": "face_actor", "id": "bard", "dir": "up"},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "camera_focus", "target": [448, 32], "duration": 1.4},
+
+    {"type": "narration", "text": "Where the treeline met the sky there was, now, a silhouette. Angular. Tall. It sat on a ridge that everyone in Harmonia had described for years as *empty*, and which nobody could now describe that way."},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "narration", "text": "A castle. The party had never seen it before. Neither, apparently, had the villagers behind them — the murmuring had gone quiet."},
+
+    {"type": "wait", "duration": 0.8},
+
+    {"type": "camera_focus", "target": [352, 384], "duration": 0.9},
+
+    {"type": "dialogue", "lines": [
+      {"speaker": "Elder Theron", "text": "Castle Harmonia. It has always been there. It has not always been *visible*. That is not superstition. That is on purpose.", "theme": "villager", "portrait": "villager"}
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {"speaker": "Elder Theron", "text": "Someone was hiding it. That someone stopped hiding it because you did what you did. Which means, now, they want you to see it. Which means, now, they want you to come.", "theme": "villager", "portrait": "villager"}
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "dialogue", "lines": [
+      {"speaker": "Elder Theron", "text": "You will. That is how these things work. But sit down first. Eat something. Talk to Bram. Talk to the child who hopped at you — she will not remember if you don't. Then go, when you go.", "theme": "villager", "portrait": "villager"}
+    ]},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "face_actor", "id": "elder", "dir": "left"},
+    {"type": "move_actor", "id": "elder", "to": [200, 320]},
+
+    {"type": "dialogue", "lines": [
+      {"speaker": "Elder Theron", "text": "The castle is not going anywhere. It was, briefly. Not anymore.", "theme": "villager", "portrait": "villager"}
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "camera_focus", "target": [592, 400], "duration": 0.7},
+
+    {"type": "emote", "id": "bard", "emote": "note", "duration": 0.8},
+
+    {"type": "narration", "text": "The Bard took her journal out. She did not open it. She looked at the horizon once more, closed her eyes for the length of a slow breath, and put the journal away again."},
+
+    {"type": "dialogue", "lines": [
+      {"speaker": "Bard", "text": "That's the picture I'll draw later. When I've forgotten enough of it to draw it honest.", "theme": "bard", "portrait": "bard"}
+    ]},
+
+    {"type": "wait", "duration": 0.5},
+
+    {"type": "camera_focus", "target": [448, 400], "duration": 0.8},
+
+    {"type": "set_flag", "flag": "world1_harmonia_after_cave_complete", "value": true},
+
+    {"type": "camera_restore", "duration": 0.6},
+
+    {"type": "letterbox_out", "duration": 0.5}
+  ]
+}
