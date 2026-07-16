@@ -19,17 +19,29 @@ const TEXT_COLOR = Color(0.9, 0.9, 0.9)
 
 ## World chapters with objective progression
 const CHAPTERS: Array = [
+	# 2026-07-15 content refresh (struktured: "quest log looks outdated to our touch ups with mordaine and masterites") — full W1 arc incl. spotlight duels, Castle Harmonia, Mordaine; dragons listed as optional.
 	{
 		"title": "Chapter 1 — The Medieval Realm",
 		"world_flag": "",
 		"objectives": [
 			{"flag": "", "text": "Explore Harmonia Village to the west"},
 			{"flag": "talked_to_theron", "text": "Speak with Elder Theron in Harmonia"},
+			{"flag": "spotlight_unlocked_cleric", "text": "Stand with the Cleric at the village well"},
 			{"flag": "chapter3_complete", "text": "Investigate the Whispering Cave"},
-			{"flag": "reached_cave_floor_3", "text": "Descend deeper into the Whispering Cave"},
+			{"flag": "spotlight_unlocked_rogue", "text": "Best the Lockward — the Rogue's trial"},
+			{"flag": "spotlight_unlocked_mage", "text": "Read the Prismatic Construct — the Mage's trial (floor 3)"},
+			{"flag": "spotlight_unlocked_fighter", "text": "Face the antechamber skeleton — the Fighter's trial (floor 5)"},
 			{"flag": "rat_king_defeated", "text": "Defeat the Cave Rat King"},
-			{"flag": "world1_rat_king_defeat_complete", "text": "Find the portal to the next world"},
+			{"flag": "world1_rat_king_defeat_complete", "text": "A castle reveals itself on the horizon..."},
+			{"flag": "spotlight_unlocked_bard", "text": "Hear the Bard's voice in Harmonia"},
+			{"flag": "world1_mordaine_defeated", "text": "Confront Chancellor Mordaine in Castle Harmonia"},
 			{"flag": "world2_prologue_complete", "text": "Enter the Mundane Sprawl"},
+		],
+		"optional": [
+			{"flag": "fire_dragon_defeated", "text": "Slay Pyrroth, the Ember Wyrm"},
+			{"flag": "ice_dragon_defeated", "text": "Slay Glacius, the Frozen Sovereign"},
+			{"flag": "lightning_dragon_defeated", "text": "Slay Voltharion, the Storm's Edge"},
+			{"flag": "shadow_dragon_defeated", "text": "Slay Umbraxis, the Void Render"},
 		]
 	},
 	# Tick 271: W2-W6 entries previously used `w2_entered` /
@@ -282,6 +294,24 @@ func _build_quest_lines() -> Array:
 						"color": LOCKED_COLOR,
 					})
 
+			# Optional side-objectives (2026-07-15: W1 dragons) — never claim the ► active marker; ✓ when done, ◇ when open.
+			var optionals: Array = chapter.get("optional", [])
+			if not optionals.is_empty():
+				lines.append({
+					"text": "  — Optional —",
+					"indent": 40.0,
+					"size": 12,
+					"color": LOCKED_COLOR,
+				})
+				for opt in optionals:
+					var opt_done: bool = _is_quest_flag_set(opt["flag"])
+					lines.append({
+						"text": ("  ✓  " if opt_done else "  ◇  ") + opt["text"],
+						"indent": 40.0,
+						"size": 13,
+						"color": COMPLETE_COLOR if opt_done else TEXT_COLOR,
+					})
+
 			# Spacer between chapters
 			lines.append({"text": "", "indent": 0.0, "size": 10, "color": LOCKED_COLOR})
 		else:
@@ -399,7 +429,11 @@ func _is_quest_flag_set(flag: String) -> bool:
 	# check into one source of truth. Wrapper kept so call sites in
 	# this file don't churn.
 	if GameState.has_method("is_story_flag_set"):
-		return GameState.is_story_flag_set(flag)
+		if GameState.is_story_flag_set(flag):
+			return true
+		# 2026-07-15: 4th namespace — dungeon boss flags (dragon kills, cave clears) live in game_constants.dungeon_flags and were invisible to the log ("beat the rat king but it shows up as TODO").
+		var dflags: Variant = GameState.game_constants.get("dungeon_flags", {})
+		return dflags is Dictionary and bool((dflags as Dictionary).get(flag, false))
 	# Defensive fallback for partial test harnesses without the helper.
 	return GameState.get_story_flag(flag) \
 		or GameState.game_constants.get("cutscene_flag_" + flag, false) \
