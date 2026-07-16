@@ -38,6 +38,13 @@ if [ "${FAILS}" != "0" ]; then
   echo "[deploy] suite passed on retry — flake confirmed"
 fi
 
+echo "[deploy] gate 1b: movement-isolation suite (own process — suite-order contamination quarantine 2026-07-15)"
+ISO_FAILS=$(godot --headless --audio-driver Dummy -s addons/gut/gut_cmdln.gd -gdir=res://test/isolated -gprefix=test_ -gsuffix=.gd -gexit 2>&1 | tee tmp/deploy_isolated.log | grep -cE "\[Failed\]") || true
+if [ "${ISO_FAILS}" != "0" ]; then
+  echo "[deploy] BLOCKED: ${ISO_FAILS} isolated-suite failure(s) — see tmp/deploy_isolated.log" >&2
+  exit 1
+fi
+
 echo "[deploy] gate 2/4: web export"
 mkdir -p builds/web
 godot --headless --export-release "Web" builds/web/index.html 2>&1 | tail -3
