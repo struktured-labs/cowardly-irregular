@@ -24,7 +24,7 @@ echo "[deploy] gate 1/4: unit suite"
 # under the full suite (H-vs-V physics parity asserts diverge in the tens
 # of pixels; passes solo, passes on rerun). A real regression fails both
 # tries. First attempt's log kept as deploy_suite.attempt1.log for diff.
-SUITE_CMD=(godot --headless --audio-driver Dummy -s addons/gut/gut_cmdln.gd -gdir=res://test/unit -gprefix=test_ -gsuffix=.gd -gexit)
+SUITE_CMD=(godot --headless --audio-driver Dummy --log-file tmp/gut_suite_godot.log -s addons/gut/gut_cmdln.gd -gdir=res://test/unit -gprefix=test_ -gsuffix=.gd -gexit)
 FAILS=$("${SUITE_CMD[@]}" 2>&1 | tee tmp/deploy_suite.log | grep -cE "\[Failed\]") || true
 if [ "${FAILS}" != "0" ]; then
   cp tmp/deploy_suite.log tmp/deploy_suite.attempt1.log
@@ -39,7 +39,7 @@ if [ "${FAILS}" != "0" ]; then
 fi
 
 echo "[deploy] gate 1b: movement-isolation suite (own process — suite-order contamination quarantine 2026-07-15)"
-ISO_FAILS=$(godot --headless --audio-driver Dummy -s addons/gut/gut_cmdln.gd -gdir=res://test/isolated -gprefix=test_ -gsuffix=.gd -gexit 2>&1 | tee tmp/deploy_isolated.log | grep -cE "\[Failed\]") || true
+ISO_FAILS=$(godot --headless --audio-driver Dummy --log-file tmp/gut_isolated_godot.log -s addons/gut/gut_cmdln.gd -gdir=res://test/isolated -gprefix=test_ -gsuffix=.gd -gexit 2>&1 | tee tmp/deploy_isolated.log | grep -cE "\[Failed\]") || true
 if [ "${ISO_FAILS}" != "0" ]; then
   echo "[deploy] BLOCKED: ${ISO_FAILS} isolated-suite failure(s) — see tmp/deploy_isolated.log" >&2
   exit 1
