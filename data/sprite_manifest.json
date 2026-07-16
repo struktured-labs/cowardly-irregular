@@ -825,8 +825,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist bat reference (tools/regen_monster_artist_style.py) \u2014 bespoke prompt with EXACTLY-ONE-SUBJECT-PER-FRAME discipline. Playtest bug fix (cowir-main msgs 2560/2561): W1 multi-subject defect regen."
     },
     "spider": {
       "path": "res://assets/sprites/monsters/spider.png",
@@ -850,7 +850,9 @@
           "start": 6,
           "end": 7
         }
-      }
+      },
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist bat reference (tools/regen_monster_artist_style.py) \u2014 bespoke prompt with EXACTLY-ONE-SUBJECT-PER-FRAME discipline. Playtest bug fix (cowir-main msgs 2560/2561): W1 multi-subject defect regen."
     },
     "skeleton": {
       "path": "res://assets/sprites/monsters/skeleton.png",
@@ -875,8 +877,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist fighter reference (tools/regen_monster_artist_style.py) \u2014 bespoke prompt with EXACTLY-ONE-SUBJECT-PER-FRAME discipline. Playtest bug fix (cowir-main msgs 2560/2561): W1 multi-subject defect regen."
     },
     "ghost": {
       "path": "res://assets/sprites/monsters/ghost.png",
@@ -927,8 +929,8 @@
           "end": 7
         }
       },
-      "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist bat reference (tools/regen_monster_artist_style.py) \u2014 bespoke prompt with EXACTLY-ONE-SUBJECT-PER-FRAME discipline. Playtest bug fix (cowir-main msgs 2560/2561): W1 multi-subject defect regen."
     },
     "troll": {
       "path": "res://assets/sprites/monsters/troll.png",
@@ -1006,7 +1008,8 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)",
+      "source": "Playtest audit 2026-07-15: single-frame multi-subject defect fixed by clone-adjacent (fix_broken_frames pattern), no regen \u2014 main body art retained."
     },
     "rat_guard": {
       "path": "res://assets/sprites/monsters/rat_guard.png",
@@ -1240,7 +1243,8 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)",
+      "source": "Playtest audit 2026-07-15: single-frame multi-subject defect fixed by clone-adjacent (fix_broken_frames pattern), no regen \u2014 main body art retained."
     },
     "viper": {
       "path": "res://assets/sprites/monsters/viper.png",
@@ -1344,7 +1348,8 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)",
+      "source": "Playtest audit 2026-07-15: single-frame multi-subject defect fixed by clone-adjacent (fix_broken_frames pattern), no regen \u2014 main body art retained."
     },
     "diseased_rat": {
       "path": "res://assets/sprites/monsters/diseased_rat.png",
@@ -1370,7 +1375,8 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)",
+      "source": "Playtest audit 2026-07-15: single-frame multi-subject defect fixed by clone-adjacent (fix_broken_frames pattern), no regen \u2014 main body art retained."
     },
     "cave_rat_king": {
       "path": "res://assets/sprites/monsters/cave_rat_king.png",
@@ -1422,7 +1428,8 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)",
+      "source": "Playtest audit 2026-07-15: single-frame multi-subject defect fixed by clone-adjacent (fix_broken_frames pattern), no regen \u2014 main body art retained."
     },
     "specter": {
       "path": "res://assets/sprites/monsters/specter.png",
