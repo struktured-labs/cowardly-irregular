@@ -423,12 +423,16 @@ func _maybe_run_battle_smoke() -> void:
 			if _autobattle_editor == null or not is_instance_valid(_autobattle_editor):
 				break
 		# Formations + Records reference pages (v3.33.66/.72) — direct-instanced so
-		# render coverage doesn't depend on brittle menu-cursor driving
+		# render coverage doesn't depend on brittle menu-cursor driving.
+		# 2026-07-16: parent them in a CanvasLayer like real play (OverworldMenu lives in layer 50) — bare add_child put them in WORLD space under the scrolled village camera, so the smoke shot a screen no player can see (rows at world coords, no backdrop).
+		var smoke_ui_layer := CanvasLayer.new()
+		smoke_ui_layer.layer = 50
+		add_child(smoke_ui_layer)
 		var FormationsScript = load("res://src/ui/FormationsMenu.gd")
 		if FormationsScript:
 			var fm = FormationsScript.new()
 			fm.party = party
-			add_child(fm)
+			smoke_ui_layer.add_child(fm)
 			await get_tree().create_timer(0.6).timeout
 			await _smoke_shot("formations_page")
 			fm.queue_free()
@@ -436,11 +440,13 @@ func _maybe_run_battle_smoke() -> void:
 		var RecordsScript = load("res://src/ui/RecordsMenu.gd")
 		if RecordsScript:
 			var rm = RecordsScript.new()
-			add_child(rm)
+			smoke_ui_layer.add_child(rm)
 			await get_tree().create_timer(0.6).timeout
 			await _smoke_shot("records_page")
 			rm.queue_free()
 			await get_tree().process_frame
+		smoke_ui_layer.queue_free()
+		await get_tree().process_frame
 		# shop UI via the real VillageShop path — the progression item's purchase surface
 		var smoke_shop = load("res://src/exploration/VillageShop.gd").new()
 		smoke_shop.shop_type = VillageShop.ShopType.BLACK_MAGIC

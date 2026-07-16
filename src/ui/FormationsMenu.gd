@@ -32,14 +32,16 @@ func _party_job_ids() -> Array:
 
 
 func _build_ui() -> void:
-	var bg := ColorRect.new()
-	bg.color = Color(0.06, 0.06, 0.10, 0.94)
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
-	add_child(bg)
-
 	var vp := get_viewport_rect().size
 	if vp.x <= 0:
 		vp = Vector2(1280, 720)
+
+	var bg := ColorRect.new()
+	bg.color = Color(0.06, 0.06, 0.10, 0.94)
+	# Explicit rect (no anchors) — anchored sizing stayed zero under a CanvasLayer parent whose layout pass hadn't run (2026-07-16 smoke: village bled through); page content is vp-absolute anyway, and the house anchor-lint forbids anchors+size combos.
+	bg.position = Vector2.ZERO
+	bg.size = vp
+	add_child(bg)
 	var panel_w: float = min(760.0, vp.x - 80)
 	var panel_x: float = (vp.x - panel_w) / 2.0
 
