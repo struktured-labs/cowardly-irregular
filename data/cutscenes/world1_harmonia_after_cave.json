@@ -5,7 +5,7 @@
   "trigger": "harmonia_first_entry_after_rat_king",
   "presentation": "staged",
   "background": "prologue_village",
-  "description": "Staged puppet cutscene. Fires on FIRST return to Harmonia after cutscene_flag_rat_king_defeated. Beats: (1) the news is spreading \u2014 villagers murmuring as the party walks in, (2) Theron emerges, delivers the 'you came back, and with something' recognition, (3) the castle reveal \u2014 Castle Harmonia is now visible on the horizon because someone stopped hiding it, (4) Theron sends the party into normal beats before going, (5) Bard easter egg \u2014 quiet marginalia sketch to close. Voice: Theron post-chapter1 (tired-elder register) plus a scattered chorus of villagers overheard-not-addressed. Cross-lane: cowir-main gates in _get_pending_story_cutscene + adds cutscene_flag_world1_harmonia_after_cave_complete to _CUTSCENE_COMPLETION_FLAGS. Staging kit precedent: world1_chapter1 (proof-scene), world1_bram_shield (single-interaction shipped precedent).",
+  "description": "Staged puppet cutscene. Fires on FIRST return to Harmonia after cutscene_flag_rat_king_defeated. Beats: (1) the news is spreading — villagers murmuring as the party walks in, (2) Theron emerges, delivers the 'you came back, and with something' recognition, (3) the castle reveal — Castle Harmonia is now visible on the horizon because someone stopped hiding it, (4) Theron sends the party into normal beats before going, (5) Bard easter egg — quiet marginalia sketch to close. Voice: Theron post-chapter1 (tired-elder register) plus a scattered chorus of villagers overheard-not-addressed. Cross-lane: cowir-main gates in _get_pending_story_cutscene + adds cutscene_flag_world1_harmonia_after_cave_complete to _CUTSCENE_COMPLETION_FLAGS. Staging kit precedent: world1_chapter1 (proof-scene), world1_bram_shield (single-interaction shipped precedent).",
   "steps": [
     {
       "type": "letterbox_in",
@@ -316,14 +316,14 @@
         {
           "speaker": "Elder Theron",
           "text": "You came back. That's the first noteworthy thing.",
-          "theme": "villager",
-          "portrait": "villager"
+          "theme": "elder",
+          "portrait": "elder"
         },
         {
           "speaker": "Elder Theron",
           "text": "The second is the something you came back *with*. I won't ask what. I have my guesses. I have had my guesses since the morning the birds went quiet.",
-          "theme": "villager",
-          "portrait": "villager"
+          "theme": "elder",
+          "portrait": "elder"
         }
       ]
     },
@@ -337,8 +337,8 @@
         {
           "speaker": "Elder Theron",
           "text": "Turn around. Look east. Past the well. Past the road. Past the treeline. Tell me what you see.",
-          "theme": "villager",
-          "portrait": "villager"
+          "theme": "elder",
+          "portrait": "elder"
         }
       ]
     },
@@ -389,7 +389,7 @@
     },
     {
       "type": "narration",
-      "text": "A castle. The party had never seen it before. Neither, apparently, had the villagers behind them \u2014 the murmuring had gone quiet."
+      "text": "A castle. The party had never seen it before. Neither, apparently, had the villagers behind them — the murmuring had gone quiet."
     },
     {
       "type": "wait",
@@ -409,8 +409,8 @@
         {
           "speaker": "Elder Theron",
           "text": "Castle Harmonia. It has always been there. It has not always been *visible*. That is not superstition. That is on purpose.",
-          "theme": "villager",
-          "portrait": "villager"
+          "theme": "elder",
+          "portrait": "elder"
         }
       ]
     },
@@ -424,8 +424,8 @@
         {
           "speaker": "Elder Theron",
           "text": "Someone was hiding it. That someone stopped hiding it because you did what you did. Which means, now, they want you to see it. Which means, now, they want you to come.",
-          "theme": "villager",
-          "portrait": "villager"
+          "theme": "elder",
+          "portrait": "elder"
         }
       ]
     },
@@ -438,9 +438,9 @@
       "lines": [
         {
           "speaker": "Elder Theron",
-          "text": "You will. That is how these things work. But sit down first. Eat something. Talk to Bram. Talk to the child who hopped at you \u2014 she will not remember if you don't. Then go, when you go.",
-          "theme": "villager",
-          "portrait": "villager"
+          "text": "You will. That is how these things work. But sit down first. Eat something. Talk to Bram. Talk to the child who hopped at you — she will not remember if you don't. Then go, when you go.",
+          "theme": "elder",
+          "portrait": "elder"
         }
       ]
     },
@@ -467,8 +467,8 @@
         {
           "speaker": "Elder Theron",
           "text": "The castle is not going anywhere. It was, briefly. Not anymore.",
-          "theme": "villager",
-          "portrait": "villager"
+          "theme": "elder",
+          "portrait": "elder"
         }
       ]
     },

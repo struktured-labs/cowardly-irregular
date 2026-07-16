@@ -189,6 +189,13 @@ const CHARACTER_THEMES = {
 		"name": Color(0.75, 0.85, 0.95),
 		"portrait_bg": Color(0.08, 0.10, 0.13)
 	},
+	"villager": {
+		"bg": Color(0.06, 0.06, 0.05),
+		"border": Color(0.5, 0.5, 0.4),
+		"text": Color(0.9, 0.88, 0.82),
+		"name": Color(0.7, 0.68, 0.55),
+		"portrait_bg": Color(0.08, 0.08, 0.06)
+	},
 	"mysterious": {
 		"bg": Color(0.03, 0.02, 0.06),
 		"border": Color(0.5, 0.3, 0.6),
