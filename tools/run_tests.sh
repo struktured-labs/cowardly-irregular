@@ -17,5 +17,5 @@ case "${1:-}" in
   "")          exec "${BASE[@]}" -gdir=res://test/unit ;;
   --isolated)  exec "${BASE[@]}" -gdir=res://test/isolated ;;
   res://*)     exec "${BASE[@]}" -gtest="$1" ;;
-  *)           exec "${BASE[@]}" -gtest="res://test/unit/test_${1#test_}" ;;
+  *)           N="${1#test_}"; N="${N%.gd}"; exec "${BASE[@]}" -gtest="res://test/unit/test_${N}.gd" ;;
 esac
