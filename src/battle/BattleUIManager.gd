@@ -1010,6 +1010,19 @@ func _create_ctb_entry(combatant: Combatant, is_current: bool, is_player: bool, 
 	return row
 
 
+## Round-boundary AP emphasis (struktured 2026-07-16, Bravely Default ref): flash every living member's AP label gold so the +1 grant registers.
+func flash_ap_labels() -> void:
+	for box in _party_status_boxes:
+		if not is_instance_valid(box):
+			continue
+		var ap_label = box.get_node_or_null("AP")
+		if ap_label == null:
+			continue
+		ap_label.modulate = Color(1.6, 1.4, 0.5)
+		var t = _scene.create_tween()
+		t.tween_property(ap_label, "modulate", Color.WHITE, 0.6).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+
+
 func log_message(message: String) -> void:
 	"""Add a message to the battle log"""
 	print(message)

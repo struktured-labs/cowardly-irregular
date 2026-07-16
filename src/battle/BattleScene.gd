@@ -3294,6 +3294,38 @@ func _on_round_ended(round_num: int) -> void:
 	for combatant in _status_icon_containers.keys():
 		if is_instance_valid(combatant) and combatant.is_alive:
 			_refresh_status_icons(combatant)
+	# struktured 2026-07-16: "should be more obvious when a round ends and AP +1 is granted, bravely default makes that quite obv" — banner + gold AP flash.
+	_show_round_banner(round_num)
+
+
+## Bravely Default-style round boundary: brief centered banner + AP-label gold flash on the party panel. Suppressed at 4x+ (same convention as speech bubbles); duration scales with battle speed.
+func _show_round_banner(round_num: int) -> void:
+	if turbo_mode or autogrind_console_mode or Engine.time_scale >= 1.0:
+		return
+	var banner := Label.new()
+	banner.text = "— ROUND %d —   +1 AP" % (round_num + 1)
+	banner.add_theme_font_size_override("font_size", TextScale.scaled(26))
+	banner.add_theme_color_override("font_color", Color(1.0, 0.9, 0.35))
+	banner.add_theme_color_override("font_outline_color", Color(0.1, 0.08, 0.02))
+	banner.add_theme_constant_override("outline_size", 6)
+	banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	banner.z_index = 90
+	banner.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var vp := get_viewport_rect().size
+	banner.position = Vector2(vp.x / 2 - 220, vp.y * 0.30)
+	banner.custom_minimum_size = Vector2(440, 40)
+	banner.modulate.a = 0.0
+	var ui = get_node_or_null("UI")
+	(ui if ui else self).add_child(banner)
+	SoundManager.play_ui("menu_select")
+	var t := create_tween()
+	t.tween_property(banner, "modulate:a", 1.0, 0.12)
+	t.parallel().tween_property(banner, "position:y", banner.position.y - 14, 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	t.tween_interval(0.45)
+	t.tween_property(banner, "modulate:a", 0.0, 0.25)
+	t.tween_callback(banner.queue_free)
+	if _ui_manager and _ui_manager.has_method("flash_ap_labels"):
+		_ui_manager.flash_ap_labels()
 
 
 func _on_action_executed(combatant: Combatant, action: Dictionary, targets: Array) -> void:
