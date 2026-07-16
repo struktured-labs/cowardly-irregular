@@ -89,6 +89,11 @@ func test_auto_save_does_not_touch_manual_slots_runtime() -> void:
 		pass_test("battle active in harness — source-level guards cover routing")
 		return
 
+	# 2026-07-16 test-isolation rule (feedback_test_isolation_from_user_save): this leg calls the REAL auto_save() and its cleanup used to DELETE the developer's real slot-98 — struktured's live autosave vanished after every full-suite run. Snapshot the real file first; restore it in cleanup.
+	var auto_path := "user://saves/save_%02d.json" % SaveSystem.AUTO_SAVE_SLOT
+	var had_real_autosave := FileAccess.file_exists(auto_path)
+	var real_autosave_backup := FileAccess.get_file_as_bytes(auto_path) if had_real_autosave else PackedByteArray()
+
 	# Record which manual slots exist (and their mtimes) before auto_save().
 	var before := {}
 	for slot in range(SaveSystem.MAX_SAVE_SLOTS):
@@ -109,6 +114,11 @@ func test_auto_save_does_not_touch_manual_slots_runtime() -> void:
 		assert_eq(now, before[slot],
 			"auto_save() must NOT create or overwrite manual slot %d" % slot)
 
-	# Cleanup: don't leave the auto-save artifact for other tests.
-	if SaveSystem.save_exists(SaveSystem.AUTO_SAVE_SLOT):
+	# Cleanup: RESTORE the developer's real autosave (never delete — the old delete_save cleanup destroyed the live autosave on every suite run).
+	if had_real_autosave:
+		var f := FileAccess.open(auto_path, FileAccess.WRITE)
+		if f:
+			f.store_buffer(real_autosave_backup)
+			f.close()
+	elif SaveSystem.save_exists(SaveSystem.AUTO_SAVE_SLOT):
 		SaveSystem.delete_save(SaveSystem.AUTO_SAVE_SLOT)
