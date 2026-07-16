@@ -1045,8 +1045,12 @@ func _sync_party_to_game_state() -> void:
 	GameLoop.gd added _restore_party_from_save_data() which reconstructs
 	live Combatants from this dict array and is wired into the load paths.
 	"""
+	# 2026-07-15 playtest: during a spotlight duel `party` is the transient [duelist] — a save fired in that window wrote a 1-member roster (autosave slot poisoned, later crash when the Mage duel found no Mage). Sync from the saved full roster instead; the duelist Combatant is the SAME instance in both arrays (shallow duplicate), so its live HP/EXP still serialize.
+	var roster: Array = party
+	if _spotlight_duel_active and not _spotlight_saved_party.is_empty():
+		roster = _spotlight_saved_party
 	GameState.player_party.clear()
-	for member in party:
+	for member in roster:
 		if not is_instance_valid(member) or not (member is Combatant):
 			continue
 		GameState.player_party.append(member.to_dict())

@@ -277,6 +277,8 @@ func _ready() -> void:
 
 	# Apply retro font styling
 	RetroFontClass.configure_battle_log(battle_log)
+	# 2026-07-15 playtest: log viewport was ~4.8 lines tall so the top visible line was permanently half-clipped — snap the panel to a whole line count once layout settles.
+	call_deferred("_snap_battle_log_height")
 
 	# Add padding to PartyStatusPanel so labels don't hug the panel
 	# borders. PanelContainer uses its stylebox content_margin_* for
@@ -1493,6 +1495,27 @@ func reveal_enemy_stats(enemy: Combatant) -> void:
 
 func _update_turn_info() -> void:
 	_ui_manager.update_turn_info()
+
+
+## Shrink the BattleLogPanel by the fractional line so the scrolled-to-bottom log never shows a half-clipped top line (playtest 2026-07-15). Measures the REAL label size post-layout instead of guessing theme metrics.
+func _snap_battle_log_height() -> void:
+	if not battle_log or not is_instance_valid(battle_log):
+		return
+	var f := battle_log.get_theme_font("normal_font")
+	var fs: int = battle_log.get_theme_font_size("normal_font_size")
+	if f == null or fs <= 0:
+		return
+	var line_h: float = f.get_height(fs) + float(battle_log.get_theme_constant("line_separation"))
+	if line_h <= 0.0:
+		return
+	var sb := battle_log.get_theme_stylebox("normal")
+	var inset: float = (sb.get_margin(SIDE_TOP) + sb.get_margin(SIDE_BOTTOM)) if sb else 0.0
+	var text_h: float = battle_log.size.y - inset
+	var frac: float = fmod(text_h, line_h)
+	if frac > 1.0:
+		var log_panel = get_node_or_null("UI/BattleLogPanel")
+		if log_panel:
+			log_panel.offset_top += frac
 
 
 func log_message(message: String) -> void:
@@ -4167,7 +4190,18 @@ func _spawn_quip_bubble(sprite: Node2D, speaker_name: String, line: String, bord
 		return
 	if sprite == null or not is_instance_valid(sprite):
 		return
-	BattleSpeechBubble.spawn(self, sprite.global_position, speaker_name, line, border_color, hold_time, audio_key)
+	# 2026-07-15 playtest: bubbles anchored at sprite CENTER — mid-body on a 300px monster, covering its head and drifting into the command menu. Anchor above the head instead, biased left for enemies (left half of screen) so wide bubbles stay clear of the center menu.
+	var anchor: Vector2 = sprite.global_position
+	if sprite is AnimatedSprite2D:
+		var anim_sprite: AnimatedSprite2D = sprite
+		if anim_sprite.sprite_frames and anim_sprite.sprite_frames.has_animation(anim_sprite.animation):
+			var tex: Texture2D = anim_sprite.sprite_frames.get_frame_texture(anim_sprite.animation, anim_sprite.frame)
+			if tex:
+				anchor.y -= tex.get_height() * absf(anim_sprite.scale.y) * 0.5
+	var vp_w: float = get_viewport_rect().size.x
+	if anchor.x < vp_w * 0.45:
+		anchor.x -= 50.0
+	BattleSpeechBubble.spawn(self, anchor, speaker_name, line, border_color, hold_time, audio_key)
 
 func _on_one_shot_achieved(rank: String, setup_turns: int) -> void:
 	"""Display one-shot visual feedback when all enemies are defeated in a single execution phase"""
