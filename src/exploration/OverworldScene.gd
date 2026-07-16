@@ -637,8 +637,8 @@ func _place_wanderers() -> void:
 				{"flag": "", "text": "Head west across the bridges — Harmonia Village is just past them."},
 				{"flag": "prologue_complete", "text": "Elder Theron mentioned a cave northwest of the village. Sounds dangerous."},
 				{"flag": "chapter1_complete", "text": "The Whispering Cave? Northwest of here. Bring potions."},
-				{"flag": "rat_king_defeated", "text": "A strange light appeared to the south... some kind of portal?"},
-				{"flag": "w1_boss_defeated", "text": "That portal south of the bridge leads somewhere... different."},
+				{"flag": "rat_king_defeated", "text": "That castle on the eastern ridge... I'd swear it wasn't there last week."},
+				{"flag": "world1_mordaine_defeated", "text": "That portal south of the bridge leads somewhere... different."},
 			],
 		},
 		{
@@ -651,7 +651,7 @@ func _place_wanderers() -> void:
 				{"flag": "", "text": "I heard there's a village to the west. Follow the bridges!"},
 				{"flag": "prologue_complete", "text": "Frosthold is up north in the ice fields. Eldertree is in the forest."},
 				{"flag": "chapter3_complete", "text": "Something terrible lurks in that cave... the ground shakes at night."},
-				{"flag": "w1_boss_defeated", "text": "The world feels... wider now. Like a door opened somewhere."},
+				{"flag": "world1_mordaine_defeated", "text": "The world feels... wider now. Like a door opened somewhere."},
 			],
 		},
 		{
@@ -664,8 +664,8 @@ func _place_wanderers() -> void:
 				{"flag": "", "text": "Harmonia Village is just south of here. Talk to Elder Theron."},
 				{"flag": "prologue_complete", "text": "The cave northwest of the village... it whispers at night."},
 				{"flag": "chapter1_complete", "text": "That cave goes deep. Five floors, they say. A king of rats at the bottom."},
-				{"flag": "rat_king_defeated", "text": "You actually beat it? Head south — a portal appeared near the river."},
-				{"flag": "w1_boss_defeated", "text": "Beyond the portal... they say the world looks completely different."},
+				{"flag": "rat_king_defeated", "text": "You actually beat it? Then look east — the castle is showing itself now. That's not a coincidence."},
+				{"flag": "world1_mordaine_defeated", "text": "Beyond the portal... they say the world looks completely different."},
 			],
 		},
 	]
