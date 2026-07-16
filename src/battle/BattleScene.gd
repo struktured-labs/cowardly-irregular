@@ -2967,8 +2967,8 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 				if enemy_idx >= 0 and enemy_idx < enemy_animators.size():
 					target_anim = enemy_animators[enemy_idx]
 				_animate_melee_attack(sprite, target_sprite, anim, target_anim)
-				# Spawn physical hit effect on impact
-				EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, target_sprite.global_position)
+				# Spawn physical hit effect on impact (msg 2569 #1: stable anchor so mid-tween targets don't drag the effect off)
+				EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, _stable_sprite_anchor(target_sprite))
 				continue
 		# Combo Magic: casters step forward, cast animation, converging spell effects
 		if group_type == "combo_magic":
@@ -3000,9 +3000,9 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 					for target in targets:
 						var t_sprite2 = _get_combatant_sprite(target as Combatant)
 						if t_sprite2 and is_instance_valid(t_sprite2):
-							# Spawn from caster's position toward target for "converging" feel
+							# Spawn from caster's position toward target for "converging" feel — stable anchor + scatter offset (msg 2569 #1)
 							var offset = Vector2(randf_range(-15, 15), randf_range(-15, 15))
-							EffectSystem.spawn_effect(my_effect, t_sprite2.global_position + offset, Callable(), 1.5)
+							EffectSystem.spawn_effect(my_effect, _stable_sprite_anchor(t_sprite2) + offset, Callable(), 1.5)
 				)
 
 				# Hold then return
@@ -3051,7 +3051,8 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 				for t in targets:
 					var ts2 = _get_combatant_sprite(t as Combatant)
 					if ts2 and is_instance_valid(ts2):
-						EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, ts2.global_position + Vector2(randf_range(-8, 8), randf_range(-8, 8)))
+						# Scattered impact bursts on all enemies at rush moment — anchor to stable rest so mid-hit knockback doesn't drag them (msg 2569 #1)
+						EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, _stable_sprite_anchor(ts2) + Vector2(randf_range(-8, 8), randf_range(-8, 8)))
 						var eidx = BattleManager.enemy_party.find(t)
 						if eidx >= 0 and eidx < enemy_animators.size():
 							enemy_animators[eidx].play_hit()
@@ -3064,12 +3065,12 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 			rush_tween.tween_property(sprite, "position", home, 0.25).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
 			continue
 
-		# Formation/fallback: play attack animation in place + physical effects
+		# Formation/fallback: play attack animation in place + physical effects (stable anchor per msg 2569 #1)
 		anim.play_attack()
 		for target in targets:
 			var t_sprite = _get_combatant_sprite(target as Combatant)
 			if t_sprite:
-				EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, t_sprite.global_position)
+				EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, _stable_sprite_anchor(t_sprite))
 
 	# Safety net: force-reset all party sprites to home positions after rush animations
 	# This catches any case where a return-home tween gets interrupted or killed
@@ -3105,7 +3106,8 @@ func _delayed_snap_and_idle(sprite, animator) -> void:
 func _delayed_play_hit_fx(target_anim, target_sprite) -> void:
 	if target_anim and is_instance_valid(target_anim) and is_instance_valid(target_sprite):
 		target_anim.play_hit()
-		EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, target_sprite.global_position)
+		# Stable anchor: multi-hit chains can arrive while target is still tweening back from the previous hit (msg 2569 #1)
+		EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, _stable_sprite_anchor(target_sprite))
 		var kb_dir = -1.0 if enemy_sprite_nodes.has(target_sprite) else 1.0
 		_apply_hit_knockback(target_sprite, kb_dir)
 		_apply_hit_flash(target_sprite)
@@ -3271,6 +3273,19 @@ func _get_combatant_sprite(combatant: Combatant) -> Node2D:
 	if enemy_idx >= 0 and enemy_idx < enemy_sprite_nodes.size():
 		return enemy_sprite_nodes[enemy_idx]
 	return null
+
+
+## Stable rest anchor for effect/popup spawn positions — same class of fix as v3.33.158/167/170 (msg 2569 #1). Prefers _party_base_positions / _enemy_base_positions (idle rest, stamped at sprite spawn) when the sprite is in one of the tracked arrays; falls back to live global_position for orphan sprites or pre-append states. Fixes the "hit effect drags with target during mid-tween" class the same way BattleResultsDisplay._get_combatant_sprite_position was fixed in v3.33.178.
+func _stable_sprite_anchor(sprite: Node2D) -> Vector2:
+	if not is_instance_valid(sprite):
+		return Vector2.ZERO
+	var party_idx: int = party_sprite_nodes.find(sprite)
+	if party_idx >= 0 and party_idx < _party_base_positions.size():
+		return _party_base_positions[party_idx]
+	var enemy_idx: int = enemy_sprite_nodes.find(sprite)
+	if enemy_idx >= 0 and enemy_idx < _enemy_base_positions.size():
+		return _enemy_base_positions[enemy_idx]
+	return sprite.global_position
 
 
 func _get_combatant_animator(combatant: Combatant) -> BattleAnimatorClass:
@@ -4616,8 +4631,8 @@ func _on_monster_summoned(monster_type: String, summoner: Combatant) -> void:
 			sprite.scale = Vector2(final_scale, final_scale)
 	)
 
-	# Flash effect at spawn position
-	EffectSystem.spawn_effect(EffectSystem.EffectType.BUFF, sprite.global_position)
+	# Flash effect at spawn position (stable anchor per msg 2569 #1 — base was appended above so the helper prefers it over the concurrent scale-tween's live pos)
+	EffectSystem.spawn_effect(EffectSystem.EffectType.BUFF, _stable_sprite_anchor(sprite))
 
 	# Log message
 	log_message("[color=%s]%s appears![/color]" % [AccessibilityPalette.penalty_bbcode(), stats["name"]])
