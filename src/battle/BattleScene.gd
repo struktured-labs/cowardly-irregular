@@ -66,6 +66,9 @@ const MENU_WATCHDOG_MAX_RETRIES: int = 3
 var _menu_wd_started_ms: int = 0
 var _menu_wd_retries: int = 0
 
+## Horizontal shift for the ONE-SHOT!/AUTO-BATTLE! victory banners so they clear the BattleResultsDisplay panel (msg 2595). Panel sits at x=200-600 via PRESET_CENTER_LEFT (BRD:171-172); banner is 400 wide with PRESET_CENTER offsets ±200, so it renders x=440-840 by default (overlaps panel at x=440-600). Shifting right by 200 puts the banner at x=640-1040 — clear of the panel with a 40px margin on the left and a 240px margin on the right at the fixed 1280 viewport. Viewport stretch=viewport + aspect=keep pins the coord system at 1280 regardless of window size, so this offset is safe across all real screens.
+const VICTORY_BANNER_X_SHIFT: int = 200
+
 ## Party status UI
 @onready var char1_name: Label = $UI/PartyStatusPanel/VBoxContainer/Character1/Name
 @onready var char1_hp: ProgressBar = $UI/PartyStatusPanel/VBoxContainer/Character1/HP
@@ -4290,8 +4293,9 @@ func _on_one_shot_achieved(rank: String, setup_turns: int) -> void:
 	one_shot_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	one_shot_label.offset_top = -60
 	one_shot_label.offset_bottom = 0
-	one_shot_label.offset_left = -200
-	one_shot_label.offset_right = 200
+	# msg 2595: shift right of the victory results panel (x=200-600) to prevent the banner from rendering under it.
+	one_shot_label.offset_left = -200 + VICTORY_BANNER_X_SHIFT
+	one_shot_label.offset_right = 200 + VICTORY_BANNER_X_SHIFT
 	one_shot_label.add_theme_font_size_override("font_size", TextScale.scaled(48))
 	one_shot_label.add_theme_color_override("font_color", Color(1.0, 0.9, 0.0))
 	# Tick 219: 2px outline matches the floating-text contrast scheme; flash_bg fades quickly so the label spends most of its life over the Mode 7 floor.
@@ -4311,8 +4315,8 @@ func _on_one_shot_achieved(rank: String, setup_turns: int) -> void:
 	rank_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	rank_label.offset_top = 0
 	rank_label.offset_bottom = 40
-	rank_label.offset_left = -200
-	rank_label.offset_right = 200
+	rank_label.offset_left = -200 + VICTORY_BANNER_X_SHIFT
+	rank_label.offset_right = 200 + VICTORY_BANNER_X_SHIFT
 	rank_label.add_theme_font_size_override("font_size", TextScale.scaled(28))
 	var rank_color = Color(1.0, 0.9, 0.0) if rank == "S" else Color(0.6, 1.0, 0.6) if rank == "A" else Color(0.6, 0.8, 1.0)
 	rank_label.add_theme_color_override("font_color", rank_color)
@@ -4333,8 +4337,8 @@ func _on_one_shot_achieved(rank: String, setup_turns: int) -> void:
 	bonus_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	bonus_label.offset_top = 40
 	bonus_label.offset_bottom = 75
-	bonus_label.offset_left = -200
-	bonus_label.offset_right = 200
+	bonus_label.offset_left = -200 + VICTORY_BANNER_X_SHIFT
+	bonus_label.offset_right = 200 + VICTORY_BANNER_X_SHIFT
 	bonus_label.add_theme_font_size_override("font_size", TextScale.scaled(22))
 	bonus_label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4))
 	# Tick 219: floating-text contrast — outline + shadow.
@@ -4403,8 +4407,9 @@ func _on_autobattle_victory(multiplier: float, total_turns: int) -> void:
 	auto_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	auto_label.offset_top = -60 + y_offset
 	auto_label.offset_bottom = 0 + y_offset
-	auto_label.offset_left = -200
-	auto_label.offset_right = 200
+	# msg 2595: shift right of the victory results panel (x=200-600) to prevent the banner from rendering under it.
+	auto_label.offset_left = -200 + VICTORY_BANNER_X_SHIFT
+	auto_label.offset_right = 200 + VICTORY_BANNER_X_SHIFT
 	auto_label.add_theme_font_size_override("font_size", TextScale.scaled(42))
 	auto_label.add_theme_color_override("font_color", Color(0.3, 0.9, 1.0))
 	# Tick 219: floating-text contrast — outline + shadow.
@@ -4424,8 +4429,8 @@ func _on_autobattle_victory(multiplier: float, total_turns: int) -> void:
 	turns_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	turns_label.offset_top = 0 + y_offset
 	turns_label.offset_bottom = 35 + y_offset
-	turns_label.offset_left = -200
-	turns_label.offset_right = 200
+	turns_label.offset_left = -200 + VICTORY_BANNER_X_SHIFT
+	turns_label.offset_right = 200 + VICTORY_BANNER_X_SHIFT
 	turns_label.add_theme_font_size_override("font_size", TextScale.scaled(22))
 	turns_label.add_theme_color_override("font_color", Color(0.9, 0.9, 1.0))
 	# Tick 219: floating-text contrast — outline + shadow.
@@ -4445,8 +4450,8 @@ func _on_autobattle_victory(multiplier: float, total_turns: int) -> void:
 	bonus_label.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
 	bonus_label.offset_top = 35 + y_offset
 	bonus_label.offset_bottom = 70 + y_offset
-	bonus_label.offset_left = -200
-	bonus_label.offset_right = 200
+	bonus_label.offset_left = -200 + VICTORY_BANNER_X_SHIFT
+	bonus_label.offset_right = 200 + VICTORY_BANNER_X_SHIFT
 	bonus_label.add_theme_font_size_override("font_size", TextScale.scaled(22))
 	bonus_label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4))
 	# Tick 219: floating-text contrast — outline + shadow.
