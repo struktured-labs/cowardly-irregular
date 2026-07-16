@@ -61,6 +61,7 @@ func test_opening_gold_chest_actually_increases_party_gold() -> void:
 
 	var script = load(TREASURE_CHEST_PATH)
 	var chest = script.new()
+	chest.chest_id = "test_fixture_gold"
 	add_child_autofree(chest)
 	chest.contents_type = "gold"
 	chest.gold_amount = 250

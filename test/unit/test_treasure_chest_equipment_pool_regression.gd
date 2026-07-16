@@ -25,9 +25,15 @@ func _read(path: String) -> String:
 	return text
 
 
+var _fixture_seq: int = 0
+
+
 func _make_chest():
 	var script = load(TREASURE_CHEST_PATH)
 	var chest = script.new()
+	# Unique fixture id — keeps the default-chest_id footgun warning high-signal for REAL forgetters (this helper was 4 of the 5 noise lines per suite run).
+	_fixture_seq += 1
+	chest.chest_id = "test_fixture_pool_%d" % _fixture_seq
 	add_child_autofree(chest)
 	return chest
 
