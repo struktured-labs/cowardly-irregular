@@ -24,6 +24,17 @@ const W2_W6_VILLAGES: Array[Array] = [
 	["res://src/maps/villages/VertexVillage.gd",        "vertex_village"],
 ]
 
+## Sub-village overrides that live in worlds that ALSO have a main village:
+## ScripturaPlaza (W1, "The Guild's Cathedral") and MapleStripMall (W2 side-map,
+## reuses maple_heights_village). Pre-fix (2026-07-16), both inherited
+## BaseVillage's default "village" key and played Harmonia's medieval theme
+## regardless of world/context. Track was authored + dispatch arm existed;
+## only the one-line override was missing.
+const SUB_VILLAGES_WITH_OVERRIDES: Array[Array] = [
+	["res://src/maps/villages/ScripturaPlaza.gd",  "scriptura_village"],
+	["res://src/maps/villages/MapleStripMall.gd",  "maple_heights_village"],
+]
+
 
 func _read(p: String) -> String:
 	var t: String = FileAccess.get_file_as_string(p)
@@ -101,3 +112,34 @@ func test_w1_main_harmonia_village_keeps_default_music() -> void:
 	var harmonia := _read("res://src/maps/villages/HarmoniaVillage.gd")
 	assert_false(harmonia.contains("func _get_music_area_id()"),
 		"HarmoniaVillage must NOT override _get_music_area_id — the default 'village' key already maps to Harmonia's medieval music in SoundManager")
+
+
+func test_sub_villages_route_to_their_own_theme() -> void:
+	# ScripturaPlaza + MapleStripMall used to fall through the base
+	# "village" default and play Harmonia's morning. Pin both overrides
+	# so a future BaseVillage refactor or copy-paste can't silently
+	# reintroduce the "everything plays Harmonia" regression on these two.
+	for entry in SUB_VILLAGES_WITH_OVERRIDES:
+		var path: String = entry[0]
+		var expected_key: String = entry[1]
+		var src := _read(path)
+		assert_true(src.contains("func _get_music_area_id() -> String"),
+			"%s must override _get_music_area_id" % path)
+		assert_true(src.contains("return \"" + expected_key + "\""),
+			"%s _get_music_area_id must return '%s'" % [path, expected_key])
+
+
+func test_sub_village_keys_have_manifest_tracks_and_dispatch_arms() -> void:
+	# Same pin as the W2-W6 tests: the target key must both resolve to
+	# a match arm in SoundManager AND find an authored track in the
+	# manifest — otherwise the override falls back to overworld music
+	# or procedural gen.
+	var sm := _read(SOUND_MANAGER)
+	var manifest := _read(MANIFEST)
+	for entry in SUB_VILLAGES_WITH_OVERRIDES:
+		var expected_key: String = entry[1]
+		assert_true(sm.contains("\"" + expected_key + "\":"),
+			"SoundManager must have a _start_area_music_deferred arm for '%s'" % expected_key)
+		var short: String = expected_key.replace("_village", "")
+		assert_true(manifest.contains("\"village_" + short + "\""),
+			"music_manifest.json must carry village_%s — that's the track the village_location helper plays" % short)

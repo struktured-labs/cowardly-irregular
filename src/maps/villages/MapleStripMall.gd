@@ -16,7 +16,7 @@ func _get_area_id() -> String:
 
 
 func _get_music_area_id() -> String:
-	return "village"
+	return "maple_heights_village"
 
 
 func _get_village_display_name() -> String:
