@@ -60,25 +60,38 @@ func test_every_save_method_honors_disable_flag() -> void:
 		"These _save_* funcs lack the _test_disable_persistence guard — they will silently overwrite the user's real save when tests run: %s" % [missing])
 
 
+## Byte-snapshot/restore per fleet PSA (msg 2586, feedback_test_isolation_from_user_save).
+## Pre-fix, these two tests DELETED the user file "to prep for the assertion" — the exact
+## bug pattern the PSA warns against, inside the file meant to prevent it. Now we snapshot
+## the file's pre-call bytes and assert byte-identical post-call, which proves the guard
+## no-opped without ever touching real user data.
+func _assert_file_byte_unchanged(path: String, action: Callable, failure_msg: String) -> void:
+	var pre_existed := FileAccess.file_exists(path)
+	var pre_bytes := FileAccess.get_file_as_bytes(path) if pre_existed else PackedByteArray()
+	action.call()
+	var post_existed := FileAccess.file_exists(path)
+	assert_eq(pre_existed, post_existed,
+		"%s (file %s pre, now %s)" % [failure_msg, "existed" if pre_existed else "absent", "exists" if post_existed else "absent"])
+	if pre_existed and post_existed:
+		var post_bytes := FileAccess.get_file_as_bytes(path)
+		assert_eq(post_bytes, pre_bytes,
+			"%s (bytes changed — real user data would have been overwritten)" % failure_msg)
+
+
 func test_permadead_save_no_ops_when_flag_set() -> void:
-	# Behavioral proof: even calling into the code that writes permadead.json
-	# does not create the file when the flag is set.
-	# Delete the user-path first to ensure we're not seeing a stale file.
-	if FileAccess.file_exists("user://autogrind/permadead.json"):
-		DirAccess.remove_absolute("user://autogrind/permadead.json")
 	_system.permadead_characters.append("TestGhostChar")
-	_system._save_permadead_characters()
-	assert_false(FileAccess.file_exists("user://autogrind/permadead.json"),
-		"With _test_disable_persistence=true, calling _save_permadead_characters must NOT create the file")
+	_assert_file_byte_unchanged(
+		"user://autogrind/permadead.json",
+		func(): _system._save_permadead_characters(),
+		"With _test_disable_persistence=true, calling _save_permadead_characters must not touch the file")
 
 
 func test_session_history_save_no_ops_when_flag_set() -> void:
-	if FileAccess.file_exists("user://autogrind_history.json"):
-		DirAccess.remove_absolute("user://autogrind_history.json")
 	_system.session_history = [{"battles": 999, "reason": "test-ghost"}]
-	_system._save_session_history()
-	assert_false(FileAccess.file_exists("user://autogrind_history.json"),
-		"With flag set, _save_session_history must NOT create the file")
+	_assert_file_byte_unchanged(
+		"user://autogrind_history.json",
+		func(): _system._save_session_history(),
+		"With flag set, _save_session_history must not touch the file")
 
 
 func test_snapshot_save_returns_false_when_flag_set() -> void:
