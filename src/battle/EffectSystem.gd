@@ -89,7 +89,8 @@ const POWER_MIN: float = 0.5  # Minimum effect scale for weak spells
 const POWER_MAX: float = 2.0  # Maximum effect scale for powerful spells
 
 
-func spawn_effect(effect_type: EffectType, position: Vector2, on_complete: Callable = Callable(), power: float = 1.0) -> void:
+## msg 2754 cycle 14: weapon_type is caller-provided (previously EffectSystem read BattleManager.current_combatant, stale mid-execution). Empty string = generic attack_hit fallback in SoundManager — safe default for non-PHYSICAL and non-execution-phase callers.
+func spawn_effect(effect_type: EffectType, position: Vector2, on_complete: Callable = Callable(), power: float = 1.0, weapon_type: String = "") -> void:
 	"""Spawn a visual effect at the given position with optional power scaling"""
 	var effect = _create_effect(effect_type)
 	effect.position = position
@@ -99,19 +100,19 @@ func spawn_effect(effect_type: EffectType, position: Vector2, on_complete: Calla
 	power = clamp(power, POWER_MIN, POWER_MAX)
 
 	# Play sound for the effect with power-based volume
-	_play_effect_sound(effect_type, power)
+	_play_effect_sound(effect_type, power, weapon_type)
 
 	# Start the effect animation
 	_animate_effect(effect, effect_type, on_complete, power)
 
 
-func spawn_effect_on_target(effect_type: EffectType, target_sprite: Node2D, on_complete: Callable = Callable(), power: float = 1.0) -> void:
+func spawn_effect_on_target(effect_type: EffectType, target_sprite: Node2D, on_complete: Callable = Callable(), power: float = 1.0, weapon_type: String = "") -> void:
 	"""Spawn effect on a target sprite with power scaling"""
 	if not is_instance_valid(target_sprite):
 		if on_complete.is_valid():
 			on_complete.call()
 		return
-	spawn_effect(effect_type, target_sprite.global_position, on_complete, power)
+	spawn_effect(effect_type, target_sprite.global_position, on_complete, power, weapon_type)
 
 
 func spawn_ability_effect(ability_id: String, target_position: Vector2, on_complete: Callable = Callable(), power: float = 1.0) -> void:
@@ -181,18 +182,10 @@ func _get_effect_type_for_ability(ability_id: String) -> EffectType:
 	return EffectType.PHYSICAL
 
 
-func _play_effect_sound(effect_type: EffectType, power: float = 1.0) -> void:
+## msg 2754 cycle 14: weapon_type is now a caller-provided param (cycle 12's deferred item). Empty string → SoundManager.play_attack_hit falls back to generic attack_hit. Pre-fix EffectSystem read BattleManager.current_combatant here, which was stale/null mid-execution (same class as cycle 12's BattleScene readers).
+func _play_effect_sound(effect_type: EffectType, power: float = 1.0, weapon_type: String = "") -> void:
 	"""Play appropriate sound for effect with power-based volume and pitch"""
-	# PHYSICAL effects route through SoundManager.play_attack_hit so the
-	# per-weapon SFX from cowir-sfx's b6f3f00 fires here too. Other effect
-	# types use the plain manifest lookup as before.
 	if effect_type == EffectType.PHYSICAL and SoundManager:
-		var weapon_type = ""
-		var battle_mgr = get_node_or_null("/root/BattleManager")
-		if battle_mgr and battle_mgr.current_combatant:
-			var equipment = get_node_or_null("/root/EquipmentSystem")
-			if equipment and equipment.has_method("get_weapon_type"):
-				weapon_type = equipment.get_weapon_type(battle_mgr.current_combatant)
 		SoundManager.play_attack_hit(weapon_type, false)
 		return
 

@@ -148,17 +148,17 @@ func test_execution_only_signal_handlers_do_not_read_manager_field() -> void:
 			"execution-only handler `%s` must not read BattleManager.current_combatant (msg 2749 cycle 12)" % signature)
 
 
-## ── EffectSystem follow-up: flag the deferred case ────────────────────
+## ── EffectSystem follow-up: fixed in msg 2754 cycle 14 (option b) ─────
 
-func test_effect_system_still_has_the_deferred_read() -> void:
-	# NOT a fix pin — a note pin. EffectSystem still reads
-	# BattleManager.current_combatant for PHYSICAL-effect weapon SFX
-	# (deferred this cycle because the fix wants a caller-provided
-	# weapon_type or a public BM property, both bigger surface than the
-	# 3 BS handlers). Documenting the outstanding site so a future audit
-	# can find it.
+func test_effect_system_no_longer_reads_battle_manager_current_combatant() -> void:
+	# Cycle 12 flagged EffectSystem._play_effect_sound reading
+	# BattleManager.current_combatant for PHYSICAL-effect weapon SFX as
+	# a deferred follow-up. Cycle 14 (msg 2754) shipped option (b):
+	# weapon_type is now a caller-provided param on spawn_effect. This
+	# pin ensures the deferred read is truly gone — EffectSystem has no
+	# excuse to reach into BM state anymore.
 	var src: String = FileAccess.get_file_as_string("res://src/battle/EffectSystem.gd")
-	# If this pin FAILS (someone fixed it), delete this test and update
-	# the cycle-12 audit notes.
-	assert_true(src.find("battle_mgr.current_combatant") > -1,
-		"if EffectSystem was fixed independently, remove this pin and note it in the audit follow-ups")
+	assert_false(src.find("battle_mgr.current_combatant") > -1,
+		"EffectSystem must not read BattleManager.current_combatant — weapon_type is caller-provided since cycle 14")
+	assert_false(src.find("/root/BattleManager") > -1,
+		"EffectSystem must not reach into BattleManager at all — the get_node_or_null(\"/root/BattleManager\") lookup was the escape valve the read used")
