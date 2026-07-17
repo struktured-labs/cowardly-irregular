@@ -122,6 +122,18 @@ var _dynamic_conv: DynamicConversation = null  # LLM-driven conversation, lazy-i
 ## per-character voice for the opening turn (the rest of the conversation
 ## continues to draw from `dialogue_lines`).
 var _persona_openings: Array = []
+## Milo v2 (msg 2600): quest-state bucketed idle lines, populated from
+## npc_showcase_personas.json's optional quest_state_lines block. Buckets
+## are keyed pre_task_1 / in_progress / post_quest (matching the 3-state
+## quest lifecycle). Empty when the persona has no quest_state_lines.
+var _persona_quest_state_lines: Dictionary = {}
+## Weight-boost pointer per bucket — first visit to a fresh bucket shows
+## this line. Defaults to 0 when the JSON omits the *_money_pick_index sibling.
+var _persona_quest_state_money_picks: Dictionary = {}
+## Per-bucket visit counter so rotation restarts from money-pick when the
+## quest transitions to a new state (avoids "landed on line 3 of the new
+## bucket because the global visit counter was there").
+var _quest_state_bucket_visits: Dictionary = {}
 
 ## State
 var _current_line: int = 0
@@ -235,6 +247,23 @@ func _setup_persona_data() -> void:
 			for line in (op_raw as Array):
 				typed_openings.append(str(line))
 			_persona_openings = typed_openings
+	# Milo v2: capture optional quest_state_lines block (buckets + money-pick indices).
+	if entry.has("quest_state_lines"):
+		var qsl_raw: Variant = entry["quest_state_lines"]
+		if qsl_raw is Dictionary:
+			for k in (qsl_raw as Dictionary).keys():
+				var key_str: String = str(k)
+				if key_str.begins_with("_"):
+					continue
+				var v: Variant = (qsl_raw as Dictionary)[k]
+				if v is Array:
+					var typed_bucket: Array = []
+					for line in (v as Array):
+						typed_bucket.append(str(line))
+					_persona_quest_state_lines[key_str] = typed_bucket
+				elif (v is int or v is float) and key_str.ends_with("_money_pick_index"):
+					var bucket_name: String = key_str.substr(0, key_str.length() - "_money_pick_index".length())
+					_persona_quest_state_money_picks[bucket_name] = int(v)
 
 
 static func _load_persona_cache() -> void:
@@ -1068,17 +1097,30 @@ func _start_dialogue() -> void:
 		player.set_can_move(false)
 
 	var lines: Array = []
-	var n: int = dialogue_lines.size()
-	var offset: int = (_dialogue_visit_count % n) if n > 0 else 0
-	for i in range(n):
-		var line_text = dialogue_lines[(i + offset) % n]
-		lines.append({
-			"speaker": npc_name,
-			"text": line_text,
-			"theme": npc_type,
-			"portrait": npc_type,
-		})
-	_dialogue_visit_count += 1
+	var _quest_sys_for_lines = get_node_or_null("/root/QuestSystem")
+	var _quest_bucket: String = _quest_state_bucket_for_npc(_quest_sys_for_lines)
+	var source_lines: Array = _quest_state_bucket_rotation(_quest_bucket)
+	if source_lines.is_empty():
+		var n: int = dialogue_lines.size()
+		var offset: int = (_dialogue_visit_count % n) if n > 0 else 0
+		for i in range(n):
+			var line_text = dialogue_lines[(i + offset) % n]
+			lines.append({
+				"speaker": npc_name,
+				"text": line_text,
+				"theme": npc_type,
+				"portrait": npc_type,
+			})
+		_dialogue_visit_count += 1
+	else:
+		for line_text in source_lines:
+			lines.append({
+				"speaker": npc_name,
+				"text": str(line_text),
+				"theme": npc_type,
+				"portrait": npc_type,
+			})
+		_quest_state_bucket_visits[_quest_bucket] = int(_quest_state_bucket_visits.get(_quest_bucket, 0)) + 1
 	await _npc_dialogue.say_lines(lines)
 
 	if player and is_instance_valid(player) and player.has_method("set_can_move"):
@@ -1132,6 +1174,42 @@ func _quest_should_yield_to_llm(quest_sys: Node, has_giver: bool) -> bool:
 		return false
 	var kind: String = str(quest_sys.giver_business_kind(get_npc_id()))
 	return kind != "offer" and kind != "talk"
+
+
+## Milo v2 (msg 2600): map QuestSystem state for the quest THIS NPC gives → persona bucket ("" if no override applies).
+func _quest_state_bucket_for_npc(quest_sys: Node) -> String:
+	if quest_sys == null or not quest_sys.has_method("get_all_ids") or not quest_sys.has_method("get_quest") or not quest_sys.has_method("get_state"):
+		return ""
+	var npc: String = get_npc_id()
+	for qid in quest_sys.get_all_ids():
+		var q: Dictionary = quest_sys.get_quest(qid)
+		if str(q.get("giver", {}).get("npc_id", "")) != npc:
+			continue
+		var state: String = str(quest_sys.get_state(qid))
+		if state == "active":
+			return "in_progress"
+		if state == "completed" or state == "turned_in":
+			return "post_quest"
+		if state == "":
+			return "pre_task_1"
+		return ""
+	return ""
+
+
+## Milo v2: return the bucket lines rotated so a fresh bucket-visit lands on money_pick_index; [] means no override, keep dialogue_lines.
+func _quest_state_bucket_rotation(bucket: String) -> Array:
+	if bucket == "" or _persona_quest_state_lines.is_empty() or not _persona_quest_state_lines.has(bucket):
+		return []
+	var bucket_lines: Array = _persona_quest_state_lines[bucket]
+	if bucket_lines.is_empty():
+		return []
+	var money_pick: int = int(_persona_quest_state_money_picks.get(bucket, 0))
+	var count: int = int(_quest_state_bucket_visits.get(bucket, 0))
+	var start: int = (money_pick + count) % bucket_lines.size()
+	var rotated: Array = []
+	for i in range(bucket_lines.size()):
+		rotated.append(str(bucket_lines[(i + start) % bucket_lines.size()]))
+	return rotated
 
 
 func _run_dynamic_conversation(player: Node) -> void:
