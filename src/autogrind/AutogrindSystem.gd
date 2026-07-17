@@ -2395,6 +2395,15 @@ func has_grind_snapshot() -> bool:
 	return FileAccess.file_exists(SNAPSHOT_PATH)
 
 
+## Cadence #11: existence-alone was a silent-fail UX bug — a corrupted snapshot passed has_grind_snapshot() so the Resume button rendered as "RESUME (0 battles, 0 EXP)", click fell through in _resume_autogrind with only a console log, and the menu hid with zero UI feedback. Callers that gate a user-visible Resume button MUST use this loadability probe instead.
+func is_snapshot_loadable() -> bool:
+	if not FileAccess.file_exists(SNAPSHOT_PATH):
+		return false
+	# load_grind_snapshot already push_warns on every failure mode (tick 344) —
+	# emptying-out here is enough signal for the gate.
+	return not load_grind_snapshot().is_empty()
+
+
 func clear_grind_snapshot() -> void:
 	"""Delete the snapshot after clean stop or successful resume."""
 	if FileAccess.file_exists(SNAPSHOT_PATH):
