@@ -25,7 +25,7 @@
           "speaker": "Herta",
           "text": "Red lamp, you hold. Green lamp, you go. First bell, the train is approaching. Second bell, the track is cleared.",
           "theme": "elder",
-          "portrait": "elder"
+          "portrait": "herta"
         },
         {
           "speaker": "Line Worker",
@@ -37,7 +37,7 @@
           "speaker": "Herta",
           "text": "Because one time we only had one bell and there was an incident. The incident is in the manual. The manual recommends two bells.",
           "theme": "elder",
-          "portrait": "elder"
+          "portrait": "herta"
         }
       ]
     },
@@ -58,7 +58,7 @@
           "speaker": "Herta",
           "text": "...",
           "theme": "elder",
-          "portrait": "elder"
+          "portrait": "herta"
         },
         {
           "speaker": "Saboteur",
@@ -70,7 +70,7 @@
           "speaker": "Herta",
           "text": "You have been here for six minutes.",
           "theme": "elder",
-          "portrait": "elder"
+          "portrait": "herta"
         },
         {
           "speaker": "Saboteur",
@@ -118,13 +118,13 @@
           "speaker": "Herta",
           "text": "Thank you.",
           "theme": "elder",
-          "portrait": "elder"
+          "portrait": "herta"
         },
         {
           "speaker": "Herta",
           "text": "I have heard the two-lamp idea five times before. The arm is, in fact, the point.",
           "theme": "elder",
-          "portrait": "elder"
+          "portrait": "herta"
         }
       ]
     },

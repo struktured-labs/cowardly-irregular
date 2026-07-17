@@ -55,7 +55,7 @@
           "speaker": "Orrery",
           "text": "Oh good. You're here. I've been routing through deprecated nodes for two weeks to avoid packet inspection and I'm fairly tired of it, and I'm a packet, so that's saying something about how tired I am.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Fighter",
@@ -67,13 +67,13 @@
           "speaker": "Orrery",
           "text": "I'm whatever traveling looks like in the current world. In World 5, traveling looks like taking an indirect route. I've been debugging my own route table for three worlds now. I keep arriving at places I've already left.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Orrery",
           "text": "It's less disorienting than you'd think. Mostly it means I've had a great deal of time to read things.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         }
       ]
     },
@@ -88,7 +88,7 @@
           "speaker": "Orrery",
           "text": "I've been carrying a compressed data object since before Node Prime. I can't deliver it myself without triggering the Calibrant's packet inspection — my routing signature is by now very recognizable to anyone watching for anomalous behavior. But you aren't flagged. Would you take it?",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Cleric",
@@ -100,7 +100,7 @@
           "speaker": "Orrery",
           "text": "Everything I've found, across five worlds, assembled into a single document. It's encrypted. A Compiler can decrypt it. The firewall attendant at the network perimeter needs to receive it before the next major routing update, or the Calibrant's new inspection rules will make the transfer impossible.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         }
       ]
     },
@@ -189,7 +189,7 @@
           "speaker": "Orrery",
           "text": "Good. That's the important part, done.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         }
       ]
     },
@@ -208,19 +208,19 @@
           "speaker": "Orrery",
           "text": "I can see their code comments, you know. The Calibrant's. They're visible at this layer of the network.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Orrery",
           "text": "They're getting shorter. World 1's code is extensively commented — long explanations, careful notation, the kind of documentation a person writes when they still believe the project is worth explaining to their future self. By World 4 the comments are terse. By World 5 some functions have no comments at all.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Orrery",
           "text": "The variable names are getting less descriptive too. In World 1 everything has a full semantic name. In World 5 there are variables named 'x' and 'temp' and one I noticed three times simply called 'thing.'",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Cleric",
@@ -232,13 +232,13 @@
           "speaker": "Orrery",
           "text": "It means they're tired. A tired programmer stops naming things carefully. When you're building something with real conviction, you name the pieces — you give them weight. When you're building something out of inertia, the names start not to matter.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Orrery",
           "text": "The Calibrant is still building. But I don't think they remember why they started.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         }
       ]
     },
@@ -272,13 +272,13 @@
           "speaker": "Orrery",
           "text": "Five marks. The Fool has traveled far enough to know what they're a fool of.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Orrery",
           "text": "When you reach the last world, I'll be the idea of a fortune teller rather than one. But I'll be there. Look for something that feels like waiting.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         }
       ]
     },

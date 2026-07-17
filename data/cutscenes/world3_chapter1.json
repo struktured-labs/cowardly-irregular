@@ -31,15 +31,15 @@
       "lines": [
         {
           "speaker": "Sprocket",
-          "text": "Newcomers! Welcome to Brasston! You're \u2014 seven seconds late. My fault, I should have accounted for dimensional transition lag.",
+          "text": "Newcomers! Welcome to Brasston! You're — seven seconds late. My fault, I should have accounted for dimensional transition lag.",
           "theme": "scholar",
-          "portrait": "scholar"
+          "portrait": "sprocket"
         },
         {
           "speaker": "Sprocket",
           "text": "Everything here runs on the Grand Schedule. The Regulator set it up years ago. Or maybe always. Nobody remembers a time before the schedule.",
           "theme": "scholar",
-          "portrait": "scholar"
+          "portrait": "sprocket"
         },
         {
           "speaker": "Mage",
@@ -51,7 +51,7 @@
           "speaker": "Sprocket",
           "text": "Chief Engineer of the Grand Mechanism. Nobody sees them much, but you can feel them. In the way the gears turn. In the way the trains arrive.",
           "theme": "scholar",
-          "portrait": "scholar"
+          "portrait": "sprocket"
         },
         {
           "speaker": "Rogue",
@@ -63,7 +63,7 @@
           "speaker": "Sprocket",
           "text": "You've met someone like the Regulator before?",
           "theme": "scholar",
-          "portrait": "scholar"
+          "portrait": "sprocket"
         },
         {
           "speaker": "Fighter",
@@ -94,7 +94,7 @@
         },
         {
           "speaker": "Madame Orrery",
-          "text": "Whoever built these places \u2014 all of them \u2014 left the same fingerprints. The same design language. The same signature.",
+          "text": "Whoever built these places — all of them — left the same fingerprints. The same design language. The same signature.",
           "theme": "mysterious",
           "portrait": "mysterious"
         },

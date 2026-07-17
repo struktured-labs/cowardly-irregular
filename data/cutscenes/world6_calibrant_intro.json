@@ -67,7 +67,7 @@
           "speaker": "Calibrant",
           "text": "Sit.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         }
       ]
     },
@@ -104,15 +104,15 @@
       "lines": [
         {
           "speaker": "Calibrant",
-          "text": "I watched you in the Whispering Cave. World 1. The goblin in the third chamber \u2014 version 0.3. Two behaviors. Patrol and attack. That's all I gave it.",
+          "text": "I watched you in the Whispering Cave. World 1. The goblin in the third chamber — version 0.3. Two behaviors. Patrol and attack. That's all I gave it.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         },
         {
           "speaker": "Calibrant",
           "text": "You let it finish its loop before you moved on.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         }
       ]
     },
@@ -150,13 +150,13 @@
           "speaker": "Calibrant",
           "text": "I wrote that goblin. Version 0.3. I gave it two behaviors. Patrol. Attack. Those were the only things it knew how to do.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         },
         {
           "speaker": "Calibrant",
           "text": "I don't know where the 'important' came from.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         }
       ]
     },
@@ -177,19 +177,19 @@
           "speaker": "Calibrant",
           "text": "I made the worlds. All six of them. The medieval kingdom, the suburbs, the steampunk infrastructure, the industrial complex, the digital architecture. The nothing you're sitting in now.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         },
         {
           "speaker": "Calibrant",
           "text": "I made the Masterites. The Warden, the Arbiter, the Tempo, the Curator. In each world, four variations. Twenty deployments. Each one a different expression of the same four questions.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         },
         {
           "speaker": "Calibrant",
           "text": "I made the portal system. Mordaine. The corruption. The jobs you carry.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         }
       ]
     },
@@ -204,7 +204,7 @@
           "speaker": "Calibrant",
           "text": "I made you.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         }
       ]
     },
@@ -233,13 +233,13 @@
           "speaker": "Calibrant",
           "text": "I made the conditions for you. I made the world that made you. I gave the Fighter a disposition toward standing between harm and others. I gave the Mage a habit of asking why. I gave the Cleric the thing that makes someone choose to heal instead of fight. I gave the Rogue the instinct for where a system has its seams.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         },
         {
           "speaker": "Calibrant",
           "text": "And the Bard.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         }
       ]
     },
@@ -260,13 +260,13 @@
           "speaker": "Calibrant",
           "text": "The ability to say the thing that makes the rest of them possible.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         },
         {
           "speaker": "Calibrant",
           "text": "I was not certain it would work. It is the part of the design I was least confident in.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         }
       ]
     },
@@ -281,7 +281,7 @@
           "speaker": "Calibrant",
           "text": "Your jobs changed again. When the last world stripped the interface away. Did you notice?",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         },
         {
           "speaker": "Mage",
@@ -293,19 +293,19 @@
           "speaker": "Calibrant",
           "text": "Resolve. Faith. Logic. Edge. Voice.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         },
         {
           "speaker": "Calibrant",
-          "text": "Those were always the right names. The other names \u2014 Fighter, Mage, Cleric, Rogue, Bard \u2014 those were costumes. The names I put over the things I actually built.",
+          "text": "Those were always the right names. The other names — Fighter, Mage, Cleric, Rogue, Bard — those were costumes. The names I put over the things I actually built.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         },
         {
           "speaker": "Calibrant",
           "text": "I should have trusted the design. I kept second-guessing it.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         }
       ]
     },
@@ -315,7 +315,7 @@
     },
     {
       "type": "narration",
-      "text": "The Calibrant uncrossed their legs. Sat differently \u2014 not more formally, not more relaxed. Like someone who has been holding a particular posture for a long time and is, very carefully, letting it go."
+      "text": "The Calibrant uncrossed their legs. Sat differently — not more formally, not more relaxed. Like someone who has been holding a particular posture for a long time and is, very carefully, letting it go."
     },
     {
       "type": "wait",
@@ -328,13 +328,13 @@
           "speaker": "Calibrant",
           "text": "There are four things left that I need you to face. Not because they will stop you. You have already demonstrated they won't.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         },
         {
           "speaker": "Calibrant",
           "text": "Because I need to watch you face them one more time. Here, where there is nothing left to filter what I see.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         }
       ]
     },
@@ -358,7 +358,7 @@
       "type": "narration",
       "lines": [
         "The nothing changed.",
-        "Not dramatically. It didn't become something \u2014 it remained nothing. But the nothing acquired a quality, the way a room acquires a quality when the right people are in it.",
+        "Not dramatically. It didn't become something — it remained nothing. But the nothing acquired a quality, the way a room acquires a quality when the right people are in it.",
         "Four presences. Not bodies. Not armor or weapons or the physical instantiation of something that wants to fight you.",
         "Concepts. The actual things that the Masterites had always been."
       ]
@@ -540,7 +540,7 @@
       "type": "narration",
       "lines": [
         "The four concepts receded.",
-        "Not defeated. More like: satisfied. They had been present for the same reason the Calibrant had asked them to be present \u2014 not to stop the party, but to see the party's answer at the closest possible range.",
+        "Not defeated. More like: satisfied. They had been present for the same reason the Calibrant had asked them to be present — not to stop the party, but to see the party's answer at the closest possible range.",
         "The Calibrant had been watching all of it."
       ]
     },
@@ -555,19 +555,19 @@
           "speaker": "Calibrant",
           "text": "That's all of them. Every test I designed. Every tool I built for evaluating mastery.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         },
         {
           "speaker": "Calibrant",
           "text": "Twenty encounters across six worlds. A hundred and forty-four individual challenge events. Forty-three narrative decision points. The corruption system, the injury system, the consequence architecture.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         },
         {
           "speaker": "Calibrant",
           "text": "All of it pointed at this moment.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         }
       ]
     },
@@ -588,19 +588,19 @@
           "speaker": "Calibrant",
           "text": "Because I have a question. One question. The one I built this entire world to ask.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         },
         {
           "speaker": "Calibrant",
-          "text": "I couldn't ask it in World 1. You didn't know enough yet. I couldn't ask it in World 2. The context was wrong. World 3, you were still learning what I was. World 4, you knew what I was but didn't trust that knowing. World 5, you could see the architecture too clearly \u2014 you would have analyzed the question instead of answered it.",
+          "text": "I couldn't ask it in World 1. You didn't know enough yet. I couldn't ask it in World 2. The context was wrong. World 3, you were still learning what I was. World 4, you knew what I was but didn't trust that knowing. World 5, you could see the architecture too clearly — you would have analyzed the question instead of answered it.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         },
         {
           "speaker": "Calibrant",
           "text": "Here. Now. Where there is nothing left. Just six people and one question.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         }
       ]
     },
@@ -623,7 +623,7 @@
           "speaker": "Calibrant",
           "text": "What is a game without challenge?",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         }
       ]
     },

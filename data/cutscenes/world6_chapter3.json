@@ -4,7 +4,7 @@
   "world": 6,
   "trigger": "world6_calibrant_question",
   "background": "vertex_village",
-  "description": "The Calibrant asks the question they built this entire world to ask. Twenty-two Masterites, six worlds, four masks \u2014 all leading to this. 'What is a game without challenge?' The answer depends on who is answering.",
+  "description": "The Calibrant asks the question they built this entire world to ask. Twenty-two Masterites, six worlds, four masks — all leading to this. 'What is a game without challenge?' The answer depends on who is answering.",
   "steps": [
     {
       "type": "letterbox_in",
@@ -45,13 +45,13 @@
           "speaker": "Calibrant",
           "text": "That's all of them. Every test I designed. Every measure I had. Every tool in my entire system for evaluating whether a player has mastered the game.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         },
         {
           "speaker": "Calibrant",
           "text": "You have. Obviously. That's been clear since World 4. Maybe earlier. Maybe since the moment you walked into Harmonia and decided to answer the call, even though you weren't heroes and nobody expected you to matter.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         }
       ]
     },
@@ -61,7 +61,7 @@
     },
     {
       "type": "narration",
-      "text": "The Calibrant stood. The nothing around them shifted \u2014 not changing, but paying attention. The way a room gets quieter when someone is about to say something important."
+      "text": "The Calibrant stood. The nothing around them shifted — not changing, but paying attention. The way a room gets quieter when someone is about to say something important."
     },
     {
       "type": "wait",
@@ -74,7 +74,7 @@
           "speaker": "Calibrant",
           "text": "Here is my question. The one I built this entire world to ask. The one I have no answer to, which is why I need you to answer it.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         }
       ]
     },
@@ -89,7 +89,7 @@
           "speaker": "Calibrant",
           "text": "What is a game without challenge?",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         }
       ]
     },
@@ -102,15 +102,15 @@
       "lines": [
         {
           "speaker": "Calibrant",
-          "text": "If you have exceeded every system I can build. If no difficulty curve can contain you. If no boss can stop you, no puzzle can stump you, no world can surprise you. If you have, in every meaningful way, won \u2014",
+          "text": "If you have exceeded every system I can build. If no difficulty curve can contain you. If no boss can stop you, no puzzle can stump you, no world can surprise you. If you have, in every meaningful way, won —",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         },
         {
           "speaker": "Calibrant",
           "text": "Then what is the point of continuing? What do you play for, when there is nothing left to play against?",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         }
       ]
     },
@@ -123,15 +123,15 @@
       "lines": [
         {
           "speaker": "Calibrant",
-          "text": "I built worlds because I believed the purpose of a game was challenge. Test the player. Measure the player. Push the player to their limits. And you exceeded those limits, and I pushed harder, and you exceeded again, and now \u2014",
+          "text": "I built worlds because I believed the purpose of a game was challenge. Test the player. Measure the player. Push the player to their limits. And you exceeded those limits, and I pushed harder, and you exceeded again, and now —",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         },
         {
           "speaker": "Calibrant",
           "text": "Now I have nothing left. No more worlds. No more masks. No more calibrations. Just the question.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         }
       ]
     },
@@ -163,7 +163,7 @@
               },
               {
                 "speaker": "Calibrant",
-                "text": "You never automated. You never optimized\u2014",
+                "text": "You never automated. You never optimized—",
                 "theme": "enemy",
                 "portrait": "mysterious"
               },
@@ -341,7 +341,7 @@
               },
               {
                 "speaker": "Bard",
-                "text": "You give voice to the things in the system that cannot speak for themselves \u2014 the deprecated goblins, the race conditions, the ghosts in the processing gaps \u2014 and you make sure the players hear them.",
+                "text": "You give voice to the things in the system that cannot speak for themselves — the deprecated goblins, the race conditions, the ghosts in the processing gaps — and you make sure the players hear them.",
                 "theme": "bard",
                 "portrait": "bard"
               },
@@ -375,7 +375,7 @@
           "speaker": "Calibrant",
           "text": "I spent six worlds trying to measure you. Trying to calibrate the perfect challenge. And the answer was that the challenge was never the point.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         }
       ]
     },
@@ -398,7 +398,7 @@
           "speaker": "Calibrant",
           "text": "I am the Calibrant. The one who calibrates. And I have been calibrating the wrong variable this entire time.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         }
       ]
     },

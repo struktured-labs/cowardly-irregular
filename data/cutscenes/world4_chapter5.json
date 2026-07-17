@@ -4,7 +4,7 @@
   "world": 4,
   "trigger": "world4_calibrant_fight",
   "background": "director_office",
-  "description": "The Calibrant doesn't fight like a boss. The Calibrant adjusts the party's stats in real time \u2014 defense drops mid-swing, healing output spikes to unsustainable levels. The party wins by becoming undescribable. The industrial world dissolves row by row, like a spreadsheet being deleted.",
+  "description": "The Calibrant doesn't fight like a boss. The Calibrant adjusts the party's stats in real time — defense drops mid-swing, healing output spikes to unsustainable levels. The party wins by becoming undescribable. The industrial world dissolves row by row, like a spreadsheet being deleted.",
   "steps": [
     {
       "type": "letterbox_in",
@@ -26,7 +26,7 @@
           "speaker": "Calibrant",
           "text": "Now I fight you. Not like before. Not a performance.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         },
         {
           "speaker": "Fighter",
@@ -38,7 +38,7 @@
           "speaker": "Calibrant",
           "text": "I said not like before. The Director adjusts workers. The Coordinator adjusts rules. The Regulator adjusts gears.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         }
       ]
     },
@@ -53,7 +53,7 @@
           "speaker": "Calibrant",
           "text": "I adjust you.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         }
       ]
     },
@@ -72,7 +72,7 @@
     },
     {
       "type": "narration",
-      "text": "The desk dissolved. The office dissolved. The factory dissolved. Rivet Row itself began to come apart \u2014 not with elegance, but like a spreadsheet being deleted. Row by row. Column by column."
+      "text": "The desk dissolved. The office dissolved. The factory dissolved. Rivet Row itself began to come apart — not with elegance, but like a spreadsheet being deleted. Row by row. Column by column."
     },
     {
       "type": "wait",
@@ -89,7 +89,7 @@
         },
         {
           "speaker": "Cleric",
-          "text": "Mine too. Up, though. My output just \u2014 that's too high. I'll exhaust everything in three rounds.",
+          "text": "Mine too. Up, though. My output just — that's too high. I'll exhaust everything in three rounds.",
           "theme": "cleric",
           "portrait": "cleric"
         },
@@ -140,7 +140,7 @@
     },
     {
       "type": "narration",
-      "text": "They stopped being predictable. Not randomly \u2014 random is its own kind of pattern. They stopped being describable. Every action chosen not for its optimality but for its interpretive difficulty."
+      "text": "They stopped being predictable. Not randomly — random is its own kind of pattern. They stopped being describable. Every action chosen not for its optimality but for its interpretive difficulty."
     },
     {
       "type": "wait",
@@ -191,7 +191,7 @@
           "speaker": "Calibrant",
           "text": "You kept going anyway. You knew since World 3. You suspected since the blueprints. And you kept going anyway.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         },
         {
           "speaker": "Fighter",
@@ -203,7 +203,7 @@
           "speaker": "Calibrant",
           "text": "Why?",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         }
       ]
     },
@@ -259,7 +259,7 @@
           "speaker": "Calibrant",
           "text": "The next world is the system itself. And in the system, I don't need to play fair.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         },
         {
           "speaker": "Rogue",
@@ -271,7 +271,7 @@
           "speaker": "Calibrant",
           "text": "Yes. I know.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         }
       ]
     },
@@ -285,7 +285,7 @@
     },
     {
       "type": "narration",
-      "text": "The gray concrete faded. Something else emerged \u2014 luminous, digital, made of light and logic. Lines of code ran through what had been walls. Data streams replaced conveyor belts. The raw substrate of reality rendered visible."
+      "text": "The gray concrete faded. Something else emerged — luminous, digital, made of light and logic. Lines of code ran through what had been walls. Data streams replaced conveyor belts. The raw substrate of reality rendered visible."
     },
     {
       "type": "wait",

@@ -58,7 +58,7 @@
           "speaker": "Mordaine",
           "text": "The irregulars.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "mordaine"
         }
       ]
     },
@@ -83,7 +83,7 @@
           "speaker": "Mordaine",
           "text": "You are ahead of schedule.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "mordaine"
         },
         {
           "speaker": "Rogue",
@@ -95,7 +95,7 @@
           "speaker": "Mordaine",
           "text": "Mine.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "mordaine"
         }
       ]
     },
@@ -110,7 +110,7 @@
           "speaker": "Mordaine",
           "text": "I projected your arrival at the castle between day forty-seven and day fifty-two. You are on day forty-three. The cave system is the variable I underweighted. I'll note that.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "mordaine"
         },
         {
           "speaker": "Mage",
@@ -122,7 +122,7 @@
           "speaker": "Mordaine",
           "text": "I track everything that moves through this kingdom. Population flow, trade route efficiency, spell corruption propagation rates. You were entered as an anomalous variable at the cave mouth. Day one.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "mordaine"
         }
       ]
     },
@@ -143,13 +143,13 @@
           "speaker": "Mordaine",
           "text": "They were the system's agents. Not mine personally. They exist to measure. To profile. To report.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "mordaine"
         },
         {
           "speaker": "Mordaine",
           "text": "They don't know that.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "mordaine"
         }
       ]
     },
@@ -168,9 +168,9 @@
         },
         {
           "speaker": "Mordaine",
-          "text": "I gave them a purpose that was functional. The Warden believes he guards an ancient pass. He does guard it. That he also produces data on every party that attempts it \u2014 that is simply an additional function of the same action.",
+          "text": "I gave them a purpose that was functional. The Warden believes he guards an ancient pass. He does guard it. That he also produces data on every party that attempts it — that is simply an additional function of the same action.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "mordaine"
         },
         {
           "speaker": "Bard",
@@ -182,7 +182,7 @@
           "speaker": "Mordaine",
           "text": "Yes. I suppose it does.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "mordaine"
         }
       ]
     },
@@ -211,7 +211,7 @@
           "speaker": "Mordaine",
           "text": "The people live. Fear is a cost I calculated was acceptable.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "mordaine"
         },
         {
           "speaker": "Fighter",
@@ -223,13 +223,13 @@
           "speaker": "Mordaine",
           "text": "I calculated everything. The kingdom was chaotic when I arrived. Not poetically chaotic. Not the kind of chaos that songwriters romanticize. The kind where people starve. Where villages burn because no one has the authority to stop the burning.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "mordaine"
         },
         {
           "speaker": "Mordaine",
           "text": "I brought order. Not because I wanted power. Because power, applied correctly, is simply the most efficient tool for reducing suffering.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "mordaine"
         }
       ]
     },
@@ -250,7 +250,7 @@
           "speaker": "Mordaine",
           "text": "Fear of authority reduces variance in behavior. Reduced behavioral variance reduces conflict. Reduced conflict reduces harm. The chain is not elegant. But it holds.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "mordaine"
         },
         {
           "speaker": "Cleric",
@@ -262,7 +262,7 @@
           "speaker": "Mordaine",
           "text": "I ran those numbers. The suffering from fear is lower than the suffering from the chaos I replaced.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "mordaine"
         },
         {
           "speaker": "Cleric",
@@ -274,7 +274,7 @@
           "speaker": "Mordaine",
           "text": "Someone had to.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "mordaine"
         }
       ]
     },
@@ -297,13 +297,13 @@
           "speaker": "Mordaine",
           "text": "I calculated everything. Including you.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "mordaine"
         },
         {
           "speaker": "Mordaine",
           "text": "You were the element I didn't account for.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "mordaine"
         }
       ]
     },
@@ -324,19 +324,19 @@
           "speaker": "Mordaine",
           "text": "I tracked your progress. I did not account for what you would become by the time you got here.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "mordaine"
         },
         {
           "speaker": "Mordaine",
           "text": "Most parties who make it this far are harder than when they started. Sharper. More efficient. Better at survival. That is what challenge produces, in my experience.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "mordaine"
         },
         {
           "speaker": "Mordaine",
           "text": "You became something else.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "mordaine"
         }
       ]
     },
@@ -357,7 +357,7 @@
           "speaker": "Mordaine",
           "text": "I don't have a category for it. That's the problem.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "mordaine"
         }
       ]
     },
@@ -380,13 +380,13 @@
           "speaker": "Mordaine",
           "text": "I have managed this kingdom for eleven years. Every decision documented. Every outcome measured. Every cost weighed against every benefit. I have the records. You are welcome to audit them when this is over.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "mordaine"
         },
         {
           "speaker": "Mordaine",
           "text": "I am not a monster. I want that on the record.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "mordaine"
         },
         {
           "speaker": "Fighter",
@@ -398,7 +398,7 @@
           "speaker": "Mordaine",
           "text": "That is, I think, the most troubling thing anyone has said to me in eleven years.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "mordaine"
         }
       ]
     },
@@ -408,7 +408,7 @@
     },
     {
       "type": "narration",
-      "text": "She straightened. The Chancellor returned \u2014 the posture, the precision, the sense of a person who has already decided what comes next and is simply performing the formality of arriving at the decision in public."
+      "text": "She straightened. The Chancellor returned — the posture, the precision, the sense of a person who has already decided what comes next and is simply performing the formality of arriving at the decision in public."
     },
     {
       "type": "dialogue",
@@ -417,19 +417,19 @@
           "speaker": "Mordaine",
           "text": "So. You've come to remove me from the system. That is also in the ledger. The scenario where my presence becomes the primary inefficiency.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "mordaine"
         },
         {
           "speaker": "Mordaine",
           "text": "I won't make it easy. I didn't build all of this to have it end easily.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "mordaine"
         },
         {
           "speaker": "Mordaine",
           "text": "But I want you to understand, before we begin, that I built all of this because someone had to.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "mordaine"
         }
       ]
     },
@@ -471,7 +471,7 @@
           "speaker": "Mordaine",
           "text": "Yes. I suppose you do.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "mordaine"
         }
       ]
     },

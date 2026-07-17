@@ -44,7 +44,7 @@
           "speaker": "Orrery",
           "text": "Oh. You found me.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         }
       ]
     },
@@ -59,19 +59,19 @@
           "speaker": "Orrery",
           "text": "I've been traveling since before you started. I'm not sure how long that is in any unit that works here. Long enough that traveling is less a thing I do and more a thing I am.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Orrery",
           "text": "In World 1 I had a wagon and it smelled like cedar. In World 2 I had a booth with a laminator. In World 3 a clockwork desk. In World 4 a lamp and a stack of reports. In World 5 I was a path that light took when it needed to go somewhere indirect. In World 6 I am —",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Orrery",
           "text": "— something that has been traveling so long it no longer carries much. I've left most of myself in the places I stopped.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         }
       ]
     },
@@ -86,13 +86,13 @@
           "speaker": "Orrery",
           "text": "I remember why I started traveling. I was looking for someone who had left without saying goodbye. I've looked in six worlds now. I've found many interesting things. I found you.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Orrery",
           "text": "I never found them.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         }
       ]
     },
@@ -107,7 +107,7 @@
           "speaker": "Orrery",
           "text": "Can you tell me where they went?",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         }
       ]
     },
@@ -144,7 +144,7 @@
           "speaker": "Orrery",
           "text": "Good. That's enough.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         }
       ]
     },
@@ -171,7 +171,7 @@
           "speaker": "Orrery",
           "text": "I'd like to stop now. Is it okay to stop?",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         }
       ]
     },
@@ -216,7 +216,7 @@
           "speaker": "Orrery",
           "text": "I have two things to give you.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         }
       ]
     },
@@ -232,7 +232,7 @@
           "speaker": "Orrery",
           "text": "The pendant. When you meet the others — the ones the Calibrant built to stand in your way — it will help you hear what they weren't allowed to say. Everyone deserves to finish what they were saying. Even if it took defeating them first to make enough quiet.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         }
       ]
     },
@@ -247,19 +247,19 @@
           "speaker": "Orrery",
           "text": "The second thing. The Calibrant's true name.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Orrery",
           "text": "I've been carrying it for six worlds. It's the only piece of information I found that didn't fit into a report or a chart or a routing table. It has to be said, not written. It is a single syllable.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Orrery",
           "text": "It sounds like this.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         }
       ]
     },
@@ -286,7 +286,7 @@
           "speaker": "Orrery",
           "text": "They chose it themselves, I think. Not the name they were built with. The name they arrived at, after six worlds of asking why. A name for what you are when the building is done and the question is still open.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         }
       ]
     },
@@ -316,13 +316,13 @@
           "speaker": "Orrery",
           "text": "I don't know. I haven't not-traveled in long enough that I've forgotten what it looks like from inside. I expect it will involve sitting here for a while.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Orrery",
           "text": "And watching. I've been very good at watching from a distance. I'd like to try watching from close up for a change.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         }
       ]
     },
@@ -343,13 +343,13 @@
           "speaker": "Orrery",
           "text": "The fortune teller who traveled six worlds looking for someone who'd gone without saying goodbye, found many interesting things, and finally stopped in a place outside the narrative structure of any of the worlds she'd traveled through.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Orrery",
           "text": "Yes. Put me in the chronicle. I'd like that.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         }
       ]
     },

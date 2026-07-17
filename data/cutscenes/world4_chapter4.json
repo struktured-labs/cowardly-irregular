@@ -4,7 +4,7 @@
   "world": 4,
   "trigger": "world4_director_reveal",
   "background": "director_office",
-  "description": "The Director appears. Not as a process \u2014 as a person. The same eyes as Mordaine, as the Coordinator, as the Regulator. Four worlds of suspicion become certainty. The Calibrant names themselves for the first time.",
+  "description": "The Director appears. Not as a process — as a person. The same eyes as Mordaine, as the Coordinator, as the Regulator. Four worlds of suspicion become certainty. The Calibrant names themselves for the first time.",
   "steps": [
     {
       "type": "letterbox_in",
@@ -28,7 +28,7 @@
     },
     {
       "type": "narration",
-      "text": "The Director sat behind a desk. A real desk. Wood, not steel. It was the only warm thing in the entire world \u2014 warm in color, warm in texture, grain visible in the surface. Against the steel and concrete and fluorescent grayness of everything else, the desk was almost jarring. Someone had wanted it there."
+      "text": "The Director sat behind a desk. A real desk. Wood, not steel. It was the only warm thing in the entire world — warm in color, warm in texture, grain visible in the surface. Against the steel and concrete and fluorescent grayness of everything else, the desk was almost jarring. Someone had wanted it there."
     },
     {
       "type": "wait",
@@ -51,7 +51,7 @@
     },
     {
       "type": "narration",
-      "text": "They looked like a middle manager. Gray suit. Sensible shoes. The kind of face you forget while you're still looking at it. But the eyes were the same. They were always the same. Whatever the costume, whatever the accent, whatever the genre \u2014 the eyes were the same quality of presence."
+      "text": "They looked like a middle manager. Gray suit. Sensible shoes. The kind of face you forget while you're still looking at it. But the eyes were the same. They were always the same. Whatever the costume, whatever the accent, whatever the genre — the eyes were the same quality of presence."
     },
     {
       "type": "wait",
@@ -95,7 +95,7 @@
     },
     {
       "type": "narration",
-      "text": "They turned their monitor around. It showed the party's complete profile \u2014 every stat, every tendency, every behavior pattern mapped and analyzed from World 1 through the present."
+      "text": "They turned their monitor around. It showed the party's complete profile — every stat, every tendency, every behavior pattern mapped and analyzed from World 1 through the present."
     },
     {
       "type": "wait",
@@ -127,7 +127,7 @@
       "lines": [
         {
           "speaker": "Mage",
-          "text": "The blueprints in the Mechanism. Five worlds, same handwriting. Harmonia, Maple Heights, Cogsworth Junction \u2014 all the same geometry.",
+          "text": "The blueprints in the Mechanism. Five worlds, same handwriting. Harmonia, Maple Heights, Cogsworth Junction — all the same geometry.",
           "theme": "mage",
           "portrait": "mage"
         },
@@ -169,7 +169,7 @@
       "lines": [
         {
           "speaker": "Director",
-          "text": "Those were calibrations. Instruments of a process. Each one built for its world, suited to its genre, designed to evaluate a specific capability. Each one was real \u2014 I was the Chancellor, I was the Coordinator, I was the Regulator. The role is genuine. But the role is not the thing.",
+          "text": "Those were calibrations. Instruments of a process. Each one built for its world, suited to its genre, designed to evaluate a specific capability. Each one was real — I was the Chancellor, I was the Coordinator, I was the Regulator. The role is genuine. But the role is not the thing.",
           "theme": "enemy",
           "portrait": "mysterious"
         },
@@ -190,7 +190,7 @@
       "lines": [
         {
           "speaker": "Director",
-          "text": "I am the thing that calibrates. I am the process. The function. The mechanism by which all of it \u2014 every world, every mask, every test \u2014 is designed, deployed, and adjusted.",
+          "text": "I am the thing that calibrates. I am the process. The function. The mechanism by which all of it — every world, every mask, every test — is designed, deployed, and adjusted.",
           "theme": "enemy",
           "portrait": "mysterious"
         },
@@ -223,7 +223,7 @@
     },
     {
       "type": "narration",
-      "text": "They straightened. And in straightening, something in them settled \u2014 the forgettable middle-manager face, the gray suit, the optimized affect \u2014 all of it was still there, and all of it was now clearly a costume, because the thing wearing it had decided to be visible."
+      "text": "They straightened. And in straightening, something in them settled — the forgettable middle-manager face, the gray suit, the optimized affect — all of it was still there, and all of it was now clearly a costume, because the thing wearing it had decided to be visible."
     },
     {
       "type": "wait",
@@ -251,7 +251,7 @@
     },
     {
       "type": "narration",
-      "text": "The word landed in the room the way large things land \u2014 not with drama, but with mass."
+      "text": "The word landed in the room the way large things land — not with drama, but with mass."
     },
     {
       "type": "wait",
@@ -270,7 +270,7 @@
           "speaker": "Calibrant",
           "text": "I know. World 3 was where you were supposed to suspect. And World 4 is where you were supposed to know. The design has always had a sequence.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         },
         {
           "speaker": "Rogue",
@@ -282,7 +282,7 @@
           "speaker": "Calibrant",
           "text": "You are, as you have been throughout, ahead of it. Which is, at this point, simply a characteristic of you.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "calibrant"
         }
       ]
     },

@@ -1,6 +1,6 @@
 {
   "id": "world1_rat_king_defeat",
-  "title": "The Cave Rat King \u2014 Aftermath",
+  "title": "The Cave Rat King — Aftermath",
   "world": 1,
   "trigger": "boss_cave_rat_king_defeated",
   "background": "cave_entrance",
@@ -37,9 +37,9 @@
       "lines": [
         {
           "speaker": "Cave Rat King",
-          "text": "Alright, alright. You win THIS encounter. But I want you to know \u2014 I saw your autobattle scripts. Derivative.",
+          "text": "Alright, alright. You win THIS encounter. But I want you to know — I saw your autobattle scripts. Derivative.",
           "theme": "enemy",
-          "portrait": "goblin"
+          "portrait": "boss_rat_king"
         },
         {
           "speaker": "Rogue",
@@ -51,7 +51,7 @@
           "speaker": "Cave Rat King",
           "text": "Someone has to have standards. The last party just spammed Attack. At least YOU had conditionals.",
           "theme": "enemy",
-          "portrait": "goblin"
+          "portrait": "boss_rat_king"
         }
       ]
     },
@@ -72,13 +72,13 @@
           "speaker": "Cave Rat King",
           "text": "How does a mage know about rats? We all have our mysteries.",
           "theme": "enemy",
-          "portrait": "goblin"
+          "portrait": "boss_rat_king"
         },
         {
           "speaker": "Cave Rat King",
           "text": "But here's a freebie: I'm not the problem. I'm the DISTRACTION. Something deeper put me here. Something that wanted you busy while it finished... whatever it's finishing.",
           "theme": "enemy",
-          "portrait": "goblin"
+          "portrait": "boss_rat_king"
         },
         {
           "speaker": "Fighter",
@@ -90,7 +90,7 @@
           "speaker": "Cave Rat King",
           "text": "If I knew that, I'd be a king of something more impressive than rats.",
           "theme": "enemy",
-          "portrait": "goblin"
+          "portrait": "boss_rat_king"
         }
       ]
     },
@@ -101,7 +101,7 @@
     },
     {
       "type": "narration",
-      "text": "The rat vanished in a puff of cheese-scented smoke, leaving behind only scratches on the cave wall \u2014 the same court magic sigils Elder Theron had warned about."
+      "text": "The rat vanished in a puff of cheese-scented smoke, leaving behind only scratches on the cave wall — the same court magic sigils Elder Theron had warned about."
     },
     {
       "type": "wait",

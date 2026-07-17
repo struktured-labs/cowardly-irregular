@@ -34,7 +34,7 @@
           "speaker": "Orrery",
           "text": "Your energy profile is remarkably consistent with someone I consulted in a previous context.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Rogue",
@@ -46,19 +46,19 @@
           "speaker": "Orrery",
           "text": "I'm Orrery, yes. The wagon is contextually unavailable here — zoning. I've adapted. Life coaching is essentially the same as fortune telling with better insurance language.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Orrery",
           "text": "I remember you from before this. I want you to know I understand how strange that sounds in a world where everyone around us is apparently on their first linear pass. I've been in this neighborhood long enough to notice things. I'd very much like to tell you what I've noticed.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Orrery",
           "text": "But first — I need a small favor.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         }
       ]
     },
@@ -73,7 +73,7 @@
           "speaker": "Orrery",
           "text": "The HOA filed a complaint about my business license. Not an unusual complaint — I've had many, in many places — but this one cites a form I've never encountered. Form 77-Gamma: Itinerant Wisdom Services.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Mage",
@@ -85,7 +85,7 @@
           "speaker": "Orrery",
           "text": "Yes. Suspiciously specific. The form is apparently only obtainable from the Community Center, which requires a resident ID to enter, and I am an itinerant consultant, not a resident. You see the problem.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Fighter",
@@ -97,7 +97,7 @@
           "speaker": "Orrery",
           "text": "That would be enormously helpful. I'd do it myself, but I have a client in — she checks something that isn't quite a watch — eleven minutes.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         }
       ]
     },
@@ -127,13 +127,13 @@
           "speaker": "Orrery",
           "text": "There's always a gap. Every system has one place where the rule admits it doesn't know how to handle a specific case and quietly excuses itself. The gap is usually in the addendum. Or page 47.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Orrery",
           "text": "Thank you. Genuinely. Now — what I noticed.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         }
       ]
     },
@@ -152,13 +152,13 @@
           "speaker": "Orrery",
           "text": "The Coordinator sends memos. Many memos. They reference documents — calibration reports, mainly — that I've been trying to locate. I found some of the originals in the Community Center archive.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Orrery",
           "text": "The memos reference calibration reports dated 1953. This neighborhood was built in 1983. The oldest house on this street is forty years old. The reports are thirty years older than the neighborhood they describe.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Cleric",
@@ -170,7 +170,7 @@
           "speaker": "Orrery",
           "text": "A filing error wouldn't contain the correct street names. The reports describe Sycamore Court and Elmwood Lane by name. Those names didn't exist until 1983. But the reports refer to them as though they were already there.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Mage",
@@ -182,7 +182,7 @@
           "speaker": "Orrery",
           "text": "Exactly. Whoever built this place built it to specification. The specification existed before the place. That's not how neighborhoods work. That's how something else works entirely. I'm still determining what.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Rogue",
@@ -194,13 +194,13 @@
           "speaker": "Orrery",
           "text": "The Coordinator is maintaining something. I don't think they built it. Their memos have the tone of a caretaker, not an architect. They're following instructions too.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Orrery",
           "text": "There's more in the next world, I suspect. There always is. The pattern keeps extending further back than I think it will.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         }
       ]
     },
@@ -234,7 +234,7 @@
           "speaker": "Orrery",
           "text": "The Fool Card. May I?",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         }
       ]
     },
@@ -249,7 +249,7 @@
           "speaker": "Orrery",
           "text": "Good. Two marks. The journey is proceeding at an appropriate pace for someone who doesn't yet know what they're doing.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Bard",
@@ -261,7 +261,7 @@
           "speaker": "Orrery",
           "text": "Knowing what you're doing too early is its own kind of problem. Come find me in Brasston. I'll be the one with the impossible appointment schedule.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         }
       ]
     },

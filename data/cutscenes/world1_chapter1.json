@@ -186,7 +186,7 @@
           "speaker": "Elder Theron",
           "text": "You'll do.",
           "theme": "elder",
-          "portrait": "elder"
+          "portrait": "theron"
         }
       ]
     },
@@ -209,7 +209,7 @@
           "speaker": "Elder Theron",
           "text": "The cave to the north... something's changed in there. The monsters aren't just wandering anymore. They're organized. Deliberate. You need to find out why.",
           "theme": "elder",
-          "portrait": "elder"
+          "portrait": "theron"
         }
       ]
     },
@@ -257,7 +257,7 @@
           "speaker": "Scholar Milo",
           "text": "Before you go... have you considered the philosophical implications of combat automation?",
           "theme": "scholar",
-          "portrait": "scholar"
+          "portrait": "milo"
         },
         {
           "speaker": "Fighter",
@@ -269,13 +269,13 @@
           "speaker": "Scholar Milo",
           "text": "Imagine a world where you don't fight your battles. You DESIGN them. You build a system of rules — if this, then that — and the system fights for you.",
           "theme": "scholar",
-          "portrait": "scholar"
+          "portrait": "milo"
         },
         {
           "speaker": "Scholar Milo",
           "text": "Not laziness. Enlightenment.",
           "theme": "scholar",
-          "portrait": "scholar"
+          "portrait": "milo"
         }
       ]
     },
@@ -302,13 +302,13 @@
           "speaker": "Scholar Milo",
           "text": "Chapter one is about letting go.",
           "theme": "scholar",
-          "portrait": "scholar"
+          "portrait": "milo"
         },
         {
           "speaker": "Scholar Milo",
           "text": "Chapter two is about letting go faster.",
           "theme": "scholar",
-          "portrait": "scholar"
+          "portrait": "milo"
         },
         {
           "speaker": "Bard",
@@ -320,7 +320,7 @@
           "speaker": "Scholar Milo",
           "text": "Chapter three is about accepting that the gap between letting go and having it taken from you is smaller than most people think.",
           "theme": "scholar",
-          "portrait": "scholar"
+          "portrait": "milo"
         },
         {
           "speaker": "",
@@ -390,7 +390,7 @@
           "speaker": "Phil the Lost",
           "text": "Phil. Phil the Lost. Called that because I lose things. Mostly I lose track of... well. Of what's happened before.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "phil"
         },
         {
           "speaker": "Mage",
@@ -402,13 +402,13 @@
           "speaker": "Phil the Lost",
           "text": "Before anything much. The village. The seasons. Years blur together. You forget which winter was which.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "phil"
         },
         {
           "speaker": "Phil the Lost",
           "text": "Though I will say this: good luck with the cave. Try not to die in the first room. It's bad for the spirit.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "phil"
         },
         {
           "speaker": "Fighter",
@@ -420,7 +420,7 @@
           "speaker": "Phil the Lost",
           "text": "Unclear.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "phil"
         }
       ]
     },
@@ -471,7 +471,7 @@
           "speaker": "Bram",
           "text": "Testing dulls the edge! That's the philosophy. Every sword here is in pristine, never-been-used condition.",
           "theme": "shopkeeper",
-          "portrait": "shopkeeper"
+          "portrait": "bram"
         },
         {
           "speaker": "Rogue",
@@ -483,7 +483,7 @@
           "speaker": "Bram",
           "text": "You look like someone who's going to get hit a lot. Take the shield. Consider it an investment in your surviving long enough to come back and buy more.",
           "theme": "shopkeeper",
-          "portrait": "shopkeeper"
+          "portrait": "bram"
         }
       ]
     },

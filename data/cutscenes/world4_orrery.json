@@ -34,7 +34,7 @@
           "speaker": "Orrery",
           "text": "Good. You made it. Three months I've been waiting for you to catch up to World 4. I've been — productive, while I waited.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Fighter",
@@ -46,13 +46,13 @@
           "speaker": "Orrery",
           "text": "I move between worlds more slowly than you do. You use portals. I take the long way. It gives me more time to look at things.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Orrery",
           "text": "I've been tracking resource flows. In and out of Rivet Row, in and out of the Company's accounts, across the supply chains. Standard labor market analysis — that's what they hired me for.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Mage",
@@ -64,7 +64,7 @@
           "speaker": "Orrery",
           "text": "The numbers don't balance. More resource enters the system than exits as product. The surplus doesn't appear as waste, doesn't appear as stockpile, doesn't appear anywhere in the accounting. It leaves and goes somewhere that the accounting system doesn't record.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         }
       ]
     },
@@ -79,7 +79,7 @@
           "speaker": "Orrery",
           "text": "Someone is building something with the surplus. I don't know what yet. But the scale — across all of Rivet Row's inputs — suggests it's very large, has been ongoing for decades, and whoever is building it has been careful to route the surplus through enough accounting categories that no single auditor would see the whole picture.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Cleric",
@@ -91,13 +91,13 @@
           "speaker": "Orrery",
           "text": "The Director's instructions originate this. But the Director may not know what they're building. The Director may be an instrument of something that doesn't have a name yet in World 4's vocabulary.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Orrery",
           "text": "I've written it all down. In the Company's report format, so it wouldn't flag on the monitor refresh. It reads like a behavioral deviation analysis. It is a behavioral deviation analysis. It's also everything I know about the last four worlds, compiled into productivity metrics language.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         }
       ]
     },
@@ -112,7 +112,7 @@
           "speaker": "Orrery",
           "text": "The union rep needs it before the hour-end monitor refresh. After that, any document transfer from my office gets flagged and the report disappears into the Company's review queue, which is a place things go to not be read. You have five minutes.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Rogue",
@@ -124,7 +124,7 @@
           "speaker": "Orrery",
           "text": "His break location. Section C, near the cooling pipes. He takes a sandwich there every day at the same time — the monitors don't cover the cooling pipe alcove. It was a construction oversight. I noticed.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         }
       ]
     },
@@ -208,7 +208,7 @@
           "speaker": "Orrery",
           "text": "Good. Thank you.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         }
       ]
     },
@@ -242,13 +242,13 @@
           "speaker": "Orrery",
           "text": "The Fool Card. Four marks. The Fool is no longer at the beginning of the journey. The Fool is at the part where the journey starts explaining itself.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Orrery",
           "text": "One more world. Find me in the next place I'm not supposed to be. It will be obvious. I'll be the only thing there that isn't quite where it's supposed to be, in a world where nothing quite is.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Fighter",
@@ -260,13 +260,13 @@
           "speaker": "Orrery",
           "text": "Keep looking at the numbers. The surplus is going somewhere. If I can identify the destination across four worlds of data, I'll know what's being built. I'll know before you get there.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Orrery",
           "text": "That might be useful to you. Or it might be something you needed to discover yourself. I'm still uncertain which things I should tell people and which things they need to arrive at unassisted.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Bard",
@@ -278,7 +278,7 @@
           "speaker": "Orrery",
           "text": "I look at how tired the information looks. Information that needs to be discovered arrives with more weight than information that's been told. This particular discovery needs its own weight.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         }
       ]
     },
