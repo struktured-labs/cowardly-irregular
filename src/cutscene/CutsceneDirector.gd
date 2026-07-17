@@ -1113,9 +1113,9 @@ func _step_camera_focus(step: Dictionary) -> void:
 	if _stage_cam_base_offset == Vector2.INF:
 		_stage_cam_base_offset = cam.offset
 	var new_offset: Vector2 = cam.offset + (target - cam.get_screen_center_position())
-	var tween := create_tween()
-	tween.tween_property(cam, "offset", new_offset, float(step.get("duration", 0.8)))
-	await tween.finished
+	_run_camera_tween(cam, new_offset, step)
+	# Await the tween via a fresh handle — _run_camera_tween returns it.
+	await _last_camera_tween.finished
 
 
 func _step_camera_restore(step: Dictionary) -> void:
@@ -1126,9 +1126,32 @@ func _step_camera_restore(step: Dictionary) -> void:
 	if _skipping:
 		cam.offset = _stage_cam_base_offset
 		return
+	_run_camera_tween(cam, _stage_cam_base_offset, step)
+	await _last_camera_tween.finished
+
+
+## Cinematic camera pan — SINE ease-in-out by default (film-camera feel: smooth start, accelerate through middle, settle at target). Optional `ease` step field: "linear" | "in" | "out" | "in_out". `trans` field selects transition ("sine" | "quad" | "cubic" | "linear"), default sine.
+var _last_camera_tween: Tween
+
+func _run_camera_tween(cam: Camera2D, dest: Vector2, step: Dictionary) -> void:
 	var tween := create_tween()
-	tween.tween_property(cam, "offset", _stage_cam_base_offset, float(step.get("duration", 0.8)))
-	await tween.finished
+	var trans_name: String = str(step.get("trans", "sine")).to_lower()
+	var ease_name: String = str(step.get("ease", "in_out")).to_lower()
+	var trans_type: int = Tween.TRANS_SINE
+	match trans_name:
+		"linear": trans_type = Tween.TRANS_LINEAR
+		"quad": trans_type = Tween.TRANS_QUAD
+		"cubic": trans_type = Tween.TRANS_CUBIC
+		_: trans_type = Tween.TRANS_SINE
+	var ease_type: int = Tween.EASE_IN_OUT
+	match ease_name:
+		"linear": ease_type = Tween.EASE_IN_OUT  # trans=linear renders as flat regardless
+		"in": ease_type = Tween.EASE_IN
+		"out": ease_type = Tween.EASE_OUT
+		_: ease_type = Tween.EASE_IN_OUT
+	tween.set_trans(trans_type).set_ease(ease_type)
+	tween.tween_property(cam, "offset", dest, float(step.get("duration", 0.8)))
+	_last_camera_tween = tween
 
 
 func _apply_remaining_set_flag_steps(steps: Array, from_index: int) -> void:
