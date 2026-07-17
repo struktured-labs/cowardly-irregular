@@ -389,7 +389,15 @@ func get_save_info(slot: int) -> Dictionary:
 		return {}
 
 	var save_data = _read_save_file(slot)
-	return save_data.get("metadata", {})
+	var info: Dictionary = save_data.get("metadata", {})
+	# Rebuild the party preview from the file's live party — pre-fix saves BAKED an all-fighter summary (job stored as string, read as dict; struktured cap 2026-07-16), so the stored metadata can't be trusted
+	var gs_data: Variant = save_data.get("game_state", {})
+	if gs_data is Dictionary:
+		var party: Variant = (gs_data as Dictionary).get("player_party", [])
+		if party is Array and not (party as Array).is_empty():
+			info = info.duplicate()
+			info["party_summary"] = summarize_party(party)
+	return info
 
 
 func delete_save(slot: int) -> bool:
@@ -569,17 +577,39 @@ func _get_party_summary() -> Array:
 				## happens through GameLoop._save_customizations writing
 				## to user://save_data.json (the global customization
 				## file). No consumer is impacted by removing this.
-				summary.append({
-					"name": member.get("name", "Unknown"),
-					"level": member.get("job_level", 1),
-					"job": member.get("job", {}).get("name", "Fighter") if member.get("job") is Dictionary else "Fighter",
-					"job_id": member.get("job", {}).get("id", "fighter") if member.get("job") is Dictionary else "fighter",
-					"secondary_job_id": member.get("secondary_job_id", ""),
-					"hp": member.get("current_hp", 0),
-					"max_hp": member.get("max_hp", 1),
-				})
+				summary.append(_summarize_member(member))
 
 	return summary
+
+
+## Combatant.to_dict stores job as a STRING id (mirroring job_id); the old dict-only read stamped every member "fighter" in the slot preview.
+static func summarize_party(party: Array) -> Array:
+	var summary: Array = []
+	for member in party:
+		if member is Dictionary:
+			summary.append(_summarize_member(member))
+	return summary
+
+
+static func _summarize_member(member: Dictionary) -> Dictionary:
+	var job_field: Variant = member.get("job")
+	var jid: String = str(member.get("job_id", ""))
+	if jid == "" and job_field is Dictionary:
+		jid = str((job_field as Dictionary).get("id", ""))
+	if jid == "" and job_field is String:
+		jid = str(job_field)
+	if jid == "":
+		jid = "fighter"
+	var jname: String = str((job_field as Dictionary).get("name", jid.capitalize())) if job_field is Dictionary else jid.capitalize()
+	return {
+		"name": member.get("name", "Unknown"),
+		"level": member.get("job_level", 1),
+		"job": jname,
+		"job_id": jid,
+		"secondary_job_id": member.get("secondary_job_id", ""),
+		"hp": member.get("current_hp", 0),
+		"max_hp": member.get("max_hp", 1),
+	}
 
 
 # Tick 265: _serialize_inventory removed (was a {} stub since 2025
