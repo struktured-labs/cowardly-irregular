@@ -1567,7 +1567,21 @@ func get_autogrind_rules() -> Array:
 
 
 func set_autogrind_rules(rules: Array) -> void:
-	"""Set active autogrind rules"""
+	"""Set active autogrind rules. Validates via validate_rule and refuses invalid input
+	(push_warning + no mutation). The choke point for every rule-write path — clipboard
+	import (ScriptShareManager pre-validates too, harmless double-check), grid editor UI,
+	template installer, LLM Rule Composer. Defense-in-depth so a future untrusted-source
+	caller can't corrupt the active profile the way pre-9935f728 clipboard imports could."""
+	var errors: Array = []
+	for i in range(rules.size()):
+		if typeof(rules[i]) != TYPE_DICTIONARY:
+			errors.append("rule %d: not a dictionary" % i)
+			continue
+		for e in validate_rule(rules[i]):
+			errors.append("rule %d: %s" % [i, str(e)])
+	if not errors.is_empty():
+		push_warning("[AUTOGRIND] set_autogrind_rules REJECTED — %d invalid rule(s), no mutation: %s" % [errors.size(), str(errors)])
+		return
 	_ensure_autogrind_profiles()
 	var active_idx = autogrind_profiles.get("active", 0)
 	var profiles = autogrind_profiles.get("profiles", [])
