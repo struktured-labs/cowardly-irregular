@@ -293,8 +293,18 @@ func _setup_npcs() -> void:
 	# has fired. Theron uses his own chapter1 gate (see his block).
 	var _after_cave_gs = get_node_or_null("/root/GameState")
 	var _after_cave_done: bool = false
+	var _is_night: bool = false
 	if _after_cave_gs:
 		_after_cave_done = bool(_after_cave_gs.game_constants.get("cutscene_flag_world1_harmonia_after_cave_complete", false))
+		# 2026-07-16 (msg 2683): day/night clock landed —
+		# GameState.is_night() returns true for the "night" band of the
+		# 24-min cycle. Boris/Flora branch on the 2x2 matrix
+		# (day/night × pre/post). Other villagers (Greta/Pip) don't
+		# get night variants — their voices are day-of tempered.
+		# has_method() guard for isolated test harnesses without the
+		# autoload; falls through to day lines cleanly.
+		if _after_cave_gs.has_method("is_night"):
+			_is_night = bool(_after_cave_gs.is_night())
 
 	# === STORY/LORE NPCs ===
 
@@ -437,6 +447,13 @@ func _setup_npcs() -> void:
 		"Slimes, bats, goblins - nothing you can't handle.",
 		"But the cave... *shudder* ...don't ask."
 	]
+	var _boris_pre_night := [
+		"Halt. ...You're heading out. Now. At this hour.",
+		"The gate is closed at sundown. Not by rule. By preference. Both mine and the cave's.",
+		"The cave is paying attention right now. That's a private theory. I've never said it to anyone. I just said it to you. Forget I said it.",
+		"There is a moon and there is the cave. On nights like this they look at each other. I try not to be between them.",
+		"If you must go — go quickly and come back louder than you left. It likes quiet."
+	]
 	var _boris_post := [
 		"You're back. That's not what I expected. It's not what I've been expecting for nineteen years.",
 		"The cave was paying attention. It has stopped paying attention to you. I don't know what that means. I don't want to.",
@@ -444,7 +461,15 @@ func _setup_npcs() -> void:
 		"I have not been paid in nine weeks now. But you have my thanks anyway. Which is worth about eight weeks of my back pay.",
 		"Halt when you leave next. Just for the ceremony of it."
 	]
-	var guard = _create_npc("Guard Boris", "guard", Vector2(11 * TILE_SIZE,23 * TILE_SIZE), _boris_post if _after_cave_done else _boris_pre)
+	var _boris_post_night := [
+		"You're back. In the dark. That's a specific thing to be. I approve of the specificity.",
+		"The cave is not paying attention. Sundown is doing its old job — general, ambient, not aimed. Better.",
+		"Nine weeks unpaid. Tonight I don't care. A sky like this is currency of a different kind. Tomorrow it will be currency again, but not tonight.",
+		"The moon is at the cave and the cave is at the moon and NEITHER of them is looking at us. That's the nicest sentence I've said in nineteen years.",
+		"Take the road slow. It's dark. There's dark and there's DARK and this is only the first kind."
+	]
+	var _boris_lines: Array = (_boris_post_night if _is_night else _boris_post) if _after_cave_done else (_boris_pre_night if _is_night else _boris_pre)
+	var guard = _create_npc("Guard Boris", "guard", Vector2(11 * TILE_SIZE,23 * TILE_SIZE), _boris_lines)
 	guard.dynamic = true
 	npcs.add_child(guard)
 
@@ -528,6 +553,13 @@ func _setup_npcs() -> void:
 		"Before the cave started... changing.",
 		"Take care of yourself out there."
 	]
+	var _flora_pre_night := [
+		"*humming softly to herself, alone at her stall*",
+		"Oh — didn't see you. The flowers close at dusk. So do I, mostly.",
+		"Nights are for the flowers to think. Days are for me to talk about them.",
+		"The moon does a nicer light on them than the sun. I don't tell the sun.",
+		"Come back when they're open. Or don't — I'll be here either way."
+	]
 	var _flora_post := [
 		"Oh — you're back! *the humming trails off, then picks back up softly*",
 		"The cave changed. Whatever you did, the cave changed *again*.",
@@ -535,7 +567,15 @@ func _setup_npcs() -> void:
 		"You can have one. They mean more when they cost nothing.",
 		"Take care of yourself. The story isn't finished."
 	]
-	var flower = _create_npc("Flora", "villager", Vector2(20 * TILE_SIZE,14 * TILE_SIZE), _flora_post if _after_cave_done else _flora_pre)
+	var _flora_post_night := [
+		"*humming — but with the melody more of a question than a song*",
+		"They're still open. At night. They've never done that. I don't know if it's you or the moon or both.",
+		"I picked one this evening. I thought it would close in my hand. It stayed open. I've been holding it since.",
+		"Take one. They mean more when they cost nothing. They mean MORE more when they mean it at night.",
+		"The story isn't finished. That's true both hours."
+	]
+	var _flora_lines: Array = (_flora_post_night if _is_night else _flora_post) if _after_cave_done else (_flora_pre_night if _is_night else _flora_pre)
+	var flower = _create_npc("Flora", "villager", Vector2(20 * TILE_SIZE,14 * TILE_SIZE), _flora_lines)
 	npcs.add_child(flower)
 
 	# === PORTAL GUIDE ===
