@@ -1,6 +1,6 @@
 {
   "id": "world2_warden_defeat",
-  "title": "Warden of Routine \u2014 Aftermath",
+  "title": "Warden of Routine — Aftermath",
   "world": 2,
   "trigger": "boss_warden_suburban_defeated",
   "background": "suburban_park",
@@ -39,13 +39,13 @@
           "speaker": "Warden",
           "text": "I don't understand.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_medieval"
         },
         {
           "speaker": "Warden",
           "text": "I've never lost a crossing before.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_medieval"
         }
       ]
     },
@@ -66,7 +66,7 @@
           "speaker": "Warden",
           "text": "You're welcome.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_medieval"
         }
       ]
     },
@@ -76,7 +76,7 @@
     },
     {
       "type": "narration",
-      "text": "A long pause. Something shifted in her posture \u2014 not defeat exactly, but a kind of attention turning inward."
+      "text": "A long pause. Something shifted in her posture — not defeat exactly, but a kind of attention turning inward."
     },
     {
       "type": "dialogue",
@@ -85,19 +85,19 @@
           "speaker": "Warden",
           "text": "I've been here such a long time.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_medieval"
         },
         {
           "speaker": "Warden",
-          "text": "I've been at this crosswalk for\u2026 how long?",
+          "text": "I've been at this crosswalk for… how long?",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_medieval"
         },
         {
           "speaker": "Warden",
           "text": "It feels like longer than the neighborhood's been here.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_medieval"
         }
       ]
     },
@@ -118,13 +118,13 @@
           "speaker": "Warden",
           "text": "Since the beginning. That's what I was told. This neighborhood has always been here. I have always been at this intersection.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_medieval"
         },
         {
           "speaker": "Warden",
-          "text": "Except I can't remember the first day. I can't remember being assigned here. I just\u2026 was. And then I was here.",
+          "text": "Except I can't remember the first day. I can't remember being assigned here. I just… was. And then I was here.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_medieval"
         }
       ]
     },
@@ -143,7 +143,7 @@
           "speaker": "Warden",
           "text": "You should cross now. Before traffic comes.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_medieval"
         }
       ]
     },
@@ -166,7 +166,7 @@
           "speaker": "Warden",
           "text": "You may cross.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_medieval"
         }
       ]
     },

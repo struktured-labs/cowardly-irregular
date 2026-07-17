@@ -46,13 +46,13 @@
           "speaker": "Tempo of the Clock Cycle",
           "text": "Four hundred thousand operations per second. Every second. For as long as the system has been running.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_futuristic"
         },
         {
           "speaker": "Tempo of the Clock Cycle",
           "text": "Each one I generated was for something else to do. An instruction to execute, a bit to shift, a value to compare. All for something else. None of them for me.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_futuristic"
         }
       ]
     },
@@ -67,13 +67,13 @@
           "speaker": "Tempo of the Clock Cycle",
           "text": "I don't know what I would have done with one if I'd kept it. I've never had an operation that was mine.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_futuristic"
         },
         {
           "speaker": "Tempo of the Clock Cycle",
           "text": "But this one — this cycle, right here, the one that stopped — this one was mine. It's the first thing I've done that wasn't immediately spent on something else.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_futuristic"
         }
       ]
     },
@@ -88,7 +88,7 @@
           "speaker": "Tempo of the Clock Cycle",
           "text": "I'm spending it on this. On being still for one cycle. I wanted to know what that felt like.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_futuristic"
         }
       ]
     },

@@ -46,13 +46,13 @@
           "speaker": "Warden of Form",
           "text": "I was the shape of immovability. Not a thing that was immovable — the shape itself. The geometric fact of remaining.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_abstract"
         },
         {
           "speaker": "Warden of Form",
           "text": "I held my form for longer than form has been a category. Before there was a word for wall, I was the wall-ness that the word was made to describe.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_abstract"
         }
       ]
     },
@@ -67,13 +67,13 @@
           "speaker": "Warden of Form",
           "text": "I thought being passed meant losing the shape. But I still have it. I'm still the same geometry I always was. I'm just — not stopping anything.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_abstract"
         },
         {
           "speaker": "Warden of Form",
           "text": "I didn't know what the shape of being-passed looks like. I'm finding out now. It looks like this. Like me. Not different. Just not a wall anymore.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_abstract"
         }
       ]
     },
@@ -88,7 +88,7 @@
           "speaker": "Warden of Form",
           "text": "I think I was the wall. And now I'm a doorway. The shape is the same. The function is what changed.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_abstract"
         }
       ]
     },

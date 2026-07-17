@@ -22,9 +22,9 @@
     {
       "type": "narration",
       "lines": [
-        "The antechamber hearth still burned. Whatever had happened here \u2014 the fight, the weight of the Curator's records, the confrontation with Mordaine beyond the sealed doors \u2014 the flame had not gone out.",
+        "The antechamber hearth still burned. Whatever had happened here — the fight, the weight of the Curator's records, the confrontation with Mordaine beyond the sealed doors — the flame had not gone out.",
         "At the base of the hearth, placed carefully on the stone: a small vial. Glass, sealed with wax, filled with something that moved with the slow warmth of an ember.",
-        "The label was in a precise, careful hand. Scholar's handwriting \u2014 the kind that has practiced making letters that will last."
+        "The label was in a precise, careful hand. Scholar's handwriting — the kind that has practiced making letters that will last."
       ]
     },
     {
@@ -33,7 +33,7 @@
     },
     {
       "type": "narration",
-      "text": "The label said: FOR WHOEVER FINDS THIS \u2014 YOU MAY WANT TO KNOW."
+      "text": "The label said: FOR WHOEVER FINDS THIS — YOU MAY WANT TO KNOW."
     },
     {
       "type": "wait",
@@ -41,7 +41,7 @@
     },
     {
       "type": "narration",
-      "text": "Picking it up, the Curator's voice arrived \u2014 thoughtful, engaged, the voice of someone dictating a final entry with genuine interest in the subject."
+      "text": "Picking it up, the Curator's voice arrived — thoughtful, engaged, the voice of someone dictating a final entry with genuine interest in the subject."
     },
     {
       "type": "wait",
@@ -54,13 +54,13 @@
           "speaker": "Curator",
           "text": "I study things. That's all. I study them and I ask why, and sometimes the answers come back and sometimes they don't.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_medieval"
         },
         {
           "speaker": "Curator",
           "text": "I've always been fine with the ones that don't. The asking was the point.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_medieval"
         }
       ]
     },
@@ -75,19 +75,19 @@
           "speaker": "Curator",
           "text": "But I want to ask one more. Why did this flame never go out?",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_medieval"
         },
         {
           "speaker": "Curator",
-          "text": "I carried it for \u2014 I don't know how long. I never lit it. It was just burning when I arrived.",
+          "text": "I carried it for — I don't know how long. I never lit it. It was just burning when I arrived.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_medieval"
         },
         {
           "speaker": "Curator",
           "text": "Someone else started this.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_medieval"
         }
       ]
     },
@@ -102,13 +102,13 @@
           "speaker": "Curator",
           "text": "Oh. Of course.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_medieval"
         },
         {
           "speaker": "Curator",
           "text": "I wonder what they were warming themselves from.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_medieval"
         }
       ]
     },
@@ -118,7 +118,7 @@
     },
     {
       "type": "narration",
-      "text": "The vial was warm. Whatever was inside moved when turned \u2014 not a liquid exactly, more like light that had learned to pool."
+      "text": "The vial was warm. Whatever was inside moved when turned — not a liquid exactly, more like light that had learned to pool."
     },
     {
       "type": "wait",
@@ -134,7 +134,7 @@
     },
     {
       "type": "narration",
-      "text": "It had the feeling of being studied with genuine interest \u2014 of being the subject of a research question that had no answer yet but would be asked carefully, for as long as it took."
+      "text": "It had the feeling of being studied with genuine interest — of being the subject of a research question that had no answer yet but would be asked carefully, for as long as it took."
     },
     {
       "type": "wait",

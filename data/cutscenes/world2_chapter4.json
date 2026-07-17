@@ -73,7 +73,7 @@
           "speaker": "Arbiter of the Grade",
           "text": "Pop quiz.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_suburban"
         },
         {
           "speaker": "Fighter",
@@ -85,13 +85,13 @@
           "speaker": "Arbiter of the Grade",
           "text": "This school serves the community. You are in the community. You are being served.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_suburban"
         },
         {
           "speaker": "Arbiter of the Grade",
           "text": "You have eight minutes.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_suburban"
         },
         {
           "speaker": "Mage",
@@ -109,7 +109,7 @@
           "speaker": "Arbiter of the Grade",
           "text": "The rubric rewards partial credit.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_suburban"
         },
         {
           "speaker": "Rogue",
@@ -121,7 +121,7 @@
           "speaker": "Arbiter of the Grade",
           "text": "All learning is personal.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_suburban"
         }
       ]
     },
@@ -134,15 +134,15 @@
       "lines": [
         {
           "speaker": "Arbiter of the Grade",
-          "text": "The Cleric's questions address moral triage in resource-limited settings. The Fighter's, military command structure. The Mage's, systems of control. The Bard's\u2014",
+          "text": "The Cleric's questions address moral triage in resource-limited settings. The Fighter's, military command structure. The Mage's, systems of control. The Bard's—",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_suburban"
         },
         {
           "speaker": "Arbiter of the Grade",
           "text": "The Bard has been given a blank page.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_suburban"
         },
         {
           "speaker": "Bard",
@@ -154,13 +154,13 @@
           "speaker": "Arbiter of the Grade",
           "text": "I could not determine what to test you on. The rubric has no column for your competency. Consider the blank page your prompt.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_suburban"
         },
         {
           "speaker": "Arbiter of the Grade",
           "text": "Pencils up.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_suburban"
         }
       ]
     },
@@ -171,7 +171,7 @@
     },
     {
       "type": "narration",
-      "text": "The quiz attacks were, in practice, each wrong answer manifesting as direct damage \u2014 specific, targeted, scaled to the magnitude of the incorrectness rather than simply the occurrence of the error."
+      "text": "The quiz attacks were, in practice, each wrong answer manifesting as direct damage — specific, targeted, scaled to the magnitude of the incorrectness rather than simply the occurrence of the error."
     },
     {
       "type": "narration",
@@ -194,7 +194,7 @@
           "speaker": "Arbiter of the Grade",
           "text": "That is not an answer. That is a sentiment.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_suburban"
         },
         {
           "speaker": "Bard",
@@ -206,7 +206,7 @@
           "speaker": "Arbiter of the Grade",
           "text": "Charming. Incomplete. C-plus.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_suburban"
         }
       ]
     },
@@ -221,7 +221,7 @@
           "speaker": "Arbiter of the Grade",
           "text": "Your answers are experientially correct.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_suburban"
         },
         {
           "speaker": "Cleric",
@@ -233,7 +233,7 @@
           "speaker": "Arbiter of the Grade",
           "text": "What you know and what you can demonstrate you know are not the same thing. I grade the demonstration. That gap tends to limit people.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_suburban"
         },
         {
           "speaker": "Cleric",
@@ -245,13 +245,13 @@
           "speaker": "Arbiter of the Grade",
           "text": "The grade disagrees. Your triage answers prioritize sentiment over efficiency. You would save the person you care about rather than the person most likely to survive.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_suburban"
         },
         {
           "speaker": "Arbiter of the Grade",
           "text": "That is not healing. That is favoritism with a prayer attached.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_suburban"
         },
         {
           "speaker": "Cleric",
@@ -278,7 +278,7 @@
           "speaker": "Arbiter of the Grade",
           "text": "That answer is not within the established parameters.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_suburban"
         },
         {
           "speaker": "Fighter",
@@ -290,7 +290,7 @@
           "speaker": "Arbiter of the Grade",
           "text": "The parameters are the rubric.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_suburban"
         }
       ]
     },

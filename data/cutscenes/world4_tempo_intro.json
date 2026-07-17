@@ -16,7 +16,7 @@
     {
       "type": "boss_intro",
       "name": "Tempo of the Shift",
-      "title": "Masterite \u2014 Industrial"
+      "title": "Masterite — Industrial"
     },
     {
       "type": "wait",
@@ -33,19 +33,19 @@
           "speaker": "Tempo of the Clock Cycle",
           "text": "TICK.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_futuristic"
         },
         {
           "speaker": "Tempo of the Clock Cycle",
           "text": "TOCK.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_futuristic"
         },
         {
           "speaker": "Tempo of the Clock Cycle",
           "text": "Your processing time is inefficient. Between the moment you perceive a threat and the moment you respond, I have completed four hundred thousand operations.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_futuristic"
         },
         {
           "speaker": "Fighter",
@@ -57,7 +57,7 @@
           "speaker": "Tempo of the Clock Cycle",
           "text": "It is a conservative estimate. Your reflex arc introduces latency. Your decision-making introduces additional latency. Your emotions introduce latency that varies by circumstance in a way I have failed to accurately model.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_futuristic"
         },
         {
           "speaker": "Mage",
@@ -69,13 +69,13 @@
           "speaker": "Tempo of the Clock Cycle",
           "text": "Yes. Also your primary differentiator. The Arbiter's report noted this. I have reviewed the Arbiter's report.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_futuristic"
         },
         {
           "speaker": "Tempo of the Clock Cycle",
           "text": "TICK. TOCK. The next cycle begins. Your lag is noted but irrelevant. Begin.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_futuristic"
         },
         {
           "speaker": "Bard",
@@ -87,7 +87,7 @@
           "speaker": "Tempo of the Clock Cycle",
           "text": "It started before you finished asking.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_futuristic"
         }
       ]
     },

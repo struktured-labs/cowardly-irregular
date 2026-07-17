@@ -22,8 +22,8 @@
     {
       "type": "narration",
       "lines": [
-        "The ridge was empty. The market noise below had resumed \u2014 vendors, footsteps, the ordinary hum of a place that had been briefly interrupted and was already forgetting.",
-        "On the ground where the Tempo had first appeared, barely visible against the stone: a card. Small, rectangular, printed on one side with nothing but a mark \u2014 something between a footprint and a signature, precise enough to be intentional.",
+        "The ridge was empty. The market noise below had resumed — vendors, footsteps, the ordinary hum of a place that had been briefly interrupted and was already forgetting.",
+        "On the ground where the Tempo had first appeared, barely visible against the stone: a card. Small, rectangular, printed on one side with nothing but a mark — something between a footprint and a signature, precise enough to be intentional.",
         "The edges were worn, as if it had been carried for a long time, or as if the Tempo had a habit of touching it while running."
       ]
     },
@@ -33,7 +33,7 @@
     },
     {
       "type": "narration",
-      "text": "The moment the card was picked up, the voice arrived \u2014 close, as if spoken from just behind, from someone who had already moved past."
+      "text": "The moment the card was picked up, the voice arrived — close, as if spoken from just behind, from someone who had already moved past."
     },
     {
       "type": "wait",
@@ -46,13 +46,13 @@
           "speaker": "Tempo",
           "text": "I spent a long time running. I assumed the running was the point.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         },
         {
           "speaker": "Tempo",
           "text": "The movement, the pursuit. The moment where you almost have something and don't quite.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         }
       ]
     },
@@ -67,13 +67,13 @@
           "speaker": "Tempo",
           "text": "But the best part was when you started running well.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         },
         {
           "speaker": "Tempo",
           "text": "When you learned the terrain faster than I expected. When the trail became interesting because you were on the other end of it.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         }
       ]
     },
@@ -88,7 +88,7 @@
           "speaker": "Tempo",
           "text": "I think I was running toward that. The whole time.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         }
       ]
     },
@@ -98,7 +98,7 @@
     },
     {
       "type": "narration",
-      "text": "A brief sound \u2014 genuine, quick, the laugh of something that found what it was looking for at exactly the moment it ran out of road."
+      "text": "A brief sound — genuine, quick, the laugh of something that found what it was looking for at exactly the moment it ran out of road."
     },
     {
       "type": "wait",
@@ -106,7 +106,7 @@
     },
     {
       "type": "narration",
-      "text": "The card was warm from being carried. The mark on it was faded but clear. Something about holding it made the market feel slightly faster \u2014 not urgently so, but with the particular energy of a place that has recently been worth running through."
+      "text": "The card was warm from being carried. The mark on it was faded but clear. Something about holding it made the market feel slightly faster — not urgently so, but with the particular energy of a place that has recently been worth running through."
     },
     {
       "type": "wait",

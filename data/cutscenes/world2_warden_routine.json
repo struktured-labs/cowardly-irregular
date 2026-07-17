@@ -16,7 +16,7 @@
     {
       "type": "boss_intro",
       "name": "Warden of Routine",
-      "title": "Masterite \u2014 Suburban"
+      "title": "Masterite — Suburban"
     },
     {
       "type": "wait",
@@ -33,7 +33,7 @@
           "speaker": "Warden of Routine",
           "text": "Halt.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_suburban"
         },
         {
           "speaker": "Fighter",
@@ -45,7 +45,7 @@
           "speaker": "Warden of Routine",
           "text": "No crossing without the signal. The signal says WALK. I say WALK. Not before. Not after. Not due to extenuating circumstances.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_suburban"
         },
         {
           "speaker": "Mage",
@@ -57,7 +57,7 @@
           "speaker": "Warden of Routine",
           "text": "The absence of visible traffic does not indicate the absence of traffic.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_suburban"
         },
         {
           "speaker": "Rogue",
@@ -69,7 +69,7 @@
           "speaker": "Warden of Routine",
           "text": "Crossing without the signal is a violation. Violations are not quick. Violations have consequences. Consequences take time. Stand behind the line.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_suburban"
         },
         {
           "speaker": "Mage",
@@ -81,7 +81,7 @@
           "speaker": "Warden of Routine",
           "text": "The line is implied.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_suburban"
         },
         {
           "speaker": "Bard",
@@ -93,13 +93,13 @@
           "speaker": "Warden of Routine",
           "text": "Since before the crosswalk. Since before the intersection. Since before the street was a street. It was a path. Before that, it was a direction. I guarded the direction.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_suburban"
         },
         {
           "speaker": "Warden of Routine",
           "text": "The signal will change when the signal changes. Until then: halt.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_suburban"
         }
       ]
     },

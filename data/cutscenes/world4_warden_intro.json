@@ -16,7 +16,7 @@
     {
       "type": "boss_intro",
       "name": "Warden of the Assembly Line",
-      "title": "Masterite \u2014 Industrial"
+      "title": "Masterite — Industrial"
     },
     {
       "type": "wait",
@@ -41,7 +41,7 @@
           "speaker": "Warden of the Firewall",
           "text": "ACCESS DENIED.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_futuristic"
         },
         {
           "speaker": "Fighter",
@@ -53,7 +53,7 @@
           "speaker": "Warden of the Firewall",
           "text": "Authorization: insufficient. Credentials: unrecognized. Purpose: anomalous. Origin: undefined. ACCESS DENIED.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_futuristic"
         },
         {
           "speaker": "Mage",
@@ -65,7 +65,7 @@
           "speaker": "Warden of the Firewall",
           "text": "The process is authorization. Authorization is proof. Proof is demonstrated. The Calibrant's system recognizes one form of proof for entities of your classification.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_futuristic"
         },
         {
           "speaker": "Rogue",
@@ -77,13 +77,13 @@
           "speaker": "Warden of the Firewall",
           "text": "Force. Prove your authorization through force. If you can pass me, you are authorized. This is not a contradiction. Authorization is the capacity to pass. The firewall tests capacity.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_futuristic"
         },
         {
           "speaker": "Warden of the Firewall",
           "text": "Every prior entity that attempted this sector was denied. I have been here since the first packet was routed. I have not been passed.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_futuristic"
         },
         {
           "speaker": "Fighter",
@@ -95,7 +95,7 @@
           "speaker": "Warden of the Firewall",
           "text": "Correct. Initiate authorization sequence.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_futuristic"
         }
       ]
     },

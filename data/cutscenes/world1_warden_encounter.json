@@ -54,19 +54,19 @@
           "speaker": "Warden",
           "text": "This pass has been held for three hundred years. By my count, you are the thirty-seventh party to attempt it. The other thirty-six turned back.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_medieval"
         },
         {
           "speaker": "Warden",
           "text": "I am not telling you this to frighten you. I am telling you so the record is clear.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_medieval"
         },
         {
           "speaker": "Warden",
           "text": "Show me what you are, and I will show you what I have left.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_medieval"
         }
       ]
     },

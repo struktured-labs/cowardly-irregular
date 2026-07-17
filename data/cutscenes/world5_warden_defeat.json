@@ -1,6 +1,6 @@
 {
   "id": "world5_warden_defeat",
-  "title": "Warden of Form \u2014 Aftermath",
+  "title": "Warden of Form — Aftermath",
   "world": 5,
   "trigger": "boss_warden_abstract_defeated",
   "background": "node_prime",
@@ -37,9 +37,9 @@
       "lines": [
         {
           "speaker": "Warden of Form",
-          "text": "Form\u2026 deformed.",
+          "text": "Form… deformed.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_abstract"
         }
       ]
     },
@@ -58,13 +58,13 @@
           "speaker": "Warden of Form",
           "text": "I was the shape of immovability. I had held this boundary since before shape meant anything. Every angle, every dimension, every boundary in every world you have passed through was expressed through me.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_abstract"
         },
         {
           "speaker": "Warden of Form",
           "text": "You moved through me.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_abstract"
         },
         {
           "speaker": "Mage",
@@ -76,7 +76,7 @@
           "speaker": "Warden of Form",
           "text": "I don't have a geometry for that.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_abstract"
         }
       ]
     },
@@ -91,13 +91,13 @@
           "speaker": "Warden of Form",
           "text": "The shape of something passed. What is the shape of something that has been passed? I have given shape to every kind of thing: motion, stillness, limit, threshold, damage, defense, space, time.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_abstract"
         },
         {
           "speaker": "Warden of Form",
           "text": "I have no geometry for the thing that passes through what cannot be passed.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_abstract"
         }
       ]
     },
@@ -118,7 +118,7 @@
           "speaker": "Warden of Form",
           "text": "Everything has a shape. I gave everything its shape.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_abstract"
         },
         {
           "speaker": "Fighter",
@@ -143,19 +143,19 @@
           "speaker": "Warden of Form",
           "text": "You said it correctly. Everything I gave a shape to.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_abstract"
         },
         {
           "speaker": "Warden of Form",
           "text": "I shaped everything I encountered. I did not shape what I could not encounter. I gave form to the known. The boundary I guarded was the boundary between the known and the rest.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_abstract"
         },
         {
           "speaker": "Warden of Form",
           "text": "You came from the known side. But you are made of something I could not shape. That is what allowed you to pass.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_abstract"
         }
       ]
     },
@@ -176,13 +176,13 @@
           "speaker": "Warden of Form",
           "text": "I don't know. That's the answer. I don't know. I have shaped everything I understand. You contain something I don't understand. I couldn't give it an angle or a boundary or a dimension.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_abstract"
         },
         {
           "speaker": "Warden of Form",
           "text": "It is the first thing, in a very long time, that I could not give a shape to.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_abstract"
         }
       ]
     },
@@ -192,7 +192,7 @@
     },
     {
       "type": "narration",
-      "text": "The shape of the Warden of Form continued its reorganization. Quietly, without drama. The way a proof revises itself when a new term is introduced \u2014 not discarding what came before, but making room for something that changes what everything before it was describing."
+      "text": "The shape of the Warden of Form continued its reorganization. Quietly, without drama. The way a proof revises itself when a new term is introduced — not discarding what came before, but making room for something that changes what everything before it was describing."
     },
     {
       "type": "dialogue",
@@ -201,13 +201,13 @@
           "speaker": "Warden of Form",
           "text": "I have been the shape of immovability since before the first wall was built in the first world.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_abstract"
         },
         {
           "speaker": "Warden of Form",
           "text": "I find I am curious what I am the shape of now.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_abstract"
         }
       ]
     },
@@ -217,7 +217,7 @@
     },
     {
       "type": "narration",
-      "text": "The space ahead of them was open. Not empty \u2014 the abstract world was never empty. But open, in the sense of a geometry that has decided it can contain what comes next."
+      "text": "The space ahead of them was open. Not empty — the abstract world was never empty. But open, in the sense of a geometry that has decided it can contain what comes next."
     },
     {
       "type": "wait",

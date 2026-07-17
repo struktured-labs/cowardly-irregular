@@ -16,7 +16,7 @@
     {
       "type": "boss_intro",
       "name": "Arbiter of Steel",
-      "title": "Masterite \u2014 Medieval"
+      "title": "Masterite — Medieval"
     },
     {
       "type": "wait",
@@ -26,7 +26,7 @@
       "type": "narration",
       "lines": [
         "The Arbiter of Steel waited in a clearing where the corruption was thickest.",
-        "She stood at the clearing's center \u2014 geometrically precise. Light armor, dueling leathers, holding her sword point-down in the manner of someone who doesn't need to threaten you."
+        "She stood at the clearing's center — geometrically precise. Light armor, dueling leathers, holding her sword point-down in the manner of someone who doesn't need to threaten you."
       ]
     },
     {
@@ -40,7 +40,7 @@
           "speaker": "Arbiter",
           "text": "I challenge one of you. Whoever leads. The others stay back. I'll know if they don't.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_medieval"
         },
         {
           "speaker": "Fighter",
@@ -52,13 +52,13 @@
           "speaker": "Arbiter",
           "text": "Then you fight together, and you have already compromised your honor before the first blow lands.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_medieval"
         },
         {
           "speaker": "Arbiter",
           "text": "Come at me with everything. I'll know if you're holding back. And I'll be disappointed.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_medieval"
         }
       ]
     },

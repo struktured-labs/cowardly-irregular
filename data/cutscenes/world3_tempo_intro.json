@@ -16,7 +16,7 @@
     {
       "type": "boss_intro",
       "name": "Tempo of the Shift",
-      "title": "Masterite \u2014 Steampunk"
+      "title": "Masterite — Steampunk"
     },
     {
       "type": "wait",
@@ -37,7 +37,7 @@
           "speaker": "Tempo of the Shift",
           "text": "CLOCK IN.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_industrial"
         },
         {
           "speaker": "Bard",
@@ -49,13 +49,13 @@
           "speaker": "Tempo of the Shift",
           "text": "Everyone is a worker here. The shift does not distinguish between residents and intruders. You are present. Presence is participation. CLOCK IN.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_industrial"
         },
         {
           "speaker": "Tempo of the Shift",
           "text": "The bell does not wait. The bell rang. The shift has begun. You will work or you will be worked around.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_industrial"
         },
         {
           "speaker": "Fighter",
@@ -67,13 +67,13 @@
           "speaker": "Tempo of the Shift",
           "text": "It is not fine. Irregularities in the flow disrupt output. You are an irregularity. The Warden's report was very clear on this point.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_industrial"
         },
         {
           "speaker": "Tempo of the Shift",
           "text": "CLOCK OUT is at the end of the shift. The shift ends when I say it ends. It has not ended since before the gears were installed. The gears were installed to track the shift, not to replace it.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_industrial"
         },
         {
           "speaker": "Mage",
@@ -85,7 +85,7 @@
           "speaker": "Tempo of the Shift",
           "text": "Not yet. Today may be different. CLOCK IN.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_industrial"
         }
       ]
     },

@@ -16,7 +16,7 @@
     {
       "type": "boss_intro",
       "name": "Curator of the Memory Pool",
-      "title": "Masterite \u2014 Digital"
+      "title": "Masterite — Digital"
     },
     {
       "type": "wait",
@@ -41,7 +41,7 @@
           "speaker": "Curator of Entropy",
           "text": "Everything ends. I merely accelerate the inevitable.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_abstract"
         },
         {
           "speaker": "Cleric",
@@ -53,13 +53,13 @@
           "speaker": "Curator of Entropy",
           "text": "I have had a long time to practice honesty. The Curator of the Flame had fire. The Curator of the Budget had ledgers. The Curator of the Pipeline had flow. I have time, and time is honest.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_abstract"
         },
         {
           "speaker": "Curator of Entropy",
           "text": "You have fought very hard to persist. I respect this in a purely observational sense. All things fight to persist. It is the nature of organized systems to resist their own dissolution.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_abstract"
         },
         {
           "speaker": "Mage",
@@ -71,13 +71,13 @@
           "speaker": "Curator of Entropy",
           "text": "I am the dissolution. I do not choose it. I am what happens when the choosing is done.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_abstract"
         },
         {
           "speaker": "Curator of Entropy",
           "text": "You have passed the Warden, the Arbiter, the Tempo. You have reached the end of the system. I am what the system deposits here when it has nothing else left to throw.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_abstract"
         },
         {
           "speaker": "Fighter",
@@ -89,13 +89,13 @@
           "speaker": "Curator of Entropy",
           "text": "Then something persists that I could not dissolve. That would be the most interesting thing that has happened in a very long time.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_abstract"
         },
         {
           "speaker": "Curator of Entropy",
           "text": "I have not decided whether I want you to pass. I find I am curious, which is not a sensation I expected to have at this stage.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_abstract"
         },
         {
           "speaker": "Rogue",

@@ -16,7 +16,7 @@
     {
       "type": "boss_intro",
       "name": "Curator of the Pipeline",
-      "title": "Masterite \u2014 Industrial"
+      "title": "Masterite — Industrial"
     },
     {
       "type": "wait",
@@ -41,7 +41,7 @@
           "speaker": "Curator of the Memory Pool",
           "text": "Memory allocation: insufficient. Garbage collection initiated.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_futuristic"
         },
         {
           "speaker": "Cleric",
@@ -53,7 +53,7 @@
           "speaker": "Curator of the Memory Pool",
           "text": "You. You are consuming memory at an unsustainable rate. Your presence in five worlds has generated more retained data than a standard party generates in twelve. You have outpaced the available pool.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_futuristic"
         },
         {
           "speaker": "Rogue",
@@ -65,7 +65,7 @@
           "speaker": "Curator of the Memory Pool",
           "text": "Anomalous parties generate anomalous data. Every deviation from expected behavior creates a record. Your records have consumed seventeen percent of available retention. This is unacceptable. I am initiating garbage collection to reclaim the allocation.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_futuristic"
         },
         {
           "speaker": "Mage",
@@ -77,7 +77,7 @@
           "speaker": "Curator of the Memory Pool",
           "text": "Garbage collection means I return your memory to the pool. Whether you persist afterward depends on what you are made of that is not memory.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_futuristic"
         },
         {
           "speaker": "Fighter",
@@ -89,7 +89,7 @@
           "speaker": "Curator of the Memory Pool",
           "text": "Unknown. That is why I am initiating the process rather than simply executing it. I am curious.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_futuristic"
         }
       ]
     },

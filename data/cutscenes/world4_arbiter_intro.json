@@ -16,7 +16,7 @@
     {
       "type": "boss_intro",
       "name": "Arbiter of Quality Control",
-      "title": "Masterite \u2014 Industrial"
+      "title": "Masterite — Industrial"
     },
     {
       "type": "wait",
@@ -33,7 +33,7 @@
           "speaker": "Arbiter of the Benchmark",
           "text": "Running diagnostic. Your performance will be measured against optimal baseline.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_futuristic"
         },
         {
           "speaker": "Cleric",
@@ -45,13 +45,13 @@
           "speaker": "Arbiter of the Benchmark",
           "text": "The World 3 baseline was extrapolated. This baseline is not. I have your complete combat logs from every world. Fifty-three encounters. I have built the optimal from your own data.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_futuristic"
         },
         {
           "speaker": "Arbiter of the Benchmark",
           "text": "You have played suboptimally in thirty-one of those encounters. You have also survived all fifty-three. This is the anomaly I cannot explain.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_futuristic"
         },
         {
           "speaker": "Mage",
@@ -63,7 +63,7 @@
           "speaker": "Arbiter of the Benchmark",
           "text": "The model disagrees. I have run it four thousand times. Statistically, you should have failed at twenty-seven distinct points. You did not fail. The model is either wrong or you are wrong. I intend to determine which.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_futuristic"
         },
         {
           "speaker": "Rogue",
@@ -75,7 +75,7 @@
           "speaker": "Arbiter of the Benchmark",
           "text": "Then I update the model. This is acceptable. I prefer accurate models to comfortable ones. Diagnostic: commencing.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_futuristic"
         }
       ]
     },

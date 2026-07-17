@@ -37,13 +37,13 @@
           "speaker": "Warden",
           "text": "Thirty-seven. You are the first to get through.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_medieval"
         },
         {
           "speaker": "Warden",
-          "text": "I don't know what that means for the other side, but \u2014 good. Carry something worth carrying.",
+          "text": "I don't know what that means for the other side, but — good. Carry something worth carrying.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_medieval"
         }
       ]
     },
@@ -62,7 +62,7 @@
           "speaker": "Warden",
           "text": "I don't know who put me here. I stopped asking. Maybe you should ask for both of us.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_medieval"
         }
       ]
     },
@@ -77,31 +77,31 @@
           "speaker": "Warden",
           "text": "Fighter. Your shield work is poor. You lead with your right side and don't correct for it. If you survive something worse than me, correct it.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_medieval"
         },
         {
           "speaker": "Warden",
           "text": "Mage. Stop documenting during the fight. You nearly took a blow that would have ended your journey. Your theory is correct. Trust it.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_medieval"
         },
         {
           "speaker": "Warden",
           "text": "Cleric. You held them together longer than anyone had a right to expect. That is rare. Guard your own life with the same care you spend on theirs.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_medieval"
         },
         {
           "speaker": "Warden",
-          "text": "And you \u2014 Bard. When you sang to the wolf pack. That was not the action of a frightened musician. That was strategy.",
+          "text": "And you — Bard. When you sang to the wolf pack. That was not the action of a frightened musician. That was strategy.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_medieval"
         },
         {
           "speaker": "Warden",
           "text": "Someone taught you well. Or no one taught you and you simply knew. I find I cannot tell which is true. Strange.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_medieval"
         }
       ]
     },

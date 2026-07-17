@@ -1,6 +1,6 @@
 {
   "id": "world4_arbiter_defeat",
-  "title": "Arbiter of the Benchmark \u2014 Aftermath",
+  "title": "Arbiter of the Benchmark — Aftermath",
   "world": 4,
   "trigger": "boss_arbiter_futuristic_defeated",
   "background": "industrial_factory",
@@ -39,19 +39,19 @@
           "speaker": "Arbiter of the Benchmark",
           "text": "Four thousand simulations.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_futuristic"
         },
         {
           "speaker": "Arbiter of the Benchmark",
           "text": "You won in none of them.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_futuristic"
         },
         {
           "speaker": "Arbiter of the Benchmark",
           "text": "And yet.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_futuristic"
         }
       ]
     },
@@ -76,13 +76,13 @@
           "speaker": "Arbiter of the Benchmark",
           "text": "Yes. Fifty-three encounters. Complete logs. Every decision you made, every resource expended, every threshold approached and not crossed. I derived the optimal from your own history.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_futuristic"
         },
         {
           "speaker": "Arbiter of the Benchmark",
           "text": "I used your past against you. This is the most precise form of measurement: hold a system against its own best self and observe the gap.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_futuristic"
         },
         {
           "speaker": "Rogue",
@@ -94,7 +94,7 @@
           "speaker": "Arbiter of the Benchmark",
           "text": "The gap did not exist. You performed above your own optimal. This should not be possible. The optimal derived from past performance represents the theoretical ceiling of a fixed system.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_futuristic"
         }
       ]
     },
@@ -115,19 +115,19 @@
           "speaker": "Arbiter of the Benchmark",
           "text": "No. You are not.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_futuristic"
         },
         {
           "speaker": "Arbiter of the Benchmark",
           "text": "The model was perfect. I have verified the model. Every input was accurate. Every derivation was sound. The model correctly predicted the optimal behavior for the system described by your combat logs.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_futuristic"
         },
         {
           "speaker": "Arbiter of the Benchmark",
           "text": "You were not the system described by your combat logs.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_futuristic"
         }
       ]
     },
@@ -148,7 +148,7 @@
           "speaker": "Arbiter of the Benchmark",
           "text": "A system in the process of changing. The logs describe what you were. You arrived as what you are becoming. The benchmark measures the past. It cannot measure the future of a system that is actively revising itself.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_futuristic"
         }
       ]
     },
@@ -167,13 +167,13 @@
           "speaker": "Arbiter of the Benchmark",
           "text": "The model was perfect. You were not. That is why you won.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_futuristic"
         },
         {
           "speaker": "Arbiter of the Benchmark",
           "text": "Perfection is static. A perfect model is a model that no longer grows. I built the optimal from your past and held it against your present. The optimal lost because you had moved past it.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_futuristic"
         }
       ]
     },
@@ -192,19 +192,19 @@
           "speaker": "Arbiter of the Benchmark",
           "text": "I have been refining the benchmark since Node Prime was initialized. I have refined it against every system that has passed through this sector.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_futuristic"
         },
         {
           "speaker": "Arbiter of the Benchmark",
           "text": "Nothing has ever updated the benchmark. The benchmark is updated when a system exceeds it. No system has exceeded it until now.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_futuristic"
         },
         {
           "speaker": "Arbiter of the Benchmark",
           "text": "The benchmark has been the same since it was built. I have been the same since I was built.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_futuristic"
         }
       ]
     },
@@ -225,19 +225,19 @@
           "speaker": "Arbiter of the Benchmark",
           "text": "Yes.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_futuristic"
         },
         {
           "speaker": "Arbiter of the Benchmark",
-          "text": "I find I do not know what I am updating toward. The benchmark was the only measure I had. Without a fixed measure, I cannot assess progress. I can only\u2026 move.",
+          "text": "I find I do not know what I am updating toward. The benchmark was the only measure I had. Without a fixed measure, I cannot assess progress. I can only… move.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_futuristic"
         },
         {
           "speaker": "Arbiter of the Benchmark",
           "text": "I think that may be what you have been doing the entire time.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_futuristic"
         }
       ]
     },

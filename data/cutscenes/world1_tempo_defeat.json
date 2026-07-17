@@ -1,10 +1,10 @@
 {
   "id": "world1_tempo_defeat",
-  "title": "Tempo of the Hunt \u2014 Aftermath",
+  "title": "Tempo of the Hunt — Aftermath",
   "world": 1,
   "trigger": "boss_tempo_medieval_defeated",
   "background": "prologue_forest",
-  "description": "The Tempo kneels in the market square \u2014 cornered, choosing to kneel rather than having it chosen for them. The hunter who loved the chase discovers their memory only extends as far back as the party's arrival. Still smiling, but somewhere quieter now.",
+  "description": "The Tempo kneels in the market square — cornered, choosing to kneel rather than having it chosen for them. The hunter who loved the chase discovers their memory only extends as far back as the party's arrival. Still smiling, but somewhere quieter now.",
   "steps": [
     {
       "type": "stop_music"
@@ -39,13 +39,13 @@
           "speaker": "Tempo",
           "text": "A fine chase.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         },
         {
           "speaker": "Tempo",
           "text": "The best I can remember.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         }
       ]
     },
@@ -62,27 +62,27 @@
       "lines": [
         {
           "speaker": "Tempo",
-          "text": "I haven't been outrun in\u2014",
+          "text": "I haven't been outrun in—",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         },
         {
           "speaker": "Tempo",
           "text": "I don't remember how long.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         },
         {
           "speaker": "Tempo",
           "text": "Strange. A hunter remembers every chase. The duration. The quarry. The outcome.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         },
         {
           "speaker": "Tempo",
           "text": "My memory extends precisely as far back as the beginning of your arrival. Nothing before that.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         }
       ]
     },
@@ -103,7 +103,7 @@
           "speaker": "Tempo",
           "text": "It should trouble me. The fact that it doesn't trouble me is, perhaps, the most troubling thing.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         }
       ]
     },
@@ -122,7 +122,7 @@
           "speaker": "Tempo",
           "text": "First time I've been run to ground in a long time. I'd do it again.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         }
       ]
     },
@@ -135,15 +135,15 @@
       "lines": [
         {
           "speaker": "Tempo",
-          "text": "Whatever you're hunting, on the other side of all this \u2014 I hope you catch it.",
+          "text": "Whatever you're hunting, on the other side of all this — I hope you catch it.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         },
         {
           "speaker": "Tempo",
-          "text": "Be careful in the palace. The last guardian has been waiting longer than any of us. She has more\u2026 history.",
+          "text": "Be careful in the palace. The last guardian has been waiting longer than any of us. She has more… history.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         }
       ]
     },

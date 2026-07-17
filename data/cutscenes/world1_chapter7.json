@@ -24,7 +24,7 @@
       "lines": [
         "Scriptura was beautiful. That was the problem.",
         "Clean streets. Window boxes full of flowers at regulation height. Guards who smiled and said good morning and meant both words in a way that allowed no deviation.",
-        "The prices in the market were almost too precise. Not round numbers \u2014 precise ones. The kind you get from careful calculation rather than tradition.",
+        "The prices in the market were almost too precise. Not round numbers — precise ones. The kind you get from careful calculation rather than tradition.",
         "It was the most oppressive place any of them had ever seen."
       ]
     },
@@ -64,7 +64,7 @@
       "lines": [
         {
           "speaker": "Sera",
-          "text": "The king is enchanted. Not the fairy-tale kind \u2014 the administrative kind.",
+          "text": "The king is enchanted. Not the fairy-tale kind — the administrative kind.",
           "theme": "mysterious",
           "portrait": "mysterious"
         },
@@ -94,7 +94,7 @@
     },
     {
       "type": "narration",
-      "text": "At the Scriptweaver's Guild \u2014 co-opted now, its scholars writing edicts instead of research \u2014 one man still kept his old work hidden. He spread documents across a back table."
+      "text": "At the Scriptweaver's Guild — co-opted now, its scholars writing edicts instead of research — one man still kept his old work hidden. He spread documents across a back table."
     },
     {
       "type": "dialogue",
@@ -175,13 +175,13 @@
           "speaker": "Tempo",
           "text": "You made it to the city. I had calculated you would lose yourselves in the forest and give up.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         },
         {
           "speaker": "Tempo",
           "text": "I even cleared one of the loop paths to give you a chance. I wanted you to last longer.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         },
         {
           "speaker": "Rogue",
@@ -193,7 +193,7 @@
           "speaker": "Tempo",
           "text": "I extended the game. Don't let me catch you. That's not a threat. That's the game.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         }
       ]
     },
@@ -205,8 +205,8 @@
       "type": "narration",
       "lines": [
         "The chase through Scriptura's streets was everything the Tempo had promised.",
-        "It vaulted crates. Disappeared around corners. Reappeared somewhere improbable. It narrated as it ran \u2014 not to taunt, but with the genuine delight of something that had been doing this since before the city had crowds.",
-        "'Clever \u2014 you're slowing down the right moments.' 'Oh, they've learned the geometry. Most don't.'"
+        "It vaulted crates. Disappeared around corners. Reappeared somewhere improbable. It narrated as it ran — not to taunt, but with the genuine delight of something that had been doing this since before the city had crowds.",
+        "'Clever — you're slowing down the right moments.' 'Oh, they've learned the geometry. Most don't.'"
       ]
     },
     {
@@ -241,13 +241,13 @@
           "speaker": "Tempo",
           "text": "Oh.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         },
         {
           "speaker": "Tempo",
           "text": "Noted.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         }
       ]
     },

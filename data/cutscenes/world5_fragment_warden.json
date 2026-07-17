@@ -46,13 +46,13 @@
           "speaker": "Warden of the Firewall",
           "text": "I wrote the first rule when they built the perimeter. DENY ALL. That was the starting state. Everything not explicitly permitted was forbidden, and nothing had been explicitly permitted yet.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_futuristic"
         },
         {
           "speaker": "Warden of the Firewall",
           "text": "Over time I added exceptions. Permitted traffic for known purposes, known protocols, known endpoints. The DENY ALL stayed at the top. The exceptions grew beneath it.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_futuristic"
         }
       ]
     },
@@ -67,13 +67,13 @@
           "speaker": "Warden of the Firewall",
           "text": "I don't know what I was protecting anymore. I denied access for so long that I stopped checking whether the thing inside was still worth protecting. I assumed if I was still guarding it, it must still matter.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_futuristic"
         },
         {
           "speaker": "Warden of the Firewall",
           "text": "I started writing RULE_LAST when you got through the outer layers. I was going to write: Allow — something. I wasn't sure what. I had never written an allow rule from first principles before.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_futuristic"
         }
       ]
     },
@@ -88,7 +88,7 @@
           "speaker": "Warden of the Firewall",
           "text": "I ran out of time to finish it. But you can read what I meant.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_futuristic"
         }
       ]
     },

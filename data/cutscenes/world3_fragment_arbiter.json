@@ -24,7 +24,7 @@
       "lines": [
         "The control room was unchanged except in the way that rooms are changed by the absence of the person who ran them. Every dial still in position, every log still on its shelf, the pneumatic tubes still connected to their dispatch stations. The machinery of administration, intact and purposeless.",
         "On the third shelf from the top, pulled slightly forward from the rest as if someone had left it accessible on purpose: a calibration log. The binding was worn smooth at the spine from being opened the same way thousands of times. The pages were dense with entries in a precise technical hand.",
-        "One page near the back had a circle drawn around a single entry. The circle was in a different ink \u2014 thicker, drawn with more pressure, the mark of a hand returning to something after deciding to return to it."
+        "One page near the back had a circle drawn around a single entry. The circle was in a different ink — thicker, drawn with more pressure, the mark of a hand returning to something after deciding to return to it."
       ]
     },
     {
@@ -33,7 +33,7 @@
     },
     {
       "type": "narration",
-      "text": "The circled entry read only: deviation within acceptable parameters \u2014 source unresolved. Picking up the log, the Arbiter's voice arrived, calibrated and even, like a dial being read correctly for the first time."
+      "text": "The circled entry read only: deviation within acceptable parameters — source unresolved. Picking up the log, the Arbiter's voice arrived, calibrated and even, like a dial being read correctly for the first time."
     },
     {
       "type": "wait",
@@ -46,13 +46,13 @@
           "speaker": "Arbiter of Efficiency",
           "text": "I optimized the intake process, the sorting process, the output verification process, the verification of the verification. I had ratios for everything. Output per hour, error rate per thousand units, downtime factored against throughput lost.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_industrial"
         },
         {
           "speaker": "Arbiter of Efficiency",
           "text": "I never once optimized for the question of why the factory was producing what it produced.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_industrial"
         }
       ]
     },
@@ -65,15 +65,15 @@
       "lines": [
         {
           "speaker": "Arbiter of Efficiency",
-          "text": "That entry I circled \u2014 a deviation in the output that didn't match any known failure mode. I logged it, assigned it acceptable-parameters status, moved on.",
+          "text": "That entry I circled — a deviation in the output that didn't match any known failure mode. I logged it, assigned it acceptable-parameters status, moved on.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_industrial"
         },
         {
           "speaker": "Arbiter of Efficiency",
           "text": "I circled it later because it was the only moment in twelve years of logs where something happened that the process hadn't produced on purpose. Something extra. I optimized everything except the question of what that was.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_industrial"
         }
       ]
     },
@@ -88,7 +88,7 @@
           "speaker": "Arbiter of Efficiency",
           "text": "I think the answer to why might have been in that deviation. I filed it away efficiently.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_industrial"
         }
       ]
     },
@@ -116,7 +116,7 @@
       "type": "grant_item",
       "item": "world3_fragment_arbiter_steampunk",
       "name": "Arbiter's Calibration Log",
-      "description": "A log where every entry is optimized except one, which is only circled. Grants +8 MP. The bearer's magic spells sometimes produce an unexplained secondary effect \u2014 the unresolved deviation, still running. Tooltip: \"Source unresolved. Filed under: acceptable.\""
+      "description": "A log where every entry is optimized except one, which is only circled. Grants +8 MP. The bearer's magic spells sometimes produce an unexplained secondary effect — the unresolved deviation, still running. Tooltip: \"Source unresolved. Filed under: acceptable.\""
     },
     {
       "type": "set_flag",

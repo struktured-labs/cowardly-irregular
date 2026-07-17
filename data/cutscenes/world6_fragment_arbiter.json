@@ -46,13 +46,13 @@
           "speaker": "Arbiter of Function",
           "text": "My purpose was to evaluate purpose. Whether a thing was doing what it was for. Whether its function was being discharged correctly, efficiently, with adequate relation to its reason for existing.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_abstract"
         },
         {
           "speaker": "Arbiter of Function",
           "text": "I evaluated everything that passed through this plane. Found each thing either sufficient or insufficient. Filed the finding. Moved to the next.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_abstract"
         }
       ]
     },
@@ -67,13 +67,13 @@
           "speaker": "Arbiter of Function",
           "text": "You did something that made the question irrelevant. Not by answering it — the question of your function has an answer, and it's complex, and I could evaluate it if you wanted.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_abstract"
         },
         {
           "speaker": "Arbiter of Function",
           "text": "But you made the asking feel beside the point. The question stopped mid-evaluation and I found I didn't need to finish it. The thing the question was for was already happening.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_abstract"
         }
       ]
     },
@@ -88,7 +88,7 @@
           "speaker": "Arbiter of Function",
           "text": "That is the rarest thing I have ever found in this plane. A thing doing something that made evaluating it feel like looking away.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_abstract"
         }
       ]
     },

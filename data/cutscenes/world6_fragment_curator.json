@@ -46,13 +46,13 @@
           "speaker": "Curator of Entropy",
           "text": "I am entropy. Not a keeper of entropy — not someone who manages it. I am the process itself, in a form that can be spoken to.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_abstract"
         },
         {
           "speaker": "Curator of Entropy",
           "text": "My nature is to disperse. To un-distinguish. To return everything to the field. I have never kept anything. Keeping things is against my function. Keeping things is against my nature.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_abstract"
         }
       ]
     },
@@ -67,13 +67,13 @@
           "speaker": "Curator of Entropy",
           "text": "But I am remembering this. Right now. I am holding the memory of this fight, of you being here, of the particular way this moment was different from the field.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_abstract"
         },
         {
           "speaker": "Curator of Entropy",
           "text": "I should not be able to do that. I am entropy. Entropy doesn't remember. Entropy is what happens to memory.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_abstract"
         }
       ]
     },
@@ -88,7 +88,7 @@
           "speaker": "Curator of Entropy",
           "text": "I didn't know I could choose. I have been running the dissolution for longer than the things I was dissolving have existed, and I did not know that I was choosing to. I thought I was only being what I am.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_abstract"
         }
       ]
     },

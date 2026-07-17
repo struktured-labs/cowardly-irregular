@@ -16,7 +16,7 @@
     {
       "type": "boss_intro",
       "name": "Warden of the Mainspring",
-      "title": "Masterite \u2014 Steampunk"
+      "title": "Masterite — Steampunk"
     },
     {
       "type": "wait",
@@ -46,7 +46,7 @@
           "speaker": "Warden of the Assembly Line",
           "text": "UNIT OPERATIONAL. COMMENCING STRESS TEST.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_industrial"
         },
         {
           "speaker": "Fighter",
@@ -58,13 +58,13 @@
           "speaker": "Warden of the Assembly Line",
           "text": "Classification pending. All unregistered elements entering the manufactory are units until classification is complete. Classification requires stress testing.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_industrial"
         },
         {
           "speaker": "Warden of the Assembly Line",
           "text": "You have exceeded the parameters of every stress test run in this facility. The Warden of the Old Guard filed a report. The Warden of Routine filed a report. Both reports were anomalous.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_industrial"
         },
         {
           "speaker": "Mage",
@@ -76,13 +76,13 @@
           "speaker": "Warden of the Assembly Line",
           "text": "Noted. The stress test will not offer dinner. The manufactory has no dining facility. Budget was reallocated to efficiency improvements in Q3.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_industrial"
         },
         {
           "speaker": "Warden of the Assembly Line",
           "text": "Stress test parameters: survivability, endurance, load capacity, failure threshold. If you exceed failure threshold, I will update the parameters. This is standard procedure.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_industrial"
         },
         {
           "speaker": "Fighter",
@@ -94,7 +94,7 @@
           "speaker": "Warden of the Assembly Line",
           "text": "No. I find this informative. COMMENCING.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_industrial"
         }
       ]
     },

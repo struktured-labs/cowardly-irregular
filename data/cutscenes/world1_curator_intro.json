@@ -16,7 +16,7 @@
     {
       "type": "boss_intro",
       "name": "Curator of the Flame",
-      "title": "Masterite \u2014 Medieval"
+      "title": "Masterite — Medieval"
     },
     {
       "type": "wait",
@@ -31,9 +31,9 @@
       "lines": [
         {
           "speaker": "Curator",
-          "text": "Before we begin \u2014 and we will begin, I'm sorry about that \u2014 can I ask what you think is behind the flame?",
+          "text": "Before we begin — and we will begin, I'm sorry about that — can I ask what you think is behind the flame?",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_medieval"
         },
         {
           "speaker": "Fighter",
@@ -45,19 +45,19 @@
           "speaker": "Curator",
           "text": "Of course you'll try. I've studied this room for eleven years. I am genuinely uncertain if what you're looking for is here. That's the most interesting thing that's happened all decade.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_medieval"
         },
         {
           "speaker": "Curator",
           "text": "The Warden reports your adaptability. The Arbiter reports your irregular formation. The Tempo reports your decision-making under pressure.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_medieval"
         },
         {
           "speaker": "Curator",
           "text": "Tell me about your resource strategy. I've been studying it and I find myself with questions.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_medieval"
         },
         {
           "speaker": "Rogue",
@@ -75,7 +75,7 @@
           "speaker": "Curator",
           "text": "I'm having a conversation.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_medieval"
         },
         {
           "speaker": "Mage",
@@ -87,13 +87,13 @@
           "speaker": "Curator",
           "text": "Your pattern recognition is excellent. The Arbiter mentioned it. Then let's skip to the relevant part. I cannot let you through. My purpose requires this.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_medieval"
         },
         {
           "speaker": "Curator",
           "text": "I hope you understand.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_medieval"
         },
         {
           "speaker": "Fighter",

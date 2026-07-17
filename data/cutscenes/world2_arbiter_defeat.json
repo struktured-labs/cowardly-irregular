@@ -1,6 +1,6 @@
 {
   "id": "world2_arbiter_defeat",
-  "title": "Arbiter of the Grade \u2014 Aftermath",
+  "title": "Arbiter of the Grade — Aftermath",
   "world": 2,
   "trigger": "boss_arbiter_suburban_defeated",
   "background": "suburban_school",
@@ -39,13 +39,13 @@
           "speaker": "Arbiter",
           "text": "A.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_medieval"
         },
         {
           "speaker": "Arbiter",
           "text": "No conditions. That was an A.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_medieval"
         }
       ]
     },
@@ -60,7 +60,7 @@
           "speaker": "Arbiter",
           "text": "My rubric was perfect. My curve was calibrated precisely. How did you pass without studying?",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_medieval"
         },
         {
           "speaker": "Mage",
@@ -91,19 +91,19 @@
           "speaker": "Arbiter",
           "text": "You are not the students this curriculum was designed for. And yet the curriculum worked.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_medieval"
         },
         {
           "speaker": "Arbiter",
           "text": "Partially. With significant deviation.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_medieval"
         },
         {
           "speaker": "Arbiter",
           "text": "I don't know whether to mark that as a success.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_medieval"
         }
       ]
     },
@@ -122,13 +122,13 @@
           "speaker": "Arbiter",
           "text": "I don't know what class this is for. I've been grading it a long time.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_medieval"
         },
         {
           "speaker": "Arbiter",
           "text": "I'm not sure anymore what the subject is.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_medieval"
         }
       ]
     },
@@ -149,7 +149,7 @@
           "speaker": "Arbiter",
           "text": "I don't have a column for interesting.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_medieval"
         }
       ]
     },
@@ -172,19 +172,19 @@
           "speaker": "Arbiter",
           "text": "Charming. Incomplete.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_medieval"
         },
         {
           "speaker": "Arbiter",
           "text": "But passing.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_medieval"
         },
         {
           "speaker": "Arbiter",
           "text": "I've never had to curve the grade before.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_medieval"
         }
       ]
     },
