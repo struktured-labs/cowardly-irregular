@@ -108,9 +108,12 @@ func resolve_battle(player_party: Array, enemy_party: Array) -> Dictionary:
 					_restore_bm(bm, _bm_player_backup, _bm_enemy_backup)
 				return _build_results(false)
 
+	# Cadence #19: MAX_ROUNDS exhaustion used to _build_results(false) silently — no log, no diagnostic. A player rule facing an unkillable enemy (healing boss, wrong element, undertuned party) would grind to a halt reporting defeats forever with no reason. Now: log + push_warning + termination_reason in results so callers can distinguish "died fair and square" from "battle timed out".
+	_log("Battle exhausted MAX_ROUNDS=%d without resolution — treating as defeat" % MAX_ROUNDS)
+	push_warning("[HeadlessBattleResolver] Battle stalemated at MAX_ROUNDS=%d — party may be undertuned for this encounter, or enemy has a heal/regen loop this ruleset can't break" % MAX_ROUNDS)
 	if bm:
 		_restore_bm(bm, _bm_player_backup, _bm_enemy_backup)
-	return _build_results(false)
+	return _build_results(false, "stalemate")
 
 
 func _restore_bm(bm, player_backup: Array, enemy_backup: Array) -> void:
@@ -764,7 +767,7 @@ func _all_dead(party: Array) -> bool:
 	return true
 
 
-func _build_results(victory: bool) -> Dictionary:
+func _build_results(victory: bool, termination_reason: String = "") -> Dictionary:
 	var exp = 0
 	var gold = 0
 	# authored rewards, same as live battles — stat-derived formulas broke the full-parity ruling both directions
@@ -847,6 +850,7 @@ func _build_results(victory: bool) -> Dictionary:
 		"log": _battle_log.duplicate(),
 		"player_party": _player_party,
 		"enemy_party": _enemy_party,
+		"termination_reason": termination_reason,  # cadence #19: "" = normal (victory or fair defeat), "stalemate" = MAX_ROUNDS exhausted
 	}
 
 
