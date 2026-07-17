@@ -1947,7 +1947,7 @@ func _play_story_cutscene(cutscene_id: String) -> void:
 			_play_story_cutscene(chained)
 			return
 		_story_chain_depth = 0
-		_start_exploration()
+		_resume_exploration_after_cutscene()
 		_flush_chat_toasts()
 	, CONNECT_ONE_SHOT)
 	_cutscene_director.play_cutscene(cutscene_id)
@@ -3111,15 +3111,12 @@ func _start_exploration() -> void:
 			and BattleManager.current_state != BattleManager.BattleState.INACTIVE:
 		print("[GAMELOOP] _start_exploration bailed — a live battle owns the screen (stale return)")
 		return
-	# Check for pending story cutscenes before entering free roam
-	# Skip if we just played one (prevents back-to-back on same map entry)
+	# Check for pending story cutscenes — 2026-07-16 struktured cap: the check used to EARLY-RETURN before the scene was built, so a village-gated STAGED cutscene played over the OLD map (after_cave narrated on the Mode 7 overworld). Now the destination scene builds first; the cutscene fires at the tail, on the map it's gated to.
+	var pending_story_cutscene: String = ""
 	if _cutscene_cooldown:
 		_cutscene_cooldown = false
 	else:
-		var pending = _get_pending_story_cutscene()
-		if pending != "":
-			await _play_story_cutscene(pending)
-			return
+		pending_story_cutscene = _get_pending_story_cutscene()
 
 	current_state = LoopState.EXPLORATION
 	_battle_transition_starting = false  # safety pop — never leak the mutex if a battle bailed mid-transition
@@ -3322,6 +3319,23 @@ func _start_exploration() -> void:
 
 	# Pre-warm common area sprites in background (deferred to not block scene setup)
 	call_deferred("_prewarm_area_sprites")
+
+	# Fire the gated story cutscene ON the freshly-built map (see top-of-function note) — director owns state/locks from here; finish path light-resumes via _resume_exploration_after_cutscene.
+	if pending_story_cutscene != "":
+		_play_story_cutscene(pending_story_cutscene)
+
+
+## Post-cutscene resume: the scene is already live under the cutscene (built pre-play since 2026-07-16) — just unlock. Full rebuild only when the cutscene tore scenes down (battle-step duels) or a battle owns the screen.
+func _resume_exploration_after_cutscene() -> void:
+	_cutscene_cooldown = false  # consume — the old rebuild path consumed it at _start_exploration's top
+	if _exploration_scene and is_instance_valid(_exploration_scene) \
+			and current_state != LoopState.BATTLE:
+		current_state = LoopState.EXPLORATION
+		InputLockManager.pop_all()
+		Engine.time_scale = 1.0
+		_ensure_party_chat_indicator()
+		return
+	_start_exploration()
 
 
 func _return_to_exploration() -> void:

@@ -20,7 +20,7 @@ func test_guard_pinned_at_entry() -> void:
 	var src := FileAccess.get_file_as_string(GAME_LOOP)
 	var i := src.find("func _start_exploration")
 	assert_gt(i, -1)
-	var body := src.substr(i, 900)
+	var body := src.substr(i, 1600)
 	assert_true("current_state == LoopState.BATTLE and BattleManager" in body,
 		"stale-return guard must gate on BOTH GameLoop state and a live BattleManager battle — either alone has legit flows")
 	assert_true("stale return" in body,

@@ -147,5 +147,6 @@ func test_completion_lambda_chains_before_start_exploration() -> void:
 	var chain_idx = body.find("_next_chained_story_cutscene(cutscene_id)")
 	assert_gt(chain_idx, -1,
 		"_play_story_cutscene completion path must call _next_chained_story_cutscene")
-	assert_gt(body.find("_start_exploration()", chain_idx), -1,
-		"empty chain must still fall through to _start_exploration")
+	# 2026-07-16: fall-through target renamed — the finish path now light-resumes (_resume_exploration_after_cutscene) since the scene is built BEFORE the cutscene plays (staged-on-target-map fix); the helper itself falls back to _start_exploration when scenes were torn down.
+	assert_gt(body.find("_resume_exploration_after_cutscene()", chain_idx), -1,
+		"empty chain must still fall through to the exploration resume path")
