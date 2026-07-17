@@ -528,10 +528,11 @@ func create_scaled_enemy_data(base_data: Dictionary) -> Dictionary:
 		if scaled.has(key):
 			scaled[key] = int(scaled[key] * (1.0 + adaptation_bonus))
 
-	# Apply cowir-battle's canonical night-scaling helper on both stat shapes so live
-	# (spawn_from_data) and headless (_resolve_headless_battle) inherit identical values
-	# — the msg 2655 parity design. Helper is defensive: no-op at identity multiplier,
-	# no-op when is_night false, no-op when plumbing absent. Safe to call unconditionally.
+	# cowir-battle's canonical night-scaling helper. Mirrors the adaptation pattern above:
+	# the two stat shapes (`scaled["stats"]` nested dict + `scaled["max_hp"]` etc. scattered
+	# top-level) are INDEPENDENT storage locations (deep-duplicated at line 516), so scaling
+	# each once each yields no double-scaling — consistent with how adaptation has always
+	# worked. Helper is defensive: no-op at identity / !is_night / missing plumbing (msg 2655).
 	if scaled.has("stats"):
 		scaled["stats"] = BattleEnemySpawner.apply_night_scaling_to_stats(scaled["stats"])
 	var top_stats: Dictionary = {}
