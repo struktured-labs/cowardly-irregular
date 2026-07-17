@@ -775,11 +775,19 @@ func _build_results(victory: bool, termination_reason: String = "") -> Dictionar
 	if EncounterSystem and not EncounterSystem.monster_database.is_empty():
 		mdb = EncounterSystem.monster_database
 	if victory:
+		# Cadence #23: reward_multiplier parity with BM._get_battle_reward_multiplier (line 968) — max across the enemy party's monster_data.reward_multiplier. Pre-fix rare-encounter monsters gave bonus rewards in live but flat rate in headless, a hidden yield tax on ludicrous-tier grinders (violates struktured's 2026-07-01 full-parity ruling: "automation isn't cheating — it's enlightenment"; ludicrous/headless MUST receive the same yields as live). Read from mdb (authored source) to match the existing exp_reward/gold_reward lookup pattern in this same loop.
+		var reward_multiplier: float = 1.0
 		for enemy in _enemy_party:
 			var mt_key: String = str(enemy.get_meta("monster_type", "")) if enemy.has_method("get_meta") and enemy.has_meta("monster_type") else ""
 			var mrow: Dictionary = mdb.get(mt_key, {})
-			exp += int(mrow.get("exp_reward", 25))
-			gold += int(mrow.get("gold_reward", int(enemy.max_hp * 0.3 + enemy.defense)))
+			var em: float = float(mrow.get("reward_multiplier", 1.0))
+			if em > reward_multiplier:
+				reward_multiplier = em
+		for enemy in _enemy_party:
+			var mt_key: String = str(enemy.get_meta("monster_type", "")) if enemy.has_method("get_meta") and enemy.has_meta("monster_type") else ""
+			var mrow: Dictionary = mdb.get(mt_key, {})
+			exp += int(float(mrow.get("exp_reward", 25)) * reward_multiplier)
+			gold += int(float(mrow.get("gold_reward", int(enemy.max_hp * 0.3 + enemy.defense))) * reward_multiplier)
 			## Tick 146: mark defeated. mark_seen happened at the top
 			## of resolve_battle (tick 145); this is the kill credit.
 			# Tick 260: forward location through the defeat call too.
