@@ -1015,10 +1015,13 @@ func _start_dialogue() -> void:
 		var qplayer := _get_nearby_player()
 		if qplayer and qplayer.has_method("set_can_move"):
 			qplayer.set_can_move(false)
-		var was_giver: bool = quest_sys.has_giver_business(get_npc_id())
-		if was_giver:
+		var has_giver: bool = quest_sys.has_giver_business(get_npc_id())
+		var yield_to_llm: bool = _quest_should_yield_to_llm(quest_sys, has_giver)
+		var was_giver: bool = false
+		if has_giver and not yield_to_llm:
 			await quest_sys.run_giver_dialogue(get_npc_id(), self)
-		else:
+			was_giver = true
+		elif not has_giver:
 			var done_qid: String = quest_sys.notify_talk(get_npc_id())
 			if done_qid != "":
 				await quest_sys.run_completion_dialogue(done_qid, self)
@@ -1119,6 +1122,16 @@ func _llm_conversation_available() -> bool:
 	# Godot 4 — look up the autoload via the scene tree root.
 	var svc: Node = get_node_or_null("/root/LLMService")
 	return svc != null and svc.is_available()
+
+
+## For LLM-opt-in NPCs (dynamic + persona), mid-quest in_progress giver-flavor yields to dynamic chat; offer/talk-completion still preempts (msg 2164, huddle 2124/2126).
+func _quest_should_yield_to_llm(quest_sys: Node, has_giver: bool) -> bool:
+	if not has_giver or not (dynamic and persona != ""):
+		return false
+	if not quest_sys.has_method("giver_business_kind"):
+		return false
+	var kind: String = str(quest_sys.giver_business_kind(get_npc_id()))
+	return kind != "offer" and kind != "talk"
 
 
 func _run_dynamic_conversation(player: Node) -> void:
