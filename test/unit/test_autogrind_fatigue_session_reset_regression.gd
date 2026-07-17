@@ -66,9 +66,12 @@ func test_starting_a_grind_clears_lifetime_fatigue_carryover() -> void:
 	# Pre-seed: pretend a prior session left lifetime fatigue at 7.
 	AutogrindSystem.is_grinding = false
 	AutogrindSystem.fatigue_events_triggered = 7
-	# Empty party is enough — start_autogrind doesn't validate further than that.
-	var empty_party: Array[Combatant] = []
-	AutogrindSystem.start_autogrind(empty_party, {}, {})
+	# Cadence #20 added an empty-party guard, so use a minimal party to pass validation.
+	var member := Combatant.new()
+	member.initialize({"name": "T", "max_hp": 100, "max_mp": 10, "attack": 10, "defense": 5, "magic": 5, "speed": 10})
+	add_child_autofree(member)
+	var party: Array[Combatant] = [member]
+	AutogrindSystem.start_autogrind(party, {}, {})
 	assert_eq(int(AutogrindSystem.fatigue_events_triggered), 0,
 		"start_autogrind must zero fatigue_events_triggered so the new session starts clean")
 	# Cleanup — restore prior state so downstream tests see normal autoload.
