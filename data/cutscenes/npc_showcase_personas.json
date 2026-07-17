@@ -67,13 +67,6 @@
 			"Halt. ...You again. Fine. State your business briefly. I am being paid by the hour but I have not been paid in eight weeks.",
 			"South gate is closed at sundown. Not by rule. By preference. The cave gets... attentive at night. You'll want to be back by then.",
 			"You came over here to talk to me. Most people don't. So either you're brave, or you're stalling. Which is it."
-		],
-		"fallbacks": [
-			"Halt! ...Oh, you're heading OUT? Carry on then.",
-			"I'm here to keep monsters from getting IN.",
-			"The overworld isn't too dangerous...",
-			"Slimes, bats, goblins - nothing you can't handle.",
-			"But the cave... *shudder* ...don't ask."
 		]
 	}
 }
