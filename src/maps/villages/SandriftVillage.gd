@@ -160,7 +160,19 @@ func _setup_treasures() -> void:
 func _setup_npcs() -> void:
 	_place_masterite_warden()
 
-	# Conspiracy Theorist Rex (paranoid)
+	# Shared post-cave state check for Gramps / Dune / Kit branches.
+	# Gate = cutscene_flag_rat_king_defeated (set the moment the cave
+	# boss falls, before the party leaves the cave). Remote villages
+	# hear via travelers/dust-borne rumor — the delay is diegetic. Same
+	# spawn-time pattern as Harmonia; village re-instances on entry so
+	# state refreshes on next visit. Rex/Shifty/Mirage untouched — their
+	# voices are timeless comedy or dragon-lore focused.
+	var _after_cave_gs = get_node_or_null("/root/GameState")
+	var _after_cave_done: bool = false
+	if _after_cave_gs:
+		_after_cave_done = bool(_after_cave_gs.game_constants.get("cutscene_flag_rat_king_defeated", false))
+
+	# Conspiracy Theorist Rex (paranoid) — timeless, no cave hook.
 	var rex = _create_npc("Conspiracy Theorist Rex", "villager", Vector2(9 * TILE_SIZE,8 * TILE_SIZE), [
 		"The encounter rate is RIGGED!",
 		"I've done the math. It's supposed to be 5%...",
@@ -171,16 +183,26 @@ func _setup_npcs() -> void:
 	npcs.add_child(rex)
 
 	# Retired Hero Gramps (nostalgic)
-	var gramps = _create_npc("Retired Hero Gramps", "elder", Vector2(21 * TILE_SIZE,10 * TILE_SIZE), [
+	# Post-cave: brief recognition, then reasserts grumpy nostalgia. He
+	# still has his grudges. And his badge.
+	var _gramps_pre := [
 		"Back in MY game, we walked BOTH ways through the dungeon.",
 		"Uphill. In 8-bit. And we LIKED it.",
 		"No autobattle, no save states, no 'quality of life.'",
 		"We had QUALITY OF DEATH and we were GRATEFUL.",
 		"Kids these days with their scripts and their 'fun'..."
-	])
+	]
+	var _gramps_post := [
+		"You came out of a cave I would not have entered. That's data. I don't like data.",
+		"In my day we would have called that reckless. In my day I would have been wrong.",
+		"You'll pardon me if I don't hand you the badge. I still have my grudges. And my badge.",
+		"Kids these days with their scripts and their... audacity. Fine. Audacity.",
+		"Now go do it again. I want to see if it was luck. In my day we needed a second data point."
+	]
+	var gramps = _create_npc("Retired Hero Gramps", "elder", Vector2(21 * TILE_SIZE,10 * TILE_SIZE), _gramps_post if _after_cave_done else _gramps_pre)
 	npcs.add_child(gramps)
 
-	# Script Dealer Shifty (shady)
+	# Script Dealer Shifty (shady) — timeless comedic voice, no branch.
 	var shifty = _create_npc("Script Dealer Shifty", "villager", Vector2(19 * TILE_SIZE,8 * TILE_SIZE), [
 		"Psst. Got some premium autogrind configs.",
 		"One-shot setups. Very efficient.",
@@ -191,15 +213,24 @@ func _setup_npcs() -> void:
 	npcs.add_child(shifty)
 
 	# Caravan Leader Dune (practical)
-	var dune = _create_npc("Caravan Leader Dune", "villager", Vector2(13 * TILE_SIZE,12 * TILE_SIZE), [
+	# Post-cave: the wind on the road has changed. Practical man notices
+	# practical shifts. Doesn't overinterpret — but records the data.
+	var _dune_pre := [
 		"The desert teaches patience.",
 		"Also, bring water. Lots of water.",
 		"The game doesn't have a thirst mechanic yet, but still.",
 		"Better safe than sorry. Or dehydrated."
-	])
+	]
+	var _dune_post := [
+		"The road east is quieter. Everything is quieter. I don't know if that means safer or the opposite.",
+		"The desert taught me patience. Whatever you did taught the desert. The wind is different this week.",
+		"Bring water. Bring some for the road ahead of you and some for what's behind you now.",
+		"News moves faster than caravans. It got here two days before it should have. Somebody's carrying it fast."
+	]
+	var dune = _create_npc("Caravan Leader Dune", "villager", Vector2(13 * TILE_SIZE,12 * TILE_SIZE), _dune_post if _after_cave_done else _dune_pre)
 	npcs.add_child(dune)
 
-	# Sand Sage Mirage (cryptic)
+	# Sand Sage Mirage (cryptic) — dragon-lore focused, no cave branch.
 	var mirage = _create_npc("Sand Sage Mirage", "elder", Vector2(8 * TILE_SIZE,16 * TILE_SIZE), [
 		"The lightning dragon moves at the speed of thought.",
 		"Which, if your thoughts are anything like mine...",
@@ -210,13 +241,23 @@ func _setup_npcs() -> void:
 	npcs.add_child(mirage)
 
 	# Young Adventurer Kit (enthusiastic)
-	var kit = _create_npc("Young Adventurer Kit", "villager", Vector2(23 * TILE_SIZE,14 * TILE_SIZE), [
+	# Post-cave: awe + reverent questions. Loops back to Rex ("Did the
+	# RNG actually have EYES?") — small cross-NPC comedic thread.
+	var _kit_pre := [
 		"I'm gonna be the very best!",
 		"Like no one ever-- wait, wrong franchise.",
 		"I mean, I'm gonna automate the very best!",
 		"My autobattle scripts are gonna be LEGENDARY!",
 		"...As soon as I figure out how conditions work."
-	])
+	]
+	var _kit_post := [
+		"YOU came from the cave? THE CAVE? The one Gramps talks about?",
+		"What was it like? Was it like the songs? Were there SIX kinds of skeleton?",
+		"I'm gonna write scripts as good as yours someday. My conditions section is getting better. It's still mostly IF-THEN-TRUE though.",
+		"Wait. Wait. Did the RNG actually have EYES? I need to go talk to Rex.",
+		"Sign my journal? I don't have a journal. Sign my arm. My mom won't mind."
+	]
+	var kit = _create_npc("Young Adventurer Kit", "villager", Vector2(23 * TILE_SIZE,14 * TILE_SIZE), _kit_post if _after_cave_done else _kit_pre)
 	npcs.add_child(kit)
 
 
