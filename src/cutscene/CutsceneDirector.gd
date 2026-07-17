@@ -597,6 +597,7 @@ func _step_letterbox_in(step: Dictionary) -> void:
 
 	var screen_size = get_viewport().get_visible_rect().size
 	var tween = create_tween().set_parallel(true)
+	_apply_letterbox_ease(tween, step)
 	tween.tween_property(_letterbox_top, "position:y", 0.0, duration)
 	tween.tween_property(_letterbox_bottom, "position:y", screen_size.y - LETTERBOX_HEIGHT, duration)
 	await tween.finished
@@ -611,10 +612,30 @@ func _step_letterbox_out(step: Dictionary) -> void:
 
 	var screen_size = get_viewport().get_visible_rect().size
 	var tween = create_tween().set_parallel(true)
+	_apply_letterbox_ease(tween, step)
 	tween.tween_property(_letterbox_top, "position:y", float(-LETTERBOX_HEIGHT), duration)
 	tween.tween_property(_letterbox_bottom, "position:y", screen_size.y, duration)
 	await tween.finished
 	_letterbox_visible = false
+
+
+## Cinematic letterbox slide — SINE ease-in-out default matches PR #158 camera easing so pan + bars feel like one unified move. Optional `ease`/`trans` fields per the same schema as camera_focus.
+func _apply_letterbox_ease(tween: Tween, step: Dictionary) -> void:
+	var trans_name: String = str(step.get("trans", "sine")).to_lower()
+	var ease_name: String = str(step.get("ease", "in_out")).to_lower()
+	var trans_type: int = Tween.TRANS_SINE
+	match trans_name:
+		"linear": trans_type = Tween.TRANS_LINEAR
+		"quad": trans_type = Tween.TRANS_QUAD
+		"cubic": trans_type = Tween.TRANS_CUBIC
+		_: trans_type = Tween.TRANS_SINE
+	var ease_type: int = Tween.EASE_IN_OUT
+	match ease_name:
+		"in": ease_type = Tween.EASE_IN
+		"out": ease_type = Tween.EASE_OUT
+		"linear": ease_type = Tween.EASE_IN_OUT  # trans=linear renders as flat regardless
+		_: ease_type = Tween.EASE_IN_OUT
+	tween.set_trans(trans_type).set_ease(ease_type)
 
 
 func _step_screen_shake(step: Dictionary) -> void:
