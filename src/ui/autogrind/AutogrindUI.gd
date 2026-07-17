@@ -212,8 +212,8 @@ func setup(party: Array, region_name: String = "") -> void:
 
 	# Tutorial: first time opening autogrind menu
 	TutorialHints.show(self, "autogrind_menu")
-	# Tutorial: show resume hint if snapshot exists
-	if AutogrindSystem.has_grind_snapshot():
+	# Tutorial: show resume hint only if the snapshot would actually load (cadence #11 — pre-fix a corrupted snapshot would show the hint AND the ghost RESUME button).
+	if AutogrindSystem.is_snapshot_loadable():
 		TutorialHints.show(self, "autogrind_resume")
 
 
@@ -379,8 +379,8 @@ func _build_grid_panel(panel_size: Vector2) -> Control:
 	_cursor.z_index = 10
 	panel.add_child(_cursor)
 
-	# Resume button (only if snapshot exists and not grinding)
-	if not _is_grinding and AutogrindSystem.has_grind_snapshot():
+	# Resume button (only if snapshot exists, is loadable, and not grinding — cadence #11).
+	if not _is_grinding and AutogrindSystem.is_snapshot_loadable():
 		var resume_btn = _create_resume_button(panel_size)
 		resume_btn.position = Vector2(8, panel_size.y - 82)
 		panel.add_child(resume_btn)
@@ -1285,7 +1285,7 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_Y:
-		if not _is_grinding and AutogrindSystem.has_grind_snapshot():
+		if not _is_grinding and AutogrindSystem.is_snapshot_loadable():
 			grind_resume_requested.emit()
 			visible = false
 			get_viewport().set_input_as_handled()
