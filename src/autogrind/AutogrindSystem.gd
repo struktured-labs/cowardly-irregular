@@ -2068,6 +2068,16 @@ func apply_autogrind_actions(actions: Array) -> void:
 
 func _track_item_consumed(item_id: String) -> void:
 	"""Track an item consumed during the grind session."""
+	# Cadence #21: empty string would create a phantom items_consumed[""] entry that leaks into get_items_consumed_summary — refuse it and warn the caller (typo in the id string, or a caller passing an unset var).
+	if item_id.is_empty():
+		push_warning("[AUTOGRIND] track_item_consumed called with empty item_id — refusing to create phantom entry (caller bug)")
+		return
+	# Cadence #21: unknown id → still track (so an id drift is visible in the summary), but push_warning so the drift surfaces in the editor warnings panel + CI. Defensive: only checks if ItemSystem is reachable.
+	var item_system: Node = _get_autoload_node("ItemSystem")
+	if item_system != null and item_system.has_method("get_item"):
+		var rec: Dictionary = item_system.get_item(item_id)
+		if rec.is_empty():
+			push_warning("[AUTOGRIND] track_item_consumed: id '%s' not in items.json — tracking anyway (typo? data drift? new id?)" % item_id)
 	items_consumed[item_id] = items_consumed.get(item_id, 0) + 1
 	# Iron Vigil streak breaks if any healing item is used, in or between battles.
 	if _is_healing_item(item_id):
