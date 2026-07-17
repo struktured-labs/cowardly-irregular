@@ -3,7 +3,7 @@
   "title": "Pyrroth, the Ember Wyrm",
   "world": 1,
   "trigger": "boss_fire_dragon",
-  "background": "fire_cave",
+  "background": "cave_entrance",
   "description": "Boss intro for Pyrroth in the Infernal Grotto. A meta-aware fire dragon questions whether the player is actually playing the game.",
   "steps": [
     {

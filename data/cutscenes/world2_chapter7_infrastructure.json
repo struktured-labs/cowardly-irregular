@@ -3,7 +3,7 @@
   "title": "Feral Infrastructure",
   "world": 2,
   "trigger": "curator_defeated",
-  "background": "suburban_strip_mall",
+  "background": "suburban_neighborhood",
   "description": "A feral shopping cart in the strip mall parking lot. The others are docked. This one escaped. It was positioned, not ambushing. Deliberate patience.",
   "steps": [
     {
@@ -131,7 +131,7 @@
         },
         {
           "speaker": "Mage",
-          "text": "It fights like a Tempo. Speed-based. Uses geometry. That bounce off the curb was not accidental \u2014 it changed the approach vector.",
+          "text": "It fights like a Tempo. Speed-based. Uses geometry. That bounce off the curb was not accidental — it changed the approach vector.",
           "theme": "mage",
           "portrait": "mage"
         },

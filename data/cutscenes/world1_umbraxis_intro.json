@@ -3,7 +3,7 @@
   "title": "Umbraxis, the Void Render",
   "world": 1,
   "trigger": "boss_shadow_dragon",
-  "background": "shadow_cave",
+  "background": "cave_entrance",
   "description": "Boss intro for Umbraxis in the Abyssal Hollow. A philosophical shadow dragon who knows what it actually is.",
   "steps": [
     {

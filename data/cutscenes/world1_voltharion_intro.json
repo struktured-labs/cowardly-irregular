@@ -3,7 +3,7 @@
   "title": "Voltharion, the Storm's Edge",
   "world": 1,
   "trigger": "boss_lightning_dragon",
-  "background": "lightning_cave",
+  "background": "cave_entrance",
   "description": "Boss intro for Voltharion in Stormspire Cavern. A hyperactive lightning dragon who has been counting milliseconds.",
   "steps": [
     {

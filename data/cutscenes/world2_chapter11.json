@@ -3,8 +3,8 @@
   "title": "After",
   "world": 2,
   "trigger": "world2_coordinator_defeated",
-  "background": "suburban_community_center",
-  "description": "After the Coordinator. Surveillance blinks out. A schematic: Phase 3 \u2014 Cogsworth Junction. Her final memo, half-written, pen set down. The sentence she never finished. The suburb shifts.",
+  "background": "community_center",
+  "description": "After the Coordinator. Surveillance blinks out. A schematic: Phase 3 — Cogsworth Junction. Her final memo, half-written, pen set down. The sentence she never finished. The suburb shifts.",
   "steps": [
     {
       "type": "fade_from_black",
@@ -27,8 +27,8 @@
       "type": "narration",
       "lines": [
         "The monitor on the Coordinator's desk flickered once.",
-        "The surveillance feeds \u2014 the cave near Harmonia, the forest clearing, the school hallway, the garage sale driveway, the strip mall parking lot \u2014 blinked out one at a time, in a sequence that felt like an exhale.",
-        "In their place: a schematic. Gears. Brass pipe in organized configurations. Steam venting at controlled intervals. A label in the corner, in the same precise typeface as the HOA memos: PHASE 3 \u2014 COGSWORTH JUNCTION."
+        "The surveillance feeds — the cave near Harmonia, the forest clearing, the school hallway, the garage sale driveway, the strip mall parking lot — blinked out one at a time, in a sequence that felt like an exhale.",
+        "In their place: a schematic. Gears. Brass pipe in organized configurations. Steam venting at controlled intervals. A label in the corner, in the same precise typeface as the HOA memos: PHASE 3 — COGSWORTH JUNCTION."
       ]
     },
     {
@@ -197,7 +197,7 @@
       "lines": [
         {
           "speaker": "MEMO",
-          "text": "INTERNAL STATUS COMMUNICATION \u2014 Coordinator's Office. SUBJECT: Final Assessment.",
+          "text": "INTERNAL STATUS COMMUNICATION — Coordinator's Office. SUBJECT: Final Assessment.",
           "theme": "system",
           "portrait": "system"
         },
@@ -215,7 +215,7 @@
         },
         {
           "speaker": "MEMO",
-          "text": "It is \u2014",
+          "text": "It is —",
           "theme": "system",
           "portrait": "system"
         }
@@ -301,7 +301,7 @@
     },
     {
       "type": "narration",
-      "text": "The sidewalks were cobblestone. The streetlamps had changed \u2014 gas-lit now, amber, casting the kind of light that made everything look like it had a history."
+      "text": "The sidewalks were cobblestone. The streetlamps had changed — gas-lit now, amber, casting the kind of light that made everything look like it had a history."
     },
     {
       "type": "narration",
@@ -349,7 +349,7 @@
       "lines": [
         {
           "speaker": "Mage",
-          "text": "'It is not tactical excellence. It is not resource optimization. It is \u2014'",
+          "text": "'It is not tactical excellence. It is not resource optimization. It is —'",
           "theme": "mage",
           "portrait": "mage"
         },
