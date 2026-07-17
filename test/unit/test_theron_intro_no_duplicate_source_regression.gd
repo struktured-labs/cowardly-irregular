@@ -38,6 +38,10 @@ func test_theron_persona_fallbacks_do_not_shadow_the_constructor_lines() -> void
 	# override constructor lines (OverworldNPC._setup_persona_data:203-210).
 	assert_false(theron.has("fallbacks"),
 		"Elder Theron's persona must not carry a `fallbacks` array — the constructor's conditional lines (HarmoniaVillage.gd) are the authoritative source; a persona fallbacks array here silently overrides them.")
+	# 2026-07-16 (cowir-story ask, msg 2619): Boris joined the constructor-conditional club with his post-cave lines — same shadow contract now applies to him.
+	assert_true(personas.has("Guard Boris"), "Guard Boris persona must exist")
+	assert_false((personas.get("Guard Boris", {}) as Dictionary).has("fallbacks"),
+		"Guard Boris's persona must not carry `fallbacks` — his pre/post-cave constructor lines are authoritative (same shadow class as Theron, msg 2443)")
 
 
 func test_no_source_still_contains_the_old_deflating_intro() -> void:
