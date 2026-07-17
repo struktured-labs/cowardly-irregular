@@ -69,6 +69,15 @@ var _menu_wd_retries: int = 0
 ## Acting combatant cached from action_executing signal (msg 2749 cycle 12). BattleManager.current_combatant is stale/null during execution — cowir-main's showcase gate fix (57269663) proved it for one reader; this field is the same escape valve for _on_damage_dealt and _play_ability_animation. Set on action_executing, cleared on action_executed so a signal firing outside an action (status tick from round-end, reactive counter) never gets a stale attribution.
 var _last_acting_combatant: Combatant = null
 
+
+## msg 2754 cycle 14: weapon_type resolver — used by PHYSICAL EffectSystem.spawn_effect callers to pass caller-provided attribution instead of EffectSystem reading the stale BattleManager.current_combatant. Empty on null attacker or missing EquipmentSystem — SoundManager.play_attack_hit degrades to generic attack_hit, matching the pre-fix fallback shape when BM.current_combatant was also null.
+func _weapon_type_for(pc: Combatant) -> String:
+	if pc == null:
+		return ""
+	if EquipmentSystem == null or not EquipmentSystem.has_method("get_weapon_type"):
+		return ""
+	return EquipmentSystem.get_weapon_type(pc)
+
 ## Horizontal shift for the ONE-SHOT!/AUTO-BATTLE! victory banners so they clear the BattleResultsDisplay panel (msg 2595). Panel sits at x=200-600 via PRESET_CENTER_LEFT (BRD:171-172); banner is 400 wide with PRESET_CENTER offsets ±200, so it renders x=440-840 by default (overlaps panel at x=440-600). Shifting right by 200 puts the banner at x=640-1040 — clear of the panel with a 40px margin on the left and a 240px margin on the right at the fixed 1280 viewport. Viewport stretch=viewport + aspect=keep pins the coord system at 1280 regardless of window size, so this offset is safe across all real screens.
 const VICTORY_BANNER_X_SHIFT: int = 200
 
@@ -3221,8 +3230,8 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 				if enemy_idx >= 0 and enemy_idx < enemy_animators.size():
 					target_anim = enemy_animators[enemy_idx]
 				_animate_melee_attack(sprite, target_sprite, anim, target_anim)
-				# Spawn physical hit effect on impact (msg 2569 #1: stable anchor so mid-tween targets don't drag the effect off)
-				EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, _stable_sprite_anchor(target_sprite))
+				# Spawn physical hit effect on impact (msg 2569 #1: stable anchor so mid-tween targets don't drag the effect off). weapon_type from participant so each limit-break lunge plays its own weapon SFX (msg 2754 cycle 14).
+				EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, _stable_sprite_anchor(target_sprite), Callable(), 1.0, _weapon_type_for(participant))
 				continue
 		# Combo Magic: casters step forward, cast animation, converging spell effects
 		if group_type == "combo_magic":
@@ -3305,8 +3314,8 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 				for t in targets:
 					var ts2 = _get_combatant_sprite(t as Combatant)
 					if ts2 and is_instance_valid(ts2):
-						# Scattered impact bursts on all enemies at rush moment — anchor to stable rest so mid-hit knockback doesn't drag them (msg 2569 #1)
-						EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, _stable_sprite_anchor(ts2) + Vector2(randf_range(-8, 8), randf_range(-8, 8)))
+						# Scattered impact bursts on all enemies at rush moment — anchor to stable rest so mid-hit knockback doesn't drag them (msg 2569 #1). weapon_type from participant (msg 2754 cycle 14).
+						EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, _stable_sprite_anchor(ts2) + Vector2(randf_range(-8, 8), randf_range(-8, 8)), Callable(), 1.0, _weapon_type_for(participant))
 						var eidx = BattleManager.enemy_party.find(t)
 						if eidx >= 0 and eidx < enemy_animators.size():
 							enemy_animators[eidx].play_hit()
@@ -3319,12 +3328,12 @@ func _on_group_attack_executing(participants: Array, group_type: String, targets
 			rush_tween.tween_property(sprite, "position", home, 0.25).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
 			continue
 
-		# Formation/fallback: play attack animation in place + physical effects (stable anchor per msg 2569 #1)
+		# Formation/fallback: play attack animation in place + physical effects (stable anchor per msg 2569 #1). weapon_type from participant (msg 2754 cycle 14).
 		anim.play_attack()
 		for target in targets:
 			var t_sprite = _get_combatant_sprite(target as Combatant)
 			if t_sprite:
-				EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, _stable_sprite_anchor(t_sprite))
+				EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, _stable_sprite_anchor(t_sprite), Callable(), 1.0, _weapon_type_for(participant))
 
 	# Safety net: force-reset all party sprites to home positions after rush animations
 	# This catches any case where a return-home tween gets interrupted or killed
@@ -3360,8 +3369,8 @@ func _delayed_snap_and_idle(sprite, animator) -> void:
 func _delayed_play_hit_fx(target_anim, target_sprite) -> void:
 	if target_anim and is_instance_valid(target_anim) and is_instance_valid(target_sprite):
 		target_anim.play_hit()
-		# Stable anchor: multi-hit chains can arrive while target is still tweening back from the previous hit (msg 2569 #1)
-		EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, _stable_sprite_anchor(target_sprite))
+		# Stable anchor: multi-hit chains can arrive while target is still tweening back from the previous hit (msg 2569 #1). weapon_type from the cycle-12 signal cache — solo melee = _last_acting_combatant is the attacker (msg 2754 cycle 14).
+		EffectSystem.spawn_effect(EffectSystem.EffectType.PHYSICAL, _stable_sprite_anchor(target_sprite), Callable(), 1.0, _weapon_type_for(_last_acting_combatant))
 		var kb_dir = -1.0 if enemy_sprite_nodes.has(target_sprite) else 1.0
 		_apply_hit_knockback(target_sprite, kb_dir)
 		_apply_hit_flash(target_sprite)
