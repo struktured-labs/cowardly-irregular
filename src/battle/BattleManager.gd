@@ -723,6 +723,12 @@ func end_battle(victory: bool) -> void:
 		var monsters_data = {}
 		if EncounterSystem and not EncounterSystem.monster_database.is_empty():
 			monsters_data = EncounterSystem.monster_database
+		# Cadence #22: game_constants["gold_multiplier"] parity with HBR:813 + GameLoop._on_autogrind_battle_ended:5075. Pre-fix a Scriptweaver-set gold_multiplier of 2.0 doubled autogrind gold but had ZERO effect on live regular battles — violates the no-hidden-yield-tax pillar (msg 2744). Same defensive .get + clampf([0.1, 10.0]) pattern as the exp_multiplier consumer at line ~838 in this same function.
+		var gold_multiplier: float = 1.0
+		if GameState and "game_constants" in GameState:
+			gold_multiplier = clampf(
+				float(GameState.game_constants.get("gold_multiplier", 1.0)),
+				0.1, 10.0)
 		for enemy in enemy_party:
 			var mt = enemy.get_meta("monster_type", "")
 			if mt in monsters_data:
@@ -734,7 +740,7 @@ func end_battle(victory: bool) -> void:
 				# Symptom: "the rare mimic gives me bonus EXP but the same
 				# gold as a regular encounter." Aligns with line 441's EXP
 				# formula where reward_multiplier IS applied.
-				total_gold += int(gold * one_shot_gold_bonus * reward_multiplier)
+				total_gold += int(gold * one_shot_gold_bonus * reward_multiplier * gold_multiplier)
 		if total_gold > 0:
 			GameState.add_gold(total_gold)
 			print("Party earned %d gold!" % total_gold)

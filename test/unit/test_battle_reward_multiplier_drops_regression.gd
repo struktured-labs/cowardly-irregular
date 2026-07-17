@@ -43,9 +43,13 @@ func test_exp_gold_drops_all_factor_reward_multiplier() -> void:
 	# EXP formula: line ~441.
 	assert_true(src.contains("exp_gained = int(base_exp * reward_multiplier"),
 		"EXP formula must use reward_multiplier (existing)")
-	# Gold formula: tick 338 fix.
-	assert_true(src.contains("total_gold += int(gold * one_shot_gold_bonus * reward_multiplier)"),
-		"gold formula must use reward_multiplier (tick 338)")
+	# Gold formula: tick 338 fix. Substring check so cadence #22's added * gold_multiplier tail doesn't break the ratchet's actual intent (reward_multiplier stays in the chain).
+	var gold_line_start: int = src.find("total_gold += int(gold * one_shot_gold_bonus")
+	assert_gt(gold_line_start, -1, "gold accumulator must exist")
+	var gold_line_end: int = src.find(")", gold_line_start)
+	var gold_line: String = src.substr(gold_line_start, gold_line_end - gold_line_start)
+	assert_true(gold_line.contains("reward_multiplier"),
+		"gold formula must factor reward_multiplier (tick 338 intent — chain-preservation, not exact-string pin)")
 	# Drops: tick 339.
 	assert_true(src.contains("drop_rate_mult * reward_multiplier"),
 		"drop-roll must use reward_multiplier (tick 339)")
