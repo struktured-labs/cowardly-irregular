@@ -163,18 +163,39 @@ func _setup_treasures() -> void:
 func _setup_npcs() -> void:
 	_place_masterite_tempo()
 
+	# Shared post-cave state check for Pip / Moss / Ivy branches. Same
+	# spawn-time pattern as Sandrift/Harmonia (village re-instances on
+	# entry; state refreshes on next visit). Gate = rat_king_defeated
+	# (news reaches Eldertree via forest birds — Ivy's post lines seed
+	# the lore: "News moves through the forest via the birds"). Thorn/
+	# Dash/Spore untouched — timeless-gag voices, no cave hook.
+	var _after_cave_gs = get_node_or_null("/root/GameState")
+	var _after_cave_done: bool = false
+	if _after_cave_gs:
+		_after_cave_done = bool(_after_cave_gs.game_constants.get("cutscene_flag_rat_king_defeated", false))
+
 	# Tutorial Fairy Pip (unwanted help)
-	var pip = _create_npc("Tutorial Fairy Pip", "villager", Vector2(14 * TILE_SIZE,7 * TILE_SIZE), [
+	# Post-cave: melancholy turn — the player didn't need her hints. Faux-
+	# brave dignity about obsolescence. Closes on pivot to moss tutorial.
+	var _pip_pre := [
 		"HEY! LISTEN!",
 		"Did you know you can press buttons to do things?",
 		"You're WELCOME!",
 		"Also, did you know walking moves you FORWARD?",
 		"I'm SO helpful. You'd be LOST without me.",
 		"...Please don't mute me. I get lonely."
-	])
+	]
+	var _pip_post := [
+		"HEY! ...oh. It's you. The cave one. You didn't need any of my hints for that, huh.",
+		"I had a whole tutorial written. 'How to Cave.' Six pages. Nobody read it.",
+		"You did it without me. That's... good? That's good. You're supposed to grow beyond the tutorial. That's development.",
+		"I'll be over here. Not muted. Just... reflective. It's fine.",
+		"...Do you want to hear about the moss? I have a moss tutorial. Six pages. Different mushrooms though."
+	]
+	var pip = _create_npc("Tutorial Fairy Pip", "villager", Vector2(14 * TILE_SIZE,7 * TILE_SIZE), _pip_post if _after_cave_done else _pip_pre)
 	npcs.add_child(pip)
 
-	# Merchant Thorn (suspicious)
+	# Merchant Thorn (suspicious) — timeless voice, no branch.
 	var thorn = _create_npc("Merchant Thorn", "villager", Vector2(12 * TILE_SIZE,9 * TILE_SIZE), [
 		"These goods? Oh, they fell off a caravan.",
 		"Several caravans. Look, do you want them or not?",
@@ -183,7 +204,7 @@ func _setup_npcs() -> void:
 	])
 	npcs.add_child(thorn)
 
-	# Speedrun Monk Dash (efficiency)
+	# Speedrun Monk Dash (efficiency) — timeless voice, no branch.
 	var dash = _create_npc("Speedrun Monk Dash", "villager", Vector2(20 * TILE_SIZE,8 * TILE_SIZE), [
 		"Words are experience points you're leaving on the table.",
 		"Skip my dialogue. Go. NOW.",
@@ -194,25 +215,46 @@ func _setup_npcs() -> void:
 	npcs.add_child(dash)
 
 	# Elder Moss (wisdom)
-	var moss = _create_npc("Elder Moss", "elder", Vector2(7 * TILE_SIZE,15 * TILE_SIZE), [
+	# Post-cave: forest-remembers gag refracted — the trees have added a
+	# chapter about the cave victory alongside their catalogue of the
+	# party's slime deaths. Peak voice: mystical + comedic + on-tone.
+	var _moss_pre := [
 		"The forest remembers all who pass.",
 		"It also remembers your embarrassing defeats.",
 		"ALL of them.",
 		"That time you died to a slime? The trees whisper about it.",
 		"But fear not. Growth comes from failure. And fertilizer."
-	])
+	]
+	var _moss_post := [
+		"The forest heard about the cave. Word travels faster on roots than roads. The trees have opinions. They usually don't.",
+		"You died to a slime, once. The trees still whisper about it. They now whisper the slime AND the rat king. Balance.",
+		"Growth comes from failure. It also comes, occasionally, from succeeding. The trees are noting the second thing today. Rarely useful, but noted.",
+		"The forest remembers all who pass. It has added a chapter."
+	]
+	var moss = _create_npc("Elder Moss", "elder", Vector2(7 * TILE_SIZE,15 * TILE_SIZE), _moss_post if _after_cave_done else _moss_pre)
 	npcs.add_child(moss)
 
 	# Ranger Ivy (practical)
-	var ivy = _create_npc("Ranger Ivy", "guard", Vector2(22 * TILE_SIZE,14 * TILE_SIZE), [
+	# Post-cave: seeds the "Rangers' Empty House" W1 quest without
+	# resolving it — quest owns the rangers' fate. Ivy notes news arrival
+	# via birds (Eldertree's diegetic vector for the news-spreading beat).
+	# The wolves-being-quieter line stays ominous, not celebratory.
+	var _ivy_pre := [
 		"Watch for wolves. They hunt in packs.",
 		"And they've learned your autobattle patterns.",
 		"I've seen one dodge a scripted Fire spell.",
 		"Nature adapts. Your scripts should too."
-	])
+	]
+	var _ivy_post := [
+		"The wolves are quieter. Not fewer. Quieter.",
+		"News moves through the forest via the birds. The birds are... editorial. What they said about you was mostly positive.",
+		"The rangers still haven't come back. You did. That's data. I use data. But not this data. Not for what it's data of.",
+		"Watch your scripts. The wolves haven't unlearned them. They just aren't attacking as often. That's worse."
+	]
+	var ivy = _create_npc("Ranger Ivy", "guard", Vector2(22 * TILE_SIZE,14 * TILE_SIZE), _ivy_post if _after_cave_done else _ivy_pre)
 	npcs.add_child(ivy)
 
-	# Mushroom Collector Spore (weird)
+	# Mushroom Collector Spore (weird) — timeless voice, no branch.
 	var spore = _create_npc("Mushroom Collector Spore", "villager", Vector2(17 * TILE_SIZE,16 * TILE_SIZE), [
 		"The mushrooms here talk to me.",
 		"They say you need more defense.",
