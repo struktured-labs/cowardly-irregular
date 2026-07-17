@@ -3215,9 +3215,10 @@ func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attac
 		if old_tween and old_tween.is_valid():
 			old_tween.kill()
 
-	# Calculate attack position (close to target but not overlapping)
+	# Calculate attack position (close to target but not overlapping). msg 2634 Fable-pass: the 40-pixel hardcode overshoots into wide artist monsters (e.g. 256-frame goblin @ scale 1.0 → half-width 128px → attacker stops 88px INSIDE the goblin) and undershoots against thin procedurals — the contact-frame reads misaligned. Compute the gap from both sprites' visible half-widths + a small mercy margin.
 	var direction = (target_pos - home_pos).normalized()
-	var attack_pos = target_pos - direction * 40  # Stop 40 pixels from target
+	var contact_gap: float = _melee_contact_gap(attacker_sprite, target_sprite)
+	var attack_pos = target_pos - direction * contact_gap
 
 	# Create movement tween
 	var tween = create_tween()
@@ -3303,6 +3304,31 @@ func _stable_sprite_anchor(sprite: Node2D) -> Vector2:
 	if enemy_idx >= 0 and enemy_idx < _enemy_base_positions.size():
 		return _enemy_base_positions[enemy_idx]
 	return sprite.global_position
+
+
+## Fable-pass melee contact-gap (msg 2634): the lunge should stop where the attacker's weapon frame reaches the target's visible edge — not at a fixed 40px hardcode. Sums half-widths of both sprites' idle frames (scaled) plus a small mercy margin so the attack animation lands at the boundary, not clipped inside a wide monster or short of a narrow one. Falls back to the pre-fix 40 constant when frame textures are unreadable so procedural sprites without idle animations don't regress.
+const MELEE_CONTACT_MERCY_PX: float = 12.0
+const MELEE_CONTACT_FALLBACK_PX: float = 40.0
+
+func _melee_contact_gap(attacker_sprite: Node2D, target_sprite: Node2D) -> float:
+	var attacker_half: float = _sprite_visible_half_width(attacker_sprite)
+	var target_half: float = _sprite_visible_half_width(target_sprite)
+	if attacker_half <= 0.0 or target_half <= 0.0:
+		return MELEE_CONTACT_FALLBACK_PX
+	return attacker_half + target_half + MELEE_CONTACT_MERCY_PX
+
+
+## Idle-frame width × current sprite scale. AnimatedSprite2D doesn't expose get_rect() on Node2D, so we read the frame texture directly (same pattern as _create_battle_sprites at BS:929-935). Returns 0.0 when the frame can't be measured — caller then falls back to the pre-fix constant.
+func _sprite_visible_half_width(sprite: Node2D) -> float:
+	if not is_instance_valid(sprite):
+		return 0.0
+	if sprite is AnimatedSprite2D:
+		var a: AnimatedSprite2D = sprite
+		if a.sprite_frames and a.sprite_frames.has_animation(&"idle") and a.sprite_frames.get_frame_count(&"idle") > 0:
+			var tex: Texture2D = a.sprite_frames.get_frame_texture(&"idle", 0)
+			if tex:
+				return tex.get_size().x * 0.5 * absf(a.scale.x)
+	return 0.0
 
 
 func _get_combatant_animator(combatant: Combatant) -> BattleAnimatorClass:
