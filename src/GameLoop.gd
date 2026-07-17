@@ -220,6 +220,7 @@ var _area_fade_rect: ColorRect = null
 ## Overworld menu
 var _overworld_menu: Control = null
 var _overworld_menu_layer: CanvasLayer = null
+var _pre_menu_music_track: String = ""  # snapshot of underlying music while pause menu is open
 var _menu_hidden_hud: Array = []
 
 ## Party Chat (opt-in flavor cutscenes)
@@ -1107,6 +1108,11 @@ func _open_overworld_menu() -> void:
 	if _overworld_menu.has_signal("party_leader_changed"):
 		_overworld_menu.party_leader_changed.connect(_on_party_leader_changed)
 	SoundManager.play_ui("menu_open")
+	# Snapshot underlying music, swap to the pause-menu theme ("Paused, Somewhere Else").
+	# Restore in _on_overworld_menu_closed, guarded against underlying swaps.
+	if SoundManager:
+		_pre_menu_music_track = SoundManager._current_music
+		SoundManager.play_music("menu")
 	print("Overworld menu opened")
 
 
@@ -1123,6 +1129,14 @@ func _teardown_overworld_menu_widget() -> void:
 func _on_overworld_menu_closed() -> void:
 	"""Handle overworld menu close — teardown + resume exploration. Called when user backs out to the field (no submenu follows)."""
 	_teardown_overworld_menu_widget()
+
+	# Restore the pre-menu music track, but ONLY if the "menu" theme is still what's
+	# playing — cowir-main msg 2687 guard: if something else swapped the music while
+	# the menu was open (autogrind end, story flag flip, boss defeat stinger resume,
+	# etc.), don't stomp that legitimate swap.
+	if SoundManager and _pre_menu_music_track != "" and SoundManager._current_music == "menu":
+		SoundManager.play_music(_pre_menu_music_track)
+	_pre_menu_music_track = ""
 
 	# Resume exploration
 	if _exploration_scene and _exploration_scene.has_method("resume"):
