@@ -80,3 +80,5 @@ tools/test_*.py
 # in their working tree without dirtying commits here.
 assets/sprites/**/*.pre_normalize.png
 assets/sprites/**/*.pre_palette.png
+assets/sprites/**/*.pre_chromakey.png
+assets/sprites/**/*.pre_artist_style.png
