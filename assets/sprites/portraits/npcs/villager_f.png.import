@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://de6lniewwfrn4"
-path="res://.godot/imported/elder.png-a10c215e53c9fcc41a33eeb01df3d81d.ctex"
+uid="uid://nebrbehej8lj"
+path="res://.godot/imported/villager_f.png-6e5d5823b21f701cbad2253146cd79c3.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/portraits/npcs/elder.png"
-dest_files=["res://.godot/imported/elder.png-a10c215e53c9fcc41a33eeb01df3d81d.ctex"]
+source_file="res://assets/sprites/portraits/npcs/villager_f.png"
+dest_files=["res://.godot/imported/villager_f.png-6e5d5823b21f701cbad2253146cd79c3.ctex"]
 
 [params]
 

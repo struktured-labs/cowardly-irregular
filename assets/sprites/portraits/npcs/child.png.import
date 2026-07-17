@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://de6lniewwfrn4"
-path="res://.godot/imported/elder.png-a10c215e53c9fcc41a33eeb01df3d81d.ctex"
+uid="uid://txatsu7rakof"
+path="res://.godot/imported/child.png-cb2c90ba40d49d1f192ccd5834854aa8.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/portraits/npcs/elder.png"
-dest_files=["res://.godot/imported/elder.png-a10c215e53c9fcc41a33eeb01df3d81d.ctex"]
+source_file="res://assets/sprites/portraits/npcs/child.png"
+dest_files=["res://.godot/imported/child.png-cb2c90ba40d49d1f192ccd5834854aa8.ctex"]
 
 [params]
 
