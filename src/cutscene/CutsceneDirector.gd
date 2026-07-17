@@ -1066,7 +1066,7 @@ func _step_hop(step: Dictionary) -> void:
 	var a := _get_actor(str(step.get("id", "")))
 	if a == null or _skipping:
 		return
-	await a.hop(int(step.get("times", 1)))
+	await a.hop(int(step.get("times", 1)), float(step.get("duration", 0.2)))
 
 
 ## Pan the live camera to frame an actor or point; offset-tween holds because

@@ -162,12 +162,13 @@ func clear_emote() -> void:
 	_emote_label = null
 
 
-## Small surprise-hop; awaited. Instant no-op off-tree (headless).
-func hop(times: int = 1) -> void:
+## Small surprise-hop; awaited. Instant no-op off-tree (headless). `duration` is per-hop cycle time (default 0.2s = 0.1 up + 0.1 down); prior signature ignored JSON `duration` silently (cadence-8 audit finding).
+func hop(times: int = 1, duration: float = 0.2) -> void:
 	if not is_inside_tree():
 		return
+	var half: float = maxf(0.05, duration * 0.5)
 	var tween := create_tween()
 	for i in maxi(1, times):
-		tween.tween_property(self, "position:y", position.y - 6.0, 0.1)
-		tween.tween_property(self, "position:y", position.y, 0.1)
+		tween.tween_property(self, "position:y", position.y - 6.0, half)
+		tween.tween_property(self, "position:y", position.y, half)
 	await tween.finished
