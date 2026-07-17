@@ -1631,14 +1631,17 @@ func get_active_autogrind_profile_name() -> String:
 	return "Default"
 
 
-func set_active_autogrind_profile(index: int) -> void:
-	"""Set active autogrind profile by index"""
+## Cadence #15: bool return (was void) so grid-editor stale-idx bookmarks fail loud instead of silent no-op. Pre-cadence callers that ignore the return still work — GDScript treats it as backward-compatible.
+func set_active_autogrind_profile(index: int) -> bool:
 	_ensure_autogrind_profiles()
 	var profiles = autogrind_profiles.get("profiles", [])
-	if index >= 0 and index < profiles.size():
-		autogrind_profiles["active"] = index
-		_save_autogrind_profiles()
-		autogrind_rules_changed.emit()
+	if index < 0 or index >= profiles.size():
+		push_warning("[AUTOGRIND] set_active_autogrind_profile: idx %d out of range [0..%d) — no-op (stale bookmark? off-by-one after delete?)" % [index, profiles.size()])
+		return false
+	autogrind_profiles["active"] = index
+	_save_autogrind_profiles()
+	autogrind_rules_changed.emit()
+	return true
 
 
 func create_new_autogrind_profile(name: String = "") -> int:
@@ -1647,6 +1650,7 @@ func create_new_autogrind_profile(name: String = "") -> int:
 	var profiles = autogrind_profiles.get("profiles", [])
 
 	if profiles.size() >= MAX_AUTOGRIND_PROFILES:
+		push_warning("[AUTOGRIND] create_new_autogrind_profile: profile cap reached (%d/%d) — delete a profile first" % [profiles.size(), MAX_AUTOGRIND_PROFILES])
 		return -1
 
 	if name.is_empty():
@@ -1666,7 +1670,11 @@ func rename_autogrind_profile(index: int, new_name: String) -> bool:
 	_ensure_autogrind_profiles()
 	var profiles = autogrind_profiles.get("profiles", [])
 
-	if index < 0 or index >= profiles.size() or new_name.is_empty():
+	if index < 0 or index >= profiles.size():
+		push_warning("[AUTOGRIND] rename_autogrind_profile: idx %d out of range [0..%d) — no-op" % [index, profiles.size()])
+		return false
+	if new_name.is_empty():
+		push_warning("[AUTOGRIND] rename_autogrind_profile: empty name refused for idx %d — no-op" % index)
 		return false
 
 	profiles[index]["name"] = new_name
@@ -1679,7 +1687,11 @@ func delete_autogrind_profile(index: int) -> bool:
 	_ensure_autogrind_profiles()
 	var profiles = autogrind_profiles.get("profiles", [])
 
-	if profiles.size() <= 1 or index < 0 or index >= profiles.size():
+	if profiles.size() <= 1:
+		push_warning("[AUTOGRIND] delete_autogrind_profile: only 1 profile remains — refusing to delete the last one (idx %d)" % index)
+		return false
+	if index < 0 or index >= profiles.size():
+		push_warning("[AUTOGRIND] delete_autogrind_profile: idx %d out of range [0..%d) — no-op" % [index, profiles.size()])
 		return false
 
 	profiles.remove_at(index)
