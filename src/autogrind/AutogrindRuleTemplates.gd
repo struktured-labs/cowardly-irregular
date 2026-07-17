@@ -70,10 +70,20 @@ static func install_as_new_profile(template_id: String, autogrind_system) -> int
 		previous_active = autogrind_system.get_active_autogrind_profile_index()
 	if autogrind_system.has_method("set_active_autogrind_profile"):
 		autogrind_system.set_active_autogrind_profile(idx)
+	# Defense-in-depth: if a future template ships a rule outside the validator's allowlist, set_autogrind_rules rejects. Restore active + delete the phantom profile so the caller doesn't get a ghost "installed" idx. Same pattern as RuleComposerOverlay._install_autogrind_new_profile.
+	var applied: bool = true
 	if autogrind_system.has_method("set_autogrind_rules"):
-		autogrind_system.set_autogrind_rules(rules)
+		# Tolerant of the pre-cadence-#5 void contract that some test mocks still use: only treat an explicit `false` bool as rejection.
+		var ret: Variant = autogrind_system.set_autogrind_rules(rules)
+		if ret is bool:
+			applied = ret
 	if autogrind_system.has_method("set_active_autogrind_profile"):
 		autogrind_system.set_active_autogrind_profile(previous_active)
+	if not applied:
+		push_warning("[AutogrindTemplates] Template '%s' rejected by set_autogrind_rules choke point — deleting phantom profile at idx %d" % [template_id, idx])
+		if autogrind_system.has_method("delete_autogrind_profile"):
+			autogrind_system.delete_autogrind_profile(idx)
+		return -1
 	return idx
 
 
