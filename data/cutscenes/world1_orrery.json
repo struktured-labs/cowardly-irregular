@@ -158,16 +158,16 @@
       "type": "dialogue",
       "lines": [
         {
-          "speaker": "Phil",
+          "speaker": "Phil the Lost",
           "text": "You're from the wagon. Not her wagon — you're from her direction. That's different. That means she sent you, which means the card is in the right sequence, which means — here.",
-          "theme": "villager",
-          "portrait": "villager"
+          "theme": "mysterious",
+          "portrait": "mysterious"
         },
         {
-          "speaker": "Phil",
+          "speaker": "Phil the Lost",
           "text": "I've been carrying this since before. I don't know what before means except that it was before Harmonia, before I was Phil, before the inn was painted so many times it forgot what it was. But I've been carrying it. I'm tired of carrying it.",
-          "theme": "villager",
-          "portrait": "villager"
+          "theme": "mysterious",
+          "portrait": "mysterious"
         }
       ]
     },
