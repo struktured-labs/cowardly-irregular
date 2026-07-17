@@ -16,7 +16,7 @@
     {
       "type": "boss_intro",
       "name": "Curator of the Pipeline",
-      "title": "Masterite \u2014 Steampunk"
+      "title": "Masterite — Steampunk"
     },
     {
       "type": "wait",
@@ -36,7 +36,7 @@
           "speaker": "Curator of the Pipeline",
           "text": "Resources flow through me. I have counted every unit that has passed this junction since the manufactory was built. Nothing has been wasted. Nothing has been free.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_industrial"
         },
         {
           "speaker": "Cleric",
@@ -48,13 +48,13 @@
           "speaker": "Curator of the Pipeline",
           "text": "Everything costs exactly what it is worth. I set the worth. I have always set the worth. Before the manufactory, I set the worth of what grew in the ground and fell from the sky.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_industrial"
         },
         {
           "speaker": "Curator of the Pipeline",
           "text": "You have consumed resources in every world you have passed through. I have the ledger.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_industrial"
         },
         {
           "speaker": "Rogue",
@@ -66,13 +66,13 @@
           "speaker": "Curator of the Pipeline",
           "text": "The pipeline connects everything. Did you think the worlds were separate? They share infrastructure. They share cost.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_industrial"
         },
         {
           "speaker": "Curator of the Pipeline",
           "text": "You are expensive. I intend to collect.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_industrial"
         },
         {
           "speaker": "Mage",
@@ -84,7 +84,7 @@
           "speaker": "Curator of the Pipeline",
           "text": "That has not occurred. The question is noted as a variable. I dislike variables.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_industrial"
         }
       ]
     },

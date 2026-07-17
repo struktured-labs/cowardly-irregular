@@ -1,10 +1,10 @@
 {
   "id": "world5_tempo_defeat",
-  "title": "Tempo of Sequence \u2014 Aftermath",
+  "title": "Tempo of Sequence — Aftermath",
   "world": 5,
   "trigger": "boss_tempo_abstract_defeated",
   "background": "node_prime",
-  "description": "The sequence broke. Not broken \u2014 completed. First, then, after. After is now. Seven hundred and forty-two before the party, none of them passed. The sequence was waiting for exactly this.",
+  "description": "The sequence broke. Not broken — completed. First, then, after. After is now. Seven hundred and forty-two before the party, none of them passed. The sequence was waiting for exactly this.",
   "steps": [
     {
       "type": "stop_music"
@@ -38,9 +38,9 @@
       "lines": [
         {
           "speaker": "Tempo of Sequence",
-          "text": "The sequence\u2026 broke.",
+          "text": "The sequence… broke.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_abstract"
         }
       ]
     },
@@ -59,13 +59,13 @@
           "speaker": "Tempo of Sequence",
           "text": "No. Not broken. Completed.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_abstract"
         },
         {
           "speaker": "Tempo of Sequence",
           "text": "First. Then. After. After is now.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_abstract"
         }
       ]
     },
@@ -86,7 +86,7 @@
           "speaker": "Tempo of Sequence",
           "text": "Yes. Seven hundred and forty-two before you. None passed. You are the current state. The current state is the only state in which passing is possible. I told you this before the sequence began.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_abstract"
         },
         {
           "speaker": "Rogue",
@@ -98,7 +98,7 @@
           "speaker": "Tempo of Sequence",
           "text": "I knew the sequence. I knew positions. I knew that every position that came before yours was not the position in which passing was possible. I did not know which position would be. Only that passing would occur at a specific position in the sequence.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_abstract"
         }
       ]
     },
@@ -111,7 +111,7 @@
       "lines": [
         {
           "speaker": "Cleric",
-          "text": "Then all seven hundred and forty-two before us were\u2026",
+          "text": "Then all seven hundred and forty-two before us were…",
           "theme": "cleric",
           "portrait": "cleric"
         },
@@ -119,13 +119,13 @@
           "speaker": "Tempo of Sequence",
           "text": "Prior. They are all prior. They needed to be prior so that you could be current. Sequence requires everything that comes before so that after can exist.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_abstract"
         },
         {
           "speaker": "Tempo of Sequence",
           "text": "Every party that came before you was part of making you possible.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_abstract"
         }
       ]
     },
@@ -146,7 +146,7 @@
           "speaker": "Tempo of Sequence",
           "text": "They did not fail. They occupied their position. Every position in the sequence is correct. Position seven hundred and forty-three is the position where passage occurs. That does not mean the previous positions were wrong. They were prior. Prior is not wrong. Prior is necessary.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_abstract"
         }
       ]
     },
@@ -165,19 +165,19 @@
           "speaker": "Tempo of Sequence",
           "text": "I have been sequence since before sequence was needed. Before there was a before, I was there to make before possible.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_abstract"
         },
         {
           "speaker": "Tempo of Sequence",
           "text": "I was the thing that made First mean something. First needs something after it. I provided the after. I provided all the afters, in the correct order, for longer than the worlds have existed.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_abstract"
         },
         {
           "speaker": "Tempo of Sequence",
           "text": "I don't know what comes after After.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_abstract"
         }
       ]
     },
@@ -198,19 +198,19 @@
           "speaker": "Tempo of Sequence",
           "text": "Yes.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_abstract"
         },
         {
           "speaker": "Tempo of Sequence",
           "text": "I was before. You are after. That is all sequence ever was.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_abstract"
         },
         {
           "speaker": "Tempo of Sequence",
           "text": "I was before so that you could be after. I don't know if that is what I was for, or if it is simply what happened. But it is what happened.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_abstract"
         }
       ]
     },

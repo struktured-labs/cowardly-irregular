@@ -16,7 +16,7 @@
     {
       "type": "boss_intro",
       "name": "Arbiter of Efficiency",
-      "title": "Masterite \u2014 Steampunk"
+      "title": "Masterite — Steampunk"
     },
     {
       "type": "wait",
@@ -33,7 +33,7 @@
           "speaker": "Arbiter of Efficiency",
           "text": "Your output is below standard. You have defeated two wardens and one arbiter. Against projected resistance curves, this is adequate. Against optimal baseline, it is not.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_industrial"
         },
         {
           "speaker": "Cleric",
@@ -45,7 +45,7 @@
           "speaker": "Arbiter of Efficiency",
           "text": "By prior parties. The ones who progressed further than you have. Their data forms the benchmark.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_industrial"
         },
         {
           "speaker": "Rogue",
@@ -57,7 +57,7 @@
           "speaker": "Arbiter of Efficiency",
           "text": "None. The baseline is extrapolated.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_industrial"
         },
         {
           "speaker": "Mage",
@@ -69,7 +69,7 @@
           "speaker": "Arbiter of Efficiency",
           "text": "All baselines are hypotheticals until data confirms them. The purpose of this encounter is to generate that data. Demonstrate value or be reassigned.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_industrial"
         },
         {
           "speaker": "Fighter",
@@ -81,7 +81,7 @@
           "speaker": "Arbiter of Efficiency",
           "text": "I haven't determined that yet. I'll know after I see what you do next.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_industrial"
         }
       ]
     },

@@ -1,6 +1,6 @@
 {
   "id": "world1_arbiter_defeat",
-  "title": "Arbiter of Steel \u2014 Aftermath",
+  "title": "Arbiter of Steel — Aftermath",
   "world": 1,
   "trigger": "boss_arbiter_medieval_defeated",
   "background": "prologue_forest",
@@ -24,7 +24,7 @@
     {
       "type": "narration",
       "lines": [
-        "The Arbiter fell, and the kneeling was deliberate \u2014 the motion of something that has chosen its posture.",
+        "The Arbiter fell, and the kneeling was deliberate — the motion of something that has chosen its posture.",
         "The forest clearing was very still. The corruption around its edges seemed to wait."
       ]
     },
@@ -39,13 +39,13 @@
           "speaker": "Arbiter",
           "text": "Hm.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_medieval"
         },
         {
           "speaker": "Arbiter",
           "text": "I asked for your best and you gave it. I didn't expect to like being beaten this much.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_medieval"
         },
         {
           "speaker": "Fighter",
@@ -57,7 +57,7 @@
           "speaker": "Arbiter",
           "text": "It is not a compliment. It is a fact.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_medieval"
         }
       ]
     },
@@ -72,13 +72,13 @@
           "speaker": "Arbiter",
           "text": "Your movements are irregular. Not trained. Not disciplined. But you persist through mistakes in a way that suggests you haven't yet accepted their cost.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_medieval"
         },
         {
           "speaker": "Arbiter",
           "text": "That is either a flaw or a quality. I cannot determine which.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_medieval"
         },
         {
           "speaker": "Mage",
@@ -90,7 +90,7 @@
           "speaker": "Arbiter",
           "text": "That answer is outside my assessment criteria.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_medieval"
         }
       ]
     },
@@ -109,13 +109,13 @@
           "speaker": "Arbiter",
           "text": "The sword knows.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_medieval"
         },
         {
           "speaker": "Arbiter",
-          "text": "Whatever you are \u2014 the sword knows you're real.",
+          "text": "Whatever you are — the sword knows you're real.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_medieval"
         }
       ]
     },
@@ -130,13 +130,13 @@
           "speaker": "Arbiter",
           "text": "Behind the sealed passage to the north. The court magic there was not intended to be found.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_medieval"
         },
         {
           "speaker": "Arbiter",
           "text": "Find it.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_medieval"
         }
       ]
     },

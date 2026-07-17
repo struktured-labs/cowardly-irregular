@@ -16,7 +16,7 @@
     {
       "type": "boss_intro",
       "name": "Arbiter of the Benchmark",
-      "title": "Masterite \u2014 Digital"
+      "title": "Masterite — Digital"
     },
     {
       "type": "wait",
@@ -40,7 +40,7 @@
           "speaker": "Arbiter of Function",
           "text": "Function defines existence. Demonstrate yours.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_abstract"
         },
         {
           "speaker": "Fighter",
@@ -52,7 +52,7 @@
           "speaker": "Arbiter of Function",
           "text": "A function. Not the function. What is the function that requires this particular instance of you?",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_abstract"
         },
         {
           "speaker": "Cleric",
@@ -64,7 +64,7 @@
           "speaker": "Arbiter of Function",
           "text": "Toward what.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_abstract"
         },
         {
           "speaker": "Mage",
@@ -76,13 +76,13 @@
           "speaker": "Arbiter of Function",
           "text": "That is the first coherent answer I have received to this question. Most entities struggle with function. They know what they do. They do not know what they are for. You have collapsed the distinction.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_abstract"
         },
         {
           "speaker": "Arbiter of Function",
           "text": "I must still arbitrate. Function is not sufficient justification on its own. Function must be tested against what it costs and what it serves. I have been the cost of crossing into this world.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_abstract"
         },
         {
           "speaker": "Rogue",
@@ -94,7 +94,7 @@
           "speaker": "Arbiter of Function",
           "text": "Yes. I expected nothing less. Proceed.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_abstract"
         }
       ]
     },

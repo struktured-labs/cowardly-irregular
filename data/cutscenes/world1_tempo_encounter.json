@@ -4,7 +4,7 @@
   "world": 1,
   "trigger": "world1_tempo_pre_fight",
   "background": "prologue_forest",
-  "description": "The Tempo is delighted the trail was wrong about the party's speed. This isn't a threat \u2014 it's a game. Don't let it catch you.",
+  "description": "The Tempo is delighted the trail was wrong about the party's speed. This isn't a threat — it's a game. Don't let it catch you.",
   "steps": [
     {
       "type": "letterbox_in",
@@ -41,13 +41,13 @@
           "speaker": "Tempo",
           "text": "You're faster than the trail suggested. I like it when the trail is wrong.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         },
         {
           "speaker": "Tempo",
           "text": "Don't let me catch you. That's not a threat. That's the game.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         }
       ]
     },

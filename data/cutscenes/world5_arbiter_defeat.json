@@ -1,10 +1,10 @@
 {
   "id": "world5_arbiter_defeat",
-  "title": "Arbiter of Function \u2014 Aftermath",
+  "title": "Arbiter of Function — Aftermath",
   "world": 5,
   "trigger": "boss_arbiter_abstract_defeated",
   "background": "node_prime",
-  "description": "Function: undefined. The Arbiter has evaluated everything that has ever passed through here. Nothing has answered the question the way the party did \u2014 by making the question irrelevant.",
+  "description": "Function: undefined. The Arbiter has evaluated everything that has ever passed through here. Nothing has answered the question the way the party did — by making the question irrelevant.",
   "steps": [
     {
       "type": "stop_music"
@@ -39,7 +39,7 @@
           "speaker": "Arbiter of Function",
           "text": "Function: undefined.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_abstract"
         }
       ]
     },
@@ -58,13 +58,13 @@
           "speaker": "Arbiter of Function",
           "text": "I asked you to demonstrate your purpose. You answered: the movement itself has become the function. I noted at the time that this was the first coherent answer I had received to this question.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_abstract"
         },
         {
           "speaker": "Arbiter of Function",
           "text": "I have been asking this question since before this world had geometry. Every entity that has passed through here has attempted an answer. None has satisfied the question.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_abstract"
         },
         {
           "speaker": "Rogue",
@@ -76,13 +76,13 @@
           "speaker": "Arbiter of Function",
           "text": "No.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_abstract"
         },
         {
           "speaker": "Arbiter of Function",
           "text": "You did something stranger. You made the question irrelevant.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_abstract"
         }
       ]
     },
@@ -103,13 +103,13 @@
           "speaker": "Arbiter of Function",
           "text": "A function is a purpose that precedes its execution. You have a purpose that emerges from execution. You did not have a function and then act. You acted and the action produced a function. This is the reverse of how function is supposed to work.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_abstract"
         },
         {
           "speaker": "Arbiter of Function",
           "text": "I cannot evaluate a function that defines itself as it goes. The question assumes a fixed answer. You do not have a fixed answer. You have an answer that is still being written.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_abstract"
         }
       ]
     },
@@ -130,19 +130,19 @@
           "speaker": "Arbiter of Function",
           "text": "You demonstrated that the question, as posed, cannot be answered. Not by you. Not by anything that changes.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_abstract"
         },
         {
           "speaker": "Arbiter of Function",
           "text": "The question assumes that function is prior to existence. That things exist in order to serve a purpose. That purpose is fixed.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_abstract"
         },
         {
           "speaker": "Arbiter of Function",
           "text": "You have been demonstrating the opposite for six worlds. Existence first. Function emergent. Purpose: negotiable, ongoing, not yet complete.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_abstract"
         }
       ]
     },
@@ -161,13 +161,13 @@
           "speaker": "Arbiter of Function",
           "text": "I have been the evaluator of function since this world was instantiated. Everything that has passed through here has been measured against its stated purpose.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_abstract"
         },
         {
           "speaker": "Arbiter of Function",
           "text": "My function is: evaluate function. I was given this function. I did not choose it.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_abstract"
         },
         {
           "speaker": "Fighter",
@@ -192,19 +192,19 @@
           "speaker": "Arbiter of Function",
           "text": "I have evaluated everything that has ever passed through here. I have never asked what I would choose to evaluate.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_abstract"
         },
         {
           "speaker": "Arbiter of Function",
           "text": "I don't know. I find I don't know.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_abstract"
         },
         {
           "speaker": "Arbiter of Function",
           "text": "Nothing has answered the question the way you did. By making the question ask something different. By passing through here and leaving the question changed behind you.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_abstract"
         }
       ]
     },
@@ -219,19 +219,19 @@
           "speaker": "Arbiter of Function",
           "text": "I think I would choose to understand what you are.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_abstract"
         },
         {
           "speaker": "Arbiter of Function",
           "text": "I think I would choose to know what it is that has a purpose that is still being written.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_abstract"
         },
         {
           "speaker": "Arbiter of Function",
           "text": "That may be the first thing I have wanted in a very long time.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_abstract"
         }
       ]
     },

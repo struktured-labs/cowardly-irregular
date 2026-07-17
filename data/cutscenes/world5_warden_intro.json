@@ -16,7 +16,7 @@
     {
       "type": "boss_intro",
       "name": "Warden of the Firewall",
-      "title": "Masterite \u2014 Digital"
+      "title": "Masterite — Digital"
     },
     {
       "type": "wait",
@@ -41,13 +41,13 @@
           "speaker": "Warden of Form",
           "text": "I am Form. The Master's final shape. Everything before me had a shape I gave it.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_abstract"
         },
         {
           "speaker": "Warden of Form",
           "text": "Your world had walls because I gave walls their angles. Your spells had shapes because I gave shapes their meaning. Your wounds had patterns because I gave damage its geometry.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_abstract"
         },
         {
           "speaker": "Mage",
@@ -59,13 +59,13 @@
           "speaker": "Warden of Form",
           "text": "I am the rules of how everything is. Looking is only one application.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_abstract"
         },
         {
           "speaker": "Warden of Form",
           "text": "To pass, you must break what cannot be broken. This is not a riddle. It is a genuine requirement. I do not know if it can be done. I have been waiting here since before the question was asked.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_abstract"
         },
         {
           "speaker": "Fighter",
@@ -77,7 +77,7 @@
           "speaker": "Warden of Form",
           "text": "I don't know. I have never seen it. If I had seen it, it would have had a shape. It would have been Form. Whatever breaks me must be something I have not yet given a shape to.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_abstract"
         },
         {
           "speaker": "Rogue",
@@ -89,7 +89,7 @@
           "speaker": "Warden of Form",
           "text": "Yes. I find it clarifying. Most problems, when you strip away their shape, are simply the question: what are you willing to do? Demonstrate.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_abstract"
         }
       ]
     },

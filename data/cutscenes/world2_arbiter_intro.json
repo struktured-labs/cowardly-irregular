@@ -16,7 +16,7 @@
     {
       "type": "boss_intro",
       "name": "Arbiter of the Grade",
-      "title": "Masterite \u2014 Suburban"
+      "title": "Masterite — Suburban"
     },
     {
       "type": "wait",
@@ -41,7 +41,7 @@
           "speaker": "Arbiter of the Grade",
           "text": "Pop quiz.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_suburban"
         },
         {
           "speaker": "Fighter",
@@ -53,13 +53,13 @@
           "speaker": "Arbiter of the Grade",
           "text": "You entered the room. You're enrolled.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_suburban"
         },
         {
           "speaker": "Arbiter of the Grade",
           "text": "The questions are personalized. I have your files. I've had your files since before you arrived. The Warden sends reports.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_suburban"
         },
         {
           "speaker": "Mage",
@@ -71,13 +71,13 @@
           "speaker": "Arbiter of the Grade",
           "text": "Competency under pressure. Adaptive reasoning. Resource allocation in suboptimal conditions.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_suburban"
         },
         {
           "speaker": "Arbiter of the Grade",
           "text": "Also: how quickly you abandon your principles when threatened. That one's a trick question. The rubric rewards partial credit.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_suburban"
         },
         {
           "speaker": "Rogue",
@@ -89,7 +89,7 @@
           "speaker": "Arbiter of the Grade",
           "text": "You already know what failing looks like. Every party that has sat in these desks has known. Pencils out.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_suburban"
         }
       ]
     },

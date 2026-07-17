@@ -41,13 +41,13 @@
           "speaker": "Arbiter",
           "text": "I challenge one of you. Whoever leads. The others stay back. I'll know if they don't.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_medieval"
         },
         {
           "speaker": "Arbiter",
           "text": "Come at me with everything. I'll know if you're holding back. And I'll be disappointed.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_medieval"
         }
       ]
     },

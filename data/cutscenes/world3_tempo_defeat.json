@@ -1,6 +1,6 @@
 {
   "id": "world3_tempo_defeat",
-  "title": "Tempo of the Shift \u2014 Aftermath",
+  "title": "Tempo of the Shift — Aftermath",
   "world": 3,
   "trigger": "boss_tempo_industrial_defeated",
   "background": "steampunk_workshop",
@@ -39,7 +39,7 @@
           "speaker": "Tempo of the Shift",
           "text": "The shift is over.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_industrial"
         }
       ]
     },
@@ -58,7 +58,7 @@
           "speaker": "Tempo of the Shift",
           "text": "I have been running shifts since before the gears were installed. The gears were installed to track the shift. I was not installed. I was already here.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_industrial"
         },
         {
           "speaker": "Bard",
@@ -70,19 +70,19 @@
           "speaker": "Tempo of the Shift",
           "text": "No.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_industrial"
         },
         {
           "speaker": "Tempo of the Shift",
           "text": "I remember every shift in the manufactory's recorded history. I have the logs. Start time. End time. Output per unit. Incident reports. I have been running shifts for longer than the logs go back.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_industrial"
         },
         {
           "speaker": "Tempo of the Shift",
           "text": "I don't remember the first one.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_industrial"
         }
       ]
     },
@@ -103,19 +103,19 @@
           "speaker": "Tempo of the Shift",
           "text": "No.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_industrial"
         },
         {
           "speaker": "Tempo of the Shift",
           "text": "CLOCK OUT is at the end of the shift. The shift ends when I say it ends. That is what I was told. That is what I have always understood.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_industrial"
         },
         {
           "speaker": "Tempo of the Shift",
           "text": "I have never said the shift ends.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_industrial"
         }
       ]
     },
@@ -136,13 +136,13 @@
           "speaker": "Tempo of the Shift",
           "text": "Yes.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_industrial"
         },
         {
           "speaker": "Tempo of the Shift",
           "text": "This is the first time I have considered that this is unusual.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_industrial"
         }
       ]
     },
@@ -161,7 +161,7 @@
           "speaker": "Tempo of the Shift",
           "text": "The workers who passed through here. They had shifts that ended. They left. I watched them leave. I rang the bell and they left and new ones came.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_industrial"
         },
         {
           "speaker": "Cleric",
@@ -173,13 +173,13 @@
           "speaker": "Tempo of the Shift",
           "text": "Nowhere. I stayed. The junction needed to be ready for the next shift. I stayed to be ready.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_industrial"
         },
         {
           "speaker": "Tempo of the Shift",
           "text": "I have always stayed to be ready.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_industrial"
         }
       ]
     },
@@ -198,13 +198,13 @@
           "speaker": "Tempo of the Shift",
           "text": "The shift is over.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_industrial"
         },
         {
           "speaker": "Tempo of the Shift",
           "text": "I am saying it now. The shift is over.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_industrial"
         }
       ]
     },

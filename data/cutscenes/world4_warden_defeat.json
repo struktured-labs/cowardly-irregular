@@ -1,6 +1,6 @@
 {
   "id": "world4_warden_defeat",
-  "title": "Warden of the Firewall \u2014 Aftermath",
+  "title": "Warden of the Firewall — Aftermath",
   "world": 4,
   "trigger": "boss_warden_futuristic_defeated",
   "background": "industrial_factory",
@@ -43,13 +43,13 @@
           "speaker": "Warden of the Firewall",
           "text": "ACCESS: GRANTED.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_futuristic"
         },
         {
           "speaker": "Warden of the Firewall",
-          "text": "First authorization in\u2026 [MEMORY_OVERFLOW]. [MEMORY_OVERFLOW]. [MEMORY_OVERFLOW].",
+          "text": "First authorization in… [MEMORY_OVERFLOW]. [MEMORY_OVERFLOW]. [MEMORY_OVERFLOW].",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_futuristic"
         }
       ]
     },
@@ -68,7 +68,7 @@
           "speaker": "Warden of the Firewall",
           "text": "I cannot retrieve the timestamp of the previous authorization. Records indicate there was no previous authorization. Records may be incomplete.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_futuristic"
         },
         {
           "speaker": "Mage",
@@ -80,7 +80,7 @@
           "speaker": "Warden of the Firewall",
           "text": "Nothing unauthorized. The firewall does not permit unauthorized passage. I am the firewall. The firewall's record of authorized passage is: one instance. Current. You.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_futuristic"
         }
       ]
     },
@@ -101,7 +101,7 @@
           "speaker": "Warden of the Firewall",
           "text": "The secured sector. Node Prime's core functions. The Calibrant's system.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_futuristic"
         },
         {
           "speaker": "Fighter",
@@ -113,13 +113,13 @@
           "speaker": "Warden of the Firewall",
           "text": "[QUERY: what_is_being_protected]",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_futuristic"
         },
         {
           "speaker": "Warden of the Firewall",
           "text": "[RESULT: undefined]",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_futuristic"
         }
       ]
     },
@@ -138,13 +138,13 @@
           "speaker": "Warden of the Firewall",
           "text": "The rules of this firewall are: deny all unauthorized access. Permit only that which has been verified. I have been enforcing these rules since the first packet was routed through this node.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_futuristic"
         },
         {
           "speaker": "Warden of the Firewall",
           "text": "The rules are my function. The rules are, in the relevant sense, what I am.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_futuristic"
         },
         {
           "speaker": "Cleric",
@@ -156,13 +156,13 @@
           "speaker": "Warden of the Firewall",
           "text": "Yes.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_futuristic"
         },
         {
           "speaker": "Warden of the Firewall",
           "text": "The rules remain. The rules have not changed. What has changed is that the rules now have an exception they did not have before.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_futuristic"
         }
       ]
     },
@@ -177,7 +177,7 @@
           "speaker": "Warden of the Firewall",
           "text": "An exception is a rule. Exceptions must be defined. I do not have a definition for you. I cannot define you. You are unauthorized and you are through.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_futuristic"
         },
         {
           "speaker": "Rogue",
@@ -189,7 +189,7 @@
           "speaker": "Warden of the Firewall",
           "text": "Authorized. Retroactively. By result.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_futuristic"
         }
       ]
     },
@@ -208,7 +208,7 @@
           "speaker": "Warden of the Firewall",
           "text": "What am I without the rules?",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_futuristic"
         },
         {
           "speaker": "Bard",
@@ -220,19 +220,19 @@
           "speaker": "Warden of the Firewall",
           "text": "[QUERY: what_was_I_before]",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_futuristic"
         },
         {
           "speaker": "Warden of the Firewall",
           "text": "[RESULT: no_records_found]",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_futuristic"
         },
         {
           "speaker": "Warden of the Firewall",
           "text": "What was I protecting?",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_futuristic"
         }
       ]
     },

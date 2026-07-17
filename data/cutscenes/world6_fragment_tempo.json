@@ -46,13 +46,13 @@
           "speaker": "Tempo of Sequence",
           "text": "I was before. That was my function. I was the before so that after could exist.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_abstract"
         },
         {
           "speaker": "Tempo of Sequence",
           "text": "Not before a specific thing. Before all of it. Every sequence needed a start, and the start needed something to be before it, and I was that.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_abstract"
         }
       ]
     },
@@ -67,13 +67,13 @@
           "speaker": "Tempo of Sequence",
           "text": "I was not allowed to come after. Afters were for what I preceded. I was the condition for them. I could not be conditioned in return.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_abstract"
         },
         {
           "speaker": "Tempo of Sequence",
           "text": "But you came after me. You happened after I did. And that means now I am before something that came after.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_abstract"
         }
       ]
     },
@@ -88,7 +88,7 @@
           "speaker": "Tempo of Sequence",
           "text": "I don't know what it's like to have an after. I'm finding out. I think it might be what everything else has felt like the whole time.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_abstract"
         }
       ]
     },

@@ -16,7 +16,7 @@
     {
       "type": "boss_intro",
       "name": "Tempo of the Hunt",
-      "title": "Masterite \u2014 Medieval"
+      "title": "Masterite — Medieval"
     },
     {
       "type": "wait",
@@ -33,13 +33,13 @@
           "speaker": "Tempo",
           "text": "You made it to the city. I had calculated you would lose yourselves in the forest and give up.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         },
         {
           "speaker": "Tempo",
           "text": "I even cleared one of the loop paths to give you a chance. I wanted you to last longer.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         },
         {
           "speaker": "Rogue",
@@ -51,19 +51,19 @@
           "speaker": "Tempo",
           "text": "Isn't it? You have an interesting way of moving through space. You cover each other's gaps without discussing it.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         },
         {
           "speaker": "Tempo",
           "text": "The rogue is already three steps from where I expect.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         },
         {
           "speaker": "Tempo",
           "text": "Don't let me catch you. That's not a threat. That's the game.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         }
       ]
     },

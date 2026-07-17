@@ -16,7 +16,7 @@
     {
       "type": "boss_intro",
       "name": "Tempo of the Clock Cycle",
-      "title": "Masterite \u2014 Digital"
+      "title": "Masterite — Digital"
     },
     {
       "type": "wait",
@@ -41,7 +41,7 @@
           "speaker": "Tempo of Sequence",
           "text": "First. Then. After. The order cannot be violated.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_abstract"
         },
         {
           "speaker": "Bard",
@@ -53,13 +53,13 @@
           "speaker": "Tempo of Sequence",
           "text": "Nothing. That is what before means. Before me, there is no order. There is no time. There is no sequence in which your question could be asked.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_abstract"
         },
         {
           "speaker": "Tempo of Sequence",
           "text": "You have arrived after every other party that has tried this world. You have arrived before the ones who will come next. You are a middle state. All things pass through me to become a middle state.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_abstract"
         },
         {
           "speaker": "Mage",
@@ -71,7 +71,7 @@
           "speaker": "Tempo of Sequence",
           "text": "I know all positions in the sequence. I am the sequence. You are position seven hundred and forty-three. This information is not useful to you. It is accurate.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_abstract"
         },
         {
           "speaker": "Rogue",
@@ -83,7 +83,7 @@
           "speaker": "Tempo of Sequence",
           "text": "No. They are all prior. Prior means behind. You are the current state. The current state is the only state in which passing is possible. First: acknowledge the sequence. Then: proceed. After: you will know whether you passed.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_abstract"
         },
         {
           "speaker": "Fighter",

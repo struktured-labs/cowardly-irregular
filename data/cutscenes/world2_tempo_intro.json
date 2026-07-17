@@ -16,7 +16,7 @@
     {
       "type": "boss_intro",
       "name": "Tempo of the Rush Hour",
-      "title": "Masterite \u2014 Suburban"
+      "title": "Masterite — Suburban"
     },
     {
       "type": "wait",
@@ -33,7 +33,7 @@
           "speaker": "Tempo of the Rush Hour",
           "text": "THIRTY MINUTES OR LESS!",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_suburban"
         },
         {
           "speaker": "Cleric",
@@ -45,7 +45,7 @@
           "speaker": "Tempo of the Rush Hour",
           "text": "EVERYTHING! ALL OF IT! WHAT DO YOU MEAN WHAT?",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_suburban"
         },
         {
           "speaker": "Fighter",
@@ -57,7 +57,7 @@
           "speaker": "Tempo of the Rush Hour",
           "text": "Irrelevant. You are on my route. You are on the clock. THE TIMER IS RUNNING. THE TIMER IS ALWAYS RUNNING.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_suburban"
         }
       ]
     },
@@ -99,7 +99,7 @@
           "speaker": "Tempo of the Rush Hour",
           "text": "TWENTY-TWO MINUTES REMAINING! TWENTY-ONE! EVERY SECOND YOU WASTE IS A SECOND ON THE CLOCK!",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_suburban"
         }
       ]
     },
@@ -132,7 +132,7 @@
     },
     {
       "type": "narration",
-      "text": "The Rogue led the car down a footpath between two houses. Not a road. A path. The compact car followed anyway \u2014 the Tempo was past making distinctions at this point. The path ended at a fence. The fence was wooden and looked reasonable. The car hit it at a speed that suggested the Tempo had done the math and concluded the fence would yield. The fence did not yield. The fence had structural opinions."
+      "text": "The Rogue led the car down a footpath between two houses. Not a road. A path. The compact car followed anyway — the Tempo was past making distinctions at this point. The path ended at a fence. The fence was wooden and looked reasonable. The car hit it at a speed that suggested the Tempo had done the math and concluded the fence would yield. The fence did not yield. The fence had structural opinions."
     },
     {
       "type": "narration",
@@ -145,13 +145,13 @@
           "speaker": "Tempo of the Rush Hour",
           "text": "Eleven minutes.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_suburban"
         },
         {
           "speaker": "Tempo of the Rush Hour",
           "text": "Eleven minutes. I still have eleven minutes.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_suburban"
         }
       ]
     },

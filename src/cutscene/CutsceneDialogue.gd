@@ -868,6 +868,27 @@ const PORTRAIT_SPRITES = {
 	"shopkeeper": "res://assets/sprites/portraits/npcs/shopkeeper.png",
 	"brigadier": "res://assets/sprites/portraits/npcs/brigadier.png",
 	"guard": "res://assets/sprites/portraits/npcs/brigadier.png",
+	# Masterite portraits — 4 roles × 5 world variants (matches monsters.json ids). Paths point at cowir-sprites' artist-anchored PNGs; missing files fall through to the procedural mysterious draw via the masterite match arm.
+	"masterite_warden_medieval": "res://assets/sprites/portraits/masterite_warden_medieval.png",
+	"masterite_warden_suburban": "res://assets/sprites/portraits/masterite_warden_suburban.png",
+	"masterite_warden_industrial": "res://assets/sprites/portraits/masterite_warden_industrial.png",
+	"masterite_warden_futuristic": "res://assets/sprites/portraits/masterite_warden_futuristic.png",
+	"masterite_warden_abstract": "res://assets/sprites/portraits/masterite_warden_abstract.png",
+	"masterite_tempo_medieval": "res://assets/sprites/portraits/masterite_tempo_medieval.png",
+	"masterite_tempo_suburban": "res://assets/sprites/portraits/masterite_tempo_suburban.png",
+	"masterite_tempo_industrial": "res://assets/sprites/portraits/masterite_tempo_industrial.png",
+	"masterite_tempo_futuristic": "res://assets/sprites/portraits/masterite_tempo_futuristic.png",
+	"masterite_tempo_abstract": "res://assets/sprites/portraits/masterite_tempo_abstract.png",
+	"masterite_arbiter_medieval": "res://assets/sprites/portraits/masterite_arbiter_medieval.png",
+	"masterite_arbiter_suburban": "res://assets/sprites/portraits/masterite_arbiter_suburban.png",
+	"masterite_arbiter_industrial": "res://assets/sprites/portraits/masterite_arbiter_industrial.png",
+	"masterite_arbiter_futuristic": "res://assets/sprites/portraits/masterite_arbiter_futuristic.png",
+	"masterite_arbiter_abstract": "res://assets/sprites/portraits/masterite_arbiter_abstract.png",
+	"masterite_curator_medieval": "res://assets/sprites/portraits/masterite_curator_medieval.png",
+	"masterite_curator_suburban": "res://assets/sprites/portraits/masterite_curator_suburban.png",
+	"masterite_curator_industrial": "res://assets/sprites/portraits/masterite_curator_industrial.png",
+	"masterite_curator_futuristic": "res://assets/sprites/portraits/masterite_curator_futuristic.png",
+	"masterite_curator_abstract": "res://assets/sprites/portraits/masterite_curator_abstract.png",
 }
 
 ## Cache loaded portrait textures to avoid repeated disk reads
@@ -926,8 +947,14 @@ func _create_portrait(portrait_type: String) -> Texture2D:
 			_draw_mysterious_portrait(img, size)
 		"system":
 			_draw_system_portrait(img, size)
-		"narrator", _:
+		"narrator":
 			_draw_narrator_portrait(img, size)
+		_:
+			# Masterite portraits (masterite_<role>_<world>) fall through to mysterious until cowir-sprites' per-world PNGs land; PORTRAIT_SPRITES lookup wins once they exist.
+			if portrait_type.begins_with("masterite_"):
+				_draw_mysterious_portrait(img, size)
+			else:
+				_draw_narrator_portrait(img, size)
 
 	return ImageTexture.create_from_image(img)
 

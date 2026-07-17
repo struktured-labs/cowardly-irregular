@@ -1,6 +1,6 @@
 {
   "id": "world3_arbiter_defeat",
-  "title": "Arbiter of Efficiency \u2014 Aftermath",
+  "title": "Arbiter of Efficiency — Aftermath",
   "world": 3,
   "trigger": "boss_arbiter_industrial_defeated",
   "background": "steampunk_workshop",
@@ -39,13 +39,13 @@
           "speaker": "Arbiter of Efficiency",
           "text": "Your efficiency rating is suboptimal.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_industrial"
         },
         {
           "speaker": "Arbiter of Efficiency",
           "text": "And yet you are standing.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_industrial"
         }
       ]
     },
@@ -64,13 +64,13 @@
           "speaker": "Arbiter of Efficiency",
           "text": "I have optimized four hundred processes in this manufactory. Output, flow, yield, loss-rate, recovery-rate, shift allocation, fuel consumption. Every process I have touched performs closer to ideal than before I touched it.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_industrial"
         },
         {
           "speaker": "Arbiter of Efficiency",
           "text": "None of those processes account for this outcome.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_industrial"
         },
         {
           "speaker": "Rogue",
@@ -82,13 +82,13 @@
           "speaker": "Arbiter of Efficiency",
           "text": "Yes. The baseline was accurate. The model was correct. You performed within the model's parameters in thirty-one of fifty-three engagements.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_industrial"
         },
         {
           "speaker": "Arbiter of Efficiency",
           "text": "You also survived all fifty-three. The model does not predict this.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_industrial"
         }
       ]
     },
@@ -109,19 +109,19 @@
           "speaker": "Arbiter of Efficiency",
           "text": "Yes.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_industrial"
         },
         {
           "speaker": "Arbiter of Efficiency",
           "text": "I have been considering which part is wrong. The inputs were accurate. The historical data was accurate. The optimization was sound.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_industrial"
         },
         {
           "speaker": "Arbiter of Efficiency",
           "text": "I believe the problem is the baseline itself. I constructed an optimal from your past behavior. But you are not bound by your past behavior.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_industrial"
         }
       ]
     },
@@ -142,13 +142,13 @@
           "speaker": "Arbiter of Efficiency",
           "text": "The systems I optimize are. A furnace cannot exceed its design capacity. A belt cannot move faster than its motor allows. The gap between what a system has done and what it can do is fixed.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_industrial"
         },
         {
           "speaker": "Arbiter of Efficiency",
           "text": "I applied the same model to you. That was the error.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_industrial"
         }
       ]
     },
@@ -167,13 +167,13 @@
           "speaker": "Arbiter of Efficiency",
           "text": "I have been optimizing this manufactory for as long as I can establish from records. The records go back further than the manufactory's construction date.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_industrial"
         },
         {
           "speaker": "Arbiter of Efficiency",
           "text": "That should trouble me. It does not. This also troubles me.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_industrial"
         },
         {
           "speaker": "Fighter",
@@ -198,19 +198,19 @@
           "speaker": "Arbiter of Efficiency",
           "text": "No.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_industrial"
         },
         {
           "speaker": "Arbiter of Efficiency",
           "text": "The optimization was always in service of outputs I did not set. Targets I did not choose. I made everything more efficient. I never asked what the efficiency was for.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_industrial"
         },
         {
           "speaker": "Arbiter of Efficiency",
           "text": "The model was wrong. But not in the way I thought. The model was wrong because I was not measuring the right thing.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_industrial"
         }
       ]
     },

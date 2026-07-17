@@ -24,7 +24,7 @@
     {
       "type": "boss_intro",
       "name": "Warden of the Old Guard",
-      "title": "Masterite \u2014 Medieval"
+      "title": "Masterite — Medieval"
     },
     {
       "type": "fade_from_black",
@@ -35,7 +35,7 @@
       "lines": [
         "The deepest chamber was almost perfectly circular. The stone floor worn smooth not by traffic but by the slow passage of time.",
         "The air here was different. Drier. Stiller. As if the ordinary dampness of the mountain had decided to leave this room alone.",
-        "In the center stood a figure in full plate armor, utterly still. The armor was old \u2014 not decayed, not corrupted, but old in the way things are old when they have been maintained for centuries."
+        "In the center stood a figure in full plate armor, utterly still. The armor was old — not decayed, not corrupted, but old in the way things are old when they have been maintained for centuries."
       ]
     },
     {
@@ -62,11 +62,11 @@
           "speaker": "Warden",
           "text": "Hm. Four blades. A healer. A mage. Rearguard position on the light-fingered one. Standard formation for an irregular unit.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_medieval"
         },
         {
           "speaker": "Fighter",
-          "text": "We're not exactly\u2014",
+          "text": "We're not exactly—",
           "theme": "fighter",
           "portrait": "fighter"
         },
@@ -74,13 +74,13 @@
           "speaker": "Warden",
           "text": "You're exactly what I said. Conscripts, most of you. Not chosen. Not trained for this. Which means you're here because no one with better options came.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_medieval"
         },
         {
           "speaker": "Warden",
           "text": "That makes you either very brave or very unlucky.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_medieval"
         },
         {
           "speaker": "Mage",
@@ -101,25 +101,25 @@
           "speaker": "Warden",
           "text": "This pass has been held for three hundred years. By my count, you are the thirty-seventh party to attempt it. The other thirty-six turned back.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_medieval"
         },
         {
           "speaker": "Warden",
           "text": "I am not telling you this to frighten you. I am telling you so the record is clear.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_medieval"
         },
         {
           "speaker": "Warden",
           "text": "I have guarded this chamber since before memory. Since before your village was a plan in anyone's mind.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_medieval"
         },
         {
           "speaker": "Warden",
-          "text": "You will be tested. But first \u2014 there is food in the guardhouse. You may rest before we begin, if you wish.",
+          "text": "You will be tested. But first — there is food in the guardhouse. You may rest before we begin, if you wish.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_medieval"
         },
         {
           "speaker": "Fighter",
@@ -140,11 +140,11 @@
           "speaker": "Warden",
           "text": "Show me what you are, and I will show you what I have left.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_medieval"
         },
         {
           "speaker": "Rogue",
-          "text": "Is there a way to avoid\u2014",
+          "text": "Is there a way to avoid—",
           "theme": "rogue",
           "portrait": "rogue"
         },
@@ -152,7 +152,7 @@
           "speaker": "Warden",
           "text": "No.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_medieval"
         },
         {
           "speaker": "Rogue",
@@ -181,13 +181,13 @@
           "speaker": "Warden",
           "text": "I want you to know that I bear you no ill will. This is not personal. This is purpose.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_medieval"
         },
         {
           "speaker": "Warden",
           "text": "Begin when you're ready.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_medieval"
         }
       ]
     },

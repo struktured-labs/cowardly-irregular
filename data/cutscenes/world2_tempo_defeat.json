@@ -1,10 +1,10 @@
 {
   "id": "world2_tempo_defeat",
-  "title": "Tempo of the Rush Hour \u2014 Aftermath",
+  "title": "Tempo of the Rush Hour — Aftermath",
   "world": 2,
   "trigger": "boss_tempo_suburban_defeated",
   "background": "suburban_park",
-  "description": "The Tempo steps out of the wrecked car. The manic frequency is gone. They have been delivering to this neighborhood their whole life and cannot remember the first delivery. The party has a beginning \u2014 a real one \u2014 and the Tempo realizes they want one too.",
+  "description": "The Tempo steps out of the wrecked car. The manic frequency is gone. They have been delivering to this neighborhood their whole life and cannot remember the first delivery. The party has a beginning — a real one — and the Tempo realizes they want one too.",
   "steps": [
     {
       "type": "stop_music"
@@ -39,13 +39,13 @@
           "speaker": "Tempo",
           "text": "Heck of a chase.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         },
         {
           "speaker": "Tempo",
           "text": "I've been doing this route my whole life.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         }
       ]
     },
@@ -62,21 +62,21 @@
       "lines": [
         {
           "speaker": "Tempo",
-          "text": "Except\u2026 I don't remember starting.",
+          "text": "Except… I don't remember starting.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         },
         {
           "speaker": "Tempo",
           "text": "I've been delivering to this neighborhood my whole life, and I remember every house, every regular order, every dog that runs at the car. But I don't remember the first delivery.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         },
         {
           "speaker": "Tempo",
           "text": "That's weird, right? That should be weird.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         }
       ]
     },
@@ -97,13 +97,13 @@
           "speaker": "Tempo",
           "text": "It's not okay.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         },
         {
           "speaker": "Tempo",
           "text": "A person remembers their first job. A person remembers the beginning.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         }
       ]
     },
@@ -118,7 +118,7 @@
           "speaker": "Tempo",
           "text": "How long have you been doing yours?",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         },
         {
           "speaker": "Bard",
@@ -130,13 +130,13 @@
           "speaker": "Tempo",
           "text": "That's specific.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         },
         {
           "speaker": "Tempo",
           "text": "That's a beginning. That's a real one.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         }
       ]
     },
@@ -155,7 +155,7 @@
           "speaker": "Tempo",
           "text": "I don't know what's in this. I've never opened it. I've delivered it every night of my life and I don't know who I'm delivering it to.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         }
       ]
     },
@@ -170,13 +170,13 @@
           "speaker": "Tempo",
           "text": "Thirty minutes or less.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         },
         {
           "speaker": "Tempo",
           "text": "It's not a slogan. It was supposed to be something. I just don't know what anymore.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         }
       ]
     },
@@ -197,9 +197,9 @@
       "lines": [
         {
           "speaker": "Tempo",
-          "text": "I'm\u2026 not late anymore.",
+          "text": "I'm… not late anymore.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         }
       ]
     },

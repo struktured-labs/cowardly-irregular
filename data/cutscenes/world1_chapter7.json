@@ -175,13 +175,13 @@
           "speaker": "Tempo",
           "text": "You made it to the city. I had calculated you would lose yourselves in the forest and give up.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         },
         {
           "speaker": "Tempo",
           "text": "I even cleared one of the loop paths to give you a chance. I wanted you to last longer.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         },
         {
           "speaker": "Rogue",
@@ -193,7 +193,7 @@
           "speaker": "Tempo",
           "text": "I extended the game. Don't let me catch you. That's not a threat. That's the game.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         }
       ]
     },
@@ -241,13 +241,13 @@
           "speaker": "Tempo",
           "text": "Oh.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         },
         {
           "speaker": "Tempo",
           "text": "Noted.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_medieval"
         }
       ]
     },

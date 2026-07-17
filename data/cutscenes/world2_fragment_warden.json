@@ -22,9 +22,9 @@
     {
       "type": "narration",
       "lines": [
-        "The intersection was empty. No cars at the stop line, no children waiting on the curb \u2014 just the lamppost, the painted crosswalk, and the particular stillness of a place that had been held in readiness for something that never came.",
+        "The intersection was empty. No cars at the stop line, no children waiting on the curb — just the lamppost, the painted crosswalk, and the particular stillness of a place that had been held in readiness for something that never came.",
         "Leaning against the lamppost, perfectly vertical, as if someone had set it down with care rather than dropped it: a stop sign paddle. The kind a crossing guard carries. Orange handle, worn smooth in the grip. The reflective face still bright.",
-        "It was warm. Not from the sun \u2014 the afternoon had gone gray. Warm from having been held for a long time by someone who meant it."
+        "It was warm. Not from the sun — the afternoon had gone gray. Warm from having been held for a long time by someone who meant it."
       ]
     },
     {
@@ -33,7 +33,7 @@
     },
     {
       "type": "narration",
-      "text": "Picking it up, the weight settled in the hand with the ease of something accustomed to being held. The voice came from the intersection itself \u2014 from the painted lines, the signal that had long since stopped cycling, the corner where she had stood."
+      "text": "Picking it up, the weight settled in the hand with the ease of something accustomed to being held. The voice came from the intersection itself — from the painted lines, the signal that had long since stopped cycling, the corner where she had stood."
     },
     {
       "type": "wait",
@@ -46,13 +46,13 @@
           "speaker": "Warden of Routine",
           "text": "I held this intersection for longer than the neighborhood existed. Every car that didn't come. Every signal that didn't change.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_suburban"
         },
         {
           "speaker": "Warden of Routine",
           "text": "I held it anyway.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_suburban"
         }
       ]
     },
@@ -67,13 +67,13 @@
           "speaker": "Warden of Routine",
           "text": "I told myself the job was the intersection. That someone had to. That the moment I stopped, something would finally come through and find no one there.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_suburban"
         },
         {
           "speaker": "Warden of Routine",
           "text": "But you came through. And I was there. And I don't know anymore what I was protecting.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_suburban"
         }
       ]
     },
@@ -88,7 +88,7 @@
           "speaker": "Warden of Routine",
           "text": "You may cross. You always could have.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_suburban"
         }
       ]
     },
@@ -98,7 +98,7 @@
     },
     {
       "type": "narration",
-      "text": "The paddle held its warmth. The reflective face caught what little light was left in the afternoon and gave it back steadily, without judgment \u2014 the way a crossing guard holds their sign up not to stop anything in particular but to say: I see you. It is safe."
+      "text": "The paddle held its warmth. The reflective face caught what little light was left in the afternoon and gave it back steadily, without judgment — the way a crossing guard holds their sign up not to stop anything in particular but to say: I see you. It is safe."
     },
     {
       "type": "wait",

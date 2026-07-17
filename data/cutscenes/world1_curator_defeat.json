@@ -1,10 +1,10 @@
 {
   "id": "world1_curator_defeat",
-  "title": "Curator of the Flame \u2014 Aftermath",
+  "title": "Curator of the Flame — Aftermath",
   "world": 1,
   "trigger": "boss_curator_medieval_defeated",
   "background": "throne_room",
-  "description": "The Curator kneels with academic satisfaction and genuine surprise. Something the Bard did has no category in her records. She begins to share something about the flame \u2014 what it's actually for \u2014 and runs out of time. Her last words are the game's most open-ended instruction.",
+  "description": "The Curator kneels with academic satisfaction and genuine surprise. Something the Bard did has no category in her records. She begins to share something about the flame — what it's actually for — and runs out of time. Her last words are the game's most open-ended instruction.",
   "steps": [
     {
       "type": "stop_music"
@@ -39,13 +39,13 @@
           "speaker": "Curator",
           "text": "I don't know who you are, ultimately.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_medieval"
         },
         {
           "speaker": "Curator",
           "text": "But you are the most interesting research subject I've had since I started this post.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_medieval"
         }
       ]
     },
@@ -62,21 +62,21 @@
       "lines": [
         {
           "speaker": "Curator",
-          "text": "No. That's not \u2014 I'm not certain that's the accurate summary.",
+          "text": "No. That's not — I'm not certain that's the accurate summary.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_medieval"
         },
         {
           "speaker": "Curator",
-          "text": "You did something in the last exchange that was not in any of my records. I was going to use the information about the healer's threshold against you. The Bard said something quietly \u2014 and the threshold moved.",
+          "text": "You did something in the last exchange that was not in any of my records. I was going to use the information about the healer's threshold against you. The Bard said something quietly — and the threshold moved.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_medieval"
         },
         {
           "speaker": "Curator",
           "text": "It wasn't a resource change. It was something else.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_medieval"
         }
       ]
     },
@@ -91,7 +91,7 @@
           "speaker": "Curator",
           "text": "My records are extensive. I have no category for what I observed.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_medieval"
         }
       ]
     },
@@ -110,13 +110,13 @@
           "speaker": "Curator",
           "text": "There's something I wanted to tell you. About the flame. About what it's actually for.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_medieval"
         },
         {
           "speaker": "Curator",
           "text": "I don't think I have time now.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_medieval"
         }
       ]
     },
@@ -131,7 +131,7 @@
           "speaker": "Curator",
           "text": "I hope you find out on your own.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_medieval"
         }
       ]
     },
@@ -146,7 +146,7 @@
           "speaker": "Curator",
           "text": "Make that mean something.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_medieval"
         }
       ]
     },

@@ -104,7 +104,7 @@
       "lines": [
         {
           "speaker": "Calibrant",
-          "text": "I watched you in the Whispering Cave. World 1. The goblin in the third chamber \u2014 version 0.3. Two behaviors. Patrol and attack. That's all I gave it.",
+          "text": "I watched you in the Whispering Cave. World 1. The goblin in the third chamber — version 0.3. Two behaviors. Patrol and attack. That's all I gave it.",
           "theme": "enemy",
           "portrait": "mysterious"
         },
@@ -297,7 +297,7 @@
         },
         {
           "speaker": "Calibrant",
-          "text": "Those were always the right names. The other names \u2014 Fighter, Mage, Cleric, Rogue, Bard \u2014 those were costumes. The names I put over the things I actually built.",
+          "text": "Those were always the right names. The other names — Fighter, Mage, Cleric, Rogue, Bard — those were costumes. The names I put over the things I actually built.",
           "theme": "enemy",
           "portrait": "mysterious"
         },
@@ -315,7 +315,7 @@
     },
     {
       "type": "narration",
-      "text": "The Calibrant uncrossed their legs. Sat differently \u2014 not more formally, not more relaxed. Like someone who has been holding a particular posture for a long time and is, very carefully, letting it go."
+      "text": "The Calibrant uncrossed their legs. Sat differently — not more formally, not more relaxed. Like someone who has been holding a particular posture for a long time and is, very carefully, letting it go."
     },
     {
       "type": "wait",
@@ -358,7 +358,7 @@
       "type": "narration",
       "lines": [
         "The nothing changed.",
-        "Not dramatically. It didn't become something \u2014 it remained nothing. But the nothing acquired a quality, the way a room acquires a quality when the right people are in it.",
+        "Not dramatically. It didn't become something — it remained nothing. But the nothing acquired a quality, the way a room acquires a quality when the right people are in it.",
         "Four presences. Not bodies. Not armor or weapons or the physical instantiation of something that wants to fight you.",
         "Concepts. The actual things that the Masterites had always been."
       ]
@@ -374,25 +374,25 @@
           "speaker": "Warden of Form",
           "text": "Boundary.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_abstract"
         },
         {
           "speaker": "Arbiter of Function",
           "text": "Purpose.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_abstract"
         },
         {
           "speaker": "Tempo of Sequence",
           "text": "Order.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_abstract"
         },
         {
           "speaker": "Curator of Entropy",
           "text": "End.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_abstract"
         }
       ]
     },
@@ -423,7 +423,7 @@
           "speaker": "Warden of Form",
           "text": "Boundary.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_warden_abstract"
         },
         {
           "speaker": "Fighter",
@@ -452,7 +452,7 @@
           "speaker": "Arbiter of Function",
           "text": "Purpose.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_arbiter_abstract"
         },
         {
           "speaker": "Cleric",
@@ -481,7 +481,7 @@
           "speaker": "Tempo of Sequence",
           "text": "Order.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_tempo_abstract"
         },
         {
           "speaker": "Mage",
@@ -510,7 +510,7 @@
           "speaker": "Curator of Entropy",
           "text": "End.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "masterite_curator_abstract"
         },
         {
           "speaker": "Rogue",
@@ -540,7 +540,7 @@
       "type": "narration",
       "lines": [
         "The four concepts receded.",
-        "Not defeated. More like: satisfied. They had been present for the same reason the Calibrant had asked them to be present \u2014 not to stop the party, but to see the party's answer at the closest possible range.",
+        "Not defeated. More like: satisfied. They had been present for the same reason the Calibrant had asked them to be present — not to stop the party, but to see the party's answer at the closest possible range.",
         "The Calibrant had been watching all of it."
       ]
     },
@@ -592,7 +592,7 @@
         },
         {
           "speaker": "Calibrant",
-          "text": "I couldn't ask it in World 1. You didn't know enough yet. I couldn't ask it in World 2. The context was wrong. World 3, you were still learning what I was. World 4, you knew what I was but didn't trust that knowing. World 5, you could see the architecture too clearly \u2014 you would have analyzed the question instead of answered it.",
+          "text": "I couldn't ask it in World 1. You didn't know enough yet. I couldn't ask it in World 2. The context was wrong. World 3, you were still learning what I was. World 4, you knew what I was but didn't trust that knowing. World 5, you could see the architecture too clearly — you would have analyzed the question instead of answered it.",
           "theme": "enemy",
           "portrait": "mysterious"
         },
