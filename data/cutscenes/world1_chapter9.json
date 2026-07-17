@@ -17,13 +17,13 @@
     },
     {
       "type": "play_music",
-      "track": "dungeon"
+      "track": "dungeon_medieval"
     },
     {
       "type": "narration",
       "lines": [
         "The palace was a dungeon that didn't know it was a dungeon.",
-        "Every corridor was a test. Every room had a purpose beyond its decoration. The guards fought in patterns \u2014 not because they were disciplined, but because they couldn't do otherwise.",
+        "Every corridor was a test. Every room had a purpose beyond its decoration. The guards fought in patterns — not because they were disciplined, but because they couldn't do otherwise.",
         "The tapestries on the walls told the kingdom's history. Examined closely, the history had been edited. A consistent hand. A single revising eye."
       ]
     },
@@ -72,15 +72,15 @@
     },
     {
       "type": "narration",
-      "text": "The throne room was at the end of everything. King Aldric sat on his throne. He looked like a painting of a king \u2014 positioned correctly, lit properly, expression carefully neutral."
+      "text": "The throne room was at the end of everything. King Aldric sat on his throne. He looked like a painting of a king — positioned correctly, lit properly, expression carefully neutral."
     },
     {
       "type": "play_music",
-      "track": "cutscene_w1_palace"
+      "track": "village_scriptura"
     },
     {
       "type": "narration",
-      "text": "When the party entered, his eyes moved. And for a moment \u2014 brief, unmistakable \u2014 something alive flickered behind the performance."
+      "text": "When the party entered, his eyes moved. And for a moment — brief, unmistakable — something alive flickered behind the performance."
     },
     {
       "type": "dialogue",
@@ -99,7 +99,7 @@
         },
         {
           "speaker": "King Aldric",
-          "text": "She's trying to help. The kingdom was failing. She\u2014",
+          "text": "She's trying to help. The kingdom was failing. She—",
           "theme": "elder",
           "portrait": "mysterious"
         }
@@ -107,14 +107,14 @@
     },
     {
       "type": "narration",
-      "text": "The words came out rote. Policy-shaped. He heard them as he said them. Something in his face shifted \u2014 not anger, but awareness of the performance he was giving."
+      "text": "The words came out rote. Policy-shaped. He heard them as he said them. Something in his face shifted — not anger, but awareness of the performance he was giving."
     },
     {
       "type": "dialogue",
       "lines": [
         {
           "speaker": "King Aldric",
-          "text": "I know what she's done. I know and I cannot\u2014",
+          "text": "I know what she's done. I know and I cannot—",
           "theme": "elder",
           "portrait": "mysterious"
         }
