@@ -49,6 +49,7 @@ func _ready() -> void:
 	var ambient_key := _get_ambient_key()
 	if ambient_key != "" and SoundManager and SoundManager.has_method("play_ambient"):
 		SoundManager.play_ambient(ambient_key)
+	_maybe_apply_night_modulation()
 
 
 func _exit_tree() -> void:
@@ -280,3 +281,33 @@ func pause() -> void:
 func resume() -> void:
 	if controller and controller.has_method("resume_exploration"):
 		controller.resume_exploration()
+
+
+## Suggested night-lighting tint (msg 2643 struktured-ack-pending). Cool
+## slight-darkening tint composed on top of any subclass ambient — reads
+## as "lamps are on but the room is quieter." Value awaits struktured's
+## ruling; the whole path is inert until the ack toggle flips.
+const NIGHT_INTERIOR_TINT: Color = Color(0.78, 0.82, 0.95)
+
+
+## Night lighting hook — same forward-compat + ack-gate pattern as the
+## OverworldController night encounter multiplier (PR #151):
+##   • Reads gs.game_constants["day_night_interior_lighting"] (default
+##     false), so the whole path stays inert until struktured flips it.
+##   • has_method-guards gs.is_night() so this stays a no-op until
+##     cowir-main's canonical GameState day-phase API lands (msg 2659).
+##   • Adds a subtle cool CanvasModulate child at night. Subclasses that
+##     want fancier behavior (per-lamp glow bloom, dawn/dusk gradients)
+##     can override this method — call super first to get the ack-gate.
+func _maybe_apply_night_modulation() -> void:
+	var gs := get_node_or_null("/root/GameState")
+	if gs == null:
+		return
+	if not bool(gs.game_constants.get("day_night_interior_lighting", false)):
+		return
+	if not gs.has_method("is_night") or not gs.is_night():
+		return
+	var night := CanvasModulate.new()
+	night.name = "NightTint"
+	night.color = NIGHT_INTERIOR_TINT
+	add_child(night)
