@@ -27,8 +27,9 @@ func _melee_body() -> String:
 
 func test_contact_distance_derives_from_sprite_widths() -> void:
 	var body := _melee_body()
-	assert_true("_sprite_half_width(target_sprite) + _sprite_half_width(attacker_sprite)" in body,
-		"stop distance must derive from both rendered half-widths — the fixed 40px was the weapon-alignment complaint")
+	# Composite resolution: cowir-battle's _melee_contact_gap (mercy+fallback consts) won over the parallel half-width draft.
+	assert_true("_melee_contact_gap(attacker_sprite, target_sprite)" in body,
+		"stop distance must derive from both rendered half-widths via _melee_contact_gap — the fixed 40px was the weapon-alignment complaint")
 	assert_false("direction * 40  #" in body,
 		"the bare fixed-40px stop must be gone")
 

@@ -483,8 +483,9 @@ func _create_dialogue_visuals(theme: Dictionary) -> void:
 
 	# Speaker name
 	_speaker_label = Label.new()
-	_speaker_label.position = Vector2(text_x, TILE_SIZE * 2)
-	_speaker_label.size = Vector2(text_width, 20)
+	# 2026-07-16 struktured: post-font-bump (+25%) the 18pt speaker name clipped into the body text — raised 8px + taller box, body pushed down to match.
+	_speaker_label.position = Vector2(text_x, TILE_SIZE * 2 - 8)
+	_speaker_label.size = Vector2(text_width, 26)
 	_speaker_label.clip_text = false
 	_speaker_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
 	# Tick 222: scale via GameState.text_size_scale (accessibility). Reads live so a SettingsMenu change applies on next cutscene.
@@ -496,7 +497,7 @@ func _create_dialogue_visuals(theme: Dictionary) -> void:
 	# reveal would fight scrollbar) but enables in _finish_typing so the
 	# player can scroll any overflow before advancing.
 	_text_label = RichTextLabel.new()
-	_text_label.position = Vector2(text_x, TILE_SIZE * 2 + 20)
+	_text_label.position = Vector2(text_x, TILE_SIZE * 2 + 22)
 	_text_label.size = Vector2(text_width, box_height - TILE_SIZE * 4 - 30)
 	_text_label.bbcode_enabled = true
 	_text_label.scroll_active = false
