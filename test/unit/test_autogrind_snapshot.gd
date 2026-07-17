@@ -189,3 +189,37 @@ func test_old_snapshot_without_session_fields_keeps_defaults() -> void:
 		"missing battles_without_heal key defaults to 0 (no crash)")
 	assert_almost_eq(_system._save_corruption_baseline, 0.3, 0.001,
 		"missing save_corruption_baseline key keeps the pre-restore value (start_autogrind re-baseline)")
+
+
+## JP snapshot fidelity (cadence #7, 2026-07-16 audit): EXP and gold survived
+## resume via grind_stats_gold, but total_jp was hardcoded to 0 on restore —
+## every resume silently reset the JP/min display to 0 until new battles ran.
+## Same class as the earlier session-fields fix; added grind_stats_jp to
+## snapshot payload + restore path.
+
+func test_jp_survives_save_load_roundtrip() -> void:
+	_system.is_grinding = true
+	_system._grind_stats["start_time"] = Time.get_unix_time_from_system() - 300.0
+	_system._grind_stats["total_jp"] = 42
+
+	assert_true(_system.save_grind_snapshot({}), "snapshot should save")
+	var loaded: Dictionary = _system.load_grind_snapshot()
+	var sys_data: Dictionary = loaded.get("system", {})
+	assert_eq(int(sys_data.get("grind_stats_jp", -1)), 42,
+		"total_jp must be written to the snapshot under key 'grind_stats_jp' (matches grind_stats_gold naming)")
+
+
+func test_restore_repopulates_jp() -> void:
+	_system._grind_stats["total_jp"] = 0
+	_system.restore_system_from_snapshot({"grind_stats_jp": 77})
+	assert_eq(int(_system._grind_stats.get("total_jp", -1)), 77,
+		"JP must survive resume — else JP/min display reads 0 briefly post-resume")
+
+
+func test_old_snapshot_without_jp_key_keeps_zero() -> void:
+	# Backward compat: v1 snapshots pre-fix lack grind_stats_jp. Restore must
+	# default to 0 without crashing — matches the previous hardcoded behavior.
+	_system._grind_stats["total_jp"] = 99
+	_system.restore_system_from_snapshot({})
+	assert_eq(int(_system._grind_stats.get("total_jp", -1)), 0,
+		"missing grind_stats_jp key defaults to 0 (matches pre-fix hardcoded behavior)")

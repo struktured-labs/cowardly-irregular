@@ -2322,6 +2322,7 @@ func save_grind_snapshot(controller_snapshot: Dictionary) -> bool:
 			"permadeath_staking_enabled": permadeath_staking_enabled,
 			"elapsed_seconds": elapsed,
 			"grind_stats_gold": _grind_stats.get("total_gold", 0),
+			"grind_stats_jp": _grind_stats.get("total_jp", 0),
 			"grind_stats_encounters": _grind_stats.get("total_encounters", 0),
 			# Session-scoped dedup/streak state — without these, resume re-fires
 			# already-shown corruption/rotation toasts and resets the Iron Vigil streak.
@@ -2419,7 +2420,7 @@ func restore_system_from_snapshot(system_data: Dictionary) -> void:
 		"start_time": Time.get_unix_time_from_system() - saved_elapsed,
 		"total_exp": total_exp_gained,
 		"total_gold": system_data.get("grind_stats_gold", 0),
-		"total_jp": 0,
+		"total_jp": system_data.get("grind_stats_jp", 0),
 		"total_encounters": system_data.get("grind_stats_encounters", 0),
 		"elapsed_seconds": saved_elapsed,
 	}
