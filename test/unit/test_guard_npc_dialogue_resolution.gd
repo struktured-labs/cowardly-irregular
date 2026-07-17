@@ -88,5 +88,8 @@ func test_existing_scholar_and_merchant_arms_still_present() -> void:
 	assert_true(src.contains("\"merchant\": {"),
 		"merchant CHARACTER_THEMES arm must remain — Senga and Crusher Pete depend on it")
 	# Procedural fallback covers merchant via the shared shopkeeper arm.
-	assert_true(src.contains("\"shopkeeper\", \"merchant\":"),
-		"procedural _create_portrait merchant arm must remain — fallback path when merchant.png absent")
+	# 2026-07-16 (scout round 3): villager joined this arm — 36 uses of
+	# `portrait: "villager"` were falling through to narrator. Both merchant
+	# and villager are now covered by the same procedural draw.
+	assert_true(src.contains("\"shopkeeper\", \"merchant\", \"villager\":"),
+		"procedural _create_portrait shared arm must remain — merchant, shopkeeper, and villager all depend on this fallback")
