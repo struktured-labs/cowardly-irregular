@@ -45,6 +45,7 @@ const MUSIC_NIGHT_BUS: String = "MusicNight"
 const NIGHT_LPF_CUTOFF_HZ: float = 1500.0
 const NIGHT_REVERB_WET: float = 0.15
 const NIGHT_REVERB_ROOM_SIZE: float = 0.55
+const NIGHT_AMBIENCE_KEY: String = "night_crickets_wind"
 
 # Music cache - stores pre-generated AudioStreamWAV for each monster type
 var _music_cache: Dictionary = {}
@@ -133,6 +134,7 @@ func _ready() -> void:
 	_load_sfx_manifest()
 	_setup_audio_players()
 	_setup_default_ability_sounds()
+	_setup_night_ambience_listener()
 	# Headless runs (--headless, i.e. GUT test suites + CI) MUST NOT emit audio —
 	# multiple background agents can be running suites simultaneously and the
 	# user hears every one of them. Mute the master bus at boot so play_ui /
@@ -512,6 +514,30 @@ func are_night_music_effects_enabled() -> bool:
 	if idx == -1:
 		return false
 	return AudioServer.is_bus_effect_enabled(idx, 0)
+
+
+## Public: start/stop the night ambience loop; mirror of set_night_music_effects.
+func set_night_ambience(enabled: bool) -> void:
+	if enabled:
+		if _sfx_manifest.has(NIGHT_AMBIENCE_KEY):
+			play_ambient(NIGHT_AMBIENCE_KEY)
+	else:
+		if _current_ambient_key == NIGHT_AMBIENCE_KEY:
+			stop_ambient()
+
+
+func _setup_night_ambience_listener() -> void:
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs == null or not gs.has_signal("time_of_day_changed"):
+		return
+	if not gs.time_of_day_changed.is_connected(_on_time_of_day_changed_for_ambience):
+		gs.time_of_day_changed.connect(_on_time_of_day_changed_for_ambience)
+	if gs.has_method("is_night") and bool(gs.is_night()):
+		set_night_ambience(true)
+
+
+func _on_time_of_day_changed_for_ambience(band: String) -> void:
+	set_night_ambience(band == "night")
 
 
 func play_footstep(terrain: String = "grass") -> void:
