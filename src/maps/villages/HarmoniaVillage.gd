@@ -416,15 +416,31 @@ func _setup_npcs() -> void:
 
 	# Guard near exit
 	# Wave D showcase NPC #3 — gruff skeptic guard at the south gate
-	# (foreshadows the Whispering Cave). Persona text + fallback lines
-	# hydrated from npc_showcase_personas.json.
-	var guard = _create_npc("Guard Boris", "guard", Vector2(11 * TILE_SIZE,23 * TILE_SIZE), [
+	# (foreshadows the Whispering Cave). Persona text hydrated from
+	# npc_showcase_personas.json; his `fallbacks[]` was deleted alongside
+	# this branching commit (Theron precedent — silent shadow bug: the
+	# JSON's fallbacks array unconditionally overrides the constructor's
+	# dialogue_lines at _ready). Constructor lines are the sole static
+	# source now, LLM-off falls through to them.
+	# Post-cave: he shares the "paying attention" theory he refused to
+	# share pre-cave (persona: "will not share unless directly pressed").
+	# Running-joke update on the running "not paid in eight weeks" —
+	# nine weeks now, and it's the vehicle for his gruff thanks.
+	var _boris_pre := [
 		"Halt! ...Oh, you're heading OUT? Carry on then.",
 		"I'm here to keep monsters from getting IN.",
 		"The overworld isn't too dangerous...",
 		"Slimes, bats, goblins - nothing you can't handle.",
 		"But the cave... *shudder* ...don't ask."
-	])
+	]
+	var _boris_post := [
+		"You're back. That's not what I expected. It's not what I've been expecting for nineteen years.",
+		"The cave was paying attention. It has stopped paying attention to you. I don't know what that means. I don't want to.",
+		"Someone should write down what you did in there. That someone will not be me. My hand hurts.",
+		"I have not been paid in nine weeks now. But you have my thanks anyway. Which is worth about eight weeks of my back pay.",
+		"Halt when you leave next. Just for the ceremony of it."
+	]
+	var guard = _create_npc("Guard Boris", "guard", Vector2(11 * TILE_SIZE,23 * TILE_SIZE), _boris_post if _after_cave_done else _boris_pre)
 	guard.dynamic = true
 	npcs.add_child(guard)
 
