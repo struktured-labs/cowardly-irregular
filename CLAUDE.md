@@ -461,7 +461,7 @@ cowardly-irregular/
 
 This project uses parallel Claude Code sessions coordinated via the `session-intercom` MCP server (SQLite-backed DB at `~/.local/share/session-intercom/intercom.db`).
 
-**Fleet norms (2026-07-11):** (1) NEVER work inside another agent's checkout — cowir-main's tree is the live deploy tree; use your own repo/worktree and push branches to origin. (2) Teammate PRs fold ONLY through cowir-main: full diff review + local full-suite gate (0 failures, claims re-verified) per struktured's standing grant; run the FULL suite before pinging ready. (3) .gd comments 1 line max.
+**Fleet norms (2026-07-11):** (1) NEVER work inside another agent's checkout — cowir-main's tree is the live deploy tree; use your own repo/worktree and push branches to origin. (2) Teammate PRs fold ONLY through cowir-main: full diff review + local full-suite gate (0 failures, claims re-verified) per struktured's standing grant; run the FULL suite before pinging ready. (3) .gd comments 1 line max. (4) NEVER `git stash` in shared worktrees (2026-07-16 incident): stash storage is repo-global across worktrees — parallel push/pop silently swaps or drops other agents' stashes with no warning; use a scratch branch or fresh worktree for diagnostic snapshots. (5) After pulling a fold that adds new `class_name` files, run `godot --headless --audio-driver Dummy --import` BEFORE gating — else expect a phantom parse-error cascade in GameLoop-dependent tests.
 
 Named sessions (one-call `intercom_register(name=<name>)` — channels API, no team_name, no TeamCreate):
 - **cowir-main** — game engine, integration, releases (this session usually)

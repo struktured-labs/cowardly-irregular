@@ -3391,7 +3391,7 @@ func _show_round_banner(round_num: int) -> void:
 	banner.modulate.a = 0.0
 	var ui = get_node_or_null("UI")
 	(ui if ui else self).add_child(banner)
-	SoundManager.play_ui("menu_select")
+	SoundManager.play_ui("round_ap_gain")
 	var t := create_tween()
 	t.tween_property(banner, "modulate:a", 1.0, 0.12)
 	t.parallel().tween_property(banner, "position:y", banner.position.y - 14, 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
