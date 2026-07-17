@@ -1871,6 +1871,223 @@ func _play_ability_animation(anim_type: String, animator: BattleAnimatorClass = 
 	animator.play_named_animation(anim_type)
 
 
+## ============================================================
+## Ability Showcase (struktured 2026-07-16: "imagine I want to spotlight
+## each attack and ability and exaggerate what it would look like and how
+## long it would take... autobattle is kind of the other mode we have now")
+## Manual play at showcase speed performs every non-physical ability as a
+## staged beat: battlefield dims, the caster steps out glowing their
+## element, the spell travels, and damage lands AT the impact frame.
+## Autobattle turns / turbo / 2x+ speeds keep the existing quick path.
+## ============================================================
+
+var _showcase_dmg_buffer = null  # null = pass-through; Array = buffering until impact
+var _showcase_depth: int = 0
+var _showcase_dim_rect: ColorRect = null
+
+
+func _showcase_element_style(ability: Dictionary) -> Dictionary:
+	var is_heal: bool = str(ability.get("type", "")) == "healing" or int(ability.get("power", 0)) < 0
+	match str(ability.get("element", "")):
+		"fire":
+			return {"color": Color(1.0, 0.45, 0.15), "effect": EffectSystem.EffectType.FIRE, "shape": "bolt"}
+		"ice":
+			return {"color": Color(0.55, 0.8, 1.0), "effect": EffectSystem.EffectType.ICE, "shape": "shards"}
+		"lightning":
+			return {"color": Color(1.0, 0.95, 0.4), "effect": EffectSystem.EffectType.LIGHTNING, "shape": "strike"}
+		"holy":
+			return {"color": Color(1.0, 0.95, 0.75), "effect": EffectSystem.EffectType.HOLY, "shape": "bloom"}
+		"dark":
+			return {"color": Color(0.6, 0.3, 0.9), "effect": EffectSystem.EffectType.DARK, "shape": "bloom"}
+		_:
+			if is_heal:
+				return {"color": Color(0.5, 1.0, 0.6), "effect": EffectSystem.EffectType.HEAL, "shape": "bloom"}
+			return {"color": Color(0.85, 0.9, 1.0), "effect": EffectSystem.EffectType.BUFF, "shape": "bloom"}
+
+
+## Showcase gate: manual party turns at showcase speed only — autobattle IS the fast mode.
+func _showcase_active() -> bool:
+	if turbo_mode or autogrind_console_mode or Engine.time_scale > 0.3:
+		return false
+	var caster = BattleManager.current_combatant
+	if caster == null or not (caster in BattleManager.player_party):
+		return false
+	var char_id: String = caster.combatant_name.to_lower().replace(" ", "_")
+	return not AutobattleSystem.is_autobattle_enabled(char_id)
+
+
+func _play_ability_showcase(caster_sprite: Node2D, animator: BattleAnimatorClass, ability: Dictionary, targets: Array) -> void:
+	var style: Dictionary = _showcase_element_style(ability)
+	var color: Color = style["color"]
+	_flush_showcase_damage()  # a still-buffering previous beat (advance chains) flushes before we re-arm
+	_showcase_dmg_buffer = []
+	_showcase_depth += 1
+	_showcase_set_dim(true)
+
+	# Focus: caster steps out and glows their element while gather-motes converge.
+	var caster_home: Vector2 = Vector2.ZERO
+	var caster_valid: bool = caster_sprite != null and is_instance_valid(caster_sprite)
+	if caster_valid:
+		if not caster_sprite.has_meta("home_position"):
+			caster_sprite.set_meta("home_position", caster_sprite.position)
+		caster_home = caster_sprite.get_meta("home_position")
+		var facing: float = -1.0 if party_sprite_nodes.has(caster_sprite) else 1.0
+		var t := create_tween()
+		caster_sprite.set_meta("attack_tween", t)
+		t.tween_property(caster_sprite, "position", caster_home + Vector2(26 * facing, 0), 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		t.parallel().tween_property(caster_sprite, "modulate", Color(1.0 + color.r * 0.8, 1.0 + color.g * 0.8, 1.0 + color.b * 0.8), 0.16)
+		_spawn_gather_motes(caster_sprite, color)
+	if animator:
+		animator.play_named_animation(str(ability.get("animation", "cast")))
+	await get_tree().create_timer(0.24).timeout
+
+	# Release: element visual travels/forms per target.
+	if not is_instance_valid(self):
+		return
+	for target in targets:
+		var ts = _get_combatant_sprite(target)
+		if ts and is_instance_valid(ts):
+			_showcase_release_visual(style, caster_sprite if caster_valid and is_instance_valid(caster_sprite) else null, ts)
+	await get_tree().create_timer(0.12).timeout
+	if not is_instance_valid(self):
+		return
+
+	# Impact: flash + shake + element effect + hit reaction, and the buffered damage lands NOW.
+	_spawn_screen_flash(Color(color.r, color.g, color.b, 0.30), 0.3)
+	EffectSystem._trigger_screen_shake(6.0, 0.22)
+	var is_hostile: bool = style["effect"] != EffectSystem.EffectType.HEAL and style["effect"] != EffectSystem.EffectType.BUFF
+	for target in targets:
+		var ts2 = _get_combatant_sprite(target)
+		if ts2 == null or not is_instance_valid(ts2):
+			continue
+		EffectSystem.spawn_effect(style["effect"], _stable_sprite_anchor(ts2), Callable(), 1.4)
+		if is_hostile:
+			var ta = _get_combatant_animator(target)
+			if ta and is_instance_valid(ta):
+				ta.play_hit()
+			_apply_hit_flash(ts2)
+	_flush_showcase_damage()
+	await get_tree().create_timer(0.20).timeout
+	if not is_instance_valid(self):
+		return
+
+	# Settle: caster returns, glow fades, battlefield undims.
+	if caster_valid and is_instance_valid(caster_sprite):
+		var settle := create_tween()
+		caster_sprite.set_meta("attack_tween", settle)
+		settle.tween_property(caster_sprite, "position", caster_home, 0.14).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		settle.parallel().tween_property(caster_sprite, "modulate", Color.WHITE, 0.18)
+	_showcase_depth = maxi(0, _showcase_depth - 1)
+	if _showcase_depth == 0:
+		_showcase_set_dim(false)
+
+
+## Dim sits between the parallax background (z -100..-10) and combatant sprites (z 0).
+func _showcase_set_dim(on: bool) -> void:
+	if _showcase_dim_rect == null or not is_instance_valid(_showcase_dim_rect):
+		_showcase_dim_rect = ColorRect.new()
+		_showcase_dim_rect.name = "ShowcaseDim"
+		_showcase_dim_rect.color = Color(0, 0, 0, 0)
+		_showcase_dim_rect.anchors_preset = Control.PRESET_FULL_RECT
+		_showcase_dim_rect.z_index = -5
+		_showcase_dim_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(_showcase_dim_rect)
+	var t := create_tween()
+	t.tween_property(_showcase_dim_rect, "color:a", 0.38 if on else 0.0, 0.15)
+
+
+## Six element-colored motes converge on the caster during the gather beat.
+func _spawn_gather_motes(caster_sprite: Node2D, color: Color) -> void:
+	for i in range(6):
+		var mote := ColorRect.new()
+		mote.color = Color(color.r, color.g, color.b, 0.0)
+		mote.size = Vector2(7, 7)
+		mote.z_index = 5
+		mote.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(mote)
+		var angle: float = TAU * i / 6.0 + 0.4
+		var center: Vector2 = _stable_sprite_anchor(caster_sprite)
+		mote.position = center + Vector2(cos(angle), sin(angle)) * 58.0
+		var t := create_tween()
+		t.tween_property(mote, "color:a", 0.9, 0.05)
+		t.parallel().tween_property(mote, "position", center, 0.2).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		t.tween_callback(mote.queue_free)
+
+
+## Element release: fire bolt travels, ice shards form and converge, lightning strikes from above, bloom rises in place.
+func _showcase_release_visual(style: Dictionary, caster_sprite: Node2D, target_sprite: Node2D) -> void:
+	var color: Color = style["color"]
+	var to: Vector2 = _stable_sprite_anchor(target_sprite)
+	match str(style["shape"]):
+		"bolt":
+			var from: Vector2 = _stable_sprite_anchor(caster_sprite) if caster_sprite else to + Vector2(-200, -40)
+			var bolt := ColorRect.new()
+			bolt.color = color
+			bolt.size = Vector2(14, 14)
+			bolt.rotation = (to - from).angle()
+			bolt.position = from
+			bolt.z_index = 6
+			bolt.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			add_child(bolt)
+			var t := create_tween()
+			t.tween_property(bolt, "position", to, 0.11).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+			t.tween_callback(bolt.queue_free)
+		"shards":
+			for i in range(5):
+				var shard := ColorRect.new()
+				shard.color = Color(color.r, color.g, color.b, 0.85)
+				shard.size = Vector2(5, 16)
+				shard.z_index = 6
+				shard.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				add_child(shard)
+				var angle: float = TAU * i / 5.0
+				shard.position = to + Vector2(cos(angle), sin(angle)) * 48.0 + Vector2(0, -20)
+				shard.rotation = angle + PI / 2.0
+				var t := create_tween()
+				t.tween_property(shard, "position", to, 0.12).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+				t.tween_callback(shard.queue_free)
+		"strike":
+			var line := Line2D.new()
+			line.width = 4.0
+			line.default_color = color
+			line.z_index = 6
+			var pts := PackedVector2Array()
+			var y: float = to.y - 380.0
+			var x: float = to.x
+			while y < to.y:
+				pts.append(Vector2(x + randf_range(-14.0, 14.0), y))
+				y += 48.0
+			pts.append(to)
+			line.points = pts
+			add_child(line)
+			var t := create_tween()
+			t.tween_interval(0.1)
+			t.tween_property(line, "modulate:a", 0.0, 0.12)
+			t.tween_callback(line.queue_free)
+		_:
+			var ring := ColorRect.new()
+			ring.color = Color(color.r, color.g, color.b, 0.6)
+			ring.size = Vector2(30, 30)
+			ring.position = to + Vector2(-15, 10)
+			ring.z_index = 6
+			ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			add_child(ring)
+			var t := create_tween()
+			t.tween_property(ring, "position:y", ring.position.y - 34.0, 0.16)
+			t.parallel().tween_property(ring, "color:a", 0.0, 0.18)
+			t.tween_callback(ring.queue_free)
+
+
+## Buffered damage presentation: numbers/indicators land at the impact frame, not at execution time.
+func _flush_showcase_damage() -> void:
+	if _showcase_dmg_buffer == null:
+		return
+	var buffered: Array = _showcase_dmg_buffer
+	_showcase_dmg_buffer = null
+	for args in buffered:
+		_on_damage_dealt(args[0], args[1], args[2], args[3], args[4])
+
+
 func _on_item_pressed() -> void:
 	"""Handle Item button"""
 	var current = BattleManager.current_combatant
@@ -2885,6 +3102,8 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 				else:
 					_play_ability_animation(anim_type, animator)
 					_spawn_ability_effects(ability_id, targets)
+			elif _showcase_active():
+				_play_ability_showcase(attacker_sprite, animator, ability, targets)
 			else:
 				_play_ability_animation(anim_type, animator)
 				_spawn_ability_effects(ability_id, targets)
@@ -3904,6 +4123,10 @@ func _close_win98_menu() -> void:
 ## Damage Numbers
 
 func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: String = "", elemental_mod: float = 1.0) -> void:
+	# Showcase beat in flight: hold the number so it lands at the impact frame, not at execution time
+	if _showcase_dmg_buffer != null:
+		_showcase_dmg_buffer.append([target, amount, is_crit, element, elemental_mod])
+		return
 	_results_display.on_damage_dealt(target, amount, is_crit)
 	# deplete the floating enemy HP bar in sync with the damage number — it lagged to the next _update_ui (action boundary)
 	_update_enemy_hp_bars()
