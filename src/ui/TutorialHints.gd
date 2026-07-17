@@ -158,26 +158,28 @@ const HINTS = {
 }
 
 
-static func show(parent: Node, hint_id: String) -> void:
+static func show(parent: Node, hint_id: String, dedupe_key: String = "") -> void:
 	"""Show a tutorial hint by ID, if it hasn't been shown before."""
 	if not HINTS.has(hint_id):
 		push_warning("TutorialHints: Unknown hint '%s'" % hint_id)
 		return
+	# dedupe_key: shared catalog entry, once-ness per key (spotlight_unlock fired only for the FIRST duel win ever — later duel victories silently swallowed, struktured cap 2026-07-16)
+	var key: String = dedupe_key if dedupe_key != "" else hint_id
 
 	# Guard BEFORE instancing/add_child — prior code leaked a node every call
 	# for an already-seen hint (TutorialHint.show_hint short-circuited but the
 	# CanvasLayer had already been parented and nothing freed it).
-	if TutorialHint._shown_hints.get(hint_id, false):
+	if TutorialHint._shown_hints.get(key, false):
 		return
 	var ml := Engine.get_main_loop()
 	if ml and ml is SceneTree:
 		var gs := (ml as SceneTree).root.get_node_or_null("GameState")
-		if gs and gs.game_constants.get("tutorial_" + hint_id, false):
+		if gs and gs.game_constants.get("tutorial_" + key, false):
 			return
 
 	var hint_data = HINTS[hint_id]
 	var hint = TutorialHint.new()
 	parent.add_child(hint)
-	hint.show_hint(hint_id, hint_data["title"], hint_data["body"], float(hint_data.get("min_dismiss", 0.0)))
+	hint.show_hint(key, hint_data["title"], hint_data["body"], float(hint_data.get("min_dismiss", 0.0)))
 	# Auto-cleanup after dismissal
 	hint.hint_dismissed.connect(func(_id): hint.queue_free())

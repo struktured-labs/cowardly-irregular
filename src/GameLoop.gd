@@ -205,6 +205,7 @@ var _last_battle_is_encounter: bool = false  # Was it a random encounter?
 ## `start_solo_battle` after `spotlight_battle_ended` is emitted.
 var _spotlight_duel_active: bool = false
 var _pending_spotlight_unlock: String = ""  # PC job id ("fighter", etc.); "" when no unlock target
+var _pending_spotlight_unlock_toast: String = ""  # deferred to _resume_exploration_after_cutscene — an immediate toast rendered under the aftermath dialogue
 var _spotlight_saved_party: Array[Combatant] = []
 signal spotlight_battle_ended(victory: bool)
 
@@ -2602,7 +2603,8 @@ func _reconcile_spotlight_locks() -> void:
 	# tutorial hint exactly once per session (TutorialHints handles the
 	# session dedupe). Out-of-battle flips are silent — the affordance
 	# only matters while a battle is on screen.
-	if any_flipped and BattleManager and BattleManager.current_state != BattleManager.BattleState.INACTIVE:
+	# Duels skip the immediate toast — it rendered under the aftermath cutscene; the deferred per-job toast in _resume_exploration_after_cutscene owns it.
+	if any_flipped and not _spotlight_duel_active and BattleManager and BattleManager.current_state != BattleManager.BattleState.INACTIVE:
 		var scene = get_tree().current_scene if is_inside_tree() else null
 		if scene:
 			TutorialHints.show(scene, "spotlight_unlock")
@@ -2705,7 +2707,7 @@ func start_solo_battle(job_id: String, enemy_id: String, _opts: Dictionary = {})
 	# Tear the stale BattleScene down under the cutscene's opaque layer so aftermath narration doesn't overlay a live battle: boss music kept playing + survive_turns re-fired end_battle every tick (the "background restart"), and _unfreeze_player at cutscene end had no player behind the layer (Rogue "frozen" after "everyone back"). Skip on defeat: the retry loop owns the next _start_battle_async which frees the scene itself.
 	if result:
 		_cutscene_cooldown = true  # skip pending-story re-fire from _start_exploration
-		await _return_to_exploration()
+		await _return_to_exploration(true)  # force: BattleManager is still VICTORY inside this emit stack
 	return "victory" if result else "defeat"
 
 
@@ -2766,6 +2768,7 @@ func _on_battle_ended(victory: bool) -> void:
 			var loss_key: String = "spotlight_losses_" + _pending_spotlight_unlock
 			GameState.game_constants.erase(loss_key)
 			print("[SPOTLIGHT] battle won → set %s + cleared %s" % [flag, loss_key])
+			_pending_spotlight_unlock_toast = _pending_spotlight_unlock
 			_reconcile_spotlight_locks()
 		elif not victory and _pending_spotlight_unlock != "" and GameState and "game_constants" in GameState:
 			# Death-tier hint counter (msg 2472). Persisted via game_constants so a save+quit between attempts preserves the tier. start_solo_battle reads it on the next attempt and fires the appropriate spotlight_hint_<job>_<tier> via TutorialHints.
@@ -3112,10 +3115,11 @@ func _show_game_over_screen() -> void:
 
 ## Exploration Management
 
-func _start_exploration() -> void:
+func _start_exploration(force_battle_teardown: bool = false) -> void:
 	"""Start exploration mode (overworld or interior)"""
 	# 2026-07-16 smoke find: a stale _return_to_exploration racing a NEW battle spawned its scene VISIBLE under the live battle (village Exit gate bled into the game-over screen) and stomped current_state. If a battle owns the screen, this return is stale — bail; the live battle's own teardown drives the next return.
-	if current_state == LoopState.BATTLE and BattleManager \
+	# force_battle_teardown: spotlight victory resumes INSIDE the battle_ended emit (before _cleanup_battle sets INACTIVE) — that legit teardown read as stale here and the swayed-alive duel kept ticking behind the aftermath dialogue (struktured cap 2026-07-16).
+	if not force_battle_teardown and current_state == LoopState.BATTLE and BattleManager \
 			and BattleManager.current_state != BattleManager.BattleState.INACTIVE:
 		print("[GAMELOOP] _start_exploration bailed — a live battle owns the screen (stale return)")
 		return
@@ -3347,6 +3351,10 @@ func _on_time_of_day_changed(band: String) -> void:
 ## Post-cutscene resume: the scene is already live under the cutscene (built pre-play since 2026-07-16) — just unlock. Full rebuild only when the cutscene tore scenes down (battle-step duels) or a battle owns the screen.
 func _resume_exploration_after_cutscene() -> void:
 	_cutscene_cooldown = false  # consume — the old rebuild path consumed it at _start_exploration's top
+	# Deferred spotlight-unlock toast: per-job dedupe key so bard/mage/etc each get their moment (the shared key only ever fired once per save)
+	if _pending_spotlight_unlock_toast != "":
+		TutorialHints.show(self, "spotlight_unlock", "spotlight_unlock_" + _pending_spotlight_unlock_toast)
+		_pending_spotlight_unlock_toast = ""
 	if _exploration_scene and is_instance_valid(_exploration_scene) \
 			and current_state != LoopState.BATTLE:
 		current_state = LoopState.EXPLORATION
@@ -3357,13 +3365,13 @@ func _resume_exploration_after_cutscene() -> void:
 	_start_exploration()
 
 
-func _return_to_exploration() -> void:
+func _return_to_exploration(force_battle_teardown: bool = false) -> void:
 	"""Return to exploration after battle"""
 	# Reset engine time scale to normal (battle speed shouldn't affect overworld)
 	Engine.time_scale = 1.0
 
 	# Keep same map, restore player to saved position
-	await _start_exploration()
+	await _start_exploration(force_battle_teardown)
 
 	# Restore player position after scene is fully set up
 	if _player_position != Vector2.ZERO and _exploration_scene:
