@@ -25,6 +25,10 @@ func _get_area_id() -> String:
 	return "node_prime_cache"
 
 
+func _get_music_track() -> String:
+	return "node_prime_village"
+
+
 func _get_display_name() -> String:
 	return "The Cache"
 

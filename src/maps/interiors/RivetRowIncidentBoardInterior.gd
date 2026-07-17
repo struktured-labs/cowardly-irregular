@@ -25,6 +25,10 @@ func _get_area_id() -> String:
 	return "rivet_row_incident_board"
 
 
+func _get_music_track() -> String:
+	return "rivet_row_village"
+
+
 func _get_display_name() -> String:
 	return "The Incident Board"
 

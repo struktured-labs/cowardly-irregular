@@ -29,6 +29,15 @@ const W2_TO_W6_INTERIOR_MUSIC: Array[Array] = [
 	["res://src/maps/interiors/RivetRowUnionHallInterior.gd",     "interior_union_hall"],
 	["res://src/maps/interiors/NodePrimeDaemonLoungeInterior.gd", "interior_lounge"],
 	["res://src/maps/interiors/VertexThresholdInterior.gd",       "vertex_village"],
+	## 2026-07-16 addition: four W2-W5 rooms that had NO music override
+	## inherited BaseInterior's "village" default → played Harmonia's
+	## medieval theme inside steampunk archive / digital cache /
+	## industrial incident board / suburban garage sale. Fix routes each
+	## to its world's village track (no new content needed).
+	["res://src/maps/interiors/BrasstonRedundancyArchiveInterior.gd", "brasston_village"],
+	["res://src/maps/interiors/NodePrimeCacheInterior.gd",            "node_prime_village"],
+	["res://src/maps/interiors/RivetRowIncidentBoardInterior.gd",     "rivet_row_village"],
+	["res://src/maps/interiors/MapleGarageSaleInterior.gd",           "maple_heights_village"],
 ]
 
 
