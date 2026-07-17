@@ -265,9 +265,11 @@ static func build_npc_opening(
 	location: String,
 	recent_events: Array,
 	quest_state_lines: Array = [],
+	time_of_day: String = "",
 ) -> String:
 	var ctx_block: String = _format_events(recent_events, CONTEXT_EVENTS)
 	var voice_block: String = _format_quest_state_voice(quest_state_lines)
+	var time_block: String = _format_time_of_day(time_of_day)
 
 	return (
 		"You are writing dialogue for a meta-aware JRPG called 'Cowardly Irregular'.\n"
@@ -276,6 +278,7 @@ static func build_npc_opening(
 		+ "NPC: %s\n" % npc_name
 		+ "Persona: %s\n" % npc_persona
 		+ "Location: %s\n" % location
+		+ time_block
 		+ ctx_block
 		+ voice_block
 		+ "\n"
@@ -1037,6 +1040,13 @@ static func _format_quest_state_voice(quest_state_lines: Array) -> String:
 	if quoted.is_empty():
 		return ""
 	return "\nThis character has recently said things like:\n" + "\n".join(quoted) + "\nEcho this mood and voice.\n"
+
+
+## Day/night compose (msg 2659): tuck time_of_day into the prompt as a peer of Location.
+static func _format_time_of_day(time_of_day: String) -> String:
+	if time_of_day == "":
+		return ""
+	return "Time of day: %s\n" % time_of_day
 
 
 ## Surface rich-data flags from an EventLog entry as terse trailing tags so

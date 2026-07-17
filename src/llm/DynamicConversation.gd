@@ -333,6 +333,7 @@ func _fetch_npc_opening() -> String:
 		_location,
 		recent,
 		_quest_state_lines,
+		_resolve_time_of_day(),
 	)
 
 	# Wave C: surface the "thinking" indicator while the LLM is composing.
@@ -666,6 +667,14 @@ func _is_farewell(choice: String) -> bool:
 func _set_player_movement(player: Node, can_move: bool) -> void:
 	if player != null and is_instance_valid(player) and player.has_method("set_can_move"):
 		player.set_can_move(can_move)
+
+
+## Day/night compose (msg 2659): pull current band from GameState for prompt injection; "" if clock is absent (older builds / hermetic tests).
+func _resolve_time_of_day() -> String:
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs == null or not gs.has_method("get_time_of_day_name"):
+		return ""
+	return str(gs.get_time_of_day_name())
 
 
 ## Register this conversation with LLMService so a scene-change abort_all
