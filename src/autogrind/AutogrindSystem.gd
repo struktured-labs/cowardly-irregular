@@ -2010,10 +2010,12 @@ func apply_autogrind_actions(actions: Array) -> void:
 				stop_autogrind("Autogrind rule triggered stop")
 
 			"heal_party":
-				# Use potions from inventory to heal party (no free heals)
+				# Use potions from inventory to heal party (no free heals). Cadence #18: distinguish "no eligible member" from "no consumable" so a player debugging why their heal_party rule doesn't seem to fire can tell rule-design-mismatch from empty-inventory.
 				var healed_count = 0
+				var eligible_count = 0
 				for member in grind_party:
 					if member is Combatant and member.is_alive and member.current_hp < member.max_hp * 0.8:
+						eligible_count += 1
 						for item_pair in [["hi_potion", 200], ["potion", 50]]:
 							if member.get_item_count(item_pair[0]) > 0:
 								member.remove_item(item_pair[0], 1)
@@ -2023,14 +2025,18 @@ func apply_autogrind_actions(actions: Array) -> void:
 								break
 				if healed_count > 0:
 					print("[AUTOGRIND] heal_party: used potions on %d members" % healed_count)
+				elif eligible_count == 0:
+					print("[AUTOGRIND] heal_party: no members needed healing (all ≥80%% HP) — no-op")
 				else:
-					print("[AUTOGRIND] heal_party: no potions available")
+					print("[AUTOGRIND] heal_party: %d members needed healing but no potions in party inventory" % eligible_count)
 
 			"restore_mp":
-				# Use ethers from inventory to restore MP (no free restores)
+				# Use ethers from inventory to restore MP (no free restores). Cadence #18: same eligibility/consumable split as heal_party above.
 				var restored_count = 0
+				var eligible_count = 0
 				for member in grind_party:
 					if member is Combatant and member.is_alive and member.current_mp < member.max_mp * 0.5:
+						eligible_count += 1
 						for item_pair in [["hi_ether", 100], ["ether", 30]]:
 							if member.get_item_count(item_pair[0]) > 0:
 								member.remove_item(item_pair[0], 1)
@@ -2040,15 +2046,15 @@ func apply_autogrind_actions(actions: Array) -> void:
 								break
 				if restored_count > 0:
 					print("[AUTOGRIND] restore_mp: used ethers on %d members" % restored_count)
+				elif eligible_count == 0:
+					print("[AUTOGRIND] restore_mp: no members needed MP (all ≥50%% MP) — no-op")
 				else:
-					print("[AUTOGRIND] restore_mp: no ethers available")
+					print("[AUTOGRIND] restore_mp: %d members needed MP but no ethers in party inventory" % eligible_count)
 
 			"flee_battle":
-				# flee_battle is handled by AutogrindController (_skip_next_battle flag).
-				# If apply_autogrind_actions is called directly (e.g. from old code paths),
-				# fall back to stopping the grind so the action is never silently ignored.
-				print("[AUTOGRIND] flee_battle action reached AutogrindSystem directly — stopping grind as fallback")
-				stop_autogrind("Flee triggered by autogrind rule")
+				# flee_battle is handled by AutogrindController (_skip_next_battle flag). Reaching this branch means the controller filter was bypassed — a real code-path regression. push_warning surfaces it in the editor warnings panel + CI (cadence #18).
+				push_warning("[AUTOGRIND] flee_battle action reached AutogrindSystem.apply_autogrind_actions directly — AutogrindController filter regression; falling back to stop_autogrind so the action is never silently ignored")
+				stop_autogrind("Flee triggered by autogrind rule (unexpected controller-filter bypass)")
 
 
 func _track_item_consumed(item_id: String) -> void:
