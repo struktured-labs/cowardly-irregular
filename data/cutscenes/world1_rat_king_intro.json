@@ -34,9 +34,9 @@
       "lines": [
         {
           "speaker": "Cave Rat King",
-          "text": "Ah, another party. Let me guess \u2014 you automated your way here?",
+          "text": "Ah, another party. Let me guess — you automated your way here?",
           "theme": "enemy",
-          "portrait": "goblin"
+          "portrait": "boss_rat_king"
         },
         {
           "speaker": "Fighter",
@@ -48,13 +48,13 @@
           "speaker": "Cave Rat King",
           "text": "I've watched THOUSANDS of you. Same scripts. Same builds. Same 'optimal' strategies.",
           "theme": "enemy",
-          "portrait": "goblin"
+          "portrait": "boss_rat_king"
         },
         {
           "speaker": "Cave Rat King",
           "text": "You think you're clever? I've EVOLVED. I've read the source code. I know what you're going to do.",
           "theme": "enemy",
-          "portrait": "goblin"
+          "portrait": "boss_rat_king"
         },
         {
           "speaker": "Mage",
@@ -66,7 +66,7 @@
           "speaker": "Cave Rat King",
           "text": "ISN'T IT?",
           "theme": "enemy",
-          "portrait": "goblin"
+          "portrait": "boss_rat_king"
         }
       ]
     },
@@ -86,7 +86,7 @@
           "speaker": "Cave Rat King",
           "text": "SQUEAK.",
           "theme": "enemy",
-          "portrait": "goblin"
+          "portrait": "boss_rat_king"
         }
       ]
     },

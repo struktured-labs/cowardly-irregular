@@ -889,6 +889,68 @@ const PORTRAIT_SPRITES = {
 	"masterite_curator_industrial": "res://assets/sprites/portraits/masterite_curator_industrial.png",
 	"masterite_curator_futuristic": "res://assets/sprites/portraits/masterite_curator_futuristic.png",
 	"masterite_curator_abstract": "res://assets/sprites/portraits/masterite_curator_abstract.png",
+	# Story-tier figures — major recurring speakers with >30 dialogue lines each. Root path per Masterite convention (PR #154). Interim: fall through to mysterious procedural via named-principal prefix arm.
+	"calibrant": "res://assets/sprites/portraits/calibrant.png",
+	"orrery": "res://assets/sprites/portraits/orrery.png",
+	"mordaine": "res://assets/sprites/portraits/mordaine.png",
+	# Named W1 principals (currently appear in cutscenes) — cowir-sprites Batch B target.
+	"theron": "res://assets/sprites/portraits/npcs/theron.png",
+	"milo": "res://assets/sprites/portraits/npcs/milo.png",
+	"bram": "res://assets/sprites/portraits/npcs/bram.png",
+	"marta": "res://assets/sprites/portraits/npcs/marta.png",
+	"phil": "res://assets/sprites/portraits/npcs/phil.png",
+	"sprocket": "res://assets/sprites/portraits/npcs/sprocket.png",
+	"herta": "res://assets/sprites/portraits/npcs/herta.png",
+	"anya": "res://assets/sprites/portraits/npcs/anya.png",
+	# Named W1 (pre-registered for cowir-story's imminent post-cave lines — Boris/Pip/Flora already promoted with dialogue on main).
+	"boris": "res://assets/sprites/portraits/npcs/boris.png",
+	"pip": "res://assets/sprites/portraits/npcs/pip.png",
+	"flora": "res://assets/sprites/portraits/npcs/flora.png",
+	"greta": "res://assets/sprites/portraits/npcs/greta.png",
+	"aldwick": "res://assets/sprites/portraits/npcs/aldwick.png",
+	"rowan": "res://assets/sprites/portraits/npcs/rowan.png",
+	"cluck": "res://assets/sprites/portraits/npcs/cluck.png",
+	# W1 bosses.
+	"boss_rat_king": "res://assets/sprites/portraits/boss_rat_king.png",
+	# Existing NPC portrait asset — Dr. Temporal already on disk.
+	"dr_temporal": "res://assets/sprites/portraits/npcs/dr_temporal.png",
+	# Generic archetype pool — every OverworldNPC.npc_type value that OverworldNPC:1112 passes as `portrait` when the player interacts. Aliased to closest existing procedural via the archetype prefix arm; cowir-sprites replaces individually as art lands.
+	"farmer": "res://assets/sprites/portraits/npcs/farmer.png",
+	"traveler": "res://assets/sprites/portraits/npcs/traveler.png",
+	"child": "res://assets/sprites/portraits/npcs/child.png",
+	"blacksmith": "res://assets/sprites/portraits/npcs/blacksmith.png",
+	"bartender": "res://assets/sprites/portraits/npcs/bartender.png",
+	"maid": "res://assets/sprites/portraits/npcs/maid.png",
+	"dancer": "res://assets/sprites/portraits/npcs/dancer.png",
+	"adventurer": "res://assets/sprites/portraits/npcs/adventurer.png",
+	"apprentice": "res://assets/sprites/portraits/npcs/apprentice.png",
+	"herbalist": "res://assets/sprites/portraits/npcs/herbalist.png",
+	"hooded_mage": "res://assets/sprites/portraits/npcs/hooded_mage.png",
+	"knight": "res://assets/sprites/portraits/npcs/knight.png",
+	"nervous": "res://assets/sprites/portraits/npcs/nervous.png",
+	"pilgrim": "res://assets/sprites/portraits/npcs/pilgrim.png",
+	"scholarly": "res://assets/sprites/portraits/npcs/scholarly.png",
+	"soldier": "res://assets/sprites/portraits/npcs/soldier.png",
+}
+
+## Named-principal + archetype → existing procedural fallback. Any key here without a PNG on disk renders via the mapped procedural until cowir-sprites' art lands (matches the pre-fix visual so nothing regresses on interim frames).
+const PORTRAIT_PROCEDURAL_FALLBACK := {
+	# Story tier
+	"calibrant": "mysterious", "orrery": "mysterious", "mordaine": "mysterious",
+	# Named W1 (shared identity anchor with their overworld archetype)
+	"theron": "elder", "milo": "scholar", "bram": "shopkeeper", "marta": "shopkeeper",
+	"phil": "mysterious", "sprocket": "scholar", "herta": "elder", "anya": "elder",
+	"boris": "guard", "pip": "villager", "flora": "villager", "greta": "elder",
+	"aldwick": "shopkeeper", "rowan": "mysterious", "cluck": "villager",
+	"dr_temporal": "mysterious",
+	# Bosses
+	"boss_rat_king": "goblin",
+	# Generic archetype pool — closest procedural per role tone
+	"farmer": "shopkeeper", "traveler": "mysterious", "child": "villager",
+	"blacksmith": "shopkeeper", "bartender": "shopkeeper", "maid": "villager",
+	"dancer": "villager", "adventurer": "guard", "apprentice": "scholar",
+	"herbalist": "scholar", "hooded_mage": "mysterious", "knight": "guard",
+	"nervous": "villager", "pilgrim": "elder", "scholarly": "scholar", "soldier": "guard",
 }
 
 ## Cache loaded portrait textures to avoid repeated disk reads
@@ -921,7 +983,10 @@ func _create_portrait(portrait_type: String) -> Texture2D:
 	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
 	img.fill(Color(0, 0, 0, 0))
 
-	match portrait_type:
+	# Named-principal + archetype pool alias: any key in PORTRAIT_PROCEDURAL_FALLBACK renders via the mapped existing procedural until cowir-sprites' art lands. Keeps 200+ named-speaker dialogue lines rendering intentionally instead of grey narrator blur.
+	var draw_type: String = str(PORTRAIT_PROCEDURAL_FALLBACK.get(portrait_type, portrait_type))
+
+	match draw_type:
 		"hero", "fighter":
 			_draw_fighter_portrait(img, size)
 		"cleric", "healer":

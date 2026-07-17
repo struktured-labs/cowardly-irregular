@@ -25,7 +25,7 @@
           "speaker": "Sprocket",
           "text": "I've been keeping this for fourteen years, I think. Or forty. I check, but the check itself — well.",
           "theme": "scholar",
-          "portrait": "scholar"
+          "portrait": "sprocket"
         },
         {
           "speaker": "Alchemist",
@@ -37,7 +37,7 @@
           "speaker": "Sprocket",
           "text": "Please.",
           "theme": "scholar",
-          "portrait": "scholar"
+          "portrait": "sprocket"
         }
       ]
     },
@@ -66,7 +66,7 @@
           "speaker": "Sprocket",
           "text": "I know.",
           "theme": "scholar",
-          "portrait": "scholar"
+          "portrait": "sprocket"
         },
         {
           "speaker": "Alchemist",
@@ -78,7 +78,7 @@
           "speaker": "Sprocket",
           "text": "I've kept the book.",
           "theme": "scholar",
-          "portrait": "scholar"
+          "portrait": "sprocket"
         }
       ]
     },
@@ -99,7 +99,7 @@
           "speaker": "Sprocket",
           "text": "I've requested an audience. I've been on the schedule for it.",
           "theme": "scholar",
-          "portrait": "scholar"
+          "portrait": "sprocket"
         },
         {
           "speaker": "Steampriest",
@@ -111,7 +111,7 @@
           "speaker": "Sprocket",
           "text": "Eleven years. Or fourteen. I should check. The book would know.",
           "theme": "scholar",
-          "portrait": "scholar"
+          "portrait": "sprocket"
         }
       ]
     },

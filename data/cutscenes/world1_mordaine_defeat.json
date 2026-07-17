@@ -74,11 +74,11 @@
           "speaker": "Mordaine",
           "text": "The kingdom will need someone to maintain the systems. The records are current through this morning. There are notes in the left margin of the third ledger. The one with the blue binding.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "mordaine"
         },
         {
           "speaker": "Fighter",
-          "text": "Mordaine\u2014",
+          "text": "Mordaine—",
           "theme": "fighter",
           "portrait": "fighter"
         },
@@ -86,7 +86,7 @@
           "speaker": "Mordaine",
           "text": "This kingdom needed order. You needed a challenge. Both served their purpose.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "mordaine"
         }
       ]
     },
@@ -107,13 +107,13 @@
           "speaker": "Mordaine",
           "text": "You were the variable I couldn't model. There's a difference.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "mordaine"
         },
         {
           "speaker": "Mordaine",
           "text": "Every system has the variable it can't model. That variable is usually the most important one.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "mordaine"
         }
       ]
     },
@@ -134,13 +134,13 @@
           "speaker": "Mordaine",
           "text": "I built it to be passable. Every system I have ever designed, I have designed to be passable. A system that cannot be passed is a system without purpose.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "mordaine"
         },
         {
           "speaker": "Mordaine",
           "text": "I simply didn't account for how long it would take to find someone who would actually try.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "mordaine"
         }
       ]
     },
@@ -150,7 +150,7 @@
     },
     {
       "type": "narration",
-      "text": "She looked at each of them once \u2014 brief, precise, the look of someone making a final entry in a column. Then she looked back at the ledger on the table."
+      "text": "She looked at each of them once — brief, precise, the look of someone making a final entry in a column. Then she looked back at the ledger on the table."
     },
     {
       "type": "wait",
@@ -163,7 +163,7 @@
           "speaker": "Mordaine",
           "text": "I wonder sometimes. Whether someone built the system I was inside. Whether my decisions were as calculated as I believed, or whether I was also a variable. Moving through a design I couldn't see.",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "mordaine"
         },
         {
           "speaker": "Cleric",
@@ -175,7 +175,7 @@
           "speaker": "Mordaine",
           "text": "...",
           "theme": "enemy",
-          "portrait": "mysterious"
+          "portrait": "mordaine"
         }
       ]
     },
@@ -199,7 +199,7 @@
       "type": "narration",
       "lines": [
         "She dissolved.",
-        "Not in the way enemies dissolve \u2014 in smoke and light and theatrical satisfaction. Not with a final pronouncement, not with a flash of dramatic energy.",
+        "Not in the way enemies dissolve — in smoke and light and theatrical satisfaction. Not with a final pronouncement, not with a flash of dramatic energy.",
         "She dissolved the way a thought dissolves. One moment she was there, present and specific and real. The next, a memory already fading at the edges.",
         "The ledger on the table remained. Open to the page she had last been reading."
       ]
@@ -221,7 +221,7 @@
       "type": "narration",
       "lines": [
         "The throne room flickered.",
-        "Not the lights \u2014 the room. The walls shuddered, and for a fraction of a second, the party saw something behind them.",
+        "Not the lights — the room. The walls shuddered, and for a fraction of a second, the party saw something behind them.",
         "Not stone. Not the dark wood paneling of a medieval chancellor's working chamber.",
         "Something that looked like suburbs. A street. A house with a short driveway and a mailbox. Ordinary and impossible.",
         "Then the room settled back into itself. Stone walls. Tapestries. Maps."
@@ -240,7 +240,7 @@
       "lines": [
         {
           "speaker": "Rogue",
-          "text": "Did anyone else\u2014",
+          "text": "Did anyone else—",
           "theme": "rogue",
           "portrait": "rogue"
         },

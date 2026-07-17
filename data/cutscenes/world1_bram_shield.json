@@ -33,13 +33,13 @@
           "speaker": "Bram",
           "text": "Thirty years I've kept this shop. Never tested a single sword. You know why?",
           "theme": "shopkeeper",
-          "portrait": "shopkeeper"
+          "portrait": "bram"
         },
         {
           "speaker": "Bram",
           "text": "Testing dulls the edge.",
           "theme": "shopkeeper",
-          "portrait": "shopkeeper"
+          "portrait": "bram"
         }
       ]
     },
@@ -117,7 +117,7 @@
           "speaker": "Bram",
           "text": "You look like someone who's going to get hit a lot. Take the shield. Consider it an investment in your surviving long enough to come back and buy more.",
           "theme": "shopkeeper",
-          "portrait": "shopkeeper"
+          "portrait": "bram"
         },
         {
           "speaker": "Fighter",
@@ -129,7 +129,7 @@
           "speaker": "Bram",
           "text": "Don't. Shields that come back in one piece weren't doing their job.",
           "theme": "shopkeeper",
-          "portrait": "shopkeeper"
+          "portrait": "bram"
         }
       ]
     },
@@ -154,7 +154,7 @@
           "speaker": "Bram",
           "text": "Cave's north. Mind the first room. And the rest of the rooms.",
           "theme": "shopkeeper",
-          "portrait": "shopkeeper"
+          "portrait": "bram"
         }
       ]
     },

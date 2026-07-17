@@ -34,7 +34,7 @@
           "speaker": "Orrery",
           "text": "Oh good. I was beginning to wonder if you'd come back from that cave at all. Most parties don't, the first time. You must have been paying attention.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Fighter",
@@ -46,7 +46,7 @@
           "speaker": "Orrery",
           "text": "No. I know the shape of someone who's just learned something. It's a distinct silhouette. Sit down. Five cards. No charge for the first reading — I have a professional curiosity about this group.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         }
       ]
     },
@@ -68,25 +68,25 @@
           "speaker": "Orrery",
           "text": "The first card. The Wheel of Fortune. You're in the middle of something much larger than what you think you're in the middle of. That's fine. Most people are.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Orrery",
           "text": "The second. The Tower. Something built on false foundations is going to fall. You will either cause this or prevent it. Possibly both, in sequence.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Orrery",
           "text": "The third. The Hermit. Someone who knows too much and says it poorly. You'll meet them, or you already have. Don't dismiss them just because the information is hard to hold.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Orrery",
           "text": "The fourth. The World. Not a destination. A question. The card doesn't know whether you're moving toward it or whether it's been underneath you the whole time.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Rogue",
@@ -111,7 +111,7 @@
           "speaker": "Orrery",
           "text": "That's never happened before.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Mage",
@@ -123,13 +123,13 @@
           "speaker": "Orrery",
           "text": "I genuinely don't know. The blank card isn't in my deck. It arrived. Recently — within the last week, I think. Before that, there were exactly seventy-eight cards and now there are seventy-nine, and the seventy-ninth has nothing on it.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Orrery",
           "text": "Have you seen, in your travels around Harmonia, a man who knows too much and says it wrong? Not a liar — someone who has the right information but the wrong syntax for it. Like he learned the words but not the order.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Cleric",
@@ -141,7 +141,7 @@
           "speaker": "Orrery",
           "text": "Yes. That's the one. I've been trying to find him for two days, but he moves in ways that don't respond well to maps. Would you be willing to bring him something from me? Or — no. Ask him if he has something that doesn't belong to him. Something he's been carrying. He'll know.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         }
       ]
     },
@@ -161,13 +161,13 @@
           "speaker": "Phil the Lost",
           "text": "You're from the wagon. Not her wagon — you're from her direction. That's different. That means she sent you, which means the card is in the right sequence, which means — here.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "phil"
         },
         {
           "speaker": "Phil the Lost",
           "text": "I've been carrying this since before. I don't know what before means except that it was before Harmonia, before I was Phil, before the inn was painted so many times it forgot what it was. But I've been carrying it. I'm tired of carrying it.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "phil"
         }
       ]
     },
@@ -187,7 +187,7 @@
           "speaker": "Orrery",
           "text": "There it is.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         }
       ]
     },
@@ -206,13 +206,13 @@
           "speaker": "Orrery",
           "text": "This is a notation system I don't recognize. I've studied fourteen schools of symbolic logic and three traditions of glyphwork that aren't taught anymore. This is none of those.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Orrery",
           "text": "It looks like something you'd write at the bottom of a technical document. A provenance mark. The signature of a maker rather than a message.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Mage",
@@ -224,13 +224,13 @@
           "speaker": "Orrery",
           "text": "I don't know yet. I'd like to. I think that's the most honest thing I've said today.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Orrery",
           "text": "I'll keep the paper. In exchange — take this.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         }
       ]
     },
@@ -246,7 +246,7 @@
           "speaker": "Orrery",
           "text": "The Fool Card. My favorite, usually. It means the beginning of a journey before the traveler knows what kind of journey it is. It's the card you give someone who doesn't know enough yet to be afraid.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Bard",
@@ -258,13 +258,13 @@
           "speaker": "Orrery",
           "text": "Ask me again in the next world. Whichever one that is for you.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         },
         {
           "speaker": "Orrery",
           "text": "Come find me when you've seen more of the world. I want to compare notes.",
           "theme": "mysterious",
-          "portrait": "mysterious"
+          "portrait": "orrery"
         }
       ]
     },

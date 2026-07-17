@@ -317,13 +317,13 @@
           "speaker": "Elder Theron",
           "text": "You came back. That's the first noteworthy thing.",
           "theme": "elder",
-          "portrait": "elder"
+          "portrait": "theron"
         },
         {
           "speaker": "Elder Theron",
           "text": "The second is the something you came back *with*. I won't ask what. I have my guesses. I have had my guesses since the morning the birds went quiet.",
           "theme": "elder",
-          "portrait": "elder"
+          "portrait": "theron"
         }
       ]
     },
@@ -338,7 +338,7 @@
           "speaker": "Elder Theron",
           "text": "Turn around. Look east. Past the well. Past the road. Past the treeline. Tell me what you see.",
           "theme": "elder",
-          "portrait": "elder"
+          "portrait": "theron"
         }
       ]
     },
@@ -374,8 +374,8 @@
     {
       "type": "camera_focus",
       "target": [
-        448,
-        32
+        576,
+        60
       ],
       "duration": 1.4
     },
@@ -410,7 +410,7 @@
           "speaker": "Elder Theron",
           "text": "Castle Harmonia. It has always been there. It has not always been *visible*. That is not superstition. That is on purpose.",
           "theme": "elder",
-          "portrait": "elder"
+          "portrait": "theron"
         }
       ]
     },
@@ -425,7 +425,7 @@
           "speaker": "Elder Theron",
           "text": "Someone was hiding it. That someone stopped hiding it because you did what you did. Which means, now, they want you to see it. Which means, now, they want you to come.",
           "theme": "elder",
-          "portrait": "elder"
+          "portrait": "theron"
         }
       ]
     },
@@ -440,7 +440,7 @@
           "speaker": "Elder Theron",
           "text": "You will. That is how these things work. But sit down first. Eat something. Talk to Bram. Talk to the child who hopped at you — she will not remember if you don't. Then go, when you go.",
           "theme": "elder",
-          "portrait": "elder"
+          "portrait": "theron"
         }
       ]
     },
@@ -468,7 +468,7 @@
           "speaker": "Elder Theron",
           "text": "The castle is not going anywhere. It was, briefly. Not anymore.",
           "theme": "elder",
-          "portrait": "elder"
+          "portrait": "theron"
         }
       ]
     },
