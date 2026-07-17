@@ -67,7 +67,7 @@
     "advance_fighter_1": {
       "file": "assets/audio/sfx/advance_fighter_1.ogg",
       "source": "elevenlabs_foley",
-      "prompt": "Fighter advance press 1 (STEEL interpretation) — single confident blade tap + a touch of low body, present and clear. Essence: Resolve, the weapon readied and held. Ladder tier 1/3, ~-17.5 dB mean (loud floor; the drum-v1 tier-1 was too quiet in-game).",
+      "prompt": "Fighter advance press 1 (STEEL interpretation) \u2014 single confident blade tap + a touch of low body, present and clear. Essence: Resolve, the weapon readied and held. Ladder tier 1/3, ~-17.5 dB mean (loud floor; the drum-v1 tier-1 was too quiet in-game).",
       "duration_seconds": 0.45,
       "prompt_influence": 0.0,
       "fallback_to": "advance_queue"
@@ -75,7 +75,7 @@
     "advance_fighter_2": {
       "file": "assets/audio/sfx/advance_fighter_2.ogg",
       "source": "elevenlabs_foley",
-      "prompt": "Fighter advance press 2 (STEEL) — sword drawn (metallic slide into ring) + shield braced with weight + sub. Heavier, closer. Tier 2/3, ~-14.7 dB.",
+      "prompt": "Fighter advance press 2 (STEEL) \u2014 sword drawn (metallic slide into ring) + shield braced with weight + sub. Heavier, closer. Tier 2/3, ~-14.7 dB.",
       "duration_seconds": 0.75,
       "prompt_influence": 0.0,
       "fallback_to": "advance_queue"
@@ -83,7 +83,7 @@
     "advance_fighter_3": {
       "file": "assets/audio/sfx/advance_fighter_3.ogg",
       "source": "elevenlabs_foley",
-      "prompt": "Fighter advance press 3 full ham (STEEL) — full draw + a big ringing steel CLANG (sustained, spectrally verified 65% high-mid tail) over the shield thunk + sub punch. The ring is the payoff. Tier 3/3, ~-13.9 dB, PCM peak -0.8.",
+      "prompt": "Fighter advance press 3 full ham (STEEL) \u2014 full draw + a big ringing steel CLANG (sustained, spectrally verified 65% high-mid tail) over the shield thunk + sub punch. The ring is the payoff. Tier 3/3, ~-13.9 dB, PCM peak -0.8.",
       "duration_seconds": 1.03,
       "prompt_influence": 0.0,
       "fallback_to": "advance_queue"
@@ -91,7 +91,7 @@
     "advance_cleric_1": {
       "file": "assets/audio/sfx/advance_cleric_1.ogg",
       "source": "lmms_sf2_fluidr3",
-      "prompt": "Cleric advance press 1 — soft latch-click, a genuine PAUSE (the half-second before the prayer, cowir-story), then a single warm tubular-bell chime over an open church-organ fifth. Essence: Faith. Tier 1/3, ~-18 dB (present floor).",
+      "prompt": "Cleric advance press 1 \u2014 soft latch-click, a genuine PAUSE (the half-second before the prayer, cowir-story), then a single warm tubular-bell chime over an open church-organ fifth. Essence: Faith. Tier 1/3, ~-18 dB (present floor).",
       "duration_seconds": 1.68,
       "prompt_influence": 0.0,
       "fallback_to": "advance_queue"
@@ -99,7 +99,7 @@
     "advance_cleric_2": {
       "file": "assets/audio/sfx/advance_cleric_2.ogg",
       "source": "lmms_sf2_fluidr3",
-      "prompt": "Cleric advance press 2 — pause SHORTENS (she's surer), bell chime + B over a SUSPENDED organ chord (Csus, unresolved tension). Tier 2/3, ~-13 dB.",
+      "prompt": "Cleric advance press 2 \u2014 pause SHORTENS (she's surer), bell chime + B over a SUSPENDED organ chord (Csus, unresolved tension). Tier 2/3, ~-13 dB.",
       "duration_seconds": 1.83,
       "prompt_influence": 0.0,
       "fallback_to": "advance_queue"
@@ -107,7 +107,7 @@
     "advance_cleric_3": {
       "file": "assets/audio/sfx/advance_cleric_3.ogg",
       "source": "lmms_sf2_fluidr3",
-      "prompt": "Cleric advance press 3 full ham — tiny pause, then the suspension RESOLVES: full C-major chord (organ + choir Aahs) + a bright tubular-bell peal ringing out (spectral-verified C-E-G-C-E). 'Teaches wounds to be over with.' Tier 3/3, ~-12 dB.",
+      "prompt": "Cleric advance press 3 full ham \u2014 tiny pause, then the suspension RESOLVES: full C-major chord (organ + choir Aahs) + a bright tubular-bell peal ringing out (spectral-verified C-E-G-C-E). 'Teaches wounds to be over with.' Tier 3/3, ~-12 dB.",
       "duration_seconds": 2.45,
       "prompt_influence": 0.0,
       "fallback_to": "advance_queue"
@@ -115,7 +115,7 @@
     "advance_rogue_1": {
       "file": "assets/audio/sfx/advance_rogue_1.ogg",
       "source": "elevenlabs_foley",
-      "prompt": "Rogue advance press 1 — bright confident coin-flick + a tiny lockpick pre-tick. Essence: Edge, 'the click that was, more than anything, over.' The rogue's ladder INVERTS (loudest here). Tier 1/3, ~-14 dB.",
+      "prompt": "Rogue advance press 1 \u2014 bright confident coin-flick + a tiny lockpick pre-tick. Essence: Edge, 'the click that was, more than anything, over.' The rogue's ladder INVERTS (loudest here). Tier 1/3, ~-14 dB.",
       "duration_seconds": 0.5,
       "prompt_influence": 0.0,
       "fallback_to": "advance_queue"
@@ -123,7 +123,7 @@
     "advance_rogue_2": {
       "file": "assets/audio/sfx/advance_rogue_2.ogg",
       "source": "elevenlabs_foley",
-      "prompt": "Rogue advance press 2 — QUIETER: lockpick tick + a softer coin. The inversion recedes. Tier 2/3, ~-17 dB.",
+      "prompt": "Rogue advance press 2 \u2014 QUIETER: lockpick tick + a softer coin. The inversion recedes. Tier 2/3, ~-17 dB.",
       "duration_seconds": 0.55,
       "prompt_influence": 0.0,
       "fallback_to": "advance_queue"
@@ -131,7 +131,7 @@
     "advance_rogue_3": {
       "file": "assets/audio/sfx/advance_rogue_3.ogg",
       "source": "elevenlabs_foley",
-      "prompt": "Rogue advance press 3 'ham' = the QUIETEST — faint pick + a coin spinning down to rest (spectral-verified metallic settle). Drama as conspicuous quiet, 'the second thing in the room, heard.' Tier 3/3, ~-20 dB. NOTE for cowir-battle: lands best if the engine ducks other audio under it.",
+      "prompt": "Rogue advance press 3 'ham' = the QUIETEST \u2014 faint pick + a coin spinning down to rest (spectral-verified metallic settle). Drama as conspicuous quiet, 'the second thing in the room, heard.' Tier 3/3, ~-20 dB. NOTE for cowir-battle: lands best if the engine ducks other audio under it.",
       "duration_seconds": 1.2,
       "prompt_influence": 0.0,
       "fallback_to": "advance_queue"
@@ -139,7 +139,7 @@
     "advance_mage_1": {
       "file": "assets/audio/sfx/advance_mage_1.ogg",
       "source": "lmms_sf2_fluidr3",
-      "prompt": "Mage advance press 1 — single clean CORRECT celesta chime, precise, no error (he's sure). Essence: Logic / forensic mathematics. Arcane crystalline interpretation. Tier 1/3, ~-15 dB.",
+      "prompt": "Mage advance press 1 \u2014 single clean CORRECT celesta chime, precise, no error (he's sure). Essence: Logic / forensic mathematics. Arcane crystalline interpretation. Tier 1/3, ~-15 dB.",
       "duration_seconds": 1.0,
       "prompt_influence": 0.0,
       "fallback_to": "advance_queue"
@@ -147,7 +147,7 @@
     "advance_mage_2": {
       "file": "assets/audio/sfx/advance_mage_2.ogg",
       "source": "lmms_sf2_fluidr3",
-      "prompt": "Mage advance press 2 — a WRONG celesta chime (F#5), then the RIGHT one (G5) re-strikes over its shimmer: 'No—wait. Then it's the other thing.' Revision without flinching; the wrong note stays hearable. Tier 2/3, ~-13 dB.",
+      "prompt": "Mage advance press 2 \u2014 a WRONG celesta chime (F#5), then the RIGHT one (G5) re-strikes over its shimmer: 'No\u2014wait. Then it's the other thing.' Revision without flinching; the wrong note stays hearable. Tier 2/3, ~-13 dB.",
       "duration_seconds": 1.2,
       "prompt_influence": 0.0,
       "fallback_to": "advance_queue"
@@ -155,7 +155,7 @@
     "advance_mage_3": {
       "file": "assets/audio/sfx/advance_mage_3.ogg",
       "source": "lmms_sf2_fluidr3",
-      "prompt": "Mage advance press 3 full ham — an ascending cascade of celesta computations (C-E-G-B), the LAST one self-corrects (C#6 wrong -> D6 right) and rings out. Tier 3/3, ~-11 dB.",
+      "prompt": "Mage advance press 3 full ham \u2014 an ascending cascade of celesta computations (C-E-G-B), the LAST one self-corrects (C#6 wrong -> D6 right) and rings out. Tier 3/3, ~-11 dB.",
       "duration_seconds": 1.7,
       "prompt_influence": 0.0,
       "fallback_to": "advance_queue"
@@ -163,7 +163,7 @@
     "advance_bard_1": {
       "file": "assets/audio/sfx/advance_bard_1.ogg",
       "source": "lmms_sf2_fluidr3",
-      "prompt": "Bard advance press 1 — a soft breath (she LISTENS first), then a single warm lute note. Speaks once. Essence: Voice / the Unwritten Chord. Tier 1/3, ~-18 dB.",
+      "prompt": "Bard advance press 1 \u2014 a soft breath (she LISTENS first), then a single warm lute note. Speaks once. Essence: Voice / the Unwritten Chord. Tier 1/3, ~-18 dB.",
       "duration_seconds": 2.45,
       "prompt_influence": 0.0,
       "fallback_to": "advance_queue"
@@ -171,7 +171,7 @@
     "advance_bard_2": {
       "file": "assets/audio/sfx/advance_bard_2.ogg",
       "source": "lmms_sf2_fluidr3",
-      "prompt": "Bard advance press 2 — a lute flourish + a bright piano note SLICED off mid-decay (the piano_scythe cutting it short). Tier 2/3, ~-15 dB.",
+      "prompt": "Bard advance press 2 \u2014 a lute flourish + a bright piano note SLICED off mid-decay (the piano_scythe cutting it short). Tier 2/3, ~-15 dB.",
       "duration_seconds": 1.84,
       "prompt_influence": 0.0,
       "fallback_to": "advance_queue"
@@ -179,7 +179,7 @@
     "advance_bard_3": {
       "file": "assets/audio/sfx/advance_bard_3.ogg",
       "source": "lmms_sf2_fluidr3",
-      "prompt": "Bard advance press 3 full ham — a rising gesture into the UNWRITTEN CHORD: a lush Cmaj9(#11) that hangs, beautiful but refuses to resolve the way the ear predicts (un-hummable). Per cowir-story canon. Tier 3/3, ~-13 dB.",
+      "prompt": "Bard advance press 3 full ham \u2014 a rising gesture into the UNWRITTEN CHORD: a lush Cmaj9(#11) that hangs, beautiful but refuses to resolve the way the ear predicts (un-hummable). Per cowir-story canon. Tier 3/3, ~-13 dB.",
       "duration_seconds": 2.86,
       "prompt_influence": 0.0,
       "fallback_to": "advance_queue"
@@ -1568,6 +1568,40 @@
       "duration_seconds": 0.085,
       "prompt_influence": 0.0,
       "fallback_to": "menu_cancel"
+    },
+    "thump_light": {
+      "file": "assets/audio/sfx/thump_light.ogg",
+      "source": "sox_synth",
+      "prompt": "Thin sub-bass contact-punch \u2014 140Hz sine + noise click, 40ms. Layers UNDER attack_hit_dagger/staff for contact-frame weight (fable-pass impact emphasis, msg 2659).",
+      "duration_seconds": 0.04,
+      "prompt_influence": 0.0
+    },
+    "thump_med": {
+      "file": "assets/audio/sfx/thump_med.ogg",
+      "source": "sox_synth",
+      "prompt": "Round mid-sub contact-punch \u2014 100Hz sine + 55Hz sub + noise click, 60ms. Layers UNDER attack_hit_sword.",
+      "duration_seconds": 0.06,
+      "prompt_influence": 0.0
+    },
+    "thump_heavy": {
+      "file": "assets/audio/sfx/thump_heavy.ogg",
+      "source": "sox_synth",
+      "prompt": "Deep bass contact-punch with weight \u2014 75Hz + 42Hz sub + 200Hz body ring + noise click, 90ms. Layers UNDER attack_hit_axe.",
+      "duration_seconds": 0.09,
+      "prompt_influence": 0.0
+    },
+    "thump_crit": {
+      "file": "assets/audio/sfx/thump_crit.ogg",
+      "source": "sox_synth",
+      "prompt": "Pitched sub-sweep contact-punch \u2014 60->100Hz sine sweep + 130Hz body + square brass hit + noise click + brief echo tail, 135ms. Layers UNDER any *_crit attack for the big crit moment.",
+      "duration_seconds": 0.135,
+      "prompt_influence": 0.0
+    },
+    "night_crickets_wind": {
+      "file": "assets/audio/sfx/night_crickets_wind.ogg",
+      "prompt": "Soft nighttime forest ambience \u2014 subtle wind rustling through leaves, distant cricket chirps in a natural rhythm, occasional very soft owl hoot far away. Low-level ambient bed suitable for seamless looping. No sudden transients, no bass rumble, no percussive elements. Consistent quiet level throughout the entire duration.",
+      "duration_seconds": 12.0,
+      "prompt_influence": 0.4
     }
   }
 }
