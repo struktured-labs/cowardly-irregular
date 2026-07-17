@@ -3260,17 +3260,6 @@ func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attac
 	tween.tween_property(attacker_sprite, "position", home_pos, 0.18)
 
 
-## Rendered half-width of a battle sprite (frame width × scale / 2); 40 fallback for non-animated nodes.
-func _sprite_half_width(sprite: Node2D) -> float:
-	if sprite is AnimatedSprite2D and is_instance_valid(sprite):
-		var a := sprite as AnimatedSprite2D
-		if a.sprite_frames and a.sprite_frames.has_animation(a.animation):
-			var tex := a.sprite_frames.get_frame_texture(a.animation, a.frame)
-			if tex:
-				return tex.get_width() * absf(a.scale.x) * 0.5
-	return 40.0
-
-
 ## Fable-pass hitstop: freeze both combatants' anim playback ~70ms at contact. Visual-only (no Engine.time_scale touch — timers/music unaffected); restore is validity-guarded so mid-stop frees are safe.
 func _apply_hitstop(attacker_sprite: Node2D, target_sprite: Node2D) -> void:
 	var frozen: Array = []
