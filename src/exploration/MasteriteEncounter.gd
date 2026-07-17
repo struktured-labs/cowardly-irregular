@@ -135,6 +135,11 @@ func _build_silhouette() -> void:
 func _on_body_entered(body: Node2D) -> void:
 	if _fired:
 		return
+	# Belt-and-suspenders vs _ready's monitoring=false: if the flag flips
+	# after _ready (defeat lands late-frame) or an external caller invokes
+	# _on_body_entered on a hidden trigger, still refuse to re-stake.
+	if _defeat_flag_set():
+		return
 	if not (body.is_in_group("player") or body.has_method("set_can_move")):
 		return
 	if monster_id == "" or archetype == "":
