@@ -277,6 +277,51 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	z_index = -100  # Render behind everything
 	_setup_layers()
+	_sync_to_game_state_clock()
+
+
+func _exit_tree() -> void:
+	_disconnect_game_state_clock()
+
+
+## Read the current time-of-day band from GameState (v3.33.197 day/night clock) and subscribe to time_of_day_changed so mid-battle band transitions retint the background. Defensive: no-op if GameState missing, if get_time_of_day_name is missing, or if the signal isn't there — same discipline the night_monster_multiplier seam uses in BattleEnemySpawner.
+func _sync_to_game_state_clock() -> void:
+	var gs: Node = _resolve_game_state()
+	if gs == null:
+		return
+	if gs.has_method("get_time_of_day_name"):
+		var band: String = str(gs.get_time_of_day_name())
+		set_time_of_day(_time_of_day_from_name(band))
+	if gs.has_signal("time_of_day_changed") and not gs.time_of_day_changed.is_connected(_on_time_of_day_changed):
+		gs.time_of_day_changed.connect(_on_time_of_day_changed)
+
+
+func _disconnect_game_state_clock() -> void:
+	var gs: Node = _resolve_game_state()
+	if gs == null:
+		return
+	if gs.has_signal("time_of_day_changed") and gs.time_of_day_changed.is_connected(_on_time_of_day_changed):
+		gs.time_of_day_changed.disconnect(_on_time_of_day_changed)
+
+
+func _on_time_of_day_changed(band: String) -> void:
+	set_time_of_day(_time_of_day_from_name(band))
+
+
+## Map GameState's lower-case band name to BattleBackground's TimeOfDay enum. Unknown or empty band falls back to DAY so a data drift on the GameState side doesn't blank the background. Static — pure mapping, no instance state needed.
+static func _time_of_day_from_name(band: String) -> int:
+	match band.to_lower():
+		"dawn": return TimeOfDay.DAWN
+		"dusk": return TimeOfDay.DUSK
+		"night": return TimeOfDay.NIGHT
+		_: return TimeOfDay.DAY
+
+
+static func _resolve_game_state() -> Node:
+	var ml: MainLoop = Engine.get_main_loop()
+	if not (ml is SceneTree):
+		return null
+	return (ml as SceneTree).root.get_node_or_null("GameState")
 
 
 func _setup_layers() -> void:
