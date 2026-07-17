@@ -5042,40 +5042,36 @@ func _on_autogrind_battle_ended(victory: bool) -> void:
 	var items_gained = {}
 
 	if victory:
-		# Calculate base EXP from defeated enemies (estimate from enemy stats)
-		for enemy in BattleManager.enemy_party:
-			if enemy is Combatant:
-				exp_gained += int(enemy.max_hp * 0.5 + enemy.attack * 2)
-		# Tick 340: apply game_constants["exp_multiplier"] so Scriptweaver
-		# nudges and RebalanceDaemon proposals actually affect autogrind
-		# EXP gains. Pre-fix the live-autogrind path used the raw enemy-
-		# stat formula directly — so an exp_multiplier of 2.0 set via the
-		# rebalance system doubled normal-battle EXP but had ZERO effect
-		# on autogrind farms (the system that grinds the most). Mirrors
-		# BattleManager line ~431's defensive clampf pattern.
+		# Cadence #24 (arc closer per cowir-main msg 2751): read authored rewards from BattleManager.get_battle_results() instead of the stat-derived formula that had drifted from actually-granted values. struktured watches this number LIVE on the autogrind dashboard; a total that reads "free money" vs actual grants (pre-fix ran high — 15*0.5+5*2=17 estimate vs authored exp_reward=10 for a low slime) is a trust-killer for the automation pillar. BM already computes base_exp (sum of monsters_db.exp_reward) + total_gold (post-#22 gold_multiplier applied) + total_multiplier (reward*one_shot*autobattle) in _battle_results — read them directly for parity-by-construction. Fallback stat formula preserved for the mock-BM/results-empty case so bare-instance tests still work.
+		var battle_results: Dictionary = BattleManager.get_battle_results()
 		var exp_mult: float = 1.0
 		if GameState and "game_constants" in GameState:
 			exp_mult = clampf(
 				float(GameState.game_constants.get("exp_multiplier", 1.0)),
 				0.1, 10.0)
-		exp_gained = int(exp_gained * exp_mult)
-		# Tick 342: compute + forward gold from defeated enemies. Pre-fix
-		# items_gained stayed {} so AutogrindSystem.on_battle_victory's
-		# gold tracking (line ~516) summed zeros — player got EXP from
-		# autogrind but ZERO actual gold despite the "total_gold" display
-		# counter implying otherwise. Same enemy-stat formula as
-		# HeadlessBattleResolver._build_results (max_hp * 0.3 + defense)
-		# and the same gold_multiplier clampf pattern.
-		var gold_gained_live: int = 0
-		for enemy in BattleManager.enemy_party:
-			if enemy is Combatant:
-				gold_gained_live += int(enemy.max_hp * 0.3 + enemy.defense)
-		var gold_mult: float = 1.0
-		if GameState and "game_constants" in GameState:
-			gold_mult = clampf(
-				float(GameState.game_constants.get("gold_multiplier", 1.0)),
-				0.1, 10.0)
-		items_gained["gold"] = int(gold_gained_live * gold_mult)
+		if not battle_results.is_empty():
+			# Authored parity: BM's actual per-character grant = base_exp * total_multiplier * exp_multiplier (BM:868). Report that same number as the dashboard telemetry.
+			var base_exp: int = int(battle_results.get("base_exp", 0))
+			var total_mult: float = float(battle_results.get("total_multiplier", 1.0))
+			exp_gained = int(base_exp * total_mult * exp_mult)
+			# gold: BM.total_gold already has one_shot_gold_bonus * reward_multiplier * gold_multiplier applied (BM:743, post-cadence #22). Read as-is; re-multiplying here would double-apply.
+			items_gained["gold"] = int(battle_results.get("total_gold", 0))
+		else:
+			# Fallback for mock-BM / instance-tests where _battle_results wasn't populated: stat-derived estimate. Kept only as a safety net.
+			for enemy in BattleManager.enemy_party:
+				if enemy is Combatant:
+					exp_gained += int(enemy.max_hp * 0.5 + enemy.attack * 2)
+			exp_gained = int(exp_gained * exp_mult)
+			var gold_gained_live: int = 0
+			for enemy in BattleManager.enemy_party:
+				if enemy is Combatant:
+					gold_gained_live += int(enemy.max_hp * 0.3 + enemy.defense)
+			var gold_mult: float = 1.0
+			if GameState and "game_constants" in GameState:
+				gold_mult = clampf(
+					float(GameState.game_constants.get("gold_multiplier", 1.0)),
+					0.1, 10.0)
+			items_gained["gold"] = int(gold_gained_live * gold_mult)
 
 		# BattleManager already routed these drops to inventory; without this merge
 		# the live path reported 0 items in total_items_gained while headless (drop
