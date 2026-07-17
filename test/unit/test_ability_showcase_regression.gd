@@ -30,8 +30,8 @@ func test_ability_branch_routes_through_showcase_gate() -> void:
 	var src := _src()
 	var i := src.find("elif _showcase_active(combatant):")
 	assert_gt(i, -1, "gate must receive the ACTING combatant from the signal — BattleManager.current_combatant is stale during execution (the showcase-never-fired bug)")
-	assert_gt(src.find("_play_ability_showcase(attacker_sprite, animator, ability, targets)", i), -1,
-		"gate-true routes to the showcase performance")
+	assert_gt(src.find("_play_ability_showcase(combatant, attacker_sprite, animator, ability, targets)", i), -1,
+		"gate-true routes to the showcase performance WITH the acting combatant — flush-time attribution needs the caster after cycle-12's cache clear")
 
 
 func test_gate_excludes_fast_modes_and_autobattle() -> void:

@@ -1887,6 +1887,7 @@ func _play_ability_animation(anim_type: String, animator: BattleAnimatorClass = 
 ## ============================================================
 
 var _showcase_dmg_buffer = null  # null = pass-through; Array = buffering until impact
+var _showcase_dmg_attacker: Combatant = null  # caster captured at buffer-arm; flush restores it for attribution
 var _showcase_depth: int = 0
 var _showcase_dim_rect: ColorRect = null
 
@@ -1923,11 +1924,13 @@ func _showcase_active(caster: Combatant) -> bool:
 	return manual
 
 
-func _play_ability_showcase(caster_sprite: Node2D, animator: BattleAnimatorClass, ability: Dictionary, targets: Array) -> void:
+func _play_ability_showcase(caster: Combatant, caster_sprite: Node2D, animator: BattleAnimatorClass, ability: Dictionary, targets: Array) -> void:
 	var style: Dictionary = _showcase_element_style(ability)
 	var color: Color = style["color"]
 	_flush_showcase_damage()  # a still-buffering previous beat (advance chains) flushes before we re-arm
 	_showcase_dmg_buffer = []
+	# By flush time _on_action_executed has cleared _last_acting_combatant (cycle-12 cache) — capture the caster now so replayed crit quips/attribution keep their speaker.
+	_showcase_dmg_attacker = caster
 	_showcase_depth += 1
 	_showcase_set_dim(true)
 
@@ -2091,8 +2094,14 @@ func _flush_showcase_damage() -> void:
 		return
 	var buffered: Array = _showcase_dmg_buffer
 	_showcase_dmg_buffer = null
+	# Restore the captured caster around the replay so attribution reads (crit quips, weapon SFX) see the true attacker, then put the cycle-12 cache back exactly as found.
+	var prev_acting: Combatant = _last_acting_combatant
+	if _showcase_dmg_attacker != null and is_instance_valid(_showcase_dmg_attacker):
+		_last_acting_combatant = _showcase_dmg_attacker
 	for args in buffered:
 		_on_damage_dealt(args[0], args[1], args[2], args[3], args[4])
+	_last_acting_combatant = prev_acting
+	_showcase_dmg_attacker = null
 
 
 func _on_item_pressed() -> void:
@@ -3112,7 +3121,7 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 					_play_ability_animation(anim_type, animator)
 					_spawn_ability_effects(ability_id, targets)
 			elif _showcase_active(combatant):
-				_play_ability_showcase(attacker_sprite, animator, ability, targets)
+				_play_ability_showcase(combatant, attacker_sprite, animator, ability, targets)
 			else:
 				_play_ability_animation(anim_type, animator)
 				_spawn_ability_effects(ability_id, targets)
