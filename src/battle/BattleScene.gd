@@ -1906,14 +1906,16 @@ func _showcase_element_style(ability: Dictionary) -> Dictionary:
 
 
 ## Showcase gate: manual party turns at showcase speed only — autobattle IS the fast mode.
-func _showcase_active() -> bool:
+## Takes the ACTING combatant from the action_executing signal — BattleManager.current_combatant is stale/null during the execution phase (v1 read it and the showcase never fired; struktured 2026-07-17).
+func _showcase_active(caster: Combatant) -> bool:
 	if turbo_mode or autogrind_console_mode or Engine.time_scale > 0.3:
 		return false
-	var caster = BattleManager.current_combatant
 	if caster == null or not (caster in BattleManager.player_party):
 		return false
 	var char_id: String = caster.combatant_name.to_lower().replace(" ", "_")
-	return not AutobattleSystem.is_autobattle_enabled(char_id)
+	var manual: bool = not AutobattleSystem.is_autobattle_enabled(char_id)
+	print("[SHOWCASE] gate for %s: speed=%.2f manual=%s -> %s" % [caster.combatant_name, Engine.time_scale, str(manual), str(manual)])
+	return manual
 
 
 func _play_ability_showcase(caster_sprite: Node2D, animator: BattleAnimatorClass, ability: Dictionary, targets: Array) -> void:
@@ -3102,7 +3104,7 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 				else:
 					_play_ability_animation(anim_type, animator)
 					_spawn_ability_effects(ability_id, targets)
-			elif _showcase_active():
+			elif _showcase_active(combatant):
 				_play_ability_showcase(attacker_sprite, animator, ability, targets)
 			else:
 				_play_ability_animation(anim_type, animator)
