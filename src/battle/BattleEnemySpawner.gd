@@ -11,8 +11,13 @@ var _scene  # Reference to parent BattleScene (untyped to avoid circular depende
 const NIGHT_SCALED_STATS: Array = ["max_hp", "attack", "defense", "magic"]
 
 
-## Multiplier applied to encounter-spawned enemy stats when GameState.is_night() is true. Read from GameState.game_constants["night_monster_multiplier"] — defaults to 1.0 (identity, no behavioral change) until struktured rules on the suggested +15-20% range AND on whether it stacks/caps with cowir-autogrind's monster_adaptation_level (+15%/level, same class of multiplier). Ship-safe seam: at 1.0 no stats change even if is_night flips true.
-static func _apply_night_scaling_to_stats(stats: Dictionary) -> Dictionary:
+## PUBLIC — the canonical night scaling function. Read from GameState.game_constants["night_monster_multiplier"] — defaults to 1.0 (identity, no behavioral change) until struktured rules on the suggested +15-20% range AND on whether it stacks/caps with cowir-autogrind's monster_adaptation_level (+15%/level, same class of multiplier). Ship-safe seam: at 1.0 no stats change even if is_night flips true.
+##
+## Callers own their site's parity contract:
+##   - BattleEnemySpawner.spawn_encounter_enemies (this file) applies it to overworld random encounters.
+##   - AutogrindSystem.create_scaled_enemy_data will apply it to autogrind data so BOTH live (spawn_from_data) AND headless (_resolve_headless_battle) inherit identical scaling by construction — see cowir-autogrind msg 2655 parity design.
+##   - spawn_forced_enemies deliberately does NOT call this — boss/miniboss/story tuning is precise per msg 2586.
+static func apply_night_scaling_to_stats(stats: Dictionary) -> Dictionary:
 	var gs: Node = _resolve_game_state()
 	if gs == null:
 		return stats
@@ -239,7 +244,7 @@ func spawn_enemies() -> void:
 		# Slight speed variation for turn order variety
 		stats["speed"] = stats["speed"] + i
 		# Night scaling seam (msg 2643): applied AFTER speed variation so the +i tiebreaker isn't multiplied. No-op while GameState.night_monster_multiplier is 1.0 (identity, awaiting struktured's ruling).
-		stats = _apply_night_scaling_to_stats(stats)
+		stats = apply_night_scaling_to_stats(stats)
 		enemy.initialize(stats)
 		_scene.add_child(enemy)
 
@@ -324,8 +329,7 @@ func spawn_from_data(enemy_data_array: Array) -> void:
 
 		# Slight speed variation
 		stats["speed"] = stats.get("speed", 8) + i
-		# Night scaling seam (msg 2643) — same identity-no-op contract as spawn_encounter_enemies. Autogrind flows through here, so night+adaptation stacking will need explicit ruling before the multiplier changes from 1.0. cowir-autogrind msg 2646 flagged the stack composition.
-		stats = _apply_night_scaling_to_stats(stats)
+		# msg 2655 live/headless parity: night scaling is NOT applied here. cowir-autogrind's create_scaled_enemy_data owns the upstream call to BattleEnemySpawner.apply_night_scaling_to_stats() so BOTH live (this path) AND headless (_resolve_headless_battle in GameLoop) inherit the same scaled dict by construction. Applying it here would double-scale live-tier grinds.
 		enemy.initialize(stats)
 		_scene.add_child(enemy)
 

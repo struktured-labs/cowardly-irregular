@@ -27,10 +27,15 @@ const BESScript = preload("res://src/battle/BattleEnemySpawner.gd")
 
 ## ── Helper surface ────────────────────────────────────────────────────
 
-func test_helper_declared() -> void:
+func test_helper_declared_as_public() -> void:
+	# PUBLIC (no leading underscore) so cowir-autogrind's create_scaled_
+	# enemy_data can call it from the autogrind side and both live/headless
+	# tiers inherit identical scaling by construction (msg 2655 parity).
 	var src: String = FileAccess.get_file_as_string(BES_PATH)
-	assert_string_contains(src, "static func _apply_night_scaling_to_stats(stats: Dictionary) -> Dictionary:",
-		"helper must exist as a static so both instance and static-context callers work")
+	assert_string_contains(src, "static func apply_night_scaling_to_stats(stats: Dictionary) -> Dictionary:",
+		"helper must be PUBLIC (no leading underscore) so cross-lane callers can invoke — msg 2655 parity design")
+	assert_false(src.find("static func _apply_night_scaling_to_stats(") > -1,
+		"the leading-underscore private version must be gone — a private helper can't fix the live/headless parity gap")
 
 
 func test_night_scaled_stats_list_is_named_const() -> void:
@@ -50,19 +55,29 @@ func test_helper_called_in_spawn_encounter_enemies() -> void:
 	var idx: int = src.find("Night scaling seam (msg 2643): applied AFTER speed variation")
 	assert_gt(idx, -1, "encounter-spawn site must document the scaling seam")
 	var window: String = src.substr(idx, 400)
-	assert_string_contains(window, "stats = _apply_night_scaling_to_stats(stats)",
+	assert_string_contains(window, "stats = apply_night_scaling_to_stats(stats)",
 		"encounter-spawn must reassign the helper's return so mutations land in stats")
 
 
-func test_helper_called_in_spawn_from_data() -> void:
-	# spawn_from_data is the autogrind entry point. cowir-autogrind msg
-	# 2646 explicitly called out that night + adaptation stack here.
+func test_spawn_from_data_does_NOT_apply_night_scaling() -> void:
+	# msg 2655 parity design: cowir-autogrind's create_scaled_enemy_data
+	# owns the upstream call so BOTH live (spawn_from_data) AND headless
+	# (_resolve_headless_battle in GameLoop) inherit the same scaled dict
+	# by construction. Applying the scaling HERE would double-scale live-
+	# tier grinds.
 	var src: String = FileAccess.get_file_as_string(BES_PATH)
-	var idx: int = src.find("same identity-no-op contract as spawn_encounter_enemies")
-	assert_gt(idx, -1, "autogrind-spawn site must document the shared seam")
-	var window: String = src.substr(idx, 400)
-	assert_string_contains(window, "stats = _apply_night_scaling_to_stats(stats)",
-		"autogrind-spawn must reassign the helper's return too")
+	var func_idx: int = src.find("func spawn_from_data(enemy_data_array: Array) -> void:")
+	assert_gt(func_idx, -1)
+	var next: int = src.find("\nfunc ", func_idx + 1)
+	var body: String = src.substr(func_idx, (next - func_idx) if next > -1 else 3000)
+	# Match the actual assignment form to avoid false-matching on the
+	# parity-design note that mentions the helper by name in prose.
+	assert_false(body.find("stats = apply_night_scaling_to_stats(") > -1,
+		"spawn_from_data must NOT call apply_night_scaling_to_stats — autogrind's create_scaled_enemy_data owns that upstream to close the live/headless parity gap (msg 2655)")
+	# But the CONTRACT reminder must remain so a future refactor doesn't
+	# accidentally reintroduce the seam here without seeing the parity note.
+	assert_string_contains(body, "msg 2655 live/headless parity",
+		"the parity-design note must remain — otherwise the next dev sees a bare spawn_from_data and wonders why it's not wired")
 
 
 func test_forced_enemies_skip_night_scaling() -> void:
@@ -76,7 +91,7 @@ func test_forced_enemies_skip_night_scaling() -> void:
 	assert_gt(idx, -1, "spawn_forced_enemies anchor must exist")
 	var next: int = src.find("\nfunc ", idx + 1)
 	var body: String = src.substr(idx, (next - idx) if next > -1 else 3000)
-	assert_false(body.find("_apply_night_scaling_to_stats(") > -1,
+	assert_false(body.find("apply_night_scaling_to_stats(") > -1,
 		"forced-enemy spawn (boss/miniboss/story) must NOT go through night scaling — msg 2586 balance-rule protects precise boss tuning")
 
 
@@ -87,7 +102,7 @@ func test_helper_is_noop_without_game_state() -> void:
 	# must return stats unchanged rather than error.
 	var input: Dictionary = {"max_hp": 100, "attack": 10, "defense": 5, "magic": 3, "speed": 8, "max_mp": 20}
 	var expected: Dictionary = input.duplicate()
-	var actual: Dictionary = BESScript._apply_night_scaling_to_stats(input)
+	var actual: Dictionary = BESScript.apply_night_scaling_to_stats(input)
 	assert_eq(actual["max_hp"], expected["max_hp"], "max_hp unchanged when GameState missing")
 	assert_eq(actual["attack"], expected["attack"], "attack unchanged when GameState missing")
 	assert_eq(actual["defense"], expected["defense"], "defense unchanged when GameState missing")
@@ -105,7 +120,7 @@ func test_helper_returns_original_dict_when_gs_lacks_is_night() -> void:
 	# skip the whole scaling path.
 	get_tree().root.add_child(stub)
 	var input: Dictionary = {"max_hp": 100, "attack": 10}
-	var result: Dictionary = BESScript._apply_night_scaling_to_stats(input)
+	var result: Dictionary = BESScript.apply_night_scaling_to_stats(input)
 	stub.queue_free()
 	assert_eq(result["max_hp"], 100, "unchanged when is_night() method missing")
 	assert_eq(result["attack"], 10, "unchanged when is_night() method missing")
@@ -120,7 +135,7 @@ class _NightStub extends Node:
 
 func test_helper_returns_early_when_multiplier_is_identity() -> void:
 	var src: String = FileAccess.get_file_as_string(BES_PATH)
-	var idx: int = src.find("static func _apply_night_scaling_to_stats(stats: Dictionary) -> Dictionary:")
+	var idx: int = src.find("static func apply_night_scaling_to_stats(stats: Dictionary) -> Dictionary:")
 	assert_gt(idx, -1)
 	var next: int = src.find("\nstatic func ", idx + 1)
 	if next == -1:
