@@ -159,3 +159,89 @@ func test_source_overworld_npc_resolves_and_passes_bucket_lines() -> void:
 		"resolved bucket lines must be passed as the 7th arg to DynamicConversation.setup — the LLM path can't see them otherwise")
 	assert_true(src.find("_quest_state_bucket_for_npc(quest_sys_for_llm)") != -1,
 		"bucket resolution must reuse the cycle-3 helper so LLM-on/LLM-off paths agree on bucket")
+
+
+# ── Cycle 5 (msg 2620 mirror): reply + combined_reply prompt injection
+
+func test_reply_prompt_with_empty_quest_state_is_backward_compatible() -> void:
+	var prompt: String = DP.build_npc_reply("Milo", "scholar", "Harmonia", [], "hi", "hello back")
+	assert_true(prompt.find("recently said") == -1,
+		"empty quest_state_lines on build_npc_reply must not emit the voice block — backward compat for non-Milo dynamic NPCs")
+	assert_true(prompt.find("Persona: scholar") != -1,
+		"reply prompt base shape (persona line) preserved")
+	assert_true(prompt.find("You previously said") != -1,
+		"reply prompt conversation-history section preserved")
+
+
+func test_reply_prompt_includes_bucket_lines_when_provided() -> void:
+	var lines: Array = ["The chapter has changed on me.", "Holding on is smaller than I remembered."]
+	var prompt: String = DP.build_npc_reply("Milo", "scholar", "Harmonia", [], "hi", "hello back", lines)
+	assert_true(prompt.find("recently said") != -1,
+		"reply prompt must emit the voice block when quest_state_lines has content")
+	assert_true(prompt.find("chapter has changed") != -1,
+		"first bucket line lands in the reply prompt")
+	assert_true(prompt.find("Holding on is smaller") != -1,
+		"second bucket line lands in the reply prompt")
+	assert_true(prompt.find("Echo this mood and voice.") != -1,
+		"same voice-directive instruction as build_npc_opening — LLM knows to match tone across all turns")
+
+
+func test_combined_reply_prompt_with_empty_quest_state_is_backward_compatible() -> void:
+	var prompt: String = DP.build_combined_reply("Milo", "scholar", "Harmonia", [], "hi", "hello back", 3)
+	assert_true(prompt.find("recently said") == -1,
+		"empty quest_state_lines on build_combined_reply must not emit the voice block")
+	assert_true(prompt.find("Produce BOTH") != -1,
+		"combined-reply prompt shape preserved (BOTH-reply-AND-choices header)")
+
+
+func test_combined_reply_prompt_includes_bucket_lines_when_provided() -> void:
+	var lines: Array = ["I have a chapter drafted.", "Nobody has believed it yet."]
+	var prompt: String = DP.build_combined_reply("Milo", "scholar", "Harmonia", [], "hi", "hello back", 3, lines)
+	assert_true(prompt.find("recently said") != -1,
+		"combined-reply prompt must emit the voice block when quest_state_lines has content")
+	assert_true(prompt.find("chapter drafted") != -1,
+		"bucket lines land in combined-reply prompt so both NPC-reply AND player-choices are informed by voice")
+
+
+func test_reply_prompts_preserve_history_section() -> void:
+	# Regression: the injection point is BETWEEN ctx_block and Rules; must not
+	# accidentally displace the history_block (You previously said / player responded).
+	var lines: Array = ["voice line 1"]
+	var prompt: String = DP.build_npc_reply("Milo", "scholar", "Harmonia", [], "prev npc line", "player reply", lines)
+	var history_at: int = prompt.find("You previously said:")
+	var voice_at: int = prompt.find("recently said")
+	assert_gt(history_at, -1, "history section must remain in reply prompt after injection")
+	assert_gt(voice_at, -1, "voice section must also be present")
+	assert_lt(history_at, voice_at, "history must come BEFORE voice — matches ctx_block ordering (context before character-notes)")
+
+
+func test_source_dynamic_conversation_passes_quest_state_to_reply_builders() -> void:
+	var src = _read(DYN_CONV_PATH)
+	# All three builders must now receive _quest_state_lines.
+	var opening_call: int = src.find("build_npc_opening")
+	var reply_call: int = src.find("build_npc_reply")
+	var combined_call: int = src.find("build_combined_reply")
+	assert_gt(opening_call, -1, "build_npc_opening call preserved (cycle 4)")
+	assert_gt(reply_call, -1, "build_npc_reply call preserved")
+	assert_gt(combined_call, -1, "build_combined_reply call preserved")
+	# Count occurrences of the marker "_quest_state_lines," in call args.
+	# Cycle 4 added it to build_npc_opening; cycle 5 to build_npc_reply and build_combined_reply.
+	# There should be AT LEAST 3 occurrences with the trailing comma-or-close paren.
+	var count: int = 0
+	var idx: int = 0
+	while true:
+		var found: int = src.find("_quest_state_lines,", idx)
+		if found == -1:
+			break
+		count += 1
+		idx = found + 1
+	# Also count the closing-paren form (last argument may end with ')').
+	idx = 0
+	while true:
+		var found2: int = src.find("_quest_state_lines)", idx)
+		if found2 == -1:
+			break
+		count += 1
+		idx = found2 + 1
+	assert_gt(count, 2,
+		"three builder call sites (opening + reply + combined_reply) must each pass _quest_state_lines — cycle 4 + cycle 5 combined")

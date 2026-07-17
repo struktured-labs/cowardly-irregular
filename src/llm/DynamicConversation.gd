@@ -457,6 +457,7 @@ func _fetch_npc_reply() -> String:
 		recent,
 		_last_npc_line,
 		_last_player_line,
+		_quest_state_lines,
 	)
 
 	_set_thinking(true)
@@ -494,6 +495,7 @@ func _fetch_combined_reply() -> Dictionary:
 		_last_npc_line,
 		_last_player_line,
 		DialoguePrompts.MAX_CHOICES,
+		_quest_state_lines,
 	)
 
 	_set_thinking(true)
