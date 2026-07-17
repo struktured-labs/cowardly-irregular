@@ -169,11 +169,14 @@ func confirm(replace_current: bool) -> void:
 			_show_error(["AutogrindSystem missing"])
 			return
 		if replace_current:
-			autogrind.set_autogrind_rules(comp_rules)
+			# set_autogrind_rules returns false on validation reject — show the error and skip installed.emit so the user isn't lied to about success.
+			if not autogrind.set_autogrind_rules(comp_rules):
+				_show_error(["Rule Composer produced invalid rules — kept your existing set. Check console for details."])
+				return
 		else:
 			idx = _install_autogrind_new_profile(autogrind, comp_rules)
 			if idx < 0:
-				_show_error(["Profile limit reached (8 max). Delete a profile or check 'Replace current profile'."])
+				_show_error(["Install failed — either the profile limit was reached (8 max) or the composed rules failed validation. Try 'Replace current profile' or delete a profile."])
 				return
 	hide()
 	installed.emit(idx)
@@ -194,9 +197,14 @@ func _install_autogrind_new_profile(autogrind, comp_rules: Array) -> int:
 		previous_active = autogrind.get_active_autogrind_profile_index()
 	if autogrind.has_method("set_active_autogrind_profile"):
 		autogrind.set_active_autogrind_profile(new_idx)
-	autogrind.set_autogrind_rules(comp_rules)
+	# If validation rejects, restore active + delete the phantom empty profile before returning failure.
+	var applied: bool = autogrind.set_autogrind_rules(comp_rules)
 	if autogrind.has_method("set_active_autogrind_profile"):
 		autogrind.set_active_autogrind_profile(previous_active)
+	if not applied:
+		if autogrind.has_method("delete_autogrind_profile"):
+			autogrind.delete_autogrind_profile(new_idx)
+		return -1
 	return new_idx
 
 
