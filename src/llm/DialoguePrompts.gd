@@ -264,8 +264,10 @@ static func build_npc_opening(
 	npc_persona: String,
 	location: String,
 	recent_events: Array,
+	quest_state_lines: Array = [],
 ) -> String:
 	var ctx_block: String = _format_events(recent_events, CONTEXT_EVENTS)
+	var voice_block: String = _format_quest_state_voice(quest_state_lines)
 
 	return (
 		"You are writing dialogue for a meta-aware JRPG called 'Cowardly Irregular'.\n"
@@ -275,6 +277,7 @@ static func build_npc_opening(
 		+ "Persona: %s\n" % npc_persona
 		+ "Location: %s\n" % location
 		+ ctx_block
+		+ voice_block
 		+ "\n"
 		+ "Rules:\n"
 		+ "- Stay in character; no modern slang unless the setting demands it.\n"
@@ -1020,6 +1023,20 @@ static func _format_events(events: Array, limit: int) -> String:
 		return ""
 
 	return "\nRecent events:\n" + "\n".join(lines) + "\n"
+
+
+## Milo v2 (msg 2600): fold quest_state_lines into the prompt as "recent voice notes" so the LLM matches Milo's current-quest-phase tone.
+static func _format_quest_state_voice(quest_state_lines: Array) -> String:
+	if quest_state_lines.is_empty():
+		return ""
+	var quoted: PackedStringArray = PackedStringArray()
+	for line in quest_state_lines:
+		var s: String = str(line)
+		if not s.is_empty():
+			quoted.append("  - \"%s\"" % s.replace("\"", "\\\""))
+	if quoted.is_empty():
+		return ""
+	return "\nThis character has recently said things like:\n" + "\n".join(quoted) + "\nEcho this mood and voice.\n"
 
 
 ## Surface rich-data flags from an EventLog entry as terse trailing tags so
