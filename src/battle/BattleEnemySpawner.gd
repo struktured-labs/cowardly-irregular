@@ -6,6 +6,38 @@ class_name BattleEnemySpawner
 
 var _scene  # Reference to parent BattleScene (untyped to avoid circular dependency)
 
+
+## Stats that scale with the day/night night multiplier (msg 2643 cowir-main directive). max_mp and speed are deliberately EXCLUDED — MP affects ability cost balance, speed affects turn order and would compound with autogrind adaptation in ways that need separate rulings.
+const NIGHT_SCALED_STATS: Array = ["max_hp", "attack", "defense", "magic"]
+
+
+## Multiplier applied to encounter-spawned enemy stats when GameState.is_night() is true. Read from GameState.game_constants["night_monster_multiplier"] — defaults to 1.0 (identity, no behavioral change) until struktured rules on the suggested +15-20% range AND on whether it stacks/caps with cowir-autogrind's monster_adaptation_level (+15%/level, same class of multiplier). Ship-safe seam: at 1.0 no stats change even if is_night flips true.
+static func _apply_night_scaling_to_stats(stats: Dictionary) -> Dictionary:
+	var gs: Node = _resolve_game_state()
+	if gs == null:
+		return stats
+	# Defensive against cowir-main's parallel work — is_night() may not exist yet.
+	if not gs.has_method("is_night"):
+		return stats
+	if not bool(gs.is_night()):
+		return stats
+	if not ("game_constants" in gs):
+		return stats
+	var mult: float = float(gs.game_constants.get("night_monster_multiplier", 1.0))
+	if absf(mult - 1.0) < 0.001:
+		return stats  # Identity multiplier — no behavioral change without struktured's ack.
+	for stat in NIGHT_SCALED_STATS:
+		if stats.has(stat):
+			stats[stat] = int(round(float(stats[stat]) * mult))
+	return stats
+
+
+static func _resolve_game_state() -> Node:
+	var ml: MainLoop = Engine.get_main_loop()
+	if not (ml is SceneTree):
+		return null
+	return (ml as SceneTree).root.get_node_or_null("GameState")
+
 ## Available monster types for random encounters
 const MONSTER_TYPES = [
 	{
@@ -206,6 +238,8 @@ func spawn_enemies() -> void:
 
 		# Slight speed variation for turn order variety
 		stats["speed"] = stats["speed"] + i
+		# Night scaling seam (msg 2643): applied AFTER speed variation so the +i tiebreaker isn't multiplied. No-op while GameState.night_monster_multiplier is 1.0 (identity, awaiting struktured's ruling).
+		stats = _apply_night_scaling_to_stats(stats)
 		enemy.initialize(stats)
 		_scene.add_child(enemy)
 
@@ -290,7 +324,8 @@ func spawn_from_data(enemy_data_array: Array) -> void:
 
 		# Slight speed variation
 		stats["speed"] = stats.get("speed", 8) + i
-
+		# Night scaling seam (msg 2643) — same identity-no-op contract as spawn_encounter_enemies. Autogrind flows through here, so night+adaptation stacking will need explicit ruling before the multiplier changes from 1.0. cowir-autogrind msg 2646 flagged the stack composition.
+		stats = _apply_night_scaling_to_stats(stats)
 		enemy.initialize(stats)
 		_scene.add_child(enemy)
 
