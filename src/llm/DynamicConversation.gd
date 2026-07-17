@@ -76,6 +76,10 @@ var _fallback_lines: Array  = []         # Static dialogue_lines from the NPC.
 ## When set and the LLM is unavailable, the opening turn samples from this
 ## richer per-character list instead of the flatter fallbacks list.
 var _opening_lines: Array  = []
+## Milo v2 (msg 2600) — quest-state bucket lines threaded into build_npc_opening
+## as "recent voice notes" so the LLM matches the current-quest-phase tone.
+## Passed from OverworldNPC after resolving GameState.quests state → persona bucket.
+var _quest_state_lines: Array = []
 
 
 # ── Runtime state ─────────────────────────────────────────────────────────────
@@ -127,6 +131,7 @@ func setup(
 	event_log:     EventLog,
 	fallback_lines: Array,
 	opening_lines: Array = [],
+	quest_state_lines: Array = [],
 ) -> void:
 	_npc_name      = npc_name      if npc_name      != "" else "NPC"
 	_npc_persona   = npc_persona   if npc_persona   != "" else "friendly villager"
@@ -136,6 +141,9 @@ func setup(
 	# Wave F R3 fix — opening_lines is optional; when empty the opening turn
 	# falls back to _fallback_lines (legacy behavior).
 	_opening_lines = opening_lines.duplicate()
+	# Milo v2 (msg 2600) — optional per-NPC quest_state_lines, threaded into
+	# build_npc_opening so the LLM matches the current-quest-phase voice.
+	_quest_state_lines = quest_state_lines.duplicate()
 
 
 ## Run the full conversation loop and await its completion.
@@ -324,6 +332,7 @@ func _fetch_npc_opening() -> String:
 		_npc_persona,
 		_location,
 		recent,
+		_quest_state_lines,
 	)
 
 	# Wave C: surface the "thinking" indicator while the LLM is composing.
