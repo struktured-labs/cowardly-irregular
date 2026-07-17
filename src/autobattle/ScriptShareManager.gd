@@ -255,7 +255,10 @@ static func apply_autogrind_rules(data: Dictionary) -> bool:
 	if not errs.is_empty():
 		push_warning("[SHARE] Rejected autogrind import — %d invalid rule(s): %s" % [errs.size(), str(errs)])
 		return false
-	AutogrindSystem.set_autogrind_rules(rules)
+	# Defense-in-depth: the choke point revalidates. If it rejects after our pre-check passed the validators drifted — surface it instead of lying to the user.
+	if not AutogrindSystem.set_autogrind_rules(rules):
+		push_warning("[SHARE] Import pre-check passed but choke point rejected — validator drift between validate_imported_autogrind_rules and AutogrindSystem.validate_rule?")
+		return false
 	print("[SHARE] Applied autogrind rules (%d rules)" % rules.size())
 	return true
 
