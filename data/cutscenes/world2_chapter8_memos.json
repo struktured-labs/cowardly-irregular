@@ -3,7 +3,7 @@
   "title": "The Coordinator's Memos",
   "world": 2,
   "trigger": "chapter7_infrastructure_complete",
-  "background": "suburban_community_center",
+  "background": "community_center",
   "description": "Two internal memos pinned to the community center bulletin board. The Masterites are off-profile. Quality of attention cannot be measured. The Arbiter flagged the same gap.",
   "steps": [
     {
@@ -67,7 +67,7 @@
       "lines": [
         {
           "speaker": "MEMO",
-          "text": "INTERNAL STATUS COMMUNICATION \u2014 Coordinator's Office. SUBJECT: Assessment Update, Active Subjects.",
+          "text": "INTERNAL STATUS COMMUNICATION — Coordinator's Office. SUBJECT: Assessment Update, Active Subjects.",
           "theme": "system",
           "portrait": "system"
         },
@@ -171,7 +171,7 @@
       "lines": [
         {
           "speaker": "MEMO",
-          "text": "INTERNAL STATUS COMMUNICATION \u2014 Coordinator's Office. SUBJECT: Incident Report \u2014 Oak Street Garage Sale. Sweater Acquisition.",
+          "text": "INTERNAL STATUS COMMUNICATION — Coordinator's Office. SUBJECT: Incident Report — Oak Street Garage Sale. Sweater Acquisition.",
           "theme": "system",
           "portrait": "system"
         },
@@ -264,7 +264,7 @@
         },
         {
           "speaker": "Mage",
-          "text": "That's what she can't model. 'I liked the bear.' There's no optimization function for that. No rubric. It's just\u2014 you noticed it, and it mattered to you.",
+          "text": "That's what she can't model. 'I liked the bear.' There's no optimization function for that. No rubric. It's just— you noticed it, and it mattered to you.",
           "theme": "mage",
           "portrait": "mage"
         }

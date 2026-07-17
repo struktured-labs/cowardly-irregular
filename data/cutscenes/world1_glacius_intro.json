@@ -3,7 +3,7 @@
   "title": "Glacius, the Frozen Sovereign",
   "world": 1,
   "trigger": "boss_ice_dragon",
-  "background": "ice_cave",
+  "background": "cave_entrance",
   "description": "Boss intro for Glacius in the Glacial Sanctum. A meta-aware ice dragon who has read the documentation while frozen.",
   "steps": [
     {
