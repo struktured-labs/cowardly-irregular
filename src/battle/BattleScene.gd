@@ -445,6 +445,17 @@ func _exit_tree() -> void:
 		BattleManager.party_combat_line.disconnect(_on_party_combat_line)
 	if BattleManager.has_signal("boss_gloat_line") and BattleManager.boss_gloat_line.is_connected(_on_boss_gloat_line):
 		BattleManager.boss_gloat_line.disconnect(_on_boss_gloat_line)
+	# Later-added signal wires had connect() sites gated on has_signal() (BS:339-364) but their disconnects were never mirrored here — auto-disconnect on Node free covers them in practice, but explicit disconnects match the discipline of the block above so a future refactor can't accidentally rely on the wrong invariant.
+	if BattleManager.has_signal("trust_interrupt_window_opened") and BattleManager.trust_interrupt_window_opened.is_connected(_on_trust_interrupt_window_opened):
+		BattleManager.trust_interrupt_window_opened.disconnect(_on_trust_interrupt_window_opened)
+	if BattleManager.has_signal("trust_interrupt_window_closed") and BattleManager.trust_interrupt_window_closed.is_connected(_on_trust_interrupt_window_closed):
+		BattleManager.trust_interrupt_window_closed.disconnect(_on_trust_interrupt_window_closed)
+	if BattleManager.has_signal("meta_autobattle_editor_requested") and BattleManager.meta_autobattle_editor_requested.is_connected(_on_meta_autobattle_editor_requested):
+		BattleManager.meta_autobattle_editor_requested.disconnect(_on_meta_autobattle_editor_requested)
+	if BattleManager.has_signal("boss_taunt") and BattleManager.boss_taunt.is_connected(_on_boss_taunt):
+		BattleManager.boss_taunt.disconnect(_on_boss_taunt)
+	if BattleManager.has_signal("boss_jailbreak_landed") and BattleManager.boss_jailbreak_landed.is_connected(_on_boss_jailbreak_landed):
+		BattleManager.boss_jailbreak_landed.disconnect(_on_boss_jailbreak_landed)
 
 	# Reset engine time scale in case battle speed was altered
 	Engine.time_scale = 1.0
