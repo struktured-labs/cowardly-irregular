@@ -243,6 +243,12 @@ const BACKDROP_PATHS = {
 	TerrainType.FOREST: "res://assets/battle_backdrops/battle_forest.png",
 	TerrainType.VILLAGE: "res://assets/battle_backdrops/battle_village.png",
 	TerrainType.BOSS: "res://assets/battle_backdrops/battle_boss.png",
+	# msg 2724 cowir-sprites finding: 5 finished PNGs had been sitting in assets/sprites/backgrounds/ without dict entries — battles on these terrains rendered procedural despite the finished art. Wired now. Ratchet in test_orphan_battle_backdrops_regression prevents the class from recurring.
+	TerrainType.COAST: "res://assets/sprites/backgrounds/coast_battle.png",
+	TerrainType.DESERT: "res://assets/sprites/backgrounds/desert_battle.png",
+	TerrainType.ICE: "res://assets/sprites/backgrounds/ice_battle.png",
+	TerrainType.SWAMP: "res://assets/sprites/backgrounds/swamp_battle.png",
+	TerrainType.VOLCANIC: "res://assets/sprites/backgrounds/volcanic_battle.png",
 	TerrainType.SUBURBAN: "res://assets/sprites/backgrounds/battle_world2_suburban.png",
 	TerrainType.STEAMPUNK: "res://assets/sprites/backgrounds/battle_world3_steampunk.png",
 	TerrainType.INDUSTRIAL: "res://assets/sprites/backgrounds/battle_world4_industrial.png",
