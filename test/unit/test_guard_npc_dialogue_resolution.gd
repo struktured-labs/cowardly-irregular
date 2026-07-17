@@ -14,11 +14,12 @@ extends GutTest
 ##   - portrait = narrator (generic) instead of brigadier
 ## Both NPCs rendered visually indistinct from a random villager NPC.
 ##
-## Tick 71 also adds a "guard" → brigadier.png alias and procedural
-## fallback. The brigadier sprite exists on disk; aliasing reuses it.
+## Tick 71 added a "guard" → brigadier.png alias (interim reuse of an
+## existing asset). v3.33.200 fold repointed "guard" → guard.png once
+## the real guard portrait landed via cowir-sprites Batch C.
 
 const CUTSCENE_DIALOGUE := "res://src/cutscene/CutsceneDialogue.gd"
-const BRIGADIER_SPRITE := "res://assets/sprites/portraits/npcs/brigadier.png"
+const GUARD_SPRITE := "res://assets/sprites/portraits/npcs/guard.png"
 
 ## Every npc_type used by an interior NPC.
 const INTERIOR_NPC_TYPES: Array[String] = ["scholar", "merchant", "guard"]
@@ -56,16 +57,18 @@ func test_guard_theme_distinct_from_narrator() -> void:
 		"guard arm must use the steel-blue border (0.55, 0.62, 0.72) — military authority palette, distinct from scholar's teal")
 
 
-func test_guard_portrait_aliased_to_brigadier_sprite() -> void:
-	# 2026-07-17 Batch C: guard got bespoke art — the brigadier ALIAS era
-	# ended when guard.png landed (this pin flips atomically with the art;
-	# the interim repoint-before-art attempt was correctly caught by the
-	# old assertion).
+func test_guard_portrait_wired_to_guard_sprite() -> void:
+	# PORTRAIT_SPRITES must have "guard" → guard.png — the bespoke
+	# guard portrait shipped in Batch C (cowir-sprites) replaces the
+	# earlier brigadier.png alias so guard NPCs (Trygg, Drogal) get a
+	# real portrait instead of a repurposed sheet crop. (The interim
+	# repoint-before-art attempt was correctly caught by the old pin.)
 	var src := _read(CUTSCENE_DIALOGUE)
 	assert_true(src.contains("\"guard\": \"res://assets/sprites/portraits/npcs/guard.png\""),
-		"PORTRAIT_SPRITES must point 'guard' at its bespoke guard.png (Batch C)")
-	assert_true(FileAccess.file_exists("res://assets/sprites/portraits/npcs/guard.png"),
-		"guard.png must exist on disk — pointer and art land together or not at all")
+		"PORTRAIT_SPRITES must wire 'guard' to guard.png — bespoke portrait from Batch C, not the brigadier.png interim alias")
+	# Sanity: the wired file must actually exist on disk.
+	assert_true(FileAccess.file_exists(GUARD_SPRITE),
+		"guard.png must exist on disk — the guard portrait wire depends on it")
 
 
 func test_guard_procedural_fallback_arm_exists() -> void:
