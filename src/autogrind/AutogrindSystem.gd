@@ -2307,9 +2307,13 @@ const SNAPSHOT_PATH: String = "user://autogrind_snapshot.json"
 
 
 func save_grind_snapshot(controller_snapshot: Dictionary) -> bool:
-	"""Save current grind state for resume after game close."""
+	"""Save current grind state for resume after game close.
+	Cadence #14: symmetric with load_grind_snapshot's tick-344 hardening —
+	every failure mode push_warns so a snapshot-save miss is diagnosable
+	from the console instead of vanishing silently."""
 	if _test_disable_persistence: return false
 	if not is_grinding:
+		push_warning("[AUTOGRIND] save_grind_snapshot called while not grinding — caller bug (only save mid-session); snapshot not written")
 		return false
 
 	# Finalize elapsed time for snapshot
@@ -2351,7 +2355,7 @@ func save_grind_snapshot(controller_snapshot: Dictionary) -> bool:
 
 	var file = FileAccess.open(SNAPSHOT_PATH, FileAccess.WRITE)
 	if not file:
-		print("[AUTOGRIND] Failed to save snapshot")
+		push_warning("[AUTOGRIND] save_grind_snapshot: FileAccess.open failed for %s (error %d) — resume next session will be unavailable" % [SNAPSHOT_PATH, FileAccess.get_open_error()])
 		return false
 	file.store_string(JSON.stringify(snapshot, "\t"))
 	file.close()
