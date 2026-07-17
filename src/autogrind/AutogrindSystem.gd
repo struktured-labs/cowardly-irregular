@@ -528,6 +528,21 @@ func create_scaled_enemy_data(base_data: Dictionary) -> Dictionary:
 		if scaled.has(key):
 			scaled[key] = int(scaled[key] * (1.0 + adaptation_bonus))
 
+	# Apply cowir-battle's canonical night-scaling helper on both stat shapes so live
+	# (spawn_from_data) and headless (_resolve_headless_battle) inherit identical values
+	# — the msg 2655 parity design. Helper is defensive: no-op at identity multiplier,
+	# no-op when is_night false, no-op when plumbing absent. Safe to call unconditionally.
+	if scaled.has("stats"):
+		scaled["stats"] = BattleEnemySpawner.apply_night_scaling_to_stats(scaled["stats"])
+	var top_stats: Dictionary = {}
+	for key in BattleEnemySpawner.NIGHT_SCALED_STATS:
+		if scaled.has(key):
+			top_stats[key] = scaled[key]
+	if not top_stats.is_empty():
+		var scaled_top: Dictionary = BattleEnemySpawner.apply_night_scaling_to_stats(top_stats)
+		for key in scaled_top:
+			scaled[key] = scaled_top[key]
+
 	# Apply meta-corruption effects
 	if meta_corruption_level >= 2.0:
 		scaled["corruption_effects"] = _get_corruption_effects()
