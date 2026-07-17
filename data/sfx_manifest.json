@@ -1602,6 +1602,13 @@
       "prompt": "Soft nighttime forest ambience \u2014 subtle wind rustling through leaves, distant cricket chirps in a natural rhythm, occasional very soft owl hoot far away. Low-level ambient bed suitable for seamless looping. No sudden transients, no bass rumble, no percussive elements. Consistent quiet level throughout the entire duration.",
       "duration_seconds": 12.0,
       "prompt_influence": 0.4
+    },
+    "round_ap_gain": {
+      "file": "assets/audio/sfx/round_ap_gain.ogg",
+      "source": "sox_synth",
+      "prompt": "Round-boundary AP+1 chime \u2014 coin-metallic click (bandpass noise + 3200/2400Hz sine ping) into ascending arpeggio C5-E5-G5-C6 (triangle+square) with a shimmer tail bending 1047->1300Hz. Bright, celebratory, ~370ms. Per struktured msg 2686: 'coin-meets-charge-up' for BattleScene._show_round_banner (replaces placeholder menu_select at fold time). NO fallback_to \u2014 double-fire prevention per thump-family convention.",
+      "duration_seconds": 0.37,
+      "prompt_influence": 0.0
     }
   }
 }
