@@ -46,6 +46,16 @@ const NIGHT_LPF_CUTOFF_HZ: float = 1500.0
 const NIGHT_REVERB_WET: float = 0.15
 const NIGHT_REVERB_ROOM_SIZE: float = 0.55
 
+# Duck-music bus: sits downstream of MusicNight (MusicPlayers → MusicNight →
+# MusicDuck → Master). Modal dialogue pulls music -6dB during CutsceneDialogue
+# / NPCDialogue show/hide (cowir-cutscenes wires the API into their panels).
+# Battle speech bubbles do NOT duck (per cowir-main msg 2700 — they're
+# seasoning, not conversation). Composes with night filter + slider volume
+# because it's a downstream bus, not a write to _music_player.volume_db.
+const MUSIC_DUCK_BUS: String = "MusicDuck"
+const DUCK_TARGET_DB: float = -6.0
+const DUCK_TAPER_TIME: float = 0.25
+
 # Music cache - stores pre-generated AudioStreamWAV for each monster type
 var _music_cache: Dictionary = {}
 
@@ -175,6 +185,9 @@ func _setup_audio_players() -> void:
 	_ability_player.bus = "Master"
 	add_child(_ability_player)
 
+	# Duck bus BEFORE night bus so night can send into it (signal chain:
+	# player → MusicNight → MusicDuck → Master).
+	_ensure_music_duck_bus()
 	_ensure_music_night_bus()
 
 	_music_player = AudioStreamPlayer.new()
@@ -478,10 +491,14 @@ func _on_ambient_finished() -> void:
 func _ensure_music_night_bus() -> void:
 	if AudioServer.get_bus_index(MUSIC_NIGHT_BUS) != -1:
 		return  # already added (autoload re-init safety)
+	# Sends to MUSIC_DUCK_BUS if it exists (compose: night filter → duck →
+	# Master); otherwise straight to Master for backwards compat.
+	var duck_idx: int = AudioServer.get_bus_index(MUSIC_DUCK_BUS)
+	var send_target: String = MUSIC_DUCK_BUS if duck_idx != -1 else "Master"
 	var idx: int = AudioServer.bus_count
 	AudioServer.add_bus(idx)
 	AudioServer.set_bus_name(idx, MUSIC_NIGHT_BUS)
-	AudioServer.set_bus_send(idx, "Master")
+	AudioServer.set_bus_send(idx, send_target)
 	var lpf := AudioEffectLowPassFilter.new()
 	lpf.cutoff_hz = NIGHT_LPF_CUTOFF_HZ
 	var reverb := AudioEffectReverb.new()
@@ -512,6 +529,58 @@ func are_night_music_effects_enabled() -> bool:
 	if idx == -1:
 		return false
 	return AudioServer.is_bus_effect_enabled(idx, 0)
+
+
+## Duck-music bus setup + toggle (2026-07-16, cowir-main directive msg 2700).
+## Downstream of MusicNight, so signal chain is: player → MusicNight (LPF+reverb)
+## → MusicDuck (amplify) → Master. Ducking is a taper on the Amplify effect's
+## volume_db (0→-6 over 250ms) rather than an enable/disable toggle — a hard
+## step would be audibly obvious.
+var _duck_tween: Tween = null
+var _duck_active: bool = false
+
+
+func _ensure_music_duck_bus() -> void:
+	if AudioServer.get_bus_index(MUSIC_DUCK_BUS) != -1:
+		return  # already added (autoload re-init safety)
+	var idx: int = AudioServer.bus_count
+	AudioServer.add_bus(idx)
+	AudioServer.set_bus_name(idx, MUSIC_DUCK_BUS)
+	AudioServer.set_bus_send(idx, "Master")
+	var amp := AudioEffectAmplify.new()
+	amp.volume_db = 0.0  # transparent at rest; taper to DUCK_TARGET_DB when active
+	AudioServer.add_bus_effect(idx, amp)
+	# Stay enabled so the taper tween can smoothly move volume_db; leaving it
+	# disabled would require an enable-flip at taper-start, which we chose to
+	# avoid (see class doc — hard steps are audible).
+	AudioServer.set_bus_effect_enabled(idx, 0, true)
+
+
+## Public: modal-dialogue enter/exit hook. Idempotent, tapered.
+## Scope per cowir-main msg 2700: CutsceneDialogue + NPCDialogue only.
+## Battle speech bubbles must NOT call this (they're seasoning, not
+## conversation — ducking on every quip would exhaust the player).
+func duck_music_for_dialogue(active: bool) -> void:
+	if active == _duck_active:
+		return  # idempotent, no thrash
+	_duck_active = active
+	var idx: int = AudioServer.get_bus_index(MUSIC_DUCK_BUS)
+	if idx == -1:
+		_ensure_music_duck_bus()
+		idx = AudioServer.get_bus_index(MUSIC_DUCK_BUS)
+	var amp = AudioServer.get_bus_effect(idx, 0)
+	if amp == null:
+		return
+	if _duck_tween and _duck_tween.is_valid():
+		_duck_tween.kill()
+	_duck_tween = create_tween()
+	var target_db: float = DUCK_TARGET_DB if active else 0.0
+	_duck_tween.tween_property(amp, "volume_db", target_db, DUCK_TAPER_TIME)
+
+
+## Public: report whether music is currently ducked for dialogue.
+func is_music_ducked_for_dialogue() -> bool:
+	return _duck_active
 
 
 func play_footstep(terrain: String = "grass") -> void:
