@@ -66,6 +66,9 @@ const MENU_WATCHDOG_MAX_RETRIES: int = 3
 var _menu_wd_started_ms: int = 0
 var _menu_wd_retries: int = 0
 
+## Acting combatant cached from action_executing signal (msg 2749 cycle 12). BattleManager.current_combatant is stale/null during execution — cowir-main's showcase gate fix (57269663) proved it for one reader; this field is the same escape valve for _on_damage_dealt and _play_ability_animation. Set on action_executing, cleared on action_executed so a signal firing outside an action (status tick from round-end, reactive counter) never gets a stale attribution.
+var _last_acting_combatant: Combatant = null
+
 ## Horizontal shift for the ONE-SHOT!/AUTO-BATTLE! victory banners so they clear the BattleResultsDisplay panel (msg 2595). Panel sits at x=200-600 via PRESET_CENTER_LEFT (BRD:171-172); banner is 400 wide with PRESET_CENTER offsets ±200, so it renders x=440-840 by default (overlaps panel at x=440-600). Shifting right by 200 puts the banner at x=640-1040 — clear of the panel with a 40px margin on the left and a 240px margin on the right at the fixed 1280 viewport. Viewport stretch=viewport + aspect=keep pins the coord system at 1280 regardless of window size, so this offset is safe across all real screens.
 const VICTORY_BANNER_X_SHIFT: int = 200
 
@@ -1726,8 +1729,10 @@ func _on_target_selected(idx: int, targets: Array[Combatant]) -> void:
 
 
 func _get_current_combatant_animator() -> BattleAnimatorClass:
-	"""Get the animator for the current combatant"""
-	var current = BattleManager.current_combatant
+	"""Get the animator for the current combatant. msg 2749 cycle 12: prefer _last_acting_combatant (cached from action_executing) over BattleManager.current_combatant, which is stale/null during execution — same fix cowir-main made to the showcase gate (57269663)."""
+	var current = _last_acting_combatant
+	if current == null:
+		current = BattleManager.current_combatant  # Selection-phase fallback — the field IS the current selector when no action is executing.
 	if not current:
 		return null
 	var idx = party_members.find(current)
@@ -3057,6 +3062,8 @@ func _on_execution_phase_started() -> void:
 
 func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 	"""Handle action executing - play animations here"""
+	# msg 2749 cycle 12: cache the signal-arg combatant so _on_damage_dealt / _play_ability_animation don't have to read the stale BattleManager.current_combatant. Cleared in _on_action_executed so a status-tick damage_dealt emit outside an action (poison at round-end, reactive counter) never carries a stale attribution.
+	_last_acting_combatant = combatant
 	_update_turn_info()
 
 	# Get combatant's animator and sprite
@@ -3627,6 +3634,8 @@ func _on_action_executed(combatant: Combatant, action: Dictionary, targets: Arra
 	"""Handle action execution — play buff/debuff/status sounds based on ability effect"""
 	_update_ui()
 	_check_masterite_phase2_music_swap()
+	# msg 2749 cycle 12: clear the acting-combatant cache once the action fully resolves. Damage_dealt emits from status ticks / reactive counters that fire OUTSIDE an action window now attribute to null, matching the "no acting combatant" fact rather than the last completed action.
+	_last_acting_combatant = null
 	# Safety net: if the attacker's melee-attack tween was interrupted
 	# (target died mid-animation, scene refresh, battle-speed change,
 	# etc.), force the sprite back to its stored home position and
@@ -4135,8 +4144,8 @@ func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: St
 	if is_crit:
 		_crit_visual_burst(target, amount)
 		_show_hint("first_crit", "CRITICAL HIT! Fast characters and Rogues crit more often. Equip gear with crit bonuses to increase your chances.")
-		# Crit quip from the attacker
-		var attacker = BattleManager.current_combatant
+		# Crit quip from the attacker (msg 2749 cycle 12: read the cached action-executing arg, not the stale current_combatant field).
+		var attacker = _last_acting_combatant
 		if attacker and attacker in BattleManager.player_party:
 			_try_combat_quip(CRIT_QUIPS, attacker)
 			# Overkill check (damage > 2x remaining HP)
@@ -4174,7 +4183,10 @@ func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: St
 	# Skip hit sounds for abilities — ability sound already played at cast time
 	if _current_ability_id != "":
 		return
-	var attacker = BattleManager.current_combatant
+	# msg 2749 cycle 12: same fix as the crit-quip attribution — read the cached signal-arg combatant, not the stale current_combatant. Status-tick damage_dealt emits arrive with _last_acting_combatant=null which correctly no-ops the weapon SFX (there's no attacker for a poison tick).
+	var attacker = _last_acting_combatant
+	if attacker == null:
+		return
 	var weapon_type = EquipmentSystem.get_weapon_type(attacker)
 	SoundManager.play_attack_hit(weapon_type, is_crit)
 
