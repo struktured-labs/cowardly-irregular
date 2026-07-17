@@ -57,15 +57,15 @@ func test_guard_theme_distinct_from_narrator() -> void:
 
 
 func test_guard_portrait_aliased_to_brigadier_sprite() -> void:
-	# PORTRAIT_SPRITES must have "guard" → brigadier.png — reusing an
-	# existing asset means the dialogue panel gets real art instead
-	# of falling through to procedural fallback.
+	# 2026-07-17 Batch C: guard got bespoke art — the brigadier ALIAS era
+	# ended when guard.png landed (this pin flips atomically with the art;
+	# the interim repoint-before-art attempt was correctly caught by the
+	# old assertion).
 	var src := _read(CUTSCENE_DIALOGUE)
-	assert_true(src.contains("\"guard\": \"res://assets/sprites/portraits/npcs/brigadier.png\""),
-		"PORTRAIT_SPRITES must alias 'guard' to brigadier.png — the brigadier sprite already exists; guard NPCs (Trygg, Drogal) reuse it")
-	# Sanity: the aliased file must actually exist on disk.
-	assert_true(FileAccess.file_exists(BRIGADIER_SPRITE),
-		"brigadier.png must exist on disk — the guard portrait alias depends on it")
+	assert_true(src.contains("\"guard\": \"res://assets/sprites/portraits/npcs/guard.png\""),
+		"PORTRAIT_SPRITES must point 'guard' at its bespoke guard.png (Batch C)")
+	assert_true(FileAccess.file_exists("res://assets/sprites/portraits/npcs/guard.png"),
+		"guard.png must exist on disk — pointer and art land together or not at all")
 
 
 func test_guard_procedural_fallback_arm_exists() -> void:

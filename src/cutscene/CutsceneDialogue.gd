@@ -877,7 +877,7 @@ const PORTRAIT_SPRITES = {
 	"scholar": "res://assets/sprites/portraits/npcs/scholar.png",
 	"shopkeeper": "res://assets/sprites/portraits/npcs/shopkeeper.png",
 	"brigadier": "res://assets/sprites/portraits/npcs/brigadier.png",
-	"guard": "res://assets/sprites/portraits/npcs/brigadier.png",
+	"guard": "res://assets/sprites/portraits/npcs/guard.png",
 	# Masterite portraits — 4 roles × 5 world variants (matches monsters.json ids). Paths point at cowir-sprites' artist-anchored PNGs; missing files fall through to the procedural mysterious draw via the masterite match arm.
 	"masterite_warden_medieval": "res://assets/sprites/portraits/masterite_warden_medieval.png",
 	"masterite_warden_suburban": "res://assets/sprites/portraits/masterite_warden_suburban.png",
