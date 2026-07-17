@@ -25,6 +25,10 @@ func _get_area_id() -> String:
 	return "brasston_redundancy_archive"
 
 
+func _get_music_track() -> String:
+	return "brasston_village"
+
+
 func _get_display_name() -> String:
 	return "The Redundancy Archive"
 

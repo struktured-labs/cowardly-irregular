@@ -25,6 +25,10 @@ func _get_area_id() -> String:
 	return "maple_garage_sale"
 
 
+func _get_music_track() -> String:
+	return "maple_heights_village"
+
+
 func _get_display_name() -> String:
 	return "The Perpetual Garage Sale"
 
