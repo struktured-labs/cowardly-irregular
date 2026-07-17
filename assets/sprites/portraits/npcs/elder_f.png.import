@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://de6lniewwfrn4"
-path="res://.godot/imported/elder.png-a10c215e53c9fcc41a33eeb01df3d81d.ctex"
+uid="uid://dffi4ujlum1iq"
+path="res://.godot/imported/elder_f.png-16d2a7626278d95f648dcdeaa75ed7f5.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/sprites/portraits/npcs/elder.png"
-dest_files=["res://.godot/imported/elder.png-a10c215e53c9fcc41a33eeb01df3d81d.ctex"]
+source_file="res://assets/sprites/portraits/npcs/elder_f.png"
+dest_files=["res://.godot/imported/elder_f.png-16d2a7626278d95f648dcdeaa75ed7f5.ctex"]
 
 [params]
 
