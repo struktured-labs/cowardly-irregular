@@ -584,6 +584,8 @@ func show_dialogue(dialogue_lines: Array) -> void:
 	_dialogue_queue = dialogue_lines
 	_current_index = 0
 	visible = true
+	# Music duck for modal dialogue — thinking indicator lives inside this panel so it composes safely (idempotent same-state). Forward-compat: no-op until cowir-music's SoundManager fold lands (feature/cowardly-irregular-music, msg 2707).
+	_duck_music_for_dialogue(true)
 	_show_current_line()
 
 
@@ -798,7 +800,15 @@ func _finish_dialogue() -> void:
 	visible = false
 	_dialogue_queue.clear()
 	_current_index = 0
+	# Pair with the duck-on from show_dialogue. Idempotent per cowir-music's API — safe to call even if we never ducked (autoload was absent, etc.).
+	_duck_music_for_dialogue(false)
 	dialogue_finished.emit()
+
+
+## Forward-compat wrapper: guards on SoundManager autoload presence + method availability so test contexts without the autoload (and pre-fold builds without the API) are clean no-ops. cowir-music branch feature/cowardly-irregular-music @ 6833cc4a folds into v3.33.198.
+func _duck_music_for_dialogue(active: bool) -> void:
+	if SoundManager and SoundManager.has_method("duck_music_for_dialogue"):
+		SoundManager.duck_music_for_dialogue(active)
 
 
 func _input(event: InputEvent) -> void:
