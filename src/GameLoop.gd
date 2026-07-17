@@ -1079,6 +1079,7 @@ func _open_overworld_menu() -> void:
 	"""Open the overworld/pause menu"""
 	if _overworld_menu and is_instance_valid(_overworld_menu):
 		return  # Already open
+	print("[MENU] Overworld menu opened")  # web-smoke sync point — stage 3 retries Escape until this line lands
 
 	# Sync party data into GameState so leader cycling has job info
 	_sync_party_to_game_state()

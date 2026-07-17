@@ -921,7 +921,7 @@ const PORTRAIT_SPRITES = {
 	"rowan": "res://assets/sprites/portraits/npcs/rowan.png",
 	"cluck": "res://assets/sprites/portraits/npcs/cluck.png",
 	# W1 bosses.
-	"boss_rat_king": "res://assets/sprites/portraits/boss_rat_king.png",
+	"boss_rat_king": "res://assets/sprites/portraits/npcs/boss_rat_king.png",
 	# Existing NPC portrait asset — Dr. Temporal already on disk.
 	"dr_temporal": "res://assets/sprites/portraits/npcs/dr_temporal.png",
 	# Generic archetype pool — every OverworldNPC.npc_type value that OverworldNPC:1112 passes as `portrait` when the player interacts. Aliased to closest existing procedural via the archetype prefix arm; cowir-sprites replaces individually as art lands.

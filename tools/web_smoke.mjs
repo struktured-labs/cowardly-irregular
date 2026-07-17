@@ -16,6 +16,7 @@ const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 let booted = false;
 let saved = false;
 let loaded = false;
+let menuOpened = false;
 const errors = [];
 // Non-fatal error budget: godot ERROR/SCRIPT ERROR lines that reach the JS
 // console without matching FATAL. Not gating (variance), but the summary
@@ -26,6 +27,7 @@ page.on('console', (msg) => {
   if (t.includes('Godot Engine v')) booted = true;
   if (t.includes('Game saved to slot')) saved = true;
   if (t.includes('Game loaded from slot')) loaded = true;
+  if (t.includes('[MENU] Overworld menu opened')) menuOpened = true;
   if (msg.type() === 'error' && FATAL.test(t)) errors.push('console: ' + t.slice(0, 300));
   else if (/ERROR|SCRIPT ERROR|WARNING/.test(t) && !/Godot Engine|Feature/.test(t)) {
     const key = t.slice(0, 120);
@@ -57,10 +59,17 @@ if (booted && errors.length === 0) {
 // Stage 3: open the overworld menu (Escape = ui_menu) — UI chrome is where
 // theme fonts/symbols render, so this screenshot is the font-chain + menu
 // layout regression surface. Escape (not Enter) so no NPC interaction fires.
+// RETRY LOOP (v3.33.199 post-mortem): the fixed 12s prologue window busted as
+// the pck grew — Escape landed mid-cutscene, did nothing, and stage 4's arrows
+// walked the character into an encounter. Now we press Escape until the
+// engine-side "[MENU] Overworld menu opened" line confirms, up to ~24s.
 if (booted && errors.length === 0) {
-  await page.keyboard.press('Escape');
-  await page.waitForTimeout(2500);
+  for (let tries = 0; tries < 12 && !menuOpened; tries++) {
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(2000);
+  }
   await page.screenshot({ path: 'tmp/web_smoke_menu.png' });
+  if (!menuOpened) errors.push('stage3: overworld menu never opened after 12 Escape retries — input locked, cutscene wedged, or menu print removed');
 }
 
 // Stage 4: save → reload → Continue. THE web-only stakes path: user:// on
