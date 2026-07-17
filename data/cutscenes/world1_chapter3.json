@@ -17,7 +17,7 @@
     },
     {
       "type": "play_music",
-      "track": "dungeon"
+      "track": "dungeon_medieval"
     },
     {
       "type": "play_sfx",
@@ -27,7 +27,7 @@
       "type": "narration",
       "lines": [
         "The cave had earned its name honestly. It whispered.",
-        "Not words, exactly. More like the memory of words \u2014 the sound a sentence makes after everyone has forgotten what it meant.",
+        "Not words, exactly. More like the memory of words — the sound a sentence makes after everyone has forgotten what it meant.",
         "The air tasted of iron and wet limestone, and something older beneath that. Shadows moved before they did."
       ]
     },

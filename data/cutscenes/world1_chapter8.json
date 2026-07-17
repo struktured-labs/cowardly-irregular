@@ -4,7 +4,7 @@
   "world": 1,
   "trigger": "chapter7_complete",
   "background": "prologue_village",
-  "description": "Before the palace \u2014 the Guild scholar reveals the chart is a guide to the party's own journey, written by Mordaine's hand.",
+  "description": "Before the palace — the Guild scholar reveals the chart is a guide to the party's own journey, written by Mordaine's hand.",
   "steps": [
     {
       "type": "letterbox_in",
@@ -17,7 +17,7 @@
     },
     {
       "type": "play_music",
-      "track": "mystery_w1"
+      "track": "village_scriptura"
     },
     {
       "type": "narration",
@@ -67,7 +67,7 @@
         },
         {
           "speaker": "Scholar",
-          "text": "The administrative chart I showed you \u2014 I was wrong about what it describes. It isn't a political structure.",
+          "text": "The administrative chart I showed you — I was wrong about what it describes. It isn't a political structure.",
           "theme": "scholar",
           "portrait": "mysterious"
         },
@@ -149,7 +149,7 @@
     },
     {
       "type": "narration",
-      "text": "The scholar unrolled the final document. His eyes moved across the last column. Something there \u2014 his expression shifted, became careful in the way of a man handling something fragile."
+      "text": "The scholar unrolled the final document. His eyes moved across the last column. Something there — his expression shifted, became careful in the way of a man handling something fragile."
     },
     {
       "type": "dialogue",
