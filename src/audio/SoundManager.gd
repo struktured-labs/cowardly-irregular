@@ -34,6 +34,18 @@ const SFX_BATTLE_BASE_DB: float = -6.0   # Battle SFX: punchy alongside music
 const SFX_ABILITY_BASE_DB: float = -12.0 # Ability SFX: same level as music
 const SFX_AMBIENT_BASE_DB: float = -20.0 # Ambient layer: subtle background
 
+# Night-music bus: music players route through this so the day/night system
+# can toggle a low-pass + reverb "nocturnal" filter on all playing music
+# without touching individual tracks. Effects default DISABLED; a GameState
+# is_night listener flips set_night_music_effects(true) at dusk-→-night.
+# Values chosen for "distant/hushed" without being murky — LPF cutoff still
+# lets bass and low-mids through, reverb tail is short so battle music stays
+# tight if a caller elects to nightify it.
+const MUSIC_NIGHT_BUS: String = "MusicNight"
+const NIGHT_LPF_CUTOFF_HZ: float = 1500.0
+const NIGHT_REVERB_WET: float = 0.15
+const NIGHT_REVERB_ROOM_SIZE: float = 0.55
+
 # Music cache - stores pre-generated AudioStreamWAV for each monster type
 var _music_cache: Dictionary = {}
 
@@ -163,16 +175,18 @@ func _setup_audio_players() -> void:
 	_ability_player.bus = "Master"
 	add_child(_ability_player)
 
+	_ensure_music_night_bus()
+
 	_music_player = AudioStreamPlayer.new()
 	_music_player.name = "MusicPlayer"
 	_music_player.volume_db = _music_base_db
-	_music_player.bus = "Master"
+	_music_player.bus = MUSIC_NIGHT_BUS
 	add_child(_music_player)
 
 	_music_player_b = AudioStreamPlayer.new()
 	_music_player_b.name = "MusicPlayerB"
 	_music_player_b.volume_db = -80.0  # Start silent
-	_music_player_b.bus = "Master"
+	_music_player_b.bus = MUSIC_NIGHT_BUS
 	add_child(_music_player_b)
 
 	_ambient_player = AudioStreamPlayer.new()
@@ -454,6 +468,50 @@ func _on_ambient_finished() -> void:
 	"""Re-loop the ambient sound when it finishes."""
 	if _current_ambient_key != "":
 		_ambient_player.play()
+
+
+## Night-music bus setup + toggle (2026-07-16, cowir-main directive msg 2643/2659).
+## Music players are routed to a dedicated bus so day/night can toggle a
+## low-pass + reverb filter over all playing music without re-routing tracks.
+## Effects default DISABLED (bus is transparent) so no gameplay change until
+## someone calls set_night_music_effects(true).
+func _ensure_music_night_bus() -> void:
+	if AudioServer.get_bus_index(MUSIC_NIGHT_BUS) != -1:
+		return  # already added (autoload re-init safety)
+	var idx: int = AudioServer.bus_count
+	AudioServer.add_bus(idx)
+	AudioServer.set_bus_name(idx, MUSIC_NIGHT_BUS)
+	AudioServer.set_bus_send(idx, "Master")
+	var lpf := AudioEffectLowPassFilter.new()
+	lpf.cutoff_hz = NIGHT_LPF_CUTOFF_HZ
+	var reverb := AudioEffectReverb.new()
+	reverb.wet = NIGHT_REVERB_WET
+	reverb.room_size = NIGHT_REVERB_ROOM_SIZE
+	AudioServer.add_bus_effect(idx, lpf)
+	AudioServer.add_bus_effect(idx, reverb)
+	# Both start disabled — flip on for night via set_night_music_effects(true).
+	AudioServer.set_bus_effect_enabled(idx, 0, false)
+	AudioServer.set_bus_effect_enabled(idx, 1, false)
+
+
+## Public: enable or disable the nocturnal filter on all playing music.
+## Caller is expected to be a GameState is_night / day_phase listener
+## (cowir-main's clock PR wires this). Idempotent, cheap, works mid-playback.
+func set_night_music_effects(enabled: bool) -> void:
+	var idx: int = AudioServer.get_bus_index(MUSIC_NIGHT_BUS)
+	if idx == -1:
+		_ensure_music_night_bus()
+		idx = AudioServer.get_bus_index(MUSIC_NIGHT_BUS)
+	AudioServer.set_bus_effect_enabled(idx, 0, enabled)
+	AudioServer.set_bus_effect_enabled(idx, 1, enabled)
+
+
+## Public: report current toggle state (both effects should agree).
+func are_night_music_effects_enabled() -> bool:
+	var idx: int = AudioServer.get_bus_index(MUSIC_NIGHT_BUS)
+	if idx == -1:
+		return false
+	return AudioServer.is_bus_effect_enabled(idx, 0)
 
 
 func play_footstep(terrain: String = "grass") -> void:
