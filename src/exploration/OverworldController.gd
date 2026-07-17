@@ -87,6 +87,15 @@ func _check_encounter() -> bool:
 		# encounter_surge save-corruption: inert before (announced, never read) — now it actually surges
 		if "corruption_effects" in gs and "encounter_surge" in gs.corruption_effects:
 			rate_multiplier *= ENCOUNTER_SURGE_MULT
+		# Day/night encounter scaling (struktured directive msg 2643) — composed
+		# into the same multiplicative stack as the corruption/daemon multipliers.
+		# Gated behind game_constants["day_night_encounter_scaling"] so the whole
+		# path stays inert until struktured acks the numbers. Forward-compat via
+		# has_method: GameState.is_night()/is_dusk() are the canonical API cowir-main
+		# is landing next (msg 2643 assignments) — this reader is a no-op until
+		# they ship. Autogrind bypasses _check_encounter entirely (cowir-autogrind
+		# msg 2646) so grind cadence stays deterministic by design.
+		rate_multiplier *= _day_night_encounter_multiplier(gs)
 
 	# If multiplier is 0, no encounters
 	if rate_multiplier <= 0.0:
@@ -128,6 +137,37 @@ func _check_encounter() -> bool:
 
 	# Fallback: simple random check with multiplier
 	return randf() < (_encounter_rate * rate_multiplier)
+
+
+## Suggested day/night multipliers (msg 2643 struktured-ack-pending). Applied
+## only when GameState.game_constants["day_night_encounter_scaling"] is true.
+## Numbers are proposed defaults awaiting his ruling — flip the toggle to try
+## them live; final values land after his ack.
+const DAY_NIGHT_ENCOUNTER_MULT_NIGHT: float = 1.5
+const DAY_NIGHT_ENCOUNTER_MULT_DUSK: float = 1.25
+
+
+func _day_night_encounter_multiplier(gs) -> float:
+	if gs == null:
+		return 1.0
+	# Ack gate — inert until struktured flips the constant. Ships as a no-op.
+	if not bool(gs.game_constants.get("day_night_encounter_scaling", false)):
+		return 1.0
+	# GameState.day_phase clock landed in v3.33.197 (msg 2683). The canonical
+	# phase-name API is get_time_of_day_name() → "dawn"/"day"/"dusk"/"night";
+	# is_night() is a shorthand for the night arm. Use the name for dusk so
+	# both arms fire against the same live clock. has_method-guarded so a
+	# hypothetical rollback stays a no-op instead of erroring.
+	if not gs.has_method("get_time_of_day_name"):
+		if gs.has_method("is_night") and gs.is_night():
+			return DAY_NIGHT_ENCOUNTER_MULT_NIGHT
+		return 1.0
+	var phase: String = str(gs.get_time_of_day_name())
+	if phase == "night":
+		return DAY_NIGHT_ENCOUNTER_MULT_NIGHT
+	if phase == "dusk":
+		return DAY_NIGHT_ENCOUNTER_MULT_DUSK
+	return 1.0
 
 
 func _trigger_battle() -> void:
