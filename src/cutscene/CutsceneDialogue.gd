@@ -914,7 +914,8 @@ func _create_portrait(portrait_type: String) -> Texture2D:
 			_draw_elder_portrait(img, size)
 		"scholar":
 			_draw_scholar_portrait(img, size)
-		"shopkeeper", "merchant":
+		"shopkeeper", "merchant", "villager":
+			# Villager reuses the shopkeeper procedural (generic townsfolk face); the villager THEME registered in PR #146 already differentiates it visually via the tan border/box — the portrait fallback was still a grey narrator blur before this arm.
 			_draw_shopkeeper_portrait(img, size)
 		"guard", "brigadier":
 			_draw_elder_portrait(img, size)
