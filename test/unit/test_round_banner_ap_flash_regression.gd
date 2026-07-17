@@ -42,3 +42,18 @@ func test_ui_manager_flash_helper_exists() -> void:
 		"flash must target the AP label node stamped in _create_character_status_box")
 	assert_true("Color.WHITE" in body,
 		"flash must tween back to white — a stuck gold modulate would misread as a status effect")
+
+
+func test_flash_v2_scale_pop_is_visible() -> void:
+	# struktured same-day follow-up: "the player AP bars should flash too" —
+	# he watched the round banner and never saw the 0.6s tint. v2 = scale pop.
+	var src := FileAccess.get_file_as_string("res://src/battle/BattleUIManager.gd")
+	var i := src.find("func flash_ap_labels")
+	var next: int = src.find("\nfunc ", i + 1)
+	var body := src.substr(i, (next - i) if next > -1 else 900)
+	assert_true("scale = Vector2(1.3, 1.3)" in body,
+		"flash must scale-pop — a pure modulate tint was invisible in live play")
+	assert_true("pivot_offset = ap_label.size / 2.0" in body,
+		"pop must pivot from center or the label lurches right")
+	assert_true("\"scale\", Vector2.ONE" in body,
+		"scale must tween back to 1.0 — a stuck 1.3x label breaks the panel layout")
