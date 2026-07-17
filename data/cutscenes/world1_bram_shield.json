@@ -6,63 +6,166 @@
   "background": "prologue_village",
   "description": "First interaction with Bram Smith. The untested sword shop, the creed, and the shield he throws in gratis — because the Fighter's earnestness is painful to witness. Canon: world1_the_usurpers_crown ch.1.",
   "steps": [
-    {"type": "letterbox_in", "duration": 0.4},
-
-    {"type": "spawn_actor", "id": "bram", "kind": "npc", "archetype": "bram", "replace_npc": "Bram Smith", "facing": "down"},
-
-    {"type": "narration", "text": "The sword shop had no name on the sign — just a sword, painted with more confidence than skill. Inside, every blade on the rack gleamed with the particular shine of steel that has never once been asked to prove anything."},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "dialogue", "lines": [
-      {"speaker": "Bram", "text": "Thirty years I've kept this shop. Never tested a single sword. You know why?", "theme": "villager", "portrait": "villager"},
-      {"speaker": "Bram", "text": "Testing dulls the edge.", "theme": "villager", "portrait": "villager"}
-    ]},
-
-    {"type": "narration", "text": "This was technically backward, but he said it with such conviction that it had, over the years, become local wisdom. He sold them what they needed at prices that were almost fair."},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "branch", "condition": "lead_job", "cases": {
-      "fighter": [
-        {"type": "narration", "text": "Bram had been watching the lead the whole transaction — the way the sword was gripped and re-gripped, the practice stance checked twice against a reflection in the shop window, the conviction polished brighter than the blade."},
-        {"type": "face_actor", "id": "bram", "dir": "down"},
-        {"type": "dialogue", "lines": [
-          {"speaker": "Bram", "text": "You. Hold there a moment.", "theme": "villager", "portrait": "villager"}
-        ]}
-      ],
-      "default": [
-        {"type": "narration", "text": "While the party counted coins, Bram was watching the Fighter — the re-gripped sword, the stance checked twice in the window's reflection, the earnestness that was, frankly, becoming painful to witness."},
-        {"type": "dialogue", "lines": [
-          {"speaker": "Bram", "text": "Not you. Him. The one practicing his grip on my floor. Hold there a moment.", "theme": "villager", "portrait": "villager"}
-        ]}
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "spawn_actor",
+      "id": "bram",
+      "kind": "npc",
+      "archetype": "bram",
+      "replace_npc": "Bram Smith",
+      "facing": "down"
+    },
+    {
+      "type": "narration",
+      "text": "The sword shop had no name on the sign — just a sword, painted with more confidence than skill. Inside, every blade on the rack gleamed with the particular shine of steel that has never once been asked to prove anything."
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Bram",
+          "text": "Thirty years I've kept this shop. Never tested a single sword. You know why?",
+          "theme": "shopkeeper",
+          "portrait": "shopkeeper"
+        },
+        {
+          "speaker": "Bram",
+          "text": "Testing dulls the edge.",
+          "theme": "shopkeeper",
+          "portrait": "shopkeeper"
+        }
       ]
-    }},
-
-    {"type": "wait", "duration": 0.5},
-
-    {"type": "narration", "text": "Bram reached under the counter — not to the display rack, under it, where a shopkeeper keeps the things that aren't for sale — and came up with a shield. Plain. Round. Heavier than it looked, in the way that good things usually are."},
-
-    {"type": "emote", "id": "bram", "emote": "ellipsis", "duration": 0.8},
-
-    {"type": "dialogue", "lines": [
-      {"speaker": "Bram", "text": "You look like someone who's going to get hit a lot. Take the shield. Consider it an investment in your surviving long enough to come back and buy more.", "theme": "villager", "portrait": "villager"},
-      {"speaker": "Fighter", "text": "I'll bring it back in one piece.", "theme": "fighter", "portrait": "fighter"},
-      {"speaker": "Bram", "text": "Don't. Shields that come back in one piece weren't doing their job.", "theme": "villager", "portrait": "villager"}
-    ]},
-
-    {"type": "grant_item", "item": "untested_shield", "name": "The Untested Shield", "description": "Bram's gift — never tested, never failed. An investment in surviving long enough to come back and buy more."},
-
-    {"type": "wait", "duration": 0.4},
-
-    {"type": "narration", "text": "The Fighter took it the way people take things they intend to deserve. Bram was already turning back to his rack, done with the moment before anyone could make it larger than he'd meant it."},
-
-    {"type": "dialogue", "lines": [
-      {"speaker": "Bram", "text": "Cave's north. Mind the first room. And the rest of the rooms.", "theme": "villager", "portrait": "villager"}
-    ]},
-
-    {"type": "set_flag", "flag": "world1_bram_shield_complete", "value": true},
-
-    {"type": "letterbox_out", "duration": 0.4}
+    },
+    {
+      "type": "narration",
+      "text": "This was technically backward, but he said it with such conviction that it had, over the years, become local wisdom. He sold them what they needed at prices that were almost fair."
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "branch",
+      "condition": "lead_job",
+      "cases": {
+        "fighter": [
+          {
+            "type": "narration",
+            "text": "Bram had been watching the lead the whole transaction — the way the sword was gripped and re-gripped, the practice stance checked twice against a reflection in the shop window, the conviction polished brighter than the blade."
+          },
+          {
+            "type": "face_actor",
+            "id": "bram",
+            "dir": "down"
+          },
+          {
+            "type": "dialogue",
+            "lines": [
+              {
+                "speaker": "Bram",
+                "text": "You. Hold there a moment.",
+                "theme": "villager",
+                "portrait": "villager"
+              }
+            ]
+          }
+        ],
+        "default": [
+          {
+            "type": "narration",
+            "text": "While the party counted coins, Bram was watching the Fighter — the re-gripped sword, the stance checked twice in the window's reflection, the earnestness that was, frankly, becoming painful to witness."
+          },
+          {
+            "type": "dialogue",
+            "lines": [
+              {
+                "speaker": "Bram",
+                "text": "Not you. Him. The one practicing his grip on my floor. Hold there a moment.",
+                "theme": "villager",
+                "portrait": "villager"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "text": "Bram reached under the counter — not to the display rack, under it, where a shopkeeper keeps the things that aren't for sale — and came up with a shield. Plain. Round. Heavier than it looked, in the way that good things usually are."
+    },
+    {
+      "type": "emote",
+      "id": "bram",
+      "emote": "ellipsis",
+      "duration": 0.8
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Bram",
+          "text": "You look like someone who's going to get hit a lot. Take the shield. Consider it an investment in your surviving long enough to come back and buy more.",
+          "theme": "shopkeeper",
+          "portrait": "shopkeeper"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "I'll bring it back in one piece.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Bram",
+          "text": "Don't. Shields that come back in one piece weren't doing their job.",
+          "theme": "shopkeeper",
+          "portrait": "shopkeeper"
+        }
+      ]
+    },
+    {
+      "type": "grant_item",
+      "item": "untested_shield",
+      "name": "The Untested Shield",
+      "description": "Bram's gift — never tested, never failed. An investment in surviving long enough to come back and buy more."
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "narration",
+      "text": "The Fighter took it the way people take things they intend to deserve. Bram was already turning back to his rack, done with the moment before anyone could make it larger than he'd meant it."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Bram",
+          "text": "Cave's north. Mind the first room. And the rest of the rooms.",
+          "theme": "shopkeeper",
+          "portrait": "shopkeeper"
+        }
+      ]
+    },
+    {
+      "type": "set_flag",
+      "flag": "world1_bram_shield_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.4
+    }
   ]
 }

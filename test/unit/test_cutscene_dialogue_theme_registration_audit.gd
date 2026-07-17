@@ -86,17 +86,43 @@ func test_every_dialogue_theme_referenced_in_json_is_registered() -> void:
 		assert_true(true)
 
 
-func test_elder_theron_speaker_uses_elder_theme() -> void:
-	# Named-canon character: Elder Theron always gets his `elder` styling.
-	# Content-drift pin — the world1_harmonia_after_cave scene shipped with
-	# 7 Theron lines mis-tagged as villager, giving him generic-npc treatment
-	# in a scene where his lines are the emotional beat.
+## Named-canon W1 speakers → their canonical theme. Round 1 (2026-07-16) pinned
+## Elder Theron only; round 2 (same day) generalized after finding Bram
+## villager-tagged in world1_bram_shield and Phil villager-tagged (with the
+## wrong name "Phil") in world1_orrery. Add new principals here as they get
+## authored — the ratchet catches any drift.
+const NAMED_CANON_THEMES := {
+	"Elder Theron": "elder",
+	"Scholar Milo": "scholar",
+	"Bram": "shopkeeper",
+	"Phil the Lost": "mysterious",
+}
+
+
+func test_named_canon_speakers_use_canonical_theme() -> void:
 	var offenders: Array = []
 	_iter_dialogue_lines(func(path: String, line: Dictionary):
-		if str(line.get("speaker", "")) != "Elder Theron":
+		var spk: String = str(line.get("speaker", ""))
+		if not NAMED_CANON_THEMES.has(spk):
 			return
-		if str(line.get("theme", "")) != "elder":
-			offenders.append("%s: theme='%s'" % [path.get_file(), line.get("theme", "")])
+		var expected: String = NAMED_CANON_THEMES[spk]
+		var actual: String = str(line.get("theme", ""))
+		if actual != expected:
+			offenders.append("%s: '%s' theme='%s' (expected '%s')" % [path.get_file(), spk, actual, expected])
 	)
 	assert_eq(offenders.size(), 0,
-		"Elder Theron speaker lines must use theme='elder' (his named-canon warm-amber styling):\n  %s" % "\n  ".join(offenders))
+		"named-canon speakers must use their canonical theme:\n  %s" % "\n  ".join(offenders))
+
+
+func test_phil_the_lost_speaker_name_is_canonical() -> void:
+	# Author-drift pin: the character's canonical name is "Phil the Lost"
+	# (per world1_chapter1 proof scene + HarmoniaVillage NPC registry). One
+	# early scene called him just "Phil" — the name inconsistency broke
+	# NAMED_CANON theme matching and any future speaker-key lookups.
+	var offenders: Array = []
+	_iter_dialogue_lines(func(path: String, line: Dictionary):
+		if str(line.get("speaker", "")) == "Phil":
+			offenders.append(path.get_file())
+	)
+	assert_eq(offenders.size(), 0,
+		"'Phil' is not canonical — use 'Phil the Lost' (matches HARMONIA_NPC_CANON + world1_chapter1):\n  %s" % "\n  ".join(offenders))
