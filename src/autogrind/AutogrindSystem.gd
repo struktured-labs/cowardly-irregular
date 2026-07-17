@@ -741,11 +741,19 @@ func _ready() -> void:
 
 
 ## Autogrind control
-func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config: Dictionary = {}) -> void:
-	"""Start automated grinding session"""
+## Cadence #20: void → bool return so callers can detect refusal. Backward-compat — existing void-return callers still work (GDScript). Two silent-fail branches now push_warning: already-active (caller-bug: double-start) + empty-party (would start a grind with no members).
+func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config: Dictionary = {}) -> bool:
 	if is_grinding:
-		print("Autogrind already active!")
-		return
+		push_warning("[AUTOGRIND] start_autogrind called while grind already active — refusing double-start (caller bug: stop_autogrind first)")
+		return false
+	# Empty-party guard — a session with 0 alive members has no meaningful loop and would trip fatigue/collapse math with div-by-zero-shaped defaults.
+	var live_count: int = 0
+	for m in party:
+		if m is Combatant:
+			live_count += 1
+	if live_count == 0:
+		push_warning("[AUTOGRIND] start_autogrind called with empty/invalid party (%d entries, 0 Combatants) — refusing to start a memberless grind" % party.size())
+		return false
 
 	is_grinding = true
 	battles_completed = 0
@@ -817,6 +825,7 @@ func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config
 		efficiency_multiplier, meta_corruption_level,
 		get_csi(current_region_id) if not current_region_id.is_empty() else 0.0
 	])
+	return true
 
 
 func stop_autogrind(reason: String = "Manual stop") -> void:
