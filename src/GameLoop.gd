@@ -213,6 +213,7 @@ const SPOTLIGHT_HINT_THRESHOLDS: Array = [2, 4, 6]
 
 ## Area transition fade overlay (reused across all area transitions)
 var _area_fade_layer: CanvasLayer = null
+var _day_night_overlay: DayNightOverlay = null
 var _area_fade_rect: ColorRect = null
 
 ## Overworld menu
@@ -304,6 +305,13 @@ func _ready() -> void:
 	if PartyChatSystem and PartyChatSystem.has_signal("event_chat_unlocked") \
 			and not PartyChatSystem.event_chat_unlocked.is_connected(_on_event_chat_unlocked):
 		PartyChatSystem.event_chat_unlocked.connect(_on_event_chat_unlocked)
+
+	# Day/night tint (layer 40, world-only) + band-change consumers (music bus etc.)
+	_day_night_overlay = DayNightOverlay.new()
+	add_child(_day_night_overlay)
+	if GameState and GameState.has_signal("time_of_day_changed") \
+			and not GameState.time_of_day_changed.is_connected(_on_time_of_day_changed):
+		GameState.time_of_day_changed.connect(_on_time_of_day_changed)
 
 	# Create the persistent area-transition fade overlay (layer=90, below BattleTransition=100)
 	_area_fade_layer = CanvasLayer.new()
@@ -3317,12 +3325,23 @@ func _start_exploration() -> void:
 	if exploration_scene.has_signal("area_transition"):
 		exploration_scene.area_transition.connect(_on_area_transition)
 
+	# Day/night tint follows the map class: outdoors only (interiors have PR-153's modulate, caves are lightless)
+	if _day_night_overlay:
+		_day_night_overlay.set_outdoor(exploration_scene is OverworldScene or exploration_scene is BaseVillage)
+
 	# Pre-warm common area sprites in background (deferred to not block scene setup)
 	call_deferred("_prewarm_area_sprites")
 
 	# Fire the gated story cutscene ON the freshly-built map (see top-of-function note) — director owns state/locks from here; finish path light-resumes via _resume_exploration_after_cutscene.
 	if pending_story_cutscene != "":
 		_play_story_cutscene(pending_story_cutscene)
+
+
+## Day/night band-change fan-out — every consumer guarded so fold order can't break boot.
+func _on_time_of_day_changed(band: String) -> void:
+	var night: bool = band == "night"
+	if SoundManager and SoundManager.has_method("set_night_music_effects"):
+		SoundManager.set_night_music_effects(night)
 
 
 ## Post-cutscene resume: the scene is already live under the cutscene (built pre-play since 2026-07-16) — just unlock. Full rebuild only when the cutscene tore scenes down (battle-step duels) or a battle owns the screen.
@@ -3547,6 +3566,8 @@ func _start_battle_async(specific_enemies: Array = [], is_encounter: bool = fals
 	"""Start battle using async-loaded scene"""
 	current_state = LoopState.BATTLE
 	_battle_transition_starting = false  # state=BATTLE now owns the mutex vs area transitions
+	if _day_night_overlay:
+		_day_night_overlay.set_outdoor(false)  # battle owns the canvas; _start_exploration recomputes on return
 	_remove_party_chat_indicator()
 	# every battle-entry path funnels through here — sweep once, not per call site
 	_hide_exploration_scenes()

@@ -9,6 +9,7 @@ const VillageShopScript = preload("res://src/exploration/VillageShop.gd")
 const VillageBarScript = preload("res://src/exploration/VillageBar.gd")
 const TreasureChestScript = preload("res://src/exploration/TreasureChest.gd")
 const VillageFountainScript = preload("res://src/exploration/VillageFountain.gd")
+const CastleVistaScript = preload("res://src/exploration/CastleVista.gd")
 
 ## Map dimensions (expanded for full village)
 const MAP_WIDTH: int = 36
@@ -170,6 +171,12 @@ func _setup_transitions() -> void:
 
 
 func _setup_buildings() -> void:
+	# === CASTLE VISTA === north skyline the after_cave scene looks up at
+	var castle_vista = CastleVistaScript.new()
+	castle_vista.name = "CastleVista"
+	castle_vista.position = Vector2(18 * TILE_SIZE, 3 * TILE_SIZE)
+	buildings.add_child(castle_vista)
+
 	# === INN ===
 	var inn = VillageInnScript.new()
 	inn.inn_name = "Sleepy Slime Inn"

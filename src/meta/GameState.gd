@@ -186,6 +186,15 @@ var pending_boss_defeat: Dictionary = {}
 
 var playtime_paused: bool = false
 
+## Day/night clock (struktured directive 2026-07-16): phase 0..1 over a full cycle.
+## Consumers already shipped inert: BattleEnemySpawner night_monster_multiplier seam,
+## autogrind parity, music night bus, interior tint — all gate on is_night() +
+## game_constants defaults, so the clock landing flips nothing until struktured's numbers.
+signal time_of_day_changed(band: String)
+
+const DAY_PHASE_NEW_GAME: float = 0.15
+var day_phase: float = DAY_PHASE_NEW_GAME
+
 ## LLM event log — append-only ring buffer of deterministic game facts.
 ## Instantiated in _ready() so it is always available to LLM subsystems.
 var event_log: EventLog = null
@@ -242,6 +251,34 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if not playtime_paused:
 		playtime_seconds += delta
+		_advance_day_phase(delta)
+
+
+## Clock advances with playtime (battles included — night can fall mid-dungeon).
+func _advance_day_phase(delta: float) -> void:
+	var cycle_minutes: float = float(game_constants.get("day_cycle_minutes", 24.0))
+	if cycle_minutes <= 0.0:
+		return
+	var before: String = get_time_of_day_name()
+	day_phase = fposmod(day_phase + delta / (cycle_minutes * 60.0), 1.0)
+	var after: String = get_time_of_day_name()
+	if after != before:
+		time_of_day_changed.emit(after)
+
+
+func get_time_of_day_name() -> String:
+	var p: float = fposmod(day_phase, 1.0)
+	if p < 0.10:
+		return "dawn"
+	if p < 0.50:
+		return "day"
+	if p < 0.60:
+		return "dusk"
+	return "night"
+
+
+func is_night() -> bool:
+	return get_time_of_day_name() == "night"
 
 
 ## Save/Load system
@@ -260,6 +297,7 @@ func _create_save_data() -> Dictionary:
 		"version": "0.1.0",
 		"timestamp": Time.get_unix_time_from_system(),
 		"playtime": playtime_seconds,
+		"day_phase": day_phase,
 		"corruption_level": corruption_level,
 		"macro_volatility": macro_volatility,
 		"party_gold": party_gold,
@@ -330,6 +368,8 @@ func _apply_save_data(save_data: Dictionary) -> void:
 	"""Apply loaded save data to game state"""
 	if save_data.has("playtime"):
 		playtime_seconds = save_data["playtime"]
+	if save_data.has("day_phase"):
+		day_phase = clampf(float(save_data["day_phase"]), 0.0, 1.0)
 	if save_data.has("corruption_level"):
 		## Tick 156: float() coerce + clampf to documented [0.0, 1.0]
 		## range. Pre-fix a corrupted save with negative or >1.0 value
@@ -889,6 +929,7 @@ func reset_game_state() -> void:
 	prior playthrough, so a second New Game would skip prologue and have
 	all 6 worlds unlocked from the start. Mirrors _create_save_data."""
 	playtime_seconds = 0.0
+	day_phase = DAY_PHASE_NEW_GAME
 	corruption_level = 0.0
 	macro_volatility = 0.0
 	party_gold = 500
