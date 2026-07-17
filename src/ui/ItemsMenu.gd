@@ -748,17 +748,42 @@ func _use_selected_item() -> void:
 		else:
 			SoundManager.play_ui("menu_select")
 
-		# Rebuild item list
+		# struktured 2026-07-16: stay in target-select for repeat use ("apply more than 1 potion without reselecting") — kick back only when stock runs out or no member can still benefit.
 		_build_item_list()
-		mode = 0
-		selected_item_index = clampi(selected_item_index, 0, max(0, _item_list.size() - 1))
-		_build_ui()
+		var still_stocked: bool = inventory.has(item["id"])
+		if still_stocked and _item_still_useful(item["data"]):
+			_build_ui()  # refresh HP rows + counts, stay in target mode
+		else:
+			mode = 0
+			selected_item_index = clampi(selected_item_index, 0, max(0, _item_list.size() - 1))
+			_build_ui()
 	else:
 		SoundManager.play_ui("menu_error")
 		# ItemSystem.use_item returns false for various reasons (target
 		# already at full HP for heal, status-clear with no matching status,
 		# etc). Without a Toast the player hears the beep but can't tell why.
 		Toast.show_warning(self, "Item had no effect")
+
+
+## True while at least one party member can still benefit from this item's primary effect — heal items vs a full-HP roster (or revive vs no KO) kick the player back to the list instead of an error-beep loop.
+func _item_still_useful(item_data: Dictionary) -> bool:
+	var fx: Dictionary = item_data.get("effects", {})
+	if fx.get("revive", false):
+		for m in party:
+			if m and not m.is_alive:
+				return true
+		return false
+	if fx.has("heal_hp") or fx.has("heal_hp_percent"):
+		for m in party:
+			if m and m.is_alive and m.current_hp < m.max_hp:
+				return true
+		return false
+	if fx.has("heal_mp") or fx.has("heal_mp_percent"):
+		for m in party:
+			if m and m.is_alive and m.current_mp < m.max_mp:
+				return true
+		return false
+	return true
 
 
 func _on_item_click(index: int) -> void:

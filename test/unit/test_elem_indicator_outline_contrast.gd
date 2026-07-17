@@ -82,8 +82,9 @@ func test_matches_damage_number_outline_pattern() -> void:
 	# The elemental indicator now uses the same pattern — single
 	# visual language across floating text.
 	var dn: String = _read(DAMAGE_NUMBER)
-	assert_true(dn.contains("add_theme_constant_override(\"outline_size\", 2)"),
-		"DamageNumber's outline_size=2 must still be the reference pattern")
+	# Fable pass 2026-07-16: DamageNumber's width moved to 5 (bigger+fatter); the shared PATTERN is black-outline-present, not the exact width.
+	assert_true(dn.contains("add_theme_constant_override(\"outline_size\", 5)"),
+		"DamageNumber's outline_size=5 must still be the fable-pass reference")
 	assert_true(dn.contains("add_theme_color_override(\"font_outline_color\", Color.BLACK)"),
 		"DamageNumber's BLACK outline must still be the reference pattern")
 

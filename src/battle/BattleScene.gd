@@ -3215,15 +3215,14 @@ func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attac
 		if old_tween and old_tween.is_valid():
 			old_tween.kill()
 
-	# Calculate attack position (close to target but not overlapping)
+	# Fable pass 2026-07-16 (struktured: "alignment of weapon to monster is off"): contact distance derives from BOTH sprites' rendered half-widths — the old fixed 40px stop put attackers inside 300px monsters and short of small ones. Weapon overlap factor 0.35 lets the strike visually reach into the target's edge.
 	var direction = (target_pos - home_pos).normalized()
-	var attack_pos = target_pos - direction * 40  # Stop 40 pixels from target
+	var stop_dist: float = _sprite_half_width(target_sprite) + _sprite_half_width(attacker_sprite) * 0.35
+	var attack_pos = target_pos - direction * maxf(stop_dist, 40.0)
 
-	# Create movement tween
+	# Create movement tween — Fable pass (struktured: "timing and emphasis... should be nonlinear — the attack slows down slightly during impact"). Shape: ACCELERATING approach → HITSTOP at contact → eased settle home.
 	var tween = create_tween()
 	attacker_sprite.set_meta("attack_tween", tween)
-	tween.set_trans(Tween.TRANS_BACK)
-	tween.set_ease(Tween.EASE_OUT)
 
 	# Play lunge/dash windup animation in parallel with the position tween below.
 	# Falls back gracefully: if no 'lunge' animation exists in SpriteFrames,
@@ -3237,26 +3236,55 @@ func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attac
 				and attacker_animated_sprite.sprite_frames.has_animation("lunge"):
 			attacker_anim.play_lunge()
 
-	# Move to target (fast)
-	tween.tween_property(attacker_sprite, "position", attack_pos, 0.15)
+	# Approach: accelerate INTO contact (EASE_IN) — committed weight, not a drift.
+	tween.set_trans(Tween.TRANS_QUAD)
+	tween.set_ease(Tween.EASE_IN)
+	tween.tween_property(attacker_sprite, "position", attack_pos, 0.12)
 
-	# Play attack animation and hit on target
+	# Contact: attack anim + HITSTOP — hit fx + damage land AT this moment (was a fixed 0.1s later timer).
 	tween.tween_callback(func():
 		if not is_instance_valid(self):
 			return
 		if attacker_anim and is_instance_valid(attacker_anim):
 			attacker_anim.play_attack()
-		# Brief delay then play hit
-		get_tree().create_timer(0.1).timeout.connect(_delayed_play_hit_fx.bind(target_anim, target_sprite))
+		_apply_hitstop(attacker_sprite, target_sprite)
+		_delayed_play_hit_fx(target_anim, target_sprite)
 	)
 
-	# Wait for attack animation
-	tween.tween_interval(0.3)
+	# Hold at strike (0.3→0.22 — the hitstop supplies the emphasis the dead air used to fake).
+	tween.tween_interval(0.22)
 
-	# Return to home position (use stored home, not where we started this attack)
+	# Settle home: decelerating ease-out (use stored home, not where we started this attack).
 	tween.set_trans(Tween.TRANS_QUAD)
-	tween.set_ease(Tween.EASE_IN_OUT)
-	tween.tween_property(attacker_sprite, "position", home_pos, 0.2)
+	tween.set_ease(Tween.EASE_OUT)
+	tween.tween_property(attacker_sprite, "position", home_pos, 0.18)
+
+
+## Rendered half-width of a battle sprite (frame width × scale / 2); 40 fallback for non-animated nodes.
+func _sprite_half_width(sprite: Node2D) -> float:
+	if sprite is AnimatedSprite2D and is_instance_valid(sprite):
+		var a := sprite as AnimatedSprite2D
+		if a.sprite_frames and a.sprite_frames.has_animation(a.animation):
+			var tex := a.sprite_frames.get_frame_texture(a.animation, a.frame)
+			if tex:
+				return tex.get_width() * absf(a.scale.x) * 0.5
+	return 40.0
+
+
+## Fable-pass hitstop: freeze both combatants' anim playback ~70ms at contact. Visual-only (no Engine.time_scale touch — timers/music unaffected); restore is validity-guarded so mid-stop frees are safe.
+func _apply_hitstop(attacker_sprite: Node2D, target_sprite: Node2D) -> void:
+	var frozen: Array = []
+	for s in [attacker_sprite, target_sprite]:
+		if s is AnimatedSprite2D and is_instance_valid(s):
+			(s as AnimatedSprite2D).speed_scale = 0.05
+			frozen.append(s)
+	if frozen.is_empty():
+		return
+	get_tree().create_timer(0.07).timeout.connect(func():
+		for s in frozen:
+			if is_instance_valid(s):
+				(s as AnimatedSprite2D).speed_scale = 1.0
+	, CONNECT_ONE_SHOT)
 
 
 func _apply_hit_knockback(sprite: Node2D, direction: float = 1.0) -> void:

@@ -40,12 +40,13 @@ func _create_label() -> void:
 	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 
-	var base_size = 16
+	# Fable pass 2026-07-16 (struktured: "font for showing damage is too small, should prob be fatter and bigger in general") — base 16→24, tiers up, outline 2→5.
+	var base_size = 24
 	var color: Color
 
 	if is_miss:
 		_label.text = "MISS"
-		base_size = 18
+		base_size = 24
 		color = Color(0.65, 0.65, 0.65)
 		_lifetime = 0.9
 	else:
@@ -53,14 +54,14 @@ func _create_label() -> void:
 
 		# Size based on damage amount
 		if value >= 100:
-			base_size = 24
+			base_size = 34
 		elif value >= 50:
-			base_size = 20
+			base_size = 30
 		elif value >= 25:
-			base_size = 18
+			base_size = 27
 
 		if is_critical:
-			base_size += 6
+			base_size += 8
 
 		# Tick 226: color-blind friendly palette swaps green→cyan (heal) and orange→yellow (crit). Both are distinguishable for deuteranopia/protanopia (red-green color blindness, ~5% of males).
 		if is_heal:
@@ -73,8 +74,8 @@ func _create_label() -> void:
 	_label.add_theme_font_size_override("font_size", base_size)
 	_label.add_theme_color_override("font_color", color)
 
-	# Outline for visibility
-	_label.add_theme_constant_override("outline_size", 2)
+	# Fat outline — the "weight" half of bigger+fatter (Labels have no bold toggle without a font swap; a 5px outline reads as heavy stroke at these sizes).
+	_label.add_theme_constant_override("outline_size", 5)
 	_label.add_theme_color_override("font_outline_color", Color.BLACK)
 
 	# Center the label

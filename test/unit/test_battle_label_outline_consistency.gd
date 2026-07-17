@@ -152,5 +152,6 @@ func test_damage_number_outline_pattern_unchanged() -> void:
 	# DamageNumber set the precedent. All these BattleScene labels
 	# now match the same scheme. Confirm DamageNumber wasn't touched.
 	var dn: String = FileAccess.get_file_as_string("res://src/ui/DamageNumber.gd")
-	assert_true(dn.contains("add_theme_constant_override(\"outline_size\", 2)"),
-		"DamageNumber outline_size=2 preserved (the reference)")
+	# Fable pass 2026-07-16: reference width deliberately 2→5 (struktured: damage font "fatter and bigger").
+	assert_true(dn.contains("add_theme_constant_override(\"outline_size\", 5)"),
+		"DamageNumber outline_size=5 preserved (the fable-pass reference)")
