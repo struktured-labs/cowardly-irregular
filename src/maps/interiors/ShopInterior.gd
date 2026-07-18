@@ -85,6 +85,8 @@ func _ready() -> void:
 	_setup_tilemap()
 	_setup_decorations()
 	_setup_npcs()
+	# msg 2764: NPC-vs-furniture sweep (shared with BaseInterior + InnInterior).
+	InteriorPlacementSweep.sweep(self, npcs, decorations, SHOP_LAYOUT, "shop_interior")
 	_create_browse_interactable()
 	_setup_transitions()
 	_setup_player()
