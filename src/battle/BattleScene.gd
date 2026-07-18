@@ -3544,6 +3544,50 @@ func _apply_hit_flash(sprite: Node2D) -> void:
 	tween.tween_property(sprite, "modulate", Color.WHITE, 0.12)
 
 
+## msg 2787 cycle 16 — weakness-hit visuals. Struktured: "if you hit monsters with weaknesses, they should have very specific palette swaps or reactions or special frames to indicate it hurt more than usual." Cut 1 (engine, no per-sheet art): on elemental_mod > 1.0, over-flash the target in the ELEMENT color (deeper hue + longer settle than white hit flash), and bigger knockback so the hit LANDS. Cut 2 (per-sheet special frames) is a cowir-sprites follow-up if this isn't enough.
+const WEAKNESS_ELEMENT_COLORS: Dictionary = {
+	"fire": Color(2.5, 0.6, 0.15),
+	"ice": Color(0.4, 1.8, 2.6),
+	"lightning": Color(2.6, 2.6, 0.5),
+	"dark": Color(1.4, 0.4, 2.0),
+	"holy": Color(2.6, 2.4, 1.6),
+	"physical": Color(1.9, 1.5, 1.0),
+	"wind": Color(1.2, 2.2, 1.2),
+	"earth": Color(1.7, 1.3, 0.7),
+	"water": Color(0.6, 1.2, 2.4),
+	"poison": Color(1.2, 2.0, 0.7),
+	"arcane": Color(2.2, 1.4, 2.4),
+}
+
+
+func _apply_weakness_hit_visuals(sprite: Node2D, element: String, elemental_mod: float) -> void:
+	# Precondition: caller checked elemental_mod > 1.0 and element != "".
+	if not is_instance_valid(sprite):
+		return
+	# Deeper color intensity scales with modifier: 1.5x weakness → base color, 2.0x → +30% intensity. Capped so a runaway multiplier doesn't oversaturate. Alpha=1.0 kept — modulate values >1.0 already produce the HDR-like flash pop.
+	var base_color: Color = WEAKNESS_ELEMENT_COLORS.get(element, Color(2.6, 2.6, 2.6))
+	var boost: float = clampf((elemental_mod - 1.0) * 0.6, 0.0, 0.4)
+	var flash_color: Color = Color(base_color.r * (1.0 + boost), base_color.g * (1.0 + boost), base_color.b * (1.0 + boost), 1.0)
+	sprite.modulate = flash_color
+	var tween = create_tween()
+	# Longer settle than the 0.12s white hit flash — reads as "it HURT". Two-phase: hold the color briefly, then ease back so the settle isn't a hard cut.
+	tween.tween_interval(0.08)
+	tween.tween_property(sprite, "modulate", Color.WHITE, 0.28).set_ease(Tween.EASE_OUT)
+
+
+func _apply_weakness_hit_knockback(sprite: Node2D, direction: float = 1.0, elemental_mod: float = 1.0) -> void:
+	# Precondition: caller checked elemental_mod > 1.0.
+	if not is_instance_valid(sprite):
+		return
+	# Regular knockback is 6.0 px. Weakness escalates to 12-16 depending on the mod (1.5x → 12, 2.0x → 16). Capped so an omega-weakness (uncommon but authored elsewhere) doesn't rocket the sprite off-screen.
+	var kb_magnitude: float = clampf(6.0 + 12.0 * (elemental_mod - 1.0), 6.0, 16.0)
+	var original_x = sprite.position.x
+	var knockback_x = original_x + (kb_magnitude * direction)
+	var tween = create_tween()
+	tween.tween_property(sprite, "position:x", knockback_x, 0.08).set_ease(Tween.EASE_OUT)
+	tween.tween_property(sprite, "position:x", original_x, 0.22).set_ease(Tween.EASE_OUT)
+
+
 func _get_combatant_sprite(combatant: Combatant) -> Node2D:
 	"""Get sprite node for any combatant"""
 	if not combatant:
@@ -4177,6 +4221,13 @@ func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: St
 				_try_combat_quip(OVERKILL_QUIPS, attacker)
 	if elemental_mod != 1.0 and element != "":
 		_spawn_elemental_indicator(target, element, elemental_mod)
+		# msg 2787 cycle 16: weakness-hit visuals — element-colored deep flash + bigger knockback on the target sprite so a weakness hit READS as different from a normal hit even before the WEAK! indicator finishes spawning. Enemies-only guard: player-side weakness hits (e.g. bosses hitting a party member's weakness) would over-flash the party sprite the player is trying to read a status/HP bar on. Struktured's brief was "if you hit MONSTERS with weaknesses".
+		if elemental_mod > 1.0 and target in BattleManager.enemy_party:
+			var wsprite: Node2D = _get_combatant_sprite(target)
+			if wsprite:
+				_apply_weakness_hit_visuals(wsprite, element, elemental_mod)
+				var kb_dir: float = -1.0 if enemy_sprite_nodes.has(wsprite) else 1.0
+				_apply_weakness_hit_knockback(wsprite, kb_dir, elemental_mod)
 		# Tutorial hints for elemental interactions
 		if elemental_mod > 1.0:
 			_show_hint("weakness_exploit", "That enemy is WEAK to %s! Elemental weaknesses deal bonus damage. Use Combo Magic to stack multiple elements!" % element.capitalize())
