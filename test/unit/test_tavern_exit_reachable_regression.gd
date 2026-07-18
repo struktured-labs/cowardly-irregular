@@ -10,10 +10,25 @@ extends GutTest
 ##
 ## Runtime probes, not source pins: instantiates the real scene, ticks
 ## physics like GameLoop's fade-in window does, and drives the player
-## through an actual approach to the door.
+## through an actual approach to the door. Uses its own SubViewport/World2D
+## so a leaked OverworldPlayer body from an unrelated earlier test (the
+## default 2D physics space is shared tree-wide) can't spuriously overlap
+## our exit trigger and poison the one-shot latch this test is asserting on.
 
 const TavernScript = preload("res://src/maps/interiors/TavernInterior.gd")
 const TILE := 32
+
+var _viewport: SubViewport
+
+
+func before_each() -> void:
+	_viewport = SubViewport.new()
+	_viewport.world_2d = World2D.new()
+	add_child(_viewport)
+
+
+func after_each() -> void:
+	_viewport.queue_free()
 
 
 func _find_exit(tavern) -> Area2D:
@@ -37,7 +52,7 @@ func _door_tile_centers(tavern) -> Array:
 
 func test_exit_trigger_covers_a_door_tile_and_does_not_self_fire_at_spawn() -> void:
 	var tavern = TavernScript.new()
-	add_child(tavern)
+	_viewport.add_child(tavern)
 	await get_tree().process_frame
 	await get_tree().process_frame
 
@@ -65,6 +80,7 @@ func test_exit_trigger_covers_a_door_tile_and_does_not_self_fire_at_spawn() -> v
 	# (b) Simulate GameLoop's fade-in window: several physics frames with
 	# zero player input right after spawn. The one-shot _triggered latch
 	# must NOT already be spent — that's what bricked the real exit.
+	exit.body_entered.connect(func(b): print("[DIAG] fired for body=%s is_ours=%s pos=%s player_pos=%s exit_rect=%s" % [b, b == tavern.player, (b as Node2D).global_position if b is Node2D else "?", tavern.player.global_position, rect]))
 	for i in range(20):
 		await get_tree().physics_frame
 	assert_false(exit._triggered,
@@ -78,7 +94,7 @@ func test_exit_trigger_covers_a_door_tile_and_does_not_self_fire_at_spawn() -> v
 ## there — the actual repro path, not just geometry.
 func test_walking_from_spawn_to_door_exits_exactly_once() -> void:
 	var tavern = TavernScript.new()
-	add_child(tavern)
+	_viewport.add_child(tavern)
 	await get_tree().process_frame
 	await get_tree().process_frame
 

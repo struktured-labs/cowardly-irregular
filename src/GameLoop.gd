@@ -216,6 +216,7 @@ const SPOTLIGHT_HINT_THRESHOLDS: Array = [2, 4, 6]
 ## Area transition fade overlay (reused across all area transitions)
 var _area_fade_layer: CanvasLayer = null
 var _day_night_overlay: DayNightOverlay = null
+var _day_clock: DayClockWidget = null
 var _area_fade_rect: ColorRect = null
 
 ## Overworld menu
@@ -312,6 +313,8 @@ func _ready() -> void:
 	# Day/night tint (layer 40, world-only) + band-change consumers (music bus etc.)
 	_day_night_overlay = DayNightOverlay.new()
 	add_child(_day_night_overlay)
+	_day_clock = DayClockWidget.new()
+	add_child(_day_clock)
 	if GameState and GameState.has_signal("time_of_day_changed") \
 			and not GameState.time_of_day_changed.is_connected(_on_time_of_day_changed):
 		GameState.time_of_day_changed.connect(_on_time_of_day_changed)
@@ -1089,6 +1092,8 @@ func _open_overworld_menu() -> void:
 	if _exploration_scene and _exploration_scene.has_method("pause"):
 		_exploration_scene.pause()
 	_set_field_hud_hidden(true)
+	if _day_clock:
+		_day_clock.set_menu_open(true)
 
 	# Create menu in CanvasLayer
 	_overworld_menu_layer = CanvasLayer.new()
@@ -1144,6 +1149,8 @@ func _on_overworld_menu_closed() -> void:
 	if _exploration_scene and _exploration_scene.has_method("resume"):
 		_exploration_scene.resume()
 	_set_field_hud_hidden(false)
+	if _day_clock:
+		_day_clock.set_menu_open(false)
 	_flush_chat_toasts()
 
 
@@ -3354,6 +3361,9 @@ func _start_exploration(force_battle_teardown: bool = false) -> void:
 	var outdoor_scene: bool = exploration_scene is OverworldScene or exploration_scene is BaseVillage
 	if _day_night_overlay:
 		_day_night_overlay.set_outdoor(outdoor_scene)
+	if _day_clock:
+		_day_clock.set_outdoor(outdoor_scene)
+		_day_clock.set_world(GameState.current_world if GameState else 1)
 	# Re-sync the night audio mood the battle exemption stripped (band may also have changed mid-fight)
 	var night_now: bool = GameState and GameState.has_method("is_night") and bool(GameState.is_night())
 	if SoundManager and SoundManager.has_method("set_night_music_effects"):
