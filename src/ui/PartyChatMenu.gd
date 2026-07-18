@@ -26,6 +26,7 @@ const WORLD_NAMES := {
 
 var _chats: Array = []        # [{id, title, world}]
 var _selection: int = 0
+var _scroll: ScrollContainer = null
 var _rows_container: VBoxContainer = null
 var _row_nodes: Array = []    # Label nodes, one per chat (not headers)
 var _hint_label: Label = null
@@ -89,16 +90,16 @@ func _build_panel() -> void:
 	divider.size = Vector2(PANEL_W - 40, 2)
 	panel.add_child(divider)
 
-	var scroll := ScrollContainer.new()
-	scroll.position = Vector2(12, 58)
-	scroll.size = Vector2(PANEL_W - 24, PANEL_H - 98)
-	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	panel.add_child(scroll)
+	_scroll = ScrollContainer.new()
+	_scroll.position = Vector2(12, 58)
+	_scroll.size = Vector2(PANEL_W - 24, PANEL_H - 98)
+	_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	panel.add_child(_scroll)
 
 	_rows_container = VBoxContainer.new()
 	_rows_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_rows_container.add_theme_constant_override("separation", 2)
-	scroll.add_child(_rows_container)
+	_scroll.add_child(_rows_container)
 
 	_hint_label = Label.new()
 	_hint_label.text = "[A/Enter/Click] Play    [B/Esc/RClick] Close    (Wheel scrolls)"
@@ -173,6 +174,19 @@ func _highlight() -> void:
 		else:
 			row.add_theme_color_override("font_color", Color(0.85, 0.9, 1.0))
 			row.text = "  " + _chats[i].title
+	# Controller-first: D-pad past the visible window must scroll the container. Without this the highlight moves off-screen and the mouse-only scrollbar becomes the only way to catch up (struktured playtest msg 2802).
+	_ensure_selection_visible()
+
+
+func _ensure_selection_visible() -> void:
+	if _scroll == null or not is_instance_valid(_scroll):
+		return
+	if _selection < 0 or _selection >= _row_nodes.size():
+		return
+	var row: Label = _row_nodes[_selection]
+	if not is_instance_valid(row):
+		return
+	_scroll.ensure_control_visible(row)
 
 
 func _input(event: InputEvent) -> void:
