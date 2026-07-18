@@ -3093,6 +3093,19 @@
     "effect": "static",
     "duration": 3
   },
+  "storm_gathering": {
+    "id": "storm_gathering",
+    "name": "Storm Gathering",
+    "type": "support",
+    "animation": "buff",
+    "mp_cost": 15,
+    "description": "Voltharion pulls the storm inward, empowering its next strike. TELEGRAPHED — Defer for the counterplay.",
+    "target_type": "self",
+    "effect": "storm_charging",
+    "duration": 2,
+    "next_attack_multiplier": 1.8,
+    "element": "lightning"
+  },
   "steam_vent": {
     "id": "steam_vent",
     "name": "Steam Vent",

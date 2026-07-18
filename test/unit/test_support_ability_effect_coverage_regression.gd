@@ -46,6 +46,8 @@ const HANDLED_EFFECTS := [
 	"reflect", "physical_reflect", "prismatic_reflect", "magic_block",
 	# --- Scan (2026-07-05): routes to _execute_scan_effect (reveals intel) ---
 	"scan",
+	# --- msg 2787 cycle 15: Voltharion Storm Gathering — dedicated arm w/ Defer-telegraph log line ---
+	"storm_charging",
 ]
 
 # Effects that legitimately still need bespoke per-effect implementations.
