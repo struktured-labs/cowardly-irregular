@@ -1658,6 +1658,20 @@
       "prompt": "Weakness-hit stinger \u2014 fires when elemental_mod > 1.0 (msg 2789 axis D + cowir-battle msg 2787 visual pair). Bright ascending 1200->2400Hz sweep + 3600Hz top + shatter-noise bandpass (5000/3000Hz) + high click (bandpass 6500/3500Hz) + gentle echo. Punches through the mix. ~235ms.",
       "duration_seconds": 0.235,
       "prompt_influence": 0.0
+    },
+    "status_burn": {
+      "file": "assets/audio/sfx/status_burn.ogg",
+      "source": "sox_synth",
+      "prompt": "Burn-status application cue (cycle #10 pre-stage \u2014 beats cowir-battle's ratchet msg 2797 before burn_chance lands on any weapon). Sustained pinknoise sizzle (bandpass 3000/2000Hz) + 200->350Hz rising heat body + 4 fire pops staggered 120/310/490/640ms. Threatening, sustained. Distinct from strike_fire (that's 140ms punchy; this is 800ms afflicted-by-fire). ~800ms.",
+      "duration_seconds": 0.8,
+      "prompt_influence": 0.0
+    },
+    "status_freeze": {
+      "file": "assets/audio/sfx/status_freeze.ogg",
+      "source": "sox_synth",
+      "prompt": "Freeze-status application cue (cycle #10 pre-stage). Ice crackle (bandpass 4500/3500Hz) + crystalline 2400+4800Hz sustained body + descending 200->150Hz sub shudder + glass tinkle at 100ms. Brittle, cold, distinct from strike_ice (that's 125ms punch; this is 840ms frozen-solid). ~840ms.",
+      "duration_seconds": 0.84,
+      "prompt_influence": 0.0
     }
   }
 }
