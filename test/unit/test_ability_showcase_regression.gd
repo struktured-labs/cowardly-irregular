@@ -38,8 +38,8 @@ func test_ability_branch_routes_through_showcase_gate() -> void:
 
 func test_gate_excludes_fast_modes_and_autobattle() -> void:
 	var body := _body_of("_showcase_active")
-	assert_true("turbo_mode or autogrind_console_mode or Engine.time_scale > 0.3" in body,
-		"showcase only at showcase speed — 2x/4x/turbo keep the quick path he praised")
+	assert_true("turbo_mode or autogrind_console_mode or Engine.time_scale > 0.55" in body,
+		"spotlight speeds = 1x AND 2x (struktured ruling) — 4x+/turbo keep the quick path")
 	assert_true("not AutobattleSystem.is_autobattle_enabled(char_id)" in body,
 		"autobattle IS the other mode — its turns must never slow down")
 	assert_true("BattleManager.player_party" in body,

@@ -40,8 +40,8 @@ func test_scene_requests_holds_only_at_showcase_speed() -> void:
 	var src: String = FileAccess.get_file_as_string(BS)
 	var i: int = src.find("func _on_action_executing")
 	var body: String = src.substr(i, src.find("\nfunc ", i + 1) - i)
-	assert_true("not turbo_mode and not autogrind_console_mode and Engine.time_scale <= 0.3" in body,
-		"holds gate on showcase speed — 2x+/turbo/console keep the fast pacing he praised")
+	assert_true("not turbo_mode and not autogrind_console_mode and Engine.time_scale <= 0.55" in body,
+		"holds cover 1x AND 2x (struktured: first two speeds are spotlight speeds) — 4x+/turbo/console keep the fast pacing")
 	assert_true("presentation_hold = 0.95 if showcase_this else 0.62" in body,
 		"a full spell showcase holds the stage longer than a quick cast")
 	assert_true("presentation_hold = 0.62" in body,
@@ -55,7 +55,7 @@ func test_hold_request_happens_during_executing_dispatch() -> void:
 	var src: String = FileAccess.get_file_as_string(BS)
 	var i: int = src.find("func _on_action_executing")
 	var body: String = src.substr(i, src.find("\nfunc ", i + 1) - i)
-	var gate_at: int = body.find("Engine.time_scale <= 0.3")
+	var gate_at: int = body.find("Engine.time_scale <= 0.55")
 	var match_at: int = body.find("match action_type:", gate_at)
 	assert_gt(gate_at, -1)
 	assert_gt(match_at, gate_at,

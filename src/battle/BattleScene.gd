@@ -1917,7 +1917,7 @@ func _showcase_element_style(ability: Dictionary) -> Dictionary:
 ## Showcase gate: manual party turns at showcase speed only — autobattle IS the fast mode.
 ## Takes the ACTING combatant from the action_executing signal — BattleManager.current_combatant is stale/null during the execution phase (v1 read it and the showcase never fired; struktured 2026-07-17).
 func _showcase_active(caster: Combatant) -> bool:
-	if turbo_mode or autogrind_console_mode or Engine.time_scale > 0.3:
+	if turbo_mode or autogrind_console_mode or Engine.time_scale > 0.55:  # spotlight speeds = 1x AND 2x (struktured 2026-07-17); 0.55 splits 2x (0.5) from 4x (1.0)
 		return false
 	if caster == null or not (caster in BattleManager.player_party):
 		return false
@@ -3087,7 +3087,7 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 	var action_type = action.get("type", "")
 	# Cinematic pacing (struktured 2026-07-17: "everyone swarms the monsters in 2-3 seconds"): at showcase speed each action HOLDS the stage until its performance finishes — the queue serializes into one-actor-at-a-time spotlights. 2x+/turbo/console keep the fast pacing.
 	var showcase_this: bool = action_type == "ability" and _showcase_active(combatant)
-	if not turbo_mode and not autogrind_console_mode and Engine.time_scale <= 0.3:
+	if not turbo_mode and not autogrind_console_mode and Engine.time_scale <= 0.55:
 		match action_type:
 			"attack":
 				BattleManager.presentation_hold = 0.62
