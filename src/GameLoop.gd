@@ -3345,8 +3345,15 @@ func _start_exploration(force_battle_teardown: bool = false) -> void:
 		exploration_scene.area_transition.connect(_on_area_transition)
 
 	# Day/night tint follows the map class: outdoors only (interiors have PR-153's modulate, caves are lightless)
+	var outdoor_scene: bool = exploration_scene is OverworldScene or exploration_scene is BaseVillage
 	if _day_night_overlay:
-		_day_night_overlay.set_outdoor(exploration_scene is OverworldScene or exploration_scene is BaseVillage)
+		_day_night_overlay.set_outdoor(outdoor_scene)
+	# Re-sync the night audio mood the battle exemption stripped (band may also have changed mid-fight)
+	var night_now: bool = GameState and GameState.has_method("is_night") and bool(GameState.is_night())
+	if SoundManager and SoundManager.has_method("set_night_music_effects"):
+		SoundManager.set_night_music_effects(night_now)
+	if SoundManager and SoundManager.has_method("set_night_ambience"):
+		SoundManager.set_night_ambience(night_now and outdoor_scene)
 
 	# Pre-warm common area sprites in background (deferred to not block scene setup)
 	call_deferred("_prewarm_area_sprites")
@@ -3359,7 +3366,8 @@ func _start_exploration(force_battle_teardown: bool = false) -> void:
 ## Day/night band-change fan-out — every consumer guarded so fold order can't break boot.
 func _on_time_of_day_changed(band: String) -> void:
 	var night: bool = band == "night"
-	if SoundManager and SoundManager.has_method("set_night_music_effects"):
+	# Battle music stays full-energy — night falling mid-fight read as a random volume drop (struktured 2026-07-17); _start_exploration re-syncs on return.
+	if SoundManager and SoundManager.has_method("set_night_music_effects") and current_state != LoopState.BATTLE:
 		SoundManager.set_night_music_effects(night)
 
 
@@ -3591,6 +3599,11 @@ func _start_battle_async(specific_enemies: Array = [], is_encounter: bool = fals
 	_battle_transition_starting = false  # state=BATTLE now owns the mutex vs area transitions
 	if _day_night_overlay:
 		_day_night_overlay.set_outdoor(false)  # battle owns the canvas; _start_exploration recomputes on return
+	# Battle audio is mood-exempt: strip the night hush + crickets for the fight
+	if SoundManager and SoundManager.has_method("set_night_music_effects"):
+		SoundManager.set_night_music_effects(false)
+	if SoundManager and SoundManager.has_method("set_night_ambience"):
+		SoundManager.set_night_ambience(false)
 	_remove_party_chat_indicator()
 	# every battle-entry path funnels through here — sweep once, not per call site
 	_hide_exploration_scenes()

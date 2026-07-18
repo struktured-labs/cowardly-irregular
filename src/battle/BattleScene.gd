@@ -524,11 +524,11 @@ const HOLD_DURATION: float = 1.5  # Seconds to hold for editor (1.5s feels respo
 
 
 func _create_speed_indicator() -> void:
-	"""Create battle speed indicator in top-left corner with background panel"""
+	"""Create battle speed indicator — bottom-left above the turn-order box (struktured 2026-07-17: top-left buried it under the ENEMIES panel)"""
 	# Background panel for readability
 	var panel = PanelContainer.new()
 	panel.name = "SpeedPanel"
-	panel.position = Vector2(8, 8)
+	panel.position = Vector2(8, get_viewport_rect().size.y - 222)
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var style = StyleBoxFlat.new()
 	style.bg_color = Color(0.0, 0.0, 0.0, 0.5)
@@ -673,14 +673,8 @@ func _animate_speed_change() -> void:
 	var tween = create_tween()
 	tween.tween_property(panel, "scale", Vector2(1.25, 1.25), 0.08).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.tween_property(panel, "scale", Vector2(1.0, 1.0), 0.12)
-	# Ensure full opacity when changed
+	# struktured 2026-07-17: "battle speed should forever be visible" — the old 1x auto-fade to 0.3 alpha read as the indicator disappearing. Full opacity, always.
 	panel.modulate.a = 1.0
-	# Auto-fade at normal speed (1x) after 3 seconds
-	if _battle_speed_index == 0:  # label "1x" = normal, matches the indicator's per-index colors
-		var fade_tween = create_tween()
-		fade_tween.tween_property(panel, "modulate:a", 0.3, 0.5).set_delay(3.0)
-	else:
-		panel.modulate.a = 1.0
 
 
 # Duplicate _input function removed - merged with the one at line 2250
