@@ -533,6 +533,18 @@ func are_night_music_effects_enabled() -> bool:
 	return AudioServer.is_bus_effect_enabled(idx, 0)
 
 
+## Public: play weapon-strike voice for the equipped element (msg 2789 axis A).
+func play_strike_element(element: String) -> void:
+	if element == "":
+		return
+	_try_play_sfx_from_manifest(_battle_player, "strike_" + element.to_lower())
+
+
+## Public: play weakness-hit stinger (msg 2789 axis D + cowir-battle msg 2787 visual).
+func play_weakness_flash() -> void:
+	_try_play_sfx_from_manifest(_battle_player, "weakness_flash")
+
+
 ## Public: start/stop the night ambience loop; mirror of set_night_music_effects.
 func set_night_ambience(enabled: bool) -> void:
 	if enabled:

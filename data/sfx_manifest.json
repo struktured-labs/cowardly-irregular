@@ -335,8 +335,8 @@
     "attack_hit_dagger_crit": {
       "file": "assets/audio/sfx/attack_hit_dagger_crit.ogg",
       "source": "ffmpeg_derive",
-      "prompt": "Dagger crit = double-tap attack_hit_dagger (2 stabs, 75ms apart) \u2014 faster/more notes",
-      "duration_seconds": 0.6,
+      "prompt": "Dagger critical-hit \u2014 rebuilt cycle #9b (previous variant was 1.17x base, imperceptible per audit msg 2792). Existing attack_hit_dagger base + 4200/5600/6800Hz shimmer harmonics + snap noise + double-echo tail. Dur 0.89s (was 0.56s).",
+      "duration_seconds": 0.89,
       "prompt_influence": 0.0
     },
     "attack_hit_staff_crit": {
@@ -349,8 +349,8 @@
     "attack_hit_axe_crit": {
       "file": "assets/audio/sfx/attack_hit_axe_crit.ogg",
       "source": "ffmpeg_derive",
-      "prompt": "Axe crit = attack_hit_axe + 3-tap reverberant echo tail (100/200/350ms) for crack aftermath",
-      "duration_seconds": 0.8,
+      "prompt": "Axe critical-hit \u2014 rebuilt cycle #9b (previous variant was 1.58x base, borderline per audit msg 2792). Existing attack_hit_axe base + 220/110Hz body ring + 55Hz subharmonic + low-mid noise snap + double-echo tail. Dur 1.22s (was 0.83s).",
+      "duration_seconds": 1.22,
       "prompt_influence": 0.0
     },
     "attack_hit_piano_scythe_crit": {
@@ -1615,6 +1615,48 @@
       "source": "sox_synth",
       "prompt": "Purchase-confirmation ka-ching for ShopScene (struktured msg 2774) \u2014 coins clinking + warm register-bell confirm. 4 metallic coin pings at 2400/3200/2800/3600 Hz staggered 18-68ms, then a warm 320 Hz confirm tone + 640 Hz octave harm + soft 200 Hz drawer-thump, gentle echo tail. ~410ms. Deliberately distinct from item_obtain (that's the celebration chord for chests/rewards; this is COMMERCE). NO fallback_to \u2014 cowir-overworld consumes with a manifest-has guard.",
       "duration_seconds": 0.41,
+      "prompt_influence": 0.0
+    },
+    "strike_fire": {
+      "file": "assets/audio/sfx/strike_fire.ogg",
+      "source": "sox_synth",
+      "prompt": "Fire-element weapon strike voice (msg 2789 axis A). Layers under attack_hit_<weapon> when equipped weapon has special_effects.fire_damage_bonus. Crackling pinknoise (bandpass 3000/1800Hz) + rising 800->1600Hz sine sweep. Ember-pop character mid-air. ~140ms.",
+      "duration_seconds": 0.14,
+      "prompt_influence": 0.0
+    },
+    "strike_ice": {
+      "file": "assets/audio/sfx/strike_ice.ogg",
+      "source": "sox_synth",
+      "prompt": "Ice-element weapon strike voice. Crystalline 3400Hz sine + 6800Hz harmonic + brittle bandpass noise click (3500-2000Hz). Shattering-glass character. ~125ms.",
+      "duration_seconds": 0.125,
+      "prompt_influence": 0.0
+    },
+    "strike_lightning": {
+      "file": "assets/audio/sfx/strike_lightning.ogg",
+      "source": "sox_synth",
+      "prompt": "Lightning-element weapon strike voice. Sharp 6000Hz snap + 100Hz square-wave buzz decay + bandpass noise (4500/3000Hz). Electric-arc character. ~90ms.",
+      "duration_seconds": 0.09,
+      "prompt_influence": 0.0
+    },
+    "strike_holy": {
+      "file": "assets/audio/sfx/strike_holy.ogg",
+      "source": "sox_synth",
+      "prompt": "Holy-element weapon strike voice. Bright bell 1568Hz + harmonics at 3136Hz + 4704Hz + soft high shimmer (bandpass 5000-3000Hz). Radiant-chord character. ~180ms.",
+      "duration_seconds": 0.18,
+      "prompt_influence": 0.0
+    },
+    "strike_dark": {
+      "file": "assets/audio/sfx/strike_dark.ogg",
+      "source": "sox_synth",
+      "prompt": "Dark-element weapon strike voice. Hollow 165Hz + 82Hz sub pad + reverse pinknoise swell (void whoosh). ~175ms.",
+      "duration_seconds": 0.175,
+      "prompt_influence": 0.0
+    },
+    "weakness_flash": {
+      "file": "assets/audio/sfx/weakness_flash.ogg",
+      "source": "sox_synth",
+      "prompt": "Weakness-hit stinger \u2014 fires when elemental_mod > 1.0 (msg 2789 axis D + cowir-battle msg 2787 visual pair). Bright ascending 1200->2400Hz sweep + 3600Hz top + shatter-noise bandpass (5000/3000Hz) + high click (bandpass 6500/3500Hz) + gentle echo. Punches through the mix. ~235ms.",
+      "duration_seconds": 0.235,
       "prompt_influence": 0.0
     }
   }
