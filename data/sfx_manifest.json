@@ -1609,6 +1609,13 @@
       "prompt": "Round-boundary AP+1 chime \u2014 coin-metallic click (bandpass noise + 3200/2400Hz sine ping) into ascending arpeggio C5-E5-G5-C6 (triangle+square) with a shimmer tail bending 1047->1300Hz. Bright, celebratory, ~370ms. Per struktured msg 2686: 'coin-meets-charge-up' for BattleScene._show_round_banner (replaces placeholder menu_select at fold time). NO fallback_to \u2014 double-fire prevention per thump-family convention.",
       "duration_seconds": 0.37,
       "prompt_influence": 0.0
+    },
+    "purchase_complete": {
+      "file": "assets/audio/sfx/purchase_complete.ogg",
+      "source": "sox_synth",
+      "prompt": "Purchase-confirmation ka-ching for ShopScene (struktured msg 2774) \u2014 coins clinking + warm register-bell confirm. 4 metallic coin pings at 2400/3200/2800/3600 Hz staggered 18-68ms, then a warm 320 Hz confirm tone + 640 Hz octave harm + soft 200 Hz drawer-thump, gentle echo tail. ~410ms. Deliberately distinct from item_obtain (that's the celebration chord for chests/rewards; this is COMMERCE). NO fallback_to \u2014 cowir-overworld consumes with a manifest-has guard.",
+      "duration_seconds": 0.41,
+      "prompt_influence": 0.0
     }
   }
 }
