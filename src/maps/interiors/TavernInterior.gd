@@ -2105,13 +2105,13 @@ func _setup_npcs() -> void:
 	add_child(npcs)
 
 	# --- Bar zone ---
-	_create_npc("Grog", "bartender", Vector2(2.5, 4), [
-		"Grog: Welcome to The Dancing Tonberry!",
-		"Grog: What'll it be? Mead? Ale? Liquid courage?",
-		"Grog: *polishes glass* The cave's been... hungry lately.",
-		"Grog: Some say the monsters are learning. Adapting.",
-		"Grog: If you're smart, you'll automate. The cave respects efficiency.",
-		"Grog: But push too hard... and it pushes back. *chuckles darkly*"
+	_create_npc("Osric", "bartender", Vector2(2.5, 4), [
+		"Osric: Welcome to The Dancing Tonberry!",
+		"Osric: What'll it be? Mead? Ale? Liquid courage?",
+		"Osric: *polishes glass* The cave's been... hungry lately.",
+		"Osric: Some say the monsters are learning. Adapting.",
+		"Osric: If you're smart, you'll automate. The cave respects efficiency.",
+		"Osric: But push too hard... and it pushes back. *chuckles darkly*"
 	])
 
 	_create_npc("Old Mack", "villager", Vector2(4, 5), [
