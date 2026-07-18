@@ -314,13 +314,14 @@ func _process(delta: float) -> void:
 ## (User feedback 2026-05-03: 653eae1 brought all NPCs down to 1x to fix
 ## an in-village size bug, but that broke the open-overworld visibility.)
 func _get_context_scale() -> Vector2:
+	# Same signal as collision sizing (InteractGeometry.is_mode7) — sprite and zone can never diverge again (audit defect #2's root: two predicates drifting apart). Name-walk kept as fallback for detached/test contexts without the overlay autoload.
+	if InteractGeometry.is_mode7():
+		return Vector2(3.0, 3.0)
 	var p = get_parent()
 	if p:
 		var pname = p.name.to_lower()
 		if "overworld" in pname:
 			return Vector2(3.0, 3.0)
-		# Walk up one extra level — some overworlds parent NPCs to a
-		# dedicated `NPCs` Node2D below the scene root.
 		var gp = p.get_parent()
 		if gp and "overworld" in gp.name.to_lower():
 			return Vector2(3.0, 3.0)
@@ -857,7 +858,7 @@ func _get_clothes_color() -> Color:
 func _setup_collision() -> void:
 	var collision = CollisionShape2D.new()
 	var shape = CircleShape2D.new()
-	shape.radius = 40.0  # Default for villages/interiors
+	shape.radius = InteractGeometry.NPC_TALK_RADIUS  # cardinal-adjacent in, diagonal out (ultracode audit step 5)
 	collision.shape = shape
 	collision.position = Vector2(0, 0)
 	add_child(collision)
@@ -883,20 +884,14 @@ func _adjust_collision_for_mode7(shape: CircleShape2D) -> void:
 	monitoring = true
 	monitorable = true
 
-	# Check if we're on a Mode 7 overworld by looking for Mode7Overlay in ancestors
-	var parent = get_parent()
-	while parent:
-		if parent.get("mode7_overlay") != null or parent.name.ends_with("Overworld"):
-			shape.radius = 128.0
-			# Y-stretch: matches Mode 7 billboard Y:X ratio (0.3:0.5)
-			var col = shape.get_meta("owner_node", null)
-			if not col:
-				for child in get_children():
-					if child is CollisionShape2D and child.shape == shape:
-						child.scale = Vector2(1.0, 1.67)
-						break
-			return
-		parent = parent.get_parent()
+	# Ultracode audit 2026-07-18 defect #2: the old ancestor property/ends_with("Overworld") walk was DEAD CODE (no scene root matches either predicate — W1 is "OverworldScene", W2-W6 are auto-named "@Node2D@N"), so Mode 7 NPCs kept a 40px zone under a 96px sprite. is_mode7() is the ONLY context signal now.
+	if InteractGeometry.is_mode7():
+		shape.radius = 128.0
+		# Y-stretch: matches Mode 7 billboard Y:X ratio (0.3:0.5)
+		for child in get_children():
+			if child is CollisionShape2D and child.shape == shape:
+				child.scale = Vector2(1.0, 1.67)
+				break
 
 
 func _setup_name_label() -> void:
@@ -1023,6 +1018,10 @@ func _input(event: InputEvent) -> void:
 		return
 	# 2026-07-12: also gate on tutorial hints — a hint dismiss press near an NPC would fire dialogue.
 	if TutorialHint.is_any_active():
+		return
+	# Facing cone (ultracode audit defect #3): talking requires facing the NPC — zone presence alone let NPCs catch presses aimed at the player's back.
+	var _pl = get_tree().get_first_node_in_group("player") if is_inside_tree() else null
+	if _pl is Node2D and not InteractGeometry.facing_allows(_pl, self):
 		return
 
 	# Only intercept ui_accept to OPEN dialogue. Once open, CutsceneDialogue
@@ -1315,4 +1314,7 @@ func interact(player: Node2D) -> void:
 	if _is_talking:
 		_advance_dialogue()
 	else:
+		# Cone applies to the controller's omnidirectional stages too (stage-1 probe passes trivially — it IS directional).
+		if player != null and not InteractGeometry.facing_allows(player, self):
+			return
 		_start_dialogue()

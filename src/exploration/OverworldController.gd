@@ -222,7 +222,7 @@ func _on_interaction_requested() -> void:
 	var query = PhysicsPointQueryParameters2D.new()
 
 	# 80px suits the Mode 7 overworld's perspective; flat villages/interiors read the same probe as a 3-4 tile grabber arm ("opened a chest from 3-4 squares away" — struktured 2026-07-11).
-	var reach: float = 80.0 if Mode7Overlay.is_active else 40.0
+	var reach: float = InteractGeometry.PROBE_REACH_MODE7 if Mode7Overlay.is_active else InteractGeometry.PROBE_REACH_FLAT
 	var check_offset = Vector2.ZERO
 	match player.current_direction:
 		OverworldPlayerScript.Direction.DOWN:
@@ -256,16 +256,20 @@ func _on_interaction_requested() -> void:
 		nearest.interact(player)
 		return
 
-	# Fallback: check interactables group by distance (more reliable than physics queries)
+	# Fallback: interactables group, NEAREST-wins (was first-in-iteration-order) and clamped to the probe reach so the omnidirectional fallback can never out-reach the facing-biased probe (ultracode audit 2026-07-18).
 	var interactables = player.get_tree().get_nodes_in_group("interactables")
-	var interaction_range = 48.0  # ~1.5 tiles
+	var best_fallback: Node = null
+	var best_fd: float = InteractGeometry.GROUP_FALLBACK_RADIUS
 	for interactable in interactables:
-		if interactable.has_method("interact"):
-			var dist = player.global_position.distance_to(interactable.global_position)
-			if dist <= interaction_range:
-				_dlog("[INTERACT] Found: %s (dist: %.0f)" % [interactable.name, dist])
-				interactable.interact(player)
-				return
+		if interactable.has_method("interact") and interactable is Node2D:
+			var dist = player.global_position.distance_to(InteractGeometry.anchor(interactable))
+			if dist <= best_fd:
+				best_fd = dist
+				best_fallback = interactable
+	if best_fallback:
+		_dlog("[INTERACT] Found: %s (fallback nearest, dist: %.0f)" % [best_fallback.name, best_fd])
+		best_fallback.interact(player)
+		return
 
 	_dlog("[INTERACT] Nothing found")
 
@@ -278,7 +282,8 @@ func _pick_nearest_interactable(results: Array, from_pos: Vector2) -> Node2D:
 		var collider = result.get("collider", null)
 		if collider == null or not is_instance_valid(collider) or not collider.has_method("interact"):
 			continue
-		var d2: float = collider.global_position.distance_squared_to(from_pos)
+		# Anchor-based distance (origin + shape offset) — offset-shape doors stop losing ties they visually win (ultracode audit defect #11).
+		var d2: float = InteractGeometry.anchor(collider).distance_squared_to(from_pos)
 		if d2 < best_d2:
 			best_d2 = d2
 			best = collider

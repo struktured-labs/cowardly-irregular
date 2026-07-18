@@ -139,6 +139,9 @@ func _process(delta: float) -> void:
 ## NPCs being too big in HarmoniaVillage, but that broke the overworld where
 ## 1x reads as tiny. Differentiate by parent-name keyword scan.)
 func _get_context_scale() -> Vector2:
+	# Unified Mode 7 signal first (ultracode audit 2026-07-18); name-walk fallback for detached contexts.
+	if InteractGeometry.is_mode7():
+		return Vector2(3.0, 3.0)
 	var p = get_parent()
 	if p:
 		var pname = p.name.to_lower()
@@ -258,7 +261,7 @@ func _setup_collision() -> void:
 		shape.radius = 128.0
 		col.scale = Vector2(1.0, 1.67)  # Y-stretch: matches Mode 7 billboard Y:X ratio
 	else:
-		shape.radius = 40.0
+		shape.radius = InteractGeometry.NPC_TALK_RADIUS
 		col.scale = Vector2.ONE
 	col.shape = shape
 	col.position = Vector2(0, 0)
@@ -337,6 +340,10 @@ func _input(event: InputEvent) -> void:
 		return
 	# 2026-07-12: also gate on tutorial hints — a hint dismiss press near a wandering NPC would fire dialogue.
 	if TutorialHint.is_any_active():
+		return
+	# Facing cone (ultracode audit defect #3) — same rule as OverworldNPC.
+	var _pl = get_tree().get_first_node_in_group("player") if is_inside_tree() else null
+	if _pl is Node2D and not InteractGeometry.facing_allows(_pl, self):
 		return
 
 	if event.is_action_pressed("ui_accept"):

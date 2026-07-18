@@ -206,6 +206,7 @@ var _last_battle_is_encounter: bool = false  # Was it a random encounter?
 var _spotlight_duel_active: bool = false
 var _pending_spotlight_unlock: String = ""  # PC job id ("fighter", etc.); "" when no unlock target
 var _pending_spotlight_unlock_toast: String = ""  # deferred to _resume_exploration_after_cutscene — an immediate toast rendered under the aftermath dialogue
+var _spotlight_saved_autobattle: bool = false  # duelist's pre-duel autobattle toggle, restored after (duels force manual)
 var _spotlight_saved_party: Array[Combatant] = []
 signal spotlight_battle_ended(victory: bool)
 
@@ -2696,6 +2697,10 @@ func start_solo_battle(job_id: String, enemy_id: String, _opts: Dictionary = {})
 		return "unavailable"
 	_spotlight_saved_party = party.duplicate()
 	party = [spotlight_pc]
+	# struktured 2026-07-18: "auto battle should be forced off in spotlight by default" — the duel showcases MANUAL play of that kit; restore the player's setting afterward.
+	var duel_char_id: String = spotlight_pc.combatant_name.to_lower().replace(" ", "_")
+	_spotlight_saved_autobattle = AutobattleSystem.is_autobattle_enabled(duel_char_id)
+	AutobattleSystem.set_autobattle_enabled(duel_char_id, false)
 	_pending_spotlight_unlock = job_id
 	_spotlight_duel_active = true
 	# the spotlight short-circuit skips post-battle healing, so a retry would re-enter at 0 HP
@@ -2717,6 +2722,7 @@ func start_solo_battle(job_id: String, enemy_id: String, _opts: Dictionary = {})
 	var result: bool = await spotlight_battle_ended
 	party = _spotlight_saved_party.duplicate()
 	_spotlight_saved_party.clear()
+	AutobattleSystem.set_autobattle_enabled(duel_char_id, _spotlight_saved_autobattle)
 	_spotlight_duel_active = false
 	_pending_spotlight_unlock = ""
 	# Tear the stale BattleScene down under the cutscene's opaque layer so aftermath narration doesn't overlay a live battle: boss music kept playing + survive_turns re-fired end_battle every tick (the "background restart"), and _unfreeze_player at cutscene end had no player behind the layer (Rogue "frozen" after "everyone back"). Skip on defeat: the retry loop owns the next _start_battle_async which frees the scene itself.
@@ -3351,7 +3357,15 @@ func _start_exploration(force_battle_teardown: bool = false) -> void:
 	# Re-sync the night audio mood the battle exemption stripped (band may also have changed mid-fight)
 	var night_now: bool = GameState and GameState.has_method("is_night") and bool(GameState.is_night())
 	if SoundManager and SoundManager.has_method("set_night_music_effects"):
-		SoundManager.set_night_music_effects(night_now)
+		if night_now:
+			# Deferred past the victory jingle — hushing the fanfare mid-note read as a defeat sting (struktured 2026-07-18, mechanism: cowir-music msg 2784); conditions re-checked at fire time.
+			get_tree().create_timer(3.5).timeout.connect(func():
+				if current_state == LoopState.EXPLORATION and GameState and GameState.has_method("is_night") \
+						and bool(GameState.is_night()) and SoundManager and SoundManager.has_method("set_night_music_effects"):
+					SoundManager.set_night_music_effects(true)
+			, CONNECT_ONE_SHOT)
+		else:
+			SoundManager.set_night_music_effects(false)
 	if SoundManager and SoundManager.has_method("set_night_ambience"):
 		SoundManager.set_night_ambience(night_now and outdoor_scene)
 

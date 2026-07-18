@@ -54,7 +54,8 @@ const COOK_ANIM_SPEED: float = 0.22
 
 ## Spawn points
 var spawn_points: Dictionary = {
-	"entrance": Vector2(13, 16),
+	# One row north of the door threshold — pre-fix this sat ON the exit trigger and self-fired/latched it dead on load (struktured 2026-07-18 trapped-in-tavern bug).
+	"entrance": Vector2(14.5, 15),
 	"stage": Vector2(20, 4),
 	"bar": Vector2(4, 5),
 	"piano": Vector2(25, 15),
@@ -2282,11 +2283,12 @@ func _setup_transitions() -> void:
 		exit.target_map = "harmonia_village"
 		exit.target_spawn = "bar_exit"
 		exit.require_interaction = false
-		exit.position = Vector2(14 * TILE_SIZE, 16.5 * TILE_SIZE)
+		# Centered on the full 2-row door band (D tiles at x13-15, y16-17) + 8px slop each side — was centered on x=14 tile (half-tile short of the true x=14.5 door center) and only 1 tile tall, missing the outer threshold row entirely.
+		exit.position = Vector2(14.5 * TILE_SIZE, 17 * TILE_SIZE)
 
 		var collision = CollisionShape2D.new()
 		var shape = RectangleShape2D.new()
-		shape.size = Vector2(TILE_SIZE * 3, TILE_SIZE)
+		shape.size = Vector2(TILE_SIZE * 3 + 16, TILE_SIZE * 2 + 16)
 		collision.shape = shape
 		exit.add_child(collision)
 

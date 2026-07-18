@@ -49,12 +49,13 @@ func test_layer_set_before_mode7_check() -> void:
 	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
 	var body: String = src.substr(fn_idx, next_fn - fn_idx) if next_fn > 0 else src.substr(fn_idx)
 
+	# 2026-07-18 ultracode: the ancestor while-loop was DEAD CODE (no real scene root matched its predicates) — replaced by InteractGeometry.is_mode7(), the single context signal. Ordering intent preserved: layer setup precedes the Mode 7 branch.
 	var layer_idx: int = body.find("collision_layer = 4")
-	var while_idx: int = body.find("while parent:")
+	var mode7_idx: int = body.find("InteractGeometry.is_mode7()")
 	assert_gt(layer_idx, -1, "collision_layer = 4 must still exist")
-	assert_gt(while_idx, -1, "Mode 7 ancestor while-loop must still exist")
-	assert_lt(layer_idx, while_idx,
-		"collision_layer = 4 must come BEFORE the Mode 7 ancestor loop — pre-fix it was after the early return, so Mode 7 NPCs never got the layer set")
+	assert_gt(mode7_idx, -1, "Mode 7 branch must use the unified is_mode7() signal — ancestor-walk detectors are retired")
+	assert_lt(layer_idx, mode7_idx,
+		"collision_layer = 4 must come BEFORE the Mode 7 branch — pre-fix it was after the early return, so Mode 7 NPCs never got the layer set")
 
 
 # ── Source pin: collision_mask + monitoring also before the check ───
@@ -65,16 +66,16 @@ func test_mask_and_monitoring_set_before_mode7_check() -> void:
 	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
 	var body: String = src.substr(fn_idx, next_fn - fn_idx) if next_fn > 0 else src.substr(fn_idx)
 
-	var while_idx: int = body.find("while parent:")
+	var mode7_idx: int = body.find("InteractGeometry.is_mode7()")
 	var mask_idx: int = body.find("collision_mask = 2")
 	var monitor_idx: int = body.find("monitoring = true")
 	var monitorable_idx: int = body.find("monitorable = true")
 	assert_gt(mask_idx, -1)
 	assert_gt(monitor_idx, -1)
 	assert_gt(monitorable_idx, -1)
-	assert_lt(mask_idx, while_idx, "collision_mask must come BEFORE the Mode 7 loop")
-	assert_lt(monitor_idx, while_idx, "monitoring must come BEFORE the Mode 7 loop")
-	assert_lt(monitorable_idx, while_idx, "monitorable must come BEFORE the Mode 7 loop")
+	assert_lt(mask_idx, mode7_idx, "collision_mask must come BEFORE the Mode 7 branch")
+	assert_lt(monitor_idx, mode7_idx, "monitoring must come BEFORE the Mode 7 branch")
+	assert_lt(monitorable_idx, mode7_idx, "monitorable must come BEFORE the Mode 7 branch")
 
 
 # ── Source pin: Mode 7 branch still has the shape adjustment ────────

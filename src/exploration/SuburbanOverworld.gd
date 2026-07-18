@@ -556,7 +556,8 @@ func _setup_transitions() -> void:
 	portal_trans.require_interaction = true
 	portal_trans.indicator_text = "Return to Overworld"
 	portal_trans.position = Vector2(25 * TILE_SIZE + TILE_SIZE / 2, 36 * TILE_SIZE + TILE_SIZE / 2)
-	_setup_transition_collision(portal_trans, Vector2(TILE_SIZE, TILE_SIZE))
+	portal_trans.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
+	_setup_transition_collision(portal_trans, InteractGeometry.ENTRANCE_BOX_MODE7)
 	portal_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(portal_trans)
 
@@ -570,7 +571,8 @@ func _setup_transitions() -> void:
 		forward_portal.require_interaction = true
 		forward_portal.indicator_text = "Enter the Clockwork Dominion"
 		forward_portal.position = Vector2(47 * TILE_SIZE + TILE_SIZE / 2, 20 * TILE_SIZE + TILE_SIZE / 2)
-		_setup_transition_collision(forward_portal, Vector2(TILE_SIZE, TILE_SIZE))
+		forward_portal.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
+		_setup_transition_collision(forward_portal, InteractGeometry.ENTRANCE_BOX_MODE7)
 		forward_portal.transition_triggered.connect(_on_transition_triggered)
 		transitions.add_child(forward_portal)
 
@@ -582,7 +584,8 @@ func _setup_transitions() -> void:
 	maple_heights_trans.require_interaction = true
 	maple_heights_trans.indicator_text = "Enter Maple Heights"
 	maple_heights_trans.position = spawn_points.get("maple_heights_entrance", Vector2(1232, 112))
-	_setup_transition_collision(maple_heights_trans, Vector2(TILE_SIZE * 3, TILE_SIZE * 3))
+	maple_heights_trans.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
+	_setup_transition_collision(maple_heights_trans, InteractGeometry.ENTRANCE_BOX_MODE7)
 	maple_heights_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(maple_heights_trans)
 
@@ -594,7 +597,8 @@ func _setup_transitions() -> void:
 	underground_trans.require_interaction = true
 	underground_trans.indicator_text = "Descend into the Suburban Underground"
 	underground_trans.position = Vector2(10 * TILE_SIZE + TILE_SIZE / 2, 30 * TILE_SIZE + TILE_SIZE / 2)
-	_setup_transition_collision(underground_trans, Vector2(TILE_SIZE * 2, TILE_SIZE * 2))
+	underground_trans.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
+	_setup_transition_collision(underground_trans, InteractGeometry.ENTRANCE_BOX_MODE7)
 	underground_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(underground_trans)
 

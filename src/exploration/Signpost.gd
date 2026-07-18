@@ -64,7 +64,7 @@ func _setup_collision() -> void:
 
 	var col = CollisionShape2D.new()
 	var shape = CircleShape2D.new()
-	shape.radius = 128.0
+	shape.radius = InteractGeometry.SIGNPOST_RADIUS_MODE7 if InteractGeometry.is_mode7() else InteractGeometry.SIGNPOST_RADIUS_FLAT  # was 128 unconditional — a 4-tile label zone in flat villages (audit defect #5)
 	col.shape = shape
 	col.position = Vector2(0, 0)
 	col.scale = Vector2(1.0, 1.67)  # Y-stretch: matches Mode 7 billboard Y:X ratio (0.3:0.5)

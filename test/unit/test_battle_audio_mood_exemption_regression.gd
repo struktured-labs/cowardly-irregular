@@ -39,8 +39,11 @@ func test_battle_start_strips_night_mood() -> void:
 
 func test_exploration_return_resyncs_from_clock() -> void:
 	var body := _body_of(GAME_LOOP, "_start_exploration")
-	assert_true("set_night_music_effects(night_now)" in body,
-		"return must re-sync the hush — the band may have changed mid-fight")
+	# 2026-07-18: re-sync DEFERRED 3.5s past the victory jingle (hushing the fanfare mid-note read as a defeat sting — cowir-music msg 2784 mechanism); conditions re-checked at fire time.
+	assert_true("set_night_music_effects(true)" in body and "create_timer(3.5)" in body,
+		"night hush re-sync must be deferred past the victory jingle, re-checking state at fire time")
+	assert_true("set_night_music_effects(false)" in body,
+		"day-side re-sync stays immediate — nothing to hush")
 	assert_true("set_night_ambience(night_now and outdoor_scene)" in body,
 		"crickets only outdoors at night — interiors/caves stay silent")
 

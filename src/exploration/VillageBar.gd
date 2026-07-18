@@ -438,17 +438,8 @@ func _draw_dancer(image: Image, frame: int) -> void:
 
 
 func _setup_collision() -> void:
-	var collision = CollisionShape2D.new()
-	var shape = RectangleShape2D.new()
-	shape.size = Vector2(TILE_SIZE * 2, TILE_SIZE)
-	collision.shape = shape
-	collision.position = Vector2(0, TILE_SIZE / 2)
-	add_child(collision)
-
-	collision_layer = 4
-	collision_mask = 2
-	monitoring = true
-	monitorable = true
+	# BUILDING_ENTRY geometry — the 2026-07-13 shop/inn reachability fix, finally applied to the bar (was 64x32, the unfixed straggler behind multi-tile wall buffers; ultracode audit 2026-07-18 step 3)
+	InteractGeometry.setup_trigger_collision(self, InteractGeometry.BUILDING_ENTRY_BOX, InteractGeometry.BUILDING_ENTRY_OFFSET)
 
 
 func _setup_name_label() -> void:

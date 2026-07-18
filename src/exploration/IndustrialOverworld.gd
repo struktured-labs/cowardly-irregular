@@ -574,7 +574,8 @@ func _setup_transitions() -> void:
 	back_portal.require_interaction = true
 	back_portal.indicator_text = "Return to the Clockwork Dominion"
 	back_portal.position = Vector2(29 * TILE_SIZE + TILE_SIZE / 2, 41 * TILE_SIZE + TILE_SIZE / 2)
-	_setup_transition_collision(back_portal, Vector2(TILE_SIZE * 2, TILE_SIZE))
+	back_portal.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
+	_setup_transition_collision(back_portal, InteractGeometry.ENTRANCE_BOX_MODE7)
 	back_portal.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(back_portal)
 
@@ -587,7 +588,8 @@ func _setup_transitions() -> void:
 		forward_portal.require_interaction = true
 		forward_portal.indicator_text = "Enter the Source Layer"
 		forward_portal.position = Vector2(30 * TILE_SIZE + TILE_SIZE / 2, 1 * TILE_SIZE + TILE_SIZE / 2)
-		_setup_transition_collision(forward_portal, Vector2(TILE_SIZE * 2, TILE_SIZE))
+		forward_portal.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
+		_setup_transition_collision(forward_portal, InteractGeometry.ENTRANCE_BOX_MODE7)
 		forward_portal.transition_triggered.connect(_on_transition_triggered)
 		transitions.add_child(forward_portal)
 
@@ -599,7 +601,8 @@ func _setup_transitions() -> void:
 	rivet_row_trans.require_interaction = true
 	rivet_row_trans.indicator_text = "Enter Rivet Row"
 	rivet_row_trans.position = spawn_points.get("rivet_row_entrance", Vector2(1776, 560))
-	_setup_transition_collision(rivet_row_trans, Vector2(TILE_SIZE, TILE_SIZE))
+	rivet_row_trans.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
+	_setup_transition_collision(rivet_row_trans, InteractGeometry.ENTRANCE_BOX_MODE7)
 	rivet_row_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(rivet_row_trans)
 
@@ -611,7 +614,8 @@ func _setup_transitions() -> void:
 	assembly_trans.require_interaction = true
 	assembly_trans.indicator_text = "Descend into the Assembly Core"
 	assembly_trans.position = Vector2(8 * TILE_SIZE + TILE_SIZE / 2, 25 * TILE_SIZE + TILE_SIZE / 2)
-	_setup_transition_collision(assembly_trans, Vector2(TILE_SIZE * 2, TILE_SIZE * 2))
+	assembly_trans.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
+	_setup_transition_collision(assembly_trans, InteractGeometry.ENTRANCE_BOX_MODE7)
 	assembly_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(assembly_trans)
 

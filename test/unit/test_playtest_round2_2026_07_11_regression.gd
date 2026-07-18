@@ -130,7 +130,8 @@ func test_interact_reach_scales_by_context() -> void:
 	# from 3-4 squares away" — the 80px Mode 7 probe applied to flat
 	# villages too. Flat scenes probe 40px.
 	var src := FileAccess.get_file_as_string("res://src/exploration/OverworldController.gd")
-	assert_true("80.0 if Mode7Overlay.is_active else 40.0" in src,
+	# 2026-07-18 ultracode: literals live in InteractGeometry now (80/40 pinned by test_interact_geometry_contract) — this pin protects the context SPLIT itself.
+	assert_true("InteractGeometry.PROBE_REACH_MODE7 if Mode7Overlay.is_active else InteractGeometry.PROBE_REACH_FLAT" in src,
 		"interact probe must be 80px only under Mode 7 perspective; 40px flat")
 	assert_true("Vector2(0, reach)" in src and "Vector2(-reach, 0)" in src,
 		"all four facing probes must use the scaled reach")

@@ -508,7 +508,8 @@ func _setup_transitions() -> void:
 	back_portal.require_interaction = true
 	back_portal.indicator_text = "Return to the Mundane Sprawl"
 	back_portal.position = spawn_points.get("steampunk_portal", Vector2(864, 48))
-	_setup_transition_collision(back_portal, Vector2(TILE_SIZE, TILE_SIZE))
+	back_portal.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
+	_setup_transition_collision(back_portal, InteractGeometry.ENTRANCE_BOX_MODE7)
 	back_portal.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(back_portal)
 
@@ -521,7 +522,8 @@ func _setup_transitions() -> void:
 		forward_portal.require_interaction = true
 		forward_portal.indicator_text = "Enter the Assembly Line"
 		forward_portal.position = spawn_points.get("station", Vector2(864, 1400))
-		_setup_transition_collision(forward_portal, Vector2(TILE_SIZE, TILE_SIZE))
+		forward_portal.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
+		_setup_transition_collision(forward_portal, InteractGeometry.ENTRANCE_BOX_MODE7)
 		forward_portal.transition_triggered.connect(_on_transition_triggered)
 		transitions.add_child(forward_portal)
 
@@ -533,7 +535,8 @@ func _setup_transitions() -> void:
 	brasston_trans.require_interaction = true
 	brasston_trans.indicator_text = "Enter Brasston"
 	brasston_trans.position = spawn_points.get("brasston_entrance", Vector2(176, 848))
-	_setup_transition_collision(brasston_trans, Vector2(TILE_SIZE * 3, TILE_SIZE * 3))
+	brasston_trans.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
+	_setup_transition_collision(brasston_trans, InteractGeometry.ENTRANCE_BOX_MODE7)
 	brasston_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(brasston_trans)
 
@@ -545,7 +548,8 @@ func _setup_transitions() -> void:
 	mechanism_trans.require_interaction = true
 	mechanism_trans.indicator_text = "Descend into the Grand Mechanism"
 	mechanism_trans.position = Vector2(48 * TILE_SIZE + TILE_SIZE / 2, 30 * TILE_SIZE + TILE_SIZE / 2)
-	_setup_transition_collision(mechanism_trans, Vector2(TILE_SIZE * 2, TILE_SIZE * 2))
+	mechanism_trans.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
+	_setup_transition_collision(mechanism_trans, InteractGeometry.ENTRANCE_BOX_MODE7)
 	mechanism_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(mechanism_trans)
 

@@ -79,7 +79,9 @@ func _setup_collision() -> void:
 	shape.radius = 48.0
 	col.shape = shape
 	col.position = Vector2(0, 0)
-	col.scale = Vector2(1.0, 1.67)  # Y-stretch: matches Mode 7 billboard Y:X ratio (0.3:0.5)
+	# Y-stretch is Mode-7-only (ultracode audit defect #6): flat interiors got a 48x80 ellipse — the save prompt fired 2.5 tiles above/below the crystal.
+	if InteractGeometry.is_mode7():
+		col.scale = Vector2(1.0, InteractGeometry.MODE7_Y_STRETCH)
 	add_child(col)
 
 

@@ -527,7 +527,8 @@ func _setup_transitions() -> void:
 	back_portal.require_interaction = true
 	back_portal.indicator_text = "Return to the Assembly Line"
 	back_portal.position = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 42 * TILE_SIZE + TILE_SIZE / 2)
-	_setup_transition_collision(back_portal, Vector2(TILE_SIZE, TILE_SIZE))
+	back_portal.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
+	_setup_transition_collision(back_portal, InteractGeometry.ENTRANCE_BOX_MODE7)
 	back_portal.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(back_portal)
 
@@ -540,7 +541,8 @@ func _setup_transitions() -> void:
 		forward_portal.require_interaction = true
 		forward_portal.indicator_text = "The Remainder"
 		forward_portal.position = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 2 * TILE_SIZE + TILE_SIZE / 2)
-		_setup_transition_collision(forward_portal, Vector2(TILE_SIZE, TILE_SIZE))
+		forward_portal.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
+		_setup_transition_collision(forward_portal, InteractGeometry.ENTRANCE_BOX_MODE7)
 		forward_portal.transition_triggered.connect(_on_transition_triggered)
 		transitions.add_child(forward_portal)
 
@@ -552,7 +554,8 @@ func _setup_transitions() -> void:
 	node_prime_trans.require_interaction = true
 	node_prime_trans.indicator_text = "Enter Node Prime"
 	node_prime_trans.position = spawn_points.get("node_prime_entrance", Vector2(1616, 656))
-	_setup_transition_collision(node_prime_trans, Vector2(TILE_SIZE, TILE_SIZE))
+	node_prime_trans.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
+	_setup_transition_collision(node_prime_trans, InteractGeometry.ENTRANCE_BOX_MODE7)
 	node_prime_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(node_prime_trans)
 
@@ -564,7 +567,8 @@ func _setup_transitions() -> void:
 	root_trans.require_interaction = true
 	root_trans.indicator_text = "Descend into the Root Process"
 	root_trans.position = Vector2(40 * TILE_SIZE + TILE_SIZE / 2, 34 * TILE_SIZE + TILE_SIZE / 2)
-	_setup_transition_collision(root_trans, Vector2(TILE_SIZE * 2, TILE_SIZE * 2))
+	root_trans.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
+	_setup_transition_collision(root_trans, InteractGeometry.ENTRANCE_BOX_MODE7)
 	root_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(root_trans)
 
