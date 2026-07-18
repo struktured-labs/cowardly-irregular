@@ -207,6 +207,7 @@ var _spotlight_duel_active: bool = false
 var _pending_spotlight_unlock: String = ""  # PC job id ("fighter", etc.); "" when no unlock target
 var _pending_spotlight_unlock_toast: String = ""  # deferred to _resume_exploration_after_cutscene — an immediate toast rendered under the aftermath dialogue
 var _spotlight_saved_autobattle: bool = false  # duelist's pre-duel autobattle toggle, restored after (duels force manual)
+var _stashed_boss_defeat: Dictionary = {}  # boss spec parked across a game-over retry (defeat clears the live spec)
 var _spotlight_saved_party: Array[Combatant] = []
 signal spotlight_battle_ended(victory: bool)
 
@@ -2886,8 +2887,8 @@ func _on_battle_ended(victory: bool) -> void:
 				print("[META] temporal_shield auto-rewind failed — rewind not enabled or no history; falling through to game over")
 
 		# Game over — show dramatic screen with retry/continue options
-		# Clear pending boss spec on defeat so a retry doesn't accidentally
-		# fire flags from a battle the player didn't actually win.
+		# Defeat STASHES the boss spec (struktured 2026-07-18: beat Umbraxis on a RETRY, stayed 'unbeaten' forever — the old unconditional clear meant retry victories fired no flags). Retry re-arms it; continue/quit discards.
+		_stashed_boss_defeat = GameState.pending_boss_defeat.duplicate(true)
 		GameState.pending_boss_defeat = {}
 		# ── EventLog: record party wipe fact ─────────────────────────────────
 		if GameState and "event_log" in GameState and GameState.event_log != null:
@@ -3107,9 +3108,15 @@ func _show_game_over_screen() -> void:
 
 	game_over.queue_free()
 
+	if not retry[0]:
+		_stashed_boss_defeat = {}  # walking away forfeits the boss spec
 	if retry[0]:
 		# Retry the same battle with the same enemy formation
 		if _last_battle_enemies.size() > 0:
+			# Same fight, same stakes — the boss spec rides the retry
+			if not _stashed_boss_defeat.is_empty():
+				GameState.pending_boss_defeat = _stashed_boss_defeat.duplicate(true)
+				_stashed_boss_defeat = {}
 			# canonical restore: raw is_alive=true carried statuses into the retry AND resurrected permakilled PCs
 			for member in party:
 				if is_instance_valid(member):

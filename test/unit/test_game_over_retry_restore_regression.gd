@@ -49,7 +49,7 @@ func test_retry_block_uses_canonical_restore() -> void:
 	var src: String = FileAccess.get_file_as_string("res://src/GameLoop.gd")
 	var block: int = src.find("# Retry the same battle with the same enemy formation")
 	assert_gt(block, -1)
-	var window: String = src.substr(block, 400)
+	var window: String = src.substr(block, 700)  # widened 2026-07-18: boss-spec re-arm lines now precede the restore loop
 	assert_true(window.contains("_restore_duelist(member)"),
 		"retry must route through the canonical restore, not a hand-rolled heal")
 	assert_false(window.contains("member.is_alive = true"),

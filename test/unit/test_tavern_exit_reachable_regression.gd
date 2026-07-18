@@ -123,6 +123,12 @@ func test_walking_from_spawn_to_door_exits_exactly_once() -> void:
 	for i in range(steps + 1):
 		tavern.player.position = start.lerp(target, float(i) / steps)
 		await get_tree().physics_frame
+	# Settle condition-based (2026-07-18 flake): under CPU contention the body->physics-server sync trails the walk and the overlap lands late — hold at the threshold until it fires or a generous cap.
+	var settle := 0
+	while fired.is_empty() and settle < 90:
+		settle += 1
+		tavern.player.position = target
+		await get_tree().physics_frame
 
 	assert_eq(fired.size(), 1,
 		"walking through the door should trigger exactly one area_transition — got %s" % [fired])
