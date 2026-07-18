@@ -365,6 +365,14 @@ func _resolve_archetype() -> String:
 	return ""
 
 
+## Cached source sheet + geometry for the archetype path. Populated on
+## the first successful sprite load; consumed by _apply_facing whenever
+## the NPC needs to turn (e.g. on dialogue start, msg 2764 item 1).
+var _archetype_sheet: Image = null
+const _ARCHETYPE_FRAME_W: int = 32
+const _ARCHETYPE_FRAME_H: int = 32
+
+
 ## Load the archetype overworld sheet and slice the (facing_direction, frame 0)
 ## frame as a static portrait. Returns true on success, false on missing/bad asset.
 func _try_load_archetype_sprite(archetype: String) -> bool:
@@ -377,25 +385,51 @@ func _try_load_archetype_sprite(archetype: String) -> bool:
 	var img = tex.get_image()
 	if not img or img.get_width() < 128 or img.get_height() < 128:
 		return false
+	_archetype_sheet = img
+	_apply_facing()
+	# Note: scale is set in _generate_sprite() via _get_context_scale()
+	# (3x for open overworld / Mode 7, 1x for village/dungeon).
+	# Don't override here — would clobber the context-aware scale.
+	return true
+
+
+## Re-slice the cached archetype sheet using the current facing_direction.
+## Cheap enough to call every dialogue start — a 32×32 sub-region + one
+## ImageTexture.create. Procedural (non-archetype) NPCs bail via null-cache
+## and stay on their generated 4-direction-agnostic sprite.
+func _apply_facing() -> void:
+	if _archetype_sheet == null or sprite == null:
+		return
 	# 4×4 grid, 32x32 frames. Row mapping: 0=down, 1=left, 2=right, 3=up.
 	# OverworldNPC.facing_direction uses: 0=down, 1=up, 2=left, 3=right.
-	# Translate.
 	var sheet_row := 0
 	match facing_direction:
 		0: sheet_row = 0  # down
 		1: sheet_row = 3  # up
 		2: sheet_row = 1  # left
 		3: sheet_row = 2  # right
-	var frame_w := 32
-	var frame_h := 32
-	var col := 0  # frame 0 (idle pose) for static NPCs
-	var region = Rect2i(col * frame_w, sheet_row * frame_h, frame_w, frame_h)
-	var frame_img = img.get_region(region)
+	var region := Rect2i(0, sheet_row * _ARCHETYPE_FRAME_H,
+		_ARCHETYPE_FRAME_W, _ARCHETYPE_FRAME_H)
+	var frame_img := _archetype_sheet.get_region(region)
 	sprite.texture = ImageTexture.create_from_image(frame_img)
-	# Note: scale is set in _generate_sprite() via _get_context_scale()
-	# (3x for open overworld / Mode 7, 1x for village/dungeon).
-	# Don't override here — would clobber the context-aware scale.
-	return true
+
+
+## Point this NPC at target_pos (struktured msg 2764 item 1: "when you
+## talk to the innkeeper, it's completely in the wrong direction compared
+## to where your character is"). Picks the dominant axis so the sprite
+## reads "facing the player" cleanly instead of splitting hairs on
+## diagonal offsets.
+func face_toward(target_pos: Vector2) -> void:
+	var delta := target_pos - global_position
+	var new_dir: int = facing_direction
+	if absf(delta.x) >= absf(delta.y):
+		new_dir = 3 if delta.x >= 0.0 else 2  # right / left
+	else:
+		new_dir = 0 if delta.y >= 0.0 else 1  # down / up
+	if new_dir == facing_direction:
+		return
+	facing_direction = new_dir
+	_apply_facing()
 
 
 func _safe_pixel(image: Image, x: int, y: int, color: Color) -> void:
@@ -1002,6 +1036,12 @@ func _input(event: InputEvent) -> void:
 func _start_dialogue() -> void:
 	if dialogue_lines.is_empty() or _is_talking:
 		return
+
+	# msg 2764 item 1: turn to face the player before the dialogue lands
+	# so the innkeeper (etc) reads as talking TO you, not past you.
+	var _player_ref := _get_nearby_player()
+	if _player_ref and _player_ref is Node2D:
+		face_toward((_player_ref as Node2D).global_position)
 
 	_is_talking = true
 	_current_line = 0
