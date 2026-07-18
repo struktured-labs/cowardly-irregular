@@ -42,7 +42,7 @@ const SHOP_LAYOUT = [
 	"W.SSS......SSS.W",
 	"W.SSS..CCC.SSS.W",
 	"W.SSS..CCC.SSS.W",
-	"W.............W",
+	"W.............WW",
 	"W.SSS......SSS.W",
 	"W.SSS......SSS.W",
 	"W..............W",

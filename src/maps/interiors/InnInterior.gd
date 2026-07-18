@@ -48,8 +48,8 @@ var spawn_points: Dictionary = {
 const INN_LAYOUT = [
 	"WWWWWWWWWWWWWWWWWWWW",
 	"W..................W",
-	"W.DDD..........UUW",
-	"W.DDD..........UUW",
+	"W.DDD..........UUWWW",
+	"W.DDD..........UUWWW",
 	"W..................W",
 	"W....hhh...........W",
 	"W....hhh...........W",

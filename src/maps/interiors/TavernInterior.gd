@@ -95,25 +95,32 @@ var _piano_playing: bool = false
 ##   D = door
 ##   U = stairs up (visual)
 ##   F = flagstone/dirt (cellar corner)
+## Layout — 28 cols × 18 rows.
+## W = wall, . = wood floor, B = bar, S = stage, T = table, K = kitchen block,
+## H = hearth, D = entrance door (south), U = stairs-up (locked private quarters
+## flavor interactable, bottom-right, msg 2780 item 1).
+## Every row is exactly MAP_WIDTH (28) characters — pre-fix rows 1-15 had 3
+## trailing chars past 28 (`.W`/`WW`) that the render loop silently truncated;
+## test_village_map_data_ragged_row_lint didn't cover interiors, so it slipped.
 const TAVERN_LAYOUT = [
 	"WWWWWWWWWWWWWWWWWWWWWWWWWWWW",
-	"W..........................W.W",
-	"W..BBB..........SSSSSSSS...W.W",
-	"W..BBB..........SSSSSSSS...W.W",
-	"W..BBB..........SSSSSSSS...W.W",
-	"W..........................W.W",
-	"W.....TT....TT....TT....K..W.W",
-	"W.....TT....TT....TT....K..W.W",
-	"W..........................K.W",
-	"W.....TT....TT..........KKKK.W",
-	"W..........HHH..........KKKK.W",
-	"W..........HHH..........KKKK.W",
-	"W.....TT........TT......KKKK.W",
-	"W.....TT........TT......KKKK.W",
-	"W..........................UUWW",
-	"W..........................UUWW",
-	"WWWWWWWWWWWWWDDDWWWWWWWWWWWWWW",
-	"WWWWWWWWWWWWWDDDWWWWWWWWWWWWWW"
+	"W..........................W",
+	"W..BBB..........SSSSSSSS...W",
+	"W..BBB..........SSSSSSSS...W",
+	"W..BBB..........SSSSSSSS...W",
+	"W..........................W",
+	"W.....TT....TT....TT....K..W",
+	"W.....TT....TT....TT....K..W",
+	"W..........................W",
+	"W.....TT....TT..........KKKW",
+	"W..........HHH..........KKKW",
+	"W..........HHH..........KKKW",
+	"W.....TT........TT......KKKW",
+	"W.....TT........TT......KKKW",
+	"W........................UUW",
+	"W........................UUW",
+	"WWWWWWWWWWWWWDDDWWWWWWWWWWWW",
+	"WWWWWWWWWWWWWDDDWWWWWWWWWWWW",
 ]
 
 ## Random seed for consistent grain variation per tile
@@ -2298,6 +2305,19 @@ func _setup_transitions() -> void:
 
 		exit.transition_triggered.connect(_on_exit_triggered)
 		transitions.add_child(exit)
+
+	# msg 2780 item 1: the UU staircase in the bottom-right renders like a
+	# door but goes nowhere. Wire it as flavor so any interact lands cleanly.
+	# Rule generalizes per cowir-main: any door-shaped visual gets a response.
+	var LockedDoorScript = load("res://src/exploration/LockedDoorFlavor.gd")
+	if LockedDoorScript:
+		var locked = LockedDoorScript.new()
+		locked.name = "LockedStairs"
+		locked.flavor_line = "The stairs to the private quarters. Locked to guests — 'staff only, and only on weekdays,' by which she means never."
+		locked.indicator_text = "[A] Locked"
+		# UU tiles at cols 25-26, rows 14-15 → center pixel (26, 15) * TILE_SIZE.
+		locked.position = Vector2(26 * TILE_SIZE, 15 * TILE_SIZE)
+		transitions.add_child(locked)
 
 
 func _on_exit_triggered(target_map: String, target_spawn: String) -> void:
