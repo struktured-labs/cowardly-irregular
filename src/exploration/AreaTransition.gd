@@ -200,6 +200,8 @@ func _on_body_entered(body: Node2D) -> void:
 func _on_body_exited(body: Node2D) -> void:
 	if _is_player(body):
 		_player_in_zone = false
+		# Latch resets on EXIT (2026-07-18): _triggered exists to stop double-fires within ONE overlap — as a permanent one-shot it killed the tavern exit + both cave stairs when a spawn/graze spent it (three same-night instances). Leaving the zone re-arms the trigger.
+		_triggered = false
 		if _indicator_label and not show_gate_visual:
 			_indicator_label.visible = false
 

@@ -131,3 +131,14 @@ func test_walking_from_spawn_to_door_exits_exactly_once() -> void:
 		assert_eq(fired[0][1], "bar_exit")
 
 	tavern.free()
+
+
+func test_area_transition_latch_rearms_on_zone_exit() -> void:
+	# Systemic close of the latch-spend class (tavern exit + 2 cave stairs,
+	# same night): _triggered guards double-fires within ONE overlap only;
+	# leaving the zone must re-arm it or any graze permanently kills the door.
+	var src: String = FileAccess.get_file_as_string("res://src/exploration/AreaTransition.gd")
+	var i: int = src.find("func _on_body_exited")
+	var body: String = src.substr(i, 500)
+	assert_true("_triggered = false" in body,
+		"body-exit must reset the latch — a permanent one-shot turns any graze into a dead exit")
