@@ -4310,11 +4310,11 @@
     "level": 20,
     "boss": true,
     "stats": {
-      "max_hp": 1500,
+      "max_hp": 1650,
       "max_mp": 300,
       "attack": 38,
       "defense": 32,
-      "magic": 72,
+      "magic": 78,
       "speed": 20
     },
     "abilities": [
@@ -4348,10 +4348,15 @@
       "ice",
       "fire"
     ],
+    "calibrant_recalibrate_swap": {
+      "weakness_out": "holy",
+      "weakness_in": "fire",
+      "boss_line": "This was a variable I DID account for. Adapt."
+    },
     "meta_enemy": true,
     "one_shot": {
-      "hp_threshold": 1500,
-      "setup_hint": "She's calibrated for the average party \u2014 bring something she didn't expect. Holy magic, stacked Bard buffs, and an Advance chain are the canonical answers.",
+      "hp_threshold": 1650,
+      "setup_hint": "She's calibrated for the average party \u2014 bring something she didn't expect. Holy magic, stacked Bard buffs, and an Advance chain are the canonical answers. She recalibrates at half HP \u2014 layer a second element.",
       "reward_item": "calibrant_token"
     },
     "dialogue": {
