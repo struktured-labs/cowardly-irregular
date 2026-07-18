@@ -18,8 +18,8 @@
     {
       "type": "camera_focus",
       "target": [
-        448,
-        352
+        544,
+        416
       ],
       "duration": 0.8
     },
@@ -29,8 +29,8 @@
       "kind": "party",
       "job": "fighter",
       "at": [
-        400,
-        400
+        496,
+        464
       ],
       "facing": "up"
     },
@@ -44,8 +44,8 @@
       "kind": "party",
       "job": "cleric",
       "at": [
-        448,
-        400
+        544,
+        464
       ],
       "facing": "up"
     },
@@ -59,8 +59,8 @@
       "kind": "party",
       "job": "mage",
       "at": [
-        496,
-        400
+        592,
+        464
       ],
       "facing": "up"
     },
@@ -74,8 +74,8 @@
       "kind": "party",
       "job": "rogue",
       "at": [
-        544,
-        400
+        640,
+        464
       ],
       "facing": "up"
     },
@@ -89,8 +89,8 @@
       "kind": "party",
       "job": "bard",
       "at": [
-        592,
-        400
+        688,
+        464
       ],
       "facing": "up"
     },
@@ -104,8 +104,8 @@
       "kind": "npc",
       "archetype": "old_man",
       "at": [
-        240,
-        384
+        336,
+        448
       ],
       "facing": "right"
     },
@@ -115,8 +115,8 @@
       "kind": "npc",
       "archetype": "young_woman",
       "at": [
-        656,
-        400
+        752,
+        464
       ],
       "facing": "left"
     },
@@ -126,8 +126,8 @@
       "kind": "npc",
       "archetype": "child",
       "at": [
-        720,
-        384
+        816,
+        448
       ],
       "facing": "left"
     },
@@ -137,8 +137,8 @@
       "kind": "npc",
       "archetype": "young_man",
       "at": [
-        752,
-        384
+        848,
+        448
       ],
       "facing": "left"
     },
@@ -157,8 +157,8 @@
     {
       "type": "camera_focus",
       "target": [
-        240,
-        384
+        336,
+        448
       ],
       "duration": 0.6
     },
@@ -176,8 +176,8 @@
     {
       "type": "camera_focus",
       "target": [
-        656,
-        400
+        752,
+        464
       ],
       "duration": 0.6
     },
@@ -195,8 +195,8 @@
     {
       "type": "camera_focus",
       "target": [
-        544,
-        400
+        640,
+        464
       ],
       "duration": 0.5
     },
@@ -220,8 +220,8 @@
     {
       "type": "camera_focus",
       "target": [
-        720,
-        384
+        816,
+        448
       ],
       "duration": 0.6
     },
@@ -243,8 +243,8 @@
       "type": "move_actor",
       "id": "child",
       "to": [
-        744,
-        384
+        840,
+        448
       ]
     },
     {
@@ -261,8 +261,8 @@
     {
       "type": "camera_focus",
       "target": [
-        448,
-        400
+        544,
+        464
       ],
       "duration": 0.6
     },
@@ -280,8 +280,8 @@
       "kind": "npc",
       "archetype": "elder_theron",
       "at": [
-        180,
-        320
+        276,
+        384
       ],
       "facing": "down"
     },
@@ -293,15 +293,15 @@
       "type": "move_actor",
       "id": "elder",
       "to": [
-        352,
-        384
+        448,
+        448
       ]
     },
     {
       "type": "camera_focus",
       "target": [
-        352,
-        384
+        448,
+        448
       ],
       "duration": 0.6
     },
@@ -398,8 +398,8 @@
     {
       "type": "camera_focus",
       "target": [
-        352,
-        384
+        448,
+        448
       ],
       "duration": 0.9
     },
@@ -457,8 +457,8 @@
       "type": "move_actor",
       "id": "elder",
       "to": [
-        200,
-        320
+        296,
+        384
       ]
     },
     {
@@ -479,8 +479,8 @@
     {
       "type": "camera_focus",
       "target": [
-        592,
-        400
+        688,
+        464
       ],
       "duration": 0.7
     },
@@ -512,8 +512,8 @@
     {
       "type": "camera_focus",
       "target": [
-        448,
-        400
+        544,
+        464
       ],
       "duration": 0.8
     },
