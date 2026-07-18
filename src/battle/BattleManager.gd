@@ -4403,6 +4403,13 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 		if elem_bonus > 0.0:
 			multiplier *= elem_bonus
 
+	## msg 2787 Voltharion gimmick: consume _next_attack_multiplier on the magic path (mirror of the physical path around line 3877). Storm Gathering authors next_attack_multiplier=1.8 and Voltharion's kit is 4/5 magic — without this the telegraph never lands. Consume BEFORE the target loop so all AoE targets get the boosted multiplier once, meta clears once. Distinct log line so player sees the unleash and can correlate to the earlier gather.
+	var mag_nam: float = float(caster.get_meta("_next_attack_multiplier", 0.0)) if caster != null else 0.0
+	if mag_nam > 0.0:
+		multiplier *= mag_nam
+		caster.set_meta("_next_attack_multiplier", 0.0)
+		battle_log_message.emit("[color=yellow]⚡⚡⚡ %s unleashes the gathered storm![/color] (×%.1f)" % [caster.combatant_name, mag_nam])
+
 	## Tick 432: track total damage dealt this cast so
 	## damage_to_self_pct (stack_overflow's caster recoil) can apply
 	## proportional self-damage after the loop. Pre-fix the field was
@@ -5550,6 +5557,12 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 		## the `_:` push_warning default and silently fizzled. The
 		## status is now applied via add_status; Combatant.update_buff_
 		## durations sister-fix processes the lightning DOT tick.
+		"storm_charging":
+			# msg 2787 Voltharion gimmick: self-buff status. Distinct arm from the "afflicted with" simple-status pool because that emit is negatively-voiced — storm_charging is a TELEGRAPH the player is meant to see and Defer against. Log line names the counterplay explicitly.
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
+					target.add_status(effect, duration)
+					battle_log_message.emit("[color=yellow]⚡ %s gathers the storm! Its NEXT strike will be devastating — Defer to blunt it.[/color]" % target.combatant_name)
 		"barrier", "invisible", "blind", "charm", "stun", "pacify", "evasion", "reflect", "physical_reflect", "prismatic_reflect", "magic_block", "sleep", "poison", "burn", "burning", "static", "confuse", "fear", "silence", "curse":
 			# Simple status effects — applied as a named status the rest of
 			# the battle engine can read via has_status(). Maps the data

@@ -1807,7 +1807,8 @@
       "chain_lightning",
       "static_field",
       "overcharge",
-      "lightning_dash"
+      "lightning_dash",
+      "storm_gathering"
     ],
     "exp_reward": 600,
     "gold_reward": 500,
