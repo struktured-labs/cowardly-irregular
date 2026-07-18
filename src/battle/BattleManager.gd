@@ -4023,6 +4023,9 @@ func _apply_equipment_on_hit_status(attacker: Combatant, target: Combatant) -> v
 		target.add_status(entry["status"], entry["duration"])
 		battle_log_message.emit("[color=%s]%s %s %s![/color]" % [
 			entry["color"], attacker.combatant_name, entry["verb"], target.combatant_name])
+		# msg 2796 cowir-sfx cross-check: BS:3729's play_status only fires for ability effects (gated by action_type == "ability"). Weapon procs (poison_dagger, sleep_dagger, future confuse_chance/burn_chance additions to ON_HIT_STATUSES) applied silently — status landed with no sound. SoundManager is an autoload; direct call from BM is safe.
+		if SoundManager:
+			SoundManager.play_status(entry["status"])
 
 
 func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> void:
