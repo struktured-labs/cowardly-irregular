@@ -1125,7 +1125,11 @@ func _setup_npcs() -> void:
 		"Scholar Fen: *peers at you* You feel like a recursion.",
 	])
 
-	# Adventurer duo comparing notes
+	# Adventurer duo comparing notes — Kael keeps the cloaked-nomad `traveler`
+	# read (default archetype for `adventurer`); Brix overrides to `soldier`
+	# so the duo doesn't render as two identical hooded travelers in adjacent
+	# chairs. Brix's "FEEL the tension" persona fits the disciplined-warrior
+	# silhouette (cowir-main msg 2770).
 	_create_npc("Kael", "adventurer", Vector2(10, 10), [
 		"Kael: Dude, you're still doing it MANUALLY?",
 		"Kael: My autobattle script cleared the whole dungeon while I slept.",
@@ -1138,7 +1142,7 @@ func _setup_npcs() -> void:
 		"Brix: You're supposed to EXPERIENCE the combat.",
 		"Brix: FEEL the tension. SWEAT through the boss fight.",
 		"Brix: Kael: *shrugs* My script felt the tension. Did a great job.",
-	])
+	], "soldier")
 
 	# Maid near stairs — the carpet's provenance follows the world
 	_create_npc("Tilly", "maid", Vector2(16, 6), [
@@ -1156,7 +1160,7 @@ func _setup_npcs() -> void:
 		npcs.add_child(hen)
 
 
-func _create_npc(npc_name: String, npc_type: String, grid_pos: Vector2, dialogue: Array) -> void:
+func _create_npc(npc_name: String, npc_type: String, grid_pos: Vector2, dialogue: Array, sprite_archetype_override: String = "") -> void:
 	var OverworldNPCScript = load("res://src/exploration/OverworldNPC.gd")
 	if OverworldNPCScript:
 		var npc = OverworldNPCScript.new()
@@ -1164,6 +1168,8 @@ func _create_npc(npc_name: String, npc_type: String, grid_pos: Vector2, dialogue
 		npc.npc_type = npc_type
 		npc.dialogue_lines = dialogue
 		npc.position = grid_pos * TILE_SIZE
+		if sprite_archetype_override != "":
+			npc.sprite_archetype = sprite_archetype_override
 		npcs.add_child(npc)
 	else:
 		var marker = _create_simple_npc(npc_name, npc_type, grid_pos)
