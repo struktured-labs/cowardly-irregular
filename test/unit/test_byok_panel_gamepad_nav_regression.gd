@@ -21,8 +21,11 @@ func _resolves(from: Control, path: NodePath, expected: Control) -> bool:
 
 func test_initial_focus_lands_on_first_field() -> void:
 	var p = _make_panel()
-	await get_tree().process_frame
-	await get_tree().process_frame
+	# Deferred grab races GUT's own UI focus under load (flaked 2026-07-18) — poll up to 10 frames; still fails loud if the panel never grabs.
+	for i in range(10):
+		await get_tree().process_frame
+		if get_viewport().gui_get_focus_owner() == p._base_url_field:
+			break
 	assert_eq(get_viewport().gui_get_focus_owner(), p._base_url_field,
 		"opening the panel must focus the Base URL field — gamepad users need a starting point")
 

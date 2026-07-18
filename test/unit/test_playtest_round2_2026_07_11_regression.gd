@@ -93,9 +93,12 @@ func test_select_toggles_autobattle_on_victory_screen() -> void:
 	# sequence/screen... but I cant" — the Select handler had no VICTORY
 	# branch, so the press fell through silently.
 	var src := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
-	var i := src.find("BattleManager.BattleState.VICTORY:")
-	assert_gt(i, -1, "Select handler must branch on the VICTORY state")
-	var window := src.substr(i, 700)
+	# 2026-07-18: the VICTORY-state check alone went DEAD when _cleanup_battle started resetting to INACTIVE post-emit — the overlay/dialogue presence is the honest signal now, and pre-battle boss chat toggles too (struktured directives).
+	var i := src.find("get_node_or_null(\"VictoryResults\") != null")
+	assert_gt(i, -1, "Select handler must key off the victory OVERLAY, not the transient VICTORY state")
+	assert_gt(src.find("_battle_dialogue.visible", i - 200), -1,
+		"pre-battle boss chat must also allow the toggle")
+	var window := src.substr(i, 900)
 	assert_true("_cancel_all_autobattle()" in window and "_enable_all_autobattle()" in window,
 		"victory branch must toggle for the NEXT battle")
 

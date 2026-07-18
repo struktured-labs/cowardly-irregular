@@ -4047,8 +4047,10 @@ func _input(event: InputEvent) -> void:
 				_enable_all_autobattle()
 			get_viewport().set_input_as_handled()
 			return
-		elif BattleManager.current_state == BattleManager.BattleState.VICTORY:
-			# Victory screen: toggle applies to the NEXT battle — struktured 2026-07-11: "should be able to disable autobattle in the victory sequence... but I cant".
+		elif BattleManager.current_state == BattleManager.BattleState.VICTORY \
+				or get_node_or_null("VictoryResults") != null \
+				or (_battle_dialogue != null and is_instance_valid(_battle_dialogue) and _battle_dialogue.visible):
+			# Victory screen OR pre-battle boss chat: toggle applies to the NEXT turn/battle. The VICTORY state check alone went dead when _cleanup_battle started resetting to INACTIVE post-emit (struktured 2026-07-18: victory toggle didn't work); the overlay/dialogue presence is the honest signal.
 			var any_on_v := false
 			for member in party_members:
 				var char_id_v := member.combatant_name.to_lower().replace(" ", "_")
