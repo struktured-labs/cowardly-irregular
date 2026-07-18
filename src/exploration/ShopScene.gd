@@ -14,6 +14,20 @@ signal item_purchased(item_id: String, cost: int)
 enum ShopMode { MAIN, BUY, SELL, QUANTITY, CHAR_SELECT }
 enum ShopType { ITEM, BLACK_MAGIC, WHITE_MAGIC, BLACKSMITH }
 
+## Keeper-portrait override — pre-registered PNG paths per ShopType.
+## When a PNG exists at the mapped path, the description panel loads it via
+## TextureRect instead of the CharacterCustomization procedural composite
+## (which struktured called "shitty proc gen" — msg 2772, "Chapel of Light
+## keeper looks like a serial killer"). Falls through to the procedural
+## draw when the PNG is missing so nothing regresses if a file gets
+## deleted or a new ShopType is added without art.
+const KEEPER_PORTRAIT_PATHS: Dictionary = {
+	ShopType.ITEM:        "res://assets/sprites/portraits/keepers/willow.png",
+	ShopType.BLACK_MAGIC: "res://assets/sprites/portraits/keepers/mortimer.png",
+	ShopType.WHITE_MAGIC: "res://assets/sprites/portraits/keepers/lenora.png",
+	ShopType.BLACKSMITH:  "res://assets/sprites/portraits/keepers/brutus.png",
+}
+
 ## Shop configuration
 var shop_type: ShopType = ShopType.ITEM
 var shop_name: String = "Shop"
@@ -162,9 +176,22 @@ func _create_description_panel() -> Control:
 	right.size = Vector2(4, panel.size.y - 8)
 	panel.add_child(right)
 
-	# Shopkeeper portrait (left side of panel)
+	# Shopkeeper portrait (left side of panel) — prefer a bespoke PNG at
+	# KEEPER_PORTRAIT_PATHS[shop_type]; fall through to procedural if absent.
 	var text_x = 16
-	if shopkeeper_customization:
+	var keeper_png_path: String = KEEPER_PORTRAIT_PATHS.get(shop_type, "")
+	if keeper_png_path != "" and ResourceLoader.exists(keeper_png_path):
+		var keeper_tex: Texture2D = load(keeper_png_path)
+		if keeper_tex:
+			var texrect = TextureRect.new()
+			texrect.texture = keeper_tex
+			texrect.position = Vector2(16, 16)
+			texrect.size = Vector2(64, 64)
+			texrect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			texrect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			panel.add_child(texrect)
+			text_x = 16 + 64 + 12
+	elif shopkeeper_customization:
 		var CharacterPortraitScript = load("res://src/ui/CharacterPortrait.gd")
 		var portrait = CharacterPortraitScript.new(shopkeeper_customization, "shopkeeper", CharacterPortraitScript.PortraitSize.LARGE)
 		portrait.position = Vector2(16, 16)
