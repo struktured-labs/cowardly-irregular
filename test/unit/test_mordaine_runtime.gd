@@ -40,7 +40,7 @@ func test_mordaine_combatant_instantiates_from_json() -> void:
 	c.speed = m["stats"]["speed"]
 	c.is_alive = true
 
-	assert_eq(c.max_hp, 1500, "Mordaine max_hp must round-trip from JSON")
+	assert_eq(c.max_hp, 1650, "Mordaine max_hp must round-trip from JSON (cycle 18 msg 2805 stat bump)")
 	assert_eq(c.max_mp, 300, "Mordaine max_mp must round-trip from JSON")
 	assert_gt(c.magic, c.attack,
 		"Mordaine is magic-heavy — magic should exceed attack (regression: balance shift)")

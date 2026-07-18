@@ -1033,6 +1033,46 @@ func _apply_weakness_cycles() -> void:
 		battle_log_message.emit("[color=cyan]%s's prism rotates — now vulnerable to %s![/color]" % [enemy.combatant_name, active.to_upper()])
 
 
+## msg 2805 cycle 18: Mordaine phase-2 Calibrant recalibrate. Struktured verdict: "Mordaine too easy" — she's the sorceress-usurper + first mask of the Calibrant, so meta-aware mechanics fit her identity better than stat inflation. Trigger: first time she crosses 50% HP in a battle. Effect: she swaps her weakness element (data-authored) with a resistance element via monster_data.calibrant_recalibrate_swap. Player was leaning into holy → she resists it, exposes a new weakness they must pivot to. Latched one-shot per battle via meta flag.
+func _maybe_trigger_mordaine_recalibrate() -> void:
+	if EncounterSystem == null or EncounterSystem.monster_database.is_empty():
+		return
+	for enemy in enemy_party:
+		if enemy == null or not is_instance_valid(enemy) or not enemy.is_alive:
+			continue
+		var mt: String = str(enemy.get_meta("monster_type", "")) if enemy.has_meta("monster_type") else ""
+		if mt == "":
+			continue
+		var mdata: Dictionary = EncounterSystem.monster_database.get(mt, {})
+		var swap: Variant = mdata.get("calibrant_recalibrate_swap", null)
+		if not (swap is Dictionary) or (swap as Dictionary).is_empty():
+			continue
+		if enemy.has_meta("_calibrant_recalibrated"):
+			continue
+		if enemy.max_hp <= 0 or enemy.current_hp * 2 > enemy.max_hp:
+			continue
+		enemy.set_meta("_calibrant_recalibrated", true)
+		var out_weakness: String = str((swap as Dictionary).get("weakness_out", ""))
+		var in_weakness: String = str((swap as Dictionary).get("weakness_in", ""))
+		if out_weakness != "" and out_weakness in enemy.elemental_weaknesses:
+			enemy.elemental_weaknesses.erase(out_weakness)
+			if not (out_weakness in enemy.elemental_resistances):
+				enemy.elemental_resistances.append(out_weakness)
+		if in_weakness != "":
+			if in_weakness in enemy.elemental_resistances:
+				enemy.elemental_resistances.erase(in_weakness)
+			if not (in_weakness in enemy.elemental_weaknesses):
+				enemy.elemental_weaknesses.append(in_weakness)
+		battle_log_message.emit("[color=magenta]✦ %s RECALIBRATES the field.[/color] %s is now RESISTED. %s is the exposed thread. Adapt." % [
+			enemy.combatant_name,
+			out_weakness.capitalize() if out_weakness != "" else "The favored element",
+			in_weakness.capitalize() if in_weakness != "" else "A new element",
+		])
+		var line: String = str((swap as Dictionary).get("boss_line", ""))
+		if line != "":
+			battle_log_message.emit("[color=cyan]%s: \"%s\"[/color]" % [enemy.combatant_name, line])
+
+
 func _start_new_round() -> void:
 	"""Start a new round of combat"""
 	current_round += 1
@@ -3127,6 +3167,8 @@ func _execute_next_action() -> void:
 
 	# Log player action for adaptive AI pattern detection
 	_log_player_action(combatant, action)
+	# msg 2805 cycle 18: check Mordaine phase 2 recalibrate BEFORE emitting action_executed. Fires once per fight when she crosses 50% HP. Silent no-op for any other enemy — free polling.
+	_maybe_trigger_mordaine_recalibrate()
 	action_executed.emit(combatant, action, action.get("targets", [action.get("target")]))
 
 	# Delay between actions — scale with battle speed for snappy feel.
