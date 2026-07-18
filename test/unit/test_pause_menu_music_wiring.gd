@@ -57,20 +57,46 @@ func test_open_snapshots_and_swaps_to_menu() -> void:
 		"_open_overworld_menu must call SoundManager.play_music(\"menu\") to swap to the pause-menu theme")
 
 
-func test_close_restores_only_when_menu_still_current() -> void:
-	## The guard is load-bearing per cowir-main msg 2687: if underlying music
-	## changed while the menu was open (autogrind end, story flag, stinger
-	## resume), restoring _pre_menu_music_track would stomp the legitimate swap.
+func test_restore_lives_in_teardown_choke_point() -> void:
+	## Bug 2801 fix: multiple exit paths (teleport, boss battle, quit-to-title,
+	## menu-action → submenu) reach _teardown_overworld_menu_widget but bypass
+	## _on_overworld_menu_closed, so pinning restore to the closed handler let
+	## menu music leak past scene transitions. Restore MUST live in teardown
+	## itself so every exit path catches it.
 	var src := _read(GAMELOOP)
-	var fn_start: int = src.find("func _on_overworld_menu_closed")
-	assert_gt(fn_start, -1, "_on_overworld_menu_closed must exist")
+	var fn_start: int = src.find("func _teardown_overworld_menu_widget")
+	assert_gt(fn_start, -1, "_teardown_overworld_menu_widget must exist")
 	var next_fn: int = src.find("\nfunc ", fn_start + 1)
 	var body: String = src.substr(fn_start, next_fn - fn_start) if next_fn > -1 else src.substr(fn_start)
+
 	assert_true(body.contains("_pre_menu_music_track != \"\""),
-		"_on_overworld_menu_closed must skip restore when _pre_menu_music_track was never set (idempotent close)")
+		"_teardown_overworld_menu_widget must skip restore when _pre_menu_music_track was never set")
 	assert_true(body.contains("SoundManager._current_music == \"menu\""),
-		"_on_overworld_menu_closed must guard the restore on _current_music == \"menu\" (cowir-main msg 2687: don't stomp a legitimate underlying swap)")
+		"_teardown_overworld_menu_widget must guard the restore on _current_music == \"menu\" (cowir-main msg 2687: don't stomp a legitimate underlying swap)")
 	assert_true(body.contains("SoundManager.play_music(_pre_menu_music_track)"),
-		"_on_overworld_menu_closed must call play_music with the snapshot when the guard passes")
+		"_teardown_overworld_menu_widget must call play_music with the snapshot when the guard passes")
 	assert_true(body.contains("_pre_menu_music_track = \"\""),
-		"_on_overworld_menu_closed must clear _pre_menu_music_track after use (avoids stale-snapshot bugs on a subsequent pause)")
+		"_teardown_overworld_menu_widget must clear _pre_menu_music_track UNCONDITIONALLY (bug 2801: a stale snapshot leaking past a scene transition let menu music persist forever)")
+
+
+func test_all_menu_exit_paths_route_through_teardown() -> void:
+	## Bug 2801 root cause: restore was only in the closed handler, but these
+	## paths call _teardown_overworld_menu_widget directly without going
+	## through it: _on_teleport_requested, _on_settings_boss_battle,
+	## _on_quit_to_title, _on_overworld_menu_action. Pin that every exit path
+	## still funnels through the teardown so the moved restore catches them.
+	var src := _read(GAMELOOP)
+	# Every exit-path handler must call teardown (or _on_overworld_menu_closed,
+	# which itself calls teardown).
+	for handler in [
+		"func _on_overworld_menu_closed",
+		"func _on_overworld_menu_action",
+		"func _on_teleport_requested",
+	]:
+		var fn_start: int = src.find(handler)
+		if fn_start < 0:
+			continue  # optional handler — skip
+		var next_fn: int = src.find("\nfunc ", fn_start + 1)
+		var body: String = src.substr(fn_start, next_fn - fn_start) if next_fn > -1 else src.substr(fn_start)
+		assert_true(body.contains("_teardown_overworld_menu_widget"),
+			"%s must call _teardown_overworld_menu_widget so the music restore catches this exit path" % handler)

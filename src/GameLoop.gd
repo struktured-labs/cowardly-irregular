@@ -1125,7 +1125,7 @@ func _open_overworld_menu() -> void:
 
 
 func _teardown_overworld_menu_widget() -> void:
-	"""Free the OverworldMenu widget + its CanvasLayer WITHOUT resuming exploration. Use this from menu-action handlers that will immediately open a submenu (autobattle editor, autogrind UI, etc.) — else the brief resume-then-repause lets the player move for one frame ("artist saw overworld went live" 2026-07-13)."""
+	"""Free the OverworldMenu widget + its CanvasLayer WITHOUT resuming exploration. Use this from menu-action handlers that will immediately open a submenu (autobattle editor, autogrind UI, etc.) — else the brief resume-then-repause lets the player move for one frame ("artist saw overworld went live" 2026-07-13). Music restore ALSO happens here (bug 2801: multiple exit paths — teleport / boss battle / quit-to-title / menu action → submenu — all reach teardown but bypassed the closed-signal, so menu music persisted forever)."""
 	if _overworld_menu and is_instance_valid(_overworld_menu):
 		_overworld_menu.queue_free()
 		_overworld_menu = null
@@ -1133,18 +1133,19 @@ func _teardown_overworld_menu_widget() -> void:
 		_overworld_menu_layer.queue_free()
 		_overworld_menu_layer = null
 
-
-func _on_overworld_menu_closed() -> void:
-	"""Handle overworld menu close — teardown + resume exploration. Called when user backs out to the field (no submenu follows)."""
-	_teardown_overworld_menu_widget()
-
-	# Restore the pre-menu music track, but ONLY if the "menu" theme is still what's
-	# playing — cowir-main msg 2687 guard: if something else swapped the music while
-	# the menu was open (autogrind end, story flag flip, boss defeat stinger resume,
-	# etc.), don't stomp that legitimate swap.
+	# Restore the pre-menu music track from EVERY exit path (bug 2801).
+	# Guard on _current_music == "menu" per cowir-main msg 2687: if something
+	# else swapped the music while the menu was open, don't stomp it. The
+	# clear runs unconditionally so a stale snapshot can't leak across pauses
+	# even if the guard skips the play_music call.
 	if SoundManager and _pre_menu_music_track != "" and SoundManager._current_music == "menu":
 		SoundManager.play_music(_pre_menu_music_track)
 	_pre_menu_music_track = ""
+
+
+func _on_overworld_menu_closed() -> void:
+	"""Handle overworld menu close — teardown + resume exploration. Called when user backs out to the field (no submenu follows). Music restore lives inside _teardown_overworld_menu_widget so every exit path catches it, not just this one."""
+	_teardown_overworld_menu_widget()
 
 	# Resume exploration
 	if _exploration_scene and _exploration_scene.has_method("resume"):
