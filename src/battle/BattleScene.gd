@@ -3091,6 +3091,16 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 		return
 
 	var action_type = action.get("type", "")
+	# Cinematic pacing (struktured 2026-07-17: "everyone swarms the monsters in 2-3 seconds"): at showcase speed each action HOLDS the stage until its performance finishes — the queue serializes into one-actor-at-a-time spotlights. 2x+/turbo/console keep the fast pacing.
+	var showcase_this: bool = action_type == "ability" and _showcase_active(combatant)
+	if not turbo_mode and not autogrind_console_mode and Engine.time_scale <= 0.3:
+		match action_type:
+			"attack":
+				BattleManager.presentation_hold = 0.62
+			"ability":
+				BattleManager.presentation_hold = 0.95 if showcase_this else 0.62
+			"item":
+				BattleManager.presentation_hold = 0.45
 	match action_type:
 		"attack":
 			_current_ability_id = ""  # Clear — this is a basic attack
@@ -3129,7 +3139,7 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 				else:
 					_play_ability_animation(anim_type, animator)
 					_spawn_ability_effects(ability_id, targets)
-			elif _showcase_active(combatant):
+			elif showcase_this:
 				_play_ability_showcase(combatant, attacker_sprite, animator, ability, targets)
 			else:
 				_play_ability_animation(anim_type, animator)

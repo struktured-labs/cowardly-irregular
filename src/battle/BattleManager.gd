@@ -89,6 +89,15 @@ var current_combatant: Combatant = null
 var pending_actions: Array[Dictionary] = []  # All selected actions before execution
 var execution_order: Array[Dictionary] = []  # Sorted by computed turn order
 
+## Cinematic pacing (struktured 2026-07-17 "everyone swarms in 2-3 seconds"): BattleScene sets this during the action_executing dispatch when it plays a performance; the execution loop holds this long before the next action so spotlights serialize. 0 = base pacing (headless/tests/fast modes never touch it).
+var presentation_hold: float = 0.0
+
+
+func _consume_presentation_hold(base_delay: float) -> float:
+	var hold: float = maxf(base_delay, presentation_hold)
+	presentation_hold = 0.0
+	return hold
+
 ## Previous round actions for repeat functionality (Y button)
 var previous_round_actions: Dictionary = {}  # {combatant_id: Array[actions]}
 
@@ -3054,7 +3063,7 @@ func _execute_next_action() -> void:
 					await get_tree().process_frame
 				else:
 					# 2026-07-12: was 0.1/speed_scale which DOUBLE-scaled (create_timer already applies Engine.time_scale) → wall clock 1.6s at 1x. Constant 0.025 gives the intended 0.1s at 1x (time_scale=0.25).
-					await get_tree().create_timer(0.025).timeout
+					await get_tree().create_timer(_consume_presentation_hold(0.025)).timeout
 				if not is_instance_valid(self):
 					return
 				_execute_next_action()
@@ -3128,7 +3137,7 @@ func _execute_next_action() -> void:
 	if turbo_mode:
 		await get_tree().process_frame
 	else:
-		await get_tree().create_timer(0.025).timeout
+		await get_tree().create_timer(_consume_presentation_hold(0.025)).timeout
 	if not is_instance_valid(self):
 		return
 	_execute_next_action()
@@ -3256,7 +3265,7 @@ func _execute_group_action(action: Dictionary) -> void:
 	if turbo_mode:
 		await get_tree().process_frame
 	else:
-		await get_tree().create_timer(0.025).timeout
+		await get_tree().create_timer(_consume_presentation_hold(0.025)).timeout
 	if not is_instance_valid(self):
 		return
 	_execute_next_action()
@@ -3685,7 +3694,7 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 			await get_tree().process_frame
 		else:
 			# 2026-07-12: was 0.3/speed_scale — the DIVISION double-scaled because create_timer already applies Engine.time_scale. At 1x (time_scale=0.25) that was create_timer(1.2) → 4.8s wall clock instead of the intended 0.3s. Constant 0.075 gives the correct 0.3s at 1x, scaling proportionally with battle speed.
-			await get_tree().create_timer(0.075).timeout
+			await get_tree().create_timer(_consume_presentation_hold(0.075)).timeout
 		if not is_instance_valid(self):
 			return
 
@@ -3693,7 +3702,7 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 	if turbo_mode:
 		await get_tree().process_frame
 	else:
-		await get_tree().create_timer(0.075).timeout
+		await get_tree().create_timer(_consume_presentation_hold(0.075)).timeout
 	if not is_instance_valid(self):
 		return
 	if _check_victory_conditions():

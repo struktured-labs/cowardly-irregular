@@ -9,6 +9,7 @@ extends GutTest
 ## effect at 1x (time_scale=0.25): timer=0.4, wall=0.4/0.25=1.6s per
 ## action instead of the authored 0.1s.
 ##
+## 2026-07-17 cinematic pacing: timers now route through _consume_presentation_hold(base) which returns the SAME constant when no hold is requested — the anti-double-scale intent pinned here is unchanged.
 ## Fix: constant `create_timer(0.025).timeout` mirroring the 3051 fix.
 ## At 1x that lands at 0.025/0.25 = 0.1s wall — the intent stated in the
 ## BM:3117 comment.
@@ -38,7 +39,7 @@ func test_main_inter_action_delay_uses_constant_025() -> void:
 	var idx: int = src.find("msg 2570/2581: was 0.1/speed_scale which DOUBLE-scaled")
 	assert_gt(idx, -1, "the msg 2570/2581 fix comment must be present at the main inter-action delay site")
 	var body: String = src.substr(idx, 400)
-	assert_string_contains(body, "await get_tree().create_timer(0.025).timeout",
+	assert_string_contains(body, "await get_tree().create_timer(_consume_presentation_hold(0.025)).timeout",
 		"main inter-action delay must use constant 0.025 (0.1s wall at 1x)")
 
 
@@ -48,7 +49,7 @@ func test_group_action_delay_uses_constant_025() -> void:
 	var idx: int = src.find("same double-scale fix as _execute_next_action's inter-action delay")
 	assert_gt(idx, -1, "the group-action fix comment must be present at the _execute_group_action delay site")
 	var body: String = src.substr(idx, 400)
-	assert_string_contains(body, "await get_tree().create_timer(0.025).timeout",
+	assert_string_contains(body, "await get_tree().create_timer(_consume_presentation_hold(0.025)).timeout",
 		"group-action delay must use constant 0.025 (0.1s wall at 1x)")
 
 
@@ -88,7 +89,7 @@ func test_confused_attack_delay_still_025() -> void:
 	var idx: int = src.find("Constant 0.025 gives the intended 0.1s at 1x")
 	assert_gt(idx, -1, "the v3.33.137 confused-attack fix comment must remain as history + guard")
 	var body: String = src.substr(idx, 300)
-	assert_string_contains(body, "await get_tree().create_timer(0.025).timeout",
+	assert_string_contains(body, "await get_tree().create_timer(_consume_presentation_hold(0.025)).timeout",
 		"confused-attack delay must still be constant 0.025 (v3.33.137 fix intact)")
 
 

@@ -8,6 +8,7 @@ extends GutTest
 ## already applies Engine.time_scale. At 1x (time_scale=0.25) the actual
 ## wall-clock pause was 4.8s (0.3/0.25=1.2 arg → 1.2/0.25=4.8s wall). The
 ## author's stated intent (per line 3663 comment history) was 0.3s at 1x.
+## 2026-07-17 cinematic pacing: timers now route through _consume_presentation_hold(base) which returns the SAME constant when no hold is requested — the anti-double-scale intent pinned here is unchanged.
 ## Fix: constant create_timer(0.075) — gives 0.3s wall clock at 1x and
 ## proportional scaling at higher speeds. Same fix on the 0.1s
 ## confused-attack chain pause (was 1.6s at 1x).
@@ -28,9 +29,9 @@ func test_battle_manager_pauses_not_divided_by_speed_scale() -> void:
 	assert_false(src.find("create_timer(0.1 / speed_scale") > -1,
 		"confused-attack pause must not double-scale by speed_scale — was 1.6s wall clock at 1x")
 	# Explicit contract: the fixed constants are present.
-	assert_true(src.find("create_timer(0.075)") > -1,
+	assert_true(src.find("create_timer(_consume_presentation_hold(0.075))") > -1,
 		"inter/post-action pause must use the constant that gives 0.3s wall clock at 1x battle speed")
-	assert_true(src.find("create_timer(0.025)") > -1,
+	assert_true(src.find("create_timer(_consume_presentation_hold(0.025))") > -1,
 		"confused-attack pause must use the constant that gives 0.1s wall clock at 1x battle speed")
 
 
