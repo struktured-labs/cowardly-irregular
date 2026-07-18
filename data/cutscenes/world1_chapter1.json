@@ -23,8 +23,8 @@
     {
       "type": "camera_focus",
       "target": [
-        544,
-        352
+        640,
+        416
       ],
       "duration": 0.8
     },
@@ -34,8 +34,8 @@
       "kind": "party",
       "job": "fighter",
       "at": [
-        496,
-        352
+        592,
+        416
       ],
       "facing": "down"
     },
@@ -49,8 +49,8 @@
       "kind": "party",
       "job": "bard",
       "at": [
-        448,
-        352
+        544,
+        416
       ],
       "facing": "down"
     },
@@ -64,8 +64,8 @@
       "kind": "party",
       "job": "cleric",
       "at": [
-        544,
-        352
+        640,
+        416
       ],
       "facing": "down"
     },
@@ -79,8 +79,8 @@
       "kind": "party",
       "job": "mage",
       "at": [
-        592,
-        352
+        688,
+        416
       ],
       "facing": "down"
     },
@@ -94,8 +94,8 @@
       "kind": "party",
       "job": "rogue",
       "at": [
-        640,
-        352
+        736,
+        416
       ],
       "facing": "down"
     },
@@ -123,16 +123,16 @@
       "type": "move_actor",
       "id": "elder",
       "to": [
-        256,
-        352
+        352,
+        416
       ]
     },
     {
       "type": "move_actor",
       "id": "elder",
       "to": [
-        400,
-        352
+        496,
+        416
       ]
     },
     {
@@ -227,8 +227,8 @@
       "type": "move_actor",
       "id": "milo",
       "to": [
-        512,
-        320
+        608,
+        384
       ]
     },
     {
@@ -360,16 +360,16 @@
       "type": "move_actor",
       "id": "mage",
       "to": [
-        640,
-        352
+        736,
+        416
       ]
     },
     {
       "type": "move_actor",
       "id": "mage",
       "to": [
-        640,
-        464
+        736,
+        528
       ]
     },
     {
@@ -445,8 +445,8 @@
       "type": "move_actor",
       "id": "rogue",
       "to": [
-        640,
-        224
+        736,
+        288
       ],
       "speed": 160
     },
@@ -454,8 +454,8 @@
       "type": "move_actor",
       "id": "rogue",
       "to": [
-        768,
-        224
+        864,
+        288
       ],
       "speed": 160
     },
@@ -490,8 +490,8 @@
     {
       "type": "camera_focus",
       "target": [
-        544,
-        352
+        640,
+        416
       ],
       "duration": 0.9
     },
