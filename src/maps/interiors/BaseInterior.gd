@@ -39,6 +39,7 @@ func _ready() -> void:
 	_setup_tilemap()
 	_setup_decorations()
 	_setup_npcs()
+	_validate_placements()
 	_setup_transitions()
 	_setup_player()
 	_setup_camera()
@@ -311,3 +312,11 @@ func _maybe_apply_night_modulation() -> void:
 	night.name = "NightTint"
 	night.color = NIGHT_INTERIOR_TINT
 	add_child(night)
+
+
+## Placement-collision sweep — thin wrapper over the shared
+## InteriorPlacementSweep utility so BaseInterior descendants AND the
+## three legacy Node2D-direct interiors (InnInterior, ShopInterior,
+## TavernInterior) all share the same code path (struktured msg 2764).
+func _validate_placements() -> void:
+	InteriorPlacementSweep.sweep(self, npcs, decorations, _get_layout(), _get_area_id())

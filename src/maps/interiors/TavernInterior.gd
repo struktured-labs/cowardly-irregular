@@ -125,6 +125,8 @@ func _ready() -> void:
 	_setup_decorations()
 	_setup_dancer()
 	_setup_npcs()
+	# msg 2764: NPC-vs-furniture sweep (shared with BaseInterior + InnInterior + ShopInterior).
+	InteriorPlacementSweep.sweep(self, npcs, decorations, TAVERN_LAYOUT, "tavern_interior")
 	_setup_transitions()
 	_setup_player()
 	_setup_camera()
