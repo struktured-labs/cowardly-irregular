@@ -306,6 +306,8 @@ godot --headless -s test/run_tests.gd          # Run tests
 
 ### Common Pitfalls (verified, recurring)
 - **Combatant uses `job_level` NOT `level`** — accessing `.level` silently crashes `_build_ui()`
+- **Godot's Input singleton leaks across GUT tests** — a stuck `ui_down` from one test drags "stationary" players in later physics tests (24px drift observed 2026-07-18); the shared default World2D also lets leaked bodies overlap unrelated triggers. Physics-sensitive tests: dedicated SubViewport/World2D + `Input.action_release` in before/after_each.
+- **AreaTransition `_triggered` re-arms on body_exited (2026-07-18)** — it guards double-fires within one overlap ONLY; if you need a true one-shot door, add your own flag, don't rely on the latch
 - **New GDScript files** need `godot --headless --import` before `class_name` is globally available
 - **Launch godot** with `setsid godot < /dev/null > tmp/godot.stdout 2>&1 &` (fully detached) — bare `godot &` can break Wayland window visibility
 - **Check `"active_buffs" in combatant`** before accessing buff arrays — not all objects are Combatants
