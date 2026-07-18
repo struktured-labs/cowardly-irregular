@@ -334,6 +334,7 @@ func _on_body_exited(body: Node2D) -> void:
 
 func interact(player: Node2D) -> void:
 	if _is_opened:
+		_clamp_dialogue_box_to_viewport()
 		dialogue_box.visible = true
 		dialogue_label.text = "The chest is empty."
 		await get_tree().create_timer(1.0).timeout
@@ -343,6 +344,40 @@ func interact(player: Node2D) -> void:
 		return
 
 	_open_chest(player)
+
+
+## Chest popup at (-120, -110) relative to the chest world position clips at dungeon-room edges when the chest sits close to a wall (struktured playtest msg 2802). Same class as the old local-panel cutoff bug that NPCDialogue was created to fix. Clamp the panel's world position inside the visible viewport with a 16px margin by shifting dialogue_box.position.
+const _POPUP_MARGIN := 16.0
+const _POPUP_LOCAL_OFFSET := Vector2(-120.0, -110.0)
+const _POPUP_SIZE := Vector2(240.0, 60.0)
+
+func _clamp_dialogue_box_to_viewport() -> void:
+	if not is_instance_valid(dialogue_box):
+		return
+	dialogue_box.position = Vector2.ZERO
+	var vp := get_viewport()
+	if vp == null:
+		return
+	var cam := vp.get_camera_2d()
+	if cam == null:
+		return
+	var vp_size := vp.get_visible_rect().size
+	var half := vp_size * 0.5
+	var cam_center := cam.get_screen_center_position()
+	var screen_min := cam_center - half + Vector2(_POPUP_MARGIN, _POPUP_MARGIN)
+	var screen_max := cam_center + half - Vector2(_POPUP_MARGIN, _POPUP_MARGIN)
+	var panel_min := global_position + _POPUP_LOCAL_OFFSET
+	var panel_max := panel_min + _POPUP_SIZE
+	var delta := Vector2.ZERO
+	if panel_min.x < screen_min.x:
+		delta.x = screen_min.x - panel_min.x
+	elif panel_max.x > screen_max.x:
+		delta.x = screen_max.x - panel_max.x
+	if panel_min.y < screen_min.y:
+		delta.y = screen_min.y - panel_min.y
+	elif panel_max.y > screen_max.y:
+		delta.y = screen_max.y - panel_max.y
+	dialogue_box.position = delta
 
 
 func _open_chest(player: Node2D) -> void:
@@ -403,6 +438,7 @@ func _open_chest(player: Node2D) -> void:
 				game_loop.equipment_pool[pool_key].append(contents_id)
 
 	# Show dialogue
+	_clamp_dialogue_box_to_viewport()
 	dialogue_box.visible = true
 	dialogue_label.text = contents_text
 
