@@ -327,34 +327,34 @@ func _setup_transitions_for_floor(floor_num: int) -> void:
 		)
 		transitions.add_child(save_pt)
 
-	# Stairs up (to next floor)
+	# Stairs up — plain Area2D sensor at unified 48x48 (same latch-spend fix as DragonCave; ultracode audit defect #9)
 	if spawn_points.has("stairs_up"):
-		var up_trans = AreaTransitionScript.new()
+		var up_trans = Area2D.new()
 		up_trans.name = "StairsUp"
-		up_trans.require_interaction = false
 		up_trans.position = spawn_points["stairs_up"]
-		_setup_transition_collision(up_trans, Vector2(TILE_SIZE, TILE_SIZE))
+		_setup_transition_collision(up_trans, InteractGeometry.STAIRS_BOX)
 		up_trans.body_entered.connect(_on_stairs_up_entered)
 		transitions.add_child(up_trans)
 
-	# Stairs down / exit
+	# Stairs down / exit — floor 1 keeps the real AreaTransition (overworld warp); inter-floor descent is a plain 48x48 sensor
 	if spawn_points.has("stairs_down"):
-		var down_trans = AreaTransitionScript.new()
-		down_trans.name = "StairsDown"
-		down_trans.require_interaction = false
-		down_trans.position = spawn_points["stairs_down"]
-		_setup_transition_collision(down_trans, Vector2(TILE_SIZE * 2, TILE_SIZE * 2))
-
 		if floor_num == 1:
-			# Floor 1 exit goes to overworld
-			down_trans.target_map = "overworld"
-			down_trans.target_spawn = "cave_entrance"
-			down_trans.transition_triggered.connect(_on_transition_triggered)
+			var exit_trans = AreaTransitionScript.new()
+			exit_trans.name = "StairsDown"
+			exit_trans.require_interaction = false
+			exit_trans.position = spawn_points["stairs_down"]
+			_setup_transition_collision(exit_trans, InteractGeometry.STAIRS_BOX)
+			exit_trans.target_map = "overworld"
+			exit_trans.target_spawn = "cave_entrance"
+			exit_trans.transition_triggered.connect(_on_transition_triggered)
+			transitions.add_child(exit_trans)
 		else:
-			# Other floors go down one floor
+			var down_trans = Area2D.new()
+			down_trans.name = "StairsDown"
+			down_trans.position = spawn_points["stairs_down"]
+			_setup_transition_collision(down_trans, InteractGeometry.STAIRS_BOX)
 			down_trans.body_entered.connect(_on_stairs_down_entered)
-
-		transitions.add_child(down_trans)
+			transitions.add_child(down_trans)
 
 	# Boss trigger on floor 6
 	if floor_num == 6:
