@@ -10,18 +10,25 @@ extends GutTest
 ##
 ## Runtime probes, not source pins: instantiates the real scene, ticks
 ## physics like GameLoop's fade-in window does, and drives the player
-## through an actual approach to the door. Uses its own SubViewport/World2D
-## so a leaked OverworldPlayer body from an unrelated earlier test (the
-## default 2D physics space is shared tree-wide) can't spuriously overlap
-## our exit trigger and poison the one-shot latch this test is asserting on.
+## through an actual approach to the door. Two defensive isolation layers,
+## both confirmed necessary by repeated full-suite runs: (1) its own
+## SubViewport/World2D so a leaked body from an unrelated earlier test can't
+## spuriously overlap our exit trigger (the default 2D physics space is
+## shared tree-wide); (2) explicit directional-input release before each
+## run — the global Input singleton isn't reset between GUT tests, and a
+## stuck ui_down from elsewhere in the 6500+ test suite was observed
+## dragging our "stationary" player 24px into the trigger mid-test.
 
 const TavernScript = preload("res://src/maps/interiors/TavernInterior.gd")
 const TILE := 32
+const _DIRECTIONS := ["ui_up", "ui_down", "ui_left", "ui_right"]
 
 var _viewport: SubViewport
 
 
 func before_each() -> void:
+	for a in _DIRECTIONS:
+		Input.action_release(a)
 	_viewport = SubViewport.new()
 	_viewport.world_2d = World2D.new()
 	add_child(_viewport)
@@ -29,6 +36,8 @@ func before_each() -> void:
 
 func after_each() -> void:
 	_viewport.queue_free()
+	for a in _DIRECTIONS:
+		Input.action_release(a)
 
 
 func _find_exit(tavern) -> Area2D:
@@ -80,7 +89,6 @@ func test_exit_trigger_covers_a_door_tile_and_does_not_self_fire_at_spawn() -> v
 	# (b) Simulate GameLoop's fade-in window: several physics frames with
 	# zero player input right after spawn. The one-shot _triggered latch
 	# must NOT already be spent — that's what bricked the real exit.
-	exit.body_entered.connect(func(b): print("[DIAG] fired for body=%s is_ours=%s pos=%s player_pos=%s exit_rect=%s" % [b, b == tavern.player, (b as Node2D).global_position if b is Node2D else "?", tavern.player.global_position, rect]))
 	for i in range(20):
 		await get_tree().physics_frame
 	assert_false(exit._triggered,
