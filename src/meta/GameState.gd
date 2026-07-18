@@ -231,7 +231,11 @@ func is_story_flag_set(flag_name: String) -> bool:
 		return true
 	if game_constants.get("cutscene_flag_" + flag_name, false):
 		return true
-	return bool(game_constants.get(flag_name, false))
+	if bool(game_constants.get(flag_name, false)):
+		return true
+	# 4th namespace CANONICALIZED here (2026-07-18): dungeon boss flags live in game_constants.dungeon_flags — QuestLog patched this locally 2026-07-15, but every OTHER consumer (MasteriteEncounter prereqs = all four W1 Masterites invisible, struktured cap) kept missing it.
+	var dflags: Variant = game_constants.get("dungeon_flags", {})
+	return dflags is Dictionary and bool((dflags as Dictionary).get(flag_name, false))
 
 func unlock_next_world() -> void:
 	if worlds_unlocked < 6:

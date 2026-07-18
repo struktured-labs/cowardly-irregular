@@ -28,7 +28,7 @@ const TILE_SIZE: int = 32
 @export var monster_id: String = ""
 
 ## Optional story-flag gate. Empty = always active; non-empty = only
-## renders once GameState.get_story_flag(prereq_flag) is true.
+## renders once GameState.is_story_flag_set(prereq_flag) is true (all 4 namespaces).
 ## Design v1: Sandrift's Warden uses "cave_rat_king_defeated" here.
 @export var prereq_flag: String = ""
 
@@ -62,7 +62,7 @@ func defeat_flag() -> String:
 func _defeat_flag_set() -> bool:
 	if GameState == null:
 		return false
-	return GameState.get_story_flag(defeat_flag())
+	return GameState.is_story_flag_set(defeat_flag())
 
 
 func _prereq_met() -> bool:
@@ -70,7 +70,8 @@ func _prereq_met() -> bool:
 		return true
 	if GameState == null:
 		return true
-	return GameState.get_story_flag(prereq_flag)
+	# Canonical helper: rat-king prereq lives in dungeon_flags — bare get_story_flag left ALL W1 Masterites invisible (struktured 2026-07-18)
+	return GameState.is_story_flag_set(prereq_flag)
 
 
 func _build_collision() -> void:
