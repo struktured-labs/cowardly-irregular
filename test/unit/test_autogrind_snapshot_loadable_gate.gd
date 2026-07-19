@@ -8,21 +8,30 @@ extends GutTest
 
 const SNAP_PATH := "user://autogrind_snapshot.json"
 
+# Cadence #25 (2026-07-19): byte-snapshot/restore isolation. Pre-fix _purge_snapshot() in before_each/after_each unconditionally DELETED user://autogrind_snapshot.json, so every full-suite run nuked struktured's in-progress grind snapshot. Same class the fleet PSA (msg 2586) fought twice this month. Byte-snapshot/restore preserves the real file bit-for-bit.
+var _pre_existed: bool = false
+var _pre_bytes: PackedByteArray = PackedByteArray()
+
 
 func before_each() -> void:
-	# Guard against a stray snapshot from previous test runs. Isolate by
-	# clearing before AND after — the file is user-scoped so contamination
-	# would silently poison later tests + real user data.
-	_purge_snapshot()
+	_pre_existed = FileAccess.file_exists(SNAP_PATH)
+	if _pre_existed:
+		_pre_bytes = FileAccess.get_file_as_bytes(SNAP_PATH)
+	# Now scrub for a clean test slate — the real file is safely in memory.
+	if _pre_existed:
+		DirAccess.remove_absolute(SNAP_PATH)
 
 
 func after_each() -> void:
-	_purge_snapshot()
-
-
-func _purge_snapshot() -> void:
+	# Delete whatever the test wrote first.
 	if FileAccess.file_exists(SNAP_PATH):
 		DirAccess.remove_absolute(SNAP_PATH)
+	# Then restore the user's real file if there was one pre-test.
+	if _pre_existed:
+		var f := FileAccess.open(SNAP_PATH, FileAccess.WRITE)
+		if f != null:
+			f.store_buffer(_pre_bytes)
+			f.close()
 
 
 func _write(path: String, contents: String) -> void:
