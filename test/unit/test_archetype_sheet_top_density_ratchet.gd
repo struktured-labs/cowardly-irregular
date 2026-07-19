@@ -34,7 +34,7 @@ const FRAME_H: int = 32
 
 ## Currently-known heavy-top offenders — reauthor these in the sprite lane.
 ## Empty when art fixes land.
-const KNOWN_HEAVY_TOP: PackedStringArray = ["traveler", "monk"]
+const KNOWN_HEAVY_TOP: PackedStringArray = []  # 2026-07-18: traveler/monk fixed by cowir-sprites 3ec923b1 — the workaround at WanderingNPC._apply_uprow_offset is now dormant per its density-≤18 gate but retained as a general safety net for future ≥18 sheets
 
 ## The threshold below which a sheet's up-facing row is considered
 ## healthy. Typical archetypes: 0-14. Traveler is 27, monk 22.
