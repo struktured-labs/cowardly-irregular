@@ -59,6 +59,16 @@ var _current_dir: int = 0  # last computed direction (for sheet row pick)
 const ARCHETYPE_FRAME_W: int = 32
 const ARCHETYPE_FRAME_H: int = 32
 
+## Per-direction top-density (opaque pixels in the top row of each frame),
+## sampled at sheet load. When a direction is "heavy top" — head fills the
+## top of the cell — the sprite Y is nudged down while that direction is
+## active so the head has headroom above the Mode 7 horizon and doesn't
+## get viewport-clipped (struktured msg 2826: traveler + monk sheets
+## both fail this at row 3 (up-facing)).
+var _archetype_row_top_density: Dictionary = {}
+const HEAVY_TOP_DENSITY: int = 18  # opaque pixels; typical archetypes are 8-14
+const HEAVY_TOP_SPRITE_Y_OFFSET: float = 4.0
+
 
 func _ready() -> void:
 	_setup_sprite()
@@ -223,6 +233,13 @@ func _try_load_archetype() -> bool:
 		return false
 	# 4×4 grid, 32x32 frames. Sheet rows: 0=down, 1=left, 2=right, 3=up.
 	for row in range(4):
+		# Sample top-row opaque density from col-0 idle frame — one cheap
+		# per-sheet check, applied per-direction at frame-swap time.
+		var top_density := 0
+		for x in range(ARCHETYPE_FRAME_W):
+			if img.get_pixel(x, row * ARCHETYPE_FRAME_H).a > 0.5:
+				top_density += 1
+		_archetype_row_top_density[row] = top_density
 		for col in range(4):
 			var region = Rect2i(col * ARCHETYPE_FRAME_W, row * ARCHETYPE_FRAME_H,
 				ARCHETYPE_FRAME_W, ARCHETYPE_FRAME_H)
@@ -242,6 +259,12 @@ func _update_archetype_frame() -> void:
 		# Disable the procedural-path flip_h since archetype rows already
 		# encode left/right separately.
 		_sprite.flip_h = false
+		# Heavy-top rows (head fills top of cell) — nudge down so the head
+		# has headroom above the Mode 7 horizon and doesn't get clipped
+		# by the viewport top. Belt-and-suspenders alongside the art fix
+		# tracked by test_archetype_sheet_top_density_ratchet.
+		var top: int = int(_archetype_row_top_density.get(_current_dir, 0))
+		_sprite.offset.y = HEAVY_TOP_SPRITE_Y_OFFSET if top > HEAVY_TOP_DENSITY else 0.0
 
 
 func _setup_collision() -> void:
