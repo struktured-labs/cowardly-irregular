@@ -1125,7 +1125,7 @@ func _open_overworld_menu() -> void:
 
 
 func _teardown_overworld_menu_widget() -> void:
-	"""Free the OverworldMenu widget + its CanvasLayer WITHOUT resuming exploration. Use this from menu-action handlers that will immediately open a submenu (autobattle editor, autogrind UI, etc.) — else the brief resume-then-repause lets the player move for one frame ("artist saw overworld went live" 2026-07-13)."""
+	"""Free the OverworldMenu widget + its CanvasLayer WITHOUT resuming exploration. Use this from menu-action handlers that will immediately open a submenu (autobattle editor, autogrind UI, etc.) — else the brief resume-then-repause lets the player move for one frame ("artist saw overworld went live" 2026-07-13). Music restore ALSO happens here (bug 2801: multiple exit paths — teleport / boss battle / quit-to-title / menu action → submenu — all reach teardown but bypassed the closed-signal, so menu music persisted forever)."""
 	if _overworld_menu and is_instance_valid(_overworld_menu):
 		_overworld_menu.queue_free()
 		_overworld_menu = null
@@ -1133,18 +1133,44 @@ func _teardown_overworld_menu_widget() -> void:
 		_overworld_menu_layer.queue_free()
 		_overworld_menu_layer = null
 
+	# Music restore from EVERY exit path (bug 2801). Two-stage design after
+	# cowir-main msg 2829: if menu music is still playing at teardown, get
+	# OFF menu no matter what. Snapshot preferred (msg 2687 guard against
+	# underneath swaps), scene-derived key as fallback so "menu" can't
+	# persist even when the snapshot was lost. Clear runs unconditionally.
+	if SoundManager and SoundManager._current_music == "menu":
+		if _pre_menu_music_track != "":
+			SoundManager.play_music(_pre_menu_music_track)
+		else:
+			var fallback: String = _derive_current_scene_music_key()
+			if fallback != "":
+				SoundManager.play_music(fallback)
+	_pre_menu_music_track = ""
+
+
+func _derive_current_scene_music_key() -> String:
+	"""Ask the current exploration scene what music key it wants — the
+	fallback for bug 2801 when the pause-menu snapshot was lost. Tries the
+	BaseVillage convention first (_get_music_area_id), then the BaseInterior
+	convention (_get_music_track), then the OverworldScene hardcoded default.
+	Returns "" only if _exploration_scene is null/freed, in which case the
+	caller leaves menu playing (nothing sensible to swap to)."""
+	if _exploration_scene == null or not is_instance_valid(_exploration_scene):
+		return ""
+	if _exploration_scene.has_method("_get_music_area_id"):
+		var key: String = str(_exploration_scene._get_music_area_id())
+		if key != "":
+			return key
+	if _exploration_scene.has_method("_get_music_track"):
+		var key: String = str(_exploration_scene._get_music_track())
+		if key != "":
+			return key
+	return "overworld"
+
 
 func _on_overworld_menu_closed() -> void:
-	"""Handle overworld menu close — teardown + resume exploration. Called when user backs out to the field (no submenu follows)."""
+	"""Handle overworld menu close — teardown + resume exploration. Called when user backs out to the field (no submenu follows). Music restore lives inside _teardown_overworld_menu_widget so every exit path catches it, not just this one."""
 	_teardown_overworld_menu_widget()
-
-	# Restore the pre-menu music track, but ONLY if the "menu" theme is still what's
-	# playing — cowir-main msg 2687 guard: if something else swapped the music while
-	# the menu was open (autogrind end, story flag flip, boss defeat stinger resume,
-	# etc.), don't stomp that legitimate swap.
-	if SoundManager and _pre_menu_music_track != "" and SoundManager._current_music == "menu":
-		SoundManager.play_music(_pre_menu_music_track)
-	_pre_menu_music_track = ""
 
 	# Resume exploration
 	if _exploration_scene and _exploration_scene.has_method("resume"):
