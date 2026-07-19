@@ -287,6 +287,19 @@ func _update_display() -> void:
 		else:
 			row.text = "  %s" % entry.title
 			row.add_theme_color_override("font_color", TEXT_COLOR)
+	# Controller-first scroll follow — same class as PartyChatMenu fix (msg 2802). As the Theater's unlock list grows past the visible window, D-pad past the bottom must scroll the container.
+	_ensure_selected_item_visible()
+
+
+func _ensure_selected_item_visible() -> void:
+	if _item_scroll == null or not is_instance_valid(_item_scroll):
+		return
+	if _selected_item_idx < 0 or _selected_item_idx >= _item_rows.size():
+		return
+	var row: Label = _item_rows[_selected_item_idx]
+	if not is_instance_valid(row):
+		return
+	_item_scroll.ensure_control_visible(row)
 
 
 func _current_entry() -> Dictionary:
