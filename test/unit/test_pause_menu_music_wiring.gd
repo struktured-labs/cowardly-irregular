@@ -100,3 +100,99 @@ func test_all_menu_exit_paths_route_through_teardown() -> void:
 		var body: String = src.substr(fn_start, next_fn - fn_start) if next_fn > -1 else src.substr(fn_start)
 		assert_true(body.contains("_teardown_overworld_menu_widget"),
 			"%s must call _teardown_overworld_menu_widget so the music restore catches this exit path" % handler)
+
+
+func test_teardown_falls_back_to_scene_derived_key_when_snapshot_lost() -> void:
+	## Bug 2801 round 2 (cowir-main msg 2829): even if _pre_menu_music_track
+	## is empty at teardown (some path lost the snapshot), teardown must NOT
+	## leave "menu" playing. It must derive a fallback from _exploration_scene
+	## so menu music can't persist into overworld.
+	var src := _read(GAMELOOP)
+	var fn_start: int = src.find("func _teardown_overworld_menu_widget")
+	assert_gt(fn_start, -1, "_teardown_overworld_menu_widget must exist")
+	var next_fn: int = src.find("\nfunc ", fn_start + 1)
+	var body: String = src.substr(fn_start, next_fn - fn_start) if next_fn > -1 else src.substr(fn_start)
+
+	assert_true(body.contains("_derive_current_scene_music_key"),
+		"_teardown_overworld_menu_widget must call _derive_current_scene_music_key as the snapshot-lost fallback (bug 2801 round 2)")
+	# The fallback path only fires when snapshot is empty AND current is menu.
+	# Assert both branches of the two-stage design exist.
+	assert_true(body.contains("_pre_menu_music_track != \"\""),
+		"Two-stage design: snapshot path (guard on non-empty snapshot)")
+	assert_true(body.contains("SoundManager._current_music == \"menu\""),
+		"Two-stage design: outer guard on _current_music == \"menu\" — if underneath swap already replaced it, don't stomp")
+
+	# Fallback function itself must exist.
+	assert_gt(src.find("func _derive_current_scene_music_key"), -1,
+		"_derive_current_scene_music_key helper must be defined")
+
+
+func test_derive_scene_music_key_fallback_chain() -> void:
+	## Pin the fallback chain: _get_music_area_id → _get_music_track →
+	## "overworld". Order matters — villages/interiors have their own
+	## conventions, OverworldScene hardcodes "overworld".
+	var src := _read(GAMELOOP)
+	var fn_start: int = src.find("func _derive_current_scene_music_key")
+	if fn_start < 0:
+		fail_test("_derive_current_scene_music_key must exist — pinned above")
+		return
+	var next_fn: int = src.find("\nfunc ", fn_start + 1)
+	var body: String = src.substr(fn_start, next_fn - fn_start) if next_fn > -1 else src.substr(fn_start)
+
+	assert_true(body.contains("_get_music_area_id"),
+		"Fallback chain must try _get_music_area_id first (BaseVillage convention)")
+	assert_true(body.contains("_get_music_track"),
+		"Fallback chain must try _get_music_track second (BaseInterior convention)")
+	assert_true(body.contains("\"overworld\""),
+		"Fallback chain must default to \"overworld\" (OverworldScene hardcodes this key)")
+
+
+func test_runtime_probe_snapshot_lost_still_leaves_menu() -> void:
+	## Runtime probe per cowir-main msg 2829: instantiate a mock scenario
+	## where snapshot is cleared mid-menu, teardown fires, assert current
+	## music is NOT "menu". Uses a fake _exploration_scene stub so
+	## _derive_current_scene_music_key returns a real key.
+	var sm := get_node_or_null("/root/SoundManager")
+	if sm == null:
+		pass_test("SoundManager not available")
+		return
+	var gl := get_node_or_null("/root/GameLoop")
+	if gl == null:
+		pass_test("GameLoop not available")
+		return
+	# Snapshot the pre-test SoundManager state so we can restore.
+	var pre_track: String = str(sm._current_music) if "_current_music" in sm else ""
+	var pre_pmm: String = str(gl._pre_menu_music_track) if "_pre_menu_music_track" in gl else ""
+	var pre_scene = gl._exploration_scene if "_exploration_scene" in gl else null
+
+	# Force the "menu is playing but snapshot is lost" state.
+	sm.play_music("menu")
+	if "_pre_menu_music_track" in gl:
+		gl._pre_menu_music_track = ""  # simulate the lost snapshot
+
+	# Give _exploration_scene a stub that returns a known music key.
+	var stub := Node.new()
+	stub.set_script(GDScript.new())
+	stub.get_script().source_code = "extends Node\nfunc _get_music_area_id() -> String:\n\treturn \"overworld_medieval\"\n"
+	stub.get_script().reload()
+	if "_exploration_scene" in gl:
+		gl._exploration_scene = stub
+	add_child(stub)
+
+	# Fire the choke point directly.
+	if gl.has_method("_teardown_overworld_menu_widget"):
+		gl._teardown_overworld_menu_widget()
+
+	# Give play_music's crossfade a moment to swap; then assert current is NOT "menu".
+	await get_tree().create_timer(0.6).timeout
+	assert_ne(str(sm._current_music), "menu",
+		"Bug 2801 round 2: after teardown with lost snapshot, current music must NOT still be \"menu\" — scene-derived fallback must have swapped away. Got: %s" % str(sm._current_music))
+
+	# Restore.
+	if "_exploration_scene" in gl:
+		gl._exploration_scene = pre_scene
+	stub.queue_free()
+	if "_pre_menu_music_track" in gl:
+		gl._pre_menu_music_track = pre_pmm
+	if pre_track != "":
+		sm.play_music(pre_track)

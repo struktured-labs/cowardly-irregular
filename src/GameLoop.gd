@@ -1133,14 +1133,39 @@ func _teardown_overworld_menu_widget() -> void:
 		_overworld_menu_layer.queue_free()
 		_overworld_menu_layer = null
 
-	# Restore the pre-menu music track from EVERY exit path (bug 2801).
-	# Guard on _current_music == "menu" per cowir-main msg 2687: if something
-	# else swapped the music while the menu was open, don't stomp it. The
-	# clear runs unconditionally so a stale snapshot can't leak across pauses
-	# even if the guard skips the play_music call.
-	if SoundManager and _pre_menu_music_track != "" and SoundManager._current_music == "menu":
-		SoundManager.play_music(_pre_menu_music_track)
+	# Music restore from EVERY exit path (bug 2801). Two-stage design after
+	# cowir-main msg 2829: if menu music is still playing at teardown, get
+	# OFF menu no matter what. Snapshot preferred (msg 2687 guard against
+	# underneath swaps), scene-derived key as fallback so "menu" can't
+	# persist even when the snapshot was lost. Clear runs unconditionally.
+	if SoundManager and SoundManager._current_music == "menu":
+		if _pre_menu_music_track != "":
+			SoundManager.play_music(_pre_menu_music_track)
+		else:
+			var fallback: String = _derive_current_scene_music_key()
+			if fallback != "":
+				SoundManager.play_music(fallback)
 	_pre_menu_music_track = ""
+
+
+func _derive_current_scene_music_key() -> String:
+	"""Ask the current exploration scene what music key it wants — the
+	fallback for bug 2801 when the pause-menu snapshot was lost. Tries the
+	BaseVillage convention first (_get_music_area_id), then the BaseInterior
+	convention (_get_music_track), then the OverworldScene hardcoded default.
+	Returns "" only if _exploration_scene is null/freed, in which case the
+	caller leaves menu playing (nothing sensible to swap to)."""
+	if _exploration_scene == null or not is_instance_valid(_exploration_scene):
+		return ""
+	if _exploration_scene.has_method("_get_music_area_id"):
+		var key: String = str(_exploration_scene._get_music_area_id())
+		if key != "":
+			return key
+	if _exploration_scene.has_method("_get_music_track"):
+		var key: String = str(_exploration_scene._get_music_track())
+		if key != "":
+			return key
+	return "overworld"
 
 
 func _on_overworld_menu_closed() -> void:
