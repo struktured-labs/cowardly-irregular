@@ -61,8 +61,9 @@ const PROFILE_SN30 = {
 const PROFILE_ULTIMATE_PRO_2 = {
 	"ui_accept": [1],          # B (East face)
 	"ui_cancel": [0],          # A (South face)
-	"battle_advance": [10],    # RIGHT_SHOULDER (R)
-	"battle_defer": [9],       # LEFT_SHOULDER (L)
+	# struktured 2026-07-18: on the actual 8BitDo Ultimate Pro 2 hardware, L physically sends button 10 and R sends button 9 — the Godot JOY_BUTTON_LEFT/RIGHT_SHOULDER constants (9/10) don't match this device's reported indices. Hint bar reads "[L] Defer · [R] Advance"; keep hardware matching the hint bar, not the constant names.
+	"battle_advance": [9],     # physically R on this device
+	"battle_defer": [10],      # physically L on this device
 	"battle_toggle_auto": [4], # BACK (Select/Minus)
 	"ui_menu": [6],            # START (Plus)
 }
