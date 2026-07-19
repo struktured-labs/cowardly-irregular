@@ -12,7 +12,7 @@ dest_files=["res://.godot/imported/night_crickets_wind.ogg-1f2cfef2969075e8688b4
 
 [params]
 
-loop=false
+loop=true
 loop_offset=0
 bpm=0
 beat_count=0

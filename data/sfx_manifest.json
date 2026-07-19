@@ -532,67 +532,78 @@
       "file": "assets/audio/sfx/ambient_forest.ogg",
       "prompt": "Peaceful forest ambience, birds singing in canopy, gentle breeze through leaves, distant woodpecker tapping, tranquil woodland atmosphere",
       "duration_seconds": 5.0,
-      "prompt_influence": 0.6
+      "prompt_influence": 0.6,
+      "loop": true
     },
     "ambient_plains": {
       "file": "assets/audio/sfx/ambient_plains.ogg",
       "prompt": "Open grassland wind ambience, steady breeze across flat terrain, distant meadow birds, rustling tall grass, wide open plains atmosphere",
       "duration_seconds": 5.0,
-      "prompt_influence": 0.6
+      "prompt_influence": 0.6,
+      "loop": true
     },
     "ambient_cave": {
       "file": "assets/audio/sfx/ambient_cave.ogg",
       "prompt": "Dark cave ambience, slow water dripping echoing off stone walls, distant underground stream, hollow wind draft through tunnels",
       "duration_seconds": 5.0,
-      "prompt_influence": 0.6
+      "prompt_influence": 0.6,
+      "loop": true
     },
     "ambient_village": {
       "file": "assets/audio/sfx/ambient_village.ogg",
       "prompt": "Quiet medieval village ambience, distant blacksmith hammering, chickens clucking, murmur of townsfolk, gentle wind through thatched roofs",
       "duration_seconds": 5.0,
-      "prompt_influence": 0.6
+      "prompt_influence": 0.6,
+      "loop": true
     },
     "ambient_dungeon": {
       "file": "assets/audio/sfx/ambient_dungeon.ogg",
       "prompt": "Eerie dungeon ambience, creaking chains, distant moaning wind, dripping water echoing, rat scurrying sounds, oppressive underground atmosphere",
       "duration_seconds": 5.0,
-      "prompt_influence": 0.6
+      "prompt_influence": 0.6,
+      "loop": true
     },
     "ambient_coast": {
       "file": "assets/audio/sfx/ambient_coast.ogg",
       "prompt": "Gentle ocean waves lapping on shore, seagulls calling overhead, light coastal breeze, peaceful seaside ambience",
       "duration_seconds": 5.0,
-      "prompt_influence": 0.6
+      "prompt_influence": 0.6,
+      "loop": true
     },
     "ambient_forge": {
       "file": "assets/audio/sfx/ambient_forge.ogg",
       "prompt": "Blacksmith forge room tone \u2014 steady coal fire crackle + soft rhythmic bellows huff, no hammering, loop-friendly fades, -22 LUFS. For BlacksmithInterior (tier-2 interiors, 1442e125).",
       "duration_seconds": 6.0,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "loop": true
     },
     "ambient_chapel": {
       "file": "assets/audio/sfx/ambient_chapel.ogg",
       "prompt": "Quiet stone chapel air \u2014 vast reverberant stillness with faint censer chain clinks, no voices/choir/organ, loop-friendly fades, -24 LUFS. For HarmoniaChapelInterior.",
       "duration_seconds": 6.0,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "loop": true
     },
     "ambient_library": {
       "file": "assets/audio/sfx/ambient_library.ogg",
       "prompt": "Hushed library air \u2014 near-silence with occasional soft page turn + old wood shelf creak, loop-friendly fades, -24 LUFS. For HarmoniaLibraryInterior.",
       "duration_seconds": 6.0,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "loop": true
     },
     "ambient_scriptorium": {
       "file": "assets/audio/sfx/ambient_scriptorium.ogg",
       "prompt": "Arcane archive room tone \u2014 library hush + faint low mystical hum + occasional quill-scratch/page-turn + latent-magic shimmer, loop-friendly fades, -24 LUFS. For the Scriptweaver's Guild interior in the Scriptura stub scene (where reality/game-constants get rewritten). Distinct from the mundane ambient_library.",
       "duration_seconds": 6.0,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "loop": true
     },
     "ambient_office": {
       "file": "assets/audio/sfx/ambient_office.ogg",
       "prompt": "Sterile institutional office room tone \u2014 fluorescent hum + low HVAC drone + faint distant muffled conversation/keyboard, EarthBound 'oppressive bureaucratic quiet', loop-friendly fades, mean ~-25 dB. For W2 (suburban) municipal interiors: the Community Enrichment Annex first, reusable across strip-mall offices / complaints dept.",
       "duration_seconds": 6.0,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "loop": true
     },
     "anvil_strike": {
       "file": "assets/audio/sfx/anvil_strike.ogg",
@@ -1601,7 +1612,8 @@
       "file": "assets/audio/sfx/night_crickets_wind.ogg",
       "prompt": "Soft nighttime forest ambience \u2014 subtle wind rustling through leaves, distant cricket chirps in a natural rhythm, occasional very soft owl hoot far away. Low-level ambient bed suitable for seamless looping. No sudden transients, no bass rumble, no percussive elements. Consistent quiet level throughout the entire duration.",
       "duration_seconds": 12.0,
-      "prompt_influence": 0.4
+      "prompt_influence": 0.4,
+      "loop": true
     },
     "round_ap_gain": {
       "file": "assets/audio/sfx/round_ap_gain.ogg",

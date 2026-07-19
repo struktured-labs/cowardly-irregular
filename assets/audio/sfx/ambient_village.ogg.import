@@ -12,7 +12,7 @@ dest_files=["res://.godot/imported/ambient_village.ogg-3360575d19f5fe0edb10ebdb2
 
 [params]
 
-loop=false
+loop=true
 loop_offset=0
 bpm=0
 beat_count=0
