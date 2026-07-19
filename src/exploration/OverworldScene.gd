@@ -676,6 +676,9 @@ func _place_wanderers() -> void:
 		npc.sprite_color = w["color"]
 		if w.has("archetype"):
 			npc.sprite_archetype = w["archetype"]
+			# Sync the dialogue portrait+theme to the archetype (2026-07-18: Lost Pilgrim rendered mysterious/no portrait — every overworld wanderer inherited WanderingNPC's default). CutsceneDialogue safely falls back if the theme key doesn't exist.
+			npc.dialogue_portrait = w["archetype"]
+			npc.dialogue_theme = w["archetype"]
 		if w.has("hints"):
 			npc.dialogue_hints = w["hints"]
 		var patrol: Array[Vector2] = []
