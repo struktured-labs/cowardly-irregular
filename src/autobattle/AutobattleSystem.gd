@@ -95,6 +95,7 @@ const CONDITION_TYPES = {
 	"ally_has_status": "Ally Has Status",
 	"enemy_has_status": "Enemy Has Status",
 	"ally_mp_percent": "Ally MP %",
+	"is_night": "Is Night",
 	"always": "Always"
 }
 
@@ -303,6 +304,13 @@ func _evaluate_grid_condition(combatant: Combatant, condition: Dictionary) -> bo
 				if buff.get("stat", "") == stat:
 					return false
 			return true
+
+		"is_night":
+			# msg 2916/2959 (cowir-ai grammar ruling): NULLARY and night-band ONLY — no operator, no value, no dusk. Truth condition is exactly GameState.is_night(), because shipping a rule vocabulary term whose meaning diverges from the identically-named engine method is a lying name: the player reads `is_night`, reasons from observed game behaviour, and gets a rule that fires on a band they didn't expect. If "at dusk" is ever wanted it's a SECOND nullary sibling (is_dusk), never a band parameter — a parameterized band can be malformed by the Rule Composer LLM ("midnight"), a nullary cannot.
+			var gs: Node = get_node_or_null("/root/GameState")
+			if gs == null or not gs.has_method("is_night"):
+				return false
+			return bool(gs.is_night())
 
 		"always":
 			return true

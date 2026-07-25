@@ -175,8 +175,11 @@ Each rule shape:
 Conditions (AND-chained). type is one of:
   hp_percent, mp_percent, ap, has_status, enemy_hp_percent, ally_hp_percent,
   turn, enemy_count, ally_count, item_count, setup_complete,
-  ally_has_status, enemy_has_status, ally_mp_percent, always
+  ally_has_status, enemy_has_status, ally_mp_percent, is_night, always
 Each numeric condition takes op ∈ {<, <=, ==, >=, >, !=} and value.
+is_night and always are NULLARY — no op, no value. is_night is true only
+during the night band (not dusk); pair it with other conditions to gate a
+rule on time of day.
 has_status / ally_has_status / enemy_has_status take a 'status' field (e.g.
 'poison'); enemy_has_status is true when ANY living enemy has that status.
 

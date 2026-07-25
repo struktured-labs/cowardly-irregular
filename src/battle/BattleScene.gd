@@ -1902,22 +1902,22 @@ func _play_ability_animation(anim_type: String, animator: BattleAnimatorClass = 
 
 
 ## ============================================================
-## Ability Showcase (struktured 2026-07-16: "imagine I want to spotlight
+## Ability Full Render (struktured 2026-07-16: "imagine I want to spotlight
 ## each attack and ability and exaggerate what it would look like and how
 ## long it would take... autobattle is kind of the other mode we have now")
-## Manual play at showcase speed performs every non-physical ability as a
+## Manual play at Full Render speed performs every non-physical ability as a
 ## staged beat: battlefield dims, the caster steps out glowing their
 ## element, the spell travels, and damage lands AT the impact frame.
 ## Autobattle turns / turbo / 2x+ speeds keep the existing quick path.
 ## ============================================================
 
-var _showcase_dmg_buffer = null  # null = pass-through; Array = buffering until impact
-var _showcase_dmg_attacker: Combatant = null  # caster captured at buffer-arm; flush restores it for attribution
-var _showcase_depth: int = 0
-var _showcase_dim_rect: ColorRect = null
+var _full_render_dmg_buffer = null  # null = pass-through; Array = buffering until impact
+var _full_render_dmg_attacker: Combatant = null  # caster captured at buffer-arm; flush restores it for attribution
+var _full_render_depth: int = 0
+var _full_render_dim_rect: ColorRect = null
 
 
-func _showcase_element_style(ability: Dictionary) -> Dictionary:
+func _full_render_element_style(ability: Dictionary) -> Dictionary:
 	var is_heal: bool = str(ability.get("type", "")) == "healing" or int(ability.get("power", 0)) < 0
 	match str(ability.get("element", "")):
 		"fire":
@@ -1936,9 +1936,9 @@ func _showcase_element_style(ability: Dictionary) -> Dictionary:
 			return {"color": Color(0.85, 0.9, 1.0), "effect": EffectSystem.EffectType.BUFF, "shape": "bloom"}
 
 
-## Showcase gate: manual party turns at showcase speed only — autobattle IS the fast mode.
-## Takes the ACTING combatant from the action_executing signal — BattleManager.current_combatant is stale/null during the execution phase (v1 read it and the showcase never fired; struktured 2026-07-17).
-func _showcase_active(caster: Combatant) -> bool:
+## Full Render gate: manual party turns at Full Render speed only — autobattle IS the fast mode.
+## Takes the ACTING combatant from the action_executing signal — BattleManager.current_combatant is stale/null during the execution phase (v1 read it and Full Render never fired; struktured 2026-07-17).
+func _full_render_active(caster: Combatant) -> bool:
 	if turbo_mode or autogrind_console_mode or Engine.time_scale > 0.55:  # spotlight speeds = 1x AND 2x (struktured 2026-07-17); 0.55 splits 2x (0.5) from 4x (1.0)
 		return false
 	if caster == null or not (caster in BattleManager.player_party):
@@ -1949,15 +1949,15 @@ func _showcase_active(caster: Combatant) -> bool:
 	return manual
 
 
-func _play_ability_showcase(caster: Combatant, caster_sprite: Node2D, animator: BattleAnimatorClass, ability: Dictionary, targets: Array) -> void:
-	var style: Dictionary = _showcase_element_style(ability)
+func _play_ability_full_render(caster: Combatant, caster_sprite: Node2D, animator: BattleAnimatorClass, ability: Dictionary, targets: Array) -> void:
+	var style: Dictionary = _full_render_element_style(ability)
 	var color: Color = style["color"]
-	_flush_showcase_damage()  # a still-buffering previous beat (advance chains) flushes before we re-arm
-	_showcase_dmg_buffer = []
+	_flush_full_render_damage()  # a still-buffering previous beat (advance chains) flushes before we re-arm
+	_full_render_dmg_buffer = []
 	# By flush time _on_action_executed has cleared _last_acting_combatant (cycle-12 cache) — capture the caster now so replayed crit quips/attribution keep their speaker.
-	_showcase_dmg_attacker = caster
-	_showcase_depth += 1
-	_showcase_set_dim(true)
+	_full_render_dmg_attacker = caster
+	_full_render_depth += 1
+	_full_render_set_dim(true)
 
 	# Focus: caster steps out and glows their element while gather-motes converge.
 	var caster_home: Vector2 = Vector2.ZERO
@@ -1982,7 +1982,7 @@ func _play_ability_showcase(caster: Combatant, caster_sprite: Node2D, animator: 
 	for target in targets:
 		var ts = _get_combatant_sprite(target)
 		if ts and is_instance_valid(ts):
-			_showcase_release_visual(style, caster_sprite if caster_valid and is_instance_valid(caster_sprite) else null, ts)
+			_full_render_release_visual(style, caster_sprite if caster_valid and is_instance_valid(caster_sprite) else null, ts)
 	await get_tree().create_timer(0.12).timeout
 	if not is_instance_valid(self):
 		return
@@ -2001,7 +2001,7 @@ func _play_ability_showcase(caster: Combatant, caster_sprite: Node2D, animator: 
 			if ta and is_instance_valid(ta):
 				ta.play_hit()
 			_apply_hit_flash(ts2)
-	_flush_showcase_damage()
+	_flush_full_render_damage()
 	await get_tree().create_timer(0.20).timeout
 	if not is_instance_valid(self):
 		return
@@ -2012,23 +2012,23 @@ func _play_ability_showcase(caster: Combatant, caster_sprite: Node2D, animator: 
 		caster_sprite.set_meta("attack_tween", settle)
 		settle.tween_property(caster_sprite, "position", caster_home, 0.14).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 		settle.parallel().tween_property(caster_sprite, "modulate", Color.WHITE, 0.18)
-	_showcase_depth = maxi(0, _showcase_depth - 1)
-	if _showcase_depth == 0:
-		_showcase_set_dim(false)
+	_full_render_depth = maxi(0, _full_render_depth - 1)
+	if _full_render_depth == 0:
+		_full_render_set_dim(false)
 
 
 ## Dim sits between the parallax background (z -100..-10) and combatant sprites (z 0).
-func _showcase_set_dim(on: bool) -> void:
-	if _showcase_dim_rect == null or not is_instance_valid(_showcase_dim_rect):
-		_showcase_dim_rect = ColorRect.new()
-		_showcase_dim_rect.name = "ShowcaseDim"
-		_showcase_dim_rect.color = Color(0, 0, 0, 0)
-		_showcase_dim_rect.anchors_preset = Control.PRESET_FULL_RECT
-		_showcase_dim_rect.z_index = -5
-		_showcase_dim_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		add_child(_showcase_dim_rect)
+func _full_render_set_dim(on: bool) -> void:
+	if _full_render_dim_rect == null or not is_instance_valid(_full_render_dim_rect):
+		_full_render_dim_rect = ColorRect.new()
+		_full_render_dim_rect.name = "FullRenderDim"
+		_full_render_dim_rect.color = Color(0, 0, 0, 0)
+		_full_render_dim_rect.anchors_preset = Control.PRESET_FULL_RECT
+		_full_render_dim_rect.z_index = -5
+		_full_render_dim_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(_full_render_dim_rect)
 	var t := create_tween()
-	t.tween_property(_showcase_dim_rect, "color:a", 0.38 if on else 0.0, 0.15)
+	t.tween_property(_full_render_dim_rect, "color:a", 0.38 if on else 0.0, 0.15)
 
 
 ## Six element-colored motes converge on the caster during the gather beat.
@@ -2050,7 +2050,7 @@ func _spawn_gather_motes(caster_sprite: Node2D, color: Color) -> void:
 
 
 ## Element release: fire bolt travels, ice shards form and converge, lightning strikes from above, bloom rises in place.
-func _showcase_release_visual(style: Dictionary, caster_sprite: Node2D, target_sprite: Node2D) -> void:
+func _full_render_release_visual(style: Dictionary, caster_sprite: Node2D, target_sprite: Node2D) -> void:
 	var color: Color = style["color"]
 	var to: Vector2 = _stable_sprite_anchor(target_sprite)
 	match str(style["shape"]):
@@ -2114,19 +2114,19 @@ func _showcase_release_visual(style: Dictionary, caster_sprite: Node2D, target_s
 
 
 ## Buffered damage presentation: numbers/indicators land at the impact frame, not at execution time.
-func _flush_showcase_damage() -> void:
-	if _showcase_dmg_buffer == null:
+func _flush_full_render_damage() -> void:
+	if _full_render_dmg_buffer == null:
 		return
-	var buffered: Array = _showcase_dmg_buffer
-	_showcase_dmg_buffer = null
+	var buffered: Array = _full_render_dmg_buffer
+	_full_render_dmg_buffer = null
 	# Restore the captured caster around the replay so attribution reads (crit quips, weapon SFX) see the true attacker, then put the cycle-12 cache back exactly as found.
 	var prev_acting: Combatant = _last_acting_combatant
-	if _showcase_dmg_attacker != null and is_instance_valid(_showcase_dmg_attacker):
-		_last_acting_combatant = _showcase_dmg_attacker
+	if _full_render_dmg_attacker != null and is_instance_valid(_full_render_dmg_attacker):
+		_last_acting_combatant = _full_render_dmg_attacker
 	for args in buffered:
 		_on_damage_dealt(args[0], args[1], args[2], args[3], args[4])
 	_last_acting_combatant = prev_acting
-	_showcase_dmg_attacker = null
+	_full_render_dmg_attacker = null
 
 
 func _on_item_pressed() -> void:
@@ -3107,14 +3107,14 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 		return
 
 	var action_type = action.get("type", "")
-	# Cinematic pacing (struktured 2026-07-17: "everyone swarms the monsters in 2-3 seconds"): at showcase speed each action HOLDS the stage until its performance finishes — the queue serializes into one-actor-at-a-time spotlights. 2x+/turbo/console keep the fast pacing.
-	var showcase_this: bool = action_type == "ability" and _showcase_active(combatant)
+	# Cinematic pacing (struktured 2026-07-17: "everyone swarms the monsters in 2-3 seconds"): at Full Render speed each action HOLDS the stage until its performance finishes — the queue serializes into one-actor-at-a-time spotlights. 2x+/turbo/console keep the fast pacing.
+	var full_render_this: bool = action_type == "ability" and _full_render_active(combatant)
 	if not turbo_mode and not autogrind_console_mode and Engine.time_scale <= 0.55:
 		match action_type:
 			"attack":
 				BattleManager.presentation_hold = 0.62
 			"ability":
-				BattleManager.presentation_hold = 0.95 if showcase_this else 0.62
+				BattleManager.presentation_hold = 0.95 if full_render_this else 0.62
 			"item":
 				BattleManager.presentation_hold = 0.45
 	match action_type:
@@ -3155,8 +3155,8 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 				else:
 					_play_ability_animation(anim_type, animator)
 					_spawn_ability_effects(ability_id, targets)
-			elif showcase_this:
-				_play_ability_showcase(combatant, attacker_sprite, animator, ability, targets)
+			elif full_render_this:
+				_play_ability_full_render(combatant, attacker_sprite, animator, ability, targets)
 			else:
 				_play_ability_animation(anim_type, animator)
 				_spawn_ability_effects(ability_id, targets)
@@ -4226,9 +4226,9 @@ func _close_win98_menu() -> void:
 ## Damage Numbers
 
 func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: String = "", elemental_mod: float = 1.0) -> void:
-	# Showcase beat in flight: hold the number so it lands at the impact frame, not at execution time
-	if _showcase_dmg_buffer != null:
-		_showcase_dmg_buffer.append([target, amount, is_crit, element, elemental_mod])
+	# Full Render beat in flight: hold the number so it lands at the impact frame, not at execution time
+	if _full_render_dmg_buffer != null:
+		_full_render_dmg_buffer.append([target, amount, is_crit, element, elemental_mod])
 		return
 	_results_display.on_damage_dealt(target, amount, is_crit)
 	# deplete the floating enemy HP bar in sync with the damage number — it lagged to the next _update_ui (action boundary)

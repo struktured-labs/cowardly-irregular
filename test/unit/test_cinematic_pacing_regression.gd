@@ -9,7 +9,7 @@ extends GutTest
 ## overlapped into a swarm. Fix: BattleScene requests a presentation_hold
 ## during the action_executing dispatch (synchronous emit) and every
 ## inter-action timer in BM routes through _consume_presentation_hold, so at
-## showcase speed the queue serializes one-actor-at-a-time. Fast modes and
+## Full Render speed the queue serializes one-actor-at-a-time. Fast modes and
 ## headless paths never set the hold, so the 2026-07-12 stall fix stands.
 
 const BM := "res://src/battle/BattleManager.gd"
@@ -36,14 +36,14 @@ func test_every_inter_action_timer_routes_through_consumer() -> void:
 		"all 5 inter-action await sites route through the consumer")
 
 
-func test_scene_requests_holds_only_at_showcase_speed() -> void:
+func test_scene_requests_holds_only_at_full_render_speed() -> void:
 	var src: String = FileAccess.get_file_as_string(BS)
 	var i: int = src.find("func _on_action_executing")
 	var body: String = src.substr(i, src.find("\nfunc ", i + 1) - i)
 	assert_true("not turbo_mode and not autogrind_console_mode and Engine.time_scale <= 0.55" in body,
 		"holds cover 1x AND 2x (struktured: first two speeds are spotlight speeds) — 4x+/turbo/console keep the fast pacing")
-	assert_true("presentation_hold = 0.95 if showcase_this else 0.62" in body,
-		"a full spell showcase holds the stage longer than a quick cast")
+	assert_true("presentation_hold = 0.95 if full_render_this else 0.62" in body,
+		"a full spell Full Render holds the stage longer than a quick cast")
 	assert_true("presentation_hold = 0.62" in body,
 		"melee lunges hold long enough to read before the next actor moves")
 
