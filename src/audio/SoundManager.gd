@@ -77,7 +77,16 @@ static var _sfx_stream_cache: Dictionary = {}
 var _sfx_cooldowns: Dictionary = {}
 const SFX_MIN_INTERVAL_MS: int = 80  # Minimum ms between same sound plays
 
-# Sound definitions - procedural parameters
+# Sound definitions - procedural parameters.
+# HEADS UP: sfx_manifest.json OUTRANKS this table (play_* tries the manifest
+# first), so 40 of these 46 keys are shadowed by an OGG and editing them here
+# changes nothing you can hear on a normal run. To retune those, edit the OGG.
+# DORMANT, NOT DEAD — do not delete them. _try_play_sfx_from_manifest returns
+# false when a file is missing, export-excluded, or fails import, and then
+# THESE play. They are the safety net on exactly the platforms (web/PCK) where
+# a missing asset is hardest to notice.
+# Unshadowed, so audible on every run: grind_stop_{hp,death,corruption,manual,
+# generic} and adaptation_warning — the last purely procedural audio in-game.
 const SOUNDS = {
 	# UI Sounds
 	"menu_move": {"freq": 800, "duration": 0.03, "type": "blip"},
