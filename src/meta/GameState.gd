@@ -165,6 +165,11 @@ var max_history_size: int = 10
 ## Corruption effects
 var corruption_effects: Array[String] = []
 
+## Serialization bucket for GameLoop.equipment_pool (the live store). Written
+## GameLoop→here on sync, read here→GameLoop on load, never the reverse, so
+## the two can't drift the way equipment_inventory did.
+var equipment_pool: Dictionary = {"weapons": [], "armors": [], "accessories": []}
+
 ## World progression — tracks which worlds are unlocked and story flags
 var current_world: int = 1  # 1-6
 ## Necromancer permakill exterminations — species filtered from encounter draws forever (per-save)
@@ -311,6 +316,7 @@ func _create_save_data() -> Dictionary:
 		"permakilled_monster_types": permakilled_monster_types.duplicate(),
 		"meta_features": meta_features.duplicate(),
 		"corruption_effects": corruption_effects.duplicate(),
+		"equipment_pool": equipment_pool.duplicate(true),
 		"current_world": current_world,
 		"worlds_unlocked": worlds_unlocked,
 		"story_flags": story_flags.duplicate(),
@@ -510,6 +516,23 @@ func _apply_save_data(save_data: Dictionary) -> void:
 			corruption_effects = typed_corruption
 		else:
 			push_warning("[GameState] _apply_save_data: corruption_effects malformed (type=%s) — keeping current list" % typeof(raw_ce))
+
+	# Equipment pool: JSON hands back generic Arrays, so coerce each slot
+	# explicitly. A silent [] here is a player losing every drop they own.
+	if save_data.has("equipment_pool"):
+		var raw_pool: Variant = save_data["equipment_pool"]
+		if raw_pool is Dictionary:
+			var typed_pool: Dictionary = {"weapons": [], "armors": [], "accessories": []}
+			for slot_key in typed_pool.keys():
+				var raw_slot: Variant = raw_pool.get(slot_key, [])
+				if raw_slot is Array:
+					for entry in raw_slot:
+						typed_pool[slot_key].append(str(entry))
+				else:
+					push_warning("[GameState] _apply_save_data: equipment_pool['%s'] malformed (type=%s) — slot left empty" % [slot_key, typeof(raw_slot)])
+			equipment_pool = typed_pool
+		else:
+			push_warning("[GameState] _apply_save_data: equipment_pool malformed (type=%s) — keeping current pool" % typeof(raw_pool))
 	## Tick 156: world bookkeeping is int 1-6 (matches the 6 worlds
 	## shipped). Coerce from JSON's float + clamp to valid range so
 	## a corrupted save with 0 or 99 doesn't leak into is_world_unlocked
@@ -954,6 +977,8 @@ func reset_game_state() -> void:
 	quests.clear()
 	activated_crystals.clear()
 	permakilled_monster_types.clear()
+	# Same leak class: a New Game would otherwise inherit last run's gear.
+	equipment_pool = {"weapons": [], "armors": [], "accessories": []}
 
 	# 2026-07-04: same leak class — these persist via to_dict but weren't
 	# reset, so a New Game inherited the prior run's battle count

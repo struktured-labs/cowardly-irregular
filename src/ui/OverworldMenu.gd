@@ -962,11 +962,32 @@ func _open_equipment_menu(target: Combatant) -> void:
 	_submenu_open = true
 	var equip_menu = EquipmentMenuClass.new()
 	equip_menu.set_anchors_preset(Control.PRESET_FULL_RECT)
-	equip_menu.setup(target)
+	# Pass the party's owned gear. Omitting it made setup() fall back to the
+	# ENTIRE catalog, so every item was equippable without ever being bought.
+	var pool: Dictionary = _shared_equipment_pool()
+	equip_menu.setup(target, pool["weapons"], pool["armors"], pool["accessories"])
 	equip_menu.closed.connect(_on_submenu_closed)
 	equip_menu.equipment_changed.connect(_on_equipment_changed)
 	add_child(equip_menu)
 	_hide_main_ui(equip_menu)
+
+
+## GameLoop's shared pool. Owning nothing yields empty lists, which is a
+## real answer — EquipmentMenu distinguishes that from "no list supplied".
+func _shared_equipment_pool() -> Dictionary:
+	var out := {"weapons": [], "armors": [], "accessories": []}
+	var tree: SceneTree = get_tree()
+	if tree == null or tree.root == null:
+		return out
+	var gl: Node = tree.root.get_node_or_null("GameLoop")
+	if gl == null or not ("equipment_pool" in gl):
+		return out
+	var pool: Dictionary = gl.equipment_pool
+	for slot_key in out.keys():
+		var entries: Variant = pool.get(slot_key, [])
+		if entries is Array:
+			out[slot_key] = (entries as Array).duplicate()
+	return out
 
 
 func _on_equipment_changed(_slot: String, _item_id: String) -> void:

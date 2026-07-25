@@ -1078,6 +1078,10 @@ func _sync_party_to_game_state() -> void:
 	# Clamp leader index in case party size changed
 	if not GameState.player_party.is_empty():
 		GameState.party_leader_index = clampi(GameState.party_leader_index, 0, GameState.player_party.size() - 1)
+	# Shared equipment pool: shop/chest/battle drops all land in the live
+	# GameLoop store, which was never serialized — every earned drop was
+	# lost on reload. One-way push; the load path is the only reader.
+	GameState.equipment_pool = equipment_pool.duplicate(true)
 
 
 func _open_overworld_menu() -> void:
@@ -2259,6 +2263,24 @@ func _load_customizations() -> Array:
 	return customizations
 
 
+## Rehydrate the live shared equipment pool from the save. Missing/legacy
+## saves leave the current pool alone rather than blanking it.
+func _restore_equipment_pool_from_game_state() -> void:
+	if not GameState or not ("equipment_pool" in GameState):
+		return
+	var saved: Dictionary = GameState.equipment_pool
+	if saved.is_empty():
+		return
+	for slot_key in equipment_pool.keys():
+		var entries: Variant = saved.get(slot_key, null)
+		if not (entries is Array):
+			continue
+		var restored: Array = []
+		for entry in entries:
+			restored.append(str(entry))
+		equipment_pool[slot_key] = restored
+
+
 func _restore_party_from_save_data() -> bool:
 	"""Reconstruct runtime party from GameState.player_party (post-load).
 
@@ -2273,6 +2295,8 @@ func _restore_party_from_save_data() -> bool:
 	"""
 	if not GameState or GameState.player_party.is_empty():
 		return false
+
+	_restore_equipment_pool_from_game_state()
 
 	# Tear down any existing live party — we're replacing it.
 	for old in party:

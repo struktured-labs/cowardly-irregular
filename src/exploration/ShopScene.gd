@@ -595,13 +595,10 @@ func _add_item_to_inventory(item_id: String) -> bool:
 			live_party[0].add_item(item_id, 1)
 		return true
 	elif shop_type == ShopType.BLACKSMITH:
-		# Add equipment to party leader's equipment pool.
+		# Equipment goes to GameLoop.equipment_pool below. The old
+		# player_party[0]["equipment_inventory"] write had 0 readers.
 		if game_state.player_party.size() == 0:
 			return false
-		var party_leader = game_state.player_party[0]
-		if not party_leader.has("equipment_inventory"):
-			party_leader["equipment_inventory"] = []
-		party_leader["equipment_inventory"].append(item_id)
 		# Tick 314: equipment_pool lives on GameLoop, not the snapshot
 		# dict (per the BattleManager._route_drop_to_equipment_pool
 		# pattern at line ~4979). Without this the same overwrite class
