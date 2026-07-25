@@ -523,6 +523,50 @@ func cleanup() -> void:
 			cam.ignore_rotation = true
 
 
+## Align terrain COLLISION with what the warped render actually shows
+## (struktured msg 2830: standing ~4 tiles inside rendered water, unblocked).
+##
+## The shader warps terrain as a post-process; TileMap physics is unwarped;
+## the player is drawn screen-locked on the overlay. Net effect measured in
+## PR #171: the terrain pixels under the player's feet belong to tiles
+## InteractGeometry.MODE7_GROUND_DISPLACEMENT_PX (140.6 world px, 4.39
+## tiles) NORTH of where the player physically stands.
+##
+## Moving the TileMapLayer itself cannot fix this — the collider and the
+## visual are the same node, so they travel together and the relationship
+## is unchanged. Instead we SPLIT them: the authored layer keeps the pixels
+## and drops its physics, and an invisible duplicate carries the physics
+## shifted SOUTH by the displacement, so the collider for the tile you can
+## SEE under your feet is the collider you actually hit.
+##
+## Shifts south (+Y) because the visible terrain is north of the player: a
+## water collider moved south reaches the player earlier as they walk north,
+## blocking them at the visual shoreline instead of 4 tiles past it.
+##
+## No-op outside Mode 7 — flat villages/interiors render 1:1, so their
+## colliders are already where their pixels are.
+static func apply_terrain_collision_alignment(tile_map: TileMapLayer, mode7: bool) -> TileMapLayer:
+	if tile_map == null or not mode7:
+		return null
+	var parent := tile_map.get_parent()
+	if parent == null:
+		return null
+	# duplicate() carries the cell data, so the clone's colliders match the
+	# authored terrain without re-walking every cell.
+	var collider_layer := tile_map.duplicate() as TileMapLayer
+	if collider_layer == null:
+		return null
+	collider_layer.name = "TileMapCollision"
+	collider_layer.visible = false
+	collider_layer.collision_enabled = true
+	collider_layer.position.y += InteractGeometry.MODE7_GROUND_DISPLACEMENT_PX
+	# The authored layer becomes pixels-only. Both halves must change or the
+	# player collides with two offset copies of the world.
+	tile_map.collision_enabled = false
+	parent.add_child(collider_layer)
+	return collider_layer
+
+
 static func apply_camera(cam: Camera2D, mode7: bool) -> void:
 	# Tick 348: surface mode7 state via the static is_active flag so
 	# OverworldPlayer can gate its 2x horizontal-compensation boost.
