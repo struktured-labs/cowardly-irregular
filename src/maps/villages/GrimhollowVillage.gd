@@ -159,33 +159,76 @@ func _setup_treasures() -> void:
 func _setup_npcs() -> void:
 	_place_masterite_arbiter()
 
+	# Shared post-cave state check for Hex / Mort / Wednesday. Same
+	# spawn-time pattern as Sandrift/Eldertree/Harmonia; gate =
+	# rat_king_defeated. Claude/Earl/Murk untouched — bar gag, undead-
+	# union gag, and shadow-dragon lore respectively, none cave-hooked.
+	# Grimhollow's register is deadpan-macabre, NOT solemn: post lines
+	# keep the jokes and let the weight land underneath them.
+	var _after_cave_gs = get_node_or_null("/root/GameState")
+	var _after_cave_done: bool = false
+	if _after_cave_gs:
+		_after_cave_done = bool(_after_cave_gs.game_constants.get("cutscene_flag_rat_king_defeated", false))
+
 	# Fortune Teller Madame Hex (dramatic)
-	var hex = _create_npc("Madame Hex", "elder", Vector2(10 * TILE_SIZE,7 * TILE_SIZE), [
+	# Post-cave: she called it. She calls it every time — but this one
+	# LANDED, which gives her a track record and therefore a pricing
+	# problem. Joke escalates rather than resolving.
+	var _hex_pre := [
 		"I see your future...",
 		"BOSS FIGHT!",
 		"...That's all futures, really.",
 		"The cards never lie. They just exaggerate dramatically.",
 		"For 50 gold I can tell you which element to use. For free? Good luck."
-	])
+	]
+	var _hex_post := [
+		"I SAW this. I said BOSS FIGHT. I was RIGHT.",
+		"...I say that to everyone. But this time it was right, and that is different. That is a track record.",
+		"The cards never lie, they only exaggerate. This time they UNDER-exaggerated. That has never happened before.",
+		"Fifty gold for what comes next. Free preview: another boss fight.",
+		"It is always another boss fight. I have raised my prices accordingly."
+	]
+	var hex = _create_npc("Madame Hex", "elder", Vector2(10 * TILE_SIZE,7 * TILE_SIZE), _hex_post if _after_cave_done else _hex_pre)
 	npcs.add_child(hex)
 
 	# Undead Shopkeeper Mort (deadpan)
-	var mort = _create_npc("Undead Shopkeeper Mort", "villager", Vector2(18 * TILE_SIZE,7 * TILE_SIZE), [
+	# Post-cave: he's the one who went in and didn't come out. Grimhollow
+	# handles that the Grimhollow way — flatly, then sells you something.
+	var _mort_pre := [
 		"Being dead is great for overhead.",
 		"No rent, no food costs. 10/10 would die again.",
 		"I used to be an adventurer. Then I died.",
 		"But the shop needed a keeper, so here I am. Un-retired."
-	])
+	]
+	var _mort_post := [
+		"You went into a cave. You came back out of it. Those are two separate achievements and most people manage only the first.",
+		"I used to be an adventurer. I did mention. The difference between us is about four feet of cave floor and some luck.",
+		"No, I am not bitter. Bitter takes glands.",
+		"Buy something. Surviving is expensive and so is not surviving. The dead still have overhead."
+	]
+	var mort = _create_npc("Undead Shopkeeper Mort", "villager", Vector2(18 * TILE_SIZE,7 * TILE_SIZE), _mort_post if _after_cave_done else _mort_pre)
 	npcs.add_child(mort)
 
 	# Creepy Child Wednesday (meta-horror)
-	var wednesday = _create_npc("Creepy Child Wednesday", "villager", Vector2(8 * TILE_SIZE,11 * TILE_SIZE), [
+	# Post-cave: she reads the save file, so she is the ONE npc in the
+	# game who can diegetically notice a story flag flip. Her post lines
+	# describe cutscene_flag_rat_king_defeated going true, in child-
+	# horror register, without ever naming the mechanic.
+	var _wednesday_pre := [
 		"I can see the save file from here.",
 		"There's something... WRITTEN between the bytes.",
 		"Can you hear it too?",
 		"The data whispers your name. And your playtime.",
 		"...It says you've been playing for a while. Maybe take a break?"
-	])
+	]
+	var _wednesday_post := [
+		"Something changed in the save file. There is a new line. It was not there yesterday.",
+		"It says a thing is TRUE that used to be FALSE. Just the one word. Just: true.",
+		"I don't know what it turned on. I only know the file is bigger now.",
+		"And things that are bigger have more room in them for other things.",
+		"...Congratulations, probably? That is usually what a bigger file means."
+	]
+	var wednesday = _create_npc("Creepy Child Wednesday", "villager", Vector2(8 * TILE_SIZE,11 * TILE_SIZE), _wednesday_post if _after_cave_done else _wednesday_pre)
 	npcs.add_child(wednesday)
 
 	# Ghost Barkeep Claude (friendly)
