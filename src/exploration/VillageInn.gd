@@ -382,7 +382,7 @@ func _rest_party() -> void:
 	dialogue_label.text = "Your party is fully rested!\nHP and MP restored. (-%d G)" % rest_cost
 
 	if SoundManager:
-		SoundManager.play_ui("heal")
+		SoundManager.play_ui("inn_rest")
 
 	rest_completed.emit()
 
