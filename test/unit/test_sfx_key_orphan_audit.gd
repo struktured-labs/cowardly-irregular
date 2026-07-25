@@ -48,7 +48,6 @@ const KNOWN_ORPHAN_SFX := {
 	# IF STRUKTURED RULES NO: delete the consumer line in BattleScene
 	# _animate_melee_attack AND this entry together; the prototype is
 	# explicitly throwaway.
-	"windup_swing_med": "prototype pending cowir-sfx fold + struktured verdict",
 }
 
 

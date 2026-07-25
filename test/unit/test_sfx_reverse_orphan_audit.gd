@@ -57,9 +57,7 @@ const KNOWN_PENDING_CONSUMER := {
 	"thump_heavy": "cowir-battle contact-frame seam",
 	"thump_crit": "cowir-battle contact-frame seam",
 	# cowir-overworld: ShopScene purchase wire (their msg 2775 item 1)
-	"purchase_complete": "cowir-overworld shop UX package",
 	# struktured verdict pending — inert prototype (cowir-main msg 2914/2928)
-	"windup_swing_med": "struktured hitstop-feel verdict",
 	# pre-staged before ON_HIT_STATUSES grows (cowir-battle ratchet, msg 2797)
 	"status_burn": "pre-staged for future burn_chance weapon proc",
 	"status_freeze": "pre-staged for future freeze_chance weapon proc",
