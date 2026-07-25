@@ -38,7 +38,7 @@ var _fire_time: float = 0.0
 var spawn_points: Dictionary = {
 	"entrance": Vector2(10, 12),
 	"desk":     Vector2(3,  4),
-	"fireplace": Vector2(10, 5),
+	"fireplace": Vector2(12, 5),
 }
 
 ## Layout — 20 cols × 14 rows
@@ -48,11 +48,11 @@ var spawn_points: Dictionary = {
 const INN_LAYOUT = [
 	"WWWWWWWWWWWWWWWWWWWW",
 	"W..................W",
-	"W.DDD..........UUWWW",
-	"W.DDD..........UUWWW",
+	"W.DDD.......hhhUUWWW",
+	"W.DDD.......hhhUUWWW",
 	"W..................W",
-	"W....hhh...........W",
-	"W....hhh...........W",
+	"W..................W",
+	"W..................W",
 	"W..ccccccccc.......W",
 	"W..ccccccccc.......W",
 	"W..................W",
@@ -77,6 +77,7 @@ func _ready() -> void:
 	# ends up standing on a table. Shared utility with BaseInterior.
 	InteriorPlacementSweep.sweep(self, npcs, decorations, INN_LAYOUT, "inn_interior")
 	_create_rest_interactable()
+	_create_fireplace_secret()
 	_setup_transitions()
 	_setup_player()
 	_setup_camera()
@@ -441,7 +442,7 @@ func _create_fireplace_surround() -> void:
 					img.set_pixel(x, y, stone_hi if hi else stone)
 
 	surround.texture = ImageTexture.create_from_image(img)
-	surround.position = Vector2(4.5 * TILE_SIZE, 4.5 * TILE_SIZE)
+	surround.position = Vector2(11.5 * TILE_SIZE, 1.5 * TILE_SIZE)
 	node.add_child(surround)
 
 	# Mantle shelf — small decorative items
@@ -459,7 +460,7 @@ func _create_fireplace_surround() -> void:
 			sh_img.set_pixel(cx2, y, Color(0.95, 0.94, 0.88))
 			sh_img.set_pixel(cx2 + 1, y, Color(0.95, 0.94, 0.88))
 	shelf.texture = ImageTexture.create_from_image(sh_img)
-	shelf.position = Vector2(3.0 * TILE_SIZE, 3.5 * TILE_SIZE)
+	shelf.position = Vector2(10.0 * TILE_SIZE, 0.5 * TILE_SIZE)
 	node.add_child(shelf)
 
 	# 2026-07-16 (task #26): hearth collision — player could walk INTO the arch opening and stand in the fire (struktured cap 07-15 15:11). Solid box over the surround footprint.
@@ -471,7 +472,7 @@ func _create_fireplace_surround() -> void:
 	hearth_shape.size = Vector2(TILE_SIZE * 3, TILE_SIZE * 2)
 	hearth_col.shape = hearth_shape
 	hearth_body.add_child(hearth_col)
-	hearth_body.position = Vector2(4.5 * TILE_SIZE, 4.5 * TILE_SIZE)
+	hearth_body.position = Vector2(11.5 * TILE_SIZE, 1.5 * TILE_SIZE)
 	node.add_child(hearth_body)
 
 	decorations.add_child(node)
@@ -482,7 +483,7 @@ func _setup_fireplace_anim() -> void:
 	_fire_sprite.name = "FireFlame"
 	_fire_sprite.z_index = 5
 	# 2026-07-16 (task #26): x 5.5→4.5 tiles — the mantle arch is centered on the surround sprite at 4.5; the flame hung one full tile right of the opening (struktured cap 07-15 15:11).
-	_fire_sprite.position = Vector2(4.5 * TILE_SIZE, 5.0 * TILE_SIZE)
+	_fire_sprite.position = Vector2(11.5 * TILE_SIZE, 2.0 * TILE_SIZE)
 	add_child(_fire_sprite)
 
 	_fire_frames.clear()
@@ -497,7 +498,7 @@ func _setup_fireplace_anim() -> void:
 	# Fireplace light
 	_fire_light = PointLight2D.new()
 	_fire_light.name = "FireLight"
-	_fire_light.position = Vector2(4.5 * TILE_SIZE, 5.5 * TILE_SIZE)
+	_fire_light.position = Vector2(11.5 * TILE_SIZE, 2.5 * TILE_SIZE)
 	_fire_light.color = Color(1.0, 0.55, 0.15, 0.8)
 	_fire_light.energy = 0.9
 	_fire_light.texture = _create_light_texture(160)
@@ -1389,3 +1390,23 @@ func _make_inn_dialog(text: String) -> Control:
 
 	add_child(holder)
 	return holder
+
+
+# ---------------------------------------------------------------------------
+# Fireplace secret (struktured directive, msg 2764 item 2)
+# ---------------------------------------------------------------------------
+
+## Gamepad-interactable examine zone at the hearth mouth (struktured
+## directive, msg 2764 item 2). Sits a tile SOUTH of the hearth tiles
+## (rows 2-3) so the player stands in front of the fire to reach it,
+## rather than inside the hearth's own collision box. All the behaviour
+## — flag, grant, prompt, one-shot guard — lives in FireplaceSecret.
+func _create_fireplace_secret() -> void:
+	if transitions == null:
+		transitions = Node2D.new()
+		transitions.name = "Transitions"
+		add_child(transitions)
+	var zone := FireplaceSecret.new()
+	zone.name = "FireplaceSecret"
+	zone.position = Vector2(11.5 * TILE_SIZE, 4.0 * TILE_SIZE)
+	transitions.add_child(zone)
