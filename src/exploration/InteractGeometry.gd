@@ -36,7 +36,33 @@ const BUILDING_ENTRY_BOX := Vector2(64, 96)  # shop/inn 2026-07-13 fix; VillageB
 const BUILDING_ENTRY_OFFSET := Vector2(0, 48)
 const ENTRANCE_BOX_FLAT := Vector2(64, 64)  # replaces the 32x32 stand-on-the-exact-tile portals
 const ENTRANCE_BOX_MODE7 := Vector2(64, 192)  # the proven W1 recipe (2x6 tiles)
-const MODE7_TRIGGER_Y_OFFSET := -96.0  # -3 tiles north — compensates the log-warp visual skew
+
+## THE Mode 7 ground displacement — MEASURED, not hand-tuned (PR #171, msg 2830).
+## mode7.gdshader warps terrain as a post-process (source_v = ground_y +
+## near_scale*ln(uv.y - horizon)) but the player is drawn on the overlay
+## SCREEN-LOCKED at row 0.75. At that row the shader samples source row
+## 260.5px while the player's body renders at 380.0px — so terrain pixels
+## under the player's feet belong to tiles 140.6 world px north of them
+## (119.5 source-px / 0.85 Mode 7 zoom) = 4.39 tiles. That predicted
+## struktured's "standing 4 tiles inside the water" screenshot to the tile.
+##
+## A constant is valid against a LOGARITHMIC warp only because the player
+## never leaves screen row 0.75 — the displacement *at the player* is the
+## same number on every map, verified across all six world presets. If the
+## player ever becomes free-moving in screen space this dies;
+## test_mode7_terrain_displacement_regression pins that assumption.
+##
+## EVERY Mode 7 world-vs-visual compensation derives from this one value —
+## trigger geometry and terrain collision must agree with EACH OTHER more
+## than either must be "true" (cowir-main ruling msg 2947: a player whose
+## feet block at one line and whose door-presses register at another feels
+## worse than either error alone, because inconsistency is unlearnable
+## while a uniform offset is adapted to in minutes). One const, two
+## consumers, cannot diverge by construction.
+const MODE7_GROUND_DISPLACEMENT_PX := 140.6
+
+## Was a hand-tuned -96.0 — right direction, a third short of the measurement.
+const MODE7_TRIGGER_Y_OFFSET := -MODE7_GROUND_DISPLACEMENT_PX
 
 # -- Class D: auto-sensors --
 const AUTO_SENSOR_SLOP := 8.0

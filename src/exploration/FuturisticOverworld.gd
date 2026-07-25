@@ -64,6 +64,8 @@ var _glitch_phase: int = 0
 func _ready() -> void:
 	_setup_scene()
 	_generate_map()
+	# msg 2830: terrain colliders shifted to match the warped render.
+	Mode7Overlay.apply_terrain_collision_alignment(tile_map, mode7_enabled)
 	_setup_transitions()
 	_setup_npcs()
 	_setup_player()

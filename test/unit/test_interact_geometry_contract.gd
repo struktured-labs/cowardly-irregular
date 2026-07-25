@@ -18,7 +18,18 @@ func test_pinned_values() -> void:
 	assert_eq(InteractGeometry.DOOR_OFFSET, Vector2(0, 24))
 	assert_eq(InteractGeometry.BUILDING_ENTRY_BOX, Vector2(64, 96), "the 2026-07-13 shop/inn fix, now canonical")
 	assert_eq(InteractGeometry.ENTRANCE_BOX_MODE7, Vector2(64, 192), "the proven W1 recipe")
-	assert_eq(InteractGeometry.MODE7_TRIGGER_Y_OFFSET, -96.0, "3 tiles north — the log-warp compensation")
+	# Was a hand-tuned -96.0 ("3 tiles north"). Retuned 2026-07-25 to the
+	# MEASURED displacement (PR #171, msg 2830): the shader samples source
+	# row 260.5px at the screen-locked player's row 0.75 while the player's
+	# body renders at 380.0px → 140.6 world px after the 0.85 Mode 7 zoom.
+	# The old value compensated the right direction but was a third short.
+	# Derived from MODE7_GROUND_DISPLACEMENT_PX so trigger geometry and
+	# terrain collision cannot diverge (cowir-main ruling msg 2947 — they
+	# must agree with EACH OTHER more than either must be "true").
+	assert_eq(InteractGeometry.MODE7_TRIGGER_Y_OFFSET, -140.6,
+		"measured log-warp compensation — 4.39 tiles north, not the old hand-tuned 3")
+	assert_eq(InteractGeometry.MODE7_TRIGGER_Y_OFFSET, -InteractGeometry.MODE7_GROUND_DISPLACEMENT_PX,
+		"trigger offset MUST stay derived from the one displacement const — a literal here lets the two consumers drift apart")
 	assert_eq(InteractGeometry.MODE7_Y_STRETCH, 1.67)
 	assert_eq(InteractGeometry.LAYER_INTERACTABLE, 4)
 	assert_eq(InteractGeometry.MASK_PLAYER, 2)
