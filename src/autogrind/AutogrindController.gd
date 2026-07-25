@@ -289,33 +289,86 @@ func _launch_collapse_boss_battle() -> void:
 	grind_battle_requested.emit([boss_data], _terrain)
 
 
+## Resolve the current region's encounter pool as enemy ids ([] = no pool, caller falls back).
+func _region_pool_ids() -> Array:
+	var es: Node = get_node_or_null("/root/EncounterSystem")
+	if es == null or not ("enemy_pools" in es):
+		return []
+	var pools: Dictionary = es.enemy_pools
+	var region: String = str(AutogrindSystem.current_region_id)
+	if region.is_empty() or pools.is_empty():
+		return []
+	if pools.has(region):
+		return (pools[region] as Array).duplicate()
+	# Subdivided region (W1 "overworld" → overworld_central/forest/ice/…): union the zone pools so grinding a region spans its whole bestiary.
+	var union: Array = []
+	var prefix: String = region + "_"
+	for key in pools:
+		if not str(key).begins_with(prefix):
+			continue
+		for id in pools[key]:
+			if not (str(id) in union):
+				union.append(str(id))
+	return union
+
+
+## Build the roster-shaped base_data for a monsters.json id ({} = unknown id).
+func _base_data_for_id(enemy_id: String) -> Dictionary:
+	var es: Node = get_node_or_null("/root/EncounterSystem")
+	if es == null or not ("monster_database" in es):
+		return {}
+	var db: Dictionary = es.monster_database
+	if not db.has(enemy_id):
+		return {}
+	var row: Dictionary = db[enemy_id]
+	var stats: Dictionary = row.get("stats", {})
+	if stats.is_empty():
+		return {}
+	return {
+		"id": str(row.get("id", enemy_id)),
+		"name": str(row.get("name", enemy_id.capitalize())),
+		"stats": stats.duplicate(true),
+		"weaknesses": (row.get("weaknesses", []) as Array).duplicate(),
+		"resistances": (row.get("resistances", []) as Array).duplicate(),
+	}
+
+
+## Candidate draw pool as base_data dicts — region pool preferred, MONSTER_TYPES const as fallback.
+func _grind_draw_candidates() -> Array:
+	var candidates: Array = []
+	for enemy_id in _region_pool_ids():
+		var data: Dictionary = _base_data_for_id(str(enemy_id))
+		if not data.is_empty():
+			candidates.append(data)
+	if not candidates.is_empty():
+		return candidates
+	# Fallback: no pool for this region, unknown region id, or the data layer failed to load.
+	for base_type in BattleEnemySpawner.MONSTER_TYPES:
+		candidates.append({
+			"id": base_type["id"],
+			"name": base_type["name"],
+			"color": base_type.get("color", Color.WHITE),
+			"stats": base_type["stats"].duplicate(true),
+			"weaknesses": base_type.get("weaknesses", []).duplicate(),
+			"resistances": base_type.get("resistances", []).duplicate(),
+		})
+	return candidates
+
+
 ## Generate enemies with adaptation scaling
 func _generate_scaled_enemies() -> Array:
-	# Pick random enemies from the spawner's MONSTER_TYPES const.
-	# BattleScene.MONSTER_TYPES is an instance property getter (not static),
-	# so it cannot be read off the GDScript Resource — read the const where it
-	# actually lives (BattleEnemySpawner, a global class with const MONSTER_TYPES).
-	var monster_types = BattleEnemySpawner.MONSTER_TYPES
-	# Necromancer permakill holds in grinds too — unwritten species never spawn
+	var candidates: Array = _grind_draw_candidates()
+	# Necromancer permakill holds in grinds too — unwritten species never spawn, whichever source supplied them.
 	if GameState and "permakilled_monster_types" in GameState and not GameState.permakilled_monster_types.is_empty():
-		monster_types = monster_types.filter(func(mt): return not str(mt.get("id", "")) in GameState.permakilled_monster_types)
-	if monster_types.is_empty():
+		candidates = candidates.filter(func(c): return not str(c.get("id", "")) in GameState.permakilled_monster_types)
+	if candidates.is_empty():
 		return []
 
 	var num_enemies = randi_range(2, 3)
 	var selected: Array = []
 
 	for i in range(num_enemies):
-		var base_type = monster_types[randi() % monster_types.size()]
-		var base_data = {
-			"id": base_type["id"],
-			"name": base_type["name"],
-			"color": base_type.get("color", Color.WHITE),
-			"stats": base_type["stats"].duplicate(true),
-			"weaknesses": base_type.get("weaknesses", []).duplicate(),
-			"resistances": base_type.get("resistances", []).duplicate()
-		}
-
+		var base_data: Dictionary = (candidates[randi() % candidates.size()] as Dictionary).duplicate(true)
 		# Apply AutogrindSystem scaling
 		var scaled = AutogrindSystem.create_scaled_enemy_data(base_data)
 		selected.append(scaled)
