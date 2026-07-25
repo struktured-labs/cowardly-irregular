@@ -11,7 +11,7 @@ signal shop_closed()
 ## reaching into the buy-menu plumbing.
 signal item_purchased(item_id: String, cost: int)
 
-enum ShopMode { MAIN, BUY, SELL, QUANTITY, CHAR_SELECT }
+enum ShopMode { MAIN, BUY, SELL, QUANTITY, CHAR_SELECT, EQUIP_SELECT }
 enum ShopType { ITEM, BLACK_MAGIC, WHITE_MAGIC, BLACKSMITH }
 
 ## Keeper-portrait override — pre-registered PNG paths per ShopType.
@@ -21,19 +21,19 @@ enum ShopType { ITEM, BLACK_MAGIC, WHITE_MAGIC, BLACKSMITH }
 ## keeper looks like a serial killer"). Falls through to the procedural
 ## draw when the PNG is missing so nothing regresses if a file gets
 ## deleted or a new ShopType is added without art.
-## Purchase-feedback tuning (struktured msg 2775). Success flash is a
-## deliberately different colour + a scale beat from the red error flash
-## so the two outcomes read as opposites at a glance.
-const GOLD_FLASH_SUCCESS_COLOR: Color = Color(1.0, 1.0, 0.75)
-const GOLD_FLASH_SUCCESS_SEC: float = 0.28
-const PURCHASE_TOAST_SEC: float = 1.5
-
 const KEEPER_PORTRAIT_PATHS: Dictionary = {
 	ShopType.ITEM:        "res://assets/sprites/portraits/keepers/willow.png",
 	ShopType.BLACK_MAGIC: "res://assets/sprites/portraits/keepers/mortimer.png",
 	ShopType.WHITE_MAGIC: "res://assets/sprites/portraits/keepers/lenora.png",
 	ShopType.BLACKSMITH:  "res://assets/sprites/portraits/keepers/brutus.png",
 }
+
+## Purchase-feedback tuning (struktured msg 2775). Success flash is a
+## deliberately different colour + a scale beat from the red error flash
+## so the two outcomes read as opposites at a glance.
+const GOLD_FLASH_SUCCESS_COLOR: Color = Color(1.0, 1.0, 0.75)
+const GOLD_FLASH_SUCCESS_SEC: float = 0.28
+const PURCHASE_TOAST_SEC: float = 1.5
 
 ## Shop configuration
 var shop_type: ShopType = ShopType.ITEM
@@ -48,6 +48,8 @@ var selected_quantity: int = 1
 var max_quantity: int = 99
 var pending_spell_id: String = ""
 var pending_spell_data: Dictionary = {}
+var pending_equip_id: String = ""
+var pending_equip_data: Dictionary = {}
 
 ## UI Components
 var background: ColorRect
@@ -393,6 +395,10 @@ func _on_menu_item_selected(item_id: String, item_data: Variant) -> void:
 			if item_id != "none":
 				_attempt_magic_purchase(item_id)
 
+		ShopMode.EQUIP_SELECT:
+			if item_id != "none":
+				_attempt_equip(item_id)
+
 
 func _attempt_purchase(item_id: String, item_data: Dictionary) -> void:
 	"""Attempt to buy an item"""
@@ -433,6 +439,11 @@ func _attempt_purchase(item_id: String, item_data: Dictionary) -> void:
 		item_purchased.emit(item_id, cost)
 
 		description_label.text = "Purchased %s for %d G!" % [item_data.get("name", "item"), cost]
+
+		# struktured msg 2775: gear you just bought is gear you want on now.
+		# Returns false when there's no live party to equip onto (test envs).
+		if shop_type == ShopType.BLACKSMITH and _offer_equip(item_id, item_data):
+			return
 
 		# Refresh buy menu to show updated owned count
 		await get_tree().create_timer(0.5).timeout
@@ -874,6 +885,113 @@ func _open_character_select(spell_id: String, spell_data: Dictionary) -> void:
 	description_label.text = "Choose who will learn %s." % spell_data.get("name", "???")
 
 
+## Which equipment slot an id belongs to, or "" when the id is unknown.
+func _equip_slot_for_item(item_id: String) -> String:
+	if equipment_system.weapons.has(item_id):
+		return "weapon"
+	if equipment_system.armors.has(item_id):
+		return "armor"
+	if equipment_system.accessories.has(item_id):
+		return "accessory"
+	return ""
+
+
+## Name currently filling `slot` on `member`, or "empty". Reads the slot's
+## own catalog rather than _get_item_data, whose BLACKSMITH branch checks
+## weapons then armors and never accessories.
+func _equipped_name_in_slot(member, slot: String) -> String:
+	var current_id: String = ""
+	var catalog: Dictionary = {}
+	match slot:
+		"weapon":
+			current_id = member.equipped_weapon
+			catalog = equipment_system.weapons
+		"armor":
+			current_id = member.equipped_armor
+			catalog = equipment_system.armors
+		"accessory":
+			current_id = member.equipped_accessory
+			catalog = equipment_system.accessories
+	if current_id.is_empty():
+		return "empty"
+	return str(catalog.get(current_id, {}).get("name", current_id))
+
+
+## Post-purchase "equip this now?" offer. Returns true when the menu opened,
+## so the caller skips its own buy-menu refresh.
+func _offer_equip(item_id: String, item_data: Dictionary) -> bool:
+	var slot: String = _equip_slot_for_item(item_id)
+	if slot.is_empty():
+		return false
+	# Equipping writes to the LIVE Combatant (tick 314) — without one there
+	# is nothing to equip onto, so fall through to the normal refresh.
+	var live_party: Array = _resolve_live_party()
+	if live_party.is_empty():
+		return false
+
+	current_mode = ShopMode.EQUIP_SELECT
+	pending_equip_id = item_id
+	pending_equip_data = item_data
+	_close_current_menu()
+
+	var items: Array = []
+	for i in range(live_party.size()):
+		var member = live_party[i]
+		if member == null or not is_instance_valid(member):
+			continue
+		items.append({
+			"id": str(i),
+			"label": "%s (%s)" % [member.combatant_name, _equipped_name_in_slot(member, slot)]
+		})
+	items.append({"id": "skip", "label": "Not now"})
+
+	_show_menu("Equip %s?" % item_data.get("name", "it"), items, Vector2(100, 100))
+	description_label.text = "Equip %s on whom? (current %s shown)" % [
+		item_data.get("name", "it"), slot]
+	return true
+
+
+## Equip the just-purchased item, or decline and go back to the shelves.
+func _attempt_equip(choice: String) -> void:
+	if choice == "skip":
+		SoundManager.play_ui("menu_select")
+		_open_buy_menu()
+		return
+
+	var live_party: Array = _resolve_live_party()
+	var char_index: int = int(choice)
+	if char_index < 0 or char_index >= live_party.size():
+		_open_buy_menu()
+		return
+	var member = live_party[char_index]
+	if member == null or not is_instance_valid(member):
+		_open_buy_menu()
+		return
+
+	var slot: String = _equip_slot_for_item(pending_equip_id)
+	var replaced: String = _equipped_name_in_slot(member, slot)
+	var success: bool = false
+	match slot:
+		"weapon": success = equipment_system.equip_weapon(member, pending_equip_id)
+		"armor": success = equipment_system.equip_armor(member, pending_equip_id)
+		"accessory": success = equipment_system.equip_accessory(member, pending_equip_id)
+
+	if not success:
+		SoundManager.play_ui("menu_error")
+		description_label.text = "Couldn't equip that."
+		_open_buy_menu()
+		return
+
+	SoundManager.play_ui("menu_select")
+	var equipped_name: String = str(pending_equip_data.get("name", pending_equip_id))
+	if replaced == "empty":
+		description_label.text = "%s equipped %s." % [member.combatant_name, equipped_name]
+	else:
+		description_label.text = "%s equipped %s, replacing %s." % [
+			member.combatant_name, equipped_name, replaced]
+	_open_buy_menu()
+
+
 func _attempt_magic_purchase(char_index_str: String) -> void:
 	"""Purchase a spell for a specific party member"""
 	var char_index = int(char_index_str)
@@ -960,7 +1078,7 @@ func _on_menu_closed() -> void:
 			_close_shop()
 		ShopMode.BUY, ShopMode.SELL:
 			_open_main_menu()
-		ShopMode.CHAR_SELECT:
+		ShopMode.CHAR_SELECT, ShopMode.EQUIP_SELECT:
 			_open_buy_menu()
 
 
