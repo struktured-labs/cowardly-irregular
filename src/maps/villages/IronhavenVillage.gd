@@ -169,6 +169,18 @@ func _setup_treasures() -> void:
 func _setup_npcs() -> void:
 	_place_masterite_curator()
 
+	# Shared post-cave state check for Cog / Bolt / Ember. Same spawn-time
+	# pattern as the other four villages; gate = rat_king_defeated.
+	# Ironhaven is the automation-philosophy village, so Cog and Bolt's
+	# post lines engage the game's actual thesis: neither of them can tell
+	# whether the party automated the win or fought it by hand — and the
+	# PLAYER knows. The joke lands on the player, not on them.
+	# Magda/Pete (dragon-focused), Koss/Stranger (W2 foreshadowing) untouched.
+	var _after_cave_gs = get_node_or_null("/root/GameState")
+	var _after_cave_done: bool = false
+	if _after_cave_gs:
+		_after_cave_done = bool(_after_cave_gs.game_constants.get("cutscene_flag_rat_king_defeated", false))
+
 	# Blacksmith Magda (eager)
 	var magda = _create_npc("Blacksmith Magda", "villager", Vector2(16 * TILE_SIZE,8 * TILE_SIZE), [
 		"Dragon scales, you say?",
@@ -190,13 +202,25 @@ func _setup_npcs() -> void:
 	npcs.add_child(koss)
 
 	# Automation Researcher Dr. Cog (philosophical)
-	var cog = _create_npc("Dr. Cog", "villager", Vector2(23 * TILE_SIZE,8 * TILE_SIZE), [
+	# Post-cave: he asks the game's actual question and cannot answer it —
+	# did the party fight, or did their rules fight? He can't tell about
+	# them because he can't tell about himself. Inverts his pre-line's
+	# "Hypothesis confirmed."
+	var _cog_pre := [
 		"What if the NPCs could automate too?",
 		"What if I already HAVE and this dialogue is just my script running?",
 		"...Hypothesis confirmed.",
 		"I've been running my own autobattle scripts for YEARS.",
 		"My dialogue tree is fully optimized. You're in the fast path."
-	])
+	]
+	var _cog_post := [
+		"You beat the thing in the cave. I have a question and it is not a polite one.",
+		"Did YOU fight it, or did your rules fight it? Do you know? Can you tell?",
+		"I ask because I have never once been able to tell about myself.",
+		"...My script says change the subject here. Watch. How about this weather.",
+		"Hypothesis unconfirmed. Hypothesis, in fact, worse."
+	]
+	var cog = _create_npc("Dr. Cog", "villager", Vector2(23 * TILE_SIZE,8 * TILE_SIZE), _cog_post if _after_cave_done else _cog_pre)
 	npcs.add_child(cog)
 
 	# Miner Pete (tired)
@@ -210,23 +234,45 @@ func _setup_npcs() -> void:
 	npcs.add_child(pete)
 
 	# Apprentice Bolt (eager)
-	var bolt = _create_npc("Apprentice Bolt", "villager", Vector2(10 * TILE_SIZE,16 * TILE_SIZE), [
+	# Post-cave: his thesis lives or dies on how the party won, and they
+	# won't say. He counts it anyway, because he needs to. Keeps the gag,
+	# lands warmer than it started.
+	var _bolt_pre := [
 		"I'm building a machine that plays the game FOR you!",
 		"...Wait, isn't that just autobattle?",
 		"Oh NO.",
 		"My entire thesis is redundant.",
 		"Well, at least mine has GEARS. That counts for something, right?"
-	])
+	]
+	var _bolt_post := [
+		"You did it! Did you use a machine? Please say you used a machine.",
+		"...You used RULES. That is sort of a machine. I am counting it. I need to count it.",
+		"My thesis is back. Provisionally. Pending an answer you have not actually given me.",
+		"It still has gears, though. Nothing you did had gears.",
+		"That is what I have. Gears. It is not nothing."
+	]
+	var bolt = _create_npc("Apprentice Bolt", "villager", Vector2(10 * TILE_SIZE,16 * TILE_SIZE), _bolt_post if _after_cave_done else _bolt_pre)
 	npcs.add_child(bolt)
 
 	# Barkeep Ember (warm)
-	var ember = _create_npc("Barkeep Ember", "villager", Vector2(6 * TILE_SIZE,16 * TILE_SIZE), [
+	# Post-cave: the "last inn before" framing means she watches people go
+	# and mostly not come back. Her warmth gets a ledger under it — same
+	# structure as Boris's gate, opposite temperature.
+	var _ember_pre := [
 		"Welcome to the last inn before the fire cave.",
 		"We serve drinks and existential dread.",
 		"Both are on the house.",
 		"The special today is 'Lava Lager.' It's... warm.",
 		"Like, REALLY warm. We haven't figured out cooling yet."
-	])
+	]
+	var _ember_post := [
+		"You came back. Sit. First one's free — so is the second, the sign is a formality.",
+		"I keep a list of everyone who walks past here toward a cave. It has two columns.",
+		"You moved columns. Most people don't move columns.",
+		"I don't like keeping the list. I keep it anyway. Somebody should.",
+		"Lava Lager's still warm. Everything here is warm. You're the good kind today."
+	]
+	var ember = _create_npc("Barkeep Ember", "villager", Vector2(6 * TILE_SIZE,16 * TILE_SIZE), _ember_post if _after_cave_done else _ember_pre)
 	npcs.add_child(ember)
 
 	# Mysterious Stranger (foreshadowing)

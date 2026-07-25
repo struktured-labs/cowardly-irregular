@@ -158,6 +158,15 @@ func _setup_treasures() -> void:
 
 
 func _setup_npcs() -> void:
+	# Shared post-cave state check for Ingrid / Kael / Lumi — closes the
+	# six-village sweep. Same spawn-time pattern, gate = rat_king_defeated.
+	# Björn (ice-dragon exposition), Helga + Fynn (timeless meta gags)
+	# untouched — no cave hook, and their jokes don't want a sequel.
+	var _after_cave_gs = get_node_or_null("/root/GameState")
+	var _after_cave_done: bool = false
+	if _after_cave_gs:
+		_after_cave_done = bool(_after_cave_gs.game_constants.get("cutscene_flag_rat_king_defeated", false))
+
 	# Old Man Björn (exposition)
 	var bjorn = _create_npc("Old Man Björn", "elder", Vector2(8 * TILE_SIZE,8 * TILE_SIZE), [
 		"The ice dragon Glacius has been here since the first compile...",
@@ -168,22 +177,43 @@ func _setup_npcs() -> void:
 	npcs.add_child(bjorn)
 
 	# Guard Ingrid (pessimistic)
-	var ingrid = _create_npc("Guard Ingrid", "guard", Vector2(10 * TILE_SIZE,16 * TILE_SIZE), [
+	# Post-cave: she called them underleveled and was wrong. Concedes on
+	# the record without stopping being herself, then ends warm.
+	var _ingrid_pre := [
 		"Turn back. You're clearly not high enough level.",
 		"I can see your stats from here.",
 		"...What? No, I can't literally SEE them.",
 		"It's a figure of speech. But seriously, you look weak."
-	])
+	]
+	var _ingrid_post := [
+		"You're back. And alive. I had you at 'not high enough level.'",
+		"I was wrong. I want that on the record, because I am never wrong, and this is the exception.",
+		"...I still cannot literally see your stats. But I would revise the estimate. Upward. Slightly.",
+		"Don't let it go to your head. Plenty out there I would still turn you back from.",
+		"Turn back from THOSE. Not this one. This one you earned."
+	]
+	var ingrid = _create_npc("Guard Ingrid", "guard", Vector2(10 * TILE_SIZE,16 * TILE_SIZE), _ingrid_post if _after_cave_done else _ingrid_pre)
 	npcs.add_child(ingrid)
 
 	# Hermit Kael (autobattle)
-	var kael = _create_npc("Hermit Kael", "villager", Vector2(12 * TILE_SIZE,12 * TILE_SIZE), [
+	# Post-cave: the cave victory earns him an actual character beat — he
+	# revises "automate EVERYTHING" down to "keep one part manual." First
+	# advice he has changed in eleven years.
+	var _kael_pre := [
 		"I automated my entire LIFE, friend.",
 		"Breakfast? Automated. Conversations? Scripted.",
 		"Do I regret it? ...That's also scripted.",
 		"Press F5 to open the Autobattle Editor. Trust me.",
 		"Once you automate combat, you'll want to automate EVERYTHING."
-	])
+	]
+	var _kael_post := [
+		"You went into a cave. Did you automate it, or did you do it by hand?",
+		"I ask because I automated my regrets, and now I cannot find them.",
+		"...That was scripted. Obviously. But lately I wonder who wrote it.",
+		"Automate the combat. Keep the walking-back-out-alive part manual. That is my new advice.",
+		"It is the first advice I have changed in eleven years."
+	]
+	var kael = _create_npc("Hermit Kael", "villager", Vector2(12 * TILE_SIZE,12 * TILE_SIZE), _kael_post if _after_cave_done else _kael_pre)
 	npcs.add_child(kael)
 
 	# Merchant Helga (shivering)
@@ -205,10 +235,21 @@ func _setup_npcs() -> void:
 	npcs.add_child(fynn)
 
 	# Child Lumi (cheerful)
-	var lumi = _create_npc("Child Lumi", "villager", Vector2(14 * TILE_SIZE,6 * TILE_SIZE), [
+	# Post-cave: keeps her programming-gag register, but the joke resolves
+	# into something sincere. "Not crashing is the whole thing" is the
+	# closing note of the whole six-village sweep.
+	var _lumi_pre := [
 		"I built a snowman! I named him 'Null Reference.'",
 		"He keeps crashing.",
 		"Every time I try to give him a nose, he throws an exception!",
 		"Mom says I should try-catch him but that sounds mean."
-	])
+	]
+	var _lumi_post := [
+		"You went in the CAVE? The real one? With the—",
+		"I made a new snowman and I named him after you. He doesn't crash.",
+		"He doesn't do anything else either. He just stands there, being fine.",
+		"It's the best one I ever made. Mom says that's not how you judge snowmen.",
+		"Mom is wrong. Not crashing is the whole thing."
+	]
+	var lumi = _create_npc("Child Lumi", "villager", Vector2(14 * TILE_SIZE,6 * TILE_SIZE), _lumi_post if _after_cave_done else _lumi_pre)
 	npcs.add_child(lumi)
