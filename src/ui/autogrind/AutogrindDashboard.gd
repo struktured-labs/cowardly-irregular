@@ -27,6 +27,13 @@ const COLOR_NEUTRAL = Color(0.7, 0.7, 0.8)
 var _battle_viewport: SubViewport = null
 var _battle_viewport_container: SubViewportContainer = null
 
+## STOPGAP (cadence #26) — text readout standing in for the unrendered SubViewport. Signal-driven, no state machine, no cache. Deletes with _wire_battle_readout + its _build_mini_battle_panel block.
+const _BATTLE_READOUT_IDLE := "— no battle in progress —"
+var _battle_readout: Label = null
+var _readout_round: int = 0
+var _readout_action: String = ""
+var _readout_last_hit: String = ""
+
 ## Corruption visual tinting
 var _corruption_tint: ColorRect = null
 const CORRUPTION_TINT_MAX_ALPHA: float = 0.22  # Max overlay opacity at full corruption
@@ -88,6 +95,97 @@ func _ready() -> void:
 
 func get_battle_viewport() -> SubViewport:
 	return _battle_viewport
+
+
+## STOPGAP (cadence #26) — connect the readout to BattleManager. Signals are the whole
+## mechanism: no polling (would race the execution phase), no cached combatant (current_combatant
+## is STALE mid-execution — the acting combatant comes from the signal args, per cowir-battle
+## cycle 12). CONNECT_REFERENCE_COUNTED so a dashboard rebuild can't double-connect.
+func _wire_battle_readout() -> void:
+	var bm: Node = get_node_or_null("/root/BattleManager")
+	if bm == null:
+		return
+	var flags := CONNECT_REFERENCE_COUNTED
+	if bm.has_signal("round_started"):
+		bm.round_started.connect(_on_readout_round_started, flags)
+	if bm.has_signal("action_executing"):
+		bm.action_executing.connect(_on_readout_action_executing, flags)
+	if bm.has_signal("damage_dealt"):
+		bm.damage_dealt.connect(_on_readout_damage_dealt, flags)
+	if bm.has_signal("battle_ended"):
+		bm.battle_ended.connect(_on_readout_battle_ended, flags)
+
+
+func _on_readout_round_started(round_num: int) -> void:
+	_readout_round = round_num
+	_readout_action = ""
+	_refresh_battle_readout()
+
+
+func _on_readout_action_executing(combatant: Combatant, action: Dictionary) -> void:
+	var who: String = combatant.combatant_name if is_instance_valid(combatant) else "?"
+	_readout_action = "%s → %s" % [who, str(action.get("type", "act")).replace("_", " ")]
+	_refresh_battle_readout()
+
+
+func _on_readout_damage_dealt(target: Combatant, amount: int, is_crit: bool, _element: String, elemental_mod: float) -> void:
+	var who: String = target.combatant_name if is_instance_valid(target) else "?"
+	var tag: String = " CRIT" if is_crit else (" WEAK" if elemental_mod > 1.0 else "")
+	_readout_last_hit = "%s took %d%s" % [who, amount, tag]
+	_refresh_battle_readout()
+
+
+func _on_readout_battle_ended(_victory: bool) -> void:
+	_readout_round = 0
+	_readout_action = ""
+	_readout_last_hit = ""
+	_refresh_battle_readout()
+
+
+func _refresh_battle_readout() -> void:
+	if not is_instance_valid(_battle_readout):
+		return
+	if _readout_round <= 0 and _readout_action.is_empty():
+		_battle_readout.text = _BATTLE_READOUT_IDLE
+		return
+	var lines: Array[String] = ["Round %d" % _readout_round]
+	if not _readout_action.is_empty():
+		lines.append(_readout_action)
+	if not _readout_last_hit.is_empty():
+		lines.append(_readout_last_hit)
+	lines.append(_readout_party_line())
+	lines.append(_readout_enemy_line())
+	_battle_readout.text = "\n".join(lines)
+
+
+func _readout_party_line() -> String:
+	var bm: Node = get_node_or_null("/root/BattleManager")
+	if bm == null or not ("player_party" in bm):
+		return ""
+	var hp := 0
+	var max_hp := 0
+	var alive := 0
+	for c in bm.player_party:
+		if c is Combatant:
+			hp += c.current_hp
+			max_hp += c.max_hp
+			if c.is_alive:
+				alive += 1
+	return "Party %d/%d HP · %d up" % [hp, max_hp, alive]
+
+
+func _readout_enemy_line() -> String:
+	var bm: Node = get_node_or_null("/root/BattleManager")
+	if bm == null or not ("enemy_party" in bm):
+		return ""
+	var alive := 0
+	var total := 0
+	for c in bm.enemy_party:
+		if c is Combatant:
+			total += 1
+			if c.is_alive:
+				alive += 1
+	return "Enemies %d/%d" % [alive, total]
 
 
 func _build_ui() -> void:
@@ -214,6 +312,20 @@ func _build_mini_battle_panel(panel_size: Vector2, pos: Vector2) -> void:
 	_battle_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 	_battle_viewport.transparent_bg = false
 	_battle_viewport_container.add_child(_battle_viewport)
+
+	# STOPGAP (cadence #26): the SubViewport above renders nothing — reparenting a live
+	# BattleScene needs every one-per-battle latch instance-scoped, which is an ownership
+	# refactor, not a reparent (cowir-battle msg 2904). Until then this text readout does the
+	# panel's informational job. Delete this block + _wire_battle_readout to remove.
+	_battle_readout = Label.new()
+	_battle_readout.position = _battle_viewport_container.position + Vector2(6, 6)
+	_battle_readout.size = _battle_viewport_container.size - Vector2(12, 12)
+	_battle_readout.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_battle_readout.add_theme_font_size_override("font_size", 11)
+	_battle_readout.add_theme_color_override("font_color", TEXT_COLOR)
+	_battle_readout.text = _BATTLE_READOUT_IDLE
+	panel.add_child(_battle_readout)
+	_wire_battle_readout()
 
 	# CRT scanline overlay — single ColorRect + shader replaces ~120 ColorRect nodes.
 	var scan_overlay = ColorRect.new()
