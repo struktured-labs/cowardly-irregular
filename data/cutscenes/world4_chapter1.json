@@ -53,14 +53,14 @@
         {
           "speaker": "Union Rep",
           "text": "The Company. It doesn't have a name. Names are branding. Branding is overhead. Overhead is waste.",
-          "theme": "mysterious",
-          "portrait": "mysterious"
+          "theme": "elder",
+          "portrait": "elder"
         },
         {
           "speaker": "Union Rep",
           "text": "The Director doesn't punish non-compliance. The Director restructures until compliance is achieved.",
-          "theme": "mysterious",
-          "portrait": "mysterious"
+          "theme": "elder",
+          "portrait": "elder"
         },
         {
           "speaker": "Fighter",
@@ -71,14 +71,14 @@
         {
           "speaker": "Union Rep",
           "text": "They became compliant. That's all I know. They stop being themselves and start being their job function.",
-          "theme": "mysterious",
-          "portrait": "mysterious"
+          "theme": "elder",
+          "portrait": "elder"
         },
         {
           "speaker": "Union Rep",
           "text": "The monitors are new. Since last month. They show maps of places I've never been. Statistics about people who aren't here. Battle records. YOUR battle records.",
-          "theme": "mysterious",
-          "portrait": "mysterious"
+          "theme": "elder",
+          "portrait": "elder"
         }
       ]
     },

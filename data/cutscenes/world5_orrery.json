@@ -124,8 +124,8 @@
         {
           "speaker": "Firewall Attendant",
           "text": "Encrypted package. Sender: Orrery_v5. I know that routing signature. It's been looping through my perimeter for two weeks.",
-          "theme": "mysterious",
-          "portrait": "mysterious"
+          "theme": "system",
+          "portrait": "system"
         },
         {
           "speaker": "Mage",
@@ -151,8 +151,8 @@
         {
           "speaker": "Firewall Attendant",
           "text": "That notation. The primary hand. That's the same notation as the access control system I maintain.",
-          "theme": "mysterious",
-          "portrait": "mysterious"
+          "theme": "system",
+          "portrait": "system"
         }
       ]
     },
@@ -166,14 +166,14 @@
         {
           "speaker": "Firewall Attendant",
           "text": "The Calibrant didn't just build the worlds. They annotated them. The second-hand notation — the 'why' — that was added after the first draft. The architect kept asking themselves why they were building it, and kept not writing down the answer.",
-          "theme": "mysterious",
-          "portrait": "mysterious"
+          "theme": "system",
+          "portrait": "system"
         },
         {
           "speaker": "Firewall Attendant",
           "text": "I'm going to file this behind the stack overflow. It's a maintenance location — legitimate access from either side requires triggering the overflow first, which is its own event that draws attention. The Calibrant won't look there without reason.",
-          "theme": "mysterious",
-          "portrait": "mysterious"
+          "theme": "system",
+          "portrait": "system"
         }
       ]
     },

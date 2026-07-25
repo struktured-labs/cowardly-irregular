@@ -39,13 +39,13 @@
         },
         {
           "speaker": "Mage",
-          "text": "The lawn mower is the tank. High defense. Low mobility. The mailbox has ranged attack and paper-cut damage, which sounds minor but\u2014",
+          "text": "The lawn mower is the tank. High defense. Low mobility. The mailbox has ranged attack and paper-cut damage, which sounds minor but—",
           "theme": "mage",
           "portrait": "mage"
         },
         {
           "speaker": "Mage",
-          "text": "\u2014is not minor. The sprinkler has area control and... it has targeting. Somehow.",
+          "text": "—is not minor. The sprinkler has area control and... it has targeting. Somehow.",
           "theme": "mage",
           "portrait": "mage"
         }
@@ -66,9 +66,9 @@
         },
         {
           "speaker": "Mail Carrier",
-          "text": "It's been like this for months. Appliances going rogue. Kids disappearing \u2014 not missing, just 'relocated.' The HOA says it's 'community restructuring.'",
-          "theme": "mysterious",
-          "portrait": "mysterious"
+          "text": "It's been like this for months. Appliances going rogue. Kids disappearing — not missing, just 'relocated.' The HOA says it's 'community restructuring.'",
+          "theme": "elder",
+          "portrait": "elder"
         },
         {
           "speaker": "Mage",
@@ -79,8 +79,8 @@
         {
           "speaker": "Mail Carrier",
           "text": "Have you MET the Coordinator?",
-          "theme": "mysterious",
-          "portrait": "mysterious"
+          "theme": "elder",
+          "portrait": "elder"
         }
       ]
     },
@@ -99,7 +99,7 @@
         },
         {
           "speaker": "",
-          "text": "Failure to report within 24 hours will result in escalating compliance measures. These measures are calibrated to encourage cooperation. \u2014 The Coordinator",
+          "text": "Failure to report within 24 hours will result in escalating compliance measures. These measures are calibrated to encourage cooperation. — The Coordinator",
           "theme": "system",
           "portrait": "system"
         }
