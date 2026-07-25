@@ -446,7 +446,7 @@
       "id": "rogue",
       "to": [
         736,
-        288
+        224
       ],
       "speed": 160
     },
@@ -455,14 +455,14 @@
       "id": "rogue",
       "to": [
         864,
-        288
+        224
       ],
       "speed": 160
     },
     {
       "type": "face_actor",
       "id": "rogue",
-      "dir": "up"
+      "dir": "down"
     },
     {
       "type": "dialogue",
