@@ -1138,6 +1138,7 @@ func _start_dialogue() -> void:
 	var lines: Array = []
 	var _quest_sys_for_lines = get_node_or_null("/root/QuestSystem")
 	var _quest_bucket: String = _quest_state_bucket_for_npc(_quest_sys_for_lines)
+	# PRECEDENCE: a resolved bucket SHADOWS dialogue_lines (i.e. persona fallbacks[]) on this path only — they still render inside DynamicConversation. Pinned by test_persona_shadow_annotation_ratchet.gd.
 	var source_lines: Array = _quest_state_bucket_rotation(_quest_bucket)
 	if source_lines.is_empty():
 		var n: int = dialogue_lines.size()
