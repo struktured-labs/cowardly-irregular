@@ -372,7 +372,12 @@ func play_ui(sound_key: String) -> void:
 
 
 func play_battle(sound_key: String) -> void:
-	"""Play a battle sound effect — file-based if available, else procedural"""
+	"""Play a battle sound effect — world variant first, then default, else procedural"""
+	# Cycle #13: play_ability was the ONLY prefix-aware path, so an authored
+	# w4_enemy_death could never be reached from the battle side.
+	var world_key: String = _get_world_sfx_prefix() + sound_key
+	if world_key != sound_key and _try_play_sfx_from_manifest(_battle_player, world_key):
+		return
 	if _try_play_sfx_from_manifest(_battle_player, sound_key):
 		return
 	if not SOUNDS.has(sound_key):

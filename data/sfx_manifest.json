@@ -49,13 +49,6 @@
       "duration_seconds": 0.06,
       "prompt_influence": 0.0
     },
-    "ui_text_tick": {
-      "file": "assets/audio/sfx/ui_text_tick.ogg",
-      "source": "sox_synth",
-      "prompt": "Very short subtle pink noise burst (25ms) lowpassed at 1800Hz with quick fade, -6dB attenuated, per-character typing tick for non-dialogue UI text rendering (softer than menu_move)",
-      "duration_seconds": 0.025,
-      "prompt_influence": 0.0
-    },
     "advance_queue": {
       "file": "assets/audio/sfx/advance_queue_arcade.ogg",
       "source": "lmms_freeboy_or_elevenlabs",
@@ -381,12 +374,6 @@
     "enemy_death": {
       "file": "assets/audio/sfx/enemy_death.ogg",
       "prompt": "Gentle organic scorch with a wispy smoke plume, soft ember sizzle as flesh quietly combusts into vapor, warm crackling dissolve with breath-like tail, natural living-thing unraveling into air, no bass no tones",
-      "duration_seconds": 1.0,
-      "prompt_influence": 0.4
-    },
-    "enemy_death_industrial": {
-      "file": "assets/audio/sfx/enemy_death_industrial.ogg",
-      "prompt": "Short muffled combustion with a dry fabric ripping tear, crunchy mid-range crackle, paper or cloth being torn apart combined with a soft smothered woof, dry grit and tear texture, minimal bass, no tones, gritty dissolve",
       "duration_seconds": 1.0,
       "prompt_influence": 0.4
     },
@@ -1684,6 +1671,12 @@
       "prompt": "Freeze-status application cue (cycle #10 pre-stage). Ice crackle (bandpass 4500/3500Hz) + crystalline 2400+4800Hz sustained body + descending 200->150Hz sub shudder + glass tinkle at 100ms. Brittle, cold, distinct from strike_ice (that's 125ms punch; this is 840ms frozen-solid). ~840ms.",
       "duration_seconds": 0.84,
       "prompt_influence": 0.0
+    },
+    "w4_enemy_death": {
+      "file": "assets/audio/sfx/w4_enemy_death.ogg",
+      "prompt": "W4 industrial enemy-death variant. RENAMED from enemy_death_industrial (cycle #13): the world-variant scheme is wN_<base>, so the suffix shape could never be found by _get_world_sfx_prefix() \u2014 this sound had never played once since authoring. Paired with making play_battle() world-prefix-aware, same as play_ability already was.",
+      "duration_seconds": 1.0,
+      "prompt_influence": 0.4
     },
     "windup_swing_med": {
       "file": "assets/audio/sfx/windup_swing_med.ogg",
