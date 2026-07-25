@@ -595,6 +595,7 @@ static func build_boss_intent(
 		+ "  %s\n" % persona
 		+ "\n"
 		+ "It is the start of phase %d.\n" % phase
+		+ _format_time_of_day(str(ctx.get("time_of_day", "")))
 		+ "Your state: HP %d%%, MP %d%%, AP %d, status: %s.\n" % [int(hp_pct), int(mp_pct), ap, boss_status_tag]
 		+ "Party state:\n%s\n" % party_block
 		+ "Recent exchange (oldest → newest):\n%s\n" % recent_block

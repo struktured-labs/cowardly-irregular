@@ -7177,6 +7177,10 @@ func _build_boss_intent_context(
 	ctx.boss_mp_pct = float(combatant.current_mp) / float(maxi(combatant.max_mp, 1)) * 100.0
 	ctx.boss_ap = combatant.current_ap
 	ctx.boss_status = combatant.status_effects.duplicate() if combatant.status_effects != null else []
+	# Day/night band for prompt flavour; "" when the clock is absent (older saves / headless).
+	var gs_clock: Node = get_node_or_null("/root/GameState")
+	if gs_clock != null and gs_clock.has_method("get_time_of_day_name"):
+		ctx.time_of_day = str(gs_clock.get_time_of_day_name())
 
 	for member in player_party:
 		if member == null:

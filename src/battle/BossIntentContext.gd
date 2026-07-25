@@ -57,6 +57,12 @@ var learned_patterns_counter: String = ""
 ## Top-N slice of ability_frequencies + element_usage from learned patterns.
 var learned_patterns_sample: Dictionary = {}
 
+## Current day/night band ("dawn"|"day"|"dusk"|"night"), or "" when the clock
+## is unavailable. Read from GameState.get_time_of_day_name() by the producer.
+## Flavour only — the LLM still picks from available_intents, so a boss cannot
+## gain or lose options by time of day; it only colours posture and taunt.
+var time_of_day: String = ""
+
 
 ## Hard cap on recent_actions size. Older entries get dropped.
 const RECENT_LIMIT: int = 8
@@ -86,4 +92,5 @@ func to_dict() -> Dictionary:
 		"player_lead_pc_rules": player_lead_pc_rules.duplicate(),
 		"learned_patterns_counter": learned_patterns_counter,
 		"learned_patterns_sample": learned_patterns_sample.duplicate(),
+		"time_of_day": time_of_day,
 	}
