@@ -74,6 +74,38 @@ func test_exact_region_pool_is_used() -> void:
 		"suburban_overworld is a real pool in enemy_pools.json — it must resolve, or autogrind stays on the degraded-mode roster in W2")
 
 
+func test_display_name_region_resolves_the_INTEGRATION_case() -> void:
+	# The case that made the first cut of this feature INERT in real play, and
+	# which the id-form tests above could never catch because they set the id
+	# directly rather than the way the game does.
+	#
+	# GameLoop:4715 builds the grind config's region as a DISPLAY name —
+	#   _current_map_id.replace("_", " ").capitalize()  →  "Suburban Overworld"
+	# AutogrindUI:1607 passes that display string through as config["region"],
+	# and AutogrindController:128 hands it to set_current_region(). So on the
+	# normal start path current_region_id is "Suburban Overworld", which matches
+	# no pool key. Only the auto-advance path (advance_to_next_region, which
+	# passes WORLD_REGIONS' snake_case id) would have resolved — meaning the
+	# feature worked only AFTER a world transition and never on a fresh grind.
+	for pair in [["Suburban Overworld", "suburban_overworld"], ["Abstract Overworld", "abstract_overworld"]]:
+		AutogrindSystem.current_region_id = str(pair[0])
+		var via_display: Array = _ctrl._region_pool_ids()
+		AutogrindSystem.current_region_id = str(pair[1])
+		var via_id: Array = _ctrl._region_pool_ids()
+		assert_gt(via_display.size(), 0,
+			"display-name region '%s' must resolve a pool — this is the form the UI actually supplies, so failing here means the whole feature is inert on a fresh grind" % str(pair[0]))
+		assert_eq(via_display, via_id,
+			"'%s' and '%s' must resolve identically — the display and id forms are the same region reached by two code paths" % [str(pair[0]), str(pair[1])])
+
+
+func test_w1_display_name_resolves_too() -> void:
+	# W1 via the UI path: map id "overworld" → display "Overworld".
+	AutogrindSystem.current_region_id = "Overworld"
+	var ids: Array = _ctrl._region_pool_ids()
+	assert_gt(ids.size(), 0,
+		"W1's display form 'Overworld' must union the zone pools — W1 is the most-played world and the UI start path is how a grind normally begins")
+
+
 func test_subdivided_region_unions_its_zone_pools() -> void:
 	# W1's region id is "overworld" and NO pool has that id — W1 was authored
 	# with 8 zone pools (overworld_central/forest/ice/…) while W2-W6 got one

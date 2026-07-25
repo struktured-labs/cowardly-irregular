@@ -295,7 +295,8 @@ func _region_pool_ids() -> Array:
 	if es == null or not ("enemy_pools" in es):
 		return []
 	var pools: Dictionary = es.enemy_pools
-	var region: String = str(AutogrindSystem.current_region_id)
+	# current_region_id arrives as a DISPLAY name on the UI start path ("Suburban Overworld", GameLoop:4715) and as a snake_case id on the auto-advance path — normalize to the pool-key form. Same derivation as AutogrindUI:208; idempotent for ids already in that form.
+	var region: String = str(AutogrindSystem.current_region_id).to_lower().replace(" ", "_")
 	if region.is_empty() or pools.is_empty():
 		return []
 	if pools.has(region):
@@ -324,9 +325,11 @@ func _base_data_for_id(enemy_id: String) -> Dictionary:
 	var stats: Dictionary = row.get("stats", {})
 	if stats.is_empty():
 		return {}
+	# color carried so pool- and roster-drawn dicts are interchangeable — nothing reads it today, and two producers disagreeing on a field nobody reads is how that stops being true quietly (cowir-battle msg 3026).
 	return {
 		"id": str(row.get("id", enemy_id)),
 		"name": str(row.get("name", enemy_id.capitalize())),
+		"color": row.get("color", Color.WHITE),
 		"stats": stats.duplicate(true),
 		"weaknesses": (row.get("weaknesses", []) as Array).duplicate(),
 		"resistances": (row.get("resistances", []) as Array).duplicate(),
