@@ -1684,6 +1684,13 @@
       "prompt": "PROTOTYPE for struktured's verdict (cowir-main msg 2914) \u2014 medium/sword-weight melee windup. Fills the 0.12s EASE_IN approach tween that currently plays SILENT before hitstop (cowir-battle msg 2910), so it adds anticipation without adding latency. Filtered pinknoise air-swell (bandpass 1200/900) + 180->300Hz accelerating-mass tone + faint 2200->3400Hz steel-edge shimmer. Deliberately 2.9 dB UNDER attack_hit_sword so anticipation stays subordinate to impact. INERT \u2014 no consumer until struktured rules; if he greenlights, light/heavy variants are trivial follow-ons.",
       "duration_seconds": 0.12,
       "prompt_influence": 0.0
+    },
+    "inn_rest": {
+      "file": "assets/audio/sfx/inn_rest.ogg",
+      "source": "sox_synth",
+      "prompt": "Inn rest \u2014 'sleep through the night and wake restored' (cowir-main GO, msg 2950). Replaces generic `heal` at VillageInn, which is 83% brilliance at 10kHz and reads as clinical magic sparkle rather than relief. Structure: soft 165Hz settle (lying down) -> C3+G3 open-fifth night pad with lowpassed air (deliberately UNRESOLVED) -> rising E4-G4-C5 waking figure that resolves the fifth to the octave, faint 1046Hz morning shimmer on the last note. Warm triangles, no harsh transients. 1.38s, inside VillageInn's 1.5s pre-close window.",
+      "duration_seconds": 1.38,
+      "prompt_influence": 0.0
     }
   }
 }
