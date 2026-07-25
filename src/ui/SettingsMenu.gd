@@ -583,6 +583,15 @@ func _build_ui() -> void:
 			"Review Rebalance Proposals",
 			"%d proposal(s) waiting for your review" % rebalance_count,
 			"rebalance_review")
+	# LLM Connection — the readout struktured lacked when he hit "dynamic quips
+	# disabled" against a perfectly healthy Ollama (2026-07-25). Subtitle is the
+	# live state; activating it forces an immediate re-probe. Hidden on web,
+	# which has no reachable HTTP backend to report on.
+	if not OS.has_feature("web"):
+		add_action.call(
+			"LLM Connection",
+			_get_llm_status_subtitle(),
+			"llm_connection")
 	# tick 50: Configure BYOK — always available on desktop, hidden
 	# on web (browser sandbox can't safely hold keys).
 	if not OS.has_feature("web"):
@@ -1438,6 +1447,43 @@ func _get_controls_subtitle() -> String:
 	return "A:%s  B:%s  Menu:%s" % [a, b, m]
 
 
+## Live LLM reachability, as the "LLM Connection" row's subtitle. Answers
+## "is dynamic dialogue actually working right now" at a glance — the question
+## that was unanswerable in-game when struktured hit a cached-dead backend.
+func _get_llm_status_subtitle() -> String:
+	var svc: Node = get_node_or_null("/root/LLMService")
+	if svc == null or not svc.has_method("get_backend_status"):
+		return "LLM service unavailable"
+	var info: Dictionary = svc.get_backend_status()
+	if info.is_empty():
+		return "No LLM backend configured"
+	if not bool(info.get("llm_enabled", false)):
+		return "Dynamic Dialogue is OFF — turn it on above"
+	if not bool(info.get("probed", false)):
+		return "Checking connection..."
+	var model: String = str(info.get("model", "?"))
+	if bool(info.get("available", false)):
+		return "Connected — %s. Select to re-check." % model
+	# Naming the retry is the point: the player must know this self-heals.
+	var every: int = int(info.get("probe_interval_sec", 30))
+	return "UNREACHABLE (%s) — retrying every %ds. Select to re-check now." % [model, every]
+
+
+## "Test connection" — force an immediate probe, then refresh the row.
+## Not awaited by the caller; the probe is async so the subtitle updates after.
+func _test_llm_connection() -> void:
+	if SoundManager:
+		SoundManager.play_ui("menu_select")
+	var svc: Node = get_node_or_null("/root/LLMService")
+	if svc == null or not svc.has_method("refresh_backend_availability"):
+		return
+	svc.refresh_backend_availability()
+	# Slightly longer than HTTPBackend.PROBE_TIMEOUT_SEC so a refused connection has resolved.
+	await get_tree().create_timer(1.8).timeout
+	if is_instance_valid(self) and is_inside_tree():
+		_build_ui()
+
+
 # Tick 235: live "Now: <track>" subtitle for the Jukebox debug button — players see which track is playing without entering the submenu.
 func _get_jukebox_subtitle() -> String:
 	var sm: Node = get_node_or_null("/root/SoundManager")
@@ -1496,6 +1542,8 @@ func _activate_setting() -> void:
 			_open_teleport_menu()
 		elif item["id"] == "rebalance_review":
 			_open_rebalance_review()
+		elif item["id"] == "llm_connection":
+			_test_llm_connection()
 		elif item["id"] == "byok_config":
 			_open_byok_config()
 		elif item["id"] == "rebalance_history":

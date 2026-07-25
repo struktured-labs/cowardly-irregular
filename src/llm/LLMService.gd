@@ -241,6 +241,28 @@ func is_available() -> bool:
 	return false
 
 
+## Reachability readout for UI. Returns {} when no real backend exists, so a
+## caller can distinguish "no backend configured" from "backend unreachable".
+## Passthrough so UI never reaches into backend internals.
+func get_backend_status() -> Dictionary:
+	for be in _backends:
+		if be.backend_id() != "null" and be.has_method("get_availability_info"):
+			var info: Dictionary = be.get_availability_info()
+			info["llm_enabled"] = llm_enabled
+			return info
+	return {}
+
+
+## Force an immediate reachability re-probe (Settings "test connection").
+## Returns false when there's no real backend to probe.
+func refresh_backend_availability() -> bool:
+	for be in _backends:
+		if be.backend_id() != "null" and be.has_method("refresh_availability"):
+			be.refresh_availability()
+			return true
+	return false
+
+
 ## Free-text completion.  Returns `fallback` if LLM is off or fails.
 ## MUST be awaited: `var result = await LLMService.complete(prompt, fallback)`
 func complete(prompt: String, fallback: String, opts: Dictionary = {}) -> Variant:
