@@ -137,7 +137,7 @@ func test_stopgap_is_documented_as_removable() -> void:
 	# The guardrail was "obviously disposable — deletes in one commit, not needing
 	# unpicking." A future maintainer must be able to find every piece from the
 	# code alone, without reading intercom history.
-	var src: String = load("res://src/ui/autogrind/AutogrindDashboard.gd").source_code
+	var src: String = FileAccess.get_file_as_string("res://src/ui/autogrind/AutogrindDashboard.gd")
 	assert_true(src.contains("STOPGAP (cadence #26)"),
 		"the stopgap must be labelled STOPGAP in-source so it's greppable as removable")
 	assert_true(src.contains("_wire_battle_readout"),
@@ -148,7 +148,7 @@ func test_stopgap_did_not_remove_the_viewport() -> void:
 	# The SubViewport stays. Deleting it would make the eventual reparent a bigger
 	# job and would break get_battle_viewport()'s contract — the stopgap must not
 	# make the real fix harder.
-	var src: String = load("res://src/ui/autogrind/AutogrindDashboard.gd").source_code
+	var src: String = FileAccess.get_file_as_string("res://src/ui/autogrind/AutogrindDashboard.gd")
 	assert_true(src.contains("func get_battle_viewport() -> SubViewport"),
 		"get_battle_viewport must survive the stopgap — the reparent path stays open")
 	assert_true(src.contains("_battle_viewport = SubViewport.new()"),
@@ -159,7 +159,7 @@ func test_no_polling_no_process_loop() -> void:
 	# Guardrail: "signal-driven, no state machine, no caching layer." A _process
 	# hook reading battle state each frame is exactly what cowir-battle warned
 	# against (races the execution phase, reads stale current_combatant).
-	var src: String = load("res://src/ui/autogrind/AutogrindDashboard.gd").source_code
+	var src: String = FileAccess.get_file_as_string("res://src/ui/autogrind/AutogrindDashboard.gd")
 	var start: int = src.find("func _wire_battle_readout")
 	assert_true(start >= 0, "setup: _wire_battle_readout must exist")
 	var end: int = src.find("func _readout_enemy_line", start)
