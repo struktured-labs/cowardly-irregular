@@ -57,25 +57,25 @@ func _stat_short_name(stat_name: String) -> String:
 	return StatNames.short_code(stat_name)
 
 
-func setup(target: Combatant, weapons: Array = [], armors: Array = [], accessories: Array = []) -> void:
+## Lists default to null, NOT []. An empty list is a real answer ("you own
+## none") and must stay empty; only an omitted list falls back to the full
+## catalog. Passing [] used to be indistinguishable from passing nothing,
+## which is how the caller's omission silently offered every item in the game.
+func setup(target: Combatant, weapons = null, armors = null, accessories = null) -> void:
 	"""Initialize menu with character and available equipment"""
 	character = target
-	available_weapons = weapons
-	available_armors = armors
-	available_accessories = accessories
-
-	# If no equipment passed, use defaults from EquipmentSystem
-	if available_weapons.is_empty():
-		for weapon_id in EquipmentSystem.weapons:
-			available_weapons.append(weapon_id)
-	if available_armors.is_empty():
-		for armor_id in EquipmentSystem.armors:
-			available_armors.append(armor_id)
-	if available_accessories.is_empty():
-		for acc_id in EquipmentSystem.accessories:
-			available_accessories.append(acc_id)
+	available_weapons = weapons if weapons is Array else _all_catalog_ids(EquipmentSystem.weapons)
+	available_armors = armors if armors is Array else _all_catalog_ids(EquipmentSystem.armors)
+	available_accessories = accessories if accessories is Array else _all_catalog_ids(EquipmentSystem.accessories)
 
 	call_deferred("_build_ui")
+
+
+func _all_catalog_ids(catalog: Dictionary) -> Array:
+	var ids: Array = []
+	for item_id in catalog:
+		ids.append(item_id)
+	return ids
 
 
 func _build_ui() -> void:
