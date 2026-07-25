@@ -148,8 +148,8 @@
         {
           "speaker": "Union Rep",
           "text": "What's this?",
-          "theme": "villager",
-          "portrait": "villager"
+          "theme": "elder",
+          "portrait": "elder"
         },
         {
           "speaker": "Rogue",
@@ -169,8 +169,8 @@
         {
           "speaker": "Union Rep",
           "text": "This says the Director isn't a person.",
-          "theme": "villager",
-          "portrait": "villager"
+          "theme": "elder",
+          "portrait": "elder"
         },
         {
           "speaker": "Mage",
@@ -181,14 +181,14 @@
         {
           "speaker": "Union Rep",
           "text": "It says the Director is a — function. Something that has decided to be a person. Something that is following instructions from something older than the Company, older than Rivet Row, possibly older than the concept of this place existing.",
-          "theme": "villager",
-          "portrait": "villager"
+          "theme": "elder",
+          "portrait": "elder"
         },
         {
           "speaker": "Union Rep",
           "text": "I'm going to keep this somewhere the monitors don't reach.",
-          "theme": "villager",
-          "portrait": "villager"
+          "theme": "elder",
+          "portrait": "elder"
         }
       ]
     },

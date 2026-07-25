@@ -92,10 +92,17 @@ func test_every_dialogue_theme_referenced_in_json_is_registered() -> void:
 ## wrong name "Phil") in world1_orrery. Add new principals here as they get
 ## authored — the ratchet catches any drift.
 const NAMED_CANON_THEMES := {
+	# W1
 	"Elder Theron": "elder",
 	"Scholar Milo": "scholar",
 	"Bram": "shopkeeper",
 	"Phil the Lost": "mysterious",
+	# W2-W5 (2026-07-25 sweep). Canon = the character's roster/dedicated file
+	# (*_npcs.json, *_guidance_*.json); drift consistently appeared in chapter
+	# and orrery scenes where the NPC inherited the scene's dominant tone.
+	"Mail Carrier": "elder",          # canon: world2_maple_heights_npcs
+	"Union Rep": "elder",             # canon: world4_rivet_row_npcs
+	"Firewall Attendant": "system",   # canon: world5_guidance_core
 }
 
 
@@ -126,3 +133,79 @@ func test_phil_the_lost_speaker_name_is_canonical() -> void:
 	)
 	assert_eq(offenders.size(), 0,
 		"'Phil' is not canonical — use 'Phil the Lost' (matches HARMONIA_NPC_CANON + world1_chapter1):\n  %s" % "\n  ".join(offenders))
+
+
+## Party jobs legitimately vary their PORTRAIT via EXPRESSION_TINTS suffixes
+## ("bard_happy", "cleric_sad") — that's the emotion feature working, not drift.
+## Their THEME must still be constant.
+const EXPRESSION_SUFFIXES := ["angry", "sad", "happy", "surprised", "worried", "determined", "mysterious"]
+
+
+func _strip_expression(portrait: String) -> String:
+	for e in EXPRESSION_SUFFIXES:
+		if portrait.ends_with("_" + e):
+			return portrait.substr(0, portrait.length() - e.length() - 1)
+	return portrait
+
+
+func test_no_named_speaker_drifts_theme_across_files() -> void:
+	# GENERAL drift catcher — supersedes hand-listing every character in
+	# NAMED_CANON_THEMES. Any speaker appearing in 2+ files with 2+ different
+	# themes is rendering as a different character depending on the scene.
+	#
+	# 2026-07-25 sweep found three: Union Rep (mysterious/elder/villager across
+	# 4 W4 files), Firewall Attendant (system/mysterious across 2 W5 files),
+	# Mail Carrier (mysterious/elder across 2 W2 files). Root pattern: chapter
+	# and orrery scenes defaulted the NPC's theme to the scene's dominant tone
+	# instead of the character's identity from their roster file.
+	var themes_by_speaker: Dictionary = {}   # speaker -> {theme: [files]}
+	_iter_dialogue_lines(func(path: String, line: Dictionary):
+		var spk: String = str(line.get("speaker", "")).strip_edges()
+		if spk == "":
+			return
+		var theme_name: String = str(line.get("theme", ""))
+		if not themes_by_speaker.has(spk):
+			themes_by_speaker[spk] = {}
+		if not themes_by_speaker[spk].has(theme_name):
+			themes_by_speaker[spk][theme_name] = []
+		var fname := path.get_file()
+		if not themes_by_speaker[spk][theme_name].has(fname):
+			themes_by_speaker[spk][theme_name].append(fname)
+	)
+	var offenders: Array = []
+	for spk in themes_by_speaker:
+		var by_theme: Dictionary = themes_by_speaker[spk]
+		if by_theme.size() < 2:
+			continue
+		var parts: Array = []
+		for t in by_theme:
+			parts.append("'%s' in %s" % [t, ", ".join(by_theme[t])])
+		offenders.append("%s renders as %d different themes — %s" % [spk, by_theme.size(), " | ".join(parts)])
+	assert_eq(offenders.size(), 0,
+		"a named speaker must look the same in every scene:\n  %s" % "\n  ".join(offenders))
+
+
+func test_party_portrait_variation_is_expression_only() -> void:
+	# Complement to the theme pin: party members MAY vary portrait via the
+	# emotion suffix, but the stripped base must stay constant. Catches a
+	# genuine mis-tag (Fighter drawn with the mage portrait) while allowing
+	# the intentional "fighter_determined" / "cleric_sad" beats.
+	var bases_by_speaker: Dictionary = {}
+	_iter_dialogue_lines(func(path: String, line: Dictionary):
+		var spk: String = str(line.get("speaker", "")).strip_edges()
+		if spk == "":
+			return
+		var base := _strip_expression(str(line.get("portrait", "")))
+		if base == "":
+			return
+		if not bases_by_speaker.has(spk):
+			bases_by_speaker[spk] = {}
+		bases_by_speaker[spk][base] = true
+	)
+	var offenders: Array = []
+	for spk in bases_by_speaker:
+		var bases: Array = bases_by_speaker[spk].keys()
+		if bases.size() > 1:
+			offenders.append("%s uses %d different portrait bases: %s" % [spk, bases.size(), str(bases)])
+	assert_eq(offenders.size(), 0,
+		"a speaker's portrait base must be constant (emotion suffixes excepted):\n  %s" % "\n  ".join(offenders))
