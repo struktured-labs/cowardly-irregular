@@ -84,7 +84,8 @@ func test_weakness_visuals_gated_on_elemental_mod_and_enemy_side() -> void:
 	var idx: int = src.find("_apply_weakness_hit_visuals(", func_idx + 32)
 	assert_gt(idx, -1, "there must be a call site distinct from the func definition")
 	# Walk backwards to find the enclosing `if` block guard.
-	var before: String = src.substr(maxi(0, idx - 400), 400)
+	# Lookback widened 400 → 900 in cycle 19: the weakness_flash audio call plus its comment now sit between the gate and this call site, and a fixed-size window that just barely reached the gate is a brittle assertion. Widened rather than tightened so future additions at this gate don't false-fail.
+	var before: String = src.substr(maxi(0, idx - 900), 900)
 	assert_string_contains(before, "elemental_mod > 1.0",
 		"the call must sit inside an `if elemental_mod > 1.0` gate")
 	assert_string_contains(before, "target in BattleManager.enemy_party",
@@ -165,6 +166,7 @@ func test_weakness_visuals_body_names_enemies_only() -> void:
 	var idx: int = src.find("_apply_weakness_hit_visuals(", func_idx + 32)
 	assert_gt(idx, -1, "there must be a call site distinct from the func definition")
 	# Prior 400 chars must mention enemy_party for the gate.
-	var context: String = src.substr(maxi(0, idx - 400), 400)
+	# Widened with its sibling above (cycle 19) — same brittleness, same reason.
+	var context: String = src.substr(maxi(0, idx - 900), 900)
 	assert_true(context.find("enemy_party") > -1,
 		"the visuals call must sit inside an enemy_party gate — no over-flash on party sprites")

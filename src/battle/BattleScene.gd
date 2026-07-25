@@ -4223,6 +4223,8 @@ func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: St
 		_spawn_elemental_indicator(target, element, elemental_mod)
 		# msg 2787 cycle 16: weakness-hit visuals — element-colored deep flash + bigger knockback on the target sprite so a weakness hit READS as different from a normal hit even before the WEAK! indicator finishes spawning. Enemies-only guard: player-side weakness hits (e.g. bosses hitting a party member's weakness) would over-flash the party sprite the player is trying to read a status/HP bar on. Struktured's brief was "if you hit MONSTERS with weaknesses".
 		if elemental_mod > 1.0 and target in BattleManager.enemy_party:
+			# msg 2893 cycle 19: cowir-sfx's weakness_flash stinger lands on the SAME frame as the visual flash — sound + palette punch as one compound beat (struktured's standing "needs more flash" note). Fires before the sprite lookup so a missing sprite still gets the audio half.
+			SoundManager.play_weakness_flash()
 			var wsprite: Node2D = _get_combatant_sprite(target)
 			if wsprite:
 				_apply_weakness_hit_visuals(wsprite, element, elemental_mod)
