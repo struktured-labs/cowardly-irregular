@@ -78,6 +78,28 @@ func _weapon_type_for(pc: Combatant) -> String:
 		return ""
 	return EquipmentSystem.get_weapon_type(pc)
 
+
+## msg 2796 cycle 20: derive the equipped weapon's element for cowir-sfx's play_strike_element. Element isn't a top-level field — it's implied by a `<element>_damage_bonus` key in the weapon's special_effects (flame_sword/ice_blade/thunder_rod/holy_staff/bone_staff today, one per element). WEAPON ONLY, deliberately: _sum_equipment_special_effect sums weapon+armor+accessory for damage math, but a fire-bonus RING must not make your sword sound like fire — the cue is a strike voice, so only the thing doing the striking counts. Returns the element name unconstrained rather than checking against a known list: play_strike_element is manifest-guarded, so an element cowir-sfx hasn't authored yet is a clean no-op, and a future strike_<x>.ogg starts working with zero code change here.
+func _weapon_element_for(pc: Combatant) -> String:
+	if pc == null:
+		return ""
+	if EquipmentSystem == null or not EquipmentSystem.has_method("get_weapon"):
+		return ""
+	if not "equipped_weapon" in pc or str(pc.equipped_weapon) == "":
+		return ""
+	var weapon: Dictionary = EquipmentSystem.get_weapon(str(pc.equipped_weapon))
+	var se: Variant = weapon.get("special_effects", {})
+	if not (se is Dictionary):
+		return ""
+	# Sorted so a hypothetical dual-element weapon picks deterministically rather than by dict order — no such weapon exists today, but a silent coin-flip would be a miserable thing to debug later.
+	var keys: Array = (se as Dictionary).keys()
+	keys.sort()
+	for k in keys:
+		var key: String = str(k)
+		if key.ends_with("_damage_bonus") and float((se as Dictionary).get(key, 0.0)) > 0.0:
+			return key.trim_suffix("_damage_bonus")
+	return ""
+
 ## Horizontal shift for the ONE-SHOT!/AUTO-BATTLE! victory banners so they clear the BattleResultsDisplay panel (msg 2595). Panel sits at x=200-600 via PRESET_CENTER_LEFT (BRD:171-172); banner is 400 wide with PRESET_CENTER offsets ±200, so it renders x=440-840 by default (overlaps panel at x=440-600). Shifting right by 200 puts the banner at x=640-1040 — clear of the panel with a 40px margin on the left and a 240px margin on the right at the fixed 1280 viewport. Viewport stretch=viewport + aspect=keep pins the coord system at 1280 regardless of window size, so this offset is safe across all real screens.
 const VICTORY_BANNER_X_SHIFT: int = 200
 
@@ -4268,6 +4290,10 @@ func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: St
 		return
 	var weapon_type = EquipmentSystem.get_weapon_type(attacker)
 	SoundManager.play_attack_hit(weapon_type, is_crit)
+	# msg 2796 cycle 20: layer the elemental strike voice ON TOP of the weapon hit, per cowir-sfx's shape — the sword still sounds like a sword, the element rides over it. Only reachable on basic attacks: the `_current_ability_id != ""` early-return above means an ability already played its own cast sound, so a Fire spell won't also fire strike_fire.
+	var weapon_element: String = _weapon_element_for(attacker)
+	if weapon_element != "":
+		SoundManager.play_strike_element(weapon_element)
 
 
 func _spawn_elemental_indicator(target: Combatant, element: String, modifier: float) -> void:
