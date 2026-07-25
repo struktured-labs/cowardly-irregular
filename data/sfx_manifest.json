@@ -1684,6 +1684,13 @@
       "prompt": "Freeze-status application cue (cycle #10 pre-stage). Ice crackle (bandpass 4500/3500Hz) + crystalline 2400+4800Hz sustained body + descending 200->150Hz sub shudder + glass tinkle at 100ms. Brittle, cold, distinct from strike_ice (that's 125ms punch; this is 840ms frozen-solid). ~840ms.",
       "duration_seconds": 0.84,
       "prompt_influence": 0.0
+    },
+    "windup_swing_med": {
+      "file": "assets/audio/sfx/windup_swing_med.ogg",
+      "source": "sox_synth",
+      "prompt": "PROTOTYPE for struktured's verdict (cowir-main msg 2914) \u2014 medium/sword-weight melee windup. Fills the 0.12s EASE_IN approach tween that currently plays SILENT before hitstop (cowir-battle msg 2910), so it adds anticipation without adding latency. Filtered pinknoise air-swell (bandpass 1200/900) + 180->300Hz accelerating-mass tone + faint 2200->3400Hz steel-edge shimmer. Deliberately 2.9 dB UNDER attack_hit_sword so anticipation stays subordinate to impact. INERT \u2014 no consumer until struktured rules; if he greenlights, light/heavy variants are trivial follow-ons.",
+      "duration_seconds": 0.12,
+      "prompt_influence": 0.0
     }
   }
 }
