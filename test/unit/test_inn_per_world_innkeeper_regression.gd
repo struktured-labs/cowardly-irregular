@@ -7,6 +7,20 @@ extends GutTest
 ## innkeeper is LOCAL: per-world identity via GameState.current_world.
 
 const InnScript := preload("res://src/maps/interiors/InnInterior.gd")
+const INN_PATH := "res://src/maps/interiors/InnInterior.gd"
+
+
+## Load-bearing after the greeting stopped saying "talk to me again": closing the
+## innkeeper's dialogue is what opens the rest prompt. Without this connection the
+## only rest gate is the service tile beside the desk, which is the exact
+## discoverability bug reported on 2026-07-14 ("talked to innkeeper repeatedly but
+## couldn't find how to rest"). Removing the hand-off line is only safe while this holds.
+func test_innkeeper_dialogue_close_opens_the_rest_prompt() -> void:
+	var src := FileAccess.get_file_as_string(INN_PATH)
+	assert_true(
+		src.contains("dialogue_ended.connect") and src.contains("_on_rest_request"),
+		"the innkeeper's dialogue_ended must still auto-open the rest prompt"
+	)
 
 
 func test_all_six_worlds_have_distinct_innkeepers() -> void:
@@ -17,9 +31,17 @@ func test_all_six_worlds_have_distinct_innkeepers() -> void:
 		assert_true(k.has("name") and k.has("weave") and k.has("lines"), "world %d entry is complete" % w)
 		assert_gt((k["lines"] as Array).size(), 2, "world %d innkeeper has real dialogue" % w)
 		names[k["name"]] = true
-		# The rest hint must survive every rewrite — the innkeeper is the rest UX anchor.
+		# 2026-07-25 playtest ("he talks twice with basically same text"): the greeting
+		# used to END with "talk to me again when you're ready to rest", which was
+		# correct until the 2026-07-14 fix made dialogue_ended auto-open the rest
+		# prompt. After that the hand-off line fired immediately before a panel
+		# saying "Talk again to confirm" — the same instruction twice in a row.
+		# The greeting must NOT re-state what the prompt already says.
 		var last := str((k["lines"] as Array)[-1]).to_lower()
-		assert_true("rest" in last, "world %d innkeeper's last line points at resting" % w)
+		assert_false(
+			"talk to me again" in last or "talk again" in last,
+			"world %d innkeeper's last line duplicates the rest prompt's own instruction" % w
+		)
 	assert_eq(names.size(), 6, "all six innkeepers are distinct people")
 
 

@@ -1051,37 +1051,31 @@ const INNKEEPERS := {
 		"Mira: Welcome to The Traveler's Rest!",
 		"Mira: A room is 50 gold a night. All party members, fully restored.",
 		"Mira: We change the sheets every Tuesday. Or Wednesday. Probably.",
-		"Mira: Talk to me again when you're ready to rest.",
 	]},
 	2: {"name": "Denise", "weave": "wall-to-wall", "lines": [
 		"Denise: Welcome to the Wayside Motor Lodge! Ice machine's broken.",
 		"Denise: Fifty gold a night. Continental breakfast is a bowl of mints.",
 		"Denise: Checkout is whenever. Time isn't real here, hon.",
-		"Denise: Talk to me again when you're ready to rest.",
 	]},
 	3: {"name": "Barnaby", "weave": "loom-calibrated", "lines": [
 		"Barnaby: The Cogsworth Hostelry welcomes you — mind the pressure valves.",
 		"Barnaby: Fifty gold. Rooms are steam-heated to exactly 19.4 degrees.",
 		"Barnaby: Checkout is at 9:41 sharp. The clock insists.",
-		"Barnaby: Talk to me again when you're ready to rest.",
 	]},
 	4: {"name": "Foreman Ada", "weave": "regulation-grade", "lines": [
 		"Foreman Ada: Bunk Block 7. Hard hats off past the yellow line.",
 		"Foreman Ada: Fifty gold a shift. Sleeping IS the shift.",
 		"Foreman Ada: Report all dreams to the safety board.",
-		"Foreman Ada: Talk to me again when you're ready to rest.",
 	]},
 	5: {"name": "HOST-3SS", "weave": "procedurally-woven", "lines": [
 		"HOST-3SS: Welcome to the Uptime Inn. Current uptime: 99.97%.",
 		"HOST-3SS: Fifty gold per sleep cycle. Rest is scheduled downtime.",
 		"HOST-3SS: Do not be alarmed if the pillows update overnight.",
-		"HOST-3SS: Talk to me again when you're ready to rest.",
 	]},
 	6: {"name": "The Concierge", "weave": "conceptual", "lines": [
 		"The Concierge: Welcome to The Rest. It is less a place than a pause.",
 		"The Concierge: Fifty gold, though the number is mostly a courtesy.",
 		"The Concierge: Your room is the idea of a room. It sleeps beautifully.",
-		"The Concierge: Talk to me again when you're ready to rest.",
 	]},
 }
 
@@ -1338,7 +1332,7 @@ func _on_rest_request() -> void:
 func _show_rest_prompt() -> void:
 	if _rest_dialog and is_instance_valid(_rest_dialog):
 		_rest_dialog.queue_free()
-	_rest_dialog = _make_inn_dialog("Rest at the inn?\n[Talk again to confirm — step away to cancel]")
+	_rest_dialog = _make_inn_dialog("Rest until morning?\nTalk again to confirm  ·  Walk away to cancel")
 	rest_requested.emit()
 	if SoundManager:
 		SoundManager.play_ui("menu_open")
