@@ -89,6 +89,12 @@ var _staged: bool = false
 var _actors: Dictionary = {}
 var _stage_hidden: Array = []
 var _stage_cam_base_offset: Vector2 = Vector2.INF
+## Ids of actors conscripted from nearby live NPCs, nearest-first (struktured msg 2392: "they can move the npcs around as puppets too which are likely to be close by the scene").
+var _conscripted: Array = []
+## Root-field spec from the cutscene JSON; empty dict = feature off (hide-only, pre-2026-07-25 behavior).
+var _conscript_spec: Dictionary = {}
+const CONSCRIPT_RADIUS_DEFAULT: float = 256.0
+const CONSCRIPT_MAX_DEFAULT: int = 6
 
 
 func _ready() -> void:
@@ -252,6 +258,8 @@ func play_cutscene(cutscene_id: String) -> void:
 	# Staged mode: live world stays visible — no backdrop, no dim, puppets act in-scene.
 	_staged = str(data.get("presentation", "")) == "staged"
 	if _staged:
+		var cn = data.get("conscript_nearby", null)
+		_conscript_spec = cn if cn is Dictionary else ({} if cn == null else {"radius": CONSCRIPT_RADIUS_DEFAULT})
 		_begin_staging()
 	elif not _try_load_backdrop_image(data):
 		await _capture_background()
@@ -304,6 +312,8 @@ func play_cutscene_from_data(cutscene_id: String, data: Dictionary) -> void:
 	# Same staged-mode gate as play_cutscene — keep the two entry points in sync.
 	_staged = str(data.get("presentation", "")) == "staged"
 	if _staged:
+		var cn = data.get("conscript_nearby", null)
+		_conscript_spec = cn if cn is Dictionary else ({} if cn == null else {"radius": CONSCRIPT_RADIUS_DEFAULT})
 		_begin_staging()
 	elif not _try_load_backdrop_image(data):
 		await _capture_background()
@@ -396,6 +406,10 @@ func _execute_step(step: Dictionary) -> void:
 			await _step_emote(step)
 		"hop":
 			await _step_hop(step)
+		"nearby_face":
+			_step_nearby_face(step)
+		"nearby_scatter":
+			await _step_nearby_scatter(step)
 		"camera_focus":
 			await _step_camera_focus(step)
 		"camera_restore":
@@ -960,10 +974,65 @@ func _begin_staging() -> void:
 			target.visible = false
 			_stage_hidden.append(target)
 	# Live-playtest 2026-07-11 (msg 2388): ambient villagers/wanderers loitered inside the puppet blocking — puppets play EVERYONE, so hide live character NPCs (npc_name-bearing PROPS like BulletinBoard/TallyWall stay on stage).
+	var live_npcs: Array = []
 	for n in stage.find_children("*", "Area2D", true, false):
 		if (n is OverworldNPC or n is WanderingNPC) and n.visible:
 			n.visible = false
 			_stage_hidden.append(n)
+			live_npcs.append(n)
+	_conscript_nearby_npcs(stage, live_npcs)
+
+
+## Turn the in-radius hidden NPCs into background puppets instead of leaving the frame empty (struktured msg 2392). Each keeps its own look and position; authors drive them with nearby_face / nearby_scatter without knowing who is there.
+func _conscript_nearby_npcs(stage: Node2D, live_npcs: Array) -> void:
+	_conscripted.clear()
+	if _conscript_spec.is_empty() or live_npcs.is_empty():
+		return
+	var origin := _conscript_origin()
+	if origin == Vector2.INF:
+		return
+	var radius: float = float(_conscript_spec.get("radius", CONSCRIPT_RADIUS_DEFAULT))
+	var limit: int = int(_conscript_spec.get("max", CONSCRIPT_MAX_DEFAULT))
+	var in_range: Array = []
+	for n in live_npcs:
+		var d: float = n.global_position.distance_to(origin)
+		if d <= radius:
+			in_range.append({"npc": n, "dist": d})
+	# Nearest-first so ids are deterministic across runs and saves.
+	in_range.sort_custom(func(a, b): return a["dist"] < b["dist"])
+	var idx := 0
+	for entry in in_range:
+		if idx >= limit:
+			break
+		idx += 1
+		var npc = entry["npc"]
+		var actor_id := "nearby_%d" % idx
+		var spec := {"kind": "npc", "archetype": _conscript_archetype(npc), "facing": "down"}
+		var actor := CutsceneActor.build(actor_id, spec)
+		stage.add_child(actor)
+		actor.global_position = npc.global_position
+		_actors[actor_id] = actor
+		_conscripted.append(actor_id)
+
+
+## Where "nearby" is measured from: explicit `at`, else the live player (both shipped staged scenes materialize the party on the player).
+func _conscript_origin() -> Vector2:
+	var at = _conscript_spec.get("at", null)
+	if at is Array and at.size() >= 2:
+		return Vector2(float(at[0]), float(at[1]))
+	var player := _get_live_player()
+	return player.global_position if player else Vector2.INF
+
+
+## Reuse the NPC's own archetype so the puppet looks like who it replaces; OverworldNPC resolves gendered/hash variants internally.
+func _conscript_archetype(npc: Node) -> String:
+	if npc.has_method("_resolve_archetype"):
+		var a: String = str(npc._resolve_archetype())
+		if a != "":
+			return a
+	if "sprite_archetype" in npc and str(npc.sprite_archetype) != "":
+		return str(npc.sprite_archetype)
+	return "young_man"
 
 
 ## Staged teardown: despawn puppets, restore hidden nodes + camera. Idempotent —
@@ -983,6 +1052,8 @@ func _end_staging() -> void:
 		if cam:
 			cam.offset = _stage_cam_base_offset
 	_stage_cam_base_offset = Vector2.INF
+	_conscripted.clear()
+	_conscript_spec = {}
 	_staged = false
 
 
@@ -1152,6 +1223,58 @@ func _run_camera_tween(cam: Camera2D, dest: Vector2, step: Dictionary) -> void:
 	tween.set_trans(trans_type).set_ease(ease_type)
 	tween.tween_property(cam, "offset", dest, float(step.get("duration", 0.8)))
 	_last_camera_tween = tween
+
+
+## Crowd reaction — every conscripted local turns toward a point or actor. No-op when nothing was conscripted, so scenes stay headless-safe and work unchanged with the feature off.
+func _step_nearby_face(step: Dictionary) -> void:
+	var target := _resolve_point_or_actor(step.get("toward", null))
+	if target == Vector2.INF:
+		return
+	for id in _conscripted:
+		var a := _get_actor(id)
+		if a:
+			a.face_toward(a.to_local(target) + a.position)
+
+
+## Locals make room — each conscripted actor walks directly away from a point. Distances are small by design; this is blocking, not choreography.
+func _step_nearby_scatter(step: Dictionary) -> void:
+	if _conscripted.is_empty():
+		return
+	var origin := _resolve_point_or_actor(step.get("from", null))
+	if origin == Vector2.INF:
+		origin = _conscript_origin()
+	if origin == Vector2.INF:
+		return
+	var distance: float = float(step.get("distance", 48.0))
+	var speed: float = float(step.get("speed", 70.0))
+	# Start every walk unawaited so the crowd parts at once, then wait out the longest — awaiting each in turn would make them shuffle single-file.
+	var longest: float = 0.0
+	for id in _conscripted:
+		var a := _get_actor(id)
+		if a == null:
+			continue
+		var away := a.global_position - origin
+		if away.length() < 1.0:
+			away = Vector2.RIGHT
+		var dest: Vector2 = a.global_position + away.normalized() * distance
+		if _skipping:
+			a.global_position = dest
+			a.stand()
+			continue
+		a.walk_to(dest, speed)
+		longest = maxf(longest, a.global_position.distance_to(dest) / maxf(1.0, speed))
+	if not _skipping and longest > 0.0:
+		await get_tree().create_timer(longest).timeout
+
+
+## Accept either an actor id or an [x,y] pair; Vector2.INF means unresolvable.
+func _resolve_point_or_actor(value) -> Vector2:
+	if value is String:
+		var a := _get_actor(str(value))
+		return a.global_position if a else Vector2.INF
+	if value is Array and value.size() >= 2:
+		return Vector2(float(value[0]), float(value[1]))
+	return Vector2.INF
 
 
 func _apply_remaining_set_flag_steps(steps: Array, from_index: int) -> void:
