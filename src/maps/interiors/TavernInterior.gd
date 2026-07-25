@@ -588,6 +588,48 @@ func _add_mug_rack(parent: Node2D) -> void:
 # Stage
 # ---------------------------------------------------------------------------
 
+## Stage geometry — DERIVED from the S tiles in TAVERN_LAYOUT (cols 16-23,
+## rows 2-4) rather than typed independently. The platform sprite, the
+## footlights, the spotlight and the dancer all anchor off these, so the
+## stage cannot drift apart from its own floor again (msg 2780 item 2: the
+## sprite was centered at x=16 while its tiles sat at 16-23, hanging the
+## whole platform 4 tiles west of the floor it was supposed to be).
+const STAGE_COL_FIRST := 16
+const STAGE_COL_LAST := 23
+const STAGE_ROW_FIRST := 2
+const STAGE_ROW_LAST := 4
+const STAGE_CENTER_X := (STAGE_COL_FIRST + STAGE_COL_LAST + 1) / 2.0  # 20.0
+const STAGE_CENTER_Y := (STAGE_ROW_FIRST + STAGE_ROW_LAST + 1) / 2.0  # 3.5
+
+
+## Warm footlight strip along the stage lip — reads as a raised platform
+## edge rather than a painted rectangle on the floor.
+func _add_stage_footlights(stage: Node2D) -> void:
+	var lip_y: float = float(STAGE_ROW_LAST) + 0.85
+	for i in range(4):
+		var lamp := PointLight2D.new()
+		lamp.name = "Footlight%d" % i
+		var t: float = float(i) / 3.0
+		var lx: float = lerpf(float(STAGE_COL_FIRST) + 0.9, float(STAGE_COL_LAST) + 0.1, t)
+		lamp.position = Vector2(lx * TILE_SIZE, lip_y * TILE_SIZE)
+		lamp.color = Color(1.0, 0.78, 0.42, 1.0)
+		lamp.energy = 0.42
+		lamp.texture = _create_light_texture(72)
+		stage.add_child(lamp)
+
+
+## Overhead wash centred on the performer. Softer and wider than the
+## footlights so the dancer reads as lit FROM the room, not glowing.
+func _add_stage_spotlight(stage: Node2D) -> void:
+	var spot := PointLight2D.new()
+	spot.name = "StageSpotlight"
+	spot.position = Vector2(STAGE_CENTER_X * TILE_SIZE, (STAGE_CENTER_Y + 0.2) * TILE_SIZE)
+	spot.color = Color(1.0, 0.94, 0.80, 1.0)
+	spot.energy = 0.55
+	spot.texture = _create_light_texture(150)
+	stage.add_child(spot)
+
+
 func _create_stage() -> void:
 	var stage = Node2D.new()
 	stage.name = "Stage"
@@ -634,8 +676,13 @@ func _create_stage() -> void:
 				img.set_pixel(x, y, c)
 
 	sprite.texture = ImageTexture.create_from_image(img)
-	sprite.position = Vector2(16 * TILE_SIZE, 3.5 * TILE_SIZE)
+	# Centered on the S tiles (cols 16-23, rows 2-4), NOT the old x=16 —
+	# that hung the whole platform 4 tiles west of its own floor, which is
+	# the "bare sprite offset" struktured flagged (msg 2780 item 2).
+	sprite.position = Vector2(STAGE_CENTER_X * TILE_SIZE, STAGE_CENTER_Y * TILE_SIZE)
 	stage.add_child(sprite)
+	_add_stage_footlights(stage)
+	_add_stage_spotlight(stage)
 	decorations.add_child(stage)
 
 
@@ -2008,7 +2055,9 @@ func _create_light_texture(size: int = 256) -> ImageTexture:
 func _setup_dancer() -> void:
 	dancer_sprite = Sprite2D.new()
 	dancer_sprite.name = "DancingGirl"
-	dancer_sprite.position = Vector2(20 * TILE_SIZE, 3.5 * TILE_SIZE)
+	# Anchored to the stage's derived centre rather than a matching literal —
+	# a hardcoded 20 would silently stop tracking if the stage ever moves.
+	dancer_sprite.position = Vector2(STAGE_CENTER_X * TILE_SIZE, STAGE_CENTER_Y * TILE_SIZE)
 	dancer_sprite.z_index = 10
 	add_child(dancer_sprite)
 	_generate_dancer_sprites()
