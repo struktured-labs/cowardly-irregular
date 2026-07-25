@@ -1042,6 +1042,8 @@ func _format_condition(condition: Dictionary) -> String:
 			return "%s %s %d" % [str(condition.get("item_id", "Item")).capitalize(), op, value]
 		"setup_complete":
 			return "Setup Done"
+		"is_night":
+			return "IS NIGHT"
 		"always":
 			return "ALWAYS"
 		_:
