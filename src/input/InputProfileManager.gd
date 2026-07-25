@@ -49,7 +49,7 @@ const ACTION_LABELS = {
 ## Godot 4 — Start (button 6) was bound to battle_toggle_auto, so pressing
 ## Plus on Switch Pro would auto-enable autobattle every time. Both
 ## profiles now use Godot 4 numbers consistently.
-## Mirrors project.godot exactly — the correct map for any pad SDL reports with standard semantics (verified 2026-07-25: 8BitDo Ultimate 2 via xpad presents BTN_A/B/X/Y + BTN_TL/TR + ABS_HAT0, so Godot's 0..14 constants are already right and remapping only breaks them).
+## Mirrors project.godot exactly — correct for any pad SDL NORMALIZES, i.e. one `Input.is_joy_known()` reports true for. Standard semantics come from SDL having a GUID mapping, NOT from the device's evdev codes being tidy: the 8BitDo Ultimate 2 reports textbook BTN_TL/BTN_TR and still arrives raw, because Godot's bundled DB lacks its product id (it binds hid-generic, never xpad — measured 2026-07-25, correcting this comment's earlier "via xpad" claim). ControllerMappings supplies the missing mapping; without that autoload this profile is wrong for that pad.
 const PROFILE_STANDARD = {
 	"ui_accept": [1],          # B (East face)
 	"ui_cancel": [0],          # A (South face)
