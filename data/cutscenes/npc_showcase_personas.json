@@ -22,6 +22,7 @@
 			"Have you ever considered that combat is just a very loud spreadsheet? Of course you have. Everyone has. Some of us have written it down.",
 			"Sit. Listen. I have a thesis. It is about you. Specifically, the parts of you that could, with minor optimization, be a script."
 		],
+		"_fallbacks_note": "SHADOWED — quest_state_lines outranks this list on the static idle path, and for Milo that shadow is TOTAL: he gives chapter_three, all three buckets are authored, and every quest state maps to one, so these six lines never render when you walk up and talk to him. They are NOT dead: they still render inside an active LLM conversation (passed to DynamicConversation as fallback_lines). Editing them changes dynamic-chat behaviour only — a spot-check on the idle path will show no change and is not evidence the edit failed. To change what he says when approached, edit quest_state_lines. (cowir-ai, precedence introduced 2026-07-16; hazard reported by cowir-story msg 2957.)",
 		"fallbacks": [
 			"Ah, a fellow seeker of knowledge!",
 			"I've been studying an ancient art called 'AUTOBATTLE'.",
