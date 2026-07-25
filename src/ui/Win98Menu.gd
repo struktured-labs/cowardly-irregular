@@ -1105,7 +1105,7 @@ func _handle_defer_input() -> void:
 
 
 func _confirm_turn_with_queue() -> void:
-	"""L button held for 2 seconds - confirm current queue and end turn"""
+	"""L held past L_HOLD_CONFIRM_TIME (0.15s) - confirm current queue and end turn"""
 	var root = _get_root_menu()
 	if root._queued_actions.size() > 0:
 		# Submit queued actions as advance

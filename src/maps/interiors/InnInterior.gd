@@ -65,7 +65,7 @@ const INN_LAYOUT = [
 
 ## Rest service state
 var _rest_pending: bool = false
-var _rest_dialog: Control = null
+var _rest_dialog: CanvasLayer = null
 
 
 func _ready() -> void:
@@ -1313,7 +1313,18 @@ func _create_rest_interactable() -> void:
 	area.add_to_group("interactables")
 	area.set_meta("interaction_callback", _on_rest_request)
 	area.set_meta("parent_scene", self)
+	# The prompt has always said "step away to cancel" — nothing implemented it, so a declined rest stayed armed and the NEXT interact slept instead of prompting.
+	area.body_exited.connect(_on_rest_zone_exited)
 	add_child(area)
+
+
+func _on_rest_zone_exited(body: Node) -> void:
+	if not InteractGeometry.is_player(body):
+		return
+	_rest_pending = false
+	if _rest_dialog and is_instance_valid(_rest_dialog):
+		_rest_dialog.queue_free()
+		_rest_dialog = null
 
 
 func _on_rest_request() -> void:
@@ -1359,18 +1370,23 @@ func _do_rest() -> void:
 		_rest_dialog = null
 
 
-func _make_inn_dialog(text: String) -> Control:
+func _make_inn_dialog(text: String) -> CanvasLayer:
+	# 2026-07-25 playtest ("spawns a menu out of sight to right of the inn"): the panel was a Control parented to this Node2D, so screen-center pixels were read as WORLD coords and the camera left them behind. A CanvasLayer is the only thing that makes Control coords mean screen coords — same root cause the local-panel dialogs hit before NPCDialogue moved to CutsceneDialogue.
+	var layer = CanvasLayer.new()
+	layer.name = "RestDialogLayer"
+	layer.layer = 60
+
 	var holder = Control.new()
 	holder.name = "RestDialog"
-	holder.z_index = 100
-	# 2026-07-15 playtest: was `3*TILE_SIZE - 120` = -24px, i.e. off-screen LEFT half the width of the dialog was clipped ("st at the inn?"). Anchor screen-center via viewport size so the dialog always renders on-screen regardless of the innkeeper's tile.
-	holder.size = Vector2(240, 70)
-	var _vp := get_viewport().get_visible_rect().size if get_viewport() else Vector2(1280, 720)
-	holder.position = Vector2((_vp.x - holder.size.x) / 2, _vp.y * 0.35)
+	holder.set_anchors_preset(Control.PRESET_FULL_RECT)
+	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(holder)
 
 	var panel = Panel.new()
-	panel.position = Vector2.ZERO
-	panel.size = holder.size
+	panel.size = Vector2(300, 88)
+	# Anchored to the layer's own rect, so this is genuinely screen-centered on any resolution.
+	panel.set_anchors_preset(Control.PRESET_CENTER_TOP)
+	panel.position = Vector2(-panel.size.x / 2, 96)
 	var style = StyleBoxFlat.new()
 	style.bg_color = Color(0.15, 0.10, 0.05, 0.95)
 	style.border_color = Color(0.7, 0.5, 0.3)
@@ -1380,16 +1396,17 @@ func _make_inn_dialog(text: String) -> Control:
 	holder.add_child(panel)
 
 	var label = Label.new()
-	label.position = Vector2(8, 8)
-	label.size = Vector2(holder.size.x - 16, holder.size.y - 16)
-	label.add_theme_font_size_override("font_size", 11)
+	label.position = Vector2(10, 10)
+	label.size = Vector2(panel.size.x - 20, panel.size.y - 20)
+	label.add_theme_font_size_override("font_size", 13)
 	label.add_theme_color_override("font_color", Color(1.0, 0.95, 0.7))
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.text = text
-	holder.add_child(label)
+	panel.add_child(label)
 
-	add_child(holder)
-	return holder
+	add_child(layer)
+	return layer
 
 
 # ---------------------------------------------------------------------------

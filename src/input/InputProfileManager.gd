@@ -5,7 +5,7 @@ extends Node
 ## Persists custom bindings to user://input/controls.json.
 
 const CONFIG_PATH = "user://input/controls.json"
-const CONFIG_VERSION = 1
+const CONFIG_VERSION = 2
 
 ## Remappable actions (gamepad only - keyboard stays fixed)
 const REMAPPABLE_ACTIONS = [
@@ -49,6 +49,16 @@ const ACTION_LABELS = {
 ## Godot 4 — Start (button 6) was bound to battle_toggle_auto, so pressing
 ## Plus on Switch Pro would auto-enable autobattle every time. Both
 ## profiles now use Godot 4 numbers consistently.
+## Mirrors project.godot exactly — the correct map for any pad SDL reports with standard semantics (verified 2026-07-25: 8BitDo Ultimate 2 via xpad presents BTN_A/B/X/Y + BTN_TL/TR + ABS_HAT0, so Godot's 0..14 constants are already right and remapping only breaks them).
+const PROFILE_STANDARD = {
+	"ui_accept": [1],          # B (East face)
+	"ui_cancel": [0],          # A (South face)
+	"battle_advance": [10],    # RIGHT_SHOULDER (R) — matches "[R] Advance" hint bar
+	"battle_defer": [9],       # LEFT_SHOULDER (L) — matches "[L] Defer" hint bar
+	"battle_toggle_auto": [4], # BACK (Select/Minus)
+	"ui_menu": [6, 7],         # START + L3 — project.godot binds both; dropping 7 was a silent regression
+}
+
 const PROFILE_SN30 = {
 	"ui_accept": [1],          # B (East face)
 	"ui_cancel": [0],          # A (South face)
@@ -69,7 +79,14 @@ const PROFILE_ULTIMATE_PRO_2 = {
 }
 
 ## Profile names
-const PROFILE_NAMES = ["8BitDo SN30", "8BitDo Ultimate Pro 2", "Custom"]
+const PROFILE_NAMES = ["Standard", "8BitDo SN30", "8BitDo Ultimate Pro 2", "Custom"]
+
+## Device-name substrings (lowercased) → profile. First match wins; anything unmatched gets Standard.
+const PROFILE_AUTODETECT = [
+	["ultimate pro 2", "8BitDo Ultimate Pro 2"],
+	["sn30", "8BitDo SN30"],
+	["sf30", "8BitDo SN30"],
+]
 
 ## Human-readable button labels by index — Godot 4 JoyButton enum.
 ## (Pre-2026-05-02 these labels were transcribed from Godot 3, which silently
@@ -98,19 +115,53 @@ const BUTTON_LABELS = {
 }
 
 ## Runtime state
-var active_profile: String = "8BitDo Ultimate Pro 2"
+var active_profile: String = "Standard"
 var custom_bindings: Dictionary = {}
+## True once the player picks a profile in Settings or a saved config supplies one — autodetect never overrides an explicit choice.
+var profile_chosen_by_user: bool = false
 
 
 func _ready() -> void:
-	# Initialize custom bindings from Ultimate Pro 2 defaults
-	custom_bindings = PROFILE_ULTIMATE_PRO_2.duplicate(true)
+	custom_bindings = PROFILE_STANDARD.duplicate(true)
 	load_config()
-	apply_profile(active_profile)
+	match profile_chosen_by_user:
+		true: apply_profile(active_profile)
+		false: _autodetect_and_apply()
+	# The pad may enumerate AFTER boot (hotplug, or a wireless dongle settling) — redetect so it isn't stuck on the no-device default.
+	Input.joy_connection_changed.connect(_on_joy_connection_changed)
+
+
+func _on_joy_connection_changed(_device: int, connected: bool) -> void:
+	if connected and not profile_chosen_by_user:
+		_autodetect_and_apply()
+
+
+## Picks a profile from the connected pad's reported name. Standard is the default because Godot/SDL already normalizes conforming devices.
+func detect_profile_for_device(device_name: String) -> String:
+	var lowered := device_name.to_lower()
+	for entry in PROFILE_AUTODETECT:
+		if lowered.find(entry[0]) != -1:
+			return entry[1]
+	return "Standard"
+
+
+func _autodetect_and_apply() -> void:
+	var pads := Input.get_connected_joypads()
+	match pads.is_empty():
+		true:
+			print("[InputProfileManager] No gamepad connected — applying Standard until one appears")
+			apply_profile("Standard")
+		false:
+			var pad_name: String = Input.get_joy_name(pads[0])
+			var detected := detect_profile_for_device(pad_name)
+			print("[InputProfileManager] Detected '%s' -> profile '%s'" % [pad_name, detected])
+			apply_profile(detected)
 
 
 func get_profile_bindings(profile_name: String) -> Dictionary:
 	match profile_name:
+		"Standard":
+			return PROFILE_STANDARD
 		"8BitDo SN30":
 			return PROFILE_SN30
 		"8BitDo Ultimate Pro 2":
@@ -118,7 +169,7 @@ func get_profile_bindings(profile_name: String) -> Dictionary:
 		"Custom":
 			return custom_bindings
 		_:
-			return PROFILE_SN30
+			return PROFILE_STANDARD
 
 
 func apply_profile(profile_name: String) -> void:
@@ -264,7 +315,7 @@ func detect_conflicts() -> Array:
 func reset_custom_to_preset() -> void:
 	var source = get_profile_bindings(active_profile)
 	if active_profile == "Custom":
-		source = PROFILE_ULTIMATE_PRO_2
+		source = PROFILE_STANDARD
 	custom_bindings = source.duplicate(true)
 	if active_profile == "Custom":
 		apply_profile("Custom")
@@ -276,6 +327,7 @@ func cycle_profile(delta: int) -> String:
 	if idx < 0:
 		idx = 0
 	idx = wrapi(idx + delta, 0, PROFILE_NAMES.size())
+	profile_chosen_by_user = true
 	apply_profile(PROFILE_NAMES[idx])
 	save_config()
 	return active_profile
@@ -348,6 +400,11 @@ func load_config() -> void:
 
 	if data.has("active_profile") and data["active_profile"] in PROFILE_NAMES:
 		active_profile = data["active_profile"]
+		profile_chosen_by_user = true
+		# v1 hardcoded "8BitDo Ultimate Pro 2" as the startup default, so a persisted copy of it is indistinguishable from a real choice — treat it as unset so autodetect can correct the L/R inversion it carries.
+		var cfg_version: int = int(data.get("version", 1))
+		if cfg_version < 2 and active_profile == "8BitDo Ultimate Pro 2":
+			profile_chosen_by_user = false
 
 	if data.has("custom_bindings") and data["custom_bindings"] is Dictionary:
 		for action in data["custom_bindings"]:
