@@ -67,15 +67,15 @@ func _scan_controllers() -> void:
 	_update_input_map()
 
 
+## ALL joypad bindings stay device-agnostic (device = -1). struktured 2026-07-25: a
+## second pad ('NEXT SNES Controller') enumerated first, won preferred_device, and this
+## function locked EVERY action to it — his 8BitDo went totally dead (dpad, A, B, sticks).
+## A spurious second controller is a far smaller harm than the player's own pad being
+## ignored, so nothing is locked. preferred_device still steers Mode 7 camera polling.
 func _update_input_map() -> void:
-	if preferred_device == -1:
-		return
-
 	for action in InputMap.get_actions():
-		var events = InputMap.action_get_events(action)
-		for event in events:
-			if event is InputEventJoypadButton or event is InputEventJoypadMotion:
-				if event.device != preferred_device:
-					InputMap.action_erase_event(action, event)
-					event.device = preferred_device
-					InputMap.action_add_event(action, event)
+		for event in InputMap.action_get_events(action):
+			if (event is InputEventJoypadButton or event is InputEventJoypadMotion) and event.device != -1:
+				InputMap.action_erase_event(action, event)
+				event.device = -1
+				InputMap.action_add_event(action, event)
