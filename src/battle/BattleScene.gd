@@ -3487,6 +3487,8 @@ func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attac
 			attacker_anim.play_lunge()
 
 	# Approach: accelerate INTO contact (EASE_IN) — committed weight, not a drift.
+	# PROTOTYPE (cowir-main msg 2929, cowir-sfx e33cb0d3): windup fills this 0.12s approach, which plays silent today. Asset is built to exactly 0.12s so it resolves AT contact rather than bleeding past it. play_battle is manifest-guarded — clean no-op until their branch folds. THROWAWAY: exists so struktured judges the anticipation in motion instead of judging an .ogg; delete this line and the asset if he rules no.
+	SoundManager.play_battle("windup_swing_med")
 	tween.set_trans(Tween.TRANS_QUAD)
 	tween.set_ease(Tween.EASE_IN)
 	tween.tween_property(attacker_sprite, "position", attack_pos, 0.12)

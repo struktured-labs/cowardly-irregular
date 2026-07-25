@@ -36,6 +36,19 @@ const KNOWN_ORPHAN_SFX := {
 	# 2026-07-04: allowlist empty — quest_complete asset landed alongside
 	# the QuestTracker branch (feature/sfx-quest-complete-relanding).
 	# New orphans still fail loud below.
+	#
+	# 2026-07-25 (cowir-main msg 2929): DELIBERATELY TEMPORARY, and the
+	# self-check below is what retires it. The windup consumer is wired in
+	# _animate_melee_attack while its asset lives on cowir-sfx's unfolded
+	# branch (feature/sfx-windup-prototype @ e33cb0d3) — cowir-main is
+	# folding both together so struktured can hear it in motion. Until that
+	# fold, the key legitimately doesn't resolve on main.
+	# WHEN THE SFX BRANCH FOLDS: test_allowlist_has_no_stale_entries fails
+	# and tells you to delete this line. That's intended — don't re-add it.
+	# IF STRUKTURED RULES NO: delete the consumer line in BattleScene
+	# _animate_melee_attack AND this entry together; the prototype is
+	# explicitly throwaway.
+	"windup_swing_med": "prototype pending cowir-sfx fold + struktured verdict",
 }
 
 
