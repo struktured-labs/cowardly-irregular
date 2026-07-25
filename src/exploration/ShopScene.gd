@@ -21,6 +21,13 @@ enum ShopType { ITEM, BLACK_MAGIC, WHITE_MAGIC, BLACKSMITH }
 ## keeper looks like a serial killer"). Falls through to the procedural
 ## draw when the PNG is missing so nothing regresses if a file gets
 ## deleted or a new ShopType is added without art.
+## Purchase-feedback tuning (struktured msg 2775). Success flash is a
+## deliberately different colour + a scale beat from the red error flash
+## so the two outcomes read as opposites at a glance.
+const GOLD_FLASH_SUCCESS_COLOR: Color = Color(1.0, 1.0, 0.75)
+const GOLD_FLASH_SUCCESS_SEC: float = 0.28
+const PURCHASE_TOAST_SEC: float = 1.5
+
 const KEEPER_PORTRAIT_PATHS: Dictionary = {
 	ShopType.ITEM:        "res://assets/sprites/portraits/keepers/willow.png",
 	ShopType.BLACK_MAGIC: "res://assets/sprites/portraits/keepers/mortimer.png",
@@ -412,8 +419,14 @@ func _attempt_purchase(item_id: String, item_data: Dictionary) -> void:
 			_update_gold_display()
 			description_label.text = "No party to receive item — gold refunded."
 			return
-		SoundManager.play_ui("menu_select")
+		# struktured msg 2775: "more obvious that you purchase something...
+		# a nice little ka-ching... more visual indication, not just a
+		# closing of a menu." Three beats fire together: the dedicated
+		# purchase sound, a gold-counter flash, and a floating receipt.
+		SoundManager.play_ui("purchase_complete")
 		_update_gold_display()
+		_flash_gold_label_success()
+		_show_purchase_toast(str(item_data.get("name", "item")), cost)
 		# Tick 257: emit only after the gold spend AND the item handoff
 		# both succeeded — refund path above returns early so we don't
 		# spuriously fire on failed transactions.
@@ -754,6 +767,57 @@ func _flash_gold_label() -> void:
 	if not is_instance_valid(self) or not is_instance_valid(gold_label):
 		return
 	gold_label.add_theme_color_override("font_color", original_color)
+
+
+## Success counterpart to _flash_gold_label — pulses the counter bright
+## white-gold and scales it briefly so the gold DROP is visible, not just
+## audible (struktured msg 2775: "more visual indication"). Deliberately a
+## different colour + a scale beat from the red error flash so the two
+## read as opposite outcomes at a glance.
+func _flash_gold_label_success() -> void:
+	if not is_instance_valid(gold_label):
+		return
+	var original_color: Color = gold_label.get_theme_color("font_color")
+	gold_label.add_theme_color_override("font_color", GOLD_FLASH_SUCCESS_COLOR)
+	# Pivot at the label's own centre so the pulse doesn't drift the text.
+	gold_label.pivot_offset = gold_label.size * 0.5
+	var tw := create_tween()
+	tw.tween_property(gold_label, "scale", Vector2(1.18, 1.18), GOLD_FLASH_SUCCESS_SEC * 0.4)
+	tw.tween_property(gold_label, "scale", Vector2.ONE, GOLD_FLASH_SUCCESS_SEC * 0.6)
+	await get_tree().create_timer(GOLD_FLASH_SUCCESS_SEC).timeout
+	if not is_instance_valid(self) or not is_instance_valid(gold_label):
+		return
+	gold_label.add_theme_color_override("font_color", original_color)
+	gold_label.scale = Vector2.ONE
+
+
+## Floating purchase receipt — item name + gold delta, rising and fading
+## just under the gold counter so the eye connects the two. Purely
+## presentational: no input capture (MOUSE_FILTER_IGNORE), self-frees, and
+## never blocks the menu, so rapid repeat-buys just stack their own toasts.
+func _show_purchase_toast(item_name: String, cost: int) -> void:
+	if not is_instance_valid(gold_label):
+		return
+	var toast := Label.new()
+	toast.name = "PurchaseToast"
+	toast.text = "%s  −%d G" % [item_name, cost]
+	toast.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	toast.add_theme_font_size_override("font_size", TextScale.scaled(13))
+	toast.add_theme_color_override("font_color", Color(0.75, 1.0, 0.75))
+	toast.add_theme_color_override("font_shadow_color", Color(0, 0, 0, 0.8))
+	toast.add_theme_constant_override("shadow_offset_x", 1)
+	toast.add_theme_constant_override("shadow_offset_y", 1)
+	toast.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	toast.position = gold_label.position + Vector2(0, gold_label.size.y + 2)
+	toast.size = gold_label.size
+	add_child(toast)
+	var tw := create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(toast, "position:y", toast.position.y + 22.0, PURCHASE_TOAST_SEC)
+	tw.tween_property(toast, "modulate:a", 0.0, PURCHASE_TOAST_SEC).set_delay(PURCHASE_TOAST_SEC * 0.45)
+	tw.chain().tween_callback(func():
+		if is_instance_valid(toast):
+			toast.queue_free())
 
 
 func _is_magic_shop() -> bool:
