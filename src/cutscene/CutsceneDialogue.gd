@@ -922,7 +922,7 @@ const PORTRAIT_SPRITES = {
 	"cluck": "res://assets/sprites/portraits/npcs/cluck.png",
 	# W1 bosses.
 	"boss_rat_king": "res://assets/sprites/portraits/npcs/boss_rat_king.png",
-	# Existing NPC portrait asset — Dr. Temporal already on disk.
+	# Pre-registered pending art (same pattern as the masterite variants). NOT on disk — assets/sprites/npcs/dr_temporal/ is his OVERWORLD sheet dir, not a portrait; PR #155 registered this claiming otherwise. Renders the mysterious procedural until a real bust lands here.
 	"dr_temporal": "res://assets/sprites/portraits/npcs/dr_temporal.png",
 	# Generic archetype pool — every OverworldNPC.npc_type value that OverworldNPC:1112 passes as `portrait` when the player interacts. Aliased to closest existing procedural via the archetype prefix arm; cowir-sprites replaces individually as art lands.
 	"farmer": "res://assets/sprites/portraits/npcs/farmer.png",
@@ -941,6 +941,10 @@ const PORTRAIT_SPRITES = {
 	"pilgrim": "res://assets/sprites/portraits/npcs/pilgrim.png",
 	"scholarly": "res://assets/sprites/portraits/npcs/scholarly.png",
 	"soldier": "res://assets/sprites/portraits/npcs/soldier.png",
+	# Gendered generics from cowir-sprites' Batch C. Shipped 256x256 and sat with ZERO consumers — the generic `villager`/`elder` keys keep their current look so scenes struktured has played don't change; these are addressable when an author wants a specific one.
+	"villager_m": "res://assets/sprites/portraits/npcs/villager_m.png",
+	"villager_f": "res://assets/sprites/portraits/npcs/villager_f.png",
+	"elder_f": "res://assets/sprites/portraits/npcs/elder_f.png",
 }
 
 ## Named-principal + archetype → existing procedural fallback. Any key here without a PNG on disk renders via the mapped procedural until cowir-sprites' art lands (matches the pre-fix visual so nothing regresses on interim frames).
@@ -961,6 +965,7 @@ const PORTRAIT_PROCEDURAL_FALLBACK := {
 	"dancer": "villager", "adventurer": "guard", "apprentice": "scholar",
 	"herbalist": "scholar", "hooded_mage": "mysterious", "knight": "guard",
 	"nervous": "villager", "pilgrim": "elder", "scholarly": "scholar", "soldier": "guard",
+	"villager_m": "villager", "villager_f": "villager", "elder_f": "elder",
 }
 
 ## Cache loaded portrait textures to avoid repeated disk reads
