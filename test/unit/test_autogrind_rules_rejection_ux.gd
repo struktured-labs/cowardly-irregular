@@ -102,9 +102,13 @@ func test_all_callers_of_set_autogrind_rules_covered() -> void:
 		"res://src/autobattle/ScriptShareManager.gd",
 		"res://src/ui/autobattle/RuleComposerOverlay.gd",
 	]
-	var count := 0
+	# Records WHICH call sites, not just how many. A bare count tells you a number
+	# moved but not what moved — and this ratchet's entire job is to send you to
+	# look at a caller, so the caller has to be named (cowir-cutscenes msg 2981:
+	# "if a check produces a count, read the items before believing the count").
+	var sites: Array[String] = []
 	for path in files:
-		var src: String = load(path).source_code
+		var src: String = FileAccess.get_file_as_string(path)
 		var idx := 0
 		while true:
 			idx = src.find("set_autogrind_rules(", idx)
@@ -114,7 +118,8 @@ func test_all_callers_of_set_autogrind_rules_covered() -> void:
 			var line_start: int = src.rfind("\n", idx) + 1
 			var line: String = src.substr(line_start, idx - line_start + 20)
 			if not line.begins_with("func "):
-				count += 1
+				var line_no: int = src.substr(0, idx).count("\n") + 1
+				sites.append("%s:%d" % [path.get_file(), line_no])
 			idx += 20
-	assert_gte(count, 6,
-		"expected at least 6 call sites; if the count DROPS a caller was removed (verify), if it JUMPS a new one was added (verify it checks the bool for UI/user-facing paths)")
+	assert_gte(sites.size(), 6,
+		"expected at least 6 call sites of set_autogrind_rules, found %d: %s — if the count DROPS a caller was removed (verify), if it JUMPS a new one was added (verify it checks the bool, for UI/user-facing paths especially)" % [sites.size(), ", ".join(sites)])
