@@ -3068,6 +3068,32 @@
       },
       "tier": "T2",
       "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). aristocratic courtier NPC \u2014 Bard spotlight-duel miniboss (msg 1950). Non-HP win: talked-down via status/song thresholds."
+    },
+    "chancellor_mordaine": {
+      "path": "res://assets/sprites/monsters/chancellor_mordaine.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 3
+        },
+        "attack": {
+          "start": 4,
+          "end": 16
+        },
+        "hit": {
+          "start": 0,
+          "end": 0
+        },
+        "dead": {
+          "start": 0,
+          "end": 0
+        }
+      },
+      "tier": "T2",
+      "source": "artist aseprite \u2014 Mordaine/Mordaine animations.aseprite; tags authored: Idle, summon 1; frames reused for un-authored anims from: Idle"
     }
   },
   "npc_sheets": {
