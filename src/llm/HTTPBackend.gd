@@ -28,15 +28,27 @@ extends LLMBackend
 @export var api_key: String = ""
 @export var default_timeout_sec: float = 30.0
 
+# ── Signals ───────────────────────────────────────────────────────────────────
+
+## Emitted whenever reachability changes (and once when the boot probe resolves).
+signal availability_changed(available: bool)
+
+
 # ── Internal state ────────────────────────────────────────────────────────────
 # Maps request_id → HTTPRequest node.
 var _inflight: Dictionary = {}
 
-# Whether a connection has been confirmed at _ready (set by _probe).
+# Last known reachability. Refreshed on an interval — never cached for the session.
 var _ready_flag: bool = false
 
 # Probe HTTPRequest reference (kept alive until probe completes).
 var _probe_request: HTTPRequest = null
+
+# Engine-msec stamp of the last RESOLVED probe; drives the re-probe interval.
+var _last_probe_msec: int = 0
+
+# False until the boot probe resolves, so boot isn't reported as a transition.
+var _first_probe_done: bool = false
 
 
 # ── Configuration: probe ──────────────────────────────────────────────────────
@@ -45,6 +57,9 @@ var _probe_request: HTTPRequest = null
 ##   openai → GET /v1/models       (lists available models)
 ##   any    → HEAD on base_url     (generic fallback)
 const PROBE_TIMEOUT_SEC: float = 1.5
+
+## How stale a probe result may get before is_ready() kicks off a fresh one.
+const PROBE_INTERVAL_SEC: float = 30.0
 
 
 # ── Lifecycle ─────────────────────────────────────────────────────────────────
@@ -95,11 +110,26 @@ func _probe_method() -> int:
 
 
 func _on_probe_completed(result: int, response_code: int, _headers: PackedStringArray, _body: PackedByteArray) -> void:
-	if result == HTTPRequest.RESULT_SUCCESS and response_code >= 200 and response_code < 300:
-		_ready_flag = true
-	else:
-		_ready_flag = false
+	var now_ready: bool = result == HTTPRequest.RESULT_SUCCESS and response_code >= 200 and response_code < 300
+	var was_ready: bool = _ready_flag
+	_ready_flag = now_ready
+	_last_probe_msec = Time.get_ticks_msec()
 	_cleanup_probe()
+	# Boot resolution isn't a "transition" — announce state, but only warn if unreachable.
+	if not _first_probe_done:
+		_first_probe_done = true
+		if not now_ready:
+			push_warning("[HTTPBackend] LLM server unreachable at %s — dynamic dialogue will use fallbacks. Re-probing every %ds; no restart needed once it's up." % [_probe_url(), int(PROBE_INTERVAL_SEC)])
+		availability_changed.emit(now_ready)
+		return
+	if was_ready == now_ready:
+		return
+	# Silent-failure guard (struktured 2026-07-25): the state must never change unannounced.
+	if now_ready:
+		print("[HTTPBackend] LLM server reachable again at %s — dynamic dialogue restored." % _probe_url())
+	else:
+		push_warning("[HTTPBackend] LLM server became unreachable at %s — falling back to scripted dialogue." % _probe_url())
+	availability_changed.emit(now_ready)
 
 
 func _cleanup_probe() -> void:
@@ -114,8 +144,43 @@ func backend_id() -> String:
 	return "http"
 
 
+## Last known reachability. Also kicks off an async re-probe when the result is stale,
+## so a server that comes up AFTER boot heals the backend instead of staying dead
+## for the whole session (struktured 2026-07-25: "dynamic quips disabled" with a
+## perfectly healthy Ollama — the boot-time miss had been cached permanently).
 func is_ready() -> bool:
+	_maybe_refresh_probe()
 	return _ready_flag
+
+
+## Kick off a re-probe if the last result has gone stale. Async — heals the NEXT call.
+func _maybe_refresh_probe() -> void:
+	if not _first_probe_done:
+		return
+	if _probe_request != null and is_instance_valid(_probe_request):
+		return
+	if Time.get_ticks_msec() - _last_probe_msec < int(PROBE_INTERVAL_SEC * 1000.0):
+		return
+	_start_probe()
+
+
+## Force an immediate re-probe regardless of interval (Settings "test connection").
+func refresh_availability() -> void:
+	if _probe_request != null and is_instance_valid(_probe_request):
+		return
+	_start_probe()
+
+
+## Observability surface for the Settings LLM panel — no internals reach required.
+func get_availability_info() -> Dictionary:
+	return {
+		"available": _ready_flag,
+		"probe_url": _probe_url(),
+		"model": model,
+		"probed": _first_probe_done,
+		"seconds_since_probe": (Time.get_ticks_msec() - _last_probe_msec) / 1000.0 if _first_probe_done else -1.0,
+		"probe_interval_sec": PROBE_INTERVAL_SEC,
+	}
 
 
 func supports_json() -> bool:
