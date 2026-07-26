@@ -71,7 +71,7 @@ const PROFILE_SN30 = {
 	"battle_advance": [10],    # RIGHT_SHOULDER (R)
 	"battle_defer": [9],       # LEFT_SHOULDER (L)
 	"battle_toggle_auto": [4], # BACK (Select/Minus)
-	"ui_menu": [6],            # START (Plus)
+	"ui_menu": [6, 7],         # START + L3 — project.godot declares both; dropping 7 here was the same silent loss already fixed in PROFILE_STANDARD
 }
 
 const PROFILE_ULTIMATE_PRO_2 = {
@@ -81,7 +81,7 @@ const PROFILE_ULTIMATE_PRO_2 = {
 	"battle_advance": [9],     # physically R on this device
 	"battle_defer": [10],      # physically L on this device
 	"battle_toggle_auto": [4], # BACK (Select/Minus)
-	"ui_menu": [6],            # START (Plus)
+	"ui_menu": [6, 7],         # START + L3 — project.godot declares both; dropping 7 here was the same silent loss already fixed in PROFILE_STANDARD
 }
 
 ## Profile names
