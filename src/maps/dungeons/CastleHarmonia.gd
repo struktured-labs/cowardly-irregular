@@ -137,11 +137,16 @@ func _init() -> void:
 	# DragonCave._transition_to_floor); the "castle_entrance" alias
 	# preserves compatibility with any previous save that stored the
 	# original single-floor spawn name.
+	# 2026-07-26 playtest ("got stuck in castle harmonia... cant go up or down"): the entrance
+	# sat on tile (10,14) — the SAME tile as every floor's 'D' marker. Spawning inside a 48x48
+	# walk-on stair sensor fires it on the first physics frame: on F1 that is the overworld
+	# AreaTransition (latch spent, exit dead), on F2-F4 the descend sensor (instant cascade down).
+	# (10,12) is walkable on all four floors and clears every U and D trigger by >=48px.
 	floor_spawn_points = {
-		1: {"entrance": Vector2(10, 14), "castle_entrance": Vector2(10, 14)},
-		2: {"entrance": Vector2(10, 14)},
-		3: {"entrance": Vector2(10, 14)},
-		4: {"entrance": Vector2(10, 14)},
+		1: {"entrance": Vector2(10, 12), "castle_entrance": Vector2(10, 12)},
+		2: {"entrance": Vector2(10, 12)},
+		3: {"entrance": Vector2(10, 12)},
+		4: {"entrance": Vector2(10, 12)},
 	}
 
 	# Encounter pool + rate (base 6% at F1, +2% per floor). Palette

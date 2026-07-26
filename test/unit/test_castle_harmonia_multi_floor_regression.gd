@@ -149,9 +149,26 @@ func test_scene_field_configuration() -> void:
 func test_castle_entrance_alias_preserved() -> void:
 	# Any save that stored the pre-redesign single-floor spawn name
 	# ("castle_entrance") must still resolve on F1 load.
+	#
+	# 2026-07-26: this pinned the literal Vector2(10, 14), so relocating the
+	# entrance off the stair trigger it was sitting inside failed a test whose
+	# actual subject is the KEY's existence. The coordinate was incidental —
+	# and worse, (10,14) was the broken value, so this asserted the bug. Assert
+	# the RELATIONSHIP instead: the alias must exist and must track "entrance",
+	# which is what save-compat actually requires.
 	var src := _read(CASTLE_PATH)
-	assert_true(src.contains("\"castle_entrance\": Vector2(10, 14)"),
-		"F1 keeps the legacy castle_entrance spawn key for save-compat")
+	var re := RegEx.new()
+	re.compile('1:\\s*\\{"entrance":\\s*Vector2\\((?<ex>\\d+),\\s*(?<ey>\\d+)\\),\\s*"castle_entrance":\\s*Vector2\\((?<cx>\\d+),\\s*(?<cy>\\d+)\\)')
+	var m := re.search(src)
+	assert_not_null(m,
+		"F1 must keep BOTH the entrance and the legacy castle_entrance spawn keys for save-compat")
+	if m != null:
+		assert_eq(
+			Vector2(float(m.get_string("cx")), float(m.get_string("cy"))),
+			Vector2(float(m.get_string("ex")), float(m.get_string("ey"))),
+			"castle_entrance is an ALIAS of entrance — if they drift, an old save lands somewhere "
+			+ "the current entrance no longer is"
+		)
 
 
 # ── Throne-approach cutscene wiring ────────────────────────────────

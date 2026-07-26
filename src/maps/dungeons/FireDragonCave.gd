@@ -72,8 +72,11 @@ func _init() -> void:
 		],
 	}
 
+	# (10,12) put the entrance inside the F1 up-stairs trigger, so entering the cave
+	# instantly ascended and floor 1 was never playable (measured 2026-07-26: floor 1 -> 2
+	# within one physics frame, no input). (10,14) clears both stair triggers.
 	floor_spawn_points = {
-		1: {"entrance": Vector2(10, 12)},
+		1: {"entrance": Vector2(10, 14)},
 		2: {"down_stairs": Vector2(14, 13)},
 		3: {"down_stairs": Vector2(10, 14)},
 	}
