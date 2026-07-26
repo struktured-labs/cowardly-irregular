@@ -696,6 +696,15 @@ func _input(event: InputEvent) -> void:
 			SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
+	elif MenuPaging.page_delta(event) != 0:
+		# Ability lists run long on a developed character; clamped rather than wrapped
+		# because a page jump that wraps past the end is disorienting.
+		if list_size > 0:
+			selected_index = clampi(selected_index + MenuPaging.page_delta(event) * MenuPaging.PAGE_ROWS, 0, list_size - 1)
+			_build_ui()
+			SoundManager.play_ui("menu_move")
+		get_viewport().set_input_as_handled()
+
 	elif event.is_action_pressed("ui_accept") and not event.is_echo():
 		if current_tab == Tab.PASSIVES:
 			_toggle_passive()
