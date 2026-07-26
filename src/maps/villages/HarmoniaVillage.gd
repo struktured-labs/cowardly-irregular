@@ -174,7 +174,8 @@ func _setup_buildings() -> void:
 	# === CASTLE VISTA === north skyline the after_cave scene looks up at
 	var castle_vista = CastleVistaScript.new()
 	castle_vista.name = "CastleVista"
-	castle_vista.position = Vector2(18 * TILE_SIZE, 3 * TILE_SIZE)
+	# y=0 = the map's top edge; the vista draws ABOVE it, where no tile can occlude it.
+	castle_vista.position = Vector2(18 * TILE_SIZE, 0)
 	buildings.add_child(castle_vista)
 
 	# === INN ===

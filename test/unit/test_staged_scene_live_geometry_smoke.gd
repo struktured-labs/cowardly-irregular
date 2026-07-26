@@ -222,12 +222,20 @@ func test_replaced_npcs_stand_on_walkable_ground() -> void:
 
 # ── Camera framing ────────────────────────────────────────────────────
 
-func test_camera_targets_are_inside_the_map() -> void:
-	# camera_focus may legitimately point at scenery (the CastleVista pan
-	# targets the north skyline), so this checks bounds, not walkability —
-	# a target outside the map means the pan shows void.
+func test_camera_targets_show_authored_scenery() -> void:
+	# WAS test_camera_targets_are_inside_the_map, which checked bounds only.
+	# That was the wrong invariant and it hid a real bug: the after_cave
+	# "tell me what you see" pan was in-bounds and showed a blank wall,
+	# because the castle it aimed at was occluded by the tilemap (2026-07-25).
+	# In-bounds does not mean there is anything to see.
+	#
+	# The map rect is no longer the whole authored area — CastleVista draws a
+	# sky/treeline/castle band ABOVE the top edge, deliberately outside the
+	# rect, so it can never be painted over. So: a target must be inside the
+	# map OR inside a band some scenery node actually draws in.
 	var w: int = _village.MAP_WIDTH * TILE_SIZE
 	var h: int = _village.MAP_HEIGHT * TILE_SIZE
+	var vista: Node2D = _village.find_child("CastleVista", true, false)
 	var offenders: Array = []
 	for path in STAGED_SCENES:
 		var scene := _scene(path)
@@ -236,9 +244,19 @@ func test_camera_targets_are_inside_the_map() -> void:
 			if step is Dictionary and step.get("type") == "camera_focus" and step.get("target") is Array:
 				var t = step["target"]
 				var p := Vector2(float(t[0]), float(t[1]))
-				if p.x < 0 or p.y < 0 or p.x > w or p.y > h:
-					offenders.append("%s[step %d] camera_focus %s outside map (0,0)-(%d,%d)" % [
+				var in_map: bool = p.x >= 0 and p.y >= 0 and p.x <= w and p.y <= h
+				if not (in_map or _inside_vista_band(vista, p)):
+					offenders.append("%s[step %d] camera_focus %s is outside the map (0,0)-(%d,%d) AND outside any scenery band — the pan shows engine void" % [
 						path.get_file(), idx, p, w, h])
 			idx += 1
 	assert_eq(offenders.size(), 0,
-		"camera targets must stay inside the map:\n  %s" % "\n  ".join(offenders))
+		"camera targets must land on something authored:\n  %s" % "\n  ".join(offenders))
+
+
+## The CastleVista backdrop above the map's top edge — sky, ridge, treeline, castle.
+func _inside_vista_band(vista: Node2D, p: Vector2) -> bool:
+	if vista == null:
+		return false
+	var s: GDScript = load("res://src/exploration/CastleVista.gd")
+	var o: Vector2 = vista.global_position
+	return absf(p.x - o.x) <= s.SPAN_X * 0.5 and p.y >= o.y - s.SKY_HEIGHT and p.y <= o.y
