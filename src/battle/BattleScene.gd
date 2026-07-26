@@ -2415,14 +2415,17 @@ func _on_battle_started() -> void:
 			SoundManager.play_music("boss_rat_king")
 			print("[MUSIC] Playing sneaky Rat King theme")
 		elif boss_type == "chancellor_mordaine":
-			# Mordaine has a dedicated track ("The Usurper's Shadow"
-			# / boss_medieval) authored for the W1 final encounter.
-			# Without this branch she would play the generic boss
-			# theme — same audio as random minibosses, blunting the
-			# climax of her cutscene-driven confrontation.
-			_base_music_track = "boss_medieval"
-			SoundManager.play_music("boss_medieval")
-			print("[MUSIC] Playing Mordaine theme — 'The Usurper's Shadow'")
+			# Her own track ("A Sound Like a Verdict"), authored 2026-07-26.
+			# She previously borrowed boss_medieval — but that key is ALSO the
+			# generic W1 boss fallback, and its prompt is generic ("towering
+			# enemy, high stakes") while every Masterite got a character piece.
+			# Her canon is administrative, not demonic: ledgers, columns, the
+			# plain chair beside the overturned throne, a defeat that closes a
+			# book rather than screams. The new track is built on that, and
+			# boss_medieval returns to being the generic theme it was written as.
+			_base_music_track = "boss_mordaine"
+			SoundManager.play_music("boss_mordaine")
+			print("[MUSIC] Playing Mordaine theme — 'A Sound Like a Verdict'")
 		else:
 			_base_music_track = "boss"
 			SoundManager.play_music("boss")
