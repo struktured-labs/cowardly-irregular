@@ -5,6 +5,17 @@ extends Node
 
 const IGNORED_NAME: String = "SNES30"
 
+## Right stick X drives Mode 7 camera rotation. Named rather than a bare 2: an axis number only means
+## something once SDL normalizes the pad, and this line previously accepted "2-5", which swept in the
+## right stick Y and BOTH triggers. See ControllerMappings for why raw indices cannot be trusted.
+const RIGHT_STICK_X_AXIS: JoyAxis = JOY_AXIS_RIGHT_X
+const STICK_DEADZONE: float = 0.2
+
+## Device-name substrings ranked best-first. struktured 2026-07-25: the 8BitDo Ultimate 2 is his
+## PRIMARY pad and the Hyperkin Cadet is a backup, so USB enumeration order must not decide which one
+## steers the camera when both are attached. Unlisted pads still work; they just rank last.
+const PREFERRED_NAMES: Array[String] = ["8bitdo", "ultimate"]
+
 var preferred_device: int = -1
 var right_stick_x: float = 0.0
 
@@ -20,12 +31,8 @@ func _ready() -> void:
 func _input(event: InputEvent) -> void:
 	if event is InputEventJoypadMotion:
 		var e = event as InputEventJoypadMotion
-		# Only axis 2 = Right Stick X (was 2-5 which included Y, triggers)
-		if e.axis == 2:
-			if abs(e.axis_value) > 0.2:
-				right_stick_x = e.axis_value
-			else:
-				right_stick_x = 0.0
+		if e.axis == RIGHT_STICK_X_AXIS:
+			right_stick_x = e.axis_value if absf(e.axis_value) > STICK_DEADZONE else 0.0
 
 
 func _process(_delta: float) -> void:
@@ -44,9 +51,20 @@ func _on_joy_connection_changed(_device: int, _connected: bool) -> void:
 	_scan_controllers()
 
 
+## Lower is better. Unlisted pads rank last but remain fully usable — this ranks preference, it never
+## excludes (that is IGNORED_NAME's job).
+func preference_rank(device_name: String) -> int:
+	var lowered := device_name.to_lower()
+	for i in PREFERRED_NAMES.size():
+		if lowered.contains(PREFERRED_NAMES[i]):
+			return i
+	return PREFERRED_NAMES.size()
+
+
 func _scan_controllers() -> void:
 	var connected = Input.get_connected_joypads()
 	preferred_device = -1
+	var best_rank := PREFERRED_NAMES.size() + 1
 
 	for device_id in connected:
 		var name = Input.get_joy_name(device_id)
@@ -56,9 +74,13 @@ func _scan_controllers() -> void:
 			print("[GamepadFilter] Ignoring device %d (%s)" % [device_id, name])
 			continue
 
-		if preferred_device == -1:
+		# Rank rather than first-wins: with two pads attached, enumeration order used to decide, so
+		# plugging in a backup pad silently took the camera away from struktured's primary.
+		var rank := preference_rank(name)
+		if rank < best_rank:
+			best_rank = rank
 			preferred_device = device_id
-			print("[GamepadFilter] Selected device %d (%s) as preferred controller" % [device_id, name])
+			print("[GamepadFilter] Selected device %d (%s) as preferred controller [rank %d]" % [device_id, name, rank])
 
 	if preferred_device == -1 and connected.size() > 0:
 		preferred_device = connected[0]
