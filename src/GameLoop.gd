@@ -1481,14 +1481,27 @@ func _play_new_game_cutscenes() -> void:
 
 func _on_prologue_finished(_cutscene_id: String) -> void:
 	"""After prologue, chain into chapter1 (Elder Theron briefing)."""
+	# This path plays cutscenes DIRECTLY, so it must set the completion flags itself — _play_story_cutscene is the only other place that does, and it isn't involved here (2026-07-25: prologue replayed on every harmonia_village entry forever).
+	_mark_story_cutscene_complete("world1_prologue")
 	_cutscene_director.cutscene_finished.connect(_on_chapter1_finished, CONNECT_ONE_SHOT)
 	_cutscene_director.play_cutscene("world1_chapter1")
 
 
 func _on_chapter1_finished(_cutscene_id: String) -> void:
 	"""After chapter1 briefing, start exploration."""
+	_mark_story_cutscene_complete("world1_chapter1")
 	current_state = LoopState.EXPLORATION
 	_start_exploration()
+
+
+## Sets a cutscene's completion flag from _CUTSCENE_COMPLETION_FLAGS. Shared by the new-game chain and _play_story_cutscene so a cutscene can never complete without its gate closing.
+func _mark_story_cutscene_complete(cutscene_id: String) -> void:
+	var completion_flag: String = _CUTSCENE_COMPLETION_FLAGS.get(cutscene_id, "")
+	if completion_flag == "":
+		push_warning("[GameLoop] '%s' missing from _CUTSCENE_COMPLETION_FLAGS — flag NOT set, it will replay on the next gate check (loop bug)" % cutscene_id)
+		return
+	_set_cutscene_flag_and_mirror(completion_flag)
+	print("[CUTSCENE] %s complete → set flag %s" % [cutscene_id, completion_flag])
 
 
 func check_pending_cutscene() -> void:

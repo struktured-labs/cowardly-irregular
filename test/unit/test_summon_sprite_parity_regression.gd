@@ -29,9 +29,17 @@ func test_summon_applies_artist_size_bump() -> void:
 
 
 func test_summon_flips_artist_sheets_toward_party() -> void:
+	# 2026-07-25: this pinned the literal `flip_h = is_artist_monster`, so adding the
+	# manifest flip_h override (cave_rat_king renders backwards without it) failed a
+	# test whose actual subject — summon/battle-start PARITY — was preserved. Assert
+	# the parity instead of one spelling of it.
 	var body := _summon_body()
-	assert_true(body.contains("sprite.flip_h = is_artist_monster"),
-		"artist sheets are authored facing LEFT — summons must flip toward the party like battle-start spawns")
+	assert_true(body.contains("monster_flip_override("),
+		"summons must resolve facing through the shared override, not a local rule")
+	var scene_src := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
+	assert_eq(scene_src.count("HybridSpriteLoader.monster_flip_override("), 2,
+		"exactly two flip sites — battle-start and summon — must agree; a summoned monster "
+		+ "facing the wrong way while its battle-start twin faces correctly is the regression")
 
 
 func test_summon_tween_settles_at_computed_scale() -> void:

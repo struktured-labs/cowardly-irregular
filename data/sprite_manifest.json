@@ -1380,6 +1380,8 @@
     },
     "cave_rat_king": {
       "path": "res://assets/sprites/monsters/cave_rat_king.png",
+      "flip_h": true,
+      "flip_h_reason": "authored facing LEFT unlike the other 256px sheets; without this it renders backwards in battle (playtest 2026-07-25)",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,

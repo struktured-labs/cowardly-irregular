@@ -1065,6 +1065,14 @@ func _input(event: InputEvent) -> void:
 			SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
+	# Page jump — this list is long enough that one-row-at-a-time is a slog (struktured 2026-07-25).
+	elif MenuPaging.page_delta(event) != 0:
+		selected_index = clampi(selected_index + MenuPaging.page_delta(event) * MenuPaging.PAGE_ROWS, 0, _settings_items.size() - 1)
+		_update_selection()
+		if SoundManager:
+			SoundManager.play_ui("menu_move")
+		get_viewport().set_input_as_handled()
+
 	# Adjust value - allow echo for left/right to make adjusting sliders easier
 	elif event.is_action_pressed("ui_left"):
 		_adjust_setting(-1)

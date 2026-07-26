@@ -7,29 +7,69 @@ class_name BossSelectorMenu
 signal closed()
 signal boss_selected(boss_id: String)
 
-## All 20 Masterite bosses grouped by world
-const BOSSES = [
-	{"id": "masterite_warden_medieval",    "name": "Warden of the Old Guard",     "world": "Medieval"},
-	{"id": "masterite_arbiter_medieval",   "name": "Arbiter of the Ancient Code",  "world": "Medieval"},
-	{"id": "masterite_tempo_medieval",     "name": "Tempo, the Relentless",        "world": "Medieval"},
-	{"id": "masterite_curator_medieval",   "name": "Curator of Forgotten Lore",   "world": "Medieval"},
-	{"id": "masterite_warden_suburban",    "name": "Warden of the Suburbs",        "world": "Suburban"},
-	{"id": "masterite_arbiter_suburban",   "name": "Arbiter of the HOA",           "world": "Suburban"},
-	{"id": "masterite_tempo_suburban",     "name": "Tempo, the Commuter",          "world": "Suburban"},
-	{"id": "masterite_curator_suburban",   "name": "Curator of the Mall",          "world": "Suburban"},
-	{"id": "masterite_warden_industrial",  "name": "Warden of the Forge",          "world": "Industrial"},
-	{"id": "masterite_arbiter_industrial", "name": "Arbiter of the Factory Floor", "world": "Industrial"},
-	{"id": "masterite_tempo_industrial",   "name": "Tempo, the Automated",         "world": "Industrial"},
-	{"id": "masterite_curator_industrial", "name": "Curator of the Archive",       "world": "Industrial"},
-	{"id": "masterite_warden_futuristic",  "name": "Warden of the Grid",           "world": "Futuristic"},
-	{"id": "masterite_arbiter_futuristic", "name": "Arbiter of the Protocol",      "world": "Futuristic"},
-	{"id": "masterite_tempo_futuristic",   "name": "Tempo, the Overclock",         "world": "Futuristic"},
-	{"id": "masterite_curator_futuristic", "name": "Curator of the Dataset",       "world": "Futuristic"},
-	{"id": "masterite_warden_abstract",    "name": "Warden of the Void",           "world": "Abstract"},
-	{"id": "masterite_arbiter_abstract",   "name": "Arbiter of Entropy",           "world": "Abstract"},
-	{"id": "masterite_tempo_abstract",     "name": "Tempo, the Unraveling",        "world": "Abstract"},
-	{"id": "masterite_curator_abstract",   "name": "Curator of Paradox",           "world": "Abstract"},
-]
+## Every boss + miniboss, DERIVED from monsters.json at runtime (struktured 2026-07-25:
+## "should be able to fight mordaine in the fight boss debug menu, and any boss for that matter").
+## Hardcoded, this listed only the 20 Masterites — Mordaine, all four dragons, the Rat King and every
+## spotlight duelist were unreachable, and nothing flagged the drift. Deriving it means a boss added to
+## the data is fightable the same day.
+var BOSSES: Array = []
+
+## Group order. Story first (that's what playtesting reaches for), Masterites last (there are 20).
+const GROUP_ORDER := ["Story", "Spotlight Duels", "Minibosses", "Medieval", "Suburban", "Industrial", "Futuristic", "Abstract"]
+const DUEL_PREFIXES := ["fighter_", "cleric_", "rogue_", "mage_", "bard_"]
+
+
+## Reads monsters.json and returns [{id, name, world}], grouped then sorted by level.
+static func load_boss_roster() -> Array:
+	var src := FileAccess.get_file_as_string("res://data/monsters.json")
+	if src == "":
+		push_warning("[BossSelector] monsters.json unreadable — boss list will be empty")
+		return []
+	var parsed = JSON.parse_string(src)
+	if not (parsed is Dictionary):
+		push_warning("[BossSelector] monsters.json did not parse to a Dictionary — boss list will be empty")
+		return []
+	var monsters = parsed.get("monsters", parsed)
+	if not (monsters is Dictionary):
+		return []
+
+	var rows: Array = []
+	for mid in monsters:
+		var m = monsters[mid]
+		if not (m is Dictionary):
+			continue
+		var is_boss: bool = bool(m.get("boss", false))
+		var is_mini: bool = bool(m.get("miniboss", false))
+		if not is_boss and not is_mini:
+			continue
+		rows.append({
+			"id": str(mid),
+			"name": str(m.get("name", mid)),
+			"world": _group_for(str(mid), is_boss, is_mini),
+			"level": int(m.get("level", 0)),
+		})
+
+	rows.sort_custom(func(a, b):
+		var ga: int = GROUP_ORDER.find(a["world"])
+		var gb: int = GROUP_ORDER.find(b["world"])
+		if ga != gb:
+			return ga < gb
+		if a["level"] != b["level"]:
+			return a["level"] < b["level"]
+		return a["id"] < b["id"])
+	return rows
+
+
+static func _group_for(mid: String, is_boss: bool, is_mini: bool) -> String:
+	if mid.begins_with("masterite_"):
+		var parts := mid.split("_")
+		return parts[parts.size() - 1].capitalize()
+	for prefix in DUEL_PREFIXES:
+		if mid.begins_with(prefix):
+			return "Spotlight Duels"
+	if is_mini and not is_boss:
+		return "Minibosses"
+	return "Story"
 
 ## How many rows to show at once in the scroll window
 const VISIBLE_ROWS = 14
@@ -69,6 +109,8 @@ func _ready() -> void:
 
 
 func _build_display_list() -> void:
+	if BOSSES.is_empty():
+		BOSSES = load_boss_roster()
 	_display_list.clear()
 	_selectable_indices.clear()
 	var last_world = ""
@@ -113,7 +155,7 @@ func _build_ui() -> void:
 	_panel.add_child(title)
 
 	var subtitle = Label.new()
-	subtitle.text = "[DEBUG] Select a Masterite boss to fight"
+	subtitle.text = "[DEBUG] Select a boss to fight  ·  L1/R1 page"
 	subtitle.position = Vector2(16, 30)
 	subtitle.add_theme_font_size_override("font_size", 10)
 	subtitle.add_theme_color_override("font_color", DISABLED_COLOR)
@@ -268,6 +310,16 @@ func _input(event: InputEvent) -> void:
 			_update_selection()
 			if SoundManager:
 				SoundManager.play_ui("menu_move")
+		get_viewport().set_input_as_handled()
+
+	elif MenuPaging.page_delta(event) != 0:
+		# 46 entries once the list came from data — one row at a time is unusable.
+		selected_index = clampi(selected_index + MenuPaging.page_delta(event) * MenuPaging.PAGE_ROWS, 0, _selectable_indices.size() - 1)
+		_clamp_scroll()
+		_refresh_list()
+		_update_selection()
+		if SoundManager:
+			SoundManager.play_ui("menu_move")
 		get_viewport().set_input_as_handled()
 
 	elif event.is_action_pressed("ui_accept") and not event.is_echo():

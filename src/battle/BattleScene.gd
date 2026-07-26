@@ -1027,7 +1027,7 @@ func _create_battle_sprites() -> void:
 					size_bump = ENEMY_SCALE_BUMP
 					_is_artist_monster = true
 		# Artist monsters (slime/bat/goblin) are authored facing LEFT; flip so they face the party on the right. Procedurals already face right.
-		sprite.flip_h = _is_artist_monster
+		sprite.flip_h = HybridSpriteLoader.monster_flip_override(monster_id, _is_artist_monster)
 		var base_enemy_pos = enemy_positions[i].global_position if i < enemy_positions.size() else Vector2(200 + i * 100, 300)
 		base_enemy_pos.y += enemy_y_stagger
 		sprite.position = base_enemy_pos
@@ -4997,7 +4997,7 @@ func _on_monster_summoned(monster_type: String, summoner: Combatant) -> void:
 			if ftex and ftex.get_height() <= ENEMY_SMALL_FRAME_THRESHOLD:
 				size_bump = ENEMY_SCALE_BUMP
 				is_artist_monster = true
-	sprite.flip_h = is_artist_monster
+	sprite.flip_h = HybridSpriteLoader.monster_flip_override(monster_type, is_artist_monster)
 	var summon_depth_scale: float = 1.0 - float(new_idx) * 0.05
 	var final_scale: float = summon_depth_scale * size_bump
 

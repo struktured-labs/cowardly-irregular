@@ -66,6 +66,9 @@ const INN_LAYOUT = [
 ## Rest service state
 var _rest_pending: bool = false
 var _rest_dialog: CanvasLayer = null
+## Innkeeper NPC + her full greeting, so a pending rest can swap in a SHORT line and swap back.
+var _keeper_npc: Node = null
+var _keeper_greeting: Array = []
 
 
 func _ready() -> void:
@@ -756,13 +759,26 @@ func _create_stairs_up() -> void:
 	stair.position = Vector2(17.5 * TILE_SIZE, 2.5 * TILE_SIZE)
 	node.add_child(stair)
 
-	# "Upstairs" hint label
+	# 2026-07-25 playtest: "it says upstairs but no idea how to get up there." The U tiles are a
+	# BLOCKER — there is no second floor — so the label was advertising a destination that does not
+	# exist and reading as broken collision. The guest rooms ARE where you sleep, so the stairs now
+	# gate the rest service instead: the sign becomes true without building a floor.
 	var label = Label.new()
-	label.text = "Upstairs"
-	label.position = Vector2(16.5 * TILE_SIZE, 1.0 * TILE_SIZE)
+	label.text = "Guest Rooms"
+	label.position = Vector2(16.2 * TILE_SIZE, 1.0 * TILE_SIZE)
 	label.add_theme_font_size_override("font_size", 10)
 	label.add_theme_color_override("font_color", Color(0.90, 0.82, 0.60))
 	node.add_child(label)
+
+	var stair_zone := Area2D.new()
+	stair_zone.name = "StairsRestService"
+	stair_zone.position = Vector2(17.5 * TILE_SIZE, 4.0 * TILE_SIZE)
+	InteractGeometry.setup_trigger_collision(stair_zone, Vector2(2.0 * TILE_SIZE, TILE_SIZE))
+	stair_zone.add_to_group("interactables")
+	stair_zone.set_meta("interaction_callback", _on_rest_request)
+	stair_zone.set_meta("parent_scene", self)
+	stair_zone.body_exited.connect(_on_rest_zone_exited)
+	node.add_child(stair_zone)
 
 	decorations.add_child(node)
 
@@ -1102,6 +1118,8 @@ func _setup_npcs() -> void:
 			keeper_npc = child
 			break
 	if keeper_npc and keeper_npc.has_signal("dialogue_ended"):
+		_keeper_npc = keeper_npc
+		_keeper_greeting = (keeper["lines"] as Array).duplicate()
 		keeper_npc.dialogue_ended.connect(func(_n): _on_rest_request())
 
 	# Sleeping merchant in armchair
@@ -1315,10 +1333,26 @@ func _create_rest_interactable() -> void:
 func _on_rest_zone_exited(body: Node) -> void:
 	if not InteractGeometry.is_player(body):
 		return
+	_cancel_pending_rest()
+
+
+func _cancel_pending_rest() -> void:
 	_rest_pending = false
+	_set_keeper_lines(_keeper_greeting)
 	if _rest_dialog and is_instance_valid(_rest_dialog):
 		_rest_dialog.queue_free()
 		_rest_dialog = null
+
+
+## Short line the innkeeper gives on the CONFIRM interact — never a repeat of the greeting.
+func _keeper_confirm_line() -> String:
+	var keeper := _innkeeper()
+	return "%s: Room's ready whenever you are." % keeper["name"]
+
+
+func _set_keeper_lines(lines: Array) -> void:
+	if _keeper_npc and is_instance_valid(_keeper_npc) and lines.size() > 0:
+		_keeper_npc.dialogue_lines = lines.duplicate()
 
 
 func _on_rest_request() -> void:
@@ -1332,6 +1366,10 @@ func _on_rest_request() -> void:
 func _show_rest_prompt() -> void:
 	if _rest_dialog and is_instance_valid(_rest_dialog):
 		_rest_dialog.queue_free()
+	# 2026-07-25 playtest ("you still talk to the innkeeper twice and he basically repeats his words"):
+	# the second interact replayed her ENTIRE greeting before resting. Swap in one short confirm line
+	# while a rest is pending so talk #2 is an acknowledgement, not a rerun.
+	_set_keeper_lines([_keeper_confirm_line()])
 	_rest_dialog = _make_inn_dialog("Rest until morning?\nTalk again to confirm  ·  Walk away to cancel")
 	rest_requested.emit()
 	if SoundManager:
@@ -1340,6 +1378,7 @@ func _show_rest_prompt() -> void:
 
 func _do_rest() -> void:
 	_rest_pending = false
+	_set_keeper_lines(_keeper_greeting)
 	if _rest_dialog and is_instance_valid(_rest_dialog):
 		_rest_dialog.queue_free()
 		_rest_dialog = null
