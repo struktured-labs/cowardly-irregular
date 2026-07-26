@@ -107,3 +107,21 @@ func test_every_authored_music_track_resolves() -> void:
 	assert_gt(checked, 50, "sanity: the corpus should have many play_music steps to audit")
 	assert_eq(offenders.size(), 0,
 		"these cutscene music steps name tracks that won't resolve — each one silences its scene:\n  %s" % "\n  ".join(offenders))
+
+
+func test_throne_room_approach_plays_mordaines_theme() -> void:
+	# @cowir-music built cutscene_mordaine_theme as four notes of the battle
+	# theme with long silences, so the player learns her music across the arc
+	# and the throne room pays it off. That only works if the earlier beats
+	# actually use it — an unwired theme is the failure mode, and it's silent.
+	# The intro scene that follows deliberately stop_music's, so the shape is
+	# theme -> silence as she speaks -> boss_mordaine. Don't "fix" that gap.
+	var parsed = JSON.parse_string(FileAccess.get_file_as_string(
+		"%s/world1_throne_room_approach.json" % CUTSCENE_DIR))
+	assert_true(parsed is Dictionary, "throne room approach must parse")
+	var tracks: Array = []
+	for step in parsed.get("steps", []):
+		if step is Dictionary and step.get("type") == "play_music":
+			tracks.append(str(step.get("track", "")))
+	assert_true(tracks.has("cutscene_mordaine_theme"),
+		"the throne room approach must play Mordaine's theme — it is the payoff for the whole leitmotif arc. found: %s" % str(tracks))
