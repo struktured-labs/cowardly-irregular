@@ -23,6 +23,7 @@ var _capture_overlay: Control
 var _test_overlay: Control
 var _test_result_label: Label
 var _conflict_label: Label
+var _device_label: Label
 var _flash_label: Label
 var _flash_timer: float = 0.0
 
@@ -39,12 +40,51 @@ const BORDER_SHADOW = RetroPanel.BORDER_SHADOW
 const SELECTED_COLOR = Color(0.2, 0.3, 0.5)
 const TEXT_COLOR = Color(1.0, 1.0, 1.0)
 const DISABLED_COLOR = Color(0.4, 0.4, 0.4)
+const WARN_COLOR = Color(1.0, 0.45, 0.35)
 const OPTION_SELECTED = Color(0.3, 0.5, 0.8)
 const CAPTURE_BG = Color(0.0, 0.0, 0.0, 0.85)
 
 
 func _ready() -> void:
 	_build_ui()
+	# A pad can appear, sleep or change MODE while this screen is open — an 8BitDo Ultimate 2
+	# re-enumerates under a different product id per mode, which changes its GUID and can void
+	# its mapping. Keep the readout honest rather than frozen at open-time.
+	Input.joy_connection_changed.connect(_on_joy_connection_changed)
+
+
+func _on_joy_connection_changed(_device: int, _connected: bool) -> void:
+	refresh_device_label()
+
+
+## Pure text/severity decision, split out so it is testable without a physical pad attached.
+## is_known == false means SDL has no mapping for this GUID, so Godot reports RAW device indices
+## and every gamepad binding on this screen points at the wrong physical control.
+func describe_pad_status(has_pad: bool, pad_name: String, is_known: bool, guid: String) -> Dictionary:
+	if not has_pad:
+		return {"text": "No gamepad detected — keyboard bindings still apply", "warn": false}
+	if is_known:
+		return {"text": "%s — SDL mapping OK" % pad_name, "warn": false}
+	return {
+		"text": "%s — NO SDL MAPPING: the buttons below are WRONG for this pad (guid %s)" % [pad_name, guid],
+		"warn": true,
+	}
+
+
+func refresh_device_label() -> void:
+	if _device_label == null or not is_instance_valid(_device_label):
+		return
+	var pads := Input.get_connected_joypads()
+	var has_pad := not pads.is_empty()
+	var device: int = pads[0] if has_pad else -1
+	var status := describe_pad_status(
+		has_pad,
+		Input.get_joy_name(device) if has_pad else "",
+		Input.is_joy_known(device) if has_pad else false,
+		Input.get_joy_guid(device) if has_pad else "",
+	)
+	_device_label.text = status["text"]
+	_device_label.add_theme_color_override("font_color", WARN_COLOR if status["warn"] else DISABLED_COLOR)
 
 
 func _build_ui() -> void:
@@ -80,13 +120,14 @@ func _build_ui() -> void:
 	title.add_theme_color_override("font_color", TEXT_COLOR)
 	_panel.add_child(title)
 
-	# Subtitle
-	var subtitle = Label.new()
-	subtitle.text = "Gamepad button remapping — keyboard/mouse bindings shown read-only"
-	subtitle.position = Vector2(16, 30)
-	subtitle.add_theme_font_size_override("font_size", 10)
-	subtitle.add_theme_color_override("font_color", DISABLED_COLOR)
-	_panel.add_child(subtitle)
+	# Subtitle carries LIVE DEVICE TRUTH rather than boilerplate. Nothing on screen used to say
+	# whether SDL had a mapping for the attached pad, and unmapped every index below is a lie —
+	# that absence is what made the 2026-07-25 controller hunt expensive.
+	_device_label = Label.new()
+	_device_label.position = Vector2(16, 30)
+	_device_label.add_theme_font_size_override("font_size", 10)
+	_panel.add_child(_device_label)
+	refresh_device_label()
 
 	# Column header — only shown for the action rows so user knows what
 	# the right-hand columns mean. Drawn just above the first action row.

@@ -1837,15 +1837,11 @@ func _input(event: InputEvent) -> void:
 		SoundManager.play_ui("menu_select")
 		get_viewport().set_input_as_handled()
 
-	# Additional direct gamepad button check for Start (in case action mapping fails)
-	elif event is InputEventJoypadButton and event.pressed:
-		# Common Start button indices: 6 (SDL standard), 7, 9, 11
-		if event.button_index in [6, 7, 9, 11]:
-			print("[AUTOBATTLE] Start pressed via button %d - saving and closing" % event.button_index)
-			_save_script()
-			closed.emit()
-			SoundManager.play_ui("menu_select")
-			get_viewport().set_input_as_handled()
+	# Removed 2026-07-25: a raw `button_index in [6, 7, 9, 11]` "in case action mapping fails" guess.
+	# Under Godot 4 those are Start, L3, L1 and D-pad Up — so with a correctly mapped pad it could
+	# save-and-close on navigation. It only ever looked harmless because ui_menu/battle_defer/ui_up
+	# shadow all four first. The real cure for "action mapping fails" is ControllerMappings supplying
+	# the SDL mapping; ui_menu above already handles Start.
 
 	# Escape or Enter key - Save and exit
 	elif event is InputEventKey and event.pressed and (event.keycode == KEY_ESCAPE or event.keycode == KEY_ENTER):
