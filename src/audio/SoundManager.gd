@@ -1166,6 +1166,23 @@ func _generate_glitch(playback: AudioStreamGeneratorPlayback, samples: int, freq
 ## Replace _generate_battle_music() internals with file loading when real
 ## music assets are available (e.g., load("res://assets/audio/battle.ogg"))
 
+## True when play_music(track) will actually produce audio — a manifest entry
+## or a procedural arm. play_music crossfades the CURRENT track out before it
+## resolves, so an unknown id leaves the scene silent rather than unchanged;
+## callers that would rather keep the existing music check this first.
+static func has_music_track(track: String) -> bool:
+	if track == "":
+		return false
+	_load_music_manifest()
+	if _music_manifest.has(track):
+		return true
+	# Mirrors play_music's own resolution order: generic names take the world
+	# suffix, battle_*/boss* fall back to the generic procedural themes.
+	if track in ["battle", "boss", "danger", "victory", "title", "autogrind", "game_over"]:
+		return true
+	return track.begins_with("battle_") or track.begins_with("boss")
+
+
 static func _load_music_manifest() -> void:
 	if _manifest_loaded:
 		return

@@ -695,9 +695,16 @@ func _step_screen_flash(step: Dictionary) -> void:
 
 
 func _step_play_music(step: Dictionary) -> void:
-	var track = step.get("track", "")
-	if track != "" and SoundManager:
-		SoundManager.play_music(track)
+	var track = str(step.get("track", ""))
+	if track == "" or not SoundManager:
+		return
+	# An unresolvable id is NOT a no-op: play_music crossfades the current
+	# track out, then warns and plays nothing, leaving the scene in silence.
+	# Keeping the map's music is the better failure — pinned by regression.
+	if SoundManager.has_method("has_music_track") and not SoundManager.has_music_track(track):
+		push_warning("[cutscene] unknown music track '%s' — keeping current music" % track)
+		return
+	SoundManager.play_music(track)
 
 
 func _step_stop_music(_step: Dictionary) -> void:
