@@ -7,6 +7,10 @@
   "description": "Fires on entering the throne room, BEFORE world1_mordaine_intro. Three-line stakes-setter. The reveal is the SECOND thing: the plain chair, not the overturned throne, is where the power actually sits. She was ready before the doors opened. Voice: Theron-adjacent narrator, tired-elder register. Does not spoil the Calibrant reveal — she is just the usurper here. cowir-overworld wires the trigger on the threshold tile before the cutscene_flag_world1_mordaine_intro_seen guard fires world1_mordaine_intro.",
   "steps": [
     {
+      "type": "play_music",
+      "track": "cutscene_mordaine_theme"
+    },
+    {
       "type": "letterbox_in",
       "duration": 0.4
     },
