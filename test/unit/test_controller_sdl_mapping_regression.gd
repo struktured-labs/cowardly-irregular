@@ -156,6 +156,47 @@ func test_ultimate_2_wireless_autodetects_to_standard_not_the_quirk_profile() ->
 	ipm.free()
 
 
+## Hardcoded joypad index LISTS are the "in case action mapping fails" reflex that predates having
+## correct mappings. They are unreadable (is 9 a shoulder or a stick click? depends on the pad's
+## mode), they bypass profiles, and they silently change meaning the moment a mapping is added or
+## removed. Both grid editors carried `button_index in [6, 7, 9, 11]` commented as "common Start
+## indices" — Start, L3, L1 and D-pad Up under Godot 4. Use named JOY_BUTTON_* or an action.
+func test_no_hardcoded_joypad_index_lists() -> void:
+	var offenders: Array[String] = []
+	for path in _gd_files_under("res://src"):
+		var src: String = FileAccess.get_file_as_string(path)
+		for line in src.split("\n"):
+			var stripped := line.strip_edges()
+			if stripped.begins_with("#"):
+				continue
+			if stripped.contains("button_index in [") and not stripped.contains("MOUSE_BUTTON") \
+					and not stripped.contains("JOY_BUTTON"):
+				offenders.append("%s: %s" % [path, stripped])
+	assert_eq(offenders, [] as Array[String],
+		"use named JOY_BUTTON_* constants or an input action, never raw index lists:\n%s" % "\n".join(offenders))
+
+
+func _gd_files_under(root: String) -> Array[String]:
+	var found: Array[String] = []
+	var dirs: Array[String] = [root]
+	while not dirs.is_empty():
+		var current: String = dirs.pop_back()
+		var dir := DirAccess.open(current)
+		if dir == null:
+			continue
+		dir.list_dir_begin()
+		var entry := dir.get_next()
+		while entry != "":
+			var full := "%s/%s" % [current, entry]
+			if dir.current_is_dir():
+				dirs.append(full)
+			elif entry.ends_with(".gd"):
+				found.append(full)
+			entry = dir.get_next()
+		dir.list_dir_end()
+	return found
+
+
 ## ControllerMappings must run BEFORE anything reads or rewrites bindings, or the first frame of
 ## input is evaluated against raw indices.
 func test_controller_mappings_autoload_precedes_input_consumers() -> void:

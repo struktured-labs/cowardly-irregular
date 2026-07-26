@@ -1076,12 +1076,9 @@ func _input(event: InputEvent) -> void:
 		SoundManager.play_ui("menu_select")
 		get_viewport().set_input_as_handled()
 
-	elif event is InputEventJoypadButton and event.pressed:
-		if event.button_index in [6, 7, 9, 11]:
-			_save_rules()
-			closed.emit()
-			SoundManager.play_ui("menu_select")
-			get_viewport().set_input_as_handled()
+	# Removed 2026-07-25: raw `button_index in [6, 7, 9, 11]` — Start, L3, L1 and D-pad Up under
+	# Godot 4. Shadowed by ui_menu/battle_defer/ui_up, so latent rather than live, but it would
+	# save-and-close on navigation for any profile whose ui_menu omits 7. ui_menu handles Start.
 
 	elif event is InputEventKey and event.pressed and (event.keycode == KEY_ESCAPE or event.keycode == KEY_ENTER):
 		_save_rules()
