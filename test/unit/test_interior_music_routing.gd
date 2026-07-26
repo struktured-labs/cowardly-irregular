@@ -121,3 +121,60 @@ func test_standalone_rooms_call_play_area_music_directly() -> void:
 		var src := _read(entry[0])
 		assert_true(src.contains("play_area_music(\"" + entry[1] + "\")"),
 			"%s must call play_area_music(\"%s\") directly (standalone scene, no BaseInterior flow)" % [entry[0], entry[1]])
+
+
+func test_menu_restore_into_unauthored_interior_does_not_keep_menu() -> void:
+	## Bug 2801 round 3 (2026-07-26). The inherit-guard exists so entering an
+	## interior with no authored track keeps the VILLAGE bed instead of going
+	## silent. But it fired on the pause-menu restore path too — where the
+	## thing "inherited" was the MENU track — so closing the menu in any of the
+	## 9 unauthored interior_* rooms left menu music bleeding into play.
+	## The guard now requires _current_area != "" (play_music clears it for
+	## menu/battle/victory, so empty means there is no area bed to inherit).
+	var sm := _sound_manager()
+	if sm == null:
+		pass_test("SoundManager autoload unavailable in this context")
+		return
+	var prev_area: String = sm._current_area
+	var prev_playing: bool = sm._music_playing
+	var prev_music: String = sm._current_music
+
+	# Reproduce the exact state: menu bed playing, _current_area cleared.
+	sm._current_music = "menu"
+	sm._current_area = ""
+	sm._music_playing = true
+	sm.play_area_music("interior_zz_unauthored_room")
+	assert_eq(sm._current_area, "interior_zz_unauthored_room",
+		"menu-restore into an unauthored interior must NOT early-return — it took the inherit path and left the menu bed playing (bug 2801 round 3)")
+
+	# The original inherit behaviour must survive: village bed -> unauthored room.
+	sm._current_area = "village"
+	sm._music_playing = true
+	sm.play_area_music("interior_zz_unauthored_room")
+	assert_eq(sm._current_area, "village",
+		"entering an unauthored interior FROM a village must still inherit the village bed, not go silent")
+
+	sm._current_area = prev_area
+	sm._music_playing = prev_playing
+	sm._current_music = prev_music
+
+
+func test_wired_interior_keys_without_tracks_are_known() -> void:
+	## The 9 unauthored interior_* keys are what made round 3 reachable.
+	## When their tracks are generated this test tightens automatically —
+	## it fails if a room requests a key that is neither authored nor listed.
+	var manifest_text: String = _read("res://data/music_manifest.json")
+	var parsed: Variant = JSON.parse_string(manifest_text)
+	assert_true(parsed is Dictionary and parsed.has("tracks"), "manifest parses")
+	var tracks: Dictionary = parsed["tracks"]
+	var pending: Array[String] = [
+		"interior_arcade", "interior_chapel", "interior_inn", "interior_library",
+		"interior_lounge", "interior_office", "interior_scriptorium",
+		"interior_tavern", "interior_union_hall",
+	]
+	for key in pending:
+		if tracks.has(key):
+			assert_true(false,
+				"'%s' now has an authored track — remove it from this pending list so the list stays honest" % key)
+	assert_true(tracks.has("interior_shop"),
+		"interior_shop is the one authored interior track ('The Merchant's Welcome') — the inherit path must keep working for the other 9 until they are generated")
