@@ -920,6 +920,8 @@ const PORTRAIT_SPRITES = {
 	"aldwick": "res://assets/sprites/portraits/npcs/aldwick.png",
 	"rowan": "res://assets/sprites/portraits/npcs/rowan.png",
 	"cluck": "res://assets/sprites/portraits/npcs/cluck.png",
+	# Bard spotlight-duel opponent. His lines carried portrait "villager", so the aristocrat who interrogates you rendered as a generic townsperson.
+	"courtier": "res://assets/sprites/portraits/npcs/courtier.png",
 	# W1 bosses.
 	"boss_rat_king": "res://assets/sprites/portraits/npcs/boss_rat_king.png",
 	# Pre-registered pending art (same pattern as the masterite variants). NOT on disk — assets/sprites/npcs/dr_temporal/ is his OVERWORLD sheet dir, not a portrait; PR #155 registered this claiming otherwise. Renders the mysterious procedural until a real bust lands here.
