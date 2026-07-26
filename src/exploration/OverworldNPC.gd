@@ -14,6 +14,12 @@ signal dialogue_ended(npc_name: String)
 @export var facing_direction: int = 0  # 0=down, 1=up, 2=left, 3=right
 ## Quest-system identity; "" derives snake_case from npc_name ("Phil the Lost" → phil_the_lost).
 @export var npc_id: String = ""
+## Scenery mode: present in the world but not talkable (Mordaine's ambient
+## watch beats). Suppresses BOTH interaction paths — the "interactables"
+## group OverworldPlayer scans AND this node's own proximity _input — plus
+## the name label and quest marker, which would advertise a talk that
+## can't happen. Persists through normal play, unlike a CutsceneActor.
+@export var interactable: bool = true
 
 ## Quest "!" marker over givers with live quest business
 const QUEST_MARKER_BASE_Y: float = -46.0
@@ -188,7 +194,8 @@ func _ready() -> void:
 		_generate_dance_frames()
 
 	# Add to interactables group for reliable interaction detection
-	add_to_group("interactables")
+	if interactable:
+		add_to_group("interactables")
 
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
@@ -914,6 +921,9 @@ func _setup_name_label() -> void:
 ## talking to every NPC in the village. Always visible (unlike the
 ## proximity-gated name label) — that's the point of the affordance.
 func _setup_quest_marker() -> void:
+	# Scenery can't be talked to, so it can never have quest business.
+	if not interactable:
+		return
 	# Only the SPRITE gets context scale (3x on open overworld) — a
 	# fixed marker height sat on the scaled sprite's face there. Clear
 	# the sprite's actual scaled top instead; villages (1x) keep the
@@ -998,7 +1008,8 @@ func _setup_dialogue_box() -> void:
 func _on_body_entered(body: Node2D) -> void:
 	if body.has_method("set_can_move"):  # It's the player
 		_player_nearby = true
-		name_label.visible = true
+		# Scenery stays unlabelled — a name tag promises a conversation.
+		name_label.visible = interactable
 
 
 func _on_body_exited(body: Node2D) -> void:
@@ -1011,6 +1022,10 @@ func _on_body_exited(body: Node2D) -> void:
 
 func _input(event: InputEvent) -> void:
 	if not _player_nearby:
+		return
+	# Scenery NPCs: this handler is a SECOND interaction path, independent of
+	# the "interactables" group — suppressing only the group leaves her talkable.
+	if not interactable:
 		return
 	# Zone-listener lock gate: this handler grabs ui_accept directly — mid-cutscene presses opened phantom dialogue over the scene (struktured 2026-07-11, SavePoint-class leak).
 	var ilm_gate = get_tree().root.get_node_or_null("InputLockManager") if is_inside_tree() else null
