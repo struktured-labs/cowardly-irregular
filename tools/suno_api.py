@@ -737,10 +737,17 @@ class SunoBrowser:
             return true;
         }}""", value)
 
-    # Attribute-based style-textarea locators, first hit wins. Survives UI shuffles
-    # better than positional/exclusion heuristics — per suno-ai msg 2496/2498.
-    # :visible filter avoids hidden stale textareas from a prior React render.
+    # Style-textarea locators, first hit wins.
+    #
+    # maxlength is FIRST because it is the only stable anchor (2026-07-26):
+    # Suno replaced static placeholder labels with rotating example copy
+    # ("90s hip hop, piano ballad, soulful" -> "accordions, post punk, ..."),
+    # so every placeholder/aria selector below is now dead on the live UI.
+    # The char caps are semantic and distinguish all three fields:
+    #     1000 = Styles   3000 = Lyrics   500 = simple-mode prompt
+    # Placeholder variants kept as fallback in case Suno reverts.
     STYLE_SELECTORS = (
+        'textarea[maxlength="1000"]',
         'textarea[placeholder*="Style" i]:visible',
         'textarea[placeholder*="style of music" i]:visible',
         'textarea[aria-label*="Style" i]:visible',
@@ -919,8 +926,23 @@ class SunoBrowser:
         style_loc, style_sel = self._locate_style_textarea()
         style_filled = False
         if style_loc is not None:
-            if self._react_fill(style_sel, style, index=0):
+            # Real click + keystrokes, NOT the React-setter path (2026-07-26).
+            # _react_fill's JS fallback writes .value and dispatches input/change,
+            # which Suno's controlled component ignores — it reported success while
+            # the app saw an empty field, so Create stayed disabled and no POST ever
+            # fired. Genuine key events commit properly. Verified: typing 22 chars
+            # into the maxlength=1000 textarea flipped Create from disabled to enabled.
+            try:
+                style_loc.click(timeout=8000)
+                page.wait_for_timeout(150)
+                style_loc.press("Control+a")
+                style_loc.press("Delete")
+                style_loc.type(style, delay=random.randint(8, 18))
+                page.wait_for_timeout(300)
                 style_filled = True
+            except Exception as e:
+                print(f"  Warning: style click+type failed ({e}); trying setter path")
+                style_filled = self._react_fill(style_sel, style, index=0)
         else:
             # Fallback: exclusion heuristic (kept as safety net, but now runs
             # only when no attribute selector matches, which itself is a signal
@@ -937,19 +959,39 @@ class SunoBrowser:
         style_ok = False
         if style_filled:
             print(f"  Style: {style[:60]}...")
-            # Verify-after-fill — fail loud pre-Create if the setter didn't stick.
-            page.wait_for_timeout(200)
+            page.wait_for_timeout(250)
+            # Read the DOM value directly. input_value() proved unreliable here —
+            # it returned 0 chars on a field the app had genuinely accepted, which
+            # made the old warning fire on healthy runs and hid the real failure.
             actual = ""
-            if style_loc is not None:
-                try:
-                    actual = style_loc.input_value() or ""
-                except Exception:
-                    pass
+            try:
+                actual = str(page.evaluate(
+                    """() => { const t = document.querySelector('textarea[maxlength="1000"]');
+                               return t ? (t.value || '') : ''; }"""
+                ) or "")
+            except Exception:
+                pass
             style_ok = bool(actual.strip())
-            if actual.strip() != style.strip():
-                print(f"  Warning: style verify mismatch (got {len(actual)} chars, want {len(style)})")
+            if not style_ok:
+                print(f"  Warning: style field reads empty after fill (wanted {len(style)} chars)")
         else:
             print("  Warning: could not fill style textarea")
+
+        # Create's disabled state is the app's own verdict on whether the form is
+        # valid — a far better signal than any field read. If it never enables, the
+        # POST cannot fire, so surface that here rather than after a 180s timeout.
+        try:
+            create_state = page.evaluate(
+                """() => { const b = [...document.querySelectorAll('button')]
+                              .find(x => /create/i.test(x.textContent || ''));
+                           return b ? !b.disabled : null; }"""
+            )
+            if create_state is False:
+                print("  Warning: Create still DISABLED after fills — form validation rejected input")
+            elif create_state is True:
+                print("  Create button enabled — form accepted")
+        except Exception:
+            pass
 
         _human_delay(HUMAN_FIELD_GAP_MS)
 
@@ -1185,21 +1227,47 @@ class SunoBrowser:
                     feed = poll_resp.json()
                     if not isinstance(feed, list):
                         feed = feed.get("clips", feed.get("data", []))
+                    # Suno returns 2 clips per generation and they can differ
+                    # wildly in length (measured 2026-07-26: 37s vs 146s from
+                    # one prompt). Returning the first to COMPLETE is biased
+                    # toward the SHORT one — shorter audio finishes rendering
+                    # sooner — so the pipeline was systematically picking the
+                    # worst take. A 24s "boss theme" was the symptom.
+                    # Collect all finished clips, then choose by duration.
+                    done: list[dict] = []
+                    failed = 0
                     for clip in feed:
                         cid = clip.get("id", "")
                         if cid not in clip_ids:
                             continue  # Skip clips not from this generation
                         if clip.get("status") == "complete" and clip.get("audio_url"):
-                            print(f"  Complete! ({elapsed}s) clip={cid[:12]}")
-                            return {
-                                "audio_url": clip["audio_url"],
-                                "title": clip.get("title", title),
-                                "duration": float(clip.get("duration") or 0),
-                                "id": cid,
-                            }
+                            done.append(clip)
                         elif clip.get("status") in ("error", "failed"):
+                            failed += 1
                             print(f"  Clip {cid[:12]} failed: {clip.get('error_message', '?')}")
-                            return None
+
+                    if failed and failed >= len(clip_ids):
+                        return None  # every sibling errored
+
+                    # Wait for the whole set while time remains, so the choice is
+                    # real rather than whoever happened to finish first.
+                    all_settled = (len(done) + failed) >= len(clip_ids)
+                    time_left = poll_deadline - time.monotonic()
+                    if done and (all_settled or time_left <= 45):
+                        best = max(done, key=lambda c: float(c.get("duration") or 0))
+                        if len(done) > 1:
+                            spread = ", ".join(
+                                f"{c.get('id','')[:8]}={float(c.get('duration') or 0):.0f}s"
+                                for c in done)
+                            print(f"  {len(done)} clips ready ({spread}) -> taking longest")
+                        print(f"  Complete! ({elapsed}s) clip={best.get('id','')[:12]} "
+                              f"dur={float(best.get('duration') or 0):.0f}s")
+                        return {
+                            "audio_url": best["audio_url"],
+                            "title": best.get("title", title),
+                            "duration": float(best.get("duration") or 0),
+                            "id": best.get("id", ""),
+                        }
             except Exception as e:
                 print(f"  Poll error: {e}")
 

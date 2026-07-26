@@ -1858,6 +1858,30 @@
       "duration": 92.04,
       "loop": true,
       "generated_at": "2026-04-23"
+    },
+    "cutscene_mordaine_theme": {
+      "file": "assets/audio/music/cutscene_mordaine_theme.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Already Looking At You",
+      "prompt": "Someone is standing where they should not be, and they are not in a hurry. A single harpsichord phrase of four notes surfaces, then a silence longer than is comfortable, then the same four notes again slightly nearer. Underneath and far away a woman hums an ordinary market tune, wordless, unaware of any of it. The two never quite meet. No swell, no payoff, no drums. Just presence, patient, and life continuing outside the window. Strictly instrumental apart from the distant wordless hum. 60 BPM, loops cleanly.",
+      "style": "sparse distant leitmotif, 60 BPM, solo harpsichord fragment with long silences, faint far-off wordless female humming of a simple folk tune, dry room tone, no percussion, no build, no climax, quiet dread alongside ordinary life, unresolved, NOT ambient drone, NOT cinematic tension, loopable",
+      "model": "suno-v4",
+      "duration": 138.72,
+      "loop": true,
+      "generated_at": "2026-07-26"
+    },
+    "boss_mordaine": {
+      "file": "assets/audio/music/boss_mordaine.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "A Sound Like a Verdict",
+      "prompt": "A LONG full-length JRPG final-boss battle theme with a clear A section, a darker B section, and a return. The final authority of a world run on paperwork: she is not louder than you, she is more exact. Harpsichord repeats like a quill filling the same column; staccato strings cut in with no vibrato; organ holds underneath as the weight of an institution rather than a demon; percussion ticks like a tally being kept. One suspension hangs unresolved throughout.",
+      "style": "16-bit SNES final-boss battle, 138 BPM, harpsichord and staccato strings, restrained pipe organ as institutional weight, ticking ledger-percussion, cold precision as menace, minor key with an unresolved suspension, strictly instrumental, NOT bombastic, NOT demonic, loopable",
+      "model": "suno-v4",
+      "duration": 146.28,
+      "loop": true,
+      "generated_at": "2026-07-26"
     }
   },
   "tier_priority": [

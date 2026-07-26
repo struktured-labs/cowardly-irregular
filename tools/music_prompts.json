@@ -54,6 +54,16 @@
           "title_template": "The Courtier Who Wouldn't Listen (Yet)",
           "style": "SNES 16-bit baroque courtly duet, 100 BPM, solo lyre + wordless vocal fragment (courtier's voice), harpsichord, minimal percussion, mode-shifting from proud major to warmer defeated minor across the track",
           "prompt": "A duet between the bard's lyre and the courtier's voice — call-and-response, two voices trading lines. The fight IS the conversation. When the courtier's vocal line drops out and only the lyre continues, THAT is the debuff landing — the listener HEARS the fight resolving. Harpsichord fills the space between exchanges. Mode shifts from proud baroque major to something warmer as the courtier begins to listen. A musical conversation, not a battle."
+        },
+        "boss_mordaine": {
+          "title_template": "A Sound Like a Verdict",
+          "style": "16-bit SNES final-boss battle, 138 BPM, TWO AND A HALF MINUTES long, full-length battle theme with development and contrasting sections, inexorable not frantic, harpsichord and staccato strings, restrained pipe organ as institutional weight, controlled low brass, ticking ledger-percussion, cold precision as menace, minor key with an unresolved suspension, strictly instrumental, NOT bombastic, NOT demonic, no choir wailing, loopable",
+          "prompt": "A LONG full-length JRPG final-boss battle theme, at least two and a half minutes, with a clear A section, a darker B section, and a return. The final authority of a world run on paperwork: she is not louder than you, she is more exact. A harpsichord figure repeats like a quill filling the same column. Staccato strings cut in on the beat with no vibrato. Organ holds underneath as the weight of an institution rather than a demon. Percussion ticks like a tally being kept. Midway the harpsichord thins to almost nothing and the organ takes the melody alone, then the full figure returns harder. Nothing rushes; she was already waiting when you arrived. One suspension hangs unresolved throughout. Strictly instrumental, 138 BPM, loops cleanly."
+        },
+        "cutscene_mordaine_theme": {
+          "title_template": "Already Looking At You",
+          "style": "sparse distant leitmotif, 60 BPM, solo harpsichord fragment with long silences, faint far-off wordless female humming of a simple folk tune, dry room tone, no percussion, no build, no climax, quiet dread alongside ordinary life, unresolved, NOT ambient drone, NOT cinematic tension, loopable",
+          "prompt": "Someone is standing where they should not be, and they are not in a hurry. A single harpsichord phrase of four notes surfaces, then a silence longer than is comfortable, then the same four notes again slightly nearer. Underneath and far away a woman hums an ordinary market tune, wordless, unaware of any of it. The two never quite meet. No swell, no payoff, no drums. Just presence, patient, and life continuing outside the window. Strictly instrumental apart from the distant wordless hum. 60 BPM, loops cleanly."
         }
       }
     },
@@ -200,9 +210,9 @@
       "prompt": "EXPLOSIVE medieval victory fanfare with VAN HALEN finger-tapping electric guitar energy over triumphant orchestral brass. Shredding guitar solo that screams triumph, pounding drums, the absolute RUSH of winning a hard fight. 80s rock meets JRPG fanfare — Eddie Van Halen playing the Final Fantasy victory theme. Blazing fast, exhilarating, fist-pumping. 20-25 seconds of pure adrenaline."
     },
     "victory_suburban": {
-      "title_template": "Nailed It",
-      "style": "funky victory, slap bass, synth brass, EarthBound celebration, quirky triumphant, 140 BPM",
-      "prompt": "Funky suburban victory fanfare — slap bass groove with punchy synth brass hits, quirky EarthBound celebration energy. The satisfying feeling of beating something absurd. Funky guitar licks, hand claps, a melody that sounds like high-fiving after defeating a possessed lawn ornament. Triumphant but weird. 15-20 seconds."
+      "title_template": "One More Boot Up",
+      "style": "midnight-city Japanese funk victory in the vein of late-night JRPG battle themes, 140 BPM, groovy live-drum breakbeat, slap bass hook, wah-guitar stabs on the offbeat, warm Rhodes chord stabs, analog synth lead + bright synth brass punches, neon-lit nightscape, jazz-fusion cocky poise, strictly instrumental no vocals no humming no ad-libs, NOT lofi, NOT chill, NOT epic orchestral",
+      "prompt": "A triumphant post-battle jam. Groovy live-drum breakbeat under a slap-bass hook — THE HOOK IS THE BASSLINE, not a topline melody. Wah-guitar chops on the offbeat, warm Rhodes chord stabs, a bright analog synth lead calls, synth brass section answers. Cool, victorious, a little smug. 140 BPM straight-time drums (not halftime, not double-time). Strictly instrumental."
     },
     "victory_steampunk": {
       "title_template": "Gears of Glory",
