@@ -3071,8 +3071,8 @@
     },
     "chancellor_mordaine": {
       "path": "res://assets/sprites/monsters/chancellor_mordaine.png",
-      "frame_width": 256,
-      "frame_height": 256,
+      "frame_width": 128,
+      "frame_height": 128,
       "fps": 8,
       "animations": {
         "idle": {
