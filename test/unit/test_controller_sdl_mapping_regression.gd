@@ -9,6 +9,8 @@ extends GutTest
 ## struktured's hardware, not inferred: is_joy_known flipped false -> true once the mapping was added.
 
 const ULTIMATE_2_GUID := "03000000c82d00000b31000014010000"
+## Same physical pad, D-input mode — a mode switch changes the product id, hence the GUID.
+const ULTIMATE_2_DINPUT_GUID := "03000000c82d00001260000011010000"
 
 var _mappings
 
@@ -60,6 +62,58 @@ func test_ultimate_2_mapping_matches_measured_hardware_layout() -> void:
 	for key in expected:
 		assert_true(mapping.contains("%s:%s," % [key, expected[key]]) or mapping.contains("%s:%s" % [key, expected[key]]),
 			"%s must map to %s (measured on the device)" % [key, expected[key]])
+
+
+## THE LESSON OF THIS WHOLE INVESTIGATION: one physical controller has SEVERAL identities. A mode
+## switch changes the USB product id, which changes the GUID, which silently voids a mapping keyed
+## to the other mode. Mapping one mode is not mapping the pad.
+func test_both_ultimate_2_modes_are_mapped() -> void:
+	assert_true(_mappings.has_mapping_for_guid(ULTIMATE_2_GUID),
+		"Ultimate 2 (2dc8:310b) must be mapped")
+	assert_true(_mappings.has_mapping_for_guid(ULTIMATE_2_DINPUT_GUID),
+		"Ultimate 2 D-input mode (2dc8:6012) must ALSO be mapped — same pad, different product id, different layout")
+
+
+## D-input mode inserts BTN_C and BTN_Z among the face buttons, shifting everything after them by
+## two. Measured on the device 2026-07-25 (struktured pressing each control into /dev/input/event14).
+## If someone re-derives this from the other mode's layout, or from convention, this fails.
+func test_dinput_mode_matches_measured_hardware_layout() -> void:
+	var mapping := ""
+	for candidate in _mappings.MAPPINGS:
+		if _mappings.guid_of(candidate) == ULTIMATE_2_DINPUT_GUID:
+			mapping = candidate
+			break
+	assert_ne(mapping, "", "D-input mapping must exist")
+
+	var expected := {
+		"a": "b0", "b": "b1", "y": "b3", "x": "b4",   # BTN_C=b2 and BTN_Z=b5 are unused extras
+		"leftshoulder": "b6", "rightshoulder": "b7",  # 0x136 / 0x137, measured
+		"back": "b10", "start": "b11", "guide": "b12",
+		"leftstick": "b13", "rightstick": "b14",
+		"lefttrigger": "a5", "righttrigger": "a4",    # ABS_BRAKE / ABS_GAS, measured
+		"leftx": "a0", "lefty": "a1",
+		"rightx": "a2", "righty": "a3",               # ABS_Z / ABS_RZ are the STICK in this mode
+	}
+	for key in expected:
+		assert_true(mapping.contains("%s:%s," % [key, expected[key]]),
+			"%s must map to %s (measured on the device, not assumed)" % [key, expected[key]])
+
+
+## The triggers were the near-miss: ABS_Z/ABS_RZ are the conventional trigger axes on many pads and
+## are the RIGHT STICK on this one. Binding them as triggers would put Defer/Advance on a stick nudge.
+func test_dinput_triggers_are_not_bound_to_the_right_stick_axes() -> void:
+	for mapping in _mappings.MAPPINGS:
+		if _mappings.guid_of(mapping) != ULTIMATE_2_DINPUT_GUID:
+			continue
+		assert_false(mapping.contains("lefttrigger:a2") or mapping.contains("righttrigger:a3"),
+			"a2/a3 are the RIGHT STICK in D-input mode — binding them as triggers puts battle actions on a stick nudge")
+
+
+## A pad mode that yields no input device at all must be documented, so "my controller is dead"
+## has an answer instead of costing another full session.
+func test_silent_dock_mode_is_documented() -> void:
+	assert_true(_mappings.KNOWN_SILENT_MODES.has("2dc8:6013"),
+		"the docked/asleep identity must be recorded — it enumerates on USB but builds no input device")
 
 
 func test_dpad_is_mapped_as_a_hat() -> void:
