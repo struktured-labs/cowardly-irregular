@@ -1,0 +1,93 @@
+{
+  "id": "world1_mordaine_watch_castle",
+  "title": "She Does Not Leave",
+  "world": 1,
+  "trigger": "castle_harmonia_floor_1_enter",
+  "presentation": "staged",
+  "background": "throne_room",
+  "description": "Mordaine escalation beat 2 of 4 — first weight added: the leitmotif plays, briefly, and she ACKNOWLEDGES. Still no words and still no letterbox. The beat is that she looks at them and then goes back to what she was doing; being seen does not change her behaviour, because she has no reason to react to people whose route she wrote. 'The corridor went the only way it went' is the tell — she does not need to follow. Fires on first entry to Castle Harmonia floor 1, after beat 1. NOTE: `background` is INERT for presentation:staged (CutsceneDirector:258 — 'live world stays visible, no backdrop'); the real castle map is what the player sees. The key is set to an existing asset only so backdrop-existence ratchets stay green — it is NOT a claim this scene shows a throne room.",
+  "steps": [
+    {
+      "type": "play_music",
+      "track": "cutscene_mordaine_theme"
+    },
+    {
+      "type": "camera_focus",
+      "target": [
+        560,
+        224
+      ],
+      "duration": 1.0
+    },
+    {
+      "type": "spawn_actor",
+      "id": "mordaine",
+      "kind": "npc",
+      "archetype": "chancellor_mordaine",
+      "at": [
+        560,
+        208
+      ],
+      "facing": "down"
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "narration",
+      "text": "She was at the far end of the foyer, and she did not leave when the doors opened."
+    },
+    {
+      "type": "wait",
+      "duration": 0.8
+    },
+    {
+      "type": "face_actor",
+      "id": "mordaine",
+      "dir": "down"
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "narration",
+      "text": "She looked at them for the length of one held breath — the way you look at a figure in a column that has come out larger than the estimate. Not alarm. Interest, of the sort that gets written down."
+    },
+    {
+      "type": "wait",
+      "duration": 0.9
+    },
+    {
+      "type": "face_actor",
+      "id": "mordaine",
+      "dir": "up"
+    },
+    {
+      "type": "narration",
+      "text": "Then she returned to whatever she had been doing, which was nothing anyone could put a name to."
+    },
+    {
+      "type": "wait",
+      "duration": 0.7
+    },
+    {
+      "type": "narration",
+      "text": "She did not follow them across the foyer. She did not need to. The corridor went the only way the corridor went."
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "set_flag",
+      "flag": "world1_mordaine_watch_castle_complete",
+      "value": true
+    },
+    {
+      "type": "camera_restore",
+      "duration": 0.8
+    }
+  ]
+}

@@ -1,0 +1,134 @@
+{
+  "id": "world1_mordaine_speaks",
+  "title": "Ahead of the Estimate",
+  "world": 1,
+  "trigger": "castle_harmonia_floor_2_enter",
+  "presentation": "staged",
+  "background": "throne_room",
+  "description": "Mordaine escalation beat 3 of 4 — the game STOPS. First letterbox, first dialogue, first time she addresses them. Her opening words are administrative rather than threatening ('That is not praise. It is bookkeeping.') because that IS the threat: she is not an enemy reacting to intruders, she is an assessor updating a figure. The Rogue's line is the party's counter-read — she is the one who sees the staging behind an interaction (Lockward essence). Mordaine's closing offer is scrupulously fair and worse for it: she will not cheat them, because cheating would corrupt the measurement. Fires on first entry to Castle Harmonia floor 2. Speaker/theme/portrait triple matches world1_mordaine_intro exactly (enemy/mordaine) — identity-drift ratchet. NOTE: `background` is INERT for presentation:staged (CutsceneDirector:258 — 'live world stays visible, no backdrop'); the real castle map is what the player sees. The key is set to an existing asset only so backdrop-existence ratchets stay green — it is NOT a claim this scene shows a throne room.",
+  "steps": [
+    {
+      "type": "letterbox_in",
+      "duration": 0.5
+    },
+    {
+      "type": "play_music",
+      "track": "cutscene_mordaine_theme"
+    },
+    {
+      "type": "camera_focus",
+      "target": [
+        512,
+        240
+      ],
+      "duration": 1.0
+    },
+    {
+      "type": "spawn_actor",
+      "id": "mordaine",
+      "kind": "npc",
+      "archetype": "chancellor_mordaine",
+      "at": [
+        512,
+        224
+      ],
+      "facing": "down"
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "narration",
+      "text": "The council chamber had been built for forty people to disagree in. She was using it alone, and it did not look too large for her."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mordaine",
+          "text": "You are ahead of the estimate. Not far ahead. But ahead.",
+          "theme": "enemy",
+          "portrait": "mordaine"
+        },
+        {
+          "speaker": "Mordaine",
+          "text": "I have revised it twice on your account. That is not praise. It is bookkeeping.",
+          "theme": "enemy",
+          "portrait": "mordaine"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Rogue",
+          "text": "You've been watching us.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Mordaine",
+          "text": "I have been recording you. Watching is what you do when the outcome is uncertain and you cannot look away. This is not that.",
+          "theme": "enemy",
+          "portrait": "mordaine"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "narration",
+      "text": "She said it without unkindness, which was the part that landed. There was no relish in it. It was the voice of someone reading a total back to you so you could confirm she had it right."
+    },
+    {
+      "type": "wait",
+      "duration": 0.7
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mordaine",
+          "text": "Go up. The stairs are where they have always been. I did not move them for you, and I will not move them against you.",
+          "theme": "enemy",
+          "portrait": "mordaine"
+        },
+        {
+          "speaker": "Mordaine",
+          "text": "That would spoil the reading.",
+          "theme": "enemy",
+          "portrait": "mordaine"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "set_flag",
+      "flag": "world1_mordaine_speaks_complete",
+      "value": true
+    },
+    {
+      "type": "camera_restore",
+      "duration": 0.6
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.5
+    }
+  ]
+}
