@@ -1440,6 +1440,46 @@ func play_music(track: String) -> void:
 		_music_cache[track] = _music_player.stream
 
 
+## Capture whatever music is currently playing, from EITHER API, so a caller
+## that temporarily takes over the music (a cutscene, the pause menu) can put
+## it back. This exists because the two paths keep separate state:
+##
+##     play_music("victory")   -> sets _current_music, leaves _current_area
+##     play_area_music("cave") -> sets _current_area, CLEARS _current_music
+##
+## So a caller snapshotting only `_current_music` reads "" in any map — every
+## map sets its bed via play_area_music — and its restore silently no-ops,
+## leaving the caller's own music playing over gameplay. That was bug 2801
+## (menu music bleeding) and, verified at runtime 2026-07-26, the same defect
+## in CutsceneDirector affecting all 93 authored play_music steps.
+##
+## Restore prefers the AREA when one is active, because that is what a map is:
+## play_area_music re-derives world-suffixed and interior-variant keys, which
+## a raw track name cannot.
+func capture_music_state() -> Dictionary:
+	return {"track": _current_music, "area": _current_area, "playing": _music_playing}
+
+
+## Put back a state captured by capture_music_state(). Safe to call with an
+## empty/garbage dict; does nothing if nothing was playing.
+func restore_music_state(state: Dictionary) -> void:
+	if state == null or state.is_empty():
+		return
+	if not bool(state.get("playing", false)):
+		return
+	var area: String = str(state.get("area", ""))
+	if area != "":
+		# _current_area is compared for the already-playing early-out, so clear
+		# it first — otherwise restoring the area we are nominally still "in"
+		# is treated as a no-op and the takeover music keeps playing.
+		_current_area = ""
+		play_area_music(area)
+		return
+	var track: String = str(state.get("track", ""))
+	if track != "":
+		play_music(track)
+
+
 func stop_music() -> void:
 	"""Stop currently playing music"""
 	_music_playing = false

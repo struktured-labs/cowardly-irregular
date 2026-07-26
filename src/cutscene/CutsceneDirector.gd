@@ -70,8 +70,13 @@ const WORLD_BACKDROP_COLORS = {
 ## Current cutscene world (for backdrop color fallback)
 var _current_world: int = 0
 
-## Pre-cutscene music track (restored after cutscene if no explicit music was played)
-var _pre_cutscene_music: String = ""
+## Pre-cutscene music state (restored after the cutscene). Captured via
+## SoundManager.capture_music_state() rather than reading _current_music
+## directly: maps set their bed with play_area_music, which CLEARS
+## _current_music, so the old track-only snapshot read "" in every map and the
+## restore below silently no-opped — leaving the cutscene's own music playing
+## over gameplay. Verified at runtime 2026-07-26; same family as bug 2801.
+var _pre_cutscene_music: Dictionary = {}
 
 ## HUD countdown timer — driven by cutscene start_timer / stop_timer steps.
 ## Spec from cowir-story: atmospheric only, never a fail state. Small
@@ -273,8 +278,10 @@ func play_cutscene(cutscene_id: String) -> void:
 	# beats that declare no music of their own, where fading the map track to
 	# dead air announces the scene louder than a letterbox would. Defaults
 	# false so every scene struktured has already heard is unchanged.
+	# When it IS true we skip the snapshot too, so the restore below correctly
+	# no-ops: nothing was faded, so nothing needs putting back.
 	if SoundManager and SoundManager._music_playing and not bool(data.get("keep_music", false)):
-		_pre_cutscene_music = SoundManager._current_music
+		_pre_cutscene_music = SoundManager.capture_music_state()
 		SoundManager.fade_out_music(0.3)
 		await get_tree().create_timer(0.3).timeout
 
@@ -1821,10 +1828,13 @@ func _end_cutscene() -> void:
 	# Restore player control
 	_unfreeze_player()
 
-	# Restore pre-cutscene music if it was playing and cutscene stopped it
-	if _pre_cutscene_music != "" and SoundManager:
-		SoundManager.play_music(_pre_cutscene_music)
-	_pre_cutscene_music = ""
+	# Restore pre-cutscene music if it was playing and the cutscene stopped it.
+	# Goes through restore_music_state so an AREA bed comes back via
+	# play_area_music (which re-derives world/interior variants) rather than a
+	# raw track name, and so a map-set bed restores at all.
+	if not _pre_cutscene_music.is_empty() and SoundManager:
+		SoundManager.restore_music_state(_pre_cutscene_music)
+	_pre_cutscene_music = {}
 
 	# Defensive: tear down the HUD timer if a cutscene ended without firing
 	# a matching stop_timer (skip path or malformed cutscene script). Without
