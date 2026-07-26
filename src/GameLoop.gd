@@ -1635,6 +1635,27 @@ func _get_pending_story_cutscene() -> String:
 				# Tick 220: route auto-skipped chapter flags through the helper so QuestLog stays consistent.
 				_set_cutscene_flag_and_mirror("cutscene_flag_" + skip_flag)
 
+	# Mordaine escalation arc (cowir-story, 2026-07-26) — four staged beats
+	# approaching the W1 finale. She is not stalking the party, she is
+	# SUPERVISING them; what escalates is how much the game STOPS for her:
+	# road = no letterbox/music/dialogue, F1 = leitmotif, F2 = she speaks,
+	# F3 = the interrupted procedure. Boss beats stay on F4, untouched.
+	# The castle beats chain to each other rather than to the road beat, so
+	# a player who somehow misses the overworld one can't soft-lock the arc.
+	if flags.get("cutscene_flag_chapter4_complete", false) and not flags.get("cutscene_flag_world1_mordaine_watch_road_complete", false) and not _chaining_story_cutscene:
+		if _current_map_id == "overworld":
+			return "world1_mordaine_watch_road"
+	var _castle_floor: int = _get_current_cave_floor()
+	if flags.get("cutscene_flag_chapter4_complete", false) and not flags.get("cutscene_flag_world1_mordaine_watch_castle_complete", false):
+		if _current_map_id == "castle_harmonia" and _castle_floor >= 1:
+			return "world1_mordaine_watch_castle"
+	if flags.get("cutscene_flag_world1_mordaine_watch_castle_complete", false) and not flags.get("cutscene_flag_world1_mordaine_speaks_complete", false) and not _chaining_story_cutscene:
+		if _current_map_id == "castle_harmonia" and _castle_floor >= 2:
+			return "world1_mordaine_speaks"
+	if flags.get("cutscene_flag_world1_mordaine_speaks_complete", false) and not flags.get("cutscene_flag_world1_mordaine_procedure_complete", false) and not _chaining_story_cutscene:
+		if _current_map_id == "castle_harmonia" and _castle_floor >= 3:
+			return "world1_mordaine_procedure"
+
 	# Tick 104: W1 Mordaine post-defeat dialogue — plays IN Castle
 	# Harmonia on return from final-boss victory. Mirrors the W2-W5
 	# defeat-cutscene gates added in ticks 102-103. Pre-fix, the
@@ -1895,6 +1916,13 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	"world1_rat_king_defeat":           "cutscene_flag_world1_rat_king_defeat_complete",
 	# 2026-07-15 (task #27): staged village-reaction scene after the Rat King falls
 	"world1_harmonia_after_cave":       "cutscene_flag_world1_harmonia_after_cave_complete",
+	# Mordaine escalation arc (2026-07-26) — four beats, four flags. A missing
+	# entry here does NOT fail loudly: the gate re-fires on every qualifying
+	# entry (the original Elder Theron bug). Pinned by regression test.
+	"world1_mordaine_watch_road":       "cutscene_flag_world1_mordaine_watch_road_complete",
+	"world1_mordaine_watch_castle":     "cutscene_flag_world1_mordaine_watch_castle_complete",
+	"world1_mordaine_speaks":           "cutscene_flag_world1_mordaine_speaks_complete",
+	"world1_mordaine_procedure":        "cutscene_flag_world1_mordaine_procedure_complete",
 	# Tick 104: W1 Mordaine final post-defeat dialogue
 	"world1_mordaine_defeat":           "cutscene_flag_world1_mordaine_defeat_complete",
 	# W1 spotlight cutscenes — dual-signal per Spotlight Duels spec (cowir-
