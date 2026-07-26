@@ -1148,7 +1148,8 @@ func _teardown_overworld_menu_widget() -> void:
 		else:
 			var fallback: String = _derive_current_scene_music_key()
 			if fallback != "":
-				SoundManager.play_music(fallback)
+				# AREA key, not a track name — play_music("village") has no case and warns "Unknown music track", leaving the menu bed to bleed into the overworld (struktured 2026-07-25). play_area_music resolves village/interior_*/overworld properly.
+				SoundManager.play_area_music(fallback)
 	_pre_menu_music_track = ""
 
 
