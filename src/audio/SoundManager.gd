@@ -4258,7 +4258,11 @@ func play_area_music(area_type: String) -> void:
 
 	# Interior sub-area keys inherit the current (village) bed when their track
 	# is absent — checked BEFORE stop_music so an unauthored room never goes silent.
-	if area_type.begins_with("interior_") and _music_playing:
+	# _current_area != "" is load-bearing: play_music() clears it for menu/battle/
+	# victory, so an empty one means there is no AREA bed to inherit. Without that
+	# term the pause-menu restore path inherited the MENU track into unauthored
+	# rooms and bled it into the overworld (bug 2801 round 3, 2026-07-26).
+	if area_type.begins_with("interior_") and _music_playing and _current_area != "":
 		_load_music_manifest()
 		if _resolve_interior_track(area_type) == "":
 			return
