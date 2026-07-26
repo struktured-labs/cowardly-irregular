@@ -33,7 +33,7 @@
           "speaker": "Courtier",
           "text": "The Rat King, they say. Congratulations. The road is materially safer for your trouble. May I ask a few questions — for the record, purely — on how you did it? So many parties have failed at this exact task.",
           "theme": "villager",
-          "portrait": "villager"
+          "portrait": "courtier"
         }
       ]
     },
@@ -130,7 +130,7 @@
           "speaker": "Courtier",
           "text": "I will report that you are... unremarkable. Ordinary irregulars, no pattern, no doctrine, no ambition beyond the next road. Is that fair?",
           "theme": "villager",
-          "portrait": "villager"
+          "portrait": "courtier"
         },
         {
           "speaker": "Bard",
@@ -142,7 +142,7 @@
           "speaker": "Courtier",
           "text": "Then I have been kind exactly once, and I did it to you.",
           "theme": "villager",
-          "portrait": "villager"
+          "portrait": "courtier"
         }
       ]
     },
