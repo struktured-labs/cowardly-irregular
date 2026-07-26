@@ -75,18 +75,35 @@ static func has_artist_sheet(job_id: String) -> bool:
 	return _manifest.has(job_id)
 
 
-## Per-sheet horizontal-flip override, for sheets authored against the opposite facing convention.
-## Battle enemies must face RIGHT (the party's side). Frame size normally decides this — 128px artist
-## sheets are authored facing left and get flipped, 256px sheets face right and don't — but that is a
-## convention, not a guarantee, and a sheet drawn the other way renders backwards with nothing to catch it
-## (cave_rat_king, playtest 2026-07-25). Declaring "flip_h" in the manifest fixes the sheet without
-## touching art or special-casing ids in BattleScene. Returns `fallback` when unset.
-static func monster_flip_override(monster_id: String, fallback: bool) -> bool:
+## Does this sheet need flipping so the monster faces the party (screen right)?
+##
+## Frame size is only a PROXY here, and conflating the two cost us twice in one day:
+##   cave_rat_king  256px sheet authored facing LEFT -> rendered backwards in battle (2026-07-25)
+##   chancellor_mordaine  re-exported 256px -> 128px for the scale bump, which silently
+##                        flipped her facing too; correct only because she happens to be
+##                        drawn facing left (caught at fold review, 2026-07-26)
+##
+## The second one is the dangerous shape: a resolution change is a SIZING decision, and it
+## must not be able to reverse a monster's facing as a side effect. So facing is declared,
+## not inferred — "flip_h" in sprite_manifest wins whenever present, and the frame-size
+## convention is only the fallback for sheets that have not declared.
+static func monster_faces_party(monster_id: String, convention_default: bool) -> bool:
 	_load_manifest()
 	var entry = _monster_manifest.get(monster_id, {})
 	if entry is Dictionary and entry.has("flip_h"):
 		return bool(entry["flip_h"])
-	return fallback
+	return convention_default
+
+
+## Kept so existing callers/tests keep working; monster_faces_party is the name that says why.
+static func monster_flip_override(monster_id: String, fallback: bool) -> bool:
+	return monster_faces_party(monster_id, fallback)
+
+
+## Sizing decision ONLY — small artist drops get the scale bump so they don't read tiny
+## next to 256px proc-gen monsters. Deliberately separate from facing: see monster_faces_party.
+static func monster_needs_scale_bump(frame_height: int, threshold: int) -> bool:
+	return frame_height > 0 and frame_height <= threshold
 
 
 static func load_sprite_frames(customization, primary_job_id: String, secondary_job_id: String = "", weapon_id: String = "", armor_id: String = "", accessory_id: String = "") -> SpriteFrames:

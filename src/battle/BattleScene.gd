@@ -1019,15 +1019,19 @@ func _create_battle_sprites() -> void:
 		# Per-frame-size bump: artist drops at <=128px get ENEMY_SCALE_BUMP so
 		# they don't read as tiny next to proc-gen 256-frame monsters.
 		var size_bump = 1.0
-		var _is_artist_monster := false
+		var _small_frame := false
 		if sprite.sprite_frames and sprite.sprite_frames.has_animation(&"idle"):
 			if sprite.sprite_frames.get_frame_count(&"idle") > 0:
 				var _enemy_ftex = sprite.sprite_frames.get_frame_texture(&"idle", 0)
-				if _enemy_ftex and _enemy_ftex.get_height() <= ENEMY_SMALL_FRAME_THRESHOLD:
-					size_bump = ENEMY_SCALE_BUMP
-					_is_artist_monster = true
-		# Artist monsters (slime/bat/goblin) are authored facing LEFT; flip so they face the party on the right. Procedurals already face right.
-		sprite.flip_h = HybridSpriteLoader.monster_flip_override(monster_id, _is_artist_monster)
+				if _enemy_ftex:
+					_small_frame = HybridSpriteLoader.monster_needs_scale_bump(
+						_enemy_ftex.get_height(), ENEMY_SMALL_FRAME_THRESHOLD)
+		# SIZING decision.
+		if _small_frame:
+			size_bump = ENEMY_SCALE_BUMP
+		# FACING decision — separate on purpose. Manifest "flip_h" wins; frame size is only the
+		# fallback convention (128px artist sheets are authored facing left, 256px facing right).
+		sprite.flip_h = HybridSpriteLoader.monster_faces_party(monster_id, _small_frame)
 		var base_enemy_pos = enemy_positions[i].global_position if i < enemy_positions.size() else Vector2(200 + i * 100, 300)
 		base_enemy_pos.y += enemy_y_stagger
 		sprite.position = base_enemy_pos
@@ -4993,14 +4997,16 @@ func _on_monster_summoned(monster_type: String, summoner: Combatant) -> void:
 
 	# summons must mirror battle-start sizing or artist drops (<=128px) pop in 2.5x small, facing away
 	var size_bump: float = 1.0
-	var is_artist_monster := false
+	var small_frame := false
 	if sprite.sprite_frames and sprite.sprite_frames.has_animation(&"idle"):
 		if sprite.sprite_frames.get_frame_count(&"idle") > 0:
 			var ftex = sprite.sprite_frames.get_frame_texture(&"idle", 0)
-			if ftex and ftex.get_height() <= ENEMY_SMALL_FRAME_THRESHOLD:
-				size_bump = ENEMY_SCALE_BUMP
-				is_artist_monster = true
-	sprite.flip_h = HybridSpriteLoader.monster_flip_override(monster_type, is_artist_monster)
+			if ftex:
+				small_frame = HybridSpriteLoader.monster_needs_scale_bump(
+					ftex.get_height(), ENEMY_SMALL_FRAME_THRESHOLD)
+	if small_frame:
+		size_bump = ENEMY_SCALE_BUMP
+	sprite.flip_h = HybridSpriteLoader.monster_faces_party(monster_type, small_frame)
 	var summon_depth_scale: float = 1.0 - float(new_idx) * 0.05
 	var final_scale: float = summon_depth_scale * size_bump
 

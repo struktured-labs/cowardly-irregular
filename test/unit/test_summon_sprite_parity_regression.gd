@@ -33,11 +33,13 @@ func test_summon_flips_artist_sheets_toward_party() -> void:
 	# manifest flip_h override (cave_rat_king renders backwards without it) failed a
 	# test whose actual subject — summon/battle-start PARITY — was preserved. Assert
 	# the parity instead of one spelling of it.
+	# 2026-07-26: helper renamed monster_flip_override -> monster_faces_party when
+	# facing was decoupled from the scale bump. Same subject, clearer name.
 	var body := _summon_body()
-	assert_true(body.contains("monster_flip_override("),
-		"summons must resolve facing through the shared override, not a local rule")
+	assert_true(body.contains("monster_faces_party("),
+		"summons must resolve facing through the shared helper, not a local rule")
 	var scene_src := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
-	assert_eq(scene_src.count("HybridSpriteLoader.monster_flip_override("), 2,
+	assert_eq(scene_src.count("HybridSpriteLoader.monster_faces_party("), 2,
 		"exactly two flip sites — battle-start and summon — must agree; a summoned monster "
 		+ "facing the wrong way while its battle-start twin faces correctly is the regression")
 
