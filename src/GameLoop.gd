@@ -1627,6 +1627,26 @@ func _get_pending_story_cutscene() -> String:
 	if flags.get("cutscene_flag_chapter4_complete", false) and not flags.get("cutscene_flag_spotlight_unlocked_bard", false) and not _chaining_story_cutscene:
 		if _current_map_id == "harmonia_village":
 			return "world1_spotlight_bard_ch7"
+
+	# Mordaine escalation (cowir-story, 2026-07-26 — struktured asked why this arc wasn't in the
+	# game). She is SUPERVISING, not stalking: the distance never changes, what escalates is how
+	# much the game stops for her — no letterbox/music/dialogue on the road, through to full
+	# staging on castle F3. Each beat gates on the PREVIOUS one so entering a later floor first
+	# can't play them out of order, and the escalation only reads if it's seen in sequence.
+	# Floors 1-3 only; F4 is the boss floor and keeps world1_mordaine_intro untouched.
+	if flags.get("cutscene_flag_chapter4_complete", false) and not flags.get("cutscene_flag_world1_mordaine_watch_road_complete", false):
+		if _current_map_id == "overworld":
+			return "world1_mordaine_watch_road"
+	if flags.get("cutscene_flag_world1_mordaine_watch_road_complete", false) and not flags.get("cutscene_flag_world1_mordaine_watch_castle_complete", false):
+		if _current_map_id == "castle_harmonia" and _cave_floor >= 1:
+			return "world1_mordaine_watch_castle"
+	if flags.get("cutscene_flag_world1_mordaine_watch_castle_complete", false) and not flags.get("cutscene_flag_world1_mordaine_speaks_complete", false):
+		if _current_map_id == "castle_harmonia" and _cave_floor >= 2:
+			return "world1_mordaine_speaks"
+	if flags.get("cutscene_flag_world1_mordaine_speaks_complete", false) and not flags.get("cutscene_flag_world1_mordaine_procedure_complete", false):
+		if _current_map_id == "castle_harmonia" and _cave_floor >= 3:
+			return "world1_mordaine_procedure"
+
 	# Chapters 5-9: auto-set flags — party commentary now opt-in via NPCs
 	# These cutscenes are still available but won't auto-trigger on map entry
 	if flags.get("cutscene_flag_chapter4_complete", false) and not flags.get("cutscene_flag_chapter9_complete", false):
@@ -1890,6 +1910,12 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	"world1_prologue":                  "cutscene_flag_prologue_complete",
 	"world1_chapter1":                  "cutscene_flag_chapter1_complete",
 	"world1_bram_shield":               "cutscene_flag_world1_bram_shield_complete",
+	# Mordaine escalation — a missing entry here does NOT fail loudly, it re-fires the beat on
+	# every qualifying entry (the original Elder Theron loop). Four beats, four entries.
+	"world1_mordaine_watch_road":       "cutscene_flag_world1_mordaine_watch_road_complete",
+	"world1_mordaine_watch_castle":     "cutscene_flag_world1_mordaine_watch_castle_complete",
+	"world1_mordaine_speaks":           "cutscene_flag_world1_mordaine_speaks_complete",
+	"world1_mordaine_procedure":        "cutscene_flag_world1_mordaine_procedure_complete",
 	"world1_chapter3":                  "cutscene_flag_chapter3_complete",
 	"world1_chapter4":                  "cutscene_flag_chapter4_complete",
 	"world1_rat_king_defeat":           "cutscene_flag_world1_rat_king_defeat_complete",
