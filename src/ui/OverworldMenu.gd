@@ -38,6 +38,7 @@ const BASE_MENU_OPTIONS = [
 	{"id": "jobs", "label": "Jobs", "enabled": true},
 	{"id": "status", "label": "Status", "enabled": true},
 	{"id": "abilities", "label": "Abilities", "enabled": true},
+	{"id": "lenses", "label": "Lenses", "enabled": true},
 	# Auto Toggle = sticky global on/off (mouse path to the same thing
 	# Minus button does — added per user feedback 2026-05-03 for mouse
 	# users who can't easily tell which gamepad button toggles).
@@ -719,6 +720,8 @@ func _handle_menu_action(action_id: String) -> void:
 			_open_status_menu(target)
 		"abilities":
 			_open_abilities_menu(target)
+		"lenses":
+			_open_lens_menu()
 		"autobattle":
 			menu_action.emit("autobattle", target)
 			_close_menu()
@@ -770,6 +773,16 @@ func _open_bestiary() -> void:
 	bestiary.closed.connect(_on_submenu_closed)
 	add_child(bestiary)
 	_hide_main_ui(bestiary)
+
+
+func _open_lens_menu() -> void:
+	_submenu_open = true
+	var lens_menu = load("res://src/ui/LensMenu.gd").new()
+	lens_menu.party = party
+	lens_menu.set_anchors_preset(Control.PRESET_FULL_RECT)
+	lens_menu.closed.connect(_on_submenu_closed)
+	add_child(lens_menu)
+	_hide_main_ui(lens_menu)
 
 
 func _open_formations() -> void:

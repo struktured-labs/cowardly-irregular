@@ -100,6 +100,37 @@ func is_recipe_unlocked(axis: String) -> bool:
 	return GameState != null and axis in GameState.unlocked_lens_recipes
 
 
+## Retroactive unlock for masterites already dead when the Lens system arrived (cowir-main default
+## 2026-07-27, reversible). Without it an existing save can never see the system — the recipe gate
+## waits on a defeat that already happened and will not happen again. Called on load; idempotent.
+func reconcile_retroactive_unlocks() -> int:
+	if GameState == null:
+		return 0
+	var src := FileAccess.get_file_as_string("res://data/monsters.json")
+	if src == "":
+		return 0
+	var parsed = JSON.parse_string(src)
+	if not (parsed is Dictionary):
+		return 0
+	var monsters = parsed.get("monsters", parsed)
+	if not (monsters is Dictionary):
+		return 0
+	var granted := 0
+	for mid in monsters:
+		var m = monsters[mid]
+		if not (m is Dictionary) or not m.get("masterite", false):
+			continue
+		var axis := str(m.get("masterite_type", ""))
+		if axis == "" or is_recipe_unlocked(axis):
+			continue
+		if BestiarySystem.is_defeated(str(mid)):
+			if unlock_recipe(axis):
+				granted += 1
+	if granted > 0:
+		print("[LensSystem] Retroactively unlocked %d recipe(s) from already-defeated masterites" % granted)
+	return granted
+
+
 ## Materials required to craft, as {item_id: count}.
 func get_recipe(axis: String) -> Dictionary:
 	var lens := get_lens(axis)
