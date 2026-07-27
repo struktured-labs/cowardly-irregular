@@ -1,0 +1,86 @@
+{
+  "_comment": "Lens system — see docs/design/lens-system-and-evolutions-proposal.md (canonical) + lens-system-addendum-2026-07-27.md. Layer 3 of the character model (Primary locked / Secondary job / Lens). struktured ruling 2026-07-27: Lenses are POOLED — crafted into shared inventory, equippable by ANY party member, never bound to a killer. Acquisition is: defeat a masterite of this axis -> recipe unlocks -> gather materials -> craft -> equip.",
+  "_stat_mod_vocabulary": "stat_mods keys match PassiveSystem.get_passive_mods exactly (attack_multiplier, defense_multiplier, magic_multiplier, speed_multiplier, max_hp_multiplier, max_mp_multiplier, mp_cost_multiplier, healing_multiplier, crit_chance, evasion). Multipliers compose multiplicatively; crit_chance/evasion add. Lenses are deliberately NOT stored in passives.json: AbilitiesMenu.gd:116 has `or true` stubbed into its learned check, so any passive listed there is equippable by anyone with no crafting gate.",
+  "_axis_fingerprint": "Stat tilts here follow cowir-battle's measurement of what the 20 live masterites ACTUALLY do (msg 3178), not the original doc's sketch. Two of the doc's four tilts were derived from ability TYPE and mislead: Tempo's abilities are 20/25 support (haste/slow/time_tax) so +SPD is the stat it MANIPULATES, not its identity; Curator's 'magic' is mana_drain/audit/dispel/resource_cut, which attack resources rather than HP, so +MAG misreads it. For those two the passive carries the identity and the stat tilt is deliberately absent.",
+
+  "lenses": {
+    "warden": {
+      "id": "warden",
+      "name": "Warden Lens",
+      "axis": "warden",
+      "description": "You have been hit by something that did not intend to stop. Now neither do you.",
+      "flavor": "The Warden does not out-damage you. It outlasts you, and then it punishes.",
+      "stat_mods": {
+        "defense_multiplier": 1.08,
+        "max_hp_multiplier": 1.05
+      },
+      "meta_effects": {
+        "lens_lethal_floor": true
+      },
+      "passive_name": "Iron Will",
+      "passive_description": "Survive one otherwise-lethal blow per battle at 1 HP.",
+      "voice_tint": "stoic",
+      "recipe": {
+        "masterite_shard": 3
+      }
+    },
+
+    "arbiter": {
+      "id": "arbiter",
+      "name": "Arbiter Lens",
+      "axis": "arbiter",
+      "description": "A verdict is not louder than an argument. It is only final.",
+      "flavor": "The Arbiter carries the highest physical share of any axis, and its execution ability triples against the wounded.",
+      "stat_mods": {
+        "attack_multiplier": 1.05
+      },
+      "meta_effects": {
+        "lens_execute_threshold": 0.25,
+        "lens_execute_bonus": 0.5
+      },
+      "passive_name": "Final Word",
+      "passive_description": "Deal +50% damage to enemies below 25% HP.",
+      "voice_tint": "judgmental",
+      "recipe": {
+        "masterite_shard": 3
+      }
+    },
+
+    "tempo": {
+      "id": "tempo",
+      "name": "Tempo Lens",
+      "axis": "tempo",
+      "description": "Speed was never the point. The point was whose turn it is.",
+      "flavor": "20 of Tempo's 25 ability slots are support — haste, slow, time tax. It manipulates the action economy; it barely fights.",
+      "stat_mods": {},
+      "meta_effects": {
+        "lens_ap_echo": 1
+      },
+      "passive_name": "Stolen Beat",
+      "passive_description": "When you act, the next ally action this round costs 1 less AP.",
+      "voice_tint": "urgent",
+      "recipe": {
+        "masterite_shard": 3
+      }
+    },
+
+    "curator": {
+      "id": "curator",
+      "name": "Curator Lens",
+      "axis": "curator",
+      "description": "It is not taking your life. It is taking your options, and keeping a record.",
+      "flavor": "Every Curator 'magic' ability is a resource attack wearing damage clothing — mana drain, audit, dispel, resource cut.",
+      "stat_mods": {},
+      "meta_effects": {
+        "lens_mp_tithe": 1,
+        "lens_debuff_resist": 0.25
+      },
+      "passive_name": "Accounting",
+      "passive_description": "Gain 1 MP whenever a party member spends MP. Debuffs land 25% less often on you.",
+      "voice_tint": "transactional",
+      "recipe": {
+        "masterite_shard": 3
+      }
+    }
+  }
+}

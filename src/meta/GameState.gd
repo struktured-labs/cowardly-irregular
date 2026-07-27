@@ -165,6 +165,16 @@ var max_history_size: int = 10
 ## Corruption effects
 var corruption_effects: Array[String] = []
 
+## Lens system (layer 3 of the character model — see docs/design/lens-system-*).
+## struktured ruling 2026-07-27: Lenses are POOLED, so ownership is party-wide and assignment is
+## a free, unrestricted mapping — there is no binding to whoever landed the killing blow.
+## Recipe axes unlocked by defeating a masterite of that axis (idempotent; 5 masterites share one axis).
+var unlocked_lens_recipes: Array[String] = []
+## Crafted Lenses in the shared pool. One per axis — crafting is gated on not already owning it.
+var owned_lenses: Array[String] = []
+## char_id -> axis. A Lens appears at most once here; equipping elsewhere MOVES it.
+var lens_assignments: Dictionary = {}
+
 ## Serialization bucket for GameLoop.equipment_pool (the live store). Written
 ## GameLoop→here on sync, read here→GameLoop on load, never the reverse, so
 ## the two can't drift the way equipment_inventory did.
@@ -316,6 +326,9 @@ func _create_save_data() -> Dictionary:
 		"permakilled_monster_types": permakilled_monster_types.duplicate(),
 		"meta_features": meta_features.duplicate(),
 		"corruption_effects": corruption_effects.duplicate(),
+		"unlocked_lens_recipes": unlocked_lens_recipes.duplicate(),
+		"owned_lenses": owned_lenses.duplicate(),
+		"lens_assignments": lens_assignments.duplicate(),
 		"equipment_pool": equipment_pool.duplicate(true),
 		"current_world": current_world,
 		"worlds_unlocked": worlds_unlocked,
@@ -516,6 +529,32 @@ func _apply_save_data(save_data: Dictionary) -> void:
 			corruption_effects = typed_corruption
 		else:
 			push_warning("[GameState] _apply_save_data: corruption_effects malformed (type=%s) — keeping current list" % typeof(raw_ce))
+
+	# Lens system. JSON.parse returns untyped Array, and assigning that straight to an
+	# Array[String] is a SILENT script error that leaves the field at its default — the
+	# documented trap that ate party data before. Coerce element-by-element.
+	for lens_field in ["unlocked_lens_recipes", "owned_lenses"]:
+		if not save_data.has(lens_field):
+			continue
+		var raw_lens: Variant = save_data[lens_field]
+		if raw_lens is Array:
+			var typed_lens: Array[String] = []
+			for entry in raw_lens:
+				typed_lens.append(str(entry))
+			match lens_field:
+				"unlocked_lens_recipes": unlocked_lens_recipes = typed_lens
+				"owned_lenses": owned_lenses = typed_lens
+		else:
+			push_warning("[GameState] _apply_save_data: %s malformed (type=%s) — keeping current list" % [lens_field, typeof(raw_lens)])
+
+	if save_data.has("lens_assignments"):
+		var raw_la: Variant = save_data["lens_assignments"]
+		if raw_la is Dictionary:
+			lens_assignments.clear()
+			for char_id in raw_la:
+				lens_assignments[str(char_id)] = str(raw_la[char_id])
+		else:
+			push_warning("[GameState] _apply_save_data: lens_assignments malformed (type=%s) — keeping current map" % typeof(raw_la))
 
 	# Equipment pool: JSON hands back generic Arrays, so coerce each slot
 	# explicitly. A silent [] here is a player losing every drop they own.
@@ -962,6 +1001,11 @@ func reset_game_state() -> void:
 	party_gold = 500
 	player_party.clear()
 	corruption_effects.clear()
+	# Lens state is per-run — without this, New Game starts holding Lenses crafted last run
+	# (same leak class as the quests/crystals bleed fixed 2026-07-02).
+	unlocked_lens_recipes.clear()
+	owned_lenses.clear()
+	lens_assignments.clear()
 	save_history.clear()
 
 	# Story / world progression
