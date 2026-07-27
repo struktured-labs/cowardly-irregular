@@ -42,6 +42,9 @@ var current_ap: int = 0  # Action Points: -4 to +4 range
 var is_defending: bool = false
 var is_alive: bool = true
 
+## Warden Lens lethal floor: once per battle, not once per run. Reset in BattleManager.start_battle alongside the other battle-scoped flags — NOT save-persisted, since a floor that stayed spent across a reload would silently weaken the Lens on every continue.
+var _lens_floor_used: bool = false
+
 ## Status effects and buffs
 var status_effects: Array[String] = []
 var status_durations: Dictionary = {}  # status_name -> turns remaining (-1 = permanent)
@@ -325,6 +328,16 @@ func take_damage(amount: int, is_magical: bool = false) -> int:
 		if gl_floor and "_spotlight_duel_active" in gl_floor and bool(gl_floor._spotlight_duel_active):
 			current_hp = 1
 			print("[SPOTLIGHT-FLOOR] %s clutch-survived a full-HP one-shot at 1 HP" % combatant_name)
+
+	# Warden Lens lethal floor (msg 3179). Deliberately the SAME shape as the spotlight floor above — that's the addendum's §4 learning loop made literal: the duel teaches the mechanic, the masterite tests it, the Lens hands it to you. Differences from the duel floor: once per BATTLE (not per full-HP hit), and it fires from ANY hp, not only full — a Warden holder survives one killing blow per fight whatever their HP was. Checked before death_resistance so the guaranteed floor wins over the chance roll rather than wasting it.
+	if current_hp <= 0 and not _lens_floor_used and is_inside_tree():
+		var ls: Node = get_tree().root.get_node_or_null("LensSystem")
+		if ls and ls.has_method("get_lens_meta_effects"):
+			var me: Dictionary = ls.get_lens_meta_effects(combatant_name.to_lower().replace(" ", "_"))
+			if bool(me.get("lens_lethal_floor", false)):
+				current_hp = 1
+				_lens_floor_used = true
+				print("[LENS-WARDEN] %s endures a killing blow at 1 HP" % combatant_name)
 
 	## Tick 439: death_resistance passive — meta_effects.death_resist
 	## _chance gives a roll to survive a killing blow at 1 HP.
@@ -618,6 +631,14 @@ func add_buff(effect: String, stat: String, modifier: float, duration: int, clas
 
 func add_debuff(effect: String, stat: String, modifier: float, duration: int) -> void:
 	"""Add a temporary debuff. Refreshes duration if same effect exists; upgrades to stronger (lower) modifier."""
+	# Curator Lens debuff resist (msg 3179): shortens incoming debuffs rather than blocking them, so the Lens never produces a silent nothing-happened — the debuff still lands and still reads in the log, it just runs out sooner. Blocking outright would make a resisted debuff indistinguishable from a bug.
+	if duration > 1 and is_inside_tree():
+		var ls: Node = get_tree().root.get_node_or_null("LensSystem")
+		if ls and ls.has_method("get_lens_meta_effects"):
+			var lme: Dictionary = ls.get_lens_meta_effects(combatant_name.to_lower().replace(" ", "_"))
+			var resist: float = float(lme.get("lens_debuff_resist", 0.0))
+			if resist > 0.0:
+				duration = maxi(1, int(round(float(duration) * (1.0 - resist))))
 	for existing in active_debuffs:
 		if existing["effect"] == effect:
 			existing["remaining_turns"] = duration

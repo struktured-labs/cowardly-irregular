@@ -113,6 +113,9 @@ var escape_allowed: bool = true
 ## threshold"|"flee_target", "value": int, "status": String}.
 ## Cleared in end_battle so subsequent normal battles use default.
 var _win_condition: Dictionary = {}
+
+## Tempo Lens AP-echo charges remaining THIS ROUND (msg 3179). Re-armed each round from the holder's lens_ap_echo; unspent charges do not bank, so Tempo rewards acting rather than hoarding — which is the axis's own behaviour (20/25 support slots manipulating action economy).
+var _lens_ap_echo_charges: int = 0
 ## Turbo mode - minimize delays between actions for fastest execution
 var turbo_mode: bool = false
 
@@ -418,6 +421,10 @@ func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	_c3_clutch_crit = false
 	_battle_results = {}
 	_ko_this_battle.clear()
+	# Warden Lens floor is once per BATTLE — clear on both sides so a party member and a lens-holding ally alike start each fight with it available.
+	for _c in (players + enemies):
+		if _c is Combatant:
+			_c._lens_floor_used = false
 
 	# Reset boss-gloat context tracking.
 	_jailbreak_landed_this_battle = false
@@ -677,6 +684,11 @@ func end_battle(victory: bool) -> void:
 				var mtype: String = str(enemy.get_meta("monster_type", ""))
 				if mtype != "":
 					BestiarySystem.mark_defeated(mtype, defeat_loc)
+			# Lens recipe unlock (msg 3179): struktured ruled Lenses POOLED, so this needs no killer — only "a masterite of axis X died and we won". Reads masterite_type meta set at spawn (BattleEnemySpawner:437); unlock_recipe is idempotent, so masterites 2..5 of an axis no-op.
+			if enemy.has_meta("masterite_type"):
+				var axis: String = str(enemy.get_meta("masterite_type", ""))
+				if axis != "" and LensSystem:
+					LensSystem.unlock_recipe(axis)
 
 		## Tick 453: record any defeated boss/miniboss so the
 		## pattern_recognition passive's boss_pattern_memory bonus
@@ -1080,6 +1092,7 @@ func _start_new_round() -> void:
 	pending_actions.clear()
 	execution_order.clear()
 	_apply_weakness_cycles()
+	_rearm_lens_ap_echo()
 
 	# Reset combatants for new round and tick buff/debuff durations
 	for combatant in all_combatants:
@@ -3042,6 +3055,12 @@ func _execute_next_action() -> void:
 	current_combatant = combatant
 	current_state = BattleState.PROCESSING_ACTION
 
+	# Tempo Lens AP echo (msg 3179). Implemented as a REFUND rather than a discount: every AP-spending path (basic attack, each Advance sub-action, group attacks) deducts independently, so intercepting "cost" would mean touching five sites and getting the group-attack arithmetic wrong. Granting 1 AP at the action boundary is arithmetically identical and has exactly one seam. Party-only — Tempo shouldn't fund the enemy side.
+	if _lens_ap_echo_charges > 0 and combatant in player_party:
+		_lens_ap_echo_charges -= 1
+		combatant.gain_ap(1)
+		battle_log_message.emit("[color=cyan]↻ %s moves on borrowed time.[/color]" % combatant.combatant_name)
+
 	# Status effect behavioral checks
 	if combatant.has_status("stun"):
 		combatant.remove_status("stun")
@@ -3910,6 +3929,7 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 
 	# Market Sense passive: scaling damage bonus based on volatility band
 	damage = _apply_market_sense(attacker, damage)
+	damage = _apply_lens_execute_bonus(attacker, actual_target, damage)
 
 	## Tick 435: consume the next_attack_multiplier set by burrow (or
 	## any future stored-multiplier support ability). One-shot — clear
@@ -4148,6 +4168,9 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 		battle_log_message.emit("[color=gray]%s lacks MP for %s.[/color]" % [caster.combatant_name, ability["name"]])
 		push_warning("[BattleManager] _execute_ability: '%s' insufficient MP after can_use_ability check passed (cost=%d, have=%d) — can_use_ability / spend_mp divergence" % [ability_id, mp_cost, caster.current_mp])
 		return
+	# Curator Lens MP tithe (msg 3179): the axis fingerprint showed Curator attacks RESOURCES, never HP — mana_drain / audit / dispel / resource_cut. The Lens gives that back as economy: the holder skims MP whenever any ally spends it. Fires only on a real spend (mp_cost > 0), so free moves and 0-cost abilities don't farm it.
+	if mp_cost > 0:
+		_apply_lens_mp_tithe(caster)
 
 	# Actions cost 1 AP (cancels out natural gain for net 0)
 	caster.spend_ap(1)
@@ -4320,6 +4343,7 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 		var phys_vrange = volatility.get_variance_range(caster) if volatility else Vector2(0.9, 1.1)
 		damage = int(damage * randf_range(phys_vrange.x, phys_vrange.y))
 		damage = _apply_market_sense(caster, damage)
+		damage = _apply_lens_execute_bonus(caster, target, damage)
 
 		# Barrier absorbs the next hit.
 		if target.has_status("barrier"):
@@ -4497,6 +4521,7 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 		if dmg_variance > 0.0:
 			damage = int(damage * randf_range(0.0, dmg_variance))
 		damage = _apply_market_sense(caster, damage)
+		damage = _apply_lens_execute_bonus(caster, target, damage)
 
 		# Apply terrain modifier for elemental damage
 		var terrain_mod = 1.0
@@ -4922,6 +4947,49 @@ func _get_crit_multiplier(attacker: Combatant) -> float:
 
 
 ## Market Sense passive: scaling damage bonus based on volatility band
+## Re-arm the Tempo echo at round start. Charges do NOT accumulate across rounds — a holder who sits still gains nothing to spend later.
+func _rearm_lens_ap_echo() -> void:
+	_lens_ap_echo_charges = 0
+	if LensSystem == null:
+		return
+	for pc in player_party:
+		if pc == null or not is_instance_valid(pc) or not pc.is_alive:
+			continue
+		var me: Dictionary = LensSystem.get_lens_meta_effects(pc.combatant_name.to_lower().replace(" ", "_"))
+		_lens_ap_echo_charges += int(me.get("lens_ap_echo", 0))
+
+
+## Curator Lens MP tithe (msg 3179). Party-level, so it lives here rather than on Combatant — a Combatant doesn't know its party. The holder need not be the spender; that's the point, it's a party economy Lens. Self-spend still tithes: a Curator-holding Mage funds their own casting slightly, which is a coherent read of "resource management" rather than an exploit (the tithe is strictly smaller than any real cost).
+func _apply_lens_mp_tithe(spender: Combatant) -> void:
+	if spender == null or LensSystem == null:
+		return
+	for pc in player_party:
+		if pc == null or not is_instance_valid(pc) or not pc.is_alive:
+			continue
+		var me: Dictionary = LensSystem.get_lens_meta_effects(pc.combatant_name.to_lower().replace(" ", "_"))
+		var tithe: int = int(me.get("lens_mp_tithe", 0))
+		if tithe > 0:
+			pc.restore_mp(tithe)
+
+
+## Arbiter Lens execute bonus (msg 3179). The axis fingerprint showed Arbiter is THRESHOLD damage, not flat damage — its identity ability is masterite_execution at 3.0x gated on wounded targets, which is why the doc's flat +8% ATK became +5% plus this. Applies to physical AND magic so a Mage holding the Arbiter Lens finishes the same way a Fighter does; the Lens describes the holder's approach, not their weapon.
+func _apply_lens_execute_bonus(attacker: Combatant, target: Combatant, damage: int) -> int:
+	if attacker == null or target == null or not is_instance_valid(target) or target.max_hp <= 0:
+		return damage
+	if LensSystem == null:
+		return damage
+	var me: Dictionary = LensSystem.get_lens_meta_effects(attacker.combatant_name.to_lower().replace(" ", "_"))
+	var threshold: float = float(me.get("lens_execute_threshold", 0.0))
+	var bonus: float = float(me.get("lens_execute_bonus", 0.0))
+	if threshold <= 0.0 or bonus <= 0.0:
+		return damage
+	# Threshold reads the hp fraction BEFORE this hit lands — "finish the wounded", not "reward whatever this hit leaves behind".
+	if float(target.current_hp) / float(target.max_hp) > threshold:
+		return damage
+	battle_log_message.emit("[color=orange]%s moves to finish it.[/color]" % attacker.combatant_name)
+	return int(damage * (1.0 + bonus))
+
+
 func _apply_market_sense(combatant: Combatant, damage: int) -> int:
 	"""Apply Market Sense passive bonus if equipped."""
 	if not volatility or not "market_sense" in combatant.equipped_passives:
