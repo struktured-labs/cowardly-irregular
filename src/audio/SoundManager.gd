@@ -32,7 +32,9 @@ const MUSIC_VOLUME_CEILING_DB: float = -10.0
 const SFX_UI_BASE_DB: float = -16.0      # Menu blips: present but below music
 const SFX_BATTLE_BASE_DB: float = -6.0   # Battle SFX: punchy alongside music
 const SFX_ABILITY_BASE_DB: float = -12.0 # Ability SFX: same level as music
-const SFX_AMBIENT_BASE_DB: float = -20.0 # Ambient layer: subtle background
+# NOTE: ambient has NO base const here on purpose — it is not an SFX channel.
+# _ambient_player tracks the MUSIC slider at _music_base_db + AMBIENT_OFFSET_DB
+# (set_music_volume, not set_sfx_volume). To retune ambience, change that offset.
 
 # Night-music bus: music players route through this so the day/night system
 # can toggle a low-pass + reverb "nocturnal" filter on all playing music
