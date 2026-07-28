@@ -96,6 +96,15 @@ var _conscript_spec: Dictionary = {}
 const CONSCRIPT_RADIUS_DEFAULT: float = 256.0
 const CONSCRIPT_MAX_DEFAULT: int = 6
 
+## Playstyle thresholds — struktured's to tune; named so tuning is a one-line
+## change rather than a hunt through the arms. What must NOT change without a
+## test failing is that all five values stay reachable (world6_chapter3 branches
+## on four of them, so a dead arm is a dead ending).
+const PLAYSTYLE_MIN_SAMPLE: int = 20
+const PLAYSTYLE_AUTOMATOR_RATIO: float = 0.7
+const PLAYSTYLE_MANUAL_RATIO: float = 0.3
+const PLAYSTYLE_GRINDER_BATTLES: int = 100
+
 
 func _ready() -> void:
 	layer = 95  # Above game (50), below battle transitions (100)
@@ -1549,23 +1558,52 @@ func _detect_playstyle() -> String:
 		if total_battles > 0:
 			autobattle_ratio = float(auto_count) / float(total_battles)
 
-	# High automation rate → automator
-	if autobattle_ratio > 0.7 and total_battles >= 20:
-		return "automator"
+	# 2026-07-28: two of the game's FOUR endings could never play. world6_
+	# chapter3 branches on all four canon keys, but the old arm order tested
+	# VOLUME before RATIO — so above 100 battles only "automator" and
+	# "grinder" were reachable, and above 40 only those plus "manual". A
+	# player who hand-played the entire game got the grinder ending; a
+	# level-3 party twenty minutes in got the exploiter ending.
+	#
+	# Canon (cowir-story) is explicit that three of the four branches are
+	# about PROPORTION and only "ground relentlessly" is a total, so ratio
+	# is tested first and volume only separates the mixed-style players.
 
-	# High total battles → grinder
-	if total_battles > 100:
-		return "grinder"
-
-	# Check for exploit-style play (low battles, high level — efficient)
-	if total_battles > 0 and total_battles < 40:
+	# Exploitation is categorical, not proportional — it outranks the ratio
+	# arms because it's a fact about HOW they played, at any battle count.
+	if _has_exploited_systems():
 		return "exploiter"
 
-	# Mostly manual play
-	if autobattle_ratio < 0.3 and total_battles >= 20:
+	# Below the sample floor no proportion is meaningful yet.
+	if total_battles < PLAYSTYLE_MIN_SAMPLE:
+		return "balanced"
+
+	if autobattle_ratio > PLAYSTYLE_AUTOMATOR_RATIO:
+		return "automator"
+
+	if autobattle_ratio < PLAYSTYLE_MANUAL_RATIO:
 		return "manual"
 
+	# Mixed style — volume is the only thing left that distinguishes them.
+	if total_battles > PLAYSTYLE_GRINDER_BATTLES:
+		return "grinder"
+
 	return "balanced"
+
+
+## Canon "exploited everything" — someone who abused the systems. The meta
+## jobs ARE the game's sanctioned exploits, and both markers are save-
+## persisted: Necromancer extermination, and corruption (which Scriptweaver's
+## modify_constant accrues on every constant edit). The old arm tested
+## `total_battles < 40`, which is not exploitation — it is being early.
+func _has_exploited_systems() -> bool:
+	if not GameState:
+		return false
+	if "permakilled_monster_types" in GameState and not GameState.permakilled_monster_types.is_empty():
+		return true
+	if "corruption_effects" in GameState and not GameState.corruption_effects.is_empty():
+		return true
+	return false
 
 
 ## =====================
