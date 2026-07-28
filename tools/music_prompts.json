@@ -634,6 +634,16 @@
       "style": "SNES dungeon, icy, crystalline chimes, cold wind, sparse piano, haunting, 80 BPM",
       "prompt": "Frozen dragon cave dungeon theme. Crystalline chime arpeggios echoing off ice walls, cold wind howling through chambers, sparse piano notes that ring and fade in frozen air. Everything is brittle and vast. The cold slows everything down including the music. SNES-era haunting ice dungeon. Looping."
     },
+    "dungeon_dragon_lightning": {
+      "title_template": "The Gathering Air",
+      "style": "SNES dungeon, electrical, static crackle, tremolo strings rising, distant thunder, restless, minor key, 108 BPM",
+      "prompt": "Storm dragon cave dungeon theme. Static crackle in the silences, tremolo strings that climb without ever arriving, distant thunder felt more than heard. A held charge that keeps building and never discharges — the air before lightning, not the strike. Metallic shimmer on the high end, restless low pulse. Every descent adds pressure. SNES-era dungeon atmosphere, tense and expectant. Looping."
+    },
+    "dungeon_dragon_shadow": {
+      "title_template": "What the Dark Asks",
+      "style": "SNES dungeon, void, sparse detuned bells, low drone, long silences, unsettling, 68 BPM",
+      "prompt": "Void dragon cave dungeon theme. Sparse detuned bells with long decay, a low drone that never resolves, silences held slightly too long so the room feels like it is waiting for an answer. Almost no percussion. Not menacing — patient, and far older than the player. Hollow, contemplative, quietly wrong. SNES-era dungeon atmosphere, philosophical and cold. Looping."
+    },
     "dungeon_suburban": {
       "title_template": "Under the Subdivision",
       "style": "EarthBound dungeon, suburban underground, muffled bass, wrong muzak, pipes dripping, unsettling, 90 BPM",
