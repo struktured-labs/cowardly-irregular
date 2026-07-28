@@ -19,7 +19,7 @@ const KNOWN_ONLY_SEMANTIC := "type"
 const STEP_SCHEMA := {
 	# Actor-lifecycle
 	"spawn_actor":   {"required": ["id", "kind"],
-	                  "optional": ["job", "archetype", "at", "facing", "replace_npc"]},
+	                  "optional": ["job", "archetype", "at", "facing", "replace_npc", "at_offset"]},
 	"despawn_actor": {"required": ["id"], "optional": []},
 	"move_actor":    {"required": ["id", "to"], "optional": ["speed"]},
 	"face_actor":    {"required": ["id"], "optional": ["dir", "toward"]},
