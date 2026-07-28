@@ -197,6 +197,25 @@ func _gd_files_under(root: String) -> Array[String]:
 	return found
 
 
+## Documents, executably, that the Ultimate Pro 2 quirk profile INVERTS L/R relative to Standard on
+## a mapped pad. Not asserting it is wrong — struktured measured it on his own hardware before
+## ControllerMappings existed, when an index genuinely did not mean what the constant said. Asserting
+## that the relationship is what it is, so "retire it / keep it" stays a decision someone makes on
+## evidence rather than a surprise they hit in Settings.
+func test_quirk_profile_is_documented_as_inverting_against_standard() -> void:
+	var ipm = load("res://src/input/InputProfileManager.gd").new()
+	var quirk: Dictionary = ipm.PROFILE_ULTIMATE_PRO_2
+	var standard: Dictionary = ipm.PROFILE_STANDARD
+	assert_eq(quirk["battle_advance"], standard["battle_defer"],
+		"the quirk profile puts Advance on Standard's Defer button — an inversion, by design, for an UNMAPPED pad")
+	assert_eq(quirk["battle_defer"], standard["battle_advance"],
+		"and Defer on Standard's Advance button")
+	var src: String = FileAccess.get_file_as_string("res://src/input/InputProfileManager.gd")
+	assert_true(src.contains("predates ControllerMappings"),
+		"the inversion must carry a note explaining WHY it disagrees with the hint bar, or the next reader re-measures it from scratch")
+	ipm.free()
+
+
 ## ControllerMappings must run BEFORE anything reads or rewrites bindings, or the first frame of
 ## input is evaluated against raw indices.
 func test_controller_mappings_autoload_precedes_input_consumers() -> void:
