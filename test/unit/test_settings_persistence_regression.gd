@@ -90,15 +90,27 @@ func test_set_volume_clamps_above_one():
 
 
 func test_sfx_volume_safe_with_zero():
-	# set_sfx_volume(0.0) historically had an edge case where -80 dB
-	# was applied to one channel but not others. Verify all 3 SFX
-	# channels go to -80 dB together.
+	# Originally: -80 dB was applied to one channel but not others, so silence was partial.
+	# 2026-07-28 the MECHANISM changed — attenuation moved from the three players onto an SFX
+	# BUS, because writing volume_db on SoundManager's own players could never reach the two
+	# AudioStreamPlayers other files construct (BattleTransition's sting, CutsceneDialogue's
+	# voice blip), and those kept playing with the slider at zero.
+	#
+	# The SUBJECT is unchanged and is what this still asserts: slider at zero means silence, for
+	# every SFX channel at once. It just now has to be checked where silence actually lives.
 	var sm = _make_sound_manager()
 	await get_tree().process_frame
 	sm.set_sfx_volume(0.0)
-	assert_eq(sm._ui_player.volume_db, -80.0, "ui at silence")
-	assert_eq(sm._battle_player.volume_db, -80.0, "battle at silence")
-	assert_eq(sm._ability_player.volume_db, -80.0, "ability at silence")
+	var idx := AudioServer.get_bus_index("SFX")
+	assert_ne(idx, -1, "the SFX bus must exist — it is where silence is applied now")
+	assert_true(AudioServer.is_bus_mute(idx),
+		"slider at zero must mute the SFX bus, silencing every player on it including the ones "
+		+ "other files create")
+	# Players keep their design-intent mix; folding the slider in here too would attenuate twice.
+	assert_eq(sm._ui_player.volume_db, sm.SFX_UI_BASE_DB, "ui holds its base level")
+	assert_eq(sm._battle_player.volume_db, sm.SFX_BATTLE_BASE_DB, "battle holds its base level")
+	assert_eq(sm._ability_player.volume_db, sm.SFX_ABILITY_BASE_DB, "ability holds its base level")
+	AudioServer.set_bus_mute(idx, false)
 
 
 func test_save_system_load_settings_no_crash_on_missing_file():

@@ -1,5 +1,7 @@
 extends GutTest
 
+const CD := preload("res://src/cutscene/CutsceneDirector.gd")
+
 ## Every authored playstyle branch key must be a value the classifier can return.
 ##
 ## THE DEFECT THIS EXISTS FOR: `CutsceneDirector` resolves a playstyle branch with
@@ -123,15 +125,23 @@ func test_every_authored_key_is_reachable() -> void:
 ## ships against, it exists so the arms can be exercised over an input grid.
 ## If it drifts from the real function, test_mirror_matches_source_arm_order
 ## fails and this file stops being trustworthy — which is the honest outcome.
-func _mirror_classify(ratio: float, total: int) -> String:
-	if ratio > 0.7 and total >= 20:
-		return "automator"
-	if total > 100:
-		return "grinder"
-	if total > 0 and total < 40:
+## 2026-07-28: rewritten after PR #187 fixed the classifier. The OLD mirror encoded the buggy
+## arm order (volume before ratio), and this test failing on that change is the mirror working
+## exactly as designed — it refused to report reachability against a function it no longer
+## reflected. Exploitation is now categorical and outranks everything; below the sample floor
+## nothing is proportional yet; ratio separates automator/manual; volume only distinguishes the
+## players left in the middle.
+func _mirror_classify(ratio: float, total: int, exploited: bool = false) -> String:
+	if exploited:
 		return "exploiter"
-	if ratio < 0.3 and total >= 20:
+	if total < CD.PLAYSTYLE_MIN_SAMPLE:
+		return "balanced"
+	if ratio > CD.PLAYSTYLE_AUTOMATOR_RATIO:
+		return "automator"
+	if ratio < CD.PLAYSTYLE_MANUAL_RATIO:
 		return "manual"
+	if total > CD.PLAYSTYLE_GRINDER_BATTLES:
+		return "grinder"
 	return "balanced"
 
 
@@ -140,11 +150,15 @@ func test_mirror_matches_source_arm_order() -> void:
 	# thresholds textually so a change to the real function invalidates it
 	# loudly rather than letting the reachability tests below quietly lie.
 	var src: String = FileAccess.get_file_as_string(DIRECTOR_PATH)
+	# Pin the NAMED CONSTANTS and the arm ORDER rather than literal thresholds: struktured owns
+	# the numbers, so a retune must stay green while a reordering — which is what silently killed
+	# two endings — must go red.
 	for needle in [
-		"ratio > 0.7 and total_battles >= 20",
-		"total_battles > 100",
-		"total_battles > 0 and total_battles < 40",
-		"autobattle_ratio < 0.3 and total_battles >= 20",
+		"if _has_exploited_systems():",
+		"if total_battles < PLAYSTYLE_MIN_SAMPLE:",
+		"if autobattle_ratio > PLAYSTYLE_AUTOMATOR_RATIO:",
+		"if autobattle_ratio < PLAYSTYLE_MANUAL_RATIO:",
+		"if total_battles > PLAYSTYLE_GRINDER_BATTLES:",
 	]:
 		assert_true(src.find(needle) != -1,
 			("_detect_playstyle no longer contains `%s`. The reachability mirror in this file is " +
@@ -160,10 +174,16 @@ func test_every_classifier_output_is_reachable_by_some_input() -> void:
 	# This guards the total case only: an output no input can ever produce.
 	# It does NOT assert reachability within any particular battle-count band —
 	# see the note below, which is a KNOWN OPEN issue, not something this covers.
+	# 2026-07-28: the grid now spans THREE dimensions, not two. PR #187 made exploitation
+	# CATEGORICAL — _has_exploited_systems() reads permakill and corruption, facts about how the
+	# player played, at any battle count. So no (ratio, battles) pair can produce "exploiter" and
+	# a two-dimensional grid would report it unreachable, which is the test being stale rather
+	# than the classifier being broken. Sweep the exploited flag too.
 	var produced: Dictionary = {}
-	for total in range(0, 260, 1):
-		for r10 in range(0, 11):
-			produced[_mirror_classify(float(r10) / 10.0, total)] = true
+	for exploited in [false, true]:
+		for total in range(0, 260, 1):
+			for r10 in range(0, 11):
+				produced[_mirror_classify(float(r10) / 10.0, total, exploited)] = true
 	for value in _classifier_returns():
 		assert_true(produced.has(value),
 			("_detect_playstyle can return '%s' but NO (ratio, battles) input produces it — an earlier arm " +
