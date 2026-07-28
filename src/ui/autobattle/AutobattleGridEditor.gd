@@ -2249,6 +2249,14 @@ func _apply_target_type(target: String, ctx: Dictionary) -> void:
 # scrollable row list. Drives all four kinds of picker (condition_type,
 # action_type, ability_id, item_id, target_type) through _handle_option_picker_input.
 
+## Kinds that get the RING (struktured 2026-07-28: "a ring like selector for the different
+## abilities"). Content pickers — abilities and items — are long, browsed, and benefit from
+## direction-as-selection on a d-pad. Structural kinds (condition_type / action_type /
+## target_type) are short semantic lists where reading top-to-bottom is genuinely better than
+## aiming, so they keep the list. The ring is not strictly superior; it is superior for browsing.
+const RADIAL_KINDS := ["ability_id", "item_id"]
+
+
 func _open_option_picker(spec: Dictionary) -> void:
 	"""Open the generic picker overlay. spec keys:
 	  title (String), kind (String), options (Array of {id,label}),
@@ -2256,6 +2264,10 @@ func _open_option_picker(spec: Dictionary) -> void:
 	if _option_picker and is_instance_valid(_option_picker):
 		_option_picker.queue_free()
 		_option_picker = null
+
+	if str(spec.get("kind", "")) in RADIAL_KINDS:
+		_open_radial_picker(spec)
+		return
 	_option_picker = Control.new()
 	_option_picker.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_option_picker.set_meta("spec", spec)
@@ -2370,18 +2382,44 @@ func _apply_option_picker_selection() -> void:
 	var kind: String = spec.get("kind", "")
 	var ctx: Dictionary = spec.get("action_ctx", {})
 	_close_option_picker()
+	_commit_option_choice(kind, str(chosen["id"]), ctx)
+	SoundManager.play_ui("menu_select")
+
+
+## The single commit seam for BOTH pickers. The list overlay and the radial picker are two
+## presentations of the same choice, so the dispatch lives here rather than being duplicated —
+## a second copy is how one picker silently stops handling a kind the other gained.
+func _commit_option_choice(kind: String, chosen_id: String, ctx: Dictionary) -> void:
 	match kind:
 		"condition_type":
-			_apply_condition_type(chosen["id"])
+			_apply_condition_type(chosen_id)
 		"action_type":
-			_apply_action_type(chosen["id"], ctx)
+			_apply_action_type(chosen_id, ctx)
 		"ability_id":
-			_apply_ability_id(chosen["id"], ctx)
+			_apply_ability_id(chosen_id, ctx)
 		"item_id":
-			_apply_item_id(chosen["id"], ctx)
+			_apply_item_id(chosen_id, ctx)
 		"target_type":
-			_apply_target_type(chosen["id"], ctx)
-	SoundManager.play_ui("menu_select")
+			_apply_target_type(chosen_id, ctx)
+
+
+## Ring presentation of the same spec. Routes through _commit_option_choice so it can never
+## drift from the list picker's behaviour.
+func _open_radial_picker(spec: Dictionary) -> void:
+	var ring: Control = load("res://src/ui/RadialPicker.gd").new()
+	ring.setup(spec)
+	ring.set_anchors_preset(Control.PRESET_FULL_RECT)
+	ring.option_chosen.connect(func(chosen_id: String, s: Dictionary):
+		_option_picker = null
+		_commit_option_choice(str(s.get("kind", "")), chosen_id, s.get("action_ctx", {}))
+		_update_cursor())
+	ring.cancelled.connect(func():
+		_option_picker = null
+		_update_cursor())
+	_option_picker = ring
+	add_child(ring)
+	if SoundManager:
+		SoundManager.play_ui("menu_open")
 
 
 func _close_option_picker() -> void:
