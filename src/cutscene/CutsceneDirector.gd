@@ -269,7 +269,11 @@ func play_cutscene(cutscene_id: String) -> void:
 	# cutscene's first dialogue / cue isn't preceded by a hard cut. The
 	# matching await lets the fade complete before the cutscene starts
 	# emitting its own audio.
-	if SoundManager and SoundManager._music_playing:
+	# `keep_music` opts a scene OUT of the fade entirely — for ambient staged
+	# beats that declare no music of their own, where fading the map track to
+	# dead air announces the scene louder than a letterbox would. Defaults
+	# false so every scene struktured has already heard is unchanged.
+	if SoundManager and SoundManager._music_playing and not bool(data.get("keep_music", false)):
 		_pre_cutscene_music = SoundManager._current_music
 		SoundManager.fade_out_music(0.3)
 		await get_tree().create_timer(0.3).timeout
@@ -1096,6 +1100,14 @@ func _step_spawn_actor(step: Dictionary) -> void:
 	var at = step.get("at", null)
 	if at is Array and at.size() >= 2:
 		spawn_pos = Vector2(float(at[0]), float(at[1]))
+	# Player-relative placement for ambient beats: a fixed map coord puts the
+	# actor wherever the AUTHOR was standing, which on a 3200x2240 overworld
+	# can be screens away from the player and off-camera entirely.
+	var off = step.get("at_offset", null)
+	if off is Array and off.size() >= 2:
+		var rel_player := _get_live_player()
+		if rel_player:
+			spawn_pos = rel_player.global_position + Vector2(float(off[0]), float(off[1]))
 	if spawn_pos == Vector2.INF:
 		var player := _get_live_player()
 		spawn_pos = player.global_position if player else Vector2.ZERO

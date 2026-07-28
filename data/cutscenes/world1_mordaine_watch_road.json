@@ -4,12 +4,13 @@
   "world": 1,
   "trigger": "overworld_after_castle_revealed",
   "presentation": "staged",
+  "keep_music": true,
   "background": "prologue_village",
-  "description": "Mordaine escalation beat 1 of 4 — the LIGHTEST. Deliberately has no letterbox, no music, no dialogue, and no camera move onto her face: the game does not stop, does not announce her, and a player may well not mention it. That restraint IS the beat. She is not stalking the party; she designed their route (novella :809 'Mordaine designed our journey. All of it.'), so she has no reason to hide and no reason to hurry. Fires on the overworld after chapter4 (castle revealed). Escalation across the four beats is the WEIGHT OF STAGING, not proximity: none -> music -> letterbox+speech -> full. Ambient-placement variant (persistent non-interactable NPC, cowir-overworld's export flag) would be stronger for beats 1-2 if that ever ships; this staged version is the graceful-degradation form and stands alone.",
+  "description": "Mordaine escalation beat 1 of 4 — the LIGHTEST. Deliberately has no letterbox, no music, no dialogue, and no camera move onto her face: the game does not stop, does not announce her, and a player may well not mention it. That restraint IS the beat. She is not stalking the party; she designed their route (novella :809 'Mordaine designed our journey. All of it.'), so she has no reason to hide and no reason to hurry. Fires on the overworld after chapter4 (castle revealed). Escalation across the four beats is the WEIGHT OF STAGING, not proximity: none -> music -> letterbox+speech -> full. Ambient-placement variant (persistent non-interactable NPC, cowir-overworld's export flag) would be stronger for beats 1-2 if that ever ships; this staged version is the graceful-degradation form and stands alone. PLACEMENT (cowir-cutscenes 2026-07-26): uses at_offset (player-relative), NOT a fixed map coord — the overworld is 3200x2240 and the authored coord sat ~900px from the player, off-camera, with the party out of frame. Camera targets the actor id so both stay visible. Despawn added before the 'rise was empty' line, which previously narrated her absence while she was still standing there.",
   "steps": [
-    {"type": "camera_focus", "target": [640, 200], "duration": 1.2},
+    {"type": "spawn_actor", "id": "mordaine", "kind": "npc", "archetype": "chancellor_mordaine", "at_offset": [208, -96], "facing": "down"},
 
-    {"type": "spawn_actor", "id": "mordaine", "kind": "npc", "archetype": "chancellor_mordaine", "at": [640, 176], "facing": "down"},
+    {"type": "camera_focus", "target": "mordaine", "duration": 1.2},
 
     {"type": "wait", "duration": 0.6},
 
@@ -20,6 +21,8 @@
     {"type": "narration", "text": "Not waiting — waiting implies someone expected. Standing, the way a surveyor stands: present because the ground needs looking at, and unbothered by who happens to walk across it."},
 
     {"type": "wait", "duration": 0.9},
+
+    {"type": "despawn_actor", "id": "mordaine"},
 
     {"type": "narration", "text": "By the time anyone thought to look again, the rise was empty. Nobody had seen her go. Nobody could say she had hurried."},
 
