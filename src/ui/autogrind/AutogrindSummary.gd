@@ -23,6 +23,28 @@ var _stats: Dictionary = {}
 var _reason: String = ""
 
 
+## Heartbeat the "autogrind_summary" input lock GameLoop pushes for us. This is a modal the player
+## READS, so it routinely outlives InputLockManager's 10s stale expiry — which would reap the lock
+## and hand movement back with the summary still on screen, exactly the 2026-07-14 playtest bug the
+## lock was added to prevent. CutsceneDirector and OverworldController already heartbeat for the same
+## reason; this holder was added after both and never got one. Re-pushing refreshes the timestamp.
+func _process(_delta: float) -> void:
+	if not is_inside_tree():
+		return
+	var ilm = get_tree().root.get_node_or_null("InputLockManager")
+	if ilm:
+		ilm.push_lock("autogrind_summary")
+
+
+## Releasing here as well as on `dismissed` — a heartbeated lock can no longer be reaped by the stale
+## timeout, so if this node is freed by anything other than a dismiss (scene change, teardown) the
+## lock would be held forever and the player would be frozen with no modal to explain it.
+func _exit_tree() -> void:
+	var ilm = get_tree().root.get_node_or_null("InputLockManager") if is_inside_tree() else null
+	if ilm:
+		ilm.pop_lock("autogrind_summary")
+
+
 func setup(stats: Dictionary, reason: String) -> void:
 	_stats = stats
 	_reason = reason
