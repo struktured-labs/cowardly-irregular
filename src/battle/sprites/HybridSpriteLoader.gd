@@ -95,11 +95,6 @@ static func monster_faces_party(monster_id: String, convention_default: bool) ->
 	return convention_default
 
 
-## Kept so existing callers/tests keep working; monster_faces_party is the name that says why.
-static func monster_flip_override(monster_id: String, fallback: bool) -> bool:
-	return monster_faces_party(monster_id, fallback)
-
-
 ## Sizing decision ONLY — small artist drops get the scale bump so they don't read tiny
 ## next to 256px proc-gen monsters. Deliberately separate from facing: see monster_faces_party.
 static func monster_needs_scale_bump(frame_height: int, threshold: int) -> bool:

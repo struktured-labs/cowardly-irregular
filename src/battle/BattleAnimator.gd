@@ -209,13 +209,6 @@ func play_animation(state: AnimState, loop: bool = false, on_complete: Callable 
 			on_complete.call()
 
 
-func stop_animation() -> void:
-	"""Stop current animation"""
-	if sprite:
-		sprite.stop()
-	is_playing = false
-
-
 func set_idle() -> void:
 	"""Set sprite to idle state"""
 	play_animation(AnimState.IDLE, true)
@@ -337,48 +330,6 @@ func play_steal(on_complete: Callable = Callable()) -> void:
 	)
 
 
-func play_skill(on_complete: Callable = Callable()) -> void:
-	"""Generic physical skill animation with pose hold"""
-	if not sprite:
-		if on_complete.is_valid():
-			on_complete.call()
-		return
-
-	# Kill any existing animation tween
-	if _current_tween and _current_tween.is_valid():
-		_current_tween.kill()
-
-	var original_pos = sprite.position
-
-	# Play attack animation with a slight forward lean
-	_current_tween = create_tween()
-	var tween = _current_tween
-
-	# Prep pose - lean back
-	tween.tween_property(sprite, "position", original_pos + Vector2(10, 0), 0.1)
-
-	# Execute - quick forward lunge
-	tween.tween_callback(func():
-		if sprite and sprite.sprite_frames and sprite.sprite_frames.has_animation("attack"):
-			sprite.play("attack")
-	)
-	tween.tween_property(sprite, "position", original_pos + Vector2(-25, 0), 0.08)
-
-	# Brief pause at impact
-	tween.tween_interval(0.1)
-
-	# Return
-	tween.tween_property(sprite, "position", original_pos, 0.12)
-
-	# Back to idle
-	tween.tween_callback(func():
-		if sprite and sprite.sprite_frames and sprite.sprite_frames.has_animation("idle"):
-			sprite.play("idle")
-		if on_complete.is_valid():
-			on_complete.call()
-	)
-
-
 func play_mug(on_complete: Callable = Callable()) -> void:
 	"""Combination attack + steal animation"""
 	if not sprite:
@@ -419,14 +370,6 @@ func play_mug(on_complete: Callable = Callable()) -> void:
 		if on_complete.is_valid():
 			on_complete.call()
 	)
-
-
-func play_advance(on_complete: Callable = Callable()) -> void:
-	play_animation(AnimState.ADVANCE, false, on_complete)
-
-
-func play_defer_anim(on_complete: Callable = Callable()) -> void:
-	play_animation(AnimState.DEFER, false, on_complete)
 
 
 func play_lunge(on_complete: Callable = Callable()) -> void:
@@ -548,30 +491,6 @@ func _on_sprite_animation_finished() -> void:
 		set_idle()
 
 	is_playing = false
-
-
-## Helper functions for common animation sequences
-
-func attack_sequence(target_sprite: AnimatedSprite2D, damage_callback: Callable) -> void:
-	"""Complete attack sequence: attack -> target hit -> return to idle"""
-	play_attack(func():
-		if target_sprite:
-			var target_animator = get_script().new()
-			target_animator.setup(target_sprite)
-			target_animator.play_hit(func():
-				damage_callback.call()
-			)
-	)
-
-
-func defend_sequence(on_complete: Callable = Callable()) -> void:
-	"""Complete defend sequence"""
-	play_defend(on_complete)
-
-
-func cast_sequence(on_complete: Callable = Callable()) -> void:
-	"""Complete spell cast sequence"""
-	play_cast(on_complete)
 
 
 ## =================

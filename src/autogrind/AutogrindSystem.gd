@@ -1488,35 +1488,6 @@ func advance_to_next_region() -> Dictionary:
 	return next
 
 
-## Autobattle interrupt system
-func check_autobattle_interrupt(combatant: Combatant) -> String:
-	"""Check if autobattle should interrupt to manual control"""
-	# Check HP danger
-	if combatant.get_hp_percentage() < 30.0:
-		return "Low HP - interrupting to manual control"
-
-	# Check if about to die (enemy can one-shot)
-	# In full implementation, would calculate enemy damage
-
-	# Check if surrounded (multiple enemies targeting)
-	# In full implementation, would check battle state
-
-	return ""  # No interrupt
-
-
-func interrupt_to_manual(reason: String) -> void:
-	"""Interrupt autobattle/autogrind to manual control"""
-	if is_grinding:
-		stop_autogrind(reason)
-
-	autobattle_interrupted.emit(reason)
-	print("[color=orange]⚠ AUTOBATTLE INTERRUPTED ⚠[/color]")
-	print("Reason: %s" % reason)
-	print("Switching to manual control...")
-
-	# In full implementation, would disable autobattle and return control to player
-
-
 ## ═══════════════════════════════════════════════════════════════════════
 ## AUTOGRIND PROFILE MANAGEMENT
 ## ═══════════════════════════════════════════════════════════════════════
