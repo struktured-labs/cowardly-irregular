@@ -39,10 +39,13 @@ func _dispatch_ids() -> Array:
 	return ids
 
 
-## Every target_map assigned anywhere in src/, with the file that set it.
+## Every destination id assigned anywhere in src/, with the file that set it.
+## Covers BOTH spellings: AreaTransition's `target_map` and VillageInn's
+## `interior_target` @export. The latter is a separate door into the same
+## dispatch — scanning only `target_map` leaves every village inn unguarded.
 func _assigned_targets() -> Array:
 	var out: Array = []
-	var re := RegEx.create_from_string("target_map\\s*=\\s*\"([^\"]+)\"")
+	var re := RegEx.create_from_string("(?:target_map|interior_target)\\s*=\\s*\"([^\"]+)\"")
 	for path in _gd_files("res://src"):
 		var text := FileAccess.get_file_as_string(path)
 		for m in re.search_all(text):
