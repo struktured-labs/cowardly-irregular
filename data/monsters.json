@@ -3567,6 +3567,230 @@
       ]
     }
   },
+  "masterite_warden_steampunk": {
+    "id": "masterite_warden_steampunk",
+    "name": "The Standing Order",
+    "description": "A pressure gauge that has never once moved. It does not attack so much as outlast — the Grand Schedule does not negotiate, and neither does its pressure.",
+    "level": 11,
+    "boss": true,
+    "masterite": true,
+    "masterite_type": "warden",
+    "masterite_phase": 3,
+    "stats": {
+      "max_hp": 780,
+      "max_mp": 75,
+      "attack": 46,
+      "defense": 40,
+      "magic": 27,
+      "speed": 13
+    },
+    "abilities": [
+      "masterite_proclamation",
+      "masterite_iron_guard",
+      "masterite_endurance_test",
+      "masterite_crushing_blow",
+      "masterite_judgment"
+    ],
+    "exp_reward": 420,
+    "gold_reward": 300,
+    "drop_table": [
+      {
+        "item": "masterite_shard",
+        "chance": 1.0
+      },
+      {
+        "item": "masterite_badge",
+        "chance": 0.3
+      }
+    ],
+    "weaknesses": [
+      "lightning"
+    ],
+    "resistances": [
+      "fire"
+    ],
+    "one_shot": {
+      "hp_threshold": 780,
+      "setup_hint": "Defense 40 behind 780 HP — it wins by attrition. Bring sustained damage or strip its guard.",
+      "reward_item": "boss_trophy"
+    },
+    "dialogue": {
+      "intro": [
+        "*A pressure gauge swings into the red and holds there, perfectly still*",
+        "The Standing Order: The Schedule has a tolerance for delay.",
+        "The Standing Order: You are inside it. Barely.",
+        "The Standing Order: I am the part that does not move."
+      ]
+    }
+  },
+  "masterite_arbiter_steampunk": {
+    "id": "masterite_arbiter_steampunk",
+    "name": "The Tolerance Limit",
+    "description": "Machining tolerance expressed as violence. Within spec you are ignored entirely; outside it, you are corrected.",
+    "level": 12,
+    "boss": true,
+    "masterite": true,
+    "masterite_type": "arbiter",
+    "masterite_phase": 3,
+    "stats": {
+      "max_hp": 700,
+      "max_mp": 70,
+      "attack": 58,
+      "defense": 28,
+      "magic": 30,
+      "speed": 17
+    },
+    "abilities": [
+      "masterite_proclamation",
+      "masterite_counter_stance",
+      "masterite_measured_blow",
+      "masterite_precise_strike",
+      "masterite_execution"
+    ],
+    "exp_reward": 450,
+    "gold_reward": 330,
+    "drop_table": [
+      {
+        "item": "masterite_shard",
+        "chance": 1.0
+      },
+      {
+        "item": "steel_sword",
+        "chance": 0.3
+      }
+    ],
+    "weaknesses": [
+      "ice"
+    ],
+    "resistances": [
+      "earth"
+    ],
+    "one_shot": {
+      "hp_threshold": 700,
+      "setup_hint": "Execution triples against wounded targets — do not limp into its range. Stay above the threshold or end it first.",
+      "reward_item": "boss_trophy"
+    },
+    "dialogue": {
+      "intro": [
+        "*Calipers close around nothing, twice, with great precision*",
+        "The Tolerance Limit: Every part is permitted a margin of error.",
+        "The Tolerance Limit: You have consumed yours.",
+        "The Tolerance Limit: Correction is not punishment. It is maintenance."
+      ]
+    }
+  },
+  "masterite_tempo_steampunk": {
+    "id": "masterite_tempo_steampunk",
+    "name": "The Grand Schedule",
+    "description": "Not a figure so much as a cadence. The trains arrive on time because it is standing here, and it is standing here because the trains arrive on time.",
+    "level": 11,
+    "boss": true,
+    "masterite": true,
+    "masterite_type": "tempo",
+    "masterite_phase": 3,
+    "stats": {
+      "max_hp": 620,
+      "max_mp": 95,
+      "attack": 42,
+      "defense": 24,
+      "magic": 35,
+      "speed": 25
+    },
+    "abilities": [
+      "masterite_proclamation",
+      "masterite_haste",
+      "masterite_slow",
+      "masterite_time_tax",
+      "masterite_quick_strike"
+    ],
+    "exp_reward": 420,
+    "gold_reward": 300,
+    "drop_table": [
+      {
+        "item": "masterite_shard",
+        "chance": 1.0
+      },
+      {
+        "item": "speed_boots",
+        "chance": 0.3
+      }
+    ],
+    "weaknesses": [
+      "lightning"
+    ],
+    "resistances": [
+      "ice"
+    ],
+    "one_shot": {
+      "hp_threshold": 620,
+      "setup_hint": "It does not out-damage you, it out-SCHEDULES you. Speed 25 plus time_tax means your turns arrive late — counter-haste or burst it down.",
+      "reward_item": "boss_trophy"
+    },
+    "dialogue": {
+      "intro": [
+        "*Somewhere a clock strikes. Everything in the room happens on the beat*",
+        "The Grand Schedule: You are four minutes ahead of the estimate.",
+        "The Grand Schedule: I have adjusted the estimate.",
+        "The Grand Schedule: You are now precisely on time."
+      ]
+    }
+  },
+  "masterite_curator_steampunk": {
+    "id": "masterite_curator_steampunk",
+    "name": "The Requisition",
+    "description": "Steam costs money and money is kept in ledgers. It does not damage you. It bills you, and the invoice comes due in magic.",
+    "level": 12,
+    "boss": true,
+    "masterite": true,
+    "masterite_type": "curator",
+    "masterite_phase": 3,
+    "stats": {
+      "max_hp": 730,
+      "max_mp": 120,
+      "attack": 35,
+      "defense": 30,
+      "magic": 51,
+      "speed": 15
+    },
+    "abilities": [
+      "masterite_proclamation",
+      "masterite_dispel",
+      "masterite_mana_drain",
+      "masterite_resource_cut",
+      "masterite_audit"
+    ],
+    "exp_reward": 450,
+    "gold_reward": 330,
+    "drop_table": [
+      {
+        "item": "masterite_shard",
+        "chance": 1.0
+      },
+      {
+        "item": "ether",
+        "chance": 0.5
+      }
+    ],
+    "weaknesses": [
+      "fire"
+    ],
+    "resistances": [
+      "lightning"
+    ],
+    "one_shot": {
+      "hp_threshold": 730,
+      "setup_hint": "It attacks your RESOURCES, not your HP. Every turn you spend casting funds it. Win before your MP does.",
+      "reward_item": "boss_trophy"
+    },
+    "dialogue": {
+      "intro": [
+        "*A ledger opens. The columns are already filled in*",
+        "The Requisition: Consumption logged. Steam, mana, patience.",
+        "The Requisition: The account is not in your favour.",
+        "The Requisition: Settlement is mandatory."
+      ]
+    }
+  },
   "masterite_warden_industrial": {
     "id": "masterite_warden_industrial",
     "name": "Warden of the Assembly Line",

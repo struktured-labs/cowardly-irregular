@@ -15,7 +15,7 @@ signal boss_selected(boss_id: String)
 var BOSSES: Array = []
 
 ## Group order. Story first (that's what playtesting reaches for), Masterites last (there are 20).
-const GROUP_ORDER := ["Story", "Spotlight Duels", "Minibosses", "Medieval", "Suburban", "Industrial", "Futuristic", "Abstract"]
+const GROUP_ORDER := ["Story", "Spotlight Duels", "Minibosses", "Medieval", "Suburban", "Steampunk", "Industrial", "Futuristic", "Abstract"]
 const DUEL_PREFIXES := ["fighter_", "cleric_", "rogue_", "mage_", "bard_"]
 
 

@@ -299,6 +299,22 @@
     "epithet": "The Column-Balancer",
     "flavor": "A very tired accountant in a cardigan. Your MP pool is a balance sheet. Each spell is an expense line item. He keeps receipts, and he keeps them."
   },
+  "masterite_warden_steampunk": {
+    "epithet": "The Standing Order",
+    "flavor": "It is a pressure gauge with opinions. It has never moved off the red and it has never had to. Ask the yard foreman how long it has stood there and he will tell you the yard was built around it. He is not being poetic."
+  },
+  "masterite_arbiter_steampunk": {
+    "epithet": "The Tolerance Limit",
+    "flavor": "Every machined part is allowed to be slightly wrong. This one decides how slightly. It does not consider itself cruel — a caliper is not cruel — and it will explain the distinction while it corrects you."
+  },
+  "masterite_tempo_steampunk": {
+    "epithet": "The Grand Schedule",
+    "flavor": "Nobody sees it much, but you can feel it: in the way the gears turn, in the way the trains arrive. It does not keep time. Time keeps IT, and has done since before anyone thought to ask who wrote the first rule."
+  },
+  "masterite_curator_steampunk": {
+    "epithet": "The Requisition",
+    "flavor": "Steam costs money and money is kept in ledgers. It has been totalling what you spend since you entered the world — not your gold, your effort. The column marked PATIENCE is the one it watches."
+  },
   "masterite_warden_industrial": {
     "epithet": "The Line Enforcer",
     "flavor": "Built from factory parts and the assumption that structural integrity is the highest virtue. It applies tests. The tests are pressure. You may fail safely; you may not fail creatively."
