@@ -25,9 +25,16 @@ const W2_W6_DUNGEONS: Array[Array] = [
 ]
 
 
-## W1 dragon caves keep the default "cave" key — they're all medieval
-## dungeons and the existing _start_dungeon_music("medieval") path
-## handles them.
+## The W1 dragon caves were pinned here as deliberately keeping the default
+## "cave" key. That was wrong, and this file's own header says why: it fixed
+## W2-W6 because "the match arms existed in SoundManager but were never
+## reached" — equally true of the four caves it exempted. SoundManager carries
+## "fire_dragon_cave" -> _start_dungeon_music("dragon_fire") and three
+## siblings, and dungeon_dragon_fire (139s) / dungeon_dragon_ice (178s) are
+## composed and on disk. Nobody writes a 178-second Ice Dragon theme and a
+## routing arm intending neither to run. Pin flipped 2026-07-28; the caves now
+## override, and test_dungeon_music_routing_regression carries the general
+## invariant (every key must resolve against the dispatch).
 const W1_DRAGON_CAVES: Array[String] = [
 	"res://src/maps/dungeons/FireDragonCave.gd",
 	"res://src/maps/dungeons/IceDragonCave.gd",
@@ -82,10 +89,18 @@ func test_each_expected_key_maps_to_a_play_area_music_arm() -> void:
 			"SoundManager._start_area_music_deferred must have arm '%s' — without it, the call falls through to overworld default" % expected_key)
 
 
-func test_w1_dragon_caves_keep_default_music() -> void:
-	# Negative pin: W1 dragon caves must NOT override
-	# _get_music_area_id — they use the medieval default.
+func test_w1_dragon_caves_route_to_their_own_arm() -> void:
+	# Was a negative pin asserting these must NOT override. It locked in the
+	# same defect this file fixed for W2-W6: all four played the generic
+	# medieval bed while their own arms and themes sat unreached.
+	var sm := _read(SOUND_MANAGER)
 	for path in W1_DRAGON_CAVES:
 		var src := _read(path)
-		assert_false(src.contains("func _get_music_area_id()"),
-			"%s must NOT override _get_music_area_id — W1 dragon caves use the medieval default" % path)
+		assert_true(src.contains("func _get_music_area_id()"),
+			"%s must override _get_music_area_id — inheriting \"cave\" plays the generic medieval bed" % path)
+		var key: String = path.get_file().replace(".gd", "").to_snake_case().replace("_dragon_cave", "")
+		var expected: String = key + "_dragon_cave"
+		assert_true(src.contains('return "%s"' % expected),
+			"%s must route to \"%s\"" % [path, expected])
+		assert_true(sm.contains('"%s"' % expected),
+			"SoundManager must carry an arm for \"%s\" — without it play_area_music falls to the overworld default" % expected)

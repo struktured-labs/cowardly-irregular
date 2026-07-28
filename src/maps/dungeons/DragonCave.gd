@@ -568,14 +568,15 @@ func _get_boss_intro_dialogue() -> Array:
 	return ["A dragon blocks the path!"]
 
 
-## Tick 93: per-dungeon music routing. Default returns "cave" which
-## SoundManager.play_area_music maps to _start_dungeon_music("medieval")
-## — correct for W1 dragon caves (fire, ice, lightning, shadow) and
-## the whispering cave. W2-W6 dungeons (SuburbanUnderground,
-## SteampunkMechanism, AssemblyCore, RootProcess, NullChamber) MUST
-## override this to return their per-world dungeon key, otherwise
-## stepping into them plays the W1 medieval dungeon theme instead
-## of the world's own track.
+## Per-dungeon music routing. Default returns "cave", which
+## SoundManager.play_area_music maps to _start_dungeon_music("medieval").
+## EVERY subclass must override this — the four W1 dragon caves have their
+## own SoundManager arms (fire/ice/lightning/shadow) and inheriting the
+## default silently played the generic medieval bed in all four; the
+## comment here previously asserted the default was correct for them.
+## Return a key play_area_music actually matches: its default arm is
+## _start_overworld_music(), so an unmatched id plays OVERWORLD music
+## inside a dungeon rather than falling back to a cave bed.
 func _get_music_area_id() -> String:
 	return "cave"
 

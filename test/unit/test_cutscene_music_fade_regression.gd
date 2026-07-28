@@ -45,7 +45,13 @@ func test_cutscene_director_uses_fade_out_music_not_stop_music() -> void:
 		"CutsceneDirector must call SoundManager.fade_out_music() at cutscene start")
 	# Should NOT call stop_music in the cutscene start path. Find every
 	# occurrence of stop_music and assert none appear near the music save line.
-	var save_idx = text.find("_pre_cutscene_music = SoundManager._current_music")
+	# Anchor on the assignment PREFIX, not a specific right-hand side: the
+	# capture moved from `SoundManager._current_music` to
+	# `SoundManager.capture_music_state()` on 2026-07-26 (the track-only read
+	# is empty in any map that uses play_area_music, so the post-cutscene
+	# restore silently no-opped). This test is about fade-vs-hard-cut, which
+	# is unchanged — so it should not re-break when the capture shape evolves.
+	var save_idx = text.find("_pre_cutscene_music = SoundManager.")
 	assert_true(save_idx > -1, "pre-cutscene music save line must be present")
 	# Walk forward 300 chars from save line — should hit fade_out_music, not stop_music.
 	var window = text.substr(save_idx, 300)
