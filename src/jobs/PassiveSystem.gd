@@ -383,7 +383,35 @@ func get_passive_mods(combatant: Combatant) -> Dictionary:
 					var mod_value = passive["conditional_mods"][cond_key][mod_key]
 					_compose_mod(total_mods, mod_key, mod_value)
 
+	_compose_lens_mods(combatant, total_mods)
 	return total_mods
+
+
+## Folds the equipped Lens's stat tilt into the same total every consumer already reads.
+##
+## Bug 2026-07-28: LensSystem.get_lens_mods() shipped with ZERO consumers while get_passive_mods
+## had ten, so the Warden Lens's +8% DEF / +5% HP and the Arbiter's +5% ATK were completely inert
+## — craft, equip, nothing changes. The four meta_effect passives fired; only the tilts were dead.
+##
+## Folded HERE rather than added at each of the ten call sites on purpose: an enumeration of
+## "everywhere stats are read" is exactly the partial-coverage trap that produced this week's other
+## defects, and missing one site would leave a Lens that works in battle and not in the status
+## screen. One seam cannot drift.
+func _compose_lens_mods(combatant: Combatant, total_mods: Dictionary) -> void:
+	var ls: Node = get_node_or_null("/root/LensSystem")
+	if ls == null or not ls.has_method("get_lens_mods"):
+		return
+	var char_id: String = str(combatant.combatant_name).to_lower().replace(" ", "_")
+	var lens_mods: Dictionary = ls.get_lens_mods(char_id)
+	for key in lens_mods:
+		if not total_mods.has(key):
+			continue
+		# get_lens_mods returns an identity dict (1.0 / 0.0), so neutral entries compose to nothing.
+		match key:
+			"crit_chance", "evasion":
+				total_mods[key] += float(lens_mods[key])
+			_:
+				total_mods[key] *= float(lens_mods[key])
 
 
 ## Tick 377: parse a conditional_mods key like "hp_below_25" /

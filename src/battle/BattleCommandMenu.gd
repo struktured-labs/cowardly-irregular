@@ -465,12 +465,21 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 				"submenu": address_targets,
 			})
 
-	# Defer - skip turn, gain +1 AP (only available if AP < 4 and not exposed)
+	# Defer — skip the turn for -50% incoming damage. struktured 2026-07-28: "you can always defer
+	# (so that u can get 50% dmg reduction even if the advance points are full), but right now its
+	# greyed out at max ap."
+	#
+	# The old `current_ap >= 4` gate was wrong twice over. execute_defer() grants NO AP — it only
+	# sets is_defending (Combatant.gd:212), and its own docstring says so; AP accrues from the
+	# natural per-turn +1, which clampi already caps harmlessly. So the gate withheld the entire
+	# DEFENSIVE option on account of a resource benefit Defer does not provide. It was also
+	# inconsistent: the L-shoulder shortcut defers at any AP, so the same action was available by
+	# button and greyed in the menu.
 	items.append({
 		"id": "defer",
 		"label": "Defer",
 		"data": null,
-		"disabled": combatant.current_ap >= 4 or combatant.has_status("cannot_defer")
+		"disabled": combatant.has_status("cannot_defer")
 	})
 
 	return items

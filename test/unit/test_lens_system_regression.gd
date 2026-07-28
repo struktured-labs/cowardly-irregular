@@ -212,3 +212,45 @@ func test_new_game_clears_lens_state() -> void:
 	assert_eq(GameState.unlocked_lens_recipes.size(), 0, "recipes must not survive New Game")
 	assert_eq(GameState.owned_lenses.size(), 0, "Lenses must not survive New Game")
 	assert_eq(GameState.lens_assignments.size(), 0, "assignments must not survive New Game")
+
+
+# ── Stat tilts reach combat (bug 2026-07-28) ────────────────────────
+
+func test_lens_stat_tilts_are_actually_consumed() -> void:
+	# BUG: get_lens_mods() shipped with ZERO consumers while get_passive_mods had ten, so the
+	# Warden's +8% DEF / +5% HP and the Arbiter's +5% ATK were inert — craft, equip, nothing
+	# changes. The meta_effect passives fired; only the tilts were dead. Classic shipped-unwired:
+	# the producer existed, was correct, and nothing read it.
+	var c := Combatant.new()
+	c.combatant_name = "Fighter"
+	var before: Dictionary = PassiveSystem.get_passive_mods(c)
+
+	GameState.owned_lenses.append("warden")
+	LensSystem.equip_lens("fighter", "warden")
+	var after: Dictionary = PassiveSystem.get_passive_mods(c)
+
+	assert_gt(float(after["defense_multiplier"]), float(before["defense_multiplier"]),
+		"equipping the Warden Lens must raise defense through the total every consumer reads")
+	assert_gt(float(after["max_hp_multiplier"]), float(before["max_hp_multiplier"]),
+		"and its HP tilt too")
+	c.free()
+
+
+func test_lens_tilts_compose_at_the_single_seam_not_per_call_site() -> void:
+	# Folded into get_passive_mods deliberately: enumerating "everywhere stats are read" is the
+	# partial-coverage trap, and missing one site leaves a Lens that works in battle but not in
+	# the status screen. Pins that the fold exists rather than N scattered lens lookups.
+	var src := FileAccess.get_file_as_string("res://src/jobs/PassiveSystem.gd")
+	assert_string_contains(src, "_compose_lens_mods",
+		"lens tilts must fold into the shared total, not be added per consumer")
+
+
+func test_an_unequipped_character_is_unaffected() -> void:
+	var c := Combatant.new()
+	c.combatant_name = "Cleric"
+	GameState.owned_lenses.append("warden")
+	LensSystem.equip_lens("fighter", "warden")
+	var mods: Dictionary = PassiveSystem.get_passive_mods(c)
+	assert_eq(float(mods["defense_multiplier"]), 1.0,
+		"a Lens on the Fighter must not buff the Cleric — get_lens_mods is per-character")
+	c.free()
