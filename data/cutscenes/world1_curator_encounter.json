@@ -4,7 +4,7 @@
   "world": 1,
   "trigger": "world1_curator_pre_fight",
   "background": "throne_room",
-  "description": "The Curator offers tea and genuine curiosity. Eleven years studying this room. The most interesting thing to happen all decade is that the party might be looking for something that isn't here.",
+  "description": "The Curator offers tea and genuine curiosity. Eleven years studying this room. The most interesting thing to happen all decade is that the party might be looking for something that isn't here. FIX 2026-07-28 (cowir-ai msg-3206): this scene's hospitality beat was gated on a 'completionist' branch key that _detect_playstyle CAN NEVER RETURN (it returns automator/grinder/exploiter/manual/balanced only), so it had never played for any player. The beat is unconditional in canon — W1 ch.4 has the Warden offer the guardhouse food with no condition attached — so it is now the default arm rather than a playstyle reward. Playstyle-specific arms (e.g. grinder) are untouched and still take precedence.",
   "steps": [
     {
       "type": "letterbox_in",
@@ -18,7 +18,7 @@
       "type": "branch",
       "condition": "playstyle",
       "cases": {
-        "completionist": [
+        "default": [
           {
             "type": "dialogue",
             "lines": [
@@ -36,8 +36,7 @@
               }
             ]
           }
-        ],
-        "default": []
+        ]
       }
     },
     {
