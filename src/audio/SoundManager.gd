@@ -178,24 +178,56 @@ func _exit_tree() -> void:
 	_corruption_tween = null
 
 
+## The SFX bus every sound-effect player routes through, so the volume slider attenuates ONE
+## thing instead of an enumerated list of players.
+##
+## Bug 2026-07-28 (cowir-sfx): set_sfx_volume wrote volume_db on exactly the three players
+## SoundManager owns and made no AudioServer call at all. Two players are constructed in OTHER
+## files with hardcoded volumes — BattleTransition's monster-transition sting and
+## CutsceneDialogue's per-character voice blip — so setting SFX to 0 still played a sound on
+## every battle transition and every dialogue character. Enumerating "SoundManager's players"
+## was complete for its original direction and blind to players any other file creates.
+##
+## CutsceneDialogue already wrote `bus = "SFX" if AudioServer.get_bus_index("SFX") >= 0` — the
+## author anticipated this bus. It simply never existed, so that line always fell to Master.
+##
+## A bus makes the class structurally impossible rather than currently-fixed: anything that sets
+## bus = SFX_BUS is attenuated forever, with no list to maintain and nothing to rot.
+const SFX_BUS := "SFX"
+
+
+func _ensure_sfx_bus() -> void:
+	if AudioServer.get_bus_index(SFX_BUS) != -1:
+		return  # already added (autoload re-init safety)
+	var idx: int = AudioServer.bus_count
+	AudioServer.add_bus(idx)
+	AudioServer.set_bus_name(idx, SFX_BUS)
+	AudioServer.set_bus_send(idx, "Master")
+
+
 func _setup_audio_players() -> void:
 	"""Create audio players for different channels"""
+	_ensure_sfx_bus()
+
+	# Players sit permanently at their DESIGN-INTENT base level; the slider attenuates the BUS.
+	# That keeps the per-channel mix (UI quietest, battle loudest) exactly as authored while
+	# making the slider a single control point.
 	_ui_player = AudioStreamPlayer.new()
 	_ui_player.name = "UIPlayer"
 	_ui_player.volume_db = SFX_UI_BASE_DB  # Menu blips: present but below music
-	_ui_player.bus = "Master"
+	_ui_player.bus = SFX_BUS
 	add_child(_ui_player)
 
 	_battle_player = AudioStreamPlayer.new()
 	_battle_player.name = "BattlePlayer"
 	_battle_player.volume_db = SFX_BATTLE_BASE_DB  # Battle SFX: punchy alongside music
-	_battle_player.bus = "Master"
+	_battle_player.bus = SFX_BUS
 	add_child(_battle_player)
 
 	_ability_player = AudioStreamPlayer.new()
 	_ability_player.name = "AbilityPlayer"
 	_ability_player.volume_db = SFX_ABILITY_BASE_DB  # Ability SFX: same level as music — spells should be felt
-	_ability_player.bus = "Master"
+	_ability_player.bus = SFX_BUS
 	add_child(_ability_player)
 
 	# Duck bus BEFORE night bus so night can send into it (signal chain:
@@ -3218,12 +3250,23 @@ func set_sfx_volume(normalized: float) -> void:
 
 	Safe to call before _ready(): writes to nil players are a no-op."""
 	var atten_db = linear_to_db(clamp(normalized, 0.0, 1.0)) if normalized > 0.01 else -80.0
+	# 2026-07-28: attenuate the BUS, not an enumerated list of players. Players keep their
+	# design-intent base level so the per-channel mix is preserved exactly as before, but the
+	# slider now also reaches every player any OTHER file creates on this bus — which is what
+	# BattleTransition's sting and CutsceneDialogue's voice blip were escaping.
+	_ensure_sfx_bus()
+	var sfx_idx := AudioServer.get_bus_index(SFX_BUS)
+	if sfx_idx != -1:
+		AudioServer.set_bus_volume_db(sfx_idx, atten_db)
+		AudioServer.set_bus_mute(sfx_idx, normalized <= 0.01)
+	# Base levels are set once at construction; re-assert defensively in case a caller
+	# mutated them, but do NOT fold the slider in again or it attenuates twice.
 	if _ui_player:
-		_ui_player.volume_db = SFX_UI_BASE_DB + atten_db if normalized > 0.01 else -80.0
+		_ui_player.volume_db = SFX_UI_BASE_DB
 	if _battle_player:
-		_battle_player.volume_db = SFX_BATTLE_BASE_DB + atten_db if normalized > 0.01 else -80.0
+		_battle_player.volume_db = SFX_BATTLE_BASE_DB
 	if _ability_player:
-		_ability_player.volume_db = SFX_ABILITY_BASE_DB + atten_db if normalized > 0.01 else -80.0
+		_ability_player.volume_db = SFX_ABILITY_BASE_DB
 
 
 func _warm_wave(phase: float) -> float:

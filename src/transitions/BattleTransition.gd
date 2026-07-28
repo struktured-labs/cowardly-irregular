@@ -414,6 +414,9 @@ func _play_encounter_sound(transition_type: TransitionType) -> void:
 	if sound:
 		var player = AudioStreamPlayer.new()
 		player.stream = sound
+		# SFX bus, or the volume slider cannot reach this — it played at a hardcoded level
+		# even with SFX set to 0 (cowir-sfx, 2026-07-28).
+		player.bus = "SFX" if AudioServer.get_bus_index("SFX") != -1 else "Master"
 		player.volume_db = -15.0  # Reduced from -6.0 to be less jarring
 		add_child(player)
 		player.play()
