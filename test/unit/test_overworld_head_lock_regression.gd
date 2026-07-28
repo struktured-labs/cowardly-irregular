@@ -42,23 +42,38 @@ func _load_image(path: String) -> Image:
 
 
 func _frame_bbox_y(img: Image, row_idx: int, col_idx: int) -> Vector2i:
-    # Returns Vector2i(y_top, y_bot) for the 32x32 frame's opaque bbox.
-    # If frame is empty, returns Vector2i(-1, -1).
-    var y_top := -1
-    var y_bot := -1
+    # Returns Vector2i(y_top, y_bot) for THIS row's OWN sprite in the cell.
+    # Anchors on the LARGEST contiguous opaque band rather than the first
+    # opaque row. A sheet whose previous row overflows its cell leaves those
+    # bled pixels at the TOP of this cell, so a first-opaque anchor measures a
+    # head region offset by the bleed -- the guard's window corrupted by
+    # exactly the defect it exists to catch (mage rows 1-2 anchor on row 0's
+    # feet today). A row's own sprite is the dominant band; bleed is a thin
+    # remnant separated by a gap. Empty frame returns Vector2i(-1, -1).
     var ox := col_idx * FRAME_SIZE
     var oy := row_idx * FRAME_SIZE
-    for y in range(FRAME_SIZE):
+    var best_top := -1
+    var best_bot := -1
+    var best_h := 0
+    var cur_top := -1
+    for y in range(FRAME_SIZE + 1):
         var any_opaque := false
-        for x in range(FRAME_SIZE):
-            if img.get_pixel(ox + x, oy + y).a > 0.05:
-                any_opaque = true
-                break
+        if y < FRAME_SIZE:
+            for x in range(FRAME_SIZE):
+                if img.get_pixel(ox + x, oy + y).a > 0.05:
+                    any_opaque = true
+                    break
         if any_opaque:
-            if y_top < 0:
-                y_top = y
-            y_bot = y
-    return Vector2i(y_top, y_bot)
+            if cur_top < 0:
+                cur_top = y
+        elif cur_top >= 0:
+            var h := y - cur_top
+            if h > best_h:
+                best_h = h
+                best_top = cur_top
+                best_bot = y - 1
+            cur_top = -1
+    return Vector2i(best_top, best_bot)
 
 
 func _head_pixels_match_shifted(img: Image, row_idx: int, col_a: int, col_b: int, y_top: int, y_lock_end: int, dy: int) -> int:
