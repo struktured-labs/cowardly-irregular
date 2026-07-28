@@ -800,7 +800,7 @@
         }
       },
       "tier": "T2",
-      "source": "artist aseprite \u2014 Game graphics - Characters/enemies/Goblin 1 anims.aseprite (Idle + ATK tags; hit/dead remapped off late-ATK crouch-twist frames 6-8 per live playtest 2026-07-01 \u2014 dedicated hit/dead frames wanted from artist)"
+      "source": "artist aseprite \u2014 Game graphics - Characters/enemies/Goblin 1 anims.aseprite (Idle tag frames 0-2, ATK tag frames 3-8). The artist authored NO hit and NO dead. hit -> frame 3 is the ATTACK WINDUP and dead -> frame 0 is a plain IDLE: both are REUSED placeholders, not reaction art, so the goblin visibly neither flinches nor falls. Dedicated hit/dead frames are an ARTIST ask \u2014 gpt-image gap-fill was attempted 2026-07-28 and rejected on visual review (renders the figure rotated/sprawled; 3rd consecutive failure of that pose class)."
     },
     "wolf": {
       "path": "res://assets/sprites/monsters/wolf.png",
