@@ -51,13 +51,6 @@ func _calculate_size() -> void:
 	size = _portrait_size
 
 
-func set_customization(custom, job: String = "") -> void:
-	customization = custom
-	if job != "":
-		job_id = job
-	_build_portrait()
-
-
 func _build_portrait() -> void:
 	# Clear existing
 	for child in get_children():

@@ -180,32 +180,3 @@ static func autogrind_ludicrous_context() -> Dictionary:
 		"start": "Rules",
 	}
 
-static func battle_context() -> Dictionary:
-	return {
-		"a": "Confirm",
-		"b": "Cancel",
-		"y": "Speed",
-		"x": "Repeat",
-		"l": "Defer",
-		"r": "Advance",
-		"dpad": "Navigate",
-		"select": "Autobattle",
-	}
-
-static func menu_context() -> Dictionary:
-	return {
-		"a": "Select",
-		"b": "Back",
-		"dpad": "Navigate",
-		"l": "Prev Tab",
-		"r": "Next Tab",
-	}
-
-static func exploration_context() -> Dictionary:
-	return {
-		"a": "Interact",
-		"b": "Menu",
-		"dpad": "Move",
-		"x": "Menu",
-		"start": "Menu",
-	}
