@@ -110,6 +110,45 @@ func test_autogrind_summary_heartbeats() -> void:
 		"the autogrind summary is a modal the player reads; without a heartbeat it is reaped after 10s and movement returns underneath it")
 
 
+## Closes a false negative in the guard above, found by auditing its own exemption.
+##
+## The lambda rule exempts every lock it considers "bounded release" — but that verdict was inferred
+## from the ABSENCE of a lambda-pop, and absence of a lambda-pop also matches absence of ANY pop.
+## `encounter_transition` has one push and zero `pop_lock` calls anywhere in src/. It is fine: the
+## push site documents that `pop_all` in `_start_exploration` clears it, and LoopState.BATTLE blocks
+## movement independently long before the stale reaper fires. But the ORIGINAL guard could not tell
+## that from a lock somebody simply forgot to release, which would freeze the player for 10s.
+##
+## So a lock with no paired pop must SAY what releases it. There is no suppression flag: you cannot
+## silence this green, only explain it green, and the explanation is the thing that was missing.
+func test_a_lock_with_no_paired_pop_must_document_what_releases_it() -> void:
+	var undocumented: Array[String] = []
+	var analysis := _analyse_locks()
+	for lock_id in analysis["pushed"]:
+		if analysis["heartbeated"].has(lock_id):
+			continue
+		var has_paired_pop := false
+		var explained := false
+		for path in _gd_files(SRC_ROOT):
+			var txt := FileAccess.get_file_as_string(path)
+			if txt.contains("pop_lock(\"%s\")" % lock_id):
+				has_paired_pop = true
+			# The release mechanism must be named WITHIN A FEW LINES of the push. A whole-file
+			# search is vacuous — GameLoop mentions pop_all in four unrelated places, so the
+			# first version of this check passed no matter what the comment said.
+			var lines := txt.split("\n")
+			for i in lines.size():
+				if not lines[i].contains("push_lock(\"%s\")" % lock_id):
+					continue
+				for j in range(maxi(0, i - 4), mini(lines.size(), i + 3)):
+					if lines[j].contains("pop_all"):
+						explained = true
+		if not has_paired_pop and not explained:
+			undocumented.append(lock_id)
+	assert_eq(undocumented, [] as Array[String],
+		"these locks are pushed, never popped by name, and never heartbeated — either they leak and freeze the player until the 10s reaper, or something else releases them and that must be stated: %s" % str(undocumented))
+
+
 ## Guards the guard: if the scan stops finding the two known-good heartbeats, it has broken and would
 ## report a clean sweep over nothing. A zero-result checker and a correct one look identical.
 func test_scanner_still_detects_the_known_heartbeats() -> void:
