@@ -406,6 +406,13 @@ func load_config() -> void:
 		push_warning("[InputProfileManager] Config parsed but root is not a Dictionary — using default profile")
 		return
 
+	# An unrecognized saved profile was silently discarded — the player's explicit Settings choice
+	# vanished with no console hint, presenting as "the game forgot my controller profile". Benign
+	# while PROFILE_NAMES only ever grows; the moment a profile is renamed or retired it becomes the
+	# difference between a diagnosable message and a mystery. Warn, then fall through to autodetect.
+	if data.has("active_profile") and not (data["active_profile"] in PROFILE_NAMES):
+		push_warning("[InputProfileManager] Saved profile '%s' is not a known profile (known: %s) — falling back to autodetect. A profile was likely renamed or retired." % [str(data["active_profile"]), str(PROFILE_NAMES)])
+
 	if data.has("active_profile") and data["active_profile"] in PROFILE_NAMES:
 		active_profile = data["active_profile"]
 		profile_chosen_by_user = true
@@ -416,11 +423,13 @@ func load_config() -> void:
 
 	if data.has("custom_bindings") and data["custom_bindings"] is Dictionary:
 		for action in data["custom_bindings"]:
-			if action in REMAPPABLE_ACTIONS:
-				var val = data["custom_bindings"][action]
-				if val is Array:
-					custom_bindings[action] = val
-				else:
-					custom_bindings[action] = [int(val)]
+			if not (action in REMAPPABLE_ACTIONS):
+				push_warning("[InputProfileManager] Saved custom binding for '%s' ignored — not a remappable action. Its persisted button choice is being dropped silently otherwise." % str(action))
+				continue
+			var val = data["custom_bindings"][action]
+			if val is Array:
+				custom_bindings[action] = val
+			else:
+				custom_bindings[action] = [int(val)]
 
 	print("[InputProfileManager] Config loaded (profile: %s)" % active_profile)
