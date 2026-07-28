@@ -88,6 +88,13 @@ func _init() -> void:
 	}
 
 
+## Each W1 dragon cave has its own SoundManager routing arm; without
+## this override they inherited "cave" and all four played the generic
+## medieval dungeon bed.
+func _get_music_area_id() -> String:
+	return "fire_dragon_cave"
+
+
 func _get_boss_intro_dialogue() -> Array:
 	return [
 		"The ground trembles. Magma bubbles through cracks in the stone.",
