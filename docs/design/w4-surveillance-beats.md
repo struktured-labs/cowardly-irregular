@@ -77,6 +77,29 @@ late         it is decreasing faster, and it is on EVERY screen
 to be half-noticed — *"she was supposed to not notice it"* — and the Director's whole method is
 information delivered without confrontation. A tooltip would destroy it.
 
+### WHAT the counter counts: masterites remaining (@cowir-battle, msg 3256)
+
+Not set dressing — a real quantity, already persisted, requiring no new tracking.
+
+**The masterites are his projections.** They're the four-axis profiling encounters —
+*"tests that report back on the player's strengths and weaknesses."* **Each one defeated is a
+model that no longer contains the party.** So the counter is simply how many he has left.
+
+It's the only quantity in the engine that satisfies all three constraints:
+- **It decreases.** Battles, playtime, quests and bestiary all climb; this is the rare one that falls.
+- **It needs no explanation and is self-evidently meaningful if noticed.** A player who beats a
+  masterite and sees the wall tick from 12 to 11 has everything, and no words for it.
+- **It is the Director's own ch.6 line made literal:** *"Every model I build, you exceed."*
+
+**It is partly under player control, and that is the point.** A completionist drains it faster —
+which is exactly his stated problem: they exceed his models faster than he can build them. An
+inexorable countdown would read as a doom clock, and **the Director does not threaten.** He
+reports.
+
+**⚠️ Derive the total at runtime, never a literal.** It is **20 today, 24** once the four W3
+masterites land. A hardcoded 20 would silently change meaning the day they ship — the same
+class of defect that has bitten four lanes tonight.
+
 Gate count-based on W4 quest completions, same as W2's memos and W3's drift, so player
 ordering can't scramble it.
 
