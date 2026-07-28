@@ -43,6 +43,10 @@ static func build(id: String, spec: Dictionary) -> CutsceneActor:
 	else:
 		sheet_path = "res://assets/sprites/npcs/%s/overworld.png" % str(spec.get("archetype", "young_man"))
 	if not a._load_sheet(sheet_path):
+		# The fallback fills the SAME _frames dict a real load does, so nothing
+		# downstream can tell a missing sheet from a present one — the scene
+		# plays with a flat coloured box standing in for the character. Say so.
+		push_warning("[cutscene] actor '%s' has no sheet at %s — rendering a PLACEHOLDER box, not the character" % [id, sheet_path])
 		a._build_placeholder()
 	a.set_facing_name(str(spec.get("facing", "down")))
 	a.z_index = 5
