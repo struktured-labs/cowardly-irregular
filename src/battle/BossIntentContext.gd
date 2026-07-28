@@ -63,6 +63,12 @@ var learned_patterns_sample: Dictionary = {}
 ## gain or lose options by time of day; it only colours posture and taunt.
 var time_of_day: String = ""
 
+## How absent the player is: "" (deciding) / "autobattle" (rules written,
+## stepped back) / "autogrind" (left entirely). Flavour only — it colours
+## posture and taunt, never the intent set. Pyrroth's persona was authored
+## to hold autobattle in contempt and had no way to learn it was happening.
+var party_automation: String = ""
+
 
 ## Hard cap on recent_actions size. Older entries get dropped.
 const RECENT_LIMIT: int = 8
@@ -93,4 +99,5 @@ func to_dict() -> Dictionary:
 		"learned_patterns_counter": learned_patterns_counter,
 		"learned_patterns_sample": learned_patterns_sample.duplicate(),
 		"time_of_day": time_of_day,
+		"party_automation": party_automation,
 	}

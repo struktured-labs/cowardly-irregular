@@ -599,6 +599,7 @@ static func build_boss_intent(
 		+ "\n"
 		+ "It is the start of phase %d.\n" % phase
 		+ _format_time_of_day(str(ctx.get("time_of_day", "")))
+		+ _format_party_automation(str(ctx.get("party_automation", "")))
 		+ "Your state: HP %d%%, MP %d%%, AP %d, status: %s.\n" % [int(hp_pct), int(mp_pct), ap, boss_status_tag]
 		+ "Party state:\n%s\n" % party_block
 		+ "Recent exchange (oldest → newest):\n%s\n" % recent_block
@@ -1051,6 +1052,21 @@ static func _format_time_of_day(time_of_day: String) -> String:
 	if time_of_day == "":
 		return ""
 	return "Time of day: %s\n" % time_of_day
+
+
+## Tell the boss the player isn't deciding. Spelled out rather than passed as a
+## bare token because the LLM must know what the state MEANS to react in voice —
+## and the two tiers deserve different reactions, not one "they're automating".
+static func _format_party_automation(tier: String) -> String:
+	match tier:
+		"autobattle":
+			return ("The party is not choosing their actions. They wrote an autobattle script "
+				+ "beforehand and are letting it play. A person is watching, but not deciding.\n")
+		"autogrind":
+			return ("The party is being run unattended by an autogrind session. Nobody is watching "
+				+ "this fight at all. You are being farmed.\n")
+		_:
+			return ""
 
 
 ## Surface rich-data flags from an EventLog entry as terse trailing tags so
