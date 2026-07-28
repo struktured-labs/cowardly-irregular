@@ -237,3 +237,46 @@ func test_tempo_and_curator_have_empty_stat_mods() -> void:
 		var sm: Variant = (lenses[axis] as Dictionary).get("stat_mods", {})
 		assert_true(sm is Dictionary and (sm as Dictionary).is_empty(),
 			"'%s' must ship with EMPTY stat_mods — its identity is meta_effects. The doc's tilt read the ability TYPE and missed what the axis does (msg 3178 fingerprint). Re-adding a tilt needs a new measurement, not a tidy-up." % axis)
+
+
+## ── (7) Target-resolver parity (msg 3189, cowir-ai's find) ───────────
+
+func test_resolve_target_delegates_rather_than_duplicating() -> void:
+	# TARGET_TYPES advertises 10; this resolver implemented 5 and sent the
+	# rest to lowest_hp_enemy with no signal. Latent (the grid path
+	# pre-resolves to a Combatant), but the fix is delegation rather than
+	# five more arms — two implementations of one contract is how they
+	# drift apart.
+	var src: String = FileAccess.get_file_as_string(BM_PATH)
+	var idx: int = src.find("func _resolve_target(")
+	assert_gt(idx, -1)
+	var next: int = src.find("\nfunc ", idx + 1)
+	var body: String = src.substr(idx, (next - idx) if next > -1 else 3000)
+	assert_string_contains(body, "_get_target_by_type",
+		"unhandled target types must delegate to the complete resolver, not silently become lowest_hp_enemy")
+	assert_string_contains(body, "push_warning",
+		"a genuinely unknown type must be loud — silent fallback is the defect being fixed")
+
+
+func test_autobattle_resolver_still_covers_every_advertised_type() -> void:
+	# The delegation is only correct while AutobattleSystem implements
+	# everything TARGET_TYPES advertises. If the two drift, this fails
+	# here rather than degrading a player's rule silently.
+	var abs_src: String = FileAccess.get_file_as_string("res://src/autobattle/AutobattleSystem.gd")
+	var t_start: int = abs_src.find("const TARGET_TYPES = {")
+	assert_gt(t_start, -1)
+	var t_end: int = abs_src.find("}", t_start)
+	var advertised: Array = []
+	for m in RegEx.create_from_string("\"([a-z_]+)\":").search_all(abs_src.substr(t_start, t_end - t_start)):
+		advertised.append(m.get_string(1))
+	assert_gt(advertised.size(), 0, "TARGET_TYPES must parse")
+	var r_start: int = abs_src.find("func _get_target_by_type(")
+	assert_gt(r_start, -1)
+	var r_end: int = abs_src.find("\nfunc ", r_start + 1)
+	var resolver: String = abs_src.substr(r_start, (r_end - r_start) if r_end > -1 else 3000)
+	var missing: Array = []
+	for t in advertised:
+		if resolver.find("\"%s\":" % t) < 0:
+			missing.append(t)
+	assert_eq(missing.size(), 0,
+		"AutobattleSystem._get_target_by_type must implement every advertised TARGET_TYPE — BattleManager._resolve_target delegates to it. Missing: %s" % str(missing))

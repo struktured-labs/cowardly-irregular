@@ -6907,7 +6907,14 @@ func _resolve_target(combatant: Combatant, target_type: String, allies: Array, e
 			return combatant
 
 		_:
-			# Default to lowest HP enemy
+			# msg 3189 (cowir-ai's find, routed here): TARGET_TYPES advertises 10 types and this resolver implemented 5 — the other 5 (all_allies, highest_atk_enemy, highest_speed_enemy, lowest_magic_defense_enemy, weakest_to_ability) fell through to lowest_hp_enemy SILENTLY. Latent today because the grid path pre-resolves to a Combatant before calling, so only a string-target caller reaches this. Rather than duplicate five more arms, delegate to AutobattleSystem._get_target_by_type, which already implements all 10 and is the resolver the live path uses — one implementation of the contract instead of two that can drift.
+			var abs_node: Node = get_node_or_null("/root/AutobattleSystem")
+			if abs_node and abs_node.has_method("_get_target_by_type"):
+				var delegated: Combatant = abs_node._get_target_by_type(combatant, target_type)
+				if delegated != null:
+					return delegated
+			# Genuinely unknown type (not merely unimplemented) — say so instead of quietly picking someone.
+			push_warning("[BattleManager] _resolve_target: unknown target_type '%s' — falling back to lowest_hp_enemy" % target_type)
 			if enemies.size() == 0:
 				return null
 			var sorted_enemies = enemies.duplicate()
