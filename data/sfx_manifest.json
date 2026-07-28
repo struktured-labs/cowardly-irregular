@@ -1705,6 +1705,27 @@
       "prompt": "Blind-status application (smoke_bomb, sand_strike, sandstorm). Vision closing: highpassed white-noise smear + 1400->300Hz descending tone, whole thing lowpassed to 2.2kHz so it audibly shuts down rather than sparkles. ~450ms.",
       "duration_seconds": 0.45,
       "prompt_influence": 0.0
+    },
+    "duel_answer_dodge": {
+      "file": "assets/audio/sfx/duel_answer_dodge.ogg",
+      "source": "sox_synth",
+      "prompt": "W6 Arbiter-duel answer cue (cowir-battle msg 3223/3226). Canon: each attack is a QUESTION; dodge is evasion, block is deflection, only a committed strike is an answer. The three share one tonal centre (C) so they read as answers to the same question, and commitment is audible as a 4dB ladder. No damage exists in this encounter, so these carry the entire action-feedback surface. DODGE: bare G5 fifth, high and thin, 0.06% bass \u2014 rootless and unresolved. mean -19.9.",
+      "duration_seconds": 0.22,
+      "prompt_influence": 0.0
+    },
+    "duel_answer_block": {
+      "file": "assets/audio/sfx/duel_answer_block.ogg",
+      "source": "sox_synth",
+      "prompt": "W6 Arbiter-duel answer cue (cowir-battle msg 3223/3226). Canon: each attack is a QUESTION; dodge is evasion, block is deflection, only a committed strike is an answer. The three share one tonal centre (C) so they read as answers to the same question, and commitment is audible as a 4dB ladder. No damage exists in this encounter, so these carry the entire action-feedback surface. BLOCK: B4 leading tone + body \u2014 wants to resolve to C and stops short. mean -15.5.",
+      "duration_seconds": 0.31,
+      "prompt_influence": 0.0
+    },
+    "duel_answer_strike": {
+      "file": "assets/audio/sfx/duel_answer_strike.ogg",
+      "source": "sox_synth",
+      "prompt": "W6 Arbiter-duel answer cue (cowir-battle msg 3223/3226). Canon: each attack is a QUESTION; dodge is evasion, block is deflection, only a committed strike is an answer. The three share one tonal centre (C) so they read as answers to the same question, and commitment is audible as a 4dB ladder. No damage exists in this encounter, so these carry the entire action-feedback surface. STRIKE: resolves to tonic \u2014 C root+fifth+octave over a sub, rings out. 27.7% bass, dominant 262Hz. The only cue that arrives. mean -11.8.",
+      "duration_seconds": 0.6,
+      "prompt_influence": 0.0
     }
   }
 }
