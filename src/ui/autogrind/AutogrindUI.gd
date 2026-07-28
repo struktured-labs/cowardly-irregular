@@ -2191,13 +2191,6 @@ var _prev_adaptation_milestone: float = 0.0
 var _warned_low_yield: bool = false
 
 
-func record_rule_trigger(rule_desc: String) -> void:
-	"""Record a rule trigger for monitor display.
-	Called externally when an autogrind rule fires."""
-	_rule_trigger_counts[rule_desc] = _rule_trigger_counts.get(rule_desc, 0) + 1
-
-
-## Signal handlers
 func _on_battle_completed(battle_num: int, results: Dictionary) -> void:
 	_battles_won = battle_num
 	var exp_gained = results.get("exp_gained", 0)

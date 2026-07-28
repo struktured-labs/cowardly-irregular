@@ -385,13 +385,6 @@ func process_frame() -> void:
 	_update_billboards()
 
 
-func register_billboard(obj: Node2D) -> void:
-	if obj not in _billboard_sources:
-		_billboard_sources.append(obj)
-
-
-## Set dissolve progress at runtime (for W5→W6 transition animation).
-## Call from a tween or _process loop: 0.0 = normal, 1.0 = fully dissolved.
 func set_dissolve(progress: float) -> void:
 	dissolve_progress = clampf(progress, 0.0, 1.0)
 	if _shader_mat:
@@ -416,14 +409,6 @@ func play_dissolve_in(duration: float = 0.8) -> void:
 	var tween = _player_ref.create_tween()
 	tween.tween_method(set_dissolve, 1.0, 0.0, duration)
 	await tween.finished
-
-
-func unregister_billboard(obj: Node2D) -> void:
-	_billboard_sources.erase(obj)
-	var obj_id = obj.get_instance_id()
-	if _billboard_sprites.has(obj_id):
-		_billboard_sprites[obj_id].queue_free()
-		_billboard_sprites.erase(obj_id)
 
 
 func _update_billboards() -> void:

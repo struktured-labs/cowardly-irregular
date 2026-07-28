@@ -46,16 +46,6 @@ static func _load_manifest() -> void:
 	_manifest_loaded = true
 
 
-static func reload_manifest() -> void:
-	"""Force reload the manifest (call after adding new sprite sheets)"""
-	_manifest_loaded = false
-	_manifest = {}
-	_monster_manifest = {}
-	_battle_effects = {}
-	_load_manifest()
-
-
-## Load a battle-effect texture registered under manifest.battle_effects — returns null if the key is absent or the texture load fails so callers can fall back gracefully. cowir-main's norm: HybridSpriteLoader is the single source, no direct load() bypass (msg 4ec21a07 commit note).
 static func load_battle_effect_texture(key: String) -> Texture2D:
 	_load_manifest()
 	if not _battle_effects.has(key):

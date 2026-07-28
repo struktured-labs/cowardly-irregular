@@ -302,18 +302,6 @@ func _current_location_display_name() -> String:
 	return "Unknown"
 
 
-func save_at_save_point(save_point_id: String) -> bool:
-	"""Save at a designated save point (works anywhere)"""
-	print("Saving at save point: %s" % save_point_id)
-
-	# Save points work even in dungeons
-	var result = save_game(current_save_slot if current_save_slot >= 0 else 1)
-	if result:
-		SoundManager.play_music("stinger_save_point")
-	return result
-
-
-## Load functions
 func load_game(slot: int) -> bool:
 	"""Load a saved game"""
 	if not save_exists(slot):
@@ -449,12 +437,6 @@ func _get_one_shot_records() -> Dictionary:
 	return one_shot_records
 
 
-func get_one_shot_record(monster_id: String) -> Dictionary:
-	"""Get one-shot record for a specific monster"""
-	return one_shot_records.get(monster_id, {})
-
-
-## Autobattle record management
 func record_autobattle_victory(monster_ids: Array, turns: int, multiplier: float) -> void:
 	"""Record an autobattle victory for the given monster types"""
 	var monster_key = "_".join(monster_ids) if monster_ids.size() > 0 else "unknown"
@@ -466,11 +448,6 @@ func record_autobattle_victory(monster_ids: Array, turns: int, multiplier: float
 	if multiplier > autobattle_records[monster_key]["best_multiplier"]:
 		autobattle_records[monster_key]["best_multiplier"] = multiplier
 	print("[SAVE] Autobattle victory recorded for monsters: %s (turns: %d, multiplier: %.1fx)" % [monster_key, turns, multiplier])
-
-
-func get_autobattle_record(monster_key: String) -> Dictionary:
-	"""Get autobattle record for a specific monster combination"""
-	return autobattle_records.get(monster_key, {})
 
 
 func _get_autobattle_records() -> Dictionary:
@@ -882,26 +859,6 @@ func _ensure_save_directory() -> void:
 			dir.make_dir("saves")
 			print("Created save directory: user://saves/")
 
-
-## Utility
-func get_all_saves() -> Array:
-	"""Get info for all save slots"""
-	var saves = []
-	for slot in range(MAX_SAVE_SLOTS):
-		var info = get_save_info(slot)
-		if not info.is_empty():
-			saves.append(info)
-	return saves
-
-
-func set_current_save_slot(slot: int) -> void:
-	"""Set the active save slot"""
-	current_save_slot = slot
-
-
-## ═══════════════════════════════════════════════════════════════════════
-## SETTINGS PERSISTENCE (global, not per-slot)
-## ═══════════════════════════════════════════════════════════════════════
 
 const SETTINGS_PATH = "user://settings.json"
 

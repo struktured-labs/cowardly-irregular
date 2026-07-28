@@ -491,51 +491,6 @@ static func build_player_choices(
 	)
 
 
-## Build a player-choices prompt that emphasises a specific emotional tone.
-## Useful for scenes where the narrative dictates a narrower choice range
-## (e.g. a confrontation scene wants choices in the aggressive/nervous range).
-##
-## tone_hint — short label like "tense", "comedic", "solemn" injected into rules.
-static func build_player_choices_toned(
-	npc_name: String,
-	npc_line: String,
-	num_choices: int,
-	tone_hint: String,
-	recent_events: Array,
-) -> String:
-	var count: int = clampi(num_choices, 1, MAX_CHOICES)
-	var ctx_block: String = _format_events(recent_events, CONTEXT_EVENTS)
-
-	return (
-		"You are writing player dialogue options for a meta-aware JRPG called 'Cowardly Irregular'.\n"
-		+ "The player just heard the following from %s:\n" % npc_name
-		+ "  \"%s\"\n" % npc_line
-		+ ctx_block
-		+ "\n"
-		+ "Generate exactly %d short player dialogue choices.\n" % count
-		+ "\n"
-		+ "Rules:\n"
-		+ "- Tone: %s — all choices should feel consistent with this mood.\n" % tone_hint
-		+ "- Each choice is a first-person player statement or question, max %d characters.\n" % MAX_CHOICE_CHARS
-		+ "- Do NOT number the choices or add bullet points.\n"
-		+ "- Respond with ONLY valid JSON: {\"choices\": [\"...\", \"...\"]}\n"
-	)
-
-
-# ── Prompt builder: boss strategic intent ─────────────────────────────────────
-
-## Build the prompt asked of the LLM at each boss phase transition.
-##
-## ctx is a BossIntentContext (passed as Dictionary via to_dict()) so this
-## function stays decoupled from the class. The LLM picks ONE of
-## ctx.available_intents and writes a short in-character taunt for the
-## moment the new posture lands.
-##
-## Parameters:
-##   display_name — boss display name (e.g. "Chancellor Mordaine")
-##   ctx          — Dictionary from BossIntentContext.to_dict()
-##
-## Returns a prompt String ready for LLMService.complete_json().
 static func build_boss_intent(
 	display_name: String,
 	ctx: Dictionary,

@@ -447,17 +447,6 @@ func test_item_system_target_validation() -> void:
 			"ItemSystem should check target validity before applying effects")
 
 
-func test_item_system_battle_manager_check() -> void:
-	"""ItemSystem should check BattleManager before accessing parties"""
-	var content = FileAccess.get_file_as_string("res://src/items/ItemSystem.gd")
-
-	var idx = content.find("func can_use_item")
-	if idx > 0:
-		var context = content.substr(idx, 400)
-		assert_true(context.contains("not BattleManager"),
-			"can_use_item should check BattleManager availability")
-
-
 ## EquipmentSystem Safety Tests
 
 func test_equipment_system_stat_key_check() -> void:

@@ -432,14 +432,6 @@ func set_terrain(terrain: TerrainType) -> void:
 	call_deferred("_draw_background")
 
 
-func set_terrain_with_seed(terrain: TerrainType, seed_value: int) -> void:
-	"""Set terrain with a specific seed for reproducible backgrounds"""
-	background_seed = seed_value
-	current_terrain = terrain
-	_rng.seed = background_seed
-	_draw_background()
-
-
 func set_terrain_from_string(terrain_name: String) -> void:
 	"""Set terrain from string name (for easy integration)"""
 	match terrain_name.to_lower():
@@ -2563,38 +2555,3 @@ func _spawn_particle_type(viewport_size: Vector2, count: int, color: Color, moti
 				tween.parallel().tween_property(rect, "modulate:a", 0.9, dur * 0.3)
 				tween.tween_property(rect, "position", Vector2(start_x, start_y), dur * 0.3)
 
-
-## Terrain modifier data (used by BattleManager)
-static func get_terrain_modifiers(terrain: TerrainType) -> Dictionary:
-	"""Get elemental damage modifiers for terrain"""
-	match terrain:
-		TerrainType.CAVE:
-			return {
-				"boost": ["ice", "dark"],
-				"reduce": ["fire", "lightning"]
-			}
-		TerrainType.FOREST:
-			return {
-				"boost": ["fire", "wind"],
-				"reduce": ["water"]
-			}
-		TerrainType.VILLAGE:
-			return {
-				"boost": ["holy"],
-				"reduce": ["dark"]
-			}
-		TerrainType.BOSS:
-			return {
-				"boost": ["dark"],
-				"reduce": []
-			}
-		_:  # PLAINS and default
-			return {
-				"boost": [],
-				"reduce": []
-			}
-
-
-static func get_terrain_modifier_value() -> float:
-	"""Get the modifier percentage (0.25 = 25% boost/reduction)"""
-	return 0.25

@@ -689,36 +689,6 @@ func get_jobs_by_type(type: JobType) -> Array:
 	return filtered_jobs
 
 
-func get_starter_jobs() -> Array:
-	"""Get all starter jobs"""
-	return get_jobs_by_type(JobType.STARTER)
-
-
-func get_meta_jobs() -> Array:
-	"""Get all meta jobs"""
-	return get_jobs_by_type(JobType.META)
-
-
-## Tick 467: check whether a job is unlocked for the current save.
-## jobs.json authors `unlock_condition` on every advanced/meta job
-## (guardian wants chapter 2, ninja wants speed_demon achievement,
-## bossbinder wants 10 boss defeats, etc.) but pre-tick no code
-## path read it — the JobMenu gated advanced/meta jobs purely on
-## debug_log_enabled, which meant either ALL advanced/meta jobs
-## were shown or none, with no progression in between.
-##
-## Resolution shape per condition type:
-##   - "story":      checks cutscene_flag_chapterN_complete
-##   - "boss_defeat": counts GameState.previously_fought_bosses
-##                    (tick 453 populates that list)
-##   - "completion": checks game_complete flag (tick 108 sets it
-##                    on world6_ending)
-##   - "achievement": opt-in flag of the same name in story_flags;
-##                    no achievement system yet, so unset = locked
-##
-## Starters (type 0) are always unlocked. Debug mode also unlocks
-## everything (preserves the existing JobMenu shortcut for
-## development).
 func is_job_unlocked(job_id: String) -> bool:
 	var job_data: Dictionary = get_job(job_id)
 	if job_data.is_empty():

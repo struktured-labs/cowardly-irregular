@@ -290,12 +290,6 @@ func _try_generate_miniboss() -> Array:
 	return [miniboss_data]
 
 
-func set_area_prefix(prefix: String) -> void:
-	"""Set the current area prefix for miniboss pool selection"""
-	current_area_prefix = prefix
-	print("Area prefix set to: %s" % prefix)
-
-
 func _generate_hero_mimics_party() -> Array:
 	"""Generate the rare Hero Mimics encounter - 4 mimics that copy player abilities"""
 	print("[RARE ENCOUNTER] Hero Mimics!")
@@ -439,20 +433,6 @@ func _create_enemy_data(enemy_id: String) -> Dictionary:
 			}
 
 
-## Configuration
-func set_encounters_enabled(enabled: bool) -> void:
-	"""Enable or disable random encounters"""
-	encounters_enabled = enabled
-	print("Encounters %s" % ("enabled" if enabled else "disabled"))
-
-
-func set_encounter_rate(rate: float) -> void:
-	"""Set the base encounter rate (0.0 to 1.0)"""
-	encounter_rate = clamp(rate, 0.0, 1.0)
-	encounter_rate_changed.emit(encounter_rate)
-	print("Encounter rate set to %.1f%%" % (encounter_rate * 100))
-
-
 func set_enemy_pool(enemy_ids: Array[String]) -> void:
 	"""Set the current enemy pool"""
 	current_enemy_pool = enemy_ids.duplicate()
@@ -511,13 +491,6 @@ func set_encounter_rate_modifier(modifier: float) -> void:
 		modifier = 0.0
 	encounter_rate_modifier = clampf(modifier, 0.0, ENCOUNTER_RATE_MODIFIER_MAX)
 	print("Encounter rate modifier: %.1fx" % encounter_rate_modifier)
-
-
-## Special encounters
-func force_next_encounter() -> void:
-	"""Force an encounter on the next step"""
-	forced_encounter_next_step = true
-	print("Next step will trigger an encounter")
 
 
 func use_repel(steps: int) -> void:

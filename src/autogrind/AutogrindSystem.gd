@@ -370,15 +370,6 @@ func decay_all_csi(hours_elapsed: float) -> void:
 		_region_csi[region_id] = maxf(0.0, _region_csi[region_id] - decay_amount)
 
 
-func decay_csi(delta_seconds: float) -> void:
-	if is_grinding:
-		return
-	# Real-time decay should match offline rate: CSI_DECAY_RATE per hour = CSI_DECAY_RATE/3600 per second
-	var decay_per_sec = CSI_DECAY_RATE / 3600.0
-	for region_id in _region_csi.keys():
-		_region_csi[region_id] = maxf(0.0, _region_csi[region_id] - decay_per_sec * delta_seconds)
-
-
 func get_csi(region_id: String) -> float:
 	"""Get current CSI for a region (0.0 if never visited)."""
 	return _region_csi.get(region_id, 0.0)
@@ -870,7 +861,6 @@ func stop_autogrind(reason: String = "Manual stop") -> void:
 	])
 
 
-
 func _run_automated_battle() -> void:
 	"""Run a single automated battle"""
 	battles_completed += 1
@@ -1354,13 +1344,6 @@ func _load_permadead_characters() -> void:
 	file.close()
 
 
-## Configuration
-func set_interrupt_rule(rule_name: String, value: Variant) -> void:
-	"""Set an interrupt rule"""
-	interrupt_rules[rule_name] = value
-	print("Interrupt rule set: %s = %s" % [rule_name, value])
-
-
 func enable_permadeath_staking(enabled: bool) -> void:
 	"""Enable/disable permadeath staking"""
 	permadeath_staking_enabled = enabled
@@ -1437,16 +1420,6 @@ func _get_region_crack_penalty() -> float:
 
 	var crack_level = region_crack_levels.get(current_region_id, 0)
 	return min(crack_level * reward_penalty_per_crack, 0.75)  # Max 75% penalty
-
-
-func get_region_crack_level(region_id: String) -> int:
-	"""Get crack level for a region"""
-	return region_crack_levels.get(region_id, 0)
-
-
-func is_region_cracked(region_id: String) -> bool:
-	"""Check if a region is cracked"""
-	return region_crack_levels.get(region_id, 0) > 0
 
 
 func get_current_world_index() -> int:
@@ -2267,49 +2240,6 @@ func save_data() -> Dictionary:
 		"grind_stats": _grind_stats.duplicate()
 	}
 
-
-func load_data(data: Dictionary) -> void:
-	"""Restore persistent autogrind state from a save file dictionary.
-	Applies CSI decay based on time since last save."""
-	if not data is Dictionary:
-		return
-
-	# Restore CSI data
-	_region_csi = data.get("region_csi", {}).duplicate()
-	_csi_timestamps = data.get("csi_timestamps", {}).duplicate()
-	_automation_affinity = data.get("automation_affinity", 0.0)
-	region_crack_levels = data.get("region_crack_levels", {}).duplicate()
-	current_region_id = data.get("current_region_id", "")
-	_grind_stats = data.get("grind_stats", {
-		"start_time": 0.0,
-		"total_exp": 0,
-		"total_gold": 0,
-		"total_jp": 0,
-		"total_encounters": 0,
-		"elapsed_seconds": 0.0
-	}).duplicate()
-
-	# Restore learned patterns
-	var saved_patterns = data.get("learned_patterns", {})
-	if saved_patterns is Dictionary and not saved_patterns.is_empty():
-		learned_patterns = saved_patterns.duplicate(true)
-
-	# Apply time-based CSI decay since last save
-	var now: float = Time.get_unix_time_from_system()
-	for region_id in _csi_timestamps.keys():
-		var last_time: float = _csi_timestamps[region_id]
-		var hours_away: float = (now - last_time) / 3600.0
-		if hours_away > 0.0 and _region_csi.has(region_id):
-			_region_csi[region_id] = maxf(0.0, _region_csi[region_id] - CSI_DECAY_RATE * hours_away)
-
-	print("Loaded autogrind data (AA: %.3f, CSI regions: %d)" % [
-		_automation_affinity, _region_csi.size()
-	])
-
-
-## ═══════════════════════════════════════════════════════════════════════
-## PAUSE/RESUME SNAPSHOT
-## ═══════════════════════════════════════════════════════════════════════
 
 const SNAPSHOT_PATH: String = "user://autogrind_snapshot.json"
 

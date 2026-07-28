@@ -137,24 +137,6 @@ func _ready() -> void:
 	_load_character_scripts()
 
 
-## Autobattle execution (legacy - single action)
-func execute_autobattle(combatant: Combatant, script: Dictionary) -> Dictionary:
-	"""Execute autobattle script for a combatant, returns action to take"""
-	if not script.has("rules"):
-		return _get_default_action(combatant)
-
-	# Evaluate rules in order (first match wins)
-	for rule in script["rules"]:
-		if _evaluate_rule(combatant, rule):
-			var action = _rule_to_action(combatant, rule)
-			script_executed.emit(combatant, rule, [action])
-			return action
-
-	# No rule matched, use default
-	return _get_default_action(combatant)
-
-
-## New 2D Grid-based execution - returns array of actions for Advance
 func execute_grid_autobattle(combatant: Combatant) -> Array[Dictionary]:
 	"""Execute autobattle for a combatant using their character script.
 	Returns array of actions (1-4) for Advance mode."""
@@ -819,27 +801,6 @@ func create_new_profile(character_id: String, name: String = "") -> int:
 	return profiles.size() - 1
 
 
-func delete_profile(character_id: String, index: int) -> bool:
-	"""Delete a profile (cannot delete last one)"""
-	_ensure_character_profiles(character_id)
-	var profiles = character_profiles[character_id].get("profiles", [])
-
-	if profiles.size() <= 1 or index < 0 or index >= profiles.size():
-		return false
-
-	profiles.remove_at(index)
-
-	# Adjust active index if needed
-	var active = character_profiles[character_id].get("active", 0)
-	if active >= profiles.size():
-		character_profiles[character_id]["active"] = profiles.size() - 1
-	elif active > index:
-		character_profiles[character_id]["active"] = active - 1
-
-	_save_character_profiles()
-	return true
-
-
 func rename_profile(character_id: String, index: int, new_name: String) -> bool:
 	"""Rename a profile"""
 	_ensure_character_profiles(character_id)
@@ -851,41 +812,6 @@ func rename_profile(character_id: String, index: int, new_name: String) -> bool:
 	profiles[index]["name"] = new_name
 	_save_character_profiles()
 	return true
-
-
-func reset_profile_to_default(character_id: String, index: int) -> bool:
-	"""Reset a profile back to default values"""
-	_ensure_character_profiles(character_id)
-	var profiles = character_profiles[character_id].get("profiles", [])
-
-	if index < 0 or index >= profiles.size():
-		return false
-
-	var name = profiles[index].get("name", "Default")
-	profiles[index]["script"] = create_default_character_script(character_id)
-	_save_character_profiles()
-	return true
-
-
-func copy_profile(character_id: String, source_index: int, new_name: String = "") -> int:
-	"""Copy a profile, returns new index or -1 if at max"""
-	_ensure_character_profiles(character_id)
-	var profiles = character_profiles[character_id].get("profiles", [])
-
-	if profiles.size() >= MAX_PROFILES_PER_CHARACTER or source_index < 0 or source_index >= profiles.size():
-		return -1
-
-	var source = profiles[source_index]
-	if new_name.is_empty():
-		new_name = source.get("name", "Copy") + " Copy"
-
-	profiles.append({
-		"name": new_name,
-		"script": source.get("script", {}).duplicate(true)
-	})
-
-	_save_character_profiles()
-	return profiles.size() - 1
 
 
 func install_composition_as_new_profile(character_id: String, composition: Dictionary) -> int:
@@ -2178,21 +2104,6 @@ func create_condition(type: ConditionType, compare_op: CompareOp, value: Variant
 		condition[key] = extra_data[key]
 
 	return condition
-
-
-## Save/Load
-func save_script(script_name: String, script: Dictionary) -> void:
-	"""Save a script to file"""
-	saved_scripts[script_name] = script
-
-	var save_path = "user://autobattle_scripts.json"
-	var file = FileAccess.open(save_path, FileAccess.WRITE)
-	if file:
-		var json_string = JSON.stringify(saved_scripts, "\t")
-		file.store_string(json_string)
-		file.close()
-		script_saved.emit(script_name)
-		print("Saved autobattle script: %s" % script_name)
 
 
 func load_script(script_name: String) -> Dictionary:

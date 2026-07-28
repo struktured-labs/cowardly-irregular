@@ -463,16 +463,6 @@ static func _compose_mod(total_mods: Dictionary, mod_key: String, mod_value: flo
 		total_mods[mod_key] += mod_value
 
 
-func get_passives_by_category(category: PassiveCategory) -> Array:
-	"""Get all passives of a specific category"""
-	var filtered = []
-	for passive_id in passives:
-		var passive = passives[passive_id]
-		if passive.get("category", PassiveCategory.OFFENSIVE) == category:
-			filtered.append(passive)
-	return filtered
-
-
 func can_equip_passive(combatant: Combatant, passive_id: String) -> bool:
 	"""Check if combatant can equip this passive"""
 	if not combatant or not is_instance_valid(combatant):

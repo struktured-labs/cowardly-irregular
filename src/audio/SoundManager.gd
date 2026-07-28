@@ -461,11 +461,6 @@ func _get_world_sfx_prefix() -> String:
 		_: return ""  # W1 medieval uses unprefixed keys
 
 
-func register_ability_sound(ability_id: String, sound_key: String) -> void:
-	"""Register a custom sound for an ability"""
-	_ability_sounds[ability_id] = sound_key
-
-
 func play_ambient(sound_key: String) -> void:
 	"""Start a looping ambient sound (weather, environment). Stops previous ambient."""
 	if sound_key == _current_ambient_key and _ambient_player.playing:
@@ -1477,11 +1472,6 @@ func fade_out_music(duration: float = CROSSFADE_DURATION) -> void:
 		_current_music = "")
 
 
-func is_music_playing() -> bool:
-	return _music_playing
-
-
-## Danger intensity system - modulates music when party is hurt
 var _danger_intensity: float = 0.0  # 0.0 = safe, 1.0 = critical
 var _danger_tween: Tween = null
 
@@ -1522,10 +1512,6 @@ func _apply_danger_intensity(intensity: float) -> void:
 	var volume_boost = intensity * 3.0  # Up to +3dB at max danger
 	# relative to the user's music-volume setting — hardcoded -12.0 clobbered the slider whenever danger rose
 	_music_player.volume_db = _music_base_db + volume_boost
-
-
-func get_danger_intensity() -> float:
-	return _danger_intensity
 
 
 func reset_danger() -> void:
@@ -1578,10 +1564,6 @@ func _apply_corruption_intensity(intensity: float) -> void:
 	if intensity > 0.6:
 		vol_noise = randf_range(0.0, (intensity - 0.6) * 4.0)
 	_music_player.volume_db = _music_base_db - vol_noise
-
-
-func get_corruption_intensity() -> float:
-	return _corruption_intensity
 
 
 func reset_corruption() -> void:
