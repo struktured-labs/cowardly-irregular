@@ -339,7 +339,7 @@ All UI must be fully navigable via gamepad or keyboard.
 | Cancel/Back | B | X/Escape |
 | Queue action (Advance) | R shoulder | R key |
 | Defer | L shoulder | L key |
-| Change battle speed | +/- on D-pad | +/- keys |
+| Change battle speed | X (top face button) | ` (backtick) |
 
 ### Menu Navigation
 - All menus expand LEFT (tree-style, like classic JRPGs)

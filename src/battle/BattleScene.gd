@@ -1610,7 +1610,8 @@ func _build_input_hint_bar() -> void:
 	# Keep the hint text concise; pipe-separated reads quickly.
 	# Use [L]/[R] notation that works for both gamepad (shoulder)
 	# and keyboard (L/R keys per InputMap).
-	label.text = "[L] Defer  ·  [R] Advance  ·  [+/-] Speed  ·  [Select] Auto"
+	# "[+/-] Speed" named a control nothing binds — see Win98Menu.HINT_DEFAULT_TEXT.
+	label.text = "[L] Defer  ·  [R] Advance  ·  [X] Speed  ·  [Select] Auto"
 	label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.95, 0.95))
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -4138,7 +4139,7 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			return
 
-	# Battle speed toggle (Tab or ` key)
+	# Battle speed toggle — ` key only. (Was documented as "Tab or `"; Tab is battle_toggle_auto.)
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_QUOTELEFT:
 			_toggle_battle_speed()

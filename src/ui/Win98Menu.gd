@@ -1277,7 +1277,10 @@ func _apply_command_memory() -> void:
 	_initial_selection_id = ""
 
 
-const HINT_DEFAULT_TEXT := "[L] Defer  ·  [R] Advance  ·  [+/-] Speed  ·  [Select] Auto"
+## "[+/-] Speed" was a dead instruction: nothing in src/ binds +/- to battle speed (2026-07-28).
+## The real toggle is JOY_BUTTON_Y — north/top face, physically X on the Nintendo-layout pads this
+## game targets — plus the ` key. BattleScene.gd carries the same string; keep them in step.
+const HINT_DEFAULT_TEXT := "[L] Defer  ·  [R] Advance  ·  [X] Speed  ·  [Select] Auto"
 
 var _hint_label_cache: Label = null
 
