@@ -1,0 +1,52 @@
+{
+  "_comment": "W2 antagonist presence — the Coordinator's medium is PAPERWORK, per world2_the_neighborhood_problem.md ch.8 'The Coordinator's Memos (A Collection)'. She is never seen between quests; she is READ. Six memos, found as examine props around Maple Heights, adapted/extended from the two canon drafts in ch.8.\n\nTHE ESCALATION: not spectacle, and not proximity — her CERTAINTY ERODING inside her own bookkeeping. Memo 1 is routine compliance reporting. Memo 6 is a woman who has stopped being able to pretend the framework works, still writing in the framework's voice. She never once addresses the party directly; every line is internal distribution. Being talked ABOUT in the third person by someone revising their opinion of you in real time is the suburban-bureaucracy version of Mordaine's 'I have been recording you.'\n\nGATING — gate on the COUNT of completed W2 quests, not on specific quest ids. W2's six quests have no authored order, so keying memo N to quest X scrambles the arc for any player who does them out of sequence — and the arc IS the content. Count-gating preserves the erosion regardless of route.\n\nWIRING (cowir-overworld): each entry is a readable prop — examine-text surface, same as village examines. `found_at` is advisory placement, not a coordinate. No NPC, no staging, no cutscene needed.",
+  "schema_version": 1,
+  "world": 2,
+  "speaker": "The Coordinator",
+  "gate_type": "w2_quests_completed_count",
+
+  "memos": [
+    {
+      "id": "w2_memo_1",
+      "unlock_at_quest_count": 1,
+      "found_at": "Maple Heights — HOA notice board, pinned under a laminated parking notice",
+      "title": "MEMO: RE: STATUS UPDATE — COMPLIANCE OPERATIONS",
+      "text": "This memo is for internal distribution only.\n\nFive (5) unregistered subjects have entered the residential phase. Documentation is incomplete in every category. This is typical of arrivals and is not, by itself, a concern.\n\nThey are ahead of schedule. This is noted without alarm. Arrivals are frequently ahead of schedule in the first phase; the schedule is designed with early enthusiasm in mind, and the schedule accounts for it.\n\nI am confident the schedule accounts for it.\n\n— The Coordinator"
+    },
+    {
+      "id": "w2_memo_2",
+      "unlock_at_quest_count": 2,
+      "found_at": "Maple Heights — community center lobby, in a tray marked OUTGOING",
+      "title": "MEMO: RE: ASSESSMENT RUBRIC (REVISION 3)",
+      "text": "This memo is for internal distribution only.\n\nSubjects passed on a curve that I specifically calibrated to be uncurvable.\n\nI am revising the assessment rubric. This is the third revision. I am beginning to question the rubric.\n\nI want to be clear that questioning the rubric is a normal part of maintaining the rubric, and that a rubric which is never revised is a rubric nobody is reading. I have written that sentence before. I looked. I wrote it in the second revision.\n\n— The Coordinator"
+    },
+    {
+      "id": "w2_memo_3",
+      "unlock_at_quest_count": 3,
+      "found_at": "Maple Heights — taped inside a mailbox that isn't anyone's",
+      "title": "MEMO: RE: TESTING AGENT CONDUCT — OFF-PROFILE",
+      "text": "This memo is for internal distribution only.\n\nThe Warden of Routine has been expressing unusual self-reflection, which is off-profile. The Tempo of the Rush Hour has been 'thinking about beginnings,' which is also off-profile.\n\nThis is becoming a pattern. Patterns are within my remit. I am the person who notices patterns and files them, and I have filed this one.\n\nThe off-profile self-reflection among testing agents was not within parameters. I am noting it. I am uncertain what to do about it.\n\nThis is itself unusual, as I am not typically uncertain about what to do.\n\n— The Coordinator"
+    },
+    {
+      "id": "w2_memo_4",
+      "unlock_at_quest_count": 4,
+      "found_at": "Maple Heights — a memo left on a bench, weighted down with a stone",
+      "title": "MEMO: RE: SUBJECT FOUR — DOCUMENTATION METHODOLOGY",
+      "text": "This memo is for internal distribution only.\n\nOne subject has been maintaining detailed notes throughout the residential phase. Her documentation methodology is thorough and her pattern recognition is exceptional.\n\nShe will likely reach conclusions I had hoped to defer.\n\nI have considered whether to interfere with the notes. I have decided not to, and I want the reasoning on record: interfering would confirm that the notes are worth interfering with, and she would write that down too.\n\nShe writes everything down. I understand the impulse. It is the only thing about her I understand.\n\n— The Coordinator"
+    },
+    {
+      "id": "w2_memo_5",
+      "unlock_at_quest_count": 5,
+      "found_at": "Maple Heights — slipped under the door of a house with no name on the mailbox",
+      "title": "MEMO: RE: GAP IN ASSESSMENT FRAMEWORK",
+      "text": "This memo is for internal distribution only.\n\nThe subject in the nurse's uniform has a high degree of what my old metrics called 'faith investment' and what I am revising my metrics to call 'quality of attention.' She attends to things — the old king, the Warden's lesson, the sweater — in a way that my models struggle to account for.\n\nI do not know what to do with 'quality of attention' as a metric.\n\nI am flagging this as a gap in my assessment framework. The Arbiter flagged the same thing. We are converging on the same gap from different directions.\n\nThis is either a coincidence or it is not.\n\n— The Coordinator"
+    },
+    {
+      "id": "w2_memo_6",
+      "unlock_at_quest_count": 6,
+      "found_at": "Maple Heights — the last one is not hidden. It is on the notice board, in the open, where the first one was.",
+      "title": "MEMO: RE: (NO SUBJECT)",
+      "text": "This memo is for internal distribution only.\n\nI have re-read the previous five memos in sequence, which is not a thing I normally do, because normally there is nothing in them but the record.\n\nRevision one was confident. Revision three questioned the rubric. Revision five could not name a metric. I did not notice this happening while it was happening. I noticed it just now, reading, the way anyone notices anything — too late and all at once.\n\nI am supposed to file a recommendation here. The form has a field for it.\n\nI am leaving the field blank, and I am filing the memo anyway, because a blank field is also a record and I would rather the record be accurate than complete.\n\n— The Coordinator"
+    }
+  ]
+}

@@ -4,7 +4,7 @@
   "world": 1,
   "trigger": "world1_tempo_pre_fight",
   "background": "prologue_forest",
-  "description": "The Tempo is delighted the trail was wrong about the party's speed. This isn't a threat — it's a game. Don't let it catch you.",
+  "description": "The Tempo is delighted the trail was wrong about the party's speed. This isn't a threat — it's a game. Don't let it catch you. FIX 2026-07-28 (cowir-ai msg-3206): this scene's hospitality beat was gated on a 'completionist' branch key that _detect_playstyle CAN NEVER RETURN (it returns automator/grinder/exploiter/manual/balanced only), so it had never played for any player. The beat is unconditional in canon — W1 ch.4 has the Warden offer the guardhouse food with no condition attached — so it is now the default arm rather than a playstyle reward. Playstyle-specific arms (e.g. grinder) are untouched and still take precedence.",
   "steps": [
     {
       "type": "letterbox_in",
@@ -18,7 +18,7 @@
       "type": "branch",
       "condition": "playstyle",
       "cases": {
-        "completionist": [
+        "default": [
           {
             "type": "dialogue",
             "lines": [
@@ -30,8 +30,7 @@
               }
             ]
           }
-        ],
-        "default": []
+        ]
       }
     },
     {
