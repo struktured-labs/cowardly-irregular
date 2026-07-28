@@ -7062,6 +7062,26 @@ func get_battle_results() -> Dictionary:
 ## STAKES GUARDRAIL: intent_id only biases existing weighted choices in the
 ## per-archetype AI ladders — it never invents new abilities or sets story
 ## flags. The LLM is never the rules engine here.
+## How absent is the player right now? "" (deciding) / "autobattle" (rules
+## written, stepped back) / "autogrind" (left entirely). A gradient rather
+## than a boolean because the game's thesis distinguishes those three.
+## Autobattle requires EVERY living PC to be scripted — one manual character
+## means a person is still making choices, and a boss shouldn't say otherwise.
+func _resolve_party_automation_tier() -> String:
+	var grind = get_node_or_null("/root/AutogrindSystem")
+	if grind != null and grind.has_method("is_battle_automated") and grind.is_battle_automated():
+		return "autogrind"
+	var living: int = 0
+	var scripted: int = 0
+	for member in player_party:
+		if member == null or not member.is_alive:
+			continue
+		living += 1
+		if is_autobattle_enabled or AutobattleSystem.is_autobattle_enabled(_get_character_id(member)):
+			scripted += 1
+	return "autobattle" if living > 0 and scripted == living else ""
+
+
 func _update_boss_dialogue_phase(combatant: Combatant) -> void:
 	var boss_dlg = get_node_or_null("/root/BossDialogue")
 	if boss_dlg == null:
@@ -7109,6 +7129,18 @@ func _update_boss_dialogue_phase(combatant: Combatant) -> void:
 	if taunt != "":
 		battle_log_message.emit("[color=%s]%s: \"%s\"[/color]" % [AccessibilityPalette.penalty_bbcode(), combatant.combatant_name, taunt])
 		boss_taunt.emit(combatant, taunt)
+
+	# The boss notices nobody is deciding. ONCE per battle by design — an
+	# observation lands, a refrain nags. Pyrroth's persona already held
+	# autobattle in contempt with no way to learn it was happening.
+	if not bool(combatant.get_meta("boss_noticed_automation", false)):
+		var auto_tier: String = _resolve_party_automation_tier()
+		if auto_tier != "":
+			var auto_line: String = boss_dlg.get_automation_line(persona_id, auto_tier)
+			if auto_line != "":
+				combatant.set_meta("boss_noticed_automation", true)
+				battle_log_message.emit("[color=%s]%s: \"%s\"[/color]" % [AccessibilityPalette.penalty_bbcode(), combatant.combatant_name, auto_line])
+				boss_taunt.emit(combatant, auto_line)
 
 	# Phase 1: strategic-intent refinement. The deterministic pick above
 	# fires immediately (no UX stall); when GameState.boss_llm_strategy_enabled
@@ -7216,6 +7248,7 @@ func _build_boss_intent_context(
 	var gs_clock: Node = get_node_or_null("/root/GameState")
 	if gs_clock != null and gs_clock.has_method("get_time_of_day_name"):
 		ctx.time_of_day = str(gs_clock.get_time_of_day_name())
+	ctx.party_automation = _resolve_party_automation_tier()
 
 	for member in player_party:
 		if member == null:

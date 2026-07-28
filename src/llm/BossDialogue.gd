@@ -139,6 +139,20 @@ func get_phase_transition_line(boss_id: String, phase: int) -> String:
 	return ""
 
 
+## Line for when the boss notices the party isn't deciding — tier is
+## "autobattle" (rules were written, the player stepped back) or "autogrind"
+## (the player left entirely). Empty when the boss has nothing authored for
+## that tier, which is a legitimate choice: not every boss should care.
+func get_automation_line(boss_id: String, tier: String) -> String:
+	if tier == "" or not has_entry(boss_id):
+		return ""
+	var block: Dictionary = _data[boss_id].get("automation_lines", {})
+	var lines = block.get(tier, [])
+	if lines is Array and lines.size() > 0:
+		return str(lines[randi() % lines.size()])
+	return ""
+
+
 ## get_victory_line — scripted-pool fallback for the boss's reaction WHEN THE
 ## PARTY DEFEATS IT (the party wins; the boss gloats/concedes in defeat).
 ## Returns a random pick from the boss section's "victory_lines" pool, or empty
