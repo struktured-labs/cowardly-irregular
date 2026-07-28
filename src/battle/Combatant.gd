@@ -214,13 +214,6 @@ func execute_defer() -> void:
 	# The natural +1 AP per turn is what accumulates when deferring
 
 
-func execute_advance(actions: Array[Dictionary]) -> void:
-	"""Advance action: queue multiple actions, spending AP"""
-	var ap_cost = actions.size() - 1  # First action is free
-	if spend_ap(ap_cost):
-		queued_actions = actions.duplicate()
-
-
 ## Combat actions
 func take_damage(amount: int, is_magical: bool = false) -> int:
 	"""Apply damage considering defense/magic defense and defending state"""

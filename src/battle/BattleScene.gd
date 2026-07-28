@@ -632,12 +632,6 @@ func _update_speed_indicator() -> void:
 			_speed_indicator.custom_minimum_size = Vector2(80, 24)
 
 
-func set_battle_counter(battle_num: int) -> void:
-	if _battle_counter_label:
-		_battle_counter_label.visible = true
-		_battle_counter_label.text = "[color=#aaaacc]#%d[/color]" % battle_num
-
-
 func _create_dialogue_system() -> void:
 	"""Create battle dialogue overlay"""
 	_battle_dialogue = BattleDialogueClass.new()

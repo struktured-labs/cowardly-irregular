@@ -1636,11 +1636,6 @@ func player_defer() -> void:
 	_end_selection_turn()
 
 
-# Alias for backwards compatibility
-func player_default() -> void:
-	player_defer()
-
-
 func player_advance(actions: Array[Dictionary]) -> void:
 	"""Queue Advance action (multiple actions in sequence, each costs 1 AP)"""
 	if not _check_player_selecting_state("player_advance"):
@@ -1663,11 +1658,6 @@ func player_advance(actions: Array[Dictionary]) -> void:
 	_queue_action(advance_action)
 	print("%s chooses to advance (%d actions, will cost %d AP)" % [current_combatant.combatant_name, actions.size(), actions.size()])
 	_end_selection_turn()
-
-
-# Alias for backwards compatibility
-func player_brave(actions: Array[Dictionary]) -> void:
-	player_advance(actions)
 
 
 func player_group_attack(group_type: String, formation_id: String = "") -> void:
@@ -6500,10 +6490,6 @@ func is_selecting() -> bool:
 	return current_state in [BattleState.SELECTION_PHASE, BattleState.PLAYER_SELECTING, BattleState.ENEMY_SELECTING]
 
 
-func is_executing() -> bool:
-	return current_state in [BattleState.EXECUTION_PHASE, BattleState.PROCESSING_ACTION]
-
-
 ## Autobattle control
 func set_autobattle_script(script_name: String) -> void:
 	autobattle_script = AutobattleSystem.load_script(script_name)
@@ -7010,13 +6996,6 @@ func get_one_shot_achieved() -> bool:
 	return _one_shot_achieved
 
 
-func get_one_shot_rank() -> String:
-	"""Get the one-shot rank for the current/last battle"""
-	if _one_shot_achieved:
-		return _get_one_shot_rank(_setup_turns_used)
-	return ""
-
-
 func get_one_shot_exp_multiplier() -> float:
 	"""Get the one-shot EXP multiplier for the current/last battle"""
 	if _one_shot_achieved:
@@ -7064,18 +7043,6 @@ func get_battle_tactics_snapshot() -> Dictionary:
 		"jailbreak_landed":    _jailbreak_landed_this_battle,
 		"all_out_attack_used": _all_out_attack_this_battle,
 	}
-
-
-func get_autobattle_exp_multiplier() -> float:
-	"""Get the autobattle EXP multiplier for the current/last battle"""
-	if get_autobattle_achieved():
-		return _get_autobattle_exp_multiplier(_autobattle_player_turns)
-	return 1.0
-
-
-func get_autobattle_turns() -> int:
-	"""Get the number of player turns handled by autobattle"""
-	return _autobattle_player_turns
 
 
 func get_battle_results() -> Dictionary:

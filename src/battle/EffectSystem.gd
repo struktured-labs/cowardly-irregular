@@ -80,10 +80,6 @@ static func _get_cached_texture(cache_key: String, generator: Callable) -> Image
 
 
 ## Clear the texture cache
-static func clear_texture_cache() -> void:
-	_texture_cache.clear()
-
-
 ## Power scaling constants
 const POWER_MIN: float = 0.5  # Minimum effect scale for weak spells
 const POWER_MAX: float = 2.0  # Maximum effect scale for powerful spells
