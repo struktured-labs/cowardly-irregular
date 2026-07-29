@@ -207,6 +207,23 @@ func test_dynamic_prefix_exemptions_are_backed_by_live_behaviour() -> void:
 	var sm: Node = get_node_or_null("/root/SoundManager")
 	assert_true(sm != null, "SoundManager autoload present")
 
+	## PREMISE, asserted rather than trusted (cowir-story msg-3384 class): every
+	## resolution assert below reads "the cooldown got stamped" as "the key resolved".
+	## That inference holds ONLY because the stamp sits AFTER the manifest-presence
+	## check in _try_play_sfx_from_manifest. Move it earlier — a plausible refactor,
+	## "stamp regardless so we don't retry a missing key every frame" — and EVERY key
+	## stamps, including ones the manifest has never heard of. The asserts below would
+	## then pass for an unresolvable key and this guard would go on printing green
+	## while proving nothing. That is an INVERSION, not staleness: it does not rot
+	## into a false claim, it rots into no claim at all.
+	var phantom: String = "definitely_not_a_real_status_key"
+	sm._sfx_cooldowns.erase("status_" + phantom)
+	assert_false(sm._sfx_manifest.has("status_" + phantom),
+		"control: the phantom key must genuinely be absent for this premise test to mean anything")
+	sm.play_status(phantom)
+	assert_false(sm._sfx_cooldowns.has("status_" + phantom),
+		"PREMISE BROKEN: a manifest MISS stamped a cooldown. The stamp no longer implies resolution, so every assert below this line is vacuous — fix the ordering in _try_play_sfx_from_manifest, or replace the resolution asserts with a different instrument.")
+
 	## _sfx_cooldowns lives on the AUTOLOAD and persists for the whole GUT run, so
 	## an earlier test that played these keys would satisfy the asserts below
 	## whether or not THIS call resolved anything. Erasing first is what makes the
