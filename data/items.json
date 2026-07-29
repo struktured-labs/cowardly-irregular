@@ -162,7 +162,7 @@
     "name": "Bomb Fragment",
     "category": 3,
     "target_type": 2,
-    "description": "Deals 100 fire damage",
+    "description": "Deals 1000 fire damage",
     "effects": {
       "damage": 1000,
       "element": "fire"
@@ -175,7 +175,7 @@
     "name": "Arctic Wind",
     "category": 3,
     "target_type": 3,
-    "description": "Deals 80 ice damage to all enemies",
+    "description": "Deals 800 ice damage to all enemies",
     "effects": {
       "damage": 800,
       "element": "ice"
@@ -254,7 +254,7 @@
     "name": "Lightning Bolt",
     "category": 3,
     "target_type": 2,
-    "description": "Deals 120 lightning damage to one enemy",
+    "description": "Deals 1200 lightning damage to one enemy",
     "effects": {
       "damage": 1200,
       "element": "lightning"
@@ -267,7 +267,7 @@
     "name": "Holy Water",
     "category": 3,
     "target_type": 2,
-    "description": "Deals 150 holy damage to undead. Weak against living foes.",
+    "description": "Deals 1500 holy damage to undead. Weak against living foes.",
     "effects": {
       "damage": 1500,
       "element": "holy",
