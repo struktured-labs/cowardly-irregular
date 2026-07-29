@@ -215,3 +215,43 @@ func test_dungeons_report_their_finale_boss_at_runtime() -> void:
 		assert_eq(int(inst.unlock_world), int(want[2]),
 			"%s must report the world it unlocks — without this the world is a dead end" % scene)
 		inst.free()
+
+func test_every_world_unlocking_dungeon_names_a_real_boss() -> void:
+	# DERIVED, replacing the hand-list above (@cowir-controller: one red
+	# validates the path that went red, not the guard). The behavioural
+	# test I added minutes ago names three dungeons explicitly — so a
+	# FOURTH declaring unlock_world with no boss_id passes 12/12. Measured,
+	# not supposed: I planted exactly that and it went green.
+	#
+	# Derives from what dungeons DECLARE (unlock_world) and asserts against
+	# monsters.json — independent of each other, so neither can quietly
+	# empty the set (@cowir-ai's precondition, @cowir-sfx's stronger form:
+	# a declared property is true of the thing, not of how it is spelled).
+	var mf: FileAccess = FileAccess.open("res://data/monsters.json", FileAccess.READ)
+	var monsters: Dictionary = JSON.parse_string(mf.get_as_text())
+	var dir: DirAccess = DirAccess.open("res://src/maps/dungeons")
+	assert_not_null(dir, "dungeon directory must be readable")
+	var checked: int = 0
+	for fname in dir.get_files():
+		if not fname.ends_with(".gd"):
+			continue
+		var script: GDScript = load("res://src/maps/dungeons/%s" % fname)
+		if script == null:
+			continue
+		var inst: Variant = script.new()
+		if not (inst is Node) or not ("unlock_world" in inst):
+			if inst is Node:
+				(inst as Node).free()
+			continue
+		var uw: int = int(inst.unlock_world)
+		var bid: String = str(inst.boss_id) if "boss_id" in inst else ""
+		(inst as Node).free()
+		if uw <= 0:
+			continue
+		checked += 1
+		assert_ne(bid, "",
+			"%s unlocks world %d but names no boss — beating it would advance the game with nothing to beat" % [fname, uw])
+		assert_true(monsters.has(bid),
+			"%s unlocks world %d via boss_id '%s', which does not exist in monsters.json" % [fname, uw, bid])
+	assert_gt(checked, 2,
+		"VACUITY FLOOR: expected several world-unlocking dungeons, found %d — if this fires the scan is broken and every assertion above it checked nothing" % checked)
