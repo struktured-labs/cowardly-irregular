@@ -343,10 +343,16 @@ func _create_stats_panel(panel_size: Vector2) -> Control:
 		return panel
 
 	# Stats display
+	# MDF pairs with MAG the way DEF pairs with ATK. It was the ONLY Combatant.MODDABLE_STATS entry
+	# with no display here, which mattered from 2026-07-29: magic_defense became a real stat and
+	# equipment gained the ability to modify ANY stat, so the comparison row — generic, driven off
+	# stat_mods — would print "+40 MDF" for a stat the panel beside it never showed. Delta visible,
+	# total invisible. The grid flows on stats.size(), so this needed content, not layout.
 	var stats = [
 		["ATK", character.attack],
 		["DEF", character.defense],
 		["MAG", character.magic],
+		["MDF", character.magic_defense],
 		["SPD", character.speed],
 		["HP", character.max_hp],
 		["MP", character.max_mp]
