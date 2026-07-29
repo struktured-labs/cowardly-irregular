@@ -36,9 +36,35 @@ const DP := preload("res://src/llm/DialoguePrompts.gd")
 const CTX := preload("res://src/battle/BossIntentContext.gd")
 const BM_SRC: String = "res://src/battle/BattleManager.gd"
 
-const LLM_BOSSES: Array[String] = [
-	"chancellor_mordaine", "pyrroth", "glacius", "voltharion", "umbraxis",
-]
+## DERIVED, NOT LISTED (2026-07-29). This was five hardcoded ids — a snapshot of
+## the roster the day it was written, complete on that day, and silently blind to
+## a sixth boss forever after. Same shape as cowir-sfx's frozen weapon-type list.
+##
+## THE DISCRIMINATOR IS DELIBERATELY NOT `automation_lines`. That is the property
+## under test: derive the set from it and a boss that LOSES its lines simply
+## leaves the set, taking the assertion with it and passing green. Independent
+## signal instead — a jailbreak kit marks a full-LLM boss, and the five spotlight
+## minibosses carry none (they are pinned silent-by-design further down).
+func _llm_bosses() -> Array:
+	var out: Array = []
+	var d: Dictionary = _boss_data()
+	for key in d.keys():
+		var v: Variant = d[key]
+		if v is Dictionary and not ((v as Dictionary).get("jailbreak_vulnerabilities", []) as Array).is_empty():
+			out.append(str(key))
+	out.sort()
+	return out
+
+
+func test_llm_boss_set_is_derived_and_non_vacuous() -> void:
+	# If the discriminator stops discriminating, every loop below iterates
+	# nothing and this whole file passes while checking no boss at all.
+	var bosses: Array = _llm_bosses()
+	assert_gt(bosses.size(), 3,
+		"derived only %d LLM bosses (%s) — the discriminator has broken, so every assertion in this file is vacuous" % [bosses.size(), str(bosses)])
+	for mb in ["fighter_skeleton_knight", "mage_prismatic_construct"]:
+		assert_false(bosses.has(mb),
+			"'%s' is a spotlight duel and must NOT be in the LLM-boss set — the discriminator is matching the wrong thing" % mb)
 
 
 func _boss_data() -> Dictionary:
@@ -58,7 +84,7 @@ func _dlg() -> Node:
 
 func test_all_five_llm_bosses_have_automation_lines() -> void:
 	var d: Dictionary = _boss_data()
-	for bid in LLM_BOSSES:
+	for bid in _llm_bosses():
 		var block: Variant = (d[bid] as Dictionary).get("automation_lines")
 		assert_true(block is Dictionary, "'%s' must author automation_lines — it's an LLM-strategy boss with a persona" % bid)
 		for tier in ["autobattle", "autogrind"]:
@@ -69,7 +95,7 @@ func test_all_five_llm_bosses_have_automation_lines() -> void:
 
 func test_every_line_is_nonempty_text() -> void:
 	var d: Dictionary = _boss_data()
-	for bid in LLM_BOSSES:
+	for bid in _llm_bosses():
 		var block: Dictionary = (d[bid] as Dictionary).get("automation_lines", {})
 		for tier in ["autobattle", "autogrind"]:
 			for line in (block.get(tier, []) as Array):
@@ -82,7 +108,7 @@ func test_bosses_do_not_share_automation_lines() -> void:
 	# across bosses would make the feature read as a system message.
 	var d: Dictionary = _boss_data()
 	var seen: Dictionary = {}
-	for bid in LLM_BOSSES:
+	for bid in _llm_bosses():
 		var block: Dictionary = (d[bid] as Dictionary).get("automation_lines", {})
 		for tier in ["autobattle", "autogrind"]:
 			for line in (block.get(tier, []) as Array):
@@ -110,7 +136,7 @@ func test_voltharion_approves_rather_than_sneers() -> void:
 
 func test_getter_returns_a_line_for_each_tier() -> void:
 	var dlg: Node = _dlg()
-	for bid in LLM_BOSSES:
+	for bid in _llm_bosses():
 		for tier in ["autobattle", "autogrind"]:
 			assert_false(str(dlg.get_automation_line(bid, tier)).is_empty(),
 				"get_automation_line('%s','%s') must resolve" % [bid, tier])
