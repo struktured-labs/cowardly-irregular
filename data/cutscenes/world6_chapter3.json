@@ -153,6 +153,10 @@
       "cases": {
         "automator": [
           {
+            "type": "play_music",
+            "track": "cutscene_w6_answer_automation"
+          },
+          {
             "type": "dialogue",
             "lines": [
               {
@@ -195,6 +199,10 @@
           }
         ],
         "grinder": [
+          {
+            "type": "play_music",
+            "track": "cutscene_w6_answer_grind"
+          },
           {
             "type": "dialogue",
             "lines": [
@@ -239,6 +247,10 @@
         ],
         "exploiter": [
           {
+            "type": "play_music",
+            "track": "cutscene_w6_answer_exploit"
+          },
+          {
             "type": "dialogue",
             "lines": [
               {
@@ -281,6 +293,10 @@
           }
         ],
         "manual": [
+          {
+            "type": "play_music",
+            "track": "cutscene_w6_answer_manual"
+          },
           {
             "type": "dialogue",
             "lines": [
