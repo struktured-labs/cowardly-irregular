@@ -115,10 +115,34 @@ func test_exp_and_gold_were_not_scaled() -> void:
 
 
 func test_the_tank_threshold_moved_with_the_data() -> void:
+	# Was `assert_string_contains(src, "combatant.max_hp >= 1500")`. Mutation-tested it per
+	# cowir-battle's 6/6 result and it FAILED — on a CORRECT refactor. Rewriting the gate as
+	# `max_hp > 1499` is identical for integers and turned this red, while a pin like that stays
+	# green for any wrong value spelled the same way. Coincidental spelling, in a guard written
+	# hours after citing that exact rule to another lane.
+	#
+	# Asserts the RELATIONSHIP instead: whatever the threshold is, it must sit in the scaled HP
+	# band rather than the pre-scale one. Survives >=1500, >1499, >=1600; fails at 150.
 	var src := FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
-	assert_string_contains(src, "combatant.max_hp >= 1500",
-		"the tank archetype gate was the only absolute HP threshold in src/ — left at 150 the "
-		+ "entire roster classifies as tank and enemy AI changes game-wide")
+	var gate := RegEx.create_from_string("combatant\\.max_hp\\s*>=?\\s*([0-9]+)")
+	var m := gate.search(src)
+	assert_not_null(m, "the tank archetype gate must still compare max_hp against a literal — "
+		+ "if it was rewritten some other way this guard is measuring nothing")
+	if m == null:
+		return
+	var threshold: int = int(m.get_string(1))
+	# Floor derived from the data: the weakest job in the game at level 1.
+	var jobs: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/jobs.json"))
+	var weakest: int = 999999
+	for jid in jobs:
+		var mods: Variant = (jobs[jid] as Dictionary).get("stat_modifiers")
+		if mods is Dictionary and (mods as Dictionary).has("max_hp"):
+			weakest = mini(weakest, int((mods as Dictionary)["max_hp"]))
+	assert_gt(threshold, weakest,
+		"the tank gate (%d) must sit ABOVE the frailest level-1 job (%d hp) — at the pre-scale "
+		% [threshold, weakest]
+		+ "150 every combatant clears it and the entire roster classifies as tank, changing "
+		+ "enemy AI game-wide")
 
 
 # ── lie-in-the-label ratchet ────────────────────────────────────────
