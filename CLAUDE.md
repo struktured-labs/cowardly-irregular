@@ -457,7 +457,33 @@ cowardly-irregular/
 ### Workflow
 - AI agents generating sprites must tag output as `tier: "T1"` in sprite_manifest.json
 - Artist sprites are `tier: "T2"` or `tier: "T3"`
-- HybridSpriteLoader priority: T3 > T2 > T1 > T0
+- **`tier` is provenance metadata. NOTHING IN THE GAME READS IT.** This line
+  used to say "HybridSpriteLoader priority: T3 > T2 > T1 > T0", which described
+  a resolution order the loader has never had. Verified 2026-07-29:
+  `HybridSpriteLoader` contains zero references to `tier`. Its actual logic is
+  binary — `_manifest.has(id)` loads that sheet, absence falls back to
+  procedural — and **`sprite_manifest.json` holds exactly one entry per id
+  per section**, so a lookup never has two candidates to rank. (An id may
+  appear in two *different* sections for two different sheets —
+  `chancellor_mordaine` has both a `monster_sheets` battle sheet and an
+  `overworld_npc_sheets` overworld sheet — but those are separate lookups by
+  separate functions, not competing candidates. I wrote "exactly one entry per
+  id" first; the check caught it before it reached this file.)
+- **Why the wrong version was dangerous, not just inaccurate:** it implied that
+  registering a T1 sheet alongside artist work is safe because the higher tier
+  wins. There is no "alongside" — registering T1 under an existing id
+  **replaces** the artist sheet, silently, at load time. The documented rule
+  would have caused the exact loss it appeared to prevent.
+- **What actually protects artist work** is refusal at generation time, not
+  resolution at load time: `regen_monster_artist_style.artist_write_refusal()`
+  (refuses T2/T3 targets, and refuses unregistered sheets whose provenance is
+  unknown) and `gen_full_sweep._protected_anims()` (derived from git, unioned
+  with a legacy floor so protection can only grow). Both live in cowir-sprites.
+  `tools/audit_sprite_tiers.py` catches tier lies by checking git rather than
+  the manifest — the manifest cannot audit its own provenance, and on
+  2026-07-29 all four starter job sheets were labelled T1 while holding artist
+  pixels, with tier and generator agreeing perfectly because both were written
+  in one edit and neither revisited.
 - When generating new job sprites, reference the artist's existing palette and proportions from fighter/cleric/mage/rogue
 - Keep all gen scripts in `tools/` with clear naming: `gen_<job>_sprites.py`
 - Generated sprites go in `assets/sprites/jobs/<job_id>/` following the per-animation PNG convention
