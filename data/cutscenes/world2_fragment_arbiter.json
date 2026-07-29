@@ -116,7 +116,7 @@
       "type": "grant_item",
       "item": "arbiter_grade_fragment",
       "name": "Arbiter's Final Paper",
-      "description": "A test paper where the only mark that matters is written in the margin. Grants +3 ATK. The bearer's first strike in each battle is evaluated honestly. Tooltip: \"The last grade I gave was the first one I meant.\""
+      "description": "A test paper where the only mark that matters is written in the margin. Grants +30 ATK. The bearer's first strike in each battle is evaluated honestly. Tooltip: \"The last grade I gave was the first one I meant.\""
     },
     {
       "type": "set_flag",

@@ -182,6 +182,57 @@ func test_umbraxis_still_names_a_true_number() -> void:
 		+ "both places, and monsters.json agreeing proves nothing about this file")
 
 
+func test_no_prose_grants_a_bonus_smaller_than_the_game_can_produce() -> void:
+	# My first prose sweep matched `\d+\s*(HP|MP|%)` and found five offenders. It never looked at
+	# DEF / ATK / MAG at all — complete for the direction I was thinking in, silent about every
+	# other. cowir-story found "+3 DEF" on rangers_cloak that my regex could not have seen.
+	#
+	# These live on cat-4 items and grant_item steps with EMPTY effects, so nothing is wrong at
+	# runtime today. That makes them WORSE, not better: they are documentation of future intent,
+	# and whoever promotes them to real gear follows the stale number and reintroduces pre-scale
+	# values into a post-scale game. A wrong spec outlives a wrong value.
+	#
+	# Floor derived from the data, not chosen: the smallest positive scaled stat_mod any real
+	# equipment grants. A prose bonus below it is below anything the game can produce.
+	var floor_val: int = 9999
+	var eq: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/equipment.json"))
+	for category in eq:
+		for item_id in (eq[category] as Dictionary):
+			var mods: Variant = ((eq[category] as Dictionary)[item_id] as Dictionary).get("stat_mods")
+			if mods is Dictionary:
+				for stat in (mods as Dictionary):
+					if stat in ["attack", "defense", "magic", "max_hp"]:
+						var v: int = int((mods as Dictionary)[stat])
+						if v > 0:
+							floor_val = mini(floor_val, v)
+	assert_lt(floor_val, 9999, "must find at least one positive equipment bonus to derive a floor")
+
+	# SPD / EVA / MP are absent by design — none of them were scaled.
+	var claim := RegEx.create_from_string("\\+([0-9]{1,4})\\s*(DEF|ATK|MAG|max HP)\\b")
+	var offenders: Array = []
+	var files: Array = ["res://data/items.json"]
+	var dir := DirAccess.open("res://data/cutscenes")
+	if dir != null:
+		for f in dir.get_files():
+			if f.ends_with(".json"):
+				files.append("res://data/cutscenes/" + f)
+	for path in files:
+		var raw := FileAccess.get_file_as_string(path)
+		for m in claim.search_all(raw):
+			if int(m.get_string(1)) < floor_val:
+				offenders.append("%s: '+%s %s' is below the %d the game's weakest gear grants"
+					% [str(path).get_file(), m.get_string(1), m.get_string(2), floor_val])
+	assert_eq(offenders, [], "prose promising a pre-scale bonus:\n  %s" % "\n  ".join(offenders))
+
+
+func test_the_bonus_floor_ratchet_can_see_a_stale_claim() -> void:
+	# Positive control — this regex is the half my HP-only version was missing entirely.
+	var claim := RegEx.create_from_string("\\+([0-9]{1,4})\\s*(DEF|ATK|MAG|max HP)\\b")
+	var m := claim.search("light-armor slot, +4 EVA +3 DEF, leather-armor tier")
+	assert_not_null(m, "the ratchet must match the authored '+N DEF' shape it exists to catch")
+	assert_eq(int(m.get_string(1)), 3, "and extract the figure it compares against the floor")
+
+
 func test_the_label_ratchet_can_see_a_mismatch() -> void:
 	# Positive control — an empty offender list and a broken regex read identically.
 	var num := RegEx.create_from_string("([0-9]+)\\s*HP")

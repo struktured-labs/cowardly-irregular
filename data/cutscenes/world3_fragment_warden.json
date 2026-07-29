@@ -116,7 +116,7 @@
       "type": "grant_item",
       "item": "world3_fragment_warden_steampunk",
       "name": "Threshold Gauge",
-      "description": "A pressure gauge stopped at the exact line between pass and fail. The Warden's final instrument. Grants +5 max HP. The bearer takes 15% less damage from the first hit in each battle — the tolerance that held past the manual's prediction. Tooltip: \"Neither failing nor passing. Holding.\""
+      "description": "A pressure gauge stopped at the exact line between pass and fail. The Warden's final instrument. Grants +50 max HP. The bearer takes 15% less damage from the first hit in each battle — the tolerance that held past the manual's prediction. Tooltip: \"Neither failing nor passing. Holding.\""
     },
     {
       "type": "set_flag",

@@ -116,7 +116,7 @@
       "type": "grant_item",
       "item": "warden_routine_fragment",
       "name": "Warden's Crossing Paddle",
-      "description": "A stop sign that still says STOP but means something else now. Grants +3 DEF. The bearer is harder to rush. Tooltip: \"You may cross.\""
+      "description": "A stop sign that still says STOP but means something else now. Grants +30 DEF. The bearer is harder to rush. Tooltip: \"You may cross.\""
     },
     {
       "type": "set_flag",

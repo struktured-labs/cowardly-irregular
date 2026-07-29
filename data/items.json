@@ -1741,7 +1741,7 @@
     "name": "The Untested Shield",
     "category": 4,
     "target_type": 4,
-    "description": "Bram's gift, from under the counter — never tested, never failed. Intended mechanics: Fighter-equippable shield (armor/accessory slot, ~+8 DEF +10 max HP, leather-armor tier) — promote in an equipment pass, returned_sword precedent.",
+    "description": "Bram's gift, from under the counter — never tested, never failed. Intended mechanics: Fighter-equippable shield (armor/accessory slot, ~+80 DEF +100 max HP, leather-armor tier) — promote in an equipment pass, returned_sword precedent.",
     "effects": {},
     "cost": 0,
     "flavor": "'Consider it an investment in your surviving long enough to come back and buy more.' Shields that come back in one piece weren't doing their job."
@@ -1761,7 +1761,7 @@
     "name": "Ranger's Cloak",
     "category": 4,
     "target_type": 4,
-    "description": "The cloak of an Eldertree ranger who did not come home. Warm, well-oiled, hood cut to see through. Intended mechanics: light-armor slot, +4 EVA +3 DEF, leather-armor tier — Rogue/Bard-equippable — promote in equipment pass.",
+    "description": "The cloak of an Eldertree ranger who did not come home. Warm, well-oiled, hood cut to see through. Intended mechanics: light-armor slot, +4 EVA +30 DEF, leather-armor tier — Rogue/Bard-equippable — promote in equipment pass.",
     "effects": {},
     "cost": 0,
     "flavor": "There are three left, and none of them belong to anyone anymore. It fits you. That is not a comfort."
