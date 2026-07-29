@@ -3096,6 +3096,84 @@
       },
       "tier": "T2",
       "source": "artist aseprite \u2014 Mordaine/Mordaine animations.aseprite; tags authored: Idle, summon 1; frames reused for un-authored anims from: Idle"
+    },
+    "rogue_automaton": {
+      "path": "res://assets/sprites/monsters/rogue_automaton.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "source": "gpt-image-1 4-pose contact sheet, description lifted from the monsters.json entry (tools/regen_monster_artist_style.py). Previously had NO sheet entry and rendered procedurally."
+    },
+    "rogue_mailbox": {
+      "path": "res://assets/sprites/monsters/rogue_mailbox.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "source": "gpt-image-1 4-pose contact sheet, description lifted from the monsters.json entry (tools/regen_monster_artist_style.py). Previously had NO sheet entry and rendered procedurally."
+    },
+    "time_phantom": {
+      "path": "res://assets/sprites/monsters/time_phantom.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "source": "gpt-image-1 4-pose contact sheet, description lifted from the monsters.json entry (tools/regen_monster_artist_style.py). Previously had NO sheet entry and rendered procedurally."
     }
   },
   "npc_sheets": {
