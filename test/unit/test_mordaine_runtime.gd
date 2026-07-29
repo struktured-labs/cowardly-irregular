@@ -106,6 +106,28 @@ func test_mordaine_weaknesses_and_resistances_are_known_elements() -> void:
 			"Mordaine resistance '%s' must be a recognized element" % r)
 
 
+## ⚠️ THIS GUARD CERTIFIES A CORPSE — read before trusting it (cowir-battle, 2026-07-29).
+##
+## The one_shot MECHANIC is live: BattleManager fires it on a first-phase wipe, ranks the setup
+## turns, and BattleResultsDisplay awards the EXP multiplier. But it is purely mechanical and
+## never consults monster data. Measured across src/, with drop_table (11 hits) as the control:
+##     setup_hint   0 consumers        reward_item  0 consumers
+## So 50 monsters declare a reward that is never granted and advice that is never shown.
+##
+## The block is AUTHORED AHEAD, not broken — struktured's call whether to wire it (a loot-economy
+## change), surface it (a content decision), or drop it. Until then this test asserts the data is
+## internally consistent, which it is, and says nothing about whether anything reads it.
+##
+## That is the trap worth naming: an assertion about the internal consistency of an unconsumed
+## field CAN ONLY EVER BE GREEN. An auditor finds a guard, a semantic comment, and a passing test,
+## and concludes the field is wired. Distinct from a guard that licenses a regression — this one
+## manufactures evidence of liveness.
+##
+## ALSO: `hp_threshold >= max_hp` is Mordaine's shape, NOT a corpus-wide invariant.
+## cave_rat_king authors 2500 against 6500 max_hp — a deliberate 38% trigger, ratio preserved
+## exactly through the ×10 pass (250/650 at v3.33.205-alpha). It reads as stale and is not.
+## Do not "fix" it; that converts a 38% trigger into a 100% one, which is a balance change.
+
 func test_mordaine_one_shot_setup_is_well_formed() -> void:
 	"""one_shot blocks reward strategic prep. The hp_threshold should
 	equal or exceed max_hp (so one full-damage hit qualifies) and the
