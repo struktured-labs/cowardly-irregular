@@ -128,8 +128,16 @@ func test_every_persona_key_is_constructed_somewhere_in_src() -> void:
 		var needle: String = '"%s"' % key
 		var found: bool = false
 		for path in sources:
-			if FileAccess.get_file_as_string(path).find(needle) != -1:
-				found = true
+			# Comments don't construct anything. cowir-story 2026-07-29: their
+			# passive guard counted a key named only in prose as consumed, and
+			# it hid three unwired passives including a starter-job one.
+			for line in FileAccess.get_file_as_string(path).split("\n"):
+				if line.strip_edges().begins_with("#"):
+					continue
+				if line.find(needle) != -1:
+					found = true
+					break
+			if found:
 				break
 		assert_true(found,
 			("persona '%s' is authored but no source file constructs an NPC with that exact name. " +
