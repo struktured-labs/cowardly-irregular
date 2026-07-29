@@ -56,15 +56,42 @@ def referenced_paths(m: dict) -> dict[str, list[str]]:
 
 
 def grep_repo(needle: str) -> int:
-    """Count references to a filename across src/ and data/."""
+    """Count files that reference a name in CODE, not in prose.
+
+    A bare `grep -l` counts a file whose only mention is a comment, so a
+    sheet nobody loads reads as consumed and the ORPHAN check stays quiet.
+    cowir-story hit exactly this (msg 3520) — their passive guard passed
+    three unwired keys, each on a single comment naming it, one of them a
+    starter-job passive promising a percentage that did nothing.
+
+    Direction matters and this one is safe: a comment inflates the count,
+    so the failure is UNDER-reporting — an inert sheet goes unmentioned,
+    never a live one wrongly condemned.
+
+    Currently latent: there are 0 unregistered monster PNGs, so this
+    predicate is unexercised (cowir-sfx's shape — a weak predicate shows
+    no symptom until the data reaches it). Fixed rather than documented,
+    because latent is precisely what bites the next time one lands.
+    """
     try:
         r = subprocess.run(
             ["grep", "-rIl", "--include=*.gd", "--include=*.json",
              needle, str(GAME / "src"), str(GAME / "data")],
             capture_output=True, text=True, timeout=60)
-        return len([x for x in r.stdout.splitlines() if x.strip()])
     except Exception:
         return -1
+    hits = 0
+    for path in (x for x in r.stdout.splitlines() if x.strip()):
+        try:
+            with open(path, errors="ignore") as fh:
+                for line in fh:
+                    s = line.strip()
+                    if needle in s and not s.startswith("#"):
+                        hits += 1
+                        break
+        except OSError:
+            hits += 1  # unreadable: assume referenced, stay under-reporting
+    return hits
 
 
 def main() -> int:
@@ -142,6 +169,29 @@ def main() -> int:
                 f"{rel}: no manifest entry, 0 refs in src/ or data/ — INERT")
 
     total = 0
+    # COVERAGE CONTROL. Without this the tool prints "0 finding(s)" whether the
+    # corpus is clean or the sweep examined nothing — a manifest that failed to
+    # load, a glob that matched no files, and a genuinely healthy tree all
+    # produce the identical happy line.
+    #
+    # Added 2026-07-29 after the same shape was found in this tool's sibling
+    # audit_sprite_tiers.py, which reported a clean sweep having examined 13 of
+    # 143 entries. I fixed that one and did not come back here — which is the
+    # error four lanes logged tonight (fix one, leave the siblings), so the
+    # floors below are stated as numbers rather than trusted as habits.
+    examined = sum(
+        len(m.get(s, {}))
+        for s in ("monster_sheets", "sheets", "overworld_npc_sheets")
+        if not args.section or s == args.section
+    )
+    on_disk = len(list((SPRITES / "monsters").glob("*.png")))
+    print(f"examined {examined} manifest entr(ies), {len(refs)} referenced "
+          f"path(s), {on_disk} monster PNG(s) on disk")
+    if examined == 0 or len(refs) == 0 or on_disk == 0:
+        print("REFUSING TO REPORT: a zero above means this sweep read nothing, "
+              "and a clean result over an empty corpus is not a clean corpus.")
+        return 2
+
     for kind in ("DANGLING", "SILENT", "MISMATCH", "ORPHAN"):
         items = findings[kind]
         if items:
