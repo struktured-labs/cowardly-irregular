@@ -450,12 +450,21 @@ func test_item_system_target_validation() -> void:
 ## EquipmentSystem Safety Tests
 
 func test_equipment_system_stat_key_check() -> void:
-	"""EquipmentSystem should check stat key exists before adding"""
+	"""EquipmentSystem must accumulate an unknown stat key safely — not discard it (flipped 2026-07-29)"""
+	# This pinned `if total_mods.has(stat)` as a safety check. The intent was right and the effect
+	# was not: it made an unrecognised stat_mods key vanish silently. Filtering is not error
+	# handling — it is data loss wearing error handling's clothes. A dictionary write through
+	# .get(stat, 0) is equally crash-proof and keeps the value.
+	#
+	# struktured 2026-07-29: "equipmods should be able to affect any stat really."
 	var content = FileAccess.get_file_as_string("res://src/jobs/EquipmentSystem.gd")
 
-	# Check for key validation in stat mod application
-	assert_true(content.contains("if total_mods.has(stat)"),
-		"EquipmentSystem should check stat key exists in total_mods")
+	assert_false(content.contains("if total_mods.has(stat)"),
+		"the allowlist filter must be gone — it dropped any stat the hardcoded list did not name")
+	assert_true(content.contains("total_mods.get(stat, 0) + mods[stat]"),
+		"unknown stat keys must be SUMMED through a defaulted read: safe against a missing key "
+		+ "without discarding the value. Typos are caught loudly by "
+		+ "test_every_authored_stat_mods_key_is_a_real_stat instead of disappearing here")
 
 
 ## Property Access Safety Tests

@@ -379,38 +379,25 @@ func get_equipment_mods(combatant: Combatant) -> Dictionary:
 	# invalid combatants so callers don't crash dereferencing a stat.
 	if not combatant or not is_instance_valid(combatant):
 		return {}
-	var total_mods = {
-		"attack": 0,
-		"defense": 0,
-		"magic": 0,
-		"speed": 0,
-		"max_hp": 0,
-		"max_mp": 0
-	}
+	# Every moddable stat present at 0 — callers rely on the keys existing (pinned by the
+	# null-guard regression). Driven off Combatant.MODDABLE_STATS so adding a stat there is
+	# the only edit needed; the old hand-listed six silently dropped magic_defense.
+	var total_mods: Dictionary = {}
+	for stat in Combatant.MODDABLE_STATS:
+		total_mods[stat] = 0
 
-	# Add weapon mods
-	if not combatant.equipped_weapon.is_empty() and weapons.has(combatant.equipped_weapon):
-		var weapon = weapons[combatant.equipped_weapon]
-		if weapon.has("stat_mods"):
-			for stat in weapon["stat_mods"]:
-				if total_mods.has(stat):
-					total_mods[stat] += weapon["stat_mods"][stat]
-
-	# Add armor mods
-	if not combatant.equipped_armor.is_empty() and armors.has(combatant.equipped_armor):
-		var armor = armors[combatant.equipped_armor]
-		if armor.has("stat_mods"):
-			for stat in armor["stat_mods"]:
-				if total_mods.has(stat):
-					total_mods[stat] += armor["stat_mods"][stat]
-
-	# Add accessory mods
-	if not combatant.equipped_accessory.is_empty() and accessories.has(combatant.equipped_accessory):
-		var accessory = accessories[combatant.equipped_accessory]
-		if accessory.has("stat_mods"):
-			for stat in accessory["stat_mods"]:
-				if total_mods.has(stat):
-					total_mods[stat] += accessory["stat_mods"][stat]
+	# Accumulate across all three slots. Unknown keys are SUMMED, not filtered — filtering is
+	# what made an unrecognised stat vanish without a word. A key that is not a real stat is a
+	# typo, and test_equipment_stat_mods_regression turns it red instead of invisible.
+	for slot in [[combatant.equipped_weapon, weapons], [combatant.equipped_armor, armors],
+			[combatant.equipped_accessory, accessories]]:
+		var item_id: String = str(slot[0])
+		var table: Dictionary = slot[1]
+		if item_id.is_empty() or not table.has(item_id):
+			continue
+		var mods: Dictionary = (table[item_id] as Dictionary).get("stat_mods", {})
+		for stat in mods:
+			total_mods[stat] = total_mods.get(stat, 0) + mods[stat]
 
 	return total_mods
 

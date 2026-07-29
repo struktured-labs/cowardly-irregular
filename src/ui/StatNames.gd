@@ -17,6 +17,7 @@ const DISPLAY := {
 	"attack": "Attack",
 	"defense": "Defense",
 	"magic": "Magic",
+	"magic_defense": "Magic Defense",
 	"speed": "Speed",
 	"max_hp": "Max HP",
 	"max_mp": "Max MP",
@@ -26,6 +27,9 @@ const SHORT := {
 	"attack": "ATK",
 	"defense": "DEF",
 	"magic": "MAG",
+	# Explicit: the substr fallback yields "MAG" for magic_defense too, colliding with magic —
+	# the same ambiguity this file's header flags for max_hp/max_mp.
+	"magic_defense": "MDF",
 	"speed": "SPD",
 	"max_hp": "HP",
 	"max_mp": "MP",

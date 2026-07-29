@@ -1751,7 +1751,7 @@
     "name": "Traveller's Waterskin",
     "category": 4,
     "target_type": 4,
-    "description": "A caravan-tanned waterskin, filled once and sealed. Intended mechanics: field consumable, restores ~30 HP + ~10 MP to a single party member outside battle — desert traveller's kit tier. Promote in a consumables pass.",
+    "description": "A caravan-tanned waterskin, filled once and sealed. Intended mechanics: field consumable, restores ~300 HP + ~10 MP to a single party member outside battle — desert traveller's kit tier. Promote in a consumables pass.",
     "effects": {},
     "cost": 0,
     "flavor": "From the Sandrift caravan-master. 'It's not much. It's what a caravan pays when a caravan can pay again.'"

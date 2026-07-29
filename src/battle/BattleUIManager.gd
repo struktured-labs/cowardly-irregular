@@ -528,7 +528,7 @@ func _update_stat_mods_label(label: RichTextLabel, member: Combatant) -> void:
 	if EquipmentSystem:
 		var equip_mods = EquipmentSystem.get_equipment_mods(member)
 		var equip_parts: Array[String] = []
-		for stat in ["attack", "defense", "magic", "speed"]:
+		for stat in ["attack", "defense", "magic", "magic_defense", "speed"]:
 			var val = equip_mods.get(stat, 0)
 			if val != 0:
 				# Tick 211: shared StatNames map.

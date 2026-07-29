@@ -37,6 +37,9 @@ signal status_tick_heal(amount: int, source: String)
 @export var magic_defense: int = 5
 @export var speed: int = 10
 
+## The stats gear/passives may modify — the single authority. Add a stat here and equipment can move it with no EquipmentSystem change; a stat_mods key outside this list is a typo, caught by test_equipment_stat_mods_regression rather than silently dropped.
+const MODDABLE_STATS := ["max_hp", "max_mp", "attack", "defense", "magic", "magic_defense", "speed"]
+
 ## Current state
 var current_hp: int
 var current_mp: int
@@ -1518,13 +1521,11 @@ func recalculate_stats() -> void:
 	# Apply equipment modifiers (same test-preload caveat as above).
 	if has_node("/root/EquipmentSystem"):
 		var equip_mods = get_node("/root/EquipmentSystem").get_equipment_mods(self)
-		max_hp += equip_mods.get("max_hp", 0)
-		max_mp += equip_mods.get("max_mp", 0)
-		attack += equip_mods.get("attack", 0)
-		defense += equip_mods.get("defense", 0)
-		magic += equip_mods.get("magic", 0)
-		magic_defense += equip_mods.get("magic_defense", 0)
-		speed += equip_mods.get("speed", 0)
+		# Driven off MODDABLE_STATS, not a hand-listed six — the old list silently omitted whatever it did not name.
+		for stat in MODDABLE_STATS:
+			var delta: int = int(equip_mods.get(stat, 0))
+			if delta != 0:
+				set(stat, int(get(stat)) + delta)
 
 	# Apply permanent injuries (reductions)
 	for injury in permanent_injuries:
