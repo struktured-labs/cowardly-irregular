@@ -35,13 +35,14 @@ func before_each() -> void:
 func after_each() -> void:
 	if _bm == null:
 		return
+	# is_instance_valid FIRST — `is` on a freed instance is a SCRIPT ERROR that ABORTS after_each, so every restore below silently never ran and the autoload kept this test's parties and _win_condition.
 	var rp: Array[Combatant] = []
 	for c in _prior_party:
-		if c is Combatant:
+		if is_instance_valid(c) and c is Combatant:
 			rp.append(c)
 	var re: Array[Combatant] = []
 	for c in _prior_enemies:
-		if c is Combatant:
+		if is_instance_valid(c) and c is Combatant:
 			re.append(c)
 	_bm.player_party = rp
 	_bm.enemy_party = re
