@@ -78,11 +78,27 @@ func _iter_steps(callback: Callable) -> void:
 		var parsed = JSON.parse_string(text)
 		if not (parsed is Dictionary):
 			continue
-		var idx := 0
-		for step in parsed.get("steps", []):
-			if step is Dictionary:
-				callback.call(f, idx, step)
-			idx += 1
+		_walk_steps(f, parsed.get("steps", []), "steps", callback)
+
+
+## Recurses into branch sub-steps. Pre-2026-07-29 this walked ONLY the
+## top-level array, so 70 nested steps across 14 files were never validated —
+## every step inside a `branch`'s cases / if_true / if_false. All 70 happened
+## to be well-formed, so the hole was latent, but @cowir-music had just added
+## four nested play_music steps to the game's ending and nothing checked them.
+## Partial-enum in my own guard: complete for the direction I was thinking in.
+func _walk_steps(f: String, steps: Array, path: String, callback: Callable) -> void:
+	var idx := 0
+	for step in steps:
+		if step is Dictionary:
+			callback.call(f, idx, step)
+			for case_steps in (step.get("cases", {}) as Dictionary).values():
+				if case_steps is Array:
+					_walk_steps(f, case_steps, "%s[%d].cases" % [path, idx], callback)
+			for key in ["if_true", "if_false"]:
+				if step.get(key) is Array:
+					_walk_steps(f, step[key], "%s[%d].%s" % [path, idx, key], callback)
+		idx += 1
 
 
 func test_every_step_type_used_has_a_schema_entry() -> void:
@@ -192,3 +208,37 @@ func test_hop_step_accepts_duration_field() -> void:
 	var step_body := director.substr(step_idx, 400)
 	assert_true(step_body.contains('step.get("duration"'),
 		"_step_hop must forward the duration field to CutsceneActor.hop — otherwise the fix is orphaned")
+
+
+func test_the_audit_actually_reaches_nested_branch_steps() -> void:
+	# POSITIVE CONTROL for the recursion. Without it, a walker that silently
+	# stopped at the top level would leave every assertion in this file green
+	# while covering nothing nested — which is exactly the state this file was
+	# in until 2026-07-29. An empty offender list must mean "clean", never
+	# "the walk never got there".
+	var nested := 0
+	var seen_types: Dictionary = {}
+	_iter_steps(func(_f: String, _i: int, step: Dictionary):
+		var t := str(step.get("type", ""))
+		if t != "":
+			seen_types[t] = true
+	)
+	# Count nested steps directly, independent of the walker, so this can't
+	# agree with a broken walk by construction.
+	var dir = DirAccess.open("res://data/cutscenes")
+	for f in dir.get_files():
+		if not f.ends_with(".json"):
+			continue
+		var parsed = JSON.parse_string(FileAccess.get_file_as_string("res://data/cutscenes/%s" % f))
+		if not (parsed is Dictionary):
+			continue
+		for step in parsed.get("steps", []):
+			if not (step is Dictionary):
+				continue
+			for case_steps in (step.get("cases", {}) as Dictionary).values():
+				if case_steps is Array:
+					nested += case_steps.size()
+	assert_gt(nested, 20,
+		"sanity: the corpus should contain many branch-nested steps to audit — got %d" % nested)
+	assert_true(seen_types.has("play_music"),
+		"the walker must reach nested play_music steps — the four W6 ending themes live inside branch cases, and they were unvalidated until the walk recursed")
