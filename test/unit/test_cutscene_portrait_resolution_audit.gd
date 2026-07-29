@@ -13,12 +13,26 @@ extends GutTest
 
 const CUTSCENE_DIALOGUE := "res://src/cutscene/CutsceneDialogue.gd"
 
-## Emotion suffixes stripped by _create_portrait before resolution.
-const EMOTIONS := ["angry", "sad", "happy", "surprised", "worried", "determined", "mysterious"]
+## Expression suffixes are stripped by _show_entry (CutsceneDialogue:676) via
+## EXPRESSION_TINTS.keys(), then applied as a modulate tint — NOT by
+## _create_portrait, which the old comment here claimed.
+##
+## This audit used to hardcode its own copy of that list. Two hand-maintained
+## sources for one contract, agreeing today only by luck: drop an expression
+## from EXPRESSION_TINTS and the audit keeps accepting a suffix the runtime no
+## longer strips, so a portrait that now falls to the narrator blur still
+## passes. DERIVED now, so the two cannot diverge.
+func _expressions() -> Array:
+	var script: GDScript = load(CUTSCENE_DIALOGUE)
+	assert_not_null(script, "CutsceneDialogue must load")
+	var out: Array = []
+	for k in script.EXPRESSION_TINTS:
+		out.append(str(k))
+	return out
 
 
 func _strip_emotion(p: String) -> String:
-	for e in EMOTIONS:
+	for e in _expressions():
 		if p.ends_with("_" + e):
 			return p.substr(0, p.length() - e.length() - 1)
 	return p
@@ -97,7 +111,7 @@ func test_every_cutscene_portrait_resolves() -> void:
 		file.close()
 		if not (parsed is Dictionary):
 			continue
-		for step in parsed.get("steps", []):
+		for step in _flatten_steps(parsed.get("steps", [])):
 			if not (step is Dictionary) or step.get("type") != "dialogue":
 				continue
 			for line in step.get("lines", []):
@@ -121,3 +135,67 @@ func test_every_cutscene_portrait_resolves() -> void:
 		reports.append("'%s' (e.g. in %s)" % [p, ", ".join(offenders[p])])
 	assert_true(false,
 		"cutscene JSON references portraits that fall through to the narrator procedural (silent grey blur):\n  %s" % "\n  ".join(reports))
+
+
+## Flattens branch sub-steps into the walk. Pre-2026-07-29 this audit read
+## only the top-level array, so 35 nested dialogue steps were never checked —
+## and one of them was live: world1_prologue's lead_job/bard case gave the
+## Bard `portrait: "bard_happy"`, which no resolution path knows, so her
+## opening line rendered the grey NARRATOR blur. Valid key `bard` with real
+## artist art sat one word away. Player-visible, in the first scene, for
+## anyone who picks Bard as lead.
+static func _flatten_steps(steps: Array) -> Array:
+	var out: Array = []
+	for step in steps:
+		if not (step is Dictionary):
+			continue
+		out.append(step)
+		for case_steps in (step.get("cases", {}) as Dictionary).values():
+			if case_steps is Array:
+				out.append_array(_flatten_steps(case_steps))
+		for key in ["if_true", "if_false"]:
+			if step.get(key) is Array:
+				out.append_array(_flatten_steps(step[key]))
+	return out
+
+
+func test_the_audit_reaches_branch_nested_dialogue() -> void:
+	# POSITIVE CONTROL for the recursion. Counted independently of the walker
+	# so it cannot agree with a broken flatten by construction. Without this,
+	# a flatten that silently stopped at the top level leaves every assertion
+	# in this file green while covering none of the 35 nested dialogue steps.
+	var nested := 0
+	var dir = DirAccess.open("res://data/cutscenes")
+	assert_not_null(dir, "cutscenes dir must open")
+	for f in dir.get_files():
+		if not f.ends_with(".json"):
+			continue
+		var parsed = JSON.parse_string(FileAccess.get_file_as_string("res://data/cutscenes/%s" % f))
+		if not (parsed is Dictionary):
+			continue
+		for step in parsed.get("steps", []):
+			if not (step is Dictionary):
+				continue
+			for case_steps in (step.get("cases", {}) as Dictionary).values():
+				if case_steps is Array:
+					for sub in case_steps:
+						if sub is Dictionary and sub.get("type") == "dialogue":
+							nested += 1
+	assert_gt(nested, 20,
+		"sanity: the corpus should hold many branch-nested dialogue steps — got %d" % nested)
+	var flat_total := 0
+	for f2 in dir.get_files():
+		if not f2.ends_with(".json"):
+			continue
+		var p2 = JSON.parse_string(FileAccess.get_file_as_string("res://data/cutscenes/%s" % f2))
+		if p2 is Dictionary:
+			flat_total += _flatten_steps(p2.get("steps", [])).size()
+	var top_total := 0
+	for f3 in dir.get_files():
+		if not f3.ends_with(".json"):
+			continue
+		var p3 = JSON.parse_string(FileAccess.get_file_as_string("res://data/cutscenes/%s" % f3))
+		if p3 is Dictionary:
+			top_total += (p3.get("steps", []) as Array).size()
+	assert_gt(flat_total, top_total,
+		"the flattened walk must reach MORE steps than the top-level array — if these are equal the recursion is dead and every check here is scoped to top-level only")
