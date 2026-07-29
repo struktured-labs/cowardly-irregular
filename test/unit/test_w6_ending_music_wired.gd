@@ -16,6 +16,16 @@ extends GutTest
 ## That defect ended up with four faces: authored JSON branches that never ran,
 ## classifier arms that could not return, art, and music nobody could hear.
 ## This pins the music face.
+##
+## ⚠️ SCOPE, so this guard is not read as more than it is: these four OGGs are
+## EXCLUDED from the web export (`assets/audio/music/cutscene_w6*` in
+## export_presets.cfg, part of the W4-W6 pck size diet). So the wiring below is
+## live on DESKTOP only — on web the load fails and the ending plays silent,
+## exactly as it did before this was wired, because the question theme is
+## excluded by the same pattern. Nothing here is a regression; the point is
+## that a green guard here is not evidence the endings are scored where most
+## people play. Un-excluding just these four costs ~6.3MB against a 199MB gate
+## and is struktured's call, not a test's.
 
 const CUTSCENE := "res://data/cutscenes/world6_chapter3.json"
 const MANIFEST := "res://data/music_manifest.json"
