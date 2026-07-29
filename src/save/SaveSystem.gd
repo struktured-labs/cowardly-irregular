@@ -843,7 +843,36 @@ func _read_save_file(slot: int) -> Dictionary:
 		push_warning("[SaveSystem] _read_save_file: '%s' parsed but root is not a Dictionary (type=%s) — invalid save" % [file_path, typeof(json.data)])
 		return {}
 
-	return json.data
+	return _migrate_stat_denomination(json.data)
+
+
+## Bring a save written at an older stat scale up to the current one.
+##
+## Lives HERE, at the file boundary, not in Combatant.from_dict — that deserializer is also fed by
+## tests, time-rewind restore and in-memory snapshots whose values are already current, and
+## migrating there multiplied fixtures that were never saves (14 red tests said so).
+## A file on disk is the only input that can predate the denomination.
+func _migrate_stat_denomination(data: Dictionary) -> Dictionary:
+	var gs: Variant = data.get("game_state")
+	if not (gs is Dictionary):
+		return data
+	var party: Variant = (gs as Dictionary).get("player_party")
+	if not (party is Array):
+		return data
+	var migrated: int = 0
+	for i in (party as Array).size():
+		var entry: Variant = (party as Array)[i]
+		if not (entry is Dictionary):
+			continue
+		var before: int = int((entry as Dictionary).get("max_hp", 0))
+		(party as Array)[i] = Combatant.migrate_stat_scale(entry as Dictionary)
+		if int(((party as Array)[i] as Dictionary).get("max_hp", 0)) != before:
+			migrated += 1
+	if migrated > 0:
+		push_warning("[SaveSystem] migrated %d party member(s) to stat scale ×%d — this save "
+			% [migrated, Combatant.STAT_SCALE]
+			+ "predates the 2026-07-29 re-denomination and would otherwise load at 1/10th strength")
+	return data
 
 
 func _get_save_path(slot: int) -> String:

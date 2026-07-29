@@ -40,6 +40,31 @@ signal status_tick_heal(amount: int, source: String)
 ## The stats gear/passives may modify — the single authority. Add a stat here and equipment can move it with no EquipmentSystem change; a stat_mods key outside this list is a typo, caught by test_equipment_stat_mods_regression rather than silently dropped.
 const MODDABLE_STATS := ["max_hp", "max_mp", "attack", "defense", "magic", "magic_defense", "speed"]
 
+## Denomination of the stat fields below. Bumped by the 2026-07-29 ×10 pass; every save records it so a file written at an older scale can be migrated instead of loading a 1/10th-strength party into a ×10 world.
+const STAT_SCALE := 10
+## Exactly the fields the ×10 data pass touched. max_mp/speed are absent because the MP economy and turn order were deliberately left alone.
+const SCALED_STAT_FIELDS := ["max_hp", "current_hp", "attack", "defense", "magic", "magic_defense"]
+
+
+## Bring a saved stat block up to the current denomination. No-op when already current.
+static func migrate_stat_scale(data: Dictionary) -> Dictionary:
+	var saved: int = int(data.get("stat_scale", 0))
+	if saved <= 0:
+		# Pre-marker file. magic_defense became a real stat minutes before the ×10 pass, and
+		# nothing else separates the two eras, so its presence dates the save. A file written
+		# inside that narrow window would be under-migrated; none exist (verified against the
+		# five local saves) and the marker makes the ambiguity unreachable from here on.
+		saved = STAT_SCALE if data.has("magic_defense") else 1
+	if saved >= STAT_SCALE:
+		return data
+	var factor: int = STAT_SCALE / saved
+	for field in SCALED_STAT_FIELDS:
+		if data.has(field):
+			data[field] = int(data[field]) * factor
+	data["stat_scale"] = STAT_SCALE
+	print("[SAVE] migrated stat block ×%d (was scale %d)" % [factor, saved])
+	return data
+
 ## Current state
 var current_hp: int
 var current_mp: int
@@ -1064,6 +1089,7 @@ func to_dict() -> Dictionary:
 		"defense": defense,
 		"magic": magic,
 		"magic_defense": magic_defense,
+		"stat_scale": STAT_SCALE,
 		"speed": speed,
 		"job_level": job_level,
 		"job_exp": job_exp,
