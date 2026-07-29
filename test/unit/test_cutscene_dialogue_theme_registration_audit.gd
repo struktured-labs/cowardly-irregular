@@ -138,11 +138,23 @@ func test_phil_the_lost_speaker_name_is_canonical() -> void:
 ## Party jobs legitimately vary their PORTRAIT via EXPRESSION_TINTS suffixes
 ## ("bard_happy", "cleric_sad") — that's the emotion feature working, not drift.
 ## Their THEME must still be constant.
-const EXPRESSION_SUFFIXES := ["angry", "sad", "happy", "surprised", "worried", "determined", "mysterious"]
+## DERIVED from EXPRESSION_TINTS, not a third hand-maintained copy. The runtime
+## strips these in _show_entry (CutsceneDialogue:676); this file and
+## test_cutscene_portrait_resolution_audit each kept their own list, so one
+## contract had THREE sources agreeing by luck. Drop an expression from
+## EXPRESSION_TINTS and a hardcoded copy keeps treating the suffix as
+## legitimate variation the runtime no longer strips.
+static func _expression_suffixes() -> Array:
+	var script: GDScript = load("res://src/cutscene/CutsceneDialogue.gd")
+	var out: Array = []
+	if script:
+		for k in script.EXPRESSION_TINTS:
+			out.append(str(k))
+	return out
 
 
 func _strip_expression(portrait: String) -> String:
-	for e in EXPRESSION_SUFFIXES:
+	for e in _expression_suffixes():
 		if portrait.ends_with("_" + e):
 			return portrait.substr(0, portrait.length() - e.length() - 1)
 	return portrait
