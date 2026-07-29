@@ -53,9 +53,9 @@ func test_mordaine_stat_bump_pinned() -> void:
 	var ms: Dictionary = JSON.parse_string(f.get_as_text())
 	var m: Dictionary = ms["chancellor_mordaine"]
 	var stats: Dictionary = m["stats"]
-	assert_eq(int(stats.get("max_hp", 0)), 1650,
-		"max_hp bumped 1500 → 1650 (+10%). If struktured re-tunes, update this pin.")
-	assert_eq(int(stats.get("magic", 0)), 78,
+	assert_eq(int(stats.get("max_hp", 0)), 16500,
+		"max_hp bumped 15000 → 16500 (+10%), in ×10 scale. If struktured re-tunes, update this pin.")
+	assert_eq(int(stats.get("magic", 0)), 780,
 		"magic bumped 72 → 78 (+8%). If struktured re-tunes, update this pin.")
 
 

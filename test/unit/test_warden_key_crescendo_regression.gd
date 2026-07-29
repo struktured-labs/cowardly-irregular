@@ -347,5 +347,5 @@ func test_lockward_hp_tuned_for_crescendo() -> void:
 	var data: Dictionary = JSON.parse_string(f.get_as_text())
 	f.close()
 	var stats: Dictionary = data["rogue_lockward"]["stats"]
-	assert_eq(int(stats.get("max_hp", -1)), 200,
-		"Lockward HP must be 200 per msg 2486 balance pass — tighter tempo for the crescendo shape")
+	assert_eq(int(stats.get("max_hp", -1)), 2000,
+		"Lockward HP must be 2000 per msg 2486 balance pass (×10 scale) — tighter tempo for the crescendo shape")

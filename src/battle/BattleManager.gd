@@ -2057,7 +2057,8 @@ func _get_ai_archetype(combatant: Combatant, available_abilities: Array) -> Stri
 	if debuff_abilities.size() > 0:
 		return "debuffer"
 	# Tank: high HP and defense relative to attack
-	if combatant.defense > combatant.attack * 0.5 and combatant.max_hp >= 150:
+	# 1500 not 150 — scaled with the 2026-07-29 ×10 pass. At the old value every combatant clears it and the whole roster classifies as "tank".
+	if combatant.defense > combatant.attack * 0.5 and combatant.max_hp >= 1500:
 		return "tank"
 	# Assassin: very fast, targets wounded enemies
 	if combatant.speed >= 18:

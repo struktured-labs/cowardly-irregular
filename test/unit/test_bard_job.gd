@@ -56,11 +56,11 @@ func test_bard_has_correct_name() -> void:
 
 func test_bard_stat_modifiers() -> void:
 	var mods = _jobs["bard"]["stat_modifiers"]
-	assert_eq(int(mods["max_hp"]), 85, "Bard HP should be 85")
+	assert_eq(int(mods["max_hp"]), 850, "Bard HP should be 850")
 	assert_eq(int(mods["max_mp"]), 65, "Bard MP should be 65")
-	assert_eq(int(mods["attack"]), 9, "Bard ATK should be 9")
-	assert_eq(int(mods["defense"]), 8, "Bard DEF should be 8")
-	assert_eq(int(mods["magic"]), 14, "Bard MAG should be 14")
+	assert_eq(int(mods["attack"]), 90, "Bard ATK should be 90")
+	assert_eq(int(mods["defense"]), 80, "Bard DEF should be 80")
+	assert_eq(int(mods["magic"]), 140, "Bard MAG should be 140")
 	assert_eq(int(mods["speed"]), 14, "Bard SPD should be 14")
 
 
@@ -78,8 +78,8 @@ func test_bard_stats_apply_to_combatant() -> void:
 	c.magic = int(mods["magic"])
 	c.speed = int(mods["speed"])
 
-	assert_eq(c.max_hp, 85, "Applied Bard HP should be 85")
-	assert_eq(c.magic, 14, "Applied Bard MAG should be 14")
+	assert_eq(c.max_hp, 850, "Applied Bard HP should be 850")
+	assert_eq(c.magic, 140, "Applied Bard MAG should be 140")
 	assert_eq(c.speed, 14, "Applied Bard SPD should be 14")
 
 

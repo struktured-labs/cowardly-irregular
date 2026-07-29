@@ -42,8 +42,8 @@ func test_returned_sword_lives_in_equipment_json() -> void:
 		"returned_sword must be authored in equipment.json weapons")
 	var w: Dictionary = EquipmentSystem.weapons["returned_sword"]
 	assert_eq(str(w.get("weapon_type", "")), "sword")
-	assert_eq(int(w.get("stat_mods", {}).get("attack", 0)), 14,
-		"story spec: 'good ATK' — 14 sits between iron 12 and flame 18")
+	assert_eq(int(w.get("stat_mods", {}).get("attack", 0)), 140,
+		"story spec: 'good ATK' — 140 sits between iron 120 and flame 180")
 	var se: Dictionary = w.get("special_effects", {})
 	assert_true(se.has("familiar_weight_bonus"),
 		"Familiar Weight bonus must be authored under special_effects for _sum_equipment_special_effect")

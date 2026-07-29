@@ -169,9 +169,9 @@ func test_speculator_passive_exists() -> void:
 func test_speculator_stat_modifiers() -> void:
 	var spec = _jobs.get("speculator", {})
 	var stats = spec.get("stat_modifiers", {})
-	assert_eq(stats.get("max_hp", 0), 95, "Speculator max_hp should be 95")
+	assert_eq(stats.get("max_hp", 0), 950, "Speculator max_hp should be 950")
 	assert_eq(stats.get("speed", 0), 14, "Speculator speed should be 14")
-	assert_eq(stats.get("magic", 0), 14, "Speculator magic should be 14")
+	assert_eq(stats.get("magic", 0), 140, "Speculator magic should be 140")
 
 
 func test_speculator_visual_config() -> void:

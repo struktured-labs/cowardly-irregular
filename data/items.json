@@ -4,9 +4,9 @@
     "name": "Potion",
     "category": 0,
     "target_type": 0,
-    "description": "Restores 50 HP",
+    "description": "Restores 500 HP",
     "effects": {
-      "heal_hp": 50
+      "heal_hp": 500
     },
     "cost": 50,
     "flavor": "A dusty bottle that smells faintly of mint. Every adventurer's first purchase, last resort, and half their inventory weight."
@@ -16,9 +16,9 @@
     "name": "Hi-Potion",
     "category": 0,
     "target_type": 0,
-    "description": "Restores 200 HP",
+    "description": "Restores 2000 HP",
     "effects": {
-      "heal_hp": 200
+      "heal_hp": 2000
     },
     "cost": 200,
     "flavor": "A larger bottle with a wax seal bearing a tower insignia. The apothecary's note says: use sparingly. Everyone uses it often."
@@ -28,9 +28,9 @@
     "name": "Mega Potion",
     "category": 0,
     "target_type": 1,
-    "description": "Restores 100 HP to all allies",
+    "description": "Restores 1000 HP to all allies",
     "effects": {
-      "heal_hp": 100
+      "heal_hp": 1000
     },
     "cost": 400,
     "flavor": "Looks like regular potion, shares like a miracle. The label claims it was blessed. The label is printed. The blessing is questionable."
@@ -164,7 +164,7 @@
     "target_type": 2,
     "description": "Deals 100 fire damage",
     "effects": {
-      "damage": 100,
+      "damage": 1000,
       "element": "fire"
     },
     "cost": 150,
@@ -177,7 +177,7 @@
     "target_type": 3,
     "description": "Deals 80 ice damage to all enemies",
     "effects": {
-      "damage": 80,
+      "damage": 800,
       "element": "ice"
     },
     "cost": 300,
@@ -256,7 +256,7 @@
     "target_type": 2,
     "description": "Deals 120 lightning damage to one enemy",
     "effects": {
-      "damage": 120,
+      "damage": 1200,
       "element": "lightning"
     },
     "cost": 250,
@@ -269,7 +269,7 @@
     "target_type": 2,
     "description": "Deals 150 holy damage to undead. Weak against living foes.",
     "effects": {
-      "damage": 150,
+      "damage": 1500,
       "element": "holy",
       "bonus_vs_undead": 2.0
     },

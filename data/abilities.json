@@ -36,8 +36,8 @@
     "type": "healing",
     "animation": "heal",
     "mp_cost": 6,
-    "description": "Restore 65 HP to one ally",
-    "heal_amount": 65,
+    "description": "Restore 650 HP to one ally",
+    "heal_amount": 650,
     "target_type": "single_ally",
     "magic_school": "white",
     "cost": 200
@@ -48,8 +48,8 @@
     "type": "healing",
     "animation": "heal",
     "mp_cost": 12,
-    "description": "Restore 150 HP to one ally",
-    "heal_amount": 150,
+    "description": "Restore 1500 HP to one ally",
+    "heal_amount": 1500,
     "target_type": "single_ally",
     "magic_school": "white",
     "cost": 800
@@ -672,7 +672,7 @@
     "description": "Create a barrier that absorbs damage for all allies for 2 turns",
     "target_type": "all_allies",
     "effect": "barrier",
-    "absorb_amount": 80,
+    "absorb_amount": 800,
     "duration": 2
   },
   "last_stand_ability": {
@@ -1716,7 +1716,7 @@
     "animation": "heal",
     "mp_cost": 8,
     "description": "Channels crystal energy to restore HP.",
-    "heal_amount": 60,
+    "heal_amount": 600,
     "target_type": "self"
   },
   "crystal_shatter": {
@@ -1797,7 +1797,7 @@
     "animation": "cast_dark",
     "mp_cost": 10,
     "description": "Absorbs raw data to restore its own HP.",
-    "heal_amount": 80,
+    "heal_amount": 800,
     "target_type": "self"
   },
   "data_corruption": {
@@ -1857,7 +1857,7 @@
     "animation": "heal",
     "mp_cost": 15,
     "description": "Runs an emergency self-repair protocol, restoring significant HP.",
-    "heal_amount": 120,
+    "heal_amount": 1200,
     "target_type": "self"
   },
   "enrage": {
@@ -1906,7 +1906,7 @@
     "description": "Absorbs incoming damage to restore its own HP.",
     "target_type": "self",
     "effect": "damage_absorb",
-    "absorb_amount": 100,
+    "absorb_amount": 1000,
     "duration": 2
   },
   "final_compilation": {
@@ -2724,7 +2724,7 @@
     "animation": "heal",
     "mp_cost": 18,
     "description": "Reconstructs its crystalline form, restoring a significant amount of HP.",
-    "heal_amount": 150,
+    "heal_amount": 1500,
     "target_type": "self"
   },
   "recursive_strike": {
