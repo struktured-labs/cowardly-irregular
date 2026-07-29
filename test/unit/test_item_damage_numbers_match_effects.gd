@@ -81,6 +81,51 @@ func test_control_pairs_are_found() -> void:
 		+ "check below vacuous rather than passing")
 
 
+## COVERAGE RATCHET. PAIRS above enumerates the phrasings that existed the day it
+## was written — which is the incident, not the property. Word a new item "Heals 300
+## HP" or "Inflicts 400 damage" and the comparison below silently skips it: no
+## failure, no coverage, and the guard still reads as protecting the file.
+##
+## So: any item that HOLDS a mechanical value and quotes a number in prose must be
+## matched by some pattern. Lore items ("Expired June 1987") are excluded
+## STRUCTURALLY — they carry no damage/heal field — so this needs no suppression
+## list, which is what makes it safe to keep. 0 uncovered as of 2026-07-29.
+## (cowir-sfx msg 3394: the bug report is a sample; guard the invariant it violated.)
+func test_no_item_phrasing_escapes_the_patterns() -> void:
+	var mech := ["damage", "heal_hp", "heal_mp"]
+	var digit := RegEx.new()
+	assert_eq(digit.compile("[0-9]"), OK)
+	var uncovered: Array = []
+	var items := _items()
+	for k in items:
+		var v = items[k]
+		if not (v is Dictionary):
+			continue
+		var eff = v.get("effects", {})
+		if not (eff is Dictionary):
+			continue
+		var has_mech := false
+		for m in mech:
+			if eff.has(m):
+				has_mech = true
+		if not has_mech:
+			continue
+		var desc: String = str(v.get("description", ""))
+		if digit.search(desc) == null:
+			continue
+		var matched := false
+		for p in PAIRS:
+			var re := RegEx.new()
+			if re.compile(p[0]) == OK and re.search(desc) != null:
+				matched = true
+		if not matched:
+			uncovered.append("%s: \"%s\"" % [k, desc])
+
+	assert_eq(uncovered, [], "this item quotes a number and holds a mechanical value, but no "
+		+ "pattern in PAIRS matches its wording — so the check below SKIPS it and the number is "
+		+ "unverified. Add the phrasing to PAIRS rather than silencing this: %s" % [uncovered])
+
+
 ## THE GUARD.
 func test_quoted_damage_equals_dealt_damage() -> void:
 	var wrong: Array = []
