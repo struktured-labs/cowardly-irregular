@@ -36,8 +36,32 @@ SCRIPTS=$(grep -oE "^Scripts +[0-9]+" "$LOG" | grep -oE "[0-9]+" | tail -1)
 SCRIPTS=${SCRIPTS:-0}
 ONDISK=$(ls test/unit/test_*.gd 2>/dev/null | wc -l)
 LOADFAIL=$(grep -c 'does not extend GutTest\|Failed to load script' "$LOG")
-echo "exit=$EC  failing=$FAILED (authoritative)  [Failed]-lines=$FAILLINES (boolean only, NOT a count)  totals-blocks=$TOTALS  tests-run=$RAN"
+# RISKY IS A THIRD OUTCOME AND THIS GATE READ TWO (@cowir-cutscenes msg-3685).
+# A test that dies in setup asserts NOTHING and GUT scores it [Risky], not
+# [Failed] — exit 0, failing 0, and five tests dead on main. The count was
+# already in the Totals block above and was read past six times, so print the
+# NAMES: a number skims, a list of test names does not. Never a hard fail —
+# legitimate Risky exists (forward-compat probes that self-skip) — and
+# deliberately no allowlist, because a check you can silence green is not a
+# check. You can only explain it, and the explanation is the fix.
+# GUT's "Risky/Pending" is ONE COMBINED counter and only half of it is actionable:
+# measured 21 = 8 risky + 13 deliberate pending() skips. Labelling all 21
+# "asserted nothing" would be false about 13 legitimate skips and would train
+# people to ignore the line — the exact habit this exists to break. So print
+# GUT's own cardinal AND the risky subset derived from unique test NAMES.
+# Not from line counts: each test emits the inline and summary form, so
+# [Risky]-lines is 2x and is a boolean, the same trap as [Failed].
+RISKYPEND=$(grep -oE "^ +Risky/Pending +[0-9]+" "$LOG" | grep -oE "[0-9]+" | tail -1)
+RISKYPEND=${RISKYPEND:-0}
+NOASSERT=$(grep -oE '\[Risky\]: +[a-z_0-9]+ did not assert' "$LOG" | sort -u | wc -l)
+echo "exit=$EC  failing=$FAILED (authoritative)  risky/pending=$RISKYPEND (GUT total)  asserted-nothing=$NOASSERT (named below)  [Failed]-lines=$FAILLINES (boolean only, NOT a count)  totals-blocks=$TOTALS  tests-run=$RAN"
 echo "scope: scripts-run=$SCRIPTS  test-files-on-disk=$ONDISK  load-failures=$LOADFAIL"
+if [ "$NOASSERT" -ne 0 ]; then
+	echo "--- $NOASSERT test(s) ran and asserted NOTHING (scored Risky, never [Failed]) ---"
+	grep -oE '\[Risky\]: +[a-z_0-9]+ did not assert' "$LOG" | sort -u | sed 's/^/  /'
+	SETUP_ERRS=$(grep -c 'SCRIPT ERROR' "$LOG")
+	[ "$SETUP_ERRS" -ne 0 ] && echo "  ^ $SETUP_ERRS SCRIPT ERROR(s) this run — a test dying in setup lands here, not in failing=$FAILED"
+fi
 if [ "$TOTALS" -eq 0 ] || [ "$RAN" -lt 1000 ]; then
 	echo "GATE: RED — log has no Totals block or ran only $RAN tests; the run did not complete, so [Failed]=$FAILED means nothing"; exit 1
 fi
