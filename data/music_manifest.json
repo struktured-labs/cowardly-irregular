@@ -614,7 +614,7 @@
       "prompt": "INTENSE boss battle theme for a master duelist, rapid aggressive strings like flashing steel, sharp percussion hits on every sword clash, relentless tempo that never lets up. She fights with honest brutality — no tricks, just overwhelming skill that cuts through everything. Driving violin runs over pounding drums, dramatic brass stabs. The beauty of combat as truth, delivered at lethal speed. Bravely Default intensity — this duel could kill you.",
       "style": "JRPG boss battle, intense dueling theme, aggressive strings, sharp percussion, sword clash, D minor, 160 BPM",
       "model": "suno-v4",
-      "duration": 56.6,
+      "duration": 167.36,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -626,7 +626,7 @@
       "prompt": "INTENSE boss battle theme for a hunter who is THRILLED to fight you, frantic galloping drums at 180 BPM, aggressive woodwind runs that dart and strike, the terrifying joy of a predator who finally found worthy prey. Relentless pursuit energy — you cannot outrun this. Driving percussion like hooves on stone, brass fanfares of the hunt. He is faster than you and he is ENJOYING this. Bravely Default boss intensity with feral energy.",
       "style": "JRPG boss battle, frantic hunting theme, aggressive woodwinds, galloping drums, relentless pursuit, G minor, 180 BPM",
       "model": "suno-v4",
-      "duration": 47.84,
+      "duration": 156.8,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -638,7 +638,7 @@
       "prompt": "INTENSE boss battle theme for a scholar-mage whose curiosity is WEAPONIZED, furious harp arpeggios cascading over thundering percussion, magical energy crackling through the orchestra. She takes notes while destroying you — the academic detachment makes her MORE terrifying. Soaring strings building to devastating magical crescendos, explosive brass. The flame doesn't illuminate — it INCINERATES. Bravely Default sage boss intensity.",
       "style": "JRPG boss battle, arcane fury, aggressive harp arpeggios, thundering percussion, magical intensity, orchestral, 150 BPM",
       "model": "suno-v4",
-      "duration": 163.84,
+      "duration": 172.68,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -650,7 +650,7 @@
       "prompt": "INTENSE boss battle theme for a crossing guard with cosmic power, distorted traffic whistles becoming war horns, pounding bass that shakes suburban foundations, aggressive synth stabs. Cheerful melody VIOLENTLY corrupted into something terrifying — mundane authority given godlike power and she WILL enforce the crosswalk rules. Heavy EarthBound Giygas influence, the horror of normalcy turned monstrous. Driving relentless rhythm, you CANNOT cross.",
       "style": "EarthBound boss, intense suburban horror, distorted whistles, pounding bass, unhinged authority, aggressive synth, 140 BPM",
       "model": "suno-v4",
-      "duration": 54.8,
+      "duration": 91.96,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -662,7 +662,7 @@
       "prompt": "INTENSE boss battle theme, school bells hammering like war drums, harsh aggressive synth melody that grades you in real-time and you are FAILING. Frantic tempo — the test-taking anxiety cranked to lethal levels. Every wrong answer hits harder. Scratching pencil sounds as aggressive percussion, the substitute teacher from HELL. EarthBound boss intensity — absurd but genuinely threatening. You are being graded and the grade has TEETH.",
       "style": "EarthBound boss, aggressive academic horror, pounding school bells, harsh synth, frantic, punishing, 155 BPM",
       "model": "suno-v4",
-      "duration": 64.72,
+      "duration": 126.0,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -674,7 +674,7 @@
       "prompt": "INTENSE boss battle theme at BREAKNECK 190 BPM, a delivery driver moving at impossible speed, aggressive synth melody that never stops for breath, bicycle bells ringing like alarm bells. Manic relentless energy — he will RUN YOU OVER. The desperate fury of someone who has NEVER missed a delivery and you are in the way. EarthBound boss at maximum velocity, overwhelming and unstoppable.",
       "style": "EarthBound boss, manic aggressive, breakneck synth, bicycle bell fury, relentless, 190 BPM",
       "model": "suno-v4",
-      "duration": 38.28,
+      "duration": 97.24,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -686,7 +686,7 @@
       "prompt": "INTENSE boss battle theme, heavy oppressive bass drops on every audit finding, sinister calculator beeps becoming aggressive percussion. Methodical but CRUSHING — she drains you systematically and there is no appeal. The hold music melody twisted into something predatory and suffocating. Every resource you have is being seized with the force of law. EarthBound boss intensity — bureaucratic horror at its most lethal.",
       "style": "EarthBound boss, oppressive bureaucratic, heavy bass, sinister calculator, methodical destruction, aggressive, 120 BPM",
       "model": "suno-v4",
-      "duration": 132.88,
+      "duration": 74.91,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -698,7 +698,7 @@
       "prompt": "INTENSE boss battle theme, massive clockwork guardian — 847,293 hours of accumulated combat power. Crushing brass over obsessive ticking percussion that NEVER stops, aggressive waltz rhythm like a war machine counting down to your destruction. Grinding gears as bass, steam explosions as hits. Eight feet of clockwork plate bearing down on you with the weight of centuries. The counting is relentless. ONE-TWO-THREE. ONE-TWO-THREE. Each count is a blow.",
       "style": "Steampunk boss battle, aggressive clockwork, crushing brass, obsessive ticking, industrial percussion, intense waltz, 140 BPM",
       "model": "suno-v4",
-      "duration": 152.0,
+      "duration": 136.36,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -710,7 +710,7 @@
       "prompt": "INTENSE boss battle theme, a clockwork construct attacking BEFORE she's dispatched — her panic makes her FASTER and more dangerous. Frantic stuttering rhythm that accelerates throughout, steam explosions and gear shrieks, aggressive brass that arrives too early. She anticipates your moves because she exists slightly ahead of time. Terrifying speed born from existential panic. The fight gets faster every turn. Overwhelming mechanical fury.",
       "style": "Steampunk boss battle, frantic clockwork, aggressive stuttering rhythm, steam fury, accelerating intensity, 170 BPM",
       "model": "suno-v4",
-      "duration": 85.76,
+      "duration": 107.8,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -722,7 +722,7 @@
       "prompt": "INTENSE boss battle theme, factory robot with 14,000 unanswered reports worth of pent-up force. Crushing industrial percussion — stamping presses and slamming filing cabinets as war drums. Aggressive alarm tones blaring, heavy mechanical bass that shakes the floor. Safety protocols delivered as THREATS. The amber warning light turns RED. Relentless institutional violence — the machine has been waiting for someone to answer and it is DONE waiting.",
       "style": "Industrial boss battle, crushing factory percussion, aggressive alarm, heavy mechanical bass, relentless, 135 BPM",
       "model": "suno-v4",
-      "duration": 171.32,
+      "duration": 123.08,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -734,7 +734,7 @@
       "prompt": "INTENSE boss battle theme, a quality inspector whose condescension is LETHAL. Harsh precise mechanical rhythm, aggressive rating display sounds becoming distorted — ACCEPTABLE becomes a punch, SUBOPTIMAL becomes a blade. Cold efficient fury at 150 BPM, the instruments of measurement turned into weapons. When she encounters UNDEFINED her attacks become UNPREDICTABLE and more dangerous. Classification as violence.",
       "style": "Industrial boss battle, aggressive precision, harsh mechanical rhythm, distorted rating sounds, cold fury, 150 BPM",
       "model": "suno-v4",
-      "duration": 171.32,
+      "duration": 89.59,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -746,7 +746,7 @@
       "prompt": "INTENSE boss battle theme, a machine that cannot stop and its desperation makes it DANGEROUS. Pounding punch clock stamps as relentless driving percussion, aggressive bass drone of an engine running past redline. The exhaustion isn't weakness — it's a thing with nothing left to lose. Driving furious rhythm at 140 BPM, the sound of something that SHOULD have stopped centuries ago and the accumulated momentum is DEVASTATING.",
       "style": "Industrial boss battle, relentless depleted fury, pounding punch clock, driving exhausted rhythm, aggressive drone, 140 BPM",
       "model": "suno-v4",
-      "duration": 164.96,
+      "duration": 152.6,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -758,7 +758,7 @@
       "prompt": "INTENSE boss battle theme, an auditor whose circular authority becomes a WEAPON. Heavy bass loop that tightens like a noose, oppressive circular rhythm that traps you in bureaucratic hell. Filing sounds as aggressive percussion, each audit finding hits like a hammer. The warm smile is the scariest part — she is genuinely enjoying draining everything you have. The loop gets tighter, the bass gets heavier, there is no way out of the audit.",
       "style": "Industrial boss battle, aggressive looping, heavy bass, oppressive circular rhythm, mechanical fury, 130 BPM",
       "model": "suno-v4",
-      "duration": 179.8,
+      "duration": 192.24,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -770,7 +770,7 @@
       "prompt": "INTENSE boss battle theme, a firewall given lethal form. Heavy glitch bass drops on every ACCESS DENIED, harsh electronic tones, pounding binary rhythm that hits like a DDoS attack. Aggressive cyberpunk fury — every attack is a permission check and you FAIL every one. When the exception surfaces the music becomes CHAOTIC and more dangerous. The concept of NO weaponized at 155 BPM. Overwhelming digital security turned hostile.",
       "style": "Digital boss battle, aggressive cyberpunk, heavy glitch bass, harsh access denial tones, pounding binary rhythm, 155 BPM",
       "model": "suno-v4",
-      "duration": 158.92,
+      "duration": 163.44,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -782,7 +782,7 @@
       "prompt": "INTENSE boss battle theme, a measurement system pushed past its limits and BREAKING. Frantic aggressive diagnostic beeps becoming distorted screams, harsh glitch percussion, benchmark displays shattering. The confident analytical melody COLLAPSES into chaotic fury when she encounters UNDEFINED — her instruments can't measure you and the system is OVERLOADING. Distorted bass drops, cascading error tones. The terror of a perfect system meeting its first failure, expressed as VIOLENCE.",
       "style": "Digital boss battle, aggressive benchmark, harsh glitch, frantic diagnostic, system overload, distorted, 160 BPM",
       "model": "suno-v4",
-      "duration": 111.0,
+      "duration": 100.52,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -794,7 +794,7 @@
       "prompt": "INTENSE boss battle theme, a timing function attacking at 60 frames per second — she is EVERYWHERE. Harsh aggressive pulse on every cycle, frantic arpeggios that swarm from isolation into overwhelming assault. She has been alone for eons and the loneliness is now FURY. Attacks come from the gaps between clock cycles where nothing should exist. Aggressive electronic combat at 170 BPM, the sound of something that has never been spoken to finally SCREAMING.",
       "style": "Digital boss battle, aggressive isolated pulse, harsh 60hz attacks, frantic lonely arpeggios, overwhelming speed, 170 BPM",
       "model": "suno-v4",
-      "duration": 53.84,
+      "duration": 204.88,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -806,7 +806,7 @@
       "prompt": "INTENSE boss battle theme, a garbage collector trying to DELETE your memories by force. Heavy glitch bass on every deallocation attempt, harsh electronic percussion, aggressive data streams as weapons. She keeps trying to erase you and FAILING and the failure makes her more desperate and dangerous. Relentless 145 BPM assault — attempted deallocation DENIED, attempted deallocation DENIED. The data fights back and she fights harder.",
       "style": "Digital boss battle, aggressive garbage collection, heavy glitch bass, harsh deallocation, relentless data assault, 145 BPM",
       "model": "suno-v4",
-      "duration": 158.64,
+      "duration": 129.92,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -818,7 +818,7 @@
       "prompt": "INTENSE boss battle theme for the concept of OBSTACLE — not quiet presence but CRUSHING immovable force. Massive overwhelming drone that physically pressures, deep bass that shakes reality itself. The wall doesn't threaten — it CRUSHES by existing. Oppressive sustained tones building in layers until the weight is unbearable. Slow but DEVASTATING at 80 BPM — every beat lands like a continent. You cannot move this. You can only survive it.",
       "style": "Abstract boss battle, overwhelming drone, crushing sustained tone, oppressive presence, massive bass, 80 BPM",
       "model": "suno-v4",
-      "duration": 182.76,
+      "duration": 135.64,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -830,7 +830,7 @@
       "prompt": "INTENSE boss battle theme, each piano strike hits like a JUDGMENT. Pounding percussion between devastating piano chords, the weight of existential questioning delivered as COMBAT. Why do you fight — the question is an ATTACK. The silences between strikes are not pauses, they are the space where your reasons are being TESTED. Aggressive building intensity, orchestral swells that overwhelm. The exam that fights back, and the stakes are everything.",
       "style": "Abstract boss battle, aggressive piano, pounding existential percussion, overwhelming philosophical weight, intense, 120 BPM",
       "model": "suno-v4",
-      "duration": 183.08,
+      "duration": 131.31,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -842,7 +842,7 @@
       "prompt": "INTENSE boss battle theme for INEVITABILITY — not gentle tide but TSUNAMI. Crushing bass that approaches with unstoppable force, relentless percussion like footsteps of something enormous that WILL reach you. Slow 100 BPM but every beat hits harder than the last, an eternal crescendo that never resolves. The sound of something you cannot outrun, cannot dodge, cannot stop. Dread made audible. I am always next. I am always HERE.",
       "style": "Abstract boss battle, crushing inevitability, overwhelming approaching bass, relentless tide percussion, dread crescendo, 100 BPM",
       "model": "suno-v4",
-      "duration": 124.88,
+      "duration": 127.28,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -854,7 +854,7 @@
       "prompt": "INTENSE boss battle theme for ENTROPY — not gentle fading but aggressive ERASURE. Crushing distorted bass that corrodes everything it touches, harsh frequencies that strip detail from the music itself. A melody being violently deconstructed in real-time, instruments losing their identity and becoming noise. Dark, oppressive, the sound of being unmade. The most terrifying track in the game — not loud but CORROSIVE. Everything it touches becomes less. Including you.",
       "style": "Abstract boss battle, aggressive entropy, crushing decay, distorted dissolution, overwhelming erasure, dark, 90 BPM",
       "model": "suno-v4",
-      "duration": 192.68,
+      "duration": 88.04,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -866,7 +866,7 @@
       "prompt": "A quiet medieval village at dawn. Five ordinary people answer a call nobody expected them to answer. Simple folk melody that starts with a single instrument and gradually adds layers as companions gather. Gentle, humble, wry humor underneath genuine warmth. Not heroic — just honest. 90 seconds.",
       "style": "celtic folk, acoustic guitar, recorder, gentle, warm, 90 BPM",
       "model": "suno-v4",
-      "duration": 106.88,
+      "duration": 109.96,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -878,7 +878,7 @@
       "prompt": "A centuries-old guardian falls after his first defeat. Not in agony but in acceptance. Military dignity dissolving into something more personal — the sound of an ancient duty completed. Solemn horn melody over tremolo strings, ending with sparse piano notes. Bittersweet, dignified, final. 75 seconds.",
       "style": "orchestral, low strings, french horn, piano, solemn, medieval",
       "model": "suno-v4",
-      "duration": 179.84,
+      "duration": 171.12,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -890,7 +890,7 @@
       "prompt": "A villain defeated but the victory feels wrong. Choir starts triumphant then distorts and thins into hollow sustained tones. The world flickers. Something behind the walls isn't stone — it's something else entirely. Eerie ambient drone emerging from fading choir. Unresolved, haunting, the feeling of a chapter ending by being deleted rather than finished. 60 seconds.",
       "style": "choir, ambient, eerie, orchestral decay, unsettling",
       "model": "suno-v4",
-      "duration": 133.44,
+      "duration": 129.04,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -902,7 +902,7 @@
       "prompt": "Medieval adventure music abruptly cuts to suburban elevator muzak. Soft rock guitar, light percussion, the ambient hum of air conditioning. Something is slightly off-key — the normalcy is too normal. A single sprinkler provides rhythm. Comedic but with an undercurrent of wrongness, like a smile that's held too long. 70 seconds.",
       "style": "muzak, lo-fi, suburban ambient, slightly wrong, comedic",
       "model": "suno-v4",
-      "duration": 41.48,
+      "duration": 115.48,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -914,7 +914,7 @@
       "prompt": "Fluorescent light hum becomes a sinister drone. The sound of someone discovering they have been watched since the beginning. Minimal piano notes over static-laced ambient, building tension. A pen scratching on paper. The music stops abruptly mid-phrase — an incomplete sentence made audible. Unsettling, clinical, the moment observation becomes personal. 80 seconds.",
       "style": "ambient, office drone, creeping dread, surveillance, minimal",
       "model": "suno-v4",
-      "duration": 154.16,
+      "duration": 170.0,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -926,7 +926,7 @@
       "prompt": "Three musical themes from different genres briefly overlay and reveal the same underlying melody. Clockwork ticking underpins a haunting waltz that builds to a moment of clarity. The sound of patterns recognized across worlds. Brass instruments, music box, ticking gears, building from mystery to revelation. The intellectual vertigo of seeing the design for the first time. 90 seconds.",
       "style": "clockwork, steampunk waltz, haunting, revelatory, layered",
       "model": "suno-v4",
-      "duration": 116.52,
+      "duration": 110.56,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -938,7 +938,7 @@
       "prompt": "The villain reveals their true name. Industrial percussion builds as stats scroll on screens, then a dramatic brass stinger as the mask drops. The world begins disassembling — gears unwinding, steam hissing, the clockwork world literally taking itself apart. Mechanical sounds becoming musical as order collapses into revelation. Dramatic, confrontational, the sound of scenery being struck from a stage. 75 seconds.",
       "style": "industrial, clockwork deconstruction, dramatic reveal, percussion, brass",
       "model": "suno-v4",
-      "duration": 157.64,
+      "duration": 103.08,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -950,7 +950,7 @@
       "prompt": "A man describes losing the desire to paint — not the ability, the desire. Single piano notes over vast silence. The sound of a personality being quietly erased from the inside. No drama, no crescendo. Just the absence of something that used to be there. Cold ambient drone underneath. Intimate, devastating, the quietest kind of horror. 70 seconds.",
       "style": "ambient, minimal piano, devastating, quiet horror, intimate",
       "model": "suno-v4",
-      "duration": 178.8,
+      "duration": 90.8,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -962,7 +962,7 @@
       "prompt": "Factory alarms transform into war drums. Every screen displays the same warning. Electronic drones layer into a threatening industrial march. The sound of a surveillance system escalating from observation to direct engagement. Cold, mechanical, purposeful. A broadcast declaring war from every speaker simultaneously. 65 seconds.",
       "style": "industrial, alarm, war drums, threatening, broadcast",
       "model": "suno-v4",
-      "duration": 25.6,
+      "duration": 142.4,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -974,7 +974,7 @@
       "prompt": "An industrial drone slowly softens. A villain sits behind a wooden desk in a steel world and admits defeat — not dramatically, just honestly. Tired piano melody emerging from factory ambient. The sound of someone who has been working too hard for too long finally being real. Vulnerable, exhausted, the moment a system admits it cannot contain what it was built to contain. 85 seconds.",
       "style": "ambient, tender, exhausted, piano over industrial drone, humanizing",
       "model": "suno-v4",
-      "duration": 174.88,
+      "duration": 146.0,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -986,7 +986,7 @@
       "prompt": "A world loading from raw code. Modem connection sounds, digital static, and bitcrushed tones assembling into a melody. Wireframe reality becoming textured and lit. Each layer adds a new musical element — bass from the grid, melody from the data streams, rhythm from the clock cycles. Digital awe and vertigo. The sound of discovering you are inside the machine. 80 seconds.",
       "style": "chiptune, glitch, digital ambient, boot sequence, ascending",
       "model": "suno-v4",
-      "duration": 30.36,
+      "duration": 162.04,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -998,7 +998,7 @@
       "prompt": "A tiny 8-bit melody played on a music box in a vast digital void. The sound of something very old and very small completing the only task it was ever given. Gentle, melancholy, tender. Low-resolution love letter to a creature that just wanted to finish its loop. Brief silence, then the melody repeats once — a respawn. Simple. Complete. 50 seconds.",
       "style": "8-bit, music box, tender, melancholy, small, gentle",
       "model": "suno-v4",
-      "duration": 123.12,
+      "duration": 118.2,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -1010,7 +1010,7 @@
       "prompt": "A beautiful melody played on instruments that are slowly losing resolution — notes becoming grainy, harmonics simplifying, the audio degrading like an old recording being played for the last time. Bittersweet wisdom from a voice that is running out of memory. The music thins until only a single tone remains, then silence. The sound of a message delivered just before the medium dissolves. 70 seconds.",
       "style": "ambient, degrading audio, bittersweet, digital decay, wisdom",
       "model": "suno-v4",
-      "duration": 169.8,
+      "duration": 143.32,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -1022,7 +1022,7 @@
       "prompt": "Late-night coding session ambience. Keyboard clicks, coffee mug clinks, the hum of monitors. Lo-fi beat underneath a melancholy synth melody. The sound of someone who has been working alone for a very long time, rewriting the same formula, trying to get it right. Not dramatic — just tired and real. The villain revealed as a burned-out developer. 90 seconds.",
       "style": "lo-fi hip hop, keyboard clicks, ambient coding, late night, melancholy",
       "model": "suno-v4",
-      "duration": 149.84,
+      "duration": 142.3,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -1034,7 +1034,7 @@
       "prompt": "Almost nothing. A single sustained tone hovering at the edge of audibility. The sound of a space that exists only because someone decided to listen. No melody, no rhythm — just presence. The musical equivalent of a white page before the first word. Gradually, almost imperceptibly, other tones gather. Not a crescendo. A becoming. The most quiet and vast thing in the game. 100 seconds.",
       "style": "ambient drone, minimal, existential, vast silence, near-silent",
       "model": "suno-v4",
-      "duration": 479.4,
+      "duration": 168.1,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -1046,7 +1046,7 @@
       "prompt": "Fragments of six different musical worlds heard simultaneously as harmony — medieval lute, suburban guitar, clockwork music box, industrial percussion, digital chiptune, abstract drone — all reduced to single notes that form a chord. The accumulated weight of an entire journey in one moment. Tender, profound, the sound of everything you've ever fought being remembered at once. Not triumphant — grateful. 90 seconds.",
       "style": "ambient orchestral, fragments of themes, emotional culmination, tender, vast",
       "model": "suno-v4",
-      "duration": 163.36,
+      "duration": 184.96,
       "loop": true,
       "generated_at": "2026-04-13"
     },
@@ -1058,7 +1058,7 @@
       "prompt": "Solo piano in vast silence. Each note placed with extreme care, long pauses between phrases. The sound of someone asking a genuine question for the first time in their life and being afraid of the answer. Not dramatic — intimate. The smallest, most honest music in the game. A conversation between two people who have been fighting for six worlds and are finally just talking. 100 seconds.",
       "style": "solo piano, sparse, vulnerable, existential, questioning",
       "model": "suno-v4",
-      "duration": 142.84,
+      "duration": 193.0,
       "loop": true,
       "generated_at": "2026-04-14"
     },
@@ -1070,7 +1070,7 @@
       "prompt": "A music box melody is silenced. Silence. Then it returns, slightly stronger. Silenced again. Returns with strings underneath. Each time the melody is suppressed it comes back with more instruments, more conviction. The sound of memories refusing to be erased. Builds from a single fragile melody to a full emotional orchestral statement. Not angry defiance — tender defiance. The gentlest act of resistance. 100 seconds.",
       "style": "music box, orchestral swell, defiant tenderness, themes returning, emotional",
       "model": "suno-v4",
-      "duration": 138.04,
+      "duration": 112.68,
       "loop": true,
       "generated_at": "2026-04-14"
     },
@@ -1082,7 +1082,7 @@
       "prompt": "Two melodies that start separately and gradually interlock through systematic refinement — each adjusting to the other until they form a perfect algorithmic harmony. Electronic tones with warm analog undertones. The sound of two minds understanding each other through shared design language. Intellectual but deeply warm. The beauty of a well-designed system appreciated by its creator. 80 seconds.",
       "style": "algorithmic, electronic, interlocking patterns, intellectual, warm",
       "model": "suno-v4",
-      "duration": 64.88,
+      "duration": 158.36,
       "loop": true,
       "generated_at": "2026-04-14"
     },
@@ -1094,7 +1094,7 @@
       "prompt": "A live jam session where the musicians are clearly having fun. Imperfect, energetic, full of happy accidents. The sound of people playing together for the joy of playing — no recording, no audience, just presence. Guitar, drums, bass, with spontaneous energy. Builds to a triumphant peak then dissolves into laughter and breathing. The best fight in the game. 85 seconds.",
       "style": "live jam session, exuberant, imperfect, joyful, organic",
       "model": "suno-v4",
-      "duration": 178.76,
+      "duration": 194.28,
       "loop": true,
       "generated_at": "2026-04-14"
     },
@@ -1106,7 +1106,7 @@
       "prompt": "A gentle four-note loop that repeats, each repetition slightly different, each one more beautiful and more peaceful than the last. Warm ambient drone underneath. The sound of people sitting in silence together and discovering that silence is not empty. Meditative, warm, the musical equivalent of a long exhale after years of holding breath. Fades to comfortable silence. 100 seconds.",
       "style": "ambient, meditation, repetitive loop, peaceful, warm drone",
       "model": "suno-v4",
-      "duration": 213.36,
+      "duration": 133.04,
       "loop": true,
       "generated_at": "2026-04-14"
     },
@@ -1118,7 +1118,7 @@
       "prompt": "A sustained ambient tone develops a crack — a glitch, a gap. Through the gap, unexpected music floods in, vast and joyful. The sound of discovering that infinity has edges and the edges are interesting. Playful electronic elements over cosmic ambient. Expanding, delighted, the musical equivalent of laughter at the boundary of everything. 75 seconds.",
       "style": "glitch, ambient, playful, cosmic, expanding, joyful",
       "model": "suno-v4",
-      "duration": 22.92,
+      "duration": 144.52,
       "loop": true,
       "generated_at": "2026-04-14"
     },
@@ -1130,7 +1130,7 @@
       "prompt": "The final theme. Every genre from six worlds plays together — medieval lute alongside suburban guitar alongside clockwork music box alongside industrial percussion alongside digital chiptune alongside abstract silence. Not competing — harmonizing. Sunrise breaking across a world that has been remade. Triumphant but warm, earned but gentle. The sound of an ending that is also a beginning. Builds to a full ensemble peak then resolves to a simple, quiet, perfect chord. 120 seconds.",
       "style": "orchestral, all genres combined, sunrise, triumphant, warm, finale",
       "model": "suno-v4",
-      "duration": 178.76,
+      "duration": 229.88,
       "loop": true,
       "generated_at": "2026-04-14"
     },
@@ -1142,7 +1142,7 @@
       "prompt": "A solo lute plays a lament composed in a cave after a battle. Not polished — written in the moment by someone who felt something needed to be said. Fourteen measures, no accompaniment, the sound of one person bearing witness to something that would otherwise be forgotten. Raw, honest, the beauty of paying attention to things that did not choose their fate. 60 seconds.",
       "style": "solo lute, lament, unaccompanied, medieval, raw, witnessing",
       "model": "suno-v4",
-      "duration": 87.76,
+      "duration": 100.0,
       "loop": true,
       "generated_at": "2026-04-14"
     },
@@ -1154,7 +1154,7 @@
       "prompt": "Breakneck tempo from the first note. Speed metal guitar over chiptune bass, relentless drums. The sound of a speedrunner tearing through a game at terminal velocity — skipping cutscenes, attacking mid-dialogue, finding every shortcut. Exhilarating, aggressive, joyful destruction. A system being broken at the speed of thought. 55 seconds.",
       "style": "speed metal, chiptune, breakneck, kinetic, aggressive, exhilarating",
       "model": "suno-v4",
-      "duration": 34.2,
+      "duration": 124.79,
       "loop": true,
       "generated_at": "2026-04-14"
     },
@@ -1166,7 +1166,7 @@
       "prompt": "Cave ambient loop. Slow dripping water echoing off stone walls, distant rumbling, subtle wind through crevices, occasional pebble falling. Dark and atmospheric with deep reverb. No melody — pure environmental texture. Seamless loop, 60 seconds.",
       "style": "ambient, cave, dripping water, reverb, dark, atmospheric, looping",
       "model": "suno-v4",
-      "duration": 239.96,
+      "duration": 194.96,
       "loop": true,
       "generated_at": "2026-04-14"
     },
@@ -1178,7 +1178,7 @@
       "prompt": "Forest ambient loop. Gentle wind through leaves, distant birdsong, soft rustling undergrowth, occasional branch creak. Warm dappled sunlight in sound. Natural and peaceful. Seamless loop, 60 seconds.",
       "style": "ambient, forest, rustling leaves, birdsong, gentle wind, natural, looping",
       "model": "suno-v4",
-      "duration": 193.64,
+      "duration": 221.32,
       "loop": true,
       "generated_at": "2026-04-14"
     },
@@ -1190,7 +1190,7 @@
       "prompt": "Medieval village ambient loop. Distant market chatter, cart wheels on cobblestone, hammering from a smithy, children laughing, gentle breeze. Warm busy atmosphere without being chaotic. Seamless loop, 60 seconds.",
       "style": "ambient, village, bustle, chatter, footsteps, warm, looping",
       "model": "suno-v4",
-      "duration": 154.8,
+      "duration": 144.96,
       "loop": true,
       "generated_at": "2026-04-14"
     },
@@ -1202,7 +1202,7 @@
       "prompt": "Ocean ambient loop. Rhythmic waves breaking on shore, distant seagulls, coastal wind, occasional spray. Peaceful and vast. The sound of standing at the edge of something infinite. Seamless loop, 60 seconds.",
       "style": "ambient, ocean, waves, seagulls, coastal wind, peaceful, looping",
       "model": "suno-v4",
-      "duration": 166.8,
+      "duration": 178.4,
       "loop": true,
       "generated_at": "2026-04-14"
     },
@@ -1226,7 +1226,7 @@
       "prompt": "Industrial ambient loop. Low factory drone, fluorescent light buzz, distant conveyor belt rhythm, ventilation hum, occasional metallic clang. Oppressive and numbing. The sound of a space that never sleeps. Seamless loop, 60 seconds.",
       "style": "ambient, industrial, drone, factory hum, fluorescent buzz, oppressive, looping",
       "model": "suno-v4",
-      "duration": 199.52,
+      "duration": 259.96,
       "loop": true,
       "generated_at": "2026-04-14"
     },
@@ -1238,7 +1238,7 @@
       "prompt": "Digital ambient loop. Soft electronic hum, data transmission pulses, gentle static crackling, distant server whir, subtle bitcrushed tones. The sound of existing inside a network. Cool blue digital atmosphere. Seamless loop, 60 seconds.",
       "style": "ambient, digital, static, data flow, electronic hum, cyber, looping",
       "model": "suno-v4",
-      "duration": 176.88,
+      "duration": 200.44,
       "loop": true,
       "generated_at": "2026-04-14"
     },
@@ -1250,7 +1250,7 @@
       "prompt": "Classic JRPG level up jingle. Bright ascending chimes building to a triumphant two-note resolution. Sparkling, satisfying, the sound of getting stronger. 5 seconds maximum, no fade.",
       "style": "JRPG stinger, ascending chime, triumphant, short, bright, 5 seconds",
       "model": "suno-v4",
-      "duration": 8.48,
+      "duration": 3.2,
       "loop": false,
       "generated_at": "2026-04-14"
     },
@@ -1310,7 +1310,7 @@
       "prompt": "EXPLOSIVE medieval victory fanfare with VAN HALEN finger-tapping electric guitar energy over triumphant orchestral brass. Shredding guitar solo that screams triumph, pounding drums, the absolute RUSH of winning a hard fight. 80s rock meets JRPG fanfare — Eddie Van Halen playing the Final Fantasy victory theme. Blazing fast, exhilarating, fist-pumping. 20-25 seconds of pure adrenaline.",
       "style": "80s rock victory, Van Halen, finger-tapping guitar, triumphant brass, shredding solo, JRPG fanfare, 160 BPM",
       "model": "suno-v4",
-      "duration": 180.8,
+      "duration": 47.6,
       "loop": true,
       "generated_at": "2026-04-08",
       "pinned": true
@@ -1387,7 +1387,7 @@
       "prompt": "Frozen dragon cave dungeon theme. Crystalline chime arpeggios echoing off ice walls, cold wind howling through chambers, sparse piano notes that ring and fade in frozen air. Everything is brittle and vast. The cold slows everything down including the music. SNES-era haunting ice dungeon. Looping.",
       "style": "SNES dungeon, icy, crystalline chimes, cold wind, sparse piano, haunting, 80 BPM",
       "model": "suno-v4",
-      "duration": 178.24,
+      "duration": 158.52,
       "loop": true,
       "generated_at": "2026-04-14"
     },
@@ -1399,7 +1399,7 @@
       "prompt": "Suburban sewer/basement dungeon theme. Muffled bass through concrete walls, distorted fragments of cheerful muzak leaking down from above, water dripping from pipes. The wrongness of being underneath normalcy. Something is humming down here that shouldn't be. EarthBound underground atmosphere, uncanny and unsettling. Looping.",
       "style": "EarthBound dungeon, suburban underground, muffled bass, wrong muzak, pipes dripping, unsettling, 90 BPM",
       "model": "suno-v4",
-      "duration": 196.4,
+      "duration": 153.32,
       "loop": true,
       "generated_at": "2026-04-14"
     },
@@ -1411,7 +1411,7 @@
       "prompt": "Interior of a massive clockwork mechanism dungeon theme. Enormous gears turning as rhythm, brass pipes resonating with each rotation, steam pressure building and releasing. The sound of being inside a machine that is larger than you can see. Tense clockwork precision, everything measured and ticking. Steampunk dungeon atmosphere. Looping.",
       "style": "Steampunk dungeon, massive gears, clockwork rhythm, brass resonance, steam pressure, tense, 100 BPM",
       "model": "suno-v4",
-      "duration": 64.92,
+      "duration": 47.6,
       "loop": true,
       "generated_at": "2026-04-14"
     },
@@ -1423,7 +1423,7 @@
       "prompt": "Deep factory floor dungeon theme. Crushing machinery percussion in the distance, dark oppressive drone, conveyor belt rhythm that never stops. Fluorescent buzz and metallic echoes. The lowest level of the assembly line where maintenance never reaches. Industrial dungeon, dehumanizing and relentless. Looping.",
       "style": "Industrial dungeon, factory basement, crushing machinery, dark drone, conveyor rhythm, oppressive, 85 BPM",
       "model": "suno-v4",
-      "duration": 189.64,
+      "duration": 194.52,
       "loop": true,
       "generated_at": "2026-04-14"
     },
@@ -1435,7 +1435,7 @@
       "prompt": "Deep inside the system's root directory dungeon theme. Corrupted chiptune melody that glitches and stutters, data corruption static, tense electronic pulses like heartbeats of dying processes. The code down here is old and unstable. Digital dungeon, cyberpunk tension, the feeling of exploring code that was never meant to be accessed. Looping.",
       "style": "Digital dungeon, deep code, corrupted chiptune, data corruption, glitch static, tense electronic, 110 BPM",
       "model": "suno-v4",
-      "duration": 173.4,
+      "duration": 157.92,
       "loop": true,
       "generated_at": "2026-04-14"
     },
@@ -1447,7 +1447,7 @@
       "prompt": "Abstract void dungeon theme. The space between concepts — reverse reverb tails, vast empty drone, sounds that seem to come from impossible distances. Near-silence that is somehow louder than noise. Liminal space music, the dungeon of ideas where nothing is solid. Existential exploration at the edge of meaning. Looping.",
       "style": "Abstract dungeon, liminal, reverse reverb, near-silence, vast empty drone, existential, 60 BPM",
       "model": "suno-v4",
-      "duration": 188.52,
+      "duration": 184.6,
       "loop": true,
       "generated_at": "2026-04-14"
     },
@@ -1483,7 +1483,7 @@
       "prompt": "Mage special attack stinger. Magical energy crackling and building to a massive arcane explosion — dramatic orchestral hit with magical shimmer aftermath. Raw elemental power unleashed through intellect. 8 seconds.",
       "style": "JRPG special attack, magical explosion, crackling energy, dramatic orchestral hit, arcane power, short, 8 seconds",
       "model": "suno-v4",
-      "duration": 9.6,
+      "duration": 6.68,
       "loop": true,
       "generated_at": "2026-04-14"
     },
@@ -1543,7 +1543,7 @@
       "prompt": "Summoner special attack stinger. A deep horn call opens a dimensional rift — otherworldly sounds flood in, something MASSIVE arrives. The ground shakes, reality bends, a being of enormous power is here. 10 seconds.",
       "style": "JRPG special attack, dimensional rift, deep horn call, otherworldly arrival, massive presence, short, 10 seconds",
       "model": "suno-v4",
-      "duration": 4.88,
+      "duration": 8.08,
       "loop": true,
       "generated_at": "2026-04-14"
     },
@@ -1591,7 +1591,7 @@
       "prompt": "Necromancer special attack stinger. The ground cracks open — grave rumble, ghostly choir rising from below, dark energy crackling. Something dead is being called back. Ominous, powerful, the line between life and death bent. 8 seconds.",
       "style": "JRPG special attack, dark resurrection, grave rumble, ghostly choir, death magic, ominous, short, 8 seconds",
       "model": "suno-v4",
-      "duration": 34.52,
+      "duration": 59.56,
       "loop": true,
       "generated_at": "2026-04-14"
     },
@@ -1603,7 +1603,7 @@
       "prompt": "Bossbinder special attack stinger. Chains of binding rattling into place, a boss-tier power being seized and redirected. The sound of taking control of something that should not be controlled. Dramatic, dangerous, the corruption spreading. 10 seconds.",
       "style": "JRPG special attack, dominance assertion, chains rattling, boss corruption, power seizure, dramatic, short, 10 seconds",
       "model": "suno-v4",
-      "duration": 7.36,
+      "duration": 4.88,
       "loop": true,
       "generated_at": "2026-04-14"
     },
@@ -1627,7 +1627,7 @@
       "prompt": "Volcanic dragon cave dungeon theme. Deep rumbling bass like magma flowing beneath stone, smoldering string tremolo, oppressive heat in every note. Flickering fire crackle percussion, ominous brass swells. The deeper you go the hotter it gets. SNES-era dungeon atmosphere, tense and foreboding. Looping.",
       "style": "SNES dungeon, volcanic, deep rumbling bass, smoldering strings, oppressive heat, minor key, 95 BPM",
       "model": "suno-v4",
-      "duration": 139.2,
+      "duration": 183.6,
       "loop": true,
       "generated_at": "2026-04-14"
     },

@@ -64,9 +64,21 @@ func test_battle_track_is_long_enough_to_be_a_battle_track() -> void:
 	var tracks: Dictionary = _tracks()
 	if not tracks.has("boss_mordaine"):
 		return  # covered by the existence test
-	var dur: float = float(tracks["boss_mordaine"].get("duration", 0.0))
+	## Measured off the STREAM, not the manifest. This read the manifest's
+	## `duration` until 2026-07-29, when 65 of 152 entries turned out to
+	## disagree with their audio — so the guard written to catch a short render
+	## was reading the one field that could lie about length. It would have
+	## passed a 24s file declaring 146s, and failed a healthy file declaring 22s
+	## (which is exactly the false alarm it produced).
+	var path: String = str(tracks["boss_mordaine"].get("file", ""))
+	if path == "" or not ResourceLoader.exists(path):
+		return  # covered by the existence test
+	var stream = load(path)
+	if stream == null or not stream.has_method("get_length"):
+		return
+	var dur: float = stream.get_length()
 	assert_gt(dur, MIN_BOSS_SECONDS,
-		"boss_mordaine is %.1fs — too short to carry a boss fight. The generator returns two takes; check whether the LONGER sibling was discarded." % dur)
+		"boss_mordaine's AUDIO is %.1fs — too short to carry a boss fight. The generator returns two takes; check whether the LONGER sibling was discarded." % dur)
 
 
 func test_battle_scene_routes_mordaine_to_her_own_track() -> void:
