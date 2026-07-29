@@ -644,6 +644,11 @@
       "style": "SNES dungeon, void, sparse detuned bells, low drone, long silences, unsettling, 68 BPM",
       "prompt": "Void dragon cave dungeon theme. Sparse detuned bells with long decay, a low drone that never resolves, silences held slightly too long so the room feels like it is waiting for an answer. Almost no percussion. Not menacing — patient, and far older than the player. Hollow, contemplative, quietly wrong. SNES-era dungeon atmosphere, philosophical and cold. Looping."
     },
+    "boss_rat_king": {
+      "title_template": "The Crown Beneath the Whispers",
+      "style": "SNES tutorial boss, manic minor key, comedic-yet-menacing, harpsichord + low brass + skittering percussion, 16-bit",
+      "prompt": "First boss confrontation in a damp cave — sense of absurd grandeur giving way to mounting dread. Sewer-king pomp colliding with primal animal menace, dripping water punctuated by manic rodent squeaks, mock-heroic brass over a relentless low pulse, building to a fever pitch as the rat king bellows."
+    },
     "village_eldertree": {
       "title_template": "Under the Canopy",
       "style": "SNES village, elven forest, harp and recorder, dappled light, gentle 6/8 lilt, 92 BPM",

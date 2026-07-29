@@ -77,7 +77,7 @@
       "generated_at": "",
       "placeholder": true,
       "planned_file": "assets/audio/music/boss_rat_king.ogg",
-      "notes": "Authored track pending — Suno generation slot for cowir-music. Until the OGG ships, BattleScene falls back to procedural _start_rat_king_music(). 'file' key intentionally omitted so the manifest-integrity audit doesn't fail on a known-missing placeholder; cowir-music adds it when the OGG lands."
+      "notes": "Authored track pending. Prompt/style/title live here AND in tools/music_prompts.json — the generator reads only the latter, so a prompt recorded solely here would never be produced (it wasn't, until 2026-07-29). Until the OGG ships, SoundManager falls back to procedural _start_rat_king_music() (SM:2610, dispatched at SM:1410) — the only W1 boss without a composed track. 'file' key intentionally omitted so the manifest-integrity audit doesn't fail on a known-missing placeholder, and duration stays 0.0, which JukeboxMenu renders as a blank row."
     },
     "overworld_suburban": {
       "file": "assets/audio/music/overworld_suburban.ogg",
