@@ -130,6 +130,25 @@ while IFS= read -r f; do
 	fi
 done <<< "$FILES"
 
+# TEST DELETION (@cowir-cutscenes msg-3555). gate.sh proves scripts-run == test files on disk,
+# which certifies every test file PRESENT. A branch that DELETES one drops both counts in step,
+# so the gate still reads clean while the coverage is simply gone — and a fold is exactly where
+# that enters the trunk. Whole-corpus comparison, not per-touched-file: a branch can delete a
+# test without the diff naming it as "touched" in the sense the loop above uses.
+# Deleting a test is a legitimate act, so this REPORTS and does not refuse.
+#
+# NOT `comm` (@cowir-ai msg-3557 found it, my control reproduced it): comm -23 <(main) /dev/null
+# returned 974 against a 1134-file corpus, SILENTLY — nothing on stderr, in either collation. It
+# is the one tool here that mis-answers rather than errors on input it dislikes. grep -Fxv -f
+# passes both controls: minus-empty == 1134, minus-itself == 0.
+_tests_in() { git ls-tree -r --name-only "$1" -- test/unit | grep '^test/unit/test_.*\.gd$'; }
+DELETED_TESTS=$(_tests_in "$MAIN" | grep -Fxv -f <(_tests_in "$BRANCH") || true)
+if [ -n "$DELETED_TESTS" ]; then
+	echo "NOTE — this branch removes $(printf '%s\n' "$DELETED_TESTS" | grep -c .) test file(s) $MAIN has:"
+	printf '%s\n' "$DELETED_TESTS" | head -5 | sed 's/^/    /'
+	echo "  gate.sh cannot see this: scripts-run and files-on-disk both drop, so it still reads clean."
+fi
+
 MAIN_AHEAD=$(git rev-list --count "$BASE..$MAIN")
 echo "branch touches $SEEN file(s); $MAIN has moved $MAIN_AHEAD commit(s) since the base"
 echo "  compared $TOTAL · skipped $SKIP_UNMOVED (main never moved them) $SKIP_ABSENT (not on $MAIN) $SKIP_DELETES (branch deletes)"
