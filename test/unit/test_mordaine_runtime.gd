@@ -129,16 +129,15 @@ func test_mordaine_weaknesses_and_resistances_are_known_elements() -> void:
 ## Do not "fix" it; that converts a 38% trigger into a 100% one, which is a balance change.
 
 func test_mordaine_one_shot_setup_is_well_formed() -> void:
-	"""one_shot blocks reward strategic prep. The hp_threshold should
-	equal or exceed max_hp (so one full-damage hit qualifies) and the
-	reward_item should be present (or this whole block is dead data)."""
+	"""Mordaine's one_shot block is internally coherent. Asserts HER
+	authored shape — a full-bar trigger — not a rule about the corpus."""
 	var m = _load_mordaine_data()
 	var os = m.get("one_shot", {})
 	if os.is_empty():
 		return  # No one_shot set — fine
 	assert_gte(os.get("hp_threshold", 0), m["stats"]["max_hp"],
-		"one_shot hp_threshold must be at least max_hp (otherwise threshold is unreachable on a fresh boss)")
+		"Mordaine authors a FULL-BAR one_shot (threshold >= max_hp). This is her shape, not a corpus invariant — cave_rat_king deliberately triggers at 38%. If you lowered this on purpose, update the test; do not 'fix' the data to match it.")
 	assert_ne(os.get("reward_item", ""), "",
-		"one_shot must declare a reward_item")
+		"one_shot must declare a reward_item. NOTE: nothing grants it — 0 consumers in src/. Keeping the data coherent so wiring it later is one change, not a 50-monster audit.")
 	assert_ne(os.get("setup_hint", ""), "",
-		"one_shot should include a setup_hint for the bestiary")
+		"one_shot must declare a setup_hint. NOTE: this is NOT displayed anywhere — the bestiary reads bestiary.json's one_shot_reward, a different key in a different file.")
