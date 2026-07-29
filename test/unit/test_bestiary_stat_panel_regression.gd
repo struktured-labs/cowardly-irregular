@@ -20,8 +20,9 @@ extends GutTest
 ##    Weak and Resist.
 ##
 ## 2. M.DEF WAS NEVER DISPLAYED. magic_defense became load-bearing when
-##    magic damage started dividing by it (Combatant.gd:277) and Protect
-##    stopped mitigating magic. All 98 monsters carry an explicit value;
+##    magic damage started dividing by it (the is_magical branch of
+##    Combatant.take_damage) and Protect stopped mitigating magic.
+##    All 98 monsters carry an explicit value;
 ##    the panel that exists to show a monster's stats just never listed
 ##    it, so DEF alone told a player nothing about how a caster would land.
 ##
