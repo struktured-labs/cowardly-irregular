@@ -39,6 +39,26 @@ func before_each() -> void:
 		_saved_constants = GameState.game_constants.duplicate(true)
 		if "story_flags" in GameState:
 			_saved_story = GameState.story_flags.duplicate(true)
+		# CLEAR, don't just save. GameState is an autoload and its dicts persist
+		# for the whole GUT run, so a flag another test set makes these asserts
+		# prove "this flag is set" rather than "this call set it".
+		# PROVEN vacuous 2026-07-29: neuter the helper with an early return,
+		# pre-stamp chapter1_complete, and test_mirror_writes_the_bare_name
+		# PASSES. @cowir-sfx's cooldown-stamp shape (msg-3382) — an accurate
+		# assertion unearned by its context.
+		GameState.game_constants = {}
+		if "story_flags" in GameState:
+			GameState.story_flags = {}
+
+
+## Precondition + action + postcondition. Asserting the flag is ABSENT first is
+## what makes the postcondition mean "this call did it" instead of "it is true".
+func _assert_mirrors(gl, flag: String, bare: String) -> void:
+	assert_false(GameState.get_story_flag(bare),
+		"PRECONDITION: '%s' must be clear before the call, or the assertion below proves nothing" % bare)
+	gl._set_cutscene_flag_and_mirror(flag)
+	assert_true(GameState.get_story_flag(bare),
+		"'%s' must mirror — QuestLog reads get_story_flag with no game_constants fallback, so a broken mirror shows completed objectives as incomplete" % bare)
 
 
 func after_each() -> void:
@@ -60,9 +80,7 @@ func test_mirror_writes_the_bare_name_to_story_flags() -> void:
 	# THE regression. Mutation A made this write the PREFIXED name; QuestLog
 	# reads bare, so the objective stays incomplete forever.
 	var gl = _loop()
-	gl._set_cutscene_flag_and_mirror("cutscene_flag_chapter1_complete")
-	assert_true(GameState.get_story_flag("chapter1_complete"),
-		"the BARE name must reach story_flags — QuestLog reads get_story_flag with no game_constants fallback")
+	_assert_mirrors(gl, "cutscene_flag_chapter1_complete", "chapter1_complete")
 	assert_false(GameState.get_story_flag("cutscene_flag_chapter1_complete"),
 		"the prefixed name must NOT be what lands in story_flags")
 	gl.free()
@@ -78,10 +96,8 @@ func test_mirror_is_not_scoped_to_any_flag_family() -> void:
 			"cutscene_flag_spotlight_watched_bard",
 			"cutscene_flag_world1_mordaine_watch_road_complete",
 			"cutscene_flag_prologue_complete"]:
-		gl._set_cutscene_flag_and_mirror(flag)
 		var bare: String = flag.substr("cutscene_flag_".length())
-		assert_true(GameState.get_story_flag(bare),
-			"'%s' must mirror — a scope condition on the bare name breaks QuestLog for that family and no source pin sees it" % bare)
+		_assert_mirrors(gl, flag, bare)
 	gl.free()
 
 
