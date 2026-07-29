@@ -74,12 +74,11 @@ const AUTHORED_AHEAD := {
 	"wall_climb": "Ninja overworld traversal — same feature",
 	"optional_detector": "Skiptrotter routing — CLAUDE.md 'warp to next quest/boss, bypass dungeons'",
 	"debug_mode": "Scriptweaver debug console — CLAUDE.md 'edit formulas via debug console'",
-	## Found 2026-07-29 once comments stopped counting as consumers. These are NOT
-	## authored-ahead: nothing in CLAUDE.md plans them, and each promises a concrete
-	## mechanic on an equip button. steal_boost sits on ROGUE, a STARTER job, making it
-	## the most reachable of the seven. Listed so the set stays honest and the ratchet
-	## keeps working — not as permission to leave them. Battle lane owns the wiring.
-	"steal_boost": "Rogue '+30% steal success rate' — steal_chance accumulates, nothing reads it",
+	## Found 2026-07-29 once comments stopped counting as consumers. These are NOT authored-ahead:
+	## nothing in CLAUDE.md plans them, and each promises a concrete mechanic on an equip button.
+	## Listed so the set stays honest and the ratchet keeps working — not as permission to leave them.
+	## steal_boost WAS here and is gone because it got wired the same day, which is this list working
+	## as designed: the self-destructing direction went red the moment it became a lie.
 	"time_sense": "Time Mage 'preview enemy actions 1 turn ahead' — preview_turns unread",
 	"speedrun_timer": "Skiptrotter split tracking — track_personal_best unread",
 }

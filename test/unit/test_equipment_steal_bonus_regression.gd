@@ -16,34 +16,41 @@ func _read(p: String) -> String:
 	return FileAccess.get_file_as_string(p)
 
 
-func test_steal_branch_reads_bonus() -> void:
+## The composition site. It moved out of the steal arm on 2026-07-29 when Mug turned out to roll its
+## own steal with a second clamp, so the two paths now share one helper. Locating it by NAME rather
+## than by a window offset from `"steal":` is what stops the next relocation from reddening this file.
+func _composition_site() -> String:
 	var src := _read(BATTLE_MANAGER_PATH)
-	# Find the steal effect branch and pin the helper call inside it.
+	var at: int = src.find("func _steal_success_rate(")
+	assert_gt(at, -1, "the shared steal-rate helper must exist — every assertion here reads it")
+	return src.substr(at, 700)
+
+
+func test_steal_branch_reads_bonus() -> void:
+	# Was: pin the helper call textually inside the steal arm. That was true only while the sum was
+	# assembled there. The durable form is that the steal arm routes to the composition site and the
+	# composition site reads the equipment field.
+	var src := _read(BATTLE_MANAGER_PATH)
 	var idx: int = src.find("\"steal\":")
 	assert_gt(idx, -1)
-	# Window covers the comment + bonus pull + clamp + loop.
 	var window: String = src.substr(idx, 1200)
-	assert_true(window.contains("_sum_equipment_special_effect(caster, \"steal_bonus\")"),
-		"steal branch must read steal_bonus via the generic helper")
+	assert_true(window.contains("_steal_success_rate("),
+		"the steal branch must compose its rate through the shared helper")
+	assert_true(_composition_site().contains("_sum_equipment_special_effect(caster, \"steal_bonus\")"),
+		"the composition site must read steal_bonus via the generic helper")
 
 
 func test_effective_rate_clamps_at_1_0() -> void:
-	var src := _read(BATTLE_MANAGER_PATH)
-	var idx: int = src.find("\"steal\":")
-	var window: String = src.substr(idx, 1200)
-	# Assert the RELATIONSHIP, not the exact expression. This pinned the
-	# literal `clampf(success_rate + steal_bonus, 0.0, 1.0)` and so went RED
-	# on a correct change — wiring the steal_boost passive into the same sum
-	# (2026-07-29). A coincidental-literal pin fails on a correct edit and
-	# passes on a wrong one that keeps the spelling; CLAUDE.md names the class.
-	var rate_at: int = window.find("var effective_rate")
-	assert_gt(rate_at, -1, "the success rate must still be computed in one place")
-	var expr: String = window.substr(rate_at, 200)
+	# Assert the RELATIONSHIP, not the exact expression. This pinned the literal
+	# `clampf(success_rate + steal_bonus, 0.0, 1.0)` and went RED on a correct change twice — first
+	# when the steal_boost passive joined the sum, then when the sum moved into a shared helper so
+	# Mug would get it too. Each time the code got better and this file said otherwise.
+	var expr := _composition_site()
 	assert_true(expr.contains("clampf("),
 		"effective rate must be clamped so stacked sources don't bend math")
 	assert_true(expr.contains("0.0, 1.0"),
 		"the clamp bounds must stay [0,1] — above 1.0 makes the randf check always-true")
-	assert_true(expr.contains("success_rate") and expr.contains("steal_bonus"),
+	assert_true(expr.contains("base_rate") and expr.contains("steal_bonus"),
 		"the base rate and equipment's contribution must both remain in the sum")
 
 

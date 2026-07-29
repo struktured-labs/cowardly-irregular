@@ -59,21 +59,22 @@ func test_get_passive_mods_carries_steal_chance_through() -> void:
 ## ── the consumer exists on the steal path ────────────────────────────
 
 func test_steal_reads_the_passive_not_only_equipment() -> void:
-	# Tick 462 wired equipment's steal_bonus and stopped there. This
-	# asserts the passive is summed on the SAME expression, so the two
-	# sources cannot drift apart again.
+	# Tick 462 wired equipment's steal_bonus and stopped there; this file wired the passive and
+	# stopped at the Steal arm, while Mug rolled its own steal from a second clamp. Both sources are
+	# now composed in one helper, so "the SAME expression" is asserted at that helper rather than at
+	# a byte offset from the steal arm — which is what let the two paths drift in the first place.
 	var src: String = FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
-	var at: int = src.find('"steal":')
-	assert_gt(at, -1, "the steal arm must exist")
-	var body: String = src.substr(at, 1400)
-	assert_string_contains(body, "steal_chance",
-		"the steal arm must read the passive's steal_chance — equipment alone was tick 462's scope, not the class")
-	var rate_line: int = body.find("var effective_rate")
-	assert_gt(rate_line, -1, "the success rate must still be computed in one place")
-	var rate_expr: String = body.substr(rate_line, 160)
+	var at: int = src.find("func _steal_success_rate(")
+	assert_gt(at, -1, "the shared steal-rate helper must exist")
+	var rate_expr: String = src.substr(at, 700)
+	assert_string_contains(rate_expr, "steal_chance",
+		"the composed rate must read the passive's steal_chance — equipment alone was tick 462's scope, not the class")
 	assert_string_contains(rate_expr, "steal_bonus",
 		"equipment's contribution must survive — this widens the rate, it does not replace it")
-	assert_string_contains(rate_expr, "passive_steal",
-		"the passive's contribution must be summed into the SAME rate, or the two sources drift")
 	assert_string_contains(rate_expr, "clampf",
 		"the sum must stay clamped — stacking sources must not push the rate past 1.0 and make the randf check always-true")
+	# The reason the helper exists: every steal roll must consult it, not just the one that was found.
+	var steal_arm: int = src.find('"steal":')
+	assert_gt(steal_arm, -1, "the steal arm must exist")
+	assert_string_contains(src.substr(steal_arm, 1400), "_steal_success_rate(",
+		"the Steal path must route through the shared helper")
