@@ -207,8 +207,21 @@ func test_no_prose_grants_a_bonus_smaller_than_the_game_can_produce() -> void:
 							floor_val = mini(floor_val, v)
 	assert_lt(floor_val, 9999, "must find at least one positive equipment bonus to derive a floor")
 
-	# SPD / EVA / MP are absent by design — none of them were scaled.
-	var claim := RegEx.create_from_string("\\+([0-9]{1,4})\\s*(DEF|ATK|MAG|max HP)\\b")
+	# SPD / EVA / MP / AP are absent by design — none of them were scaled. Percentages are
+	# scale-free and never match. The second alternative catches the SPELLED-OUT form
+	# ("+20 to party defense"), which is the eleventh offender in this class and the one that beat
+	# both hand-sweeps AND the first version of this ratchet — it names the stat in prose rather
+	# than as an abbreviation, so an abbreviation-only pattern is blind to it by construction.
+	#
+	# SCOPED TO SPEC-BEARING CORPORA (items.json + cutscene grant_item descriptions). bestiary.json
+	# is deliberately excluded: meta_knight's "Gains +2 damage against any character who quicksaved
+	# within the last minute" is flavour with no mechanical backing, and the pettiness of +2 IS the
+	# joke — scaling it to +20 would make it a real bonus and kill the line. Same ruling as
+	# cowir-cutscenes' world5_chapter2 "You'd deal three damage", where an obsolete enemy being
+	# pathetic is the entire subject. A number in prose is not automatically a stat, and a ratchet
+	# that cannot tell those apart will eventually demand that a joke be wrong.
+	var claim := RegEx.create_from_string(
+		"\\+([0-9]{1,4})\\s*(DEF|ATK|MAG|max HP)\\b|\\+([0-9]{1,4})\\s+to\\s+(?:party\\s+)?(defense|attack|magic)\\b")
 	var offenders: Array = []
 	var files: Array = ["res://data/items.json"]
 	var dir := DirAccess.open("res://data/cutscenes")
@@ -219,9 +232,12 @@ func test_no_prose_grants_a_bonus_smaller_than_the_game_can_produce() -> void:
 	for path in files:
 		var raw := FileAccess.get_file_as_string(path)
 		for m in claim.search_all(raw):
-			if int(m.get_string(1)) < floor_val:
+			# Two alternatives: abbreviated form fills groups 1/2, spelled-out form fills 3/4.
+			var num_s: String = m.get_string(1) if m.get_string(1) != "" else m.get_string(3)
+			var stat_s: String = m.get_string(2) if m.get_string(2) != "" else m.get_string(4)
+			if num_s != "" and int(num_s) < floor_val:
 				offenders.append("%s: '+%s %s' is below the %d the game's weakest gear grants"
-					% [str(path).get_file(), m.get_string(1), m.get_string(2), floor_val])
+					% [str(path).get_file(), num_s, stat_s, floor_val])
 	assert_eq(offenders, [], "prose promising a pre-scale bonus:\n  %s" % "\n  ".join(offenders))
 
 
