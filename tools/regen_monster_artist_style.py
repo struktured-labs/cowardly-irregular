@@ -618,6 +618,24 @@ def despeckle(img: Image.Image, min_px: int = 24) -> Image.Image:
 
     Keeps every component >= min_px, so a genuinely detached part (a
     thrown weapon, a separated jaw) survives untouched.
+
+    ⚠️ ONLY EVER CALL THIS ON A SHEET YOU JUST GENERATED, never across the
+    corpus. Measured 2026-07-28 before making that mistake: 79 of 103
+    monster sheets carry sub-24px components totalling 11,755px, and the
+    single worst offender is fighter_skeleton_knight at 1,944px — TIER
+    T2, artist-made. 15 of the 79 are T2. Those specks are the artist
+    DRAWING: the sword tip, the torn scarf, the orange eye glints, the
+    gaps between bones. A corpus sweep justified by that 79/103 number
+    would have deleted artist work, which is the one thing this lane must
+    never do (struktured: "not outright manipulation or subbing gpt2
+    sprites where we have artist ones").
+
+    The number does not distinguish chromakey dust from intentional
+    detail — only provenance does, and provenance lives in the manifest's
+    tier field, not in the pixels. On a freshly generated T1 sheet the
+    specks are known to be keying residue because nothing else could have
+    put them there. On any sheet you did not just make, they are somebody's
+    decision until proven otherwise.
     """
     from scipy import ndimage
 
