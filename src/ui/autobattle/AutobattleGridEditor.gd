@@ -1024,6 +1024,10 @@ func _format_condition(condition: Dictionary) -> String:
 			return "Has %s" % StatusNames.display(status)
 		"ally_has_status":
 			return "Ally has %s" % StatusNames.display(condition.get("status", ""))
+		"has_buff":
+			return "Buffed: %s" % str(condition.get("stat", "?")).capitalize()
+		"not_has_buff":
+			return "Not buffed: %s" % str(condition.get("stat", "?")).capitalize()
 		"enemy_has_status":
 			return "Enemy has %s" % StatusNames.display(condition.get("status", ""))
 		"enemy_hp_percent":
