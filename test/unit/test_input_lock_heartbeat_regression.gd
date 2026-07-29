@@ -164,6 +164,45 @@ func test_a_lock_with_no_paired_pop_must_document_what_releases_it() -> void:
 		"these locks are pushed, never popped by name, and never heartbeated — either they leak and freeze the player until the 10s reaper, or something else releases them and that must be stated: %s" % str(undocumented))
 
 
+## THE PREMISE THIS ENTIRE FILE RESTS ON, and it was asserted nowhere until 2026-07-29.
+##
+## Every other test here demands that long-held locks re-push. That is only meaningful because
+## `push_lock` OVERWRITES the timestamp. Make it not clobber an existing entry — a plausible
+## "don't reset a lock someone else already holds" edit —
+##
+##     func push_lock(lock_id: String) -> void:
+##         if not _locks.has(lock_id):          # <-- one line
+##             _locks[lock_id] = Time.get_ticks_msec()
+##
+## and heartbeating becomes a silent no-op, the autogrind-summary bug returns, and every test in
+## this file STAYS GREEN. Measured, not reasoned: 5 passing under that mutation.
+##
+## That is worse than a stale claim. A stale claim goes out of date; this one INVERTS the file —
+## it would go on demanding a ritual that does nothing, while the bug it exists to prevent is live.
+## cowir-story's category: a true claim, load-bearing, asserted nowhere.
+##
+## Asserted BEHAVIOURALLY rather than by reading the source, because the thing that matters is that
+## a re-push rescues a lock the reaper would otherwise take — not that the assignment is spelled a
+## particular way.
+func test_push_lock_actually_refreshes_the_timestamp() -> void:
+	var ilm = load("res://src/input/InputLockManager.gd").new()
+	ilm.push_lock("probe")
+	assert_true(ilm.is_locked(), "positive control: a fresh lock must read as held")
+
+	# Age it past the reaper's horizon, as a real holder crossing 10s would.
+	ilm._locks["probe"] = Time.get_ticks_msec() - (ilm.STALE_TIMEOUT_MS + 5000)
+	# The heartbeat. If push_lock does not overwrite, this changes nothing.
+	ilm.push_lock("probe")
+	assert_true(ilm.is_locked(),
+		"push_lock must REFRESH an existing lock's timestamp — heartbeating is the only defence long-held holders have against the 10s reaper, and if a re-push stops clobbering, every heartbeat in src/ becomes a no-op while this file stays green")
+
+	# And the reaper must still work, or "always locked" would pass the assert above for free.
+	ilm._locks["probe"] = Time.get_ticks_msec() - (ilm.STALE_TIMEOUT_MS + 5000)
+	assert_false(ilm.is_locked(),
+		"negative control: an un-heartbeated stale lock must still be reaped, or the test above proves nothing")
+	ilm.free()
+
+
 ## Guards the guard: if the scan stops finding the two known-good heartbeats, it has broken and would
 ## report a clean sweep over nothing. A zero-result checker and a correct one look identical.
 func test_scanner_still_detects_the_known_heartbeats() -> void:
