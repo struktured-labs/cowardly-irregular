@@ -44,6 +44,18 @@ func _matched_area_keys() -> Array:
 	return keys
 
 
+## Does the manifest carry a real, playable entry for this track?
+func _manifest_has(track_id: String) -> bool:
+	var raw: String = FileAccess.get_file_as_string("res://data/music_manifest.json")
+	var parsed = JSON.parse_string(raw)
+	if not (parsed is Dictionary):
+		return false
+	var tracks = parsed.get("tracks", parsed)
+	if not tracks.has(track_id):
+		return false
+	return str(tracks[track_id].get("file", "")) != ""
+
+
 func _dungeon_scripts() -> Array:
 	var out: Array = []
 	var d := DirAccess.open(DUNGEON_DIR)
@@ -102,8 +114,20 @@ func test_each_dragon_cave_key_resolves_at_runtime() -> void:
 		if stream == null:
 			continue
 		var playing_path: String = str(stream.resource_path)
-		assert_true(playing_path.find("dungeon_dragon") > -1 or playing_path.find("dungeon_medieval") > -1,
-			"%s routed to \"%s\" but the player is on %s — an unmatched key falls to _start_overworld_music(), which is overworld music inside a dungeon" % [f, key, playing_path])
+		## Expect the SPECIFIC track, derived from the manifest. Accepting
+		## "dungeon_dragon OR dungeon_medieval" for every cave — this test's
+		## previous form — was vacuous for exactly the defect it exists to
+		## catch: Fire and Ice falling back to the generic medieval bed IS the
+		## bug that was fixed here, and the loose form passed on it.
+		##
+		## Lightning and Shadow have no composed track yet, so dungeon_medieval
+		## is their CORRECT result. That expectation is derived rather than
+		## listed, so it self-destructs: the day those OGGs land, this demands
+		## their own track without anyone remembering to come back.
+		var own_track: String = "dungeon_dragon_" + key.replace("_dragon_cave", "")
+		var expected: String = own_track if _manifest_has(own_track) else "dungeon_medieval"
+		assert_true(playing_path.find(expected) > -1,
+			"%s routed to \"%s\" and should be playing %s, but the player is on %s. Either the key missed every arm (falling to _start_overworld_music — overworld music inside a dungeon) or it fell back to the generic bed, which is the original defect" % [f, key, expected, playing_path])
 	if not prev.is_empty() and sm.has_method("restore_music_state"):
 		sm.restore_music_state(prev)
 
