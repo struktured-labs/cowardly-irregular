@@ -593,7 +593,7 @@
 		"glass_amulet": {
 			"id": "glass_amulet",
 			"name": "Glass Amulet",
-			"description": "Immense power, but fragile - +50% damage, -30% defense",
+			"description": "Immense power, but fragile — +150 attack and magic, -100 defense",
 			"cost": 2500,
 			"stat_mods": {
 				"attack": 150,
