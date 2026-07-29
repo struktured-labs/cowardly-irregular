@@ -652,6 +652,52 @@ def despeckle(img: Image.Image, min_px: int = 24) -> Image.Image:
     return Image.fromarray(arr)
 
 
+def artist_write_refusal(monster_id: str, allow_override: bool) -> str:
+    """Refuse to overwrite artist-tier art. Returns a reason, or "" to proceed.
+
+    Until 2026-07-29 this did not exist, and the absence was invisible
+    because the METADATA looked like protection. I corrected four job
+    sheets from T1 to T2 and reported that protection was restored — then
+    checked what actually reads `tier` before writing. Nothing did. Every
+    generation tool in this repo WRITES tier into the manifest and none
+    consults it. The field encoded an intention that no code enforced, so
+    a regen aimed at `fighter` would have proceeded exactly as before.
+
+    (cowir-sfx's inversion class: a premise that is load-bearing, true by
+    convention, and asserted nowhere. The question is not "is it true" but
+    "what breaks if it stops being true" — here, nothing visible, which is
+    precisely why it needed enforcing rather than documenting.)
+
+    The backup in tmp/ is not a substitute. It is gitignored, per-machine,
+    and only ever holds the FIRST overwrite — regen twice and the artist
+    original is gone from disk entirely.
+    """
+    try:
+        manifest = json.loads((GAME_REPO / "data" / "sprite_manifest.json").read_text())
+    except (OSError, json.JSONDecodeError) as exc:
+        # Fail CLOSED. If provenance can't be read, nothing may be
+        # overwritten — the failure mode of guessing is unrecoverable.
+        return (f"'{monster_id}': sprite_manifest.json unreadable ({exc}). "
+                f"Refusing to write when provenance is unknown.")
+    entry = manifest.get("monster_sheets", {}).get(monster_id, {})
+    tier = entry.get("tier", "")
+    target = GAME_REPO / "assets" / "sprites" / "monsters" / f"{monster_id}.png"
+    if not entry and target.exists() and not allow_override:
+        # A sheet on disk with no manifest entry has UNKNOWN provenance, and
+        # unknown is not the same as T1. Fail closed: register it (with a
+        # tier you can defend) before regenerating over it. Writing a brand
+        # new id is still free — that path has no file to destroy.
+        return (f"'{monster_id}' has a sheet on disk but NO manifest entry, "
+                f"so its provenance is unknown. Register it before "
+                f"regenerating — unknown is not T1.")
+    if tier in ("T2", "T3") and not allow_override:
+        return (f"'{monster_id}' is tier {tier} — ARTIST work. Regenerating "
+                f"would overwrite it. Pass --allow-artist-overwrite only "
+                f"with struktured's explicit approval; the tmp/ backup is "
+                f"gitignored and holds only the first overwrite.")
+    return ""
+
+
 def assemble_sheet(sheet_1024: Image.Image, monster_id: str) -> Image.Image:
     """Split 1024×1024 into 4 tiles, downscale each, assemble as 2048×256 strip."""
     half = 512
@@ -679,12 +725,18 @@ def assemble_sheet(sheet_1024: Image.Image, monster_id: str) -> Image.Image:
     return strip
 
 
-def regen_one(client, monster_id: str, quality: str) -> dict:
+def regen_one(client, monster_id: str, quality: str,
+              allow_artist_overwrite: bool = False) -> dict:
     refs = refs_for(monster_id)
     if not refs:
         return {"monster": monster_id, "status": "no-refs"}
     ref_name = refs[0].stem.split()[0].lower()  # "SLIME 1" → "slime"
     print(f"[{monster_id}] refs={[r.name for r in refs]}  ${COST_PER_IMAGE[quality]}")
+    refusal = artist_write_refusal(monster_id, allow_artist_overwrite)
+    if refusal:
+        print(f"  REFUSED {refusal}")
+        return {"monster": monster_id, "status": "refused", "cost": 0.0}
+
     prompt = sheet_prompt(monster_id, ref_name)
     ref_bytes = load_reference_bytes(refs)
     result_1024 = call_gpt_image(client, prompt, ref_bytes, quality)
@@ -710,7 +762,26 @@ def main() -> int:
     parser.add_argument("--quality", choices=["low", "medium", "high"],
                         default="medium")
     parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--allow-artist-overwrite", action="store_true",
+                        help="Overwrite T2/T3 artist sheets. Requires struktured's "
+                             "explicit approval — the tmp/ backup is gitignored "
+                             "and holds only the first overwrite.")
     args = parser.parse_args()
+
+    # Refuse BEFORE anything is constructed or spent. Checking inside
+    # regen_one meant OpenAI() was built first, so a run aimed at artist art
+    # died on a missing API key instead of on the refusal — the right
+    # outcome for the wrong reason, and it made the guard unrunnable without
+    # credentials. A protection you can only exercise by paying for it is
+    # one nobody exercises.
+    refused = [(m, r) for m in args.monsters
+               if (r := artist_write_refusal(m, args.allow_artist_overwrite))]
+    for m, reason in refused:
+        print(f"REFUSED {reason}")
+    args.monsters = [m for m in args.monsters if m not in dict(refused)]
+    if not args.monsters:
+        print("\nNothing to do — every target was refused.")
+        return 1
 
     if args.dry_run:
         total = COST_PER_IMAGE[args.quality] * len(args.monsters)
@@ -726,7 +797,8 @@ def main() -> int:
     total = 0.0
     for m in args.monsters:
         try:
-            r = regen_one(client, m, args.quality)
+            r = regen_one(client, m, args.quality,
+                          args.allow_artist_overwrite)
             results.append(r)
             total += r.get("cost", 0.0)
         except Exception as e:
