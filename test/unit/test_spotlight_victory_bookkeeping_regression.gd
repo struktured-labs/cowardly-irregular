@@ -77,7 +77,7 @@ func test_spotlight_short_circuit_sets_unlock_flag_on_victory() -> void:
 	var src: String = FileAccess.get_file_as_string(GL_PATH)
 	var idx: int = src.find("if _spotlight_duel_active:")
 	assert_gt(idx, -1, "spotlight short-circuit must exist")
-	var window: String = src.substr(idx, 1500)
+	var window: String = _short_circuit_block(src, idx)
 	assert_string_contains(window, "cutscene_flag_spotlight_unlocked_",
 		"victory branch must set the unlock cutscene flag")
 	assert_string_contains(window, "_pending_spotlight_unlock",
@@ -90,7 +90,7 @@ func test_spotlight_short_circuit_clears_loss_counter_on_victory() -> void:
 	var src: String = FileAccess.get_file_as_string(GL_PATH)
 	var idx: int = src.find("if _spotlight_duel_active:")
 	assert_gt(idx, -1)
-	var window: String = src.substr(idx, 1500)
+	var window: String = _short_circuit_block(src, idx)
 	assert_string_contains(window, "spotlight_losses_",
 		"loss counter key must be per-job")
 	assert_string_contains(window, "GameState.game_constants.erase(loss_key)",
@@ -104,7 +104,7 @@ func test_spotlight_short_circuit_increments_loss_counter_on_defeat() -> void:
 	var src: String = FileAccess.get_file_as_string(GL_PATH)
 	var idx: int = src.find("elif not victory and _pending_spotlight_unlock")
 	assert_gt(idx, -1, "defeat branch of the short-circuit must exist")
-	var window: String = src.substr(idx, 800)
+	var window: String = _short_circuit_block(src, idx)
 	assert_string_contains(window, "GameState.game_constants[loss_key] = current + 1",
 		"defeat branch must increment loss counter")
 
@@ -117,7 +117,7 @@ func test_spotlight_short_circuit_calls_reconcile_locks_on_victory() -> void:
 	var src: String = FileAccess.get_file_as_string(GL_PATH)
 	var idx: int = src.find("if _spotlight_duel_active:")
 	assert_gt(idx, -1)
-	var window: String = src.substr(idx, 1500)
+	var window: String = _short_circuit_block(src, idx)
 	var flag_idx: int = window.find("cutscene_flag_spotlight_unlocked_")
 	var reconcile_idx: int = window.find("_reconcile_spotlight_locks()")
 	assert_gt(reconcile_idx, flag_idx,
@@ -131,7 +131,7 @@ func test_spotlight_short_circuit_emits_signal_and_returns() -> void:
 	var src: String = FileAccess.get_file_as_string(GL_PATH)
 	var idx: int = src.find("if _spotlight_duel_active:")
 	assert_gt(idx, -1)
-	var window: String = src.substr(idx, 1500)
+	var window: String = _short_circuit_block(src, idx)
 	assert_string_contains(window, "spotlight_battle_ended.emit(victory)",
 		"signal must fire so start_solo_battle can resume")
 	# The return must land BETWEEN the emit and the normal victory block.
@@ -142,29 +142,52 @@ func test_spotlight_short_circuit_emits_signal_and_returns() -> void:
 		"short-circuit must return immediately after emit — falling through re-runs the normal victory flow (double teardown, cutscene collision)")
 
 
-## ── (3) battles_won: currently SKIPPED for spotlight (design flag) ──
+## ── (3) battles_won: duels COUNT, but are removed from the ratio ──
 
-func test_battles_won_currently_skipped_for_spotlight_victory() -> void:
-	## PIN CURRENT BEHAVIOR: the short-circuit returns BEFORE the
-	## `battles_won += 1` line. This is DESIGN-AMBIGUOUS — if struktured
-	## rules "spotlights should count as battles_won," flip the return
-	## into `if victory: battles_won += 1; if GameState: GameState
-	## .battles_won += 1` inside the short-circuit BEFORE the return,
-	## and change this test's assertions to check the counters
-	## increment rather than the structural skip.
+func test_spotlight_victory_counts_as_a_battle_won() -> void:
+	## struktured ruled 2026-07-29: "the fights which unlock each of the 5 party members —
+	## remove from the ratio." So the duel IS a battle won (Records must say so; it previously
+	## under-counted by five) and it is excluded from the AUTOMATION RATIO instead.
+	##
+	## This test previously PINNED the skip as design-ambiguous, with a comment instructing
+	## exactly this flip once he ruled. Flipped rather than deleted — the pin did its job.
 	var src: String = FileAccess.get_file_as_string(GL_PATH)
-	var short_circuit_idx: int = src.find("if _spotlight_duel_active:")
-	assert_gt(short_circuit_idx, -1)
-	var battles_won_incr_idx: int = src.find("battles_won += 1")
-	assert_gt(battles_won_incr_idx, short_circuit_idx,
-		"battles_won += 1 must be BELOW the short-circuit — pinning current 'skip for spotlight' behavior")
-	# The window between the short-circuit's `return` and the increment
-	# must not contain another `battles_won += 1` (which would mean the
-	# short-circuit *does* count spotlights, contradicting the pin).
-	var post_short_circuit: String = src.substr(short_circuit_idx, battles_won_incr_idx - short_circuit_idx)
-	var second_incr: int = post_short_circuit.find("battles_won += 1")
-	assert_eq(second_incr, -1,
-		"no battles_won increment inside the short-circuit — if intent changed, delete this pin and add the increment")
+	var sc: int = src.find("if _spotlight_duel_active:")
+	assert_gt(sc, -1)
+	var emit_idx: int = src.find("spotlight_battle_ended.emit(victory)", sc)
+	var inside: String = src.substr(sc, emit_idx - sc)
+	assert_string_contains(inside, "GameState.battles_won += 1",
+		"a won duel must increment battles_won INSIDE the short-circuit — the early return "
+		+ "previously skipped it, under-counting Records by the five unlock fights")
+	assert_string_contains(inside, "GameState.spotlight_duels_won += 1",
+		"and must record it as a DUEL, so the automation ratio can subtract it")
+
+
+func test_the_ratio_excludes_duels() -> void:
+	## The ruling's actual subject. battles_won is both a display number and the ratio's
+	## denominator, and those want different answers: five forced-manual tutorial fights are
+	## battles the player won, but say nothing about their automation habits. Leaving them in
+	## the denominator of an automation ratio biases toward "automator" — backwards, since they
+	## are the most manual battles in the game.
+	var cd: String = FileAccess.get_file_as_string("res://src/cutscene/CutsceneDirector.gd")
+	assert_string_contains(cd, "organic_battles_won()",
+		"the playstyle ratio must use the organic count, not raw battles_won")
+
+
+func test_organic_count_subtracts_duels_and_never_goes_negative() -> void:
+	var saved_b: int = GameState.battles_won
+	var saved_d: int = GameState.spotlight_duels_won
+	GameState.battles_won = 25
+	GameState.spotlight_duels_won = 5
+	assert_eq(GameState.organic_battles_won(), 20,
+		"25 fights won, 5 of them duels -> 20 battles that are evidence about automation")
+	# A corrupted or hand-edited save must not produce a negative denominator.
+	GameState.battles_won = 2
+	GameState.spotlight_duels_won = 9
+	assert_eq(GameState.organic_battles_won(), 0, "clamped, never negative")
+	GameState.battles_won = saved_b
+	GameState.spotlight_duels_won = saved_d
+
 
 
 ## ── (4) Data-side pin: spotlight monsters must remain boss-tagged ──
@@ -227,3 +250,14 @@ func test_reconcile_spotlight_locks_called_on_party_rehydrate() -> void:
 	var window: String = src.substr(comment_idx, 300)
 	assert_string_contains(window, "_reconcile_spotlight_locks()",
 		"post-load must call _reconcile_spotlight_locks — otherwise unlocked duelists come back locked")
+
+
+## The spotlight short-circuit block, bounded at its own `return` rather than a byte count.
+## A fixed window silently truncates when anyone adds a line inside the block — which is exactly
+## what happened when the battles_won ruling landed: the emit fell outside a 1500-char window and
+## three assertions started searching a region that no longer contained their subject.
+func _short_circuit_block(src: String, idx: int) -> String:
+	var end: int = src.find("\n\t\treturn", idx)
+	if end == -1:
+		return src.substr(idx, 2000)
+	return src.substr(idx, end - idx + 12)

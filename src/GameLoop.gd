@@ -2895,6 +2895,14 @@ func _on_battle_ended(victory: bool) -> void:
 			var current: int = int(GameState.game_constants.get(loss_key, 0))
 			GameState.game_constants[loss_key] = current + 1
 			print("[SPOTLIGHT] battle lost → %s = %d" % [loss_key, current + 1])
+		if victory and GameState:
+			# struktured ruling 2026-07-29: a duel IS a battle won — it belongs in battles_won and
+			# in Records. It is excluded from the AUTOMATION RATIO instead, via spotlight_duels_won,
+			# because a forced-manual tutorial fight is not evidence about automation habits.
+			# Previously this early return skipped battles_won entirely, under-counting by five.
+			GameState.battles_won += 1
+			GameState.spotlight_duels_won += 1
+			battles_won += 1
 		spotlight_battle_ended.emit(victory)
 		return
 	if victory:

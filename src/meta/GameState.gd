@@ -131,6 +131,25 @@ var game_constants: Dictionary = {
 ## its session counter to match.
 var battles_won: int = 0
 
+## Spotlight duels won — the five 1v1 fights that unlock each party member.
+##
+## struktured ruling 2026-07-29: "the fights which unlock each of the 5 party members — remove
+## from the ratio." They ARE battles the player fought and won, so they belong in battles_won and
+## in Records; they are NOT evidence about automation, so the automation ratio subtracts them.
+##
+## The split matters because battles_won is BOTH a display number and the ratio's denominator, and
+## those two want different answers. Previously duels were excluded from both — which made Records
+## under-count by five AND inflated the ratio, since a short denominator on a manual-only fight
+## always biases toward "automator" (cowir-ai: excluding hand-fought duels from the denominator of
+## an automation ratio is backwards on its face).
+var spotlight_duels_won: int = 0
+
+
+## Battles that count as evidence about HOW the player fights. Duels are forced-manual and
+## tutorialised, so they say nothing about a player's automation habits either way.
+func organic_battles_won() -> int:
+	return maxi(0, battles_won - spotlight_duels_won)
+
 ## Tick 453: persistent record of bosses defeated at least once.
 ## Read by BattleManager when the pattern_recognition passive is
 ## equipped — repeat encounters with a recorded boss get an extra
@@ -353,6 +372,7 @@ func _create_save_data() -> Dictionary:
 		## play. Pre-fix this lived only on GameLoop and reset to 0
 		## every restart.
 		"battles_won": battles_won,
+		"spotlight_duels_won": spotlight_duels_won,
 		## Tick 453: persist the boss-memory list so the pattern_
 		## recognition bonus survives a save+load.
 		"previously_fought_bosses": previously_fought_bosses,
@@ -634,6 +654,12 @@ func _apply_save_data(save_data: Dictionary) -> void:
 	## Tick 418: restore the canonical battle counter. max(0, ...)
 	## clamp defends against a corrupted save with a negative value.
 	# else-default (2026-07-04): a pre-tick-418 save lacks the key; without the else it kept the previously-loaded game's count (cross-slot leak)
+	if save_data.has("spotlight_duels_won"):
+		spotlight_duels_won = max(0, int(save_data["spotlight_duels_won"]))
+	else:
+		# Pre-split saves never counted duels at all, so there is nothing to subtract and the
+		# organic count correctly equals battles_won. Grandfathered rather than guessed.
+		spotlight_duels_won = 0
 	if save_data.has("battles_won"):
 		battles_won = max(0, int(save_data["battles_won"]))
 	else:
@@ -1032,6 +1058,7 @@ func reset_game_state() -> void:
 	# splits are last-run defeat times (run-specific). boss_personal_best
 	# is deliberately cross-run (a PB survives New Game — see its docstring).
 	battles_won = 0
+	spotlight_duels_won = 0
 	previously_fought_bosses.clear()
 	boss_splits.clear()
 	if rebalance_daemon != null:

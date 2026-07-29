@@ -1560,7 +1560,14 @@ func _detect_playstyle() -> String:
 		## autobattle-ratio playstyle gating below (>= 20 battles
 		## for "automator", > 100 for veteran) silently never fired
 		## pre-fix.
-		if GameState and "battles_won" in GameState:
+		if GameState and GameState.has_method("organic_battles_won"):
+			# struktured ruling 2026-07-29: the five party-unlock duels are removed FROM THE RATIO.
+			# They stay in battles_won (they are fights the player won, and Records must say so),
+			# but they are forced-manual tutorials and say nothing about automation habits. Using
+			# the raw total here would put five hand-fought battles in the denominator of a
+			# question they do not answer.
+			total_battles = GameState.organic_battles_won()
+		elif GameState and "battles_won" in GameState:
 			total_battles = GameState.battles_won
 		if total_battles > 0:
 			autobattle_ratio = float(auto_count) / float(total_battles)

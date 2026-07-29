@@ -72,7 +72,7 @@ func test_gameloop_applies_pending_boss_defeat_on_victory() -> void:
 	assert_gt(idx, -1, "_on_battle_ended must exist")
 	# Tick 472+ spotlight defeat-branch (msg 2472 loss counter) pushed the
 	# _apply_pending_boss_defeat call past the old 2000-char window.
-	var body = text.substr(idx, 3000)
+	var body = _function_body(text, idx)
 	assert_true(body.find("_apply_pending_boss_defeat") != -1,
 		"_on_battle_ended must call _apply_pending_boss_defeat() on victory")
 
@@ -113,7 +113,7 @@ func test_gameloop_clears_pending_on_defeat() -> void:
 	# of _on_battle_ended, pushing the literal past 3500 too. Widened
 	# to 5000. Msg 2472 spotlight defeat-branch (loss counter) pushed
 	# it further — widened to 6000.
-	var body = text.substr(idx, 6000)
+	var body = _function_body(text, idx)
 	# Defeat branch: look in the `else` clause for pending clear
 	assert_true(body.find("pending_boss_defeat = {}") != -1,
 		"On battle defeat, pending_boss_defeat must be cleared (prevent false-flag on retry)")
@@ -151,3 +151,15 @@ func test_reset_game_state_clears_pending() -> void:
 	var body = text.substr(idx, next_func - idx)
 	assert_true(body.find("pending_boss_defeat = {}") != -1,
 		"reset_game_state must clear pending_boss_defeat (carry-over leak across new games)")
+
+
+## A function's FULL body, bounded at the next top-level `func` rather than a byte count.
+##
+## 2026-07-29: these assertions used fixed 3000/6000-char windows into _on_battle_ended. Adding
+## six lines to the spotlight short-circuit pushed their subjects past the window and three
+## assertions began searching a region that no longer contained what they were looking for —
+## failing while the behaviour they defend was intact. A byte-count window is a silent
+## truncation waiting for the function to grow, and this is the third instance tonight.
+func _function_body(text: String, idx: int) -> String:
+	var next: int = text.find("\nfunc ", idx + 1)
+	return text.substr(idx, (next - idx) if next != -1 else 8000)
