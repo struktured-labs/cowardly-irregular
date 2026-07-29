@@ -3084,7 +3084,13 @@ func _execute_next_action() -> void:
 
 	# Status effect behavioral checks
 	if combatant.has_status("stun"):
-		combatant.remove_status("stun")
+		# Tick down like cannot_act below — remove_status ERASES status_durations, so an
+		# unconditional call here discarded every declared duration unread (6 abilities author 2-3).
+		var stun_left: int = int(combatant.status_durations.get("stun", 1))
+		if stun_left <= 1:
+			combatant.remove_status("stun")
+		else:
+			combatant.status_durations["stun"] = stun_left - 1
 		battle_log_message.emit("[color=yellow]%s[/color] is [color=orange]stunned[/color] and cannot act!" % combatant.combatant_name)
 		action_executing.emit(combatant, {"type": "stun_skip"})
 		_execute_next_action()

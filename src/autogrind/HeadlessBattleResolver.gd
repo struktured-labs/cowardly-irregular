@@ -446,7 +446,13 @@ func _execute_group_formation(participants: Array, formation: Dictionary) -> Dic
 
 func _check_status_skip(combatant) -> String:
 	if combatant.has_status("stun"):
-		combatant.remove_status("stun")
+		# Second consumer of the same defect — the live path and this one must agree or an
+		# autogrind run scores a fight the player could not have fought the same way.
+		var stun_left: int = int(combatant.status_durations.get("stun", 1))
+		if stun_left <= 1:
+			combatant.remove_status("stun")
+		else:
+			combatant.status_durations["stun"] = stun_left - 1
 		_log("%s is stunned and cannot act!" % combatant.combatant_name)
 		return "skip"
 
