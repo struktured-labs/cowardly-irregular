@@ -55,8 +55,11 @@ func _setup(party_size: int, enemy_size: int, party_bases: Array = [], enemy_bas
 	var scene := _SceneStub.new()
 	add_child_autofree(scene)
 	var brd = BRDScript.new(scene)
-	var party: Array = []
-	var enemies: Array = []
+	# TYPED. BattleManager declares Array[Combatant]; assigning a plain Array to
+	# it is a SCRIPT ERROR, which aborted _setup and returned an empty Dictionary
+	# — every test here then died on setup["brd"] and reported Risky, not Failed.
+	var party: Array[Combatant] = []
+	var enemies: Array[Combatant] = []
 	for i in range(party_size):
 		var c := _make_combatant("PartyPC%d" % i)
 		party.append(c)
@@ -138,7 +141,14 @@ func test_fallback_to_live_position_when_base_array_short() -> void:
 	if bm == null:
 		pending("BattleManager autoload not available in headless")
 		return
-	var setup = _setup(0, 1, [], [])  # 1 enemy sprite, 0 base positions
+	var setup = _setup(0, 1, [], [])
+	# _setup ALWAYS appends a base entry — passing [] makes it default to the
+	# sprite's own position, it does not leave the array short. The old comment
+	# here claimed "0 base positions" and the array held 1, so this test took the
+	# base branch and never reached the fallback it exists to defend. Clear the
+	# array to build the real case: a late-spawned sprite in sprite_nodes with no
+	# base entry yet.
+	setup["scene"]._enemy_base_positions.clear()
 	var brd = setup["brd"]
 	var sprite = setup["scene"].enemy_sprite_nodes[0]
 	sprite.position = Vector2(999, 999)  # arbitrary — no base to prefer
