@@ -14,6 +14,19 @@ const STICK_DEADZONE: float = 0.2
 ## Device-name substrings ranked best-first. struktured 2026-07-25: the 8BitDo Ultimate 2 is his
 ## PRIMARY pad and the Hyperkin Cadet is a backup, so USB enumeration order must not decide which one
 ## steers the camera when both are attached. Unlisted pads still work; they just rank last.
+##
+## ⚠️ SCOPE, measured 2026-07-29 — this ranking currently steers NOTHING LIVE. `preferred_device`'s
+## only consumers are `right_stick_x` and `shoulder_rotate` below, and both are the input half of
+## Mode 7 camera rotation, which `Mode7Overlay.gd:334` deliberately disables ("deferred to future
+## release"). Verified against the strong dead-code rule: zero readers in src/ outside this file,
+## zero in test/, zero string dispatch, zero scene/data refs — the ONLY mention of GamepadFilter
+## anywhere else is a comment in InputProfileManager.
+##
+## KEEP IT. This is a ready seam, not rot — the same shape as autogrind's `manual_only`: correct,
+## cheap, and one line from load-bearing the day rotation ships. But do not repeat the claim I made
+## when I added it, that a second pad could "take the camera away" — it cannot, because there is no
+## camera rotation to take. The ranking is preparation, and the honest justification is that it will
+## be right on the day the feature turns on, not that it fixes something today.
 const PREFERRED_NAMES: Array[String] = ["8bitdo", "ultimate"]
 
 var preferred_device: int = -1
