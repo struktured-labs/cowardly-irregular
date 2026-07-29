@@ -4363,6 +4363,10 @@
   },
   "masterite_warden_abstract": {
     "id": "masterite_warden_abstract",
+    "win_condition": {
+      "type": "withhold_attack",
+      "value": 4
+    },
     "name": "Warden of Form",
     "description": "Pure geometric defense given consciousness. It is the shape of immovability, the form of endurance made manifest.",
     "level": 19,
@@ -4422,6 +4426,15 @@
   },
   "masterite_arbiter_abstract": {
     "id": "masterite_arbiter_abstract",
+    "win_condition": {
+      "type": "arbiter_ladder",
+      "phases": [
+        { "key": "faith", "job": "cleric" },
+        { "key": "logic", "job": "mage" },
+        { "key": "edge", "job": "rogue" },
+        { "key": "voice", "job": "bard" }
+      ]
+    },
     "name": "Arbiter of Function",
     "description": "The reduction of combat to its simplest function: damage. No elegance, no waste, just the mathematically optimal strike.",
     "level": 20,
