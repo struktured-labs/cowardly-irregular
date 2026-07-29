@@ -206,10 +206,16 @@ func test_quirk_profile_is_documented_as_inverting_against_standard() -> void:
 	var ipm = load("res://src/input/InputProfileManager.gd").new()
 	var quirk: Dictionary = ipm.PROFILE_ULTIMATE_PRO_2
 	var standard: Dictionary = ipm.PROFILE_STANDARD
+	# IF THIS IS RED, READ THIS BEFORE REVERTING ANYTHING. Retire-vs-keep on this profile is an OPEN
+	# ruling with struktured (see the note in InputProfileManager). A failure here most likely means
+	# that ruling landed — the quirk was aligned with Standard, or the profile was retired — in which
+	# case this test is the stale artifact and should be updated or deleted, NOT the change reverted.
+	# It exists to stop the inversion changing SILENTLY and unratified, not to defend the inversion.
+	var ruling_hint := " — if the retire/align ruling has landed, update THIS TEST, do not revert the change"
 	assert_eq(quirk["battle_advance"], standard["battle_defer"],
-		"the quirk profile puts Advance on Standard's Defer button — an inversion, by design, for an UNMAPPED pad")
+		"the quirk profile puts Advance on Standard's Defer button — an inversion that was correct for an UNMAPPED pad" + ruling_hint)
 	assert_eq(quirk["battle_defer"], standard["battle_advance"],
-		"and Defer on Standard's Advance button")
+		"and Defer on Standard's Advance button" + ruling_hint)
 	var src: String = FileAccess.get_file_as_string("res://src/input/InputProfileManager.gd")
 	assert_true(src.contains("predates ControllerMappings"),
 		"the inversion must carry a note explaining WHY it disagrees with the hint bar, or the next reader re-measures it from scratch")
