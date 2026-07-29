@@ -22,9 +22,29 @@ require_test_file() {
   exit 2
 }
 
+# OUTCOME, not preconditions. require_test_file covers the file-absent cause. It is blind to the
+# one that cost the fleet an hour on 2026-07-29: a FRESH WORKTREE has no .godot cache, so
+# res://test/unit/test_X.gd resolves to nothing while the file sits on disk — same signature,
+# exit 0, nothing run, reads as a pass. There will be a fourth cause. Rather than predicting each
+# one, assert that a real suite happened: a run that executed prints a Totals block, and a vacuous
+# one prints none, whatever made it vacuous.
+run_and_verify() {
+  local log; log="$(mktemp tmp/run_tests_verify.XXXXXX)"
+  "$@" 2>&1 | tee "$log"
+  local ec=${PIPESTATUS[0]}
+  if ! grep -q "^---- Totals" "$log"; then
+    echo "run_tests.sh: the run produced NO Totals block — nothing was executed (godot exit $ec)." >&2
+    echo "  Most likely an unimported tree. Fix: godot --headless --audio-driver Dummy --import --quit" >&2
+    echo "  Refusing to return $ec, which would read as a pass." >&2
+    rm -f "$log"; exit 2
+  fi
+  rm -f "$log"
+  exit "$ec"
+}
+
 case "${1:-}" in
-  "")          exec "${BASE[@]}" -gdir=res://test/unit ;;
-  --isolated)  exec "${BASE[@]}" -gdir=res://test/isolated ;;
-  res://*)     require_test_file "${1#res://}"; exec "${BASE[@]}" -gtest="$1" ;;
-  *)           N="${1#test_}"; N="${N%.gd}"; require_test_file "test/unit/test_${N}.gd"; exec "${BASE[@]}" -gtest="res://test/unit/test_${N}.gd" ;;
+  "")          run_and_verify "${BASE[@]}" -gdir=res://test/unit ;;
+  --isolated)  run_and_verify "${BASE[@]}" -gdir=res://test/isolated ;;
+  res://*)     require_test_file "${1#res://}"; run_and_verify "${BASE[@]}" -gtest="$1" ;;
+  *)           N="${1#test_}"; N="${N%.gd}"; require_test_file "test/unit/test_${N}.gd"; run_and_verify "${BASE[@]}" -gtest="res://test/unit/test_${N}.gd" ;;
 esac
