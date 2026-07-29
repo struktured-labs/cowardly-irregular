@@ -31,6 +31,10 @@ const CD := preload("res://src/cutscene/CutsceneDirector.gd")
 const DIRECTOR_PATH: String = "res://src/cutscene/CutsceneDirector.gd"
 const CUTSCENE_DIR: String = "res://data/cutscenes"
 
+## The cutscene whose branches a finishing player sees. Named explicitly because
+## "which scene is the ending" is a fact about the game, not something derivable.
+const ENDING_CUTSCENE: String = "world6_chapter3.json"
+
 ## Always legal — the explicit fallback arm, not a playstyle.
 const RESERVED_KEYS: Array[String] = ["default"]
 
@@ -153,6 +157,11 @@ func test_mirror_matches_source_arm_order() -> void:
 	# Pin the NAMED CONSTANTS and the arm ORDER rather than literal thresholds: struktured owns
 	# the numbers, so a retune must stay green while a reordering — which is what silently killed
 	# two endings — must go red.
+	# 2026-07-28 (cowir-ai): this loop said ORDER in the comment and only checked
+	# PRESENCE in the code — every needle survives a reorder, so the one defect it
+	# names could pass straight through it. Positions must strictly increase.
+	var prev: int = -1
+	var prev_needle: String = ""
 	for needle in [
 		"if _has_exploited_systems():",
 		"if total_battles < PLAYSTYLE_MIN_SAMPLE:",
@@ -160,9 +169,20 @@ func test_mirror_matches_source_arm_order() -> void:
 		"if autobattle_ratio < PLAYSTYLE_MANUAL_RATIO:",
 		"if total_battles > PLAYSTYLE_GRINDER_BATTLES:",
 	]:
-		assert_true(src.find(needle) != -1,
+		var at: int = src.find(needle)
+		assert_gt(at, -1,
 			("_detect_playstyle no longer contains `%s`. The reachability mirror in this file is " +
 			"now stale — update it before trusting any reachability result here.") % needle)
+		if at == -1:
+			return
+		assert_gt(at, prev,
+			("_detect_playstyle tests `%s` BEFORE `%s`, but the mirror in this file assumes the " +
+			"reverse. Arm order decides which playstyles are reachable at which battle counts — " +
+			"reordering silently kills endings, which is exactly what it did once. Update the " +
+			"mirror, then re-read test_every_ending_branch_is_reachable_at_endgame.")
+			% [needle, prev_needle])
+		prev = at
+		prev_needle = needle
 
 
 func test_every_classifier_output_is_reachable_by_some_input() -> void:
@@ -190,23 +210,42 @@ func test_every_classifier_output_is_reachable_by_some_input() -> void:
 			"shadows it completely. Any cutscene branching on it is dead content.") % value)
 
 
-func test_endgame_reachability_is_documented_not_silently_lost() -> void:
-	# NOT asserting all five are reachable at endgame — they are not, and that
-	# is a live open issue owned by cowir-cutscenes (cowir-battle msg 3207,
-	# cowir-story msg 3209: `manual` dies above 100 battles and `exploiter`
-	# above 40, so two of the four authored W6 endings can never play).
-	#
-	# What this pins is that the situation does not get WORSE unnoticed: at a
-	# W6-era battle count at least the two known-reachable outputs must remain
-	# reachable. If that ever drops to one, the ending collapses to a single
-	# branch and someone should be told immediately.
+func test_ending_cutscene_exists_and_branches_on_playstyle() -> void:
+	# Without this, renaming the ending turns the guard below into a silent no-op
+	# that passes forever while checking nothing.
+	var n: int = 0
+	for entry in _authored_keys():
+		if str(entry["file"]) == ENDING_CUTSCENE:
+			n += 1
+	assert_gt(n, 1,
+		("%s authors %d playstyle branches. If the ending was renamed or restructured, " +
+		"test_every_ending_branch_is_reachable_at_endgame is guarding NOTHING — repoint ENDING_CUTSCENE.")
+		% [ENDING_CUTSCENE, n])
+
+
+func test_every_ending_branch_is_reachable_at_endgame() -> void:
+	# 2026-07-28 (cowir-ai): this asserted only ">= 2 outputs reachable", with a
+	# comment calling the dead endings a LIVE open issue. PR #187 fixed them, so
+	# the comment described a bug that no longer existed and the assertion stayed
+	# green at exactly the broken value. Now it asserts the FIX: every non-default
+	# branch the ending authors must be producible past the grinder threshold.
+	# Authored = {automator, exploiter, grinder, manual}, all four now reachable.
 	var endgame: Dictionary = {}
-	for r10 in range(0, 11):
-		endgame[_mirror_classify(float(r10) / 10.0, 150)] = true
-	assert_gte(endgame.size(), 2,
-		("at 150 battles only %d playstyle output(s) are reachable (%s). W6's ending branches on this; " +
-		"dropping below two collapses it to a single branch for every player.")
-		% [endgame.size(), str(endgame.keys())])
+	for exploited in [false, true]:
+		for total in range(CD.PLAYSTYLE_GRINDER_BATTLES + 1, CD.PLAYSTYLE_GRINDER_BATTLES * 2):
+			for r10 in range(0, 11):
+				endgame[_mirror_classify(float(r10) / 10.0, total, exploited)] = true
+	for entry in _authored_keys():
+		if str(entry["file"]) != ENDING_CUTSCENE:
+			continue
+		var key: String = str(entry["key"])
+		if RESERVED_KEYS.has(key):
+			continue
+		assert_true(endgame.has(key),
+			("%s authors ending branch '%s', but no player past %d battles can be classified as it " +
+			"(reachable at endgame: %s). An earlier arm shadows it, so that ending can NEVER play — " +
+			"the exact defect that hid two of the four endings.")
+			% [ENDING_CUTSCENE, key, CD.PLAYSTYLE_GRINDER_BATTLES, str(endgame.keys())])
 
 
 func test_classifier_outputs_are_not_silently_unauthored() -> void:
