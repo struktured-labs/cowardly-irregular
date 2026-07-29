@@ -49,7 +49,7 @@ const MONSTER_TYPES = [
 		"id": "slime",
 		"name": "Slime",
 		"color": Color(0.3, 0.8, 0.3),
-		"stats": {"max_hp": 80, "max_mp": 20, "attack": 10, "defense": 8, "magic": 5, "speed": 8},
+		"stats": {"max_hp": 800, "max_mp": 20, "attack": 100, "defense": 80, "magic": 50, "speed": 8},
 		"weaknesses": ["fire"],
 		"resistances": ["ice"]
 	},
@@ -57,7 +57,7 @@ const MONSTER_TYPES = [
 		"id": "bat",
 		"name": "Bat",
 		"color": Color(0.4, 0.3, 0.5),
-		"stats": {"max_hp": 50, "max_mp": 15, "attack": 12, "defense": 5, "magic": 6, "speed": 18},
+		"stats": {"max_hp": 500, "max_mp": 15, "attack": 120, "defense": 50, "magic": 60, "speed": 18},
 		"weaknesses": ["fire", "lightning"],
 		"resistances": []
 	},
@@ -65,7 +65,7 @@ const MONSTER_TYPES = [
 		"id": "mushroom",
 		"name": "Fungoid",
 		"color": Color(0.6, 0.4, 0.3),
-		"stats": {"max_hp": 100, "max_mp": 25, "attack": 8, "defense": 12, "magic": 10, "speed": 5},
+		"stats": {"max_hp": 1000, "max_mp": 25, "attack": 80, "defense": 120, "magic": 100, "speed": 5},
 		"weaknesses": ["fire"],
 		"resistances": ["poison"]
 	},
@@ -73,7 +73,7 @@ const MONSTER_TYPES = [
 		"id": "imp",
 		"name": "Imp",
 		"color": Color(0.8, 0.3, 0.3),
-		"stats": {"max_hp": 70, "max_mp": 50, "attack": 8, "defense": 8, "magic": 18, "speed": 14},
+		"stats": {"max_hp": 700, "max_mp": 50, "attack": 80, "defense": 80, "magic": 180, "speed": 14},
 		"weaknesses": ["ice", "holy"],
 		"resistances": ["fire", "dark"]
 	},
@@ -81,7 +81,7 @@ const MONSTER_TYPES = [
 		"id": "goblin",
 		"name": "Goblin",
 		"color": Color(0.5, 0.6, 0.3),
-		"stats": {"max_hp": 120, "max_mp": 30, "attack": 15, "defense": 10, "magic": 8, "speed": 12},
+		"stats": {"max_hp": 1200, "max_mp": 30, "attack": 150, "defense": 100, "magic": 80, "speed": 12},
 		"weaknesses": ["lightning"],
 		"resistances": []
 	},
@@ -89,7 +89,7 @@ const MONSTER_TYPES = [
 		"id": "skeleton",
 		"name": "Skeleton",
 		"color": Color(0.9, 0.9, 0.85),
-		"stats": {"max_hp": 90, "max_mp": 10, "attack": 14, "defense": 6, "magic": 3, "speed": 10},
+		"stats": {"max_hp": 900, "max_mp": 10, "attack": 140, "defense": 60, "magic": 30, "speed": 10},
 		"weaknesses": ["holy", "fire"],
 		"resistances": ["dark", "poison"]
 	},
@@ -97,7 +97,7 @@ const MONSTER_TYPES = [
 		"id": "wolf",
 		"name": "Dire Wolf",
 		"color": Color(0.4, 0.35, 0.3),
-		"stats": {"max_hp": 110, "max_mp": 15, "attack": 18, "defense": 8, "magic": 4, "speed": 16},
+		"stats": {"max_hp": 1100, "max_mp": 15, "attack": 180, "defense": 80, "magic": 40, "speed": 16},
 		"weaknesses": ["fire"],
 		"resistances": ["ice"]
 	},
@@ -105,7 +105,7 @@ const MONSTER_TYPES = [
 		"id": "ghost",
 		"name": "Specter",
 		"color": Color(0.7, 0.8, 0.9),
-		"stats": {"max_hp": 60, "max_mp": 80, "attack": 6, "defense": 4, "magic": 20, "speed": 14},
+		"stats": {"max_hp": 600, "max_mp": 80, "attack": 60, "defense": 40, "magic": 200, "speed": 14},
 		"weaknesses": ["holy"],
 		"resistances": ["physical", "dark"]
 	},
@@ -113,7 +113,7 @@ const MONSTER_TYPES = [
 		"id": "snake",
 		"name": "Viper",
 		"color": Color(0.3, 0.5, 0.2),
-		"stats": {"max_hp": 70, "max_mp": 30, "attack": 12, "defense": 7, "magic": 8, "speed": 20},
+		"stats": {"max_hp": 700, "max_mp": 30, "attack": 120, "defense": 70, "magic": 80, "speed": 20},
 		"weaknesses": ["ice"],
 		"resistances": ["poison"]
 	},
@@ -121,7 +121,7 @@ const MONSTER_TYPES = [
 		"id": "cave_rat",
 		"name": "Cave Rat",
 		"color": Color(0.45, 0.35, 0.3),
-		"stats": {"max_hp": 90, "max_mp": 15, "attack": 30, "defense": 8, "magic": 10, "speed": 14},
+		"stats": {"max_hp": 900, "max_mp": 15, "attack": 300, "defense": 80, "magic": 100, "speed": 14},
 		"weaknesses": ["fire"],
 		"resistances": []
 	},
@@ -129,7 +129,7 @@ const MONSTER_TYPES = [
 		"id": "rat_guard",
 		"name": "Rat Guard",
 		"color": Color(0.4, 0.35, 0.35),
-		"stats": {"max_hp": 160, "max_mp": 25, "attack": 40, "defense": 18, "magic": 12, "speed": 11},
+		"stats": {"max_hp": 1600, "max_mp": 25, "attack": 400, "defense": 180, "magic": 120, "speed": 11},
 		"weaknesses": ["lightning"],
 		"resistances": ["physical"]
 	}
