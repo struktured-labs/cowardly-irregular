@@ -75,6 +75,7 @@ const NPC_TYPE_TO_ARCHETYPE: Dictionary = {
 	"villager": "",     # picked by name hash → young_man / young_woman
 	"noble_pair": "",   # picked by name hash → noble / noblewoman
 	"shopkeeper": "merchant",
+	"merchant": "merchant",     # npc_type "merchant" was a VALUE but never a KEY, so Senga and Crusher Pete fell to procedural while merchant/overworld.png sat on disk
 	"guard": "guard",
 	"scholar": "scholar",
 	"child": "child",
