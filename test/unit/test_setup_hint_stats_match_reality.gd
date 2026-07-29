@@ -5,9 +5,12 @@ extends GutTest
 ## 7800 HP", "Speed 28 means it outspeeds almost everything" — and those numbers
 ## live somewhere else, in the same file, under `stats`.
 ##
-## ⚠️ NOTHING READS setup_hint TODAY. Zero consumers in src/ (controls: drop_table 7,
-## exp_reward 9, weaknesses 25). The whole `one_shot` block is authored ahead of its
-## consumer across 50 monsters. NO PLAYER HAS EVER SEEN ONE OF THESE STRINGS.
+## ⚠️ AS MEASURED 2026-07-29: nothing reads setup_hint. Zero consumers in src/
+## (controls: drop_table 7, exp_reward 9, weaknesses 25). The whole `one_shot` block was
+## authored ahead of its consumer across 50 monsters; no player had seen one of these
+## strings. The measurement is DATED on purpose — a dated finding stays true forever,
+## while the undated present tense it replaced ("nothing reads this TODAY") becomes a
+## lie the day someone wires the field, and misdirects whoever reads it next.
 ##
 ## That correction matters, because the first version of this file justified itself
 ## with "tactical advice the player is meant to act on" — which was false, and would

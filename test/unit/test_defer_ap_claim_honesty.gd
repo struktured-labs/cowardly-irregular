@@ -5,8 +5,14 @@ extends GutTest
 ## BattleManager._execute_defer halves incoming damage and grants nothing else —
 ## the only AP it can add is a conditional `bp_regen_bonus` from the optional
 ## bp_recovery passive, and its own comment says that sits "on top of the natural
-## +1 next-turn gain". That +1 is unconditional (BattleManager ~1447, "natural
-## gain"), awarded whatever the combatant did.
+## +1 next-turn gain". That +1 is unconditional — granted at turn start, before an
+## action is chosen, whatever the combatant does. That half is LOAD-BEARING and is
+## now asserted structurally below rather than claimed here against a line number.
+##
+## (Caveat found 2026-07-29, does not change the rule: under the bp_instability
+## corruption effect the natural gain jitters 0/+1/+2 for player turns. The battle
+## log announces it — "the economy is corrupted" — so the baseline hint text stays
+## honest; corruption declaring itself is the point of corruption.)
 ##
 ## So "Defer — gain +1 AP" credits Defer with a per-turn regen every action
 ## receives, and hides Defer's actual benefit (halved damage). That exact false
@@ -41,6 +47,38 @@ func test_premise_defer_grants_no_unconditional_ap() -> void:
 		"if Defer ever grants a flat +1 AP, this whole rule is wrong and the hints should be revised, not this test silenced")
 	assert_true(body.contains("bp_regen_bonus"),
 		"the sole AP path in _execute_defer is the optional bp_recovery passive")
+
+
+## THE OTHER HALF OF THE PREMISE — the half that would invert the rule.
+## "Defer grants no AP" only means anything because EVERY combatant receives the +1
+## at turn start regardless of what they chose. Move that gain inside a conditional
+## — award it only to non-deferrers, say — and "Defer gives you +1 AP" becomes TRUE,
+## while the guard below goes on banning it and stays green the whole time.
+## Asserted structurally: the call must sit at function-body indentation, so any
+## nesting under a condition trips it. Anchored on the comment, not a line number.
+func test_premise_natural_ap_gain_is_action_independent() -> void:
+	var lines := FileAccess.get_file_as_string(BATTLE_MGR).split("\n")
+	var idx := -1
+	for i in lines.size():
+		if lines[i].contains("# Natural AP gain"):
+			idx = i
+			break
+	assert_gt(idx, -1, "the natural AP gain block must exist — if it was renamed or removed, "
+		+ "re-anchor this premise before trusting anything below it")
+
+	var call_line := -1
+	for i in range(idx, mini(idx + 20, lines.size())):
+		if lines[i].contains("current_combatant.gain_ap("):
+			call_line = i
+			break
+	assert_gt(call_line, -1, "the natural gain block must still call gain_ap")
+
+	var raw: String = lines[call_line]
+	var indent: int = raw.length() - raw.lstrip("\t").length()
+	assert_eq(indent, 1, "the natural +1 must be granted at function-body level, unconditionally. "
+		+ "It is now nested under a condition, so it is no longer universal regen — "
+		+ "\"Defer grants +1 AP\" may have become TRUE and the ban below would be silencing "
+		+ "honest text. Revisit the rule, not this assertion.")
 
 
 func test_no_player_text_claims_defer_grants_ap() -> void:
