@@ -289,7 +289,7 @@ func play_cutscene(cutscene_id: String) -> void:
 	# false so every scene struktured has already heard is unchanged.
 	# When it IS true we skip the snapshot too, so the restore below correctly
 	# no-ops: nothing was faded, so nothing needs putting back.
-	if SoundManager and SoundManager._music_playing and not bool(data.get("keep_music", false)):
+	if _should_fade_music_for(data):
 		_pre_cutscene_music = SoundManager.capture_music_state()
 		SoundManager.fade_out_music(0.3)
 		await get_tree().create_timer(0.3).timeout
@@ -712,6 +712,20 @@ func _step_screen_flash(step: Dictionary) -> void:
 	tween.tween_property(_effects_rect, "color:a", 0.0, duration)
 	await tween.finished
 	_effects_rect.visible = false
+
+
+## Should this scene fade the map's music out before it starts?
+##
+## Extracted from play_cutscene so it can be DRIVEN by a test. The guard that
+## covered `keep_music` pinned the source string `data.get("keep_music"` —
+## which survives a refactor that reads the field and ignores it, leaving the
+## ambient beat back in dead air with every test green (verified by mutation,
+## 2026-07-29). @cowir-ai's class: a pin on the code's spelling where the
+## claim is about its behaviour.
+func _should_fade_music_for(data: Dictionary) -> bool:
+	if not SoundManager or not SoundManager._music_playing:
+		return false
+	return not bool(data.get("keep_music", false))
 
 
 func _step_play_music(step: Dictionary) -> void:
