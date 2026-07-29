@@ -1964,7 +1964,7 @@
     },
     "dialogue": {
       "intro": [
-        "*The cavern has no light. Not darkness \u2014 an absence of light*",
+        "*The cavern has no light. Not darkness — an absence of light*",
         "*Something vast shifts in the void*",
         "Umbraxis: ...Do you ever wonder what we are?",
         "Hero: A dragon?",
@@ -2266,7 +2266,7 @@
   "brass_golem": {
     "id": "brass_golem",
     "name": "Brass Golem",
-    "description": "A hulking automaton forged from salvaged boiler plate. Extremely durable but slow \u2014 its coal furnace heart needs time to build pressure between swings.",
+    "description": "A hulking automaton forged from salvaged boiler plate. Extremely durable but slow — its coal furnace heart needs time to build pressure between swings.",
     "level": 6,
     "stats": {
       "max_hp": 2400,
@@ -2744,7 +2744,7 @@
   "data_wraith": {
     "id": "data_wraith",
     "name": "Data Wraith",
-    "description": "A ghost in the machine \u2014 fragmented code that achieved consciousness and chose violence. High magic, devastating attacks, but held together by barely a thread.",
+    "description": "A ghost in the machine — fragmented code that achieved consciousness and chose violence. High magic, devastating attacks, but held together by barely a thread.",
     "level": 14,
     "stats": {
       "max_hp": 2000,
@@ -2792,7 +2792,7 @@
   "recursive_loop": {
     "id": "recursive_loop",
     "name": "Recursive Loop",
-    "description": "An infinite loop made manifest \u2014 a spiraling entity that calls itself endlessly. Medium stats across the board, but its 'stack overflow' self-destruct deals massive damage to everything.",
+    "description": "An infinite loop made manifest — a spiraling entity that calls itself endlessly. Medium stats across the board, but its 'stack overflow' self-destruct deals massive damage to everything.",
     "level": 12,
     "stats": {
       "max_hp": 3200,
@@ -4634,7 +4634,7 @@
   "chancellor_mordaine": {
     "id": "chancellor_mordaine",
     "name": "Chancellor Mordaine",
-    "description": "Sorceress-usurper of Castle Harmonia. The architect of World 1 \u2014 and the first mask of the Calibrant. Cold, deliberate, and somehow already knows your build.",
+    "description": "Sorceress-usurper of Castle Harmonia. The architect of World 1 — and the first mask of the Calibrant. Cold, deliberate, and somehow already knows your build.",
     "level": 20,
     "boss": true,
     "stats": {
@@ -4685,7 +4685,7 @@
     "meta_enemy": true,
     "one_shot": {
       "hp_threshold": 16500,
-      "setup_hint": "She's calibrated for the average party \u2014 bring something she didn't expect. Holy magic, stacked Bard buffs, and an Advance chain are the canonical answers. She recalibrates at half HP \u2014 layer a second element.",
+      "setup_hint": "She's calibrated for the average party — bring something she didn't expect. Holy magic, stacked Bard buffs, and an Advance chain are the canonical answers. She recalibrates at half HP — layer a second element.",
       "reward_item": "calibrant_token"
     },
     "dialogue": {
@@ -4781,7 +4781,7 @@
   "cleric_survive_target": {
     "id": "cleric_survive_target",
     "name": "The Grinding Wound",
-    "description": "A slow, relentless miasma that presses on the wounded villager. It cannot be defeated \u2014 only outlasted. The Cleric's grace-under-pressure is the answer. Faith as endurance, not violence.",
+    "description": "A slow, relentless miasma that presses on the wounded villager. It cannot be defeated — only outlasted. The Cleric's grace-under-pressure is the answer. Faith as endurance, not violence.",
     "level": 2,
     "boss": true,
     "spotlight_duel": true,
@@ -4832,7 +4832,7 @@
     "dialogue": {
       "intro": [
         "*The wounded villager gasps. His breath is failing.*",
-        "*The Cleric kneels. There is nothing here to fight \u2014 only a wound that will not stop bleeding.*",
+        "*The Cleric kneels. There is nothing here to fight — only a wound that will not stop bleeding.*",
         "Villager: Please... just... stay with me...",
         "*The Cleric's hands hover a half-second above his chest. Then she begins the prayer.*"
       ],
@@ -4852,7 +4852,7 @@
   "rogue_lockward": {
     "id": "rogue_lockward",
     "name": "The Lockward",
-    "description": "A treasure-guardian construct that ambushes any who reach for the vault. Every round it briefly exposes its flank \u2014 the Rogue's Steal, Backstab, and speed are the answer.",
+    "description": "A treasure-guardian construct that ambushes any who reach for the vault. Every round it briefly exposes its flank — the Rogue's Steal, Backstab, and speed are the answer.",
     "level": 5,
     "boss": true,
     "spotlight_duel": true,
@@ -4863,7 +4863,7 @@
     "steal_response": {
       "type": "vulnerability",
       "modifier": 0.5,
-      "message": "You lifted the Warden's Key from its plate \u2014 the guard falls slack."
+      "message": "You lifted the Warden's Key from its plate — the guard falls slack."
     },
     "stats": {
       "max_hp": 2000,
@@ -4902,7 +4902,7 @@
         "*The vault door hums. From its frame steps a ward-construct of interlocking bronze.*",
         "Lockward: THIEF DETECTED.",
         "Lockward: PROTOCOL: DEFEND. COUNTER. PROTOCOL: REPEAT.",
-        "*Its stance is perfect \u2014 except for one moment each cycle when the counter resets.*"
+        "*Its stance is perfect — except for one moment each cycle when the counter resets.*"
       ],
       "low_hp": [
         "Lockward: PROTOCOL COMPROMISED.",
@@ -4923,7 +4923,7 @@
   "mage_prismatic_construct": {
     "id": "mage_prismatic_construct",
     "name": "Prismatic Construct",
-    "description": "A crystal automaton whose elemental core rotates each round \u2014 fire, then ice, then lightning. The Mage must READ which face is showing and cast the opposing element. Logic as correctable reading.",
+    "description": "A crystal automaton whose elemental core rotates each round — fire, then ice, then lightning. The Mage must READ which face is showing and cast the opposing element. Logic as correctable reading.",
     "level": 5,
     "boss": true,
     "spotlight_duel": true,
@@ -4981,7 +4981,7 @@
       "intro": [
         "*A crystal automaton descends from the cave ceiling. Its core flickers red, then blue, then gold.*",
         "Prismatic Construct: PRISM ACTIVE. CYCLE INITIATED.",
-        "Prismatic Construct: RED FACE \u2014 WEAKNESS: FIRE.",
+        "Prismatic Construct: RED FACE — WEAKNESS: FIRE.",
         "Prismatic Construct: OBSERVE. ADAPT."
       ],
       "low_hp": [
@@ -5000,7 +5000,7 @@
   "bard_hostile_courtier": {
     "id": "bard_hostile_courtier",
     "name": "The Sneering Courtier",
-    "description": "A haughty capital-city functionary who refuses to yield. He cannot be killed \u2014 only talked down. The Bard's listen-first-then-speak-once is the answer. Voice as the naming of what is true.",
+    "description": "A haughty capital-city functionary who refuses to yield. He cannot be killed — only talked down. The Bard's listen-first-then-speak-once is the answer. Voice as the naming of what is true.",
     "level": 6,
     "boss": true,
     "spotlight_duel": true,
@@ -5103,5 +5103,162 @@
     "resistances": [
       "ice"
     ]
+  },
+  "the_coordinator": {
+    "id": "the_coordinator",
+    "name": "The Coordinator",
+    "description": "Neat, precise, controlled. Glasses, a clipboard mid-annotation, and the expression of someone who has found a variance in their system and is deciding whether it is a problem or data. The second face of the Calibrant.",
+    "level": 22,
+    "boss": true,
+    "stats": {
+      "max_hp": 18500,
+      "max_mp": 3000,
+      "attack": 400,
+      "defense": 340,
+      "magic_defense": 300,
+      "magic": 620,
+      "speed": 18
+    },
+    "abilities": [
+      "masterite_proclamation",
+      "masterite_resource_cut",
+      "masterite_dispel",
+      "masterite_iron_guard",
+      "masterite_audit"
+    ],
+    "exp_reward": 1200,
+    "gold_reward": 1000,
+    "drop_table": [
+      {
+        "item": "masterite_core",
+        "chance": 1.0
+      },
+      {
+        "item": "x_potion",
+        "chance": 0.6
+      },
+      {
+        "item": "calibrant_token",
+        "chance": 0.25
+      }
+    ],
+    "weaknesses": [
+      "lightning"
+    ],
+    "resistances": [
+      "dark",
+      "ice"
+    ],
+    "meta_enemy": true,
+    "one_shot": {
+      "hp_threshold": 18500,
+      "setup_hint": "She revises her assessment as you fight. Nothing you did in the first round still applies in the fourth — bring options, not a plan.",
+      "reward_item": "calibrant_token"
+    }
+  },
+  "the_regulator": {
+    "id": "the_regulator",
+    "name": "The Regulator",
+    "description": "Victorian engineer. Goggles pushed up on the forehead, brass-buttoned coat, gloves stained with oil. She does not arrive; she is simply on time. The third face of the Calibrant.",
+    "level": 25,
+    "boss": true,
+    "stats": {
+      "max_hp": 19500,
+      "max_mp": 3000,
+      "attack": 460,
+      "defense": 300,
+      "magic_defense": 260,
+      "magic": 640,
+      "speed": 26
+    },
+    "abilities": [
+      "masterite_proclamation",
+      "masterite_time_tax",
+      "masterite_haste",
+      "masterite_slow",
+      "masterite_quick_strike"
+    ],
+    "exp_reward": 1200,
+    "gold_reward": 1000,
+    "drop_table": [
+      {
+        "item": "masterite_core",
+        "chance": 1.0
+      },
+      {
+        "item": "elixir",
+        "chance": 0.6
+      },
+      {
+        "item": "calibrant_token",
+        "chance": 0.25
+      }
+    ],
+    "weaknesses": [
+      "fire"
+    ],
+    "resistances": [
+      "lightning",
+      "physical"
+    ],
+    "meta_enemy": true,
+    "one_shot": {
+      "hp_threshold": 19500,
+      "setup_hint": "The Grand Schedule does not care what you are doing. Her heavy move arrives on a fixed beat whether or not you are ready — count it, and be ready.",
+      "reward_item": "calibrant_token"
+    }
+  },
+  "the_director": {
+    "id": "the_director",
+    "name": "The Director",
+    "description": "A gray suit and a flat tie, hands folded on a real desk — wood, not steel. A face you would fail to describe five minutes later, and the only warm thing in the world he runs. The fourth face of the Calibrant.",
+    "level": 28,
+    "boss": true,
+    "stats": {
+      "max_hp": 22000,
+      "max_mp": 3000,
+      "attack": 540,
+      "defense": 400,
+      "magic_defense": 400,
+      "magic": 700,
+      "speed": 20
+    },
+    "abilities": [
+      "masterite_proclamation",
+      "masterite_execution",
+      "masterite_mana_drain",
+      "masterite_counter_stance",
+      "masterite_judgment"
+    ],
+    "exp_reward": 1200,
+    "gold_reward": 1000,
+    "drop_table": [
+      {
+        "item": "masterite_core",
+        "chance": 1.0
+      },
+      {
+        "item": "megalixir",
+        "chance": 0.5
+      },
+      {
+        "item": "calibrant_token",
+        "chance": 0.3
+      }
+    ],
+    "weaknesses": [
+      "holy"
+    ],
+    "resistances": [
+      "dark",
+      "fire",
+      "ice"
+    ],
+    "meta_enemy": true,
+    "one_shot": {
+      "hp_threshold": 22000,
+      "setup_hint": "He has already read the file. Whatever beat the last three faces is the thing he prepared for — the answer is something you have not done yet.",
+      "reward_item": "calibrant_token"
+    }
   }
 }

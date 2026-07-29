@@ -9,8 +9,9 @@ class_name SteampunkMechanismScene
 func _init() -> void:
 	cave_name = "The Grand Mechanism"
 	cave_id = "steampunk_mechanism"
-	boss_id = "meta_knight"
-	boss_flag_key = "steampunk_mechanism_cleared"
+	boss_id = "the_regulator"
+	boss_flag_key = "world3_regulator_defeated"
+	unlock_world = 4
 	boss_cutscene_id = "world3_tempo_intro"
 	# (Tick 105: defeat_cutscene removed — see DragonCave for rationale.
 	# The W3 tempo defeat plays via the GameLoop gate on

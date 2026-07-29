@@ -9,8 +9,9 @@ class_name AssemblyCoreScene
 func _init() -> void:
 	cave_name = "Assembly Core"
 	cave_id = "assembly_core"
-	boss_id = "masterite_warden_industrial"
-	boss_flag_key = "assembly_core_cleared"
+	boss_id = "the_director"
+	boss_flag_key = "world4_director_defeated"
+	unlock_world = 5
 	boss_cutscene_id = "world4_assembly_boss"
 	# (Tick 105: defeat_cutscene removed. The W4 warden defeat plays via
 	# the GameLoop gate on cutscene_flag_warden_industrial_defeated in

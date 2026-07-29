@@ -390,5 +390,17 @@
   "rogue_mailbox": {
     "epithet": "Undelivered",
     "flavor": "Regulation blue. Bolted down, allegedly. It has decided that everything placed inside it is, legally speaking, its. The flag is up. That means it has mail for you."
+  },
+  "the_coordinator": {
+    "epithet": "Second Face of the Calibrant",
+    "flavor": "Does not raise her voice, because raising it would imply the outcome were in doubt. She has a rubric for you. She has revised it three times. She has begun to question the rubric, and that is the closest thing to fear this world contains."
+  },
+  "the_regulator": {
+    "epithet": "Third Face of the Calibrant",
+    "flavor": "You will not see her arrive. You will notice that everything happened on time, and that one of those things was her. Nobody has ever found who wrote the first rule of the Grand Schedule; she merely enforces it, punctually, forever."
+  },
+  "the_director": {
+    "epithet": "Fourth Face of the Calibrant",
+    "flavor": "A gray suit behind a wooden desk, in a world made entirely of steel. He has read your file. He is not threatening you with it — he simply assumed you already knew it existed, and is mildly puzzled that this is the part you find upsetting."
   }
 }

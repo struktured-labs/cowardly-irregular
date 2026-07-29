@@ -8,8 +8,9 @@ class_name SuburbanUndergroundScene
 func _init() -> void:
 	cave_name = "Suburban Underground"
 	cave_id = "suburban_underground"
-	boss_id = "masterite_warden_suburban"
-	boss_flag_key = "suburban_underground_cleared"
+	boss_id = "the_coordinator"
+	boss_flag_key = "world2_coordinator_defeated"
+	unlock_world = 3
 	boss_cutscene_id = "world2_warden_routine"
 	# (Tick 105: legacy defeat_cutscene field removed. The W2 warden defeat
 	# cutscene now plays via GameLoop._get_pending_story_cutscene's gate
