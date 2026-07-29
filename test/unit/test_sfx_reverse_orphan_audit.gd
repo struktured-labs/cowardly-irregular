@@ -207,10 +207,40 @@ func test_dynamic_prefix_exemptions_are_backed_by_live_behaviour() -> void:
 	var sm: Node = get_node_or_null("/root/SoundManager")
 	assert_true(sm != null, "SoundManager autoload present")
 
+	## PREMISE, asserted rather than trusted (cowir-story msg-3384 class): every
+	## resolution assert below reads "the cooldown got stamped" as "the key resolved".
+	## That inference holds ONLY because the stamp sits AFTER the manifest-presence
+	## check in _try_play_sfx_from_manifest. Move it earlier — a plausible refactor,
+	## "stamp regardless so we don't retry a missing key every frame" — and EVERY key
+	## stamps, including ones the manifest has never heard of. The asserts below would
+	## then pass for an unresolvable key and this guard would go on printing green
+	## while proving nothing. That is an INVERSION, not staleness: it does not rot
+	## into a false claim, it rots into no claim at all.
+	var phantom: String = "definitely_not_a_real_status_key"
+	sm._sfx_cooldowns.erase("status_" + phantom)
+	assert_false(sm._sfx_manifest.has("status_" + phantom),
+		"control: the phantom key must genuinely be absent for this premise test to mean anything")
+	sm.play_status(phantom)
+	assert_false(sm._sfx_cooldowns.has("status_" + phantom),
+		"PREMISE BROKEN: a manifest MISS stamped a cooldown. The stamp no longer implies resolution, so every assert below this line is vacuous — fix the ordering in _try_play_sfx_from_manifest, or replace the resolution asserts with a different instrument.")
+
+	## _sfx_cooldowns lives on the AUTOLOAD and persists for the whole GUT run, so
+	## an earlier test that played these keys would satisfy the asserts below
+	## whether or not THIS call resolved anything. Erasing first is what makes the
+	## stamp evidence of this call. Found 2026-07-29 while auditing my own assert
+	## messages: this guard replaced a spelling pin and had a latent vacuity of its
+	## own, differing only in what it would have passed for.
+	sm._sfx_cooldowns.erase("status_poison")
+	for k in sm._sfx_cooldowns.keys():
+		if str(k).ends_with("ability_fire"):
+			sm._sfx_cooldowns.erase(k)
+
 	# status_: play_status must reach a manifest key, not merely contain the string.
 	sm.stop_ambient()
 	var before: String = sm._current_ambient_key
 	assert_true(sm._sfx_manifest.has("status_poison"), "control: status_poison exists to be found")
+	assert_false(sm._sfx_cooldowns.has("status_poison"),
+		"control: cooldown cleared, so a stamp below can only come from this call")
 	sm.play_status("poison")
 	assert_true(sm._sfx_cooldowns.has("status_poison"),
 		"play_status('poison') must RESOLVE status_poison — cooldown is stamped only on a manifest hit")
