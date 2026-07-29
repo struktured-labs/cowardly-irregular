@@ -61,7 +61,10 @@ const STEP_SCHEMA := {
 	"play_sfx":     {"required": ["sfx"], "optional": []},
 
 	# Control flow
-	"branch":       {"required": ["condition", "cases"], "optional": []},
+	# TWO legal forms, both dispatched by _step_branch and both in its own
+	# docstring: condition+cases, OR flag+if_true/if_false. Required fields
+	# are checked per-form below, so `optional` lists the union.
+	"branch":       {"required": [], "optional": ["condition", "cases", "flag", "if_true", "if_false"]},
 	"choice":       {"required": ["prompt", "options"], "optional": []},
 	"battle":       {"required": ["combatants", "enemies"], "optional": ["on_defeat", "music", "background", "win_condition"]},
 }
@@ -159,6 +162,21 @@ func test_required_fields_present_on_every_step() -> void:
 	_iter_steps(func(f: String, i: int, step: Dictionary):
 		var t := str(step.get("type", ""))
 		if not STEP_SCHEMA.has(t):
+			return
+		# branch has two legal forms; require ONE of them rather than both.
+		# Pre-2026-07-29 this demanded condition+cases unconditionally, so the
+		# flag form — which _step_branch dispatches and documents — failed the
+		# audit on BOTH counts (unknown fields AND missing required). Zero flag
+		# branches exist in 193 files; the guard was forbidding them.
+		if t == "branch":
+			var has_cond: bool = step.has("condition") and step.has("cases")
+			var has_flag: bool = step.has("flag")
+			if not has_cond and not has_flag:
+				var bkey := "branch.condition+cases_or_flag"
+				if not offenders.has(bkey):
+					offenders[bkey] = []
+				if offenders[bkey].size() < 3:
+					offenders[bkey].append("%s[step %d]" % [f, i])
 			return
 		# narration is `text` OR `lines` (either satisfies the required contract).
 		if t == "narration":
