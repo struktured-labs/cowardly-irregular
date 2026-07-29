@@ -45,6 +45,7 @@ const AXES: Array[Dictionary] = [
 		"src": AUTOBATTLE_SRC,
 		"needle": "func _evaluate_grid_condition",
 		"floor": 12,
+		"accessor": "condition",
 	},
 	{
 		"name": "autobattle actions",
@@ -54,6 +55,7 @@ const AXES: Array[Dictionary] = [
 		"src": AUTOBATTLE_SRC,
 		"needle": "match action_type:",
 		"floor": 3,
+		"accessor": "action",
 	},
 	{
 		"name": "autobattle targets",
@@ -63,6 +65,7 @@ const AXES: Array[Dictionary] = [
 		"src": AUTOBATTLE_SRC,
 		"needle": "match target_type:",
 		"floor": 8,
+		"accessor": "",
 	},
 	{
 		"name": "autogrind conditions",
@@ -72,6 +75,7 @@ const AXES: Array[Dictionary] = [
 		"src": AUTOGRIND_SRC,
 		"needle": "func _evaluate_party_condition",
 		"floor": 12,
+		"accessor": "condition",
 	},
 	{
 		"name": "autogrind actions",
@@ -81,6 +85,7 @@ const AXES: Array[Dictionary] = [
 		"src": AUTOGRIND_SRC,
 		"needle": "match action_type:",
 		"floor": 4,
+		"accessor": "action",
 	},
 ]
 
@@ -136,6 +141,51 @@ func _implemented(axis: Dictionary) -> Array:
 	return out
 
 
+## Keys every entry carries; documented structurally, not per-verb.
+const GENERIC_KEYS: Array[String] = ["type", "op", "value"]
+
+
+## Extra fields each arm READS off its entry, e.g. item_count -> ["item_id"].
+func _arm_fields(axis: Dictionary) -> Dictionary:
+	var accessor: String = str(axis.get("accessor", ""))
+	if accessor == "":
+		return {}
+	var src: String = FileAccess.get_file_as_string(str(axis["src"]))
+	var at: int = src.find(str(axis["needle"]))
+	if src.is_empty() or at == -1:
+		return {}
+	var out: Dictionary = {}
+	var head := RegEx.new()
+	head.compile('^\\t+("[a-z_]+"(?:,\\s*"[a-z_]+")*):\\s*$')
+	var ids := RegEx.new()
+	ids.compile('"([a-z_]+)"')
+	var getter := RegEx.new()
+	getter.compile(accessor + '\\.get\\("([a-z_]+)"')
+	var open_ids: Array = []
+	var lines: PackedStringArray = src.substr(at).split("\n")
+	for i in range(1, lines.size()):
+		var line: String = lines[i]
+		if line.begins_with("func "):
+			break
+		var m: RegExMatch = head.search(line)
+		if m != null:
+			open_ids = []
+			for im in ids.search_all(m.get_string(1)):
+				open_ids.append(im.get_string(1))
+				if not out.has(im.get_string(1)):
+					out[im.get_string(1)] = []
+			continue
+		for fm in getter.search_all(line):
+			var f: String = fm.get_string(1)
+			if GENERIC_KEYS.has(f):
+				continue
+			for k in open_ids:
+				var lst: Array = out[k]
+				if not lst.has(f):
+					lst.append(f)
+	return out
+
+
 # ── Positive controls — a vacuous pass must be impossible, per axis ──────────
 
 func test_every_axis_extracts_a_plausible_vocabulary() -> void:
@@ -176,6 +226,39 @@ func test_every_implemented_verb_is_advertised() -> void:
 				"can NEVER produce it — unreachable from the LLM path, and invisible to any test that only " +
 				"uses advertised verbs. Add it to the grammar. Advertised: %s")
 				% [axis["name"], verb, axis["needle"], str(adv)])
+
+
+func test_field_scan_finds_the_known_field_bearing_arms() -> void:
+	# Control for the clause below: if the getter regex or the accessor name
+	# breaks, every arm reports zero extra fields and "all documented" passes
+	# vacuously. These arms are known to read a field.
+	var fields: Dictionary = _arm_fields(AXES[0])
+	assert_true(fields.has("has_status") and (fields["has_status"] as Array).has("status"),
+		"has_status must be seen reading 'status' — the field scan is broken, so the clause below proves nothing")
+	assert_true(fields.has("item_count") and (fields["item_count"] as Array).has("item_id"),
+		"item_count must be seen reading 'item_id' — the field scan is broken")
+
+
+func test_every_field_the_evaluator_reads_is_documented() -> void:
+	# ONE LAYER BELOW THE VERB. A verb can be advertised and implemented while
+	# the FIELD it needs is undocumented — the type validates, the evaluator
+	# reads a missing key, and the condition silently defaults.
+	#
+	# FOUND LIVE (2026-07-29): item_count reads condition.get("item_id", "") and
+	# the grammar never named that field. A composed "use a potion when you have
+	# one" emits no item_id, _get_item_count("") returns 0, and the rule NEVER
+	# FIRES. validate_rule doesn't require it, so nothing is reported. The
+	# shipped presets use item_id 15 times — it was always the real contract.
+	for axis in AXES:
+		var g: String = _grammar(str(axis["grammar"]))
+		var fields: Dictionary = _arm_fields(axis)
+		for verb in fields.keys():
+			for f in (fields[verb] as Array):
+				assert_true(g.find(str(f)) != -1,
+					("[%s] '%s' reads the field '%s' off its entry and the grammar never names it. The LLM " +
+					"cannot supply a key it was not told about, so the field arrives missing, the read " +
+					"silently defaults, and the rule never fires — with no validation error.")
+					% [axis["name"], verb, f])
 
 
 func test_buff_conditions_reach_the_composer() -> void:

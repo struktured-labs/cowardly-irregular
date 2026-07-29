@@ -187,6 +187,9 @@ has_buff / not_has_buff take a 'stat' field (e.g. 'defense', 'speed') and no
 op/value. Use not_has_buff to cast a buff only when it is not already up —
 {\"type\":\"not_has_buff\",\"stat\":\"defense\"} — which is how the built-in
 presets avoid wasting turns re-applying a buff that is still active.
+item_count takes an 'item_id' field NAMING the item to count, alongside op and
+value — {\"type\":\"item_count\",\"item_id\":\"potion\",\"op\":\">\",\"value\":0}.
+Omit item_id and the count is always 0, so the rule never fires.
 
 Actions (executed in order, up to 4 per rule). type is one of:
   attack, ability, item, defer
