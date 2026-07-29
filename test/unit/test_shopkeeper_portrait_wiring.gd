@@ -61,3 +61,45 @@ func test_shopscene_prefers_png_over_procedural_before_customization_check() -> 
 	assert_gt(cust_idx, -1, "ShopScene must still keep the procedural fallback branch")
 	assert_lt(png_idx, cust_idx,
 		"PNG-preferred check must precede the procedural CharacterPortrait branch — otherwise procedural wins and the whole point of the wiring is defeated")
+
+
+func test_every_shop_actually_renders_its_keeper_portrait() -> void:
+	# BEHAVIOURAL. The three tests above read source, and source-reading
+	# cannot tell working code from broken code: changing the render path's
+	# lookup to KEEPER_PORTRAIT_PATHS.get(shop_type.to_upper(), "") — which
+	# throws at runtime, since shop_type is an enum — left all three GREEN,
+	# because none of them execute the line. (cowir-ai msg 3319, cowir-main
+	# msg 3322: fix the guard that measures the wrong thing.)
+	#
+	# So drive the real render path per shop type and read the texture that
+	# actually lands on screen. This is what "the keeper has a portrait"
+	# means; every assertion above is a proxy for it.
+	var Shop = load(SHOP_SCENE)
+	var expected := {
+		Shop.ShopType.ITEM: "willow",
+		Shop.ShopType.BLACK_MAGIC: "mortimer",
+		Shop.ShopType.WHITE_MAGIC: "lenora",
+		Shop.ShopType.BLACKSMITH: "brutus",
+	}
+	for shop_type in expected:
+		var scene = Shop.new()
+		scene.shop_type = shop_type
+		# A shopkeeper_customization MUST be set, or this fixture is
+		# degenerate: the PNG branch and the procedural branch are only
+		# distinguishable when the procedural one could actually fire.
+		# Left null, inverting the two branches changes nothing and the
+		# test passes a mutation it exists to catch (measured — see the
+		# MUT B run in the commit message; cowir-ai msg 3327 hit the same
+		# shape with 1 living / 1 scripted).
+		scene.shopkeeper_customization = CharacterCustomization.new("Keeper")
+		add_child_autofree(scene)
+		await wait_frames(2)
+		var found := ""
+		var stack: Array = [scene]
+		while not stack.is_empty():
+			for c in (stack.pop_back() as Node).get_children():
+				stack.append(c)
+				if c is TextureRect and c.texture and c.texture.resource_path != "":
+					found = c.texture.resource_path
+		assert_true(found.contains(expected[shop_type]),
+			"shop_type %s must render %s.png — got '%s'. An empty string means the keeper fell back to the procedural CharacterPortrait composite struktured asked us to retire." % [shop_type, expected[shop_type], found])

@@ -294,9 +294,10 @@ func _generate_dancer_sprites() -> void:
 ## Try to load all 4 bespoke dancer frames. Returns true iff every path
 ## resolves — partial coverage falls through to procedural rather than
 ## mixing artist + procgen frames mid-animation (which would flicker).
-func _try_load_artist_dancer_frames() -> bool:
+## `paths` is injectable ONLY so a test can reach the missing-file branch.
+func _try_load_artist_dancer_frames(paths: Array = DANCER_FRAME_PATHS) -> bool:
 	var loaded: Array[ImageTexture] = []
-	for path in DANCER_FRAME_PATHS:
+	for path in paths:
 		if not ResourceLoader.exists(path):
 			return false
 		var tex: Texture2D = load(path)
