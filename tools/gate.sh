@@ -23,9 +23,29 @@ FAILED=${FAILED:-0}
 TOTALS=$(grep -c "^---- Totals" "$LOG")
 RAN=$(grep -oE "^Tests +[0-9]+" "$LOG" | grep -oE "[0-9]+" | tail -1)
 RAN=${RAN:-0}
+# SCOPE (@cowir-controller msg-3522): "a gate that reports a different corpus size is not
+# reporting on your tree." They caught a conflicted-tree run by seeing 7272 where 7278 belonged.
+# $? is silent about scope — it answers "did what ran pass", never "did the right thing run".
+#
+# Derived from the tree rather than remembered, so it cannot go stale and needs no state file:
+# GUT's Scripts count must equal the test files on disk. A script that fails to PARSE is simply
+# omitted — GUT warns and carries on — so a broken file, a conflict marker, or a missing
+# class_name silently shrinks the corpus while every surviving test passes. That is precisely
+# the run that exits 0 and means nothing.
+SCRIPTS=$(grep -oE "^Scripts +[0-9]+" "$LOG" | grep -oE "[0-9]+" | tail -1)
+SCRIPTS=${SCRIPTS:-0}
+ONDISK=$(ls test/unit/test_*.gd 2>/dev/null | wc -l)
+LOADFAIL=$(grep -c 'does not extend GutTest\|Failed to load script' "$LOG")
 echo "exit=$EC  failing=$FAILED (authoritative)  [Failed]-lines=$FAILLINES (boolean only, NOT a count)  totals-blocks=$TOTALS  tests-run=$RAN"
+echo "scope: scripts-run=$SCRIPTS  test-files-on-disk=$ONDISK  load-failures=$LOADFAIL"
 if [ "$TOTALS" -eq 0 ] || [ "$RAN" -lt 1000 ]; then
 	echo "GATE: RED — log has no Totals block or ran only $RAN tests; the run did not complete, so [Failed]=$FAILED means nothing"; exit 1
+fi
+if [ "$SCRIPTS" -ne "$ONDISK" ] || [ "$LOADFAIL" -ne 0 ]; then
+	echo "GATE: RED — SCOPE. GUT ran $SCRIPTS script(s) against $ONDISK on disk ($LOADFAIL load failure(s))."
+	echo "A file that does not parse is skipped, not failed, so failing=$FAILED is silent about it:"
+	grep -E 'does not extend GutTest|Failed to load script|Parse Error' "$LOG" | head -5
+	exit 1
 fi
 # Two independent signals must agree; disagreement is itself a failure.
 if [ "$EC" -ne 0 ] || [ "$FAILED" -ne 0 ]; then
