@@ -282,6 +282,7 @@ godot --headless -s test/run_tests.gd          # Run tests
   tools/run_tests.sh <name>         # single file (test_<name>.gd)
   tools/run_tests.sh --isolated     # quarantined suite (test/isolated/, own process by design)
   ```
+- **Exit codes: `0` pass · `1` test failures · `2` bad invocation · `3` NOTHING RAN.** Codes 2 and 3 were added 2026-07-29 because GUT **exits 0 when it runs no tests at all**, which no exit code could distinguish from a real pass. Measured: a nonexistent name gave `exit 0 · Scripts 1 · Tests 5`-shaped success with zero `Tests` lines. It cost the fleet four vacuous verification runs and two wrong diagnoses in one evening — cowir-ai briefly measured a known-red branch as green, and cowir-sfx took three attempts to get a real run. The causes are open-ended (absent file · empty `-gdir` · **fresh unimported worktree**, where `res://` does not resolve while the file sits on disk · a parse error that drops the script), so the wrapper does **not** enumerate them: it asserts the OUTCOME — a real run always prints a Totals block, a vacuous one never does — and exits 3 if none appeared. `tools/gate.sh` defends the full-suite path only; single-file runs bypass it entirely, which is why the check lives in the wrapper.
 - **Gate on the EXIT CODE, captured before you shape the output.** `run_tests.sh` propagates failure correctly (verified independently by 5 lanes, 2026-07-29); every gate that ever passed a red tree broke the signal downstream:
   ```bash
   tools/run_tests.sh > tmp/gate.log 2>&1; EC=$?   # capture BEFORE piping
@@ -291,6 +292,13 @@ godot --headless -s test/run_tests.gd          # Run tests
   - `suite | grep … && commit` tests **grep's** exit code, not the suite's. `suite ; commit ; push` in one block never checks at all — the gate runs and does not gate.
   - Counting `[Failed]` is wrong twice: `grep -cE '^\s+\[Failed\]'` returns a clean **0** on a red tree (Godot colours stdout, so the ANSI escape precedes the whitespace; `\s*` does not save you — `--log-file` is ANSI-free and immune), and `grep -cF '[Failed]'` is a **valid boolean and never a count** — it equals 2 × failing *asserts*, a quantity GUT never prints, so nothing on screen can catch it being wrong. Measured: 1 failing test with 3 failing asserts → `Failing 1`, `grep -cF` **6**; 2 tests × 1 assert → 4. The ratio to `Failing N` is unbounded. Report `Failing N` (the only exact cardinal GUT prints) or `$?`.
 - **`cowir-ai-intent-kit-ratchet` @ `b50a90f6` is a permanent known-RED branch, kept deliberately — do not fold or delete it.** It is an executable bug report (boss intents that reach no bias arm) and doubles as the fleet's gate control: point a gate at it, and if it reports green the detector is broken. A real coloured multi-line failure catches parse bugs a planted one-line assert does not.
+  - **Run it in a worktree AT that SHA, and import first** — the naive form gives a false green twice over. From your own branch the file does not exist, so nothing runs; in a fresh worktree the import cache is absent, so `res://` does not resolve. Both used to exit 0 and read as "my detector is broken" when it was fine. `run_tests.sh` now refuses them (2 and 3), but the procedure still needs both lines:
+    ```bash
+    git worktree add --detach <dir> b50a90f6
+    cd <dir> && godot --headless --audio-driver Dummy --import --quit   # REQUIRED — every fresh worktree is unimported
+    tools/run_tests.sh > log 2>&1; echo $?                              # expect 1 · Failing 2
+    ```
+  - It is a **subset** of main (157 commits behind, 14 fewer test files). Valid as a detector control; it certifies **nothing** about main's corpus. Self-consistent is not current.
 - Raw equivalent if the wrapper is unavailable (add `--log-file tmp/gut.log`):
   ```bash
   godot --headless --audio-driver Dummy --log-file tmp/gut.log -s addons/gut/gut_cmdln.gd -gdir=res://test/unit -gprefix=test_ -gsuffix=.gd -gexit

@@ -71,15 +71,93 @@ func test_the_guard_does_not_reject_files_that_exist() -> void:
 		"POSITIVE CONTROL: the corpus must yield real names to check — 0 here makes the assertion above vacuous, which is the same defect this file exists to fix")
 
 
-func test_the_full_suite_form_is_untouched() -> void:
-	# The bare and --isolated forms select a DIRECTORY and were never affected;
-	# the guard must not have been attached to them. Source-level on purpose —
-	# driving it would run the whole suite from inside the suite.
+## The directory forms carry the SAME vacuity: an empty -gdir selects nothing
+## and exits 0. test/isolated is the live risk — it holds exactly ONE file, and
+## unlike the full-suite path it has no tools/gate.sh wrapper to catch a vacuum.
+##
+## I first wrote this file asserting the directory half was NOT drivable —
+## run_tests.sh hardcodes both paths, so the negative case appeared to need an
+## empty test/unit, i.e. emptying the repo — and pinned it structurally with a
+## comment saying so. That was wrong, and I disproved it one step later: copy
+## the script, repoint one path at an empty directory, and the REAL guard runs.
+## Kept in the record because "not reachable" was my own claim, held for about
+## ninety seconds, and the structural pin I justified with it was weaker than
+## what was actually available.
+func test_both_suite_directories_actually_contain_tests() -> void:
+	# The guard's PREDICATE, driven against the real tree. This is the assertion
+	# that fires first if test/isolated is ever emptied — with a reason attached,
+	# instead of a green run that tested nothing.
+	for d in ["res://test/unit", "res://test/isolated"]:
+		var dir := DirAccess.open(d)
+		assert_not_null(dir, "%s must exist — run_tests.sh selects it by -gdir" % d)
+		var n := 0
+		for f in dir.get_files():
+			if f.begins_with("test_") and f.ends_with(".gd"):
+				n += 1
+		assert_gt(n, 0,
+			"%s holds no test_*.gd — GUT would select an empty set and exit 0, and for test/isolated nothing else would catch it" % d)
+
+
+func test_the_directory_guard_refuses_an_empty_directory() -> void:
+	# BEHAVIOURAL — drives the real guard by copying the script and repointing
+	# one -gdir at an empty directory. Fires before godot launches, so it costs
+	# nothing. This is the half I wrongly called unreachable.
+	# Built entirely in GDScript. The first version shelled the patch out to sed
+	# via `bash -c`; the identical command substitutes correctly from a shell and
+	# did NOT under OS.execute, so the probe silently stayed unmodified and ran
+	# the real isolated suite. Root cause unchased — removing the hand-off is
+	# cheaper than understanding it, and leaves nothing to be wrong.
+	#
+	# All paths ABSOLUTE, never res://tmp/. tmp/ carries a .gdignore, so it is
+	# absent from the resource filesystem: opening res://tmp/x for WRITE returns
+	# a valid handle and reading it back returns "".
+	var root := ProjectSettings.globalize_path("res://")
+	var src := FileAccess.get_file_as_string(root + "tools/run_tests.sh")
+	assert_ne(src, "", "PRECONDITION: run_tests.sh must be readable at %s" % root)
+	assert_true(src.contains('require_test_dir "test/isolated"'),
+		"PRECONDITION: the line being repointed must exist verbatim, or the probe is the unmodified script")
+
+	var patched := src.replace('require_test_dir "test/isolated"', 'require_test_dir "tmp/rt_probe_empty"')
+	assert_ne(patched, src, "PRECONDITION: the patch must change something")
+
+	DirAccess.make_dir_recursive_absolute(root + "tmp/rt_probe_empty")
+	var pf := FileAccess.open(root + "tmp/rt_probe.sh", FileAccess.WRITE)
+	assert_not_null(pf, "PRECONDITION: probe must be writable")
+	pf.store_string(patched)
+	pf.close()
+
+	var out: Array = []
+	var code := OS.execute("bash", [root + "tmp/rt_probe.sh", "--isolated"], out, true)
+	var text := "\n".join(out)
+	assert_eq(code, 2,
+		"an empty -gdir must be refused with exit 2 — GUT selects an empty set and exits 0, and test/isolated has no gate.sh wrapper to catch it. got %d: %s" % [code, text])
+	assert_true(text.contains("no test_*.gd files"),
+		"the refusal must say why, got: %s" % text)
+
+	DirAccess.remove_absolute(root + "tmp/rt_probe_empty")
+	DirAccess.remove_absolute(root + "tmp/rt_probe.sh")
+
+
+func test_the_directory_forms_are_guarded_too() -> void:
+	# Structural companion to the behavioural check above: catches a form added
+	# later that reaches exec without any guard at all.
 	var src := FileAccess.get_file_as_string("res://tools/run_tests.sh")
 	assert_ne(src, "", "run_tests.sh must be readable")
+	# Keyed on `-gdir=res://` alone, NOT on the dispatcher's name. The first
+	# version required `exec` on the line; I then replaced exec with a wrapper
+	# so the outcome could be checked after the run, and this scan silently
+	# matched zero lines. Only the count control below caught it — the two
+	# per-line assertions had simply stopped running.
+	var guarded := 0
 	for line in src.split("\n"):
-		if line.contains("-gdir=") and line.contains("exec"):
-			assert_false(line.contains("require_test_file"),
-				"the directory forms must not be gated on a single-file check: %s" % line.strip_edges())
+		if not line.contains("-gdir=res://"):
+			continue
+		assert_true(line.contains("require_test_dir"),
+			"a directory form reaches the runner without an emptiness guard: %s" % line.strip_edges())
+		assert_false(line.contains("require_test_file"),
+			"a directory form must use the DIRECTORY guard, not the single-file one: %s" % line.strip_edges())
+		guarded += 1
+	assert_eq(guarded, 2,
+		"POSITIVE CONTROL: both -gdir forms must be found — got %d, so the scan missed one and the assertions above never ran on it" % guarded)
 	assert_true(src.contains("-gdir=res://test/unit"), "the full-suite form must still exist")
 	assert_true(src.contains("-gdir=res://test/isolated"), "the --isolated form must still exist")
