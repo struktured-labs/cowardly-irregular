@@ -49,16 +49,25 @@ func test_result_never_exceeds_the_budget() -> void:
 func test_long_text_is_not_cut_mid_word() -> void:
 	# THE DEFECT. The old `.left(140)` ended inside a word; the replacement must
 	# end at a word boundary and say that it was cut.
-	var out: String = DP.clamp_display(LONG, 140)
-	assert_true(out.ends_with("…"), "a truncated line must signal that it was truncated: %s" % out)
-	var body: String = out.trim_suffix("…").strip_edges()
-	assert_true(LONG.begins_with(body),
-		"the kept text must be a genuine prefix of the original, not a reflow: %s" % body)
-	var next_char: String = LONG.substr(body.length(), 1)
-	assert_eq(next_char, " ",
-		("truncation landed mid-word — kept text ends '%s' and the original continues '%s'. " +
-		"That is the bare .left() behaviour this replaced.")
-		% [body.right(12), LONG.substr(body.length(), 12)])
+	#
+	# SWEPT ACROSS BUDGETS, NOT PINNED TO ONE. A single cap tests a single offset
+	# into a single string, and whether THAT offset lands mid-word is a
+	# coincidence of the sentence. Verified: a mutant that hard-cuts at the
+	# budget and appends the ellipsis anyway passes at cap 140 — trailing-space
+	# stripping happens to leave a clean boundary there — and fails across the
+	# sweep. The property is "never mid-word", so every budget must hold it.
+	for cap in range(30, 200, 7):
+		var out: String = DP.clamp_display(LONG, cap)
+		assert_true(out.ends_with("…"),
+			"[cap %d] a truncated line must signal that it was truncated: %s" % [cap, out])
+		var body: String = out.trim_suffix("…").strip_edges()
+		assert_true(LONG.begins_with(body),
+			"[cap %d] the kept text must be a genuine prefix of the original, not a reflow: %s" % [cap, body])
+		var next_char: String = LONG.substr(body.length(), 1)
+		assert_eq(next_char, " ",
+			("[cap %d] truncation landed mid-word — kept text ends '%s' and the original continues '%s'. " +
+			"That is the bare .left() behaviour this replaced.")
+			% [cap, body.right(12), LONG.substr(body.length(), 12)])
 
 
 func test_single_overlong_word_still_fits_the_budget() -> void:
