@@ -27,7 +27,7 @@ const HINTS = {
 	},
 	"advance_defer": {
 		"title": "Advance & Defer",
-		"body": "Press R to Advance — queue up to 4 actions in one turn (costs AP). Press L to Defer — skip your turn, gain +1 AP, take less damage. Manage your AP for powerful combos.",
+		"body": "Press R to Advance — queue up to 4 actions in one turn (costs AP). Press L to Defer — skip your turn and take HALF damage that round. You gain +1 AP every turn either way; Defer banks it, because you spend none.",
 	},
 	"group_attacks": {
 		"title": "Group Attacks",
@@ -35,7 +35,7 @@ const HINTS = {
 	},
 	"first_battle": {
 		"title": "Battle Controls",
-		"body": "Navigate menus with D-pad. Confirm with A/Z. Cancel with B/X. Use R to queue multiple actions (Advance mode). Use L to skip your turn and build AP (Defer).",
+		"body": "Navigate menus with D-pad. Confirm with A/Z. Cancel with B/X. Use R to queue multiple actions (Advance mode). Use L to Defer — skip your turn and halve the damage you take.",
 	},
 	"first_boss": {
 		"title": "Boss Fight",
