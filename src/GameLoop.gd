@@ -3722,6 +3722,28 @@ func _hide_exploration_scenes() -> void:
 	print("[GAMELOOP] Exploration hidden — %d scene(s): %s" % [hidden_names.size(), str(hidden_names)])
 
 
+## Adopt a monsters.json win_condition for any battle whose enemies are
+## known by id. Never overwrites an already-set condition, so the
+## step-beats-data precedence start_solo_battle established is preserved
+## rather than re-litigated here. First authored condition wins — a
+## multi-enemy fight with two of them is an authoring error, not a
+## runtime decision, and the source-agreement ratchet is where that lives.
+func _adopt_monster_win_condition(enemy_ids: Array) -> void:
+	if BattleManager == null or not BattleManager._win_condition.is_empty():
+		return
+	if EncounterSystem == null:
+		return
+	for eid in enemy_ids:
+		var key: String = str(eid)
+		if not EncounterSystem.monster_database.has(key):
+			continue
+		var wc: Variant = (EncounterSystem.monster_database[key] as Dictionary).get("win_condition", {})
+		if wc is Dictionary and not (wc as Dictionary).is_empty():
+			BattleManager._win_condition = (wc as Dictionary).duplicate()
+			print("[BATTLE] win_condition adopted from monsters.json (%s): %s" % [key, str(wc)])
+			return
+
+
 func _start_battle_async(specific_enemies: Array = [], is_encounter: bool = false) -> void:
 	"""Start battle using async-loaded scene"""
 	current_state = LoopState.BATTLE
@@ -3740,6 +3762,14 @@ func _start_battle_async(specific_enemies: Array = [], is_encounter: bool = fals
 	# Save battle config for retry
 	_last_battle_enemies = specific_enemies.duplicate()
 	_last_battle_is_encounter = is_encounter
+
+	# W6 (msg 3225): let a monsters.json-authored win_condition reach NORMAL
+	# battles, not just Spotlight Duels. Before this, _win_condition was set
+	# only inside start_solo_battle — so a win_condition on a monster fought
+	# as a regular encounter was data with no reader. Fills only an EMPTY
+	# condition, so start_solo_battle's step override (set just before it
+	# calls us) still outranks the data exactly as before.
+	_adopt_monster_win_condition(specific_enemies)
 
 	# Remove old scene
 	if current_scene and is_instance_valid(current_scene):

@@ -29,6 +29,8 @@ signal monster_summoned(monster_type: String, summoner: Combatant)
 ## durable signal for post-battle / mid-frame readers; this signal
 ## is the immediate hook for the BattleScene UI.
 signal meta_autobattle_editor_requested(caster: Combatant)
+## W6 non-HP win conditions report progress here (msg 3225). `kind` is the win_condition type, so a listener can score restraint differently from argument. Emitted on every CHANGE including regressions (current < previous) — a reset is the most audible moment in a withhold fight and both audio lanes asked for it.
+signal win_condition_progress(kind: String, current: int, needed: int)
 signal one_shot_achieved(rank: String, setup_turns: int)
 signal autobattle_victory(multiplier: float, total_turns: int)
 signal group_attack_executing(participants: Array, group_type: String, targets: Array, formation_id: String)
@@ -113,6 +115,14 @@ var escape_allowed: bool = true
 ## threshold"|"flee_target", "value": int, "status": String}.
 ## Cleared in end_battle so subsequent normal battles use default.
 var _win_condition: Dictionary = {}
+
+## W6 arms (msg 3225). The two Calibrant finales are won by NOT fighting: Warden of Form wants restraint, Arbiter of Essence wants a case argued in order. Both track progress across actions rather than reading state at round end, so both need live counters.
+## Consecutive clean rounds for "withhold_attack". Reset to 0 by any player strike, so the counter itself teaches the rule.
+var _wc_withhold_rounds: int = 0
+## Latched by the action observer when a player strikes; consumed at round end.
+var _wc_struck_this_round: bool = false
+## Index into the "arbiter_ladder" phases array — how much of the case is made.
+var _wc_phase_index: int = 0
 
 ## Tempo Lens AP-echo charges remaining THIS ROUND (msg 3179). Re-armed each round from the holder's lens_ap_echo; unspent charges do not bank, so Tempo rewards acting rather than hoarding — which is the axis's own behaviour (20/25 support slots manipulating action economy).
 var _lens_ap_echo_charges: int = 0
@@ -645,6 +655,12 @@ func end_battle(victory: bool) -> void:
 	## enemies dead" behavior. Set once per battle by GameLoop.
 	## start_solo_battle from the cutscene step's data.
 	_win_condition = {}
+	# Clear the W6 progress counters on the SAME line as the condition they
+	# belong to. Leaving them set would carry restraint or a half-argued case
+	# into an unrelated battle — and only the second such battle would show it.
+	_wc_withhold_rounds = 0
+	_wc_struck_this_round = false
+	_wc_phase_index = 0
 	var c3_one_hp: bool = false
 	if victory:
 		for pc in player_party:
@@ -3030,7 +3046,12 @@ func _execute_next_action() -> void:
 
 	# Get next action
 	if execution_order.size() == 0:
-		# Round complete
+		# Round complete. Credit a withheld round BEFORE re-checking
+		# victory — the check above ran on the pre-credit count, so
+		# without this the win lands a full round late.
+		_advance_withhold_round()
+		if _check_victory_conditions():
+			return
 		round_ended.emit(current_round)
 		_start_new_round()
 		return
@@ -3149,6 +3170,9 @@ func _execute_next_action() -> void:
 
 	# Boss identity SFX — spotlight-duel minibosses author signature_sfx in monsters.json; fire once on first action
 	_maybe_play_signature_sfx(combatant)
+
+	# W6 win conditions watch what the party CHOOSES, so observe before dispatch
+	_observe_action_for_win_condition(combatant, action)
 
 	# Execute based on action type
 	match action.get("type", ""):
@@ -6385,12 +6409,102 @@ func _evaluate_custom_win_condition() -> bool:
 				if stacks >= need:
 					return true
 			return false
+		"withhold_attack":
+			# W6 Warden of Form. Victory is restraint: survive `value`
+			# consecutive rounds without a single player strike. The
+			# counter is advanced at round end and zeroed by the action
+			# observer, so this arm only reads.
+			# A missing/zero `value` must NOT read as "already won" — an
+			# unauthored field would hand the player an instant victory
+			# that looks like the fight never started.
+			var need_rounds: int = int(_win_condition.get("value", 0))
+			return need_rounds > 0 and _wc_withhold_rounds >= need_rounds
+		"arbiter_ladder":
+			# W6 Arbiter of Essence. Victory is a case argued IN ORDER —
+			# each phase satisfied by its job acting with a real ability.
+			# Advanced by the action observer; this arm only reads.
+			return _wc_phase_index >= _arbiter_phases().size() and not _arbiter_phases().is_empty()
 		"flee_target":
 			# All target enemies dead OR removed. Delegates to the
 			# standard "enemies_alive" check in the caller.
 			return false
 		_:
 			return false
+
+
+## W6 Arbiter phases, normalized. Authored as [{"key","job"}, ...] in the
+## win_condition; returns [] for any other type so callers can treat an
+## empty ladder as "not an Arbiter fight" without a second type check.
+func _arbiter_phases() -> Array:
+	if str(_win_condition.get("type", "")) != "arbiter_ladder":
+		return []
+	var raw: Variant = _win_condition.get("phases", [])
+	return raw if raw is Array else []
+
+
+## True when a player action lands as a STRIKE for withhold purposes.
+## Classifies on damage_multiplier rather than ability `type`, because the
+## two disagree: 'support' and 'meta' abilities carry multipliers while
+## some 'magic' does not. Type would be a proxy; the multiplier is the thing.
+func _action_is_strike(action: Dictionary) -> bool:
+	match str(action.get("type", "")):
+		"attack", "group":
+			return true
+		"ability":
+			var ab: Dictionary = JobSystem.get_ability(str(action.get("ability_id", ""))) if JobSystem else {}
+			return float(ab.get("damage_multiplier", 0.0)) > 0.0
+		"advance":
+			for sub in action.get("actions", []):
+				if sub is Dictionary and _action_is_strike(sub):
+					return true
+			return false
+		_:
+			return false
+
+
+## Credit one round of restraint if the party never struck. No-op for every
+## other win condition, so the round-end path stays cheap in normal battles.
+func _advance_withhold_round() -> void:
+	if str(_win_condition.get("type", "")) != "withhold_attack":
+		return
+	if _wc_struck_this_round:
+		_wc_struck_this_round = false
+		return
+	_wc_withhold_rounds += 1
+	var need: int = int(_win_condition.get("value", 0))
+	battle_log_message.emit("[color=aqua]The Warden waits.[/color] [color=gray](%d/%d)[/color]" % [_wc_withhold_rounds, need])
+	win_condition_progress.emit("withhold_attack", _wc_withhold_rounds, need)
+
+
+## Action observer for the two W6 arms. Called from _execute_next_action
+## before dispatch, so a strike is counted even if it misses or the target
+## dies — the Warden judges the swing, not the outcome.
+func _observe_action_for_win_condition(combatant: Combatant, action: Dictionary) -> void:
+	if _win_condition.is_empty() or combatant == null or not combatant in player_party:
+		return
+	match str(_win_condition.get("type", "")):
+		"withhold_attack":
+			if not _action_is_strike(action):
+				return
+			_wc_struck_this_round = true
+			if _wc_withhold_rounds > 0:
+				battle_log_message.emit("[color=red]The Warden's form hardens.[/color] Restraint broken — the count returns to zero.")
+			_wc_withhold_rounds = 0
+			win_condition_progress.emit("withhold_attack", 0, int(_win_condition.get("value", 0)))
+		"arbiter_ladder":
+			var phases: Array = _arbiter_phases()
+			if _wc_phase_index >= phases.size():
+				return
+			# Only a real ability argues a case; a plain swing says nothing.
+			if str(action.get("type", "")) != "ability":
+				return
+			var want: Dictionary = phases[_wc_phase_index] if phases[_wc_phase_index] is Dictionary else {}
+			var jid: String = str(combatant.job.get("id", "")) if combatant.job else ""
+			if jid == "" or jid != str(want.get("job", "")):
+				return
+			_wc_phase_index += 1
+			battle_log_message.emit("[color=aqua]%s[/color] enters the record. [color=gray](%d/%d)[/color]" % [str(want.get("key", "?")).capitalize(), _wc_phase_index, phases.size()])
+			win_condition_progress.emit("arbiter_ladder", _wc_phase_index, phases.size())
 
 
 ## Signal handlers
