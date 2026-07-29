@@ -58,6 +58,43 @@ func _dungeon_scripts() -> Array:
 	return out
 
 
+func test_ready_actually_routes_through_the_hook() -> void:
+	## The hole in this file's first version, found 2026-07-29 by mutation:
+	## every other test here pins SOURCE TEXT. Deleting DragonCave._ready's
+	## `SoundManager.play_area_music(_get_music_area_id())` — a plausible
+	## "cleanup" refactor — broke dungeon music completely and left all three
+	## checks GREEN, because the overrides and the arms are all still spelled
+	## correctly. A source pin is a claim about spelling; this file meant to
+	## claim behaviour.
+	var src := _read(DUNGEON_DIR + "DragonCave.gd")
+	var idx := src.find("func _ready")
+	assert_true(idx > -1, "DragonCave must define _ready")
+	assert_true(src.find("play_area_music(_get_music_area_id())") > -1,
+		"DragonCave._ready must feed _get_music_area_id() to play_area_music — without this call every override in this file is dead and the caves fall silent or inherit whatever was playing")
+
+
+func test_each_dragon_cave_key_resolves_at_runtime() -> void:
+	## Behavioural half: the subclasses' keys are fed to the REAL SoundManager
+	## and must actually select an area. Text checks can only prove an arm is
+	## spelled somewhere; this proves the key reaches it.
+	var sm := get_node_or_null("/root/SoundManager")
+	if sm == null:
+		pass_test("SoundManager unavailable")
+		return
+	var prev: Dictionary = sm.capture_music_state() if sm.has_method("capture_music_state") else {}
+	for f in ["FireDragonCave.gd", "IceDragonCave.gd", "LightningDragonCave.gd", "ShadowDragonCave.gd"]:
+		var script = load(DUNGEON_DIR + f)
+		assert_not_null(script, "%s must load" % f)
+		var inst = script.new()
+		var key: String = str(inst._get_music_area_id())
+		sm.play_area_music(key)
+		assert_eq(str(sm._current_area), key,
+			"%s routes to \"%s\" but play_area_music did not select it — the key misses every arm and falls to the overworld default" % [f, key])
+		inst.free()
+	if not prev.is_empty() and sm.has_method("restore_music_state"):
+		sm.restore_music_state(prev)
+
+
 func test_positive_control_parser_sees_the_dispatch() -> void:
 	## A sweep that silently parsed nothing would make every assertion below
 	## vacuously true.
