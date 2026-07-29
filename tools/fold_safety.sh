@@ -72,12 +72,23 @@ fi
 
 HAZARD=0
 TOTAL=0
+# WHY-ZERO ACCOUNTING. The FILES floor above catches "the branch touches nothing". It does not
+# catch the commoner shape: the branch touches files, every one is skipped below, and TOTAL
+# prints 0 — identical output to an enumeration that silently failed. A count of zero is only an
+# answer when it comes with the reason it is zero, so each skip is attributed.
+SKIP_ABSENT=0
+SKIP_DELETES=0
+SKIP_UNMOVED=0
+SEEN=0
 while IFS= read -r f; do
 	[ -z "$f" ] && continue
+	SEEN=$((SEEN + 1))
 	# Skip binaries: a byte difference proves nothing once either side has been re-encoded,
 	# and there is no line-level notion of "main has this and the branch does not".
-	if ! git show "$MAIN:$f" >/dev/null 2>&1; then continue; fi
-	if git diff --numstat "$MAIN" "$BRANCH" -- "$f" | grep -q '^-'; then continue; fi
+	if ! git show "$MAIN:$f" >/dev/null 2>&1; then SKIP_ABSENT=$((SKIP_ABSENT + 1)); continue; fi
+	if git diff --numstat "$MAIN" "$BRANCH" -- "$f" | grep -q '^-'; then
+		SKIP_DELETES=$((SKIP_DELETES + 1)); continue
+	fi
 	# STALENESS GATE. "main has a line this branch lacks" is ALSO what every ordinary
 	# edit looks like: the branch replaced the line, so main's old version reads as
 	# missing. Without this, the tool flags nearly every branch and becomes noise.
@@ -88,7 +99,7 @@ while IFS= read -r f; do
 	# branch's own deliberate edits. This is also why rebasing dissolves the question
 	# (cowir-controller, msg 3442): afterwards the count is 0 by construction.
 	MOVED=$(git rev-list --count "$BASE..$MAIN" -- "$f")
-	if [ "${MOVED:-0}" -eq 0 ]; then continue; fi
+	if [ "${MOVED:-0}" -eq 0 ]; then SKIP_UNMOVED=$((SKIP_UNMOVED + 1)); continue; fi
 	TOTAL=$((TOTAL + 1))
 	# STRUCTURED DATA: compare PARSED objects, not lines. A line diff is true of how the file is
 	# WRITTEN; the parse is true of the thing (cowir-sfx's rule). cowir-battle hit the failure —
@@ -119,7 +130,14 @@ while IFS= read -r f; do
 	fi
 done <<< "$FILES"
 
-echo "checked $TOTAL text file(s) the branch touches; $HAZARD carry main-only content"
+MAIN_AHEAD=$(git rev-list --count "$BASE..$MAIN")
+echo "branch touches $SEEN file(s); $MAIN has moved $MAIN_AHEAD commit(s) since the base"
+echo "  compared $TOTAL · skipped $SKIP_UNMOVED (main never moved them) $SKIP_ABSENT (not on $MAIN) $SKIP_DELETES (branch deletes)"
+if [ "$TOTAL" -eq 0 ] && [ "$SEEN" -gt 0 ]; then
+	echo "  zero compared is the ANSWER here, not a silence: every file the branch touches is one"
+	echo "  $MAIN has not modified since the base, so a substitution could not drop anything."
+fi
+echo "$HAZARD file(s) carry main-only content"
 if [ "$HAZARD" -gt 0 ]; then
 	cat <<'AMBIG'
 STALE IN A MOVED FILE — and the COUNT ALONE CANNOT TELL YOU WHICH KIND.
