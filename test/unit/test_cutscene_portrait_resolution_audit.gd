@@ -138,12 +138,22 @@ func test_every_cutscene_portrait_resolves() -> void:
 
 
 ## Flattens branch sub-steps into the walk. Pre-2026-07-29 this audit read
-## only the top-level array, so 35 nested dialogue steps were never checked —
-## and one of them was live: world1_prologue's lead_job/bard case gave the
-## Bard `portrait: "bard_happy"`, which no resolution path knows, so her
-## opening line rendered the grey NARRATOR blur. Valid key `bard` with real
-## artist art sat one word away. Player-visible, in the first scene, for
-## anyone who picks Bard as lead.
+## only the top-level array, so 35 branch-nested dialogue steps were never
+## checked. That coverage gap is the whole reason for this helper; all 35
+## resolve correctly.
+##
+## RETRACTION, recorded here because the claim was made publicly and the
+## correction has to live where the claim did: I first reported
+## world1_prologue's lead_job/bard case as a live defect, on the grounds that
+## `portrait: "bard_happy"` matched no registry. It is NOT a defect.
+## _show_entry (CutsceneDialogue:676) strips expression suffixes via
+## EXPRESSION_TINTS and applies the emotion as a modulate tint, then resolves
+## the base key. I had read _create_portrait, found no stripping there, and
+## concluded there was none anywhere — the stripping is in the CALLER.
+##
+## test_cutscene_dialogue_theme_registration_audit, a guard in this same lane,
+## already documented exactly this ("that's the emotion feature working, not
+## drift"). I did not read it before claiming the bug.
 static func _flatten_steps(steps: Array) -> Array:
 	var out: Array = []
 	for step in steps:
