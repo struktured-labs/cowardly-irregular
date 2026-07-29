@@ -20,6 +20,32 @@ extends GutTest
 ## "Jump over gaps" down to something true would launder a planned feature into a
 ## smaller one, and the fix both prior instances got was a consumer, not a reword.
 ##
+## ⚠️ THE PREDICATE IS A PRESENCE PROXY, AND HERE IS EXACTLY HOW FAR IT REACHES.
+## It asks "does this key's text appear in non-comment src/", which is not the same
+## question as "is this key consumed". Bounded and exhausted 2026-07-29 rather than
+## left as a caveat (cowir-sfx msg 3471, cowir-controller's predicate axis msg 3506):
+##
+##   comments                 FIXED — stripped below. Counting them hid THREE unwired
+##                            passives, each passing on one comment that named its key.
+##   dynamic construction     ONE exists: _get_passive_meta_effect_sum(element +
+##                            "_absorb"). All 8 meta-effect call sites and every
+##                            passive_mods index enumerated; it is the only non-literal
+##                            argument, and it is exempted explicitly below.
+##   fallback re-declaration  NOT FIXED, 4 keys affected. PassiveSystem.gd carries a
+##                            hardcoded copy of passives.json, so a key it re-declares
+##                            reads as "present" without anything consuming it:
+##                            autobattle_advanced · hp_below_25 · show_formulas ·
+##                            volatility_scaling. At least hp_below_25 IS consumed
+##                            inside that same file, so "appears only there" does not
+##                            settle it either way — it needs reading, not counting.
+##   string literals          a key inside a live string (push_warning, a log line)
+##                            counts as present. Measured: no passive key currently
+##                            reaches src/ only that way.
+##
+## So the guard UNDER-reports: it can miss an unwired passive, never invent one. Every
+## name it does report is a real promise on an equip button, which is the direction
+## that matters for a player-facing claim.
+##
 ## WHAT IT DOES is hold the set still, in BOTH directions:
 ##   a FIFTH unwired passive appears  -> red, because the list grew unnoticed
 ##   one of these four gets wired     -> red, forcing the entry out
@@ -42,6 +68,14 @@ const AUTHORED_AHEAD := {
 	"wall_climb": "Ninja overworld traversal — same feature",
 	"optional_detector": "Skiptrotter routing — CLAUDE.md 'warp to next quest/boss, bypass dungeons'",
 	"debug_mode": "Scriptweaver debug console — CLAUDE.md 'edit formulas via debug console'",
+	## Found 2026-07-29 once comments stopped counting as consumers. These are NOT
+	## authored-ahead: nothing in CLAUDE.md plans them, and each promises a concrete
+	## mechanic on an equip button. steal_boost sits on ROGUE, a STARTER job, making it
+	## the most reachable of the seven. Listed so the set stays honest and the ratchet
+	## keeps working — not as permission to leave them. Battle lane owns the wiring.
+	"steal_boost": "Rogue '+30% steal success rate' — steal_chance accumulates, nothing reads it",
+	"time_sense": "Time Mage 'preview enemy actions 1 turn ahead' — preview_turns unread",
+	"speedrun_timer": "Skiptrotter split tracking — track_personal_best unread",
 }
 
 ## Keys whose consumers we assert exist, to prove the scan itself resolves.
@@ -69,7 +103,14 @@ func _src_text() -> String:
 			if d.current_is_dir():
 				stack.append(p)
 			elif f.ends_with(".gd"):
-				out += FileAccess.get_file_as_string(p)
+				## Comment lines are STRIPPED. This is a CONSUMER check, and a key mentioned
+				## only in prose is not consumed — counting comments was a label-read that
+				## hid THREE unwired passives (steal_boost, time_sense, speedrun_timer),
+				## each passing solely because one comment happened to name its key.
+				for line in FileAccess.get_file_as_string(p).split("\n"):
+					if line.strip_edges().begins_with("#"):
+						continue
+					out += line + "\n"
 			f = d.get_next()
 		d.list_dir_end()
 	return out
@@ -91,8 +132,16 @@ func _unwired() -> Dictionary:
 			if not (b is Dictionary):
 				continue
 			for key in b:
-				if not src.contains(str(key)):
-					dead.append(str(key))
+				if src.contains(str(key)):
+					continue
+				## The ONE constructed read in src/: _get_passive_meta_effect_sum(element
+				## + "_absorb"). Enumerated all 8 meta-effect call sites and every
+				## passive_mods index; this is the only non-literal argument, so it is the
+				## only key shape a text search cannot see. Bounded and exhausted rather
+				## than left as a stated caveat (cowir-sfx msg 3471).
+				if str(key).ends_with("_absorb"):
+					continue
+				dead.append(str(key))
 		if not dead.is_empty():
 			out[pid] = dead
 	return out
