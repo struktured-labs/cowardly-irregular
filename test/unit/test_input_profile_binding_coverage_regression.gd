@@ -90,6 +90,28 @@ func test_deliberate_remapping_is_still_permitted() -> void:
 		"a remap preserves the binding COUNT; only the index changes")
 
 
+## Closes a hole in this file's OWN exemption, found by re-reading it rather than by a failure.
+##
+## The count invariant above deliberately permits REMAPPING — same number of bindings, different
+## index — so the Ultimate Pro 2's measured swap stays legal. But "count preserved" says nothing
+## about whether the new index exists: [6, 7] -> [6, 99] passes the count check while binding a
+## button no controller sends, and the action would be silently unreachable on every pad.
+##
+## BUTTON_LABELS is the right authority because it is the same table the remap UI renders — an index
+## outside it displays as a bare "Button 99" to the player, which is the visible symptom.
+func test_every_profile_button_index_is_a_real_button() -> void:
+	var unknown: Array[String] = []
+	var profiles := _profiles()
+	for profile_name in profiles:
+		var profile: Dictionary = profiles[profile_name]
+		for action in profile:
+			for index in profile[action]:
+				if not _ipm.BUTTON_LABELS.has(index):
+					unknown.append("%s.%s -> button %s" % [profile_name, action, str(index)])
+	assert_eq(unknown, [] as Array[String],
+		"a profile binds an index with no known button — the count guard permits remapping, so nothing else catches an index that simply does not exist: %s" % str(unknown))
+
+
 ## Every remappable action must actually be covered by every profile, or applying that profile
 ## erases the action's joypad bindings and leaves nothing behind.
 func test_every_profile_covers_every_remappable_action() -> void:
