@@ -307,11 +307,11 @@ func _generate_hero_mimics_party() -> Array:
 		var mimic_data = {
 			"id": "hero_mimic",
 			"name": "Hero Mimic %d" % (i + 1),
-			"max_hp": 100,
+			"max_hp": 1000,
 			"max_mp": 50,
-			"attack": 15,
-			"defense": 12,
-			"magic": 15,
+			"attack": 150,
+			"defense": 1200,
+			"magic": 150,
 			"speed": 14,
 			"is_mimic": true,
 			"mimic_index": i,
@@ -347,7 +347,7 @@ func _create_enemy_data(enemy_id: String) -> Dictionary:
 		var data = {
 			"id": db_entry.get("id", enemy_id),
 			"name": db_entry.get("name", enemy_id.capitalize()),
-			"max_hp": stats.get("max_hp", 80),
+			"max_hp": stats.get("max_hp", 800),
 			"max_mp": stats.get("max_mp", 20),
 			"attack": stats.get("attack", 10),
 			"defense": stats.get("defense", 8),
@@ -375,11 +375,11 @@ func _create_enemy_data(enemy_id: String) -> Dictionary:
 			return {
 				"id": "wolf",
 				"name": "Feral Wolf",
-				"max_hp": 120,
+				"max_hp": 1200,
 				"max_mp": 5,
-				"attack": 18,
-				"defense": 12,
-				"magic": 3,
+				"attack": 180,
+				"defense": 120,
+				"magic": 30,
 				"speed": 16
 			}
 
@@ -387,11 +387,11 @@ func _create_enemy_data(enemy_id: String) -> Dictionary:
 			return {
 				"id": "corrupted_sprite",
 				"name": "Corrupted Sprite",
-				"max_hp": 90,
+				"max_hp": 900,
 				"max_mp": 40,
-				"attack": 10,
-				"defense": 8,
-				"magic": 20,
+				"attack": 100,
+				"defense": 80,
+				"magic": 200,
 				"speed": 14,
 				"corruption_effects": ["reality_bending"]
 			}
@@ -400,11 +400,11 @@ func _create_enemy_data(enemy_id: String) -> Dictionary:
 			return {
 				"id": "glitch_entity",
 				"name": "Glitch Entity",
-				"max_hp": 110,
+				"max_hp": 1100,
 				"max_mp": 50,
-				"attack": 15,
-				"defense": 10,
-				"magic": 25,
+				"attack": 150,
+				"defense": 100,
+				"magic": 250,
 				"speed": 13,
 				"meta_enemy": true
 			}
@@ -424,11 +424,11 @@ func _create_enemy_data(enemy_id: String) -> Dictionary:
 			return {
 				"id": "slime",
 				"name": "Slime",
-				"max_hp": 80,
+				"max_hp": 800,
 				"max_mp": 20,
-				"attack": 10,
-				"defense": 8,
-				"magic": 5,
+				"attack": 100,
+				"defense": 80,
+				"magic": 50,
 				"speed": 8
 			}
 

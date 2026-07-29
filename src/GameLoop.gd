@@ -2195,11 +2195,14 @@ func _create_party_from_customizations(customizations: Array) -> void:
 	party.clear()
 
 	# Base stats for party members
+	# Overwritten by JobSystem.assign_job for any customization with a job (all of them today —
+	# starting_jobs defaults to two). Kept as the no-job floor, and scaled with the 2026-07-29 ×10
+	# pass so that floor is in the same denomination as everything it would sit beside.
 	var base_stats_list = [
-		{"max_hp": 150, "max_mp": 50, "attack": 25, "defense": 15, "magic": 12, "speed": 12},
-		{"max_hp": 100, "max_mp": 120, "attack": 10, "defense": 12, "magic": 28, "speed": 14},
-		{"max_hp": 90, "max_mp": 40, "attack": 18, "defense": 10, "magic": 8, "speed": 22},
-		{"max_hp": 80, "max_mp": 150, "attack": 8, "defense": 8, "magic": 35, "speed": 12}
+		{"max_hp": 1500, "max_mp": 50, "attack": 250, "defense": 150, "magic": 120, "speed": 12},
+		{"max_hp": 1000, "max_mp": 120, "attack": 100, "defense": 120, "magic": 280, "speed": 14},
+		{"max_hp": 900, "max_mp": 40, "attack": 180, "defense": 100, "magic": 80, "speed": 22},
+		{"max_hp": 800, "max_mp": 150, "attack": 80, "defense": 80, "magic": 350, "speed": 12}
 	]
 
 	for i in range(min(customizations.size(), 4)):
@@ -2452,11 +2455,11 @@ func _create_party() -> void:
 	var hero = Combatant.new()
 	hero.initialize({
 		"name": "Fighter",
-		"max_hp": 150,
+		"max_hp": 1500,
 		"max_mp": 50,
-		"attack": 25,
-		"defense": 15,
-		"magic": 12,
+		"attack": 250,
+		"defense": 150,
+		"magic": 120,
 		"speed": 12
 	})
 	add_child(hero)
@@ -2488,11 +2491,11 @@ func _create_party() -> void:
 	var mira = Combatant.new()
 	mira.initialize({
 		"name": "Cleric",
-		"max_hp": 100,
+		"max_hp": 1000,
 		"max_mp": 120,
-		"attack": 10,
-		"defense": 12,
-		"magic": 28,
+		"attack": 100,
+		"defense": 120,
+		"magic": 280,
 		"speed": 14
 	})
 	add_child(mira)
@@ -2513,11 +2516,11 @@ func _create_party() -> void:
 	var rogue = Combatant.new()
 	rogue.initialize({
 		"name": "Rogue",
-		"max_hp": 90,
+		"max_hp": 900,
 		"max_mp": 40,
-		"attack": 18,
-		"defense": 10,
-		"magic": 8,
+		"attack": 180,
+		"defense": 100,
+		"magic": 80,
 		"speed": 22
 	})
 	add_child(rogue)
@@ -2538,11 +2541,11 @@ func _create_party() -> void:
 	var vex = Combatant.new()
 	vex.initialize({
 		"name": "Mage",
-		"max_hp": 80,
+		"max_hp": 800,
 		"max_mp": 150,
-		"attack": 8,
-		"defense": 8,
-		"magic": 35,
+		"attack": 80,
+		"defense": 80,
+		"magic": 350,
 		"speed": 12
 	})
 	add_child(vex)
@@ -2565,11 +2568,11 @@ func _create_party() -> void:
 	var bard = Combatant.new()
 	bard.initialize({
 		"name": "Bard",
-		"max_hp": 95,
+		"max_hp": 950,
 		"max_mp": 90,
-		"attack": 12,
-		"defense": 9,
-		"magic": 22,
+		"attack": 120,
+		"defense": 90,
+		"magic": 220,
 		"speed": 16
 	})
 	add_child(bard)

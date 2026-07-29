@@ -1131,18 +1131,18 @@ func build_meta_boss_enemy_data(is_collapse_boss: bool = false) -> Dictionary:
 func _build_fallback_meta_boss(is_collapse_boss: bool) -> Dictionary:
 	"""Fallback boss when monsters.json cannot be read"""
 	var name_str := "NULL::ENTITY" if is_collapse_boss else _generate_meta_boss_name()
-	var hp := int(600 * (1.0 + meta_corruption_level * 0.2))
+	var hp := int(6000 * (1.0 + meta_corruption_level * 0.2))
 	if is_collapse_boss:
 		hp = int(hp * 1.5)
 	return {
 		"id": "null_entity" if is_collapse_boss else "meta_boss_generated",
 		"name": name_str,
 		"color": Color(0.5, 0.0, 0.8),
-		"stats": {"max_hp": hp, "max_mp": 100, "attack": 40, "defense": 30, "magic": 35, "speed": 16},
+		"stats": {"max_hp": hp, "max_mp": 100, "attack": 400, "defense": 300, "magic": 350, "speed": 16},
 		"max_hp": hp,
-		"attack": 40,
-		"defense": 30,
-		"magic": 35,
+		"attack": 400,
+		"defense": 300,
+		"magic": 350,
 		"speed": 16,
 		"exp_reward": 500,
 		"gold_reward": 300,

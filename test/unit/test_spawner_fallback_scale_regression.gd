@@ -97,3 +97,74 @@ func test_speed_and_mp_were_not_scaled_here_either() -> void:
 			"speed is comparative and was not part of the ×10 pass — scaling it here would break "
 			+ "the `speed >= 18` assassin gate for fallback spawns")
 	assert_gt(found, 5, "positive control — speeds must actually be read")
+
+
+# ── the peer group: every OTHER literal stat block in src/ ──────────
+##
+## MONSTER_TYPES was the first one found and I reported it as the finding. The peer group is SIX
+## files — cowir-sfx's scope lesson, committed by me one item after quoting it:
+##   BattleEnemySpawner  11 monster fallbacks      JobSystem      14 job fallbacks
+##   GameLoop            2 party-creation blocks   BattleScene    default party
+##   AutogrindSystem     meta-boss fallback        EncounterSystem hero_mimic
+## All six were invisible to the ×10 pass (which rewrote JSON) AND to the arithmetic sweeps that
+## found the tank gate and the steal divisor (which look for stats in expressions). A literal block
+## in a const array or an initialize() call matches neither shape.
+
+func test_the_job_fallbacks_mirror_jobs_json_exactly() -> void:
+	# JobSystem's hardcoded jobs carry the comment "Values mirror data/jobs.json exactly". They did
+	# not — fighter read 120 against the file's 132 even BEFORE the rescale, so the claim was
+	# already false and the ×10 made it false by an order of magnitude. Synced rather than softened:
+	# a comment that states an invariant should be made true or deleted, not hedged.
+	var jobs: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/jobs.json"))
+	var src := FileAccess.get_file_as_string("res://src/jobs/JobSystem.gd")
+	var offenders: Array = []
+	var compared: int = 0
+	for job_id in jobs:
+		var mods: Variant = (jobs[job_id] as Dictionary).get("stat_modifiers")
+		if not (mods is Dictionary):
+			continue
+		var re := RegEx.create_from_string("(?s)\"%s\": \\{.*?\"stat_modifiers\": \\{(.*?)\\}" % job_id)
+		var m := re.search(src)
+		if m == null:
+			continue
+		var body: String = m.get_string(1)
+		for stat in (mods as Dictionary):
+			var sre := RegEx.create_from_string("\"%s\":\\s*(\\d+)" % stat)
+			var sm := sre.search(body)
+			if sm == null:
+				continue
+			compared += 1
+			if int(sm.get_string(1)) != int((mods as Dictionary)[stat]):
+				offenders.append("%s.%s: fallback %s vs jobs.json %d"
+					% [job_id, stat, sm.get_string(1), int((mods as Dictionary)[stat])])
+	assert_gt(compared, 20, "positive control — the parse must actually reach job stat blocks")
+	assert_eq(offenders, [], "JobSystem's fallbacks claim to mirror jobs.json and do not. If "
+		+ "jobs.json fails to load, every job silently spawns at these values:\n  %s"
+		% "\n  ".join(offenders))
+
+
+func test_no_src_stat_block_sits_an_order_of_magnitude_below_the_corpus() -> void:
+	# The general form across all six files, so a SEVENTH literal block cannot ship unnoticed.
+	# Floor derived from the authored corpus, not chosen.
+	var jobs: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/jobs.json"))
+	var weakest_job: int = 1 << 30
+	for jid in jobs:
+		var mods: Variant = (jobs[jid] as Dictionary).get("stat_modifiers")
+		if mods is Dictionary and (mods as Dictionary).has("max_hp"):
+			weakest_job = mini(weakest_job, int((mods as Dictionary)["max_hp"]))
+	var files := ["res://src/jobs/JobSystem.gd", "res://src/GameLoop.gd",
+		"res://src/battle/BattleScene.gd", "res://src/battle/BattleEnemySpawner.gd",
+		"res://src/autogrind/AutogrindSystem.gd", "res://src/encounters/EncounterSystem.gd"]
+	var re := RegEx.create_from_string("\"max_hp\":\\s*(\\d+)")
+	var offenders: Array = []
+	var seen: int = 0
+	for path in files:
+		var src := FileAccess.get_file_as_string(path)
+		for m in re.search_all(src):
+			seen += 1
+			var v: int = int(m.get_string(1))
+			# A tenth of the frailest authored job is unambiguously the old denomination.
+			if v > 0 and v * 5 < weakest_job:
+				offenders.append("%s: max_hp %d (corpus floor %d)" % [str(path).get_file(), v, weakest_job])
+	assert_gt(seen, 20, "positive control — must actually find literal blocks across the six files")
+	assert_eq(offenders, [], "literal stat blocks left at the pre-×10 scale:\n  %s" % "\n  ".join(offenders))
