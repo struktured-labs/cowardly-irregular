@@ -4215,7 +4215,7 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 			# dead. Wire it here (same contained pattern as smoke_bomb's escape):
 			# after the hit, roll a gold steal per target.
 			if bool(ability.get("steals", false)):
-				var _steal_rate: float = clampf(float(ability.get("success_rate", 0.5)) + _sum_equipment_special_effect(caster, "steal_bonus"), 0.0, 1.0)
+				var _steal_rate: float = _steal_success_rate(caster, float(ability.get("success_rate", 0.5)))
 				for _st in retargeted:
 					if _st is Combatant and is_instance_valid(_st) and _st.is_alive:
 						if _first_steal_guaranteed(_st) or randf() < _steal_rate:
@@ -4850,6 +4850,16 @@ func _sum_equipment_special_effect(combatant: Combatant, key: String) -> float:
 		if ac_se is Dictionary:
 			total += float(ac_se.get(key, 0.0))
 	return total
+
+
+## The ONE place a steal rate is composed. Two paths roll for a steal — the pure Steal handler and Mug's physical branch — and each grew its own inline clamp, so tick 462 wired thiefs_glove into one and the steal_boost passive reached one. A Rogue equipping a passive promising "+30% steal success" got it on Steal and not on Mug, which reads as randomness rather than as a bug.
+func _steal_success_rate(caster: Combatant, base_rate: float) -> float:
+	var equip_bonus: float = _sum_equipment_special_effect(caster, "steal_bonus")
+	var passive_bonus: float = 0.0
+	var ps: Node = get_node_or_null("/root/PassiveSystem")
+	if ps and ps.has_method("get_passive_mods"):
+		passive_bonus = float(ps.get_passive_mods(caster).get("steal_chance", 0.0))
+	return clampf(base_rate + equip_bonus + passive_bonus, 0.0, 1.0)
 
 
 ## 2026-07-15 playtest: Lockward is a knife-edge — a first-turn Steal miss lets Counter Stance one-shot the solo Rogue and no recovery is possible. When a target's monsters.json entry sets `first_steal_guaranteed: true`, the FIRST steal/mug this fight always lands (rate-roll bypassed). Subsequent steals fall back to the normal rate. One-shot only, so grinding doesn't turn Rogue into an infinite-steal turret.
@@ -5588,13 +5598,7 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 			## 1.0 so a future stacked-glove build doesn't go above
 			## 100% (the bound also dodges the > 1.0 randf check
 			## becoming always-true edge).
-			var steal_bonus: float = _sum_equipment_special_effect(caster, "steal_bonus")
-			## steal_boost passive (Rogue) authors stat_mods.steal_chance and had NO reader — the same defect tick 462 fixed for thiefs_glove, one layer over. get_passive_mods composes unknown keys rather than dropping them, so the value was always available and simply unread.
-			var passive_steal: float = 0.0
-			var ps: Node = get_node_or_null("/root/PassiveSystem")
-			if ps and ps.has_method("get_passive_mods"):
-				passive_steal = float(ps.get_passive_mods(caster).get("steal_chance", 0.0))
-			var effective_rate: float = clampf(success_rate + steal_bonus + passive_steal, 0.0, 1.0)
+			var effective_rate: float = _steal_success_rate(caster, success_rate)
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
 					if _first_steal_guaranteed(target) or randf() < effective_rate:
