@@ -310,14 +310,40 @@ MONSTER_DESC = {
         "cool cyan and violet neon palette. NOT organic, NOT armored. "
         "Silhouette must read as 'CPU-scheduler ghost' at a glance"
     ),
+    # REWRITTEN 2026-07-28. The previous prompt asked for a "semi-transparent
+    # humanoid outline ... more implied than drawn ... a suggestion of a
+    # person, not a body" — and the model obeyed exactly: the IDLE frames
+    # came back with SEVEN opaque pixels against 30933 in the attack. The
+    # monster was invisible until it swung. Abstract must mean abstract in
+    # DESIGN, never in opacity; a battle sprite that isn't drawn isn't a
+    # battle sprite. Found by tools/sprite_structural_qa.py ALPHA_EMPTY.
     "masterite_tempo_abstract": (
-        "Tempo of Sequence — pure ORDER-as-form: a semi-transparent "
-        "humanoid outline (a suggestion of a person, not a body) filled with "
-        "cascading downward arrows, dashed timeline segments, and numbered "
-        "sequence marks (1→2→3→) glowing in soft white and pale gold. The "
-        "figure is more implied than drawn — motion-blur trails follow the "
-        "silhouette. NOT a character, an INDEX. Silhouette must read as "
-        "'sequence itself, given a shape' at a glance"
+        "Tempo of Sequence — ORDER given a body. A SOLID, FULLY OPAQUE "
+        "humanoid figure standing upright and clearly visible, built out of "
+        "stacked geometric plates like a mannequin assembled from timetable "
+        "cards. Its surface is covered in crisp glowing marks: cascading "
+        "downward arrows, dashed timeline segments, numbered sequence ticks "
+        "(1-2-3). A featureless plate for a head with a single horizontal "
+        "indicator bar for eyes. Palette: matte bone-white and pale gold "
+        "plating with luminous amber marks, deep charcoal in the seams. "
+        "CRITICAL: every frame must be a SOLID, OPAQUE, clearly readable "
+        "silhouette — NOT translucent, NOT a wireframe, NOT an outline, NOT "
+        "implied or ghostly. It reads as 'the schedule, walking' because of "
+        "its MARKINGS, not because it is faint."
+    ),
+    # Also previously undescribed — fell to the generic default and came back
+    # with a 204px idle against a 7760px attack. Same class, same fix.
+    "masterite_curator_abstract": (
+        "Curator of Entropy — PRESERVATION given a body. A SOLID, FULLY "
+        "OPAQUE robed figure standing upright and clearly visible, its deep "
+        "indigo ceremonial robe hung with small brass reliquary frames, each "
+        "holding a single glowing ember. Where a face would be, a closed "
+        "brass locket. Cupped in its hands, a contained flame that does not "
+        "spread. Palette: deep indigo and aged brass with warm ember-orange "
+        "points of light, matte and heavy. CRITICAL: every frame must be a "
+        "SOLID, OPAQUE, clearly readable silhouette — NOT translucent, NOT a "
+        "wireframe, NOT ghostly. The abstraction is in the DESIGN (a curator "
+        "who is only robe, frames and flame), never in the opacity."
     ),
 }
 
