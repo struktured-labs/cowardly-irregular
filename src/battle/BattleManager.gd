@@ -213,6 +213,10 @@ func _recover_enemy_selection_stall() -> void:
 var _current_terrain: String = "plains"
 var _terrain_modifiers: Dictionary = {"boost": [], "reduce": []}
 const TERRAIN_MODIFIER_VALUE: float = 0.25  # +25% or -25% damage
+## Steal/Mug gold scales with the target's max_hp, so this divisor is an ABSOLUTE magnitude and
+## must move with Combatant.STAT_SCALE. At the pre-×10 value of 50 a slime paid out up to 700 gold
+## against its authored reward of 10, and Mordaine up to 16,550 against her 800.
+const STEAL_GOLD_HP_DIVISOR: float = 500.0
 
 ## Tick 416: removed dead `autobattle_toggled` signal that was never
 ## emitted from BattleManager — the live signal of the same name
@@ -4215,7 +4219,7 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 				for _st in retargeted:
 					if _st is Combatant and is_instance_valid(_st) and _st.is_alive:
 						if _first_steal_guaranteed(_st) or randf() < _steal_rate:
-							var _g: int = randi_range(5, 50) * (1 + int(_st.max_hp / 50.0))
+							var _g: int = randi_range(5, 50) * (1 + int(_st.max_hp / STEAL_GOLD_HP_DIVISOR))
 							GameState.add_gold(_g)
 							battle_log_message.emit("[color=yellow]%s mugs %d gold from %s![/color]" % [caster.combatant_name, _g, _st.combatant_name])
 							# msg 2483: Mug is attack + steal in one action, so its steal-success branch fires the same steal_response the pure Steal handler does — Warden's Key path opens either way. Guarded once per fight by _steal_response_consumed inside the helper.
@@ -5589,7 +5593,7 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
 					if _first_steal_guaranteed(target) or randf() < effective_rate:
-						var gold_amount = randi_range(5, 50) * (1 + int(target.max_hp / 50.0))
+						var gold_amount = randi_range(5, 50) * (1 + int(target.max_hp / STEAL_GOLD_HP_DIVISOR))
 						GameState.add_gold(gold_amount)
 						print("  → Stole %d gold from %s!" % [gold_amount, target.combatant_name])
 						battle_log_message.emit("[color=yellow]%s stole %d gold from %s![/color]" % [caster.combatant_name, gold_amount, target.combatant_name])
