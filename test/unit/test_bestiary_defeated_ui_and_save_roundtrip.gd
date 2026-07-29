@@ -25,6 +25,28 @@ func _read(p: String) -> String:
 	return t
 
 
+## Drive the real detail panel for one synthetic entry and hand back the
+## stat Label, so the intel gate can be asserted on what actually renders
+## rather than on how the format string happens to be spelled.
+func _render_stats(stats: Dictionary, defeated: bool) -> Label:
+	var menu = load(BESTIARY_MENU).new()
+	add_child_autofree(menu)
+	await wait_frames(3)
+	var label = menu.get("_detail_stats")
+	assert_ne(label, null, "bestiary detail must build a stat label")
+	if label == null:
+		return null
+	menu.set("_entries", [{
+		"id": "test_dummy", "name": "Dummy", "level": 3, "epithet": "",
+		"stats": stats, "flavor": "", "defeated": defeated,
+		"weaknesses": [], "resistances": [], "drops": [], "pools": [],
+	}])
+	menu.set("_selected", 0)
+	menu.call("_refresh_detail")
+	await wait_frames(2)
+	return label
+
+
 func before_each() -> void:
 	for d_key in ["seen_monsters", "defeated_monsters"]:
 		if GameState.game_constants.has(d_key):
@@ -68,9 +90,25 @@ func test_detail_reads_defeated_field() -> void:
 func test_undefeated_shows_question_marks_for_stats() -> void:
 	# Pin: the not-defeated branch sets stats text to ??? form,
 	# NOT the full HP/MP numbers.
-	var body := _detail_body()
-	assert_true(body.contains("HP ???   MP ???   ATK ???   DEF ???   MAG ???   SPD ???"),
+	# Was a pin on the literal stat line, spelled out stat by stat. It
+	# failed the moment M.DEF was legitimately ADDED to the panel — the
+	# gate it names was never broken, only the spelling changed. A
+	# spelling pin doesn't just miss bugs, it blocks correct changes and
+	# invites the next person to "fix" it by re-copying the new string.
+	# Driven for real instead: what matters is that no stat VALUE leaks
+	# before the kill, whichever stats the panel happens to list.
+	var label := await _render_stats({"hp": 999, "defense": 42}, false)
+	if label == null:
+		return
+	assert_true(label.text.contains("???"),
 		"un-defeated stats line must show ??? — not real numbers")
+	var digits := 0
+	for ch in label.text:
+		if ch >= "0" and ch <= "9":
+			digits += 1
+	assert_eq(digits, 0,
+		"un-defeated stats line must contain NO digits — intel is gated on the kill, but rendered '%s'" % label.text)
+	var body := _detail_body()
 	assert_true(body.contains("Weak: ???"),
 		"un-defeated weaknesses must be ???")
 	assert_true(body.contains("Resist: ???"),
@@ -84,9 +122,20 @@ func test_undefeated_shows_question_marks_for_stats() -> void:
 func test_defeated_branch_still_shows_full_intel() -> void:
 	# Negative regression: don't accidentally break the full-intel
 	# render path for defeated entries.
+	# Also de-spelled: pinned the exact format string, so it broke when
+	# M.DEF was added even though full intel still rendered correctly.
+	# The claim is "the numbers show once you've killed it" — assert that.
+	var label := await _render_stats(
+		{"max_hp": 1234, "max_mp": 77, "attack": 88, "defense": 42,
+		 "magic": 55, "magic_defense": 21, "speed": 30}, true)
+	if label == null:
+		return
+	assert_false(label.text.contains("???"),
+		"defeated branch must reveal real stats, not ??? — got '%s'" % label.text)
+	for expected in ["1234", "42", "21"]:
+		assert_true(label.text.contains(expected),
+			"defeated stat line must render the real value %s — got '%s'" % [expected, label.text])
 	var body := _detail_body()
-	assert_true(body.contains("HP %d   MP %d   ATK %d   DEF %d   MAG %d   SPD %d"),
-		"defeated branch must still render full stat numbers")
 	assert_true(body.contains("_format_drops("),
 		"defeated branch must still call _format_drops for the drop table")
 
