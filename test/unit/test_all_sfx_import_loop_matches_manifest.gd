@@ -101,7 +101,7 @@ func test_no_new_manifest_import_loop_drift() -> void:
 		if not known_set.has(k):
 			new_drift.append(k)
 	assert_eq(new_drift.size(), 0,
-		"NEW manifest/import loop drift (%d): %s — runtime callback-loop hides this for play_ambient, but any bypass path (one-shot ambient stinger, direct AudioStreamPlayer.play) makes .import authoritative. Fix by aligning .import loop with manifest, OR add to KNOWN_LOOP_MISMATCHES with a documented reason." % [new_drift.size(), new_drift])
+		"NEW manifest/import loop drift (%d): %s — the SFX path NEVER reads the manifest `loop` field, so .import is the ONLY live loop mechanism: a cue whose .import says loop=false PLAYS ONCE AND STOPS no matter what the manifest claims. Fix by aligning the .import loop flag with the manifest, OR add to KNOWN_LOOP_MISMATCHES with a documented reason." % [new_drift.size(), new_drift])
 
 	# Guarantee 2: no snapshot rot.
 	var actual_set := {}
