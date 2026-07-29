@@ -116,7 +116,7 @@
       "type": "grant_item",
       "item": "old_guard_tally",
       "name": "Old Guard Tally",
-      "description": "A fragment of the Warden's memory, crystallized in stone. Warm to the touch. Someone is still counting. Grants +2 to party defense when outnumbered."
+      "description": "A fragment of the Warden's memory, crystallized in stone. Warm to the touch. Someone is still counting. Grants +20 to party defense when outnumbered."
     },
     {
       "type": "set_flag",
