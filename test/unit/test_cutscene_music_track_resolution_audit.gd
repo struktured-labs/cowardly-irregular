@@ -94,7 +94,7 @@ func test_every_cutscene_music_track_resolves() -> void:
 		var parsed = JSON.parse_string(_read(path))
 		if not (parsed is Dictionary):
 			continue
-		for step in parsed.get("steps", []):
+		for step in _flatten_steps(parsed.get("steps", [])):
 			if not (step is Dictionary) or step.get("type") != "play_music":
 				continue
 			var track := str(step.get("track", "")).strip_edges()
@@ -112,3 +112,24 @@ func test_every_cutscene_music_track_resolves() -> void:
 		reports.append("'%s' (e.g. in %s)" % [t, ", ".join(offenders[t])])
 	assert_true(false,
 		"cutscene JSON references play_music tracks with no manifest entry or SoundManager match arm (silent overworld-music fallback):\n  %s" % "\n  ".join(reports))
+
+
+## Flattens branch sub-steps. This audit walked the top-level array only, so
+## the four nested play_music steps in world6_chapter3 — the W6 ending themes,
+## one per canon ending — were never checked. One of THREE music walkers with
+## this gap; I fixed one first and came back for the other two (@cowir-sfx's
+## scope lesson: the check was real, its scope was the file in front of me).
+## Which one is "last" is a state claim that rots, so it isn't made here.
+static func _flatten_steps(steps: Array) -> Array:
+	var out: Array = []
+	for step in steps:
+		if not (step is Dictionary):
+			continue
+		out.append(step)
+		for case_steps in (step.get("cases", {}) as Dictionary).values():
+			if case_steps is Array:
+				out.append_array(_flatten_steps(case_steps))
+		for key in ["if_true", "if_false"]:
+			if step.get(key) is Array:
+				out.append_array(_flatten_steps(step[key]))
+	return out
