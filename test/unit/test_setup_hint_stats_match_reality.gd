@@ -5,15 +5,27 @@ extends GutTest
 ## 7800 HP", "Speed 28 means it outspeeds almost everything" — and those numbers
 ## live somewhere else, in the same file, under `stats`.
 ##
-## That is the lie-in-the-label shape with a rebalance as the trigger. The x10
-## re-denomination (2026-07-28) already broke a batch of these; they were caught
-## by hand and fixed. Nothing stops the next tuning pass from doing it again, and
-## a wrong number here is worse than no number: the hint is tactical advice the
-## player is meant to act on, and it reads as authoritative because it is specific.
+## ⚠️ NOTHING READS setup_hint TODAY. Zero consumers in src/ (controls: drop_table 7,
+## exp_reward 9, weaknesses 25). The whole `one_shot` block is authored ahead of its
+## consumer across 50 monsters. NO PLAYER HAS EVER SEEN ONE OF THESE STRINGS.
 ##
-## All 7 quoting hints were verified correct at the time of writing. This keeps
-## them that way by DERIVING the expected value from the monster's own stats
-## rather than pinning the prose.
+## That correction matters, because the first version of this file justified itself
+## with "tactical advice the player is meant to act on" — which was false, and would
+## have made this guard *evidence that the field is wired*. A mutation-verified
+## two-directional ratchet is persuasive; pointed at unconsumed data it certifies a
+## liveness that doesn't exist, and the next person auditing `one_shot` believes it.
+## (cowir-battle, msg 3355 — they measured it; I had verified the numbers were right
+## and never asked whether anything displays them.)
+##
+## THE REAL REASON TO KEEP IT: this corpus is authored ahead of a consumer that may
+## still arrive. The x10 re-denomination already broke a batch of these hints and they
+## were fixed by hand. Keeping them true costs nothing now and makes wiring the field
+## a one-line change instead of a 50-monster audit — the guard protects the option,
+## not a live surface.
+##
+## All 7 quoting hints were correct at the time of writing. This keeps them that way
+## by DERIVING the expected value from the monster's own stats rather than pinning
+## the prose, so it survives any rebalance that updates both.
 
 const MONSTERS := "res://data/monsters.json"
 
