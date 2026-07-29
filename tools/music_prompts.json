@@ -646,8 +646,8 @@
     },
     "boss_rat_king": {
       "title_template": "The Crown Beneath the Whispers",
-      "style": "SNES tutorial boss, manic minor key, comedic-yet-menacing, harpsichord + low brass + skittering percussion, 16-bit",
-      "prompt": "First boss confrontation in a damp cave — sense of absurd grandeur giving way to mounting dread. Sewer-king pomp colliding with primal animal menace, dripping water punctuated by manic rodent squeaks, mock-heroic brass over a relentless low pulse, building to a fever pitch as the rat king bellows."
+      "style": "SNES boss battle, INTENSE and driving, pounding relentless percussion, aggressive low brass, manic minor key, comedic-yet-menacing character carried on top of the assault, harpsichord + skittering rodent detail, 16-bit",
+      "prompt": "First boss confrontation in a damp cave — sense of absurd grandeur giving way to mounting dread. Sewer-king pomp colliding with primal animal menace, dripping water punctuated by manic rodent squeaks, mock-heroic brass over a relentless low pulse, building to a fever pitch as the rat king bellows. Must hit HARDER than the standard battle theme — overwhelming, urgent, fight-for-your-life energy under the absurdity. The comedy rides on top of real menace; it never replaces it."
     },
     "village_eldertree": {
       "title_template": "Under the Canopy",
