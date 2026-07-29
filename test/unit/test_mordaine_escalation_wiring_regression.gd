@@ -227,7 +227,6 @@ func test_at_offset_lands_her_inside_the_visible_frame() -> void:
 	var player := Node2D.new()
 	player.add_to_group("player")
 	stage.add_child(player)
-	player.global_position = Vector2(2100, 1450)   # arbitrary, far from any authored coord
 
 	var d = load(DIRECTOR).new()
 	add_child_autofree(d)
@@ -236,16 +235,33 @@ func test_at_offset_lands_her_inside_the_visible_frame() -> void:
 		if s is Dictionary and s.get("type") == "spawn_actor" and s.get("at_offset") is Array:
 			offset = s["at_offset"]
 	assert_gt(offset.size(), 1, "road beat must declare at_offset")
-	d._step_spawn_actor({"id": "mordaine", "kind": "npc", "archetype": "chancellor_mordaine",
-		"at_offset": offset, "facing": "down"})
-	var actor = d._actors.get("mordaine")
-	assert_not_null(actor, "she must spawn")
-	var delta: Vector2 = actor.global_position - player.global_position
-	# Half the visible region, minus a margin so she isn't clipped at the edge.
-	assert_true(absf(delta.x) < 288.0 and absf(delta.y) < 148.0,
-		"she must land inside the visible frame relative to the player (delta %s) — a fixed map coord is what put her off-screen" % str(delta))
-	assert_true(delta.length() > 64.0,
-		"…but not on top of the party either; she is a figure at a distance")
+
+	# SWEEP, not one fixture. The property is "wherever the player stands",
+	# and whether a single sample exposes a break is a fact about that sample
+	# rather than about the code (@cowir-ai msg-3390: the mutant is wrong, the
+	# one input didn't reveal it). Includes near-origin and far-corner, since
+	# a clamp would only misbehave at an edge.
+	for spot in [Vector2(2100, 1450), Vector2(96, 96), Vector2(3100, 2180), Vector2(1600, 40)]:
+		player.global_position = spot
+		d._step_spawn_actor({"id": "mordaine", "kind": "npc", "archetype": "chancellor_mordaine",
+			"at_offset": offset, "facing": "down"})
+		var actor = d._actors.get("mordaine")
+		assert_not_null(actor, "she must spawn (player at %s)" % str(spot))
+		var delta: Vector2 = actor.global_position - player.global_position
+		# Half the visible region, minus a margin so she isn't clipped at the edge.
+		assert_true(absf(delta.x) < 288.0 and absf(delta.y) < 148.0,
+			"she must land inside the visible frame relative to the player (delta %s, player %s) — a fixed map coord is what put her off-screen" % [str(delta), str(spot)])
+		assert_true(delta.length() > 64.0,
+			"…but not on top of the party either; she is a figure at a distance (player %s)" % str(spot))
+		# DIRECTION, not just distance. The narration the player reads says
+		# "a figure on the RISE, EAST of the road" — so +x and above. absf() on
+		# both axes was direction-blind: negating at_offset puts her west and
+		# downhill, contradicting the prose, and all 13 assertions stayed green
+		# (measured 2026-07-29).
+		assert_true(delta.x > 0.0,
+			"she must stand EAST of the party — the narration says 'east of the road' (delta %s, player %s)" % [str(delta), str(spot)])
+		assert_true(delta.y < 0.0,
+			"…and ABOVE them: it is 'the rise', and the beat ends with 'the rise was empty' (delta %s, player %s)" % [str(delta), str(spot)])
 	if MapSystem:
 		MapSystem.current_map = saved
 
