@@ -138,6 +138,55 @@ func test_the_directory_guard_refuses_an_empty_directory() -> void:
 	DirAccess.remove_absolute(root + "tmp/rt_probe.sh")
 
 
+## THE OUTCOME ASSERTION — the guard that matters most, and until now the only
+## one in this file with no test behind it.
+##
+## Every check above drives a PRECONDITION (require_test_file, require_test_dir)
+## and exits 2 before godot launches. Those cover the causes we thought of. The
+## cause that actually cost the fleet an hour was one nobody predicted: a fresh
+## worktree has no .godot cache, so res:// resolves to nothing while the file
+## sits on disk — Godot prints "Some GUT class_names have not been imported" and
+## exits 0 anyway. run_gut answers that by asserting the OUTCOME instead: a real
+## run always prints a Totals block, and exit 3 if none appeared.
+##
+## Six tests guarded the preconditions. Zero guarded the thing that generalises.
+## Measured by mutation: replacing the Totals check with `if false` leaves every
+## other test in this file GREEN.
+func test_a_run_that_executes_nothing_is_refused() -> void:
+	# Repoint the full-suite -gdir at a directory that does not exist: GUT
+	# selects an empty set, prints no Totals, and exits 0. run_gut must refuse it.
+	var root := ProjectSettings.globalize_path("res://")
+	var src := FileAccess.get_file_as_string(root + "tools/run_tests.sh")
+	assert_ne(src, "", "PRECONDITION: run_tests.sh must be readable at %s" % root)
+	assert_true(src.contains("-gdir=res://test/unit"),
+		"PRECONDITION: the full-suite selector must exist verbatim, or the probe is the unmodified script")
+
+	# require_test_dir would refuse a real-but-empty directory first, at exit 2.
+	# Pointing at a NONEXISTENT res:// dir keeps the disk-side guard satisfied
+	# (test/unit is untouched) so the run reaches godot and returns vacuous —
+	# which is the only way to drive run_gut rather than the precondition.
+	var patched := src.replace("-gdir=res://test/unit", "-gdir=res://test/zzz_no_such_dir")
+	assert_ne(patched, src, "PRECONDITION: the patch must change something")
+
+	var probe_path := root + "tmp/rt_outcome_probe.sh"
+	var pf := FileAccess.open(probe_path, FileAccess.WRITE)
+	assert_not_null(pf, "PRECONDITION: probe must be writable")
+	pf.store_string(patched)
+	pf.close()
+
+	var out: Array = []
+	var code := OS.execute("bash", [probe_path], out, true)
+	var text := "\n".join(out)
+	assert_ne(code, 0,
+		"a run that executed NOTHING must not exit 0 — that is the defect, and it is exactly what GUT does on an empty selection")
+	assert_eq(code, 3,
+		"a vacuous run must be exit 3, distinct from 2 (bad invocation) and 1 (real failures) — a gate that cannot tell them apart reports the wrong cause. got %d: %s" % [code, text])
+	assert_true(text.contains("NO TESTS RAN"),
+		"the refusal must name what happened, got: %s" % text)
+
+	DirAccess.remove_absolute(probe_path)
+
+
 func test_the_directory_forms_are_guarded_too() -> void:
 	# Structural companion to the behavioural check above: catches a form added
 	# later that reaches exec without any guard at all.
