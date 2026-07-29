@@ -43,20 +43,42 @@ func test_play_strike_element_unknown_is_manifest_miss_not_crash() -> void:
 	assert_true(true, "unknown element goes through manifest lookup and quietly misses")
 
 
-func test_crit_variants_replaced_dagger_axe_lengths_are_distinct_now() -> void:
+func test_every_crit_variant_is_audibly_longer_than_its_base() -> void:
 	## Ratchet against the msg 2792 audit finding: pre-rebuild dagger_crit
 	## was 555ms vs 480ms base (1.17x — imperceptible). Post-rebuild must
 	## be >=1.5x base so the crit reads as distinct.
-	for w in ["dagger", "axe"]:
-		var base_path: String = "res://assets/audio/sfx/attack_hit_%s.ogg" % w
-		var crit_path: String = "res://assets/audio/sfx/attack_hit_%s_crit.ogg" % w
-		var base_s: AudioStream = load(base_path)
-		var crit_s: AudioStream = load(crit_path)
-		assert_true(base_s != null, "base %s exists" % w)
-		assert_true(crit_s != null, "crit %s exists" % w)
+	##
+	## DERIVED FROM DISK 2026-07-29 (cowir-ai msg-3390's fixture-coincidence class).
+	## This used to hardcode ["dagger", "axe"] — the two weapons the incident was
+	## about — while five base/crit pairs exist. The property is "every crit reads
+	## as distinct from its base"; a hardcoded pair list pins the INCIDENT instead,
+	## so a shortened sword_crit or a new weapon added without a longer crit was
+	## invisible. Enumerating the directory means new weapons opt in automatically.
+	var dir: String = "res://assets/audio/sfx/"
+	var pairs: Array[String] = []
+	for f in DirAccess.get_files_at(dir):
+		var name: String = str(f)
+		if name.begins_with("attack_hit_") and name.ends_with("_crit.ogg"):
+			pairs.append(name.trim_suffix("_crit.ogg").trim_prefix("attack_hit_"))
+	pairs.sort()
+
+	## Vacuity control: if the enumeration ever returns nothing, every assertion
+	## below is skipped and this test passes having checked zero files.
+	assert_gt(pairs.size(), 0,
+		"control: found no attack_hit_*_crit.ogg at all — enumeration is broken, so the checks below ran on nothing")
+
+	for w in pairs:
+		var base_s: AudioStream = load("%sattack_hit_%s.ogg" % [dir, w])
+		var crit_s: AudioStream = load("%sattack_hit_%s_crit.ogg" % [dir, w])
+		assert_true(crit_s != null, "crit variant loads: %s" % w)
+		assert_true(base_s != null,
+			"%s_crit.ogg exists but attack_hit_%s.ogg does not — a crit with no base can never be compared, and plays as the only version of that weapon's hit" % [w, w])
+		if base_s == null or crit_s == null:
+			continue
 		var base_dur: float = base_s.get_length()
 		var crit_dur: float = crit_s.get_length()
-		assert_true(crit_dur >= base_dur * 1.5, "%s crit (%.2fs) is >=1.5x base (%.2fs) — distinct" % [w, crit_dur, base_dur])
+		assert_true(crit_dur >= base_dur * 1.5,
+			"%s crit (%.2fs) must be >=1.5x its base (%.2fs) to read as distinct — got %.2fx" % [w, crit_dur, base_dur, crit_dur / maxf(base_dur, 0.001)])
 
 
 func test_manifest_load_is_not_vacuous() -> void:
