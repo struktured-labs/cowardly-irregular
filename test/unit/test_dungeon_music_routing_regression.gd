@@ -58,6 +58,85 @@ func _dungeon_scripts() -> Array:
 	return out
 
 
+func test_ready_actually_routes_through_the_hook() -> void:
+	## The hole in this file's first version, found 2026-07-29 by mutation:
+	## every other test here pins SOURCE TEXT. Deleting DragonCave._ready's
+	## `SoundManager.play_area_music(_get_music_area_id())` — a plausible
+	## "cleanup" refactor — broke dungeon music completely and left all three
+	## checks GREEN, because the overrides and the arms are all still spelled
+	## correctly. A source pin is a claim about spelling; this file meant to
+	## claim behaviour.
+	var src := _read(DUNGEON_DIR + "DragonCave.gd")
+	var idx := src.find("func _ready")
+	assert_true(idx > -1, "DragonCave must define _ready")
+	assert_true(src.find("play_area_music(_get_music_area_id())") > -1,
+		"DragonCave._ready must feed _get_music_area_id() to play_area_music — without this call every override in this file is dead and the caves fall silent or inherit whatever was playing")
+
+
+func test_each_dragon_cave_key_resolves_at_runtime() -> void:
+	## Behavioural half: the subclasses' keys are fed to the REAL SoundManager
+	## and must actually select an area. Text checks can only prove an arm is
+	## spelled somewhere; this proves the key reaches it.
+	var sm := get_node_or_null("/root/SoundManager")
+	if sm == null:
+		pass_test("SoundManager unavailable")
+		return
+	var prev: Dictionary = sm.capture_music_state() if sm.has_method("capture_music_state") else {}
+	for f in ["FireDragonCave.gd", "IceDragonCave.gd", "LightningDragonCave.gd", "ShadowDragonCave.gd"]:
+		var script = load(DUNGEON_DIR + f)
+		assert_not_null(script, "%s must load" % f)
+		var inst = script.new()
+		var key: String = str(inst._get_music_area_id())
+		inst.free()
+		sm.play_area_music(key)
+		await get_tree().create_timer(0.35).timeout
+		## Assert the STREAM that ended up on the player, not _current_area.
+		## _current_area is assigned from the argument BEFORE the dispatch runs,
+		## so `play_area_music("total_garbage")` sets it to "total_garbage" and
+		## an equality check against the key passes for ANY string — including
+		## one that misses every arm. That was this test's first form, and it
+		## proved nothing. The loaded stream is the only thing that differs
+		## between "hit the dragon arm" and "fell through to the overworld".
+		var stream = sm._music_player.stream if sm._music_player else null
+		assert_not_null(stream, "%s: nothing is playing after play_area_music(\"%s\")" % [f, key])
+		if stream == null:
+			continue
+		var playing_path: String = str(stream.resource_path)
+		assert_true(playing_path.find("dungeon_dragon") > -1 or playing_path.find("dungeon_medieval") > -1,
+			"%s routed to \"%s\" but the player is on %s — an unmatched key falls to _start_overworld_music(), which is overworld music inside a dungeon" % [f, key, playing_path])
+	if not prev.is_empty() and sm.has_method("restore_music_state"):
+		sm.restore_music_state(prev)
+
+
+func test_dragon_cave_areas_still_resolve_to_the_medieval_battle_suffix() -> void:
+	## Second-order coupling, found after the routing fix shipped: making the
+	## caves override _get_music_area_id() changed _current_area from "cave" to
+	## "fire_dragon_cave" — and _get_current_world_suffix() reads _current_area
+	## to pick BATTLE music. It stayed correct only because that match already
+	## carried the four dragon ids, written before anything ever set them.
+	## Drop them from that arm and every fight inside a dragon cave takes the
+	## default suffix instead of medieval.
+	var sm := get_node_or_null("/root/SoundManager")
+	if sm == null:
+		pass_test("SoundManager unavailable")
+		return
+	var prev: Dictionary = sm.capture_music_state() if sm.has_method("capture_music_state") else {}
+	## The cache must be poisoned first. _get_current_world_suffix's default arm
+	## returns the CACHED _current_world_suffix, which is "medieval" at rest —
+	## so asserting "medieval" against a clean cache passes whether the dragon
+	## arm matched or fell through, and cannot tell the two apart. Seeding a
+	## DIFFERENT suffix makes the assertion mean what it says.
+	var cached_before: String = str(sm._current_world_suffix)
+	for key in ["fire_dragon_cave", "ice_dragon_cave", "lightning_dragon_cave", "shadow_dragon_cave"]:
+		sm._current_world_suffix = "abstract"
+		sm._current_area = key
+		assert_eq(str(sm._get_current_world_suffix()), "medieval",
+			"\"%s\" must resolve to the medieval battle suffix — the dungeon-music override feeds this, so a missing arm here gives dragon-cave battles the wrong world's music" % key)
+	sm._current_world_suffix = cached_before
+	if not prev.is_empty() and sm.has_method("restore_music_state"):
+		sm.restore_music_state(prev)
+
+
 func test_positive_control_parser_sees_the_dispatch() -> void:
 	## A sweep that silently parsed nothing would make every assertion below
 	## vacuously true.
