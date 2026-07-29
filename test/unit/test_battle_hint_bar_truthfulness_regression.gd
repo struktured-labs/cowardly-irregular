@@ -40,7 +40,7 @@ func test_hint_bar_does_not_advertise_the_unbound_plus_minus_speed_control() -> 
 			var stripped := line.strip_edges()
 			if stripped.begins_with("#"):
 				continue
-			if stripped.contains("[+/-] Speed"):
+			if _advertises_plus_minus_speed(stripped):
 				offenders.append(stripped)
 		if offenders.is_empty():
 			continue
@@ -175,3 +175,19 @@ func _calls_within_block(lines: PackedStringArray, start: int, needle: String) -
 		if line.contains(needle):
 			return true
 	return false
+
+## Does this line advertise +/- as a SPEED control, in any wording?
+##
+## The first version matched the literal "[+/-] Speed" — the exact phrasing that existed the day I
+## found the bug. That is the INCIDENT vocabulary, not the property (cowir-story's framing, and
+## cowir-sfx's: the bug report is a sample; the guard should assert the invariant the bug violated).
+## Measured 2026-07-29: "Press +/- to change battle speed" with nothing bound sailed straight past
+## it — the same defect, different words, guard green.
+##
+## The property is "a player-facing string offers +/- for speed". Both tokens on one line, so an
+## unrelated +/- elsewhere in a file cannot trip it. Covers the Unicode minus too, because a
+## designer writing UI text is more likely to type it than a programmer is.
+func _advertises_plus_minus_speed(line: String) -> bool:
+	if not line.to_lower().contains("speed"):
+		return false
+	return line.contains("+/-") or line.contains("+/\u2212") or line.contains("+ / -")

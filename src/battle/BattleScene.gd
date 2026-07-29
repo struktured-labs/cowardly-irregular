@@ -677,7 +677,7 @@ func _toggle_battle_speed() -> void:
 	_animate_speed_change()
 	SoundManager.play_ui("speed_change")
 	log_message("[color=gray]Battle speed: %s[/color]" % BATTLE_SPEED_LABELS[_battle_speed_index])
-	_show_hint("speed_toggle", "Press +/- to change battle speed. Higher speeds skip animations for faster grinding.")
+	_show_hint("speed_toggle", "Press X (or the ` key) to change battle speed. Higher speeds skip animations for faster grinding.")
 
 
 func _animate_speed_change() -> void:
@@ -1677,7 +1677,7 @@ func update_autogrind_console_stats(stats: Dictionary) -> void:
 
 	_autogrind_console.append_text("[color=#666677]─────────────────────────────[/color]\n")
 	_autogrind_console.append_text("[color=#ffff66]Battle #%d[/color] | EXP: %d | Streak: %d | Eff: %.1fx | Time: %.1fx%s\n" % [battles, exp, streak, eff, time_mult, turbo])
-	_autogrind_console.append_text("[color=#6666aa]Corruption: %.2f | Y:Turbo +/-:Speed T:Tier B:Exit[/color]\n" % corruption)
+	_autogrind_console.append_text("[color=#6666aa]Corruption: %.2f | Y:Turbo T:Tier B:Exit[/color]\n" % corruption)
 
 
 ## Button handlers
