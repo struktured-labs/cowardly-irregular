@@ -89,12 +89,41 @@ func test_play_attack_hit_handles_empty_and_unknown_weapon():
 
 
 func test_play_attack_hit_resolves_known_weapon_types():
-	# Known weapon_types from equipment.json must resolve via the manifest
-	# (or the procedural fallback) without raising.
+	# Every weapon_type in equipment.json must resolve via the manifest (or the
+	# procedural fallback) without raising.
+	#
+	# DERIVED 2026-07-29. This hand-listed the five types that existed when it was
+	# written, under a comment saying "known weapon_types from equipment.json" — so
+	# it claimed to cover that file while being a snapshot of it. The list happens to
+	# be complete today (5 of 5), which is exactly why it would have gone unnoticed:
+	# a sixth weapon type would ship with no audio coverage and this test would stay
+	# green. Same class as the crit/base pairs in the weapon-strike guard, which I
+	# derived from disk earlier today and then left this sibling hand-listed.
+	var text: String = FileAccess.get_file_as_string("res://data/equipment.json")
+	var parsed: Variant = JSON.parse_string(text)
+	assert_true(parsed is Dictionary, "equipment.json must parse")
+	var types: Array[String] = []
+	var stack: Array = [parsed]
+	while not stack.is_empty():
+		var node: Variant = stack.pop_back()
+		if node is Dictionary:
+			for k in node.keys():
+				if str(k) == "weapon_type" and node[k] is String and not types.has(str(node[k])):
+					types.append(str(node[k]))
+				stack.append(node[k])
+		elif node is Array:
+			for x in node:
+				stack.append(x)
+	types.sort()
+
+	## Vacuity control: an empty walk would run the loop zero times and pass.
+	assert_gt(types.size(), 0,
+		"control: found no weapon_type in equipment.json — the walk is broken, so the calls below never happened")
+
 	var sm = load("res://src/audio/SoundManager.gd").new()
 	add_child_autofree(sm)
 	await get_tree().process_frame
-	for wt in ["sword", "dagger", "staff", "axe", "piano_scythe"]:
+	for wt in types:
 		sm.play_attack_hit(wt, false)
 		sm.play_attack_hit(wt, true)
-	pass_test("play_attack_hit resolved all 5 known weapon_types")
+	pass_test("play_attack_hit resolved all %d weapon_types in equipment.json: %s" % [types.size(), types])
