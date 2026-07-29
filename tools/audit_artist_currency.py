@@ -17,9 +17,13 @@ still. A name-diff cannot see this -- the filenames match exactly.
 TWO TRAPS THIS TOOL EXISTS TO AVOID REPEATING:
 
 1. The Drive root has a LEADING SPACE: "gdrive: cowir", not "gdrive:cowir".
-   The hourly drop cron has the unspaced path baked in, finds nothing, and
-   reports success -- which is why a 2026-07-28 delivery (Knight animations,
-   Mordaine arc) sat unretrieved until someone looked by hand.
+   NOTHING syncs it automatically, so this tool is the only thing that will
+   notice a drop. The drop cron is commented out (2026-06-14, "embed script
+   no longer covers enemies, manual ingest for now") and points at a path
+   where the script no longer lives -- which is why a 2026-07-28 delivery
+   (Knight animations, Mordaine arc) sat unretrieved until someone looked by
+   hand. My commit message for this file's first version blamed a wrong path
+   baked into the cron; `crontab -l` says otherwise, and I had not run it.
 
 2. `rclone lsf -R` lists DIRECTORIES as well as files. Counting its lines
    gives 80 "PNGs" where there are 20. Always --files-only.
