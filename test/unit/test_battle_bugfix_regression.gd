@@ -508,11 +508,13 @@ func test_status_added_signal_fires() -> void:
 
 
 func test_status_removed_signal_fires() -> void:
+	# `blind` rather than `stun`: stun's countdown is consume-owned now, so the generic tick no
+	# longer expires it and no signal would fire. The signal is what this test is about.
 	var removed_status = [""]
 	_combatant.status_removed.connect(func(s): removed_status[0] = s)
-	_combatant.add_status("stun", 1)
+	_combatant.add_status("blind", 1)
 	_combatant.update_buff_durations()
-	assert_eq(removed_status[0], "stun", "status_removed signal should fire when status expires")
+	assert_eq(removed_status[0], "blind", "status_removed signal should fire when status expires")
 
 
 # ---- No duplicate statuses ----
@@ -693,11 +695,14 @@ func test_multiple_statuses_coexist() -> void:
 
 
 func test_statuses_expire_independently() -> void:
-	_combatant.add_status("stun", 1)
+	# Was `stun`, which is now in CONSUME_OWNED_DURATIONS — its countdown belongs to the turn-skip
+	# handler, so the generic tick deliberately leaves it alone. This test is about independent
+	# expiry, not about stun; `blind` is a generic-ticked status and keeps the original meaning.
+	_combatant.add_status("blind", 1)
 	_combatant.add_status("poison", 3)
 
 	_combatant.update_buff_durations()
-	assert_false(_combatant.has_status("stun"), "Stun (1 turn) should expire")
+	assert_false(_combatant.has_status("blind"), "Blind (1 turn) should expire")
 	assert_true(_combatant.has_status("poison"), "Poison (3 turns) should persist")
 
 
