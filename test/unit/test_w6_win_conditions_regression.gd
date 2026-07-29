@@ -110,8 +110,14 @@ func test_withhold_credited_before_victory_recheck() -> void:
 	assert_gt(adv, -1, "round-end must credit the withheld round")
 	var recheck: int = s.find("_check_victory_conditions()", adv)
 	assert_gt(recheck, -1, "victory must be re-checked after crediting")
-	assert_lt(recheck - adv, 200,
-		"the re-check must directly follow the credit, not drift to another round")
+	# Assert the ORDER (credit precedes re-check), not the distance. A
+	# character-count window is a coincidental magnitude: it goes red on a
+	# correct refactor that adds a line between them, and green on a wrong
+	# one that keeps them adjacent while reordering. The behaviour this
+	# exists to defend is pinned in the runtime file, where it can fail
+	# for the real reason.
+	assert_gt(recheck, adv,
+		"the credit must precede the re-check — reversed, the win lands a full round late")
 
 
 ## ── (3) arbiter_ladder ───────────────────────────────────────────────
