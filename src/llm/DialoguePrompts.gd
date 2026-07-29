@@ -757,9 +757,31 @@ static func validate_npc_opening(raw: Variant) -> Dictionary:
 
 	var s: String = (line as String).strip_edges()
 	if s.length() > MAX_LINE_CHARS:
-		s = s.left(MAX_LINE_CHARS)
+		s = clamp_display(s, MAX_LINE_CHARS)
 
 	return {"line": s}
+
+
+## Trim player-visible text to a budget WITHOUT cutting mid-word.
+##
+## The bare `.left(n)` this replaced stopped a boss taunt dead inside whatever
+## word straddled the limit — "...until something finally dies " — and shipped
+## that to the combat log. The clamp exists because models overshoot a stated
+## budget, so the truncated case is the expected one, not the edge case.
+##
+## Cuts at the last space before the budget and appends an ellipsis; falls back
+## to a hard cut for a single over-long word. The result NEVER exceeds
+## max_chars, so every caller's contract is unchanged.
+static func clamp_display(text: String, max_chars: int) -> String:
+	var s: String = text.strip_edges()
+	if max_chars <= 0 or s.length() <= max_chars:
+		return s
+	var budget: int = max_chars - 1
+	var cut: String = s.left(budget)
+	var space: int = cut.rfind(" ")
+	if space > 0:
+		cut = cut.left(space)
+	return cut.strip_edges() + "…"
 
 
 ## Validate and sanitise an LLM-returned player choices Dictionary.
@@ -789,7 +811,7 @@ static func validate_player_choices(raw: Variant, expected_count: int) -> Dictio
 		if s.is_empty():
 			continue
 		if s.length() > MAX_CHOICE_CHARS:
-			s = s.left(MAX_CHOICE_CHARS)
+			s = clamp_display(s, MAX_CHOICE_CHARS)
 		out.append(s)
 		if out.size() >= count:
 			break
@@ -818,7 +840,7 @@ static func validate_npc_reply(raw: Variant, cycle_index: int = 0) -> Dictionary
 
 	var s: String = (line as String).strip_edges()
 	if s.length() > MAX_LINE_CHARS:
-		s = s.left(MAX_LINE_CHARS)
+		s = clamp_display(s, MAX_LINE_CHARS)
 
 	return {"line": s}
 
@@ -837,7 +859,7 @@ static func validate_combined_reply(raw: Variant, expected_count: int, cycle_ind
 	if reply_raw is String and not (reply_raw as String).strip_edges().is_empty():
 		reply = (reply_raw as String).strip_edges()
 		if reply.length() > MAX_LINE_CHARS:
-			reply = reply.left(MAX_LINE_CHARS)
+			reply = clamp_display(reply, MAX_LINE_CHARS)
 	else:
 		reply = _fallback_reply_line(cycle_index)
 
@@ -900,7 +922,7 @@ static func validate_boss_intent(raw: Variant, available_intents: Array) -> Dict
 	if taunt_raw is String:
 		taunt = (taunt_raw as String).strip_edges()
 		if taunt.length() > MAX_BOSS_TAUNT_CHARS:
-			taunt = taunt.left(MAX_BOSS_TAUNT_CHARS)
+			taunt = clamp_display(taunt, MAX_BOSS_TAUNT_CHARS)
 
 	return {
 		"intent_id": intent_id,
@@ -921,7 +943,7 @@ static func validate_party_line(raw: Variant) -> Dictionary:
 	if line.is_empty():
 		return FALLBACK_PARTY_LINE.duplicate()
 	if line.length() > MAX_PARTY_LINE_CHARS:
-		line = line.left(MAX_PARTY_LINE_CHARS)
+		line = clamp_display(line, MAX_PARTY_LINE_CHARS)
 	var mood: String = "neutral"
 	var mood_raw: Variant = d.get("mood", "neutral")
 	if mood_raw is String:
