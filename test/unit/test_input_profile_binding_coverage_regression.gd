@@ -17,14 +17,45 @@ extends GutTest
 var _ipm
 
 
-## Built-in profiles by name. NOTE: GDScript `const`s are NOT reachable through Object.get(), which
-## silently returns null — so they are listed explicitly rather than looked up by string.
+## Built-in profiles, DERIVED at runtime from the script's own constant map.
+##
+## This was a hand-written list of three, built on my conclusion that consts are unreachable —
+## Object.get() does silently return null for them, which is true and was the wrong lesson. They ARE
+## reachable via Script.get_script_constant_map(), values included, so the list is deleted rather
+## than guarded: a fourth profile is covered by every test in this file the moment it is declared.
+##
+## Keyed on VALUE SHAPE, not on the PROFILE_ naming convention — cowir-sfx's sharpening of
+## cowir-ai's rule (2026-07-29): derive from something true of the THING, not true of how the thing
+## is WRITTEN. A binding profile is a dict of action -> button-list; that is what one IS. Matching
+## the name prefix would be matching a spelling, and a profile named anything else would silently
+## leave the set and take its own assertions with it.
 func _profiles() -> Dictionary:
-	return {
-		"PROFILE_STANDARD": _ipm.PROFILE_STANDARD,
-		"PROFILE_SN30": _ipm.PROFILE_SN30,
-		"PROFILE_ULTIMATE_PRO_2": _ipm.PROFILE_ULTIMATE_PRO_2,
-	}
+	var out := {}
+	var script: Script = load("res://src/input/InputProfileManager.gd")
+	for key in script.get_script_constant_map():
+		var value = script.get_script_constant_map()[key]
+		if not value is Dictionary or (value as Dictionary).is_empty():
+			continue
+		var every_value_is_a_button_list := true
+		for action in value:
+			if not value[action] is Array:
+				every_value_is_a_button_list = false
+		if every_value_is_a_button_list:
+			out[str(key)] = value
+	return out
+
+
+## Vacuity control for the derivation above. If the shape filter stops matching — a renamed API, a
+## profile that grows a non-Array member — every loop in this file iterates an empty set and all of
+## it passes having checked no profile at all. A derived set fails silently in a way a hand list
+## cannot, and that is the price of deleting the list.
+func test_the_profile_derivation_actually_finds_the_profiles() -> void:
+	var found := _profiles()
+	assert_gt(found.size(), 2, "the shape filter must still match real binding profiles — an empty or tiny set makes every other test here vacuous")
+	for known in ["PROFILE_STANDARD", "PROFILE_SN30", "PROFILE_ULTIMATE_PRO_2"]:
+		assert_true(found.has(known), "derivation must still find the known profile '%s'" % known)
+	assert_false(found.has("PROFILE_NAMES"), "PROFILE_NAMES is an Array of labels, not a binding profile — the filter must discriminate, or it is matching everything")
+	assert_false(found.has("ACTION_LABELS"), "ACTION_LABELS maps action -> String, not action -> button list; if it enters the set the shape filter is not filtering")
 
 
 func before_each() -> void:
@@ -50,6 +81,22 @@ func _declared_joypad_buttons(action: String) -> Array:
 	return buttons
 
 
+## DISTINCT buttons, not list length. The invariant is "how many ways can the player trigger this",
+## and `[6, 6]` is one way written twice — raw length says two and means one.
+##
+## cowir-sfx's predicate question (2026-07-29): a count is a proxy for the thing it counts, exactly
+## as `contains` is a proxy for equality. Measured before changing it: `ui_menu: [6, 7]` mutated to
+## `[6, 6]` does go red today, but via the NAMED PIN below, not via this general guard — and
+## `ui_menu` is the only action in any profile with more than one button, so the loose predicate
+## here is currently unexercisable. Caught by luck of which action happens to have two bindings, and
+## a second multi-button action would arrive uncovered.
+func _distinct_count(values: Array) -> int:
+	var seen := {}
+	for v in values:
+		seen[v] = true
+	return seen.size()
+
+
 func test_no_profile_silently_reduces_a_binding_count() -> void:
 	var losses: Array[String] = []
 	var profiles := _profiles()
@@ -60,9 +107,9 @@ func test_no_profile_silently_reduces_a_binding_count() -> void:
 			if declared.is_empty() or not profile.has(action):
 				continue
 			var mapped: Array = profile[action]
-			if mapped.size() < declared.size():
-				losses.append("%s.%s has %d binding(s) but project.godot declares %d (%s vs %s)"
-					% [profile_name, action, mapped.size(), declared.size(), str(mapped), str(declared)])
+			if _distinct_count(mapped) < _distinct_count(declared):
+				losses.append("%s.%s has %d distinct binding(s) but project.godot declares %d (%s vs %s)"
+					% [profile_name, action, _distinct_count(mapped), _distinct_count(declared), str(mapped), str(declared)])
 	assert_eq(losses, [] as Array[String],
 		"applying a profile erases ALL joypad buttons then re-adds only its own, so a shorter list is silent deletion:\n%s" % "\n".join(losses))
 

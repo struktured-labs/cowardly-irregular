@@ -53,12 +53,86 @@ func test_hint_bar_does_not_advertise_the_unbound_plus_minus_speed_control() -> 
 
 ## Both files print the same bar. They drifted apart silently once already (the duplicated literal),
 ## so pin that a fix to one reaches the other.
-func test_both_hint_bar_sites_agree() -> void:
-	var win98 := _read(WIN98_PATH)
-	var battle := _read(BATTLE_PATH)
-	var expected := "[L] Defer  ·  [R] Advance  ·  [X] Speed  ·  [Select] Auto"
-	assert_true(win98.contains(expected), "Win98Menu must print the corrected bar")
-	assert_true(battle.contains(expected), "BattleScene must print the SAME bar — two copies of one string drift")
+## There is now ONE bar. BattleScene referenced a second literal copy; it reads
+## Win98Menu.HINT_DEFAULT_TEXT instead, so drift is impossible rather than detected.
+##
+## This test caught its own predecessor. The version I wrote minutes earlier asserted BattleScene's
+## source `.contains(bar)` — and a drift mutation of "[Select] Auto" to "[Select] Autobattle" stayed
+## GREEN, because the mutated string CONTAINS the original as a prefix. Any drift that EXTENDS a
+## token is invisible to containment, and the original version of this test had the same hole.
+## The mutation that found it was one I nearly didn't run, having already gone red on a different one.
+##
+## So the guard is now against REINTRODUCING a copy: the bar's text may appear as a literal exactly
+## once in src/, at its declaration.
+func test_the_hint_bar_has_exactly_one_literal_in_src() -> void:
+	var bar := _hint_bar_text()
+	assert_true(bar.contains("Defer"), "positive control: the bar must carry real hint text, or counting its occurrences is meaningless")
+
+	var sites: Array[String] = []
+	for path in _all_gd_files():
+		for line in FileAccess.get_file_as_string(path).split("\n"):
+			if line.contains(bar) and not line.strip_edges().begins_with("#"):
+				sites.append("%s: %s" % [path, line.strip_edges()])
+	assert_eq(sites.size(), 1,
+		"the hint bar text must be written out exactly once — at Win98Menu's const. A second literal is a copy that drifts silently, which is what BattleScene's was: %s" % str(sites))
+
+
+## HINT_DEFAULT_TEXT's VALUE, read at runtime from the script's constant map.
+##
+## My first version parsed the source line — `begins_with("const HINT_DEFAULT_TEXT")`, then the
+## first and last quote. I justified that publicly by saying the artifact IS a string, so reading
+## the string is reading the thing. That defends reading the VALUE; it does not defend parsing the
+## LINE, which assumes single-line, double-quoted, and that exact const spelling. cowir-story lost a
+## verification tonight to a phrase spanning a line break, which is the same assumption.
+##
+## The stronger instrument was two functions away in this same commit — I had just used
+## get_script_constant_map() to delete the profile hand list and did not carry it across. A
+## carve-out I write for my own weaker choice deserves more scrutiny than one I apply to someone
+## else's, not less.
+func _hint_bar_text() -> String:
+	var script: Script = load(WIN98_PATH)
+	var constants := script.get_script_constant_map()
+	assert_true(constants.has("HINT_DEFAULT_TEXT"), "Win98Menu must still declare HINT_DEFAULT_TEXT — a missing const would make every check below vacuous")
+	return str(constants.get("HINT_DEFAULT_TEXT", ""))
+
+
+func _bracketed_tokens(text: String) -> Array[String]:
+	var out: Array[String] = []
+	var i := 0
+	while true:
+		var open := text.find("[", i)
+		if open == -1:
+			break
+		var close := text.find("]", open)
+		if close == -1:
+			break
+		out.append(text.substr(open, close - open + 1))
+		i = close + 1
+	return out
+
+
+## The label->action map below is a HAND LIST covering the surface this file's whole reason for
+## existing is on. A hint added to the bar tomorrow is unlisted, therefore unchecked — which is
+## EXACTLY how "[+/-] Speed" survived: it advertised a control nothing bound, and no test named it.
+##
+## Fixing the instance and leaving the class is the error I keep finding in other lanes' work, so:
+## the set of hints comes from HINT_DEFAULT_TEXT itself, and every token in it must be accounted for
+## by one of the checks in this file.
+func test_every_bracketed_hint_in_the_bar_is_accounted_for() -> void:
+	var bar := _hint_bar_text()
+	assert_ne(bar, "", "must be able to read HINT_DEFAULT_TEXT out of Win98Menu — a blank read would make this vacuous")
+	var tokens := _bracketed_tokens(bar)
+	assert_gt(tokens.size(), 3, "positive control: the bar must yield its bracketed hints")
+
+	# [L]/[R]/[Select] are InputMap actions, checked by test_hint_bar_actions_have_real_joypad_bindings.
+	# [X] is a raw button check, covered by test_speed_toggle_is_actually_wired_to_the_advertised_button.
+	var accounted := {"[L]": true, "[R]": true, "[Select]": true, "[X]": true}
+	var unaccounted: Array[String] = []
+	for t in tokens:
+		if not accounted.has(t):
+			unaccounted.append(t)
+	assert_eq(unaccounted, [] as Array[String],
+		"the hint bar advertises these controls and NOTHING in this file verifies they are bound — the exact shape of the [+/-] Speed bug this file exists for. Add a check, then list the token here: %s" % str(unaccounted))
 
 
 ## [L], [R] and [Select] are InputMap actions and must actually carry a joypad binding, or the hint
