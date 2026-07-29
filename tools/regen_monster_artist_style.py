@@ -37,6 +37,7 @@ import time
 from pathlib import Path
 
 from openai import OpenAI
+import numpy as np
 from PIL import Image
 
 PROJECT = Path(__file__).resolve().parent.parent
@@ -388,6 +389,80 @@ MONSTER_DESC = {
         "wireframe, NOT ghostly. The abstraction is in the DESIGN (a curator "
         "who is only robe, frames and flame), never in the opacity."
     ),
+    # ── W3 steampunk masterites. The last world-shaped hole in the roster:
+    # every other world had 4/4 sheets, steampunk had 0/4 (cowir-battle
+    # confirmed against monsters.json, msg 3332). Descriptions below are
+    # built FROM the authored canon text, not invented alongside it.
+    #
+    # Shared world palette, anchored on the two shipped steampunk enemies
+    # (brass_golem "salvaged boiler plate", clockwork_sentinel "brass-plated"):
+    # aged brass and copper, blackened wrought iron, coal-soot black, rivets,
+    # warm amber gaslight, and white steam used SPARINGLY as an accent —
+    # never as the body, because steam is exactly the thing that renders as
+    # near-transparent and produced the two invisible abstract sheets.
+    #
+    # TEMPO is the risk case and is deliberately handled first: its canon
+    # text is explicitly non-figurative ("Not a figure so much as a cadence"),
+    # which is the SAME framing that made masterite_tempo_abstract come back
+    # at 5 opaque pixels. Resolution is the one already proven above — honour
+    # the concept, refuse the transparency. A cadence gets a housing.
+    "masterite_tempo_steampunk": (
+        "The Grand Schedule — a monumental brass STATION CLOCK AND TIMETABLE "
+        "BOARD standing as one solid machine, the size of a person. A SOLID, "
+        "FULLY OPAQUE upright object, clearly visible and heavy. A great "
+        "riveted brass clock face at the top with black iron hands; below it "
+        "a departures board of flip-tiles mid-flutter, some tiles caught "
+        "half-turned. Squat iron feet bolted to the ground. Palette: aged "
+        "brass and blackened iron, coal-black shadow, amber gaslight glowing "
+        "behind the clock face and between the tiles. A few small white steam "
+        "wisps at the base ONLY as accent. CRITICAL: every frame must be a "
+        "SOLID, OPAQUE, clearly readable silhouette — NOT translucent, NOT a "
+        "wireframe, NOT ghostly, NOT made of steam or motion lines. It reads "
+        "as 'a cadence' because of the flipping tiles and the clock, never "
+        "because it is faint."
+    ),
+    "masterite_warden_steampunk": (
+        "The Standing Order — an enormous brass PRESSURE GAUGE whose needle "
+        "has never once moved, mounted in a squat armoured iron housing on "
+        "heavy bolted feet. A SOLID, FULLY OPAQUE upright object. The gauge "
+        "face dominates it like a single unblinking eye: cracked convex glass, "
+        "a black needle pinned hard at rest, engraved graduations around the "
+        "rim. Thick riveted pipes enter from below and are sealed off. Deep "
+        "verdigris in every crevice — this thing has held its position for a "
+        "very long time. Palette: aged brass, verdigris green, blackened "
+        "wrought iron, coal-black shadow, dim amber backlight behind the "
+        "glass. CRITICAL: SOLID, OPAQUE, heavy and immovable in every frame — "
+        "never translucent, never a wireframe. It reads as endurance because "
+        "it looks IMMOVABLE, not because it looks strong."
+    ),
+    "masterite_curator_steampunk": (
+        "The Requisition — a brass BUREAUCRATIC APPARATUS that bills you: a "
+        "standing ledger-machine of stamps, spools and pneumatic tubes. A "
+        "SOLID, FULLY OPAQUE upright object, clearly visible. A heavy iron "
+        "ledger lies open on a brass lectern body; above it a rack of "
+        "date-stamps and a spool feeding a long punched receipt-tape that "
+        "curls down its front. Pneumatic tube mouths at its shoulders. Brass "
+        "counter-wheels showing figures. Palette: aged brass and copper, "
+        "oxblood-red ledger leather, ink-black, cream paper tape, amber "
+        "gaslight. CRITICAL: SOLID, OPAQUE, clearly readable in every frame — "
+        "never translucent, never ghostly. It reads as an invoice made "
+        "physical: paperwork as a machine, not a wisp."
+    ),
+    "masterite_arbiter_steampunk": (
+        "The Tolerance Limit — a precision GO/NO-GO GAUGE, a machinist's "
+        "caliper built at the scale of a body and mounted upright on an iron "
+        "base. A SOLID, FULLY OPAQUE object. Two polished steel measuring "
+        "jaws form its head, held slightly apart as if about to close on "
+        "something; a fine engraved vernier scale runs down its brass spine. "
+        "Its posture is WATCHFUL AND MEASURING, poised and still — patient, "
+        "not aggressive, not lunging. Machined to an uncomfortable degree of "
+        "precision: every edge crisp, every surface true. Palette: polished "
+        "steel and aged brass, blackened iron base, coal-black shadow, a "
+        "single cold amber indicator light. CRITICAL: SOLID, OPAQUE, crisply "
+        "readable in every frame — never translucent, never a wireframe. It "
+        "reads as judgement because it looks EXACT, not because it looks "
+        "violent; the violence is one event, not its posture."
+    ),
 }
 
 
@@ -523,6 +598,40 @@ def make_transparent_bg(img: Image.Image, tolerance: int = 45) -> Image.Image:
             if a and abs(r - sr) + abs(g - sg) + abs(b - sb) <= tolerance:
                 px[x, y] = (r, g, b, 0)
     return img
+
+
+def despeckle(img: Image.Image, min_px: int = 24) -> Image.Image:
+    """Drop disconnected specks left behind by the chromakey.
+
+    The corner-sample key clears the flat background but leaves the
+    antialiased dust between figure and background — pixels too far from
+    the sampled colour to key, too small to be anything. On
+    masterite_arbiter_steampunk that was 48 stray pixels in idle and 444
+    in the defeated frame, visible as a dotted haze around the sprite.
+
+    Deliberately NOT caught by sprite_structural_qa's DETACHED check,
+    which floors at 1% of the figure so that held weapons and wings do
+    not swamp the signal — 1-4px specks are far below that and always
+    will be. Two instruments, two jobs: QA reports structure, this
+    removes dust. Do not raise DETACHED's floor to cover this; that was
+    measured at 301 hits / 108 sheets and is why it is advisory.
+
+    Keeps every component >= min_px, so a genuinely detached part (a
+    thrown weapon, a separated jaw) survives untouched.
+    """
+    from scipy import ndimage
+
+    arr = np.array(img)
+    opaque = arr[:, :, 3] > 8
+    lab, n = ndimage.label(opaque)
+    if n <= 1:
+        return img
+    sizes = ndimage.sum(opaque, lab, range(1, n + 1))
+    doomed = {i + 1 for i, s in enumerate(sizes) if s < min_px}
+    if not doomed:
+        return img
+    arr[np.isin(lab, list(doomed)), 3] = 0
+    return Image.fromarray(arr)
 
 
 def assemble_sheet(sheet_1024: Image.Image, monster_id: str) -> Image.Image:
