@@ -33,6 +33,8 @@ signal status_tick_heal(amount: int, source: String)
 @export var attack: int = 10
 @export var defense: int = 10
 @export var magic: int = 10
+## Magic mitigation. Was `defense * 0.5` inline from the Dec-2025 scaffold onward; split into a real stat 2026-07-29 (struktured ruling) so enemies can be physically tough and magically frail.
+@export var magic_defense: int = 5
 @export var speed: int = 10
 
 ## Current state
@@ -110,6 +112,7 @@ var base_max_mp: int = 50
 var base_attack: int = 10
 var base_defense: int = 10
 var base_magic: int = 10
+var base_magic_defense: int = 5
 var base_speed: int = 10
 
 ## Turn state
@@ -152,6 +155,11 @@ func initialize(stats: Dictionary) -> void:
 		defense = stats["defense"]
 	if stats.has("magic"):
 		magic = stats["magic"]
+	# Derive from defense when a block predates the split — keeps unauthored data at the old value.
+	if stats.has("magic_defense"):
+		magic_defense = stats["magic_defense"]
+	elif stats.has("defense"):
+		magic_defense = int(stats["defense"] * 0.5)
 	if stats.has("speed"):
 		speed = stats["speed"]
 
@@ -263,7 +271,7 @@ func take_damage(amount: int, is_magical: bool = false) -> int:
 			amount = int(round(amount * vuln))
 			amount = max(0, amount)
 
-	var def_value = get_buffed_stat("defense", defense) if not is_magical else int(get_buffed_stat("defense", defense) * 0.5)
+	var def_value = get_buffed_stat("magic_defense", magic_defense) if is_magical else get_buffed_stat("defense", defense)
 	var denom = max(1, amount + def_value)
 	var actual_damage = int((amount * amount) / float(denom))
 	actual_damage = max(1, actual_damage)  # Always at least 1 damage
@@ -984,6 +992,8 @@ func apply_permanent_injury(injury: Dictionary) -> void:
 				defense = max(1, defense - penalty)
 			"magic":
 				magic = max(1, magic - penalty)
+			"magic_defense":
+				magic_defense = max(1, magic_defense - penalty)
 			"speed":
 				speed = max(1, speed - penalty)
 			"max_mp":
@@ -1050,6 +1060,7 @@ func to_dict() -> Dictionary:
 		"attack": attack,
 		"defense": defense,
 		"magic": magic,
+		"magic_defense": magic_defense,
 		"speed": speed,
 		"job_level": job_level,
 		"job_exp": job_exp,
@@ -1134,6 +1145,11 @@ func from_dict(data: Dictionary) -> void:
 		defense = max(0, int(data["defense"]))
 	if data.has("magic"):
 		magic = max(0, int(data["magic"]))
+	# Pre-split saves carry no magic_defense — derive it so loading one is not a silent stat wipe.
+	if data.has("magic_defense"):
+		magic_defense = max(0, int(data["magic_defense"]))
+	elif data.has("defense"):
+		magic_defense = max(0, int(int(data["defense"]) * 0.5))
 	if data.has("speed"):
 		speed = max(0, int(data["speed"]))
 	if data.has("job_level"):
@@ -1454,6 +1470,7 @@ func recalculate_stats() -> void:
 	attack = base_attack
 	defense = base_defense
 	magic = base_magic
+	magic_defense = base_magic_defense
 	speed = base_speed
 
 	# Apply job modifiers (if JobSystem is available)
@@ -1469,6 +1486,10 @@ func recalculate_stats() -> void:
 			defense = job_mods["defense"]
 		if job_mods.has("magic"):
 			magic = job_mods["magic"]
+		if job_mods.has("magic_defense"):
+			magic_defense = job_mods["magic_defense"]
+		elif job_mods.has("defense"):
+			magic_defense = int(job_mods["defense"] * 0.5)
 		if job_mods.has("speed"):
 			speed = job_mods["speed"]
 
@@ -1479,6 +1500,7 @@ func recalculate_stats() -> void:
 	attack = int(attack * level_mult)
 	defense = int(defense * level_mult)
 	magic = int(magic * level_mult)
+	magic_defense = int(magic_defense * level_mult)
 	speed = int(speed * level_mult)
 
 	# Apply passive modifiers (via runtime lookup — autoload identifiers
@@ -1501,6 +1523,7 @@ func recalculate_stats() -> void:
 		attack += equip_mods.get("attack", 0)
 		defense += equip_mods.get("defense", 0)
 		magic += equip_mods.get("magic", 0)
+		magic_defense += equip_mods.get("magic_defense", 0)
 		speed += equip_mods.get("speed", 0)
 
 	# Apply permanent injuries (reductions)
@@ -1515,6 +1538,8 @@ func recalculate_stats() -> void:
 					defense = max(1, defense - injury["penalty"])
 				"magic":
 					magic = max(1, magic - injury["penalty"])
+				"magic_defense":
+					magic_defense = max(1, magic_defense - injury["penalty"])
 				"speed":
 					speed = max(1, speed - injury["penalty"])
 				"max_mp":

@@ -4713,9 +4713,8 @@ func estimate_ability_damage(attacker: Combatant, target: Combatant, ability: Di
 		stat_val = attacker.get_buffed_stat("attack", attacker.attack)
 
 	var raw = int(stat_val * power / 10.0)
-	var def_val = target.get_buffed_stat("defense", target.defense)
-	if is_magical:
-		def_val = int(def_val * 0.5)
+	var def_val = target.get_buffed_stat("magic_defense", target.magic_defense) if is_magical \
+		else target.get_buffed_stat("defense", target.defense)
 	var mitigated = int((raw * raw) / float(max(1, raw + def_val)))
 
 	# Elemental modifier — reuse the real hit's source of truth so the "~N dmg"
@@ -5140,8 +5139,8 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 		"magic_defense_down":
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
-					target.add_debuff("Soul Sap", "defense", stat_modifier, duration)
-					battle_log_message.emit("[color=%s]%s's magic defense is sapped![/color] (DEF -%d%% for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, int((1.0 - stat_modifier) * 100), duration])
+					target.add_debuff("Soul Sap", "magic_defense", stat_modifier, duration)
+					battle_log_message.emit("[color=%s]%s's magic defense is sapped![/color] (M.DEF -%d%% for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, int((1.0 - stat_modifier) * 100), duration])
 		## Tick 380: amplify_poison handler. Pre-fix fester
 		## (effect=amplify_poison, multiplier=2.0) fell through to the
 		## `_:` push_warning default and silently fizzled. The ability

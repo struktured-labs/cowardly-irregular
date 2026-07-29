@@ -38,16 +38,35 @@ func test_magic_defense_down_arm_exists() -> void:
 		"magic_defense_down arm must apply the distinct 'Soul Sap' debuff label (not collide with Armor Break)")
 
 
-# ── Source pin: arm uses defense stat (the right mechanical fit) ────
+# ── Source pin: arm debuffs magic_defense (FLIPPED 2026-07-29) ──────
+##
+## This pin used to assert the OPPOSITE — that the arm must debuff "defense" — with the rationale
+## "take_damage uses defense for both physical + magical, halved in the magical case". That was
+## TRUE when written: there was no magic_defense stat, so debuffing defense was the only way to
+## make an effect named magic_defense_down do anything at all.
+##
+## It is the defect-class-exemption shape: a pin authored while fixing one bug (the missing
+## dispatch arm) that certifies the sibling bug (an effect debuffing a stat it isn't named for) as
+## correct, and explains why so persuasively that nobody revisits it. The explanation was accurate
+## and the assertion still became wrong the moment the stat was split.
+##
+## Flipped, not deleted — the pin's SUBJECT (this arm must debuff a specific, deliberate stat)
+## is still exactly what wants defending.
 
-func test_magic_defense_down_uses_defense_stat() -> void:
+func test_magic_defense_down_uses_magic_defense_stat() -> void:
 	var src := _read(BATTLE_MANAGER_PATH)
-	# Slice from the magic_defense_down arm to the next case label.
+	# Bound the window at the next case label rather than a byte count — a fixed substr silently
+	# truncates when the arm above it grows, and reports a missing string that is simply off-window.
 	var arm_idx: int = src.find("\"magic_defense_down\":")
 	assert_gt(arm_idx, -1)
-	var window: String = src.substr(arm_idx, 400)
-	assert_true(window.contains("add_debuff(\"Soul Sap\", \"defense\""),
-		"magic_defense_down must add_debuff on the 'defense' stat (take_damage uses defense for both physical + magical, halved in the magical case)")
+	var rest: String = src.substr(arm_idx)
+	var next_case: int = rest.find("\n\t\t\"", 1)
+	var window: String = rest.substr(0, next_case) if next_case > 0 else rest
+	assert_true(window.contains("add_debuff(\"Soul Sap\", \"magic_defense\""),
+		"magic_defense_down must debuff magic_defense — it is a real stat now, and debuffing "
+		+ "plain defense would make the effect mitigate SWORDS while its name and log say magic")
+	assert_false(window.contains("add_debuff(\"Soul Sap\", \"defense\""),
+		"the pre-split target must be gone, not merely joined")
 
 
 # ── Source pin: data/abilities.json still authors soul_wail with this effect

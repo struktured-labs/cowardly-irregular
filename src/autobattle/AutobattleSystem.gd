@@ -2029,12 +2029,12 @@ func _get_lowest_hp_ally(combatant: Combatant) -> Combatant:
 
 
 func _get_lowest_magic_defense_enemy(combatant: Combatant) -> Combatant:
-	"""Get enemy with lowest defense (magic damage scales at 0.5x defense — lowest defense = best magic target)"""
+	"""Get enemy with lowest magic_defense — the best target for a magic ability"""
 	var enemies = _get_enemies_for(combatant)
 	if enemies.size() == 0:
 		return null
 
-	enemies.sort_custom(func(a, b): return a.defense < b.defense)
+	enemies.sort_custom(func(a, b): return a.magic_defense < b.magic_defense)
 	return enemies[0]
 
 

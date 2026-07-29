@@ -10,7 +10,6 @@
       "attack": 21,
       "defense": 8,
       "magic": 12,
-      "magic_defense": 4,
       "speed": 8
     },
     "abilities": [
@@ -42,7 +41,6 @@
       "attack": 23,
       "defense": 5,
       "magic": 15,
-      "magic_defense": 2,
       "speed": 18
     },
     "abilities": [
@@ -74,7 +72,6 @@
       "attack": 18,
       "defense": 12,
       "magic": 25,
-      "magic_defense": 6,
       "speed": 5
     },
     "abilities": [
@@ -111,7 +108,6 @@
       "attack": 18,
       "defense": 8,
       "magic": 29,
-      "magic_defense": 4,
       "speed": 14
     },
     "abilities": [
@@ -150,7 +146,6 @@
       "attack": 27,
       "defense": 10,
       "magic": 18,
-      "magic_defense": 5,
       "speed": 12
     },
     "abilities": [
@@ -185,7 +180,6 @@
       "attack": 29,
       "defense": 12,
       "magic": 8,
-      "magic_defense": 6,
       "speed": 16
     },
     "abilities": [
@@ -216,7 +210,6 @@
       "attack": 23,
       "defense": 8,
       "magic": 20,
-      "magic_defense": 4,
       "speed": 14
     },
     "abilities": [
@@ -249,7 +242,6 @@
       "attack": 22,
       "defense": 15,
       "magic": 25,
-      "magic_defense": 7,
       "speed": 6
     },
     "abilities": [
@@ -283,7 +275,6 @@
       "attack": 30,
       "defense": 6,
       "magic": 18,
-      "magic_defense": 3,
       "speed": 20
     },
     "abilities": [
@@ -316,7 +307,6 @@
       "attack": 18,
       "defense": 3,
       "magic": 35,
-      "magic_defense": 1,
       "speed": 12
     },
     "abilities": [
@@ -351,7 +341,6 @@
       "attack": 38,
       "defense": 8,
       "magic": 12,
-      "magic_defense": 4,
       "speed": 22
     },
     "abilities": [
@@ -386,7 +375,6 @@
       "attack": 30,
       "defense": 20,
       "magic": 30,
-      "magic_defense": 10,
       "speed": 10
     },
     "abilities": [
@@ -422,7 +410,6 @@
       "attack": 45,
       "defense": 25,
       "magic": 10,
-      "magic_defense": 12,
       "speed": 5
     },
     "abilities": [
@@ -457,7 +444,6 @@
       "attack": 15,
       "defense": 5,
       "magic": 38,
-      "magic_defense": 2,
       "speed": 18
     },
     "abilities": [
@@ -490,7 +476,6 @@
       "attack": 25,
       "defense": 10,
       "magic": 40,
-      "magic_defense": 5,
       "speed": 15
     },
     "abilities": [
@@ -530,7 +515,6 @@
       "attack": 25,
       "defense": 8,
       "magic": 10,
-      "magic_defense": 4,
       "speed": 14
     },
     "abilities": [
@@ -561,7 +545,6 @@
       "attack": 35,
       "defense": 7,
       "magic": 18,
-      "magic_defense": 3,
       "speed": 20
     },
     "abilities": [
@@ -594,7 +577,6 @@
       "attack": 40,
       "defense": 18,
       "magic": 12,
-      "magic_defense": 9,
       "speed": 11
     },
     "abilities": [
@@ -632,7 +614,6 @@
       "attack": 38,
       "defense": 10,
       "magic": 20,
-      "magic_defense": 5,
       "speed": 13
     },
     "abilities": [
@@ -672,7 +653,6 @@
       "attack": 52,
       "defense": 28,
       "magic": 22,
-      "magic_defense": 14,
       "speed": 20
     },
     "abilities": [
@@ -755,7 +735,6 @@
       "attack": 38,
       "defense": 12,
       "magic": 15,
-      "magic_defense": 6,
       "speed": 10
     },
     "abilities": [
@@ -795,7 +774,6 @@
       "attack": 45,
       "defense": 14,
       "magic": 28,
-      "magic_defense": 7,
       "speed": 16
     },
     "abilities": [
@@ -833,7 +811,6 @@
       "attack": 18,
       "defense": 5,
       "magic": 35,
-      "magic_defense": 2,
       "speed": 14
     },
     "abilities": [
@@ -874,7 +851,6 @@
       "attack": 55,
       "defense": 25,
       "magic": 10,
-      "magic_defense": 12,
       "speed": 6
     },
     "abilities": [
@@ -921,7 +897,6 @@
       "attack": 48,
       "defense": 30,
       "magic": 25,
-      "magic_defense": 15,
       "speed": 12
     },
     "abilities": [
@@ -969,7 +944,6 @@
       "attack": 42,
       "defense": 28,
       "magic": 15,
-      "magic_defense": 14,
       "speed": 16
     },
     "abilities": [
@@ -1028,7 +1002,6 @@
       "attack": 38,
       "defense": 35,
       "magic": 8,
-      "magic_defense": 17,
       "speed": 7
     },
     "abilities": [
@@ -1077,7 +1050,6 @@
       "attack": 44,
       "defense": 32,
       "magic": 20,
-      "magic_defense": 16,
       "speed": 9
     },
     "abilities": [
@@ -1131,7 +1103,6 @@
       "attack": 50,
       "defense": 18,
       "magic": 22,
-      "magic_defense": 9,
       "speed": 18
     },
     "abilities": [
@@ -1189,7 +1160,6 @@
       "attack": 40,
       "defense": 30,
       "magic": 10,
-      "magic_defense": 15,
       "speed": 5
     },
     "abilities": [
@@ -1245,7 +1215,6 @@
       "attack": 35,
       "defense": 25,
       "magic": 30,
-      "magic_defense": 12,
       "speed": 15
     },
     "abilities": [
@@ -1306,7 +1275,6 @@
       "attack": 25,
       "defense": 20,
       "magic": 40,
-      "magic_defense": 10,
       "speed": 4
     },
     "abilities": [
@@ -1359,7 +1327,6 @@
       "attack": 30,
       "defense": 20,
       "magic": 25,
-      "magic_defense": 10,
       "speed": 14
     },
     "abilities": [
@@ -1410,7 +1377,6 @@
       "attack": 28,
       "defense": 18,
       "magic": 30,
-      "magic_defense": 9,
       "speed": 18
     },
     "abilities": [
@@ -1469,7 +1435,6 @@
       "attack": 50,
       "defense": 30,
       "magic": 40,
-      "magic_defense": 15,
       "speed": 20
     },
     "abilities": [
@@ -1524,7 +1489,6 @@
       "attack": 20,
       "defense": 15,
       "magic": 15,
-      "magic_defense": 7,
       "speed": 12
     },
     "abilities": [
@@ -1572,7 +1536,6 @@
       "attack": 35,
       "defense": 25,
       "magic": 20,
-      "magic_defense": 12,
       "speed": 16
     },
     "abilities": [
@@ -1623,7 +1586,6 @@
       "attack": 45,
       "defense": 35,
       "magic": 50,
-      "magic_defense": 17,
       "speed": 22
     },
     "abilities": [
@@ -1682,7 +1644,6 @@
       "attack": 55,
       "defense": 30,
       "magic": 45,
-      "magic_defense": 15,
       "speed": 16
     },
     "abilities": [
@@ -1760,7 +1721,6 @@
       "attack": 48,
       "defense": 35,
       "magic": 52,
-      "magic_defense": 17,
       "speed": 14
     },
     "abilities": [
@@ -1840,7 +1800,6 @@
       "attack": 52,
       "defense": 22,
       "magic": 58,
-      "magic_defense": 11,
       "speed": 22
     },
     "abilities": [
@@ -1922,7 +1881,6 @@
       "attack": 45,
       "defense": 28,
       "magic": 60,
-      "magic_defense": 14,
       "speed": 18
     },
     "abilities": [
@@ -2007,7 +1965,6 @@
       "attack": 15,
       "defense": 10,
       "magic": 30,
-      "magic_defense": 5,
       "speed": 10
     },
     "abilities": [
@@ -2043,7 +2000,6 @@
       "attack": 20,
       "defense": 6,
       "magic": 10,
-      "magic_defense": 3,
       "speed": 22
     },
     "abilities": [
@@ -2079,7 +2035,6 @@
       "attack": 35,
       "defense": 12,
       "magic": 8,
-      "magic_defense": 6,
       "speed": 16
     },
     "abilities": [
@@ -2117,7 +2072,6 @@
       "attack": 42,
       "defense": 15,
       "magic": 12,
-      "magic_defense": 7,
       "speed": 14
     },
     "abilities": [
@@ -2160,7 +2114,6 @@
       "attack": 22,
       "defense": 14,
       "magic": 25,
-      "magic_defense": 7,
       "speed": 11
     },
     "abilities": [
@@ -2196,7 +2149,6 @@
       "attack": 32,
       "defense": 22,
       "magic": 10,
-      "magic_defense": 11,
       "speed": 10
     },
     "abilities": [
@@ -2235,7 +2187,6 @@
       "attack": 28,
       "defense": 8,
       "magic": 12,
-      "magic_defense": 4,
       "speed": 20
     },
     "abilities": [
@@ -2274,7 +2225,6 @@
       "attack": 36,
       "defense": 30,
       "magic": 5,
-      "magic_defense": 15,
       "speed": 5
     },
     "abilities": [
@@ -2319,7 +2269,6 @@
       "attack": 35,
       "defense": 10,
       "magic": 15,
-      "magic_defense": 5,
       "speed": 16
     },
     "abilities": [
@@ -2358,7 +2307,6 @@
       "attack": 18,
       "defense": 10,
       "magic": 38,
-      "magic_defense": 5,
       "speed": 14
     },
     "abilities": [
@@ -2403,7 +2351,6 @@
       "attack": 38,
       "defense": 28,
       "magic": 10,
-      "magic_defense": 14,
       "speed": 8
     },
     "abilities": [
@@ -2446,7 +2393,6 @@
       "attack": 30,
       "defense": 18,
       "magic": 28,
-      "magic_defense": 9,
       "speed": 12
     },
     "abilities": [
@@ -2487,7 +2433,6 @@
       "attack": 32,
       "defense": 22,
       "magic": 30,
-      "magic_defense": 11,
       "speed": 9
     },
     "abilities": [
@@ -2531,7 +2476,6 @@
       "attack": 25,
       "defense": 12,
       "magic": 32,
-      "magic_defense": 6,
       "speed": 7
     },
     "abilities": [
@@ -2575,7 +2519,6 @@
       "attack": 28,
       "defense": 10,
       "magic": 18,
-      "magic_defense": 5,
       "speed": 24
     },
     "abilities": [
@@ -2616,7 +2559,6 @@
       "attack": 48,
       "defense": 18,
       "magic": 35,
-      "magic_defense": 9,
       "speed": 22
     },
     "abilities": [
@@ -2660,7 +2602,6 @@
       "attack": 28,
       "defense": 15,
       "magic": 30,
-      "magic_defense": 7,
       "speed": 8
     },
     "abilities": [
@@ -2705,7 +2646,6 @@
       "attack": 30,
       "defense": 45,
       "magic": 38,
-      "magic_defense": 22,
       "speed": 6
     },
     "abilities": [
@@ -2752,7 +2692,6 @@
       "attack": 25,
       "defense": 12,
       "magic": 58,
-      "magic_defense": 6,
       "speed": 18
     },
     "abilities": [
@@ -2800,7 +2739,6 @@
       "attack": 38,
       "defense": 25,
       "magic": 42,
-      "magic_defense": 12,
       "speed": 14
     },
     "abilities": [
@@ -2845,7 +2783,6 @@
       "attack": 15,
       "defense": 8,
       "magic": 55,
-      "magic_defense": 4,
       "speed": 14
     },
     "abilities": [
@@ -2900,7 +2837,6 @@
       "attack": 45,
       "defense": 20,
       "magic": 45,
-      "magic_defense": 10,
       "speed": 18
     },
     "abilities": [
@@ -2956,7 +2892,6 @@
       "attack": 12,
       "defense": 55,
       "magic": 48,
-      "magic_defense": 27,
       "speed": 10
     },
     "abilities": [
@@ -3021,7 +2956,6 @@
       "attack": 25,
       "defense": 18,
       "magic": 30,
-      "magic_defense": 9,
       "speed": 8
     },
     "abilities": [
@@ -3088,7 +3022,6 @@
       "attack": 65,
       "defense": 40,
       "magic": 70,
-      "magic_defense": 20,
       "speed": 22
     },
     "abilities": [
@@ -3194,7 +3127,6 @@
       "attack": 38,
       "defense": 32,
       "magic": 20,
-      "magic_defense": 16,
       "speed": 12
     },
     "abilities": [
@@ -3251,7 +3183,6 @@
       "attack": 48,
       "defense": 22,
       "magic": 22,
-      "magic_defense": 11,
       "speed": 16
     },
     "abilities": [
@@ -3306,7 +3237,6 @@
       "attack": 35,
       "defense": 18,
       "magic": 28,
-      "magic_defense": 9,
       "speed": 22
     },
     "abilities": [
@@ -3363,7 +3293,6 @@
       "attack": 28,
       "defense": 24,
       "magic": 40,
-      "magic_defense": 12,
       "speed": 14
     },
     "abilities": [
@@ -3420,7 +3349,6 @@
       "attack": 42,
       "defense": 38,
       "magic": 25,
-      "magic_defense": 19,
       "speed": 13
     },
     "abilities": [
@@ -3482,7 +3410,6 @@
       "attack": 55,
       "defense": 26,
       "magic": 28,
-      "magic_defense": 13,
       "speed": 17
     },
     "abilities": [
@@ -3537,7 +3464,6 @@
       "attack": 40,
       "defense": 22,
       "magic": 32,
-      "magic_defense": 11,
       "speed": 24
     },
     "abilities": [
@@ -3595,7 +3521,6 @@
       "attack": 32,
       "defense": 28,
       "magic": 48,
-      "magic_defense": 14,
       "speed": 15
     },
     "abilities": [
@@ -3657,7 +3582,6 @@
       "attack": 46,
       "defense": 40,
       "magic": 27,
-      "magic_defense": 20,
       "speed": 13
     },
     "abilities": [
@@ -3714,7 +3638,6 @@
       "attack": 58,
       "defense": 28,
       "magic": 30,
-      "magic_defense": 14,
       "speed": 17
     },
     "abilities": [
@@ -3771,7 +3694,6 @@
       "attack": 42,
       "defense": 24,
       "magic": 35,
-      "magic_defense": 12,
       "speed": 25
     },
     "abilities": [
@@ -3828,7 +3750,6 @@
       "attack": 35,
       "defense": 30,
       "magic": 51,
-      "magic_defense": 15,
       "speed": 15
     },
     "abilities": [
@@ -3885,7 +3806,6 @@
       "attack": 50,
       "defense": 42,
       "magic": 30,
-      "magic_defense": 21,
       "speed": 14
     },
     "abilities": [
@@ -3947,7 +3867,6 @@
       "attack": 62,
       "defense": 30,
       "magic": 32,
-      "magic_defense": 15,
       "speed": 18
     },
     "abilities": [
@@ -4004,7 +3923,6 @@
       "attack": 45,
       "defense": 26,
       "magic": 38,
-      "magic_defense": 13,
       "speed": 26
     },
     "abilities": [
@@ -4061,7 +3979,6 @@
       "attack": 38,
       "defense": 32,
       "magic": 55,
-      "magic_defense": 16,
       "speed": 16
     },
     "abilities": [
@@ -4123,7 +4040,6 @@
       "attack": 55,
       "defense": 48,
       "magic": 35,
-      "magic_defense": 24,
       "speed": 15
     },
     "abilities": [
@@ -4186,7 +4102,6 @@
       "attack": 68,
       "defense": 32,
       "magic": 38,
-      "magic_defense": 16,
       "speed": 20
     },
     "abilities": [
@@ -4248,7 +4163,6 @@
       "attack": 50,
       "defense": 28,
       "magic": 42,
-      "magic_defense": 14,
       "speed": 28
     },
     "abilities": [
@@ -4310,7 +4224,6 @@
       "attack": 42,
       "defense": 36,
       "magic": 62,
-      "magic_defense": 18,
       "speed": 17
     },
     "abilities": [
@@ -4376,7 +4289,6 @@
       "attack": 62,
       "defense": 52,
       "magic": 40,
-      "magic_defense": 26,
       "speed": 16
     },
     "abilities": [
@@ -4435,7 +4347,6 @@
       "attack": 75,
       "defense": 35,
       "magic": 42,
-      "magic_defense": 17,
       "speed": 22
     },
     "abilities": [
@@ -4497,7 +4408,6 @@
       "attack": 55,
       "defense": 30,
       "magic": 48,
-      "magic_defense": 15,
       "speed": 30
     },
     "abilities": [
@@ -4563,7 +4473,6 @@
       "attack": 48,
       "defense": 38,
       "magic": 70,
-      "magic_defense": 19,
       "speed": 18
     },
     "abilities": [
@@ -4630,7 +4539,6 @@
       "attack": 38,
       "defense": 32,
       "magic": 78,
-      "magic_defense": 16,
       "speed": 20
     },
     "abilities": [
@@ -4716,7 +4624,6 @@
       "attack": 42,
       "defense": 22,
       "magic": 10,
-      "magic_defense": 11,
       "speed": 12
     },
     "abilities": [
@@ -4786,7 +4693,6 @@
       "attack": 22,
       "defense": 40,
       "magic": 18,
-      "magic_defense": 20,
       "speed": 8
     },
     "abilities": [
@@ -4858,7 +4764,6 @@
       "attack": 44,
       "defense": 30,
       "magic": 8,
-      "magic_defense": 15,
       "speed": 20
     },
     "abilities": [
@@ -4930,7 +4835,6 @@
       "attack": 22,
       "defense": 28,
       "magic": 34,
-      "magic_defense": 14,
       "speed": 14
     },
     "abilities": [
@@ -5006,7 +4910,6 @@
       "attack": 26,
       "defense": 44,
       "magic": 20,
-      "magic_defense": 22,
       "speed": 14
     },
     "abilities": [
@@ -5068,7 +4971,6 @@
       "attack": 24,
       "defense": 18,
       "magic": 10,
-      "magic_defense": 9,
       "speed": 8
     },
     "abilities": [

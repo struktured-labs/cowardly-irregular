@@ -10,7 +10,6 @@
       "attack": 15,
       "defense": 14,
       "magic": 5,
-      "magic_defense": 7,
       "speed": 8
     },
     "abilities": [
@@ -60,7 +59,6 @@
       "attack": 5,
       "defense": 10,
       "magic": 18,
-      "magic_defense": 5,
       "speed": 10
     },
     "abilities": [
@@ -125,7 +123,6 @@
       "attack": 5,
       "defense": 8,
       "magic": 20,
-      "magic_defense": 4,
       "speed": 9
     },
     "abilities": [
@@ -197,7 +194,6 @@
       "attack": 12,
       "defense": 11,
       "magic": 7,
-      "magic_defense": 5,
       "speed": 16
     },
     "abilities": [
@@ -250,7 +246,6 @@
       "attack": 9,
       "defense": 8,
       "magic": 14,
-      "magic_defense": 4,
       "speed": 14
     },
     "abilities": [
@@ -303,7 +298,6 @@
       "attack": 10,
       "defense": 10,
       "magic": 15,
-      "magic_defense": 5,
       "speed": 12
     },
     "abilities": [
@@ -347,7 +341,6 @@
       "attack": 8,
       "defense": 9,
       "magic": 17,
-      "magic_defense": 4,
       "speed": 11
     },
     "abilities": [
@@ -392,7 +385,6 @@
       "attack": 7,
       "defense": 7,
       "magic": 22,
-      "magic_defense": 3,
       "speed": 9
     },
     "abilities": [
@@ -435,7 +427,6 @@
       "attack": 13,
       "defense": 15,
       "magic": 6,
-      "magic_defense": 7,
       "speed": 8
     },
     "abilities": [
@@ -487,7 +478,6 @@
       "attack": 14,
       "defense": 8,
       "magic": 8,
-      "magic_defense": 4,
       "speed": 18
     },
     "abilities": [
@@ -540,7 +530,6 @@
       "attack": 6,
       "defense": 7,
       "magic": 19,
-      "magic_defense": 3,
       "speed": 10
     },
     "abilities": [
@@ -591,7 +580,6 @@
       "attack": 11,
       "defense": 11,
       "magic": 16,
-      "magic_defense": 5,
       "speed": 11
     },
     "abilities": [
@@ -640,7 +628,6 @@
       "attack": 10,
       "defense": 9,
       "magic": 12,
-      "magic_defense": 4,
       "speed": 14
     },
     "abilities": [
@@ -690,7 +677,6 @@
       "attack": 12,
       "defense": 9,
       "magic": 14,
-      "magic_defense": 4,
       "speed": 14
     },
     "abilities": [

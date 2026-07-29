@@ -329,7 +329,7 @@ func test_starter_jobs_have_type_zero() -> void:
 
 
 func test_all_job_stat_modifiers_have_valid_keys() -> void:
-	var valid_stats = ["max_hp", "max_mp", "attack", "defense", "magic", "speed"]
+	var valid_stats = ["max_hp", "max_mp", "attack", "defense", "magic", "magic_defense", "speed"]
 	for job_id in _jobs:
 		var mods = _jobs[job_id].get("stat_modifiers", {})
 		for stat in mods:
