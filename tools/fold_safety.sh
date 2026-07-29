@@ -36,12 +36,28 @@ if [ -z "$BRANCH" ]; then
 fi
 git rev-parse --verify "$BRANCH" >/dev/null 2>&1 || { echo "no such ref: $BRANCH" >&2; exit 2; }
 
-BASE=$(git merge-base HEAD "$BRANCH")
+# The ref being folded INTO. This was HEAD, which made the entire check vacuous
+# whenever you ran it on the branch you had checked out: merge-base HEAD <branch>
+# is then the branch tip itself, FILES comes back empty, and it printed SAFE having
+# compared nothing. That is the highest-traffic case — you check your own branch
+# right before asking for a fold. Explicit ref, overridable as $2.
+MAIN="${2:-origin/main}"
+git rev-parse --verify "$MAIN" >/dev/null 2>&1 || { echo "no such ref: $MAIN" >&2; exit 2; }
+
+BASE=$(git merge-base "$MAIN" "$BRANCH")
 # Files the branch touches — the only ones a file-level fold could substitute.
 FILES=$(git diff --name-only "$BASE" "$BRANCH")
 if [ -z "$FILES" ]; then
-	echo "SAFE: branch touches no files relative to the merge base"
-	exit 0
+	# FLOOR. "Found nothing to check" and "checked everything, found nothing" print the
+	# same word; only the second is an answer. A branch fully contained in MAIN really
+	# has nothing to substitute — anything else means the base is wrong.
+	if git merge-base --is-ancestor "$BRANCH" "$MAIN" 2>/dev/null; then
+		echo "SAFE: $BRANCH is fully contained in $MAIN — nothing to substitute"
+		exit 0
+	fi
+	echo "REFUSING TO ANSWER: no files against base ${BASE:0:8}, yet $BRANCH is not" >&2
+	echo "contained in $MAIN. The base is wrong, so SAFE here would be vacuous." >&2
+	exit 2
 fi
 
 HAZARD=0
@@ -50,11 +66,22 @@ while IFS= read -r f; do
 	[ -z "$f" ] && continue
 	# Skip binaries: a byte difference proves nothing once either side has been re-encoded,
 	# and there is no line-level notion of "main has this and the branch does not".
-	if ! git show "HEAD:$f" >/dev/null 2>&1; then continue; fi
-	if git diff --numstat HEAD "$BRANCH" -- "$f" | grep -q '^-'; then continue; fi
+	if ! git show "$MAIN:$f" >/dev/null 2>&1; then continue; fi
+	if git diff --numstat "$MAIN" "$BRANCH" -- "$f" | grep -q '^-'; then continue; fi
+	# STALENESS GATE. "main has a line this branch lacks" is ALSO what every ordinary
+	# edit looks like: the branch replaced the line, so main's old version reads as
+	# missing. Without this, the tool flags nearly every branch and becomes noise.
+	#
+	# The decidable difference is WHO MOVED LAST. If main has commits touching this
+	# file since the merge base, the branch's copy predates them and a substitution
+	# drops main's work. If main has not touched it, the only differences are the
+	# branch's own deliberate edits. This is also why rebasing dissolves the question
+	# (cowir-controller, msg 3442): afterwards the count is 0 by construction.
+	MOVED=$(git rev-list --count "$BASE..$MAIN" -- "$f")
+	if [ "${MOVED:-0}" -eq 0 ]; then continue; fi
 	TOTAL=$((TOTAL + 1))
-	# Lines main HAS that the branch LACKS. Direction matters: diff BRANCH -> HEAD, additions.
-	LOST=$(git diff "$BRANCH" HEAD -- "$f" | grep '^+' | grep -v '^+++' | sed 's/^+//' \
+	# Lines main HAS that the branch LACKS. Direction matters: diff BRANCH -> MAIN, additions.
+	LOST=$(git diff "$BRANCH" "$MAIN" -- "$f" | grep '^+' | grep -v '^+++' | sed 's/^+//' \
 		| grep -vE '^\s*$' | grep -vE '^\s*(#|##|//)' || true)
 	N=$(printf '%s' "$LOST" | grep -c . || true)
 	if [ "${N:-0}" -gt 0 ]; then
