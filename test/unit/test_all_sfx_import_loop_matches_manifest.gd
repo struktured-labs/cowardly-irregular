@@ -3,12 +3,31 @@ extends GutTest
 ## Full-manifest loop-agreement ratchet for SFX (cycle #11, msg 2685 finding).
 ##
 ## Shape stolen from cowir-music's test_all_music_import_loop_matches_manifest.gd.
-## Rationale: SoundManager._on_ambient_finished re-plays the ambient stream on
-## finish, so play_ambient() ambient loops via callback regardless of .import
-## flag. BUT any future code path that plays an ambient direct via a plain
-## AudioStreamPlayer (one-shot ambient stinger, direct-to-stream helper like
-## the music side's _start_monster_music) makes .import authoritative — and
-## silence-after-one-play regresses. Same class as cowir-music's slime/bat fix.
+##
+## RATIONALE CORRECTED 2026-07-29 — the original understated why this guard is
+## load-bearing, and got the mechanism backwards. It said ambient loops via the
+## _on_ambient_finished callback "regardless of .import flag", treating .import as
+## a hazard only for hypothetical future bypass paths. Measured: the SFX manifest
+## path NEVER READS the `loop` field (SoundManager:1280 is _try_play_from_manifest,
+## the MUSIC function, reading _music_manifest). `.import` is the ONLY live loop
+## mechanism for SFX, today. And because all 12 ambient streams now carry
+## loop=true, they never emit `finished`, so _on_ambient_finished is UNREACHABLE —
+## the same effect SoundManager:1269 documents for stingers ("loop=true ... made
+## them loop forever and never fire the `finished` signal").
+##
+## So the manifest `loop` field is DOCUMENTATION of an intent the runtime cannot
+## honour on its own. An author adding an ambient key with "loop": true and no
+## .import edit gets a cue that plays once and stops. THIS GUARD IS WHAT MAKES THE
+## FIELD MEAN ANYTHING — it is not a nice-to-have ratchet against a future bypass.
+##
+## Field-level context (cowir-ai msg-3373's class, swept 2026-07-29): of 8 fields
+## used across the manifest, `file`/`fallback_to`/`variants` are read;
+## `prompt`/`prompt_influence`/`source`/`duration_seconds` have zero consumers and
+## are legitimately inert provenance. `loop` is the only field that READS as
+## behavioural while having no runtime reader — which is exactly why it needs a
+## guard and they do not. Deliberately NOT adding a field-consumer ratchet: it
+## would flag those four on day one, and a check whose correct case needs four
+## suppression flags is rot arriving dressed as diligence.
 ##
 ## Two guarantees:
 ##   1. Any NEW mismatch between manifest.loop and .import loop fails the gate.
