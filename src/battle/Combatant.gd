@@ -39,6 +39,10 @@ signal status_tick_heal(amount: int, source: String)
 
 ## The stats gear/passives may modify — the single authority. Add a stat here and equipment can move it with no EquipmentSystem change; a stat_mods key outside this list is a typo, caught by test_equipment_stat_mods_regression rather than silently dropped.
 const MODDABLE_STATS := ["max_hp", "max_mp", "attack", "defense", "magic", "magic_defense", "speed"]
+## Statuses whose countdown belongs to the turn-skip handler that consumes them. The generic
+## per-round tick below must skip these or they are decremented TWICE per round — which is why a
+## 1-turn stun expired before its own handler ran and delivered no skipped turn at all.
+const CONSUME_OWNED_DURATIONS := ["stun", "cannot_act"]
 
 ## Denomination of the stat fields below. Bumped by the 2026-07-29 ×10 pass; every save records it so a file written at an older scale can be migrated instead of loading a 1/10th-strength party into a ×10 world.
 const STAT_SCALE := 10
@@ -850,6 +854,8 @@ func update_buff_durations() -> void:
 	# Tick down status effect durations
 	var expired_statuses: Array[String] = []
 	for status in status_durations:
+		if status in CONSUME_OWNED_DURATIONS:  # counted down where the turn is skipped, not here
+			continue
 		if status_durations[status] > 0:  # -1 = permanent
 			status_durations[status] -= 1
 			if status_durations[status] <= 0:

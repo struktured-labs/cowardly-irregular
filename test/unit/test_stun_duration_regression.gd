@@ -1,154 +1,162 @@
 extends GutTest
 
-## Six abilities declared a 2-3 turn stun and delivered exactly one. 2026-07-29.
+## Turn-skip statuses were decremented TWICE per round. 2026-07-29.
 ##
-## The duration was applied correctly and then thrown away: the turn-skip handler called
-## `remove_status("stun")` unconditionally on the first skipped turn, and `Combatant.remove_status`
-## erases `status_durations` along with the effect. Nothing in src/ ever read
-## `status_durations["stun"]`.
+## Two writers to one dictionary, and nobody enumerated them:
 ##
-## The tell is twelve lines below in the same function. `cannot_act` — added later, for landed boss
-## jailbreaks — reads its remaining duration, decrements, and only removes at zero. One status ticks,
-## the other erased, same author, same file.
+##   Combatant.update_buff_durations()   generic per-round tick, no exclusion list
+##   the turn-skip handler               reads the duration and decrements it again
 ##
-##   time_stop      declares 2   delivered 1
-##   infinite_loop  declares 3   delivered 1
-##   absolute_zero · ice_prison · shadow_bind · root_bind   declare 2, delivered 1
+## Both run every round, so a declared duration burns at 2/round. Measured delivered skips:
 ##
-## The last four author `"freeze"`, which a 2026-07-03 audit aliases to `"stun"` at cast time — so a
-## set derived from `effect == "stun"` finds four of six. Derive from what the runtime produces.
+##   declared      1   2   3   4   5   10
+##   stun          0   1   1   1   1    1      erases on consume -> SATURATES at one skip
+##   cannot_act    0   1   1   2   2    5      decrements on consume -> floor(N/2)
 ##
-## Two consumers had it: BattleManager (live battles) and HeadlessBattleResolver (autogrind). Fixing
-## one would leave an autogrind run scoring a fight the player could not have fought the same way.
+## Both are ZERO at declared 1, which is the authored value everywhere it matters: 14 of the 20
+## stun abilities, all 5 `skip_turn` jailbreak consequences, and the 4 `lose_buff_or_stagger`
+## stagger fallbacks. The jailbreak half is the sharp one — a player who reads a boss's persona,
+## finds its vulnerability and lands the exploit gets nothing at all, on Mordaine and all four
+## dragons, whenever the boss's next turn falls in a later round.
 ##
-## NOTE: this makes the game HARDER — two of the six belong to World 1 bosses. Shipped only on
-## struktured's ruling; the tests below pin the mechanism either way.
+## MY FIRST VERSION OF THIS FILE PASSED WHILE THE FIX WAS INERT. It asserted against a local helper
+## applying only the consume half — a model of the system with ONE writer. Every behavioural test
+## agreed with itself and none touched `end_turn()`. cowir-battle's A/B on real production functions
+## caught it: the branch moved only `declared=4`, because copying the `cannot_act` pattern converts
+## stun from saturate-at-1 to floor(N/2), and nothing in the data declares 4.
+##
+## So the runtime assertions drive `end_turn()` — the actual generic tick. BOUNDARY, stated rather
+## than implied: they do not drive `BattleManager._start_new_round()`, so the consume half is pinned
+## by source derivation. The half that can be executed is executed.
 
 const BM_SRC := "res://src/battle/BattleManager.gd"
 const HBR_SRC := "res://src/autogrind/HeadlessBattleResolver.gd"
 
 
-func _combatant(dur: int) -> Combatant:
+# ── runtime: the generic tick, real production ──────────────────────
+
+func test_the_generic_tick_no_longer_eats_a_turn_skip_duration() -> void:
+	# The defect, executed. Before the fix this came back 1 — the round tick spending a unit the
+	# skip handler had not yet been given a chance to consume.
 	var c := Combatant.new()
-	c.combatant_name = "Victim"
-	c.add_status("stun", dur)
-	return c
-
-
-## Exactly what BattleManager does on a stunned actor's turn. Duplicated rather than invoked because
-## the real path needs a whole battle; the assertion below pins that the two stay identical.
-func _skip_one_turn(c: Combatant) -> void:
-	var left: int = int(c.status_durations.get("stun", 1))
-	if left <= 1:
-		c.remove_status("stun")
-	else:
-		c.status_durations["stun"] = left - 1
-
-
-# ── behaviour ───────────────────────────────────────────────────────
-
-func test_a_two_turn_stun_survives_the_first_skipped_turn() -> void:
-	# The defect, stated as the player experiences it: Time Stop says two turns and you act on the
-	# second. Before the fix has_status went false here.
-	var c := _combatant(2)
-	_skip_one_turn(c)
-	assert_true(c.has_status("stun"), "a stun declared for 2 turns must still be active after 1")
-	assert_eq(int(c.status_durations.get("stun", 0)), 1, "and must have one turn remaining")
+	c.combatant_name = "Probe"
+	c.add_status("stun", 2)
+	c.end_turn()
+	assert_eq(int(c.status_durations.get("stun", -99)), 2,
+		"the per-round tick must leave stun alone — the turn-skip handler owns its countdown")
 	c.free()
 
 
-func test_the_stun_ends_when_its_duration_is_spent() -> void:
-	# The other direction. A tick-down that never removes is a permanent stun, which is worse than
-	# the bug it replaces.
-	var c := _combatant(2)
-	_skip_one_turn(c)
-	_skip_one_turn(c)
-	assert_false(c.has_status("stun"), "a 2-turn stun must end after 2 skipped turns")
-	assert_false(c.status_durations.has("stun"), "and must not leave a dangling duration entry")
+func test_a_one_turn_stun_survives_to_reach_its_own_handler() -> void:
+	# The live case and the worst one. Before the fix the generic tick expired a 1-turn stun to zero
+	# and removed it, so the skip handler never saw it and no turn was ever skipped.
+	var c := Combatant.new()
+	c.add_status("stun", 1)
+	c.end_turn()
+	assert_true(c.has_status("stun"),
+		"a 1-turn stun must still exist when its target's turn arrives — this is the jailbreak case")
 	c.free()
 
 
-func test_a_one_turn_stun_is_unchanged() -> void:
-	# Regression floor: the overwhelming majority of stuns are 1 turn, and this must not lengthen
-	# them. If it did, every basic stun in the game silently doubled.
-	var c := _combatant(1)
-	_skip_one_turn(c)
-	assert_false(c.has_status("stun"), "a 1-turn stun must still end after one skipped turn")
+func test_cannot_act_is_protected_too() -> void:
+	# Held up as the correct reference implementation by three lanes, and double-ticked itself. It
+	# decrements rather than erasing, so it degraded to floor(N/2) instead of saturating at one — a
+	# different symptom of the same second writer, which is exactly why it read as correct.
+	var c := Combatant.new()
+	c.add_status("cannot_act", 2)
+	c.end_turn()
+	assert_eq(int(c.status_durations.get("cannot_act", -99)), 2,
+		"cannot_act is the boss-jailbreak lockout and shares the defect")
 	c.free()
 
 
-func test_a_three_turn_stun_lasts_three() -> void:
-	var c := _combatant(3)
-	_skip_one_turn(c)
-	_skip_one_turn(c)
-	assert_true(c.has_status("stun"), "infinite_loop declares 3 — it must survive two skips")
-	_skip_one_turn(c)
-	assert_false(c.has_status("stun"), "and end on the third")
+func test_ordinary_statuses_still_tick() -> void:
+	# CONTROL, and what makes the three above mean anything. An exclusion that swallowed everything
+	# would pass them all and freeze every poison and regen in the game.
+	var c := Combatant.new()
+	c.add_status("poison", 3)
+	c.end_turn()
+	assert_eq(int(c.status_durations.get("poison", -99)), 2,
+		"the generic tick must still count down statuses nobody else owns")
 	c.free()
 
 
-func test_remove_status_still_erases_the_duration() -> void:
-	# The mechanism that caused this. If remove_status ever stops erasing status_durations, the
-	# tick-down above becomes redundant rather than load-bearing, and this comment stops being true.
-	var c := _combatant(3)
-	c.remove_status("stun")
-	assert_false(c.status_durations.has("stun"),
-		"remove_status erases the duration — that is WHY an unconditional call discarded it")
+func test_an_ordinary_status_still_expires() -> void:
+	# The other half of the control: exclusion must not stop expiry.
+	var c := Combatant.new()
+	c.add_status("poison", 1)
+	c.end_turn()
+	assert_false(c.has_status("poison"), "a 1-turn poison must still wear off on its own")
 	c.free()
 
 
-# ── both consumers, derived ─────────────────────────────────────────
+# ── the exclusion set, derived ──────────────────────────────────────
 
-func test_every_stun_consumer_ticks_instead_of_erasing() -> void:
-	# Derived from the sites that skip a turn on stun, not a hand list of two files. A third consumer
-	# (a new battle mode, a simulator) would otherwise reintroduce the defect silently.
-	var offenders: Array = []
+func test_every_consume_owned_status_is_excluded_from_the_generic_tick() -> void:
+	# Derived from the consume sites rather than trusting the const. A third turn-skip status added
+	# with its own countdown, and not added here, silently reintroduces the double-write.
+	var owned: Dictionary = {}
+	for path in [BM_SRC, HBR_SRC]:
+		var src := FileAccess.get_file_as_string(path)
+		for line in src.split("\n"):
+			if not line.contains("status_durations[\""):
+				continue
+			if not line.contains("] = ") or not line.contains(" - 1"):
+				continue
+			var i := line.find("status_durations[\"")
+			var rest := line.substr(i + 18)
+			var name := rest.substr(0, rest.find("\""))
+			if name != "":
+				owned[name] = true
+	assert_gt(owned.size(), 0, "no consume-owned countdown found — this derivation is blind")
+	var missing: Array = []
+	for s in owned:
+		if not (s in Combatant.CONSUME_OWNED_DURATIONS):
+			missing.append(str(s))
+	assert_eq(missing, [],
+		"a turn-skip handler counts these down itself while the generic tick also decrements them "
+		+ "— the double-write that made a 1-turn stun deliver nothing: %s" % str(missing))
+
+
+func test_the_exclusion_is_not_a_blanket() -> void:
+	# The failure direction of the fix. Excluding a status nobody consumes means it never expires.
+	assert_lt(Combatant.CONSUME_OWNED_DURATIONS.size(), 4,
+		"only statuses with a consume-path countdown belong here — a long list means something was "
+		+ "excluded to silence a test rather than because a handler owns it")
+
+
+func test_both_consume_paths_still_own_their_countdown() -> void:
+	# Source-derived half, and the boundary named in the header. If a handler goes back to erasing,
+	# the exclusion turns a halved duration into an infinite one.
 	for path in [BM_SRC, HBR_SRC]:
 		var src := FileAccess.get_file_as_string(path)
 		var at: int = src.find("has_status(\"stun\")")
-		if at < 0:
-			offenders.append("%s: no stun handler found — did it move?" % path)
-			continue
+		assert_gt(at, -1, "%s must still handle stun" % path)
 		var window: String = src.substr(at, 420)
-		if not window.contains("status_durations.get(\"stun\""):
-			offenders.append("%s: removes stun without reading its duration" % path)
-	assert_eq(offenders, [], "a stun consumer discards the declared duration:\n  %s"
-		% "\n  ".join(offenders))
-
-
-func test_the_helper_matches_what_battlemanager_actually_does() -> void:
-	# _skip_one_turn duplicates the production block. Pin that they agree, or every behavioural
-	# assertion above tests a copy that has drifted from the code it stands in for.
-	var src := FileAccess.get_file_as_string(BM_SRC)
-	var at: int = src.find("has_status(\"stun\")")
-	var window: String = src.substr(at, 420)
-	assert_true(window.contains("stun_left <= 1"), "production must remove at the last turn")
-	assert_true(window.contains("stun_left - 1"), "production must decrement otherwise")
+		assert_true(window.contains("status_durations.get(\"stun\""),
+			"%s must read the remaining duration, not erase it" % path)
+		assert_true(window.contains("- 1"),
+			"%s must decrement — with the generic tick excluded, this is the ONLY writer" % path)
 
 
 # ── the data this defends ───────────────────────────────────────────
 
-func test_the_corpus_still_declares_multi_turn_stuns() -> void:
-	# Positive control. Every test above passes in a world where no ability declares more than 1
-	# turn — the fix would be real and pointless. Derived through the freeze alias, because four of
-	# the six are spelled "freeze" and a scan for "stun" finds only two.
+func test_the_corpus_still_declares_turn_skips() -> void:
+	# Positive control. Every assertion above passes in a world where nothing stuns anyone. Derived
+	# through the freeze->stun alias, because four of the multi-turn ones are spelled "freeze".
 	var raw: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/abilities.json"))
 	var abilities: Dictionary = raw.get("abilities", raw)
-	var multi: Array = []
+	var one_turn: int = 0
+	var multi: int = 0
 	for id in abilities:
 		var a: Dictionary = abilities[id]
 		var eff := str(a.get("effect", ""))
 		var meta := str(a.get("meta_effect", ""))
-		if (eff == "stun" or eff == "freeze" or meta == "time_stop") and int(a.get("duration", 1)) > 1:
-			multi.append("%s(%d)" % [id, int(a.get("duration", 1))])
-	assert_gt(multi.size(), 1,
-		"the corpus must still author multi-turn stuns or this fix defends nothing — found: %s"
-			% str(multi))
-
-
-func test_the_freeze_alias_still_exists() -> void:
-	# Four of the six reach stun only through this alias. If it is ever removed, the affected set
-	# shrinks to two and the comment at the top of this file becomes wrong.
-	var src := FileAccess.get_file_as_string(BM_SRC)
-	assert_true(src.contains("status_to_add = \"stun\""),
-		"freeze aliases to stun — without it, absolute_zero and ice_prison stop being stuns at all")
+		if eff == "stun" or eff == "freeze" or meta == "time_stop":
+			if int(a.get("duration", 1)) > 1:
+				multi += 1
+			else:
+				one_turn += 1
+	assert_gt(one_turn, 5,
+		"the 1-turn stuns are the population that delivered ZERO — found %d" % one_turn)
+	assert_gt(multi, 1, "and the multi-turn ones that delivered one — found %d" % multi)
