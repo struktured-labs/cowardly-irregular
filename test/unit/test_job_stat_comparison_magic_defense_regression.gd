@@ -71,6 +71,41 @@ func test_unchanged_magic_defense_is_omitted_like_every_other_stat() -> void:
 
 ## ── the real corpus, so the fixture cannot drift from shipped data ────
 
+func test_every_stat_any_job_modifies_is_surfaced() -> void:
+	# THE PROPERTY, replacing the incident (@cowir-story msg 3398, and
+	# @cowir-controller's derive-don't-list on the equipment panel).
+	#
+	# This file originally asserted that magic_defense appears — the stat
+	# that happened to be broken. That is the bug report, not the
+	# invariant. Deriving the set from jobs.json found max_mp equally
+	# invisible: all 14 jobs author it, spread 30..100, so a Fighter ->
+	# Summoner change more than TRIPLES the MP pool and the screen said
+	# nothing. My incident-shaped guard passed the whole time.
+	#
+	# Derived, so a stat added to jobs.json tomorrow fails here until the
+	# screen shows it. No allowlist — every entry is a real authored stat.
+	var f: FileAccess = FileAccess.open("res://data/jobs.json", FileAccess.READ)
+	assert_not_null(f)
+	var jobs: Dictionary = JSON.parse_string(f.get_as_text())
+	var modified: Dictionary = {}
+	for jid in jobs:
+		var mods: Variant = (jobs[jid] as Dictionary).get("stat_modifiers", {})
+		if mods is Dictionary:
+			for s in (mods as Dictionary):
+				modified[str(s)] = true
+	assert_gt(modified.size(), 3,
+		"sanity: expected several modified stats, got %d — if this fires the parse is wrong and every assertion below is vacuous" % modified.size())
+	for stat_name in modified:
+		# A job differing ONLY in this stat must produce visible output.
+		_menu.character = _character_with({stat_name: 10})
+		var out: String = _menu._get_stat_comparison(
+			{"id": "t", "name": "T", "stat_modifiers": {stat_name: 40}})
+		assert_ne(out, "",
+			"jobs author '%s' but a change in it renders NOTHING — the comparison screen omits a stat the player is choosing between" % stat_name)
+		assert_string_contains(out, StatNames.short_code(stat_name),
+			"a '%s' change must be labelled with its own code, not another stat's" % stat_name)
+
+
 func test_every_shipped_job_authors_magic_defense() -> void:
 	# The premise of the fix. If jobs stopped authoring it, the screen
 	# would correctly show nothing and this regression would be moot —
