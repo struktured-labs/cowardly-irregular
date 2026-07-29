@@ -7478,6 +7478,26 @@ func _bias_by_intent(intent_id: String, masterite_type: String = "") -> Dictiona
 		return {}
 	# Mordaine bias table — applied to *any* boss that uses these intents
 	# (the masterite_type arg is for masterite-specific scaling, optional).
+	#
+	# SCOPE, ruled 2026-07-29 (cowir-ai msg-3345/3348, cowir-battle msg-3357):
+	# 26 authored intents across the dragons and duel minibosses reach no arm
+	# here, and that is NOT a missing-arm bug. Every ability-weight key below
+	# (attack_weight / iron_guard / crushing_blow / endurance_test) is read
+	# ONLY inside _make_masterite_decision, entered via has_meta("masterite").
+	# Dragons and Mordaine are masterite:false, so counter_action_chance is the
+	# only key they can ever read. Adding arms for them is inert — verified by
+	# a commit that did exactly that, passed six assertions and three
+	# mutations, and changed nothing (withdrawn e1fd88e5).
+	#
+	# So the intent layer is DIALOGUE-FIRST for non-masterites by construction:
+	# it selects which taunt fires, not how the boss weights abilities. Making
+	# it mechanical means teaching the generic AI ladder to read these keys —
+	# a feature touching every non-masterite boss, not a bugfix. Struktured's
+	# call; do not re-file it as a defect.
+	#
+	# The duels are unaffected: their mechanics run through counter_abilities /
+	# steal_response / first_steal_guaranteed and the Prismatic Construct's
+	# weakness_cycle, none of which route through here.
 	match intent_id:
 		"aggress":
 			return {
