@@ -31,8 +31,20 @@ func test_effective_rate_clamps_at_1_0() -> void:
 	var src := _read(BATTLE_MANAGER_PATH)
 	var idx: int = src.find("\"steal\":")
 	var window: String = src.substr(idx, 1200)
-	assert_true(window.contains("clampf(success_rate + steal_bonus, 0.0, 1.0)"),
-		"effective rate must clamp at 1.0 so stacked gloves don't bend math")
+	# Assert the RELATIONSHIP, not the exact expression. This pinned the
+	# literal `clampf(success_rate + steal_bonus, 0.0, 1.0)` and so went RED
+	# on a correct change — wiring the steal_boost passive into the same sum
+	# (2026-07-29). A coincidental-literal pin fails on a correct edit and
+	# passes on a wrong one that keeps the spelling; CLAUDE.md names the class.
+	var rate_at: int = window.find("var effective_rate")
+	assert_gt(rate_at, -1, "the success rate must still be computed in one place")
+	var expr: String = window.substr(rate_at, 200)
+	assert_true(expr.contains("clampf("),
+		"effective rate must be clamped so stacked sources don't bend math")
+	assert_true(expr.contains("0.0, 1.0"),
+		"the clamp bounds must stay [0,1] — above 1.0 makes the randf check always-true")
+	assert_true(expr.contains("success_rate") and expr.contains("steal_bonus"),
+		"the base rate and equipment's contribution must both remain in the sum")
 
 
 func test_steal_loop_uses_effective_rate() -> void:

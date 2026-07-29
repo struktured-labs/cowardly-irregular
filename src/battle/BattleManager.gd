@@ -5589,7 +5589,12 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 			## 100% (the bound also dodges the > 1.0 randf check
 			## becoming always-true edge).
 			var steal_bonus: float = _sum_equipment_special_effect(caster, "steal_bonus")
-			var effective_rate: float = clampf(success_rate + steal_bonus, 0.0, 1.0)
+			## steal_boost passive (Rogue) authors stat_mods.steal_chance and had NO reader — the same defect tick 462 fixed for thiefs_glove, one layer over. get_passive_mods composes unknown keys rather than dropping them, so the value was always available and simply unread.
+			var passive_steal: float = 0.0
+			var ps: Node = get_node_or_null("/root/PassiveSystem")
+			if ps and ps.has_method("get_passive_mods"):
+				passive_steal = float(ps.get_passive_mods(caster).get("steal_chance", 0.0))
+			var effective_rate: float = clampf(success_rate + steal_bonus + passive_steal, 0.0, 1.0)
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
 					if _first_steal_guaranteed(target) or randf() < effective_rate:
