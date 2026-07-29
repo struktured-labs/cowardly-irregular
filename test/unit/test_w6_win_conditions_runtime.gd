@@ -41,6 +41,18 @@ func test_restraint_accumulates_and_wins() -> void:
 	assert_true(_bm._evaluate_custom_win_condition(), "restraint must win at the authored count")
 
 
+func test_victory_lands_on_the_round_it_is_earned() -> void:
+	# The behaviour the source ratchet used to defend with a character-count
+	# window. Off-by-one here is invisible in review and reads in play as a
+	# boss that ignores the round you actually won on.
+	_bm._win_condition = {"type": "withhold_attack", "value": 2}
+	_bm._advance_withhold_round()
+	assert_false(_bm._evaluate_custom_win_condition(), "one quiet round of two must not win")
+	_bm._advance_withhold_round()
+	assert_true(_bm._evaluate_custom_win_condition(),
+		"the SECOND quiet round must win on that round — crediting after the victory check lands it a round late")
+
+
 func test_a_strike_zeroes_the_count() -> void:
 	var hero: Combatant = _pc("fighter")
 	_bm._win_condition = {"type": "withhold_attack", "value": 3}

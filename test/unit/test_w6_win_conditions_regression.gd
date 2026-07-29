@@ -110,8 +110,14 @@ func test_withhold_credited_before_victory_recheck() -> void:
 	assert_gt(adv, -1, "round-end must credit the withheld round")
 	var recheck: int = s.find("_check_victory_conditions()", adv)
 	assert_gt(recheck, -1, "victory must be re-checked after crediting")
-	assert_lt(recheck - adv, 200,
-		"the re-check must directly follow the credit, not drift to another round")
+	# Assert the ORDER (credit precedes re-check), not the distance. A
+	# character-count window is a coincidental magnitude: it goes red on a
+	# correct refactor that adds a line between them, and green on a wrong
+	# one that keeps them adjacent while reordering. The behaviour this
+	# exists to defend is pinned in the runtime file, where it can fail
+	# for the real reason.
+	assert_gt(recheck, adv,
+		"the credit must precede the re-check — reversed, the win lands a full round late")
 
 
 ## ── (3) arbiter_ladder ───────────────────────────────────────────────
@@ -244,7 +250,27 @@ func test_adoption_never_outranks_an_explicit_condition() -> void:
 		"must return early when a condition is already set — the duels depend on it")
 
 
-## ── (6) Cross-battle leak ────────────────────────────────────────────
+## ── (6) Latent readers the widened field now reaches ─────────────────
+
+func test_sway_progress_denominator_is_type_guarded() -> void:
+	# Generalizing _win_condition to normal battles widened who can see it
+	# set. The Bard's sway log read `value` with NO type check — fine while
+	# the field only ever held status_threshold during a solo duel, wrong
+	# the moment withhold_attack (whose `value` is a ROUND count) can be
+	# live in an ordinary encounter. Unreachable today because no monster
+	# sets tracks_sway_stacks; pinned because *I* moved it closer to
+	# reachable, and an unreachable misread is still a misread waiting.
+	var src: String = FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
+	var at: int = src.find("_swayed_stacks\", current + 1")
+	assert_gt(at, -1, "the sway counter must exist")
+	var seg: String = src.substr(at, 700)
+	var need_at: int = seg.find("var need: int")
+	assert_gt(need_at, -1, "the sway log must compute a denominator")
+	assert_true(seg.substr(need_at, 220).contains('"status_threshold"'),
+		"the sway denominator must only accept `value` from status_threshold — every other condition means something different by it")
+
+
+## ── (7) Cross-battle leak ────────────────────────────────────────────
 
 func test_counters_reset_with_the_condition() -> void:
 	# The nastiest available bug here: a half-argued ladder or banked

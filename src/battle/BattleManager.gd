@@ -5119,7 +5119,12 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 			var current: int = int(target.get_meta("_swayed_stacks", 0))
 			target.set_meta("_swayed_stacks", current + 1)
 			print("[SWAY] %s absorbs %s — swayed stacks: %d" % [target.combatant_name, ability.get("id", "song"), current + 1])
-			var need: int = int(_win_condition.get("value", 0)) if not _win_condition.is_empty() else 0
+			# Type-guard the denominator: `value` means stacks only for
+			# status_threshold. withhold_attack authors it as a ROUND count,
+			# and since W6 that condition can be live in an ordinary
+			# encounter — so an untyped read would print "swayed (1/4)"
+			# against the Warden's restraint counter.
+			var need: int = int(_win_condition.get("value", 0)) if str(_win_condition.get("type", "")) == "status_threshold" else 0
 			var progress_suffix: String = " (%d/%d)" % [current + 1, need] if need > 0 else " (%d)" % (current + 1)
 			battle_log_message.emit("[color=magenta]%s is swayed...%s[/color]" % [target.combatant_name, progress_suffix])
 
