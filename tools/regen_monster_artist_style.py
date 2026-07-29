@@ -69,14 +69,193 @@ MONSTER_DESC = {
     "cave_rat":       "large dark gray cave rat with scruffy fur, red eyes, exposed teeth, small clawed paws",
     "cave_rat_king":  "a DISAPPOINTINGLY LARGE quadruped rat, four legs firmly on the ground (NOT bipedal, NOT humanoid, NOT goblin-shaped), fat rotund pear-shaped body, matted brown-gray fur, tiny beady black eyes, whiskers, a long naked pink tail, small clawed paws, and — sitting comically small and lopsided on his head — a TINY bronze crown that is obviously too small for him. Whimsical menace: he looks silly but not friendly. Read: the joke IS the sprite. NO cloak, NO weapon, NO armor, NO humanoid stance. He is a rat wearing a bad crown",
     "rat_guard":      "bipedal humanoid rat guard wearing tattered leather armor, gripping a rusty short sword in two paws, hunched aggressive stance",
-    "skeleton":       "undead human skeleton warrior with a tarnished rusted iron sword and battered wooden shield, hollow eye sockets, cracked yellowed bones, tattered belt cloth",
-    "wolf":           "gaunt gray timber wolf with tangled fur, glowing amber eyes, curled black lips exposing white fangs",
+    "skeleton":       "SINGLE ONE undead human skeleton warrior alone in the frame, gripping ONE tarnished rusted iron sword firmly in his right hand (never dropped, never floating), a small battered round wooden shield in the left, hollow eye sockets, cracked yellowed bones with a slightly darker jaw, tattered brown belt cloth wrapped around the pelvis, worn undead posture — CRITICAL: EXACTLY ONE FIGURE per frame, weapon held not dangling, no fragmented bones scattered nearby. Style consistent with the artist's fighter_skeleton_knight — same undead palette family, same one-subject-per-frame discipline",
+    "wolf":           "SINGLE ONE gaunt gray timber wolf alone in the frame, standing on all four legs in profile, tangled dark-gray fur, glowing amber eyes, curled black lips exposing sharp white fangs, ears flattened aggressive posture, bushy tail — CRITICAL: EXACTLY ONE WOLF per frame (not a pair, not a pack, not a shadow-double), quadruped stance never bipedal",
     "cave_troll":     "hulking green-gray cave troll with a knotted wooden club, sagging leathery skin, tusked jaw, small angry eyes",
     "shadow_knight":  "dark armored knight in blackened plate mail with glowing violet visor eyes and a longsword wreathed in shadow",
     "cursed_armor":   "empty haunted suit of medieval plate armor animated by dark energy, wielding a rusted greatsword, purple wisps leaking from the joints",
-    "spider":         "large hairy cave spider with 8 spindly legs, bulbous abdomen, glinting red multi-faceted eyes",
+    "spider":         "SINGLE ONE large hairy cave spider alone in the frame, dark charcoal-brown chitin body with a bulbous swollen abdomen and prominent spinnerets, EXACTLY EIGHT spindly hairy legs (four on each side, symmetric), a cluster of small glinting red multi-faceted eyes near the front of the head, no mandibles overly detailed — CRITICAL: ONE SPIDER per frame (never two side-by-side, never with a small offspring)",
+    "lightning_dragon": (
+        "Voltharion, the Storm's Edge — a large regal serpentine storm-dragon "
+        "wreathed in crackling lightning arcs, EXACTLY ONE FIGURE per frame. "
+        "Sinuous quadruped body with a long powerful tail, tattered "
+        "storm-cloud wings with jagged trailing edges (not smooth bat-wings — "
+        "read as CLOUDS given wing-shape); a slender reptilian head with two "
+        "hot-white eyes that read as 'charged'; a crest of upswept horns "
+        "sparking with static; four clawed limbs each ending in gold-yellow "
+        "talons; arcs of visible chained-lightning zig-zag between horns, "
+        "along the spine ridge, and dance along the belly scales. Palette: "
+        "deep storm-blue and gunmetal-slate scales as the base, hot electric-"
+        "yellow highlights along scale edges and belly ridges, white-hot "
+        "lightning arcs and eye-glow, faint violet aura along the wing "
+        "trailing edges. CRITICAL: the CRACKLING LIGHTNING is the identity — "
+        "not decoration. Every pose has visible arcing lightning branching "
+        "off the body somewhere, not just static glow. Boss-scale presence: "
+        "fills more of the frame than the trash-mob dragons, silhouette "
+        "reads dragon-shaped-storm-cloud. Same character across all four "
+        "poses (idle coiled with slow bright arcs cycling / attack lunge "
+        "with a discharged white-hot bolt from the maw / hit recoil with "
+        "static crackling erratically around the body / dead collapsed "
+        "with the arcs sputtering and mostly dark, wings drooped). "
+        "Consistent identity every frame, majestic aggression not feral"
+    ),
+    # ─── World-finale faces of the Calibrant ────────────────────────────
+    # Canon: docs/novellas/. The through-line struktured's story lane calls
+    # DE-COSTUMING — each face wears less than the last. Robes -> glasses ->
+    # goggles -> gray suit -> nothing. Descriptions below are lifted from the
+    # novella text, NOT invented; the tag/appearance is the author's word.
+    # All five share ONE pair of eyes (w3:577 "the same eyes ... that looked
+    # out from whatever costume it was currently wearing and found the
+    # costume quite adequate") — so identity must carry across sheets.
+    "the_coordinator": (
+        "THE COORDINATOR — the suburban face of the Calibrant, a middle-aged "
+        "HOA-administrator woman. Canon (novella w2:578): 'neat, precise, "
+        "controlled. Middle-aged. Glasses. The kind of person who had never "
+        "been late for anything in her life, including her own birth. She "
+        "wore the expression of someone who has found a variance in their "
+        "system and is assessing whether it is a problem or data.' "
+        "Plain rimless or thin-wire GLASSES, mousy brown hair in a short "
+        "neat set style with not one strand loose, a muted mauve cardigan "
+        "over a plain blouse with a small round collar, a lanyard or a pen "
+        "clipped precisely straight. Holding a clipboard she is mid-annotating. "
+        "CRITICAL: she is NOT a monster and NOT a witch. She is unremarkable "
+        "on purpose. The menace is total composure and the absence of anger — "
+        "she is assessing you, not fighting you. Muted suburban palette: "
+        "mauve, beige, oatmeal, dull brass. Nothing glows, nothing floats."
+    ),
+    "the_regulator": (
+        "THE REGULATOR — the steampunk face of the Calibrant. Canon "
+        "(novella w3:577): 'looked like a Victorian engineer. Goggles pushed "
+        "up on the forehead. Brass-buttoned coat. Gloves stained with oil "
+        "that might have been oil and might have been something else.' "
+        "Brass-rimmed GOGGLES pushed up onto the forehead (never over the "
+        "eyes — the eyes must be visible), a long double-breasted coat with "
+        "two columns of brass buttons, heavy oil-stained leather work gloves, "
+        "a high collar. Calm certainty in the face, the same unbothered "
+        "assessing expression as the Coordinator. LESS COSTUME than a "
+        "medieval sorceress but MORE than a middle manager — this is the "
+        "middle rung of the de-costuming ladder. Palette: brass, oiled "
+        "leather brown, soot black, dull copper. Grimy and functional, not "
+        "ornate; a working engineer, not a steampunk aristocrat."
+    ),
+    "the_director": (
+        "THE DIRECTOR — the industrial face of the Calibrant, a corporate "
+        "middle manager who is FORGETTABLE ON PURPOSE. Canon (novella w4): "
+        "refuses to fight — 'Those were... performances. Genre-appropriate "
+        "confrontations designed to provide narrative satisfaction.' Sits "
+        "behind a wood desk, hands folded. "
+        "A plain mid-gray suit with no pattern, a flat unremarkable tie, a "
+        "cheap laminated badge on a lanyard, thinning neutral hair combed "
+        "without style, a face you would fail to describe five minutes after "
+        "meeting it. NEARLY the least costume of any face — one rung above "
+        "nothing. CRITICAL: no menace in the styling at all; the horror is "
+        "how ordinary and tired this is. No cape, no glow, no insignia of "
+        "power, no villain silhouette. Palette: office grays, beige, "
+        "fluorescent-lit skin, one small patch of warm wood-brown."
+    ),
+    "chancellor_mordaine": (
+        "Chancellor Mordaine — a sorceress-usurper of Castle Harmonia, the "
+        "architect of World 1 and the first mask of the Calibrant. EXACTLY "
+        "ONE FIGURE per frame. A tall regal adult woman with severe elegant "
+        "features: high cheekbones, cold pale skin, silver-white hair pulled "
+        "back sharply from the forehead in a single long straight sweep down "
+        "the back, unnervingly calm pale-cyan eyes that read as 'already "
+        "knows your build'. A subtle silver circlet or thin diadem across "
+        "the brow with a single pale-blue gem centered. Wearing an ornate "
+        "high-collared deep-teal sorceress gown with cold silver hexagon-"
+        "lattice trim at the collar and sleeves (the same subtle mathematical "
+        "motif that marks Calibrant kin — she IS his first mask). A staff of "
+        "pale silver-white metal topped with a small floating hexagonal "
+        "prism held vertically in one hand. Isolated on a completely uniform "
+        "pure-white background — NO environmental effects, NO ground shadow, "
+        "NO aura leaking off-body. Palette: deep teal + silver + pale cyan + "
+        "porcelain-cold skin + silver-white hair. CRITICAL: identity read is "
+        "'JUDGE-of-your-choices made queen', NOT feral sorceress, NOT raving. "
+        "Cold deliberate authority. Same character across all four poses "
+        "(idle standing composed with staff angled forward slightly / attack "
+        "casting with the prism aglow and free hand raised palm-out / hit "
+        "recoil with one step back and diadem gem cracked / dead collapsed "
+        "with staff fallen, silver-white hair spread across the ground, "
+        "hexagon-lattice trim dimmed). Consistent identity every frame, "
+        "philosophical menace not physical rage."
+    ),
+    "fire_dragon": (
+        "Pyrroth, the Ember Wyrm — a large regal serpentine fire-dragon "
+        "whose SCALES ARE SMOLDERING COAL, radiating unbearable heat conveyed "
+        "ENTIRELY through the dragon's own body (glowing fissures, hot molten "
+        "eye-glow, ember highlights on scale edges) — NO environmental effects, "
+        "NO red floor-pool under the dragon, NO red bloom into the background, "
+        "NO ground shadow, NO aura leaking off-body. The dragon is isolated "
+        "on a completely uniform pure-white background with nothing else "
+        "in the frame. EXACTLY ONE FIGURE per frame. Sinuous quadruped "
+        "body with a long powerful tail, jagged bat-wings with tattered "
+        "trailing edges that glow like heated iron along the trailing membrane; "
+        "a broad reptilian head with two molten-orange eyes that read as "
+        "'furnace-lit'; a crown of upswept horns with cracked-lava fissures "
+        "running through them; four clawed limbs each ending in blackened "
+        "talons; visible ember-orange fissures crackle along the neck, spine "
+        "ridge, and belly scales like cooling magma. Palette: deep charcoal-"
+        "black scales as the base, molten-orange and hot-yellow fissures/eyes/"
+        "wing-glow, ember-red aura at the outline, small drift of dark smoke "
+        "trailing from the nostrils. CRITICAL: the CRACKED-MAGMA fissures ARE "
+        "the identity — not decoration. Every pose has visible glowing cracks "
+        "somewhere. Boss-scale presence: fills more of the frame than the "
+        "trash-mob dragons, silhouette reads dragon-carved-from-cooling-coal. "
+        "Same character across all four poses (idle coiled with slow ember "
+        "pulse / attack lunge with a discharged fire-breath / hit recoil with "
+        "fissures flaring bright / dead collapsed with the ember light "
+        "sputtering out, wings drooped). Consistent identity every frame, "
+        "majestic aggression not feral"
+    ),
+    "ice_dragon": (
+        "Glacius, the Frozen Sovereign — a large regal serpentine ice-dragon "
+        "entombed in living permafrost, whose breath freezes time itself. "
+        "EXACTLY ONE FIGURE per frame. Sinuous quadruped body with a long "
+        "powerful tail, elegant crystalline bat-wings that look like carved "
+        "glacier-shards with pale-blue translucent membranes; a noble reptilian "
+        "head with two pale-cyan eyes that read as 'ancient and calm'; a "
+        "regal crown of upswept ice-horns with visible frost crystals branching "
+        "along their edges; four clawed limbs each ending in translucent-blue "
+        "ice talons; a mantle of jagged ice-crystals encrusting the shoulders "
+        "and running down the spine ridge like a sovereign's collar; faint "
+        "wisps of cold vapor drift from the maw and along the wing edges. "
+        "Palette: deep glacier-blue and steel-gray scales as the base, pale "
+        "cyan and white-frost highlights on the ice-crystal accents, "
+        "translucent-white wing membranes, faint silver rim-light along scale "
+        "edges. CRITICAL: the CRYSTALLINE ICE-CRUST is the identity — not "
+        "decoration. Every pose has visible ice-crystals on shoulders, horns, "
+        "or wing-tips. Boss-scale presence: fills more of the frame than the "
+        "trash-mob dragons, silhouette reads dragon-carved-from-a-glacier. "
+        "Same character across all four poses (idle coiled with slow vapor "
+        "curling / attack lunge with a frost-breath discharge / hit recoil "
+        "with crystals cracking visibly / dead collapsed with ice starting "
+        "to shatter along the ridge, wings drooped). Consistent identity "
+        "every frame, sovereign dignity not feral aggression"
+    ),
+    "shadow_dragon":  (
+        "Umbraxis, the Void Render — a large regal serpentine void-dragon "
+        "of living shadow that questions its own existence between attacks, "
+        "coalescing out of dark violet-black smoke, EXACTLY ONE FIGURE per "
+        "frame. Long sinuous body with tattered semi-translucent bat-wings "
+        "trailing wisps of purple void-smoke at their edges; a slender "
+        "reptilian head with two pale cyan eyes that read as 'philosophically "
+        "aware'; curling horns swept back; four clawed limbs; a long spade-"
+        "tipped tail dissolving into smoke where it meets the ground; faint "
+        "cyan void-glyphs occasionally flicker inside the smoke-body like "
+        "half-formed questions. Palette: deep indigo scales with violet "
+        "highlights, cool cyan eye-glow, smoky purple-gray aura, faint gold "
+        "rim-light along scale edges. CRITICAL: preserve a 'MANIFESTING FROM "
+        "VOID' visual language — the smoke/dissolve edges are the identity, "
+        "not decoration. Every pose has visible smoke-dissolve at some body "
+        "edge (tail, wingtip, or shoulder). Boss-scale presence: fills more "
+        "of the frame than the trash-mob dragons. Same character across all "
+        "four poses (idle solidified with contemplative posture / attack "
+        "lunge with wing-sweep / hit recoil with body flare / dead collapsed "
+        "and half-dissolving back into smoke). Consistent identity every "
+        "frame, philosophical calm not feral aggression"
+    ),
     "ghost":          "translucent pale spirit with tattered floating shroud, hollow blue eye sockets, wispy ethereal form",
-    "imp":            "small mischievous red imp with bat-like wings, sharp horns and tail, wielding a tiny obsidian dagger, snarling grin",
+    "imp":            "SINGLE ONE small mischievous red imp alone in the frame, deep crimson skin, small bat-like wings folded or spread but attached to THIS imp, sharp curled horns, pointed tail with a spade tip, wielding a tiny obsidian dagger in one hand, snarling grin exposing sharp fangs — CRITICAL: EXACTLY ONE IMP per frame (NOT two side-by-side, NOT a pair, NOT a small buddy floating nearby, ONE), red not pale-white",
     "troll":          "large ugly forest troll with warty green skin, sagging belly, knotted club, angry underbite",
     "snake":          "coiled dark scaled viper with venomous fangs bared, forked tongue flicking, patterned scales",
     "mushroom":       "hostile spore-belching giant purple mushroom creature with beady eyes on the cap and stubby legs",
@@ -247,14 +426,32 @@ def downscale_pose(tile_512: Image.Image, target: int = 256) -> Image.Image:
     return img
 
 
-def make_transparent_bg(img: Image.Image, threshold: int = 240) -> Image.Image:
+def make_transparent_bg(img: Image.Image, tolerance: int = 45) -> Image.Image:
+    """Key the flat background out by CORNER SAMPLE, not a fixed white test.
+
+    The previous version required r,g,b all >= 240. gpt-image-1 routinely
+    returns a warm or cool off-white — the_coordinator came back on
+    (243,241,236) and the_regulator on (250,245,232). Both read as white to
+    the eye; both have a blue channel under 240, so nothing keyed and the
+    sheets shipped with fully opaque backgrounds. A fixed threshold encodes
+    an assumption about the generator's white point that the generator does
+    not honour.
+
+    Sampling the corner makes the check relative to whatever background
+    actually arrived, so warm white, cool white and near-black all key.
+    """
     img = img.convert("RGBA")
     px = img.load()
     W, H = img.size
+    corners = [px[0, 0], px[W - 1, 0], px[0, H - 1], px[W - 1, H - 1]]
+    opaque = [c for c in corners if c[3] > 0]
+    if not opaque:
+        return img  # already keyed
+    sr, sg, sb = opaque[0][:3]
     for y in range(H):
         for x in range(W):
             r, g, b, a = px[x, y]
-            if r >= threshold and g >= threshold and b >= threshold:
+            if a and abs(r - sr) + abs(g - sg) + abs(b - sb) <= tolerance:
                 px[x, y] = (r, g, b, 0)
     return img
 
@@ -301,7 +498,9 @@ def regen_one(client, monster_id: str, quality: str) -> dict:
     strip = assemble_sheet(result_1024, monster_id)
     out_path = GAME_REPO / "assets" / "sprites" / "monsters" / f"{monster_id}.png"
     if out_path.exists():
-        backup = out_path.with_name(out_path.stem + ".pre_artist_style" + out_path.suffix)
+        backup_dir = PROJECT / "tmp" / "pre_artist_style_backups"
+        backup_dir.mkdir(parents=True, exist_ok=True)
+        backup = backup_dir / (out_path.stem + ".pre_artist_style" + out_path.suffix)
         if not backup.exists():
             shutil.copy2(out_path, backup)
     strip.save(out_path)

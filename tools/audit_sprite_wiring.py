@@ -1,0 +1,157 @@
+#!/usr/bin/env python3
+"""Scan the sprite domain for the shipped-unwired / dangling-pointer classes.
+
+Bug-hunt sweep (cowir-main msg 3182): "for each public producer: grep its
+name; 1 hit = definition only = DEAD."
+
+The sprite-lane instance of that class is an ASSET that ships but is never
+read. `HybridSpriteLoader.load_monster_sprite_frames()` returns null for
+any id absent from `monster_sheets` and the caller silently falls back to
+procedural — so an unregistered PNG is inert with no warning, a clean
+commit, and art visibly present on disk. `chancellor_mordaine` shipped
+2026-07-17 and was inert until 2026-07-25.
+
+Four checks, both directions:
+  ORPHAN    PNG on disk that no manifest entry and no source file references
+  DANGLING  manifest entry pointing at a path that does not exist
+  SILENT    monster sheet whose animations dict lacks idle (never renders)
+  MISMATCH  manifest frame_width/height disagreeing with the actual PNG
+
+Usage:
+    uv run python tools/audit_sprite_wiring.py
+    uv run python tools/audit_sprite_wiring.py --section monster_sheets
+"""
+import argparse
+import json
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+from PIL import Image
+
+GAME = Path("/home/struktured/projects/cowardly-irregular-artist-ship")
+MANIFEST = GAME / "data" / "sprite_manifest.json"
+SPRITES = GAME / "assets" / "sprites"
+
+
+def load_manifest() -> dict:
+    return json.loads(MANIFEST.read_text())
+
+
+def referenced_paths(m: dict) -> dict[str, list[str]]:
+    """path -> [section/key ...] for every entry that declares one."""
+    out: dict[str, list[str]] = {}
+    for section, entries in m.items():
+        if not isinstance(entries, dict):
+            continue
+        for key, val in entries.items():
+            if not isinstance(val, dict):
+                continue
+            p = val.get("path")
+            if isinstance(p, str) and p.startswith("res://"):
+                out.setdefault(p.replace("res://", ""), []).append(
+                    f"{section}/{key}")
+    return out
+
+
+def grep_repo(needle: str) -> int:
+    """Count references to a filename across src/ and data/."""
+    try:
+        r = subprocess.run(
+            ["grep", "-rIl", "--include=*.gd", "--include=*.json",
+             needle, str(GAME / "src"), str(GAME / "data")],
+            capture_output=True, text=True, timeout=60)
+        return len([x for x in r.stdout.splitlines() if x.strip()])
+    except Exception:
+        return -1
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--section", default=None)
+    args = ap.parse_args()
+
+    m = load_manifest()
+    refs = referenced_paths(m)
+    findings = {"DANGLING": [], "SILENT": [], "MISMATCH": [], "ORPHAN": []}
+
+    # --- DANGLING: manifest points at a file that isn't there --------------
+    for rel, owners in sorted(refs.items()):
+        if not (GAME / rel).exists():
+            findings["DANGLING"].append(f"{rel}  <- {', '.join(owners)}")
+
+    # --- SILENT + MISMATCH: monster/job sheets that can't render ----------
+    for section in ("monster_sheets", "sheets", "overworld_npc_sheets"):
+        if args.section and section != args.section:
+            continue
+        for key, val in sorted(m.get(section, {}).items()):
+            if not isinstance(val, dict):
+                continue
+            anims = val.get("animations")
+            # TWO SCHEMAS, and conflating them was this scanner's own first
+            # bug (52 false positives). Horizontal STRIP sheets key
+            # animations by frame range {"start","end"} and need "idle";
+            # GRID sheets (overworld walk cycles) key by {"row","frames"}
+            # and legitimately have only walk_<dir> — no idle exists or
+            # should. Detect by the value shape, never by section name.
+            is_grid = bool(isinstance(anims, dict) and anims and all(
+                isinstance(v, dict) and "row" in v for v in anims.values()))
+            if isinstance(anims, dict) and not is_grid and "idle" not in anims:
+                findings["SILENT"].append(
+                    f"{section}/{key}: strip sheet with no 'idle' "
+                    f"({', '.join(sorted(anims)) or 'empty'})")
+            rel = str(val.get("path", "")).replace("res://", "")
+            fp = GAME / rel
+            fw, fh = val.get("frame_width"), val.get("frame_height")
+            if fp.exists() and fw and fh:
+                try:
+                    w, h = Image.open(fp).size
+                except Exception:
+                    continue
+                if is_grid:
+                    rows = max((v.get("row", 0) for v in anims.values()),
+                               default=0) + 1
+                    cols = max((v.get("frames", 1) for v in anims.values()),
+                               default=1)
+                    if h < rows * fh or w < cols * fw:
+                        findings["MISMATCH"].append(
+                            f"{section}/{key}: grid needs >={cols*fw}x{rows*fh} "
+                            f"({cols}x{rows} cells of {fw}x{fh}), PNG is {w}x{h}")
+                else:
+                    if h != fh:
+                        findings["MISMATCH"].append(
+                            f"{section}/{key}: manifest frame_height={fh} "
+                            f"but PNG is {w}x{h}")
+                    elif w % fw != 0:
+                        findings["MISMATCH"].append(
+                            f"{section}/{key}: PNG width {w} not divisible by "
+                            f"frame_width={fw}")
+
+    # --- ORPHAN: monster PNG on disk that nothing points at ---------------
+    known = set(refs)
+    for png in sorted((SPRITES / "monsters").glob("*.png")):
+        rel = str(png.relative_to(GAME))
+        if rel in known:
+            continue
+        if ".pre_" in png.name:
+            continue
+        hits = grep_repo(png.stem)
+        if hits == 0:
+            findings["ORPHAN"].append(
+                f"{rel}: no manifest entry, 0 refs in src/ or data/ — INERT")
+
+    total = 0
+    for kind in ("DANGLING", "SILENT", "MISMATCH", "ORPHAN"):
+        items = findings[kind]
+        if items:
+            print(f"\n=== {kind} ({len(items)}) ===")
+            for i in items:
+                print(f"  {i}")
+            total += len(items)
+    print(f"\n{total} finding(s)")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

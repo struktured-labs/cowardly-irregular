@@ -86,6 +86,30 @@ _NAMED_BOSS_OVERRIDES = {
     "masterite_tempo_industrial": ["fighter"], # worker with tools, sturdy build
     "masterite_tempo_futuristic": ["mage"],    # geometric/arcane feel, robed silhouette
     "masterite_tempo_abstract":   ["mage"],    # style-anchor only (implied humanoid)
+    # W1-pool multi-subject defect regens (2026-07-15, cowir-main msgs 2560/2561):
+    # skeleton in-family anchor per msg 2560 — same undead palette family
+    "skeleton":                   ["fighter"],  # via fighter_skeleton_knight canon; artist fighter as base identity
+    "imp":                        ["bat"],      # small winged creature
+    "wolf":                       ["bat"],      # bat is the closest artist quadruped-ish anchor
+    "spider":                     ["bat"],      # multi-limbed small crawler
+    # W1 BOSS — Umbraxis the Void Render. Bat is the only winged artist
+    # anchor; description carries the manifesting-from-smoke identity beat.
+    "shadow_dragon":              ["bat"],
+    # W1 FINALE — Chancellor Mordaine, sorceress-usurper (mask of the
+    # Calibrant). Cold arcane humanoid; anchor on party mage for the
+    # robed-sorcerer silhouette + palette, prompt carries the icy-
+    # philosophical identity beat. NOT goblin (would drag into raving-
+    # warrior read); NOT shadow_knight (the placeholder she'll replace —
+    # would fixate on plate armor).
+    "chancellor_mordaine":        ["mage"],
+    # World-finale faces of the Calibrant. All humanoid, none armoured, none
+    # monstrous — anchor on party humanoids for proportion and lineart weight
+    # rather than the goblin default, which would drag them toward creature.
+    # cleric = plainly-dressed standing humanoid, the closest proportion match
+    # for an administrator / engineer / middle manager.
+    "the_coordinator":            ["cleric"],
+    "the_regulator":              ["cleric"],
+    "the_director":               ["cleric"],
 }
 
 # Explicit per-monster overrides where the archetype match isn't obvious

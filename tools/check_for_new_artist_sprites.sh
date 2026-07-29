@@ -5,11 +5,11 @@
 # - If any aseprite/png files changed, re-runs the embed and pushes to feature branch
 # - Idempotent: no-op when nothing changed
 #
-# Run via cron:  0 * * * * /home/struktured/projects/cowardly-irregular-sprite-gen/tools/check_for_new_artist_sprites.sh
+# Run via cron:  0 * * * * /home/struktured/projects/cowir-sprites/tools/check_for_new_artist_sprites.sh
 
 set -euo pipefail
 
-REPO="/home/struktured/projects/cowardly-irregular-sprite-gen"
+REPO="/home/struktured/projects/cowir-sprites"
 GAME_WORKTREE="/home/struktured/projects/cowardly-irregular-artist-ship"
 DRIVE_LOCAL="$REPO/assets/sprites/drive_archive/Game graphics - Characters"
 DRIVE_REMOTE="gdrive: cowir/assets/sprites/Game graphics - Characters"
