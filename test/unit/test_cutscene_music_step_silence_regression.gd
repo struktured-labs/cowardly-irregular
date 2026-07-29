@@ -97,7 +97,7 @@ func test_every_authored_music_track_resolves() -> void:
 		if not (parsed is Dictionary):
 			continue
 		var idx := 0
-		for step in parsed.get("steps", []):
+		for step in _flatten_steps(parsed.get("steps", [])):
 			if step is Dictionary and step.get("type") == "play_music":
 				var track := str(step.get("track", ""))
 				checked += 1
@@ -125,3 +125,60 @@ func test_throne_room_approach_plays_mordaines_theme() -> void:
 			tracks.append(str(step.get("track", "")))
 	assert_true(tracks.has("cutscene_mordaine_theme"),
 		"the throne room approach must play Mordaine's theme — it is the payoff for the whole leitmotif arc. found: %s" % str(tracks))
+
+
+## Flattens branch sub-steps. The corpus audit walked the top-level array
+## only, so the FOUR nested play_music steps in world6_chapter3 — the W6
+## ending themes @cowir-music wired — were never checked for resolution.
+## They all resolve today; the coverage gap was the finding. Same shape as
+## @cowir-ai's "I checked verbs and stopped, the layer below is fields":
+## I checked that tracks resolve and stopped at the layer the walk reached.
+static func _flatten_steps(steps: Array) -> Array:
+	var out: Array = []
+	for step in steps:
+		if not (step is Dictionary):
+			continue
+		out.append(step)
+		for case_steps in (step.get("cases", {}) as Dictionary).values():
+			if case_steps is Array:
+				out.append_array(_flatten_steps(case_steps))
+		for key in ["if_true", "if_false"]:
+			if step.get(key) is Array:
+				out.append_array(_flatten_steps(step[key]))
+	return out
+
+
+func test_the_track_audit_reaches_branch_nested_music_steps() -> void:
+	# POSITIVE CONTROL. A flatten that silently stopped at the top level would
+	# leave this file green while never seeing the game's four ending themes.
+	# Counted independently of the walker so it can't agree with a broken one.
+	var nested := 0
+	var dir := DirAccess.open(CUTSCENE_DIR)
+	assert_not_null(dir, "cutscene dir must open")
+	for f in dir.get_files():
+		if not f.ends_with(".json"):
+			continue
+		var parsed = JSON.parse_string(FileAccess.get_file_as_string("%s/%s" % [CUTSCENE_DIR, f]))
+		if not (parsed is Dictionary):
+			continue
+		for step in parsed.get("steps", []):
+			if not (step is Dictionary):
+				continue
+			for case_steps in (step.get("cases", {}) as Dictionary).values():
+				if case_steps is Array:
+					for sub in case_steps:
+						if sub is Dictionary and sub.get("type") == "play_music":
+							nested += 1
+	assert_gt(nested, 0,
+		"the corpus must contain branch-nested play_music steps for this audit to be doing anything — the W6 endings are four of them")
+	var flat := 0
+	var top := 0
+	for f2 in dir.get_files():
+		if not f2.ends_with(".json"):
+			continue
+		var p2 = JSON.parse_string(FileAccess.get_file_as_string("%s/%s" % [CUTSCENE_DIR, f2]))
+		if p2 is Dictionary:
+			flat += _flatten_steps(p2.get("steps", [])).size()
+			top += (p2.get("steps", []) as Array).size()
+	assert_gt(flat, top,
+		"the flattened walk must reach MORE steps than the top-level array — equal means the recursion is dead and this audit is scoped to top-level only")
