@@ -114,6 +114,36 @@ func test_id_substring_alone_would_not_have_found_it() -> void:
 		"frost_armor matches none of the id substrings — that is the whole defect")
 
 
+## ── (2b) The PROPERTY, not the one coordinate ────────────────────────
+
+func test_any_defense_up_ability_is_found_whatever_its_id_says() -> void:
+	# @cowir-ai's fixture-coincidence class (msg 3390): the mutant is
+	# wrong, the guard runs correctly, and the single sample happens not
+	# to expose it. My other assertions all use frost_armor, so a filter
+	# hardcoded to `id == "frost_armor"` would satisfy the headline test
+	# while restoring the exact defect — matching a SPELLING again.
+	#
+	# The property is "selected by effect, regardless of id". So: ids that
+	# deliberately contain none of the substrings, and one that actively
+	# looks like something else.
+	for fake_id in ["zzz_unhelpful", "frost_armor", "warm_hug", "attack_stance_of_serenity"]:
+		var synthetic: Dictionary = {"id": fake_id, "type": "support", "effect": "defense_up"}
+		var action: Dictionary = _bm._get_counter_action(_boss(), "defense_boost", [], [], [synthetic])
+		assert_eq(str(action.get("ability_id", "")), fake_id,
+			"an ability whose EFFECT is defense_up must be selected whatever its id reads as — id '%s' was skipped, which means the filter is matching spelling again" % fake_id)
+
+
+func test_effect_absent_means_not_selected_whatever_the_type() -> void:
+	# The other half of the property: `type: support` alone must not
+	# qualify. Without this, widening the filter to "any support ability"
+	# passes every assertion above, and Pyrroth "defends" with attack_up.
+	for eff in ["attack_up", "haste", ""]:
+		var synthetic: Dictionary = {"id": "zzz_unhelpful", "type": "support", "effect": eff}
+		var action: Dictionary = _bm._get_counter_action(_boss(), "defense_boost", [], [], [synthetic])
+		assert_true(action.is_empty(),
+			"effect '%s' is not a defensive buff — selecting it would make a boss 'defend' by buffing its own offence" % eff)
+
+
 ## ── (3) Controls: the fix widens, it does not replace ────────────────
 
 func test_substring_matched_abilities_still_work() -> void:
