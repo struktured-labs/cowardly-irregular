@@ -188,12 +188,14 @@ func test_mirror_matches_source_arm_order() -> void:
 func test_every_classifier_output_is_reachable_by_some_input() -> void:
 	# STATIC key-validity (above) is not runtime reachability. An arm can be a
 	# legal return value and still be shadowed into unreachability by an earlier
-	# arm — which is a different defect, invisible to a key check, and the one
-	# that actually bit: two of W6's four authored endings never play.
+	# arm — a different defect, invisible to a key check, and the one that
+	# actually bit: two of W6's four authored endings COULD NOT PLAY until PR
+	# #187 reordered the arms. Fixed; this file is why it stays fixed.
 	#
 	# This guards the total case only: an output no input can ever produce.
-	# It does NOT assert reachability within any particular battle-count band —
-	# see the note below, which is a KNOWN OPEN issue, not something this covers.
+	# Reachability within a specific battle-count band is asserted separately by
+	# test_every_ending_branch_is_reachable_at_endgame, which is the clause that
+	# sees that defect — a total-reachability check passes straight through it.
 	# 2026-07-28: the grid now spans THREE dimensions, not two. PR #187 made exploitation
 	# CATEGORICAL — _has_exploited_systems() reads permakill and corruption, facts about how the
 	# player played, at any battle count. So no (ratio, battles) pair can produce "exploiter" and
@@ -206,7 +208,7 @@ func test_every_classifier_output_is_reachable_by_some_input() -> void:
 				produced[_mirror_classify(float(r10) / 10.0, total, exploited)] = true
 	for value in _classifier_returns():
 		assert_true(produced.has(value),
-			("_detect_playstyle can return '%s' but NO (ratio, battles) input produces it — an earlier arm " +
+			("_detect_playstyle can return '%s' but NO (ratio, battles, exploited) input produces it — an earlier arm " +
 			"shadows it completely. Any cutscene branching on it is dead content.") % value)
 
 
