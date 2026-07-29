@@ -158,9 +158,15 @@ func test_control_scan_resolves() -> void:
 	var src := _src_text()
 	assert_gt(src.length(), 200000, "src/ walk must load a real corpus — a short read makes "
 		+ "every effect key look unwired")
+	## The `% c` must bind to the WHOLE concatenation, not the last literal. Written
+	## unparenthesised this threw "not all arguments converted during string formatting"
+	## while BUILDING the message — so assert_true never ran, and every assertion after
+	## it in this function was skipped. GUT reported 2/2 passed with the entire floor
+	## dead: not [Failed], not even [Risky], because the OTHER test still asserted.
+	## Found 2026-07-29 via cowir-cutscenes' dead-test sweep. Keep the parens.
 	for c in CONTROLS:
-		assert_true(src.contains(c), "%s must resolve in src/ — if the controls do not appear, "
-			+ "this scan is not finding consumers and its verdict means nothing" % c)
+		assert_true(src.contains(c), ("%s must resolve in src/ — if the controls do not " % c)
+			+ "appear, this scan is not finding consumers and its verdict means nothing")
 	assert_gt(_passives().size(), 40, "passives.json must parse with a real corpus")
 
 	## The derivation replaced a hand list. Prove it still yields the three block types
