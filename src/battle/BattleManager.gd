@@ -7484,7 +7484,9 @@ func _bias_by_intent(intent_id: String, masterite_type: String = "") -> Dictiona
 	# here, and that is NOT a missing-arm bug. Every ability-weight key below
 	# (attack_weight / iron_guard / crushing_blow / endurance_test) is read
 	# ONLY inside _make_masterite_decision, entered via has_meta("masterite").
-	# Dragons and Mordaine are masterite:false, so counter_action_chance is the
+	# Dragons and Mordaine do not AUTHOR the masterite key at all (absent, not
+	# false — they diverge if someone later writes masterite:true expecting the
+	# key to exist), so has_meta is false and counter_action_chance is the
 	# only key they can ever read. Adding arms for them is inert — verified by
 	# a commit that did exactly that, passed six assertions and three
 	# mutations, and changed nothing (withdrawn e1fd88e5).
