@@ -81,14 +81,46 @@ func test_all_four_beats_exist_and_are_staged() -> void:
 func test_the_game_stops_for_her_progressively() -> void:
 	# The whole arc's point. A player who shrugged off beat 1 should feel it
 	# when the letterbox finally comes down on the same figure.
+	# NON-DECREASING IS NOT ESCALATION. Measured 2026-07-29: stripping beat 3's
+	# letterbox and dialogue down to beat 2's shape left this guard 13/13 GREEN
+	# — she stops speaking, the game stops stopping, and "never goes backward"
+	# is perfectly satisfied. The contract is that each beat stops the game
+	# MORE than the last, so every consecutive pair needs at least one STRICT
+	# increase. @cowir-controller's predicate axis (msg-3506); found by running
+	# a mutation I expected to survive, which @cowir-sfx measured as the only
+	# kind that has taught anyone anything tonight.
 	var prev := [-1, -1, -1, -1]
+	var prev_id := ""
 	for id in BEATS:
 		var w := _weight(id)
 		for i in 4:
 			assert_true(int(w[i]) >= int(prev[i]),
 				"escalation must never go BACKWARD: %s has %s, previous beat had %s (letterbox, music, speaks, steps)" % [
 					id, str(w), str(prev)])
+		if prev_id != "":
+			var rose := false
+			for i in 4:
+				if int(w[i]) > int(prev[i]):
+					rose = true
+			assert_true(rose,
+				"%s must stop the game MORE than %s, not merely not-less — identical weight %s is a flat beat in an arc whose whole subject is escalation" % [
+					id, prev_id, str(w)])
 		prev = w
+		prev_id = id
+	# ABSOLUTE MILESTONES, because relational checks cannot express them.
+	# The strict-increase rule above was ALSO insufficient (measured): padding
+	# beat 3's step count satisfies "some dimension rose" while its letterbox
+	# and speech drop to zero. Step count is the weakest dimension and the one
+	# that can always be padded, so a relational guard can always be bought off
+	# with filler. @cowir-story's design names WHERE the arc arrives:
+	#   road = nothing · F1 = leitmotif · F2 = SHE SPEAKS · F3 = full staging
+	# Beat 3 is the one the mutation destroyed and the one no relative rule can
+	# defend, so it is asserted directly.
+	var third := _weight(BEATS[2])
+	assert_eq(third[0], 1,
+		"beat 3 must LETTERBOX — it is where the game first stops for her, and no relative rule can express that")
+	assert_eq(third[2], 1,
+		"beat 3 must be where she SPEAKS — the arc's whole shape is silence, then presence, then voice")
 	var first := _weight(BEATS[0])
 	assert_eq([first[0], first[1], first[2]], [0, 0, 0],
 		"beat 1 is the LIGHTEST — no letterbox, no music, no speech. That restraint is the beat.")
@@ -258,10 +290,19 @@ func test_at_offset_lands_her_inside_the_visible_frame() -> void:
 		# both axes was direction-blind: negating at_offset puts her west and
 		# downhill, contradicting the prose, and all 13 assertions stayed green
 		# (measured 2026-07-29).
-		assert_true(delta.x > 0.0,
-			"she must stand EAST of the party — the narration says 'east of the road' (delta %s, player %s)" % [str(delta), str(spot)])
-		assert_true(delta.y < 0.0,
-			"…and ABOVE them: it is 'the rise', and the beat ends with 'the rise was empty' (delta %s, player %s)" % [str(delta), str(spot)])
+		# MAGNITUDE, not just sign. `> 0` defends the DIRECTION and not the
+		# MEANING: measured 2026-07-29, at_offset [1,-96] (east by one pixel)
+		# and [208,-1] ("the rise" is one pixel of elevation) both passed a
+		# sign-only predicate. A figure one pixel east of you is not "on the
+		# rise east of the road". Floors are in TILE_SIZE units (32px) so they
+		# say something about the world rather than being chosen numbers:
+		# two tiles east, one tile above — the authored [208,-96] is 6.5 and 3.
+		# @cowir-controller's axis (msg-3506): exhausting the set says nothing
+		# about whether the predicate is right; only an awkward mutation does.
+		assert_true(delta.x > 64.0,
+			"she must stand MEANINGFULLY EAST of the party — 'east of the road', not east by a pixel (delta %s, player %s)" % [str(delta), str(spot)])
+		assert_true(delta.y < -32.0,
+			"…and MEANINGFULLY ABOVE them: it is 'the rise', and the beat closes on 'the rise was empty' (delta %s, player %s)" % [str(delta), str(spot)])
 	if MapSystem:
 		MapSystem.current_map = saved
 
