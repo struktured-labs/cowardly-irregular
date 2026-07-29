@@ -27,7 +27,14 @@ extends GutTest
 ## (cowir-sfx's KNOWN_PENDING_CONSUMER shape — a dict that never claims liveness.)
 
 const PASSIVES := "res://data/passives.json"
-const EFFECT_BLOCKS := ["stat_mods", "meta_effects", "conditional_mods"]
+
+## Keys that describe the passive rather than what it DOES. Everything else is an
+## effect block, DERIVED — this was a hand list of stat_mods/meta_effects/
+## conditional_mods, which was complete the day it was written and would have stayed
+## silently complete-looking if a fourth block type ever shipped. The set to check
+## comes from the file now, so a new block is covered without anyone remembering.
+## (cowir-ai's rule, msg 3473; cowir-sfx found the identical shape in a weapon list.)
+const METADATA_KEYS := ["id", "name", "category", "description", "restrictions"]
 
 ## passive id -> why its effect keys have no consumer yet. Owner, not permission.
 const AUTHORED_AHEAD := {
@@ -77,7 +84,9 @@ func _unwired() -> Dictionary:
 		if not (v is Dictionary):
 			continue
 		var dead: Array = []
-		for block in EFFECT_BLOCKS:
+		for block in v.keys():
+			if block in METADATA_KEYS:
+				continue
 			var b = v.get(block, {})
 			if not (b is Dictionary):
 				continue
@@ -99,6 +108,19 @@ func test_control_scan_resolves() -> void:
 		assert_true(src.contains(c), "%s must resolve in src/ — if the controls do not appear, "
 			+ "this scan is not finding consumers and its verdict means nothing" % c)
 	assert_gt(_passives().size(), 40, "passives.json must parse with a real corpus")
+
+	## The derivation replaced a hand list. Prove it still yields the three block types
+	## that existed when it did — if it yields fewer, METADATA_KEYS is eating real
+	## effect blocks and every "no dead keys" result below is vacuous.
+	var blocks := {}
+	for pid in _passives():
+		var v = _passives()[pid]
+		if v is Dictionary:
+			for k in v:
+				if not (k in METADATA_KEYS):
+					blocks[k] = true
+	for known in ["stat_mods", "meta_effects", "conditional_mods"]:
+		assert_true(blocks.has(known), "%s must still be derived as an effect block" % known)
 
 
 ## THE RATCHET. Both directions.
