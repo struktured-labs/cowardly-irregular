@@ -644,6 +644,31 @@
       "style": "SNES dungeon, void, sparse detuned bells, low drone, long silences, unsettling, 68 BPM",
       "prompt": "Void dragon cave dungeon theme. Sparse detuned bells with long decay, a low drone that never resolves, silences held slightly too long so the room feels like it is waiting for an answer. Almost no percussion. Not menacing — patient, and far older than the player. Hollow, contemplative, quietly wrong. SNES-era dungeon atmosphere, philosophical and cold. Looping."
     },
+    "village_eldertree": {
+      "title_template": "Under the Canopy",
+      "style": "SNES village, elven forest, harp and recorder, dappled light, gentle 6/8 lilt, 92 BPM",
+      "prompt": "Elven treehouse village high in a northern forest. Harp arpeggios and a soft recorder melody, wooden creak and leaf-rustle in the texture, a gentle 6/8 sway like walking a rope bridge. Warm and unhurried, slightly older than the people living in it. SNES-era village theme. Looping."
+    },
+    "village_frosthold": {
+      "title_template": "Where the Fire Is Kept",
+      "style": "SNES village, nordic, low male-choir pad, hand drum, bright bell over cold air, 76 BPM",
+      "prompt": "Nordic outpost in the frozen northwest. A low wordless choir pad under a bright plucked bell melody, slow hand-drum pulse like something kept deliberately alive. Cold air around a warm room — the warmth is the point and it is working hard. SNES-era village theme. Looping."
+    },
+    "village_grimhollow": {
+      "title_template": "The Neighbours Downstairs",
+      "style": "SNES village, swamp hamlet, detuned music box, muted plucks, damp reverb, wry not scary, 84 BPM",
+      "prompt": "Haunted hamlet in the northeastern swamps. A slightly detuned music-box melody over muted plucked strings, damp reverb, an occasional low frog-croak note in the bass. Wry rather than frightening — these people have simply made their peace with the ghosts. SNES-era village theme. Looping."
+    },
+    "village_ironhaven": {
+      "title_template": "Shift Change",
+      "style": "SNES village, forge town, anvil percussion on the downbeat, brass ostinato, industrious, 104 BPM",
+      "prompt": "Volcanic frontier forge town. Anvil strikes landing on the downbeat as percussion, a working brass ostinato over a bellows-like low pulse, steam hiss in the gaps. Proud and industrious, built to be heard over machinery. SNES-era village theme. Looping."
+    },
+    "village_sandrift": {
+      "title_template": "Water, Named",
+      "style": "SNES village, desert oasis, oud and frame drum, modal, shimmering heat, 88 BPM",
+      "prompt": "Nomad camp around a desert oasis. Plucked oud figure over a loose frame-drum groove, modal melody with a shimmering high pad for the heat. Generous and mercantile, with the ease of people who know exactly where the water is. SNES-era village theme. Looping."
+    },
     "dungeon_suburban": {
       "title_template": "Under the Subdivision",
       "style": "EarthBound dungeon, suburban underground, muffled bass, wrong muzak, pipes dripping, unsettling, 90 BPM",
