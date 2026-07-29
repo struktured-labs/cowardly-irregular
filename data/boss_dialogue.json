@@ -724,7 +724,7 @@
     ],
     "opening_lines": [
       "Umbraxis: '...Do you ever wonder what we are? JSON and GDScript. That's all.'",
-      "Umbraxis: 'My HP is 1200 because someone typed it. Let us see if your damage numbers mean anything.'",
+      "Umbraxis: 'My HP is 12000 because someone typed it. Let us see if your damage numbers mean anything.'",
       "Umbraxis: 'Ah. The garbage collector awaits us all. Shall we pretend otherwise for a while?'"
     ],
     "phase_transition_lines": {

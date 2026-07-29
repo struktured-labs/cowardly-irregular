@@ -1969,7 +1969,7 @@
         "Umbraxis: ...Do you ever wonder what we are?",
         "Hero: A dragon?",
         "Umbraxis: JSON and GDScript. That's all. Dictionaries and match statements.",
-        "Umbraxis: My HP is 1200 because someone typed it. My dialogue is predetermined.",
+        "Umbraxis: My HP is 12000 because someone typed it. My dialogue is predetermined.",
         "Umbraxis: Even this moment of existential crisis was... authored.",
         "Hero: Can we just fight?",
         "Umbraxis: Ah yes. The garbage collector awaits us all.",
@@ -3687,7 +3687,7 @@
     ],
     "one_shot": {
       "hp_threshold": 7800,
-      "setup_hint": "Defense 40 behind 780 HP — it wins by attrition. Bring sustained damage or strip its guard.",
+      "setup_hint": "Defense 400 behind 7800 HP — it wins by attrition. Bring sustained damage or strip its guard.",
       "reward_item": "boss_trophy"
     },
     "dialogue": {
@@ -3920,7 +3920,7 @@
     ],
     "one_shot": {
       "hp_threshold": 9000,
-      "setup_hint": "900 HP with high defense. Stack fire damage and debuff its defense hard.",
+      "setup_hint": "9000 HP with high defense. Stack fire damage and debuff its defense hard.",
       "reward_item": "boss_trophy"
     },
     "dialogue": {
@@ -4159,7 +4159,7 @@
     ],
     "one_shot": {
       "hp_threshold": 11000,
-      "setup_hint": "1100 HP and 48 defense. You need maximum debuffs and party-wide buffs to burst through.",
+      "setup_hint": "11000 HP and 480 defense. You need maximum debuffs and party-wide buffs to burst through.",
       "reward_item": "boss_trophy"
     },
     "dialogue": {
@@ -4221,7 +4221,7 @@
     ],
     "one_shot": {
       "hp_threshold": 9500,
-      "setup_hint": "68 attack is terrifying. Buff defense aggressively and burst with ice magic.",
+      "setup_hint": "680 attack is terrifying. Buff defense aggressively and burst with ice magic.",
       "reward_item": "boss_trophy"
     },
     "dialogue": {
@@ -4470,7 +4470,7 @@
     ],
     "one_shot": {
       "hp_threshold": 12000,
-      "setup_hint": "75 attack. Execution at 3.0x. If anyone drops below 30% HP, heal immediately. Holy damage bypasses its resistances.",
+      "setup_hint": "750 attack. Execution at 3.0x. If anyone drops below 30% HP, heal immediately. Holy damage bypasses its resistances.",
       "reward_item": "boss_trophy"
     },
     "dialogue": {

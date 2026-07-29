@@ -144,6 +144,44 @@ func test_no_description_misstates_its_own_heal_value() -> void:
 	assert_eq(offenders, [], "descriptions contradicting their own effect:\n  %s" % "\n  ".join(offenders))
 
 
+func test_no_monster_prose_misstates_its_own_hp() -> void:
+	# Umbraxis is the dragon who knows he is in a game — "My HP is 1200 because someone typed it"
+	# works ONLY because a player who checks finds it true. After ×10 he was citing a number the
+	# player can see is wrong, which does not read as a stale constant; it reads as the meta-joke
+	# failing, in the one character whose credibility is being right about the implementation.
+	#
+	# The line lived in TWO files (boss_dialogue.json and monsters.json) — the two-sources shape.
+	# Four of my own W3/W4 setup_hints were stale the same way, written hours earlier in this
+	# session. Prose asserting a stat has no mechanical coupling to the stat, so nothing but this
+	# scan can catch it.
+	var offenders: Array = []
+	var hp_claim := RegEx.create_from_string("([0-9]{2,6})\\s*HP")
+	var mons: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/monsters.json"))
+	for id in mons:
+		var entry: Dictionary = mons[id]
+		var real_hp: int = int((entry.get("stats", {}) as Dictionary).get("max_hp", 0))
+		var texts: Array = [str((entry.get("one_shot", {}) as Dictionary).get("setup_hint", ""))]
+		for line in ((entry.get("dialogue", {}) as Dictionary).get("opening_lines", []) as Array):
+			texts.append(str(line))
+		for text in texts:
+			for m in hp_claim.search_all(text):
+				if int(m.get_string(1)) != real_hp:
+					offenders.append("%s claims '%s HP' but has %d" % [id, m.get_string(1), real_hp])
+	assert_eq(offenders, [], "prose contradicting its own stat block:\n  %s" % "\n  ".join(offenders))
+
+
+func test_umbraxis_still_names_a_true_number() -> void:
+	# Pinned separately from the sweep above because it lives in a SECOND file the sweep cannot
+	# see — the same line is authored in both boss_dialogue.json and monsters.json, and fixing
+	# one is indistinguishable from fixing both until you look.
+	var mons: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/monsters.json"))
+	var hp: int = int(((mons["shadow_dragon"] as Dictionary)["stats"] as Dictionary)["max_hp"])
+	var bd := FileAccess.get_file_as_string("res://data/boss_dialogue.json")
+	assert_string_contains(bd, "My HP is %d because someone typed it" % hp,
+		"boss_dialogue.json is a SECOND home for this line — the joke needs the number true in "
+		+ "both places, and monsters.json agreeing proves nothing about this file")
+
+
 func test_the_label_ratchet_can_see_a_mismatch() -> void:
 	# Positive control — an empty offender list and a broken regex read identically.
 	var num := RegEx.create_from_string("([0-9]+)\\s*HP")
