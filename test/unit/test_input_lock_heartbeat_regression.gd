@@ -203,6 +203,71 @@ func test_push_lock_actually_refreshes_the_timestamp() -> void:
 	ilm.free()
 
 
+## Every pop_all() CALL site in src/, each tagged with whether it sits inside a lambda.
+## Text-in rather than path-in so a synthetic sample can prove the classifier is able to answer TRUE.
+func _classify_pop_all(txt: String, path: String) -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	var lambda_open := false
+	var lines := txt.split("\n")
+	for i in lines.size():
+		var line: String = lines[i]
+		if line.begins_with("func "):
+			lambda_open = false
+		if (line.contains("func(") or line.contains("func (")) and not line.begins_with("func "):
+			lambda_open = true
+		if line.strip_edges().begins_with("#"):
+			continue
+		if line.contains("pop_all()") and not line.begins_with("func "):
+			out.append({"path": path, "line": i + 1, "in_lambda": lambda_open})
+	return out
+
+
+func _pop_all_sites() -> Array[Dictionary]:
+	var sites: Array[Dictionary] = []
+	for path in _gd_files(SRC_ROOT):
+		var txt := FileAccess.get_file_as_string(path)
+		if txt.contains("pop_all()"):
+			sites.append_array(_classify_pop_all(txt, path))
+	return sites
+
+
+## THE PREMISE UNDER THE EXEMPTION ABOVE, asserted rather than assumed (2026-07-29).
+##
+## `pop_all` is the THIRD mutator on InputLockManager and this file's scanner models only two.
+## A lock released solely by pop_all never enters `lambda_released`, so the heartbeat guard exempts
+## it and the test above accepts a nearby `pop_all` mention as explanation. That exemption is sound
+## only while pop_all is called SYNCHRONOUSLY — from a state transition, not deferred out of a
+## signal lambda. Deferred, it has the identical unbounded latency, the reaper wins the race, and a
+## lock resting on it is exactly the autogrind_summary bug wearing a different release path.
+##
+## I found this by enumerating InputLockManager's actual API instead of assuming push/pop were all
+## of it (cowir-ai's class, 2026-07-29), and I did NOT find it by testing: the positive control on
+## the scanner is built from the same two names the scanner knows, so it passes whether or not the
+## third mutator is handled. A control derived from the API you assumed cannot tell you that you
+## assumed wrong, and a silently-narrow guard reports a clean green — the most believable output
+## there is. Nothing here would have gone red.
+##
+## Derived, not hand-listed: the set comes from scanning src/, so a pop_all added in a new file is
+## covered without anyone remembering to extend a list.
+func test_the_pop_all_exemption_premise_holds() -> void:
+	var sites := _pop_all_sites()
+	assert_gt(sites.size(), 2, "positive control: the scan must find the real pop_all call sites — an empty set would make the assert below vacuous")
+
+	var deferred: Array[String] = []
+	for s in sites:
+		if s["in_lambda"]:
+			deferred.append("%s:%d" % [s["path"], s["line"]])
+	assert_eq(deferred, [] as Array[String],
+		"pop_all is called from inside a lambda here, which breaks the exemption the no-paired-pop test grants: a lock whose only release is a DEFERRED pop_all is reaped by the 10s stale timer long before it fires, and it must heartbeat instead: %s" % str(deferred))
+
+	# The classifier must be ABLE to say true, or "none deferred" is a check with one possible answer.
+	var synthetic := "func _ready() -> void:\n\tthing.connect(func():\n\t\tInputLockManager.pop_all()\n\t)\n"
+	var probe := _classify_pop_all(synthetic, "<synthetic>")
+	assert_eq(probe.size(), 1, "negative control: the classifier must SEE a lambda-nested pop_all at all")
+	assert_true(probe[0]["in_lambda"],
+		"negative control: it must CLASSIFY that one as deferred — if it cannot ever answer true, the empty offender list above proves nothing")
+
+
 ## Guards the guard: if the scan stops finding the two known-good heartbeats, it has broken and would
 ## report a clean sweep over nothing. A zero-result checker and a correct one look identical.
 func test_scanner_still_detects_the_known_heartbeats() -> void:
