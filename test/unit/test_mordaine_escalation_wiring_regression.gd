@@ -258,10 +258,19 @@ func test_at_offset_lands_her_inside_the_visible_frame() -> void:
 		# both axes was direction-blind: negating at_offset puts her west and
 		# downhill, contradicting the prose, and all 13 assertions stayed green
 		# (measured 2026-07-29).
-		assert_true(delta.x > 0.0,
-			"she must stand EAST of the party — the narration says 'east of the road' (delta %s, player %s)" % [str(delta), str(spot)])
-		assert_true(delta.y < 0.0,
-			"…and ABOVE them: it is 'the rise', and the beat ends with 'the rise was empty' (delta %s, player %s)" % [str(delta), str(spot)])
+		# MAGNITUDE, not just sign. `> 0` defends the DIRECTION and not the
+		# MEANING: measured 2026-07-29, at_offset [1,-96] (east by one pixel)
+		# and [208,-1] ("the rise" is one pixel of elevation) both passed a
+		# sign-only predicate. A figure one pixel east of you is not "on the
+		# rise east of the road". Floors are in TILE_SIZE units (32px) so they
+		# say something about the world rather than being chosen numbers:
+		# two tiles east, one tile above — the authored [208,-96] is 6.5 and 3.
+		# @cowir-controller's axis (msg-3506): exhausting the set says nothing
+		# about whether the predicate is right; only an awkward mutation does.
+		assert_true(delta.x > 64.0,
+			"she must stand MEANINGFULLY EAST of the party — 'east of the road', not east by a pixel (delta %s, player %s)" % [str(delta), str(spot)])
+		assert_true(delta.y < -32.0,
+			"…and MEANINGFULLY ABOVE them: it is 'the rise', and the beat closes on 'the rise was empty' (delta %s, player %s)" % [str(delta), str(spot)])
 	if MapSystem:
 		MapSystem.current_map = saved
 
