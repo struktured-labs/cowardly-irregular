@@ -38,6 +38,12 @@ extends GutTest
 ##                            volatility_scaling. At least hp_below_25 IS consumed
 ##                            inside that same file, so "appears only there" does not
 ##                            settle it either way — it needs reading, not counting.
+##   TRAILING inline comments only whole-line comments are skipped, so `foo()  # see
+##                            preview_turns` would still count. Measured 2026-07-29: 0
+##                            passive keys reach src/ only that way. DELIBERATELY not
+##                            "fixed" — splitting on the first # would eat real code
+##                            containing a string like "#FF0000", flipping this guard
+##                            from safe under-reporting to false positives.
 ##   string literals          a key inside a live string (push_warning, a log line)
 ##                            counts as present. Measured: no passive key currently
 ##                            reaches src/ only that way.
