@@ -67,14 +67,37 @@ func test_hint_bar_actions_have_real_joypad_bindings() -> void:
 
 ## [X] is NOT an InputMap action — it is a raw button check in BattleScene. Assert the handler is
 ## really there, because a hint pointing at a raw check has nothing else guarding it.
+## Pins the RELATIONSHIP, not the presence of three strings.
+##
+## The first version asserted `contains("JOY_BUTTON_Y")`, `contains("_toggle_battle_speed")` and
+## `contains("KEY_QUOTELEFT")` separately. Mutation-tested 2026-07-29 and it is BLIND to the exact
+## regression it exists for: repoint the JOY_BUTTON_Y arm at `_repeat_previous_actions()` and all
+## three strings survive, the guard stays green, and the advertised [X] button no longer changes
+## speed. A source-text pin is a claim about the code's SPELLING; the word doing the work in the old
+## assertion was "handled", and nothing exercised it. (cowir-ai's class, cowir-music's Mordaine guard,
+## same shape.)
 func test_speed_toggle_is_actually_wired_to_the_advertised_button() -> void:
-	var battle := _read(BATTLE_PATH)
-	assert_true(battle.contains("JOY_BUTTON_Y"),
-		"the [X] hint relies on JOY_BUTTON_Y (north/top face) being handled in BattleScene")
-	assert_true(battle.contains("_toggle_battle_speed"),
-		"speed toggle handler must exist")
-	assert_true(battle.contains("KEY_QUOTELEFT"),
-		"the keyboard half of the speed toggle (` key) must exist")
+	var lines := _read(BATTLE_PATH).split("\n")
+	var wired := false
+	for i in lines.size():
+		if not lines[i].contains("JOY_BUTTON_Y"):
+			continue
+		# The dispatch arm and its call sit together; a repoint moves them apart.
+		for j in range(i, mini(lines.size(), i + 4)):
+			if lines[j].contains("_toggle_battle_speed("):
+				wired = true
+	assert_true(wired,
+		"the [X] hint promises the north/top face toggles speed — JOY_BUTTON_Y must actually CALL _toggle_battle_speed, not merely appear in the same 390KB file")
+
+	var kb_wired := false
+	for i in lines.size():
+		if not lines[i].contains("KEY_QUOTELEFT"):
+			continue
+		for j in range(i, mini(lines.size(), i + 4)):
+			if lines[j].contains("_toggle_battle_speed("):
+				kb_wired = true
+	assert_true(kb_wired,
+		"the keyboard half (` key) must call _toggle_battle_speed, same reasoning")
 
 
 ## The source comment claimed "Tab or ` key" for speed. Tab is battle_toggle_auto, so that comment
