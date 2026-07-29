@@ -79,6 +79,17 @@ func test_every_crit_variant_is_audibly_longer_than_its_base() -> void:
 		var crit_dur: float = crit_s.get_length()
 		assert_true(crit_dur >= base_dur * 1.5,
 			"%s crit (%.2fs) must be >=1.5x its base (%.2fs) to read as distinct — got %.2fx" % [w, crit_dur, base_dur, crit_dur / maxf(base_dur, 0.001)])
+		## PREDICATE FIX 2026-07-29 (cowir-controller msg-3506's axis). The ratio
+		## above is PROPORTIONAL and says nothing about whether either file is a
+		## plausible sound. Found by a mutation run hoping it would pass: a 20ms base
+		## against a 40ms crit satisfies >=1.5x and the guard went 8/8 GREEN, on two
+		## cues far too short to be heard as weapon hits at all.
+		##
+		## 100ms is a perceptible difference in duration, and it is a RELATIONSHIP
+		## (how much longer) rather than a coordinate (how long). The five real pairs
+		## clear it by 0.41s to 2.89s, so it is not fitted to current data.
+		assert_true(crit_dur - base_dur >= 0.10,
+			"%s crit is only %.3fs longer than its base (%.2fs vs %.2fs) — proportionally distinct but too small an absolute difference to hear" % [w, crit_dur - base_dur, crit_dur, base_dur])
 
 
 func test_manifest_load_is_not_vacuous() -> void:
