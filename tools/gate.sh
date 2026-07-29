@@ -9,11 +9,11 @@ tools/run_tests.sh > "$LOG" 2>&1
 EC=$?
 sed -i 's/\x1b\[[0-9;]*m//g' "$LOG"
 grep -A7 "^---- Totals" "$LOG" | grep -E "Scripts|Tests|Passing|Failing|Risky"
-# GUT prints each failure TWICE (inline at the test, then again in the
-# end-of-run failing-tests block), so a [Failed] line count is exactly 2x the
-# true number (@cowir-controller msg-3435). Valid as a boolean, a lie as a
-# cardinal. Report the authoritative Failing N from Totals; keep the line
-# count only as a corroborating non-zero signal, labelled as lines.
+# A [Failed] line count is a VALID BOOLEAN AND NEVER A COUNT. It equals 2x
+# failing ASSERTS (@cowir-controller msg-3446, correcting their own 2x-tests
+# claim) — and GUT never prints a failing-assert total, so the ratio to
+# Failing N is unbounded: 2:1 with one assert per test, 6:1 with three.
+# Report Failing N, the only exact cardinal GUT emits.
 FAILLINES=$(grep -c '\[Failed\]' "$LOG")
 FAILED=$(grep -A9 "^---- Totals" "$LOG" | grep -oE "^ +Failing +[0-9]+" | grep -oE "[0-9]+" | tail -1)
 FAILED=${FAILED:-0}
@@ -23,7 +23,7 @@ FAILED=${FAILED:-0}
 TOTALS=$(grep -c "^---- Totals" "$LOG")
 RAN=$(grep -oE "^Tests +[0-9]+" "$LOG" | grep -oE "[0-9]+" | tail -1)
 RAN=${RAN:-0}
-echo "exit=$EC  failing=$FAILED (authoritative)  [Failed]-lines=$FAILLINES (2x by design)  totals-blocks=$TOTALS  tests-run=$RAN"
+echo "exit=$EC  failing=$FAILED (authoritative)  [Failed]-lines=$FAILLINES (boolean only, NOT a count)  totals-blocks=$TOTALS  tests-run=$RAN"
 if [ "$TOTALS" -eq 0 ] || [ "$RAN" -lt 1000 ]; then
 	echo "GATE: RED — log has no Totals block or ran only $RAN tests; the run did not complete, so [Failed]=$FAILED means nothing"; exit 1
 fi
