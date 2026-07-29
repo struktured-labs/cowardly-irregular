@@ -47,6 +47,13 @@ func test_helper_consults_party_base_positions_first() -> void:
 		"enemy path must return base position, not live global_position")
 	assert_string_contains(body, "return sprite.global_position",
 		"live global_position must remain as the fallback for orphan sprites (test enemies, pre-append states)")
+	# This line had NO defence. The behavioural test below calls stable_anchor(null) and asserts
+	# ZERO — but with the guard removed, `sprite.global_position` on Nil errors and ALSO yields
+	# Vector2.ZERO, so the value cannot discriminate the guard from the crash. A source pin is the
+	# only instrument that can, which is the narrow case where one is the right tool.
+	assert_string_contains(body, "if not is_instance_valid(sprite):",
+		"the freed/null guard must survive — without it an invalid sprite errors into Vector2.ZERO, "
+		+ "which is the same value the guard returns, so no behavioural test can catch its removal")
 
 
 ## ── Every swept site uses the helper (no raw global_position anchor
@@ -121,10 +128,12 @@ func _make_sprite(at_local_pos: Vector2) -> Node2D:
 func test_helper_returns_zero_for_invalid_sprite() -> void:
 	var stub := _AnchorStub.new()
 	add_child_autofree(stub)
-	# Truly invalid sprite (freed) — the guard must handle it.
-	var sprite := Node2D.new()
-	sprite.free()
-	assert_eq(stub.stable_anchor(sprite), Vector2.ZERO,
+	# Was: Node2D.new() then free(), then pass it in. A FREED object cannot satisfy the `sprite:
+	# Node2D` annotation, so Godot rejected the CALL — "previously freed is not a subclass of the
+	# expected argument class" — the body never ran, the assert never fired, and the test scored
+	# [Risky] rather than [Failed]. Invisible to any gate reading pass/fail. `null` is the only
+	# value that reaches `not is_instance_valid(sprite)` through a typed object parameter.
+	assert_eq(stub.stable_anchor(null), Vector2.ZERO,
 		"invalid sprite ref must produce ZERO — callers guard against ZERO before spawning")
 
 
