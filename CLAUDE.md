@@ -282,6 +282,15 @@ godot --headless -s test/run_tests.gd          # Run tests
   tools/run_tests.sh <name>         # single file (test_<name>.gd)
   tools/run_tests.sh --isolated     # quarantined suite (test/isolated/, own process by design)
   ```
+- **Gate on the EXIT CODE, captured before you shape the output.** `run_tests.sh` propagates failure correctly (verified independently by 5 lanes, 2026-07-29); every gate that ever passed a red tree broke the signal downstream:
+  ```bash
+  tools/run_tests.sh > tmp/gate.log 2>&1; EC=$?   # capture BEFORE piping
+  grep -E "^  (Passing|Failing)" tmp/gate.log     # then look
+  test $EC -eq 0 || exit 1                        # then decide
+  ```
+  - `suite | grep … && commit` tests **grep's** exit code, not the suite's. `suite ; commit ; push` in one block never checks at all — the gate runs and does not gate.
+  - Counting `[Failed]` is wrong twice: `grep -cE '^\s+\[Failed\]'` returns a clean **0** on a red tree (Godot colours stdout, so the ANSI escape precedes the whitespace; `\s*` does not save you — `--log-file` is ANSI-free and immune), and GUT prints each failure **twice** (inline + summary), so even `grep -cF` reports 2× the real count. Report the `Failing N` summary line or `$?`; both are exact.
+- **`cowir-ai-intent-kit-ratchet` @ `b50a90f6` is a permanent known-RED branch, kept deliberately — do not fold or delete it.** It is an executable bug report (boss intents that reach no bias arm) and doubles as the fleet's gate control: point a gate at it, and if it reports green the detector is broken. A real coloured multi-line failure catches parse bugs a planted one-line assert does not.
 - Raw equivalent if the wrapper is unavailable (add `--log-file tmp/gut.log`):
   ```bash
   godot --headless --audio-driver Dummy --log-file tmp/gut.log -s addons/gut/gut_cmdln.gd -gdir=res://test/unit -gprefix=test_ -gsuffix=.gd -gexit
