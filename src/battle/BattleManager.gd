@@ -6775,7 +6775,8 @@ func _get_counter_action(combatant: Combatant, strategy: String, allies: Array, 
 					"speed": _compute_action_speed(combatant, "attack")
 				}
 		"defense_boost":
-			var def_abilities = abilities.filter(func(a): return "defense" in a.get("id", "") or "guard" in a.get("id", "") or "shield" in a.get("id", ""))
+			# Match what the ability IS (effect defense_up) before how it is SPELLED — Glacius owns frost_armor and the id-substring test missed it because the word is "armor". Substring kept as a widening for abilities that declare no effect.
+			var def_abilities = abilities.filter(func(a): return a.get("effect", "") == "defense_up" or "defense" in a.get("id", "") or "guard" in a.get("id", "") or "shield" in a.get("id", ""))
 			if def_abilities.size() > 0:
 				return {
 					"type": "ability",
