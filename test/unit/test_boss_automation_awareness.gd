@@ -264,3 +264,79 @@ func test_party_with_no_living_members_reports_nothing() -> void:
 	var tier: String = _tier_for([_combatant("Alpha", false)], true)
 	assert_eq(tier, "",
 		"an all-dead party must report no automation tier, not '%s'" % tier)
+
+
+func test_one_manual_living_member_suppresses_the_tier() -> void:
+	# The `scripted == living` clause, DISCRIMINATED. cowir-controller's point:
+	# a guard that passes its first mutation can still be blind. The dead-member
+	# test above uses 1 living / 1 scripted, where `scripted == living` and a
+	# sloppy `scripted > 0` agree — it cannot tell them apart. This case can:
+	# 2 living, 1 scripted. Someone is still choosing, and a boss that announced
+	# otherwise would be lying about the one thing it is there to notice.
+	var saved_a: bool = AutobattleSystem.is_autobattle_enabled("alpha")
+	var saved_b: bool = AutobattleSystem.is_autobattle_enabled("beta")
+	AutobattleSystem.set_autobattle_enabled("alpha", true)
+	AutobattleSystem.set_autobattle_enabled("beta", false)
+	var tier: String = _tier_for([_combatant("Alpha", true), _combatant("Beta", true)], false)
+	AutobattleSystem.set_autobattle_enabled("alpha", saved_a)
+	AutobattleSystem.set_autobattle_enabled("beta", saved_b)
+	assert_eq(tier, "",
+		("one living PC is unscripted, so a person IS deciding — the tier must be empty, got '%s'. " +
+		"This is the case that separates `scripted == living` from `scripted > 0`.") % tier)
+
+
+## Drive the real hook across two phase gates, returning every emitted taunt.
+func _taunts_across_two_phases() -> Array:
+	var boss := Combatant.new()
+	boss.combatant_name = "Pyrroth"
+	boss.set_meta("llm_persona_id", "pyrroth")
+	boss.max_hp = 1000
+	boss.is_alive = true
+
+	var saved: Array = []
+	for m in BattleManager.player_party:
+		saved.append(m)
+	var saved_flag: bool = BattleManager.is_autobattle_enabled
+	BattleManager.player_party.clear()
+	BattleManager.player_party.append(_combatant("Alpha", true))
+	BattleManager.is_autobattle_enabled = true
+
+	var heard: Array = []
+	var sink := func(_c, line): heard.append(str(line))
+	BattleManager.boss_taunt.connect(sink)
+	boss.current_hp = 600
+	BattleManager._update_boss_dialogue_phase(boss)   # -> phase 2
+	boss.current_hp = 200
+	BattleManager._update_boss_dialogue_phase(boss)   # -> phase 3
+	BattleManager.boss_taunt.disconnect(sink)
+
+	BattleManager.is_autobattle_enabled = saved_flag
+	BattleManager.player_party.clear()
+	for m in saved:
+		BattleManager.player_party.append(m)
+	return heard
+
+
+func test_automation_line_fires_once_per_battle_not_at_every_phase() -> void:
+	# THE SECOND LABEL READ. test_source_hook_fires_once_per_battle pins the
+	# strings "boss_noticed_automation" and the getter call. Flipping the latch
+	# to set_meta(..., false) keeps BOTH strings and makes the boss repeat its
+	# automation line at every phase gate — 57 tests across four files stayed
+	# green on that mutation. "Once" is the word carrying the condition here,
+	# and nothing varied it. An observation lands; a refrain nags.
+	var authored: Array = []
+	var block: Dictionary = (_boss_data()["pyrroth"] as Dictionary).get("automation_lines", {})
+	for tier in ["autobattle", "autogrind"]:
+		for line in (block.get(tier, []) as Array):
+			authored.append(str(line))
+	assert_gt(authored.size(), 0, "sanity: pyrroth must author automation lines or this proves nothing")
+
+	var heard: Array = _taunts_across_two_phases()
+	var hits: int = 0
+	for line in heard:
+		if authored.has(str(line)):
+			hits += 1
+	assert_eq(hits, 1,
+		("the automation line was spoken %d times across two phase transitions (expected exactly 1). " +
+		"0 means the hook never fired and this test is guarding nothing; 2+ means the once-per-battle " +
+		"latch is broken and the boss nags. Heard: %s") % [hits, str(heard)])
