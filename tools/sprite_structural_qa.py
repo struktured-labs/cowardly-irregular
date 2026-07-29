@@ -87,6 +87,19 @@ def frames_of(img: Image.Image, fw: int, fh: int):
 def check_sheet(path: Path, fw: int, fh: int, is_grid: bool) -> list[str]:
     out = []
     img = Image.open(path).convert("RGBA")
+    # This tool slices frames using frame_width/frame_height FROM THE
+    # MANIFEST — a label describing the artifact. If the label is wrong the
+    # slicing is wrong, and every check below then reports confidently about
+    # frames that do not exist. That is the shape cowir-music found in their
+    # own guard (a short-render check reading the manifest's `duration`
+    # instead of the audio): an instrument trusting a pointer to measure the
+    # thing the pointer describes. Verify the geometry against the actual
+    # pixels before believing any result derived from it.
+    W, H = img.size
+    if fw <= 0 or fh <= 0 or W % fw or H % fh:
+        return [f"GEOMETRY {path.name}: manifest says {fw}x{fh} frames but "
+                f"the PNG is {W}x{H} — not evenly divisible, so every check "
+                f"below would slice garbage. Fix the manifest first."]
     prev_area = None
     for row, col, fr in frames_of(img, fw, fh):
         a = np.array(fr)[:, :, 3]

@@ -99,6 +99,49 @@ MONSTER_DESC = {
         "with the arcs sputtering and mostly dark, wings drooped). "
         "Consistent identity every frame, majestic aggression not feral"
     ),
+    # ─── Orphan monsters: in monsters.json since forever, never had a
+    # ─── sheet, so they render procedurally today. Descriptions lifted
+    # ─── from their monsters.json entries, not invented.
+    "rogue_automaton": (
+        "ROGUE AUTOMATON — canon: 'a malfunctioning machine that speaks in "
+        "error codes. Its attacks glitch reality.' A humanoid industrial "
+        "automaton, riveted brass-and-iron plating gone green with verdigris, "
+        "one arm ending in a heavy piston-clamp. Its chest hatch hangs open "
+        "showing sparking copper coils, and a cracked glass gauge-face where "
+        "a head should be, displaying a garbled glowing readout instead of "
+        "features. Malfunction is the identity: sparks arcing from a shoulder "
+        "joint, one plate hanging loose, a faint magenta glitch-fringe "
+        "displacing its outline. Palette: verdigris brass, oil-black, hot "
+        "copper, with sickly magenta glitch accents. SOLID and fully opaque; "
+        "the glitching is in the DETAILS, never in the transparency."
+    ),
+    "rogue_mailbox": (
+        "ROGUE MAILBOX — canon: 'a regulation blue mailbox that has stopped "
+        "accepting the concept of routes. It keeps what it's given.' A "
+        "standard American pillar mailbox, regulation post-office BLUE, "
+        "domed lid, standing on its single squat post — but ALIVE and "
+        "hostile: the pull-down flap is a hinged mouth crammed with "
+        "envelopes it refuses to release, letters jammed at angles in the "
+        "gap, a hand-written envelope caught half-swallowed. Two small "
+        "glinting points of light inside the slot for eyes. Slightly "
+        "hunched forward on its post, leaning at the viewer. Comedic menace "
+        "— absurd object, entirely serious about itself. Palette: "
+        "regulation blue, weathered steel, cream envelope-paper, a red "
+        "flag on one side."
+    ),
+    "time_phantom": (
+        "TIME PHANTOM — canon: 'a meta-boss that exists between save states. "
+        "Can rewind its own actions.' A hooded spectral figure in a tattered "
+        "deep-violet cloak, hood empty except for a floating pale-cyan clock "
+        "face where features should be, hands frozen mid-sweep. Its own "
+        "silhouette is echoed by two fainter after-images offset behind it "
+        "like a stuttering rewind, each a step further out. Skeletal hands "
+        "emerging from the sleeves hold nothing. Palette: deep violet, "
+        "spectral cyan, bone-white, with a faint gold ring of numerals. "
+        "CRITICAL: the MAIN figure must be SOLID and fully opaque and clearly "
+        "readable — only the two trailing echoes are faint. The rewind reads "
+        "from the repeated silhouettes, never from the body being see-through."
+    ),
     # ─── World-finale faces of the Calibrant ────────────────────────────
     # Canon: docs/novellas/. The through-line struktured's story lane calls
     # DE-COSTUMING — each face wears less than the last. Robes -> glasses ->
