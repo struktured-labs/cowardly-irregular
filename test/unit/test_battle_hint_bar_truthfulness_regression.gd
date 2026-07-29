@@ -28,8 +28,13 @@ func _read(path: String) -> String:
 ##
 ## Comment lines are skipped deliberately: the fix documents the old bad string in a comment at each
 ## site, and a naive whole-file scan flags its own explanation. Guarding CODE, not prose.
+## WIDENED 2026-07-29. The original scanned only the two hint-bar files, because those were where
+## the bug was. But player-facing control references also appear UNBRACKETED — "Press L to Defer",
+## "Use R to queue actions" — a form my sweep pattern could not see at all, and there are ~19 of them
+## across src/. A guard whose corpus is "the file the bug was in" cannot catch the same claim
+## reappearing anywhere else, which is the whole reason a class-level ratchet exists.
 func test_hint_bar_does_not_advertise_the_unbound_plus_minus_speed_control() -> void:
-	for path in [WIN98_PATH, BATTLE_PATH]:
+	for path in _all_gd_files():
 		var offenders: Array[String] = []
 		for line in _read(path).split("\n"):
 			var stripped := line.strip_edges()
@@ -111,3 +116,27 @@ func test_tab_is_not_claimed_as_the_speed_key() -> void:
 			if event is InputEventKey and (event as InputEventKey).keycode == KEY_TAB:
 				tab_action = action
 	assert_eq(tab_action, "battle_toggle_auto", "Tab is expected to remain the autobattle toggle")
+
+## Every .gd under src/ — the corpus is "anywhere a player-facing string can live", not "the file
+## the bug happened to be in".
+func _all_gd_files() -> Array[String]:
+	var found: Array[String] = []
+	var dirs: Array[String] = ["res://src"]
+	while not dirs.is_empty():
+		var current: String = dirs.pop_back()
+		var dir := DirAccess.open(current)
+		if dir == null:
+			continue
+		dir.list_dir_begin()
+		var entry := dir.get_next()
+		while entry != "":
+			var full := "%s/%s" % [current, entry]
+			if dir.current_is_dir():
+				dirs.append(full)
+			elif entry.ends_with(".gd"):
+				found.append(full)
+			entry = dir.get_next()
+		dir.list_dir_end()
+	# Positive control: an empty or tiny corpus makes the scan vacuously green.
+	assert(found.size() > 50)
+	return found
