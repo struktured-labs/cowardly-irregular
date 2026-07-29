@@ -39,8 +39,8 @@
         "victory",
         "walk"
       ],
-      "tier": "T1",
-      "generator": "gen_full_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "generator": "MIXED — contains ARTIST animations (attack, cast, idle) alongside v3 LoRA fills for the rest (16 PNGs total). Tier corrected 2026-07-29: was T1 with a bare LoRA generator string, which described the directory before the artist animations landed and was never updated. Provenance verified via git lineage (first decisive ancestor per file), not via this manifest — tier and generator agreed with each other while both were wrong. T1 here meant 'safe to regenerate', which would have destroyed the artist animations named above. T2, not T3: T3 is struktured's call."
     },
     "cleric": {
       "path": "res://assets/sprites/jobs/cleric",
@@ -58,8 +58,8 @@
         "victory",
         "walk"
       ],
-      "tier": "T1",
-      "generator": "gen_full_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "generator": "MIXED — contains ARTIST animations (attack, cast, idle, walk) alongside v3 LoRA fills for the rest (15 PNGs total). Tier corrected 2026-07-29: was T1 with a bare LoRA generator string, which described the directory before the artist animations landed and was never updated. Provenance verified via git lineage (first decisive ancestor per file), not via this manifest — tier and generator agreed with each other while both were wrong. T1 here meant 'safe to regenerate', which would have destroyed the artist animations named above. T2, not T3: T3 is struktured's call."
     },
     "rogue": {
       "path": "res://assets/sprites/jobs/rogue",
@@ -84,8 +84,8 @@
         "victory",
         "walk"
       ],
-      "tier": "T1",
-      "generator": "gen_full_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "generator": "MIXED — contains ARTIST animations (attack, idle, stab) alongside v3 LoRA fills for the rest (17 PNGs total). Tier corrected 2026-07-29: was T1 with a bare LoRA generator string, which described the directory before the artist animations landed and was never updated. Provenance verified via git lineage (first decisive ancestor per file), not via this manifest — tier and generator agreed with each other while both were wrong. T1 here meant 'safe to regenerate', which would have destroyed the artist animations named above. T2, not T3: T3 is struktured's call."
     },
     "bard": {
       "path": "res://assets/sprites/jobs/bard",
