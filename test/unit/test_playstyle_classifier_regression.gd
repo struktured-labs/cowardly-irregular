@@ -113,13 +113,27 @@ func test_a_manual_player_at_endgame_is_not_called_a_grinder() -> void:
 		"…and it must not degrade back to grinder at higher totals either")
 
 
-func test_endgame_still_distinguishes_more_than_two_playstyles() -> void:
-	# @cowir-battle measured exactly 2 of 5 reachable at 150 battles.
+func test_endgame_reaches_the_specific_arms_the_ending_needs() -> void:
+	# WAS `assert_gt(seen.size(), 2)` — @cowir-battle measured exactly 2 of 5
+	# reachable at 150 battles, and I turned that measurement into the
+	# threshold. That is @cowir-ai's class (msg-3293): a guard written while
+	# a bug is open encodes the BUG'S MAGNITUDE as its bar, so it licenses
+	# everything above the broken state forever.
+	#
+	# Concretely, `> 2` passes on {automator, grinder, balanced} — i.e. with
+	# `manual` DEAD AGAIN and balanced leaking in to keep the count up. That
+	# is a regression of the exact ending this file exists to defend, and the
+	# old assertion could not see it. Name the arms instead of counting them.
 	var seen := {}
 	for ratio in [0.0, 0.2, 0.5, 0.65, 0.95]:
 		seen[_classify(150, ratio)] = true
-	assert_gt(seen.size(), 2,
-		"at endgame the classifier must tell more than two stories apart — it collapsed to automator/grinder, which is where the ending reads it: %s" % str(seen.keys()))
+	for required in ["manual", "grinder", "automator"]:
+		assert_true(seen.has(required),
+			"'%s' must be reachable at endgame — world6_chapter3 branches on it, so an unreachable arm is an ENDING THAT NEVER PLAYS. reachable at 150 battles: %s" % [
+				required, str(seen.keys())])
+	# The dead pair specifically: manual was swallowed by the volume arm.
+	assert_eq(_classify(150, 0.0), "manual",
+		"a player who hand-fought 150 battles is the 'fought every battle manually' ending, not the grinder one")
 
 
 # ── exploiter means exploitation, not "early" ─────────────────────────
