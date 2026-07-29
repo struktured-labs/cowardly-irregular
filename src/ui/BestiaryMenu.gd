@@ -407,12 +407,20 @@ func _refresh_detail() -> void:
 
 	if defeated:
 		var stats: Dictionary = entry.stats
-		_detail_stats.text = "HP %d   MP %d   ATK %d   DEF %d   MAG %d   SPD %d" % [
+		# M.DEF earns its place here: magic damage divides by magic_defense,
+		# not defense (Combatant.gd:277), and Protect no longer mitigates
+		# magic — so DEF alone tells a player nothing about how a caster
+		# will land. All 98 monsters carry an explicit magic_defense; this
+		# panel was simply never updated when the stat went live.
+		_detail_stats.text = "HP %d   MP %d   ATK %d   DEF %d   MAG %d   M.DEF %d   SPD %d" % [
 			stats.get("max_hp", 0),
 			stats.get("max_mp", 0),
 			stats.get("attack", 0),
 			stats.get("defense", 0),
 			stats.get("magic", 0),
+			# Mirror Combatant's fallback exactly (int(defense * 0.5)) so the
+			# bestiary can never advertise a number combat doesn't use.
+			stats.get("magic_defense", int(stats.get("defense", 0) * 0.5)),
 			stats.get("speed", 0),
 		]
 		_detail_weak.text = "Weak: %s" % (", ".join(_caps(entry.weaknesses)) if not entry.weaknesses.is_empty() else "—")
@@ -430,7 +438,7 @@ func _refresh_detail() -> void:
 		_detail_rewards.text = rewards_text
 		_detail_drops.text = _format_drops(entry.get("drops", []), entry.get("one_shot_reward", null))
 	else:
-		_detail_stats.text = "HP ???   MP ???   ATK ???   DEF ???   MAG ???   SPD ???"
+		_detail_stats.text = "HP ???   MP ???   ATK ???   DEF ???   MAG ???   M.DEF ???   SPD ???"
 		_detail_weak.text = "Weak: ???"
 		_detail_resist.text = "Resist: ???"
 		_detail_rewards.text = "EXP: ???   Gold: ???"
@@ -453,9 +461,45 @@ func _refresh_detail() -> void:
 		blocks.append(flavor)
 	_detail_flavor.text = "\n\n".join(blocks)
 
+	_reflow_detail_column()
 	_load_sprite(entry.id)
 	# Tick 194: silhouette undefeated entries so the visual gate matches the text intel gate (tick 147 docstring said "silhouette" but sprite shipped full-color).
 	_detail_sprite.modulate = Color.WHITE if defeated else SILHOUETTE_COLOR
+
+
+## Stack the detail column from MEASURED text height, not fixed offsets.
+##
+## Every y here used to be a literal (stats at +86 in a 48px box, weak at
+## +140, resist at +164 …), which encodes an assumption that each label is
+## exactly one line tall. Two things broke that:
+##
+##   * the x10 stat rescale — max_hp reached 16500, so the stat string got
+##     long enough to wrap;
+##   * TextScale, which multiplies every font by a PLAYER-CHOSEN
+##     accessibility factor (0.8 / 1.0 / 1.25 / 1.5 / 2.0) while the boxes
+##     stayed fixed.
+##
+## Measured on the shipped build before this fix, worst-case stat line:
+##   scale 1.00  1 line   29px in a 48px box   fits
+##   scale 1.50  2 lines  88px in a 48px box   40px cut off
+##   scale 2.00  2 lines 116px in a 48px box   68px cut off
+##
+## So a player who enlarged the text — the players who most need to read it
+## — lost half of every monster's stats, and the overflow ran under Weak and
+## Resist. Reflowing from get_line_count() * get_line_height() is exact at
+## every scale and needs no per-scale constants, which is the point: a
+## threshold tuned for 2.0 would just break again at the next preset.
+func _reflow_detail_column() -> void:
+	var gap := 6
+	var y: float = _detail_stats.position.y
+	for label in [_detail_stats, _detail_weak, _detail_resist, _detail_rewards, _detail_drops]:
+		if label == null:
+			continue
+		label.position.y = y
+		var lines: int = maxi(1, label.get_line_count())
+		var h: float = lines * label.get_line_height()
+		label.size.y = h
+		y += h + gap
 
 
 func _format_drops(drops: Array, one_shot) -> String:

@@ -101,9 +101,17 @@ func test_load_sprite_does_not_touch_modulate() -> void:
 func test_text_intel_gate_still_active() -> void:
 	# Tick 147's "???" gate for stats/weaknesses/etc still active —
 	# the silhouette change should be ADDITIVE, not a regression.
+	# De-spelled: this pinned the stat line verbatim, stat by stat, so
+	# adding M.DEF to the panel broke it even though the gate it names was
+	# untouched. The claim is "undefeated stats stay masked", which does
+	# not depend on WHICH stats are listed.
 	var src := _read(BESTIARY_MENU)
-	assert_true(src.contains("HP ???   MP ???   ATK ???   DEF ???   MAG ???   SPD ???"),
-		"undefeated stats line preserved")
+	var undefeated_idx := src.find("_detail_stats.text = \"HP ???")
+	assert_gt(undefeated_idx, -1,
+		"the undefeated branch must still mask the stat line")
+	var masked := src.substr(undefeated_idx, 140)
+	assert_false(masked.contains("%d"),
+		"undefeated stats line must format NO real values — intel is gated on the kill")
 	assert_true(src.contains("Drops: ???   (defeat to unlock)"),
 		"undefeated drops line preserved")
 
