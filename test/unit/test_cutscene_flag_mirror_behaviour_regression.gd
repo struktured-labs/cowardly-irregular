@@ -109,17 +109,22 @@ func test_mirror_is_not_scoped_to_any_flag_family() -> void:
 
 
 ## Every cutscene_flag_* the completion map can hand the helper.
+##
+## Derived from the CONSTANT ITSELF, not from GameLoop.gd's source text. The
+## first version regex'd the file — which derives the set from HOW THE DICT IS
+## WRITTEN rather than from the dict. @cowir-sfx (msg-3489): derive from
+## something true of the thing, never true of how the thing is spelled. A flag
+## added by any other form — a computed key, different quoting, a merged dict —
+## silently leaves the set and takes its own assertion with it.
 func _completion_flags() -> Array:
-	var src := FileAccess.get_file_as_string(GAMELOOP)
-	var start := src.find("const _CUTSCENE_COMPLETION_FLAGS")
-	assert_gt(start, -1, "_CUTSCENE_COMPLETION_FLAGS must exist")
-	var body := src.substr(start, src.find("\n}", start) - start)
-	var rx := RegEx.new()
-	rx.compile('"(cutscene_flag_[a-z0-9_]+)"')
+	var script: GDScript = load(GAMELOOP)
+	assert_not_null(script, "GameLoop script must load")
+	var map = script.get("_CUTSCENE_COMPLETION_FLAGS")
+	assert_true(map is Dictionary, "_CUTSCENE_COMPLETION_FLAGS must be a Dictionary")
 	var out: Array = []
-	for m in rx.search_all(body):
-		var f := m.get_string(1)
-		if not out.has(f):
+	for v in (map as Dictionary).values():
+		var f := str(v)
+		if f.begins_with("cutscene_flag_") and not out.has(f):
 			out.append(f)
 	return out
 
