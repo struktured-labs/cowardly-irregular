@@ -955,7 +955,7 @@ func _create_battle_sprites() -> void:
 					_sprite_scale = target_height / float(_ftex.get_height())
 				elif _ftex and _ftex.get_height() > 48:
 					_sprite_scale = proc_target_height / float(_ftex.get_height())
-		# Apply per-job scale override (currently empty — kept as a hook)
+		# Apply per-job scale override. NOT empty — fighter carries 1.4 (const at line 34); the artist sheet fills only 0.38 of its 256px frame, so frame-height scaling renders it smallest.
 		var scale_mult = JOB_SCALE_OVERRIDES.get(job_id, 1.0)
 		_sprite_scale *= scale_mult
 		# Constant uniform bump — applies to artist + procedural paths alike.
