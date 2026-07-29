@@ -32,12 +32,40 @@ func _presave_party_member() -> Dictionary:
 # ── the migration itself ────────────────────────────────────────────
 
 func test_a_prescale_block_is_multiplied() -> void:
-	var out := Combatant.migrate_stat_scale(_presave_party_member())
-	assert_eq(int(out["max_hp"]), 2080, "max_hp must reach the ×10 band or the party cannot fight")
-	assert_eq(int(out["attack"]), 420)
-	assert_eq(int(out["defense"]), 390)
-	assert_eq(int(out["magic"]), 140)
-	assert_eq(int(out["current_hp"]), 2080, "current_hp must move with max_hp, not stay at 1/10th")
+	# SWEPT, not sampled. cowir-ai 2026-07-29: "one string is a coordinate; the sweep is the
+	# relationship." The property is "ANY pre-scale block migrates" — my original single fixture
+	# was a level-5 fighter, and a migration restricted to `job_id == "fighter"` passed 9/9 against
+	# it. The mutation applied, the guard ran, the code was broken, and it printed green; nothing
+	# about the experiment was wrong except its input.
+	var jobs: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/jobs.json"))
+	var checked: int = 0
+	for job_id in ["fighter", "cleric", "mage", "rogue", "bard"]:
+		if not jobs.has(job_id):
+			continue
+		for lvl in [1, 5, 20]:
+			var block := {"combatant_name": "P", "job_id": job_id, "job_level": lvl,
+				"max_hp": 208, "current_hp": 130, "max_mp": 36,
+				"attack": 42, "defense": 39, "magic": 14, "speed": 22}
+			var out := Combatant.migrate_stat_scale(block)
+			checked += 1
+			assert_eq(int(out["max_hp"]), 2080,
+				"%s L%d — every job and level must migrate, not just the one this test was written "
+					% [job_id, lvl] + "against")
+			assert_eq(int(out["attack"]), 420, "%s L%d attack" % [job_id, lvl])
+			assert_eq(int(out["defense"]), 390, "%s L%d defense" % [job_id, lvl])
+			assert_eq(int(out["current_hp"]), 1300,
+				"%s L%d — current_hp must move with max_hp, not stay at 1/10th" % [job_id, lvl])
+	assert_eq(checked, 15, "positive control — 5 jobs × 3 levels must actually be exercised")
+
+
+func test_migration_does_not_depend_on_job_or_level_being_present() -> void:
+	# A save from a corrupted or partial write may carry stats without job_id. The migration is
+	# about the DENOMINATION, which is a property of the numbers, not of who owns them.
+	var bare := {"max_hp": 208, "attack": 42}
+	var out := Combatant.migrate_stat_scale(bare)
+	assert_eq(int(out["max_hp"]), 2080,
+		"migration must key on the scale marker alone — gating it on job_id or level makes it "
+		+ "silently partial for any block that lacks them")
 
 
 func test_the_unscaled_stats_are_left_alone() -> void:
