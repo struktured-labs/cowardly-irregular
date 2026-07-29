@@ -104,6 +104,8 @@ func test_quoted_stat_numbers_match_the_monster() -> void:
 			var actual: int = int(stats[key])
 			if int(num) != actual:
 				wrong.append("%s: hint says %s %s, actual %s=%d" % [mid, word, num, key, actual])
-	assert_eq(wrong, [], "setup_hints quote live stats and these no longer match. A wrong number here is "
-		+ "tactical advice the player acts on, and reads as authoritative because it is specific. "
-		+ "Fix the prose or the stat, do not silence this: %s" % [wrong])
+	assert_eq(wrong, [], "setup_hints quote live stats and these no longer match — most likely a "
+		+ "rebalance moved the stat and left the prose, which is what the x10 re-denomination did. "
+		+ "Before judging how urgent this is, read this file's header — it carries the DATED "
+		+ "measurement of what does and does not read setup_hint, and the reason keeping these "
+		+ "true is cheap insurance rather than a live fix. Fix the prose or the stat: %s" % [wrong])
