@@ -24,10 +24,16 @@ extends GutTest
 ## a consumer so it ticks down instead of clearing re-derives what its abilities
 ## may claim.
 ##
-## NOTE `absorb_amount: 800` on guardian_wall is dead data — 2 mentions in src/,
-## both inside comments (controls: duration 93, mp_cost 34, target_type 69). The
-## barrier consumer nullifies the hit whatever its size. Left in place, not mine
-## to remove; the new description states what the code does, not what 800 implies.
+## NOTE `absorb_amount: 800` on guardian_wall is dead data as measured 2026-07-29 —
+## 2 mentions in src/, both inside comments (controls: duration 93, mp_cost 34,
+## target_type 69). The barrier consumer nullifies the hit whatever its size. Left
+## in place, not mine to remove.
+##
+## That is not a footnote: guardian_wall's description says the ward nullifies a hit
+## "outright", which is TRUE ONLY WHILE absorb_amount IS DEAD. Wire it and the ward
+## becomes a capped pool, the description becomes a lie, and this guard would not
+## notice — the wording still admits single use. So the claim is asserted below
+## rather than left in prose.
 
 const ABILITIES := "res://data/abilities.json"
 const BATTLE_MGR := "res://src/battle/BattleManager.gd"
@@ -89,6 +95,25 @@ func test_control_both_sides_are_non_empty() -> void:
 		if ab[k] is Dictionary and consumed.has(ab[k].get("effect", "")):
 			appliers += 1
 	assert_gt(appliers, 5, "must find abilities applying a consumed-on-use effect, else this file guards nothing")
+
+
+## PREMISE BEHIND guardian_wall's WORDING. "Nullifies one incoming hit outright" is
+## a claim about magnitude, which the guard below cannot see — it only reads for the
+## single-use admission. If absorb_amount ever gains a live read, the ward becomes a
+## capped pool and the word "outright" is wrong. Scoped to the two damage-path files,
+## which is where a consumer would have to live.
+func test_premise_absorb_amount_is_still_dead_data() -> void:
+	var live: Array = []
+	for path in [BATTLE_MGR, "res://src/battle/Combatant.gd"]:
+		for l in FileAccess.get_file_as_string(path).split("\n"):
+			var s: String = l.strip_edges()
+			if s.begins_with("#") or s.begins_with("##"):
+				continue
+			if s.contains("absorb_amount"):
+				live.append("%s: %s" % [path.get_file(), s])
+	assert_eq(live, [], "absorb_amount now has a live read, so barrier no longer nullifies a hit "
+		+ "of any magnitude. guardian_wall's description says the ward nullifies one hit "
+		+ "\"outright\" — that word is now wrong. Fix the description and this note together: %s" % [live])
 
 
 ## THE GUARD. Claim persistence only if you also admit the charge.
