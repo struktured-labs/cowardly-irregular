@@ -35,11 +35,25 @@ func _matched_area_keys() -> Array:
 	var src := _read(SOUND_MANAGER)
 	var start := src.find("func play_area_music")
 	assert_true(start > -1, "play_area_music must exist")
+	## The bound DELIBERATELY spans two functions: play_area_music defers to
+	## _start_area_music_deferred, and the match arms live in the latter. A
+	## "tidier" structural bound at the next top-level func cuts the parse at
+	## the end of the first one and excludes every arm — tried 2026-07-29, three
+	## tests went red immediately.
+	##
+	## The residual premise, stated rather than asserted: this assumes nothing
+	## is inserted between the dispatch and _start_overworld_music. If something
+	## is, the parse WIDENS and unresolvable keys start resolving — the guard
+	## degrades into a weaker guard rather than a failing one. Reaching a false
+	## pass needs two simultaneous changes (an inserted func carrying a quoted
+	## key, AND a dungeon returning that exact key), so it is recorded here
+	## rather than defended: the cheap structural fix is wrong, and a correct
+	## one costs more than the risk.
 	var body := src.substr(start)
 	var keys: Array = []
 	var re := RegEx.new()
 	re.compile('"([a-z0-9_]+)"[,:]')
-	for m in re.search_all(body.substr(0, body.find("\nfunc _start_overworld_music"))):
+	for m in re.search_all(body):
 		keys.append(m.get_string(1))
 	return keys
 
