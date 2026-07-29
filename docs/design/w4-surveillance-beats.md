@@ -40,6 +40,25 @@ the wall, in a font too small to be a threat.** Nothing needs to be said about i
 This also makes W4 the world where the game's own telemetry becomes diegetic — which is on
 thesis for a game about automation being visible to the system.
 
+### ⚠️ WHICH fields — two are currently broken (@cowir-battle, msg 3247)
+
+Making telemetry player-facing **promotes any defect in it from cosmetic to visible**, because
+the whole power of the idea is *"those are MY numbers."* Two of the obvious fields have known
+defects on struktured's ruling queue right now:
+
+| field | state |
+|---|---|
+| level, HP, playtime | ✅ no known defects — safe to display |
+| **`battles_won`** | ❌ **under-counts by five** — the spotlight-duel short-circuit returns above the increment, so every W1 duel the player fought and won is missing |
+| **automation ratio** | ❌ derived from `battles_won`, so inflated; same signal that makes two W6 endings unreachable |
+
+A player who fought five duels and sees a total excluding them has a **visible discrepancy in
+the one place the game claims to be showing them the truth.** That would be the feature
+undermining itself.
+
+**Ship with the safe fields; leave hooks for the other two.** They're also the two that most
+sell the premise, so they're worth waiting for the ruling rather than shipping wrong.
+
 ---
 
 ## The escalation: the counter
@@ -58,6 +77,29 @@ late         it is decreasing faster, and it is on EVERY screen
 to be half-noticed — *"she was supposed to not notice it"* — and the Director's whole method is
 information delivered without confrontation. A tooltip would destroy it.
 
+### WHAT the counter counts: masterites remaining (@cowir-battle, msg 3256)
+
+Not set dressing — a real quantity, already persisted, requiring no new tracking.
+
+**The masterites are his projections.** They're the four-axis profiling encounters —
+*"tests that report back on the player's strengths and weaknesses."* **Each one defeated is a
+model that no longer contains the party.** So the counter is simply how many he has left.
+
+It's the only quantity in the engine that satisfies all three constraints:
+- **It decreases.** Battles, playtime, quests and bestiary all climb; this is the rare one that falls.
+- **It needs no explanation and is self-evidently meaningful if noticed.** A player who beats a
+  masterite and sees the wall tick from 12 to 11 has everything, and no words for it.
+- **It is the Director's own ch.6 line made literal:** *"Every model I build, you exceed."*
+
+**It is partly under player control, and that is the point.** A completionist drains it faster —
+which is exactly his stated problem: they exceed his models faster than he can build them. An
+inexorable countdown would read as a doom clock, and **the Director does not threaten.** He
+reports.
+
+**⚠️ Derive the total at runtime, never a literal.** It is **20 today, 24** once the four W3
+masterites land. A hardcoded 20 would silently change meaning the day they ship — the same
+class of defect that has bitten four lanes tonight.
+
 Gate count-based on W4 quest completions, same as W2's memos and W3's drift, so player
 ordering can't scramble it.
 
@@ -72,6 +114,32 @@ the prop — and it makes the monitors legible by contrast. A player who never c
 registered being watched will feel the tunnels as relief and not know why.
 
 If anything wants to be *found* down there, that's the natural home for it.
+
+### ⚠️ The relief is AUDIO, not visual (@cowir-sfx, msg 3246)
+
+The above is incomplete as originally written. **Contrast needs two terms** — if the monitors
+are silent, the tunnels are silent too, and the refuge is visually identical to everywhere
+else with nothing to feel.
+
+**The monitored spaces need a continuous low room-tone; the tunnels are where it stops.**
+That's the fridge-you-stop-hearing effect, and it's one of the few tricks that works *better*
+on a player who never consciously noticed.
+
+No new asset required: **`ambient_office` already ships**, and @cowir-overworld already
+consumed it for the two W2 civic interiors — the wiring pattern is proven in the same lane
+that owns W4's props. One `play_ambient()` per monitored area.
+
+**It must be boring.** If the bed is interesting the player attends to it consciously, and the
+tunnels then read as *"the music stopped"* rather than as relief. This argues for reusing the
+flat office tone rather than composing something characterful — the sound should only exist in
+its own absence.
+
+### Corollary: the counter is SILENT
+
+The no-explanation rule applies to audio, and a cue is the obvious thing to reach for.
+**No sound when the counter ticks.** A sound is an explanation — it tells the player this is a
+thing to attend to, which is exactly what canon forbids. If it ever wants audio at all, the
+moment is the *last* decrement, and none of the ones before it.
 
 ---
 
