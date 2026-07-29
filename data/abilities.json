@@ -669,7 +669,7 @@
     "type": "support",
     "animation": "buff",
     "mp_cost": 15,
-    "description": "Create a barrier that absorbs damage for all allies for 2 turns",
+    "description": "Wards every ally. Each ward nullifies one incoming hit outright — spell or steel — then breaks. Lasts 2 turns unspent.",
     "target_type": "all_allies",
     "effect": "barrier",
     "absorb_amount": 800,
@@ -750,7 +750,7 @@
     "type": "support",
     "animation": "special",
     "mp_cost": 12,
-    "description": "Become completely invisible for 2 turns - cannot be targeted",
+    "description": "Vanish for 2 turns — spells find nothing where you stood. The first swing aimed at you misses, and reveals you.",
     "target_type": "self",
     "effect": "invisible",
     "duration": 2
@@ -1275,7 +1275,7 @@
     "type": "support",
     "animation": "buff",
     "mp_cost": 12,
-    "description": "Blocks all incoming magic for one turn.",
+    "description": "Cancels the next spell aimed at you outright. One spell — the one after it is served normally.",
     "target_type": "self",
     "effect": "magic_block",
     "duration": 1
@@ -1544,7 +1544,7 @@
     "type": "support",
     "animation": "special",
     "mp_cost": 0,
-    "description": "Briefly phases out of existence, becoming untargetable for one turn.",
+    "description": "Phases out for one turn — spells find nothing. The first swing aimed at you misses, and brings it back.",
     "target_type": "self",
     "effect": "invisible",
     "duration": 1
