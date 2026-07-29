@@ -197,28 +197,37 @@ func _gd_files_under(root: String) -> Array[String]:
 	return found
 
 
-## Documents, executably, that the Ultimate Pro 2 quirk profile INVERTS L/R relative to Standard on
-## a mapped pad. Not asserting it is wrong — struktured measured it on his own hardware before
-## ControllerMappings existed, when an index genuinely did not mean what the constant said. Asserting
-## that the relationship is what it is, so "retire it / keep it" stays a decision someone makes on
-## evidence rather than a surprise they hit in Settings.
-func test_quirk_profile_is_documented_as_inverting_against_standard() -> void:
+## The Ultimate Pro 2 quirk profile now AGREES with Standard and the hint bar. It used to invert
+## them, and this test used to pin that inversion.
+##
+## The swap was real: struktured measured it on his own hardware on 2026-07-18, before
+## ControllerMappings existed, when a raw index genuinely did not mean what the constant said. Once
+## a mapping is registered, 9 IS the left shoulder and 10 IS the right BY DEFINITION — so the swap
+## stopped being a correction and became an inversion, and anyone selecting that profile got Defer
+## and Advance backwards against the bar the game prints at them all battle.
+##
+## Aligned 2026-07-29 rather than left for the open retire-vs-keep ruling, because alignment is
+## correct under BOTH halves of it: if the entry stays it should work, and if it is retired the
+## alignment costs nothing. The ruling now only decides whether the entry exists at all.
+##
+## Autodetect could never reach it — neither of struktured's Ultimate 2 identities contains the
+## "ultimate pro 2" substring — so this was only ever reachable by hand. It is also the listed name
+## closest to his actual pad, which made it the tempting pick.
+##
+## This test's job is now the reverse of what it was: stop the swap coming BACK without evidence.
+## A future reader who re-measures the hardware and finds the indices really are reversed should
+## register a MAPPING for that device, not re-invert a profile.
+func test_quirk_profile_agrees_with_standard_and_the_hint_bar() -> void:
 	var ipm = load("res://src/input/InputProfileManager.gd").new()
 	var quirk: Dictionary = ipm.PROFILE_ULTIMATE_PRO_2
 	var standard: Dictionary = ipm.PROFILE_STANDARD
-	# IF THIS IS RED, READ THIS BEFORE REVERTING ANYTHING. Retire-vs-keep on this profile is an OPEN
-	# ruling with struktured (see the note in InputProfileManager). A failure here most likely means
-	# that ruling landed — the quirk was aligned with Standard, or the profile was retired — in which
-	# case this test is the stale artifact and should be updated or deleted, NOT the change reverted.
-	# It exists to stop the inversion changing SILENTLY and unratified, not to defend the inversion.
-	var ruling_hint := " — if the retire/align ruling has landed, update THIS TEST, do not revert the change"
-	assert_eq(quirk["battle_advance"], standard["battle_defer"],
-		"the quirk profile puts Advance on Standard's Defer button — an inversion that was correct for an UNMAPPED pad" + ruling_hint)
-	assert_eq(quirk["battle_defer"], standard["battle_advance"],
-		"and Defer on Standard's Advance button" + ruling_hint)
+	assert_eq(quirk["battle_advance"], standard["battle_advance"],
+		"Advance must sit on the same physical shoulder as Standard — the hint bar says [R] Advance and a mapped pad reports 10 as the right shoulder")
+	assert_eq(quirk["battle_defer"], standard["battle_defer"],
+		"and Defer on the same shoulder as Standard — [L] Defer, button 9 on a mapped pad")
 	var src: String = FileAccess.get_file_as_string("res://src/input/InputProfileManager.gd")
-	assert_true(src.contains("predates ControllerMappings"),
-		"the inversion must carry a note explaining WHY it disagrees with the hint bar, or the next reader re-measures it from scratch")
+	assert_true(src.contains("ALIGNED"),
+		"the alignment must carry a note explaining what the swap WAS and why it went away, or the next reader re-measures unmapped hardware and reinstates it")
 	ipm.free()
 
 

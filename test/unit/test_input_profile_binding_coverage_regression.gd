@@ -211,15 +211,28 @@ func test_ui_menu_keeps_both_declared_buttons_in_every_profile() -> void:
 			"%s must keep both — dropping 7 makes the menu unreachable from L3 with no warning" % profile_name)
 
 
-## Remapping must stay legal, or the guard above would forbid the Ultimate Pro 2's measured
-## hardware quirk. Same count, different index = fine.
+## Remapping must stay LEGAL — the count guard forbids losing bindings, never moving them.
+##
+## This used to assert the property through PROFILE_ULTIMATE_PRO_2, which was the only profile that
+## remapped anything. That profile was aligned with Standard on 2026-07-29 (its swap predated
+## ControllerMappings and had become an inversion), so no built-in profile remaps today — and the
+## old form would now be RED on correct code while proving nothing about the rule.
+##
+## Asserted synthetically instead. The property belongs to the guard, not to whichever profile
+## happens to exercise it: a hand-list of one is what made this brittle, and tying an invariant to a
+## specific data value is the coincidental-value trap in another costume.
 func test_deliberate_remapping_is_still_permitted() -> void:
-	var pro2: Dictionary = _ipm.PROFILE_ULTIMATE_PRO_2
 	var standard: Dictionary = _ipm.PROFILE_STANDARD
-	assert_ne(pro2["battle_advance"], standard["battle_advance"],
-		"the Ultimate Pro 2 profile is expected to differ — it encodes a device-specific swap")
-	assert_eq(pro2["battle_advance"].size(), standard["battle_advance"].size(),
-		"a remap preserves the binding COUNT; only the index changes")
+	var declared := _declared_joypad_buttons("battle_advance")
+	assert_false(declared.is_empty(), "positive control: battle_advance must have declared joypad buttons, or this proves nothing")
+
+	# A profile that MOVES the binding to a different real button, same count.
+	var remapped: Array = []
+	for b in standard["battle_advance"]:
+		remapped.append(int(b) + 1)
+	assert_eq(_distinct_count(remapped), _distinct_count(declared),
+		"a remap preserves the DISTINCT binding count; only the index changes, and the guard must permit that")
+	assert_ne(remapped, standard["battle_advance"], "sanity: the synthetic remap must actually differ")
 
 
 ## Closes a hole in this file's OWN exemption, found by re-reading it rather than by a failure.
