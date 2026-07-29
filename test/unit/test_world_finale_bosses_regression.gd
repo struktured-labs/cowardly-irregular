@@ -184,3 +184,34 @@ func test_finale_one_shot_thresholds_are_reachable() -> void:
 			continue
 		assert_gte(int(os.get("hp_threshold", 0)), int((d["stats"] as Dictionary)["max_hp"]),
 			"'%s' one_shot threshold must be >= max_hp or it can never fire" % id)
+
+## ── (5) BEHAVIOURAL: the wiring as the object reports it ─────────────
+
+func test_dungeons_report_their_finale_boss_at_runtime() -> void:
+	# The three assertions above read SOURCE TEXT — they pass on an
+	# assignment that is unreachable, overwritten later, or never read.
+	# That is a claim about spelling standing in for a claim about wiring
+	# (@cowir-sfx: derive from what is true of the THING, not how it is
+	# written).
+	#
+	# I logged this as "needs a fixture" because DragonCave subclasses run
+	# _ready. Then I checked WHERE boss_id is assigned: _init(), which runs
+	# on .new() with no scene tree at all. The fixture was imaginary — a
+	# true fact (subclasses have _ready) carried one step past where it held.
+	var expected: Dictionary = {
+		"SuburbanUnderground": ["the_coordinator", "world2_coordinator_defeated", 3],
+		"SteampunkMechanism": ["the_regulator", "world3_regulator_defeated", 4],
+		"AssemblyCore": ["the_director", "world4_director_defeated", 5],
+	}
+	for scene in expected:
+		var script: GDScript = load("res://src/maps/dungeons/%s.gd" % scene)
+		assert_not_null(script, "%s must load" % scene)
+		var inst: Node = script.new()
+		var want: Array = expected[scene]
+		assert_eq(str(inst.boss_id), str(want[0]),
+			"%s must REPORT its finale boss, not merely contain the string — a source pin passes on an assignment that never runs" % scene)
+		assert_eq(str(inst.boss_flag_key), str(want[1]),
+			"%s must report its story-closure flag" % scene)
+		assert_eq(int(inst.unlock_world), int(want[2]),
+			"%s must report the world it unlocks — without this the world is a dead end" % scene)
+		inst.free()
