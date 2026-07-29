@@ -71,6 +71,23 @@ MANIFEST = GAME / "data" / "sprite_manifest.json"
 # the final check.
 MIN_TRANSPARENT_PCT = 2.0    # below this, the background never keyed
 MAX_TRANSPARENT_PCT = 99.5   # above this, the frame is empty
+# ALPHA_EMPTY above is ABSOLUTE and was fitted to the two instances that
+# motivated it (7 opaque px, 140 opaque px). A mutation run 2026-07-29
+# specifically hoping it would survive DID: an idle reduced to 600 opaque
+# pixels is 99.08% transparent, clears the absolute gate, and is 0.023 of
+# its own attack pose — invisible in battle by any honest reading.
+#
+# So the absolute floor answers "is this frame empty" and cannot answer
+# "is this frame invisible NEXT TO THE SAME MONSTER'S other poses", which
+# is the shape both real defects actually had. Proportional floor added
+# beside it rather than replacing it: the two catch different things, and
+# swapping to the ratio alone flags 8 sheets whose attack legitimately
+# covers 3-4x their idle (measured; median ratio across 106 sheets = 0.95).
+#
+# 0.10 is chosen as a RELATIONSHIP, not fitted: the lowest legitimate sheet
+# in the corpus sits at 0.25 (2.5x clear) and the two real defects at
+# 0.0002 and 0.018 (5-500x clear). Nothing in the corpus is near it.
+MIN_IDLE_PEAK_RATIO = 0.10
 DETACHED_MIN_PCT = 1.0       # ignore antialias specks
 DETACHED_MAX_PCT = 40.0      # above this it's a real second subject (FX, weapon)
 AREA_DROP_PCT = 55.0         # frame loses >55% silhouette vs the previous
@@ -84,7 +101,8 @@ def frames_of(img: Image.Image, fw: int, fh: int):
                                       (col + 1) * fw, (row + 1) * fh))
 
 
-def check_sheet(path: Path, fw: int, fh: int, is_grid: bool) -> list[str]:
+def check_sheet(path: Path, fw: int, fh: int, is_grid: bool,
+                idle_frames: tuple | None = None) -> list[str]:
     out = []
     img = Image.open(path).convert("RGBA")
     # This tool slices frames using frame_width/frame_height FROM THE
@@ -100,6 +118,31 @@ def check_sheet(path: Path, fw: int, fh: int, is_grid: bool) -> list[str]:
         return [f"GEOMETRY {path.name}: manifest says {fw}x{fh} frames but "
                 f"the PNG is {W}x{H} — not evenly divisible, so every check "
                 f"below would slice garbage. Fix the manifest first."]
+    # Proportional invisibility: a frame that is present but tiny beside the
+    # same sheet's biggest pose. Strip sheets only — a grid sheet's rows are
+    # different characters, so cross-row comparison is meaningless.
+    if not is_grid:
+        areas = [int((np.array(f)[:, :, 3] > 8).sum())
+                 for _, _, f in frames_of(img, fw, fh)]
+        if areas and max(areas) > 0:
+            peak = max(areas)
+            # Idle span from the manifest when known, else the conventional
+            # first two frames of an 8-frame strip.
+            idle_end = idle_frames[1] if idle_frames else 1
+            # IDLE FRAMES ONLY. Scoping to every frame flagged ghost's DEAD
+            # pose at 8% — a dissolving ghost is correct art, and dead frames
+            # legitimately collapse (AREA_DROP already covers a pose losing
+            # its body). The invariant is about the resting pose: it is what
+            # BattleScene shows until the monster acts and what BestiaryMenu
+            # renders, which is exactly how both real defects presented as
+            # "invisible until it swings".
+            for i, a_ in enumerate(areas[:idle_end + 1]):
+                if a_ > 0 and a_ / peak < MIN_IDLE_PEAK_RATIO:
+                    out.append(
+                        f"ALPHA_TINY f{i}: {a_}px is {100.0 * a_ / peak:.1f}% "
+                        f"of this sheet's largest pose ({peak}px) — present but "
+                        f"invisible beside its own animation")
+
     prev_area = None
     for row, col, fr in frames_of(img, fw, fh):
         a = np.array(fr)[:, :, 3]
@@ -181,11 +224,17 @@ def manifest_sheets():
                 for anim in (anims if isinstance(anims, list) else []):
                     ap_ = p / f"{anim}.png"
                     if ap_.exists():
-                        yield section, f"{key}/{anim}", ap_, fw, fh, False
+                        yield section, f"{key}/{anim}", ap_, fw, fh, False, None
                 continue
             is_grid = bool(isinstance(anims, dict) and anims and all(
                 isinstance(v, dict) and "row" in v for v in anims.values()))
-            yield section, key, p, fw, fh, is_grid
+            # Derive the idle span from the manifest rather than assuming
+            # frames 0-1 — the convention holds today across every strip,
+            # but a sheet that declares otherwise should be believed.
+            idle = anims.get("idle") if isinstance(anims, dict) else None
+            span = ((idle["start"], idle["end"])
+                    if isinstance(idle, dict) and "start" in idle else None)
+            yield section, key, p, fw, fh, is_grid, span
 
 
 def main() -> int:
@@ -205,8 +254,8 @@ def main() -> int:
         return 0
 
     flagged, clean = {}, 0
-    for section, key, p, fw, fh, is_grid in manifest_sheets():
-        issues = check_sheet(p, fw, fh, is_grid)
+    for section, key, p, fw, fh, is_grid, span in manifest_sheets():
+        issues = check_sheet(p, fw, fh, is_grid, span)
         if issues:
             flagged[f"{section}/{key}"] = issues
         else:
