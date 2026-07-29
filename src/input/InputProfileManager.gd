@@ -78,10 +78,16 @@ const PROFILE_ULTIMATE_PRO_2 = {
 	"ui_accept": [1],          # B (East face)
 	"ui_cancel": [0],          # A (South face)
 	# struktured 2026-07-18: on the actual 8BitDo Ultimate Pro 2 hardware, L physically sends button 10 and R sends button 9 — the Godot JOY_BUTTON_LEFT/RIGHT_SHOULDER constants (9/10) don't match this device's reported indices. Hint bar reads "[L] Defer · [R] Advance"; keep hardware matching the hint bar, not the constant names.
-	# 2026-07-28 CONTEXT, NOT A CONTRADICTION: that measurement predates ControllerMappings. An index only means something once SDL normalizes the pad, and it did not then. With a mapping registered, 9 IS the left shoulder and 10 IS the right by definition, so this swap now INVERTS L/R against the hint bar rather than correcting it.
-	# It is unreachable by autodetect — neither of struktured's Ultimate 2 identities ("8BitDo Ultimate 2 Wireless Controller" / "…for PC") contains the "ultimate pro 2" substring, and a test pins that. It remains MANUALLY selectable in Settings, where it is the listed name closest to his actual pad. Selecting it on a mapped device swaps Defer and Advance. Retire-vs-keep is struktured's call; this note exists so the next reader does not have to re-measure.
-	"battle_advance": [9],     # physically R on this device
-	"battle_defer": [10],      # physically L on this device
+	# 2026-07-29 ALIGNED. The swap above was measured on real hardware BEFORE ControllerMappings
+	# existed, when a raw index genuinely did not mean what the constant said. With a mapping
+	# registered, 9 IS the left shoulder and 10 IS the right by definition, so keeping the swap
+	# INVERTED Defer and Advance against the hint bar for anyone who picked this profile.
+	# Autodetect never reaches it (neither Ultimate 2 identity contains "ultimate pro 2", pinned
+	# by test) but it stays MANUALLY selectable, and it is the listed name closest to struktured's
+	# actual pad — the tempting choice. Aligning is correct under either half of the open
+	# retire-vs-keep ruling; that ruling now only decides whether the entry exists at all.
+	"battle_advance": [10],    # RIGHT_SHOULDER — aligned with Standard and the hint bar
+	"battle_defer": [9],       # LEFT_SHOULDER — aligned with Standard and the hint bar
 	"battle_toggle_auto": [4], # BACK (Select/Minus)
 	"ui_menu": [6, 7],         # START + L3 — project.godot declares both; dropping 7 here was the same silent loss already fixed in PROFILE_STANDARD
 }
