@@ -86,7 +86,7 @@ func test_every_ending_branch_declares_its_theme() -> void:
 			if s is Dictionary and s.get("type", "") == "play_music":
 				tracks.append(str(s.get("track", "")))
 		assert_true(tracks.has(EXPECTED[key]),
-			"the '%s' ending must play \"%s\" — it is composed, in the manifest and on disk, and without this step the ending plays on whatever bed happened to be running" % [key, EXPECTED[key]])
+			"the '%s' ending must play \"%s\" — composed, in the manifest, on disk. Without this step the ending plays on whatever bed happened to be running. NOTE before you 'fix' this: these four OGGs are excluded from the WEB export (cutscene_w6* in export_presets.cfg), so restoring the step scores the ending on DESKTOP only" % [key, EXPECTED[key]])
 
 
 func test_every_wired_theme_exists_in_the_manifest() -> void:
