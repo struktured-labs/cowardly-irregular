@@ -65,8 +65,12 @@ func describe_pad_status(has_pad: bool, pad_name: String, is_known: bool, guid: 
 		return {"text": "No gamepad detected — keyboard bindings still apply", "warn": false}
 	if is_known:
 		return {"text": "%s — SDL mapping OK" % pad_name, "warn": false}
+	# Points at the pre-existing F11 overlay rather than duplicating it. GamepadDiagnostic has shown
+	# name/GUID/is_joy_known plus live button and axis reads since long before this readout existed —
+	# the 2026-07-28 controller hunt was a DISCOVERABILITY failure as much as a diagnostic one, so the
+	# one place a player looks when their pad misbehaves should name the deeper tool.
 	return {
-		"text": "%s — NO SDL MAPPING: the buttons below are WRONG for this pad (guid %s)" % [pad_name, guid],
+		"text": "%s — NO SDL MAPPING: the buttons below are WRONG for this pad (guid %s) · F11 for live button/axis readout" % [pad_name, guid],
 		"warn": true,
 	}
 
