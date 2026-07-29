@@ -42,8 +42,13 @@ func test_hint_bar_does_not_advertise_the_unbound_plus_minus_speed_control() -> 
 				continue
 			if stripped.contains("[+/-] Speed"):
 				offenders.append(stripped)
-		assert_eq(offenders, [] as Array[String],
-			"%s advertises +/- for battle speed, but no +/- handler for speed exists in src/ — either bind it or do not print it:\n%s" % [path, "\n".join(offenders)])
+		if offenders.is_empty():
+			continue
+		# CONDITIONAL, not a ban. The offence is advertising +/- while nothing binds it — not the
+		# token itself. Banning the string outright would go RED on a correct change: someone who
+		# actually wires +/- to speed SHOULD be able to print the hint. Assert the relationship.
+		assert_true(_plus_minus_toggles_speed(),
+			"%s advertises +/- for battle speed. That is only honest if something binds it — and nothing does, so a player pressing +/- gets nothing. Either wire +/- to _toggle_battle_speed, or do not print it:\n%s" % [path, "\n".join(offenders)])
 
 
 ## Both files print the same bar. They drifted apart silently once already (the duplicated literal),
@@ -140,3 +145,18 @@ func _all_gd_files() -> Array[String]:
 	# Positive control: an empty or tiny corpus makes the scan vacuously green.
 	assert(found.size() > 50)
 	return found
+
+## True when some key in the +/- family actually reaches the speed toggle. Adjacency, same technique
+## as the JOY_BUTTON_Y check: presence of both tokens somewhere in a 390KB file proves nothing.
+func _plus_minus_toggles_speed() -> bool:
+	for path in _all_gd_files():
+		var lines := FileAccess.get_file_as_string(path).split("\n")
+		for i in lines.size():
+			var line: String = lines[i]
+			if not (line.contains("KEY_PLUS") or line.contains("KEY_MINUS") \
+					or line.contains("KEY_EQUAL") or line.contains("KEY_KP_ADD")):
+				continue
+			for j in range(i, mini(lines.size(), i + 5)):
+				if lines[j].contains("_toggle_battle_speed("):
+					return true
+	return false
