@@ -54,12 +54,26 @@ GAME = Path("/home/struktured/projects/cowardly-irregular-artist-ship")
 MANIFEST = GAME / "data" / "sprite_manifest.json"
 
 ARTIST_BASELINE_TAG = "v0.15.0"
-# Commits whose subject states they imported artist-authored pixels. Add to
-# this list when a new artist drop lands; a missing entry weakens the check
-# but cannot make it lie, since every rule here is sufficient-not-necessary.
-ARTIST_IMPORT_COMMITS = {
-    "4cab90d0",  # fighter/mage/rogue idle+attack from artist drive archive
-}
+
+# Derived, not curated. A curated hash list is the thing that let this rot in
+# the first place — it only knows the drops someone remembered to add.
+#
+# A file's MOST RECENT commit decides what its pixels are now. If that commit
+# says it took them from an artist source, they are artist pixels.
+ARTIST_SOURCE = (
+    ".aseprite", "artist drive archive", "artist-normalized",
+    "artist tag-rename", "artist idle placeholder", "artist original",
+    "restore artist", "artist sprite",
+)
+# ...unless the same subject also says a machine made them. This exclusion is
+# load-bearing: my first attempt was a bare grep for "artist" and it called
+# bard_sdxl "9/9 artist-sourced", because its subject says the LoRA was
+# ARTIST-TRAINED. Trained-on-artist-work and drawn-by-the-artist are opposite
+# claims about the pixels and share a word.
+MACHINE_SOURCE = (
+    "lora", "sdxl", "ml-gen", "ip-adapter", "controlnet", "gen_",
+    "trained", "sweep", "procedural", "gpt-image", "diffusion",
+)
 
 
 def _git(*args: str) -> str:
@@ -83,13 +97,62 @@ def artist_evidence(rel_dir: str) -> list[str]:
         if baseline and baseline == _blob_hash(png):
             out.append(f"{png.name}: byte-identical to {ARTIST_BASELINE_TAG}")
             continue
-        last = _git("log", "-1", "--format=%h", "--", str(rel)).strip()
-        if last in ARTIST_IMPORT_COMMITS:
-            out.append(f"{png.name}: content from {last} (artist import)")
+        # Walk newest -> oldest and take the FIRST DECISIVE commit. Using
+        # only the newest is a false negative in the dangerous direction:
+        # mage/idle's last commit is "strip purple canvas bg from mage
+        # idle/attack/cast", a cleanup that says nothing about who drew the
+        # pixels, and its parent is "artist tag-rename" over an artist drive
+        # import. Neutral operations must not erase provenance — they are
+        # the normal fate of shipped artist art.
+        verdict = None
+        for subj in _git("log", "--format=%s", "--", str(rel)).splitlines():
+            s = subj.strip().lower()
+            machine = any(w in s for w in MACHINE_SOURCE)
+            artist = any(w in s for w in ARTIST_SOURCE)
+            if machine and not artist:
+                verdict = None
+                break
+            if artist and not machine:
+                verdict = f"{png.name}: artist-source commit ({s[:56]})"
+                break
+        if verdict:
+            out.append(verdict)
     return out
 
 
+def self_check() -> bool:
+    """Controls. A classifier nobody has tried to fool is a guess.
+
+    Both directions matter and they fail differently: a false negative
+    silently un-protects artist work (the bug this tool exists for), while a
+    false positive would have me relabel machine sheets as artist and refuse
+    to regenerate my own output.
+    """
+    must_be_artist = ["assets/sprites/jobs/fighter"]
+    must_not_be = [
+        "assets/sprites/jobs/bard_sdxl",     # subject says "artist-trained LoRA"
+        "assets/sprites/jobs/mage_sdxl",
+        "assets/sprites/jobs/guardian",      # v3 LoRA sweep, no artist source
+        "assets/sprites/jobs/summoner",
+    ]
+    ok = True
+    for d in must_be_artist:
+        if not artist_evidence(d):
+            print(f"CONTROL FAILED: {d} must read as artist and did not")
+            ok = False
+    for d in must_not_be:
+        ev = artist_evidence(d)
+        if ev:
+            print(f"CONTROL FAILED: {d} must NOT read as artist — got {ev[:2]}")
+            ok = False
+    return ok
+
+
 def main() -> int:
+    if not self_check():
+        print("\nControls failed — the classifier is wrong, so every result "
+              "below is untrustworthy. Fix it before believing any of this.")
+        return 2
     m = json.loads(MANIFEST.read_text())
     findings = []
     for section in ("sheets", "monster_sheets", "overworld_npc_sheets"):
