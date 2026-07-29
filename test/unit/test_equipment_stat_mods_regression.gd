@@ -45,26 +45,33 @@ func test_get_equipment_mods_defaults_include_magic_defense() -> void:
 
 
 func test_an_unrecognised_stat_key_is_summed_not_dropped() -> void:
-	# The actual defect. Inject a slot whose stat_mods carry a key the old allowlist never named,
-	# and confirm it survives the accumulation rather than vanishing.
+	# SWEPT across keys AND slots. The property is "ANY stat key on ANY slot is summed" — a single
+	# probe cannot express that, and the original version (one magic_defense weapon) passed 9/9
+	# against a fix that special-cased exactly that key. cowir-ai's fixture-coincidence class:
+	# the mutation applied, the guard ran, the code was broken, and it printed green.
 	var es := EquipmentSystem
-	var saved: Variant = es.weapons.get("__probe_weapon__")
-	es.weapons["__probe_weapon__"] = {
-		"id": "__probe_weapon__", "name": "Probe", "weapon_type": "sword",
-		"stat_mods": {"magic_defense": 40}
-	}
-	var c := Combatant.new()
-	c.combatant_name = "test"
-	c.equipped_weapon = "__probe_weapon__"
-	var mods: Dictionary = es.get_equipment_mods(c)
-	assert_eq(int(mods.get("magic_defense", 0)), 40,
-		"a stat_mods key outside the old six must be summed — filtering it is what made gear "
-		+ "bonuses disappear without a word")
-	c.free()
-	if saved == null:
-		es.weapons.erase("__probe_weapon__")
-	else:
-		es.weapons["__probe_weapon__"] = saved
+	var tables := {"weapons": es.weapons, "armors": es.armors, "accessories": es.accessories}
+	var slot_field := {"weapons": "equipped_weapon", "armors": "equipped_armor",
+		"accessories": "equipped_accessory"}
+	var checked: int = 0
+	for slot in tables:
+		for stat in Combatant.MODDABLE_STATS:
+			var probe_id: String = "__probe_%s_%s__" % [slot, stat]
+			(tables[slot] as Dictionary)[probe_id] = {
+				"id": probe_id, "name": "Probe", "weapon_type": "sword",
+				"stat_mods": {stat: 40}
+			}
+			var c := Combatant.new()
+			c.combatant_name = "test"
+			c.set(slot_field[slot], probe_id)
+			var mods: Dictionary = es.get_equipment_mods(c)
+			checked += 1
+			assert_eq(int(mods.get(stat, 0)), 40,
+				"%s on the %s slot must be summed — filtering ANY key is what made gear bonuses "
+					% [stat, slot] + "vanish without a word")
+			c.free()
+			(tables[slot] as Dictionary).erase(probe_id)
+	assert_eq(checked, 21, "positive control — 3 slots × 7 moddable stats must be exercised")
 
 
 func test_the_probe_would_have_failed_before_the_fix() -> void:
@@ -123,3 +130,31 @@ func test_magic_defense_has_a_distinct_short_code() -> void:
 	assert_ne(StatNames.short_code("magic_defense"), StatNames.short_code("magic"),
 		"magic and magic_defense must not share a display code in the equipment/battle readouts")
 	assert_eq(StatNames.display_name("magic_defense"), "Magic Defense")
+
+
+func test_a_key_OUTSIDE_the_seeded_set_is_still_summed() -> void:
+	# The 21-combination sweep above CANNOT see the defect class, and finding that out is the point.
+	#
+	# total_mods is SEEDED from MODDABLE_STATS, so `total_mods.has(stat)` is true for every stat in
+	# it. Reinstating the original allowlist filter verbatim passes that sweep 9/9 — every stat it
+	# tries is already a key. The drop only shows on a key OUTSIDE the seed.
+	#
+	# A subtler relative of the fixture-coincidence class: the sweep was wide, and wide along an
+	# axis the defect does not vary on. Sweeping harder in the wrong dimension proves nothing, and
+	# it looks more rigorous than the single probe it replaced.
+	var es := EquipmentSystem
+	var future_stat := "luck"   # stands in for any stat the DATA gains before the authority list
+	assert_false(Combatant.MODDABLE_STATS.has(future_stat),
+		"this test needs a key the seed does NOT contain — if 'luck' became moddable, pick another")
+	var probe_id := "__probe_unseeded__"
+	es.weapons[probe_id] = {"id": probe_id, "name": "Probe", "weapon_type": "sword",
+		"stat_mods": {future_stat: 40}}
+	var c := Combatant.new()
+	c.combatant_name = "test"
+	c.equipped_weapon = probe_id
+	var mods: Dictionary = es.get_equipment_mods(c)
+	c.free()
+	es.weapons.erase(probe_id)
+	assert_eq(int(mods.get(future_stat, 0)), 40,
+		"a stat_mods key outside the seeded set must be SUMMED. Filtering it is the original "
+		+ "defect, and it is invisible to any sweep restricted to stats the seed already contains")
