@@ -59,9 +59,14 @@ func test_crit_variants_replaced_dagger_axe_lengths_are_distinct_now() -> void:
 		assert_true(crit_dur >= base_dur * 1.5, "%s crit (%.2fs) is >=1.5x base (%.2fs) — distinct" % [w, crit_dur, base_dur])
 
 
-func test_manifest_size_increment_covers_the_6_new_keys() -> void:
-	## Sanity: manifest grew by 6 (5 strikes + 1 weakness_flash; the 2 crits
-	## are overwrites, not additions). Pins against accidental duplicate keys.
+func test_manifest_load_is_not_vacuous() -> void:
+	## POSITIVE CONTROL, not a size pin. The key-presence tests above only mean
+	## something if the manifest actually loaded — an empty dict would fail them
+	## for the wrong reason. This asserts the sweep had something to sweep.
+	##
+	## Was `count >= 250` (cowir-ai's class, msg 3293): a bare magnitude is
+	## satisfied by any large manifest, so it could not tell a correct edit from
+	## someone deleting five keys. The specific keys are pinned by name above;
+	## the count only needs to prove the load happened.
 	var sm: Node = get_node_or_null("/root/SoundManager")
-	var count: int = sm._sfx_manifest.size()
-	assert_true(count >= 250, "manifest at least 250 keys after cycle #9b (has %d)" % count)
+	assert_true(sm._sfx_manifest.size() > 0, "manifest loaded and is non-empty")
