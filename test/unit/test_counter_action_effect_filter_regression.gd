@@ -46,6 +46,28 @@ func _boss() -> Combatant:
 	return c
 
 
+## ── (0) THE PREMISE every assertion below rests on ───────────────────
+
+func test_premise_the_caller_actually_uses_the_returned_action() -> void:
+	# @cowir-sfx's inversion class (msg 3387): a true premise, asserted
+	# nowhere, whose falsification makes a guard rot into NO claim rather
+	# than a false one.
+	#
+	# Everything below proves _get_counter_action RETURNS the right action.
+	# That only matters because _make_ai_decision returns it as the boss's
+	# move. Change the caller to ignore or discard it and every assertion
+	# in this file still passes while the fix is inert — which is exactly
+	# how my own dragon-intent commit died: verified return value, unread
+	# by the path the boss takes.
+	var src: String = FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
+	var call_at: int = src.find("_get_counter_action(combatant, counter_strategy")
+	assert_gt(call_at, -1,
+		"PREMISE BROKEN: _make_ai_decision no longer calls _get_counter_action. Every assertion below this line is vacuous — the function may be perfect and no boss will ever run it.")
+	var window: String = src.substr(call_at, 260)
+	assert_true(window.contains("if not counter_action.is_empty()") and window.contains("return counter_action"),
+		"PREMISE BROKEN: the caller no longer RETURNS the counter action. The asserts below still pass because they call the function directly — they would be proving a value nobody reads. Re-instrument this file against whatever consumes it now; do not delete the premise to make it green.")
+
+
 ## ── (1) The regression: the action is actually produced ──────────────
 
 func test_glacius_defense_boost_returns_a_real_action() -> void:
