@@ -7,7 +7,7 @@ extends GutTest
 ## ⚠️ CORRECTED 2026-07-29. This file previously said a backup pad "could silently take the camera
 ## away from the pad in his hands." THAT WAS FALSE and I retracted it in GamepadFilter.gd (c94783d2)
 ## without fixing it here. `preferred_device`'s only consumers are `right_stick_x` / `shoulder_rotate`,
-## the input half of Mode 7 camera rotation, which Mode7Overlay.gd:334 deliberately disables. Nothing
+## the input half of Mode 7 camera rotation, which Mode7Overlay.gd deliberately disables (search: "Camera rotation DISABLED"). Nothing
 ## is being taken, because there is no camera rotation to take.
 ##
 ## The ranking is still correct and still worth guarding — it is preparation that will be right the
@@ -56,8 +56,12 @@ func test_unknown_pads_rank_last_but_are_still_selectable() -> void:
 ## The axis this file reads is only meaningful once SDL normalizes the pad. It was a bare `2`, and
 ## before that a `2-5` range that swept in the right stick Y and BOTH triggers.
 func test_right_stick_axis_is_a_named_constant_not_a_magic_number() -> void:
+	# States the INSTRUCTION (cannot rot) and POINTS at the header for the claim about external
+	# state (can). My first version restated the header's claim here too — two copies of one rotting
+	# fact, in a fix made specifically to solve the two-audiences problem. cowir-story's refinement:
+	# two-audiences is not solved by writing both carefully, it is solved by having ONE copy.
 	assert_eq(_filter.RIGHT_STICK_X_AXIS, JOY_AXIS_RIGHT_X,
-		"the right-stick capture must read the NAMED axis constant — this feeds Mode 7 camera rotation, which is currently DISABLED at Mode7Overlay.gd:334, so a wrong axis here would be invisible until the day that feature turns on")
+		"the right-stick capture must read the NAMED axis constant, not a bare number — and see this file's header before assuming a wrong value here would be visible in play")
 	var src: String = FileAccess.get_file_as_string("res://src/input/GamepadFilter.gd")
 	assert_false(src.contains("e.axis == 2"),
 		"no bare axis numbers — an axis index means nothing until SDL maps the device")

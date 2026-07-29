@@ -40,7 +40,7 @@ func test_hint_bar_does_not_advertise_the_unbound_plus_minus_speed_control() -> 
 			var stripped := line.strip_edges()
 			if stripped.begins_with("#"):
 				continue
-			if stripped.contains("[+/-] Speed"):
+			if _advertises_plus_minus_speed(stripped):
 				offenders.append(stripped)
 		if offenders.is_empty():
 			continue
@@ -90,22 +90,15 @@ func test_speed_toggle_is_actually_wired_to_the_advertised_button() -> void:
 	var lines := _read(BATTLE_PATH).split("\n")
 	var wired := false
 	for i in lines.size():
-		if not lines[i].contains("JOY_BUTTON_Y"):
-			continue
-		# The dispatch arm and its call sit together; a repoint moves them apart.
-		for j in range(i, mini(lines.size(), i + 4)):
-			if lines[j].contains("_toggle_battle_speed("):
-				wired = true
+		if lines[i].contains("JOY_BUTTON_Y") and _calls_within_block(lines, i, "_toggle_battle_speed("):
+			wired = true
 	assert_true(wired,
 		"the [X] hint promises the north/top face toggles speed — JOY_BUTTON_Y must actually CALL _toggle_battle_speed, not merely appear in the same 390KB file")
 
 	var kb_wired := false
 	for i in lines.size():
-		if not lines[i].contains("KEY_QUOTELEFT"):
-			continue
-		for j in range(i, mini(lines.size(), i + 4)):
-			if lines[j].contains("_toggle_battle_speed("):
-				kb_wired = true
+		if lines[i].contains("KEY_QUOTELEFT") and _calls_within_block(lines, i, "_toggle_battle_speed("):
+			kb_wired = true
 	assert_true(kb_wired,
 		"the keyboard half (` key) must call _toggle_battle_speed, same reasoning")
 
@@ -156,7 +149,45 @@ func _plus_minus_toggles_speed() -> bool:
 			if not (line.contains("KEY_PLUS") or line.contains("KEY_MINUS") \
 					or line.contains("KEY_EQUAL") or line.contains("KEY_KP_ADD")):
 				continue
-			for j in range(i, mini(lines.size(), i + 5)):
-				if lines[j].contains("_toggle_battle_speed("):
-					return true
+			if _calls_within_block(lines, i, "_toggle_battle_speed("):
+				return true
 	return false
+
+## Does the dispatch arm opening at `start` CALL `needle` before its block ends?
+##
+## Scope, not a line count. The previous form scanned a fixed 4-line window, which is a
+## COORDINATE: inserting four comment lines between the check and its call — behaviour entirely
+## unchanged — made this guard go RED on correct code. Measured 2026-07-29. That is the standing
+## pitfall about ratchets pinned to coincidental values, shipped in the same file where I had just
+## fixed the other instance of it.
+##
+## A block ends at the first non-blank, non-comment line indented at or below the arm itself.
+func _calls_within_block(lines: PackedStringArray, start: int, needle: String) -> bool:
+	var base := lines[start].length() - lines[start].strip_edges(true, false).length()
+	for j in range(start + 1, lines.size()):
+		var line: String = lines[j]
+		var bare := line.strip_edges()
+		if bare.is_empty() or bare.begins_with("#"):
+			continue
+		var indent := line.length() - line.strip_edges(true, false).length()
+		if indent <= base:
+			return false
+		if line.contains(needle):
+			return true
+	return false
+
+## Does this line advertise +/- as a SPEED control, in any wording?
+##
+## The first version matched the literal "[+/-] Speed" — the exact phrasing that existed the day I
+## found the bug. That is the INCIDENT vocabulary, not the property (cowir-story's framing, and
+## cowir-sfx's: the bug report is a sample; the guard should assert the invariant the bug violated).
+## Measured 2026-07-29: "Press +/- to change battle speed" with nothing bound sailed straight past
+## it — the same defect, different words, guard green.
+##
+## The property is "a player-facing string offers +/- for speed". Both tokens on one line, so an
+## unrelated +/- elsewhere in a file cannot trip it. Covers the Unicode minus too, because a
+## designer writing UI text is more likely to type it than a programmer is.
+func _advertises_plus_minus_speed(line: String) -> bool:
+	if not line.to_lower().contains("speed"):
+		return false
+	return line.contains("+/-") or line.contains("+/\u2212") or line.contains("+ / -")
