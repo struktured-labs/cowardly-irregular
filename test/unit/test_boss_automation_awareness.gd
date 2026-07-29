@@ -198,3 +198,69 @@ func test_source_autobattle_tier_requires_every_living_pc() -> void:
 		"'autobattle' must require EVERY living PC to be scripted — one manual character means a person is still choosing, and the boss would be lying")
 	assert_true(src.find("_get_character_id(member)") != -1,
 		"must use the canonical id helper — a hand-rolled derivation would silently never match")
+
+
+# ── Behaviour, because the source pins above are LABEL READS ─────────────────
+#
+# 2026-07-28: measured, not assumed. Deleting the `is_alive` filter from
+# _resolve_party_automation_tier leaves every string those two tests pin fully
+# intact, and all 15 tests in this file stayed green — while a single dead party
+# member silently dropped the tier to "" and the boss stopped noticing
+# automation. The word doing the work in the message above is "living", and
+# nothing here exercised it.
+#
+# Same shape as cowir-music's Mordaine guard reading the manifest's `duration`
+# instead of the audio: a guard written to catch a defect, reading the label
+# rather than the thing. A green ratchet and a ratchet measuring the wrong thing
+# are indistinguishable from outside — the only way to tell is to reintroduce
+# the defect and confirm red, which is how these two were written.
+
+func _combatant(nm: String, alive: bool) -> Combatant:
+	var c := Combatant.new()
+	c.combatant_name = nm
+	c.is_alive = alive
+	return c
+
+
+## Run the resolver against a party, always restoring live autoload state.
+func _tier_for(members: Array, global_auto: bool) -> String:
+	var saved: Array = []
+	for m in BattleManager.player_party:
+		saved.append(m)
+	var saved_flag: bool = BattleManager.is_autobattle_enabled
+	BattleManager.player_party.clear()
+	for m in members:
+		BattleManager.player_party.append(m)
+	BattleManager.is_autobattle_enabled = global_auto
+	var tier: String = BattleManager._resolve_party_automation_tier()
+	BattleManager.is_autobattle_enabled = saved_flag
+	BattleManager.player_party.clear()
+	for m in saved:
+		BattleManager.player_party.append(m)
+	return tier
+
+
+func test_all_living_and_scripted_reports_autobattle() -> void:
+	# Positive control. Without this the dead-member test below could pass for
+	# the wrong reason — a resolver that returned "autobattle" unconditionally.
+	var tier: String = _tier_for([_combatant("Alpha", true), _combatant("Beta", true)], true)
+	assert_eq(tier, "autobattle",
+		"a fully scripted living party must read as 'autobattle'; got '%s'" % tier)
+
+
+func test_dead_member_does_not_suppress_the_autobattle_tier() -> void:
+	# THE REGRESSION. Every living PC is scripted, so the player IS stepped back
+	# and the boss should say so. A corpse in the party is not a person deciding.
+	var tier: String = _tier_for([_combatant("Alpha", true), _combatant("Beta", false)], true)
+	assert_eq(tier, "autobattle",
+		("a DEAD party member dropped the tier to '%s'. Every living PC is scripted, so nobody is " +
+		"deciding and the boss must still notice. This is what deleting the `is_alive` filter does, " +
+		"and every source-text pin in this file survives that deletion.") % tier)
+
+
+func test_party_with_no_living_members_reports_nothing() -> void:
+	# The `living > 0` clause, exercised rather than grepped: an all-dead party
+	# is a wipe, not a demonstration of automation.
+	var tier: String = _tier_for([_combatant("Alpha", false)], true)
+	assert_eq(tier, "",
+		"an all-dead party must report no automation tier, not '%s'" % tier)
