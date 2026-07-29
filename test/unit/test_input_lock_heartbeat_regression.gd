@@ -94,6 +94,15 @@ func _analyse_locks() -> Dictionary:
 				if not line.begins_with("func "):
 					lambda_open = true
 
+			# Comments are not call sites. A prose mention of push_lock("x") would enter `pushed`
+			# and then be flagged as an undocumented lock — a false positive on correct code, which
+			# is the worse direction (cowir-story/cowir-ai's class, 2026-07-29). Measured: zero such
+			# comments in src/ today, so this is a latent hole, not a live one. Fixed because
+			# _classify_pop_all below already skips them and one file disagreeing with itself is its
+			# own trap.
+			if line.strip_edges().begins_with("#"):
+				continue
+
 			var pushed_id := _quoted_arg(line, "push_lock(")
 			if pushed_id != "":
 				pushed[pushed_id] = true
