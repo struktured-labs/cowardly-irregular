@@ -96,6 +96,8 @@ const CONDITION_TYPES = {
 	"enemy_has_status": "Enemy Has Status",
 	"ally_mp_percent": "Ally MP %",
 	"is_night": "Is Night",
+	"has_buff": "Has Buff",
+	"not_has_buff": "No Buff",
 	"always": "Always"
 }
 

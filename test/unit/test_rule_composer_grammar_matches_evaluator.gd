@@ -44,6 +44,7 @@ const AXES: Array[Dictionary] = [
 		"tail": "Each numeric condition",
 		"src": AUTOBATTLE_SRC,
 		"needle": "func _evaluate_grid_condition",
+		"validator": "CONDITION_TYPES",
 		"floor": 12,
 		"accessor": "condition",
 	},
@@ -54,6 +55,7 @@ const AXES: Array[Dictionary] = [
 		"tail": "ability requires id",
 		"src": AUTOBATTLE_SRC,
 		"needle": "match action_type:",
+		"validator": "ACTION_TYPES",
 		"floor": 3,
 		"accessor": "action",
 	},
@@ -64,6 +66,7 @@ const AXES: Array[Dictionary] = [
 		"tail": "weakest_to_ability aims",
 		"src": AUTOBATTLE_SRC,
 		"needle": "match target_type:",
+		"validator": "TARGET_TYPES",
 		"floor": 8,
 		"accessor": "",
 	},
@@ -74,6 +77,7 @@ const AXES: Array[Dictionary] = [
 		"tail": "Numeric conditions take",
 		"src": AUTOGRIND_SRC,
 		"needle": "func _evaluate_party_condition",
+		"validator": "PARTY_CONDITION_TYPES",
 		"floor": 12,
 		"accessor": "condition",
 	},
@@ -84,6 +88,7 @@ const AXES: Array[Dictionary] = [
 		"tail": "switch_profile requires",
 		"src": AUTOGRIND_SRC,
 		"needle": "match action_type:",
+		"validator": "AUTOGRIND_ACTION_TYPES",
 		"floor": 4,
 		"accessor": "action",
 	},
@@ -259,6 +264,62 @@ func test_every_field_the_evaluator_reads_is_documented() -> void:
 					"cannot supply a key it was not told about, so the field arrives missing, the read " +
 					"silently defaults, and the rule never fires — with no validation error.")
 					% [axis["name"], verb, f])
+
+
+## Verbs the VALIDATOR accepts, from its own const dict (id -> display label).
+func _validated(axis: Dictionary) -> Array:
+	var name: String = str(axis.get("validator", ""))
+	if name == "":
+		return []
+	var src: String = FileAccess.get_file_as_string(str(axis["src"]))
+	var at: int = src.find("const " + name)
+	if at == -1:
+		return []
+	var out: Array = []
+	var re := RegEx.new()
+	re.compile('^\\s*"([a-z_]+)"\\s*:')
+	for line in src.substr(at).split("\n"):
+		if line.begins_with("}"):
+			break
+		var m: RegExMatch = re.search(line)
+		if m != null and not out.has(m.get_string(1)):
+			out.append(m.get_string(1))
+	return out
+
+
+func test_validator_sets_are_parsed() -> void:
+	# Control for the clause below: an unparsed const yields an empty set, and
+	# an empty set agrees with nothing — which reads exactly like agreement.
+	for axis in AXES:
+		var v: Array = _validated(axis)
+		assert_gte(v.size(), int(axis["floor"]),
+			("[%s] parsed only %d entries from const %s (floor %d) — the const's shape has changed, so " +
+			"this axis compares nothing.") % [axis["name"], v.size(), axis["validator"], int(axis["floor"])])
+
+
+func test_validator_accepts_exactly_what_the_evaluator_runs() -> void:
+	# THE THIRD LIST. This file's header used to claim there wasn't one —
+	# "RuleComposer delegates validation to AutobattleSystem itself" — which is
+	# true and does NOT mean the validator uses the evaluator's match arms. It
+	# gates on separate const dicts that also populate the grid editor's menus.
+	#
+	# FOUND LIVE (2026-07-29): documenting has_buff / not_has_buff in the grammar
+	# made the composer able to emit them while CONDITION_TYPES still rejected
+	# them — and validate_rule failing ANY condition fails the WHOLE composition,
+	# so the player asking for "buff only when it isn't up" got the empty draft.
+	# A grammar-vs-evaluator check cannot see this: both ends were correct.
+	for axis in AXES:
+		var val: Array = _validated(axis)
+		var impl: Array = _implemented(axis)
+		for verb in val:
+			assert_true(impl.has(verb),
+				("[%s] const %s ACCEPTS '%s' but the dispatch at '%s' has no arm — it validates, saves, " +
+				"and silently never runs.") % [axis["name"], axis["validator"], verb, axis["needle"]])
+		for verb in impl:
+			assert_true(val.has(verb),
+				("[%s] '%s' is implemented but const %s REJECTS it. validate_rule fails the whole rule, so " +
+				"a composed rule using it resolves to the empty fallback draft with no indication why.")
+				% [axis["name"], verb, axis["validator"]])
 
 
 func test_buff_conditions_reach_the_composer() -> void:
