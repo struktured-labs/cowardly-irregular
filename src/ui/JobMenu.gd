@@ -563,7 +563,8 @@ func _get_stat_comparison(new_job: Dictionary) -> String:
 	var new_mods = new_job.get("stat_modifiers", {})
 	var parts = []
 
-	for stat_name in ["attack", "defense", "magic", "speed", "max_hp"]:
+	# magic_defense included: all 14 jobs modify it (+30..+70) and it decides magical damage since the stat split — omitting it hid a 40-point swing on the screen built to compare jobs. Order matches BattleUIManager's equipment readout.
+	for stat_name in ["attack", "defense", "magic", "magic_defense", "speed", "max_hp"]:
 		var current_val = current_mods.get(stat_name, 0)
 		var new_val = new_mods.get(stat_name, 0)
 		var diff = new_val - current_val
