@@ -58,6 +58,91 @@ func test_the_profile_derivation_actually_finds_the_profiles() -> void:
 	assert_false(found.has("ACTION_LABELS"), "ACTION_LABELS maps action -> String, not action -> button list; if it enters the set the shape filter is not filtering")
 
 
+## THE THIRD LIST. A profile exists in three places keyed differently, and my other guards see one:
+##
+##   const PROFILE_X = {...}          the bindings          <- what _profiles() derives
+##   PROFILE_NAMES = [...]            the Settings menu, by DISPLAY name
+##   get_profile_bindings() match     display name -> dict
+##
+## That match ends in `_: return PROFILE_STANDARD`. So a profile added as a const and listed in the
+## menu, but missed in the match, applies STANDARD when the player selects it — no error, no warning,
+## nothing on screen. The binding-count guards above would pass it: they read the const directly and
+## never ask whether anything can reach it.
+##
+## Consistent today, and one edit from not being. Found by asking cowir-ai's question after they
+## shipped this exact shape (2026-07-29): both ends of my check were right and there was a list in
+## the middle. Their `_:`-less validator failed LOUDLY on the unknown; this one falls back silently,
+## which is the worse half of the same defect.
+##
+## Behavioural on purpose — it calls the real resolver rather than reading the match arms as text,
+## so it holds if the dispatch is rewritten.
+func test_every_menu_profile_resolves_to_its_own_bindings() -> void:
+	var names: Array = _ipm.PROFILE_NAMES
+	assert_gt(names.size(), 2, "positive control: PROFILE_NAMES must list the real profiles, or this test iterates nothing")
+
+	# The dispatch ARMS, read from source. Two behavioural predicates were tried first and BOTH were
+	# wrong, in a way worth recording because each looked obviously right:
+	#
+	#   got == PROFILE_STANDARD        red on the clean tree. PROFILE_SN30's bindings are
+	#                                  byte-identical to Standard's, so a legitimate profile reads
+	#                                  as a fallthrough. Content cannot distinguish them.
+	#   is_same(got, PROFILE_STANDARD) ALSO red. GDScript de-duplicates identical constant
+	#                                  dictionaries in the script's constant pool, so `return
+	#                                  PROFILE_SN30` and `return PROFILE_STANDARD` load the SAME
+	#                                  object while the two consts read as distinct from outside.
+	#
+	# Proven by differentiating the consts: with SN30's ui_accept changed to [1, 3] the arm resolves
+	# correctly (is_same(got, SN30) true). The arm works; both predicates were measuring an artifact.
+	#
+	# So no runtime probe can tell "matched its own arm" from "fell through" while two profiles are
+	# content-identical, and profiles being identical is legitimate — the SN30 pad conforms to the
+	# standard layout. The dispatch text is the only instrument that answers the question asked, the
+	# same position cowir-ai reached for match arms: available, not lazy.
+	#
+	# BOUNDARY: a dispatch rewritten as a lookup table, or arms built from a variable, evades this.
+	# The positive control below fails loudly if the parse ever stops finding arms.
+	var arms := _dispatch_arms()
+	assert_gt(arms.size(), 2, "positive control: the get_profile_bindings dispatch must yield its arms — an empty set makes the check below vacuous")
+
+	var unreachable: Array[String] = []
+	for profile_name in names:
+		if not (str(profile_name) in arms):
+			unreachable.append(str(profile_name))
+	assert_eq(unreachable, [] as Array[String],
+		"these profiles are offered in the Settings menu but have no arm in get_profile_bindings, so selecting one falls through the default and SILENTLY applies Standard: %s" % str(unreachable))
+
+
+## Quoted match arms inside get_profile_bindings, in source order.
+func _dispatch_arms() -> Array[String]:
+	var arms: Array[String] = []
+	var inside := false
+	for line in FileAccess.get_file_as_string("res://src/input/InputProfileManager.gd").split("\n"):
+		if line.begins_with("func get_profile_bindings"):
+			inside = true
+			continue
+		if inside and line.begins_with("func "):
+			break
+		if not inside:
+			continue
+		var bare := line.strip_edges()
+		if bare.begins_with("\"") and bare.ends_with("\":"):
+			arms.append(bare.substr(1, bare.length() - 3))
+	return arms
+
+
+## Autodetect selects by DISPLAY name too, so a typo there picks a profile the menu never offers and
+## the same silent Standard fallback swallows it.
+func test_autodetect_targets_are_real_menu_profiles() -> void:
+	var names: Array = _ipm.PROFILE_NAMES
+	var unknown: Array[String] = []
+	for entry in _ipm.PROFILE_AUTODETECT:
+		if not (entry[1] in names):
+			unknown.append("%s -> %s" % [str(entry[0]), str(entry[1])])
+	assert_gt(_ipm.PROFILE_AUTODETECT.size(), 0, "positive control: the autodetect table must have entries")
+	assert_eq(unknown, [] as Array[String],
+		"autodetect maps a device to a profile name that is not in PROFILE_NAMES, so the pad is detected and then given Standard: %s" % str(unknown))
+
+
 func before_each() -> void:
 	_ipm = load("res://src/input/InputProfileManager.gd").new()
 
