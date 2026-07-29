@@ -90,6 +90,23 @@ while IFS= read -r f; do
 	MOVED=$(git rev-list --count "$BASE..$MAIN" -- "$f")
 	if [ "${MOVED:-0}" -eq 0 ]; then continue; fi
 	TOTAL=$((TOTAL + 1))
+	# STRUCTURED DATA: compare PARSED objects, not lines. A line diff is true of how the file is
+	# WRITTEN; the parse is true of the thing (cowir-sfx's rule). cowir-battle hit the failure —
+	# 15 "missing" lines on monsters.json were pure em-dash re-escaping. Falls back to the line
+	# diff if either side does not parse.
+	case "$f" in
+	*.json)
+		if PARSED=$(python3 "$(dirname "$0")/_fold_json_diff.py" "$BRANCH" "$MAIN" "$f" 2>/dev/null); then
+			N=$(printf '%s' "$PARSED" | head -1)
+			if [ "${N:-0}" -gt 0 ]; then
+				HAZARD=$((HAZARD + 1))
+				echo "  ⚠ $f — main has $N parsed key(s) this branch lacks or differs on:"
+				printf '%s\n' "$PARSED" | tail -n +2
+			fi
+			continue
+		fi
+		;;
+	esac
 	# Lines main HAS that the branch LACKS. Direction matters: diff BRANCH -> MAIN, additions.
 	LOST=$(git diff "$BRANCH" "$MAIN" -- "$f" | grep '^+' | grep -v '^+++' | sed 's/^+//' \
 		| grep -vE '^\s*$' | grep -vE '^\s*(#|##|//)' || true)
