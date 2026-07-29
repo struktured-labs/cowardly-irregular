@@ -57,6 +57,37 @@ def db(x: float) -> float:
     return 10 * np.log10(max(x, 1e-12))
 
 
+def k_weighted_rms_db(d: np.ndarray, sr: int) -> float:
+    """ITU-R BS.1770 K-weighting, then plain RMS -- LKFS without the gating.
+
+    Plain RMS is correct for comparing ONE sound before/after processing, but it
+    over-weights bass when comparing DIFFERENT sounds: a 139 Hz-centroid cue and a
+    6000 Hz-centroid cue at equal RMS are not equally loud. K-weighting is the
+    frequency weighting R128 uses; the part of R128 that breaks on short files is
+    the 400ms block GATING, not the filter. So we take the filter and skip the gate.
+    Coefficients are the BS.1770 48 kHz reference pair.
+    """
+    if sr != 48000:
+        raise ValueError(f"K-weighting coefficients are 48 kHz; got {sr}")
+
+    def biquad(x, b, a):
+        y = np.zeros_like(x)
+        x1 = x2 = y1 = y2 = 0.0
+        for i, xn in enumerate(x):
+            yn = b[0] * xn + b[1] * x1 + b[2] * x2 - a[1] * y1 - a[2] * y2
+            y[i] = yn
+            x2, x1 = x1, xn
+            y2, y1 = y1, yn
+        return y
+
+    shelf_b = [1.53512485958697, -2.69169618940638, 1.19839281085285]
+    shelf_a = [1.0, -1.69065929318241, 0.73248077421585]
+    hp_b = [1.0, -2.0, 1.0]
+    hp_a = [1.0, -1.99004745483398, 0.99007225036621]
+    y = biquad(biquad(d, shelf_b, shelf_a), hp_b, hp_a)
+    return db((y ** 2).mean())
+
+
 def true_peak_db(d: np.ndarray) -> float:
     """True peak by definition: 4x sinc reconstruction, then sample peak."""
     up = np.zeros(len(d) * 4)
@@ -90,14 +121,15 @@ def main() -> int:
         rows.append({
             "key": key,
             "rms": db((d ** 2).mean()),
+            "lk": k_weighted_rms_db(d, sr),
             "peak": 20 * np.log10(max(np.abs(d).max(), 1e-12)),
             "tp": true_peak_db(d),
             "centroid": centroid_hz(d, sr),
         })
 
-    print(f"{'key':<22}{'RMS':>9}{'peak':>9}{'truepeak':>10}{'centroid':>11}")
+    print(f"{'key':<22}{'K-wtd':>9}{'RMS':>9}{'peak':>9}{'truepeak':>10}{'centroid':>11}")
     for r in rows:
-        print(f"{r['key']:<22}{r['rms']:>9.1f}{r['peak']:>9.1f}"
+        print(f"{r['key']:<22}{r['lk']:>9.1f}{r['rms']:>9.1f}{r['peak']:>9.1f}"
               f"{r['tp']:>+10.1f}{r['centroid']:>10.0f}Hz")
 
     fail = False
@@ -108,9 +140,11 @@ def main() -> int:
               f"{', '.join(f'{r['key']} {r['tp']:+.1f}' for r in over)}")
         fail = True
 
-    loud, quiet = max(rows, key=lambda r: r["rms"]), min(rows, key=lambda r: r["rms"])
-    spread = loud["rms"] - quiet["rms"]
-    print(f"\nfamily RMS spread: {spread:.1f} dB "
+    # Spread is judged on K-weighted level: it is the cross-cue comparison, and
+    # plain RMS would rank a bass-heavy cue as loud when it is not heard that way.
+    loud, quiet = max(rows, key=lambda r: r["lk"]), min(rows, key=lambda r: r["lk"])
+    spread = loud["lk"] - quiet["lk"]
+    print(f"\nfamily K-weighted spread: {spread:.1f} dB "
           f"({loud['key']} loudest, {quiet['key']} quietest; limit {args.spread:.1f})")
     if spread > args.spread:
         print(f"OUTLIER: {loud['key']} sits {spread:.1f} dB above {quiet['key']}. "
