@@ -91,14 +91,37 @@ func test_mirror_is_not_scoped_to_any_flag_family() -> void:
 	# `if bare.begins_with("world")` kills it for every chapter, spotlight
 	# and quest flag while every pinned string stays present. Drive several
 	# families so a scope condition on ANY of them fails here.
+	# DERIVED from _CUTSCENE_COMPLETION_FLAGS, not a hand-picked sample. This
+	# used to drive four flags I happened to think of; measured 2026-07-29,
+	# the map holds 55 flags across 15 leading-token families and those four
+	# covered FOUR of them — world2..world6 and `arbiter` were all
+	# unrepresented, so `if bare.begins_with("world1")` passed cleanly.
+	# @cowir-sfx: the bug report is a sample, the guard should assert the
+	# invariant. @cowir-story: incident vocabulary vs the class.
 	var gl = _loop()
-	for flag in ["cutscene_flag_chapter4_complete",
-			"cutscene_flag_spotlight_watched_bard",
-			"cutscene_flag_world1_mordaine_watch_road_complete",
-			"cutscene_flag_prologue_complete"]:
+	var flags := _completion_flags()
+	assert_gt(flags.size(), 20,
+		"POSITIVE CONTROL: the completion map must yield many flags — an empty or tiny parse makes every assertion below vacuous")
+	for flag in flags:
 		var bare: String = flag.substr("cutscene_flag_".length())
 		_assert_mirrors(gl, flag, bare)
 	gl.free()
+
+
+## Every cutscene_flag_* the completion map can hand the helper.
+func _completion_flags() -> Array:
+	var src := FileAccess.get_file_as_string(GAMELOOP)
+	var start := src.find("const _CUTSCENE_COMPLETION_FLAGS")
+	assert_gt(start, -1, "_CUTSCENE_COMPLETION_FLAGS must exist")
+	var body := src.substr(start, src.find("\n}", start) - start)
+	var rx := RegEx.new()
+	rx.compile('"(cutscene_flag_[a-z0-9_]+)"')
+	var out: Array = []
+	for m in rx.search_all(body):
+		var f := m.get_string(1)
+		if not out.has(f):
+			out.append(f)
+	return out
 
 
 func test_mirror_also_writes_game_constants() -> void:
