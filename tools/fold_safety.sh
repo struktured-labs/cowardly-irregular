@@ -44,6 +44,16 @@ git rev-parse --verify "$BRANCH" >/dev/null 2>&1 || { echo "no such ref: $BRANCH
 MAIN="${2:-origin/main}"
 git rev-parse --verify "$MAIN" >/dev/null 2>&1 || { echo "no such ref: $MAIN" >&2; exit 2; }
 
+# PRECONDITION (cowir-sfx, msg 3458). A branch whose commits have all landed has no
+# fold question left — and worse, the staleness gate below counts THE FOLD ITSELF as
+# main moving the file, so a just-folded branch reads as a hazard against its own
+# content. That is the mechanism behind fold_safety returning exit 1 on four correct
+# folds. Ask "is there anything to fold" before "is folding it dangerous".
+if [ -z "$(git cherry "$MAIN" "$BRANCH" 2>/dev/null | grep '^+')" ]; then
+	echo "MOOT: every commit on $BRANCH has landed on $MAIN — nothing left to fold"
+	exit 0
+fi
+
 BASE=$(git merge-base "$MAIN" "$BRANCH")
 # Files the branch touches — the only ones a file-level fold could substitute.
 FILES=$(git diff --name-only "$BASE" "$BRANCH")
