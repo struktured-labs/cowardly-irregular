@@ -16,6 +16,12 @@ extends GutTest
 ## keeper portraits — art-exists-implies-wired).
 
 const VILLAGE_BAR := "res://src/exploration/VillageBar.gd"
+const DANCER_PATHS: Array = [
+	"res://assets/sprites/npcs/dancer/frame_0.png",
+	"res://assets/sprites/npcs/dancer/frame_1.png",
+	"res://assets/sprites/npcs/dancer/frame_2.png",
+	"res://assets/sprites/npcs/dancer/frame_3.png",
+]
 
 
 func _read(p: String) -> String:
@@ -51,17 +57,31 @@ func test_artist_load_precedes_procedural_fallback() -> void:
 
 
 func test_artist_load_is_all_or_nothing() -> void:
-	# Pin partial-coverage guard: _try_load_artist_dancer_frames returns
-	# false on ANY missing path, so we never mix artist + procgen frames
-	# mid-animation (that would visibly flicker between styles per tick).
-	var src := _read(VILLAGE_BAR)
-	assert_true(src.contains("_try_load_artist_dancer_frames"),
-		"VillageBar must define _try_load_artist_dancer_frames")
-	# Find the function body and confirm it early-returns on ResourceLoader.exists false.
-	var fn_idx := src.find("func _try_load_artist_dancer_frames")
-	assert_gt(fn_idx, -1)
-	var body := src.substr(fn_idx, 500)
-	assert_true(body.contains("ResourceLoader.exists"),
-		"artist-load must guard on ResourceLoader.exists per frame — early-returns preserve the all-or-nothing contract")
-	assert_true(body.contains("return false"),
-		"artist-load must early-return false on any missing frame (all-or-nothing)")
+	# BEHAVIOURAL, deliberately — the source-text version of this test passed
+	# 3/3 against a mutation that broke the exact contract it names (swap the
+	# `return false` for a `continue` and both pinned strings survive
+	# elsewhere in the function). See cowir-ai msg 3319: a pinned string is a
+	# claim about the code's SPELLING where we meant its BEHAVIOUR.
+	#
+	# So drive it instead. `_try_load_artist_dancer_frames` takes an
+	# injectable path list for this reason alone — DANCER_FRAME_PATHS is a
+	# const, and without injection the missing-file branch is unreachable
+	# from a test, which is why the old guard could only pin spelling.
+	var bar: VillageBar = autofree(VillageBar.new())
+
+	# Positive control: all four real frames load, all four land.
+	assert_true(bar._try_load_artist_dancer_frames(),
+		"the four shipped dancer PNGs must load — if this fails the bar is silently procedural again")
+	assert_eq(bar._dancer_frames.size(), 4,
+		"a successful artist load must yield exactly 4 frames")
+
+	# Negative control: one path missing => refuse the WHOLE set. A partial
+	# load would alternate artist and procedural frames every ANIM_SPEED
+	# tick, flickering between two art styles — the defect this guards.
+	bar._dancer_frames.clear()
+	var one_missing: Array = DANCER_PATHS.slice(0, 3)
+	one_missing.append("res://assets/sprites/npcs/dancer/frame_DOES_NOT_EXIST.png")
+	assert_false(bar._try_load_artist_dancer_frames(one_missing),
+		"a missing frame must fail the whole load, not load the other three")
+	assert_true(bar._dancer_frames.is_empty(),
+		"a failed artist load must leave NO frames behind — any survivors mix artist + procgen mid-animation")
