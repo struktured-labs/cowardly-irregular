@@ -18,6 +18,21 @@ extends GutTest
 ## signal the player fires whenever they feel like it), so it must heartbeat. A lock released
 ## synchronously — a transition that pops when its await finishes — is bounded and does not.
 ## Currently zero exceptions, which is what makes this a guard rather than an allowlist.
+##
+## ⚠️ STATED BOUNDARY — the scanner detects the LAMBDA form only. A lock released from a connected
+## METHOD (`.connect(_on_thing)` with the pop inside `_on_thing`) has identical unbounded latency and
+## would be exempt. Mutation-tested 2026-07-29: that shape IS currently caught, but by the named
+## `autogrind_summary` pin below, NOT by this general guard — i.e. caught for the wrong reason, so a
+## NEW lock using it would slip through.
+##
+## Two attempts to widen it were reverted rather than shipped, and the failures are the useful part:
+##   (a) flagging any line containing ".connect(" — wrong, that call defers the CALLABLE'S body, not
+##       the lines after it. False-positived area_transition_fade and world_transition.
+##   (b) flagging pops inside any connected method — also wrong: area_transition_fade both PUSHES and
+##       POPS inside a signal handler, which is synchronous with respect to its own push.
+## The relation that actually matters is push-to-pop context, not how the enclosing function was
+## invoked. Both attempts were caught by running the CLEAN tree before trusting the mutation result.
+## A stated boundary beats a third guess; widen it only with clean-green plus mutation-red.
 
 const SRC_ROOT := "res://src"
 
