@@ -67,8 +67,29 @@ done <<< "$FILES"
 
 echo "checked $TOTAL text file(s) the branch touches; $HAZARD carry main-only content"
 if [ "$HAZARD" -gt 0 ]; then
-	echo "FOLD HAZARD — a three-way merge keeps main's version, but squash / checkout-theirs /"
-	echo "resolve-as-theirs would DELETE the lines above. Read them before folding."
+	cat <<'AMBIG'
+STALE IN A MOVED FILE — and the COUNT ALONE CANNOT TELL YOU WHICH KIND.
+
+  main has the FIX, branch lacks it   -> folding REGRESSES        (danger)
+  main has the BUG, branch deletes it -> folding IS THE POINT     (fine)
+
+Those produce an identical number. cowir-story and cowir-sprites both hit the
+false-positive direction within an hour of this check existing, so read the
+lines above, do not count them. The discriminator that worked (cowir-sprites):
+
+  is the absent content INSIDE the branch's subject matter, or INCIDENTAL to it?
+    inside      the branch holds the newer thinking on those lines — fold it
+    incidental  stale collateral the branch dragged along — danger
+
+  worked examples: _test_disable_persistence in a branch about session history,
+  and four artist tiers in a branch about three Calibrant faces. Both incidental,
+  both real. A branch's own subject matter is almost always the newer version.
+
+DISPOSITION (cowir-controller) — the ambiguity only has to be resolved for a
+branch you intend to DROP. If you intend to FOLD it, REBASE onto main and
+re-gate: git replays only the branch's changes onto main's current content, so
+the absence stops existing and nothing has to be adjudicated.
+AMBIG
 	exit 1
 fi
 echo "SAFE TO FOLD"
