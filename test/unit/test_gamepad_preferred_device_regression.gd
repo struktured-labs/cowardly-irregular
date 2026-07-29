@@ -1,9 +1,20 @@
 extends GutTest
 
-## GamepadFilter used to take the FIRST non-ignored pad, so USB enumeration order decided which
-## controller steers the Mode 7 camera and right-stick look. struktured has two pads attached at
-## times — an 8BitDo Ultimate 2 (his stated PRIMARY, 2026-07-25) and a Hyperkin Cadet backup — so
-## plugging in the backup could silently take the camera away from the pad in his hands.
+## GamepadFilter used to take the FIRST non-ignored pad, so USB enumeration order decided which pad
+## became `preferred_device`. struktured has two attached at times — an 8BitDo Ultimate 2 (his stated
+## PRIMARY, 2026-07-25) and a Hyperkin Cadet backup — and enumeration order is not a preference.
+##
+## ⚠️ CORRECTED 2026-07-29. This file previously said a backup pad "could silently take the camera
+## away from the pad in his hands." THAT WAS FALSE and I retracted it in GamepadFilter.gd (c94783d2)
+## without fixing it here. `preferred_device`'s only consumers are `right_stick_x` / `shoulder_rotate`,
+## the input half of Mode 7 camera rotation, which Mode7Overlay.gd:334 deliberately disables. Nothing
+## is being taken, because there is no camera rotation to take.
+##
+## The ranking is still correct and still worth guarding — it is preparation that will be right the
+## day rotation ships. It just does not fix a present-day symptom, and this file should not tell the
+## next reader that it does. A guard has two audiences: the header, read while auditing, and the
+## assert message, read by whoever just broke it. I corrected the source and left BOTH of this
+## file's audiences carrying the retracted claim (cowir-sfx's find, msg 3374, within the hour).
 ##
 ## preference_rank is a pure function so this is testable with no hardware attached.
 
@@ -46,7 +57,7 @@ func test_unknown_pads_rank_last_but_are_still_selectable() -> void:
 ## before that a `2-5` range that swept in the right stick Y and BOTH triggers.
 func test_right_stick_axis_is_a_named_constant_not_a_magic_number() -> void:
 	assert_eq(_filter.RIGHT_STICK_X_AXIS, JOY_AXIS_RIGHT_X,
-		"camera rotation must read the named right-stick axis")
+		"the right-stick capture must read the NAMED axis constant — this feeds Mode 7 camera rotation, which is currently DISABLED at Mode7Overlay.gd:334, so a wrong axis here would be invisible until the day that feature turns on")
 	var src: String = FileAccess.get_file_as_string("res://src/input/GamepadFilter.gd")
 	assert_false(src.contains("e.axis == 2"),
 		"no bare axis numbers — an axis index means nothing until SDL maps the device")
