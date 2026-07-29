@@ -408,10 +408,11 @@ func _refresh_detail() -> void:
 	if defeated:
 		var stats: Dictionary = entry.stats
 		# M.DEF earns its place here: magic damage divides by magic_defense,
-		# not defense (Combatant.gd:277), and Protect no longer mitigates
-		# magic — so DEF alone tells a player nothing about how a caster
-		# will land. All 98 monsters carry an explicit magic_defense; this
-		# panel was simply never updated when the stat went live.
+		# not defense (the is_magical branch of Combatant.take_damage), and
+		# Protect no longer mitigates magic — so DEF alone tells a player
+		# nothing about how a caster will land. All 98 monsters carry an
+		# explicit magic_defense; this panel was never updated when the
+		# stat went live.
 		_detail_stats.text = "HP %d   MP %d   ATK %d   DEF %d   MAG %d   M.DEF %d   SPD %d" % [
 			stats.get("max_hp", 0),
 			stats.get("max_mp", 0),
