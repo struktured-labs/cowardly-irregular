@@ -20,8 +20,8 @@
         "victory",
         "walk"
       ],
-      "tier": "T1",
-      "generator": "gen_full_sweep.py (v2 jrpg_pixel_style LoRA)"
+      "tier": "T2",
+      "generator": "ARTIST work. Tier corrected 2026-07-29: this entry said T1 with 'gen_full_sweep.py (v2 jrpg_pixel_style LoRA)', which described a PREVIOUS state of the directory. 68b049d0 restored artist sprites and 4cab90d0 replaced idle+attack with the artist's own drive-archive renders; the generator string was never updated. Verified 2026-07-29: 7 of 9 PNGs are byte-identical to the v0.15.0 artist baseline, and idle/attack currently hold 4cab90d0 content ('artist's pre-rendered 128x128 sheets, 2x NN'). T2 to match its siblings bard and rogue_artist; NOT promoted to T3, which means artist-approved and is struktured's call, not mine."
     },
     "mage": {
       "path": "res://assets/sprites/jobs/mage",
