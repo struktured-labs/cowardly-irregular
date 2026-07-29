@@ -249,7 +249,7 @@
     "type": "mp_restore",
     "animation": "channel",
     "mp_cost": 0,
-    "description": "Focus the arcane currents \u2014 restore a small amount of MP",
+    "description": "Focus the arcane currents — restore a small amount of MP",
     "target_type": "self",
     "mp_amount": 6
   },
@@ -259,7 +259,7 @@
     "type": "mp_restore",
     "animation": "pray",
     "mp_cost": 0,
-    "description": "Offer a brief prayer \u2014 restore a small amount of MP to one ally",
+    "description": "Offer a brief prayer — restore a small amount of MP to one ally",
     "target_type": "single_ally",
     "mp_amount": 6
   },
@@ -269,7 +269,7 @@
     "type": "mp_restore",
     "animation": "riff",
     "mp_cost": 0,
-    "description": "Strike a quick chord \u2014 restore a small amount of MP to the whole party",
+    "description": "Strike a quick chord — restore a small amount of MP to the whole party",
     "target_type": "all_allies",
     "mp_amount": 6
   },
@@ -820,7 +820,7 @@
     "type": "meta",
     "animation": "cast_meta",
     "mp_cost": 35,
-    "description": "Bind the boss to your will \u2014 it fights its own side while the swap holds. The bond cuts both ways.",
+    "description": "Bind the boss to your will — it fights its own side while the swap holds. The bond cuts both ways.",
     "target_type": "single_enemy",
     "meta_effect": "boss_control_swap",
     "corruption_risk": 0.3
@@ -842,7 +842,7 @@
     "type": "meta",
     "animation": "cast_meta",
     "mp_cost": 40,
-    "description": "Seize the boss for a turn \u2014 it turns on its own side. A solo boss turns on itself.",
+    "description": "Seize the boss for a turn — it turns on its own side. A solo boss turns on itself.",
     "target_type": "single_enemy",
     "meta_effect": "full_boss_control",
     "duration": 1,
@@ -2526,7 +2526,7 @@
     "type": "support",
     "animation": "buff",
     "mp_cost": 10,
-    "description": "Filters incoming damage, reducing all damage taken for 2 turns.",
+    "description": "Filters incoming traffic, sharply raising defense against physical damage for 2 turns.",
     "target_type": "self",
     "effect": "defense_up",
     "stat_modifier": 1.5,
