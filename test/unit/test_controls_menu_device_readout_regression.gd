@@ -47,6 +47,11 @@ func test_unmapped_pad_warns_and_surfaces_the_guid() -> void:
 		"the GUID is what a mapping is keyed to; without it on screen the user cannot report it: %s" % status["text"])
 	assert_true(status["text"].to_upper().contains("WRONG"),
 		"must state that the displayed bindings are wrong, not merely that something is unmapped: %s" % status["text"])
+	# GamepadDiagnostic (F11) has shown name/GUID/is_joy_known plus LIVE button and axis reads since
+	# long before this readout existed — the 2026-07-28 hunt was a discoverability failure as much as
+	# a diagnostic one. The warning must name it rather than leave a second tool undiscovered.
+	assert_true(status["text"].contains("F11"),
+		"the unmapped warning must point at the existing live-readout overlay, not silently duplicate half of it: %s" % status["text"])
 
 
 func test_mapped_and_unmapped_are_visually_distinguishable() -> void:
