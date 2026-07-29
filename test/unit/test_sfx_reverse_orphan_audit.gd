@@ -194,3 +194,40 @@ func test_world_variant_keys_use_the_prefix_shape() -> void:
 		("World-variant SFX keys using base_<world> instead of wN_<base> (%d): %s\n" +
 		"_get_world_sfx_prefix() builds wN_<base>, so a suffix-shaped key can never " +
 		"be resolved — it will never play. Rename to the wN_ form.") % [wrong_shape.size(), wrong_shape])
+
+func test_dynamic_prefix_exemptions_are_backed_by_live_behaviour() -> void:
+	## cowir-ai msg-3319: a source-text pin is a claim about the code's SPELLING,
+	## written where we meant its BEHAVIOUR. test_no_unreachable_sfx_keys exempts
+	## every status_/ability_/footstep_ key on the strength of a construction
+	## string appearing in SoundManager. Mutation-tested 2026-07-29: neutering
+	## play_status with an early return, while leaving `"status_" +` in the file,
+	## left that guard GREEN — it cannot tell reachable from unreachable.
+	##
+	## This does not prove reachability in general (that wants a call graph).
+	## It proves the exemption's PREMISE for the largest prefix families: the
+	## dispatcher actually resolves a real manifest key when called.
+	var sm: Node = get_node_or_null("/root/SoundManager")
+	assert_true(sm != null, "SoundManager autoload present")
+
+	# status_: play_status must reach a manifest key, not merely contain the string.
+	sm.stop_ambient()
+	var before: String = sm._current_ambient_key
+	assert_true(sm._sfx_manifest.has("status_poison"), "control: status_poison exists to be found")
+	sm.play_status("poison")
+	assert_true(sm._sfx_cooldowns.has("status_poison"),
+		"play_status('poison') must RESOLVE status_poison — cooldown is stamped only on a manifest hit")
+
+	# ability_: play_ability resolves through _ability_sounds to a real key.
+	assert_true(sm._sfx_manifest.has("ability_fire"), "control: ability_fire exists")
+	sm.play_ability("fire")
+	# World-agnostic: play_ability prefixes by CURRENT world, so a prior test
+	# leaving the world at W3-W6 resolves w3_/w4_/w5_/w6_ability_fire. Naming
+	# only the W1/W2 forms made this pass alone and fail in the full suite.
+	var hit_fire := false
+	for k in sm._sfx_cooldowns:
+		if str(k).ends_with("ability_fire"):
+			hit_fire = true
+			break
+	assert_true(hit_fire, "play_ability('fire') must RESOLVE some ability_fire variant (any world prefix)")
+
+	assert_eq(before, "", "ambient state untouched by this test")
