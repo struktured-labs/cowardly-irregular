@@ -104,6 +104,14 @@ func test_every_stat_any_job_modifies_is_surfaced() -> void:
 			"jobs author '%s' but a change in it renders NOTHING — the comparison screen omits a stat the player is choosing between" % stat_name)
 		assert_string_contains(out, StatNames.short_code(stat_name),
 			"a '%s' change must be labelled with its own code, not another stat's" % stat_name)
+		# PREDICATE, not just presence (@cowir-sfx msg-3511): "non-empty and
+		# contains the code" passes on a delta rendered with the WRONG SIGN.
+		# Measured: inverting `new_val - current_val` is caught only by the two
+		# hardcoded-value tests below, so it is covered for magic_defense and
+		# invisible for any stat added later — which is the one case this
+		# derived test exists to cover.
+		assert_string_contains(out, "+30 %s" % StatNames.short_code(stat_name),
+			"a +30 change in '%s' must render as +30, not -30 — a sign inversion tells the player a gain is a loss" % stat_name)
 
 
 func test_every_shipped_job_authors_magic_defense() -> void:
