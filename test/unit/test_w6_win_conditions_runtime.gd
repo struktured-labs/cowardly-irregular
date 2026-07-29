@@ -116,6 +116,13 @@ const LADDER: Array = [
 
 func _ladder_battle() -> Dictionary:
 	_bm._win_condition = {"type": "arbiter_ladder", "phases": LADDER.duplicate(true)}
+	# Fighter FIRST, deliberately. The real party is the locked five and
+	# Fighter leads it, so party index never equals phase index — cleric is
+	# party[1] arguing phase[0]. Without him the two orders coincide and the
+	# fixture cannot tell "match the phase's job" from "the Nth party member
+	# argues the Nth phase", which is a plausible misreading of the design.
+	# Verified: that mutation passes 15/15 against a fixture without Fighter.
+	_pc("fighter")
 	return {
 		"cleric": _pc("cleric"), "mage": _pc("mage"),
 		"rogue": _pc("rogue"), "bard": _pc("bard"),
