@@ -61,6 +61,11 @@ const KNOWN_PENDING_CONSUMER := {
 	# pre-staged before ON_HIT_STATUSES grows (cowir-battle ratchet, msg 2797)
 	"status_burn": "pre-staged for future burn_chance weapon proc",
 	"status_freeze": "pre-staged for future freeze_chance weapon proc",
+	# cowir-battle: W6 Arbiter-duel win-condition arms (msg 3223/3226) — spec
+	# still moving; shipped inert so the cues exist when the signal lands.
+	"duel_answer_dodge": "cowir-battle W6 Arbiter duel arms",
+	"duel_answer_block": "cowir-battle W6 Arbiter duel arms",
+	"duel_answer_strike": "cowir-battle W6 Arbiter duel arms",
 	# authored alternates never wired; harmless, kept as design options
 	"buff_v2": "unwired alternate take",
 	"buff_v3": "unwired alternate take",
