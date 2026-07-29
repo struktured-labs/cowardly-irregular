@@ -207,10 +207,23 @@ func test_dynamic_prefix_exemptions_are_backed_by_live_behaviour() -> void:
 	var sm: Node = get_node_or_null("/root/SoundManager")
 	assert_true(sm != null, "SoundManager autoload present")
 
+	## _sfx_cooldowns lives on the AUTOLOAD and persists for the whole GUT run, so
+	## an earlier test that played these keys would satisfy the asserts below
+	## whether or not THIS call resolved anything. Erasing first is what makes the
+	## stamp evidence of this call. Found 2026-07-29 while auditing my own assert
+	## messages: this guard replaced a spelling pin and had a latent vacuity of its
+	## own, differing only in what it would have passed for.
+	sm._sfx_cooldowns.erase("status_poison")
+	for k in sm._sfx_cooldowns.keys():
+		if str(k).ends_with("ability_fire"):
+			sm._sfx_cooldowns.erase(k)
+
 	# status_: play_status must reach a manifest key, not merely contain the string.
 	sm.stop_ambient()
 	var before: String = sm._current_ambient_key
 	assert_true(sm._sfx_manifest.has("status_poison"), "control: status_poison exists to be found")
+	assert_false(sm._sfx_cooldowns.has("status_poison"),
+		"control: cooldown cleared, so a stamp below can only come from this call")
 	sm.play_status("poison")
 	assert_true(sm._sfx_cooldowns.has("status_poison"),
 		"play_status('poison') must RESOLVE status_poison — cooldown is stamped only on a manifest hit")
