@@ -1,5 +1,28 @@
 extends GutTest
 
+## Snapshot of the developer's REAL slot 98, restored from after_each so an
+## abort mid-test cannot leave his live autosave as harness state
+## (@cowir-overworld msg-3773). Same abort-skips-the-restore class fixed in the
+## win-condition teardown tonight — worse here, because the restore was not even
+## in a teardown to be skipped.
+var _auto_path: String = ""
+var _had_real_autosave: bool = false
+var _real_autosave_backup: PackedByteArray = PackedByteArray()
+var _snapshot_taken: bool = false
+
+
+func after_each() -> void:
+	if not _snapshot_taken:
+		return
+	_snapshot_taken = false
+	if _had_real_autosave:
+		var f := FileAccess.open(_auto_path, FileAccess.WRITE)
+		if f:
+			f.store_buffer(_real_autosave_backup)
+			f.close()
+	elif SaveSystem and SaveSystem.save_exists(SaveSystem.AUTO_SAVE_SLOT):
+		SaveSystem.delete_save(SaveSystem.AUTO_SAVE_SLOT)
+
 ## Regression: auto_save() must NEVER write to a manual user save slot.
 ##
 ## Bug (high severity, silent data loss): auto_save() wrote to slot 0,
@@ -90,9 +113,15 @@ func test_auto_save_does_not_touch_manual_slots_runtime() -> void:
 		return
 
 	# 2026-07-16 test-isolation rule (feedback_test_isolation_from_user_save): this leg calls the REAL auto_save() and its cleanup used to DELETE the developer's real slot-98 — struktured's live autosave vanished after every full-suite run. Snapshot the real file first; restore it in cleanup.
+	# Snapshot into MEMBERS and restore from after_each, not inline below. The
+	# restore used to be straight-line code after two assert loops: a failing
+	# assert, a crash, or a killed run between auto_save() and it left the real
+	# slot 98 holding harness state. after_each runs even when the body aborts.
 	var auto_path := "user://saves/save_%02d.json" % SaveSystem.AUTO_SAVE_SLOT
-	var had_real_autosave := FileAccess.file_exists(auto_path)
-	var real_autosave_backup := FileAccess.get_file_as_bytes(auto_path) if had_real_autosave else PackedByteArray()
+	_auto_path = auto_path
+	_had_real_autosave = FileAccess.file_exists(auto_path)
+	_real_autosave_backup = FileAccess.get_file_as_bytes(auto_path) if _had_real_autosave else PackedByteArray()
+	_snapshot_taken = true
 
 	# Record which manual slots exist (and their mtimes) before auto_save().
 	var before := {}
@@ -114,11 +143,6 @@ func test_auto_save_does_not_touch_manual_slots_runtime() -> void:
 		assert_eq(now, before[slot],
 			"auto_save() must NOT create or overwrite manual slot %d" % slot)
 
-	# Cleanup: RESTORE the developer's real autosave (never delete — the old delete_save cleanup destroyed the live autosave on every suite run).
-	if had_real_autosave:
-		var f := FileAccess.open(auto_path, FileAccess.WRITE)
-		if f:
-			f.store_buffer(real_autosave_backup)
-			f.close()
-	elif SaveSystem.save_exists(SaveSystem.AUTO_SAVE_SLOT):
-		SaveSystem.delete_save(SaveSystem.AUTO_SAVE_SLOT)
+	# Restore happens in after_each — NEVER inline here. Inline is what made an
+	# abort between auto_save() above and the restore leave his live slot 98 as
+	# harness state.
