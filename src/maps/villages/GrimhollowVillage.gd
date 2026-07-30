@@ -259,6 +259,28 @@ func _setup_npcs() -> void:
 	])
 	npcs.add_child(murk)
 
+	# Miner Trude — foremans_ledger giver, at the mine gate east of the graveyard.
+	var trude = _create_npc("Miner Trude", "villager", Vector2(20 * TILE_SIZE,12 * TILE_SIZE), [
+		"Three days. He has never once been late coming up.",
+		"The foreman's ledger says he was 'reallocated.' I asked what to.",
+		"The foreman doesn't know. He didn't write it. He showed me the page — it isn't his hand.",
+		"Somebody wrote a word into his book that he can't read, and now my husband is a word.",
+	])
+	# Without this the quest is UNSTARTABLE — QuestSystem.gd:125 matches npc_id to giver.npc_id.
+	trude.npc_id = "miner_trude"
+	npcs.add_child(trude)
+
+	_add_quest_examine_point("w1_grimhollow_foremans_ledger",
+		"quest_w1_grimhollow_foremans_ledger_accepted", "[A] Read the ledger",
+		"'Reallocated.' The word sits in a column that used to say WHERE. Not the foreman's hand — the letters lean like a court clerk's.",
+		"The mine office. A ledger lies open, turned to a page nobody here wrote.",
+		Vector2(21 * TILE_SIZE,10 * TILE_SIZE))
+	_add_quest_examine_point("w1_grimhollow_foremans_ledger",
+		"quest_w1_grimhollow_ledger_read", "[A] Confront the robed man",
+		"He does not deny it. He explains it, patiently, as procedure. Trude's husband was not taken. He was FILED.",
+		"A figure in judgment robes stands at the mine gate, holding nothing, waiting for nothing.",
+		Vector2(20 * TILE_SIZE,14 * TILE_SIZE))
+
 
 ## Arbiter of Steel — L8 masterite guarding the mine approach as a
 ## corrupted foreman-cum-judge. Placed south of the CCC block (chapel /

@@ -253,3 +253,20 @@ func _setup_npcs() -> void:
 	]
 	var lumi = _create_npc("Child Lumi", "villager", Vector2(14 * TILE_SIZE,6 * TILE_SIZE), _lumi_post if _after_cave_done else _lumi_pre)
 	npcs.add_child(lumi)
+
+	# Clockkeeper Yara — meltwater_clock giver, beside the Meltwater Clock door at (15,6.5).
+	var yara = _create_npc("Clockkeeper Yara", "elder", Vector2(17 * TILE_SIZE,6 * TILE_SIZE), [
+		"Two minutes fast. Every day. The same two minutes.",
+		"A clock that breaks runs wrong by a DIFFERENT amount each day. That's what broken means.",
+		"This one is wrong on purpose. Someone is melting the source pool on a schedule.",
+		"I've kept this clock for thirty-one years. I would like to know whose schedule.",
+	])
+	# Without this the quest is UNSTARTABLE — QuestSystem.gd:125 matches npc_id to giver.npc_id.
+	yara.npc_id = "clockkeeper_yara"
+	npcs.add_child(yara)
+
+	_add_quest_examine_point("w1_frosthold_meltwater_clock",
+		"quest_w1_frosthold_meltwater_clock_accepted", "[A] Examine the source pool",
+		"A rune cut into the pool's lip, melting the ice on a schedule. An expert hand cut it. Whoever paid never came here.",
+		"Meltwater runs from the pool above the village. Steady. Too steady.",
+		Vector2(12 * TILE_SIZE,2 * TILE_SIZE))

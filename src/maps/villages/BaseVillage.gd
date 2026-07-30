@@ -311,6 +311,23 @@ func _create_npc(npc_name: String, npc_type: String, pos: Vector2, dialogue: Arr
 	return npc
 
 
+## A "custom" objective advances ONLY via QuestSystem.notify_flag — notify_talk skips the type
+## entirely — so a step with no emitter strands the quest with no in-game way to progress it.
+func _add_quest_examine_point(qid: String, flag: String, indicator: String, examined: String,
+		idle: String, pos: Vector2) -> void:
+	var ExamineScript = load("res://src/exploration/QuestExaminePoint.gd")
+	if ExamineScript == null:
+		return
+	var point = ExamineScript.new()
+	point.quest_id = qid
+	point.flag = flag
+	point.indicator_text = indicator
+	point.examine_text = examined
+	point.idle_text = idle
+	point.position = pos
+	npcs.add_child(point)
+
+
 ## Create a WanderingNPC that patrols a small loop. Use for ambient
 ## villagers who should walk between landmarks. The sprite_archetype must
 ## match an asset in `assets/sprites/npcs/<name>/overworld.png` (one of

@@ -503,6 +503,8 @@ func _setup_npcs() -> void:
 	var aldwick = _create_npc("Farmer Aldwick", "farmer", Vector2(10 * TILE_SIZE,4 * TILE_SIZE), [
 		"Seven chickens. Seven names. One mistake per name.",
 	])
+	# Without this the quest is UNSTARTABLE — QuestSystem.gd:125 matches npc_id to giver.npc_id.
+	aldwick.npc_id = "farmer_aldwick"
 	npcs.add_child(aldwick)
 
 	# one_chicken_problem step-2 puzzle: 4 of the 7 hens roost in Harmonia.
