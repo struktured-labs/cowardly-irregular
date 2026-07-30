@@ -330,12 +330,71 @@ echo "[${PLAT}] gate 3/4: boot smoke"
     --headless --quit ) > "tmp/${PLAT}_boot.log" 2>&1 || true
 if ! grep -q "\[GAME\] Started" tmp/${PLAT}_boot.log; then
     echo "[${PLAT}] BLOCKED: exported binary did not reach '[GAME] Started'" >&2
-    grep -iE "SCRIPT ERROR|Failed to load|Parse Error" tmp/${PLAT}_boot.log | head -5 >&2
+    # `|| true` is load-bearing: a diagnostic grep that finds NOTHING exits 1,
+    # and under `set -e` that pre-empts the `exit 3` below — so the gate would
+    # report 1 instead of 3 exactly when there is no error to print. Caught by a
+    # control that asserted the exit CODE, not merely that the gate failed.
+    grep -iE "SCRIPT ERROR|Failed to load|Parse Error" tmp/${PLAT}_boot.log | head -5 >&2 || true
     exit 3
 fi
 BOOT_ERRS=$(grep -icE "SCRIPT ERROR|Failed to load script" tmp/${PLAT}_boot.log || true)
 echo "[${PLAT}] booted to title screen · script errors during boot: ${BOOT_ERRS}"
 [ "$BOOT_ERRS" = "0" ] || echo "[${PLAT}] WARNING: booted, but with ${BOOT_ERRS} script error(s) — see tmp/${PLAT}_boot.log"
+
+# ── gate 3b: COMBAT smoke, in an isolated profile (linux only) ──────────────
+# Gate 3 proves the binary reaches the title screen. It says nothing about the
+# battle system — and on 2026-07-30 four BattleManager fixes landed (burn damage,
+# blocked-Defer, an empty-party victory guard and a selection guard, the last two
+# running on every action of every turn) with no execution in a booted build on
+# any platform.
+#
+# GameLoop.gd:382 has accepted `--battle-smoke` all along and NOTHING used it:
+# 0 references in tools/, .github/ or CLAUDE.md. It fights a real battle in the
+# exported build and writes screenshots.
+#
+# WHY THIS IS SAFE TO RUN AND GATE 3 IS NOT EXTENDED INSTEAD:
+# a desktop binary resolves user:// from $HOME, so redirecting HOME relocates the
+# ENTIRE profile. The smoke then plays a real battle against a throwaway
+# directory and cannot reach struktured's saves — which is the only reason this
+# is allowed to do more than boot. Measured on the first run: his profile held
+# 141 files before and 141 after, and all 63 writes landed in the sandbox.
+#
+# That isolation is ASSERTED below, not trusted. If it ever stops holding, this
+# gate must fail rather than quietly play the game against real save data.
+if [ "$PLAT" = "linux" ]; then
+    if ! command -v xvfb-run >/dev/null; then
+        # Loudly skipped, never silently: a smoke that does not run must not look
+        # like a smoke that passed.
+        echo "[${PLAT}] gate 3b: SKIPPED — xvfb-run absent, combat is UNVERIFIED" >&2
+    else
+        echo "[${PLAT}] gate 3b: combat smoke (isolated profile)"
+        SMOKE_HOME="$(pwd)/tmp/smoke_home"
+        rm -rf "$SMOKE_HOME"; mkdir -p "$SMOKE_HOME"
+        REAL_N_BEFORE=$(find "$USERDATA" -type f 2>/dev/null | wc -l)
+        HOME="$SMOKE_HOME" timeout 600 xvfb-run -a "$BIN" -- --battle-smoke \
+            > "tmp/${PLAT}_battle.log" 2>&1 &
+        SEC=0; wait $! || SEC=$?
+        REAL_N_AFTER=$(find "$USERDATA" -type f 2>/dev/null | wc -l)
+
+        # Isolation first: a leak matters more than a failed battle.
+        if [ "$REAL_N_BEFORE" -ne "$REAL_N_AFTER" ]; then
+            echo "[${PLAT}] BLOCKED: the combat smoke WROTE TO THE REAL PROFILE" >&2
+            echo "        ${REAL_N_BEFORE} -> ${REAL_N_AFTER} files. HOME redirection failed;" >&2
+            echo "        refusing to keep running the game against real save data." >&2
+            exit 3
+        fi
+        # Positive marker, not absence-of-error: an empty log has no errors either.
+        if ! grep -aq "Battle commenced" "tmp/${PLAT}_battle.log"; then
+            echo "[${PLAT}] BLOCKED: combat smoke never reached a battle (exit ${SEC})" >&2
+            grep -aiE "SCRIPT ERROR|Failed to load|Parse Error" "tmp/${PLAT}_battle.log" | head -5 >&2 || true
+            exit 3
+        fi
+        SHOTS=$(find "$SMOKE_HOME" -name '*.png' 2>/dev/null | wc -l)
+        echo "[${PLAT}] fought a real battle · ${SHOTS} screenshot(s) · profile untouched (${REAL_N_BEFORE} files)"
+    fi
+else
+    echo "[${PLAT}] gate 3b: SKIPPED — combat smoke is linux-only (wine+xvfb unverified)"
+fi
 
 # ── gate 4: publish, only if explicitly asked ───────────────────────────────
 if [ "$PUBLISH" != "1" ]; then
