@@ -31,6 +31,34 @@ const VIEW_H := 720
 const _EXPORT_FILES := ["hero_autobattle.json", "party_autobattle.json"]
 
 
+## user:// keys by APPLICATION NAME, not project path, so all 24 worktrees share
+## one directory (@cowir-adhoc msg-3733). This file writes, reads and DELETES
+## fixed filenames there in both hooks, so a neighbour's before_each can unlink
+## our export between the write on one line and the file_exists on the next —
+## which is the intermittent red @cowir-overworld saw, 1 of 3 runs.
+##
+## Per-process dir instead. Keeps the real ScriptShareManager path semantics
+## (still user://, still created on demand) while removing the fixed name that
+## made the collision possible.
+var _prior_export_dir: String = ""
+
+
+func before_all() -> void:
+	_prior_export_dir = ScriptShareManager.EXPORT_DIR
+	ScriptShareManager.EXPORT_DIR = "user://script_exports_test_%d/" % OS.get_process_id()
+
+
+func after_all() -> void:
+	# Restore FIRST, so a failure below cannot leak the override into
+	# test_script_share, which pins the production default.
+	var mine := ScriptShareManager.EXPORT_DIR
+	if _prior_export_dir != "":
+		ScriptShareManager.EXPORT_DIR = _prior_export_dir
+	_cleanup_exports_in(mine)
+	if DirAccess.dir_exists_absolute(mine):
+		DirAccess.remove_absolute(mine)
+
+
 func before_each() -> void:
 	_cleanup_exports()
 
@@ -40,10 +68,26 @@ func after_each() -> void:
 
 
 func _cleanup_exports() -> void:
+	_cleanup_exports_in(ScriptShareManager.EXPORT_DIR)
+
+
+func _cleanup_exports_in(dir_path: String) -> void:
 	for fname in _EXPORT_FILES:
-		var path = ScriptShareManager.EXPORT_DIR + fname
+		var path = dir_path + fname
 		if FileAccess.file_exists(path):
 			DirAccess.remove_absolute(path)
+
+
+func test_exports_are_isolated_from_concurrent_gates() -> void:
+	# The fix for @cowir-overworld's intermittent red. Fixed filenames in a
+	# directory shared by every worktree is the whole defect; asserting the
+	# per-process dir is what stops it silently reverting to a shared one.
+	assert_ne(ScriptShareManager.EXPORT_DIR, _prior_export_dir,
+		"this file must NOT write to the shared production export dir — 24 worktrees resolve user:// to the same place")
+	assert_true(ScriptShareManager.EXPORT_DIR.contains(str(OS.get_process_id())),
+		"the export dir must be process-scoped, or two gates running at once still race on the same filenames")
+	assert_true(_prior_export_dir.begins_with("user://"),
+		"sanity: the saved production default must be a real user:// path, or after_all restores garbage")
 
 
 func _make_editor() -> AutobattleGridEditor:
