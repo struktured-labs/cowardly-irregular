@@ -1,6 +1,42 @@
 extends GutTest
 
 ## Tests for ScriptShareManager — autobattle script export/import
+##
+## Writes autogrind_rules.json and reads it back, at a FIXED name in a directory
+## every worktree shares (user:// keys by app name, not project path — @cowir-adhoc
+## msg-3733). Two runs therefore assert against each other's file. This file never
+## deletes, so it carries no data-loss risk; the exposure is the overwrite variant
+## @cowir-overworld measured, where file_exists and import both PASS and the
+## assertions compare foreign content.
+##
+## Per-process dir, same as test_autobattle_grid_share_regression.
+##
+## The wrinkle that made this a design call rather than four lines
+## (@cowir-overworld msg-3739): this file also PINS the production default, and
+## that pin is the tripwire that catches a leaked override elsewhere. Overriding
+## here would fail its own pin; dropping the pin would remove the tripwire.
+## Resolved by pinning the value INHERITED at before_all instead of the live
+## global — which is strictly stronger, because a leak from another file is
+## exactly what that inherited value would be.
+
+var _prior_export_dir: String = ""
+
+
+func before_all() -> void:
+	_prior_export_dir = ScriptShareManager.EXPORT_DIR
+	ScriptShareManager.EXPORT_DIR = "user://script_share_test_%d/" % OS.get_process_id()
+
+
+func after_all() -> void:
+	var mine := ScriptShareManager.EXPORT_DIR
+	# Restore FIRST: a failure below must not leak the override into whatever
+	# runs next, which is the abort-skips-the-restore shape fixed elsewhere tonight.
+	if _prior_export_dir != "":
+		ScriptShareManager.EXPORT_DIR = _prior_export_dir
+	if DirAccess.dir_exists_absolute(mine):
+		for fname in DirAccess.get_files_at(mine):
+			DirAccess.remove_absolute(mine + fname)
+		DirAccess.remove_absolute(mine)
 
 
 func test_script_share_manager_class_exists() -> void:
@@ -8,9 +44,22 @@ func test_script_share_manager_class_exists() -> void:
 	assert_not_null(manager, "ScriptShareManager should instantiate")
 
 
-func test_export_dir_constant() -> void:
-	assert_eq(ScriptShareManager.EXPORT_DIR, "user://script_exports/",
-		"Export dir should be user://script_exports/")
+func test_export_dir_default_is_the_production_path() -> void:
+	# Pins the value this file INHERITED, not the live global it overrides.
+	# Doubles as the leak detector: if another file leaves an override set, that
+	# is what before_all captured, and this fails naming it.
+	assert_eq(_prior_export_dir, "user://script_exports/",
+		"the inherited EXPORT_DIR must be the production default — a different value means a previous test file leaked its override")
+
+
+func test_this_file_writes_to_an_isolated_dir() -> void:
+	# The exposure being closed. A fixed filename in the shared dir lets a
+	# concurrent gate's autogrind_rules.json be read back by the roundtrip test
+	# below, which passes every checkpoint and compares foreign content.
+	assert_ne(ScriptShareManager.EXPORT_DIR, _prior_export_dir,
+		"this file must not write autogrind_rules.json into the dir every worktree shares")
+	assert_true(ScriptShareManager.EXPORT_DIR.contains(str(OS.get_process_id())),
+		"the dir must be process-scoped or two concurrent gates still collide on the same filename")
 
 
 func test_file_version_constant() -> void:
