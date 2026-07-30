@@ -395,6 +395,10 @@ func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, v
 		return false
 
 	# Cooldown: skip if same sound played too recently (prevents pileup at high battle speeds)
+	# LOAD-BEARING BEYOND ITS NAME: this stamp is also the only thing bounding the fallback_to
+	# recursion below. The `fallback_key != sound_key` checks catch self-loops ONLY, so an a->b->a
+	# cycle would recurse forever (the cached-null branch recurses too) — except the second visit
+	# to any key hits its own fresh stamp and returns here. Do NOT move the stamp after the load.
 	var now_ms = Time.get_ticks_msec()
 	var last_played = _sfx_cooldowns.get(sound_key, 0)
 	if now_ms - last_played < SFX_MIN_INTERVAL_MS:
