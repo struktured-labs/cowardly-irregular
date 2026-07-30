@@ -158,12 +158,27 @@ func test_control_scan_resolves() -> void:
 	var src := _src_text()
 	assert_gt(src.length(), 200000, "src/ walk must load a real corpus — a short read makes "
 		+ "every effect key look unwired")
-	## The `% c` must bind to the WHOLE concatenation, not the last literal. Written
-	## unparenthesised this threw "not all arguments converted during string formatting"
-	## while BUILDING the message — so assert_true never ran, and every assertion after
-	## it in this function was skipped. GUT reported 2/2 passed with the entire floor
-	## dead: not [Failed], not even [Risky], because the OTHER test still asserted.
-	## Found 2026-07-29 via cowir-cutscenes' dead-test sweep. Keep the parens.
+	## Keep the parens. Written unparenthesised, `% c` bound to the trailing literal
+	## (which has no specifier), threw "not all arguments converted", and KILLED THIS
+	## TEST METHOD — assert_true never ran and the five assertions below were skipped.
+	## GUT reported 2/2 passed with the whole floor dead: not [Failed], not even
+	## [Risky], because the file's OTHER test still asserted. Asserts 3 -> 9 on fixing.
+	##
+	## MECHANISM — measured by cowir-main (8 shapes, one variable at a time) and
+	## cowir-ai (in vs out of GUT), after I published a WRONG one ("argument position
+	## aborts"). Don't hunt argument-position bugs on the strength of this file:
+	##   for-loop VARIABLE as the % right operand, inside GUT  -> ABORTS the method
+	##   every other shape tested (assignment · direct arg · concat · precedence ·
+	##   while-loop · local var · function-call operand · all of it outside GUT)
+	##                                                        -> logs, returns the
+	##                                                           literal, CONTINUES
+	##   const-foldable operands (two literals)               -> PARSE error, whole
+	##                                                           file dead, no Totals
+	## Nobody isolated WHY the loop-variable case differs; three lanes published three
+	## mechanisms and two were wrong, so it is recorded as measured, not explained.
+	## Detection is complementary: the abort still scores, so cowir-battle's
+	## asserted-nothing/assert-count sees it; the parse-error variant has no tests to
+	## score and only gate.sh's missing-Totals floor sees it.
 	for c in CONTROLS:
 		assert_true(src.contains(c), ("%s must resolve in src/ — if the controls do not " % c)
 			+ "appear, this scan is not finding consumers and its verdict means nothing")
