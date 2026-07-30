@@ -92,6 +92,37 @@ func test_every_crit_variant_is_audibly_longer_than_its_base() -> void:
 			"%s crit is only %.3fs longer than its base (%.2fs vs %.2fs) — proportionally distinct but too small an absolute difference to hear" % [w, crit_dur - base_dur, crit_dur, base_dur])
 
 
+## ── LABELLED GAP: this file measures DURATION and is blind to LEVEL ──────
+##
+## Measured 2026-07-30 (K-weighted, tools/sfx_family_levels.py). THREE OF FIVE CRITS
+## ARE QUIETER THAN THE BASE HIT THEY UPGRADE, and every assertion above passes anyway:
+##
+##   dagger        base -20.0  crit -11.5   +8.5 dB
+##   axe           base -20.5  crit -16.3   +4.3 dB
+##   piano_scythe  base -19.7  crit -20.0   -0.3 dB   <- quieter
+##   sword         base -19.6  crit -21.9   -2.3 dB   <- quieter, and sword is the
+##                                                       Fighter's default weapon
+##   staff         base -21.4  crit -27.7   -6.4 dB   <- quieter by a lot
+##
+## A crit is mechanically 1.5x damage; it must not SOUND weaker. This guard was written
+## to stop imperceptible crits and passes 8/8 while three of them read as feeble --
+## the defect it exists to catch, in the axis it does not measure.
+##
+## NOT ASSERTED, deliberately. The invariant (crit level >= base level) is RED today on
+## three weapons, and an exemption list for a live defect is the anti-pattern: it would
+## be green by suppression rather than by correctness.
+##
+## NOT FIXABLE BY GAIN, measured: staff_crit has only 1.57 dB of true-peak headroom
+## against an 8 dB need, so the boost requires heavy limiting -- which cost ability_ice
+## 2.4 dB of RMS and moved its centroid the wrong way earlier today. staff_crit wants
+## re-synthesis (a heavier impact, not the same sound louder); piano_scythe_crit is the
+## only clean gain fix (+2.3 needed, 3.4 dB available). The alternative is a per-key
+## runtime trim, for which SoundManager._UI_VOLUME_TRIM_DB is the existing precedent --
+## but louder crits are game feel, so it is struktured's call, not this file's.
+##
+## Reproduce: tools/sfx_family_levels.py attack_hit_staff attack_hit_staff_crit ...
+
+
 func test_manifest_load_is_not_vacuous() -> void:
 	## POSITIVE CONTROL, not a size pin. The key-presence tests above only mean
 	## something if the manifest actually loaded — an empty dict would fail them
