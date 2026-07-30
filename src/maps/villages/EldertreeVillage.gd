@@ -264,6 +264,17 @@ func _setup_npcs() -> void:
 	])
 	npcs.add_child(spore)
 
+	# Elder Vesper — rangers_empty_house giver, the village common by the herb garden.
+	var vesper = _create_npc("Elder Vesper", "elder", Vector2(14 * TILE_SIZE,11 * TILE_SIZE), [
+		"Four rangers went out on the patrol they have walked for eleven years.",
+		"They are never late. Not once. That is the entire point of a ranger.",
+		"Their house is empty and it is TIDY. Someone put it in order.",
+		"Rangers do not tidy before a patrol. Somebody came back who was not them.",
+	])
+	# Without this the quest is UNSTARTABLE — QuestSystem.gd:125 matches npc_id to giver.npc_id.
+	vesper.npc_id = "elder_vesper"
+	npcs.add_child(vesper)
+
 
 ## Tempo of the Hunt — L7 masterite ranging Eldertree's forest edge after
 ## the village's own rangers were hunted. Placed in the mid-village grass

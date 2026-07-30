@@ -260,6 +260,17 @@ func _setup_npcs() -> void:
 	var kit = _create_npc("Young Adventurer Kit", "villager", Vector2(23 * TILE_SIZE,14 * TILE_SIZE), _kit_post if _after_cave_done else _kit_pre)
 	npcs.add_child(kit)
 
+	# Caravan Master Kes — water_on_the_road giver, east edge of the bazaar.
+	var kes = _create_npc("Caravan Master Kes", "traveler", Vector2(19 * TILE_SIZE,5 * TILE_SIZE), [
+		"Nine days camped at the edge of a town I was supposed to pass through.",
+		"There's a man on the road east in gold armor. He won't move.",
+		"He doesn't want a toll. He wants PROOF. Of legitimate business.",
+		"I have forty barrels of water and a route. What proof is that?",
+	])
+	# Without this the quest is UNSTARTABLE — QuestSystem.gd:125 matches npc_id to giver.npc_id.
+	kes.npc_id = "caravan_master_kes"
+	npcs.add_child(kes)
+
 
 ## Warden of the Old Guard — L7 masterite blocking the trade road until
 ## the party can prove "legitimate business" (Rat King defeated). Placement

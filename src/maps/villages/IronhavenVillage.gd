@@ -285,6 +285,17 @@ func _setup_npcs() -> void:
 	])
 	npcs.add_child(stranger)
 
+	# Temple Keeper Sella — flame_speaks_wrong giver, west of the forge temple block.
+	var sella = _create_npc("Temple Keeper Sella", "elder", Vector2(12 * TILE_SIZE,6 * TILE_SIZE), [
+		"Six hundred years it burned straight up. Three weeks ago it started to lean.",
+		"East. Precisely east. Not a draft — a draft wanders. This does not wander.",
+		"A flame with a direction has an opinion. I don't know who gave it one.",
+		"And there's a woman tending it now. Nobody appointed her. She was simply there.",
+	])
+	# Without this the quest is UNSTARTABLE — QuestSystem.gd:125 matches npc_id to giver.npc_id.
+	sella.npc_id = "temple_keeper_sella"
+	npcs.add_child(sella)
+
 
 ## Curator of the Flame — L8 masterite tending the warped temple flame in
 ## a duel-of-belief encounter. Placed south of the FFF temple block on the
