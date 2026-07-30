@@ -115,6 +115,20 @@ func test_no_unnamed_sheet_regresses_to_heavy_top() -> void:
 ## WanderingNPC.gd must scan each row's top density at sheet load AND
 ## apply an offset at frame-swap time. Source-pin so a refactor can't
 ## silently drop the workaround while the art is still uncorrected.
+##
+## ⚠️ ITS REACH IS MEASURED, NOT ASSUMED (2026-07-30). Borrowing cowir-sfx's
+## technique — mutate leaving all strings intact and change only a value:
+##
+##   HEAVY_TOP_SPRITE_Y_OFFSET 4.0 -> 0   (workaround fully neutralised)
+##   result: Tests 3 · Asserts 12 · 0 FAILURES — all five pins stayed GREEN
+##
+## So these pins catch DELETION and are blind to NEUTRALISATION. That is the
+## known ceiling of substring pins, and normally the fix is a behavioural
+## companion. Not written here, deliberately: the offset only fires above
+## density 18 and no sheet exceeds it (max is farmer at 14, measured), so the
+## path is dormant and a companion would have to fabricate a sheet that does
+## not exist. Stating the gap with its number beats implying coverage — and if
+## a >18 sheet ever lands, KNOWN_HEAVY_TOP's own ratchet fires first.
 func test_wandering_npc_scans_and_offsets_heavy_top() -> void:
 	var src := FileAccess.get_file_as_string("res://src/exploration/WanderingNPC.gd")
 	assert_true(src.contains("_archetype_row_top_density"),
