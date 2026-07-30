@@ -44,7 +44,13 @@ const SFX_ABILITY_BASE_DB: float = -12.0 # Ability SFX: same level as music
 # lets bass and low-mids through, reverb tail is short so battle music stays
 # tight if a caller elects to nightify it.
 const MUSIC_NIGHT_BUS: String = "MusicNight"
-const NIGHT_LPF_CUTOFF_HZ: float = 1500.0
+## struktured reported this as "muffled … did u lower the music volume?" —
+## it was 1500 Hz, which removes everything above it: cymbals, string
+## harmonics, the top of a harpsichord. That is a behind-a-door effect, not a
+## nocturnal one. Measured: 1500 Hz costs 3.05 dB of total level, 7000 Hz costs
+## 2.79 dB — so the muffled character bought 0.26 dB and nothing else.
+## Keep this well above the ~4 kHz region where presence lives.
+const NIGHT_LPF_CUTOFF_HZ: float = 7000.0
 const NIGHT_REVERB_WET: float = 0.15
 const NIGHT_REVERB_ROOM_SIZE: float = 0.55
 const NIGHT_AMBIENCE_KEY: String = "night_crickets_wind"
