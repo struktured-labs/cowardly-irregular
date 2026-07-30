@@ -294,9 +294,17 @@ for _ in $(seq 1 40); do
     "${BUTLER_BIN}" status "$ITCH_TARGET" 2>/dev/null | grep -q "$VERSION" && break
     sleep 8
 done
-"${BUTLER_BIN}" status "$ITCH_TARGET" | grep -i linux || {
+# Assert the OUTCOME (this version registered), not a precondition (the word
+# "linux" appears somewhere in a table). Two bugs in the original one-liner:
+#   * it was hardcoded `grep -i linux`, so after parameterization a successful
+#     Windows push would report failure and exit 4 — a false alarm on a real ship
+#   * even on Linux it proved the wrong thing. The channel name is in the table
+#     whether or not the new build landed, so it could pass on a push that never
+#     registered. The loop above already waits for VERSION; this must check it.
+"${BUTLER_BIN}" status "$ITCH_TARGET" | grep -q "$VERSION" || {
     echo "[${PLAT}] WARNING: pushed, but ${VERSION} has not appeared in butler status after ~5 min." >&2
     echo "        Check https://itch.io/dashboard before assuming it shipped." >&2
+    "${BUTLER_BIN}" status "$ITCH_TARGET" >&2 || true
     exit 4
 }
 echo "[${PLAT}] LIVE: ${VERSION} — https://struktured.itch.io/cowardly-irregular"

@@ -185,15 +185,31 @@ hardware prerequisite.
 
 These are ways to *ship* the Linux/Windows builds that already work, not new exports:
 
-- **Steam** — needs `steamcmd` + a Steam partner account ($100 per app). Would consume
-  the same Linux/Windows binaries. Real audience, real money, real review process.
-- **Flatpak** — the sane Linux distribution format; the binary is already
-  self-contained, so the manifest is small. Good fit given Linux is first-class here.
-- **AppImage** — single-file, no install. Cheapest possible "send a friend a link"
-  for Linux, and closest in spirit to how web is used today.
-- **GitHub Releases** — already wired in `.github/workflows/build.yml`, Linux only,
-  fires on `v*` tags. Adding Windows to that workflow is straightforward now that the
-  preset exists and cross-export from Linux is proven.
+Tooling measured on this box:
+
+```
+flatpak          /usr/bin/flatpak            ✅ present
+flatpak-builder  /usr/bin/flatpak-builder    ✅ present
+zip              /usr/bin/zip                ✅ present
+/dev/fuse                                    ✅ present (AppImages can run)
+appimagetool     absent      linuxdeploy  absent      steamcmd  absent
+```
+
+- **Flatpak — buildable today, no new tooling needed.** Both binaries are already
+  installed, and the game is a self-contained executable so the manifest is short.
+  The one real cost is the first `org.freedesktop.Platform` runtime pull (~1 GB).
+  Best fit for a Linux-first project, and the format his distro's software centre
+  understands.
+- **AppImage — needs `appimagetool`** (a single downloadable AppImage itself; FUSE is
+  already available so the result will run). Single file, no install, no runtime —
+  the closest desktop equivalent to "here's a link, try it", which is how web is
+  currently used for friends. **Cheapest genuine win here after the itch channels.**
+- **Steam** — needs `steamcmd` plus a Steam partner account ($100 per app). Consumes
+  the same Linux/Windows binaries already built. Real audience, real money, real
+  review process. Not an alpha-stage move.
+- **GitHub Releases** — wired in `.github/workflows/build.yml`. **Now builds Linux
+  *and* Windows**, both attached on `v*` tags. Note the CI jobs have no boot gate
+  (that image has no wine); they assert the artifact exists and is well-formed only.
 
 ---
 
