@@ -137,6 +137,32 @@ def placement_gaps() -> list[str]:
     on_disk = {d.name for d in npcs_dir.iterdir() if d.is_dir()} if npcs_dir.exists() else set()
     manifest_keys = set(load_manifest().get("overworld_npc_sheets", {}).keys())
 
+    # SEMANTIC CONTROL, not a count. If the _create_npc regex or the alias parse
+    # breaks, `placed` comes back empty and this returns [] -- a clean pass over
+    # nothing, indistinguishable from a healthy corpus.
+    #
+    # cowir-overworld 2026-07-30 ran two sweeps of one question that both printed
+    # "0 missing"; the first resolved ZERO targets, so nothing could fail. Their
+    # rule, sharpened from cowir-battle's: a control asserting a count is
+    # non-zero tests the sweep's PLUMBING, a control asserting a NAMED member
+    # resolves tests its SEMANTICS. These four are placed in shipped maps and
+    # each has art, so all four must resolve or this sweep is lying.
+    #
+    # The members were VERIFIED present before being used as controls. My first
+    # pick included `innkeeper`, which has art but is not created via
+    # _create_npc -- so the control fired on a healthy corpus. A control whose
+    # own premise is unchecked is just another guess.
+    for known in ("guard", "merchant", "blacksmith", "dancer"):
+        if known not in placed:
+            return [f"CONTROL FAILED: '{known}' is placed in a shipped map but "
+                    f"this sweep did not find it — the _create_npc extraction is "
+                    f"broken and every result below would be a false clean "
+                    f"(found {len(placed)} archetypes)."]
+        if known not in on_disk and known not in manifest_keys:
+            return [f"CONTROL FAILED: '{known}' has art on disk but this sweep "
+                    f"cannot resolve it — the resolution logic is broken, not "
+                    f"the corpus."]
+
     out = []
     for arch in sorted(placed):
         if arch in on_disk or arch in manifest_keys:
