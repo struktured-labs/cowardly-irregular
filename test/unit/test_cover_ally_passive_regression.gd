@@ -92,11 +92,11 @@ func _set_parties(bm, party: Array[Combatant], foes: Array[Combatant]) -> Dictio
 func _restore_parties(bm, prior: Dictionary) -> void:
 	var p: Array[Combatant] = []
 	for c in prior["p"]:
-		if c is Combatant:
+		if is_instance_valid(c) and c is Combatant:
 			p.append(c)
 	var e: Array[Combatant] = []
 	for c in prior["e"]:
-		if c is Combatant:
+		if is_instance_valid(c) and c is Combatant:
 			e.append(c)
 	bm.player_party = p
 	bm.enemy_party = e

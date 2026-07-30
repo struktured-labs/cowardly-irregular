@@ -110,7 +110,7 @@ func test_runtime_no_passive_empty_flags() -> void:
 		"vanilla party must produce empty flags dict — no silent baseline")
 	var restore: Array[Combatant] = []
 	for c in prior_party:
-		if c is Combatant:
+		if is_instance_valid(c) and c is Combatant:
 			restore.append(c)
 	bm.player_party = restore
 
@@ -136,6 +136,6 @@ func test_runtime_with_passive_returns_flags() -> void:
 		"boss_insight-equipped party must surface show_boss_weakness")
 	var restore: Array[Combatant] = []
 	for c in prior_party:
-		if c is Combatant:
+		if is_instance_valid(c) and c is Combatant:
 			restore.append(c)
 	bm.player_party = restore

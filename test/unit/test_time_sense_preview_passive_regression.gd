@@ -94,7 +94,7 @@ func test_runtime_no_passive_gate_false() -> void:
 	# Restore.
 	var restore: Array[Combatant] = []
 	for c in prior_party:
-		if c is Combatant:
+		if is_instance_valid(c) and c is Combatant:
 			restore.append(c)
 	bm.player_party = restore
 
@@ -117,7 +117,7 @@ func test_runtime_with_passive_gate_true() -> void:
 		"time_sense-equipped party must request the preview")
 	var restore: Array[Combatant] = []
 	for c in prior_party:
-		if c is Combatant:
+		if is_instance_valid(c) and c is Combatant:
 			restore.append(c)
 	bm.player_party = restore
 
@@ -145,6 +145,6 @@ func test_runtime_dead_member_no_preview() -> void:
 		"dead member's passive must not grant preview")
 	var restore: Array[Combatant] = []
 	for c in prior_party:
-		if c is Combatant:
+		if is_instance_valid(c) and c is Combatant:
 			restore.append(c)
 	bm.player_party = restore
