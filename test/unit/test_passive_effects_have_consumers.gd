@@ -31,7 +31,15 @@ extends GutTest
 ##                            "_absorb"). All 8 meta-effect call sites and every
 ##                            passive_mods index enumerated; it is the only non-literal
 ##                            argument, and it is exempted explicitly below.
-##   fallback re-declaration  NOT FIXED, 4 keys affected. PassiveSystem.gd carries a
+##   fallback re-declaration  FIXED 2026-07-30 (this paragraph said NOT FIXED for a day
+##                            AFTER the fix landed, and four lanes cited it as the current
+##                            state while re-deriving the answer it already held —
+##                            declaration-shaped lines are stripped in _src_text below).
+##                            Resolved per key by reading: hp_below_25 CONSUMED (split at
+##                            runtime by _conditional_key_satisfied, exempted below);
+##                            autobattle_advanced and show_formulas DEAD; volatility_scaling
+##                            key dead but market_sense WIRED BY ID — see the AUTHORED_AHEAD
+##                            header. Was: 4 keys affected. PassiveSystem.gd carries a
 ##                            hardcoded copy of passives.json, so a key it re-declares
 ##                            reads as "present" without anything consuming it:
 ##                            autobattle_advanced · hp_below_25 · show_formulas ·
