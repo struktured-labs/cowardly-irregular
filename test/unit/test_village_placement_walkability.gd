@@ -30,14 +30,34 @@ func test_every_village_placement_is_walkable() -> void:
 		audited += 1
 		var blocked := _parse_impassable_chars(src)
 		_audit_file(f, src, rows, blocked)
-	assert_gt(audited, 8, "expected the village fleet to carry map_data grids (got %d)" % audited)
+	# DERIVED, not a magic number. `> 8` let up to 4 of the 13 grid-carrying
+	# villages parse to nothing and be skipped in silence — _parse_map_rows
+	# returns [] on failure and the loop `continue`s, so a failed parse is
+	# indistinguishable from a village that legitimately has no grid.
+	assert_eq(audited, _villages_declaring_a_grid(),
+		"audited %d villages but %d declare a map_data grid — the difference parsed to nothing and was skipped in silence" % [audited, _villages_declaring_a_grid()])
+
+
+## How many village sources DECLARE a grid, independent of whether this file
+## managed to parse one. The gap between the two is what a silent skip looks like.
+func _villages_declaring_a_grid() -> int:
+	var n := 0
+	var dir := DirAccess.open("res://src/maps/villages")
+	if dir == null:
+		return 0
+	for f in dir.get_files():
+		if not f.ends_with(".gd"):
+			continue
+		if FileAccess.get_file_as_string("res://src/maps/villages/" + f).contains("var map_data: Array[String] = ["):
+			n += 1
+	return n
 
 
 ## Both authored literal forms. Form B is what ScripturaPlaza uses for two of
 ## its NPCs; the old single-pattern scan matched neither of them, so they were
 ## placed unchecked from the day they landed.
-const LIT_MUL_EACH := "Vector2\\(\\s*(\\d+(?:\\.\\d+)?)\\s*\\*\\s*TILE_SIZE[^,]*,\\s*(\\d+(?:\\.\\d+)?)\\s*\\*\\s*TILE_SIZE[^)]*\\)"
-const LIT_MUL_WHOLE := "Vector2\\(\\s*(\\d+(?:\\.\\d+)?)\\s*,\\s*(\\d+(?:\\.\\d+)?)\\s*\\)\\s*\\*\\s*TILE_SIZE"
+const LIT_MUL_EACH := "Vector2\\(\\s*(-?\\d+(?:\\.\\d+)?)\\s*\\*\\s*TILE_SIZE[^,]*,\\s*(-?\\d+(?:\\.\\d+)?)\\s*\\*\\s*TILE_SIZE[^)]*\\)"
+const LIT_MUL_WHOLE := "Vector2\\(\\s*(-?\\d+(?:\\.\\d+)?)\\s*,\\s*(-?\\d+(?:\\.\\d+)?)\\s*\\)\\s*\\*\\s*TILE_SIZE"
 
 
 ## Walk a call to its balanced closing paren. The previous scan iterated LINES
@@ -180,11 +200,17 @@ func _parse_impassable_chars(src: String) -> Dictionary:
 	return blocked
 
 
+## Negative guards are load-bearing, not defensive padding: GDScript indexes
+## from the END, so row[-3] returns a real tile several columns from the right
+## edge — a silent wrong answer rather than an error. cowir-story hit exactly
+## this in QuestSystem (objectives[-2] returning a populated objective). It was
+## unreachable here only because the patterns below could not express a
+## negative; they now can, so the guard has to precede them.
 func _char_at(rows: Array, cx: int, cy: int) -> String:
-	if cy >= rows.size():
+	if cy < 0 or cy >= rows.size():
 		return "W"
 	var row: String = rows[cy]
-	if cx >= row.length():
+	if cx < 0 or cx >= row.length():
 		return "W"
 	return row[cx]
 

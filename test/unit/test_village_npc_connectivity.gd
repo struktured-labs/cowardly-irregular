@@ -22,8 +22,8 @@ const VILLAGE_DIR := "res://src/maps/villages"
 const IMPASSABLE_TYPES := ["WALL", "WATER", "VILLAGE_HEDGE", "CAVE_WALL", "LAVA", "MOUNTAIN"]
 
 ## Both authored literal forms, same as the placement audit.
-const LIT_MUL_EACH := "Vector2\\(\\s*(\\d+(?:\\.\\d+)?)\\s*\\*\\s*TILE_SIZE[^,]*,\\s*(\\d+(?:\\.\\d+)?)\\s*\\*\\s*TILE_SIZE[^)]*\\)"
-const LIT_MUL_WHOLE := "Vector2\\(\\s*(\\d+(?:\\.\\d+)?)\\s*,\\s*(\\d+(?:\\.\\d+)?)\\s*\\)\\s*\\*\\s*TILE_SIZE"
+const LIT_MUL_EACH := "Vector2\\(\\s*(-?\\d+(?:\\.\\d+)?)\\s*\\*\\s*TILE_SIZE[^,]*,\\s*(-?\\d+(?:\\.\\d+)?)\\s*\\*\\s*TILE_SIZE[^)]*\\)"
+const LIT_MUL_WHOLE := "Vector2\\(\\s*(-?\\d+(?:\\.\\d+)?)\\s*,\\s*(-?\\d+(?:\\.\\d+)?)\\s*\\)\\s*\\*\\s*TILE_SIZE"
 
 
 func _rows(src: String) -> Array:
@@ -181,5 +181,26 @@ func test_every_village_npc_stands_in_the_reachable_region() -> void:
 				"%s:%d NPC at cell (%d,%d) is not in the village's main walkable region (component %s of %d cells vs main %d) — a player cannot reach them" % [
 					f, entry["line"], cell.x, cell.y, str(comp), int(sizes.get(comp, 0)), main_size])
 
-	assert_gt(villages, 8, "audited the village fleet, not a subset")
+	# DERIVED floor, not a magic number. `> 8` let up to 4 of the 13 villages
+	# drop out silently — _rows() returns [] on a failed parse and the loop
+	# `continue`s, so a partial failure is indistinguishable from a village
+	# that legitimately carries no grid. Compare the audit against the count
+	# the marker itself implies.
+	assert_eq(villages, _villages_declaring_a_grid(),
+		"audited %d villages but %d declare a map_data grid — the difference parsed to nothing and was skipped in silence" % [villages, _villages_declaring_a_grid()])
 	assert_gt(npcs, 40, "found real NPC placements — zero would pass this file for free")
+
+
+## How many village sources DECLARE a grid, independent of whether this file
+## managed to parse one. The gap between the two is what a silent skip looks like.
+func _villages_declaring_a_grid() -> int:
+	var n := 0
+	var dir := DirAccess.open(VILLAGE_DIR)
+	if dir == null:
+		return 0
+	for f in dir.get_files():
+		if not f.ends_with(".gd"):
+			continue
+		if FileAccess.get_file_as_string(VILLAGE_DIR + "/" + f).contains("var map_data: Array[String] = ["):
+			n += 1
+	return n
