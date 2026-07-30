@@ -40,6 +40,10 @@ if [ -d "$_UD" ]; then
   _SNAP="$(mktemp -d "${TMPDIR:-/tmp}/gate_exports_snap.XXXXXX")"
   cp -a "$_UD/." "$_SNAP/" 2>/dev/null || true
   trap '[ -n "$_SNAP" ] && [ -d "$_SNAP" ] && { cp -a "$_SNAP/." "$_UD/" 2>/dev/null; rm -rf "$_SNAP"; }' EXIT INT TERM
+  # SAY SO. gate.sh used to print this and I nearly dropped it in the move, which would have made the
+  # net unobservable in every run rather than only in the ones where it silently failed. Four lanes
+  # spent this morning arguing about whether it had run, from artifacts that could not answer.
+  echo "run_tests.sh: snapshotted $(find "$_SNAP" -type f 2>/dev/null | wc -l) player export file(s) — restored on exit"
 fi
 # Reap snapshots abandoned by a run that died without its trap — four were sitting in TMPDIR this
 # morning, each holding a stale copy, and hand-restoring from one re-litters the real directory
