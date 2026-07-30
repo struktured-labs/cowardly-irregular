@@ -410,6 +410,17 @@ func _maybe_run_battle_smoke() -> void:
 		await _start_exploration()
 		await get_tree().create_timer(1.5).timeout
 		await _smoke_shot("village")
+		# the 5 villages holding W1 quest givers + QuestExaminePoints — no smoke on any platform had ever entered one
+		for _vid in ["sandrift_village", "frosthold_village", "grimhollow_village", "ironhaven_village", "eldertree_village"]:
+			_cutscene_cooldown = true
+			_set_current_map_id(_vid)
+			await _start_exploration()
+			await get_tree().create_timer(1.0).timeout
+			await _smoke_shot(_vid)
+		_cutscene_cooldown = true
+		_set_current_map_id("harmonia_village")
+		await _start_exploration()
+		await get_tree().create_timer(1.0).timeout
 		# settings (Start) then the overworld/party menu (X) — the week's UI churn surfaces
 		_smoke_tap("ui_menu")
 		await get_tree().create_timer(1.0).timeout
