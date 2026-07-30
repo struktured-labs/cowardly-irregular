@@ -13,7 +13,15 @@ set -uo pipefail
 cd "$(cd "$(dirname "$0")/.." && pwd)"
 mkdir -p tmp
 
-BASE=(godot --headless --audio-driver Dummy --log-file tmp/gut_manual_godot.log -s addons/gut/gut_cmdln.gd -gprefix=test_ -gsuffix=.gd -gexit)
+# PER-PROCESS LOG PATHS. These were shared (tmp/gut_manual_godot.log and tmp/run_tests_last.log),
+# and up to 6 lanes/agents run this concurrently. A neighbour's run truncates the file between our
+# write and our read, so the outcome assertion below finds no "Tests" line and reports exit 3 —
+# NO TESTS RAN — on a run that actually passed. A false RED on the tool the whole fleet gates with,
+# reported by a subagent that hit it on a green run (2026-07-30).
+# Shared mutable state keyed by nothing is the same class as user:// keying by app name.
+GUT_LOG="tmp/gut_manual_godot.$$.log"
+RUN_LOG="tmp/run_tests_last.$$.log"
+BASE=(godot --headless --audio-driver Dummy --log-file "$GUT_LOG" -s addons/gut/gut_cmdln.gd -gprefix=test_ -gsuffix=.gd -gexit)
 
 require_test_file() {
   [ -f "$1" ] && return 0
@@ -36,13 +44,24 @@ require_test_dir() {
 # — three were found in one evening — so assert the OUTCOME instead: a real run
 # always prints a Totals block, and a vacuous one never does.
 run_gut() {
-  "${BASE[@]}" "$@" 2>&1 | tee tmp/run_tests_last.log
+  "${BASE[@]}" "$@" 2>&1 | tee "$RUN_LOG"
   local ec=${PIPESTATUS[0]}
-  if ! grep -q '^Tests' tmp/run_tests_last.log; then
+  # `command grep`: the session grep is a ugrep shim carrying -I, and it SILENTLY skips a file it
+  # judges binary. Godot logs can carry NUL bytes, which made a 150KB log read as zero matches —
+  # a false zero on the artifact this assertion depends on.
+  if ! command grep -q '^Tests' "$RUN_LOG"; then
     echo "run_tests.sh: NO TESTS RAN — no Totals block in the output." >&2
-    grep -iE 'have not been imported|Failed to load script|Parse Error|does not extend GutTest' tmp/run_tests_last.log | head -3 | sed 's/^/  /' >&2
+    command grep -aiE 'have not been imported|Failed to load script|Parse Error|does not extend GutTest' "$RUN_LOG" | head -3 | sed 's/^/  /' >&2
     echo "  fresh worktree? godot --headless --audio-driver Dummy --import" >&2
+    echo "  logs kept for inspection: $RUN_LOG $GUT_LOG" >&2
     exit 3
+  fi
+  # Keep both logs when the run FAILED — that is exactly when someone needs the evidence — and
+  # clean up when it passed, or per-process naming turns into per-process litter.
+  if [ "$ec" -eq 0 ]; then
+    rm -f "$RUN_LOG" "$GUT_LOG"
+  else
+    echo "run_tests.sh: logs kept for inspection: $RUN_LOG $GUT_LOG" >&2
   fi
   exit "$ec"
 }
