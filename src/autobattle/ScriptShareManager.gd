@@ -4,7 +4,8 @@ class_name ScriptShareManager
 ## ScriptShareManager — Export/import autobattle scripts and autogrind rules as JSON.
 ## Files go to user://script_exports/ for easy sharing between players.
 
-const EXPORT_DIR = "user://script_exports/"
+## static var, not const, ONLY so tests can point it at a per-process dir: user:// keys by app name so all 24 worktrees share one, and fixed filenames there race between concurrent gates. Production default is unchanged and pinned by test_script_share.
+static var EXPORT_DIR := "user://script_exports/"
 const FILE_VERSION = 1
 ## Clipboard share codes: "COWIR1:" + base64(gzip(json)) — the only sharing path that works on web (user:// is IndexedDB) and survives a Discord paste.
 const SHARE_CODE_PREFIX = "COWIR1:"
