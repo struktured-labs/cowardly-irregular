@@ -81,8 +81,41 @@ test $EC -eq 0 || { echo "[linux] BLOCKED: asset import failed — see tmp/linux
 # autogrind_rules.json, and so does the game. So a clobbered export cannot be
 # detected after the fact, let alone recovered. There is no "is this mine?" check
 # available, which is why the answer is to copy first and ask nothing.
-EXPORT_DIR_REAL="${HOME}/.local/share/godot/app_userdata/Cowardly Irregular/script_exports"
+USERDATA="${HOME}/.local/share/godot/app_userdata/Cowardly Irregular"
+EXPORT_DIR_REAL="${USERDATA}/script_exports"
 SNAP_DIR="tmp/script_exports_snapshot"
+# SNAPSHOT BROAD, RESTORE NARROW, REPORT THE REST.
+#
+# The census predicate that settled the fleet's audit asked "does any test write
+# to the EXPORT dir" — so it could not see user://autogrind/, which is 13 days
+# older than script_exports/ and had all three of its files rewritten during a
+# test window. Content there turned out intact (an internal 07-14 timestamp
+# inside a file written at 23:05 proves re-serialization, not replacement), but
+# the check never covered it and neither did this gate.
+#
+# Widening the SNAPSHOT is free insurance: the whole profile is well under a MiB.
+# Widening the RESTORE is NOT free and is deliberately not done. struktured may
+# be playing while a deploy runs — a .recovery_mode_lock appeared mid-window
+# tonight — and blanket-restoring user:// would revert live progress made during
+# the deploy. That trades a silent overwrite for a silent rollback, which is
+# worse: the overwrite hits data a test also writes, the rollback hits anything.
+#
+# So: copy everything, put back only the paths TESTS write and the player does
+# not continuously write, and for the remainder report what changed so a loss is
+# detectable rather than either silently kept or silently reverted.
+#
+# user://autogrind/ IS DELIBERATELY NOT RESTORED. I had it in this list for about
+# a minute, which would have been strictly worse than the gap it was closing:
+#   * tests CANNOT write there — every save path in src/autogrind/AutogrindSystem.gd
+#     opens with `if _test_disable_persistence: return`, set by 24 test files,
+#     added after autogrind tests corrupted struktured's live saves on 2026-07-14
+#   * so it is the GAME's live save path, and its mtimes during a deploy window
+#     mean he is playing — restoring it would revert his session
+# The lesson generalises: the paths a deploy may put back are the ones only a
+# test writes, never the ones the game writes. Adding a directory here needs that
+# established, not assumed — I assumed it from a suspicious mtime and was wrong.
+FULL_SNAP="tmp/userdata_snapshot"
+RESTORE_PATHS=(script_exports)
 _restore_exports() {
     [ -d "$SNAP_DIR" ] || return 0
     mkdir -p "$EXPORT_DIR_REAL"
@@ -108,14 +141,48 @@ _restore_exports() {
     cp -a "$SNAP_DIR/." "$EXPORT_DIR_REAL/" 2>/dev/null || true
     echo "[linux] restored $(find "$SNAP_DIR" -type f | wc -l) exported script(s)"
 }
+# Report-only drift check over everything OUTSIDE RESTORE_PATHS. Detection, never
+# reversion — see the RESTORE_PATHS note above for why reverting here is worse.
+_report_userdata_drift() {
+    [ -d "$FULL_SNAP" ] || return 0
+    local rel top a b changed=0
+    while IFS= read -r a; do
+        rel="${a#"$FULL_SNAP"/}"
+        top="${rel%%/*}"
+        case " ${RESTORE_PATHS[*]} " in *" $top "*) continue ;; esac
+        b="$USERDATA/$rel"
+        if [ ! -e "$b" ] || ! cmp -s "$a" "$b"; then
+            changed=$(( changed + 1 ))
+            echo "[linux]   drift: $rel"
+        fi
+    done < <(find "$FULL_SNAP" -type f | sort)
+    case $changed in
+        0) echo "[linux] userdata drift outside ${RESTORE_PATHS[*]}: none" ;;
+        *) echo "[linux] NOTE: ${changed} user:// file(s) changed during this deploy." >&2
+           echo "        NOT reverted — if you were playing, that is your own save." >&2
+           echo "        Pre-deploy copy kept at ${FULL_SNAP}/ if you need to compare." >&2 ;;
+    esac
+}
+# ONE trap, both handlers. `trap X EXIT` followed by `trap Y EXIT` does not add a
+# second handler — the second REPLACES the first, silently. I wrote both and the
+# restore would have won, leaving the drift report defined and never called: a
+# handler that looks installed and isn't, which is this evening's whole theme.
+_on_exit() { _restore_exports; _report_userdata_drift; }
+trap _on_exit EXIT
+if [ -d "$USERDATA" ]; then
+    rm -rf "$FULL_SNAP"; mkdir -p "$FULL_SNAP"
+    cp -a "$USERDATA/." "$FULL_SNAP/" 2>/dev/null || true
+    echo "[linux] gate 0b: userdata snapshot $(find "$FULL_SNAP" -type f | wc -l) file(s), $(du -sh "$FULL_SNAP" 2>/dev/null | cut -f1)"
+fi
 if [ -d "$EXPORT_DIR_REAL" ] && [ -n "$(ls -A "$EXPORT_DIR_REAL" 2>/dev/null)" ]; then
     rm -rf "$SNAP_DIR"; mkdir -p "$SNAP_DIR"
     cp -a "$EXPORT_DIR_REAL/." "$SNAP_DIR/"
     echo "[linux] gate 0b: snapshotted $(find "$SNAP_DIR" -type f | wc -l) exported script(s)"
-    # Restore on ANY exit, including a gate failure. A restore that only runs on
-    # the success path is the teardown-abort shape: the thing you were protecting
-    # is lost exactly when something else went wrong.
-    trap _restore_exports EXIT
+    # The EXIT trap is installed ONCE, above, as _on_exit — do not re-arm it here.
+    # A second `trap ... EXIT` REPLACES the first rather than adding to it, and
+    # this line used to do exactly that: it silently disarmed the drift report,
+    # which then existed, was correct, and never ran. Caught by a sandbox test
+    # that asserted the report's OUTPUT rather than that the code was present.
 else
     echo "[linux] gate 0b: no exported scripts to protect"
 fi
