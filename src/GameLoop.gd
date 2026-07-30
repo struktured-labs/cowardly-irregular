@@ -4750,21 +4750,24 @@ func equip_from_pool(combatant: Combatant, slot: String, item_id: String) -> boo
 		"accessory":
 			old_item = combatant.equipped_accessory
 
+	# Equip FIRST — consuming the pool entry before knowing the equip took would delete the item on any id the catalog no longer knows (renamed gear in an old save).
+	var equipped: bool = false
+	match slot:
+		"weapon":
+			equipped = EquipmentSystem.equip_weapon(combatant, item_id)
+		"armor":
+			equipped = EquipmentSystem.equip_armor(combatant, item_id)
+		"accessory":
+			equipped = EquipmentSystem.equip_accessory(combatant, item_id)
+	if not equipped:
+		return false
+
 	# Remove new item from pool
 	equipment_pool[pool_key].erase(item_id)
 
 	# Add old item to pool if it exists
 	if old_item and old_item != "":
 		equipment_pool[pool_key].append(old_item)
-
-	# Equip new item
-	match slot:
-		"weapon":
-			EquipmentSystem.equip_weapon(combatant, item_id)
-		"armor":
-			EquipmentSystem.equip_armor(combatant, item_id)
-		"accessory":
-			EquipmentSystem.equip_accessory(combatant, item_id)
 
 	return true
 

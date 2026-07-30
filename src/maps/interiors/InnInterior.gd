@@ -14,6 +14,10 @@ const TILE_SIZE: int = 32
 const MAP_WIDTH: int = 20
 const MAP_HEIGHT: int = 14
 
+## Single source for the inn price — VillageInn owns it, every innkeeper line quotes it, and this is the path the player actually rests on.
+const VillageInnRes = preload("res://src/exploration/VillageInn.gd")
+const REST_COST: int = VillageInnRes.DEFAULT_REST_COST
+
 ## Scene nodes
 var tilemap: TileMapLayer
 var player: Node2D
@@ -1370,7 +1374,7 @@ func _show_rest_prompt() -> void:
 	# the second interact replayed her ENTIRE greeting before resting. Swap in one short confirm line
 	# while a rest is pending so talk #2 is an acknowledgement, not a rerun.
 	_set_keeper_lines([_keeper_confirm_line()])
-	_rest_dialog = _make_inn_dialog("Rest until morning?\nTalk again to confirm  ·  Walk away to cancel")
+	_rest_dialog = _make_inn_dialog("Rest until morning? (%d G)\nTalk again to confirm  ·  Walk away to cancel" % REST_COST)
 	rest_requested.emit()
 	if SoundManager:
 		SoundManager.play_ui("menu_open")
@@ -1382,6 +1386,10 @@ func _do_rest() -> void:
 	if _rest_dialog and is_instance_valid(_rest_dialog):
 		_rest_dialog.queue_free()
 		_rest_dialog = null
+
+	# Every innkeeper quotes fifty gold a night; nothing charged it. VillageInn._rest_party did, but interior_target routes every inn here instead, so the legacy charge never ran.
+	if not _charge_for_rest():
+		return
 
 	var game_loop = get_tree().root.get_node_or_null("GameLoop")
 	if game_loop and game_loop.party:
@@ -1396,11 +1404,27 @@ func _do_rest() -> void:
 	if SoundManager:
 		SoundManager.play_ui("heal")
 
-	_rest_dialog = _make_inn_dialog("Your party is fully rested!\nHP and MP restored.")
+	_rest_dialog = _make_inn_dialog("Your party is fully rested!\nHP and MP restored. (-%d G)" % REST_COST)
 	await get_tree().create_timer(1.6).timeout
 	if _rest_dialog and is_instance_valid(_rest_dialog):
 		_rest_dialog.queue_free()
 		_rest_dialog = null
+
+
+## Deducts REST_COST. False = the rest is refused (message shown, gold untouched); the caller must not restore the party.
+func _charge_for_rest() -> bool:
+	if GameState == null or not GameState.has_method("get_gold"):
+		return true
+	var current_gold: int = int(GameState.get_gold())
+	if current_gold < REST_COST:
+		if SoundManager:
+			SoundManager.play_ui("menu_error")
+		_rest_dialog = _make_inn_dialog("Not enough gold!\nNeed %d G, you have %d G." % [REST_COST, current_gold])
+		return false
+	# spend_gold (not a raw party_gold write) so the gold_multiplier constant stays consistent with shop transactions.
+	if GameState.has_method("spend_gold"):
+		return bool(GameState.spend_gold(REST_COST))
+	return true
 
 
 func _make_inn_dialog(text: String) -> CanvasLayer:

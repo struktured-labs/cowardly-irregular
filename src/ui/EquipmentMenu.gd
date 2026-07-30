@@ -676,6 +676,34 @@ func _handle_item_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
+## GameLoop owns the shared equipment pool. Null outside a running game (tests, standalone menu harnesses) — callers fall back to a direct equip.
+func _gameloop() -> Node:
+	var tree: SceneTree = get_tree()
+	if tree == null or tree.root == null:
+		return null
+	return tree.root.get_node_or_null("GameLoop")
+
+
+## "weapon" / "armor" / "accessory" — the slot vocabulary GameLoop's pool API speaks.
+func _slot_key(slot_index: int) -> String:
+	match slot_index:
+		0: return "weapon"
+		1: return "armor"
+		2: return "accessory"
+	return ""
+
+
+## Re-read the pool after it changes so the list can't offer gear that is no longer owned (and does offer what was just swapped out).
+func _refresh_from_pool(gl: Node) -> void:
+	if gl == null or not ("equipment_pool" in gl):
+		return
+	var pool: Dictionary = gl.equipment_pool
+	available_weapons = (pool.get("weapons", []) as Array).duplicate()
+	available_armors = (pool.get("armors", []) as Array).duplicate()
+	available_accessories = (pool.get("accessories", []) as Array).duplicate()
+	selected_item_index = clampi(selected_item_index, 0, max(0, _get_available_items_for_slot().size() - 1))
+
+
 func _equip_selected_item() -> void:
 	"""Equip the selected item"""
 	var items = _get_available_items_for_slot()
@@ -685,13 +713,22 @@ func _equip_selected_item() -> void:
 	var item_id = items[selected_item_index]
 	var success = false
 
-	match selected_slot:
-		0:
-			success = EquipmentSystem.equip_weapon(character, item_id)
-		1:
-			success = EquipmentSystem.equip_armor(character, item_id)
-		2:
-			success = EquipmentSystem.equip_accessory(character, item_id)
+	# Route through the pool so the gear is CONSUMED and the replaced piece comes back. Equipping straight through EquipmentSystem left the pool untouched, so one purchased sword outfitted the whole party.
+	var gl: Node = _gameloop()
+	var slot_key: String = _slot_key(selected_slot)
+	if gl != null and gl.has_method("equip_from_pool") and slot_key != "":
+		success = gl.equip_from_pool(character, slot_key, item_id)
+		if success:
+			_refresh_from_pool(gl)
+
+	if not success:
+		match selected_slot:
+			0:
+				success = EquipmentSystem.equip_weapon(character, item_id)
+			1:
+				success = EquipmentSystem.equip_armor(character, item_id)
+			2:
+				success = EquipmentSystem.equip_accessory(character, item_id)
 
 	if success:
 		equipment_changed.emit(SLOTS[selected_slot].to_lower(), item_id)
@@ -712,6 +749,18 @@ func _unequip_slot() -> void:
 		0: slot_enum = EquipmentSystem.EquipSlot.WEAPON
 		1: slot_enum = EquipmentSystem.EquipSlot.ARMOR
 		2: slot_enum = EquipmentSystem.EquipSlot.ACCESSORY
+
+	# Return it to the shared pool instead of deleting it — a bare unequip destroyed the gear outright.
+	var gl: Node = _gameloop()
+	var slot_key: String = _slot_key(selected_slot)
+	if gl != null and gl.has_method("unequip_to_pool") and slot_key != "":
+		if gl.unequip_to_pool(character, slot_key):
+			_refresh_from_pool(gl)
+			equipment_changed.emit(SLOTS[selected_slot].to_lower(), "")
+			SoundManager.play_ui("menu_select")
+			mode = Mode.SLOT_SELECT
+			_build_ui()
+			return
 
 	if EquipmentSystem.unequip_slot(character, slot_enum):
 		equipment_changed.emit(SLOTS[selected_slot].to_lower(), "")

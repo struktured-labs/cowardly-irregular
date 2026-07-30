@@ -7,8 +7,11 @@ class_name VillageInn
 signal rest_completed()
 signal transition_triggered(target_map: String, target_spawn: String)
 
+## Canonical inn price — every innkeeper's dialogue quotes it, and InnInterior (the live rest path) reads it from here so the two can't drift.
+const DEFAULT_REST_COST: int = 50
+
 @export var inn_name: String = "Inn"
-@export var rest_cost: int = 50  # Gold cost to rest
+@export var rest_cost: int = DEFAULT_REST_COST  # Gold cost to rest
 
 ## Set to "" to keep the legacy outdoor rest menu instead of transitioning
 ## to an interior scene. Defaults to the generic InnInterior.
