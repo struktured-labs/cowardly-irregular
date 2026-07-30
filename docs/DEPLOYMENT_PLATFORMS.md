@@ -197,17 +197,21 @@ These are ways to *ship* the Linux/Windows builds that already work, not new exp
 
 ---
 
-## Script consolidation — do this before adding the third platform
+## Script layout — DONE
 
-`tools/deploy_linux.sh` is 267 lines and gates 0/0b/1/2/3/4 are almost entirely
-platform-independent. Gate 0b alone has had **four** correctness fixes (overwrite
-coverage, a duplicate `trap` that silently disarmed the drift report, one-sided
-enumeration blind to file creation, and a partial-snapshot control). Every one of
-those would have to be re-fixed in a copy.
+`tools/deploy_desktop.sh` holds the single implementation of gates 0/0b/1/2/3/4.
+`tools/deploy_linux.sh` and `tools/deploy_windows.sh` are three-line wrappers that
+set `PLAT` and `exec` into it.
 
-**So: `tools/deploy_windows.sh` must not be a copy of `deploy_linux.sh`.** Extract the
-gates into `tools/deploy_desktop.sh <platform>` and make both entry points thin
-wrappers, so the next platform is a table entry rather than a fork.
+This is deliberately **not** a copy per platform. Gate 0b alone has taken **four**
+correctness fixes — overwrite coverage, a duplicate `trap` that silently disarmed the
+drift report, one-sided enumeration blind to file creation, and a partial-snapshot
+control. A fork would have to re-earn every one, and wouldn't: that is precisely how
+`deploy_web.sh`'s gate 1 stayed vacuous while this file was being hardened.
+
+Adding a platform is now a table entry. Gate 0b was re-verified under `PLAT=windows`
+after the refactor (snapshot 2/2, export restored, a modified save left untouched, a
+created file reported).
 
 Per-platform, the only things that actually differ:
 

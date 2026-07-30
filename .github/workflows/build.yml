@@ -70,3 +70,60 @@ jobs:
         with:
           files: build/linux/*
           generate_release_notes: true
+
+  export-windows:
+    name: Windows Export
+    runs-on: ubuntu-latest
+    container:
+      image: barichello/godot-ci:4.4.1
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup export templates
+        run: |
+          mkdir -p /github/home/.local/share/godot/export_templates/${GODOT_VERSION}.stable
+          mv /root/.local/share/godot/export_templates/${GODOT_VERSION}.stable/* \
+             /github/home/.local/share/godot/export_templates/${GODOT_VERSION}.stable/ 2>/dev/null || true
+
+      - name: Import project assets
+        run: |
+          godot --headless --audio-driver Dummy --import > import.log 2>&1; EC=$?
+          tail -20 import.log
+          test $EC -eq 0 || {
+            echo "::error::asset import FAILED — the export step would package an incomplete project"
+            exit 1
+          }
+
+      - name: Export Windows build
+        run: |
+          mkdir -p build/windows
+          godot --headless --audio-driver Dummy \
+                --export-release "Windows Desktop" build/windows/${EXPORT_NAME}.exe > export.log 2>&1; EC=$?
+          tail -20 export.log
+          test $EC -eq 0 || { echo "::error::Windows export FAILED"; exit 1; }
+          # Assert the artifact is a real PE binary, not a zero-byte file from an
+          # export that reported success. Godot exits 0 on some partial exports.
+          test -s "build/windows/${EXPORT_NAME}.exe" || {
+            echo "::error::export reported success but produced no binary"; exit 1; }
+          file "build/windows/${EXPORT_NAME}.exe" | grep -q "PE32+" || {
+            echo "::error::artifact is not a PE32+ executable"; exit 1; }
+
+      # NOTE: no boot gate here. Locally, tools/deploy_windows.sh runs the exported
+      # .exe under wine and asserts "[GAME] Started"; this CI image has no wine, so
+      # CI proves the binary EXISTS and is well-formed, not that it RUNS. Do not
+      # read a green run here as "Windows works" — that is what the local deploy
+      # script is for. See docs/DEPLOYMENT_PLATFORMS.md.
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-build-${{ github.sha }}
+          path: build/windows/
+          retention-days: 14
+
+      - name: Create release (on tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/windows/*
+          generate_release_notes: true
