@@ -274,7 +274,7 @@ func play_cutscene(cutscene_id: String) -> void:
 	if _staged:
 		var cn = data.get("conscript_nearby", null)
 		_conscript_spec = cn if cn is Dictionary else ({} if cn == null else {"radius": CONSCRIPT_RADIUS_DEFAULT})
-		_begin_staging()
+		_begin_staging(_scene_spawns_party_puppet(data))
 	elif not _try_load_backdrop_image(data):
 		await _capture_background()
 
@@ -334,7 +334,7 @@ func play_cutscene_from_data(cutscene_id: String, data: Dictionary) -> void:
 	if _staged:
 		var cn = data.get("conscript_nearby", null)
 		_conscript_spec = cn if cn is Dictionary else ({} if cn == null else {"radius": CONSCRIPT_RADIUS_DEFAULT})
-		_begin_staging()
+		_begin_staging(_scene_spawns_party_puppet(data))
 	elif not _try_load_backdrop_image(data):
 		await _capture_background()
 	cutscene_started.emit(cutscene_id)
@@ -987,13 +987,37 @@ func _get_live_player() -> Node2D:
 	return null
 
 
+## True when the scene spawns a `kind: "party"` puppet, i.e. something takes the real player's place on stage.
+func _scene_spawns_party_puppet(data: Dictionary) -> bool:
+	return _steps_spawn_party(data.get("steps", []))
+
+
+## Recurses branch sub-steps — a party spawn inside a branch case still represents the party.
+func _steps_spawn_party(steps) -> bool:
+	if not (steps is Array):
+		return false
+	for step in steps:
+		if not (step is Dictionary):
+			continue
+		if str(step.get("type", "")) == "spawn_actor" and str(step.get("kind", "")) == "party":
+			return true
+		for case_steps in (step.get("cases", {}) as Dictionary).values():
+			if _steps_spawn_party(case_steps):
+				return true
+		for key in ["if_true", "if_false"]:
+			if _steps_spawn_party(step.get(key)):
+				return true
+	return false
+
+
 ## Staged entry: hide the real player + best-effort HUD so puppets own the frame.
-func _begin_staging() -> void:
+## `hide_player` false keeps the live player on stage — see the call sites.
+func _begin_staging(hide_player: bool = true) -> void:
 	_actors.clear()
 	_stage_hidden.clear()
 	_stage_cam_base_offset = Vector2.INF
 	var player := _get_live_player()
-	if player and player.visible:
+	if hide_player and player and player.visible:
 		player.visible = false
 		_stage_hidden.append(player)
 	var stage := _get_live_stage()
