@@ -55,6 +55,39 @@ func test_unregister_keeps_others() -> void:
 	assert_true(b.aborted, "b must still be aborted")
 
 
+## The teardown loop must survive a dangling entry. NOTE: the two clauses in the
+## guard are redundant — a freed reference fails `!= null` in Godot 4 — so this
+## cannot discriminate `is_instance_valid` alone; removing BOTH is what it pins.
+func test_freed_registration_does_not_strand_later_conversations() -> void:
+	var svc_script = load("res://src/llm/LLMService.gd")
+	var svc: Node = svc_script.new()
+	autofree(svc)
+	svc._active_conversations = []
+
+	# `dangling` is deliberately NOT autofree'd — it is freed by hand below.
+	var dangling := DummyConv.new()
+	var live := DummyConv.new()
+	autofree(live)
+	svc.register_conversation(dangling)
+	svc.register_conversation(live)
+
+	assert_eq(svc._active_conversations.size(), 2, "PREMISE: both conversations must register")
+	assert_true(svc._active_conversations[0] == dangling,
+		"PREMISE: the dangling entry must sort FIRST, or the loop never reaches it before `live`")
+
+	dangling.free()
+	assert_false(is_instance_valid(dangling),
+		"PREMISE: the entry must really be freed — otherwise this test asserts nothing")
+	assert_eq(svc._active_conversations.size(), 2,
+		"PREMISE: _active_conversations is UNTYPED, so it must still hold the freed slot (a typed Array[Node] would have refused the insert and made this premise unconstructible)")
+
+	svc.abort_all_conversations()
+
+	assert_true(live.aborted,
+		"a dangling registration stopped the teardown loop before reaching `live` — on a scene change that leaves a conversation holding a frozen player and an on-screen choice menu")
+	assert_eq(svc._active_conversations.size(), 0, "registry must still clear")
+
+
 func test_inference_succeeded_signal_exists() -> void:
 	var svc_script = load("res://src/llm/LLMService.gd")
 	var svc: Node = svc_script.new()
