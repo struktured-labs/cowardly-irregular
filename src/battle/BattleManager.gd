@@ -6294,6 +6294,13 @@ func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:
 	var item_effects = item_data.get("effects", {})
 	var is_revival_item = item_effects.get("revive", false)
 
+	# ItemSystem routes escape_battle here BY CONTRACT (_CALLER_HANDLED_EFFECT_KEYS) and the gate never existed — Smoke Bomb was consumed and did nothing.
+	var wants_escape: bool = bool(item_effects.get("escape_battle", false))
+	if wants_escape and not escape_allowed:
+		print("  → Cannot escape from this battle!")
+		battle_log_message.emit("[color=gray]Cannot escape from this battle![/color]")
+		return
+
 	## Tick 361: route enemy-targeting damage items (holy_water,
 	## bomb_fragment, arctic_wind, lightning_bolt) through
 	## _retarget_enemy instead of _retarget_ally. Pre-fix every
@@ -6340,6 +6347,10 @@ func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:
 
 	if ItemSystem and ItemSystem.use_item(user, item_id, retargeted):
 		user.remove_item(item_id, 1)
+		if wants_escape:
+			print("  → %s escaped successfully!" % user.combatant_name)
+			battle_log_message.emit("[color=%s]%s escaped successfully![/color]" % [AccessibilityPalette.bonus_bbcode(), user.combatant_name])
+			end_battle(false)
 	else:
 		## Tick 183: surface item-use failures to both push_warning
 		## (dev/CI surface) and battle_log_message (player surface).
