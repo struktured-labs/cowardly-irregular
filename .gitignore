@@ -83,3 +83,7 @@ assets/sprites/**/*.pre_palette.png
 assets/sprites/**/*.pre_chromakey.png
 assets/sprites/**/*.pre_artist_style.png
 *.bak
+
+# Scraped third-party sprite sets used as LoRA training input — NEVER commit.
+# Filenames name commercial titles (Final Fantasy Tactics/VI); provenance is not ours.
+tools/lora_training/jrpg_flat/
