@@ -421,6 +421,10 @@ func run_giver_dialogue(npc_id: String, npc: Node) -> void:
 	var dlg: Dictionary = q.get("dialogue", {})
 
 	if is_offerable(qid):
+		# An offer must not swallow OTHER quests' business here — this is the only notify_talk on the offer path
+		var other_qid := notify_talk(npc_id)
+		if other_qid != "":
+			await run_completion_dialogue(other_qid, npc)
 		await _play_lines(npc, dlg.get("offer", []))
 		var accepted := await _prompt_accept(npc, q)
 		if accepted:
