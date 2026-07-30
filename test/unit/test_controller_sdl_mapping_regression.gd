@@ -245,3 +245,13 @@ func test_controller_mappings_autoload_precedes_input_consumers() -> void:
 			continue
 		assert_lt(mapping_idx, consumer_idx,
 			"ControllerMappings must load before %s — mappings decide what every button index MEANS" % consumer)
+
+
+## The platform:Linux rationale in ControllerMappings is verified against Godot 4.4's web behaviour;
+## this FAILS on a version bump so a stale rationale can't defend a real gap.
+func test_web_rationale_is_pinned_to_the_godot_version_it_was_verified_against() -> void:
+	var info := Engine.get_version_info()
+	var major: int = int(info["major"])
+	var minor: int = int(info["minor"])
+	assert_eq("%d.%d" % [major, minor], "4.4",
+		"Godot is now %d.%d. ControllerMappings.gd states platform:Linux is deliberate because web pads are normalized by the browser and Godot ships standard,Standard Gamepad Mapping,...,platform:Web. Re-verify against the NEW web template (strings its wasm for 'platform:Web'), then move this pin. Stale, that comment tells the next reader web is covered when it may not be." % [major, minor])
