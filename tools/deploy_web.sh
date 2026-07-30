@@ -19,29 +19,49 @@ BUTLER_BIN="$(command -v butler || echo ./butler-bin/butler)"
 
 echo "[deploy] target: $VERSION"
 
-echo "[deploy] gate 1/4: unit suite"
-# Retry once: 2026-07-14 saw test_movement_isolation.gd fail intermittently
-# under the full suite (H-vs-V physics parity asserts diverge in the tens
-# of pixels; passes solo, passes on rerun). A real regression fails both
-# tries. First attempt's log kept as deploy_suite.attempt1.log for diff.
-SUITE_CMD=(godot --headless --audio-driver Dummy --log-file tmp/gut_suite_godot.log -s addons/gut/gut_cmdln.gd -gdir=res://test/unit -gprefix=test_ -gsuffix=.gd -gexit)
-FAILS=$("${SUITE_CMD[@]}" 2>&1 | tee tmp/deploy_suite.log | grep -cE "\[Failed\]") || true
-if [ "${FAILS}" != "0" ]; then
+# IMPORT PREWARM. A fresh worktree has no .godot cache, so res://test/unit/* resolves to nothing
+# and GUT runs ZERO tests while exiting 0 (cowir-sfx/cowir-ai/cowir-story, 2026-07-29). This script
+# had no prewarm, so deploying from a fresh checkout made gate 1 vacuous. Cheap and idempotent.
+echo "[deploy] gate 0/4: import prewarm (a fresh worktree runs NOTHING and exits 0)"
+godot --headless --audio-driver Dummy --import --quit >/dev/null 2>&1 || true
+
+# GATE 1 DELEGATES TO tools/gate.sh AND CONSULTS ITS EXIT CODE.
+#
+# It used to read `grep -cE "[Failed]"` with `|| true`, which defused the `set -euo pipefail`
+# above and made this the weakest gate in the project — guarding a public butler push
+# (cowir-deploy msg-3720). Measured against its own command shape with a nonexistent -gdir:
+# godot exit 0, [Failed] count 0, Totals blocks 0 — THE GATE PASSED ON A RUN THAT DID NOTHING.
+# It was also blind to [Risky] (a test dying in setup never scores [Failed]; 8 such tests existed
+# on main this session), and the count itself is a boolean, not a cardinal — it equals 2x failing
+# ASSERTS, so it could never be reported as "N failures" honestly.
+#
+# gate.sh already carries every instrument: exit code + Failing N agreement, a Totals-present
+# floor, scripts-run == test-files-on-disk, load-failure detection, and asserted-nothing naming.
+# Re-rolling a weaker version inside the deploy script is what produced the hole, so this deletes
+# the check rather than hardening it.
+#
+# Retry once: 2026-07-14 saw test_movement_isolation.gd fail intermittently under the full suite
+# (H-vs-V physics parity asserts diverge in the tens of pixels; passes solo, passes on rerun). A
+# real regression fails both tries. First attempt's log kept for diff.
+echo "[deploy] gate 1/4: unit suite (via tools/gate.sh)"
+if ! ./tools/gate.sh tmp/deploy_suite.log; then
   cp tmp/deploy_suite.log tmp/deploy_suite.attempt1.log
-  echo "[deploy] suite attempt 1: ${FAILS} failure(s) — retrying once (physics-timing flake?)"
-  FAILS=$("${SUITE_CMD[@]}" 2>&1 | tee tmp/deploy_suite.log | grep -cE "\[Failed\]") || true
-  if [ "${FAILS}" != "0" ]; then
-    echo "[deploy] BLOCKED: ${FAILS} test failure(s) on retry — see tmp/deploy_suite.log (+ attempt1)" >&2
-    grep -B12 "\[Failed\]" tmp/deploy_suite.log | grep -E "^res://test" | sort -u >&2
+  echo "[deploy] suite attempt 1 did not pass the gate — retrying once (physics-timing flake?)"
+  if ! ./tools/gate.sh tmp/deploy_suite.log; then
+    echo "[deploy] BLOCKED: gate refused the suite on retry — see tmp/deploy_suite.log (+ attempt1)" >&2
+    grep -E "^GATE:|^exit=|^scope:" tmp/deploy_suite.log >&2 || true
+    grep -B12 "\[Failed\]" tmp/deploy_suite.log | grep -E "^res://test" | sort -u >&2 || true
     exit 1
   fi
-  echo "[deploy] suite passed on retry — flake confirmed"
+  echo "[deploy] suite passed the gate on retry — flake confirmed"
 fi
 
 echo "[deploy] gate 1b: movement-isolation suite (own process — suite-order contamination quarantine 2026-07-15)"
-ISO_FAILS=$(godot --headless --audio-driver Dummy --log-file tmp/gut_isolated_godot.log -s addons/gut/gut_cmdln.gd -gdir=res://test/isolated -gprefix=test_ -gsuffix=.gd -gexit 2>&1 | tee tmp/deploy_isolated.log | grep -cE "\[Failed\]") || true
-if [ "${ISO_FAILS}" != "0" ]; then
-  echo "[deploy] BLOCKED: ${ISO_FAILS} isolated-suite failure(s) — see tmp/deploy_isolated.log" >&2
+# Same delegation. test/isolated holds very few files, so an emptied directory would have reported
+# green forever under the old [Failed] count — gate.sh's scripts-run == on-disk check catches that.
+if ! ./tools/gate.sh tmp/deploy_isolated.log --isolated; then
+  echo "[deploy] BLOCKED: gate refused the isolated suite — see tmp/deploy_isolated.log" >&2
+  grep -E "^GATE:|^exit=|^scope:" tmp/deploy_isolated.log >&2 || true
   exit 1
 fi
 

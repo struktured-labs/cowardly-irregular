@@ -4,8 +4,17 @@
 # command's status wins. Capture first, shape second, decide on the capture.
 set -uo pipefail
 LOG="${1:-tmp/gate.log}"
+# Suite selector, so the DEPLOY path can gate the isolated suite through this script instead of
+# re-rolling a weaker check (cowir-deploy msg-3720: deploy_web.sh had three [Failed]-count gates,
+# none consulting an exit code, guarding a public butler push).
+MODE="${2:-}"
+case "$MODE" in
+	"")          SUITE_DIR="test/unit" ;;
+	--isolated)  SUITE_DIR="test/isolated" ;;
+	*) echo "usage: tools/gate.sh [log-path] [--isolated]" >&2; exit 2 ;;
+esac
 mkdir -p "$(dirname "$LOG")"
-tools/run_tests.sh > "$LOG" 2>&1
+tools/run_tests.sh $MODE > "$LOG" 2>&1
 EC=$?
 sed -i 's/\x1b\[[0-9;]*m//g' "$LOG"
 grep -A7 "^---- Totals" "$LOG" | grep -E "Scripts|Tests|Passing|Failing|Risky"
@@ -34,7 +43,7 @@ RAN=${RAN:-0}
 # the run that exits 0 and means nothing.
 SCRIPTS=$(grep -oE "^Scripts +[0-9]+" "$LOG" | grep -oE "[0-9]+" | tail -1)
 SCRIPTS=${SCRIPTS:-0}
-ONDISK=$(ls test/unit/test_*.gd 2>/dev/null | wc -l)
+ONDISK=$(ls "$SUITE_DIR"/test_*.gd 2>/dev/null | wc -l)
 LOADFAIL=$(grep -c 'does not extend GutTest\|Failed to load script' "$LOG")
 # RISKY IS A THIRD OUTCOME AND THIS GATE READ TWO (@cowir-cutscenes msg-3685).
 # A test that dies in setup asserts NOTHING and GUT scores it [Risky], not
@@ -62,8 +71,15 @@ if [ "$NOASSERT" -ne 0 ]; then
 	SETUP_ERRS=$(grep -c 'SCRIPT ERROR' "$LOG")
 	[ "$SETUP_ERRS" -ne 0 ] && echo "  ^ $SETUP_ERRS SCRIPT ERROR(s) this run — a test dying in setup lands here, not in failing=$FAILED"
 fi
-if [ "$TOTALS" -eq 0 ] || [ "$RAN" -lt 1000 ]; then
-	echo "GATE: RED — log has no Totals block or ran only $RAN tests; the run did not complete, so [Failed]=$FAILED means nothing"; exit 1
+# The floor USED to be `RAN -lt 1000`, sized for the 7000-test unit suite. That is an absolute
+# magnitude where a relationship was meant — CLAUDE.md's coincidental-value trap, in this gate.
+# It passes a 1001-test broken tree and REFUSES a correct small suite: pointing gate.sh at
+# test/isolated (1 file, 5 tests) reported RED on a green run. Found only by extending the gate to
+# a second suite, which is the mutation an author never runs on their own default path.
+# What actually proves a real suite ran is mode-independent: a Totals block exists, something ran,
+# and scripts-run matches the files on disk (checked below).
+if [ "$TOTALS" -eq 0 ] || [ "$RAN" -lt 1 ]; then
+	echo "GATE: RED — log has no Totals block or ran $RAN tests; the run did not complete, so [Failed]=$FAILED means nothing"; exit 1
 fi
 if [ "$SCRIPTS" -ne "$ONDISK" ] || [ "$LOADFAIL" -ne 0 ]; then
 	echo "GATE: RED — SCOPE. GUT ran $SCRIPTS script(s) against $ONDISK on disk ($LOADFAIL load failure(s))."
