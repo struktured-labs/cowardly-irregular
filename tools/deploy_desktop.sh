@@ -95,6 +95,26 @@ echo "[${PLAT}] target ${VERSION}  publish=${PUBLISH}"
 # below was unreachable on the exact failure it describes. The deploy still failed
 # safely (non-zero), it just never said why.
 
+# ── marker staleness guard ──────────────────────────────────────────────────
+# Gates 3 and 3b assert a literal log line. That is a positive marker, which is
+# right — but it is also a coincidental-value pin: change the log line and the
+# gate goes RED on a correct build, and whoever hits it edits the string. That
+# is how the WEB gate spent three days blocked on a hardcoded menu row index
+# (2026-07-27 -> 2026-07-30) while reporting "failed to boot in chromium" for a
+# build that booted perfectly.
+#
+# So before believing a missing marker means a broken build, check the marker
+# still EXISTS in src/. If it doesn't, the gate is stale and says so, rather
+# than blaming the artifact. This is the expiry condition a comment can't be.
+_require_marker_live() {
+    grep -rqF "$1" src/ && return 0
+    echo "[${PLAT}] BLOCKED: gate marker '$1' no longer exists in src/." >&2
+    echo "        This gate is STALE — the game changed its log line. The build is" >&2
+    echo "        NOT necessarily broken. Re-derive the marker before touching it," >&2
+    echo "        and do not simply edit the string until it passes." >&2
+    exit 3
+}
+
 # ── gate 0: import prewarm ───────────────────────────────────────────────────
 # A fresh worktree has no .godot cache, so res:// paths resolve to nothing while
 # the files sit right there on disk. A test run in that state exits 0 having run
@@ -328,6 +348,7 @@ echo "[${PLAT}] binary: $(( $(stat -c%s "$BIN") / 1048576 )) MiB"
 echo "[${PLAT}] gate 3/4: boot smoke"
 ( cd "$OUT_DIR" && timeout 240 ${BOOT_RUNNER[@]+"${BOOT_RUNNER[@]}"} "./${ARTIFACT}" \
     --headless --quit ) > "tmp/${PLAT}_boot.log" 2>&1 || true
+_require_marker_live "[GAME] Started"
 if ! grep -q "\[GAME\] Started" tmp/${PLAT}_boot.log; then
     echo "[${PLAT}] BLOCKED: exported binary did not reach '[GAME] Started'" >&2
     # `|| true` is load-bearing: a diagnostic grep that finds NOTHING exits 1,
@@ -384,6 +405,7 @@ if [ "$PLAT" = "linux" ]; then
             exit 3
         fi
         # Positive marker, not absence-of-error: an empty log has no errors either.
+        _require_marker_live "Battle commenced"
         if ! grep -aq "Battle commenced" "tmp/${PLAT}_battle.log"; then
             echo "[${PLAT}] BLOCKED: combat smoke never reached a battle (exit ${SEC})" >&2
             grep -aiE "SCRIPT ERROR|Failed to load|Parse Error" "tmp/${PLAT}_battle.log" | head -5 >&2 || true
