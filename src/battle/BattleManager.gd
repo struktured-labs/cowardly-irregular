@@ -6349,6 +6349,15 @@ func _execute_item(user: Combatant, item_id: String, targets: Array) -> void:
 
 ## Victory/defeat conditions
 func _check_victory_conditions() -> bool:
+	# An EMPTIED roster is not a dead roster. _cleanup_battle clears both parties, and [].any()
+	# is false, so a second call read the empty party as "nobody alive" and emitted
+	# battle_ended(false) — a DEFEAT after a win. Returns "stop" rather than false, because every
+	# caller is `if _check_victory_conditions(): return`; false would fall through to
+	# _start_new_round() and resurrect a selection state. Keyed on the arrays, not on
+	# is_battle_active(): that also covers INACTIVE, which is a battle that never started and
+	# whose parties are populated, and gating on it breaks the win-condition harness.
+	if player_party.is_empty() and enemy_party.is_empty():
+		return true
 	var players_alive = player_party.any(func(p): return p.is_alive)
 	var enemies_alive = enemy_party.any(func(e): return e.is_alive)
 
