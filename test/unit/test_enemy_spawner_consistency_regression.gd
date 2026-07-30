@@ -98,5 +98,7 @@ func test_sister_spawn_paths_keep_modulo_3_suffix() -> void:
 		var body := rest.substr(0, next_fn) if next_fn > -1 else rest
 		assert_true(body.contains("[\"A\", \"B\", \"C\"]"),
 			"%s must use the same A/B/C suffix array as spawn_enemies (parity)" % fn_name)
+		# `%% 3]` — an unescaped `% 3]` here made the format ABORT the enclosing function,
+		# so this assert never ran and iteration 2 never happened. 2 of 6 asserts were live.
 		assert_true(body.contains("% 3]"),
-			"%s must index with `% 3]` so it stays parity with spawn_enemies' new modulo guard" % fn_name)
+			"%s must index with `%% 3]` so it stays parity with spawn_enemies' modulo guard" % fn_name)
