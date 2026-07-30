@@ -10,7 +10,15 @@ permissions:
   contents: write
 
 env:
-  GODOT_VERSION: "4.3"
+  # 4.4.1 to match the engine that actually ships and the engine the suite runs
+  # under. Until 2026-07-29 this said 4.3 while the itch :web build was produced
+  # locally by Godot 4.4.1 — verified from the artifact, not inferred:
+  # builds/web/index.wasm contains the literal "4.4.1.stable.official". So the
+  # Linux binary attached to every GitHub Release was built by an engine that
+  # nothing in this project had ever tested against, and the web build players
+  # actually get was built by a different engine again.
+  # Tag existence checked before bumping: barichello/godot-ci:4.4.1 -> HTTP 200.
+  GODOT_VERSION: "4.4.1"
   EXPORT_NAME: cowardly-irregular
 
 jobs:
@@ -18,7 +26,7 @@ jobs:
     name: Linux Export
     runs-on: ubuntu-latest
     container:
-      image: barichello/godot-ci:4.3
+      image: barichello/godot-ci:4.4.1
     steps:
       - uses: actions/checkout@v4
 
@@ -30,7 +38,19 @@ jobs:
 
       - name: Import project assets
         run: |
-          godot --headless --import 2>&1 | tail -5 || true
+          # Capture the exit code BEFORE shaping the output. The previous form was
+          #   godot --headless --import 2>&1 | tail -5 || true
+          # which discarded godot's status twice over: the pipe hands back tail's
+          # exit code, and `|| true` swallows whatever survived. A failed import
+          # therefore passed, and the export below would then build from a project
+          # whose assets never resolved — the same swallowed-verdict shape that let
+          # deploy_web.sh's test gate pass a suite that never ran.
+          godot --headless --audio-driver Dummy --import > import.log 2>&1; EC=$?
+          tail -20 import.log
+          test $EC -eq 0 || {
+            echo "::error::asset import FAILED — the export step would package an incomplete project"
+            exit 1
+          }
 
       - name: Export Linux build
         run: |
