@@ -1,0 +1,531 @@
+{
+  "dataset_name": "cowardly_irregular_fighter_lora",
+  "character": "Fighter (Cowardly Irregular JRPG)",
+  "style": "SNES-era pixel art, 16-bit RPG battle sprite",
+  "total_training_images": 47,
+  "sources": [
+    {
+      "source_file": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/idle.png",
+      "prefix": "fighter_idle",
+      "frame_size": "256x256",
+      "frames_extracted": 2,
+      "output_files": [
+        "fighter_idle_f01.png",
+        "fighter_idle_f02.png"
+      ]
+    },
+    {
+      "source_file": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/attack.png",
+      "prefix": "fighter_attack",
+      "frame_size": "256x256",
+      "frames_extracted": 6,
+      "output_files": [
+        "fighter_attack_f01.png",
+        "fighter_attack_f02.png",
+        "fighter_attack_f03.png",
+        "fighter_attack_f04.png",
+        "fighter_attack_f05.png",
+        "fighter_attack_f06.png"
+      ]
+    },
+    {
+      "source_file": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/walk.png",
+      "prefix": "fighter_walk",
+      "frame_size": "256x256",
+      "frames_extracted": 6,
+      "output_files": [
+        "fighter_walk_f01.png",
+        "fighter_walk_f02.png",
+        "fighter_walk_f03.png",
+        "fighter_walk_f04.png",
+        "fighter_walk_f05.png",
+        "fighter_walk_f06.png"
+      ]
+    },
+    {
+      "source_file": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/cast.png",
+      "prefix": "fighter_cast",
+      "frame_size": "256x256",
+      "frames_extracted": 4,
+      "output_files": [
+        "fighter_cast_f01.png",
+        "fighter_cast_f02.png",
+        "fighter_cast_f03.png",
+        "fighter_cast_f04.png"
+      ]
+    },
+    {
+      "source_file": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/dead.png",
+      "prefix": "fighter_dead",
+      "frame_size": "256x256",
+      "frames_extracted": 4,
+      "output_files": [
+        "fighter_dead_f01.png",
+        "fighter_dead_f02.png",
+        "fighter_dead_f03.png",
+        "fighter_dead_f04.png"
+      ]
+    },
+    {
+      "source_file": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/hit.png",
+      "prefix": "fighter_hit",
+      "frame_size": "256x256",
+      "frames_extracted": 4,
+      "output_files": [
+        "fighter_hit_f01.png",
+        "fighter_hit_f02.png",
+        "fighter_hit_f03.png",
+        "fighter_hit_f04.png"
+      ]
+    },
+    {
+      "source_file": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/defend.png",
+      "prefix": "fighter_defend",
+      "frame_size": "256x256",
+      "frames_extracted": 4,
+      "output_files": [
+        "fighter_defend_f01.png",
+        "fighter_defend_f02.png",
+        "fighter_defend_f03.png",
+        "fighter_defend_f04.png"
+      ]
+    },
+    {
+      "source_file": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/item.png",
+      "prefix": "fighter_item",
+      "frame_size": "256x256",
+      "frames_extracted": 4,
+      "output_files": [
+        "fighter_item_f01.png",
+        "fighter_item_f02.png",
+        "fighter_item_f03.png",
+        "fighter_item_f04.png"
+      ]
+    },
+    {
+      "source_file": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/victory.png",
+      "prefix": "fighter_victory",
+      "frame_size": "256x256",
+      "frames_extracted": 4,
+      "output_files": [
+        "fighter_victory_f01.png",
+        "fighter_victory_f02.png",
+        "fighter_victory_f03.png",
+        "fighter_victory_f04.png"
+      ]
+    },
+    {
+      "source_file": "/home/struktured/Pictures/Main_Fighter_SLASH_1-Sheet.png",
+      "prefix": "fighter_body_slash",
+      "frame_size": "128x128",
+      "frames_extracted": 3,
+      "output_files": [
+        "fighter_body_slash_f01.png",
+        "fighter_body_slash_f02.png",
+        "fighter_body_slash_f03.png"
+      ]
+    },
+    {
+      "source_file": "/home/struktured/Pictures/Wp1_Iron_sword-Sheet.png",
+      "prefix": "fighter_iron_sword",
+      "frame_size": "128x128",
+      "frames_extracted": 2,
+      "output_files": [
+        "fighter_iron_sword_f01.png",
+        "fighter_iron_sword_f02.png"
+      ]
+    },
+    {
+      "source_file": "/home/struktured/Pictures/Wp_1_Iron_Sword_DASH_move.png",
+      "prefix": "fighter_iron_sword_dash",
+      "frame_size": "128x128",
+      "frames_extracted": 1,
+      "output_files": [
+        "fighter_iron_sword_dash_f01.png"
+      ]
+    },
+    {
+      "source_file": "/home/struktured/Pictures/Wp_1_Iron_Sword_SLASH_1-Sheet.png",
+      "prefix": "fighter_iron_sword_slash",
+      "frame_size": "128x128",
+      "frames_extracted": 3,
+      "output_files": [
+        "fighter_iron_sword_slash_f01.png",
+        "fighter_iron_sword_slash_f02.png",
+        "fighter_iron_sword_slash_f03.png"
+      ]
+    }
+  ],
+  "frames": [
+    {
+      "filename": "fighter_idle_f01.png",
+      "source": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/idle.png",
+      "frame_index": 0,
+      "frame_size": "256x256",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, idle pose frame 1, standing at rest with sword lowered, battle-ready stance"
+    },
+    {
+      "filename": "fighter_idle_f02.png",
+      "source": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/idle.png",
+      "frame_index": 1,
+      "frame_size": "256x256",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, idle pose frame 2, subtle weight shift bob, sword held at side"
+    },
+    {
+      "filename": "fighter_attack_f01.png",
+      "source": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/attack.png",
+      "frame_index": 0,
+      "frame_size": "256x256",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, attack wind-up frame 1, raising sword overhead, weight shifting to back foot"
+    },
+    {
+      "filename": "fighter_attack_f02.png",
+      "source": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/attack.png",
+      "frame_index": 1,
+      "frame_size": "256x256",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, attack frame 2, sword lifted high, body coiling for swing"
+    },
+    {
+      "filename": "fighter_attack_f03.png",
+      "source": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/attack.png",
+      "frame_index": 2,
+      "frame_size": "256x256",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, attack frame 3, mid-swing arc, blade cutting downward"
+    },
+    {
+      "filename": "fighter_attack_f04.png",
+      "source": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/attack.png",
+      "frame_index": 3,
+      "frame_size": "256x256",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, attack frame 4, follow-through past center, blade angled forward"
+    },
+    {
+      "filename": "fighter_attack_f05.png",
+      "source": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/attack.png",
+      "frame_index": 4,
+      "frame_size": "256x256",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, attack frame 5, extended thrust pose, sword pointed at enemy"
+    },
+    {
+      "filename": "fighter_attack_f06.png",
+      "source": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/attack.png",
+      "frame_index": 5,
+      "frame_size": "256x256",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, attack frame 6, recovery stance, returning to guard position"
+    },
+    {
+      "filename": "fighter_walk_f01.png",
+      "source": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/walk.png",
+      "frame_index": 0,
+      "frame_size": "256x256",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, walk cycle frame 1, advancing step, left foot forward"
+    },
+    {
+      "filename": "fighter_walk_f02.png",
+      "source": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/walk.png",
+      "frame_index": 1,
+      "frame_size": "256x256",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, walk cycle frame 2, mid-stride, weight transfer"
+    },
+    {
+      "filename": "fighter_walk_f03.png",
+      "source": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/walk.png",
+      "frame_index": 2,
+      "frame_size": "256x256",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, walk cycle frame 3, right foot stepping forward, sword at side"
+    },
+    {
+      "filename": "fighter_walk_f04.png",
+      "source": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/walk.png",
+      "frame_index": 3,
+      "frame_size": "256x256",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, walk cycle frame 4, both feet near ground, neutral position"
+    },
+    {
+      "filename": "fighter_walk_f05.png",
+      "source": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/walk.png",
+      "frame_index": 4,
+      "frame_size": "256x256",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, walk cycle frame 5, advancing step, momentum forward"
+    },
+    {
+      "filename": "fighter_walk_f06.png",
+      "source": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/walk.png",
+      "frame_index": 5,
+      "frame_size": "256x256",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, walk cycle frame 6, stride completing, returning to start pose"
+    },
+    {
+      "filename": "fighter_cast_f01.png",
+      "source": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/cast.png",
+      "frame_index": 0,
+      "frame_size": "256x256",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, magic cast frame 1, gathering energy, arm extended forward"
+    },
+    {
+      "filename": "fighter_cast_f02.png",
+      "source": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/cast.png",
+      "frame_index": 1,
+      "frame_size": "256x256",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, magic cast frame 2, small blue orb forming in hand, concentrating"
+    },
+    {
+      "filename": "fighter_cast_f03.png",
+      "source": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/cast.png",
+      "frame_index": 2,
+      "frame_size": "256x256",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, magic cast frame 3, bright light burst at fingertips, releasing spell"
+    },
+    {
+      "filename": "fighter_cast_f04.png",
+      "source": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/cast.png",
+      "frame_index": 3,
+      "frame_size": "256x256",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, magic cast frame 4, spell fired, recoil stance, afterglow fading"
+    },
+    {
+      "filename": "fighter_dead_f01.png",
+      "source": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/dead.png",
+      "frame_index": 0,
+      "frame_size": "256x256",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, death animation frame 1, falling backwards, sword slipping from grip"
+    },
+    {
+      "filename": "fighter_dead_f02.png",
+      "source": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/dead.png",
+      "frame_index": 1,
+      "frame_size": "256x256",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, death animation frame 2, body tilting, arms losing strength"
+    },
+    {
+      "filename": "fighter_dead_f03.png",
+      "source": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/dead.png",
+      "frame_index": 2,
+      "frame_size": "256x256",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, death animation frame 3, collapsed, diagonal sprawl on ground"
+    },
+    {
+      "filename": "fighter_dead_f04.png",
+      "source": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/dead.png",
+      "frame_index": 3,
+      "frame_size": "256x256",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, death animation frame 4, fully prone, motionless defeated pose"
+    },
+    {
+      "filename": "fighter_hit_f01.png",
+      "source": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/hit.png",
+      "frame_index": 0,
+      "frame_size": "256x256",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, hit reaction frame 1, impact recoil, body lurching backward"
+    },
+    {
+      "filename": "fighter_hit_f02.png",
+      "source": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/hit.png",
+      "frame_index": 1,
+      "frame_size": "256x256",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, hit reaction frame 2, staggered, arms spread for balance"
+    },
+    {
+      "filename": "fighter_hit_f03.png",
+      "source": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/hit.png",
+      "frame_index": 2,
+      "frame_size": "256x256",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, hit reaction frame 3, recovering from blow, leaning back"
+    },
+    {
+      "filename": "fighter_hit_f04.png",
+      "source": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/hit.png",
+      "frame_index": 3,
+      "frame_size": "256x256",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, hit reaction frame 4, regaining footing, returning to guard stance"
+    },
+    {
+      "filename": "fighter_defend_f01.png",
+      "source": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/defend.png",
+      "frame_index": 0,
+      "frame_size": "256x256",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, defend pose frame 1, raising sword in guard position, knees bent"
+    },
+    {
+      "filename": "fighter_defend_f02.png",
+      "source": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/defend.png",
+      "frame_index": 1,
+      "frame_size": "256x256",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, defend pose frame 2, full block, blade horizontal across body"
+    },
+    {
+      "filename": "fighter_defend_f03.png",
+      "source": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/defend.png",
+      "frame_index": 2,
+      "frame_size": "256x256",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, defend pose frame 3, bracing for impact, feet planted wide"
+    },
+    {
+      "filename": "fighter_defend_f04.png",
+      "source": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/defend.png",
+      "frame_index": 3,
+      "frame_size": "256x256",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, defend pose frame 4, held guard stance, sword edge toward enemy"
+    },
+    {
+      "filename": "fighter_item_f01.png",
+      "source": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/item.png",
+      "frame_index": 0,
+      "frame_size": "256x256",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, item use frame 1, kneeling, reaching into bag at side"
+    },
+    {
+      "filename": "fighter_item_f02.png",
+      "source": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/item.png",
+      "frame_index": 1,
+      "frame_size": "256x256",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, item use frame 2, holding green potion vial overhead"
+    },
+    {
+      "filename": "fighter_item_f03.png",
+      "source": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/item.png",
+      "frame_index": 2,
+      "frame_size": "256x256",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, item use frame 3, tipping potion, liquid beginning to pour"
+    },
+    {
+      "filename": "fighter_item_f04.png",
+      "source": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/item.png",
+      "frame_index": 3,
+      "frame_size": "256x256",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, item use frame 4, sparkle effect, item consumed, rising back up"
+    },
+    {
+      "filename": "fighter_victory_f01.png",
+      "source": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/victory.png",
+      "frame_index": 0,
+      "frame_size": "256x256",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, victory pose frame 1, raising sword skyward triumphantly"
+    },
+    {
+      "filename": "fighter_victory_f02.png",
+      "source": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/victory.png",
+      "frame_index": 1,
+      "frame_size": "256x256",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, victory pose frame 2, sword held high, chest out, proud stance"
+    },
+    {
+      "filename": "fighter_victory_f03.png",
+      "source": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/victory.png",
+      "frame_index": 2,
+      "frame_size": "256x256",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, victory pose frame 3, swinging sword in celebratory arc"
+    },
+    {
+      "filename": "fighter_victory_f04.png",
+      "source": "/home/struktured/projects/cowardly-irregular-sprite-gen/assets/sprites/jobs/fighter/victory.png",
+      "frame_index": 3,
+      "frame_size": "256x256",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, victory pose frame 4, resting sword on shoulder, satisfied pose"
+    },
+    {
+      "filename": "fighter_body_slash_f01.png",
+      "source": "/home/struktured/Pictures/Main_Fighter_SLASH_1-Sheet.png",
+      "frame_index": 0,
+      "frame_size": "128x128",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, body slash frame 1, wind-up pose, torso rotating, unarmed slash motion"
+    },
+    {
+      "filename": "fighter_body_slash_f02.png",
+      "source": "/home/struktured/Pictures/Main_Fighter_SLASH_1-Sheet.png",
+      "frame_index": 1,
+      "frame_size": "128x128",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, body slash frame 2, peak of slash arc, arm extended mid-swing, no weapon"
+    },
+    {
+      "filename": "fighter_body_slash_f03.png",
+      "source": "/home/struktured/Pictures/Main_Fighter_SLASH_1-Sheet.png",
+      "frame_index": 2,
+      "frame_size": "128x128",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, body slash frame 3, follow-through, arm sweeping downward, no weapon"
+    },
+    {
+      "filename": "fighter_iron_sword_f01.png",
+      "source": "/home/struktured/Pictures/Wp1_Iron_sword-Sheet.png",
+      "frame_index": 0,
+      "frame_size": "128x128",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, iron sword weapon sprite frame 1, blade at rest angle, grey steel edge"
+    },
+    {
+      "filename": "fighter_iron_sword_f02.png",
+      "source": "/home/struktured/Pictures/Wp1_Iron_sword-Sheet.png",
+      "frame_index": 1,
+      "frame_size": "128x128",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, iron sword weapon sprite frame 2, blade at alternate angle, slight gleam"
+    },
+    {
+      "filename": "fighter_iron_sword_dash_f01.png",
+      "source": "/home/struktured/Pictures/Wp_1_Iron_Sword_DASH_move.png",
+      "frame_index": 0,
+      "frame_size": "128x128",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, iron sword dash move, blade angled for lunge strike, forward momentum pose"
+    },
+    {
+      "filename": "fighter_iron_sword_slash_f01.png",
+      "source": "/home/struktured/Pictures/Wp_1_Iron_Sword_SLASH_1-Sheet.png",
+      "frame_index": 0,
+      "frame_size": "128x128",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, iron sword slash arc frame 1, sword mid-swing with green motion trail"
+    },
+    {
+      "filename": "fighter_iron_sword_slash_f02.png",
+      "source": "/home/struktured/Pictures/Wp_1_Iron_Sword_SLASH_1-Sheet.png",
+      "frame_index": 1,
+      "frame_size": "128x128",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, iron sword slash arc frame 2, blade at peak of arc, trail fading"
+    },
+    {
+      "filename": "fighter_iron_sword_slash_f03.png",
+      "source": "/home/struktured/Pictures/Wp_1_Iron_Sword_SLASH_1-Sheet.png",
+      "frame_index": 2,
+      "frame_size": "128x128",
+      "caption": "pixel art, SNES RPG battle sprite, fighter character, red plate armor, brown hair, black pixel outline, transparent background, 16-bit style, side-view battle stance, iron sword slash arc frame 3, follow-through, sword angled downward, trail gone"
+    }
+  ],
+  "kohya_sdxl_lora_settings": {
+    "model": "SDXL 1.0 base (stabilityai/stable-diffusion-xl-base-1.0)",
+    "lora_type": "LoRA (standard rank decomposition)",
+    "network_dim": 32,
+    "network_alpha": 16,
+    "notes_network": "rank 32 / alpha 16 is a good balance for a small specialised style dataset. Increase to rank 64 if you want more capacity but 32 is sufficient for a single character style.",
+    "resolution": "512,512",
+    "notes_resolution": "512x512 matches the 256x256 in-game frames upscaled 2x. SDXL can train at 512 even though its native res is 1024; the pixel art style benefits from smaller resolution to preserve crispness.",
+    "train_batch_size": 4,
+    "gradient_accumulation_steps": 1,
+    "notes_batch": "Batch 4 fits comfortably on 24GB VRAM with SDXL. Increase to 6 if memory permits with fp16 and xformers.",
+    "max_train_steps": "recommend 1500-2500 (start at 1500, check samples every 250 steps)",
+    "notes_steps": "With ~38 training images and batch 4, one epoch is ~10 steps. 1500 steps gives roughly 150 epochs \u2014 appropriate for a tightly scoped style LoRA. Monitor validation loss; stop early if overfit.",
+    "learning_rate": 0.0001,
+    "unet_lr": 0.0001,
+    "text_encoder_lr": 5e-05,
+    "lr_scheduler": "cosine_with_restarts",
+    "lr_warmup_steps": 100,
+    "optimizer": "AdamW8bit",
+    "mixed_precision": "fp16",
+    "save_precision": "fp16",
+    "xformers": true,
+    "gradient_checkpointing": false,
+    "notes_gradient_ckpt": "With 24GB VRAM, gradient checkpointing is not needed and leaving it off keeps training faster.",
+    "bucket_no_upscale": true,
+    "notes_bucketing": "Enable no-upscale bucketing so smaller 128x128 frames are not blurrily upscaled during data loading.",
+    "caption_dropout_rate": 0.05,
+    "notes_caption": "5% caption dropout helps the LoRA learn visual style, not just caption keywords. Keep low because captions are descriptive.",
+    "noise_offset": 0.1,
+    "sample_every_n_steps": 250,
+    "save_every_n_steps": 500,
+    "trigger_word": "fighter_ci_pixel",
+    "notes_trigger": "Prefix every caption with 'fighter_ci_pixel' when training to allow targeted activation. The CAPTION_PREFIX in this script already encodes style tags; prepend the trigger word in Kohya's caption prefix field."
+  },
+  "generation_notes": [
+    "All frames extracted from artist-made sprites \u2014 no procedural/generated art.",
+    "Frames have transparent (RGBA) backgrounds, as required for clean pixel art LoRA training.",
+    "128x128 and 256x256 frame sizes are mixed; Kohya bucketing handles this automatically.",
+    "Re-run this script to regenerate the dataset after adding new sheets to SOURCES.",
+    "Caption trigger word 'fighter_ci_pixel' should be prepended in Kohya's prefix field."
+  ]
+}
