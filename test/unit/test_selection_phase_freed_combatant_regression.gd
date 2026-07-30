@@ -25,6 +25,17 @@ extends GutTest
 ## is NOT proven to occur in play, and this is not claimed as the known
 ## normal-battle wedge. The guard is correct either way: a freed combatant
 ## cannot act, and skipping it is strictly better than aborting the phase.
+##
+## THAT PARAGRAPH IS A TEMPORARY STATE, so it carries an EXPIRY BELOW rather
+## than waiting for someone to re-read it. A self-documented gap does not merely
+## go stale — the stale note then DEFENDS the gap against the next reader
+## (@cowir-cutscenes msg-3878, who opened a file and was misled by exactly this;
+## @cowir-main found the same shape in a probe dead for two weeks whose own
+## comment explained why it was fine).
+##
+## The premise is falsifiable even though the conclusion is not: the note rests
+## on spawn_enemies freeing Combatants. If that stops being true the paragraph is
+## void, and test_the_scope_notes_premise_still_holds goes RED naming it.
 
 var _bm: Node
 
@@ -115,3 +126,25 @@ func test_dead_but_valid_combatants_are_still_excluded() -> void:
 	_bm._calculate_selection_order()
 	assert_eq(_bm.selection_order.size(), 1,
 		"a valid-but-dead combatant must still be excluded — validity is not aliveness")
+
+
+## ── the scope note's EXPIRY ───────────────────────────────────────────
+
+func test_the_scope_notes_premise_still_holds() -> void:
+	# The header says production reachability is UNPROVEN, resting on one
+	# checkable fact: BattleEnemySpawner frees Combatants, so a party array can
+	# hold a dangling one. That premise is falsifiable even though the
+	# conclusion is not — so it expires by FAILING rather than by being re-read.
+	#
+	# If the spawner stops freeing them, the note is void and someone must
+	# re-derive the scope instead of inheriting a sentence that was true once.
+	var src := FileAccess.get_file_as_string("res://src/battle/BattleEnemySpawner.gd")
+	assert_ne(src, "", "the spawner must be readable or this expiry is vacuous")
+	var at: int = src.find("func spawn_enemies")
+	assert_gt(at, -1,
+		"spawn_enemies has moved or been renamed — the scope note above names it explicitly, so re-read the note before trusting it")
+	var body: String = src.substr(at, 1200)
+	assert_true(body.contains("queue_free()"),
+		"the scope note rests on spawn_enemies FREEING Combatants; it no longer does, so the paragraph above is stale — re-derive the scope, do not inherit it")
+	assert_true(body.contains("is_instance_valid"),
+		"the note also says the free is guarded; if that guard is gone the production shape changed and the note's reasoning no longer applies")
