@@ -56,8 +56,8 @@ func _villages_declaring_a_grid() -> int:
 ## Both authored literal forms. Form B is what ScripturaPlaza uses for two of
 ## its NPCs; the old single-pattern scan matched neither of them, so they were
 ## placed unchecked from the day they landed.
-const LIT_MUL_EACH := "Vector2\\(\\s*(\\d+(?:\\.\\d+)?)\\s*\\*\\s*TILE_SIZE[^,]*,\\s*(\\d+(?:\\.\\d+)?)\\s*\\*\\s*TILE_SIZE[^)]*\\)"
-const LIT_MUL_WHOLE := "Vector2\\(\\s*(\\d+(?:\\.\\d+)?)\\s*,\\s*(\\d+(?:\\.\\d+)?)\\s*\\)\\s*\\*\\s*TILE_SIZE"
+const LIT_MUL_EACH := "Vector2\\(\\s*(-?\\d+(?:\\.\\d+)?)\\s*\\*\\s*TILE_SIZE[^,]*,\\s*(-?\\d+(?:\\.\\d+)?)\\s*\\*\\s*TILE_SIZE[^)]*\\)"
+const LIT_MUL_WHOLE := "Vector2\\(\\s*(-?\\d+(?:\\.\\d+)?)\\s*,\\s*(-?\\d+(?:\\.\\d+)?)\\s*\\)\\s*\\*\\s*TILE_SIZE"
 
 
 ## Walk a call to its balanced closing paren. The previous scan iterated LINES
@@ -200,11 +200,17 @@ func _parse_impassable_chars(src: String) -> Dictionary:
 	return blocked
 
 
+## Negative guards are load-bearing, not defensive padding: GDScript indexes
+## from the END, so row[-3] returns a real tile several columns from the right
+## edge — a silent wrong answer rather than an error. cowir-story hit exactly
+## this in QuestSystem (objectives[-2] returning a populated objective). It was
+## unreachable here only because the patterns below could not express a
+## negative; they now can, so the guard has to precede them.
 func _char_at(rows: Array, cx: int, cy: int) -> String:
-	if cy >= rows.size():
+	if cy < 0 or cy >= rows.size():
 		return "W"
 	var row: String = rows[cy]
-	if cx >= row.length():
+	if cx < 0 or cx >= row.length():
 		return "W"
 	return row[cx]
 

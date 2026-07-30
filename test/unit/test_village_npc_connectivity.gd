@@ -22,8 +22,8 @@ const VILLAGE_DIR := "res://src/maps/villages"
 const IMPASSABLE_TYPES := ["WALL", "WATER", "VILLAGE_HEDGE", "CAVE_WALL", "LAVA", "MOUNTAIN"]
 
 ## Both authored literal forms, same as the placement audit.
-const LIT_MUL_EACH := "Vector2\\(\\s*(\\d+(?:\\.\\d+)?)\\s*\\*\\s*TILE_SIZE[^,]*,\\s*(\\d+(?:\\.\\d+)?)\\s*\\*\\s*TILE_SIZE[^)]*\\)"
-const LIT_MUL_WHOLE := "Vector2\\(\\s*(\\d+(?:\\.\\d+)?)\\s*,\\s*(\\d+(?:\\.\\d+)?)\\s*\\)\\s*\\*\\s*TILE_SIZE"
+const LIT_MUL_EACH := "Vector2\\(\\s*(-?\\d+(?:\\.\\d+)?)\\s*\\*\\s*TILE_SIZE[^,]*,\\s*(-?\\d+(?:\\.\\d+)?)\\s*\\*\\s*TILE_SIZE[^)]*\\)"
+const LIT_MUL_WHOLE := "Vector2\\(\\s*(-?\\d+(?:\\.\\d+)?)\\s*,\\s*(-?\\d+(?:\\.\\d+)?)\\s*\\)\\s*\\*\\s*TILE_SIZE"
 
 
 func _rows(src: String) -> Array:
