@@ -3384,8 +3384,7 @@ func _execute_physical_group(participants: Array, alive_enemies: Array[Combatant
 		var raw_damage: int = int(total_power * scale / max(1.0, float(alive_enemies.size())))
 		var mitigated: int = 0
 		if is_limit_break:
-			# Limit Break: 3x damage, ignore defense (project rule: ultimate
-			# strike must justify its 4x AP cost vs All-Out Attack).
+			# 3x damage at 4x the AP of All-Out — same raw formula, same take_damage, so defense applies to both; the trade is burst timing plus _limit_break_cleanse, NOT armor piercing.
 			mitigated = max(1, int(raw_damage * lb_dmg_mult))
 		else:
 			mitigated = max(1, raw_damage)
