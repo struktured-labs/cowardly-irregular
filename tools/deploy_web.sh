@@ -7,11 +7,35 @@
 # losslessly (sprite-pipeline intermediates + W4-W6 music, which has a
 # procedural fallback). The old in-place 64k/quantize mangling is gone.
 #
-# Usage: tools/deploy_web.sh [version-tag]   (defaults to latest git tag)
+# Usage: tools/deploy_web.sh [version-tag] [--gates-only]   (tag defaults to the newest git tag)
 set -euo pipefail
 cd "$(cd "$(dirname "$0")/.." && pwd)"
 
-VERSION="${1:-$(git tag --sort=-creatordate | head -1)}"
+# --gates-only runs every LOCAL gate and stops before anything outward-facing. Parsed before
+# anything else so it can never be mistaken for a version tag.
+GATES_ONLY=0
+ARGS=()
+for a in "$@"; do
+	case "$a" in
+		--gates-only) GATES_ONLY=1 ;;
+		-*) echo "usage: tools/deploy_web.sh [version-tag] [--gates-only]" >&2; exit 2 ;;
+		*) ARGS+=("$a") ;;
+	esac
+done
+
+# NO PIPE. `git tag --sort=-creatordate | head -1` under `set -o pipefail` DIES: head closes the
+# pipe after one line, git tag takes SIGPIPE, pipefail propagates 141, and set -e kills the script
+# before it prints anything. Measured 2026-07-30 — the documented default path exited 141 in
+# silence, which reads as "the script did nothing" rather than as a failure.
+# It is LOAD-DEPENDENT and was correct when written: with few tags git finishes writing before head
+# exits. This repo has 507, well past the pipe buffer, so it broke as tags accumulated and nobody
+# noticed because every real deploy passes an explicit tag.
+if [ "${#ARGS[@]}" -gt 0 ]; then
+	VERSION="${ARGS[0]}"
+else
+	VERSION="$(git for-each-ref --sort=-creatordate --count=1 --format='%(refname:short)' refs/tags)"
+fi
+[ -n "$VERSION" ] || { echo "deploy_web.sh: no version tag given and no tags in the repo" >&2; exit 2; }
 ITCH_TARGET="struktured/cowardly-irregular:web"
 PCK_LIMIT=199000000   # itch refuses HTML5 embeds with any file >= 200 MB
 PCK_WARN=180000000    # early-warning band: plan the next diet before it bites
@@ -121,6 +145,18 @@ else
       fi
     fi
   fi
+fi
+
+# --gates-only stops HERE, before anything outward-facing. Every gate above is local: suite,
+# export, pck size, render smoke, WASM boot smoke. Verifying that main is shippable is a thing
+# people legitimately want, and until now the only way to do it was to read this file to the end
+# and confirm the push below wouldn't fire — or hand-roll the sequence. Making the safe path
+# supported is cheaper than trusting everyone to check. Publishing still requires struktured's
+# explicit per-deploy approval; this flag does not grant it, it removes the reason to skip asking.
+if [ "$GATES_ONLY" = "1" ]; then
+  echo "[deploy] --gates-only: ALL GATES PASSED for ${VERSION}. Nothing pushed."
+  echo "[deploy] build is in builds/web/ — publishing needs struktured's explicit approval."
+  exit 0
 fi
 
 echo "[deploy] pushing to ${ITCH_TARGET} (userversion ${VERSION})"
