@@ -1,18 +1,22 @@
 #!/usr/bin/env bash
-# deploy_linux.sh — build, verify and (only when explicitly told) publish the
-# native Linux build.
+# deploy_desktop.sh — build, verify and (only when explicitly told) publish a
+# native DESKTOP build. Platform comes from $PLAT; tools/deploy_linux.sh and
+# tools/deploy_windows.sh are thin wrappers that set it.
 #
 # WHY LINUX IS FIRST-CLASS HERE
 #   It is struktured's own platform and his dev cycle. Not a market tier — the
 #   build he actually plays. Web stays the portability/collaboration channel
-#   (phone, laptops, friends, and the artist's sprite review).
+#   (phone, laptops, friends, and the artist's sprite review). Windows is a real
+#   target because most players are on it; macOS is NOT wired in here because it
+#   cannot be boot-gated from this box (see docs/DEPLOYMENT_PLATFORMS.md).
 #
 # HOW THIS DIFFERS FROM deploy_web.sh
 #   * No pck size gate. That limit is itch's HTML5 *embed* cap; a downloadable
-#     build is not subject to it. A 316 MB Linux binary is unremarkable.
+#     build is not subject to it. A 300+ MB desktop binary is unremarkable.
 #   * A BOOT gate instead of a render/WASM smoke. The exported binary is run
 #     headless and must reach the title screen. Web cannot do this; desktop can,
 #     and it is the cheapest possible proof the artifact is not merely large.
+#     Windows gets the identical assertion via wine, so it is not a blind ship.
 #   * Gating is delegated to tools/gate.sh rather than re-rolled. deploy_web.sh
 #     used to decide "did the suite pass?" by counting lines containing
 #     [Failed], which is 2x failing ASSERTS — a quantity GUT never prints — and
@@ -140,6 +144,18 @@ SNAP_DIR="tmp/script_exports_snapshot"
 # established, not assumed — I assumed it from a suspicious mtime and was wrong.
 FULL_SNAP="tmp/userdata_snapshot"
 RESTORE_PATHS=(script_exports)
+# Paths excluded from the DRIFT REPORT (not from the snapshot — they are still
+# copied, they just don't get reported). Engine logs only.
+#
+# user://logs/ gets a fresh file on EVERY native godot invocation, and a deploy
+# makes three (import, suite, export). So it would drift on every single run,
+# unconditionally. A report that always fires is a report nobody reads, and the
+# whole point of this one is that "drift: none" carries information. Excluding a
+# guaranteed-noisy path is what keeps the remaining lines meaningful.
+#
+# Deliberately narrow: ONLY logs. Anything under saves/ or autogrind/ still
+# reports, because those are the paths where a change might be his.
+DRIFT_IGNORE=(logs)
 _restore_exports() {
     [ -d "$SNAP_DIR" ] || return 0
     mkdir -p "$EXPORT_DIR_REAL"
@@ -174,6 +190,7 @@ _report_userdata_drift() {
         rel="${a#"$FULL_SNAP"/}"
         top="${rel%%/*}"
         case " ${RESTORE_PATHS[*]} " in *" $top "*) continue ;; esac
+        case " ${DRIFT_IGNORE[*]} " in *" $top "*) continue ;; esac
         b="$USERDATA/$rel"
         if [ ! -e "$b" ] || ! cmp -s "$a" "$b"; then
             changed=$(( changed + 1 ))
@@ -189,6 +206,7 @@ _report_userdata_drift() {
         rel="${b#"$USERDATA"/}"
         top="${rel%%/*}"
         case " ${RESTORE_PATHS[*]} " in *" $top "*) continue ;; esac
+        case " ${DRIFT_IGNORE[*]} " in *" $top "*) continue ;; esac
         [ -e "$FULL_SNAP/$rel" ] && continue
         changed=$(( changed + 1 ))
         echo "[${PLAT}]   new: $rel"
