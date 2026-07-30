@@ -23,6 +23,29 @@ GUT_LOG="tmp/gut_manual_godot.$$.log"
 RUN_LOG="tmp/run_tests_last.$$.log"
 BASE=(godot --headless --audio-driver Dummy --log-file "$GUT_LOG" -s addons/gut/gut_cmdln.gd -gprefix=test_ -gsuffix=.gd -gexit)
 
+# PLAYER-DATA NET — HERE, not in gate.sh, because THIS is the documented command.
+# The suite writes test data over user://script_exports/ under fixed filenames, which are the same
+# paths the shipped Shift+E export and export_autogrind_rules() write. I originally put the
+# snapshot in gate.sh; cowir-sfx measured that CLAUDE.md's canonical command is this script, that
+# gate.sh merely WRAPS it, and that three of their own full-suite runs therefore had no net at all.
+# Protecting the wrapper protects the path fewest runs take. Every run goes through here.
+#
+# Traps EXIT INT TERM. I could NOT reproduce the "EXIT doesn't fire on SIGTERM" mechanism three
+# lanes diagnosed — in a controlled test EXIT alone did fire, and adding INT TERM fired it twice —
+# so the orphaned snapshots are real but their stated cause is unconfirmed. INT TERM is free, the
+# handler is idempotent behind the -d guard, and nothing saves a kill -9.
+_UD="${HOME}/.local/share/godot/app_userdata/Cowardly Irregular/script_exports"
+_SNAP=""
+if [ -d "$_UD" ]; then
+  _SNAP="$(mktemp -d "${TMPDIR:-/tmp}/gate_exports_snap.XXXXXX")"
+  cp -a "$_UD/." "$_SNAP/" 2>/dev/null || true
+  trap '[ -n "$_SNAP" ] && [ -d "$_SNAP" ] && { cp -a "$_SNAP/." "$_UD/" 2>/dev/null; rm -rf "$_SNAP"; }' EXIT INT TERM
+fi
+# Reap snapshots abandoned by a run that died without its trap — four were sitting in TMPDIR this
+# morning, each holding a stale copy, and hand-restoring from one re-litters the real directory
+# with another lane's canary. Older than an hour only, so a concurrent run's live snapshot is safe.
+find "${TMPDIR:-/tmp}" -maxdepth 1 -name 'gate_exports_snap.*' -type d -mmin +60 -exec rm -rf {} + 2>/dev/null || true
+
 require_test_file() {
   [ -f "$1" ] && return 0
   echo "run_tests.sh: no such test file: $1" >&2

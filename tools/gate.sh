@@ -15,28 +15,10 @@ case "$MODE" in
 esac
 mkdir -p "$(dirname "$LOG")"
 
-# PLAYER-DATA NET (@cowir-deploy msg-3760, mechanism from deploy_linux.sh gate 0b).
-# The suite writes test data to user://script_exports/ under FIXED filenames — autogrind_rules.json
-# and <char>_autobattle.json — which are the same paths the shipped Shift+E export and
-# export_autogrind_rules() write. It is an OVERWRITE, not a delete: same name, someone else's
-# contents, nothing loud. `static var EXPORT_DIR` only scopes tests that ASSIGN it, and the writer
-# never does — an override nobody sets is a default (@cowir-ai). So every tree including main is
-# exposed, and rebasing does not help.
-#
-# A snapshot + EXIT trap is cause-INDEPENDENT: it does not care which file wrote, which tree ran,
-# or whether the damage was a delete or a replace, because `cp -a "$SNAP/." "$REAL/"` overwrites.
-# This is a NET, not a fix — cowir-battle's test_script_share scoping is the fix. It exists so that
-# running the gate stops being a destructive act in the meantime.
-_UD="${HOME}/.local/share/godot/app_userdata/Cowardly Irregular/script_exports"
-_SNAP=""
-if [ -d "$_UD" ]; then
-	_SNAP="$(mktemp -d "${TMPDIR:-/tmp}/gate_exports_snap.XXXXXX")"
-	cp -a "$_UD/." "$_SNAP/" 2>/dev/null || true
-	_N=$(find "$_SNAP" -type f 2>/dev/null | wc -l)
-	[ "${_N:-0}" -gt 0 ] && echo "gate: snapshotted $_N player export file(s) — restored on exit"
-	# Trap covers every exit path below, including the several `exit 1`s.
-	trap '[ -n "$_SNAP" ] && [ -d "$_SNAP" ] && { cp -a "$_SNAP/." "$_UD/" 2>/dev/null; rm -rf "$_SNAP"; }' EXIT
-fi
+# PLAYER-DATA NET now lives in tools/run_tests.sh, which is CLAUDE.md's canonical command
+# and the thing this script wraps. It was here first, which meant it only protected runs
+# that typed `gate.sh` — cowir-sfx measured three of their own full-suite runs with no net
+# because they followed the docs. Protecting the wrapper protected the path fewest runs take.
 
 tools/run_tests.sh $MODE > "$LOG" 2>&1
 EC=$?
