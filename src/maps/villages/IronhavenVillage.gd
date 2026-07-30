@@ -296,6 +296,17 @@ func _setup_npcs() -> void:
 	sella.npc_id = "temple_keeper_sella"
 	npcs.add_child(sella)
 
+	_add_quest_examine_point("w1_ironhaven_flame_speaks_wrong",
+		"quest_w1_ironhaven_flame_speaks_wrong_accepted", "[A] Listen to the flame",
+		"It leans east, and it SPEAKS — fragments, in a measured beat. Not a flame's cadence. A court's.",
+		"Six hundred years it burned straight up. Now it leans, and the lean has a direction.",
+		Vector2(16 * TILE_SIZE,4 * TILE_SIZE))
+	_add_quest_examine_point("w1_ironhaven_flame_speaks_wrong",
+		"quest_w1_ironhaven_flame_heard", "[A] Confront the flame-tender",
+		"She does not pretend she was appointed. 'It was speaking wrong,' she says. 'I am teaching it the correct wording.'",
+		"A woman tends the flame with great care. Nobody remembers hiring her.",
+		Vector2(18 * TILE_SIZE,10 * TILE_SIZE))
+
 
 ## Curator of the Flame — L8 masterite tending the warped temple flame in
 ## a duel-of-belief encounter. Placed south of the FFF temple block on the

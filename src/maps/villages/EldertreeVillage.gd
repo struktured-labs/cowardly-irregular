@@ -275,6 +275,17 @@ func _setup_npcs() -> void:
 	vesper.npc_id = "elder_vesper"
 	npcs.add_child(vesper)
 
+	_add_quest_examine_point("w1_eldertree_rangers_empty_house",
+		"quest_w1_eldertree_rangers_empty_house_accepted", "[A] Search the rangers' house",
+		"Every arrow in the quiver sits at the same rotation. Rangers never store arrows that way. Someone who has never held a bow TIDIED this.",
+		"The rangers' house, at the top of the path. Empty, and in perfect order.",
+		Vector2(22 * TILE_SIZE,5 * TILE_SIZE))
+	_add_quest_examine_point("w1_eldertree_rangers_empty_house",
+		"quest_w1_eldertree_rangers_house_searched", "[A] Enter the deep forest",
+		"Four sets of boot prints go out. Four come back — same boots, same stride, and not one of them broke step to run.",
+		"The forest edge. The birds here stopped some days ago.",
+		Vector2(24 * TILE_SIZE,12 * TILE_SIZE))
+
 
 ## Tempo of the Hunt — L7 masterite ranging Eldertree's forest edge after
 ## the village's own rangers were hunted. Placed in the mid-village grass

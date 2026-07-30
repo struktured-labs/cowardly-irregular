@@ -270,6 +270,17 @@ func _setup_npcs() -> void:
 	trude.npc_id = "miner_trude"
 	npcs.add_child(trude)
 
+	_add_quest_examine_point("w1_grimhollow_foremans_ledger",
+		"quest_w1_grimhollow_foremans_ledger_accepted", "[A] Read the ledger",
+		"'Reallocated.' The word sits in a column that used to say WHERE. Not the foreman's hand — the letters lean like a court clerk's.",
+		"The mine office. A ledger lies open, turned to a page nobody here wrote.",
+		Vector2(21 * TILE_SIZE,10 * TILE_SIZE))
+	_add_quest_examine_point("w1_grimhollow_foremans_ledger",
+		"quest_w1_grimhollow_ledger_read", "[A] Confront the robed man",
+		"He does not deny it. He explains it, patiently, as procedure. Trude's husband was not taken. He was FILED.",
+		"A figure in judgment robes stands at the mine gate, holding nothing, waiting for nothing.",
+		Vector2(20 * TILE_SIZE,14 * TILE_SIZE))
+
 
 ## Arbiter of Steel — L8 masterite guarding the mine approach as a
 ## corrupted foreman-cum-judge. Placed south of the CCC block (chapel /
