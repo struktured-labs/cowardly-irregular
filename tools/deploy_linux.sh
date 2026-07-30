@@ -185,7 +185,22 @@ trap _on_exit EXIT
 if [ -d "$USERDATA" ]; then
     rm -rf "$FULL_SNAP"; mkdir -p "$FULL_SNAP"
     cp -a "$USERDATA/." "$FULL_SNAP/" 2>/dev/null || true
-    echo "[linux] gate 0b: userdata snapshot $(find "$FULL_SNAP" -type f | wc -l) file(s), $(du -sh "$FULL_SNAP" 2>/dev/null | cut -f1)"
+    # POSITIVE CONTROL on the snapshot itself. The cp above suppresses its errors
+    # (some godot userdata is unreadable sockets/locks), so a PARTIAL copy would be
+    # silent — and every later "drift: none" would inherit that silence and read as
+    # a clean deploy. Counting both sides makes the snapshot a measurement rather
+    # than a claim: a sweep reporting 0 problems is only meaningful if you have
+    # shown the sweep can see anything at all.
+    SNAP_N=$(find "$FULL_SNAP" -type f | wc -l)
+    LIVE_N=$(find "$USERDATA" -type f | wc -l)
+    echo "[linux] gate 0b: userdata snapshot ${SNAP_N}/${LIVE_N} file(s), $(du -sh "$FULL_SNAP" 2>/dev/null | cut -f1)"
+    if [ "$SNAP_N" -ne "$LIVE_N" ]; then
+        echo "[linux] BLOCKED: snapshot captured ${SNAP_N} of ${LIVE_N} user:// files." >&2
+        echo "        Refusing to run the suite behind a partial backup — an" >&2
+        echo "        uncaptured file cannot be restored and its loss would not" >&2
+        echo "        even be reported. Fix the copy, or move the unreadable file." >&2
+        exit 1
+    fi
 fi
 if [ -d "$EXPORT_DIR_REAL" ] && [ -n "$(ls -A "$EXPORT_DIR_REAL" 2>/dev/null)" ]; then
     rm -rf "$SNAP_DIR"; mkdir -p "$SNAP_DIR"
