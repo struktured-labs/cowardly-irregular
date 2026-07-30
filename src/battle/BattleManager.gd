@@ -4462,6 +4462,9 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 			var log_effect: String = status_to_add
 			if status_to_add == "freeze":
 				status_to_add = "stun"
+			# burn aliases to burning — 5 fire abilities AND the random-debuff pool author "burn", but the 8%/turn DoT in Combatant ticks only "burning". Measured: burn 100->100, burning 100->92. Aliasing at apply (not widening the tick) also gets burn into the cleanse and negative-status lists, which already say "burning".
+			if status_to_add == "burn":
+				status_to_add = "burning"
 			var duration: int = int(ability.get("duration", 3))
 			target.add_status(status_to_add, duration)
 			battle_log_message.emit("%s inflicted %s!" % [caster.combatant_name, StatusNames.display(log_effect)])
@@ -4684,6 +4687,9 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 			var log_effect: String = status_to_add
 			if status_to_add == "freeze":
 				status_to_add = "stun"
+			# burn aliases to burning — 5 fire abilities AND the random-debuff pool author "burn", but the 8%/turn DoT in Combatant ticks only "burning". Measured: burn 100->100, burning 100->92. Aliasing at apply (not widening the tick) also gets burn into the cleanse and negative-status lists, which already say "burning".
+			if status_to_add == "burn":
+				status_to_add = "burning"
 			var duration: int = int(ability.get("duration", 3))
 			target.add_status(status_to_add, duration)
 			battle_log_message.emit("%s inflicted %s!" % [caster.combatant_name, StatusNames.display(log_effect)])
