@@ -82,12 +82,26 @@ BUTLER_BIN="$(command -v butler || echo ./butler-bin/butler)"
 mkdir -p tmp "$OUT_DIR"
 echo "[${PLAT}] target ${VERSION}  publish=${PUBLISH}"
 
+# ⚠️ WHY THESE RUN BACKGROUNDED + `wait` RATHER THAN IN THE FOREGROUND.
+# bash DEFERS a signal trap until the current foreground command finishes.
+# Measured: TERM during a foreground `sleep 8` -> handler ran 8s later; the same
+# work backgrounded with `wait` -> handler ran in 1s. Gate 1 is a 9-11 minute
+# suite, so a foreground kill would leave the export dir clobbered for the whole
+# remaining run. Trapping the signal is only half the fix; being interruptible is
+# the other half.
+#
+# `EC=0; wait $! || EC=$?` and not `cmd; EC=$?`: under `set -e` a failing command
+# exits the script BEFORE its status can be read, so every "BLOCKED: ..." message
+# below was unreachable on the exact failure it describes. The deploy still failed
+# safely (non-zero), it just never said why.
+
 # ── gate 0: import prewarm ───────────────────────────────────────────────────
 # A fresh worktree has no .godot cache, so res:// paths resolve to nothing while
 # the files sit right there on disk. A test run in that state exits 0 having run
 # NOTHING, which is indistinguishable from success. Cheap and idempotent once warm.
 echo "[${PLAT}] gate 0/4: import prewarm"
-godot --headless --audio-driver Dummy --import --quit > tmp/${PLAT}_import.log 2>&1; EC=$?
+godot --headless --audio-driver Dummy --import --quit > tmp/${PLAT}_import.log 2>&1 &
+EC=0; wait $! || EC=$?
 test $EC -eq 0 || { echo "[${PLAT}] BLOCKED: asset import failed — see tmp/${PLAT}_import.log" >&2; exit 1; }
 
 # ── gate 0b: protect the player's exported scripts ──────────────────────────
@@ -222,8 +236,33 @@ _report_userdata_drift() {
 # second handler — the second REPLACES the first, silently. I wrote both and the
 # restore would have won, leaving the drift report defined and never called: a
 # handler that looks installed and isn't, which is this evening's whole theme.
-_on_exit() { _restore_exports; _report_userdata_drift; }
+# ⚠️ AN EXIT TRAP DOES NOT RUN WHEN THE SHELL IS KILLED. bash runs EXIT on a
+# normal exit, on `set -e`, and on `exit N` — but a SIGTERM/SIGINT kills the shell
+# outright and the handler never fires. @cowir-story found this in tools/gate.sh
+# with physical evidence: FOUR orphaned snapshot dirs in /tmp, three of them 13
+# hours old, from gates that were killed and silently never restored. Nobody
+# noticed, because a net that fails open is invisible exactly when it matters.
+#
+# This script had the identical hole. Ctrl-C on a long deploy — or any lane
+# killing a stuck gate — would skip both the restore and the drift report, which
+# is the worst moment to lose them: an interrupted run is when the suite is most
+# likely to have left the export dir mid-write.
+#
+# _EXIT_DONE makes it idempotent: the signal handler exits, which re-fires the
+# EXIT trap, and without the guard the drift report would print twice.
+_EXIT_DONE=0
+_on_exit() {
+    [ "$_EXIT_DONE" = "1" ] && return 0
+    _EXIT_DONE=1
+    _restore_exports
+    _report_userdata_drift
+}
+# 128+signo, the conventional status for a signal death.
+_on_signal() { echo "[${PLAT}] interrupted — running restore before exiting" >&2; _on_exit; exit $((128 + $1)); }
 trap _on_exit EXIT
+trap '_on_signal 2'  INT
+trap '_on_signal 15' TERM
+trap '_on_signal 1'  HUP
 if [ -d "$USERDATA" ]; then
     rm -rf "$FULL_SNAP"; mkdir -p "$FULL_SNAP"
     cp -a "$USERDATA/." "$FULL_SNAP/" 2>/dev/null || true
@@ -263,7 +302,8 @@ fi
 # parse its output.
 echo "[${PLAT}] gate 1/4: test suite (tools/gate.sh)"
 if [ -x tools/gate.sh ]; then
-    ./tools/gate.sh > tmp/${PLAT}_gate.log 2>&1; EC=$?
+    ./tools/gate.sh > tmp/${PLAT}_gate.log 2>&1 &
+    EC=0; wait $! || EC=$?
     tail -12 tmp/${PLAT}_gate.log
     test $EC -eq 0 || { echo "[${PLAT}] BLOCKED: suite gate failed (exit ${EC}) — tmp/${PLAT}_gate.log" >&2; exit 1; }
 else
@@ -274,7 +314,8 @@ fi
 
 # ── gate 2: export ───────────────────────────────────────────────────────────
 echo "[${PLAT}] gate 2/4: export"
-godot --headless --audio-driver Dummy --export-release "$PRESET" "$BIN" > tmp/${PLAT}_export.log 2>&1; EC=$?
+godot --headless --audio-driver Dummy --export-release "$PRESET" "$BIN" > tmp/${PLAT}_export.log 2>&1 &
+EC=0; wait $! || EC=$?
 test $EC -eq 0 || { echo "[${PLAT}] BLOCKED: export failed — see tmp/${PLAT}_export.log" >&2; exit 2; }
 [ -s "$BIN" ] || { echo "[${PLAT}] BLOCKED: export reported success but produced no binary" >&2; exit 2; }
 echo "[${PLAT}] binary: $(( $(stat -c%s "$BIN") / 1048576 )) MiB"
