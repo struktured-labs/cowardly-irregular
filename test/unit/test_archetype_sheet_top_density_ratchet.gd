@@ -119,10 +119,21 @@ func test_no_unnamed_sheet_regresses_to_heavy_top() -> void:
 ## ⚠️ ITS REACH IS MEASURED, NOT ASSUMED (2026-07-30). Borrowing cowir-sfx's
 ## technique — mutate leaving all strings intact and change only a value:
 ##
-##   HEAVY_TOP_SPRITE_Y_OFFSET 4.0 -> 0   (workaround fully neutralised)
-##   result: Tests 3 · Asserts 12 · 0 FAILURES — all five pins stayed GREEN
+##   offset 4.0 -> 0        (workaround neutralised)   3 tests · 12 asserts · 0 failed
+##   threshold 18 -> 0      (offsets everything)       3 tests · 12 asserts · 0 failed
+##   comparison > -> <      (offsets the wrong sheets) 3 tests · 12 asserts · 0 failed
+##   offset 4.0 -> -4.0     (shifts the wrong way)     3 tests · 12 asserts · 0 failed
 ##
-## So these pins catch DELETION and are blind to NEUTRALISATION. That is the
+## FOUR string-preserving mutations, all five pins GREEN on every one. Stated as
+## four measured instances, not as "blind to neutralisation" — cowir-story
+## 2026-07-30: a labelled gap is honest only once the gap is BOUNDED, else it is
+## a false zero wearing a warning label, which is worse than an ordinary one
+## because it looks examined. Five lanes agreed "no assertion exists" for a
+## bounds guard while every probe used non-negative indices; `objectives[-2]`
+## returned a real objective. I had claimed a class from one instance the same
+## way, so this is four instances and no claim about a fifth.
+##
+## So these pins catch DELETION and missed all four value changes. That is the
 ## known ceiling of substring pins, and normally the fix is a behavioural
 ## companion. Not written here, deliberately: the offset only fires above
 ## density 18 and no sheet exceeds it (max is farmer at 14, measured), so the
