@@ -6,6 +6,25 @@
 // install is needed — ESM ignores NODE_PATH, so the runner passes a file:// URL.
 const pwModule = process.env.PW_MODULE || 'playwright';
 const { chromium } = await import(pwModule);
+const { readFileSync } = await import('node:fs');
+
+// Save's row index is DERIVED from OverworldMenu.gd, not hardcoded. It was 15,
+// then the Lens screen (3a3e2d13, 2026-07-27) inserted a row at 7 and pushed Save
+// to 16 — every deploy since was BLOCKED at stage 4, landing on World Map, and
+// nobody saw it because nobody deployed. A literal row number is a coincidental
+// value: it goes red on a correct change and teaches you to bump the number.
+function saveRowIndex() {
+  const src = readFileSync(new URL('../src/ui/OverworldMenu.gd', import.meta.url), 'utf8');
+  const ids = [...src.matchAll(/\{"id":\s*"([a-z_0-9]+)",\s*"label":/g)].map((m) => m[1]);
+  const i = ids.indexOf('save');
+  if (ids.length < 10 || i < 0) {
+    throw new Error(`web_smoke: could not derive the Save row from OverworldMenu.gd `
+      + `(parsed ${ids.length} rows, save at ${i}) — the row-list shape changed; `
+      + `fix this parse rather than reverting to a hardcoded index`);
+  }
+  return i;
+}
+const SAVE_ROW = saveRowIndex();
 
 const url = process.argv[2] || 'http://127.0.0.1:8371';
 const BOOT_BUDGET_MS = 45000;
@@ -75,9 +94,10 @@ if (booted && errors.length === 0) {
 // Stage 4: save → reload → Continue. THE web-only stakes path: user:// on
 // web is IndexedDB with async flush — if the flush never lands, players
 // lose their saves on tab close and no desktop test can catch it.
-// Menu is open from stage 3 with the cursor on row 0; Save is row 15.
+// Menu is open from stage 3 with the cursor on row 0; Save's row is derived above.
 if (booted && errors.length === 0) {
-  for (let i = 0; i < 15; i++) {
+  console.log(`[WEB-SMOKE] Save is row ${SAVE_ROW} (derived from OverworldMenu.gd)`);
+  for (let i = 0; i < SAVE_ROW; i++) {
     await page.keyboard.press('ArrowDown');
     await page.waitForTimeout(120);
   }
@@ -86,7 +106,9 @@ if (booted && errors.length === 0) {
   await page.keyboard.press('Enter');        // save to slot 1 (empty, no confirm)
   await page.waitForTimeout(4000);           // write + IndexedDB syncfs window
   await page.screenshot({ path: 'tmp/web_smoke_save.png' });
-  if (!saved) errors.push('stage4: no "Game saved to slot" console line — menu row order changed or save was refused');
+  if (!saved) errors.push(`stage4: no "Game saved to slot" console line after ${SAVE_ROW} ArrowDowns `
+    + `(row derived from OverworldMenu.gd) — check tmp/web_smoke_save.png for which screen it landed on; `
+    + `if that is not the save screen the row list and the cursor disagree, otherwise the save was refused`);
 }
 if (booted && errors.length === 0 && saved) {
   booted = false;
