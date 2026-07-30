@@ -1628,17 +1628,18 @@ func player_use_ability(ability_id: String, targets: Array) -> void:
 	_end_selection_turn()
 
 
-func player_defer() -> void:
+## Returns TRUE only when the defer actually consumed the turn. The menu handler nulls its menu reference BEFORE calling this, so a false return means it destroyed the reference for an action that never happened.
+func player_defer() -> bool:
 	"""Queue Defer action (skip turn, gain AP, defend)"""
 	if not _check_player_selecting_state("player_defer"):
-		return
+		return false
 	if current_combatant.has_status("cannot_defer"):
 		# Tick 237: BBCode color via AccessibilityPalette so red↔magenta swap follows the color-blind setting.
 		battle_log_message.emit("[color=%s]%s cannot defer while exposed![/color]" % [AccessibilityPalette.penalty_bbcode(), current_combatant.combatant_name])
 		# Re-show menu instead of silently returning (prevents battle freeze)
 		current_state = BattleState.PLAYER_SELECTING
 		selection_turn_started.emit(current_combatant)
-		return
+		return false
 	_track_manual_player_turn()
 
 	var action = {
@@ -1659,7 +1660,7 @@ func player_defer() -> void:
 	battle_log_message.emit("[color=cyan]%s defers![/color]" % current_combatant.combatant_name)
 	print("%s chooses to defer" % current_combatant.combatant_name)
 	_end_selection_turn()
-
+	return true
 
 func player_advance(actions: Array[Dictionary]) -> void:
 	"""Queue Advance action (multiple actions in sequence, each costs 1 AP)"""
