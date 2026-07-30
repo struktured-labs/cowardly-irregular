@@ -173,6 +173,10 @@ var autogrind_enemy_data: Array = []  # When set, spawn pre-configured enemies f
 const BATTLE_SPEEDS: Array[float] = [0.25, 0.5, 1.0, 2.0, 4.0, 8.0, 16.0]
 const BATTLE_SPEED_LABELS: Array[String] = ["1x", "2x", "4x", "8x", "16x", "32x", "64x"]
 static var _battle_speed_index: int = 0  # persists across battles; index 0 = label "1x" (engine 0.25) — struktured 2026-07-11: the old 0.5x pacing IS the correct default
+# Crit hitlag nests — two crits in the 80ms window and the second captured 0.1 as "normal"; depth-counted so only the outermost restores
+const HITLAG_SCALE: float = 0.1
+var _hitlag_depth: int = 0
+var _hitlag_base_scale: float = 1.0
 var _speed_indicator: RichTextLabel = null
 var _battle_counter_label: RichTextLabel = null
 
@@ -672,7 +676,7 @@ func _toggle_battle_speed() -> void:
 	"""Cycle through battle speeds"""
 	_battle_speed_index = (_battle_speed_index + 1) % BATTLE_SPEEDS.size()
 	var speed = BATTLE_SPEEDS[_battle_speed_index]
-	Engine.time_scale = speed
+	_set_battle_time_scale(speed)
 	_update_speed_indicator()
 	_animate_speed_change()
 	SoundManager.play_ui("speed_change")
@@ -2387,7 +2391,7 @@ func _on_battle_started() -> void:
 		TutorialHints.show(self, "first_boss")
 
 	# Restore persisted battle speed
-	Engine.time_scale = BATTLE_SPEEDS[_battle_speed_index]
+	_set_battle_time_scale(BATTLE_SPEEDS[_battle_speed_index])
 	_update_speed_indicator()
 
 	# Apply any pending autobattle cancellation from previous battle
@@ -4393,17 +4397,47 @@ func _on_status_tick_heal(amount: int, _source: String, target: Combatant) -> vo
 	_results_display.on_healing_done(target, amount)
 
 
+## Depth arithmetic only — split from _begin_hitlag so the nesting can be tested without a live tree.
+func _hitlag_enter() -> void:
+	if _hitlag_depth == 0:
+		_hitlag_base_scale = Engine.time_scale
+	_hitlag_depth += 1
+	Engine.time_scale = HITLAG_SCALE
+
+
+## Only the OUTERMOST hitlag restores; the inner one captured 0.1 as "normal" and pinned the fight there.
+func _end_hitlag() -> void:
+	if _hitlag_depth == 0:
+		return
+	_hitlag_depth -= 1
+	if _hitlag_depth == 0:
+		Engine.time_scale = _hitlag_base_scale
+
+
+func _begin_hitlag(scaled_duration: float) -> void:
+	_hitlag_enter()
+	if not is_inside_tree():
+		_end_hitlag()
+		return
+	var hitlag_tween := create_tween()
+	hitlag_tween.set_process_mode(Tween.TWEEN_PROCESS_PHYSICS)
+	hitlag_tween.tween_callback(_end_hitlag).set_delay(scaled_duration)
+
+
+## Retarget the pending restore, else pressing X mid-crit reverts to the old speed 80ms later.
+func _set_battle_time_scale(speed: float) -> void:
+	_hitlag_base_scale = speed
+	if _hitlag_depth == 0:
+		Engine.time_scale = speed
+
+
 func _crit_visual_burst(target: Combatant, _amount: int) -> void:
 	"""Full critical hit visual package — screen flash, hitlag, sprite flash, banner"""
 	# 1. Bright white-gold screen flash (more dramatic than normal hit)
 	_flash_screen(Color(1.0, 0.95, 0.6, 0.5), 0.2)
 
 	# 2. Hitlag — brief time freeze for impact (80ms at 10% speed)
-	var prev_scale = Engine.time_scale
-	Engine.time_scale = 0.1
-	var hitlag_tween = create_tween()
-	hitlag_tween.set_process_mode(Tween.TWEEN_PROCESS_PHYSICS)
-	hitlag_tween.tween_callback(func(): Engine.time_scale = prev_scale).set_delay(0.008)  # 80ms real time at 0.1x
+	_begin_hitlag(0.008)
 
 	# 3. Target sprite white flash
 	var sprite = _get_combatant_sprite(target)
