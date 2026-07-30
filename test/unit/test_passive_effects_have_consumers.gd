@@ -81,6 +81,16 @@ const AUTHORED_AHEAD := {
 	## as designed: the self-destructing direction went red the moment it became a lie.
 	"time_sense": "Time Mage 'preview enemy actions 1 turn ahead' — preview_turns unread",
 	"speedrun_timer": "Skiptrotter split tracking — track_personal_best unread",
+	## Found 2026-07-30 once PassiveSystem.gd's own re-declaration stopped counting as a
+	## consumer — the blind spot this file's header documented as NOT FIXED, 4 keys. Three
+	## were genuinely dead; hp_below_25 was the fourth and is consumed dynamically, now
+	## exempted above. Listed with owners, NOT as permission to leave them.
+	## KEYED BY PASSIVE ID, not effect key — every entry above is a passive id, and I keyed
+	## these three by their effect first. The set then reported the SAME three as both
+	## "nothing reads them" and "they now resolve", because neither lookup could match.
+	"autobattle_verbs": "effect autobattle_advanced — Scriptweaver text-mode rules, CLAUDE.md 'unlocks text-based expression mode' (Future Vision), so plausibly authored ahead",
+	"formula_sight": "effect show_formulas — CLAUDE.md lists Scriptweaver 'reveals execution order' as SHIPPED, so this key being dead is worth a look rather than an assumption",
+	"market_sense": "effect volatility_scaling — NOT authored ahead: VolatilitySystem is fully built (4 bands, per-battle instance, Speculator shifts it a tier) so the infrastructure exists and nothing reads the key",
 }
 
 ## Keys whose consumers we assert exist, to prove the scan itself resolves.
@@ -113,7 +123,19 @@ func _src_text() -> String:
 				## hid THREE unwired passives (steal_boost, time_sense, speedrun_timer),
 				## each passing solely because one comment happened to name its key.
 				for line in FileAccess.get_file_as_string(p).split("\n"):
-					if line.strip_edges().begins_with("#"):
+					var t := line.strip_edges()
+					if t.begins_with("#"):
+						continue
+					## DECLARATION lines are stripped too. PassiveSystem.gd carries a
+					## hardcoded copy of passives.json, so `"volatility_scaling": true`
+					## satisfied a substring scan and the key read as consumed with nothing
+					## consuming it — the blind spot this file's own header documented as
+					## NOT FIXED, 4 keys affected. A read looks like `me.get("key", 0.0)`
+					## and survives; an authoring site starts with the quoted key.
+					## KNOWN COST: a dispatch arm written `"key":` is also stripped, so this
+					## can only ADD false unwired entries, never hide a real one. The
+					## CONTROLS below prove real reads still resolve.
+					if t.begins_with("\"") and t.contains("\":"):
 						continue
 					out += line + "\n"
 			f = d.get_next()
@@ -145,6 +167,16 @@ func _unwired() -> Dictionary:
 				## only key shape a text search cannot see. Bounded and exhausted rather
 				## than left as a stated caveat (cowir-sfx msg 3471).
 				if str(key).ends_with("_absorb"):
+					continue
+				## SECOND constructed read, surfaced once declaration lines stopped
+				## counting as consumers: PassiveSystem._conditional_key_satisfied()
+				## SPLITS a conditional_mods key at runtime ("hp_below_25" ->
+				## stat/comparator/threshold), so the literal appears nowhere. Verified by
+				## reading that function, not by trusting the comment above it. Bounded to
+				## the shape it parses — <hp|mp>_<below|above>_<int> — so a typo'd or
+				## unparseable conditional key still surfaces as unwired.
+				var _kp: PackedStringArray = str(key).split("_")
+				if _kp.size() == 3 and _kp[0] in ["hp", "mp"] and _kp[1] in ["below", "above"] and _kp[2].is_valid_int():
 					continue
 				dead.append(str(key))
 		if not dead.is_empty():

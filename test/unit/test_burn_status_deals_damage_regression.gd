@@ -61,6 +61,73 @@ func test_poison_still_ticks() -> void:
 		"poison must still deal damage — if it does not, this test file is measuring nothing")
 
 
+## ── the alias DRIVEN, not just pinned ────────────────────────────────
+
+func test_a_burn_cast_lands_the_ticking_status() -> void:
+	# The pin below is provably blind to the cue name: it checks that the
+	# assignment exists, not that a cast produces a status that ticks. This
+	# drives the real effect-application path with effect_chance 1.0 —
+	# randf() returns [0,1), so `randf() < 1.0` is always true and the roll is
+	# deterministic. All five burn abilities are type=magic, so this is the arm
+	# they actually take.
+	var bm: Node = load("res://src/battle/BattleManager.gd").new()
+	add_child_autofree(bm)
+	var caster: Combatant = autofree(Combatant.new())
+	caster.combatant_name = "Mage"
+	caster.is_alive = true
+	caster.magic = 10
+	var target: Combatant = _victim()
+	bm.player_party.append(caster)
+	bm.enemy_party.append(target)
+	bm._execute_magic_ability(caster, {
+		"id": "flame_wall", "name": "Flame Wall", "effect": "burn",
+		"effect_chance": 1.0, "duration": 3, "damage_multiplier": 0.1,
+		"type": "magic", "target_type": "single",
+	}, [target])
+	assert_true(target.has_status("burning"),
+		"a cast authoring effect 'burn' must land the status the DoT actually ticks — landing 'burn' is the defect, and the source pin cannot tell the two apart")
+	assert_false(target.has_status("burn"),
+		"and must NOT leave the unticked spelling behind, or both exist and only one does damage")
+
+
+func test_the_landed_status_then_deals_damage() -> void:
+	# End to end: cast, then tick. This is the assertion a player would notice.
+	var bm: Node = load("res://src/battle/BattleManager.gd").new()
+	add_child_autofree(bm)
+	var caster: Combatant = autofree(Combatant.new())
+	caster.combatant_name = "Mage"
+	caster.is_alive = true
+	caster.magic = 10
+	var target: Combatant = _victim()
+	bm.player_party.append(caster)
+	bm.enemy_party.append(target)
+	bm._execute_magic_ability(caster, {
+		"id": "flame_wall", "name": "Flame Wall", "effect": "burn",
+		"effect_chance": 1.0, "duration": 3, "damage_multiplier": 0.0,
+		"type": "magic", "target_type": "single",
+	}, [target])
+	var before: int = target.current_hp
+	target.update_buff_durations()
+	assert_lt(target.current_hp, before,
+		"the status a burn cast leaves behind must deal damage on the next tick — this is the whole defect, measured end to end")
+
+
+func test_all_five_burn_abilities_still_author_a_chance() -> void:
+	# The gate that decides whether ANY of this fires: effect_chance defaults to
+	# 0.0, so an ability omitting it never applies its status at all. If one of
+	# these loses its chance, burn silently stops landing again by a DIFFERENT
+	# mechanism and every assertion above would still pass.
+	var raw: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/abilities.json"))
+	var abilities: Dictionary = raw.get("abilities", raw)
+	var chanceless: Array[String] = []
+	for id in abilities:
+		var a: Dictionary = abilities[id]
+		if str(a.get("effect", "")) == "burn" and float(a.get("effect_chance", 0.0)) <= 0.0:
+			chanceless.append(str(id))
+	assert_eq(chanceless, [] as Array[String],
+		"a burn ability with no effect_chance never applies its status — the alias would be correct and unreachable: %s" % str(chanceless))
+
+
 ## ── the alias, at both sites ─────────────────────────────────────────
 
 func test_apply_path_aliases_burn_to_burning() -> void:
