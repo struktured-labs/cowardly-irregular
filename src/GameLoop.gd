@@ -417,6 +417,13 @@ func _maybe_run_battle_smoke() -> void:
 			await _start_exploration()
 			await get_tree().create_timer(1.0).timeout
 			await _smoke_shot(_vid)
+		# interiors: NOTHING on any platform had ever loaded one in a built game (inn charges gold, the rest carry quest content)
+		for _iid in ["inn_interior", "tavern_interior", "sandrift_glassmaker", "frosthold_meltwater_clock", "ironhaven_watchtower"]:
+			_cutscene_cooldown = true
+			_set_current_map_id(_iid)
+			await _start_exploration()
+			await get_tree().create_timer(0.8).timeout
+			await _smoke_shot(_iid)
 		_cutscene_cooldown = true
 		_set_current_map_id("harmonia_village")
 		await _start_exploration()
