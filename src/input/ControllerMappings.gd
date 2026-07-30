@@ -10,6 +10,8 @@ extends Node
 
 ## GUID (Linux/SDL) -> full mapping string. Verified against real hardware, never guessed:
 ## an incorrect mapping is worse than none, because it looks authoritative.
+## platform:Linux is DELIBERATE, not an oversight: on web the browser normalizes the pad and Godot's
+## bundled "standard,Standard Gamepad Mapping,...,platform:Web" entry already yields these constants.
 const MAPPINGS: Array[String] = [
 	# 8BitDo Ultimate 2 Wireless Controller, wired "for PC" mode (2dc8:310b) - struktured's primary pad.
 	# Verified 2026-07-25 by decoding /proc/bus/input/devices: this pad reports BTN_TL/BTN_TR as raw
