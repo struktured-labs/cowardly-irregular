@@ -36,6 +36,14 @@ const FRAME_H: int = 32
 ## Empty when art fixes land.
 const KNOWN_HEAVY_TOP: PackedStringArray = []  # 2026-07-18: traveler/monk fixed by cowir-sprites 3ec923b1 — the workaround at WanderingNPC._apply_uprow_offset is now dormant per its density-≤18 gate but retained as a general safety net for future ≥18 sheets
 
+## Sheets that WERE over threshold and were reauthored. Draining
+## KNOWN_HEAVY_TOP is the intended end state, but it left the offender test
+## iterating an empty list — it ran, asserted nothing, and scored [Risky],
+## which every gate counting only failures reads as coverage. The earned
+## invariant is that the sheets which got fixed STAY fixed, so this list
+## carries it. Measured 2026-07-29: traveler 0, monk 0, threshold 18.
+const FIXED_FORMERLY_HEAVY: PackedStringArray = ["traveler", "monk"]
+
 ## The threshold below which a sheet's up-facing row is considered
 ## healthy. Typical archetypes: 0-14. Traveler is 27, monk 22.
 const HEAVY_TOP_DENSITY: int = 18
@@ -69,6 +77,17 @@ func test_known_heavy_top_offenders_still_offend() -> void:
 			continue
 		assert_gt(d, HEAVY_TOP_DENSITY,
 			"%s is in KNOWN_HEAVY_TOP but row 3 top density is %d (≤ threshold %d) — remove it from the list" % [
+				sheet, d, HEAVY_TOP_DENSITY])
+	# KNOWN_HEAVY_TOP is drained, so the loop above asserts nothing; this half
+	# is what keeps the test alive and able to fail.
+	for sheet in FIXED_FORMERLY_HEAVY:
+		var d := _sheet_row3_top_density(sheet)
+		assert_ne(d, -1,
+			"%s was reauthored to fix a heavy top row — its sheet must still exist" % sheet)
+		if d < 0:
+			continue
+		assert_lte(d, HEAVY_TOP_DENSITY,
+			"%s regressed to heavy-top: row 3 top density %d > %d. The 2026-07-18 reauthor has been undone, and up-walking will clip its head near the Mode 7 horizon again." % [
 				sheet, d, HEAVY_TOP_DENSITY])
 
 
