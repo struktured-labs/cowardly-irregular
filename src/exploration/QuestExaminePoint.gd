@@ -90,7 +90,12 @@ func _is_live() -> bool:
 		return false
 	if qs.get_state(quest_id) != "active":
 		return false
-	var obj: Dictionary = qs.get_quest(quest_id).get("objectives", [])[qs.get_objective_index(quest_id)]
+	# get_objective_index clamps only when objectives is NON-empty, and this runs every frame from _process
+	var objectives: Array = qs.get_quest(quest_id).get("objectives", [])
+	var idx: int = qs.get_objective_index(quest_id)
+	if idx < 0 or idx >= objectives.size():
+		return false
+	var obj: Dictionary = objectives[idx]
 	return obj.get("type", "") == "custom" and obj.get("required_flag", "") == flag
 
 
