@@ -95,15 +95,28 @@ func test_end_staging_called_from_end_cutscene_not_steps() -> void:
 func test_both_entry_points_gate_backdrop_on_staged() -> void:
 	# play_cutscene and play_cutscene_from_data have drifted before; both
 	# must skip backdrop capture when presentation == "staged".
+	# Keyed on `_begin_staging(` — the CALL, not its argument list. This pinned
+	# `_begin_staging()` with empty parens and went red on 2026-07-30 when the
+	# call correctly gained an argument, which is a guard punishing a correct
+	# change rather than catching a drift.
 	var text = _read(DIRECTOR_PATH)
+	var args: Array = []
 	for entry in ["play_cutscene", "play_cutscene_from_data"]:
 		var body = _func_body(text, entry)
-		assert_true(body.find("_begin_staging()") > -1,
-			"%s must call _begin_staging() for staged scenes" % entry)
-		var staged_idx = body.find("_begin_staging()")
+		var staged_idx = body.find("_begin_staging(")
+		assert_true(staged_idx > -1,
+			"%s must call _begin_staging for staged scenes" % entry)
 		var backdrop_idx = body.find("_try_load_backdrop_image")
 		assert_true(backdrop_idx > staged_idx,
 			"%s: staged gate must run before (and branch around) backdrop capture" % entry)
+		# To end of line, NOT to the first ")" — a nested call closes the inner
+		# paren first, so `f(x)` and `f(x), y` would have compared equal.
+		var eol := body.find("\n", staged_idx)
+		args.append(body.substr(staged_idx, (eol if eol > -1 else body.length()) - staged_idx).strip_edges())
+	# The whole reason this test exists is that the two entry points drift, and
+	# the argument is a new thing that CAN drift between them.
+	assert_eq(args[0], args[1],
+		"both entry points must pass the SAME argument to _begin_staging — got %s vs %s" % [args[0], args[1]])
 
 
 ## =====================
