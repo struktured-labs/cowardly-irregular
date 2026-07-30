@@ -22,9 +22,13 @@ extends GutTest
 var _reached_the_end: bool = false
 
 
+## Deliberately `is Node`, not `is Combatant`. The error is about the freed LEFT
+## operand, so any class demonstrates it — and using a different one means the
+## corpus ratchet below needs no exemption for this file. A check you have to
+## suppress for its own regression test is a check with a hole in it.
 func _walk(items: Array) -> void:
 	for x in items:
-		if x is Combatant:
+		if x is Node:
 			pass
 	_reached_the_end = true
 
@@ -71,15 +75,36 @@ func test_the_guard_still_admits_live_combatants() -> void:
 		"the guard must still admit a LIVE Combatant — rejecting everything would restore an empty party and read as fixed")
 
 
-func test_win_condition_teardown_guards_before_type_checking() -> void:
-	# The file that had it. Source-level, because the failure is a runtime
-	# error inside GUT's own teardown and cannot be asserted from within the
-	# same run — paired with the mechanism tests above rather than standing
-	# alone.
-	var src := FileAccess.get_file_as_string(
-		"res://test/unit/test_win_condition_runtime_integration.gd")
-	assert_ne(src, "", "the file must be readable or this assertion is vacuous")
-	assert_false(src.contains("\t\tif c is Combatant:"),
-		"an unguarded `is` in teardown aborts it — use is_instance_valid(c) and c is Combatant")
-	assert_true(src.contains("is_instance_valid(c) and c is Combatant"),
-		"the teardown must guard validity before type-checking possibly-freed combatants")
+func test_no_test_type_checks_a_possibly_freed_combatant() -> void:
+	# CORPUS ratchet, not a pin on the one file that had it. These restore
+	# loops all save the live BattleManager party, mutate it, and hand it
+	# back; the type-check is what throws, and the reassignment below it is
+	# what then never runs. Twelve instances existed across six files and
+	# only four ever fired in a given run, so the log alone would have left
+	# eight latent.
+	#
+	# ZERO exemptions by construction: the needle is built from parts so this
+	# file does not match itself, and the mechanism demo above uses `is Node`
+	# for the same reason. Nothing here can be silenced green.
+	var needle := "if c is " + "Combatant:"
+	var needle_x := "if x is " + "Combatant:"
+	var dir := DirAccess.open("res://test/unit")
+	assert_not_null(dir, "test/unit must be readable or this ratchet is vacuous")
+	var offenders: Array[String] = []
+	var scanned := 0
+	for fname in dir.get_files():
+		if not fname.ends_with(".gd"):
+			continue
+		var src := FileAccess.get_file_as_string("res://test/unit/" + fname)
+		if src == "":
+			continue
+		scanned += 1
+		for line in src.split("\n"):
+			var t := line.strip_edges()
+			if (t == needle or t == needle_x) and not line.contains("is_instance_valid"):
+				offenders.append("%s: %s" % [fname, t])
+	assert_gt(scanned, 100,
+		"sanity: expected to scan the whole suite, got %d files — a low count makes every result below vacuous" % scanned)
+	assert_eq(offenders, [] as Array[String],
+		"a test type-checks a combatant it may have outlived; the access ABORTS the function and the restore below it silently never runs:\n  %s"
+			% "\n  ".join(offenders))

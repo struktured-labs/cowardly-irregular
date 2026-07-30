@@ -87,7 +87,7 @@ func test_runtime_no_speculator_helper_false() -> void:
 	# Restore.
 	var restore: Array[Combatant] = []
 	for x in prior_party:
-		if x is Combatant:
+		if is_instance_valid(x) and x is Combatant:
 			restore.append(x)
 	bm.player_party = restore
 
@@ -109,7 +109,7 @@ func test_runtime_speculator_primary_true() -> void:
 	# Restore.
 	var restore: Array[Combatant] = []
 	for x in prior_party:
-		if x is Combatant:
+		if is_instance_valid(x) and x is Combatant:
 			restore.append(x)
 	bm.player_party = restore
 
@@ -131,6 +131,6 @@ func test_runtime_speculator_secondary_true() -> void:
 	# Restore.
 	var restore: Array[Combatant] = []
 	for x in prior_party:
-		if x is Combatant:
+		if is_instance_valid(x) and x is Combatant:
 			restore.append(x)
 	bm.player_party = restore

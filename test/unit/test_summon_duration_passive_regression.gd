@@ -133,11 +133,11 @@ func test_runtime_tick_decrements_meta() -> void:
 	# Restore.
 	var rp: Array[Combatant] = []
 	for c in prior_p:
-		if c is Combatant:
+		if is_instance_valid(c) and c is Combatant:
 			rp.append(c)
 	var re: Array[Combatant] = []
 	for c in prior_e:
-		if c is Combatant:
+		if is_instance_valid(c) and c is Combatant:
 			re.append(c)
 	bm.player_party = rp
 	bm.enemy_party = re
