@@ -68,6 +68,13 @@ const PASSIVES := "res://data/passives.json"
 ## (cowir-ai's rule, msg 3473; cowir-sfx found the identical shape in a weapon list.)
 const METADATA_KEYS := ["id", "name", "category", "description", "restrictions"]
 
+## ⚠️ THIS IS A DEAD-KEY LIST, NOT A DEAD-PASSIVE LIST. A passive is consumable TWO ways —
+## by its effect key (`_get_passive_meta_effect_sum("death_resist_chance")`) and by its ID
+## (`"market_sense" in combatant.equipped_passives`) — and this guard only measures the first.
+## An entry here means "nothing reads this passive's effect keys". It does NOT mean the passive
+## is inert: `market_sense` is listed below and is fully wired by id at BattleManager:5032.
+## Measured 2026-07-30 after five lanes read this list as a dead-passive list and published a
+## count six times (13 → 0 → ≥1 → 2 → 3 → 2), every miss a different consumption shape.
 ## passive id -> why its effect keys have no consumer yet. Owner, not permission.
 const AUTHORED_AHEAD := {
 	"double_jump": "Ninja overworld traversal — CLAUDE.md 'speedrun functions, overworld shortcuts'",
@@ -90,7 +97,7 @@ const AUTHORED_AHEAD := {
 	## "nothing reads them" and "they now resolve", because neither lookup could match.
 	"autobattle_verbs": "effect autobattle_advanced — Scriptweaver text-mode rules, CLAUDE.md 'unlocks text-based expression mode' (Future Vision), so plausibly authored ahead",
 	"formula_sight": "effect show_formulas — CLAUDE.md lists Scriptweaver 'reveals execution order' as SHIPPED, so this key being dead is worth a look rather than an assumption",
-	"market_sense": "effect volatility_scaling — NOT authored ahead: VolatilitySystem is fully built (4 bands, per-battle instance, Speculator shifts it a tier) so the infrastructure exists and nothing reads the key",
+	"market_sense": "effect volatility_scaling is decorative and unread — but the PASSIVE IS WIRED BY ID: BattleManager._apply_market_sense (:5032, gated on equipped_passives) scales damage per volatility band at :3955/:4369/:4550. Listed because its KEY is dead; do not read this entry as the passive being inert",
 }
 
 ## Keys whose consumers we assert exist, to prove the scan itself resolves.
