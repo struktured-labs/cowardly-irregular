@@ -35,7 +35,16 @@ cd "$(cd "$(dirname "$0")/.." && pwd)"
 
 PUBLISH=0
 [ "${1:-}" = "--publish" ] && { PUBLISH=1; shift; }
-VERSION="${1:-$(git tag --sort=-creatordate | head -1)}"
+# NO PIPE, deliberately. `git tag --sort=-creatordate | head -1` dies here:
+# `head` closes the pipe after one line, `git tag` keeps writing into it and takes
+# SIGPIPE, and `set -o pipefail` makes 141 the status of the whole pipeline — fatal
+# under `set -e`, at the very first statement, BEFORE any echo. The symptom is an
+# empty log and exit 141, which reads like nothing ran, because nothing did.
+# Measured here: 507 tags emit 7453 bytes and it failed 20/20. It is buffer-bound,
+# so it was silent while the repo had fewer tags and became reliable as they piled
+# up — the same producer-speed pipe class the fleet hit in `comm` tonight.
+# deploy_web.sh already carries this fix; I copied its pre-fix shape.
+VERSION="${1:-$(git for-each-ref --sort=-creatordate --count=1 --format='%(refname:short)' refs/tags)}"
 
 ITCH_TARGET="struktured/cowardly-irregular:linux"
 OUT_DIR="build/linux"
