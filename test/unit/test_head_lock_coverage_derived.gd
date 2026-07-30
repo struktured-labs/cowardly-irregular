@@ -60,8 +60,18 @@ func _listed_in_head_lock_test() -> Array:
 
 func test_every_overworld_sheet_is_visible_to_the_head_lock_gate() -> void:
 	var listed := _listed_in_head_lock_test()
-	assert_gt(listed.size(), 20,
-		"sanity: expected the gate's hand lists to yield >20 names, got %d — a parse failure here would make this whole check vacuous" % listed.size())
+	# NAMED controls, not a count. The extraction takes every quoted lowercase
+	# token, so path fragments ("res", "assets", "png") inflate the total —
+	# a size floor would pass even if real sheet names stopped being extracted.
+	# cowir-battle's distinction (2026-07-30): a control asserting "the sweep
+	# found something" cannot fail usefully; one asserting "the sweep sees THIS
+	# KNOWN MEMBER" can. Their status join returned a clean 0 until a named
+	# control showed `poison` missing from a set that plainly contained it.
+	for known in ["fighter", "dr_temporal", "bard", "chancellor_mordaine"]:
+		assert_true(known in listed,
+			("the gate's lists must yield '%s' — it is there in the source, so " +
+			 "if this fails the extraction shape has drifted and every result " +
+			 "below is measuring the wrong set") % known)
 
 	var on_disk: Array = []
 	for job in _sheet_names("res://assets/sprites/jobs"):
