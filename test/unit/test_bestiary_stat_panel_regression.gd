@@ -32,8 +32,17 @@ extends GutTest
 const WORST_CASE := "HP 16500   MP 999   ATK 750   DEF 550   MAG 780   M.DEF 270   SPD 30"
 
 
+var _prior_text_scale: float = 1.0
+
+
+func before_each() -> void:
+	_prior_text_scale = GameState.text_size_scale
+
+
 func after_each() -> void:
-	GameState.text_size_scale = 1.0
+	# Restore what was there, not an assumed 1.0 — text_size_scale is a shared
+	# autoload field and hardcoding the default leaks this test's opinion of it.
+	GameState.text_size_scale = _prior_text_scale
 
 
 func _build_menu() -> Node:
