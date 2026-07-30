@@ -82,13 +82,38 @@ func test_equipped_name_reads_the_slot_it_was_asked_for() -> void:
 	c.free()
 
 
-func test_equip_select_mode_is_routed_both_ways() -> void:
-	var src := _read()
-	assert_true(src.contains("EQUIP_SELECT"), "the mode exists")
-	assert_true(src.contains("ShopMode.EQUIP_SELECT:\n\t\t\tif item_id != \"none\":\n\t\t\t\t_attempt_equip(item_id)"),
-		"selection routes to _attempt_equip — without this the menu opens and every choice is inert")
-	assert_true(src.contains("ShopMode.CHAR_SELECT, ShopMode.EQUIP_SELECT:"),
-		"cancel/B routes back to the buy menu — an unrouted mode strands the player in a dead menu")
+## Both EQUIP_SELECT exits, DRIVEN. These were source pins that matched an
+## exact block including its tabs and newlines — reformatting the match arm
+## broke them, and a routing arm that compiled but went nowhere passed them.
+## Both properties are observable, so observe them.
+##
+## `_open_buy_menu()` sets current_mode = BUY, and it is the only thing either
+## path reaches, so BUY IS the evidence the selection arrived at its handler.
+func test_equip_select_routes_a_selection_to_its_handler() -> void:
+	var shop = _new_shop()
+	shop.current_mode = ShopScene.ShopMode.EQUIP_SELECT
+	# "skip" is the one _attempt_equip branch needing no party or gear state.
+	shop._on_menu_item_selected("skip", {})
+	assert_eq(shop.current_mode, ShopScene.ShopMode.BUY,
+		"an EQUIP_SELECT choice must reach _attempt_equip — unrouted, the menu opens and every choice is inert")
+
+
+## The guard that stops the cursor's own placeholder row from equipping.
+func test_the_none_row_is_ignored_in_equip_select() -> void:
+	var shop = _new_shop()
+	shop.current_mode = ShopScene.ShopMode.EQUIP_SELECT
+	shop._on_menu_item_selected("none", {})
+	assert_eq(shop.current_mode, ShopScene.ShopMode.EQUIP_SELECT,
+		"'none' must not route — without the guard the placeholder row equips whatever int() makes of it")
+
+
+## An unrouted cancel strands the player in a dead menu with no way back.
+func test_cancel_from_equip_select_returns_to_the_shelves() -> void:
+	var shop = _new_shop()
+	shop.current_mode = ShopScene.ShopMode.EQUIP_SELECT
+	shop._on_menu_closed()
+	assert_eq(shop.current_mode, ShopScene.ShopMode.BUY,
+		"B from the equip prompt returns to the buy menu")
 
 
 ## "Not now" is a real choice, not a no-op: it must return to the shelves
