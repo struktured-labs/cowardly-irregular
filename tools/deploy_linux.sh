@@ -86,6 +86,25 @@ SNAP_DIR="tmp/script_exports_snapshot"
 _restore_exports() {
     [ -d "$SNAP_DIR" ] || return 0
     mkdir -p "$EXPORT_DIR_REAL"
+    # `cp -a src/. dst/` REPLACES existing files, and that is load-bearing — do not
+    # "optimise" this into a copy-only-if-missing. There are TWO exposures here, and
+    # only one is deletion:
+    #   DELETE    test_autobattle_grid_share_regression.gd purges the dir
+    #   OVERWRITE test_script_share.gd calls export_autogrind_rules() with NO
+    #             EXPORT_DIR override, writing test data over the FIXED production
+    #             filename autogrind_rules.json — a shipped player action
+    #             (AutogrindUI.gd:1687). Same path, same name, someone else's
+    #             contents, nothing loud. A copy-if-missing restore would "pass"
+    #             while leaving that substitution in place.
+    # Measured, sandboxed (never probe the live dir — planting a canary there is a
+    # destructive act, not a read): original 95e34427 -> clobbered 4947f406 ->
+    # restored 95e34427, with plain deletion as the control. Both axes recover.
+    #
+    # NOTE the declaration form is NOT the discriminator. `static var EXPORT_DIR`
+    # only makes the path assignable; the writer never assigns it, so a "fixed"
+    # tree overwrites production exactly like an unfixed one. An override nobody
+    # sets is a default. This snapshot is a net, not a scope — it does not replace
+    # scoping the writer, it only makes gate 1 non-destructive until that lands.
     cp -a "$SNAP_DIR/." "$EXPORT_DIR_REAL/" 2>/dev/null || true
     echo "[linux] restored $(find "$SNAP_DIR" -type f | wc -l) exported script(s)"
 }
