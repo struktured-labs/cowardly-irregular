@@ -161,6 +161,8 @@ enabled=PackedStringArray("res://addons/gut/plugin.cfg")
 
 [rendering]
 
+textures/vram_compression/import_etc2_astc=true
+
 renderer/rendering_method="forward_plus"
 textures/canvas_textures/default_texture_filter=0
 2d/snap/snap_2d_transforms_to_pixel=true
