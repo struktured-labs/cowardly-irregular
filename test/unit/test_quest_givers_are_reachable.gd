@@ -15,8 +15,8 @@ const AUTHORED_AHEAD := {
 	"traveler_w6": "W6", "madame_orrery_w6": "W6", "last_shopkeeper_w6": "W6",
 }
 
-## Givers proven reachable by each of the three mechanisms, so a broken walk cannot read as clean.
-const CONTROLS := ["rowan_harmonia", "warden_tally_wall", "scholar_milo"]
+## One NAMED member per resolution path — a count control passes on a sweep that resolved nothing.
+const CONTROLS := ["rowan_harmonia", "warden_tally_wall", "scholar_milo", "senga_the_glassblower"]
 
 
 func _gd_files() -> Array:
@@ -56,6 +56,8 @@ func _reachable_ids() -> Dictionary:
 	var assigned := RegEx.create_from_string("(\\w+)\\.npc_id\\s*=\\s*\"([^\"]+)\"")
 	var declared := RegEx.create_from_string("var npc_id\\s*:\\s*String\\s*=\\s*\"([^\"]+)\"")
 	var made := RegEx.create_from_string("(?:var\\s+(\\w+)\\s*=\\s*)?_create_(?:wandering_)?npc\\(\\s*\"([^\"]+)\"")
+	## 48 ids exist only this way: interiors build NPCs directly instead of through the factory.
+	var named := RegEx.create_from_string("(\\w+)\\.npc_name\\s*=\\s*\"([^\"]+)\"")
 	for src in _gd_files():
 		var overridden := {}
 		for m in assigned.search_all(src):
@@ -66,6 +68,12 @@ func _reachable_ids() -> Dictionary:
 		for m in made.search_all(src):
 			## An explicit npc_id SUPPRESSES the fallback — get_npc_id() returns it and the display name is never derived.
 			if m.get_string(1) != "" and overridden.has(m.get_string(1)):
+				continue
+			var derived := _name_to_id(m.get_string(2))
+			if not out.has(derived):
+				out[derived] = "name_fallback"
+		for m in named.search_all(src):
+			if overridden.has(m.get_string(1)):
 				continue
 			var derived := _name_to_id(m.get_string(2))
 			if not out.has(derived):
