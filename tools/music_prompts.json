@@ -649,6 +649,31 @@
       "style": "SNES boss battle, INTENSE and driving, pounding relentless percussion, aggressive low brass, manic minor key, comedic-yet-menacing character carried on top of the assault, harpsichord + skittering rodent detail, 16-bit",
       "prompt": "First boss confrontation in a damp cave — sense of absurd grandeur giving way to mounting dread. Sewer-king pomp colliding with primal animal menace, dripping water punctuated by manic rodent squeaks, mock-heroic brass over a relentless low pulse, building to a fever pitch as the rat king bellows. Must hit HARDER than the standard battle theme — overwhelming, urgent, fight-for-your-life energy under the absurdity. The comedy rides on top of real menace; it never replaces it."
     },
+    "battle_new_age_retro_hippie": {
+      "title_template": "Bad Vibes, Man",
+      "style": "SNES/16-bit battle theme, EarthBound and Mother 3 influenced, driving drums, psychedelic, sitar and wah guitar, woozy detuned organ, backwards tape, 112 BPM",
+      "prompt": "Battle theme for a tie-dye pacifist who attacks with bad vibes and crystal healing. Loose psychedelic groove — sitar figure, wah guitar, a detuned organ pad that keeps bending FLAT so the peace-and-love reads slightly nauseating. Reversed tape swells on the downbeats. Driving enough to be a fight; the serenity is the threat. Looping."
+    },
+    "battle_skate_punk": {
+      "title_template": "Radical, Dude",
+      "style": "SNES/16-bit battle theme, EarthBound and Mother 3 influenced, driving drums, surf punk, fast garage drums, reverb-drenched tremolo guitar, cowbell, 158 BPM",
+      "prompt": "Battle theme for a skateboarder attacking with kickflips and rail grinds. Fast surf-punk: sixteenth hi-hat, reverb-soaked tremolo guitar, walking bass, handclaps. Percussion built from board-scrape and wheel-rumble textures on the offbeats. Cocky and relentless, no menace — the threat is that he is not taking this seriously. Looping."
+    },
+    "battle_cranky_lady": {
+      "title_template": "Speak to Your Manager",
+      "style": "SNES/16-bit battle theme, EarthBound and Mother 3 influenced, driving drums, passive-aggressive suburban, prim pizzicato, parlour organ, escalating, 128 BPM",
+      "prompt": "Battle theme for an irate suburban resident who attacks with complaints and thrown objects. Opens prim and tidy — pizzicato strings, a polite parlour organ, brushed snare. Every eight bars it gets a semitone higher and slightly faster while pretending nothing is happening. Door-slam and screen-door percussion. Comedy from restraint escalating into real force. Looping."
+    },
+    "battle_unassuming_dog": {
+      "title_template": "Just a Regular Neighborhood Dog",
+      "style": "SNES/16-bit battle theme, EarthBound and Mother 3 influenced, driving drums, deliberately innocuous then enormous, toy piano to full brass, whiplash dynamics, 104 BPM",
+      "prompt": "Battle theme for a dog whose description insists there is nothing suspicious about its enormous attack stat. The joke IS the music: begins as a small harmless toy-piano-and-ukulele ditty, then without warning the full drum kit and low brass arrive, far too big for what is on screen, and the ditty keeps politely playing on top. The mismatch never resolves. Looping."
+    },
+    "battle_rogue_mailbox": {
+      "title_template": "It Keeps What It Is Given",
+      "style": "SNES/16-bit battle theme, EarthBound and Mother 3 influenced, driving drums, deadpan mechanical, metronomic, hollow metal percussion, absurd stoicism, 120 BPM",
+      "prompt": "Battle theme for a regulation blue mailbox that has stopped accepting the concept of routes. Rigidly metronomic and utterly deadpan — hollow struck-metal percussion, a single stubborn bass note refusing to move, a small brass motif that repeats without ever developing. Bureaucratically menacing. The comedy is that it will not stop and will not explain. Looping."
+    },
     "village_eldertree": {
       "title_template": "Under the Canopy",
       "style": "SNES village, elven forest, harp and recorder, dappled light, gentle 6/8 lilt, 92 BPM",
