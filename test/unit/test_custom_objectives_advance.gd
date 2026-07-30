@@ -123,6 +123,28 @@ func test_custom_objective_advances_when_its_emitter_fires() -> void:
 		+ "that could never reach step 3")
 
 
+## The bounds guard IS mutation-verifiable on its negative branch, and that branch is not a
+## crash — GDScript indexes arrays from the end, so a corrupted index silently picks a step.
+func test_negative_objective_index_does_not_select_a_step_from_the_end() -> void:
+	var point = load("res://src/exploration/QuestExaminePoint.gd").new()
+	point.quest_id = QUEST
+	point.flag = STEP2_FLAG
+	add_child_autofree(point)
+
+	## QUEST's objectives are [talk, custom, talk], so an index of -2 resolves to the CUSTOM
+	## step. Unguarded this returns true and the point fires notify_flag for a step the player
+	## is not on — stranding the quest, which is the defect the emitter exists to prevent.
+	GameState.quests[QUEST] = {"state": "active", "objective_index": -2}
+	assert_false(point._is_live(), "a negative objective_index must be refused, not indexed from "
+		+ "the end. Save corruption is a shipped mechanic, so this state is reachable, and the "
+		+ "unguarded read returns a REAL objective rather than erroring — a silent wrong answer")
+
+	## POSITIVE CONTROL: the same point must still go live on the honest index, else the guard
+	## refuses everything and the assertion above passes for the wrong reason.
+	GameState.quests[QUEST] = {"state": "active", "objective_index": 1}
+	assert_true(point._is_live(), "the emitter must still arm on the real current objective")
+
+
 ## RATCHET. Every playable custom objective must have something able to notify its flag.
 func test_no_playable_custom_objective_is_unreachable() -> void:
 	var result := _stuck_custom_objectives()
