@@ -23,12 +23,22 @@ extends GutTest
 const FRAME_SIZE := 32
 const HEAD_FRAC := 0.65
 const STARTER_JOBS := ["fighter", "cleric", "rogue", "mage"]
+
+## Advanced/meta job overworld sheets. Added 2026-07-30 — they were on disk and
+## the gate never looked at them. All ten measure 0 diffs, so this is coverage,
+## not a fix. Joined to the corpus by test_head_lock_coverage_derived.
+const OTHER_JOBS := [
+    "bard", "guardian", "ninja", "summoner", "speculator",
+    "scriptweaver", "time_mage", "necromancer", "bossbinder", "skiptrotter",
+]
 const NPC_ARCHETYPES := [
     "old_man", "old_woman", "young_man", "young_woman", "child",
     "guard", "merchant", "scholar",
     "innkeeper", "blacksmith", "priestess", "noble", "noblewoman",
     "king", "queen", "soldier", "farmer", "fisherman", "monk", "traveler",
     "dr_temporal",
+    # Added 2026-07-30, measured 0 diffs. Named story NPCs were absent entirely.
+    "chancellor_mordaine",
 ]
 
 
@@ -133,6 +143,11 @@ func _assert_head_locked(path: String, label: String) -> void:
 
 func test_starter_jobs_head_locked() -> void:
     for job in STARTER_JOBS:
+        _assert_head_locked("res://assets/sprites/jobs/%s/overworld.png" % job, "job:" + job)
+
+
+func test_other_jobs_head_locked() -> void:
+    for job in OTHER_JOBS:
         _assert_head_locked("res://assets/sprites/jobs/%s/overworld.png" % job, "job:" + job)
 
 
