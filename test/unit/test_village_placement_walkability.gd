@@ -33,31 +33,118 @@ func test_every_village_placement_is_walkable() -> void:
 	assert_gt(audited, 8, "expected the village fleet to carry map_data grids (got %d)" % audited)
 
 
+## Both authored literal forms. Form B is what ScripturaPlaza uses for two of
+## its NPCs; the old single-pattern scan matched neither of them, so they were
+## placed unchecked from the day they landed.
+const LIT_MUL_EACH := "Vector2\\(\\s*(\\d+(?:\\.\\d+)?)\\s*\\*\\s*TILE_SIZE[^,]*,\\s*(\\d+(?:\\.\\d+)?)\\s*\\*\\s*TILE_SIZE[^)]*\\)"
+const LIT_MUL_WHOLE := "Vector2\\(\\s*(\\d+(?:\\.\\d+)?)\\s*,\\s*(\\d+(?:\\.\\d+)?)\\s*\\)\\s*\\*\\s*TILE_SIZE"
+
+
+## Walk a call to its balanced closing paren. The previous scan iterated LINES
+## and only looked at one when the marker and the Vector2 shared it, so a call
+## wrapped across lines was skipped and reported as a pass — fail-open, and
+## invisible. Measured on main before this change: 34% of markers yielded no
+## coordinate at all.
+func _call_extent(src: String, start: int) -> String:
+	var open := src.find("(", start)
+	if open < 0:
+		return ""
+	var depth := 0
+	var i := open
+	while i < src.length():
+		if src[i] == "(":
+			depth += 1
+		elif src[i] == ")":
+			depth -= 1
+			if depth == 0:
+				return src.substr(start, i - start + 1)
+		i += 1
+	return ""
+
+
+## Text inside the call's first Vector2(...), for shape classification.
+func _vector_args(call_text: String) -> String:
+	var v := call_text.find("Vector2(")
+	if v < 0:
+		return ""
+	var inner := _call_extent(call_text.substr(v), 0)
+	return inner.substr(8, inner.length() - 9) if inner.length() > 9 else ""
+
+
+## A literal placement is one whose Vector2 args are pure arithmetic on tile
+## numbers. Anything reaching into a dict, a property or a variable is dynamic
+## and cannot be resolved from source — those are REPORTED, never silently
+## dropped. Classifying by shape rather than by an allowlist means a NEW
+## literal form fails loudly instead of joining the invisible 34%.
+func _is_literal_shape(args: String) -> bool:
+	if args.is_empty():
+		return false
+	var stripped := args.replace("TILE_SIZE", "")
+	for c in stripped:
+		if not (c in "0123456789 \t\n.,*+-/()"):
+			return false
+	return true
+
+
+func _check_cell(fname: String, where: String, rows: Array, blocked: Dictionary, cx: int, cy: int) -> void:
+	var ch := _char_at(rows, cx, cy)
+	assert_false(blocked.has(ch),
+		"%s %s places on impassable '%s' at cell (%d,%d)" % [fname, where, ch, cx, cy])
+
+
 func _audit_file(fname: String, src: String, rows: Array, blocked: Dictionary) -> void:
-	var vec_re := RegEx.create_from_string(
-		"Vector2\\(\\s*(\\d+(?:\\.\\d+)?)\\s*\\*\\s*TILE_SIZE[^,]*,\\s*(\\d+(?:\\.\\d+)?)\\s*\\*\\s*TILE_SIZE[^)]*\\)")
+	var re_each := RegEx.create_from_string(LIT_MUL_EACH)
+	var re_whole := RegEx.create_from_string(LIT_MUL_WHOLE)
+	var calls := 0
+	var resolved := 0
+	var dynamic: Array[String] = []
+
+	for marker in PLACEMENT_MARKERS:
+		var idx := src.find(marker)
+		while idx >= 0:
+			# `func _place_chicken(` is a definition, not a placement.
+			var line_start := src.rfind("\n", idx) + 1
+			if not src.substr(line_start, idx - line_start).contains("func "):
+				var call_text := _call_extent(src, idx)
+				var line_no := src.substr(0, idx).count("\n") + 1
+				var hits := re_each.search_all(call_text)
+				if hits.is_empty():
+					hits = re_whole.search_all(call_text)
+				calls += 1
+				if hits.is_empty():
+					var args := _vector_args(call_text)
+					assert_false(_is_literal_shape(args),
+						"%s:%d is a LITERAL placement in a form this audit cannot read (%s) — extend the patterns rather than leaving it unchecked" % [fname, line_no, args.strip_edges().left(48)])
+					dynamic.append("%s:%d" % [fname, line_no])
+				else:
+					resolved += 1
+					for m in hits:
+						_check_cell(fname, "line %d" % line_no, rows, blocked,
+							int(float(m.get_string(1))), int(float(m.get_string(2))))
+			idx = src.find(marker, idx + 1)
+
+	# Patrol legs are authored as multi-line Vector2 arrays, scanned separately.
 	var in_patrol := false
-	var line_no := 0
+	var line_no_p := 0
 	for line in src.split("\n"):
-		line_no += 1
+		line_no_p += 1
 		if line.contains("Array[Vector2] = ["):
 			in_patrol = true
-		var relevant := in_patrol
-		for marker in PLACEMENT_MARKERS:
-			if line.contains(marker):
-				relevant = true
-				break
-		if in_patrol and line.strip_edges() == "]":
-			in_patrol = false
-		if not relevant:
-			continue
-		for m in vec_re.search_all(line):
-			var cx := int(float(m.get_string(1)))
-			var cy := int(float(m.get_string(2)))
-			var ch := _char_at(rows, cx, cy)
-			assert_false(blocked.has(ch),
-				"%s:%d places on impassable '%s' at cell (%d,%d) — %s" % [
-					fname, line_no, ch, cx, cy, line.strip_edges().left(70)])
+		if in_patrol:
+			for m in re_each.search_all(line):
+				_check_cell(fname, "patrol line %d" % line_no_p, rows, blocked,
+					int(float(m.get_string(1))), int(float(m.get_string(2))))
+			if line.strip_edges() == "]":
+				in_patrol = false
+
+	# THE FLOOR. A village carrying placement markers must yield at least one
+	# resolved coordinate. Without this, a reformat that made every call
+	# unreadable would leave the file counted as audited and checked zero times.
+	if calls > 0:
+		assert_gt(resolved, 0,
+			"%s has %d placement call(s) and NONE resolved to a cell — the audit read nothing and would have passed silently" % [fname, calls])
+	if not dynamic.is_empty():
+		gut.p("  %s: %d dynamic placement(s) not statically resolvable: %s" % [fname, dynamic.size(), ", ".join(dynamic)])
 
 
 func _parse_map_rows(src: String) -> Array:
