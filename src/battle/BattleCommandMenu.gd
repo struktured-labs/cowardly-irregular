@@ -1124,13 +1124,17 @@ func _on_win98_actions_submitted(actions: Array) -> void:
 func _on_win98_defer_requested() -> void:
 	"""Handle L button defer request (no queue)"""
 	print("[MENU-NULL] t=%dms path=defer_requested" % Time.get_ticks_msec())
-	_scene.active_win98_menu = null
 	var current = BattleManager.current_combatant
 	if not current:
 		return
 
 	## Tick 174: defer log emit centralized in BattleManager.player_defer.
-	BattleManager.player_defer()
+	# Null the menu ref only when the defer actually consumed the turn. A blocked defer
+	# (cannot_defer, from `exposed`) returns false, queues nothing and leaves the turn open —
+	# nulling first destroyed the reference for an action that never happened, so every press
+	# lost the menu and achieved nothing. Measured: 5 presses, 0 actions queued, 0 turn advance.
+	if BattleManager.player_defer():
+		_scene.active_win98_menu = null
 	_scene._update_ui()
 
 
