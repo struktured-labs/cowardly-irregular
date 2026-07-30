@@ -156,6 +156,19 @@ _report_userdata_drift() {
             echo "[linux]   drift: $rel"
         fi
     done < <(find "$FULL_SNAP" -type f | sort)
+    # Second pass, from the OTHER side. The loop above walks the SNAPSHOT, so it
+    # sees modifications and deletions and is structurally blind to CREATIONS — a
+    # file a test invents was never in the snapshot to be iterated over. That is
+    # the enumerate-from-one-side hole: a sweep's silence is only as wide as its
+    # shape, and this one's shape was "things that already existed."
+    while IFS= read -r b; do
+        rel="${b#"$USERDATA"/}"
+        top="${rel%%/*}"
+        case " ${RESTORE_PATHS[*]} " in *" $top "*) continue ;; esac
+        [ -e "$FULL_SNAP/$rel" ] && continue
+        changed=$(( changed + 1 ))
+        echo "[linux]   new: $rel"
+    done < <(find "$USERDATA" -type f | sort)
     case $changed in
         0) echo "[linux] userdata drift outside ${RESTORE_PATHS[*]}: none" ;;
         *) echo "[linux] NOTE: ${changed} user:// file(s) changed during this deploy." >&2
