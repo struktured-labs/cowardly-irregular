@@ -161,6 +161,7 @@ func _ready() -> void:
 	_load_sfx_manifest()
 	_setup_audio_players()
 	_setup_default_ability_sounds()
+	_derive_ability_sounds_from_data()
 	_setup_night_ambience_listener()
 	# Headless runs (--headless, i.e. GUT test suites + CI) MUST NOT emit audio —
 	# multiple background agents can be running suites simultaneously and the
@@ -302,6 +303,62 @@ func _setup_default_ability_sounds() -> void:
 	_ability_sounds["bypass_puzzle"] = "ability_bypass_puzzle"
 
 
+## Element -> cue for the derived pass. poison/earth/wind are absent because no such cue exists yet.
+const _ELEMENT_SFX: Dictionary = {
+	"fire": "ability_fire",
+	"ice": "ability_ice",
+	"lightning": "ability_lightning",
+	"dark": "ability_dark",
+	"holy": "ability_holy",
+}
+
+
+func _derive_ability_sounds_from_data() -> void:
+	"""Fill gaps in the hand map from abilities.json so a spell never plays the melee thump.
+
+	play_ability defaults unmapped ids to "ability_physical". The hand map above covers 24
+	ids, so 49 magic/healing abilities -- fire_breath, ice_breath, chain_lightning,
+	magma_eruption, every Necromancer dark spell -- played a punch while their correct cue
+	sat unused in the manifest. Derived from `type`, NOT element alone: the 4 physical
+	abilities that carry an element (dark_slash, cursed_strike, glitch_strike,
+	lightning_dash) are weapon strikes and keep the thump deliberately.
+
+	The hand map WINS -- it holds the meta-job signature cues, so permakill_strike stays
+	ability_permakill rather than being overwritten with ability_dark.
+	"""
+	var text: String = FileAccess.get_file_as_string("res://data/abilities.json")
+	if text == "":
+		push_warning("[SFX] abilities.json unreadable — elemental spells fall back to ability_physical")
+		return
+	var parsed: Variant = JSON.parse_string(text)
+	if not (parsed is Dictionary):
+		push_warning("[SFX] abilities.json did not parse as a Dictionary — derived ability cues skipped")
+		return
+	var abilities: Variant = parsed.get("abilities", parsed)
+	if not (abilities is Dictionary):
+		return
+	var derived: int = 0
+	for aid in abilities.keys():
+		var ability_id: String = str(aid)
+		if _ability_sounds.has(ability_id):
+			continue
+		var entry: Variant = abilities[aid]
+		if not (entry is Dictionary):
+			continue
+		var ability_type: String = str(entry.get("type", ""))
+		if ability_type != "magic" and ability_type != "healing":
+			continue
+		var cue: String = str(_ELEMENT_SFX.get(str(entry.get("element", "")).to_lower(), ""))
+		if cue == "" and ability_type == "healing":
+			cue = "ability_heal"
+		if cue == "" or not _sfx_manifest.has(cue):
+			continue
+		_ability_sounds[ability_id] = cue
+		derived += 1
+	if derived > 0:
+		print("[SFX] Derived %d ability cues from abilities.json (hand map: %d)" % [derived, _ability_sounds.size() - derived])
+
+
 ## SFX Manifest (file-based SFX take priority over procedural)
 
 static func _load_sfx_manifest() -> void:
@@ -344,6 +401,10 @@ func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, v
 		return false
 
 	# Cooldown: skip if same sound played too recently (prevents pileup at high battle speeds)
+	# LOAD-BEARING BEYOND ITS NAME: this stamp is also the only thing bounding the fallback_to
+	# recursion below. The `fallback_key != sound_key` checks catch self-loops ONLY, so an a->b->a
+	# cycle would recurse forever (the cached-null branch recurses too) — except the second visit
+	# to any key hits its own fresh stamp and returns here. Do NOT move the stamp after the load.
 	var now_ms = Time.get_ticks_msec()
 	var last_played = _sfx_cooldowns.get(sound_key, 0)
 	if now_ms - last_played < SFX_MIN_INTERVAL_MS:
