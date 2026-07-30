@@ -53,6 +53,45 @@ echo "[linux] gate 0/4: import prewarm"
 godot --headless --audio-driver Dummy --import --quit > tmp/linux_import.log 2>&1; EC=$?
 test $EC -eq 0 || { echo "[linux] BLOCKED: asset import failed — see tmp/linux_import.log" >&2; exit 1; }
 
+# ── gate 0b: protect the player's exported scripts ──────────────────────────
+# The suite DELETES user://script_exports/. Verified with a canary against
+# origin/main: plant a file no test knows about, run the share suite, it is gone.
+# Since gate 1 runs the suite, a deploy destroys any autobattle script struktured
+# has exported from the grid editor — the storage for a shipped pillar.
+#
+# The upstream fix (a per-process export dir) exists on a branch and is not merged.
+# This does NOT wait for it: a publish path must not be able to eat player data
+# regardless of what another lane has folded.
+#
+# Snapshot/restore rather than refuse-to-run, because refusing would make the
+# deploy un-runnable whenever the directory is non-empty, and the directory is
+# non-empty precisely when there is something worth protecting.
+#
+# Why a snapshot is the only safe option and not merely the tidy one: tests and
+# players write the SAME FILENAMES to this directory — a test writes
+# autogrind_rules.json, and so does the game. So a clobbered export cannot be
+# detected after the fact, let alone recovered. There is no "is this mine?" check
+# available, which is why the answer is to copy first and ask nothing.
+EXPORT_DIR_REAL="${HOME}/.local/share/godot/app_userdata/Cowardly Irregular/script_exports"
+SNAP_DIR="tmp/script_exports_snapshot"
+_restore_exports() {
+    [ -d "$SNAP_DIR" ] || return 0
+    mkdir -p "$EXPORT_DIR_REAL"
+    cp -a "$SNAP_DIR/." "$EXPORT_DIR_REAL/" 2>/dev/null || true
+    echo "[linux] restored $(find "$SNAP_DIR" -type f | wc -l) exported script(s)"
+}
+if [ -d "$EXPORT_DIR_REAL" ] && [ -n "$(ls -A "$EXPORT_DIR_REAL" 2>/dev/null)" ]; then
+    rm -rf "$SNAP_DIR"; mkdir -p "$SNAP_DIR"
+    cp -a "$EXPORT_DIR_REAL/." "$SNAP_DIR/"
+    echo "[linux] gate 0b: snapshotted $(find "$SNAP_DIR" -type f | wc -l) exported script(s)"
+    # Restore on ANY exit, including a gate failure. A restore that only runs on
+    # the success path is the teardown-abort shape: the thing you were protecting
+    # is lost exactly when something else went wrong.
+    trap _restore_exports EXIT
+else
+    echo "[linux] gate 0b: no exported scripts to protect"
+fi
+
 # ── gate 1: test suite ───────────────────────────────────────────────────────
 # gate.sh checks Totals-present, scripts-run == test files on disk, reports
 # tests that asserted NOTHING, and returns a real exit code. Consult it; do not
