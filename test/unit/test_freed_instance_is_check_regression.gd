@@ -83,11 +83,17 @@ func test_no_test_type_checks_a_possibly_freed_combatant() -> void:
 	# only four ever fired in a given run, so the log alone would have left
 	# eight latent.
 	#
-	# ZERO exemptions by construction: the needle is built from parts so this
+	# ZERO exemptions by construction: the pattern is built from parts so this
 	# file does not match itself, and the mechanism demo above uses `is Node`
 	# for the same reason. Nothing here can be silenced green.
-	var needle := "if c is " + "Combatant:"
-	var needle_x := "if x is " + "Combatant:"
+	#
+	# ANY identifier, not a hand-list (@cowir-ai msg-3701). The first version
+	# matched exactly `if c is` and `if x is` — the two spellings that happened
+	# to exist. Zero genuine sites escaped it, but a new teardown written with
+	# `member` or `combatant` would have walked straight through. That is
+	# derive-from-the-spelling, in a ratchet against a class.
+	var rx := RegEx.new()
+	rx.compile("^if [a-z_][a-z_0-9]* is " + "Combatant:$")
 	var dir := DirAccess.open("res://test/unit")
 	assert_not_null(dir, "test/unit must be readable or this ratchet is vacuous")
 	var offenders: Array[String] = []
@@ -101,7 +107,7 @@ func test_no_test_type_checks_a_possibly_freed_combatant() -> void:
 		scanned += 1
 		for line in src.split("\n"):
 			var t := line.strip_edges()
-			if (t == needle or t == needle_x) and not line.contains("is_instance_valid"):
+			if rx.search(t) != null and not line.contains("is_instance_valid"):
 				offenders.append("%s: %s" % [fname, t])
 	assert_gt(scanned, 100,
 		"sanity: expected to scan the whole suite, got %d files — a low count makes every result below vacuous" % scanned)
