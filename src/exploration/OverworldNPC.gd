@@ -109,7 +109,7 @@ const NPC_TYPE_TO_ARCHETYPE: Dictionary = {
 	"bard": "traveler",           # NPC bards in cutscenes — cloak+lute reads as traveler
 	"rogue": "traveler",          # NPC rogues — hooded generic
 	"scholarly": "scholar",       # alias (a few files use "scholarly" instead of "scholar")
-	# "dancer" stays procedural — it has its own animation system
+	# "dancer" is absent deliberately: it does not take a static sheet, it drives a 4-frame cycle from DANCER_FRAME_PATHS (artist frames, procedural only as fallback). This line used to read "stays procedural", which was true until 42b0c123 landed the frames and stale from that moment on.
 }
 
 ## Visual
@@ -162,6 +162,13 @@ var _dance_frame: int = 0
 var _dance_timer: float = 0.0
 const DANCE_SPEED: float = 0.2  # Seconds per frame
 const DANCE_FRAMES: int = 4
+## Artist-anchored dancer frames (42b0c123, 2026-07-18). VillageBar has loaded these since the day they landed; this consumer did not, because the alias table's carve-out was written BEFORE they existed. Struktured flagged Aria as "horrific proc gen" 2026-07-30 — she is the only dancer NPC in the game, so this was the whole symptom. Kept in sync with VillageBar's copy by test_dancer_artist_frames_regression.
+const DANCER_FRAME_PATHS: Array = [
+	"res://assets/sprites/npcs/dancer/frame_0.png",
+	"res://assets/sprites/npcs/dancer/frame_1.png",
+	"res://assets/sprites/npcs/dancer/frame_2.png",
+	"res://assets/sprites/npcs/dancer/frame_3.png",
+]
 var _sprite_cache: Dictionary = {}  # frame -> texture
 
 const TILE_SIZE: int = 32
@@ -663,11 +670,34 @@ func _get_npc_hair_color() -> Color:
 
 func _generate_dance_frames() -> void:
 	"""Generate all dance animation frames for dancer NPC"""
+	## Artist frames first, procedural only as fallback — the 4-frame animation is the reason to keep FOUR frames, never a reason to draw them by hand.
+	if _try_load_artist_dance_frames():
+		return
 	for frame in range(DANCE_FRAMES):
 		var image = Image.create(TILE_SIZE, TILE_SIZE, false, Image.FORMAT_RGBA8)
 		_draw_dancer_frame(image, frame)
 		var texture = ImageTexture.create_from_image(image)
 		_sprite_cache[frame] = texture
+
+
+## Mirrors VillageBar._try_load_artist_dancer_frames: all-or-nothing, so a partial drop cannot leave a half-artist half-procedural dance cycle.
+func _try_load_artist_dance_frames(paths: Array = DANCER_FRAME_PATHS) -> bool:
+	if paths.size() != DANCE_FRAMES:
+		return false
+	var loaded: Array[ImageTexture] = []
+	for path in paths:
+		if not ResourceLoader.exists(path):
+			return false
+		var tex: Texture2D = load(path)
+		if tex == null:
+			return false
+		var img: Image = tex.get_image()
+		if img == null:
+			return false
+		loaded.append(ImageTexture.create_from_image(img))
+	for i in range(loaded.size()):
+		_sprite_cache[i] = loaded[i]
+	return true
 
 
 func _draw_dancer_frame(image: Image, frame: int) -> void:
