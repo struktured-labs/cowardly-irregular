@@ -116,5 +116,8 @@ func test_game_constants_merge_pattern_still_present() -> void:
 		or (src.contains("var raw_gc: Variant = save_data[\"game_constants\"]")
 			and src.contains("var saved: Dictionary = raw_gc")),
 		"game_constants merge loop (tick 112) must still be present (direct or via type-guarded raw_gc)")
-	assert_true(src.contains("game_constants[key] = saved[key]"),
+	# 2026-07-30: the per-key assign now targets `rebuilt`, a fresh copy of
+	# DEFAULT_GAME_CONSTANTS — merging onto the live dict leaked the prior save's
+	# cutscene flags. The merge itself (tick 112's contract) is unchanged.
+	assert_true(src.contains("rebuilt[key] = saved[key]"),
 		"game_constants per-key assign must still be present")

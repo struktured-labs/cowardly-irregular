@@ -10,6 +10,13 @@ extends GutTest
 ##
 ## The merge approach preserves both: saved daemon nudges win on
 ## conflict, defaults fill in any keys the save didn't have.
+##
+## 2026-07-30: the merge target moved from the LIVE dict to a fresh copy of
+## DEFAULT_GAME_CONSTANTS. Merging onto the live dict leaked the previously-loaded
+## save's cutscene_flag_* / dungeon_flags / bestiary keys into the next save loaded
+## in the same session (see test_game_constants_cross_save_leak_regression). Tick
+## 112's contract — defaults survive for keys the save omits — is unchanged and
+## still pinned by the three runtime tests below.
 
 const GAME_STATE := "res://src/meta/GameState.gd"
 
@@ -27,10 +34,12 @@ func test_load_merges_instead_of_replaces() -> void:
 	# replace pattern must be gone.
 	assert_false(src.contains("game_constants = save_data[\"game_constants\"].duplicate()"),
 		"GameState.from_dict must NOT replace game_constants wholesale — that wipes defaults for keys the save didn't include")
-	# Positive pin: the merge loop.
+	# Positive pin: the merge loop, now onto a fresh copy of the defaults.
 	assert_true(src.contains("for key in saved.keys():"),
 		"GameState.from_dict must merge saved keys into game_constants — preserves defaults for newer keys")
-	assert_true(src.contains("game_constants[key] = saved[key]"),
+	assert_true(src.contains("var rebuilt: Dictionary = DEFAULT_GAME_CONSTANTS.duplicate(true)"),
+		"the merge must start from a FRESH copy of the defaults — merging onto the live dict leaks the previously-loaded save's story flags")
+	assert_true(src.contains("rebuilt[key] = saved[key]"),
 		"merge loop must overwrite per-key — saved daemon nudges win on conflict, missing keys keep defaults")
 
 

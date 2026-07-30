@@ -110,8 +110,8 @@ func get_llm_custom_api_key_masked() -> String:
 		return "•".repeat(k.length())
 	return k.substr(0, 4) + "…" + k.substr(k.length() - 4)
 
-## Game constants (modifiable by Scriptweaver and other meta jobs)
-var game_constants: Dictionary = {
+## Shipped values for every tunable constant — the ONE authority New Game and the load path both rebuild from, so they can never drift apart.
+const DEFAULT_GAME_CONSTANTS := {
 	"exp_multiplier": 1.0,
 	"gold_multiplier": 1.0,
 	"damage_multiplier": 1.0,
@@ -119,6 +119,9 @@ var game_constants: Dictionary = {
 	"encounter_rate": 1.0,
 	"drop_rate_multiplier": 1.0,
 }
+
+## Modifiable by Scriptweaver, and ALSO the store for cutscene_flag_* / dungeon_flags / bestiary keys — which is why the load path rebuilds it instead of merging onto the live dict.
+var game_constants: Dictionary = DEFAULT_GAME_CONSTANTS.duplicate(true)
 
 ## Tick 418: persistent battle counter. Pre-fix this lived only on
 ## GameLoop.battles_won as a session-local int that never made it to
@@ -505,19 +508,18 @@ func _apply_save_data(save_data: Dictionary) -> void:
 		if raw_pk is Array:
 			for x in raw_pk:
 				permakilled_monster_types.append(str(x))
+	else:
+		# absent key = that playthrough permakilled nothing; keeping the live list would EXTERMINATE species this save never touched, since Necromancer permakill removes them from all three spawn paths
+		permakilled_monster_types.clear()
 	if save_data.has("game_constants"):
-		# Tick 112: MERGE saved values onto the default dict instead of
-		# replacing the dict wholesale. Old saves predate later-added keys
-		# (exp_multiplier, encounter_rate, drop_rate_multiplier, …), and a
-		# direct replace wiped the defaults, leaving consumers like
-		# GameState.add_gold to crash on KeyError when accessing the
-		# missing key. Merging preserves both the saved daemon nudges
-		# AND the defaults for new keys the save didn't know about.
+		# tick 112 merged onto the LIVE dict (keeps defaults a save predates) — but this dict also holds every cutscene_flag_/dungeon_flags/bestiary key, so the prior save's story progress leaked in while story_flags was replaced; rebuild from DEFAULTS then merge, keeping tick 112 and making the loaded save authoritative
 		var raw_gc: Variant = save_data["game_constants"]
 		if raw_gc is Dictionary:
 			var saved: Dictionary = raw_gc
+			var rebuilt: Dictionary = DEFAULT_GAME_CONSTANTS.duplicate(true)
 			for key in saved.keys():
-				game_constants[key] = saved[key]
+				rebuilt[key] = saved[key]
+			game_constants = rebuilt
 		else:
 			push_warning("[GameState] _apply_save_data: game_constants malformed (type=%s) — keeping defaults" % typeof(raw_gc))
 	if save_data.has("meta_features"):
@@ -549,12 +551,19 @@ func _apply_save_data(save_data: Dictionary) -> void:
 			corruption_effects = typed_corruption
 		else:
 			push_warning("[GameState] _apply_save_data: corruption_effects malformed (type=%s) — keeping current list" % typeof(raw_ce))
+	else:
+		# absent key = an uncorrupted playthrough; keeping the live list carried the prior save's stat_drain/ability_corruption into a clean run — every roster entry has a live consumer
+		corruption_effects.clear()
 
 	# Lens system. JSON.parse returns untyped Array, and assigning that straight to an
 	# Array[String] is a SILENT script error that leaves the field at its default — the
 	# documented trap that ate party data before. Coerce element-by-element.
 	for lens_field in ["unlocked_lens_recipes", "owned_lenses"]:
 		if not save_data.has(lens_field):
+			# absent key = that playthrough had NO Lenses; keeping the live list handed it the prior save's pool (measured: 3 of 5 local saves predate the key)
+			match lens_field:
+				"unlocked_lens_recipes": unlocked_lens_recipes.clear()
+				"owned_lenses": owned_lenses.clear()
 			continue
 		var raw_lens: Variant = save_data[lens_field]
 		if raw_lens is Array:
@@ -575,6 +584,9 @@ func _apply_save_data(save_data: Dictionary) -> void:
 				lens_assignments[str(char_id)] = str(raw_la[char_id])
 		else:
 			push_warning("[GameState] _apply_save_data: lens_assignments malformed (type=%s) — keeping current map" % typeof(raw_la))
+	else:
+		# pre-Lens save had no assignments, so anything equipped here is the prior save's — same authoritative-load rule as quests/crystals (2026-07-02)
+		lens_assignments.clear()
 
 	# Equipment pool: JSON hands back generic Arrays, so coerce each slot
 	# explicitly. A silent [] here is a player losing every drop they own.
@@ -592,6 +604,9 @@ func _apply_save_data(save_data: Dictionary) -> void:
 			equipment_pool = typed_pool
 		else:
 			push_warning("[GameState] _apply_save_data: equipment_pool malformed (type=%s) — keeping current pool" % typeof(raw_pool))
+	else:
+		# pre-pool save owned no shared gear; keeping the live pool handed it the other save's drops (measured: 2 of 5 local saves predate the key)
+		equipment_pool = {"weapons": [], "armors": [], "accessories": []}
 	## Tick 156: world bookkeeping is int 1-6 (matches the 6 worlds
 	## shipped). Coerce from JSON's float + clamp to valid range so
 	## a corrupted save with 0 or 99 doesn't leak into is_world_unlocked
@@ -1065,15 +1080,8 @@ func reset_game_state() -> void:
 		rebalance_daemon.pending.clear()
 		rebalance_daemon.applied.clear()
 
-	# Reset game constants
-	game_constants = {
-		"exp_multiplier": 1.0,
-		"gold_multiplier": 1.0,
-		"damage_multiplier": 1.0,
-		"healing_multiplier": 1.0,
-		"encounter_rate": 1.0,
-		"drop_rate_multiplier": 1.0,
-	}
+	# same authority the load path rebuilds from, so New Game and a load can never land on different defaults
+	game_constants = DEFAULT_GAME_CONSTANTS.duplicate(true)
 
 	# Reset meta features (autosave / rewind / restore points) — start fresh.
 	# Mirror the var-default at GameState.gd:50.
