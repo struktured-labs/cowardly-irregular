@@ -95,6 +95,26 @@ echo "[${PLAT}] target ${VERSION}  publish=${PUBLISH}"
 # below was unreachable on the exact failure it describes. The deploy still failed
 # safely (non-zero), it just never said why.
 
+# ── marker staleness guard ──────────────────────────────────────────────────
+# Gates 3 and 3b assert a literal log line. That is a positive marker, which is
+# right — but it is also a coincidental-value pin: change the log line and the
+# gate goes RED on a correct build, and whoever hits it edits the string. That
+# is how the WEB gate spent three days blocked on a hardcoded menu row index
+# (2026-07-27 -> 2026-07-30) while reporting "failed to boot in chromium" for a
+# build that booted perfectly.
+#
+# So before believing a missing marker means a broken build, check the marker
+# still EXISTS in src/. If it doesn't, the gate is stale and says so, rather
+# than blaming the artifact. This is the expiry condition a comment can't be.
+_require_marker_live() {
+    grep -rqF "$1" src/ && return 0
+    echo "[${PLAT}] BLOCKED: gate marker '$1' no longer exists in src/." >&2
+    echo "        This gate is STALE — the game changed its log line. The build is" >&2
+    echo "        NOT necessarily broken. Re-derive the marker before touching it," >&2
+    echo "        and do not simply edit the string until it passes." >&2
+    exit 3
+}
+
 # ── gate 0: import prewarm ───────────────────────────────────────────────────
 # A fresh worktree has no .godot cache, so res:// paths resolve to nothing while
 # the files sit right there on disk. A test run in that state exits 0 having run
@@ -328,14 +348,75 @@ echo "[${PLAT}] binary: $(( $(stat -c%s "$BIN") / 1048576 )) MiB"
 echo "[${PLAT}] gate 3/4: boot smoke"
 ( cd "$OUT_DIR" && timeout 240 ${BOOT_RUNNER[@]+"${BOOT_RUNNER[@]}"} "./${ARTIFACT}" \
     --headless --quit ) > "tmp/${PLAT}_boot.log" 2>&1 || true
+_require_marker_live "[GAME] Started"
 if ! grep -q "\[GAME\] Started" tmp/${PLAT}_boot.log; then
     echo "[${PLAT}] BLOCKED: exported binary did not reach '[GAME] Started'" >&2
-    grep -iE "SCRIPT ERROR|Failed to load|Parse Error" tmp/${PLAT}_boot.log | head -5 >&2
+    # `|| true` is load-bearing: a diagnostic grep that finds NOTHING exits 1,
+    # and under `set -e` that pre-empts the `exit 3` below — so the gate would
+    # report 1 instead of 3 exactly when there is no error to print. Caught by a
+    # control that asserted the exit CODE, not merely that the gate failed.
+    grep -iE "SCRIPT ERROR|Failed to load|Parse Error" tmp/${PLAT}_boot.log | head -5 >&2 || true
     exit 3
 fi
 BOOT_ERRS=$(grep -icE "SCRIPT ERROR|Failed to load script" tmp/${PLAT}_boot.log || true)
 echo "[${PLAT}] booted to title screen · script errors during boot: ${BOOT_ERRS}"
 [ "$BOOT_ERRS" = "0" ] || echo "[${PLAT}] WARNING: booted, but with ${BOOT_ERRS} script error(s) — see tmp/${PLAT}_boot.log"
+
+# ── gate 3b: COMBAT smoke, in an isolated profile (linux only) ──────────────
+# Gate 3 proves the binary reaches the title screen. It says nothing about the
+# battle system — and on 2026-07-30 four BattleManager fixes landed (burn damage,
+# blocked-Defer, an empty-party victory guard and a selection guard, the last two
+# running on every action of every turn) with no execution in a booted build on
+# any platform.
+#
+# GameLoop.gd:382 has accepted `--battle-smoke` all along and NOTHING used it:
+# 0 references in tools/, .github/ or CLAUDE.md. It fights a real battle in the
+# exported build and writes screenshots.
+#
+# WHY THIS IS SAFE TO RUN AND GATE 3 IS NOT EXTENDED INSTEAD:
+# a desktop binary resolves user:// from $HOME, so redirecting HOME relocates the
+# ENTIRE profile. The smoke then plays a real battle against a throwaway
+# directory and cannot reach struktured's saves — which is the only reason this
+# is allowed to do more than boot. Measured on the first run: his profile held
+# 141 files before and 141 after, and all 63 writes landed in the sandbox.
+#
+# That isolation is ASSERTED below, not trusted. If it ever stops holding, this
+# gate must fail rather than quietly play the game against real save data.
+if [ "$PLAT" = "linux" ]; then
+    if ! command -v xvfb-run >/dev/null; then
+        # Loudly skipped, never silently: a smoke that does not run must not look
+        # like a smoke that passed.
+        echo "[${PLAT}] gate 3b: SKIPPED — xvfb-run absent, combat is UNVERIFIED" >&2
+    else
+        echo "[${PLAT}] gate 3b: combat smoke (isolated profile)"
+        SMOKE_HOME="$(pwd)/tmp/smoke_home"
+        rm -rf "$SMOKE_HOME"; mkdir -p "$SMOKE_HOME"
+        REAL_N_BEFORE=$(find "$USERDATA" -type f 2>/dev/null | wc -l)
+        HOME="$SMOKE_HOME" timeout 600 xvfb-run -a "$BIN" -- --battle-smoke \
+            > "tmp/${PLAT}_battle.log" 2>&1 &
+        SEC=0; wait $! || SEC=$?
+        REAL_N_AFTER=$(find "$USERDATA" -type f 2>/dev/null | wc -l)
+
+        # Isolation first: a leak matters more than a failed battle.
+        if [ "$REAL_N_BEFORE" -ne "$REAL_N_AFTER" ]; then
+            echo "[${PLAT}] BLOCKED: the combat smoke WROTE TO THE REAL PROFILE" >&2
+            echo "        ${REAL_N_BEFORE} -> ${REAL_N_AFTER} files. HOME redirection failed;" >&2
+            echo "        refusing to keep running the game against real save data." >&2
+            exit 3
+        fi
+        # Positive marker, not absence-of-error: an empty log has no errors either.
+        _require_marker_live "Battle commenced"
+        if ! grep -aq "Battle commenced" "tmp/${PLAT}_battle.log"; then
+            echo "[${PLAT}] BLOCKED: combat smoke never reached a battle (exit ${SEC})" >&2
+            grep -aiE "SCRIPT ERROR|Failed to load|Parse Error" "tmp/${PLAT}_battle.log" | head -5 >&2 || true
+            exit 3
+        fi
+        SHOTS=$(find "$SMOKE_HOME" -name '*.png' 2>/dev/null | wc -l)
+        echo "[${PLAT}] fought a real battle · ${SHOTS} screenshot(s) · profile untouched (${REAL_N_BEFORE} files)"
+    fi
+else
+    echo "[${PLAT}] gate 3b: SKIPPED — combat smoke is linux-only (wine+xvfb unverified)"
+fi
 
 # ── gate 4: publish, only if explicitly asked ───────────────────────────────
 if [ "$PUBLISH" != "1" ]; then
