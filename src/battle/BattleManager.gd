@@ -1384,11 +1384,12 @@ func _calculate_selection_order() -> void:
 	var alive_players: Array[Combatant] = []
 	var alive_enemies: Array[Combatant] = []
 
+	# is_instance_valid first — a freed entry makes `.is_alive` a SCRIPT ERROR that ABORTS this function, leaving selection_order stale instead of rebuilt.
 	for c in player_party:
-		if c.is_alive:
+		if is_instance_valid(c) and c.is_alive:
 			alive_players.append(c)
 	for c in enemy_party:
-		if c.is_alive:
+		if is_instance_valid(c) and c.is_alive:
 			alive_enemies.append(c)
 
 	# Sort by speed (faster selects first)
@@ -1415,6 +1416,10 @@ func _process_next_selection() -> void:
 	# Skip combatants with AP debt
 	while selection_index < selection_order.size():
 		current_combatant = selection_order[selection_index]
+		# Observed throwing in the suite: aborting here wedges the selection phase mid-loop — nothing advances and no state changes.
+		if not is_instance_valid(current_combatant):
+			selection_index += 1
+			continue
 		if current_combatant.is_alive:
 			# Check for AP debt
 			if current_combatant.current_ap < 0:
