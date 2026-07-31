@@ -85,6 +85,9 @@
       ],
       "10": [
         "raise"
+      ],
+      "7": [
+        "shell"
       ]
     },
     "passive_abilities": [

@@ -105,6 +105,20 @@
     "magic_school": "white",
     "cost": 600
   },
+  "shell": {
+    "id": "shell",
+    "name": "Shell",
+    "type": "support",
+    "animation": "buff",
+    "mp_cost": 8,
+    "description": "Increase ally's magic defense by 50% for 3 turns",
+    "target_type": "single_ally",
+    "effect": "magic_defense_up",
+    "stat_modifier": 1.5,
+    "duration": 3,
+    "magic_school": "white",
+    "cost": 600
+  },
   "fire": {
     "id": "fire",
     "name": "Fire",

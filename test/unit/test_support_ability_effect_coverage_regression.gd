@@ -48,6 +48,8 @@ const HANDLED_EFFECTS := [
 	"scan",
 	# --- msg 2787 cycle 15: Voltharion Storm Gathering — dedicated arm w/ Defer-telegraph log line ---
 	"storm_charging",
+	# --- Shell (2026-07-30): the magic mirror of Protect. Its Soul Sap counterpart is handled in the same match but reaches this list only if a support-typed ability ever authors it — soul_wail is type=magic. ---
+	"magic_defense_up", "magic_defense_down",
 ]
 
 # Effects that legitimately still need bespoke per-effect implementations.
