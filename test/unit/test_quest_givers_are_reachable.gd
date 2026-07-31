@@ -7,7 +7,6 @@ const NPC_SRC := "res://src/exploration/OverworldNPC.gd"
 
 ## Unreachable givers that are authored ahead of their world. Owner, not permission.
 const AUTHORED_AHEAD := {
-	"sprocket_brasston": "W3", "clem_lamplighter": "W3", "madame_orrery_w3": "W3",
 	"rat_patrol_junction": "W4", "madame_orrery_w4": "W4", "dorrit_w4": "W4",
 	"foreman_w4": "W4", "union_rep_w4": "W4",
 	"memory_leak_district": "W5", "madame_orrery_w5": "W5", "race_condition_pair": "W5",

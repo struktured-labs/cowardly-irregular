@@ -205,6 +205,8 @@ func _setup_npcs() -> void:
 		"Vesper at the Forge does excellent work. Tell her Sprocket sent you.",
 		"She'll still overcharge you, but at least she'll be polite about it."
 	])
+	# Without this the quest is UNSTARTABLE — QuestSystem matches npc_id to giver.npc_id.
+	sprocket.npc_id = "sprocket_brasston"
 	npcs.add_child(sprocket)
 
 	# Lamplighter (night-shift, shadows in the pipes)
@@ -216,6 +218,8 @@ func _setup_npcs() -> void:
 		"The engineers say it's 'pressure differentials'.",
 		"I say something LIVES down there. Been there since the gears were new."
 	])
+	# Without this the quest is UNSTARTABLE — QuestSystem matches npc_id to giver.npc_id.
+	lamplighter.npc_id = "clem_lamplighter"
 	npcs.add_child(lamplighter)
 
 	# Steam Merchant (exotic goods)
@@ -227,6 +231,8 @@ func _setup_npcs() -> void:
 		"A potion here might be called 'Gatorade' somewhere else.",
 		"Same effect, different branding."
 	])
+	# Without this the quest is UNSTARTABLE — QuestSystem matches npc_id to giver.npc_id.
+	merchant.npc_id = "madame_orrery_w3"
 	npcs.add_child(merchant)
 
 	# Clockwork Cat (mechanical pet, responds with sound effects)
