@@ -505,16 +505,40 @@ func _maybe_run_battle_smoke() -> void:
 	if xform.origin != Vector2.ZERO:
 		_smoke_failed = true
 	await _smoke_shot("battle_smoke")
+	# auto-play only AFTER battle_smoke: with no input the party waits in PLAYER_SELECTING forever
+	for m in party:
+		if m and is_instance_valid(m) and "player_trust" in m:
+			m.player_trust = true
+	# the Select-key path — enabling autobattle alone leaves the already-open menu waiting on input
+	if current_scene and is_instance_valid(current_scene) and current_scene.has_method("_enable_all_autobattle"):
+		current_scene._enable_all_autobattle()
 	# the duel must wait for the live battle to end — a fixed sleep raced RNG-length battles
 	var _bwait := 0.0
-	while BattleManager.current_state != BattleManager.BattleState.INACTIVE and _bwait < 30.0:
+	while BattleManager.current_state != BattleManager.BattleState.INACTIVE and _bwait < 90.0:
 		await get_tree().create_timer(0.5).timeout
 		_bwait += 0.5
+	# a SILENT timeout here shot a live battle into both legs below and still printed PASS
+	if BattleManager.current_state != BattleManager.BattleState.INACTIVE:
+		print("[SMOKE] FAIL: battle still active after %.1fs — post_battle_return/duel_smoke show a live battle" % _bwait)
+		_smoke_failed = true
 	# dismiss victory and walk the battle→exploration seam — the gray-screen regression class
-	_smoke_tap("ui_accept")
-	await get_tree().create_timer(2.0).timeout
+	# repeat: a tutorial hint eats the first tap, so one tap left the victory panel up
+	var _battle_ref := current_scene
+	var _rwait := 0.0
+	while current_scene == _battle_ref and _rwait < 25.0:
+		_smoke_tap("ui_accept")
+		await get_tree().create_timer(1.0).timeout
+		_rwait += 1.0
+	if current_scene == _battle_ref:
+		print("[SMOKE] FAIL: still in the battle scene after %.0fs of dismiss taps — no exploration return" % _rwait)
+		_smoke_failed = true
+	await get_tree().create_timer(1.5).timeout
 	await _smoke_shot("post_battle_return")
 	if full:
+		# start_solo_battle REFUSES while a battle is live, and only push_warning'd about it
+		if BattleManager.current_state != BattleManager.BattleState.INACTIVE:
+			print("[SMOKE] FAIL: battle still live — solo duel will be refused, duel_smoke shows no duel")
+			_smoke_failed = true
 		# spotlight duel leg: trust the fighter so turns auto-play, capture mid-duel
 		for m in party:
 			if m and is_instance_valid(m) and "player_trust" in m:
