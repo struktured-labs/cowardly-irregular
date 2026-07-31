@@ -26,7 +26,17 @@ var _dc:  DynamicConversation
 
 # ── GUT lifecycle ─────────────────────────────────────────────────────────────
 
+## Force the fallback path deterministically. These tests used to SKIP whenever the LLM
+## backend happened to be up, so on a box running Ollama they silently never ran.
+var _llm_svc: Node = null
+var _llm_saved_enabled: bool = true
+
+
 func before_each() -> void:
+	_llm_svc = get_tree().root.get_node_or_null("LLMService") if get_tree() else null
+	if _llm_svc and "llm_enabled" in _llm_svc:
+		_llm_saved_enabled = _llm_svc.llm_enabled
+		_llm_svc.llm_enabled = false
 	_log = EventLog.new()
 	_dc  = DynamicConversation.new()
 	_dc.name = "IntegTestDynamicConversation"
@@ -34,6 +44,8 @@ func before_each() -> void:
 
 
 func after_each() -> void:
+	if _llm_svc and "llm_enabled" in _llm_svc:
+		_llm_svc.llm_enabled = _llm_saved_enabled
 	_log = null
 	_dc  = null
 
@@ -113,9 +125,6 @@ func test_dc_abort_while_active_sets_done() -> void:
 
 ## _fetch_npc_opening() — without LLM, returns first fallback line.
 func test_dc_fetch_opening_uses_first_fallback() -> void:
-	if _llm_actually_reachable():
-		pending("LLMService present — skipping fallback-path test")
-		return
 	_dc.setup("Guard", "stoic guard", "Gate", null, ["Halt! Who goes there?"])
 	_dc._exchange_count = 0
 	var line: String = await _dc._fetch_npc_opening()
@@ -125,9 +134,6 @@ func test_dc_fetch_opening_uses_first_fallback() -> void:
 
 ## _fetch_npc_opening() cycles through fallback lines using exchange_count.
 func test_dc_fetch_opening_cycles_fallbacks() -> void:
-	if _llm_actually_reachable():
-		pending("LLMService present — skipping fallback-path test")
-		return
 	var fallbacks: Array = ["Hello.", "Goodbye.", "Perhaps later."]
 	_dc.setup("Vendor", "merchant", "Market", null, fallbacks)
 	for i in range(fallbacks.size() * 2):
@@ -139,9 +145,6 @@ func test_dc_fetch_opening_cycles_fallbacks() -> void:
 
 ## _fetch_npc_opening() returns '...' when fallback_lines is empty.
 func test_dc_fetch_opening_empty_fallbacks_is_ellipsis() -> void:
-	if _llm_actually_reachable():
-		pending("LLMService present — skipping fallback-path test")
-		return
 	_dc.setup("Ghost", "silent spirit", "Graveyard", null, [])
 	var line: String = await _dc._fetch_npc_opening()
 	assert_eq(line, "...", "Empty fallback_lines should yield '...'")
@@ -149,9 +152,6 @@ func test_dc_fetch_opening_empty_fallbacks_is_ellipsis() -> void:
 
 ## _fetch_player_choices() — without LLM, returns DialoguePrompts fallback.
 func test_dc_fetch_player_choices_fallback_non_empty() -> void:
-	if _llm_actually_reachable():
-		pending("LLMService present — skipping fallback-path test")
-		return
 	_dc.setup("Sage", "mystical sage", "Library", null, ["Indeed."])
 	var choices: Array[String] = await _dc._fetch_player_choices()
 	assert_false(choices.is_empty(),
@@ -162,9 +162,6 @@ func test_dc_fetch_player_choices_fallback_non_empty() -> void:
 
 ## _fetch_player_choices() entries are all non-empty Strings.
 func test_dc_fetch_player_choices_all_strings() -> void:
-	if _llm_actually_reachable():
-		pending("LLMService present — skipping fallback-path test")
-		return
 	_dc.setup("Sage", "mystical sage", "Library", null, ["Indeed."])
 	var choices: Array[String] = await _dc._fetch_player_choices()
 	for c in choices:
@@ -178,9 +175,6 @@ func test_dc_full_fallback_state_sequence() -> void:
 	_dc.setup("Innkeeper", "friendly innkeeper", "Tavern", _log, ["Welcome!", "Come again!", "Safe travels."])
 
 	# Verify OPENING handler returns a non-empty fallback line.
-	if _llm_actually_reachable():
-		pending("LLMService present — skipping full fallback loop test")
-		return
 
 	_dc._exchange_count = 0
 	var opening: String = await _dc._fetch_npc_opening()
@@ -272,9 +266,6 @@ func test_dc_has_required_signals() -> void:
 
 ## EventLog injected via setup() is read during _fetch_npc_opening().
 func test_dc_uses_event_log_recent_during_fetch() -> void:
-	if _llm_actually_reachable():
-		pending("LLMService present — skipping EventLog integration test")
-		return
 	# Populate the event log with a fact.
 	_log.record(EventLog.TYPE_BOSS_DEFEAT, "Defeated Cave Rat King",
 		{"boss_id": "cave_rat_king_defeated"})
@@ -290,9 +281,6 @@ func test_dc_uses_event_log_recent_during_fetch() -> void:
 
 ## EventLog with null injected via setup() does not crash during fetch.
 func test_dc_null_event_log_no_crash_during_fetch() -> void:
-	if _llm_actually_reachable():
-		pending("LLMService present — skipping null EventLog test")
-		return
 	_dc.setup("Ghost", "silent spirit", "Ruin", null, ["..."])
 	var line: String = await _dc._fetch_npc_opening()
 	assert_false(line.is_empty(),
@@ -581,3 +569,12 @@ func test_persist_recent_n_mixed_types() -> void:
 	assert_eq(r.size(), 5, "recent(5) should return exactly 5 entries")
 	assert_eq(r[r.size() - 1]["data"]["idx"], 19,
 		"Last entry in recent(5) should be the newest overall")
+
+
+## CONTROL: the harness must actually make the fallback path live. If this fails, every
+## fallback assertion above was exercising the LLM path instead.
+func test_control_harness_forces_llm_unavailable() -> void:
+	assert_false(_llm_actually_reachable(),
+		"before_each must disable llm_enabled so the fallback path is what runs")
+	assert_false(_dc._llm_available(),
+		"DynamicConversation must see the LLM as unavailable")
