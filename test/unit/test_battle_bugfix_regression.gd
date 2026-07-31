@@ -1313,6 +1313,9 @@ func test_vulnerability_on_dead_combatant_skips() -> void:
 func test_defer_with_cannot_defer_reemits_selection() -> void:
 	# Setup: put BattleManager in PLAYER_SELECTING state with a combatant that cannot defer
 	_combatant.add_status("cannot_defer", 1)
+	# BattleManager is an AUTOLOAD: this state outlives the test. Left set, it made is_battle_active() true for every later file, and test_map_system_regression's quick-save test skipped itself as pending for the rest of the suite.
+	var _prior_state = BattleManager.current_state
+	var _prior_combatant = BattleManager.current_combatant
 	BattleManager.current_combatant = _combatant
 	BattleManager.current_state = BattleManager.BattleState.PLAYER_SELECTING
 
@@ -1329,3 +1332,5 @@ func test_defer_with_cannot_defer_reemits_selection() -> void:
 		"State must remain PLAYER_SELECTING so player can pick another action")
 
 	BattleManager.selection_turn_started.disconnect(_on_signal)
+	BattleManager.current_state = _prior_state
+	BattleManager.current_combatant = _prior_combatant
