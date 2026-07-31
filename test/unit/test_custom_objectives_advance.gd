@@ -32,6 +32,9 @@ func _stuck_custom_objectives() -> Array:
 	var const_re := RegEx.create_from_string("const\\s+(\\w+)\\s*(?::=|:\\s*String\\s*=|=)\\s*\"([^\"]+)\"")
 	var var_call_re := RegEx.create_from_string("notify_flag\\(\\s*([A-Z_][A-Z0-9_]*)\\s*\\)")
 	var point_re := RegEx.create_from_string("_add_quest_examine_point\\(\\s*\"[^\"]+\"\\s*,\\s*\"([^\"]+)\"")
+	## A QuestExaminePoint built directly (dungeons have no BaseVillage helper) sets .flag
+	## as a property — invisible to the factory pattern above, and W3's junction uses it.
+	var direct_re := RegEx.create_from_string("\\w+\\.flag\\s*=\\s*\"([^\"]+)\"")
 	var stack: Array = ["res://src"]
 	while not stack.is_empty():
 		var dir: String = stack.pop_back()
@@ -58,6 +61,8 @@ func _stuck_custom_objectives() -> Array:
 					if consts.has(m.get_string(1)):
 						notifiable[consts[m.get_string(1)]] = true
 				for m in point_re.search_all(text):
+					notifiable[m.get_string(1)] = true
+				for m in direct_re.search_all(text):
 					notifiable[m.get_string(1)] = true
 			f = d.get_next()
 		d.list_dir_end()

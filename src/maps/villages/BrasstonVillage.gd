@@ -235,6 +235,27 @@ func _setup_npcs() -> void:
 	merchant.npc_id = "madame_orrery_w3"
 	npcs.add_child(merchant)
 
+	# Cornelius Hartwick — before_the_regulator step-3 emitter AND its step-4 turn-in.
+	# Alias display name: the notebook's last page is what identifies him, not a puzzle.
+	var repairman = _create_npc("Clock Repairman", "villager", Vector2(4 * TILE_SIZE,16 * TILE_SIZE), [
+		"Small things only. Clocks, mostly. Nothing that runs the city.",
+		"I used to work on something larger. It stopped being mine.",
+		"No, I don't take commissions. I fix what people bring me and I don't ask where it came from.",
+	])
+	repairman.npc_id = "cornelius_hartwick"
+	npcs.add_child(repairman)
+
+	_add_quest_examine_point("world3_delay_in_everything",
+		"quest_world3_delay_in_everything_gear_examined", "[A] Examine the gear cluster",
+		"The replacement gear is one unit too large. Exactly one gear-tooth of lag per cycle — seven seconds, every cycle, for six months. Too precise to be an accident.",
+		"A maintenance panel stands open at Sprocket's shoulder. The cluster inside turns a half-beat behind the rest.",
+		Vector2(11 * TILE_SIZE,7 * TILE_SIZE))
+	_add_quest_examine_point("world3_delay_in_everything",
+		"quest_world3_delay_in_everything_record_found", "[A] Read the depot record",
+		"The entry is there, in the margin, in a clerk's hand: 'substituted — standard gauge unavailable. Approved: Calibrant Logistics.' The order date precedes the maintenance incident.",
+		"The supply depot's ledger, open to a page of part numbers nobody has needed to read in six months.",
+		Vector2(13 * TILE_SIZE,14 * TILE_SIZE))
+
 	# Clockwork Cat (mechanical pet, responds with sound effects)
 	var clockcat = _create_npc("Cogsworth", "villager", Vector2(7 * TILE_SIZE,15 * TILE_SIZE), [
 		"*whirr*",
