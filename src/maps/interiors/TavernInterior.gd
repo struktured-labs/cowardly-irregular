@@ -1157,7 +1157,8 @@ func _draw_sleeping_dog(img: Image, frame: int) -> void:
 		for x in range(46, 50):
 			if x < img.get_width():
 				img.set_pixel(x, y, fur_b)
-	img.set_pixel(48, 11, nose)
+	## snout tip, derived — a literal 48 is one past the last column and ABORTS the rest of this function
+	img.set_pixel(img.get_width() - 1, 11, nose)
 
 	# Ear
 	for y in range(3, 8):
