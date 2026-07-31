@@ -7,6 +7,17 @@ const QUEST := "w1_sandrift_water_on_the_road"
 const STEP2_FLAG := "quest_w1_sandrift_water_on_the_road_accepted"
 const PREREQ := "cutscene_flag_rat_king_defeated"
 
+## W3 included so its dungeon junction is covered; W4-W6 are wholesale unwired (20 stuck steps,
+## no givers) and would drown the signal, so they join when their givers ship.
+const GUARDED_PREFIXES := ["w1_", "world1_", "world2_", "world3_"]
+
+## flag -> why. An exemption carries its justification or it reads as coverage, and
+## test_exemptions_have_not_expired below deletes it for you the moment it stops being true.
+const KNOWN_UNBUILT := {
+	"quest_world3_lamplighters_logic_route_documented":
+		"lamplighters_logic step 2 is cowir-overworld's follow-the-route mechanic, held for struktured's genre ruling — unbuilt, not broken",
+}
+
 var _saved_quests: Dictionary = {}
 var _saved_flags: Dictionary = {}
 
@@ -90,21 +101,48 @@ func _stuck_custom_objectives() -> Array:
 	while qf != "":
 		if qf.ends_with(".json"):
 			var id := qf.trim_suffix(".json")
-			if id.begins_with("w1_") or id.begins_with("world1_") or id.begins_with("world2_"):
+			var guarded := false
+			for pre in GUARDED_PREFIXES:
+				if id.begins_with(pre):
+					guarded = true
+			if guarded:
 				var q = JSON.parse_string(FileAccess.get_file_as_string("res://data/quests/" + qf))
 				if q is Dictionary:
 					for o in q.get("objectives", []):
 						if str(o.get("type", "")) != "custom":
 							continue
 						var rf: String = str(o.get("required_flag", ""))
-						if rf == "":
+						if rf == "" or KNOWN_UNBUILT.has(rf):
 							continue
 						checked += 1
 						if not notifiable.has(rf):
 							stuck.append("%s step%s -> %s" % [id, o.get("step", "?"), rf])
 		qf = qd.get_next()
 	qd.list_dir_end()
-	return [checked, stuck, notifiable.size()]
+	return [checked, stuck, notifiable.size(), notifiable]
+
+
+## An exemption that outlives its reason is a silent coverage hole — the exact shape that let a
+## mode7 test sit retired since the day it was written. This deletes it for you.
+func test_exemptions_have_not_expired() -> void:
+	var r := _stuck_custom_objectives()
+	assert_gt(r.size(), 3, "walk must return the notifiable set, else this cannot fire")
+	if r.size() < 4:
+		return
+	var notifiable: Dictionary = r[3]
+	assert_gt(notifiable.size(), 10, "notifiable set must be populated, else every exemption "
+		+ "below looks still-needed and this guard inverts")
+	## A member the scan's own call_re produces, verified single-line in src/ — my first
+	## attempt named w1_tempo_defeated, which nothing in src/ emits, and the control fired.
+	assert_true(notifiable.has("quest_world1_chapter_three_basics_only"),
+		"a KNOWN-emittable flag must resolve — a count alone passes while the scan matches nothing")
+	assert_false(notifiable.has("zzz_never_emitted"), "an invented flag must NOT resolve")
+	var expired: Array = []
+	for flag in KNOWN_UNBUILT:
+		if notifiable.has(flag):
+			expired.append("%s (%s)" % [flag, KNOWN_UNBUILT[flag]])
+	assert_eq(expired, [], "this flag is now emittable, so its KNOWN_UNBUILT exemption is stale "
+		+ "and is hiding real coverage. DELETE the entry: %s" % [expired])
 
 
 ## BEHAVIOURAL. A source pin on "notify_flag( is present" stays GREEN against the shipped
