@@ -35,6 +35,12 @@ func _ready() -> void:
 	body_exited.connect(_on_body_exited)
 
 
+## Stand-in for the cutscene's set_flag step: BOTH namespaces, or the quest's prefixed prereq never closes.
+func _mark_encounter_complete() -> void:
+	GameState.set_story_flag(ENCOUNTER_FLAG)
+	GameState.game_constants["cutscene_flag_" + ENCOUNTER_FLAG] = true
+
+
 func _setup_sprite() -> void:
 	_sprite = Sprite2D.new()
 	_sprite.name = "TallySprite"
@@ -139,7 +145,7 @@ func _examine() -> void:
 			await director.play_cutscene("world1_warden_encounter")
 		else:
 			# Defensive: never strand the quest if the director is missing.
-			GameState.set_story_flag(ENCOUNTER_FLAG)
+			_mark_encounter_complete()
 	else:
 		var qs = get_node_or_null("/root/QuestSystem")
 		if qs and qs.has_giver_business(npc_id):
