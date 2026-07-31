@@ -49,7 +49,7 @@ const ITEM_INVENTORY = [
 # spells-early path (level-up grants free later; buying is tempo).
 # The -ga tier stays off W1 shelves.
 const BLACK_MAGIC_INVENTORY = ["fire", "blizzard", "thunder", "fira", "blizzara", "thundara"]
-const WHITE_MAGIC_INVENTORY = ["cure", "cura", "raise", "protect", "esuna", "regen"]
+const WHITE_MAGIC_INVENTORY = ["cure", "cura", "raise", "protect", "shell", "esuna", "regen"]
 ## Shelves in strict ascending cost so the list reads as a progression
 ## ladder (ratcheted by test_shop_shelf_cost_order). NOTE: every world's
 ## blacksmith stocks this SAME catalog — per-world shelves are a design

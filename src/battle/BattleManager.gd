@@ -5177,6 +5177,12 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 				if target and is_instance_valid(target) and target.is_alive:
 					target.add_buff("Protect", "defense", stat_modifier, duration)
 					battle_log_message.emit("[color=cyan]%s gains Protect![/color] (DEF +%d%% for %d turns)" % [target.combatant_name, int((stat_modifier - 1.0) * 100), duration])
+		## Shell — the magic mirror of Protect. take_damage reads magic_defense for magical hits and defense for physical ones, so Protect gave no magic mitigation and nothing raised magic_defense at all: soul_wail could sap it, no ability restored it.
+		"magic_defense_up":
+			for target in targets:
+				if target and is_instance_valid(target) and target.is_alive:
+					target.add_buff("Shell", "magic_defense", stat_modifier, duration)
+					battle_log_message.emit("[color=cyan]%s gains Shell![/color] (M.DEF +%d%% for %d turns)" % [target.combatant_name, int((stat_modifier - 1.0) * 100), duration])
 		"attack_up":
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
@@ -5187,17 +5193,7 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
 					target.add_debuff("Armor Break", "defense", stat_modifier, duration)
 					battle_log_message.emit("[color=%s]%s's armor is broken![/color] (DEF -%d%% for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, int((1.0 - stat_modifier) * 100), duration])
-		## Tick 378: magic_defense_down handler. Pre-fix soul_wail
-		## (effect=magic_defense_down, stat_modifier=0.7, duration=2)
-		## fell through to the `_:` push_warning default and silently
-		## fizzled. take_damage reads the same `defense` stat for both
-		## physical and magical attacks (just halved in the magical
-		## case), so a defense debuff with a distinct effect label is
-		## the right mechanical fit: the buff system keys on the
-		## effect name (not the stat), so "Soul Sap" coexists cleanly
-		## with a regular "Armor Break" defense_down — both reduce the
-		## stat in get_buffed_stat. Distinct label keeps the UI source-
-		## of-debuff legible.
+		## Tick 378: soul_wail's magic_defense_down fell through to the `_:` default and fizzled. The old note here claimed magic and physical share one `defense` stat — untrue since magic_defense became real, and it contradicted the "magic_defense" this very handler passes.
 		"magic_defense_down":
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
@@ -5802,12 +5798,14 @@ const _SECONDARY_STAT_BUFF_MAP: Dictionary = {
 	"defense_up": ["defense", "Secondary Defense Up"],
 	"magic_up":   ["magic",   "Secondary Magic Up"],
 	"speed_up":   ["speed",   "Secondary Speed Up"],
+	"magic_defense_up": ["magic_defense", "Secondary Magic Defense Up"],
 }
 const _SECONDARY_STAT_DEBUFF_MAP: Dictionary = {
 	"attack_down":  ["attack",  "Secondary Attack Down"],
 	"defense_down": ["defense", "Secondary Defense Down"],
 	"magic_down":   ["magic",   "Secondary Magic Down"],
 	"speed_down":   ["speed",   "Secondary Speed Down"],
+	"magic_defense_down": ["magic_defense", "Secondary Magic Defense Down"],
 }
 
 
