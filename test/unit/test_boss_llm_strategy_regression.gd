@@ -24,6 +24,29 @@ const BossIntentContextScript := preload("res://src/battle/BossIntentContext.gd"
 
 # ── BossIntentContext ─────────────────────────────────────────────────────────
 
+## Force the deterministic (LLM-off) path. This test used to SKIP whenever a backend was
+## reachable, so on any dev box running Ollama it silently never ran.
+var _llm_svc: Node = null
+var _llm_saved_enabled: bool = true
+
+
+func _llm_reachable() -> bool:
+	var svc: Node = get_node_or_null("/root/LLMService")
+	return svc != null and svc.has_method("is_available") and svc.is_available()
+
+
+func before_each() -> void:
+	_llm_svc = get_node_or_null("/root/LLMService")
+	if _llm_svc and "llm_enabled" in _llm_svc:
+		_llm_saved_enabled = _llm_svc.llm_enabled
+		_llm_svc.llm_enabled = false
+
+
+func after_each() -> void:
+	if _llm_svc and "llm_enabled" in _llm_svc:
+		_llm_svc.llm_enabled = _llm_saved_enabled
+
+
 func test_context_push_recent_caps_at_limit() -> void:
 	var ctx = BossIntentContextScript.new()
 	for i in range(BossIntentContextScript.RECENT_LIMIT + 5):
@@ -180,12 +203,10 @@ func test_pick_intent_async_falls_back_when_llm_unavailable() -> void:
 	# deterministic envelope — { intent_id, taunt_line, reason="" }.
 	var boss_dlg: Node = get_node_or_null("/root/BossDialogue")
 	if boss_dlg == null:
-		pending("BossDialogue autoload unavailable in GUT runtime")
+		fail_test("BossDialogue autoload missing — it is registered in project.godot, so this is a real break")
 		return
-	var svc: Node = get_node_or_null("/root/LLMService")
-	if svc != null and svc.has_method("is_available") and svc.is_available():
-		pending("LLMService backend is reachable (Ollama running) — test asserts the deterministic-only path")
-		return
+	assert_false(_llm_reachable(),
+		"CONTROL: before_each must force llm_enabled=false, else this asserts the LLM path instead")
 
 	var ctx = BossIntentContextScript.new()
 	ctx.boss_id = "chancellor_mordaine"
@@ -208,7 +229,7 @@ func test_pick_intent_async_handles_null_context() -> void:
 	# must not crash; it returns a clean empty envelope.
 	var boss_dlg: Node = get_node_or_null("/root/BossDialogue")
 	if boss_dlg == null:
-		pending("BossDialogue autoload unavailable in GUT runtime")
+		fail_test("BossDialogue autoload missing — it is registered in project.godot, so this is a real break")
 		return
 	var result: Dictionary = await boss_dlg.pick_intent_async(null)
 	assert_eq(str(result.get("intent_id", "missing")), "",
@@ -222,7 +243,7 @@ func test_boss_llm_strategy_flag_defaults_off() -> void:
 	# so vanilla bosses stay reproducible until the player flips it.
 	var gs: Node = get_node_or_null("/root/GameState")
 	if gs == null:
-		pending("GameState autoload unavailable in GUT runtime")
+		fail_test("GameState autoload missing — it is registered in project.godot, so this is a real break")
 		return
 	assert_true("boss_llm_strategy_enabled" in gs,
 		"GameState must expose boss_llm_strategy_enabled")
@@ -242,10 +263,10 @@ func test_should_use_llm_strategy_off_when_flag_off() -> void:
 	var bm: Node = get_node_or_null("/root/BattleManager")
 	var gs: Node = get_node_or_null("/root/GameState")
 	if bm == null or gs == null:
-		pending("BattleManager / GameState autoloads unavailable in GUT runtime")
+		fail_test("BattleManager/GameState autoload missing — both are registered, so this is a real break")
 		return
 	if not bm.has_method("_should_use_llm_strategy"):
-		pending("BattleManager._should_use_llm_strategy missing — Phase 1 not landed?")
+		fail_test("BattleManager._should_use_llm_strategy is missing — a rename here used to SKIP silently")
 		return
 	var prior: bool = gs.boss_llm_strategy_enabled
 	gs.boss_llm_strategy_enabled = false
@@ -262,10 +283,10 @@ func test_should_use_llm_strategy_on_for_w1_bosses() -> void:
 	var bm: Node = get_node_or_null("/root/BattleManager")
 	var gs: Node = get_node_or_null("/root/GameState")
 	if bm == null or gs == null:
-		pending("BattleManager / GameState autoloads unavailable in GUT runtime")
+		fail_test("BattleManager/GameState autoload missing — both are registered, so this is a real break")
 		return
 	if not bm.has_method("_should_use_llm_strategy"):
-		pending("BattleManager._should_use_llm_strategy missing — Phase 1 not landed?")
+		fail_test("BattleManager._should_use_llm_strategy is missing — a rename here used to SKIP silently")
 		return
 	var prior: bool = gs.boss_llm_strategy_enabled
 	gs.boss_llm_strategy_enabled = true
