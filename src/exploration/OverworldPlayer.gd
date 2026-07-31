@@ -291,10 +291,22 @@ const _FOOTSTEP_TERRAIN_MAP := {
 }
 
 
+## Map ids whose FLOOR differs from their battle terrain. Keyed by map, not terrain,
+## because _current_terrain also drives battle backgrounds, battle music and autogrind —
+## re-pointing tavern_interior from "village" would silently change all three.
+const _FOOTSTEP_MAP_OVERRIDE := {
+	"tavern_interior": "wood",
+}
+
+
 func _resolve_footstep_terrain() -> String:
 	var gl = get_node_or_null("/root/GameLoop")
 	if gl == null or not ("_current_terrain" in gl):
 		return "grass"
+	if "_current_map_id" in gl:
+		var override: String = str(_FOOTSTEP_MAP_OVERRIDE.get(str(gl._current_map_id), ""))
+		if override != "":
+			return override
 	var battle_terrain: String = str(gl._current_terrain)
 	return _FOOTSTEP_TERRAIN_MAP.get(battle_terrain, "grass")
 

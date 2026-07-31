@@ -1,11 +1,11 @@
 {
   "version": 3,
-  "description": "SFX manifest \u2014 maps sound keys to ElevenLabs-generated OGG files. Falls back to procedural if file missing.",
+  "description": "SFX manifest — maps sound keys to ElevenLabs-generated OGG files. Falls back to procedural if file missing.",
   "model_id": "eleven_text_to_sound_v2",
   "sfx": {
     "menu_move": {
       "file": "assets/audio/sfx/menu_move.ogg",
-      "prompt": "Very short low bubbly boing tick, quick wobbly digital dink with a silly wah bend, playful retro menu cursor \u2014 dampened highs, pitched up 50%",
+      "prompt": "Very short low bubbly boing tick, quick wobbly digital dink with a silly wah bend, playful retro menu cursor — dampened highs, pitched up 50%",
       "duration_seconds": 0.5,
       "prompt_influence": 0.95
     },
@@ -52,7 +52,7 @@
     "advance_queue": {
       "file": "assets/audio/sfx/advance_queue_arcade.ogg",
       "source": "lmms_freeboy_or_elevenlabs",
-      "prompt": "Arcade-machine credit-added jingle: a single coin dropping into a metal slot followed by a short ascending 3-note chiptune bleep (Game Boy / FreeBoy square wave, ~C5\u2192E5\u2192G5, 80ms per note) confirming the credit registered. Bright, satisfying, 'I just got another turn to spend'. ~0.45s total, mono, normalize to -14 LUFS. Replaces the prior tonal-gunshot prompt the user disliked.",
+      "prompt": "Arcade-machine credit-added jingle: a single coin dropping into a metal slot followed by a short ascending 3-note chiptune bleep (Game Boy / FreeBoy square wave, ~C5→E5→G5, 80ms per note) confirming the credit registered. Bright, satisfying, 'I just got another turn to spend'. ~0.45s total, mono, normalize to -14 LUFS. Replaces the prior tonal-gunshot prompt the user disliked.",
       "duration_seconds": 0.45,
       "prompt_influence": 0.0,
       "fallback_to": "menu_select"
@@ -60,7 +60,7 @@
     "advance_fighter_1": {
       "file": "assets/audio/sfx/advance_fighter_1.ogg",
       "source": "elevenlabs_foley",
-      "prompt": "Fighter advance press 1 (STEEL interpretation) \u2014 single confident blade tap + a touch of low body, present and clear. Essence: Resolve, the weapon readied and held. Ladder tier 1/3, ~-17.5 dB mean (loud floor; the drum-v1 tier-1 was too quiet in-game).",
+      "prompt": "Fighter advance press 1 (STEEL interpretation) — single confident blade tap + a touch of low body, present and clear. Essence: Resolve, the weapon readied and held. Ladder tier 1/3, ~-17.5 dB mean (loud floor; the drum-v1 tier-1 was too quiet in-game).",
       "duration_seconds": 0.45,
       "prompt_influence": 0.0,
       "fallback_to": "advance_queue"
@@ -68,7 +68,7 @@
     "advance_fighter_2": {
       "file": "assets/audio/sfx/advance_fighter_2.ogg",
       "source": "elevenlabs_foley",
-      "prompt": "Fighter advance press 2 (STEEL) \u2014 sword drawn (metallic slide into ring) + shield braced with weight + sub. Heavier, closer. Tier 2/3, ~-14.7 dB.",
+      "prompt": "Fighter advance press 2 (STEEL) — sword drawn (metallic slide into ring) + shield braced with weight + sub. Heavier, closer. Tier 2/3, ~-14.7 dB.",
       "duration_seconds": 0.75,
       "prompt_influence": 0.0,
       "fallback_to": "advance_queue"
@@ -76,7 +76,7 @@
     "advance_fighter_3": {
       "file": "assets/audio/sfx/advance_fighter_3.ogg",
       "source": "elevenlabs_foley",
-      "prompt": "Fighter advance press 3 full ham (STEEL) \u2014 full draw + a big ringing steel CLANG (sustained, spectrally verified 65% high-mid tail) over the shield thunk + sub punch. The ring is the payoff. Tier 3/3, ~-13.9 dB, PCM peak -0.8.",
+      "prompt": "Fighter advance press 3 full ham (STEEL) — full draw + a big ringing steel CLANG (sustained, spectrally verified 65% high-mid tail) over the shield thunk + sub punch. The ring is the payoff. Tier 3/3, ~-13.9 dB, PCM peak -0.8.",
       "duration_seconds": 1.03,
       "prompt_influence": 0.0,
       "fallback_to": "advance_queue"
@@ -84,7 +84,7 @@
     "advance_cleric_1": {
       "file": "assets/audio/sfx/advance_cleric_1.ogg",
       "source": "lmms_sf2_fluidr3",
-      "prompt": "Cleric advance press 1 \u2014 soft latch-click, a genuine PAUSE (the half-second before the prayer, cowir-story), then a single warm tubular-bell chime over an open church-organ fifth. Essence: Faith. Tier 1/3, ~-18 dB (present floor).",
+      "prompt": "Cleric advance press 1 — soft latch-click, a genuine PAUSE (the half-second before the prayer, cowir-story), then a single warm tubular-bell chime over an open church-organ fifth. Essence: Faith. Tier 1/3, ~-18 dB (present floor).",
       "duration_seconds": 1.68,
       "prompt_influence": 0.0,
       "fallback_to": "advance_queue"
@@ -92,7 +92,7 @@
     "advance_cleric_2": {
       "file": "assets/audio/sfx/advance_cleric_2.ogg",
       "source": "lmms_sf2_fluidr3",
-      "prompt": "Cleric advance press 2 \u2014 pause SHORTENS (she's surer), bell chime + B over a SUSPENDED organ chord (Csus, unresolved tension). Tier 2/3, ~-13 dB.",
+      "prompt": "Cleric advance press 2 — pause SHORTENS (she's surer), bell chime + B over a SUSPENDED organ chord (Csus, unresolved tension). Tier 2/3, ~-13 dB.",
       "duration_seconds": 1.83,
       "prompt_influence": 0.0,
       "fallback_to": "advance_queue"
@@ -100,7 +100,7 @@
     "advance_cleric_3": {
       "file": "assets/audio/sfx/advance_cleric_3.ogg",
       "source": "lmms_sf2_fluidr3",
-      "prompt": "Cleric advance press 3 full ham \u2014 tiny pause, then the suspension RESOLVES: full C-major chord (organ + choir Aahs) + a bright tubular-bell peal ringing out (spectral-verified C-E-G-C-E). 'Teaches wounds to be over with.' Tier 3/3, ~-12 dB.",
+      "prompt": "Cleric advance press 3 full ham — tiny pause, then the suspension RESOLVES: full C-major chord (organ + choir Aahs) + a bright tubular-bell peal ringing out (spectral-verified C-E-G-C-E). 'Teaches wounds to be over with.' Tier 3/3, ~-12 dB.",
       "duration_seconds": 2.45,
       "prompt_influence": 0.0,
       "fallback_to": "advance_queue"
@@ -108,7 +108,7 @@
     "advance_rogue_1": {
       "file": "assets/audio/sfx/advance_rogue_1.ogg",
       "source": "elevenlabs_foley",
-      "prompt": "Rogue advance press 1 \u2014 bright confident coin-flick + a tiny lockpick pre-tick. Essence: Edge, 'the click that was, more than anything, over.' The rogue's ladder INVERTS (loudest here). Tier 1/3, ~-14 dB.",
+      "prompt": "Rogue advance press 1 — bright confident coin-flick + a tiny lockpick pre-tick. Essence: Edge, 'the click that was, more than anything, over.' The rogue's ladder INVERTS (loudest here). Tier 1/3, ~-14 dB.",
       "duration_seconds": 0.5,
       "prompt_influence": 0.0,
       "fallback_to": "advance_queue"
@@ -116,7 +116,7 @@
     "advance_rogue_2": {
       "file": "assets/audio/sfx/advance_rogue_2.ogg",
       "source": "elevenlabs_foley",
-      "prompt": "Rogue advance press 2 \u2014 QUIETER: lockpick tick + a softer coin. The inversion recedes. Tier 2/3, ~-17 dB.",
+      "prompt": "Rogue advance press 2 — QUIETER: lockpick tick + a softer coin. The inversion recedes. Tier 2/3, ~-17 dB.",
       "duration_seconds": 0.55,
       "prompt_influence": 0.0,
       "fallback_to": "advance_queue"
@@ -124,7 +124,7 @@
     "advance_rogue_3": {
       "file": "assets/audio/sfx/advance_rogue_3.ogg",
       "source": "elevenlabs_foley",
-      "prompt": "Rogue advance press 3 'ham' = the QUIETEST \u2014 faint pick + a coin spinning down to rest (spectral-verified metallic settle). Drama as conspicuous quiet, 'the second thing in the room, heard.' Tier 3/3, ~-20 dB. NOTE for cowir-battle: lands best if the engine ducks other audio under it.",
+      "prompt": "Rogue advance press 3 'ham' = the QUIETEST — faint pick + a coin spinning down to rest (spectral-verified metallic settle). Drama as conspicuous quiet, 'the second thing in the room, heard.' Tier 3/3, ~-20 dB. NOTE for cowir-battle: lands best if the engine ducks other audio under it.",
       "duration_seconds": 1.2,
       "prompt_influence": 0.0,
       "fallback_to": "advance_queue"
@@ -132,7 +132,7 @@
     "advance_mage_1": {
       "file": "assets/audio/sfx/advance_mage_1.ogg",
       "source": "lmms_sf2_fluidr3",
-      "prompt": "Mage advance press 1 \u2014 single clean CORRECT celesta chime, precise, no error (he's sure). Essence: Logic / forensic mathematics. Arcane crystalline interpretation. Tier 1/3, ~-15 dB.",
+      "prompt": "Mage advance press 1 — single clean CORRECT celesta chime, precise, no error (he's sure). Essence: Logic / forensic mathematics. Arcane crystalline interpretation. Tier 1/3, ~-15 dB.",
       "duration_seconds": 1.0,
       "prompt_influence": 0.0,
       "fallback_to": "advance_queue"
@@ -140,7 +140,7 @@
     "advance_mage_2": {
       "file": "assets/audio/sfx/advance_mage_2.ogg",
       "source": "lmms_sf2_fluidr3",
-      "prompt": "Mage advance press 2 \u2014 a WRONG celesta chime (F#5), then the RIGHT one (G5) re-strikes over its shimmer: 'No\u2014wait. Then it's the other thing.' Revision without flinching; the wrong note stays hearable. Tier 2/3, ~-13 dB.",
+      "prompt": "Mage advance press 2 — a WRONG celesta chime (F#5), then the RIGHT one (G5) re-strikes over its shimmer: 'No—wait. Then it's the other thing.' Revision without flinching; the wrong note stays hearable. Tier 2/3, ~-13 dB.",
       "duration_seconds": 1.2,
       "prompt_influence": 0.0,
       "fallback_to": "advance_queue"
@@ -148,7 +148,7 @@
     "advance_mage_3": {
       "file": "assets/audio/sfx/advance_mage_3.ogg",
       "source": "lmms_sf2_fluidr3",
-      "prompt": "Mage advance press 3 full ham \u2014 an ascending cascade of celesta computations (C-E-G-B), the LAST one self-corrects (C#6 wrong -> D6 right) and rings out. Tier 3/3, ~-11 dB.",
+      "prompt": "Mage advance press 3 full ham — an ascending cascade of celesta computations (C-E-G-B), the LAST one self-corrects (C#6 wrong -> D6 right) and rings out. Tier 3/3, ~-11 dB.",
       "duration_seconds": 1.7,
       "prompt_influence": 0.0,
       "fallback_to": "advance_queue"
@@ -156,7 +156,7 @@
     "advance_bard_1": {
       "file": "assets/audio/sfx/advance_bard_1.ogg",
       "source": "lmms_sf2_fluidr3",
-      "prompt": "Bard advance press 1 \u2014 a soft breath (she LISTENS first), then a single warm lute note. Speaks once. Essence: Voice / the Unwritten Chord. Tier 1/3, ~-18 dB.",
+      "prompt": "Bard advance press 1 — a soft breath (she LISTENS first), then a single warm lute note. Speaks once. Essence: Voice / the Unwritten Chord. Tier 1/3, ~-18 dB.",
       "duration_seconds": 2.45,
       "prompt_influence": 0.0,
       "fallback_to": "advance_queue"
@@ -164,7 +164,7 @@
     "advance_bard_2": {
       "file": "assets/audio/sfx/advance_bard_2.ogg",
       "source": "lmms_sf2_fluidr3",
-      "prompt": "Bard advance press 2 \u2014 a lute flourish + a bright piano note SLICED off mid-decay (the piano_scythe cutting it short). Tier 2/3, ~-15 dB.",
+      "prompt": "Bard advance press 2 — a lute flourish + a bright piano note SLICED off mid-decay (the piano_scythe cutting it short). Tier 2/3, ~-15 dB.",
       "duration_seconds": 1.84,
       "prompt_influence": 0.0,
       "fallback_to": "advance_queue"
@@ -172,7 +172,7 @@
     "advance_bard_3": {
       "file": "assets/audio/sfx/advance_bard_3.ogg",
       "source": "lmms_sf2_fluidr3",
-      "prompt": "Bard advance press 3 full ham \u2014 a rising gesture into the UNWRITTEN CHORD: a lush Cmaj9(#11) that hangs, beautiful but refuses to resolve the way the ear predicts (un-hummable). Per cowir-story canon. Tier 3/3, ~-13 dB.",
+      "prompt": "Bard advance press 3 full ham — a rising gesture into the UNWRITTEN CHORD: a lush Cmaj9(#11) that hangs, beautiful but refuses to resolve the way the ear predicts (un-hummable). Per cowir-story canon. Tier 3/3, ~-13 dB.",
       "duration_seconds": 2.86,
       "prompt_influence": 0.0,
       "fallback_to": "advance_queue"
@@ -222,7 +222,7 @@
     "autogrind_stop_sting": {
       "file": "assets/audio/sfx/autogrind_stop_sting.ogg",
       "source": "lmms_freeboy",
-      "prompt": "Attention-grabbing autogrind-halt sting: staccato G4->C5->E5 chiptune build (FreeBoy CH1 hollow square + CH2 harmony) followed by sustained G5 chord hold with C5 pedal underneath. ~0.93s, -12 LUFS TP -1.0, urgent-but-not-alarming \u2014 'come look at your screen', not 'your house is on fire'. For tabbed-out user notification when autogrind interrupts.",
+      "prompt": "Attention-grabbing autogrind-halt sting: staccato G4->C5->E5 chiptune build (FreeBoy CH1 hollow square + CH2 harmony) followed by sustained G5 chord hold with C5 pedal underneath. ~0.93s, -12 LUFS TP -1.0, urgent-but-not-alarming — 'come look at your screen', not 'your house is on fire'. For tabbed-out user notification when autogrind interrupts.",
       "duration_seconds": 0.93,
       "prompt_influence": 0.0
     },
@@ -328,7 +328,7 @@
     "attack_hit_dagger_crit": {
       "file": "assets/audio/sfx/attack_hit_dagger_crit.ogg",
       "source": "ffmpeg_derive",
-      "prompt": "Dagger critical-hit \u2014 rebuilt cycle #9b (previous variant was 1.17x base, imperceptible per audit msg 2792). Existing attack_hit_dagger base + 4200/5600/6800Hz shimmer harmonics + snap noise + double-echo tail. Dur 0.89s (was 0.56s).",
+      "prompt": "Dagger critical-hit — rebuilt cycle #9b (previous variant was 1.17x base, imperceptible per audit msg 2792). Existing attack_hit_dagger base + 4200/5600/6800Hz shimmer harmonics + snap noise + double-echo tail. Dur 0.89s (was 0.56s).",
       "duration_seconds": 0.89,
       "prompt_influence": 0.0
     },
@@ -342,14 +342,14 @@
     "attack_hit_axe_crit": {
       "file": "assets/audio/sfx/attack_hit_axe_crit.ogg",
       "source": "ffmpeg_derive",
-      "prompt": "Axe critical-hit \u2014 rebuilt cycle #9b (previous variant was 1.58x base, borderline per audit msg 2792). Existing attack_hit_axe base + 220/110Hz body ring + 55Hz subharmonic + low-mid noise snap + double-echo tail. Dur 1.22s (was 0.83s).",
+      "prompt": "Axe critical-hit — rebuilt cycle #9b (previous variant was 1.58x base, borderline per audit msg 2792). Existing attack_hit_axe base + 220/110Hz body ring + 55Hz subharmonic + low-mid noise snap + double-echo tail. Dur 1.22s (was 0.83s).",
       "duration_seconds": 1.22,
       "prompt_influence": 0.0
     },
     "attack_hit_piano_scythe_crit": {
       "file": "assets/audio/sfx/attack_hit_piano_scythe_crit.ogg",
       "source": "ffmpeg_derive",
-      "prompt": "Piano-scythe crit = 3-layer dissonant chord (original + 18% up + 16% down) + sustained 3-tap reverb (120/240/380ms) \u2014 thicker discord, more notes",
+      "prompt": "Piano-scythe crit = 3-layer dissonant chord (original + 18% up + 16% down) + sustained 3-tap reverb (120/240/380ms) — thicker discord, more notes",
       "duration_seconds": 0.9,
       "prompt_influence": 0.0
     },
@@ -559,35 +559,35 @@
     },
     "ambient_forge": {
       "file": "assets/audio/sfx/ambient_forge.ogg",
-      "prompt": "Blacksmith forge room tone \u2014 steady coal fire crackle + soft rhythmic bellows huff, no hammering, loop-friendly fades, -22 LUFS. For BlacksmithInterior (tier-2 interiors, 1442e125).",
+      "prompt": "Blacksmith forge room tone — steady coal fire crackle + soft rhythmic bellows huff, no hammering, loop-friendly fades, -22 LUFS. For BlacksmithInterior (tier-2 interiors, 1442e125).",
       "duration_seconds": 6.0,
       "prompt_influence": 0.7,
       "loop": true
     },
     "ambient_chapel": {
       "file": "assets/audio/sfx/ambient_chapel.ogg",
-      "prompt": "Quiet stone chapel air \u2014 vast reverberant stillness with faint censer chain clinks, no voices/choir/organ, loop-friendly fades, -24 LUFS. For HarmoniaChapelInterior.",
+      "prompt": "Quiet stone chapel air — vast reverberant stillness with faint censer chain clinks, no voices/choir/organ, loop-friendly fades, -24 LUFS. For HarmoniaChapelInterior.",
       "duration_seconds": 6.0,
       "prompt_influence": 0.7,
       "loop": true
     },
     "ambient_library": {
       "file": "assets/audio/sfx/ambient_library.ogg",
-      "prompt": "Hushed library air \u2014 near-silence with occasional soft page turn + old wood shelf creak, loop-friendly fades, -24 LUFS. For HarmoniaLibraryInterior.",
+      "prompt": "Hushed library air — near-silence with occasional soft page turn + old wood shelf creak, loop-friendly fades, -24 LUFS. For HarmoniaLibraryInterior.",
       "duration_seconds": 6.0,
       "prompt_influence": 0.7,
       "loop": true
     },
     "ambient_scriptorium": {
       "file": "assets/audio/sfx/ambient_scriptorium.ogg",
-      "prompt": "Arcane archive room tone \u2014 library hush + faint low mystical hum + occasional quill-scratch/page-turn + latent-magic shimmer, loop-friendly fades, -24 LUFS. For the Scriptweaver's Guild interior in the Scriptura stub scene (where reality/game-constants get rewritten). Distinct from the mundane ambient_library.",
+      "prompt": "Arcane archive room tone — library hush + faint low mystical hum + occasional quill-scratch/page-turn + latent-magic shimmer, loop-friendly fades, -24 LUFS. For the Scriptweaver's Guild interior in the Scriptura stub scene (where reality/game-constants get rewritten). Distinct from the mundane ambient_library.",
       "duration_seconds": 6.0,
       "prompt_influence": 0.7,
       "loop": true
     },
     "ambient_office": {
       "file": "assets/audio/sfx/ambient_office.ogg",
-      "prompt": "Sterile institutional office room tone \u2014 fluorescent hum + low HVAC drone + faint distant muffled conversation/keyboard, EarthBound 'oppressive bureaucratic quiet', loop-friendly fades, mean ~-25 dB. For W2 (suburban) municipal interiors: the Community Enrichment Annex first, reusable across strip-mall offices / complaints dept.",
+      "prompt": "Sterile institutional office room tone — fluorescent hum + low HVAC drone + faint distant muffled conversation/keyboard, EarthBound 'oppressive bureaucratic quiet', loop-friendly fades, mean ~-25 dB. For W2 (suburban) municipal interiors: the Community Enrichment Annex first, reusable across strip-mall offices / complaints dept.",
       "duration_seconds": 6.0,
       "prompt_influence": 0.7,
       "loop": true
@@ -618,7 +618,7 @@
     },
     "paper_shuffle": {
       "file": "assets/audio/sfx/paper_shuffle.ogg",
-      "prompt": "Stack of papers being shuffled and squared on a desk, dry bureaucratic riffle. Cutscene one-shot (world1_mordaine_intro \u2014 the Chancellor's paperwork).",
+      "prompt": "Stack of papers being shuffled and squared on a desk, dry bureaucratic riffle. Cutscene one-shot (world1_mordaine_intro — the Chancellor's paperwork).",
       "duration_seconds": 0.8,
       "prompt_influence": 0.7
     },
@@ -649,7 +649,7 @@
     "bell_shift": {
       "file": "assets/audio/sfx/bell_shift.ogg",
       "source": "sox_synth",
-      "prompt": "Bell tone whose pitch bends downward mid-ring (660->560Hz + octave partial) \u2014 time distortion cue for Tempo. Cutscene one-shot (world3_tempo_intro).",
+      "prompt": "Bell tone whose pitch bends downward mid-ring (660->560Hz + octave partial) — time distortion cue for Tempo. Cutscene one-shot (world3_tempo_intro).",
       "duration_seconds": 1.0,
       "prompt_influence": 0.0
     },
@@ -684,14 +684,14 @@
     "data_hum": {
       "file": "assets/audio/sfx/data_hum.ogg",
       "source": "sox_synth",
-      "prompt": "Low digital drone swell \u2014 twin detuned 110/112Hz saws lowpassed 800Hz, slow beat-frequency throb, -22 LUFS ambient. Cutscene one-shot (world4_curator_intro).",
+      "prompt": "Low digital drone swell — twin detuned 110/112Hz saws lowpassed 800Hz, slow beat-frequency throb, -22 LUFS ambient. Cutscene one-shot (world4_curator_intro).",
       "duration_seconds": 1.5,
       "prompt_influence": 0.0
     },
     "digital_synthesize": {
       "file": "assets/audio/sfx/digital_synthesize.ogg",
       "source": "sox_synth",
-      "prompt": "Rising quantized 6-step square arpeggio (300->1200Hz) + sine settle tail \u2014 something materializing digitally. Cutscene one-shot (world4_warden_intro/defeat).",
+      "prompt": "Rising quantized 6-step square arpeggio (300->1200Hz) + sine settle tail — something materializing digitally. Cutscene one-shot (world4_warden_intro/defeat).",
       "duration_seconds": 0.94,
       "prompt_influence": 0.0
     },
@@ -705,35 +705,35 @@
     "sprint_start": {
       "file": "assets/audio/sfx/sprint_start.ogg",
       "source": "sox_synth",
-      "prompt": "Quick boot scuff tick + rising pink-noise whoosh \u2014 dash takeoff. Cutscene one-shot (world1_chapter7).",
+      "prompt": "Quick boot scuff tick + rising pink-noise whoosh — dash takeoff. Cutscene one-shot (world1_chapter7).",
       "duration_seconds": 0.35,
       "prompt_influence": 0.0
     },
     "acrobatic_leap": {
       "file": "assets/audio/sfx/acrobatic_leap.ogg",
       "source": "sox_synth",
-      "prompt": "Upward-sweeping airy whoosh (pitch-shifted pink noise, 500-5000Hz band) \u2014 vaulting leap. Cutscene one-shot (world1_chapter7).",
+      "prompt": "Upward-sweeping airy whoosh (pitch-shifted pink noise, 500-5000Hz band) — vaulting leap. Cutscene one-shot (world1_chapter7).",
       "duration_seconds": 0.46,
       "prompt_influence": 0.0
     },
     "magic_surge": {
       "file": "assets/audio/sfx/magic_surge.ogg",
       "source": "sox_synth",
-      "prompt": "Shimmering rising sine sweep (400->1200Hz) + sparkle layer (2.4->3.2kHz) + echo \u2014 magical power welling up. Cutscene one-shot (world1_mordaine_intro, world6_calibrant_intro/defeat).",
+      "prompt": "Shimmering rising sine sweep (400->1200Hz) + sparkle layer (2.4->3.2kHz) + echo — magical power welling up. Cutscene one-shot (world1_mordaine_intro, world6_calibrant_intro/defeat).",
       "duration_seconds": 0.99,
       "prompt_influence": 0.0
     },
     "boss_spawn": {
       "file": "assets/audio/sfx/boss_spawn.ogg",
       "source": "sox_synth",
-      "prompt": "Reverse brown-noise swell into a 65Hz sine boom \u2014 ominous materialization, -15 LUFS. Cutscene one-shot (world4_chapter3). Shorter/rawer than boss_intro_stinger.",
+      "prompt": "Reverse brown-noise swell into a 65Hz sine boom — ominous materialization, -15 LUFS. Cutscene one-shot (world4_chapter3). Shorter/rawer than boss_intro_stinger.",
       "duration_seconds": 1.05,
       "prompt_influence": 0.0
     },
     "calibrant_true_name": {
       "file": "assets/audio/sfx/calibrant_true_name.ogg",
       "source": "sox_synth",
-      "prompt": "Reality-bending reveal: detuned A-minor chord (220/262/331Hz \u2014 fifth 2Hz sharp) under a REVERSED descending shimmer + double echo. The Calibrant's true name spoken. Cutscene one-shot (world6_orrery).",
+      "prompt": "Reality-bending reveal: detuned A-minor chord (220/262/331Hz — fifth 2Hz sharp) under a REVERSED descending shimmer + double echo. The Calibrant's true name spoken. Cutscene one-shot (world6_orrery).",
       "duration_seconds": 1.82,
       "prompt_influence": 0.0
     },
@@ -777,7 +777,7 @@
     "quest_complete": {
       "file": "assets/audio/sfx/quest_complete.ogg",
       "source": "sox_synth",
-      "prompt": "G-major heroic-motif quest completion jingle \u2014 G4-D5-G5-B5 ascending triangle melody + sustained D5+G5+B5 triad chord tail + double echo. Deliberately in G major to differentiate from the C-major level_up (both fire in the same pipeline; branch on 'complete' state).",
+      "prompt": "G-major heroic-motif quest completion jingle — G4-D5-G5-B5 ascending triangle melody + sustained D5+G5+B5 triad chord tail + double echo. Deliberately in G major to differentiate from the C-major level_up (both fire in the same pipeline; branch on 'complete' state).",
       "duration_seconds": 1.53,
       "prompt_influence": 0.0
     },
@@ -795,7 +795,7 @@
     },
     "chicken_caught": {
       "file": "assets/audio/sfx/chicken_caught.ogg",
-      "prompt": "Startled chicken squawk-flutter (comedic bwak + wing flap), a hen being scooped up. For QuestChicken._catch \u2014 more thematic than the reused secret_found sting for the 7-chicken roundup puzzle.",
+      "prompt": "Startled chicken squawk-flutter (comedic bwak + wing flap), a hen being scooped up. For QuestChicken._catch — more thematic than the reused secret_found sting for the 7-chicken roundup puzzle.",
       "duration_seconds": 0.6,
       "prompt_influence": 0.7
     },
@@ -862,70 +862,70 @@
     "spotlight_fighter_signature": {
       "file": "assets/audio/sfx/spotlight_fighter_signature.ogg",
       "source": "elevenlabs",
-      "prompt": "Skeleton-knight signature hit for fighter_skeleton_knight \u2014 dry rattling bones layered with a deep resonant iron honor-bell clang, chivalric weight, dry and impactful, quick decay.",
+      "prompt": "Skeleton-knight signature hit for fighter_skeleton_knight — dry rattling bones layered with a deep resonant iron honor-bell clang, chivalric weight, dry and impactful, quick decay.",
       "duration_seconds": 0.8,
       "prompt_influence": 0.75
     },
     "spotlight_fighter_victory": {
       "file": "assets/audio/sfx/spotlight_fighter_victory.ogg",
       "source": "sox_synth",
-      "prompt": "Fighter spotlight victory \u2014 a struck iron bell in G (196Hz fundamental + 392Hz + 784Hz partials) with a soft leading clank transient and long resonant decay + double echo. Respectful, honor-fight resolution. -16 LUFS.",
+      "prompt": "Fighter spotlight victory — a struck iron bell in G (196Hz fundamental + 392Hz + 784Hz partials) with a soft leading clank transient and long resonant decay + double echo. Respectful, honor-fight resolution. -16 LUFS.",
       "duration_seconds": 1.5,
       "prompt_influence": 0.0
     },
     "spotlight_cleric_signature": {
       "file": "assets/audio/sfx/spotlight_cleric_signature.ogg",
       "source": "elevenlabs",
-      "prompt": "Cleric-outlast miniboss signature attack \u2014 heavy sustained pressure hit, deep dull weighted thud with a low sub-frequency press underneath, sense of relentless downward force, no bright highs, no metallic ring. For cleric_survive_target's non-DPS outlast duel.",
+      "prompt": "Cleric-outlast miniboss signature attack — heavy sustained pressure hit, deep dull weighted thud with a low sub-frequency press underneath, sense of relentless downward force, no bright highs, no metallic ring. For cleric_survive_target's non-DPS outlast duel.",
       "duration_seconds": 0.7,
       "prompt_influence": 0.75
     },
     "spotlight_cleric_victory": {
       "file": "assets/audio/sfx/spotlight_cleric_victory.ogg",
       "source": "sox_synth",
-      "prompt": "Cleric outlast victory \u2014 peaceful F-major grace cadence (F-A-C-F ascending triangle arp -> sustained F+A+C+F octave chord) + echo. Grace-not-violence essence-seed payoff. Per cowir-ai msg 1956: non-HP victory cue. -16 LUFS.",
+      "prompt": "Cleric outlast victory — peaceful F-major grace cadence (F-A-C-F ascending triangle arp -> sustained F+A+C+F octave chord) + echo. Grace-not-violence essence-seed payoff. Per cowir-ai msg 1956: non-HP victory cue. -16 LUFS.",
       "duration_seconds": 1.3,
       "prompt_influence": 0.0
     },
     "spotlight_rogue_signature": {
       "file": "assets/audio/sfx/spotlight_rogue_signature.ogg",
       "source": "elevenlabs",
-      "prompt": "Sharp metallic ward-snap on parry for rogue_lockward \u2014 quick crisp lock-mechanism click layered with a bright short metal spring release, cold and mechanical, treasure-guardian precision, very short and snappy.",
+      "prompt": "Sharp metallic ward-snap on parry for rogue_lockward — quick crisp lock-mechanism click layered with a bright short metal spring release, cold and mechanical, treasure-guardian precision, very short and snappy.",
       "duration_seconds": 0.5,
       "prompt_influence": 0.75
     },
     "spotlight_rogue_victory": {
       "file": "assets/audio/sfx/spotlight_rogue_victory.ogg",
       "source": "sox_synth",
-      "prompt": "Rogue lockward victory \u2014 two quick metallic lock-clicks (square wave, lowpass 1400) followed by a cheeky ascending E5-G5-B5 triangle-wave 3-note chime flourish. 'Got it' feel. -16 LUFS.",
+      "prompt": "Rogue lockward victory — two quick metallic lock-clicks (square wave, lowpass 1400) followed by a cheeky ascending E5-G5-B5 triangle-wave 3-note chime flourish. 'Got it' feel. -16 LUFS.",
       "duration_seconds": 0.53,
       "prompt_influence": 0.0
     },
     "spotlight_mage_signature": {
       "file": "assets/audio/sfx/spotlight_mage_signature.ogg",
       "source": "elevenlabs",
-      "prompt": "Crystalline prismatic shatter for mage_prismatic_construct \u2014 glass and quartz shards breaking apart with a shimmering high-frequency cascade, ethereal magical break, sparkling harmonic scatter, no bass. Fires when the construct's elemental phase rotates.",
+      "prompt": "Crystalline prismatic shatter for mage_prismatic_construct — glass and quartz shards breaking apart with a shimmering high-frequency cascade, ethereal magical break, sparkling harmonic scatter, no bass. Fires when the construct's elemental phase rotates.",
       "duration_seconds": 0.9,
       "prompt_influence": 0.75
     },
     "spotlight_mage_victory": {
       "file": "assets/audio/sfx/spotlight_mage_victory.ogg",
       "source": "sox_synth",
-      "prompt": "Mage prismatic-construct victory \u2014 descending high-frequency chime cascade (G6-E6-C6-A5-G5 sine notes) + long shimmer tail at 2093Hz + 3-tap echo. Weakness-exploited essence-seed payoff. -16 LUFS.",
+      "prompt": "Mage prismatic-construct victory — descending high-frequency chime cascade (G6-E6-C6-A5-G5 sine notes) + long shimmer tail at 2093Hz + 3-tap echo. Weakness-exploited essence-seed payoff. -16 LUFS.",
       "duration_seconds": 1.13,
       "prompt_influence": 0.0
     },
     "spotlight_bard_signature": {
       "file": "assets/audio/sfx/spotlight_bard_signature.ogg",
       "source": "elevenlabs",
-      "prompt": "Dry courtly rebuff \u2014 a short dismissive vocal-adjacent 'tsk' or 'hmph' texture layered with a quick fan-snap and a single closed-lipped negative tone, sharp and unamused, no music, no sustain, courtly refusal. For bard_hostile_courtier's talk-down duel.",
+      "prompt": "Dry courtly rebuff — a short dismissive vocal-adjacent 'tsk' or 'hmph' texture layered with a quick fan-snap and a single closed-lipped negative tone, sharp and unamused, no music, no sustain, courtly refusal. For bard_hostile_courtier's talk-down duel.",
       "duration_seconds": 0.6,
       "prompt_influence": 0.75
     },
     "spotlight_bard_victory": {
       "file": "assets/audio/sfx/spotlight_bard_victory.ogg",
       "source": "sox_synth",
-      "prompt": "Bard talked-down victory \u2014 quiet B4->A4 suspension-to-resolution triangle-wave melody over a warm F3 pedal + soft echo. Listen-first essence-seed payoff. Per cowir-ai msg 1956: non-HP victory cue. -18 LUFS (quieter than combat victories \u2014 the peace is the reward).",
+      "prompt": "Bard talked-down victory — quiet B4->A4 suspension-to-resolution triangle-wave melody over a warm F3 pedal + soft echo. Listen-first essence-seed payoff. Per cowir-ai msg 1956: non-HP victory cue. -18 LUFS (quieter than combat victories — the peace is the reward).",
       "duration_seconds": 1.03,
       "prompt_influence": 0.0
     },
@@ -1052,21 +1052,21 @@
     "status_doom": {
       "file": "assets/audio/sfx/status_doom.ogg",
       "source": "sox_synth",
-      "prompt": "Ominous low bell toll (A2 110Hz + octave partial) over a descending sub-bass dread glide + long echo \u2014 the countdown-to-death. For the doom status (final_death/permakill_strike/death_sentence). The scariest status; player needs a clear dread cue. 1.48s, ~-14 LUFS.",
+      "prompt": "Ominous low bell toll (A2 110Hz + octave partial) over a descending sub-bass dread glide + long echo — the countdown-to-death. For the doom status (final_death/permakill_strike/death_sentence). The scariest status; player needs a clear dread cue. 1.48s, ~-14 LUFS.",
       "duration_seconds": 1.48,
       "prompt_influence": 0.0
     },
     "status_curse": {
       "file": "assets/audio/sfx/status_curse.ogg",
       "source": "sox_synth",
-      "prompt": "Dissonant low minor-second grind (D3 146Hz vs D#3 155Hz beating) under an eerie descending shimmer + echo \u2014 unsettling hex. For the curse status (cursed_strike). 0.83s, ~-14 LUFS.",
+      "prompt": "Dissonant low minor-second grind (D3 146Hz vs D#3 155Hz beating) under an eerie descending shimmer + echo — unsettling hex. For the curse status (cursed_strike). 0.83s, ~-14 LUFS.",
       "duration_seconds": 0.83,
       "prompt_influence": 0.0
     },
     "status_silence": {
       "file": "assets/audio/sfx/status_silence.ogg",
       "source": "sox_synth",
-      "prompt": "A choked tone swept downward + pink noise, whole thing lowpassed so it 'closes off' into muffled quiet \u2014 the sound of ability access being cut. For the ability_silence status (null_field). 0.35s, ~-14 LUFS.",
+      "prompt": "A choked tone swept downward + pink noise, whole thing lowpassed so it 'closes off' into muffled quiet — the sound of ability access being cut. For the ability_silence status (null_field). 0.35s, ~-14 LUFS.",
       "duration_seconds": 0.35,
       "prompt_influence": 0.0
     },
@@ -1163,35 +1163,35 @@
     "ability_constant_modification": {
       "file": "assets/audio/sfx/ability_constant_modification.ogg",
       "source": "sox_synth",
-      "prompt": "Scriptweaver Modify Constant \u2014 glitchy pitch-bending square sweep + two data blips + a 'value set' confirm chime. The sound of editing a game-rule dial. For the now-real meta ability (v3.33.77); replaces the generic ability_physical fallback.",
+      "prompt": "Scriptweaver Modify Constant — glitchy pitch-bending square sweep + two data blips + a 'value set' confirm chime. The sound of editing a game-rule dial. For the now-real meta ability (v3.33.77); replaces the generic ability_physical fallback.",
       "duration_seconds": 0.68,
       "prompt_influence": 0.0
     },
     "ability_analyze_code": {
       "file": "assets/audio/sfx/ability_analyze_code.ogg",
       "source": "sox_synth",
-      "prompt": "Scriptweaver Analyze Code \u2014 ascending terminal-scan square-wave readout + a done chime. Reading the execution order. Meta ability cast cue.",
+      "prompt": "Scriptweaver Analyze Code — ascending terminal-scan square-wave readout + a done chime. Reading the execution order. Meta ability cast cue.",
       "duration_seconds": 0.44,
       "prompt_influence": 0.0
     },
     "ability_permakill": {
       "file": "assets/audio/sfx/ability_permakill.ogg",
       "source": "sox_synth",
-      "prompt": "Necromancer permakill \u2014 a descending sine into the void + a swallowing brown-noise rumble that fades to nothing + a final low toll. The species exterminated, 'the area is quiet, nothing left remembers how to attack'. Meta ability; unmaking, not violence.",
+      "prompt": "Necromancer permakill — a descending sine into the void + a swallowing brown-noise rumble that fades to nothing + a final low toll. The species exterminated, 'the area is quiet, nothing left remembers how to attack'. Meta ability; unmaking, not violence.",
       "duration_seconds": 1.15,
       "prompt_influence": 0.0
     },
     "ability_mind_swap": {
       "file": "assets/audio/sfx/ability_mind_swap.ogg",
       "source": "sox_synth",
-      "prompt": "Bossbinder mind-swap \u2014 a disorienting rising sine warp with a pulsator tremolo + echo. Possession/control seizing the enemy. Meta ability cast cue.",
+      "prompt": "Bossbinder mind-swap — a disorienting rising sine warp with a pulsator tremolo + echo. Possession/control seizing the enemy. Meta ability cast cue.",
       "duration_seconds": 0.61,
       "prompt_influence": 0.0
     },
     "ability_bypass_puzzle": {
       "file": "assets/audio/sfx/ability_bypass_puzzle.ogg",
       "source": "sox_synth",
-      "prompt": "Skiptrotter Bypass Puzzle \u2014 a quick rising glitch-skip whoosh + a data glitch tick. Warping past content. Meta ability cast cue.",
+      "prompt": "Skiptrotter Bypass Puzzle — a quick rising glitch-skip whoosh + a data glitch tick. Warping past content. Meta ability cast cue.",
       "duration_seconds": 0.34,
       "prompt_influence": 0.0
     },
@@ -1393,43 +1393,43 @@
     },
     "w6_ability_fire": {
       "file": "assets/audio/sfx/w6_ability_fire.ogg",
-      "prompt": "Pure rising tone \u2014 concept of heat",
+      "prompt": "Pure rising tone — concept of heat",
       "duration_seconds": 1.5,
       "prompt_influence": 0.8
     },
     "w6_ability_ice": {
       "file": "assets/audio/sfx/w6_ability_ice.ogg",
-      "prompt": "Pure descending tone \u2014 concept of cold",
+      "prompt": "Pure descending tone — concept of cold",
       "duration_seconds": 1.5,
       "prompt_influence": 0.8
     },
     "w6_ability_lightning": {
       "file": "assets/audio/sfx/w6_ability_lightning.ogg",
-      "prompt": "Sharp pure tone spike \u2014 concept of sudden energy",
+      "prompt": "Sharp pure tone spike — concept of sudden energy",
       "duration_seconds": 1.5,
       "prompt_influence": 0.8
     },
     "w6_ability_holy": {
       "file": "assets/audio/sfx/w6_ability_holy.ogg",
-      "prompt": "Harmonic chord resolving to unity \u2014 abstract truth",
+      "prompt": "Harmonic chord resolving to unity — abstract truth",
       "duration_seconds": 1.5,
       "prompt_influence": 0.8
     },
     "w6_ability_dark": {
       "file": "assets/audio/sfx/w6_ability_dark.ogg",
-      "prompt": "Low tone fading to silence \u2014 concept of absence",
+      "prompt": "Low tone fading to silence — concept of absence",
       "duration_seconds": 1.5,
       "prompt_influence": 0.8
     },
     "w6_ability_heal": {
       "file": "assets/audio/sfx/w6_ability_heal.ogg",
-      "prompt": "Two tones converging to unison \u2014 becoming whole",
+      "prompt": "Two tones converging to unison — becoming whole",
       "duration_seconds": 1.5,
       "prompt_influence": 0.8
     },
     "w6_ability_physical": {
       "file": "assets/audio/sfx/w6_ability_physical.ogg",
-      "prompt": "Single percussive sine ping \u2014 concept of force",
+      "prompt": "Single percussive sine ping — concept of force",
       "duration_seconds": 1.5,
       "prompt_influence": 0.8
     },
@@ -1562,7 +1562,7 @@
     "menu_error": {
       "file": "assets/audio/sfx/menu_error.ogg",
       "source": "sox_synth",
-      "prompt": "Two-tone descending error blip (A4->E4 square waves lowpassed 1000-1200Hz, 85ms) attenuated -12dB. Soft negative feedback for invalid actions \u2014 distinct from menu_cancel (deliberate back-out).",
+      "prompt": "Two-tone descending error blip (A4->E4 square waves lowpassed 1000-1200Hz, 85ms) attenuated -12dB. Soft negative feedback for invalid actions — distinct from menu_cancel (deliberate back-out).",
       "duration_seconds": 0.085,
       "prompt_influence": 0.0,
       "fallback_to": "menu_cancel"
@@ -1570,34 +1570,34 @@
     "thump_light": {
       "file": "assets/audio/sfx/thump_light.ogg",
       "source": "sox_synth",
-      "prompt": "Thin sub-bass contact-punch \u2014 140Hz sine + noise click, 40ms. Layers UNDER attack_hit_dagger/staff for contact-frame weight (fable-pass impact emphasis, msg 2659).",
+      "prompt": "Thin sub-bass contact-punch — 140Hz sine + noise click, 40ms. Layers UNDER attack_hit_dagger/staff for contact-frame weight (fable-pass impact emphasis, msg 2659).",
       "duration_seconds": 0.04,
       "prompt_influence": 0.0
     },
     "thump_med": {
       "file": "assets/audio/sfx/thump_med.ogg",
       "source": "sox_synth",
-      "prompt": "Round mid-sub contact-punch \u2014 100Hz sine + 55Hz sub + noise click, 60ms. Layers UNDER attack_hit_sword.",
+      "prompt": "Round mid-sub contact-punch — 100Hz sine + 55Hz sub + noise click, 60ms. Layers UNDER attack_hit_sword.",
       "duration_seconds": 0.06,
       "prompt_influence": 0.0
     },
     "thump_heavy": {
       "file": "assets/audio/sfx/thump_heavy.ogg",
       "source": "sox_synth",
-      "prompt": "Deep bass contact-punch with weight \u2014 75Hz + 42Hz sub + 200Hz body ring + noise click, 90ms. Layers UNDER attack_hit_axe.",
+      "prompt": "Deep bass contact-punch with weight — 75Hz + 42Hz sub + 200Hz body ring + noise click, 90ms. Layers UNDER attack_hit_axe.",
       "duration_seconds": 0.09,
       "prompt_influence": 0.0
     },
     "thump_crit": {
       "file": "assets/audio/sfx/thump_crit.ogg",
       "source": "sox_synth",
-      "prompt": "Pitched sub-sweep contact-punch \u2014 60->100Hz sine sweep + 130Hz body + square brass hit + noise click + brief echo tail, 135ms. Layers UNDER any *_crit attack for the big crit moment.",
+      "prompt": "Pitched sub-sweep contact-punch — 60->100Hz sine sweep + 130Hz body + square brass hit + noise click + brief echo tail, 135ms. Layers UNDER any *_crit attack for the big crit moment.",
       "duration_seconds": 0.135,
       "prompt_influence": 0.0
     },
     "night_crickets_wind": {
       "file": "assets/audio/sfx/night_crickets_wind.ogg",
-      "prompt": "Soft nighttime forest ambience \u2014 subtle wind rustling through leaves, distant cricket chirps in a natural rhythm, occasional very soft owl hoot far away. Low-level ambient bed suitable for seamless looping. No sudden transients, no bass rumble, no percussive elements. Consistent quiet level throughout the entire duration.",
+      "prompt": "Soft nighttime forest ambience — subtle wind rustling through leaves, distant cricket chirps in a natural rhythm, occasional very soft owl hoot far away. Low-level ambient bed suitable for seamless looping. No sudden transients, no bass rumble, no percussive elements. Consistent quiet level throughout the entire duration.",
       "duration_seconds": 12.0,
       "prompt_influence": 0.4,
       "loop": true
@@ -1605,14 +1605,14 @@
     "round_ap_gain": {
       "file": "assets/audio/sfx/round_ap_gain.ogg",
       "source": "sox_synth",
-      "prompt": "Round-boundary AP+1 chime \u2014 coin-metallic click (bandpass noise + 3200/2400Hz sine ping) into ascending arpeggio C5-E5-G5-C6 (triangle+square) with a shimmer tail bending 1047->1300Hz. Bright, celebratory, ~370ms. Per struktured msg 2686: 'coin-meets-charge-up' for BattleScene._show_round_banner (replaces placeholder menu_select at fold time). NO fallback_to \u2014 double-fire prevention per thump-family convention.",
+      "prompt": "Round-boundary AP+1 chime — coin-metallic click (bandpass noise + 3200/2400Hz sine ping) into ascending arpeggio C5-E5-G5-C6 (triangle+square) with a shimmer tail bending 1047->1300Hz. Bright, celebratory, ~370ms. Per struktured msg 2686: 'coin-meets-charge-up' for BattleScene._show_round_banner (replaces placeholder menu_select at fold time). NO fallback_to — double-fire prevention per thump-family convention.",
       "duration_seconds": 0.37,
       "prompt_influence": 0.0
     },
     "purchase_complete": {
       "file": "assets/audio/sfx/purchase_complete.ogg",
       "source": "sox_synth",
-      "prompt": "Purchase-confirmation ka-ching for ShopScene (struktured msg 2774) \u2014 coins clinking + warm register-bell confirm. 4 metallic coin pings at 2400/3200/2800/3600 Hz staggered 18-68ms, then a warm 320 Hz confirm tone + 640 Hz octave harm + soft 200 Hz drawer-thump, gentle echo tail. ~410ms. Deliberately distinct from item_obtain (that's the celebration chord for chests/rewards; this is COMMERCE). NO fallback_to \u2014 cowir-overworld consumes with a manifest-has guard.",
+      "prompt": "Purchase-confirmation ka-ching for ShopScene (struktured msg 2774) — coins clinking + warm register-bell confirm. 4 metallic coin pings at 2400/3200/2800/3600 Hz staggered 18-68ms, then a warm 320 Hz confirm tone + 640 Hz octave harm + soft 200 Hz drawer-thump, gentle echo tail. ~410ms. Deliberately distinct from item_obtain (that's the celebration chord for chests/rewards; this is COMMERCE). NO fallback_to — cowir-overworld consumes with a manifest-has guard.",
       "duration_seconds": 0.41,
       "prompt_influence": 0.0
     },
@@ -1654,14 +1654,14 @@
     "weakness_flash": {
       "file": "assets/audio/sfx/weakness_flash.ogg",
       "source": "sox_synth",
-      "prompt": "Weakness-hit stinger \u2014 fires when elemental_mod > 1.0 (msg 2789 axis D + cowir-battle msg 2787 visual pair). Bright ascending 1200->2400Hz sweep + 3600Hz top + shatter-noise bandpass (5000/3000Hz) + high click (bandpass 6500/3500Hz) + gentle echo. Punches through the mix. ~235ms.",
+      "prompt": "Weakness-hit stinger — fires when elemental_mod > 1.0 (msg 2789 axis D + cowir-battle msg 2787 visual pair). Bright ascending 1200->2400Hz sweep + 3600Hz top + shatter-noise bandpass (5000/3000Hz) + high click (bandpass 6500/3500Hz) + gentle echo. Punches through the mix. ~235ms.",
       "duration_seconds": 0.235,
       "prompt_influence": 0.0
     },
     "status_burn": {
       "file": "assets/audio/sfx/status_burn.ogg",
       "source": "sox_synth",
-      "prompt": "Burn-status application cue (cycle #10 pre-stage \u2014 beats cowir-battle's ratchet msg 2797 before burn_chance lands on any weapon). Sustained pinknoise sizzle (bandpass 3000/2000Hz) + 200->350Hz rising heat body + 4 fire pops staggered 120/310/490/640ms. Threatening, sustained. Distinct from strike_fire (that's 140ms punchy; this is 800ms afflicted-by-fire). ~800ms.",
+      "prompt": "Burn-status application cue (cycle #10 pre-stage — beats cowir-battle's ratchet msg 2797 before burn_chance lands on any weapon). Sustained pinknoise sizzle (bandpass 3000/2000Hz) + 200->350Hz rising heat body + 4 fire pops staggered 120/310/490/640ms. Threatening, sustained. Distinct from strike_fire (that's 140ms punchy; this is 800ms afflicted-by-fire). ~800ms.",
       "duration_seconds": 0.8,
       "prompt_influence": 0.0
     },
@@ -1674,28 +1674,28 @@
     },
     "w4_enemy_death": {
       "file": "assets/audio/sfx/w4_enemy_death.ogg",
-      "prompt": "W4 industrial enemy-death variant. RENAMED from enemy_death_industrial (cycle #13): the world-variant scheme is wN_<base>, so the suffix shape could never be found by _get_world_sfx_prefix() \u2014 this sound had never played once since authoring. Paired with making play_battle() world-prefix-aware, same as play_ability already was.",
+      "prompt": "W4 industrial enemy-death variant. RENAMED from enemy_death_industrial (cycle #13): the world-variant scheme is wN_<base>, so the suffix shape could never be found by _get_world_sfx_prefix() — this sound had never played once since authoring. Paired with making play_battle() world-prefix-aware, same as play_ability already was.",
       "duration_seconds": 1.0,
       "prompt_influence": 0.4
     },
     "windup_swing_med": {
       "file": "assets/audio/sfx/windup_swing_med.ogg",
       "source": "sox_synth",
-      "prompt": "PROTOTYPE for struktured's verdict (cowir-main msg 2914) \u2014 medium/sword-weight melee windup. Fills the 0.12s EASE_IN approach tween that currently plays SILENT before hitstop (cowir-battle msg 2910), so it adds anticipation without adding latency. Filtered pinknoise air-swell (bandpass 1200/900) + 180->300Hz accelerating-mass tone + faint 2200->3400Hz steel-edge shimmer. Deliberately 2.9 dB UNDER attack_hit_sword so anticipation stays subordinate to impact. INERT \u2014 no consumer until struktured rules; if he greenlights, light/heavy variants are trivial follow-ons.",
+      "prompt": "PROTOTYPE for struktured's verdict (cowir-main msg 2914) — medium/sword-weight melee windup. Fills the 0.12s EASE_IN approach tween that currently plays SILENT before hitstop (cowir-battle msg 2910), so it adds anticipation without adding latency. Filtered pinknoise air-swell (bandpass 1200/900) + 180->300Hz accelerating-mass tone + faint 2200->3400Hz steel-edge shimmer. Deliberately 2.9 dB UNDER attack_hit_sword so anticipation stays subordinate to impact. INERT — no consumer until struktured rules; if he greenlights, light/heavy variants are trivial follow-ons.",
       "duration_seconds": 0.12,
       "prompt_influence": 0.0
     },
     "inn_rest": {
       "file": "assets/audio/sfx/inn_rest.ogg",
       "source": "sox_synth",
-      "prompt": "Inn rest \u2014 'sleep through the night and wake restored' (cowir-main GO, msg 2950). Replaces generic `heal` at VillageInn, which is 83% brilliance at 10kHz and reads as clinical magic sparkle rather than relief. Structure: soft 165Hz settle (lying down) -> C3+G3 open-fifth night pad with lowpassed air (deliberately UNRESOLVED) -> rising E4-G4-C5 waking figure that resolves the fifth to the octave, faint 1046Hz morning shimmer on the last note. Warm triangles, no harsh transients. 1.38s, inside VillageInn's 1.5s pre-close window.",
+      "prompt": "Inn rest — 'sleep through the night and wake restored' (cowir-main GO, msg 2950). Replaces generic `heal` at VillageInn, which is 83% brilliance at 10kHz and reads as clinical magic sparkle rather than relief. Structure: soft 165Hz settle (lying down) -> C3+G3 open-fifth night pad with lowpassed air (deliberately UNRESOLVED) -> rising E4-G4-C5 waking figure that resolves the fifth to the octave, faint 1046Hz morning shimmer on the last note. Warm triangles, no harsh transients. 1.38s, inside VillageInn's 1.5s pre-close window.",
       "duration_seconds": 1.38,
       "prompt_influence": 0.0
     },
     "status_stun": {
       "file": "assets/audio/sfx/status_stun.ogg",
       "source": "sox_synth",
-      "prompt": "Stun-status application. 18 shipped abilities inflict `stun` (shield_bash, ground_pound, crystal_slam, horn_charge, ...) and it had NO key \u2014 all 18 fell to play_status's generic descending blip. Concussive by design and deliberately unlike status_paralyze (which is an electric zap, 70% brilliance @8.5kHz): 90Hz thud + 150Hz body + bandpassed crack, then an 880/1320Hz tremolo ring that decays \u2014 the 'seeing stars' daze. ~640ms.",
+      "prompt": "Stun-status application. 18 shipped abilities inflict `stun` (shield_bash, ground_pound, crystal_slam, horn_charge, ...) and it had NO key — all 18 fell to play_status's generic descending blip. Concussive by design and deliberately unlike status_paralyze (which is an electric zap, 70% brilliance @8.5kHz): 90Hz thud + 150Hz body + bandpassed crack, then an 880/1320Hz tremolo ring that decays — the 'seeing stars' daze. ~640ms.",
       "duration_seconds": 0.64,
       "prompt_influence": 0.0
     },
@@ -1709,23 +1709,89 @@
     "duel_answer_dodge": {
       "file": "assets/audio/sfx/duel_answer_dodge.ogg",
       "source": "sox_synth",
-      "prompt": "W6 Arbiter-duel answer cue (cowir-battle msg 3223/3226). Canon: each attack is a QUESTION; dodge is evasion, block is deflection, only a committed strike is an answer. The three share one tonal centre (C) so they read as answers to the same question, and commitment is audible as a 4dB ladder. No damage exists in this encounter, so these carry the entire action-feedback surface. DODGE: bare G5 fifth, high and thin, 0.06% bass \u2014 rootless and unresolved. mean -19.9.",
+      "prompt": "W6 Arbiter-duel answer cue (cowir-battle msg 3223/3226). Canon: each attack is a QUESTION; dodge is evasion, block is deflection, only a committed strike is an answer. The three share one tonal centre (C) so they read as answers to the same question, and commitment is audible as a 4dB ladder. No damage exists in this encounter, so these carry the entire action-feedback surface. DODGE: bare G5 fifth, high and thin, 0.06% bass — rootless and unresolved. mean -19.9.",
       "duration_seconds": 0.22,
       "prompt_influence": 0.0
     },
     "duel_answer_block": {
       "file": "assets/audio/sfx/duel_answer_block.ogg",
       "source": "sox_synth",
-      "prompt": "W6 Arbiter-duel answer cue (cowir-battle msg 3223/3226). Canon: each attack is a QUESTION; dodge is evasion, block is deflection, only a committed strike is an answer. The three share one tonal centre (C) so they read as answers to the same question, and commitment is audible as a 4dB ladder. No damage exists in this encounter, so these carry the entire action-feedback surface. BLOCK: B4 leading tone + body \u2014 wants to resolve to C and stops short. mean -15.5.",
+      "prompt": "W6 Arbiter-duel answer cue (cowir-battle msg 3223/3226). Canon: each attack is a QUESTION; dodge is evasion, block is deflection, only a committed strike is an answer. The three share one tonal centre (C) so they read as answers to the same question, and commitment is audible as a 4dB ladder. No damage exists in this encounter, so these carry the entire action-feedback surface. BLOCK: B4 leading tone + body — wants to resolve to C and stops short. mean -15.5.",
       "duration_seconds": 0.31,
       "prompt_influence": 0.0
     },
     "duel_answer_strike": {
       "file": "assets/audio/sfx/duel_answer_strike.ogg",
       "source": "sox_synth",
-      "prompt": "W6 Arbiter-duel answer cue (cowir-battle msg 3223/3226). Canon: each attack is a QUESTION; dodge is evasion, block is deflection, only a committed strike is an answer. The three share one tonal centre (C) so they read as answers to the same question, and commitment is audible as a 4dB ladder. No damage exists in this encounter, so these carry the entire action-feedback surface. STRIKE: resolves to tonic \u2014 C root+fifth+octave over a sub, rings out. 27.7% bass, dominant 262Hz. The only cue that arrives. mean -11.8.",
+      "prompt": "W6 Arbiter-duel answer cue (cowir-battle msg 3223/3226). Canon: each attack is a QUESTION; dodge is evasion, block is deflection, only a committed strike is an answer. The three share one tonal centre (C) so they read as answers to the same question, and commitment is audible as a 4dB ladder. No damage exists in this encounter, so these carry the entire action-feedback surface. STRIKE: resolves to tonic — C root+fifth+octave over a sub, rings out. 27.7% bass, dominant 262Hz. The only cue that arrives. mean -11.8.",
       "duration_seconds": 0.6,
       "prompt_influence": 0.0
+    },
+    "status_fear": {
+      "file": "assets/audio/sfx/status_fear.ogg",
+      "prompt": "Low shuddering heartbeat pulse swelling under a rising brittle shiver, sustained cold dread with no sharp attack — unease gathering, not a jump scare",
+      "duration_seconds": 0.9,
+      "prompt_influence": 0.5
+    },
+    "status_charm": {
+      "file": "assets/audio/sfx/status_charm.ogg",
+      "prompt": "Warm hypnotic chime bending sweetly upward, dizzy shimmering bell haze, an enchantment that feels lovely and wrong",
+      "duration_seconds": 0.9,
+      "prompt_influence": 0.5
+    },
+    "status_pacify": {
+      "file": "assets/audio/sfx/status_pacify.ogg",
+      "prompt": "A weapon lowering with a soft metallic sigh, tension draining out, calm muted resonance settling to stillness",
+      "duration_seconds": 0.85,
+      "prompt_influence": 0.5
+    },
+    "status_cannot_act": {
+      "file": "assets/audio/sfx/status_cannot_act.ogg",
+      "prompt": "A heavy iron lock slamming home and seizing, solid weighty clunk with a ringing metallic tail, a body locked in place — present and forceful, not distant",
+      "duration_seconds": 0.9,
+      "prompt_influence": 0.5
+    },
+    "status_cannot_defer": {
+      "file": "assets/audio/sfx/status_cannot_defer.ogg",
+      "prompt": "A guard's stance breaking open, denied buzz over a hollow refusal tone, defences swept aside and held open",
+      "duration_seconds": 0.9,
+      "prompt_influence": 0.5
+    },
+    "status_controlled": {
+      "file": "assets/audio/sfx/status_controlled.ogg",
+      "prompt": "Taut puppet strings drawing tight with a wooden creak, a will bending under someone else's hand, unsettling sustained pull",
+      "duration_seconds": 0.9,
+      "prompt_influence": 0.5
+    },
+    "status_exposed": {
+      "file": "assets/audio/sfx/status_exposed.ogg",
+      "prompt": "A field recalibrating with a cold descending sweep, protective layers peeling away, clinical and precise",
+      "duration_seconds": 0.9,
+      "prompt_influence": 0.5
+    },
+    "status_festered": {
+      "file": "assets/audio/sfx/status_festered.ogg",
+      "prompt": "A wound turning bad, thick wet churn under a low sickly throb, slow spreading corruption with no sharp attack",
+      "duration_seconds": 0.9,
+      "prompt_influence": 0.5
+    },
+    "status_memory_leak": {
+      "file": "assets/audio/sfx/status_memory_leak.ogg",
+      "prompt": "Digital decay bleeding through, stuttering bit-crushed fragments dissolving into static hiss, data draining away",
+      "duration_seconds": 0.9,
+      "prompt_influence": 0.5
+    },
+    "status_mind_swap": {
+      "file": "assets/audio/sfx/status_mind_swap.ogg",
+      "prompt": "Two consciousnesses trading places, a disorienting swirling whoosh that inverts mid-flight, vertiginous and wrong",
+      "duration_seconds": 0.9,
+      "prompt_influence": 0.5
+    },
+    "status_permakilled": {
+      "file": "assets/audio/sfx/status_permakilled.ogg",
+      "prompt": "Absolute erasure, a hollow reversed swell collapsing into dead flat silence, final and total with no echo left behind",
+      "duration_seconds": 0.9,
+      "prompt_influence": 0.5
     }
   }
 }
