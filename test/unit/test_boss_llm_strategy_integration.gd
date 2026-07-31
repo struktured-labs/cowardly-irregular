@@ -114,7 +114,7 @@ func test_build_intent_context_captures_party_and_boss_state() -> void:
 		pending("BattleManager autoload unavailable in GUT runtime")
 		return
 	if not bm.has_method("_build_boss_intent_context"):
-		pending("_build_boss_intent_context missing — Phase 1 not landed?")
+		fail_test("_build_boss_intent_context is missing — Phase 1 IS landed, so a rename here used to SKIP silently")
 		return
 
 	# Stand up a fixture party with two members, one wounded.

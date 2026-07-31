@@ -89,7 +89,7 @@ func test_get_alive_enemies_returns_array() -> void:
 		return
 
 	if not _battle_manager.has_method("_get_alive_enemies"):
-		pending("_get_alive_enemies method not found")
+		fail_test("BattleManager._get_alive_enemies is missing — a rename here used to SKIP silently")
 		return
 
 	var alive = _battle_manager._get_alive_enemies()
@@ -102,7 +102,7 @@ func test_get_alive_combatants_returns_array() -> void:
 		return
 
 	if not _battle_manager.has_method("get_alive_combatants"):
-		pending("get_alive_combatants method not found")
+		fail_test("get_alive_combatants is missing — a rename here used to SKIP silently")
 		return
 
 	# Pass empty typed array to test the method signature

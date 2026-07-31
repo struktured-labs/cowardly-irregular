@@ -185,7 +185,7 @@ func test_maybe_fire_party_line_no_op_when_flag_off() -> void:
 		pending("autoloads unavailable")
 		return
 	if not bm.has_method("_maybe_fire_party_line"):
-		pending("hook missing — Phase C not landed?")
+		fail_test("_maybe_fire_party_line is missing — Phase C IS landed, so a rename here used to SKIP silently")
 		return
 	var prior: bool = gs.party_llm_dialogue_enabled
 	gs.party_llm_dialogue_enabled = false

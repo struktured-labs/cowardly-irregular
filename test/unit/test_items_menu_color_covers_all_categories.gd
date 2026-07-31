@@ -106,7 +106,7 @@ func test_actual_offensive_item_renders_with_offensive_color() -> void:
 	# render it with OFFENSIVE_COLOR.
 	var item_sys = get_node_or_null("/root/ItemSystem")
 	if item_sys == null or not item_sys.has_method("get_item"):
-		pending("ItemSystem not available in this test context")
+		fail_test("ItemSystem autoload or get_item missing — both exist, so this is a real break not a skip")
 		return
 	var data: Dictionary = item_sys.get_item("bomb_fragment")
 	if data.is_empty():

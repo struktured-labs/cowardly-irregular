@@ -114,7 +114,7 @@ func test_magic_defense_down_applies_debuff() -> void:
 	if bm.has_method("_execute_support_ability"):
 		bm._execute_support_ability(null, ability, typed_targets)
 	else:
-		pending("_execute_support_ability helper missing — dispatch path moved?")
+		fail_test("_execute_support_ability is missing — it exists in src/, so a rename here used to SKIP silently")
 		return
 
 	# Pre-fix this would have fallen through to push_warning with no
