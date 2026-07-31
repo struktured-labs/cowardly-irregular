@@ -533,7 +533,8 @@ func _find_heal_ability(combatant) -> String:
 		return ""
 	for ability_id in combatant.learned_abilities:
 		var ability = js.get_ability(ability_id) if js.has_method("get_ability") else {}
-		if ability.get("category", "") == "healing":
+		# `type` is the field abilities author (289/289); `category` is authored by NONE, so this read was constant "" and no enemy ever healed in a headless battle.
+		if str(ability.get("type", ability.get("category", ""))) == "healing":
 			return ability_id
 	return ""
 
@@ -543,12 +544,13 @@ func _find_attack_ability(combatant) -> String:
 	if not js:
 		return ""
 	var best_id = ""
-	var best_power = 0
+	var best_power = 0.0
 	for ability_id in combatant.learned_abilities:
 		var ability = js.get_ability(ability_id) if js.has_method("get_ability") else {}
-		var cat = ability.get("category", "")
+		# Both keys were dead: `category` authored 0/289 (the field is `type`) and `power` 0/289 (it is `damage_multiplier`), so the guard never passed and this returned "" on every call — enemies fell through to a basic attack for the whole battle.
+		var cat := str(ability.get("type", ability.get("category", "")))
 		if cat in ["magic", "physical"]:
-			var power = ability.get("power", 0)
+			var power := float(ability.get("power", ability.get("damage_multiplier", 0.0)))
 			if power > best_power:
 				best_power = power
 				best_id = ability_id
