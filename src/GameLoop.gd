@@ -587,10 +587,18 @@ func _smoke_key(keycode: int) -> void:
 ## leaving the previous frame up — and the shot still saved "OK", so 13 legs went vacuous silently.
 func _smoke_enter_map(map_id: String) -> void:
 	_cutscene_cooldown = true
+	# A successful entry frees the old scene and instantiates a new one, so an
+	# UNCHANGED instance means _start_exploration returned early. Battle state is
+	# only one of its early returns; this catches the rest, and a map that fails
+	# to build at all. Without it the shot is silently of the previous map.
+	var before_id: int = current_scene.get_instance_id() if is_instance_valid(current_scene) else 0
 	_set_current_map_id(map_id)
 	await _start_exploration()
 	if BattleManager and BattleManager.current_state != BattleManager.BattleState.INACTIVE:
 		print("[SMOKE] FAIL: '%s' leg bailed — a live battle owns the screen, this shot is the previous frame" % map_id)
+		_smoke_failed = true
+	elif not is_instance_valid(current_scene) or current_scene.get_instance_id() == before_id:
+		print("[SMOKE] FAIL: '%s' leg built no new scene — _start_exploration returned early, this shot is the previous map" % map_id)
 		_smoke_failed = true
 
 
