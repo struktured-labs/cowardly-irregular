@@ -129,7 +129,9 @@ func _examine() -> void:
 		_glint()
 		GameState.set_story_flag(FLAG)
 		qs.notify_flag(FLAG)
-		_toast("The Mage's light finds letters under the steel. They were waiting.")
+		var beat: String = qs.job_beat_at(QUEST_ID, "sword_inscription") if qs.has_method("job_beat_at") else ""
+		var lit := "The Mage's light finds letters under the steel. They were waiting."
+		_toast(lit if beat == "" else lit + "\n\n" + beat)
 	else:
 		_toast("Faint marks under the surface — too dim to read. Magelight might reach them. Or a scholar.")
 

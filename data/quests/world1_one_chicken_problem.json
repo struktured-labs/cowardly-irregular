@@ -113,7 +113,8 @@
     ],
     "job_variants": {
       "rogue": {
-        "description": "Dialogue-only: the Rogue can overhear the chicken near the cave entrance clucking a four-note sequence — the first four notes of the main theme. 'That chicken knows the song. That's a weird song for a chicken to know.' No mechanical effect.",
+        "dialogue_text": "That chicken is clucking a four-note sequence. The same four notes, over and over, and they are the first four notes of the song that plays when the world is being itself. That is a very strange song for a chicken to know.",
+        "dialogue_at": "quest_chicken",
         "items": [
           {
             "item_id": "potion",

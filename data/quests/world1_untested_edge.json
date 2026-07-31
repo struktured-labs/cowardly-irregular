@@ -120,7 +120,8 @@
     ],
     "job_variants": {
       "cleric": {
-        "description": "Dialogue-only: the Cleric identifies the inscription language as predating the kingdom, matching one other document — Harmonia's founding charter, which names no founder, only that the founder 'left when the work was complete and said to return when called.'",
+        "dialogue_text": "This language predates the kingdom. It matches exactly one other document — Harmonia's founding charter, which names no founder at all. Only that whoever it was left when the work was complete, and said to return when called.",
+        "dialogue_at": "sword_inscription",
         "items": [
           {
             "item_id": "returned_sword",
