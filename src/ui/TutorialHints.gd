@@ -158,6 +158,11 @@ const HINTS = {
 }
 
 
+## Hints deferred behind an on-screen one — first_battle and first_boss fire in the SAME
+## frame on a first-ever boss fight and used to render two panels stacked.
+static var _pending: Array[Dictionary] = []
+
+
 static func show(parent: Node, hint_id: String, dedupe_key: String = "") -> void:
 	"""Show a tutorial hint by ID, if it hasn't been shown before."""
 	if not HINTS.has(hint_id):
@@ -177,9 +182,42 @@ static func show(parent: Node, hint_id: String, dedupe_key: String = "") -> void
 		if gs and gs.game_constants.get("tutorial_" + key, false):
 			return
 
+	## show_hint marks a hint seen BEFORE it draws, so one dropped for arriving second is lost
+	## forever — queue it and let the on-screen panel's dismissal replay it.
+	if TutorialHint.is_any_active():
+		for q in _pending:
+			if str(q.get("key", "")) == key:
+				return
+		_pending.append({"parent": parent, "hint_id": hint_id, "key": key})
+		return
+
+	_present(parent, hint_id, key)
+
+
+static func _present(parent: Node, hint_id: String, key: String) -> void:
 	var hint_data = HINTS[hint_id]
 	var hint = TutorialHint.new()
 	parent.add_child(hint)
 	hint.show_hint(key, hint_data["title"], hint_data["body"], float(hint_data.get("min_dismiss", 0.0)))
 	# Auto-cleanup after dismissal
 	hint.hint_dismissed.connect(func(_id): hint.queue_free())
+	## Drain on BOTH paths: _exit_tree releases the active gate without emitting
+	## hint_dismissed, so a signal-only drain stalls when a battle ends mid-hint.
+	hint.hint_dismissed.connect(func(_id): _drain())
+	hint.tree_exited.connect(func(): _drain())
+
+
+## Replay the oldest queued hint whose parent is still live; silently drop the rest.
+static func _drain() -> void:
+	if TutorialHint.is_any_active():
+		return
+	while not _pending.is_empty():
+		var q: Dictionary = _pending.pop_front()
+		var parent = q.get("parent")
+		if not is_instance_valid(parent) or not parent.is_inside_tree() or parent.is_queued_for_deletion():
+			continue
+		var key: String = str(q.get("key", ""))
+		if TutorialHint._shown_hints.get(key, false):
+			continue
+		_present(parent, str(q.get("hint_id", "")), key)
+		return
