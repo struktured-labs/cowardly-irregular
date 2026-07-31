@@ -2166,7 +2166,7 @@ func _ai_caster(combatant: Combatant, abilities: Array, alive_enemies: Array) ->
 		var best_score = 0.0
 		for spell in magic_abilities:
 			var element = spell.get("element", "")
-			var score = spell.get("power", 10)
+			var score = _ability_power(spell)
 			# Check if any enemy is weak to this element.
 			# Combatant's field is elemental_weaknesses (Array[String]), not
 			# weaknesses — a prior typo silently errored at runtime when
@@ -2262,7 +2262,8 @@ func _ai_tank(combatant: Combatant, abilities: Array, alive_allies: Array, alive
 
 	# Use strongest physical ability (50% chance)
 	if physical_abilities.size() > 0 and randf() < 0.5:
-		physical_abilities.sort_custom(func(a, b): return a.get("power", 0) > b.get("power", 0))
+		# Sorted on damage_multiplier: no ability authors `power`, so the old key was constant 0 and "strongest" was whichever happened to be first.
+		physical_abilities.sort_custom(func(a, b): return _ability_power(a) > _ability_power(b))
 		var ability = physical_abilities[0]
 		var target = _choose_target(combatant, alive_enemies, ability)
 		return {
@@ -2299,7 +2300,7 @@ func _ai_assassin(combatant: Combatant, abilities: Array, alive_enemies: Array) 
 
 	# Use strongest offensive ability on wounded target (60% chance)
 	if offensive_abilities.size() > 0 and randf() < 0.6:
-		offensive_abilities.sort_custom(func(a, b): return a.get("power", 0) > b.get("power", 0))
+		offensive_abilities.sort_custom(func(a, b): return _ability_power(a) > _ability_power(b))
 		var ability = offensive_abilities[0]
 		return {
 			"type": "ability",
@@ -4732,6 +4733,11 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 ## Critical hit system
 ## Physical attacks can crit, magic does NOT crit by default
 
+## An ability's damage weight for "pick the strongest" comparisons. `power` is a legacy key 0 of 288 abilities author, so reading it alone made every such comparison constant; damage_multiplier is the field the data and the execution path both use.
+func _ability_power(ability: Dictionary) -> float:
+	return float(ability.get("power", ability.get("damage_multiplier", 0.0)))
+
+
 func estimate_attack_damage(attacker: Combatant, target: Combatant) -> int:
 	"""Estimate basic attack damage (no variance, no crit) for UI preview"""
 	var atk = attacker.get_buffed_stat("attack", attacker.attack)
@@ -4742,7 +4748,8 @@ func estimate_attack_damage(attacker: Combatant, target: Combatant) -> int:
 
 func estimate_ability_damage(attacker: Combatant, target: Combatant, ability: Dictionary) -> int:
 	"""Estimate ability damage for UI preview"""
-	var power = ability.get("power", 10)
+	# `power` is a legacy key NO ability authors (0 of 288); damage_multiplier is, and it is what execution reads — preferring power made every preview assume 1.0x, understating a 5.0x ability by 5x and suppressing its [KILL] tag.
+	var power = float(ability.get("damage_multiplier", float(ability.get("power", 10)) / 10.0)) * 10.0
 	var ability_type = ability.get("type", "physical")
 	var is_magical = ability_type == "magic"
 
@@ -6837,7 +6844,7 @@ func _get_counter_action(combatant: Combatant, strategy: String, allies: Array, 
 			if abilities.size() > 0 and enemies.size() > 0:
 				var strongest = abilities[0]
 				for a in abilities:
-					if a.get("power", 0) > strongest.get("power", 0):
+					if _ability_power(a) > _ability_power(strongest):
 						strongest = a
 				var target = enemies[randi() % enemies.size()]
 				return {
