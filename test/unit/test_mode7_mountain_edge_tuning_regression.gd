@@ -37,9 +37,7 @@ func test_default_curvature_softened() -> void:
 
 
 func test_medieval_preset_matches_default() -> void:
-	# Medieval was the world user was playtesting. Must have the
-	# softened 0.005 (not the pre-tuning 0.01) because per-world
-	# presets override the default at apply_world_preset time.
+	# Per-world presets override the default at apply_preset time, so medieval must carry it too.
 	var src := _read(MODE7_PATH)
 	var idx: int = src.find("\"medieval\":")
 	assert_gt(idx, -1)
