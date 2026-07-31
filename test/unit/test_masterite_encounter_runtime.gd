@@ -424,3 +424,105 @@ func test_apply_pending_boss_defeat_notifies_quest_flags() -> void:
 		"consumes spec.quest_flags — the field MasteriteEncounter stakes for kill-gated steps")
 	assert_true(body.contains("notify_flag("),
 		"notifies QuestSystem — setting the story flag alone leaves a custom objective parked at its gate")
+
+
+## The quest must not become acceptable before its encounter is VISIBLE.
+##
+## Now that the examine points are gone, the encounter is the SOLE emitter for
+## these steps — so a quest whose prereq opens earlier than its encounter's
+## prereq is acceptable with no way to advance it. Sandrift is the live case:
+## the quest gates on `cutscene_flag_rat_king_defeated`, the Warden on
+## `cave_rat_king_defeated`. Those are aliases ONLY because WhisperingCave's one
+## defeat spec writes all three names at the same moment. Split that spec — move
+## the dungeon_flag write, rename one side — and the two gates drift apart with
+## nothing else in the suite watching. So pin the property that makes it safe:
+## one spec opens both.
+func test_encounter_prereq_opens_with_its_quest_prereq() -> void:
+	var specs := _boss_defeat_specs()
+	assert_gt(specs.size(), 0,
+		"found at least one pending_boss_defeat spec in src/ — zero means this test read nothing")
+	var gated := 0
+	for s in _kill_gated_steps():
+		var arch: String = s["archetype"]
+		var epre := _placement_prereq(arch)
+		if epre == "":
+			continue
+		gated += 1
+		var qpre := _quest_prereq(s["quest"])
+		assert_ne(qpre, "",
+			"%s gates its %s encounter on '%s' but the quest itself has no prereq — it is acceptable while the encounter is invisible" % [s["quest"], arch, epre])
+		var together := false
+		for spec in specs:
+			if spec.contains("\"%s\"" % epre) and spec.contains("\"%s\"" % qpre):
+				together = true
+				break
+		assert_true(together,
+			"no single pending_boss_defeat spec writes BOTH '%s' (quest gate) and '%s' (%s visibility) — if they stop opening together, the quest is acceptable while its only emitter is hidden" % [qpre, epre, arch])
+	assert_gt(gated, 0,
+		"no masterite declares a prereq_flag — this test asserted nothing (Sandrift's Warden should be here)")
+
+
+## Brace-balanced text of every `pending_boss_defeat = {...}` literal in src/.
+func _boss_defeat_specs() -> Array:
+	var out: Array = []
+	for path in _gd_files_under("res://src"):
+		var src: String = FileAccess.get_file_as_string(path)
+		var i := src.find("pending_boss_defeat = {")
+		while i >= 0:
+			var open_at := src.find("{", i)
+			var depth := 0
+			var j := open_at
+			while j < src.length():
+				if src[j] == "{":
+					depth += 1
+				elif src[j] == "}":
+					depth -= 1
+					if depth == 0:
+						out.append(src.substr(open_at, j - open_at + 1))
+						break
+				j += 1
+			i = src.find("pending_boss_defeat = {", i + 1)
+	return out
+
+
+func _gd_files_under(root: String) -> Array:
+	var out: Array = []
+	var dir := DirAccess.open(root)
+	if dir == null:
+		return out
+	for f in dir.get_files():
+		if f.ends_with(".gd"):
+			out.append(root + "/" + f)
+	for d in dir.get_directories():
+		out.append_array(_gd_files_under(root + "/" + d))
+	return out
+
+
+func _placement_prereq(archetype: String) -> String:
+	var dir := DirAccess.open(VILLAGE_DIR)
+	if dir == null:
+		return ""
+	var re := RegEx.create_from_string("\\.prereq_flag\\s*=\\s*\"([a-z0-9_]+)\"")
+	for f in dir.get_files():
+		if not f.ends_with(".gd"):
+			continue
+		var src: String = FileAccess.get_file_as_string(VILLAGE_DIR + "/" + f)
+		var idx := src.find("MasteriteScript.new()")
+		while idx >= 0:
+			var end := src.find("npcs.add_child(", idx)
+			var block: String = src.substr(idx, end - idx) if end > idx else src.substr(idx)
+			if block.contains("\"%s\"" % archetype):
+				var m := re.search(block)
+				return m.get_string(1) if m != null else ""
+			idx = src.find("MasteriteScript.new()", idx + 1)
+	return ""
+
+
+func _quest_prereq(qid: String) -> String:
+	for f in DirAccess.open(QUEST_DIR).get_files():
+		if not f.ends_with(".json"):
+			continue
+		var parsed = JSON.parse_string(FileAccess.get_file_as_string(QUEST_DIR + "/" + f))
+		if typeof(parsed) == TYPE_DICTIONARY and str(parsed.get("id", "")) == qid:
+			return str(parsed.get("prereq_flag", ""))
+	return ""
