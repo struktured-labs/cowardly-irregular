@@ -388,15 +388,16 @@ func _maybe_run_battle_smoke() -> void:
 	# Deterministic smoke: neutralize this box's dev flags — debug_all_pcs_unlocked force-clears is_player_trusted (BattleManager) and breaks the game-over leg's auto-play.
 	if GameState and "debug_all_pcs_unlocked" in GameState:
 		GameState.debug_all_pcs_unlocked = false
+	# ...and random encounters: one firing during the walk legs made EVERY later map leg bail
+	if EncounterSystem:
+		EncounterSystem.encounters_enabled = false
 	_close_title_screen()
 	await get_tree().process_frame
 	await get_tree().process_frame
 	_create_party()
 	DirAccess.make_dir_recursive_absolute("user://smoke")
 	if full:
-		_cutscene_cooldown = true
-		_set_current_map_id("overworld")
-		await _start_exploration()
+		await _smoke_enter_map("overworld")
 		await get_tree().create_timer(1.5).timeout
 		# mid-stride captures — the garbled-walk sprite class is only visible while moving
 		for dir_action in ["ui_right", "ui_left"]:
@@ -405,28 +406,20 @@ func _maybe_run_battle_smoke() -> void:
 			await _smoke_shot("overworld_walk_%s" % dir_action.trim_prefix("ui_"))
 			Input.action_release(dir_action)
 		# village: NPC sheets + quest markers in one frame
-		_cutscene_cooldown = true
-		_set_current_map_id("harmonia_village")
-		await _start_exploration()
+		await _smoke_enter_map("harmonia_village")
 		await get_tree().create_timer(1.5).timeout
 		await _smoke_shot("village")
 		# the 5 villages holding W1 quest givers + QuestExaminePoints — no smoke on any platform had ever entered one
 		for _vid in ["sandrift_village", "frosthold_village", "grimhollow_village", "ironhaven_village", "eldertree_village"]:
-			_cutscene_cooldown = true
-			_set_current_map_id(_vid)
-			await _start_exploration()
+			await _smoke_enter_map(_vid)
 			await get_tree().create_timer(1.0).timeout
 			await _smoke_shot(_vid)
 		# interiors: NOTHING on any platform had ever loaded one in a built game (inn charges gold, the rest carry quest content)
 		for _iid in ["inn_interior", "tavern_interior", "sandrift_glassmaker", "frosthold_meltwater_clock", "ironhaven_watchtower"]:
-			_cutscene_cooldown = true
-			_set_current_map_id(_iid)
-			await _start_exploration()
+			await _smoke_enter_map(_iid)
 			await get_tree().create_timer(0.8).timeout
 			await _smoke_shot(_iid)
-		_cutscene_cooldown = true
-		_set_current_map_id("harmonia_village")
-		await _start_exploration()
+		await _smoke_enter_map("harmonia_village")
 		await get_tree().create_timer(1.0).timeout
 		# settings (Start) then the overworld/party menu (X) — the week's UI churn surfaces
 		_smoke_tap("ui_menu")
@@ -493,9 +486,7 @@ func _maybe_run_battle_smoke() -> void:
 		smoke_shop.queue_free()
 		await get_tree().create_timer(0.5).timeout
 		# cave, then battle FROM it — the scene that leaked under battle 2026-07-02
-		_cutscene_cooldown = true
-		_set_current_map_id("whispering_cave")
-		await _start_exploration()
+		await _smoke_enter_map("whispering_cave")
 		await get_tree().create_timer(1.5).timeout
 		await _smoke_shot("cave")
 	await _start_battle_async(["goblin"], true)
@@ -592,6 +583,17 @@ func _smoke_key(keycode: int) -> void:
 
 
 ## real InputEventAction pair — Input.action_press only sets poll-state and never reaches event handlers
+## Every map leg enters through here. _start_exploration BAILS while a battle owns the screen,
+## leaving the previous frame up — and the shot still saved "OK", so 13 legs went vacuous silently.
+func _smoke_enter_map(map_id: String) -> void:
+	_cutscene_cooldown = true
+	_set_current_map_id(map_id)
+	await _start_exploration()
+	if BattleManager and BattleManager.current_state != BattleManager.BattleState.INACTIVE:
+		print("[SMOKE] FAIL: '%s' leg bailed — a live battle owns the screen, this shot is the previous frame" % map_id)
+		_smoke_failed = true
+
+
 func _smoke_tap(action: String) -> void:
 	var ev := InputEventAction.new()
 	ev.action = action
