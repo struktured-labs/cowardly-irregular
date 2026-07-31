@@ -114,7 +114,8 @@
     ],
     "job_variants": {
       "cleric": {
-        "description": "Cleric examine text at the source pool: the rune is drawn in a hand that is meant to LAST, not to work. It is elegant. It is finished. Whoever cut it was showing off, and they are not the person who commissioned it. 'The one who cut this is a hired hand. The one who ordered it is not here. Neither ever came here in person.' No mechanical effect.",
+        "examine_text": "The rune is drawn in a hand meant to last, not to work. Elegant. Finished. Whoever cut it was showing off — and they are not the person who commissioned it. The one who cut this was a hired hand. The one who ordered it never came here at all.",
+        "examine_flag": "quest_w1_frosthold_meltwater_clock_accepted",
         "items": [
           {
             "item_id": "watchers_charm",

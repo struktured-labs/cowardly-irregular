@@ -122,7 +122,8 @@
     ],
     "job_variants": {
       "rogue": {
-        "description": "Rogue examine text at the rangers' house: the tidying is TOO careful. Every arrow in the quiver is in the same rotation. Rangers never store arrows like that — the pattern is administrative, not martial. 'Someone who has never held a bow arranged these.' No mechanical effect.",
+        "examine_text": "The tidying is too careful. Every arrow in the quiver sits at the same rotation — rangers never store arrows that way. The pattern is administrative, not martial. Someone who has never held a bow arranged these.",
+        "examine_flag": "quest_w1_eldertree_rangers_empty_house_accepted",
         "items": [
           {
             "item_id": "rangers_cloak",

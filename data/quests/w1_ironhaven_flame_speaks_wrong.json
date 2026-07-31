@@ -122,7 +122,8 @@
     ],
     "job_variants": {
       "bard": {
-        "description": "Bard examine text at the flame: the fragments the flame is speaking are in a meter. Trochaic. The Bard recognizes the meter — it's the same meter as the chancellor's edicts, the ones the town crier reads. Someone is teaching a flame to recite. 'That's not a flame's cadence. That's a court's cadence.' No mechanical effect.",
+        "examine_text": "The fragments the flame is speaking are in a meter. Trochaic — the same meter as the chancellor's edicts, the ones the town crier reads aloud. Someone is teaching a flame to recite. That is not a flame's cadence. It is a court's.",
+        "examine_flag": "quest_w1_ironhaven_flame_speaks_wrong_accepted",
         "items": [
           {
             "item_id": "leaning_ember",
