@@ -167,3 +167,76 @@ func test_no_playable_custom_objective_is_unreachable() -> void:
 		+ "so only notify_flag moves it, and nothing in src/ can fire this flag. The player can "
 		+ "accept the quest and never finish it. Add an emitter (QuestExaminePoint, an interactable, "
 		+ "or a DIALOGUE_EMITTERS entry): %s" % [stuck])
+
+
+## COMPANION to the shape-aware ratchet, and deliberately NOT a replacement.
+## That one asks "is this a real emitter" and goes blind to any mechanism it doesn't
+## model — measured: it cannot see cowir-overworld's `<var>.quest_flag = "..."`.
+## This one asks only "is this step definitely dark", from the flag literal, so a new
+## mechanism cannot blindside it. Over-permissive by design: a literal in a dead branch
+## counts. Broadening the OTHER scan instead was measured and rejected — `\w+\.\w*flag`
+## also matches `.prereq_flag`, a GATE, which would trade a false red for a false green.
+func test_no_playable_custom_flag_is_absent_from_src_entirely() -> void:
+	var corpus := _src_corpus()
+
+	assert_gt(corpus.length(), 200000, "src walk must load a real corpus, else every flag "
+		+ "below looks dark and this inverts")
+	assert_true(corpus.contains("quest_w1_sandrift_water_on_the_road_accepted"),
+		"a KNOWN-wired flag must appear — a length check alone passes while the walk returns junk")
+	assert_false(corpus.contains("zzz_flag_that_is_never_wired"),
+		"an invented flag must NOT appear, else this matches everything")
+
+	var checked := 0
+	var dark: Array = []
+	var qd := DirAccess.open("res://data/quests/")
+	assert_not_null(qd, "quest dir must be readable")
+	if qd == null:
+		return
+	qd.list_dir_begin()
+	var qf := qd.get_next()
+	while qf != "":
+		var id: String = qf.trim_suffix(".json")
+		if not qf.ends_with(".json") or not (id.begins_with("w1_") or id.begins_with("world1_") or id.begins_with("world2_")):
+			qf = qd.get_next()
+			continue
+		var parsed = JSON.parse_string(FileAccess.get_file_as_string("res://data/quests/" + qf))
+		for o in (parsed.get("objectives", []) if parsed is Dictionary else []):
+			if str(o.get("type", "")) != "custom":
+				continue
+			var rf: String = str(o.get("required_flag", ""))
+			if rf == "":
+				continue
+			checked += 1
+			if not corpus.contains(rf):
+				dark.append("%s step%s -> %s" % [id, o.get("step", "?"), rf])
+		qf = qd.get_next()
+	qd.list_dir_end()
+
+	assert_gt(checked, 15, "must examine real custom objectives, else vacuous")
+	assert_eq(dark, [], "this step's required_flag appears NOWHERE in src/, by any mechanism at "
+		+ "all — so nothing can possibly advance it and the quest is unfinishable. Unlike the "
+		+ "shape-aware check above, this cannot be fooled by an emitter style nobody taught it: %s" % [dark])
+
+
+## Comment-stripped .gd corpus — a flag named only in prose is not a wiring.
+func _src_corpus() -> String:
+	var out := ""
+	var stack: Array = ["res://src"]
+	while not stack.is_empty():
+		var dir: String = stack.pop_back()
+		var d := DirAccess.open(dir)
+		if d == null:
+			continue
+		d.list_dir_begin()
+		var f := d.get_next()
+		while f != "":
+			var p: String = dir + "/" + f
+			if d.current_is_dir():
+				stack.append(p)
+			elif f.ends_with(".gd"):
+				for line in FileAccess.get_file_as_string(p).split("\n"):
+					if not line.strip_edges().begins_with("#"):
+						out += line + "\n"
+			f = d.get_next()
+		d.list_dir_end()
+	return out
