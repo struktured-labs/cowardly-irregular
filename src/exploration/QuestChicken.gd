@@ -150,7 +150,8 @@ func _tally() -> void:
 		_toast("All seven chickens rounded up! Return to Farmer Aldwick.")
 	else:
 		var line := catch_line if catch_line != "" else "Chicken cornered! (%d / 7)" % caught_count
-		_toast(line)
+		var beat: String = qs.job_beat_at(QUEST_ID, "quest_chicken") if qs and qs.has_method("job_beat_at") else ""
+		_toast(line if beat == "" else line + "\n\n" + beat)
 
 
 func _poof() -> void:

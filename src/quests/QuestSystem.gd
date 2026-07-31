@@ -467,6 +467,11 @@ func run_completion_dialogue(quest_id: String, npc: Node) -> void:
 	var dlg: Dictionary = q.get("dialogue", {})
 	await _play_lines(npc, dlg.get("ready_to_turn_in", []))
 	await _play_lines(npc, dlg.get("complete", []))
+	## NPC-sited job beats land here: the site key IS the npc_id, so every present and
+	## future beat authored against a person is delivered without a bespoke wire.
+	var beat: String = job_beat_at(quest_id, str(npc.get_npc_id()) if npc.has_method("get_npc_id") else "")
+	if beat != "":
+		await _play_lines(npc, [{"text": beat, "theme": "villager"}])
 	await _announce_rewards(npc)
 	await _flush_completion_cutscene()
 
@@ -561,6 +566,22 @@ func _flag(flag: String) -> bool:
 	if GameState.has_method("is_story_flag_set"):
 		return GameState.is_story_flag_set(flag)
 	return GameState.get_story_flag(flag)
+
+
+## The lead job's authored beat for a named SITE, or "". Sites are interactables and NPCs,
+## not only examine points — 16 of these sat in quest data rendered by nothing.
+func job_beat_at(quest_id: String, site: String) -> String:
+	var job: String = _leader_job_id()
+	if job == "":
+		return ""
+	var v = get_quest(quest_id).get("rewards", {}).get("job_variants", {}).get(job, {})
+	if not (v is Dictionary):
+		return ""
+	## The site key scopes the beat: a quest's single job read must not fire at every
+	## interactable the quest touches.
+	if str(v.get("dialogue_at", "")) != site:
+		return ""
+	return str(v.get("dialogue_text", ""))
 
 
 func _leader_job_id() -> String:

@@ -107,7 +107,8 @@
     "items": [],
     "job_variants": {
       "bard": {
-        "description": "Dialogue-only: the Bard offers to compose Aldrin's letter in verse — saying what he can't figure out how to say in prose. Rowan laughs reading it ('he always did hide behind jokes when he was scared') and reties the ribbon in a sailor's knot meaning 'safe passage home,' which the Bard recognizes.",
+        "dialogue_text": "The letter says nothing it means, so the Bard offers to say it in verse instead. Rowan laughs halfway down the page — 'he always did hide behind jokes when he was scared' — and reties the ribbon in a sailor's knot. Safe passage home. She knows the Bard will recognise it.",
+        "dialogue_at": "rowan_harmonia",
         "items": []
       }
     }
