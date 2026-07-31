@@ -77,6 +77,19 @@ if [ "$NOASSERT" -ne 0 ]; then
 	SETUP_ERRS=$(grep -c 'SCRIPT ERROR' "$LOG")
 	[ "$SETUP_ERRS" -ne 0 ] && echo "  ^ $SETUP_ERRS SCRIPT ERROR(s) this run — a test dying in setup lands here, not in failing=$FAILED"
 fi
+# The PENDING half was a bare number for as long as the risky half has been named,
+# and that asymmetry cost a day: 4 lanes read "risky/pending=14" past ~25 gate runs
+# without once learning that 12 of them are LLM-absence tests skipping because
+# Ollama happens to be running on this box. A deliberate skip is legitimate; a skip
+# whose CONDITION is ambient machine state is a coverage hole wearing a green tick.
+# Print the reasons, deduped, for the same reason the risky half is printed: a number
+# gets skimmed and a sentence does not. Never a hard fail — pending() is a real tool.
+PENDNAMES=$(grep -aoE '\[Pending\]: *.*' "$LOG" | sed 's/\[Pending\]: *//' | sort -u)
+PENDCOUNT=$(printf '%s\n' "$PENDNAMES" | grep -c . || true)
+if [ "${PENDCOUNT:-0}" -ne 0 ]; then
+	echo "--- $PENDCOUNT distinct pending() skip reason(s) — deliberate, but check the CONDITION ---"
+	printf '%s\n' "$PENDNAMES" | sed 's/^/  /'
+fi
 # The floor USED to be `RAN -lt 1000`, sized for the 7000-test unit suite. That is an absolute
 # magnitude where a relationship was meant — CLAUDE.md's coincidental-value trap, in this gate.
 # It passes a 1001-test broken tree and REFUSES a correct small suite: pointing gate.sh at
