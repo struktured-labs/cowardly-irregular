@@ -105,7 +105,7 @@ func test_each_dragon_cave_key_resolves_at_runtime() -> void:
 	## spelled somewhere; this proves the key reaches it.
 	var sm := get_node_or_null("/root/SoundManager")
 	if sm == null:
-		pass_test("SoundManager unavailable")
+		assert_not_null(sm, "SoundManager unavailable — a skip here reports GREEN having tested nothing")
 		return
 	var prev: Dictionary = sm.capture_music_state() if sm.has_method("capture_music_state") else {}
 	for f in ["FireDragonCave.gd", "IceDragonCave.gd", "LightningDragonCave.gd", "ShadowDragonCave.gd"]:
@@ -156,7 +156,7 @@ func test_dragon_cave_areas_still_resolve_to_the_medieval_battle_suffix() -> voi
 	## default suffix instead of medieval.
 	var sm := get_node_or_null("/root/SoundManager")
 	if sm == null:
-		pass_test("SoundManager unavailable")
+		assert_not_null(sm, "SoundManager unavailable — a skip here reports GREEN having tested nothing")
 		return
 	var prev: Dictionary = sm.capture_music_state() if sm.has_method("capture_music_state") else {}
 	## The cache must be poisoned first. _get_current_world_suffix's default arm

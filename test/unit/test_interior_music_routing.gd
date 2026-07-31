@@ -51,7 +51,7 @@ func test_inherit_on_missing_keeps_current_area() -> void:
 	# unauthored rooms cut the village music to silence.
 	var sm := _sound_manager()
 	if sm == null:
-		pass_test("SoundManager autoload unavailable in this context")
+		assert_not_null(sm, "SoundManager autoload unavailable in this context — a skip here reports GREEN having tested nothing")
 		return
 	var prev_area: String = sm._current_area
 	var prev_playing: bool = sm._music_playing
@@ -81,7 +81,7 @@ func test_guard_sits_before_stop_music_in_source() -> void:
 func test_world_variant_outranks_base_key() -> void:
 	var sm := _sound_manager()
 	if sm == null:
-		pass_test("SoundManager autoload unavailable in this context")
+		assert_not_null(sm, "SoundManager autoload unavailable in this context — a skip here reports GREEN having tested nothing")
 		return
 	var probe_base := "interior_zz_probe"
 	var probe_variant: String = probe_base + "_" + str(sm._get_current_world_suffix())
@@ -133,7 +133,7 @@ func test_menu_restore_into_unauthored_interior_does_not_keep_menu() -> void:
 	## menu/battle/victory, so empty means there is no area bed to inherit).
 	var sm := _sound_manager()
 	if sm == null:
-		pass_test("SoundManager autoload unavailable in this context")
+		assert_not_null(sm, "SoundManager autoload unavailable in this context — a skip here reports GREEN having tested nothing")
 		return
 	var prev_area: String = sm._current_area
 	var prev_playing: bool = sm._music_playing

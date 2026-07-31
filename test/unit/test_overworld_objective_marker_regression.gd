@@ -73,7 +73,7 @@ func test_marker_points_at_cave_when_only_game_constant_flag_set() -> void:
 	# The marker MUST point at the cave, not the village.
 	var gs = get_tree().root.get_node_or_null("GameState")
 	if gs == null:
-		pass_test("GameState autoload unavailable; skipping")
+		assert_not_null(gs, "GameState autoload unavailable; skipping — a skip here reports GREEN having tested nothing")
 		return
 	gs.game_constants["cutscene_flag_chapter1_complete"] = true
 
@@ -95,7 +95,7 @@ func test_marker_points_at_village_before_chapter1() -> void:
 	# through to the village entrance (the introductory objective).
 	var gs = get_tree().root.get_node_or_null("GameState")
 	if gs == null:
-		pass_test("GameState autoload unavailable; skipping")
+		assert_not_null(gs, "GameState autoload unavailable; skipping — a skip here reports GREEN having tested nothing")
 		return
 
 	var scene = await _make_scene()
@@ -111,7 +111,7 @@ func test_marker_still_points_at_cave_via_story_flag() -> void:
 	# story_flags directly), the marker must still point at the cave.
 	var gs = get_tree().root.get_node_or_null("GameState")
 	if gs == null:
-		pass_test("GameState autoload unavailable; skipping")
+		assert_not_null(gs, "GameState autoload unavailable; skipping — a skip here reports GREEN having tested nothing")
 		return
 	gs.story_flags["chapter1_complete"] = true
 
@@ -131,7 +131,7 @@ func test_marker_points_at_portal_after_boss() -> void:
 	# defeat_cutscene_flags ratchet.
 	var gs = get_tree().root.get_node_or_null("GameState")
 	if gs == null:
-		pass_test("GameState autoload unavailable; skipping")
+		assert_not_null(gs, "GameState autoload unavailable; skipping — a skip here reports GREEN having tested nothing")
 		return
 	gs.game_constants["cutscene_flag_world1_mordaine_defeated"] = true
 	# Even with the chapter1 game_constant set, boss-defeated takes priority.
