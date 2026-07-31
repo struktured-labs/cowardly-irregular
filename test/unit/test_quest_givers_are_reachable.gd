@@ -5,13 +5,23 @@ extends GutTest
 const QUEST_DIR := "res://data/quests/"
 const NPC_SRC := "res://src/exploration/OverworldNPC.gd"
 
-## Unreachable givers that are authored ahead of their world. Owner, not permission.
+## Value is the BLOCKER, not just the world — membership must carry WHY it is still absent.
+## The three W4 rivet_row givers below are DELIBERATELY unplaced: their NPCs exist and one line
+## each would start the quests, but every custom step needs a designed mechanic (multi-path
+## counter-signature, a compression puzzle, an archive in maintenance tunnels that has no map).
+## Placing them would ship startable-but-unfinishable quests — the W1 trap, on purpose.
 const AUTHORED_AHEAD := {
-	"rat_patrol_junction": "W4", "madame_orrery_w4": "W4", "dorrit_w4": "W4",
-	"foreman_w4": "W4", "union_rep_w4": "W4",
-	"memory_leak_district": "W5", "madame_orrery_w5": "W5", "race_condition_pair": "W5",
-	"firewall_attendant_w5": "W5",
-	"traveler_w6": "W6", "madame_orrery_w6": "W6", "last_shopkeeper_w6": "W6",
+	"foreman_w4": "W4 — NPC 'Shift Foreman Grix' exists; watercolors step3 needs the maintenance-tunnels map",
+	"union_rep_w4": "W4 — NPC 'Union Rep Voss' exists; words_per_conversation step2 is the compression puzzle",
+	"dorrit_w4": "W4 — NPC 'Dorrit' exists; form_exception step2 is the multi-path counter-signature",
+	"rat_patrol_junction": "W4 — sited in rivet_row_tunnels, which exists as no map",
+	"memory_leak_district": "W5 — no village placement yet",
+	"madame_orrery_w5": "W5 — no village placement yet",
+	"race_condition_pair": "W5 — no village placement yet",
+	"firewall_attendant_w5": "W5 — no village placement yet",
+	"traveler_w6": "W6 — no village placement yet",
+	"madame_orrery_w6": "W6 — no village placement yet",
+	"last_shopkeeper_w6": "W6 — no village placement yet",
 }
 
 ## One NAMED member per resolution path — a count control passes on a sweep that resolved nothing.

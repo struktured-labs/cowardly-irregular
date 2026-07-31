@@ -213,6 +213,30 @@ func _setup_npcs() -> void:
 	])
 	npcs.add_child(kid)
 
+	# Dorrit — giver for world4_form_exception_alpha. Counts her own words; twelve is quota.
+	var dorrit = _create_npc("Dorrit", "villager", Vector2(14 * TILE_SIZE,9 * TILE_SIZE), [
+		"Twelve words is optimal. I'm already over.",
+		"The line runs. I watch it run. That's the role now.",
+		"I asked a question last spring. They scheduled me for training.",
+		"After training, twelve words felt like plenty. That lasted four months.",
+		"The questions come back. The Director's recalibration doesn't hold perfectly.",
+		"There are always deviations. I'm one. You're a bigger one."
+	])
+	npcs.add_child(dorrit)
+
+	# Madame Orrery — giver for world4_deviation_report. Same merchant, W4 consulting office.
+	var orrery = _create_npc("Madame Orrery", "mysterious", Vector2(8 * TILE_SIZE,12 * TILE_SIZE), [
+		"Close the door. Doors are the last technology in this building that still works for the occupant.",
+		"I sold goods across worlds. Here they gave me a title and an office and called it a promotion.",
+		"'Consultant.' It means they file what I write and never read it.",
+		"So I write in their format. Forty pages, correct headers, findings section.",
+		"Camouflage is just knowing what a thing is WORTH to the person holding it.",
+		"You have the look of someone who travels between worlds. I'm documenting that."
+	])
+	# Without this world4_deviation_report is UNSTARTABLE — derived id would be madame_orrery.
+	orrery.npc_id = "madame_orrery_w4"
+	npcs.add_child(orrery)
+
 	# Graffiti Wall (interactable object)
 	var graffiti = _create_npc("Graffiti Wall", "villager", Vector2(21 * TILE_SIZE,4 * TILE_SIZE), [
 		"Scrawled on the wall:",
