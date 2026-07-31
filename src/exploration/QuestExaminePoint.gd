@@ -133,9 +133,28 @@ func _examine() -> void:
 	var qs = get_node_or_null("/root/QuestSystem")
 	if SoundManager:
 		SoundManager.play_ui("secret_found")
+	var job_line := _job_variant_text(qs)
 	GameState.set_story_flag(flag)
 	qs.notify_flag(flag)
-	_toast(examine_text)
+	_toast(examine_text if job_line == "" else examine_text + "\n\n" + job_line)
+
+
+## The lead job's authored read of THIS point, or "". 16 of these sat in quest data
+## rendered by nothing until struktured's "wire / rewrite" ruling.
+func _job_variant_text(qs: Node) -> String:
+	if qs == null or not qs.has_method("_leader_job_id"):
+		return ""
+	var job: String = str(qs._leader_job_id())
+	if job == "":
+		return ""
+	var variant = qs.get_quest(quest_id).get("rewards", {}).get("job_variants", {}).get(job, {})
+	if not (variant is Dictionary):
+		return ""
+	## examine_flag scopes the beat to ONE point — a quest with several points would
+	## otherwise show its single job read at whichever the player reached first.
+	if str(variant.get("examine_flag", "")) != flag:
+		return ""
+	return str(variant.get("examine_text", ""))
 
 
 func _toast(text: String) -> void:

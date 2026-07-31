@@ -121,7 +121,8 @@
     ],
     "job_variants": {
       "mage": {
-        "description": "Mage examine text on the ledger: the entries scan as a legal template someone lifted from a capital-court proceeding and then repurposed as bookkeeping. 'This is the wrong document dressed as the right one.' No mechanical effect.",
+        "examine_text": "The entries scan as a legal template — lifted from a capital-court proceeding and repurposed as bookkeeping. This is the wrong document dressed as the right one.",
+        "examine_flag": "quest_w1_grimhollow_foremans_ledger_accepted",
         "items": [
           {
             "item_id": "grimhollow_pick",
