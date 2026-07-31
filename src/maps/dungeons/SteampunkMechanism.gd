@@ -120,3 +120,22 @@ func _get_boss_intro_dialogue() -> Array:
 
 func _get_music_area_id() -> String:
 	return "steampunk_dungeon"
+
+
+## world3_before_the_regulator step 2. The authored note puts it ON the main-quest
+## dungeon route with no separate unlock, so it rides the existing floor-2 corridor.
+func _setup_transitions_for_floor(floor_num: int) -> void:
+	super._setup_transitions_for_floor(floor_num)
+	if floor_num != 2:
+		return
+	var ExamineScript = load("res://src/exploration/QuestExaminePoint.gd")
+	if ExamineScript == null:
+		return
+	var junction = ExamineScript.new()
+	junction.quest_id = "world3_before_the_regulator"
+	junction.flag = "quest_world3_before_the_regulator_junction_traced"
+	junction.indicator_text = "[A] Trace the junction"
+	junction.examine_text = "One conduit runs the wrong way — carrying out, not in. The Mechanism is not being controlled from here. It is being LISTENED to, by something that was receiving long before the Regulator was appointed."
+	junction.idle_text = "Brass conduit converges at a junction box, humming slightly out of time with the floor."
+	junction.position = Vector2(4 * TILE_SIZE, 7 * TILE_SIZE)
+	transitions.add_child(junction)

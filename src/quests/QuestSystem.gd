@@ -254,6 +254,11 @@ func _announce_rewards(npc: Node) -> void:
 ## untested_edge step 2's dual-emitter path B (path A is the Mage light-spell
 ## interact at the rack). Table-driven so future dual-emitters slot in as data.
 const DIALOGUE_EMITTERS: Dictionary = {
+	# world3_before_the_regulator step 3 — Hartwick is not hidden behind a puzzle,
+	# he is hidden behind nobody asking; the first talk after step 2 finds him.
+	"cornelius_hartwick": [
+		{"quest": "world3_before_the_regulator", "flag": "quest_world3_before_the_regulator_hartwick_found"},
+	],
 	"guild_scholar_scriptura": [
 		{"quest": "world1_untested_edge", "flag": "quest_world1_untested_edge_inscription_read"},
 	],
