@@ -35,7 +35,16 @@ cd "$(cd "$(dirname "$0")/.." && pwd)"
 
 BITRATE="${1:-64}"
 SRC_DIR="assets/audio/music"
-OUT_DIR="tmp/web_audio/music"
+# BITRATE-SCOPED, and that is load-bearing. The idempotence check below compares
+# mtimes and has no notion of bitrate, so a shared output directory makes
+# `make_web_audio.sh 64` silently REUSE files transcoded at 48 and then report
+# them as 64 kbps. Measured: a 64k run printed "reused 154 · 91.5 MiB at 64 kbps"
+# for a tree that was entirely 48k — the script asserting a bitrate it did not
+# produce. That is the label-implies-a-conclusion-its-predicate-doesn't-support
+# class, in my own tool, and it fed a wrong number into a shipping decision.
+# Scoping the path means two bitrates cannot share a directory, so the mtime
+# check stays cheap and can no longer lie.
+OUT_DIR="tmp/web_audio/music_${BITRATE}k"
 PCK_LIMIT_MIB=189   # 199,000,000 bytes; see deploy_web.sh PCK_LIMIT
 
 command -v ffmpeg >/dev/null || { echo "[web-audio] ffmpeg not found" >&2; exit 2; }
