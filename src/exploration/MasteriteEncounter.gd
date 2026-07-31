@@ -35,6 +35,10 @@ const TILE_SIZE: int = 32
 ## Display label above the pre-fight silhouette (design flavor).
 @export var display_name: String = ""
 
+## Optional custom objective this fight RESOLVES — the step's `required_flag`.
+## Setting a flag never advances a quest; only notify_flag does.
+@export var quest_flag: String = ""
+
 var _fired: bool = false
 
 
@@ -46,6 +50,10 @@ func _ready() -> void:
 	monitorable = true
 
 	if _defeat_flag_set() or not _prereq_met():
+		# Catch-up: killed BEFORE the quest reached this step, so the victory
+		# notify found no active objective. Idempotent — a no-op once past it.
+		if _defeat_flag_set():
+			_notify_quest()
 		visible = false
 		monitoring = false
 		return
@@ -57,6 +65,16 @@ func _ready() -> void:
 
 func defeat_flag() -> String:
 	return "w1_%s_defeated" % archetype
+
+
+## notify_flag advances only a CURRENT custom objective whose required_flag
+## matches, so this is safe to call whenever the fight is already resolved.
+func _notify_quest() -> void:
+	if quest_flag == "":
+		return
+	var qs = get_node_or_null("/root/QuestSystem")
+	if qs:
+		qs.notify_flag(quest_flag)
 
 
 func _defeat_flag_set() -> bool:
@@ -156,6 +174,7 @@ func _on_body_entered(body: Node2D) -> void:
 			"story_flags": [defeat_flag()],
 			"constants": [],
 			"dungeon_flag": "",
+			"quest_flags": [quest_flag] if quest_flag != "" else [],
 		}
 	monitoring = false
 	_fire_battle()

@@ -3110,6 +3110,12 @@ func _apply_pending_boss_defeat() -> void:
 	# Story flags
 	for flag in spec.get("story_flags", []):
 		GameState.set_story_flag(flag)
+	# Quest notifies. A custom objective advances ONLY via notify_flag — setting
+	# the flag above is invisible to QuestSystem, so a kill-gated step strands.
+	var qs = get_node_or_null("/root/QuestSystem")
+	for qf in spec.get("quest_flags", []):
+		if qs and str(qf) != "":
+			qs.notify_flag(str(qf))
 	# Game constants (typically cutscene_flag_*)
 	# Tick 214: warn on cutscene_flag_* names that don't appear anywhere in this file's body. A subclass typo (e.g. "cutscene_flag_wardin_industrial_defeated") sets the wrong flag silently — defeat applies but no post-defeat cutscene gate ever fires.
 	# Tick 220: route through the helper so each flag also mirrors to story_flags. Pre-fix the direct write here meant QuestLog never saw boss defeat objectives flip to "complete".

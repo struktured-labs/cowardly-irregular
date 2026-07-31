@@ -294,5 +294,6 @@ func _place_masterite_arbiter() -> void:
 	arbiter.archetype = "arbiter"
 	arbiter.monster_id = "masterite_arbiter_medieval"
 	arbiter.display_name = "Arbiter of Steel"
+	arbiter.quest_flag = "quest_w1_grimhollow_ledger_read"
 	arbiter.position = Vector2(16 * TILE_SIZE,12 * TILE_SIZE)
 	npcs.add_child(arbiter)

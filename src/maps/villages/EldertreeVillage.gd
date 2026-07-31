@@ -299,5 +299,6 @@ func _place_masterite_tempo() -> void:
 	tempo.archetype = "tempo"
 	tempo.monster_id = "masterite_tempo_medieval"
 	tempo.display_name = "Tempo of the Hunt"
+	tempo.quest_flag = "quest_w1_eldertree_rangers_house_searched"
 	tempo.position = Vector2(14 * TILE_SIZE,14 * TILE_SIZE)
 	npcs.add_child(tempo)

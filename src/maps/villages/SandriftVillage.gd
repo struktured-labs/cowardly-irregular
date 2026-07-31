@@ -291,5 +291,6 @@ func _place_masterite_warden() -> void:
 	warden.monster_id = "masterite_warden_medieval"
 	warden.prereq_flag = "cave_rat_king_defeated"
 	warden.display_name = "Warden of the Old Guard"
+	warden.quest_flag = "quest_w1_sandrift_water_on_the_road_accepted"
 	warden.position = Vector2(14 * TILE_SIZE,16 * TILE_SIZE)
 	npcs.add_child(warden)
