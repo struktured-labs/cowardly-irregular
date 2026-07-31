@@ -3050,6 +3050,10 @@ func _get_alive_enemies() -> Array[Combatant]:
 
 func _execute_next_action() -> void:
 	"""Execute the next action in the queue"""
+	## An awaited continuation can resume AFTER end_battle and resurrect the battle: with a
+	## stale action it sets PROCESSING_ACTION, with an empty queue it falls into _start_new_round.
+	if not is_battle_active():
+		return
 	_wd_bump()
 	# Check for victory/defeat
 	if _check_victory_conditions():

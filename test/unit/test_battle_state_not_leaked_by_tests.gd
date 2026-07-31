@@ -28,8 +28,15 @@ extends GutTest
 ## outliving the test, since that file sets turbo_mode so the attack continuation
 ## runs on process_frame rather than a timer. NOT CONFIRMED, and not fixed here.
 ##
-## The map test still skips. This guard defends a different, real leak and the
-## runtime assertion below only proves the state is clean AT THIS FILE'S POSITION.
+## RESOLVED 2026-07-31 — the hypothesis above was right. _execute_next_action() had no
+## guard against running after end_battle, so a resuming continuation re-entered and set
+## PROCESSING_ACTION (or, on an empty queue, fell into _start_new_round). Fixed in
+## BattleManager with `if not is_battle_active(): return`; see
+## test_execute_next_action_after_battle_end_regression, whose mutation reproduces
+## state 6 exactly. The map test no longer skips — suite pendings went 2 -> 1.
+##
+## This guard still defends a DIFFERENT, real leak, and the runtime assertion below
+## only proves the state is clean AT THIS FILE'S POSITION.
 
 const TEST_DIR := "res://test/unit"
 const ASSIGN := "BattleManager.current_state = "
