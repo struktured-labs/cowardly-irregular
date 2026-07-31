@@ -70,24 +70,24 @@ func test_measured_displacement_matches_the_screenshot() -> void:
 		"displacement in tiles — struktured observed ~4, measured %.2f" % (d / TILE))
 
 
-## The displacement must be world-INDEPENDENT. Presets override curvature
-## and fog, never near_scale/ground_y — so one constant covers every map.
-## If a future preset overrides those, this fails and the fix needs to
-## become per-world instead of global.
+## Displacement must be world-INDEPENDENT, else the constant offset has to become per-world.
 func test_displacement_is_uniform_across_all_world_presets() -> void:
 	var overlay = load(MODE7).new()
 	autofree(overlay)
-	if not overlay.has_method("apply_world_preset"):
-		pass_test("no per-world presets to check")
-		return
+	## Assert, never skip — the old guard named apply_world_preset, which has never existed.
+	assert_true(overlay.has_method("apply_preset"),
+		"apply_preset is the per-world preset API. This was has_method(\"apply_world_preset\") "
+		+ "+ pass_test() — a name nothing ever defined, so the guard fired on every run and the "
+		+ "loop below measured zero presets while the test reported green. A rename must go RED.")
 	var seen: Array = []
+	## "void" is preset-less on purpose (AbstractOverworld sets mode7_enabled=false) — its warning is expected.
 	for world in ["medieval", "suburban", "steampunk", "industrial", "digital", "void"]:
-		overlay.apply_world_preset(world)
+		overlay.apply_preset(world)
 		var d := _displacement_world_px(overlay.near_scale, overlay.ground_y, overlay.horizon)
 		seen.append(d)
 		assert_almost_eq(d, MEASURED_DISPLACEMENT_WORLD_PX, MEASURE_TOLERANCE_PX,
 			"%s preset displacement %.1f — a preset overriding near_scale/ground_y would make the fix per-world" % [world, d])
-	assert_eq(seen.size(), 6, "all six presets measured")
+	assert_eq(seen.size(), 6, "5 presets + the unknown-world fallback all measured")
 
 
 ## The player being screen-locked is WHY one constant can be correct
