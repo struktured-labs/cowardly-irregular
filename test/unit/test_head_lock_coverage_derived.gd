@@ -173,3 +173,36 @@ func test_exempt_entries_all_carry_a_reason_and_still_exist() -> void:
 	assert_eq(bad, [],
 		("every EXEMPT entry must carry a real reason (>20 chars) and name a " +
 		 "sheet that exists — an unexplained exemption is a silent to-do: %s") % [bad])
+
+
+## LISTED is not MEASURED — _assert_head_locked bare-returns on a missing image and
+## on any sheet that is not 128x128, asserting nothing and reporting nothing either time.
+## The visibility test above proves a sheet reaches the gate; this proves the gate can act on it.
+## Measured 2026-07-31: 41/41 are 128x128, so both skips are dormant — this keeps them dormant.
+func test_every_sheet_is_actually_MEASURABLE_not_just_listed() -> void:
+	var on_disk := _sheet_names("res://assets/sprites/jobs")
+	for npc in _sheet_names("res://assets/sprites/npcs"):
+		on_disk.append(npc)
+	assert_gt(on_disk.size(), 30, "sanity: expected >30 overworld sheets, found %d" % [on_disk.size()])
+
+	var unmeasurable: Array = []
+	for sheet in on_disk:
+		var path: String = "res://assets/sprites/jobs/%s/overworld.png" % [sheet]
+		if not ResourceLoader.exists(path):
+			path = "res://assets/sprites/npcs/%s/overworld.png" % [sheet]
+		var tex := load(path) as Texture2D
+		if tex == null:
+			unmeasurable.append("%s: does not load as Texture2D" % [sheet])
+			continue
+		var img: Image = tex.get_image()
+		if img == null:
+			unmeasurable.append("%s: texture yields no Image" % [sheet])
+			continue
+		if img.get_width() != 128 or img.get_height() != 128:
+			unmeasurable.append("%s: %dx%d not 128x128" % [sheet, img.get_width(), img.get_height()])
+	unmeasurable.sort()
+	assert_eq(unmeasurable, [],
+		("sheet(s) the head-lock gate CANNOT measure — it bare-returns on each and " +
+		 "asserts nothing, so they sit in NPC_ARCHETYPES looking covered while no " +
+		 "pixel is ever compared. A skip whose condition is invisible is a coverage " +
+		 "hole wearing a green tick: %s") % [unmeasurable])
