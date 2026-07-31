@@ -1744,6 +1744,54 @@
       "prompt": "A weapon lowering with a soft metallic sigh, tension draining out, calm muted resonance settling to stillness",
       "duration_seconds": 0.85,
       "prompt_influence": 0.5
+    },
+    "status_cannot_act": {
+      "file": "assets/audio/sfx/status_cannot_act.ogg",
+      "prompt": "A heavy iron lock slamming home and seizing, solid weighty clunk with a ringing metallic tail, a body locked in place — present and forceful, not distant",
+      "duration_seconds": 0.9,
+      "prompt_influence": 0.5
+    },
+    "status_cannot_defer": {
+      "file": "assets/audio/sfx/status_cannot_defer.ogg",
+      "prompt": "A guard's stance breaking open, denied buzz over a hollow refusal tone, defences swept aside and held open",
+      "duration_seconds": 0.9,
+      "prompt_influence": 0.5
+    },
+    "status_controlled": {
+      "file": "assets/audio/sfx/status_controlled.ogg",
+      "prompt": "Taut puppet strings drawing tight with a wooden creak, a will bending under someone else's hand, unsettling sustained pull",
+      "duration_seconds": 0.9,
+      "prompt_influence": 0.5
+    },
+    "status_exposed": {
+      "file": "assets/audio/sfx/status_exposed.ogg",
+      "prompt": "A field recalibrating with a cold descending sweep, protective layers peeling away, clinical and precise",
+      "duration_seconds": 0.9,
+      "prompt_influence": 0.5
+    },
+    "status_festered": {
+      "file": "assets/audio/sfx/status_festered.ogg",
+      "prompt": "A wound turning bad, thick wet churn under a low sickly throb, slow spreading corruption with no sharp attack",
+      "duration_seconds": 0.9,
+      "prompt_influence": 0.5
+    },
+    "status_memory_leak": {
+      "file": "assets/audio/sfx/status_memory_leak.ogg",
+      "prompt": "Digital decay bleeding through, stuttering bit-crushed fragments dissolving into static hiss, data draining away",
+      "duration_seconds": 0.9,
+      "prompt_influence": 0.5
+    },
+    "status_mind_swap": {
+      "file": "assets/audio/sfx/status_mind_swap.ogg",
+      "prompt": "Two consciousnesses trading places, a disorienting swirling whoosh that inverts mid-flight, vertiginous and wrong",
+      "duration_seconds": 0.9,
+      "prompt_influence": 0.5
+    },
+    "status_permakilled": {
+      "file": "assets/audio/sfx/status_permakilled.ogg",
+      "prompt": "Absolute erasure, a hollow reversed swell collapsing into dead flat silence, final and total with no echo left behind",
+      "duration_seconds": 0.9,
+      "prompt_influence": 0.5
     }
   }
 }
