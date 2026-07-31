@@ -9,11 +9,15 @@ const VILLAGES := {
 	"Grimhollow": "res://src/maps/villages/GrimhollowVillage.gd",
 	"Ironhaven": "res://src/maps/villages/IronhavenVillage.gd",
 	"Eldertree": "res://src/maps/villages/EldertreeVillage.gd",
+	"Brasston": "res://src/maps/villages/BrasstonVillage.gd",
 }
 
 ## Emitters authored per village — the count each _setup_npcs places.
+## Sandrift is 0 BY DESIGN: its only step-2 emitter is the Warden encounter, so the
+## examine point that stood in for it was deleted once the encounter learned to notify.
 const EXPECTED := {
-	"Sandrift": 1, "Frosthold": 1, "Grimhollow": 2, "Ironhaven": 2, "Eldertree": 2,
+	"Sandrift": 0, "Frosthold": 1, "Grimhollow": 1, "Ironhaven": 1, "Eldertree": 1,
+	"Brasston": 2,
 }
 
 

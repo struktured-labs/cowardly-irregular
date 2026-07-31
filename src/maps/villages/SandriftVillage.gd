@@ -271,11 +271,6 @@ func _setup_npcs() -> void:
 	kes.npc_id = "caravan_master_kes"
 	npcs.add_child(kes)
 
-	_add_quest_examine_point("w1_sandrift_water_on_the_road",
-		"quest_w1_sandrift_water_on_the_road_accepted", "[A] Approach the road east",
-		"Gold armor, no sigil. He asks your business. You give him a story shaped like a form — and he stands aside, satisfied by the SHAPE of it.",
-		"The road east. Dust, and a figure in gold who has not moved in nine days.",
-		Vector2(25 * TILE_SIZE,7 * TILE_SIZE))
 
 
 ## Warden of the Old Guard — L7 masterite blocking the trade road until

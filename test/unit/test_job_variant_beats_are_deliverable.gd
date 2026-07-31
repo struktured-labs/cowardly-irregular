@@ -47,7 +47,10 @@ func test_control_both_corpora_resolve() -> void:
 	var placed := _placed_flags()
 	assert_gt(placed.size(), 5, "must find real examine-point placements, else every beat "
 		+ "below looks undeliverable and the guard inverts")
-	assert_true(placed.has("quest_w1_sandrift_water_on_the_road_accepted"),
+	## A named-member control is only valid while that member exists: this originally named
+	## Sandrift's flag and went red the moment that point was deleted for the Warden encounter.
+	## Re-point it when a member goes, never weaken it to a count.
+	assert_true(placed.has("quest_w1_frosthold_meltwater_clock_accepted"),
 		"a KNOWN-placed flag must resolve — a count alone passes while the scan matches nothing")
 	assert_false(placed.has("zzz_never_placed"), "an invented flag must NOT resolve")
 	assert_gt(_quests().size(), 25, "quest walk must load the real corpus")

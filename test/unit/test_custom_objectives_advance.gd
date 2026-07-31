@@ -35,6 +35,10 @@ func _stuck_custom_objectives() -> Array:
 	## A QuestExaminePoint built directly (dungeons have no BaseVillage helper) sets .flag
 	## as a property — invisible to the factory pattern above, and W3's junction uses it.
 	var direct_re := RegEx.create_from_string("\\w+\\.flag\\s*=\\s*\"([^\"]+)\"")
+	## MasteriteEncounter's export. Named EXACTLY, not broadened to \\w*flag — that also
+	## matches .prereq_flag (SandriftVillage: the Warden's precondition), and counting a
+	## GATE as an emitter trades a false red for a false green.
+	var quest_flag_re := RegEx.create_from_string("\\w+\\.quest_flag\\s*=\\s*\"([^\"]+)\"")
 	var stack: Array = ["res://src"]
 	while not stack.is_empty():
 		var dir: String = stack.pop_back()
@@ -63,6 +67,8 @@ func _stuck_custom_objectives() -> Array:
 				for m in point_re.search_all(text):
 					notifiable[m.get_string(1)] = true
 				for m in direct_re.search_all(text):
+					notifiable[m.get_string(1)] = true
+				for m in quest_flag_re.search_all(text):
 					notifiable[m.get_string(1)] = true
 			f = d.get_next()
 		d.list_dir_end()
