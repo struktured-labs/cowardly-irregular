@@ -397,6 +397,7 @@ func _maybe_run_battle_smoke() -> void:
 		_cutscene_cooldown = true
 		_set_current_map_id("overworld")
 		await _start_exploration()
+		_smoke_expect_exploration("overworld")
 		await get_tree().create_timer(1.5).timeout
 		# mid-stride captures — the garbled-walk sprite class is only visible while moving
 		for dir_action in ["ui_right", "ui_left"]:
@@ -408,6 +409,7 @@ func _maybe_run_battle_smoke() -> void:
 		_cutscene_cooldown = true
 		_set_current_map_id("harmonia_village")
 		await _start_exploration()
+		_smoke_expect_exploration("harmonia_village")
 		await get_tree().create_timer(1.5).timeout
 		await _smoke_shot("village")
 		# the 5 villages holding W1 quest givers + QuestExaminePoints — no smoke on any platform had ever entered one
@@ -415,6 +417,7 @@ func _maybe_run_battle_smoke() -> void:
 			_cutscene_cooldown = true
 			_set_current_map_id(_vid)
 			await _start_exploration()
+			_smoke_expect_exploration(_vid)
 			await get_tree().create_timer(1.0).timeout
 			await _smoke_shot(_vid)
 		# interiors: NOTHING on any platform had ever loaded one in a built game (inn charges gold, the rest carry quest content)
@@ -422,11 +425,13 @@ func _maybe_run_battle_smoke() -> void:
 			_cutscene_cooldown = true
 			_set_current_map_id(_iid)
 			await _start_exploration()
+			_smoke_expect_exploration(_iid)
 			await get_tree().create_timer(0.8).timeout
 			await _smoke_shot(_iid)
 		_cutscene_cooldown = true
 		_set_current_map_id("harmonia_village")
 		await _start_exploration()
+		_smoke_expect_exploration("harmonia_village (menu return)")
 		await get_tree().create_timer(1.0).timeout
 		# settings (Start) then the overworld/party menu (X) — the week's UI churn surfaces
 		_smoke_tap("ui_menu")
@@ -496,6 +501,7 @@ func _maybe_run_battle_smoke() -> void:
 		_cutscene_cooldown = true
 		_set_current_map_id("whispering_cave")
 		await _start_exploration()
+		_smoke_expect_exploration("whispering_cave")
 		await get_tree().create_timer(1.5).timeout
 		await _smoke_shot("cave")
 	await _start_battle_async(["goblin"], true)
@@ -577,6 +583,18 @@ func _smoke_tap(action: String) -> void:
 	up.action = action
 	up.pressed = false
 	Input.parse_input_event(up)
+
+
+## A map leg that BAILED still shoots and still prints "saved ... OK".
+## _start_exploration returns early when a battle owns the screen, so the shot
+## captures whatever was already there and the leg proves nothing (cowir-main's
+## duel/post_battle_return finding, same mechanism one function over). Name the
+## leg that did not run. Map legs only — battle legs are correctly in BATTLE.
+func _smoke_expect_exploration(leg: String) -> void:
+	if current_state == LoopState.BATTLE and BattleManager \
+			and BattleManager.current_state != BattleManager.BattleState.INACTIVE:
+		print("[SMOKE] FAIL %s — _start_exploration bailed (a battle owns the screen); this leg tested NOTHING" % leg)
+		_smoke_failed = true
 
 
 func _smoke_shot(shot_name: String, max_dominant: float = 0.92) -> void:
