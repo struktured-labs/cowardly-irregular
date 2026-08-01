@@ -88,6 +88,9 @@ func _build_portrait() -> void:
 
 	var sprite = TextureRect.new()
 	sprite.texture = tex
+	## expand_mode BEFORE size: the procedural image is RENDER_SIZE (48), so at SMALL (32)
+	## the minimum size is still the texture's and the 32 is clamped straight back up.
+	sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	sprite.stretch_mode = TextureRect.STRETCH_SCALE
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	sprite.size = _portrait_size
