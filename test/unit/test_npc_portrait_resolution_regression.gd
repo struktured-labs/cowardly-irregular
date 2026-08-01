@@ -116,9 +116,9 @@ func test_every_declared_portrait_path_exists() -> void:
 	if not preregistered.is_empty():
 		var src := FileAccess.get_file_as_string(CUTSCENE_DIALOGUE)
 		assert_true(src.contains('begins_with("masterite_")'),
-			"%d masterite portrait(s) are declared without art and are only safe because " +
+			("%d masterite portrait(s) are declared without art and are only safe because " +
 			"_create_portrait's default arm draws them as mysterious. That arm is gone, so " +
-			"they now render a narrator blur." % [preregistered.size()])
+			"they now render a narrator blur.") % [preregistered.size()])
 
 
 func test_every_placed_npc_resolves_to_a_real_portrait() -> void:
@@ -132,8 +132,8 @@ func test_every_placed_npc_resolves_to_a_real_portrait() -> void:
 		names.append(p["name"])
 	for known in ["Phil the Lost", "Young Pip", "Rowan", "Scholar Milo"]:
 		assert_true(known in names,
-			"the placement scan must find '%s' — it is placed in a shipped map, so if " +
-			"this fails every result below is a false clean" % [known])
+			("the placement scan must find '%s' — it is placed in a shipped map, so if " +
+			"this fails every result below is a false clean") % [known])
 
 	# A named NPC (sprite_archetype set) must have art for THAT archetype.
 	var faceless: Array = []
