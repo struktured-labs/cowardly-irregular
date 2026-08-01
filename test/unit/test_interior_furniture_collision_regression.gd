@@ -101,10 +101,10 @@ func test_legacy_interiors_also_call_the_sweep() -> void:
 
 
 func test_authored_interiors_instantiate_without_stranding_npcs() -> void:
-	# Belt: bring each listed interior into the tree, let _ready run the
-	# sweep, and verify no NPC ended up on a wall cell. Furniture-overlap
-	# is checked at runtime (push_warning); ratchet on the wall-cell class
-	# here since it's cheap and catches the most common regression.
+	# Belt: bring each listed interior into the tree, let _ready run the sweep, and verify
+	# no NPC ended up on a wall cell OR on furniture. Both classes are asserted below —
+	# the furniture half was added 2026-08-01; this comment previously said it was left to
+	# a runtime push_warning, which is no longer true.
 	var checked := 0
 	for entry in INTERIOR_SCENES:
 		var path: String = entry[0]
