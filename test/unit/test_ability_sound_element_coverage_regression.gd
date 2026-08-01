@@ -140,3 +140,26 @@ func test_every_derived_cue_target_exists_in_the_manifest() -> void:
 	assert_gt(sm._ability_sounds.size(), 0, "control: the map is empty")
 	assert_eq(missing.size(), 0,
 		"ability cue target(s) absent from the manifest: %s" % [missing])
+
+func test_play_ability_actually_CONSULTS_the_derived_map() -> void:
+	## THE CALL-SITE GAP. Every other assertion here reads sm._ability_sounds directly —
+	## they prove the map is BUILT, never that play_ability READS it. Change line ~474 to
+	## stop consulting the map and all of them stay green while every dragon breath
+	## silently reverts to a melee thump.
+	##
+	## test_sfx_reverse_orphan_audit drives play_ability("fire") — but fire is in the HAND
+	## map, so the DERIVED path specifically has no call-site coverage. This closes that.
+	##
+	## Observable is the SFX cooldown stamp: a manifest MISS provably does not stamp
+	## (pinned by that file's premise assert), so a stamp means the cue resolved.
+	var sm: Node = _sm()
+	assert_not_null(sm, "SoundManager autoload required")
+	var derived_id: String = "fire_breath"
+	assert_eq(str(sm._ability_sounds.get(derived_id, "")), "ability_fire",
+		"PREMISE: %s must be a DERIVED entry (not hand-mapped) or this test proves nothing about the derived path" % derived_id)
+	sm._sfx_cooldowns.erase("ability_fire")
+	assert_false(sm._sfx_cooldowns.has("ability_fire"),
+		"control: the cue key must start unstamped or the assert below is satisfied by an earlier test")
+	sm.play_ability(derived_id)
+	assert_true(sm._sfx_cooldowns.has("ability_fire"),
+		"play_ability('%s') did NOT resolve ability_fire — the derived map is built but play_ability is not reading it, which is the exact defect every other assertion in this file is blind to" % derived_id)
