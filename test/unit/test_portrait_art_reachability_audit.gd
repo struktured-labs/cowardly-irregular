@@ -126,13 +126,16 @@ func test_gendered_generics_are_registered() -> void:
 
 
 func test_generic_villager_and_elder_keys_unchanged() -> void:
-	# Deliberate restraint: wiring the gendered art must NOT silently
-	# repoint the generic keys. 52+ villager-themed lines already render a
-	# specific way in builds struktured has played; changing what he's seen
-	# without him asking is the wrong default (same call as shipping
-	# conscript_nearby inert).
+	# The restraint was "don't change what struktured has already seen without
+	# him asking". He asked, 2026-07-31: "phil the lost: no portrait … PLEASE
+	# MAKE PORTRAITS FOR ALL SPRITES". `villager` is the npc_type of 55 placed
+	# NPCs and had no art, so every one of them shared one procedural face.
+	# The invariant this test was really protecting SURVIVES: the generic keys
+	# must not be silently repointed at the GENDERED variants.
 	var reg := _registry()
 	assert_eq(str(reg.get("elder", "")), "res://assets/sprites/portraits/npcs/elder.png",
 		"generic 'elder' must keep its existing art — repointing it to elder_f is a visible change nobody asked for")
-	assert_false(reg.has("villager"),
-		"generic 'villager' must keep resolving through the procedural arm, not get silently repointed at villager_m")
+	assert_eq(str(reg.get("villager", "")), "res://assets/sprites/portraits/npcs/villager.png",
+		"generic 'villager' must have its OWN art — never villager_m, and no longer left procedural (55 NPCs share this key)")
+	assert_true(ResourceLoader.exists(str(reg.get("villager", ""))),
+		"the villager portrait must exist on disk or 55 NPCs fall back to the generic procedural face")
