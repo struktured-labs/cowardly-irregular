@@ -297,6 +297,30 @@ const CHARACTER_THEMES = {
 	},
 }
 
+## npc_type -> an EXISTING theme, for roles with no palette of their own. Every target
+## must be a CHARACTER_THEMES key; aliasing to another missing name re-enters the same
+## silent narrator fallback and looks fixed. A real palette added later wins on its own.
+const THEME_ALIASES := {
+	"soldier": "guard", "knight": "guard",
+	"hooded_mage": "mage", "apprentice": "mage",
+	"herbalist": "cleric", "pilgrim": "cleric",
+	"scholarly": "scholar",
+	"bartender": "shopkeeper", "blacksmith": "merchant", "traveler": "merchant",
+	"adventurer": "hero", "dancer": "bard",
+	"child": "villager", "farmer": "villager", "maid": "villager", "nervous": "villager",
+}
+
+
+## Direct hit wins, then the alias, then narrator. Order-independent by construction:
+## if a real palette for an aliased role lands later, this returns it without an edit.
+func resolve_theme(theme_name: String) -> Dictionary:
+	if CHARACTER_THEMES.has(theme_name):
+		return CHARACTER_THEMES[theme_name]
+	var aliased: String = str(THEME_ALIASES.get(theme_name, ""))
+	if aliased != "" and CHARACTER_THEMES.has(aliased):
+		return CHARACTER_THEMES[aliased]
+	return CHARACTER_THEMES["narrator"]
+
 
 func _ready() -> void:
 	layer = 96  # Above CutsceneDirector (95), below transitions (100)
@@ -663,7 +687,7 @@ func _show_current_line() -> void:
 
 	var entry = _dialogue_queue[_current_index]
 	var theme_name = entry.get("theme", "narrator")
-	var theme = CHARACTER_THEMES.get(theme_name, CHARACTER_THEMES["narrator"])
+	var theme = resolve_theme(str(theme_name))
 
 	_create_dialogue_visuals(theme)
 
