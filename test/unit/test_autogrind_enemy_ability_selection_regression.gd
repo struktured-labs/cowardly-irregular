@@ -116,9 +116,9 @@ func test_the_strongest_offensive_ability_wins() -> void:
 	var e: Combatant = _enemy(100, 100, 99, ["fire", "firaga"])
 	var raw: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/abilities.json"))
 	var ab: Dictionary = raw.get("abilities", raw)
-	if not (ab.has("fire") and ab.has("firaga")):
-		pass_test("fire/firaga not both present; the ranking is covered by the helper test")
-		return
+	# ASSERT, don't skip. A `pass_test` here would register a passing assertion and retire this test silently the day either id is renamed — the shape three lanes closed on 2026-07-31. Asserting makes a rename LOUD and hands the next reader the two names to re-point.
+	assert_true(ab.has("fire") and ab.has("firaga"),
+		"this ranking test is written against fire/firaga — if either was renamed, re-point it rather than letting it skip")
 	var strongest: String = "firaga" if float((ab["firaga"] as Dictionary).get("damage_multiplier", 0.0)) \
 		> float((ab["fire"] as Dictionary).get("damage_multiplier", 0.0)) else "fire"
 	assert_eq(str(r._find_attack_ability(e)), strongest,
