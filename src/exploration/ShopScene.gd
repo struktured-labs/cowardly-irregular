@@ -194,10 +194,13 @@ func _create_description_panel() -> Control:
 		if keeper_tex:
 			var texrect = TextureRect.new()
 			texrect.texture = keeper_tex
-			texrect.position = Vector2(16, 16)
-			texrect.size = Vector2(64, 64)
+			## expand_mode BEFORE size: while it is still the default, minimum size is the
+			## texture's 256x256 and the 64 is clamped straight back up to it.
 			texrect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 			texrect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			texrect.custom_minimum_size = Vector2.ZERO
+			texrect.position = Vector2(16, 16)
+			texrect.size = Vector2(64, 64)
 			panel.add_child(texrect)
 			text_x = 16 + 64 + 12
 	elif shopkeeper_customization:
