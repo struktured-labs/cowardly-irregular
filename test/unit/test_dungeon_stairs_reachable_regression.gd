@@ -84,13 +84,41 @@ func test_stairs_sensor_masks_the_player_collision_layer() -> void:
 	var src := FileAccess.get_file_as_string(CAVE)
 	var start := src.find("func _setup_transition_collision")
 	assert_gt(start, 0, "_setup_transition_collision must exist")
-	var body := src.substr(start, 300)
+	# Read the actual function body, not a fixed character count: a 300-char window silently
+	# truncated when an explanatory comment was added inside the function, so a correct change
+	# failed the assertion while the code it checks was still there at char 416.
+	var _next := src.find("\nfunc ", start + 1)
+	var body := src.substr(start, (_next - start) if _next > start else 600)
 	assert_true(
 		body.contains("collision_mask = %d" % PLAYER_LAYER_BIT),
 		"stairs sensors must mask layer %d — OverworldPlayer is on collision_layer 2, and a "
 		% PLAYER_LAYER_BIT + "mismatched mask makes every staircase in every dungeon inert"
 	)
-	assert_true(body.contains("monitoring = true"), "a non-monitoring Area2D never emits body_entered")
+	# Deferred form accepted: a floor change rebuilds the map from inside the stair's own
+	# body_entered, so a direct write threw "Function blocked during in/out signal". What
+	# matters here is that monitoring is turned ON at all, not when it lands.
+	assert_true(
+		body.contains("monitoring = true") or body.contains('set_deferred("monitoring", true)'),
+		"a non-monitoring Area2D never emits body_entered"
+	)
+
+
+## Regression: struktured's session logged 9x "Function blocked during in/out signal.
+## Use set_deferred(\"monitorable\", true/false)" — 3 per floor change. A floor change
+## rebuilds the map from INSIDE the stair Area2D's body_entered, so writing these flags
+## directly happens mid-signal. The assertion above accepts either form (what matters
+## there is that monitoring is enabled at all); this one pins the deferred form, because
+## the direct write is a known engine error rather than a style preference.
+func test_transition_flags_are_set_deferred_not_mid_signal() -> void:
+	var src := FileAccess.get_file_as_string(CAVE)
+	var start := src.find("func _setup_transition_collision")
+	assert_gt(start, 0, "_setup_transition_collision must exist")
+	var _next := src.find("\nfunc ", start + 1)
+	var body := src.substr(start, (_next - start) if _next > start else 600)
+	assert_true(body.contains('set_deferred("monitoring", true)'),
+		"monitoring must be deferred — a direct write runs inside body_entered during a floor change")
+	assert_true(body.contains('set_deferred("monitorable", true)'),
+		"monitorable must be deferred — this is the exact flag the engine named in the error")
 
 
 func test_both_stair_handlers_are_connected_to_body_entered() -> void:
