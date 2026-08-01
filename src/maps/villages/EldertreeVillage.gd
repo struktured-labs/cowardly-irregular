@@ -196,7 +196,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(pip)
 
 	# Merchant Thorn (suspicious) — timeless voice, no branch.
-	var thorn = _create_npc("Merchant Thorn", "villager", Vector2(12 * TILE_SIZE,9 * TILE_SIZE), [
+	var thorn = _create_npc("Merchant Thorn", "merchant", Vector2(12 * TILE_SIZE,9 * TILE_SIZE), [
 		"These goods? Oh, they fell off a caravan.",
 		"Several caravans. Look, do you want them or not?",
 		"I have potions, ethers, and 'definitely not stolen' equipment.",
@@ -205,7 +205,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(thorn)
 
 	# Speedrun Monk Dash (efficiency) — timeless voice, no branch.
-	var dash = _create_npc("Speedrun Monk Dash", "villager", Vector2(20 * TILE_SIZE,8 * TILE_SIZE), [
+	var dash = _create_npc("Speedrun Monk Dash", "monk", Vector2(20 * TILE_SIZE,8 * TILE_SIZE), [
 		"Words are experience points you're leaving on the table.",
 		"Skip my dialogue. Go. NOW.",
 		"...Why are you still reading?",

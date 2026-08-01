@@ -175,6 +175,30 @@ const CHARACTER_THEMES = {
 		"name": Color(0.7, 0.9, 0.4),
 		"portrait_bg": Color(0.1, 0.12, 0.06)
 	},
+	# Added 2026-08-01 so NPCs can be typed by their actual role. These three
+	# archetypes had sheets and portraits but NO theme, so retyping an NPC to
+	# them would have fixed the sprite and dropped the box to narrator grey.
+	"child": {
+		"bg": Color(0.11, 0.09, 0.04),
+		"border": Color(0.95, 0.8, 0.45),
+		"text": Color(1.0, 0.97, 0.88),
+		"name": Color(1.0, 0.85, 0.5),
+		"portrait_bg": Color(0.13, 0.11, 0.05)
+	},
+	"blacksmith": {
+		"bg": Color(0.12, 0.06, 0.04),
+		"border": Color(0.85, 0.45, 0.2),
+		"text": Color(1.0, 0.92, 0.85),
+		"name": Color(0.95, 0.55, 0.25),
+		"portrait_bg": Color(0.14, 0.07, 0.04)
+	},
+	"monk": {
+		"bg": Color(0.1, 0.08, 0.04),
+		"border": Color(0.8, 0.62, 0.3),
+		"text": Color(0.98, 0.94, 0.86),
+		"name": Color(0.9, 0.72, 0.38),
+		"portrait_bg": Color(0.12, 0.09, 0.05)
+	},
 	"shopkeeper": {
 		"bg": Color(0.1, 0.08, 0.04),
 		"border": Color(0.8, 0.65, 0.3),

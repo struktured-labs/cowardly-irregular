@@ -182,7 +182,7 @@ func _setup_npcs() -> void:
 		_after_cave_done = bool(_after_cave_gs.game_constants.get("cutscene_flag_rat_king_defeated", false))
 
 	# Blacksmith Magda (eager)
-	var magda = _create_npc("Blacksmith Magda", "villager", Vector2(16 * TILE_SIZE,8 * TILE_SIZE), [
+	var magda = _create_npc("Blacksmith Magda", "blacksmith", Vector2(16 * TILE_SIZE,8 * TILE_SIZE), [
 		"Dragon scales, you say?",
 		"Oh, I could forge LEGENDARY equipment from those.",
 		"Come back with four. Bring receipts.",

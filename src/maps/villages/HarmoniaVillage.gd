@@ -494,7 +494,7 @@ func _setup_npcs() -> void:
 		"Not IN. Just at.",
 		"*swings imaginary sword, one time, at nothing*"
 	]
-	var kid = _create_npc("Young Pip", "villager", Vector2(19 * TILE_SIZE,12 * TILE_SIZE), _pip_post if _after_cave_done else _pip_pre)
+	var kid = _create_npc("Young Pip", "child", Vector2(19 * TILE_SIZE,12 * TILE_SIZE), _pip_post if _after_cave_done else _pip_pre)
 	npcs.add_child(kid)
 
 	# === SIDE-QUEST GIVERS (dialogue owned by QuestSystem when quest business exists) ===

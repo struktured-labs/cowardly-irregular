@@ -217,7 +217,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(kael)
 
 	# Merchant Helga (shivering)
-	var helga = _create_npc("Merchant Helga", "villager", Vector2(18 * TILE_SIZE,13 * TILE_SIZE), [
+	var helga = _create_npc("Merchant Helga", "merchant", Vector2(18 * TILE_SIZE,13 * TILE_SIZE), [
 		"B-buy something warm, please.",
 		"The d-developer forgot to add heating.",
 		"I've been standing here since the scene loaded.",
@@ -226,7 +226,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(helga)
 
 	# Scholar Fynn (lore)
-	var fynn = _create_npc("Scholar Fynn", "villager", Vector2(6 * TILE_SIZE,13 * TILE_SIZE), [
+	var fynn = _create_npc("Scholar Fynn", "scholar", Vector2(6 * TILE_SIZE,13 * TILE_SIZE), [
 		"Legend says four dragons guard four elemental scales.",
 		"Collect them all and... actually, nobody remembers what happens next.",
 		"The ancient texts just say 'TODO: implement endgame.'",
@@ -251,7 +251,7 @@ func _setup_npcs() -> void:
 		"It's the best one I ever made. Mom says that's not how you judge snowmen.",
 		"Mom is wrong. Not crashing is the whole thing."
 	]
-	var lumi = _create_npc("Child Lumi", "villager", Vector2(14 * TILE_SIZE,6 * TILE_SIZE), _lumi_post if _after_cave_done else _lumi_pre)
+	var lumi = _create_npc("Child Lumi", "child", Vector2(14 * TILE_SIZE,6 * TILE_SIZE), _lumi_post if _after_cave_done else _lumi_pre)
 	npcs.add_child(lumi)
 
 	# Clockkeeper Yara — meltwater_clock giver, beside the Meltwater Clock door at (15,6.5).

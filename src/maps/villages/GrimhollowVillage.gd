@@ -206,7 +206,7 @@ func _setup_npcs() -> void:
 		"No, I am not bitter. Bitter takes glands.",
 		"Buy something. Surviving is expensive and so is not surviving. The dead still have overhead."
 	]
-	var mort = _create_npc("Undead Shopkeeper Mort", "villager", Vector2(18 * TILE_SIZE,7 * TILE_SIZE), _mort_post if _after_cave_done else _mort_pre)
+	var mort = _create_npc("Undead Shopkeeper Mort", "shopkeeper", Vector2(18 * TILE_SIZE,7 * TILE_SIZE), _mort_post if _after_cave_done else _mort_pre)
 	npcs.add_child(mort)
 
 	# Creepy Child Wednesday (meta-horror)
@@ -228,7 +228,7 @@ func _setup_npcs() -> void:
 		"And things that are bigger have more room in them for other things.",
 		"...Congratulations, probably? That is usually what a bigger file means."
 	]
-	var wednesday = _create_npc("Creepy Child Wednesday", "villager", Vector2(8 * TILE_SIZE,11 * TILE_SIZE), _wednesday_post if _after_cave_done else _wednesday_pre)
+	var wednesday = _create_npc("Creepy Child Wednesday", "child", Vector2(8 * TILE_SIZE,11 * TILE_SIZE), _wednesday_post if _after_cave_done else _wednesday_pre)
 	npcs.add_child(wednesday)
 
 	# Ghost Barkeep Claude (friendly)
