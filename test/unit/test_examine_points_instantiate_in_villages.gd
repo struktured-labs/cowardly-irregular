@@ -15,9 +15,11 @@ const VILLAGES := {
 ## Emitters authored per village — the count each _setup_npcs places.
 ## Sandrift is 0 BY DESIGN: its only step-2 emitter is the Warden encounter, so the
 ## examine point that stood in for it was deleted once the encounter learned to notify.
+## Brasston is 7: 2 single-point emitters + the 5-lamp lamplighters_logic route group, which
+## shares ONE flag across five points, so authored-flags and placed-points no longer match 1:1.
 const EXPECTED := {
 	"Sandrift": 0, "Frosthold": 1, "Grimhollow": 1, "Ironhaven": 1, "Eldertree": 1,
-	"Brasston": 2,
+	"Brasston": 7,
 }
 
 
