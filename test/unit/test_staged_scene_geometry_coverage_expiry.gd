@@ -54,17 +54,20 @@ func _staged_ids() -> Array:
 	return out
 
 
-## Derived from the smoke's source, not hand-copied — else this list and that one
-## drift apart and agree only by luck.
+## Read from the smoke's CONSTANT, not its source text. A regex over source models
+## one authoring shape; a scene added as "…%s.json" % id would be invisible and read
+## as uncovered, firing a false RED on correct work. Same defect as reading
+## _CUTSCENE_COMPLETION_FLAGS by regex — that gave 8 of 55.
 func _smoke_covered() -> Array:
-	var src := FileAccess.get_file_as_string(SMOKE)
-	assert_ne(src, "", "the geometry smoke must be readable at %s" % SMOKE)
+	var script := load(SMOKE)
+	assert_not_null(script, "the geometry smoke must load at %s" % SMOKE)
+	var paths = script.get_script_constant_map().get("STAGED_SCENES", [])
+	assert_gt(paths.size(), 0,
+		"the smoke's STAGED_SCENES const must be readable — if it was renamed, every scene reads as uncovered and this file fails for the wrong reason")
 	var out: Array = []
-	var re := RegEx.new()
-	re.compile("data/cutscenes/([a-z0-9_]+)\\.json")
-	for m in re.search_all(src):
-		var id := m.get_string(1)
-		if not out.has(id):
+	for p in paths:
+		var id := str(p).get_file().get_basename()
+		if id != "" and not out.has(id):
 			out.append(id)
 	return out
 
