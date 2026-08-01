@@ -164,3 +164,44 @@ func test_the_high_traffic_npc_types_all_have_art() -> void:
 	assert_eq(bare, [],
 		"high-traffic npc_type(s) with no portrait art — every NPC of that type shares " +
 		"one generic procedural face: %s" % [bare])
+
+
+## BEHAVIOURAL companion to the source pin above.
+## The pin asserts SPELLING — it would fail a correct rename and pass a wrong change
+## that kept the text. cowir-cutscenes was failed by exactly that shape tonight: a pin
+## on `CHARACTER_THEMES.get(...)` red-flagged a refactor that preserved the behaviour.
+## This drives the real function over all three of its branches instead.
+func test_portrait_key_BEHAVIOUR_over_all_three_branches() -> void:
+	var NpcScript = load(OVERWORLD_NPC)
+	assert_not_null(NpcScript, "OverworldNPC must load — it owns _portrait_key")
+	if NpcScript == null:
+		return
+
+	# 1. Named NPC with a bespoke sheet: must portrait as ITSELF. This is the Phil defect —
+	#    he is placed as npc_type "villager" and his own art never rendered.
+	var named = NpcScript.new()
+	autofree(named)
+	named.npc_name = "Phil the Lost"
+	named.npc_type = "villager"
+	named.sprite_archetype = "phil"
+	assert_eq(named._portrait_key(), "phil",
+		"a named NPC with sprite_archetype must portrait as itself, not as its npc_type")
+
+	# 2. Plain villager: must resolve through the name-hash pair, never the bare npc_type.
+	var plain = NpcScript.new()
+	autofree(plain)
+	plain.npc_name = "Someone Ordinary"
+	plain.npc_type = "villager"
+	plain.sprite_archetype = ""
+	assert_true(plain._portrait_key() in ["young_man", "young_woman"],
+		"a plain villager must portrait as its hash-picked sheet so face matches body, got '%s'" % [plain._portrait_key()])
+
+	# 3. Unmapped type: falls through to itself, NOT to "" — an empty key resolves to
+	#    no portrait at all, which is the failure this whole file exists to prevent.
+	var odd = NpcScript.new()
+	autofree(odd)
+	odd.npc_name = "Odd One"
+	odd.npc_type = "zzz_unmapped_type"
+	odd.sprite_archetype = ""
+	assert_eq(odd._portrait_key(), "zzz_unmapped_type",
+		"an unmapped npc_type must fall through to itself, never to an empty key")
