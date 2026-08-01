@@ -1951,7 +1951,10 @@ func _process_ai_selection(combatant: Combatant) -> void:
 	# NOTE: Enemies do NOT defer. Deferring caused stall bugs (battles frozen
 	# when all party members deferred and enemies also randomly deferred).
 	# Enemies always attack — defer is a player-only mechanic.
-	var should_advance = randf() < 0.15 and combatant.current_ap >= 0  # 15% chance to advance
+	## Enemies only. A player character routed here (trusted / spotlight-locked) used to take
+	## this branch too, and it hardcodes basic attacks — a Cleric spent 3 AP on ~41-damage
+	## swings instead of casting. PCs fall through to the ability-aware decision below.
+	var should_advance = not is_player_controlled and randf() < 0.15 and combatant.current_ap >= 0
 
 	if should_advance and combatant.current_ap >= 1:
 		# Queue multiple attacks as advance (each action costs 1 AP)
