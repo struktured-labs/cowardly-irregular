@@ -15,16 +15,21 @@ extends GutTest
 const OBJECTS_DIR := "res://assets/sprites/objects"
 
 
-func test_chest_art_is_consulted_before_the_procedural_draw() -> void:
-	var src: String = FileAccess.get_file_as_string("res://src/exploration/TreasureChest.gd")
-	var i := src.find("func _generate_sprite")
-	assert_gt(i, 0, "the sprite builder still exists")
-	var body: String = src.substr(i, 600)
-	var art_at := body.find("ResourceLoader.exists")
-	var draw_at := body.find("Image.create")
-	assert_gt(art_at, -1, "chest art is looked up")
-	assert_lt(art_at, draw_at,
-		"the art lookup must precede the procedural draw — after it the fallback always wins")
+## BEHAVIOURAL, not a spelling pin. The first version asserted that
+## ResourceLoader.exists appeared before Image.create inside _generate_sprite —
+## which fails a correct refactor (extract the lookup into a helper) and passes a
+## wrong one that keeps the text. cowir-cutscenes was failed by exactly that
+## shape tonight: a pin on the expression they replaced, whose invariant their
+## change preserved. Chest art exists on disk, so assert the outcome instead.
+func test_a_closed_chest_renders_the_artist_sheet() -> void:
+	var c = load("res://src/exploration/TreasureChest.gd").new()
+	c.chest_id = "seam_closed_probe"
+	add_child_autofree(c)
+	await get_tree().process_frame
+	var s = c.get_node_or_null("Sprite")
+	assert_not_null(s, "chest built a sprite")
+	assert_eq(s.texture.resource_path, "res://assets/sprites/objects/chest_closed.png",
+		"a closed chest must render the artist sheet — a procedural ImageTexture has an EMPTY resource_path, so this fails the moment the lookup stops working")
 
 
 ## Both authored states must resolve, or a chest flips to procedural on opening.
@@ -35,11 +40,19 @@ func test_both_chest_states_have_reachable_art() -> void:
 			"chest_%s.png must be loadable — the open/closed pair is what the seam selects between" % state)
 
 
-## The drawer must actually pick the state's art, not one fixed image.
-func test_opened_and_closed_select_different_art() -> void:
-	var src: String = FileAccess.get_file_as_string("res://src/exploration/TreasureChest.gd")
-	assert_true(src.contains("\"open\" if _is_opened else \"closed\""),
-		"the state selects the sheet — a fixed path would render an open chest as closed")
+## The state must select the sheet. Driven, not read: an opened chest that still
+## renders chest_closed.png is the defect, and no source pin can see it.
+func test_an_opened_chest_renders_the_open_sheet() -> void:
+	GameState.set_story_flag("chest_seam_open_probe", true)
+	var c = load("res://src/exploration/TreasureChest.gd").new()
+	c.chest_id = "seam_open_probe"
+	add_child_autofree(c)
+	await get_tree().process_frame
+	var s = c.get_node_or_null("Sprite")
+	assert_not_null(s, "chest built a sprite")
+	assert_eq(s.texture.resource_path, "res://assets/sprites/objects/chest_open.png",
+		"an opened chest must render the OPEN sheet — ignoring _is_opened renders it closed forever")
+	GameState.set_story_flag("chest_seam_open_probe", false)
 
 
 ## A chest builds and carries a texture in both states. Runtime, because source
