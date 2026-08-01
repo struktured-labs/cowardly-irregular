@@ -256,6 +256,31 @@ func _setup_npcs() -> void:
 		"The supply depot's ledger, open to a page of part numbers nobody has needed to read in six months.",
 		Vector2(13 * TILE_SIZE,14 * TILE_SIZE))
 
+	# Clem's route: 5 stops on the map's own `f` gas-lamp tiles, at the landmarks his offer names
+	# (mill, Copper Street twice, skip the arcade, bridge, back to the arcade). Each reads as a
+	# local oddity; only Brigadier Flux at step 3 names the shape they make.
+	var _lamp_idle := "A gas lamp on Clem's route, unlit at this hour. Its base is grated at the foot."
+	_add_quest_route_point("world3_lamplighters_logic",
+		"quest_world3_lamplighters_logic_route_documented", 1, 5, "[A] Document the mill lamp",
+		"The mill lamp. Its base is warm — warmer than burning gas explains, and warmest on the side facing AWAY from the flame.",
+		_lamp_idle, Vector2(5 * TILE_SIZE,3 * TILE_SIZE))
+	_add_quest_route_point("world3_lamplighters_logic",
+		"quest_world3_lamplighters_logic_route_documented", 2, 5, "[A] Document the Copper Street lamp",
+		"Copper Street, east side. The grate at the lamp's foot exhales on a slow count, like something upstream of it is breathing.",
+		_lamp_idle, Vector2(20 * TILE_SIZE,4 * TILE_SIZE))
+	_add_quest_route_point("world3_lamplighters_logic",
+		"quest_world3_lamplighters_logic_route_documented", 3, 5, "[A] Document the second Copper Street lamp",
+		"Copper Street again, further down, on the side you started from. The same slow count — offset by exactly the walk between the two.",
+		_lamp_idle, Vector2(20 * TILE_SIZE,17 * TILE_SIZE))
+	_add_quest_route_point("world3_lamplighters_logic",
+		"quest_world3_lamplighters_logic_route_documented", 4, 5, "[A] Document the bridge lamp",
+		"The bridge lamp, reached after the arcade is skipped entirely. This base is cold. Cold enough to bead water out of dry air.",
+		_lamp_idle, Vector2(5 * TILE_SIZE,8 * TILE_SIZE))
+	_add_quest_route_point("world3_lamplighters_logic",
+		"quest_world3_lamplighters_logic_route_documented", 5, 5, "[A] Document the arcade lamp",
+		"The arcade lamp, come back to last, exactly as Clem said. Warm again — the same warmth as the mill, at the opposite end of town.",
+		_lamp_idle, Vector2(5 * TILE_SIZE,18 * TILE_SIZE))
+
 	# Clockwork Cat (mechanical pet, responds with sound effects)
 	var clockcat = _create_npc("Cogsworth", "villager", Vector2(7 * TILE_SIZE,15 * TILE_SIZE), [
 		"*whirr*",
