@@ -674,7 +674,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(maint_bot)
 
 	# === Young Worker Pip - near conveyor belts, never seen outside ===
-	var pip = _create_npc("Young Worker Pip", "villager", Vector2(20 * TILE_SIZE, 22 * TILE_SIZE), [
+	var pip = _create_npc("Young Worker Pip", "child", Vector2(20 * TILE_SIZE, 22 * TILE_SIZE), [
 		"Is it true there are places with no conveyor belts? That sounds fake.",
 		"I was born in Unit 12-B. My efficiency score was 94 at birth. That's above average!",
 		"Teacher says the factory makes Everything. I asked what Everything is FOR. Got detention.",
