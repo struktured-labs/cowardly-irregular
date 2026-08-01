@@ -81,10 +81,12 @@ func _present(item: Dictionary) -> void:
 		if tex:
 			var sprite_rect := TextureRect.new()
 			sprite_rect.texture = tex
+			## expand_mode BEFORE size — otherwise a sprite larger than 96 clamps the
+			## 96 back up to the texture's own size and overflows the panel.
+			sprite_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			sprite_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 			sprite_rect.size = Vector2(96, 96)
 			sprite_rect.position = Vector2((PANEL_W - 96) / 2.0, sprite_y)
-			sprite_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-			sprite_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 			_panel.add_child(sprite_rect)
 
 	# Name
