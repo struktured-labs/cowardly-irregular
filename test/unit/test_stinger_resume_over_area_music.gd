@@ -34,7 +34,7 @@ func test_premise_area_music_leaves_current_music_empty() -> void:
 	## is testing nothing, so assert it rather than trusting the comment.
 	var sm := _sm()
 	if sm == null:
-		pass_test("SoundManager unavailable")
+		assert_not_null(sm, "SoundManager unavailable — a skip here reports GREEN having tested nothing")
 		return
 	var prev: Dictionary = sm.capture_music_state()
 	sm.play_area_music("overworld")
@@ -49,7 +49,7 @@ func test_premise_area_music_leaves_current_music_empty() -> void:
 func test_stinger_over_area_music_reconnects_and_restores() -> void:
 	var sm := _sm()
 	if sm == null:
-		pass_test("SoundManager unavailable")
+		assert_not_null(sm, "SoundManager unavailable — a skip here reports GREEN having tested nothing")
 		return
 	var prev: Dictionary = sm.capture_music_state()
 
@@ -81,7 +81,7 @@ func test_battle_style_stinger_still_resumes_a_plain_track() -> void:
 	## silently regressed.
 	var sm := _sm()
 	if sm == null:
-		pass_test("SoundManager unavailable")
+		assert_not_null(sm, "SoundManager unavailable — a skip here reports GREEN having tested nothing")
 		return
 	var prev: Dictionary = sm.capture_music_state()
 
@@ -104,7 +104,7 @@ func test_a_stinger_over_silence_connects_nothing() -> void:
 	## was playing, so a stinger from silence must not resurrect a stale bed.
 	var sm := _sm()
 	if sm == null:
-		pass_test("SoundManager unavailable")
+		assert_not_null(sm, "SoundManager unavailable — a skip here reports GREEN having tested nothing")
 		return
 	var prev: Dictionary = sm.capture_music_state()
 
@@ -121,11 +121,11 @@ func test_a_stinger_over_silence_connects_nothing() -> void:
 
 
 func test_positive_control_the_state_pair_is_reachable() -> void:
-	## If capture/restore were renamed, every test above would still pass by
-	## way of pass_test or a no-op, so pin that they exist and round-trip.
+	## If capture/restore were renamed, every test above would degrade to a
+	## no-op rather than a failure, so pin that they exist and round-trip.
 	var sm := _sm()
 	if sm == null:
-		pass_test("SoundManager unavailable")
+		assert_not_null(sm, "SoundManager unavailable — a skip here reports GREEN having tested nothing")
 		return
 	assert_true(sm.has_method("capture_music_state"), "capture_music_state must exist — the resume path is built on it")
 	assert_true(sm.has_method("restore_music_state"), "restore_music_state must exist")
