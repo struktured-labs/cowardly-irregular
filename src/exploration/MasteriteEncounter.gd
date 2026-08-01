@@ -103,10 +103,19 @@ func _build_collision() -> void:
 	add_child(cs)
 
 
+## Artist sheet if one exists, procedural figure otherwise. Same path convention
+## RoamingMonster._setup_sprite consumes, so masterite art drops in without a code change.
 func _build_silhouette() -> void:
-	# A simple standing figure (silhouette) — a real sprite lands as a
-	# follow-up when the art batch reaches these. Silhouette reads as
-	# "someone is standing in your way" at overworld scale.
+	var art := "res://assets/sprites/monsters/overworld/%s.png" % monster_id
+	if monster_id != "" and ResourceLoader.exists(art):
+		var art_sprite := Sprite2D.new()
+		art_sprite.name = "MasteriteSilhouette"
+		art_sprite.texture = load(art)
+		art_sprite.centered = true
+		add_child(art_sprite)
+		return
+	# The procedural fallback reads as "someone is standing in your way" at
+	# overworld scale. 32x64 — a sheet of the same size replaces it directly.
 	var sprite := Sprite2D.new()
 	sprite.name = "MasteriteSilhouette"
 	var img := Image.create(TILE_SIZE, TILE_SIZE * 2, false, Image.FORMAT_RGBA8)
