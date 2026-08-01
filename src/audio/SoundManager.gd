@@ -17,7 +17,7 @@ var _crossfade_tween: Tween = null
 # Music state
 var _music_playing: bool = false
 var _current_music: String = ""
-var _stinger_resume_track: String = ""  # Track to resume after stinger finishes
+var _stinger_resume_state: Dictionary = {}  # Full state to restore after a stinger — a bare track id cannot describe AREA music
 const CROSSFADE_DURATION: float = 0.5  # Seconds for crossfade
 var _music_base_db: float = -12.0  # Base volume for music (overwritten by set_music_volume)
 const AMBIENT_OFFSET_DB: float = -8.0  # ambient (weather/room tone) sits this far below music, tracking the slider
@@ -1351,12 +1351,14 @@ func _try_play_from_manifest(track_id: String) -> bool:
 	_music_player.volume_db = _music_base_db
 	_music_player.play()
 	_music_playing = true
-	print("[MUSIC] Playing from manifest: %s (%s) loop=%s stinger=%s resume=%s" % [track_id, path, should_loop, is_stinger, _stinger_resume_track if is_stinger else ""])
-	# Resume previous music after stinger finishes
-	if is_stinger and _stinger_resume_track != "" and _stinger_resume_track != track_id:
-		var resume = _stinger_resume_track
+	print("[MUSIC] Playing from manifest: %s (%s) loop=%s stinger=%s resume=%s" % [track_id, path, should_loop, is_stinger, _stinger_resume_state if is_stinger else ""])
+	# Resume whatever was playing once the stinger ends. Restores through the
+	# captured STATE, not a track id: area beds live in _current_area and leave
+	# _current_music empty, so a track-only resume silently did nothing there.
+	if is_stinger and not _stinger_resume_state.is_empty() and str(_stinger_resume_state.get("track", "")) != track_id:
+		var resume: Dictionary = _stinger_resume_state.duplicate()
 		_music_player.finished.connect(func():
-			play_music(resume)
+			restore_music_state(resume)
 		, CONNECT_ONE_SHOT)
 	return true
 
@@ -1404,6 +1406,11 @@ func play_music(track: String) -> void:
 	if _current_music == track and _music_playing:
 		return  # Already playing
 
+	# Capture here, ABOVE the clear below — not at the old site further down,
+	# which ran after _current_area was already emptied and so could only ever
+	# describe a play_music() bed.
+	_stinger_resume_state = capture_music_state()
+
 	# Clear area tracking so play_area_music() doesn't skip after battle/victory
 	_current_area = ""
 
@@ -1425,7 +1432,6 @@ func play_music(track: String) -> void:
 		_crossfade_tween.tween_property(_music_player_b, "volume_db", -40.0, CROSSFADE_DURATION)
 		_crossfade_tween.tween_callback(func(): _music_player_b.stop())
 
-	_stinger_resume_track = _current_music  # Save for stinger resume before overwriting
 	_current_music = track
 
 	# Clean slate for the new track: the danger-intensity system elevates

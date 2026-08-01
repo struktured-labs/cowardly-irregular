@@ -149,7 +149,13 @@ func _input(event: InputEvent) -> void:
 		_is_saving = true
 		SoundManager.play_ui("save_crystal_activate")
 		# Attune this crystal for fast travel the first time it's used.
+		# The 7s stinger marks that unlock ONLY — checked before activate_crystal,
+		# which is what makes it once-per-crystal. On every save it would be a
+		# music interruption several times an hour; there are five crystals.
+		var first_attunement: bool = not GameState.is_crystal_activated(_current_map_id())
 		GameState.activate_crystal(_current_map_id())
+		if first_attunement:
+			SoundManager.play_music("stinger_save_point")
 		_indicator.text = _indicator_text()
 		save_requested.emit()
 		get_viewport().set_input_as_handled()
