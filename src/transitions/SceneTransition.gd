@@ -19,15 +19,15 @@ func _ready() -> void:
 	# Create fade overlay
 	_create_fade_overlay()
 
-	# Connect to encounter system
-	if EncounterSystem:
-		EncounterSystem.encounter_triggered.connect(_on_encounter_triggered)
+	## NOT connected to EncounterSystem.encounter_triggered. That signal carries
+	## (enemy_data, terrain_type) and the old handler took one argument, so every random
+	## encounter threw "expected 1 arguments, but called with 2" and the handler never ran.
+	## BattleTransition's SHAKE_FLASH owns encounter transitions — reconnecting this would
+	## play a SECOND transition on top of it, so do not "fix" the arity.
 
 
 func _exit_tree() -> void:
 	"""Cleanup signal connections when freed"""
-	if EncounterSystem and EncounterSystem.encounter_triggered.is_connected(_on_encounter_triggered):
-		EncounterSystem.encounter_triggered.disconnect(_on_encounter_triggered)
 	if BattleManager and BattleManager.battle_ended.is_connected(_on_battle_ended):
 		BattleManager.battle_ended.disconnect(_on_battle_ended)
 
@@ -185,11 +185,6 @@ func _on_battle_ended(victory: bool) -> void:
 	if not is_instance_valid(self):
 		return
 	transition_from_battle(victory)
-
-
-func _on_encounter_triggered(enemy_data: Array) -> void:
-	"""Handle random encounter trigger"""
-	transition_to_battle(enemy_data)
 
 
 ## Map transitions
