@@ -390,8 +390,11 @@ func _create_boss_marker(pos: Vector2) -> Node2D:
 func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
 	trans.collision_layer = 4
 	trans.collision_mask = 2
-	trans.monitoring = true
-	trans.monitorable = true
+	## Deferred: a floor change rebuilds the map from INSIDE the stair Area2D's body_entered,
+	## so setting these mid-signal threw "Function blocked during in/out signal" 9x (3 per
+	## floor change) in one play session. Overlap is still detected on the next physics step.
+	trans.set_deferred("monitoring", true)
+	trans.set_deferred("monitorable", true)
 
 	var collision = CollisionShape2D.new()
 	var shape = RectangleShape2D.new()
