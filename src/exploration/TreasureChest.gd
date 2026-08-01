@@ -52,9 +52,18 @@ func _check_if_opened() -> void:
 	_is_opened = GameState.get_story_flag("chest_" + chest_id)
 
 
+## Artist art if it exists, procedural chest otherwise. assets/sprites/objects/
+## holds chest_open/chest_closed and had NO consumer — art we owned, unreachable.
 func _generate_sprite() -> void:
 	sprite = Sprite2D.new()
 	sprite.name = "Sprite"
+
+	var art := "res://assets/sprites/objects/chest_%s.png" % ("open" if _is_opened else "closed")
+	if ResourceLoader.exists(art):
+		sprite.texture = load(art)
+		sprite.centered = true
+		add_child(sprite)
+		return
 
 	var image = Image.create(TILE_SIZE, TILE_SIZE, false, Image.FORMAT_RGBA8)
 	_draw_chest(image)
