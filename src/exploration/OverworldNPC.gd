@@ -381,6 +381,17 @@ func _resolve_archetype() -> String:
 	return ""
 
 
+## Portrait key for dialogue — the ARCHETYPE, not the npc_type (struktured 2026-07-31).
+## Phil the Lost is _create_npc(..., "villager") with sprite_archetype "phil": his sprite
+## was Phil and his portrait was "villager", so phil.png never rendered once in the
+## overworld. Same for Bram, Milo, Theron, Dr. Temporal. Resolving through
+## _resolve_archetype makes the face match the sprite the player is looking at,
+## including the name-hash pick for plain villagers.
+func _portrait_key() -> String:
+	var key: String = _resolve_archetype()
+	return key if key != "" else npc_type
+
+
 ## Cached source sheet + geometry for the archetype path. Populated on
 ## the first successful sprite load; consumed by _apply_facing whenever
 ## the NPC needs to turn (e.g. on dialogue start, msg 2764 item 1).
@@ -1195,7 +1206,7 @@ func _start_dialogue() -> void:
 				"speaker": npc_name,
 				"text": line_text,
 				"theme": npc_type,
-				"portrait": npc_type,
+				"portrait": _portrait_key(),
 			})
 		_dialogue_visit_count += 1
 	else:
@@ -1204,7 +1215,7 @@ func _start_dialogue() -> void:
 				"speaker": npc_name,
 				"text": str(line_text),
 				"theme": npc_type,
-				"portrait": npc_type,
+				"portrait": _portrait_key(),
 			})
 		_quest_state_bucket_visits[_quest_bucket] = int(_quest_state_bucket_visits.get(_quest_bucket, 0)) + 1
 	await _npc_dialogue.say_lines(lines)

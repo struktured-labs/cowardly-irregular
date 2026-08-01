@@ -947,6 +947,41 @@ const PORTRAIT_SPRITES = {
 	"villager_m": "res://assets/sprites/portraits/npcs/villager_m.png",
 	"villager_f": "res://assets/sprites/portraits/npcs/villager_f.png",
 	"elder_f": "res://assets/sprites/portraits/npcs/elder_f.png",
+	# struktured 2026-07-31 ("phil the lost: no portrait … MAKE PORTRAITS FOR ALL SPRITES").
+	# `villager` is the npc_type of 55 placed NPCs and had no art — Phil, Young Pip, Milo,
+	# Flora, Sprocket and 50 more all rendered the generic shopkeeper procedural.
+	"villager": "res://assets/sprites/portraits/npcs/villager.png",
+	"mysterious": "res://assets/sprites/portraits/npcs/mysterious.png",
+	# Name-hash pair targets — OverworldNPC picks these for villager/elder npc_types.
+	"young_man": "res://assets/sprites/portraits/npcs/young_man.png",
+	"young_woman": "res://assets/sprites/portraits/npcs/young_woman.png",
+	"old_man": "res://assets/sprites/portraits/npcs/old_man.png",
+	"old_woman": "res://assets/sprites/portraits/npcs/old_woman.png",
+	# Archetype sheets that existed with no matching portrait.
+	"merchant": "res://assets/sprites/portraits/npcs/merchant.png",
+	"innkeeper": "res://assets/sprites/portraits/npcs/innkeeper.png",
+	"fisherman": "res://assets/sprites/portraits/npcs/fisherman.png",
+	"monk": "res://assets/sprites/portraits/npcs/monk.png",
+	"priestess": "res://assets/sprites/portraits/npcs/priestess.png",
+	"noble": "res://assets/sprites/portraits/npcs/noble.png",
+	"noblewoman": "res://assets/sprites/portraits/npcs/noblewoman.png",
+	"king": "res://assets/sprites/portraits/npcs/king.png",
+	"queen": "res://assets/sprites/portraits/npcs/queen.png",
+	# Named W1 principals reached via OverworldNPC.sprite_archetype.
+	"elder_theron": "res://assets/sprites/portraits/npcs/elder_theron.png",
+	"scholar_milo": "res://assets/sprites/portraits/npcs/scholar_milo.png",
+	"chancellor_mordaine": "res://assets/sprites/portraits/npcs/chancellor_mordaine.png",
+	# Advanced + meta jobs. The 5 meta jobs have no idle.png, so the job-sheet
+	# bust rung cannot fire for them and this is their only portrait source.
+	"guardian": "res://assets/sprites/portraits/guardian.png",
+	"ninja": "res://assets/sprites/portraits/ninja.png",
+	"summoner": "res://assets/sprites/portraits/summoner.png",
+	"speculator": "res://assets/sprites/portraits/speculator.png",
+	"scriptweaver": "res://assets/sprites/portraits/scriptweaver.png",
+	"time_mage": "res://assets/sprites/portraits/time_mage.png",
+	"necromancer": "res://assets/sprites/portraits/necromancer.png",
+	"bossbinder": "res://assets/sprites/portraits/bossbinder.png",
+	"skiptrotter": "res://assets/sprites/portraits/skiptrotter.png",
 }
 
 ## Named-principal + archetype → existing procedural fallback. Any key here without a PNG on disk renders via the mapped procedural until cowir-sprites' art lands (matches the pre-fix visual so nothing regresses on interim frames).
