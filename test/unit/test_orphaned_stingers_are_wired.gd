@@ -71,7 +71,7 @@ func test_quest_completion_plays_the_stinger() -> void:
 	## player ended up on. A source pin here would only prove the line is spelled.
 	var sm := _sm()
 	if sm == null:
-		pass_test("SoundManager unavailable")
+		assert_not_null(sm, "SoundManager unavailable — a skip here reports GREEN having tested nothing")
 		return
 	var qid := _quest_without_completion_cutscene()
 	assert_ne(qid, "", "setup: expected at least one quest with no completion cutscene")
@@ -94,7 +94,7 @@ func test_a_quest_that_chains_a_cutscene_stays_silent() -> void:
 	## play_music cuts it off a second later — worse than no stinger at all.
 	var sm := _sm()
 	if sm == null:
-		pass_test("SoundManager unavailable")
+		assert_not_null(sm, "SoundManager unavailable — a skip here reports GREEN having tested nothing")
 		return
 	var prev: Dictionary = sm.capture_music_state()
 	sm.stop_music()

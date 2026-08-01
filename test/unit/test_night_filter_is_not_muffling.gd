@@ -34,7 +34,7 @@ func _sm() -> Node:
 func test_night_cutoff_is_above_the_muffling_threshold() -> void:
 	var sm := _sm()
 	if sm == null:
-		pass_test("SoundManager unavailable")
+		assert_not_null(sm, "SoundManager unavailable — a skip here reports GREEN having tested nothing")
 		return
 	var cutoff: float = float(sm.NIGHT_LPF_CUTOFF_HZ)
 	assert_gt(cutoff, MUFFLING_THRESHOLD_HZ,
@@ -62,7 +62,7 @@ func test_reverb_stays_a_hint_not_a_hall() -> void:
 	## Same class as the cutoff: the other way to accidentally build occlusion.
 	var sm := _sm()
 	if sm == null:
-		pass_test("SoundManager unavailable")
+		assert_not_null(sm, "SoundManager unavailable — a skip here reports GREEN having tested nothing")
 		return
 	assert_lt(float(sm.NIGHT_REVERB_WET), 0.35,
 		"night reverb wet is %.2f — past ~0.35 the music sits in a room rather than gaining an evening character" % float(sm.NIGHT_REVERB_WET))
@@ -73,7 +73,7 @@ func test_positive_control_the_constants_are_readable() -> void:
 	## default of 0.0 and the suite reports the filter as pristine.
 	var sm := _sm()
 	if sm == null:
-		pass_test("SoundManager unavailable")
+		assert_not_null(sm, "SoundManager unavailable — a skip here reports GREEN having tested nothing")
 		return
 	assert_gt(float(sm.NIGHT_LPF_CUTOFF_HZ), 0.0,
 		"NIGHT_LPF_CUTOFF_HZ must resolve to a real value — 0.0 means the constant was renamed and the checks above are vacuous")
