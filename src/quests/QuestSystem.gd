@@ -160,8 +160,13 @@ func _complete_quest(quest_id: String) -> void:
 	if mirror != "":
 		GameState.set_story_flag(mirror)
 	_grant_rewards(q)
+	# Turn-in flourish. Skipped when a completion cutscene follows — that scene
+	# sets its own music and the stinger would be cut off mid-phrase.
+	var chained: String = str(q.get("cutscene_on_complete", ""))
+	if chained == "" and SoundManager:
+		SoundManager.play_music("stinger_quest_complete")
 	# Chain-quest cinematic (Orrery): stash only — the dialogue tail flushes it from a clean stack
-	_pending_completion_cutscene = str(q.get("cutscene_on_complete", ""))
+	_pending_completion_cutscene = chained
 	quest_state_changed.emit(quest_id, "complete")
 
 

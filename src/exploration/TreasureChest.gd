@@ -445,16 +445,22 @@ func _open_chest(player: Node2D) -> void:
 	chest_opened.emit({"type": contents_type, "id": contents_id, "amount": contents_amount})
 	# Content-aware "loot received" cue. Pre-fix this also played
 	# "chest_open" — the same sound the opening at line 331 already fired,
-	# so every chest played chest_open TWICE. The comment hinted that this
-	# slot was intended as a content-specific reward chime (a music stinger
-	# here caused a loop bug, hence the play_ui form). Gold gets the
-	# canonical gold_pickup chime (matches BattleResultsDisplay's gold
-	# count-up); item/equipment chests stay silent on this slot — the
-	# opening sound + on-screen text already communicate the reward.
+	# so every chest played chest_open TWICE. Gold gets the canonical
+	# gold_pickup chime (matches BattleResultsDisplay's gold count-up).
+	#
+	# Equipment now takes the composed stinger_item_found fanfare. The old note
+	# here said a music stinger "caused a loop bug" — that bug was manifest
+	# stingers carrying loop=true, so they never emitted `finished` and the
+	# previous track never came back. Fixed 2026-05-02: SoundManager force-clears
+	# loop for any "stinger_" id regardless of the manifest, and all five entries
+	# now also carry loop=false. Consumables stay quiet — a fanfare per potion is
+	# what makes a fanfare stop meaning anything.
 	if SoundManager:
 		match contents_type:
 			"gold":
 				SoundManager.play_ui("gold_pickup")
+			"equipment":
+				SoundManager.play_music("stinger_item_found")
 
 	# Hide after delay
 	await get_tree().create_timer(2.0).timeout
