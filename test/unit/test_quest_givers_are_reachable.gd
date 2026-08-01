@@ -124,10 +124,19 @@ func test_control_both_corpora_resolve() -> void:
 			+ "quest as dead. Scanning only explicit .npc_id= writes called farmer_aldwick unreachable "
 			+ "when the display name resolves it, and that false alarm is why this guard exists")
 
-	var npc_src := FileAccess.get_file_as_string(NPC_SRC)
-	assert_true(npc_src.contains("npc_name.to_lower().replace(\" \", \"_\")"),
-		"OverworldNPC's id fallback changed shape — _name_to_id() above mirrors it by hand, so "
-		+ "update both together or this guard silently measures the wrong id set")
+	## Was a source pin on ONE of the fallback's three replacements, with a message claiming it
+	## caught the shape CHANGING — dropping .replace("'","") passed it while the mirror diverged.
+	var probe = load(NPC_SRC).new()
+	autofree(probe)
+	probe.npc_name = "O'Rourke-Vance the Elder"
+	assert_eq(probe.get_npc_id(), _name_to_id("O'Rourke-Vance the Elder"),
+		"_name_to_id() must agree with the REAL OverworldNPC.get_npc_id() fallback on a name "
+		+ "exercising all three transforms (space, apostrophe, hyphen). This guard derives every "
+		+ "name-fallback id by hand; if the two drift it measures an id set no NPC answers to and "
+		+ "a live quest reads as dead. A source pin could not see a replacement being removed")
+	probe.npc_id = "explicit_wins"
+	assert_eq(probe.get_npc_id(), "explicit_wins",
+		"an explicit npc_id must SUPPRESS the fallback — the scan above relies on that precedence")
 
 
 ## THE RATCHET. Both directions.
