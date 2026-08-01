@@ -83,10 +83,19 @@ func test_non_starter_themes_differ_from_narrator() -> void:
 
 # ── Narrator still the fallback ───────────────────────────────────
 
+## Was a source pin on the literal `CHARACTER_THEMES.get(theme_name, …)` call. That went
+## RED when the lookup gained an alias step, even though the invariant it names — unknown
+## themes fall back to narrator — was fully preserved. Pinning the expression made a
+## correct change fail; this drives the resolver and tests the invariant itself.
 func test_narrator_still_fallback() -> void:
-	var src := _read(CUTSCENE_DIALOGUE)
-	assert_true(src.contains("CHARACTER_THEMES.get(theme_name, CHARACTER_THEMES[\"narrator\"])"),
-		"unknown theme fallback must still be CHARACTER_THEMES[\"narrator\"]")
+	var dlg = load(CUTSCENE_DIALOGUE).new()
+	add_child_autofree(dlg)
+	var themes: Dictionary = load(CUTSCENE_DIALOGUE).get_script_constant_map().get("CHARACTER_THEMES", {})
+	assert_true(themes.has("narrator"), "PRECONDITION: the narrator theme must exist")
+	assert_eq(dlg.resolve_theme("zzz_unknown_theme"), themes["narrator"],
+		"an unrecognised theme must still fall back to CHARACTER_THEMES[\"narrator\"]")
+	assert_ne(dlg.resolve_theme("zzz_unknown_theme"), themes["villager"],
+		"NEGATIVE CONTROL: an unknown theme must not resolve to a real palette")
 
 
 # ── Cross-pin: tick 293 Win98Menu coverage preserved ──────────────
