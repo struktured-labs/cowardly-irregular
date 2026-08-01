@@ -145,5 +145,25 @@ func test_authored_interiors_instantiate_without_stranding_npcs() -> void:
 		assert_eq(offenders.size(), 0,
 			"%s: sweep must leave every NPC on a walkable cell — offenders:\n  %s" % [
 				path, "\n  ".join(offenders)])
+
+		# FURNITURE overlap — the sweep's actual purpose (struktured: "characters are
+		# standing on tables"). This file previously checked only the wall-cell class and
+		# said so in a comment; furniture was left to a runtime push_warning, and
+		# _find_clear_near returns the ORIGINAL position when its ring search gives up, so
+		# a failed relocation was silent. Measured clean across 8 interiors before adding.
+		if ("decorations" in scene) and scene.decorations != null:
+			var furniture: Array = InteriorPlacementSweep._collect_furniture_rects(scene, scene.decorations)
+			var on_furniture: Array = []
+			for npc2 in scene.npcs.get_children():
+				if not (npc2 is Node2D):
+					continue
+				var foot: Rect2 = InteriorPlacementSweep._npc_footprint((npc2 as Node2D).position)
+				for r in furniture:
+					if (r as Rect2).intersects(foot):
+						on_furniture.append("%s at %s" % [npc2.name, str((npc2 as Node2D).position)])
+						break
+			assert_eq(on_furniture.size(), 0,
+				"%s: no NPC may stand on furniture after the sweep — offenders:\n  %s" % [
+					path, "\n  ".join(on_furniture)])
 	assert_gt(checked, 5,
 		"expected the ratchet to walk >5 authored interiors (got %d — inheritance broken?)" % checked)

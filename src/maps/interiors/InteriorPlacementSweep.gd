@@ -125,4 +125,7 @@ static func _find_clear_near(pos: Vector2, layout: Array, furniture: Array) -> V
 				var probe := Vector2((c.x + 0.5) * TILE_SIZE, (c.y + 0.5) * TILE_SIZE)
 				if _is_position_clear(probe, layout, furniture):
 					return probe
+	## Gave up. The caller only warns when the position CHANGED, so without this a failed
+	## relocation is silent and the NPC stays standing on the furniture.
+	push_warning("[InteriorPlacementSweep] no clear cell within 8 tiles of %s — NPC left where it was" % str(pos))
 	return pos
