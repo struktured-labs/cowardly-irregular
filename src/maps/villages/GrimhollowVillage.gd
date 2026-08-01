@@ -229,6 +229,7 @@ func _setup_npcs() -> void:
 		"...Congratulations, probably? That is usually what a bigger file means."
 	]
 	var wednesday = _create_npc("Creepy Child Wednesday", "villager", Vector2(8 * TILE_SIZE,11 * TILE_SIZE), _wednesday_post if _after_cave_done else _wednesday_pre)
+	wednesday.sprite_archetype = "child"
 	npcs.add_child(wednesday)
 
 	# Ghost Barkeep Claude (friendly)

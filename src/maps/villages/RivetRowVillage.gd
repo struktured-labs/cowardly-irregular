@@ -211,6 +211,7 @@ func _setup_npcs() -> void:
 		"Management gave me a certificate. It said 'satisfactory.'",
 		"...I'm going to frame it."
 	])
+	kid.sprite_archetype = "child"
 	npcs.add_child(kid)
 
 	# Dorrit — giver for world4_form_exception_alpha. Counts her own words; twelve is quota.

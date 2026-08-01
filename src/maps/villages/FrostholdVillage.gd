@@ -252,6 +252,7 @@ func _setup_npcs() -> void:
 		"Mom is wrong. Not crashing is the whole thing."
 	]
 	var lumi = _create_npc("Child Lumi", "villager", Vector2(14 * TILE_SIZE,6 * TILE_SIZE), _lumi_post if _after_cave_done else _lumi_pre)
+	lumi.sprite_archetype = "child"
 	npcs.add_child(lumi)
 
 	# Clockkeeper Yara — meltwater_clock giver, beside the Meltwater Clock door at (15,6.5).
