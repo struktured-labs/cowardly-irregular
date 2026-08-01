@@ -978,7 +978,10 @@ func _create_fireplace() -> void:
 	_fire_sprite = Sprite2D.new()
 	## X must match the mantle (11.5): at 12.5 the 64px flame spanned 368..432 while the
 	## surround ends at 416, so it hung a full tile right and spilled outside the arch.
-	_fire_sprite.position = Vector2(11.5 * TILE_SIZE, 11.0 * TILE_SIZE)
+	## Y follows the inn convention (+0.5 below the surround centre). At 11.0 the flame sat
+	## ABOVE centre and its painted pixels (rows 6..43 of a 64px canvas, 20px bottom padding)
+	## ended at y=363 while the ash bed starts at 384 — a 21px gap under the fire.
+	_fire_sprite.position = Vector2(11.5 * TILE_SIZE, 12.0 * TILE_SIZE)
 	_fire_sprite.z_index = 5
 	_generate_fire_frames()
 	if _fire_frames.size() > 0:
@@ -987,7 +990,7 @@ func _create_fireplace() -> void:
 
 	# Point light at fireplace — warm orange glow
 	_fireplace_light = PointLight2D.new()
-	_fireplace_light.position = Vector2(11.5 * TILE_SIZE, 11.0 * TILE_SIZE)
+	_fireplace_light.position = Vector2(11.5 * TILE_SIZE, 12.5 * TILE_SIZE)
 	_fireplace_light.color = Color(1.0, 0.65, 0.25)
 	_fireplace_light.energy = 0.8
 	_fireplace_light.texture_scale = 3.0

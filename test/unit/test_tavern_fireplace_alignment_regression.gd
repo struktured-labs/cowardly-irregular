@@ -13,9 +13,12 @@ extends GutTest
 ## coincidental value goes red on a legitimate relocation and green on a wrong one; the
 ## relationship survives any move and still catches an off-centre flame.
 ##
-## Only X is asserted. The tavern's flame sits ABOVE the surround's centre by design — its
-## 64px sprite is centred at y=352 so its base meets the ash bed at y=384, and flames rise
-## from there. The inn's geometry differs, which is why that file's Y assertion is not copied.
+## Y was ALSO wrong, and my first pass got it backwards. I reasoned the 64px sprite centred
+## at y=352 put its base on the ash bed at y=384 and left Y alone. Measuring the generated
+## frame disproved it: the painted pixels occupy rows 6..43, i.e. 20px of empty bottom
+## padding, so the visible flame ended at y=363 — a 21px gap above the ash bed. Arithmetic on
+## the sprite BOX is not arithmetic on the pixels IN it. Now follows the inn's tested
+## convention: flame +0.5 tiles below the surround centre, light +0.5 below the flame.
 
 const TAVERN := "res://src/maps/interiors/TavernInterior.gd"
 
@@ -53,6 +56,26 @@ func test_flame_and_light_share_the_mantles_x() -> void:
 		"flame must share the mantle's X — the arch opening is centred there; the defect was a one-tile offset that pushed the flame outside the surround")
 	assert_almost_eq(light.x, mantle.x, 0.01,
 		"fire light must share the mantle's X so the glow sits in the opening, not beside it")
+
+
+## The inn's tested convention, now guarded here too: the flame sits IN the hearth mouth
+## (below the surround centre) and the light at or below it, casting up out of the opening.
+## The tavern had the flame ABOVE its centre — the wrong direction — which left its painted
+## pixels ending at y=363 with the ash bed starting at 384.
+func test_flame_and_light_sit_in_the_hearth_mouth() -> void:
+	var src := FileAccess.get_file_as_string(TAVERN)
+	var body := _fn_body(src, "_create_fireplace", 4000)
+	var mantle := _anchor_of(body, "mantle")
+	var flame := _anchor_of(body, "_fire_sprite")
+	var light := _anchor_of(body, "_fireplace_light")
+	assert_ne(mantle, Vector2.INF, "mantle anchor is readable")
+	assert_ne(flame, Vector2.INF, "flame anchor is readable")
+	assert_ne(light, Vector2.INF, "light anchor is readable")
+
+	assert_gt(flame.y, mantle.y,
+		"flame belongs in the hearth mouth, below the surround centre — above it leaves a gap over the ash bed")
+	assert_gte(light.y, flame.y,
+		"fire light sits at or below the flame, casting up out of the opening")
 
 
 func test_flame_sprite_stays_inside_the_surround() -> void:
