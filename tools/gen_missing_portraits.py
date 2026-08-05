@@ -165,11 +165,14 @@ PORTRAITS = {
         "worth it. Palette: teal + brass + silver hair."
     ),
     "chancellor_mordaine": (
-        "Character: CHANCELLOR MORDAINE, a sorceress-usurper — sharp beautiful "
-        "cold face, black hair drawn back severely, violet eyes with an unnatural "
-        "inner light, wearing a high-collared black robe with deep-purple "
-        "arcane trim. Reads: the antagonist, elegant and entirely certain. "
-        "Palette: black + violet + pale skin."
+        "Character: CHANCELLOR MORDAINE, a sorceress-usurper. CRITICAL: she is DARK. "
+        "JET-BLACK hair pulled back severely and tightly against the skull — NOT white, "
+        "NOT silver, NOT pale hair. A HIGH-COLLARED BLACK ROBE in near-black charcoal "
+        "with deep-purple arcane trim at the collar — NOT a white or light garment. "
+        "Sharp cold beautiful face, pale skin against the black, violet eyes with a faint "
+        "unnatural inner light. Reads: the antagonist, elegant and entirely certain. "
+        "Overall value: DARK silhouette, black and violet, with the pale face the only "
+        "bright area in frame."
     ),
     # --- meta jobs: no battle sheet, no idle.png, nothing renders today ---
     "scriptweaver": (
