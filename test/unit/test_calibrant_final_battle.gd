@@ -215,6 +215,20 @@ func test_a_face_swap_recomputes_scale_and_facing_from_the_new_sheet() -> void:
 	BattleManager.enemy_party.assign(saved_party)
 
 
+func test_the_unmasking_is_scored_by_silence() -> void:
+	# The music contract: ABSENT = inherit, "silence" = stop, anything else = swap. Face 4
+	# carries the named sentinel — NOT empty-string, which 525 .get(k, "") sites would erase.
+	var m := _monster(CALIBRANT)
+	var faces: Array = m.get("phase_faces", [])
+	var last: Dictionary = faces[faces.size() - 1]
+	assert_eq(str(last.get("name", "")), "no face at all", "PRECONDITION: the unmasking is last")
+	assert_true(last.has("music"), "the unmasking's silence is AUTHORED, not an accident of absence")
+	assert_eq(str(last["music"]), "silence",
+		"the named sentinel — an empty string here would be one tidy-up away from inheriting the Arbiter's theme")
+	for i in range(faces.size() - 1):
+		assert_ne(str(faces[i].get("music", "")), "silence", "only the unmasking goes quiet")
+
+
 func test_the_arena_is_registered_and_the_intro_is_finally_lit() -> void:
 	assert_true(MapSystem.is_dungeon_map("vertex_apex"),
 		"the arena must be a known dungeon map or the save_point_only gate misses it")

@@ -5232,7 +5232,8 @@
         ],
         "weaknesses": [],
         "resistances": [],
-        "line": "The tuning is off. All of it. No curve, no clamps, no compensation. I have never seen this. No one has."
+        "line": "The tuning is off. All of it. No curve, no clamps, no compensation. I have never seen this. No one has.",
+        "music": "silence"
       }
     ],
     "exp_reward": 5000,

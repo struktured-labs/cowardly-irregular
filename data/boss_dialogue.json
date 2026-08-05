@@ -1724,6 +1724,6 @@
         "You, versus you, refereed by me. The job I should have taken from the start."
       ]
     },
-    "_META_vocabularies": "TWO deliberate vocabularies, both consumed. phase_faces (monsters.json, 5 entries) is the MECHANICAL ladder; this entry's `phases` (3: measuring/patching/unmasked) is the NARRATIVE act structure the LLM speaks from. Bark index mapping, verified in _maybe_advance_boss_face: after landing faces[k] the meta is k+1, so phase_barks[0] = the un-phased Calibrant and phase_barks[N+1] = worn face N (1=Warden .. 5='no face at all')."
+    "_META_vocabularies": "TWO deliberate vocabularies, both consumed. phase_faces (monsters.json, 5 entries) is the MECHANICAL ladder; this entry's `phases` (3: measuring/patching/unmasked) is the NARRATIVE act structure the LLM speaks from. Bark index mapping, verified in _maybe_advance_boss_face: after landing faces[k] the meta is k+1, so phase_barks[0] = the un-phased Calibrant and phase_barks[N+1] = worn face N (1=Warden .. 5='no face at all'). MUSIC contract per face (cowir-sfx's sentinel, msg 4173): key ABSENT = inherit the playing track; 'silence' = stop_music at the swap (the unmasking is scored by silence, per the intro's own convention: 'the question hung in the nothing, without music to underline it'); any other value = swap to that track. A named sentinel, NOT empty-string: 525 .get(k,\"\") sites in src/ collapse absent and empty."
   }
 }
