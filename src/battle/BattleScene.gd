@@ -1376,6 +1376,18 @@ const STATUS_ICON_CONFIG = {
 	"barrier": {"label": "BARR", "color": Color(0.4, 0.8, 1.0)},
 	"haste": {"label": "HAST", "color": Color(0.3, 1.0, 0.5)},
 	"slow": {"label": "SLOW", "color": Color(0.7, 0.3, 0.8)},
+	# "burning" is what the engine actually applies — BattleManager aliases the authored effect "burn" at both application sites, and Combatant ticks the DoT on "burning". Without this key the fix that made burn deal damage (2026-07-31) also turned its orange badge into the grey "BUR" fallback.
+	"burning": {"label": "BURN", "color": Color(1.0, 0.5, 0.1)},
+	# Tick 129's gap, reopened: these 9 are applied by add_status() but had no entry, so each rendered as a grey 3-letter truncation — "CAN" for cannot_act reads as its own opposite. Colours follow the convention above (buff green, debuff red, utility tinted); labels are 4 chars like their neighbours.
+	"cannot_act": {"label": "HELD", "color": Color(0.8, 0.2, 0.2)},
+	"festered": {"label": "FSTR", "color": Color(0.7, 0.8, 0.2)},
+	"memory_leak": {"label": "LEAK", "color": Color(0.9, 0.4, 0.6)},
+	"controlled": {"label": "CTRL", "color": Color(0.9, 0.4, 0.2)},
+	"mind_swap": {"label": "SWAP", "color": Color(0.7, 0.4, 0.9)},
+	"damage_absorb": {"label": "ABSB", "color": Color(0.3, 1.0, 0.3)},
+	"evasion": {"label": "EVDE", "color": Color(0.3, 1.0, 0.3)},
+	"reflect": {"label": "RFLC", "color": Color(0.4, 0.8, 1.0)},
+	"shadow_step": {"label": "SHDW", "color": Color(0.5, 0.4, 0.8)},
 }
 
 
