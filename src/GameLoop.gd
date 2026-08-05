@@ -65,6 +65,7 @@ const NullChamberScript = preload("res://src/maps/dungeons/NullChamber.gd")
 const SuburbanUndergroundScript = preload("res://src/maps/dungeons/SuburbanUnderground.gd")
 const CastleHarmoniaScript = preload("res://src/maps/dungeons/CastleHarmonia.gd")
 const SteampunkMechanismScript = preload("res://src/maps/dungeons/SteampunkMechanism.gd")
+const VertexApexScript = preload("res://src/maps/dungeons/VertexApex.gd")
 const SteampunkOverworldScript = preload("res://src/exploration/SteampunkOverworld.gd")
 const SuburbanOverworldScript = preload("res://src/exploration/SuburbanOverworld.gd")
 const IndustrialOverworldScript = preload("res://src/exploration/IndustrialOverworld.gd")
@@ -1883,14 +1884,14 @@ func _get_pending_story_cutscene() -> String:
 		return "world6_chapter2"
 	if flags.get("cutscene_flag_world6_chapter2_complete", false) and not flags.get("cutscene_flag_world6_chapter3_complete", false):
 		return "world6_chapter3"
-	# Tick 107: W6 endgame closer — chapter3 (The Question) → calibrant
-	# defeat (the answer + class offer) → ending (worlds reform). Pre-fix,
-	# the W6 chain stopped at chapter3 and the player had no narrative
-	# closer despite world6_calibrant_defeat.json and world6_ending.json
-	# being authored on disk. The Calibrant "battle" is elided as
-	# narrative — matches the W2 Masterite auto-sets pattern (tick 101)
-	# since no Calibrant arena/dungeon exists.
-	if flags.get("cutscene_flag_world6_chapter3_complete", false) and not flags.get("cutscene_flag_world6_calibrant_defeat_complete", false):
+	# W6 endgame closer — chapter3 (The Question) → the Vertex Apex → calibrant defeat (the
+	# answer + class offer) → ending (worlds reform). The Calibrant battle used to be ELIDED as
+	# narrative because no arena existed, so the game's antagonist was never fought and
+	# world6_calibrant_intro (86 authored steps) never played. VertexApex is that arena; the
+	# closer now waits on the real defeat flag the boss sets.
+	if flags.get("cutscene_flag_world6_chapter3_complete", false) \
+			and flags.get("cutscene_flag_world6_calibrant_defeated", false) \
+			and not flags.get("cutscene_flag_world6_calibrant_defeat_complete", false):
 		if _current_map_id == "vertex_village":
 			return "world6_calibrant_defeat"
 	if flags.get("cutscene_flag_world6_calibrant_defeat_complete", false) and not flags.get("cutscene_flag_world6_ending_complete", false):
@@ -3452,6 +3453,8 @@ func _start_exploration(force_battle_teardown: bool = false) -> void:
 			exploration_scene = _create_dragon_cave_from_script(CastleHarmoniaScript)
 		"steampunk_mechanism":
 			exploration_scene = _create_dragon_cave_from_script(SteampunkMechanismScript)
+		"vertex_apex":
+			exploration_scene = _create_dragon_cave_from_script(VertexApexScript)
 		"steampunk_overworld":
 			exploration_scene = SteampunkOverworldScript.new()
 		"suburban_overworld":

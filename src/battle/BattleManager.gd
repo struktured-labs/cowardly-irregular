@@ -15,6 +15,8 @@ signal selection_turn_ended(combatant: Combatant)
 signal execution_phase_started()
 signal action_executing(combatant: Combatant, action: Dictionary)
 signal action_executed(combatant: Combatant, action: Dictionary, targets: Array)
+## Emitted when a phase_faces boss swaps face — UI/audio hooks; no consumer is required.
+signal boss_face_changed(combatant: Combatant, face_name: String)
 signal round_started(round_num: int)
 signal round_ended(round_num: int)
 signal damage_dealt(target: Combatant, amount: int, is_crit: bool, element: String, elemental_mod: float)
@@ -1066,6 +1068,60 @@ func _apply_weakness_cycles() -> void:
 
 
 ## msg 2805 cycle 18: Mordaine phase-2 Calibrant recalibrate. Struktured verdict: "Mordaine too easy" — she's the sorceress-usurper + first mask of the Calibrant, so meta-aware mechanics fit her identity better than stat inflation. Trigger: first time she crosses 50% HP in a battle. Effect: she swaps her weakness element (data-authored) with a resistance element via monster_data.calibrant_recalibrate_swap. Player was leaning into holy → she resists it, exposes a new weakness they must pivot to. Latched one-shot per battle via meta flag.
+## Data-driven boss phases that CHANGE the fight instead of scaling it. Party power is flat
+## L20->L28, so extra HP buys length, not difficulty — a boss escalates by swapping its kit and
+## its elemental profile. Authored as monster_data.phase_faces[]; generic, not Calibrant-only.
+func _maybe_advance_boss_face() -> void:
+	if EncounterSystem == null or EncounterSystem.monster_database.is_empty():
+		return
+	for enemy in enemy_party:
+		if enemy == null or not is_instance_valid(enemy) or not enemy.is_alive:
+			continue
+		var mt: String = str(enemy.get_meta("monster_type", "")) if enemy.has_meta("monster_type") else ""
+		if mt == "":
+			continue
+		var faces: Variant = EncounterSystem.monster_database.get(mt, {}).get("phase_faces", null)
+		if not (faces is Array) or (faces as Array).is_empty() or enemy.max_hp <= 0:
+			continue
+		var pct: float = 100.0 * float(enemy.current_hp) / float(enemy.max_hp)
+		var idx: int = int(enemy.get_meta("_boss_face_index", 0))
+		var landed: int = -1
+		# A single big hit can cross two thresholds; land on the LAST one rather than
+		# firing every intervening face's line in the same frame.
+		while idx < (faces as Array).size() and pct <= float((faces as Array)[idx].get("below_pct", 0.0)):
+			landed = idx
+			idx += 1
+		if landed < 0:
+			continue
+		enemy.set_meta("_boss_face_index", idx)
+		_apply_boss_face(enemy, (faces as Array)[landed])
+
+
+func _apply_boss_face(enemy: Combatant, face: Dictionary) -> void:
+	var abilities: Array = face.get("abilities", [])
+	if not abilities.is_empty() and enemy.job is Dictionary:
+		var swapped: Array = []
+		for a in abilities:
+			swapped.append(str(a))
+		enemy.job["abilities"] = swapped
+	if face.has("weaknesses"):
+		enemy.elemental_weaknesses.clear()
+		for w in face["weaknesses"]:
+			enemy.elemental_weaknesses.append(str(w))
+	if face.has("resistances"):
+		enemy.elemental_resistances.clear()
+		for r in face["resistances"]:
+			enemy.elemental_resistances.append(str(r))
+	# Phase break clears buffs, matching the Masterite escalation convention.
+	enemy.active_buffs.clear()
+	var face_name: String = str(face.get("name", "another face"))
+	battle_log_message.emit("[color=magenta]✦ %s takes the face of %s.[/color]" % [enemy.combatant_name, face_name])
+	var line: String = str(face.get("line", ""))
+	if line != "":
+		battle_log_message.emit("[color=magenta]%s[/color]" % line)
+	boss_face_changed.emit(enemy, face_name)
+
+
 func _maybe_trigger_mordaine_recalibrate() -> void:
 	if EncounterSystem == null or EncounterSystem.monster_database.is_empty():
 		return
@@ -3221,6 +3277,8 @@ func _execute_next_action() -> void:
 	_log_player_action(combatant, action)
 	# msg 2805 cycle 18: check Mordaine phase 2 recalibrate BEFORE emitting action_executed. Fires once per fight when she crosses 50% HP. Silent no-op for any other enemy — free polling.
 	_maybe_trigger_mordaine_recalibrate()
+	# Same polling seam: silent no-op for any enemy without phase_faces authored.
+	_maybe_advance_boss_face()
 	action_executed.emit(combatant, action, action.get("targets", [action.get("target")]))
 
 	# Delay between actions — scale with battle speed for snappy feel.
