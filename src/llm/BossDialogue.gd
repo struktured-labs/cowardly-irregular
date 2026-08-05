@@ -87,6 +87,13 @@ func _load_data() -> void:
 
 # ── Public API ────────────────────────────────────────────────────────────────
 
+## Fable's per-face combat barks for phase_faces bosses; {} when a boss has none.
+func get_phase_barks(boss_id: String) -> Dictionary:
+	_load_data()
+	var e = _data.get(boss_id, {})
+	return e.get("phase_barks", {}) if e is Dictionary else {}
+
+
 func has_entry(boss_id: String) -> bool:
 	"""True iff data/boss_dialogue.json declares a section for this boss."""
 	if not _loaded:

@@ -5263,17 +5263,18 @@
         "The numbers held. The numbers always held. So it was never the numbers.",
         "Don't stop now. I need to see how you finish a fight you could have skipped."
       ],
-      "victory": [
+      "defeat": [
         "Enough. Stand down. The test ended before you sat. I needed to watch it end anyway.",
         "Something in the measurement is wrong. Not the numbers. Something older than the numbers.",
         "Put the menus away. The last question doesn't work with the interface on."
       ],
-      "defeat": [
+      "player_wiped": [
         "No. That result is miscalibrated. Your defeat measures my error, nothing else. Logged.",
         "Recorded as variance, not verdict. Reload. I'll be here. I am always here.",
         "I have waited six worlds for an answer. I can wait one more attempt. Take your time."
       ]
     },
-    "_META_hp_provisional": "34000 is PROVISIONAL and struktured's to rule. Anchored at ~2x Mordaine (L20/16500), the largest boss on main. Party damage is FLAT L20->L28, so this buys LENGTH, not difficulty -- the phase_faces carry the difficulty. cowir-battle holds 22k/28k/35k for the_coordinator/regulator/director pending the same equipment-vs-HP lever; this number belongs to that ruling and should move with them."
+    "_META_hp_provisional": "34000 is PROVISIONAL and struktured's to rule. Anchored at ~2x Mordaine (L20/16500), the largest boss on main. Party damage is FLAT L20->L28, so this buys LENGTH, not difficulty -- the phase_faces carry the difficulty. cowir-battle holds 22k/28k/35k for the_coordinator/regulator/director pending the same equipment-vs-HP lever; this number belongs to that ruling and should move with them.",
+    "diegetic_retry": true
   }
 }

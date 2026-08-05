@@ -6772,6 +6772,9 @@ func _log_player_action(combatant: Combatant, action: Dictionary) -> void:
 		"ap_before": combatant.current_ap
 	})
 
+	# Fable's phase barks — the finale boss reacts to HOW the player fights.
+	_maybe_boss_phase_bark(combatant, action)
+
 	# Signature-ability dialogue trigger; cooldown handled inside _maybe_fire.
 	var ability_id: String = str(action.get("ability_id", ""))
 	if ability_id != "" and _is_signature_ability(combatant, ability_id):
@@ -8627,3 +8630,47 @@ func _trigger_monster_counter(monster: Combatant, attacker: Combatant) -> void:
 			_execute_magic_ability(monster, ability, [attacker])
 		_:
 			_execute_physical_ability(monster, ability, [attacker])
+
+## Deterministic combat voice for phase_faces bosses (data: boss_dialogue.json phase_barks,
+## keyed by _boss_face_index). Reactions fire ONCE per face; taunts rotate every 4th player
+## action. Same battle_log path as Mordaine's recalibrate line — no new UI surface.
+func _maybe_boss_phase_bark(combatant: Combatant, action: Dictionary) -> void:
+	var boss_dlg = get_node_or_null("/root/BossDialogue")
+	if boss_dlg == null or not boss_dlg.has_method("get_phase_barks"):
+		return
+	for e in enemy_party:
+		if e == null or not is_instance_valid(e) or not e.is_alive:
+			continue
+		var mt: String = str(e.get_meta("monster_type", "")) if e.has_meta("monster_type") else ""
+		if mt == "":
+			continue
+		var barks: Dictionary = boss_dlg.get_phase_barks(mt)
+		if barks.is_empty():
+			continue
+		var face_key: String = str(int(e.get_meta("_boss_face_index", 0)))
+		var pool: Dictionary = barks.get(face_key, {})
+		if pool.is_empty():
+			return
+		if str(action.get("type", "")) == "advance" and not e.has_meta("_bark_adv_" + face_key):
+			e.set_meta("_bark_adv_" + face_key, true)
+			_emit_boss_bark(e, pool.get("on_advance", []), 0)
+			return
+		var ab = get_node_or_null("/root/AutobattleSystem")
+		if ab and ab.has_method("is_autobattle_enabled") \
+				and ab.is_autobattle_enabled(_get_character_id(combatant)) \
+				and not e.has_meta("_bark_auto_" + face_key):
+			e.set_meta("_bark_auto_" + face_key, true)
+			_emit_boss_bark(e, pool.get("on_autobattle", []), 0)
+			return
+		var n: int = int(e.get_meta("_bark_n", 0)) + 1
+		e.set_meta("_bark_n", n)
+		if n % 4 == 0:
+			_emit_boss_bark(e, pool.get("taunts", []), int(n / 4) - 1)
+		return
+
+
+func _emit_boss_bark(e: Combatant, lines: Array, idx: int) -> void:
+	if lines.is_empty():
+		return
+	battle_log_message.emit("[color=magenta]%s: \"%s\"[/color]" % [e.combatant_name, str(lines[idx % lines.size()])])
+

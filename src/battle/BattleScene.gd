@@ -454,6 +454,8 @@ func _exit_tree() -> void:
 		BattleManager.action_executing.disconnect(_on_action_executing)
 	if BattleManager.action_executed.is_connected(_on_action_executed):
 		BattleManager.action_executed.disconnect(_on_action_executed)
+	if BattleManager.boss_face_changed.is_connected(_on_boss_face_changed):
+		BattleManager.boss_face_changed.disconnect(_on_boss_face_changed)
 	if BattleManager.round_ended.is_connected(_on_round_ended):
 		BattleManager.round_ended.disconnect(_on_round_ended)
 	if BattleManager.round_started.is_connected(_on_round_started_snap_home):
