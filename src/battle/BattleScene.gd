@@ -3791,12 +3791,16 @@ func _on_boss_face_changed(combatant: Combatant, _face_name: String, face: Dicti
 		# Clear the danger baseline too, or a dip-and-recover replays the PREVIOUS face's
 		# theme over the silence, permanently (cowir-sfx, msg 4223 — both halves or neither).
 		_base_music_track = ""
-		if SoundManager:
+		# Danger OWNS the channel while in force (cowir-battle, msg 4231): if the party is
+		# critical, keep the you're-about-to-die cue; recovery delivers the silence instead.
+		if SoundManager and not _is_danger_music:
 			SoundManager.fade_out_music(1.2)
 	elif face_music != "":
 		# Keep the danger-swap baseline in step or it reverts to the pre-fight bed.
 		_base_music_track = face_music
-		if SoundManager:
+		# Same rule: a swap mid-danger must not stomp the critical-HP cue — the baseline is
+		# set, and the existing recovery path plays the new theme once the party is safe.
+		if SoundManager and not _is_danger_music:
 			SoundManager.play_music(face_music)
 	var sheet_id := str(face.get("sheet_id", ""))
 	if sheet_id == "":

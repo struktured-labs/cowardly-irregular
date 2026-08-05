@@ -241,6 +241,16 @@ func test_a_face_swap_moves_the_music_and_the_unmasking_silences_it() -> void:
 	assert_eq(str(scene._base_music_track), "",
 		"silence must CLEAR the danger baseline — else a dip-and-recover replays the previous face's theme over the unmasking (cowir-sfx, msg 4223)")
 
+	# A swap landing while DANGER owns the channel must not stomp the critical-HP cue —
+	# the baseline updates, the channel doesn't, recovery delivers it (cowir-battle, msg 4231).
+	scene._is_danger_music = true
+	scene._on_boss_face_changed(c, "the Curator", {"music": "boss_phase2_curator"})
+	assert_ne(str(SoundManager._current_music), "boss_phase2_curator",
+		"a face swap during critical HP must not replace the danger music")
+	assert_eq(str(scene._base_music_track), "boss_phase2_curator",
+		"but the baseline moves, so recovery plays the NEW phase's theme")
+	scene._is_danger_music = false
+
 	# A face with no music key inherits: nothing changes.
 	scene._on_boss_face_changed(c, "the Warden", {"music": "boss_phase2_warden"})
 	var before := str(SoundManager._current_music)
