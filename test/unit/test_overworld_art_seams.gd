@@ -68,3 +68,27 @@ func test_chest_builds_with_a_texture_in_both_states() -> void:
 		assert_not_null(s, "chest builds a Sprite node (opened=%s)" % str(opened))
 		if s != null:
 			assert_not_null(s.texture, "chest carries a texture (opened=%s)" % str(opened))
+
+
+## THE TRANSITION, not the built state. My first pass tested a chest CONSTRUCTED
+## already-open — which exercises _generate_sprite's branch and says nothing about
+## what happens when a player opens one. _open_chest redrew procedurally and
+## unconditionally, so an artist-rendered chest snapped to the procedural drawing
+## on the first open: reachable, plays, wrong. cowir-main caught it in review.
+func test_opening_a_chest_keeps_the_artist_art() -> void:
+	GameState.set_story_flag("chest_transition_probe", false)
+	var c = load("res://src/exploration/TreasureChest.gd").new()
+	c.chest_id = "transition_probe"
+	add_child_autofree(c)
+	await get_tree().process_frame
+
+	var s = c.get_node_or_null("Sprite")
+	assert_not_null(s, "chest built a sprite")
+	assert_eq(s.texture.resource_path, "res://assets/sprites/objects/chest_closed.png",
+		"precondition: it starts on the CLOSED artist sheet, else this proves nothing")
+
+	c._open_chest(null)
+
+	assert_eq(s.texture.resource_path, "res://assets/sprites/objects/chest_open.png",
+		"opening must swap to the OPEN artist sheet — a procedural redraw here has an EMPTY resource_path and is the visible regression")
+	GameState.set_story_flag("chest_transition_probe", false)
