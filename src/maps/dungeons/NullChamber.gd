@@ -11,6 +11,8 @@ func _init() -> void:
 	boss_id = "masterite_curator_abstract"
 	boss_flag_key = "null_chamber_cleared"
 	boss_cutscene_id = "world6_null_chamber_boss"
+	# Its three sibling masterite dungeons all declare this; without it world5_curator_defeat is unreachable.
+	defeat_cutscene_flags = ["cutscene_flag_curator_abstract_defeated"]
 	total_floors = 3
 	overworld_exit_spawn = "catalog"
 	overworld_exit_map = "abstract_overworld"
