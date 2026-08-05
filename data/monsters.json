@@ -1964,7 +1964,7 @@
     },
     "dialogue": {
       "intro": [
-        "*The cavern has no light. Not darkness \u2014 an absence of light*",
+        "*The cavern has no light. Not darkness — an absence of light*",
         "*Something vast shifts in the void*",
         "Umbraxis: ...Do you ever wonder what we are?",
         "Hero: A dragon?",
@@ -2266,7 +2266,7 @@
   "brass_golem": {
     "id": "brass_golem",
     "name": "Brass Golem",
-    "description": "A hulking automaton forged from salvaged boiler plate. Extremely durable but slow \u2014 its coal furnace heart needs time to build pressure between swings.",
+    "description": "A hulking automaton forged from salvaged boiler plate. Extremely durable but slow — its coal furnace heart needs time to build pressure between swings.",
     "level": 6,
     "stats": {
       "max_hp": 2400,
@@ -2744,7 +2744,7 @@
   "data_wraith": {
     "id": "data_wraith",
     "name": "Data Wraith",
-    "description": "A ghost in the machine \u2014 fragmented code that achieved consciousness and chose violence. High magic, devastating attacks, but held together by barely a thread.",
+    "description": "A ghost in the machine — fragmented code that achieved consciousness and chose violence. High magic, devastating attacks, but held together by barely a thread.",
     "level": 14,
     "stats": {
       "max_hp": 2000,
@@ -2792,7 +2792,7 @@
   "recursive_loop": {
     "id": "recursive_loop",
     "name": "Recursive Loop",
-    "description": "An infinite loop made manifest \u2014 a spiraling entity that calls itself endlessly. Medium stats across the board, but its 'stack overflow' self-destruct deals massive damage to everything.",
+    "description": "An infinite loop made manifest — a spiraling entity that calls itself endlessly. Medium stats across the board, but its 'stack overflow' self-destruct deals massive damage to everything.",
     "level": 12,
     "stats": {
       "max_hp": 3200,
@@ -4429,10 +4429,22 @@
     "win_condition": {
       "type": "arbiter_ladder",
       "phases": [
-        { "key": "faith", "job": "cleric" },
-        { "key": "logic", "job": "mage" },
-        { "key": "edge", "job": "rogue" },
-        { "key": "voice", "job": "bard" }
+        {
+          "key": "faith",
+          "job": "cleric"
+        },
+        {
+          "key": "logic",
+          "job": "mage"
+        },
+        {
+          "key": "edge",
+          "job": "rogue"
+        },
+        {
+          "key": "voice",
+          "job": "bard"
+        }
       ]
     },
     "name": "Arbiter of Function",
@@ -4634,7 +4646,7 @@
   "chancellor_mordaine": {
     "id": "chancellor_mordaine",
     "name": "Chancellor Mordaine",
-    "description": "Sorceress-usurper of Castle Harmonia. The architect of World 1 \u2014 and the first mask of the Calibrant. Cold, deliberate, and somehow already knows your build.",
+    "description": "Sorceress-usurper of Castle Harmonia. The architect of World 1 — and the first mask of the Calibrant. Cold, deliberate, and somehow already knows your build.",
     "level": 20,
     "boss": true,
     "stats": {
@@ -4685,7 +4697,7 @@
     "meta_enemy": true,
     "one_shot": {
       "hp_threshold": 16500,
-      "setup_hint": "She's calibrated for the average party \u2014 bring something she didn't expect. Holy magic, stacked Bard buffs, and an Advance chain are the canonical answers. She recalibrates at half HP \u2014 layer a second element.",
+      "setup_hint": "She's calibrated for the average party — bring something she didn't expect. Holy magic, stacked Bard buffs, and an Advance chain are the canonical answers. She recalibrates at half HP — layer a second element.",
       "reward_item": "calibrant_token"
     },
     "dialogue": {
@@ -4781,7 +4793,7 @@
   "cleric_survive_target": {
     "id": "cleric_survive_target",
     "name": "The Grinding Wound",
-    "description": "A slow, relentless miasma that presses on the wounded villager. It cannot be defeated \u2014 only outlasted. The Cleric's grace-under-pressure is the answer. Faith as endurance, not violence.",
+    "description": "A slow, relentless miasma that presses on the wounded villager. It cannot be defeated — only outlasted. The Cleric's grace-under-pressure is the answer. Faith as endurance, not violence.",
     "level": 2,
     "boss": true,
     "spotlight_duel": true,
@@ -4832,7 +4844,7 @@
     "dialogue": {
       "intro": [
         "*The wounded villager gasps. His breath is failing.*",
-        "*The Cleric kneels. There is nothing here to fight \u2014 only a wound that will not stop bleeding.*",
+        "*The Cleric kneels. There is nothing here to fight — only a wound that will not stop bleeding.*",
         "Villager: Please... just... stay with me...",
         "*The Cleric's hands hover a half-second above his chest. Then she begins the prayer.*"
       ],
@@ -4852,7 +4864,7 @@
   "rogue_lockward": {
     "id": "rogue_lockward",
     "name": "The Lockward",
-    "description": "A treasure-guardian construct that ambushes any who reach for the vault. Every round it briefly exposes its flank \u2014 the Rogue's Steal, Backstab, and speed are the answer.",
+    "description": "A treasure-guardian construct that ambushes any who reach for the vault. Every round it briefly exposes its flank — the Rogue's Steal, Backstab, and speed are the answer.",
     "level": 5,
     "boss": true,
     "spotlight_duel": true,
@@ -4863,7 +4875,7 @@
     "steal_response": {
       "type": "vulnerability",
       "modifier": 0.5,
-      "message": "You lifted the Warden's Key from its plate \u2014 the guard falls slack."
+      "message": "You lifted the Warden's Key from its plate — the guard falls slack."
     },
     "stats": {
       "max_hp": 2000,
@@ -4902,7 +4914,7 @@
         "*The vault door hums. From its frame steps a ward-construct of interlocking bronze.*",
         "Lockward: THIEF DETECTED.",
         "Lockward: PROTOCOL: DEFEND. COUNTER. PROTOCOL: REPEAT.",
-        "*Its stance is perfect \u2014 except for one moment each cycle when the counter resets.*"
+        "*Its stance is perfect — except for one moment each cycle when the counter resets.*"
       ],
       "low_hp": [
         "Lockward: PROTOCOL COMPROMISED.",
@@ -4923,7 +4935,7 @@
   "mage_prismatic_construct": {
     "id": "mage_prismatic_construct",
     "name": "Prismatic Construct",
-    "description": "A crystal automaton whose elemental core rotates each round \u2014 fire, then ice, then lightning. The Mage must READ which face is showing and cast the opposing element. Logic as correctable reading.",
+    "description": "A crystal automaton whose elemental core rotates each round — fire, then ice, then lightning. The Mage must READ which face is showing and cast the opposing element. Logic as correctable reading.",
     "level": 5,
     "boss": true,
     "spotlight_duel": true,
@@ -4981,7 +4993,7 @@
       "intro": [
         "*A crystal automaton descends from the cave ceiling. Its core flickers red, then blue, then gold.*",
         "Prismatic Construct: PRISM ACTIVE. CYCLE INITIATED.",
-        "Prismatic Construct: RED FACE \u2014 WEAKNESS: FIRE.",
+        "Prismatic Construct: RED FACE — WEAKNESS: FIRE.",
         "Prismatic Construct: OBSERVE. ADAPT."
       ],
       "low_hp": [
@@ -5000,7 +5012,7 @@
   "bard_hostile_courtier": {
     "id": "bard_hostile_courtier",
     "name": "The Sneering Courtier",
-    "description": "A haughty capital-city functionary who refuses to yield. He cannot be killed \u2014 only talked down. The Bard's listen-first-then-speak-once is the answer. Voice as the naming of what is true.",
+    "description": "A haughty capital-city functionary who refuses to yield. He cannot be killed — only talked down. The Bard's listen-first-then-speak-once is the answer. Voice as the naming of what is true.",
     "level": 6,
     "boss": true,
     "spotlight_duel": true,
@@ -5132,42 +5144,136 @@
         "below_pct": 80,
         "name": "the Warden",
         "sheet_id": "masterite_warden_abstract",
-        "abilities": ["masterite_iron_guard", "masterite_crushing_blow", "masterite_endurance_test", "masterite_judgment"],
+        "abilities": [
+          "masterite_iron_guard",
+          "masterite_crushing_blow",
+          "masterite_endurance_test",
+          "masterite_judgment"
+        ],
         "weaknesses": [],
-        "resistances": ["physical"]
+        "resistances": [
+          "physical"
+        ],
+        "line": "Her books balanced. They always balanced. That was never the problem. Next face.",
+        "music": "boss_phase2_warden"
       },
       {
         "below_pct": 60,
         "name": "Tempo",
         "sheet_id": "masterite_tempo_abstract",
-        "abilities": ["masterite_haste", "masterite_slow", "masterite_quick_strike", "masterite_time_tax"],
-        "weaknesses": ["fire"],
-        "resistances": ["ice", "wind"]
+        "abilities": [
+          "masterite_haste",
+          "masterite_slow",
+          "masterite_quick_strike",
+          "masterite_time_tax"
+        ],
+        "weaknesses": [
+          "fire"
+        ],
+        "resistances": [
+          "ice",
+          "wind"
+        ],
+        "line": "I patched you mid-fight for six worlds. You treated my patches as content. Fine. Try yours.",
+        "music": "boss_phase2_tempo"
       },
       {
         "below_pct": 40,
         "name": "the Curator",
         "sheet_id": "masterite_curator_abstract",
-        "abilities": ["masterite_mana_drain", "masterite_dispel", "masterite_audit", "masterite_resource_cut"],
-        "weaknesses": ["holy"],
-        "resistances": ["physical", "fire", "ice", "lightning", "dark", "wind"]
+        "abilities": [
+          "masterite_mana_drain",
+          "masterite_dispel",
+          "masterite_audit",
+          "masterite_resource_cut"
+        ],
+        "weaknesses": [
+          "holy"
+        ],
+        "resistances": [
+          "physical",
+          "fire",
+          "ice",
+          "lightning",
+          "dark",
+          "wind"
+        ],
+        "line": "You beat yourself. I ran you flawlessly and you still beat you. One variable left to remove: me.",
+        "music": "boss_phase2_curator"
       },
       {
         "below_pct": 20,
         "name": "the Arbiter",
         "sheet_id": "masterite_arbiter_abstract",
-        "abilities": ["masterite_precise_strike", "masterite_measured_blow", "masterite_counter_stance", "masterite_execution"],
-        "weaknesses": ["holy"],
-        "resistances": ["dark", "physical"]
+        "abilities": [
+          "masterite_precise_strike",
+          "masterite_measured_blow",
+          "masterite_counter_stance",
+          "masterite_execution"
+        ],
+        "weaknesses": [
+          "holy"
+        ],
+        "resistances": [
+          "dark",
+          "physical"
+        ],
+        "line": "Four faces now. Boundary. Purpose. Order. End. You killed each of them twice. I kept the masks.",
+        "music": "boss_phase2_arbiter"
+      },
+      {
+        "below_pct": 8,
+        "name": "no face at all",
+        "abilities": [
+          "void_pulse",
+          "life_drain",
+          "firaga",
+          "thundaga"
+        ],
+        "weaknesses": [],
+        "resistances": [],
+        "line": "The tuning is off. All of it. No curve, no clamps, no compensation. I have never seen this. No one has."
       }
     ],
     "exp_reward": 5000,
     "gold_reward": 3000,
     "drop_table": [
-      {"item": "elixir", "chance": 1.0},
-      {"item": "calibrant_token", "chance": 1.0}
+      {
+        "item": "elixir",
+        "chance": 1.0
+      },
+      {
+        "item": "calibrant_token",
+        "chance": 1.0
+      }
     ],
-    "weaknesses": ["holy"],
-    "resistances": ["dark"]
+    "weaknesses": [
+      "holy"
+    ],
+    "resistances": [
+      "dark"
+    ],
+    "dialogue": {
+      "intro": [
+        "You've killed this face before. She ran my numbers and believed them. Watch closely. So did I.",
+        "One encounter, exactly as designed. Damage budget, level curve, eleven projected rounds."
+      ],
+      "low_hp": [
+        "Defeat projected in three rounds. I make it two. Losing ahead of schedule. Of course.",
+        "The numbers held. The numbers always held. So it was never the numbers.",
+        "Don't stop now. I need to see how you finish a fight you could have skipped."
+      ],
+      "victory": [
+        "Enough. Stand down. The test ended before you sat. I needed to watch it end anyway.",
+        "Something in the measurement is wrong. Not the numbers. Something older than the numbers.",
+        "Put the menus away. The last question doesn't work with the interface on."
+      ],
+      "defeat": [
+        "No. That result is miscalibrated. Your defeat measures my error, nothing else. Logged.",
+        "Recorded as variance, not verdict. Reload. I'll be here. I am always here.",
+        "I have waited six worlds for an answer. I can wait one more attempt. Take your time."
+      ]
+    },
+    "_META_hp_provisional": "34000 is PROVISIONAL and struktured's to rule. Anchored at ~2x Mordaine (L20/16500), the largest boss on main. Party damage is FLAT L20->L28, so this buys LENGTH, not difficulty -- the phase_faces carry the difficulty. cowir-battle holds 22k/28k/35k for the_coordinator/regulator/director pending the same equipment-vs-HP lever; this number belongs to that ruling and should move with them."
   }
 }

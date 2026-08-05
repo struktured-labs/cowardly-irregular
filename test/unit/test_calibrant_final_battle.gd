@@ -61,7 +61,18 @@ func test_the_calibrant_exists_and_is_a_real_boss() -> void:
 	assert_true(bool(m.get("boss", false)), "flagged as a boss")
 	assert_gt(int(m.get("level", 0)), 20, "the final boss outranks Mordaine (L20), the first mask")
 	var faces: Array = m.get("phase_faces", [])
-	assert_eq(faces.size(), 4, "four faces — the masterites it already spent on the player")
+	assert_eq(faces.size(), 5,
+		"four masterite faces it already spent on the player, then no face at all")
+	assert_eq(str(faces[faces.size() - 1].get("name", "")), "no face at all",
+		"the last phase drops every borrowed face — the tuning comes off")
+	var thresholds: Array = []
+	for f in faces:
+		thresholds.append(float(f.get("below_pct", 0)))
+	var sorted_desc: Array = thresholds.duplicate()
+	sorted_desc.sort()
+	sorted_desc.reverse()
+	assert_eq(thresholds, sorted_desc,
+		"faces must be authored in descending HP order or the walker lands on the wrong one: %s" % str(thresholds))
 
 
 func test_every_phase_ability_and_element_resolves() -> void:
@@ -108,12 +119,18 @@ func test_crossing_a_threshold_swaps_the_kit_and_the_elements() -> void:
 	assert_true("physical" in c.elemental_resistances,
 		"the Warden's face resists physical — the elemental profile moves with the kit")
 
-	# Drop below the last threshold (20%) in one hit: land on the FINAL face, not an intermediate.
-	c.current_hp = int(c.max_hp * 0.05)
+	# Drop past EVERY remaining threshold in one hit: land on the FINAL face, not the next one.
+	var faces: Array = _monster(CALIBRANT).get("phase_faces", [])
+	var final_face: Dictionary = faces[faces.size() - 1]
+	c.current_hp = int(c.max_hp * 0.02)
 	BattleManager._maybe_advance_boss_face()
 	assert_ne(c.job["abilities"], warden_kit, "a big hit still advances the face")
-	assert_true("masterite_execution" in c.job["abilities"],
-		"a hit crossing several thresholds lands on the LAST face (the Arbiter), not the next one")
+	for a in final_face.get("abilities", []):
+		assert_true(str(a) in c.job["abilities"],
+			"a hit crossing several thresholds lands on the LAST face ('%s'), not the next one — missing %s"
+				% [str(final_face.get("name", "?")), str(a)])
+	assert_false("masterite_execution" in c.job["abilities"],
+		"and it must not be left wearing an intermediate face's kit")
 
 	BattleManager.enemy_party.assign(saved_party)
 
