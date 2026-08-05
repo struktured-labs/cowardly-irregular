@@ -215,6 +215,40 @@ func test_a_face_swap_recomputes_scale_and_facing_from_the_new_sheet() -> void:
 	BattleManager.enemy_party.assign(saved_party)
 
 
+## BEHAVIOURAL. The music keys were authored, referenced, and consumed by NOTHING — caught
+## by two lanes within an hour of me reporting "five faces with music". Drives the real
+## handler: a track key swaps SoundManager, the sentinel fades instead of playing, and both
+## fire ABOVE the sheet guard so the sheetless unmasking still gets its beat.
+func test_a_face_swap_moves_the_music_and_the_unmasking_silences_it() -> void:
+	var scene = load("res://src/battle/BattleScene.tscn").instantiate()
+	add_child_autofree(scene)
+	var c := _build_calibrant()
+	var saved_party: Array = BattleManager.enemy_party.duplicate()
+	var typed: Array[Combatant] = [c]
+	BattleManager.enemy_party = typed
+
+	# A face with a music key: the track swaps and the danger baseline follows.
+	scene._on_boss_face_changed(c, "the Warden", {"music": "boss_phase2_warden"})
+	assert_eq(str(SoundManager._current_music), "boss_phase2_warden",
+		"a face's music key must actually PLAY — it was authored and consumed by nothing")
+	assert_eq(str(scene._base_music_track), "boss_phase2_warden",
+		"the danger-swap baseline moves with it or later systems revert to the pre-fight bed")
+
+	# The unmasking: sheetless AND silence — the music beat must fire despite the absent sheet.
+	scene._on_boss_face_changed(c, "no face at all", {"music": "silence"})
+	assert_ne(str(SoundManager._current_music), "silence",
+		"NEVER play_music(\"silence\") — that is silence by accident, a failed lookup")
+
+	# A face with no music key inherits: nothing changes.
+	scene._on_boss_face_changed(c, "the Warden", {"music": "boss_phase2_warden"})
+	var before := str(SoundManager._current_music)
+	scene._on_boss_face_changed(c, "Tempo", {})
+	assert_eq(str(SoundManager._current_music), before,
+		"an ABSENT music key inherits the playing track — only authored keys change audio")
+
+	BattleManager.enemy_party.assign(saved_party)
+
+
 func test_the_unmasking_is_scored_by_silence() -> void:
 	# The music contract: ABSENT = inherit, "silence" = stop, anything else = swap. Face 4
 	# carries the named sentinel — NOT empty-string, which 525 .get(k, "") sites would erase.

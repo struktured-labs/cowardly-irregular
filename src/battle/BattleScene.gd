@@ -3779,8 +3779,26 @@ func _on_action_executed(combatant: Combatant, action: Dictionary, targets: Arra
 ## the NEW sheet or a 128px base wearing 256px faces renders 2.5x too big and facing backwards
 ## (cowir-sprites' latch spec, found before this consumer existed).
 func _on_boss_face_changed(combatant: Combatant, _face_name: String, face: Dictionary) -> void:
+	# MUSIC FIRST, above the sheet guard — face 4 ("no face at all") has no sheet_id and
+	# carries the "silence" sentinel; below the guard its beat could never fire and would
+	# read as the sentinel being wrong rather than unreachable (cowir-music, msg 4178/4181).
+	# "silence" is also a status-effect id — different namespace, no code collision; kept
+	# because it names the AESTHETIC at the authoring site (consumer owner's call).
+	var face_music := str(face.get("music", ""))
+	if face_music == "silence":
+		# The unmasking is scored by silence — deliberate fade, never play_music("silence"),
+		# which would produce silence by ACCIDENT (failed lookup + poisoned _current_music).
+		if SoundManager:
+			SoundManager.fade_out_music(1.2)
+	elif face_music != "":
+		# Keep the danger-swap baseline in step or it reverts to the pre-fight bed.
+		_base_music_track = face_music
+		if SoundManager:
+			SoundManager.play_music(face_music)
 	var sheet_id := str(face.get("sheet_id", ""))
 	if sheet_id == "":
+		# A sheetless face KEEPS the worn body — for the unmasking that is the honest
+		# placeholder until the true-form sheet ships (an unspent tier call), not a bail.
 		return
 	var idx: int = BattleManager.enemy_party.find(combatant)
 	if idx < 0 or idx >= enemy_sprite_nodes.size():
