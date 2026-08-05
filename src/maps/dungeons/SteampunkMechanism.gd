@@ -9,7 +9,12 @@ class_name SteampunkMechanismScene
 func _init() -> void:
 	cave_name = "The Grand Mechanism"
 	cave_id = "steampunk_mechanism"
-	boss_id = "meta_knight"
+	# Was "meta_knight" — a level-matched placeholder (both L11) never swapped back. Three
+	# signals said Tempo the whole time: the intro cutscene below, the defeat flag below, and
+	# boss_tempo_steampunk.ogg composed on disk yet unreachable because meta_knight carries no
+	# masterite_type, so BattleScene's masterite music branch silently fell through to generic.
+	# meta_knight remains a steampunk pool enemy + Castle Harmonia F3 — nothing orphaned.
+	boss_id = "masterite_tempo_steampunk"
 	boss_flag_key = "steampunk_mechanism_cleared"
 	boss_cutscene_id = "world3_tempo_intro"
 	# (Tick 105: defeat_cutscene removed — see DragonCave for rationale.

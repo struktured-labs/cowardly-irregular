@@ -27,8 +27,9 @@ func _init() -> void:
 	defeat_cutscene_flags = ["cutscene_flag_world6_calibrant_defeated"]
 	unlock_story_flag = "w6_calibrant_defeated"
 
-	# A single chamber. The walk from D to B is deliberately long and empty — the last
-	# approach in the game should be quiet. Legend: M=wall, .=floor, B=boss, D=exit.
+	# A single chamber. The walk from D to B is deliberately long and quiet — one chest by
+	# the door (the game's last kindness), then nothing but floor. Legend: M=wall, .=floor,
+	# B=boss, T=treasure, D=exit.
 	floor_layouts = {
 		1: [
 			"MMMMMMMMMMMMMMMMMMMM",
@@ -44,7 +45,7 @@ func _init() -> void:
 			"M..................M",
 			"M..................M",
 			"MM................MM",
-			"MMMM............MMMM",
+			"MMMM....T.......MMMM",
 			"MMMMMMM..D...MMMMMMM",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],

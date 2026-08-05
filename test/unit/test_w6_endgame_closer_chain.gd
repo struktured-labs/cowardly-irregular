@@ -29,13 +29,16 @@ func _pending_cutscene_body() -> String:
 
 
 func test_calibrant_defeat_gate_present() -> void:
+	# The gate gained a THIRD condition when the Calibrant became a real fight (VertexApex):
+	# the closer must wait on the actual defeat flag, not fire off The Question alone. The old
+	# two-condition pattern was the elision this file now guards against re-introducing.
 	var body := _pending_cutscene_body()
-	var pattern: String = (
-		"if flags.get(\"cutscene_flag_world6_chapter3_complete\", false) "
-		+ "and not flags.get(\"cutscene_flag_world6_calibrant_defeat_complete\", false):"
-	)
-	assert_true(body.contains(pattern),
-		"calibrant defeat gate must check chapter3_complete + not calibrant_defeat_complete")
+	assert_true(body.contains("flags.get(\"cutscene_flag_world6_chapter3_complete\", false)"),
+		"calibrant defeat gate still requires The Question (chapter3)")
+	assert_true(body.contains("flags.get(\"cutscene_flag_world6_calibrant_defeated\", false)"),
+		"calibrant defeat gate must require the REAL defeat — its absence was the elided final boss")
+	assert_true(body.contains("not flags.get(\"cutscene_flag_world6_calibrant_defeat_complete\", false)"),
+		"and must not replay once the closer has run")
 	assert_true(body.contains("return \"world6_calibrant_defeat\""),
 		"_get_pending_story_cutscene must return world6_calibrant_defeat")
 

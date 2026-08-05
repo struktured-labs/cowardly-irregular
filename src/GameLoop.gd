@@ -1933,6 +1933,7 @@ func _next_chained_story_cutscene(finished_id: String) -> String:
 # Tick 214: defeat flags that _get_pending_story_cutscene actually reads. When a subclass declares defeat_cutscene_flags = ["cutscene_flag_X"] and X isn't here, the flag gets set but no gate fires — silent narrative drop. Update both this set AND the gate when adding a new boss defeat cutscene.
 const _KNOWN_DEFEAT_CUTSCENE_FLAGS := {
 	"cutscene_flag_arbiter_futuristic_defeated": true,
+	"cutscene_flag_world6_calibrant_defeated": true,
 	"cutscene_flag_arbiter_suburban_defeated": true,
 	"cutscene_flag_curator_suburban_defeated": true,
 	"cutscene_flag_rat_king_defeated": true,
