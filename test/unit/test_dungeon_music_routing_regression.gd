@@ -193,7 +193,7 @@ func test_every_dungeon_music_key_resolves() -> void:
 		var src := _read(DUNGEON_DIR + f)
 		var idx := src.find("func _get_music_area_id")
 		if idx == -1:
-			continue  # base-class default; covered by the dragon-cave test below
+			continue  # no override — handled by test_non_medieval_dungeons_must_override
 		var body := src.substr(idx, 220)
 		var re := RegEx.new()
 		re.compile('return\\s+"([a-z0-9_]+)"')
@@ -204,6 +204,63 @@ func test_every_dungeon_music_key_resolves() -> void:
 		if not keys.has(key):
 			offenders.append("%s returns \"%s\" — unmatched, so play_area_music falls to _start_overworld_music() and plays OVERWORLD music inside a dungeon" % [f, key])
 	assert_eq(offenders, [], "\n".join(offenders))
+
+
+## Dungeons whose inherited "cave" default is CORRECT, each on its own merits
+## rather than as an exemption: both are World 1 and medieval, which is exactly
+## what "cave" resolves to. A W2+ dungeon can never qualify.
+const MEDIEVAL_BY_LOCATION := {
+	"WhisperingCave.gd": "W1 medieval cave — \"cave\" is its true area",
+	"CastleHarmonia.gd": "W1 medieval — inherits the medieval bed correctly",
+	"DragonCave.gd": "the base class itself; defines the default",
+	"BossTrigger.gd": "not a placed map",
+}
+
+
+func test_non_medieval_dungeons_must_override_the_music_key() -> void:
+	## The hole that let the Calibrant arena through (2026-08-05).
+	##
+	## test_every_dungeon_music_key_resolves `continue`s past any file with no
+	## override, on a comment saying the dragon-cave test covers it. That test
+	## covers the four NAMED W1 caves. A NEW DragonCave subclass with no
+	## override was therefore covered by nothing — and cowir-main's VertexApex,
+	## the World 6 abstract-world finale, landed in exactly that gap: it
+	## inherits "cave", which plays the generic cave bed AND resolves to the
+	## "medieval" battle suffix. The last fight of a six-world game scored to
+	## World 1.
+	##
+	## The predicate is not "must override" — it is "a dungeon outside medieval
+	## World 1 must SAY where it is." The four entries above pass because they
+	## genuinely are medieval, not because they are listed; a W2+ dungeon cannot
+	## join them by being added to the dict, because the assertion below is what
+	## fails and the dict only documents the four that were already correct.
+	var offenders: Array = []
+	for f in _dungeon_scripts():
+		if MEDIEVAL_BY_LOCATION.has(f):
+			continue
+		var src := _read(DUNGEON_DIR + f)
+		if src.find("func _get_music_area_id") > -1:
+			continue
+		offenders.append("%s has no _get_music_area_id() override, so it inherits \"cave\" — the generic cave bed, and the MEDIEVAL battle suffix. Every non-medieval dungeon in the game overrides (industrial_dungeon, abstract_dungeon, digital_dungeon, steampunk_dungeon, suburban_dungeon, the four dragon caves); if this one is genuinely W1 medieval, add it to MEDIEVAL_BY_LOCATION with the reason" % f)
+	assert_eq(offenders.size(), 0, "\n".join(offenders))
+
+
+func test_the_medieval_exemptions_are_all_really_medieval() -> void:
+	## Keeps the dict above from becoming a silencer. Every entry must still be
+	## a file that exists and still lack an override — an entry that has since
+	## gained one is stale and must be pruned, exactly the decay that left the
+	## orphan-music allowlist 100% dead while reporting green.
+	for f in MEDIEVAL_BY_LOCATION:
+		var path: String = DUNGEON_DIR + f
+		assert_true(FileAccess.file_exists(path),
+			"MEDIEVAL_BY_LOCATION names %s, which no longer exists — prune it" % f)
+		if not FileAccess.file_exists(path):
+			continue
+		if f == "DragonCave.gd":
+			continue  # the base class DEFINES the default; it necessarily has one
+		var src: String = FileAccess.get_file_as_string(path)
+		assert_true(src.find("func _get_music_area_id") == -1,
+			"%s now overrides _get_music_area_id, so its MEDIEVAL_BY_LOCATION entry is stale — remove it, or the entry will silently excuse a future regression" % f)
 
 
 func test_w1_dragon_caves_route_to_their_own_theme() -> void:
