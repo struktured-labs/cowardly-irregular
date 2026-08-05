@@ -526,3 +526,51 @@ func _quest_prereq(qid: String) -> String:
 		if typeof(parsed) == TYPE_DICTIONARY and str(parsed.get("id", "")) == qid:
 			return str(parsed.get("prereq_flag", ""))
 	return ""
+
+
+## The masterite overworld art seam.
+##
+## cowir-main found Tempo of the Hunt rendering as a featureless silhouette next
+## to artist NPCs in the eldertree_village smoke. The art genuinely does not
+## exist — but until now neither did a way for it to arrive: _build_silhouette
+## was unconditionally procedural, so a PNG dropped at the conventional path
+## would have rendered nothing and looked like a bad asset rather than a missing
+## loader. Same class as the Phil portrait defect: art we own, unreachable by
+## one lookup.
+func test_silhouette_is_a_fallback_not_the_only_path() -> void:
+	var src: String = FileAccess.get_file_as_string("res://src/exploration/MasteriteEncounter.gd")
+	assert_true(src.contains("ResourceLoader.exists(art)"),
+		"the artist sheet is tried before the procedural figure is drawn")
+	var i := src.find("func _build_silhouette")
+	var body: String = src.substr(i, 700)
+	assert_lt(body.find("ResourceLoader.exists"), body.find("Image.create"),
+		"the sheet lookup must precede the procedural draw — after it, the fallback always wins")
+
+
+## The convention is RoamingMonster's, not one this file invented. If that file
+## ever moves its overworld art, this lookup silently stops resolving — so pin
+## the AGREEMENT rather than the string.
+func test_overworld_art_path_matches_the_roaming_monster_convention() -> void:
+	var re := RegEx.create_from_string("\"res://assets/sprites/monsters/overworld/%s\\.png\"")
+	for path in ["res://src/exploration/RoamingMonster.gd", "res://src/exploration/MasteriteEncounter.gd"]:
+		var text: String = FileAccess.get_file_as_string(path)
+		assert_not_null(re.search(text),
+			"%s must use the shared overworld-art path convention" % path.get_file())
+
+
+## With no masterite art on disk today, every placed encounter must still draw
+## its procedural figure — the fallback is what ships until the art lands.
+func test_every_placed_masterite_still_renders_without_art() -> void:
+	var checked := 0
+	for s in _kill_gated_steps():
+		var arch: String = s["archetype"]
+		GameState.set_story_flag("w1_%s_defeated" % arch, false)
+		var trig := MasteriteEncounterScript.new()
+		trig.archetype = arch
+		trig.monster_id = "masterite_%s_medieval" % arch
+		add_child_autofree(trig)
+		await get_tree().process_frame
+		var node := trig.get_node_or_null("MasteriteSilhouette")
+		assert_not_null(node, "%s renders a silhouette node (art or procedural)" % arch)
+		checked += 1
+	assert_gt(checked, 0, "checked at least one placed masterite")
