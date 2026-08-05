@@ -1853,6 +1853,10 @@ func _get_pending_story_cutscene() -> String:
 	if flags.get("cutscene_flag_arbiter_futuristic_defeated", false) and not flags.get("cutscene_flag_world5_arbiter_defeat_complete", false):
 		if _current_map_id == "root_process":
 			return "world5_arbiter_defeat"
+	# Same shape as its three sibling masterite dungeons; NullChamber declared no defeat flag, so this scene could never play.
+	if flags.get("cutscene_flag_curator_abstract_defeated", false) and not flags.get("cutscene_flag_world5_curator_defeat_complete", false):
+		if _current_map_id == "null_chamber":
+			return "world5_curator_defeat"
 	if flags.get("cutscene_flag_world4_complete", false) and not flags.get("cutscene_flag_world5_prologue_complete", false):
 		if _current_map_id == "abstract_overworld":
 			return "world5_prologue"
@@ -1933,6 +1937,7 @@ func _next_chained_story_cutscene(finished_id: String) -> String:
 # Tick 214: defeat flags that _get_pending_story_cutscene actually reads. When a subclass declares defeat_cutscene_flags = ["cutscene_flag_X"] and X isn't here, the flag gets set but no gate fires — silent narrative drop. Update both this set AND the gate when adding a new boss defeat cutscene.
 const _KNOWN_DEFEAT_CUTSCENE_FLAGS := {
 	"cutscene_flag_arbiter_futuristic_defeated": true,
+	"cutscene_flag_curator_abstract_defeated": true,
 	"cutscene_flag_world6_calibrant_defeated": true,
 	"cutscene_flag_arbiter_suburban_defeated": true,
 	"cutscene_flag_curator_suburban_defeated": true,
@@ -2032,6 +2037,7 @@ const _CUTSCENE_COMPLETION_FLAGS := {
 	"world5_chapter5":                  "cutscene_flag_world5_chapter5_complete",
 	# Tick 103: W5 Arbiter of Futuristic post-defeat dialogue
 	"world5_arbiter_defeat":            "cutscene_flag_world5_arbiter_defeat_complete",
+	"world5_curator_defeat":            "cutscene_flag_world5_curator_defeat_complete",
 	# World 6 (vertex/final)
 	"world6_prologue":                  "cutscene_flag_world6_prologue_complete",
 	"world6_chapter1":                  "cutscene_flag_world6_chapter1_complete",
