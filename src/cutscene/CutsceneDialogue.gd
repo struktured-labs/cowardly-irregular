@@ -329,10 +329,14 @@ const THEME_ALIASES := {
 	"hooded_mage": "mage", "apprentice": "mage",
 	"herbalist": "cleric", "pilgrim": "cleric",
 	"scholarly": "scholar",
-	"bartender": "shopkeeper", "blacksmith": "merchant", "traveler": "merchant",
+	"bartender": "shopkeeper", "traveler": "merchant",
 	"adventurer": "hero", "dancer": "bard",
-	"child": "villager", "farmer": "villager", "maid": "villager", "nervous": "villager",
+	"farmer": "villager", "maid": "villager", "nervous": "villager",
 }
+## `child` and `blacksmith` removed 2026-08-05 — they now carry their OWN palettes above,
+## so the aliases were dead weight that reads as intent. test_an_alias_never_shadows_a_real_palette
+## went red and handed over this exact deletion: the self-expiring exemption doing its job,
+## with the second lane to land paying the one-line cost.
 
 
 ## Direct hit wins, then the alias, then narrator. Order-independent by construction:
