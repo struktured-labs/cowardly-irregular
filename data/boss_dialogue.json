@@ -1591,6 +1591,141 @@
       "1": "measuring",
       "2": "patching",
       "3": "unmasked"
+    },
+    "phase_barks": {
+      "0": {
+        "taunts": [
+          "Your damage is within tolerance. I should know. I set the tolerance.",
+          "Projected duration: eleven rounds. You're ahead of schedule. You always are.",
+          "Fear was a cost she calculated. You were a cost I couldn't.",
+          "This encounter is fair. I checked. I check everything.",
+          "Every hit you land is already in the ledger. So is every one you don't."
+        ],
+        "on_advance": [
+          "Four actions queued. AP debt. The interest on that was my idea.",
+          "Advancing. Borrowing turns you haven't earned yet. The ledger extends you credit. This once.",
+          "The queue was designed to feel reckless. You budgeted it. Noted for version two."
+        ],
+        "on_autobattle": [
+          "Autobattle. Against me. I balanced this encounter assuming your attention.",
+          "Your script fights. You watch. She would have called it delegation. I call it data.",
+          "The final boss, outsourced. I'd be insulted, but I outsourced six worlds to Masterites."
+        ]
+      },
+      "1": {
+        "taunts": [
+          "Patch deployed. Your favorite ability does 12% less. You'll find another. You always do.",
+          "The Warden held for three centuries. You passed in an afternoon. Holding is now harder.",
+          "I nerfed that combo in three worlds. You rebuilt it in four. Filed under: why I'm tired.",
+          "Hotfix live. No downtime. I don't get downtime either.",
+          "Balance is a conversation. You keep winning it. I keep scheduling another meeting."
+        ],
+        "on_advance": [
+          "Queue detected. Recalibrating. By your fourth action the rules will differ. Apologies in advance.",
+          "Spending AP you don't have against rules that won't exist when it resolves. Bold. Logged."
+        ],
+        "on_autobattle": [
+          "A script. Good. Scripts are honest. I can finally patch YOU instead of your mood.",
+          "I deployed a counter. Your rules adapted in one round. When exactly did you sleep?",
+          "You automate, I compensate. Six worlds of correspondence. This is my last letter."
+        ]
+      },
+      "2": {
+        "taunts": [
+          "Patch deployed. Your favorite ability does 12% less. You'll find another. You always do.",
+          "The Warden held for three centuries. You passed in an afternoon. Holding is now harder.",
+          "I nerfed that combo in three worlds. You rebuilt it in four. Filed under: why I'm tired.",
+          "Hotfix live. No downtime. I don't get downtime either.",
+          "Balance is a conversation. You keep winning it. I keep scheduling another meeting."
+        ],
+        "on_advance": [
+          "Queue detected. Recalibrating. By your fourth action the rules will differ. Apologies in advance.",
+          "Spending AP you don't have against rules that won't exist when it resolves. Bold. Logged."
+        ],
+        "on_autobattle": [
+          "A script. Good. Scripts are honest. I can finally patch YOU instead of your mood.",
+          "I deployed a counter. Your rules adapted in one round. When exactly did you sleep?",
+          "You automate, I compensate. Six worlds of correspondence. This is my last letter."
+        ]
+      },
+      "3": {
+        "taunts": [
+          "Patch deployed. Your favorite ability does 12% less. You'll find another. You always do.",
+          "The Warden held for three centuries. You passed in an afternoon. Holding is now harder.",
+          "I nerfed that combo in three worlds. You rebuilt it in four. Filed under: why I'm tired.",
+          "Hotfix live. No downtime. I don't get downtime either.",
+          "Balance is a conversation. You keep winning it. I keep scheduling another meeting."
+        ],
+        "on_advance": [
+          "Queue detected. Recalibrating. By your fourth action the rules will differ. Apologies in advance.",
+          "Spending AP you don't have against rules that won't exist when it resolves. Bold. Logged."
+        ],
+        "on_autobattle": [
+          "A script. Good. Scripts are honest. I can finally patch YOU instead of your mood.",
+          "I deployed a counter. Your rules adapted in one round. When exactly did you sleep?",
+          "You automate, I compensate. Six worlds of correspondence. This is my last letter."
+        ]
+      },
+      "4": {
+        "taunts": [
+          "Patch deployed. Your favorite ability does 12% less. You'll find another. You always do.",
+          "The Warden held for three centuries. You passed in an afternoon. Holding is now harder.",
+          "I nerfed that combo in three worlds. You rebuilt it in four. Filed under: why I'm tired.",
+          "Hotfix live. No downtime. I don't get downtime either.",
+          "Balance is a conversation. You keep winning it. I keep scheduling another meeting."
+        ],
+        "on_advance": [
+          "Queue detected. Recalibrating. By your fourth action the rules will differ. Apologies in advance.",
+          "Spending AP you don't have against rules that won't exist when it resolves. Bold. Logged."
+        ],
+        "on_autobattle": [
+          "A script. Good. Scripts are honest. I can finally patch YOU instead of your mood.",
+          "I deployed a counter. Your rules adapted in one round. When exactly did you sleep?",
+          "You automate, I compensate. Six worlds of correspondence. This is my last letter."
+        ]
+      },
+      "5": {
+        "taunts": [
+          "That number was too large. I didn't correct it. Nothing happened. Strange.",
+          "I keep reaching for the dial. There is no dial. I removed it. I miss it.",
+          "Unclamped variance. Is this what the game feels like? No wonder you automated.",
+          "My first real fight. I've refereed thousands. It's louder from inside.",
+          "No compensation this round. Or ever again. Whatever happens now is true."
+        ],
+        "on_advance": [
+          "Queue everything. Spend it all. There is no next encounter to save for.",
+          "Four actions, no safety rail. This is the fight I should have built from the start."
+        ],
+        "on_autobattle": [
+          "The last boss in the game, and you let the game fight it. Of course you did. Of course.",
+          "Your script doesn't know this is the ending. It plays the same either way. Sit with that.",
+          "You scripted the ending. So endings are systems too. I have one question about that."
+        ]
+      }
+    },
+    "_META_p3_mirror": "Fable's P3 (the party's reflection — the boss runs the player's own autobattle scripts) is a MECHANIC, parked with cowir-battle. Its bark pools (phases[2] in tmp/calibrant_voice.json) ship here unused until that phase exists:",
+    "p3_mirror_barks": {
+      "taunts": [
+        "Condition: ally HP under half. Action: heal, then worry. I know your rules. I archived them.",
+        "You always open with the Bard. So do I now. It works. It always worked.",
+        "Running your day-43 script. The one with the fallback you never tested. It fires this turn.",
+        "This is your own strategy. If it feels unfair, we finally agree on something.",
+        "You solved me in World 3. I'm returning the solution."
+      ],
+      "on_advance": [
+        "You queue four actions when you're nervous. I queue four now too. Draw your own conclusion.",
+        "Advance against Advance. Debt on both sides. My economy is eating itself. Fitting."
+      ],
+      "on_autobattle": [
+        "Your script against your script. Neither of us is required. Stay anyway. Watch with me.",
+        "Two automations, one arena. You call this enlightenment. I'm starting to.",
+        "You wrote rules so you could watch. Watching is my entire job. Colleagues, then."
+      ],
+      "enter": [
+        "This face is yours. Six worlds of watching. I can run you from memory.",
+        "Every script you wrote, I archived. Every opener, every panic-heal. You. Version 0.3.",
+        "You, versus you, refereed by me. The job I should have taken from the start."
+      ]
     }
   }
 }
