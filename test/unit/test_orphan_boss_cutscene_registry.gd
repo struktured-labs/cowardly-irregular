@@ -6,8 +6,9 @@ extends GutTest
 ## Most are Masterite per-world intro variants (Arbiter/Curator/
 ## Tempo/Warden across each non-base world) — content the story
 ## team authored anticipating the recurring-Masterite-boss
-## mechanic that isn't wired yet. The world6_calibrant_intro is
-## the final boss's intro, also not yet wired.
+## mechanic that isn't wired yet — a statement of intent this file
+## has carried since tick 243, and the clearest evidence on record
+## that the Masterites were meant to RECUR rather than pilot in W1.
 ##
 ## This test converts dormant content debt into a tracked metric:
 ##
@@ -46,7 +47,9 @@ const KNOWN_PLANNED_INTROS: Array[String] = [
 	"world5_curator_intro",
 	"world5_tempo_intro",
 	"world5_warden_intro",
-	"world6_calibrant_intro",
+	## world6_calibrant_intro RETIRED 2026-08-04 — VertexApex.gd wires it as boss_cutscene_id.
+	## Its 86 steps had never played; the Calibrant is now a fight instead of an elided cutscene.
+	## Removing it here is this registry working exactly as designed, not a suppression.
 ]
 
 
