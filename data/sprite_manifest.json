@@ -3356,6 +3356,32 @@
       },
       "tier": "T2",
       "source": "gpt-image-1 4-pose contact-sheet anchored to artist bat reference (tools/regen_monster_artist_style.py) — bespoke prompt with EXACTLY-ONE-SUBJECT-PER-FRAME discipline. Playtest bug fix (cowir-main msgs 2560/2561): W1 multi-subject defect regen."
+    },
+    "the_calibrant": {
+      "path": "res://assets/sprites/monsters/chancellor_mordaine.png",
+      "frame_width": 128,
+      "frame_height": 128,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 3
+        },
+        "attack": {
+          "start": 4,
+          "end": 16
+        },
+        "hit": {
+          "start": 0,
+          "end": 0
+        },
+        "dead": {
+          "start": 0,
+          "end": 0
+        }
+      },
+      "tier": "T2",
+      "source": "DELIBERATE REUSE of chancellor_mordaine.png — the Calibrant opens as its first mask (Fable P1: Mordaine baseline). True-form sheet is an unspent tier call; replace this entry when it ships."
     }
   },
   "npc_sheets": {
