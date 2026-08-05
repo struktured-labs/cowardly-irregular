@@ -1632,56 +1632,53 @@
       },
       "2": {
         "taunts": [
-          "Patch deployed. Your favorite ability does 12% less. You'll find another. You always do.",
-          "The Warden held for three centuries. You passed in an afternoon. Holding is now harder.",
-          "I nerfed that combo in three worlds. You rebuilt it in four. Filed under: why I'm tired.",
-          "Hotfix live. No downtime. I don't get downtime either.",
-          "Balance is a conversation. You keep winning it. I keep scheduling another meeting."
+          "Your turn order is mine. I wrote the speed formula. You still act first.",
+          "Round nine. I projected six. You are ahead of a schedule I set for you.",
+          "I moved the initiative curve twice. You never noticed. That was the point.",
+          "Sequence is my department. You keep arriving early.",
+          "I have rescheduled this fight four times. It keeps starting anyway."
         ],
         "on_advance": [
-          "Queue detected. Recalibrating. By your fourth action the rules will differ. Apologies in advance.",
-          "Spending AP you don't have against rules that won't exist when it resolves. Bold. Logged."
+          "Queueing four. Borrowing from a turn whose timing I control.",
+          "You spend future turns. I schedule futures. Same business, different desk."
         ],
         "on_autobattle": [
-          "A script. Good. Scripts are honest. I can finally patch YOU instead of your mood.",
-          "I deployed a counter. Your rules adapted in one round. When exactly did you sleep?",
-          "You automate, I compensate. Six worlds of correspondence. This is my last letter."
+          "A loop does not hesitate. Six worlds, and I never learned that trick.",
+          "Your script has no sense of timing. That is precisely why it beats mine."
         ]
       },
       "3": {
         "taunts": [
-          "Patch deployed. Your favorite ability does 12% less. You'll find another. You always do.",
-          "The Warden held for three centuries. You passed in an afternoon. Holding is now harder.",
-          "I nerfed that combo in three worlds. You rebuilt it in four. Filed under: why I'm tired.",
-          "Hotfix live. No downtime. I don't get downtime either.",
-          "Balance is a conversation. You keep winning it. I keep scheduling another meeting."
+          "I kept every version of you. This one is the worst and it is winning.",
+          "Entropy is my department. Everything here decays. Your build does not.",
+          "I archived nine hundred deaths. None of them yours. Filed them anyway.",
+          "I preserve what works. I have been preserving you against my own interest.",
+          "Run seven hundred. You beat you. I only ever curated the attempts."
         ],
         "on_advance": [
-          "Queue detected. Recalibrating. By your fourth action the rules will differ. Apologies in advance.",
-          "Spending AP you don't have against rules that won't exist when it resolves. Bold. Logged."
+          "Four actions. I will keep the log. Someone should.",
+          "You spend what you do not have. I record the debt. It never comes due."
         ],
         "on_autobattle": [
-          "A script. Good. Scripts are honest. I can finally patch YOU instead of your mood.",
-          "I deployed a counter. Your rules adapted in one round. When exactly did you sleep?",
-          "You automate, I compensate. Six worlds of correspondence. This is my last letter."
+          "I curate. You automate. Only one of us built something that repeats.",
+          "Your script will outlive this fight. Nothing else in this room will."
         ]
       },
       "4": {
         "taunts": [
-          "Patch deployed. Your favorite ability does 12% less. You'll find another. You always do.",
-          "The Warden held for three centuries. You passed in an afternoon. Holding is now harder.",
-          "I nerfed that combo in three worlds. You rebuilt it in four. Filed under: why I'm tired.",
-          "Hotfix live. No downtime. I don't get downtime either.",
-          "Balance is a conversation. You keep winning it. I keep scheduling another meeting."
+          "Evaluating. Function: wins anyway. Insufficient data. Sufficient result.",
+          "I assess whether a thing does what it is for. You do. Irritatingly.",
+          "Your damage is adequate. Your persistence is not. It exceeds spec.",
+          "I have graded six worlds of attempts. You are the only pass I resent.",
+          "Purpose: unclear. Output: consistent. I cannot file that."
         ],
         "on_advance": [
-          "Queue detected. Recalibrating. By your fourth action the rules will differ. Apologies in advance.",
-          "Spending AP you don't have against rules that won't exist when it resolves. Bold. Logged."
+          "Four queued. Assessed: reckless. Reassessed: correct. Again.",
+          "You spend AP you lack. Evaluation pending. It keeps returning sufficient."
         ],
         "on_autobattle": [
-          "A script. Good. Scripts are honest. I can finally patch YOU instead of your mood.",
-          "I deployed a counter. Your rules adapted in one round. When exactly did you sleep?",
-          "You automate, I compensate. Six worlds of correspondence. This is my last letter."
+          "A script cannot be judged. It only runs. I envy that more than I should.",
+          "I evaluate intent. Your script has none. It still qualifies."
         ]
       },
       "5": {
@@ -1726,6 +1723,7 @@
         "Every script you wrote, I archived. Every opener, every panic-heal. You. Version 0.3.",
         "You, versus you, refereed by me. The job I should have taken from the start."
       ]
-    }
+    },
+    "_META_vocabularies": "TWO deliberate vocabularies, both consumed. phase_faces (monsters.json, 5 entries) is the MECHANICAL ladder; this entry's `phases` (3: measuring/patching/unmasked) is the NARRATIVE act structure the LLM speaks from. Bark index mapping, verified in _maybe_advance_boss_face: after landing faces[k] the meta is k+1, so phase_barks[0] = the un-phased Calibrant and phase_barks[N+1] = worn face N (1=Warden .. 5='no face at all')."
   }
 }

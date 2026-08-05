@@ -18,6 +18,9 @@ signal action_executed(combatant: Combatant, action: Dictionary, targets: Array)
 ## Emitted when a phase_faces boss swaps face. The face dict rides along so consumers read
 ## sheet_id / music without a second lookup. BattleScene swaps the sprite; audio may hook it.
 signal boss_face_changed(combatant: Combatant, face_name: String, face: Dictionary)
+## Voice seam, party-convention mirror: voice_calibrant_<face>_<kind> derives from this the
+## way voice_<job>_<trigger> derives from party_combat_line. Inert until a voice pack ships.
+signal boss_combat_line(combatant: Combatant, line: String, voice_trigger: String)
 signal round_started(round_num: int)
 signal round_ended(round_num: int)
 signal damage_dealt(target: Combatant, amount: int, is_crit: bool, element: String, elemental_mod: float)
@@ -8653,14 +8656,14 @@ func _maybe_boss_phase_bark(combatant: Combatant, action: Dictionary) -> void:
 			return
 		if str(action.get("type", "")) == "advance" and not e.has_meta("_bark_adv_" + face_key):
 			e.set_meta("_bark_adv_" + face_key, true)
-			_emit_boss_bark(e, pool.get("on_advance", []), 0)
+			_emit_boss_bark(e, pool.get("on_advance", []), 0, "advance")
 			return
 		var ab = get_node_or_null("/root/AutobattleSystem")
 		if ab and ab.has_method("is_autobattle_enabled") \
 				and ab.is_autobattle_enabled(_get_character_id(combatant)) \
 				and not e.has_meta("_bark_auto_" + face_key):
 			e.set_meta("_bark_auto_" + face_key, true)
-			_emit_boss_bark(e, pool.get("on_autobattle", []), 0)
+			_emit_boss_bark(e, pool.get("on_autobattle", []), 0, "autobattle")
 			return
 		var n: int = int(e.get_meta("_bark_n", 0)) + 1
 		e.set_meta("_bark_n", n)
@@ -8669,8 +8672,11 @@ func _maybe_boss_phase_bark(combatant: Combatant, action: Dictionary) -> void:
 		return
 
 
-func _emit_boss_bark(e: Combatant, lines: Array, idx: int) -> void:
+func _emit_boss_bark(e: Combatant, lines: Array, idx: int, kind: String = "taunt") -> void:
 	if lines.is_empty():
 		return
-	battle_log_message.emit("[color=magenta]%s: \"%s\"[/color]" % [e.combatant_name, str(lines[idx % lines.size()])])
+	var line: String = str(lines[idx % lines.size()])
+	battle_log_message.emit("[color=magenta]%s: \"%s\"[/color]" % [e.combatant_name, line])
+	var face_key: String = str(int(e.get_meta("_boss_face_index", 0))) if e.has_meta("_boss_face_index") else "0"
+	boss_combat_line.emit(e, line, "%s_%s" % [kind, face_key])
 

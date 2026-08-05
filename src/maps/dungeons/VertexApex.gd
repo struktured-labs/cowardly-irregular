@@ -52,6 +52,13 @@ func _init() -> void:
 	}
 
 
+## Every non-medieval dungeon overrides this; without it DragonCave's "cave" maps to the
+## MEDIEVAL suffix and the finale scores to World 1 cave + boss music. Sibling key on
+## purpose: an unmatched new key falls through play_area_music to OVERWORLD music, worse.
+func _get_music_area_id() -> String:
+	return "abstract_dungeon"
+
+
 func _ready() -> void:
 	super._ready()
 	# Nothing random happens in this room.
