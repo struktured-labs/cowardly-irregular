@@ -218,7 +218,7 @@ static var current_formation: int = PartyFormation.V_FORMATION  # Persists acros
 var _battle_dialogue: BattleDialogueClass = null
 var _boss_dialogue_data: Dictionary = {}  # Stores dialogue for current boss
 var _waiting_for_dialogue: bool = false  # Pauses battle during dialogue
-var _base_music_track: String = "battle"  # "battle" or "boss"
+var _base_music_track: String = "battle"  # battle/boss/per-monster/per-face id; "" = authored silence (unmasking)
 var _masterite_phase2_swapped: bool = false  # One-shot: latch when phase2 music kicks in
 const DANGER_HP_THRESHOLD: float = 0.25  # Switch to danger music below 25% HP
 
@@ -3788,6 +3788,9 @@ func _on_boss_face_changed(combatant: Combatant, _face_name: String, face: Dicti
 	if face_music == "silence":
 		# The unmasking is scored by silence — deliberate fade, never play_music("silence"),
 		# which would produce silence by ACCIDENT (failed lookup + poisoned _current_music).
+		# Clear the danger baseline too, or a dip-and-recover replays the PREVIOUS face's
+		# theme over the silence, permanently (cowir-sfx, msg 4223 — both halves or neither).
+		_base_music_track = ""
 		if SoundManager:
 			SoundManager.fade_out_music(1.2)
 	elif face_music != "":
@@ -5189,8 +5192,14 @@ func _check_danger_music() -> void:
 	elif not any_in_danger and (_is_danger_music or str(SoundManager._current_music) == "danger"):
 		# Stateless check: a duel-retry rebuilds this scene with the flag fresh while SoundManager still plays danger — the flag-only check left doom music over a full-HP party (struktured 2026-07-11).
 		_is_danger_music = false
-		SoundManager.play_music(_base_music_track)
-		print("[MUSIC] Switched back to %s music - party recovered" % _base_music_track)
+		# An EMPTY baseline is authored silence (the unmasking) — play_music("") would be
+		# the accidental-silence failed lookup; fade out instead and stay quiet.
+		if _base_music_track == "":
+			SoundManager.fade_out_music(1.2)
+			print("[MUSIC] party recovered into authored silence - staying quiet")
+		else:
+			SoundManager.play_music(_base_music_track)
+			print("[MUSIC] Switched back to %s music - party recovered" % _base_music_track)
 
 
 ## ======================== BATTLE QUIPS ========================

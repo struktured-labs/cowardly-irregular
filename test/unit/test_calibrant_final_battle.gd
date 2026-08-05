@@ -238,6 +238,8 @@ func test_a_face_swap_moves_the_music_and_the_unmasking_silences_it() -> void:
 	scene._on_boss_face_changed(c, "no face at all", {"music": "silence"})
 	assert_ne(str(SoundManager._current_music), "silence",
 		"NEVER play_music(\"silence\") — that is silence by accident, a failed lookup")
+	assert_eq(str(scene._base_music_track), "",
+		"silence must CLEAR the danger baseline — else a dip-and-recover replays the previous face's theme over the unmasking (cowir-sfx, msg 4223)")
 
 	# A face with no music key inherits: nothing changes.
 	scene._on_boss_face_changed(c, "the Warden", {"music": "boss_phase2_warden"})
