@@ -38,16 +38,17 @@ const RESOLVED_VIA_ALIAS := {
 # JSON but not in music_manifest.json and not resolved via alias/proc-gen.
 # Remove entries from this list as cowir-music authors the tracks (or
 # corrects the cutscene JSON to point at a real manifest entry).
-const KNOWN_ORPHAN_MUSIC := {
-	"cutscene_w1_palace": true,
-	"cutscene_w2_coordinator_after": true,
-	"dungeon": true,
-	"mystery_w1": true,
-	"town_w1": true,
-	# `world3_overworld` was a typo — cutscene JSON updated to point at the
-	# real manifest entry `overworld_steampunk` (cowir-music's W3 overworld
-	# track). Entry pruned from this allowlist per the self-healing pattern.
-}
+# EMPTY as of 2026-08-05, and that is the correct state — every entry was
+# pruned because NO cutscene references any of them any more.
+#
+# All five (cutscene_w1_palace, cutscene_w2_coordinator_after, dungeon,
+# mystery_w1, town_w1) were stale in a direction the prune check could not
+# see: it only asked "does the track exist now", never "does anything still
+# ask for it". So the suppressions outlived the references by months while
+# the suite stayed green. Each stale entry is a PRE-ARMED SUPPRESSION — the
+# day a cutscene names `town_w1` again, that genuine new orphan gets absorbed
+# silently instead of failing. That is the failure mode this list is for.
+const KNOWN_ORPHAN_MUSIC := {}
 
 
 func _read_text(path: String) -> String:
@@ -122,9 +123,30 @@ func test_known_orphan_music_list_stays_pruned() -> void:
 	var stale: Array = []
 	for orphan in KNOWN_ORPHAN_MUSIC:
 		if manifest.has(orphan) or RESOLVED_VIA_ALIAS.has(orphan):
-			stale.append(orphan)
+			stale.append("%s (track now resolves)" % orphan)
 	if not stale.is_empty():
 		fail_test("KNOWN_ORPHAN_MUSIC contains entries that now DO resolve — remove them: %s" % [stale])
+
+
+func test_known_orphan_entries_are_still_referenced_by_something() -> void:
+	## The staleness direction the check above cannot see, and the one that
+	## actually happened: an entry stops being referenced by ANY cutscene.
+	## The track never appears, so "does it resolve" stays false forever and
+	## the suppression is immortal. All five original entries sat here for
+	## months in exactly that state while this file reported green.
+	##
+	## Why it is worth failing over rather than ignoring: an unreferenced entry
+	## is a suppression armed for a defect that has not happened yet. Re-add a
+	## cutscene naming `town_w1` and the orphan it introduces is absorbed
+	## silently — the list would be protecting the bug it was written to expose.
+	var refs: Dictionary = _collect_cutscene_music_refs()
+	assert_gt(refs.size(), 0, "setup: the cutscene walker must find refs, or every entry reads as unreferenced")
+	var unreferenced: Array = []
+	for orphan in KNOWN_ORPHAN_MUSIC:
+		if not refs.has(orphan):
+			unreferenced.append(orphan)
+	assert_eq(unreferenced.size(), 0,
+		"KNOWN_ORPHAN_MUSIC suppresses %d track(s) that NO cutscene asks for any more — delete them, or the suppression will silently absorb a future real orphan of the same name: %s" % [unreferenced.size(), str(unreferenced)])
 
 
 func test_alias_list_matches_sound_manager_dispatch() -> void:
