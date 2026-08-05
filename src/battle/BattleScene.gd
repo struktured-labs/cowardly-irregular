@@ -361,6 +361,7 @@ func _ready() -> void:
 	BattleManager.execution_phase_started.connect(_on_execution_phase_started)
 	BattleManager.action_executing.connect(_on_action_executing)
 	BattleManager.action_executed.connect(_on_action_executed)
+	BattleManager.boss_face_changed.connect(_on_boss_face_changed)
 	# Item 19: user report "bard was briefly stuck for a turn next to
 	# the monsters on the left he presumably recently attacked" —
 	# stray displaced sprite from an interrupted return-home tween.
@@ -3769,6 +3770,40 @@ func _on_action_executed(combatant: Combatant, action: Dictionary, targets: Arra
 				# every other status (poison/sleep/doom/curse/stun/burn/freeze/...) — play_status does status_<name> manifest lookup with a generic fallback, so F1-activated effects can't land silently again
 				_:
 					SoundManager.play_status(effect)
+
+
+## A phase_faces boss (the Calibrant) swaps its visible body when a face lands. The spawn path
+## latches _small_frame/size_bump/flip_h from the sheet worn at spawn — recompute ALL THREE from
+## the NEW sheet or a 128px base wearing 256px faces renders 2.5x too big and facing backwards
+## (cowir-sprites' latch spec, found before this consumer existed).
+func _on_boss_face_changed(combatant: Combatant, _face_name: String, face: Dictionary) -> void:
+	var sheet_id := str(face.get("sheet_id", ""))
+	if sheet_id == "":
+		return
+	var idx: int = BattleManager.enemy_party.find(combatant)
+	if idx < 0 or idx >= enemy_sprite_nodes.size():
+		return
+	var sprite := enemy_sprite_nodes[idx]
+	if not is_instance_valid(sprite):
+		return
+	var frames := HybridSpriteLoaderClass.load_monster_sprite_frames(sheet_id)
+	# A missing sheet keeps the current face — mid-fight procedural fallback would be worse.
+	if frames == null:
+		push_warning("[FACE-SWAP] sheet '%s' failed to load — %s keeps its current face" % [sheet_id, combatant.combatant_name])
+		return
+	sprite.sprite_frames = frames
+	var small := false
+	if frames.has_animation(&"idle") and frames.get_frame_count(&"idle") > 0:
+		var ftex := frames.get_frame_texture(&"idle", 0)
+		if ftex:
+			small = HybridSpriteLoaderClass.monster_needs_scale_bump(
+				ftex.get_height(), ENEMY_SMALL_FRAME_THRESHOLD)
+	var depth_scale: float = 1.0 - float(idx) * 0.05
+	var bump: float = ENEMY_SCALE_BUMP if small else 1.0
+	sprite.scale = Vector2(depth_scale * bump, depth_scale * bump)
+	# Facing keys on the NEW sheet's manifest entry, falling back to the frame-size convention.
+	sprite.flip_h = HybridSpriteLoaderClass.monster_faces_party(sheet_id, small)
+	sprite.play("idle")
 
 
 func _check_masterite_phase2_music_swap() -> void:

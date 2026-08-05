@@ -15,8 +15,9 @@ signal selection_turn_ended(combatant: Combatant)
 signal execution_phase_started()
 signal action_executing(combatant: Combatant, action: Dictionary)
 signal action_executed(combatant: Combatant, action: Dictionary, targets: Array)
-## Emitted when a phase_faces boss swaps face — UI/audio hooks; no consumer is required.
-signal boss_face_changed(combatant: Combatant, face_name: String)
+## Emitted when a phase_faces boss swaps face. The face dict rides along so consumers read
+## sheet_id / music without a second lookup. BattleScene swaps the sprite; audio may hook it.
+signal boss_face_changed(combatant: Combatant, face_name: String, face: Dictionary)
 signal round_started(round_num: int)
 signal round_ended(round_num: int)
 signal damage_dealt(target: Combatant, amount: int, is_crit: bool, element: String, elemental_mod: float)
@@ -1119,7 +1120,7 @@ func _apply_boss_face(enemy: Combatant, face: Dictionary) -> void:
 	var line: String = str(face.get("line", ""))
 	if line != "":
 		battle_log_message.emit("[color=magenta]%s[/color]" % line)
-	boss_face_changed.emit(enemy, face_name)
+	boss_face_changed.emit(enemy, face_name, face)
 
 
 func _maybe_trigger_mordaine_recalibrate() -> void:

@@ -146,7 +146,7 @@ func test_a_face_never_advances_backwards_or_repeats() -> void:
 	# on every single action — measured: deleting the latch failed 0 tests until this counter
 	# replaced it. The observable of a missing latch is the announcement, not the state.
 	var changes: Array[String] = []
-	BattleManager.boss_face_changed.connect(func(_e, n): changes.append(str(n)))
+	BattleManager.boss_face_changed.connect(func(_e, n, _f): changes.append(str(n)))
 
 	c.current_hp = int(c.max_hp * 0.75)
 	BattleManager._maybe_advance_boss_face()
@@ -165,6 +165,52 @@ func test_a_face_never_advances_backwards_or_repeats() -> void:
 	BattleManager._maybe_advance_boss_face()
 	assert_eq(changes.size(), 1,
 		"faces are one-way — healing must not replay a shed face: %s" % str(changes))
+
+	BattleManager.enemy_party.assign(saved_party)
+
+
+## BEHAVIOURAL. The spawn path latches _small_frame/size_bump/flip_h from the sheet worn at
+## spawn; the Calibrant opens on a 128px sheet and its faces are 256px. Without recomputing,
+## every face renders 2.5x too big and facing backwards — cowir-sprites specced this before the
+## consumer existed. Drives the REAL handler with the REAL sheets and reads the sprite after.
+func test_a_face_swap_recomputes_scale_and_facing_from_the_new_sheet() -> void:
+	var scene = load("res://src/battle/BattleScene.tscn").instantiate()
+	add_child_autofree(scene)
+	var c := _build_calibrant()
+	var saved_party: Array = BattleManager.enemy_party.duplicate()
+	var typed: Array[Combatant] = [c]
+	BattleManager.enemy_party = typed
+
+	var spr := AnimatedSprite2D.new()
+	var opening := HybridSpriteLoader.load_monster_sprite_frames(CALIBRANT)
+	assert_not_null(opening, "PRECONDITION: the Calibrant's opening (128px) sheet loads")
+	if opening == null:
+		BattleManager.enemy_party.assign(saved_party)
+		return
+	spr.sprite_frames = opening
+	# What the spawn path latches for a 128px sheet: the small-frame bump and its facing.
+	spr.scale = Vector2(2.5, 2.5)
+	spr.flip_h = HybridSpriteLoader.monster_faces_party(CALIBRANT, true)
+	scene.add_child(spr)
+	# Instantiating the scene AUTO-STARTS a battle with its own enemy sprites, and the handler
+	# maps combatant -> sprite BY INDEX. Clear the scene's own list so index 0 is our sprite —
+	# the first run of this test restyled the scene's slime while ours sat untouched at the end.
+	scene.enemy_sprite_nodes.clear()
+	scene.enemy_sprite_nodes.append(spr)
+
+	scene._on_boss_face_changed(c, "the Warden", {"sheet_id": "masterite_warden_abstract"})
+
+	assert_ne(spr.sprite_frames, opening, "the visible body must actually change")
+	assert_almost_eq(spr.scale.x, 1.0, 0.01,
+		"a 256px face takes NO small-frame bump — 2.5 here is the latch bug rendering the Warden ~640px tall")
+	var expected_flip := HybridSpriteLoader.monster_faces_party("masterite_warden_abstract", false)
+	assert_eq(spr.flip_h, expected_flip,
+		"facing must be recomputed for the NEW sheet's convention, not inherited from the 128px opener")
+
+	# A face with no sheet_id (the unmasking) keeps the current body — and must not crash.
+	var before = spr.sprite_frames
+	scene._on_boss_face_changed(c, "no face at all", {})
+	assert_eq(spr.sprite_frames, before, "a sheetless face keeps whatever the boss was wearing")
 
 	BattleManager.enemy_party.assign(saved_party)
 
