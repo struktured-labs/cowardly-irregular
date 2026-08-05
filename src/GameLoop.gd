@@ -3080,6 +3080,11 @@ func _on_battle_ended(victory: bool) -> void:
 				var fired: bool = GameState.rebalance_daemon.consider(RebalanceDaemonScript.TRIGGER_PARTY_WIPE, wipe_ctx)
 				if fired:
 					_kick_off_rebalance_fetch.call_deferred(GameState.rebalance_daemon.pending.size() - 1)
+		# Diegetic retry (Fable's design): a boss authored with diegetic_retry files the
+		# player's death as ITS OWN calibration error and refuses the game over — full
+		# restore, same fight, its player_wiped line as the retried battle's opener.
+		if await _maybe_diegetic_retry():
+			return
 		await _show_game_over_screen()
 
 
@@ -3238,6 +3243,62 @@ func _wait_for_confirm() -> void:
 			break
 		if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 			break
+
+
+## The diegetic-retry boss in the LAST battle, or {} — data-driven via monsters.json
+## `diegetic_retry`, so any future boss can refuse a game over by authoring one flag.
+func _diegetic_retry_boss() -> Dictionary:
+	if EncounterSystem == null or EncounterSystem.monster_database.is_empty():
+		return {}
+	for id in _last_battle_enemies:
+		var md: Dictionary = EncounterSystem.monster_database.get(str(id), {})
+		if bool(md.get("diegetic_retry", false)):
+			return {"id": str(id), "name": str(md.get("name", str(id))),
+				"lines": md.get("dialogue", {}).get("player_wiped", [])}
+	return {}
+
+
+## Fable's design: the Calibrant files the player's death as ITS OWN calibration error.
+## No GameOverScreen — dark beat, its line, full restore, same fight. Returns false when
+## the last battle held no diegetic_retry boss, and the normal game over proceeds.
+func _maybe_diegetic_retry() -> bool:
+	var boss := _diegetic_retry_boss()
+	if boss.is_empty():
+		return false
+	var count_key: String = "diegetic_retries_" + str(boss["id"])
+	var n: int = int(GameState.game_constants.get(count_key, 0))
+	GameState.game_constants[count_key] = n + 1
+
+	var overlay := CanvasLayer.new()
+	overlay.layer = 96
+	var bg := ColorRect.new()
+	bg.color = Color(0.0, 0.0, 0.02)
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(bg)
+	var lbl := Label.new()
+	var lines: Array = boss["lines"]
+	var line: String = str(lines[n % lines.size()]) if not lines.is_empty() else "Recalibrating."
+	lbl.text = "%s\n\n\"%s\"" % [str(boss["name"]).to_upper(), line]
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	lbl.set_anchors_preset(Control.PRESET_FULL_RECT)
+	lbl.add_theme_font_size_override("font_size", 18)
+	lbl.add_theme_color_override("font_color", Color(0.85, 0.6, 0.95))
+	overlay.add_child(lbl)
+	add_child(overlay)
+	await get_tree().create_timer(3.0).timeout
+	overlay.queue_free()
+
+	# The same restore the GameOverScreen retry arm performs — statuses stripped, AP zeroed.
+	for member in party:
+		if is_instance_valid(member):
+			_restore_duelist(member)
+			member.current_ap = 0
+	await _start_battle_async(_last_battle_enemies, _last_battle_is_encounter)
+	if BattleTransition:
+		await BattleTransition.fade_out()
+	return true
 
 
 func _show_game_over_screen() -> void:
