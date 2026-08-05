@@ -20,7 +20,7 @@ const DUNGEON_MAP_IDS: PackedStringArray = [
 	"whispering_cave", "fire_dragon_cave", "ice_dragon_cave",
 	"lightning_dragon_cave", "shadow_dragon_cave", "castle_harmonia",
 	"null_chamber", "root_process", "assembly_core",
-	"steampunk_mechanism", "suburban_underground",
+	"steampunk_mechanism", "suburban_underground", "vertex_apex",
 ]
 
 

@@ -5103,5 +5103,71 @@
     "resistances": [
       "ice"
     ]
+  },
+  "the_calibrant": {
+    "id": "the_calibrant",
+    "name": "The Calibrant",
+    "description": "The hand on the dial. It has been adjusting this world's numbers since the first slime, and it wears the faces of everything it already spent on you. Its objection to you is not moral. It is a balance objection.",
+    "level": 28,
+    "boss": true,
+    "meta_enemy": true,
+    "stats": {
+      "max_hp": 34000,
+      "max_mp": 500,
+      "attack": 620,
+      "defense": 340,
+      "magic": 820,
+      "magic_defense": 280,
+      "speed": 24
+    },
+    "abilities": [
+      "firaga",
+      "blizzaga",
+      "thundaga",
+      "life_drain",
+      "void_pulse"
+    ],
+    "phase_faces": [
+      {
+        "below_pct": 80,
+        "name": "the Warden",
+        "sheet_id": "masterite_warden_abstract",
+        "abilities": ["masterite_iron_guard", "masterite_crushing_blow", "masterite_endurance_test", "masterite_judgment"],
+        "weaknesses": [],
+        "resistances": ["physical"]
+      },
+      {
+        "below_pct": 60,
+        "name": "Tempo",
+        "sheet_id": "masterite_tempo_abstract",
+        "abilities": ["masterite_haste", "masterite_slow", "masterite_quick_strike", "masterite_time_tax"],
+        "weaknesses": ["fire"],
+        "resistances": ["ice", "wind"]
+      },
+      {
+        "below_pct": 40,
+        "name": "the Curator",
+        "sheet_id": "masterite_curator_abstract",
+        "abilities": ["masterite_mana_drain", "masterite_dispel", "masterite_audit", "masterite_resource_cut"],
+        "weaknesses": ["holy"],
+        "resistances": ["physical", "fire", "ice", "lightning", "dark", "wind"]
+      },
+      {
+        "below_pct": 20,
+        "name": "the Arbiter",
+        "sheet_id": "masterite_arbiter_abstract",
+        "abilities": ["masterite_precise_strike", "masterite_measured_blow", "masterite_counter_stance", "masterite_execution"],
+        "weaknesses": ["holy"],
+        "resistances": ["dark", "physical"]
+      }
+    ],
+    "exp_reward": 5000,
+    "gold_reward": 3000,
+    "drop_table": [
+      {"item": "elixir", "chance": 1.0},
+      {"item": "calibrant_token", "chance": 1.0}
+    ],
+    "weaknesses": ["holy"],
+    "resistances": ["dark"]
   }
 }

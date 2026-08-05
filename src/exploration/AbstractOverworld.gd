@@ -524,6 +524,20 @@ func _setup_transitions() -> void:
 	transitions.add_child(null_trans)
 	transitions.add_child(vertex_trans)
 
+	# The Vertex Apex — the Calibrant's arena. Appears only once The Question has been asked
+	# (world6_chapter3), so the last room in the game cannot be walked into early.
+	if GameState and GameState.is_story_flag_set("world6_chapter3_complete"):
+		var apex_trans = AreaTransitionScript.new()
+		apex_trans.name = "VertexApexEntrance"
+		apex_trans.target_map = "vertex_apex"
+		apex_trans.target_spawn = "default"
+		apex_trans.require_interaction = true
+		apex_trans.indicator_text = "Ascend to the Apex"
+		apex_trans.position = Vector2(16 * TILE_SIZE + TILE_SIZE / 2, 4 * TILE_SIZE + TILE_SIZE / 2)
+		_setup_transition_collision(apex_trans, Vector2(TILE_SIZE * 2, TILE_SIZE * 2))
+		apex_trans.transition_triggered.connect(_on_transition_triggered)
+		transitions.add_child(apex_trans)
+
 
 func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
 	# Layer 4 = interactables, Mask 2 = player layer

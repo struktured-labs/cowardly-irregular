@@ -31,6 +31,9 @@ const BEATS := [
 	["cutscene_flag_tempo_steampunk_defeated"],
 	["cutscene_flag_warden_industrial_defeated"],
 	["cutscene_flag_arbiter_futuristic_defeated"],
+	## The Calibrant is now a real fight in the Vertex Apex rather than an elided cutscene, so
+	## the closer waits on its defeat flag exactly as every other boss gate does.
+	["cutscene_flag_world6_calibrant_defeated"],
 ]
 
 

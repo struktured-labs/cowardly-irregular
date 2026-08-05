@@ -390,5 +390,9 @@
   "rogue_mailbox": {
     "epithet": "Undelivered",
     "flavor": "Regulation blue. Bolted down, allegedly. It has decided that everything placed inside it is, legally speaking, its. The flag is up. That means it has mail for you."
+  },
+  "the_calibrant": {
+    "epithet": "The Hand on the Dial",
+    "flavor": "Everything you have fought was a measurement. The slime in the first cave was a measurement. It has been adjusting this world's numbers since before you had a name for numbers, and it has never once been hostile about it \u2014 hostility is not a lever it has. It wears the faces it already spent on you, because those were expensive and it is not wasteful. Its objection is not that you are evil, or strong, or an anomaly. Its objection is that you automated a thing that was meant to be endured, and the curve it spent five worlds fitting does not survive contact with a player who stopped playing and started scripting. It is not angry. It is out of budget."
   }
 }
