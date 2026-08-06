@@ -66,7 +66,8 @@ func test_purchase_updates_live_learned_abilities() -> void:
 	var combatant_script: GDScript = load("res://src/battle/Combatant.gd")
 	var live: Object = combatant_script.new()
 	add_child_autofree(live)
-	live.learned_abilities = []
+	# clear(), not `= []`: the untyped literal fails to assign to Array[String] and aborts.
+	live.learned_abilities.clear()
 	# Seed enough HP for the combatant to be considered "alive" (some
 	# code paths may guard on this).
 	live.max_hp = 100
