@@ -25,6 +25,8 @@ var _prior_export_dir: String = ""
 func before_all() -> void:
 	_prior_export_dir = ScriptShareManager.EXPORT_DIR
 	ScriptShareManager.EXPORT_DIR = "user://script_share_test_%d/" % OS.get_process_id()
+	## The EXPORT_DIR redirect above covers script_exports; set_autogrind_rules ALSO writes user://autogrind/profiles.json, which had no net — measured overwriting the player's real profiles on every suite run.
+	AutogrindSystem._test_disable_persistence = true
 
 
 func after_all() -> void:

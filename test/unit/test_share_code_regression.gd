@@ -18,6 +18,11 @@ func _valid_script() -> Dictionary:
 	]}
 
 
+func before_each() -> void:
+	## test_autogrind_share_code_round_trip reaches set_autogrind_rules, which persists to user://autogrind/profiles.json — measured overwriting the player's real profiles on every suite run, with no net covering that directory.
+	AutogrindSystem._test_disable_persistence = true
+
+
 func after_each() -> void:
 	AutobattleSystem.character_scripts.erase(CHAR)
 	AutobattleSystem.character_profiles.erase(CHAR)
