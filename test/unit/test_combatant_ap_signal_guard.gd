@@ -47,8 +47,7 @@ func test_gain_ap_below_cap_still_emits() -> void:
 	c.current_ap = 2
 	watch_signals(c)
 	c.gain_ap(1)
-	assert_signal_emitted_with_parameters(c, "ap_changed", [2, 3],
-		"gain_ap from 2 → 3 must emit with (2, 3)")
+	assert_signal_emitted_with_parameters(c, "ap_changed", [2, 3])
 
 
 # ── spend_ap(0) is a no-op for the signal ─────────────────────────
@@ -71,8 +70,7 @@ func test_spend_ap_real_cost_still_emits() -> void:
 	c.current_ap = 3
 	watch_signals(c)
 	c.spend_ap(2)
-	assert_signal_emitted_with_parameters(c, "ap_changed", [3, 1],
-		"spend_ap(2) from 3 → 1 must emit with (3, 1)")
+	assert_signal_emitted_with_parameters(c, "ap_changed", [3, 1])
 
 
 # ── spend_ap blocked by can_brave still doesn't emit ──────────────
@@ -94,5 +92,4 @@ func test_gain_ap_from_floor_emits_normally() -> void:
 	c.current_ap = -4
 	watch_signals(c)
 	c.gain_ap(1)
-	assert_signal_emitted_with_parameters(c, "ap_changed", [-4, -3],
-		"gain_ap rising from floor must emit")
+	assert_signal_emitted_with_parameters(c, "ap_changed", [-4, -3])

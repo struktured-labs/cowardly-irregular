@@ -1792,6 +1792,12 @@
       "prompt": "Absolute erasure, a hollow reversed swell collapsing into dead flat silence, final and total with no echo left behind",
       "duration_seconds": 0.9,
       "prompt_influence": 0.5
+    },
+    "ledger_close": {
+      "file": "assets/audio/sfx/ledger_close.ogg",
+      "prompt": "Hardcover book slammed shut, very loud and close. A sharp cracking SLAP as the covers meet, over a solid low wooden thud. Punchy, immediate, recorded hot and full-scale. Percussive and decisive like a gavel. No rustling paper.",
+      "duration_seconds": 1.0,
+      "prompt_influence": 0.75
     }
   }
 }

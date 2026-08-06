@@ -58,8 +58,7 @@ func test_emits_unlocked_signal_with_chat_id_and_title() -> void:
 	watch_signals(sys)
 	sys.fire_event_flag("event_flag_level_10_reached")
 	assert_signal_emitted_with_parameters(sys, "event_chat_unlocked",
-		["event_chat_level_10", "Double Digits"],
-		"event_chat_unlocked must fire with chat_id + title")
+		["event_chat_level_10", "Double Digits"])
 
 
 # ── No re-emit on idempotent call (toast won't spam) ───────────────

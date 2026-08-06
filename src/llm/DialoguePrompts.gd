@@ -567,11 +567,32 @@ static func build_boss_intent(
 		+ "Party state:\n%s\n" % party_block
 		+ "Recent exchange (oldest → newest):\n%s\n" % recent_block
 	)
-	# Task 8: surface the player's own autobattle strategy when captured.
-	var player_rules: Array = ctx.get("player_lead_pc_rules", []) as Array
-	if player_rules.size() > 0:
-		prompt += "\nThe player is running an autobattle strategy. Their lead character's top rules (compact JSON):\n"
-		prompt += JSON.stringify(player_rules) + "\n"
+	# The party's authored automation, as prose. Falls back to the lead-PC JSON.
+	var party_scripts: Array = ctx.get("party_scripts", []) as Array
+	if party_scripts.size() > 0:
+		prompt += (
+			"\nTHE PLAYER HAS WRITTEN THE PARTY'S BEHAVIOUR IN ADVANCE. These are their\n"
+			+ "actual authored rules, evaluated top-down — the FIRST rule whose conditions\n"
+			+ "hold is the one that fires, so ordering is the strategy and anything not\n"
+			+ "covered by a rule is a gap they did not plan for:\n"
+		)
+		for entry in party_scripts:
+			if not (entry is Dictionary):
+				continue
+			prompt += "\n%s (%s):\n%s\n" % [
+				str(entry.get("name", "?")),
+				str(entry.get("job_id", "?")),
+				str(entry.get("rules", "")),
+			]
+		prompt += (
+			"\nReason about that script, not just the board: which intent does it handle\n"
+			+ "worst? A taunt that names what they automated lands harder than a generic one.\n"
+		)
+	else:
+		var player_rules: Array = ctx.get("player_lead_pc_rules", []) as Array
+		if player_rules.size() > 0:
+			prompt += "\nThe player is running an autobattle strategy. Their lead character's top rules (compact JSON):\n"
+			prompt += JSON.stringify(player_rules) + "\n"
 	# Task 8: surface the region's adaptive-AI counter-strategy read, if any.
 	var counter: String = str(ctx.get("learned_patterns_counter", ""))
 	if counter != "":
