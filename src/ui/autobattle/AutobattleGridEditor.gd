@@ -49,6 +49,7 @@ var _stats_panel: Control
 var _share_picker: Control = null  # Import file-picker overlay (acts as a submenu; blocks grid input while open)
 var _option_picker: Control = null # Generic option-picker overlay (condition/action/item/target)
 var _rule_composer_overlay: Control = null # RuleComposerOverlay instance; blocks grid input while open
+var _simulate_panel: Control = null # Simulate readout; blocks grid input while open
 var _splash_shown: bool = false    # Latches the empty-grid composer splash to once per setup() call
 var _flash_label: Label = null     # Transient status flash for export/import feedback
 var _flash_timer: float = 0.0
@@ -1662,6 +1663,11 @@ func _input(event: InputEvent) -> void:
 		_handle_option_picker_input(event)
 		return
 
+	# Simulate readout handles its own input (any key closes)
+	if _simulate_panel and is_instance_valid(_simulate_panel) and _simulate_panel.visible:
+		_handle_simulate_input(event)
+		return
+
 	# Rule Composer overlay handles its own input (A/B/R) when open
 	if _rule_composer_overlay and is_instance_valid(_rule_composer_overlay) and _rule_composer_overlay.visible:
 		return
@@ -1738,6 +1744,11 @@ func _input(event: InputEvent) -> void:
 	# B button - Delete current cell
 	elif event.is_action_pressed("ui_cancel") and not event.is_echo():
 		_delete_current_cell()
+		get_viewport().set_input_as_handled()
+
+	# R trigger / R key - Simulate: what does this grid actually DO?
+	elif event.is_action_pressed("battle_advance") and not event.is_echo():
+		_open_simulate()
 		get_viewport().set_input_as_handled()
 
 	# L trigger - Split grouped action OR add AND condition
@@ -2664,6 +2675,156 @@ func _delete_current_cell() -> void:
 			cursor_col = min(cursor_col, condition_slots + new_groups.size() - 1)
 			_refresh_grid()
 			SoundManager.play_ui("menu_cancel")
+
+
+## Simulate: answer "what does this grid actually DO?" without walking into a fight.
+## Evaluates the live rules against sampled combatant states and names the FIRST rule that
+## matches each — the same first-match-wins order the real executor uses.
+##
+## Deliberately does NOT run a battle. HeadlessBattleResolver clears and repopulates the
+## LIVE BattleManager parties (:81-88, restoring at three exit points), which is correct for
+## autogrind and unsafe next to a live session. _evaluate_grid_rule and _evaluate_condition
+## read zero live state (measured), so pure evaluation gives the same answer with nothing to
+## restore and nothing to race.
+func _open_simulate() -> void:
+	var rules: Array = AutobattleSystem.get_character_script(character_id).get("rules", [])
+	_simulate_panel = _build_simulate_panel(_simulate_report(rules))
+	add_child(_simulate_panel)
+
+
+func _build_simulate_panel(lines: Array[String]) -> Control:
+	var root := Control.new()
+	root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.72)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	root.add_child(dim)
+	var box := VBoxContainer.new()
+	box.position = Vector2(80, 90)
+	box.add_theme_constant_override("separation", 10)
+	root.add_child(box)
+	var title := Label.new()
+	title.text = "SIMULATE — what this grid does"
+	title.add_theme_font_size_override("font_size", 22)
+	title.add_theme_color_override("font_color", Color(1.0, 0.9, 0.4))
+	box.add_child(title)
+	for line in lines:
+		var l := Label.new()
+		l.text = line
+		l.add_theme_font_size_override("font_size", 16)
+		l.add_theme_color_override("font_color", Color(0.88, 0.92, 1.0))
+		box.add_child(l)
+	var hint := Label.new()
+	hint.text = "Rules are first-match-wins, top to bottom. Any key closes."
+	hint.add_theme_font_size_override("font_size", 13)
+	hint.add_theme_color_override("font_color", Color(0.6, 0.6, 0.65))
+	box.add_child(hint)
+	return root
+
+
+## Sampled states, chosen so a player can see their THRESHOLDS fire rather than one snapshot.
+func _simulate_states() -> Array:
+	return [
+		{"label": "full HP", "hp_pct": 1.0, "mp_pct": 1.0},
+		{"label": "half HP", "hp_pct": 0.5, "mp_pct": 0.6},
+		{"label": "25% HP", "hp_pct": 0.25, "mp_pct": 0.3},
+		{"label": "critical, no MP", "hp_pct": 0.1, "mp_pct": 0.0},
+	]
+
+
+## Conditions that read the BATTLEFIELD rather than the caster. A pure probe has no enemies
+## and no allies, so evaluating these would answer confidently against an empty field — the
+## exact "the UI says something the engine doesn't do" defect. They are reported as
+## undecidable instead of guessed.
+const _BATTLEFIELD_CONDITIONS: Array[String] = [
+	"enemy_count", "enemy_has_status", "enemy_hp_percent",
+	"ally_count", "ally_has_status", "ally_hp_percent", "ally_mp_percent",
+]
+
+
+func _rule_needs_battlefield(rule: Dictionary) -> bool:
+	for c in (rule.get("conditions", []) as Array):
+		if str((c as Dictionary).get("type", "")) in _BATTLEFIELD_CONDITIONS:
+			return true
+	return false
+
+
+## One line per sampled state: which rule wins, and what it does.
+func _simulate_report(rules: Array) -> Array[String]:
+	var out: Array[String] = []
+	if rules.is_empty():
+		out.append("This grid has no rules — every turn falls back to a basic attack.")
+		return out
+	for state in _simulate_states():
+		var probe: Combatant = _simulate_probe(state)
+		var matched: int = -1
+		var blocked: int = -1
+		for i in range(rules.size()):
+			var rule: Dictionary = rules[i]
+			if not bool(rule.get("enabled", true)):
+				continue
+			if _rule_needs_battlefield(rule):
+				# Cannot be decided without a real fight, and every rule below it is
+				# unreachable until this one is settled — first-match-wins.
+				blocked = i
+				break
+			if AutobattleSystem._evaluate_grid_rule(probe, rule):
+				matched = i
+				break
+		if blocked >= 0:
+			out.append("%s  ->  rule %d depends on the battlefield (enemy/ally state) — can't be simulated" % [state["label"], blocked + 1])
+			continue
+		if matched < 0:
+			out.append("%s  ->  no rule matches — falls back to a basic attack" % state["label"])
+			continue
+		var acts: Array = AutobattleSystem._rule_to_actions(probe, rules[matched])
+		out.append("%s  ->  rule %d fires: %s" % [state["label"], matched + 1, _simulate_action_summary(acts)])
+	return out
+
+
+## A scratch Combatant at the sampled state. Never the live one — mutating the edited
+## character's HP to answer a UI question is the two-writers class.
+func _simulate_probe(state: Dictionary) -> Combatant:
+	var c: Combatant = Combatant.new()
+	if combatant:
+		c.combatant_name = combatant.combatant_name
+		c.job = combatant.job
+		c.max_hp = combatant.max_hp
+		c.max_mp = combatant.max_mp
+		c.learned_abilities = combatant.learned_abilities.duplicate()
+	else:
+		c.combatant_name = character_name
+		c.max_hp = 100
+		c.max_mp = 50
+	c.is_alive = true
+	c.current_hp = maxi(1, int(c.max_hp * float(state["hp_pct"])))
+	c.current_mp = int(c.max_mp * float(state["mp_pct"]))
+	return c
+
+
+func _simulate_action_summary(actions: Array) -> String:
+	if actions.is_empty():
+		return "(nothing)"
+	var names: Array[String] = []
+	for a in actions:
+		var t: String = str(a.get("type", "?"))
+		names.append(str(a.get("ability_id", "")) if t == "ability" and str(a.get("ability_id", "")) != "" else t)
+	return ", ".join(names)
+
+
+func _handle_simulate_input(event: InputEvent) -> void:
+	if not (event is InputEventKey or event is InputEventJoypadButton):
+		return
+	if not event.is_pressed() or event.is_echo():
+		return
+	_close_simulate()
+	get_viewport().set_input_as_handled()
+
+
+func _close_simulate() -> void:
+	if _simulate_panel and is_instance_valid(_simulate_panel):
+		_simulate_panel.queue_free()
+	_simulate_panel = null
 
 
 func _open_rename_profile() -> void:
