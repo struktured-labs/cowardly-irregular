@@ -27,7 +27,7 @@ func test_boss_intent_prompt_contains_persona() -> void:
 	ctx.available_intents = ["aggress", "turtle"]
 	var DP = load("res://src/llm/DialoguePrompts.gd")
 	if DP == null or not DP.has_method("build_boss_intent"):
-		pending("DialoguePrompts.build_boss_intent unavailable in test env")
+		fail_test("DialoguePrompts.build_boss_intent is missing — it exists in src/, so a rename here used to SKIP silently")
 		return
 	var prompt: String = DP.build_boss_intent("Chancellor Mordaine", ctx.to_dict())
 	assert_true(prompt.find("MORDAINE_PERSONA_MARKER") > -1,

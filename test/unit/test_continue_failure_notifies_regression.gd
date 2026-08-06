@@ -27,7 +27,7 @@ func _body_of(func_name: String) -> String:
 
 
 func test_on_title_continue_toasts_on_failure() -> void:
-	var body := _body_of("_on_title_continue")
+	var body := _body_of("_title_load_slot")  # the Toast/fallback core moved here (title picker refactor) — Continue AND Load both delegate to it
 	assert_true(body.contains("Toast.show_warning"),
 		"Continue failure path must Toast — silent fallback to default party was a UX trap")
 	# Reason string must distinguish 'no save' vs 'load failed' vs 'party empty'.
@@ -45,7 +45,7 @@ func test_fallback_party_still_created() -> void:
 	# screen with only a warning toast. Walk the function line-by-line
 	# and skip comments so a stale `_create_party()` in a docstring or
 	# code comment can't be mistaken for the real call site.
-	var body := _body_of("_on_title_continue")
+	var body := _body_of("_title_load_slot")  # the Toast/fallback core moved here (title picker refactor) — Continue AND Load both delegate to it
 	var lines := body.split("\n")
 	var toast_line := -1
 	var party_line := -1

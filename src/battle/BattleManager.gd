@@ -15,6 +15,12 @@ signal selection_turn_ended(combatant: Combatant)
 signal execution_phase_started()
 signal action_executing(combatant: Combatant, action: Dictionary)
 signal action_executed(combatant: Combatant, action: Dictionary, targets: Array)
+## Emitted when a phase_faces boss swaps face. The face dict rides along so consumers read
+## sheet_id / music without a second lookup. BattleScene swaps the sprite; audio may hook it.
+signal boss_face_changed(combatant: Combatant, face_name: String, face: Dictionary)
+## Voice seam, party-convention mirror: voice_calibrant_<face>_<kind> derives from this the
+## way voice_<job>_<trigger> derives from party_combat_line. Inert until a voice pack ships.
+signal boss_combat_line(combatant: Combatant, line: String, voice_trigger: String)
 signal round_started(round_num: int)
 signal round_ended(round_num: int)
 signal damage_dealt(target: Combatant, amount: int, is_crit: bool, element: String, elemental_mod: float)
@@ -1066,6 +1072,60 @@ func _apply_weakness_cycles() -> void:
 
 
 ## msg 2805 cycle 18: Mordaine phase-2 Calibrant recalibrate. Struktured verdict: "Mordaine too easy" — she's the sorceress-usurper + first mask of the Calibrant, so meta-aware mechanics fit her identity better than stat inflation. Trigger: first time she crosses 50% HP in a battle. Effect: she swaps her weakness element (data-authored) with a resistance element via monster_data.calibrant_recalibrate_swap. Player was leaning into holy → she resists it, exposes a new weakness they must pivot to. Latched one-shot per battle via meta flag.
+## Data-driven boss phases that CHANGE the fight instead of scaling it. Party power is flat
+## L20->L28, so extra HP buys length, not difficulty — a boss escalates by swapping its kit and
+## its elemental profile. Authored as monster_data.phase_faces[]; generic, not Calibrant-only.
+func _maybe_advance_boss_face() -> void:
+	if EncounterSystem == null or EncounterSystem.monster_database.is_empty():
+		return
+	for enemy in enemy_party:
+		if enemy == null or not is_instance_valid(enemy) or not enemy.is_alive:
+			continue
+		var mt: String = str(enemy.get_meta("monster_type", "")) if enemy.has_meta("monster_type") else ""
+		if mt == "":
+			continue
+		var faces: Variant = EncounterSystem.monster_database.get(mt, {}).get("phase_faces", null)
+		if not (faces is Array) or (faces as Array).is_empty() or enemy.max_hp <= 0:
+			continue
+		var pct: float = 100.0 * float(enemy.current_hp) / float(enemy.max_hp)
+		var idx: int = int(enemy.get_meta("_boss_face_index", 0))
+		var landed: int = -1
+		# A single big hit can cross two thresholds; land on the LAST one rather than
+		# firing every intervening face's line in the same frame.
+		while idx < (faces as Array).size() and pct <= float((faces as Array)[idx].get("below_pct", 0.0)):
+			landed = idx
+			idx += 1
+		if landed < 0:
+			continue
+		enemy.set_meta("_boss_face_index", idx)
+		_apply_boss_face(enemy, (faces as Array)[landed])
+
+
+func _apply_boss_face(enemy: Combatant, face: Dictionary) -> void:
+	var abilities: Array = face.get("abilities", [])
+	if not abilities.is_empty() and enemy.job is Dictionary:
+		var swapped: Array = []
+		for a in abilities:
+			swapped.append(str(a))
+		enemy.job["abilities"] = swapped
+	if face.has("weaknesses"):
+		enemy.elemental_weaknesses.clear()
+		for w in face["weaknesses"]:
+			enemy.elemental_weaknesses.append(str(w))
+	if face.has("resistances"):
+		enemy.elemental_resistances.clear()
+		for r in face["resistances"]:
+			enemy.elemental_resistances.append(str(r))
+	# Phase break clears buffs, matching the Masterite escalation convention.
+	enemy.active_buffs.clear()
+	var face_name: String = str(face.get("name", "another face"))
+	battle_log_message.emit("[color=magenta]✦ %s takes the face of %s.[/color]" % [enemy.combatant_name, face_name])
+	var line: String = str(face.get("line", ""))
+	if line != "":
+		battle_log_message.emit("[color=magenta]%s[/color]" % line)
+	boss_face_changed.emit(enemy, face_name, face)
+
+
 func _maybe_trigger_mordaine_recalibrate() -> void:
 	if EncounterSystem == null or EncounterSystem.monster_database.is_empty():
 		return
@@ -1951,7 +2011,10 @@ func _process_ai_selection(combatant: Combatant) -> void:
 	# NOTE: Enemies do NOT defer. Deferring caused stall bugs (battles frozen
 	# when all party members deferred and enemies also randomly deferred).
 	# Enemies always attack — defer is a player-only mechanic.
-	var should_advance = randf() < 0.15 and combatant.current_ap >= 0  # 15% chance to advance
+	## Enemies only. A player character routed here (trusted / spotlight-locked) used to take
+	## this branch too, and it hardcodes basic attacks — a Cleric spent 3 AP on ~41-damage
+	## swings instead of casting. PCs fall through to the ability-aware decision below.
+	var should_advance = not is_player_controlled and randf() < 0.15 and combatant.current_ap >= 0
 
 	if should_advance and combatant.current_ap >= 1:
 		# Queue multiple attacks as advance (each action costs 1 AP)
@@ -3050,6 +3113,10 @@ func _get_alive_enemies() -> Array[Combatant]:
 
 func _execute_next_action() -> void:
 	"""Execute the next action in the queue"""
+	## An awaited continuation can resume AFTER end_battle and resurrect the battle: with a
+	## stale action it sets PROCESSING_ACTION, with an empty queue it falls into _start_new_round.
+	if not is_battle_active():
+		return
 	_wd_bump()
 	# Check for victory/defeat
 	if _check_victory_conditions():
@@ -3214,6 +3281,8 @@ func _execute_next_action() -> void:
 	_log_player_action(combatant, action)
 	# msg 2805 cycle 18: check Mordaine phase 2 recalibrate BEFORE emitting action_executed. Fires once per fight when she crosses 50% HP. Silent no-op for any other enemy — free polling.
 	_maybe_trigger_mordaine_recalibrate()
+	# Same polling seam: silent no-op for any enemy without phase_faces authored.
+	_maybe_advance_boss_face()
 	action_executed.emit(combatant, action, action.get("targets", [action.get("target")]))
 
 	# Delay between actions — scale with battle speed for snappy feel.
@@ -6706,6 +6775,9 @@ func _log_player_action(combatant: Combatant, action: Dictionary) -> void:
 		"ap_before": combatant.current_ap
 	})
 
+	# Fable's phase barks — the finale boss reacts to HOW the player fights.
+	_maybe_boss_phase_bark(combatant, action)
+
 	# Signature-ability dialogue trigger; cooldown handled inside _maybe_fire.
 	var ability_id: String = str(action.get("ability_id", ""))
 	if ability_id != "" and _is_signature_ability(combatant, ability_id):
@@ -8561,3 +8633,50 @@ func _trigger_monster_counter(monster: Combatant, attacker: Combatant) -> void:
 			_execute_magic_ability(monster, ability, [attacker])
 		_:
 			_execute_physical_ability(monster, ability, [attacker])
+
+## Deterministic combat voice for phase_faces bosses (data: boss_dialogue.json phase_barks,
+## keyed by _boss_face_index). Reactions fire ONCE per face; taunts rotate every 4th player
+## action. Same battle_log path as Mordaine's recalibrate line — no new UI surface.
+func _maybe_boss_phase_bark(combatant: Combatant, action: Dictionary) -> void:
+	var boss_dlg = get_node_or_null("/root/BossDialogue")
+	if boss_dlg == null or not boss_dlg.has_method("get_phase_barks"):
+		return
+	for e in enemy_party:
+		if e == null or not is_instance_valid(e) or not e.is_alive:
+			continue
+		var mt: String = str(e.get_meta("monster_type", "")) if e.has_meta("monster_type") else ""
+		if mt == "":
+			continue
+		var barks: Dictionary = boss_dlg.get_phase_barks(mt)
+		if barks.is_empty():
+			continue
+		var face_key: String = str(int(e.get_meta("_boss_face_index", 0)))
+		var pool: Dictionary = barks.get(face_key, {})
+		if pool.is_empty():
+			return
+		if str(action.get("type", "")) == "advance" and not e.has_meta("_bark_adv_" + face_key):
+			e.set_meta("_bark_adv_" + face_key, true)
+			_emit_boss_bark(e, pool.get("on_advance", []), 0, "advance")
+			return
+		var ab = get_node_or_null("/root/AutobattleSystem")
+		if ab and ab.has_method("is_autobattle_enabled") \
+				and ab.is_autobattle_enabled(_get_character_id(combatant)) \
+				and not e.has_meta("_bark_auto_" + face_key):
+			e.set_meta("_bark_auto_" + face_key, true)
+			_emit_boss_bark(e, pool.get("on_autobattle", []), 0, "autobattle")
+			return
+		var n: int = int(e.get_meta("_bark_n", 0)) + 1
+		e.set_meta("_bark_n", n)
+		if n % 4 == 0:
+			_emit_boss_bark(e, pool.get("taunts", []), int(n / 4) - 1)
+		return
+
+
+func _emit_boss_bark(e: Combatant, lines: Array, idx: int, kind: String = "taunt") -> void:
+	if lines.is_empty():
+		return
+	var line: String = str(lines[idx % lines.size()])
+	battle_log_message.emit("[color=magenta]%s: \"%s\"[/color]" % [e.combatant_name, line])
+	var face_key: String = str(int(e.get_meta("_boss_face_index", 0))) if e.has_meta("_boss_face_index") else "0"
+	boss_combat_line.emit(e, line, "%s_%s" % [kind, face_key])
+

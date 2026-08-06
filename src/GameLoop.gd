@@ -65,6 +65,7 @@ const NullChamberScript = preload("res://src/maps/dungeons/NullChamber.gd")
 const SuburbanUndergroundScript = preload("res://src/maps/dungeons/SuburbanUnderground.gd")
 const CastleHarmoniaScript = preload("res://src/maps/dungeons/CastleHarmonia.gd")
 const SteampunkMechanismScript = preload("res://src/maps/dungeons/SteampunkMechanism.gd")
+const VertexApexScript = preload("res://src/maps/dungeons/VertexApex.gd")
 const SteampunkOverworldScript = preload("res://src/exploration/SteampunkOverworld.gd")
 const SuburbanOverworldScript = preload("res://src/exploration/SuburbanOverworld.gd")
 const IndustrialOverworldScript = preload("res://src/exploration/IndustrialOverworld.gd")
@@ -388,15 +389,16 @@ func _maybe_run_battle_smoke() -> void:
 	# Deterministic smoke: neutralize this box's dev flags — debug_all_pcs_unlocked force-clears is_player_trusted (BattleManager) and breaks the game-over leg's auto-play.
 	if GameState and "debug_all_pcs_unlocked" in GameState:
 		GameState.debug_all_pcs_unlocked = false
+	# ...and random encounters: one firing during the walk legs made EVERY later map leg bail
+	if EncounterSystem:
+		EncounterSystem.encounters_enabled = false
 	_close_title_screen()
 	await get_tree().process_frame
 	await get_tree().process_frame
 	_create_party()
 	DirAccess.make_dir_recursive_absolute("user://smoke")
 	if full:
-		_cutscene_cooldown = true
-		_set_current_map_id("overworld")
-		await _start_exploration()
+		await _smoke_enter_map("overworld")
 		await get_tree().create_timer(1.5).timeout
 		# mid-stride captures — the garbled-walk sprite class is only visible while moving
 		for dir_action in ["ui_right", "ui_left"]:
@@ -405,28 +407,20 @@ func _maybe_run_battle_smoke() -> void:
 			await _smoke_shot("overworld_walk_%s" % dir_action.trim_prefix("ui_"))
 			Input.action_release(dir_action)
 		# village: NPC sheets + quest markers in one frame
-		_cutscene_cooldown = true
-		_set_current_map_id("harmonia_village")
-		await _start_exploration()
+		await _smoke_enter_map("harmonia_village")
 		await get_tree().create_timer(1.5).timeout
 		await _smoke_shot("village")
 		# the 5 villages holding W1 quest givers + QuestExaminePoints — no smoke on any platform had ever entered one
 		for _vid in ["sandrift_village", "frosthold_village", "grimhollow_village", "ironhaven_village", "eldertree_village"]:
-			_cutscene_cooldown = true
-			_set_current_map_id(_vid)
-			await _start_exploration()
+			await _smoke_enter_map(_vid)
 			await get_tree().create_timer(1.0).timeout
 			await _smoke_shot(_vid)
 		# interiors: NOTHING on any platform had ever loaded one in a built game (inn charges gold, the rest carry quest content)
 		for _iid in ["inn_interior", "tavern_interior", "sandrift_glassmaker", "frosthold_meltwater_clock", "ironhaven_watchtower"]:
-			_cutscene_cooldown = true
-			_set_current_map_id(_iid)
-			await _start_exploration()
+			await _smoke_enter_map(_iid)
 			await get_tree().create_timer(0.8).timeout
 			await _smoke_shot(_iid)
-		_cutscene_cooldown = true
-		_set_current_map_id("harmonia_village")
-		await _start_exploration()
+		await _smoke_enter_map("harmonia_village")
 		await get_tree().create_timer(1.0).timeout
 		# settings (Start) then the overworld/party menu (X) — the week's UI churn surfaces
 		_smoke_tap("ui_menu")
@@ -493,9 +487,7 @@ func _maybe_run_battle_smoke() -> void:
 		smoke_shop.queue_free()
 		await get_tree().create_timer(0.5).timeout
 		# cave, then battle FROM it — the scene that leaked under battle 2026-07-02
-		_cutscene_cooldown = true
-		_set_current_map_id("whispering_cave")
-		await _start_exploration()
+		await _smoke_enter_map("whispering_cave")
 		await get_tree().create_timer(1.5).timeout
 		await _smoke_shot("cave")
 	await _start_battle_async(["goblin"], true)
@@ -505,16 +497,40 @@ func _maybe_run_battle_smoke() -> void:
 	if xform.origin != Vector2.ZERO:
 		_smoke_failed = true
 	await _smoke_shot("battle_smoke")
+	# auto-play only AFTER battle_smoke: with no input the party waits in PLAYER_SELECTING forever
+	for m in party:
+		if m and is_instance_valid(m) and "player_trust" in m:
+			m.player_trust = true
+	# the Select-key path — enabling autobattle alone leaves the already-open menu waiting on input
+	if current_scene and is_instance_valid(current_scene) and current_scene.has_method("_enable_all_autobattle"):
+		current_scene._enable_all_autobattle()
 	# the duel must wait for the live battle to end — a fixed sleep raced RNG-length battles
 	var _bwait := 0.0
-	while BattleManager.current_state != BattleManager.BattleState.INACTIVE and _bwait < 30.0:
+	while BattleManager.current_state != BattleManager.BattleState.INACTIVE and _bwait < 90.0:
 		await get_tree().create_timer(0.5).timeout
 		_bwait += 0.5
+	# a SILENT timeout here shot a live battle into both legs below and still printed PASS
+	if BattleManager.current_state != BattleManager.BattleState.INACTIVE:
+		print("[SMOKE] FAIL: battle still active after %.1fs — post_battle_return/duel_smoke show a live battle" % _bwait)
+		_smoke_failed = true
 	# dismiss victory and walk the battle→exploration seam — the gray-screen regression class
-	_smoke_tap("ui_accept")
-	await get_tree().create_timer(2.0).timeout
+	# repeat: a tutorial hint eats the first tap, so one tap left the victory panel up
+	var _battle_ref := current_scene
+	var _rwait := 0.0
+	while current_scene == _battle_ref and _rwait < 25.0:
+		_smoke_tap("ui_accept")
+		await get_tree().create_timer(1.0).timeout
+		_rwait += 1.0
+	if current_scene == _battle_ref:
+		print("[SMOKE] FAIL: still in the battle scene after %.0fs of dismiss taps — no exploration return" % _rwait)
+		_smoke_failed = true
+	await get_tree().create_timer(1.5).timeout
 	await _smoke_shot("post_battle_return")
 	if full:
+		# start_solo_battle REFUSES while a battle is live, and only push_warning'd about it
+		if BattleManager.current_state != BattleManager.BattleState.INACTIVE:
+			print("[SMOKE] FAIL: battle still live — solo duel will be refused, duel_smoke shows no duel")
+			_smoke_failed = true
 		# spotlight duel leg: trust the fighter so turns auto-play, capture mid-duel
 		for m in party:
 			if m and is_instance_valid(m) and "player_trust" in m:
@@ -568,6 +584,25 @@ func _smoke_key(keycode: int) -> void:
 
 
 ## real InputEventAction pair — Input.action_press only sets poll-state and never reaches event handlers
+## Every map leg enters through here. _start_exploration BAILS while a battle owns the screen,
+## leaving the previous frame up — and the shot still saved "OK", so 13 legs went vacuous silently.
+func _smoke_enter_map(map_id: String) -> void:
+	_cutscene_cooldown = true
+	# A successful entry frees the old scene and instantiates a new one, so an
+	# UNCHANGED instance means _start_exploration returned early. Battle state is
+	# only one of its early returns; this catches the rest, and a map that fails
+	# to build at all. Without it the shot is silently of the previous map.
+	var before_id: int = current_scene.get_instance_id() if is_instance_valid(current_scene) else 0
+	_set_current_map_id(map_id)
+	await _start_exploration()
+	if BattleManager and BattleManager.current_state != BattleManager.BattleState.INACTIVE:
+		print("[SMOKE] FAIL: '%s' leg bailed — a live battle owns the screen, this shot is the previous frame" % map_id)
+		_smoke_failed = true
+	elif not is_instance_valid(current_scene) or current_scene.get_instance_id() == before_id:
+		print("[SMOKE] FAIL: '%s' leg built no new scene — _start_exploration returned early, this shot is the previous map" % map_id)
+		_smoke_failed = true
+
+
 func _smoke_tap(action: String) -> void:
 	var ev := InputEventAction.new()
 	ev.action = action
@@ -1426,6 +1461,7 @@ func _show_title_screen() -> void:
 	# Connect signals
 	_title_screen.new_game_selected.connect(_on_title_new_game)
 	_title_screen.continue_selected.connect(_on_title_continue)
+	_title_screen.load_selected.connect(_on_title_load)
 	_title_screen.settings_selected.connect(_on_title_settings)
 
 	print("[GAME] Showing title screen")
@@ -1849,14 +1885,14 @@ func _get_pending_story_cutscene() -> String:
 		return "world6_chapter2"
 	if flags.get("cutscene_flag_world6_chapter2_complete", false) and not flags.get("cutscene_flag_world6_chapter3_complete", false):
 		return "world6_chapter3"
-	# Tick 107: W6 endgame closer — chapter3 (The Question) → calibrant
-	# defeat (the answer + class offer) → ending (worlds reform). Pre-fix,
-	# the W6 chain stopped at chapter3 and the player had no narrative
-	# closer despite world6_calibrant_defeat.json and world6_ending.json
-	# being authored on disk. The Calibrant "battle" is elided as
-	# narrative — matches the W2 Masterite auto-sets pattern (tick 101)
-	# since no Calibrant arena/dungeon exists.
-	if flags.get("cutscene_flag_world6_chapter3_complete", false) and not flags.get("cutscene_flag_world6_calibrant_defeat_complete", false):
+	# W6 endgame closer — chapter3 (The Question) → the Vertex Apex → calibrant defeat (the
+	# answer + class offer) → ending (worlds reform). The Calibrant battle used to be ELIDED as
+	# narrative because no arena existed, so the game's antagonist was never fought and
+	# world6_calibrant_intro (86 authored steps) never played. VertexApex is that arena; the
+	# closer now waits on the real defeat flag the boss sets.
+	if flags.get("cutscene_flag_world6_chapter3_complete", false) \
+			and flags.get("cutscene_flag_world6_calibrant_defeated", false) \
+			and not flags.get("cutscene_flag_world6_calibrant_defeat_complete", false):
 		if _current_map_id == "vertex_village":
 			return "world6_calibrant_defeat"
 	if flags.get("cutscene_flag_world6_calibrant_defeat_complete", false) and not flags.get("cutscene_flag_world6_ending_complete", false):
@@ -1898,6 +1934,7 @@ func _next_chained_story_cutscene(finished_id: String) -> String:
 # Tick 214: defeat flags that _get_pending_story_cutscene actually reads. When a subclass declares defeat_cutscene_flags = ["cutscene_flag_X"] and X isn't here, the flag gets set but no gate fires — silent narrative drop. Update both this set AND the gate when adding a new boss defeat cutscene.
 const _KNOWN_DEFEAT_CUTSCENE_FLAGS := {
 	"cutscene_flag_arbiter_futuristic_defeated": true,
+	"cutscene_flag_world6_calibrant_defeated": true,
 	"cutscene_flag_arbiter_suburban_defeated": true,
 	"cutscene_flag_curator_suburban_defeated": true,
 	"cutscene_flag_rat_king_defeated": true,
@@ -2077,14 +2114,26 @@ func _play_story_cutscene(cutscene_id: String) -> void:
 func _on_title_continue() -> void:
 	"""Handle continue selected from title screen"""
 	print("[GAME] Continue selected")
+	var slot := -1
+	if SaveSystem and SaveSystem.has_method("get_most_recent_slot"):
+		slot = SaveSystem.get_most_recent_slot()
+	await _title_load_slot(slot)
+
+
+## The picker's path and Continue's path are ONE function on purpose — a chosen slot gets
+## the identical load-then-restore-then-toast hardening, never a second copy that drifts.
+func _on_title_load(slot: int) -> void:
+	print("[GAME] Load Game selected: slot %d" % slot)
+	await _title_load_slot(slot)
+
+
+func _title_load_slot(slot: int) -> void:
 	_close_title_screen()
-	# Load most recent save FIRST (writes into GameState), THEN restore the
+	# Load the save FIRST (writes into GameState), THEN restore the
 	# live party from the loaded GameState. Bug fix (2026-04-30): previously
 	# we went straight to _create_party() (defaults) and ignored the save.
 	var loaded = false
-	var slot := -1
 	if SaveSystem and SaveSystem.has_method("load_game"):
-		slot = SaveSystem.get_most_recent_slot() if SaveSystem.has_method("get_most_recent_slot") else -1
 		if slot >= 0:
 			loaded = SaveSystem.load_game(slot)
 	if loaded and _restore_party_from_save_data():
@@ -3044,6 +3093,11 @@ func _on_battle_ended(victory: bool) -> void:
 				var fired: bool = GameState.rebalance_daemon.consider(RebalanceDaemonScript.TRIGGER_PARTY_WIPE, wipe_ctx)
 				if fired:
 					_kick_off_rebalance_fetch.call_deferred(GameState.rebalance_daemon.pending.size() - 1)
+		# Diegetic retry (Fable's design): a boss authored with diegetic_retry files the
+		# player's death as ITS OWN calibration error and refuses the game over — full
+		# restore, same fight, its player_wiped line as the retried battle's opener.
+		if await _maybe_diegetic_retry():
+			return
 		await _show_game_over_screen()
 
 
@@ -3202,6 +3256,62 @@ func _wait_for_confirm() -> void:
 			break
 		if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 			break
+
+
+## The diegetic-retry boss in the LAST battle, or {} — data-driven via monsters.json
+## `diegetic_retry`, so any future boss can refuse a game over by authoring one flag.
+func _diegetic_retry_boss() -> Dictionary:
+	if EncounterSystem == null or EncounterSystem.monster_database.is_empty():
+		return {}
+	for id in _last_battle_enemies:
+		var md: Dictionary = EncounterSystem.monster_database.get(str(id), {})
+		if bool(md.get("diegetic_retry", false)):
+			return {"id": str(id), "name": str(md.get("name", str(id))),
+				"lines": md.get("dialogue", {}).get("player_wiped", [])}
+	return {}
+
+
+## Fable's design: the Calibrant files the player's death as ITS OWN calibration error.
+## No GameOverScreen — dark beat, its line, full restore, same fight. Returns false when
+## the last battle held no diegetic_retry boss, and the normal game over proceeds.
+func _maybe_diegetic_retry() -> bool:
+	var boss := _diegetic_retry_boss()
+	if boss.is_empty():
+		return false
+	var count_key: String = "diegetic_retries_" + str(boss["id"])
+	var n: int = int(GameState.game_constants.get(count_key, 0))
+	GameState.game_constants[count_key] = n + 1
+
+	var overlay := CanvasLayer.new()
+	overlay.layer = 96
+	var bg := ColorRect.new()
+	bg.color = Color(0.0, 0.0, 0.02)
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(bg)
+	var lbl := Label.new()
+	var lines: Array = boss["lines"]
+	var line: String = str(lines[n % lines.size()]) if not lines.is_empty() else "Recalibrating."
+	lbl.text = "%s\n\n\"%s\"" % [str(boss["name"]).to_upper(), line]
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	lbl.set_anchors_preset(Control.PRESET_FULL_RECT)
+	lbl.add_theme_font_size_override("font_size", 18)
+	lbl.add_theme_color_override("font_color", Color(0.85, 0.6, 0.95))
+	overlay.add_child(lbl)
+	add_child(overlay)
+	await get_tree().create_timer(3.0).timeout
+	overlay.queue_free()
+
+	# The same restore the GameOverScreen retry arm performs — statuses stripped, AP zeroed.
+	for member in party:
+		if is_instance_valid(member):
+			_restore_duelist(member)
+			member.current_ap = 0
+	await _start_battle_async(_last_battle_enemies, _last_battle_is_encounter)
+	if BattleTransition:
+		await BattleTransition.fade_out()
+	return true
 
 
 func _show_game_over_screen() -> void:
@@ -3418,6 +3528,8 @@ func _start_exploration(force_battle_teardown: bool = false) -> void:
 			exploration_scene = _create_dragon_cave_from_script(CastleHarmoniaScript)
 		"steampunk_mechanism":
 			exploration_scene = _create_dragon_cave_from_script(SteampunkMechanismScript)
+		"vertex_apex":
+			exploration_scene = _create_dragon_cave_from_script(VertexApexScript)
 		"steampunk_overworld":
 			exploration_scene = SteampunkOverworldScript.new()
 		"suburban_overworld":

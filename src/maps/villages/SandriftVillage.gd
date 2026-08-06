@@ -258,6 +258,7 @@ func _setup_npcs() -> void:
 		"Sign my journal? I don't have a journal. Sign my arm. My mom won't mind."
 	]
 	var kit = _create_npc("Young Adventurer Kit", "villager", Vector2(23 * TILE_SIZE,14 * TILE_SIZE), _kit_post if _after_cave_done else _kit_pre)
+	kit.sprite_archetype = "young_woman"
 	npcs.add_child(kit)
 
 	# Caravan Master Kes — water_on_the_road giver, east edge of the bazaar.

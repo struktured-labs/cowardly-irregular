@@ -12,6 +12,9 @@ const TILE_SIZE: int = 32
 @export var examine_text: String = ""
 @export var idle_text: String = ""
 @export var glyph_color: Color = Color(0.85, 0.78, 0.5)
+## Group mode: 1-based index within a set that must ALL be examined before `flag` fires. 0 = single point.
+@export var member_index: int = 0
+@export var group_size: int = 0
 
 var _sprite: Sprite2D
 var _indicator: Label
@@ -134,9 +137,26 @@ func _examine() -> void:
 	if SoundManager:
 		SoundManager.play_ui("secret_found")
 	var job_line := _job_variant_text(qs)
+	if group_size > 0 and member_index > 0 and not _group_complete_after_marking():
+		_toast("%s\n\n(%d of %d documented)" % [examine_text, _group_done(), group_size])
+		return
 	GameState.set_story_flag(flag)
 	qs.notify_flag(flag)
 	_toast(examine_text if job_line == "" else examine_text + "\n\n" + job_line)
+
+
+## Marks THIS member and reports whether the whole set is now done.
+func _group_complete_after_marking() -> bool:
+	GameState.set_story_flag("%s_%d" % [flag, member_index])
+	return _group_done() >= group_size
+
+
+func _group_done() -> int:
+	var n: int = 0
+	for i in range(1, group_size + 1):
+		if GameState.is_story_flag_set("%s_%d" % [flag, i]):
+			n += 1
+	return n
 
 
 ## The lead job's authored read of THIS point, or "". 16 of these sat in quest data

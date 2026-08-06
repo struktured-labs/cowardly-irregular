@@ -265,7 +265,8 @@ func test_continue_loads_save_before_restoring() -> void:
 	# Source-level: _on_title_continue must call SaveSystem.load_game and
 	# _restore_party_from_save_data, with _create_party as a fallback path.
 	var src = _read_file("res://src/GameLoop.gd")
-	var idx = src.find("func _on_title_continue")
+	# Load-then-restore lives in the shared core since the title picker refactor.
+	var idx = src.find("func _title_load_slot")
 	assert_gt(idx, -1, "_on_title_continue must exist")
 	# Slice the function body up to (but not including) the next func
 	var rest = src.substr(idx)

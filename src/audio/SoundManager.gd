@@ -747,6 +747,11 @@ func play_status(status_name: String) -> void:
 		_play_sound(_battle_player, {"freq": 350, "duration": 0.2, "type": "descending"})
 
 
+## Manifest-gated status cue for callers that must stay SILENT when unauthored — the blip above is struktured's ruling-15 "not even close to good", and buffs fire far too often to spend it on them.
+func play_status_if_authored(sound_key: String) -> bool:
+	return _try_play_sfx_from_manifest(_battle_player, sound_key)
+
+
 ## Sound Generation
 
 func _play_sound(player: AudioStreamPlayer, params: Dictionary) -> void:

@@ -215,8 +215,15 @@ func test_roaming_monster_deactivate_sets_active_false() -> void:
 		"deactivate() must set _active = false (body_entered gating)")
 	assert_true(body.find("_fading = false") != -1,
 		"deactivate() must set _fading = false (prevent fade re-entry)")
-	assert_true(body.find("_collision") != -1 and body.find("disabled = true") != -1,
-		"deactivate() must disable the CollisionShape2D synchronously")
+	# The shape disable must be DEFERRED, not synchronous: deactivate() runs inside a
+	# body_entered dispatch (touch -> battle -> pause -> set_enabled(false) -> _despawn_all),
+	# and a direct assignment threw "Can't change this state while flushing queries" 52x in
+	# one play session. The menu-immunity guard this file is about is `_active = false`,
+	# asserted above and still synchronous. See
+	# test_roaming_monster_deactivate_deferred_regression for the runtime pin.
+	assert_true(body.find("_collision") != -1 \
+			and (body.find("disabled = true") != -1 or body.find("set_deferred(\"disabled\", true)") != -1),
+		"deactivate() must disable the CollisionShape2D (deferred form required)")
 	assert_true(body.find("_sprite") != -1 and body.find("visible = false") != -1,
 		"deactivate() must hide the sprite (no visual ghost during fade)")
 

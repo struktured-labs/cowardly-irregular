@@ -267,7 +267,11 @@ func deactivate() -> void:
 	_active = false
 	_fading = false
 	if _collision:
-		_collision.disabled = true
+		## Deferred: this runs INSIDE body_entered (touch -> battle -> pause ->
+		## set_enabled(false) -> _despawn_all), and changing shape state mid-flush threw
+		## "Can't change this state while flushing queries" 52x in one play session.
+		## The battle-leak guard is _active above, which stays synchronous.
+		_collision.set_deferred("disabled", true)
 	if _sprite:
 		_sprite.visible = false
 

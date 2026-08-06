@@ -22,13 +22,25 @@ var _dc: DynamicConversation
 
 # ── GUT lifecycle ─────────────────────────────────────────────────────────────
 
+## Force the fallback path deterministically. These tests used to SKIP whenever the LLM
+## backend happened to be up, so on a box running Ollama they silently never ran.
+var _llm_svc: Node = null
+var _llm_saved_enabled: bool = true
+
+
 func before_each() -> void:
+	_llm_svc = get_tree().root.get_node_or_null("LLMService") if get_tree() else null
+	if _llm_svc and "llm_enabled" in _llm_svc:
+		_llm_saved_enabled = _llm_svc.llm_enabled
+		_llm_svc.llm_enabled = false
 	_dc = DynamicConversation.new()
 	_dc.name = "TestDynamicConversation"
 	add_child_autofree(_dc)
 
 
 func after_each() -> void:
+	if _llm_svc and "llm_enabled" in _llm_svc:
+		_llm_svc.llm_enabled = _llm_saved_enabled
 	_dc = null
 
 
@@ -226,9 +238,6 @@ func test_fallback_npc_line_cycles_with_modulo() -> void:
 
 ## _llm_available() returns false when LLMService singleton is absent.
 func test_llm_available_false_without_singleton() -> void:
-	if _llm_service_actually_reachable():
-		pending("LLMService singleton present; test requires its absence")
-		return
 	assert_false(_dc._llm_available(),
 		"_llm_available() should return false when LLMService is not registered")
 
@@ -304,9 +313,6 @@ func test_run_reentrant_guard() -> void:
 
 ## When LLM is unavailable, _fetch_player_choices returns the DialoguePrompts fallback.
 func test_fetch_player_choices_uses_fallback_without_llm() -> void:
-	if _llm_service_actually_reachable():
-		pending("LLMService singleton present; test requires its absence")
-		return
 
 	_dc.setup("NPC", "persona", "loc", null, ["Hello!"])
 	var choices: Array[String] = await _dc._fetch_player_choices()
@@ -325,9 +331,6 @@ func test_fetch_player_choices_uses_fallback_without_llm() -> void:
 
 ## When LLM is unavailable, _fetch_npc_opening returns a fallback line.
 func test_fetch_npc_opening_uses_fallback_without_llm() -> void:
-	if _llm_service_actually_reachable():
-		pending("LLMService singleton present; test requires its absence")
-		return
 
 	_dc.setup("NPC", "persona", "loc", null, ["Greetings, traveler!"])
 	_dc._exchange_count = 0
@@ -340,9 +343,6 @@ func test_fetch_npc_opening_uses_fallback_without_llm() -> void:
 
 ## _fetch_npc_opening returns '...' when fallback_lines is empty and LLM is off.
 func test_fetch_npc_opening_empty_fallbacks_returns_ellipsis() -> void:
-	if _llm_service_actually_reachable():
-		pending("LLMService singleton present; test requires its absence")
-		return
 
 	_dc.setup("NPC", "persona", "loc", null, [])
 	var line: String = await _dc._fetch_npc_opening()
@@ -387,3 +387,12 @@ func test_state_enum_variants_present() -> void:
 func _llm_service_actually_reachable() -> bool:
 	var svc: Node = get_tree().root.get_node_or_null("LLMService") if get_tree() else null
 	return svc != null and svc.has_method("is_available") and svc.is_available()
+
+
+## CONTROL: the harness must actually make the fallback path live. If this fails, every
+## fallback assertion above was exercising the LLM path instead.
+func test_control_harness_forces_llm_unavailable() -> void:
+	assert_false(_llm_service_actually_reachable(),
+		"before_each must disable llm_enabled so the fallback path is what runs")
+	assert_false(_dc._llm_available(),
+		"DynamicConversation must see the LLM as unavailable")

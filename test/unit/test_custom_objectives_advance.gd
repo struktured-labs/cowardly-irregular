@@ -13,10 +13,9 @@ const GUARDED_PREFIXES := ["w1_", "world1_", "world2_", "world3_"]
 
 ## flag -> why. An exemption carries its justification or it reads as coverage, and
 ## test_exemptions_have_not_expired below deletes it for you the moment it stops being true.
-const KNOWN_UNBUILT := {
-	"quest_world3_lamplighters_logic_route_documented":
-		"lamplighters_logic step 2 is cowir-overworld's follow-the-route mechanic, held for struktured's genre ruling — unbuilt, not broken",
-}
+## Emptied 2026-08-01: lamplighters_logic step 2 shipped as 5 QuestExaminePoints in group mode on
+## Brasston's own `f` gas-lamp tiles, so its exemption expired exactly as this guard promised.
+const KNOWN_UNBUILT := {}
 
 var _saved_quests: Dictionary = {}
 var _saved_flags: Dictionary = {}
@@ -42,7 +41,10 @@ func _stuck_custom_objectives() -> Array:
 	var call_re := RegEx.create_from_string("notify_flag\\(\\s*\"([^\"]+)\"")
 	var const_re := RegEx.create_from_string("const\\s+(\\w+)\\s*(?::=|:\\s*String\\s*=|=)\\s*\"([^\"]+)\"")
 	var var_call_re := RegEx.create_from_string("notify_flag\\(\\s*([A-Z_][A-Z0-9_]*)\\s*\\)")
-	var point_re := RegEx.create_from_string("_add_quest_examine_point\\(\\s*\"[^\"]+\"\\s*,\\s*\"([^\"]+)\"")
+	## Matches any BaseVillage quest-point factory (_add_quest_examine_point, _add_quest_route_point)
+	## by SHAPE — (qid, flag, …). Pinning one NAME left _add_quest_route_point invisible, which would
+	## have kept lamplighters_logic's exemption green after its mechanic shipped.
+	var point_re := RegEx.create_from_string("_add_quest_\\w*point\\(\\s*\"[^\"]+\"\\s*,\\s*\"([^\"]+)\"")
 	## A QuestExaminePoint built directly (dungeons have no BaseVillage helper) sets .flag
 	## as a property — invisible to the factory pattern above, and W3's junction uses it.
 	var direct_re := RegEx.create_from_string("\\w+\\.flag\\s*=\\s*\"([^\"]+)\"")

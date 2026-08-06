@@ -218,7 +218,7 @@ static var current_formation: int = PartyFormation.V_FORMATION  # Persists acros
 var _battle_dialogue: BattleDialogueClass = null
 var _boss_dialogue_data: Dictionary = {}  # Stores dialogue for current boss
 var _waiting_for_dialogue: bool = false  # Pauses battle during dialogue
-var _base_music_track: String = "battle"  # "battle" or "boss"
+var _base_music_track: String = "battle"  # battle/boss/per-monster/per-face id; "" = authored silence (unmasking)
 var _masterite_phase2_swapped: bool = false  # One-shot: latch when phase2 music kicks in
 const DANGER_HP_THRESHOLD: float = 0.25  # Switch to danger music below 25% HP
 
@@ -361,6 +361,7 @@ func _ready() -> void:
 	BattleManager.execution_phase_started.connect(_on_execution_phase_started)
 	BattleManager.action_executing.connect(_on_action_executing)
 	BattleManager.action_executed.connect(_on_action_executed)
+	BattleManager.boss_face_changed.connect(_on_boss_face_changed)
 	# Item 19: user report "bard was briefly stuck for a turn next to
 	# the monsters on the left he presumably recently attacked" —
 	# stray displaced sprite from an interrupted return-home tween.
@@ -453,6 +454,8 @@ func _exit_tree() -> void:
 		BattleManager.action_executing.disconnect(_on_action_executing)
 	if BattleManager.action_executed.is_connected(_on_action_executed):
 		BattleManager.action_executed.disconnect(_on_action_executed)
+	if BattleManager.boss_face_changed.is_connected(_on_boss_face_changed):
+		BattleManager.boss_face_changed.disconnect(_on_boss_face_changed)
 	if BattleManager.round_ended.is_connected(_on_round_ended):
 		BattleManager.round_ended.disconnect(_on_round_ended)
 	if BattleManager.round_started.is_connected(_on_round_started_snap_home):
@@ -3771,6 +3774,65 @@ func _on_action_executed(combatant: Combatant, action: Dictionary, targets: Arra
 					SoundManager.play_status(effect)
 
 
+## A phase_faces boss (the Calibrant) swaps its visible body when a face lands. The spawn path
+## latches _small_frame/size_bump/flip_h from the sheet worn at spawn — recompute ALL THREE from
+## the NEW sheet or a 128px base wearing 256px faces renders 2.5x too big and facing backwards
+## (cowir-sprites' latch spec, found before this consumer existed).
+func _on_boss_face_changed(combatant: Combatant, _face_name: String, face: Dictionary) -> void:
+	# MUSIC FIRST, above the sheet guard — face 4 ("no face at all") has no sheet_id and
+	# carries the "silence" sentinel; below the guard its beat could never fire and would
+	# read as the sentinel being wrong rather than unreachable (cowir-music, msg 4178/4181).
+	# "silence" is also a status-effect id — different namespace, no code collision; kept
+	# because it names the AESTHETIC at the authoring site (consumer owner's call).
+	var face_music := str(face.get("music", ""))
+	if face_music == "silence":
+		# The unmasking is scored by silence — deliberate fade, never play_music("silence"),
+		# which would produce silence by ACCIDENT (failed lookup + poisoned _current_music).
+		# Clear the danger baseline too, or a dip-and-recover replays the PREVIOUS face's
+		# theme over the silence, permanently (cowir-sfx, msg 4223 — both halves or neither).
+		_base_music_track = ""
+		# Danger OWNS the channel while in force (cowir-battle, msg 4231): if the party is
+		# critical, keep the you're-about-to-die cue; recovery delivers the silence instead.
+		if SoundManager and not _is_danger_music:
+			SoundManager.fade_out_music(1.2)
+	elif face_music != "":
+		# Keep the danger-swap baseline in step or it reverts to the pre-fight bed.
+		_base_music_track = face_music
+		# Same rule: a swap mid-danger must not stomp the critical-HP cue — the baseline is
+		# set, and the existing recovery path plays the new theme once the party is safe.
+		if SoundManager and not _is_danger_music:
+			SoundManager.play_music(face_music)
+	var sheet_id := str(face.get("sheet_id", ""))
+	if sheet_id == "":
+		# A sheetless face KEEPS the worn body — for the unmasking that is the honest
+		# placeholder until the true-form sheet ships (an unspent tier call), not a bail.
+		return
+	var idx: int = BattleManager.enemy_party.find(combatant)
+	if idx < 0 or idx >= enemy_sprite_nodes.size():
+		return
+	var sprite := enemy_sprite_nodes[idx]
+	if not is_instance_valid(sprite):
+		return
+	var frames := HybridSpriteLoaderClass.load_monster_sprite_frames(sheet_id)
+	# A missing sheet keeps the current face — mid-fight procedural fallback would be worse.
+	if frames == null:
+		push_warning("[FACE-SWAP] sheet '%s' failed to load — %s keeps its current face" % [sheet_id, combatant.combatant_name])
+		return
+	sprite.sprite_frames = frames
+	var small := false
+	if frames.has_animation(&"idle") and frames.get_frame_count(&"idle") > 0:
+		var ftex := frames.get_frame_texture(&"idle", 0)
+		if ftex:
+			small = HybridSpriteLoaderClass.monster_needs_scale_bump(
+				ftex.get_height(), ENEMY_SMALL_FRAME_THRESHOLD)
+	var depth_scale: float = 1.0 - float(idx) * 0.05
+	var bump: float = ENEMY_SCALE_BUMP if small else 1.0
+	sprite.scale = Vector2(depth_scale * bump, depth_scale * bump)
+	# Facing keys on the NEW sheet's manifest entry, falling back to the frame-size convention.
+	sprite.flip_h = HybridSpriteLoaderClass.monster_faces_party(sheet_id, small)
+	sprite.play("idle")
+
+
 func _check_masterite_phase2_music_swap() -> void:
 	# Latch once per battle when a Masterite boss escalates to phase 2.
 	if _masterite_phase2_swapped or _is_danger_music:
@@ -5134,8 +5196,14 @@ func _check_danger_music() -> void:
 	elif not any_in_danger and (_is_danger_music or str(SoundManager._current_music) == "danger"):
 		# Stateless check: a duel-retry rebuilds this scene with the flag fresh while SoundManager still plays danger — the flag-only check left doom music over a full-HP party (struktured 2026-07-11).
 		_is_danger_music = false
-		SoundManager.play_music(_base_music_track)
-		print("[MUSIC] Switched back to %s music - party recovered" % _base_music_track)
+		# An EMPTY baseline is authored silence (the unmasking) — play_music("") would be
+		# the accidental-silence failed lookup; fade out instead and stay quiet.
+		if _base_music_track == "":
+			SoundManager.fade_out_music(1.2)
+			print("[MUSIC] party recovered into authored silence - staying quiet")
+		else:
+			SoundManager.play_music(_base_music_track)
+			print("[MUSIC] Switched back to %s music - party recovered" % _base_music_track)
 
 
 ## ======================== BATTLE QUIPS ========================

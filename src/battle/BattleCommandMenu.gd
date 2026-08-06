@@ -6,6 +6,9 @@ class_name BattleCommandMenu
 
 const Win98MenuClass = preload("res://src/ui/Win98Menu.gd")
 
+## Command-menu opacity. Below 1.0 so the acting PC stays readable under the panel.
+const MENU_ALPHA_OVER_ACTOR: float = 0.85
+
 var _scene  # Reference to parent BattleScene (untyped to avoid circular dependency)
 
 ## Cached alive enemies list per selection turn to avoid recomputation
@@ -106,6 +109,10 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 	_scene.active_win98_menu.expand_up = true  # Expand submenus upward
 	_scene.active_win98_menu.is_root_menu = true  # Root menu can't be closed
 	_scene.active_win98_menu.z_index = 100  # Render on top
+	## Translucent: at 1280x720 there is no free band for a 210px menu — enemies end at 532, the
+	## party column starts at 612 — so it unavoidably covers the acting PC until the bottom-strip
+	## layout frees the right edge. 0.85 keeps the text legible and the actor readable underneath.
+	_scene.active_win98_menu.modulate.a = MENU_ALPHA_OVER_ACTOR
 	_scene.active_win98_menu.visible = true  # Ensure visible
 	_scene.add_child(_scene.active_win98_menu)
 	_scene.active_win98_menu.setup(combatant.combatant_name, menu_items, menu_pos, job_id)

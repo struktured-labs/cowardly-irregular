@@ -680,6 +680,7 @@ func _setup_npcs() -> void:
 		"Teacher says the factory makes Everything. I asked what Everything is FOR. Got detention.",
 		"The sky outside the smokestacks... it's gray. Is it always gray? What color should it be?"
 	])
+	pip.sprite_archetype = "child"
 	npcs.add_child(pip)
 
 	# === Vandal K - hiding in the waste area near chemical barrels ===
