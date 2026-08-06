@@ -55,7 +55,16 @@ func test_all_group_attack_reads_are_buffed_in_source() -> void:
 	var stop: int = src.find("func _execute_combo_magic")  # combo/formation live between here and later
 	# formation special is after combo; extend the window to its end
 	var region_end: int = src.find("func _apply_vulnerability_window")
+	# Both assertions below are ABSENCE checks, so a failed parse makes them pass vacuously
+	# and the guard evaporates silently. cowir-autogrind mutation-verified exactly that
+	# (blind the parse, src untouched: EXIT 0, 2/2 passed) — this was the only genuinely
+	# silent source guard in the corpus. Renaming any of the three anchors must be LOUD.
+	assert_gt(start, -1, "_execute_physical_group must exist — an absence check over a failed parse passes for free")
+	assert_gt(stop, -1, "_execute_combo_magic must exist — it bounds the region below")
+	assert_gt(region_end, -1, "_apply_vulnerability_window must exist — it bounds the region below")
 	var region: String = src.substr(start, max(stop, region_end) - start)
+	assert_gt(region.length(), 200,
+		"the parsed region must be substantial — a truncated region satisfies both absence checks below without reading the code they defend")
 	assert_false(region.contains("+= p.attack"),
 		"no group/formation power sum may read raw p.attack — use get_buffed_stat")
 	assert_false(region.contains("(p.attack +"),
