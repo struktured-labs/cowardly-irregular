@@ -74,9 +74,22 @@ func test_dispatch_handles_survive_turns() -> void:
 	var body: String = src.substr(fn_idx, next_fn - fn_idx) if next_fn > 0 else src.substr(fn_idx)
 	assert_true(body.contains("\"survive_turns\":"),
 		"dispatch must handle survive_turns type")
-	# Cleric duel is 8 rounds per msg 2014 — the check is current_round >= value.
-	assert_true(body.contains("current_round >= target_round"),
-		"survive_turns check must compare current_round to authored value")
+	# Was pinned as the literal `current_round >= target_round`. That is a claim about
+	# SPELLING, and it failed a correct change: a boss face that swaps the win condition
+	# mid-fight stamps `_since_round` so the count runs from the phase rather than from
+	# battle start, which the expression must subtract. The INVARIANT — the Cleric duel's
+	# 8 rounds still wins on round 8 — is unchanged, so assert the behaviour instead.
+	assert_true(body.contains("current_round") and body.contains("target_round"),
+		"survive_turns must still decide from the round counter and the authored value")
+	var bm: Node = load(BATTLE_MANAGER_PATH).new()
+	add_child_autofree(bm)
+	bm._win_condition = {"type": "survive_turns", "value": 8}
+	bm.current_round = 7
+	assert_false(bm._evaluate_custom_win_condition(),
+		"round 7 of an 8-round duel is not yet a win — behaviour, not spelling")
+	bm.current_round = 8
+	assert_true(bm._evaluate_custom_win_condition(),
+		"round 8 of an 8-round duel wins; a duel authors no phase baseline, so it counts from battle start exactly as before")
 
 
 func test_dispatch_handles_status_threshold() -> void:
