@@ -23,7 +23,7 @@ func test_the_seam_exists_and_returns_bool() -> void:
 	var sm: Node = _sm()
 	assert_not_null(sm, "SoundManager autoload must exist")
 	assert_true(sm.has_method("play_status_if_authored"),
-		"play_status_if_authored is the seam Combatant.add_buff/add_debuff call — removing it re-blocks that lane")
+		"play_status_if_authored is a READY SEAM with ZERO production callers, deliberately. This message previously said add_buff/add_debuff call it; they do not, and Combatant.gd contains no SoundManager reference at all. Buff audio is emitted a layer up, in BattleScene._on_action_executed's effect match.")
 	assert_true(sm.play_status_if_authored(UNAUTHORED) is bool,
 		"must return bool so the caller can tell authored from silent")
 

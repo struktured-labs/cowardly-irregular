@@ -3760,7 +3760,8 @@ func _on_action_executed(combatant: Combatant, action: Dictionary, targets: Arra
 		if not ability.is_empty():
 			var effect = ability.get("effect", "")
 			match effect:
-				"defense_up", "attack_up", "volatility_up_self", "volatility_down":
+				# magic_defense_up/regen/barrier/cleanse fell to `_:` and drew the DESCENDING blip — a buff sounding negative; magic_defense_down was listed and its own opposite was not
+				"defense_up", "attack_up", "volatility_up_self", "volatility_down", "magic_defense_up", "regen", "barrier", "cleanse":
 					SoundManager.play_battle("buff")
 				# stat reductions share the generic debuff cue (cowir-sfx rec) — bespoke cues reserved for the scary/unique statuses
 				"defense_down", "volatility_up", "attack_down", "magic_down", "magic_defense_down", "speed_down", "all_stats_down", "random_debuff", "dispel", "pacify", "amplify_poison":
