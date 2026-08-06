@@ -105,6 +105,78 @@ func test_unbacked_claims_are_exactly_the_pinned_set() -> void:
 		"a hint-bar claim has no input action, so nothing can verify it names the right button. Either bind it, or add it here with a reason: %s" % str(unbacked))
 
 
+## 33 files render hardcoded "[TOKEN] Phrase" prompts. Every one is a claim about a binding
+## and none was checked. They are all NINTENDO-LAYOUT tokens: ui_accept is bound to index 1,
+## whose label is "B / East (Nintendo A)", and the prompts say [A] — correct on struktured's
+## 8BitDo and wrong on an Xbox-layout pad. That convention is unstated and 33 files depend on it.
+const PROMPT_TOKEN_TO_ACTION := {
+	"A": "ui_accept",
+	"B": "ui_cancel",
+	"L": "battle_defer",
+	"R": "battle_advance",
+	"Select": "battle_toggle_auto",
+}
+
+
+func _prompt_claims_in_src() -> Array[Dictionary]:
+	var out: Array[Dictionary] = []
+	var rx := RegEx.new()
+	rx.compile("\\[(A|B|L|R|Select)\\]\\s+[A-Za-z]")
+	var dirs: Array[String] = ["res://src"]
+	while not dirs.is_empty():
+		var d: String = dirs.pop_back()
+		var da := DirAccess.open(d)
+		if da == null:
+			continue
+		da.list_dir_begin()
+		var n := da.get_next()
+		while n != "":
+			var full: String = d + "/" + n
+			if da.current_is_dir():
+				dirs.append(full)
+			elif n.ends_with(".gd"):
+				var txt := FileAccess.get_file_as_string(full)
+				for m in rx.search_all(txt):
+					out.append({"token": m.get_string(1), "file": full})
+			n = da.get_next()
+		da.list_dir_end()
+	return out
+
+
+## Every hardcoded prompt token must name the button its action is actually bound to.
+## This is the same claim the hint bar makes, made in 33 more places by hand.
+func test_every_hardcoded_prompt_token_matches_its_binding() -> void:
+	var profiles := _consts(PROFILES_OWNER)
+	var standard: Dictionary = profiles.get("PROFILE_STANDARD", {})
+	var labels: Dictionary = profiles.get("BUTTON_LABELS", {})
+	var claims := _prompt_claims_in_src()
+	assert_gt(claims.size(), 20, "the sweep must find the shipped prompts — an empty read makes this vacuous: %d" % claims.size())
+
+	var wrong: Array[String] = []
+	for c in claims:
+		var token: String = c["token"]
+		var action: String = PROMPT_TOKEN_TO_ACTION.get(token, "")
+		if action == "" or not standard.has(action):
+			wrong.append("%s: [%s] maps to no bound action" % [c["file"], token])
+			continue
+		var matched := false
+		for idx in standard[action]:
+			var label: String = str(labels.get(int(idx), ""))
+			# A label lists every name the button answers to: "B / East (Nintendo A)" and
+			# "Back / Select / Minus". The token matches if it is the Nintendo-printed letter
+			# OR any slash-separated alternative — not a prefix, which misses "Select" in
+			# "Back / Select / Minus" and would fail two correct prompts.
+			if label.contains("(Nintendo %s)" % token):
+				matched = true
+			for part in label.split("/"):
+				if part.strip_edges().split(" ")[0] == token:
+					matched = true
+		if not matched:
+			wrong.append("%s: [%s] is rendered, but %s is bound to %s" % [c["file"], token, action, str(standard[action])])
+	assert_eq(wrong, [] as Array[String],
+		"a prompt names a button that does something else — the player reads it and presses that button: %s" % str(wrong))
+
+
 ## Speed's letter is layout-dependent: JOY_BUTTON_Y is NORTH, printed X on Nintendo pads
 ## (struktured's 8BitDo) and Y on Xbox pads. The string is right for his hardware and wrong
 ## for the other layout. Pinned so a rebind or a relabel surfaces the coupling.
