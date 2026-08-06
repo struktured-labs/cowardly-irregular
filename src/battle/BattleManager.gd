@@ -1126,7 +1126,53 @@ func _apply_boss_face(enemy: Combatant, face: Dictionary) -> void:
 	var line: String = str(face.get("line", ""))
 	if line != "":
 		battle_log_message.emit("[color=magenta]%s[/color]" % line)
+	_apply_face_win_condition(face, face_name)
 	boss_face_changed.emit(enemy, face_name, face)
+
+
+## A face may change what WINNING means, not just what the boss hits for. Opt-in and inert:
+## a face with no `win_condition` key leaves _win_condition exactly as it was, so every boss
+## shipped today behaves identically. Authored per-face, so enabling it is one JSON field.
+##
+## Party power is FLAT across W2-W6 (damage/round 1044 at L20 vs 1049 at L28, measured — one
+## equipment catalog covers the game), so more boss HP buys LENGTH, not difficulty. A fight
+## gets harder by changing what the player must DO. That is what this is for.
+func _apply_face_win_condition(face: Dictionary, face_name: String) -> void:
+	var wc: Variant = face.get("win_condition", null)
+	if not (wc is Dictionary) or (wc as Dictionary).is_empty():
+		return
+	_win_condition = (wc as Dictionary).duplicate(true)
+	_reset_win_condition_arms()
+	battle_log_message.emit("[color=magenta]The terms change: %s.[/color]" % _describe_win_condition())
+
+
+## Both live arms LATCH, so a naive reassign hands the new phase a pre-satisfied condition.
+## survive_turns compares absolute current_round; at round 12 a "survive 3" phase is already
+## won. status_threshold reads a `_<status>_stacks` meta that the previous phase filled.
+func _reset_win_condition_arms() -> void:
+	# survive_turns: stamp the phase's start so the evaluator can count FROM here. Absent on
+	# every Spotlight Duel's condition, where the baseline is correctly 0 (the battle start).
+	_win_condition["_since_round"] = current_round
+	var status_name: String = str(_win_condition.get("status", ""))
+	if status_name != "":
+		var meta_key: String = "_" + status_name + "_stacks"
+		for e in enemy_party:
+			if e != null and is_instance_valid(e) and e.has_meta(meta_key):
+				e.set_meta(meta_key, 0)
+
+
+func _describe_win_condition() -> String:
+	match str(_win_condition.get("type", "")):
+		"survive_turns":
+			return "survive %d more turns" % int(_win_condition.get("value", 0))
+		"status_threshold":
+			return "land %d %s" % [int(_win_condition.get("value", 1)), str(_win_condition.get("status", ""))]
+		"withhold_attack":
+			return "win without attacking"
+		"arbiter_ladder":
+			return "answer the ladder"
+		_:
+			return "defeat it"
 
 
 func _maybe_trigger_mordaine_recalibrate() -> void:
@@ -6503,7 +6549,12 @@ func _evaluate_custom_win_condition() -> bool:
 	match wc_type:
 		"survive_turns":
 			var target_round: int = int(_win_condition.get("value", 0))
-			return current_round >= target_round
+			# `_since_round` is stamped only when a boss FACE swaps the condition mid-fight,
+			# so the count runs from that phase rather than from battle start. Absent on every
+			# Spotlight Duel (baseline 0), which is why this is additive and changes nothing
+			# that ships today. Without it, a phase demanding "survive 3" at round 12 is
+			# already won the instant it begins.
+			return (current_round - int(_win_condition.get("_since_round", 0))) >= target_round
 		"status_threshold":
 			var status_name: String = str(_win_condition.get("status", ""))
 			var need: int = int(_win_condition.get("value", 1))
