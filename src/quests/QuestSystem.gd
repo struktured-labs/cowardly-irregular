@@ -216,6 +216,10 @@ func _grant_rewards(q: Dictionary) -> void:
 			var count: int = int(entry.get("count", 1))
 			if iid == "" or not game_loop.party[0].has_method("add_item"):
 				continue
+			## Weapons/armor/accessories must reach equipment_pool — the ONLY list the Equipment menu reads.
+			if _route_reward_to_equipment_pool(game_loop, iid, count):
+				summary_parts.append(_item_display_name(iid) + ("" if count <= 1 else " ×%d" % count))
+				continue
 			# An unresolvable id would become a phantom inventory entry
 			# AND _item_display_name's pretty-case fallback would announce
 			# the failure as success. Warn loudly; still grant (the id may
@@ -229,13 +233,34 @@ func _grant_rewards(q: Dictionary) -> void:
 	_last_reward_summary = "" if summary_parts.is_empty() else "Received: " + ", ".join(summary_parts) + "."
 
 
+## world1_untested_edge rewards returned_sword (+140 atk); add_item alone made it a dead lore entry.
+## Getters are called unguarded on purpose — a renamed catalog method must fail loudly, not skip silently.
+## Fourth copy of this resolver (BattleManager/TreasureChest/ShopScene have their own); consolidation is a separate change.
+func _route_reward_to_equipment_pool(game_loop, item_id: String, count: int) -> bool:
+	if game_loop == null or EquipmentSystem == null or not "equipment_pool" in game_loop:
+		return false
+	var pool_key: String = ""
+	if not EquipmentSystem.get_weapon(item_id).is_empty():
+		pool_key = "weapons"
+	elif not EquipmentSystem.get_armor(item_id).is_empty():
+		pool_key = "armors"
+	elif not EquipmentSystem.get_accessory(item_id).is_empty():
+		pool_key = "accessories"
+	if pool_key == "":
+		return false
+	if not game_loop.equipment_pool.has(pool_key):
+		game_loop.equipment_pool[pool_key] = []
+	## The pool is a multiset — equip_from_pool erases one entry, so count copies need count entries.
+	for _i in range(maxi(1, count)):
+		game_loop.equipment_pool[pool_key].append(item_id)
+	return true
+
+
+## Was an ItemSystem-only copy of ItemNameResolver, blind to its ability and equipment steps, so a
+## reward naming either announced a pretty-cased id. Tick 135 extracted the shared one after three
+## such copies drifted apart and one locked in an "armor"/"armors" typo; this was a fourth.
 func _item_display_name(item_id: String) -> String:
-	if ItemSystem:
-		var data: Dictionary = ItemSystem.get_item(item_id)
-		var display: String = str(data.get("name", ""))
-		if display != "":
-			return display
-	return item_id.replace("_", " ").capitalize()
+	return ItemNameResolver.resolve(item_id)
 
 
 ## Plays the stashed reward summary as a final dialogue line + the

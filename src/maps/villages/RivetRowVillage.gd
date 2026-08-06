@@ -234,8 +234,7 @@ func _setup_npcs() -> void:
 		"Camouflage is just knowing what a thing is WORTH to the person holding it.",
 		"You have the look of someone who travels between worlds. I'm documenting that."
 	])
-	# Without this world4_deviation_report is UNSTARTABLE — derived id would be madame_orrery.
-	orrery.npc_id = "madame_orrery_w4"
+	# npc_id DELIBERATELY unset: madame_orrery_w4 makes world4_deviation_report offerable, and its step 2 talks to union_rep_w4 — an id no NPC answers to. Re-add when the union rep is placed, not before.
 	npcs.add_child(orrery)
 
 	# Graffiti Wall (interactable object)

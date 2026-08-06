@@ -110,3 +110,27 @@ func test_announce_consumes_the_summary_once() -> void:
 	QuestSystem._announce_rewards(shell)
 	assert_eq(QuestSystem._last_reward_summary, "",
 		"summary must clear on announce so it can't replay on the next quest")
+
+
+## _item_display_name was a FOURTH partial copy of ItemNameResolver — ItemSystem step only,
+## blind to abilities and equipment. Both ids below are absent from items.json AND have a real
+## name that differs from the pretty-cased fallback, so a pass cannot come from falling through.
+func test_reward_names_resolve_through_the_shared_resolver() -> void:
+	assert_true(ItemSystem.get_item("thiefs_glove").is_empty(),
+		"control: thiefs_glove must NOT be in items.json, else this proves nothing about the "
+		+ "equipment step")
+	assert_eq(QuestSystem._item_display_name("thiefs_glove"), "Thief's Glove",
+		"an EQUIPMENT reward must announce its equipment.json name. The pretty-cased fallback "
+		+ "gives 'Thiefs Glove' — the apostrophe is what separates 'the resolver ran' from "
+		+ "'it fell through', and hp_amulet/iron_sword would pass BOTH ways")
+
+	assert_true(ItemSystem.get_item("press_the_edge").is_empty(),
+		"control: press_the_edge must NOT be in items.json")
+	assert_eq(QuestSystem._item_display_name("press_the_edge"), "Press the Edge",
+		"an ABILITY reward must announce its abilities.json name; the fallback capitalises "
+		+ "every word and gives 'Press The Edge'")
+
+	## The common path must not regress — a consumable still resolves through step 1.
+	assert_eq(QuestSystem._item_display_name("potion"), "Potion")
+	## And an id no autoload knows still prettifies rather than returning empty.
+	assert_eq(QuestSystem._item_display_name("zzz_unknown_thing"), "Zzz Unknown Thing")
