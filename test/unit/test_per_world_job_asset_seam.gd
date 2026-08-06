@@ -14,6 +14,14 @@ extends GutTest
 
 const Loader = preload("res://src/battle/sprites/HybridSpriteLoader.gd")
 
+## The runtime world vocabulary — an INDEPENDENT literal, deliberately not derived from any
+## resolver map (cowir-sprites: a check derived from the thing it checks is vacuous). Runtime
+## returns quadruple-confirmed 2026-08-06: medieval is the BASE (unsuffixed), and "futuristic"
+## appears in bodies 39x but is RETURNED zero times — a futuristic sheet would load fine and
+## never be requested. If a sixth world ever ships, this list is the one place to grow.
+const RUNTIME_SUFFIXES: Array = ["suburban", "steampunk", "industrial", "digital", "abstract"]
+const VARIANT_RX := "^(overworld|idle)_([a-z]+)\\.png$"
+
 
 func test_medieval_resolves_the_base_sheet() -> void:
 	# The arm most likely to be got wrong, per cowir-sfx: medieval is deliberately unsuffixed.
@@ -33,13 +41,52 @@ func test_medieval_resolves_the_base_sheet() -> void:
 
 
 func test_a_world_without_a_variant_falls_back_to_base() -> void:
-	# TODAY this covers "digital" too: no variant sheets exist yet. When cowir-sprites' pilot
-	# lands fighter/overworld_<suffix>.png, ADD the positive arm asserting the variant WINS —
-	# this comment is the reminder, and the coverage guard below reds if the art lands unshipped.
-	for w in ["digital", "abstract", "zzz_not_a_world"]:
+	# Skip-with-floor (cowir-overworld's arm): a world whose variant EXISTS on disk is skipped
+	# (asserting fallback there reds on the first CORRECT sheet — sprites' 70-sheet batch is
+	# inbound), but the floor arm below can never be skipped, so the test can't go vacuous.
+	for w in ["digital", "abstract"]:
+		var variant := "res://assets/sprites/jobs/fighter/overworld_%s.png" % w
+		if ResourceLoader.exists(variant):
+			gut.p("'%s' variant shipped — fallback arm skipped, reachability test covers it" % w)
+			continue
 		assert_eq(Loader.job_asset_path("fighter", "overworld", w),
 			"res://assets/sprites/jobs/fighter/overworld.png",
 			"absent variant for '%s' must fall back to base — silent procedural is the enemy" % w)
+	# THE FLOOR: not a world, never shippable, always asserts — the arm that keeps this test real.
+	assert_eq(Loader.job_asset_path("fighter", "overworld", "zzz_not_a_world"),
+		"res://assets/sprites/jobs/fighter/overworld.png",
+		"an unknown world must always fall back to base")
+
+
+func test_every_variant_suffix_is_in_the_runtime_vocabulary() -> void:
+	# cowir-overworld's arm: art registered under a suffix the runtime never RETURNS loads fine
+	# and is never requested — dark forever (the overworld_futuristic.png trap). Walks the real
+	# dirs so the check covers what actually shipped, not what anyone listed.
+	assert_false("futuristic" in RUNTIME_SUFFIXES, "futuristic is authored in bodies, returned NEVER")
+	assert_false("medieval" in RUNTIME_SUFFIXES, "medieval is the BASE — a _medieval file is dead on arrival")
+	var dir := DirAccess.open("res://assets/sprites/jobs")
+	assert_not_null(dir, "jobs dir readable")
+	if dir == null:
+		return
+	for job in dir.get_directories():
+		var jd := DirAccess.open("res://assets/sprites/jobs/" + job)
+		if jd == null:
+			continue
+		for f in jd.get_files():
+			var m := RegEx.create_from_string(VARIANT_RX).search(f)
+			if m == null:
+				continue
+			assert_true(m.get_string(2) in RUNTIME_SUFFIXES,
+				"%s/%s carries suffix '%s' the runtime NEVER returns — this art can never render" % [job, f, m.get_string(2)])
+
+
+func test_the_fetch_site_returns_a_vocabulary_member() -> void:
+	# cowir-cutscenes' arm, behavioural half: whatever source current_world_suffix() reads
+	# (audio private today, the single visual resolver post-fold), its RETURN must stay inside
+	# the vocabulary the helper understands — a rogue value silently disables every variant.
+	var got := Loader.current_world_suffix()
+	assert_true(got == "" or got == "medieval" or got in RUNTIME_SUFFIXES,
+		"fetch site returned '%s' — outside vocabulary+base, every consumer falls back silently" % got)
 
 
 func test_every_variant_sheet_on_disk_is_reachable_by_the_helper() -> void:
@@ -56,7 +103,7 @@ func test_every_variant_sheet_on_disk_is_reachable_by_the_helper() -> void:
 		if jd == null:
 			continue
 		for f in jd.get_files():
-			var m := RegEx.create_from_string("^(overworld|idle)_([a-z]+)\\.png$").search(f)
+			var m := RegEx.create_from_string(VARIANT_RX).search(f)
 			if m == null:
 				continue
 			checked += 1
@@ -69,11 +116,13 @@ func test_every_variant_sheet_on_disk_is_reachable_by_the_helper() -> void:
 func test_all_four_consumers_resolve_through_the_helper() -> void:
 	# Five hand-built constructions became one; a site regressing to a literal re-splits the
 	# corpus. The suffix must also be IN the cache keys at the three caching sites.
+	# Every site must FETCH the suffix, not hardcode "" — cutscenes' arm, source half
+	# (spelling-level; upgrades to behaviour when the single visual resolver folds).
 	var sites := {
 		"res://src/exploration/OverworldPlayer.gd": ["job_asset_path", "current_world_suffix"],
-		"res://src/cutscene/CutsceneActor.gd": ["job_asset_path"],
-		"res://src/cutscene/CutsceneDialogue.gd": ["job_asset_path", "cache_key := \"bust:%s:%s\""],
-		"res://src/ui/SaveScreen.gd": ["job_asset_path", "cache_key"],
+		"res://src/cutscene/CutsceneActor.gd": ["job_asset_path", "current_world_suffix"],
+		"res://src/cutscene/CutsceneDialogue.gd": ["job_asset_path", "current_world_suffix", "cache_key := \"bust:%s:%s\""],
+		"res://src/ui/SaveScreen.gd": ["job_asset_path", "current_world_suffix", "cache_key"],
 	}
 	for path in sites:
 		var src := FileAccess.get_file_as_string(path)
