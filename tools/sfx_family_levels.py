@@ -29,6 +29,7 @@ Usage:
 """
 
 import argparse
+import json
 import subprocess
 import sys
 import tempfile
@@ -111,12 +112,30 @@ def main() -> int:
                     help="max acceptable RMS spread across the family, dB (default 3.0)")
     args = ap.parse_args()
 
+    # Resolve each key through the MANIFEST's declared `file`, never by assuming
+    # <key>.ogg. advance_queue -> advance_queue_arcade.ogg is a legitimate, deliberate
+    # name; assuming the key spelling made that ONE cue abort its whole 17-cue family,
+    # so `advance_` had never been level-checked and read as "unswept" when it was
+    # unsweepable. Derive from the thing, not the spelling.
+    manifest_paths: dict[str, str] = {}
+    manifest_file = Path(__file__).resolve().parent.parent / "data" / "sfx_manifest.json"
+    try:
+        entries = json.loads(manifest_file.read_text()).get("sfx", {})
+        for k, v in entries.items():
+            if isinstance(v, dict) and v.get("file"):
+                manifest_paths[k] = v["file"]
+    except (OSError, ValueError) as exc:
+        print(f"WARNING: could not read {manifest_file}: {exc}", file=sys.stderr)
+
     rows = []
+    missing: list[str] = []
     for key in args.keys:
-        path = SFX_DIR / f"{key}.ogg"
+        declared = manifest_paths.get(key)
+        path = (Path(manifest_file).parent.parent / declared) if declared else (SFX_DIR / f"{key}.ogg")
         if not path.exists():
-            print(f"MISSING: {path}", file=sys.stderr)
-            return 2
+            # Collect rather than abort: one unresolvable key must not blind its family.
+            missing.append(f"{key} -> {path}")
+            continue
         d, sr = decode(path)
         rows.append({
             "key": key,
@@ -133,6 +152,20 @@ def main() -> int:
               f"{r['tp']:>+10.1f}{r['centroid']:>10.0f}Hz")
 
     fail = False
+
+    # Report skips LOUDLY and next to the count that consumed them — a silently short
+    # family reads exactly like a complete one, which is how a 17-cue blind spot lasted.
+    if missing:
+        print(f"\nUNRESOLVED ({len(missing)} of {len(args.keys)} requested) — measured "
+              f"{len(rows)}:", file=sys.stderr)
+        for m in missing:
+            print(f"  {m}", file=sys.stderr)
+        fail = True
+
+    if not rows:
+        print("NOTHING MEASURED — every requested key was unresolvable. This is a tooling "
+              "or naming failure, not a clean family.", file=sys.stderr)
+        return 2
 
     over = [r for r in rows if r["tp"] > 0.0]
     if over:

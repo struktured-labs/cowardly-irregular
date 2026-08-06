@@ -90,8 +90,39 @@ if ! ./tools/gate.sh tmp/deploy_isolated.log --isolated; then
 fi
 
 echo "[deploy] gate 2/4: web export"
+# STAGED EXPORT, not a direct one. struktured's ruling (2026-07-30): ship the W4-W6
+# endings, compress to fit. The web preset excludes 54 ending tracks to stay under
+# itch's embed cap; make_web_stage.sh builds a throwaway copy of the project with a
+# 48 kbps audio tier swapped in and those exclusions dropped, so the endings ship.
+# Measured: 154 tracks at 48k is SMALLER than 98 at 96k, so they cost nothing.
+#
+# It is a COPY, never a swap. assets/ keeps the 96k masters for desktop and is never
+# touched, so a deploy killed mid-run cannot leave lo-fi audio where the masters
+# belong — there is no restore step to skip. That matters because a gate crossing a
+# harness timeout dies by SIGTERM, which is the normal case here, not the edge case.
+#
+# WEB_STAGE=0 falls back to the direct export (faster, no endings) for a quick
+# non-publishing check. Publishing on that path ships less content than was measured,
+# so it is deliberately NOT the default.
 mkdir -p builds/web
-godot --headless --export-release "Web" builds/web/index.html 2>&1 | tail -3
+if [ "${WEB_STAGE:-1}" = "1" ]; then
+  ./tools/make_web_stage.sh 48 || {
+    echo "[deploy] BLOCKED: staged web build failed — see its own BLOCKED line above." >&2
+    echo "        WEB_STAGE=0 exports directly, but ships WITHOUT the W4-W6 endings." >&2
+    exit 2; }
+  # Downstream gates, both smokes and the butler push all read builds/web. Move the
+  # staged artifact there rather than re-pointing five call sites.
+  rm -rf builds/web && mkdir -p builds/web
+  cp -a tmp/web_stage/builds/web/. builds/web/
+  echo "[deploy] staged build in place (48 kbps tier, endings included)"
+else
+  echo "[deploy] WEB_STAGE=0 — direct export, W4-W6 endings EXCLUDED"
+  godot --headless --export-release "Web" builds/web/index.html 2>&1 | tail -3
+fi
+# An export that reported success and produced nothing would otherwise reach the pck
+# gate as a stat error rather than a named failure.
+[ -s builds/web/index.pck ] || {
+  echo "[deploy] BLOCKED: no index.pck after export — nothing to measure or push." >&2; exit 2; }
 
 echo "[deploy] gate 3/4: pck size"
 PCK=$(stat -c%s builds/web/index.pck)

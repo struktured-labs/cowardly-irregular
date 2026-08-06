@@ -1268,7 +1268,8 @@ func _draw_worker_housing(img: Image, palette: Dictionary, variant: int) -> void
 
 ## Guard post / checkpoint booth with red/white barrier stripe and window
 func _draw_guard_post(img: Image, palette: Dictionary) -> void:
-	img.fill(palette["concrete"])
+	# "concrete" is not a key in this tile's palette — the read aborted the whole function, leaving the tile blank.
+	img.fill(palette["light"])
 
 	# Concrete ground
 	for y in range(TILE_SIZE - 4, TILE_SIZE):

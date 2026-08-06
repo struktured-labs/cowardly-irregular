@@ -468,10 +468,14 @@ func get_grind_stats() -> Dictionary:
 
 
 func get_time_multiplier() -> float:
-	if not is_grinding or _grind_stats["start_time"] <= 0.0:
+	## Reads the FINALIZED elapsed once stopped, mirroring get_grind_stats — the end-of-session summary is built after is_grinding goes false, so gating on it reported 1.0x for every session.
+	var elapsed_sec: float = _grind_stats["elapsed_seconds"]
+	if is_grinding and _grind_stats["start_time"] > 0.0:
+		elapsed_sec = Time.get_unix_time_from_system() - _grind_stats["start_time"]
+	if elapsed_sec <= 0.0:
 		return 1.0
 
-	var elapsed_min = (Time.get_unix_time_from_system() - _grind_stats["start_time"]) / 60.0
+	var elapsed_min = elapsed_sec / 60.0
 
 	for i in range(TIME_MULTIPLIER_CURVE.size() - 1):
 		var bp_start = TIME_MULTIPLIER_CURVE[i]

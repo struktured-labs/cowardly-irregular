@@ -14,6 +14,7 @@ const AUTHORED_AHEAD := {
 	"foreman_w4": "W4 — NPC 'Shift Foreman Grix' exists; watercolors step3 needs the maintenance-tunnels map",
 	"union_rep_w4": "W4 — NPC 'Union Rep Voss' exists; words_per_conversation step2 is the compression puzzle",
 	"dorrit_w4": "W4 — NPC 'Dorrit' exists; form_exception step2 is the multi-path counter-signature",
+	"madame_orrery_w4": "W4 — NPC 'Madame Orrery' IS placed in rivet_row; the id is withheld because deviation_report step2 talks to union_rep_w4. Placing it shipped an acceptable-unfinishable quest",
 	"rat_patrol_junction": "W4 — sited in rivet_row_tunnels, which exists as no map",
 	"memory_leak_district": "W5 — no village placement yet",
 	"madame_orrery_w5": "W5 — no village placement yet",
@@ -173,3 +174,34 @@ func test_unreachable_giver_set_is_exactly_the_authored_ahead_set() -> void:
 		+ "NPC, or add it to AUTHORED_AHEAD with its world: %s" % [broken])
 	assert_eq(landed, [], "these are listed as authored-ahead but their NPCs now exist. Good — remove "
 		+ "them from AUTHORED_AHEAD so the list keeps describing reality: %s" % [landed])
+
+
+## THE DUAL. A reachable giver makes every LATER step of that quest a promise too.
+## AUTHORED_AHEAD deliberately does NOT exempt here: it records givers we chose not to place,
+## and a member of that list appearing as a TALK TARGET of a quest we DID place is the trap
+## the list exists to prevent, not a case it covers.
+func test_a_placed_giver_implies_every_talk_target_is_placed() -> void:
+	var ids := _reachable_ids()
+	var checked := 0
+	var stranded: Array = []
+	for pair in _quests():
+		var giver: String = str(pair[1].get("giver", {}).get("npc_id", ""))
+		if giver == "" or not ids.has(giver):
+			continue
+		checked += 1
+		var objectives: Array = pair[1].get("objectives", [])
+		for i in objectives.size():
+			var o: Dictionary = objectives[i]
+			if str(o.get("type", "")) != "talk":
+				continue
+			var target: String = str(o.get("target_npc", ""))
+			if target != "" and not ids.has(target):
+				stranded.append("%s obj[%d] -> %s" % [pair[0], i, target])
+
+	assert_gt(checked, 15, "must inspect real placed-giver quests, else this ratchet is vacuous")
+	assert_eq(stranded, [], "this quest CAN be accepted and can NEVER be finished. The giver is placed, "
+		+ "so the player is offered it, walks to the step, and the target NPC answers to a different id "
+		+ "or does not exist. world4_deviation_report shipped this way: Union Rep Voss stands in Rivet "
+		+ "Row but derives 'union_rep_voss', while the step asks for 'union_rep_w4'. Either place the "
+		+ "target, or un-place the giver — do NOT add the target to AUTHORED_AHEAD, which tracks "
+		+ "unplaced GIVERS and would hide exactly this: %s" % [stranded])

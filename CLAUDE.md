@@ -207,7 +207,7 @@ Old IDs (white_mage, black_mage, thief) are aliased to new IDs (cleric, mage, ro
 
 ### Save System Architecture
 - **Format**: JSON, persisted via SaveSystem autoload
-- **Critical pattern — typed-array roundtrip protection**: `JSON.parse` returns generic `Array`. Assigning to a typed `Array[String]` / `Array[Dictionary]` field is a SCRIPT ERROR (silent — no crash, field silently keeps default `[]`). Combatant.from_dict and GameState.from_dict use explicit `for x in data[key]: typed.append(str(x))` coercion for these fields:
+- **Critical pattern — typed-array roundtrip protection**: `JSON.parse` returns generic `Array`. Assigning to a typed `Array[String]` / `Array[Dictionary]` field is a SCRIPT ERROR — and **the assignment ABORTS the enclosing function; the surviving default is a symptom, not the extent.** Every line after the assignment never runs. (Read only as "field keeps default `[]`", this sentence mis-triaged two lanes in one hour on 2026-08-06 — a test with this bug at line 69 scored green while its subject-assert was never reached. Discriminator: `executed < authored` assert counts.) Combatant.from_dict and GameState.from_dict use explicit `for x in data[key]: typed.append(str(x))` coercion for these fields:
   - `status_effects`, `permanent_injuries`, `learned_passives`, `equipped_passives`, `pinned_abilities`, `recent_abilities` (Combatant)
   - `player_party`, `corruption_effects` (GameState)
 - **Persisted ability slots**: MRU `recent_abilities` (size 2) + `pinned_abilities` (player-selected)
@@ -336,7 +336,7 @@ godot --headless -s test/run_tests.gd          # Run tests
 - **New GDScript files** need `godot --headless --import` before `class_name` is globally available
 - **Launch godot** with `setsid godot < /dev/null > tmp/godot.stdout 2>&1 &` (fully detached) — bare `godot &` can break Wayland window visibility
 - **Check `"active_buffs" in combatant`** before accessing buff arrays — not all objects are Combatants
-- **Typed-array assignment from JSON** (`Array[String] = data["x"].duplicate()`) silently fails — use explicit loop with `str()` coercion
+- **Typed-array assignment from JSON** (`Array[String] = data["x"].duplicate()`) silently fails AND **aborts the enclosing function** — everything after the line is skipped, so a test containing one passes vacuously. Use explicit loop with `str()` coercion
 - **Channel delivery requires the launch flag** — `claude --dangerously-load-development-channels server:session-intercom`. Without it, intercom tools work but inbound DMs never inject as `<channel>` tags
 - **`HybridSpriteLoader._manifest_loaded`** is a static var — after editing sprite_manifest.json, restart Godot for changes to take effect
 - **Submenu pattern**: create Control, PRESET_FULL_RECT, call setup(), add_child, hide parent UI (`_submenu_open` flag prevents OverworldMenu input consumption while submenus active)
