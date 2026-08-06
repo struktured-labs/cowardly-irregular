@@ -1,92 +1,6 @@
 {
   "_comment": "Hybrid sprite manifest - maps IDs to external sprite sheet paths. HybridSpriteLoader reads from 'sheets' key.",
   "sheets": {
-    "fighter": {
-      "path": "res://assets/sprites/jobs/fighter",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 8,
-      "animations": [
-        "attack",
-        "cast",
-        "dash",
-        "dead",
-        "defend",
-        "hit",
-        "idle",
-        "item",
-        "lunge",
-        "slash",
-        "victory",
-        "walk"
-      ],
-      "tier": "T2",
-      "generator": "ARTIST work. Tier corrected 2026-07-29: this entry said T1 with 'gen_full_sweep.py (v2 jrpg_pixel_style LoRA)', which described a PREVIOUS state of the directory. 68b049d0 restored artist sprites and 4cab90d0 replaced idle+attack with the artist's own drive-archive renders; the generator string was never updated. Verified 2026-07-29: 7 of 9 PNGs are byte-identical to the v0.15.0 artist baseline, and idle/attack currently hold 4cab90d0 content ('artist's pre-rendered 128x128 sheets, 2x NN'). T2 to match its siblings bard and rogue_artist; NOT promoted to T3, which means artist-approved and is struktured's call, not mine."
-    },
-    "mage": {
-      "path": "res://assets/sprites/jobs/mage",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 8,
-      "animations": [
-        "attack",
-        "cast",
-        "dead",
-        "defend",
-        "hit",
-        "idle",
-        "item",
-        "victory",
-        "walk"
-      ],
-      "tier": "T2",
-      "generator": "MIXED — contains ARTIST animations (attack, cast, idle) alongside v3 LoRA fills for the rest (16 PNGs total). Tier corrected 2026-07-29: was T1 with a bare LoRA generator string, which described the directory before the artist animations landed and was never updated. Provenance verified via git lineage (first decisive ancestor per file), not via this manifest — tier and generator agreed with each other while both were wrong. T1 here meant 'safe to regenerate', which would have destroyed the artist animations named above. T2, not T3: T3 is struktured's call."
-    },
-    "cleric": {
-      "path": "res://assets/sprites/jobs/cleric",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 8,
-      "animations": [
-        "attack",
-        "cast",
-        "dead",
-        "defend",
-        "hit",
-        "idle",
-        "item",
-        "victory",
-        "walk"
-      ],
-      "tier": "T2",
-      "generator": "MIXED — contains ARTIST animations (attack, cast, idle, walk) alongside v3 LoRA fills for the rest (15 PNGs total). Tier corrected 2026-07-29: was T1 with a bare LoRA generator string, which described the directory before the artist animations landed and was never updated. Provenance verified via git lineage (first decisive ancestor per file), not via this manifest — tier and generator agreed with each other while both were wrong. T1 here meant 'safe to regenerate', which would have destroyed the artist animations named above. T2, not T3: T3 is struktured's call."
-    },
-    "rogue": {
-      "path": "res://assets/sprites/jobs/rogue",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 8,
-      "animations": [
-        "advance",
-        "attack",
-        "backstab",
-        "cast",
-        "dead",
-        "defend",
-        "defer",
-        "flee",
-        "hit",
-        "idle",
-        "item",
-        "mug",
-        "stab",
-        "steal",
-        "victory",
-        "walk"
-      ],
-      "tier": "T2",
-      "generator": "MIXED — contains ARTIST animations (attack, idle, stab) alongside v3 LoRA fills for the rest (17 PNGs total). Tier corrected 2026-07-29: was T1 with a bare LoRA generator string, which described the directory before the artist animations landed and was never updated. Provenance verified via git lineage (first decisive ancestor per file), not via this manifest — tier and generator agreed with each other while both were wrong. T1 here meant 'safe to regenerate', which would have destroyed the artist animations named above. T2, not T3: T3 is struktured's call."
-    },
     "bard": {
       "path": "res://assets/sprites/jobs/bard",
       "frame_width": 256,
@@ -125,54 +39,57 @@
         "victory"
       ]
     },
-    "rogue_sdxl": {
-      "path": "res://assets/sprites/jobs/rogue_sdxl",
+    "bossbinder": {
+      "path": "res://assets/sprites/jobs/bossbinder",
       "frame_width": 256,
       "frame_height": 256,
-      "fps": 10,
-      "tier": "T1",
-      "generator": "SDXL + jrpg_pixel_style LoRA (v3, with artist rogue) + IP-Adapter (artist ref)",
-      "animations": [
-        "idle",
-        "walk",
-        "attack",
-        "hit",
-        "dead",
-        "cast",
-        "defend",
-        "item",
-        "victory"
-      ]
-    },
-    "mage_sdxl": {
-      "path": "res://assets/sprites/jobs/mage_sdxl",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 10,
-      "tier": "T1",
-      "generator": "SDXL + jrpg_pixel_style LoRA (artist-trained) + ControlNet",
-      "animations": [
-        "idle",
-        "walk",
-        "attack",
-        "hit",
-        "dead",
-        "cast",
-        "defend",
-        "item",
-        "victory"
-      ]
-    },
-    "rogue_artist": {
-      "path": "res://assets/sprites/jobs/rogue_artist",
-      "frame_width": 128,
-      "frame_height": 128,
       "fps": 8,
-      "tier": "T2",
-      "source": "artist (Rogue Base sprite.png from Google Drive)",
       "animations": [
-        "base"
-      ]
+        "idle"
+      ],
+      "tier": "T1",
+      "_note": "AI-generated (gpt-image-1, artist fighter idle as style anchor). idle only — no walk/attack/cast yet, so BattleScene falls back per-animation. Flagged for artist review before any T2 promotion."
+    },
+    "cleric": {
+      "path": "res://assets/sprites/jobs/cleric",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": [
+        "attack",
+        "cast",
+        "dead",
+        "defend",
+        "hit",
+        "idle",
+        "item",
+        "victory",
+        "walk"
+      ],
+      "tier": "T2",
+      "generator": "MIXED — contains ARTIST animations (attack, cast, idle, walk) alongside v3 LoRA fills for the rest (15 PNGs total). Tier corrected 2026-07-29: was T1 with a bare LoRA generator string, which described the directory before the artist animations landed and was never updated. Provenance verified via git lineage (first decisive ancestor per file), not via this manifest — tier and generator agreed with each other while both were wrong. T1 here meant 'safe to regenerate', which would have destroyed the artist animations named above. T2, not T3: T3 is struktured's call."
+    },
+    "fighter": {
+      "path": "res://assets/sprites/jobs/fighter",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": [
+        "attack",
+        "cast",
+        "dash",
+        "dead",
+        "defend",
+        "hit",
+        "idle",
+        "item",
+        "lunge",
+        "slash",
+        "victory",
+        "walk"
+      ],
+      "tier": "T2",
+      "generator": "ARTIST work. Tier corrected 2026-07-29: this entry said T1 with 'gen_full_sweep.py (v2 jrpg_pixel_style LoRA)', which described a PREVIOUS state of the directory. 68b049d0 restored artist sprites and 4cab90d0 replaced idle+attack with the artist's own drive-archive renders; the generator string was never updated. Verified 2026-07-29: 7 of 9 PNGs are byte-identical to the v0.15.0 artist baseline, and idle/attack currently hold 4cab90d0 content ('artist's pre-rendered 128x128 sheets, 2x NN'). T2 to match its siblings bard and rogue_artist; NOT promoted to T3, which means artist-approved and is struktured's call, not mine."
     },
     "guardian": {
       "path": "res://assets/sprites/jobs/guardian",
@@ -193,6 +110,55 @@
       "tier": "T1",
       "generator": "gen_full_sweep.py (v2 jrpg_pixel_style LoRA)"
     },
+    "mage": {
+      "path": "res://assets/sprites/jobs/mage",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": [
+        "attack",
+        "cast",
+        "dead",
+        "defend",
+        "hit",
+        "idle",
+        "item",
+        "victory",
+        "walk"
+      ],
+      "tier": "T2",
+      "generator": "MIXED — contains ARTIST animations (attack, cast, idle) alongside v3 LoRA fills for the rest (16 PNGs total). Tier corrected 2026-07-29: was T1 with a bare LoRA generator string, which described the directory before the artist animations landed and was never updated. Provenance verified via git lineage (first decisive ancestor per file), not via this manifest — tier and generator agreed with each other while both were wrong. T1 here meant 'safe to regenerate', which would have destroyed the artist animations named above. T2, not T3: T3 is struktured's call."
+    },
+    "mage_sdxl": {
+      "path": "res://assets/sprites/jobs/mage_sdxl",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 10,
+      "tier": "T1",
+      "generator": "SDXL + jrpg_pixel_style LoRA (artist-trained) + ControlNet",
+      "animations": [
+        "idle",
+        "walk",
+        "attack",
+        "hit",
+        "dead",
+        "cast",
+        "defend",
+        "item",
+        "victory"
+      ]
+    },
+    "necromancer": {
+      "path": "res://assets/sprites/jobs/necromancer",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": [
+        "idle"
+      ],
+      "tier": "T1",
+      "_note": "AI-generated (gpt-image-1, artist fighter idle as style anchor). idle only — no walk/attack/cast yet, so BattleScene falls back per-animation. Flagged for artist review before any T2 promotion."
+    },
     "ninja": {
       "path": "res://assets/sprites/jobs/ninja",
       "frame_width": 256,
@@ -211,6 +177,84 @@
       ],
       "tier": "T1",
       "generator": "gen_full_sweep.py (v2 jrpg_pixel_style LoRA)"
+    },
+    "rogue": {
+      "path": "res://assets/sprites/jobs/rogue",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": [
+        "advance",
+        "attack",
+        "backstab",
+        "cast",
+        "dead",
+        "defend",
+        "defer",
+        "flee",
+        "hit",
+        "idle",
+        "item",
+        "mug",
+        "stab",
+        "steal",
+        "victory",
+        "walk"
+      ],
+      "tier": "T2",
+      "generator": "MIXED — contains ARTIST animations (attack, idle, stab) alongside v3 LoRA fills for the rest (17 PNGs total). Tier corrected 2026-07-29: was T1 with a bare LoRA generator string, which described the directory before the artist animations landed and was never updated. Provenance verified via git lineage (first decisive ancestor per file), not via this manifest — tier and generator agreed with each other while both were wrong. T1 here meant 'safe to regenerate', which would have destroyed the artist animations named above. T2, not T3: T3 is struktured's call."
+    },
+    "rogue_artist": {
+      "path": "res://assets/sprites/jobs/rogue_artist",
+      "frame_width": 128,
+      "frame_height": 128,
+      "fps": 8,
+      "tier": "T2",
+      "source": "artist (Rogue Base sprite.png from Google Drive)",
+      "animations": [
+        "base"
+      ]
+    },
+    "rogue_sdxl": {
+      "path": "res://assets/sprites/jobs/rogue_sdxl",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 10,
+      "tier": "T1",
+      "generator": "SDXL + jrpg_pixel_style LoRA (v3, with artist rogue) + IP-Adapter (artist ref)",
+      "animations": [
+        "idle",
+        "walk",
+        "attack",
+        "hit",
+        "dead",
+        "cast",
+        "defend",
+        "item",
+        "victory"
+      ]
+    },
+    "scriptweaver": {
+      "path": "res://assets/sprites/jobs/scriptweaver",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": [
+        "idle"
+      ],
+      "tier": "T1",
+      "_note": "AI-generated (gpt-image-1, artist fighter idle as style anchor). idle only — no walk/attack/cast yet, so BattleScene falls back per-animation. Flagged for artist review before any T2 promotion."
+    },
+    "skiptrotter": {
+      "path": "res://assets/sprites/jobs/skiptrotter",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": [
+        "idle"
+      ],
+      "tier": "T1",
+      "_note": "AI-generated (gpt-image-1, artist fighter idle as style anchor). idle only — no walk/attack/cast yet, so BattleScene falls back per-animation. Flagged for artist review before any T2 promotion."
     },
     "speculator": {
       "path": "res://assets/sprites/jobs/speculator",
@@ -249,6 +293,17 @@
       ],
       "tier": "T1",
       "generator": "gen_full_sweep.py (v2 jrpg_pixel_style LoRA)"
+    },
+    "time_mage": {
+      "path": "res://assets/sprites/jobs/time_mage",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": [
+        "idle"
+      ],
+      "tier": "T1",
+      "_note": "AI-generated (gpt-image-1, artist fighter idle as style anchor). idle only — no walk/attack/cast yet, so BattleScene falls back per-animation. Flagged for artist review before any T2 promotion."
     }
   },
   "party_sheets": {},
