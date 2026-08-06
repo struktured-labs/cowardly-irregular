@@ -39,6 +39,9 @@ const NPC_ARCHETYPES := [
     "dr_temporal",
     # Added 2026-07-30, measured 0 diffs. Named story NPCs were absent entirely.
     "chancellor_mordaine",
+    # Added 2026-08-06 with the sheets. Tutorial Fairy Pip and Ghost Barkeep Claude
+    # were rendering as generic humans; these are their archetype sheets.
+    "fairy", "ghost",
     # Added 2026-07-30 after the exemption-expiry test proved they pass the
     # gate's own metric: bram/elder_theron/marta/phil/scholar_milo measure 0
     # diffs under _frame_bbox_y. My 32-diff reading used a different anchor.
