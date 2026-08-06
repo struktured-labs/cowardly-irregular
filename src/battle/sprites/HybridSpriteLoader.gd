@@ -180,24 +180,31 @@ const WORLD_SUFFIXES := ["", "suburban", "steampunk", "industrial", "digital", "
 
 ## Resolve the current world's sheet suffix; pass `world` explicitly to override.
 ##
-## SoundManager.get_current_world_suffix() is the codebase's authority and wins whenever
-## present — cowir-sfx added it for exactly this consumer, and two world mappings that
-## disagree would dress the party for one world while the music plays another. It keys off
-## the current AREA, so it stays right during a battle in a world the player has already
-## passed through, which GameState.current_world alone cannot express.
+## Reads GameState.current_world and DELIBERATELY does not call
+## SoundManager.get_current_world_suffix(), which was added for this consumer. An earlier
+## version deferred to it; cowir-sfx flagged the hazard and the source confirms it:
 ##
-## The GameState path below is the fallback for trees where that accessor has not landed.
-## It is not redundancy for its own sake: without it this returns "" everywhere and the
-## whole costume feature silently degrades to base art with nothing failing.
+##   GameState.current_world     written in _set_current_map_id(), the setter for EVERY map
+##                               change, derived from the map id (GameLoop:141)
+##   audio's cached suffix       written at ONE site, behind an early `return` for interiors
+##                               with no resolved track — and by an AUDIO function, so it
+##                               tracks music state, not player location
+##
+## Audio's is right for audio: during a battle _current_area is cleared on purpose so the
+## cached value keeps battle music world-aware. But sprites resolve DURING battle, on that
+## exact cleared-area path, so deferring would have made costumes inherit whatever the last
+## music transition happened to leave behind.
+##
+## The two are not duplicates. Audio maps AREA -> world; this maps WORLD INDEX -> suffix.
+## The logic that must not be duplicated is area -> world, and GameLoop already owns it.
+##
+## Left as a plain read with no accessor probe, so folding sfx-world-suffix-public cannot
+## silently change what the player sees.
 static func world_suffix(world: int = -1) -> String:
 	var w: int = world
 	if w < 0:
 		var tree: SceneTree = Engine.get_main_loop() as SceneTree
 		var root: Node = tree.root if tree != null else null
-		if root != null:
-			var sm: Object = root.get_node_or_null("SoundManager")
-			if sm != null and sm.has_method("get_current_world_suffix"):
-				return _normalize_suffix(str(sm.call("get_current_world_suffix")))
 		var gs: Object = root.get_node_or_null("GameState") if root != null else null
 		w = int(gs.get("current_world")) if gs != null and "current_world" in gs else 1
 	if w < 1 or w > WORLD_SUFFIXES.size():

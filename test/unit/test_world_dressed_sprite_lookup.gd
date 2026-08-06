@@ -260,20 +260,44 @@ func test_audio_vocabulary_is_translated_not_trusted() -> void:
 ## While that branch is unfolded this tree has no such method and the GameState fallback is
 ## live; the moment it lands, the accessor takes over. This asserts they AGREE, so the
 ## handover cannot change what the player sees without failing here first.
-func test_when_audios_accessor_exists_we_agree_with_it() -> void:
-	var sm := get_node_or_null("/root/SoundManager")
-	assert_not_null(sm, "SoundManager autoload must exist — it is the world-suffix authority")
-	if sm == null:
+func test_costume_resolution_is_IMMUNE_to_folding_the_audio_accessor() -> void:
+	# An earlier version of world_suffix() probed SoundManager.get_current_world_suffix()
+	# and deferred to it. That accessor does not exist on this tree yet, so the probe was
+	# dead code — and the day sfx-world-suffix-public folds, it would have flipped live and
+	# changed what the player sees, with no code of ours changing and nothing failing.
+	#
+	# It would also have been the WRONG source. Verified in the source, not assumed:
+	#   GameState.current_world  written in _set_current_map_id(), the setter for EVERY map
+	#                            change (GameLoop:141)
+	#   audio's cached suffix    written at ONE site, behind an early `return` for interiors
+	#                            with no resolved track, by an AUDIO function
+	# Audio deliberately clears _current_area during battle so its cache keeps battle music
+	# world-aware — but sprites resolve DURING battle, on exactly that path.
+	# Match the CALL, not the NAME. The first version grepped for the bare accessor name and
+	# failed on the doc comment explaining why we don't call it — a guard that forbade
+	# documenting its own rationale. These are how the probe was actually written; a mention
+	# in prose is fine, a call is not.
+	var src := FileAccess.get_file_as_string("res://src/battle/sprites/HybridSpriteLoader.gd")
+	assert_ne(src, "", "HybridSpriteLoader must be readable")
+	assert_false(src.contains('has_method("get_current_world_suffix")'),
+		"world_suffix() must not probe for the audio accessor — folding sfx-world-suffix-public " +
+		"would then silently change costume resolution to a music-derived cache")
+	assert_false(src.contains('call("get_current_world_suffix")'),
+		"world_suffix() must not call the audio accessor — see above")
+
+	# BEHAVIOURAL half: the answer must track current_world and nothing else. A source pin
+	# alone would pass a rewrite that reintroduced the dependency under another name.
+	var gs := get_node_or_null("/root/GameState")
+	assert_not_null(gs, "GameState autoload required — run via tools/run_tests.sh")
+	if gs == null:
 		return
-	if not sm.has_method("get_current_world_suffix"):
-		# Honest about which path is live rather than passing silently.
-		gut.p("NOTE: public accessor not on this tree yet — GameState fallback is the live path")
-		assert_true(true, "fallback path active; convergence check arms itself on fold")
-		return
-	var theirs: String = str(sm.call("get_current_world_suffix"))
-	assert_eq(Loader.world_suffix(), Loader._normalize_suffix(theirs),
-		("the loader must return audio's world, translated — a disagreement dresses the party " +
-		"for one world while the music plays another (audio said '%s')") % [theirs])
+	var restore: int = int(gs.current_world)
+	for world in range(1, 7):
+		gs.current_world = world
+		assert_eq(Loader.world_suffix(), Loader.WORLD_SUFFIXES[world - 1],
+			"world_suffix() must follow GameState.current_world (world %d)" % [world])
+	gs.current_world = restore
+	assert_eq(int(gs.current_world), restore, "current_world must be restored")
 
 
 func _jobs_with_base_art() -> Array:

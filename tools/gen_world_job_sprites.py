@@ -86,6 +86,31 @@ JOB_SIGNATURE = {
 }
 
 
+## Every output filename's suffix must be one the RUNTIME can actually ask for.
+##
+## The trap is `futuristic`: world 5's map ids say futuristic (futuristic_overworld,
+## overworld_futuristic) but SoundManager._get_current_world_suffix RETURNS "digital".
+## A batch written as idle_futuristic.png would generate cleanly, import cleanly, sit on
+## disk forever and never be requested once — and nothing downstream reports it, because
+## the lookup just falls back to base art and the game looks right.
+##
+## Checked BEFORE the API spends: the failure costs real money per sheet and is invisible
+## afterwards. This is an INDEPENDENT literal, deliberately not derived from WORLD_DRESS —
+## the whole point is to disagree with WORLD_DRESS when someone adds a world under a name
+## the runtime never returns. Deriving it from the thing it checks would make it vacuous.
+_RUNTIME_SUFFIXES = {"medieval", "suburban", "steampunk", "industrial", "digital", "abstract"}
+
+
+def _check_output_names(worlds):
+    unrequestable = sorted(w for w in worlds if w not in _RUNTIME_SUFFIXES)
+    if unrequestable:
+        raise SystemExit(
+            f"ERROR: {unrequestable} is not a suffix the runtime ever asks for. "
+            f"Valid: {sorted(_RUNTIME_SUFFIXES)}. Note world 5 is 'digital', NOT 'futuristic' "
+            f"— its map ids say futuristic but the resolver returns digital, so the art would "
+            f"generate, import, and never once be requested.")
+
+
 def _check_signature_coverage():
     """A job with no signature would silently inherit the world palette again."""
     missing = sorted(set(JOB_CORE) - set(JOB_SIGNATURE))
@@ -207,6 +232,7 @@ def main() -> int:
         return 2
 
     _check_signature_coverage()
+    _check_output_names(args.worlds)
     assets = ["overworld", "idle"] if args.asset == "both" else [args.asset]
     todo = []
     for job in args.jobs:
