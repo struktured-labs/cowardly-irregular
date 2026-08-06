@@ -65,7 +65,8 @@ _spec2.loader.exec_module(_gw)
 
 GAME_JOBS = _gw.GAME_REPO / "assets" / "sprites" / "jobs"
 TMP = HERE.parent / "tmp" / "world_overworld"
-COST_PER_SHEET = 0.056
+## 4 bitforge re-dresses (~$0.009) + 4 animate calls (~$0.014). Measured, not guessed.
+COST_PER_SHEET = 0.092
 
 
 def reference_from_idle(job: str, world: str, ref_from: str = "overworld") -> str:
@@ -105,6 +106,55 @@ def describe(job: str, world: str) -> str:
             f"large head and top-down framing exactly; change ONLY the clothing.")
 
 
+
+## Direction of each grid ROW, in the game's row order (down/left/right/up), expressed in
+## PixelLab's Direction vocabulary. The artist's overworld.png uses the same row order, so
+## row index doubles as "which artist frame to re-dress".
+ROW_DIRECTIONS = [("walk_down", "south"), ("walk_left", "west"),
+                  ("walk_right", "east"), ("walk_up", "north")]
+
+API = "https://api.pixellab.ai/v1"
+
+
+def _b64(img: Image.Image) -> str:
+    b = io.BytesIO()
+    img.save(b, format="PNG")
+    return base64.b64encode(b.getvalue()).decode()
+
+
+def redress_direction(client, api_key, job, world, row, seed):
+    """Re-dress ONE of the artist's directional stand poses into the world's costume.
+
+    init_image is the artist's own frame for this row, so pose, framing, chibi proportions
+    and DIRECTION all come from art a human made — bitforge only has to change clothes.
+    That is the whole reason this step exists: /rotate has no description field and cannot
+    re-dress, and asking animate-with-text to reorient does not work (see the module note).
+
+    style_image is the world-dressed BATTLE idle, which already carries the costume design
+    and the job's signature colour, so the walk sprite and the battle sprite agree.
+    """
+    init = (Image.open(GAME_JOBS / job / "overworld.png").convert("RGBA")
+            .crop((0, row * 32, 32, row * 32 + 32)).resize((64, 64), Image.LANCZOS))
+    style = (Image.open(GAME_JOBS / job / f"idle_{world}.png").convert("RGBA")
+             .crop((0, 0, 256, 256)).resize((64, 64), Image.LANCZOS))
+    r = client.post(f"{API}/generate-image-bitforge",
+        headers={"Authorization": f"Bearer {api_key}"}, json={
+            "description": describe(job, world),
+            "image_size": {"width": 64, "height": 64},
+            "init_image": {"type": "base64", "base64": _b64(init)},
+            "init_image_strength": 300,
+            "style_image": {"type": "base64", "base64": _b64(style)},
+            "style_strength": 50,
+            "direction": ROW_DIRECTIONS[row][1],
+            "view": "low top-down",
+            "no_background": True,
+            "seed": seed})
+    r.raise_for_status()
+    d = r.json()
+    img = Image.open(io.BytesIO(base64.b64decode(d["image"]["base64"]))).convert("RGBA")
+    return img, float(d.get("usage", {}).get("usd", 0.0))
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--jobs", nargs="+", required=True)
@@ -134,7 +184,7 @@ def main() -> int:
             targets.append((job, world, out))
 
     print(f"{len(targets)} walk grid(s) — est ${COST_PER_SHEET * len(targets):.2f} "
-          f"({len(targets)} x 4 PixelLab calls)")
+          f"({len(targets)} x 8 PixelLab calls: 4 redress + 4 animate)")
     if args.dry_run:
         for job, world, out in targets:
             print(f"  {job:<14}{world:<12}-> {out.relative_to(_gw.GAME_REPO)}")
@@ -149,31 +199,39 @@ def main() -> int:
 
     TMP.mkdir(parents=True, exist_ok=True)
     total, made = 0.0, []
-    with httpx.Client() as client:
+    # bitforge takes ~26s and animate ~20s; httpx's 5s default times out on every call.
+    with httpx.Client(timeout=_pl.API_TIMEOUT) as client:
         for job, world, out in targets:
             print(f"[{job}/{world}]")
-            try:
-                ref = reference_from_idle(job, world, args.ref_from)
-            except FileNotFoundError as e:
-                print(f"  FAILED: {e}", file=sys.stderr)
-                continue
-
             frames_by_dir, ok = {}, True
-            for tag, clause in _pl.DIRECTIONS:
-                print(f"   - {tag}...", end=" ", flush=True)
+            for row, (tag, _direction) in enumerate(ROW_DIRECTIONS):
+                print(f"   - {tag}: redress...", end=" ", flush=True)
                 t0 = time.time()
                 try:
-                    frames, cost = _pl.call_pixellab_walk(
-                        client, api_key, describe(job, world), ref, clause, args.seed)
+                    stand, c1 = redress_direction(client, api_key, job, world, row, args.seed)
                 except Exception as e:
                     print(f"FAILED: {e}", file=sys.stderr)
                     ok = False
                     break
-                total += cost
+                total += c1
+                # Animate from the RE-DRESSED, correctly-oriented pose. animate-with-text
+                # preserves the reference's orientation — proven by the failure that made
+                # this two-stage: given a south reference it returned south for all four
+                # directions. Preservation is the bug there and the feature here.
+                print(f"animate...", end=" ", flush=True)
+                try:
+                    frames, c2 = _pl.call_pixellab_walk(
+                        client, api_key, describe(job, world), _b64(stand),
+                        dict(_pl.DIRECTIONS)[tag], args.seed)
+                except Exception as e:
+                    print(f"FAILED: {e}", file=sys.stderr)
+                    ok = False
+                    break
+                total += c2
                 frames_by_dir[tag] = frames
-                print(f"{len(frames)}f, ${cost:.3f}, {time.time()-t0:.1f}s")
+                print(f"{len(frames)}f, ${c1+c2:.3f}, {time.time()-t0:.1f}s")
 
-            if not ok or len(frames_by_dir) != len(_pl.DIRECTIONS):
+            if not ok or len(frames_by_dir) != len(ROW_DIRECTIONS):
                 print(f"  INCOMPLETE — not writing {out.name}", file=sys.stderr)
                 continue
 
