@@ -544,9 +544,12 @@ func _update_sprite() -> void:
 
 
 func _get_static_cache_key() -> String:
+	# The world suffix is part of identity now — without it a cached medieval form
+	# survives a world transition and the transform silently never renders.
+	var w := HybridSpriteLoader.current_world_suffix()
 	if _use_custom_colors:
-		return "%s_1_%s_%s" % [current_job, _custom_hair_color.to_html(false), _custom_skin_color.to_html(false)]
-	return "%s_0" % current_job
+		return "%s_%s_1_%s_%s" % [current_job, w, _custom_hair_color.to_html(false), _custom_skin_color.to_html(false)]
+	return "%s_%s_0" % [current_job, w]
 
 
 func _generate_all_sprites() -> void:
@@ -585,7 +588,9 @@ func _generate_all_sprites() -> void:
 ## Load dedicated overworld sprite sheet (128x128 PNG, 4x4 grid of 32x32 frames).
 ## Row order: down, left, right, up. 4 walk frames per row.
 func _try_load_overworld_sheet() -> Dictionary:
-	var path = "res://assets/sprites/jobs/%s/overworld.png" % current_job
+	# Per-world form: overworld_<suffix>.png if it exists, base overworld.png otherwise.
+	var path = HybridSpriteLoader.job_asset_path(
+		current_job, "overworld", HybridSpriteLoader.current_world_suffix())
 	if not ResourceLoader.exists(path):
 		return {}
 
