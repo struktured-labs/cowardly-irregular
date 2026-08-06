@@ -142,6 +142,6 @@ func test_the_verdict_cue_actually_loads() -> void:
 	## sidecar ships a cue that silently fails to load, which is how 11 status cues shipped
 	## dark once already.
 	var stream: Variant = load("res://assets/audio/sfx/ledger_close.ogg")
-	assert_not_null(stream, "ledger_close.ogg did not load — check its .import sidecar is committed")
+	assert_not_null(stream, "ledger_close.ogg did not load. TWO causes are indistinguishable from here: (a) the .import sidecar was never committed, or (b) YOUR .godot cache is cold because this asset arrived in a merge — run `godot --headless --audio-driver Dummy --import --quit` and re-run BEFORE reading this as a defect. (b) is far likelier and looks exactly like someone else's asset being broken.")
 	assert_true(stream is AudioStreamOggVorbis, "ledger_close loaded as %s, not an ogg stream" % [stream.get_class() if stream else "null"])
 	assert_gt(stream.get_length(), 0.1, "ledger_close is %.2fs long — implausibly short" % stream.get_length())

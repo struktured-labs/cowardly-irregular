@@ -55,7 +55,7 @@ func test_every_sfx_entry_loads() -> void:
 			unloadable.append("%s -> %s" % [key, rel])
 	assert_gt(checked, 200, "control: only %d sfx entries were checked — the sweep is broken" % checked)
 	assert_eq(unloadable.size(), 0,
-		"%d sfx cue(s) are manifest-registered and CANNOT LOAD. Present-on-disk is not loadable; check the .import sidecar is committed and the path still matches the file: %s" % [unloadable.size(), unloadable])
+		"%d sfx cue(s) are manifest-registered and CANNOT LOAD. RUN `godot --headless --audio-driver Dummy --import --quit` FIRST — a cold .godot cache after a merge produces exactly this and is the likeliest cause. If it survives an import, then check the .import sidecar is committed and the path still matches the file: %s" % [unloadable.size(), unloadable])
 
 
 func test_every_real_music_track_loads() -> void:
