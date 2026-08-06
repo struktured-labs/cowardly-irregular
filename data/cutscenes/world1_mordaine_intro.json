@@ -454,7 +454,7 @@
     },
     {
       "type": "play_sfx",
-      "sfx": "paper_shuffle"
+      "sfx": "ledger_close"
     },
     {
       "type": "narration",
