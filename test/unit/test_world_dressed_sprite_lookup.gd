@@ -142,6 +142,44 @@ func test_every_job_still_loads_in_EVERY_world_through_the_real_loader() -> void
 	assert_eq(int(gs.current_world), restore, "current_world must be restored for later tests")
 
 
+## Audio owns the world vocabulary; sheets own the suffix vocabulary. They differ by one
+## entry and that difference is load-bearing: audio says "medieval" for world 1 where the
+## sheets say "" because world 1 IS the artist's base art. If _normalize_suffix ever passed
+## "medieval" through, every world-1 lookup would ask for idle_medieval.png, miss, and land
+## on base art — correct art, reached by accident, with nothing failing to say so.
+func test_audio_vocabulary_is_translated_not_trusted() -> void:
+	assert_eq(Loader._normalize_suffix("medieval"), "",
+		"audio's 'medieval' must translate to the unsuffixed artist sheet, not to a filename")
+	for shared in ["suburban", "steampunk", "industrial", "digital", "abstract"]:
+		assert_eq(Loader._normalize_suffix(shared), shared,
+			"'%s' is shared vocabulary and must pass through unchanged" % [shared])
+	# 'futuristic' is the name W5 goes by in several places but is NEVER a sheet suffix.
+	for foreign in ["futuristic", "", "OVERWORLD", "world2", "suburban_overworld"]:
+		assert_eq(Loader._normalize_suffix(foreign), "",
+			"unrecognised world name '%s' must degrade to base art, not to a broken path" % [foreign])
+
+
+## The convergence itself. cowir-sfx added SoundManager.get_current_world_suffix() for this
+## consumer, with the note that a second copy "would drift silently into base-art fallback".
+## While that branch is unfolded this tree has no such method and the GameState fallback is
+## live; the moment it lands, the accessor takes over. This asserts they AGREE, so the
+## handover cannot change what the player sees without failing here first.
+func test_when_audios_accessor_exists_we_agree_with_it() -> void:
+	var sm := get_node_or_null("/root/SoundManager")
+	assert_not_null(sm, "SoundManager autoload must exist — it is the world-suffix authority")
+	if sm == null:
+		return
+	if not sm.has_method("get_current_world_suffix"):
+		# Honest about which path is live rather than passing silently.
+		gut.p("NOTE: public accessor not on this tree yet — GameState fallback is the live path")
+		assert_true(true, "fallback path active; convergence check arms itself on fold")
+		return
+	var theirs: String = str(sm.call("get_current_world_suffix"))
+	assert_eq(Loader.world_suffix(), Loader._normalize_suffix(theirs),
+		("the loader must return audio's world, translated — a disagreement dresses the party " +
+		"for one world while the music plays another (audio said '%s')") % [theirs])
+
+
 func _jobs_with_base_art() -> Array:
 	var out: Array = []
 	var dir := DirAccess.open("res://assets/sprites/jobs")

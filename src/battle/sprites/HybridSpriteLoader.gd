@@ -179,17 +179,36 @@ const WORLD_SUFFIXES := ["", "suburban", "steampunk", "industrial", "digital", "
 
 
 ## Resolve the current world's sheet suffix; pass `world` explicitly to override.
+##
+## SoundManager.get_current_world_suffix() is the codebase's authority and wins whenever
+## present — cowir-sfx added it for exactly this consumer, and two world mappings that
+## disagree would dress the party for one world while the music plays another. It keys off
+## the current AREA, so it stays right during a battle in a world the player has already
+## passed through, which GameState.current_world alone cannot express.
+##
+## The GameState path below is the fallback for trees where that accessor has not landed.
+## It is not redundancy for its own sake: without it this returns "" everywhere and the
+## whole costume feature silently degrades to base art with nothing failing.
 static func world_suffix(world: int = -1) -> String:
 	var w: int = world
 	if w < 0:
 		var tree: SceneTree = Engine.get_main_loop() as SceneTree
-		var gs: Object = null
-		if tree != null and tree.root != null:
-			gs = tree.root.get_node_or_null("GameState")
+		var root: Node = tree.root if tree != null else null
+		if root != null:
+			var sm: Object = root.get_node_or_null("SoundManager")
+			if sm != null and sm.has_method("get_current_world_suffix"):
+				return _normalize_suffix(str(sm.call("get_current_world_suffix")))
+		var gs: Object = root.get_node_or_null("GameState") if root != null else null
 		w = int(gs.get("current_world")) if gs != null and "current_world" in gs else 1
 	if w < 1 or w > WORLD_SUFFIXES.size():
 		return ""
 	return WORLD_SUFFIXES[w - 1]
+
+
+## Audio's vocabulary is not the sheet vocabulary: it says "medieval" where the sheets say
+## "" (world 1 IS the artist's base art). Anything unrecognised also lands on base art.
+static func _normalize_suffix(audio_suffix: String) -> String:
+	return audio_suffix if audio_suffix in WORLD_SUFFIXES else ""
 
 
 static func _load_external_sheet(sheet_data: Dictionary, job_id: String) -> SpriteFrames:
