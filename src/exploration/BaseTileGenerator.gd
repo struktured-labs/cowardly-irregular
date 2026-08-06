@@ -7,6 +7,9 @@ class_name BaseTileGenerator
 
 const TILE_SIZE: int = 32
 
+## Suppresses the user:// debug-atlas dump. Self-defaults ON under headless (GUT) because generators are built TRANSITIVELY by overworld scenes — no test names this class, so an opt-in flag alone would never be set.
+static var _test_disable_persistence: bool = DisplayServer.get_name() == "headless" or OS.has_feature("headless")
+
 var _tile_cache: Dictionary = {}
 
 
@@ -104,7 +107,7 @@ func create_tileset() -> TileSet:
 	atlas.texture_region_size = Vector2i(TILE_SIZE, TILE_SIZE)
 
 	# Debug: Save atlas to disk for inspection
-	if OS.is_debug_build():
+	if OS.is_debug_build() and not _test_disable_persistence:
 		var debug_name = _get_debug_atlas_name()
 		atlas_img.save_png("user://%s.png" % debug_name)
 		print("%s saved (size: %dx%d, %d tiles)" % [debug_name, atlas_img.get_width(), atlas_img.get_height(), tile_order.size()])
