@@ -115,8 +115,7 @@ func test_damage_partial_clamp_still_emits() -> void:
 	c.current_hp = 10
 	watch_signals(c)
 	c.take_damage(30)
-	assert_signal_emitted_with_parameters(c, "hp_changed", [10, 0],
-		"take_damage with clamp-but-real-change must emit (10, 0)")
+	assert_signal_emitted_with_parameters(c, "hp_changed", [10, 0])
 
 
 # ── Source pin: guard is in place ────────────────────────────────
