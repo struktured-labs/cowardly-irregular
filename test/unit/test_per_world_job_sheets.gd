@@ -15,7 +15,10 @@ extends GutTest
 ##    futuristic-named sheet passes every presence check and can never load.
 
 const LOADER := "res://src/battle/sprites/HybridSpriteLoader.gd"
-const RUNTIME_SUFFIXES := ["medieval", "suburban", "steampunk", "industrial", "digital", "abstract"]
+## SAMPLE INPUT, not a claim about the vocabulary. The vocabulary itself is guarded by
+## the audio lane (test_world_suffix_vocabulary_regression) which drives the real
+## resolver over real area ids. Asserting a property of this list would test the list.
+const SAMPLE_SUFFIXES := ["medieval", "suburban", "steampunk", "industrial", "digital", "abstract"]
 
 
 func _resolve(job: String, suffix: String) -> String:
@@ -27,7 +30,7 @@ func _resolve(job: String, suffix: String) -> String:
 func test_every_runtime_world_falls_back_to_the_base_sheet_today() -> void:
 	var base: String = "res://assets/sprites/jobs/fighter/overworld.png"
 	assert_true(ResourceLoader.exists(base), "the base fighter sheet exists — else this proves nothing")
-	for s in RUNTIME_SUFFIXES:
+	for s in SAMPLE_SUFFIXES:
 		assert_eq(_resolve("fighter", s), base,
 			"world '%s' must fall back to the base sheet while no variant exists — a broken fallback ships invisible art" % s)
 
@@ -64,10 +67,20 @@ func test_both_job_sheet_consumers_use_the_shared_resolver() -> void:
 
 
 ## "futuristic" is the trap: it appears in the suffix function's BODY 39 times and is
-## RETURNED zero times, so it reassures a grep and can never load.
-func test_futuristic_is_not_a_runtime_world() -> void:
-	assert_false("futuristic" in RUNTIME_SUFFIXES,
-		"W5 is 'digital' at runtime — a sheet named overworld_futuristic.png would pass every presence check and never load")
+## RETURNED zero times, so it reassures a grep and can never load. Driven through the REAL
+## resolver rather than asserted against this file's own list — the first version of this
+## test checked `"futuristic" not in SAMPLE_SUFFIXES`, which is a property of a constant
+## three lines up and could never fail.
+func test_a_futuristic_named_sheet_could_never_be_asked_for() -> void:
+	var sm = get_node_or_null("/root/SoundManager")
+	assert_not_null(sm, "SoundManager autoload present")
+	if sm == null:
+		return
+	var live: String = str(sm._get_current_world_suffix())
+	assert_ne(live, "futuristic",
+		"the runtime never emits 'futuristic' — a sheet named overworld_futuristic.png would pass every presence check and never load")
+	assert_true(live in SAMPLE_SUFFIXES,
+		"whatever the runtime emits must be one this seam handles (got '%s') — if this fails the vocabulary grew and the sample is stale" % live)
 
 
 ## THE 25-vs-30 GUARD. medieval art IS the base file, so an overworld_medieval.png would
