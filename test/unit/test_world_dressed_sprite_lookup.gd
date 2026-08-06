@@ -102,19 +102,53 @@ func test_the_suffix_vocabulary_matches_what_is_ON_DISK() -> void:
 		"the art was generated and is unreachable: %s") % [orphaned])
 
 
-func test_a_dressed_sheet_never_REPLACES_a_missing_one() -> void:
-	# The core safety property, stated as behaviour: for a job with base art and no
-	# world art, every world must still resolve to a loadable sheet. This is the
-	# "never overwrite artist sprites" rule enforced at the LOOKUP, where a bad
-	# suffix could hide the artist's work without touching a single byte of it.
-	var base := "res://assets/sprites/jobs/fighter/idle.png"
-	assert_true(ResourceLoader.exists(base),
-		"fighter/idle.png is the artist's anchor sheet — if it is gone this test is meaningless")
+## The core safety property, driven through the REAL loader.
+##
+## An earlier version of this test recomputed the dressed-vs-base choice inline and
+## asserted on its own arithmetic. It passed 5/5 against a mutation that deleted the
+## existence check entirely — it was measuring the test, not the seam. Mutation
+## testing is the only reason that was caught, so this drives _load_external_sheet
+## itself and lets GameState.current_world select the world, exercising the autoload
+## read in world_suffix() at the same time.
+func test_every_job_still_loads_in_EVERY_world_through_the_real_loader() -> void:
+	var gs := get_node_or_null("/root/GameState")
+	assert_not_null(gs, "GameState autoload required — run via tools/run_tests.sh, not -s")
+	if gs == null:
+		return
 
+	var jobs := _jobs_with_base_art()
+	# NAMED control: a scan that lost the artist's own jobs would pass vacuously.
+	for known in ["fighter", "cleric", "mage", "rogue"]:
+		assert_true(known in jobs,
+			("the job scan must find '%s' — it is an artist sheet on disk, so if this " +
+			"fails every result below is a false clean") % [known])
+
+	var restore: int = int(gs.current_world)
+	var broken: Array = []
 	for world in range(1, 7):
-		var suffix: String = Loader.world_suffix(world)
-		var dressed := "res://assets/sprites/jobs/fighter/idle_%s.png" % [suffix]
-		var resolved: String = dressed if suffix != "" and ResourceLoader.exists(dressed) else base
-		assert_true(ResourceLoader.exists(resolved),
-			("world %d resolves fighter idle to '%s', which does not load — a world with no " +
-			"costume art must fall back to the artist's base sheet") % [world, resolved])
+		gs.current_world = world
+		for job in jobs:
+			var data := {"path": "res://assets/sprites/jobs/%s" % job,
+				"frame_width": 256, "frame_height": 256}
+			var frames = Loader._load_external_sheet(data, job)
+			if frames == null or frames.get_animation_names().is_empty():
+				broken.append("%s in world %d (suffix '%s')" % [job, world, Loader.world_suffix(world)])
+	gs.current_world = restore
+
+	broken.sort()
+	assert_eq(broken, [],
+		("job(s) that load NOTHING in some world — a world with no costume art must fall " +
+		"back to the artist's base sheet, not resolve to a path nobody authored: %s") % [broken])
+	assert_eq(int(gs.current_world), restore, "current_world must be restored for later tests")
+
+
+func _jobs_with_base_art() -> Array:
+	var out: Array = []
+	var dir := DirAccess.open("res://assets/sprites/jobs")
+	if dir == null:
+		return out
+	for job in dir.get_directories():
+		if ResourceLoader.exists("res://assets/sprites/jobs/%s/idle.png" % job):
+			out.append(job)
+	out.sort()
+	return out
