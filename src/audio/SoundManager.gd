@@ -3339,10 +3339,19 @@ func _stereo_spread(sample_l: float, sample_r: float, pan: float) -> Vector2:
 func set_music_volume(normalized: float) -> void:
 	"""Set music volume (0.0 to 1.0).
 
-	Slider applies attenuation BELOW MUSIC_VOLUME_CEILING_DB:
-	  - slider 1.00 → -6 dB  (ceiling — battle SFX still punches through)
-	  - slider 0.50 → -12 dB (-6 dB attenuation from ceiling)
-	  - slider 0.10 → -26 dB (-20 dB attenuation)
+	Slider applies attenuation BELOW MUSIC_VOLUME_CEILING_DB (-10.0 dB):
+	  - slider 1.00 → -10 dB (ceiling — battle SFX still punches through)
+	  - slider 0.50 → -16 dB (-6 dB attenuation from ceiling)
+	  - slider 0.10 → -30 dB (-20 dB attenuation)
+
+	These were -6/-12/-26 until 2026-08-05: correct for a -6 dB ceiling, and
+	the ceiling had since moved to -10 with the prose left behind. Derive them
+	from MUSIC_VOLUME_CEILING_DB if you change it — they are that constant plus
+	linear_to_db(slider), not independent facts.
+
+	The ceiling is also why a track's file true-peak is NOT its output peak:
+	at +2.9 dBTP, title.ogg plays at -7.1 dBFS. Reading a file's dBTP as the
+	playback level says the library clips when it has ~7 dB of headroom.
 
 	Safe to call before _ready() — the base db is latched into
 	_music_base_db and applied when _setup_audio_players creates

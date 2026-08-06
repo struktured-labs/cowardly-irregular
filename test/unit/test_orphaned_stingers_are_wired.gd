@@ -114,9 +114,15 @@ func test_a_quest_that_chains_a_cutscene_stays_silent() -> void:
 
 
 func test_save_point_stinger_is_gated_on_FIRST_attunement() -> void:
-	## The ordering is the correctness: reading is_crystal_activated AFTER
-	## activate_crystal would always be true and the stinger would never fire;
-	## dropping the gate entirely fires it on every save, several times an hour.
+	## Ordering alone was this test's first form, and it was a label broader than
+	## its predicate: delete the `if first_attunement:` wrapper but leave the
+	## variable assigned and every ordering assertion still passed while the
+	## stinger fired on EVERY save — the exact thing the gate exists to prevent.
+	##
+	## SCOPE, stated rather than implied: this does not drive SavePoint._input.
+	## That path emits save_requested and opens the confirmation UI, i.e. it would
+	## perform a REAL save and write user:// from a test. So the guard is split —
+	## structure here, and the gate's premise behaviourally in the test below.
 	var src := _read(SAVEPOINT)
 	var i_read := src.find("is_crystal_activated")
 	var i_write := src.find("activate_crystal(_current_map_id())")
@@ -127,6 +133,38 @@ func test_save_point_stinger_is_gated_on_FIRST_attunement() -> void:
 		"the is_crystal_activated check must come BEFORE activate_crystal — after it, the flag is always true and the stinger can never fire")
 	assert_lt(i_write, i_play,
 		"the stinger should follow attunement so it marks the unlock")
+
+	## The hole the ordering checks could not see: the call must sit inside a
+	## conditional on the pre-read flag, not merely after it.
+	var guard := src.find("if first_attunement:")
+	assert_true(guard > -1,
+		"the stinger must be wrapped in `if first_attunement:` — ordering alone permits an unconditional call that fires on every save")
+	assert_lt(guard, i_play,
+		"the guard must precede the call it guards")
+	var between: String = src.substr(guard, i_play - guard)
+	assert_false(between.contains("\n\t\tif ") and not between.contains("first_attunement"),
+		"the stinger must be under the first_attunement branch, not a later unrelated one")
+	## And the flag must be DERIVED from the negated check, not set to a constant.
+	assert_true(src.contains("not GameState.is_crystal_activated"),
+		"first_attunement must come from NOT is_crystal_activated — a hardcoded true fires every save, a hardcoded false never fires")
+
+
+func test_the_attunement_flag_can_actually_distinguish_first_from_later() -> void:
+	## Behavioural half. The structural checks above are worthless if
+	## is_crystal_activated cannot tell a first visit from a repeat — then the
+	## gate is correctly shaped around a constant and the stinger either always
+	## fires or never does.
+	var map_id := "zz_test_crystal_%d" % Time.get_ticks_usec()
+	var had: bool = GameState.activated_crystals.has(map_id)
+	assert_false(had, "setup: the probe id must be unused")
+
+	assert_false(GameState.is_crystal_activated(map_id),
+		"before attunement the flag must read false — this is what makes the FIRST save fire the stinger")
+	GameState.activate_crystal(map_id)
+	assert_true(GameState.is_crystal_activated(map_id),
+		"after attunement it must read true — this is what keeps every LATER save silent")
+
+	GameState.activated_crystals.erase(map_id)
 
 
 func test_equipment_chests_fanfare_and_consumables_do_not() -> void:
