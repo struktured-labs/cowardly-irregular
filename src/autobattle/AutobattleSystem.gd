@@ -1685,8 +1685,13 @@ func _load_character_scripts() -> void:
 				print("Loaded %d character autobattle scripts (legacy)" % character_scripts.size())
 
 
+## Set to true in tests to prevent writes to user://autobattle/*.json and user://autobattle_scripts.json — otherwise test-suite runs overwrite the player's real autobattle scripts with fixture content. Mirrors AutogrindSystem; no-op in production.
+var _test_disable_persistence: bool = false
+
+
 func _save_character_profiles() -> void:
 	"""Save all character profiles to file"""
+	if _test_disable_persistence: return
 	var save_path = "user://autobattle/profiles.json"
 
 	# Create directory if it doesn't exist
@@ -1741,6 +1746,7 @@ func _migrate_old_format_scripts() -> void:
 
 func _save_character_scripts() -> void:
 	"""Legacy save - redirects to profile save after migration"""
+	if _test_disable_persistence: return
 	# First migrate any legacy scripts to profiles
 	for character_id in character_scripts.keys():
 		if not character_profiles.has(character_id):
