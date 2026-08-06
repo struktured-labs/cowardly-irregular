@@ -102,9 +102,18 @@ WORLD_DRESS = {
                    "banding, thick canvas overalls, steel-toed boots."),
     "digital":    ("DIGITAL/CYBER dress — a slim visor with a thin light bar, panelled "
                    "bodysuit with glowing seams, hard-edged geometric plating."),
+    # The first abstract pilot read as a MISSING ASSET — a grey untextured figure. Cause was
+    # "flat unshaded, no texture" landing on a sprite that had also lost its colour to the
+    # old palette clause. With JOB_SIGNATURE holding the hue, minimalism can read as a
+    # deliberate style instead of unfinished art, but only if it keeps a crisp outline and a
+    # few value steps: truly flat at 256px downscales to a silhouette with no interior form.
     "abstract":   ("MINIMALIST ABSTRACT dress — the costume reduced to its essential "
-                   "shapes, flat unshaded colour blocks, no ornament, no texture, the "
-                   "silhouette still unmistakably this class. "),
+                   "geometric shapes, bold flat colour blocks with only two or three value "
+                   "steps, no fabric texture and no small ornament, but a CRISP DARK "
+                   "OUTLINE and clearly separated forms so it reads as a deliberate "
+                   "graphic style rather than an unfinished sprite. The silhouette must "
+                   "remain unmistakably this class, and the figure must never read as a "
+                   "flat grey or untextured blank. "),
 }
 
 ## Per-job identity that must survive every costume change.
