@@ -340,7 +340,7 @@
     "description": "A small obsidian disc with the rune of Mordaine. Pulses with a calibrated heartbeat. Cannot be sold.",
     "effects": {},
     "cost": 0,
-    "flavor": "Each face shows a different sigil \u2014 a chancellor, a coordinator, a regulator, a director. Four sides of the same coin. Or maybe the same side, four times."
+    "flavor": "Each face shows a different sigil — a chancellor, a coordinator, a regulator, a director. Four sides of the same coin. Or maybe the same side, four times."
   },
   "boss_trophy": {
     "id": "boss_trophy",
@@ -387,7 +387,7 @@
     "name": "Masterite Prism",
     "category": 4,
     "target_type": 4,
-    "description": "A multi-faceted shard from an abstract Masterite \u2014 refracts a color you can't name.",
+    "description": "A multi-faceted shard from an abstract Masterite — refracts a color you can't name.",
     "effects": {},
     "cost": 0,
     "flavor": "Looking at it for too long resolves a koan you didn't know you had."
@@ -587,7 +587,7 @@
     "name": "Poison Spore",
     "category": 4,
     "target_type": 4,
-    "description": "Toxic fungal seeds \u2014 handle with cloth.",
+    "description": "Toxic fungal seeds — handle with cloth.",
     "effects": {},
     "cost": 0,
     "flavor": ""
@@ -1007,7 +1007,7 @@
     "name": "Reaper Scythe",
     "category": 4,
     "target_type": 4,
-    "description": "A weapon of the permadeath reaper. Cannot be equipped \u2014 it equips itself elsewhere.",
+    "description": "A weapon of the permadeath reaper. Cannot be equipped — it equips itself elsewhere.",
     "effects": {},
     "cost": 0,
     "flavor": ""
@@ -1107,7 +1107,7 @@
     "name": "Mythril Ore",
     "category": 4,
     "target_type": 4,
-    "description": "Pure mythril \u2014 the legendary alloy base.",
+    "description": "Pure mythril — the legendary alloy base.",
     "effects": {},
     "cost": 0,
     "flavor": ""
@@ -1541,7 +1541,7 @@
     "name": "Unwritten Chord",
     "category": 4,
     "target_type": 4,
-    "description": "An accessory earned by playing something that doesn't exist yet. Intended mechanics: +5% to all Bard support effects (promote to real accessory in an equipment pass).",
+    "description": "An accessory earned by playing something that doesn't exist yet.",
     "effects": {},
     "cost": 0,
     "flavor": "Madame Orrery asked for a song that had never been played. The Bard played it. It has not been played since — which is different from saying it stopped."
@@ -1551,7 +1551,7 @@
     "name": "Cluck Norris's Egg",
     "category": 4,
     "target_type": 4,
-    "description": "A rare egg from a hen named after a legend. Intended mechanics: combat throwable, stuns one enemy for one turn; only two obtainable in the game (promote to consumable in an items pass).",
+    "description": "A rare egg from a hen named after a legend.",
     "effects": {},
     "cost": 0,
     "flavor": "It is heavier than an egg should be. It is warmer than an egg should be. Farmer Aldwick's advice, verbatim: 'Careful with it. It's... spirited.'"
@@ -1561,7 +1561,7 @@
     "name": "The Returned Sword",
     "category": 4,
     "target_type": 4,
-    "description": "Sold seventeen times. Returned seventeen times. Intended mechanics: weapon with good ATK and the Familiar Weight passive — +10% damage against any enemy the party has fought before (promote to real weapon in an equipment pass).",
+    "description": "Sold seventeen times. Returned seventeen times.",
     "effects": {},
     "cost": 0,
     "flavor": "The inscription on the hilt reads: 'Return me when you're done. I'll know where I belong.' Exploit-minded owners notice Familiar Weight triggering on enemies the party has never fought. The sword remembers enemies before you do."
@@ -1571,7 +1571,7 @@
     "name": "Chapter Three Pages",
     "category": 4,
     "target_type": 4,
-    "description": "Milo's working pages. Intended mechanics: passive party buff, +5% autobattle efficiency AND +5% manual critical rate simultaneously — the only item in the game that buffs both playstyles at once (promote in a passives pass).",
+    "description": "Milo's working pages.",
     "effects": {},
     "cost": 0,
     "flavor": "The gap is where everything interesting happens."
@@ -1641,7 +1641,7 @@
     "name": "Precision Tool Set",
     "category": 4,
     "target_type": 4,
-    "description": "Sprocket's own kit, given at normal speed. Intended mechanics: reduces AP cost of ability-based actions by 1 in World 3 battles (promote in an equipment pass).",
+    "description": "Sprocket's own kit, given at normal speed.",
     "effects": {},
     "cost": 0,
     "flavor": "Every tool sits in a fitted recess. Every recess is labeled. One recess is empty and labeled 'THE ONE I ALWAYS NEED.' Sprocket says that one is intentional."
@@ -1681,7 +1681,7 @@
     "name": "Mechanism Master Key",
     "category": 4,
     "target_type": 4,
-    "description": "Hartwick's key to the Grand Mechanism's restricted section — never rekeyed, because they assumed nobody remembered it existed. Intended mechanics: opens a blueprint shortcut compressing the dungeon's second half and skipping one mandatory fight.",
+    "description": "Hartwick's key to the Grand Mechanism's restricted section — never rekeyed, because they assumed nobody remembered it existed.",
     "effects": {},
     "cost": 0,
     "flavor": "'I remember everything that exists. It's my whole problem.'"
@@ -1701,7 +1701,7 @@
     "name": "Synchronization Protocol",
     "category": 4,
     "target_type": 4,
-    "description": "What two processes wrote when they stopped fighting over the same resource. Intended mechanics: when two party members act in the same round, their actions gain a small bonus — +10% effectiveness (protocol path) or an occasional defensive-negate cooperative flag (merged path); promotion keys on the quest's path flag.",
+    "description": "What two processes wrote when they stopped fighting over the same resource.",
     "effects": {},
     "cost": 0,
     "flavor": "'We thought we were competing. We were always the same thing, separately. That's more interesting, actually. Being the same thing, separately.'"
@@ -1731,7 +1731,7 @@
     "name": "The Remainder Token",
     "category": 4,
     "target_type": 4,
-    "description": "Proof that two entities built for motion and commerce chose to stay. Intended mechanics: in subsequent playthroughs, unlocks The Vertex as a revisitable location from the World 1 map.",
+    "description": "Proof that two entities built for motion and commerce chose to stay.",
     "effects": {},
     "cost": 0,
     "flavor": "The shopkeeper and the traveler are there each time, still sitting. They don't say much. But they're there."
@@ -1741,7 +1741,7 @@
     "name": "The Untested Shield",
     "category": 4,
     "target_type": 4,
-    "description": "Bram's gift, from under the counter — never tested, never failed. Intended mechanics: Fighter-equippable shield (armor/accessory slot, ~+80 DEF +100 max HP, leather-armor tier) — promote in an equipment pass, returned_sword precedent.",
+    "description": "Bram's gift, from under the counter — never tested, never failed.",
     "effects": {},
     "cost": 0,
     "flavor": "'Consider it an investment in your surviving long enough to come back and buy more.' Shields that come back in one piece weren't doing their job."
@@ -1751,7 +1751,7 @@
     "name": "Traveller's Waterskin",
     "category": 4,
     "target_type": 4,
-    "description": "A caravan-tanned waterskin, filled once and sealed. Intended mechanics: field consumable, restores ~300 HP + ~10 MP to a single party member outside battle — desert traveller's kit tier. Promote in a consumables pass.",
+    "description": "A caravan-tanned waterskin, filled once and sealed.",
     "effects": {},
     "cost": 0,
     "flavor": "From the Sandrift caravan-master. 'It's not much. It's what a caravan pays when a caravan can pay again.'"
@@ -1761,7 +1761,7 @@
     "name": "Ranger's Cloak",
     "category": 4,
     "target_type": 4,
-    "description": "The cloak of an Eldertree ranger who did not come home. Warm, well-oiled, hood cut to see through. Intended mechanics: light-armor slot, +4 EVA +30 DEF, leather-armor tier — Rogue/Bard-equippable — promote in equipment pass.",
+    "description": "The cloak of an Eldertree ranger who did not come home. Warm, well-oiled, hood cut to see through.",
     "effects": {},
     "cost": 0,
     "flavor": "There are three left, and none of them belong to anyone anymore. It fits you. That is not a comfort."
@@ -1771,7 +1771,7 @@
     "name": "Grimhollow Pick",
     "category": 4,
     "target_type": 4,
-    "description": "A working pickaxe. Handle polished by three shifts a day for eleven years. Intended mechanics: two-handed weapon, Fighter-equippable, ATK-focused (iron-sword-adjacent tier) — promote in equipment pass.",
+    "description": "A working pickaxe. Handle polished by three shifts a day for eleven years.",
     "effects": {},
     "cost": 0,
     "flavor": "'He'd want it swung, not stored. So swing it.' — Trude."
@@ -1781,7 +1781,7 @@
     "name": "Leaning Ember",
     "category": 4,
     "target_type": 4,
-    "description": "An ember that leans, without any wind or heat source, toward the direction Mordaine's magic reach is currently touching. In Sella's pocket it pointed east. In your pack it will do the same. Intended mechanics: key item / diegetic compass — inspect-view line updates when the party is near Mordaine's presence. cowir-cutscenes may wire an inspect handler in Castle Harmonia F3+ to fire the leaning-observation line (\"the ember, in your pack, is pointing at the plain chair beside the throne\"). No combat effect. Cannot be dropped once received.",
+    "description": "An ember that leans, without any wind or heat source, toward the direction Mordaine's magic reach is currently touching. In Sella's pocket it pointed east. In your pack it will do the same.",
     "effects": {},
     "cost": 0,
     "flavor": "Warm to the touch. Not lit. 'If it starts to lean, in your pocket, in your pack — put it down and look east.'"
@@ -1791,7 +1791,7 @@
     "name": "Watcher's Charm",
     "category": 4,
     "target_type": 4,
-    "description": "A charm against being watched from a distance. Clockkeeper Yara's grandmother's, from a mountain older than this one. Intended mechanics: accessory slot, minor MDF or Luck boost (leather-armor tier), narrative flag for detection-resistant beats in W2+ (surveillance mechanics not yet implemented). Promote in equipment pass.",
+    "description": "A charm against being watched from a distance. Clockkeeper Yara's grandmother's, from a mountain older than this one.",
     "effects": {},
     "cost": 0,
     "flavor": "'It has never worked, in my experience. It has also never been tested against something that was actually watching.' — Yara."
