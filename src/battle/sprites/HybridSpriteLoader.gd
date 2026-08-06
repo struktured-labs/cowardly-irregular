@@ -172,6 +172,26 @@ static func load_monster_sprite_frames(monster_id: String) -> SpriteFrames:
 	return sprite_frames
 
 
+## Sheet suffix per world, indexed by GameState.current_world (1-6).
+## World 1 is the artist's BASE art and is deliberately never suffixed, so the
+## costume vocabulary is 5 suffixes and not 6. Order pinned to WorldMapMenu.WORLD_DATA.
+const WORLD_SUFFIXES := ["", "suburban", "steampunk", "industrial", "digital", "abstract"]
+
+
+## Resolve the current world's sheet suffix; pass `world` explicitly to override.
+static func world_suffix(world: int = -1) -> String:
+	var w: int = world
+	if w < 0:
+		var tree: SceneTree = Engine.get_main_loop() as SceneTree
+		var gs: Object = null
+		if tree != null and tree.root != null:
+			gs = tree.root.get_node_or_null("GameState")
+		w = int(gs.get("current_world")) if gs != null and "current_world" in gs else 1
+	if w < 1 or w > WORLD_SUFFIXES.size():
+		return ""
+	return WORLD_SUFFIXES[w - 1]
+
+
 static func _load_external_sheet(sheet_data: Dictionary, job_id: String) -> SpriteFrames:
 	var base_path = sheet_data.get("path", "res://assets/sprites/jobs/%s" % job_id)
 	var frame_width = sheet_data.get("frame_width", 32)
@@ -180,9 +200,15 @@ static func _load_external_sheet(sheet_data: Dictionary, job_id: String) -> Spri
 
 	var sprite_frames = SpriteFrames.new()
 	var loaded_any = false
+	var suffix: String = world_suffix()
 
 	for anim_name in animations:
 		var sheet_path = "%s/%s.png" % [base_path, anim_name]
+		# A world-dressed sheet wins ONLY when it exists; absence falls back to artist base.
+		if suffix != "":
+			var dressed: String = "%s/%s_%s.png" % [base_path, anim_name, suffix]
+			if ResourceLoader.exists(dressed):
+				sheet_path = dressed
 		if not ResourceLoader.exists(sheet_path):
 			continue
 
