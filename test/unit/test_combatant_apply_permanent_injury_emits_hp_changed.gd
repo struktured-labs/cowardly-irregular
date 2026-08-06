@@ -44,8 +44,7 @@ func test_hp_changed_carries_correct_old_and_new() -> void:
 	watch_signals(c)
 	c.apply_permanent_injury({"stat": "max_hp", "penalty": 25})
 	# Pre: 100/100. Post: 75/75. hp_changed should carry (100, 75).
-	assert_signal_emitted_with_parameters(c, "hp_changed", [100, 75],
-		"hp_changed must carry (old_hp, new_hp) on the injury clamp")
+	assert_signal_emitted_with_parameters(c, "hp_changed", [100, 75])
 
 
 # ── No spurious emit when current_hp was already at or below cap ─

@@ -110,8 +110,7 @@ func test_availability_changed_emitted_on_recovery() -> void:
 	_resolve_probe(be, false)
 	watch_signals(be)
 	_resolve_probe(be, true)
-	assert_signal_emitted_with_parameters(be, "availability_changed", [true],
-		"recovery must announce itself with available=true")
+	assert_signal_emitted_with_parameters(be, "availability_changed", [true])
 
 
 func test_availability_changed_emitted_on_degradation() -> void:
@@ -120,8 +119,7 @@ func test_availability_changed_emitted_on_degradation() -> void:
 	_resolve_probe(be, true)
 	watch_signals(be)
 	_resolve_probe(be, false)
-	assert_signal_emitted_with_parameters(be, "availability_changed", [false],
-		"degradation must announce itself with available=false")
+	assert_signal_emitted_with_parameters(be, "availability_changed", [false])
 
 
 func test_no_signal_when_state_is_unchanged() -> void:

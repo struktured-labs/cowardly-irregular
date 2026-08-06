@@ -46,8 +46,7 @@ func test_heal_below_max_still_emits() -> void:
 	watch_signals(c)
 	var healed: int = c.heal(30)
 	assert_eq(healed, 30, "heal from 50 → 80 returns 30")
-	assert_signal_emitted_with_parameters(c, "hp_changed", [50, 80],
-		"hp_changed must fire with (50, 80)")
+	assert_signal_emitted_with_parameters(c, "hp_changed", [50, 80])
 
 
 # ── Heal that clamps to max still emits (partial change > 0) ─────
@@ -58,8 +57,7 @@ func test_heal_clamped_to_max_still_emits_when_actual_change() -> void:
 	watch_signals(c)
 	var healed: int = c.heal(50)
 	assert_eq(healed, 20, "heal clamped to max: 80 → 100, returns 20")
-	assert_signal_emitted_with_parameters(c, "hp_changed", [80, 100],
-		"hp_changed must fire even when clamped, because there was actual change")
+	assert_signal_emitted_with_parameters(c, "hp_changed", [80, 100])
 
 
 # ── Heal with amount=0 doesn't emit (no actual change) ───────────

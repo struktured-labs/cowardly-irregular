@@ -44,8 +44,7 @@ func test_die_emits_hp_changed_with_old_and_zero() -> void:
 	c.current_hp = 47  # Mid-fight HP
 	watch_signals(c)
 	c.die()
-	assert_signal_emitted_with_parameters(c, "hp_changed", [47, 0],
-		"hp_changed(old_hp, new_hp) — old must be pre-die HP, new must be 0")
+	assert_signal_emitted_with_parameters(c, "hp_changed", [47, 0])
 
 
 # ── died signal still fires (don't regress the other listener) ──
