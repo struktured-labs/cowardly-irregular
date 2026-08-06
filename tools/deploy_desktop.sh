@@ -166,16 +166,30 @@ SNAP_DIR="tmp/script_exports_snapshot"
 # not continuously write, and for the remainder report what changed so a loss is
 # detectable rather than either silently kept or silently reverted.
 #
-# user://autogrind/ IS DELIBERATELY NOT RESTORED. I had it in this list for about
-# a minute, which would have been strictly worse than the gap it was closing:
-#   * tests CANNOT write there — every save path in src/autogrind/AutogrindSystem.gd
-#     opens with `if _test_disable_persistence: return`, set by 24 test files,
-#     added after autogrind tests corrupted struktured's live saves on 2026-07-14
-#   * so it is the GAME's live save path, and its mtimes during a deploy window
-#     mean he is playing — restoring it would revert his session
-# The lesson generalises: the paths a deploy may put back are the ones only a
-# test writes, never the ones the game writes. Adding a directory here needs that
-# established, not assumed — I assumed it from a suspicious mtime and was wrong.
+# user://autogrind/ IS NOT RESTORED — but NOT for the reason I first wrote here.
+#
+# ⚠️ MY ORIGINAL JUSTIFICATION WAS FALSE. It read: "tests CANNOT write there —
+# every save path in AutogrindSystem.gd opens with `if _test_disable_persistence:
+# return`, set by 24 test files." Every clause is individually true and the
+# conclusion does not follow. The guard is present in every WRITER; that says
+# nothing about whether every CALLER sets the flag. cowir-autogrind measured it
+# (2026-08-06): 48 tests touch AutogrindSystem, 19 do not set the flag, and 4 of
+# those reach a write path. I counted the files that DO set it and generalised to
+# the ones that don't — a correct count of the wrong predicate, again.
+#
+# THE DECISION IS UNCHANGED; ONLY ITS BASIS IS. Both writers are real:
+#   * the GAME writes here live — restoring would revert an in-progress session
+#   * the SUITE writes here too, and gate 1 above runs the full suite, so THIS
+#     SCRIPT is one of the writers it is reporting drift for
+# Neither restore nor keep is safe, so we do the third thing: report it, name
+# both possible authors, and keep the pre-image. The snapshot is taken at gate 0b
+# BEFORE gate 1, so it is a genuine pre-suite copy — which is why it can serve as
+# an independent restore source (verified 2026-08-06: my Aug-5 snapshot and
+# cowir-autogrind's separate restore agree at b5bfef1c).
+#
+# The generalisable rule survives intact and is what I got wrong: a path may be
+# put back only if ONLY tests write it. That must be established by driving the
+# tests, not inferred from a guard's presence in the writer.
 FULL_SNAP="tmp/userdata_snapshot"
 RESTORE_PATHS=(script_exports)
 # Paths excluded from the DRIFT REPORT (not from the snapshot — they are still
@@ -248,8 +262,17 @@ _report_userdata_drift() {
     case $changed in
         0) echo "[${PLAT}] userdata drift outside ${RESTORE_PATHS[*]}: none" ;;
         *) echo "[${PLAT}] NOTE: ${changed} user:// file(s) changed during this deploy." >&2
-           echo "        NOT reverted — if you were playing, that is your own save." >&2
-           echo "        Pre-deploy copy kept at ${FULL_SNAP}/ if you need to compare." >&2 ;;
+           # This used to read "if you were playing, that is your own save" — which
+           # named the wrong author for autogrind/. Gate 1 runs the full suite and the
+           # suite writes user://autogrind/ (cowir-autogrind, 2026-08-06), so THIS
+           # SCRIPT is a writer. Attributing its own drift to the player is worse than
+           # saying nothing: it invites him to keep a test fixture as if it were a save.
+           echo "        NOT reverted. TWO possible authors and this report cannot tell" >&2
+           echo "        them apart: (a) your live session, or (b) gate 1's test suite —" >&2
+           echo "        user://autogrind/ is written by both, and user:// is ONE path" >&2
+           echo "        shared by every cowir-* checkout on this machine." >&2
+           echo "        Pre-deploy copy at ${FULL_SNAP}/ is from BEFORE gate 1, so it is" >&2
+           echo "        a true pre-suite pre-image — diff against it before keeping either." >&2 ;;
     esac
 }
 # ONE trap, both handlers. `trap X EXIT` followed by `trap Y EXIT` does not add a
