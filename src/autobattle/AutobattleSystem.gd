@@ -669,6 +669,75 @@ func get_character_script(character_id: String) -> Dictionary:
 	return create_default_character_script(character_id)
 
 
+## Render a character's active rules as prose an LLM can reason about.
+## Priority order is the strategy — rules are numbered because first match wins.
+func describe_script_for_llm(character_id: String, max_rules: int = 6) -> String:
+	return describe_rules_for_llm(get_character_script(character_id).get("rules", []) as Array, max_rules)
+
+
+## Pure half of describe_script_for_llm — takes rules directly so it is testable
+## without touching character_profiles or the user:// save path.
+func describe_rules_for_llm(rules: Array, max_rules: int = 6) -> String:
+	if rules.is_empty():
+		return ""
+	var lines: PackedStringArray = PackedStringArray()
+	var shown: int = mini(max_rules, rules.size())
+	for i in range(shown):
+		var rule: Variant = rules[i]
+		if not (rule is Dictionary):
+			continue
+		lines.append("%d. %s" % [i + 1, describe_rule_for_llm(rule as Dictionary)])
+	# Say what was withheld rather than truncate silently.
+	if rules.size() > shown:
+		lines.append("   (+%d further rules, lower priority)" % (rules.size() - shown))
+	return "\n".join(lines)
+
+
+## One rule as "IF <conditions> THEN <actions>". Unknown keys degrade to their raw id.
+func describe_rule_for_llm(rule: Dictionary) -> String:
+	var conds: Array = rule.get("conditions", []) as Array
+	var cond_parts: PackedStringArray = PackedStringArray()
+	for c in conds:
+		if c is Dictionary:
+			cond_parts.append(_describe_condition_for_llm(c as Dictionary))
+	var acts: Array = rule.get("actions", []) as Array
+	var act_parts: PackedStringArray = PackedStringArray()
+	for a in acts:
+		if a is Dictionary:
+			act_parts.append(_describe_action_for_llm(a as Dictionary))
+	var cond_text: String = " AND ".join(cond_parts) if cond_parts.size() > 0 else "ALWAYS"
+	var act_text: String = " + ".join(act_parts) if act_parts.size() > 0 else "(no action)"
+	return "IF %s THEN %s" % [cond_text, act_text]
+
+
+func _describe_condition_for_llm(c: Dictionary) -> String:
+	var ctype: String = str(c.get("type", "?"))
+	if ctype == "always":
+		return "ALWAYS"
+	var label: String = str(CONDITION_TYPES.get(ctype, ctype))
+	# The subject key varies by condition type; take whichever identifying one is present.
+	var subject: String = ""
+	for key in ["status", "item_id", "buff", "ability_id"]:
+		if c.has(key):
+			subject = " " + str(c[key])
+			break
+	var op: String = str(c.get("op", c.get("compare_op", "")))
+	if op == "" or not c.has("value"):
+		return (label + subject).strip_edges()
+	return "%s%s %s %s" % [label, subject, op, str(c.get("value", ""))]
+
+
+func _describe_action_for_llm(a: Dictionary) -> String:
+	var atype: String = str(a.get("type", "?"))
+	var name: String = str(ACTION_TYPES.get(atype, atype)).to_lower()
+	var id: String = str(a.get("id", ""))
+	var target: String = str(a.get("target", ""))
+	var out: String = name if id == "" else "%s %s" % [name, id]
+	if target != "":
+		out += " -> " + str(TARGET_TYPES.get(target, target))
+	return out
+
+
 func set_character_script(character_id: String, script: Dictionary) -> void:
 	"""Set active autobattle script for a character"""
 	_ensure_character_profiles(character_id)
