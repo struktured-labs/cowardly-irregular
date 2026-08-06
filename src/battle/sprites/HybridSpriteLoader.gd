@@ -11,6 +11,35 @@ static var _monster_manifest: Dictionary = {}
 static var _battle_effects: Dictionary = {}
 static var _manifest_loaded: bool = false
 
+
+## Per-world job asset resolution (struktured 2026-08-06: "your characters are supposed to
+## xform as they shift overworlds"). PURE: the suffix arrives as an argument, so this cannot
+## inherit audio-state staleness. Medieval is the BASE — the unsuffixed file IS the medieval
+## art, so "medieval" and "" both skip the variant probe (the monster loader's convention).
+## `exists` is injectable so the medieval-skips-the-probe arm is falsifiable BEFORE any
+## variant art ships — with the default probe, skip-and-miss return identical paths and a
+## mutation deleting the medieval guard survives every test (measured, M1, 2026-08-06).
+static func job_asset_path(job_id: String, base_name: String, world_suffix: String,
+		exists: Callable = Callable()) -> String:
+	if world_suffix != "" and world_suffix != "medieval":
+		var variant := "res://assets/sprites/jobs/%s/%s_%s.png" % [job_id, base_name, world_suffix]
+		var found: bool = exists.call(variant) if exists.is_valid() else ResourceLoader.exists(variant)
+		if found:
+			return variant
+	return "res://assets/sprites/jobs/%s/%s.png" % [job_id, base_name]
+
+
+## The ONE fetch site for the current suffix, so four consumers stay identical and the swap
+## to SoundManager's public accessor (unfolded branch) is a single edit here, not four.
+static func current_world_suffix() -> String:
+	var tree := Engine.get_main_loop() as SceneTree
+	if tree == null:
+		return ""
+	var sm := tree.root.get_node_or_null("SoundManager")
+	if sm == null or not sm.has_method("_get_current_world_suffix"):
+		return ""
+	return str(sm._get_current_world_suffix())
+
 static func _load_manifest() -> void:
 	if _manifest_loaded:
 		return

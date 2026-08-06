@@ -1137,11 +1137,13 @@ const BUST_CROP_RATIO: float = 0.55
 func _create_bust_from_job_sheet(job_id: String) -> Texture2D:
 	if job_id.is_empty():
 		return null
-	var cache_key := "bust:" + job_id
+	# Suffix in the cache key, or a world transition serves the previous world's face forever.
+	var _bust_w := HybridSpriteLoader.current_world_suffix()
+	var cache_key := "bust:%s:%s" % [job_id, _bust_w]
 	if _portrait_cache.has(cache_key):
 		return _portrait_cache[cache_key]
 
-	var sheet_path := "res://assets/sprites/jobs/%s/idle.png" % job_id
+	var sheet_path := HybridSpriteLoader.job_asset_path(job_id, "idle", _bust_w)
 	if not ResourceLoader.exists(sheet_path):
 		_portrait_cache[cache_key] = null
 		return null
