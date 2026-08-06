@@ -130,3 +130,45 @@ func test_no_recorded_origin_falls_back_to_the_id_derivation() -> void:
 	_gl._set_current_map_id("inn_interior")
 	assert_eq(int(GameState.current_world), 1,
 		"no origin captured — the shared id carries no world, so W1 is the only available answer")
+
+
+## THE OTHER HALF. Everything above SETS _village_origin_id and asserts the sync
+## reads it — which is only half the mechanism. The game also has to RECORD the
+## origin on the way in, and nothing drove that: deleting the capture block from
+## _on_area_transition outright left this file 5/5 GREEN, so the fix could be
+## silently half-reverted and every gate would still pass while the party changed
+## into chainmail again. Measured 2026-08-06, on my own guard.
+##
+## The transition handler is drivable directly — the work before the capture is
+## two bail flags and a guarded LLMService lookup, and the scene routing after it
+## no-ops on an instance with no tree. Verified: zero SCRIPT ERRORs.
+func test_entering_an_interior_records_the_village_it_came_from() -> void:
+	_gl._set_current_map_id("brasston_village")
+	assert_eq(str(_gl._village_origin_id), "",
+		"origin starts empty — otherwise the assertion below could pass on a stale value")
+	_gl._on_area_transition("inn_interior", "default")
+	assert_eq(str(_gl._village_origin_id), "brasston_village",
+		"entering the inn must RECORD the village — without this the sync above has nothing to read and every shared interior falls back to W1")
+
+
+## The capture's own guard: interior -> interior keeps the original village, so a
+## player who somehow chains rooms still exits to where they came from.
+func test_an_interior_to_interior_move_keeps_the_first_village() -> void:
+	_gl._set_current_map_id("brasston_village")
+	_gl._on_area_transition("inn_interior", "default")
+	_gl._set_current_map_id("inn_interior")
+	_gl._on_area_transition("shop_interior_item", "default")
+	assert_eq(str(_gl._village_origin_id), "brasston_village",
+		"the origin must not be overwritten by a second interior — it would resolve to an interior id, which carries no world at all")
+
+
+## End to end, the way the player experiences it: walk from a W3 village into a
+## shared shop and still be in world 3. This is the only assertion here that
+## needs BOTH halves, so it is the one that fails if either is removed.
+func test_walking_from_a_village_into_a_shared_shop_keeps_the_world() -> void:
+	_gl._set_current_map_id("brasston_village")
+	assert_eq(int(GameState.current_world), 3, "outside, in Brasston, world 3")
+	_gl._on_area_transition("shop_interior_item", "default")
+	_gl._set_current_map_id("shop_interior_item")
+	assert_eq(int(GameState.current_world), 3,
+		"inside the shop, still world 3 — a shared interior id resolves through the recorded origin, not through its own name")
