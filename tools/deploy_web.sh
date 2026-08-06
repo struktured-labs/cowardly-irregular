@@ -190,8 +190,16 @@ if [ "$GATES_ONLY" = "1" ]; then
   exit 0
 fi
 
-echo "[deploy] pushing to ${ITCH_TARGET} (userversion ${VERSION})"
-"${BUTLER_BIN}" push builds/web/ "${ITCH_TARGET}" --userversion "${VERSION}"
+# Same defect as deploy_desktop.sh carried, same fix — see its comment at VERSION for the
+# measurement. This script exports the working tree (or a stage built FROM it), so the tag
+# is a label and never the built commit. `-dirty` because a dirty export is reproducible
+# from no SHA at all.
+BUILD_SHA="$(git rev-parse --short HEAD)"
+git diff --quiet HEAD -- 2>/dev/null || BUILD_SHA="${BUILD_SHA}-dirty"
+USERVERSION="${VERSION}+${BUILD_SHA}"
+echo "[deploy] pushing to ${ITCH_TARGET} (userversion ${USERVERSION})"
+echo "[deploy]   tag ${VERSION} is a LABEL; ${BUILD_SHA} is the tree that was exported"
+"${BUTLER_BIN}" push builds/web/ "${ITCH_TARGET}" --userversion "${USERVERSION}"
 until "${BUTLER_BIN}" status "${ITCH_TARGET}" 2>/dev/null | grep -q "${VERSION}"; do sleep 8; done
 "${BUTLER_BIN}" status "${ITCH_TARGET}" | grep web
 echo "[deploy] LIVE: ${VERSION} — https://struktured.itch.io/cowardly-irregular"
