@@ -8,10 +8,15 @@ extends GutTest
 ## what the player must DO, which struktured already ruled once for Mordaine:
 ## "meta-aware mechanics fit her identity better than stat inflation" (BattleManager:1068).
 ##
-## Four win-condition arms already exist and are each authored exactly ONCE — and two of
-## them belong to the masterites the Calibrant wears (withhold_attack -> Warden,
-## arbiter_ladder -> Arbiter). So the phases don't represent wearing their faces; they ARE
-## their faces, procedurally.
+## Four win-condition arms already exist. Two belong to the masterites the Calibrant wears
+## (withhold_attack -> Warden, arbiter_ladder -> Arbiter), so the phases don't represent
+## wearing their faces; they ARE their faces, procedurally.
+##
+## ⚠️ Authored-site counts differ by arm, and an earlier version of this comment said all
+## four were authored exactly ONCE. Measured: withhold_attack and arbiter_ladder are, in
+## monsters.json only — but survive_turns and status_threshold are DUAL-SOURCED, once in
+## monsters.json and once as a cutscene `battle` step, where the step overrides. Editing
+## the monster and expecting a duel to change is the trap; check both.
 ##
 ## ⚠️ SHIPPED OFF BY DEFAULT. A face with no `win_condition` key leaves _win_condition
 ## untouched, so every boss in the game behaves identically after this lands — including
