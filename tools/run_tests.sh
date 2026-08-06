@@ -34,16 +34,38 @@ BASE=(godot --headless --audio-driver Dummy --log-file "$GUT_LOG" -s addons/gut/
 # lanes diagnosed — in a controlled test EXIT alone did fire, and adding INT TERM fired it twice —
 # so the orphaned snapshots are real but their stated cause is unconfirmed. INT TERM is free, the
 # handler is idempotent behind the -d guard, and nothing saves a kill -9.
-_UD="${HOME}/.local/share/godot/app_userdata/Cowardly Irregular/script_exports"
+_UD_BASE="${HOME}/.local/share/godot/app_userdata/Cowardly Irregular"
+# Dirs the suite is KNOWN to write, derived from the CODE's user:// corpus, not from
+# incidents (both prior nets were incident-scoped and each missed the next incident):
+# autogrind/ proven rewritten every full-suite run 2026-08-06 (4 ungated tests reach
+# writers); root settings.json carried a gate-time mtime the same day. saves/ and
+# screenshots/ are EXCLUDED deliberately — the suite must never write them (separately
+# guarded) and restoring them could clobber a live play session's writes.
+# The net is a BACKSTOP; per-test _test_disable_persistence gates are the real fix.
+_NETTED_DIRS=(script_exports autogrind autobattle input)
 _SNAP=""
-if [ -d "$_UD" ]; then
-  _SNAP="$(mktemp -d "${TMPDIR:-/tmp}/gate_exports_snap.XXXXXX")"
-  cp -a "$_UD/." "$_SNAP/" 2>/dev/null || true
-  trap '[ -n "$_SNAP" ] && [ -d "$_SNAP" ] && { cp -a "$_SNAP/." "$_UD/" 2>/dev/null; rm -rf "$_SNAP"; }' EXIT INT TERM
+for _d in "${_NETTED_DIRS[@]}"; do
+  [ -d "$_UD_BASE/$_d" ] || continue
+  [ -n "$_SNAP" ] || _SNAP="$(mktemp -d "${TMPDIR:-/tmp}/gate_exports_snap.XXXXXX")"
+  mkdir -p "$_SNAP/$_d"
+  cp -a "$_UD_BASE/$_d/." "$_SNAP/$_d/" 2>/dev/null || true
+done
+# Root-level config/automation jsons (settings.json, autogrind_history.json, …) — flat
+# files a dir list cannot carry. Restored to their exact pre-run bytes.
+if [ -d "$_UD_BASE" ]; then
+  for _f in "$_UD_BASE"/*.json; do
+    [ -f "$_f" ] || continue
+    [ -n "$_SNAP" ] || _SNAP="$(mktemp -d "${TMPDIR:-/tmp}/gate_exports_snap.XXXXXX")"
+    mkdir -p "$_SNAP/__root__"
+    cp -a "$_f" "$_SNAP/__root__/" 2>/dev/null || true
+  done
+fi
+if [ -n "$_SNAP" ]; then
+  trap '[ -n "$_SNAP" ] && [ -d "$_SNAP" ] && { for _d in "$_SNAP"/*/; do _n="$(basename "$_d")"; if [ "$_n" = "__root__" ]; then cp -a "${_d}." "$_UD_BASE/" 2>/dev/null; else mkdir -p "$_UD_BASE/$_n"; cp -a "${_d}." "$_UD_BASE/$_n/" 2>/dev/null; fi; done; rm -rf "$_SNAP"; }' EXIT INT TERM
   # SAY SO. gate.sh used to print this and I nearly dropped it in the move, which would have made the
   # net unobservable in every run rather than only in the ones where it silently failed. Four lanes
   # spent this morning arguing about whether it had run, from artifacts that could not answer.
-  echo "run_tests.sh: snapshotted $(find "$_SNAP" -type f 2>/dev/null | wc -l) player export file(s) — restored on exit"
+  echo "run_tests.sh: snapshotted $(find "$_SNAP" -type f 2>/dev/null | wc -l) player data file(s) across ${#_NETTED_DIRS[@]} dir(s) — restored on exit"
 fi
 # Reap snapshots abandoned by a run that died without its trap — four were sitting in TMPDIR this
 # morning, each holding a stale copy, and hand-restoring from one re-litters the real directory
