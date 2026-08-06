@@ -1368,6 +1368,11 @@ func _try_play_from_manifest(track_id: String) -> bool:
 	return true
 
 
+## Public entry point for this file's world vocabulary — it exists to stop a FOURTH re-derivation of the area→suffix map (three were built in one day), NOT because visual lanes should call it: sprites and cutscenes deliberately resolve costume identity from GameState.current_world instead, which after the interior fix has no known hole while this still lags during battle (play_music clears _current_area). Correct for audio-adjacent callers wanting the suffix STRING; returns "medieval" where sheets want "" — translate at your consumer. See test_world_suffix_vocabulary_regression.gd.
+func get_current_world_suffix() -> String:
+	return _get_current_world_suffix()
+
+
 func _get_current_world_suffix() -> String:
 	"""Map current area to world suffix for manifest track lookup.
 	When _current_area is empty (cleared by play_music for battle/victory),
