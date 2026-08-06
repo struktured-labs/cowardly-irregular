@@ -845,7 +845,8 @@ func _input(event: InputEvent) -> void:
 	# and toggles back to ON. Net effect: nothing. (Audit-fix 2026-05-04
 	# for the persistent "I press Minus, autobattle stays on" bug.)
 	# Block when autogrind UI is open — don't toggle autobattle behind it.
-	if event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_BACK:
+	# Action, not raw BACK: a Controls rebind moves battle_toggle_auto and this must follow it.
+	if event is InputEventJoypadButton and event.is_action_pressed("battle_toggle_auto"):
 		if _autogrind_ui and is_instance_valid(_autogrind_ui):
 			get_viewport().set_input_as_handled()
 		elif current_state == LoopState.BATTLE:

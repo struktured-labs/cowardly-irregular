@@ -29,17 +29,19 @@ func _read(path: String) -> String:
 
 
 func test_gameloop_skips_minus_in_battle() -> void:
-	"""GameLoop._input must NOT call _toggle_all_autobattle on JOY_BUTTON_BACK
-	when current_state == LoopState.BATTLE — that path belongs exclusively
+	"""GameLoop._input must NOT call _toggle_all_autobattle on the autobattle
+	toggle when current_state == LoopState.BATTLE — that path belongs exclusively
 	to BattleScene._input now. Both firing canceled each other out."""
 	var text = _read("res://src/GameLoop.gd")
-	var idx = text.find("event.button_index == JOY_BUTTON_BACK")
-	assert_gt(idx, -1, "GameLoop must still have a JOY_BUTTON_BACK handler")
+	# Located by ACTION, not by JOY_BUTTON_BACK: the handler moved to the action so a
+	# Controls rebind reaches it, and a spelling pin reds on that correct change.
+	var idx = text.find('event.is_action_pressed("battle_toggle_auto")')
+	assert_gt(idx, -1, "GameLoop must still have a battle_toggle_auto handler")
 	# Find the surrounding if-block (~600 chars after the match should
 	# include the BATTLE-state guard the fix introduced).
 	var body = text.substr(idx, 600)
 	assert_true(body.find("LoopState.BATTLE") != -1,
-		"JOY_BUTTON_BACK handler must reference LoopState.BATTLE for the "
+		"the battle_toggle_auto handler must reference LoopState.BATTLE for the "
 		+ "skip-in-battle gate (regression: pre-525dfe1 the gate was missing "
 		+ "and Minus toggled twice, canceling itself out)")
 
