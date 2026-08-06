@@ -54,8 +54,7 @@ func test_signal_fires_with_correct_parameters() -> void:
 	var data: Dictionary = BestiarySystem.get_monster_data("slime")
 	var expected_name: String = str(data.get("name", "Slime"))
 	assert_signal_emitted_with_parameters(GameState, "bestiary_kill_milestone",
-		["slime", expected_name, 10],
-		"signal must emit (monster_id, display_name, milestone_count)")
+		["slime", expected_name, 10])
 
 
 # ── Strict-equality: no re-fire between milestones ────────────────
