@@ -142,6 +142,54 @@ func test_every_job_still_loads_in_EVERY_world_through_the_real_loader() -> void
 	assert_eq(int(gs.current_world), restore, "current_world must be restored for later tests")
 
 
+## A world sheet on disk must be LOADABLE, not merely present.
+##
+## Every sheet this lane generated sat unreachable and nothing said so: gpt-image-1 writes
+## the .png, but Godot needs a .png.import sidecar, and without one ResourceLoader.exists()
+## returns false while FileAccess.file_exists() returns true. Measured on cleric:
+##   idle.png          ResourceLoader=true   FileAccess=true
+##   idle_digital.png  ResourceLoader=false  FileAccess=true    <- 42 sheets in this state
+##
+## The lookup then falls back to base art and the game looks completely fine, which is why
+## the load-bearing test above (every job loads in every world) stayed green throughout —
+## it asserts SOMETHING loads, and base art always does. Scanning with DirAccess sees the
+## file and agrees it exists. Only ResourceLoader knows the truth, so only ResourceLoader
+## can catch a batch of art that was generated, committed, and never once rendered.
+func test_world_sheets_on_disk_are_actually_LOADABLE() -> void:
+	var dir := DirAccess.open("res://assets/sprites/jobs")
+	assert_not_null(dir, "jobs sprite dir must be scannable")
+	if dir == null:
+		return
+
+	var suffixes: Array = []
+	for s in Loader.WORLD_SUFFIXES:
+		if s != "":
+			suffixes.append(s)
+
+	var unimported: Array = []
+	var found := 0
+	for job in dir.get_directories():
+		for suffix in suffixes:
+			var path := "res://assets/sprites/jobs/%s/idle_%s.png" % [job, suffix]
+			if not FileAccess.file_exists(path):
+				continue
+			found += 1
+			if not ResourceLoader.exists(path):
+				unimported.append("%s/idle_%s.png" % [job, suffix])
+	unimported.sort()
+
+	# Honest when there is nothing to check, rather than passing as if verified.
+	if found == 0:
+		gut.p("NOTE: no world-dressed sheets on disk yet — nothing to verify")
+		assert_true(true, "no world sheets present; guard arms when the art lands")
+		return
+
+	assert_eq(unimported, [],
+		("%d world sheet(s) present on disk but NOT importable — they never render, the " +
+		"lookup silently serves base art, and nothing else in this file can see it. " +
+		"Run: godot --headless --audio-driver Dummy --import  : %s") % [unimported.size(), unimported])
+
+
 ## Audio owns the world vocabulary; sheets own the suffix vocabulary. They differ by one
 ## entry and that difference is load-bearing: audio says "medieval" for world 1 where the
 ## sheets say "" because world 1 IS the artist's base art. If _normalize_suffix ever passed
