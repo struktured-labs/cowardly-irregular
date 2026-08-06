@@ -18,7 +18,10 @@ extends GutTest
 const SCENE: String = "res://data/cutscenes/world1_mordaine_intro.json"
 const VERDICT_CUE: String = "ledger_close"
 const RIFFLE_CUE: String = "paper_shuffle"
-const STEP_COUNT: int = 54
+## A vacuity FLOOR, not the exact count. Was pinned at 54 with a note that the assertions
+## below index into the scene — they don't; every one locates the verdict beat by its
+## narration text, which is why they all survived the staged conversion to 71 steps.
+const MIN_STEPS: int = 40
 
 
 func _scene() -> Array:
@@ -41,8 +44,8 @@ func _cue_of(step: Variant) -> String:
 
 func test_premise_the_scene_parses() -> void:
 	var steps: Array = _scene()
-	assert_eq(steps.size(), STEP_COUNT,
-		"PREMISE: the scene must have %d steps — every assertion below indexes into it, and a changed count means the staging blocking's step numbers moved too" % STEP_COUNT)
+	assert_gt(steps.size(), MIN_STEPS,
+		"PREMISE: the scene must parse into a real step list — a small number here makes every assertion below vacuous. Deliberately a FLOOR: the exact count moves whenever the scene is re-staged, and pinning it fails a correct change while catching nothing a content search misses.")
 
 
 func test_the_verdict_beat_is_scored_by_the_verdict_cue() -> void:
