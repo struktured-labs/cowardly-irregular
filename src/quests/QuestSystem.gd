@@ -256,13 +256,11 @@ func _route_reward_to_equipment_pool(game_loop, item_id: String, count: int) -> 
 	return true
 
 
+## Was an ItemSystem-only copy of ItemNameResolver, blind to its ability and equipment steps, so a
+## reward naming either announced a pretty-cased id. Tick 135 extracted the shared one after three
+## such copies drifted apart and one locked in an "armor"/"armors" typo; this was a fourth.
 func _item_display_name(item_id: String) -> String:
-	if ItemSystem:
-		var data: Dictionary = ItemSystem.get_item(item_id)
-		var display: String = str(data.get("name", ""))
-		if display != "":
-			return display
-	return item_id.replace("_", " ").capitalize()
+	return ItemNameResolver.resolve(item_id)
 
 
 ## Plays the stashed reward summary as a final dialogue line + the
