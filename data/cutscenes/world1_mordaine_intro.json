@@ -118,6 +118,10 @@
       "duration": 0.8
     },
     {
+      "type": "play_sfx",
+      "sfx": "paper_shuffle"
+    },
+    {
       "type": "narration",
       "text": "She finished reading the document. Folded it. Set it in a stack that was distinguishable from the other stacks only because it was the one she had just set a document on. Then she turned."
     },
