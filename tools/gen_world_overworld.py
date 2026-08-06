@@ -11,6 +11,23 @@ made it worse (face close-up plus failed transparency). PixelLab's animate-with-
 purpose-built for exactly this and takes a reference image, so each tool does the job it
 is actually good at: gpt-image-1 designs the costume, PixelLab animates it.
 
+🛑 SUPERSEDED — DO NOT USE THIS TOOL. See tools/gen_world_overworld_gptimage.py.
+
+Everything below is a correct measurement of the PixelLab path and a WRONG conclusion about
+gpt-image-1. This file's original note said gpt-image-1 "cannot produce a coherent
+4-direction walk grid." That was measured against MY prompt. `gen_overworld_gpt_image.
+PROMPT_TEMPLATE` — which has shipped 27 named-NPC sheets — does it, and beats every PixelLab
+result on the same metric:
+
+  artist base (correct)              2050 / 1414 / 1414 / 2130
+  gpt-image-1 w/ the SHIPPED prompt  1946 / 1354 / 1354 / 1964   <- and frame drift 8-17
+  best PixelLab attempt              1952 / 1431 / 1460 / 1941   <- costume lost, drift 25-48
+
+I built an identity/format two-reference split by hand for PixelLab. That split already
+existed here, tuned, with a non-negotiable back-view clause someone added after hitting the
+exact "every row came out front-facing" failure I hit. LOOK FOR THE EXISTING INSTRUMENT
+BEFORE DECLARING A TOOL INCAPABLE.
+
 ⛔ INCOMPLETE — animate-with-text ALONE CANNOT PRODUCE THE FOUR DIRECTIONS.
 Measured twice, and the numbers are the whole story. Row opaque-pixel counts for
 down/left/right/up, where a correct sheet must have NARROW side views:
