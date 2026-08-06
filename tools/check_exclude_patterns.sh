@@ -74,10 +74,34 @@ echo "[patterns] ${#PATTERNS[@]} distinct exclude pattern(s): ${LIVE} matching n
 [ "${#PROPH[@]}" -gt 0 ] && { echo "[patterns] matched historically, absent now (pipeline intermediates — expected):"
                               printf '             %s\n' "${PROPH[@]}"; }
 if [ "${#STALE[@]}" -gt 0 ]; then
+    # SPLIT THE NEVER-MATCHED SET, because "delete it" is right for one half and
+    # DANGEROUS for the other. cowir-music, 2026-08-06: *futuristic* was not a name that
+    # never existed — it is the WORLD-ID vocabulary aimed at the MUSIC-KEY namespace.
+    # World 5 is called Futuristic in monsters.json, in map ids, and in
+    # GameLoop._get_world_for_map; its music tracks are all named *_digital, because
+    # SoundManager's suffix function returns `digital`. The two vocabularies agree on
+    # five of six worlds, which is why it survived the repo's entire history.
+    #
+    # So the INTENT was live and only the SPELLING was dead. Deleting such a pattern
+    # drops a real exclusion silently — the opposite of the fix. Deleting a prophylactic
+    # *.jpg costs nothing.
+    #
+    # The discriminator is whether the pattern AIMS AT A POPULATED DIRECTORY. A pattern
+    # with a real directory prefix that holds files was written to catch something that
+    # exists; a bare extension guard was not.
     echo "[patterns] ⚠️  NEVER matched a file in this repo's history:"
-    printf '             %s\n' "${STALE[@]}"
-    echo "[patterns]    Prophylactic (*.jpg guarding a type nobody has added) is FINE."
-    echo "[patterns]    A pattern naming something specific is a VOCABULARY MISMATCH:"
-    echo "[patterns]    it excludes nothing, and whatever it was meant to catch still ships."
+    for p in "${STALE[@]}"; do
+        dir="${p%%\**}"; dir="${dir%/}"
+        if [ -n "$dir" ] && [ -d "$dir" ] && [ "$(find "$dir" -type f 2>/dev/null | head -1)" ]; then
+            echo "             ${p}"
+            echo "                 ^ AIMED AT A POPULATED DIRECTORY ($(find "$dir" -type f | wc -l) files)."
+            echo "                   The intent was probably LIVE and only the SPELLING is dead."
+            echo "                   ⛔ Do NOT just delete it — first confirm the files it MEANT"
+            echo "                      to exclude are caught by another pattern. Known trap:"
+            echo "                      world ids say 'futuristic', music keys say 'digital'."
+        else
+            echo "             ${p}   (no populated target dir — prophylactic, fine)"
+        fi
+    done
 fi
 exit 0
