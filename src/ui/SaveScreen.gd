@@ -619,15 +619,19 @@ static var _bust_cache: Dictionary = {}
 static func _bust_from_job_sheet(job_id: String) -> Texture2D:
 	if job_id.is_empty():
 		return null
-	if _bust_cache.has(job_id):
-		return _bust_cache[job_id]
-	var sheet_path := "res://assets/sprites/jobs/%s/idle.png" % job_id
+	# FLAGGED DEFAULT (struktured away): busts wear the CURRENT world's form, not the
+	# world the save was made in. Revisit if he wants per-save world forms.
+	var _bust_w := HybridSpriteLoader.current_world_suffix()
+	var cache_key := "%s:%s" % [job_id, _bust_w]
+	if _bust_cache.has(cache_key):
+		return _bust_cache[cache_key]
+	var sheet_path := HybridSpriteLoader.job_asset_path(job_id, "idle", _bust_w)
 	if not ResourceLoader.exists(sheet_path):
-		_bust_cache[job_id] = null
+		_bust_cache[cache_key] = null
 		return null
 	var sheet := load(sheet_path) as Texture2D
 	if sheet == null:
-		_bust_cache[job_id] = null
+		_bust_cache[cache_key] = null
 		return null
 	var size: Vector2 = sheet.get_size()
 	var frame: int = int(size.y)
@@ -636,5 +640,5 @@ static func _bust_from_job_sheet(job_id: String) -> Texture2D:
 	var atlas := AtlasTexture.new()
 	atlas.atlas = sheet
 	atlas.region = Rect2(0, 0, frame, int(float(frame) * 0.55))
-	_bust_cache[job_id] = atlas
+	_bust_cache[cache_key] = atlas
 	return atlas

@@ -39,7 +39,11 @@ static func build(id: String, spec: Dictionary) -> CutsceneActor:
 	a.add_child(a._sprite)
 	var sheet_path: String = ""
 	if str(spec.get("kind", "npc")) == "party":
-		sheet_path = "res://assets/sprites/jobs/%s/overworld.png" % str(spec.get("job", "fighter"))
+		# Party puppets wear the current world's form, same resolution as the live player.
+		# (All staged scenes are W1 today; the post-battle cache caveat is filed against
+		# the shelved puppet-ending and bites nothing that exists.)
+		sheet_path = HybridSpriteLoader.job_asset_path(
+			str(spec.get("job", "fighter")), "overworld", HybridSpriteLoader.current_world_suffix())
 	else:
 		sheet_path = "res://assets/sprites/npcs/%s/overworld.png" % str(spec.get("archetype", "young_man"))
 	if not a._load_sheet(sheet_path):

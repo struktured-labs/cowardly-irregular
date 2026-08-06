@@ -420,6 +420,11 @@ func _maybe_run_battle_smoke() -> void:
 			await _smoke_enter_map(_iid)
 			await get_tree().create_timer(0.8).timeout
 			await _smoke_shot(_iid)
+		# The Vertex Apex — the LAST ROOM IN THE GAME had never had a screenshot taken of it
+		# by anything, human or automated, until this leg (struktured's go, wishlist item).
+		await _smoke_enter_map("vertex_apex")
+		await get_tree().create_timer(1.2).timeout
+		await _smoke_shot("vertex_apex")
 		await _smoke_enter_map("harmonia_village")
 		await get_tree().create_timer(1.0).timeout
 		# settings (Start) then the overworld/party menu (X) — the week's UI churn surfaces
