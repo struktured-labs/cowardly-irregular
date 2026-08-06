@@ -434,6 +434,9 @@ func giver_business_kind(npc_id: String) -> String:
 
 
 func _giver_quest_for(npc_id: String) -> String:
+	## Remembered, never preferred: live business (offerable/active) still returns immediately,
+	## so a giver who somehow owned both would offer the quest rather than refuse a locked one.
+	var locked_fallback: String = ""
 	for qid in _quests:
 		var q: Dictionary = _quests[qid]
 		if q.get("giver", {}).get("npc_id", "") != npc_id:
@@ -442,7 +445,11 @@ func _giver_quest_for(npc_id: String) -> String:
 			return qid
 		if get_state(qid) == "active":
 			return qid
-	return ""
+		## Prereq-locked WITH an authored refusal. Without this, run_giver_dialogue's locked
+		## branch is unreachable and the Orrery arc's four out-of-sequence lines never play.
+		if locked_fallback == "" and get_state(qid) == "" and (q.get("dialogue", {}) as Dictionary).has("locked"):
+			locked_fallback = qid
+	return locked_fallback
 
 
 ## Run the full giver-state dialogue with accept/decline on offer.
