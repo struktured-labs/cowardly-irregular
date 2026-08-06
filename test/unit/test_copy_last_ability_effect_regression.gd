@@ -52,15 +52,48 @@ func test_execute_ability_records_cast() -> void:
 		"recording must skip mimic_ability itself to prevent infinite recursion")
 
 
+## Was a 1200-char source window from the arm — a claim about WHERE the code sits, which failed a correct move into the shared _replay_last_ability. Assert the replay happens instead.
 func test_copy_last_ability_arm_exists() -> void:
 	var src := _read(BATTLE_MANAGER_PATH)
-	var arm_idx: int = src.find("\"copy_last_ability\":")
-	assert_gt(arm_idx, -1, "copy_last_ability arm must exist")
-	var window: String = src.substr(arm_idx, 1200)
-	assert_true(window.contains("_last_ability_cast_id"),
-		"copy_last_ability arm must read the tracked ability id")
-	assert_true(window.contains("_execute_ability(caster, _last_ability_cast_id, targets)"),
-		"copy_last_ability arm must replay via _execute_ability")
+	assert_gt(src.find("\"copy_last_ability\":"), -1, "copy_last_ability arm must exist")
+	var bm: Node = load(BATTLE_MANAGER_PATH).new()
+	add_child_autofree(bm)
+	var caster: Combatant = autofree(Combatant.new())
+	caster.combatant_name = "Mimic"
+	caster.is_alive = true
+	var seen: Array[String] = []
+	bm.battle_log_message.connect(func(m): seen.append(str(m)))
+	bm._last_ability_cast_id = "fire"
+	bm._execute_meta_ability(caster, {"id": "x", "meta_effect": "copy_last_ability"}, [])
+	var announced := false
+	for m in seen:
+		if m.to_lower().contains("mimics"):
+			announced = true
+	assert_true(announced, "the meta dispatch must replay the tracked cast, wherever the body lives")
+
+
+## Every assert above passed while mimic_ability could not reach this handler at all — it authors type=support and the arm sits in the meta_effect match. Existence was pinned; reachability never was.
+func test_the_ability_can_actually_reach_the_handler() -> void:
+	var bm: Node = load(BATTLE_MANAGER_PATH).new()
+	add_child_autofree(bm)
+	var caster: Combatant = autofree(Combatant.new())
+	caster.combatant_name = "Adaptive Slime"
+	caster.is_alive = true
+	var seen: Array[String] = []
+	bm.battle_log_message.connect(func(m): seen.append(str(m)))
+	bm._last_ability_cast_id = "fire"
+	var raw: String = FileAccess.get_file_as_string("res://data/abilities.json")
+	var data: Dictionary = JSON.parse_string(raw)
+	var mimic: Dictionary = data["mimic_ability"]
+	assert_eq(str(mimic.get("type", "")), "support",
+		"the routing premise of this test — if the type changes, re-derive which dispatch it reaches")
+	bm._execute_support_ability(caster, mimic, [])
+	var announced := false
+	for m in seen:
+		if m.to_lower().contains("mimics"):
+			announced = true
+	assert_true(announced,
+		"casting mimic_ability AS AUTHORED must replay — pre-fix it hit the support `_:` push_warning")
 
 
 func test_data_authors_copy_last_ability() -> void:
