@@ -81,8 +81,9 @@ func test_autobattle_handlers_still_call_helper() -> void:
 	# F6 block
 	assert_true(window.contains("KEY_F6") and window.find("_in_exploration_transition()", window.find("KEY_F6")) > 0,
 		"F6 toggle-all-autobattle handler must guard with _in_exploration_transition()")
-	# Gamepad Select (JOY_BUTTON_BACK)
-	assert_true(window.contains("JOY_BUTTON_BACK"),
-		"gamepad Select handler must exist")
-	assert_gt(window.find("_in_exploration_transition()", window.find("JOY_BUTTON_BACK")), -1,
-		"gamepad Select handler must guard with _in_exploration_transition()")
+	# Gamepad autobattle toggle — located by ACTION, not by JOY_BUTTON_BACK, so a
+	# Controls rebind reaches the handler and this pin survives that correct change.
+	assert_true(window.contains('is_action_pressed("battle_toggle_auto")'),
+		"gamepad autobattle-toggle handler must exist")
+	assert_gt(window.find("_in_exploration_transition()", window.find('is_action_pressed("battle_toggle_auto")')), -1,
+		"gamepad autobattle-toggle handler must guard with _in_exploration_transition()")
