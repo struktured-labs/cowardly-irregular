@@ -56,7 +56,6 @@ func test_mega_potion_heals_correct_amount() -> void:
 		return
 	var hbr: GDScript = load(HBR_PATH)
 	var resolver: Object = hbr.new()
-	add_child_autofree(resolver)
 	var user: Combatant = _make("User", 200, 50)
 	user.add_item("mega_potion", 1)
 	var target: Combatant = _make("Target", 200, 50)
@@ -78,7 +77,6 @@ func test_unknown_item_does_not_fizzle_to_heal() -> void:
 		return
 	var hbr: GDScript = load(HBR_PATH)
 	var resolver: Object = hbr.new()
-	add_child_autofree(resolver)
 	var user: Combatant = _make("User", 100, 50)
 	user.add_item("__not_a_real_item__", 1)
 	var target: Combatant = _make("Target", 100, 50)

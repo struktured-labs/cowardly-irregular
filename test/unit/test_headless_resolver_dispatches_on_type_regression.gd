@@ -61,7 +61,6 @@ func test_heal_ability_actually_heals_in_sim() -> void:
 
 	var script: GDScript = load(HBR_PATH)
 	var hbr: Object = script.new()
-	add_child_autofree(hbr)
 
 	var c_script: GDScript = load("res://src/battle/Combatant.gd")
 	var caster: Combatant = c_script.new()
