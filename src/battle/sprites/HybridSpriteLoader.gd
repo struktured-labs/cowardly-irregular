@@ -31,14 +31,21 @@ static func job_asset_path(job_id: String, base_name: String, world_suffix: Stri
 
 ## The ONE fetch site for the current suffix, so four consumers stay identical and the swap
 ## to SoundManager's public accessor (unfolded branch) is a single edit here, not four.
+## RESOLVER UNIFICATION (cowir-sprites' fold slot, as agreed): delegates to world_suffix()
+## instead of reading SoundManager's private method, so the codebase has ONE visual world
+## source. Four consumers keep calling this name; only the body moved.
+##
+## Why GameState and not audio, now that both are correct: audio's suffix is written at ONE
+## site behind an early return for interiors with no resolved track, by an audio function,
+## and play_music CLEARS _current_area for battle — which is where sprites resolve.
+## current_world is written in _set_current_map_id(), the setter for every map change.
+##
+## The interior hole that made audio look better is CLOSED on this tree: GameLoop:144 derives
+## a shared interior's world from _village_origin_id, so current_world no longer zeroes to W1
+## in a Brasston inn. That fix landing is what makes this a correct unification rather than a
+## trade — before it, each source was right only where the other was wrong.
 static func current_world_suffix() -> String:
-	var tree := Engine.get_main_loop() as SceneTree
-	if tree == null:
-		return ""
-	var sm := tree.root.get_node_or_null("SoundManager")
-	if sm == null or not sm.has_method("_get_current_world_suffix"):
-		return ""
-	return str(sm._get_current_world_suffix())
+	return world_suffix()
 
 static func _load_manifest() -> void:
 	if _manifest_loaded:

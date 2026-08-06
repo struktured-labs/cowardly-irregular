@@ -310,3 +310,25 @@ func _jobs_with_base_art() -> Array:
 			out.append(job)
 	out.sort()
 	return out
+
+
+## THE UNIFICATION, pinned. Two fetch names exist for compatibility — four consumers call
+## current_world_suffix(), this lane's code calls world_suffix() — but there must be exactly
+## ONE source behind them. Today's ledger recorded FOUR independent builds of this mapping
+## (sprites built one and deleted it, music, sfx, main's seam); the map has gravity and
+## everything near it duplicates. Equality is the cheapest thing that makes "don't copy the
+## map" enforceable instead of advisory.
+func test_the_two_fetch_names_share_ONE_source() -> void:
+	var gs := get_node_or_null("/root/GameState")
+	assert_not_null(gs, "GameState autoload required — run via tools/run_tests.sh")
+	if gs == null:
+		return
+	var restore: int = int(gs.current_world)
+	for world in range(1, 7):
+		gs.current_world = world
+		assert_eq(Loader.current_world_suffix(), Loader.world_suffix(),
+			("current_world_suffix() and world_suffix() disagree in world %d — two visual " +
+			"world sources means the party can be dressed for one world while another " +
+			"consumer resolves a different one") % [world])
+	gs.current_world = restore
+	assert_eq(int(gs.current_world), restore, "current_world must be restored")
