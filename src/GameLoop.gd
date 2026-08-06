@@ -1461,6 +1461,7 @@ func _show_title_screen() -> void:
 	# Connect signals
 	_title_screen.new_game_selected.connect(_on_title_new_game)
 	_title_screen.continue_selected.connect(_on_title_continue)
+	_title_screen.load_selected.connect(_on_title_load)
 	_title_screen.settings_selected.connect(_on_title_settings)
 
 	print("[GAME] Showing title screen")
@@ -2113,14 +2114,26 @@ func _play_story_cutscene(cutscene_id: String) -> void:
 func _on_title_continue() -> void:
 	"""Handle continue selected from title screen"""
 	print("[GAME] Continue selected")
+	var slot := -1
+	if SaveSystem and SaveSystem.has_method("get_most_recent_slot"):
+		slot = SaveSystem.get_most_recent_slot()
+	await _title_load_slot(slot)
+
+
+## The picker's path and Continue's path are ONE function on purpose — a chosen slot gets
+## the identical load-then-restore-then-toast hardening, never a second copy that drifts.
+func _on_title_load(slot: int) -> void:
+	print("[GAME] Load Game selected: slot %d" % slot)
+	await _title_load_slot(slot)
+
+
+func _title_load_slot(slot: int) -> void:
 	_close_title_screen()
-	# Load most recent save FIRST (writes into GameState), THEN restore the
+	# Load the save FIRST (writes into GameState), THEN restore the
 	# live party from the loaded GameState. Bug fix (2026-04-30): previously
 	# we went straight to _create_party() (defaults) and ignored the save.
 	var loaded = false
-	var slot := -1
 	if SaveSystem and SaveSystem.has_method("load_game"):
-		slot = SaveSystem.get_most_recent_slot() if SaveSystem.has_method("get_most_recent_slot") else -1
 		if slot >= 0:
 			loaded = SaveSystem.load_game(slot)
 	if loaded and _restore_party_from_save_data():

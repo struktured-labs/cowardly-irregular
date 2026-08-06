@@ -6,6 +6,8 @@ class_name TitleScreen
 
 signal new_game_selected()
 signal continue_selected()
+## The startup save picker — struktured 2026-08-05: "you should be able to pick at startup somehow".
+signal load_selected(slot: int)
 signal settings_selected()
 
 ## State machine: PRESS_START → MENU
@@ -41,6 +43,7 @@ var _blink_timer: float = 0.0
 
 # Tick 203: single source of truth for Continue's target slot. Pre-fix _check_for_save (file-existence) and _build_continue_subtitle (metadata-driven get_most_recent_slot) could disagree — a save with missing metadata showed Continue, subtitle was empty, and load attempts went to slot -1.
 var _cached_continue_slot: int = -1
+var _load_mode: bool = false
 
 
 func _ready() -> void:
@@ -182,6 +185,7 @@ func _build_menu() -> void:
 			"subtitle": _build_continue_subtitle(),
 			"enabled": true,
 		})
+		menu_items.append({"id": "load_game", "label": "LOAD GAME", "enabled": true})
 	menu_items.append({"id": "new_game", "label": "NEW GAME", "enabled": true})
 	menu_items.append({"id": "settings", "label": "SETTINGS", "enabled": true})
 	menu_items.append({"id": "help", "label": "HELP", "enabled": true})
@@ -190,6 +194,49 @@ func _build_menu() -> void:
 	for i in menu_items.size():
 		_menu_container.add_child(_create_menu_row(i, menu_items[i]))
 	_update_selection()
+
+
+## Replace-in-place slot list: every slot holding a save, each row labeled the way
+## Continue's subtitle already labels its target, so the two surfaces cannot disagree.
+func _build_load_menu() -> void:
+	_load_mode = true
+	menu_items.clear()
+	for child in _menu_container.get_children():
+		child.queue_free()
+	var slots: Array[int] = []
+	for i in range(SaveSystem.MAX_SAVE_SLOTS):
+		slots.append(i)
+	slots.append(SaveSystem.AUTO_SAVE_SLOT)
+	slots.append(SaveSystem.QUICK_SAVE_SLOT)
+	for slot in slots:
+		if not SaveSystem.save_exists(slot):
+			continue
+		var info: Dictionary = SaveSystem.get_save_info(slot)
+		var detail: String = str(info.get("location_name", "")).strip_edges()
+		var chapter: String = str(info.get("chapter_title", "")).strip_edges()
+		if chapter != "" and detail != "":
+			detail = "%s — %s" % [chapter, detail]
+		elif detail == "":
+			detail = chapter
+		var when: String = str(info.get("save_date", "")).split("T")[0]
+		if when != "":
+			detail = ("%s · %s" % [detail, when]) if detail != "" else when
+		menu_items.append({
+			"id": "load_slot", "slot": slot,
+			"label": _format_continue_slot_label(slot).to_upper(),
+			"subtitle": detail, "enabled": true,
+		})
+	menu_items.append({"id": "load_back", "label": "BACK", "enabled": true})
+	for i in menu_items.size():
+		_menu_container.add_child(_create_menu_row(i, menu_items[i]))
+	selected_index = 0
+	_update_selection()
+
+
+func _close_load_menu() -> void:
+	_load_mode = false
+	selected_index = 0
+	_build_menu()
 
 
 func _create_menu_row(index: int, item: Dictionary) -> Control:
@@ -283,6 +330,12 @@ func _input(event: InputEvent) -> void:
 	if not _can_input:
 		return
 
+	# Load-picker intercept — cancel returns to the main menu, same as BACK.
+	if _load_mode and not _help_overlay and event.is_action_pressed("ui_cancel"):
+		_close_load_menu()
+		get_viewport().set_input_as_handled()
+		return
+
 	# Help overlay intercept — cancel closes; up/down scroll the long content via controller.
 	if _help_overlay:
 		if event.is_action_pressed("ui_cancel"):
@@ -348,6 +401,12 @@ func _select_item() -> void:
 	if SoundManager:
 		SoundManager.play_ui("menu_select")
 	match item.id:
+		"load_game":
+			_build_load_menu()
+		"load_slot":
+			load_selected.emit(int(item.get("slot", -1)))
+		"load_back":
+			_close_load_menu()
 		"new_game":
 			new_game_selected.emit()
 		"continue":
