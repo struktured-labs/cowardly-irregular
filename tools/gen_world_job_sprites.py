@@ -88,8 +88,16 @@ JOB_SIGNATURE = {
 
 ## Every output filename's suffix must be one the RUNTIME can actually ask for.
 ##
-## The trap is `futuristic`: world 5's map ids say futuristic (futuristic_overworld,
-## overworld_futuristic) but SoundManager._get_current_world_suffix RETURNS "digital".
+## The trap is `futuristic`, and there are THREE vocabularies here, not two:
+##   MAP IDS       futuristic_overworld / overworld_futuristic   real, matched, correct
+##   AUDIO suffix  SoundManager._get_current_world_suffix()      returns "digital"
+##   SPRITE suffix HybridSpriteLoader.WORLD_SUFFIXES[4]          "digital"  <- WHAT WE NAME FILES BY
+##
+## The authority for THIS check is the SPRITE list, not audio's — the loader stopped
+## consulting SoundManager when the resolver unified. The two agree, but they are separate
+## literals, so agreement is a fact to re-check rather than a guarantee. Knowing which PAIR
+## a comparison spans is what decides whether a mismatch is a bug: map-id-to-map-id can
+## never misfire; map-id-to-suffix is where the art gets named something nothing requests.
 ## A batch written as idle_futuristic.png would generate cleanly, import cleanly, sit on
 ## disk forever and never be requested once — and nothing downstream reports it, because
 ## the lookup just falls back to base art and the game looks right.
