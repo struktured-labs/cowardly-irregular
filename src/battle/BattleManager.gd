@@ -5878,9 +5878,12 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 				monster_summoned.emit(clone_type, caster)
 				battle_log_message.emit("[color=purple]%s forks a copy of itself![/color]" % caster.combatant_name)
 				print("  → %s summons a clone (%s)" % [caster.combatant_name, clone_type])
+		## mimic_ability authors type=support, so it routes here — tick 406 put copy_last_ability in _execute_meta_ability's meta_effect match, which a type=support ability never reaches.
+		"copy_last_ability":
+			_replay_last_ability(caster, targets)
 		_:
 			# Authored-but-unimplemented support effect (dispel,
-			# copy_last_ability, random_stat_change, adapt_resistance, etc.).
+			# random_stat_change, adapt_resistance, etc.).
 			# These need bespoke handling — make the gap LOUD (push_warning)
 			# so it shows up in CI/test runs rather than silently no-opping.
 			# (Silent failure is the project's canonical worst failure class.)
@@ -5993,6 +5996,16 @@ func _apply_secondary_effect(caster: Combatant, ability: Dictionary, primary_tar
 			battle_log_message.emit("[color=cyan]%s is afflicted with %s![/color]" % [t.combatant_name, StatusNames.display(sec_effect)])
 
 
+## Mimic's replay, shared by both dispatches so it cannot be reachable from only one.
+func _replay_last_ability(caster: Combatant, targets: Array) -> void:
+	if _last_ability_cast_id == "":
+		battle_log_message.emit("[color=gray]%s reaches for a memory... but there's nothing to mimic yet.[/color]" % caster.combatant_name)
+		return
+	battle_log_message.emit("[color=magenta]✦ %s mimics %s![/color]" % [caster.combatant_name, _last_ability_cast_id.capitalize().replace("_", " ")])
+	## Replay with the caster as the new source and the same targets — "do what they did".
+	_execute_ability(caster, _last_ability_cast_id, targets)
+
+
 func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Array) -> void:
 	var meta_effect = ability.get("meta_effect", "")
 	var corruption_risk = ability.get("corruption_risk", 0.0)
@@ -6089,13 +6102,7 @@ func _execute_meta_ability(caster: Combatant, ability: Dictionary, targets: Arra
 		## mimic_ability itself so a mimic-of-a-mimic doesn't recurse;
 		## the mimic still reads the prior cast.
 		"copy_last_ability":
-			if _last_ability_cast_id == "":
-				battle_log_message.emit("[color=gray]%s reaches for a memory... but there's nothing to mimic yet.[/color]" % caster.combatant_name)
-			else:
-				battle_log_message.emit("[color=magenta]✦ %s mimics %s![/color]" % [caster.combatant_name, _last_ability_cast_id.capitalize().replace("_", " ")])
-				# Replay the ability using the caster as the new source.
-				# Pass the same targets — semantically "do what they did".
-				_execute_ability(caster, _last_ability_cast_id, targets)
+			_replay_last_ability(caster, targets)
 		## Tick 404: batch-wire 5 flag-write meta_effects so the casts
 		## stop silently fizzling. Actual mechanical implementations
 		## live downstream; this tick writes the canonical flags +
