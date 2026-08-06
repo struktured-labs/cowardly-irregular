@@ -329,7 +329,7 @@ const THEME_ALIASES := {
 	"hooded_mage": "mage", "apprentice": "mage",
 	"herbalist": "cleric", "pilgrim": "cleric",
 	"scholarly": "scholar",
-	"bartender": "shopkeeper", "traveler": "merchant",
+	"bartender": "shopkeeper", "innkeeper": "shopkeeper", "traveler": "merchant",
 	"adventurer": "hero", "dancer": "bard",
 	"farmer": "villager", "maid": "villager", "nervous": "villager",
 }
