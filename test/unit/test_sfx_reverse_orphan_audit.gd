@@ -51,13 +51,6 @@ const DYNAMIC_PREFIXES := {
 ## owner. Every entry needs the owner and what they're waiting on — an entry
 ## with no owner is just a dead asset wearing a costume.
 const KNOWN_PENDING_CONSUMER := {
-	# cowir-sfx: freed from the VERDICT beat (it is a "dry bureaucratic riffle" and that
-	# beat narrates "a sound like a verdict" — now ledger_close). It belongs at the FOLDING
-	# beat, which has no cue at all today. Placing it needs a new step, and
-	# lane/cutscene-mordaine-intro-staged is concurrently rewriting this scene 54 -> 70
-	# steps, so the placement lands in THAT rewrite rather than two lanes renumbering one
-	# scene. Owner: cowir-sfx. Delete this entry when the staged scene folds.
-	"paper_shuffle": "cowir-sfx — folding beat, placed by the staged Mordaine rewrite",
 	# cowir-battle: contact-frame seam (their cycle, confirmed msg 2910)
 	"thump_light": "cowir-battle contact-frame seam",
 	"thump_med": "cowir-battle contact-frame seam",
