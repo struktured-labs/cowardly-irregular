@@ -38,6 +38,7 @@ const MAP_BINDINGS := {
 	"world1_mordaine_speaks": "res://src/maps/dungeons/CastleHarmonia.gd",
 	"world1_mordaine_procedure": "res://src/maps/dungeons/CastleHarmonia.gd",
 	"world1_mordaine_watch_road": "res://src/exploration/OverworldScene.tscn",
+	"world1_mordaine_intro": "res://src/maps/dungeons/CastleHarmonia.gd",
 }
 
 

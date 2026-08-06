@@ -4,7 +4,7 @@
   "world": 1,
   "trigger": "boss_mordaine_encounter",
   "background": "throne_room",
-  "description": "The throne room of Castle Harmonia. Chancellor Mordaine has been expecting them. The architect of World 1 meets the element she did not calculate.",
+  "description": "The throne room of Castle Harmonia. Chancellor Mordaine has been expecting them. The architect of World 1 meets the element she did not calculate. STAGED (2026-08-06): plays on Castle Harmonia floor 4. Blocking by cowir-story — she moves twice and both moves are retreats; the party enters, stops and never moves again, so footstep_stone is hers alone. `background` is INERT for presentation:staged (CutsceneDirector:258), kept only so backdrop-existence ratchets stay green.",
   "steps": [
     {
       "type": "stop_music"
@@ -27,6 +27,80 @@
       "title": "The Usurper's Crown"
     },
     {
+      "type": "camera_focus",
+      "target": [
+        336,
+        240
+      ],
+      "duration": 0.1
+    },
+    {
+      "type": "spawn_actor",
+      "id": "fighter",
+      "kind": "party",
+      "job": "fighter",
+      "at": [
+        272,
+        304
+      ],
+      "facing": "up"
+    },
+    {
+      "type": "spawn_actor",
+      "id": "cleric",
+      "kind": "party",
+      "job": "cleric",
+      "at": [
+        304,
+        304
+      ],
+      "facing": "up"
+    },
+    {
+      "type": "spawn_actor",
+      "id": "mage",
+      "kind": "party",
+      "job": "mage",
+      "at": [
+        336,
+        304
+      ],
+      "facing": "up"
+    },
+    {
+      "type": "spawn_actor",
+      "id": "rogue",
+      "kind": "party",
+      "job": "rogue",
+      "at": [
+        368,
+        304
+      ],
+      "facing": "up"
+    },
+    {
+      "type": "spawn_actor",
+      "id": "bard",
+      "kind": "party",
+      "job": "bard",
+      "at": [
+        400,
+        304
+      ],
+      "facing": "up"
+    },
+    {
+      "type": "spawn_actor",
+      "id": "mordaine",
+      "kind": "npc",
+      "archetype": "chancellor_mordaine",
+      "at": [
+        240,
+        208
+      ],
+      "facing": "up"
+    },
+    {
       "type": "fade_from_black",
       "duration": 1.2
     },
@@ -44,8 +118,17 @@
       "duration": 0.8
     },
     {
+      "type": "play_sfx",
+      "sfx": "paper_shuffle"
+    },
+    {
       "type": "narration",
       "text": "She finished reading the document. Folded it. Set it in a stack that was distinguishable from the other stacks only because it was the one she had just set a document on. Then she turned."
+    },
+    {
+      "type": "face_actor",
+      "id": "mordaine",
+      "dir": "down"
     },
     {
       "type": "wait",
@@ -283,6 +366,23 @@
       "duration": 0.6
     },
     {
+      "type": "play_sfx",
+      "sfx": "footstep_stone"
+    },
+    {
+      "type": "move_actor",
+      "id": "mordaine",
+      "to": [
+        432,
+        176
+      ]
+    },
+    {
+      "type": "face_actor",
+      "id": "mordaine",
+      "dir": "up"
+    },
+    {
       "type": "narration",
       "text": "She moved to the window. Below, the market sounds continued. Someone had resolved the fence argument. Someone else was singing. The ordinary persistence of people who did not know they were inside a system."
     },
@@ -364,6 +464,31 @@
     {
       "type": "wait",
       "duration": 0.6
+    },
+    {
+      "type": "play_sfx",
+      "sfx": "footstep_stone"
+    },
+    {
+      "type": "move_actor",
+      "id": "mordaine",
+      "to": [
+        240,
+        208
+      ]
+    },
+    {
+      "type": "face_actor",
+      "id": "mordaine",
+      "dir": "down"
+    },
+    {
+      "type": "camera_focus",
+      "target": [
+        240,
+        208
+      ],
+      "duration": 1.2
     },
     {
       "type": "narration",
@@ -493,6 +618,10 @@
       "intensity": 3.0
     },
     {
+      "type": "camera_restore",
+      "duration": 0.6
+    },
+    {
       "type": "letterbox_out",
       "duration": 0.3
     },
@@ -501,5 +630,6 @@
       "flag": "mordaine_intro_complete",
       "value": true
     }
-  ]
+  ],
+  "presentation": "staged"
 }
