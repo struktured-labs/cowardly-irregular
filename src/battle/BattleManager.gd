@@ -224,6 +224,9 @@ const TERRAIN_MODIFIER_VALUE: float = 0.25  # +25% or -25% damage
 ## against its authored reward of 10, and Mordaine up to 16,550 against her 800.
 const STEAL_GOLD_HP_DIVISOR: float = 500.0
 
+## Rules per PC sent to the boss-intent prompt — 5 PCs, so this is a token budget.
+const BOSS_INTENT_RULES_PER_PC: int = 4
+
 ## Tick 416: removed dead `autobattle_toggled` signal that was never
 ## emitted from BattleManager — the live signal of the same name
 ## lives on AutobattleToggleUI (src/ui/autobattle/AutobattleToggleUI.gd)
@@ -7546,12 +7549,30 @@ func _build_boss_intent_context(
 		})
 
 	# Task 8: lead PC's autobattle rules, sliced for prompt-budget hygiene.
+	var autobattle = get_node_or_null("/root/AutobattleSystem")
 	if player_party.size() > 0 and player_party[0] != null:
-		var autobattle = get_node_or_null("/root/AutobattleSystem")
 		if autobattle != null:
 			var lead_script: Dictionary = autobattle.get_character_script(_get_character_id(player_party[0]))
 			var rules: Array = lead_script.get("rules", [])
 			ctx.player_lead_pc_rules = rules.slice(0, min(5, rules.size()))
+
+	# Every member actually RUNNING automation, rendered as prose the model can read.
+	if autobattle != null and autobattle.has_method("describe_script_for_llm"):
+		for member in player_party:
+			if member == null or not member.is_alive:
+				continue
+			var cid: String = _get_character_id(member)
+			# A script that is switched off is a draft, not a strategy — skip it.
+			if not (is_autobattle_enabled or autobattle.is_autobattle_enabled(cid)):
+				continue
+			var rules_text: String = str(autobattle.describe_script_for_llm(cid, BOSS_INTENT_RULES_PER_PC))
+			if rules_text == "":
+				continue
+			ctx.party_scripts.append({
+				"name":   str(member.combatant_name),
+				"job_id": str(member.job_id) if "job_id" in member else "",
+				"rules":  rules_text,
+			})
 
 	# Task 8: region's derived counter strategy + top-3 pattern samples.
 	var autogrind = get_node_or_null("/root/AutogrindSystem")

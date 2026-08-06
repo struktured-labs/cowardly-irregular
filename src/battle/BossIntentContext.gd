@@ -51,6 +51,12 @@ var persona: String = ""
 ## Compact rule summary of the lead PC's autobattle profile (3-5 top entries).
 var player_lead_pc_rules: Array = []
 
+## Every party member currently RUNNING automation, as readable strategy prose.
+## Entries: { name, job_id, rules }. A character with a script but autobattle
+## switched off is excluded — an unused draft is not a strategy the boss can read.
+## Supersedes player_lead_pc_rules, which only ever saw slot 0 and shipped raw JSON.
+var party_scripts: Array = []
+
 ## The region's derived counter_strategy string.
 var learned_patterns_counter: String = ""
 
@@ -96,6 +102,7 @@ func to_dict() -> Dictionary:
 		"available_intents": available_intents.duplicate(),
 		"persona": persona,
 		"player_lead_pc_rules": player_lead_pc_rules.duplicate(),
+		"party_scripts": party_scripts.duplicate(),
 		"learned_patterns_counter": learned_patterns_counter,
 		"learned_patterns_sample": learned_patterns_sample.duplicate(),
 		"time_of_day": time_of_day,
