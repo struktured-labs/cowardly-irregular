@@ -267,10 +267,18 @@ _report_userdata_drift() {
            # suite writes user://autogrind/ (cowir-autogrind, 2026-08-06), so THIS
            # SCRIPT is a writer. Attributing its own drift to the player is worse than
            # saying nothing: it invites him to keep a test fixture as if it were a save.
+           # Post-C1 (main 4dda6dfb) run_tests.sh carries its own net over
+           # script_exports/autogrind/autobattle/input/ + root *.json, restoring them on
+           # EXIT INT TERM — verified, including the signal cases this script had to learn.
+           # So for a NETTED path (b) now means the suite ALSO died by SIGKILL or its
+           # restore failed, which is worth knowing rather than assuming (a).
+           # For saves/ and screenshots/ nothing is netted by anyone, deliberately.
            echo "        NOT reverted. TWO possible authors and this report cannot tell" >&2
            echo "        them apart: (a) your live session, or (b) gate 1's test suite —" >&2
-           echo "        user://autogrind/ is written by both, and user:// is ONE path" >&2
-           echo "        shared by every cowir-* checkout on this machine." >&2
+           echo "        user:// is ONE path shared by every cowir-* checkout on this" >&2
+           echo "        machine. For netted dirs (autogrind/ autobattle/ input/" >&2
+           echo "        script_exports/ root *.json) the suite restores its own writes," >&2
+           echo "        so drift there points at (a) or at a net that did not run." >&2
            echo "        Pre-deploy copy at ${FULL_SNAP}/ is from BEFORE gate 1, so it is" >&2
            echo "        a true pre-suite pre-image — diff against it before keeping either." >&2 ;;
     esac
