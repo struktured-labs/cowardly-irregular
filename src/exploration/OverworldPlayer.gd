@@ -585,7 +585,11 @@ func _generate_all_sprites() -> void:
 ## Load dedicated overworld sprite sheet (128x128 PNG, 4x4 grid of 32x32 frames).
 ## Row order: down, left, right, up. 4 walk frames per row.
 func _try_load_overworld_sheet() -> Dictionary:
-	var path = "res://assets/sprites/jobs/%s/overworld.png" % current_job
+	# Per-world sheet via the shared resolver; base file is the medieval art.
+	var suffix := ""
+	if SoundManager and SoundManager.has_method("_get_current_world_suffix"):
+		suffix = str(SoundManager._get_current_world_suffix())
+	var path = HybridSpriteLoader.job_overworld_sheet_path(current_job, suffix)
 	if not ResourceLoader.exists(path):
 		return {}
 

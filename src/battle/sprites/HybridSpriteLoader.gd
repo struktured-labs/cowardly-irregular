@@ -123,6 +123,30 @@ static func load_sprite_frames(customization, primary_job_id: String, secondary_
 ##     }
 ##   }
 ## Sheets are horizontal strips: frame_width * num_frames wide, frame_height tall.
+## Per-world job overworld sheet, with the base file as fallback.
+##
+## THE ONE PLACE this path is built. OverworldPlayer and CutsceneActor each
+## constructed it by hand, so a per-world variant added to one would silently
+## miss the other — five party puppets in medieval sheets standing beside a
+## transformed player.
+##
+## medieval is the BASE and is deliberately UNSUFFIXED: assets/sprites/jobs/
+## <job>/overworld.png IS the medieval art, exactly as "slime_medieval" is not
+## a registered monster variant. A guard demanding a suffixed sheet per world
+## would want 30 files and go red on a correct 25.
+##
+## world_suffix must come from the RUNTIME vocabulary — medieval, suburban,
+## steampunk, industrial, digital, abstract. NOT from a monster id: those say
+## "futuristic", which the runtime never emits, so a futuristic-named sheet
+## passes every presence check and can never load.
+static func job_overworld_sheet_path(job_id: String, world_suffix: String) -> String:
+	var base := "res://assets/sprites/jobs/%s/overworld.png" % job_id
+	if world_suffix == "" or world_suffix == "medieval":
+		return base
+	var variant := "res://assets/sprites/jobs/%s/overworld_%s.png" % [job_id, world_suffix]
+	return variant if ResourceLoader.exists(variant) else base
+
+
 static func load_monster_sprite_frames(monster_id: String) -> SpriteFrames:
 	_load_manifest()
 

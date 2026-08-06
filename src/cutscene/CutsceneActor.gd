@@ -39,7 +39,12 @@ static func build(id: String, spec: Dictionary) -> CutsceneActor:
 	a.add_child(a._sprite)
 	var sheet_path: String = ""
 	if str(spec.get("kind", "npc")) == "party":
-		sheet_path = "res://assets/sprites/jobs/%s/overworld.png" % str(spec.get("job", "fighter"))
+		# Same resolver as OverworldPlayer — party puppets must transform with the
+		# player, or a staged scene outside medieval shows two renderings of one character.
+		var _sfx := ""
+		if SoundManager and SoundManager.has_method("_get_current_world_suffix"):
+			_sfx = str(SoundManager._get_current_world_suffix())
+		sheet_path = HybridSpriteLoader.job_overworld_sheet_path(str(spec.get("job", "fighter")), _sfx)
 	else:
 		sheet_path = "res://assets/sprites/npcs/%s/overworld.png" % str(spec.get("archetype", "young_man"))
 	if not a._load_sheet(sheet_path):
