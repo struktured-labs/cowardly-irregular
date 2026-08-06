@@ -75,6 +75,25 @@ esac
 # deploy_web.sh already carries this fix; I copied its pre-fix shape.
 VERSION="${1:-$(git for-each-ref --sort=-creatordate --count=1 --format='%(refname:short)' refs/tags)}"
 
+# THE VERSION LABEL DOES NOT IDENTIFY THE BUILD, AND UNTIL NOW NOTHING DID.
+# This script EXPORTS THE WORKING TREE. The tag is a string passed to --userversion; it
+# is never checked out. So the tag and the bits can be arbitrarily far apart, and the
+# published label reads as if it were the built commit.
+#
+# Measured on the 2026-08-05 Linux publish, which is live right now:
+#   userversion shown on itch   v3.33.205-alpha   -> a 2026-07-25 commit, 740 behind main
+#   the tree actually exported  6dd69779          -> 2026-08-05 06:43, 146 behind main
+# The label overstates the build's age by 594 commits. Nobody could have told which
+# number was real from anything itch displays, and I quoted the wrong one to struktured
+# for a day — from the tag, because that is what the deploy prints.
+#
+# So publish the built SHA alongside the tag. `+` is semver build metadata and butler
+# takes the string verbatim. `-dirty` when the tree has uncommitted changes, because an
+# export of a dirty tree is not reproducible from any SHA and saying so is the point.
+BUILD_SHA="$(git rev-parse --short HEAD)"
+git diff --quiet HEAD -- 2>/dev/null || BUILD_SHA="${BUILD_SHA}-dirty"
+USERVERSION="${VERSION}+${BUILD_SHA}"
+
 ITCH_TARGET="struktured/cowardly-irregular:${CHANNEL}"
 BIN="${OUT_DIR}/${ARTIFACT}"
 BUTLER_BIN="$(command -v butler || echo ./butler-bin/butler)"
@@ -457,8 +476,9 @@ if [ "$PUBLISH" != "1" ]; then
     exit 0
 fi
 
-echo "[${PLAT}] gate 4/4: pushing to ${ITCH_TARGET} (userversion ${VERSION})"
-"${BUTLER_BIN}" push "$OUT_DIR" "$ITCH_TARGET" --userversion "$VERSION"
+echo "[${PLAT}] gate 4/4: pushing to ${ITCH_TARGET} (userversion ${USERVERSION})"
+echo "[${PLAT}]   tag ${VERSION} is a LABEL; ${BUILD_SHA} is the tree that was exported"
+"${BUTLER_BIN}" push "$OUT_DIR" "$ITCH_TARGET" --userversion "$USERVERSION"
 # Bounded wait. deploy_web.sh's equivalent loop has no timeout, so a version that
 # never registers hangs the deploy forever instead of reporting anything.
 for _ in $(seq 1 40); do
