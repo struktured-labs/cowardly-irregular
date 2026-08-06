@@ -205,3 +205,49 @@ func test_portrait_key_BEHAVIOUR_over_all_three_branches() -> void:
 	odd.sprite_archetype = ""
 	assert_eq(odd._portrait_key(), "zzz_unmapped_type",
 		"an unmapped npc_type must fall through to itself, never to an empty key")
+
+
+## The npc_type -> portrait join, which the arm above does NOT cover.
+##
+## That arm skips any placement without an explicit sprite_archetype, so a character whose
+## identity comes from its npc_type is invisible to it. Tutorial Fairy Pip and Ghost Barkeep
+## Claude were exactly that shape: _create_npc(..., "villager"), no override, so a fairy and
+## a ghost both resolved through the young_man/young_woman name-hash to an adult human.
+##
+## ⚠️ npc_type is ALSO what the dialogue line dicts carry as "theme" (OverworldNPC ~1208),
+## while the portrait goes through _portrait_key(). Registering a new character as an
+## npc_type keeps all three surfaces on one key; a sprite_archetype override fixes the
+## sprite and portrait and leaves the theme reading the old type.
+func test_every_placed_npc_TYPE_resolves_to_a_real_portrait() -> void:
+	var sprites := _portrait_sprites()
+	assert_true(sprites.has("fighter"),
+		"portrait extraction must yield 'fighter' — otherwise every result below is vacuous")
+
+	var src := FileAccess.get_file_as_string(OVERWORLD_NPC)
+	var start := src.find("const NPC_TYPE_TO_ARCHETYPE")
+	var stop := src.find("\n}", start)
+	assert_true(start >= 0 and stop > start, "NPC_TYPE_TO_ARCHETYPE must be readable")
+	var block := src.substr(start, stop - start)
+	var rx := RegEx.new()
+	rx.compile('"([a-z_]+)"\\s*:\\s*"([a-z_]*)"')
+	var mapped: Dictionary = {}
+	for m in rx.search_all(block):
+		mapped[m.get_string(1)] = m.get_string(2)
+	# NAMED scope control: an empty extraction would pass this test vacuously.
+	assert_true(mapped.has("child"),
+		"the npc_type map must yield 'child' — if not, the extraction drifted")
+
+	var faceless: Array = []
+	for p in _placements():
+		if p["archetype"] != "":
+			continue  # covered by the sprite_archetype arm above
+		var arch: String = str(mapped.get(p["type"], ""))
+		if arch == "":
+			continue  # "" means a deliberate name-hash pair, or an unregistered type
+		if not sprites.has(arch):
+			faceless.append("%s (%s) -> npc_type '%s' -> archetype '%s' has no portrait" % [
+				p["name"], p["file"], p["type"], arch])
+	faceless.sort()
+	assert_eq(faceless, [],
+		("placed NPC(s) whose npc_type maps to an archetype with no portrait — they show a " +
+		"generic face while their own sprite is on screen: %s") % [faceless])

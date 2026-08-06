@@ -38,6 +38,20 @@ P = _rap.STYLE_PROMPT_PREFIX
 
 ## Ordered by blast radius — villager first, it is 55 of the game's NPCs.
 PORTRAITS = {
+    # Two non-human named NPCs whose dialogue portrait resolved to a generic adult human,
+    # because both are _create_npc(..., "villager") with no sprite_archetype. The overworld
+    # sheets landed first (assets/sprites/npcs/{fairy,ghost}/overworld.png) — a portrait
+    # without a sheet, or a sheet without a portrait, is the split that made phil's face
+    # never render.
+    "fairy": ("a tiny winged tutorial fairy, bust portrait: small bright face with large "
+              "eager eyes, short blonde hair, translucent insect wings rising behind the "
+              "shoulders, pale mint-green dress, a faint soft glow around her. Cheerfully "
+              "overbearing expression, mid-explanation."),
+    "ghost": ("a friendly ghost barkeep, bust portrait: kindly heavy-set bald head with a "
+              "bushy moustache and a warm smile, dark apron over a pale shirt with rolled "
+              "sleeves. Tinted pale blue-white and ghostly, but the face and outline stay "
+              "sharp and clearly defined — not blurred, not a cloud."),
+
     "villager": (
         "Character: an ORDINARY VILLAGE TOWNSPERSON of indeterminate middle age — "
         "friendly open face, medium-brown hair cut plainly, mild hazel eyes, a "

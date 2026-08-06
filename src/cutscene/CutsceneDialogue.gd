@@ -330,6 +330,7 @@ const THEME_ALIASES := {
 	"herbalist": "cleric", "pilgrim": "cleric",
 	"scholarly": "scholar",
 	"bartender": "shopkeeper", "innkeeper": "shopkeeper", "traveler": "merchant",
+	"fairy": "mage", "ghost": "mysterious",
 	"adventurer": "hero", "dancer": "bard",
 	"farmer": "villager", "maid": "villager", "nervous": "villager",
 }
@@ -1034,6 +1035,10 @@ const PORTRAIT_SPRITES = {
 	"necromancer": "res://assets/sprites/portraits/necromancer.png",
 	"bossbinder": "res://assets/sprites/portraits/bossbinder.png",
 	"skiptrotter": "res://assets/sprites/portraits/skiptrotter.png",
+	## Non-human named NPCs. Both were _create_npc(..., "villager") with no archetype, so
+	## a fairy and a ghost both resolved to the young_man/young_woman name-hash pair.
+	"fairy": "res://assets/sprites/portraits/npcs/fairy.png",
+	"ghost": "res://assets/sprites/portraits/npcs/ghost.png",
 }
 
 ## Named-principal + archetype → existing procedural fallback. Any key here without a PNG on disk renders via the mapped procedural until cowir-sprites' art lands (matches the pre-fix visual so nothing regresses on interim frames).

@@ -232,7 +232,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(wednesday)
 
 	# Ghost Barkeep Claude (friendly)
-	var claude = _create_npc("Ghost Barkeep Claude", "villager", Vector2(6 * TILE_SIZE,9 * TILE_SIZE), [
+	var claude = _create_npc("Ghost Barkeep Claude", "ghost", Vector2(6 * TILE_SIZE,9 * TILE_SIZE), [
 		"The usual? One Spectral Ale?",
 		"...Oh right, you're alive. That limits the menu.",
 		"I can offer water. Ghostly water. It's just regular water.",

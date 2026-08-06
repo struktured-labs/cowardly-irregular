@@ -72,6 +72,39 @@ NAMED_NPCS = {
             "small red book to his chest, brown shoes, earnest posture"
         ),
     },
+    # Two NON-HUMAN named NPCs that render as generic adult humans today: both are
+    # _create_npc(..., "villager") with no sprite_archetype, so _resolve_archetype falls to
+    # the young_man/young_woman name-hash pair. Same shape as the innkeeper theme gap —
+    # a bespoke character on a fallback surface, and nothing reports it.
+    #
+    # Both follow phil's pattern: no battle strip exists, so the persona carries identity
+    # and an existing archetype sheet supplies the 128x128 4x4 chibi FORMAT only.
+    "fairy": {
+        "strip": None,
+        "archetype": "child",  # format anchor: the smallest chibi in the set
+        "char_desc": (
+            "a tiny winged tutorial fairy — small glowing figure with translucent "
+            "insect wings, pale mint-green dress, short bright hair, hovering just "
+            "above the ground with a faint soft glow. Cheerfully overbearing posture, "
+            "one finger raised as if mid-explanation. NOT a human child: the wings and "
+            "the hover must read instantly at 32 pixels"
+        ),
+    },
+    "ghost": {
+        "strip": None,
+        "archetype": "innkeeper",  # format anchor: a barkeep build
+        "char_desc": (
+            "a friendly ghost barkeep. CRITICAL — this must be a CLEARLY DEFINED "
+            "CHARACTER, not a blob or a cloud: solid readable silhouette, distinct "
+            "head with visible eyes and a warm smile, a bushy moustache, defined "
+            "shoulders and ARMS, and a dark barkeep's apron over a pale shirt with "
+            "rolled sleeves, all drawn with a crisp dark outline. He is tinted pale "
+            "blue-white and GHOSTLY, but every feature stays sharp. The ONLY ghostly "
+            "part is BELOW THE WAIST, where the legs taper into a short wispy tail "
+            "instead of feet. Do NOT blur the torso, face or arms; do NOT make him "
+            "semi-transparent overall; do NOT let the outline dissolve"
+        ),
+    },
     "phil": {
         "strip": None,  # no battle strip — traveler archetype + persona
         "archetype": "traveler",
