@@ -370,6 +370,12 @@ fi
 # gate.sh checks Totals-present, scripts-run == test files on disk, reports
 # tests that asserted NOTHING, and returns a real exit code. Consult it; do not
 # parse its output.
+# NON-BLOCKING. A pattern that matches nothing means an exclusion silently stopped
+# happening — the direction that SHIPS content you meant to drop, and pck size cannot
+# see it (bigger reads as "we added content"). Reported, never enforced: a prophylactic
+# *.jpg legitimately matches nothing and refusing over it would be worse than the bug.
+./tools/check_exclude_patterns.sh || true
+
 echo "[${PLAT}] gate 1/4: test suite (tools/gate.sh)"
 if [ -x tools/gate.sh ]; then
     ./tools/gate.sh > tmp/${PLAT}_gate.log 2>&1 &

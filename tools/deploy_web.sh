@@ -67,6 +67,11 @@ godot --headless --audio-driver Dummy --import --quit >/dev/null 2>&1 || true
 # Retry once: 2026-07-14 saw test_movement_isolation.gd fail intermittently under the full suite
 # (H-vs-V physics parity asserts diverge in the tens of pixels; passes solo, passes on rerun). A
 # real regression fails both tries. First attempt's log kept for diff.
+# Non-blocking dead-exclusion report — see deploy_desktop.sh for why it never enforces.
+# This matters more on web than desktop: web is the size-capped target, so an exclusion
+# that quietly stopped applying eats headroom against itch's 200 MB embed limit.
+./tools/check_exclude_patterns.sh || true
+
 echo "[deploy] gate 1/4: unit suite (via tools/gate.sh)"
 if ! ./tools/gate.sh tmp/deploy_suite.log; then
   cp tmp/deploy_suite.log tmp/deploy_suite.attempt1.log
