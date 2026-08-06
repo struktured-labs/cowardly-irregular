@@ -1837,7 +1837,8 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 	# Select button - Toggle autobattle ON/OFF
-	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_BACK:
+	# Action, not raw BACK: a Controls rebind moves battle_toggle_auto and this must follow it.
+	elif event is InputEventJoypadButton and event.is_action_pressed("battle_toggle_auto"):
 		AutobattleSystem.toggle_autobattle(character_id)
 		_update_status_label()
 		SoundManager.play_ui("menu_select")
