@@ -85,6 +85,44 @@ func test_the_riffle_is_not_on_the_verdict_beat() -> void:
 		"the verdict beat has NO cue at all — silence here is a different defect, not a fix")
 
 
+func test_short_narration_REQUIRES_the_verdict_cue() -> void:
+	## THE COUPLING, ENCODED. The narration was cut to three words BECAUSE the sound now
+	## carries the beat. Those two changes are individually sensible and jointly required:
+	##
+	##   cue fixed  + prose kept   safe, slightly redundant
+	##   cue fixed  + prose cut    intended
+	##   cue unfixed + prose kept  the prose compensates for the wrong cue
+	##   cue unfixed + prose CUT   🔴 WORSE THAN EITHER — thinner AND still wrong
+	##
+	## A fold reviewer sees a prose trim and a cue swap as two reasonable changes and has no
+	## reason to check they arrived together. Three lanes reasoned about this correctly in
+	## chat and encoded it nowhere; a rule indexed on FOLD ORDER was agreed twice and would
+	## have shipped the forbidden row. The dependency is not "who folds second" — it is
+	## "is ledger_close in this tree", so it belongs in the tree.
+	##
+	## Relationship, not coordinate: it survives a rewrite that renumbers every step.
+	var steps: Array = _scene()
+	var idx: int = -1
+	for i in range(steps.size()):
+		if steps[i] is Dictionary and str(steps[i].get("text", "")).to_lower().contains("a sound like a verdict"):
+			idx = i
+			break
+	assert_gt(idx, 0, "could not find the verdict narration")
+
+	var text: String = str(steps[idx].get("text", "")).to_lower()
+	var cue: String = _cue_of(steps[idx - 1])
+	## The long form names the physical action ("closed the ledger"); the short form leaves
+	## that entirely to the screen and the sound.
+	var prose_compensates: bool = text.contains("closed the ledger")
+
+	if not prose_compensates:
+		assert_eq(cue, VERDICT_CUE,
+			"the verdict narration is the SHORT form but its cue is '%s'. Trimming that line is only safe once the sound carries the beat — with %s here the moment is thinner AND still wrong, which is worse than not trimming at all." % [cue, cue])
+	else:
+		assert_false(cue.is_empty(),
+			"the long-form narration is present but the beat has no cue at all")
+
+
 func test_both_cues_resolve_in_the_manifest() -> void:
 	## paper_shuffle is deliberately KEPT despite being unreferenced after the swap — the
 	## folding beat ("She finished reading the document. Folded it.") is genuinely a
