@@ -190,6 +190,54 @@ func test_world_sheets_on_disk_are_actually_LOADABLE() -> void:
 		"Run: godot --headless --audio-driver Dummy --import  : %s") % [unimported.size(), unimported])
 
 
+## A world's costume set must be COMPLETE across the playable jobs, or absent entirely.
+##
+## Partial coverage is worse than none, and the fallback is what makes it worse: a world
+## with art for some jobs dresses those and silently serves medieval base art to the rest.
+## The player sees one party member in a hard hat standing next to three in chainmail —
+## which reads as a bug in the game, where uniform base art just reads as a style.
+##
+## Caught on this branch: two fighter pilots (idle_steampunk, idle_abstract) were swept in
+## by a directory-wide `git add` while the other thirteen jobs had no steampunk or abstract
+## art at all. Every other guard here was green — they were present, importable, correctly
+## named, and reachable. Completeness is a property no per-file check can see.
+func test_a_world_is_dressed_for_ALL_jobs_or_for_NONE() -> void:
+	var real := _real_job_ids()
+	assert_eq(real.size(), 14,
+		"jobs.json must yield 14 ids, got %d — otherwise the ratio below is meaningless" % [real.size()])
+
+	var partial: Array = []
+	for suffix in Loader.WORLD_SUFFIXES:
+		if suffix == "":
+			continue
+		var dressed: Array = []
+		for job in real:
+			if FileAccess.file_exists("res://assets/sprites/jobs/%s/idle_%s.png" % [job, suffix]):
+				dressed.append(job)
+		if dressed.is_empty() or dressed.size() == real.size():
+			continue
+		dressed.sort()
+		partial.append("%s: %d/%d dressed (%s)" % [suffix, dressed.size(), real.size(),
+			", ".join(dressed) if dressed.size() <= 4 else "%s, +%d more" % [dressed[0], dressed.size() - 1]])
+	partial.sort()
+	assert_eq(partial, [],
+		("world(s) dressed for SOME jobs but not all — those jobs render in costume while " +
+		"the rest fall back to medieval base art, so the party looks half-changed: %s") % [partial])
+
+
+func _real_job_ids() -> Array:
+	var raw := FileAccess.get_file_as_string("res://data/jobs.json")
+	if raw == "":
+		return []
+	var parsed = JSON.parse_string(raw)
+	if not (parsed is Dictionary):
+		return []
+	var src: Variant = parsed.get("jobs", parsed)
+	var out: Array = (src.keys() if src is Dictionary else [])
+	out.sort()
+	return out
+
+
 ## Audio owns the world vocabulary; sheets own the suffix vocabulary. They differ by one
 ## entry and that difference is load-bearing: audio says "medieval" for world 1 where the
 ## sheets say "" because world 1 IS the artist's base art. If _normalize_suffix ever passed
