@@ -98,7 +98,11 @@ if [ "${#STALE[@]}" -gt 0 ]; then
             echo "                   The intent was probably LIVE and only the SPELLING is dead."
             echo "                   ⛔ Do NOT just delete it — first confirm the files it MEANT"
             echo "                      to exclude are caught by another pattern. Known trap:"
-            echo "                      world ids say 'futuristic', music keys say 'digital'."
+            echo "                      W5 has THREE vocabularies, not two — map ids say"
+            echo "                      'futuristic_overworld', audio FILENAMES say 'digital'."
+            echo "                      A pattern here is a FILE PATH, so the filename spelling"
+            echo "                      is the one that governs. (map-id-to-map-id comparisons"
+            echo "                      elsewhere are same-vocabulary and correct — cowir-battle)"
         else
             echo "             ${p}   (no populated target dir — prophylactic, fine)"
         fi
