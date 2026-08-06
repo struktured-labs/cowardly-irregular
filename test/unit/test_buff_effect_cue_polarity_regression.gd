@@ -139,6 +139,34 @@ func test_the_four_repaired_effects_route_to_the_BUFF_cue() -> void:
 			"'%s' is beneficial (Shell / Regen / Guardian Wall / Esuna) and must play the ascending buff cue" % effect)
 
 
+func test_an_effect_NAMED_after_an_authored_cue_must_route_to_it() -> void:
+	## Second instance of the same defect, found by the same question asked wider. Seven
+	## Masterite abilities carry the literal effect strings "buff" and "debuff" — both are
+	## authored cues in the manifest. The catch-all asks for status_<effect>, so it looked up
+	## status_buff, missed, and drew the procedural blip while buff.ogg sat right there.
+	##
+	## Derived, so it covers the NEXT one automatically: if an effect string is itself a
+	## manifest key, the intent is unambiguous and it must be routed. No hand-list to go stale.
+	var routed: Dictionary = _routed_effects()
+	var effects: Dictionary = _ability_effects()
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/sfx_manifest.json"))
+	var sfx: Dictionary = parsed.get("sfx", {}) if parsed is Dictionary else {}
+	assert_gt(sfx.size(), 200, "control: sfx manifest parsed to %d entries — implausible" % sfx.size())
+
+	var matches: int = 0
+	var unrouted: Array[String] = []
+	for effect in effects.keys():
+		if not sfx.has(effect):
+			continue
+		matches += 1
+		if not routed.has(effect):
+			unrouted.append("%s (abilities: %s)" % [effect, effects[effect]])
+	assert_gt(matches, 0,
+		"control: no ability effect string matches a manifest cue name at all — the join is broken, not the routing")
+	assert_eq(unrouted.size(), 0,
+		"%d effect(s) are spelled exactly like an authored cue and are still unrouted, so the lookup asks for 'status_<effect>', misses, and plays the procedural blip while the real cue sits in the manifest: %s" % [unrouted.size(), unrouted])
+
+
 func test_the_descending_fallback_still_exists_for_afflictions() -> void:
 	## NEGATIVE CONTROL. The fix must not have been "delete the fallback" — that arm is
 	## deliberate (an unauthored affliction should not land silently). If someone removes it,
