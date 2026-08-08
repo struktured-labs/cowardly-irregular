@@ -1070,6 +1070,22 @@ func _create_portrait(portrait_type: String) -> Texture2D:
 	# Try loading artist sprite portrait first (hand-crafted bust art)
 	var sprite_path = PORTRAIT_SPRITES.get(portrait_type, "")
 	if sprite_path != "":
+		# struktured 2026-08-08: "the portraits have to change from one world to another in
+		# addition to the character sprites". The world-dressed BUST path below already did
+		# — but it was unreachable: all 14 jobs have a painted portrait, and this rung wins
+		# first, so the bust ran for 0 of them. A variant probe here is what he asked for.
+		# Absent variant falls straight back to the base art, so this is inert until the art
+		# lands and can never hide a painted portrait behind a broken path.
+		var _pw := HybridSpriteLoader.current_world_suffix()
+		if _pw != "" and _pw != "medieval":
+			var variant: String = sprite_path.get_basename() + "_" + _pw + ".png"
+			if _portrait_cache.has(variant):
+				return _portrait_cache[variant]
+			if ResourceLoader.exists(variant):
+				var vtex = load(variant)
+				if vtex:
+					_portrait_cache[variant] = vtex
+					return vtex
 		if _portrait_cache.has(sprite_path):
 			return _portrait_cache[sprite_path]
 		if ResourceLoader.exists(sprite_path):
