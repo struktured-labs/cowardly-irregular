@@ -15,6 +15,20 @@ extends SceneTree
 ##
 ## The verdict here is threshold-independent and that is why it stands: the clear
 ## directions travel 117-160px against 5px stops, and no defensible bar separates those.
+##
+## TWO MORE THINGS A LIFTED VERSION MUST GET RIGHT, both found by peers whose rigs differed:
+##
+## 1. MEASURE TRAVEL FROM THE SETTLED POSITION, NOT THE SPAWN. This probe settles first and
+##    resets to `settled` before each direction, so travel excludes depenetration. A rig
+##    that captures `start` before its first move_and_slide silently adds the whole ~8px
+##    settle to every direction — which flips a 20.2px partial to 27.7 and the verdict with
+##    it. Two rigs "disagreeing about a threshold" turned out to be measuring two different
+##    quantities and calling both travel.
+##
+## 2. A CLEAR DIRECTION HERE MEASURES THE BUDGET, NOT THE MAP. 40 frames x 240px/s / 60 =
+##    exactly 160.0, and every unobstructed direction reports precisely that. So "160.0" is
+##    saturation, not a distance. Raise the budget until clear directions stop pinning to
+##    it, or report time-to-clear instead.
 
 const TS := 32
 const OFFENDERS := {
