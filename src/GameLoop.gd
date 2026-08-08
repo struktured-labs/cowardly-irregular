@@ -3904,9 +3904,10 @@ func _adopt_monster_win_condition(enemy_ids: Array) -> void:
 
 func _start_battle_async(specific_enemies: Array = [], is_encounter: bool = false) -> void:
 	"""Start battle using async-loaded scene"""
-	# A battle entering mid-dissolve frees the scene the dissolve tween is bound to; the await never resumes and the transition is never requested (stuck-after-teleport, 2026-08-08, five-lane chain). The player is FROZEN under the lock and cannot evade, so the unearned encounter is dropped, loudly.
+	# Mid-dissolve battle kills the transition tween -> emit never runs (2026-08-08 stuck class): drop the unearned encounter, clear the mutex.
 	if InputLockManager and InputLockManager.has_lock("world_transition"):
-		push_warning("[BATTLE] entry refused — world transition mid-dissolve; encounter dropped (2026-08-08 stuck class)")
+		_battle_transition_starting = false
+		push_warning("[BATTLE] entry suppressed — world transition mid-dissolve; encounter dropped")
 		return
 	current_state = LoopState.BATTLE
 	_battle_transition_starting = false  # state=BATTLE now owns the mutex vs area transitions
@@ -4454,8 +4455,9 @@ func _arm_transition_watchdog() -> void:
 		if _transition_in_progress and _transition_wd_gen == gen:
 			push_error("[GAMELOOP] transition watchdog: latch held >20s — force-clearing (stranded-session class, 2026-08-08)")
 			_transition_in_progress = false
-			if InputLockManager:
-				InputLockManager.pop_lock("area_transition_fade")
+			# The fade lock is NOT popped here: InputLockManager's own 10s stale expiry covers
+			# locks, and a signal-lambda pop trips the heartbeat guard. This watchdog exists for
+			# the two latches that have NO expiry.
 			if current_state != LoopState.EXPLORATION and _exploration_scene != null and is_instance_valid(_exploration_scene):
 				current_state = LoopState.EXPLORATION)
 
