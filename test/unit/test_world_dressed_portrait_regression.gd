@@ -1,20 +1,6 @@
 extends GutTest
 
-## Regression: dialogue portraits must change with the world.
-##
-## struktured, 2026-08-08, while playing: "the portraits have to change from one world to
-## another in addition to the character sprites (which cowir-sprites already did)."
-##
-## The world-dressed BUST path already existed and was correct — driven across all six
-## worlds it resolves idle.png / idle_suburban.png / ... / idle_abstract.png, and every one
-## loads. It was also UNREACHABLE: _create_portrait tries PORTRAIT_SPRITES first, and all 14
-## jobs have painted portrait art, so the bust ran for 0 of them. A correct mechanism behind
-## a rung that always wins is indistinguishable from a missing one.
-##
-## So rung 1 now probes for <portrait>_<world>.png. The load-bearing property is that an
-## ABSENT variant falls back to the base art — otherwise this would hide every painted
-## portrait behind a broken path, which is the "never overwrite artist sprites" rule
-## violated at the lookup rather than by a write.
+## Portraits must change with the world; an ABSENT variant must fall back to painted art
 
 const Loader := preload("res://src/battle/sprites/HybridSpriteLoader.gd")
 const CD := preload("res://src/cutscene/CutsceneDialogue.gd")
@@ -35,12 +21,7 @@ func _job_ids() -> Array:
 
 
 func test_the_probe_is_WIRED_at_the_rung_that_actually_wins() -> void:
-	# Source pin with a reason: the bust path was already correct and never ran, so
-	# "a world-dressed portrait mechanism exists" is not the property worth asserting.
-	#
-	# ⚠️ The rung that WINS is the PORTRAIT_SPRITES load, NOT the bust. My first version
-	# asserted probe-before-bust and PASSED with the probe moved below the base load —
-	# dead code, the exact defect, scored green. Anchor on the thing that returns.
+	# Anchor on the rung that RETURNS — probe-before-bust passes with the probe dead
 	var src := FileAccess.get_file_as_string("res://src/cutscene/CutsceneDialogue.gd")
 	assert_ne(src, "", "CutsceneDialogue must be readable")
 	var head := src.find("func _create_portrait")
@@ -54,10 +35,7 @@ func test_the_probe_is_WIRED_at_the_rung_that_actually_wins() -> void:
 
 
 func test_the_portrait_ACTUALLY_CHANGES_between_worlds() -> void:
-	# The behavioural arm, and the one that survives a refactor: pin the VALUE, not the
-	# source order. A job with world art on disk must hand back a DIFFERENT texture in a
-	# dressed world than in medieval — which is the thing he asked for, stated as an
-	# outcome rather than as the presence of a mechanism.
+	# Pins the VALUE, not the source order — survives a reorder that a source pin cannot
 	var gs := get_node_or_null("/root/GameState")
 	assert_not_null(gs, "GameState required — run via tools/run_tests.sh")
 	if gs == null:
@@ -88,8 +66,7 @@ func test_the_portrait_ACTUALLY_CHANGES_between_worlds() -> void:
 			gs.current_world = 1
 	gs.current_world = restore
 
-	# Control naming a known-present member: a run that resolved nothing would report
-	# zero mismatches and read exactly like a clean pass.
+	# A run that resolved nothing reports zero mismatches and reads like a clean pass
 	assert_true(checked > 0,
 		"asserted nothing — no job resolved a world variant, so this test could not fail")
 	unchanged.sort()
@@ -100,8 +77,7 @@ func test_the_portrait_ACTUALLY_CHANGES_between_worlds() -> void:
 
 
 func test_a_missing_variant_falls_back_to_the_painted_ART() -> void:
-	# The safety property, driven. For every job and every world, a portrait must resolve —
-	# whether or not world-dressed art exists yet.
+	# Every job, every world, resolves — whether or not world art exists yet
 	var gs := get_node_or_null("/root/GameState")
 	assert_not_null(gs, "GameState required — run via tools/run_tests.sh")
 	if gs == null:
@@ -127,9 +103,7 @@ func test_a_missing_variant_falls_back_to_the_painted_ART() -> void:
 
 
 func test_world_dressed_portraits_on_disk_are_LOADABLE() -> void:
-	# A generated .png is invisible to ResourceLoader until imported, while FileAccess sees
-	# it — so art can be present, correctly named, and never render. Cost this lane 42
-	# sheets once already.
+	# A .png is invisible to ResourceLoader until imported while FileAccess still sees it
 	var dir := DirAccess.open(PORTRAIT_DIR)
 	assert_not_null(dir, "portraits dir must be scannable")
 	if dir == null:
@@ -160,8 +134,7 @@ func test_world_dressed_portraits_on_disk_are_LOADABLE() -> void:
 
 
 func test_a_world_is_dressed_for_ALL_jobs_or_for_NONE() -> void:
-	# Same rule as the battle sheets: one party member transformed beside three who are not
-	# reads as a bug; nobody transformed reads as a style.
+	# One member transformed beside three who are not reads as a bug; none reads as style
 	var jobs := _job_ids()
 	assert_eq(jobs.size(), 14, "jobs.json must yield 14 ids")
 	var partial: Array = []

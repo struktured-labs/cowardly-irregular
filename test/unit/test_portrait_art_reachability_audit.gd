@@ -34,18 +34,7 @@ const Loader := preload("res://src/battle/sprites/HybridSpriteLoader.gd")
 const NON_DIALOGUE_DIRS := ["keepers"]
 
 
-## World-dressed variants are consumed by a name BUILT AT RUNTIME —
-## `sprite_path.get_basename() + "_" + world_suffix() + ".png"` — so no literal
-## "bard_suburban" exists anywhere to grep for. The docstring above already allows for a
-## portrait consumed "by a key built at runtime"; the implementation could not see one,
-## and 70 real, reachable files landed as orphans (2026-08-08).
-##
-## Suffixes come from HybridSpriteLoader.WORLD_SUFFIXES, never a hand-list — a seventh
-## world must not require editing this file to stay audited.
-##
-## ⚠️ The exemption is CONDITIONAL on the constructing code existing AND being reachable.
-## Unconditional, it would exempt 70 files forever the moment someone deletes the probe —
-## the exact defect this audit exists to catch, re-created by its own fix.
+## Exempt only while the probe is REACHABLE — unconditional, this whitelists 70 files forever
 func _world_variant_stem(basename: String) -> String:
 	if not _dialogue_constructs_world_variants():
 		return ""
@@ -62,7 +51,7 @@ func _dialogue_constructs_world_variants() -> bool:
 		return false
 	var base_load := src.find("ResourceLoader.exists(sprite_path)", head)
 	var probe := src.find("current_world_suffix()", head)
-	# Below the base load the probe never runs, so the variants really are orphans.
+	# Below the base load the probe never runs, so the variants really are orphans
 	return probe > head and base_load > head and probe < base_load
 
 
@@ -121,8 +110,7 @@ func test_no_portrait_art_ships_without_a_consumer() -> void:
 		var base: String = str(p).get_file().get_basename()
 		if _has_any_consumer(base):
 			continue
-		# A world variant is reachable iff its STEM is consumed and the probe that
-		# builds the suffixed name is wired above the rung that returns.
+		# Reachable iff the STEM is consumed and the probe is above the returning rung
 		var stem := _world_variant_stem(base)
 		if stem != "" and _has_any_consumer(stem):
 			by_construction += 1
