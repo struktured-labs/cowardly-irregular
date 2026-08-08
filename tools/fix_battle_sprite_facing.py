@@ -28,6 +28,12 @@ Mirrors PER FRAME, never the whole strip: a whole-image flip also REVERSES FRAME
 turning a facing bug into an animation bug. Sheets are horizontal strips of 256px frames
 (2 for generated idles, up to 7 for the artist's own).
 
+⚠️ ONE-TIME MIGRATION, NOT IDEMPOTENT. Mirroring is its own inverse, so a second --apply
+puts every sheet back to facing wrong and reports success. A stamp file records the run and
+the tool refuses to repeat without --force. If sheets ever face wrong again the cause is a
+NEW batch generated from a stale prompt, not this — fix the prompt and mirror only the new
+files.
+
   python3 tools/fix_battle_sprite_facing.py --dry-run
   python3 tools/fix_battle_sprite_facing.py --apply
 """
@@ -44,11 +50,22 @@ JOBS = GAME / "assets" / "sprites" / "jobs"
 FRAME = 256
 
 WORLDS = ["suburban", "steampunk", "industrial", "digital", "abstract"]
+## TRACKED, not tmp/: a gitignored stamp is absent on a fresh clone, so the guard
+## would pass there and double-mirror art that is already correct in git.
+STAMP = HERE / "battle_facing_mirrored.stamp"
 
 ## Base idle sheets THIS LANE generated (gen_meta_job_idle.py, same "facing RIGHT" prompt).
 ## The other nine jobs' base sheets are artist or older-tier art and are NOT touched —
 ## never mirror art this lane did not author.
-GENERATED_BASES = ["scriptweaver", "time_mage", "necromancer", "bossbinder", "skiptrotter"]
+GENERATED_BASES = ["scriptweaver", "time_mage", "necromancer", "bossbinder", "skiptrotter",
+                   ## ninja is an OLDER T1 base this lane did not author, added 2026-08-08.
+                   ## It faces RIGHT like the generated ones, and mirroring only its world
+                   ## variants left it flipping between W1 and W2-W6 — an inconsistency this
+                   ## fix CREATED. T1 is AI art and mutable; the four T2 artist bases
+                   ## (fighter/cleric/mage/rogue/bard) already face left and are never targeted.
+                   ## guardian/summoner/speculator are frontal-symmetric: no flip needed, and
+                   ## mirroring a symmetric sprite is a no-op that would still dirty the file.
+                   "ninja"]
 
 
 def targets() -> list:
@@ -84,6 +101,9 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--apply", action="store_true")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--force", action="store_true",
+                    help="re-run despite the stamp — mirroring is its own inverse, so this "
+                         "UNDOES a previous run unless you know the sheets are unmirrored")
     args = ap.parse_args()
 
     t = targets()
@@ -98,6 +118,13 @@ def main() -> int:
         print("\n(dry run — pass --apply to write)")
         return 0
 
+    if STAMP.exists() and not args.force:
+        print(f"ALREADY RUN ({STAMP.read_text().strip()}). Mirroring is its own inverse — "
+              f"re-running would face every sheet the WRONG way and report success.\n"
+              f"Pass --force only if you know the sheets are currently unmirrored.",
+              file=sys.stderr)
+        return 2
+
     frames = 0
     for p in t:
         n, ok = mirror_frames(p)
@@ -105,6 +132,8 @@ def main() -> int:
             print(f"  SKIP {p.relative_to(GAME)} — unexpected geometry", file=sys.stderr)
             continue
         frames += n
+    STAMP.parent.mkdir(parents=True, exist_ok=True)
+    STAMP.write_text(f"{len(t)} sheets / {frames} frames mirrored to the LEFT-facing convention")
     print(f"mirrored {len(t)} sheets / {frames} frames")
     return 0
 

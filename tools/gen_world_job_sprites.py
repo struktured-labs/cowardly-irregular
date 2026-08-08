@@ -207,7 +207,7 @@ Use the SECOND reference image for SCALE AND FRAMING (how big the figure sits in
 cell) and the FIRST only for the character's colours and equipment. Clean pixel art,
 bold dark outlines, limited palette, no anti-aliasing fuzz, no floating pixels."""
 
-BUST_PROMPT = """16-bit SNES-era JRPG battle sprite, full body, facing RIGHT toward the enemy.
+BUST_PROMPT = """16-bit SNES-era JRPG battle sprite, full body, facing LEFT (the enemy line is to the LEFT). ⚠️ LEFT is the shipped convention: BattleScene:980 gives 256px sheets flip_h=false, so a right-facing sprite renders backwards next to the artist's party.
 {core}, dressed in {dress}
 
 Single character centred on a fully transparent background. Clean pixel art with bold

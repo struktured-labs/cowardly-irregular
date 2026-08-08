@@ -35,7 +35,7 @@ FRAME = 256
 FRAMES = 2
 
 PREFIX = (
-    "16-bit SNES-era JRPG battle sprite, full body, facing RIGHT toward the enemy. "
+    "16-bit SNES-era JRPG battle sprite, full body, facing LEFT (the enemy line is to the LEFT). ⚠️ LEFT is the shipped convention: BattleScene:980 gives 256px sheets flip_h=false, so a right-facing sprite renders backwards next to the artist's party. "
     "Single character centred on a fully transparent background. Clean pixel art with "
     "bold dark outlines, soft cel shading, limited palette, no anti-aliasing fuzz, no "
     "floating pixels, no duplicate limbs, no weapons doubled, no scenery, no ground "
