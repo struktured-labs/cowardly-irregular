@@ -29,6 +29,12 @@ extends SceneTree
 ##    exactly 160.0, and every unobstructed direction reports precisely that. So "160.0" is
 ##    saturation, not a distance. Raise the budget until clear directions stop pinning to
 ##    it, or report time-to-clear instead.
+##
+##    🔑 AND IT GIVES YOU A SELF-CHECK FOR TRAP 1 THAT NEEDS NO SECOND RIG: any travel
+##    figure EXCEEDING `frames * speed / 60` is arithmetically impossible as travel, so the
+##    quantity includes something else — in practice the settle. A rig measuring from the
+##    raw spawn reports 162.0 and 164.1 against a 160.0 ceiling. Compare your own maximum
+##    to your own budget before comparing anything to anyone.
 
 const TS := 32
 const OFFENDERS := {
