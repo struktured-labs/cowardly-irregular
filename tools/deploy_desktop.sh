@@ -376,6 +376,24 @@ fi
 # *.jpg legitimately matches nothing and refusing over it would be worse than the bug.
 ./tools/check_exclude_patterns.sh || true
 
+# TREE IDENTITY — bind the gate's evidence to the bits that get exported.
+#
+# THE GAP THIS CLOSES, measured on a real attempt (cowir-main, 2026-08-08, 3 tries):
+# this script EXPORTS THE WORKING TREE. Gate 1 reads src/ at time T; gate 2 exports src/
+# at T+8min. NOTHING connected the two. A concurrent edit — another lane, a rebase, a fold
+# landing, or the same operator editing GameLoop.gd while their own publish chain ran —
+# silently changes WHAT SHIPS after the evidence for shipping it was collected.
+# "The gate was green" is a claim with no subject unless the subject is recorded.
+#
+# This is the label-vs-build defect one turn worse. There, the published label failed to
+# identify the bits; here the GATE failed to identify them, and the gate is what authorises
+# a public push.
+#
+# Discipline ("publish from a quiescent tree") is what failed three times today with
+# `git checkout --`. A mechanism does not need anyone to remember.
+_tree_id() { printf '%s %s' "$(git rev-parse HEAD)" "$(git status --porcelain | sort | md5sum | cut -d' ' -f1)"; }
+GATE_TREE_ID="$(_tree_id)"
+
 echo "[${PLAT}] gate 1/4: test suite (tools/gate.sh)"
 if [ -x tools/gate.sh ]; then
     ./tools/gate.sh > tmp/${PLAT}_gate.log 2>&1 &
@@ -389,7 +407,24 @@ else
 fi
 
 # ── gate 2: export ───────────────────────────────────────────────────────────
-echo "[${PLAT}] gate 2/4: export"
+# TREE IDENTITY RE-CHECK — the gate's evidence must describe the bits about to be exported.
+# Deliberately BEFORE the export, not before the push: an export from a changed tree has
+# already produced an artifact nothing vouches for, and the useful place to stop is before
+# the expensive step rather than after it.
+GATE_TREE_ID_NOW="$(_tree_id)"
+if [ "$GATE_TREE_ID_NOW" != "$GATE_TREE_ID" ]; then
+    echo "[${PLAT}] BLOCKED: the working tree CHANGED between the suite gate and the export." >&2
+    echo "        at gate 1: ${GATE_TREE_ID}" >&2
+    echo "        now:       ${GATE_TREE_ID_NOW}" >&2
+    echo "        This script exports the WORKING TREE, so what would ship is not what" >&2
+    echo "        gate 1 tested. The suite result is void — it describes a tree that no" >&2
+    echo "        longer exists. Causes seen in practice: another lane editing a shared" >&2
+    echo "        file, a fold landing on this checkout, a rebase, or concurrent work by" >&2
+    echo "        the same operator who launched the deploy." >&2
+    echo "        Re-run from a quiescent tree." >&2
+    exit 1
+fi
+echo "[${PLAT}] gate 2/4: export (tree unchanged since gate 1)"
 godot --headless --audio-driver Dummy --export-release "$PRESET" "$BIN" > tmp/${PLAT}_export.log 2>&1 &
 EC=0; wait $! || EC=$?
 test $EC -eq 0 || { echo "[${PLAT}] BLOCKED: export failed — see tmp/${PLAT}_export.log" >&2; exit 2; }
