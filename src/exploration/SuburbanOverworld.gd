@@ -513,13 +513,14 @@ func _generate_map() -> void:
 	print("Suburban tile counts: ", tile_counts)
 
 	# Define spawn points
-	spawn_points["entrance"] = Vector2(25 * TILE_SIZE + TILE_SIZE / 2, 11 * TILE_SIZE + TILE_SIZE / 2)
+	# was tile(25,11): clear on screen, but the displaced collider put a house wall on it
+	spawn_points["entrance"] = Vector2(23 * TILE_SIZE + TILE_SIZE / 2, 12 * TILE_SIZE + TILE_SIZE / 2)
 	spawn_points["default"] = spawn_points["entrance"]
 	spawn_points["suburban_portal"] = spawn_points["entrance"]
 	# Spawn point for returning from industrial world (east side of map)
 	spawn_points["from_industrial"] = Vector2(46 * TILE_SIZE + TILE_SIZE / 2, 20 * TILE_SIZE + TILE_SIZE / 2)
 	# Spawn point for Maple Heights village — in open lawn east of house rows (was inside house wall)
-	spawn_points["maple_heights_entrance"] = Vector2(43 * TILE_SIZE + TILE_SIZE / 2, 10 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["maple_heights_entrance"] = Vector2(43 * TILE_SIZE + TILE_SIZE / 2, 9 * TILE_SIZE + TILE_SIZE / 2)
 
 
 func _char_to_tile_type(char: String) -> int:

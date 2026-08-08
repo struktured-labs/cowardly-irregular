@@ -530,14 +530,14 @@ func _generate_map() -> void:
 	spawn_points["rail_yard"] = Vector2(30 * TILE_SIZE + TILE_SIZE / 2, 3 * TILE_SIZE + TILE_SIZE / 2)
 	spawn_points["factory_floor"] = Vector2(25 * TILE_SIZE + TILE_SIZE / 2, 17 * TILE_SIZE + TILE_SIZE / 2)
 	spawn_points["break_room"] = Vector2(36 * TILE_SIZE + TILE_SIZE / 2, 19 * TILE_SIZE + TILE_SIZE / 2)
-	spawn_points["chemical_zone"] = Vector2(7 * TILE_SIZE + TILE_SIZE / 2, 17 * TILE_SIZE + TILE_SIZE / 2)
-	spawn_points["housing"] = Vector2(52 * TILE_SIZE + TILE_SIZE / 2, 17 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["chemical_zone"] = Vector2(7 * TILE_SIZE + TILE_SIZE / 2, 12 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["housing"] = Vector2(51 * TILE_SIZE + TILE_SIZE / 2, 17 * TILE_SIZE + TILE_SIZE / 2)
 	# Spawn point for arriving from suburban world (south gate)
 	spawn_points["from_suburban"] = Vector2(30 * TILE_SIZE + TILE_SIZE / 2, 38 * TILE_SIZE + TILE_SIZE / 2)
 	# Spawn point for returning from futuristic world (north rail yard)
 	spawn_points["from_futuristic"] = Vector2(30 * TILE_SIZE + TILE_SIZE / 2, 3 * TILE_SIZE + TILE_SIZE / 2)
 	# Spawn point for returning from Rivet Row village (east worker housing area, row 17)
-	spawn_points["rivet_row_entrance"] = Vector2(55 * TILE_SIZE + TILE_SIZE / 2, 17 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["rivet_row_entrance"] = Vector2(52 * TILE_SIZE + TILE_SIZE / 2, 16 * TILE_SIZE + TILE_SIZE / 2)
 
 
 func _char_to_tile_type(char: String) -> int:
