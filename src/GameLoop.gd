@@ -227,7 +227,7 @@ var _area_fade_rect: ColorRect = null
 ## Overworld menu
 var _overworld_menu: Control = null
 var _overworld_menu_layer: CanvasLayer = null
-var _pre_menu_music_track: String = ""  # snapshot of underlying music while pause menu is open
+var _pre_menu_music_state: Dictionary = {}  # capture_music_state() snapshot while pause menu is open — a raw _current_music string cannot carry AREA beds, so W2+ overworlds restored wrong (struktured in-play report 2026-08-08)
 var _menu_hidden_hud: Array = []
 
 ## Party Chat (opt-in flavor cutscenes)
@@ -1185,7 +1185,7 @@ func _open_overworld_menu() -> void:
 	# Snapshot underlying music, swap to the pause-menu theme ("Paused, Somewhere Else").
 	# Restore in _on_overworld_menu_closed, guarded against underlying swaps.
 	if SoundManager:
-		_pre_menu_music_track = SoundManager._current_music
+		_pre_menu_music_state = SoundManager.capture_music_state()
 		SoundManager.play_music("menu")
 	print("Overworld menu opened")
 
@@ -1205,14 +1205,14 @@ func _teardown_overworld_menu_widget() -> void:
 	# underneath swaps), scene-derived key as fallback so "menu" can't
 	# persist even when the snapshot was lost. Clear runs unconditionally.
 	if SoundManager and SoundManager._current_music == "menu":
-		if _pre_menu_music_track != "":
-			SoundManager.play_music(_pre_menu_music_track)
-		else:
+		SoundManager.restore_music_state(_pre_menu_music_state)
+		if SoundManager._current_music == "menu":
+			# Restore no-oped (empty/not-playing snapshot) — bug 2801's second stage still applies.
 			var fallback: String = _derive_current_scene_music_key()
 			if fallback != "":
 				# AREA key, not a track name — play_music("village") has no case and warns "Unknown music track", leaving the menu bed to bleed into the overworld (struktured 2026-07-25). play_area_music resolves village/interior_*/overworld properly.
 				SoundManager.play_area_music(fallback)
-	_pre_menu_music_track = ""
+	_pre_menu_music_state = {}
 
 
 func _derive_current_scene_music_key() -> String:
