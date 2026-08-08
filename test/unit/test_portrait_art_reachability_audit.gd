@@ -27,10 +27,43 @@ extends GutTest
 
 const CUTSCENE_DIALOGUE := "res://src/cutscene/CutsceneDialogue.gd"
 const PORTRAIT_ROOT := "res://assets/sprites/portraits"
+const Loader := preload("res://src/battle/sprites/HybridSpriteLoader.gd")
 
 ## Subdirectories owned by a DIFFERENT consumer than CutsceneDialogue.
 ## keepers/ belongs to ShopScene (by direct path, not via a registry).
 const NON_DIALOGUE_DIRS := ["keepers"]
+
+
+## World-dressed variants are consumed by a name BUILT AT RUNTIME —
+## `sprite_path.get_basename() + "_" + world_suffix() + ".png"` — so no literal
+## "bard_suburban" exists anywhere to grep for. The docstring above already allows for a
+## portrait consumed "by a key built at runtime"; the implementation could not see one,
+## and 70 real, reachable files landed as orphans (2026-08-08).
+##
+## Suffixes come from HybridSpriteLoader.WORLD_SUFFIXES, never a hand-list — a seventh
+## world must not require editing this file to stay audited.
+##
+## ⚠️ The exemption is CONDITIONAL on the constructing code existing AND being reachable.
+## Unconditional, it would exempt 70 files forever the moment someone deletes the probe —
+## the exact defect this audit exists to catch, re-created by its own fix.
+func _world_variant_stem(basename: String) -> String:
+	if not _dialogue_constructs_world_variants():
+		return ""
+	for suffix in Loader.WORLD_SUFFIXES:
+		if suffix != "" and basename.ends_with("_" + str(suffix)):
+			return basename.substr(0, basename.length() - str(suffix).length() - 1)
+	return ""
+
+
+func _dialogue_constructs_world_variants() -> bool:
+	var src := FileAccess.get_file_as_string(CUTSCENE_DIALOGUE)
+	var head := src.find("func _create_portrait")
+	if head < 0:
+		return false
+	var base_load := src.find("ResourceLoader.exists(sprite_path)", head)
+	var probe := src.find("current_world_suffix()", head)
+	# Below the base load the probe never runs, so the variants really are orphans.
+	return probe > head and base_load > head and probe < base_load
 
 
 func _registry() -> Dictionary:
@@ -83,12 +116,21 @@ func test_no_portrait_art_ships_without_a_consumer() -> void:
 	_all_portrait_pngs(PORTRAIT_ROOT, pngs)
 	assert_gt(pngs.size(), 10, "sanity: portrait art should exist to audit")
 	var orphans: Array = []
+	var by_construction := 0
 	for p in pngs:
 		var base: String = str(p).get_file().get_basename()
-		if not _has_any_consumer(base):
-			orphans.append(p.replace(PORTRAIT_ROOT + "/", ""))
+		if _has_any_consumer(base):
+			continue
+		# A world variant is reachable iff its STEM is consumed and the probe that
+		# builds the suffixed name is wired above the rung that returns.
+		var stem := _world_variant_stem(base)
+		if stem != "" and _has_any_consumer(stem):
+			by_construction += 1
+			continue
+		orphans.append(p.replace(PORTRAIT_ROOT + "/", ""))
 	assert_eq(orphans.size(), 0,
 		"portrait art with no consumer in src/ or data/ — it will never render, and the procedural fallback hides that:\n  %s" % "\n  ".join(orphans))
+	gut.p("reachable by constructed name: %d" % by_construction)
 
 
 func test_registered_keys_without_art_still_resolve_intentionally() -> void:

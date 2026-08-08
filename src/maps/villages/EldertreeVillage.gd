@@ -192,7 +192,7 @@ func _setup_npcs() -> void:
 		"I'll be over here. Not muted. Just... reflective. It's fine.",
 		"...Do you want to hear about the moss? I have a moss tutorial. Six pages. Different mushrooms though."
 	]
-	var pip = _create_npc("Tutorial Fairy Pip", "villager", Vector2(14 * TILE_SIZE,7 * TILE_SIZE), _pip_post if _after_cave_done else _pip_pre)
+	var pip = _create_npc("Tutorial Fairy Pip", "fairy", Vector2(14 * TILE_SIZE,7 * TILE_SIZE), _pip_post if _after_cave_done else _pip_pre)
 	npcs.add_child(pip)
 
 	# Merchant Thorn (suspicious) — timeless voice, no branch.

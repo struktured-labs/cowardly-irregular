@@ -88,8 +88,22 @@ JOB_SIGNATURE = {
 
 ## Every output filename's suffix must be one the RUNTIME can actually ask for.
 ##
-## The trap is `futuristic`: world 5's map ids say futuristic (futuristic_overworld,
-## overworld_futuristic) but SoundManager._get_current_world_suffix RETURNS "digital".
+## The trap is `futuristic`, and the durable form is a RELATIONSHIP, not a count.
+##
+## ⚠️ I first wrote "there are THREE vocabularies here, not two" and it was stale within the
+## hour — cowir-cutscenes found a fourth inside SoundManager itself (`_area_wav_cache`, an
+## in-memory Dictionary key, spelled `futuristic` and CORRECT). A note that names a COUNT is
+## a hand-list wearing a rule's clothes, and it goes wrong in both directions like any other.
+##
+## THE RULE: `futuristic` is wrong ONLY when a value that names a MAP or a MONSTER reaches a
+## consumer expecting a WORLD SUFFIX. Every other spelling of it is correct — map-id-to-map-id
+## cannot misfire, and audio's own procedural cache legitimately says `futuristic` one line
+## after its manifest lookup says `digital`.
+##
+## For THIS check the consumer is the SPRITE suffix list, HybridSpriteLoader.WORLD_SUFFIXES —
+## not audio's, since the loader stopped consulting SoundManager when the resolver unified.
+## The two agree today, but they are separate literals: agreement is a fact to re-check, not
+## a guarantee.
 ## A batch written as idle_futuristic.png would generate cleanly, import cleanly, sit on
 ## disk forever and never be requested once — and nothing downstream reports it, because
 ## the lookup just falls back to base art and the game looks right.
@@ -193,7 +207,7 @@ Use the SECOND reference image for SCALE AND FRAMING (how big the figure sits in
 cell) and the FIRST only for the character's colours and equipment. Clean pixel art,
 bold dark outlines, limited palette, no anti-aliasing fuzz, no floating pixels."""
 
-BUST_PROMPT = """16-bit SNES-era JRPG battle sprite, full body, facing RIGHT toward the enemy.
+BUST_PROMPT = """16-bit SNES-era JRPG battle sprite, full body, facing LEFT (the enemy line is to the LEFT). ⚠️ LEFT is the shipped convention: BattleScene:980 gives 256px sheets flip_h=false, so a right-facing sprite renders backwards next to the artist's party.
 {core}, dressed in {dress}
 
 Single character centred on a fully transparent background. Clean pixel art with bold

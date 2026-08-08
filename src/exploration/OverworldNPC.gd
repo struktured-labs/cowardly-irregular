@@ -79,6 +79,13 @@ const NPC_TYPE_TO_ARCHETYPE: Dictionary = {
 	"guard": "guard",
 	"scholar": "scholar",
 	"child": "child",
+	## Non-human named NPCs. Registered as npc_types rather than sprite_archetype
+	## overrides so all THREE surfaces agree: the sprite resolves here, the portrait
+	## through _portrait_key(), and the dialogue THEME through npc_type — which is what
+	## the line dicts below actually carry. An archetype override would have fixed the
+	## first two and left the theme reading "villager".
+	"fairy": "fairy",
+	"ghost": "ghost",
 	"blacksmith": "blacksmith",
 	"farmer": "farmer",
 	"fisherman": "fisherman",
