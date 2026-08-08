@@ -72,6 +72,13 @@ godot --headless --audio-driver Dummy --import --quit >/dev/null 2>&1 || true
 # that quietly stopped applying eats headroom against itch's 200 MB embed limit.
 ./tools/check_exclude_patterns.sh || true
 
+# TREE IDENTITY — see deploy_desktop.sh for the measured gap this closes. Web has the
+# same shape: gate 1 reads src/ at T, the staged export reads it at T+minutes, and nothing
+# connected them. Worse here, because make_web_stage.sh copies the tree into tmp/web_stage
+# — so a mid-run edit is captured into the stage silently.
+_tree_id() { printf '%s %s' "$(git rev-parse HEAD)" "$(git status --porcelain | sort | md5sum | cut -d' ' -f1)"; }
+GATE_TREE_ID="$(_tree_id)"
+
 echo "[deploy] gate 1/4: unit suite (via tools/gate.sh)"
 if ! ./tools/gate.sh tmp/deploy_suite.log; then
   cp tmp/deploy_suite.log tmp/deploy_suite.attempt1.log
@@ -94,6 +101,15 @@ if ! ./tools/gate.sh tmp/deploy_isolated.log --isolated; then
   exit 1
 fi
 
+GATE_TREE_ID_NOW="$(_tree_id)"
+if [ "$GATE_TREE_ID_NOW" != "$GATE_TREE_ID" ]; then
+  echo "[deploy] BLOCKED: the working tree CHANGED between the suite gate and the export." >&2
+  echo "        at gate 1: ${GATE_TREE_ID}" >&2
+  echo "        now:       ${GATE_TREE_ID_NOW}" >&2
+  echo "        The stage is built FROM the working tree, so what would ship is not what" >&2
+  echo "        gate 1 tested. Re-run from a quiescent tree." >&2
+  exit 1
+fi
 echo "[deploy] gate 2/4: web export"
 # STAGED EXPORT, not a direct one. struktured's ruling (2026-07-30): ship the W4-W6
 # endings, compress to fit. The web preset excludes 54 ending tracks to stay under
