@@ -13,6 +13,11 @@ func push_lock(lock_id: String) -> void:
 	_locks[lock_id] = Time.get_ticks_msec()
 
 
+## Name-specific check for callers gating on ONE lock (battle-entry funnel, 2026-08-08).
+func has_lock(lock_id: String) -> bool:
+	return _locks.has(lock_id)
+
+
 func pop_lock(lock_id: String) -> void:
 	_locks.erase(lock_id)
 
