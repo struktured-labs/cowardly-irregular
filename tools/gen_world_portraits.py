@@ -19,6 +19,30 @@ TWO anchors, mirroring the battle-idle batch:
   2 costume        — frame 0 of jobs/<job>/idle_<world>.png, the world dress already shipped.
                      The portrait must agree with the body on screen beside it.
 
+⛔ DO NOT RETRY THE "COVERED FACE" PROMPT CLAUSE — measured, reverted 2026-08-08.
+
+Covered-face jobs differentiate least between worlds: at the 72px render size ninja scores
+11-15 mean RGB distance from its base and scriptweaver 12-24, against a 24-29 corpus mean.
+The face is a mask or a deep hood, so the world signal has almost no visible surface.
+
+The obvious fix — an extra clause telling the model to put the world signal on mask fabric,
+collar, shoulders, rig and trim instead — was tried on all 10 (ninja + scriptweaver x 5) at
+$0.42 and made things WORSE:
+
+  scriptweaver  16.3 -> 13.6 mean   every one of the five went DOWN
+  ninja         13.8 -> 14.6 mean   excluding digital; flat, three of five went DOWN
+  and it reintroduced opaque backdrops on 11 files, plus ninja/digital came back with a
+  transparency CHECKERBOARD rendered as actual pixels
+
+⚠️ THE METRIC LIED FIRST, WHICH IS THE PART WORTH REMEMBERING. Before keying the
+backdrops, the same measurement read +42 to +92 — a 5x "improvement" — because distance
+from base counts BACKGROUND. An opaque white rectangle scores as maximum differentiation.
+Only looking at the sheet caught it; see the same lesson in
+tools/gen_world_overworld_gptimage.py, where numbers said better and the art was worse.
+
+If someone does retry this: measure on the SUBJECT ONLY (mask alpha before diffing), and
+treat any score outside the 24-29 corpus band as a defect signal rather than a win.
+
   python3 tools/gen_world_portraits.py --jobs fighter --worlds suburban --dry-run
   python3 tools/gen_world_portraits.py --worlds suburban --quality medium
 """
