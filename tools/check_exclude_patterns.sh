@@ -51,6 +51,31 @@ _count_ever() {  # files EVER added anywhere in history matching the pattern
       | command grep -av '^$' | sort -u | wc -l
 }
 
+# COVERAGE — the parse below keys on a LINE PATTERN, and a line pattern reports on however
+# many presets it HAPPENED to match. A preset whose filter is formatted differently, or a
+# preset added with no exclude_filter at all, parses clean and audits a SUBSET — which is
+# indistinguishable in the output from a complete audit. That is the same shape as the
+# never-matched/zero split this script exists to disambiguate, one level up: "covered and
+# clean" and "never looked at" must not print the same.
+#
+#   Measured 2026-08-09 on main: 5 preset sections, 5 exclude_filter lines. Equal — and
+#   nothing asserted it until now, which is the only reason it's worth a line of code.
+#   `exclude_filter=` does NOT match `encryption_exclude_filters=` (plural, `s=`): verified
+#   by count, 5 filter lines against 5 encryption lines rather than 10.
+#
+# WARNS, does not block. A preset legitimately may carry no exclude_filter — that ships
+# everything, which is a decision, not a parse failure. Blocking here would refuse a
+# correct config; staying silent would let a partial audit read as a full one.
+N_PRESETS="$(command grep -ac '^\[preset\.[0-9]*\]' "$CFG" || true)"
+N_FILTERS="$(command grep -ac 'exclude_filter=' "$CFG" || true)"
+if [ "${N_PRESETS:-0}" -ne "${N_FILTERS:-0}" ]; then
+    echo "[patterns] ⚠️  COVERAGE: ${N_PRESETS} preset section(s), ${N_FILTERS} exclude_filter line(s)." >&2
+    echo "             This audit covers only the presets that parsed. A preset with no" >&2
+    echo "             exclude_filter ships EVERYTHING; one formatted differently is invisible" >&2
+    echo "             here. Neither is reported below — the report is silent about what it" >&2
+    echo "             never read." >&2
+fi
+
 mapfile -t PATTERNS < <(
   command grep -a 'exclude_filter=' "$CFG" \
     | sed 's/.*exclude_filter="//; s/"$//' \
