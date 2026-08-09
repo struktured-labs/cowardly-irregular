@@ -1,0 +1,49 @@
+{
+	"version": 1,
+	"description": "Per-world display names for party jobs. struktured 2026-08-09: 'party CHARACTER NAMES should change from one overworld to another' — his example Fighter -> Mall Cop (suburban). Register is deflationary: the archetype survives the world shift and loses its dignity. Same person, re-skinned by the world's logic. Consistent with each job's voice in job_personas.json.",
+	"_world_key_warning": "Keys are WORLD THEMES, not map ids. W5 is 'futuristic' here; the codebase also calls that world 'digital' in some places (5 uses vs 2) and its map id is 'futuristic_overworld'. A resolver keying on the wrong vocabulary silently misses W5 and falls back to the base name — which looks like a design choice, not a bug. Normalize to these six keys and assert every one resolves.",
+	"_scope": "Starter jobs only (5 of 15). The 9 advanced/meta jobs are debug-gated and deliberately absent — absence must mean 'use the base name from jobs.json' by an explicit branch, not by a lookup that happens to miss.",
+	"worlds": ["medieval", "suburban", "steampunk", "industrial", "futuristic", "abstract"],
+	"jobs": {
+		"fighter": {
+			"medieval": "Fighter",
+			"suburban": "Mall Cop",
+			"steampunk": "Stoker",
+			"industrial": "Floor Boss",
+			"futuristic": "Firewall",
+			"abstract": "Blunt Instrument"
+		},
+		"cleric": {
+			"medieval": "Cleric",
+			"suburban": "School Nurse",
+			"steampunk": "Ward Matron",
+			"industrial": "Safety Officer",
+			"futuristic": "Redundancy Officer",
+			"abstract": "Undo"
+		},
+		"mage": {
+			"medieval": "Mage",
+			"suburban": "Chem Teacher",
+			"steampunk": "Sparkwright",
+			"industrial": "Hazmat Tech",
+			"futuristic": "Root User",
+			"abstract": "Hypothesis"
+		},
+		"rogue": {
+			"medieval": "Rogue",
+			"suburban": "Shoplifter",
+			"steampunk": "Chimneysweep",
+			"industrial": "Scrapper",
+			"futuristic": "Zero-Day",
+			"abstract": "Loophole"
+		},
+		"bard": {
+			"medieval": "Bard",
+			"suburban": "Karaoke Legend",
+			"steampunk": "Barrel Organist",
+			"industrial": "Shop Steward",
+			"futuristic": "Influencer",
+			"abstract": "Motif"
+		}
+	}
+}
