@@ -452,7 +452,7 @@ func _generate_map() -> void:
 	spawn_points["default"] = spawn_points["entrance"]
 	spawn_points["abstract_portal"] = spawn_points["entrance"]
 	spawn_points["the_question"] = Vector2(19 * TILE_SIZE + TILE_SIZE / 2, 16 * TILE_SIZE + TILE_SIZE / 2)
-	spawn_points["catalog"] = Vector2(4 * TILE_SIZE + TILE_SIZE / 2, 16 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["catalog"] = Vector2(5 * TILE_SIZE + TILE_SIZE / 2, 16 * TILE_SIZE + TILE_SIZE / 2)
 	spawn_points["echo_chamber"] = Vector2(34 * TILE_SIZE + TILE_SIZE / 2, 16 * TILE_SIZE + TILE_SIZE / 2)
 	# Spawn point for arriving from futuristic world (south origin point)
 	spawn_points["from_futuristic"] = Vector2(19 * TILE_SIZE + TILE_SIZE / 2, 32 * TILE_SIZE + TILE_SIZE / 2)

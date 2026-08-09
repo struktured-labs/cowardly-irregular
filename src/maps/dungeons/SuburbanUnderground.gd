@@ -51,7 +51,7 @@ func _init() -> void:
 			"M..M.T.M...M.T.M...M",
 			"M..MMMMM...MMMMM...M",
 			"M..................M",
-			"M.....MMMMMMMM.....M",
+			"M.....MMM.MMMM.....M",
 			"M.....M......M.....M",
 			"M.....M..U...M.T...M",
 			"M.....MMMMMMMM.....M",

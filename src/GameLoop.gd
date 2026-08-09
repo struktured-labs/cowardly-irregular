@@ -227,7 +227,7 @@ var _area_fade_rect: ColorRect = null
 ## Overworld menu
 var _overworld_menu: Control = null
 var _overworld_menu_layer: CanvasLayer = null
-var _pre_menu_music_track: String = ""  # snapshot of underlying music while pause menu is open
+var _pre_menu_music_state: Dictionary = {}  # capture_music_state() snapshot while pause menu is open — a raw _current_music string cannot carry AREA beds, so W2+ overworlds restored wrong (struktured in-play report 2026-08-08)
 var _menu_hidden_hud: Array = []
 
 ## Party Chat (opt-in flavor cutscenes)
@@ -1185,7 +1185,7 @@ func _open_overworld_menu() -> void:
 	# Snapshot underlying music, swap to the pause-menu theme ("Paused, Somewhere Else").
 	# Restore in _on_overworld_menu_closed, guarded against underlying swaps.
 	if SoundManager:
-		_pre_menu_music_track = SoundManager._current_music
+		_pre_menu_music_state = SoundManager.capture_music_state()
 		SoundManager.play_music("menu")
 	print("Overworld menu opened")
 
@@ -1205,14 +1205,14 @@ func _teardown_overworld_menu_widget() -> void:
 	# underneath swaps), scene-derived key as fallback so "menu" can't
 	# persist even when the snapshot was lost. Clear runs unconditionally.
 	if SoundManager and SoundManager._current_music == "menu":
-		if _pre_menu_music_track != "":
-			SoundManager.play_music(_pre_menu_music_track)
-		else:
+		SoundManager.restore_music_state(_pre_menu_music_state)
+		if SoundManager._current_music == "menu":
+			# Restore no-oped (empty/not-playing snapshot) — bug 2801's second stage still applies.
 			var fallback: String = _derive_current_scene_music_key()
 			if fallback != "":
 				# AREA key, not a track name — play_music("village") has no case and warns "Unknown music track", leaving the menu bed to bleed into the overworld (struktured 2026-07-25). play_area_music resolves village/interior_*/overworld properly.
 				SoundManager.play_area_music(fallback)
-	_pre_menu_music_track = ""
+	_pre_menu_music_state = {}
 
 
 func _derive_current_scene_music_key() -> String:
@@ -3265,12 +3265,16 @@ func _wait_for_confirm() -> void:
 	"""Wait for the player to press confirm (A/Z/Enter/mouse click) before continuing"""
 	# Small delay so the press that ended the battle doesn't immediately confirm
 	await get_tree().create_timer(0.5).timeout
-	while true:
+	# Bounded per the house pattern (its four teardown siblings all are; this was the file's sole unbounded wait). 120s is generous for a human reading a victory screen; the else is LOUD because silently advancing past an unseen screen would be worse than the hang.
+	var confirm_t0: int = Time.get_ticks_msec()
+	while Time.get_ticks_msec() - confirm_t0 < 120000:
 		await get_tree().process_frame
 		if Input.is_action_just_pressed("ui_accept"):
 			break
 		if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 			break
+	if Time.get_ticks_msec() - confirm_t0 >= 120000:
+		push_warning("[GAMELOOP] _wait_for_confirm timed out after 120s — advancing without a press (report if you were present)")
 
 
 ## The diegetic-retry boss in the LAST battle, or {} — data-driven via monsters.json
@@ -3900,6 +3904,11 @@ func _adopt_monster_win_condition(enemy_ids: Array) -> void:
 
 func _start_battle_async(specific_enemies: Array = [], is_encounter: bool = false) -> void:
 	"""Start battle using async-loaded scene"""
+	# Mid-dissolve battle kills the transition tween -> emit never runs (2026-08-08 stuck class): drop the unearned encounter, clear the mutex.
+	if InputLockManager and InputLockManager.has_lock("world_transition"):
+		_battle_transition_starting = false
+		push_warning("[BATTLE] entry suppressed — world transition mid-dissolve; encounter dropped")
+		return
 	current_state = LoopState.BATTLE
 	_battle_transition_starting = false  # state=BATTLE now owns the mutex vs area transitions
 	if _day_night_overlay:
@@ -4433,6 +4442,25 @@ func _area_overworld_transition_out() -> void:
 
 var _transition_in_progress: bool = false
 var _battle_transition_starting: bool = false  # set by _on_exploration_battle_triggered — mutex against area transitions
+var _transition_wd_gen: int = 0  # generation token so a watchdog never fires on a LATER transition
+
+## Wall-clock floor under the two no-expiry latches that can strand a session (2026-08-08: InputLockManager's 10s net covered the only gate that never needed one — nets grow where failure is FELT, not where it is severe). Mirrors the battle stall watchdog: gut hard-off, generation token, fires only if THIS transition is still latched, LOUD.
+func _arm_transition_watchdog() -> void:
+	for a in OS.get_cmdline_args():
+		if "gut_cmdln" in a:
+			return
+	_transition_wd_gen += 1
+	var gen: int = _transition_wd_gen
+	get_tree().create_timer(20.0).timeout.connect(func() -> void:
+		if _transition_in_progress and _transition_wd_gen == gen:
+			push_error("[GAMELOOP] transition watchdog: latch held >20s — force-clearing (stranded-session class, 2026-08-08)")
+			_transition_in_progress = false
+			# The fade lock is NOT popped here: InputLockManager's own 10s stale expiry covers
+			# locks, and a signal-lambda pop trips the heartbeat guard. This watchdog exists for
+			# the two latches that have NO expiry.
+			if current_state != LoopState.EXPLORATION and _exploration_scene != null and is_instance_valid(_exploration_scene):
+				current_state = LoopState.EXPLORATION)
+
 
 func _on_area_transition(target_map: String, spawn_point: String) -> void:
 	"""Handle contextual area transition based on destination type."""
@@ -4443,6 +4471,7 @@ func _on_area_transition(target_map: String, spawn_point: String) -> void:
 	if _transition_in_progress:
 		return
 	_transition_in_progress = true
+	_arm_transition_watchdog()
 
 	# R2 (scene-change abort): kill any in-flight NPC dialogue LLM requests so a
 	# slow inference from the OLD map can't resolve into the NEW scene (stale

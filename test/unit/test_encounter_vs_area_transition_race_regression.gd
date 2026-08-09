@@ -51,7 +51,9 @@ func test_mutex_flag_declared_and_toggled_at_state_boundaries() -> void:
 	# Cleared once state=BATTLE takes over ownership.
 	var i := src.find("func _start_battle_async")
 	assert_gt(i, -1)
-	var body := src.substr(i, 400)
+	# Function-bounded, not a fixed char window — a 400-char window went blind when a comment grew (2026-08-08).
+	var fn_end := src.find("\nfunc ", i + 1)
+	var body := src.substr(i, fn_end - i if fn_end > -1 else 4000)
 	assert_true("_battle_transition_starting = false" in body,
 		"_start_battle_async must clear the mutex — state=BATTLE now owns exclusion")
 	# Safety pop on return to exploration — leak proof.

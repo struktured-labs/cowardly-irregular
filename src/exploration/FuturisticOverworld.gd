@@ -482,14 +482,15 @@ func _generate_map() -> void:
 	spawn_points["default"] = spawn_points["entrance"]
 	spawn_points["futuristic_portal"] = spawn_points["entrance"]
 	spawn_points["plaza"] = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 17 * TILE_SIZE + TILE_SIZE / 2)
-	spawn_points["server_farm"] = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 4 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["server_farm"] = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 3 * TILE_SIZE + TILE_SIZE / 2)
 	spawn_points["glitch_sector"] = Vector2(22 * TILE_SIZE + TILE_SIZE / 2, 32 * TILE_SIZE + TILE_SIZE / 2)
 	# Spawn point for arriving from industrial world (south access port)
 	spawn_points["from_industrial"] = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 40 * TILE_SIZE + TILE_SIZE / 2)
 	# Spawn point for returning from abstract world (north server farm)
 	spawn_points["from_abstract"] = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 3 * TILE_SIZE + TILE_SIZE / 2)
 	# Spawn point for returning from Node Prime village (east residential pods, row 20)
-	spawn_points["node_prime_entrance"] = Vector2(50 * TILE_SIZE + TILE_SIZE / 2, 20 * TILE_SIZE + TILE_SIZE / 2)
+	# the one case no cell model could flag: both cells open, the 4px body straddled the boundary
+	spawn_points["node_prime_entrance"] = Vector2(49 * TILE_SIZE + TILE_SIZE / 2, 20 * TILE_SIZE + TILE_SIZE / 2)
 
 
 func _char_to_tile_type(char: String) -> int:

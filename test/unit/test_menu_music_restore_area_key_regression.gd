@@ -46,14 +46,19 @@ func test_scene_derived_fallback_uses_the_area_api() -> void:
 	)
 
 
-func test_snapshot_path_still_uses_the_track_api() -> void:
-	# The OTHER branch is genuinely a track name (_current_music), so it must
-	# NOT be "fixed" to play_area_music. Both calls sit two lines apart and
-	# take opposite APIs; that asymmetry is the whole trap.
+func test_snapshot_path_routes_through_the_state_api() -> void:
+	# 2026-08-08: the snapshot branch moved from a raw track string to
+	# capture/restore_music_state — restore OWNS the area-vs-track asymmetry
+	# this file guards, at ONE site (prefers area, falls to track). The trap
+	# this file was written for cannot recur through it.
 	var src := _loop_src()
 	assert_true(
-		src.contains("SoundManager.play_music(_pre_menu_music_track)"),
-		"the snapshot branch holds SoundManager._current_music, a TRACK name — it must stay on play_music"
+		src.contains("SoundManager.restore_music_state(_pre_menu_music_state)"),
+		"the snapshot branch must route through restore_music_state, which handles area AND track correctly"
+	)
+	assert_false(
+		src.contains("play_music(_pre_menu_music_state"),
+		"a state Dictionary must never reach play_music — it takes track names"
 	)
 
 

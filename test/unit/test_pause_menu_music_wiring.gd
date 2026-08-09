@@ -40,8 +40,8 @@ func test_menu_track_exists_in_manifest() -> void:
 
 func test_pre_menu_music_track_member_var_declared() -> void:
 	var src := _read(GAMELOOP)
-	assert_true(src.contains("var _pre_menu_music_track"),
-		"GameLoop must declare _pre_menu_music_track to hold the snapshot across the pause")
+	assert_true(src.contains("var _pre_menu_music_state"),
+		"GameLoop must declare _pre_menu_music_state (a capture_music_state() Dictionary — a raw track STRING cannot carry AREA beds, the 2026-08-08 W2+ menu-exit bug)")
 
 
 func test_open_snapshots_and_swaps_to_menu() -> void:
@@ -51,8 +51,8 @@ func test_open_snapshots_and_swaps_to_menu() -> void:
 	assert_gt(fn_start, -1, "_open_overworld_menu must exist")
 	var next_fn: int = src.find("\nfunc ", fn_start + 1)
 	var body: String = src.substr(fn_start, next_fn - fn_start) if next_fn > -1 else src.substr(fn_start)
-	assert_true(body.contains("_pre_menu_music_track = SoundManager._current_music"),
-		"_open_overworld_menu must snapshot SoundManager._current_music into _pre_menu_music_track BEFORE swapping — else restore has nothing to restore to")
+	assert_true(body.contains("_pre_menu_music_state = SoundManager.capture_music_state()"),
+		"_open_overworld_menu must snapshot via capture_music_state() BEFORE swapping — the state dict carries the AREA, which a raw _current_music string cannot (2026-08-08)")
 	assert_true(body.contains("SoundManager.play_music(\"menu\")"),
 		"_open_overworld_menu must call SoundManager.play_music(\"menu\") to swap to the pause-menu theme")
 
@@ -69,13 +69,13 @@ func test_restore_lives_in_teardown_choke_point() -> void:
 	var next_fn: int = src.find("\nfunc ", fn_start + 1)
 	var body: String = src.substr(fn_start, next_fn - fn_start) if next_fn > -1 else src.substr(fn_start)
 
-	assert_true(body.contains("_pre_menu_music_track != \"\""),
-		"_teardown_overworld_menu_widget must skip restore when _pre_menu_music_track was never set")
+	assert_true(body.contains("SoundManager.restore_music_state(_pre_menu_music_state)"),
+		"_teardown_overworld_menu_widget must restore via restore_music_state — it owns the area-vs-track asymmetry at ONE site (2026-08-08)")
 	assert_true(body.contains("SoundManager._current_music == \"menu\""),
 		"_teardown_overworld_menu_widget must guard the restore on _current_music == \"menu\" (cowir-main msg 2687: don't stomp a legitimate underlying swap)")
-	assert_true(body.contains("SoundManager.play_music(_pre_menu_music_track)"),
+	assert_true(body.contains("SoundManager.restore_music_state(_pre_menu_music_state)"),
 		"_teardown_overworld_menu_widget must call play_music with the snapshot when the guard passes")
-	assert_true(body.contains("_pre_menu_music_track = \"\""),
+	assert_true(body.contains("_pre_menu_music_state = {}"),
 		"_teardown_overworld_menu_widget must clear _pre_menu_music_track UNCONDITIONALLY (bug 2801: a stale snapshot leaking past a scene transition let menu music persist forever)")
 
 
@@ -117,8 +117,8 @@ func test_teardown_falls_back_to_scene_derived_key_when_snapshot_lost() -> void:
 		"_teardown_overworld_menu_widget must call _derive_current_scene_music_key as the snapshot-lost fallback (bug 2801 round 2)")
 	# The fallback path only fires when snapshot is empty AND current is menu.
 	# Assert both branches of the two-stage design exist.
-	assert_true(body.contains("_pre_menu_music_track != \"\""),
-		"Two-stage design: snapshot path (guard on non-empty snapshot)")
+	assert_true(body.contains("SoundManager.restore_music_state(_pre_menu_music_state)"),
+		"Two-stage design: restore first (no-ops safely on an empty/not-playing snapshot)")
 	assert_true(body.contains("SoundManager._current_music == \"menu\""),
 		"Two-stage design: outer guard on _current_music == \"menu\" — if underneath swap already replaced it, don't stomp")
 
@@ -162,13 +162,13 @@ func test_runtime_probe_snapshot_lost_still_leaves_menu() -> void:
 		return
 	# Snapshot the pre-test SoundManager state so we can restore.
 	var pre_track: String = str(sm._current_music) if "_current_music" in sm else ""
-	var pre_pmm: String = str(gl._pre_menu_music_track) if "_pre_menu_music_track" in gl else ""
+	var pre_pmm: Dictionary = gl._pre_menu_music_state if "_pre_menu_music_state" in gl else {}
 	var pre_scene = gl._exploration_scene if "_exploration_scene" in gl else null
 
 	# Force the "menu is playing but snapshot is lost" state.
 	sm.play_music("menu")
-	if "_pre_menu_music_track" in gl:
-		gl._pre_menu_music_track = ""  # simulate the lost snapshot
+	if "_pre_menu_music_state" in gl:
+		gl._pre_menu_music_state = {}  # simulate the lost snapshot
 
 	# Give _exploration_scene a stub that returns a known music key.
 	var stub := Node.new()
@@ -192,7 +192,7 @@ func test_runtime_probe_snapshot_lost_still_leaves_menu() -> void:
 	if "_exploration_scene" in gl:
 		gl._exploration_scene = pre_scene
 	stub.queue_free()
-	if "_pre_menu_music_track" in gl:
-		gl._pre_menu_music_track = pre_pmm
+	if "_pre_menu_music_state" in gl:
+		gl._pre_menu_music_state = pre_pmm
 	if pre_track != "":
 		sm.play_music(pre_track)

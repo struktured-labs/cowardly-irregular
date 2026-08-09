@@ -334,8 +334,13 @@ func _generate_map() -> void:
 	spawn_points["default"] = Vector2(40 * TILE_SIZE + TILE_SIZE / 2, 25 * TILE_SIZE + TILE_SIZE / 2)
 
 
+## Markers sit under ridge; the Mode 7 collider shift drops that ridge onto the marker tile, so these arrivals step aside to ground that is clear in the DISPLACED frame.
+const SPAWN_CLEARANCE := {"1": Vector2i(0, -1), "4": Vector2i(-1, -1), "I": Vector2i(1, 2)}
+
+
 func _register_spawn_point(char: String, x: int, y: int) -> void:
-	var pos = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
+	var off: Vector2i = SPAWN_CLEARANCE.get(char, Vector2i.ZERO)
+	var pos = Vector2((x + off.x) * TILE_SIZE + TILE_SIZE / 2, (y + off.y) * TILE_SIZE + TILE_SIZE / 2)
 	match char:
 		"C": spawn_points["cave_entrance"] = pos
 		"V": spawn_points["village_entrance"] = pos
