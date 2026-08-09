@@ -67,7 +67,25 @@ def build_grid(client, job: str, world: str, quality: str):
 
 
 
-## ⛔ THERE IS NO WORKING AUTOMATED ACCEPTANCE TEST FOR THESE SHEETS. Review by eye.
+## ✅ THERE IS A PARTIAL ACCEPTANCE TEST AND IT IS ROW-MASS IMBALANCE — max(row)/min(row)
+## over the four rows' opaque-pixel counts. It catches SLICING, which is the dominant
+## failure: gpt-image-1 puts the figures off-grid and assemble_game_grid cuts them mid-body,
+## leaving one row nearly empty.
+##
+## VALIDATED AGAINST CONTROLS, which is what the two earlier attempts lacked — the five
+## ARTIST sheets score 1.07 / 1.20 / 1.35 / 1.51 / 1.57, so a threshold of ~1.96 (worst
+## artist +25%) passes all known-good work. Measured on 25 generated sheets it flagged 5,
+## scoring 2.52-4.38, and every one was visibly sliced. No false positives against the
+## artist baseline.
+##
+## ⛔ IT IS NOT SUFFICIENT AND MUST NOT BE THE ONLY GATE. It measures MASS, so a sheet whose
+## rows are full-size but MANGLED passes: fighter/abstract scored 1.77 and its rows 2-4 were
+## garbled half-figures. Eyes caught that one and the metric never could.
+## ⛔ AND THE SIDE/FRONT RATIO BELOW IS NOT A DEFECT SIGNAL — fighter/suburban scored 0.92,
+## right at the old flag threshold, and is a clean shippable sheet. Costumes with broad
+## shoulders widen the side rows. Treat it as review ORDER, never as a verdict.
+##
+## So: generate, run the imbalance check, LOOK at everything, reroll what either one fails.
 ##
 ## I built one and it was worthless, which is worth recording so the next attempt does not
 ## rebuild it. gpt-image-1's grid compliance is inconsistent: fighter/suburban came back a
@@ -90,9 +108,19 @@ def build_grid(client, job: str, world: str, quality: str):
 ##
 ## So: generate, LOOK at every sheet, reroll the bad ones. Measured hit rate 1 of 5.
 
+## max/min row mass. Artist baseline 1.07-1.57, so ~1.96 clears all known-good work.
+## Catches slicing; blind to a mangled-but-full-size row. Pair it with looking.
+SLICE_THRESHOLD = 1.96
+
+
+def row_imbalance(grid: Image.Image) -> float:
+    rc = row_counts(grid)
+    return max(rc) / max(min(rc), 1)
+
+
 def row_counts(grid: Image.Image):
     a = grid.split()[3]
-    return [sum(1 for q in a.crop((0, r * 32, 128, r * 32 + 32)).get_flattened_data() if q > 40)
+    return [sum(1 for q in a.crop((0, r * 32, 128, r * 32 + 32)).getdata() if q > 40)
             for r in range(4)]
 
 
@@ -163,16 +191,19 @@ def main() -> int:
         # Side rows equal to EACH OTHER is correct (assemble_game_grid mirrors them).
         side, front = (rc[1] + rc[2]) / 2, (rc[0] + rc[3]) / 2
         ratio = side / front if front else 1.0
-        flag = "  ⚠️ NO DIRECTIONAL SPREAD" if ratio > 0.92 else ""
+        imb = row_imbalance(grid)
+        # Imbalance is the validated signal; the ratio is review ORDER only, never a verdict
+        flag = "  🔴 SLICED (reroll)" if imb > SLICE_THRESHOLD else ""
         if flag:
-            weak.append(f"{job}/{world} (ratio {ratio:.2f})")
-        print(f"{rc} side/front {ratio:.2f}{flag}  {time.time()-t0:.0f}s")
+            weak.append(f"{job}/{world} (imbalance {imb:.2f})")
+        print(f"{rc} imb {imb:.2f} side/front {ratio:.2f}{flag}  {time.time()-t0:.0f}s")
 
     print(f"\nGenerated {len(made)}/{len(targets)} — spent ~${total:.2f}")
     if rejected:
         print(f"⛔ REJECTED (grid never came back clean): {rejected}", file=sys.stderr)
     if weak:
-        print(f"⚠️ REVIEW THESE FIRST (no directional spread): {weak}", file=sys.stderr)
+        print(f"🔴 REROLL THESE — row mass says sliced: {weak}", file=sys.stderr)
+        print("⛔ AND LOOK AT THE REST: a mangled full-size row passes this check.", file=sys.stderr)
     if len(made) != len(targets):
         print(f"MISSING: {[f'{j}/{w}' for j, w, _ in targets if f'{j}/{w}' not in made]}",
               file=sys.stderr)

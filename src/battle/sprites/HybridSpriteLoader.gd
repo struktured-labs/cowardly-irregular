@@ -248,6 +248,17 @@ static func world_suffix(world: int = -1) -> String:
 	return WORLD_SUFFIXES[w - 1]
 
 
+## The ONE place that knows a portrait's world rule — an avatar surface that builds the path
+## itself serves medieval art in every world, which is how the menu shipped wrong
+static func portrait_path(job_id: String, world: int = -1) -> String:
+	var base: String = "res://assets/sprites/portraits/%s.png" % job_id
+	var suffix: String = world_suffix(world)
+	if suffix == "" or suffix == "medieval":
+		return base
+	var variant: String = "res://assets/sprites/portraits/%s_%s.png" % [job_id, suffix]
+	return variant if ResourceLoader.exists(variant) else base
+
+
 ## Audio's vocabulary is not the sheet vocabulary: it says "medieval" where the sheets say
 ## "" (world 1 IS the artist's base art). Anything unrecognised also lands on base art.
 static func _normalize_suffix(audio_suffix: String) -> String:
