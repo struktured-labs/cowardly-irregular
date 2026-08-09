@@ -1,9 +1,18 @@
 {
 	"version": 1,
-	"description": "Per-world display names for party jobs. struktured 2026-08-09: 'party CHARACTER NAMES should change from one overworld to another' — his example Fighter -> Mall Cop (suburban). Register is deflationary: the archetype survives the world shift and loses its dignity. Same person, re-skinned by the world's logic. Consistent with each job's voice in job_personas.json.",
-	"_world_key_warning": "Keys are WORLD THEMES, not map ids. W5 is 'futuristic' here; the codebase also calls that world 'digital' in some places (5 uses vs 2) and its map id is 'futuristic_overworld'. A resolver keying on the wrong vocabulary silently misses W5 and falls back to the base name — which looks like a design choice, not a bug. Normalize to these six keys and assert every one resolves.",
-	"_scope": "Starter jobs only (5 of 15). The 9 advanced/meta jobs are debug-gated and deliberately absent — absence must mean 'use the base name from jobs.json' by an explicit branch, not by a lookup that happens to miss.",
-	"worlds": ["medieval", "suburban", "steampunk", "industrial", "futuristic", "abstract"],
+	"description": "Per-world display names for party jobs. struktured 2026-08-09: 'party CHARACTER NAMES should change from one overworld to another' — his example Fighter -> Mall Cop (suburban). Register is deflationary: the archetype survives the world shift and loses its dignity. Same person, re-skinned by the world's logic. Voices kept consistent with job_personas.json.",
+	"_key_on": "GameState.current_world (int 1-6), NOT a map id and NOT a world word. It is set at one chokepoint (GameLoop._set_current_map_id) and is already corrected for shared interiors: inn/shop/quest-room ids carry no world prefix, so _get_world_for_map() alone returns 1 for them and _village_origin_id is what fixes it. Calling _get_world_for_map(current_map_id) directly gives medieval names in every W2-W6 shop while the overworld outside shows the themed ones.",
+	"_why_the_int": "Four vocabularies spell World 5 in this codebase — map id 'futuristic_overworld', audio manifest key 'digital', a procedural cache key 'futuristic', and a monster-id suffix. Keying on an integer has no spelling to lose. The strings below are LABELS for humans editing this file; 'worlds' is the only place an int meets a word, so a rename is one line here and nowhere else. Read this mapping from this file rather than copying it into a GDScript const — a second copy is the hand-maintained duplicate that drifts.",
+	"_guard": "Assert set(worlds.keys()) == {1,2,3,4,5,6} and that every job carries every label. SET EQUALITY, not 'contains' and not per-key iteration — a per-key loop passes a file that is missing World 5 entirely. ⚠️ One level up, _get_world_for_map() is a prefix chain whose miss case is 'return 1', so an unmatched map and a genuine World 1 map are the same observation; a new W3 village whose id starts with neither 'steampunk_' nor 'brasston' gets medieval names silently.",
+	"_scope": "Starter jobs only (5 of 15). The 9 advanced/meta jobs are debug-gated and deliberately absent — absence must hit an EXPLICIT 'use the base name from jobs.json' branch, not a lookup that happens to miss. Ask before authoring the other 54 cells; that is a lot of speculative content behind a debug gate.",
+	"worlds": {
+		"1": "medieval",
+		"2": "suburban",
+		"3": "steampunk",
+		"4": "industrial",
+		"5": "futuristic",
+		"6": "abstract"
+	},
 	"jobs": {
 		"fighter": {
 			"medieval": "Fighter",
