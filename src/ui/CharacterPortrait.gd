@@ -6,6 +6,7 @@ class_name CharacterPortrait
 ## Inspired by FF4/FF5/FF6 menu portraits
 
 const CustomizationScript = preload("res://src/character/CharacterCustomization.gd")
+const SpriteLoader = preload("res://src/battle/sprites/HybridSpriteLoader.gd")
 
 ## Size presets
 enum PortraitSize {
@@ -56,8 +57,8 @@ func _build_portrait() -> void:
 	for child in get_children():
 		child.queue_free()
 
-	# Try artist portrait first (PNG in assets/sprites/portraits/)
-	var portrait_path = "res://assets/sprites/portraits/%s.png" % job_id
+	# Resolver, not a literal — this widget feeds 6 surfaces and all showed medieval art
+	var portrait_path = SpriteLoader.portrait_path(job_id)
 	if ResourceLoader.exists(portrait_path):
 		var tex = load(portrait_path) as Texture2D
 		if tex:

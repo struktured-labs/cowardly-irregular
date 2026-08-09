@@ -593,7 +593,8 @@ func _make_slot_portrait(job_id: String) -> Control:
 	Matches CutsceneDialogue's resolution so save slots and dialogue
 	show the same face."""
 	var tex: Texture2D = null
-	var png_path: String = PORTRAIT_PNGS.get(job_id, "")
+	# Resolver, so a slot's face matches the world rather than always reading medieval
+	var png_path: String = HybridSpriteLoader.portrait_path(job_id) if PORTRAIT_PNGS.has(job_id) else ""
 	if png_path != "" and ResourceLoader.exists(png_path):
 		tex = load(png_path)
 	if tex == null:
