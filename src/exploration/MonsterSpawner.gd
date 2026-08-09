@@ -251,17 +251,12 @@ func _despawn_all() -> void:
 
 
 func _get_valid_pool_for_overworld() -> Array:
-	var overworld_sprites = ["slime", "bat", "goblin", "wolf", "spider",
-		"skeleton", "ghost", "imp", "troll", "snake"]
-	var valid: Array = []
-	for entry in _enemy_pool:
-		if entry in overworld_sprites:
-			valid.append(entry)
-	if valid.is_empty():
-		valid = overworld_sprites.filter(func(e): return e in _enemy_pool)
-	if valid.is_empty():
-		valid = ["slime"]
-	return valid
+	# The per-world roster IS the curation — a medieval sprite-id whitelist here forced every
+	# W2+ monster to "slime" (wrong ART and wrong ENCOUNTER). RoamingMonster renders real art
+	# when present and a per-id placeholder otherwise, so trust the roster.
+	if not _enemy_pool.is_empty():
+		return _enemy_pool.duplicate()
+	return ["slime"]
 
 
 func _on_monster_touched(monster_id: String, monster_types: Array) -> void:

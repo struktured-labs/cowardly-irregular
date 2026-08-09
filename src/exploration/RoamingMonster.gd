@@ -76,8 +76,10 @@ func _setup_sprite() -> void:
 
 
 func _draw_fallback_sprite() -> void:
+	# Placeholder until overworld art lands — hue-hashed per monster_id so species are
+	# distinguishable (was a single red box, which read as "all the same" for art-less worlds).
 	var img = Image.create(FRAME_W, FRAME_H, false, Image.FORMAT_RGBA8)
-	img.fill(Color(0.8, 0.2, 0.2, 0.9))
+	img.fill(_placeholder_color(monster_id))
 	for x in range(FRAME_W):
 		img.set_pixel(x, 0, Color.BLACK)
 		img.set_pixel(x, FRAME_H - 1, Color.BLACK)
@@ -86,6 +88,13 @@ func _draw_fallback_sprite() -> void:
 		img.set_pixel(FRAME_W - 1, y, Color.BLACK)
 	_sprite.texture = ImageTexture.create_from_image(img)
 	_sprite.region_enabled = false
+
+
+func _placeholder_color(id: String) -> Color:
+	var h := 0
+	for i in id.length():
+		h = (h * 31 + id.unicode_at(i)) & 0xFFFFFF
+	return Color.from_hsv(float(h % 360) / 360.0, 0.6, 0.85, 0.95)
 
 
 func _apply_frame(row: int, col: int) -> void:
