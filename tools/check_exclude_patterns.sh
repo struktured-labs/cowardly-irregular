@@ -58,22 +58,30 @@ _count_ever() {  # files EVER added anywhere in history matching the pattern
 # never-matched/zero split this script exists to disambiguate, one level up: "covered and
 # clean" and "never looked at" must not print the same.
 #
-#   Measured 2026-08-09 on main: 5 preset sections, 5 exclude_filter lines. Equal — and
-#   nothing asserted it until now, which is the only reason it's worth a line of code.
-#   `exclude_filter=` does NOT match `encryption_exclude_filters=` (plural, `s=`): verified
-#   by count, 5 filter lines against 5 encryption lines rather than 10.
+#   Measured 2026-08-09 on main: 5 preset sections, one exclude_filter each.
+#
+# CHECKED PER SECTION, NOT BY COUNT. The first version of this guard compared
+# `count(presets)` against `count(exclude_filter lines)` — and a count cannot tell
+# "one each" from "one preset carrying two while another carries none." Equal totals,
+# one preset silently unaudited. A count catches a filter that VANISHED; it never
+# catches one that MOVED, and moved is the case that leaves the report looking complete.
+# Naming which section is uncovered is the property this audit actually depends on.
+#
+# `^exclude_filter=` anchors to line start so it cannot match `encryption_exclude_filters=`.
 #
 # WARNS, does not block. A preset legitimately may carry no exclude_filter — that ships
 # everything, which is a decision, not a parse failure. Blocking here would refuse a
 # correct config; staying silent would let a partial audit read as a full one.
-N_PRESETS="$(command grep -ac '^\[preset\.[0-9]*\]' "$CFG" || true)"
-N_FILTERS="$(command grep -ac 'exclude_filter=' "$CFG" || true)"
-if [ "${N_PRESETS:-0}" -ne "${N_FILTERS:-0}" ]; then
-    echo "[patterns] ⚠️  COVERAGE: ${N_PRESETS} preset section(s), ${N_FILTERS} exclude_filter line(s)." >&2
-    echo "             This audit covers only the presets that parsed. A preset with no" >&2
-    echo "             exclude_filter ships EVERYTHING; one formatted differently is invisible" >&2
-    echo "             here. Neither is reported below — the report is silent about what it" >&2
-    echo "             never read." >&2
+UNCOVERED="$(awk '
+    /^\[preset\.[0-9]+\]/ { if (s != "" && !f) print s; s = $0; f = 0; next }
+    /^exclude_filter=/    { if (s != "") f = 1 }
+    END                   { if (s != "" && !f) print s }
+' "$CFG")"
+if [ -n "$UNCOVERED" ]; then
+    echo "[patterns] ⚠️  COVERAGE: preset section(s) with NO exclude_filter — not audited below:" >&2
+    echo "$UNCOVERED" | sed 's/^/               /' >&2
+    echo "             A preset with no exclude_filter ships EVERYTHING. Nothing below this" >&2
+    echo "             line describes it — the report is silent about what it never read." >&2
 fi
 
 mapfile -t PATTERNS < <(
