@@ -101,19 +101,27 @@ func test_every_named_job_exists_in_jobs_json() -> void:
 func test_world_numbering_agrees_with_autogrind_region_table() -> void:
 	var src: String = FileAccess.get_file_as_string(REGIONS_PATH)
 	assert_false(src.is_empty(), "CONTROL: AutogrindSystem.gd must be readable")
-	var rx := RegEx.create_from_string('"world"\\s*:\\s*(\\d+)\\s*,\\s*"region"\\s*:\\s*"([a-z_]+)"')
+	## Cross-check the `name` field, not `region` — every entry carries the world word, so all six compare and none is skipped.
+	var rx := RegEx.create_from_string('"world"\\s*:\\s*(\\d+)\\s*,\\s*"region"\\s*:\\s*"[a-z_]+"\\s*,\\s*"name"\\s*:\\s*"([^"]+)"')
 	var found: Dictionary = {}
 	for m in rx.search_all(src):
 		found[m.get_string(1)] = m.get_string(2)
-	assert_true(found.has("5"),
-		"CONTROL: the region table must yield a known member, else a zero here reads as agreement. got %s" % [found])
+	assert_eq(found.size(), 6,
+		"CONTROL: all six region rows must parse — a short read here reads as agreement. got %s" % [found])
 	var disagreements: Array = []
 	for world_num in _worlds:
-		if world_num == "1":
-			continue
 		var label: String = str(_worlds[world_num])
-		var region: String = str(found.get(world_num, ""))
-		if region != "" and not region.contains(label):
-			disagreements.append("world %s: names say '%s', region is '%s'" % [world_num, label, region])
+		var display: String = str(found.get(world_num, ""))
+		## A BIJECTION, not six independent hits: `contains` alone goes green if a label matches several rows.
+		var matches: Array = []
+		for other in found:
+			if str(found[other]).to_lower().contains(label):
+				matches.append(other)
+		if display == "":
+			disagreements.append("world %s: no region row to compare against" % [world_num])
+		elif matches != [world_num]:
+			disagreements.append("world %s ('%s'): expected to match only its own row, matched %s"
+				% [world_num, label, matches])
 	assert_eq(disagreements, [],
-		"world 1's region id is the bare 'overworld' and is skipped; 2-6 must contain their label. %s" % [disagreements])
+		"a missing row FAILS rather than skipping, and a label matching several rows pins nothing "
+		+ "— `name` is display prose, so a rename can silently stop it discriminating. %s" % [disagreements])
