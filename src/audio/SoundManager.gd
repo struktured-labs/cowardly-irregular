@@ -1368,7 +1368,7 @@ func _try_play_from_manifest(track_id: String) -> bool:
 	return true
 
 
-## Public entry point for this file's world vocabulary — it exists to stop a FOURTH re-derivation of the area→suffix map (three were built in one day), NOT because visual lanes should call it: sprites and cutscenes deliberately resolve costume identity from GameState.current_world instead, which after the interior fix has no known hole while this still lags during battle (play_music clears _current_area). Correct for audio-adjacent callers wanting the suffix STRING; returns "medieval" where sheets want "" — translate at your consumer. See test_world_suffix_vocabulary_regression.gd.
+## Public entry point for this file's world vocabulary — it exists to stop a FOURTH re-derivation of the area→suffix map (three were built in one day), NOT because visual lanes should call it: sprites and cutscenes deliberately resolve costume identity from GameState.current_world instead, which after the interior fix has no known hole while this serves a CACHE, not a live read, whenever play_music has cleared _current_area — menu, battle AND victory, not battle alone: play_area_music is the cache's ONLY writer, so the fallthrough reports the last AREA's world, which is correct-by-design for battle music but diverges from GameState.current_world until area music plays for a newly-entered world; restore_music_state clears _current_area too and stays accurate only because it re-calls play_area_music. Correct for audio-adjacent callers wanting the suffix STRING; returns "medieval" where sheets want "" — translate at your consumer. See test_world_suffix_vocabulary_regression.gd.
 func get_current_world_suffix() -> String:
 	return _get_current_world_suffix()
 
