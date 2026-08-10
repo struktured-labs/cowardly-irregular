@@ -173,6 +173,17 @@ func test_the_cached_return_cannot_smuggle_an_unseen_suffix() -> void:
 	assert_eq(writes.size(), 1,
 		"_current_world_suffix has %d assignment sites. It is safe ONLY as a cache of this function's own output; a second writer (save-load, settings restore, a test helper) breaks that invariant from outside the function the coverage parser reads." % writes.size())
 
+	## The count above catches a writer APPEARING; this catches the writer MOVING (konsolai, 2026-08-09).
+	assert_eq(src.split("\n").count("func play_area_music(area_type: String) -> void:"), 1,
+		"SCOPE control: the play_area_music declaration must occur exactly once or the bounds below are arbitrary")
+	var pam: int = src.find("func play_area_music(area_type: String) -> void:")
+	var pam_end: int = src.find("\nfunc ", pam + 1)
+	if pam_end < 0:
+		pam_end = src.length()
+	var w_at: int = writes[0].get_start() if writes.size() > 0 else -1
+	assert_true(w_at > pam and w_at < pam_end,
+		"the sole _current_world_suffix write is OUTSIDE play_area_music. size()==1 holds when the write MOVES, so the count cannot defend get_current_world_suffix's docstring, which names play_area_music as the only refresher and derives the divergence window from it: play_music clears _current_area WITHOUT refreshing, and a write relocated there would report the CURRENT area's world, making the documented window wrong in the opposite direction.")
+
 
 func test_futuristic_is_NEVER_returned() -> void:
 	## THE LOAD-BEARING GUARD. W5's monster ids and map ids say "futuristic"; the resolver
