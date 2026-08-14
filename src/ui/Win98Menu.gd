@@ -279,6 +279,8 @@ func _setup_target_highlight() -> void:
 	_target_highlight = Control.new()
 	_target_highlight.z_index = 99
 	_target_highlight.visible = false
+	# No-op at construction; kept so the invariant is uniform — every visible=false carries a kill, with no site anyone has to remember is exempt
+	_stop_target_pulse()
 	_target_highlight.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	# Add as sibling so it's not clipped by menu bounds
@@ -300,6 +302,7 @@ func _update_target_highlight() -> void:
 	if selected_index < 0 or selected_index >= menu_items.size():
 		_target_highlight.visible = false
 		_set_chain_dim(false)
+		_stop_target_pulse()
 		return
 
 	var item = menu_items[selected_index]
@@ -313,6 +316,7 @@ func _update_target_highlight() -> void:
 	if target_pos == Vector2.ZERO:
 		_target_highlight.visible = false
 		_set_chain_dim(false)
+		_stop_target_pulse()
 		_pending_target_pos = Vector2.ZERO
 		return
 
@@ -322,6 +326,42 @@ func _update_target_highlight() -> void:
 	_build_target_highlight_box(target_pos)
 	_target_highlight.visible = true
 	_set_chain_dim(true)
+	_start_target_pulse()
+
+
+## Phase D item 2 — target reticle breathing. One tween for the whole highlight lifetime.
+const TARGET_PULSE_SEC: float = 0.5
+const TARGET_PULSE_SCALE: float = 1.05
+const TARGET_PULSE_ALPHA_LOW: float = 0.75
+
+var _target_pulse: Tween = null
+
+
+## Idempotent BY DESIGN: _update_target_highlight runs on every selection change, so a bare create_tween here would stack one looping tween per keypress and the reticle would accelerate as you scroll.
+func _start_target_pulse() -> void:
+	if not _target_highlight or not is_instance_valid(_target_highlight):
+		return
+	if _target_pulse and _target_pulse.is_valid():
+		return
+	if not _should_animate_motion():
+		return
+	_target_pulse = _target_highlight.create_tween().set_loops()
+	_target_pulse.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+	_target_pulse.set_parallel(true)
+	_target_pulse.tween_property(_target_highlight, "scale", Vector2.ONE * TARGET_PULSE_SCALE, TARGET_PULSE_SEC * 0.5)
+	_target_pulse.tween_property(_target_highlight, "modulate:a", 1.0, TARGET_PULSE_SEC * 0.5)
+	_target_pulse.chain().tween_property(_target_highlight, "scale", Vector2.ONE, TARGET_PULSE_SEC * 0.5)
+	_target_pulse.parallel().tween_property(_target_highlight, "modulate:a", TARGET_PULSE_ALPHA_LOW, TARGET_PULSE_SEC * 0.5)
+
+
+## Kill on every hide path — a looping tween on a hidden reticle keeps running forever and resurfaces mid-breath when the next target is picked.
+func _stop_target_pulse() -> void:
+	if _target_pulse and _target_pulse.is_valid():
+		_target_pulse.kill()
+	_target_pulse = null
+	if _target_highlight and is_instance_valid(_target_highlight):
+		_target_highlight.scale = Vector2.ONE
+		_target_highlight.modulate.a = 1.0
 
 
 func _build_target_highlight_box(target_pos: Vector2) -> void:
@@ -339,6 +379,8 @@ func _build_target_highlight_box(target_pos: Vector2) -> void:
 	var box_pos = target_pos - Vector2(box_width / 2, box_height / 2 - 5)
 	_target_highlight.position = box_pos
 	_target_highlight.size = Vector2(box_width, box_height)
+	# Pivot must follow size or the pulse scales from the top-left and the reticle drifts off the sprite
+	_target_highlight.pivot_offset = Vector2(box_width, box_height) * 0.5
 
 	# Colors matching menu style
 	var border_color = style.get("cursor", Color(1.0, 1.0, 0.3))
@@ -440,6 +482,9 @@ func _fade_target_highlight(on_complete: Callable = Callable()) -> void:
 		if on_complete.is_valid():
 			on_complete.call()
 		return
+
+	# MUST precede the fade: the pulse drives modulate:a too, and two live tweens on one property fight — the reticle would flicker instead of fading out
+	_stop_target_pulse()
 
 	var tween = create_tween()
 	# Multiply duration by time_scale to keep consistent real-time speed
@@ -1089,6 +1134,8 @@ func force_close() -> void:
 func _cleanup_target_highlight() -> void:
 	"""Remove target highlight from scene"""
 	_set_chain_dim(false)
+	# Kill before the free — a looping tween bound to a freed node keeps ticking and its property writes abort the caller
+	_stop_target_pulse()
 	if _target_highlight and is_instance_valid(_target_highlight):
 		_target_highlight.queue_free()
 		_target_highlight = null
@@ -1286,6 +1333,7 @@ func _submit_actions() -> void:
 	if _target_highlight and is_instance_valid(_target_highlight):
 		_target_highlight.visible = false
 		_set_chain_dim(false)
+		_stop_target_pulse()
 
 	# Emit signal from root
 	if all_actions.size() == 1:
