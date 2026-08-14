@@ -135,6 +135,8 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 	_scene.active_win98_menu.visible = not _dialogue_owns_screen
 	_scene.add_child(_scene.active_win98_menu)
 	_scene.active_win98_menu.setup(combatant.combatant_name, menu_items, menu_pos, job_id)
+	# After setup() because setup owns final placement — the slide is relative to the resting y it assigns. At MINIMAL/OFF this just re-applies MENU_ALPHA_OVER_ACTOR, matching the pre-Phase-D assignment above.
+	_scene.active_win98_menu.play_open_motion(MENU_ALPHA_OVER_ACTOR)
 
 	# Connect signals — bind THIS menu instance to _on_win98_menu_closed so the handler can identity-guard the null-write. Root cause of msg 2503 two-menus bug (repro cap timeline named it, msg 2529): actions_submitted returns → BM dispatches turn end → next PC's menu spawns → control returns to _submit_actions:1230 → force_close(old menu) → menu_closed fires → handler blindly null'd active_win98_menu which by then was the NEW menu, orphaning it and triggering watchdog respawn on top.
 	_scene.active_win98_menu.item_selected.connect(_on_win98_menu_selection)

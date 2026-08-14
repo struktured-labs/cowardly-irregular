@@ -1021,6 +1021,31 @@ func close_all() -> void:
 			queue_free()
 
 
+## Phase D motion tuning — open slide is downward-to-rest so the menu rises into place
+const OPEN_MOTION_SEC: float = 0.12
+const OPEN_SLIDE_PX: float = 12.0
+const CLOSE_FADE_SEC: float = 0.08
+
+
+## True only at FULL/REDUCED. MINIMAL and OFF take the pre-Phase-D path unchanged, and OFF is what autogrind/turbo resolve to.
+func _should_animate_motion() -> bool:
+	var tier: int = BattleJuice.presentation_tier()
+	return tier == BattleJuice.Tier.FULL or tier == BattleJuice.Tier.REDUCED
+
+
+## Entrance motion; caller passes the alpha it wants at rest since the menu is deliberately translucent over the actor. Lives here because BattleCommandMenu is RefCounted and has no create_tween.
+func play_open_motion(target_alpha: float) -> void:
+	if not _should_animate_motion():
+		modulate.a = target_alpha
+		return
+	var rest_y: float = position.y
+	modulate.a = 0.0
+	position.y = rest_y + OPEN_SLIDE_PX
+	var intro := create_tween().set_parallel(true)
+	intro.tween_property(self, "modulate:a", target_alpha, OPEN_MOTION_SEC).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	intro.tween_property(self, "position:y", rest_y, OPEN_MOTION_SEC).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+
+
 func force_close() -> void:
 	"""Force close this menu and all submenus immediately"""
 	# Prevent double-close
@@ -1031,8 +1056,12 @@ func force_close() -> void:
 	# Reset L button state to prevent stale state
 	_l_button_pressed = false
 
+	# Phase D: ONLY the visual disappearance defers. Every logical step below — highlight cleanup, submenu recursion, menu_closed.emit() and the identity-guarded null-write it drives — stays synchronous and in its original order (msg 2503/2529 two-menus class).
+	var animate: bool = _should_animate_motion()
+
 	# Hide immediately (queue_free happens at end of frame)
-	hide()
+	if not animate:
+		hide()
 
 	# Clean up target highlight AND tooltip — both are scene-parented siblings that outlive queue_free
 	_cleanup_target_highlight()
@@ -1048,7 +1077,13 @@ func force_close() -> void:
 		menu_closed.emit()
 
 	# Free this menu
-	queue_free()
+	if not animate:
+		queue_free()
+		return
+	# Tween lives on self, so a freed menu cannot outlive its own fade
+	var fade := create_tween()
+	fade.tween_property(self, "modulate:a", 0.0, CLOSE_FADE_SEC).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	fade.tween_callback(queue_free)
 
 
 func _cleanup_target_highlight() -> void:
