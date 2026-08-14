@@ -14,6 +14,7 @@ const HybridSpriteLoaderClass = preload("res://src/battle/sprites/HybridSpriteLo
 const BattleEnemySpawnerClass = preload("res://src/battle/BattleEnemySpawner.gd")
 const BattleUIManagerClass = preload("res://src/battle/BattleUIManager.gd")
 const BattleCommandMenuClass = preload("res://src/battle/BattleCommandMenu.gd")
+const BattleCameraRigClass = preload("res://src/battle/BattleCameraRig.gd")
 const BattleResultsDisplayClass = preload("res://src/battle/BattleResultsDisplay.gd")
 
 ## Base display height for party sprites. Aseprite frames are ground truth —
@@ -249,6 +250,7 @@ var _mode7_floor_enabled: bool = false
 ## Composed subsystems (extracted from BattleScene)
 var _enemy_spawner: BattleEnemySpawnerClass = null
 var _ui_manager: BattleUIManagerClass = null
+var _camera_rig: BattleCameraRigClass = null
 var _command_menu: BattleCommandMenuClass = null
 var _results_display: BattleResultsDisplayClass = null
 
@@ -307,6 +309,12 @@ func _ready() -> void:
 	_battle_cam.zoom = Vector2(1.0, 1.0)
 	add_child(_battle_cam)
 	_battle_cam.make_current()
+	# Register the juice rig as the camera's single writer for this battle (unregistered in _exit_tree)
+	_camera_rig = BattleCameraRigClass.new()
+	add_child(_camera_rig)
+	_camera_rig.setup(_battle_cam)
+	BattleJuice.camera_rig = _camera_rig
+	BattleJuice.burst_host = self
 	var viewport = get_viewport()
 	if viewport:
 		var current_camera = viewport.get_camera_2d()
@@ -437,6 +445,7 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
 	"""Cleanup signal connections when scene is freed"""
+	BattleJuice.clear_battle_context()
 	# Disconnect from BattleManager signals to prevent memory leaks
 	if BattleManager.battle_started.is_connected(_on_battle_started):
 		BattleManager.battle_started.disconnect(_on_battle_started)
@@ -944,6 +953,7 @@ func _create_battle_sprites() -> void:
 		var armor_id = member.equipped_armor if member.equipped_armor else ""
 		var accessory_id = member.equipped_accessory if member.equipped_accessory else ""
 		var custom = member.get("customization") if "customization" in member else null
+		BattleJuice.ensure_flash_material(sprite)
 		sprite.sprite_frames = HybridSpriteLoaderClass.load_sprite_frames(
 			custom, job_id, sec_job_id, weapon_id, armor_id, accessory_id)
 		# Per-job display height targets (in pixels) for battle sprites.
@@ -1010,6 +1020,7 @@ func _create_battle_sprites() -> void:
 		var sprite = AnimatedSprite2D.new()
 		# Choose sprite based on monster type ID stored in enemy
 		var monster_id = enemy.get_meta("monster_type", "slime")
+		BattleJuice.ensure_flash_material(sprite)
 		sprite.sprite_frames = _get_monster_sprite_frames(monster_id)
 
 		# Depth stagger: index 0 is closer (lower/larger), higher indices are farther
@@ -3582,11 +3593,8 @@ func _apply_hit_knockback(sprite: Node2D, direction: float = 1.0) -> void:
 
 
 func _apply_hit_flash(sprite: Node2D) -> void:
-	if not is_instance_valid(sprite):
-		return
-	sprite.modulate = Color(3.0, 3.0, 3.0, 1.0)
-	var tween = create_tween()
-	tween.tween_property(sprite, "modulate", Color.WHITE, 0.12)
+	# Delegates to the shared shader flash (true white; modulate fallback for material-less sprites)
+	BattleJuice.flash_sprite(sprite)
 
 
 ## msg 2787 cycle 16 — weakness-hit visuals. Struktured: "if you hit monsters with weaknesses, they should have very specific palette swaps or reactions or special frames to indicate it hurt more than usual." Cut 1 (engine, no per-sheet art): on elemental_mod > 1.0, over-flash the target in the ELEMENT color (deeper hue + longer settle than white hit flash), and bigger knockback so the hit LANDS. Cut 2 (per-sheet special frames) is a cowir-sprites follow-up if this isn't enough.
@@ -5098,6 +5106,7 @@ func _on_monster_summoned(monster_type: String, summoner: Combatant) -> void:
 
 	# Create sprite for the new enemy
 	var sprite = AnimatedSprite2D.new()
+	BattleJuice.ensure_flash_material(sprite)
 	sprite.sprite_frames = _get_monster_sprite_frames(monster_type)
 
 	# summons must mirror battle-start sizing or artist drops (<=128px) pop in 2.5x small, facing away
