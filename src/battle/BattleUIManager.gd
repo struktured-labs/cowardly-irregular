@@ -1021,7 +1021,20 @@ func _create_ctb_entry(combatant: Combatant, is_current: bool, is_player: bool, 
 
 ## Round-boundary AP emphasis (struktured 2026-07-16, Bravely Default ref): flash every living member's AP label gold so the +1 grant registers.
 ## v2 same day: "the player AP bars should flash too" — the 0.6s tint read as invisible in play; scale pop + hot gold, unmissable at 1x.
+## Phase D item 4 — the party's AP gain cascades instead of firing as one block. BARE, matching this file's other tween durations: the flash decorates a battle event and should scale with battle time (Win98Menu compensates because a MENU must not slow down when combat does).
+const AP_FLASH_STAGGER: float = 0.04
+
+
+## Applied via tween_callback rather than before the tween: setting it up front lights every box at once and staggers only the fade back. The validity check matters because this fires up to 4 slots later and a box can be freed in between.
+func _apply_ap_flash(label: Control) -> void:
+	if not is_instance_valid(label):
+		return
+	label.modulate = Color(2.2, 1.9, 0.45)
+	label.scale = Vector2(1.3, 1.3)
+
+
 func flash_ap_labels() -> void:
+	var slot := 0
 	for box in _party_status_boxes:
 		if not is_instance_valid(box):
 			continue
@@ -1029,11 +1042,13 @@ func flash_ap_labels() -> void:
 		if ap_label == null:
 			continue
 		ap_label.pivot_offset = ap_label.size / 2.0
-		ap_label.modulate = Color(2.2, 1.9, 0.45)
-		ap_label.scale = Vector2(1.3, 1.3)
 		var t = _scene.create_tween()
+		if slot > 0:
+			t.tween_interval(slot * AP_FLASH_STAGGER)
+		t.tween_callback(_apply_ap_flash.bind(ap_label))
 		t.tween_property(ap_label, "scale", Vector2.ONE, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		t.parallel().tween_property(ap_label, "modulate", Color.WHITE, 0.9).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		slot += 1
 
 
 func log_message(message: String) -> void:
