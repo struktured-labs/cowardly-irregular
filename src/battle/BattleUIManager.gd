@@ -381,7 +381,7 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 	if hp_bar:
 		hp_bar.max_value = member.max_hp
 		# Tweened fill (killing the prior tween so rapid ticks don't fight); instant at OFF tier
-		if _scene._tier() == BattleJuice.Tier.OFF or absf(hp_bar.value - member.current_hp) < 0.5:
+		if _scene._tier() == BattleJuice.Tier.OFF or not BattleJuice.flag("chip_hp_bars") or absf(hp_bar.value - member.current_hp) < 0.5:
 			hp_bar.value = member.current_hp
 		else:
 			var prev = hp_bar.get_meta("hp_tween", null)

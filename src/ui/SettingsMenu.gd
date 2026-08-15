@@ -50,6 +50,22 @@ var text_size_index: int = 1
 var color_blind_mode: bool = false
 var reduce_flashes: bool = false
 var screen_shake_enabled: bool = true
+
+## The 'ridiculous menu of toggles' (struktured 2026-08-14) — [flag_key, label, description]; audio lanes append theirs here
+const BATTLE_FX_FLAGS := [
+	["camera_zoom", "Camera Punch", "The camera leans into every hit"],
+	["hit_sparks", "Hit Sparks", "Tiny victories, rendered as particles"],
+	["afterimages", "Afterimages", "Lunges leave ghosts of your commitment"],
+	["squash_stretch", "Squash & Stretch", "The laws of cartoon physics apply"],
+	["hit_stop", "Hit-Stop", "Time flinches on contact"],
+	["anticipation", "Anticipation", "A little step back before every strike"],
+	["death_dissolve", "Death Dissolve", "Enemies exit pixel by pixel"],
+	["chip_hp_bars", "Chip HP Bars", "HP bars remember what you just did to them"],
+	["targeting_dim", "Targeting Dim", "Menus step aside while you aim"],
+	["steal_sauce", "Steal Sauce", "Thieves travel with style"],
+	["env_pulse", "Arena Thump", "Heavy hits rattle the scenery"],
+	["arena_unrest", "Arena Unrest", "Phase-2 bosses unsettle the ground itself"],
+]
 var dash_always_on: bool = false  # Item 9: dash without holding the button
 var llm_enabled: bool = not OS.has_feature("web")  # Wave C: dynamic dialogue toggle (off by default on web)
 var boss_llm_strategy_enabled: bool = false  # Phase 1 boss-AI strategic-intent toggle (opt-in)
@@ -554,6 +570,19 @@ func _build_ui() -> void:
 	# Stacked in their own VBoxContainer inside the scroll area so any
 	# future debug actions automatically extend the scrollable content
 	# without needing panel-height or y-offset tuning.
+	# BATTLE FX — one toggle per juice feature, appended data-driven so lanes can grow the list
+	for fx in BATTLE_FX_FLAGS:
+		var fx_idx: int = _settings_items.size()
+		var fx_on: bool = true
+		if GameState and "battle_fx_flags" in GameState:
+			fx_on = bool(GameState.battle_fx_flags.get(fx[0], true))
+		var fx_item = _create_toggle_setting("FX: %s" % fx[1], fx[2], fx_on, fx_idx)
+		vbox.add_child(fx_item)
+		_settings_items.append({"control": fx_item, "type": "toggle", "id": "fx_" + fx[0]})
+		MenuMouseHelper.make_clickable(fx_item, fx_idx, 400, 60,
+			_on_setting_click.bind(fx_idx), _on_setting_hover.bind(fx_idx))
+
+
 	var actions_box = VBoxContainer.new()
 	actions_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	actions_box.add_theme_constant_override("separation", 0)
@@ -1122,6 +1151,18 @@ func _adjust_setting(delta: int) -> void:
 		screen_shake_enabled = not screen_shake_enabled
 		_update_toggle_display(selected_index, screen_shake_enabled)
 		_save_screen_shake_setting()
+		if SoundManager:
+			SoundManager.play_ui("menu_move")
+	elif str(item["id"]).begins_with("fx_"):
+		# Battle FX flags: sparse overrides on GameState, persisted with the other settings
+		var fx_key: String = str(item["id"]).substr(3)
+		if GameState and "battle_fx_flags" in GameState:
+			var fx_now: bool = not bool(GameState.battle_fx_flags.get(fx_key, true))
+			GameState.battle_fx_flags[fx_key] = fx_now
+			_update_toggle_display(selected_index, fx_now)
+			var fx_ss = get_node_or_null("/root/SaveSystem")
+			if fx_ss and fx_ss.has_method("save_settings"):
+				fx_ss.save_settings()
 		if SoundManager:
 			SoundManager.play_ui("menu_move")
 	elif item["id"] == "dash_always_on":

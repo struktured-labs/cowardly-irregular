@@ -1063,6 +1063,8 @@ func _cleanup_tooltip() -> void:
 
 ## Targeting dim: monsters must read THROUGH the menu chain while picking a target (struktured 2026-08-14 report); active list stays readable, ancestors go faint
 func _set_chain_dim(dimmed: bool) -> void:
+	if dimmed and not BattleJuice.flag("targeting_dim"):
+		return
 	var m = _get_root_menu()
 	while m and is_instance_valid(m):
 		if dimmed:

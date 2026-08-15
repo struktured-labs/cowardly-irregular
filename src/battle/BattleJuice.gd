@@ -16,6 +16,8 @@ var flags: Dictionary = {}
 
 
 func flag(feature: String) -> bool:
+	if GameState and "battle_fx_flags" in GameState and GameState.battle_fx_flags.has(feature):
+		return bool(GameState.battle_fx_flags[feature])
 	return bool(flags.get(feature, true))
 
 var _burst_pool: Array = []
@@ -41,7 +43,7 @@ func add_trauma(amount: float, dir: Vector2 = Vector2.ZERO, sustain: float = 0.0
 
 
 func punch_zoom(pivot: Vector2, strength: float = 0.03, duration: float = 0.14) -> void:
-	if camera_rig:
+	if camera_rig and flag("camera_zoom"):
 		camera_rig.punch_zoom(pivot, strength, duration)
 
 
@@ -94,7 +96,7 @@ func knockback(sprite: Node2D, dir: float, mag_x: float = 6.0, pop_y: float = 0.
 
 
 func squash(sprite: Node2D, x: float = 1.12, y: float = 0.88, snap: float = 0.03, settle: float = 0.10) -> void:
-	if not is_instance_valid(sprite):
+	if not is_instance_valid(sprite) or not flag("squash_stretch"):
 		return
 	# Multiply the stored base scale, never assign absolutes — sprite base scales are heterogeneous
 	var base: Vector2 = sprite.get_meta("base_scale", sprite.scale)
