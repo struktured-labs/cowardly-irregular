@@ -51,8 +51,19 @@ func test_flash_v2_scale_pop_is_visible() -> void:
 	var i := src.find("func flash_ap_labels")
 	var next: int = src.find("\nfunc ", i + 1)
 	var body := src.substr(i, (next - i) if next > -1 else 900)
-	assert_true("scale = Vector2(1.3, 1.3)" in body,
+	## BEHAVIOURAL since Phase D item 4. The pop moved into _apply_ap_flash so the per-slot
+	## stagger delays the FLASH and not merely the fade-back; a source pin on flash_ap_labels'
+	## body then reported the pop as absent while it still happens. Asserting the OUTCOME
+	## survives that relocation and still catches the defect struktured actually reported —
+	## a pure modulate tint he could not see.
+	var mgr = load("res://src/battle/BattleUIManager.gd").new(null)
+	var probe := Control.new()
+	add_child_autofree(probe)
+	mgr._apply_ap_flash(probe)
+	assert_eq(probe.scale, Vector2(1.3, 1.3),
 		"flash must scale-pop — a pure modulate tint was invisible in live play")
+	assert_almost_eq(probe.modulate.r, 2.2, 0.01,
+		"and it must still tint — the pop replaced nothing")
 	assert_true("pivot_offset = ap_label.size / 2.0" in body,
 		"pop must pivot from center or the label lurches right")
 	assert_true("\"scale\", Vector2.ONE" in body,
