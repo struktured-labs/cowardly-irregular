@@ -35,7 +35,7 @@ PORTRAIT_PROMPTS = {
         "palette": "white robes, soft pink, pale gold tiara, silver hair, warm skin",
     },
     "mage": {
-        "prompt": "pixel art JRPG character portrait, close-up face and shoulders, mysterious mage, dark shadowed face under tall blue pointed wizard hat, glowing cyan eyes, blue robes collar, arcane aura",
+        "prompt": "pixel art JRPG character portrait, close-up face and shoulders, mysterious male mage, dark shadowed face under tall blue pointed wizard hat, glowing cyan eyes, blue robes collar, arcane aura",
         "negative": "full body, legs, staff, weapon, background scenery",
         "palette": "deep blue hat and robes, cyan glowing eyes, dark shadows, silver trim",
     },
@@ -45,7 +45,7 @@ PORTRAIT_PROMPTS = {
         "palette": "dark navy hood, dusty purple scarf, shadowed face, sharp amber eyes",
     },
     "bard": {
-        "prompt": "pixel art JRPG character portrait, close-up face and shoulders, charming young bard, tilted feathered beret with red feather, warm smile, gold-olive doublet collar, bright observant eyes",
+        "prompt": "pixel art JRPG character portrait, close-up face and shoulders, charming young female bard, tilted feathered beret with red feather, warm smile, gold-olive doublet collar, bright observant eyes",
         "negative": "full body, legs, instrument, lute, weapon, background scenery",
         "palette": "gold-olive doublet, red feather, warm brown hair, bright hazel eyes",
     },

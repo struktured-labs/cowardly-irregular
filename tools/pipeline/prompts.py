@@ -1,10 +1,12 @@
+## Party gender is pinned per struktured 2026-03-21: Fighter/Mage he, Cleric/Bard she, Rogue
+## never revealed. Unpinned, the generator picks per run — that is how the bard drifted male.
 JOB_PROMPTS = {
     "fighter": {
-        "desc": "medieval warrior in red and steel armor, broadsword, sturdy stance, brown hair",
+        "desc": "medieval male warrior in red and steel armor, broadsword, sturdy stance, brown hair",
         "palette_hint": "warm reds, steel grays, brown leather, orange accents",
     },
     "mage": {
-        "desc": "mysterious mage in deep blue robes, tall pointed wizard hat, crystal-tipped staff, glowing cyan eyes",
+        "desc": "mysterious male mage in deep blue robes, tall pointed wizard hat, crystal-tipped staff, glowing cyan eyes",
         "palette_hint": "deep blues, cyan glow, silver trim, dark shadows",
     },
     "cleric": {
@@ -16,7 +18,7 @@ JOB_PROMPTS = {
         "palette_hint": "deep muted green, dark brown leather, dusty purple scarf, shadow tones, weathered",
     },
     "bard": {
-        "desc": "charming young bard performer, bright gold-olive doublet vest over cream shirt, flowing half-cape, tilted beret with red feather, lute strapped on back, light rapier at hip, confident theatrical stance, NOT a warrior NOT armored NOT dark",
+        "desc": "charming young female bard performer, bright gold-olive doublet vest over cream shirt, flowing half-cape, tilted beret with red feather, lute strapped on back, light rapier at hip, confident theatrical stance, NOT a warrior NOT armored NOT dark",
         "palette_hint": "bright gold, olive green fabric, red feather accent, cream white shirt, warm tan skin, brown boots, light cheerful colors",
     },
     "guardian": {

@@ -55,7 +55,7 @@ ARTIST_REFS = {
 # Per-character identity description (reinforces the artist reference)
 JOB_DESC = {
     "fighter": "young male warrior with brown spiky hair, blue eyes, wearing red plate armor with steel-gray trim, determined expression",
-    "mage":    "young dark wizard mage with dark shadowed features under a tall pointed purple wizard hat, glowing violet eyes, wearing teal-navy robes with silver trim",
+    "mage":    "young male dark wizard mage with dark shadowed features under a tall pointed purple wizard hat, glowing violet eyes, wearing teal-navy robes with silver trim",
     "rogue":   "hooded rogue with face partially hidden by a deep dark navy hood and dusty purple scarf, only sharp amber eyes visible in shadow, dark leather collar",
     "bard":    "charming young female bard with long orange hair pulled back in a loose ponytail, warm hazel eyes, wearing a crimson-and-plum leather doublet with dark purple accents at the collar, half-smile, no hat",
 }
