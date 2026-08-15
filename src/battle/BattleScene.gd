@@ -1009,8 +1009,7 @@ func _create_battle_sprites() -> void:
 		add_child(animator)
 		party_animators.append(animator)
 
-		# Add label with character name
-		_add_sprite_label(sprite, member.combatant_name.to_upper(), Vector2(-20, 40))
+		# No floating name label for party members — the PARTY panel already names them, and the label drifted off-sprite in the stacked formation (struktured cap 2026-08-15). Enemies keep theirs (targeting aid).
 
 		# Setup status icons for this party member
 		_setup_status_icons(member, sprite)
