@@ -1639,3 +1639,14 @@ func _get_inventory() -> Array:
 		ShopType.WHITE_MAGIC: return VillageShopRes.WHITE_MAGIC_INVENTORY
 		ShopType.BLACKSMITH:  return VillageShopRes.BLACKSMITH_WEAPONS + VillageShopRes.BLACKSMITH_ARMOR
 		_: return []
+
+
+## Pause/resume contract (tavern bug class, 2026-06-04): GameLoop suspends exploration via has_method("pause") — a scene missing it is SILENTLY skipped and the player walks behind the open menu.
+func pause() -> void:
+	if controller and is_instance_valid(controller) and controller.has_method("pause_exploration"):
+		controller.pause_exploration()
+
+
+func resume() -> void:
+	if controller and is_instance_valid(controller) and controller.has_method("resume_exploration"):
+		controller.resume_exploration()

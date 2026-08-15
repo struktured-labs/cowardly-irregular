@@ -1,78 +1,103 @@
 extends GutTest
 
-## Regression test for the tavern input-leak bug (user-reported 2026-06-04,
-## re-applied from commit 2ca618a).
+## Regression for the tavern input-leak CLASS (user-reported 2026-06-04; re-hit
+## 2026-08-14 in ShopInterior + InnInterior).
 ##
-## Bug: TavernInterior extends Node2D directly (NOT BaseVillage) and originally
-## defined neither pause() nor resume(). GameLoop guards every suspend/resume
-## call with `if _exploration_scene.has_method("pause")` (see GameLoop.gd lines
-## 384-385, 551-552, 587-588, 623-624, 725, 1129-1134, 2879-2880, ...), so the
-## call was SILENTLY skipped in the tavern. The OverworldMenu does not change
-## current_state (stays EXPLORATION) and OverworldPlayer movement is read by
-## polling Input.is_action_pressed() in _physics_process — unaffected by the
-## menu's set_input_as_handled(). So with the menu open the player kept walking
-## behind it and could walk into the exit door (require_interaction=false,
-## auto-triggers on body_entered), firing a full scene change under the open UI.
+## GameLoop guards every exploration suspend/resume with
+## `if _exploration_scene.has_method("pause")` — a scene missing pause()/resume()
+## is SILENTLY skipped. The OverworldMenu doesn't change current_state (stays
+## EXPLORATION) and OverworldPlayer polls Input in _physics_process, so with the
+## menu or autobattle editor open the player keeps walking behind it: D-pad menu
+## navigation visibly moves the character, the exit door auto-fires a scene
+## change under the open UI, and _start_exploration's pop_all() then strips the
+## menu's lock — battles trigger with the menu still up.
 ##
-## Fix: TavernInterior now defines pause()/resume() that delegate to
-## controller.pause_exploration()/resume_exploration() (which push/pop the
-## InputLockManager 'exploration_paused' lock), mirroring BaseVillage.
-##
-## These are source-level contract assertions: EVERY exploration scene
-## reachable from GameLoop._start_exploration() (villages via BaseVillage,
-## caves, the tavern interior, and the overworld scene) MUST declare both
-## pause() and resume(). This catches the silent-skip class (has_method false)
-## that a runtime test would miss, and would have caught the original bug.
+## The 2026-06-04 fix patched only TavernInterior and pinned a HAND-LIST of 5
+## scripts; ShopInterior and InnInterior (same shape, same hole) were never on
+## it. This version derives the list from GameLoop.gd itself — every map script
+## GameLoop references must declare or inherit BOTH methods, so the next sibling
+## cannot be born outside the net.
+
+const GL_PATH := "res://src/GameLoop.gd"
+
+## GameLoop references these from the scanned dirs but never mounts them as
+## _exploration_scene — the only entries allowed to skip the contract.
+const NOT_MOUNTED_SCENES := {
+	"res://src/exploration/SavePoint.gd": "interactable prop spawned INSIDE scenes",
+	"res://src/exploration/VillageShop.gd": "shop counter UI helper, not a scene",
+}
 
 
-## Every exploration-scene script GameLoop mounts as _exploration_scene.
-const EXPLORATION_SCENE_SCRIPTS := [
-	"res://src/maps/villages/BaseVillage.gd",
-	"res://src/maps/dungeons/DragonCave.gd",
-	"res://src/maps/dungeons/WhisperingCave.gd",
-	"res://src/maps/interiors/TavernInterior.gd",
-	"res://src/exploration/OverworldScene.gd",
-]
+func _mounted_scene_paths() -> Array:
+	var src := FileAccess.get_file_as_string(GL_PATH)
+	var re := RegEx.new()
+	re.compile("res://src/(maps|exploration)/[A-Za-z_/]+\\.gd")
+	var paths := {}
+	for m in re.search_all(src):
+		var p: String = m.get_string()
+		if not NOT_MOUNTED_SCENES.has(p):
+			paths[p] = true
+	return paths.keys()
 
 
-func _read(path: String) -> String:
-	var file = FileAccess.open(path, FileAccess.READ)
-	assert_not_null(file, "file should exist: %s" % path)
-	var text = file.get_as_text()
-	file.close()
+func _chain_source(path: String) -> String:
+	var script: Script = load(path)
+	assert_not_null(script, "script should load: %s" % path)
+	var text := ""
+	while script:
+		text += FileAccess.get_file_as_string(script.resource_path)
+		script = script.get_base_script()
 	return text
 
 
-func test_every_exploration_scene_declares_pause_and_resume() -> void:
-	"""GameLoop suspends/resumes exploration via has_method('pause')/
-	has_method('resume'). Any scene missing either method is silently
-	skipped — the tavern input-leak bug. Guard the whole contract here."""
-	for path in EXPLORATION_SCENE_SCRIPTS:
-		var text = _read(path)
-		assert_true(text.find("func pause()") != -1,
-			"%s MUST declare func pause() (regression: silent has_method skip leaks input)" % path)
-		assert_true(text.find("func resume()") != -1,
-			"%s MUST declare func resume() (regression: silent has_method skip leaks input)" % path)
+func test_every_gameloop_mounted_scene_declares_or_inherits_pause_and_resume() -> void:
+	var paths := _mounted_scene_paths()
+	# Wrong-shape-zero control: the derivation must NAME known members, not just count.
+	for known in ["res://src/maps/interiors/ShopInterior.gd",
+			"res://src/maps/interiors/InnInterior.gd",
+			"res://src/maps/interiors/TavernInterior.gd",
+			"res://src/exploration/OverworldScene.gd"]:
+		assert_true(known in paths, "derived list must contain %s" % known)
+	assert_gte(paths.size(), 50, "derivation regressed — GameLoop mounts 50+ map scripts (59 at authoring)")
+	for path in paths:
+		var chain := _chain_source(path)
+		assert_true("func pause(" in chain,
+			"%s must declare/inherit pause() — has_method guard silently skips it (tavern class)" % path)
+		assert_true("func resume(" in chain,
+			"%s must declare/inherit resume() — else the menu-close resume is silently skipped" % path)
 
 
-func test_tavern_pause_delegates_to_controller() -> void:
-	"""TavernInterior.pause()/resume() must forward to the controller's
-	pause_exploration()/resume_exploration() (which push/pop the
-	InputLockManager 'exploration_paused' lock). A no-op pause() would
-	satisfy has_method() but still leak input — assert the delegation."""
-	var text = _read("res://src/maps/interiors/TavernInterior.gd")
-	assert_true(text.find("controller.pause_exploration()") != -1,
-		"TavernInterior.pause() must call controller.pause_exploration() (regression 2026-06-04)")
-	assert_true(text.find("controller.resume_exploration()") != -1,
-		"TavernInterior.resume() must call controller.resume_exploration() (regression 2026-06-04)")
+func test_shop_and_inn_pause_actually_push_the_lock() -> void:
+	# Runtime half: the new methods must reach the controller's lock, not just exist.
+	var ControllerScript = preload("res://src/exploration/OverworldController.gd")
+	for path in ["res://src/maps/interiors/ShopInterior.gd", "res://src/maps/interiors/InnInterior.gd"]:
+		var scene: Node2D = load(path).new()  # no add_child: _ready builds a full interior, not needed here
+		autofree(scene)
+		var controller = ControllerScript.new()
+		add_child_autofree(controller)
+		await get_tree().physics_frame
+		scene.controller = controller
+		scene.pause()
+		assert_true(InputLockManager.has_lock("exploration_paused"),
+			"%s.pause() must push the exploration lock" % path)
+		scene.resume()
+		assert_false(InputLockManager.has_lock("exploration_paused"),
+			"%s.resume() must pop the exploration lock" % path)
 
 
-func test_overworld_controller_exposes_pause_resume_exploration() -> void:
-	"""Defensive: the delegation targets must exist on OverworldController,
-	or every scene's pause()/resume() is a silent no-op (has_method guard
-	inside each scene falls through)."""
-	var text = _read("res://src/exploration/OverworldController.gd")
-	assert_true(text.find("func pause_exploration()") != -1,
-		"OverworldController must declare func pause_exploration() (delegation target)")
-	assert_true(text.find("func resume_exploration()") != -1,
-		"OverworldController must declare func resume_exploration() (delegation target)")
+func test_autobattle_menu_action_never_strands_on_null_target() -> void:
+	# 2026-08-14: "autobattle" with a null target tore the menu down and opened
+	# nothing — player stranded paused with no UI. Teardown must be target-guarded
+	# and the null path must degrade to the plain close (which resumes).
+	var src := FileAccess.get_file_as_string(GL_PATH)
+	var arm_start := src.find("\"autobattle\":")
+	var arm_end := src.find("\"autobattle_toggle\":", arm_start)
+	assert_gt(arm_start, -1, "autobattle menu-action arm must exist")
+	assert_gt(arm_end, arm_start, "autobattle_toggle arm must follow")
+	var arm := src.substr(arm_start, arm_end - arm_start)
+	var guard := arm.find("if target:")
+	var teardown := arm.find("_teardown_overworld_menu_widget()")
+	assert_gt(guard, -1, "arm must branch on target")
+	assert_gt(teardown, guard, "teardown must sit INSIDE the target guard — unguarded teardown strands the player")
+	assert_true("_on_overworld_menu_closed()" in arm,
+		"the null-target path must degrade to the plain close (resume + HUD restore)")

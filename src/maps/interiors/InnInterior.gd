@@ -1484,3 +1484,14 @@ func _create_fireplace_secret() -> void:
 	zone.name = "FireplaceSecret"
 	zone.position = Vector2(11.5 * TILE_SIZE, 4.0 * TILE_SIZE)
 	transitions.add_child(zone)
+
+
+## Pause/resume contract (tavern bug class, 2026-06-04): GameLoop suspends exploration via has_method("pause") — a scene missing it is SILENTLY skipped and the player walks behind the open menu.
+func pause() -> void:
+	if controller and is_instance_valid(controller) and controller.has_method("pause_exploration"):
+		controller.pause_exploration()
+
+
+func resume() -> void:
+	if controller and is_instance_valid(controller) and controller.has_method("resume_exploration"):
+		controller.resume_exploration()
