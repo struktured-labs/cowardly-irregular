@@ -9,14 +9,20 @@ extends GutTest
 ## already-poisoned save revives everyone at 1 HP so it is at least playable.
 
 var _saved_party: Array[Dictionary] = []
+var _saved_battle_state: int = 0
 
 
 func before_each() -> void:
 	_saved_party = GameState.player_party.duplicate(true)
+	# A prior suite test can leak an active battle in the BattleManager autoload —
+	# _save_block_reason would then return "during battle" before the wiped check.
+	_saved_battle_state = BattleManager.current_state
+	BattleManager.current_state = BattleManager.BattleState.INACTIVE
 
 
 func after_each() -> void:
 	GameState.player_party = _saved_party
+	BattleManager.current_state = _saved_battle_state
 
 
 func _wiped_party() -> Array:
