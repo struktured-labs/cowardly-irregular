@@ -26,7 +26,7 @@ func after_each() -> void:
 
 
 ## Runs a tween to completion, returning the engine-seconds and wall-seconds it consumed.
-func _run(duration: float, scale: float, mid_flight: Callable = Callable()) -> Dictionary:
+func _run(duration: float, scale: float, mid_flight: Callable = Callable(), ignore_scale: bool = false) -> Dictionary:
 	Engine.time_scale = scale
 	## Headless reports a stale multi-frame delta on the first frames of a run, which finished the
 	## very first tween in 2 frames. Settle the tree before timing anything.
@@ -35,6 +35,7 @@ func _run(duration: float, scale: float, mid_flight: Callable = Callable()) -> D
 	var node := Node2D.new()
 	add_child_autofree(node)
 	var tw := node.create_tween()
+	tw.set_ignore_time_scale(ignore_scale)
 	tw.tween_property(node, "position:x", 100.0, duration)
 	## Terminate on the finished SIGNAL, not on is_running(): a freshly created tween polls as
 	## not-running before its first process frame, which ended the loop after 2 frames.
@@ -100,3 +101,22 @@ func test_the_compensated_form_IS_sampled_once_so_it_is_not_hitlag_immune() -> v
 	assert_true(float(in_window["wall"]) < float(nominal["wall"]),
 		"a compensated duration sampled mid-dip finishes EARLY (%.3fs vs %.3fs) — 'immune' is too strong"
 			% [in_window["wall"], nominal["wall"]])
+
+
+func test_ignore_time_scale_is_immune_at_BOTH_ends_unlike_the_compensated_form() -> void:
+	## The third arm. An audio envelope rides the MIXER clock, which does not slow with battle
+	## speed, so it must opt out of game time entirely rather than compensate for it.
+	## This is the property cowir-sfx's duck fix depends on, so it is pinned rather than assumed.
+	var fast: Dictionary = await _run(D, 1.0, Callable(), true)
+	var slow: Dictionary = await _run(D, 0.25, Callable(), true)
+	var dipped: Dictionary = await _run(D, 1.0, func() -> void: Engine.time_scale = 0.1, true)
+	gut.p("ignore_time_scale | ts=1.00 wall %.3f | ts=0.25 wall %.3f | mid-flight dip wall %.3f"
+		% [fast["wall"], slow["wall"], dipped["wall"]])
+	assert_gt(int(slow["frames"]), 1, "CONTROL: the ts=0.25 tween must have run frames")
+	assert_true(_near(float(slow["wall"]), D),
+		"wall-clock must hold at the ladder's slow end: %.3fs vs %.3fs authored" % [slow["wall"], D])
+	assert_true(_near(float(fast["wall"]), D), "and at ts=1.0: %.3fs" % [fast["wall"]])
+	## The discriminator: D*ts survives the ladder but NOT a dip at creation; this survives both.
+	assert_true(_near(float(dipped["wall"]), D),
+		"and through a mid-flight dip to 0.1: %.3fs — a variable read at neither end cannot be corrupted"
+			% [dipped["wall"]])
