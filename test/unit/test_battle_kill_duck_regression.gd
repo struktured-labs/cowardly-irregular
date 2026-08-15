@@ -146,11 +146,17 @@ func test_the_duck_tween_opts_OUT_of_game_time() -> void:
 func test_the_flag_defaults_TRUE_and_can_be_turned_off() -> void:
 	## Unknown ids default true so a typo cannot silently disable a shipped effect —
 	## the failure direction matters: opt-OUT, never opt-in-by-spelling.
+	##
+	## Uses cowir-main's registry (BattleJuice.flags), not the local stub this branch
+	## originally carried: main landed its own flag() while this branch was in flight, and
+	## two `func flag` in one class is a GDScript parse error that `git merge` reports as a
+	## clean merge. The stub is deleted; these ids ride the shipped registry.
 	assert_true(BattleJuice.flag("audio_kill_duck"), "a declared flag must default enabled")
 	assert_true(BattleJuice.flag("nonexistent_flag_xyz"), "an UNKNOWN flag must default enabled, not disabled")
-	BattleJuice.set_flag("audio_kill_duck", false)
-	assert_false(BattleJuice.flag("audio_kill_duck"), "set_flag(false) must disable")
-	BattleJuice.set_flag("audio_kill_duck", true)
+	BattleJuice.flags["audio_kill_duck"] = false
+	assert_false(BattleJuice.flag("audio_kill_duck"), "an explicit false must disable")
+	BattleJuice.flags.erase("audio_kill_duck")
+	assert_true(BattleJuice.flag("audio_kill_duck"), "erasing the override must restore the default-enabled state")
 
 
 func test_the_call_site_is_gated_on_FULL_and_on_the_flag() -> void:
