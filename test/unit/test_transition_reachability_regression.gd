@@ -39,6 +39,22 @@ func _map_paths() -> Array:
 	return out
 
 
+## Worlds are unlocked for the sweep. TWO forward portals -- the W4->W5 and W5->W6
+## progression routes -- are built inside `if GameState.is_world_unlocked(n)`, so a
+## default-state instantiation never creates them: this file measured what a NEW GAME
+## can see, not what the game can contain. Both were unreachable; neither was visible.
+var _saved_worlds: int = 1
+
+
+func before_each() -> void:
+	_saved_worlds = GameState.worlds_unlocked
+	GameState.worlds_unlocked = 6
+
+
+func after_each() -> void:
+	GameState.worlds_unlocked = _saved_worlds
+
+
 func _isolated_viewport() -> SubViewport:
 	var vp := SubViewport.new()
 	vp.size = Vector2i(64, 64)
