@@ -1392,6 +1392,9 @@ func _input(event: InputEvent) -> void:
 	# A closing/queued-free menu still receives _input until freed — bail so one press isn't handled twice (double Advance / menu overlap).
 	if is_queued_for_deletion() or _is_closing:
 		return
+	# A HIDDEN menu must not eat input either — boss dialogue hides the command menu and owns the A press (struktured 2026-08-15 spotlight-duel ambiguity).
+	if not visible:
+		return
 	# A tutorial hint is capturing input, or another handler already consumed this event — don't double-fire a menu action.
 	if TutorialHint.is_any_active() or get_viewport().is_input_handled():
 		return

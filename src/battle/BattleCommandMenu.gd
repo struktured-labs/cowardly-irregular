@@ -58,6 +58,11 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 	close_win98_menu()
 	_sweep_stray_menus()
 
+	# Boss dialogue mid-selection: the dialogue owns A — a menu spawning under it starts hidden; _on_dialogue_finished re-shows it.
+	var _dialogue_owns_screen: bool = _scene and is_instance_valid(_scene) \
+			and "_battle_dialogue" in _scene and _scene._battle_dialogue \
+			and is_instance_valid(_scene._battle_dialogue) and _scene._battle_dialogue.visible
+
 	# Spotlight gate: locked PCs route through autobattle. Debug override wins.
 	# Solo-player_party override mirrors BattleManager._process_next_selection (msg 2372/2376): a duelist inside their own spotlight duel plays their turn.
 	if "autobattle_locked" in combatant and combatant.autobattle_locked:
@@ -126,7 +131,8 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 	## party column starts at 612 — so it unavoidably covers the acting PC until the bottom-strip
 	## layout frees the right edge. 0.85 keeps the text legible and the actor readable underneath.
 	_scene.active_win98_menu.modulate.a = MENU_ALPHA_OVER_ACTOR
-	_scene.active_win98_menu.visible = true  # Ensure visible
+	# Starts hidden under an active boss dialogue; _on_dialogue_finished re-shows it.
+	_scene.active_win98_menu.visible = not _dialogue_owns_screen
 	_scene.add_child(_scene.active_win98_menu)
 	_scene.active_win98_menu.setup(combatant.combatant_name, menu_items, menu_pos, job_id)
 

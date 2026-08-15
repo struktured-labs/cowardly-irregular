@@ -659,8 +659,17 @@ func _create_dialogue_system() -> void:
 func _on_dialogue_finished() -> void:
 	"""Handle dialogue completion - resume battle"""
 	_waiting_for_dialogue = false
+	# Re-show the command menu the dialogue hid — only mid-selection (never resurrect it over a victory screen).
+	if BattleManager and BattleManager.is_selecting():
+		set_command_menu_visible(true)
 	# Now actually start the battle
 	_start_battle_after_dialogue()
+
+
+## Boss speech owns the screen: hide the command menu so A unambiguously advances the dialogue (struktured 2026-08-15, mage duel vs Prismatic Construct).
+func _show_boss_dialogue(speaker: String, lines: Array) -> void:
+	set_command_menu_visible(false)
+	_battle_dialogue.show_boss_intro(speaker, lines)
 
 
 func _show_boss_intro_dialogue() -> void:
@@ -2603,7 +2612,7 @@ func _on_battle_ended(victory: bool) -> void:
 				boss_name = enemy.combatant_name
 				break
 		if _battle_dialogue and _battle_dialogue.has_method("show_boss_intro"):
-			_battle_dialogue.show_boss_intro(boss_name, _boss_dialogue_data["defeat"])
+			_show_boss_dialogue(boss_name, _boss_dialogue_data["defeat"])
 
 	# Clean up any open menus
 	if active_win98_menu and is_instance_valid(active_win98_menu):
@@ -4207,7 +4216,7 @@ func _on_enemy_hp_changed(old_value: int, new_value: int, enemy_idx: int) -> voi
 func _on_enemy_died(enemy_idx: int) -> void:
 	"""Handle enemy death"""
 	_command_menu.invalidate_alive_cache()
-	SoundManager.play_battle("enemy_death")
+	# enemy_death moved INTO the death tween (after the flash): fired here it started first and the killing blow's hit sound stomped it on the shared _battle_player — the scorch was never audible (struktured 2026-08-15).
 	if enemy_idx < test_enemies.size():
 		var enemy = test_enemies[enemy_idx]
 		# deferred: died fires inside take_damage, before the killing blow's damage line prints
@@ -4227,6 +4236,8 @@ func _on_enemy_died(enemy_idx: int) -> void:
 			# Play defeat animation
 			animator.play_defeat()
 			# Death moment: shader pixel-dissolve + burst + hold; FF-flicker kept as the material-less/OFF fallback
+			if not is_instance_valid(sprite):
+				SoundManager.play_battle("enemy_death")
 			if is_instance_valid(sprite):
 				sprite.set_meta("dying", true)
 				var death_tier := _tier()
@@ -4238,6 +4249,8 @@ func _on_enemy_died(enemy_idx: int) -> void:
 				var tween = create_tween()
 				tween.tween_property(sprite, "modulate", Color(3.0, 3.0, 3.0, 1.0), 0.1)
 				tween.tween_property(sprite, "modulate", Color(1.0, 1.0, 1.0, 1.0), 0.1)
+				# The burned-away scorch starts WITH the fade — after the killing blow's hit sound, not under it.
+				tween.tween_callback(func() -> void: SoundManager.play_battle("enemy_death"))
 				if has_dissolve:
 					tween.tween_method(func(v: float) -> void:
 						if is_instance_valid(sprite) and sprite.material is ShaderMaterial:
@@ -4466,7 +4479,7 @@ func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: St
 			if target.get_hp_percentage() < 25.0 and target.has_meta("is_boss"):
 				_boss_low_hp_spoken = true
 				if _battle_dialogue and _battle_dialogue.has_method("show_boss_intro"):
-					_battle_dialogue.show_boss_intro(target.combatant_name, _boss_dialogue_data["low_hp"])
+					_show_boss_dialogue(target.combatant_name, _boss_dialogue_data["low_hp"])
 
 	# Skip hit sounds for abilities — ability sound already played at cast time
 	if _current_ability_id != "":
