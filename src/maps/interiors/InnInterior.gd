@@ -1423,7 +1423,10 @@ func _charge_for_rest() -> bool:
 		return false
 	# spend_gold (not a raw party_gold write) so the gold_multiplier constant stays consistent with shop transactions.
 	if GameState.has_method("spend_gold"):
-		return bool(GameState.spend_gold(REST_COST))
+		var paid := bool(GameState.spend_gold(REST_COST))
+		if paid and SoundManager:
+			SoundManager.play_ui("purchase_complete")
+		return paid
 	return true
 
 
