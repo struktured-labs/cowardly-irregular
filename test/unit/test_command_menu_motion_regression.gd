@@ -165,6 +165,45 @@ func test_the_caller_hands_the_menu_a_scene_handle() -> void:
 		"the handle must be assigned BEFORE setup() so the menu's first tier read already sees live turbo/autogrind state")
 
 
+## INTEGRATION with cowir-main's targeting dim (2bb4e6e0). _set_chain_dim captures
+## pre_dim_alpha from LIVE modulate.a, and the entrance tween drives that same property for
+## 0.12s. A dim landing mid-entrance stores a partial alpha as the resting value, and the
+## un-dim restores the menu to it — permanently translucent, no error, visual only.
+func test_the_entrance_corrects_a_dim_that_captured_a_mid_tween_alpha() -> void:
+	var body := _body_of(_read(MENU_SRC), "func play_open_motion(target_alpha: float) -> void:")
+	assert_gt(body.length(), 0, "play_open_motion is missing")
+	assert_true(body.find("pre_dim_alpha") != -1,
+		"the entrance must reconcile with _set_chain_dim's stored alpha — the two drive the same property and the dim samples it live")
+	assert_true(body.find("set_meta(\"pre_dim_alpha\", target_alpha)") != -1,
+		"on finishing, the entrance must correct the stored value to the TRUE resting alpha, not leave whatever partial value the dim happened to sample")
+
+
+func test_both_lifecycle_systems_survive_at_every_highlight_site() -> void:
+	## The rebase onto 2bb4e6e0 conflicted at five sites where cowir-main added
+	## _set_chain_dim and I added the pulse calls — the SAME lifecycle points, found
+	## independently. Both belong; a resolution that kept only one side would silently
+	## drop either the targeting dim or the reticle pulse.
+	var src := _read(MENU_SRC)
+	var hides := src.count("_target_highlight.visible = false")
+	assert_gt(hides, 0, "CONTROL: no hide sites found — the pattern moved")
+	assert_gt(src.count("_set_chain_dim("), hides,
+		"cowir-main's targeting dim must survive at every hide site plus its own declaration")
+	assert_gt(src.count("_stop_target_pulse()"), hides,
+		"the pulse kill must survive at every hide site plus its own declaration")
+
+
+## Caught by cowir-main's test_battle_menu_stack_regression going RED on my branch (4/4 on
+## main, 3/1 with the fade). close_all() callers check within two process frames; a 0.08s
+## fade is ~5. Deferring a SUBMENU's free leaves it alive across that window and reads as a
+## cascade leak. Pinned here too because their failure message names queue_free and gives no
+## hint that an animation caused it — the next person to widen this gate needs the reason.
+func test_only_the_root_menu_defers_its_free() -> void:
+	var body := _body_of(_read(MENU_SRC), "func force_close() -> void:")
+	assert_gt(body.length(), 0, "CONTROL: force_close body not found")
+	assert_true(body.find("is_root_menu and _should_animate_motion()") != -1,
+		"the fade must be gated on is_root_menu. Submenus are siblings torn down by the cascade — deferring their free breaks close_all()'s synchronous contract and reads as an orphan leak")
+
+
 func test_tier_helper_admits_exactly_full_and_reduced() -> void:
 	var body := _body_of(_read(MENU_SRC), "func _should_animate_motion() -> bool:")
 	assert_gt(body.length(), 0, "_should_animate_motion is missing")

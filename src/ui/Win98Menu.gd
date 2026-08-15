@@ -1095,6 +1095,10 @@ func play_open_motion(target_alpha: float) -> void:
 	var intro := create_tween().set_parallel(true)
 	intro.tween_property(self, "modulate:a", target_alpha, OPEN_MOTION_SEC).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	intro.tween_property(self, "position:y", rest_y, OPEN_MOTION_SEC).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	# _set_chain_dim captures pre_dim_alpha from LIVE modulate.a: a dim landing mid-entrance stores a partial value and the un-dim restores the menu to it, leaving it permanently translucent. Correct the stored value to the true resting alpha instead of racing it.
+	intro.finished.connect(func() -> void:
+		if has_meta("pre_dim_alpha"):
+			set_meta("pre_dim_alpha", target_alpha))
 
 
 func force_close() -> void:
@@ -1108,7 +1112,8 @@ func force_close() -> void:
 	_l_button_pressed = false
 
 	# Phase D: ONLY the visual disappearance defers. Every logical step below — highlight cleanup, submenu recursion, menu_closed.emit() and the identity-guarded null-write it drives — stays synchronous and in its original order (msg 2503/2529 two-menus class).
-	var animate: bool = _should_animate_motion()
+	# is_root_menu is load-bearing: submenus are SIBLINGS torn down by the cascade, and deferring their free behind a fade leaves them alive across the frames close_all()'s callers check (test_battle_menu_stack_regression). Only the root is a thing the player watches close.
+	var animate: bool = is_root_menu and _should_animate_motion()
 
 	# Hide immediately (queue_free happens at end of frame)
 	if not animate:
