@@ -34,6 +34,18 @@ static func presentation_tier(time_scale: float = Engine.time_scale, turbo: bool
 	return Tier.MINIMAL
 
 
+## Feature-flag stub pending cowir-main's toggle registry; unknown ids default TRUE so a flag is opt-OUT and a typo cannot silently disable a shipped effect.
+var _flags: Dictionary = {}
+
+
+func flag(id: String) -> bool:
+	return bool(_flags.get(id, true))
+
+
+func set_flag(id: String, enabled: bool) -> void:
+	_flags[id] = enabled
+
+
 func add_trauma(amount: float, dir: Vector2 = Vector2.ZERO, sustain: float = 0.0) -> void:
 	if camera_rig:
 		camera_rig.add_trauma(amount, dir, sustain)

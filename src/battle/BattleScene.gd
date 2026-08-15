@@ -3849,6 +3849,8 @@ func _on_action_executed(combatant: Combatant, action: Dictionary, targets: Arra
 	_check_masterite_phase2_music_swap()
 	# msg 2749 cycle 12: clear the acting-combatant cache once the action fully resolves. Damage_dealt emits from status ticks / reactive counters that fire OUTSIDE an action window now attribute to null, matching the "no acting combatant" fact rather than the last completed action.
 	_last_acting_combatant = null
+	# Chain resets at the action boundary, so a multi-hit ability ramps but the next action starts flat. Reset here rather than at action start: this is the canonical resolve point the acting-combatant cache already uses.
+	SoundManager.reset_hit_chain()
 	# Safety net: if the attacker's melee-attack tween was interrupted
 	# (target died mid-animation, scene refresh, battle-speed change,
 	# etc.), force the sprite back to its stored home position and
@@ -4217,6 +4219,9 @@ func _on_enemy_died(enemy_idx: int) -> void:
 	"""Handle enemy death"""
 	_command_menu.invalidate_alive_cache()
 	# enemy_death moved INTO the death tween (after the flash): fired here it started first and the killing blow's hit sound stomped it on the shared _battle_player — the scorch was never audible (struktured 2026-08-15).
+	# The duck stays HERE rather than moving with the cue: it writes a bus effect, not a player, so the stomping that motivated that move cannot reach it, and punctuation should land on the death event rather than on the flash.
+	if _tier() == BattleJuice.Tier.FULL and BattleJuice.flag("audio_kill_duck"):
+		SoundManager.duck_music_for_kill()
 	if enemy_idx < test_enemies.size():
 		var enemy = test_enemies[enemy_idx]
 		# deferred: died fires inside take_damage, before the killing blow's damage line prints
@@ -4490,6 +4495,9 @@ func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: St
 		return
 	var weapon_type = EquipmentSystem.get_weapon_type(attacker)
 	SoundManager.play_attack_hit(weapon_type, is_crit)
+	# Sub-layer UNDER the crit cue, which already carries its own pitch/echo identity — this adds body, it does not re-hit the transient.
+	if is_crit and _tier() == BattleJuice.Tier.FULL and BattleJuice.flag("audio_crit_thud"):
+		SoundManager.play_crit_thud()
 	# msg 2796 cycle 20: layer the elemental strike voice ON TOP of the weapon hit, per cowir-sfx's shape — the sword still sounds like a sword, the element rides over it. Only reachable on basic attacks: the `_current_ability_id != ""` early-return above means an ability already played its own cast sound, so a Fire spell won't also fire strike_fire.
 	var weapon_element: String = _weapon_element_for(attacker)
 	if weapon_element != "":
