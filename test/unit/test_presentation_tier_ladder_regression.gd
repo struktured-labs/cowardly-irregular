@@ -86,6 +86,23 @@ func test_turbo_and_autogrind_force_off_at_every_speed() -> void:
 	assert_eq(grind_checked, _ladder().size(), "autogrind not checked at every rung")
 
 
+## Requested by cowir-autogrind, and it is the arm that exposes the class: a test which only
+## ever passes the bools EXPLICITLY can never see that omitting them changes the answer.
+func test_omitting_the_bools_asserts_a_fact_instead_of_deriving_one() -> void:
+	## time_scale DERIVES from Engine when omitted; turbo/autogrind ASSERT false when omitted.
+	## That asymmetry is the defect — a caller who forgets gets "not grinding" for free, in
+	## the unsafe direction, with no error and a valid Tier returned.
+	var omitted: int = BattleJuiceClass.presentation_tier(1.0)
+	var explicit_grind: int = BattleJuiceClass.presentation_tier(1.0, false, true)
+	var explicit_turbo: int = BattleJuiceClass.presentation_tier(1.0, true, false)
+	assert_eq(omitted, BattleJuiceClass.Tier.REDUCED,
+		"omitting the bools yields the non-grinding answer")
+	assert_eq(explicit_grind, BattleJuiceClass.Tier.OFF, "autogrind must force OFF")
+	assert_eq(explicit_turbo, BattleJuiceClass.Tier.OFF, "turbo must force OFF")
+	assert_ne(omitted, explicit_grind,
+		"THE HAZARD, pinned: same speed, opposite tier, and the only difference is whether the caller remembered the third argument. Win98Menu shipped this exact omission and animated through visible autogrinds")
+
+
 func test_off_is_reachable_by_speed_alone() -> void:
 	## Guards the specific thing I nearly filed as a defect: if the ladder's top ever drops
 	## below the 4.0 boundary, OFF becomes reachable ONLY via turbo/autogrind, and the

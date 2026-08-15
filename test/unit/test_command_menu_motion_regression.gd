@@ -12,6 +12,7 @@ extends GutTest
 ## in test_presentation_tier_ladder_regression.
 
 const Win98MenuClass = preload("res://src/ui/Win98Menu.gd")
+const BattleJuiceClass = preload("res://src/battle/BattleJuice.gd")
 const MENU_SRC := "res://src/ui/Win98Menu.gd"
 const CMD_SRC := "res://src/battle/BattleCommandMenu.gd"
 
@@ -113,6 +114,55 @@ func test_the_caller_animates_after_setup_not_before() -> void:
 	assert_gt(motion_at, -1, "play_open_motion is never called — the entrance is dead code")
 	assert_true(setup_at < motion_at,
 		"play_open_motion must be called AFTER setup(), which owns the menu's resting position")
+
+
+## Stand-in for BattleScene: only _tier() matters to the gate, and duck-typing it keeps the
+## test free of the real scene's autoload graph.
+class _FakeScene extends Node:
+	var tier_value: int = 0
+	func _tier() -> int:
+		return tier_value
+
+
+## BEHAVIOURAL, not structural — names the OUTCOME (no motion during autogrind) rather than
+## the mechanism. The bug this pins was live and reachable: the command menu opens on every
+## player selection turn (BattleManager emits selection_turn_started unconditionally,
+## _on_selection_turn_started has no autogrind gate, use_win98_menus is never false), so a
+## no-arg presentation_tier() animated the menu through an entire visible grind.
+func test_the_gate_reads_live_scene_state_not_the_false_defaults() -> void:
+	var menu: Control = Win98MenuClass.new()
+	add_child_autofree(menu)
+	var fake := _FakeScene.new()
+	add_child_autofree(fake)
+
+	assert_true(menu._should_animate_motion(),
+		"PRECONDITION: with no scene handle the menu animates at the headless default tier — if this is false the assertions below cannot discriminate")
+
+	menu._battle_scene = fake
+	fake.tier_value = BattleJuiceClass.Tier.OFF
+	assert_false(menu._should_animate_motion(),
+		"OFF from the live scene must suppress motion. presentation_tier()'s autogrind bool DEFAULTS to false, so a no-arg call reports FULL through a visible autogrind")
+
+	fake.tier_value = BattleJuiceClass.Tier.MINIMAL
+	assert_false(menu._should_animate_motion(), "MINIMAL must not animate")
+
+	fake.tier_value = BattleJuiceClass.Tier.REDUCED
+	assert_true(menu._should_animate_motion(), "REDUCED must animate")
+
+	fake.tier_value = BattleJuiceClass.Tier.FULL
+	assert_true(menu._should_animate_motion(), "FULL must animate")
+
+
+func test_the_caller_hands_the_menu_a_scene_handle() -> void:
+	## Without this wiring the gate silently falls back to the false defaults — the handle
+	## being set is what makes the behavioural test above true in production.
+	var src := _read(CMD_SRC)
+	var assign_at := src.find("_battle_scene = _scene")
+	var setup_at := src.find(".setup(combatant.combatant_name")
+	assert_gt(assign_at, -1,
+		"BattleCommandMenu must hand the menu a scene handle, or _should_animate_motion falls back to presentation_tier()'s false defaults")
+	assert_true(assign_at < setup_at,
+		"the handle must be assigned BEFORE setup() so the menu's first tier read already sees live turbo/autogrind state")
 
 
 func test_tier_helper_admits_exactly_full_and_reduced() -> void:

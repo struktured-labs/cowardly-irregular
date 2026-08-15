@@ -133,6 +133,8 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 	_scene.active_win98_menu.modulate.a = MENU_ALPHA_OVER_ACTOR
 	# Starts hidden under an active boss dialogue; _on_dialogue_finished re-shows it.
 	_scene.active_win98_menu.visible = not _dialogue_owns_screen
+	# Hand the menu a live scene handle BEFORE setup so its first tier read sees turbo/autogrind rather than presentation_tier()'s false defaults
+	_scene.active_win98_menu._battle_scene = _scene
 	_scene.add_child(_scene.active_win98_menu)
 	_scene.active_win98_menu.setup(combatant.combatant_name, menu_items, menu_pos, job_id)
 	# After setup() because setup owns final placement — the slide is relative to the resting y it assigns. At MINIMAL/OFF this just re-applies MENU_ALPHA_OVER_ACTOR, matching the pre-Phase-D assignment above.

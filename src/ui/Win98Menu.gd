@@ -1072,9 +1072,15 @@ const OPEN_SLIDE_PX: float = 12.0
 const CLOSE_FADE_SEC: float = 0.08
 
 
-## True only at FULL/REDUCED. MINIMAL and OFF take the pre-Phase-D path unchanged, and OFF is what autogrind/turbo resolve to.
+## Untyped handle mirroring BattleUIManager:9 — dodges the circular dependency; null outside battle.
+var _battle_scene = null
+
+
+## Routes through BattleScene._tier() because presentation_tier()'s turbo/autogrind bools DEFAULT TO FALSE: a no-arg call ASSERTS "not grinding" and animates through a whole visible autogrind, where the menu opens every player selection turn.
 func _should_animate_motion() -> bool:
 	var tier: int = BattleJuice.presentation_tier()
+	if _battle_scene != null and is_instance_valid(_battle_scene) and _battle_scene.has_method("_tier"):
+		tier = _battle_scene._tier()
 	return tier == BattleJuice.Tier.FULL or tier == BattleJuice.Tier.REDUCED
 
 
