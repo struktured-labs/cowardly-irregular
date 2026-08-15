@@ -225,6 +225,24 @@ func test_every_phase_d_tween_duration_is_time_scale_compensated() -> void:
 	assert_eq(offenders.size(), 0,
 		"every Phase D tween duration must be multiplied by Engine.time_scale, matching this file's own convention. Unscaled: %s" % str(offenders))
 
+	## VACUITY GUARD — measured, not theorised. Deleting the entrance tween outright left this
+	## test at 14/14, because "no uncompensated durations" is satisfied by NO durations. A
+	## check that counts offenders cannot distinguish CORRECT from ABSENT; it needs a floor.
+	## PER-MOTION, not a total. My first attempt used `count > 4` and STILL passed the deletion
+	## mutation: removing the 2 entrance tweens left 5 others, which cleared the floor. A count
+	## cannot say WHICH motion vanished, and the floor was picked from the gap rather than from
+	## the defect — so each of the three motions is asserted by name.
+	var per_motion := {"OPEN_MOTION_SEC": 0, "CLOSE_FADE_SEC": 0, "TARGET_PULSE_SEC": 0}
+	for line in src.split("\n"):
+		if line.find("tween_property") == -1 or line.find("Engine.time_scale") == -1:
+			continue
+		for key in per_motion:
+			if line.find(key) != -1:
+				per_motion[key] = int(per_motion[key]) + 1
+	for key in per_motion:
+		assert_gt(int(per_motion[key]), 0,
+			"%s drives no compensated tween — the motion is GONE, and 'zero uncompensated durations' is exactly what a deleted animation looks like" % key)
+
 	## CONTROL naming a known-present member: the pre-existing convention must still be here,
 	## or this test is asserting against a file that no longer works the way it claims.
 	assert_true(src.find("0.15 * Engine.time_scale") != -1,
