@@ -204,6 +204,33 @@ func test_only_the_root_menu_defers_its_free() -> void:
 		"the fade must be gated on is_root_menu. Submenus are siblings torn down by the cascade — deferring their free breaks close_all()'s synchronous contract and reads as an orphan leak")
 
 
+## Godot tweens run in SCALED time, so a bare duration constant is 1/time_scale too long in
+## real seconds. At the DEFAULT battle speed (engine 0.25, label "1x") a 0.12s entrance took
+## 0.48s of wall clock — 4x sluggish at the speed almost everyone plays. Win98Menu already
+## documents the fix three lines from code I edited (":490 Multiply duration by time_scale to
+## keep consistent real-time speed") and I added three tweens next to it without following it.
+## Multiplying by the LIVE scale is also self-correcting under hitlag: D*ts/ts is constant
+## whatever ts is, which the tier reads elsewhere in this thread are not.
+func test_every_phase_d_tween_duration_is_time_scale_compensated() -> void:
+	var src := _read(MENU_SRC)
+	assert_gt(src.length(), 0, "CONTROL: source read empty")
+	var offenders: Array[String] = []
+	for line in src.split("\n"):
+		if line.find("tween_property") == -1:
+			continue
+		var names_a_phase_d_const := line.find("OPEN_MOTION_SEC") != -1 \
+			or line.find("CLOSE_FADE_SEC") != -1 or line.find("TARGET_PULSE_SEC") != -1
+		if names_a_phase_d_const and line.find("Engine.time_scale") == -1:
+			offenders.append(line.strip_edges())
+	assert_eq(offenders.size(), 0,
+		"every Phase D tween duration must be multiplied by Engine.time_scale, matching this file's own convention. Unscaled: %s" % str(offenders))
+
+	## CONTROL naming a known-present member: the pre-existing convention must still be here,
+	## or this test is asserting against a file that no longer works the way it claims.
+	assert_true(src.find("0.15 * Engine.time_scale") != -1,
+		"CONTROL: the pre-existing scaled tween at the highlight fade-out is missing — the convention this pins may have changed wholesale")
+
+
 func test_tier_helper_admits_exactly_full_and_reduced() -> void:
 	var body := _body_of(_read(MENU_SRC), "func _should_animate_motion() -> bool:")
 	assert_gt(body.length(), 0, "_should_animate_motion is missing")

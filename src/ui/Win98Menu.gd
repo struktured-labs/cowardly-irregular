@@ -348,10 +348,10 @@ func _start_target_pulse() -> void:
 	_target_pulse = _target_highlight.create_tween().set_loops()
 	_target_pulse.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 	_target_pulse.set_parallel(true)
-	_target_pulse.tween_property(_target_highlight, "scale", Vector2.ONE * TARGET_PULSE_SCALE, TARGET_PULSE_SEC * 0.5)
-	_target_pulse.tween_property(_target_highlight, "modulate:a", 1.0, TARGET_PULSE_SEC * 0.5)
-	_target_pulse.chain().tween_property(_target_highlight, "scale", Vector2.ONE, TARGET_PULSE_SEC * 0.5)
-	_target_pulse.parallel().tween_property(_target_highlight, "modulate:a", TARGET_PULSE_ALPHA_LOW, TARGET_PULSE_SEC * 0.5)
+	_target_pulse.tween_property(_target_highlight, "scale", Vector2.ONE * TARGET_PULSE_SCALE, TARGET_PULSE_SEC * 0.5 * Engine.time_scale)
+	_target_pulse.tween_property(_target_highlight, "modulate:a", 1.0, TARGET_PULSE_SEC * 0.5 * Engine.time_scale)
+	_target_pulse.chain().tween_property(_target_highlight, "scale", Vector2.ONE, TARGET_PULSE_SEC * 0.5 * Engine.time_scale)
+	_target_pulse.parallel().tween_property(_target_highlight, "modulate:a", TARGET_PULSE_ALPHA_LOW, TARGET_PULSE_SEC * 0.5 * Engine.time_scale)
 
 
 ## Kill on every hide path — a looping tween on a hidden reticle keeps running forever and resurfaces mid-breath when the next target is picked.
@@ -1093,8 +1093,8 @@ func play_open_motion(target_alpha: float) -> void:
 	modulate.a = 0.0
 	position.y = rest_y + OPEN_SLIDE_PX
 	var intro := create_tween().set_parallel(true)
-	intro.tween_property(self, "modulate:a", target_alpha, OPEN_MOTION_SEC).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	intro.tween_property(self, "position:y", rest_y, OPEN_MOTION_SEC).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	intro.tween_property(self, "modulate:a", target_alpha, OPEN_MOTION_SEC * Engine.time_scale).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	intro.tween_property(self, "position:y", rest_y, OPEN_MOTION_SEC * Engine.time_scale).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	# _set_chain_dim captures pre_dim_alpha from LIVE modulate.a: a dim landing mid-entrance stores a partial value and the un-dim restores the menu to it, leaving it permanently translucent. Correct the stored value to the true resting alpha instead of racing it.
 	intro.finished.connect(func() -> void:
 		if has_meta("pre_dim_alpha"):
@@ -1138,7 +1138,7 @@ func force_close() -> void:
 		return
 	# Tween lives on self, so a freed menu cannot outlive its own fade
 	var fade := create_tween()
-	fade.tween_property(self, "modulate:a", 0.0, CLOSE_FADE_SEC).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	fade.tween_property(self, "modulate:a", 0.0, CLOSE_FADE_SEC * Engine.time_scale).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 	fade.tween_callback(queue_free)
 
 
