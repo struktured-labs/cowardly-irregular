@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "_note": "SINGLE SOURCE OF TRUTH for the overworld map image format. Both tools/map_ascii_to_png.py and src/exploration/MapImageLoader.gd read THIS FILE. Do not transcribe these values into either one — a second copy is how a mapping silently drifts.",
+  "_format": "One pixel per tile. The pixel encodes the MAP CHARACTER, not the tile type: _char_to_tile_type collapses 25 chars into ~12 visual types (all four dragon caves return CAVE_ENTRANCE), so a tile-type image cannot round-trip and would erase every landmark's spawn identity.",
+  "_authoring": "Paint at 1px = 1 tile. Colours are exact-match; an unknown colour is a hard error naming its coordinate, never a silent fallback. Terrain colours are naturalistic so the map reads while painting; landmark colours are deliberately vivid and far apart in RGB because most landmarks are a SINGLE PIXEL and must survive a stray stroke being noticed.",
+  "terrain": {
+    "~": { "rgb": [0, 80, 160], "name": "water" },
+    "c": { "rgb": [120, 190, 220], "name": "coast" },
+    ".": { "rgb": [200, 180, 130], "name": "path" },
+    "g": { "rgb": [80, 160, 70], "name": "grass" },
+    "F": { "rgb": [30, 100, 45], "name": "forest" },
+    "M": { "rgb": [130, 130, 130], "name": "mountain" },
+    "s": { "rgb": [230, 210, 150], "name": "sand" },
+    "i": { "rgb": [200, 235, 245], "name": "ice" },
+    "S": { "rgb": [90, 110, 60], "name": "swamp" },
+    "d": { "rgb": [70, 50, 90], "name": "dark_ground" },
+    "l": { "rgb": [220, 70, 20], "name": "lava" },
+    "B": { "rgb": [150, 100, 55], "name": "bridge" }
+  },
+  "landmarks": {
+    "C": { "rgb": [255, 0, 255], "name": "whispering_cave" },
+    "V": { "rgb": [255, 255, 0], "name": "harmonia_village" },
+    "1": { "rgb": [0, 255, 255], "name": "ice_dragon_cave" },
+    "2": { "rgb": [128, 0, 255], "name": "shadow_dragon_cave" },
+    "3": { "rgb": [255, 128, 0], "name": "lightning_dragon_cave" },
+    "4": { "rgb": [255, 0, 0], "name": "fire_dragon_cave" },
+    "W": { "rgb": [255, 255, 255], "name": "frosthold" },
+    "E": { "rgb": [0, 255, 0], "name": "eldertree" },
+    "G": { "rgb": [150, 150, 0], "name": "grimhollow" },
+    "D": { "rgb": [255, 200, 100], "name": "sandrift" },
+    "I": { "rgb": [180, 180, 255], "name": "ironhaven" },
+    "P": { "rgb": [255, 0, 128], "name": "steampunk_portal" },
+    "H": { "rgb": [0, 128, 255], "name": "hidden_passage" }
+  }
+}
