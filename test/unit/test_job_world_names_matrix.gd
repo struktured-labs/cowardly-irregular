@@ -26,7 +26,8 @@ func test_control_the_file_parses_and_names_a_known_member() -> void:
 	assert_true(_jobs.has("fighter"),
 		"NAMED-member control, not a count: a count passes on an empty parse. got keys: %s" % [_jobs.keys()])
 	assert_eq(str((_jobs.get("fighter", {}) as Dictionary).get("suburban", "")), "Mall Cop",
-		"struktured's own example is the anchor — if this moves, the register moved with it")
+		"a NAMED member with a known value is the floor control. This name is AUTHORED, not "
+		+ "struktured's — see _attribution_correction in the json; it anchors the check, not the register")
 
 
 ## The world key space must EQUAL 1-6, not merely contain it.
