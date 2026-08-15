@@ -172,6 +172,21 @@ func _ready() -> void:
 		print("[SoundManager] headless run detected — master bus muted")
 
 
+## 2026-08-14 silent-death class (struktured: music+SFX stopped mid-battle, zero errors, YT fine): frozen playback position while playing == game mixer dead; advancing position while silent == stream corked below the game
+var _liveness_last_pos: float = -1.0
+
+
+func audio_liveness_check() -> void:
+	var p: AudioStreamPlayer = _music_player_b if (_music_player_b and _music_player_b.playing and not _music_player.playing) else _music_player
+	if p and p.playing and not p.stream_paused:
+		var pos := p.get_playback_position()
+		if _liveness_last_pos >= 0.0 and absf(pos - _liveness_last_pos) < 0.001:
+			push_warning("[AUDIO] playback position frozen at %.2fs while playing — game audio mixer is dead (2026-08-14 class); restart recovers" % pos)
+		_liveness_last_pos = pos
+	else:
+		_liveness_last_pos = -1.0
+
+
 func _exit_tree() -> void:
 	# Cleanup tweens to prevent callbacks on freed nodes
 	if _crossfade_tween and _crossfade_tween.is_valid():

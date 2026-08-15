@@ -3496,6 +3496,7 @@ func _snap_party_sprites_home() -> void:
 ## rendering wrong for a full turn. Covers party AND enemies since
 ## monsters can also step out and get interrupted.
 func _on_round_started_snap_home(_round_num: int) -> void:
+	SoundManager.audio_liveness_check()
 	_snap_party_sprites_home()
 	for sprite in party_sprite_nodes:
 		_reset_presentation_state(sprite)

@@ -211,6 +211,7 @@ func _init() -> void:
 
 
 func _ready() -> void:
+	add_to_group("win98_menus")
 	_setup_timers()
 	_setup_audio()
 	# Don't call _build_menu() here - setup() will call it with proper data
@@ -298,6 +299,7 @@ func _update_target_highlight() -> void:
 	# Get current item data
 	if selected_index < 0 or selected_index >= menu_items.size():
 		_target_highlight.visible = false
+		_set_chain_dim(false)
 		return
 
 	var item = menu_items[selected_index]
@@ -310,6 +312,7 @@ func _update_target_highlight() -> void:
 
 	if target_pos == Vector2.ZERO:
 		_target_highlight.visible = false
+		_set_chain_dim(false)
 		_pending_target_pos = Vector2.ZERO
 		return
 
@@ -318,6 +321,7 @@ func _update_target_highlight() -> void:
 	# Build the highlight box around target
 	_build_target_highlight_box(target_pos)
 	_target_highlight.visible = true
+	_set_chain_dim(true)
 
 
 func _build_target_highlight_box(target_pos: Vector2) -> void:
@@ -443,6 +447,7 @@ func _fade_target_highlight(on_complete: Callable = Callable()) -> void:
 	tween.tween_callback(func():
 		if is_instance_valid(_target_highlight):
 			_target_highlight.visible = false
+			_set_chain_dim(false)
 			_target_highlight.modulate.a = 1.0  # Reset for next use
 		if on_complete.is_valid():
 			on_complete.call()
@@ -993,11 +998,13 @@ func _clamp_to_screen() -> void:
 
 func close_all() -> void:
 	"""Close this menu and all parent menus"""
-	# Clean up our own target highlight
+	# Clean up our own target highlight + tooltip
 	_cleanup_target_highlight()
+	_cleanup_tooltip()
 
 	if submenu and is_instance_valid(submenu):
-		submenu.queue_free()
+		# force_close cascades to grandchildren and cleans their scene-parented highlights/tooltips; bare queue_free orphaned them
+		submenu.force_close()
 		submenu = null
 
 	if parent_menu and is_instance_valid(parent_menu):
@@ -1022,8 +1029,9 @@ func force_close() -> void:
 	# Hide immediately (queue_free happens at end of frame)
 	hide()
 
-	# Clean up target highlight
+	# Clean up target highlight AND tooltip — both are scene-parented siblings that outlive queue_free
 	_cleanup_target_highlight()
+	_cleanup_tooltip()
 
 	# Recursively close submenus first
 	if submenu and is_instance_valid(submenu):
@@ -1040,6 +1048,7 @@ func force_close() -> void:
 
 func _cleanup_target_highlight() -> void:
 	"""Remove target highlight from scene"""
+	_set_chain_dim(false)
 	if _target_highlight and is_instance_valid(_target_highlight):
 		_target_highlight.queue_free()
 		_target_highlight = null
@@ -1050,6 +1059,20 @@ func _cleanup_tooltip() -> void:
 	if _tooltip_label and is_instance_valid(_tooltip_label):
 		_tooltip_label.queue_free()
 		_tooltip_label = null
+
+
+## Targeting dim: monsters must read THROUGH the menu chain while picking a target (struktured 2026-08-14 report); active list stays readable, ancestors go faint
+func _set_chain_dim(dimmed: bool) -> void:
+	var m = _get_root_menu()
+	while m and is_instance_valid(m):
+		if dimmed:
+			if not m.has_meta("pre_dim_alpha"):
+				m.set_meta("pre_dim_alpha", m.modulate.a)
+			m.modulate.a = minf(m.modulate.a, 0.65 if m == self else 0.35)
+		elif m.has_meta("pre_dim_alpha"):
+			m.modulate.a = m.get_meta("pre_dim_alpha")
+			m.remove_meta("pre_dim_alpha")
+		m = m.submenu
 
 
 ## Advance Mode Functions
@@ -1146,11 +1169,12 @@ func _queue_current_action(item: Dictionary) -> void:
 
 func _close_submenu_to_root() -> void:
 	"""Close this submenu chain but keep root menu open"""
-	# Clean up our target highlight
+	# Clean up our target highlight + tooltip
 	_cleanup_target_highlight()
+	_cleanup_tooltip()
 
 	if submenu and is_instance_valid(submenu):
-		submenu.queue_free()
+		submenu.force_close()
 		submenu = null
 
 	if parent_menu:
@@ -1219,6 +1243,7 @@ func _submit_actions() -> void:
 	# Hide target highlight immediately
 	if _target_highlight and is_instance_valid(_target_highlight):
 		_target_highlight.visible = false
+		_set_chain_dim(false)
 
 	# Emit signal from root
 	if all_actions.size() == 1:
