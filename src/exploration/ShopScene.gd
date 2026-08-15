@@ -36,6 +36,8 @@ const GOLD_FLASH_SUCCESS_SEC: float = 0.28
 const GOLD_LABEL_COLOR: Color = Color(1.0, 0.9, 0.3)
 const GOLD_SPEND_FLASH_COLOR: Color = Color(1.0, 0.25, 0.2)
 const GOLD_SPEND_HOLD_SEC: float = 0.65
+const BUY_ROW_UNAFFORDABLE_COLOR: Color = Color(0.45, 0.45, 0.5)
+const BUY_ROW_OWNED_COLOR: Color = Color(0.55, 0.78, 0.6)
 const PURCHASE_TOAST_SEC: float = 1.5
 
 ## Shop configuration
@@ -287,14 +289,21 @@ func _open_buy_menu() -> void:
 			if wearers != "":
 				label += " [on %s]" % wearers
 
-			if game_state:
-				label += _affordability_suffix(int(cost), game_state.get_gold())
-
-			items.append({
+			# struktured 2026-08-15: the "(need Xg)" suffix truncated row labels.
+			# Shortfall lives in the description panel now; the ROW communicates by
+			# colour - grey = cannot afford, green tint = already have (magic learned /
+			# gear someone is wearing). Rows stay SELECTABLE (unlike disabled) so they can be inspected.
+			var row := {
 				"id": item_id,
 				"label": label,
 				"data": item_data
-			})
+			}
+			var already_owned: bool = (_is_magic_shop() and owned > 0) or wearers != ""
+			if already_owned:
+				row["text_color"] = BUY_ROW_OWNED_COLOR
+			elif game_state and int(cost) > game_state.get_gold():
+				row["text_color"] = BUY_ROW_UNAFFORDABLE_COLOR
+			items.append(row)
 
 	if items.is_empty():
 		items.append({"id": "none", "label": "(No items available)", "disabled": true})
@@ -671,6 +680,10 @@ func _update_description_for_item(item_id: String) -> void:
 	var desc = ""
 	desc += "%s\n" % item_data.get("name", "???")
 	desc += "%s\n\n" % item_data.get("description", "No description")
+
+	# Row labels no longer carry the shortfall (it truncated them) - it lives here.
+	if game_state and int(item_data.get("cost", 0)) > game_state.get_gold():
+		desc += "Not enough gold%s.\n\n" % _affordability_suffix(int(item_data.get("cost", 0)), game_state.get_gold())
 
 	# Show stats + comparison for equipment (blacksmith)
 	if shop_type == ShopType.BLACKSMITH:

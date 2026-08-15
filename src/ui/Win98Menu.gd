@@ -773,6 +773,9 @@ func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -
 
 	if disabled:
 		text_label.add_theme_color_override("font_color", style.text.darkened(0.5))
+	elif item.get("text_color", null) is Color:
+		# Optional per-row tint (shop affordability/owned cues) — row stays selectable, unlike disabled.
+		text_label.add_theme_color_override("font_color", item["text_color"])
 	else:
 		text_label.add_theme_color_override("font_color", style.text)
 
@@ -825,6 +828,8 @@ func _update_selection() -> void:
 			var disabled = item.get("disabled", false)
 			if disabled:
 				label.add_theme_color_override("font_color", style.text.darkened(0.5))
+			elif item.get("text_color", null) is Color:
+				label.add_theme_color_override("font_color", item["text_color"])
 			else:
 				label.add_theme_color_override("font_color", style.text)
 
