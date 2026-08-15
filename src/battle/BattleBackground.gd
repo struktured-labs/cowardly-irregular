@@ -278,6 +278,32 @@ var _has_drawn: bool = false
 var _frames_in_tree: int = 0  # Safety counter for background draw retry
 
 
+var _pulse_tween: Tween = null
+var _unrest_amplitude: float = 0.0
+
+
+## Bass-thump: the arena flinches under heavy hits (brightness dip + 2px drop, fast recovery)
+func pulse(strength: float = 0.5) -> void:
+	var s := clampf(strength, 0.0, 1.0)
+	if _pulse_tween and _pulse_tween.is_valid():
+		_pulse_tween.kill()
+	var dip := 1.0 - 0.06 * s
+	modulate = Color(dip, dip, dip)
+	position.y = 2.0 * s
+	_pulse_tween = create_tween()
+	_pulse_tween.tween_property(self, "modulate", Color.WHITE, 0.22).set_ease(Tween.EASE_OUT)
+	_pulse_tween.parallel().tween_property(self, "position:y", 0.0, 0.22).set_ease(Tween.EASE_OUT)
+
+
+## Arena unrest: slow vertical sway of the parallax layers (masterite phase 2 — the ground stops being trustworthy)
+func set_unrest(amplitude: float) -> void:
+	_unrest_amplitude = amplitude
+	if amplitude <= 0.0 and _layer_far and _layer_mid and _layer_near:
+		_layer_far.position.y = 0.0
+		_layer_mid.position.y = 0.0
+		_layer_near.position.y = 0.0
+
+
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -367,6 +393,10 @@ func _process(delta: float) -> void:
 		_layer_far.position.x = sin(_parallax_time * PARALLAX_SPEED_FAR * 0.1) * PARALLAX_RANGE * 0.3
 		_layer_mid.position.x = sin(_parallax_time * PARALLAX_SPEED_MID * 0.1) * PARALLAX_RANGE * 0.6
 		_layer_near.position.x = sin(_parallax_time * PARALLAX_SPEED_NEAR * 0.1) * PARALLAX_RANGE
+		if _unrest_amplitude > 0.0:
+			_layer_far.position.y = sin(_parallax_time * 0.9) * _unrest_amplitude * 0.3
+			_layer_mid.position.y = sin(_parallax_time * 0.9 + 0.7) * _unrest_amplitude * 0.6
+			_layer_near.position.y = sin(_parallax_time * 0.9 + 1.4) * _unrest_amplitude
 
 	if _sky_rect and is_instance_valid(_sky_rect):
 		var pulse = sin(_parallax_time * 0.4) * 0.025

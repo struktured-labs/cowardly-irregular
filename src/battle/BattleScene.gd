@@ -530,6 +530,7 @@ func _create_battle_background() -> void:
 	_battle_background.set_terrain_from_string(_current_terrain)
 	# Give EffectSystem a reference so it can tint the background during spells
 	EffectSystem.battle_background = _battle_background
+	BattleJuice.env_background = _battle_background
 
 	# Mode 7 perspective floor overlay — sits BEHIND sprites but on top of the
 	# painted background so the characters appear to be standing on a tilted
@@ -2505,6 +2506,8 @@ func _on_battle_started() -> void:
 				print("[MUSIC] Playing %s terrain battle theme" % _current_terrain)
 	_is_danger_music = false
 	_masterite_phase2_swapped = false
+	if _battle_background and is_instance_valid(_battle_background):
+		_battle_background.set_unrest(0.0)
 	## Tick 428: reset per-battle boss-dialogue latches.
 	_boss_low_hp_spoken = false
 	_boss_defeat_spoken = false
@@ -3640,22 +3643,7 @@ func _apply_hitstop(attacker_sprite: Node2D, target_sprite: Node2D) -> void:
 
 
 func _spawn_lunge_ghost(src: AnimatedSprite2D) -> void:
-	if not is_instance_valid(src) or src.sprite_frames == null or not src.sprite_frames.has_animation(src.animation):
-		return
-	var tex := src.sprite_frames.get_frame_texture(src.animation, src.frame)
-	if tex == null:
-		return
-	var ghost := Sprite2D.new()
-	ghost.texture = tex
-	ghost.global_position = src.global_position
-	ghost.scale = src.scale
-	ghost.flip_h = src.flip_h
-	ghost.z_index = src.z_index - 1
-	ghost.modulate = Color(1, 1, 1, 0.45)
-	add_child(ghost)
-	var gt := create_tween()
-	gt.tween_property(ghost, "modulate:a", 0.0, 0.18)
-	gt.tween_callback(ghost.queue_free)
+	BattleJuice.spawn_ghost(src)
 
 
 func _apply_hit_knockback(sprite: Node2D, direction: float = 1.0) -> void:
@@ -3950,6 +3938,9 @@ func _check_masterite_phase2_music_swap() -> void:
 			_base_music_track = track
 			SoundManager.play_music(track)
 			_masterite_phase2_swapped = true
+			# Phase 2: the arena itself stops being trustworthy (struktured "try it" 2026-08-14)
+			if _battle_background and is_instance_valid(_battle_background) and BattleJuice.flag("arena_unrest"):
+				_battle_background.set_unrest(3.0)
 			return
 
 

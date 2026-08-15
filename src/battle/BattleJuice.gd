@@ -9,6 +9,14 @@ const BURST_POOL_SIZE := 3
 ## In-scene nodes registered by BattleScene for the current battle; null outside battle
 var camera_rig: BattleCameraRig = null
 var burst_host: Node = null
+var env_background: Node = null
+
+## Per-feature bells-and-whistles registry (struktured: "ridiculous menu of toggles") — unknown names default TRUE so new juice works before the menu knows it; accessibility masters (reduce_flashes/screen_shake_enabled) rank above flags
+var flags: Dictionary = {}
+
+
+func flag(feature: String) -> bool:
+	return bool(flags.get(feature, true))
 
 var _burst_pool: Array = []
 
@@ -27,6 +35,9 @@ static func presentation_tier(time_scale: float = Engine.time_scale, turbo: bool
 func add_trauma(amount: float, dir: Vector2 = Vector2.ZERO, sustain: float = 0.0) -> void:
 	if camera_rig:
 		camera_rig.add_trauma(amount, dir, sustain)
+	# Heavy hits thump the arena itself (bass-thump pulse; struktured "try it" 2026-08-14)
+	if amount >= 0.3 and env_background and is_instance_valid(env_background) and flag("env_pulse") and presentation_tier() != Tier.OFF:
+		env_background.pulse(amount)
 
 
 func punch_zoom(pivot: Vector2, strength: float = 0.03, duration: float = 0.14) -> void:
@@ -107,6 +118,26 @@ func spawn_burst(pos: Vector2, dir: Vector2, count: int, color: Color, speed: fl
 	emitter.restart()
 
 
+## Ghost/afterimage of a sprite's current frame — fades and frees itself (promoted from BattleScene for steal/lunge reuse)
+func spawn_ghost(src: AnimatedSprite2D, alpha: float = 0.45, fade: float = 0.18) -> void:
+	if not is_instance_valid(src) or src.sprite_frames == null or not src.sprite_frames.has_animation(src.animation):
+		return
+	var tex := src.sprite_frames.get_frame_texture(src.animation, src.frame)
+	if tex == null or src.get_parent() == null:
+		return
+	var ghost := Sprite2D.new()
+	ghost.texture = tex
+	ghost.global_position = src.global_position
+	ghost.scale = src.scale
+	ghost.flip_h = src.flip_h
+	ghost.z_index = src.z_index - 1
+	ghost.modulate = Color(1, 1, 1, alpha)
+	src.get_parent().add_child(ghost)
+	var gt := create_tween()
+	gt.tween_property(ghost, "modulate:a", 0.0, fade)
+	gt.tween_callback(ghost.queue_free)
+
+
 static func ensure_flash_material(sprite: CanvasItem) -> ShaderMaterial:
 	if sprite.material is ShaderMaterial and (sprite.material as ShaderMaterial).shader == FLASH_SHADER:
 		return sprite.material
@@ -153,6 +184,7 @@ func _make_burst_emitter() -> CPUParticles2D:
 func clear_battle_context() -> void:
 	camera_rig = null
 	burst_host = null
+	env_background = null
 	for e in _burst_pool:
 		if is_instance_valid(e):
 			e.queue_free()
