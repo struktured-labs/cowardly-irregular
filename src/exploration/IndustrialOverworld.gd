@@ -615,7 +615,9 @@ func _setup_transitions() -> void:
 	assembly_trans.target_spawn = "default"
 	assembly_trans.require_interaction = true
 	assembly_trans.indicator_text = "Descend into the Assembly Core"
-	assembly_trans.position = Vector2(8 * TILE_SIZE + TILE_SIZE / 2, 25 * TILE_SIZE + TILE_SIZE / 2)
+	# Tile 8 is inside solid terrain -- a body at the authored door measured BLOCKED, and no
+	# southward shift cleared it. (14,25) is the nearest anchor whose box is standable.
+	assembly_trans.position = Vector2(14 * TILE_SIZE + TILE_SIZE / 2, 25 * TILE_SIZE + TILE_SIZE / 2)
 	assembly_trans.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
 	_setup_transition_collision(assembly_trans, InteractGeometry.ENTRANCE_BOX_MODE7)
 	assembly_trans.transition_triggered.connect(_on_transition_triggered)
