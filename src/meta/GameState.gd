@@ -54,6 +54,7 @@ var text_size_scale: float = 1.0  # 0.8 | 1.0 | 1.25 | 1.5 | 2.0
 var color_blind_mode: bool = false
 var reduce_flashes: bool = false  # Accessibility: suppress full-screen battle flashes (photosensitivity)
 var screen_shake_enabled: bool = true  # Master gate for camera/screen shake effects
+var battle_fx_flags: Dictionary = {}  # Sparse per-feature juice overrides (BattleJuice.flag) — the 'ridiculous menu of toggles'
 ## Wave C: dynamic-dialogue master switch persisted to user settings. Off by
 ## default on web (no HTTP backend reachable from WASM); on by default on
 ## desktop. SettingsMenu mirrors this to LLMService.llm_enabled at runtime.

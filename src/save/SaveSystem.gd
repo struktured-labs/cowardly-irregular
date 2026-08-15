@@ -900,6 +900,7 @@ func save_settings() -> void:
 		"speed_scale_v3": true,
 		"battle_speed_index": BATTLE_SCENE_SCRIPT._battle_speed_index,
 		"show_controller_overlay": GameState.show_controller_overlay if GameState else true,
+		"battle_fx_flags": GameState.battle_fx_flags if GameState else {},
 		"master_volume": AudioServer.get_bus_volume_db(0),
 	}
 	if GameState:
@@ -1002,6 +1003,9 @@ func load_settings() -> void:
 	# Controller overlay
 	if GameState and settings.has("show_controller_overlay"):
 		GameState.show_controller_overlay = settings["show_controller_overlay"]
+
+	if GameState and settings.has("battle_fx_flags") and settings["battle_fx_flags"] is Dictionary:
+		GameState.battle_fx_flags = settings["battle_fx_flags"]
 
 	# Master volume — clamp to safe range. Pre-fix (2026-04-30) a corrupt
 	# or hand-edited settings.json could push the bus to +60 dB, instant

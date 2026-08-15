@@ -1210,7 +1210,7 @@ func _update_enemy_hp_bars() -> void:
 		var ratio = float(enemy.current_hp) / float(max(1, enemy.max_hp))
 		var target_w: float = 40.0 * ratio
 		var bar_trail: ColorRect = bars.get("bar_trail")
-		if _tier() == BattleJuice.Tier.OFF or absf(bar_fill.size.x - target_w) < 0.5:
+		if _tier() == BattleJuice.Tier.OFF or not BattleJuice.flag("chip_hp_bars") or absf(bar_fill.size.x - target_w) < 0.5:
 			bar_fill.size.x = target_w
 			if bar_trail and is_instance_valid(bar_trail):
 				bar_trail.size.x = target_w
@@ -3468,7 +3468,8 @@ func _delayed_play_hit_fx(target_anim, target_sprite) -> void:
 		var jt := _tier()
 		if jt <= BattleJuice.Tier.REDUCED:
 			BattleJuice.squash(target_sprite)
-			BattleJuice.spawn_burst(_stable_sprite_anchor(target_sprite), Vector2(kb_dir, -0.35), 12 if jt == BattleJuice.Tier.FULL else 6, Color(1.0, 0.9, 0.55))
+			if BattleJuice.flag("hit_sparks"):
+				BattleJuice.spawn_burst(_stable_sprite_anchor(target_sprite), Vector2(kb_dir, -0.35), 12 if jt == BattleJuice.Tier.FULL else 6, Color(1.0, 0.9, 0.55))
 			BattleJuice.punch_zoom(_stable_sprite_anchor(target_sprite), 0.02, 0.12)
 
 
@@ -3599,9 +3600,11 @@ func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attac
 	# PROTOTYPE (cowir-main msg 2929, cowir-sfx e33cb0d3): windup fills this 0.12s approach, which plays silent today. Asset is built to exactly 0.12s so it resolves AT contact rather than bleeding past it. play_battle is manifest-guarded — clean no-op until their branch folds. THROWAWAY: exists so struktured judges the anticipation in motion instead of judging an .ogg; delete this line and the asset if he rules no.
 	# Anticipation (FULL tier): brief pull-back so the lunge has a windup, ghost trail during the dash
 	if _tier() == BattleJuice.Tier.FULL:
-		tween.tween_property(attacker_sprite, "position", home_pos - direction * 6.0, 0.05)
-		for gi in range(3):
-			get_tree().create_timer(0.07 + 0.03 * gi).timeout.connect(_spawn_lunge_ghost.bind(attacker_sprite))
+		if BattleJuice.flag("anticipation"):
+			tween.tween_property(attacker_sprite, "position", home_pos - direction * 6.0, 0.05)
+		if BattleJuice.flag("afterimages"):
+			for gi in range(3):
+				get_tree().create_timer(0.07 + 0.03 * gi).timeout.connect(_spawn_lunge_ghost.bind(attacker_sprite))
 	tween.tween_callback(func() -> void: SoundManager.play_battle("windup_swing_med"))
 	tween.set_trans(Tween.TRANS_QUAD)
 	tween.set_ease(Tween.EASE_IN)
@@ -3628,6 +3631,8 @@ func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attac
 
 ## Fable-pass hitstop: freeze both combatants' anim playback ~70ms at contact. Visual-only (no Engine.time_scale touch — timers/music unaffected); restore is validity-guarded so mid-stop frees are safe.
 func _apply_hitstop(attacker_sprite: Node2D, target_sprite: Node2D) -> void:
+	if not BattleJuice.flag("hit_stop"):
+		return
 	var frozen: Array = []
 	for s in [attacker_sprite, target_sprite]:
 		if s is AnimatedSprite2D and is_instance_valid(s):
@@ -4226,7 +4231,7 @@ func _on_enemy_died(enemy_idx: int) -> void:
 			if is_instance_valid(sprite):
 				sprite.set_meta("dying", true)
 				var death_tier := _tier()
-				var has_dissolve: bool = sprite.material is ShaderMaterial and death_tier != BattleJuice.Tier.OFF
+				var has_dissolve: bool = sprite.material is ShaderMaterial and death_tier != BattleJuice.Tier.OFF and BattleJuice.flag("death_dissolve")
 				if has_dissolve and death_tier <= BattleJuice.Tier.REDUCED:
 					BattleJuice.spawn_burst(_stable_sprite_anchor(sprite), Vector2(0, -0.5), 14, Color(1.0, 0.82, 0.45))
 					BattleJuice.hitstop([sprite], 0.12)
