@@ -835,6 +835,13 @@ func duck_music_for_kill() -> void:
 	if _kill_duck_tween and _kill_duck_tween.is_valid():
 		_kill_duck_tween.kill()
 	_kill_duck_tween = create_tween()
+	# Tween durations are ENGINE time, but the music this ducks runs on the mixer clock and
+	# does not slow with battle speed. Bare, the 0.4s release costs 1.6s of wall clock at the
+	# default 1x rung (engine 0.25) — a dropout, not the beat that was asked for. Ignoring the
+	# time scale is the right primitive here rather than a `* time_scale` compensation, which
+	# samples the scale ONCE at creation and so latches a hitlag's 0.1 if a kill lands inside
+	# a crit window (cowir-battle measured that fragility, 2026-08-15).
+	_kill_duck_tween.set_ignore_time_scale(true)
 	_kill_duck_tween.tween_property(amp, "volume_db", KILL_DUCK_TARGET_DB, KILL_DUCK_ATTACK_TIME)
 	_kill_duck_tween.tween_property(amp, "volume_db", 0.0, KILL_DUCK_RELEASE_TIME)
 
