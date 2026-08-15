@@ -4220,7 +4220,7 @@ func _on_enemy_died(enemy_idx: int) -> void:
 	_command_menu.invalidate_alive_cache()
 	# enemy_death moved INTO the death tween (after the flash): fired here it started first and the killing blow's hit sound stomped it on the shared _battle_player — the scorch was never audible (struktured 2026-08-15).
 	# The duck stays HERE rather than moving with the cue: it writes a bus effect, not a player, so the stomping that motivated that move cannot reach it, and punctuation should land on the death event rather than on the flash.
-	if _tier() == BattleJuice.Tier.FULL and BattleJuice.flag("audio_kill_duck"):
+	if _intent_tier() == BattleJuice.Tier.FULL and BattleJuice.flag("audio_kill_duck"):
 		SoundManager.duck_music_for_kill()
 	if enemy_idx < test_enemies.size():
 		var enemy = test_enemies[enemy_idx]
@@ -4496,7 +4496,7 @@ func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: St
 	var weapon_type = EquipmentSystem.get_weapon_type(attacker)
 	SoundManager.play_attack_hit(weapon_type, is_crit)
 	# Sub-layer UNDER the crit cue, which already carries its own pitch/echo identity — this adds body, it does not re-hit the transient.
-	if is_crit and _tier() == BattleJuice.Tier.FULL and BattleJuice.flag("audio_crit_thud"):
+	if is_crit and _intent_tier() == BattleJuice.Tier.FULL and BattleJuice.flag("audio_crit_thud"):
 		SoundManager.play_crit_thud()
 	# msg 2796 cycle 20: layer the elemental strike voice ON TOP of the weapon hit, per cowir-sfx's shape — the sword still sounds like a sword, the element rides over it. Only reachable on basic attacks: the `_current_ability_id != ""` early-return above means an ability already played its own cast sound, so a Fire spell won't also fire strike_fire.
 	var weapon_element: String = _weapon_element_for(attacker)
@@ -4597,6 +4597,12 @@ func _on_status_tick_heal(amount: int, _source: String, target: Combatant) -> vo
 	if not is_instance_valid(target) or not is_instance_valid(_results_display):
 		return
 	_results_display.on_healing_done(target, amount)
+
+
+## Tier from the player's CHOSEN speed. Engine.time_scale has TWO writers with different meanings — the speed ladder (intent) and hitlag (an 80ms presentation effect writing 0.1) — so a live read during a crit reports FULL at every ladder speed. _hitlag_base_scale is the pre-hitlag value, which is the one a "how much presentation does the player want" question actually means.
+func _intent_tier() -> BattleJuice.Tier:
+	var scale: float = _hitlag_base_scale if _hitlag_depth > 0 else Engine.time_scale
+	return BattleJuice.presentation_tier(scale, turbo_mode, autogrind_console_mode)
 
 
 ## Depth arithmetic only — split from _begin_hitlag so the nesting can be tested without a live tree.
