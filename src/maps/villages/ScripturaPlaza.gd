@@ -78,8 +78,8 @@ func _generate_map() -> void:
 	spawn_points["entrance"] = Vector2(15 * TILE_SIZE,17 * TILE_SIZE)
 	spawn_points["default"] = spawn_points["entrance"]
 	# Interiors return here (guild_exit / bookshop_exit) just below their doors.
-	spawn_points["guild_exit"] = Vector2(7 * TILE_SIZE,11 * TILE_SIZE)
-	spawn_points["bookshop_exit"] = Vector2(22 * TILE_SIZE,11 * TILE_SIZE)
+	spawn_points["guild_exit"] = Vector2(7 * TILE_SIZE + TILE_SIZE / 2, 11 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["bookshop_exit"] = Vector2(22 * TILE_SIZE + TILE_SIZE / 2, 11 * TILE_SIZE + TILE_SIZE / 2)
 
 
 func _char_to_tile_type(ch: String) -> int:

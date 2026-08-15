@@ -100,13 +100,13 @@ func _generate_map() -> void:
 	spawn_points["entrance"] = Vector2(18 * TILE_SIZE,20 * TILE_SIZE)
 	spawn_points["default"] = spawn_points["entrance"]
 	# Bar exit spawn (in front of The Dancing Tonberry)
-	spawn_points["bar_exit"] = Vector2(29 * TILE_SIZE,18 * TILE_SIZE)
+	spawn_points["bar_exit"] = Vector2(29 * TILE_SIZE + TILE_SIZE / 2, 18 * TILE_SIZE + TILE_SIZE / 2)
 	# Chapel exit spawn (in front of the H cluster at columns 3-5, rows 13-15)
-	spawn_points["chapel_exit"] = Vector2(7 * TILE_SIZE,18 * TILE_SIZE)
+	spawn_points["chapel_exit"] = Vector2(7 * TILE_SIZE + TILE_SIZE / 2, 18 * TILE_SIZE + TILE_SIZE / 2)
 	# Library exit spawn (in front of the top-left H cluster at cols 3-5, rows 2-4)
-	spawn_points["library_exit"] = Vector2(7 * TILE_SIZE,7 * TILE_SIZE)
+	spawn_points["library_exit"] = Vector2(7 * TILE_SIZE + TILE_SIZE / 2, 7 * TILE_SIZE + TILE_SIZE / 2)
 	# Cartographer exit spawn (in front of the top-right PPP cluster at cols 22-24, rows 2-4)
-	spawn_points["cartographer_exit"] = Vector2(26 * TILE_SIZE,7 * TILE_SIZE)
+	spawn_points["cartographer_exit"] = Vector2(26 * TILE_SIZE + TILE_SIZE / 2, 7 * TILE_SIZE + TILE_SIZE / 2)
 
 
 func _char_to_tile_type(char: String) -> int:
