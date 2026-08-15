@@ -27,10 +27,19 @@ const BS_PATH: String = "res://src/battle/BattleScene.gd"
 func test_spawn_effect_signature_includes_weapon_type() -> void:
 	# The seam for callers. Position is unchanged so old callers keep
 	# working (default is empty string).
+	# Pins the RELATIONSHIP (weapon_type defaulted, immediately after power) rather than the
+	# whole signature — the full-string form also forbade correct additive params (tint, 2026-08-14).
+	# Scoped to spawn_effect's OWN line: a whole-file search is satisfied by
+	# spawn_effect_on_target, which carries the identical param tail.
 	var src: String = FileAccess.get_file_as_string(ES_PATH)
-	assert_string_contains(src,
-		"func spawn_effect(effect_type: EffectType, position: Vector2, on_complete: Callable = Callable(), power: float = 1.0, weapon_type: String = \"\") -> void:",
-		"spawn_effect must expose weapon_type as a defaulted trailing param")
+	var sig: String = ""
+	for line in src.split("\n"):
+		if line.begins_with("func spawn_effect("):
+			sig = line
+			break
+	assert_ne(sig, "", "CONTROL: spawn_effect's declaration must be found, or every assert below is vacuous")
+	assert_string_contains(sig, "power: float = 1.0, weapon_type: String = \"\"",
+		"weapon_type must stay defaulted and immediately after power, or positional callers silently shift")
 
 
 func test_spawn_effect_on_target_signature_includes_weapon_type() -> void:

@@ -1922,7 +1922,9 @@ func _execute_ability(ability_id: String, target: Combatant, target_all: bool = 
 	BattleManager.player_use_ability(ability_id, targets)
 
 
-func _spawn_ability_effects(ability_id: String, targets: Array) -> void:
+## Accepts the ability DICT (preferred) or a bare id — the dict is what carries element/vfx into
+## AbilityVFX, and passing only the id was why 270 of 289 abilities rendered a generic swing.
+func _spawn_ability_effects(ability: Variant, targets: Array) -> void:
 	"""Spawn visual effects for an ability on all targets"""
 	var canvas_transform = get_viewport().get_canvas_transform()
 
@@ -1948,7 +1950,25 @@ func _spawn_ability_effects(ability_id: String, targets: Array) -> void:
 				target_pos = sprite.global_position
 
 		if target_pos != Vector2.ZERO:
-			EffectSystem.spawn_ability_effect(ability_id, target_pos)
+			EffectSystem.spawn_ability_effect(ability, target_pos)
+
+
+## Cast tell: a converge-ring under the caster plus a brief element-tinted flash, fired the frame
+## the ability starts. Fire-and-forget by design — an await here would enter the action pipeline
+## and shift the execution watchdog's cadence.
+func _spawn_cast_anticipation(caster_sprite: Node2D, ability: Variant) -> void:
+	if not is_instance_valid(caster_sprite):
+		return
+	## Delegates to _tier() rather than re-deriving the three-flag triple — a second copy is
+	## how the five existing gate sites drift apart.
+	var tier: int = _tier()
+	if tier != BattleJuice.Tier.FULL and tier != BattleJuice.Tier.REDUCED:
+		return
+	var data: Dictionary = ability if ability is Dictionary else {"id": str(ability)}
+	var vfx: Dictionary = AbilityVFX.resolve(data)
+	var color: Color = vfx["color"] if vfx["color"] is Color else Color(1.6, 1.6, 1.8)
+	BattleJuice.spawn_burst(caster_sprite.global_position, Vector2.ZERO, 8, color, -140.0)
+	BattleJuice.flash_sprite(caster_sprite, color * 0.5, 0.0, 0.15)
 
 
 func _play_ability_animation(anim_type: String, animator: BattleAnimatorClass = null) -> void:
@@ -3216,12 +3236,13 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 					_animate_melee_attack(attacker_sprite, target_sprite, animator, target_animator)
 				else:
 					_play_ability_animation(anim_type, animator)
-					_spawn_ability_effects(ability_id, targets)
+					_spawn_ability_effects(ability, targets)
 			elif full_render_this:
 				_play_ability_full_render(combatant, attacker_sprite, animator, ability, targets)
 			else:
+				_spawn_cast_anticipation(attacker_sprite, ability)
 				_play_ability_animation(anim_type, animator)
-				_spawn_ability_effects(ability_id, targets)
+				_spawn_ability_effects(ability, targets)
 		"advance":
 			pass  # Advance sub-actions handle their own animations
 		"item":
