@@ -291,7 +291,92 @@ func play_backstab(on_complete: Callable = Callable()) -> void:
 
 
 func play_steal(on_complete: Callable = Callable()) -> void:
-	"""Quick dash in and out animation for stealing"""
+	"""Stealth-travel steal (struktured 2026-08-14: 'something stealthy to travel to the monster and back')"""
+	if not sprite:
+		if on_complete.is_valid():
+			on_complete.call()
+		return
+	if not BattleJuice.flag("steal_sauce") or BattleJuice.presentation_tier() == BattleJuice.Tier.OFF:
+		_play_steal_basic(on_complete)
+		return
+	_play_stealth_travel(on_complete, false)
+
+
+func play_mug(on_complete: Callable = Callable()) -> void:
+	"""Mug = the loud cousin: same stealth travel plus spin and a gold grab-flash"""
+	if not sprite:
+		if on_complete.is_valid():
+			on_complete.call()
+		return
+	if not BattleJuice.flag("steal_sauce") or BattleJuice.presentation_tier() == BattleJuice.Tier.OFF:
+		_play_mug_basic(on_complete)
+		return
+	_play_stealth_travel(on_complete, true)
+
+
+## Travel target: the nearest enemy's column via the battle scene (BattleJuice.burst_host); fixed hop when unavailable
+func _stealth_apex() -> Vector2:
+	var scene = BattleJuice.burst_host
+	if scene and is_instance_valid(scene) and "enemy_sprite_nodes" in scene:
+		var best: Node2D = null
+		var best_d := INF
+		for e in scene.enemy_sprite_nodes:
+			if e and is_instance_valid(e) and e.visible:
+				var d: float = absf(e.global_position.x - sprite.global_position.x)
+				if d > 1.0 and d < best_d:
+					best_d = d
+					best = e
+		if best:
+			return sprite.position + Vector2(best.global_position.x - sprite.global_position.x + 40.0, 0)
+	return sprite.position + Vector2(-90, 0)
+
+
+func _play_stealth_travel(on_complete: Callable, aggressive: bool) -> void:
+	if _current_tween and _current_tween.is_valid():
+		_current_tween.kill()
+	var original_pos = sprite.position
+	var original_mod = sprite.modulate
+	var apex := _stealth_apex()
+	if sprite.sprite_frames and sprite.sprite_frames.has_animation("attack"):
+		sprite.play("attack")
+	_current_tween = create_tween()
+	var tween = _current_tween
+	# Stealth engage: go translucent, ghosts trail the dash
+	tween.tween_property(sprite, "modulate:a", 0.4, 0.05)
+	tween.tween_callback(func() -> void:
+		for gi in range(3):
+			if sprite and is_instance_valid(sprite):
+				sprite.get_tree().create_timer(0.03 + 0.035 * gi).timeout.connect(BattleJuice.spawn_ghost.bind(sprite)))
+	tween.set_trans(Tween.TRANS_EXPO)
+	tween.set_ease(Tween.EASE_IN)
+	tween.tween_property(sprite, "position", apex, 0.14)
+	if aggressive:
+		tween.parallel().tween_property(sprite, "rotation", 0.3, 0.14)
+	# The grab: vanish-blink + swipe burst at the mark
+	tween.tween_callback(func() -> void:
+		if sprite and is_instance_valid(sprite):
+			BattleJuice.spawn_burst(sprite.global_position + Vector2(-24, -8), Vector2(-0.6, -0.4), 8, Color(0.75, 0.95, 1.0), 300.0))
+	tween.tween_property(sprite, "modulate:a", 0.12, 0.04)
+	tween.tween_property(sprite, "modulate:a", 0.4, 0.05)
+	if aggressive:
+		tween.tween_property(sprite, "modulate", Color(1.25, 1.05, 0.7, 0.4), 0.05)
+	# Expo dash home, re-materialize, loot glint
+	tween.set_ease(Tween.EASE_OUT)
+	tween.tween_property(sprite, "position", original_pos, 0.16)
+	if aggressive:
+		tween.parallel().tween_property(sprite, "rotation", 0.0, 0.16)
+	tween.tween_property(sprite, "modulate", original_mod, 0.06)
+	tween.tween_callback(func() -> void:
+		if sprite and is_instance_valid(sprite):
+			BattleJuice.spawn_burst(sprite.global_position + Vector2(0, -20), Vector2(0, -1), 6, Color(1.0, 0.85, 0.3), 160.0)
+		if sprite and sprite.sprite_frames and sprite.sprite_frames.has_animation("idle"):
+			sprite.play("idle")
+		if on_complete.is_valid():
+			on_complete.call())
+
+
+func _play_steal_basic(on_complete: Callable = Callable()) -> void:
+	"""Legacy quick dash — the OFF-tier / flag-off fallback"""
 	if not sprite:
 		if on_complete.is_valid():
 			on_complete.call()
@@ -330,8 +415,8 @@ func play_steal(on_complete: Callable = Callable()) -> void:
 	)
 
 
-func play_mug(on_complete: Callable = Callable()) -> void:
-	"""Combination attack + steal animation"""
+func _play_mug_basic(on_complete: Callable = Callable()) -> void:
+	"""Legacy dash+spin — the OFF-tier / flag-off fallback"""
 	if not sprite:
 		if on_complete.is_valid():
 			on_complete.call()

@@ -14,6 +14,7 @@ const HybridSpriteLoaderClass = preload("res://src/battle/sprites/HybridSpriteLo
 const BattleEnemySpawnerClass = preload("res://src/battle/BattleEnemySpawner.gd")
 const BattleUIManagerClass = preload("res://src/battle/BattleUIManager.gd")
 const BattleCommandMenuClass = preload("res://src/battle/BattleCommandMenu.gd")
+const BattleCameraRigClass = preload("res://src/battle/BattleCameraRig.gd")
 const BattleResultsDisplayClass = preload("res://src/battle/BattleResultsDisplay.gd")
 
 ## Base display height for party sprites. Aseprite frames are ground truth —
@@ -249,6 +250,7 @@ var _mode7_floor_enabled: bool = false
 ## Composed subsystems (extracted from BattleScene)
 var _enemy_spawner: BattleEnemySpawnerClass = null
 var _ui_manager: BattleUIManagerClass = null
+var _camera_rig: BattleCameraRigClass = null
 var _command_menu: BattleCommandMenuClass = null
 var _results_display: BattleResultsDisplayClass = null
 
@@ -307,6 +309,12 @@ func _ready() -> void:
 	_battle_cam.zoom = Vector2(1.0, 1.0)
 	add_child(_battle_cam)
 	_battle_cam.make_current()
+	# Register the juice rig as the camera's single writer for this battle (unregistered in _exit_tree)
+	_camera_rig = BattleCameraRigClass.new()
+	add_child(_camera_rig)
+	_camera_rig.setup(_battle_cam)
+	BattleJuice.camera_rig = _camera_rig
+	BattleJuice.burst_host = self
 	var viewport = get_viewport()
 	if viewport:
 		var current_camera = viewport.get_camera_2d()
@@ -437,6 +445,7 @@ func _ready() -> void:
 
 func _exit_tree() -> void:
 	"""Cleanup signal connections when scene is freed"""
+	BattleJuice.clear_battle_context()
 	# Disconnect from BattleManager signals to prevent memory leaks
 	if BattleManager.battle_started.is_connected(_on_battle_started):
 		BattleManager.battle_started.disconnect(_on_battle_started)
@@ -521,6 +530,7 @@ func _create_battle_background() -> void:
 	_battle_background.set_terrain_from_string(_current_terrain)
 	# Give EffectSystem a reference so it can tint the background during spells
 	EffectSystem.battle_background = _battle_background
+	BattleJuice.env_background = _battle_background
 
 	# Mode 7 perspective floor overlay — sits BEHIND sprites but on top of the
 	# painted background so the characters appear to be standing on a tilted
@@ -944,6 +954,7 @@ func _create_battle_sprites() -> void:
 		var armor_id = member.equipped_armor if member.equipped_armor else ""
 		var accessory_id = member.equipped_accessory if member.equipped_accessory else ""
 		var custom = member.get("customization") if "customization" in member else null
+		BattleJuice.ensure_flash_material(sprite)
 		sprite.sprite_frames = HybridSpriteLoaderClass.load_sprite_frames(
 			custom, job_id, sec_job_id, weapon_id, armor_id, accessory_id)
 		# Per-job display height targets (in pixels) for battle sprites.
@@ -968,6 +979,7 @@ func _create_battle_sprites() -> void:
 		# Constant uniform bump — applies to artist + procedural paths alike.
 		_sprite_scale *= SPRITE_SCALE_BUMP
 		sprite.scale = Vector2(_sprite_scale, _sprite_scale)
+		sprite.set_meta("base_scale", sprite.scale)
 		sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 
 		# Position based on current formation
@@ -1010,6 +1022,7 @@ func _create_battle_sprites() -> void:
 		var sprite = AnimatedSprite2D.new()
 		# Choose sprite based on monster type ID stored in enemy
 		var monster_id = enemy.get_meta("monster_type", "slime")
+		BattleJuice.ensure_flash_material(sprite)
 		sprite.sprite_frames = _get_monster_sprite_frames(monster_id)
 
 		# Depth stagger: index 0 is closer (lower/larger), higher indices are farther
@@ -1038,6 +1051,7 @@ func _create_battle_sprites() -> void:
 		sprite.position = base_enemy_pos
 		sprite.set_meta("home_position", base_enemy_pos)  # 2026-07-14: attack tweens read this so a hit landing while target is mid-return still aims for the settled home
 		sprite.scale = Vector2(depth_scale * size_bump, depth_scale * size_bump)
+		sprite.set_meta("base_scale", sprite.scale)
 		_enemy_base_positions.append(base_enemy_pos)
 
 		sprite.play("idle")
@@ -1166,6 +1180,14 @@ func _create_enemy_hp_bar(enemy: Combatant, sprite: AnimatedSprite2D) -> void:
 	bar_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	sprite.add_child(bar_bg)
 
+	# Chip-damage trail: pale bar that lags the fill so the lost chunk stays visible for a beat
+	var bar_trail = ColorRect.new()
+	bar_trail.color = Color(1.0, 0.72, 0.5, 0.65)
+	bar_trail.size = Vector2(40, 4)
+	bar_trail.position = Vector2(-20, 52)
+	bar_trail.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	sprite.add_child(bar_trail)
+
 	var bar_fill = ColorRect.new()
 	bar_fill.color = Color(0.8, 0.2, 0.2)  # Red for enemies
 	bar_fill.size = Vector2(40, 4)
@@ -1173,7 +1195,7 @@ func _create_enemy_hp_bar(enemy: Combatant, sprite: AnimatedSprite2D) -> void:
 	bar_fill.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	sprite.add_child(bar_fill)
 
-	_enemy_hp_bars[enemy] = {"bar_bg": bar_bg, "bar_fill": bar_fill}
+	_enemy_hp_bars[enemy] = {"bar_bg": bar_bg, "bar_trail": bar_trail, "bar_fill": bar_fill}
 
 
 func _update_enemy_hp_bars() -> void:
@@ -1186,7 +1208,27 @@ func _update_enemy_hp_bars() -> void:
 		if not bar_fill or not is_instance_valid(bar_fill):
 			continue
 		var ratio = float(enemy.current_hp) / float(max(1, enemy.max_hp))
-		bar_fill.size.x = 40.0 * ratio
+		var target_w: float = 40.0 * ratio
+		var bar_trail: ColorRect = bars.get("bar_trail")
+		if _tier() == BattleJuice.Tier.OFF or absf(bar_fill.size.x - target_w) < 0.5:
+			bar_fill.size.x = target_w
+			if bar_trail and is_instance_valid(bar_trail):
+				bar_trail.size.x = target_w
+		else:
+			var ft = bars.get("fill_tween")
+			if ft is Tween and ft.is_valid():
+				ft.kill()
+			var t1 = create_tween()
+			t1.tween_property(bar_fill, "size:x", target_w, 0.15)
+			bars["fill_tween"] = t1
+			if bar_trail and is_instance_valid(bar_trail):
+				var tt = bars.get("trail_tween")
+				if tt is Tween and tt.is_valid():
+					tt.kill()
+				var t2 = create_tween()
+				t2.tween_interval(0.30)
+				t2.tween_property(bar_trail, "size:x", target_w, 0.35)
+				bars["trail_tween"] = t2
 		# Tick 230: floating enemy HP bar via AccessibilityPalette — color-blind mode swaps green/red to cyan/magenta, matching the SaveScreen + StatusMenu HP bar palette.
 		if ratio > 0.5:
 			bar_fill.color = AccessibilityPalette.hp_high()
@@ -2464,6 +2506,8 @@ func _on_battle_started() -> void:
 				print("[MUSIC] Playing %s terrain battle theme" % _current_terrain)
 	_is_danger_music = false
 	_masterite_phase2_swapped = false
+	if _battle_background and is_instance_valid(_battle_background):
+		_battle_background.set_unrest(0.0)
 	## Tick 428: reset per-battle boss-dialogue latches.
 	_boss_low_hp_spoken = false
 	_boss_defeat_spoken = false
@@ -3421,6 +3465,11 @@ func _delayed_play_hit_fx(target_anim, target_sprite) -> void:
 		var kb_dir = -1.0 if enemy_sprite_nodes.has(target_sprite) else 1.0
 		_apply_hit_knockback(target_sprite, kb_dir)
 		_apply_hit_flash(target_sprite)
+		var jt := _tier()
+		if jt <= BattleJuice.Tier.REDUCED:
+			BattleJuice.squash(target_sprite)
+			BattleJuice.spawn_burst(_stable_sprite_anchor(target_sprite), Vector2(kb_dir, -0.35), 12 if jt == BattleJuice.Tier.FULL else 6, Color(1.0, 0.9, 0.55))
+			BattleJuice.punch_zoom(_stable_sprite_anchor(target_sprite), 0.02, 0.12)
 
 
 func _delayed_play_victory(animator) -> void:
@@ -3450,16 +3499,33 @@ func _snap_party_sprites_home() -> void:
 ## rendering wrong for a full turn. Covers party AND enemies since
 ## monsters can also step out and get interrupted.
 func _on_round_started_snap_home(_round_num: int) -> void:
+	SoundManager.audio_liveness_check()
 	_snap_party_sprites_home()
+	for sprite in party_sprite_nodes:
+		_reset_presentation_state(sprite)
 	for i in range(enemy_sprite_nodes.size()):
 		var sprite = enemy_sprite_nodes[i]
-		if not is_instance_valid(sprite):
+		if not is_instance_valid(sprite) or sprite.get_meta("dying", false):
 			continue
+		_reset_presentation_state(sprite)
 		if sprite.has_meta("home_position"):
 			var home = sprite.get_meta("home_position")
 			if sprite.position.distance_to(home) > 20:
 				var tween = create_tween()
 				tween.tween_property(sprite, "position", home, 0.15).set_trans(Tween.TRANS_CUBIC)
+
+
+## Round-boundary presentation reset — every juice tween (squash/hitstop/flash/dissolve) is interruptible, so restore the canonical state each round
+func _reset_presentation_state(sprite: Node2D) -> void:
+	if not is_instance_valid(sprite):
+		return
+	if sprite.has_meta("base_scale"):
+		sprite.scale = sprite.get_meta("base_scale")
+	if sprite is AnimatedSprite2D:
+		sprite.speed_scale = 1.0
+	if sprite.material is ShaderMaterial:
+		sprite.material.set_shader_parameter("flash_amount", 0.0)
+		sprite.material.set_shader_parameter("dissolve_amount", 0.0)
 
 
 func _try_play_formation_sfx(formation_key: String) -> bool:
@@ -3531,7 +3597,12 @@ func _animate_melee_attack(attacker_sprite: Node2D, target_sprite: Node2D, attac
 
 	# Approach: accelerate INTO contact (EASE_IN) — committed weight, not a drift.
 	# PROTOTYPE (cowir-main msg 2929, cowir-sfx e33cb0d3): windup fills this 0.12s approach, which plays silent today. Asset is built to exactly 0.12s so it resolves AT contact rather than bleeding past it. play_battle is manifest-guarded — clean no-op until their branch folds. THROWAWAY: exists so struktured judges the anticipation in motion instead of judging an .ogg; delete this line and the asset if he rules no.
-	SoundManager.play_battle("windup_swing_med")
+	# Anticipation (FULL tier): brief pull-back so the lunge has a windup, ghost trail during the dash
+	if _tier() == BattleJuice.Tier.FULL:
+		tween.tween_property(attacker_sprite, "position", home_pos - direction * 6.0, 0.05)
+		for gi in range(3):
+			get_tree().create_timer(0.07 + 0.03 * gi).timeout.connect(_spawn_lunge_ghost.bind(attacker_sprite))
+	tween.tween_callback(func() -> void: SoundManager.play_battle("windup_swing_med"))
 	tween.set_trans(Tween.TRANS_QUAD)
 	tween.set_ease(Tween.EASE_IN)
 	tween.tween_property(attacker_sprite, "position", attack_pos, 0.12)
@@ -3571,22 +3642,34 @@ func _apply_hitstop(attacker_sprite: Node2D, target_sprite: Node2D) -> void:
 	, CONNECT_ONE_SHOT)
 
 
+func _spawn_lunge_ghost(src: AnimatedSprite2D) -> void:
+	BattleJuice.spawn_ghost(src)
+
+
 func _apply_hit_knockback(sprite: Node2D, direction: float = 1.0) -> void:
 	if not is_instance_valid(sprite):
 		return
 	var original_x = sprite.position.x
+	var original_y = sprite.position.y
 	var knockback_x = original_x + (6.0 * direction)
+	# Vertical pop reads as weight; x-only knockback reads as a slide
+	var pop: float = 4.0 if _tier() <= BattleJuice.Tier.REDUCED else 0.0
 	var tween = create_tween()
 	tween.tween_property(sprite, "position:x", knockback_x, 0.05)
+	if pop > 0.0:
+		tween.parallel().tween_property(sprite, "position:y", original_y - pop, 0.05)
 	tween.tween_property(sprite, "position:x", original_x, 0.15).set_ease(Tween.EASE_OUT)
+	if pop > 0.0:
+		tween.parallel().tween_property(sprite, "position:y", original_y, 0.15).set_ease(Tween.EASE_OUT)
+
+
+func _tier() -> BattleJuice.Tier:
+	return BattleJuice.presentation_tier(Engine.time_scale, turbo_mode, autogrind_console_mode)
 
 
 func _apply_hit_flash(sprite: Node2D) -> void:
-	if not is_instance_valid(sprite):
-		return
-	sprite.modulate = Color(3.0, 3.0, 3.0, 1.0)
-	var tween = create_tween()
-	tween.tween_property(sprite, "modulate", Color.WHITE, 0.12)
+	# Delegates to the shared shader flash (true white; modulate fallback for material-less sprites)
+	BattleJuice.flash_sprite(sprite)
 
 
 ## msg 2787 cycle 16 — weakness-hit visuals. Struktured: "if you hit monsters with weaknesses, they should have very specific palette swaps or reactions or special frames to indicate it hurt more than usual." Cut 1 (engine, no per-sheet art): on elemental_mod > 1.0, over-flash the target in the ELEMENT color (deeper hue + longer settle than white hit flash), and bigger knockback so the hit LANDS. Cut 2 (per-sheet special frames) is a cowir-sprites follow-up if this isn't enough.
@@ -3627,10 +3710,16 @@ func _apply_weakness_hit_knockback(sprite: Node2D, direction: float = 1.0, eleme
 	# Regular knockback is 6.0 px. Weakness escalates to 12-16 depending on the mod (1.5x → 12, 2.0x → 16). Capped so an omega-weakness (uncommon but authored elsewhere) doesn't rocket the sprite off-screen.
 	var kb_magnitude: float = clampf(6.0 + 12.0 * (elemental_mod - 1.0), 6.0, 16.0)
 	var original_x = sprite.position.x
+	var original_y = sprite.position.y
 	var knockback_x = original_x + (kb_magnitude * direction)
+	var pop: float = 7.0 if _tier() <= BattleJuice.Tier.REDUCED else 0.0
 	var tween = create_tween()
 	tween.tween_property(sprite, "position:x", knockback_x, 0.08).set_ease(Tween.EASE_OUT)
+	if pop > 0.0:
+		tween.parallel().tween_property(sprite, "position:y", original_y - pop, 0.08).set_ease(Tween.EASE_OUT)
 	tween.tween_property(sprite, "position:x", original_x, 0.22).set_ease(Tween.EASE_OUT)
+	if pop > 0.0:
+		tween.parallel().tween_property(sprite, "position:y", original_y, 0.22).set_ease(Tween.EASE_OUT)
 
 
 func _get_combatant_sprite(combatant: Combatant) -> Node2D:
@@ -3849,6 +3938,9 @@ func _check_masterite_phase2_music_swap() -> void:
 			_base_music_track = track
 			SoundManager.play_music(track)
 			_masterite_phase2_swapped = true
+			# Phase 2: the arena itself stops being trustworthy (struktured "try it" 2026-08-14)
+			if _battle_background and is_instance_valid(_battle_background) and BattleJuice.flag("arena_unrest"):
+				_battle_background.set_unrest(3.0)
 			return
 
 
@@ -4130,18 +4222,27 @@ func _on_enemy_died(enemy_idx: int) -> void:
 			var sprite = enemy_sprite_nodes[enemy_idx]
 			# Play defeat animation
 			animator.play_defeat()
-			# FF-style dissolve: flash white, flicker, then vanish
+			# Death moment: shader pixel-dissolve + burst + hold; FF-flicker kept as the material-less/OFF fallback
 			if is_instance_valid(sprite):
+				sprite.set_meta("dying", true)
+				var death_tier := _tier()
+				var has_dissolve: bool = sprite.material is ShaderMaterial and death_tier != BattleJuice.Tier.OFF
+				if has_dissolve and death_tier <= BattleJuice.Tier.REDUCED:
+					BattleJuice.spawn_burst(_stable_sprite_anchor(sprite), Vector2(0, -0.5), 14, Color(1.0, 0.82, 0.45))
+					BattleJuice.hitstop([sprite], 0.12)
+					BattleJuice.punch_zoom(_stable_sprite_anchor(sprite), 0.03, 0.2)
 				var tween = create_tween()
-				# Flash white briefly
 				tween.tween_property(sprite, "modulate", Color(3.0, 3.0, 3.0, 1.0), 0.1)
 				tween.tween_property(sprite, "modulate", Color(1.0, 1.0, 1.0, 1.0), 0.1)
-				# Flicker dissolve (rapid on/off while fading)
-				for i in range(6):
-					tween.tween_property(sprite, "modulate:a", 0.1, 0.06)
-					tween.tween_property(sprite, "modulate:a", 0.7 - i * 0.1, 0.06)
-				# Final vanish
-				tween.tween_property(sprite, "modulate:a", 0.0, 0.15)
+				if has_dissolve:
+					tween.tween_method(func(v: float) -> void:
+						if is_instance_valid(sprite) and sprite.material is ShaderMaterial:
+							sprite.material.set_shader_parameter("dissolve_amount", v), 0.0, 1.0, 0.5)
+				else:
+					for i in range(6):
+						tween.tween_property(sprite, "modulate:a", 0.1, 0.06)
+						tween.tween_property(sprite, "modulate:a", 0.7 - i * 0.1, 0.06)
+					tween.tween_property(sprite, "modulate:a", 0.0, 0.15)
 				tween.tween_callback(func():
 					if is_instance_valid(sprite):
 						sprite.visible = false
@@ -4514,6 +4615,9 @@ func _crit_visual_burst(target: Combatant, _amount: int) -> void:
 
 	# 2. Hitlag — brief time freeze for impact (80ms at 10% speed)
 	_begin_hitlag(0.008)
+	var crit_sprite := _get_combatant_sprite(target)
+	if crit_sprite:
+		BattleJuice.punch_zoom(_stable_sprite_anchor(crit_sprite), 0.04, 0.18)
 
 	# 3. Target sprite white flash
 	var sprite = _get_combatant_sprite(target)
@@ -5098,6 +5202,7 @@ func _on_monster_summoned(monster_type: String, summoner: Combatant) -> void:
 
 	# Create sprite for the new enemy
 	var sprite = AnimatedSprite2D.new()
+	BattleJuice.ensure_flash_material(sprite)
 	sprite.sprite_frames = _get_monster_sprite_frames(monster_type)
 
 	# summons must mirror battle-start sizing or artist drops (<=128px) pop in 2.5x small, facing away

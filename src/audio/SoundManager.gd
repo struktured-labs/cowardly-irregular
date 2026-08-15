@@ -172,6 +172,21 @@ func _ready() -> void:
 		print("[SoundManager] headless run detected — master bus muted")
 
 
+## 2026-08-14 silent-death class (struktured: music+SFX stopped mid-battle, zero errors, YT fine): frozen playback position while playing == game mixer dead; advancing position while silent == stream corked below the game
+var _liveness_last_pos: float = -1.0
+
+
+func audio_liveness_check() -> void:
+	var p: AudioStreamPlayer = _music_player_b if (_music_player_b and _music_player_b.playing and not _music_player.playing) else _music_player
+	if p and p.playing and not p.stream_paused:
+		var pos := p.get_playback_position()
+		if _liveness_last_pos >= 0.0 and absf(pos - _liveness_last_pos) < 0.001:
+			push_warning("[AUDIO] playback position frozen at %.2fs while playing — game audio mixer is dead (2026-08-14 class); restart recovers" % pos)
+		_liveness_last_pos = pos
+	else:
+		_liveness_last_pos = -1.0
+
+
 func _exit_tree() -> void:
 	# Cleanup tweens to prevent callbacks on freed nodes
 	if _crossfade_tween and _crossfade_tween.is_valid():
@@ -1368,7 +1383,7 @@ func _try_play_from_manifest(track_id: String) -> bool:
 	return true
 
 
-## Public entry point for this file's world vocabulary — it exists to stop a FOURTH re-derivation of the area→suffix map (three were built in one day), NOT because visual lanes should call it: sprites and cutscenes deliberately resolve costume identity from GameState.current_world instead, which after the interior fix has no known hole while this still lags during battle (play_music clears _current_area). Correct for audio-adjacent callers wanting the suffix STRING; returns "medieval" where sheets want "" — translate at your consumer. See test_world_suffix_vocabulary_regression.gd.
+## Public entry point for this file's world vocabulary — it exists to stop a FOURTH re-derivation of the area→suffix map (three were built in one day), NOT because visual lanes should call it: sprites and cutscenes deliberately resolve costume identity from GameState.current_world instead, which after the interior fix has no known hole while this serves a CACHE, not a live read, whenever play_music has cleared _current_area — menu, battle AND victory, not battle alone: play_area_music is the cache's ONLY writer, so the fallthrough reports the last AREA's world, which is correct-by-design for battle music but diverges from GameState.current_world until area music plays for a newly-entered world; restore_music_state clears _current_area too and stays accurate only because it re-calls play_area_music. Correct for audio-adjacent callers wanting the suffix STRING; returns "medieval" where sheets want "" — translate at your consumer. See test_world_suffix_vocabulary_regression.gd.
 func get_current_world_suffix() -> String:
 	return _get_current_world_suffix()
 

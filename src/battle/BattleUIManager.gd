@@ -380,7 +380,16 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 	var hp_bar = box.get_node_or_null("HP")
 	if hp_bar:
 		hp_bar.max_value = member.max_hp
-		hp_bar.value = member.current_hp
+		# Tweened fill (killing the prior tween so rapid ticks don't fight); instant at OFF tier
+		if _scene._tier() == BattleJuice.Tier.OFF or absf(hp_bar.value - member.current_hp) < 0.5:
+			hp_bar.value = member.current_hp
+		else:
+			var prev = hp_bar.get_meta("hp_tween", null)
+			if prev is Tween and prev.is_valid():
+				prev.kill()
+			var hp_tween = _scene.create_tween()
+			hp_tween.tween_property(hp_bar, "value", float(member.current_hp), 0.2)
+			hp_bar.set_meta("hp_tween", hp_tween)
 		var hp_label = hp_bar.get_node_or_null("HPLabel")
 		if hp_label:
 			if not member.is_alive:

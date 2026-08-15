@@ -368,6 +368,10 @@ func _trigger_screen_shake(intensity: float, duration: float) -> void:
 	# Settings gate - skip entirely if user disabled screen shake
 	if GameState and "screen_shake_enabled" in GameState and not GameState.screen_shake_enabled:
 		return
+	# In battle the camera rig owns the camera (single writer) — trauma model replaces the 30Hz steps; legacy path below stays for CutsceneDirector's exploration shakes
+	if BattleJuice.camera_rig != null:
+		BattleJuice.add_trauma(clampf(intensity / 25.0, 0.1, 1.0), Vector2.ZERO, maxf(duration - 0.3, 0.0))
+		return
 	var viewport = get_viewport()
 	if not viewport:
 		# Camera no longer reachable. If we were mid-shake, the previous

@@ -40,10 +40,23 @@ func get_alive_enemies() -> Array[Combatant]:
 	return _cached_alive_enemies
 
 
+## Structural invariant: at most ONE menu chain exists per selecting character — sweep any stray
+## chain a leak path left behind (struktured's 2026-08-14 cap: bouncing between players stacked
+## three menus + an orphaned tooltip) so every future leak self-heals at the next menu spawn.
+func _sweep_stray_menus() -> void:
+	if not _scene or not is_instance_valid(_scene):
+		return
+	for stray in _scene.get_tree().get_nodes_in_group("win98_menus"):
+		if is_instance_valid(stray) and _scene.is_ancestor_of(stray):
+			print("[MENU-NULL] t=%dms path=stray_sweep freeing=%s" % [Time.get_ticks_msec(), _instance_id(stray)])
+			stray.force_close()
+
+
 func show_win98_command_menu(combatant: Combatant) -> void:
 	"""Show retro command menu for the combatant"""
-	# Close any existing menu
+	# Close any existing menu, then reap any stray chain a leak path left behind
 	close_win98_menu()
+	_sweep_stray_menus()
 
 	# Spotlight gate: locked PCs route through autobattle. Debug override wins.
 	# Solo-player_party override mirrors BattleManager._process_next_selection (msg 2372/2376): a duelist inside their own spotlight duel plays their turn.
