@@ -773,6 +773,9 @@ func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -
 
 	if disabled:
 		text_label.add_theme_color_override("font_color", style.text.darkened(0.5))
+	elif item.get("text_color", null) is Color:
+		# Optional per-row tint (shop affordability/owned cues) — row stays selectable, unlike disabled.
+		text_label.add_theme_color_override("font_color", item["text_color"])
 	else:
 		text_label.add_theme_color_override("font_color", style.text)
 
@@ -825,6 +828,8 @@ func _update_selection() -> void:
 			var disabled = item.get("disabled", false)
 			if disabled:
 				label.add_theme_color_override("font_color", style.text.darkened(0.5))
+			elif item.get("text_color", null) is Color:
+				label.add_theme_color_override("font_color", item["text_color"])
 			else:
 				label.add_theme_color_override("font_color", style.text)
 
@@ -1386,6 +1391,9 @@ func _input(event: InputEvent) -> void:
 	"""Handle input for menu navigation"""
 	# A closing/queued-free menu still receives _input until freed — bail so one press isn't handled twice (double Advance / menu overlap).
 	if is_queued_for_deletion() or _is_closing:
+		return
+	# A HIDDEN menu must not eat input either — boss dialogue hides the command menu and owns the A press (struktured 2026-08-15 spotlight-duel ambiguity).
+	if not visible:
 		return
 	# A tutorial hint is capturing input, or another handler already consumed this event — don't double-fire a menu action.
 	if TutorialHint.is_any_active() or get_viewport().is_input_handled():

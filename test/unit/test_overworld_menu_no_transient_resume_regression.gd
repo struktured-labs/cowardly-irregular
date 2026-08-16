@@ -42,8 +42,16 @@ func test_menu_action_handlers_use_teardown_not_close() -> void:
 	var teardown_count: int = body.count("_teardown_overworld_menu_widget()")
 	assert_gte(teardown_count, 2,
 		"both autobattle + autogrind menu-action branches must call _teardown_overworld_menu_widget (not _on_overworld_menu_closed) to prevent the transient resume")
-	assert_false("_on_overworld_menu_closed()" in body,
-		"menu-action handlers must NOT call _on_overworld_menu_closed — that resumes exploration between the menu-close and submenu-open, letting the player move for one frame")
+	# The ban is on RESUMING BETWEEN teardown and submenu-open — a branch that
+	# opens NO submenu may (must) take the plain close instead (2026-08-14
+	# null-target strand fix). Assert the relationship, not a blanket ban.
+	for opener in ["_open_autobattle_for_character", "_open_autogrind_ui"]:
+		var o: int = body.find(opener)
+		assert_gt(o, -1, "%s must still be reachable from the handler" % opener)
+		var branch_start: int = body.rfind("_teardown_overworld_menu_widget()", o)
+		assert_gt(branch_start, -1, "%s must be preceded by the widget-only teardown" % opener)
+		assert_false("_on_overworld_menu_closed" in body.substr(branch_start, o - branch_start),
+			"no resume-path call between teardown and %s — that's the one-frame movable gap" % opener)
 
 
 func test_close_path_still_resumes_when_actually_backing_to_field() -> void:

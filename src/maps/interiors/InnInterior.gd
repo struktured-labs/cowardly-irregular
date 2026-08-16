@@ -1423,7 +1423,10 @@ func _charge_for_rest() -> bool:
 		return false
 	# spend_gold (not a raw party_gold write) so the gold_multiplier constant stays consistent with shop transactions.
 	if GameState.has_method("spend_gold"):
-		return bool(GameState.spend_gold(REST_COST))
+		var paid := bool(GameState.spend_gold(REST_COST))
+		if paid and SoundManager:
+			SoundManager.play_ui("purchase_complete")
+		return paid
 	return true
 
 
@@ -1484,3 +1487,14 @@ func _create_fireplace_secret() -> void:
 	zone.name = "FireplaceSecret"
 	zone.position = Vector2(11.5 * TILE_SIZE, 4.0 * TILE_SIZE)
 	transitions.add_child(zone)
+
+
+## Pause/resume contract (tavern bug class, 2026-06-04): GameLoop suspends exploration via has_method("pause") — a scene missing it is SILENTLY skipped and the player walks behind the open menu.
+func pause() -> void:
+	if controller and is_instance_valid(controller) and controller.has_method("pause_exploration"):
+		controller.pause_exploration()
+
+
+func resume() -> void:
+	if controller and is_instance_valid(controller) and controller.has_method("resume_exploration"):
+		controller.resume_exploration()

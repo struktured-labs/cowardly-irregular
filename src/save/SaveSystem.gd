@@ -242,6 +242,8 @@ func can_quick_save() -> bool:
 		return false
 	if _is_cutscene_active():
 		return false
+	if _party_is_wiped():
+		return false
 	return true
 
 
@@ -257,7 +259,21 @@ func _save_block_reason() -> String:
 		return "Cannot save inside this room — leave to a village or overworld first"
 	if _is_cutscene_active():
 		return "Cannot save mid-cutscene — wait for the scene to finish"
+	if _party_is_wiped():
+		return "Cannot save with the whole party down"
 	return ""
+
+
+## The game-over-screen autosave hole (struktured 2026-08-15): after a wipe the battle is
+## INACTIVE, so the 5-min timed autosave could snapshot the dead party — Continue then loaded
+## it and the player explored with nobody alive. No save path may capture a full wipe.
+func _party_is_wiped() -> bool:
+	if not (GameState and "player_party" in GameState) or GameState.player_party.is_empty():
+		return false
+	for m in GameState.player_party:
+		if m is Dictionary and bool(m.get("is_alive", true)) and int(m.get("current_hp", 1)) > 0:
+			return false
+	return true
 
 
 func _is_player_inside_interior() -> bool:
@@ -787,6 +803,18 @@ func _deserialize_party(party_data: Array) -> void:
 					resolved_profiles[rk] = copy["job_profiles"][key]
 				copy["job_profiles"] = resolved_profiles
 		resolved.append(copy)
+	# Wipe rescue: existing saves poisoned by the game-over autosave hole must still load
+	# PLAYABLE — a fully KO'd party comes back at 1 HP each (alive, still punished).
+	var any_alive := false
+	for m in resolved:
+		if bool(m.get("is_alive", true)) and int(m.get("current_hp", 1)) > 0:
+			any_alive = true
+			break
+	if not any_alive and not resolved.is_empty():
+		push_warning("[SAVE] Loaded a fully-KO'd party — reviving everyone at 1 HP (wipe-rescue floor)")
+		for m in resolved:
+			m["is_alive"] = true
+			m["current_hp"] = 1
 	GameState.player_party = resolved
 
 

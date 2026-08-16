@@ -366,6 +366,8 @@ func _rest_party() -> void:
 		# game_constant stays consistent with shop transactions.
 		if GameState.has_method("spend_gold"):
 			GameState.spend_gold(rest_cost)
+			if SoundManager:
+				SoundManager.play_ui("purchase_complete")
 
 	# Restore all party members to full HP/MP
 	var game_loop = get_tree().root.get_node_or_null("GameLoop")

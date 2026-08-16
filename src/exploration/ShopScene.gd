@@ -33,6 +33,11 @@ const KEEPER_PORTRAIT_PATHS: Dictionary = {
 ## so the two outcomes read as opposites at a glance.
 const GOLD_FLASH_SUCCESS_COLOR: Color = Color(1.0, 1.0, 0.75)
 const GOLD_FLASH_SUCCESS_SEC: float = 0.28
+const GOLD_LABEL_COLOR: Color = Color(1.0, 0.9, 0.3)
+const GOLD_SPEND_FLASH_COLOR: Color = Color(1.0, 0.25, 0.2)
+const GOLD_SPEND_HOLD_SEC: float = 0.65
+const BUY_ROW_UNAFFORDABLE_COLOR: Color = Color(0.45, 0.45, 0.5)
+const BUY_ROW_OWNED_COLOR: Color = Color(0.55, 0.78, 0.6)
 const PURCHASE_TOAST_SEC: float = 1.5
 
 ## Shop configuration
@@ -54,6 +59,7 @@ var pending_equip_data: Dictionary = {}
 ## UI Components
 var background: ColorRect
 var gold_label: Label
+var _gold_flash_tween: Tween = null
 var description_panel: Control
 var description_label: Label
 var current_menu: Win98Menu = null
@@ -129,7 +135,7 @@ func _setup_ui() -> void:
 	gold_label.size = Vector2(180, 30)
 	gold_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	gold_label.add_theme_font_size_override("font_size", TextScale.scaled(16))
-	gold_label.add_theme_color_override("font_color", Color(1.0, 0.9, 0.3))
+	gold_label.add_theme_color_override("font_color", GOLD_LABEL_COLOR)
 	add_child(gold_label)
 	_update_gold_display()
 
@@ -283,14 +289,21 @@ func _open_buy_menu() -> void:
 			if wearers != "":
 				label += " [on %s]" % wearers
 
-			if game_state:
-				label += _affordability_suffix(int(cost), game_state.get_gold())
-
-			items.append({
+			# struktured 2026-08-15: the "(need Xg)" suffix truncated row labels.
+			# Shortfall lives in the description panel now; the ROW communicates by
+			# colour - grey = cannot afford, green tint = already have (magic learned /
+			# gear someone is wearing). Rows stay SELECTABLE (unlike disabled) so they can be inspected.
+			var row := {
 				"id": item_id,
 				"label": label,
 				"data": item_data
-			})
+			}
+			var already_owned: bool = (_is_magic_shop() and owned > 0) or wearers != ""
+			if already_owned:
+				row["text_color"] = BUY_ROW_OWNED_COLOR
+			elif game_state and int(cost) > game_state.get_gold():
+				row["text_color"] = BUY_ROW_UNAFFORDABLE_COLOR
+			items.append(row)
 
 	if items.is_empty():
 		items.append({"id": "none", "label": "(No items available)", "disabled": true})
@@ -433,8 +446,7 @@ func _attempt_purchase(item_id: String, item_data: Dictionary) -> void:
 		# closing of a menu." Three beats fire together: the dedicated
 		# purchase sound, a gold-counter flash, and a floating receipt.
 		SoundManager.play_ui("purchase_complete")
-		_update_gold_display()
-		_flash_gold_label_success()
+		_flash_gold_spend(cost)
 		_show_purchase_toast(str(item_data.get("name", "item")), cost)
 		# Tick 257: emit only after the gold spend AND the item handoff
 		# both succeeded — refund path above returns early so we don't
@@ -669,6 +681,10 @@ func _update_description_for_item(item_id: String) -> void:
 	desc += "%s\n" % item_data.get("name", "???")
 	desc += "%s\n\n" % item_data.get("description", "No description")
 
+	# Row labels no longer carry the shortfall (it truncated them) - it lives here.
+	if game_state and int(item_data.get("cost", 0)) > game_state.get_gold():
+		desc += "Not enough gold%s.\n\n" % _affordability_suffix(int(item_data.get("cost", 0)), game_state.get_gold())
+
 	# Show stats + comparison for equipment (blacksmith)
 	if shop_type == ShopType.BLACKSMITH:
 		var stat_mods = item_data.get("stat_mods", {})
@@ -780,26 +796,38 @@ func _flash_gold_label() -> void:
 	gold_label.add_theme_color_override("font_color", original_color)
 
 
-## Success counterpart to _flash_gold_label — pulses the counter bright
-## white-gold and scales it briefly so the gold DROP is visible, not just
-## audible (struktured msg 2775: "more visual indication"). Deliberately a
-## different colour + a scale beat from the red error flash so the two
-## read as opposite outcomes at a glance.
-func _flash_gold_label_success() -> void:
+## Spend flash (struktured 2026-08-15): on any purchase the counter turns red
+## showing the DELTA ("-1000 G"), pulses, holds long enough to read, then
+## settles to the new total in the normal gold colour. Kill-prior so rapid
+## repeat-buys restart the flash instead of fighting a stale settle.
+func _flash_gold_spend(cost: int) -> void:
 	if not is_instance_valid(gold_label):
 		return
-	var original_color: Color = gold_label.get_theme_color("font_color")
-	gold_label.add_theme_color_override("font_color", GOLD_FLASH_SUCCESS_COLOR)
+	if _gold_flash_tween and _gold_flash_tween.is_valid():
+		_gold_flash_tween.kill()
+	gold_label.text = _gold_spend_flash_text(cost)
+	gold_label.add_theme_color_override("font_color", GOLD_SPEND_FLASH_COLOR)
 	# Pivot at the label's own centre so the pulse doesn't drift the text.
 	gold_label.pivot_offset = gold_label.size * 0.5
-	var tw := create_tween()
-	tw.tween_property(gold_label, "scale", Vector2(1.18, 1.18), GOLD_FLASH_SUCCESS_SEC * 0.4)
-	tw.tween_property(gold_label, "scale", Vector2.ONE, GOLD_FLASH_SUCCESS_SEC * 0.6)
-	await get_tree().create_timer(GOLD_FLASH_SUCCESS_SEC).timeout
-	if not is_instance_valid(self) or not is_instance_valid(gold_label):
-		return
-	gold_label.add_theme_color_override("font_color", original_color)
 	gold_label.scale = Vector2.ONE
+	_gold_flash_tween = create_tween()
+	_gold_flash_tween.tween_property(gold_label, "scale", Vector2(1.18, 1.18), GOLD_FLASH_SUCCESS_SEC * 0.4)
+	_gold_flash_tween.tween_property(gold_label, "scale", Vector2.ONE, GOLD_FLASH_SUCCESS_SEC * 0.6)
+	_gold_flash_tween.tween_interval(GOLD_SPEND_HOLD_SEC)
+	_gold_flash_tween.tween_callback(_settle_gold_label)
+
+
+## Pure so the delta format is unit-testable.
+func _gold_spend_flash_text(cost: int) -> String:
+	return "-%d G" % cost
+
+
+func _settle_gold_label() -> void:
+	if not is_instance_valid(gold_label):
+		return
+	gold_label.add_theme_color_override("font_color", GOLD_LABEL_COLOR)
+	gold_label.scale = Vector2.ONE
+	_update_gold_display()
 
 
 ## Floating purchase receipt — item name + gold delta, rising and fading
@@ -1052,8 +1080,8 @@ func _attempt_magic_purchase(char_index_str: String) -> void:
 		if "purchased_abilities" in live_party[char_index] and pending_spell_id not in live_party[char_index].purchased_abilities:
 			live_party[char_index].purchased_abilities.append(pending_spell_id)
 
-		SoundManager.play_ui("menu_select")
-		_update_gold_display()
+		SoundManager.play_ui("purchase_complete")
+		_flash_gold_spend(cost)
 
 		var member_name = member.get("name", "???")
 		description_label.text = "%s learned %s!" % [member_name, pending_spell_data.get("name", "spell")]

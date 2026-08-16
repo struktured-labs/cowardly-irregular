@@ -1401,10 +1401,13 @@ func _on_overworld_menu_action(action: String, target: Combatant) -> void:
 	match action:
 		"autobattle":
 			# Teardown widget only — do NOT resume exploration. Autobattle editor pauses again immediately; the old close-plus-resume path let the player move for one frame between resume and re-pause.
-			_teardown_overworld_menu_widget()
 			if target:
+				_teardown_overworld_menu_widget()
 				var char_id = target.combatant_name.to_lower().replace(" ", "_")
 				_open_autobattle_for_character(char_id, target.combatant_name, target)
+			else:
+				# No target = no editor will follow — degrade to a plain close, else the player is stranded paused with no UI (menu gone, lock heartbeating forever).
+				_on_overworld_menu_closed()
 		"autobattle_toggle":
 			# Sticky global toggle from overworld menu (mouse path,
 			# matches Minus button behavior). Toast feedback comes from

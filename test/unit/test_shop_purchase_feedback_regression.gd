@@ -62,7 +62,7 @@ func test_all_three_beats_fire_on_the_success_path_only() -> void:
 	var body: String = src.substr(fn_idx, next_fn - fn_idx) if next_fn > 0 else src.substr(fn_idx)
 
 	var sound_pos := body.find("play_ui(\"purchase_complete\")")
-	var flash_pos := body.find("_flash_gold_label_success()")
+	var flash_pos := body.find("_flash_gold_spend(cost)")
 	var toast_pos := body.find("_show_purchase_toast(")
 	var emit_pos := body.find("item_purchased.emit(")
 	assert_gt(sound_pos, 0, "ka-ching fires in _attempt_purchase")
@@ -83,22 +83,64 @@ func test_all_three_beats_fire_on_the_success_path_only() -> void:
 	assert_lt(sound_pos, emit_pos, "presentation precedes the item_purchased emit")
 
 
-## The success flash must be visually distinct from the pre-existing red
-## error flash, or the two outcomes read the same at a glance.
-func test_success_flash_is_distinct_from_error_flash() -> void:
+## Spend flash (struktured 2026-08-15): the counter flashes RED showing the
+## DELTA ("-1000 G"), holds, then settles to the new total in the normal gold
+## colour. Distinctness from the error flash comes from CONTENT — the error
+## flash never rewrites the text, the spend flash always does.
+func test_spend_flash_shows_delta_then_settles() -> void:
 	var src := _read(SHOP_SCENE)
-	assert_true(src.contains("func _flash_gold_label_success"),
-		"dedicated success-flash helper exists")
-	assert_true(src.contains("GOLD_FLASH_SUCCESS_COLOR"),
-		"success colour is a named constant (tunable without hunting literals)")
-	# The error path keeps its red flash — unchanged behaviour.
-	var err_idx := src.find("func _flash_gold_label(")
-	assert_gt(err_idx, 0, "error flash helper still present")
-	var err_next := src.find("\nfunc ", err_idx + 1)
-	var err_body: String = src.substr(err_idx, err_next - err_idx) if err_next > 0 else src.substr(err_idx)
-	assert_true(err_body.contains("Color.RED"), "error flash still flashes red")
-	assert_false(err_body.contains("GOLD_FLASH_SUCCESS_COLOR"),
-		"success colour must not leak into the error path")
+	var fn_idx := src.find("func _flash_gold_spend")
+	assert_gt(fn_idx, 0, "spend-flash helper exists")
+	var next_fn := src.find("\nfunc ", fn_idx + 1)
+	var body: String = src.substr(fn_idx, next_fn - fn_idx) if next_fn > 0 else src.substr(fn_idx)
+	assert_true(body.contains("_gold_spend_flash_text(cost)"),
+		"the flash must SHOW the delta, not just recolour the total")
+	assert_true(body.contains("GOLD_SPEND_FLASH_COLOR"),
+		"spend colour is a named constant (tunable without hunting literals)")
+	assert_true(body.contains("_settle_gold_label"),
+		"the flash must settle back to the real total — else the counter lies forever")
+	var settle_idx := src.find("func _settle_gold_label")
+	assert_gt(settle_idx, 0, "settle helper exists")
+	var settle_next := src.find("\nfunc ", settle_idx + 1)
+	var settle: String = src.substr(settle_idx, settle_next - settle_idx) if settle_next > 0 else src.substr(settle_idx)
+	assert_true(settle.contains("_update_gold_display()"),
+		"settle must re-read the REAL gold total from game_state")
+	assert_true(settle.contains("GOLD_LABEL_COLOR"),
+		"settle restores the canonical label colour, never a snapshot of a mid-flash colour")
+
+
+func test_spend_flash_delta_text_format() -> void:
+	var shop = preload(SHOP_SCENE).new()
+	autofree(shop)  # pure helper, no _ready / tree needed
+	assert_eq(shop._gold_spend_flash_text(1000), "-1000 G", "delta reads as a reduction")
+	assert_eq(shop._gold_spend_flash_text(76), "-76 G", "small costs format identically")
+
+
+## The magic-shop path was SILENT commerce until 2026-08-15 — sounds on every
+## error branch, nothing on success (struktured: "we need a purchase sound").
+func test_magic_purchase_success_has_sound_and_flash() -> void:
+	var src := _read(SHOP_SCENE)
+	var fn_idx := src.find("func _attempt_magic_purchase")
+	assert_gt(fn_idx, 0, "_attempt_magic_purchase present")
+	var next_fn := src.find("\nfunc ", fn_idx + 1)
+	var body: String = src.substr(fn_idx, next_fn - fn_idx) if next_fn > 0 else src.substr(fn_idx)
+	var spend_pos := body.find("spend_gold(cost)")
+	var sound_pos := body.find("play_ui(\"purchase_complete\")")
+	var flash_pos := body.find("_flash_gold_spend(cost)")
+	assert_gt(spend_pos, 0, "magic path spends gold")
+	assert_gt(sound_pos, spend_pos, "ka-ching fires AFTER the successful spend, never on an error branch")
+	assert_gt(flash_pos, spend_pos, "gold spend-flash fires after the successful spend")
+
+
+## Inn rests are the same commerce class — both inn flows must ka-ching on the
+## paid rest (sibling enumeration: every success-side spend_gold gets a cue).
+func test_inn_rests_play_the_purchase_sound() -> void:
+	for path in ["res://src/exploration/VillageInn.gd", "res://src/maps/interiors/InnInterior.gd"]:
+		var src := FileAccess.get_file_as_string(path)
+		var spend := src.find("spend_gold(")
+		assert_gt(spend, 0, "%s spends gold for a rest" % path)
+		assert_gt(src.find("play_ui(\"purchase_complete\")", spend), spend,
+			"%s must confirm the paid rest audibly" % path)
 
 
 ## Toast hygiene: presentational only. It must not capture input (a
