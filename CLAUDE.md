@@ -244,6 +244,13 @@ Source-level + runtime guards in `test/unit/`:
 
 ## Development Workflow
 
+### Branch Hygiene
+**CRITICAL: Always merge latest main before starting new work.**
+```bash
+git fetch origin && git merge origin/main --no-edit
+```
+Do this at the start of every session, before creating new branches, and before any significant feature work. Stale branches cause merge hell.
+
 ### Pre-Launch Validation
 **CRITICAL: Always use godot-mcp MCP tools before launching the game.**
 

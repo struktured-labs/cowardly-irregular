@@ -18,7 +18,10 @@ Usage:
 import argparse
 import hashlib
 import json
+import os
+import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 from PIL import Image
@@ -170,6 +173,116 @@ def process_frame(
         out_txt.write_text(caption, encoding="utf-8")
 
     return True
+
+
+ASEPRITE_BIN = os.environ.get("ASEPRITE_BIN", str(Path.home() / ".local/bin/aseprite"))
+
+
+## Raw-frame opacity above this means a background layer rendered — reject, don't train on it.
+## The FILL_MIN/FILL_MAX band cannot catch it: an opaque rect autocrops to itself and scales to
+## TARGET_FILL**2 = 0.56, which sits comfortably inside the accept band.
+OPAQUE_BG_THRESHOLD = 0.98
+
+
+def export_aseprite_frames(path: Path) -> list[Image.Image]:
+    """Every frame of an .aseprite, VISIBLE layers only. [] if aseprite can't read it.
+
+    NOT --all-layers: that forces the artist's hidden BG/Sketch layers to render, which
+    produced fully-opaque training frames (BAT 1 has a 'BG' layer, Mordaine and SLIME have
+    'Sketch'/'Sk1'). Measured 2026-08-16: BAT frame 0 was 1.00 opaque with the flag, 0.24
+    without. Honouring layer visibility IS honouring artist intent.
+    """
+    with tempfile.TemporaryDirectory() as td:
+        out = Path(td) / "f_0.png"
+        try:
+            subprocess.run([ASEPRITE_BIN, "-b", str(path), "--save-as", str(out)],
+                           check=True, capture_output=True, timeout=180)
+        except (subprocess.SubprocessError, OSError):
+            return []
+        frames = []
+        for f in sorted(Path(td).glob("f_*.png"), key=lambda p: int(p.stem.split("_")[1])):
+            frames.append(Image.open(f).convert("RGBA"))
+        return frames
+
+
+def _canvas_key(img: Image.Image) -> str:
+    return hashlib.md5(img.tobytes()).hexdigest()
+
+
+def _subject_from_path(rel: Path) -> str:
+    """Caption subject derived from the path, so a new drop needs no code change."""
+    stem = rel.stem
+    for noise in ("animations", "anims", "Main design", "Base sprite", "1"):
+        stem = stem.replace(noise, "")
+    stem = " ".join(stem.split()).strip(" -_").lower() or rel.parent.name.lower()
+    folder = rel.parent.name.lower()
+    if folder == "enemies" or rel.parts[0] == "enemies":
+        return f"{stem} enemy monster"
+    return stem
+
+
+def ingest_aseprite_sources(output_dir: Path, counter: list[int], dry_run: bool) -> tuple[int, int]:
+    """Every .aseprite under the drive archive, deduped by rendered-frame content.
+
+    The per-job ingesters above only see art the artist ALSO exported as PNG — which is why
+    all 7 enemies, MAGE and BARD contributed nothing (2026-08-16 audit: 105 artist frames
+    absent from training). Walking the tree instead of listing jobs means the next drop is
+    picked up without editing this file. Dedupe is on the FINAL canvas, so frames already
+    ingested from a PNG sheet are skipped rather than duplicated.
+    """
+    seen: set[str] = set()
+    for existing in output_dir.glob("*.png"):
+        try:
+            seen.add(_canvas_key(Image.open(existing).convert("RGBA")))
+        except OSError:
+            continue
+
+    accepted = rejected = bg_rejected = 0
+    sources = sorted(DRIVE_ARCHIVE.rglob("*.aseprite"))
+    print(f"  scanning {len(sources)} .aseprite sources, {len(seen)} already-ingested canvases")
+    for src in sources:
+        rel = src.relative_to(DRIVE_ARCHIVE)
+        frames = export_aseprite_frames(src)
+        if not frames:
+            print(f"    !! could not export {rel}")
+            continue
+        subject = _subject_from_path(rel)
+        prefix = "ase_" + "".join(c if c.isalnum() else "_" for c in rel.stem.lower())[:28]
+        took = 0
+        for i, frame in enumerate(frames):
+            alpha = frame.split()[3]
+            raw_opaque = sum(1 for p in alpha.getdata() if p > 10) / float(frame.width * frame.height)
+            if raw_opaque >= OPAQUE_BG_THRESHOLD:
+                bg_rejected += 1
+                rejected += 1
+                continue
+            cropped = autocrop(frame)
+            if cropped.size[0] < 4 or cropped.size[1] < 4:
+                rejected += 1
+                continue
+            canvas = place_on_canvas(scale_to_fill(cropped, CANVAS_SIZE, TARGET_FILL), CANVAS_SIZE)
+            ratio = canvas_fill_ratio(canvas)
+            if ratio < FILL_MIN or ratio > FILL_MAX:
+                rejected += 1
+                continue
+            key = _canvas_key(canvas)
+            if key in seen:
+                rejected += 1
+                continue
+            seen.add(key)
+            idx = counter[0]
+            counter[0] += 1
+            if not dry_run:
+                canvas.save(output_dir / f"{prefix}_{idx:03d}.png", "PNG")
+                (output_dir / f"{prefix}_{idx:03d}.txt").write_text(
+                    make_caption(subject, f"frame {i}"), encoding="utf-8")
+            accepted += 1
+            took += 1
+        if took:
+            print(f"    {rel}: {took}/{len(frames)} frames")
+    if bg_rejected:
+        print(f"    rejected {bg_rejected} frame(s) as opaque-background")
+    return accepted, rejected
 
 
 def ingest_fighter(output_dir: Path, counter: list[int], dry_run: bool) -> tuple[int, int]:
@@ -657,6 +770,11 @@ def main():
     a, r = ingest_cleric(BUCKET_ARTIST, artist_counter, args.dry_run)
     print(f"  Cleric: {a} accepted, {r} rejected")
     results["cleric"] = (a, r)
+
+    print("\n[All .aseprite sources — enemies, mage, bard, and anything dropped later]")
+    a, r = ingest_aseprite_sources(BUCKET_ARTIST, artist_counter, args.dry_run)
+    print(f"  Aseprite sources: {a} accepted, {r} rejected")
+    results["aseprite_sources"] = (a, r)
 
     # 2. Samples → 15_nazuna_samples bucket
     samples_counter = [0]

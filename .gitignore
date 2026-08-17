@@ -63,6 +63,7 @@ butler.zip
 *.zip
 tmp/
 
+
 # Music pipeline - keep OGG, ignore raw downloads and locks
 assets/audio/music/*.mp3
 assets/audio/music/*.wav
@@ -87,3 +88,20 @@ assets/sprites/**/*.pre_artist_style.png
 # Scraped third-party sprite sets used as LoRA training input — NEVER commit.
 # Filenames name commercial titles (Final Fantasy Tactics/VI); provenance is not ours.
 tools/lora_training/jrpg_flat/
+
+# Sprite-gen lane additions (PR #5 fold 2026-08-17)
+# LoRA training — large binary assets and generated datasets
+tools/lora_training/raw_jrpg_sprites/
+tools/lora_training/raw_jrpg_sprites_flat/
+tools/lora_training/style_dataset/
+tools/lora_training/kohya_dataset/
+tools/lora_training/checkpoints/
+tools/lora_training/logs/
+tools/lora_training/samples/
+tools/lora_training/dataset/
+tools/lora_training/dataset_info.json
+tools/__pycache__/
+uv.lock
+# Artist source files mirrored from Google Drive (canonical lives on gdrive)
+assets/sprites/drive_archive/
+
