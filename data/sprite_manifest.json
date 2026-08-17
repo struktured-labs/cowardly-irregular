@@ -2822,23 +2822,23 @@
       "animations": {
         "idle": {
           "start": 0,
-          "end": 1
-        },
-        "attack": {
-          "start": 2,
           "end": 3
         },
-        "hit": {
+        "attack": {
           "start": 4,
-          "end": 5
+          "end": 9
+        },
+        "hit": {
+          "start": 10,
+          "end": 11
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 12,
+          "end": 13
         }
       },
       "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist fighter reference (tools/regen_monster_artist_style.py) \u2014 bespoke prompt with EXACTLY-ONE-SUBJECT-PER-FRAME discipline. Playtest bug fix (cowir-main msgs 2560/2561): W1 multi-subject defect regen."
+      "source": "ARTIST aseprite 'enemies/Skeleton animations.aseprite' (2026-08-16), tags idle(4)+Atk(6), 2x nearest 128->256 per embed_artist_idle_attack convention. hit/dead are idle freezes (compose_bard_artist_anims convention) - artist has not drawn them; OWED artist work."
     },
     "slime": {
       "path": "res://assets/sprites/monsters/slime.png",
