@@ -1553,14 +1553,16 @@ func play_music(track: String) -> void:
 				var monster = track.substr(7)
 				# Try stripping prefixes (cave_bat → bat, forest_spider → spider)
 				var parts = monster.split("_")
-				var base_name = parts[-1] if parts.size() > 1 else monster
-				var base_track = "battle_" + base_name
-				if base_track != track and base_track in ["battle_slime", "battle_bat", "battle_mushroom", "battle_imp", "battle_goblin", "battle_skeleton", "battle_wolf", "battle_ghost", "battle_snake"]:
-					print("[MUSIC] Mapping %s → %s" % [track, base_track])
-					play_music(base_track)
-				else:
-					print("[MUSIC] No specific theme for %s, using default battle music" % track)
-					_start_battle_music()
+				var known := ["battle_slime", "battle_bat", "battle_mushroom", "battle_imp", "battle_goblin", "battle_skeleton", "battle_wolf", "battle_ghost", "battle_snake"]
+				# Try suffix (cave_bat → bat) AND prefix (skeleton_soldier → skeleton): a monster FAMILY shares one theme (struktured 2026-08-17).
+				for base_name in [parts[-1], parts[0]]:
+					var base_track = "battle_" + base_name
+					if parts.size() > 1 and base_track != track and base_track in known:
+						print("[MUSIC] Mapping %s → %s" % [track, base_track])
+						play_music(base_track)
+						return
+				print("[MUSIC] No specific theme for %s, using default battle music" % track)
+				_start_battle_music()
 			elif track.begins_with("boss"):
 				print("[MUSIC] Unknown boss track %s, using generic boss music" % track)
 				_start_boss_music()

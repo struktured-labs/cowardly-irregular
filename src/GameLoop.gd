@@ -378,6 +378,26 @@ func _ready() -> void:
 
 	# Arg-gated render smoke — see _maybe_run_battle_smoke.
 	_maybe_run_battle_smoke()
+	_maybe_run_dev_fight()
+
+
+## `godot -- --fight=skeleton,skeleton` — boot straight into an interactive battle (dev art/feel testing, struktured 2026-08-17).
+func _maybe_run_dev_fight() -> void:
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--fight="):
+			var ids := a.trim_prefix("--fight=").split(",", false)
+			if ids.is_empty():
+				return
+			await get_tree().create_timer(1.0).timeout
+			_close_title_screen()
+			await get_tree().process_frame
+			_create_party()
+			var enemies: Array = []
+			for id in ids:
+				enemies.append(str(id).strip_edges())
+			print("[DEV] --fight boot: %s" % [enemies])
+			_start_battle_async(enemies, false)
+			return
 
 
 ## `xvfb-run godot -- --battle-smoke` (battle only) or `-- --render-smoke` (overworld walk frames + battle) — pixels catch what source pins can't
