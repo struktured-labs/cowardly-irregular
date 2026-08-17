@@ -3437,6 +3437,32 @@
       },
       "tier": "T2",
       "source": "DELIBERATE REUSE of chancellor_mordaine.png \u2014 the Calibrant opens as its first mask (Fable P1: Mordaine baseline). True-form sheet is an unspent tier call; replace this entry when it ships."
+    },
+    "bone_warden": {
+      "path": "res://assets/sprites/monsters/bone_warden.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 3
+        },
+        "attack": {
+          "start": 4,
+          "end": 9
+        },
+        "hit": {
+          "start": 10,
+          "end": 11
+        },
+        "dead": {
+          "start": 12,
+          "end": 13
+        }
+      },
+      "tier": "T2",
+      "source": "ARTIST 'enemies/Skeleton animations.aseprite' (2026-08-16), palette-shifted elite variant (blue->venom green, gold->bone) \u2014 artist linework and shading unmodified. hit/dead are idle freezes; OWED artist work."
     }
   },
   "npc_sheets": {
