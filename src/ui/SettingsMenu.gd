@@ -65,6 +65,7 @@ const BATTLE_FX_FLAGS := [
 	["steal_sauce", "Steal Sauce", "Thieves travel with style"],
 	["env_pulse", "Arena Thump", "Heavy hits rattle the scenery"],
 	["arena_unrest", "Arena Unrest", "Phase-2 bosses unsettle the ground itself"],
+	["victory_flourish", "Victory Flourish", "The win gets a slam, cards, and confetti-adjacent behavior"],
 ]
 var dash_always_on: bool = false  # Item 9: dash without holding the button
 var llm_enabled: bool = not OS.has_feature("web")  # Wave C: dynamic dialogue toggle (off by default on web)

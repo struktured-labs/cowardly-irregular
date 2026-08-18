@@ -3037,7 +3037,8 @@ func _on_battle_ended(victory: bool) -> void:
 			member.current_ap = 0
 
 		# Wait for player to confirm before leaving victory screen
-		await _wait_for_confirm()
+		# (first press completes the overlay's choreography, the next one leaves — victory revamp 2026-08-18)
+		await _wait_for_confirm_victory()
 
 		# Play exit transition (iris-close) before returning to overworld
 		if BattleTransition:
@@ -3282,6 +3283,24 @@ func _apply_pending_boss_defeat() -> void:
 	# highest-stakes encounters in the game.
 	if SaveSystem and SaveSystem.has_method("auto_save"):
 		SaveSystem.auto_save()
+
+
+## Victory variant of _wait_for_confirm: the FIRST accept snaps the overlay's
+## animations to their end state; only a press on a COMPLETED overlay leaves.
+func _wait_for_confirm_victory() -> void:
+	await get_tree().create_timer(0.5).timeout
+	var confirm_t0: int = Time.get_ticks_msec()
+	while Time.get_ticks_msec() - confirm_t0 < 120000:
+		await get_tree().process_frame
+		if Input.is_action_just_pressed("ui_accept") or Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+			var overlay = current_scene.get_node_or_null("VictoryResults") if current_scene and is_instance_valid(current_scene) else null
+			if overlay and overlay.has_method("is_complete") and not overlay.is_complete():
+				overlay.complete_now()
+				await get_tree().create_timer(0.25).timeout  # debounce so one press can't both snap and dismiss
+				continue
+			break
+	if Time.get_ticks_msec() - confirm_t0 >= 120000:
+		push_warning("[GAMELOOP] _wait_for_confirm_victory timed out after 120s — advancing without a press")
 
 
 func _wait_for_confirm() -> void:

@@ -14,20 +14,21 @@ const GL_PATH := "res://src/GameLoop.gd"
 
 
 func test_level_up_block_is_one_compact_line() -> void:
-	var src := FileAccess.get_file_as_string(BRD_PATH)
-	assert_false("gain_label" in src,
-		"separate stat-gain line must be merged into the compact level-up line")
-	assert_false("learn_label" in src,
-		"separate learned-abilities line must be merged into the compact level-up line")
-	assert_true("char_height_total += 20" in src,
-		"height formula must budget ONE line (20px) per level-up")
-	assert_false("char_height_total += 22" in src, "old 3-line budget must be gone")
+	# 2026-08-18 victory revamp: the panel became per-character cards. The rule
+	# this pin defends survives as gains-on-ONE-clipped-line inside a card.
+	var src := FileAccess.get_file_as_string("res://src/battle/VictoryOverlay.gd")
+	var gains := src.find("gains.clip_text = true")
+	assert_gt(gains, -1, "level-up gains stay ONE clipped line — the 700px 5-level-up clip bug")
+	assert_true("LEVEL UP!" in src, "the level-up callout still exists in the gains line")
 
 
 func test_panel_height_is_clamped() -> void:
-	var src := FileAccess.get_file_as_string(BRD_PATH)
-	assert_true("mini(panel_height, 680)" in src,
-		"panel must clamp under the 720px viewport — it clipped off-screen")
+	# Revamp successor: cards are fixed-height and clamped INSIDE the viewport,
+	# above the loot strip — 5 simultaneous level-ups cannot clip off-screen.
+	var src := FileAccess.get_file_as_string("res://src/battle/VictoryOverlay.gd")
+	assert_true("clampf(pos.y" in src, "card Y is clamped into the viewport")
+	assert_true("STRIP_BOTTOM_MARGIN - CARD_H" in src,
+		"card clamp reserves the loot strip + hint bar band at the bottom")
 
 
 func test_new_game_resets_per_run_pacing() -> void:

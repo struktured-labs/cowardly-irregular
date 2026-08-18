@@ -48,7 +48,7 @@ func test_every_registered_flag_is_consumed() -> void:
 	var consumers := ""
 	for path in ["res://src/battle/BattleJuice.gd", "res://src/battle/BattleScene.gd",
 			"res://src/battle/BattleAnimator.gd", "res://src/battle/BattleUIManager.gd",
-			"res://src/ui/Win98Menu.gd"]:
+			"res://src/ui/Win98Menu.gd", "res://src/battle/VictoryOverlay.gd"]:
 		consumers += FileAccess.get_file_as_string(path)
 	for fx in SettingsMenuScript.BATTLE_FX_FLAGS:
 		assert_true('flag("%s")' % fx[0] in consumers, "flag '%s' has a live consumer" % fx[0])
