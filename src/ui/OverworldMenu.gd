@@ -218,6 +218,17 @@ func _create_party_panel(panel_size: Vector2) -> Control:
 	title.add_theme_color_override("font_color", TEXT_COLOR)
 	panel.add_child(title)
 
+	# Gold readout, right-aligned on the title row (struktured 2026-08-18: "ur gold should be visible in the main menu")
+	var gold_lbl = Label.new()
+	gold_lbl.name = "GoldLabel"
+	gold_lbl.text = "%d G" % (GameState.get_gold() if GameState and GameState.has_method("get_gold") else 0)
+	gold_lbl.position = Vector2(8, 4)
+	gold_lbl.size = Vector2(panel_size.x - 16, 20)
+	gold_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	gold_lbl.add_theme_font_size_override("font_size", TextScale.scaled(14))
+	gold_lbl.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
+	panel.add_child(gold_lbl)
+
 	# Party member cards
 	var card_height = 100
 	var y_offset = 28

@@ -47,3 +47,11 @@ func test_restore_only_touches_what_was_hidden() -> void:
 	var restore := fn.substr(0, fn.find("_menu_hidden_hud.clear()\n\t\treturn"))
 	assert_true("for n in _menu_hidden_hud" in restore,
 		"restore must replay the recorded hidden set, not the full prop list")
+
+
+## struktured 2026-08-18: gold must be visible in the overworld main menu.
+func test_party_panel_shows_gold() -> void:
+	var src := FileAccess.get_file_as_string("res://src/ui/OverworldMenu.gd")
+	var idx := src.find('gold_lbl.text = "%d G"')
+	assert_gt(idx, -1, "the party panel renders the gold readout")
+	assert_true("get_gold()" in src.substr(idx - 200, 400), "reads the real total from GameState")
