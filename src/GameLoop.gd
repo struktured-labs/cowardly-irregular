@@ -3599,6 +3599,11 @@ func _start_exploration(force_battle_teardown: bool = false) -> void:
 	current_scene = exploration_scene
 	_exploration_scene = exploration_scene
 
+	# A battle can end while the autobattle editor is still open (autobattle finished it) —
+	# the rebuilt world must come up PAUSED under the editor, not live (2026-08-17 wedge).
+	if _autobattle_editor and is_instance_valid(_autobattle_editor) and exploration_scene.has_method("pause"):
+		exploration_scene.pause()
+
 	# Mount the [L] Party Chat indicator for exploration
 	_ensure_party_chat_indicator()
 
@@ -3812,6 +3817,15 @@ func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> v
 		return
 	if _autogrind_ui and is_instance_valid(_autogrind_ui):
 		print("[GAMELOOP] BLOCKED — autogrind UI is open")
+		return
+	# 2026-08-17 wedge: battle ended under an OPEN autobattle editor, exploration rebuilt live,
+	# roamers re-triggered battles beneath it — twice, racing transitions. Third sibling of the
+	# menu/autogrind guards above.
+	if _autobattle_editor and is_instance_valid(_autobattle_editor):
+		print("[GAMELOOP] BLOCKED — autobattle editor is open")
+		return
+	if _battle_transition_starting:
+		print("[GAMELOOP] BLOCKED — a battle transition is already starting (double-commence guard)")
 		return
 	# 2026-07-14: reciprocal mutex against _on_area_transition. If the player is mid-scene-load (walked into a village) and an encounter fires the same frame, drop the encounter — the transition owns the scene state.
 	if _transition_in_progress:
