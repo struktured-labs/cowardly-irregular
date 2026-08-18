@@ -312,26 +312,36 @@ func _resolve_footstep_terrain() -> String:
 
 
 func _get_terrain_speed_modifier() -> float:
-	"""Check tile under player and apply speed penalty for rough terrain."""
+	"""Speed penalty for the rough terrain the player is actually standing on."""
 	var parent = get_parent()
-	if not parent or not parent.has_node("TileMap"):
+	if parent == null or not ("tile_generator" in parent):
 		return 1.0
-	var tile_map = parent.get_node("TileMap")
-	var tile_size = tile_map.tile_set.tile_size.x if tile_map.tile_set else 16
-	var tile_pos = Vector2i(int(position.x) / tile_size, int(position.y) / tile_size)
-	var tile_data = tile_map.get_cell_tile_data(tile_pos)
-	if not tile_data:
+	var gen = parent.tile_generator
+	if gen == null:
 		return 1.0
-	# Check atlas coords to determine tile type — rough terrain = slower
-	var atlas_coords = tile_map.get_cell_atlas_coords(tile_pos)
-	var tile_id = atlas_coords.y * 5 + atlas_coords.x  # 5 columns in atlas
-	# TileGenerator tile order: GRASS=0, FOREST=1, MOUNTAIN=2, WATER=3, PATH=4, ...
-	# Forest/Mountain/Water = slower instead of blocked (Mode 7 invisible wall fix)
-	match tile_id:
-		1: return 0.5   # Forest — half speed
-		2: return 0.4   # Mountain — very slow
-		3: return 0.5   # Water — half speed (wading)
-		_: return 1.0
+	# Sample the layer that OWNS collision. Under Mode 7 the authored TileMap is
+	# pixels-only and a hidden clone 140.6px south does the blocking, so reading
+	# the node keeps "what slows you" and "what stops you" the SAME TILE by
+	# construction — not by two constants that happen to agree.
+	var layer = parent.get_node_or_null("TileMapCollision")
+	if layer == null:
+		layer = parent.get_node_or_null("TileMap")
+	if layer == null:
+		return 1.0
+	var speeds: Dictionary = gen._get_rough_terrain_speeds()
+	if speeds.is_empty():
+		return 1.0
+	var cell: Vector2i = layer.local_to_map(layer.to_local(global_position))
+	if layer.get_cell_tile_data(cell) == null:
+		return 1.0
+	# Atlas index is derived from THIS generator's column count; the old literal 5
+	# was W1's, applied to five other worlds whose atlases are 4 wide.
+	var atlas: Vector2i = layer.get_cell_atlas_coords(cell)
+	var order: Array = gen._get_tile_order()
+	var index: int = atlas.y * int(gen._get_atlas_dimensions().x) + atlas.x
+	if index < 0 or index >= order.size():
+		return 1.0
+	return float(speeds.get(order[index], 1.0))
 
 
 func _can_move() -> bool:

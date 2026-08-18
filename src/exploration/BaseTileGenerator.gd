@@ -39,6 +39,10 @@ func _get_impassable_types() -> Array:
 func _get_atlas_dimensions() -> Vector2i:
 	return Vector2i(4, 4)
 
+## Return {tile_type: speed_multiplier} for terrain that slows instead of blocking; empty = nothing slows.
+func _get_rough_terrain_speeds() -> Dictionary:
+	return {}
+
 ## Return tile variant overrides: {tile_index: variant_number}
 ## Only needed for generators with multiple variants per tile type in the atlas
 func _get_tile_variants() -> Dictionary:
