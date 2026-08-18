@@ -28,6 +28,42 @@ func _bus_index(name: String) -> int:
 	return AudioServer.get_bus_index(name)
 
 
+## Read the real constant — a hardcoded -6.0 here would still pass if the shipped duck changed.
+func _duck_target() -> float:
+	var sm := _sm()
+	return float(sm.DUCK_TARGET_DB) if sm and "DUCK_TARGET_DB" in sm else -6.0
+
+
+func _read_source(path: String) -> String:
+	var f := FileAccess.open(path, FileAccess.READ)
+	assert_not_null(f, "should be readable: %s" % path)
+	if f == null:
+		return ""
+	var t := f.get_as_text()
+	f.close()
+	return t
+
+
+## Bounded to the NEXT top-level func so the ratchet can't drift into a neighbour's body.
+func _func_body(src: String, fname: String) -> String:
+	var start: int = src.find("func %s(" % fname)
+	if start == -1:
+		return ""
+	var next: int = src.find("\nfunc ", start + 1)
+	return src.substr(start, (next - start) if next != -1 else -1)
+
+
+## Poll a WALL clock: the taper is a bare tween, so it runs on engine time and GUT's
+## wait_seconds is itself time-scaled. Returns whether it settled before the deadline.
+func _settle(amp, target_db: float, timeout_ms: int) -> bool:
+	var deadline: int = Time.get_ticks_msec() + timeout_ms
+	while Time.get_ticks_msec() < deadline:
+		if abs(amp.volume_db - target_db) <= 0.05:
+			return true
+		await get_tree().process_frame
+	return abs(amp.volume_db - target_db) <= 0.05
+
+
 func test_music_duck_bus_exists_after_boot() -> void:
 	assert_not_null(_sm(), "SoundManager autoload must be present")
 	var idx: int = _bus_index("MusicDuck")
@@ -46,17 +82,52 @@ func test_duck_bus_carries_single_amplify_effect() -> void:
 		"Effect 0 must be AudioEffectAmplify — it's what we taper for the duck")
 
 
-func test_amp_defaults_to_transparent_and_enabled() -> void:
+## Guarantee 3 is a CONSTRUCTION-time property, so pin it at the construction site.
+## Reading the live bus instead made this intermittent: any earlier test that ducked
+## left -6.0 on a GLOBAL, and resetting it in before_each would have been worse — the
+## assert would check the value it just wrote and pass on a bus CREATED at -6.0.
+func test_the_bus_is_CREATED_transparent() -> void:
+	var src := _read_source("res://src/audio/SoundManager.gd")
+	var body := _func_body(src, "_ensure_music_duck_bus")
+	assert_false(body.is_empty(), "_ensure_music_duck_bus must exist — this ratchet is anchored to it")
+	assert_true(body.contains("amp.volume_db = 0.0"),
+		"the Amplify must be CREATED at 0.0dB inside _ensure_music_duck_bus — a bus born ducked alters the music mix on a fresh install, and no runtime read can distinguish that from a stale duck")
+	var init_at: int = body.find("amp.volume_db = 0.0")
+	var added_at: int = body.find("add_bus_effect")
+	assert_true(added_at > init_at,
+		"the 0.0 init must precede add_bus_effect — set after, and the bus is briefly live at whatever the default was")
+
+
+## The REST state, measured on a real duck cycle rather than on whatever the global
+## happened to hold. Bounded wall-clock poll: the taper is a bare tween (ENGINE time),
+## so a frame count or GUT's time-scaled wait_seconds samples an arbitrary point.
+func test_the_REST_state_is_transparent_after_a_full_duck_CYCLE() -> void:
 	var idx: int = _bus_index("MusicDuck")
-	if idx == -1:
+	var sm := _sm()
+	if idx == -1 or sm == null:
 		pass_test("Bus not present in this context")
 		return
 	var amp = AudioServer.get_bus_effect(idx, 0)
 	if amp == null:
 		pass_test("Amp effect missing")
 		return
-	assert_almost_eq(amp.volume_db, 0.0, 0.01,
-		"Amp default must be 0.0dB — bus must be transparent at rest so day-one shipping doesn't alter music mix")
+
+	sm.duck_music_for_dialogue(true)
+	var engaged: bool = await _settle(amp, _duck_target(), 2000)
+	assert_true(engaged,
+		"the duck must actually ENGAGE — without this the rest-state assert below passes vacuously, because a duck that never ran is already at 0.0")
+
+	sm.duck_music_for_dialogue(false)
+	var released: bool = await _settle(amp, 0.0, 2000)
+	assert_true(released,
+		"music must return to 0.0dB after the dialogue closes — a rest state that isn't transparent leaves every later track quietly attenuated")
+
+
+func test_amp_is_enabled() -> void:
+	var idx: int = _bus_index("MusicDuck")
+	if idx == -1:
+		pass_test("Bus not present in this context")
+		return
 	assert_true(AudioServer.is_bus_effect_enabled(idx, 0),
 		"Amp must be ENABLED so the taper tween can move volume_db smoothly — the enable/disable toggle path was rejected because a hard step is audible (cowir-main msg 2700)")
 
