@@ -18,13 +18,14 @@ func test_battle_manager_collects_learned_abilities() -> void:
 
 
 func test_results_display_renders_and_sizes_learned_line() -> void:
-	var src: String = FileAccess.get_file_as_string("res://src/battle/BattleResultsDisplay.gd")
+	# 2026-08-18 revamp: the surface moved to VictoryOverlay's per-character cards.
+	var src: String = FileAccess.get_file_as_string("res://src/battle/VictoryOverlay.gd")
 	assert_true(src.contains("cr.get(\"learned_abilities\", [])"),
-		"the results row must read learned_abilities")
-	assert_true(src.contains("✦ %s") and src.contains("learned_names"),
+		"the card gains line must read learned_abilities")
+	assert_true(src.contains("✦ ") and src.contains("names"),
 		"learned abilities must render inline on the compact level-up line (2026-07-11 too-vertical fix)")
-	assert_gt(src.find("char_height_total += 20  # single compact level-up line"), -1,
-		"panel height must budget the compact level-up line")
+	assert_true(src.contains("gains.clip_text = true"),
+		"the gains line stays ONE clipped line — the height-budget rule's successor")
 
 
 func test_ability_learned_signal_collection_pattern() -> void:

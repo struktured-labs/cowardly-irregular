@@ -58,10 +58,13 @@ func test_battle_scene_uses_text_scale_at_all_sites() -> void:
 
 
 func test_battle_results_display_uses_text_scale() -> void:
-	# Pre-fix BattleResultsDisplay had 11 font_size sites.
-	var src := _read(BATTLE_RESULTS_DISPLAY)
-	assert_gte(_count_calls(src), 11,
-		"BattleResultsDisplay must have ≥11 TextScale.scaled calls")
+	# 2026-08-18 revamp: the victory surface moved to VictoryOverlay; the two files
+	# together must keep every font_size site scaled (was 11 in the old panel).
+	for path in [BATTLE_RESULTS_DISPLAY, "res://src/battle/VictoryOverlay.gd"]:
+		var src := _read(path)
+		var overrides := src.count("add_theme_font_size_override(")
+		assert_eq(_count_calls(src), overrides,
+			"%s: every font_size override must route through TextScale.scaled (found %d overrides)" % [path, overrides])
 
 
 # ── Negative pins: no bare integer font_size remaining ──────────────

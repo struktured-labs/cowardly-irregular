@@ -41,14 +41,11 @@ func test_battle_manager_captures_stat_gains() -> void:
 
 
 func test_results_display_renders_and_sizes_the_gain_line() -> void:
-	var src: String = FileAccess.get_file_as_string("res://src/battle/BattleResultsDisplay.gd")
+	# 2026-08-18 revamp: the surface moved to VictoryOverlay's per-character cards.
+	var src: String = FileAccess.get_file_as_string("res://src/battle/VictoryOverlay.gd")
 	assert_true(src.contains("cr.get(\"stat_gains\", {})"),
-		"the results row must read stat_gains")
+		"the card gains line must read stat_gains")
 	assert_true(src.contains("%s +%d"),
 		"gains must render as 'STAT +N'")
-	# Compact layout (2026-07-11): gains ride the single level-up line;
-	# the height budget is one 20px line per leveled character.
-	var h_idx: int = src.find("char_height_total += 52")
-	var h_window: String = src.substr(h_idx, 300)
-	assert_true(h_window.contains("+= 20"),
-		"panel height must budget the compact level-up line")
+	assert_true(src.contains("gains.clip_text = true"),
+		"gains ride ONE clipped line per card — the compact-layout rule's successor")

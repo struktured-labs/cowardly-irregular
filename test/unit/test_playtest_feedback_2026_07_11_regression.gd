@@ -14,13 +14,10 @@ const SettingsMenuScript := preload("res://src/ui/SettingsMenu.gd")
 
 
 func test_victory_panel_clears_sprites_and_log() -> void:
-	var src := FileAccess.get_file_as_string(BSD_PATH)
-	assert_true("PRESET_CENTER_LEFT" in src,
-		"panel must be left-anchored, not centered over the party sprites")
-	assert_true("panel.offset_left = 200" in src,
-		"panel starts at x=200 — right of the battle log (x<180)")
-	assert_true("panel.offset_right = 200 + panel_width" in src,
-		"panel ends at x=600 — left of the party sprites (x>800)")
+	# 2026-08-18 revamp successors: cards clamp clear of the log; dim stays light.
+	var src := FileAccess.get_file_as_string("res://src/battle/VictoryOverlay.gd")
+	assert_true("LOG_CLEAR_X := 190" in src,
+		"cards clamp right of the battle log (x<180) — the clearance rule's successor")
 	var backdrop_i := src.find("backdrop.color")
 	assert_true("0.22" in src.substr(backdrop_i, 60),
 		"full-screen dim must stay light (0.22) so victory animations remain lit")

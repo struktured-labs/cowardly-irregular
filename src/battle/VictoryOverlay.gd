@@ -169,10 +169,10 @@ func _make_card(cr: Dictionary) -> PanelContainer:
 	h.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	card.add_child(h)
 
-	# Portrait chip (artist portraits keyed by job; absence is fine)
+	# Portrait chip — through the world-aware resolver, never a hand-built path (2026-08-09 six-surfaces defect)
 	var job_key := str(cr.get("job_name", "")).to_lower()
-	var tex_path := "res://assets/sprites/portraits/%s.png" % job_key
-	if ResourceLoader.exists(tex_path):
+	var tex_path: String = HybridSpriteLoader.portrait_path(job_key)
+	if tex_path != "" and ResourceLoader.exists(tex_path):
 		var chip := TextureRect.new()
 		chip.texture = load(tex_path)
 		chip.custom_minimum_size = Vector2(40, 40)
@@ -293,7 +293,7 @@ func _gains_line(cr: Dictionary) -> String:
 	var gains: Dictionary = cr.get("stat_gains", {})
 	for stat in ["HP", "MP", "ATK", "DEF", "MAG", "SPD"]:
 		if gains.has(stat) and int(gains[stat]) != 0:
-			parts.append("%s+%d" % [stat, int(gains[stat])])
+			parts.append("%s +%d" % [stat, int(gains[stat])])
 	var learned: Array = cr.get("learned_abilities", [])
 	if not learned.is_empty():
 		var names: PackedStringArray = []

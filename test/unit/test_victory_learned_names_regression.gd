@@ -8,7 +8,7 @@ extends GutTest
 
 
 func test_victory_screen_resolves_ability_names() -> void:
-	var src := FileAccess.get_file_as_string("res://src/battle/BattleResultsDisplay.gd")
+	var src := FileAccess.get_file_as_string("res://src/battle/VictoryOverlay.gd")
 	assert_true("JobSystem.get_ability(str(aid))" in src,
 		"learned-abilities line must resolve ids through JobSystem")
 	assert_false("\", \".join(PackedStringArray(learned))" in src,

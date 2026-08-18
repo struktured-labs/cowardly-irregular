@@ -101,13 +101,10 @@ func test_shift_const_used_at_all_six_label_sites() -> void:
 ## ── Panel geometry the shift depends on hasn't drifted ────────────────
 
 func test_victory_panel_geometry_still_matches_shift_assumption() -> void:
-	# The shift value assumes panel occupies x=200-600. If BRD moves the
-	# panel, the shift may need retuning. Textual pin catches drift.
-	var brd_src: String = FileAccess.get_file_as_string("res://src/battle/BattleResultsDisplay.gd")
-	assert_string_contains(brd_src, "panel.offset_left = 200",
-		"victory panel left edge is expected at x=200 — if it moves, retune VICTORY_BANNER_X_SHIFT")
-	assert_string_contains(brd_src, "panel.offset_right = 200 + panel_width",
-		"victory panel right edge is expected at 200 + panel_width (typically 600) — if geometry changes, retune")
-	# And panel_width should still be 400 for the shift to be right-sized.
-	assert_string_contains(brd_src, "var panel_width = 400",
-		"panel_width=400 is the ceiling the shift assumes — if it grows, banner needs a matching shift bump")
+	# 2026-08-18 revamp: the x=200-600 panel is gone; cards hang LEFT of the party
+	# sprites with a log-clearance clamp. The shifted banners (x>=640) now share the
+	# right half with the CARDS — flagged as a watch-item for the next victory cap;
+	# banners fire mid-battle and fade before cards normally appear.
+	var vo_src: String = FileAccess.get_file_as_string("res://src/battle/VictoryOverlay.gd")
+	assert_string_contains(vo_src, "LOG_CLEAR_X := 190",
+		"card left-clamp keeps the log clear — the geometry rule the shift const originally defended")
