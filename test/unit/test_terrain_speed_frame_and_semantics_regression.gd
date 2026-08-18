@@ -23,6 +23,7 @@ extends GutTest
 ## never call `apply_terrain_collision_alignment`, so they had the right table in the right frame.
 
 const PLAYER := preload("res://src/exploration/OverworldPlayer.gd")
+const TG := preload("res://src/exploration/TileGenerator.gd")
 
 const OVERWORLDS := {
 	"medieval": ["res://src/exploration/OverworldScene.gd", "res://src/exploration/TileGenerator.gd"],
@@ -190,6 +191,94 @@ func test_rough_terrain_is_a_minority_of_every_world_and_never_the_common_ground
 	assert_eq(worlds_measured, OVERWORLDS.size(),
 		"measured %d of %d worlds -- the rest placed no tiles" % [worlds_measured, OVERWORLDS.size()])
 	assert_true(offenders.is_empty(), "\n  ".join(offenders))
+
+
+## TWO TABLES INTERACT AND NOTHING SURFACED IT. A tile can be declared rough AND declared
+## impassable -- and then its rough speed can never fire, because the player cannot stand on
+## it. Measured 2026-08-18 on W1: FOREST 225/225 cells standable, felt 0.50x; MOUNTAIN 213
+## cells and WATER 1675 cells, both in _get_impassable_types(), both ZERO standable. So the
+## comment this code carried for months -- "Forest/Mountain/Water = slower instead of blocked"
+## -- was true of exactly one of the three, and a reader would reasonably believe water is
+## wadeable at half speed.
+##
+## TWO assertions, because one of them alone was an overclaim I caught while mutating.
+##   (a) RELATIONSHIP: a rough tile that blocks must have no standable cell, and one that
+##       does not block must have some. Catches collision failing to apply, and a rough
+##       entry that is unreachable for a reason other than its own impassability.
+##   (b) INERT ROSTER: which rough entries can never fire, pinned by name. (a) alone does
+##       NOT catch a new rough entry being swallowed -- adding `WALL: 0.5` yields
+##       blocks=true, standable=0, which (a) reads as perfectly consistent. It is
+##       consistent; it is also dead config, and only a roster pin sees it.
+## The roster is deliberately small and a change to it is informative either way: making
+## mountains walkable (the original intent) reds it and says so, which is the right amount
+## of friction for a decision that silently activates a speed nobody has felt.
+func test_a_rough_entry_is_live_exactly_when_its_tile_is_not_impassable() -> void:
+	var built: Dictionary = await _build("medieval")
+	var m = built["map"]
+	var p = built["player"]
+	var gen = m.tile_generator
+	var table: Dictionary = gen._get_rough_terrain_speeds()
+	var impassable: Array = gen._get_impassable_types()
+	var order: Array = gen._get_tile_order()
+	var cols: int = int(gen._get_atlas_dimensions().x)
+	var layer = m.get_node_or_null("TileMapCollision")
+	if layer == null:
+		layer = m.get_node_or_null("TileMap")
+	assert_not_null(layer, "W1 built a tile layer")
+	var space = built["viewport"].world_2d.direct_space_state
+
+	var live := 0
+	var inert := 0
+	var offenders: Array = []
+	for t in table.keys():
+		var placed := 0
+		var standable := 0
+		for cell in layer.get_used_cells():
+			var ac: Vector2i = layer.get_cell_atlas_coords(cell)
+			var idx: int = ac.y * cols + ac.x
+			if idx < 0 or idx >= order.size() or order[idx] != t:
+				continue
+			placed += 1
+			var q := PhysicsShapeQueryParameters2D.new()
+			var s := CircleShape2D.new()
+			s.radius = 4.0
+			q.shape = s
+			q.collision_mask = 1
+			q.transform = Transform2D(0.0, layer.to_global(layer.map_to_local(cell)))
+			if space.intersect_shape(q, 1).is_empty():
+				standable += 1
+		if placed == 0:
+			continue
+		var blocks: bool = t in impassable
+		if blocks:
+			inert += 1
+		else:
+			live += 1
+		if blocks and standable > 0:
+			offenders.append("tile %s is in _get_impassable_types() yet %d/%d cells are standable" % [str(t), standable, placed])
+		if not blocks and standable == 0:
+			offenders.append("tile %s is NOT impassable yet 0/%d cells are standable -- its rough speed %s can never fire" % [
+				str(t), placed, str(table[t])])
+
+	# Controls: the sweep must have found members on BOTH sides, or the check is vacuous.
+	assert_gt(live, 0, "no rough tile type is reachable in W1 -- the rough-terrain feature is entirely dead")
+	assert_gt(inert, 0, "no rough tile type is impassable -- this guard's whole subject is absent, so its silence means nothing")
+	assert_true(offenders.is_empty(), "\n  ".join(offenders))
+
+	# (b) the inert roster, by name. Measured: MOUNTAIN (213 cells) and WATER (1675) place
+	# tiles and block every one of them, so their 0.4/0.5 have never been felt by a player.
+	var inert_names: Array = []
+	for t in table.keys():
+		if t in impassable:
+			inert_names.append(int(t))
+	inert_names.sort()
+	var expected: Array = [int(TG.TileType.MOUNTAIN), int(TG.TileType.WATER)]
+	expected.sort()
+	assert_eq(inert_names, expected,
+		("W1's DEAD rough entries changed. Each tile here is declared rough AND impassable, " +
+		"so its speed can never fire. Adding one is dead config; removing one activates a " +
+		"speed no player has ever felt. Either may be intended -- update this list and say " +
+		"which in the commit."))
 
 
 ## The frame. Under Mode 7 the sampler must read the collider clone, not the authored layer.
