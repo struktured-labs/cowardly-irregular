@@ -7,6 +7,7 @@ class_name SoundManagerClass
 # Audio players for different channels
 var _ui_player: AudioStreamPlayer
 var _battle_player: AudioStreamPlayer
+var _death_player: AudioStreamPlayer  # dedicated voice: death cries survive the next action's sounds (2026-08-18)
 var _ability_player: AudioStreamPlayer
 var _music_player: AudioStreamPlayer
 var _music_player_b: AudioStreamPlayer  # Second player for crossfade
@@ -245,6 +246,12 @@ func _setup_audio_players() -> void:
 	_battle_player.volume_db = SFX_BATTLE_BASE_DB  # Battle SFX: punchy alongside music
 	_battle_player.bus = SFX_BUS
 	add_child(_battle_player)
+
+	_death_player = AudioStreamPlayer.new()
+	_death_player.name = "DeathPlayer"
+	_death_player.volume_db = SFX_BATTLE_BASE_DB + 2.0
+	_death_player.bus = SFX_BUS
+	add_child(_death_player)
 
 	_ability_player = AudioStreamPlayer.new()
 	_ability_player.name = "AbilityPlayer"
@@ -508,6 +515,17 @@ func play_battle(sound_key: String) -> void:
 	if not SOUNDS.has(sound_key):
 		return
 	_play_sound(_battle_player, SOUNDS[sound_key])
+
+
+## Death cries on their OWN voice — on the shared _battle_player the 1s scorch was stomped by the killing blow's hit sound, then (post-fix) by the NEXT action's sounds at 2x+ speed. Never audible either way (struktured 2026-08-15 + 2026-08-18).
+func play_death(sound_key: String) -> void:
+	var world_key: String = _get_world_sfx_prefix() + sound_key
+	if world_key != sound_key and _try_play_sfx_from_manifest(_death_player, world_key):
+		return
+	if _try_play_sfx_from_manifest(_death_player, sound_key):
+		return
+	if SOUNDS.has(sound_key):
+		_play_sound(_death_player, SOUNDS[sound_key])
 
 
 func play_battle_scaled(sound_key: String, volume_db: float = 0.0, pitch_scale: float = 1.0) -> void:

@@ -17,14 +17,28 @@ func test_death_cry_fires_inside_the_fade_tween_not_before_the_hit_sound() -> vo
 
 	var tween_start := body.find("var tween = create_tween()")
 	assert_gt(tween_start, -1, "death tween present")
-	var cry := body.find('play_battle("enemy_death")', tween_start)
+	var cry := body.find('play_death("enemy_death")', tween_start)
 	assert_gt(cry, tween_start, "the scorch fires INSIDE the death tween (after the flash) — immediately-on-died gets stomped by the killing blow's hit sound on the shared battle player")
 	var dissolve := body.find("dissolve_amount", tween_start)
 	assert_gt(dissolve, cry, "the scorch starts before/with the dissolve step, synced to the fade the player watches")
 
 	# No early fire: between function start and the tween there is no play (except the spriteless fallback, which is inside a not-valid guard)
 	var head := body.substr(0, tween_start)
-	var early := head.find('play_battle("enemy_death")')
+	var early := head.find('play_death("enemy_death")')
 	if early > -1:
 		var guard := head.rfind("if not is_instance_valid(sprite):", early)
 		assert_gt(guard, -1, "any pre-tween death cry must be the spriteless fallback only")
+
+
+func test_death_cry_has_its_own_voice() -> void:
+	# 2026-08-18 second report: even fired at fade-start, the scorch died on the
+	# SHARED _battle_player — at 2x+ speed the next action's hit sound arrives
+	# inside the 1s tail and cuts it. Death cries get a dedicated player.
+	var sm := FileAccess.get_file_as_string("res://src/audio/SoundManager.gd")
+	assert_true("var _death_player: AudioStreamPlayer" in sm, "dedicated death voice exists")
+	var fn := sm.find("func play_death")
+	assert_gt(fn, -1, "play_death helper exists")
+	var body := sm.substr(fn, sm.find("\nfunc ", fn + 1) - fn)
+	assert_true("_death_player" in body, "play_death routes to the dedicated voice")
+	assert_false("_battle_player" in body, "play_death must NOT touch the shared battle voice")
+

@@ -4237,7 +4237,7 @@ func _on_enemy_died(enemy_idx: int) -> void:
 			animator.play_defeat()
 			# Death moment: shader pixel-dissolve + burst + hold; FF-flicker kept as the material-less/OFF fallback
 			if not is_instance_valid(sprite):
-				SoundManager.play_battle("enemy_death")
+				SoundManager.play_death("enemy_death")
 			if is_instance_valid(sprite):
 				sprite.set_meta("dying", true)
 				var death_tier := _tier()
@@ -4250,7 +4250,7 @@ func _on_enemy_died(enemy_idx: int) -> void:
 				tween.tween_property(sprite, "modulate", Color(3.0, 3.0, 3.0, 1.0), 0.1)
 				tween.tween_property(sprite, "modulate", Color(1.0, 1.0, 1.0, 1.0), 0.1)
 				# The burned-away scorch starts WITH the fade — after the killing blow's hit sound, not under it.
-				tween.tween_callback(func() -> void: SoundManager.play_battle("enemy_death"))
+				tween.tween_callback(func() -> void: SoundManager.play_death("enemy_death"))
 				if has_dissolve:
 					tween.tween_method(func(v: float) -> void:
 						if is_instance_valid(sprite) and sprite.material is ShaderMaterial:
