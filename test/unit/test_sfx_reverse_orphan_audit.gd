@@ -71,6 +71,15 @@ const KNOWN_PENDING_CONSUMER := {
 	"debuff_v3": "unwired alternate take",
 	"heal_v2": "unwired alternate take",
 	"heal_v3": "unwired alternate take",
+	# cowir-main: victory-sequence wiring blocked on the voice-topology ruling —
+	# all 5 cues share _battle_player today, so retrigger order decides the mix.
+	"victory_slam": "cowir-main victory sequence",
+	"loot_pop": "cowir-main victory sequence",
+	"exp_bar_tick_ramp_lo": "cowir-main EXP bar fill ramp",
+	"exp_bar_tick_ramp_mid": "cowir-main EXP bar fill ramp",
+	"exp_bar_tick_ramp_hi": "cowir-main EXP bar fill ramp",
+	"levelup_flourish": "cowir-main victory sequence",
+	"injury_sting": "cowir-main victory sequence",
 }
 
 

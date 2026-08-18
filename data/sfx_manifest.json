@@ -1798,6 +1798,52 @@
       "prompt": "Hardcover book slammed shut, very loud and close. A sharp cracking SLAP as the covers meet, over a solid low wooden thud. Punchy, immediate, recorded hot and full-scale. Percussive and decisive like a gavel. No rustling paper.",
       "duration_seconds": 1.0,
       "prompt_influence": 0.75
+    },
+    "victory_slam": {
+      "file": "assets/audio/sfx/victory_slam.ogg",
+      "prompt": "Huge close-miked drum hit with a sharp rimshot crack on top, loud and full-bodied, deep resonant thump underneath a bright snapping attack, powerful cinematic percussion hit, strong and forward in the mix",
+      "duration_seconds": 0.6,
+      "prompt_influence": 0.7
+    },
+    "exp_bar_tick_ramp_lo": {
+      "file": "assets/audio/sfx/exp_bar_tick_ramp_lo.ogg",
+      "prompt": "Short clean digital tick, low-pitched counter blip, crisp and unobtrusive, a single increment",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.6,
+      "_trim_seconds": 0.12
+    },
+    "exp_bar_tick_ramp_mid": {
+      "file": "assets/audio/sfx/exp_bar_tick_ramp_mid.ogg",
+      "prompt": "One single instantaneous mid-pitched digital click, immediate sharp attack with absolutely no build-up or rise, over instantly, followed by complete silence",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.6,
+      "_trim_seconds": 0.12
+    },
+    "exp_bar_tick_ramp_hi": {
+      "file": "assets/audio/sfx/exp_bar_tick_ramp_hi.ogg",
+      "prompt": "One single instantaneous high-pitched bright digital click, immediate sharp attack with absolutely no build-up or rise, over instantly, followed by complete silence",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.6,
+      "_trim_seconds": 0.12
+    },
+    "levelup_flourish": {
+      "file": "assets/audio/sfx/levelup_flourish.ogg",
+      "prompt": "Bright ascending magical flourish opening into a shimmering burst, celebratory sparkle rising to a clear ringing bell accent, triumphant and airy, present and forceful",
+      "duration_seconds": 0.9,
+      "prompt_influence": 0.7
+    },
+    "loot_pop": {
+      "file": "assets/audio/sfx/loot_pop.ogg",
+      "prompt": "Bright glassy pop, a high clear plink with sparkling upper harmonics, like a coin chiming onto glass — crisp cutting attack, loud and forward, treble-rich",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.6,
+      "_trim_seconds": 0.25
+    },
+    "injury_sting": {
+      "file": "assets/audio/sfx/injury_sting.ogg",
+      "prompt": "Low ominous sting, dark descending tone with a dissonant edge and a long resonant decay, heavy and present, a sense of dread and permanence",
+      "duration_seconds": 1.1,
+      "prompt_influence": 0.75
     }
   }
 }
