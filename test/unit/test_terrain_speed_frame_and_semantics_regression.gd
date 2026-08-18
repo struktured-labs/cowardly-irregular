@@ -129,6 +129,69 @@ func test_no_world_is_slowed_by_another_worlds_tile_table() -> void:
 	assert_true(offenders.is_empty(), "\n  ".join(offenders))
 
 
+## THE COMPLAINT ITSELF, and the reason the test above is not enough on its own. That one
+## asserts the sampler AGREES WITH the generator's declaration, so re-introducing the defect
+## through the base class -- returning `{order[1]: 0.5, order[2]: 0.4, order[3]: 0.5}`, which
+## is precisely what the old hardcoded match did -- keeps sampler and declaration in perfect
+## agreement and passes it. Measured: that mutation scored 4/4 green. Consistency checks cannot
+## catch a wrong declaration, so this pins the PROPERTY instead: rough terrain is a minority
+## feature. A world whose common ground is "rough" has no ordinary walking speed at all.
+## LIMIT, stated because the mutation only tripped it through W2: this catches rough-as-default,
+## not a single wrong entry in one world. Which tiles are rough is an authoring call and no test
+## can adjudicate it -- the three checks here cover sampler-ignores-declaration, foreign tile
+## types, and rough-as-the-common-ground, and deliberately stop there.
+func test_rough_terrain_is_a_minority_of_every_world_and_never_the_common_ground() -> void:
+	var offenders: Array = []
+	var worlds_measured := 0
+
+	for world in OVERWORLDS.keys():
+		var built: Dictionary = await _build(world)
+		var m = built["map"]
+		var p = built["player"]
+		var gen = m.tile_generator
+		var order: Array = gen._get_tile_order()
+		var cols: int = int(gen._get_atlas_dimensions().x)
+		var layer = m.get_node_or_null("TileMapCollision")
+		if layer == null:
+			layer = m.get_node_or_null("TileMap")
+		if layer == null:
+			continue
+
+		var speed_of := {}
+		var count := {}
+		var cells: Array = layer.get_used_cells()
+		for cell in cells:
+			var ac: Vector2i = layer.get_cell_atlas_coords(cell)
+			count[ac] = int(count.get(ac, 0)) + 1
+			if not speed_of.has(ac):
+				p.global_position = layer.to_global(layer.map_to_local(cell))
+				speed_of[ac] = p._get_terrain_speed_modifier()
+		if cells.is_empty():
+			continue
+		worlds_measured += 1
+
+		var slowed_cells := 0
+		var commonest: Vector2i = Vector2i(-1, -1)
+		for ac in count.keys():
+			if float(speed_of[ac]) < 1.0:
+				slowed_cells += int(count[ac])
+			if commonest == Vector2i(-1, -1) or int(count[ac]) > int(count[commonest]):
+				commonest = ac
+
+		var frac := float(slowed_cells) / float(cells.size())
+		if frac >= 0.5:
+			offenders.append("%s: %.0f%% of placed tiles are slowed -- rough terrain is the default surface" % [world, frac * 100.0])
+		if float(speed_of[commonest]) < 1.0:
+			var idx: int = commonest.y * cols + commonest.x
+			var tname = order[idx] if idx >= 0 and idx < order.size() else -1
+			offenders.append("%s: its MOST COMMON tile (type %s, %d cells) is slowed to %.2fx" % [
+				world, str(tname), int(count[commonest]), float(speed_of[commonest])])
+
+	assert_eq(worlds_measured, OVERWORLDS.size(),
+		"measured %d of %d worlds -- the rest placed no tiles" % [worlds_measured, OVERWORLDS.size()])
+	assert_true(offenders.is_empty(), "\n  ".join(offenders))
+
+
 ## The frame. Under Mode 7 the sampler must read the collider clone, not the authored layer.
 func test_the_sampler_reads_the_layer_that_owns_collision() -> void:
 	var built: Dictionary = await _build("medieval")
