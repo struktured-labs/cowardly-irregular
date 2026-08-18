@@ -2838,7 +2838,7 @@
         }
       },
       "tier": "T2",
-      "source": "artist aseprite drop 2026-08-16 (cowir-sprites tmp/drop/skeleton_artist_full.png, 4 idle + 6 attack frames upscaled to 256 by the ingest pipeline); hit/dead reuse idle frames \u2014 death visual is the dissolve shader."
+      "source": "artist aseprite drop 2026-08-16 (cowir-sprites tmp/drop/skeleton_artist_full.png, 4 idle + 6 attack frames upscaled to 256 by the ingest pipeline); hit/dead reuse idle frames \u2014 death visual is the dissolve shader. | RESCALED 2026-08-17 to 2.84x (was 2x): content 148x171 feet y=238 vs neighbour 188/y=237. struktured: \"his way too small, you need like 2.5x\". Scale = min(match-reference-height, fit-widest-frame); whole canvas scaled once so the artist's inter-frame registration is preserved."
     },
     "slime": {
       "path": "res://assets/sprites/monsters/slime.png",
@@ -3463,6 +3463,32 @@
       },
       "tier": "T1",
       "source": "gpt-image-1 4-pose contact-sheet anchored to artist fighter reference (tools/regen_monster_artist_style.py) \u2014 bespoke prompt with EXACTLY-ONE-SUBJECT-PER-FRAME discipline. Playtest bug fix (cowir-main msgs 2560/2561): W1 multi-subject defect regen. | 2026-08-17: preserved as the Skeleton Soldier class when the artist skeleton drop replaced the base id (struktured: 'keep these guys around for some other skeleton type')."
+    },
+    "bone_warden": {
+      "path": "res://assets/sprites/monsters/bone_warden.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 3
+        },
+        "attack": {
+          "start": 4,
+          "end": 9
+        },
+        "hit": {
+          "start": 0,
+          "end": 1
+        },
+        "dead": {
+          "start": 3,
+          "end": 3
+        }
+      },
+      "tier": "T2",
+      "source": "ARTIST 'enemies/Skeleton animations.aseprite' (2026-08-16), palette-shifted elite variant (blue->venom green, gold->bone). Artist linework and shading unmodified. Same frame layout as skeleton; hit/dead reference idle, dissolve shader owns death."
     }
   },
   "npc_sheets": {

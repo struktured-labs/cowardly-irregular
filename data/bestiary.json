@@ -398,5 +398,9 @@
   "skeleton_soldier": {
     "epithet": "The Standing Order",
     "flavor": "Nobody ever countermanded the last order, so he is still following it. The order was 'hold'. He has been holding for four hundred years. He is very good at it now."
+  },
+  "bone_warden": {
+    "epithet": "Still On Duty",
+    "flavor": "Outranked the skeletons it now stands among, and has not been told the war ended. It gave its blade away and never asked for another, which it does not consider a disadvantage. Salutes nobody. There is nobody left of sufficient rank."
   }
 }
