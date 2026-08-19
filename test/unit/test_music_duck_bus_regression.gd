@@ -34,16 +34,24 @@ func test_music_duck_bus_exists_after_boot() -> void:
 	assert_ne(idx, -1, "MusicDuck bus must be created at SoundManager _ready — the duck API depends on it")
 
 
-func test_duck_bus_carries_single_amplify_effect() -> void:
+func test_duck_bus_carries_one_amplify_PER_SOURCE() -> void:
+	## Was "exactly one Amplify — extras would compound the attenuation". Compounding is now
+	## the POINT: a kill landing mid-dialogue should duck further, not fight for one property.
+	## The original invariant was right for one source and its rationale did not survive a
+	## second. What must stay fixed is ONE SLOT PER SOURCE — a source sharing another's slot
+	## would kill its tween and silently release it (the failure the split exists to prevent).
 	var idx: int = _bus_index("MusicDuck")
 	if idx == -1:
 		pass_test("Bus not present in this context")
 		return
-	assert_eq(AudioServer.get_bus_effect_count(idx), 1,
-		"MusicDuck must carry exactly one Amplify — extras would compound the attenuation, missing would drop the duck")
-	var e0 = AudioServer.get_bus_effect(idx, 0)
-	assert_true(e0 is AudioEffectAmplify,
-		"Effect 0 must be AudioEffectAmplify — it's what we taper for the duck")
+	var sm = _sm()
+	assert_eq(AudioServer.get_bus_effect_count(idx), 2,
+		"MusicDuck must carry one Amplify per duck SOURCE: slot 0 dialogue (msg 2700), slot 1 kill. A third means a source was added without declaring itself here; one means a source is sharing a slot.")
+	for slot in [0, sm.KILL_DUCK_EFFECT_SLOT]:
+		assert_true(AudioServer.get_bus_effect(idx, slot) is AudioEffectAmplify,
+			"Effect %d must be AudioEffectAmplify — it's what we taper for the duck" % slot)
+	assert_eq(sm.KILL_DUCK_EFFECT_SLOT, 1,
+		"the kill duck must not move onto dialogue's slot 0")
 
 
 func test_amp_defaults_to_transparent_and_enabled() -> void:

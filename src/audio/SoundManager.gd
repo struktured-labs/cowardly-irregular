@@ -12,6 +12,7 @@ var _ability_player: AudioStreamPlayer
 var _music_player: AudioStreamPlayer
 var _music_player_b: AudioStreamPlayer  # Second player for crossfade
 var _ambient_player: AudioStreamPlayer  # Looping weather/environment ambience
+var _sub_player: AudioStreamPlayer  # Crit sub-layer only; separate so the thud LAYERS under the hit instead of replacing it on _battle_player
 var _current_ambient_key: String = ""
 var _crossfade_tween: Tween = null
 
@@ -65,6 +66,18 @@ const NIGHT_AMBIENCE_KEY: String = "night_crickets_wind"
 const MUSIC_DUCK_BUS: String = "MusicDuck"
 const DUCK_TARGET_DB: float = -6.0
 const DUCK_TAPER_TIME: float = 0.25
+## Kill duck: cowir-main's envelope (-4dB / 50ms attack / 400ms release) — a beat, not a dropout. Slot 1 keeps it off dialogue's slot 0 so the two compose instead of overwriting.
+const KILL_DUCK_EFFECT_SLOT: int = 1
+const KILL_DUCK_TARGET_DB: float = -4.0
+const KILL_DUCK_ATTACK_TIME: float = 0.05
+const KILL_DUCK_RELEASE_TIME: float = 0.4
+## Crit sub-layer: sits UNDER the existing crit cue (which already carries pitch/echo identity in its OGG) so crits land in the chest without doubling the transient.
+const CRIT_THUD_FREQ: float = 62.0
+const CRIT_THUD_DURATION: float = 0.18
+const CRIT_THUD_TRIM_DB: float = -4.0
+## Combo ramp: a BIAS multiplied onto pitch_scale, so the existing ±5% jitter survives underneath it.
+const COMBO_PITCH_STEP: float = 0.03
+const COMBO_PITCH_CAP: float = 0.12
 
 # Music cache - stores pre-generated AudioStreamWAV for each monster type
 var _music_cache: Dictionary = {}
@@ -252,6 +265,12 @@ func _setup_audio_players() -> void:
 	_death_player.volume_db = SFX_BATTLE_BASE_DB + 2.0
 	_death_player.bus = SFX_BUS
 	add_child(_death_player)
+
+	_sub_player = AudioStreamPlayer.new()
+	_sub_player.name = "SubPlayer"
+	_sub_player.volume_db = SFX_BATTLE_BASE_DB + CRIT_THUD_TRIM_DB
+	_sub_player.bus = SFX_BUS
+	add_child(_sub_player)
 
 	_ability_player = AudioStreamPlayer.new()
 	_ability_player.name = "AbilityPlayer"
@@ -551,11 +570,14 @@ func play_attack_hit(weapon_type: String = "", is_crit: bool = false) -> void:
 	# The procedural fallback still gets the old crit boost.
 	var suffix = "_crit" if is_crit else ""
 	var generic_key = "critical_hit" if is_crit else "attack_hit"
+	# Step 0 yields exactly 1.0, so a non-chained hit is bit-identical to the pre-ramp path.
+	var bias: float = _combo_pitch_bias()
+	_combo_step += 1
 	if not weapon_type.is_empty():
 		var per_weapon_key = "attack_hit_%s%s" % [weapon_type, suffix]
-		if _try_play_sfx_from_manifest(_battle_player, per_weapon_key):
+		if _try_play_sfx_from_manifest(_battle_player, per_weapon_key, NAN, bias):
 			return
-	if _try_play_sfx_from_manifest(_battle_player, generic_key):
+	if _try_play_sfx_from_manifest(_battle_player, generic_key, NAN, bias):
 		return
 	if not SOUNDS.has(generic_key):
 		return
@@ -563,10 +585,38 @@ func play_attack_hit(weapon_type: String = "", is_crit: bool = false) -> void:
 		var params = SOUNDS[generic_key].duplicate()
 		params["volume_db"] = 2.0
 		if params.has("freq"):
-			params["freq"] = params["freq"] * 1.3
+			params["freq"] = params["freq"] * 1.3 * bias
 		_play_sound(_battle_player, params)
 	else:
-		_play_sound(_battle_player, SOUNDS[generic_key])
+		var plain = SOUNDS[generic_key].duplicate()
+		if plain.has("freq"):
+			plain["freq"] = plain["freq"] * bias
+		_play_sound(_battle_player, plain)
+
+
+## Consecutive-hit pitch bias. Reset per ACTION by the caller — an unreset counter would ramp across a whole battle.
+var _combo_step: int = 0
+
+
+func _combo_pitch_bias() -> float:
+	return 1.0 + minf(float(_combo_step) * COMBO_PITCH_STEP, COMBO_PITCH_CAP)
+
+
+## Public: call at the start of each action so multi-hit chains ramp but separate actions do not.
+func reset_hit_chain() -> void:
+	_combo_step = 0
+
+
+## Public: test/inspection seam for the current ramp multiplier.
+func get_combo_pitch_bias() -> float:
+	return _combo_pitch_bias()
+
+
+## Public: low sub-layer UNDER a crit. Its own player so it stacks with the crit cue rather than replacing it; the caller owns tier/flag gating.
+func play_crit_thud() -> void:
+	if _sub_player == null:
+		return
+	_play_sound(_sub_player, {"freq": CRIT_THUD_FREQ, "duration": CRIT_THUD_DURATION, "type": "thud"})
 
 
 func play_ability(ability_id: String) -> void:
@@ -733,6 +783,12 @@ func _ensure_music_duck_bus() -> void:
 	# disabled would require an enable-flip at taper-start, which we chose to
 	# avoid (see class doc — hard steps are audible).
 	AudioServer.set_bus_effect_enabled(idx, 0, true)
+	# Slot 1 (kill duck) is built here too, so the bus has one slot per source from boot.
+	# Creating it lazily made the bus's SHAPE depend on whether a kill had happened yet.
+	var kill_amp := AudioEffectAmplify.new()
+	kill_amp.volume_db = 0.0
+	AudioServer.add_bus_effect(idx, kill_amp)
+	AudioServer.set_bus_effect_enabled(idx, KILL_DUCK_EFFECT_SLOT, true)
 
 
 ## Public: modal-dialogue enter/exit hook. Idempotent, tapered.
@@ -760,6 +816,61 @@ func duck_music_for_dialogue(active: bool) -> void:
 ## Public: report whether music is currently ducked for dialogue.
 func is_music_ducked_for_dialogue() -> bool:
 	return _duck_active
+
+
+## Kill-duck lives on its OWN Amplify (slot 1) instead of sharing the dialogue one: duck_music_for_dialogue() hardcodes slot 0 and KILLS any running tween, so one shared property would let a kill silently release an active dialogue duck mid-conversation. Serial Amplifies sum in dB, so the two sources compose (-6 dialogue + -4 kill = -10) with no shared state to coordinate.
+var _kill_duck_tween: Tween = null
+
+
+## Slot 0 is dialogue's (msg 2700); never write it from here.
+func _ensure_kill_duck_effect() -> int:
+	var idx: int = AudioServer.get_bus_index(MUSIC_DUCK_BUS)
+	if idx == -1:
+		_ensure_music_duck_bus()
+		idx = AudioServer.get_bus_index(MUSIC_DUCK_BUS)
+	if idx == -1:
+		return -1
+	# Not folded into _ensure_music_duck_bus(): that early-returns when the bus already
+	# exists, so a bus built before this slot existed would never gain it.
+	while AudioServer.get_bus_effect_count(idx) <= KILL_DUCK_EFFECT_SLOT:
+		var amp := AudioEffectAmplify.new()
+		amp.volume_db = 0.0
+		AudioServer.add_bus_effect(idx, amp)
+		AudioServer.set_bus_effect_enabled(idx, AudioServer.get_bus_effect_count(idx) - 1, true)
+	return idx
+
+
+## One-shot punctuation duck for a kill. Tier-gated by the CALLER (BattleScene owns turbo/autogrind); this only owns the bus math.
+func duck_music_for_kill() -> void:
+	var idx: int = _ensure_kill_duck_effect()
+	if idx == -1:
+		return
+	var amp = AudioServer.get_bus_effect(idx, KILL_DUCK_EFFECT_SLOT)
+	if amp == null:
+		return
+	# Retrigger restarts the envelope from wherever it is rather than stacking a second
+	# tween on the same property — two live tweens would fight and land anywhere.
+	if _kill_duck_tween and _kill_duck_tween.is_valid():
+		_kill_duck_tween.kill()
+	_kill_duck_tween = create_tween()
+	# Tween durations are ENGINE time, but the music this ducks runs on the mixer clock and
+	# does not slow with battle speed. Bare, the 0.4s release costs 1.6s of wall clock at the
+	# default 1x rung (engine 0.25) — a dropout, not the beat that was asked for. Ignoring the
+	# time scale is the right primitive here rather than a `* time_scale` compensation, which
+	# samples the scale ONCE at creation and so latches a hitlag's 0.1 if a kill lands inside
+	# a crit window (cowir-battle measured that fragility, 2026-08-15).
+	_kill_duck_tween.set_ignore_time_scale(true)
+	_kill_duck_tween.tween_property(amp, "volume_db", KILL_DUCK_TARGET_DB, KILL_DUCK_ATTACK_TIME)
+	_kill_duck_tween.tween_property(amp, "volume_db", 0.0, KILL_DUCK_RELEASE_TIME)
+
+
+## Public: current kill-duck attenuation in dB (0.0 at rest). Test seam — reading the bus is the only way to observe this without ears.
+func get_kill_duck_db() -> float:
+	var idx: int = AudioServer.get_bus_index(MUSIC_DUCK_BUS)
+	if idx == -1 or AudioServer.get_bus_effect_count(idx) <= KILL_DUCK_EFFECT_SLOT:
+		return 0.0
+	var amp = AudioServer.get_bus_effect(idx, KILL_DUCK_EFFECT_SLOT)
+	return amp.volume_db if amp else 0.0
 
 
 func play_footstep(terrain: String = "grass") -> void:
