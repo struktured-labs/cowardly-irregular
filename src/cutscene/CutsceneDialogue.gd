@@ -21,6 +21,8 @@ var _typing_speed: float = 0.03
 var _current_text: String = ""
 var _displayed_chars: int = 0
 var _typing_timer: Timer
+## Does THIS panel own the music duck? Freeing mid-line must unduck, but only its own.
+var _ducked_music: bool = false
 
 ## Typewriter speed per GameState.text_speed setting. "instant" returns 0.0
 ## which the dialogue start path interprets as "skip the typewriter entirely
@@ -362,6 +364,9 @@ func _ready() -> void:
 func _exit_tree() -> void:
 	if _typing_timer and is_instance_valid(_typing_timer):
 		_typing_timer.stop()
+	# The duck lives on the SoundManager AUTOLOAD, which outlives this node — freeing mid-line otherwise strands music at DUCK_TARGET_DB for the rest of the session.
+	if _ducked_music:
+		_duck_music_for_dialogue(false)
 
 
 func _setup_typing_timer() -> void:
@@ -862,6 +867,7 @@ func _finish_dialogue() -> void:
 func _duck_music_for_dialogue(active: bool) -> void:
 	if SoundManager and SoundManager.has_method("duck_music_for_dialogue"):
 		SoundManager.duck_music_for_dialogue(active)
+		_ducked_music = active
 
 
 func _input(event: InputEvent) -> void:
