@@ -86,10 +86,14 @@ const POWER_MAX: float = 2.0  # Maximum effect scale for powerful spells
 
 
 ## msg 2754 cycle 14: weapon_type is caller-provided (previously EffectSystem read BattleManager.current_combatant, stale mid-execution). Empty string = generic attack_hit fallback in SoundManager — safe default for non-PHYSICAL and non-execution-phase callers.
-func spawn_effect(effect_type: EffectType, position: Vector2, on_complete: Callable = Callable(), power: float = 1.0, weapon_type: String = "") -> void:
+func spawn_effect(effect_type: EffectType, position: Vector2, on_complete: Callable = Callable(), power: float = 1.0, weapon_type: String = "", tint: Variant = null) -> void:
 	"""Spawn a visual effect at the given position with optional power scaling"""
 	var effect = _create_effect(effect_type)
 	effect.position = position
+	## Earth/wind/water/arcane have no dedicated animation — they borrow one and tint it, so they
+	## are distinguishable from the element they borrow from.
+	if tint is Color:
+		effect.modulate = tint
 	_effects_container.add_child(effect)
 
 	# Clamp power to reasonable range
@@ -111,71 +115,39 @@ func spawn_effect_on_target(effect_type: EffectType, target_sprite: Node2D, on_c
 	spawn_effect(effect_type, target_sprite.global_position, on_complete, power, weapon_type)
 
 
-func spawn_ability_effect(ability_id: String, target_position: Vector2, on_complete: Callable = Callable(), power: float = 1.0) -> void:
-	"""Spawn effect based on ability ID with power scaling"""
-	var effect_type = _get_effect_type_for_ability(ability_id)
-	# Auto-scale power based on ability tier
-	var auto_power = _get_ability_power_tier(ability_id)
-	spawn_effect(effect_type, target_position, on_complete, auto_power if power == 1.0 else power)
+## Accepts an id OR the full ability dict — the dict path is what carries element/vfx through.
+func spawn_ability_effect(ability: Variant, target_position: Vector2, on_complete: Callable = Callable(), power: float = 1.0) -> void:
+	"""Spawn effect based on ability ID or ability dictionary with power scaling"""
+	var data: Dictionary = {}
+	if ability is Dictionary:
+		data = ability
+	elif ability is String:
+		data = JobSystem.get_ability(ability) if JobSystem else {}
+		if data.is_empty():
+			data = {"id": ability}
+		elif not data.has("id"):
+			data["id"] = ability
+	var vfx: Dictionary = AbilityVFX.resolve(data)
+	spawn_effect(vfx["type"], target_position, on_complete,
+		float(vfx["power"]) if power == 1.0 else power, "", vfx["color"])
 
 
+## Ladder moved to AbilityVFX.power_for so the resolver and this path cannot drift apart.
 func _get_ability_power_tier(ability_id: String) -> float:
 	"""Get power tier based on ability name suffix (basic -> -a -> -aga)"""
-	# Tier 3 spells (most powerful)
-	if ability_id.ends_with("aga") or ability_id in ["holy", "flare", "ultima", "megalixir"]:
-		return 1.8
-	# Tier 2 spells
-	if ability_id.ends_with("a") or ability_id in ["cura", "fira", "blizzara", "thundara", "hi_ether"]:
-		return 1.3
-	# Tier 1 spells (basic)
-	return 1.0
+	return AbilityVFX.power_for(ability_id)
 
 
+## Delegates to AbilityVFX — the ~45-id whitelist lives there as precedence level 2 and matched
+## only 19 of 289 abilities on its own.
 func _get_effect_type_for_ability(ability_id: String) -> EffectType:
 	"""Map ability ID to effect type"""
-	# Fire abilities
-	if ability_id in ["fire", "fira", "firaga", "flame_strike"]:
-		return EffectType.FIRE
-
-	# Ice abilities
-	if ability_id in ["blizzard", "blizzara", "blizzaga", "ice_lance"]:
-		return EffectType.ICE
-
-	# Lightning abilities
-	if ability_id in ["thunder", "thundara", "thundaga", "shock"]:
-		return EffectType.LIGHTNING
-
-	# Holy abilities
-	if ability_id in ["holy", "divine_light", "smite"]:
-		return EffectType.HOLY
-
-	# Dark abilities
-	if ability_id in ["dark", "drain", "darkness", "shadow_bolt", "life_drain"]:
-		return EffectType.DARK
-
-	# Heal abilities
-	if ability_id in ["cure", "cura", "curaga", "heal", "regen"]:
-		return EffectType.HEAL
-
-	# MP restore abilities (items + free-move channel/pray/riff)
-	if ability_id in ["ether", "hi_ether", "mega_ether", "elixir", "megalixir",
-			"channel", "pray", "riff"]:
-		return EffectType.MP_RESTORE
-
-	# Buff abilities
-	if ability_id in ["protect", "shell", "haste", "brave", "faith"]:
-		return EffectType.BUFF
-
-	# Debuff abilities
-	if ability_id in ["slow", "dispel", "break", "weaken"]:
-		return EffectType.DEBUFF
-
-	# Poison abilities
-	if ability_id in ["poison", "bio", "venom"]:
-		return EffectType.POISON
-
-	# Default to physical
-	return EffectType.PHYSICAL
+	var data: Dictionary = JobSystem.get_ability(ability_id) if JobSystem else {}
+	if data.is_empty():
+		data = {"id": ability_id}
+	elif not data.has("id"):
+		data["id"] = ability_id
+	return AbilityVFX.resolve(data)["type"]
 
 
 ## msg 2754 cycle 14: weapon_type is now a caller-provided param (cycle 12's deferred item). Empty string → SoundManager.play_attack_hit falls back to generic attack_hit. Pre-fix EffectSystem read BattleManager.current_combatant here, which was stale/null mid-execution (same class as cycle 12's BattleScene readers).
