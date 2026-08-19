@@ -5317,5 +5317,46 @@
       "ice"
     ],
     "undead": true
+  },
+  "bone_warden": {
+    "id": "bone_warden",
+    "name": "Bone Warden",
+    "description": "A skeleton that kept its rank. Fights bare-handed because it buried its sword with someone it respected.",
+    "level": 9,
+    "stats": {
+      "max_hp": 2600,
+      "max_mp": 70,
+      "attack": 520,
+      "defense": 175,
+      "magic": 210,
+      "magic_defense": 110,
+      "speed": 13
+    },
+    "abilities": [
+      "dark_slash",
+      "rending_bite",
+      "drain_life"
+    ],
+    "exp_reward": 85,
+    "gold_reward": 65,
+    "drop_table": [
+      {
+        "item": "bone",
+        "chance": 0.55
+      },
+      {
+        "item": "ether",
+        "chance": 0.2
+      }
+    ],
+    "weaknesses": [
+      "fire",
+      "holy"
+    ],
+    "resistances": [
+      "dark",
+      "ice"
+    ],
+    "undead": true
   }
 }

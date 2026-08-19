@@ -78,14 +78,16 @@
   "corrupted_zone": [
     "corrupted_sprite",
     "glitch_entity",
-    "skeleton"
+    "skeleton",
+    "bone_warden"
   ],
   "deep_cave": [
     "skeleton",
     "giant_bat",
     "rat_guard",
     "specter",
-    "skeleton_soldier"
+    "skeleton_soldier",
+    "bone_warden"
   ],
   "frozen_cavern": [
     "ice_wolf",
