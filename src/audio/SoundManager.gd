@@ -34,6 +34,9 @@ const MUSIC_VOLUME_CEILING_DB: float = -10.0
 const SFX_UI_BASE_DB: float = -16.0      # Menu blips: present but below music
 const SFX_BATTLE_BASE_DB: float = -6.0   # Battle SFX: punchy alongside music
 const SFX_ABILITY_BASE_DB: float = -12.0 # Ability SFX: same level as music
+# Per-cue offsets ON the death voice — passed to play_death, never baked into assets (cowir-main 2026-08-19)
+const DEATH_CRY_OFFSET_DB: float = 2.0   # the shipped death-cry lift; default so bfe8c6da is unchanged
+const VICTORY_ACCENT_OFFSET_DB: float = 0.0  # victory cues keep their play_battle loudness; only the VOICE moves
 # NOTE: ambient has NO base const here on purpose — it is not an SFX channel.
 # _ambient_player tracks the MUSIC slider at _music_base_db + AMBIENT_OFFSET_DB
 # (set_music_volume, not set_sfx_volume). To retune ambience, change that offset.
@@ -262,7 +265,7 @@ func _setup_audio_players() -> void:
 
 	_death_player = AudioStreamPlayer.new()
 	_death_player.name = "DeathPlayer"
-	_death_player.volume_db = SFX_BATTLE_BASE_DB + 2.0
+	_death_player.volume_db = SFX_BATTLE_BASE_DB + DEATH_CRY_OFFSET_DB
 	_death_player.bus = SFX_BUS
 	add_child(_death_player)
 
@@ -537,7 +540,10 @@ func play_battle(sound_key: String) -> void:
 
 
 ## Death cries on their OWN voice — on the shared _battle_player the 1s scorch was stomped by the killing blow's hit sound, then (post-fix) by the NEXT action's sounds at 2x+ speed. Never audible either way (struktured 2026-08-15 + 2026-08-18).
-func play_death(sound_key: String) -> void:
+## Also the victory accent voice (cowir-main 2026-08-19): deaths precede victory, so the windows cannot overlap and one accent voice stays a legible mixing model.
+func play_death(sound_key: String, offset_db: float = DEATH_CRY_OFFSET_DB) -> void:
+	# Set the level EVERY call rather than relying on the setup value: _try_play_sfx_from_manifest ASSIGNS volume_db and never restores it, so one offset play would retune the voice for every later cue.
+	_death_player.volume_db = SFX_BATTLE_BASE_DB + offset_db
 	var world_key: String = _get_world_sfx_prefix() + sound_key
 	if world_key != sound_key and _try_play_sfx_from_manifest(_death_player, world_key):
 		return

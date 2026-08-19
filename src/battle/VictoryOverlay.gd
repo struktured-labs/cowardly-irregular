@@ -310,7 +310,8 @@ func _level_up_flare(card: PanelContainer, fill: ColorRect, idx: int) -> void:
 		flash.tween_property(fill, "color", Color(1.0, 0.9, 0.2), 0.12)
 		flash.tween_property(fill, "color", Color(0.2, 0.8, 0.5), 0.18)
 	if SoundManager._sfx_manifest.has("levelup_flourish"):
-		SoundManager.play_battle("levelup_flourish")
+		# Accent voice, not the shared battle player — the level-up lands while hit sounds are still retriggering (cowir-main 2026-08-19)
+		SoundManager.play_death("levelup_flourish", SoundManager.VICTORY_ACCENT_OFFSET_DB)
 	else:
 		SoundManager.play_music("stinger_level_up")
 		SoundManager.play_battle("level_up")

@@ -71,15 +71,15 @@ const KNOWN_PENDING_CONSUMER := {
 	"debuff_v3": "unwired alternate take",
 	"heal_v2": "unwired alternate take",
 	"heal_v3": "unwired alternate take",
-	# cowir-main: victory-sequence wiring blocked on the voice-topology ruling —
-	# all 5 cues share _battle_player today, so retrigger order decides the mix.
-	"victory_slam": "cowir-main victory sequence",
-	"loot_pop": "cowir-main victory sequence",
-	"exp_bar_tick_ramp_lo": "cowir-main EXP bar fill ramp",
-	"exp_bar_tick_ramp_mid": "cowir-main EXP bar fill ramp",
-	"exp_bar_tick_ramp_hi": "cowir-main EXP bar fill ramp",
-	"levelup_flourish": "cowir-main victory sequence",
-	"injury_sting": "cowir-main victory sequence",
+	# The EXP-bar ramp is the ONE part of the victory kit still unwired. The voice-topology
+	# ruling (cowir-main 2026-08-19) resolved the other four and they have left this list.
+	# The ramp's blocker is different and was never the voice: wiring it replaces the flat
+	# exp_tick at VictoryOverlay._animate_card_content with tier selection across the
+	# roll-up, which changes how the EXP fill SOUNDS on a surface struktured locked on
+	# 2026-08-18. Needs his call, not a routing decision.
+	"exp_bar_tick_ramp_lo": "struktured — EXP fill feel, locked surface 2026-08-18",
+	"exp_bar_tick_ramp_mid": "struktured — EXP fill feel, locked surface 2026-08-18",
+	"exp_bar_tick_ramp_hi": "struktured — EXP fill feel, locked surface 2026-08-18",
 }
 
 
