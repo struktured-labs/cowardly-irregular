@@ -3676,8 +3676,9 @@ func _apply_hit_knockback(sprite: Node2D, direction: float = 1.0) -> void:
 		tween.parallel().tween_property(sprite, "position:y", original_y, 0.15).set_ease(Tween.EASE_OUT)
 
 
+## Delegate kept for the existing callers and their pins; new consumers call BattleJuice.battle_tier() directly (cowir-main ruling, msg 6501).
 func _tier() -> BattleJuice.Tier:
-	return BattleJuice.presentation_tier(Engine.time_scale, turbo_mode, autogrind_console_mode)
+	return BattleJuice.battle_tier()
 
 
 func _apply_hit_flash(sprite: Node2D) -> void:
