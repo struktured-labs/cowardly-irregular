@@ -46,7 +46,8 @@ func test_byok_toggle_hidden_on_web() -> void:
 	var idx := src.find("Custom LLM Backend / BYOK")
 	assert_gt(idx, -1, "BYOK toggle title must appear in the menu builder")
 	# Look BACKWARDS for the web-feature gate within ~500 chars.
-	var window_start := max(0, idx - 500)
+	# maxi not max: max() returns Variant, and `:=` on a Variant is warning-as-error here.
+	var window_start := maxi(0, idx - 500)
 	var window := src.substr(window_start, idx - window_start)
 	assert_true(window.contains("not OS.has_feature(\"web\")"),
 		"BYOK toggle creation must be gated behind `not OS.has_feature('web')`")
