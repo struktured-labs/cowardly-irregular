@@ -31,6 +31,10 @@ signal party_leader_changed(new_index: int)
 var _menu_options: Array = []
 
 const BASE_MENU_OPTIONS = [
+	# First on purpose. The controls reference used to be reachable ONLY from the title
+	# screen, so a player who got confused after pressing NEW GAME had no way back to it.
+	# Demo feedback 2026-08-20: "the controls are impossible to figure out."
+	{"id": "controls", "label": "Controls", "enabled": true},
 	{"id": "quest_log", "label": "Quest Log", "enabled": true},
 	{"id": "party", "label": "Party", "enabled": true},
 	{"id": "items", "label": "Items", "enabled": true},
@@ -762,6 +766,8 @@ func _handle_menu_action(action_id: String) -> void:
 			_open_records()
 		"world_map":
 			_open_world_map()
+		"controls":
+			_open_controls()
 		"settings":
 			_open_settings()
 		"teleport":
@@ -775,6 +781,21 @@ func _open_cutscene_gallery() -> void:
 	gallery.closed.connect(_on_submenu_closed)
 	add_child(gallery)
 	_hide_main_ui(gallery)
+
+
+func _open_controls() -> void:
+	_submenu_open = true
+	var ControlsMenuScript = load("res://src/ui/ControlsMenu.gd")
+	if not ControlsMenuScript:
+		# Never leave the flag stuck true — it would swallow ui_cancel forever.
+		# Same defensive shape as SettingsMenu._open_controls_menu.
+		_submenu_open = false
+		return
+	var controls = ControlsMenuScript.new()
+	controls.set_anchors_preset(Control.PRESET_FULL_RECT)
+	controls.closed.connect(_on_submenu_closed)
+	add_child(controls)
+	_hide_main_ui(controls)
 
 
 func _open_bestiary() -> void:

@@ -32,7 +32,8 @@ var _flash_timer: float = 0.0
 ## one silently. The tail rows are DERIVED from REMAPPABLE_ACTIONS so they cannot drift.
 const ROW_PROFILE := 0
 const ROW_NINTENDO := 1
-const ROW_ACTION_FIRST := 2
+const ROW_HELP := 2
+const ROW_ACTION_FIRST := 3
 const ROW_HEIGHT = 40
 const ROW_START_Y = 48
 
@@ -203,6 +204,11 @@ func _build_ui() -> void:
 
 	# Confirm sits on the EAST face when on — the SNES layout. Cycles like the profile row.
 	_add_row(ROW_NINTENDO, y, "Nintendo Mode", _get_nintendo_display(), true)
+	y += ROW_HEIGHT
+
+	# The full reference, reachable from inside the game. Sits here rather than only on the
+	# title screen because that copy is unreachable once a session starts.
+	_add_row(ROW_HELP, y, "How to Play", "View full reference", true)
 	y += ROW_HEIGHT + 8
 
 	var row_idx = ROW_ACTION_FIRST
@@ -814,6 +820,13 @@ func _cycle_profile(delta: int) -> void:
 		SoundManager.play_ui("menu_move")
 
 
+func _open_how_to_play() -> void:
+	var overlay := HowToPlayOverlay.new()
+	add_child(overlay)
+	if SoundManager:
+		SoundManager.play_ui("menu_select")
+
+
 func _activate_row() -> void:
 	if selected_index == ROW_PROFILE:
 		# Profile row - cycle forward on A press
@@ -822,6 +835,10 @@ func _activate_row() -> void:
 
 	if selected_index == ROW_NINTENDO:
 		_toggle_nintendo_mode()
+		return
+
+	if selected_index == ROW_HELP:
+		_open_how_to_play()
 		return
 
 	if selected_index == _row_reset:

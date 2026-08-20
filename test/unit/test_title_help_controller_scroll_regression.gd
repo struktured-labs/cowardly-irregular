@@ -1,9 +1,14 @@
 extends GutTest
 
-## TitleScreen Help overlay must accept D-pad scroll for the long content.
+## The Help overlay must accept D-pad scroll for the long content.
 ## Was: only ui_cancel intercepted; gamepad users had to fall back to mouse wheel.
+##
+## The overlay moved out of TitleScreen into HowToPlayOverlay so it could be reached
+## in-game as well as from the title screen. This guard FOLLOWED it — the anchor changed,
+## the behaviour it defends did not. Re-pointing rather than deleting is deliberate: the
+## clamp below is itself a regression fix and would otherwise have been silently dropped.
 
-const TITLE_PATH := "res://src/ui/TitleScreen.gd"
+const TITLE_PATH := "res://src/ui/HowToPlayOverlay.gd"
 
 
 func _read(p: String) -> String:

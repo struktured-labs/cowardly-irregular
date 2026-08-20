@@ -55,6 +55,25 @@ func test_the_two_pads_disagree_which_is_the_whole_point() -> void:
 func test_no_hardcoded_letter_survives_in_the_source() -> void:
 	# Belt and braces: the literal that caused this must not come back. A source pin is weak
 	# alone, which is why the value assertions above carry the guard.
-	var src := FileAccess.get_file_as_string("res://src/ui/TitleScreen.gd")
-	assert_false(src.contains("A Button          Z / Enter"),
-		"the hardcoded confirm row is back — it lies on any pad whose east face is not A")
+	#
+	# Enumerated by CAPABILITY — every file that RENDERS a controls row — not by the one
+	# file that originally had the bug. When the reference moved into HowToPlayOverlay so
+	# it could be opened in-game, checking only TitleScreen would have left the new home
+	# unguarded while still reporting green.
+	var renderers: Array[String] = [
+		"res://src/ui/TitleScreen.gd",
+		"res://src/ui/HowToPlayOverlay.gd",
+	]
+	for path in renderers:
+		var src: String = FileAccess.get_file_as_string(path)
+		assert_ne(src, "", "renderer must be readable: %s" % path)
+		assert_false(src.contains("A Button          Z / Enter"),
+			"the hardcoded confirm row is back in %s — it lies on any pad whose east face is not A" % path)
+
+
+func test_the_renderer_list_names_a_file_that_actually_renders_a_row() -> void:
+	# Control for the loop above: if a path 404s or the row moves again, the guard must go
+	# red rather than sweep an empty corpus. Names a known-present member, not a count.
+	var overlay: String = FileAccess.get_file_as_string("res://src/ui/HowToPlayOverlay.gd")
+	assert_true(overlay.contains("Defer / Party Chat"),
+		"HowToPlayOverlay must actually carry the controls table this guard is defending")

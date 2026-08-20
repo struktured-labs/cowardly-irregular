@@ -28,8 +28,6 @@ var _press_tween: Tween = null
 var _version_label: Label = null
 var _stars: Array[ColorRect] = []
 var _help_overlay: Control = null
-var _help_scroll_target: RichTextLabel = null
-const HELP_SCROLL_STEP_PX: float = 48.0
 
 ## Colors
 const MENU_COLOR := Color(0.95, 0.95, 1.0)
@@ -336,21 +334,10 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 
-	# Help overlay intercept — cancel closes; up/down scroll the long content via controller.
+	# HowToPlayOverlay owns cancel and scrolling while it is up — one owner, so the
+	# two handlers cannot race to close it. We only need to stay out of its way.
 	if _help_overlay:
-		if event.is_action_pressed("ui_cancel"):
-			_close_help_overlay()
-			get_viewport().set_input_as_handled()
-			return
-		var dy: float = 0.0
-		if event.is_action_pressed("ui_down"):
-			dy = HELP_SCROLL_STEP_PX
-		elif event.is_action_pressed("ui_up"):
-			dy = -HELP_SCROLL_STEP_PX
-		if dy != 0.0:
-			_scroll_help(dy)
-			get_viewport().set_input_as_handled()
-			return
+		return
 
 	if _phase == Phase.PRESS_START:
 		# Accept gamepad/keyboard confirm/start, OR a mouse click anywhere
@@ -539,105 +526,29 @@ func _show_help_overlay() -> void:
 	if _help_overlay:
 		return
 	_can_input = false
-	_help_overlay = Control.new()
-	_help_overlay.set_anchors_preset(PRESET_FULL_RECT)
-	_help_overlay.z_index = 50
-	add_child(_help_overlay)
-
-	var bg := ColorRect.new()
-	bg.set_anchors_preset(PRESET_FULL_RECT)
-	bg.color = Color(0.0, 0.0, 0.05, 0.92)
-	bg.mouse_filter = MOUSE_FILTER_STOP
-	_help_overlay.add_child(bg)
-
-	var vp := _vp_size()
-	var title := Label.new()
-	title.text = "HOW TO PLAY"
-	title.add_theme_font_size_override("font_size", 24)
-	title.add_theme_color_override("font_color", Color(0.95, 0.85, 0.4))
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.position = Vector2(vp.x / 2 - 120, 30)
-	title.size = Vector2(240, 30)
-	_help_overlay.add_child(title)
-
-	var content := RichTextLabel.new()
-	_help_scroll_target = content
-	content.bbcode_enabled = true
-	content.scroll_active = true
-	content.position = Vector2(60, 75)
-	content.size = Vector2(vp.x - 120, vp.y - 120)
-	content.add_theme_font_size_override("normal_font_size", 13)
-	content.add_theme_font_size_override("bold_font_size", 14)
-	content.add_theme_color_override("default_color", Color(0.9, 0.9, 0.95))
-	var g_ok: String = InputProfileManager.glyph_for_action("ui_accept")
-	var g_no: String = InputProfileManager.glyph_for_action("ui_cancel")
-	content.text = build_confirm_cancel_rows(g_ok, g_no) + """
-L Shoulder        L Key             —                Defer / Party Chat
-R Shoulder        R Key             —                Advance (queue action)
-Start (Plus)      F5                —                Open Autobattle Editor
-Back (Minus)      F6                —                Toggle Autobattle
-                  F2                —                Quick Save
-                  F3                —                Quick Load
-                  F12               —                Screenshot
-                  ─                 Wheel            Scroll lists / change selection
-
-[b][color=yellow]BATTLE SYSTEM (CTB)[/color][/b]
-Each turn you choose: [color=lime]Attack[/color], use [color=cyan]Magic[/color], or strategize with AP.
-
-[color=white]AP (Action Points)[/color] range from -4 to +4.
-  [color=lime]Defer (L)[/color]: Skip your turn. Gain +1 AP, take less damage.
-  [color=cyan]Advance (R)[/color]: Queue extra actions. Each costs 1 AP.
-    Queue up to 4 actions, then they all execute at once!
-
-[b][color=yellow]AUTOBATTLE[/color][/b]
-This game is designed to be automated!
-Open the [color=lime]Autobattle Editor[/color] (Start/F5) to write rules:
-  IF [condition] THEN [action]
-Rules are checked top-to-bottom. First match wins.
-Toggle autobattle per character with Select/F6.
-
-[b][color=yellow]PARTY CHAT[/color][/b]
-Press [color=lime]L[/color] during exploration when the indicator appears to access
-optional story conversations. These are flavor, not required.
-
-[b][color=yellow]TIPS[/color][/b]
-- Deferring builds AP for powerful multi-action turns later
-- Queue multiple heals or attacks with Advance for burst plays
-- Autobattle scripts run automatically — master them to win!
-- Visit inns to heal and save your progress
-- Check the Bestiary and World Map from the pause menu
-
-[color=gray]Press B / X / Escape / Right-click to close[/color]"""
-	_help_overlay.add_child(content)
-	# Right-click anywhere closes the overlay (in addition to Esc / B).
-	# Wire on the bg ColorRect we added above.
-	bg.gui_input.connect(func(ev: InputEvent) -> void:
-		if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_RIGHT:
-			_close_help_overlay()
-			get_viewport().set_input_as_handled()
-	)
+	# The body used to be built inline here, which stranded it on the title screen —
+	# a player who pressed NEW GAME could never reach it again. HowToPlayOverlay owns
+	# the text now so the Controls menu and the pause menu can show the same thing.
+	var overlay := HowToPlayOverlay.new()
+	overlay.closed.connect(_close_help_overlay)
+	add_child(overlay)
+	_help_overlay = overlay
 	await get_tree().create_timer(0.3).timeout
 	_can_input = true
 
 
+
 func _close_help_overlay() -> void:
-	if _help_overlay:
-		_help_overlay.queue_free()
-		_help_overlay = null
-		_help_scroll_target = null
-		_can_input = true  # Restore input ability after close
+	# The overlay queue_free()s itself before emitting `closed`, so this can run against
+	# an already-freeing node. Clear the ref first and only free what is still valid.
+	var overlay: Node = _help_overlay
+	_help_overlay = null
+	_can_input = true
+	if overlay and is_instance_valid(overlay) and not overlay.is_queued_for_deletion():
+		overlay.queue_free()
 
 
 ## Scroll the open help overlay's content by `dy` pixels (positive = down).
-func _scroll_help(dy: float) -> void:
-	if _help_scroll_target == null or not is_instance_valid(_help_scroll_target):
-		return
-	var sb := _help_scroll_target.get_v_scroll_bar()
-	if sb == null:
-		return
-	sb.value = clampf(sb.value + dy, sb.min_value, max(sb.min_value, sb.max_value - sb.page))
-
-
 func _exit_tree() -> void:
 	# Kill any looping press-start pulse tween so it doesn't outlive the node.
 	if _press_tween and _press_tween.is_valid():
