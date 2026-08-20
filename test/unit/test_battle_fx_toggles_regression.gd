@@ -45,10 +45,24 @@ func test_flags_persist_with_settings() -> void:
 
 func test_every_registered_flag_is_consumed() -> void:
 	# A toggle wired to nothing is the menu lying — every key must appear in a flag() call somewhere in src/
+	# Scan the whole presentation surface, not a hand-list: the list went stale the first
+	# time a consumer landed in a file nobody remembered to add (BattleCommandMenu, 2026-08-14).
 	var consumers := ""
-	for path in ["res://src/battle/BattleJuice.gd", "res://src/battle/BattleScene.gd",
-			"res://src/battle/BattleAnimator.gd", "res://src/battle/BattleUIManager.gd",
-			"res://src/ui/Win98Menu.gd", "res://src/battle/VictoryOverlay.gd"]:
-		consumers += FileAccess.get_file_as_string(path)
+	for dir_path in ["res://src/battle", "res://src/ui"]:
+		consumers += _concat_gd_files(dir_path)
+	assert_true('flag("' in consumers, "CONTROL: the scan actually found flag() calls")
 	for fx in SettingsMenuScript.BATTLE_FX_FLAGS:
 		assert_true('flag("%s")' % fx[0] in consumers, "flag '%s' has a live consumer" % fx[0])
+
+
+func _concat_gd_files(dir_path: String) -> String:
+	var out := ""
+	var d := DirAccess.open(dir_path)
+	if d == null:
+		return out
+	for f in d.get_files():
+		if f.ends_with(".gd"):
+			out += FileAccess.get_file_as_string(dir_path + "/" + f)
+	for sub in d.get_directories():
+		out += _concat_gd_files(dir_path + "/" + sub)
+	return out

@@ -10,11 +10,16 @@ extends GutTest
 const UIM := "res://src/battle/BattleUIManager.gd"
 
 
+## 2026-08-14: the queue build was extracted into _compute_ctb_queue() for the UI-motion
+## work. Same behavior, one function over — so the pin spans BOTH and stays location-proof.
 func _strip_body() -> String:
 	var src: String = FileAccess.get_file_as_string(UIM)
 	var fn: int = src.find("func _update_turn_order_strip")
 	assert_gt(fn, -1, "_update_turn_order_strip must exist")
-	return src.substr(fn, src.find("\nfunc ", fn + 1) - fn)
+	var body: String = src.substr(fn, src.find("\nfunc ", fn + 1) - fn)
+	var q: int = src.find("func _compute_ctb_queue")
+	assert_gt(q, -1, "the extracted queue builder must exist")
+	return body + src.substr(q, src.find("\nfunc ", q + 1) - q)
 
 
 func test_execution_phase_reads_execution_order() -> void:
