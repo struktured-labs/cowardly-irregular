@@ -4878,10 +4878,10 @@
       "message": "You lifted the Warden's Key from its plate \u2014 the guard falls slack."
     },
     "stats": {
-      "max_hp": 2000,
+      "max_hp": 1340,
       "max_mp": 30,
-      "attack": 440,
-      "defense": 300,
+      "attack": 295,
+      "defense": 150,
       "magic": 80,
       "magic_defense": 150,
       "speed": 20
@@ -4905,7 +4905,7 @@
       "physical"
     ],
     "one_shot": {
-      "hp_threshold": 2600,
+      "hp_threshold": 1740,
       "setup_hint": "Wait for the flank to expose. Steal breaks its guard; Backstab lands the answer. Speed matters more than power.",
       "reward_item": "boss_trophy"
     },
