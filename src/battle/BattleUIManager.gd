@@ -876,6 +876,7 @@ func update_turn_info() -> void:
 
 
 ## CTB Timeline — vertical turn order display (FFX-style) on right side
+var _ctb_last_head_id: int = 0
 var _ctb_timeline: VBoxContainer = null
 var _ctb_panel: PanelContainer = null
 
@@ -932,24 +933,7 @@ func _update_turn_order_strip() -> void:
 	for child in _ctb_timeline.get_children():
 		child.queue_free()
 
-	# Build the upcoming-combatant queue. During SELECTION it's who selects
-	# next (selection_order); during EXECUTION the strip used to go empty —
-	# now it shows execution_order (speed-sorted pending actions, front =
-	# next to act), so "who acts next" stays visible while actions resolve.
-	var queue: Array = []
-	var st = BattleManager.current_state
-	var in_execution: bool = st == BattleManager.BattleState.EXECUTION_PHASE or st == BattleManager.BattleState.PROCESSING_ACTION
-	if in_execution and "execution_order" in BattleManager and not BattleManager.execution_order.is_empty():
-		for action in BattleManager.execution_order:
-			var c = action.get("combatant")
-			if c is Combatant:
-				queue.append(c)
-	else:
-		var order = BattleManager.selection_order
-		var current_idx = BattleManager.selection_index
-		for i in range(order.size()):
-			if i >= current_idx:
-				queue.append(order[i])
+	var queue: Array = _compute_ctb_queue()
 	if queue.is_empty():
 		return
 
@@ -964,6 +948,46 @@ func _update_turn_order_strip() -> void:
 		var entry = _create_ctb_entry(combatant, is_current, is_player, shown)
 		_ctb_timeline.add_child(entry)
 		shown += 1
+	if shown > 0:
+		_animate_ctb_rows(queue[0])
+
+
+## Pure queue build, extracted so the ordering is unit-testable without a scene. During SELECTION it's who selects next; during EXECUTION it's execution_order (speed-sorted pending actions) so "who acts next" stays visible while actions resolve.
+func _compute_ctb_queue() -> Array:
+	var queue: Array = []
+	var st = BattleManager.current_state
+	var in_execution: bool = st == BattleManager.BattleState.EXECUTION_PHASE or st == BattleManager.BattleState.PROCESSING_ACTION
+	if in_execution and "execution_order" in BattleManager and not BattleManager.execution_order.is_empty():
+		for action in BattleManager.execution_order:
+			var c = action.get("combatant")
+			if c is Combatant:
+				queue.append(c)
+	else:
+		var order = BattleManager.selection_order
+		var current_idx = BattleManager.selection_index
+		for i in range(order.size()):
+			if i >= current_idx:
+				queue.append(order[i])
+	return queue
+
+
+## Rows are rebuilt wholesale (cheap, and only on turn changes) — the pop is what reads badly, so new rows fade in and a head CHANGE pulses. Tracked by instance id so the pulse fires on arrival, not on every repaint.
+func _animate_ctb_rows(head: Combatant) -> void:
+	if BattleJuice.presentation_tier() >= BattleJuice.Tier.MINIMAL or not BattleJuice.flag("ctb_motion"):
+		return
+	for row in _ctb_timeline.get_children():
+		if row is Control:
+			row.modulate.a = 0.0
+			row.create_tween().tween_property(row, "modulate:a", 1.0, 0.14)
+	var head_id: int = head.get_instance_id() if is_instance_valid(head) else 0
+	if head_id != _ctb_last_head_id:
+		_ctb_last_head_id = head_id
+		var first = _ctb_timeline.get_child(0) if _ctb_timeline.get_child_count() > 0 else null
+		if first is Control:
+			first.pivot_offset = first.size * 0.5
+			var t := first.create_tween()
+			t.tween_property(first, "scale", Vector2(1.15, 1.15), 0.10).set_trans(Tween.TRANS_BACK)
+			t.tween_property(first, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
 func _create_ctb_entry(combatant: Combatant, is_current: bool, is_player: bool, position_idx: int) -> HBoxContainer:

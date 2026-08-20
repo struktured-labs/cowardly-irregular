@@ -66,6 +66,9 @@ const BATTLE_FX_FLAGS := [
 	["env_pulse", "Arena Thump", "Heavy hits rattle the scenery"],
 	["arena_unrest", "Arena Unrest", "Phase-2 bosses unsettle the ground itself"],
 	["victory_flourish", "Victory Flourish", "The win gets a slam, cards, and confetti-adjacent behavior"],
+	["menu_motion", "Menu Motion", "Command menus arrive instead of appearing"],
+	["ctb_motion", "Turn Order Motion", "The timeline breathes when your turn comes up"],
+	["target_pulse", "Target Pulse", "The cursor insists on the thing you picked"],
 ]
 var dash_always_on: bool = false  # Item 9: dash without holding the button
 var llm_enabled: bool = not OS.has_feature("web")  # Wave C: dynamic dialogue toggle (off by default on web)

@@ -135,6 +135,7 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 	_scene.active_win98_menu.visible = not _dialogue_owns_screen
 	_scene.add_child(_scene.active_win98_menu)
 	_scene.active_win98_menu.setup(combatant.combatant_name, menu_items, menu_pos, job_id)
+	_animate_menu_open(_scene.active_win98_menu)
 
 	# Connect signals — bind THIS menu instance to _on_win98_menu_closed so the handler can identity-guard the null-write. Root cause of msg 2503 two-menus bug (repro cap timeline named it, msg 2529): actions_submitted returns → BM dispatches turn end → next PC's menu spawns → control returns to _submit_actions:1230 → force_close(old menu) → menu_closed fires → handler blindly null'd active_win98_menu which by then was the NEW menu, orphaning it and triggering watchdog respawn on top.
 	_scene.active_win98_menu.item_selected.connect(_on_win98_menu_selection)
@@ -171,6 +172,23 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 			submenu_memory["item_menu"] = combatant.last_item_selection
 		print("[CMD MEM] Submenu memory: %s" % str(submenu_memory))
 		_scene.active_win98_menu.set_command_memory(combatant.last_menu_selection, submenu_memory)
+
+
+
+## Menus that move make CHOOSING feel good — most of a turn-based game's runtime is spent here. Open only: the CLOSE path stays synchronous (msg-2503 two-menus identity bug — a deferred free would let a stale instance answer for the live one).
+func _animate_menu_open(menu: Node) -> void:
+	if menu == null or not is_instance_valid(menu) or not (menu is Control):
+		return
+	if BattleJuice.presentation_tier() >= BattleJuice.Tier.MINIMAL or not BattleJuice.flag("menu_motion"):
+		return
+	var ctl: Control = menu
+	var rest: Vector2 = ctl.position
+	ctl.position = rest + Vector2(0, 10)
+	ctl.modulate.a = 0.0
+	var t := ctl.create_tween()
+	t.set_parallel(true)
+	t.tween_property(ctl, "position", rest, 0.12).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	t.tween_property(ctl, "modulate:a", 1.0, 0.12)
 
 
 func build_command_menu_items_with_targets(combatant: Combatant) -> Array:

@@ -178,6 +178,7 @@ var _cursor_blink_timer: Timer = null  # Blinking cursor
 var _cursor_visible: bool = true
 var _audio_player: AudioStreamPlayer = null
 var _target_highlight: Control = null  # Rectangle highlight around target
+var _target_pulse_tween: Tween = null
 var _pending_target_pos: Vector2 = Vector2.ZERO  # Target position for line
 var _queued_actions: Array = []  # Actions queued via Advance mode
 var _max_queue_size: int = 4  # Max actions (limited by AP)
@@ -394,6 +395,20 @@ func _build_target_highlight_box(target_pos: Vector2) -> void:
 	pointer.add_theme_color_override("font_color", border_color)
 	pointer.add_theme_font_size_override("font_size", TextScale.scaled(24))
 	_target_highlight.add_child(pointer)
+	_start_target_pulse()
+
+
+func _start_target_pulse() -> void:
+	# Breathing cursor: one looping tween that survives selection rebuilds, killed on hide
+	if _target_pulse_tween and _target_pulse_tween.is_valid():
+		return
+	if not _target_highlight or not is_instance_valid(_target_highlight):
+		return
+	if BattleJuice.presentation_tier() >= BattleJuice.Tier.MINIMAL or not BattleJuice.flag("target_pulse"):
+		return
+	_target_pulse_tween = create_tween().set_loops()
+	_target_pulse_tween.tween_property(_target_highlight, "modulate:a", 0.72, 0.45).set_trans(Tween.TRANS_SINE)
+	_target_pulse_tween.tween_property(_target_highlight, "modulate:a", 1.0, 0.45).set_trans(Tween.TRANS_SINE)
 
 
 func _update_tooltip() -> void:
@@ -1054,6 +1069,9 @@ func force_close() -> void:
 func _cleanup_target_highlight() -> void:
 	"""Remove target highlight from scene"""
 	_set_chain_dim(false)
+	if _target_pulse_tween and _target_pulse_tween.is_valid():
+		_target_pulse_tween.kill()
+	_target_pulse_tween = null
 	if _target_highlight and is_instance_valid(_target_highlight):
 		_target_highlight.queue_free()
 		_target_highlight = null
