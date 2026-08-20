@@ -27,6 +27,28 @@ const ACTION_LABELS = {
 	"ui_menu": "Menu",
 }
 
+## Confirm sits on the EAST face when true — the SNES layout (Y X / B A). False puts it on
+## SOUTH, native for Xbox and PlayStation. Every profile below is authored EAST-confirm and
+## this derives the other convention, so there is one table instead of two that can drift.
+var nintendo_mode: bool = true
+
+## Face glyphs keyed by BUTTON INDEX (position) — SDL numbers by position, the silkscreen
+## differs per family. All verified to render through FontFallbacks; squared 🅰/🅱 are tofu.
+const FACE_GLYPHS := {
+	"nintendo": {0: "Ⓑ", 1: "Ⓐ", 2: "Ⓨ", 3: "Ⓧ"},
+	"xbox": {0: "Ⓐ", 1: "Ⓑ", 2: "Ⓧ", 3: "Ⓨ"},
+	"playstation": {0: "✕", 1: "○", 2: "□", 3: "△"},
+}
+
+## Device-name substrings -> face-glyph family. First match wins; unmatched gets xbox, because
+## an unknown pad on Windows is overwhelmingly an XInput device.
+const FACE_FAMILY_HINTS := [
+	["dualsense", "playstation"], ["dualshock", "playstation"], ["ps5", "playstation"],
+	["ps4", "playstation"], ["playstation", "playstation"], ["sony", "playstation"],
+	["switch", "nintendo"], ["nintendo", "nintendo"], ["pro controller", "nintendo"],
+	["snes", "nintendo"], ["sn30", "nintendo"], ["8bitdo", "nintendo"],
+]
+
 ## Built-in profile definitions: action -> button index(es)
 ## Button indices use the GODOT 4 JoyButton enum (matches SDL2 normalized):
 ##   0  = A          (Nintendo B / PS Cross / Xbox A — SOUTH face button)
@@ -190,15 +212,72 @@ func apply_profile(profile_name: String) -> void:
 	active_profile = profile_name
 	var bindings = get_profile_bindings(profile_name)
 
-	print("[InputProfileManager] Applying profile: %s" % profile_name)
+	print("[InputProfileManager] Applying profile: %s (nintendo_mode=%s)" % [profile_name, nintendo_mode])
 	for action in REMAPPABLE_ACTIONS:
 		if not bindings.has(action):
 			continue
-		var indices = bindings[action]
+		var indices = face_convention_indices(action, bindings[action])
 		print("[InputProfileManager]   %s -> buttons %s" % [action, str(indices)])
 		_replace_joypad_buttons(action, indices)
 
 	print("[InputProfileManager] Profile applied: %s" % profile_name)
+
+
+## Swaps SOUTH<->EAST for confirm/cancel when nintendo_mode is off. Pure, so it is testable
+## without a pad; every other action passes through untouched.
+func face_convention_indices(action: String, indices: Array) -> Array:
+	if nintendo_mode or action not in ["ui_accept", "ui_cancel"]:
+		return indices
+	var swapped: Array = []
+	for i in indices:
+		match i:
+			0: swapped.append(1)
+			1: swapped.append(0)
+			_: swapped.append(i)
+	return swapped
+
+
+## Sets the convention and re-applies, so the InputMap and the flag can never disagree.
+func set_nintendo_mode(enabled: bool) -> void:
+	if nintendo_mode == enabled:
+		return
+	nintendo_mode = enabled
+	apply_profile(active_profile)
+	save_config()
+
+
+## The face layout as it is PRINTED, written west-north / south-east — the notation people
+## actually use, so a Nintendo pad reads "Ⓨ Ⓧ / Ⓑ Ⓐ" and an Xbox one "Ⓧ Ⓨ / Ⓐ Ⓑ".
+func face_layout_diagram(family: String) -> String:
+	var t: Dictionary = FACE_GLYPHS.get(family, FACE_GLYPHS["xbox"])
+	return "%s %s / %s %s" % [t.get(2, "?"), t.get(3, "?"), t.get(0, "?"), t.get(1, "?")]
+
+
+## Glyph family for a pad NAME. Unmatched returns "xbox" — an unknown pad on Windows is
+## almost always XInput, and that is the demo case.
+func face_family_for_device(device_name: String) -> String:
+	var lowered := device_name.to_lower()
+	for entry in FACE_FAMILY_HINTS:
+		if lowered.find(entry[0]) != -1:
+			return entry[1]
+	return "xbox"
+
+
+## The glyph printed on the physical button an action currently fires from.
+func glyph_for_action(action: String, device_name: String = "") -> String:
+	var name := device_name
+	if name == "":
+		var pads := Input.get_connected_joypads()
+		name = Input.get_joy_name(pads[0]) if not pads.is_empty() else ""
+	var family: String = face_family_for_device(name)
+	var bindings := get_profile_bindings(active_profile)
+	if not bindings.has(action):
+		return "?"
+	var indices := face_convention_indices(action, bindings[action])
+	if indices.is_empty():
+		return "?"
+	var table: Dictionary = FACE_GLYPHS[family]
+	return table.get(indices[0], "?")
 
 
 func _replace_joypad_buttons(action: String, button_indices: Array) -> void:
@@ -356,6 +435,7 @@ func save_config() -> void:
 	var data = {
 		"version": CONFIG_VERSION,
 		"active_profile": active_profile,
+		"nintendo_mode": nintendo_mode,
 		"custom_bindings": {},
 	}
 
@@ -426,6 +506,11 @@ func load_config() -> void:
 		var cfg_version: int = int(data.get("version", 1))
 		if cfg_version < 2 and active_profile == "8BitDo Ultimate Pro 2":
 			profile_chosen_by_user = false
+
+	# Absent key keeps the east-confirm default rather than flipping a returning player's
+	# convention on upgrade — v2 configs predate this flag and must not read as "off".
+	if data.has("nintendo_mode"):
+		nintendo_mode = bool(data["nintendo_mode"])
 
 	if data.has("custom_bindings") and data["custom_bindings"] is Dictionary:
 		for action in data["custom_bindings"]:

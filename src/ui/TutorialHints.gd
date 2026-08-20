@@ -11,7 +11,7 @@ class_name TutorialHints
 const HINTS = {
 	"movement": {
 		"title": "Movement",
-		"body": "Use D-pad or left stick to move. The overworld is large — follow signposts and check your Quest Log (Menu → Quest Log) for direction.",
+		"body": "Use {move} to move. The overworld is large — follow signposts and check your Quest Log (Menu → Quest Log) for direction.",
 	},
 	"autobattle_intro": {
 		"title": "Autobattle System",
@@ -23,11 +23,11 @@ const HINTS = {
 	},
 	"save_crystal": {
 		"title": "Save Crystal",
-		"body": "Approach a glowing crystal and press A to save your progress. Save often — the game has real consequences.",
+		"body": "Approach a glowing crystal and press {confirm} to save your progress. Save often — the game has real consequences.",
 	},
 	"advance_defer": {
 		"title": "Advance & Defer",
-		"body": "Press R to Advance — queue up to 4 actions in one turn (costs AP). Press L to Defer — skip your turn and take HALF damage that round. You gain +1 AP every turn either way; Defer banks it, because you spend none.",
+		"body": "Press {advance} to Advance — queue up to 4 actions in one turn (costs AP). Press {defer} to Defer — skip your turn and take HALF damage that round. You gain +1 AP every turn either way; Defer banks it, because you spend none.",
 	},
 	"group_attacks": {
 		"title": "Group Attacks",
@@ -35,7 +35,7 @@ const HINTS = {
 	},
 	"first_battle": {
 		"title": "Battle Controls",
-		"body": "Navigate menus with D-pad. Confirm with A/Z. Cancel with B/X. Use R to queue multiple actions (Advance mode). Use L to Defer — skip your turn and halve the damage you take.",
+		"body": "Navigate menus with {move}. Confirm with {confirm}. Cancel with {cancel}. Use {advance} to queue multiple actions (Advance mode). Use {defer} to Defer — skip your turn and halve the damage you take.",
 	},
 	"first_boss": {
 		"title": "Boss Fight",
@@ -43,7 +43,7 @@ const HINTS = {
 	},
 	"quest_log": {
 		"title": "Quest Log",
-		"body": "Lost? Open the menu and check Quest Log for your current objective. The minimap also shows a pulsing gold dot at your destination.",
+		"body": "Lost? Open the menu ({menu}) and check Quest Log for your current objective. The minimap also shows a pulsing gold dot at your destination.",
 	},
 	"autogrind": {
 		"title": "Autogrind",
@@ -194,11 +194,35 @@ static func show(parent: Node, hint_id: String, dedupe_key: String = "") -> void
 	_present(parent, hint_id, key)
 
 
+## Substitutes control tokens with BOTH the glyph printed on the attached pad and the keyboard
+## key, so one string serves a pad player and a keyboard player at once. Hints used to hardcode
+## "press A", which names the wrong button on any pad whose east face is not A — and never
+## mentioned a key at all, leaving keyboard players with nothing.
+static func resolve_tokens(text: String) -> String:
+	var ml := Engine.get_main_loop()
+	var ipm = null
+	if ml and ml is SceneTree:
+		ipm = (ml as SceneTree).root.get_node_or_null("/root/InputProfileManager")
+	var confirm := "Ⓐ"
+	var cancel := "Ⓑ"
+	if ipm and ipm.has_method("glyph_for_action"):
+		confirm = ipm.glyph_for_action("ui_accept")
+		cancel = ipm.glyph_for_action("ui_cancel")
+	var out := text
+	out = out.replace("{confirm}", "%s / Z" % confirm)
+	out = out.replace("{cancel}", "%s / X" % cancel)
+	out = out.replace("{move}", "D-pad, left stick or the arrow keys")
+	out = out.replace("{menu}", "Start / Enter")
+	out = out.replace("{defer}", "L shoulder / L key")
+	out = out.replace("{advance}", "R shoulder / R key")
+	return out
+
+
 static func _present(parent: Node, hint_id: String, key: String) -> void:
 	var hint_data = HINTS[hint_id]
 	var hint = TutorialHint.new()
 	parent.add_child(hint)
-	hint.show_hint(key, hint_data["title"], hint_data["body"], float(hint_data.get("min_dismiss", 0.0)))
+	hint.show_hint(key, hint_data["title"], resolve_tokens(hint_data["body"]), float(hint_data.get("min_dismiss", 0.0)))
 	# Auto-cleanup after dismissal
 	hint.hint_dismissed.connect(func(_id): hint.queue_free())
 	## Drain on BOTH paths: _exit_tree releases the active gate without emitting

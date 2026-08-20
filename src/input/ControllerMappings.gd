@@ -47,8 +47,15 @@ const KNOWN_SILENT_MODES := {
 }
 
 
+## Mappings captured in-game land here, so a pad can be added without a code change or a
+## rebuild. Shipped MAPPINGS register first and user entries override by GUID — SDL replaces
+## by GUID, so a captured entry for the same pad wins on purpose.
+const USER_MAPPINGS_PATH := "user://input/controller_mappings.json"
+
+
 func _ready() -> void:
 	register_all()
+	register_user_mappings()
 	# Pads present at boot never emit joy_connection_changed, so audit them directly.
 	for device in Input.get_connected_joypads():
 		warn_if_unmapped(device)
@@ -61,6 +68,47 @@ func register_all() -> int:
 		Input.add_joy_mapping(mapping, true)
 	print("[ControllerMappings] Registered %d SDL mapping(s)" % MAPPINGS.size())
 	return MAPPINGS.size()
+
+
+## Loads captured mappings from user://. Every failure is LOUD: a silently-skipped file
+## presents as "my pad's buttons are still wrong after I mapped it", with nothing in the log.
+func register_user_mappings() -> int:
+	if not FileAccess.file_exists(USER_MAPPINGS_PATH):
+		return 0
+	var file := FileAccess.open(USER_MAPPINGS_PATH, FileAccess.READ)
+	if file == null:
+		push_warning("[ControllerMappings] %s exists but could not be opened (error %d) - captured pad mappings are NOT applied." % [USER_MAPPINGS_PATH, FileAccess.get_open_error()])
+		return 0
+	var json := JSON.new()
+	if json.parse(file.get_as_text()) != OK:
+		push_warning("[ControllerMappings] %s is not valid JSON (%s) - captured pad mappings are NOT applied." % [USER_MAPPINGS_PATH, json.get_error_message()])
+		return 0
+	var data = json.data
+	if not (data is Array):
+		push_warning("[ControllerMappings] %s parsed but its root is not an Array - captured pad mappings are NOT applied." % USER_MAPPINGS_PATH)
+		return 0
+	var applied := 0
+	for entry in data:
+		if not (entry is String) or not is_wellformed(entry):
+			push_warning("[ControllerMappings] Skipping malformed captured mapping: %s" % str(entry))
+			continue
+		Input.add_joy_mapping(entry, true)
+		applied += 1
+	print("[ControllerMappings] Registered %d captured mapping(s) from %s" % [applied, USER_MAPPINGS_PATH])
+	return applied
+
+
+## A mapping needs at least a GUID, a name and one binding, and SDL silently ignores a
+## malformed string — so validate before handing it over rather than after.
+func is_wellformed(mapping: String) -> bool:
+	var parts := mapping.split(",")
+	if parts.size() < 3:
+		return false
+	if parts[0].strip_edges().length() != 32:
+		return false
+	if parts[1].strip_edges() == "":
+		return false
+	return mapping.contains(":")
 
 
 func _on_joy_connection_changed(device: int, connected: bool) -> void:

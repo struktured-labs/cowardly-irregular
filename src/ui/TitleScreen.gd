@@ -522,6 +522,19 @@ func _vp_size() -> Vector2:
 
 ## — Help overlay (unchanged) —
 
+## Header + the two rows whose gamepad column depends on the ATTACHED pad. Static text read
+## "A Button — Confirm", which is a lie on any pad whose east face is printed B; the one screen
+## a lost player opens must name the button actually printed on the controller in their hands.
+## Static and pure so a test can pin the VALUE without building a title screen.
+static func build_confirm_cancel_rows(glyph_accept: String, glyph_cancel: String) -> String:
+	return """[b][color=yellow]CONTROLS[/color][/b]
+[color=gray]Gamepad          Keyboard          Mouse[/color]
+D-Pad             Arrow Keys        —                Navigate
+%-17s Z / Enter         L-Click          Confirm / Select
+%-17s X / Escape        R-Click          Cancel / Back""" % [
+		glyph_accept + " Button", glyph_cancel + " Button"]
+
+
 func _show_help_overlay() -> void:
 	if _help_overlay:
 		return
@@ -556,11 +569,9 @@ func _show_help_overlay() -> void:
 	content.add_theme_font_size_override("normal_font_size", 13)
 	content.add_theme_font_size_override("bold_font_size", 14)
 	content.add_theme_color_override("default_color", Color(0.9, 0.9, 0.95))
-	content.text = """[b][color=yellow]CONTROLS[/color][/b]
-[color=gray]Gamepad          Keyboard          Mouse[/color]
-D-Pad             Arrow Keys        —                Navigate
-A Button          Z / Enter         L-Click          Confirm / Select
-B Button          X / Escape        R-Click          Cancel / Back
+	var g_ok: String = InputProfileManager.glyph_for_action("ui_accept")
+	var g_no: String = InputProfileManager.glyph_for_action("ui_cancel")
+	content.text = build_confirm_cancel_rows(g_ok, g_no) + """
 L Shoulder        L Key             —                Defer / Party Chat
 R Shoulder        R Key             —                Advance (queue action)
 Start (Plus)      F5                —                Open Autobattle Editor
