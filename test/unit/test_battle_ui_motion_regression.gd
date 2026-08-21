@@ -20,7 +20,7 @@ func test_open_is_animated_and_tier_gated() -> void:
 	assert_gt(i, -1, "open animation helper must exist")
 	var fn_end := src.find("\nfunc ", i + 1)
 	var body := src.substr(i, (fn_end - i) if fn_end > -1 else 1200)
-	assert_true("presentation_tier()" in body, "gated by presentation tier (instant at MINIMAL/OFF)")
+	assert_true("battle_tier()" in body, "must gate on battle_tier() — presentation_tier() with no args asserts 'not turbo, not grinding' and animates through both")
 	assert_true('flag("menu_motion")' in body, "respects the per-feature toggle")
 	assert_true("is_instance_valid(menu)" in body, "validity-guarded — menus are freed aggressively")
 
@@ -56,7 +56,7 @@ func test_ctb_pulse_fires_on_head_change_only() -> void:
 	var fn_end := src.find("\nfunc ", i + 1)
 	var body := src.substr(i, (fn_end - i) if fn_end > -1 else 1600)
 	assert_true("_ctb_last_head_id" in body, "tracks the head so the pulse fires on ARRIVAL, not every repaint")
-	assert_true("presentation_tier()" in body, "tier-gated")
+	assert_true("battle_tier()" in body, "must gate on battle_tier() — the no-arg form is blind to turbo/autogrind")
 	assert_true("row.create_tween()" in body, "tweens are owned by the Control — BattleUIManager is not a Node")
 
 
