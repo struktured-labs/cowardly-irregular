@@ -105,8 +105,31 @@ jobs:
           # export that reported success. Godot exits 0 on some partial exports.
           test -s "build/windows/${EXPORT_NAME}.exe" || {
             echo "::error::export reported success but produced no binary"; exit 1; }
-          file "build/windows/${EXPORT_NAME}.exe" | grep -q "PE32+" || {
-            echo "::error::artifact is not a PE32+ executable"; exit 1; }
+          # Read the PE magic directly instead of shelling out to `file`, which is NOT in
+          # barichello/godot-ci:4.4.1. When it was, `file … | grep -q PE32+` failed with
+          # "file: not found", grep saw an empty pipe, and the || fired — reporting
+          # "artifact is not a PE32+ executable" about a binary that had exported fine.
+          # A gate that cannot MEASURE must not report the SUBJECT as bad: that failure is
+          # indistinguishable from a real one and it red-flagged two clean main pushes
+          # (2026-08-21) before anyone read the log.
+          # PE layout: "MZ" at 0, LE u32 at 0x3C -> PE header, "PE\0\0" there, and the
+          # optional-header magic 16 bytes on is 0x20B for PE32+ (0x10B = 32-bit PE32).
+          python3 - "build/windows/${EXPORT_NAME}.exe" <<'PECHECK'
+          import sys, struct
+          p = sys.argv[1]
+          with open(p, "rb") as f:
+              b = f.read(4096)
+          if b[:2] != b"MZ":
+              print(f"::error::{p} is not a PE image (no MZ magic)"); sys.exit(1)
+          off = struct.unpack_from("<I", b, 0x3C)[0]
+          if b[off:off+4] != b"PE\0\0":
+              print(f"::error::{p} has no PE header at 0x{off:x}"); sys.exit(1)
+          magic = struct.unpack_from("<H", b, off + 24)[0]
+          if magic != 0x20B:
+              print(f"::error::{p} optional-header magic 0x{magic:x}, expected 0x20b (PE32+)")
+              sys.exit(1)
+          print(f"PE32+ verified: {p}")
+          PECHECK
 
       # NOTE: no boot gate here. Locally, tools/deploy_windows.sh runs the exported
       # .exe under wine and asserts "[GAME] Started"; this CI image has no wine, so
