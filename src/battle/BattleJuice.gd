@@ -34,11 +34,23 @@ static func presentation_tier(time_scale: float = Engine.time_scale, turbo: bool
 	return Tier.MINIMAL
 
 
+## Tier for the CURRENT battle, read off the registered context so every consumer agrees; outside battle burst_host is null and this equals presentation_tier() with both modes false.
+func battle_tier() -> Tier:
+	var turbo := false
+	var autogrind := false
+	if burst_host and is_instance_valid(burst_host):
+		if "turbo_mode" in burst_host:
+			turbo = bool(burst_host.turbo_mode)
+		if "autogrind_console_mode" in burst_host:
+			autogrind = bool(burst_host.autogrind_console_mode)
+	return presentation_tier(Engine.time_scale, turbo, autogrind)
+
+
 func add_trauma(amount: float, dir: Vector2 = Vector2.ZERO, sustain: float = 0.0) -> void:
 	if camera_rig:
 		camera_rig.add_trauma(amount, dir, sustain)
 	# Heavy hits thump the arena itself (bass-thump pulse; struktured "try it" 2026-08-14)
-	if amount >= 0.3 and env_background and is_instance_valid(env_background) and flag("env_pulse") and presentation_tier() != Tier.OFF:
+	if amount >= 0.3 and env_background and is_instance_valid(env_background) and flag("env_pulse") and battle_tier() != Tier.OFF:
 		env_background.pulse(amount)
 
 

@@ -973,7 +973,7 @@ func _compute_ctb_queue() -> Array:
 
 ## Rows are rebuilt wholesale (cheap, and only on turn changes) — the pop is what reads badly, so new rows fade in and a head CHANGE pulses. Tracked by instance id so the pulse fires on arrival, not on every repaint.
 func _animate_ctb_rows(head: Combatant) -> void:
-	if BattleJuice.presentation_tier() >= BattleJuice.Tier.MINIMAL or not BattleJuice.flag("ctb_motion"):
+	if BattleJuice.battle_tier() >= BattleJuice.Tier.MINIMAL or not BattleJuice.flag("ctb_motion"):
 		return
 	for row in _ctb_timeline.get_children():
 		if row is Control:
