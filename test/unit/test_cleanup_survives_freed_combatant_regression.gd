@@ -5,6 +5,12 @@ extends GutTest
 ## never ran — and :1051's own comment says an unreset state leaves every "!= INACTIVE" gate
 ## reading "in battle" for the rest of the session. The stale array then aborts the NEXT
 ## battle's _check_victory_conditions. Observed live in two full-suite runs, 2026-08-21.
+##
+## NO test covers the _check_victory_conditions guard: measured 2026-08-21, removing it emits
+## the SCRIPT ERROR but the return value is UNCHANGED (true either way) — the abort kills the
+## LAMBDA, .any() reads that as false, and the outer function proceeds identically. The guard
+## suppresses a real error line; it does not alter behaviour, so no behavioural assert can
+## discriminate it. Do not "add coverage" here — any such test passes with the guard removed.
 
 var _saved_all: Array = []
 var _saved_players: Array = []
@@ -59,14 +65,3 @@ func test_cleanup_clears_state_even_with_a_freed_combatant() -> void:
 	assert_eq(BattleManager.player_party.size(), 0, "player_party cleared")
 	assert_eq(BattleManager.current_state, BattleManager.BattleState.INACTIVE,
 		"state reset to INACTIVE — the wedge is that this line is BELOW the loop and gets skipped")
-
-
-func test_victory_check_survives_a_freed_party_member() -> void:
-	var doomed := _registered_then_freed()
-	BattleManager.player_party.assign([doomed])
-	BattleManager.enemy_party.assign([])
-	doomed.free()
-	var reached := 0
-	var _r = BattleManager._check_victory_conditions()
-	reached += 1
-	assert_eq(reached, 1, "the call returned instead of aborting its caller on a freed member")

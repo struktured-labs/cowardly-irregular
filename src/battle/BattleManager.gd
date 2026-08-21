@@ -2687,7 +2687,7 @@ func _find_taunter(attacker: Combatant, targets: Array) -> Combatant:
 			continue
 		var taunter_name = status.substr(len("taunted_"))
 		for t in targets:
-			if t is Combatant and is_instance_valid(t) and t.is_alive and t.combatant_name == taunter_name:
+			if is_instance_valid(t) and t is Combatant and t.is_alive and t.combatant_name == taunter_name:
 				return t
 	return null
 
@@ -4344,7 +4344,7 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 			if bool(ability.get("steals", false)):
 				var _steal_rate: float = _steal_success_rate(caster, float(ability.get("success_rate", 0.5)))
 				for _st in retargeted:
-					if _st is Combatant and is_instance_valid(_st) and _st.is_alive:
+					if is_instance_valid(_st) and _st is Combatant and _st.is_alive:
 						if _first_steal_guaranteed(_st) or randf() < _steal_rate:
 							var _g: int = randi_range(5, 50) * (1 + int(_st.max_hp / STEAL_GOLD_HP_DIVISOR))
 							GameState.add_gold(_g)
@@ -6385,7 +6385,7 @@ func _execute_mp_restore_ability(caster: Combatant, ability: Dictionary, targets
 					recipients.append(ally)
 		"single_ally":
 			for t in targets:
-				if t is Combatant and is_instance_valid(t) and t.is_alive:
+				if is_instance_valid(t) and t is Combatant and t.is_alive:
 					recipients.append(t)
 			if recipients.is_empty():
 				recipients.append(caster)
@@ -6509,6 +6509,7 @@ func _check_victory_conditions() -> bool:
 	# whose parties are populated, and gating on it breaks the win-condition harness.
 	if player_party.is_empty() and enemy_party.is_empty():
 		return true
+	## Validity-first suppresses a freed-member SCRIPT ERROR; the verdict is identical either way
 	var players_alive = player_party.any(func(p): return is_instance_valid(p) and p.is_alive)
 	var enemies_alive = enemy_party.any(func(e): return is_instance_valid(e) and e.is_alive)
 

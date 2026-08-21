@@ -63,7 +63,7 @@ func punch_zoom(pivot: Vector2, strength: float = 0.03, duration: float = 0.14) 
 func hitstop(sprites: Array, duration: float = 0.07) -> void:
 	var frozen: Array = []
 	for s in sprites:
-		if s is AnimatedSprite2D and is_instance_valid(s) and s.speed_scale != 0.0:
+		if is_instance_valid(s) and s is AnimatedSprite2D and s.speed_scale != 0.0:
 			s.speed_scale = 0.0
 			frozen.append(s)
 	if frozen.is_empty():

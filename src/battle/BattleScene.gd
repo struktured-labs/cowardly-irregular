@@ -3664,7 +3664,7 @@ func _apply_hitstop(attacker_sprite: Node2D, target_sprite: Node2D) -> void:
 		return
 	var frozen: Array = []
 	for s in [attacker_sprite, target_sprite]:
-		if s is AnimatedSprite2D and is_instance_valid(s):
+		if is_instance_valid(s) and s is AnimatedSprite2D:
 			(s as AnimatedSprite2D).speed_scale = 0.05
 			frozen.append(s)
 	if frozen.is_empty():
@@ -4584,7 +4584,7 @@ func _elem_weak_color() -> Color:
 func _count_recent_elem_indicators_near(pos: Vector2) -> int:
 	var count: int = 0
 	for child in get_children():
-		if child is Label and is_instance_valid(child) and child.has_meta("elem_indicator"):
+		if is_instance_valid(child) and child is Label and child.has_meta("elem_indicator"):
 			if child.position.distance_squared_to(pos) < ELEM_STAGGER_RADIUS_SQUARED:
 				count += 1
 	return count

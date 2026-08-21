@@ -118,7 +118,7 @@ const STAGGER_RADIUS_SQUARED := 40.0 * 40.0
 func _count_recent_popups_near(pos: Vector2) -> int:
 	var count: int = 0
 	for child in _scene.get_children():
-		if child is DamageNumber and is_instance_valid(child):
+		if is_instance_valid(child) and child is DamageNumber:
 			if child.position.distance_squared_to(pos) < STAGGER_RADIUS_SQUARED:
 				count += 1
 	return count
