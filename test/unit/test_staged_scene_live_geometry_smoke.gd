@@ -161,16 +161,26 @@ func test_walk_paths_do_not_cross_impassable_terrain() -> void:
 		"staged walk paths must stay on walkable ground end to end:\n  %s" % "\n  ".join(offenders))
 
 
+func _step_ok(a: Vector2i, b: Vector2i) -> bool:
+	if _village == null or not _village.has_method("_can_step"):
+		return true
+	return a == b or _village._can_step(a, b)
+
+
 func _first_blocked_on_segment(from: Vector2, to: Vector2) -> Vector2:
 	var dist := from.distance_to(to)
 	if dist < 1.0:
 		return Vector2.INF
 	# Half-tile stepping — fine enough that a 1-tile pillar can't slip between samples.
 	var steps := int(ceil(dist / (TILE_SIZE * 0.5)))
+	var last := Vector2i(int(floor(from.x / TILE_SIZE)), int(floor(from.y / TILE_SIZE)))
 	for i in range(steps + 1):
 		var p := from.lerp(to, float(i) / float(steps))
-		if not _walkable(p):
+		var cell := Vector2i(int(floor(p.x / TILE_SIZE)), int(floor(p.y / TILE_SIZE)))
+		# A legal cell reached off a ledge is still a blocked walk — tiers connect only via stairs
+		if not _walkable(p) or not _step_ok(last, cell):
 			return p
+		last = cell
 	return Vector2.INF
 
 

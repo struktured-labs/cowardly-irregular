@@ -24,50 +24,36 @@ const IMPASSABLE_TYPES := ["WALL", "WATER", "VILLAGE_HEDGE", "CAVE_WALL", "LAVA"
 ## Both authored literal forms, same as the placement audit.
 const LIT_MUL_EACH := "Vector2\\(\\s*(-?\\d+(?:\\.\\d+)?)\\s*\\*\\s*TILE_SIZE[^,]*,\\s*(-?\\d+(?:\\.\\d+)?)\\s*\\*\\s*TILE_SIZE[^)]*\\)"
 const LIT_MUL_WHOLE := "Vector2\\(\\s*(-?\\d+(?:\\.\\d+)?)\\s*,\\s*(-?\\d+(?:\\.\\d+)?)\\s*\\)\\s*\\*\\s*TILE_SIZE"
+const GS := preload("res://test/unit/helpers/village_grid_source.gd")
+const HG := preload("res://src/exploration/HeightGrid.gd")
 
 
-func _rows(src: String) -> Array:
-	var start := src.find("var map_data: Array[String] = [")
-	if start < 0:
-		return []
-	var open := src.find("= [", start) + 3
-	var block := src.substr(open, src.find("]", open) - open)
-	var out: Array = []
-	for m in RegEx.create_from_string("\"([^\"]+)\"").search_all(block):
-		out.append(m.get_string(1))
-	return out
+func _ctx(src: String) -> Dictionary:
+	return {"rows": GS.rows(src), "blocked": GS.blocked_chars(src, IMPASSABLE_TYPES),
+		"grid": GS.grid(src), "stairs": GS.stairs(src), "faces": GS.face_cells(src, IMPASSABLE_TYPES)}
 
 
-func _blocked(src: String) -> Dictionary:
-	var b := {}
-	var ch := RegEx.create_from_string("\"(.)\"")
-	for line in src.split("\n"):
-		if not (line.contains("return") and line.contains("TileType.")):
-			continue
-		var blocking := false
-		for t in IMPASSABLE_TYPES:
-			if line.contains("TileType." + t):
-				blocking = true
-				break
-		if not blocking:
-			continue
-		for m in ch.search_all(line):
-			b[m.get_string(1)] = true
-	return b
-
-
-func _walkable(rows: Array, blocked: Dictionary, x: int, y: int) -> bool:
+func _walkable(ctx: Dictionary, x: int, y: int) -> bool:
+	var rows: Array = ctx["rows"]
 	if y < 0 or y >= rows.size():
 		return false
 	var row: String = rows[y]
 	if x < 0 or x >= row.length():
 		return false
-	return not blocked.has(row[x])
+	return not ctx["blocked"].has(row[x]) and not ctx["faces"].has(Vector2i(x, y))
+
+
+## Flat village: every open neighbour connects. Tiered: only same height or via a stair.
+func _step_ok(ctx: Dictionary, a: Vector2i, b: Vector2i) -> bool:
+	if (ctx["grid"] as Array).is_empty():
+		return true
+	return HG.can_step(ctx["grid"], ctx["stairs"], a, b)
 
 
 ## 4-connected components over walkable cells. Returns {cell_key: component_id}
 ## and {component_id: size}.
-func _components(rows: Array, blocked: Dictionary) -> Array:
+func _components(ctx: Dictionary) -> Array:
+	var rows: Array = ctx["rows"]
 	var owner := {}
 	var sizes := {}
 	var next_id := 0
@@ -75,7 +61,7 @@ func _components(rows: Array, blocked: Dictionary) -> Array:
 		var row: String = rows[y]
 		for x in row.length():
 			var key := Vector2i(x, y)
-			if not _walkable(rows, blocked, x, y) or owner.has(key):
+			if not _walkable(ctx, x, y) or owner.has(key):
 				continue
 			next_id += 1
 			var n := 0
@@ -86,7 +72,7 @@ func _components(rows: Array, blocked: Dictionary) -> Array:
 				n += 1
 				for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
 					var nb: Vector2i = c + d
-					if _walkable(rows, blocked, nb.x, nb.y) and not owner.has(nb):
+					if _walkable(ctx, nb.x, nb.y) and _step_ok(ctx, c, nb) and not owner.has(nb):
 						owner[nb] = next_id
 						queue.append(nb)
 			sizes[next_id] = n
@@ -140,10 +126,11 @@ func test_every_village_npc_stands_in_the_reachable_region() -> void:
 		if not f.ends_with(".gd"):
 			continue
 		var src: String = FileAccess.get_file_as_string(VILLAGE_DIR + "/" + f)
-		var rows := _rows(src)
+		var ctx := _ctx(src)
+		var rows: Array = ctx["rows"]
 		if rows.is_empty():
 			continue
-		var blocked := _blocked(src)
+		var blocked: Dictionary = ctx["blocked"]
 		# Without this the fill treats every cell as walkable, every village is
 		# trivially one component, and the assertion below can never fail.
 		assert_false(blocked.is_empty(),
@@ -152,7 +139,7 @@ func test_every_village_npc_stands_in_the_reachable_region() -> void:
 			continue
 		villages += 1
 
-		var parts := _components(rows, blocked)
+		var parts := _components(ctx)
 		var owner: Dictionary = parts[0]
 		var sizes: Dictionary = parts[1]
 		assert_gt(sizes.size(), 0, "%s: has walkable cells" % f)

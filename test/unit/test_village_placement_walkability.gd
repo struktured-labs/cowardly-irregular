@@ -14,6 +14,10 @@ const IMPASSABLE_TYPES := ["WALL", "WATER", "VILLAGE_HEDGE", "CAVE_WALL", "LAVA"
 
 ## Line shapes that place something the player must physically reach.
 const PLACEMENT_MARKERS := ["_create_npc(", "_place_chicken(", "spawn_points["]
+const GS := preload("res://test/unit/helpers/village_grid_source.gd")
+
+## Derived cliff faces of the file under audit (empty for flat villages)
+var _faces: Dictionary = {}
 
 
 func test_every_village_placement_is_walkable() -> void:
@@ -29,6 +33,7 @@ func test_every_village_placement_is_walkable() -> void:
 			continue
 		audited += 1
 		var blocked := _parse_impassable_chars(src)
+		_faces = GS.face_cells(src, IMPASSABLE_TYPES)
 		_audit_file(f, src, rows, blocked)
 	# DERIVED, not a magic number. `> 8` let up to 4 of the 13 grid-carrying
 	# villages parse to nothing and be skipped in silence — _parse_map_rows
@@ -110,6 +115,8 @@ func _check_cell(fname: String, where: String, rows: Array, blocked: Dictionary,
 	var ch := _char_at(rows, cx, cy)
 	assert_false(blocked.has(ch),
 		"%s %s places on impassable '%s' at cell (%d,%d)" % [fname, where, ch, cx, cy])
+	assert_false(_faces.has(Vector2i(cx, cy)),
+		"%s %s places on a DERIVED cliff face at cell (%d,%d) — move the mark or the tier line" % [fname, where, cx, cy])
 
 
 func _audit_file(fname: String, src: String, rows: Array, blocked: Dictionary) -> void:

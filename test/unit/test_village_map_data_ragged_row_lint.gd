@@ -17,6 +17,7 @@ extends GutTest
 
 const VILLAGES_DIR := "res://src/maps/villages"
 const INTERIORS_DIR := "res://src/maps/interiors"
+const GS := preload("res://test/unit/helpers/village_grid_source.gd")
 
 
 func _read(p: String) -> String:
@@ -87,6 +88,15 @@ func _lint_dir(dir_path: String, base_skip: String, offenders_w: Array, offender
 			if rows.size() != mh:
 				offenders_h.append("%s: %d rows vs MAP_HEIGHT=%d" % [
 					f, rows.size(), mh])
+		# height_data is a parallel grid: same width per row, same row count
+		var hrows := GS.height_rows(src)
+		if not hrows.is_empty():
+			if mw > 0:
+				for i in range(hrows.size()):
+					if str(hrows[i]).length() != mw:
+						offenders_w.append("%s height row %d: len=%d != MAP_WIDTH=%d" % [f, i, str(hrows[i]).length(), mw])
+			if hrows.size() != rows.size():
+				offenders_h.append("%s: %d height rows vs %d map rows" % [f, hrows.size(), rows.size()])
 	return checked
 
 
