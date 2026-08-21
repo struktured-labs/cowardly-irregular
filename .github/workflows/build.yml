@@ -105,31 +105,45 @@ jobs:
           # export that reported success. Godot exits 0 on some partial exports.
           test -s "build/windows/${EXPORT_NAME}.exe" || {
             echo "::error::export reported success but produced no binary"; exit 1; }
-          # Read the PE magic directly instead of shelling out to `file`, which is NOT in
-          # barichello/godot-ci:4.4.1. When it was, `file … | grep -q PE32+` failed with
-          # "file: not found", grep saw an empty pipe, and the || fired — reporting
-          # "artifact is not a PE32+ executable" about a binary that had exported fine.
-          # A gate that cannot MEASURE must not report the SUBJECT as bad: that failure is
-          # indistinguishable from a real one and it red-flagged two clean main pushes
-          # (2026-08-21) before anyone read the log.
-          # PE layout: "MZ" at 0, LE u32 at 0x3C -> PE header, "PE\0\0" there, and the
-          # optional-header magic 16 bytes on is 0x20B for PE32+ (0x10B = 32-bit PE32).
-          python3 - "build/windows/${EXPORT_NAME}.exe" <<'PECHECK'
-          import sys, struct
-          p = sys.argv[1]
-          with open(p, "rb") as f:
-              b = f.read(4096)
-          if b[:2] != b"MZ":
-              print(f"::error::{p} is not a PE image (no MZ magic)"); sys.exit(1)
-          off = struct.unpack_from("<I", b, 0x3C)[0]
-          if b[off:off+4] != b"PE\0\0":
-              print(f"::error::{p} has no PE header at 0x{off:x}"); sys.exit(1)
-          magic = struct.unpack_from("<H", b, off + 24)[0]
-          if magic != 0x20B:
-              print(f"::error::{p} optional-header magic 0x{magic:x}, expected 0x20b (PE32+)")
-              sys.exit(1)
-          print(f"PE32+ verified: {p}")
-          PECHECK
+          # PE32+ check with an HONEST DEGRADE. Two prior versions hard-failed when their
+          # own tool was absent from barichello/godot-ci:4.4.1 — `file` (not installed) and
+          # then `python3` (also not installed, exit 127, my own fix). Both reported the
+          # ARTIFACT as bad. That is the failure this comment exists to stop repeating:
+          # a gate that cannot MEASURE must not condemn the SUBJECT, because that failure
+          # is byte-identical to a real one and it turned five runs red for nothing.
+          # `test -s` above is the guard that always works; this one is a bonus that
+          # SKIPS LOUDLY when it cannot run.
+          # PE: "MZ" at 0, LE u32 at 0x3C -> PE header, "PE\0\0" there, optional-header
+          # magic 16 bytes on == 0x20b for PE32+.
+          EXE="build/windows/${EXPORT_NAME}.exe"
+          if command -v od >/dev/null 2>&1; then
+            mz=$(od -An -c -N2 "$EXE" | tr -d ' \n')
+            if [ "$mz" != "MZ" ]; then
+              echo "::error::$EXE is not a PE image (magic '$mz', expected MZ)"; exit 1
+            fi
+            # e_lfanew: 4 little-endian bytes at 0x3C
+            pe_off=$(od -An -tu4 -j60 -N4 "$EXE" | tr -d ' \n')
+            sig=$(od -An -c -j"$pe_off" -N2 "$EXE" | tr -d ' \n')
+            if [ "$sig" != "PE" ]; then
+              echo "::error::$EXE has no PE signature at offset $pe_off (got '$sig')"; exit 1
+            fi
+            magic=$(od -An -tu2 -j$((pe_off + 24)) -N2 "$EXE" | tr -d ' \n')
+            # Only CONDEMN on a value we positively parsed and recognise as wrong. If od's
+            # output format differs from what this expects, `magic` is non-numeric — and an
+            # unparseable reading is the tool failing, not the artifact. Same rule as the
+            # missing-tool branch: cannot measure => do not condemn.
+            case "$magic" in
+              523) echo "PE32+ verified: $EXE ($(wc -c < "$EXE") bytes)" ;;
+              267) echo "::error::$EXE is PE32 (32-bit), expected PE32+ (64-bit)"; exit 1 ;;
+              ''|*[!0-9]*)
+                echo "::warning::could not parse the optional-header magic from od output" \
+                     "('$magic') — PE32+ NOT verified. Unverified pass, not a failure." ;;
+              *) echo "::error::$EXE optional-header magic $magic, expected 523 (0x20b)"; exit 1 ;;
+            esac
+          else
+            echo "::warning::od not available — PE32+ magic NOT verified. The non-empty" \
+                 "check above still passed, so this is an unverified pass, not a failure."
+          fi
 
       # NOTE: no boot gate here. Locally, tools/deploy_windows.sh runs the exported
       # .exe under wine and asserts "[GAME] Started"; this CI image has no wine, so
