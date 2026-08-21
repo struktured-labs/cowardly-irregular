@@ -1965,7 +1965,7 @@ func _spawn_ability_effects(ability: Variant, targets: Array) -> void:
 ## Cast tell: a converge-ring under the caster plus a brief element-tinted flash, fired the frame
 ## the ability starts. Fire-and-forget by design — an await here would enter the action pipeline
 ## and shift the execution watchdog's cadence.
-func _spawn_cast_anticipation(caster_sprite: Node2D, ability: Variant) -> void:
+func _spawn_cast_anticipation(caster_sprite: Variant, ability: Variant) -> void:
 	if not is_instance_valid(caster_sprite):
 		return
 	## Delegates to _tier() rather than re-deriving the three-flag triple — a second copy is

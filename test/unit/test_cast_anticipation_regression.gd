@@ -77,9 +77,12 @@ func test_it_survives_a_freed_or_null_caster() -> void:
 	## Sprites are freed on death and on scene teardown; the tell must not abort its caller.
 	var scene: Node = load(SCENE_PATH).new()
 	add_child_autofree(scene)
+	var survived := 0
 	scene._spawn_cast_anticipation(null, {"id": "fire"})
+	survived += 1
 	var doomed := Node2D.new()
 	add_child(doomed)
 	doomed.free()
 	scene._spawn_cast_anticipation(doomed, {"id": "fire"})
-	assert_true(true, "reached here without aborting — a freed-instance access would have stopped the test")
+	survived += 1
+	assert_eq(survived, 2, "both the null AND the freed caster returned; a typed param aborts the second at the call boundary, before the guard")
