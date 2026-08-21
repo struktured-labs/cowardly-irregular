@@ -404,7 +404,7 @@ func _start_target_pulse() -> void:
 		return
 	if not _target_highlight or not is_instance_valid(_target_highlight):
 		return
-	if BattleJuice.presentation_tier() >= BattleJuice.Tier.MINIMAL or not BattleJuice.flag("target_pulse"):
+	if BattleJuice.battle_tier() >= BattleJuice.Tier.MINIMAL or not BattleJuice.flag("target_pulse"):
 		return
 	_target_pulse_tween = create_tween().set_loops()
 	_target_pulse_tween.tween_property(_target_highlight, "modulate:a", 0.72, 0.45).set_trans(Tween.TRANS_SINE)

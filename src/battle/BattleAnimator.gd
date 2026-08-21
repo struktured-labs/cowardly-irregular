@@ -296,7 +296,7 @@ func play_steal(on_complete: Callable = Callable()) -> void:
 		if on_complete.is_valid():
 			on_complete.call()
 		return
-	if not BattleJuice.flag("steal_sauce") or BattleJuice.presentation_tier() == BattleJuice.Tier.OFF:
+	if not BattleJuice.flag("steal_sauce") or BattleJuice.battle_tier() == BattleJuice.Tier.OFF:
 		_play_steal_basic(on_complete)
 		return
 	_play_stealth_travel(on_complete, false)
@@ -308,7 +308,7 @@ func play_mug(on_complete: Callable = Callable()) -> void:
 		if on_complete.is_valid():
 			on_complete.call()
 		return
-	if not BattleJuice.flag("steal_sauce") or BattleJuice.presentation_tier() == BattleJuice.Tier.OFF:
+	if not BattleJuice.flag("steal_sauce") or BattleJuice.battle_tier() == BattleJuice.Tier.OFF:
 		_play_mug_basic(on_complete)
 		return
 	_play_stealth_travel(on_complete, true)
