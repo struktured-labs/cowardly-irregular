@@ -1596,6 +1596,8 @@ func play_music(track: String) -> void:
 
 		# Fade out old track on B
 		_crossfade_tween = create_tween()
+		# Mixer-clock subject: a bare envelope stretches by 1/time_scale while the audio it drives does not (9a883dcf).
+		_crossfade_tween.set_ignore_time_scale(true)
 		_crossfade_tween.tween_property(_music_player_b, "volume_db", -40.0, CROSSFADE_DURATION)
 		_crossfade_tween.tween_callback(func(): _music_player_b.stop())
 
@@ -1780,6 +1782,8 @@ func fade_out_music(duration: float = CROSSFADE_DURATION) -> void:
 	if _crossfade_tween and _crossfade_tween.is_valid():
 		_crossfade_tween.kill()
 	_crossfade_tween = create_tween()
+	# Mixer-clock subject: a bare envelope stretches by 1/time_scale while the audio it drives does not (9a883dcf).
+	_crossfade_tween.set_ignore_time_scale(true)
 	_crossfade_tween.tween_property(_music_player, "volume_db", -40.0, duration)
 	_crossfade_tween.tween_callback(func() -> void:
 		if _music_player:
@@ -1809,6 +1813,8 @@ func set_danger_intensity(intensity: float) -> void:
 		_danger_tween.kill()
 
 	_danger_tween = create_tween()
+	# Mixer-clock subject: a bare envelope stretches by 1/time_scale while the audio it drives does not (9a883dcf).
+	_danger_tween.set_ignore_time_scale(true)
 	_danger_tween.tween_method(_apply_danger_intensity, _danger_intensity, new_intensity, 0.5)
 
 
@@ -1857,6 +1863,8 @@ func set_corruption_intensity(intensity: float) -> void:
 		_corruption_tween.kill()
 
 	_corruption_tween = create_tween()
+	# Mixer-clock subject: a bare envelope stretches by 1/time_scale while the audio it drives does not (9a883dcf).
+	_corruption_tween.set_ignore_time_scale(true)
 	_corruption_tween.tween_method(_apply_corruption_intensity, _corruption_intensity, new_intensity, 1.5)
 
 
