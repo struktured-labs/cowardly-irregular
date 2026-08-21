@@ -52,6 +52,14 @@ func _get_tile_variants() -> Dictionary:
 func _get_debug_atlas_name() -> String:
 	return "debug_atlas"
 
+## Manifest key under tile_sheets ("" = this generator never consults artist sheets)
+func _get_sheet_key() -> String:
+	return ""
+
+## Enum key for a tile type value — the name an artist sheet addresses it by
+func _get_tile_type_name(type: int) -> String:
+	return ""
+
 
 # --- Shared implementation ---
 
@@ -70,6 +78,19 @@ func generate_tile(type: int, variant: int = 0) -> ImageTexture:
 	var texture = ImageTexture.create_from_image(img)
 	_tile_cache[cache_key] = texture
 	return texture
+
+
+## Artist region for (type, variant) from the manifest sheet, or null to draw procedurally
+func _artist_tile(tile_type: int, variant: int) -> Image:
+	var key := _get_sheet_key()
+	if key == "":
+		return null
+	var name := _get_tile_type_name(tile_type)
+	if name == "":
+		return null
+	if variant > 0:
+		name += ":%d" % variant
+	return TileSheetManifest.region(key, "tiles", name)
 
 
 ## Create a TileSet with all tile types for use in TileMap
@@ -98,8 +119,9 @@ func create_tileset() -> TileSet:
 		var tile_type = tile_order[i]
 		var variant = tile_variants.get(i, 0)
 
-		var tile_tex = generate_tile(tile_type, variant)
-		var tile_img = tile_tex.get_image()
+		var tile_img: Image = _artist_tile(tile_type, variant)
+		if tile_img == null:
+			tile_img = generate_tile(tile_type, variant).get_image()
 
 		# Use blit_rect for native C++ image copy instead of per-pixel GDScript loop
 		var col = i % atlas_cols
