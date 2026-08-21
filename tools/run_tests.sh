@@ -34,7 +34,15 @@ BASE=(godot --headless --audio-driver Dummy --log-file "$GUT_LOG" -s addons/gut/
 # lanes diagnosed — in a controlled test EXIT alone did fire, and adding INT TERM fired it twice —
 # so the orphaned snapshots are real but their stated cause is unconfirmed. INT TERM is free, the
 # handler is idempotent behind the -d guard, and nothing saves a kill -9.
-_UD_BASE="${HOME}/.local/share/godot/app_userdata/Cowardly Irregular"
+# 2026-08-19: this was ${HOME}-hardcoded while godot's user:// follows XDG_DATA_HOME, so a
+# SANDBOXED run still snapshotted and restored the SHARED path on exit. Measured live: a gate
+# exit re-stamped autobattle/profiles.json mid-session (mtime backward 25h, ctime now = a cp -a
+# restore) while struktured was playing. settings.json and autobattle/ are netted and are exactly
+# what a player edits mid-session, so any gate opened a window in which his edits silently
+# reverted — and a content hash CANNOT detect it, because reverting TO the baseline is what
+# produces the matching hash. Honouring XDG_DATA_HOME makes a sandboxed run net its OWN path,
+# which is what six lanes already assumed sandboxing did. saves/ stays excluded below regardless.
+_UD_BASE="${XDG_DATA_HOME:-$HOME/.local/share}/godot/app_userdata/Cowardly Irregular"
 # Dirs the suite is KNOWN to write, derived from the CODE's user:// corpus, not from
 # incidents (both prior nets were incident-scoped and each missed the next incident):
 # autogrind/ proven rewritten every full-suite run 2026-08-06 (4 ungated tests reach
