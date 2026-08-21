@@ -35,6 +35,7 @@ const OverworldNPCScript = preload("res://src/exploration/OverworldNPC.gd")
 const WanderingNPCScript = preload("res://src/exploration/WanderingNPC.gd")
 const HeightGridScript = preload("res://src/exploration/HeightGrid.gd")
 const EnvTileSetsScript = preload("res://src/exploration/EnvironmentTileSets.gd")
+const VillagePropScript = preload("res://src/exploration/VillageProp.gd")
 
 signal exploration_ready()
 signal battle_triggered(enemies: Array)
@@ -58,6 +59,7 @@ var transitions: Node2D
 var npcs: Node2D
 var buildings: Node2D
 var treasures: Node2D
+var props: Node2D
 
 ## Spawn points (populated by subclass _generate_map)
 var spawn_points: Dictionary = {}
@@ -185,6 +187,15 @@ func _add_interior_door(node_name: String, target_map: String, label: String, po
 
 func _setup_treasures() -> void:
 	pass
+
+
+## Place a Y-sorted prop by its base cell; its footprint joins the walkability grid and the physics world.
+func _add_prop(kind: int, base_cell: Vector2i) -> VillageProp:
+	var p: VillageProp = VillagePropScript.create(kind, base_cell)
+	for c in p.footprint_cells(base_cell):
+		_prop_blocked[c] = true
+	props.add_child(p)
+	return p
 
 
 ## ---- Placement validation (live playtest 2026-07-11, msg 2360) ----
@@ -390,6 +401,15 @@ func _setup_scene() -> void:
 	npcs = Node2D.new()
 	npcs.name = "NPCs"
 	add_child(npcs)
+
+	# Y-sort so the player walks BEHIND tall props and among NPCs by feet position
+	y_sort_enabled = true
+	npcs.y_sort_enabled = true
+
+	props = Node2D.new()
+	props.name = "Props"
+	props.y_sort_enabled = true
+	add_child(props)
 
 
 func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
