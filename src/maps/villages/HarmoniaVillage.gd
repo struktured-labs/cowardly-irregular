@@ -285,6 +285,28 @@ func _setup_buildings() -> void:
 	fountain.position = Vector2(14 * TILE_SIZE,10 * TILE_SIZE)
 	buildings.add_child(fountain)
 
+	# === TIER DRESSING (CrossCode pass 2026-08-21) ===
+	# Castle approach (tier 2): lamps flank the top path, trees soften the corners
+	_add_lamp_post(Vector2i(6, 3))
+	_add_lamp_post(Vector2i(12, 3))
+	_add_prop(VillagePropScript.Kind.TREE, Vector2i(4, 5))
+	_add_prop(VillagePropScript.Kind.TREE, Vector2i(31, 5))
+	_add_prop(VillagePropScript.Kind.PLANTER, Vector2i(20, 3))
+	# Town (tier 1): trees at the edges, barrels behind the smithy
+	_add_prop(VillagePropScript.Kind.TREE, Vector2i(4, 12))
+	_add_prop(VillagePropScript.Kind.TREE, Vector2i(31, 12))
+	_add_prop(VillagePropScript.Kind.BARREL, Vector2i(30, 9))
+	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(31, 9))
+	_add_prop(VillagePropScript.Kind.FENCE, Vector2i(9, 14))
+	# Market + gate (tier 0): stalls either side of the entrance, a cart, crates, lamps on the road
+	_add_prop(VillagePropScript.Kind.STALL, Vector2i(14, 21))
+	_add_prop(VillagePropScript.Kind.STALL, Vector2i(21, 21))
+	_add_prop(VillagePropScript.Kind.CART, Vector2i(27, 21))
+	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(24, 24))
+	_add_prop(VillagePropScript.Kind.BARREL, Vector2i(25, 24))
+	_add_lamp_post(Vector2i(12, 25))
+	_add_lamp_post(Vector2i(23, 25))
+
 
 func _setup_treasures() -> void:
 	# Hidden treasure behind house 1 (top left)

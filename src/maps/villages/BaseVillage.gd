@@ -78,6 +78,7 @@ func _ready() -> void:
 	Mode7Overlay.is_active = false
 	Mode7Overlay.camera_angle = 0.0  # Defense-in-depth: OverworldPlayer reads this UNCONDITIONALLY, so a leaked non-zero angle would rotate village movement.
 	_setup_scene()
+	_setup_lighting()
 	_generate_map()
 	_setup_transitions()
 	_setup_buildings()
@@ -88,7 +89,6 @@ func _ready() -> void:
 	_setup_camera()
 	_setup_controller()
 	_setup_save_point()
-	_setup_lighting()
 
 	if SoundManager:
 		SoundManager.play_area_music(_get_music_area_id())
@@ -211,6 +211,13 @@ func _setup_lighting() -> void:
 
 func _add_lamp(pos: Vector2, lamp_color: Color = Color(1.0, 0.85, 0.55), radius: int = 96, energy: float = 0.9) -> PointLight2D:
 	return lighting.add_lamp(pos, lamp_color, radius, energy) if lighting else null
+
+
+## A lamp post prop with its PointLight2D parked at the lamp head.
+func _add_lamp_post(base_cell: Vector2i) -> VillageProp:
+	var p := _add_prop(VillagePropScript.Kind.LAMP_POST, base_cell)
+	_add_lamp(p.position + p.light_anchor, Color(1.0, 0.85, 0.55), 96, 0.9)
+	return p
 
 
 ## Place a Y-sorted prop by its base cell; its footprint joins the walkability grid and the physics world.

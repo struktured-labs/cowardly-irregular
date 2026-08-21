@@ -95,3 +95,17 @@ func test_every_npc_is_reachable_from_the_entrance() -> void:
 		assert_true(near, "'%s' at %s is reachable from the entrance" % [n.npc_name, c])
 	for sp in ["exit", "entrance", "bar_exit", "chapel_exit", "library_exit", "cartographer_exit"]:
 		assert_true(seen.has(_cell(_v.spawn_points[sp])), "spawn '%s' reachable" % sp)
+
+
+func test_harmonia_is_dressed_and_lit() -> void:
+	assert_gte(_v.props.get_child_count(), 12, "market stalls, trees, lamps, crates, cart")
+	var lamps := 0
+	for c in _v.lighting.get_children():
+		if c is PointLight2D:
+			lamps += 1
+	assert_gte(lamps, 4, "lamp posts light the approach and the gate")
+	for p in _v.props.get_children():
+		for cell in p.footprint_cells(_cell(p.position - Vector2(0, 1))):
+			assert_false(_v._face_cells.has(cell), "prop %s stands on a cliff face" % p.name)
+			assert_false(_v._stair_cells.has(cell), "prop %s blocks a stair" % p.name)
+	assert_true(_v._is_cell_walkable(_cell(_v.spawn_points["default"])), "entrance spawn kept clear")
