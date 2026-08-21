@@ -60,7 +60,7 @@ func _generate_map() -> void:
 		"W...gfHHHgdppgggAAAggdppgPPPgfgg...W",
 		"W...ggHHHgdppggfAAAggdppgPPPgfgg...W",
 		"W...gggggddpppppppppppppppggfggg...W",
-		"W...gfgggddppFFFFFFggdppggfgfggg...W",
+		"W...gfgggdd^^FFFFFFggd^^ggfgfggg...W",
 		"W...ggIIIgdppFFFFFFggdppGGGgfggg...W",
 		"W...ggIIIgdppFFFFFFggdppGGGggfgg...W",
 		"W...gfIIIgdppFFFFFFggdppGGGgfgfg...W",
@@ -71,7 +71,7 @@ func _generate_map() -> void:
 		"W...ggHHHgdppggggggggfgdppBBBfgg...W",
 		"W...ggHHHgdppgfgggggggdppgBBBfgg...W",
 		"W...gfggggdpppppppppppppppggfggg...W",
-		"W...gggHHHgdppggfggfgggggggfgfgg...W",
+		"W...gggHHHgd^^ggfggfgg^^gggfgfgg...W",
 		"W...gfgHHHgdppggggggfggfggfgfgfg...W",
 		"W...gggHHHgdppgfggggggggggfggfgg...W",
 		"W...ggfggggddpppppppppggfgggfggg...W",
@@ -83,18 +83,53 @@ func _generate_map() -> void:
 		"W..................................W",
 		"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
 	]
+	# Elevation: castle approach (2) / town (1) / market + gate (0); cliffs are DERIVED, stairs are the '^' cells above
+	var height_data: Array[String] = [
+		"222222222222222222222222222222222222",
+		"222222222222222222222222222222222222",
+		"222222222222222222222222222222222222",
+		"222222222222222222222222222222222222",
+		"222222222222222222222222222222222222",
+		"222222222222222222222222222222222222",
+		"222222222222222222222222222222222222",
+		"222222222222222222222222222222222222",
+		"111111111111111111111111111111111111",
+		"111111111111111111111111111111111111",
+		"111111111111111111111111111111111111",
+		"111111111111111111111111111111111111",
+		"111111111111111111111111111111111111",
+		"111111111111111111111111111111111111",
+		"111111111111111111111111111111111111",
+		"111111111111111111111111111111111111",
+		"111111111111111111111111111111111111",
+		"111111111111111111111111111111111111",
+		"111111111111111111111111111111111111",
+		"000000000000000000000000000000000000",
+		"000000000000000000000000000000000000",
+		"000000000000000000000000000000000000",
+		"000000000000000000000000000000000000",
+		"000000000000000000000000000000000000",
+		"000000000000000000000000000000000000",
+		"000000000000000000000000000000000000",
+		"000000000000000000000000000000000000",
+		"000000000000000000000000000000000000",
+		"000000000000000000000000000000000000",
+		"000000000000000000000000000000000000",
+	]
 
 	for y in range(MAP_HEIGHT):
 		var row = map_data[y] if y < map_data.size() else ""
 		for x in range(MAP_WIDTH):
 			var char = row[x] if x < row.length() else "W"
 			var tile_type = _char_to_tile_type(char)
-			var atlas_coords = _get_atlas_coords(tile_type)
+			var atlas_coords = _atlas_for(tile_type, Vector2i(x, y))
 			tile_map.set_cell(Vector2i(x, y), 0, atlas_coords)
 
 			# Mark special locations
 			if char == "X" and not spawn_points.has("exit"):
 				spawn_points["exit"] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
+
+	_build_derived_layers(map_data, height_data)
 
 	# Entrance spawn (safe distance from exit)
 	spawn_points["entrance"] = Vector2(18 * TILE_SIZE,20 * TILE_SIZE)
@@ -120,6 +155,7 @@ func _char_to_tile_type(char: String) -> int:
 		"e": return TileGeneratorScript.TileType.VILLAGE_HEDGE
 		"F": return TileGeneratorScript.TileType.WATER
 		"X": return TileGeneratorScript.TileType.VILLAGE_PATH  # Exit is also cobblestone
+		"^", "/": return TileGeneratorScript.TileType.VILLAGE_PATH  # stair/ramp ground; elevation lives in height_data
 		_: return TileGeneratorScript.TileType.VILLAGE_GRASS
 
 
@@ -334,7 +370,7 @@ func _setup_npcs() -> void:
 	var _theron_gs = get_node_or_null("/root/GameState")
 	if _theron_gs:
 		_theron_chapter1_done = bool(_theron_gs.game_constants.get("cutscene_flag_chapter1_complete", false))
-	var elder = _create_npc("Elder Theron", "elder", Vector2(11 * TILE_SIZE,8 * TILE_SIZE), _theron_post if _theron_chapter1_done else _theron_pre)
+	var elder = _create_npc("Elder Theron", "elder", Vector2(11 * TILE_SIZE,9 * TILE_SIZE), _theron_post if _theron_chapter1_done else _theron_pre)
 	elder.dynamic = true
 	# Named canon sheet (2fd985bb); must match his staged-cutscene puppet (HARMONIA_NPC_CANON).
 	elder.sprite_archetype = "elder_theron"
@@ -345,7 +381,7 @@ func _setup_npcs() -> void:
 	# Scholar (hints about automation)
 	# Wave D showcase NPC #2 — fourth-wall-aware autobattle townie.
 	# Persona text + fallback lines hydrated from the same JSON cache.
-	var scholar = _create_npc("Scholar Milo", "villager", Vector2(19 * TILE_SIZE,8 * TILE_SIZE), [
+	var scholar = _create_npc("Scholar Milo", "villager", Vector2(19 * TILE_SIZE,9 * TILE_SIZE), [
 		"Ah, a fellow seeker of knowledge!",
 		"I've been studying an ancient art called 'AUTOBATTLE'.",
 		"Press F5 or START to open the Autobattle Editor!",
@@ -520,7 +556,7 @@ func _setup_npcs() -> void:
 		"Phil: \"It keeps coming back to me. Maybe it knows something.\"")
 
 	# Bram the smith's apprentice — untested_edge giver, by Ironclad Arms
-	var bram = _create_npc("Bram Smith", "blacksmith", Vector2(27 * TILE_SIZE,8 * TILE_SIZE), [
+	var bram = _create_npc("Bram Smith", "blacksmith", Vector2(27 * TILE_SIZE,9 * TILE_SIZE), [
 		"Master Brutus forges them. I catalogue them. One came BACK.",
 	])
 	bram.npc_id = "bram_smith"
@@ -533,7 +569,7 @@ func _setup_npcs() -> void:
 	var SwordScript = load("res://src/exploration/SwordInscription.gd")
 	if SwordScript:
 		var sword = SwordScript.new()
-		sword.position = Vector2(29 * TILE_SIZE,8 * TILE_SIZE)
+		sword.position = Vector2(29 * TILE_SIZE,9 * TILE_SIZE)
 		npcs.add_child(sword)
 
 	# Rowan the courier — word_from_capital giver, by the fountain square
