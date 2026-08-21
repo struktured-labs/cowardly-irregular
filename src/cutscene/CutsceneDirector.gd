@@ -968,7 +968,8 @@ func _get_live_stage() -> Node2D:
 	if MapSystem and MapSystem.current_map and is_instance_valid(MapSystem.current_map):
 		return MapSystem.current_map
 	var gl = get_tree().root.get_node_or_null("GameLoop")
-	if gl and "current_scene" in gl and gl.current_scene is Node2D and is_instance_valid(gl.current_scene):
+	# is_instance_valid FIRST: `and` short-circuits left-to-right and `is` on a freed instance ABORTS the function, so a validity check to its right can never run. GameLoop.current_scene is queue_free'd then awaited (GameLoop:3479/3995/5407) and reassigned much later, so it holds a freed node for a real window.
+	if gl and "current_scene" in gl and is_instance_valid(gl.current_scene) and gl.current_scene is Node2D:
 		return gl.current_scene
 	var cs = get_tree().current_scene
 	if cs is Node2D:
