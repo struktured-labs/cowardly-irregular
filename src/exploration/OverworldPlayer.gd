@@ -314,6 +314,9 @@ func _resolve_footstep_terrain() -> String:
 func _get_terrain_speed_modifier() -> float:
 	"""Speed penalty for the rough terrain the player is actually standing on."""
 	var parent = get_parent()
+	# Villages own their slope speed (stairs/ramps); the overworld keeps the collision-frame sampler below
+	if parent != null and parent.has_method("get_terrain_speed_at"):
+		return parent.get_terrain_speed_at(global_position)
 	if parent == null or not ("tile_generator" in parent):
 		return 1.0
 	var gen = parent.tile_generator

@@ -45,6 +45,8 @@ signal area_transition(target_map: String, spawn_point: String)
 ## Tile size (consistent across all villages)
 const TILE_SIZE: int = 32
 const FRINGE_GRASS_TYPES := [TileGeneratorScript.TileType.VILLAGE_GRASS, TileGeneratorScript.TileType.GRASS]
+## Stairs/ramps slow the walk (spec 2026-08-21: 0.6, the mud/snow scale) — read by OverworldPlayer through its terrain-speed seam
+const STAIR_SPEED: float = 0.6
 
 ## Scene components
 var tile_map: TileMapLayer
@@ -262,6 +264,11 @@ func _can_step(from: Vector2i, to: Vector2i) -> bool:
 
 func _get_cliff_palette() -> Dictionary:
 	return {}
+
+
+func get_terrain_speed_at(pos: Vector2) -> float:
+	var cell := Vector2i(int(floor(pos.x / TILE_SIZE)), int(floor(pos.y / TILE_SIZE)))
+	return STAIR_SPEED if _stair_cells.has(cell) else 1.0
 
 
 func _cell_salt(cell: Vector2i) -> int:
