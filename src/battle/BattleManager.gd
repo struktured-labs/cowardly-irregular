@@ -1033,6 +1033,9 @@ func _cleanup_battle() -> void:
 	# comment for why is_connected/disconnect with the unbound method
 	# silently no-ops here.
 	for combatant in all_combatants:
+		## A freed combatant aborts this loop, skipping the clears AND the INACTIVE reset below
+		if not is_instance_valid(combatant):
+			continue
 		var cb = _died_callbacks.get(combatant, null)
 		if cb and combatant.died.is_connected(cb):
 			combatant.died.disconnect(cb)
@@ -6506,8 +6509,8 @@ func _check_victory_conditions() -> bool:
 	# whose parties are populated, and gating on it breaks the win-condition harness.
 	if player_party.is_empty() and enemy_party.is_empty():
 		return true
-	var players_alive = player_party.any(func(p): return p.is_alive)
-	var enemies_alive = enemy_party.any(func(e): return e.is_alive)
+	var players_alive = player_party.any(func(p): return is_instance_valid(p) and p.is_alive)
+	var enemies_alive = enemy_party.any(func(e): return is_instance_valid(e) and e.is_alive)
 
 	if not players_alive:
 		# Tick 247/248/254: ratchet "After the First Time" via the
