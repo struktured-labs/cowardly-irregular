@@ -59,3 +59,23 @@ func test_validity_check_precedes_the_is_operator_in_get_live_stage() -> void:
 	assert_lt(v, i,
 		"is_instance_valid MUST precede `is` — `and` short-circuits left-to-right and `is` " +
 		"on a freed instance aborts the function before any check to its right runs")
+
+
+# _get_live_player has the SAME defect at TWO rungs, and MapSystem.player is the worse one:
+# a stored ref that is NEVER cleared when the exploration scene holding the player is freed,
+# so it stays dangling until the next set_player() — a wider window than current_scene's.
+func test_get_live_player_checks_validity_before_the_is_operator_at_both_rungs() -> void:
+	var src := FileAccess.get_file_as_string("res://src/cutscene/CutsceneDirector.gd")
+	assert_ne(src, "", "could not read CutsceneDirector.gd")
+
+	var idx := src.find("func _get_live_player")
+	assert_gt(idx, -1, "_get_live_player must exist")
+	var body: String = src.substr(idx, 420)
+
+	for pair in [["p", "get_first_node_in_group rung"], ["mp", "MapSystem.get_player rung"]]:
+		var v: String = "is_instance_valid(%s) and %s is Node2D" % [pair[0], pair[0]]
+		var bad: String = "%s is Node2D and is_instance_valid(%s)" % [pair[0], pair[0]]
+		assert_true(body.contains(v),
+			"%s must read is_instance_valid BEFORE `is` — `and` short-circuits left to right" % pair[1])
+		assert_false(body.contains(bad),
+			"%s must not reinstate `is` before the validity check" % pair[1])

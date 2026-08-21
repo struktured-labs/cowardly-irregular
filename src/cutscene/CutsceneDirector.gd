@@ -977,13 +977,14 @@ func _get_live_stage() -> Node2D:
 	return null
 
 
+## is_instance_valid FIRST at both rungs: `and` short-circuits left-to-right and `is` on a freed instance ABORTS, and MapSystem.player is a stored ref never cleared when the exploration scene holding the player is freed.
 func _get_live_player() -> Node2D:
 	var p = get_tree().get_first_node_in_group("player")
-	if p is Node2D and is_instance_valid(p):
+	if is_instance_valid(p) and p is Node2D:
 		return p
 	if MapSystem and MapSystem.has_method("get_player"):
 		var mp = MapSystem.get_player()
-		if mp is Node2D and is_instance_valid(mp):
+		if is_instance_valid(mp) and mp is Node2D:
 			return mp
 	return null
 
