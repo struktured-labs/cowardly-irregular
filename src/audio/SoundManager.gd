@@ -75,6 +75,11 @@ const KILL_DUCK_RELEASE_TIME: float = 0.4
 const CRIT_THUD_FREQ: float = 62.0
 const CRIT_THUD_DURATION: float = 0.18
 const CRIT_THUD_TRIM_DB: float = -4.0
+## Death punctuation (struktured 2026-08-20: "cant hear the sfx when a monster dies"). The authored cue is a gentle scorch ("no bass no tones") measured at the SAME mean level as a plain hit (-22.8 vs -21.8 dB) — it cannot read as a climax. Boost the cue and give it the low body it was authored without.
+const DEATH_PLAYER_BASE_DB: float = SFX_BATTLE_BASE_DB + 2.0
+const DEATH_CUE_BOOST_DB: float = 6.0
+const DEATH_THUD_FREQ: float = 48.0
+const DEATH_THUD_DURATION: float = 0.28
 ## Combo ramp: a BIAS multiplied onto pitch_scale, so the existing ±5% jitter survives underneath it.
 const COMBO_PITCH_STEP: float = 0.03
 const COMBO_PITCH_CAP: float = 0.12
@@ -262,7 +267,7 @@ func _setup_audio_players() -> void:
 
 	_death_player = AudioStreamPlayer.new()
 	_death_player.name = "DeathPlayer"
-	_death_player.volume_db = SFX_BATTLE_BASE_DB + 2.0
+	_death_player.volume_db = DEATH_PLAYER_BASE_DB
 	_death_player.bus = SFX_BUS
 	add_child(_death_player)
 
@@ -539,9 +544,17 @@ func play_battle(sound_key: String) -> void:
 ## Death cries on their OWN voice — on the shared _battle_player the 1s scorch was stomped by the killing blow's hit sound, then (post-fix) by the NEXT action's sounds at 2x+ speed. Never audible either way (struktured 2026-08-15 + 2026-08-18).
 func play_death(sound_key: String) -> void:
 	var world_key: String = _get_world_sfx_prefix() + sound_key
-	if world_key != sound_key and _try_play_sfx_from_manifest(_death_player, world_key):
+	# A group kill drops 2-3 enemies inside SFX_MIN_INTERVAL_MS; the per-key cooldown would swallow every death but the first (and its `return true` suppresses the fallback too). Deaths are the one cue that must never dedupe.
+	_sfx_cooldowns.erase(world_key)
+	_sfx_cooldowns.erase(sound_key)
+	# Low body under the cue, on the sub channel — NOT the battle player, whose hit tail is exactly why the cry got its own voice
+	if _sub_player != null:
+		_play_sound(_sub_player, {"freq": DEATH_THUD_FREQ, "duration": DEATH_THUD_DURATION, "type": "thud"})
+	# ABSOLUTE from the base const, never from the live player: the override persists on the player, so `volume_db + boost` would ratchet +6 dB per death
+	var boosted_db: float = DEATH_PLAYER_BASE_DB + DEATH_CUE_BOOST_DB
+	if world_key != sound_key and _try_play_sfx_from_manifest(_death_player, world_key, boosted_db):
 		return
-	if _try_play_sfx_from_manifest(_death_player, sound_key):
+	if _try_play_sfx_from_manifest(_death_player, sound_key, boosted_db):
 		return
 	if SOUNDS.has(sound_key):
 		_play_sound(_death_player, SOUNDS[sound_key])

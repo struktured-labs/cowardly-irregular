@@ -510,6 +510,9 @@ func _setup_transitions() -> void:
 	back_portal.require_interaction = true
 	back_portal.indicator_text = "Return to the Mundane Sprawl"
 	back_portal.position = spawn_points.get("steampunk_portal", Vector2(864, 48))
+	# Anchored one box south first: this arrival is at y=48, so the -140.6 recipe alone
+	# left 3.4px of 192 on-map with the body floor at y=38 -- an unreachable portal.
+	back_portal.position += Vector2(0, InteractGeometry.ENTRANCE_BOX_MODE7.y)
 	back_portal.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
 	_setup_transition_collision(back_portal, InteractGeometry.ENTRANCE_BOX_MODE7)
 	back_portal.transition_triggered.connect(_on_transition_triggered)

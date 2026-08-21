@@ -300,7 +300,7 @@ func _create_default_abilities() -> void:
 		},
 		"cura": {
 			"id": "cura",
-			"name": "Cura",
+			"name": "Curia",
 			"type": "healing",
 			"mp_cost": 12,
 			"description": "Restore HP to one ally",

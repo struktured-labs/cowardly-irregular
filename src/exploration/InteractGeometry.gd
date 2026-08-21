@@ -58,10 +58,21 @@ const ENTRANCE_BOX_MODE7 := Vector2(64, 192)  # the proven W1 recipe (2x6 tiles)
 ## feet block at one line and whose door-presses register at another feels
 ## worse than either error alone, because inconsistency is unlearnable
 ## while a uniform offset is adapted to in minutes). One const, two
-## consumers, cannot diverge by construction.
+## consumers — so the MAGNITUDE cannot drift. It does NOT make them agree:
+## the consumers apply OPPOSITE SIGNS and sit 281.2px apart. See below.
 const MODE7_GROUND_DISPLACEMENT_PX := 140.6
 
 ## Was a hand-tuned -96.0 — right direction, a third short of the measurement.
+## THE SIGN IS OPPOSITE to the terrain consumer (Mode7Overlay applies +GROUND to the
+## collider clone), so terrain and triggers are 2x140.6 apart. That -96.0 playtest
+## predates the collider split by 7 days and was tuned when terrain still collided on
+## the authored layer, so it is not evidence about the current pair.
+## MEASURED COST of the negative sign, 2026-08-15: any trigger anchored within ~140px
+## of a map's TOP edge is pushed off the map entirely. Three were — W3's back portal
+## and the W4->W5 and W5->W6 forward portals, all standable-cell-count 0, all fixed by
+## anchoring one ENTRANCE_BOX_MODE7.y south first. Bottom-edge anchors are unaffected,
+## which is why 13 of 16 sites are fine and nothing at the call site distinguishes them.
+## test_transition_reachability_regression measures this; do not re-derive it by hand.
 const MODE7_TRIGGER_Y_OFFSET := -MODE7_GROUND_DISPLACEMENT_PX
 
 # -- Class D: auto-sensors --

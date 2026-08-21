@@ -372,6 +372,10 @@ func _get_impassable_types() -> Array:
 	# layout explicitly calls it "impassable decorative border" but it was missing from this list.
 	return [TileType.WALL, TileType.CAVE_WALL, TileType.LAVA, TileType.WATER, TileType.MOUNTAIN, TileType.VILLAGE_HEDGE]
 
+## Playtested W1 values; MOUNTAIN and WATER are inert — _get_impassable_types() blocks both.
+func _get_rough_terrain_speeds() -> Dictionary:
+	return {TileType.FOREST: 0.5, TileType.MOUNTAIN: 0.4, TileType.WATER: 0.5}
+
 func _get_atlas_dimensions() -> Vector2i:
 	return Vector2i(5, 8)
 

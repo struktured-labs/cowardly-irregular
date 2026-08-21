@@ -335,17 +335,23 @@ func test_boss_dialogue_getter_for_widens_crack_line_declared() -> void:
 ## ── Balance pass (msg 2486) ────────────────────────────────────────────
 
 func test_lockward_hp_tuned_for_crescendo() -> void:
-	# msg 2486 balance: Lockward HP 260 → 200 to hit the 6-8 round win-tempo
-	# spec with the vulnerability-shape crescendo. Math at Rogue level 4-5
-	# (attack 14-18 base 12 × 1.16 level growth + gear): Backstab base
-	# 28-36, post-Steal weighted expected 29-42 per hit blend with 30%
-	# crit. 4 Backstabs kill 200 HP at middle-attack (~150-170 damage +
-	# variance), 5 at low-attack. Total rounds = Steal + 4-5 Backstabs +
-	# 1-2 Defer-for-Counter-Stance = 6-8 rounds. If someone accidentally
-	# reverts to 260 during a data pass, the fight becomes grindy again.
+	# 2026-08-20 rebalance (struktured, live: "rogue spotlight is too hard, make 1/3
+	# easier" / "I am stealing and breaking his guard its still not enough"). The
+	# msg-2486 spec was 6-8 rounds; the REAL formula (Combatant.take_damage:
+	# atk²/(atk+def)) against defense 300 gave ~11 Backstabs post-Steal while the
+	# boss killed the Rogue in <3 hits — the Steal paid off but nowhere near enough.
+	# Two levers: HP 2000→1340 and ATK 440→295 (the -1/3 he asked for), and
+	# defense 300→150 so the vulnerability bonus actually lands. Math at Rogue
+	# baseline attack 120 / Backstab ×2: post-Steal hits ~220-257 (stacking),
+	# 1340 HP ≈ 5 Backstabs → Steal + 5 + Defer ≈ 7 rounds, inside the spec.
+	# If a data pass reverts any of these three, the duel goes grindy again.
 	var f := FileAccess.open("res://data/monsters.json", FileAccess.READ)
 	var data: Dictionary = JSON.parse_string(f.get_as_text())
 	f.close()
 	var stats: Dictionary = data["rogue_lockward"]["stats"]
-	assert_eq(int(stats.get("max_hp", -1)), 2000,
-		"Lockward HP must be 2000 per msg 2486 balance pass (×10 scale) — tighter tempo for the crescendo shape")
+	assert_eq(int(stats.get("max_hp", -1)), 1340,
+		"Lockward HP must be 1340 — 2026-08-20 rebalance, ~5 post-Steal Backstabs to kill")
+	assert_eq(int(stats.get("attack", -1)), 295,
+		"Lockward attack must be 295 — the Rogue must survive ~5 hits, not <3")
+	assert_eq(int(stats.get("defense", -1)), 150,
+		"Lockward defense must be 150 — at 300 the atk²/(atk+def) formula ate the Steal bonus")

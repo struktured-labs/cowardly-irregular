@@ -9,6 +9,10 @@ const OverworldPlayerScript = preload("res://src/exploration/OverworldPlayer.gd"
 const OverworldControllerScript = preload("res://src/exploration/OverworldController.gd")
 const AreaTransitionScript = preload("res://src/exploration/AreaTransition.gd")
 const MonsterSpawnerScript = preload("res://src/exploration/MonsterSpawner.gd")
+const MapImageLoaderScript = preload("res://src/exploration/MapImageLoader.gd")
+
+## The map is a 1px-per-tile PNG, not an ASCII literal -- see MapImageLoader for why.
+const MAP_IMAGE: String = "res://data/maps/overworld_w1.png"
 
 signal exploration_ready()
 signal battle_triggered(enemies: Array, terrain: String)
@@ -215,103 +219,22 @@ func _generate_map() -> void:
 	## W=Mountains  CENTER=Grassland  E=Coast
 	## SW=Desert    S=Rivers/Bridges  SE=Volcanic
 	##
-	## Legend:
-	## ~ = water, M = mountain, . = path, g = grass, F = forest, B = bridge
-	## C = whispering cave, V = harmonia village
-	## i = ice/snow, s = sand/desert, S = swamp, d = dark/corrupted
-	## 1 = ice dragon cave, 2 = shadow dragon cave
-	## 3 = lightning dragon cave, 4 = fire dragon cave
-	## W = frosthold, E = eldertree, G = grimhollow, D = sandrift, I = ironhaven
-	## P = steampunk portal
+	## The character legend lives in data/maps/map_palette.json, which is the file the
+	## loader and the exporter both read -- a copy here would be a second source that
+	## drifts silently, and it already had one: this comment omitted "c" (coast) and "l"
+	## (lava) while both are used 126 and 108 times in the map.
 
 	print("Generating overworld map %dx%d..." % [MAP_WIDTH, MAP_HEIGHT])
 
-	var map_data: Array[String] = [
-		# Row 0-9: Northern region (Ice NW, Forest N, Swamp NE)
-		"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",  # 0
-		"~~MMMMMMiiiiiiiiii~~~FFFFFFFFFFFFFFFFFFFFFFFFFFFFF~~~~~~~~~~~~~SSSSSSSSSSdddddddddddd~~~~~~~~~~~~~~~",  # 1
-		"~~MMM.Hiiiiiiiiiii~~~FFFFFFFFFFFFFFFFFFFFFFFFFFFF~~~~~~~~~~~~~~SSSSSSSSSdddddddddddddd~~~~~~~~~~~~~~",  # 2 (H = hidden passage → ice hollow pocket)
-		"~~MMMMiiii.iiiiiii~~FFFFFFFFFFgFFFFFFFFFFFFFFFFF~~~~~~~~~~~~~~~SSSSSSSSddddddddddddddd~~~~~~~~~~~~~~",  # 3
-		"~~MMMiii..1.iiiiii~~FFFFFFFgggggFFFFFFFFFFFFFFFF~~~~~~~~~~~~~~~SSSSSSSdddddd..ddddddddd~~~~~~~~~~~~~",  # 4
-		"~~MMiiii....iiiiiii~FFFFFFgggggggFFFFFFFFFFFFFFF~~~~~~~~~~~~~~~SSSSSSddddd.....dddddddd~~~~~~~~~~~~~",  # 5
-		"~~MMiii..W..iiiiii~~FFFFFggggEggggFFFFFFFFFFFFF~~~~~~~~~~~~~~~~SSSSSdddd...2...ddddddd~~~~~~~~~~~~~~",  # 6
-		"~~MMiiii....iiiii~~~FFFFggggg.gggggFFFFFFFFFFFF~~~~~~~~~~~~~~~~SSSSdddd.........dddddd~~~~~~~~~~~~~~",  # 7
-		"~~MMMiii..iiiii~~~~~FFFgggg.....ggggFFFFFFFFFFF~~~~~~~~~~~~~~~~SSSddddd..G......ddddd~~~~~~~~~~~~~~~",  # 8
-		"~~MMMMiiiiiiii~~~~~~FFggg.........gggFFFFFFFFFF~~~~~~~~~~~~~~~~SSdddddd.........ddddd~~~~~~~~~~~~~~~",  # 9
-		# Row 10-19: Transition from north to central
-		"~~MMMMMiiiii~~~~~~~~~Fgg...........ggFFFFFFFFF~~~~~~~~~~~~~~~~~Sddddddd........dddddd~~~~~~~~~~~~~~~",  # 10
-		"~~~MMMMiii~~~~~~~~~~~Fg.............gFFFFFFFF~~~~~~~~~~~~~~~~~~Sdddddd.......dddddd~~~~~~~~~~~~~~~~~",  # 11
-		"~~~~MMMii~~~~~..B..~~g..............gFFFFFFF~~~~~~~~~~~~~~~~~~~Sddddd......ddddddd~~~~~~~~~~~~~~~~~~",  # 12
-		"~~~~~MMi~~~~~~.....~~g..............gFFFFFF~~~~~~~~~~~~~~~~~~~~SSddd.....ddddddd~~~~~~~~~~~~~~~~~~~~",  # 13
-		"~~~~~~M~~~~~~~..B..~~................FFFFF~~~~~~~~~~~~~~~~~~~~~SSdd....ddddddd~~~~~~~~~~~~~~~~~~~~~~",  # 14
-		"..........................................................................................dd..dddddd",  # 15
-		"....................................................................................................",  # 16
-		"....................................................................................................",  # 17
-		"....................................................................................................",  # 18
-		"....................................................................................................",  # 19
-		# Row 20-29: Central grassland (Harmonia Village + Whispering Cave)
-		"...C..........................gggggggggggggg.........gggggg.........................................",  # 20
-		"..C...........................ggggggggggggggg........gggggggg.......................................",  # 21
-		"..............................ggggggggggggggggg.....gggggggggg......................................",  # 22
-		".............BB........BB.....ggggggggggggggggg....ggggggggggg................................cccccc",  # 23
-		".............BB........BB.....gggggggggggggggg....gggggggggggg...............................ccccccc",  # 24
-		"....V........BB........BB.....ggggggggggggggg....ggggggggggg................................cccccccc",  # 25
-		".............BB........BB.....gggggggggggggg....gggggggggg..................................cccccccc",  # 26
-		"..............................ggggggggggggg....ggggggggg....................................cccccccc",  # 27
-		"..........gggggg..............ggggggggggg....gggggggg......................................ccccccccc",  # 28
-		"~~~~~~~~.....gggggggg..............ggggggggg...ggggggg....................................cccccccccc",  # 29
-		# Row 30-39: Central-south transition
-		"~~~~~~~~....ggggggggggg.............gggggggg..ggggggg....................................ccccccccccc",  # 30
-		"~~~~~~~~~..ggggggggggggg............ggggggg..gggggg.....................................cccccccccccc",  # 31
-		"~~~~~~~~~~ggggggggggggggg...........gggggg..ggggg......................................ccccccccccccc",  # 32
-		"~~~~~~~~~~ggggggggggggggg............ggggg.gggg.......................................ccccccc~~~cccc",  # 33
-		"~~~~~~~~~ggggggggggggggg.............gggg.ggg........................................cccccc~~~~~cccc",  # 34
-		"~~~~~~~~gggggggggggggg................ggg.gg........................................ccccc~~~~~~~~ccc",  # 35
-		"~~~~~~~ggggggggggggg...................gg.g........................................ccccc~~~~~~~~~~~~",  # 36
-		"~~~~~~gggggggggggg..........................................................................~~~~~~~~",  # 37
-		"~~~~~ggggggggg.................................................................................~~~~~",  # 38
-		"~~~~gggggggg....................................................................................~~~~",  # 39
-		# Row 40-49: Southern transition (Desert SW, Rivers, Volcanic SE)
-		"~~~ggggggg.......................................................................................~~~",  # 40
-		"~~gggggg.........................................................................................~~~",  # 41
-		"~ggggg..............................................................................................",  # 42
-		"gggg................................................................................................",  # 43
-		"ggg.................................................................................................",  # 44
-		"gg..................................................................................................",  # 45
-		"g..............................~~...............~~.............................................~~~~~",  # 46
-		"..............................~~~~.............~~~~...........................................~~~~~~",  # 47
-		".............................~~~~~~...........~~~~~~.........................................~~~~~~~",  # 48
-		"............................~~~~~~~~.........~~~~~~~~........................................~~~~~~~",  # 49
-		# Row 50-59: Desert and Volcanic regions
-		"ssssssssssssssss............~~~~~~~~~~BBB~~~~~~~~~~............................MMHMMM~~~~MMM~~~~~~~~",  # 50 (H = hidden passage → magma vault)
-		"sssssssssssssssss..........~~~~~~~~~~~...~~~~~~~~~~...........................MMM.MMlllMMMMM~~~~~~~~",  # 51 (pocket behind the H above)
-		"ssssssssssssssssss.........~~~~~~~~~~~...~~~~~~~~~~..........................MMMMMlllllMMMMM~~~~~~~~",  # 52
-		"ssssssssss..sssssss........~~~~~~~~~~~...~~~~~~~~~~.........................MMMMlllllll.MMMMM~~~~~~~",  # 53
-		"sssssssss....sssssss.......~~~~~~~~~~~...~~~~~~~~~~........................MMMlllll.llll.MMMM~~~~~~~",  # 54
-		"ssssssss..D...ssssss.......~~~~~~~~~~~...~~~~~~~~~~.......................MMMlllll...lll..MM~~~~~~~~",  # 55
-		"sssssss.......ssssss.......~~~~~~~~~~~...~~~~~~~~~~......................MMlllll..4..lllMMM~~~~~~~~~",  # 56
-		"ssssssss..3..sssssss.......~~~~~~~~~~~.P.~~~~~~~~~~.....................MMlllll......lllMM~~~~~~~~~~",  # 57
-		"sssssssss....sssssss.......~~~~~~~~~~~...~~~~~~~~~~....................MMllllll..I..llllMM~~~~~~~~~~",  # 58
-		"ssssssssss..sssssssss......~~~~~~~~~~~...~~~~~~~~~~...................MMlllllll.....lllMM~~~~~~~~~~~",  # 59
-		# Row 60-69: Southern edge
-		"sssssssssssssssssssss......~~~~~~~~~~~~.~~~~~~~~~~~~..................MMMllllllllllllllMM~~~~~~~~~~~",  # 60
-		"ssssssssssssssssssssss.....~~~~~~~~~~~~~~~~~~~~~~~~~.................MMMMlllllllllllMMM~~~~~~~~~~~~~",  # 61
-		"sssssssssssssssssssssss....~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.............MMMMMlllllllMMMMM~~~~~~~~~~~~~~",  # 62
-		"ssssssssssssssssssssssss...~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~............MMMMMMlllllMMMMMM~~~~~~~~~~~~~~",  # 63
-		"sssssssssssssssssssssssss..~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...........MMMMMMMlllMMMMMMM~~~~~~~~~~~~~~",  # 64
-		"ssssssssssssssssssssssssss.~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~..........MMMMMMMMMMMMMMMM~~~~~~~~~~~~~~~",  # 65
-		"ssssssssssssssssssssssssss~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.........MMMMMMMMMMMMMM~~~~~~~~~~~~~~~~~",  # 66
-		"ssssssssssssssssssssssssss~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~........MMMMMMMMMMMMM~~~~~~~~~~~~~~~~~~",  # 67
-		"ssssssssssssssssssssssssss~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.......MMMMMMMMMMMM~~~~~~~~~~~~~~~~~~~",  # 68
-		"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",  # 69
-	]
+	var map_data: Array[String] = []
+	# str() coercion, not `= load_rows(...)`: a generic-to-typed assign ABORTS this function
+	for row in MapImageLoaderScript.load_rows(MAP_IMAGE):
+		map_data.append(str(row))
 
-	# Ensure map_data matches expected dimensions
-	while map_data.size() < MAP_HEIGHT:
-		var pad = ""
-		for _x in range(MAP_WIDTH):
-			pad += "~"
-		map_data.append(pad)
+	# no padding: the old water-pad turned a failed load into a silent ocean
+	if map_data.size() != MAP_HEIGHT:
+		push_error("[MAP] %s yielded %d rows, expected %d -- refusing to pad" % [MAP_IMAGE, map_data.size(), MAP_HEIGHT])
+		return
 
 	# Convert map_data to tiles
 	var tile_counts = {}
