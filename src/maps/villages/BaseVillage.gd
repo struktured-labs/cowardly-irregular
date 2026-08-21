@@ -42,6 +42,7 @@ signal area_transition(target_map: String, spawn_point: String)
 
 ## Tile size (consistent across all villages)
 const TILE_SIZE: int = 32
+const FRINGE_GRASS_TYPES := [TileGeneratorScript.TileType.VILLAGE_GRASS, TileGeneratorScript.TileType.GRASS]
 
 ## Scene components
 var tile_map: TileMapLayer
@@ -221,6 +222,15 @@ func _get_cliff_palette() -> Dictionary:
 	return {}
 
 
+func _cell_salt(cell: Vector2i) -> int:
+	return cell.x * 73856093 ^ cell.y * 19349663
+
+
+## Atlas coords for a tile type at a cell, variant chosen per cell (5-column TileGenerator atlas).
+func _atlas_for(tile_type: int, cell: Vector2i) -> Vector2i:
+	return TileGeneratorScript.get_atlas_coords_for_id(TileGeneratorScript.get_tile_id_variant(tile_type, _cell_salt(cell)))
+
+
 func _ground_type(cell: Vector2i) -> int:
 	if tile_map == null or tile_map.get_cell_source_id(cell) == -1:
 		return -1
@@ -238,6 +248,7 @@ func _build_derived_layers(map_rows: Array, height_rows: Array) -> void:
 		var id: int = EnvTileSetsScript.RAMP_ID if _stair_cells[c] == "/" else EnvTileSetsScript.STAIR_ID
 		overlay_map.set_cell(c, 0, EnvTileSetsScript.atlas_coords(id))
 	if _height_grid.is_empty():
+		_paint_fringe()
 		return
 	var walls := {}
 	for y in range(_height_grid.size()):
@@ -251,6 +262,27 @@ func _build_derived_layers(map_rows: Array, height_rows: Array) -> void:
 		cliff_map.set_cell(c, 0, EnvTileSetsScript.atlas_coords(EnvTileSetsScript.FACE_ID))
 	for c in pieces["edges"]:
 		cliff_map.set_cell(c, 0, EnvTileSetsScript.atlas_coords(int(pieces["edges"][c])))
+	_paint_fringe()
+
+
+func _fringe_mask(cell: Vector2i) -> int:
+	var mask := 0
+	for bit in HeightGridScript.DIRS:
+		if _ground_type(cell + HeightGridScript.DIRS[bit]) in FRINGE_GRASS_TYPES:
+			mask |= bit
+	return mask
+
+
+## Grass tufts creep onto neighbouring path/dirt — the cheap half of terrain transitions.
+func _paint_fringe() -> void:
+	for c in tile_map.get_used_cells():
+		if not _tile_is_open(c) or _face_cells.has(c) or _stair_cells.has(c):
+			continue
+		if _ground_type(c) in FRINGE_GRASS_TYPES:
+			continue
+		var m := _fringe_mask(c)
+		if m != 0:
+			overlay_map.set_cell(c, 0, EnvTileSetsScript.atlas_coords(m))
 
 
 ## Nearest walkable cell center via ring search (radius ≤ 5 tiles);

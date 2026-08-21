@@ -98,3 +98,21 @@ func test_village_without_height_data_has_empty_derived_layers() -> void:
 	assert_eq(_v.cliff_map.get_used_cells().size(), 0, "no cliffs without height data")
 	assert_true(_v._is_cell_walkable(Vector2i(1, 3)), "flat village: every open tile walkable")
 	assert_true(_v._can_step(Vector2i(1, 2), Vector2i(1, 3)), "flat village: every open step legal")
+
+
+func test_fringe_mask_points_at_grass_neighbours() -> void:
+	_v = _build()
+	# (2,4) is the path cell under the stair: grass E and W, stair (PATH ground) N, wall S.
+	var m: int = _v._fringe_mask(Vector2i(2, 4))
+	assert_eq(m, 2 | 8, "grass east + west only")
+	assert_eq(_v._fringe_mask(Vector2i(1, 1)), 2 | 4, "(1,1): wall N and W, grass E and S")
+
+
+func test_fringe_tiles_paint_only_on_open_non_grass_cells() -> void:
+	_v = _build()
+	assert_ne(_v.overlay_map.get_cell_source_id(Vector2i(2, 4)), -1, "path beside grass gets a fringe tile")
+	assert_eq(_v.overlay_map.get_cell_atlas_coords(Vector2i(2, 4)), Vector2i(2 | 8, 0), "fringe id IS the mask")
+	assert_eq(_v.overlay_map.get_cell_source_id(Vector2i(1, 1)), -1, "grass never fringes itself")
+	assert_eq(_v.overlay_map.get_cell_source_id(Vector2i(0, 0)), -1, "walls never fringe")
+	assert_eq(_v.overlay_map.get_cell_source_id(Vector2i(3, 3)), -1, "a face cell is never fringed")
+	assert_eq(_v.overlay_map.get_cell_atlas_coords(Vector2i(2, 3)).x, 16, "the stair keeps its stair tile")

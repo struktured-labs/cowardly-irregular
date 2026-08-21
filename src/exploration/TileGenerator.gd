@@ -3008,6 +3008,29 @@ static func get_tile_id(type: TileType) -> int:
 	return 0
 
 
+## Atlas ids per type, base id first; derived from _get_tile_order (water frames excluded — they animate).
+const VARIANT_IDS := {
+	TileType.GRASS: [0, 12, 13],
+	TileType.FOREST: [1, 14],
+	TileType.MOUNTAIN: [2, 19],
+	TileType.SAND: [20, 27],
+	TileType.ICE: [21, 28],
+	TileType.LAVA: [26, 29],
+	TileType.VILLAGE_GRASS: [30, 30, 35, 39],
+	TileType.VILLAGE_PATH: [31, 36],
+	TileType.VILLAGE_DIRT: [32, 37],
+	TileType.VILLAGE_FLOWER: [33, 38],
+}
+
+
+## Per-cell variant pick; callers pass a cell-derived salt so the choice is stable across rebuilds.
+static func get_tile_id_variant(type: TileType, salt: int) -> int:
+	var ids: Array = VARIANT_IDS.get(type, [])
+	if ids.is_empty():
+		return get_tile_id(type)
+	return int(ids[absi(salt) % ids.size()])
+
+
 ## Get atlas coordinates for a tile ID (for 5-column layout)
 static func get_atlas_coords_for_id(tile_id: int) -> Vector2i:
 	return Vector2i(tile_id % 5, tile_id / 5)
