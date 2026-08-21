@@ -4684,5 +4684,6 @@
       "tier": "T2",
       "source": "hand-pixeled 24x24 amber shield-with-crossed-blades \u2014 cowir-sprites (cowir-main msg 2454 approval). Sigil for THREAT_CLASS_BUFFS (counter_stance et al.); attaches as sprite child, pulses via existing _update_buff_debuff_visuals hook."
     }
-  }
+  },
+  "tile_sheets": {}
 }
