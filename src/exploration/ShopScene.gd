@@ -38,6 +38,8 @@ const GOLD_SPEND_FLASH_COLOR: Color = Color(1.0, 0.25, 0.2)
 const GOLD_SPEND_HOLD_SEC: float = 0.65
 const BUY_ROW_UNAFFORDABLE_COLOR: Color = Color(0.45, 0.45, 0.5)
 const BUY_ROW_OWNED_COLOR: Color = Color(0.55, 0.78, 0.6)
+## struktured 2026-08-20: "make the spells in the store green if they're better than what the player has" — saturated, distinct from the soft owned tint; label also carries ▲ so colour-blind mode still reads it
+const BUY_ROW_UPGRADE_COLOR: Color = Color(0.35, 0.95, 0.45)
 const PURCHASE_TOAST_SEC: float = 1.5
 
 ## Shop configuration
@@ -301,6 +303,9 @@ func _open_buy_menu() -> void:
 			var already_owned: bool = (_is_magic_shop() and owned > 0) or wearers != ""
 			if already_owned:
 				row["text_color"] = BUY_ROW_OWNED_COLOR
+			elif _is_magic_shop() and _is_spell_upgrade(item_data):
+				row["label"] = "▲ " + row["label"]
+				row["text_color"] = BUY_ROW_UPGRADE_COLOR
 			elif game_state and int(cost) > game_state.get_gold():
 				row["text_color"] = BUY_ROW_UNAFFORDABLE_COLOR
 			items.append(row)
@@ -510,6 +515,25 @@ func _get_item_data(item_id: String) -> Dictionary:
 				return weapon
 			return equipment_system.armors.get(item_id, {})
 	return {}
+
+
+## A spell is an UPGRADE when its data tier outranks the best tier anyone in the party knows in that family (nothing known → tier 1 is an upgrade). Data-driven: family/tier fields, never a name-suffix guess.
+func _is_spell_upgrade(spell_data: Dictionary) -> bool:
+	if not spell_data.has("family") or not spell_data.has("tier"):
+		return false
+	return int(spell_data["tier"]) > _best_known_tier(str(spell_data["family"]))
+
+
+func _best_known_tier(family: String) -> int:
+	var best := 0
+	if game_state == null or job_system == null:
+		return best
+	for member_data in game_state.player_party:
+		for aid in member_data.get("learned_abilities", []):
+			var data: Dictionary = job_system.get_ability(str(aid))
+			if str(data.get("family", "")) == family:
+				best = maxi(best, int(data.get("tier", 0)))
+	return best
 
 
 func _get_owned_count(item_id: String) -> int:
