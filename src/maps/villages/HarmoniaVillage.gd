@@ -36,7 +36,7 @@ func _get_save_point_position() -> Vector2:
 
 
 func _get_player_spawn_fallback() -> Vector2:
-	return Vector2(576, 640)
+	return Vector2(592, 656)
 
 
 func _generate_map() -> void:
@@ -131,8 +131,8 @@ func _generate_map() -> void:
 
 	_build_derived_layers(map_data, height_data)
 
-	# Entrance spawn (safe distance from exit)
-	spawn_points["entrance"] = Vector2(18 * TILE_SIZE,20 * TILE_SIZE)
+	# Entrance spawn, CENTRED in cell (18,20): the cell corner touches the row-19 cliff faces (spawn-overlap ratchet)
+	spawn_points["entrance"] = Vector2(18 * TILE_SIZE + TILE_SIZE / 2, 20 * TILE_SIZE + TILE_SIZE / 2)
 	spawn_points["default"] = spawn_points["entrance"]
 	# Bar exit spawn (in front of The Dancing Tonberry)
 	spawn_points["bar_exit"] = Vector2(29 * TILE_SIZE + TILE_SIZE / 2, 18 * TILE_SIZE + TILE_SIZE / 2)

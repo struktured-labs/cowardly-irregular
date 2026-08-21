@@ -1,6 +1,6 @@
 # CrossCode-Style Environments for Villages and Dungeons — Design
 
-**Date:** 2026-08-21 · **Owner:** cowir-main · **Status:** approved by struktured (sections 1–9), proceeding to plan
+**Date:** 2026-08-21 · **Owner:** cowir-main · **Status:** approved by struktured (sections 1–9); phases 1–2 implemented on `feat/crosscode-environments-p1` (2026-08-21); phases 3–4 pending their own plans
 
 ## Context
 
