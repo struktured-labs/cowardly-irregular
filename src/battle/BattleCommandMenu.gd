@@ -179,7 +179,7 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 func _animate_menu_open(menu: Node) -> void:
 	if menu == null or not is_instance_valid(menu) or not (menu is Control):
 		return
-	if BattleJuice.presentation_tier() >= BattleJuice.Tier.MINIMAL or not BattleJuice.flag("menu_motion"):
+	if BattleJuice.battle_tier() >= BattleJuice.Tier.MINIMAL or not BattleJuice.flag("menu_motion"):
 		return
 	var ctl: Control = menu
 	var rest: Vector2 = ctl.position

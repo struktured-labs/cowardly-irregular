@@ -50,7 +50,7 @@ func add_trauma(amount: float, dir: Vector2 = Vector2.ZERO, sustain: float = 0.0
 	if camera_rig:
 		camera_rig.add_trauma(amount, dir, sustain)
 	# Heavy hits thump the arena itself (bass-thump pulse; struktured "try it" 2026-08-14)
-	if amount >= 0.3 and env_background and is_instance_valid(env_background) and flag("env_pulse") and presentation_tier() != Tier.OFF:
+	if amount >= 0.3 and env_background and is_instance_valid(env_background) and flag("env_pulse") and battle_tier() != Tier.OFF:
 		env_background.pulse(amount)
 
 
