@@ -33,6 +33,8 @@ const OverworldControllerScript = preload("res://src/exploration/OverworldContro
 const AreaTransitionScript = preload("res://src/exploration/AreaTransition.gd")
 const OverworldNPCScript = preload("res://src/exploration/OverworldNPC.gd")
 const WanderingNPCScript = preload("res://src/exploration/WanderingNPC.gd")
+const HeightGridScript = preload("res://src/exploration/HeightGrid.gd")
+const EnvTileSetsScript = preload("res://src/exploration/EnvironmentTileSets.gd")
 
 signal exploration_ready()
 signal battle_triggered(enemies: Array)
@@ -43,6 +45,8 @@ const TILE_SIZE: int = 32
 
 ## Scene components
 var tile_map: TileMapLayer
+var cliff_map: TileMapLayer
+var overlay_map: TileMapLayer
 var player: Node2D
 var camera: Camera2D
 var controller: Node
@@ -56,6 +60,12 @@ var treasures: Node2D
 
 ## Spawn points (populated by subclass _generate_map)
 var spawn_points: Dictionary = {}
+
+## Elevation state, filled by _build_derived_layers (empty = flat village, today's behaviour)
+var _height_grid: Array = []
+var _stair_cells: Dictionary = {}
+var _face_cells: Dictionary = {}
+var _prop_blocked: Dictionary = {}
 
 
 func _ready() -> void:
@@ -183,15 +193,64 @@ func _setup_treasures() -> void:
 ## the first impassable tile. Doors live in `buildings` and are exempt —
 ## they intentionally hug wall faces.
 
-## Impassable = the cell's TileSet data carries collision polygons, so this
-## inherits every generator's _get_impassable_types() without a second list.
-func _is_cell_walkable(cell: Vector2i) -> bool:
+## Open = the ground tile carries no collision polygons (inherits every generator's _get_impassable_types()).
+func _tile_is_open(cell: Vector2i) -> bool:
 	if tile_map == null:
 		return true
 	var td := tile_map.get_cell_tile_data(cell)
 	if td == null:
 		return false
 	return td.get_collision_polygons_count(0) == 0
+
+
+## Game-wide walkability authority: open tile, not consumed by a derived cliff face, not under a prop footprint.
+func _is_cell_walkable(cell: Vector2i) -> bool:
+	return _tile_is_open(cell) and not _face_cells.has(cell) and not _prop_blocked.has(cell)
+
+
+## Height rule on top of walkability: same tier, or a one-tier step via a stair/ramp (flat villages: always true).
+func _can_step(from: Vector2i, to: Vector2i) -> bool:
+	if not _is_cell_walkable(from) or not _is_cell_walkable(to):
+		return false
+	if _height_grid.is_empty():
+		return true
+	return HeightGridScript.can_step(_height_grid, _stair_cells, from, to)
+
+
+func _get_cliff_palette() -> Dictionary:
+	return {}
+
+
+func _ground_type(cell: Vector2i) -> int:
+	if tile_map == null or tile_map.get_cell_source_id(cell) == -1:
+		return -1
+	var ac := tile_map.get_cell_atlas_coords(cell)
+	var order: Array = tile_generator._get_tile_order()
+	var id: int = ac.y * tile_generator._get_atlas_dimensions().x + ac.x
+	return int(order[id]) if id >= 0 and id < order.size() else -1
+
+
+## Derive cliffs/stairs from the height grid and paint them; call at the end of _generate_map. Empty height rows = flat village, nothing painted.
+func _build_derived_layers(map_rows: Array, height_rows: Array) -> void:
+	_stair_cells = HeightGridScript.stair_cells(map_rows)
+	_height_grid = HeightGridScript.parse(height_rows)
+	for c in _stair_cells:
+		var id: int = EnvTileSetsScript.RAMP_ID if _stair_cells[c] == "/" else EnvTileSetsScript.STAIR_ID
+		overlay_map.set_cell(c, 0, EnvTileSetsScript.atlas_coords(id))
+	if _height_grid.is_empty():
+		return
+	var walls := {}
+	for y in range(_height_grid.size()):
+		for x in range(_height_grid[y].size()):
+			var c := Vector2i(x, y)
+			if not _tile_is_open(c):
+				walls[c] = true
+	var pieces: Dictionary = HeightGridScript.derive(_height_grid, _stair_cells, walls)
+	_face_cells = pieces["faces"]
+	for c in _face_cells:
+		cliff_map.set_cell(c, 0, EnvTileSetsScript.atlas_coords(EnvTileSetsScript.FACE_ID))
+	for c in pieces["edges"]:
+		cliff_map.set_cell(c, 0, EnvTileSetsScript.atlas_coords(int(pieces["edges"][c])))
 
 
 ## Nearest walkable cell center via ring search (radius ≤ 5 tiles);
@@ -244,14 +303,16 @@ func _validate_patrol(w: Node2D) -> void:
 		var b: Vector2 = pts[j]
 		var steps := int(ceil(a.distance_to(b) / (TILE_SIZE * 0.5)))
 		var last_clear := a
+		var last_cell := Vector2i(int(floor(a.x / TILE_SIZE)), int(floor(a.y / TILE_SIZE)))
 		for s in range(1, steps + 1):
 			var sample := a.lerp(b, float(s) / float(steps))
 			var cell := Vector2i(int(floor(sample.x / TILE_SIZE)), int(floor(sample.y / TILE_SIZE)))
-			if not _is_cell_walkable(cell):
+			if not _is_cell_walkable(cell) or (cell != last_cell and not _can_step(last_cell, cell)):
 				pts[j] = last_clear
 				changed = true
 				break
 			last_clear = sample
+			last_cell = cell
 	if changed:
 		push_warning("[%s] adjusted patrol for '%s' around impassable tiles" % [_get_area_id(), w.name])
 		w.set_patrol(pts)
@@ -271,6 +332,16 @@ func _setup_scene() -> void:
 	tile_map.name = "TileMap"
 	tile_map.tile_set = tile_generator.create_tileset()
 	add_child(tile_map)
+
+	cliff_map = TileMapLayer.new()
+	cliff_map.name = "Cliffs"
+	cliff_map.tile_set = EnvTileSetsScript.build_cliff_tileset(_get_cliff_palette())
+	add_child(cliff_map)
+
+	overlay_map = TileMapLayer.new()
+	overlay_map.name = "Overlay"
+	overlay_map.tile_set = EnvTileSetsScript.build_overlay_tileset(_get_cliff_palette())
+	add_child(overlay_map)
 
 	transitions = Node2D.new()
 	transitions.name = "Transitions"
