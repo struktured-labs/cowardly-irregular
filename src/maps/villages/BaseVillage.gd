@@ -36,6 +36,7 @@ const WanderingNPCScript = preload("res://src/exploration/WanderingNPC.gd")
 const HeightGridScript = preload("res://src/exploration/HeightGrid.gd")
 const EnvTileSetsScript = preload("res://src/exploration/EnvironmentTileSets.gd")
 const VillagePropScript = preload("res://src/exploration/VillageProp.gd")
+const VillageLightingScript = preload("res://src/exploration/VillageLighting.gd")
 
 signal exploration_ready()
 signal battle_triggered(enemies: Array)
@@ -60,6 +61,7 @@ var npcs: Node2D
 var buildings: Node2D
 var treasures: Node2D
 var props: Node2D
+var lighting: VillageLighting
 
 ## Spawn points (populated by subclass _generate_map)
 var spawn_points: Dictionary = {}
@@ -86,6 +88,7 @@ func _ready() -> void:
 	_setup_camera()
 	_setup_controller()
 	_setup_save_point()
+	_setup_lighting()
 
 	if SoundManager:
 		SoundManager.play_area_music(_get_music_area_id())
@@ -187,6 +190,27 @@ func _add_interior_door(node_name: String, target_map: String, label: String, po
 
 func _setup_treasures() -> void:
 	pass
+
+
+func _uses_scene_lighting() -> bool:
+	return true
+
+
+## GameLoop asks this to hand the day/night tint to the scene instead of the fullscreen overlay
+func has_scene_lighting() -> bool:
+	return lighting != null
+
+
+func _setup_lighting() -> void:
+	if not _uses_scene_lighting():
+		return
+	lighting = VillageLightingScript.new()
+	lighting.name = "Lighting"
+	add_child(lighting)
+
+
+func _add_lamp(pos: Vector2, lamp_color: Color = Color(1.0, 0.85, 0.55), radius: int = 96, energy: float = 0.9) -> PointLight2D:
+	return lighting.add_lamp(pos, lamp_color, radius, energy) if lighting else null
 
 
 ## Place a Y-sorted prop by its base cell; its footprint joins the walkability grid and the physics world.

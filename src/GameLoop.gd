@@ -3669,8 +3669,10 @@ func _start_exploration(force_battle_teardown: bool = false) -> void:
 
 	# Day/night tint follows the map class: outdoors only (interiors have PR-153's modulate, caves are lightless)
 	var outdoor_scene: bool = exploration_scene is OverworldScene or exploration_scene is BaseVillage
+	# A scene that lights itself (VillageLighting CanvasModulate) must not ALSO be multiplied by the overlay
+	var scene_lit: bool = exploration_scene.has_method("has_scene_lighting") and bool(exploration_scene.has_scene_lighting())
 	if _day_night_overlay:
-		_day_night_overlay.set_outdoor(outdoor_scene)
+		_day_night_overlay.set_outdoor(outdoor_scene and not scene_lit)
 	if _day_clock:
 		_day_clock.set_outdoor(outdoor_scene)
 		_day_clock.set_world(GameState.current_world if GameState else 1)
