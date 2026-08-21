@@ -65,3 +65,23 @@ func test_sprite_extends_upward_from_the_origin() -> void:
 	assert_not_null(spr)
 	assert_lt(spr.position.y, 0.0, "drawn above the base")
 	assert_lt(p.light_anchor.y, -TILE, "lamp head sits at least a tile up")
+
+
+func test_artist_prop_region_replaces_the_drawing_but_not_the_footprint() -> void:
+	const TSM := preload("res://src/exploration/TileSheetManifest.gd")
+	var sheet := Image.create(32, 96, false, Image.FORMAT_RGBA8)
+	sheet.fill(Color.MAGENTA)
+	TSM.set_for_test({"medieval": {"path": "res://fake/m.png", "props": {"TREE": [0, 0, 1, 3]}}}, {"res://fake/m.png": sheet})
+	var tree := VP.create(VP.Kind.TREE, Vector2i(2, 2))
+	tree.sheet_key = "medieval"
+	add_child_autofree(tree)
+	var spr: Sprite2D = tree.get_node("Sprite")
+	assert_eq(spr.texture.get_size(), Vector2(32, 96), "sheet region at the prop's drawn size")
+	assert_eq(spr.texture.get_image().get_pixel(16, 80), Color.MAGENTA, "artist pixels")
+	assert_eq(spr.position, Vector2(-16, -96), "still anchored at the base")
+	assert_eq(tree.footprint_cells(Vector2i(2, 2)), [Vector2i(2, 2)], "footprint is data, not art")
+	var barrel := VP.create(VP.Kind.BARREL, Vector2i(1, 1))
+	barrel.sheet_key = "medieval"
+	add_child_autofree(barrel)
+	assert_ne((barrel.get_node("Sprite") as Sprite2D).texture.get_image().get_pixel(16, 16), Color.MAGENTA, "unnamed prop stays procedural")
+	TSM.reset_for_test()

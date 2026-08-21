@@ -225,6 +225,7 @@ func _add_lamp_post(base_cell: Vector2i) -> VillageProp:
 ## Place a Y-sorted prop by its base cell; its footprint joins the walkability grid and the physics world.
 func _add_prop(kind: int, base_cell: Vector2i) -> VillageProp:
 	var p: VillageProp = VillagePropScript.create(kind, base_cell)
+	p.sheet_key = tile_generator._get_sheet_key()
 	for c in p.footprint_cells(base_cell):
 		_prop_blocked[c] = true
 	props.add_child(p)
@@ -421,12 +422,12 @@ func _setup_scene() -> void:
 
 	cliff_map = TileMapLayer.new()
 	cliff_map.name = "Cliffs"
-	cliff_map.tile_set = EnvTileSetsScript.build_cliff_tileset(_get_cliff_palette())
+	cliff_map.tile_set = EnvTileSetsScript.build_cliff_tileset(_get_cliff_palette(), tile_generator._get_sheet_key())
 	add_child(cliff_map)
 
 	overlay_map = TileMapLayer.new()
 	overlay_map.name = "Overlay"
-	overlay_map.tile_set = EnvTileSetsScript.build_overlay_tileset(_get_cliff_palette())
+	overlay_map.tile_set = EnvTileSetsScript.build_overlay_tileset(_get_cliff_palette(), tile_generator._get_sheet_key())
 	add_child(overlay_map)
 
 	transitions = Node2D.new()

@@ -72,3 +72,19 @@ func test_face_and_stair_tiles_are_not_blank() -> void:
 	assert_gt(stair_px.a, 0.9, "stair tile is painted")
 	var blank := overlay.get_pixel(16, 16)
 	assert_eq(blank.a, 0.0, "fringe mask 0 is transparent in the middle")
+
+
+func test_artist_cliff_piece_replaces_pixels_but_never_colliders() -> void:
+	const TSM := preload("res://src/exploration/TileSheetManifest.gd")
+	var sheet := Image.create(32, 32, false, Image.FORMAT_RGBA8)
+	sheet.fill(Color.MAGENTA)
+	TSM.set_for_test({"medieval": {"path": "res://fake/m.png", "cliff": {"face": [0, 0]}, "overlay": {"stair": [0, 0]}}}, {"res://fake/m.png": sheet})
+	var cliff := _source(ETS.build_cliff_tileset({}, "medieval"))
+	var img := cliff.texture.get_image()
+	assert_eq(img.get_pixel(ETS.FACE_ID * ETS.TILE + 16, 16), Color.MAGENTA, "face is the artist cell")
+	assert_ne(img.get_pixel(1 * ETS.TILE + 1, 1), Color.MAGENTA, "edge_1 unnamed — procedural")
+	assert_eq(cliff.get_tile_data(ETS.atlas_coords(ETS.FACE_ID), 0).get_collision_polygons_count(0), 1, "art never changes collision")
+	var overlay := _source(ETS.build_overlay_tileset({}, "medieval"))
+	assert_eq(overlay.texture.get_image().get_pixel(ETS.STAIR_ID * ETS.TILE + 16, 16), Color.MAGENTA, "stair is the artist cell")
+	assert_ne(_source(ETS.build_cliff_tileset()).texture.get_image().get_pixel(ETS.FACE_ID * ETS.TILE + 16, 16), Color.MAGENTA, "no key: procedural")
+	TSM.reset_for_test()

@@ -28,6 +28,12 @@ static func atlas_coords(id: int) -> Vector2i:
 	return Vector2i(id, 0)
 
 
+## Artist piece from the world's sheet, or the procedural image — colliders are set by id, never by art
+static func _art_or(sheet_key: String, section: String, name: String, procedural: Image) -> Image:
+	var art: Image = TileSheetManifest.region(sheet_key, section, name) if sheet_key != "" else null
+	return art if art != null else procedural
+
+
 static func _pal(palette: Dictionary, key: String) -> Color:
 	return palette.get(key, DEFAULT_PALETTE[key])
 
@@ -53,7 +59,7 @@ static func _edge_strip(bit: int, half: float) -> PackedVector2Array:
 		_: return PackedVector2Array([Vector2(-half, -half), Vector2(-half + t, -half), Vector2(-half + t, half), Vector2(-half, half)])
 
 
-static func build_cliff_tileset(palette: Dictionary = {}) -> TileSet:
+static func build_cliff_tileset(palette: Dictionary = {}, sheet_key: String = "") -> TileSet:
 	var ts := TileSet.new()
 	ts.tile_size = Vector2i(TILE, TILE)
 	ts.add_physics_layer()
@@ -61,8 +67,8 @@ static func build_cliff_tileset(palette: Dictionary = {}) -> TileSet:
 	ts.set_physics_layer_collision_mask(0, 1)
 	var images: Array = []
 	for mask in range(16):
-		images.append(_draw_edge_tile(mask, palette))
-	images.append(_draw_face_tile(palette))
+		images.append(_art_or(sheet_key, "cliff", "edge_%d" % mask, _draw_edge_tile(mask, palette)))
+	images.append(_art_or(sheet_key, "cliff", "face", _draw_face_tile(palette)))
 	var src := _make_atlas(images)
 	ts.add_source(src)
 	var half := TILE / 2.0
@@ -79,7 +85,7 @@ static func build_cliff_tileset(palette: Dictionary = {}) -> TileSet:
 	return ts
 
 
-static func build_overlay_tileset(palette: Dictionary = {}) -> TileSet:
+static func build_overlay_tileset(palette: Dictionary = {}, sheet_key: String = "") -> TileSet:
 	var ts := TileSet.new()
 	ts.tile_size = Vector2i(TILE, TILE)
 	ts.add_physics_layer()
@@ -87,10 +93,10 @@ static func build_overlay_tileset(palette: Dictionary = {}) -> TileSet:
 	ts.set_physics_layer_collision_mask(0, 1)
 	var images: Array = []
 	for mask in range(16):
-		images.append(_draw_fringe_tile(mask, palette))
-	images.append(_draw_stair_tile(palette))
-	images.append(_draw_ramp_tile(palette))
-	images.append(_draw_shadow_tile())
+		images.append(_art_or(sheet_key, "overlay", "fringe_%d" % mask, _draw_fringe_tile(mask, palette)))
+	images.append(_art_or(sheet_key, "overlay", "stair", _draw_stair_tile(palette)))
+	images.append(_art_or(sheet_key, "overlay", "ramp", _draw_ramp_tile(palette)))
+	images.append(_art_or(sheet_key, "overlay", "shadow", _draw_shadow_tile()))
 	ts.add_source(_make_atlas(images))
 	return ts
 

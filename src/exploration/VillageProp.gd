@@ -32,6 +32,8 @@ const CLOTH_B := Color(0.92, 0.88, 0.80)
 const GLASS := Color(1.0, 0.85, 0.50)
 
 var kind: int = Kind.BARREL
+## Manifest key of the world's tile sheet; "" = always procedural
+var sheet_key: String = ""
 ## Local point a lamp should sit at (lamp posts: the glass head)
 var light_anchor: Vector2 = Vector2.ZERO
 
@@ -53,8 +55,12 @@ func footprint_cells(base_cell: Vector2i) -> Array:
 
 func _ready() -> void:
 	var size: Vector2i = SIZES[kind]
-	var img := Image.create(size.x * TILE, size.y * TILE, false, Image.FORMAT_RGBA8)
-	_paint(img, size)
+	var img: Image = TileSheetManifest.region(sheet_key, "props", Kind.keys()[kind], size) if sheet_key != "" else null
+	if img == null:
+		img = Image.create(size.x * TILE, size.y * TILE, false, Image.FORMAT_RGBA8)
+		_paint(img, size)
+	elif kind == Kind.LAMP_POST:
+		light_anchor = Vector2(0, -50.0)
 	var spr := Sprite2D.new()
 	spr.name = "Sprite"
 	spr.centered = false
