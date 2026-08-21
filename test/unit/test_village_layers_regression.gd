@@ -116,3 +116,11 @@ func test_fringe_tiles_paint_only_on_open_non_grass_cells() -> void:
 	assert_eq(_v.overlay_map.get_cell_source_id(Vector2i(0, 0)), -1, "walls never fringe")
 	assert_eq(_v.overlay_map.get_cell_source_id(Vector2i(3, 3)), -1, "a face cell is never fringed")
 	assert_eq(_v.overlay_map.get_cell_atlas_coords(Vector2i(2, 3)).x, 16, "the stair keeps its stair tile")
+
+
+func test_ledge_shadow_falls_on_the_cell_below_a_face() -> void:
+	_v = _build()
+	var ETS := preload("res://src/exploration/EnvironmentTileSets.gd")
+	assert_eq(_v.overlay_map.get_cell_atlas_coords(Vector2i(1, 4)).x, ETS.SHADOW_ID, "shadow under the face at (1,3)")
+	assert_eq(_v.overlay_map.get_cell_atlas_coords(Vector2i(2, 4)).x, 2 | 8, "the stair's foot keeps its fringe — no face above it")
+	assert_true(_v._is_cell_walkable(Vector2i(1, 4)), "a shadow never blocks")

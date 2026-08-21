@@ -312,6 +312,11 @@ func _build_derived_layers(map_rows: Array, height_rows: Array) -> void:
 	for c in pieces["edges"]:
 		cliff_map.set_cell(c, 0, EnvTileSetsScript.atlas_coords(int(pieces["edges"][c])))
 	_paint_fringe()
+	# Ledge shadows go on AFTER fringe so the shadow wins the cell under a face
+	for c in _face_cells:
+		var below: Vector2i = c + Vector2i(0, 1)
+		if _tile_is_open(below) and not _face_cells.has(below) and not _stair_cells.has(below):
+			overlay_map.set_cell(below, 0, EnvTileSetsScript.atlas_coords(EnvTileSetsScript.SHADOW_ID))
 
 
 func _fringe_mask(cell: Vector2i) -> int:

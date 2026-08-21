@@ -6,8 +6,9 @@ const TILE := 32
 const FACE_ID := 16
 const STAIR_ID := 16
 const RAMP_ID := 17
+const SHADOW_ID := 18
 const CLIFF_COUNT := 17
-const OVERLAY_COUNT := 18
+const OVERLAY_COUNT := 19
 const EDGE_THICKNESS := 4.0
 
 const DEFAULT_PALETTE := {
@@ -89,6 +90,7 @@ static func build_overlay_tileset(palette: Dictionary = {}) -> TileSet:
 		images.append(_draw_fringe_tile(mask, palette))
 	images.append(_draw_stair_tile(palette))
 	images.append(_draw_ramp_tile(palette))
+	images.append(_draw_shadow_tile())
 	ts.add_source(_make_atlas(images))
 	return ts
 
@@ -112,20 +114,33 @@ static func _draw_edge_tile(mask: int, palette: Dictionary) -> Image:
 	return img
 
 
+## A ledge reads as a ledge only with a LIT top edge, a darkening body and a black foot — flat mid-grey reads as path.
 static func _draw_face_tile(palette: Dictionary) -> Image:
 	var img := Image.create(TILE, TILE, false, Image.FORMAT_RGBA8)
 	var dark := _pal(palette, "face_dark")
 	var mid := _pal(palette, "face_mid")
 	var light := _pal(palette, "face_light")
-	img.fill(mid)
-	img.fill_rect(Rect2i(0, 0, TILE, 3), _pal(palette, "lip"))
-	img.fill_rect(Rect2i(0, 3, TILE, 4), dark)
-	for y in range(8, TILE, 6):
-		var jitter := int(sin(y * 1.7) * 3.0)
-		img.fill_rect(Rect2i(0, y, TILE, 1), dark)
-		img.fill_rect(Rect2i(4 + jitter, y + 2, 10, 1), light)
-		img.fill_rect(Rect2i(20 - jitter, y + 3, 8, 1), light)
-	img.fill_rect(Rect2i(0, TILE - 2, TILE, 2), dark)
+	for y in range(TILE):
+		var t := float(y) / float(TILE - 1)
+		img.fill_rect(Rect2i(0, y, TILE, 1), light.lerp(mid, clampf(t * 1.6, 0.0, 1.0)).lerp(dark, clampf((t - 0.55) * 2.2, 0.0, 1.0)))
+	img.fill_rect(Rect2i(0, 0, TILE, 2), _pal(palette, "lip"))
+	img.fill_rect(Rect2i(0, 2, TILE, 1), light)
+	for y in range(7, TILE - 4, 7):
+		var jitter := int(sin(y * 1.7) * 4.0)
+		img.fill_rect(Rect2i(0, y, TILE, 1), dark.darkened(0.25))
+		img.fill_rect(Rect2i(3 + jitter, y + 3, 9, 1), light)
+		img.fill_rect(Rect2i(19 - jitter, y + 4, 7, 1), light)
+		img.fill_rect(Rect2i(13 + jitter, y, 1, 7), dark.darkened(0.25))
+	img.fill_rect(Rect2i(0, TILE - 3, TILE, 3), dark.darkened(0.45))
+	return img
+
+
+## Cast shadow the ledge throws onto the ground beneath it (painted on the cell SOUTH of a face)
+static func _draw_shadow_tile() -> Image:
+	var img := Image.create(TILE, TILE, false, Image.FORMAT_RGBA8)
+	for y in range(12):
+		var a := 0.55 * (1.0 - float(y) / 12.0)
+		img.fill_rect(Rect2i(0, y, TILE, 1), Color(0.05, 0.04, 0.08, a * a + 0.08 * (1.0 - float(y) / 12.0)))
 	return img
 
 

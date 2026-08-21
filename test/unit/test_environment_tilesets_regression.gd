@@ -58,8 +58,8 @@ func test_mask_zero_and_face() -> void:
 func test_overlay_tileset_is_walkable_everywhere() -> void:
 	var ts := ETS.build_overlay_tileset()
 	var src := _source(ts)
-	assert_eq(src.get_tiles_count(), 18)
-	for id in range(18):
+	assert_eq(src.get_tiles_count(), 19)
+	for id in range(19):
 		assert_eq(src.get_tile_data(ETS.atlas_coords(id), 0).get_collision_polygons_count(0), 0, "overlay %d never blocks" % id)
 
 
