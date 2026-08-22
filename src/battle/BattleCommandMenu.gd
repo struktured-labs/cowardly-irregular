@@ -195,7 +195,7 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 	"""Build command menu with enemy targets as submenus.
 
 	   New menu shape (2026-04 redesign):
-	     Auto / [MRU/Pin slot 1] / [MRU/Pin slot 2] / Free Move / Ability ▸ / Item ▸ / Group ▸ / Scan ▸ / Defer
+	     Auto ▸ / [MRU/Pin slot 1] / [MRU/Pin slot 2] / Attack / Free Move / Ability ▸ / Item ▸ / Group ▸ / Defer
 
 	   Per-job 'Free Move' replaces the legacy top-level 'Attack' for everyone.
 	   Fighter/Rogue: basic attack with custom label (Attack / Strike).
@@ -439,24 +439,11 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 			"submenu": group_items
 		})
 
-	# Scan - reveal enemy stats and weaknesses (free action submenu)
-	if alive_enemies.size() > 0:
-		var scan_targets = []
-		for enemy in alive_enemies:
-			var enemy_idx = _scene.test_enemies.find(enemy)
-			var revealed = _scene._ui_manager._revealed_enemies.get(enemy, false)
-			var scan_label = "%s%s" % [enemy.combatant_name, " (scanned)" if revealed else ""]
-			scan_targets.append({
-				"id": "scan_" + str(enemy_idx),
-				"label": scan_label,
-				"data": {"target_idx": enemy_idx, "action": "scan"},
-			})
-		items.append({
-			"id": "scan_menu",
-			"label": "Scan",
-			"tooltip": "Reveal enemy stats, weaknesses, and drops (uses your turn)",
-			"submenu": scan_targets
-		})
+	# Scan is NOT intrinsic (struktured playtest 2026-08-22: "scan should be an ability not
+	# intrinsic to a player"). It is a real ability — abilities.json `scan`, 3 MP, effect
+	# "scan", handler BattleManager:5564 — and it lives in the Rogue's kit, so weakness
+	# intel is something you BRING. The reveal still lands: BattleUIManager:823 ORs
+	# _revealed_enemies with the intel_revealed meta the ability sets.
 
 	# Wave E — 'Address' command. Gated on the active boss having an entry
 	# in data/boss_dialogue.json. Opens a verb-picker submenu; selecting a
@@ -881,6 +868,9 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 		return
 
 	# Scan enemy — reveal stats, weaknesses, drops
+	## Unreachable since the intrinsic Scan row was removed — no scan_ ids are built now.
+	## Kept with _show_scan_popup/_add_scan_indicators_to_sprite pending a ruling on whether
+	## the scan ABILITY should drive them (it currently reveals + logs, but shows no popup).
 	if item_id.begins_with("scan_") and item_data is Dictionary:
 		var target_idx = item_data.get("target_idx", -1)
 		if target_idx >= 0 and target_idx < _scene.test_enemies.size():

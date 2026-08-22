@@ -73,3 +73,21 @@ func test_auto_block_is_one_top_level_row_with_all_three_actions_inside() -> voi
 	var sub_ids := _ids(sub)
 	for needed in ["autobattle", "autobattle_edit", "trust_toggle"]:
 		assert_true(needed in sub_ids, "%s is still REACHABLE inside Auto (buried, not deleted)" % needed)
+
+
+func test_scan_is_not_an_intrinsic_menu_row_for_any_job() -> void:
+	## struktured 2026-08-22: "scan should be an ability not intrinsic to a player".
+	## It lives in the Rogue's kit; nobody gets weakness intel just for having a turn.
+	for job_id in ["fighter", "mage", "cleric", "rogue", "bard"]:
+		var ids := _ids(_rows(job_id))
+		assert_false("scan_menu" in ids, "%s must not get a free intrinsic Scan row" % job_id)
+
+
+func test_scan_ability_still_reveals_through_the_shared_reader() -> void:
+	## The reveal must survive losing the menu path: BattleUIManager ORs its own
+	## _revealed_enemies dict with the intel_revealed meta that the ability sets, so the
+	## ability alone is sufficient. Guarding the OR, because dropping either side is silent.
+	var src := FileAccess.get_file_as_string("res://src/battle/BattleUIManager.gd")
+	assert_gt(src.length(), 1000, "CONTROL: read a real file")
+	assert_true("intel_revealed" in src, "the UI still reads the meta the scan ABILITY sets")
+	assert_true("_revealed_enemies" in src, "and still reads the attack-based reveal")
