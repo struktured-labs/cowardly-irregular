@@ -18,6 +18,17 @@ extends GutTest
 ## count plus fill, the total surplus must equal 3 x 15 landmarks, and the whole census must
 ## tile 200x140. Measured surplus 45 == 3 x 15. A miscount fails that arithmetic.
 ##
+## THIRD DERIVATION, 2026-08-22 (#15 fold 2, composition). The map was re-authored:
+## three sealed enclaves opened and three continental barriers painted so the west-east
+## crossing can no longer be a straight line. That moves 1694 cells, so the census had to
+## change -- and the tempting move, reading the new counts out of the PNG, is the one this
+## file exists to forbid. Instead the census below is the PREVIOUS census plus the
+## composition's own LEDGER: tools/compose_overworld_w1.py records every cell it changes,
+## and old + ledger was checked against the image and agreed exactly (28000, no residual).
+## So the chain is still ASCII -> x2 scale law -> composition ledger, with the PNG only ever
+## the thing being CHECKED, never a source. The ledger traded . -1523 for ~ +1254 / M +422 /
+## B +185 -- i.e. the interrupted highway, which is the point of the fold.
+##
 ## WHAT THIS EXISTS TO CATCH. 12 of the 25 map characters appear EXACTLY ONCE: every
 ## landmark is a single pixel. `_register_spawn_point` keys on the CHARACTER, so one stray
 ## paint stroke deletes a dragon cave's arrival coordinate with no error anywhere -- the
@@ -50,13 +61,31 @@ const GOLDEN_LANDMARKS := {
 }
 
 const GOLDEN_CENSUS := {
-	".": 13583, "1": 1, "2": 1, "3": 1,
-	"4": 1, "B": 84, "C": 2, "D": 1,
-	"E": 1, "F": 900, "G": 1, "H": 2,
-	"I": 1, "M": 855, "P": 1, "S": 244,
-	"V": 1, "W": 1, "c": 504, "d": 700,
-	"g": 2075, "i": 388, "l": 432, "s": 1520,
-	"~": 6700,
+	".": 12061,
+	"1": 1,
+	"2": 1,
+	"3": 1,
+	"4": 1,
+	"B": 295,
+	"C": 2,
+	"D": 1,
+	"E": 1,
+	"F": 864,
+	"G": 1,
+	"H": 2,
+	"I": 1,
+	"M": 1277,
+	"P": 1,
+	"S": 166,
+	"V": 1,
+	"W": 1,
+	"c": 504,
+	"d": 642,
+	"g": 1948,
+	"i": 384,
+	"l": 414,
+	"s": 1479,
+	"~": 7951,
 }
 
 
