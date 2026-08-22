@@ -28,6 +28,8 @@ const SAVE_ROW = saveRowIndex();
 
 const url = process.argv[2] || 'http://127.0.0.1:8371';
 const BOOT_BUDGET_MS = 45000;
+// Resuming a save re-boots the engine AND loads game state, so it needs its own budget.
+const LOAD_BUDGET_MS = Number(process.env.WEB_SMOKE_LOAD_BUDGET_MS || 45000);
 const FATAL = /RuntimeError|abort\(|out of memory|failed to (load|instantiate|fetch)|wasm.*error|Unable to load/i;
 
 const browser = await chromium.launch();
@@ -118,13 +120,48 @@ if (booted && errors.length === 0 && saved) {
     await page.waitForTimeout(500);
   }
   if (booted) {
-    await page.waitForTimeout(5000);
-    await page.keyboard.press('Enter');      // Press Start
-    await page.waitForTimeout(2000);
-    await page.keyboard.press('Enter');      // first row = Continue when a save exists
-    await page.waitForTimeout(9000);
+    // RETRY THE PRESSES, don't time them. These were two flat sleeps (5 s, then 2 s) and
+    // the sequence is press-start THEN continue -- so if the title is not interactive at
+    // 5 s, the first Enter is swallowed, the second one merely dismisses Press Start, and
+    // Continue is never activated. Measured 2026-08-22: 3 failures in 5 runs at ~1.5
+    // load/core, and tmp/web_smoke_resume.png showed the title screen with BOTH the menu
+    // and the "PRESS START" overlay visible -- i.e. mid-transition, save intact,
+    // "CONTINUE  Slot 1 - The Beginning - Overworld" rendered right there on screen.
+    // The old failure text blamed "IndexedDB persistence is broken"; the screenshot
+    // disproves that -- the save had persisted and been detected every time.
+    // Pressing until the load actually happens is robust to however long boot takes.
+    const tPress = Date.now();
+    let presses = 0;
+    while (!loaded && Date.now() - tPress < LOAD_BUDGET_MS) {
+      await page.keyboard.press('Enter');
+      presses++;
+      await page.waitForTimeout(1500);
+    }
+    console.log('[WEB-SMOKE] resume took ' + presses + ' Enter press(es), '
+      + (Date.now() - tPress) + 'ms');
+    // POLL, don't sleep. This was a flat 9 s wait, which is a wall-clock guess about how
+    // long a WASM load takes -- and on a loaded box it is wrong. Measured 2026-08-22 at
+    // ~1.9 load/core (ffprobe + chrome-headless from other projects on this machine):
+    // 3 FAILURES IN 5 RUNS, all of them this line, on a build whose save works fine.
+    // The message asserted "IndexedDB persistence is broken", so the instrument's own
+    // timeout budget was reported as a specific product defect -- and deploy_web.sh
+    // retries only once, so a 60%-per-run failure rate blocks a legitimate deploy ~36%
+    // of the time while naming the wrong cause.
+    // The boot check 10 lines up already polls against BOOT_BUDGET_MS; this now matches it.
+    const tLoad = Date.now();
+    while (!loaded && Date.now() - tLoad < LOAD_BUDGET_MS) {
+      await page.waitForTimeout(500);
+    }
+    const loadWaitMs = Date.now() - tLoad;
     await page.screenshot({ path: 'tmp/web_smoke_resume.png' });
-    if (!loaded) errors.push('stage4: save did NOT survive the page reload (no "Game loaded from slot" after Continue) — IndexedDB persistence is broken');
+    if (loaded) {
+      console.log('[WEB-SMOKE] save resumed after ' + loadWaitMs + 'ms (budget ' + LOAD_BUDGET_MS + 'ms)');
+    } else {
+      errors.push('stage4: no "Game loaded from slot" after ' + presses + ' Enter press(es) over '
+        + LOAD_BUDGET_MS + 'ms. Check tmp/web_smoke_resume.png: if it shows CONTINUE with a slot '
+        + 'subtitle then the save DID persist and this is an input/transition problem, not '
+        + 'IndexedDB.');
+    }
   } else if (errors.length === 0) {
     errors.push('stage4: engine never re-booted after page reload');
   }
