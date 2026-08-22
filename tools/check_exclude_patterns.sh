@@ -88,6 +88,25 @@ SECTIONS="$(command grep -ac '^\[preset\.[0-9]*\]' "$CFG" || true)"
   echo "        not the config. A zero here would otherwise print as a clean coverage" >&2
   echo "        report, which is the exact confusion this guard exists to prevent." >&2; exit 2; }
 
+# ⚠️ BLOCKING ON *ZERO* IS NOT ENOUGH — a scan that HALF works is silent too, and my
+# first attempt at this was the very defect it was fixing. Measured 2026-08-22:
+#   rename ONE of five preset headers -> SECTIONS is 4, which is > 0, so a zero-check
+#   passes while that preset is never audited. EC=0, no COVERAGE line, no BLOCKED line.
+# I then "fixed" it by having awk count what it saw and comparing to the grep count —
+# BOTH DERIVED FROM THE SAME PATTERN, so a renamed header drops both to 4 and they agree.
+# That is cowir-sprites' rule ("a guard that enumerates from the data it checks can only
+# confirm that data agrees with itself") reproduced inside the fix for it.
+#
+# The witness has to be INDEPENDENT of the thing it witnesses. Godot writes exactly one
+# [preset.N.options] block per [preset.N], so the options blocks count the presets without
+# reading the preset headers at all. Rename a header and the pairing breaks: 4 vs 5.
+OPTIONS="$(command grep -ac '^\[preset\.[0-9]*\.options\]$' "$CFG" || true)"
+[ "${SECTIONS:-0}" = "${OPTIONS:-0}" ] || {
+  echo "[patterns] BLOCKED: $SECTIONS preset header(s) but $OPTIONS options block(s) in $CFG." >&2
+  echo "        Godot writes one [preset.N.options] per [preset.N], so a mismatch means the" >&2
+  echo "        header scan is missing presets — and every verdict below would describe a" >&2
+  echo "        SUBSET while reading like a full audit." >&2; exit 2; }
+
 UNCOVERED="$(awk '
     /^\[preset\.[0-9]+\]/ { if (s != "" && !f) print s; s = $0; f = 0; next }
     /^exclude_filter=/    { if (s != "") f = 1 }
