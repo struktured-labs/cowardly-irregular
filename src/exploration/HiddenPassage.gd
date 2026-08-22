@@ -97,7 +97,7 @@ func _setup_collision() -> void:
 	var shape = RectangleShape2D.new()
 	shape.size = Vector2(TILE_SIZE * passage_width, TILE_SIZE * passage_height)
 	col.shape = shape
-	col.scale = Vector2(1.0, 1.67)  # Mode 7 Y-stretch, matches other interactables
+	col.scale = Vector2(1.0, InteractGeometry.MODE7_Y_STRETCH)  # Mode 7 Y-stretch, matches other interactables
 	add_child(col)
 
 

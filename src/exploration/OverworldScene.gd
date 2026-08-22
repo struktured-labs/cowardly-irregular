@@ -13,14 +13,19 @@ const MapImageLoaderScript = preload("res://src/exploration/MapImageLoader.gd")
 
 ## The map is a 1px-per-tile PNG, not an ASCII literal -- see MapImageLoader for why.
 const MAP_IMAGE: String = "res://data/maps/overworld_w1.png"
+## Which palette decodes MAP_IMAGE. Required: the same character means different things per world
+const MAP_WORLD: String = "medieval"
 
 signal exploration_ready()
 signal battle_triggered(enemies: Array, terrain: String)
 signal area_transition(target_map: String, spawn_point: String)
 
 ## Map dimensions (in tiles)
-const MAP_WIDTH: int = 100
-const MAP_HEIGHT: int = 70
+const MAP_WIDTH: int = 200
+const MAP_HEIGHT: int = 140
+
+## The painted character grid, kept so encounter zones can read the authored biome
+var map_rows: Array[String] = []
 const TILE_SIZE: int = 32
 
 ## Scene components
@@ -226,20 +231,20 @@ func _generate_map() -> void:
 
 	print("Generating overworld map %dx%d..." % [MAP_WIDTH, MAP_HEIGHT])
 
-	var map_data: Array[String] = []
+	map_rows.clear()
 	# str() coercion, not `= load_rows(...)`: a generic-to-typed assign ABORTS this function
-	for row in MapImageLoaderScript.load_rows(MAP_IMAGE):
-		map_data.append(str(row))
+	for row in MapImageLoaderScript.load_rows(MAP_IMAGE, MAP_WORLD):
+		map_rows.append(str(row))
 
 	# no padding: the old water-pad turned a failed load into a silent ocean
-	if map_data.size() != MAP_HEIGHT:
-		push_error("[MAP] %s yielded %d rows, expected %d -- refusing to pad" % [MAP_IMAGE, map_data.size(), MAP_HEIGHT])
+	if map_rows.size() != MAP_HEIGHT:
+		push_error("[MAP] %s yielded %d rows, expected %d -- refusing to pad" % [MAP_IMAGE, map_rows.size(), MAP_HEIGHT])
 		return
 
-	# Convert map_data to tiles
+	# Convert the painted grid to tiles
 	var tile_counts = {}
 	for y in range(MAP_HEIGHT):
-		var row = map_data[y] if y < map_data.size() else ""
+		var row = map_rows[y] if y < map_rows.size() else ""
 		for x in range(MAP_WIDTH):
 			var char = row[x] if x < row.length() else "~"
 			var tile_type = _char_to_tile_type(char)
@@ -254,7 +259,7 @@ func _generate_map() -> void:
 	print("Tile counts: ", tile_counts)
 
 	# Default spawn: central grassland (column 40, row 25 — clear of water)
-	spawn_points["default"] = Vector2(40 * TILE_SIZE + TILE_SIZE / 2, 25 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["default"] = Vector2(80 * TILE_SIZE + TILE_SIZE / 2, 50 * TILE_SIZE + TILE_SIZE / 2)
 
 
 ## Markers sit under ridge; the Mode 7 collider shift drops that ridge onto the marker tile, so these arrivals step aside to ground that is clear in the DISPLACED frame.
@@ -492,43 +497,46 @@ func _update_encounter_zone(pos: Vector2) -> void:
 		_update_zone_ambient(new_zone)
 
 
+func biome_char_at(tx: int, ty: int) -> String:
+	if ty < 0 or ty >= map_rows.size():
+		return ""
+	var row: String = map_rows[ty]
+	if tx < 0 or tx >= row.length():
+		return ""
+	return row[tx]
+
+
+## Painted terrain char -> encounter zone; the authored biome IS the zone
+const BIOME_ZONES := {
+	"i": "ice", "F": "forest", "S": "swamp", "s": "desert",
+	"l": "volcanic", "d": "volcanic", "c": "coast", "~": "coast",
+	"g": "plains", ".": "central", "B": "central", "M": "central",
+}
+
+
+func _pool_id_map() -> Dictionary:
+	return {
+		"central": "overworld_central", "plains": "overworld_plains",
+		"forest": "overworld_forest", "ice": "overworld_ice",
+		"swamp": "overworld_swamp", "desert": "overworld_desert",
+		"volcanic": "overworld_volcanic", "coast": "overworld_coast",
+	}
+
+
+func _zone_pool_ids() -> Array:
+	return _pool_id_map().values()
+
+
 func _get_zone_for_tile(tx: int, ty: int) -> String:
-	# NW quadrant: Ice/Snow (top-left)
-	if tx < 30 and ty < 15:
-		return "ice"
-	# N quadrant: Forest (top-center)
-	if tx >= 20 and tx < 65 and ty < 15:
-		return "forest"
-	# NE quadrant: Swamp/Spooky (top-right)
-	if tx >= 60 and ty < 15:
-		return "swamp"
-	# SW quadrant: Desert (bottom-left)
-	if tx < 35 and ty >= 50:
-		return "desert"
-	# SE quadrant: Volcanic (bottom-right)
-	if tx >= 65 and ty >= 50:
-		return "volcanic"
-	# E side: Coast
-	if tx >= 85 and ty >= 20 and ty < 45:
-		return "coast"
-	# Central: Grassland
-	return "central"
+	return BIOME_ZONES.get(biome_char_at(tx, ty), "central")
 
 
 func _apply_zone_encounters(zone: String) -> void:
 	# Source of truth: enemy_pools.json. Zone -> pool_id mapping below.
-	var pool_id_map = {
-		"central": "overworld_central",
-		"forest": "overworld_forest",
-		"ice": "overworld_ice",
-		"swamp": "overworld_swamp",
-		"desert": "overworld_desert",
-		"volcanic": "overworld_volcanic",
-		"coast": "overworld_coast",
-	}
+	var pool_id_map = _pool_id_map()
 	var rate_map = {
 		"central": 0.05, "forest": 0.06, "ice": 0.06,
-		"swamp": 0.06, "desert": 0.06, "volcanic": 0.065, "coast": 0.05,
+		"swamp": 0.06, "desert": 0.06, "volcanic": 0.065, "coast": 0.05, "plains": 0.05,
 	}
 	var pool_id: String = pool_id_map.get(zone, "")
 	if pool_id == "":

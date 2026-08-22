@@ -478,7 +478,7 @@ func _generate_map() -> void:
 		# Row 32: Gate approach
 		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
 		# Row 33: Fence line before checkpoint (gate at cols 29-30)
-		"kkkkkkkkkkkkkkkkkkkkkkkkkkkkkffkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+		"kkkkkkkkkkkkkkkkkkkkkkkkkkkkkffkkkkkkkkkkkkkkkkkkkkkkkkkkkkf",
 		# Row 34: Checkpoint area
 		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
 		# Row 35: Guard posts and gate
