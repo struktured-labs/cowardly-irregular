@@ -545,9 +545,23 @@ Connectivity is NOT the problem there: every island in W2-W6 is empty terrain
 
 **The enabler is the PNG migration.** W2-W6 carry their maps as ASCII literals inside
 their `.gd` files, so scaling one means hand-editing thousands of characters in source.
-`tools/map_ascii_to_png.py` + `MapImageLoader` already do this for W1; the palette is
-per-world (five different vocabularies — W6's blockers `BDES` share not one letter with
-W2's `befhmtwy`), so `map_palette.json` needs a per-world section rather than one table.
+`tools/map_ascii_to_png.py` + `MapImageLoader` already do this for W1.
+
+**The palette MUST become per-world, and this is measured, not assumed.** Across the six
+worlds' `_char_to_tile_type` arms there are 48 distinct map characters. **30 of them are
+used by more than one world, and ZERO of those 30 mean the same thing in two worlds:**
+
+| char | meanings |
+|---|---|
+| `c` | COAST (W1) / BASKETBALL_COURT (W2) / CONCRETE (W3) / CONVEYOR_BELT (W4) / CIRCUIT_FLOOR (W5) |
+| `g` | GRASS (W1) / FLOWER_BED (W2) / PARK_GRASS (W3) / IRON_GRATING (W4) / VOID_GRAY (W6) |
+| `B` | BRIDGE (W1) / CHEMICAL_BARREL (W4) / VOID_BLACK (W6) |
+
+Overlap is total: 30 shared, 30 conflicting, 0 consistent. A single table cannot serve two
+worlds, and the failure mode is the reason it matters — a W4 image decoded against W1's
+table produces a **plausible map made of the wrong tiles**, not an error. So the loader must
+REQUIRE a world id and fail loudly on an unknown one, and must never fall back to a default
+table. Measured by `tools/audit_overworld_connectivity.py`.
 
 Order: migrate to PNG → scale → compose. Same three folds W1 took, and the ratchets
 (`test_map_image_roundtrip`, `test_overworld_composition`) generalise to each world.
