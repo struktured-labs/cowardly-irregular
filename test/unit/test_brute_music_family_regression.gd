@@ -31,32 +31,37 @@ func test_the_brute_track_exists_and_the_goblin_ogg_is_gone() -> void:
 		"battle_goblin.ogg is back. If a NEW goblin track was generated this is correct and this arm should be inverted - but if it is the OLD barbarian bed restored, the thing he complained about is playing on goblins again.")
 
 
+const BRUTE_OGG: String = "battle_brute.ogg"
+
+func _route_and_get_path(track: String) -> String:
+	## play_music sets _music_player.stream SYNCHRONOUSLY; the crossfade only moves the
+	## OUTGOING stream to _music_player_b. So the routing decision is readable immediately.
+	SoundManager.play_music(track)
+	var stream: AudioStream = SoundManager._music_player.stream
+	return "<no stream>" if stream == null else str(stream.resource_path)
+
 func test_every_brute_key_routes_to_the_brute_theme() -> void:
-	## Source-pinned rather than behavioural: play_music writes a real AudioStreamPlayer and
-	## the assert that matters is WHICH key reaches _start_monster_music("brute"), which is a
-	## routing fact, not an audio one.
-	## Reads the ARM, not the file. A bare src.contains() passes on the key appearing
-	## anywhere - and these keys also appear in the `known` fallback array, so a whole-file
-	## search stays green with the routing arm deleted. Mutation-proven: removing
-	## "battle_ogre" from the arm left the naive version 5/5 green.
-	var src: String = _sm_source()
-	var lines: PackedStringArray = src.split("\n")
-	var idx: int = -1
-	for i in range(lines.size()):
-		if lines[i].contains('_start_monster_music("brute")'):
-			idx = i
-			break
-	assert_gt(idx, 0, "nothing routes to the brute theme at all")
-	var arm: String = ""
-	for j in range(idx - 1, maxi(idx - 5, -1), -1):
-		if lines[j].strip_edges().ends_with(":"):
-			arm = lines[j]
-			break
-	assert_ne(arm, "", "SCOPE control: no match arm found in the 4 lines above _start_monster_music(\"brute\")")
-	assert_true(arm.contains("battle_"), "SCOPE control: the line found above the call is not a battle_ arm: %s" % arm)
+	## CONVERTED from a source pin on the match arm. Pinning the arm text asserts a
+	## SPELLING: it passes if the arm exists but calls _start_monster_music with the wrong
+	## argument, and reds on a harmless reformat. This asserts the OUTCOME - which OGG the
+	## player is actually holding - so it covers both, and it survives the match being
+	## rewritten as a dictionary lookup.
+	var saved: Dictionary = SoundManager.capture_music_state()
 	for key in BRUTE_KEYS:
-		assert_true(arm.contains('"%s"' % key),
-			"%s is not in the arm that routes to the brute theme. It may still appear in the `known` fallback array, which does NOT route it: one-word ids never reach the parts.size() > 1 fallback, so this plays generic battle music." % key)
+		var path: String = _route_and_get_path(key)
+		assert_true(path.ends_with(BRUTE_OGG), "%s routed to %s, not the brute theme" % [key, path])
+	SoundManager.restore_music_state(saved)
+
+func test_CONTROL_a_non_brute_key_does_not_reach_the_brute_theme() -> void:
+	## Without this the arm above passes on a router that sends EVERYTHING to the brute
+	## theme. battle_skeleton is used because it ships its own OGG, so the control costs
+	## a cached load rather than a procedural generation.
+	var saved: Dictionary = SoundManager.capture_music_state()
+	var path: String = _route_and_get_path("battle_skeleton")
+	SoundManager.restore_music_state(saved)
+	assert_false(path.ends_with(BRUTE_OGG), "battle_skeleton reached the brute theme - the router does not discriminate")
+	assert_true(path.ends_with("battle_skeleton.ogg"), "battle_skeleton routed to %s" % path)
+
 func test_CONTROL_the_fallback_really_is_gated_on_multiword_ids() -> void:
 	## The whole reason the arms above must be explicit. If this precondition ever relaxes,
 	## the arms become redundant rather than load-bearing - and someone should know that
@@ -70,8 +75,12 @@ func _is_war_drum_flavoured(entry: Dictionary) -> bool:
 	return entry.get("style", "") == "tribal" or entry.get("bass_style", "") == "drums"
 
 func test_the_procedural_goblin_is_no_longer_a_war_chant() -> void:
-	## The OGG move is only half the fix. On any machine that does not load a goblin OGG -
-	## which after this change is EVERY machine - the procedural theme IS the goblin music.
+	## NOT because the procedural theme is what goblins play - MEASURED 2026-08-22, it is
+	## not: battle_goblin resolves to the world bed (battle_medieval) because play_music
+	## consults the manifest first and returns on a hit, so the proc-gen arm is unreachable.
+	## This guards the params anyway: they are what a machine WITHOUT a world bed falls to,
+	## and leaving a tribal brief in the tree re-creates the character he objected to the
+	## moment anything reaches it.
 	##
 	## MONSTER_MUSIC_PARAMS is a class-level const, so this reads the value the generator
 	## uses. The previous version sliced source with a fixed 140-char window for a 106-char
@@ -125,3 +134,15 @@ func test_CONTROL_the_pentatonic_detector_can_still_say_pentatonic() -> void:
 		if not WAR_CHANT_PITCHES.has(p):
 			outside.append(p)
 	assert_eq(outside.size(), 0, "the detector flags a genuinely pentatonic line as chromatic — it cannot distinguish anything")
+
+
+func test_goblins_never_get_the_barbarian_theme() -> void:
+	## His actual requirement. The brute theme is the track he called too barbarian for
+	## goblins, so the thing that must stay true - whatever the router does internally - is
+	## that a goblin encounter does not reach it. Until the new goblin track lands this
+	## resolves to the world bed, which is inoffensive; what would be a regression is
+	## battle_goblin finding its way back to battle_brute.ogg.
+	var saved: Dictionary = SoundManager.capture_music_state()
+	var path: String = _route_and_get_path("battle_goblin")
+	SoundManager.restore_music_state(saved)
+	assert_false(path.ends_with(BRUTE_OGG), "battle_goblin routed to the brute theme - goblins are barbarian-scored again, which is the complaint that started this")
