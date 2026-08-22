@@ -254,11 +254,13 @@ func _place_landmarks() -> void:
 
 func _place_wanderers() -> void:
 	var wanderers = [
-		{"name": "?", "dialogue": "...", "color": Color(0.7, 0.7, 0.7), "path": [Vector2(15, 15), Vector2(20, 15), Vector2(20, 20), Vector2(15, 20)]},
+		{"name": "?", "dialogue": "...", "color": Color(0.7, 0.7, 0.7), "path": [Vector2(15, 15), Vector2(20, 15), Vector2(20, 20), Vector2(15, 20)], "archetype": "ghost"},
 	]
 	for w in wanderers:
 		var npc = WanderingNPC.new()
 		npc.npc_name = w["name"]
+		# NO PROC GEN CHARS (struktured 2026-08-22): an empty archetype falls to the procedural drawer
+		npc.sprite_archetype = w.get("archetype", "traveler")
 		npc.dialogue = w["dialogue"]
 		npc.sprite_color = w["color"]
 		var patrol: Array[Vector2] = []

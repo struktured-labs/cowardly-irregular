@@ -275,7 +275,7 @@ func _place_wanderers() -> void:
 			"color": Color(0.6, 0.45, 0.3),
 			"path": [Vector2(15, 15), Vector2(20, 15), Vector2(20, 20), Vector2(15, 20)],
 			"hints": [
-				{"flag": "w2_entered", "text": "Maple Heights is up north — nice neighborhood if you like picket fences."},
+				{"flag": "w2_entered", "text": "Maple Heights is up north — nice neighborhood if you like picket fences.", "archetype": "young_woman"},
 				{"flag": "warden_suburban_defeated", "text": "Something weird opened up south of the park. Like a... gear-shaped hole?"},
 			],
 		},
@@ -285,7 +285,7 @@ func _place_wanderers() -> void:
 			"color": Color(0.3, 0.3, 0.65),
 			"path": [Vector2(30, 10), Vector2(35, 10), Vector2(35, 15), Vector2(30, 15)],
 			"hints": [
-				{"flag": "w2_entered", "text": "The strip mall south of the main road has everything. Well, five stores."},
+				{"flag": "w2_entered", "text": "The strip mall south of the main road has everything. Well, five stores.", "archetype": "traveler"},
 				{"flag": "warden_suburban_defeated", "text": "Past the portal it smells like copper and oil. Not my kind of neighborhood."},
 			],
 		},
@@ -293,6 +293,8 @@ func _place_wanderers() -> void:
 	for w in wanderers:
 		var npc = WanderingNPC.new()
 		npc.npc_name = w["name"]
+		# NO PROC GEN CHARS (struktured 2026-08-22): an empty archetype falls to the procedural drawer
+		npc.sprite_archetype = w.get("archetype", "traveler")
 		npc.dialogue = w["dialogue"]
 		npc.sprite_color = w["color"]
 		if w.has("hints"):

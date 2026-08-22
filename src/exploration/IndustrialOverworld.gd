@@ -240,7 +240,7 @@ func _place_wanderers() -> void:
 			"color": Color(0.45, 0.4, 0.35),
 			"path": [Vector2(20, 15), Vector2(25, 15), Vector2(25, 20), Vector2(20, 20)],
 			"hints": [
-				{"flag": "w4_entered", "text": "Rivet Row is east — the worker housing. The Director watches everything."},
+				{"flag": "w4_entered", "text": "Rivet Row is east — the worker housing. The Director watches everything.", "archetype": "farmer"},
 				{"flag": "warden_industrial_defeated", "text": "The Assembly Line stopped. There's a rift where the furnace was... glowing blue."},
 			],
 		},
@@ -250,7 +250,7 @@ func _place_wanderers() -> void:
 			"color": Color(0.3, 0.3, 0.35),
 			"path": [Vector2(35, 25), Vector2(40, 25), Vector2(40, 30), Vector2(35, 30)],
 			"hints": [
-				{"flag": "w4_entered", "text": "The factory floor runs north to south. Watch for chemical barrels."},
+				{"flag": "w4_entered", "text": "The factory floor runs north to south. Watch for chemical barrels.", "archetype": "guard"},
 				{"flag": "warden_industrial_defeated", "text": "Past the rift... it's all data. Numbers. Like the world forgot how to be real."},
 			],
 		},
@@ -258,6 +258,8 @@ func _place_wanderers() -> void:
 	for w in wanderers:
 		var npc = WanderingNPC.new()
 		npc.npc_name = w["name"]
+		# NO PROC GEN CHARS (struktured 2026-08-22): an empty archetype falls to the procedural drawer
+		npc.sprite_archetype = w.get("archetype", "traveler")
 		npc.dialogue = w["dialogue"]
 		npc.sprite_color = w["color"]
 		if w.has("hints"):

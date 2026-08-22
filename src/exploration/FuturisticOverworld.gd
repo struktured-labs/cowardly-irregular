@@ -244,7 +244,7 @@ func _place_wanderers() -> void:
 			"color": Color(0.2, 0.5, 0.6),
 			"path": [Vector2(20, 15), Vector2(25, 15), Vector2(25, 20), Vector2(20, 20)],
 			"hints": [
-				{"flag": "w5_entered", "text": "Node Prime is east. The core processes run there. Don't benchmark them."},
+				{"flag": "w5_entered", "text": "Node Prime is east. The core processes run there. Don't benchmark them.", "archetype": "ghost"},
 				{"flag": "arbiter_futuristic_defeated", "text": "The Source Layer is dissolving. Something beyond the code... the Remainder."},
 			],
 		},
@@ -254,7 +254,7 @@ func _place_wanderers() -> void:
 			"color": Color(0.4, 0.6, 0.3),
 			"path": [Vector2(35, 30), Vector2(40, 30), Vector2(40, 35), Vector2(35, 35)],
 			"hints": [
-				{"flag": "w5_entered", "text": "The Masterites built all of this. Or compiled it. Same thing here."},
+				{"flag": "w5_entered", "text": "The Masterites built all of this. Or compiled it. Same thing here.", "archetype": "old_man"},
 				{"flag": "arbiter_futuristic_defeated", "text": "Beyond the code there's... nothing? Everything? I can't parse it."},
 			],
 		},
@@ -262,6 +262,8 @@ func _place_wanderers() -> void:
 	for w in wanderers:
 		var npc = WanderingNPC.new()
 		npc.npc_name = w["name"]
+		# NO PROC GEN CHARS (struktured 2026-08-22): an empty archetype falls to the procedural drawer
+		npc.sprite_archetype = w.get("archetype", "traveler")
 		npc.dialogue = w["dialogue"]
 		npc.sprite_color = w["color"]
 		if w.has("hints"):
