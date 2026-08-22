@@ -111,7 +111,6 @@ var post_collapse_debuff_battles: int = 0      # Remaining battles with reduced 
 
 ## Permadeath persistence — names of permanently dead characters (loaded/saved via user://autogrind/)
 var permadead_characters: Array[String] = []
-var permadeath_enabled: bool = false  # Alias for permadeath_staking_enabled (for UI binding)
 
 ## Set to true in tests to prevent writes to user://autogrind/*.json — otherwise test-suite runs overwrite the user's real save data with fixture content ("TestChar0" in permadead, test presets in profiles, etc.). No-op in production.
 var _test_disable_persistence: bool = false
@@ -657,7 +656,7 @@ func on_battle_defeat() -> void:
 	# Update automation affinity (still autogrinding even on defeat)
 	update_automation_affinity("autogrind")
 
-	if permadeath_staking_enabled or permadeath_enabled:
+	if permadeath_staking_enabled:
 		_trigger_permadeath()
 		return  # _trigger_permadeath calls stop_autogrind
 
@@ -810,7 +809,6 @@ func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config
 	if config.has("permadeath_staking"):
 		var pd_enabled: bool = config["permadeath_staking"]
 		permadeath_staking_enabled = pd_enabled
-		permadeath_enabled = pd_enabled
 		if pd_enabled:
 			efficiency_growth_rate = 0.15  # 50% boost for permadeath staking
 
@@ -1351,7 +1349,6 @@ func _load_permadead_characters() -> void:
 func enable_permadeath_staking(enabled: bool) -> void:
 	"""Enable/disable permadeath staking"""
 	permadeath_staking_enabled = enabled
-	permadeath_enabled = enabled
 	if enabled:
 		# 50% efficiency bonus while permadeath staking is active
 		efficiency_growth_rate = 0.15
@@ -2374,7 +2371,6 @@ func restore_system_from_snapshot(system_data: Dictionary) -> void:
 	fatigue_events_triggered = system_data.get("fatigue_events_triggered", 0)
 	current_region_id = system_data.get("current_region_id", "")
 	permadeath_staking_enabled = system_data.get("permadeath_staking_enabled", false)
-	permadeath_enabled = permadeath_staking_enabled
 
 	# Session-scoped dedup/streak state. restore runs AFTER start_autogrind cleared
 	# these, so restored values win. Old (pre-field) snapshots lack the keys and
