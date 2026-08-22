@@ -116,6 +116,11 @@ func get_current_map_id() -> String:
 	return _current_map_id
 
 
+## Public read of the village an interior was entered from -- shop/inn dialogue keys on it.
+func get_village_origin_id() -> String:
+	return _village_origin_id
+
+
 ## Tick 307: setter that keeps MapSystem.current_map_id in sync with our
 ## _current_map_id. Pre-fix MapSystem.current_map_id was only updated by
 ## MapSystem.load_map, which is bypassed by GameLoop's direct scene routing
