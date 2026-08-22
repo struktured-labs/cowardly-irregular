@@ -861,6 +861,7 @@ func _update_selection() -> void:
 	var container = _get_items_container()
 	if not container:
 		return
+	_restore_hint_after_reason()
 	_scroll_selection_into_view(container)
 
 	for i in range(container.get_child_count()):
@@ -914,6 +915,7 @@ func _on_item_pressed(index: int) -> void:
 	var item = menu_items[index]
 
 	if item.get("disabled", false):
+		_reject_selection(item)
 		return
 
 	if item.has("submenu"):
@@ -1181,6 +1183,7 @@ func _handle_advance_input() -> void:
 		return
 
 	if current_item.get("disabled", false):
+		_reject_selection(current_item)
 		return
 
 	# Check if we're at the queue limit - if so, act as confirm
@@ -1303,6 +1306,7 @@ func _submit_actions() -> void:
 	var current_item = menu_items[selected_index] if selected_index >= 0 and selected_index < menu_items.size() else {}
 
 	if current_item.get("disabled", false):
+		_reject_selection(current_item)
 		return
 
 	if current_item.has("submenu"):
@@ -1393,6 +1397,36 @@ func _apply_command_memory() -> void:
 const HINT_DEFAULT_TEXT := "[L] Defer  ·  [R] Advance  ·  [X] Speed  ·  [Select] Auto"
 
 var _hint_label_cache: Label = null
+var _hint_showing_reason: bool = false
+
+
+## Selecting an unaffordable row used to fail SILENTLY — the row was already marked
+## `disabled: not can_afford`, but nothing told the player why nothing happened.
+## struktured 2026-08-22: "a wasted action because of insufficient resources - mp, ap, etc,
+## should have a noise and/or text to indicate it". menu_error is the canonical key
+## (cowir-sfx, 21 existing call sites, falls back to menu_cancel if the asset ever fails).
+func _reject_selection(item: Dictionary) -> void:
+	SoundManager.play_ui("menu_error")
+	var reason := "Can't use that right now"
+	if item.has("cost") and not bool(item.get("cost_affordable", true)):
+		reason = "Not enough MP (%d needed)" % int(item.get("cost", 0))
+	elif item.has("ap_cost"):
+		reason = "Not enough AP"
+	var label := _find_hint_label()
+	if label:
+		label.text = reason
+		_hint_showing_reason = true
+
+
+## Restore the hint bar as soon as the player moves — no timer, so it cannot drift with
+## Engine.time_scale the way a create_timer() restore would at 4x/8x battle speed.
+func _restore_hint_after_reason() -> void:
+	if not _hint_showing_reason:
+		return
+	_hint_showing_reason = false
+	var label := _find_hint_label()
+	if label:
+		label.text = HINT_DEFAULT_TEXT
 
 
 func _find_hint_label() -> Label:

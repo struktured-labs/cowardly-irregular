@@ -217,3 +217,48 @@ func test_an_unaffordable_cost_is_tinted_differently_from_an_affordable_one() ->
 	var c_bad: Color = bad.get_theme_color("font_color")
 	assert_false(c_ok.is_equal_approx(c_bad), "affordable and unaffordable costs differ in colour")
 	assert_gt(c_bad.r, c_bad.g, "the unaffordable tint reads as a warning (red-dominant)")
+
+
+func test_selecting_an_unaffordable_row_is_not_silent() -> void:
+	## struktured 2026-08-22: "a wasted action because of insufficient resources - mp, ap, etc,
+	## should have a noise and/or text to indicate it". The rows were ALREADY marked
+	## `disabled: not can_afford`; the gap was that activating one returned with no feedback.
+	var m = await _built_menu([
+		{"id": "cheap", "label": "Firebolt", "cost": 6, "cost_affordable": true},
+		{"id": "dear", "label": "Meteor", "cost": 99, "cost_affordable": false, "disabled": true},
+	])
+	## Seed the cache: the real label lives under an InputHintBar that only exists in a live
+	## battle. _find_hint_label() returns the cache when set, so this exercises the REAL path
+	## instead of skipping — a pending test defends nothing.
+	var hint := Label.new()
+	add_child_autofree(hint)
+	hint.text = m.HINT_DEFAULT_TEXT
+	m._hint_label_cache = hint
+	var before: String = hint.text
+	## Through the REAL entry point, not the helper — this pins the WIRING at the silent
+	## `if disabled: return`, which is where the feedback was actually missing.
+	m._can_accept_input = true
+	m.selected_index = 1
+	m._on_item_pressed(1)
+	assert_ne(hint.text, before, "the hint bar says something after a rejected selection")
+	assert_true("MP" in hint.text, "and it names the resource: %s" % hint.text)
+	assert_true("99" in hint.text, "and how much was needed")
+
+
+func test_the_reason_line_restores_itself_on_the_next_move() -> void:
+	## No timer: a create_timer() restore would drift with Engine.time_scale at 4x/8x
+	## battle speed. Restoring on the next navigation is deterministic at any speed.
+	var m = await _built_menu([
+		{"id": "a", "label": "Firebolt", "cost": 6, "cost_affordable": true},
+		{"id": "b", "label": "Meteor", "cost": 99, "cost_affordable": false, "disabled": true},
+	])
+	var hint := Label.new()
+	add_child_autofree(hint)
+	hint.text = m.HINT_DEFAULT_TEXT
+	m._hint_label_cache = hint
+	m._reject_selection(m.menu_items[1])
+	assert_true(m._hint_showing_reason, "CONTROL: a reason is actually being shown")
+	m.selected_index = 0
+	m._update_selection()
+	assert_false(m._hint_showing_reason, "moving clears the reason")
+	assert_eq(hint.text, m.HINT_DEFAULT_TEXT, "and the hint bar is back to its default")
