@@ -248,10 +248,20 @@ func _ready() -> void:
 	grab_focus()
 
 
+var _nav_repeat := MenuRepeat.new(PackedStringArray(["ui_up", "ui_down"]))
+
+
 func _process(delta: float) -> void:
 	# Guard against running on freed node
 	if not is_instance_valid(self) or _is_closing:
 		return
+	# Hold-to-repeat. Only up/down: left/right enter and exit submenus here, so repeating
+	# them would thrash the player in and out on a single hold.
+	var repeat_action := _nav_repeat.tick(delta)
+	if repeat_action == "ui_up":
+		_nav_step(-1)
+	elif repeat_action == "ui_down":
+		_nav_step(1)
 	# Check for L button hold-to-confirm
 	if _l_button_pressed and battle_mode:
 		var hold_time = Time.get_ticks_msec() / 1000.0 - _l_button_press_time
@@ -1509,6 +1519,15 @@ func _step_selection(delta: int) -> void:
 	# all items disabled: leave selected_index unchanged
 
 
+## One navigation step plus its feedback. Extracted so a HELD direction repeats through
+## the exact same path a keypress takes — a second implementation would drift.
+func _nav_step(dir: int) -> void:
+	_step_selection(dir)
+	_play_move_sound()
+	_update_selection()
+	_auto_expand_submenu()
+
+
 func _input(event: InputEvent) -> void:
 	"""Handle input for menu navigation"""
 	# A closing/queued-free menu still receives _input until freed — bail so one press isn't handled twice (double Advance / menu overlap).
@@ -1570,16 +1589,10 @@ func _input(event: InputEvent) -> void:
 	# Unified navigation via input actions (covers both keyboard and gamepad)
 	# Note: Check echo to prevent rapid-fire when holding d-pad
 	if event.is_action_pressed("ui_up") and not event.is_echo():
-		_step_selection(-1)
-		_play_move_sound()
-		_update_selection()
-		_auto_expand_submenu()
+		_nav_step(-1)
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_down") and not event.is_echo():
-		_step_selection(1)
-		_play_move_sound()
-		_update_selection()
-		_auto_expand_submenu()
+		_nav_step(1)
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_accept") and not event.is_echo():
 		var current_item = menu_items[selected_index] if selected_index >= 0 and selected_index < menu_items.size() else {}
