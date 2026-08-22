@@ -50,6 +50,14 @@ _UD_BASE="${XDG_DATA_HOME:-$HOME/.local/share}/godot/app_userdata/Cowardly Irreg
 # screenshots/ are EXCLUDED deliberately — the suite must never write them (separately
 # guarded) and restoring them could clobber a live play session's writes.
 # The net is a BACKSTOP; per-test _test_disable_persistence gates are the real fix.
+# ARM 1 OF 2 -- THIS ARRAY IS THE DIRECTORY CORPUS, NOT THE WHOLE NET.
+# Root-level *.json (settings.json, autogrind_history.json) are snapshotted by a SEPARATE
+# glob ~14 lines below, restored via the __root__ branch. That arm has NO identifier, so
+# grepping for what the net covers cannot find it, and `grep -A3 _NETTED_DIRS` -- what
+# everyone actually runs -- shows a complete-looking answer that is wrong.
+# Three lanes independently concluded "root file => not netted" from this array alone on
+# 2026-08-22; two of them had already read the correction in-channel first.
+# saves/ IS deliberately excluded (see below) -- do NOT generalise the root-json arm to it.
 _NETTED_DIRS=(script_exports autogrind autobattle input)
 _SNAP=""
 for _d in "${_NETTED_DIRS[@]}"; do
