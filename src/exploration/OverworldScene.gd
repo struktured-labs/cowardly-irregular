@@ -504,43 +504,37 @@ func biome_char_at(tx: int, ty: int) -> String:
 	return row[tx]
 
 
+## Painted terrain char -> encounter zone; the authored biome IS the zone
+const BIOME_ZONES := {
+	"i": "ice", "F": "forest", "S": "swamp", "s": "desert",
+	"l": "volcanic", "d": "volcanic", "c": "coast", "~": "coast",
+	"g": "plains", ".": "central", "B": "central", "M": "central",
+}
+
+
+func _pool_id_map() -> Dictionary:
+	return {
+		"central": "overworld_central", "plains": "overworld_plains",
+		"forest": "overworld_forest", "ice": "overworld_ice",
+		"swamp": "overworld_swamp", "desert": "overworld_desert",
+		"volcanic": "overworld_volcanic", "coast": "overworld_coast",
+	}
+
+
+func _zone_pool_ids() -> Array:
+	return _pool_id_map().values()
+
+
 func _get_zone_for_tile(tx: int, ty: int) -> String:
-	# NW quadrant: Ice/Snow (top-left)
-	if tx < 30 and ty < 15:
-		return "ice"
-	# N quadrant: Forest (top-center)
-	if tx >= 20 and tx < 65 and ty < 15:
-		return "forest"
-	# NE quadrant: Swamp/Spooky (top-right)
-	if tx >= 60 and ty < 15:
-		return "swamp"
-	# SW quadrant: Desert (bottom-left)
-	if tx < 35 and ty >= 50:
-		return "desert"
-	# SE quadrant: Volcanic (bottom-right)
-	if tx >= 65 and ty >= 50:
-		return "volcanic"
-	# E side: Coast
-	if tx >= 85 and ty >= 20 and ty < 45:
-		return "coast"
-	# Central: Grassland
-	return "central"
+	return BIOME_ZONES.get(biome_char_at(tx, ty), "central")
 
 
 func _apply_zone_encounters(zone: String) -> void:
 	# Source of truth: enemy_pools.json. Zone -> pool_id mapping below.
-	var pool_id_map = {
-		"central": "overworld_central",
-		"forest": "overworld_forest",
-		"ice": "overworld_ice",
-		"swamp": "overworld_swamp",
-		"desert": "overworld_desert",
-		"volcanic": "overworld_volcanic",
-		"coast": "overworld_coast",
-	}
+	var pool_id_map = _pool_id_map()
 	var rate_map = {
 		"central": 0.05, "forest": 0.06, "ice": 0.06,
-		"swamp": 0.06, "desert": 0.06, "volcanic": 0.065, "coast": 0.05,
+		"swamp": 0.06, "desert": 0.06, "volcanic": 0.065, "coast": 0.05, "plains": 0.05,
 	}
 	var pool_id: String = pool_id_map.get(zone, "")
 	if pool_id == "":
