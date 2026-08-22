@@ -8,7 +8,7 @@ extends GutTest
 ## words instead of internal snake_case identifiers.
 ##
 ## Affected files:
-##   - JobMenu (4 sites): secondary job id, ability id ×2, job_id
+##   - JobMenu: ability id ×2 (job_id + secondary_job_id moved to JobSystem in tick 335)
 ##   - AbilitiesMenu (4 sites): ability row + detail, passive row + detail
 ##   - PartyStatusScreen (1 site): equipment _resolve fallback
 
@@ -25,14 +25,25 @@ func _read(p: String) -> String:
 
 # ── JobMenu ──────────────────────────────────────────────────────────────
 
-func test_job_menu_secondary_job_name_prettifies_id() -> void:
-	var src := _read(JOB_MENU)
-	# _get_current_job_name's secondary slot branch:
-	assert_true(src.contains("return sec_job.get(\"name\", character.secondary_job_id.replace(\"_\", \" \").capitalize())"),
-		"_get_current_job_name (slot 1) must prettify secondary_job_id fallback")
-	# Secondary job label in the header:
-	assert_true(src.contains("sec_label.text = \"/ %s\" % sec_job.get(\"name\", character.secondary_job_id.replace(\"_\", \" \").capitalize())"),
-		"secondary job header label must prettify fallback")
+## tick 335: the job_id/secondary_job_id fallback moved into JobSystem.get_job_display_name.
+func test_job_display_name_prettifies_an_unknown_id() -> void:
+	var out: String = JobSystem.get_job_display_name("some_unknown_id")
+	assert_false(out.contains("_"),
+		"fallback leaked raw snake_case to the player: '%s'" % out)
+	assert_eq(out, "Some Unknown Id",
+		"an unknown job id must render title-cased, not as a raw identifier")
+
+
+## Guards the resolver being swapped for a bare prettifier: an ALIAS must reach real job data.
+func test_job_display_name_resolves_data_rather_than_prettifying() -> void:
+	var saved: int = int(GameState.current_world)
+	GameState.current_world = 1
+	var out: String = JobSystem.get_job_display_name("white_mage")
+	GameState.current_world = saved
+	assert_eq(out, "Cleric",
+		"'white_mage' must resolve through the alias to real job data; got '%s'" % out)
+	assert_ne(out, "White Mage",
+		"prettifying the raw id instead of resolving it is the defect this file exists to catch")
 
 
 func test_job_menu_ability_name_prettifies_id_in_two_sites() -> void:
@@ -47,10 +58,13 @@ func test_job_menu_ability_name_prettifies_id_in_two_sites() -> void:
 		"available-job ability_names must prettify fallback")
 
 
-func test_job_menu_job_row_name_prettifies_id() -> void:
+## The labels must keep ROUTING through the resolver -- unwiring them re-opens the raw-id leak.
+func test_job_menu_labels_route_through_the_resolver() -> void:
 	var src := _read(JOB_MENU)
-	assert_true(src.contains("name_label.text = job_data.get(\"name\", job_id.replace(\"_\", \" \").capitalize()) + type_tag"),
-		"job-row name fallback must prettify job_id")
+	# Floor is 1, not the current 5: a wrapper refactor is CORRECT and would trip a tighter
+	# count. Blind spot accepted -- unwiring SOME sites passes; the arms above cover the resolver.
+	assert_gt(src.count("JobSystem.get_job_display_name("), 0,
+		"JobMenu no longer resolves display names anywhere -- the raw-id leak is re-openable")
 
 
 # ── AbilitiesMenu ────────────────────────────────────────────────────────
