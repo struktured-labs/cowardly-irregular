@@ -265,7 +265,7 @@ func _setup_collision() -> void:
 		shape.radius = InteractGeometry.CHEST_GRAB_RADIUS_MODE7
 		collision.scale = Vector2(1.0, InteractGeometry.MODE7_Y_STRETCH)  # Mode 7 billboard Y:X ratio (0.3:0.5)
 	else:
-		shape.radius = 40.0  # ~1.25 tiles for flat villages/interiors
+		shape.radius = InteractGeometry.CHEST_GRAB_RADIUS_FLAT  # ~1.25 tiles for flat villages/interiors
 		collision.scale = Vector2.ONE
 	collision.shape = shape
 	add_child(collision)
