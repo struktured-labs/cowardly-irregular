@@ -1211,7 +1211,7 @@
             {
               "type": "ability",
               "id": "riff",
-              "target": "all_allies"
+              "target": "highest_atk_enemy"
             }
           ],
           "enabled": true
@@ -1297,7 +1297,7 @@
             {
               "type": "ability",
               "id": "riff",
-              "target": "all_allies"
+              "target": "highest_atk_enemy"
             }
           ],
           "enabled": true
