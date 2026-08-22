@@ -1484,6 +1484,22 @@ func _create_default_autogrind_profiles() -> Dictionary:
 	return {"profiles": profile_list, "active": 0}
 
 
+## Restore the shipped profile set. _create_default_autogrind_profiles is otherwise reachable ONLY on first run, so a clobbered profiles.json is permanent (2026-08-06: slot 0 became `always -> stop_grinding`, which halts every profile because slots 1-2 defer to it).
+func reset_autogrind_profiles_to_defaults() -> Dictionary:
+	var before_count: int = int((autogrind_profiles.get("profiles", []) as Array).size())
+	var before_active: int = int(autogrind_profiles.get("active", 0))
+	autogrind_profiles = _create_default_autogrind_profiles()
+	_save_autogrind_profiles()
+	var after: Array = autogrind_profiles.get("profiles", [])
+	return {
+		"profiles_before": before_count,
+		"profiles_after": after.size(),
+		"active_before": before_active,
+		"active_after": int(autogrind_profiles.get("active", 0)),
+		"rules_in_first": int(((after[0] as Dictionary).get("rules", []) as Array).size()) if after.size() > 0 else 0
+	}
+
+
 func _create_default_autogrind_rules() -> Array:
 	"""Create a sensible default autogrind ruleset"""
 	return [
