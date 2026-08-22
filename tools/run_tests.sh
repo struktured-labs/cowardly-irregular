@@ -124,6 +124,47 @@ run_gut() {
     echo "  logs kept for inspection: $RUN_LOG $GUT_LOG" >&2
     exit 3
   fi
+  # PER-FILE VACUITY. The arm above is WHOLE-RUN: on a 1300-file suite one script that
+  # fails to parse leaves `Tests` at ~1307, which is nonzero, so it cannot see it. A
+  # parse-failed script is not counted as FAILED — it is NOT COUNTED. @cowir-overworld
+  # measured both arms byte-identical: Tests, Passing, Failing, EC and the Totals block
+  # are the same whether the broken file exists or was never written.
+  #
+  # The missing quantity is not in GUT's output at all: EXECUTED is `Scripts N`, AUTHORED
+  # is on disk. tools/gate.sh has carried exactly this since before tonight (:50-53) and
+  # I proved both its arms just now — but gate.sh is the WRAPPER, and CLAUDE.md sends
+  # every lane here. That split is a REPEAT: the player-data net lived in gate.sh until
+  # 2026-07-30 and protected only the runs that typed gate.sh, which is the argument
+  # written at :28 of this file. Protecting the wrapper protects the path fewest runs take.
+  #
+  # AUTHORED comes from the FILESYSTEM, never `git ls-tree`: GUT globs the working tree, so
+  # a commit-derived count reds on an uncommitted new test — i.e. on the lane whose job is
+  # adding tests, for doing it right (@cowir-adhoc/@cowir-controller, measured, retracted).
+  # Scoped to the invocation's OWN -gdir so test/unit and test/isolated never cross-count.
+  local _gdir="" _a
+  for _a in "$@"; do case "$_a" in -gdir=res://*) _gdir="${_a#-gdir=res://}" ;; esac; done
+  if [ -n "$_gdir" ] && [ -d "$_gdir" ]; then
+    local _authored _executed
+    _authored="$(ls "$_gdir"/test_*.gd 2>/dev/null | command grep -c .)"   # grep -c PRINTS 0; no ||
+    _executed="$(command grep -aoE '^[[:space:]]*Scripts[[:space:]]+[0-9]+' "$RUN_LOG" | tail -1 | tr -dc '0-9')"
+    if [ -z "$_executed" ]; then
+      # THREE-STATE: the instrument could not measure. That must be its own loud outcome,
+      # never folded into a verdict about the suite.
+      echo "run_tests.sh: WARNING — no 'Scripts N' line; per-file vacuity NOT checked." >&2
+    elif [ "$_executed" -lt "$_authored" ]; then
+      echo "run_tests.sh: NOT ALL TEST FILES RAN — $_authored authored in $_gdir, $_executed loaded." >&2
+      echo "  A script that fails to parse is SKIPPED, not failed, so Tests/Failing/EC are all" >&2
+      echo "  silent about it and this run would otherwise exit 0." >&2
+      command grep -aiE 'Parse Error|Failed to load script|does not extend GutTest' "$RUN_LOG" | head -5 | sed 's/^/  /' >&2
+      echo "  logs kept for inspection: $RUN_LOG $GUT_LOG" >&2
+      exit 3
+    elif [ "$_executed" -gt "$_authored" ]; then
+      # Also an instrument mismatch, NOT a suite failure — a nested corpus would do it.
+      # Failing here would be the permanent false alarm everyone learns to suppress.
+      echo "run_tests.sh: WARNING — GUT loaded $_executed script(s) but only $_authored are" >&2
+      echo "  directly in $_gdir. The authored count may be mis-scoped; not failing on it." >&2
+    fi
+  fi
   if ! command grep -q '^Tests' "$RUN_LOG"; then
     echo "run_tests.sh: NO TESTS RAN — no Totals block in the output." >&2
     command grep -aiE 'have not been imported|Failed to load script|Parse Error|does not extend GutTest' "$RUN_LOG" | head -3 | sed 's/^/  /' >&2
