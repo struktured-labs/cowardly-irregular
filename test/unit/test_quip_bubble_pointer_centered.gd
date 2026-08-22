@@ -29,6 +29,16 @@ func _spawn_bubble_body() -> String:
 	return src.substr(idx, next_fn - idx) if next_fn > -1 else src.substr(idx)
 
 
+## The layout pass MOVED out of _present 2026-08-22: bubble.ready had already fired by the
+## time _present connected to it, so the whole pass was dead. It now lives in _finalize_layout.
+func _finalize_layout_body() -> String:
+	var src := _read(BATTLE_SCENE)
+	var idx: int = src.find("func _finalize_layout")
+	assert_gt(idx, -1, "_finalize_layout must exist — the layout pass cannot live in _present, whose bubble.ready never fires")
+	var next_fn: int = src.find("\nfunc ", idx + 1)
+	return src.substr(idx, next_fn - idx) if next_fn > -1 else src.substr(idx)
+
+
 func test_anchor_x_captured_locally() -> void:
 	# Pin: the callback captures sprite.global_position.x into a
 	# local before the lambda. Using sprite.global_position directly
@@ -40,43 +50,41 @@ func test_anchor_x_captured_locally() -> void:
 		"anchor_x must be captured from sprite.global_position.x BEFORE the lambda — defensive against sprite being freed during the same frame")
 
 
-func test_container_recentered_on_ready() -> void:
-	var body := _spawn_bubble_body()
-	assert_true(body.contains("position.x = _clamped_x(anchor_x - bw / 2.0, bw)"),
-		"container x must be re-centered using captured anchor_x - bubble_width/2 — aligns wide bubbles with speaker")
+# Retargeted 2026-08-22: centring on the anchor is what put the bubble ON the speaker. Behavioural coverage lives in test_speech_bubble_offset_regression.
+func test_container_placed_beside_speaker_on_ready() -> void:
+	var body := _finalize_layout_body()
+	assert_true(body.contains("position.x = _side_placed_x(anchor_x, bw, prefer_right)"),
+		"container x must be placed BESIDE the speaker, not centred on them — struktured 2026-08-22 'style the bubble away from them'")
 
 
-func test_pointer_x_centered_on_bubble_width() -> void:
-	var body := _spawn_bubble_body()
-	# Polygon tip is at local x=20 within the polygon coords. So
-	# the pointer's NODE position must be (bubble_width/2 - 20) so
-	# the tip ends up at bubble_width/2 horizontally.
-	assert_true(body.contains("pointer.position.x = clampf(anchor_x - position.x - 20.0, 4.0, bw - 44.0)"),
-		"pointer x must be set to (bubble_width / 2) - 20 — accounts for the polygon tip's local x offset")
+# Retargeted 2026-08-22: the tail is rebuilt from the bubble's real size and leans back toward the speaker, so a diagonally-offset bubble still reads as theirs.
+func test_tail_is_rebuilt_against_the_speaker() -> void:
+	var body := _finalize_layout_body()
+	assert_true(body.contains("_build_tail(pointer, bubble.size, anchor_x - position.x)"),
+		"the tail must be rebuilt from the settled bubble size with the speaker's LOCAL offset")
 
 
-func test_pointer_y_still_at_bubble_bottom() -> void:
-	# Don't regress the y positioning — pointer still sits at the
-	# bottom of the bubble (which is now correctly centered).
-	var body := _spawn_bubble_body()
-	assert_true(body.contains("pointer.position.y = bubble.size.y"),
-		"pointer y must still be set to bubble.size.y — pointer hangs from bubble bottom")
+# Still pinned, one layer in: the tail base sits on the bubble's BOTTOM EDGE.
+func test_tail_base_sits_on_the_bubble_bottom_edge() -> void:
+	var src := _read(BATTLE_SCENE)
+	var idx: int = src.find("func _build_tail")
+	assert_gt(idx, -1, "_build_tail must exist")
+	var next_fn: int = src.find("\nfunc ", idx + 1)
+	var body: String = src.substr(idx, next_fn - idx) if next_fn > -1 else src.substr(idx)
+	assert_true(body.contains("bh - 2.0"),
+		"the tail's base points must sit on the bubble's bottom edge, not float")
 
 
-func test_callback_guards_validity_of_all_three_nodes() -> void:
-	# Pin: the callback checks pointer, bubble, AND container before
-	# touching any of them. The lambda fires on the next process
-	# frame; any of the three may have been freed if the battle
-	# scene tore down.
-	var body := _spawn_bubble_body()
+func test_layout_pass_guards_validity_of_all_three_nodes() -> void:
+	# Pin: the pass checks pointer, bubble, AND container before touching any of them —
+	# it resumes a frame later and any of the three may have been freed by teardown.
+	var body := _finalize_layout_body()
 	assert_true(body.contains("if not (is_instance_valid(pointer) and is_instance_valid(bubble) and is_instance_valid(self)):"),
 		"ready callback must guard ALL THREE nodes (pointer, bubble, container) before mutating positions")
 
 
-func test_initial_x_offset_preserved_at_minus_40() -> void:
-	# Tick 127 changed the y component to a line-length heuristic
-	# but kept the x at -40 (refined by ready callback below). Pin
-	# just the x portion so a tick-127 update doesn't trip this test.
+# Retargeted 2026-08-22: the pre-layout x is now a SIDE GAP, not a fixed -40 nudge.
+func test_initial_x_offset_is_the_side_gap() -> void:
 	var body := _spawn_bubble_body()
-	assert_true(body.contains("Vector2(-40, -float(est_height + 28))"),
-		"initial container x offset must still be -40 — finalized by ready-time recentering")
+	assert_true(body.contains("Vector2(SIDE_GAP_PX, -float(est_height + 28))"),
+		"the pre-layout offset must use SIDE_GAP_PX — the ready callback finalises which side")

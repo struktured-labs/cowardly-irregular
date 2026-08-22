@@ -31,6 +31,16 @@ func _spawn_bubble_body() -> String:
 	return src.substr(idx, next_fn - idx) if next_fn > -1 else src.substr(idx)
 
 
+## The layout pass moved out of _present 2026-08-22 — bubble.ready had already fired by the
+## time _present connected to it, so the pass was dead code. It now lives in _finalize_layout.
+func _finalize_layout_body() -> String:
+	var src := _read(BATTLE_SCENE)
+	var idx: int = src.find("func _finalize_layout")
+	assert_gt(idx, -1, "_finalize_layout must exist — a bubble.ready connect made AFTER add_child never fires")
+	var next_fn: int = src.find("\nfunc ", idx + 1)
+	return src.substr(idx, next_fn - idx) if next_fn > -1 else src.substr(idx)
+
+
 func test_initial_y_offset_uses_line_length_heuristic() -> void:
 	# Pin: the -90 hardcode is gone, replaced by an estimated
 	# height based on line.length() / 20 chars-per-line.
@@ -55,36 +65,28 @@ func test_y_offset_includes_28px_buffer_above_sprite() -> void:
 	# bubble bottom that distance above the sprite, with the pointer
 	# extending 8px down into that buffer = ~20px clear of sprite.
 	var body := _spawn_bubble_body()
-	assert_true(body.contains("Vector2(-40, -float(est_height + 28))"),
+	assert_true(body.contains("Vector2(SIDE_GAP_PX, -float(est_height + 28))"),
 		"y offset must be -(est_height + 28) — keeps bubble bottom 28px above sprite for ALL line lengths")
 
 
-func test_x_offset_preserved_at_minus_40() -> void:
+func test_x_offset_is_the_side_gap() -> void:
 	# X offset placeholder (-40) preserved — bubble.ready callback
 	# from tick 126 re-centers it once layout settles. Don't
 	# regress the initial placement.
 	var body := _spawn_bubble_body()
-	assert_true(body.contains("Vector2(-40, -float(est_height + 28))"),
+	assert_true(body.contains("Vector2(SIDE_GAP_PX, -float(est_height + 28))"),
 		"x offset must stay -40 — ready-time recentering (tick 126) finalizes x once bubble width is known")
 
 
-func test_ready_callback_no_longer_touches_y() -> void:
+func test_layout_pass_no_longer_touches_y() -> void:
 	# The ready callback now only touches x (recenter) and pointer.
 	# y is finalized in the initial position. If ready() ALSO updated
 	# container.position.y, it would clash with the tween that was
 	# created right after add_child (the tween captures the initial y
 	# as its starting value; a mid-flight y change would jump).
-	var body := _spawn_bubble_body()
-	# Find the ready callback block and confirm container.position.y
-	# is NOT assigned inside it.
-	var lambda_idx: int = body.find("bubble.ready.connect(func():")
-	assert_gt(lambda_idx, -1, "bubble.ready lambda must exist")
-	# End of lambda is the , CONNECT_ONE_SHOT) line.
-	var end_idx: int = body.find(", CONNECT_ONE_SHOT)", lambda_idx)
-	assert_gt(end_idx, -1, "lambda end marker must exist")
-	var lambda_body: String = body.substr(lambda_idx, end_idx - lambda_idx)
-	assert_false(lambda_body.contains("position.y = maxf"),
-		"bubble.ready callback must NOT mutate container.position.y — would clash with the tween that captures initial y")
+	var body := _finalize_layout_body()
+	assert_false(body.contains("position.y = maxf"),
+		"the layout pass must NOT mutate container.position.y — it would clash with the tween that captured the initial y")
 
 
 func test_tween_still_animates_y_by_minus_10() -> void:
@@ -96,8 +98,8 @@ func test_tween_still_animates_y_by_minus_10() -> void:
 		"tween must still animate container.position.y by -10 — preserves the float-up bubble animation")
 
 
-func test_x_centering_still_in_ready_callback() -> void:
-	# Tick 126's x centering must remain — only y handling moved.
-	var body := _spawn_bubble_body()
-	assert_true(body.contains("position.x = _clamped_x(anchor_x - bw / 2.0, bw)"),
+func test_side_placement_happens_in_the_layout_pass() -> void:
+	# The side choice must live in the pass that actually runs, not in _present.
+	var body := _finalize_layout_body()
+	assert_true(body.contains("position.x = _side_placed_x(anchor_x, bw, prefer_right)"),
 		"tick 126's x centering in ready callback must still be present")

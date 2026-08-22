@@ -91,3 +91,28 @@ func test_bubble_is_translucent_and_rounded() -> void:
 		"fill must be MORE translucent than the 0.85 struktured called too opaque")
 	assert_gt(sb.corner_radius_top_left, 4,
 		"corners must be rounder than the pre-fix 4px panel look")
+
+
+# WIRING, not just correctness. Reverting _present's call site to the old centred form left
+# every arm above GREEN — they exercise _side_placed_x directly and never prove _present
+# CALLS it. This spawns a real bubble and measures where it actually lands.
+func test_a_spawned_bubble_lands_beside_the_speaker_not_on_them() -> void:
+	var host := Control.new()
+	host.size = Vector2(1280, 720)
+	add_child_autofree(host)
+	var anchor := Vector2(320, 400)
+	var b = BattleSpeechBubble.spawn(host, anchor, "Fighter", "Testing placement end to end.", Color(1, 0.85, 0.2), 5.0, "", true)
+	assert_not_null(b, "spawn must return a bubble at default time_scale")
+	for i in 6:
+		await get_tree().process_frame
+	var panel: PanelContainer = null
+	for c in b.get_children():
+		if c is PanelContainer:
+			panel = c
+			break
+	assert_not_null(panel, "the bubble must have built its body")
+	var left: float = b.position.x
+	var right: float = left + panel.size.x
+	assert_gt(panel.size.x, 0.0, "the body must have settled to a real width or this assert is vacuous")
+	assert_false(anchor.x > left - 10.0 and anchor.x < right + 10.0,
+		"a SPAWNED bubble must not span the speaker: anchor %.0f, bubble [%.0f..%.0f]" % [anchor.x, left, right])

@@ -116,19 +116,26 @@ func _present(anchor_global_pos: Vector2, speaker_name: String, line: String, bo
 	modulate.a = 0.0
 
 	var anchor_x: float = anchor_global_pos.x
-	bubble.ready.connect(func():
-		if not (is_instance_valid(pointer) and is_instance_valid(bubble) and is_instance_valid(self)):
-			return
-		var bw: float = bubble.size.x
-		position.x = _side_placed_x(anchor_x, bw, prefer_right)
-		_build_tail(pointer, bubble.size, anchor_x - position.x)
-	, CONNECT_ONE_SHOT)
+	# NOT bubble.ready: spawn() adds this node to the tree BEFORE _present runs, so add_child(bubble) above makes the panel ready SYNCHRONOUSLY and a later connect misses the signal forever. Measured 2026-08-22 — is_node_ready() is already true here, so the whole layout pass had been DEAD since the 2026-07-01 extraction.
+	_finalize_layout(bubble, pointer, anchor_x, prefer_right)
 
 	var tween := create_tween()
 	tween.tween_property(self, "modulate:a", 1.0, 0.15)
 	tween.tween_property(self, "position:y", position.y - 10, _hold_time * 0.5)
 	tween.parallel().tween_property(self, "modulate:a", 0.0, 0.3).set_delay(_hold_time)
 	tween.tween_callback(queue_free)
+
+
+## Runs one frame after build, when the PanelContainer finally has a real size.
+func _finalize_layout(bubble: PanelContainer, pointer: Polygon2D, anchor_x: float, prefer_right: bool) -> void:
+	if not is_inside_tree():
+		return
+	await get_tree().process_frame
+	if not (is_instance_valid(pointer) and is_instance_valid(bubble) and is_instance_valid(self)):
+		return
+	var bw: float = bubble.size.x
+	position.x = _side_placed_x(anchor_x, bw, prefer_right)
+	_build_tail(pointer, bubble.size, anchor_x - position.x)
 
 
 ## Places the bubble BESIDE the speaker, flipping side when the clamp would drag it back onto them — centring on the anchor is what covered the sprite (struktured 2026-08-22).

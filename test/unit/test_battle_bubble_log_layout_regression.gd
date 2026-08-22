@@ -32,9 +32,9 @@ func test_quip_bubble_anchors_above_head_not_center() -> void:
 		"bubble anchor must derive the sprite's frame height — raw global_position is mid-body on tall monsters")
 	assert_true("anchor.y -= tex.get_height() * absf(anim_sprite.scale.y) * 0.5" in body,
 		"anchor must lift by half the rendered frame height so the bubble clears the head")
-	assert_true("anchor.x -= 50.0" in body,
+	assert_true("var prefer_right: bool = anchor.x < vp_w * 0.5" in body,
 		"enemy-side bubbles (left 45% of viewport) must bias left, clear of the center command menu")
-	assert_true("anchor.x -= 70.0" in body,
+	assert_false("anchor.x -= 70.0" in body,
 		"party-side bubbles (right 55%+) must bias toward mid-field — smoke showed them colliding with the AUTO button + party panel")
 	assert_false("BattleSpeechBubble.spawn(self, sprite.global_position" in body,
 		"the raw-global-position spawn is the bug — must pass the adjusted anchor")
