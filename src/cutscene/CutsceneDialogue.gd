@@ -1027,8 +1027,8 @@ const PORTRAIT_SPRITES = {
 	"king": "res://assets/sprites/portraits/npcs/king.png",
 	"queen": "res://assets/sprites/portraits/npcs/queen.png",
 	# Named W1 principals reached via OverworldNPC.sprite_archetype.
-	"elder_theron": "res://assets/sprites/portraits/npcs/elder_theron.png",
-	"scholar_milo": "res://assets/sprites/portraits/npcs/scholar_milo.png",
+	"elder_theron": "res://assets/sprites/portraits/npcs/theron.png",  # one face per NPC: Batch B was built for Theron by name, the archetype face was generic
+	"scholar_milo": "res://assets/sprites/portraits/npcs/milo.png",  # one face per NPC: Batch B was built for Milo by name, the archetype face was generic  # one face per NPC: Batch B was built for Milo by name, the archetype face was generic
 	"chancellor_mordaine": "res://assets/sprites/portraits/npcs/chancellor_mordaine.png",
 	# Advanced + meta jobs. The 5 meta jobs have no idle.png, so the job-sheet
 	# bust rung cannot fire for them and this is their only portrait source.
