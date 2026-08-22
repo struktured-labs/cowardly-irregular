@@ -9,6 +9,10 @@ const RESERVED_RIGHT_PX: float = 210.0
 const EDGE_MARGIN: float = 8.0
 const TOP_MARGIN: float = 48.0  # 2026-07-16 smoke: head-anchored bubbles on tall party sprites climbed into the AUTO button row (y 6..36) — keep bubbles below it
 const MAX_TEXT_WIDTH: float = 260.0
+## Gap between the speaker and the bubble's near edge — the bubble sits BESIDE the head, not on it.
+const SIDE_GAP_PX: float = 22.0
+## Speaker counts as covered when it falls inside the bubble span plus this slack.
+const CLEAR_SLACK_PX: float = 10.0
 ## Suppress only at 4x+ (doc'd intent); pre-fix code suppressed at 2x so users at 2x saw no bubbles.
 const SUPPRESS_TIME_SCALE: float = 4.0
 
@@ -23,7 +27,7 @@ static var _live: Array = []
 ## audio_key: optional SFX/voice clip (phase-2 voice acting hook for cowir-sfx).
 static func spawn(parent: Node, anchor_global_pos: Vector2, speaker_name: String, line: String,
 		border_color: Color = Color(1.0, 0.85, 0.2), hold_time: float = 1.5,
-		audio_key: String = "") -> BattleSpeechBubble:
+		audio_key: String = "", prefer_right: bool = true) -> BattleSpeechBubble:
 	if parent == null or not is_instance_valid(parent):
 		return null
 	if Engine.time_scale >= SUPPRESS_TIME_SCALE:
@@ -43,30 +47,32 @@ static func spawn(parent: Node, anchor_global_pos: Vector2, speaker_name: String
 	b.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	b.z_index = 120
 	parent.add_child(b)
-	b._present(anchor_global_pos, speaker_name, line, border_color)
+	b._present(anchor_global_pos, speaker_name, line, border_color, prefer_right)
 	b._play_voice(audio_key)
 	_live.append({"bubble": b, "speaker": speaker_name})
 	return b
 
 
-func _present(anchor_global_pos: Vector2, speaker_name: String, line: String, border_color: Color) -> void:
+func _present(anchor_global_pos: Vector2, speaker_name: String, line: String, border_color: Color, prefer_right: bool = true) -> void:
 	var bubble := PanelContainer.new()
 	bubble.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.0, 0.0, 0.0, 0.85)
+	# struktured playtest 2026-08-22: the opaque fill hid the sprite behind it — see through it.
+	style.bg_color = Color(0.04, 0.03, 0.09, 0.55)
 	style.border_color = border_color
 	style.border_width_top = 2
 	style.border_width_bottom = 2
 	style.border_width_left = 2
 	style.border_width_right = 2
-	style.corner_radius_top_left = 4
-	style.corner_radius_top_right = 4
-	style.corner_radius_bottom_left = 4
-	style.corner_radius_bottom_right = 4
-	style.content_margin_left = 8
-	style.content_margin_right = 8
-	style.content_margin_top = 3
-	style.content_margin_bottom = 3
+	# Rounded like a comic bubble rather than a panel (same playtest note).
+	style.corner_radius_top_left = 14
+	style.corner_radius_top_right = 14
+	style.corner_radius_bottom_left = 14
+	style.corner_radius_bottom_right = 14
+	style.content_margin_left = 12
+	style.content_margin_right = 12
+	style.content_margin_top = 7
+	style.content_margin_bottom = 7
 	bubble.add_theme_stylebox_override("panel", style)
 
 	var vbox := VBoxContainer.new()
@@ -78,6 +84,8 @@ func _present(anchor_global_pos: Vector2, speaker_name: String, line: String, bo
 	name_label.text = speaker_name
 	name_label.add_theme_font_size_override("font_size", TextScale.scaled(9))
 	name_label.add_theme_color_override("font_color", border_color)
+	name_label.add_theme_constant_override("outline_size", 3)
+	name_label.add_theme_color_override("font_outline_color", Color(0.05, 0.04, 0.0, 0.9))
 	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	vbox.add_child(name_label)
 
@@ -85,7 +93,8 @@ func _present(anchor_global_pos: Vector2, speaker_name: String, line: String, bo
 	text_label.text = '"%s"' % line
 	text_label.add_theme_font_size_override("font_size", TextScale.scaled(13))
 	text_label.add_theme_color_override("font_color", Color(1.0, 0.95, 0.7))
-	text_label.add_theme_constant_override("outline_size", 1)
+	# Outline carries legibility now that the fill is see-through.
+	text_label.add_theme_constant_override("outline_size", 4)
 	text_label.add_theme_color_override("font_outline_color", Color(0.2, 0.15, 0.0))
 	text_label.autowrap_mode = TextServer.AUTOWRAP_WORD
 	text_label.custom_minimum_size = Vector2(MAX_TEXT_WIDTH, 0)
@@ -93,16 +102,15 @@ func _present(anchor_global_pos: Vector2, speaker_name: String, line: String, bo
 	vbox.add_child(text_label)
 	add_child(bubble)
 
-	# Comic tail pointing down at the speaker.
+	# Tail geometry is rebuilt once the bubble has a real size; fill-coloured so it reads as part of the bubble, not a separate arrow.
 	var pointer := Polygon2D.new()
-	pointer.polygon = PackedVector2Array([Vector2(15, 0), Vector2(25, 0), Vector2(20, 8)])
-	pointer.color = border_color
+	pointer.color = Color(style.bg_color.r, style.bg_color.g, style.bg_color.b, minf(1.0, style.bg_color.a + 0.14))
 	add_child(pointer)
 
 	# Height estimate keeps wrapped bubbles clear of the sprite head pre-layout.
 	var est_lines: int = int(ceil(float(line.length()) / 20.0))
 	var est_height: int = est_lines * 16 + 24
-	position = anchor_global_pos + Vector2(-40, -float(est_height + 28))
+	position = anchor_global_pos + Vector2(SIDE_GAP_PX, -float(est_height + 28))
 	# Top clamp happens HERE (pre-tween) so the float-up tween's captured y never jumps.
 	position.y = maxf(position.y, TOP_MARGIN)
 	modulate.a = 0.0
@@ -112,10 +120,8 @@ func _present(anchor_global_pos: Vector2, speaker_name: String, line: String, bo
 		if not (is_instance_valid(pointer) and is_instance_valid(bubble) and is_instance_valid(self)):
 			return
 		var bw: float = bubble.size.x
-		position.x = _clamped_x(anchor_x - bw / 2.0, bw)
-		# Tail tip tracks the speaker even when the bubble body got clamped sideways.
-		pointer.position.x = clampf(anchor_x - position.x - 20.0, 4.0, bw - 44.0)
-		pointer.position.y = bubble.size.y
+		position.x = _side_placed_x(anchor_x, bw, prefer_right)
+		_build_tail(pointer, bubble.size, anchor_x - position.x)
 	, CONNECT_ONE_SHOT)
 
 	var tween := create_tween()
@@ -124,6 +130,34 @@ func _present(anchor_global_pos: Vector2, speaker_name: String, line: String, bo
 	tween.parallel().tween_property(self, "modulate:a", 0.0, 0.3).set_delay(_hold_time)
 	tween.tween_callback(queue_free)
 
+
+## Places the bubble BESIDE the speaker, flipping side when the clamp would drag it back onto them — centring on the anchor is what covered the sprite (struktured 2026-08-22).
+func _side_placed_x(anchor_x: float, bubble_width: float, prefer_right: bool) -> float:
+	var first: float = (anchor_x + SIDE_GAP_PX) if prefer_right else (anchor_x - SIDE_GAP_PX - bubble_width)
+	var placed: float = _clamped_x(first, bubble_width)
+	if not _covers_anchor(placed, bubble_width, anchor_x):
+		return placed
+	var second: float = (anchor_x - SIDE_GAP_PX - bubble_width) if prefer_right else (anchor_x + SIDE_GAP_PX)
+	var alt: float = _clamped_x(second, bubble_width)
+	return alt if not _covers_anchor(alt, bubble_width, anchor_x) else placed
+
+
+## True when the speaker falls inside the bubble's horizontal span — the bubble is ON them.
+func _covers_anchor(x: float, bubble_width: float, anchor_x: float) -> bool:
+	return anchor_x > x - CLEAR_SLACK_PX and anchor_x < x + bubble_width + CLEAR_SLACK_PX
+
+
+## Tail base on the bubble's bottom edge, tip leaning back toward the speaker, so a diagonally-offset bubble still reads as belonging to that character.
+func _build_tail(pointer: Polygon2D, bubble_size: Vector2, anchor_local_x: float) -> void:
+	var bw: float = bubble_size.x
+	var bh: float = bubble_size.y
+	var base_cx: float = clampf(anchor_local_x, 16.0, maxf(16.0, bw - 16.0))
+	var tip_x: float = clampf(anchor_local_x, -34.0, bw + 34.0)
+	pointer.polygon = PackedVector2Array([
+		Vector2(base_cx - 8.0, bh - 2.0),
+		Vector2(base_cx + 8.0, bh - 2.0),
+		Vector2(tip_x, bh + 16.0),
+	])
 
 ## Phase-2 voice hook: plays the clip alongside the bubble when authored.
 func _play_voice(audio_key: String) -> void:
