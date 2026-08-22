@@ -262,3 +262,24 @@ func test_the_reason_line_restores_itself_on_the_next_move() -> void:
 	m._update_selection()
 	assert_false(m._hint_showing_reason, "moving clears the reason")
 	assert_eq(hint.text, m.HINT_DEFAULT_TEXT, "and the hint bar is back to its default")
+
+
+func test_panel_is_translucent_but_its_border_is_not() -> void:
+	## struktured 2026-08-22 wanted the menu more translucent, and flagged it as needing a
+	## playtest — so this pins the STRUCTURE (fill fades, frame does not), not the number.
+	## The number is PANEL_ALPHA and is meant to be moved in one line after he looks.
+	var m = await _built_menu([{"id": "a", "label": "Row"}])
+	assert_lt(m.PANEL_ALPHA, 1.0, "the fill is translucent at all")
+	assert_gt(m.PANEL_ALPHA, 0.25, "but not so faint the menu stops reading as a panel")
+	var panel = m.get_child(0)
+	var fill: ColorRect = null
+	var opaque_borders := 0
+	for c in panel.get_children():
+		if c is ColorRect:
+			if fill == null:
+				fill = c
+			elif c.color.a >= 0.99:
+				opaque_borders += 1
+	assert_not_null(fill, "CONTROL: found the panel fill")
+	assert_lt(fill.color.a, 1.0, "the fill is actually drawn translucent")
+	assert_gt(opaque_borders, 0, "the BORDER stays opaque — it is what keeps the menu legible")

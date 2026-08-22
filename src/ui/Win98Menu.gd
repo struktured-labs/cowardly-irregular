@@ -218,6 +218,16 @@ const MENU_SCREEN_MARGIN = 24
 const COST_COLOR := Color(0.65, 0.78, 0.95, 0.85)
 const COST_COLOR_UNAFFORDABLE := Color(0.92, 0.45, 0.45, 0.95)
 const COST_COLUMN_WIDTH = 46
+
+## struktured 2026-08-22: "the main battle menu for ap layer can prob be more translucent
+## not just prev ones, unclear though we need to play test it" — he flagged it as UNCERTAIN,
+## so this is one named number to move rather than a value to agonise over.
+## 0.55 is deliberately the SAME alpha cowir-cutscenes gave the speech bubbles the same
+## night; two independently-chosen values would read as sloppy, one reads as a house style.
+## BORDERS STAY OPAQUE ON PURPOSE: the frame is what keeps the menu legible over the Mode 7
+## floor and bright battle backgrounds. A menu you cannot read is worse than one that covers
+## scenery, and fading the border is what costs legibility, not fading the fill.
+const PANEL_ALPHA := 0.55
 const SUBMENU_DELAY = 0.12  # Delay before submenu expands
 
 
@@ -695,7 +705,7 @@ func _create_retro_panel(w: int, h: int) -> Control:
 
 	# Background
 	var bg = ColorRect.new()
-	bg.color = style.bg
+	bg.color = Color(style.bg.r, style.bg.g, style.bg.b, style.bg.a * PANEL_ALPHA)
 	bg.position = Vector2(TILE_SIZE, TILE_SIZE)
 	bg.size = Vector2(w - TILE_SIZE * 2, h - TILE_SIZE * 2)
 	panel.add_child(bg)
