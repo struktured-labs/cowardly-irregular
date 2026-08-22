@@ -10,6 +10,7 @@ signal secondary_job_changed(combatant: Combatant, job_id: String)
 var jobs: Dictionary = {}
 var abilities: Dictionary = {}
 var job_aliases: Dictionary = {}
+var job_world_names: Dictionary = {}
 
 ## Job categories
 enum JobType {
@@ -21,6 +22,7 @@ enum JobType {
 
 func _ready() -> void:
 	_load_job_aliases()
+	_load_job_world_names()
 	_load_job_data()
 	_load_ability_data()
 
@@ -60,6 +62,35 @@ func _load_job_aliases() -> void:
 
 	job_aliases = json.data
 	print("Loaded %d job aliases" % job_aliases.size())
+
+
+func _load_job_world_names() -> void:
+	"""Load data/job_world_names.json; every failure mode warns and leaves the base names in place."""
+	var file_path = "res://data/job_world_names.json"
+	if not FileAccess.file_exists(file_path):
+		push_warning("[JobSystem] job_world_names.json not found at %s — jobs keep their base names in every world" % file_path)
+		return
+
+	var file = FileAccess.open(file_path, FileAccess.READ)
+	if not file:
+		push_warning("[JobSystem] job_world_names.json exists but FileAccess.open failed — jobs keep their base names")
+		return
+
+	var json_string = file.get_as_text()
+	file.close()
+
+	var json = JSON.new()
+	var parse_result = json.parse(json_string)
+
+	if parse_result != OK:
+		push_warning("[JobSystem] job_world_names.json parse error: %s — jobs keep their base names" % json.get_error_message())
+		return
+	if not (json.data is Dictionary):
+		push_warning("[JobSystem] job_world_names.json parsed but root is not a Dictionary — jobs keep their base names")
+		return
+
+	job_world_names = json.data
+	print("Loaded per-world names for %d jobs" % job_world_names.get("jobs", {}).size())
 
 
 func resolve_job_id(raw_id: String) -> String:
@@ -610,6 +641,22 @@ func get_job(job_id: String) -> Dictionary:
 	"""Get job data by ID"""
 	job_id = resolve_job_id(job_id)
 	return jobs.get(job_id, {})
+
+
+func get_job_display_name(job_id: String) -> String:
+	"""Job's display name for the CURRENT world; falls back to the base name at every missing rung."""
+	job_id = resolve_job_id(job_id)
+	var base: String = get_job(job_id).get("name", job_id.replace("_", " ").capitalize())
+	if job_world_names.is_empty():
+		return base
+	var gs: Node = get_node_or_null("/root/GameState")
+	var world: int = int(gs.current_world) if gs != null and "current_world" in gs else 1
+	var theme: String = str(job_world_names.get("worlds", {}).get(str(world), ""))
+	if theme == "":
+		return base
+	var per_job: Dictionary = job_world_names.get("jobs", {}).get(job_id, {})
+	var name_for_world: String = str(per_job.get(theme, ""))
+	return name_for_world if name_for_world != "" else base
 
 
 func get_job_abilities(job_id: String) -> Array:

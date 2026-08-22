@@ -125,7 +125,10 @@ func _create_character_panel(panel_size: Vector2) -> Control:
 	panel.add_child(name_label)
 
 	# Current job
-	var job_name = character.job.get("name", "Fighter") if character.job else "Fighter"
+	var job_name := "Fighter"
+	if character.job:
+		var pjid: String = str(character.job.get("id", ""))
+		job_name = JobSystem.get_job_display_name(pjid) if pjid != "" else str(character.job.get("name", "Fighter"))
 	var job_label = Label.new()
 	job_label.text = job_name
 	job_label.position = Vector2(8, 28)
@@ -135,9 +138,8 @@ func _create_character_panel(panel_size: Vector2) -> Control:
 
 	# Secondary job
 	if character.secondary_job_id != "":
-		var sec_job = JobSystem.get_job(character.secondary_job_id)
 		var sec_label = Label.new()
-		sec_label.text = "/ %s" % sec_job.get("name", character.secondary_job_id.replace("_", " ").capitalize())
+		sec_label.text = "/ %s" % JobSystem.get_job_display_name(character.secondary_job_id)
 		sec_label.position = Vector2(8, 42)
 		sec_label.add_theme_font_size_override("font_size", 10)
 		sec_label.add_theme_color_override("font_color", SECONDARY_COLOR)
@@ -262,12 +264,12 @@ func _get_current_job_name(slot_index: int) -> String:
 	match slot_index:
 		0:  # Primary
 			if character.job:
-				return character.job.get("name", "Fighter")
+				var pjid2: String = str(character.job.get("id", ""))
+				return JobSystem.get_job_display_name(pjid2) if pjid2 != "" else str(character.job.get("name", "Fighter"))
 			return "(none)"
 		1:  # Secondary
 			if character.secondary_job_id != "":
-				var sec_job = JobSystem.get_job(character.secondary_job_id)
-				return sec_job.get("name", character.secondary_job_id.replace("_", " ").capitalize())
+				return JobSystem.get_job_display_name(character.secondary_job_id)
 			return "(none)"
 	return "(none)"
 
@@ -503,7 +505,7 @@ func _create_job_row(job_id: String, index: int) -> Control:
 			tag_color = Color(0.9, 0.4, 0.9)  # Purple for meta
 
 	var name_label = Label.new()
-	name_label.text = job_data.get("name", job_id.replace("_", " ").capitalize()) + type_tag
+	name_label.text = JobSystem.get_job_display_name(job_id) + type_tag
 	name_label.position = Vector2(24, 4)
 	name_label.add_theme_font_size_override("font_size", 12)
 	name_label.add_theme_color_override("font_color", tag_color)
