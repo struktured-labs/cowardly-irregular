@@ -286,7 +286,7 @@
       "job_id": "cleric",
       "stance": "defensive",
       "name": "Defensive",
-      "description": "Emergency Curia first, cleanse poison, heal early, Pray when MP runs dry, Defer between crises.",
+      "description": "Emergency Sanatio Maior first, cleanse poison, heal early, Pray when MP runs dry, Defer between crises.",
       "rules": [
         {
           "conditions": [
@@ -787,7 +787,7 @@
       "job_id": "mage",
       "stance": "aggressive",
       "name": "Aggressive",
-      "description": "Firia spam, double-cast burst with spare AP, Channel just enough to keep casting.",
+      "description": "Ignis Maior spam, double-cast burst with spare AP, Channel just enough to keep casting.",
       "rules": [
         {
           "conditions": [
