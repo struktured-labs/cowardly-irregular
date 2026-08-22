@@ -13,13 +13,28 @@ func _init() -> void:
 	# Autoloads are added AFTER the -s script's _init runs; compiling the village before then fails on SoundManager/GameState
 	await process_frame
 	await process_frame
-	var path := "res://src/maps/villages/%sVillage.tscn" % village.capitalize()
-	var packed: PackedScene = load(path)
-	if packed == null:
-		push_error("no scene at %s" % path)
+	# Only Harmonia has a .tscn; every other village is a bare script, so try both.
+	var stem := ""
+	for part in village.split("_"):
+		stem += part.capitalize()
+	var scene: Node = null
+	for path in ["res://src/maps/villages/%sVillage.tscn" % stem, "res://src/maps/villages/%s.tscn" % stem,
+			"res://src/maps/villages/%sVillage.gd" % stem, "res://src/maps/villages/%s.gd" % stem,
+			"res://src/maps/dungeons/%s.gd" % stem]:
+		if not ResourceLoader.exists(path):
+			continue
+		var res = load(path)
+		if res is PackedScene:
+			scene = res.instantiate()
+		elif res is GDScript:
+			scene = res.new()
+		if scene != null:
+			print("SCREEN source ", path)
+			break
+	if scene == null:
+		push_error("no village named %s" % village)
 		quit(2)
 		return
-	var scene := packed.instantiate()
 	root.add_child(scene)
 	if "lighting" in scene and scene.lighting != null:
 		scene.lighting.phase_override = phase

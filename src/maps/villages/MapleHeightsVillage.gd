@@ -1,5 +1,8 @@
 extends BaseVillage
+
 class_name MapleHeightsVillageScene
+
+const SuburbanTileGeneratorScript = preload("res://src/exploration/SuburbanTileGenerator.gd")
 
 ## MapleHeightsVillage - Nostalgic 90s suburban neighborhood
 ## Features: Mom's Guest Room (Inn), Suburban Mart (Item Shop), Picket fences, Mailboxes, NPCs
@@ -82,7 +85,7 @@ func _generate_map() -> void:
 		for x in range(MAP_WIDTH):
 			var char = row[x] if x < row.length() else "W"
 			var tile_type = _char_to_tile_type(char)
-			var atlas_coords = _get_atlas_coords(tile_type)
+			var atlas_coords = _atlas_for(tile_type, Vector2i(x, y))
 			tile_map.set_cell(Vector2i(x, y), 0, atlas_coords)
 
 			if char == "X" and not spawn_points.has("exit"):
@@ -93,22 +96,26 @@ func _generate_map() -> void:
 	spawn_points["maple_heights_entrance"] = spawn_points["entrance"]
 
 
+## W2 is suburbia — CrossCode phase 4 (struktured: "continue with next cross code phase")
+func _get_tile_generator() -> Node:
+	return SuburbanTileGeneratorScript.new()
+
+
+func _get_fringe_ground_types() -> Array:
+	return [SuburbanTileGeneratorScript.TileType.LAWN]
+
+
 func _char_to_tile_type(char: String) -> int:
 	match char:
-		"W": return TileGeneratorScript.TileType.WALL
-		"H", "I", "S": return TileGeneratorScript.TileType.WALL
-		"g": return TileGeneratorScript.TileType.VILLAGE_GRASS
-		"p": return TileGeneratorScript.TileType.VILLAGE_PATH
-		"d": return TileGeneratorScript.TileType.VILLAGE_DIRT
-		"f": return TileGeneratorScript.TileType.VILLAGE_FLOWER
-		"e": return TileGeneratorScript.TileType.VILLAGE_HEDGE
-		"X": return TileGeneratorScript.TileType.VILLAGE_PATH
-		_: return TileGeneratorScript.TileType.VILLAGE_GRASS
-
-
-func _get_atlas_coords(tile_type: int) -> Vector2i:
-	var tile_id = TileGeneratorScript.get_tile_id(tile_type)
-	return Vector2i(tile_id % 5, tile_id / 5)
+		"W": return SuburbanTileGeneratorScript.TileType.PICKET_FENCE
+		"H", "I", "S": return SuburbanTileGeneratorScript.TileType.HOUSE_WALL
+		"g": return SuburbanTileGeneratorScript.TileType.LAWN
+		"p": return SuburbanTileGeneratorScript.TileType.SIDEWALK
+		"d": return SuburbanTileGeneratorScript.TileType.PARKING_LOT
+		"f": return SuburbanTileGeneratorScript.TileType.FLOWER_BED
+		"e": return SuburbanTileGeneratorScript.TileType.PICKET_FENCE
+		"X": return SuburbanTileGeneratorScript.TileType.SIDEWALK
+		_: return SuburbanTileGeneratorScript.TileType.LAWN
 
 
 func _setup_transitions() -> void:

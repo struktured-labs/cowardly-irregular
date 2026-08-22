@@ -34,14 +34,42 @@ static func stairs(src: String) -> Dictionary:
 	return HG.stair_cells(rows(src))
 
 
+## Impassable TileType names for whichever generators a village's legend actually names.
+## W2-W6 villages paint with their own world's generator (CrossCode phase 4), so a hardcoded
+## medieval list parses their legends as ZERO blocking chars and every flood fill downstream
+## goes vacuous. Derived from each generator's own _get_impassable_types(), never a hand-list:
+## for the medieval generator the derived set is byte-identical to the list callers passed.
+static func derived_impassable(src: String) -> Array:
+	var out: Array = []
+	var seen := {}
+	var re := RegEx.create_from_string("(\\w*)TileGeneratorScript\\.TileType\\.")
+	for m in re.search_all(src):
+		seen[m.get_string(1)] = true
+	for prefix in seen:
+		var path := "res://src/exploration/%sTileGenerator.gd" % prefix
+		if not ResourceLoader.exists(path):
+			continue
+		var gsrc := FileAccess.get_file_as_string(path)
+		var start := gsrc.find("func _get_impassable_types")
+		if start < 0:
+			continue
+		var stop := gsrc.find("\nfunc ", start + 1)
+		var body := gsrc.substr(start, (stop - start) if stop > -1 else gsrc.length() - start)
+		var tre := RegEx.create_from_string("TileType\\.([A-Z_]+)")
+		for tm in tre.search_all(body):
+			out.append(tm.get_string(1))
+	return out
+
+
 static func blocked_chars(src: String, impassable_types: Array) -> Dictionary:
+	var types: Array = impassable_types + derived_impassable(src)
 	var b := {}
 	var ch := RegEx.create_from_string("\"(.)\"")
 	for line in src.split("\n"):
 		if not (line.contains("return") and line.contains("TileType.")):
 			continue
 		var blocking := false
-		for t in impassable_types:
+		for t in types:
 			if line.contains("TileType." + t):
 				blocking = true
 				break

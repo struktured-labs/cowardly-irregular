@@ -110,3 +110,8 @@ func _get_boss_intro_dialogue() -> Array:
 		"Glacius: *exhales a cloud of absolute zero*",
 		"Glacius: 'Let's see how your autobattle handles THIS.'",
 	]
+
+
+## blue under the frost
+func _get_dungeon_ambient() -> Color:
+	return Color(0.28, 0.36, 0.48)

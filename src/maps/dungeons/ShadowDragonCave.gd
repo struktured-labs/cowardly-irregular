@@ -113,3 +113,8 @@ func _get_boss_intro_dialogue() -> Array:
 		"Umbraxis: 'Don't worry. It only hurts if you think about it.'",
 		"Umbraxis: *the room inverts*",
 	]
+
+
+## the darkest of the four
+func _get_dungeon_ambient() -> Color:
+	return Color(0.20, 0.19, 0.28)

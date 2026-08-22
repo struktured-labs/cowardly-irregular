@@ -1,6 +1,8 @@
 extends BaseVillage
 class_name NodePrimeVillageScene
 
+const FuturisticTileGeneratorScript = preload("res://src/exploration/FuturisticTileGenerator.gd")
+
 ## NodePrimeVillage - Digital rest stop / data hub in the futuristic overworld
 ## Features: Sleep.exe (inn), Cache Store (magic shop), holographic signs, geometric architecture
 
@@ -75,7 +77,7 @@ func _generate_map() -> void:
 		for x in range(MAP_WIDTH):
 			var char = row[x] if x < row.length() else "W"
 			var tile_type = _char_to_tile_type(char)
-			var atlas_coords = _get_atlas_coords(tile_type)
+			var atlas_coords = _atlas_for(tile_type, Vector2i(x, y))
 			tile_map.set_cell(Vector2i(x, y), 0, atlas_coords)
 
 			if char == "X" and not spawn_points.has("exit"):
@@ -86,18 +88,22 @@ func _generate_map() -> void:
 	spawn_points["node_prime_entrance"] = spawn_points["entrance"]
 
 
+## W5 paints with its own world's generator — CrossCode phase 4
+func _get_tile_generator() -> Node:
+	return FuturisticTileGeneratorScript.new()
+
+
+func _get_fringe_ground_types() -> Array:
+	return [FuturisticTileGeneratorScript.TileType.PIXEL_GARDEN]
+
+
 func _char_to_tile_type(char: String) -> int:
 	match char:
-		"W": return TileGeneratorScript.TileType.WALL
-		"F": return TileGeneratorScript.TileType.WALL
-		"p": return TileGeneratorScript.TileType.VILLAGE_PATH
-		"X": return TileGeneratorScript.TileType.VILLAGE_PATH
-		_: return TileGeneratorScript.TileType.FLOOR
-
-
-func _get_atlas_coords(tile_type: int) -> Vector2i:
-	var tile_id = TileGeneratorScript.get_tile_id(tile_type)
-	return Vector2i(tile_id % 5, tile_id / 5)
+		"W": return FuturisticTileGeneratorScript.TileType.NEON_WALL
+		"F": return FuturisticTileGeneratorScript.TileType.NEON_WALL
+		"p": return FuturisticTileGeneratorScript.TileType.DATA_HIGHWAY
+		"X": return FuturisticTileGeneratorScript.TileType.DATA_HIGHWAY
+		_: return FuturisticTileGeneratorScript.TileType.CIRCUIT_FLOOR
 
 
 func _setup_transitions() -> void:
