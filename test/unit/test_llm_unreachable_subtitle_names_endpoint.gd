@@ -7,51 +7,55 @@ extends GutTest
 ## localhost:11434, and a perfectly healthy server behind a mistyped URL. The player can
 ## act on the first and cannot even see the second.
 ##
-## `HTTPBackend.get_availability_info()` has always returned `probe_url`, and
-## `LLMService.get_backend_status()` has always passed it through — the subtitle simply
-## discarded it. This pins that it is spent, not that it is available.
-##
-## Pins the RELATIONSHIP (the rendered string carries the endpoint the probe actually
-## used) rather than the literal copy, so rewording stays green and dropping the
-## diagnostic reds.
+## BEHAVIOURAL, deliberately. The first version of this file pinned the SOURCE TEXT
+## ("does the body contain `probe_url`") and a mutation proved it blind: keeping the
+## token, computing `where`, and never rendering it left all three tests GREEN while the
+## player saw no endpoint. A pin proves a token survives; only the string proves the
+## player is told. Both arms are red now.
 
-const SETTINGS_SRC := "res://src/ui/SettingsMenu.gd"
+const SettingsMenuScript := preload("res://src/ui/SettingsMenu.gd")
 
-
-func _subtitle_body() -> String:
-	var f := FileAccess.open(SETTINGS_SRC, FileAccess.READ)
-	assert_not_null(f, "could not open SettingsMenu.gd")
-	if f == null:
-		return ""
-	var src := f.get_as_text()
-	f.close()
-	var idx := src.find("func _get_llm_status_subtitle")
-	assert_gt(idx, -1, "_get_llm_status_subtitle must exist")
-	var next := src.find("\nfunc ", idx + 1)
-	return src.substr(idx, next - idx) if next > -1 else src.substr(idx)
+const URL := "http://192.0.2.77:11434"
 
 
-func test_unreachable_subtitle_spends_the_probe_url() -> void:
-	var body := _subtitle_body()
-	assert_ne(body, "", "subtitle function body was empty")
-	assert_true(body.contains("probe_url"),
-		("the UNREACHABLE readout must name the endpoint the probe used — with BYOK the "
-		+ "URL is configurable, so 'unreachable' alone cannot separate a stopped server "
-		+ "from a mistyped base_url"))
+func _render(overrides: Dictionary) -> String:
+	var info: Dictionary = {
+		"llm_enabled": true, "probed": true, "available": false,
+		"model": "llama3", "probe_url": URL, "probe_interval_sec": 30,
+	}
+	for k in overrides:
+		info[k] = overrides[k]
+	var menu: Node = SettingsMenuScript.new()
+	var out: String = menu._render_llm_status(info)
+	menu.free()
+	return out
 
 
-func test_the_retry_interval_is_still_named() -> void:
-	# The self-heal is the other half of the message: the player must know it recovers
-	# on its own rather than needing a restart (struktured 2026-07-25).
-	var body := _subtitle_body()
-	assert_true(body.contains("probe_interval_sec"),
-		"the readout must still tell the player the probe retries on its own")
+func test_unreachable_readout_shows_the_endpoint_to_the_player() -> void:
+	var out := _render({})
+	assert_true(out.contains(URL),
+		("the UNREACHABLE readout must RENDER the endpoint, not merely consult it — with "
+		+ "BYOK a mistyped base_url and a stopped server are the same message otherwise. "
+		+ "Got: " + out))
 
 
-func test_the_reader_can_see_this_file_at_all() -> void:
-	# Control: a body-extraction that silently returned "" would pass both asserts above
-	# by vacuity if they were phrased as absence checks.
-	var body := _subtitle_body()
-	assert_gt(body.length(), 100, "extracted body is implausibly short")
-	assert_true(body.contains("UNREACHABLE"), "known-present token missing from the body")
-	assert_false(body.contains("Zzznotasubtitle"), "fabricated token found")
+func test_unreachable_readout_states_the_retry_interval() -> void:
+	var out := _render({})
+	assert_true(out.contains("30"),
+		"the readout must tell the player it retries on its own. Got: " + out)
+
+
+func test_a_blank_probe_url_falls_back_without_an_empty_at_clause() -> void:
+	var out := _render({"probe_url": ""})
+	assert_true(out.contains("UNREACHABLE"), "fallback must still say UNREACHABLE")
+	assert_false(out.contains(" at "),
+		"with no URL known the readout must not render a dangling 'at'. Got: " + out)
+
+
+func test_control_the_renderer_discriminates() -> void:
+	var unreachable := _render({})
+	var connected := _render({"available": true})
+	assert_true(connected.contains("Connected"), "the available branch must differ")
+	assert_false(connected.contains("UNREACHABLE"), "available must not say UNREACHABLE")
+	assert_ne(unreachable, connected, "the two branches must render differently")
+	assert_false(unreachable.contains("Zzznotanendpoint"), "fabricated token found")

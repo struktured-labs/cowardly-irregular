@@ -1507,7 +1507,11 @@ func _get_llm_status_subtitle() -> String:
 	var svc: Node = get_node_or_null("/root/LLMService")
 	if svc == null or not svc.has_method("get_backend_status"):
 		return "LLM service unavailable"
-	var info: Dictionary = svc.get_backend_status()
+	return _render_llm_status(svc.get_backend_status())
+
+
+## Pure render of a backend-status dict — split out so a test can assert the STRING.
+func _render_llm_status(info: Dictionary) -> String:
 	if info.is_empty():
 		return "No LLM backend configured"
 	if not bool(info.get("llm_enabled", false)):
