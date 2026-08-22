@@ -153,8 +153,16 @@ run_gut() {
       echo "run_tests.sh: WARNING — no 'Scripts N' line; per-file vacuity NOT checked." >&2
     elif [ "$_executed" -lt "$_authored" ]; then
       echo "run_tests.sh: NOT ALL TEST FILES RAN — $_authored authored in $_gdir, $_executed loaded." >&2
-      echo "  A script that fails to parse is SKIPPED, not failed, so Tests/Failing/EC are all" >&2
-      echo "  silent about it and this run would otherwise exit 0." >&2
+      echo "  ⇒ DISCARD THIS RUN. It did not execute everything it was supposed to, so its" >&2
+      echo "    Tests/Passing/Failing/EC describe a SUBSET and are silent about the rest." >&2
+      echo "    This says nothing about whether the code is good — only that this run" >&2
+      echo "    cannot answer. Fix the run, then re-read." >&2
+      echo "  Causes seen so far (NOT a complete list — do not stop at the first that fits):" >&2
+      echo "    - the tree was never imported. A fold adding class_name files makes GameLoop-" >&2
+      echo "      dependent scripts fail to resolve; the cascade reads like a broken subsystem." >&2
+      echo "      Run: godot --headless --audio-driver Dummy --import --quit, check the LOG" >&2
+      echo "      (its exit code is inert), then re-run this." >&2
+      echo "    - a test script genuinely fails to parse — SKIPPED, never counted as failed." >&2
       command grep -aiE 'Parse Error|Failed to load script|does not extend GutTest' "$RUN_LOG" | head -5 | sed 's/^/  /' >&2
       echo "  logs kept for inspection: $RUN_LOG $GUT_LOG" >&2
       exit 3
