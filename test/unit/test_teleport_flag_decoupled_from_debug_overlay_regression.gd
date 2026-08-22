@@ -6,10 +6,31 @@ extends GutTest
 ## Glacius and Pyrroth while they sat in sealed walkable components of the W1 map.
 ## Found 2026-08-22. The fix is a separate flag; these pin BOTH directions.
 
-func after_each() -> void:
+# GameState is an AUTOLOAD: whatever this file leaves set survives into every later test
+# file. Restore what was actually there, not a hardcoded true — forcing a value is itself
+# a leak if the suite arrived with the flag off.
+var _orig_debug: bool = true
+var _orig_teleport: bool = true
+
+
+func before_all() -> void:
 	if GameState:
-		GameState.debug_log_enabled = true
-		GameState.teleport_menu_enabled = true
+		_orig_debug = GameState.debug_log_enabled
+		_orig_teleport = GameState.teleport_menu_enabled
+
+
+func after_each() -> void:
+	_restore()
+
+
+func after_all() -> void:
+	_restore()
+
+
+func _restore() -> void:
+	if GameState:
+		GameState.debug_log_enabled = _orig_debug
+		GameState.teleport_menu_enabled = _orig_teleport
 
 
 func test_the_overlay_flag_no_longer_gates_teleport() -> void:
