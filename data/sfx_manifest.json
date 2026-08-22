@@ -1798,6 +1798,106 @@
       "prompt": "Hardcover book slammed shut, very loud and close. A sharp cracking SLAP as the covers meet, over a solid low wooden thud. Punchy, immediate, recorded hot and full-scale. Percussive and decisive like a gavel. No rustling paper.",
       "duration_seconds": 1.0,
       "prompt_influence": 0.75
+    },
+    "voice_fighter_big_hit_taken": {
+      "file": "assets/audio/sfx/voice_fighter_big_hit_taken.ogg",
+      "description": "Fighter party voice line — big hit taken"
+    },
+    "voice_fighter_low_hp": {
+      "file": "assets/audio/sfx/voice_fighter_low_hp.ogg",
+      "description": "Fighter party voice line — low hp"
+    },
+    "voice_fighter_turn_start": {
+      "file": "assets/audio/sfx/voice_fighter_turn_start.ogg",
+      "description": "Fighter party voice line — turn start"
+    },
+    "voice_fighter_used_signature_ability": {
+      "file": "assets/audio/sfx/voice_fighter_used_signature_ability.ogg",
+      "description": "Fighter party voice line — used signature ability"
+    },
+    "voice_fighter_victory": {
+      "file": "assets/audio/sfx/voice_fighter_victory.ogg",
+      "description": "Fighter party voice line — victory"
+    },
+    "voice_cleric_big_hit_taken": {
+      "file": "assets/audio/sfx/voice_cleric_big_hit_taken.ogg",
+      "description": "Cleric party voice line — big hit taken"
+    },
+    "voice_cleric_low_hp": {
+      "file": "assets/audio/sfx/voice_cleric_low_hp.ogg",
+      "description": "Cleric party voice line — low hp"
+    },
+    "voice_cleric_turn_start": {
+      "file": "assets/audio/sfx/voice_cleric_turn_start.ogg",
+      "description": "Cleric party voice line — turn start"
+    },
+    "voice_cleric_used_signature_ability": {
+      "file": "assets/audio/sfx/voice_cleric_used_signature_ability.ogg",
+      "description": "Cleric party voice line — used signature ability"
+    },
+    "voice_cleric_victory": {
+      "file": "assets/audio/sfx/voice_cleric_victory.ogg",
+      "description": "Cleric party voice line — victory"
+    },
+    "voice_mage_big_hit_taken": {
+      "file": "assets/audio/sfx/voice_mage_big_hit_taken.ogg",
+      "description": "Mage party voice line — big hit taken"
+    },
+    "voice_mage_low_hp": {
+      "file": "assets/audio/sfx/voice_mage_low_hp.ogg",
+      "description": "Mage party voice line — low hp"
+    },
+    "voice_mage_turn_start": {
+      "file": "assets/audio/sfx/voice_mage_turn_start.ogg",
+      "description": "Mage party voice line — turn start"
+    },
+    "voice_mage_used_signature_ability": {
+      "file": "assets/audio/sfx/voice_mage_used_signature_ability.ogg",
+      "description": "Mage party voice line — used signature ability"
+    },
+    "voice_mage_victory": {
+      "file": "assets/audio/sfx/voice_mage_victory.ogg",
+      "description": "Mage party voice line — victory"
+    },
+    "voice_rogue_big_hit_taken": {
+      "file": "assets/audio/sfx/voice_rogue_big_hit_taken.ogg",
+      "description": "Rogue party voice line — big hit taken"
+    },
+    "voice_rogue_low_hp": {
+      "file": "assets/audio/sfx/voice_rogue_low_hp.ogg",
+      "description": "Rogue party voice line — low hp"
+    },
+    "voice_rogue_turn_start": {
+      "file": "assets/audio/sfx/voice_rogue_turn_start.ogg",
+      "description": "Rogue party voice line — turn start"
+    },
+    "voice_rogue_used_signature_ability": {
+      "file": "assets/audio/sfx/voice_rogue_used_signature_ability.ogg",
+      "description": "Rogue party voice line — used signature ability"
+    },
+    "voice_rogue_victory": {
+      "file": "assets/audio/sfx/voice_rogue_victory.ogg",
+      "description": "Rogue party voice line — victory"
+    },
+    "voice_bard_big_hit_taken": {
+      "file": "assets/audio/sfx/voice_bard_big_hit_taken.ogg",
+      "description": "Bard party voice line — big hit taken"
+    },
+    "voice_bard_low_hp": {
+      "file": "assets/audio/sfx/voice_bard_low_hp.ogg",
+      "description": "Bard party voice line — low hp"
+    },
+    "voice_bard_turn_start": {
+      "file": "assets/audio/sfx/voice_bard_turn_start.ogg",
+      "description": "Bard party voice line — turn start"
+    },
+    "voice_bard_used_signature_ability": {
+      "file": "assets/audio/sfx/voice_bard_used_signature_ability.ogg",
+      "description": "Bard party voice line — used signature ability"
+    },
+    "voice_bard_victory": {
+      "file": "assets/audio/sfx/voice_bard_victory.ogg",
+      "description": "Bard party voice line — victory"
     }
   }
 }
