@@ -51,16 +51,25 @@ func test_the_audit_cannot_report_a_world_that_nothing_blocks() -> void:
 	assert_true(w1.contains("components="), "the W1 line carries no component count")
 
 
-func test_a_world_with_no_landmarks_says_so_instead_of_ok() -> void:
+func test_every_world_gets_a_classification_and_none_of_them_is_a_vacuous_ok() -> void:
 	var probe := _run(["-c", "print('alive')"])
 	if int(probe[0]) != 0:
 		pending("python3 unavailable -- the auditor cannot be exercised here")
 		return
 	var text := str(_run([AUDIT])[1])
-	# W2-W6 carry no landmark glyphs; 0 classified sites must never render as a pass
+
+	# every world header must be followed by a classification; a silently skipped world
+	# is the failure this counts, and it is exercised on every run
+	var headers := 0
+	var classified := 0
 	var vacuous_ok := 0
 	for line in text.split("\n"):
+		if line.begins_with("W") and line.contains("block="):
+			headers += 1
+		if line.contains("sites "):
+			classified += 1
 		if line.contains("sites 0") and line.contains("OK"):
 			vacuous_ok += 1
+	assert_gt(headers, 5, "fewer than six worlds were audited -- the world list is not being read")
+	assert_eq(classified, headers, "a world was audited but never classified")
 	assert_eq(vacuous_ok, 0, "a world classified 0 sites and still printed OK")
-	assert_true(text.contains("NOT MEASURED"), "no world reported an unmeasurable classification")

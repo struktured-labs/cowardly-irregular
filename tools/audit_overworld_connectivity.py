@@ -74,20 +74,31 @@ def components(rows, block):
 
 
 def authored_sites(scene):
-    """Sites this scan may legitimately classify: LANDMARK-bearing cells only.
+    """Sites this scan may classify, WITH the frame ambiguity made explicit.
 
-    NOT spawn points and NOT transitions. Both were tried on 2026-08-22 and both produced
-    false positives, because MODE7_GROUND_DISPLACEMENT_PX is 140.6 = 4x32 + 12.6 -- not a
-    whole number of tiles. test_overworld_spawn_overlap_regression already records that
+    NOT a walkability check. test_overworld_spawn_overlap_regression records that
     "four grid models were tried against this question over one evening and all four were
-    wrong"; a fifth is not better. Those questions belong to the body-probe tests
-    (test_overworld_spawn_overlap_regression, test_transition_reachability_regression),
-    which answer them with a physics query that has no grid parameter to get wrong.
+    wrong" -- MODE7_GROUND_DISPLACEMENT_PX is 140.6 = 4x32 + 12.6, so no cell model resolves
+    whether a body overlaps. That stays with the body probes.
 
-    What a body probe CANNOT answer is global: a spawn can be perfectly clear and still sit
-    on a 26-tile island. That is this tool's only job.
+    COMPONENT MEMBERSHIP is a different question and tolerates the ambiguity: a site deep
+    inside a 1500-cell region is in that region under either frame. So each site is tested
+    at BOTH its authored cell and its mode7-corrected cell, and reported only when the two
+    agree. Disagreement is printed as AMBIGUOUS, never resolved by picking one.
     """
-    return []
+    src = open("src/exploration/%s.gd" % scene).read()
+    corrected = set(re.findall(r'(\w+)\.position \+= Vector2\(0, InteractGeometry\.MODE7_TRIGGER_Y_OFFSET', src))
+    out = []
+    for m in re.finditer(r'(\w+)\.position = Vector2\((\d+) \* TILE_SIZE[^,]*, (\d+) \* TILE_SIZE', src):
+        nm, tx, ty = m.group(1), int(m.group(2)), int(m.group(3))
+        out.append((nm, tx, ty, ty - 4 if nm in corrected else ty))
+    # teleport() assigns the pixel position directly, but the body meets the DISPLACED
+    # clone, so a spawn's collision-relevant row is 4.39 above its authored one. Same
+    # two-frame treatment: agreement is an answer, disagreement is deferred.
+    for m in re.finditer(r'spawn_points\["(\w+)"\] = Vector2\((\d+) \* TILE_SIZE[^,]*, (\d+) \* TILE_SIZE', src):
+        tx, ty = int(m.group(2)), int(m.group(3))
+        out.append(("spawn:" + m.group(1), tx, ty, ty - 4))
+    return out
 
 
 def png_rows(path, world):
@@ -123,21 +134,26 @@ def png_rows(path, world):
 
 
 def classify(comps, sites):
-    """Which component holds each authored site? An island of scenery is cosmetic;
-    an island holding a portal or entrance is the W1 dragon-cave bug again."""
-    where = {}
-    for name, tx, ty in sites:
-        hit = next((n for n, c in enumerate(comps) if (tx, ty) in c), None)
-        where.setdefault(hit, []).append(name)
-    return where
+    """Which component holds each site? Tested in BOTH frames; disagreement is reported."""
+    where, ambiguous = {}, []
+    for name, tx, ty, ty2 in sites:
+        a = next((n for n, c in enumerate(comps) if (tx, ty) in c), None)
+        b = next((n for n, c in enumerate(comps) if (tx, ty2) in c), None)
+        if a != b or a is None:
+            # a != b: the two frames disagree. a is None: neither frame is walkable, which
+            # is a CLEARANCE claim -- test_overworld_spawn_overlap_regression owns that with
+            # a physics query. Five grid-model false positives on 2026-08-22 say so.
+            ambiguous.append(name)
+            continue
+        where.setdefault(a, []).append(name)
+    return where, ambiguous
 
 
 def report(label, rows, block, comps, sites, extra=""):
     walk = sum(len(c) for c in comps)
     tot = len(rows) * len(rows[0])
-    where = classify(comps, sites)
+    where, ambiguous = classify(comps, sites)
     stranded = {k: v for k, v in where.items() if k not in (0, None)}
-    unplaced = where.get(None, [])
     sizes = [len(c) for c in comps]
     frag = "" if len(comps) <= 1 else "  %d island(s): %s" % (len(comps) - 1, sizes[1:][:8])
     print("%-16s %dx%d  block=%-11s walkable %d/%d (%d%%)  components=%d%s%s"
@@ -146,14 +162,14 @@ def report(label, rows, block, comps, sites, extra=""):
     if not sites:
         # 0 sites classified is NOT a pass. W2-W6 carry no landmark glyphs, so this scan
         # has nothing to place and must say so rather than print a clean-looking OK.
-        print("                 sites 0: NOT MEASURED -- this world has no landmark glyphs; "
-              "island contents unclassified")
+        print("                 sites 0: NOT MEASURED -- nothing authored to classify")
     else:
-        print("                 sites %d: mainland %d · STRANDED %d · off-map/blocked %d  %s"
-              % (len(sites), len(where.get(0, [])), sum(len(v) for v in stranded.values()), len(unplaced),
-                 "OK" if not stranded else "<-- STRANDED: " + str(stranded)))
-    if unplaced:
-        print("                 not on any walkable cell: %s" % unplaced)
+        print("                 sites %d: mainland %d · STRANDED %d · deferred %d  %s"
+              % (len(sites), len(where.get(0, [])), sum(len(v) for v in stranded.values()),
+                 len(ambiguous), "OK" if not stranded else "<-- STRANDED: " + str(stranded)))
+        if ambiguous:
+            print("                 deferred to the body probes (frames disagree, or neither "
+                  "cell walkable -- a clearance question): %s" % ambiguous)
 
 
 if __name__ == '__main__':
@@ -169,7 +185,7 @@ if __name__ == '__main__':
     # derive W1 blocking from the same source the runtime uses
     _NAME2TYPE = {"water": "WATER", "mountain": "MOUNTAIN", "lava": "LAVA"}
     block1 = {ch for ch, v in _W["terrain"].items() if _NAME2TYPE.get(v["name"]) in imp1}
-    sites1 = [(_W["landmarks"][ch]["name"], x, y)
+    sites1 = [(_W["landmarks"][ch]["name"], x, y, y)
               for y, r in enumerate(g1) for x, ch in enumerate(r) if ch in lm1]
     report("W1 medieval", g1, block1, components(g1, block1), sites1)
 
