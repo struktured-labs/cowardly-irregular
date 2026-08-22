@@ -96,6 +96,7 @@ var _settings_items: Array = []
 ## this, the bottom action rows are unreachable and the cursor goes off-screen.
 var _scroll: ScrollContainer = null
 var _controls_submenu_open: bool = false
+var _nav_repeat := MenuRepeat.new()
 var _jukebox_submenu_open: bool = false
 var _boss_submenu_open: bool = false
 var _teleport_submenu_open: bool = false
@@ -1064,6 +1065,44 @@ func _update_option_display(index: int, option_index: int) -> void:
 				label.add_theme_color_override("font_color", Color.YELLOW if i == option_index else TEXT_COLOR)
 
 
+## One navigation step, shared by a keypress and a held repeat. up/down CLAMP rather than
+## wrap here, so a repeat that reaches an end simply stops — no wrap-around surprise.
+func _nav_step(action: String) -> void:
+	match action:
+		"ui_up":
+			selected_index = max(0, selected_index - 1)
+		"ui_down":
+			selected_index = min(_settings_items.size() - 1, selected_index + 1)
+		"ui_left":
+			_adjust_setting(-1)
+			return
+		"ui_right":
+			_adjust_setting(1)
+			return
+		_:
+			return
+	_update_selection()
+	if SoundManager:
+		SoundManager.play_ui("menu_move")
+
+
+## Hold-to-repeat. Deliberately MORE conservative than _input's gate: _input carries a
+## stale-flag failsafe that RESETS the submenu flags as a side effect, and a poll must not
+## trigger that. Refusing to repeat in an edge case is safe; repeating under a live submenu
+## is not, so this errs toward silence.
+func _process(delta: float) -> void:
+	if not visible \
+			or get_node_or_null("QuitConfirmDialog") != null \
+			or _controls_submenu_open or _jukebox_submenu_open or _boss_submenu_open \
+			or _teleport_submenu_open or _rebalance_review_open or _byok_config_open \
+			or _rebalance_history_open:
+		_nav_repeat.reset()
+		return
+	var action := _nav_repeat.tick(delta)
+	if action != "":
+		_nav_step(action)
+
+
 func _input(event: InputEvent) -> void:
 	"""Handle settings input"""
 	if not visible:
@@ -1085,17 +1124,11 @@ func _input(event: InputEvent) -> void:
 
 	# Navigation - check echo to prevent rapid-fire when holding keys
 	if event.is_action_pressed("ui_up") and not event.is_echo():
-		selected_index = max(0, selected_index - 1)
-		_update_selection()
-		if SoundManager:
-			SoundManager.play_ui("menu_move")
+		_nav_step("ui_up")
 		get_viewport().set_input_as_handled()
 
 	elif event.is_action_pressed("ui_down") and not event.is_echo():
-		selected_index = min(_settings_items.size() - 1, selected_index + 1)
-		_update_selection()
-		if SoundManager:
-			SoundManager.play_ui("menu_move")
+		_nav_step("ui_down")
 		get_viewport().set_input_as_handled()
 
 	# Page jump — this list is long enough that one-row-at-a-time is a slog (struktured 2026-07-25).
