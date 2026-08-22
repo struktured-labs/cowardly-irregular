@@ -118,3 +118,8 @@ func _get_boss_intro_dialogue() -> Array:
 		"Pyrroth: *the temperature doubles*",
 		"Pyrroth: 'Let's find out what happens when the script breaks.'",
 	]
+
+
+## embers in the rock
+func _get_dungeon_ambient() -> Color:
+	return Color(0.42, 0.26, 0.24)

@@ -8,6 +8,7 @@ const TileGeneratorScript = preload("res://src/exploration/TileGenerator.gd")
 const OverworldPlayerScript = preload("res://src/exploration/OverworldPlayer.gd")
 const OverworldControllerScript = preload("res://src/exploration/OverworldController.gd")
 const AreaTransitionScript = preload("res://src/exploration/AreaTransition.gd")
+const DungeonLightingScript = preload("res://src/exploration/DungeonLighting.gd")
 
 signal exploration_ready()
 signal battle_triggered(enemies: Array)
@@ -74,6 +75,7 @@ var player: Node2D
 var camera: Camera2D
 var controller: Node
 var tile_generator: Node
+var lighting: DungeonLighting
 
 ## Area transitions
 var transitions: Node2D
@@ -185,6 +187,8 @@ func _maybe_warn_out_of_league() -> void:
 
 
 func _setup_scene() -> void:
+	_setup_lighting()
+
 	tile_generator = TileGeneratorScript.new()
 	add_child(tile_generator)
 
@@ -233,9 +237,46 @@ func _generate_map_for_floor(floor_num: int) -> void:
 
 	var spawn_pos = floor_spawn_points.get(floor_num, {}).get("entrance", Vector2(10, 12))
 	spawn_points["default"] = Vector2(spawn_pos.x * TILE_SIZE, spawn_pos.y * TILE_SIZE)
+	_place_torches()
 
 	_setup_transitions_for_floor(floor_num)
 	_add_stair_visuals()
+
+
+## Cave ambient. Elemental caves override to tint their own dark.
+func _get_dungeon_ambient() -> Color:
+	return DungeonLightingScript.CAVE_AMBIENT
+
+
+func _setup_lighting() -> void:
+	lighting = DungeonLightingScript.new()
+	lighting.name = "Lighting"
+	lighting.ambient = _get_dungeon_ambient()
+	add_child(lighting)
+
+
+## Landmarks earn a torch: the way in, the way on, the treasure, the boss. Derived from
+## spawn_points, which _generate_map_for_floor rebuilds per floor, so nothing is pinned
+## to a coordinate that a map edit would strand.
+func _place_torches() -> void:
+	if lighting == null:
+		return
+	for l in lighting._lamps:
+		if is_instance_valid(l):
+			l.queue_free()
+	lighting._lamps.clear()
+	for key in spawn_points:
+		var k := str(key)
+		var tint := Color(1.0, 0.80, 0.45)
+		var radius := 112
+		var energy := 1.0
+		if k == "boss":
+			tint = Color(1.0, 0.45, 0.30); radius = 176; energy = 1.25
+		elif k.begins_with("treasure"):
+			tint = Color(1.0, 0.93, 0.60); radius = 88; energy = 0.85
+		elif k.begins_with("secret"):
+			tint = Color(0.65, 0.85, 1.0); radius = 80; energy = 0.7
+		lighting.add_lamp(spawn_points[key], tint, radius, energy)
 
 
 func _char_to_tile_type(char: String) -> int:
