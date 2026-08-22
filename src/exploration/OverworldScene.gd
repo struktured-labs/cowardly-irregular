@@ -329,6 +329,35 @@ func _get_atlas_coords(tile_type: int) -> Vector2i:
 	return Vector2i(tile_id % 5, tile_id / 5)
 
 
+const W1_SPINE_FLAGS: Array[String] = [
+	"rat_king_defeated",
+	"fire_dragon_defeated",
+	"ice_dragon_defeated",
+	"lightning_dragon_defeated",
+	"shadow_dragon_defeated",
+]
+
+
+func _castle_is_earned(gs: Node) -> bool:
+	"""Castle Harmonia opens only after the whole W1 spine; a player who already beat Mordaine keeps access."""
+	if gs.is_story_flag_set("world1_mordaine_defeated"):
+		return true
+	for flag in W1_SPINE_FLAGS:
+		if not gs.is_story_flag_set(flag):
+			return false
+	return true
+
+
+func w1_spine_remaining(gs: Node) -> Array[String]:
+	"""Spine flags still unset, in order — for telegraphing which bosses remain."""
+	var remaining: Array[String] = []
+	if gs == null or not gs.has_method("is_story_flag_set"):
+		return remaining
+	for flag in W1_SPINE_FLAGS:
+		if not gs.is_story_flag_set(flag):
+			remaining.append(flag)
+	return remaining
+
 func _setup_transitions() -> void:
 	# Harmonia Village
 	_add_area_transition("VillageEntrance", "harmonia_village", "entrance",
@@ -379,7 +408,7 @@ func _setup_transitions() -> void:
 	# rat_king_defeated still reveals the castle. Pre-fix bare
 	# get_story_flag would silently miss that and the player would be
 	# stranded mid-W1.
-	if gs and gs.has_method("is_story_flag_set") and gs.is_story_flag_set("rat_king_defeated"):
+	if gs and gs.has_method("is_story_flag_set") and _castle_is_earned(gs):
 		_add_area_transition("CastleHarmonia", "castle_harmonia", "castle_entrance",
 			spawn_points.get("castle_entrance", Vector2.ZERO), "Enter Castle Harmonia")
 
