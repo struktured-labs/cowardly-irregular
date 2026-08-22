@@ -6,6 +6,8 @@ extends GutTest
 const Loader := preload("res://src/exploration/MapImageLoader.gd")
 const OverworldSceneScript := preload("res://src/exploration/OverworldScene.gd")
 const MAP_PNG := "res://data/maps/overworld_w1.png"
+## Palette world id -- load_rows/landmark_chars take it since the per-world palette fold.
+const WORLD := "medieval"
 
 ## The painted chars behind TileGenerator._get_impassable_types() -- WATER / MOUNTAIN / LAVA.
 const BLOCKING := ["~", "M", "l"]
@@ -19,7 +21,7 @@ var _mainland: int = -1
 
 
 func before_each() -> void:
-	_rows = Loader.load_rows(MAP_PNG)
+	_rows = Loader.load_rows(MAP_PNG, WORLD)
 	_h = _rows.size()
 	_w = 0 if _h == 0 else (_rows[0] as String).length()
 	_label_components()
@@ -96,7 +98,7 @@ func test_spawn_clearance_is_not_empty() -> void:
 
 func test_every_landmark_arrival_tile_is_on_the_mainland() -> void:
 	var clearance: Dictionary = OverworldSceneScript.SPAWN_CLEARANCE
-	var landmarks: Array = Loader.landmark_chars()
+	var landmarks: Array = Loader.landmark_chars(WORLD)
 	var checked := 0
 	var bad: Array = []
 	for y in range(_h):
