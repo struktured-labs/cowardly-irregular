@@ -117,7 +117,7 @@ func test_abilities_json_has_zero_mp_caster_moves() -> void:
 	var parsed = JSON.parse_string(text)
 	assert_true(parsed is Dictionary)
 
-	for ability_id in ["channel", "pray", "riff"]:
+	for ability_id in ["channel", "pray"]:
 		assert_true(parsed.has(ability_id),
 			"Free-Move ability '%s' must exist (regression: caster fallback)" % ability_id)
 		var a: Dictionary = parsed[ability_id]
@@ -127,3 +127,9 @@ func test_abilities_json_has_zero_mp_caster_moves() -> void:
 			"%s must use mp_restore type so BattleManager dispatches correctly" % ability_id)
 		assert_true(a.get("mp_amount", 0) > 0,
 			"%s must restore some MP (mp_amount > 0)" % ability_id)
+
+	## Riff left this family 2026-08-22 (struktured): it is a 0-MP weak strike now, not an
+	## MP battery. Still 0 MP, because a free move must cost nothing.
+	assert_true(parsed.has("riff"), "riff must exist")
+	assert_eq(parsed["riff"].get("mp_cost", -1), 0, "riff is still free to use")
+	assert_eq(parsed["riff"].get("type", ""), "physical", "riff is a strike")

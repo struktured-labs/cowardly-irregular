@@ -8,6 +8,21 @@ class_name VictoryOverlay
 ## victory_flourish off = built pre-completed. Node is named "VictoryResults" by the
 ## caller — three consumers key off that name (Select toggle, quip suppression, cleanup).
 
+## Victory grades — he asked for it to "look more amazing against bosses or OP monsters"
+enum Grade { NORMAL = 0, ELITE = 1, BOSS = 2 }
+## An ordinary monster this far above the party reads as "OP" even without a boss flag
+const OP_LEVEL_GAP := 3
+const GRADE_FONT := {Grade.NORMAL: 48, Grade.ELITE: 58, Grade.BOSS: 72}
+const GRADE_TRAUMA := {Grade.NORMAL: 0.22, Grade.ELITE: 0.38, Grade.BOSS: 0.62}
+const GRADE_ZOOM := {Grade.NORMAL: 0.035, Grade.ELITE: 0.055, Grade.BOSS: 0.085}
+const GRADE_RINGS := {Grade.NORMAL: 1, Grade.ELITE: 2, Grade.BOSS: 3}
+const GRADE_HOLD := {Grade.NORMAL: 0.45, Grade.ELITE: 0.62, Grade.BOSS: 0.95}
+const GRADE_TINT := {
+	Grade.NORMAL: Color(1.0, 0.85, 0.2),
+	Grade.ELITE: Color(1.0, 0.62, 0.95),
+	Grade.BOSS: Color(1.0, 0.97, 0.72),
+}
+
 const CARD_W := 210.0
 const CARD_H := 58.0
 const CARD_GAP := 8.0
@@ -69,18 +84,61 @@ func _track(t: Tween) -> Tween:
 
 ## -- Stage 1: VICTORY slam --------------------------------------------------
 
+## Boss > elite > normal, from the metas BattleEnemySpawner stamps plus the monster's own data.
+## The spawner sets is_boss for minibosses too, so the boss/elite split comes from monsters.json.
+func _victory_grade() -> int:
+	var grade: int = Grade.NORMAL
+	if _scene == null or not ("test_enemies" in _scene):
+		return grade
+	var party_level: int = _party_level()
+	for e in _scene.test_enemies:
+		if not is_instance_valid(e):
+			continue
+		if e.has_meta("is_boss") and e.get_meta("is_boss"):
+			var data: Dictionary = BestiarySystem.get_monster_data(str(e.get_meta("monster_type", "")))
+			grade = maxi(grade, Grade.BOSS if data.get("boss", false) else Grade.ELITE)
+		elif party_level > 0 and "job_level" in e and int(e.job_level) >= party_level + OP_LEVEL_GAP:
+			grade = maxi(grade, Grade.ELITE)
+	return grade
+
+
+func _party_level() -> int:
+	if _scene == null or not ("party_members" in _scene):
+		return 0
+	var total := 0
+	var n := 0
+	for m in _scene.party_members:
+		if is_instance_valid(m) and "job_level" in m:
+			total += int(m.job_level)
+			n += 1
+	return int(total / float(n)) if n > 0 else 0
+
+
+## The name that gets billed under VICTORY on a boss kill
+func _headline_foe() -> String:
+	if _scene == null or not ("test_enemies" in _scene):
+		return ""
+	for e in _scene.test_enemies:
+		if is_instance_valid(e) and e.has_meta("is_boss") and e.get_meta("is_boss"):
+			return str(e.combatant_name) if "combatant_name" in e else ""
+	return ""
+
+
 func _build_slam(flourish: bool) -> void:
+	var grade: int = _victory_grade()
+	var vp := get_viewport_rect().size
+	var tint: Color = GRADE_TINT[grade]
+
 	var title := Label.new()
 	title.text = "V I C T O R Y"
-	title.add_theme_font_size_override("font_size", TextScale.scaled(44))
-	title.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
-	title.add_theme_constant_override("outline_size", 3)
+	title.add_theme_font_size_override("font_size", TextScale.scaled(int(GRADE_FONT[grade])))
+	title.add_theme_color_override("font_color", tint)
+	title.add_theme_constant_override("outline_size", 3 if grade == Grade.NORMAL else 5)
 	title.add_theme_color_override("font_outline_color", Color(0.15, 0.08, 0.0))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	title.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(title)
 	title.reset_size()
-	var vp := get_viewport_rect().size
 	var center := Vector2((vp.x - title.size.x) / 2.0 - 120.0, vp.y * 0.30)
 	var docked := Vector2(center.x, 28.0)
 	title.pivot_offset = title.size / 2.0
@@ -89,23 +147,125 @@ func _build_slam(flourish: bool) -> void:
 			title.position = docked
 			title.scale = Vector2(0.55, 0.55)
 			title.modulate.a = 1.0)
+
+	var impact_at := title.position + title.pivot_offset if not flourish else center + title.pivot_offset
+	var sub: Label = null
+	if grade == Grade.BOSS:
+		sub = _build_subtitle(center, title.size, tint, flourish)
+	if grade >= Grade.ELITE:
+		_build_letterbox(vp, grade, flourish)
+
 	if not flourish:
 		return
+
 	title.position = center
-	title.scale = Vector2(2.2, 2.2)
+	title.scale = Vector2(2.6 if grade == Grade.BOSS else 2.2, 2.6 if grade == Grade.BOSS else 2.2)
 	title.modulate.a = 0.0
+
 	var tw := _track(create_tween())
-	tw.tween_property(title, "modulate:a", 1.0, 0.08)
-	tw.parallel().tween_property(title, "scale", Vector2(0.92, 1.06), 0.22) \
+	tw.tween_property(title, "modulate:a", 1.0, 0.07)
+	tw.parallel().tween_property(title, "scale", Vector2(0.92, 1.08), 0.20) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tw.tween_property(title, "scale", Vector2.ONE, 0.13) \
-		.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	tw.tween_interval(0.45)
+	tw.tween_property(title, "scale", Vector2(1.04, 0.96), 0.09).set_trans(Tween.TRANS_SINE)
+	tw.tween_property(title, "scale", Vector2.ONE, 0.11) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_interval(float(GRADE_HOLD[grade]))
 	tw.tween_property(title, "position", docked, 0.3).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN_OUT)
 	tw.parallel().tween_property(title, "scale", Vector2(0.55, 0.55), 0.3)
-	BattleJuice.punch_zoom(vp / 2.0, 0.03, 0.22)
-	if SoundManager._sfx_manifest.has("victory_slam"):
+	if sub != null:
+		var st := _track(create_tween())
+		st.tween_interval(0.20 + float(GRADE_HOLD[grade]) + 0.30)
+		st.tween_property(sub, "modulate:a", 0.0, 0.25)
+
+	_spawn_impact(impact_at, grade, tint)
+
+
+## The echo smear + expanding rings that make the landing read as an IMPACT rather than a fade-in
+func _spawn_impact(at: Vector2, grade: int, tint: Color) -> void:
+	BattleJuice.add_trauma(float(GRADE_TRAUMA[grade]))
+	BattleJuice.punch_zoom(get_viewport_rect().size / 2.0, float(GRADE_ZOOM[grade]), 0.22)
+	BattleJuice.spawn_burst(at, Vector2(0, -1), 10 + 8 * grade, tint, 180.0 + 60.0 * grade)
+	for i in range(int(GRADE_RINGS[grade])):
+		_spawn_ring(at, tint, 0.06 * i, grade)
+	if SoundManager and SoundManager._sfx_manifest.has("victory_slam"):
 		SoundManager.play_battle("victory_slam")
+
+
+func _spawn_ring(at: Vector2, tint: Color, delay: float, grade: int) -> void:
+	var ring := Panel.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0, 0, 0, 0)
+	style.border_color = tint
+	style.set_border_width_all(3)
+	style.set_corner_radius_all(90)
+	ring.add_theme_stylebox_override("panel", style)
+	ring.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ring.size = Vector2(180, 180)
+	ring.pivot_offset = ring.size / 2.0
+	ring.position = at - ring.pivot_offset
+	ring.scale = Vector2(0.2, 0.2)
+	add_child(ring)
+	_snaps.append(func() -> void:
+		if is_instance_valid(ring):
+			ring.queue_free())
+	var t := _track(create_tween())
+	t.tween_interval(delay)
+	t.tween_property(ring, "scale", Vector2(1.6 + 0.5 * grade, 1.6 + 0.5 * grade), 0.45).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	t.parallel().tween_property(ring, "modulate:a", 0.0, 0.45)
+	t.tween_callback(ring.queue_free)
+
+
+## Boss kills get billed: the foe's name under the title
+func _build_subtitle(center: Vector2, title_size: Vector2, tint: Color, flourish: bool) -> Label:
+	var foe := _headline_foe()
+	if foe == "":
+		return null
+	var sub := Label.new()
+	sub.text = "%s FELLED" % foe.to_upper()
+	sub.add_theme_font_size_override("font_size", TextScale.scaled(20))
+	sub.add_theme_color_override("font_color", tint)
+	sub.add_theme_constant_override("outline_size", 4)
+	sub.add_theme_color_override("font_outline_color", Color(0.15, 0.08, 0.0))
+	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	sub.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(sub)
+	sub.reset_size()
+	sub.position = Vector2(center.x + (title_size.x - sub.size.x) / 2.0, center.y + title_size.y + 6.0)
+	_snaps.append(func() -> void:
+		if is_instance_valid(sub):
+			sub.modulate.a = 0.0)
+	if not flourish:
+		sub.modulate.a = 0.0
+		return sub
+	sub.modulate.a = 0.0
+	var t := _track(create_tween())
+	t.tween_interval(0.34)
+	t.tween_property(sub, "modulate:a", 1.0, 0.18)
+	return sub
+
+
+## Cinematic bars for elite/boss kills — they retract with the title so the cards are never boxed in
+func _build_letterbox(vp: Vector2, grade: int, flourish: bool) -> void:
+	var h: float = 34.0 + 14.0 * (grade - Grade.ELITE)
+	for edge in [0.0, 1.0]:
+		var bar := ColorRect.new()
+		bar.color = Color(0.0, 0.0, 0.02, 0.85)
+		bar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		bar.size = Vector2(vp.x, h)
+		var shown := Vector2(0.0, (vp.y - h) * edge)
+		var hidden := Vector2(0.0, -h if edge == 0.0 else vp.y)
+		bar.position = hidden if flourish else hidden
+		add_child(bar)
+		_snaps.append(func() -> void:
+			if is_instance_valid(bar):
+				bar.queue_free())
+		if not flourish:
+			continue
+		var t := _track(create_tween())
+		t.tween_property(bar, "position", shown, 0.18).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+		t.tween_interval(float(GRADE_HOLD[grade]) + 0.30)
+		t.tween_property(bar, "position", hidden, 0.26).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+		t.tween_callback(bar.queue_free)
 
 
 ## -- Stage 2: character cards ----------------------------------------------

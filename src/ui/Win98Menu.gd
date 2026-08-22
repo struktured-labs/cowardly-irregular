@@ -163,6 +163,9 @@ const CHARACTER_STYLES = {
 var style: Dictionary = CHARACTER_STYLES["fighter"]
 var menu_items: Array = []
 var selected_index: int = 0
+var _scroll_offset: int = 0        # first visible row index
+var _max_visible_rows: int = 0     # 0 = uncapped (menu fits)
+var _items_base_y: float = 0.0
 var submenu: Win98Menu = null
 var parent_menu: Win98Menu = null
 var anchor_position: Vector2 = Vector2.ZERO
@@ -202,6 +205,29 @@ var _tooltip_label: Label = null  # Ability tooltip shown below menu
 const TILE_SIZE = 6
 const ITEM_HEIGHT = 24
 const MENU_PADDING = 12
+## Hard ceiling so a tall menu SCROLLS instead of running off the bottom of the screen.
+## struktured playtest 2026-08-22: "bard menu is cutoff on bottom" — Bard ran 10-11 rows and
+## menu_height had no cap, so _clamp_to_screen computed a negative y, hit its `y < 0` branch,
+## and pinned the panel at y=10 with the tail off-screen. Repositioning cannot fit a menu
+## taller than the viewport; only capping can.
+const MENU_SCREEN_MARGIN = 24
+## Cost suffixes render as their OWN right-aligned span, not concatenated into the name
+## (struktured 2026-08-22: the cost "should be colorized differently or stylized from the
+## other text"). Dimmer than the name so the eye reads NAME first; red when unaffordable,
+## which makes a greyed row self-explanatory without a message.
+const COST_COLOR := Color(0.65, 0.78, 0.95, 0.85)
+const COST_COLOR_UNAFFORDABLE := Color(0.92, 0.45, 0.45, 0.95)
+const COST_COLUMN_WIDTH = 46
+
+## struktured 2026-08-22: "the main battle menu for ap layer can prob be more translucent
+## not just prev ones, unclear though we need to play test it" — he flagged it as UNCERTAIN,
+## so this is one named number to move rather than a value to agonise over.
+## 0.55 is deliberately the SAME alpha cowir-cutscenes gave the speech bubbles the same
+## night; two independently-chosen values would read as sloppy, one reads as a house style.
+## BORDERS STAY OPAQUE ON PURPOSE: the frame is what keeps the menu legible over the Mode 7
+## floor and bright battle backgrounds. A menu you cannot read is worse than one that covers
+## scenery, and fading the border is what costs legibility, not fading the fill.
+const PANEL_ALPHA := 0.55
 const SUBMENU_DELAY = 0.12  # Delay before submenu expands
 
 
@@ -587,6 +613,8 @@ func _build_menu() -> void:
 		if item.has("submenu"):
 			label_text += " >"
 		var text_width = font.get_string_size(label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
+		if item.has("cost"):
+			text_width += COST_COLUMN_WIDTH  # the cost column sits to the right of the name
 		max_label_width = max(max_label_width, text_width)
 	var viewport_width = 1280
 	if is_inside_tree():
@@ -594,10 +622,20 @@ func _build_menu() -> void:
 	var menu_width = clampi(max(210, int(max_label_width) + content_padding), 210, viewport_width / 2)
 
 	var ap_label_height = 14 if (is_root_menu and battle_mode) else 0  # Only show AP in battle
-	var menu_height = MENU_PADDING * 2 + menu_items.size() * ITEM_HEIGHT + TILE_SIZE * 2 + ap_label_height
+	var chrome_height = MENU_PADDING * 2 + TILE_SIZE * 2 + ap_label_height
+	var viewport_height = 720
+	if is_inside_tree():
+		viewport_height = int(get_viewport_rect().size.y)
+	var room_for_rows = viewport_height - MENU_SCREEN_MARGIN * 2 - chrome_height
+	_max_visible_rows = maxi(1, room_for_rows / ITEM_HEIGHT)
+	if menu_items.size() <= _max_visible_rows:
+		_max_visible_rows = 0  # fits; no scrolling
+	var shown_rows = menu_items.size() if _max_visible_rows == 0 else _max_visible_rows
+	var menu_height = chrome_height + shown_rows * ITEM_HEIGHT
 
 	# Create the menu texture with pixel borders
 	var menu_panel = _create_retro_panel(menu_width, menu_height)
+	menu_panel.clip_contents = true  # rows past the cap are scrolled, not drawn outside the panel
 	add_child(menu_panel)
 
 	# AP label at top for root menu in battle mode (compact, right-aligned)
@@ -617,6 +655,8 @@ func _build_menu() -> void:
 	# Items container (offset by AP label if present)
 	var items_container = VBoxContainer.new()
 	items_container.position = Vector2(MENU_PADDING + TILE_SIZE, MENU_PADDING + TILE_SIZE + ap_label_height)
+	_items_base_y = items_container.position.y
+	_scroll_offset = 0
 	items_container.add_theme_constant_override("separation", 0)
 	menu_panel.add_child(items_container)
 
@@ -665,7 +705,7 @@ func _create_retro_panel(w: int, h: int) -> Control:
 
 	# Background
 	var bg = ColorRect.new()
-	bg.color = style.bg
+	bg.color = Color(style.bg.r, style.bg.g, style.bg.b, style.bg.a * PANEL_ALPHA)
 	bg.position = Vector2(TILE_SIZE, TILE_SIZE)
 	bg.size = Vector2(w - TILE_SIZE * 2, h - TILE_SIZE * 2)
 	panel.add_child(bg)
@@ -786,6 +826,22 @@ func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -
 	else:
 		text_label.text = label
 
+	# Cost as a separate right-aligned span so it can carry its own colour AND its own
+	# affordability tint, independent of the row's disabled state.
+	if item.has("cost"):
+		text_label.size.x -= COST_COLUMN_WIDTH
+		var cost_label = Label.new()
+		cost_label.name = "Cost"
+		cost_label.text = "%d MP" % int(item["cost"])
+		cost_label.position = Vector2(10 + text_label.size.x, 0)
+		cost_label.size = Vector2(COST_COLUMN_WIDTH - 4, ITEM_HEIGHT)
+		cost_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		cost_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		cost_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
+		var affordable: bool = bool(item.get("cost_affordable", true))
+		cost_label.add_theme_color_override("font_color", COST_COLOR if affordable else COST_COLOR_UNAFFORDABLE)
+		row.add_child(cost_label)
+
 	if disabled:
 		text_label.add_theme_color_override("font_color", style.text.darkened(0.5))
 	elif item.get("text_color", null) is Color:
@@ -815,6 +871,8 @@ func _update_selection() -> void:
 	var container = _get_items_container()
 	if not container:
 		return
+	_restore_hint_after_reason()
+	_scroll_selection_into_view(container)
 
 	for i in range(container.get_child_count()):
 		var row = container.get_child(i)
@@ -867,6 +925,7 @@ func _on_item_pressed(index: int) -> void:
 	var item = menu_items[index]
 
 	if item.get("disabled", false):
+		_reject_selection(item)
 		return
 
 	if item.has("submenu"):
@@ -917,6 +976,19 @@ func _auto_expand_submenu() -> void:
 		if _submenu_timer:
 			_submenu_timer.wait_time = SUBMENU_DELAY
 			_submenu_timer.start()
+
+
+## Keep the selected row inside the capped window. No-op when the menu fits (_max_visible_rows 0).
+func _scroll_selection_into_view(container: VBoxContainer) -> void:
+	if _max_visible_rows <= 0:
+		return
+	var last_visible: int = _scroll_offset + _max_visible_rows - 1
+	if selected_index < _scroll_offset:
+		_scroll_offset = selected_index
+	elif selected_index > last_visible:
+		_scroll_offset = selected_index - _max_visible_rows + 1
+	_scroll_offset = clampi(_scroll_offset, 0, maxi(0, menu_items.size() - _max_visible_rows))
+	container.position.y = _items_base_y - float(_scroll_offset * ITEM_HEIGHT)
 
 
 func _get_items_container() -> VBoxContainer:
@@ -1121,6 +1193,7 @@ func _handle_advance_input() -> void:
 		return
 
 	if current_item.get("disabled", false):
+		_reject_selection(current_item)
 		return
 
 	# Check if we're at the queue limit - if so, act as confirm
@@ -1243,6 +1316,7 @@ func _submit_actions() -> void:
 	var current_item = menu_items[selected_index] if selected_index >= 0 and selected_index < menu_items.size() else {}
 
 	if current_item.get("disabled", false):
+		_reject_selection(current_item)
 		return
 
 	if current_item.has("submenu"):
@@ -1333,6 +1407,36 @@ func _apply_command_memory() -> void:
 const HINT_DEFAULT_TEXT := "[L] Defer  ·  [R] Advance  ·  [X] Speed  ·  [Select] Auto"
 
 var _hint_label_cache: Label = null
+var _hint_showing_reason: bool = false
+
+
+## Selecting an unaffordable row used to fail SILENTLY — the row was already marked
+## `disabled: not can_afford`, but nothing told the player why nothing happened.
+## struktured 2026-08-22: "a wasted action because of insufficient resources - mp, ap, etc,
+## should have a noise and/or text to indicate it". menu_error is the canonical key
+## (cowir-sfx, 21 existing call sites, falls back to menu_cancel if the asset ever fails).
+func _reject_selection(item: Dictionary) -> void:
+	SoundManager.play_ui("menu_error")
+	var reason := "Can't use that right now"
+	if item.has("cost") and not bool(item.get("cost_affordable", true)):
+		reason = "Not enough MP (%d needed)" % int(item.get("cost", 0))
+	elif item.has("ap_cost"):
+		reason = "Not enough AP"
+	var label := _find_hint_label()
+	if label:
+		label.text = reason
+		_hint_showing_reason = true
+
+
+## Restore the hint bar as soon as the player moves — no timer, so it cannot drift with
+## Engine.time_scale the way a create_timer() restore would at 4x/8x battle speed.
+func _restore_hint_after_reason() -> void:
+	if not _hint_showing_reason:
+		return
+	_hint_showing_reason = false
+	var label := _find_hint_label()
+	if label:
+		label.text = HINT_DEFAULT_TEXT
 
 
 func _find_hint_label() -> Label:

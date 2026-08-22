@@ -112,7 +112,7 @@ func test_live_job_data_yields_expected_hints() -> void:
 		return
 	assert_eq(m._free_move_hint(channel), "MP+ self", "live channel ability hint")
 	assert_eq(m._free_move_hint(pray), "MP+ ally", "live pray ability hint")
-	assert_eq(m._free_move_hint(riff), "MP+ party", "live riff ability hint")
+	assert_eq(m._free_move_hint(riff), "", "riff is a physical strike now — no MP/heal hint (struktured 2026-08-22)")
 
 
 # ── basic_attack path unchanged (Fighter/Rogue Strike/Attack) ──────────
@@ -123,7 +123,7 @@ func test_basic_attack_path_does_not_call_hint_helper() -> void:
 	# noisy for self-explanatory melee.
 	var src: String = FileAccess.get_file_as_string("res://src/battle/BattleCommandMenu.gd")
 	# Find _build_free_move_item function body.
-	var fn_idx: int = src.find("func _build_free_move_item")
+	var fn_idx: int = src.find("func _build_attack_item")  # basic_attack branch moved here 2026-08-22
 	assert_gt(fn_idx, -1)
 	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
 	var body: String = src.substr(fn_idx, next_fn - fn_idx)
