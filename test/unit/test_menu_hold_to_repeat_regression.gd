@@ -14,12 +14,18 @@ const ACTION := "ui_down"
 
 
 func before_each() -> void:
-	Input.action_release(ACTION)
+	for a in ["ui_up", "ui_down", "ui_left", "ui_right"]:
+		if InputMap.has_action(a):
+			Input.action_release(a)
 
 
 func after_each() -> void:
-	# A leaked press drags later physics/menu tests — documented hazard in CLAUDE.md.
-	Input.action_release(ACTION)
+	# A leaked press drags later physics/menu tests — CLAUDE.md records 24px of drift on a
+	# "stationary" player from a stuck ui_down. Release EVERY direction this file can press:
+	# a mid-test abort skips the in-body release, and after_each is the only guaranteed exit.
+	for a in ["ui_up", "ui_down", "ui_left", "ui_right"]:
+		if InputMap.has_action(a):
+			Input.action_release(a)
 
 
 func _held_ticks(r, seconds: float, step: float = 1.0 / 60.0) -> int:
