@@ -862,6 +862,82 @@
     ],
     "undead": true
   },
+  "ogre": {
+    "id": "ogre",
+    "name": "Ogre",
+    "description": "Enormous, slow, and entirely uninterested in your plan. Hits once; that is usually enough.",
+    "level": 7,
+    "stats": {
+      "max_hp": 2600,
+      "max_mp": 10,
+      "attack": 520,
+      "defense": 230,
+      "magic": 40,
+      "magic_defense": 70,
+      "speed": 4
+    },
+    "abilities": [
+      "smash",
+      "ground_pound",
+      "enrage"
+    ],
+    "exp_reward": 60,
+    "gold_reward": 40,
+    "drop_table": [
+      {
+        "item": "beast_hide",
+        "chance": 0.35
+      },
+      {
+        "item": "hi_potion",
+        "chance": 0.25
+      }
+    ],
+    "weaknesses": [
+      "lightning",
+      "ice"
+    ],
+    "resistances": [
+      "physical"
+    ]
+  },
+  "barbarian": {
+    "id": "barbarian",
+    "name": "Barbarian Raider",
+    "description": "A human who solved every previous problem with an axe and sees no reason to change method.",
+    "level": 7,
+    "stats": {
+      "max_hp": 1750,
+      "max_mp": 20,
+      "attack": 500,
+      "defense": 150,
+      "magic": 50,
+      "magic_defense": 60,
+      "speed": 11
+    },
+    "abilities": [
+      "cleave",
+      "frenzy",
+      "armor_break"
+    ],
+    "exp_reward": 55,
+    "gold_reward": 55,
+    "drop_table": [
+      {
+        "item": "potion",
+        "chance": 0.3
+      },
+      {
+        "item": "bone",
+        "chance": 0.2
+      }
+    ],
+    "weaknesses": [
+      "ice",
+      "holy"
+    ],
+    "resistances": []
+  },
   "cave_troll": {
     "id": "cave_troll",
     "name": "Cave Troll",

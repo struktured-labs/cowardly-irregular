@@ -26,8 +26,7 @@
   "cave_floor_5": [
     "goblin",
     "rat_guard",
-    "diseased_rat"
-  ],
+    "diseased_rat", "ogre"],
   "cave_floor_6": [],
   "forest_dungeon": [
     "wolf",
@@ -68,8 +67,7 @@
     "imp",
     "skeleton",
     "troll",
-    "skeleton_soldier"
-  ],
+    "skeleton_soldier", "ogre", "barbarian"],
   "overworld_coast": [
     "slime",
     "bat",
