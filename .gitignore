@@ -110,3 +110,7 @@ assets/sprites/drive_archive/
 # not game assets. Godot imports them anyway and mints a fresh uid per worktree (measured:
 # 4 worktrees, 4 uids), so tracking the sidecar would block every other tree's next merge.
 assets/sprites/jobs/*_sdxl/hero_reference.png.import
+
+# Sandboxed XDG_DATA_HOME roots for headless runs -- never repo content.
+tmp-xdg/
+**/app_userdata/
