@@ -1801,103 +1801,128 @@
     },
     "voice_fighter_big_hit_taken": {
       "file": "assets/audio/sfx/voice_fighter_big_hit_taken.ogg",
-      "description": "Fighter party voice line — big hit taken"
+      "description": "Fighter party voice line — big hit taken",
+      "source_sha": "3bd3ce40af315843"
     },
     "voice_fighter_low_hp": {
       "file": "assets/audio/sfx/voice_fighter_low_hp.ogg",
-      "description": "Fighter party voice line — low hp"
+      "description": "Fighter party voice line — low hp",
+      "source_sha": "7874df44d36d0d80"
     },
     "voice_fighter_turn_start": {
       "file": "assets/audio/sfx/voice_fighter_turn_start.ogg",
-      "description": "Fighter party voice line — turn start"
+      "description": "Fighter party voice line — turn start",
+      "source_sha": "4bd005830510c7b9"
     },
     "voice_fighter_used_signature_ability": {
       "file": "assets/audio/sfx/voice_fighter_used_signature_ability.ogg",
-      "description": "Fighter party voice line — used signature ability"
+      "description": "Fighter party voice line — used signature ability",
+      "source_sha": "116a58d4cfcac432"
     },
     "voice_fighter_victory": {
       "file": "assets/audio/sfx/voice_fighter_victory.ogg",
-      "description": "Fighter party voice line — victory"
+      "description": "Fighter party voice line — victory",
+      "source_sha": "37c8ba14d73c4b81"
     },
     "voice_cleric_big_hit_taken": {
       "file": "assets/audio/sfx/voice_cleric_big_hit_taken.ogg",
-      "description": "Cleric party voice line — big hit taken"
+      "description": "Cleric party voice line — big hit taken",
+      "source_sha": "ba16ce8ba4b77b68"
     },
     "voice_cleric_low_hp": {
       "file": "assets/audio/sfx/voice_cleric_low_hp.ogg",
-      "description": "Cleric party voice line — low hp"
+      "description": "Cleric party voice line — low hp",
+      "source_sha": "2eb5406eb4e6d995"
     },
     "voice_cleric_turn_start": {
       "file": "assets/audio/sfx/voice_cleric_turn_start.ogg",
-      "description": "Cleric party voice line — turn start"
+      "description": "Cleric party voice line — turn start",
+      "source_sha": "9f6001bd1547a136"
     },
     "voice_cleric_used_signature_ability": {
       "file": "assets/audio/sfx/voice_cleric_used_signature_ability.ogg",
-      "description": "Cleric party voice line — used signature ability"
+      "description": "Cleric party voice line — used signature ability",
+      "source_sha": "6371613699a57f54"
     },
     "voice_cleric_victory": {
       "file": "assets/audio/sfx/voice_cleric_victory.ogg",
-      "description": "Cleric party voice line — victory"
+      "description": "Cleric party voice line — victory",
+      "source_sha": "1754606f50098e8c"
     },
     "voice_mage_big_hit_taken": {
       "file": "assets/audio/sfx/voice_mage_big_hit_taken.ogg",
-      "description": "Mage party voice line — big hit taken"
+      "description": "Mage party voice line — big hit taken",
+      "source_sha": "49716e85f18bf0d6"
     },
     "voice_mage_low_hp": {
       "file": "assets/audio/sfx/voice_mage_low_hp.ogg",
-      "description": "Mage party voice line — low hp"
+      "description": "Mage party voice line — low hp",
+      "source_sha": "073cadc3d500c7fd"
     },
     "voice_mage_turn_start": {
       "file": "assets/audio/sfx/voice_mage_turn_start.ogg",
-      "description": "Mage party voice line — turn start"
+      "description": "Mage party voice line — turn start",
+      "source_sha": "da783b6178f3a3dd"
     },
     "voice_mage_used_signature_ability": {
       "file": "assets/audio/sfx/voice_mage_used_signature_ability.ogg",
-      "description": "Mage party voice line — used signature ability"
+      "description": "Mage party voice line — used signature ability",
+      "source_sha": "fa2932d059b1d69e"
     },
     "voice_mage_victory": {
       "file": "assets/audio/sfx/voice_mage_victory.ogg",
-      "description": "Mage party voice line — victory"
+      "description": "Mage party voice line — victory",
+      "source_sha": "9c1745aa55f79fb8"
     },
     "voice_rogue_big_hit_taken": {
       "file": "assets/audio/sfx/voice_rogue_big_hit_taken.ogg",
-      "description": "Rogue party voice line — big hit taken"
+      "description": "Rogue party voice line — big hit taken",
+      "source_sha": "23d141bc777d7aa1"
     },
     "voice_rogue_low_hp": {
       "file": "assets/audio/sfx/voice_rogue_low_hp.ogg",
-      "description": "Rogue party voice line — low hp"
+      "description": "Rogue party voice line — low hp",
+      "source_sha": "562476471df280e4"
     },
     "voice_rogue_turn_start": {
       "file": "assets/audio/sfx/voice_rogue_turn_start.ogg",
-      "description": "Rogue party voice line — turn start"
+      "description": "Rogue party voice line — turn start",
+      "source_sha": "c2ff57a4502337fb"
     },
     "voice_rogue_used_signature_ability": {
       "file": "assets/audio/sfx/voice_rogue_used_signature_ability.ogg",
-      "description": "Rogue party voice line — used signature ability"
+      "description": "Rogue party voice line — used signature ability",
+      "source_sha": "98b107347156da39"
     },
     "voice_rogue_victory": {
       "file": "assets/audio/sfx/voice_rogue_victory.ogg",
-      "description": "Rogue party voice line — victory"
+      "description": "Rogue party voice line — victory",
+      "source_sha": "c69501a71f6e09c1"
     },
     "voice_bard_big_hit_taken": {
       "file": "assets/audio/sfx/voice_bard_big_hit_taken.ogg",
-      "description": "Bard party voice line — big hit taken"
+      "description": "Bard party voice line — big hit taken",
+      "source_sha": "457037eefb862068"
     },
     "voice_bard_low_hp": {
       "file": "assets/audio/sfx/voice_bard_low_hp.ogg",
-      "description": "Bard party voice line — low hp"
+      "description": "Bard party voice line — low hp",
+      "source_sha": "3e531210c17b1171"
     },
     "voice_bard_turn_start": {
       "file": "assets/audio/sfx/voice_bard_turn_start.ogg",
-      "description": "Bard party voice line — turn start"
+      "description": "Bard party voice line — turn start",
+      "source_sha": "5d9fe0e133d5ab45"
     },
     "voice_bard_used_signature_ability": {
       "file": "assets/audio/sfx/voice_bard_used_signature_ability.ogg",
-      "description": "Bard party voice line — used signature ability"
+      "description": "Bard party voice line — used signature ability",
+      "source_sha": "b1b5016e3680c9fe"
     },
     "voice_bard_victory": {
       "file": "assets/audio/sfx/voice_bard_victory.ogg",
-      "description": "Bard party voice line — victory"
+      "description": "Bard party voice line — victory",
+      "source_sha": "547e1f6414605f33"
     }
   }
 }
