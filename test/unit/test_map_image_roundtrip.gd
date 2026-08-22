@@ -8,6 +8,16 @@ extends GutTest
 ## image they now guard -- that ordering is the whole reason they are worth anything. Had
 ## they been read out of the PNG, they would assert only that the PNG equals itself.
 ##
+## SECOND DERIVATION, 2026-08-22 (#15, 100x70 -> 200x140). The landmark coordinates were
+## NOT re-read from the new PNG -- that would have collapsed them into "the PNG equals
+## itself", the exact failure the paragraph above exists to prevent. They are the ORIGINAL
+## ASCII-derived coordinates multiplied by the scale factor 2, so they still descend from a
+## source independent of the image. The census could not be transformed that cleanly (a
+## landmark's 2x2 block keeps 1 landmark pixel and yields 3 to fill terrain), so it is
+## checked against a LAW rather than copied: every terrain char must be exactly 4x its old
+## count plus fill, the total surplus must equal 3 x 15 landmarks, and the whole census must
+## tile 200x140. Measured surplus 45 == 3 x 15. A miscount fails that arithmetic.
+##
 ## WHAT THIS EXISTS TO CATCH. 12 of the 25 map characters appear EXACTLY ONCE: every
 ## landmark is a single pixel. `_register_spawn_point` keys on the CHARACTER, so one stray
 ## paint stroke deletes a dragon cave's arrival coordinate with no error anywhere -- the
@@ -20,30 +30,33 @@ const SceneScript := preload("res://src/exploration/OverworldScene.gd")
 const MAP_PNG := "res://data/maps/overworld_w1.png"
 const SCENE_GD := "res://src/exploration/OverworldScene.gd"
 
-const GOLDEN_W := 100
-const GOLDEN_H := 70
+const GOLDEN_W := 200
+const GOLDEN_H := 140
 
 const GOLDEN_LANDMARKS := {
-	"1": ["10,4"],
-	"2": ["75,6"],
-	"3": ["10,57"],
-	"4": ["82,56"],
-	"C": ["3,20", "2,21"],
-	"D": ["10,55"],
-	"E": ["29,6"],
-	"G": ["73,8"],
-	"H": ["6,2", "81,50"],
-	"I": ["81,58"],
-	"P": ["39,57"],
-	"V": ["4,25"],
-	"W": ["9,6"],
+	"1": ["20,8"],
+	"2": ["150,12"],
+	"3": ["20,114"],
+	"4": ["164,112"],
+	"C": ["6,40", "4,42"],
+	"D": ["20,110"],
+	"E": ["58,12"],
+	"G": ["146,16"],
+	"H": ["12,4", "162,100"],
+	"I": ["162,116"],
+	"P": ["78,114"],
+	"V": ["8,50"],
+	"W": ["18,12"],
 }
 
 const GOLDEN_CENSUS := {
-	".": 3386, "1": 1, "2": 1, "3": 1, "4": 1, "B": 21, "C": 2, "D": 1,
-	"E": 1, "F": 225, "G": 1, "H": 2, "I": 1, "M": 213, "P": 1, "S": 61,
-	"V": 1, "W": 1, "c": 126, "d": 175, "g": 518, "i": 97, "l": 108,
-	"s": 380, "~": 1675,
+	".": 13583, "1": 1, "2": 1, "3": 1,
+	"4": 1, "B": 84, "C": 2, "D": 1,
+	"E": 1, "F": 900, "G": 1, "H": 2,
+	"I": 1, "M": 855, "P": 1, "S": 244,
+	"V": 1, "W": 1, "c": 504, "d": 700,
+	"g": 2075, "i": 388, "l": 432, "s": 1520,
+	"~": 6700,
 }
 
 

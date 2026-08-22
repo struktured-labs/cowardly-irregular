@@ -19,8 +19,8 @@ signal battle_triggered(enemies: Array, terrain: String)
 signal area_transition(target_map: String, spawn_point: String)
 
 ## Map dimensions (in tiles)
-const MAP_WIDTH: int = 100
-const MAP_HEIGHT: int = 70
+const MAP_WIDTH: int = 200
+const MAP_HEIGHT: int = 140
 
 ## The painted character grid, kept so encounter zones can read the authored biome
 var map_rows: Array[String] = []
@@ -257,7 +257,7 @@ func _generate_map() -> void:
 	print("Tile counts: ", tile_counts)
 
 	# Default spawn: central grassland (column 40, row 25 — clear of water)
-	spawn_points["default"] = Vector2(40 * TILE_SIZE + TILE_SIZE / 2, 25 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["default"] = Vector2(80 * TILE_SIZE + TILE_SIZE / 2, 50 * TILE_SIZE + TILE_SIZE / 2)
 
 
 ## Markers sit under ridge; the Mode 7 collider shift drops that ridge onto the marker tile, so these arrivals step aside to ground that is clear in the DISPLACED frame.
