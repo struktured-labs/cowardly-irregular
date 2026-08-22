@@ -80,24 +80,37 @@ func test_the_procedural_goblin_is_no_longer_a_war_chant() -> void:
 		"the procedural goblin bass is war drums again")
 
 
-func test_the_goblin_melody_IS_chromatic_not_pentatonic() -> void:
-	## Asserts the NOTES, not the comments. A previous version pinned comment text
-	## ("TRIBAL A MINOR") — passes if someone restores the pentatonic arrays under a
-	## reworded comment, reds if someone rewords a comment over correct notes.
-	##
-	## Bb4/Gs4 occur 96/2 times ELSEWHERE in this file, so a whole-file contains() is
-	## hollow. The arm MUST be extracted, and a missing anchor must fail rather than
-	## silently widen to the rest of the file (measured: 53x the intended corpus).
-	var src: String = _sm_source()
-	var at: int = src.find('\t\t"goblin":')
-	assert_gt(at, 0, "the goblin melody arm is gone from _get_monster_melody")
-	var rest: String = src.substr(at)
-	var stop: int = rest.find('\t\t"wolf":')
-	assert_gt(stop, 0, "SCOPE: the arm's end anchor \"wolf\": is gone — refusing to assert against an unbounded slice")
-	var arm: String = rest.substr(0, stop)
-	assert_lt(arm.length(), 6000, "SCOPE: extracted %d chars — that is the whole file, not one arm" % arm.length())
+## A4, C5, E4, E5, G4 — the exact pitch set of main's pentatonic goblin war chant.
+const WAR_CHANT_PITCHES: Array[float] = [440.0, 523.25, 329.63, 659.25, 392.0]
 
-	## main's war chant is pentatonic A-minor: exactly {A4, C5, E4, E5, G4}.
-	## These three tones cannot occur in it, so they are positive evidence of re-authoring.
-	for tone in ["Bb4", "Gs4", "Eb5"]:
-		assert_true(arm.contains(tone), "the goblin melody has no %s. Those are chromatic tones impossible in the pentatonic war chant this replaced — the tribal notes are back, whatever the comments say." % tone)
+func _distinct_pitches(mel: Array) -> Array:
+	var seen: Dictionary = {}
+	for n in mel:
+		var f: float = float(n)
+		if f > 0.0:
+			seen[snappedf(f, 0.01)] = true
+	return seen.keys()
+
+func test_the_goblin_melody_IS_chromatic_not_pentatonic() -> void:
+	## CONVERTED from a source pin. Two earlier drafts of this arm were hollow: one pinned
+	## comment text, one pinned note names against a slice whose end anchor I guessed —
+	## and on a wrong guess the extraction silently widened to the whole file, 53x over.
+	## Calling the generator removes the mechanism instead of guarding it: no anchor to
+	## miss, no corpus to widen, and it asserts the data the synthesizer actually plays.
+	var mel: Array = SoundManager._get_monster_melody("goblin")
+	assert_gt(mel.size(), 100, "SCOPE control: the goblin melody came back %d notes" % mel.size())
+
+	var outside: Array = []
+	for p in _distinct_pitches(mel):
+		if not WAR_CHANT_PITCHES.has(p):
+			outside.append(p)
+	assert_gt(outside.size(), 0, "every pitch in the goblin melody belongs to the pentatonic war-chant set {A4,C5,E4,E5,G4} — the tribal theme is back in the data, whatever the comments say")
+
+func test_CONTROL_the_pentatonic_detector_can_still_say_pentatonic() -> void:
+	## Without this, the arm above passes on ANY melody and proves nothing about goblin.
+	var fake: Array = [440.0, 523.25, 0, 329.63, 659.25, 392.0, 0, 440.0]
+	var outside: Array = []
+	for p in _distinct_pitches(fake):
+		if not WAR_CHANT_PITCHES.has(p):
+			outside.append(p)
+	assert_eq(outside.size(), 0, "the detector flags a genuinely pentatonic line as chromatic — it cannot distinguish anything")
