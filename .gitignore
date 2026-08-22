@@ -111,6 +111,6 @@ assets/sprites/drive_archive/
 # 4 worktrees, 4 uids), so tracking the sidecar would block every other tree's next merge.
 assets/sprites/jobs/*_sdxl/hero_reference.png.import
 
-# Sandboxed XDG_DATA_HOME roots for headless runs -- never repo content.
+# sandbox roots for XDG_DATA_HOME — a godot run materialises app_userdata here
 tmp-xdg/
-**/app_userdata/
+tmp-*/
