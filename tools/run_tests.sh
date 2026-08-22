@@ -190,6 +190,19 @@ run_gut() {
   exit "$ec"
 }
 
+# Extra arguments are SILENTLY DROPPED by the dispatcher below — every branch reads $1
+# and nothing reads $2..$N, so `run_tests.sh A B` runs A alone with a valid Totals block,
+# Scripts 1 and EC 0, which is indistinguishable from a correct single-file run. The
+# wrapper's own per-file vacuity arm cannot catch it: that arm is gated on -gdir, and the
+# named-file branches take -gtest, so it is off on precisely the path that loses files.
+# (GUT's stacked -gselect drops in the OPPOSITE direction, keeping the LAST file.)
+# Exit 2 is the documented "bad invocation" code.
+if [ "$#" -gt 1 ]; then
+  echo "run_tests.sh: takes at most one test name; got $# ($*)" >&2
+  echo "  to run several files in one process, use repeated -gtest= via gut_cmdln.gd" >&2
+  exit 2
+fi
+
 case "${1:-}" in
   "")          require_test_dir "test/unit";     run_gut -gdir=res://test/unit ;;
   --isolated)  require_test_dir "test/isolated"; run_gut -gdir=res://test/isolated ;;
