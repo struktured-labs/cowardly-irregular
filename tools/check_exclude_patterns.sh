@@ -72,6 +72,22 @@ _count_ever() {  # files EVER added anywhere in history matching the pattern
 # WARNS, does not block. A preset legitimately may carry no exclude_filter — that ships
 # everything, which is a decision, not a parse failure. Blocking here would refuse a
 # correct config; staying silent would let a partial audit read as a full one.
+# ENUMERATE FIRST, AND PROVE THE ENUMERATION IS NON-EMPTY. This guard exists so that
+# "covered and clean" and "never looked at" stop printing the same — and its own section
+# scan had exactly that defect: if /^\[preset\.N\]/ stops matching (Godot renames the
+# section, adds whitespace, changes the numbering), awk prints nothing, UNCOVERED is
+# empty, and the guard is SILENT — byte-identical to a clean audit.
+# MEASURED 2026-08-22: headers rewritten to [exportpreset.N] -> 0 sections enumerated,
+# EC=0, no COVERAGE line, output indistinguishable from the real config's.
+# This is cowir-sprites' rule — "a guard that enumerates from the data it checks can only
+# confirm that data agrees with itself" — and the fix is to check the ENUMERATION against
+# something the enumeration cannot produce: the raw section count.
+SECTIONS="$(command grep -ac '^\[preset\.[0-9]*\]' "$CFG" || true)"
+[ "${SECTIONS:-0}" -gt 0 ] || {
+  echo "[patterns] BLOCKED: parsed 0 preset sections from $CFG — the section scan is wrong," >&2
+  echo "        not the config. A zero here would otherwise print as a clean coverage" >&2
+  echo "        report, which is the exact confusion this guard exists to prevent." >&2; exit 2; }
+
 UNCOVERED="$(awk '
     /^\[preset\.[0-9]+\]/ { if (s != "" && !f) print s; s = $0; f = 0; next }
     /^exclude_filter=/    { if (s != "") f = 1 }
