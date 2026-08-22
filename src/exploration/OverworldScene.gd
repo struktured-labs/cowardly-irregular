@@ -13,6 +13,8 @@ const MapImageLoaderScript = preload("res://src/exploration/MapImageLoader.gd")
 
 ## The map is a 1px-per-tile PNG, not an ASCII literal -- see MapImageLoader for why.
 const MAP_IMAGE: String = "res://data/maps/overworld_w1.png"
+## Which palette decodes MAP_IMAGE. Required: the same character means different things per world
+const MAP_WORLD: String = "medieval"
 
 signal exploration_ready()
 signal battle_triggered(enemies: Array, terrain: String)
@@ -231,7 +233,7 @@ func _generate_map() -> void:
 
 	map_rows.clear()
 	# str() coercion, not `= load_rows(...)`: a generic-to-typed assign ABORTS this function
-	for row in MapImageLoaderScript.load_rows(MAP_IMAGE):
+	for row in MapImageLoaderScript.load_rows(MAP_IMAGE, MAP_WORLD):
 		map_rows.append(str(row))
 
 	# no padding: the old water-pad turned a failed load into a silent ocean

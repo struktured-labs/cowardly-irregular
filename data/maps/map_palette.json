@@ -1,35 +1,349 @@
 {
-  "version": 1,
-  "_note": "SINGLE SOURCE OF TRUTH for the overworld map image format. Both tools/map_ascii_to_png.py and src/exploration/MapImageLoader.gd read THIS FILE. Do not transcribe these values into either one — a second copy is how a mapping silently drifts.",
-  "_format": "One pixel per tile. The pixel encodes the MAP CHARACTER, not the tile type: _char_to_tile_type collapses 25 chars into ~12 visual types (all four dragon caves return CAVE_ENTRANCE), so a tile-type image cannot round-trip and would erase every landmark's spawn identity.",
-  "_authoring": "Paint at 1px = 1 tile. Colours are exact-match; an unknown colour is a hard error naming its coordinate, never a silent fallback. Terrain colours are naturalistic so the map reads while painting; landmark colours are deliberately vivid and far apart in RGB because most landmarks are a SINGLE PIXEL and must survive a stray stroke being noticed.",
-  "terrain": {
-    "~": { "rgb": [0, 80, 160], "name": "water" },
-    "c": { "rgb": [120, 190, 220], "name": "coast" },
-    ".": { "rgb": [200, 180, 130], "name": "path" },
-    "g": { "rgb": [80, 160, 70], "name": "grass" },
-    "F": { "rgb": [30, 100, 45], "name": "forest" },
-    "M": { "rgb": [130, 130, 130], "name": "mountain" },
-    "s": { "rgb": [230, 210, 150], "name": "sand" },
-    "i": { "rgb": [200, 235, 245], "name": "ice" },
-    "S": { "rgb": [90, 110, 60], "name": "swamp" },
-    "d": { "rgb": [70, 50, 90], "name": "dark_ground" },
-    "l": { "rgb": [220, 70, 20], "name": "lava" },
-    "B": { "rgb": [150, 100, 55], "name": "bridge" }
-  },
-  "landmarks": {
-    "C": { "rgb": [255, 0, 255], "name": "whispering_cave" },
-    "V": { "rgb": [255, 255, 0], "name": "harmonia_village" },
-    "1": { "rgb": [0, 255, 255], "name": "ice_dragon_cave" },
-    "2": { "rgb": [128, 0, 255], "name": "shadow_dragon_cave" },
-    "3": { "rgb": [255, 128, 0], "name": "lightning_dragon_cave" },
-    "4": { "rgb": [255, 0, 0], "name": "fire_dragon_cave" },
-    "W": { "rgb": [255, 255, 255], "name": "frosthold" },
-    "E": { "rgb": [0, 255, 0], "name": "eldertree" },
-    "G": { "rgb": [150, 150, 0], "name": "grimhollow" },
-    "D": { "rgb": [255, 200, 100], "name": "sandrift" },
-    "I": { "rgb": [180, 180, 255], "name": "ironhaven" },
-    "P": { "rgb": [255, 0, 128], "name": "steampunk_portal" },
-    "H": { "rgb": [0, 128, 255], "name": "hidden_passage" }
+  "version": 2,
+  "_note": "SINGLE SOURCE OF TRUTH for the overworld map image format. Both tools/map_ascii_to_png.py and src/exploration/MapImageLoader.gd read THIS FILE. Do not transcribe these values into either one -- a second copy is how a mapping silently drifts.",
+  "_per_world": "THE PALETTE IS PER WORLD AND THE WORLD ID IS REQUIRED. Measured 2026-08-22: 48 distinct map characters across the six worlds, 30 used by more than one world, and ZERO of those 30 meaning the same thing in two. 'c' is COAST in medieval, BASKETBALL_COURT in suburban, CONCRETE in steampunk, CONVEYOR_BELT in industrial, CIRCUIT_FLOOR in futuristic. A shared table cannot serve two worlds, and the failure mode is silent: an image decoded against the wrong world's table yields a PLAUSIBLE MAP MADE OF THE WRONG TILES, not an error. So the loader takes a world id and refuses an unknown one rather than defaulting.",
+  "_format": "One pixel per tile. The pixel encodes the MAP CHARACTER, not the tile type: _char_to_tile_type collapses many chars into fewer visual types (all four dragon caves return CAVE_ENTRANCE), so a tile-type image cannot round-trip and would erase every landmark's spawn identity.",
+  "_authoring": "Paint at 1px = 1 tile. Colours are exact-match WITHIN A WORLD; an unknown colour is a hard error naming its coordinate, never a silent fallback. Terrain colours are naturalistic so the map reads while painting; landmark colours are deliberately vivid and far apart in RGB because most landmarks are a SINGLE PIXEL and must survive a stray stroke being noticed. Colours may repeat ACROSS worlds -- they are only ever resolved against one world's table.",
+  "worlds": {
+    "medieval": {
+      "terrain": {
+        "~": {
+          "rgb": [
+            0,
+            80,
+            160
+          ],
+          "name": "water"
+        },
+        "c": {
+          "rgb": [
+            120,
+            190,
+            220
+          ],
+          "name": "coast"
+        },
+        ".": {
+          "rgb": [
+            200,
+            180,
+            130
+          ],
+          "name": "path"
+        },
+        "g": {
+          "rgb": [
+            80,
+            160,
+            70
+          ],
+          "name": "grass"
+        },
+        "F": {
+          "rgb": [
+            30,
+            100,
+            45
+          ],
+          "name": "forest"
+        },
+        "M": {
+          "rgb": [
+            130,
+            130,
+            130
+          ],
+          "name": "mountain"
+        },
+        "s": {
+          "rgb": [
+            230,
+            210,
+            150
+          ],
+          "name": "sand"
+        },
+        "i": {
+          "rgb": [
+            200,
+            235,
+            245
+          ],
+          "name": "ice"
+        },
+        "S": {
+          "rgb": [
+            90,
+            110,
+            60
+          ],
+          "name": "swamp"
+        },
+        "d": {
+          "rgb": [
+            70,
+            50,
+            90
+          ],
+          "name": "dark_ground"
+        },
+        "l": {
+          "rgb": [
+            220,
+            70,
+            20
+          ],
+          "name": "lava"
+        },
+        "B": {
+          "rgb": [
+            150,
+            100,
+            55
+          ],
+          "name": "bridge"
+        }
+      },
+      "landmarks": {
+        "C": {
+          "rgb": [
+            255,
+            0,
+            255
+          ],
+          "name": "whispering_cave"
+        },
+        "V": {
+          "rgb": [
+            255,
+            255,
+            0
+          ],
+          "name": "harmonia_village"
+        },
+        "1": {
+          "rgb": [
+            0,
+            255,
+            255
+          ],
+          "name": "ice_dragon_cave"
+        },
+        "2": {
+          "rgb": [
+            128,
+            0,
+            255
+          ],
+          "name": "shadow_dragon_cave"
+        },
+        "3": {
+          "rgb": [
+            255,
+            128,
+            0
+          ],
+          "name": "lightning_dragon_cave"
+        },
+        "4": {
+          "rgb": [
+            255,
+            0,
+            0
+          ],
+          "name": "fire_dragon_cave"
+        },
+        "W": {
+          "rgb": [
+            255,
+            255,
+            255
+          ],
+          "name": "frosthold"
+        },
+        "E": {
+          "rgb": [
+            0,
+            255,
+            0
+          ],
+          "name": "eldertree"
+        },
+        "G": {
+          "rgb": [
+            150,
+            150,
+            0
+          ],
+          "name": "grimhollow"
+        },
+        "D": {
+          "rgb": [
+            255,
+            200,
+            100
+          ],
+          "name": "sandrift"
+        },
+        "I": {
+          "rgb": [
+            180,
+            180,
+            255
+          ],
+          "name": "ironhaven"
+        },
+        "P": {
+          "rgb": [
+            255,
+            0,
+            128
+          ],
+          "name": "steampunk_portal"
+        },
+        "H": {
+          "rgb": [
+            0,
+            128,
+            255
+          ],
+          "name": "hidden_passage"
+        }
+      }
+    },
+    "suburban": {
+      "terrain": {
+        "r": {
+          "rgb": [
+            70,
+            70,
+            78
+          ],
+          "name": "road"
+        },
+        "s": {
+          "rgb": [
+            176,
+            176,
+            172
+          ],
+          "name": "sidewalk"
+        },
+        "k": {
+          "rgb": [
+            120,
+            120,
+            128
+          ],
+          "name": "parking_lot"
+        },
+        "l": {
+          "rgb": [
+            95,
+            175,
+            80
+          ],
+          "name": "lawn"
+        },
+        "g": {
+          "rgb": [
+            210,
+            110,
+            160
+          ],
+          "name": "flower_bed"
+        },
+        "c": {
+          "rgb": [
+            192,
+            122,
+            70
+          ],
+          "name": "basketball_court"
+        },
+        "p": {
+          "rgb": [
+            235,
+            150,
+            60
+          ],
+          "name": "playground"
+        },
+        "d": {
+          "rgb": [
+            132,
+            60,
+            45
+          ],
+          "name": "house_door"
+        },
+        "h": {
+          "rgb": [
+            200,
+            170,
+            140
+          ],
+          "name": "house_wall"
+        },
+        "w": {
+          "rgb": [
+            150,
+            200,
+            232
+          ],
+          "name": "house_window"
+        },
+        "t": {
+          "rgb": [
+            60,
+            140,
+            150
+          ],
+          "name": "store_front"
+        },
+        "f": {
+          "rgb": [
+            226,
+            220,
+            205
+          ],
+          "name": "picket_fence"
+        },
+        "e": {
+          "rgb": [
+            35,
+            95,
+            50
+          ],
+          "name": "shade_tree"
+        },
+        "b": {
+          "rgb": [
+            110,
+            70,
+            45
+          ],
+          "name": "park_bench"
+        },
+        "m": {
+          "rgb": [
+            90,
+            110,
+            142
+          ],
+          "name": "mailbox"
+        },
+        "y": {
+          "rgb": [
+            200,
+            40,
+            40
+          ],
+          "name": "fire_hydrant"
+        }
+      },
+      "landmarks": {},
+      "_landmarks_note": "SuburbanOverworld places its portals and village entrances by explicit Vector2 coordinate in _setup_transitions(), not by a map character. So this section is legitimately empty until W2 migrates to an image; it is not an oversight."
+    }
   }
 }

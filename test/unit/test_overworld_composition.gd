@@ -22,6 +22,7 @@ extends GutTest
 
 const Loader := preload("res://src/exploration/MapImageLoader.gd")
 const MAP_PNG := "res://data/maps/overworld_w1.png"
+const WORLD := "medieval"
 
 ## WATER / MOUNTAIN / LAVA -- the painted chars behind TileGenerator._get_impassable_types()
 const BLOCKING := ["~", "M", "l"]
@@ -36,7 +37,7 @@ var _h: int = 0
 
 
 func before_each() -> void:
-	_rows = Loader.load_rows(MAP_PNG)
+	_rows = Loader.load_rows(MAP_PNG, WORLD)
 	_h = _rows.size()
 	_w = 0 if _h == 0 else (_rows[0] as String).length()
 
@@ -110,7 +111,7 @@ func test_composition_severs_no_landmark() -> void:
 	var dist := _flood([spawn])
 	assert_gt(dist.size(), 1000, "flood reached %d cells -- too few to be a real traversal probe" % dist.size())
 
-	var landmarks: Array = Loader.landmark_chars()
+	var landmarks: Array = Loader.landmark_chars(WORLD)
 	var found := 0
 	var stranded: Array = []
 	for y in range(_h):
