@@ -1,5 +1,8 @@
 extends BaseVillage
+
 class_name MapleStripMall
+
+const SuburbanTileGeneratorScript = preload("res://src/exploration/SuburbanTileGenerator.gd")
 
 ## MapleStripMall — the rearranging strip mall on the edge of Maple Heights
 ## (world2_configuration_pending's stage; Madame Orrery's W2 booth for
@@ -67,7 +70,7 @@ func _generate_map() -> void:
 		for x in range(MAP_WIDTH):
 			var ch: String = row[x] if x < row.length() else "W"
 			var tile_type := _char_to_tile_type(ch)
-			var atlas := _get_atlas_coords(tile_type)
+			var atlas := _atlas_for(tile_type, Vector2i(x, y))
 			tile_map.set_cell(Vector2i(x, y), 0, atlas)
 			if ch == "X" and not spawn_points.has("exit"):
 				spawn_points["exit"] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
@@ -76,20 +79,24 @@ func _generate_map() -> void:
 	spawn_points["default"] = spawn_points["entrance"]
 
 
+## W2 is suburbia — CrossCode phase 4 (struktured: "continue with next cross code phase")
+func _get_tile_generator() -> Node:
+	return SuburbanTileGeneratorScript.new()
+
+
+func _get_fringe_ground_types() -> Array:
+	return [SuburbanTileGeneratorScript.TileType.LAWN]
+
+
 func _char_to_tile_type(ch: String) -> int:
 	match ch:
-		"W": return TileGeneratorScript.TileType.WALL
-		"S", "O": return TileGeneratorScript.TileType.WALL  # storefronts / booth
-		"Y": return TileGeneratorScript.TileType.VILLAGE_DIRT  # the gap — bare slab
-		"p": return TileGeneratorScript.TileType.VILLAGE_PATH
-		"k": return TileGeneratorScript.TileType.VILLAGE_DIRT  # parking lot
-		"X": return TileGeneratorScript.TileType.VILLAGE_PATH
-		_: return TileGeneratorScript.TileType.VILLAGE_PATH
-
-
-func _get_atlas_coords(tile_type: int) -> Vector2i:
-	var tile_id: int = TileGeneratorScript.get_tile_id(tile_type)
-	return Vector2i(tile_id % 5, tile_id / 5)
+		"W": return SuburbanTileGeneratorScript.TileType.HOUSE_WALL
+		"S", "O": return SuburbanTileGeneratorScript.TileType.HOUSE_WALL  # storefronts / booth
+		"Y": return SuburbanTileGeneratorScript.TileType.PARKING_LOT  # the gap — bare slab
+		"p": return SuburbanTileGeneratorScript.TileType.SIDEWALK
+		"k": return SuburbanTileGeneratorScript.TileType.PARKING_LOT  # parking lot
+		"X": return SuburbanTileGeneratorScript.TileType.SIDEWALK
+		_: return SuburbanTileGeneratorScript.TileType.SIDEWALK
 
 
 func _setup_transitions() -> void:

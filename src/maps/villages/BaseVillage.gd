@@ -272,13 +272,31 @@ func get_terrain_speed_at(pos: Vector2) -> float:
 	return STAIR_SPEED if _stair_cells.has(cell) else 1.0
 
 
+## The world's tile generator. W1 villages keep medieval; W2-W6 override with their own.
+func _get_tile_generator() -> Node:
+	return TileGeneratorScript.new()
+
+
+## Ground types the grass-fringe overlay creeps out from; per-world because "grass" differs.
+func _get_fringe_ground_types() -> Array:
+	return FRINGE_GRASS_TYPES
+
+
 func _cell_salt(cell: Vector2i) -> int:
 	return cell.x * 73856093 ^ cell.y * 19349663
 
 
-## Atlas coords for a tile type at a cell, variant chosen per cell (5-column TileGenerator atlas).
+## Atlas coords for a tile type at a cell, resolved against WHICHEVER generator this village
+## uses — the per-world atlases are 4x4 with id == index in _get_tile_order(), and only the
+## medieval one carries the per-cell variant table.
 func _atlas_for(tile_type: int, cell: Vector2i) -> Vector2i:
-	return TileGeneratorScript.get_atlas_coords_for_id(TileGeneratorScript.get_tile_id_variant(tile_type, _cell_salt(cell)))
+	var cols: int = int(tile_generator._get_atlas_dimensions().x) if tile_generator else 5
+	if tile_generator is TileGenerator:
+		var id: int = TileGeneratorScript.get_tile_id_variant(tile_type, _cell_salt(cell))
+		return Vector2i(id % cols, id / cols)
+	var order: Array = tile_generator._get_tile_order() if tile_generator else []
+	var idx: int = order.find(tile_type)
+	return Vector2i(idx % cols, idx / cols) if idx >= 0 else Vector2i.ZERO
 
 
 func _ground_type(cell: Vector2i) -> int:
@@ -323,7 +341,7 @@ func _build_derived_layers(map_rows: Array, height_rows: Array) -> void:
 func _fringe_mask(cell: Vector2i) -> int:
 	var mask := 0
 	for bit in HeightGridScript.DIRS:
-		if _ground_type(cell + HeightGridScript.DIRS[bit]) in FRINGE_GRASS_TYPES:
+		if _ground_type(cell + HeightGridScript.DIRS[bit]) in _get_fringe_ground_types():
 			mask |= bit
 	return mask
 
@@ -333,7 +351,7 @@ func _paint_fringe() -> void:
 	for c in tile_map.get_used_cells():
 		if not _tile_is_open(c) or _face_cells.has(c) or _stair_cells.has(c):
 			continue
-		if _ground_type(c) in FRINGE_GRASS_TYPES:
+		if _ground_type(c) in _get_fringe_ground_types():
 			continue
 		var m := _fringe_mask(c)
 		if m != 0:
@@ -412,7 +430,7 @@ func _setup_npcs() -> void:
 ## ---- Shared scene/node setup ----
 
 func _setup_scene() -> void:
-	tile_generator = TileGeneratorScript.new()
+	tile_generator = _get_tile_generator()
 	add_child(tile_generator)
 
 	tile_map = TileMapLayer.new()
