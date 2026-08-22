@@ -84,3 +84,32 @@ func test_the_clips_exist_on_disk_and_are_not_empty() -> void:
 		assert_ne(f, "", "%s carries a file key" % k)
 		assert_true(FileAccess.file_exists("res://" + f), "%s -> %s exists" % [k, f])
 	assert_eq(checked, 25, "expected the full 5 jobs x 5 triggers pack, found %d" % checked)
+
+func test_each_clip_was_generated_from_the_line_that_ships_today() -> void:
+	## THE DRIFT GUARD, and the reason it exists: on 2026-08-22 a spell-rename sweep changed
+	## the Cleric's signature line from "Cure" to "Sanatio" on a different branch. The clip
+	## still existed, the key was still right, the trigger still resolved -- every other arm
+	## in this file stayed green while the bubble read "Sanatio" and the audio said "Cure".
+	## No instrument compares an OGG's spoken words to a JSON string, so the manifest records
+	## the sha of the text each clip was cut from and this compares it to the live line.
+	## Redundant sources that are SUPPOSED to agree get an AGREEMENT assertion, not a
+	## precedence rule (CLAUDE.md, "two data sources feeding one surface", form (a)).
+	var sfx := _sfx()
+	var jobs := _jobs()
+	var checked := 0
+	var stale: Array[String] = []
+	for job_id in jobs:
+		var tv: Dictionary = jobs[job_id].get("trigger_voices", {})
+		for trig in tv:
+			var key := "voice_%s_%s" % [job_id, trig]
+			if not sfx.has(key):
+				continue
+			var recorded := str(sfx[key].get("source_sha", ""))
+			assert_ne(recorded, "", "%s must record the text it was generated from" % key)
+			checked += 1
+			var live := str(tv[trig]).sha256_text().substr(0, 16)
+			if recorded != live:
+				stale.append("%s (clip cut from different text than ships today)" % key)
+	assert_gt(checked, 0, "the scan compared something — a zero here is a dead scan")
+	assert_eq(stale.size(), 0,
+		"voice clips whose audio no longer matches the line the player reads: %s" % [stale])
