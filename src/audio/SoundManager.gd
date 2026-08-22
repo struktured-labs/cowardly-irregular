@@ -1667,7 +1667,7 @@ func play_music(track: String) -> void:
 			_start_monster_music("imp")
 		"battle_goblin":
 			_start_monster_music("goblin")
-		# Brute family: troll/ogre/barbarian are ONE-WORD ids, and the fallback at the bottom of this match requires parts.size() > 1, so they need explicit arms.
+		# Brute-family floor: the LIVE routing is the manifest aliases — this arm is reached only if the manifest misses entirely (measured 2026-08-22).
 		"battle_brute", "battle_troll", "battle_cave_troll", "battle_ogre", "battle_barbarian":
 			_start_monster_music("brute")
 		"battle_skeleton":
