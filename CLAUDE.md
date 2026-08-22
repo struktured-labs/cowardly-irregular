@@ -92,7 +92,7 @@ Each starter job has a free 0-cost AP action available in the command menu:
 | Cleric | Pray | Restores MP to a party member (green heal popup + sparkle FX) |
 | Mage | Channel | Restores MP to self |
 | Rogue | Strike | Bonus melee (falls back to attack anim, not cast) |
-| Bard | Riff | Restores MP to whole party |
+| Bard | Riff | Weak strike (0.4x) with a high chance to blind — his 2026-08-22 reruling; was an MP restore |
 
 - MP-restore variants emit `healing_done` (green popup) not `damage_dealt` (would show as crit damage)
 - Free Move abilities are NOT recorded in the MRU quick-slot list (each job has its own dedicated slot)
@@ -154,7 +154,9 @@ Each starter job has a free 0-cost AP action available in the command menu:
 - Share/export scripts between players
 - Hall of Fame for novel strategies
 
-## Autogrind System (Future)
+## Autogrind System (SHIPPED)
+
+Reachable from the pause menu; 20 files under `src/ui/autogrind/`, an 891-line `HeadlessBattleResolver`, `LoopState.AUTOGRIND`. Every bullet below is BUILT, not planned — the header said "(Future)" until 2026-08-22 while `system collapse` alone had 82 references and `permadead.json` was a real file in `user://autogrind/`.
 
 Risk/reward automation with escalating stakes:
 - Longer automation = higher EXP multipliers BUT increased danger
