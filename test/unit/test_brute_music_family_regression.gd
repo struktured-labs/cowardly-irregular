@@ -80,10 +80,24 @@ func test_the_procedural_goblin_is_no_longer_a_war_chant() -> void:
 		"the procedural goblin bass is war drums again")
 
 
-func test_no_war_chant_language_survives_in_the_goblin_generator_arms() -> void:
-	## Belt to the params braces: the note arrays are keyed on monster name, so a params
-	## change alone leaves a pentatonic war chant playing through a different filter.
+func test_the_goblin_melody_IS_chromatic_not_pentatonic() -> void:
+	## Asserts the NOTES, not the comments. A previous version pinned comment text
+	## ("TRIBAL A MINOR") — passes if someone restores the pentatonic arrays under a
+	## reworded comment, reds if someone rewords a comment over correct notes.
+	##
+	## Bb4/Gs4 occur 96/2 times ELSEWHERE in this file, so a whole-file contains() is
+	## hollow. The arm MUST be extracted, and a missing anchor must fail rather than
+	## silently widen to the rest of the file (measured: 53x the intended corpus).
 	var src: String = _sm_source()
-	for phrase in ["TRIBAL A MINOR", "Pentatonic war harmony", "Tribal bass"]:
-		assert_false(src.contains(phrase),
-			"'%s' is back in the goblin generator - the melodic material is the war chant again, whatever the params say" % phrase)
+	var at: int = src.find('\t\t"goblin":')
+	assert_gt(at, 0, "the goblin melody arm is gone from _get_monster_melody")
+	var rest: String = src.substr(at)
+	var stop: int = rest.find('\t\t"wolf":')
+	assert_gt(stop, 0, "SCOPE: the arm's end anchor \"wolf\": is gone — refusing to assert against an unbounded slice")
+	var arm: String = rest.substr(0, stop)
+	assert_lt(arm.length(), 6000, "SCOPE: extracted %d chars — that is the whole file, not one arm" % arm.length())
+
+	## main's war chant is pentatonic A-minor: exactly {A4, C5, E4, E5, G4}.
+	## These three tones cannot occur in it, so they are positive evidence of re-authoring.
+	for tone in ["Bb4", "Gs4", "Eb5"]:
+		assert_true(arm.contains(tone), "the goblin melody has no %s. Those are chromatic tones impossible in the pentatonic war chant this replaced — the tribal notes are back, whatever the comments say." % tone)
