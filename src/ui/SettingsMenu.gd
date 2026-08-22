@@ -1517,9 +1517,14 @@ func _get_llm_status_subtitle() -> String:
 	var model: String = str(info.get("model", "?"))
 	if bool(info.get("available", false)):
 		return "Connected — %s. Select to re-check." % model
-	# Naming the retry is the point: the player must know this self-heals.
+	# Naming the retry is the point: the player must know this self-heals. Naming the
+	# URL is the other half: with BYOK the endpoint is configurable, so "unreachable"
+	# without it cannot distinguish a stopped server from a mistyped base_url.
 	var every: int = int(info.get("probe_interval_sec", 30))
-	return "UNREACHABLE (%s) — retrying every %ds. Select to re-check now." % [model, every]
+	var where: String = str(info.get("probe_url", ""))
+	if where == "":
+		return "UNREACHABLE (%s) — retrying every %ds. Select to re-check now." % [model, every]
+	return "UNREACHABLE — %s at %s. Retrying every %ds; select to re-check." % [model, where, every]
 
 
 ## "Test connection" — force an immediate probe, then refresh the row.
