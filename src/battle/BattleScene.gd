@@ -3188,11 +3188,25 @@ func _on_execution_phase_started() -> void:
 	_update_ui()
 
 
+## A turn lost to a status had NO audio at all. BattleManager's six skip paths (stun,
+## cannot_act, sleep, confuse-with-no-target, fear, charm) each emit a "<status>_skip" type,
+## so keying on the SUFFIX covers a seventh for free instead of pinning today's list.
+## Returns whether the cue actually fired, so a test can assert BEHAVIOUR rather than grep
+## for the call — a source pin cannot tell live code from dead code.
+func _cue_if_turn_skipped(action: Dictionary) -> bool:
+	if not str(action.get("type", "")).ends_with("_skip"):
+		return false
+	return SoundManager.play_status_if_authored("status_cannot_act")
+
 func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 	"""Handle action executing - play animations here"""
 	# msg 2749 cycle 12: cache the signal-arg combatant so _on_damage_dealt / _play_ability_animation don't have to read the stale BattleManager.current_combatant. Cleared in _on_action_executed so a status-tick damage_dealt emit outside an action (poison at round-end, reactive counter) never carries a stale attribution.
 	_last_acting_combatant = combatant
 	_update_turn_info()
+
+	# Placed above the animator lookup deliberately — that guard returns early for any
+	# combatant without one, and losing a turn is exactly as audible either way.
+	_cue_if_turn_skipped(action)
 
 	# Get combatant's animator and sprite
 	var animator = _get_combatant_animator(combatant)
