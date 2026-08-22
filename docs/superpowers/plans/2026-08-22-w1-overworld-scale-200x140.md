@@ -496,3 +496,72 @@ Not planned in this document. Once Phase 2 lands, write `docs/superpowers/plans/
 **Type consistency.** `map_rows: Array[String]` (Task 1) is read by `biome_char_at` (Task 1) and consumed by `_get_zone_for_tile` (Task 2). `_pool_id_map() -> Dictionary` (Task 2) is used by `_zone_pool_ids() -> Array` (Task 2) and by `_apply_zone_encounters` (existing). `_get_zone_for_tile(int, int) -> String` keeps its original signature, so its existing caller at `:484` is unchanged.
 
 **Known gap, stated rather than hidden.** The frame arm of `test_terrain_speed_frame_and_semantics_regression` is structurally discriminating and carries its own vacuity floor, but has never been observed red. Re-authoring the map changes which tiles that test samples, so Phase 2 is a natural moment to run the frame-only mutation and close it.
+
+---
+
+## Outcome, 2026-08-22
+
+**Fold 1 (scale) and fold 2 (composition) are both landed** on `lane/w1-scale-200x140`.
+
+| | before | after |
+|---|---|---|
+| tiles | 7,000 (100x70) | 28,000 (200x140) |
+| crossing | 13.3s straight | 35.3s, detour ratio 1.332 |
+| walkable components | 6 | 1 continent + 4 empty pockets |
+| landmarks unreachable on foot | 5 | 0 |
+
+### The defect fold 2 found, which was not in this plan
+
+Component analysis of walkable space found **three sealed enclaves holding five
+landmarks** — Glacius + Frosthold behind mountain, Pyrroth + Ironhaven behind lava, a
+hidden passage in a 5-cell pocket. Two of the four W1 elemental dragon bosses were
+unreachable on foot; only `TeleportMenu` got a player there, which is why it survived
+since the ASCII map. Verified pre-existing (the same five landmarks at exactly half the
+coordinates on 100x70), so the upscale reproduced it faithfully rather than causing it.
+
+`SPAWN_CLEARANCE` moves an arrival off its landmark pixel, so opening an enclave is
+necessary and not sufficient — all 15 arrivals are re-checked with the clearance applied.
+
+---
+
+## Phase 3 scope: W2-W6. NOT started, deliberately.
+
+Measured 2026-08-22, same instruments:
+
+| world | tiles | crossing | detour ratio |
+|---|---|---|---|
+| W1 medieval | 28,000 | 35.3s | 1.332 |
+| W2 suburban | 2,000 | 6.5s | 1.000 |
+| W3 steampunk | 3,000 | 7.9s | 1.000 |
+| W4 industrial | 2,700 | 7.9s | 1.000 |
+| W5 futuristic | 2,475 | — | — (both edges solid border) |
+| W6 abstract | 1,400 | 5.2s | 1.000 |
+
+**W1 is now 14x W2's tile count, and every one of W2-W6 is straight-line crossable.**
+struktured's note — *"its also a mess in overworld 2+ last I checked"* — is these two rows.
+
+Connectivity is NOT the problem there: every island in W2-W6 is empty terrain
+(`tools/audit_overworld_connectivity.py`). W1's enclave defect does not repeat.
+
+**The enabler is the PNG migration.** W2-W6 carry their maps as ASCII literals inside
+their `.gd` files, so scaling one means hand-editing thousands of characters in source.
+`tools/map_ascii_to_png.py` + `MapImageLoader` already do this for W1.
+
+**The palette MUST become per-world, and this is measured, not assumed.** Across the six
+worlds' `_char_to_tile_type` arms there are 48 distinct map characters. **30 of them are
+used by more than one world, and ZERO of those 30 mean the same thing in two worlds:**
+
+| char | meanings |
+|---|---|
+| `c` | COAST (W1) / BASKETBALL_COURT (W2) / CONCRETE (W3) / CONVEYOR_BELT (W4) / CIRCUIT_FLOOR (W5) |
+| `g` | GRASS (W1) / FLOWER_BED (W2) / PARK_GRASS (W3) / IRON_GRATING (W4) / VOID_GRAY (W6) |
+| `B` | BRIDGE (W1) / CHEMICAL_BARREL (W4) / VOID_BLACK (W6) |
+
+Overlap is total: 30 shared, 30 conflicting, 0 consistent. A single table cannot serve two
+worlds, and the failure mode is the reason it matters — a W4 image decoded against W1's
+table produces a **plausible map made of the wrong tiles**, not an error. So the loader must
+REQUIRE a world id and fail loudly on an unknown one, and must never fall back to a default
+table. Measured by `tools/audit_overworld_connectivity.py`.
+
+Order: migrate to PNG → scale → compose. Same three folds W1 took, and the ratchets
+(`test_map_image_roundtrip`, `test_overworld_composition`) generalise to each world.

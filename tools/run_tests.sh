@@ -106,6 +106,24 @@ run_gut() {
   # `command grep`: the session grep is a ugrep shim carrying -I, and it SILENTLY skips a file it
   # judges binary. Godot logs can carry NUL bytes, which made a 150KB log read as zero matches —
   # a false zero on the artifact this assertion depends on.
+  # ASSERT THE COUNT, NOT THE LINE. The Totals-block check below was `grep -q '^Tests'`, and
+  # GUT prints a Totals block with `Tests 0` when the named script PARSE-ERRORS or when the
+  # -gtest name simply does not exist — so the line was present, the vacuity arm never fired,
+  # and the run exited 0 having executed nothing. cowir-main hit the parse-error mouth live
+  # (a duplicate const in HarmoniaVillage read "green"); cowir-battle named the typo mouth,
+  # which is worse for mutation testing: a misspelled name returns EC=0 with no failures,
+  # which reads as "my mutation didn't land" and invites reverting a change that was correct.
+  # Enumerating causes is the losing game this block already rejects — so assert the outcome
+  # one level deeper: a real run reports Tests > 0.
+  _tests_ran="$(command grep -aE '^Tests[[:space:]]+[0-9]+' "$RUN_LOG" | tail -1 | tr -dc '0-9')"
+  if [ -n "$_tests_ran" ] && [ "$_tests_ran" -eq 0 ]; then
+    echo "run_tests.sh: NO TESTS RAN — Totals reported 'Tests 0'." >&2
+    echo "  a named test whose script fails to parse, or a -gtest name that does not exist," >&2
+    echo "  both produce a Totals block with zero tests and would otherwise exit 0." >&2
+    command grep -aiE 'Parse Error|Failed to load script|does not extend GutTest' "$RUN_LOG" | head -3 | sed 's/^/  /' >&2
+    echo "  logs kept for inspection: $RUN_LOG $GUT_LOG" >&2
+    exit 3
+  fi
   if ! command grep -q '^Tests' "$RUN_LOG"; then
     echo "run_tests.sh: NO TESTS RAN — no Totals block in the output." >&2
     command grep -aiE 'have not been imported|Failed to load script|Parse Error|does not extend GutTest' "$RUN_LOG" | head -3 | sed 's/^/  /' >&2

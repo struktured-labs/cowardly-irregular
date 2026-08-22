@@ -41,10 +41,13 @@ func test_pray_target_type_is_single_ally() -> void:
 		"Pray must target a single ally (CLAUDE.md: 'Restores MP to a party member').")
 
 
-func test_riff_target_type_is_all_allies() -> void:
+func test_riff_is_no_longer_an_mp_restore_free_move() -> void:
+	## struktured 2026-08-22 reruled Riff: "an attack that is really weak but high chance of
+	## status effect". It left this file's subject (mp_restore free moves) entirely — pinned
+	## so a future edit cannot quietly restore the MP-battery behaviour he replaced.
 	var data = _read_json(ABILITIES_PATH)
-	assert_eq(data["riff"]["target_type"], "all_allies",
-		"Riff must target all allies (CLAUDE.md: 'Restores MP to whole party').")
+	assert_ne(str(data["riff"]["type"]), "mp_restore", "Riff is a strike, not an MP battery")
+	assert_eq(str(data["riff"]["target_type"]), "single_enemy", "Riff hits one enemy")
 
 
 func test_channel_target_type_remains_self() -> void:

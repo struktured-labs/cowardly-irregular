@@ -71,7 +71,7 @@ func _setup_collision() -> void:
 	col.radius = 72.0
 	var cs := CollisionShape2D.new()
 	cs.shape = col
-	cs.scale = Vector2(1.0, 1.67)
+	cs.scale = Vector2(1.0, InteractGeometry.MODE7_Y_STRETCH)
 	add_child(cs)
 
 

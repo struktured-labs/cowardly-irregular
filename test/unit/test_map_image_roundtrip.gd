@@ -39,6 +39,7 @@ const Loader := preload("res://src/exploration/MapImageLoader.gd")
 const SceneScript := preload("res://src/exploration/OverworldScene.gd")
 
 const MAP_PNG := "res://data/maps/overworld_w1.png"
+const WORLD := "medieval"
 const SCENE_GD := "res://src/exploration/OverworldScene.gd"
 
 const GOLDEN_W := 200
@@ -104,9 +105,9 @@ func test_the_palette_loads_and_is_collision_free() -> void:
 	# get an AGREEMENT assert, never a precedence rule -- if both agree the question is moot.
 	assert_eq(MAP_PNG, SceneScript.MAP_IMAGE, "the test and the scene must load the same image")
 
-	var err: String = Loader.ensure_palette()
+	var err: String = Loader.ensure_palette(WORLD)
 	assert_eq(err, "", "palette must load cleanly -- a collision or a missing section is fatal")
-	var chars: Array = Loader.palette_chars()
+	var chars: Array = Loader.palette_chars(WORLD)
 	assert_gt(chars.size(), 20, "palette has %d entries -- too few; the read broke" % chars.size())
 	# named members, not a count: a count control passes on an empty parse
 	assert_true("~" in chars, "palette knows water")
@@ -118,7 +119,7 @@ func test_the_palette_loads_and_is_collision_free() -> void:
 ## loops `for y in range(MAP_HEIGHT)`, so an image shorter than the constant reads past its
 ## own data and a taller one is silently cropped -- neither raises anything.
 func test_the_image_agrees_with_the_declared_dimensions() -> void:
-	var rows: Array = Loader.load_rows(MAP_PNG)
+	var rows: Array = Loader.load_rows(MAP_PNG, WORLD)
 	assert_gt(rows.size(), 10, "PNG side is non-empty -- an empty result means the load FAILED")
 	assert_eq(rows.size(), GOLDEN_H, "row count")
 	assert_eq(str(rows[0]).length(), GOLDEN_W, "row width")
@@ -131,8 +132,8 @@ func test_the_image_agrees_with_the_declared_dimensions() -> void:
 ## "C" and "H" each appear TWICE in W1, so an eyeballed singleton list asserted a falsehood
 ## about the map it was guarding.
 func test_every_landmark_survives_at_its_exact_coordinates() -> void:
-	var rows: Array = Loader.load_rows(MAP_PNG)
-	var landmarks: Array = Loader.landmark_chars()
+	var rows: Array = Loader.load_rows(MAP_PNG, WORLD)
+	var landmarks: Array = Loader.landmark_chars(WORLD)
 
 	assert_gt(landmarks.size(), 5, "derived %d landmark chars from the palette -- the derivation broke" % landmarks.size())
 	assert_true("4" in landmarks, "the palette's landmark set includes the fire dragon cave")
@@ -153,7 +154,7 @@ func test_every_landmark_survives_at_its_exact_coordinates() -> void:
 
 
 func test_no_character_is_gained_or_dropped_anywhere() -> void:
-	var rows: Array = Loader.load_rows(MAP_PNG)
+	var rows: Array = Loader.load_rows(MAP_PNG, WORLD)
 	assert_gt(rows.size(), 10, "PNG side non-empty")
 
 	var census := {}

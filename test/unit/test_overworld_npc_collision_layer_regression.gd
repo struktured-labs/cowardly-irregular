@@ -87,7 +87,14 @@ func test_mode7_branch_still_adjusts_shape() -> void:
 	var fn_idx: int = src.find("func _adjust_collision_for_mode7")
 	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
 	var body: String = src.substr(fn_idx, next_fn - fn_idx) if next_fn > 0 else src.substr(fn_idx)
-	assert_true(body.contains("shape.radius = 128.0"),
-		"Mode 7 branch must still enlarge the collision shape to radius 128")
-	assert_true(body.contains("Vector2(1.0, 1.67)"),
-		"Mode 7 branch must still apply the Y-stretch")
+	# Pins the VALUE through the contract, not the literal spelling. These asserted the
+	# text "shape.radius = 128.0"; routing the site to InteractGeometry (2026-08-22) kept
+	# the value identical and broke the pin — a guard that reds on a correct refactor and
+	# would go green on a wrong value re-typed as a literal.
+	assert_true(body.contains("InteractGeometry.NPC_TALK_RADIUS_MODE7"),
+		"Mode 7 branch must read the radius from the interaction contract")
+	assert_eq(InteractGeometry.NPC_TALK_RADIUS_MODE7, 128.0,
+		"the Mode 7 talk radius is still 128 (ruling 2026-07-11)")
+	assert_true(body.contains("InteractGeometry.MODE7_Y_STRETCH"),
+		"Mode 7 branch must read the Y-stretch from the contract")
+	assert_eq(InteractGeometry.MODE7_Y_STRETCH, 1.67, "the Y-stretch is still 1.67")

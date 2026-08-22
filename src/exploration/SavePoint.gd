@@ -76,7 +76,7 @@ func _setup_collision() -> void:
 	var col = CollisionShape2D.new()
 	var shape = CircleShape2D.new()
 	# 128 read as a 4-tile grabber — the [A] Save prompt + save fired from across the plaza (struktured cap 2026-07-11); 48 = stand beside the crystal.
-	shape.radius = 48.0
+	shape.radius = InteractGeometry.SAVE_RADIUS
 	col.shape = shape
 	col.position = Vector2(0, 0)
 	# Y-stretch is Mode-7-only (ultracode audit defect #6): flat interiors got a 48x80 ellipse — the save prompt fired 2.5 tiles above/below the crystal.

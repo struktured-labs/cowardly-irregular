@@ -29,68 +29,115 @@ extends RefCounted
 
 const PALETTE_PATH := "res://data/maps/map_palette.json"
 
-## rgb24 -> character. Built once from the palette JSON that the exporter also reads;
-## the mapping is deliberately not duplicated in GDScript.
-static var _rgb_to_char: Dictionary = {}
-static var _char_to_rgb: Dictionary = {}
-static var _palette_error: String = ""
+## THE WORLD ID IS REQUIRED, AND THAT IS THE POINT. Measured 2026-08-22 across the six
+## worlds' `_char_to_tile_type` arms: 48 distinct map characters, 30 used by more than one
+## world, and ZERO of those 30 meaning the same thing in two of them. "c" is COAST in
+## medieval, BASKETBALL_COURT in suburban, CONCRETE in steampunk, CONVEYOR_BELT in
+## industrial, CIRCUIT_FLOOR in futuristic.
+##
+## A default world would be the dangerous convenience: decoding an image against the wrong
+## world's table does not fail, it produces a PLAUSIBLE MAP MADE OF THE WRONG TILES -- every
+## pixel resolves, every row is the right length, the map renders. There is no symptom to
+## notice. So an unknown world decodes NOTHING and says which world it was asked for.
+
+## world id -> { "to_char": {rgb24: char}, "to_rgb": {char: rgb24} }
+static var _by_world: Dictionary = {}
+## world id -> the reason it could not be built, "" once it is built
+static var _errors: Dictionary = {}
 
 
 static func _key(r: int, g: int, b: int) -> int:
 	return (r << 16) | (g << 8) | b
 
 
-## Returns "" on success, or a human-readable reason. Idempotent.
-static func ensure_palette() -> String:
-	if not _rgb_to_char.is_empty():
-		return ""
-	if _palette_error != "":
-		return _palette_error
+static func _read_palette() -> Variant:
 	if not FileAccess.file_exists(PALETTE_PATH):
-		_palette_error = "palette missing: %s" % PALETTE_PATH
-		return _palette_error
-	var parsed = JSON.parse_string(FileAccess.get_file_as_string(PALETTE_PATH))
-	if not (parsed is Dictionary):
-		_palette_error = "palette is not a JSON object: %s" % PALETTE_PATH
-		return _palette_error
-	for section in ["terrain", "landmarks"]:
-		if not parsed.has(section):
-			_palette_error = "palette has no '%s' section" % section
-			return _palette_error
-		for ch in (parsed[section] as Dictionary):
-			var rgb: Array = (parsed[section][ch] as Dictionary).get("rgb", [])
+		return null
+	return JSON.parse_string(FileAccess.get_file_as_string(PALETTE_PATH))
+
+
+## Returns "" on success, or a human-readable reason naming `world_id`. Idempotent.
+static func ensure_palette(world_id: String) -> String:
+	if _by_world.has(world_id):
+		return ""
+	if _errors.has(world_id):
+		return _errors[world_id]
+
+	var parsed = _read_palette()
+	if parsed == null:
+		_errors[world_id] = "palette missing or unparseable: %s" % PALETTE_PATH
+		return _errors[world_id]
+	if not (parsed is Dictionary) or not parsed.has("worlds"):
+		_errors[world_id] = "palette has no 'worlds' section: %s" % PALETTE_PATH
+		return _errors[world_id]
+
+	var worlds: Dictionary = parsed["worlds"]
+	if not worlds.has(world_id):
+		# names the asked-for world AND what exists, so a typo is one line from fixed
+		var known: Array = worlds.keys()
+		known.sort()
+		_errors[world_id] = "unknown world '%s'; palette defines %s" % [world_id, str(known)]
+		return _errors[world_id]
+
+	var section: Dictionary = worlds[world_id]
+	var to_char := {}
+	var to_rgb := {}
+	for kind in ["terrain", "landmarks"]:
+		if not section.has(kind):
+			_errors[world_id] = "world '%s' has no '%s' section" % [world_id, kind]
+			return _errors[world_id]
+		for ch in (section[kind] as Dictionary):
+			var rgb: Array = (section[kind][ch] as Dictionary).get("rgb", [])
 			if rgb.size() != 3:
-				_palette_error = "palette entry '%s' has no 3-component rgb" % ch
-				return _palette_error
+				_errors[world_id] = "world '%s' entry '%s' has no 3-component rgb" % [world_id, ch]
+				return _errors[world_id]
 			var k := _key(int(rgb[0]), int(rgb[1]), int(rgb[2]))
-			# a collision means two characters decode to one, and the map silently loses one
-			if _rgb_to_char.has(k):
-				_palette_error = "palette collision: '%s' and '%s' share rgb %s" % [ch, _rgb_to_char[k], str(rgb)]
-				_rgb_to_char.clear()
-				return _palette_error
-			_rgb_to_char[k] = String(ch)
-			_char_to_rgb[String(ch)] = k
+			# a collision WITHIN a world means two characters decode to one and the map
+			# silently loses one; across worlds it is expected and harmless
+			if to_char.has(k):
+				_errors[world_id] = "world '%s' collision: '%s' and '%s' share rgb %s" % [
+					world_id, ch, to_char[k], str(rgb)]
+				return _errors[world_id]
+			to_char[k] = String(ch)
+			to_rgb[String(ch)] = k
+	_by_world[world_id] = {"to_char": to_char, "to_rgb": to_rgb}
 	return ""
 
 
-static func palette_chars() -> Array:
-	ensure_palette()
-	var out: Array = _char_to_rgb.keys()
+static func palette_chars(world_id: String) -> Array:
+	if ensure_palette(world_id) != "":
+		return []
+	var out: Array = (_by_world[world_id]["to_rgb"] as Dictionary).keys()
 	out.sort()
 	return out
 
 
-## The spawn-bearing characters, read from the palette's own `landmarks` section rather than
-## hand-listed. A hand-list of "which chars are landmarks" drifts the moment one is added,
-## and it drifted within minutes of first being written: "C" and "H" each appear TWICE in W1,
-## so an eyeballed singleton list was wrong on its first run.
-static func landmark_chars() -> Array:
-	if not FileAccess.file_exists(PALETTE_PATH):
+## The rgb triple `ch` decodes from in `world_id`, or [] if that world does not define it.
+static func palette_rgb(world_id: String, ch: String) -> Array:
+	if ensure_palette(world_id) != "":
 		return []
-	var parsed = JSON.parse_string(FileAccess.get_file_as_string(PALETTE_PATH))
-	if not (parsed is Dictionary) or not parsed.has("landmarks"):
+	var to_rgb: Dictionary = _by_world[world_id]["to_rgb"]
+	if not to_rgb.has(ch):
 		return []
-	var out: Array = (parsed["landmarks"] as Dictionary).keys()
+	var k: int = to_rgb[ch]
+	return [(k >> 16) & 0xFF, (k >> 8) & 0xFF, k & 0xFF]
+
+
+## The spawn-bearing characters for `world_id`, read from that world's own `landmarks`
+## section rather than hand-listed. A hand-list of "which chars are landmarks" drifts the
+## moment one is added, and it drifted within minutes of first being written: "C" and "H"
+## each appear TWICE in W1, so an eyeballed singleton list was wrong on its first run.
+static func landmark_chars(world_id: String) -> Array:
+	var parsed = _read_palette()
+	if not (parsed is Dictionary) or not parsed.has("worlds"):
+		return []
+	var worlds: Dictionary = parsed["worlds"]
+	if not worlds.has(world_id):
+		return []
+	var section: Dictionary = worlds[world_id]
+	if not section.has("landmarks"):
+		return []
+	var out: Array = (section["landmarks"] as Dictionary).keys()
 	out.sort()
 	return out
 
@@ -98,10 +145,10 @@ static func landmark_chars() -> Array:
 ## Loads `png_path` into rows of characters. On any failure returns an empty array and
 ## pushes an error naming the cause -- callers must treat empty as fatal, not as an
 ## empty map.
-static func load_rows(png_path: String) -> Array:
-	var err := ensure_palette()
+static func load_rows(png_path: String, world_id: String) -> Array:
+	var err := ensure_palette(world_id)
 	if err != "":
-		push_error("[MAP] %s" % err)
+		push_error("[MAP] %s (loading %s)" % [err, png_path])
 		return []
 	if not FileAccess.file_exists(png_path):
 		push_error("[MAP] no map image at %s" % png_path)
@@ -122,6 +169,7 @@ static func load_rows(png_path: String) -> Array:
 		push_error("[MAP] %s decoded to %dx%d" % [png_path, w, h])
 		return []
 
+	var to_char: Dictionary = _by_world[world_id]["to_char"]
 	var rows: Array = []
 	var unknown: Array = []
 	for y in range(h):
@@ -129,8 +177,8 @@ static func load_rows(png_path: String) -> Array:
 		for x in range(w):
 			var c := img.get_pixel(x, y)
 			var k := _key(c.r8, c.g8, c.b8)
-			if _rgb_to_char.has(k):
-				line += _rgb_to_char[k]
+			if to_char.has(k):
+				line += to_char[k]
 			else:
 				line += "?"
 				if unknown.size() < 12:
@@ -141,8 +189,8 @@ static func load_rows(png_path: String) -> Array:
 		# NOT a silent fallback: a landmark is a single pixel, and decoding an unrecognised
 		# colour to grass would delete a spawn point with no symptom.
 		push_error(("[MAP] %s has %s unrecognised colour(s); first: %s. " +
-			"Add them to the palette or repaint them -- they are NOT defaulted.") % [
-				png_path, "12+" if unknown.size() >= 12 else str(unknown.size()), ", ".join(unknown)])
+			"Add them to world '%s' in the palette or repaint them -- they are NOT defaulted.") % [
+				png_path, world_id, "12+" if unknown.size() >= 12 else str(unknown.size()), ", ".join(unknown)])
 		return []
 
 	return rows

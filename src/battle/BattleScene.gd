@@ -2817,7 +2817,8 @@ func _process_hold_a(delta: float) -> void:
 		var selected_id = active_win98_menu.get_selected_item_id()
 		var selected_data = active_win98_menu.get_selected_item_data()
 
-		if selected_id == "autobattle" and Input.is_action_pressed("ui_accept"):
+		## "auto_menu" is the collapsed root row; "autobattle" kept for the pre-collapse shape
+		if selected_id in ["autobattle", "auto_menu"] and Input.is_action_pressed("ui_accept"):
 			if not _holding_auto:
 				# Start tracking hold
 				_holding_auto = true

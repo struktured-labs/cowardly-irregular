@@ -103,15 +103,25 @@ func test_bard_can_reach_three_sways() -> void:
 		if str(a.get("type", "")) == "song":
 			songs.append(a)
 	assert_gt(songs.size(), 0, "bard kit at duel level must contain songs — sways only count off type=='song'")
-	# Riff (free move) must out-earn the cheapest song on a 2-turn
-	# cycle so 3 sways are reachable from any MP state.
+	# Riff funded this economy until 2026-08-22, when struktured reruled it into a 0-MP
+	# weak/high-status strike. That removed the MP battery, so the invariant is asserted
+	# DIRECTLY now — can the Bard afford three sways? — instead of via the mechanism that
+	# used to pay for them. Asserting the mechanism is what made this test red on a correct
+	# change while saying nothing about whether the duel is still winnable.
 	assert_eq(str(_jobs["bard"].get("free_move", {}).get("ability_id", "")), "riff")
-	var riff_mp: int = int(_abilities.get("riff", {}).get("mp_amount", 0))
 	var cheapest: int = 9999
 	for s in songs:
 		cheapest = mini(cheapest, int(s.get("mp_cost", 9999)))
-	assert_true(cheapest <= riff_mp * 2,
-		"cheapest song (%d MP) must be affordable on a song/riff alternation (%d per 2 turns)" % [cheapest, riff_mp])
+	var sways_needed: int = int(_monsters["bard_hostile_courtier"].get("win_condition", {}).get("value", 3))
+	var bard := Combatant.new()
+	add_child_autofree(bard)
+	bard.job = JobSystem.get_job("bard")
+	bard.job_level = int(_monsters["bard_hostile_courtier"].get("level", 6))
+	if bard.has_method("recalculate_stats"):
+		bard.recalculate_stats()
+	assert_gt(bard.current_mp, 0, "CONTROL: the probe built a real Bard with a real MP pool")
+	assert_true(bard.current_mp >= cheapest * sways_needed,
+		"Bard opens the duel able to afford %d sways at %d MP (has %d)" % [sways_needed, cheapest, bard.current_mp])
 	var wc: Dictionary = _monsters["bard_hostile_courtier"].get("win_condition", {})
 	assert_eq(str(wc.get("status", "")), "swayed")
 	assert_between(int(wc.get("value", 0)), 1, 6, "sway threshold sanity band")

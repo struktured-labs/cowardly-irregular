@@ -158,10 +158,15 @@ func test_cutscene_director_refuses_reentry() -> void:
 func test_save_zone_is_beside_the_crystal() -> void:
 	# One A-press from ~6 tiles away fired the SAVE and an NPC dialogue
 	# together — the crystal zone was a 128px (4-tile) circle.
+	# Pins the VALUE through the contract. This asserted the literal "shape.radius = 48.0";
+	# SavePoint now reads InteractGeometry.SAVE_RADIUS, same number, and the pin redded on
+	# a refactor that changed nothing a player can feel.
 	var src := FileAccess.get_file_as_string("res://src/exploration/SavePoint.gd")
-	assert_true("shape.radius = 48.0" in src,
+	assert_true("InteractGeometry.SAVE_RADIUS" in src,
+		"the save zone must read its radius from the interaction contract")
+	assert_eq(InteractGeometry.SAVE_RADIUS, 48.0,
 		"save zone must be ~1.5 tiles — 128 was a cross-plaza grabber")
-	assert_false("shape.radius = 128.0" in src, "the old 4-tile radius must be gone")
+	assert_false("shape.radius = 128.0" in src, "the old 4-tile radius must not be re-typed")
 
 
 func test_all_zone_listeners_honor_the_input_lock() -> void:

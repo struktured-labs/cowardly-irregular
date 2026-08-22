@@ -281,8 +281,8 @@ func _setup_collision() -> void:
 	# prompts from way too far away. Audit-fix 2026-05-04.
 	var ctx_scale := _get_context_scale()
 	if ctx_scale.x >= 2.0:
-		shape.radius = 128.0
-		col.scale = Vector2(1.0, 1.67)  # Y-stretch: matches Mode 7 billboard Y:X ratio
+		shape.radius = InteractGeometry.NPC_TALK_RADIUS_MODE7
+		col.scale = Vector2(1.0, InteractGeometry.MODE7_Y_STRETCH)  # Y-stretch: matches Mode 7 billboard Y:X ratio
 	else:
 		shape.radius = InteractGeometry.NPC_TALK_RADIUS
 		col.scale = Vector2.ONE

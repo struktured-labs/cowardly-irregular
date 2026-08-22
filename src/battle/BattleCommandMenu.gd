@@ -195,7 +195,7 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 	"""Build command menu with enemy targets as submenus.
 
 	   New menu shape (2026-04 redesign):
-	     Auto / [MRU/Pin slot 1] / [MRU/Pin slot 2] / Free Move / Ability ▸ / Item ▸ / Group ▸ / Scan ▸ / Defer
+	     Auto ▸ / [MRU/Pin slot 1] / [MRU/Pin slot 2] / Attack / Free Move / Ability ▸ / Item ▸ / Group ▸ / Defer
 
 	   Per-job 'Free Move' replaces the legacy top-level 'Attack' for everyone.
 	   Fighter/Rogue: basic attack with custom label (Attack / Strike).
@@ -205,15 +205,18 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 	var alive_enemies = get_alive_enemies()
 	var canvas_transform = _scene.get_viewport().get_canvas_transform()
 
-	# Autobattle option at the top — runs autobattle for THIS character
-	items.append({
+	# Auto block collapsed to ONE row (struktured playtest 2026-08-22: "the menu is too
+	# busy"). Buried, not deleted — Auto Rules is the mouse-only path to the editor
+	# (F5/L+R are kb/pad only) and Trust keeps its Settings->Party Trust clear-path.
+	var auto_rows: Array = []
+	auto_rows.append({
 		"id": "autobattle",
-		"label": "Auto",
+		"label": "Run Auto",
 		"data": {"action": "autobattle", "combatant": combatant}
 	})
 	# Edit Autobattle rules — opens the rule grid editor for THIS character.
 	# Mouse-only users need this entry because F5/L+R is keyboard/gamepad only.
-	items.append({
+	auto_rows.append({
 		"id": "autobattle_edit",
 		"label": "Auto Rules",
 		"data": {"action": "autobattle_edit", "combatant": combatant}
@@ -226,10 +229,16 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 	# CLEARING (queue #4): Settings → Party Trust per-PC row (added same
 	# ticket) so the toggle isn't one-way once ON.
 	var trust_label: String = "Trust: ON" if combatant.player_trust else "Trust: OFF"
-	items.append({
+	auto_rows.append({
 		"id": "trust_toggle",
 		"label": trust_label,
 		"data": {"action": "trust_toggle", "combatant": combatant}
+	})
+	items.append({
+		"id": "auto_menu",
+		"label": "Auto",
+		"tooltip": "Run this character's autobattle script, edit it, or delegate every turn",
+		"submenu": auto_rows
 	})
 
 	# MRU/Pin quick-access ability slots — most-recently-used or player-pinned.
@@ -239,8 +248,18 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 		if not quick_item.is_empty():
 			items.append(quick_item)
 
-	# Free Move — per-job 0-cost canon action (replaces legacy top-level Attack).
-	# Falls back to a default basic-attack with label "Attack" when the job has no spec.
+	# Attack — EVERY job gets one. Pre-fix, free_move REPLACED it, so Mage/Cleric/Bard
+	# traded Attack for Channel/Pray/Riff and could not make a basic attack from the menu
+	# at all — while autobattle called basic_attack directly and could. struktured found it
+	# on Bard 2026-08-22: "the bard can attack in auto mode but otherwise cant thats a bug".
+	# Cleric and Mage had the identical defect, unreported. The menu must never be able to
+	# do LESS than autobattle.
+	var attack_item = _build_attack_item(combatant, alive_enemies, canvas_transform)
+	if not attack_item.is_empty():
+		items.append(attack_item)
+
+	# Free Move — per-job 0-cost canon action. For basic_attack jobs the Attack row above
+	# IS the free move (it carries their label), so this returns {} and adds no second row.
 	var free_move_item = _build_free_move_item(combatant, alive_enemies, canvas_transform)
 	if not free_move_item.is_empty():
 		items.append(free_move_item)
@@ -430,24 +449,11 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 			"submenu": group_items
 		})
 
-	# Scan - reveal enemy stats and weaknesses (free action submenu)
-	if alive_enemies.size() > 0:
-		var scan_targets = []
-		for enemy in alive_enemies:
-			var enemy_idx = _scene.test_enemies.find(enemy)
-			var revealed = _scene._ui_manager._revealed_enemies.get(enemy, false)
-			var scan_label = "%s%s" % [enemy.combatant_name, " (scanned)" if revealed else ""]
-			scan_targets.append({
-				"id": "scan_" + str(enemy_idx),
-				"label": scan_label,
-				"data": {"target_idx": enemy_idx, "action": "scan"},
-			})
-		items.append({
-			"id": "scan_menu",
-			"label": "Scan",
-			"tooltip": "Reveal enemy stats, weaknesses, and drops (uses your turn)",
-			"submenu": scan_targets
-		})
+	# Scan is NOT intrinsic (struktured playtest 2026-08-22: "scan should be an ability not
+	# intrinsic to a player"). It is a real ability — abilities.json `scan`, 3 MP, effect
+	# "scan", handler BattleManager:5564 — and it lives in the Rogue's kit, so weakness
+	# intel is something you BRING. The reveal still lands: BattleUIManager:823 ORs
+	# _revealed_enemies with the intel_revealed meta the ability sets.
 
 	# Wave E — 'Address' command. Gated on the active boss having an entry
 	# in data/boss_dialogue.json. Opens a verb-picker submenu; selecting a
@@ -592,7 +598,9 @@ func _build_ability_menu_item(ability_id: String, combatant: Combatant, alive_en
 			})
 		return {
 			"id": "ability_menu_" + ability_id,
-			"label": "%s (%d)" % [ability["name"], mp_cost],
+			"label": str(ability["name"]),
+			"cost": mp_cost,
+			"cost_affordable": can_afford,
 			"tooltip": ability_tooltip,
 			"submenu": enemy_targets,
 			"disabled": not can_afford
@@ -621,7 +629,9 @@ func _build_ability_menu_item(ability_id: String, combatant: Combatant, alive_en
 			})
 		return {
 			"id": "ability_menu_" + ability_id,
-			"label": "%s (%d)" % [ability["name"], mp_cost],
+			"label": str(ability["name"]),
+			"cost": mp_cost,
+			"cost_affordable": can_afford,
 			"tooltip": ability_tooltip,
 			"submenu": ally_targets,
 			"disabled": not can_afford
@@ -647,14 +657,18 @@ func _build_ability_menu_item(ability_id: String, combatant: Combatant, alive_en
 		if dead_targets.size() > 0:
 			return {
 				"id": "ability_menu_" + ability_id,
-				"label": "%s (%d)" % [ability["name"], mp_cost],
+				"label": str(ability["name"]),
+			"cost": mp_cost,
+			"cost_affordable": can_afford,
 				"tooltip": ability_tooltip,
 				"submenu": dead_targets,
 				"disabled": not can_afford
 			}
 		return {
 			"id": "ability_" + ability_id,
-			"label": "%s (%d)" % [ability["name"], mp_cost],
+			"label": str(ability["name"]),
+			"cost": mp_cost,
+			"cost_affordable": can_afford,
 			"tooltip": ability_tooltip,
 			"data": {"ability_id": ability_id},
 			"disabled": true
@@ -662,15 +676,17 @@ func _build_ability_menu_item(ability_id: String, combatant: Combatant, alive_en
 
 	# AoE on all enemies — show [AoE] tag with total estimated damage
 	if target_type == "all_enemies" and can_afford:
-		var aoe_label: String = "%s (%d) [AoE]" % [ability["name"], mp_cost]
+		var aoe_label: String = "%s [AoE]" % ability["name"]
 		if alive_enemies.size() > 0:
 			var total_est: int = 0
 			for enemy in alive_enemies:
 				total_est += BattleManager.estimate_ability_damage(combatant, enemy, ability)
-			aoe_label = "%s (%d) [AoE] ~%d total" % [ability["name"], mp_cost, total_est]
+			aoe_label = "%s [AoE] ~%d total" % [ability["name"], total_est]
 		return {
 			"id": "ability_" + ability_id,
 			"label": aoe_label,
+			"cost": mp_cost,
+			"cost_affordable": can_afford,
 			"tooltip": ability_tooltip + " (hits all enemies)",
 			"data": {"ability_id": ability_id},
 			"disabled": not can_afford
@@ -678,13 +694,15 @@ func _build_ability_menu_item(ability_id: String, combatant: Combatant, alive_en
 
 	# Party-wide buff/heal — show [All] tag
 	if target_type == "all_allies" and can_afford:
-		var all_label: String = "%s (%d) [All]" % [ability["name"], mp_cost]
+		var all_label: String = "%s [All]" % ability["name"]
 		if ability.has("heal_amount"):
 			var est_heal: int = int(ability["heal_amount"] * (1.0 + combatant.get_buffed_stat("magic", combatant.magic) / 20.0))
-			all_label = "%s (%d) [All] ~+%d each" % [ability["name"], mp_cost, est_heal]
+			all_label = "%s [All] ~+%d each" % [ability["name"], est_heal]
 		return {
 			"id": "ability_" + ability_id,
 			"label": all_label,
+			"cost": mp_cost,
+			"cost_affordable": can_afford,
 			"tooltip": ability_tooltip + " (affects all allies)",
 			"data": {"ability_id": ability_id},
 			"disabled": not can_afford
@@ -693,7 +711,9 @@ func _build_ability_menu_item(ability_id: String, combatant: Combatant, alive_en
 	# Default: single-target, self, or unaffordable — flat entry
 	return {
 		"id": "ability_" + ability_id,
-		"label": "%s (%d)" % [ability["name"], mp_cost],
+		"label": str(ability["name"]),
+			"cost": mp_cost,
+			"cost_affordable": can_afford,
 		"tooltip": ability_tooltip,
 		"data": {"ability_id": ability_id},
 		"disabled": not can_afford
@@ -709,6 +729,11 @@ func _build_free_move_item(combatant: Combatant, alive_enemies: Array[Combatant]
 	var move_type: String = free_move.get("type", "basic_attack")
 	var label: String = free_move.get("label", "Attack")
 
+	## basic_attack jobs (Fighter/Rogue): _build_attack_item already emitted their row with
+	## their label, so emitting here too would duplicate it.
+	if move_type != "ability":
+		return {}
+
 	if move_type == "ability":
 		var ability_id: String = free_move.get("ability_id", "")
 		if ability_id == "":
@@ -722,7 +747,16 @@ func _build_free_move_item(combatant: Combatant, alive_enemies: Array[Combatant]
 		item["label"] = ("%s (%s)" % [label, hint]) if hint != "" else label
 		return item
 
-	# Default: basic_attack (Fighter/Rogue path — same data shape as legacy "Attack")
+	return {}
+
+
+## Attack row for EVERY job. Fighter/Rogue carry their own free_move label (Attack/Strike);
+## ability-free-move jobs get a plain "Attack" alongside their Channel/Pray/Riff.
+func _build_attack_item(combatant: Combatant, alive_enemies: Array[Combatant], canvas_transform: Transform2D) -> Dictionary:
+	var free_move: Dictionary = combatant.job.get("free_move", {}) if combatant.job else {}
+	var label: String = "Attack"
+	if str(free_move.get("type", "basic_attack")) != "ability":
+		label = str(free_move.get("label", "Attack"))
 	if alive_enemies.size() == 0:
 		return {
 			"id": "attack",
@@ -872,6 +906,9 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 		return
 
 	# Scan enemy — reveal stats, weaknesses, drops
+	## Unreachable since the intrinsic Scan row was removed — no scan_ ids are built now.
+	## Kept with _show_scan_popup/_add_scan_indicators_to_sprite pending a ruling on whether
+	## the scan ABILITY should drive them (it currently reveals + logs, but shows no popup).
 	if item_id.begins_with("scan_") and item_data is Dictionary:
 		var target_idx = item_data.get("target_idx", -1)
 		if target_idx >= 0 and target_idx < _scene.test_enemies.size():
