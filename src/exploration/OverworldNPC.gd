@@ -942,11 +942,11 @@ func _adjust_collision_for_mode7(shape: CircleShape2D) -> void:
 
 	# Ultracode audit 2026-07-18 defect #2: the old ancestor property/ends_with("Overworld") walk was DEAD CODE (no scene root matches either predicate — W1 is "OverworldScene", W2-W6 are auto-named "@Node2D@N"), so Mode 7 NPCs kept a 40px zone under a 96px sprite. is_mode7() is the ONLY context signal now.
 	if InteractGeometry.is_mode7():
-		shape.radius = 128.0
+		shape.radius = InteractGeometry.NPC_TALK_RADIUS_MODE7
 		# Y-stretch: matches Mode 7 billboard Y:X ratio (0.3:0.5)
 		for child in get_children():
 			if child is CollisionShape2D and child.shape == shape:
-				child.scale = Vector2(1.0, 1.67)
+				child.scale = Vector2(1.0, InteractGeometry.MODE7_Y_STRETCH)
 				break
 
 
