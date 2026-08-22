@@ -133,8 +133,8 @@ func setup(game_party: Array) -> void:
 		if opt.get("id", "") == "autobattle_toggle":
 			opt["label"] = "Auto: ON" if any_auto_on else "Auto: OFF"
 			break
-	if GameState and GameState.teleport_menu_enabled:
-		_menu_options.append({"id": "teleport", "label": "Teleport", "enabled": true})
+	# struktured 2026-08-22: always visible. Whether it should be player-facing is DEFERRED.
+	_menu_options.append({"id": "teleport", "label": "Teleport", "enabled": true})
 	# Force full rebuild with new party data
 	_ui_built = false
 	call_deferred("_build_ui")
