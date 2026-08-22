@@ -405,15 +405,20 @@ func is_slot_resumable(slot: int) -> bool:
 	return top is Array and not (top as Array).is_empty()
 
 
-func get_most_recent_slot() -> int:
-	"""Find the most recently saved RESUMABLE slot. Returns -1 if none exist."""
-	var candidates: Array = []
+## Every slot Continue may resume from — extracted so tests can assert the SET, not source text
+static func candidate_slots() -> Array:
 	var slots: Array = []
 	for slot in range(MAX_SAVE_SLOTS):
 		slots.append(slot)
 	slots.append(QUICK_SAVE_SLOT)
 	slots.append(AUTO_SAVE_SLOT)
-	for slot in slots:
+	return slots
+
+
+func get_most_recent_slot() -> int:
+	"""Find the most recently saved RESUMABLE slot. Returns -1 if none exist."""
+	var candidates: Array = []
+	for slot in candidate_slots():
 		var info = get_save_info(slot)
 		if info.is_empty():
 			continue
