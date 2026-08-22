@@ -90,7 +90,7 @@ func _get_fringe_ground_types() -> Array:
 
 func _char_to_tile_type(ch: String) -> int:
 	match ch:
-		"W": return SuburbanTileGeneratorScript.TileType.HOUSE_WALL
+		"W": return SuburbanTileGeneratorScript.TileType.PICKET_FENCE
 		"S", "O": return SuburbanTileGeneratorScript.TileType.HOUSE_WALL  # storefronts / booth
 		"Y": return SuburbanTileGeneratorScript.TileType.PARKING_LOT  # the gap — bare slab
 		"p": return SuburbanTileGeneratorScript.TileType.SIDEWALK
