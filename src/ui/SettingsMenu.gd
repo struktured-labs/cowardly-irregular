@@ -1325,10 +1325,6 @@ func _save_debug_log_setting() -> void:
 	"""Save debug log setting to GameState and update overlay"""
 	if GameState:
 		GameState.debug_log_enabled = debug_log_enabled
-		# Teleport no longer HIDES with the overlay (that stranded map content), but turning
-		# debug back on still restores it — otherwise a pre-split save could never get it back.
-		if debug_log_enabled:
-			GameState.teleport_menu_enabled = true
 	# Update the overlay visibility
 	if DebugLogOverlay:
 		DebugLogOverlay.set_enabled(debug_log_enabled)

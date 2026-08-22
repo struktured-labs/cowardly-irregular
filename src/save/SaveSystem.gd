@@ -947,7 +947,6 @@ func save_settings() -> void:
 		settings["screen_shake_enabled"] = GameState.screen_shake_enabled
 		settings["default_battle_speed"] = GameState.default_battle_speed
 		settings["debug_log_enabled"] = GameState.debug_log_enabled
-		settings["teleport_menu_enabled"] = GameState.teleport_menu_enabled
 		settings["debug_all_pcs_unlocked"] = GameState.debug_all_pcs_unlocked
 		# Wave C: persist the dynamic-dialogue master switch alongside other
 		# UX preferences so the SettingsMenu toggle survives a relaunch.
@@ -1078,11 +1077,6 @@ func load_settings() -> void:
 			GameState.default_battle_speed = raw_speed if (raw_speed in BATTLE_SCENE_SCRIPT.BATTLE_SPEEDS) else 0.25
 		if settings.has("debug_log_enabled"):
 			GameState.debug_log_enabled = bool(settings["debug_log_enabled"])
-		# Pre-split saves carry no teleport key; inherit whatever used to gate it.
-		if settings.has("teleport_menu_enabled"):
-			GameState.teleport_menu_enabled = bool(settings["teleport_menu_enabled"])
-		elif settings.has("debug_log_enabled"):
-			GameState.teleport_menu_enabled = bool(settings["debug_log_enabled"])
 			if DebugLogOverlay and DebugLogOverlay.has_method("set_enabled"):
 				DebugLogOverlay.set_enabled(GameState.debug_log_enabled)
 		if settings.has("debug_all_pcs_unlocked"):
