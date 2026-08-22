@@ -3489,6 +3489,58 @@
       },
       "tier": "T2",
       "source": "ARTIST 'enemies/Skeleton animations.aseprite' (2026-08-16), palette-shifted elite variant (blue->venom green, gold->bone). Artist linework and shading unmodified. Same frame layout as skeleton; hit/dead reference idle, dissolve shader owns death."
+    },
+    "ogre": {
+      "path": "res://assets/sprites/monsters/ogre.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "regen_monster_artist_style.py 2026-08-22, gpt-image-1 high, anchored to the ARTIST goblin sheet (humanoid canon). Deliberately STONE-GREY with horns/tusks/maul so it does not duplicate `troll`, which is already a green axe-wielding brute \u2014 a default ogre prompt renders a third near-identical green club-troll. struktured: \"we should absolute add [a barbarian/ogre]\" (relayed by cowir-music, 2026-08-22)."
+    },
+    "barbarian": {
+      "path": "res://assets/sprites/monsters/barbarian.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "regen_monster_artist_style.py 2026-08-22, gpt-image-1 high, anchored to the ARTIST goblin sheet. HUMAN warrior \u2014 furs, woad warpaint, two-handed axe \u2014 the roster's real gap: troll/cave_troll already cover the green brute, nothing covered a human raider. Matches the 'too barbarian sounding' music struktured wants recast."
     }
   },
   "npc_sheets": {
