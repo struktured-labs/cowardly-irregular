@@ -188,6 +188,12 @@ func test_every_sfx_key_resolves_or_is_allowlisted() -> void:
 	for k in code_refs: all_refs[k] = "code"
 	for k in json_refs: all_refs[k] = all_refs.get(k, "cutscene JSON")
 
+	# VACUITY: orphans derive ONLY from all_refs, so a scanner that stops matching passes at zero coverage — mutation-proven 2026-08-22, both arms. Name a known-present member, not a count.
+	assert_true(code_refs.has("menu_select"),
+		"src scanner found no 'menu_select' (125 literal call sites) — the play_* regex has stopped matching and the orphan audit below is scanning NOTHING")
+	assert_true(json_refs.has("boss_defeat_stinger"),
+		"cutscene scanner found no 'boss_defeat_stinger' (19 play_sfx steps) — the JSON walk has stopped matching and cutscene sfx are unaudited")
+
 	var new_orphans: Array = []
 	for key in all_refs:
 		if resolvable.has(key):
