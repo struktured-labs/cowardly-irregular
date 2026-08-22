@@ -4,9 +4,23 @@
 WHY THIS EXISTS
     A Suno track is a SONG, and songs fade out. A game loop must not: when the
     stream wraps, the player hears the music die to silence and snap back to
-    full. Measured 2026-08-05: 98 of 138 looping beds do this. It is the largest
-    player-audible defect found in the music lane, and no existing guard could
-    see it, because "the track plays" and "loop = true" are both true for all 98.
+    full. It is the largest player-audible defect found in the music lane, and no
+    existing guard could see it, because "the track plays" and "loop = true" are
+    both true for every one of them.
+
+    Measured 2026-08-05, reproduced unchanged 2026-08-21 -- 138 looping beds:
+
+        ALREADY OK   41    loops cleanly today
+        TRIM-SAFE    88    fade laid over playing music
+        RITARDANDO    9    the piece is ENDING; a trim cuts a decay
+                    ----
+                    138    == the corpus, which is the check on these three
+
+    So 97 beds fade at the loop point, of which 88 are safe to trim. This
+    docstring said "98" for sixteen days -- a figure this tool has never printed,
+    off by one against its own output, and unfalsifiable because no line here
+    summed to anything. Quote the breakdown, not a total: a total cannot disagree
+    with itself. Re-derive with `python3 tools/audit_loop_seams.py`.
 
 WHAT IT REPORTS, and the distinction that matters for a fix
     Trimming the fade is only safe when the material UNDER the fade is at full
