@@ -133,7 +133,7 @@ func setup(game_party: Array) -> void:
 		if opt.get("id", "") == "autobattle_toggle":
 			opt["label"] = "Auto: ON" if any_auto_on else "Auto: OFF"
 			break
-	if GameState and GameState.debug_log_enabled:
+	if GameState and GameState.teleport_menu_enabled:
 		_menu_options.append({"id": "teleport", "label": "Teleport", "enabled": true})
 	# Force full rebuild with new party data
 	_ui_built = false
