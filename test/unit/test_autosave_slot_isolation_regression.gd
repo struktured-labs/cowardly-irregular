@@ -97,7 +97,10 @@ func test_most_recent_slot_considers_auto_save_slot() -> void:
 	var idx = src.find("func get_most_recent_slot")
 	assert_gt(idx, -1)
 	var body = src.substr(idx, 800)
-	assert_string_contains(body, "get_save_info(AUTO_SAVE_SLOT)",
+	# 2026-08-22: was pinned to the literal get_save_info(AUTO_SAVE_SLOT) call, which a
+	# refactor to a collected candidate list broke while preserving the behaviour. Pin the
+	# constant's presence, not the call shape.
+	assert_string_contains(body, "AUTO_SAVE_SLOT",
 		"get_most_recent_slot() must consider AUTO_SAVE_SLOT so Continue can " +
 		"resume from the latest auto-save")
 
