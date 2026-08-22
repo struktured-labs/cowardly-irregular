@@ -244,6 +244,8 @@ func can_quick_save() -> bool:
 		return false
 	if _party_is_wiped():
 		return false
+	if _party_is_absent():
+		return false
 	return true
 
 
@@ -259,6 +261,8 @@ func _save_block_reason() -> String:
 		return "Cannot save inside this room — leave to a village or overworld first"
 	if _is_cutscene_active():
 		return "Cannot save mid-cutscene — wait for the scene to finish"
+	if _party_is_absent():
+		return "No party loaded — nothing to save yet"
 	if _party_is_wiped():
 		return "Cannot save with the whole party down"
 	return ""
@@ -267,6 +271,16 @@ func _save_block_reason() -> String:
 ## The game-over-screen autosave hole (struktured 2026-08-15): after a wipe the battle is
 ## INACTIVE, so the 5-min timed autosave could snapshot the dead party — Continue then loaded
 ## it and the player explored with nobody alive. No save path may capture a full wipe.
+## A party that was NEVER LOADED is a different state from one that is down, and _party_is_wiped
+## deliberately returns false for it (7ef5dae9 scoped itself to a wipe). Without this, the timed
+## autosave fires with nothing loaded and writes a 2.5KB shell that then outranks real saves on
+## recency — struktured's slot 98, 2026-08-06 through 2026-08-22.
+func _party_is_absent() -> bool:
+	if not (GameState and "player_party" in GameState):
+		return true
+	return (GameState.player_party as Array).is_empty()
+
+
 func _party_is_wiped() -> bool:
 	if not (GameState and "player_party" in GameState) or GameState.player_party.is_empty():
 		return false
