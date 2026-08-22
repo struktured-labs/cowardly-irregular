@@ -136,3 +136,40 @@ func test_the_repeat_reuses_the_same_step_path_as_a_keypress() -> void:
 		assert_true(src.contains("func _nav_step("), "%s must extract one step path" % path)
 		assert_gt(src.count("_nav_step("), 2,
 			"%s must call _nav_step from BOTH _input and the repeat" % path)
+
+## HOLLOW-PIN GUARD. The source pins above assert `_nav_repeat.tick(` is PRESENT — they
+## pass on a menu that calls tick() and discards the result, i.e. on dead wiring. Measured:
+## that mutation scored 9/9 green. This arm drives a REAL menu through held input across
+## frames and asserts the selection actually moved, so the string cannot stand in for the
+## behaviour.
+func test_a_held_direction_actually_moves_a_real_settings_cursor() -> void:
+	var menu = load("res://src/ui/SettingsMenu.gd").new()
+	add_child_autofree(menu)
+	await get_tree().process_frame
+	if not ("selected_index" in menu and "_nav_repeat" in menu):
+		fail_test("SettingsMenu must expose selected_index and _nav_repeat")
+		return
+	menu.visible = true
+	var start: int = menu.selected_index
+	Input.action_press("ui_down")
+	# Long enough to clear INITIAL_DELAY and produce several ramped steps.
+	for i in 90:
+		menu._process(1.0 / 60.0)
+	Input.action_release("ui_down")
+	var moved: int = menu.selected_index - start
+	assert_gt(moved, 0,
+		"holding ui_down must move the real cursor; moved %d rows (dead wiring reads as 0)" % moved)
+
+
+func test_the_cursor_does_not_move_without_a_held_direction() -> void:
+	# CONTROL for the arm above: without it, "moved > 0" could pass on a menu that
+	# advances on every _process regardless of input.
+	var menu = load("res://src/ui/SettingsMenu.gd").new()
+	add_child_autofree(menu)
+	await get_tree().process_frame
+	menu.visible = true
+	var start: int = menu.selected_index
+	for i in 90:
+		menu._process(1.0 / 60.0)
+	assert_eq(menu.selected_index, start,
+		"the cursor must not drift with no direction held")
