@@ -56,6 +56,7 @@ func test_no_ghost_frame_beside_healthy_siblings() -> void:
 	assert_gt(sheets.size(), 10, "sanity: manifest should carry plenty of monster sheets")
 	var scanned: Array = []
 	var offenders: Array = []
+	var short: Array = []
 	for id in sheets:
 		var entry: Dictionary = sheets[id]
 		var path: String = str(entry.get("path", ""))
@@ -71,7 +72,11 @@ func test_no_ghost_frame_beside_healthy_siblings() -> void:
 		if fw <= 0 or int(img.get_width() / fw) < 2:
 			continue
 		scanned.append(id)
+		var frames := int(img.get_width() / fw)
 		var sol := _frame_solidity(img, fw)
+		# a zero-assert helper that aborts returns a SHORT array, and fewer frames read means fewer ghosts found
+		if sol.size() != frames:
+			short.append("%s: read %d of %d frames" % [id, sol.size(), frames])
 		var ghosts: Array = []
 		var healthy := false
 		for i in range(sol.size()):
@@ -84,6 +89,7 @@ func test_no_ghost_frame_beside_healthy_siblings() -> void:
 	# a named member the scan MUST reach — a count would pass on one stray match
 	assert_true(scanned.has("wolf"), "scan must reach wolf (8 solid frames) — else it read nothing")
 	assert_gt(scanned.size(), 50, "scan must cover the bulk of monster_sheets")
+	assert_eq(short, [], "a frame-solidity read came back short — the scan skipped frames: %s" % [short])
 	assert_eq(offenders, [], "a frame this faint renders as nothing in battle")
 
 
