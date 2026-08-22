@@ -56,9 +56,25 @@ func test_helper_checks_three_namespaces() -> void:
 # ── Source pin: critical gates routed through helper ────────────────
 
 func test_overworld_castle_gate_uses_helper() -> void:
+	# The gate now iterates W1_SPINE_FLAGS (the JRPG boss-spine ruling, 2026-08-22) rather
+	# than naming one flag inline, so the literal `is_story_flag_set("rat_king_defeated")`
+	# is gone while the BEHAVIOUR this guard exists for is intact and stronger. What must
+	# hold post-tick-335: the castle path reads through the dual-namespace helper, never
+	# get_story_flag, and the rat king is still a requirement.
 	var src := _read(OVERWORLD_SCENE_PATH)
-	assert_true(src.contains("is_story_flag_set(\"rat_king_defeated\")"),
-		"OverworldScene Castle Harmonia gate must use is_story_flag_set (post-tick-335)")
+	assert_true(src.contains("is_story_flag_set"),
+		"OverworldScene Castle Harmonia gate must read via is_story_flag_set (post-tick-335)")
+	assert_true(src.contains("rat_king_defeated"),
+		"the rat king must still be required for Castle Harmonia")
+	# Scoped to the castle helper's own body. A whole-file assertion overreaches: an
+	# UNRELATED gate at :883 uses get_story_flag with a manual game_constants fallback,
+	# which predates this guard and is not what it governs.
+	var start := src.find("func _castle_is_earned")
+	assert_gt(start, -1, "the castle gate helper must exist")
+	var stop := src.find("\nfunc ", start + 1)
+	var body := src.substr(start, (stop - start) if stop > -1 else src.length() - start)
+	assert_true(body.contains("is_story_flag_set"), "the castle helper reads via the dual-namespace helper")
+	assert_false(body.contains("get_story_flag"), "the castle helper must not use the single-namespace reader")
 
 
 func test_harmonia_suburban_gate_uses_helper() -> void:

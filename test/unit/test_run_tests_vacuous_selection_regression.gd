@@ -198,8 +198,13 @@ func test_the_directory_forms_are_guarded_too() -> void:
 	# matched zero lines. Only the count control below caught it — the two
 	# per-line assertions had simply stopped running.
 	var guarded := 0
+	# Keyed on a CONCRETE corpus path (`-gdir=res://test/`), not on the bare flag. The
+	# per-file vacuity arm (2026-08-22) added an argument PARSER matching the glob
+	# `-gdir=res://*`, which is not a runner invocation — the bare-flag scan counted it as
+	# a third form and this guard redded on correct code. The count control below caught
+	# it, exactly as it caught the earlier `exec` breakage recorded above.
 	for line in src.split("\n"):
-		if not line.contains("-gdir=res://"):
+		if not line.contains("-gdir=res://test/"):
 			continue
 		assert_true(line.contains("require_test_dir"),
 			"a directory form reaches the runner without an emptiness guard: %s" % line.strip_edges())
