@@ -21,6 +21,8 @@ extends GutTest
 ## design question, and STRANDED is covered by the mutation arm in the commit, not here.
 
 const AUDIT := "tools/audit_overworld_connectivity.py"
+## the same exclusions test_transition_reachability_regression uses to enumerate maps
+const NOT_MAPS := ["OverworldNPC.gd", "OverworldPlayer.gd", "OverworldController.gd", "OverworldMinimap.gd"]
 
 
 func _run(args: Array) -> Array:
@@ -70,6 +72,16 @@ func test_every_world_gets_a_classification_and_none_of_them_is_a_vacuous_ok() -
 			classified += 1
 		if line.contains("sites 0") and line.contains("OK"):
 			vacuous_ok += 1
-	assert_gt(headers, 5, "fewer than six worlds were audited -- the world list is not being read")
+	# the auditor's world list is HAND-WRITTEN; derive the truth from disk so a seventh
+	# world cannot ship silently unaudited behind a floor like "more than five"
+	var scenes: Array = []
+	var dir := DirAccess.open("res://src/exploration")
+	if dir != null:
+		for f in dir.get_files():
+			if f.ends_with(".gd") and f.contains("Overworld") and not f in NOT_MAPS:
+				scenes.append(f)
+	assert_gt(scenes.size(), 0, "no overworld scenes found on disk -- the derivation is dead")
+	assert_eq(headers, scenes.size(),
+		"the auditor covers %d worlds but %d overworld scenes exist on disk: %s" % [headers, scenes.size(), str(scenes)])
 	assert_eq(classified, headers, "a world was audited but never classified")
 	assert_eq(vacuous_ok, 0, "a world classified 0 sites and still printed OK")
