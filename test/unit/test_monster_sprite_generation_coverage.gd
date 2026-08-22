@@ -123,3 +123,43 @@ func test_every_creator_has_a_key_and_the_key_matches_it() -> void:
 		if not want in keys:
 			keyless.append("%s has no cache key named '%s'" % [c, want])
 	assert_eq(keyless.size(), 0, "creators whose own key is missing: " + str(keyless))
+
+
+func test_no_monster_falls_through_to_the_default_sprite() -> void:
+	## BattleScene resolves a monster as: world-variant sheet -> base sheet -> a `match
+	## monster_id` arm -> the DEFAULT, which returns a slime. So a monster added with neither
+	## a sheet nor an arm renders as a slime, silently, and only on screen.
+	## That is not hypothetical: the Ogre and Barbarian Raider shipped exactly that way on
+	## 2026-08-22 and were caught by a merged-tree gate rather than at authoring time.
+	var mons = JSON.parse_string(FileAccess.get_file_as_string("res://data/monsters.json"))
+	var list = mons.get("monsters", mons) if mons is Dictionary else mons
+	var ids: Array = []
+	if list is Array:
+		for m in list:
+			if m is Dictionary and m.has("id"):
+				ids.append(str(m["id"]))
+	else:
+		for k in list:
+			ids.append(str(k))
+	assert_gt(ids.size(), 50, "CONTROL: read a real monster roster (%d)" % ids.size())
+
+	var manifest = JSON.parse_string(FileAccess.get_file_as_string("res://data/sprite_manifest.json"))
+	var sheets: Dictionary = manifest.get("monster_sheets", {}) if manifest is Dictionary else {}
+	assert_gt(sheets.size(), 20, "CONTROL: read a real sheet manifest (%d)" % sheets.size())
+
+	var scene_src := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
+	var start := scene_src.find("var external_frames = HybridSpriteLoaderClass.load_monster_sprite_frames(monster_id)")
+	assert_gt(start, -1, "CONTROL: located the procedural fallback block")
+	var block := scene_src.substr(start, scene_src.find("\nfunc ", start) - start)
+	var arms: Array = []
+	var re := RegEx.create_from_string("\"([a-z_0-9]+)\":")
+	for m in re.search_all(block):
+		arms.append(m.get_string(1))
+	assert_true("slime" in arms, "CONTROL: the arm scan found a known member")
+
+	var orphans: Array = []
+	for id in ids:
+		if not sheets.has(id) and not (id in arms):
+			orphans.append(id)
+	assert_eq(orphans.size(), 0,
+		"monsters with neither an artist sheet nor a procedural arm — these render as SLIMES: " + str(orphans))
