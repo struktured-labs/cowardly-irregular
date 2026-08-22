@@ -598,7 +598,9 @@ func _build_ability_menu_item(ability_id: String, combatant: Combatant, alive_en
 			})
 		return {
 			"id": "ability_menu_" + ability_id,
-			"label": "%s (%d)" % [ability["name"], mp_cost],
+			"label": str(ability["name"]),
+			"cost": mp_cost,
+			"cost_affordable": can_afford,
 			"tooltip": ability_tooltip,
 			"submenu": enemy_targets,
 			"disabled": not can_afford
@@ -627,7 +629,9 @@ func _build_ability_menu_item(ability_id: String, combatant: Combatant, alive_en
 			})
 		return {
 			"id": "ability_menu_" + ability_id,
-			"label": "%s (%d)" % [ability["name"], mp_cost],
+			"label": str(ability["name"]),
+			"cost": mp_cost,
+			"cost_affordable": can_afford,
 			"tooltip": ability_tooltip,
 			"submenu": ally_targets,
 			"disabled": not can_afford
@@ -653,14 +657,18 @@ func _build_ability_menu_item(ability_id: String, combatant: Combatant, alive_en
 		if dead_targets.size() > 0:
 			return {
 				"id": "ability_menu_" + ability_id,
-				"label": "%s (%d)" % [ability["name"], mp_cost],
+				"label": str(ability["name"]),
+			"cost": mp_cost,
+			"cost_affordable": can_afford,
 				"tooltip": ability_tooltip,
 				"submenu": dead_targets,
 				"disabled": not can_afford
 			}
 		return {
 			"id": "ability_" + ability_id,
-			"label": "%s (%d)" % [ability["name"], mp_cost],
+			"label": str(ability["name"]),
+			"cost": mp_cost,
+			"cost_affordable": can_afford,
 			"tooltip": ability_tooltip,
 			"data": {"ability_id": ability_id},
 			"disabled": true
@@ -668,15 +676,17 @@ func _build_ability_menu_item(ability_id: String, combatant: Combatant, alive_en
 
 	# AoE on all enemies — show [AoE] tag with total estimated damage
 	if target_type == "all_enemies" and can_afford:
-		var aoe_label: String = "%s (%d) [AoE]" % [ability["name"], mp_cost]
+		var aoe_label: String = "%s [AoE]" % ability["name"]
 		if alive_enemies.size() > 0:
 			var total_est: int = 0
 			for enemy in alive_enemies:
 				total_est += BattleManager.estimate_ability_damage(combatant, enemy, ability)
-			aoe_label = "%s (%d) [AoE] ~%d total" % [ability["name"], mp_cost, total_est]
+			aoe_label = "%s [AoE] ~%d total" % [ability["name"], total_est]
 		return {
 			"id": "ability_" + ability_id,
 			"label": aoe_label,
+			"cost": mp_cost,
+			"cost_affordable": can_afford,
 			"tooltip": ability_tooltip + " (hits all enemies)",
 			"data": {"ability_id": ability_id},
 			"disabled": not can_afford
@@ -684,13 +694,15 @@ func _build_ability_menu_item(ability_id: String, combatant: Combatant, alive_en
 
 	# Party-wide buff/heal — show [All] tag
 	if target_type == "all_allies" and can_afford:
-		var all_label: String = "%s (%d) [All]" % [ability["name"], mp_cost]
+		var all_label: String = "%s [All]" % ability["name"]
 		if ability.has("heal_amount"):
 			var est_heal: int = int(ability["heal_amount"] * (1.0 + combatant.get_buffed_stat("magic", combatant.magic) / 20.0))
-			all_label = "%s (%d) [All] ~+%d each" % [ability["name"], mp_cost, est_heal]
+			all_label = "%s [All] ~+%d each" % [ability["name"], est_heal]
 		return {
 			"id": "ability_" + ability_id,
 			"label": all_label,
+			"cost": mp_cost,
+			"cost_affordable": can_afford,
 			"tooltip": ability_tooltip + " (affects all allies)",
 			"data": {"ability_id": ability_id},
 			"disabled": not can_afford
@@ -699,7 +711,9 @@ func _build_ability_menu_item(ability_id: String, combatant: Combatant, alive_en
 	# Default: single-target, self, or unaffordable — flat entry
 	return {
 		"id": "ability_" + ability_id,
-		"label": "%s (%d)" % [ability["name"], mp_cost],
+		"label": str(ability["name"]),
+			"cost": mp_cost,
+			"cost_affordable": can_afford,
 		"tooltip": ability_tooltip,
 		"data": {"ability_id": ability_id},
 		"disabled": not can_afford

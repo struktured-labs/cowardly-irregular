@@ -211,6 +211,13 @@ const MENU_PADDING = 12
 ## and pinned the panel at y=10 with the tail off-screen. Repositioning cannot fit a menu
 ## taller than the viewport; only capping can.
 const MENU_SCREEN_MARGIN = 24
+## Cost suffixes render as their OWN right-aligned span, not concatenated into the name
+## (struktured 2026-08-22: the cost "should be colorized differently or stylized from the
+## other text"). Dimmer than the name so the eye reads NAME first; red when unaffordable,
+## which makes a greyed row self-explanatory without a message.
+const COST_COLOR := Color(0.65, 0.78, 0.95, 0.85)
+const COST_COLOR_UNAFFORDABLE := Color(0.92, 0.45, 0.45, 0.95)
+const COST_COLUMN_WIDTH = 46
 const SUBMENU_DELAY = 0.12  # Delay before submenu expands
 
 
@@ -596,6 +603,8 @@ func _build_menu() -> void:
 		if item.has("submenu"):
 			label_text += " >"
 		var text_width = font.get_string_size(label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
+		if item.has("cost"):
+			text_width += COST_COLUMN_WIDTH  # the cost column sits to the right of the name
 		max_label_width = max(max_label_width, text_width)
 	var viewport_width = 1280
 	if is_inside_tree():
@@ -806,6 +815,22 @@ func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -
 		text_label.text = label + " >"
 	else:
 		text_label.text = label
+
+	# Cost as a separate right-aligned span so it can carry its own colour AND its own
+	# affordability tint, independent of the row's disabled state.
+	if item.has("cost"):
+		text_label.size.x -= COST_COLUMN_WIDTH
+		var cost_label = Label.new()
+		cost_label.name = "Cost"
+		cost_label.text = "%d MP" % int(item["cost"])
+		cost_label.position = Vector2(10 + text_label.size.x, 0)
+		cost_label.size = Vector2(COST_COLUMN_WIDTH - 4, ITEM_HEIGHT)
+		cost_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		cost_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		cost_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
+		var affordable: bool = bool(item.get("cost_affordable", true))
+		cost_label.add_theme_color_override("font_color", COST_COLOR if affordable else COST_COLOR_UNAFFORDABLE)
+		row.add_child(cost_label)
 
 	if disabled:
 		text_label.add_theme_color_override("font_color", style.text.darkened(0.5))

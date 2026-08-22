@@ -182,3 +182,38 @@ func test_scrolling_keeps_the_selected_row_inside_the_window() -> void:
 	var last_visible: int = m._scroll_offset + m._max_visible_rows - 1
 	assert_true(m.selected_index <= last_visible and m.selected_index >= m._scroll_offset,
 		"selecting the last row scrolled it into view (offset %d, window %d)" % [m._scroll_offset, m._max_visible_rows])
+
+
+func test_cost_renders_as_its_own_span_not_glued_to_the_name() -> void:
+	## struktured 2026-08-22: the cost "should be colorized differently or stylized from the
+	## other text". Pre-fix the row label was one string, "Fire (6)", so the cost could not
+	## carry its own colour. Asserts the SPLIT, which is what makes styling possible at all.
+	var m = await _built_menu([
+		{"id": "a", "label": "Firebolt", "cost": 6, "cost_affordable": true},
+		{"id": "b", "label": "Meteor", "cost": 99, "cost_affordable": false},
+	])
+	var container = m._get_items_container()
+	assert_not_null(container, "CONTROL: the menu built its rows")
+	var row_a = container.get_child(0)
+	var name_a = row_a.get_node_or_null("Label")
+	var cost_a = row_a.get_node_or_null("Cost")
+	assert_not_null(cost_a, "the cost is its OWN node, not concatenated into the name")
+	assert_eq(name_a.text, "Firebolt", "the name span carries the name ALONE")
+	assert_true("6" in cost_a.text, "the cost span carries the cost")
+
+
+func test_an_unaffordable_cost_is_tinted_differently_from_an_affordable_one() -> void:
+	## Makes "why is this row greyed" self-evident without a message.
+	var m = await _built_menu([
+		{"id": "a", "label": "Firebolt", "cost": 6, "cost_affordable": true},
+		{"id": "b", "label": "Meteor", "cost": 99, "cost_affordable": false},
+	])
+	var container = m._get_items_container()
+	var ok = container.get_child(0).get_node_or_null("Cost")
+	var bad = container.get_child(1).get_node_or_null("Cost")
+	assert_not_null(ok)
+	assert_not_null(bad)
+	var c_ok: Color = ok.get_theme_color("font_color")
+	var c_bad: Color = bad.get_theme_color("font_color")
+	assert_false(c_ok.is_equal_approx(c_bad), "affordable and unaffordable costs differ in colour")
+	assert_gt(c_bad.r, c_bad.g, "the unaffordable tint reads as a warning (red-dominant)")
