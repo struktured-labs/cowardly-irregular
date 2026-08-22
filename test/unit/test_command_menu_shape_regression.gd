@@ -10,6 +10,35 @@ const MenuClass = preload("res://src/battle/BattleCommandMenu.gd")
 const Win98MenuClass = preload("res://src/ui/Win98Menu.gd")
 
 
+var _saved_enemy: Array = []
+var _saved_player: Array = []
+
+
+## BattleManager is an AUTOLOAD and other test files leave FREED combatants in its parties
+## (test_calibrant_final_battle does; measured 3 freed entries). A freed entry aborts the
+## menu builder somewhere in its body, and an abort in a function returning Array discards
+## everything and yields [] — so this file passed alone and returned ZERO ROWS in the suite.
+## Purging on entry makes the file hermetic instead of order-dependent.
+func before_each() -> void:
+	_saved_enemy = BattleManager.enemy_party.duplicate()
+	_saved_player = BattleManager.player_party.duplicate()
+	var live_e: Array = []
+	for e in BattleManager.enemy_party:
+		if is_instance_valid(e):
+			live_e.append(e)
+	var live_p: Array = []
+	for p in BattleManager.player_party:
+		if is_instance_valid(p):
+			live_p.append(p)
+	BattleManager.enemy_party.assign(live_e)
+	BattleManager.player_party.assign(live_p)
+
+
+func after_each() -> void:
+	BattleManager.enemy_party.assign(_saved_enemy)
+	BattleManager.player_party.assign(_saved_player)
+
+
 ## MUST await: build_command_menu_items_with_targets reads _scene.get_viewport() on its THIRD
 ## line, and a scene not yet in the tree makes that null — which ABORTS the builder and returns
 ## an empty array. Passed in isolation and failed in the full suite until this await existed;
