@@ -5296,13 +5296,13 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 		"defense_up":
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
-					target.add_buff("Protect", "defense", stat_modifier, duration)
+					target.add_buff("Praesidium", "defense", stat_modifier, duration)
 					battle_log_message.emit("[color=cyan]%s gains Protect![/color] (DEF +%d%% for %d turns)" % [target.combatant_name, int((stat_modifier - 1.0) * 100), duration])
 		## Shell — the magic mirror of Protect. take_damage reads magic_defense for magical hits and defense for physical ones, so Protect gave no magic mitigation and nothing raised magic_defense at all: soul_wail could sap it, no ability restored it.
 		"magic_defense_up":
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
-					target.add_buff("Shell", "magic_defense", stat_modifier, duration)
+					target.add_buff("Velamen", "magic_defense", stat_modifier, duration)
 					battle_log_message.emit("[color=cyan]%s gains Shell![/color] (M.DEF +%d%% for %d turns)" % [target.combatant_name, int((stat_modifier - 1.0) * 100), duration])
 		"attack_up":
 			for target in targets:

@@ -32,7 +32,7 @@
   },
   "cure": {
     "id": "cure",
-    "name": "Cure",
+    "name": "Sanatio",
     "family": "cure",
     "tier": 1,
     "type": "healing",
@@ -46,7 +46,7 @@
   },
   "cura": {
     "id": "cura",
-    "name": "Curia",
+    "name": "Sanatio Maior",
     "family": "cure",
     "tier": 2,
     "type": "healing",
@@ -60,7 +60,7 @@
   },
   "raise": {
     "id": "raise",
-    "name": "Raise",
+    "name": "Anima Reddita",
     "type": "revival",
     "animation": "heal",
     "mp_cost": 20,
@@ -72,7 +72,7 @@
   },
   "esuna": {
     "id": "esuna",
-    "name": "Esuna",
+    "name": "Purgatio",
     "type": "support",
     "animation": "heal",
     "mp_cost": 10,
@@ -84,7 +84,7 @@
   },
   "regen": {
     "id": "regen",
-    "name": "Regen",
+    "name": "Recreatio Lenta",
     "type": "support",
     "animation": "heal",
     "mp_cost": 12,
@@ -97,7 +97,7 @@
   },
   "protect": {
     "id": "protect",
-    "name": "Protect",
+    "name": "Praesidium",
     "type": "support",
     "animation": "buff",
     "mp_cost": 8,
@@ -111,7 +111,7 @@
   },
   "shell": {
     "id": "shell",
-    "name": "Shell",
+    "name": "Velamen",
     "type": "support",
     "animation": "buff",
     "mp_cost": 8,
@@ -125,7 +125,7 @@
   },
   "fire": {
     "id": "fire",
-    "name": "Fire",
+    "name": "Ignis",
     "family": "fire",
     "tier": 1,
     "type": "magic",
@@ -140,7 +140,7 @@
   },
   "fira": {
     "id": "fira",
-    "name": "Firia",
+    "name": "Ignis Maior",
     "family": "fire",
     "tier": 2,
     "type": "magic",
@@ -155,7 +155,7 @@
   },
   "blizzard": {
     "id": "blizzard",
-    "name": "Blizzard",
+    "name": "Glacies",
     "family": "ice",
     "tier": 1,
     "type": "magic",
@@ -170,7 +170,7 @@
   },
   "blizzara": {
     "id": "blizzara",
-    "name": "Blizzardia",
+    "name": "Glacies Maior",
     "family": "ice",
     "tier": 2,
     "type": "magic",
@@ -185,7 +185,7 @@
   },
   "thunder": {
     "id": "thunder",
-    "name": "Thunder",
+    "name": "Fulmen",
     "family": "lightning",
     "tier": 1,
     "type": "magic",
@@ -200,7 +200,7 @@
   },
   "thundara": {
     "id": "thundara",
-    "name": "Thunderia",
+    "name": "Fulmen Maius",
     "family": "lightning",
     "tier": 2,
     "type": "magic",
@@ -215,7 +215,7 @@
   },
   "firaga": {
     "id": "firaga",
-    "name": "Firia Ex",
+    "name": "Ignis Maximus",
     "family": "fire",
     "tier": 3,
     "type": "magic",
@@ -230,7 +230,7 @@
   },
   "blizzaga": {
     "id": "blizzaga",
-    "name": "Blizzardia Ex",
+    "name": "Glacies Maxima",
     "family": "ice",
     "tier": 3,
     "type": "magic",
@@ -245,7 +245,7 @@
   },
   "thundaga": {
     "id": "thundaga",
-    "name": "Thunderia Ex",
+    "name": "Fulmen Maximum",
     "family": "lightning",
     "tier": 3,
     "type": "magic",
@@ -426,7 +426,7 @@
   },
   "drain_life": {
     "id": "drain_life",
-    "name": "Drain Life",
+    "name": "Haustus Vitae",
     "type": "magic",
     "animation": "cast_dark",
     "mp_cost": 16,
@@ -438,7 +438,7 @@
   },
   "death_sentence": {
     "id": "death_sentence",
-    "name": "Death Sentence",
+    "name": "Sententia Mortis",
     "type": "magic",
     "animation": "cast_dark",
     "mp_cost": 30,
@@ -461,7 +461,7 @@
   },
   "necro_blast": {
     "id": "necro_blast",
-    "name": "Necro Blast",
+    "name": "Ictus Mortis",
     "type": "magic",
     "animation": "cast_dark",
     "mp_cost": 35,
@@ -1587,7 +1587,7 @@
   },
   "chain_lightning": {
     "id": "chain_lightning",
-    "name": "Chain Lightning",
+    "name": "Catena Fulminis",
     "type": "magic",
     "animation": "cast_lightning",
     "mp_cost": 20,
@@ -1747,7 +1747,7 @@
   },
   "crystal_heal": {
     "id": "crystal_heal",
-    "name": "Crystal Heal",
+    "name": "Sanatio Crystalli",
     "type": "healing",
     "animation": "heal",
     "mp_cost": 8,
@@ -1794,7 +1794,7 @@
   },
   "dark_bolt": {
     "id": "dark_bolt",
-    "name": "Dark Bolt",
+    "name": "Telum Umbrae",
     "type": "magic",
     "animation": "cast_dark",
     "mp_cost": 6,
@@ -2797,7 +2797,7 @@
   },
   "regenerate": {
     "id": "regenerate",
-    "name": "Regenerate",
+    "name": "Recreatio",
     "type": "healing",
     "animation": "heal",
     "mp_cost": 10,

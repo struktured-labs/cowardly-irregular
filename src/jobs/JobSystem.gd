@@ -291,7 +291,7 @@ func _create_default_abilities() -> void:
 		},
 		"cure": {
 			"id": "cure",
-			"name": "Cure",
+			"name": "Sanatio",
 			"type": "healing",
 			"mp_cost": 6,
 			"description": "Restore HP to one ally",
@@ -300,7 +300,7 @@ func _create_default_abilities() -> void:
 		},
 		"cura": {
 			"id": "cura",
-			"name": "Curia",
+			"name": "Sanatio Maior",
 			"type": "healing",
 			"mp_cost": 12,
 			"description": "Restore HP to one ally",
@@ -309,7 +309,7 @@ func _create_default_abilities() -> void:
 		},
 		"raise": {
 			"id": "raise",
-			"name": "Raise",
+			"name": "Anima Reddita",
 			"type": "revival",
 			"mp_cost": 20,
 			"description": "Revive a fallen ally with 50% HP",
@@ -317,7 +317,7 @@ func _create_default_abilities() -> void:
 		},
 		"fire": {
 			"id": "fire",
-			"name": "Fire",
+			"name": "Ignis",
 			"type": "magic",
 			"mp_cost": 8,
 			"description": "Fire magic damage to one enemy",
@@ -327,7 +327,7 @@ func _create_default_abilities() -> void:
 		},
 		"blizzard": {
 			"id": "blizzard",
-			"name": "Blizzard",
+			"name": "Glacies",
 			"type": "magic",
 			"mp_cost": 8,
 			"description": "Ice magic damage to one enemy",
@@ -337,7 +337,7 @@ func _create_default_abilities() -> void:
 		},
 		"thunder": {
 			"id": "thunder",
-			"name": "Thunder",
+			"name": "Fulmen",
 			"type": "magic",
 			"mp_cost": 8,
 			"description": "Lightning magic damage to one enemy",
