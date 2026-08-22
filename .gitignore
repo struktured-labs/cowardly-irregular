@@ -114,3 +114,4 @@ assets/sprites/jobs/*_sdxl/hero_reference.png.import
 # sandbox roots for XDG_DATA_HOME — a godot run materialises app_userdata here
 tmp-xdg/
 tmp-*/
+**/app_userdata/
