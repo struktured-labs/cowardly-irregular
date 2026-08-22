@@ -199,8 +199,8 @@ func test_every_sfx_key_resolves_or_is_allowlisted() -> void:
 	assert_true(json_refs.has("boss_defeat_stinger"),
 		"cutscene scanner found no 'boss_defeat_stinger' (19 play_sfx steps) — the JSON walk has stopped matching and cutscene sfx are unaudited")
 
-	# FAMILY B: _walk_src returns SILENTLY on a null DirAccess, so one unreadable subdir drops its files with no signal — and a key in 35 files survives that. Name one file PER directory the walk must reach.
-	for required in ["res://src/audio/SoundManager.gd", "res://src/battle/BattleScene.gd", "res://src/ui/ItemsMenu.gd"]:
+	# FAMILY B: _walk_src returns SILENTLY on a null DirAccess, so a lost subdir drops its files unnoticed. Canaries cover the THREE HIGHEST-DENSITY sfx dirs (ui 33 files / exploration 21 / battle 4); 8 sparser dirs stay uncovered — stated, not implied.
+	for required in ["res://src/exploration/ShopScene.gd", "res://src/battle/BattleScene.gd", "res://src/ui/ItemsMenu.gd"]:
 		assert_true(_visited_src.has(required),
 			"the src walk never reached %s — a subdirectory failed to open and its sfx calls are unaudited, which a key-presence check cannot see" % required)
 
