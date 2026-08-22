@@ -7,6 +7,7 @@ extends GutTest
 
 const SCENE_PATH := "res://src/battle/BattleScene.gd"
 const MenuClass = preload("res://src/battle/BattleCommandMenu.gd")
+const Win98MenuClass = preload("res://src/ui/Win98Menu.gd")
 
 
 func _scene_with_enemies(n: int = 2) -> Node:
@@ -132,3 +133,52 @@ func test_basic_attack_jobs_get_exactly_one_attack_row_with_their_own_label() ->
 				assert_eq(str(r.get("label", "")), str(expected[job_id]),
 					"%s's attack row keeps its own label" % job_id)
 		assert_eq(n, 1, "%s has exactly one attack row, not a duplicate" % job_id)
+
+
+func _built_menu(rows: Array) -> Node:
+	var m = Win98MenuClass.new()
+	add_child_autofree(m)
+	m.setup("Test", rows, Vector2(200, 200), "bard")
+	await get_tree().process_frame
+	await get_tree().process_frame
+	return m
+
+
+func test_a_very_tall_menu_still_FITS_the_viewport() -> void:
+	## struktured 2026-08-22: "bard menu is cutoff on bottom". menu_height had no cap, so
+	## _clamp_to_screen computed a negative y, took its `y < 0` branch and pinned the panel at
+	## y=10 with the tail off-screen. Asserts the RELATIONSHIP (it fits) — a row count would
+	## go red every time the menu legitimately changes shape.
+	var rows: Array = []
+	for i in 40:
+		rows.append({"id": "row%d" % i, "label": "Row %d" % i})
+	var m = await _built_menu(rows)
+	var vh: float = get_viewport().get_visible_rect().size.y
+	assert_gt(vh, 0.0, "CONTROL: a real viewport with a real height")
+	assert_gt(m.size.y, 0.0, "CONTROL: the menu actually built")
+	assert_true(m.size.y <= vh, "a 40-row menu is capped to the viewport (%d vs %d)" % [m.size.y, vh])
+	assert_true(m.position.y + m.size.y <= vh, "and it sits fully ON screen, not just sized to fit")
+
+
+func test_the_tallest_REAL_battle_menu_fits() -> void:
+	## The live Bard menu — the job that actually overflowed — with its submenus.
+	var rows := _rows("bard")
+	var m = await _built_menu(rows)
+	var vh: float = get_viewport().get_visible_rect().size.y
+	assert_gt(rows.size(), 4, "CONTROL: a real, populated Bard menu")
+	assert_true(m.position.y + m.size.y <= vh,
+		"Bard's full command menu fits on screen (%d rows, bottom at %d of %d)" % [rows.size(), m.position.y + m.size.y, vh])
+
+
+func test_scrolling_keeps_the_selected_row_inside_the_window() -> void:
+	## A cap without scrolling would hide the rows past it instead of clipping them off-screen.
+	var rows: Array = []
+	for i in 40:
+		rows.append({"id": "row%d" % i, "label": "Row %d" % i})
+	var m = await _built_menu(rows)
+	assert_gt(m._max_visible_rows, 0, "CONTROL: 40 rows actually triggered the cap")
+	m.selected_index = 39
+	m._update_selection()
+	var last_visible: int = m._scroll_offset + m._max_visible_rows - 1
+	assert_true(m.selected_index <= last_visible and m.selected_index >= m._scroll_offset,
+		"selecting the last row scrolled it into view (offset %d, window %d)" % [m._scroll_offset, m._max_visible_rows])

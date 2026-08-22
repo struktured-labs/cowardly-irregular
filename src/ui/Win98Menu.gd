@@ -163,6 +163,9 @@ const CHARACTER_STYLES = {
 var style: Dictionary = CHARACTER_STYLES["fighter"]
 var menu_items: Array = []
 var selected_index: int = 0
+var _scroll_offset: int = 0        # first visible row index
+var _max_visible_rows: int = 0     # 0 = uncapped (menu fits)
+var _items_base_y: float = 0.0
 var submenu: Win98Menu = null
 var parent_menu: Win98Menu = null
 var anchor_position: Vector2 = Vector2.ZERO
@@ -202,6 +205,12 @@ var _tooltip_label: Label = null  # Ability tooltip shown below menu
 const TILE_SIZE = 6
 const ITEM_HEIGHT = 24
 const MENU_PADDING = 12
+## Hard ceiling so a tall menu SCROLLS instead of running off the bottom of the screen.
+## struktured playtest 2026-08-22: "bard menu is cutoff on bottom" — Bard ran 10-11 rows and
+## menu_height had no cap, so _clamp_to_screen computed a negative y, hit its `y < 0` branch,
+## and pinned the panel at y=10 with the tail off-screen. Repositioning cannot fit a menu
+## taller than the viewport; only capping can.
+const MENU_SCREEN_MARGIN = 24
 const SUBMENU_DELAY = 0.12  # Delay before submenu expands
 
 
@@ -594,10 +603,20 @@ func _build_menu() -> void:
 	var menu_width = clampi(max(210, int(max_label_width) + content_padding), 210, viewport_width / 2)
 
 	var ap_label_height = 14 if (is_root_menu and battle_mode) else 0  # Only show AP in battle
-	var menu_height = MENU_PADDING * 2 + menu_items.size() * ITEM_HEIGHT + TILE_SIZE * 2 + ap_label_height
+	var chrome_height = MENU_PADDING * 2 + TILE_SIZE * 2 + ap_label_height
+	var viewport_height = 720
+	if is_inside_tree():
+		viewport_height = int(get_viewport_rect().size.y)
+	var room_for_rows = viewport_height - MENU_SCREEN_MARGIN * 2 - chrome_height
+	_max_visible_rows = maxi(1, room_for_rows / ITEM_HEIGHT)
+	if menu_items.size() <= _max_visible_rows:
+		_max_visible_rows = 0  # fits; no scrolling
+	var shown_rows = menu_items.size() if _max_visible_rows == 0 else _max_visible_rows
+	var menu_height = chrome_height + shown_rows * ITEM_HEIGHT
 
 	# Create the menu texture with pixel borders
 	var menu_panel = _create_retro_panel(menu_width, menu_height)
+	menu_panel.clip_contents = true  # rows past the cap are scrolled, not drawn outside the panel
 	add_child(menu_panel)
 
 	# AP label at top for root menu in battle mode (compact, right-aligned)
@@ -617,6 +636,8 @@ func _build_menu() -> void:
 	# Items container (offset by AP label if present)
 	var items_container = VBoxContainer.new()
 	items_container.position = Vector2(MENU_PADDING + TILE_SIZE, MENU_PADDING + TILE_SIZE + ap_label_height)
+	_items_base_y = items_container.position.y
+	_scroll_offset = 0
 	items_container.add_theme_constant_override("separation", 0)
 	menu_panel.add_child(items_container)
 
@@ -815,6 +836,7 @@ func _update_selection() -> void:
 	var container = _get_items_container()
 	if not container:
 		return
+	_scroll_selection_into_view(container)
 
 	for i in range(container.get_child_count()):
 		var row = container.get_child(i)
@@ -917,6 +939,19 @@ func _auto_expand_submenu() -> void:
 		if _submenu_timer:
 			_submenu_timer.wait_time = SUBMENU_DELAY
 			_submenu_timer.start()
+
+
+## Keep the selected row inside the capped window. No-op when the menu fits (_max_visible_rows 0).
+func _scroll_selection_into_view(container: VBoxContainer) -> void:
+	if _max_visible_rows <= 0:
+		return
+	var last_visible: int = _scroll_offset + _max_visible_rows - 1
+	if selected_index < _scroll_offset:
+		_scroll_offset = selected_index
+	elif selected_index > last_visible:
+		_scroll_offset = selected_index - _max_visible_rows + 1
+	_scroll_offset = clampi(_scroll_offset, 0, maxi(0, menu_items.size() - _max_visible_rows))
+	container.position.y = _items_base_y - float(_scroll_offset * ITEM_HEIGHT)
 
 
 func _get_items_container() -> VBoxContainer:
