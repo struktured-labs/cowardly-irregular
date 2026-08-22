@@ -480,6 +480,23 @@ def main() -> None:
         for mid in sorted(extra):
             print(f"  - {mid}")
 
+    # A REBUILD-FROM-TABLE generator can only carry the fields the table has. If an entry
+    # in the shipped JSON ever grows a field ENTRIES does not model, rebuilding DROPS it
+    # silently and no assert below would notice -- the same class as the 16 missing entries,
+    # one level down. cowir-battle: tools/gen_item_flavor.py avoids this structurally by
+    # LOADING the json and mutating in place. Until this one is reshaped that way, guard it.
+    if BESTIARY.exists():
+        with BESTIARY.open() as f:
+            _existing = json.load(f)
+        _modelled = {"epithet", "flavor"}
+        _extra = {mid: sorted(set(e) - _modelled) for mid, e in _existing.items() if set(e) - _modelled}
+        if _extra:
+            print("ERROR: shipped entries carry fields this generator does not model;")
+            print("rebuilding would DELETE them. Extend ENTRIES/this writer first:")
+            for mid, fields in sorted(_extra.items()):
+                print(f"  - {mid}: {fields}")
+            raise SystemExit(2)
+
     for mid, entry in ENTRIES.items():
         assert "epithet" in entry and "flavor" in entry, f"{mid} missing keys"
         assert 0 < len(entry["epithet"]) <= 60, f"{mid} epithet length"
