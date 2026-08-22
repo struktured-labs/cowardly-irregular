@@ -82,7 +82,22 @@ godot --headless --audio-driver Dummy --import --quit >/dev/null 2>&1 || true
 # Non-blocking dead-exclusion report — see deploy_desktop.sh for why it never enforces.
 # This matters more on web than desktop: web is the size-capped target, so an exclusion
 # that quietly stopped applying eats headroom against itch's 200 MB embed limit.
-./tools/check_exclude_patterns.sh || true
+# `|| true` here discarded the audit's exit code entirely. That script exits 2 with
+# "BLOCKED: parsed 0 patterns — the parse is wrong, not the config", precisely because a
+# zero-pattern parse would otherwise read as "no dead patterns" — and its own comment says
+# so: "the vacuous-pass shape this script exists to prevent elsewhere." The caller then
+# threw that away, so the one signal meaning THE AUDIT DID NOT RUN was indistinguishable
+# from a clean audit. Measured 2026-08-22: a config with every exclude_filter removed
+# exits 2, and with `|| true` the deploy proceeded as if gate 0 had passed.
+# EC 2 = the instrument could not measure. On a PUBLISH path that blocks: you do not ship
+# when a safety check was unable to run. EC 0 with warnings on stderr stays non-blocking —
+# a preset with no exclude_filter is loud but the pck size gate catches its consequence.
+./tools/check_exclude_patterns.sh; _PAT_EC=$?
+if [ "$_PAT_EC" -eq 2 ]; then
+  echo "[deploy] BLOCKED: the exclude-pattern audit could not run (exit 2). Not shipping" >&2
+  echo "         on an unaudited exclude_filter — fix the parse or the config first." >&2
+  exit 2
+fi
 
 # TREE IDENTITY — see deploy_desktop.sh for the measured gap this closes. Web has the
 # same shape: gate 1 reads src/ at T, the staged export reads it at T+minutes, and nothing
