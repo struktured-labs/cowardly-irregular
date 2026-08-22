@@ -529,8 +529,8 @@
       "generated_at": "2026-03-21",
       "pinned": true
     },
-    "battle_goblin": {
-      "file": "assets/audio/music/battle_goblin.ogg",
+    "battle_brute": {
+      "file": "assets/audio/music/battle_brute.ogg",
       "tier": "T1",
       "provider": "suno",
       "title": "Raid!",
@@ -540,7 +540,9 @@
       "duration": 177.28,
       "loop": true,
       "generated_at": "2026-03-21",
-      "pinned": true
+      "pinned": true,
+      "repurposed_from": "battle_goblin",
+      "repurposed_note": "Generated as a goblin theme; struktured 2026-08-22 heard it as barbarian rather than goblin. Audio unchanged - only its role moved, to the troll/ogre/barbarian brute family. The prompt below is kept verbatim as generation provenance and no longer describes intended use."
     },
     "battle_skeleton": {
       "file": "assets/audio/music/battle_skeleton.ogg",

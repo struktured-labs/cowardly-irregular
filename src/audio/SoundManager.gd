@@ -1667,6 +1667,9 @@ func play_music(track: String) -> void:
 			_start_monster_music("imp")
 		"battle_goblin":
 			_start_monster_music("goblin")
+		# Brute family: troll/ogre/barbarian are ONE-WORD ids, and the fallback at the bottom of this match requires parts.size() > 1, so they need explicit arms.
+		"battle_brute", "battle_troll", "battle_cave_troll", "battle_ogre", "battle_barbarian":
+			_start_monster_music("brute")
 		"battle_skeleton":
 			_start_monster_music("skeleton")
 		"battle_wolf":
@@ -1697,7 +1700,7 @@ func play_music(track: String) -> void:
 				var monster = track.substr(7)
 				# Try stripping prefixes (cave_bat → bat, forest_spider → spider)
 				var parts = monster.split("_")
-				var known := ["battle_slime", "battle_bat", "battle_mushroom", "battle_imp", "battle_goblin", "battle_skeleton", "battle_wolf", "battle_ghost", "battle_snake"]
+				var known := ["battle_slime", "battle_bat", "battle_mushroom", "battle_imp", "battle_goblin", "battle_skeleton", "battle_wolf", "battle_ghost", "battle_snake", "battle_troll", "battle_ogre", "battle_barbarian"]
 				# Try suffix (cave_bat → bat) AND prefix (skeleton_soldier → skeleton): a monster FAMILY shares one theme (struktured 2026-08-17).
 				for base_name in [parts[-1], parts[0]]:
 					var base_track = "battle_" + base_name
@@ -3596,8 +3599,8 @@ const MONSTER_MUSIC_PARAMS = {
 		"style": "chaotic", "bass_style": "chromatic"
 	},
 	"goblin": {
-		"bpm": 140, "bars": 24, "key": "A_minor",
-		"style": "tribal", "bass_style": "drums"
+		"bpm": 158, "bars": 24, "key": "A_minor",
+		"style": "frantic", "bass_style": "staccato"
 	},
 	"skeleton": {
 		"bpm": 120, "bars": 24, "key": "B_minor",
@@ -4178,28 +4181,27 @@ func _get_monster_melody(monster_type: String) -> Array:
 				F4, 0, Gb4, 0, Ab4, 0, Bb4, Ab4,  Gb4, F4, 0, Gb4, F4, 0, 0, 0,
 				Ab4, Bb4, Ab4, Gb4, F4, 0, Ab4, F4,  Gb4, F4, 0, 0, F4, 0, 0, 0]
 		"goblin":
-			# TRIBAL A MINOR - war drums, pentatonic, primal
-			# Hook: A-C-A-G-E (war chant)
+			# SCRAPPY A MINOR - chromatic wriggle, scurry-and-stop; vermin with knives, NOT a war chant (struktured 2026-08-22)
+			# Hook: A-Bb-A-Gs (a snicker), stabbed with the Eb tritone
 			return [
-				# Section A - THE WAR CHANT
-				A4, 0, C5, 0, A4, 0, G4, E4,  A4, 0, 0, 0, A4, 0, 0, 0,
-				A4, 0, C5, 0, A4, 0, G4, E4,  G4, A4, 0, 0, 0, 0, 0, 0,
-				# Section A with response
-				A4, 0, C5, 0, A4, 0, G4, E4,  A4, 0, C5, A4, G4, 0, 0, 0,
-				E4, G4, A4, 0, C5, A4, G4, E4,  A4, 0, 0, 0, 0, 0, 0, 0,
-				# Section B - battle intensifies
-				A4, A4, C5, C5, A4, A4, G4, G4,  E4, E4, G4, G4, A4, 0, 0, 0,
-				C5, A4, G4, E4, G4, A4, C5, 0,  A4, G4, E4, 0, A4, 0, 0, 0,
-				# Section B - marching stomp
-				A4, 0, A4, 0, C5, 0, C5, 0,  A4, 0, G4, 0, E4, 0, A4, 0,
-				G4, A4, C5, A4, G4, E4, G4, A4,  0, 0, A4, 0, 0, 0, 0, 0,
-				# Section C - victory surge
-				C5, 0, E5, 0, C5, 0, A4, G4,  A4, C5, A4, G4, E4, 0, 0, 0,
-				A4, C5, E5, C5, A4, G4, A4, 0,  E4, G4, A4, 0, 0, 0, 0, 0,
-				# Section C - return to war chant
-				A4, 0, C5, 0, A4, 0, G4, E4,  A4, 0, C5, 0, A4, 0, 0, 0,
-				E4, G4, A4, C5, A4, G4, E4, G4,  A4, 0, 0, 0, A4, 0, 0, 0]
-		"skeleton":
+				# Section A - THE SKITTER
+				A4, Bb4, A4, Gs4, A4, 0, 0, 0,  Bb4, A4, Gs4, A4, 0, 0, 0, 0,
+				A4, Bb4, A4, Gs4, A4, Bb4, B4, 0,  Eb5, 0, 0, 0, 0, 0, 0, 0,
+				# Section A' - the snicker answers
+				Gs4, A4, Bb4, A4, 0, Gs4, 0, A4,  Bb4, B4, Bb4, A4, 0, 0, 0, 0,
+				A4, 0, Eb5, 0, D5, Cs5, C5, B4,  Bb4, A4, 0, 0, 0, 0, 0, 0,
+				# Section B - the ambush
+				A4, Bb4, B4, C5, Cs5, D5, Ds5, E5,  0, 0, Eb5, 0, A4, 0, 0, 0,
+				E5, Ds5, D5, Cs5, C5, B4, Bb4, A4,  0, A4, 0, Gs4, A4, 0, 0, 0,
+				# Section B' - stab, then scatter
+				A4, 0, 0, Eb5, 0, 0, A4, 0,  Bb4, A4, Gs4, 0, A4, 0, 0, 0,
+				Eb5, 0, D5, 0, Bb4, 0, A4, 0,  Gs4, A4, 0, 0, 0, 0, 0, 0,
+				# Section C - the swarm
+				A4, Bb4, A4, Bb4, A4, Bb4, B4, C5,  Bb4, A4, Gs4, A4, 0, 0, 0, 0,
+				C5, B4, Bb4, A4, Gs4, A4, Bb4, 0,  A4, 0, 0, 0, A4, 0, 0, 0,
+				# Section C' - back to the skitter, then gone
+				A4, Bb4, A4, Gs4, A4, 0, 0, 0,  Bb4, A4, Gs4, A4, 0, 0, 0, 0,
+				A4, 0, Eb5, 0, A4, 0, Gs4, 0,  A4, 0, 0, 0, 0, 0, 0, 0]
 			# SPOOKY B MINOR - Castlevania bone-rattling, staccato
 			# Hook: B-D-B..Fs-B (bone clatter)
 			return [
@@ -4335,13 +4337,12 @@ func _get_monster_counter_melody(monster_type: String) -> Array:
 				F4, 0, Ab4, Bb4, Ab4, 0, Gb4, F4,  Ab4, 0, Gb4, F4, Ab4, 0, 0, 0,
 				Gb4, Ab4, F4, 0, Ab4, Bb4, Ab4, Gb4,  F4, 0, Ab4, 0, F4, 0, 0, 0]
 		"goblin":
-			# Pentatonic war harmony
+			# Chromatic stabs, sparse - needling rather than chanting
 			return [
-				C5, 0, A4, 0, E4, 0, G4, 0,  A4, 0, C5, 0, A4, 0, G4, 0,
-				E4, G4, A4, 0, G4, E4, C5, 0,  A4, 0, G4, 0, E4, 0, A4, 0,
-				A4, 0, C5, 0, A4, G4, E4, 0,  G4, A4, C5, 0, A4, 0, 0, 0,
-				E4, 0, G4, A4, C5, A4, G4, E4,  A4, 0, G4, 0, A4, 0, 0, 0]
-		"skeleton":
+				C5, 0, Bb4, 0, A4, 0, Ab4, 0,  A4, 0, Bb4, 0, B4, 0, Bb4, 0,
+				A4, 0, 0, Eb4, 0, 0, A4, 0,  Ab4, 0, A4, 0, Bb4, 0, 0, 0,
+				Bb4, 0, A4, 0, Ab4, 0, A4, 0,  0, Eb4, 0, D5, 0, Bb4, 0, 0,
+				A4, 0, Bb4, B4, Bb4, A4, Ab4, 0,  A4, 0, 0, 0, A4, 0, 0, 0]
 			# Sparse bone harmonics
 			return [
 				D5, 0, 0, B4, 0, 0, Fs4, 0,  0, B4, 0, 0, 0, 0, 0, 0,
@@ -4414,14 +4415,13 @@ func _get_monster_bass(monster_type: String) -> Array:
 					Bb2, Ab2, Gb2, F2, Gb2, Ab2, F2, Gb2,  # Section C - dance
 					F2, Gb2, Ab2, Bb2, Ab2, Gb2, F2, F2]  # Section C' - wild
 		"goblin":
-			# Tribal bass - 6 sections
-			return [A2, A2, E2, A2, A2, G2, E2, A2,  # Section A - war
-					A2, E2, A2, G2, A2, E2, G2, A2,  # Section A'
-					E2, G2, A2, A2, G2, E2, A2, G2,  # Section B - battle
-					A2, G2, E2, G2, A2, G2, E2, A2,  # Section B'
-					A2, A2, A2, A2, G2, G2, E2, E2,  # Section C - march
-					A2, G2, E2, G2, A2, E2, G2, A2]  # Section C' - stomp
-		"skeleton":
+			# Nervous bass - 6 sections, off-beat chromatic neighbours instead of a stomp
+			return [A2, 0, A2, Bb2, 0, A2, 0, Gb2,  # Section A - skitter
+					A2, 0, Bb2, 0, A2, 0, Ab2, A2,  # Section A'
+					A2, Bb2, A2, Ab2, A2, 0, Eb2, 0,  # Section B - ambush
+					A2, 0, Eb2, 0, A2, Ab2, A2, 0,  # Section B'
+					A2, A2, Bb2, 0, A2, 0, Ab2, 0,  # Section C - swarm
+					A2, 0, Ab2, A2, Bb2, 0, A2, 0]  # Section C' - gone
 			# Staccato bass - 6 sections
 			return [B2, 0, B2, 0, Fs2, 0, B2, 0,  # Section A - rattle
 					B2, 0, Fs2, 0, B2, 0, D2, 0,  # Section A'
