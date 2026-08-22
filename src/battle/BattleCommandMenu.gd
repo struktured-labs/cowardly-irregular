@@ -205,15 +205,18 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 	var alive_enemies = get_alive_enemies()
 	var canvas_transform = _scene.get_viewport().get_canvas_transform()
 
-	# Autobattle option at the top — runs autobattle for THIS character
-	items.append({
+	# Auto block collapsed to ONE row (struktured playtest 2026-08-22: "the menu is too
+	# busy"). Buried, not deleted — Auto Rules is the mouse-only path to the editor
+	# (F5/L+R are kb/pad only) and Trust keeps its Settings->Party Trust clear-path.
+	var auto_rows: Array = []
+	auto_rows.append({
 		"id": "autobattle",
-		"label": "Auto",
+		"label": "Run Auto",
 		"data": {"action": "autobattle", "combatant": combatant}
 	})
 	# Edit Autobattle rules — opens the rule grid editor for THIS character.
 	# Mouse-only users need this entry because F5/L+R is keyboard/gamepad only.
-	items.append({
+	auto_rows.append({
 		"id": "autobattle_edit",
 		"label": "Auto Rules",
 		"data": {"action": "autobattle_edit", "combatant": combatant}
@@ -226,10 +229,16 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 	# CLEARING (queue #4): Settings → Party Trust per-PC row (added same
 	# ticket) so the toggle isn't one-way once ON.
 	var trust_label: String = "Trust: ON" if combatant.player_trust else "Trust: OFF"
-	items.append({
+	auto_rows.append({
 		"id": "trust_toggle",
 		"label": trust_label,
 		"data": {"action": "trust_toggle", "combatant": combatant}
+	})
+	items.append({
+		"id": "auto_menu",
+		"label": "Auto",
+		"tooltip": "Run this character's autobattle script, edit it, or delegate every turn",
+		"submenu": auto_rows
 	})
 
 	# MRU/Pin quick-access ability slots — most-recently-used or player-pinned.
