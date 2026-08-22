@@ -358,33 +358,57 @@ func has_save() -> bool:
 	return false
 
 
-func get_most_recent_slot() -> int:
-	"""Find the most recently saved slot. Returns -1 if no saves exist."""
-	var best_slot = -1
-	var best_time = 0.0
-	for slot in range(MAX_SAVE_SLOTS):
-		var info = get_save_info(slot)
-		if not info.is_empty():
-			var save_time = info.get("save_time", 0.0)
-			if save_time > best_time:
-				best_time = save_time
-				best_slot = slot
-	# Also check quick save
-	var qs_info = get_save_info(QUICK_SAVE_SLOT)
-	if not qs_info.is_empty():
-		var qs_time = qs_info.get("save_time", 0.0)
-		if qs_time > best_time:
-			best_time = qs_time
-			best_slot = QUICK_SAVE_SLOT
-	# Also check the dedicated auto-save slot — a fresh launch's "Continue"
-	# should be able to resume from the latest auto-save too.
-	var as_info = get_save_info(AUTO_SAVE_SLOT)
-	if not as_info.is_empty():
-		var as_time = as_info.get("save_time", 0.0)
-		if as_time > best_time:
-			best_time = as_time
-			best_slot = AUTO_SAVE_SLOT
+static func rank_resumable_slots(candidates: Array) -> int:
+	## Pure ranker: newest RESUMABLE candidate wins. A partyless shell must never outrank a real save on recency alone (struktured's slot 98, 2026-08-22).
+	var best_slot := -1
+	var best_time := -1.0
+	for c in candidates:
+		if not (c is Dictionary):
+			continue
+		var d: Dictionary = c
+		if not bool(d.get("resumable", false)):
+			continue
+		var t := float(d.get("save_time", 0.0))
+		if t > best_time:
+			best_time = t
+			best_slot = int(d.get("slot", -1))
 	return best_slot
+
+
+func is_slot_resumable(slot: int) -> bool:
+	## A save with no party is a shell — Continue landing on one reads to a player as lost progress.
+	if not save_exists(slot):
+		return false
+	var data: Dictionary = _read_save_file(slot)
+	if data.is_empty():
+		return false
+	var gs: Variant = data.get("game_state", {})
+	if gs is Dictionary:
+		var party: Variant = (gs as Dictionary).get("player_party", [])
+		if party is Array and not (party as Array).is_empty():
+			return true
+	var top: Variant = data.get("party", [])
+	return top is Array and not (top as Array).is_empty()
+
+
+func get_most_recent_slot() -> int:
+	"""Find the most recently saved RESUMABLE slot. Returns -1 if none exist."""
+	var candidates: Array = []
+	var slots: Array = []
+	for slot in range(MAX_SAVE_SLOTS):
+		slots.append(slot)
+	slots.append(QUICK_SAVE_SLOT)
+	slots.append(AUTO_SAVE_SLOT)
+	for slot in slots:
+		var info = get_save_info(slot)
+		if info.is_empty():
+			continue
+		candidates.append({
+			"slot": slot,
+			"save_time": info.get("save_time", 0.0),
+			"resumable": is_slot_resumable(slot)
+		})
+	return rank_resumable_slots(candidates)
 
 
 func get_save_info(slot: int) -> Dictionary:
