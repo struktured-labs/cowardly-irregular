@@ -331,6 +331,69 @@ func _get_atlas_coords(tile_type: int) -> Vector2i:
 	return Vector2i(tile_id % 5, tile_id / 5)
 
 
+const W1_SPINE_FLAGS: Array[String] = [
+	"rat_king_defeated",
+	"fire_dragon_defeated",
+	"ice_dragon_defeated",
+	"lightning_dragon_defeated",
+	"shadow_dragon_defeated",
+]
+
+
+func _castle_is_earned(gs: Node) -> bool:
+	"""Castle Harmonia opens only after the whole W1 spine; a player who already beat Mordaine keeps access."""
+	if gs.is_story_flag_set("world1_mordaine_defeated"):
+		return true
+	for flag in W1_SPINE_FLAGS:
+		if not gs.is_story_flag_set(flag):
+			return false
+	return true
+
+
+func w1_spine_remaining(gs: Node) -> Array[String]:
+	"""Spine flags still unset, in order — for telegraphing which bosses remain."""
+	var remaining: Array[String] = []
+	if gs == null or not gs.has_method("is_story_flag_set"):
+		return remaining
+	for flag in W1_SPINE_FLAGS:
+		if not gs.is_story_flag_set(flag):
+			remaining.append(flag)
+	return remaining
+
+
+## Cave names for the four elemental seals, matching the AreaTransition indicator strings.
+const SPINE_SEAL_NAMES := {
+	"fire_dragon_defeated": "the Infernal Grotto",
+	"ice_dragon_defeated": "the Glacial Sanctum",
+	"lightning_dragon_defeated": "the Stormspire",
+	"shadow_dragon_defeated": "the Abyssal Hollow",
+}
+
+
+## The post-Rat-King line promised an open castle; the spine gate makes that false until all five fall.
+func _spine_telegraph_text(gs: Node) -> String:
+	if gs == null:
+		return "The castle showed itself on the eastern ridge, then sealed itself just as fast."
+	var left: Array[String] = w1_spine_remaining(gs)
+	left.erase("rat_king_defeated")
+	if left.is_empty():
+		return "Every seal is broken. The castle stands open on the eastern ridge — I'd think twice before walking in."
+	var names: Array[String] = []
+	for flag in left:
+		names.append(str(SPINE_SEAL_NAMES.get(flag, flag)))
+	return "The castle showed itself on the eastern ridge, then sealed itself just as fast. Still burning: %s." % ", ".join(names)
+
+
+## Rewrites the rat-king line in place so it keeps its slot in the last-match-wins order.
+func _with_spine_telegraph(hints: Array, gs: Node) -> Array:
+	var out: Array = []
+	for hint in hints:
+		var entry: Dictionary = (hint as Dictionary).duplicate()
+		if entry.get("flag", "") == "rat_king_defeated":
+			entry["text"] = _spine_telegraph_text(gs)
+		out.append(entry)
+	return out
+
 func _setup_transitions() -> void:
 	# Harmonia Village
 	_add_area_transition("VillageEntrance", "harmonia_village", "entrance",
@@ -381,7 +444,7 @@ func _setup_transitions() -> void:
 	# rat_king_defeated still reveals the castle. Pre-fix bare
 	# get_story_flag would silently miss that and the player would be
 	# stranded mid-W1.
-	if gs and gs.has_method("is_story_flag_set") and gs.is_story_flag_set("rat_king_defeated"):
+	if gs and gs.has_method("is_story_flag_set") and _castle_is_earned(gs):
 		_add_area_transition("CastleHarmonia", "castle_harmonia", "castle_entrance",
 			spawn_points.get("castle_entrance", Vector2.ZERO), "Enter Castle Harmonia")
 
@@ -618,7 +681,7 @@ func _place_wanderers() -> void:
 			npc.dialogue_portrait = w["archetype"]
 			npc.dialogue_theme = w["archetype"]
 		if w.has("hints"):
-			npc.dialogue_hints = w["hints"]
+			npc.dialogue_hints = _with_spine_telegraph(w["hints"], _get_game_state())
 		var patrol: Array[Vector2] = []
 		for pt in w["path"]:
 			patrol.append(Vector2(pt.x * TILE_SIZE + TILE_SIZE / 2, pt.y * TILE_SIZE + TILE_SIZE / 2))

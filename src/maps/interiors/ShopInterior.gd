@@ -1404,7 +1404,23 @@ func _setup_npcs() -> void:
 			])
 
 
+## The village this interior was entered from; "" when GameLoop is absent or never set one.
+func _origin_map_id() -> String:
+	var gl: Node = get_node_or_null("/root/GameLoop")
+	if gl == null or not gl.has_method("get_village_origin_id"):
+		return ""
+	return str(gl.get_village_origin_id())
+
+
 func _keeper_dialogue() -> Array:
+	return _keeper_dialogue_for(_origin_map_id())
+
+
+## Split from the node lookup so the preference order is testable without a live GameLoop.
+func _keeper_dialogue_for(origin_map_id: String) -> Array:
+	var authored: Array = ShopDialogue.ambient_lines(origin_map_id, shop_type, keeper_name)
+	if not authored.is_empty():
+		return authored
 	match shop_type:
 		ShopType.ITEM:
 			return [
