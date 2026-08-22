@@ -1,6 +1,8 @@
 extends BaseVillage
 class_name BrasstonVillageScene
 
+const SteampunkTileGeneratorScript = preload("res://src/exploration/SteampunkTileGenerator.gd")
+
 ## BrasstonVillage - Clockwork market town with brass pipes, gas lamps, and gear-shaped fountains
 ## Features: The Cog & Pillow (Inn), Gearwright's Forge (Blacksmith), Tinkerers, Steam Merchant
 
@@ -83,7 +85,7 @@ func _generate_map() -> void:
 		for x in range(MAP_WIDTH):
 			var char = row[x] if x < row.length() else "W"
 			var tile_type = _char_to_tile_type(char)
-			var atlas_coords = _get_atlas_coords(tile_type)
+			var atlas_coords = _atlas_for(tile_type, Vector2i(x, y))
 			tile_map.set_cell(Vector2i(x, y), 0, atlas_coords)
 
 			if char == "X" and not spawn_points.has("exit"):
@@ -94,23 +96,27 @@ func _generate_map() -> void:
 	spawn_points["brasston_entrance"] = spawn_points["entrance"]
 
 
+## W3 paints with its own world's generator — CrossCode phase 4
+func _get_tile_generator() -> Node:
+	return SteampunkTileGeneratorScript.new()
+
+
+func _get_fringe_ground_types() -> Array:
+	return [SteampunkTileGeneratorScript.TileType.PARK_GRASS]
+
+
 func _char_to_tile_type(char: String) -> int:
 	match char:
-		"W": return TileGeneratorScript.TileType.WALL
-		"H", "I", "B": return TileGeneratorScript.TileType.WALL
-		"p": return TileGeneratorScript.TileType.VILLAGE_PATH
-		"d": return TileGeneratorScript.TileType.VILLAGE_DIRT
-		"f": return TileGeneratorScript.TileType.VILLAGE_FLOWER
-		"e": return TileGeneratorScript.TileType.VILLAGE_HEDGE
-		"F": return TileGeneratorScript.TileType.WATER
-		"g": return TileGeneratorScript.TileType.VILLAGE_GRASS
-		"X": return TileGeneratorScript.TileType.VILLAGE_PATH
-		_: return TileGeneratorScript.TileType.VILLAGE_PATH
-
-
-func _get_atlas_coords(tile_type: int) -> Vector2i:
-	var tile_id = TileGeneratorScript.get_tile_id(tile_type)
-	return Vector2i(tile_id % 5, tile_id / 5)
+		"W": return SteampunkTileGeneratorScript.TileType.BUILDING_WALL
+		"H", "I", "B": return SteampunkTileGeneratorScript.TileType.BUILDING_WALL
+		"p": return SteampunkTileGeneratorScript.TileType.CONCRETE
+		"d": return SteampunkTileGeneratorScript.TileType.ASPHALT
+		"f": return SteampunkTileGeneratorScript.TileType.PARK_GRASS
+		"e": return SteampunkTileGeneratorScript.TileType.FENCE
+		"F": return SteampunkTileGeneratorScript.TileType.WATER_FEATURE
+		"g": return SteampunkTileGeneratorScript.TileType.PARK_GRASS
+		"X": return SteampunkTileGeneratorScript.TileType.CONCRETE
+		_: return SteampunkTileGeneratorScript.TileType.CONCRETE
 
 
 func _setup_transitions() -> void:

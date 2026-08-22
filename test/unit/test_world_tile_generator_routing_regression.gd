@@ -10,14 +10,31 @@ extends GutTest
 ## does not know, so a mis-routed village paints ONE tile everywhere and still runs. Nothing
 ## errors, nothing crashes, and a screenshot is the only way a human notices.
 ##
+## BOUND, measured by mutation 2026-08-22: TileType values are plain small ints, so
+## resolvability is DIRECTIONAL. A medieval legend (ids up to 23) inside a 16-entry world
+## atlas is caught; the reverse — a world legend (ids 0-15) inside medieval's 40-entry order
+## — resolves by coincidence and this check stays green. That direction is covered instead by
+## test_each_village_uses_its_own_worlds_generator, which is why both tests must exist.
+##
 ## Chars are swept across printable ASCII rather than read from the legend source — the default
 ## `_` arm is part of the contract too, and a source-parsed char list would go quietly empty.
 
-const SUBURBAN := "res://src/exploration/SuburbanTileGenerator.gd"
 const MEDIEVAL := "res://src/exploration/TileGenerator.gd"
+const SUBURBAN := "res://src/exploration/SuburbanTileGenerator.gd"
+const STEAMPUNK := "res://src/exploration/SteampunkTileGenerator.gd"
+const INDUSTRIAL := "res://src/exploration/IndustrialTileGenerator.gd"
+const FUTURISTIC := "res://src/exploration/FuturisticTileGenerator.gd"
+const ABSTRACT := "res://src/exploration/AbstractTileGenerator.gd"
+
+## Every village outside W1, with the generator its world is supposed to paint with.
 const W2 := {
 	"res://src/maps/villages/MapleHeightsVillage.gd": SUBURBAN,
 	"res://src/maps/villages/MapleStripMall.gd": SUBURBAN,
+	"res://src/maps/villages/BrasstonVillage.gd": STEAMPUNK,
+	"res://src/maps/villages/ScripturaPlaza.gd": STEAMPUNK,
+	"res://src/maps/villages/RivetRowVillage.gd": INDUSTRIAL,
+	"res://src/maps/villages/NodePrimeVillage.gd": FUTURISTIC,
+	"res://src/maps/villages/VertexVillage.gd": ABSTRACT,
 }
 ## W1 stays medieval — without this the suite cannot tell "routed correctly" from "routed all
 ## villages to one generator", which passes every other assert here.
@@ -73,11 +90,11 @@ func test_every_char_the_legend_can_emit_resolves_in_that_generators_atlas() -> 
 func test_the_resolvability_check_can_actually_fail() -> void:
 	# Feeds the real resolver a type from the WRONG generator — the exact mistake the phase
 	# invites. Without this, the zero above is equally true of a check that never compared.
-	var v: Node = await _village(W2.keys()[0])
-	var order: Array = v.tile_generator._get_tile_order()
 	var foreign: int = TileGenerator.TileType.VILLAGE_HEDGE
-	assert_lt(order.find(foreign), 0,
-		"a medieval type must NOT resolve in the suburban atlas — else the vocabularies overlap and this whole test proves nothing")
+	for path in W2:
+		var v: Node = await _village(path)
+		assert_lt(v.tile_generator._get_tile_order().find(foreign), 0,
+			"%s: a medieval type must NOT resolve in this atlas — else the vocabularies overlap and the resolvability check proves nothing" % path.get_file())
 
 
 func test_routing_preserved_which_cells_block() -> void:

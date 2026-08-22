@@ -1,6 +1,8 @@
 extends BaseVillage
 class_name VertexVillageScene
 
+const AbstractTileGeneratorScript = preload("res://src/exploration/AbstractTileGenerator.gd")
+
 ## VertexVillage - Minimalist refuge in the void, stark geometry, existential calm
 ## Features: The Rest (inn), The Exchange (item shop), sparse NPCs in intentional emptiness
 
@@ -70,7 +72,7 @@ func _generate_map() -> void:
 		for x in range(MAP_WIDTH):
 			var char = row[x] if x < row.length() else "W"
 			var tile_type = _char_to_tile_type(char)
-			var atlas_coords = _get_atlas_coords(tile_type)
+			var atlas_coords = _atlas_for(tile_type, Vector2i(x, y))
 			tile_map.set_cell(Vector2i(x, y), 0, atlas_coords)
 
 			if char == "X" and not spawn_points.has("exit"):
@@ -81,17 +83,21 @@ func _generate_map() -> void:
 	spawn_points["vertex_entrance"] = spawn_points["entrance"]
 
 
+## W6 paints with its own world's generator — CrossCode phase 4
+func _get_tile_generator() -> Node:
+	return AbstractTileGeneratorScript.new()
+
+
+func _get_fringe_ground_types() -> Array:
+	return []
+
+
 func _char_to_tile_type(char: String) -> int:
 	match char:
-		"W": return TileGeneratorScript.TileType.WALL
-		"D": return TileGeneratorScript.TileType.DARK_GROUND
-		"X": return TileGeneratorScript.TileType.VILLAGE_PATH
-		_: return TileGeneratorScript.TileType.FLOOR
-
-
-func _get_atlas_coords(tile_type: int) -> Vector2i:
-	var tile_id = TileGeneratorScript.get_tile_id(tile_type)
-	return Vector2i(tile_id % 5, tile_id / 5)
+		"W": return AbstractTileGeneratorScript.TileType.ECHO_WALL
+		"D": return AbstractTileGeneratorScript.TileType.SHADOW_TILE
+		"X": return AbstractTileGeneratorScript.TileType.GRID_LINE
+		_: return AbstractTileGeneratorScript.TileType.VOID_GRAY
 
 
 func _setup_transitions() -> void:

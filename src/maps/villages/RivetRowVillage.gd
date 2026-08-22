@@ -1,6 +1,8 @@
 extends BaseVillage
 class_name RivetRowVillageScene
 
+const IndustrialTileGeneratorScript = preload("res://src/exploration/IndustrialTileGenerator.gd")
+
 ## RivetRowVillage - Workers' settlement on factory outskirts
 ## Features: Workers' Barracks, Company Store, canteen, smokestacks, graffiti wall
 
@@ -73,7 +75,7 @@ func _generate_map() -> void:
 		for x in range(MAP_WIDTH):
 			var char = row[x] if x < row.length() else "W"
 			var tile_type = _char_to_tile_type(char)
-			var atlas_coords = _get_atlas_coords(tile_type)
+			var atlas_coords = _atlas_for(tile_type, Vector2i(x, y))
 			tile_map.set_cell(Vector2i(x, y), 0, atlas_coords)
 
 			if char == "X" and not spawn_points.has("exit"):
@@ -84,18 +86,22 @@ func _generate_map() -> void:
 	spawn_points["rivet_row_entrance"] = spawn_points["entrance"]
 
 
+## W4 paints with its own world's generator — CrossCode phase 4
+func _get_tile_generator() -> Node:
+	return IndustrialTileGeneratorScript.new()
+
+
+func _get_fringe_ground_types() -> Array:
+	return []
+
+
 func _char_to_tile_type(char: String) -> int:
 	match char:
-		"W": return TileGeneratorScript.TileType.WALL
-		"V": return TileGeneratorScript.TileType.LAVA
-		"d": return TileGeneratorScript.TileType.VILLAGE_DIRT
-		"X": return TileGeneratorScript.TileType.VILLAGE_PATH
-		_: return TileGeneratorScript.TileType.FLOOR
-
-
-func _get_atlas_coords(tile_type: int) -> Vector2i:
-	var tile_id = TileGeneratorScript.get_tile_id(tile_type)
-	return Vector2i(tile_id % 5, tile_id / 5)
+		"W": return IndustrialTileGeneratorScript.TileType.BRICK_WALL
+		"V": return IndustrialTileGeneratorScript.TileType.CHEMICAL_BARREL
+		"d": return IndustrialTileGeneratorScript.TileType.FACTORY_FLOOR
+		"X": return IndustrialTileGeneratorScript.TileType.IRON_GRATING
+		_: return IndustrialTileGeneratorScript.TileType.FACTORY_FLOOR
 
 
 func _setup_transitions() -> void:
