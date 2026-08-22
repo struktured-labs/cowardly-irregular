@@ -114,11 +114,15 @@ func _load_sounds_dict_keys() -> Dictionary:
 	return keys
 
 
+var _visited_src: Dictionary = {}
+
+
 func _scan_src_for_sfx_calls() -> Dictionary:
 	## Walks src/**/*.gd, extracts the literal sfx key argument from
 	## play_ui / play_battle / play_battle_scaled / play_ability /
 	## play_attack_hit / play_sfx calls. Returns {key: true} set.
 	var refs: Dictionary = {}
+	_visited_src.clear()
 	_walk_src(SRC_DIR, refs)
 	return refs
 
@@ -135,6 +139,7 @@ func _walk_src(dir_path: String, refs: Dictionary) -> void:
 			if dir.current_is_dir():
 				_walk_src(full, refs)
 			elif name.ends_with(".gd"):
+				_visited_src[full] = true
 				_extract_sfx_keys_from_text(_read_text(full), refs)
 		name = dir.get_next()
 
@@ -193,6 +198,11 @@ func test_every_sfx_key_resolves_or_is_allowlisted() -> void:
 		"src scanner found no 'menu_select' (125 literal call sites) — the play_* regex has stopped matching and the orphan audit below is scanning NOTHING")
 	assert_true(json_refs.has("boss_defeat_stinger"),
 		"cutscene scanner found no 'boss_defeat_stinger' (19 play_sfx steps) — the JSON walk has stopped matching and cutscene sfx are unaudited")
+
+	# FAMILY B: _walk_src returns SILENTLY on a null DirAccess, so one unreadable subdir drops its files with no signal — and a key in 35 files survives that. Name one file PER directory the walk must reach.
+	for required in ["res://src/audio/SoundManager.gd", "res://src/battle/BattleScene.gd", "res://src/ui/ItemsMenu.gd"]:
+		assert_true(_visited_src.has(required),
+			"the src walk never reached %s — a subdirectory failed to open and its sfx calls are unaudited, which a key-presence check cannot see" % required)
 
 	var new_orphans: Array = []
 	for key in all_refs:
