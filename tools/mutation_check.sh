@@ -39,6 +39,22 @@ cd "$(cd "$(dirname "$0")/.." && pwd)"
 mkdir -p tmp
 
 RUNNER="${MC_RUNNER:-tools/run_tests.sh}"
+# Resolve the runner against the repo root we just cd'd into, and PROVE it is runnable
+# BEFORE the baseline runs. @cowir-ai hit this from another lane's tree (2026-08-22): a
+# missing runner exits 127, which the baseline check below reported as "baseline is
+# ALREADY RED" -- blaming the subject for the instrument's own failure, which is the exact
+# misdiagnosis ec=3 exists to prevent. A relative default is only safe if something proves
+# it resolved.
+case "$RUNNER" in
+  /*)  ;;                                                   # absolute: use as-is
+  */*) RUNNER="$PWD/$RUNNER" ;;                             # repo-relative
+  *)   command -v "$RUNNER" >/dev/null 2>&1 \
+         || { echo "INSTRUMENT: runner not found on PATH: $RUNNER" >&2; exit 3; } ;;
+esac
+case "$RUNNER" in /*)
+  [ -e "$RUNNER" ] || { echo "INSTRUMENT: runner does not exist: $RUNNER" >&2; exit 3; }
+  [ -x "$RUNNER" ] || { echo "INSTRUMENT: runner not executable: $RUNNER" >&2; exit 3; }
+;; esac
 
 _die_usage() { echo "usage: tools/mutation_check.sh <file> <old> <new> [test-target...]" >&2; exit 2; }
 
@@ -86,11 +102,40 @@ FAKE
   _arm "mutation is a NO-OP (old==new)"   3 live    "0.40" "0.40"
   _arm "suite ran nothing (Tests 0)"      3 zero    "0.40" "0.0"
   _arm "runner crashed (ec=127)"          3 crash   "0.40" "0.0"
+  echo "  -- the DEFAULT runner path (previously untested: every arm above injects"
+  echo "     MC_RUNNER as an absolute path, so the default value of the one injectable"
+  echo "     knob was never exercised -- @cowir-ai, 2026-08-22) --"
+  # arm: no MC_RUNNER at all; the runner must be found at its repo-relative default.
+  cp "$W/fake_runner.sh" "$W/tools/run_tests.sh" 2>/dev/null
+  cat > "$W/tools/run_tests.sh" <<'DEFRUN'
+#!/usr/bin/env bash
+echo "---- Totals"; echo "  Tests   12"
+grep -q '0\.0$' subject.gd && exit 1 || exit 0
+DEFRUN
+  chmod +x "$W/tools/run_tests.sh"
+  printf 'const DELAY = 0.40\n' > "$W/subject.gd"
+  ( cd "$W" && env -u MC_RUNNER bash tools/mutation_check.sh subject.gd "0.40" "0.0" >"$W/out.txt" 2>&1 )
+  got=$?
+  if [ "$got" = 0 ]; then printf '  ✅ %-36s ec=%s\n' "default runner resolves + runs" "$got"
+  else printf '  🔴 %-36s ec=%s (expected 0)\n' "default runner resolves + runs" "$got"; sed 's/^/       /' "$W/out.txt"; fail=1; fi
+
+  # arm: a runner that does not exist must say so IN THOSE WORDS, and must NOT be
+  # reported as "baseline ALREADY RED" -- the misdiagnosis @cowir-ai actually received.
+  printf 'const DELAY = 0.40\n' > "$W/subject.gd"
+  ( cd "$W" && MC_RUNNER="tools/no_such_runner.sh" bash tools/mutation_check.sh subject.gd "0.40" "0.0" >"$W/out.txt" 2>&1 )
+  got=$?
+  if [ "$got" = 3 ] && grep -q 'runner does not exist' "$W/out.txt" && ! grep -q 'ALREADY RED' "$W/out.txt"; then
+    printf '  ✅ %-36s ec=3, named correctly\n' "missing runner != 'baseline RED'"
+  else
+    printf '  🔴 %-36s ec=%s\n' "missing runner != 'baseline RED'" "$got"; sed 's/^/       /' "$W/out.txt"; fail=1
+  fi
+  rm -f "$W/tools/run_tests.sh"
+
   echo
   # A self-test in which every arm returned 3 would print all-green and mean nothing --
   # the same vacuity the tool itself exists to catch. Both verdicts above are reachable
   # from ONE fixture, which is what makes the instrument arms informative.
-  if [ "$fail" = 0 ]; then echo "SELF-TEST: PASS — 2 verdict arms reachable + 5 instrument arms, all distinct"; else echo "SELF-TEST: FAIL"; fi
+  if [ "$fail" = 0 ]; then echo "SELF-TEST: PASS — 2 verdict arms + 5 instrument arms + 2 runner-resolution arms"; else echo "SELF-TEST: FAIL"; fi
   exit "$fail"
 fi
 
@@ -186,7 +231,13 @@ if [ "$_mut_ec" -eq 1 ]; then
 fi
 echo "🔴 VACUOUS — mutation landed (hash changed), suite ran $_mut_tests tests, and stayed GREEN."
 echo "   This is NOT 'the mutation didn't apply' — that was excluded by measurement above."
-echo "   Most likely: the test derives its expectation from the symbol it mutates, so both"
-echo "   sides moved together (@cowir-controller's M1). Re-target the assert on an ABSOLUTE"
-echo "   literal, never on the constant under test."
+echo "   The test does not guard '$OLD' in $FILE. WHY is not determined by this tool --"
+echo "   these are the causes seen so far, and they need different fixes:"
+echo "     - the expectation is DERIVED from the mutated symbol, so both sides moved"
+echo "       together (@cowir-controller's M1) -> re-target on an absolute literal"
+echo "     - the mutated value is OUTSIDE the check's vocabulary/allowlist, so nothing"
+echo "       ever looks at it (@cowir-ai, 2026-08-22) -> widen the list, or document the hole"
+echo "     - the assert is SAMPLE-CONDITIONAL and the sample is absent, so the test"
+echo "       short-circuits to pass_test() -> use pending(), and check gitignored artifacts"
+echo "   Read the test before picking one; the symptom is identical across all three."
 exit 4
