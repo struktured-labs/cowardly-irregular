@@ -30,7 +30,9 @@ func _ready() -> void:
 	_dial.size = Vector2(72, 88)
 	_dial.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_dial.set_anchors_preset(Control.PRESET_CENTER_TOP)
-	_dial.position = Vector2(get_viewport().get_visible_rect().size.x / 2.0 - 36, 8)
+	# Offsets are relative to the CENTER_TOP anchor, so half the dial's width centres it. Adding
+	# viewport_width/2 here (as this did) applied the centring TWICE and hung it off the right edge.
+	_dial.position = Vector2(-36, 8)
 	_dial.draw.connect(_draw_dial)
 	add_child(_dial)
 
