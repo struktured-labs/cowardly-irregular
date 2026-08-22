@@ -21,6 +21,9 @@ signal area_transition(target_map: String, spawn_point: String)
 ## Map dimensions (in tiles)
 const MAP_WIDTH: int = 100
 const MAP_HEIGHT: int = 70
+
+## The painted character grid, kept so encounter zones can read the authored biome
+var map_rows: Array[String] = []
 const TILE_SIZE: int = 32
 
 ## Scene components
@@ -226,20 +229,20 @@ func _generate_map() -> void:
 
 	print("Generating overworld map %dx%d..." % [MAP_WIDTH, MAP_HEIGHT])
 
-	var map_data: Array[String] = []
+	map_rows.clear()
 	# str() coercion, not `= load_rows(...)`: a generic-to-typed assign ABORTS this function
 	for row in MapImageLoaderScript.load_rows(MAP_IMAGE):
-		map_data.append(str(row))
+		map_rows.append(str(row))
 
 	# no padding: the old water-pad turned a failed load into a silent ocean
-	if map_data.size() != MAP_HEIGHT:
-		push_error("[MAP] %s yielded %d rows, expected %d -- refusing to pad" % [MAP_IMAGE, map_data.size(), MAP_HEIGHT])
+	if map_rows.size() != MAP_HEIGHT:
+		push_error("[MAP] %s yielded %d rows, expected %d -- refusing to pad" % [MAP_IMAGE, map_rows.size(), MAP_HEIGHT])
 		return
 
-	# Convert map_data to tiles
+	# Convert the painted grid to tiles
 	var tile_counts = {}
 	for y in range(MAP_HEIGHT):
-		var row = map_data[y] if y < map_data.size() else ""
+		var row = map_rows[y] if y < map_rows.size() else ""
 		for x in range(MAP_WIDTH):
 			var char = row[x] if x < row.length() else "~"
 			var tile_type = _char_to_tile_type(char)
@@ -490,6 +493,15 @@ func _update_encounter_zone(pos: Vector2) -> void:
 		if _zone_particles:
 			_zone_particles.update_zone(new_zone)
 		_update_zone_ambient(new_zone)
+
+
+func biome_char_at(tx: int, ty: int) -> String:
+	if ty < 0 or ty >= map_rows.size():
+		return ""
+	var row: String = map_rows[ty]
+	if tx < 0 or tx >= row.length():
+		return ""
+	return row[tx]
 
 
 func _get_zone_for_tile(tx: int, ty: int) -> String:
