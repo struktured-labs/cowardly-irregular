@@ -10,9 +10,14 @@ const MenuClass = preload("res://src/battle/BattleCommandMenu.gd")
 const Win98MenuClass = preload("res://src/ui/Win98Menu.gd")
 
 
+## MUST await: build_command_menu_items_with_targets reads _scene.get_viewport() on its THIRD
+## line, and a scene not yet in the tree makes that null — which ABORTS the builder and returns
+## an empty array. Passed in isolation and failed in the full suite until this await existed;
+## the CONTROL assert ("the builder produced a real menu") is what caught it.
 func _scene_with_enemies(n: int = 2) -> Node:
 	var scene: Node = load(SCENE_PATH).new()
 	add_child_autofree(scene)
+	await get_tree().process_frame
 	var enemies: Array = []
 	for i in n:
 		var e := Combatant.new()
@@ -38,7 +43,7 @@ func _pc(job_id: String) -> Combatant:
 
 
 func _rows(job_id: String) -> Array:
-	var scene := _scene_with_enemies()
+	var scene = await _scene_with_enemies()
 	var menu = MenuClass.new(scene)
 	return menu.build_command_menu_items_with_targets(_pc(job_id))
 
@@ -60,12 +65,12 @@ func _find(rows: Array, id: String) -> Dictionary:
 
 func test_the_builder_returns_a_real_menu() -> void:
 	## CONTROL: everything below is worthless if the build returns nothing.
-	var rows := _rows("bard")
+	var rows: Array = await _rows("bard")
 	assert_gt(rows.size(), 3, "CONTROL: the builder produced a real menu")
 
 
 func test_auto_block_is_one_top_level_row_with_all_three_actions_inside() -> void:
-	var rows := _rows("bard")
+	var rows: Array = await _rows("bard")
 	var ids := _ids(rows)
 	assert_true("auto_menu" in ids, "the collapsed Auto row exists at top level")
 	for buried in ["autobattle", "autobattle_edit", "trust_toggle"]:
@@ -80,7 +85,7 @@ func test_scan_is_not_an_intrinsic_menu_row_for_any_job() -> void:
 	## struktured 2026-08-22: "scan should be an ability not intrinsic to a player".
 	## It lives in the Rogue's kit; nobody gets weakness intel just for having a turn.
 	for job_id in ["fighter", "mage", "cleric", "rogue", "bard"]:
-		var ids := _ids(_rows(job_id))
+		var ids: Array = _ids(await _rows(job_id))
 		assert_false("scan_menu" in ids, "%s must not get a free intrinsic Scan row" % job_id)
 
 
@@ -101,7 +106,7 @@ func test_every_job_can_attack_from_the_menu() -> void:
 	## carried the identical defect unreported — which is why this asserts over ALL jobs,
 	## not the one that got noticed.
 	for job_id in ["fighter", "mage", "cleric", "rogue", "bard"]:
-		var ids := _ids(_rows(job_id))
+		var ids: Array = _ids(await _rows(job_id))
 		var has_attack: bool = ("attack_menu" in ids) or ("attack" in ids)
 		assert_true(has_attack, "%s must be able to attack from the command menu" % job_id)
 
@@ -110,7 +115,7 @@ func test_ability_free_move_jobs_keep_BOTH_attack_and_their_free_move() -> void:
 	## The fix must not go the other way and cost them their job identity move.
 	var expected := {"mage": "Channel", "cleric": "Pray", "bard": "Riff"}
 	for job_id in expected:
-		var rows := _rows(job_id)
+		var rows: Array = await _rows(job_id)
 		var ids := _ids(rows)
 		assert_true("attack_menu" in ids or "attack" in ids, "%s kept Attack" % job_id)
 		var labels := ""
@@ -125,7 +130,7 @@ func test_basic_attack_jobs_get_exactly_one_attack_row_with_their_own_label() ->
 	## Fighter/Rogue must NOT gain a duplicate: their free_move IS the attack.
 	var expected := {"fighter": "Attack", "rogue": "Strike"}
 	for job_id in expected:
-		var rows := _rows(job_id)
+		var rows: Array = await _rows(job_id)
 		var n := 0
 		for r in rows:
 			if r is Dictionary and str(r.get("id", "")) in ["attack_menu", "attack"]:
@@ -162,7 +167,7 @@ func test_a_very_tall_menu_still_FITS_the_viewport() -> void:
 
 func test_the_tallest_REAL_battle_menu_fits() -> void:
 	## The live Bard menu — the job that actually overflowed — with its submenus.
-	var rows := _rows("bard")
+	var rows: Array = await _rows("bard")
 	var m = await _built_menu(rows)
 	var vh: float = get_viewport().get_visible_rect().size.y
 	assert_gt(rows.size(), 4, "CONTROL: a real, populated Bard menu")
