@@ -7,18 +7,30 @@
 # losslessly (sprite-pipeline intermediates + W4-W6 music, which has a
 # procedural fallback). The old in-place 64k/quantize mangling is gone.
 #
-# Usage: tools/deploy_web.sh [version-tag] [--gates-only]   (tag defaults to the newest git tag)
+# Usage:
+#   tools/deploy_web.sh [version-tag]              build + verify only  (DEFAULT, safe)
+#   tools/deploy_web.sh --publish [version-tag]    build + verify + butler push
+#   (tag defaults to the newest git tag; --gates-only is kept as an alias for the default)
+#
+# PUBLISHING IS OPT-IN, BY CONSTRUCTION — matching deploy_desktop.sh, which has always
+# worked this way. Until 2026-08-22 this script PUBLISHED BY DEFAULT and you had to
+# remember --gates-only to avoid it, while its sibling refused to publish unless you
+# passed --publish. Two scripts in one lane, opposite defaults, and the dangerous one was
+# the one whose header said "THE canonical web deploy". Forgetting a flag must never be
+# the thing that pushes to itch.io; struktured's standing rule is that a publish needs
+# explicit per-deploy approval, and a default that publishes puts that rule one typo away.
 set -euo pipefail
 cd "$(cd "$(dirname "$0")/.." && pwd)"
 
 # --gates-only runs every LOCAL gate and stops before anything outward-facing. Parsed before
 # anything else so it can never be mistaken for a version tag.
-GATES_ONLY=0
+PUBLISH=0
 ARGS=()
 for a in "$@"; do
 	case "$a" in
-		--gates-only) GATES_ONLY=1 ;;
-		-*) echo "usage: tools/deploy_web.sh [version-tag] [--gates-only]" >&2; exit 2 ;;
+		--publish)    PUBLISH=1 ;;
+		--gates-only) : ;;   # now the default; kept so existing invocations keep working
+		-*) echo "usage: tools/deploy_web.sh [--publish] [version-tag]" >&2; exit 2 ;;
 		*) ARGS+=("$a") ;;
 	esac
 done
@@ -41,7 +53,7 @@ PCK_LIMIT=199000000   # itch refuses HTML5 embeds with any file >= 200 MB
 PCK_WARN=180000000    # early-warning band: plan the next diet before it bites
 BUTLER_BIN="$(command -v butler || echo ./butler-bin/butler)"
 
-echo "[deploy] target: $VERSION"
+echo "[deploy] target: $VERSION  publish=${PUBLISH}"
 
 # IMPORT PREWARM. A fresh worktree has no .godot cache, so res://test/unit/* resolves to nothing
 # and GUT runs ZERO tests while exiting 0 (cowir-sfx/cowir-ai/cowir-story, 2026-07-29). This script
@@ -70,7 +82,22 @@ godot --headless --audio-driver Dummy --import --quit >/dev/null 2>&1 || true
 # Non-blocking dead-exclusion report — see deploy_desktop.sh for why it never enforces.
 # This matters more on web than desktop: web is the size-capped target, so an exclusion
 # that quietly stopped applying eats headroom against itch's 200 MB embed limit.
-./tools/check_exclude_patterns.sh || true
+# `|| true` here discarded the audit's exit code entirely. That script exits 2 with
+# "BLOCKED: parsed 0 patterns — the parse is wrong, not the config", precisely because a
+# zero-pattern parse would otherwise read as "no dead patterns" — and its own comment says
+# so: "the vacuous-pass shape this script exists to prevent elsewhere." The caller then
+# threw that away, so the one signal meaning THE AUDIT DID NOT RUN was indistinguishable
+# from a clean audit. Measured 2026-08-22: a config with every exclude_filter removed
+# exits 2, and with `|| true` the deploy proceeded as if gate 0 had passed.
+# EC 2 = the instrument could not measure. On a PUBLISH path that blocks: you do not ship
+# when a safety check was unable to run. EC 0 with warnings on stderr stays non-blocking —
+# a preset with no exclude_filter is loud but the pck size gate catches its consequence.
+./tools/check_exclude_patterns.sh; _PAT_EC=$?
+if [ "$_PAT_EC" -eq 2 ]; then
+  echo "[deploy] BLOCKED: the exclude-pattern audit could not run (exit 2). Not shipping" >&2
+  echo "         on an unaudited exclude_filter — fix the parse or the config first." >&2
+  exit 2
+fi
 
 # TREE IDENTITY — see deploy_desktop.sh for the measured gap this closes. Web has the
 # same shape: gate 1 reads src/ at T, the staged export reads it at T+minutes, and nothing
@@ -205,9 +232,10 @@ fi
 # and confirm the push below wouldn't fire — or hand-roll the sequence. Making the safe path
 # supported is cheaper than trusting everyone to check. Publishing still requires struktured's
 # explicit per-deploy approval; this flag does not grant it, it removes the reason to skip asking.
-if [ "$GATES_ONLY" = "1" ]; then
-  echo "[deploy] --gates-only: ALL GATES PASSED for ${VERSION}. Nothing pushed."
+if [ "$PUBLISH" != "1" ]; then
+  echo "[deploy] gate 6/6: SKIPPED — ALL GATES PASSED for ${VERSION}. Nothing pushed."
   echo "[deploy] build is in builds/web/ — publishing needs struktured's explicit approval."
+  echo "[deploy] to publish: tools/deploy_web.sh --publish ${VERSION}"
   exit 0
 fi
 
