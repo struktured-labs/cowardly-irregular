@@ -1,8 +1,9 @@
 extends GutTest
 
-## pre_battle_check and check_new_injuries are LIVE — GameLoop and AutogrindController both
-## call them to decide whether a grind battle starts and whether stakes were paid — and neither
-## was named by any test. An audit of AutogrindSystem's 60 public funcs found 9 in that state.
+## pre_battle_check and check_new_injuries are LIVE, each with exactly ONE real caller:
+## AutogrindController:227 gates every grind battle on the first, GameLoop:5552 reads the second
+## for the session injury warning. A third GameLoop mention of pre_battle_check is a COMMENT, not
+## a call — counted as a consumer in my first audit pass. Neither function was named by any test. An audit of AutogrindSystem's 60 public funcs found 9 in that state.
 ## These two carry the real consequences: an interrupt that stops firing grinds a wiped party
 ## forever, and an injury count that stops rising hides permanent damage from the session report.
 
