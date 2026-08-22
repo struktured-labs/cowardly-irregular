@@ -85,7 +85,7 @@ ENTRIES: dict[str, dict[str, str]] = {
     },
     "rat_guard": {
         "epithet": "Conscripted Squeak",
-        "flavor": "A rat that, by some unholy grant of self-importance, has been issued a tabard and a small spear. Guards the Cave Rat King's treasury, which is three coppers and a button.",
+        "flavor": "A rat that, by some unholy grant of self-importance, has been issued a tabard and a spear. Guards the Cave Rat King's treasury, which is three coppers and a button.",
     },
     "diseased_rat": {
         "epithet": "Walking Infection",
@@ -387,6 +387,72 @@ ENTRIES: dict[str, dict[str, str]] = {
         "epithet": "The Entropy",
         "flavor": "The decay of your reserves, crystallized into a figure that can swing a clock hand. Each turn takes one MP from each party member, not through drain but through the room's declining tolerance for having MP in it.",
     },
+
+    # ── Back-filled from data/bestiary.json (authored directly, never in this table) ──
+    "ogre": {
+        "epithet": "Load-Bearing Problem",
+        "flavor": "Twelve feet of appetite that never saw the point of tools. Strategy is wasted on it, which is inconvenient, because strategy is all you have.",
+    },
+    "barbarian": {
+        "epithet": "Unreformed Optimist",
+        "flavor": "Left home to solve problems with an axe and has, by his own accounting, a perfect record. He is not counting the same way you are.",
+    },
+    "masterite_warden_steampunk": {
+        "epithet": "The Standing Order",
+        "flavor": "It is a pressure gauge with opinions. It has never moved off the red and it has never had to. Ask the yard foreman how long it has stood there and he will tell you the yard was built around it. He is not being poetic.",
+    },
+    "masterite_arbiter_steampunk": {
+        "epithet": "The Tolerance Limit",
+        "flavor": "Every machined part is allowed to be slightly wrong. This one decides how slightly. It does not consider itself cruel — a caliper is not cruel — and it will explain the distinction while it corrects you.",
+    },
+    "masterite_tempo_steampunk": {
+        "epithet": "The Grand Schedule",
+        "flavor": "Nobody sees it much, but you can feel it: in the way the gears turn, in the way the trains arrive. It does not keep time. Time keeps IT, and has done since before anyone thought to ask who wrote the first rule.",
+    },
+    "masterite_curator_steampunk": {
+        "epithet": "The Requisition",
+        "flavor": "Steam costs money and money is kept in ledgers. It has been totalling what you spend since you entered the world — not your gold, your effort. The column marked PATIENCE is the one it watches.",
+    },
+    "chancellor_mordaine": {
+        "epithet": "Sorceress-Usurper of Harmonia",
+        "flavor": "She does not draw a sword. She does not raise her voice. She simply notes that you arrived later than her schedule predicted, and adjusts the schedule. The throne room is exactly the temperature of a server room. She does not so much fight you as audit you — testing variables, recording responses, allowing some attacks through to confirm the damage formula still holds. Defeat her and you do not feel victorious. You feel like you passed an evaluation that was never explained to you, conducted by an evaluator who is already designing the next one.",
+    },
+    "fighter_skeleton_knight": {
+        "epithet": "The Honorable Bone",
+        "flavor": "A skeleton who insists, politely, on the old forms. He will not strike you while you defend. He will bow before the duel. He will nod when you find his tempo. There is no malice in him — only the memory of a code that outlived the body that upheld it. The Fighter meets him blade to blade because that is what the Skeleton Knight is for: to teach a young resolve that resolve is a rhythm, not a shout.",
+    },
+    "cleric_survive_target": {
+        "epithet": "The Grinding Wound",
+        "flavor": "Not a monster in any conventional sense. A wound that will not stop bleeding. A miasma that presses on the villager as if it has all the time in the world — which it does. The Cleric cannot defeat it. No one can. She can only hold the villager's hand and pray, and pray, and pray, until the pressure lifts of its own accord. Faith, it turns out, is a form of endurance.",
+    },
+    "rogue_lockward": {
+        "epithet": "Bronze Protocol",
+        "flavor": "A treasure-guardian construct built to defend the vault by executing exactly one program: DEFEND, COUNTER, REPEAT. Every cycle, for one heartbeat, its rotation exposes a flank. The Rogue watches. She has always watched. When she moves, she moves for the paper no one else notices — not for the vault's obvious loot. The Lockward, in defeat, does not seem to mind.",
+    },
+    "mage_prismatic_construct": {
+        "epithet": "Crystalline Metronome",
+        "flavor": "A crystal automaton whose elemental face rotates in strict sequence — red, blue, gold. Its taunt is its telegraph: the color it names is the element that undoes it. The Mage does not need to be clever. He needs to READ. And when his first reading is wrong, he needs to say 'then it's the other thing' without flinching. That, the construct notes, is logic.",
+    },
+    "bard_hostile_courtier": {
+        "epithet": "The Sneering Velvet",
+        "flavor": "A capital-city functionary who refuses to treat with mercenaries. Blades will not move him — his court armor is embroidered with heirloom protection charms. Insult him and he escalates. Threaten him and he calls the guard. He can only be talked down, and only by someone who listens first — who hears the name he thought no one remembered — and then speaks once, at the exact right moment. The Bard writes what she hears down. She does not read it aloud.",
+    },
+    "rogue_mailbox": {
+        "epithet": "Undelivered",
+        "flavor": "Regulation blue. Bolted down, allegedly. It has decided that everything placed inside it is, legally speaking, its. The flag is up. That means it has mail for you.",
+    },
+    "the_calibrant": {
+        "epithet": "The Hand on the Dial",
+        "flavor": "Everything you have fought was a measurement. The slime in the first cave was a measurement. It has been adjusting this world's numbers since before you had a name for numbers, and it has never once been hostile about it — hostility is not a lever it has. It wears the faces it already spent on you, because those were expensive and it is not wasteful. Its objection is not that you are evil, or strong, or an anomaly. Its objection is that you automated a thing that was meant to be endured, and the curve it spent five worlds fitting does not survive contact with a player who stopped playing and started scripting. It is not angry. It is out of budget.",
+    },
+    "skeleton_soldier": {
+        "epithet": "The Standing Order",
+        "flavor": "Nobody ever countermanded the last order, so he is still following it. The order was 'hold'. He has been holding for four hundred years. He is very good at it now.",
+    },
+    "bone_warden": {
+        "epithet": "Still On Duty",
+        "flavor": "Outranked the skeletons it now stands among, and has not been told the war ended. It gave its blade away and never asked for another, which it does not consider a disadvantage. Salutes nobody. There is nobody left of sufficient rank.",
+    },
 }
 
 
@@ -400,10 +466,15 @@ def main() -> None:
     missing = monster_ids - entry_ids
     extra = entry_ids - monster_ids
 
+    # ABORT, never warn: `ordered` is built only from ENTRIES, so a monster missing here is
+    # SILENTLY DELETED from the output. A 2026-08-22 run would have destroyed 16 entries
+    # including the_calibrant and chancellor_mordaine, printing EC=0 and a WARNING nobody reads.
     if missing:
-        print(f"WARNING: monsters without bestiary entries ({len(missing)}):")
+        print(f"ERROR: {len(missing)} monster(s) have no bestiary entry; regenerating would")
+        print("DELETE their existing entries from data/bestiary.json. Add them to ENTRIES first:")
         for mid in sorted(missing):
             print(f"  - {mid}  [{monsters[mid].get('name', '?')}]")
+        raise SystemExit(2)
     if extra:
         print(f"WARNING: bestiary entries with no matching monster ({len(extra)}):")
         for mid in sorted(extra):
@@ -412,14 +483,20 @@ def main() -> None:
     for mid, entry in ENTRIES.items():
         assert "epithet" in entry and "flavor" in entry, f"{mid} missing keys"
         assert 0 < len(entry["epithet"]) <= 60, f"{mid} epithet length"
-        assert 20 < len(entry["flavor"]) <= 400, f"{mid} flavor length ({len(entry['flavor'])})"
+        # 800, not 400: FOUR shipped entries already exceed 400 (the_calibrant 655,
+        # chancellor_mordaine 551, bard_hostile_courtier 454, fighter_skeleton_knight 401)
+        # because they were authored straight into the JSON and never met this check.
+        # The bestiary UI word-wraps, so length is not a layout bound -- this catches a
+        # runaway paste, not long boss prose. Median is 159. Upper figure is a judgement,
+        # not a measurement: it is the observed max plus headroom.
+        assert 20 < len(entry["flavor"]) <= 800, f"{mid} flavor length ({len(entry['flavor'])})"
 
     ordered = {mid: ENTRIES[mid] for mid in monsters.keys() if mid in ENTRIES}
     for mid in entry_ids - monster_ids:
         ordered[mid] = ENTRIES[mid]
 
     with BESTIARY.open("w") as f:
-        json.dump(ordered, f, indent="\t", ensure_ascii=False)
+        json.dump(ordered, f, indent=2)
         f.write("\n")
 
     print(f"Wrote {BESTIARY} with {len(ordered)} entries (of {len(monsters)} monsters).")
