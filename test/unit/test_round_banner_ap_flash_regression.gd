@@ -24,8 +24,13 @@ func test_banner_respects_speed_and_console_suppression() -> void:
 	assert_gt(i, -1)
 	var next: int = src.find("\nfunc ", i + 1)
 	var body := src.substr(i, (next - i) if next > -1 else 1800)
-	assert_true("turbo_mode or autogrind_console_mode or Engine.time_scale >= 1.0" in body,
-		"banner suppressed in turbo/console and at 4x+ (engine 1.0 = '4x' label per speed-scale v3) — same convention as bubbles")
+	# Each suppression must gate the banner, asserted INDEPENDENTLY of how they are spelled: cowir-sfx split this compound `or` in 2026-08-22 so the round CUE could fire between turbo and the 4x guard, and a pin on the joined expression reds on that correct change while staying green on a wrong value re-typed in the pinned form.
+	var made := body.find("Label.new()")
+	assert_gt(made, -1, "the banner is still constructed here")
+	for cond in ["turbo_mode", "autogrind_console_mode", "Engine.time_scale >= 1.0"]:
+		var at: int = body.find(cond)
+		assert_gt(at, -1, "banner suppression '%s' still present (speed-scale v3: engine 1.0 = the '4x' label)" % cond)
+		assert_lt(at, made, "'%s' must gate the banner — it has to be checked BEFORE Label.new()" % cond)
 	assert_true("+1 AP" in body,
 		"banner text must name the AP grant — that's the teaching beat")
 	assert_true("flash_ap_labels" in body,
