@@ -124,3 +124,32 @@ func test_the_map_still_paints_more_than_one_kind_of_tile() -> void:
 		assert_gt(v.tile_map.get_used_cells().size(), 100, "CONTROL: %s painted a real map" % path.get_file())
 		assert_gt(seen.size(), 2,
 			"%s painted only %d distinct tiles — the mis-route symptom" % [path.get_file(), seen.size()])
+
+
+func test_the_shared_legend_parser_can_see_these_villages_walls() -> void:
+	# test_village_npc_connectivity flood-fills from a legend parsed by village_grid_source,
+	# whose impassable list was MEDIEVAL type names. Routing W2-W6 to their own generators
+	# made every one of their legends parse as zero blocking chars — the flood fill would have
+	# escaped through the walls and the whole reachability suite would have gone vacuous.
+	# Its own guard caught it. This pins the fix from the other side.
+	var GS := preload("res://test/unit/helpers/village_grid_source.gd")
+	for path in W2:
+		var src := FileAccess.get_file_as_string(path)
+		assert_gt(src.length(), 500, "CONTROL: read a real village source for %s" % path.get_file())
+		var derived: Array = GS.derived_impassable(src)
+		assert_gt(derived.size(), 0,
+			"%s: the shared parser derives no impassable types — every flood fill over it is vacuous" % path.get_file())
+		assert_gt(GS.blocked_chars(src, []).size(), 0,
+			"%s: no blocking legend chars, even with derivation" % path.get_file())
+
+
+func test_derivation_agrees_with_the_medieval_hand_list_it_replaced() -> void:
+	# The medieval generator's own impassable set was byte-identical to the hardcoded list
+	# callers passed, which is WHY deriving was safe for W1. Asserted so a change to either
+	# side surfaces here rather than as a silently different W1 flood fill.
+	var GS := preload("res://test/unit/helpers/village_grid_source.gd")
+	var src := FileAccess.get_file_as_string("res://src/maps/villages/HarmoniaVillage.gd")
+	var derived: Array = GS.derived_impassable(src)
+	derived.sort()
+	var hand := ["CAVE_WALL", "LAVA", "MOUNTAIN", "VILLAGE_HEDGE", "WALL", "WATER"]
+	assert_eq(derived, hand, "medieval derivation drifted from the list it replaced")
