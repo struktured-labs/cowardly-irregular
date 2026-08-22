@@ -1580,9 +1580,9 @@ func _status_icon_family(status: String) -> String:
 
 ## struktured 2026-08-22: "the 'ZZZ 1' status indicator is ghetto. we need an animation to indicte they are sleeping, same with all animations." Procedural idle per family — no art needed, and art can supersede it later. Animates scale/rotation/modulate only: HBoxContainer owns child POSITION and would fight a positional tween.
 func _start_status_icon_idle(icon: Control, status: String) -> void:
-	if not is_inside_tree():
+	if icon == null or not is_instance_valid(icon) or not icon.is_inside_tree():
 		return
-	await get_tree().process_frame
+	await icon.get_tree().process_frame
 	if not is_instance_valid(icon):
 		return
 	icon.pivot_offset = icon.size / 2.0

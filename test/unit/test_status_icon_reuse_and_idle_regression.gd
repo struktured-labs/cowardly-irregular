@@ -132,3 +132,44 @@ func test_icon_keys_are_valid_and_distinct_node_names() -> void:
 	var weird: String = _scene._status_icon_key("odd name/with:chars")
 	assert_false(weird.contains("/") or weird.contains(":") or weird.contains(" "),
 		"node names must not carry path or space characters; got '%s'" % weird)
+
+
+# THE ASK ITSELF. Every arm above passes with the animation DELETED — measured — because
+# they test the reuse plumbing and the family MAPPING, never that anything moves. This one
+# observes the icon actually changing over real frames.
+func test_a_new_icon_actually_animates() -> void:
+	var c := _combatant(["sleep"])
+	var row := _row_for(c)
+	_scene._refresh_status_icons(c, false)
+	var icon: Control = row.get_child(0)
+	var rest_scale: Vector2 = icon.scale
+	var rest_alpha: float = icon.modulate.a
+	var rest_rot: float = icon.rotation
+
+	var moved := false
+	for i in 40:
+		await get_tree().process_frame
+		if icon.scale != rest_scale or icon.modulate.a != rest_alpha or icon.rotation != rest_rot:
+			moved = true
+			break
+	assert_true(moved,
+		"a status icon must visibly animate — struktured asked for motion, and every other " +
+		"arm in this file stays green with the idle tween deleted")
+
+
+# CONTROL for the arm above: it must be able to report NO motion, or it proves nothing.
+func test_the_motion_probe_reports_a_static_control_as_static() -> void:
+	var still := Control.new()
+	still.custom_minimum_size = Vector2(20, 10)
+	add_child_autofree(still)
+	var rest_scale: Vector2 = still.scale
+	var rest_alpha: float = still.modulate.a
+	var moved := false
+	for i in 40:
+		await get_tree().process_frame
+		if still.scale != rest_scale or still.modulate.a != rest_alpha:
+			moved = true
+			break
+	assert_false(moved,
+		"a Control nobody animates must read as static — otherwise the motion assert above " +
+		"would pass on anything")
