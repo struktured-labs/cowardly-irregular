@@ -3836,9 +3836,14 @@ func _on_round_ended(round_num: int) -> void:
 	_show_round_banner(round_num)
 
 
-## Bravely Default-style round boundary: brief centered banner + AP-label gold flash on the party panel. Suppressed at 4x+ (same convention as speech bubbles); duration scales with battle speed.
+## Bravely Default-style round boundary: brief centered banner + AP-label gold flash on the party panel. Banner suppressed at 4x+ (same convention as speech bubbles); the CUE is not — struktured 2026-08-22 "still no sound to indicate next round", and the banner threshold was swallowing it whole.
 func _show_round_banner(round_num: int) -> void:
-	if turbo_mode or autogrind_console_mode or Engine.time_scale >= 1.0:
+	if turbo_mode or autogrind_console_mode:
+		return
+	# BATTLE channel, not UI: a round marker has to cut through combat and music, and SFX_UI_BASE_DB sat it 10 dB under both. Sound survives to 8x; past that rounds are too short to mark.
+	if Engine.time_scale < 4.0:
+		SoundManager.play_battle("round_ap_gain")
+	if Engine.time_scale >= 1.0:
 		return
 	var banner := Label.new()
 	banner.text = "— ROUND %d —   +1 AP" % (round_num + 1)
@@ -3855,7 +3860,6 @@ func _show_round_banner(round_num: int) -> void:
 	banner.modulate.a = 0.0
 	var ui = get_node_or_null("UI")
 	(ui if ui else self).add_child(banner)
-	SoundManager.play_ui("round_ap_gain")
 	var t := create_tween()
 	t.tween_property(banner, "modulate:a", 1.0, 0.12)
 	t.parallel().tween_property(banner, "position:y", banner.position.y - 14, 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
