@@ -106,9 +106,20 @@ func test_every_creator_has_a_key_and_the_key_matches_it() -> void:
 	keys.append_array(_cache_keys_in(SRC_EXTRA))
 	assert_eq(creators.size(), keys.size(),
 		"every creator has exactly one cache key (creators %d, keys %d)" % [creators.size(), keys.size()])
+	## BOTH DIRECTIONS. Forward alone is blind to a creator LOSING its key: a mutation that
+	## repoints mall_cop's key at skate_punk leaves 44==44 and every key still resolving,
+	## while mall_cop silently caches under another monster's entry. Measured 2026-08-22 —
+	## predicted this arm would catch it, it did not, and that is why the reverse exists.
 	var mismatched: Array = []
 	for k in keys:
 		var expected := "create_%s_sprite_frames" % k
 		if not expected in creators:
 			mismatched.append("key '%s' has no creator named '%s'" % [k, expected])
 	assert_eq(mismatched.size(), 0, "keys not matching their creator: " + str(mismatched))
+
+	var keyless: Array = []
+	for c in creators:
+		var want: String = str(c).replace("create_", "").replace("_sprite_frames", "")
+		if not want in keys:
+			keyless.append("%s has no cache key named '%s'" % [c, want])
+	assert_eq(keyless.size(), 0, "creators whose own key is missing: " + str(keyless))
