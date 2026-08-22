@@ -248,8 +248,18 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 		if not quick_item.is_empty():
 			items.append(quick_item)
 
-	# Free Move — per-job 0-cost canon action (replaces legacy top-level Attack).
-	# Falls back to a default basic-attack with label "Attack" when the job has no spec.
+	# Attack — EVERY job gets one. Pre-fix, free_move REPLACED it, so Mage/Cleric/Bard
+	# traded Attack for Channel/Pray/Riff and could not make a basic attack from the menu
+	# at all — while autobattle called basic_attack directly and could. struktured found it
+	# on Bard 2026-08-22: "the bard can attack in auto mode but otherwise cant thats a bug".
+	# Cleric and Mage had the identical defect, unreported. The menu must never be able to
+	# do LESS than autobattle.
+	var attack_item = _build_attack_item(combatant, alive_enemies, canvas_transform)
+	if not attack_item.is_empty():
+		items.append(attack_item)
+
+	# Free Move — per-job 0-cost canon action. For basic_attack jobs the Attack row above
+	# IS the free move (it carries their label), so this returns {} and adds no second row.
 	var free_move_item = _build_free_move_item(combatant, alive_enemies, canvas_transform)
 	if not free_move_item.is_empty():
 		items.append(free_move_item)
@@ -705,6 +715,11 @@ func _build_free_move_item(combatant: Combatant, alive_enemies: Array[Combatant]
 	var move_type: String = free_move.get("type", "basic_attack")
 	var label: String = free_move.get("label", "Attack")
 
+	## basic_attack jobs (Fighter/Rogue): _build_attack_item already emitted their row with
+	## their label, so emitting here too would duplicate it.
+	if move_type != "ability":
+		return {}
+
 	if move_type == "ability":
 		var ability_id: String = free_move.get("ability_id", "")
 		if ability_id == "":
@@ -718,7 +733,16 @@ func _build_free_move_item(combatant: Combatant, alive_enemies: Array[Combatant]
 		item["label"] = ("%s (%s)" % [label, hint]) if hint != "" else label
 		return item
 
-	# Default: basic_attack (Fighter/Rogue path — same data shape as legacy "Attack")
+	return {}
+
+
+## Attack row for EVERY job. Fighter/Rogue carry their own free_move label (Attack/Strike);
+## ability-free-move jobs get a plain "Attack" alongside their Channel/Pray/Riff.
+func _build_attack_item(combatant: Combatant, alive_enemies: Array[Combatant], canvas_transform: Transform2D) -> Dictionary:
+	var free_move: Dictionary = combatant.job.get("free_move", {}) if combatant.job else {}
+	var label: String = "Attack"
+	if str(free_move.get("type", "basic_attack")) != "ability":
+		label = str(free_move.get("label", "Attack"))
 	if alive_enemies.size() == 0:
 		return {
 			"id": "attack",

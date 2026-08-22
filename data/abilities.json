@@ -302,12 +302,15 @@
   "riff": {
     "id": "riff",
     "name": "Riff",
-    "type": "mp_restore",
+    "type": "physical",
     "animation": "riff",
     "mp_cost": 0,
-    "description": "Strike a quick chord — restore a small amount of MP to the whole party",
-    "target_type": "all_allies",
-    "mp_amount": 6
+    "description": "A sour, clashing chord. It barely stings — but it throws the target's aim off badly.",
+    "damage_multiplier": 0.4,
+    "target_type": "single_enemy",
+    "effect": "blind",
+    "effect_chance": 0.7,
+    "duration": 3
   },
   "backstab": {
     "id": "backstab",

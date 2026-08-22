@@ -194,10 +194,12 @@ func test_bard_free_move_is_riff() -> void:
 	assert_eq(fm.get("label"), "Riff", "Bard free_move label should be 'Riff'")
 
 
-func test_riff_ability_is_mp_restore_type() -> void:
+func test_riff_is_a_weak_high_status_strike() -> void:
+	## Reruled by struktured 2026-08-22: "an attack that is really weak but high chance of
+	## status effect". Was an mp_restore party battery.
 	assert_true(_abilities.has("riff"), "abilities.json should have 'riff'")
-	assert_eq(_abilities["riff"].get("type"), "mp_restore",
-		"Riff ability type must be 'mp_restore' (regression: was showing as crit-damage popup)")
+	assert_eq(_abilities["riff"].get("type"), "physical", "Riff is a strike")
+	assert_lt(float(_abilities["riff"].get("damage_multiplier", 9.0)), 0.6, "and a WEAK one")
 
 
 func test_riff_ability_has_zero_mp_cost() -> void:
@@ -205,9 +207,14 @@ func test_riff_ability_has_zero_mp_cost() -> void:
 		"Riff should cost 0 MP so Bard can always act")
 
 
-func test_riff_ability_restores_mp() -> void:
-	var mp_amount = _abilities["riff"].get("mp_amount", 0)
-	assert_gt(mp_amount, 0, "Riff should restore at least 1 MP")
+func test_riff_inflicts_a_real_implemented_status_at_high_odds() -> void:
+	## The status must be one the engine CONSUMES. "slow" has 0 references in src/ and
+	## "silence"'s only has_status() occurrence is inside a comment — both would be inert.
+	var effect := str(_abilities["riff"].get("effect", ""))
+	assert_eq(effect, "blind", "blind is consumed at BattleManager:4048 (+40% miss)")
+	assert_gt(float(_abilities["riff"].get("effect_chance", 0.0)), 0.5, "HIGH chance, per the ruling")
+	var mgr := FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
+	assert_true('has_status("%s")' % effect in mgr, "the status is actually read somewhere")
 
 
 func test_mp_restore_emits_healing_done_not_damage_dealt() -> void:
