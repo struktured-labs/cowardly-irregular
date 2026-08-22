@@ -58,10 +58,16 @@ for _d in "${_NETTED_DIRS[@]}"; do
   mkdir -p "$_SNAP/$_d"
   cp -a "$_UD_BASE/$_d/." "$_SNAP/$_d/" 2>/dev/null || true
 done
-# Root-level config/automation jsons (settings.json, autogrind_history.json, …) — flat
-# files a dir list cannot carry. Restored to their exact pre-run bytes.
+# Root-level flat files a dir list cannot carry (settings.json, autogrind_history.json,
+# .recovery_mode_lock, debug atlases…). Restored to their exact pre-run bytes.
+# The glob was *.json and therefore missed .recovery_mode_lock, which Godot writes at the
+# root and which NEITHER arm covered. Harmless in itself (0 consumers in src/ — it is an
+# engine artifact) but it survives every gate with a FRESH timestamp, so it tops the
+# "newest files" list in his live dir and four lanes independently spent tonight reasoning
+# it away in live-data audits. The second pattern picks up dotfiles; `[ -f ]` skips a glob
+# that matched nothing. The restore side already copies dotfiles (cp -a "${_d}.").
 if [ -d "$_UD_BASE" ]; then
-  for _f in "$_UD_BASE"/*.json; do
+  for _f in "$_UD_BASE"/* "$_UD_BASE"/.[!.]*; do
     [ -f "$_f" ] || continue
     [ -n "$_SNAP" ] || _SNAP="$(mktemp -d "${TMPDIR:-/tmp}/gate_exports_snap.XXXXXX")"
     mkdir -p "$_SNAP/__root__"
@@ -73,7 +79,7 @@ if [ -n "$_SNAP" ]; then
   # SAY SO. gate.sh used to print this and I nearly dropped it in the move, which would have made the
   # net unobservable in every run rather than only in the ones where it silently failed. Four lanes
   # spent this morning arguing about whether it had run, from artifacts that could not answer.
-  echo "run_tests.sh: snapshotted $(find "$_SNAP" -type f 2>/dev/null | wc -l) player data file(s) across ${#_NETTED_DIRS[@]} dir(s) — restored on exit"
+  echo "run_tests.sh: snapshotted $(find "$_SNAP" -type f 2>/dev/null | wc -l) player data file(s) across ${#_NETTED_DIRS[@]} dir(s) + root files — restored on exit"
 fi
 # Reap snapshots abandoned by a run that died without its trap — four were sitting in TMPDIR this
 # morning, each holding a stale copy, and hand-restoring from one re-litters the real directory
