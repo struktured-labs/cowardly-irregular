@@ -66,18 +66,29 @@ func test_CONTROL_the_fallback_really_is_gated_on_multiword_ids() -> void:
 		"the family fallback is no longer gated on a multi-word id. Re-check whether the explicit brute arms are still required, rather than assuming either way.")
 
 
+func _is_war_drum_flavoured(entry: Dictionary) -> bool:
+	return entry.get("style", "") == "tribal" or entry.get("bass_style", "") == "drums"
+
 func test_the_procedural_goblin_is_no_longer_a_war_chant() -> void:
 	## The OGG move is only half the fix. On any machine that does not load a goblin OGG -
 	## which after this change is EVERY machine - the procedural theme IS the goblin music.
-	var src: String = _sm_source()
-	var at: int = src.find('"goblin": {')
-	assert_gt(at, 0, "the goblin proc-gen params are gone")
-	var params: String = src.substr(at, 140)
-	assert_gt(params.length(), 100, "SCOPE control: extracted %d chars of goblin params" % params.length())
-	assert_false(params.contains('"style": "tribal"'),
-		"the procedural goblin is tribal again - the same war-drum character he objected to, reached by the other of the two sources")
-	assert_false(params.contains('"bass_style": "drums"'),
-		"the procedural goblin bass is war drums again")
+	##
+	## MONSTER_MUSIC_PARAMS is a class-level const, so this reads the value the generator
+	## uses. The previous version sliced source with a fixed 140-char window for a 106-char
+	## entry: it overshot into "skeleton", so skeleton going tribal would have redded the
+	## GOBLIN test, and a goblin entry grown past 140 would have truncated to a false green.
+	var params: Dictionary = SoundManager.MONSTER_MUSIC_PARAMS
+	assert_true(params.has("goblin"), "SCOPE: no goblin entry in MONSTER_MUSIC_PARAMS (%d entries)" % params.size())
+	assert_false(_is_war_drum_flavoured(params["goblin"]),
+		"the procedural goblin is war-drum flavoured again - the character he objected to, reached by the other of the two sources. style=%s bass_style=%s" % [params["goblin"].get("style"), params["goblin"].get("bass_style")])
+
+func test_CONTROL_the_war_drum_detector_can_still_say_tribal() -> void:
+	## No monster ships "tribal"/"drums" any more, so there is no live positive case.
+	## Without this the arm above passes on any dictionary and proves nothing.
+	assert_true(_is_war_drum_flavoured({"style": "tribal", "bass_style": "staccato"}), "the detector misses a tribal style")
+	assert_true(_is_war_drum_flavoured({"style": "frantic", "bass_style": "drums"}), "the detector misses a war-drum bass")
+	assert_false(_is_war_drum_flavoured({"style": "frantic", "bass_style": "staccato"}), "the detector flags the SHIPPED goblin values - it cannot distinguish anything")
+
 
 
 ## A4, C5, E4, E5, G4 — the exact pitch set of main's pentatonic goblin war chant.
