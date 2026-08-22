@@ -17,11 +17,22 @@ extends GutTest
 ## "Firia" back as a real ability — makes the check stop flagging it automatically,
 ## because the name is then current and a data file may legitimately say it.
 ##
-## Deliberately narrow: only names that are UNAMBIGUOUS spell references. `Fire`, `Cure`,
-## `Thunder`, `Shell` and `Protect` are ordinary English and appear all over legitimate
-## prose — boss_dialogue.json's "Fire again. Predictable." is element flavour and correct.
-## Including them would bury the signal, so this list is a FLOOR on the defect, not a
-## partition of it.
+## Deliberately narrow, and the excluded set is named in full rather than gestured at:
+##
+##   Fire · Cure · Thunder · Shell · Protect · Regen · RAISE
+##
+## all are ordinary English and appear throughout legitimate prose — boss_dialogue.json's
+## "Fire again. Predictable." is element flavour and correct. Sweeping them would bury the
+## signal in false positives, which get suppressed, which is how an allowlist rots.
+##
+## ⚠️ SO THIS LIST IS A FLOOR ON THE DEFECT, NOT A PARTITION OF IT. Concretely:
+## data/lore.json's "Raise" -> "Anima Reddita" was fixed by the same commit that added this
+## guard, and this guard CANNOT protect it. If that line regresses, nothing here reds.
+##
+## Found by cowir-deploy's tools/mutation_check.sh on 2026-08-22: mutating the lore.json
+## line back to "Raise" left this test GREEN. The author's own hand-mutation had targeted
+## autobattle_rule_templates.json, where the name IS covered — a mutation aimed at the
+## strong half of the guard. The tool named it VACUOUS and it was right.
 
 const ABILITIES_PATH := "res://data/abilities.json"
 
