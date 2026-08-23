@@ -107,16 +107,26 @@ OPTIONS="$(command grep -ac '^\[preset\.[0-9]*\.options\]$' "$CFG" || true)"
   echo "        header scan is missing presets — and every verdict below would describe a" >&2
   echo "        SUBSET while reading like a full audit." >&2; exit 2; }
 
+# ⚠️ MEASURED 2026-08-22 on the MERGED tree: this arm tested for the WRONG FORM of the
+# defect. Deleting a preset's `exclude_filter=` line fired the COVERAGE warning; setting it
+# to `exclude_filter=""` was COMPLETELY SILENT — EC=0, no warning — while that preset ships
+# EVERYTHING, which is the exact condition this script exists to detect. And the empty form
+# is the LIKELIER one: Godot's export dialog writes `exclude_filter=""` when the field is
+# cleared in the UI; hand-deleting the line is the mutation a human would have to author.
+# So the arm matched on the line's PRESENCE when the semantics live in its VALUE.
+# Mutation placement is a parameter of the answer: I had tested delete and never empty.
 UNCOVERED="$(awk '
     /^\[preset\.[0-9]+\]/ { if (s != "" && !f) print s; s = $0; f = 0; next }
-    /^exclude_filter=/    { if (s != "") f = 1 }
+    /^exclude_filter=/    { v = $0; sub(/^exclude_filter=/, "", v)
+                            gsub(/["[:space:]]/, "", v)
+                            if (s != "" && v != "") f = 1 }
     END                   { if (s != "" && !f) print s }
 ' "$CFG")"
 if [ -n "$UNCOVERED" ]; then
-    echo "[patterns] ⚠️  COVERAGE: preset section(s) with NO exclude_filter — not audited below:" >&2
+    echo "[patterns] ⚠️  COVERAGE: preset section(s) with NO EFFECTIVE exclude_filter (absent OR empty) — not audited:" >&2
     echo "$UNCOVERED" | sed 's/^/               /' >&2
-    echo "             A preset with no exclude_filter ships EVERYTHING. Nothing below this" >&2
-    echo "             line describes it — the report is silent about what it never read." >&2
+    echo "             A preset with no exclude_filter — or an EMPTY one — ships EVERYTHING. Nothing" >&2
+    echo "             below this line describes it; the report is silent about what it never read." >&2
 fi
 
 mapfile -t PATTERNS < <(
