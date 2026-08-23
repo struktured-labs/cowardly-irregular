@@ -85,7 +85,25 @@ echo "[deploy] gate 0/4: import prewarm (a fresh worktree runs NOTHING and exits
 _UD="${XDG_DATA_HOME:-$HOME/.local/share}/godot/app_userdata/Cowardly Irregular"
 _LOCK="$_UD/.recovery_mode_lock"
 _LOCK_PRE=0; [ -e "$_LOCK" ] && _LOCK_PRE=1
-godot --headless --audio-driver Dummy --import --quit >/dev/null 2>&1 || true
+#
+# ✅ PREVENTION, added after the cleanup below: sandbox XDG for THIS invocation (a gitignored
+# repo-local dir, reused across deploys so the sandbox stays warm) so the lock
+# is never written to his data at all. Measured in a fresh worktree (no .godot):
+#     ARM A  no import         run_tests.sh EC=3 "NO TESTS RAN — no Totals block"
+#     ARM B  SANDBOXED import  EC=0 · 6510 lines · project .godot created (5 entries)
+#     ARM C  same test after B EC=0 · Scripts 1 · Tests 1 · Passing 1     ✅ prewarm intact
+#     his real lock mtime, before and after B and C: 17:39:14.803 — BYTE-IDENTICAL, untouched
+# The import cache lives in res://.godot — in the PROJECT — so relocating XDG_DATA_HOME
+# costs the prewarm nothing. ARM A/C is the pair that matters: it shows the prewarm's
+# PURPOSE survives, not merely that the command exits 0.
+#
+# ⛔ DO NOT extend this env var to gate 2. XDG_DATA_HOME relocates the WHOLE godot data
+# root, and export templates live at ~/.local/share/godot/export_templates/4.4.1.stable.
+# Measured: a sandboxed `--export-release "Web"` fails EC=1 "No export template found at
+# the expected path"; the unsandboxed control emits no such line. Sandbox the PREWARM,
+# never the EXPORT.
+mkdir -p tmp/prewarm_xdg
+XDG_DATA_HOME="$PWD/tmp/prewarm_xdg" godot --headless --audio-driver Dummy --import --quit >/dev/null 2>&1 || true
 if [ "$_LOCK_PRE" -eq 0 ] && [ -e "$_LOCK" ]; then
   rm -f "$_LOCK"
   echo "[deploy] gate 0: removed the .recovery_mode_lock this prewarm created (none before)"
