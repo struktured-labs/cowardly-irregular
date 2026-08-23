@@ -80,6 +80,19 @@ if [ -n "$_SNAP" ]; then
   # net unobservable in every run rather than only in the ones where it silently failed. Four lanes
   # spent this morning arguing about whether it had run, from artifacts that could not answer.
   echo "run_tests.sh: snapshotted $(find "$_SNAP" -type f 2>/dev/null | wc -l) player data file(s) across ${#_NETTED_DIRS[@]} dir(s) + root files — restored on exit"
+else
+  # SAY SO IN THIS DIRECTION TOO. Measured 2026-08-22: with a fresh XDG_DATA_HOME every
+  # loop above takes its `continue`, $_SNAP stays empty, this whole block is skipped, and
+  # the run emits NOTHING — byte-identical to a run where the net armed, minus one line
+  # nobody is looking for. Two causes print the same silence:
+  #   BENIGN  a sandboxed run whose user dir is genuinely empty — nothing to protect
+  #   BAD     $_UD_BASE computed wrong (XDG semantics change, a Godot path change, a typo)
+  #           -> his real data is UNPROTECTED and the run says so nowhere
+  # Non-blocking, because the benign case is legitimate and common. Loud, because the
+  # bad case is otherwise unobservable. Same three-state rule the CI PE check uses: the
+  # instrument's inability to act must be its own outcome, never folded into silence.
+  echo "run_tests.sh: player-data net did NOT arm — nothing to snapshot under $_UD_BASE" >&2
+  echo "  (benign for a sandboxed run; if this is his real user dir, the net is not protecting it)" >&2
 fi
 # Reap snapshots abandoned by a run that died without its trap — four were sitting in TMPDIR this
 # morning, each holding a stale copy, and hand-restoring from one re-litters the real directory
