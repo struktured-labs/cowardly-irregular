@@ -140,6 +140,45 @@ mapfile -t PATTERNS < <(
   echo "        A zero here would otherwise report as 'no dead patterns', which is the" >&2
   echo "        vacuous-pass shape this script exists to prevent elsewhere." >&2; exit 2; }
 
+# NAMED-MEMBER CANARY, ON THE OUTPUT SIDE (cowir-sfx / cowir-ai, 2026-08-22).
+# The zero-check above catches TOTAL parse failure only. A pipeline that drops SOME
+# patterns — one preset's line formatted differently, an anchor that stops matching one
+# spelling — still yields a non-empty array, and a partial parse reports FEWER dead
+# patterns, which reads as a CLEANER audit. Same total-vs-partial split that made the
+# coverage guard hollow twice.
+#
+# cowir-ai's refinement is why this reads the OUTPUT, not the input: a canary naming a
+# member of the computation's INPUT (the cfg is readable, it has exclude_filter lines)
+# survives a broken computation intact — a reader test wearing a canary's clothes. The
+# member must sit DOWNSTREAM of what can break, so this asserts that a pattern extracted
+# by a SECOND, INDEPENDENT method is present in what the pipeline produced.
+#
+# awk -F'"' / -F',' shares no sed expression, no tr and no sort with the mapfile above, so
+# the two agree only if the extraction actually worked. Checked PER LINE, because a
+# whole-file canary passes while one preset's filter is silently dropped.
+# ⚠️ THE FIRST VERSION OF THIS CANARY CHECKED ONLY EACH LINE'S FIRST TOKEN, and it was
+# STRUCTURALLY INCAPABLE of firing. Measured 2026-08-22: this cfg has 5 exclude_filter
+# lines and exactly TWO distinct first tokens (*.pre_normalize.png x4, *.jpg x1), so
+# dropping a whole line leaves its first token in PATTERNS via another line. Two landed
+# mutations — drop one whole line, drop the alphabetically-first pattern — both passed
+# EC=0 with no BLOCKED line. A canary that names a member SHARED across the population
+# it is sampling cannot detect the loss of any one member.
+# Every token is checked, so a dropped line must lose at least its preset-specific ones.
+while IFS= read -r _line; do
+    while IFS= read -r _canary; do
+        [ -n "$_canary" ] || continue
+        _found=0
+        for _p in "${PATTERNS[@]}"; do [ "$_p" = "$_canary" ] && { _found=1; break; }; done
+        [ "$_found" -eq 1 ] || {
+          echo "[patterns] BLOCKED: '${_canary}' appears on an exclude_filter line in $CFG —" >&2
+          echo "        read with awk, independently of the sed/tr/sort pipeline — but it is NOT" >&2
+          echo "        among the ${#PATTERNS[@]} patterns that pipeline produced." >&2
+          echo "        The extraction is dropping patterns. Every verdict below would describe a" >&2
+          echo "        SUBSET while reading like a complete audit, and the non-empty check above" >&2
+          echo "        cannot see a partial failure." >&2; exit 2; }
+    done < <(printf '%s' "$_line" | awk -F'"' '{print $2}' | tr ',' '\n' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+done < <(command grep -a '^exclude_filter=' "$CFG")
+
 STALE=(); PROPH=(); LIVE=0
 for p in "${PATTERNS[@]}"; do
     if [ "$(_count_now "$p")" -gt 0 ]; then LIVE=$((LIVE + 1))
