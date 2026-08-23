@@ -84,6 +84,13 @@ func test_map_and_component_scan_are_live() -> void:
 		assert_gt(n, 0, "no '" + c + "' painted on the map -- BLOCKING no longer names real terrain, so nothing can ever read as stranded")
 	assert_gt(_sizes.size(), 0, "no walkable components found")
 	assert_gt(_sizes[_mainland], 1000, "largest walkable component is only " + str(_sizes[_mainland]) + " cells -- too small to be the traversable world")
+	var off_mainland := 0
+	for y in range(_h):
+		for x in range(_w):
+			if _walkable(x, y) and _comp[y][x] != _mainland:
+				off_mainland += 1
+	## Guards the LABELLING: a degenerate one-component partition RELAXES the size assert above.
+	assert_gt(off_mainland, 0, "every walkable cell labelled as mainland -- the component partition is degenerate, so the sealed-pocket check cannot fire")
 
 
 func test_spawn_clearance_is_not_empty() -> void:
