@@ -57,6 +57,7 @@ func test_no_ghost_frame_beside_healthy_siblings() -> void:
 	var scanned: Array = []
 	var offenders: Array = []
 	var short: Array = []
+	var excused: Array = []
 	for id in sheets:
 		var entry: Dictionary = sheets[id]
 		var path: String = str(entry.get("path", ""))
@@ -84,12 +85,21 @@ func test_no_ghost_frame_beside_healthy_siblings() -> void:
 				ghosts.append(i)
 			elif float(sol[i]) >= HEALTHY_MIN:
 				healthy = true
-		if healthy and not ghosts.is_empty() and not KNOWN.has(id):
-			offenders.append("%s: frames %s are near-invisible beside solid siblings" % [id, str(ghosts)])
+		if healthy and not ghosts.is_empty():
+			if KNOWN.has(id):
+				excused.append(id)
+			else:
+				offenders.append("%s: frames %s are near-invisible beside solid siblings" % [id, str(ghosts)])
 	# a named member the scan MUST reach — a count would pass on one stray match
 	assert_true(scanned.has("wolf"), "scan must reach wolf (8 solid frames) — else it read nothing")
 	assert_gt(scanned.size(), 50, "scan must cover the bulk of monster_sheets")
 	assert_eq(short, [], "a frame-solidity read came back short — the scan skipped frames: %s" % [short])
+	var want := KNOWN.keys()
+	want.sort()
+	excused.sort()
+	# the allowlist is downstream of _frame_solidity, so a wrong-but-plausible read empties it
+	assert_eq(excused, want,
+		"every KNOWN sheet must STILL be detected as ghosted — a missing one means its art was fixed (drop the entry) or the solidity read is broken (the check above is vacuous)")
 	assert_eq(offenders, [], "a frame this faint renders as nothing in battle")
 
 
