@@ -231,6 +231,29 @@ if [ "${_CE_POS:-0}" -le 0 ] || [ "${_CE_NEG:-1}" -ne 0 ]; then
   echo "        That counter decides STALE vs PROPHYLACTIC, so a dead one labels every" >&2
   echo "        never-matched pattern 'prophylactic, fine' — the reassuring verdict." >&2; exit 2; fi
 
+# ⚠️ PER-PRESET VIEW — added 2026-08-22 after cowir-sfx/cowir-adhoc's PERMUTATION finding.
+# Everything below this point reasons over PATTERNS, which is `sort -u` across ALL presets:
+# a UNION. Measured: moving `assets/audio/music/*industrial*` from the Web preset to Android
+# produces BYTE-IDENTICAL output — 24 patterns, 19 live, 3 prophylactic, 2 never-matched,
+# EC=0, zero BLOCKED lines, both before and after. The set is unchanged; only the
+# preset->pattern PAIRING moved, and a set-based check cannot see a permutation by
+# construction.
+#
+# That is deploy-relevant rather than academic: the web preset is the size-capped one, so a
+# pattern migrating off it silently adds its files to the pck. `*industrial*` alone is
+# 18.8 MiB against 34 MiB of headroom — under the cap, so gate 3 is blind to it too. Both
+# instruments miss the same event, for unrelated reasons.
+#
+# Reported, not blocked: a preset legitimately may carry a different filter from its
+# siblings (Web carries 24 to the desktop presets' 11, by design). The fix is to make the
+# distribution VISIBLE so a migration shows up as a count that moved, rather than to pin a
+# per-preset membership list — which would be a use-site pin and would red on every
+# legitimate edit.
+echo "[patterns] per-preset distribution (a UNION cannot show a pattern MOVING between presets):"
+awk '/^\[preset\.[0-9]+\]$/{sec=$0}
+     /^name=/{if(sec!="")nm[sec]=$0}
+     /^exclude_filter=/{if(sec!=""){n=split($0,a,","); printf "             %-12s %-24s %2d pattern(s)\n", sec, nm[sec], n}}' "$CFG"
+
 STALE=(); PROPH=(); LIVE=0
 for p in "${PATTERNS[@]}"; do
     if [ "$(_count_now "$p")" -gt 0 ]; then LIVE=$((LIVE + 1))
