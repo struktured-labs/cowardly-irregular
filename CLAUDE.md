@@ -278,8 +278,8 @@ The `mcp/godot-mcp` submodule provides MCP tools for safe validation:
 
 **Fallback:** Godot headless commands via Bash are always safe:
 ```bash
-godot --headless --check-only --script <file>  # Check syntax
-godot --headless -s test/run_tests.gd          # Run tests
+XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --check-only --script <file>  # Check syntax
+XDG_DATA_HOME=$PWD/tmp/xdg godot --headless -s test/run_tests.gd          # Run tests
 ```
 
 ### Testing
@@ -310,13 +310,19 @@ godot --headless -s test/run_tests.gd          # Run tests
   - It is a **subset** of main (157 commits behind, 14 fewer test files). Valid as a detector control; it certifies **nothing** about main's corpus. Self-consistent is not current.
 - Raw equivalent if the wrapper is unavailable (add `--log-file tmp/gut.log`):
   ```bash
-  godot --headless --audio-driver Dummy --log-file tmp/gut.log -s addons/gut/gut_cmdln.gd -gdir=res://test/unit -gprefix=test_ -gsuffix=.gd -gexit
+  XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --audio-driver Dummy --log-file tmp/gut.log -s addons/gut/gut_cmdln.gd -gdir=res://test/unit -gprefix=test_ -gsuffix=.gd -gexit
   ```
-- Syntax-only check (autoloads not initialized; SoundManager / JobSystem refs will appear missing):
+- Syntax-only check (autoloads not initialized; SoundManager / JobSystem refs will appear missing).
+⚠️ NOT inert: `--check-only` opens the project and WRITES `user://logs/godot.log`, rotating his
+crash trace. Sandbox it like everything else:
   ```bash
-  godot --headless --check-only --script <file>
+  XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --check-only --script <file>
   ```
-- **⚠️ SANDBOX EVERY GODOT INVOCATION — `--import` IS NOT BENIGN.** It carries the same `E`
+- **⚠️ SANDBOX EVERY GODOT INVOCATION THAT OPENS THE PROJECT — `--import`, `--check-only`,
+`-s <script>`, the raw GUT runner. The ONE exception is launching the game FOR HIM
+(`launch.sh`, `godot &`): there his `user://` IS the destination and sandboxing it would
+send his saves to a temp dir that gets deleted. Classify by INTENT, not by the flag.
+`--import` IS NOT BENIGN.** It carries the same `E`
 (editor-only) flag as `--editor` and the engine's own help says it *"Starts the editor"* —
 `--headless` means NO WINDOW, not *not the editor*. An editor-class run whose
 `user://` project dir ALREADY EXISTS writes `.recovery_mode_lock` there (reproduced on
