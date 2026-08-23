@@ -59,6 +59,7 @@ func test_no_interior_hand_rolls_an_exit_shape_any_more() -> void:
 	var dir := DirAccess.open("res://src/maps/interiors")
 	assert_true(dir != null, "the interiors directory is unreadable -- the scan is dead")
 	var offenders: Array = []
+	var detected: Array = []
 	var scanned := 0
 	for f in dir.get_files():
 		if not f.ends_with(".gd"):
@@ -67,9 +68,15 @@ func test_no_interior_hand_rolls_an_exit_shape_any_more() -> void:
 		var src := FileAccess.get_file_as_string("res://src/maps/interiors/" + f)
 		# an exit that builds its own rectangle instead of calling the shared builder
 		if src.contains("RectangleShape2D.new()") and src.contains("exit.collision_layer"):
+			detected.append(f)
 			if not EXPECTED_EXCEPTIONS.has(f.get_basename()):
 				offenders.append(f)
 	assert_gt(scanned, 20, "only %d interior scripts scanned -- the directory read is not working" % scanned)
+	# CANARY ON THE SCAN'S OUTPUT, not its input: a corpus check survives a dead predicate,
+	# because it names a file the walk saw rather than a finding the scan produced
+	for name in EXPECTED_EXCEPTIONS:
+		assert_true(detected.has(name + ".gd"),
+			"the scan produced no finding for %s, which is KNOWN to hand-roll its exit -- the detection is dead and every assertion below is vacuous" % name)
 	assert_eq(offenders, [], "these interiors still hand-roll their exit geometry: %s" % str(offenders))
 	# every exception must still SUPPRESS a real detection -- an entry whose subject was
 	# fixed goes inert while the suite stays green, documenting a hazard that is gone
