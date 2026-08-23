@@ -90,11 +90,15 @@ func scan_offences(body: String, label: String, current: Array, retired: Array) 
 func test_no_player_data_names_a_retired_spell() -> void:
 	var current := _current_ability_names()
 	var offences: Array[String] = []
+	var walked: Array[String] = []
 	for path in PROSE_DATA_FILES:
 		var body := _read(path)
 		if body == "":
 			continue  # file absent is another test's business, not this one's
+		walked.append(path.get_file())
 		offences.append_array(scan_offences(body, path.get_file(), current, RETIRED_ARCANE_NAMES))
+	assert_true(walked.has("lore.json"),
+		"the prose walk never reached lore.json — the scan is dead and the check below is vacuous")
 	assert_eq(offences.size(), 0,
 		("player-facing prose names a spell abilities.json no longer defines — the player "
 		+ "reads a spell that does not exist: %s") % str(offences))
@@ -114,9 +118,7 @@ func test_the_scan_can_see_these_files_and_names() -> void:
 
 
 func test_a_name_that_comes_back_stops_being_forbidden() -> void:
-	# The header advertises SELF-MAINTAINING, but 0 of 12 retired names are currently live,
-	# so that branch never ran. Measured 2026-08-22: inverting it left Passing 2 / Asserts 6
-	# byte-identical — the guard was hollow under that mutation. These arms make it fire.
+	# The self-maintaining branch never fires against live data, so exercise it directly.
 	var body := "Emergency Firia first, then Curia."
 	var retired: Array = ["Firia", "Curia"]
 
