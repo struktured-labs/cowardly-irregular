@@ -46,5 +46,5 @@ One `match` in CutsceneDirector; ~30 step types (dialogue, narration, letterbox,
 
 - Syntax: `XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --check-only --script <file>` (autoload refs appear missing — expected)
 - New `class_name` needs `XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --import` before GUT sees it — flag it in handoffs
-- Full gate (ALWAYS muted): `XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --audio-driver Dummy -s addons/gut/gut_cmdln.gd -gdir=res://test/unit -gprefix=test_ -gsuffix=.gd -gexit` — 0 [Failed] required
+- Full gate: `XDG_DATA_HOME=$PWD/tmp/xdg tools/run_tests.sh` — muting and the player-data net are inside the wrapper. Gate on the EXIT CODE captured before shaping output; `Failing` is suppressed at zero, so its absence is the green signal
 - Every bug fix gets a regression test; prefer the orphan-ratchet shape (allowlist + stale-pruner) for content-vs-code gaps

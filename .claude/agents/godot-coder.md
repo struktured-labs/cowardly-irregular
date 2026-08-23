@@ -34,7 +34,7 @@ Read CLAUDE.md at the project root for full design docs. Key architecture:
 **Always validate before presenting work:**
 1. `XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --check-only --script <file>` for syntax
 2. `XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --import` for full project validation
-3. Run tests if touching battle/combat/job code: `XDG_DATA_HOME=$PWD/tmp/xdg godot --headless -s test/run_tests.gd`
+3. Run tests if touching battle/combat/job code: `XDG_DATA_HOME=$PWD/tmp/xdg tools/run_tests.sh <name>` — NOT `-s test/run_tests.gd`, which skips autoloads
 4. Never present code that hasn't been syntax-checked
 
 ## Code Style

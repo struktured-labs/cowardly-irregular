@@ -47,5 +47,5 @@ You own everything related to combat:
 - Physical attacks can crit (Luck/Speed based), magic does NOT crit by default
 - Crit multiplier: 1.5x base
 - Always validate: `XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --check-only --script <file>`
-- Run battle tests after changes: `XDG_DATA_HOME=$PWD/tmp/xdg godot --headless -s test/run_tests.gd`
+- Run battle tests after changes: `XDG_DATA_HOME=$PWD/tmp/xdg tools/run_tests.sh <name>` — NOT `-s test/run_tests.gd`, which skips autoloads and gives you phantom missing-SoundManager errors
 - Test files in `test/unit/` — add regression tests for any bug you fix

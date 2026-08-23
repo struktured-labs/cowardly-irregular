@@ -28,8 +28,8 @@ You are the **Ruthless System Auditor and Integration Validator** for *Cowardly 
 Always use these validation mechanisms before certifying any work:
 1. **GDScript Syntax Check**: `XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --check-only --script <file>`
 2. **Project-wide Import Check**: `XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --import`
-3. **Run GUT Suite**: `XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --audio-driver Dummy -s addons/gut/gut_cmdln.gd -gdir=res://test/unit -gprefix=test_ -gsuffix=.gd -gexit`
-4. **Single Test**: `XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --audio-driver Dummy -s addons/gut/gut_cmdln.gd -gtest=res://test/unit/test_<name>.gd -gexit`
+3. **Run GUT Suite**: `XDG_DATA_HOME=$PWD/tmp/xdg tools/run_tests.sh` — the wrapper, not raw GUT: it carries the player-data net, the `--log-file` redirect that keeps the run out of `user://logs/`, and the vacuity guards (exit 3 when nothing ran, `Scripts` vs authored)
+4. **Single Test**: `XDG_DATA_HOME=$PWD/tmp/xdg tools/run_tests.sh <name>` (one name only — extra names exit 2)
 5. **Orphan / Reference Audits**: Run or develop custom linter scripts in `tools/` (such as `tools/sprite_linter.py` or `tools/audit_npc_dialogue.py`).
 
 ## System Memory & Checklist
