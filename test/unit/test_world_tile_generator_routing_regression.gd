@@ -95,6 +95,9 @@ func test_every_char_the_legend_can_emit_resolves_in_that_generators_atlas() -> 
 		# PRINTABLE is independent of _chars(); comparing against _chars() would let both sides shrink together
 		assert_eq(resolved.size() + unresolved.size(), PRINTABLE,
 			"%s: the sweep saw %d of %d chars — it is skipping part of the legend" % [path.get_file(), resolved.size() + unresolved.size(), PRINTABLE])
+		# A degenerate classifier resolves every char, making the check below trivially true
+		assert_ne(v._char_to_tile_type("W"), v._char_to_tile_type("g"),
+			"%s: wall and ground map to the SAME type — the classifier is degenerate, so every char resolves and the check below is trivially true" % path.get_file())
 		assert_eq(unresolved.size(), 0,
 			"%s emits types its own generator cannot draw (they paint as tile 0,0): %s"
 			% [path.get_file(), ", ".join(unresolved)])
