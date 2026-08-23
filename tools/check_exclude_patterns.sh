@@ -164,6 +164,21 @@ mapfile -t PATTERNS < <(
 # EC=0 with no BLOCKED line. A canary that names a member SHARED across the population
 # it is sampling cannot detect the loss of any one member.
 # Every token is checked, so a dropped line must lose at least its preset-specific ones.
+#
+# ⚠️ STATED GRANULARITY (cowir-sfx: "a canary detects at the CARDINALITY of the member it
+# names" — so the comment must say which, or a reader assumes the finer one). Measured
+# 2026-08-22 by deleting each exclude_filter line in turn and re-deriving the set:
+#     [preset.0] Linux            no unique tokens  -> loss INVISIBLE here
+#     [preset.2] Windows Desktop  no unique tokens  -> INVISIBLE
+#     [preset.3] macOS            no unique tokens  -> INVISIBLE
+#     [preset.1] Web              13 unique         -> DETECTED
+#     [preset.4] Android          no unique tokens  -> INVISIBLE
+# That blind spot is not a weakness: PATTERNS is `sort -u` deduped and every verdict below
+# derives from it alone, so dropping a line whose tokens are all duplicated changes the
+# audit's output by NOTHING. The canary is blind to exactly the losses that are semantically
+# null — and it sees the one line that carries the deploy-critical music/tools/test globs.
+# A preset losing its filter ENTIRELY is a different failure and is caught per-preset by the
+# COVERAGE arm above; do not read this canary as covering that.
 while IFS= read -r _line; do
     while IFS= read -r _canary; do
         [ -n "$_canary" ] || continue
