@@ -194,6 +194,28 @@ while IFS= read -r _line; do
     done < <(printf '%s' "$_line" | awk -F'"' '{print $2}' | tr ',' '\n' | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
 done < <(command grep -a '^exclude_filter=' "$CFG")
 
+# ⚠️ CANARY ON THE COUNTER, added 2026-08-22. The canary above is downstream of the
+# EXTRACTION and UPSTREAM of `_count_now`, which is what decides every verdict below.
+# cowir-sprites' rule: being downstream of SOMETHING is not being downstream of the thing
+# that breaks. Measured — `_count_now` stubbed to always return 1:
+#     "24 distinct exclude pattern(s): 24 matching now, 0 historical, 0 never-matched"  EC=0
+# A perfectly clean audit from a completely dead counter, and not one cardinal moved.
+#
+# Both comparands are TYPED LITERALS, never derived (cowir-sfx: a literal cannot co-vary
+# with the thing it checks; a check you can write without knowing the answer cannot be
+# wrong and cannot be right). The positive uses `tools/*` because THIS SCRIPT lives under
+# tools/ — so a working counter must find at least one file, and no repo change can make
+# that stale without also deleting the script doing the asking.
+_CN_POS="$(_count_now 'tools/*')"
+_CN_NEG="$(_count_now 'ZZZ_no_such_path_ever_*')"
+if [ "${_CN_POS:-0}" -le 0 ] || [ "${_CN_NEG:-1}" -ne 0 ]; then
+  echo "[patterns] BLOCKED: the file counter is not working — 'tools/*' counted ${_CN_POS}" >&2
+  echo "        (this script lives under tools/, so a working counter cannot return 0) and" >&2
+  echo "        a fabricated pattern counted ${_CN_NEG} (must be 0)." >&2
+  echo "        Every verdict below is decided by that counter: a counter stuck high reports" >&2
+  echo "        every pattern as live and prints a CLEAN audit; stuck low reports them all" >&2
+  echo "        dead. Neither moves an exit code or a count on its own." >&2; exit 2; fi
+
 STALE=(); PROPH=(); LIVE=0
 for p in "${PATTERNS[@]}"; do
     if [ "$(_count_now "$p")" -gt 0 ]; then LIVE=$((LIVE + 1))
