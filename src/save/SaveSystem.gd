@@ -244,6 +244,8 @@ func can_quick_save() -> bool:
 		return false
 	if _party_is_wiped():
 		return false
+	if _party_is_absent():
+		return false
 	return true
 
 
@@ -259,6 +261,8 @@ func _save_block_reason() -> String:
 		return "Cannot save inside this room — leave to a village or overworld first"
 	if _is_cutscene_active():
 		return "Cannot save mid-cutscene — wait for the scene to finish"
+	if _party_is_absent():
+		return "No party loaded — nothing to save yet"
 	if _party_is_wiped():
 		return "Cannot save with the whole party down"
 	return ""
@@ -267,6 +271,16 @@ func _save_block_reason() -> String:
 ## The game-over-screen autosave hole (struktured 2026-08-15): after a wipe the battle is
 ## INACTIVE, so the 5-min timed autosave could snapshot the dead party — Continue then loaded
 ## it and the player explored with nobody alive. No save path may capture a full wipe.
+## A party that was NEVER LOADED is a different state from one that is down, and _party_is_wiped
+## deliberately returns false for it (7ef5dae9 scoped itself to a wipe). Without this, the timed
+## autosave fires with nothing loaded and writes a 2.5KB shell that then outranks real saves on
+## recency — struktured's slot 98, 2026-08-06 through 2026-08-22.
+func _party_is_absent() -> bool:
+	if not (GameState and "player_party" in GameState):
+		return true
+	return (GameState.player_party as Array).is_empty()
+
+
 func _party_is_wiped() -> bool:
 	if not (GameState and "player_party" in GameState) or GameState.player_party.is_empty():
 		return false
@@ -358,33 +372,62 @@ func has_save() -> bool:
 	return false
 
 
-func get_most_recent_slot() -> int:
-	"""Find the most recently saved slot. Returns -1 if no saves exist."""
-	var best_slot = -1
-	var best_time = 0.0
-	for slot in range(MAX_SAVE_SLOTS):
-		var info = get_save_info(slot)
-		if not info.is_empty():
-			var save_time = info.get("save_time", 0.0)
-			if save_time > best_time:
-				best_time = save_time
-				best_slot = slot
-	# Also check quick save
-	var qs_info = get_save_info(QUICK_SAVE_SLOT)
-	if not qs_info.is_empty():
-		var qs_time = qs_info.get("save_time", 0.0)
-		if qs_time > best_time:
-			best_time = qs_time
-			best_slot = QUICK_SAVE_SLOT
-	# Also check the dedicated auto-save slot — a fresh launch's "Continue"
-	# should be able to resume from the latest auto-save too.
-	var as_info = get_save_info(AUTO_SAVE_SLOT)
-	if not as_info.is_empty():
-		var as_time = as_info.get("save_time", 0.0)
-		if as_time > best_time:
-			best_time = as_time
-			best_slot = AUTO_SAVE_SLOT
+static func rank_resumable_slots(candidates: Array) -> int:
+	## Pure ranker: newest RESUMABLE candidate wins. A partyless shell must never outrank a real save on recency alone (struktured's slot 98, 2026-08-22).
+	var best_slot := -1
+	var best_time := -1.0
+	for c in candidates:
+		if not (c is Dictionary):
+			continue
+		var d: Dictionary = c
+		if not bool(d.get("resumable", false)):
+			continue
+		var t := float(d.get("save_time", 0.0))
+		if t > best_time:
+			best_time = t
+			best_slot = int(d.get("slot", -1))
 	return best_slot
+
+
+func is_slot_resumable(slot: int) -> bool:
+	## A save with no party is a shell — Continue landing on one reads to a player as lost progress.
+	if not save_exists(slot):
+		return false
+	var data: Dictionary = _read_save_file(slot)
+	if data.is_empty():
+		return false
+	var gs: Variant = data.get("game_state", {})
+	if gs is Dictionary:
+		var party: Variant = (gs as Dictionary).get("player_party", [])
+		if party is Array and not (party as Array).is_empty():
+			return true
+	var top: Variant = data.get("party", [])
+	return top is Array and not (top as Array).is_empty()
+
+
+## Every slot Continue may resume from — extracted so tests can assert the SET, not source text
+static func candidate_slots() -> Array:
+	var slots: Array = []
+	for slot in range(MAX_SAVE_SLOTS):
+		slots.append(slot)
+	slots.append(QUICK_SAVE_SLOT)
+	slots.append(AUTO_SAVE_SLOT)
+	return slots
+
+
+func get_most_recent_slot() -> int:
+	"""Find the most recently saved RESUMABLE slot. Returns -1 if none exist."""
+	var candidates: Array = []
+	for slot in candidate_slots():
+		var info = get_save_info(slot)
+		if info.is_empty():
+			continue
+		candidates.append({
+			"slot": slot,
+			"save_time": info.get("save_time", 0.0),
+			"resumable": is_slot_resumable(slot)
+		})
+	return rank_resumable_slots(candidates)
 
 
 func get_save_info(slot: int) -> Dictionary:

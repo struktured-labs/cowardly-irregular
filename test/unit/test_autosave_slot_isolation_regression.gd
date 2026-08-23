@@ -93,13 +93,14 @@ func test_has_save_considers_auto_save_slot() -> void:
 
 # get_most_recent_slot() must include AUTO_SAVE_SLOT in the recency search.
 func test_most_recent_slot_considers_auto_save_slot() -> void:
-	var src = _read(SAVE_SYSTEM_PATH)
-	var idx = src.find("func get_most_recent_slot")
-	assert_gt(idx, -1)
-	var body = src.substr(idx, 800)
-	assert_string_contains(body, "get_save_info(AUTO_SAVE_SLOT)",
-		"get_most_recent_slot() must consider AUTO_SAVE_SLOT so Continue can " +
-		"resume from the latest auto-save")
+	# Source-pinned twice (call shape, then the constant); both died to behaviour-preserving refactors.
+	var slots: Array = SaveSystem.candidate_slots()
+	assert_true(slots.has(SaveSystem.AUTO_SAVE_SLOT),
+		"Continue's recency search must consider AUTO_SAVE_SLOT so it can resume from an auto-save")
+	assert_true(slots.has(SaveSystem.QUICK_SAVE_SLOT),
+		"ARM+: the quick-save slot must also be a Continue candidate")
+	for s in range(SaveSystem.MAX_SAVE_SLOTS):
+		assert_true(slots.has(int(s)), "manual slot %d must remain a Continue candidate" % int(s))
 
 
 # End-to-end runtime guard: an actual auto_save() must land in AUTO_SAVE_SLOT

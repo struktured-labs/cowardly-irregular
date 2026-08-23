@@ -19,6 +19,7 @@ class_name AutogrindGridEditor
 ## - W/S: Adjust value (conditions) or cycle profile (actions)
 ## - Tab: Toggle row enabled/disabled
 ## - Shift+Tab: Cycle autogrind profiles
+## - Shift+D: Restore shipped profiles (confirms first)
 ## - Shift+R: Rename current profile
 ## - Start/Escape/Enter: Save and exit
 
@@ -42,6 +43,7 @@ var _cursor: Control
 var _profile_label: Label
 var _details_panel: Control
 var _keyboard: Control = null
+var _reset_confirm: Control = null
 const VirtualKeyboardClass = preload("res://src/ui/VirtualKeyboard.gd")
 var _rule_composer_overlay: Control = null # RuleComposerOverlay instance; blocks grid input while open
 var _splash_shown: bool = false # Latches the empty-grid composer splash to once per setup() call
@@ -189,7 +191,7 @@ func _build_ui() -> void:
 	add_child(help1)
 
 	var help2 = Label.new()
-	help2.text = "C:Cycle  W/S:Adjust  Tab:Toggle  Sh+Tab:Profile  K:Compose  Start:Save"
+	help2.text = "C:Cycle  W/S:Adjust  Tab:Toggle  Sh+Tab:Profile  Sh+D:Defaults  K:Compose  Start:Save"
 	help2.position = Vector2(16, size.y - 28)
 	help2.add_theme_font_size_override("font_size", 10)
 	help2.add_theme_color_override("font_color", style.text.darkened(0.2))
@@ -960,6 +962,17 @@ func _input(event: InputEvent) -> void:
 	if _rule_composer_overlay and is_instance_valid(_rule_composer_overlay) and _rule_composer_overlay.visible:
 		return
 
+	# Reset confirmation takes priority over everything below it
+	if _reset_confirm and is_instance_valid(_reset_confirm):
+		if event is InputEventKey and event.pressed:
+			if event.keycode == KEY_ENTER:
+				_do_reset_to_defaults()
+			elif event.keycode == KEY_ESCAPE:
+				_dismiss_reset_confirm()
+				SoundManager.play_ui("menu_cancel")
+			get_viewport().set_input_as_handled()
+		return
+
 	if is_editing:
 		return
 
@@ -1024,6 +1037,11 @@ func _input(event: InputEvent) -> void:
 	# Shift+R - Rename profile
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_R and event.shift_pressed:
 		_open_rename_profile()
+		get_viewport().set_input_as_handled()
+
+	# Shift+D - restore the shipped autogrind profiles (destructive, confirms first)
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_D and event.shift_pressed:
+		_show_reset_confirmation()
 		get_viewport().set_input_as_handled()
 
 	# K - Open Rule Composer overlay (compose rules from a natural-language prompt)
@@ -1614,6 +1632,64 @@ func _cycle_profile() -> void:
 	_refresh_grid()
 
 	SoundManager.play_ui("menu_select")
+
+
+## Shipped profiles are otherwise reachable only on first run, so a clobbered profiles.json is permanent without this.
+func _show_reset_confirmation() -> void:
+	if _reset_confirm and is_instance_valid(_reset_confirm):
+		return
+	_reset_confirm = Control.new()
+	_reset_confirm.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(_reset_confirm)
+
+	var dim = ColorRect.new()
+	dim.color = Color(0.0, 0.0, 0.0, 0.7)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_reset_confirm.add_child(dim)
+
+	var vp := get_viewport().get_visible_rect().size
+	if vp.x == 0:
+		vp = Vector2(640, 480)
+	var box = ColorRect.new()
+	box.color = Color(0.12, 0.10, 0.14, 1.0)
+	box.size = Vector2(360, 130)
+	box.position = Vector2((vp.x - 360) / 2, (vp.y - 130) / 2)
+	_reset_confirm.add_child(box)
+
+	var msg = Label.new()
+	msg.text = "Restore the shipped autogrind profiles?\nThis discards all three rule sets."
+	msg.position = Vector2(box.position.x + 20, box.position.y + 22)
+	_reset_confirm.add_child(msg)
+
+	var hint = Label.new()
+	hint.text = "Enter: restore   Esc: cancel"
+	hint.position = Vector2(box.position.x + 20, box.position.y + 92)
+	hint.add_theme_font_size_override("font_size", 12)
+	_reset_confirm.add_child(hint)
+
+	SoundManager.play_ui("menu_select")
+
+
+func _dismiss_reset_confirm() -> void:
+	if _reset_confirm and is_instance_valid(_reset_confirm):
+		_reset_confirm.queue_free()
+	_reset_confirm = null
+
+
+## Reports what it replaced -- a silent repair has the same shape as the defect it fixes.
+func _do_reset_to_defaults() -> void:
+	_dismiss_reset_confirm()
+	var info: Dictionary = AutogrindSystem.reset_autogrind_profiles_to_defaults()
+	rules = AutogrindSystem.get_autogrind_rules().duplicate(true)
+	if rules.size() == 0:
+		rules.append(_create_default_rule())
+	cursor_row = 0
+	cursor_col = 0
+	_build_ui()
+	_refresh_grid()
+	SoundManager.play_ui("menu_select")
+	print("[AUTOGRIND] Profiles restored to defaults: %d profiles, first has %d rules (was active %d)" % [
+		int(info.get("profiles_after", 0)), int(info.get("rules_in_first", 0)), int(info.get("active_before", 0))])
 
 
 func _open_rename_profile() -> void:

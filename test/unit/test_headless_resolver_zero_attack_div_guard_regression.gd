@@ -71,6 +71,11 @@ func test_resolve_attack_with_power_guards_divisor() -> void:
 func test_no_bare_division_by_damage_plus_def_in_either_resolver() -> void:
 	# Lint: neither function may divide by the raw sum without the maxf guard.
 	# Walk both functions' non-comment code and assert the buggy shape is gone.
+	## Both asserts below sit INSIDE this loop, so a scan that examines nothing skips them all.
+	## That would score [Risky] — except _read() asserts, which lifts the count off zero and
+	## suppresses GUT's only built-in hollowness signal. Measured 2026-08-22: empty this loop
+	## and the test PASSES silently; remove _read's assert too and it goes Risky.
+	var examined := 0
 	var text := _read(RESOLVER_PATH)
 	for fn_name in ["func _resolve_attack(attacker", "func _resolve_attack_with_power"]:
 		var idx := text.find(fn_name)
@@ -85,11 +90,14 @@ func test_no_bare_division_by_damage_plus_def_in_either_resolver() -> void:
 			if ln.strip_edges().begins_with("#"):
 				continue
 			code_only.append(ln)
+		examined += 1
 		var code := "\n".join(code_only)
 		assert_false(code.contains("(damage + def_val)") and not code.contains("maxf(1.0, damage + def_val)"),
 			"%s must NOT use the bare (damage + def_val) divisor" % fn_name)
 		assert_false(code.contains("(dmg + def_val)") and not code.contains("maxf(1.0, dmg + def_val)"),
 			"%s must NOT use the bare (dmg + def_val) divisor" % fn_name)
+	assert_eq(examined, 2,
+		"the scan examined %d resolver bodies, not 2 — the source walk is dead and both asserts above are vacuous" % examined)
 
 
 # ── Behavioural ──────────────────────────────────────────────────────────────

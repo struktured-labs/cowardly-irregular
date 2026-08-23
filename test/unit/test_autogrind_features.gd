@@ -192,18 +192,37 @@ func test_get_current_world_index_suburban() -> void:
 	assert_eq(_system.get_current_world_index(), 1, "suburban should be index 1")
 
 
+## 2026-08-22: this took the pass_test() branch on EVERY run and its two real assertions had
+## never executed. The comment blamed "no GameState autoload" — measured false, the autoload is
+## present. get_next_region() returns {} for TWO reasons and the other one was firing:
+## worlds_unlocked defaults to 1, so is_world_unlocked(2) is false. Unlock it and assert for real.
 func test_get_next_region_from_overworld() -> void:
-	# Without GameState autoload, get_next_region returns empty (safety guard)
-	# This test verifies the safety behavior — in-game GameState is always present
+	var gs = _system.get_node_or_null("/root/GameState")
+	if gs == null:
+		fail_test("GameState autoload absent — this test cannot check what it claims")
+		return
+	var prev_unlocked = gs.worlds_unlocked
+	gs.worlds_unlocked = 2
 	_system.current_region_id = "overworld"
 	var next = _system.get_next_region()
-	if next.is_empty():
-		# Expected in test environment (no GameState autoload)
-		pass_test("get_next_region returns empty without GameState (safety guard)")
-	else:
-		# If GameState IS available (running in full game context)
-		assert_eq(next["region"], "suburban_overworld", "Next after overworld should be suburban")
-		assert_eq(next["world"], 2, "Next world number should be 2")
+	gs.worlds_unlocked = prev_unlocked
+	assert_false(next.is_empty(), "with world 2 unlocked, the next region must resolve")
+	assert_eq(next.get("region", ""), "suburban_overworld", "next after overworld is suburban")
+	assert_eq(int(next.get("world", -1)), 2, "next world number is 2")
+
+
+func test_get_next_region_is_gated_on_the_world_being_unlocked() -> void:
+	# ARM+ for the sibling: proves the unlock gate is load-bearing, not incidental.
+	var gs = _system.get_node_or_null("/root/GameState")
+	if gs == null:
+		fail_test("GameState autoload absent")
+		return
+	var prev_unlocked = gs.worlds_unlocked
+	gs.worlds_unlocked = 1
+	_system.current_region_id = "overworld"
+	var next = _system.get_next_region()
+	gs.worlds_unlocked = prev_unlocked
+	assert_true(next.is_empty(), "a locked next world must yield no next region")
 
 
 func test_get_next_region_from_last_world() -> void:
