@@ -121,6 +121,7 @@ func test_every_landmark_arrival_tile_is_on_the_mainland() -> void:
 				bad.append(c + "@" + str(x) + "," + str(y) + " -> OFF-MAP " + str(ax) + "," + str(ay))
 			elif not _walkable(ax, ay):
 				bad.append(c + "@" + str(x) + "," + str(y) + " -> arrival " + str(ax) + "," + str(ay) + " is '" + _char_at(ax, ay) + "' (impassable)")
+			## This arm's only guard is off_mainland in test_map_and_component_scan_are_live.
 			elif _comp[ay][ax] != _mainland:
 				bad.append(c + "@" + str(x) + "," + str(y) + " -> arrival " + str(ax) + "," + str(ay) + " is in a sealed pocket of " + str(_sizes[_comp[ay][ax]]) + " cells")
 	assert_gt(checked, 10, "only " + str(checked) + " landmarks scanned -- the map is not being read")
