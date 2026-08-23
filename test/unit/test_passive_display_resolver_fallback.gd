@@ -107,10 +107,13 @@ func test_old_raw_passive_id_fallback_gone_in_status_menu() -> void:
 
 # ── Cross-pins: clean callers preserved ────────────────────────────────
 
-func test_job_menu_prettifier_preserved() -> void:
-	var src := _read("res://src/ui/JobMenu.gd")
-	assert_true(src.contains("character.secondary_job_id.replace(\"_\", \" \").capitalize()"),
-		"tick 141 JobMenu prettifier preserved")
+## tick 335: the secondary-job prettifier moved into JobSystem.get_job_display_name.
+func test_secondary_job_id_fallback_still_prettifies() -> void:
+	var out: String = JobSystem.get_job_display_name("not_a_real_secondary")
+	assert_false(out.contains("_"),
+		"secondary job fallback leaked raw snake_case to the player: '%s'" % out)
+	assert_eq(out, "Not A Real Secondary",
+		"tick 141 invariant, at its new owner: the id must render title-cased")
 
 
 func test_abilities_menu_iteration_pattern_preserved() -> void:

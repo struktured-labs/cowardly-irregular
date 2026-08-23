@@ -1,0 +1,60 @@
+{
+	"version": 1,
+	"description": "Per-world display names for party jobs. Register is deflationary: the archetype survives the world shift and loses its dignity. Same person, re-skinned by the world's logic. Voices kept consistent with job_personas.json.",
+	"_source": "struktured, TYPED turn 2026-03-21T02:44:41Z (V3 Pass plan): 'characters should be referred to by class title only (Fighter, Cleric, Mage, Rogue, Bard and their per-world evolution names)'. His phrase is 'per-world evolution names' and his list is exactly these five jobs, which is where _scope comes from.",
+	"_attribution_correction": "An earlier version of this field quoted him as asking on 2026-08-09 for names to change per overworld, with 'Fighter -> Mall Cop' as HIS example. Neither is sourceable. A sweep of every transcript on this box found ZERO typed user turns containing 'Mall Cop'; its earliest occurrence anywhere is my own W2 spotlight-duel design text of 2026-07-01, describing the miniboss w2_fighter_mall_captain. The NAMES BELOW ARE MINE, not his. Only the 2026-03-21 directive above is his, and it authorises the concept and the 5-job scope — not any specific name.",
+	"_key_on": "GameState.current_world (int 1-6), NOT a map id and NOT a world word. It is set at one chokepoint (GameLoop._set_current_map_id) and is already corrected for shared interiors: inn/shop/quest-room ids carry no world prefix, so _get_world_for_map() alone returns 1 for them and _village_origin_id is what fixes it. Calling _get_world_for_map(current_map_id) directly gives medieval names in every W2-W6 shop while the overworld outside shows the themed ones.",
+	"_why_the_int": "Four vocabularies spell World 5 in this codebase — map id 'futuristic_overworld', audio manifest key 'digital', a procedural cache key 'futuristic', and a monster-id suffix. Keying on an integer has no spelling to lose. The strings below are LABELS for humans editing this file; 'worlds' is the only place an int meets a word, so a rename is one line here and nowhere else. Read this mapping from this file rather than copying it into a GDScript const — a second copy is the hand-maintained duplicate that drifts.",
+	"_guard": "Assert set(worlds.keys()) == {1,2,3,4,5,6} and that every job carries every label. SET EQUALITY, not 'contains' and not per-key iteration — a per-key loop passes a file that is missing World 5 entirely. ⚠️ One level up, _get_world_for_map() is a prefix chain whose miss case is 'return 1', so an unmatched map and a genuine World 1 map are the same observation; a new W3 village whose id starts with neither 'steampunk_' nor 'brasston' gets medieval names silently.",
+	"_scope": "Starter jobs only (5 of 15). The 9 advanced/meta jobs are debug-gated and deliberately absent — absence must hit an EXPLICIT 'use the base name from jobs.json' branch, not a lookup that happens to miss. Ask before authoring the other 54 cells; that is a lot of speculative content behind a debug gate.",
+	"worlds": {
+		"1": "medieval",
+		"2": "suburban",
+		"3": "steampunk",
+		"4": "industrial",
+		"5": "futuristic",
+		"6": "abstract"
+	},
+	"jobs": {
+		"fighter": {
+			"medieval": "Fighter",
+			"suburban": "Mall Cop",
+			"steampunk": "Stoker",
+			"industrial": "Floor Boss",
+			"futuristic": "Firewall",
+			"abstract": "Blunt Instrument"
+		},
+		"cleric": {
+			"medieval": "Cleric",
+			"suburban": "School Nurse",
+			"steampunk": "Ward Matron",
+			"industrial": "Safety Officer",
+			"futuristic": "Redundancy Officer",
+			"abstract": "Undo"
+		},
+		"mage": {
+			"medieval": "Mage",
+			"suburban": "Chem Teacher",
+			"steampunk": "Sparkwright",
+			"industrial": "Hazmat Tech",
+			"futuristic": "Root User",
+			"abstract": "Hypothesis"
+		},
+		"rogue": {
+			"medieval": "Rogue",
+			"suburban": "Shoplifter",
+			"steampunk": "Chimneysweep",
+			"industrial": "Scrapper",
+			"futuristic": "Zero-Day",
+			"abstract": "Loophole"
+		},
+		"bard": {
+			"medieval": "Bard",
+			"suburban": "Karaoke Legend",
+			"steampunk": "Barrel Organist",
+			"industrial": "Shop Steward",
+			"futuristic": "Influencer",
+			"abstract": "Motif"
+		}
+	}
+}
