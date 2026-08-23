@@ -30,6 +30,12 @@ func _portrait_map() -> Dictionary:
 	for m in re.search_all(block):
 		out[m.get_string(1)] = m.get_string(2)
 	assert_gt(out.size(), 90, "CONTROL: parser must see the whole dict, not a fragment (%d keys)" % out.size())
+	var seen := {}
+	for k in out:
+		seen[out[k]] = true
+	# a parse that collapses every key onto one path makes every PAIR below trivially equal
+	assert_gt(seen.size(), 50, "CONTROL: %d distinct paths for %d keys — the parse collapsed, so every identity check below is vacuous" % [seen.size(), out.size()])
+	assert_true(str(out.get("queen", "")).ends_with("queen.png"), "CONTROL: a known key must map to its OWN file, got %s" % out.get("queen", "<missing>"))
 	return out
 
 
