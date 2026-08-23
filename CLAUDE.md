@@ -304,7 +304,7 @@ godot --headless -s test/run_tests.gd          # Run tests
   - **Run it in a worktree AT that SHA, and import first** — the naive form gives a false green twice over. From your own branch the file does not exist, so nothing runs; in a fresh worktree the import cache is absent, so `res://` does not resolve. Both used to exit 0 and read as "my detector is broken" when it was fine. `run_tests.sh` now refuses them (2 and 3), but the procedure still needs both lines:
     ```bash
     git worktree add --detach <dir> b50a90f6
-    cd <dir> && godot --headless --audio-driver Dummy --import --quit   # REQUIRED — every fresh worktree is unimported
+    cd <dir> && XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --audio-driver Dummy --import --quit   # REQUIRED — every fresh worktree is unimported
     tools/run_tests.sh > log 2>&1; echo $?                              # expect 1 · Failing 2
     ```
   - It is a **subset** of main (157 commits behind, 14 fewer test files). Valid as a detector control; it certifies **nothing** about main's corpus. Self-consistent is not current.
@@ -316,9 +316,21 @@ godot --headless -s test/run_tests.gd          # Run tests
   ```bash
   godot --headless --check-only --script <file>
   ```
-- Full import (autoloads available, catches more issues; ~10s):
+- **⚠️ SANDBOX EVERY GODOT INVOCATION — `--import` IS NOT BENIGN.** It carries the same `E`
+(editor-only) flag as `--editor` and the engine's own help says it *"Starts the editor"* —
+`--headless` means NO WINDOW, not *not the editor*. An editor-class run whose
+`user://` project dir ALREADY EXISTS writes `.recovery_mode_lock` there (reproduced on
+demand 2026-08-22: same sandbox twice, run 1 creates the dir and no lock, run 2 writes one).
+Four lanes reasoned that `--import` was safe "because it registers autoloads without
+instantiating them" — true, and irrelevant: the ENGINE writes the file, not project code.
+`XDG_DATA_HOME=$PWD/tmp/xdg` redirects the whole `user://` root; `tmp/` is already
+gitignored, and `tmp/xdg` (a CHILD) inherits that rule where `tmp-xdg` (a SIBLING) does not.
+Prove the redirect FIRED — a non-empty sandbox — rather than inferring it from an
+unchanged live dir, which is also what you get if godot never ran.
+
+Full import (autoloads available, catches more issues; ~10s):
   ```bash
-  godot --headless --import
+  XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --import
   ```
 - All tests should pass before committing changes
 - Output to local `tmp/` folder (gitignored), never `/tmp`
@@ -341,7 +353,7 @@ godot --headless -s test/run_tests.gd          # Run tests
   **Which guard is right depends on ONE axis — are the sources supposed to agree, and if not, can the author see which wins?** (a) *Redundant* (`monsters.json` ↔ cutscene `win_condition`): assert AGREEMENT — never model precedence, if both agree the question is moot. (b) *Divergent + invisible at authoring* (`fallbacks[]` ↔ `quest_state_lines`): guard the INVISIBILITY, not the collision — require an annotation naming what outranks it. (c) *Divergent + already documented* (`SOUNDS` ↔ `sfx_manifest`, manifest-wins-by-contract): NO ratchet, comment only.
   **Corollary — a check whose CORRECT case requires a suppression flag is not a check.** 40 allowlist entries on day one, or an `"_shadow_ok": true` that's muscle memory by the second NPC, is rot arriving dressed as diligence. When a guard IS warranted, require the DELIVERABLE (the note explaining precedence), never permission to skip — you can't silence it green, only explain it green, and the explanation is the fix
 - **Ratchets pinned to a COINCIDENTAL value go red on a correct change and green on a wrong one (2026-07-25)** — e.g. asserting a flame sits at `x=4.5 tiles` (true, but only because that's where the fireplace happened to be) fails a correct relocation while permitting a genuinely misaligned flame. Assert the RELATIONSHIP (flame shares the surround's X, light tracks flame) not the coordinate. Tell: an absolute coordinate or magnitude in an assertion where the relationship is what's being defended
-- **New GDScript files** need `godot --headless --import` before `class_name` is globally available
+- **New GDScript files** need `XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --import` before `class_name` is globally available
 - **Launch godot** with `setsid godot < /dev/null > tmp/godot.stdout 2>&1 &` (fully detached) — bare `godot &` can break Wayland window visibility
 - **Check `"active_buffs" in combatant`** before accessing buff arrays — not all objects are Combatants
 - **Typed-array assignment from JSON** (`Array[String] = data["x"].duplicate()`) silently fails AND **aborts the enclosing function** — everything after the line is skipped, so a test containing one passes vacuously. Use explicit loop with `str()` coercion
@@ -522,7 +534,7 @@ cowardly-irregular/
 
 This project uses parallel Claude Code sessions coordinated via the `session-intercom` MCP server (SQLite-backed DB at `~/.local/share/session-intercom/intercom.db`).
 
-**Fleet norms (2026-07-11):** (1) NEVER work inside another agent's checkout — cowir-main's tree is the live deploy tree; use your own repo/worktree and push branches to origin. (2) Teammate PRs fold ONLY through cowir-main: full diff review + local full-suite gate (0 failures, claims re-verified) per struktured's standing grant; run the FULL suite before pinging ready. (3) .gd comments 1 line max. (4) NEVER `git stash` in shared worktrees (2026-07-16 incident): stash storage is repo-global across worktrees — parallel push/pop silently swaps or drops other agents' stashes with no warning; use a scratch branch or fresh worktree for diagnostic snapshots. (5) After pulling a fold that adds new `class_name` files, run `godot --headless --audio-driver Dummy --import` BEFORE gating — else expect a phantom parse-error cascade in GameLoop-dependent tests.
+**Fleet norms (2026-07-11):** (1) NEVER work inside another agent's checkout — cowir-main's tree is the live deploy tree; use your own repo/worktree and push branches to origin. (2) Teammate PRs fold ONLY through cowir-main: full diff review + local full-suite gate (0 failures, claims re-verified) per struktured's standing grant; run the FULL suite before pinging ready. (3) .gd comments 1 line max. (4) NEVER `git stash` in shared worktrees (2026-07-16 incident): stash storage is repo-global across worktrees — parallel push/pop silently swaps or drops other agents' stashes with no warning; use a scratch branch or fresh worktree for diagnostic snapshots. (5) After pulling a fold that adds new `class_name` files, run `XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --audio-driver Dummy --import` BEFORE gating — else expect a phantom parse-error cascade in GameLoop-dependent tests.
 
 Named sessions (one-call `intercom_register(name=<name>)` — channels API, no team_name, no TeamCreate):
 - **cowir-main** — game engine, integration, releases (this session usually)
