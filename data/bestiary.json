@@ -47,14 +47,6 @@
     "epithet": "Whirling Grit",
     "flavor": "Old desert magic that was supposed to be a minor ward against pickpockets, and is now, after many centuries of nobody maintaining it, a major problem for everyone."
   },
-  "ogre": {
-    "epithet": "Load-Bearing Problem",
-    "flavor": "Twelve feet of appetite with a club it did not carve so much as find. Strategy is wasted on it, which is inconvenient, because strategy is all you have."
-  },
-  "barbarian": {
-    "epithet": "Unreformed Optimist",
-    "flavor": "Left home to solve problems with an axe and has, by his own accounting, a perfect record. He is not counting the same way you are."
-  },
   "troll": {
     "epithet": "Lava-Blooded Brute",
     "flavor": "A troll that grew up inside a volcano and considers room temperature a personal insult. Slow. When it connects, it connects for real."
@@ -77,7 +69,7 @@
   },
   "rat_guard": {
     "epithet": "Conscripted Squeak",
-    "flavor": "A rat that, by some unholy grant of self-importance, has been issued a tabard and a small spear. Guards the Cave Rat King's treasury, which is three coppers and a button."
+    "flavor": "A rat that, by some unholy grant of self-importance, has been issued a tabard and a spear. Guards the Cave Rat King's treasury, which is three coppers and a button."
   },
   "diseased_rat": {
     "epithet": "Walking Infection",
@@ -98,6 +90,14 @@
   "specter": {
     "epithet": "Half-Phase",
     "flavor": "Ghost-lite. It is trying its best to be frightening, and some nights it succeeds. Cannot cross running water, but considers that a personal matter."
+  },
+  "ogre": {
+    "epithet": "Load-Bearing Problem",
+    "flavor": "Twelve feet of appetite that never saw the point of tools. Strategy is wasted on it, which is inconvenient, because strategy is all you have."
+  },
+  "barbarian": {
+    "epithet": "Unreformed Optimist",
+    "flavor": "Left home to solve problems with an axe and has, by his own accounting, a perfect record. He is not counting the same way you are."
   },
   "cave_troll": {
     "epithet": "Chamber Warden",
