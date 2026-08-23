@@ -20,6 +20,7 @@ extends GutTest
 const SFX_MANIFEST_PATH := "res://data/sfx_manifest.json"
 const SOUND_MANAGER_PATH := "res://src/audio/SoundManager.gd"
 const SRC_DIR := "res://src"
+# `sfx` here is the CUTSCENE JSON step type, not a method — no `func play_sfx` exists, so it matches nothing in src and the JSON scanner covers those refs separately.
 # Hoisted so the scope guard can READ this alternation — play_death escaped the audit for months because the list was restated by hand and nothing compared it to SoundManager.
 const SFX_CALL_PATTERN := "play_(?:ui|battle|battle_scaled|ability|attack_hit|sfx|death|ambient|status_if_authored)\\(\\s*\"([a-zA-Z_0-9]+)\""
 const CUTSCENES_DIR := "res://data/cutscenes"
@@ -236,6 +237,12 @@ func test_every_sfx_key_resolves_or_is_allowlisted() -> void:
 func test_known_orphan_sfx_list_stays_pruned() -> void:
 	var manifest_keys: Dictionary = _load_manifest_sfx_keys()
 	var sounds_keys: Dictionary = _load_sounds_dict_keys()
+	# fail_test-only: a dead loader leaves `stale` empty and this reports "pruned" while unable to tell. GUT's Risky flag cannot catch it here — _read_text's assert_not_null counts as an assert for every caller, so no test in this file can ever score Risky (measured: remove that line and this test flips to [Risky]).
+	assert_true(manifest_keys.has("menu_select"),
+		"the manifest loader returned nothing — this test cannot distinguish a pruned allowlist from an unreadable manifest, and would report the list clean either way")
+	assert_true(sounds_keys.has("attack_hit"),
+		"the SOUNDS scrape returned nothing — same blindness on the other resolution source")
+
 	var stale: Array = []
 	for orphan in KNOWN_ORPHAN_SFX:
 		if manifest_keys.has(orphan) or sounds_keys.has(orphan):
