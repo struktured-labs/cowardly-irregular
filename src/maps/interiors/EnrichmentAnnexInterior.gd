@@ -887,14 +887,7 @@ func _setup_transitions() -> void:
 	front.target_spawn = "annex_exit"
 	front.require_interaction = false
 	front.position = Vector2(8.5 * TILE_SIZE, 11.5 * TILE_SIZE)
-	var front_collision = CollisionShape2D.new()
-	var front_shape = RectangleShape2D.new()
-	front_shape.size = Vector2(TILE_SIZE * 2, TILE_SIZE)
-	front_collision.shape = front_shape
-	front.add_child(front_collision)
-	front.collision_layer = 4
-	front.collision_mask = 2
-	front.monitoring = true
+	InteractGeometry.setup_trigger_collision(front, InteractGeometry.INTERIOR_EXIT_BOX)
 	front.transition_triggered.connect(_on_exit_triggered)
 	transitions.add_child(front)
 

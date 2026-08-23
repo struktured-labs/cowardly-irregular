@@ -34,6 +34,7 @@ const DOOR_BOX := Vector2(64, 48)  # (pin) interior door
 const DOOR_OFFSET := Vector2(0, 24)  # (pin)
 const BUILDING_ENTRY_BOX := Vector2(64, 96)  # shop/inn 2026-07-13 fix; VillageBar adopts
 const BUILDING_ENTRY_OFFSET := Vector2(0, 48)
+const INTERIOR_EXIT_BOX := Vector2(64, 32)  # what 27 interior exits ship; DOOR_BOX(64,48) is unadopted
 const ENTRANCE_BOX_FLAT := Vector2(64, 64)  # replaces the 32x32 stand-on-the-exact-tile portals
 const ENTRANCE_BOX_MODE7 := Vector2(64, 192)  # the proven W1 recipe (2x6 tiles)
 

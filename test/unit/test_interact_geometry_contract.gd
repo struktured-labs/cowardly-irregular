@@ -14,6 +14,7 @@ func test_pinned_values() -> void:
 	assert_eq(InteractGeometry.CHEST_GRAB_RADIUS_FLAT, 40.0, "SETTLED ruling 2026-07-11 — do not re-litigate")
 	assert_eq(InteractGeometry.SAVE_RADIUS, 48.0)
 	assert_eq(InteractGeometry.SIGNPOST_RADIUS_FLAT, 48.0, "was 128 unconditional — 4-tile label zones in flat villages")
+	assert_eq(InteractGeometry.INTERIOR_EXIT_BOX, Vector2(64, 32), "what 30 interior exits ship; changing it moves every one")
 	assert_eq(InteractGeometry.DOOR_BOX, Vector2(64, 48))
 	assert_eq(InteractGeometry.DOOR_OFFSET, Vector2(0, 24))
 	assert_eq(InteractGeometry.BUILDING_ENTRY_BOX, Vector2(64, 96), "the 2026-07-13 shop/inn fix, now canonical")
