@@ -78,9 +78,12 @@ func test_no_interior_hand_rolls_an_exit_shape_any_more() -> void:
 		assert_true(detected.has(name + ".gd"),
 			"the scan produced no finding for %s, which is KNOWN to hand-roll its exit -- the detection is dead and every assertion below is vacuous" % name)
 	assert_eq(offenders, [], "these interiors still hand-roll their exit geometry: %s" % str(offenders))
-	# STAGE-4 ARITHMETIC. Covers the filter failing to EXCLUDE; it cannot cover the filter
-	# excluding EVERYTHING, because today `detected` holds exactly one file and that file is
-	# exactly the one exception, so the two breakages are indistinguishable from this corpus.
+	# STAGE-4 ARITHMETIC, and it covers BOTH directions of an exception-filter break.
+	# A first reading called the excludes-everything direction uncovered, from a mutation that
+	# measured silent -- but that mutation was OUTCOME-null: with zero non-excepted detections
+	# the filter has nothing to pass through, so breaking it has no consequence to detect.
+	# Re-run with a real offender present, it fires: "detected 2 but 1 exception + 0 offender".
+	# The break is invisible exactly when it is inconsequential, which is the ceiling, not a hole.
 	assert_eq(detected.size(), EXPECTED_EXCEPTIONS.size() + offenders.size(),
 		"detected %d hand-roller(s) but %d exception(s) + %d offender(s) -- the exception filter is not partitioning the findings" % [detected.size(), EXPECTED_EXCEPTIONS.size(), offenders.size()])
 	# every exception must still SUPPRESS a real detection -- an entry whose subject was
