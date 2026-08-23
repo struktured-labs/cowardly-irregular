@@ -79,7 +79,19 @@ if [ -n "$_SNAP" ]; then
   # SAY SO. gate.sh used to print this and I nearly dropped it in the move, which would have made the
   # net unobservable in every run rather than only in the ones where it silently failed. Four lanes
   # spent this morning arguing about whether it had run, from artifacts that could not answer.
-  echo "run_tests.sh: snapshotted $(find "$_SNAP" -type f 2>/dev/null | wc -l) player data file(s) across ${#_NETTED_DIRS[@]} dir(s) + root files — restored on exit"
+  # THREE STATES, NOT TWO (cowir-ai, 2026-08-22). A sandbox drifts from "absent" into
+  # "present but empty" after its first run, so the same command gives a different header
+  # on run 2 than on run 1 — silent, then "snapshotted 0", then "snapshotted N".
+  # Measured here: run 1 -> "did NOT arm"; run 2 -> "snapshotted 0 … restored on exit".
+  # That trailing clause asserts a protection covering nothing, and a reader scanning for
+  # "did the net arm" sees a snapshot line and moves on. Truthful count, reassuring frame.
+  _SNAP_N="$(find "$_SNAP" -type f 2>/dev/null | wc -l)"
+  if [ "$_SNAP_N" -eq 0 ]; then
+    echo "run_tests.sh: player-data net ARMED but snapshotted 0 files under $_UD_BASE — it will restore nothing." >&2
+    echo "  (the netted dirs exist and are empty — a reused sandbox, or a real dir whose data has gone. Not 'protected'.)" >&2
+  else
+    echo "run_tests.sh: snapshotted $_SNAP_N player data file(s) across ${#_NETTED_DIRS[@]} dir(s) + root files — restored on exit"
+  fi
 else
   # SAY SO IN THIS DIRECTION TOO. Measured 2026-08-22: with a fresh XDG_DATA_HOME every
   # loop above takes its `continue`, $_SNAP stays empty, this whole block is skipped, and
