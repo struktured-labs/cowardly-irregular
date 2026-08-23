@@ -1374,11 +1374,33 @@ func _show_rest_prompt() -> void:
 	# the second interact replayed her ENTIRE greeting before resting. Swap in one short confirm line
 	# while a rest is pending so talk #2 is an acknowledgement, not a rerun.
 	_set_keeper_lines([_keeper_confirm_line()])
-	_rest_dialog = _make_inn_dialog("Rest until morning? (%d G)\nTalk again to confirm  ·  Walk away to cancel" % REST_COST)
+	_rest_dialog = _make_inn_dialog(_rest_prompt_text())
 	rest_requested.emit()
 	if SoundManager:
 		SoundManager.play_ui("menu_open")
 
+
+## struktured 2026-08-22 "village inn purcahsde flow is still awkward": the prompt named the PRICE and never the player's PURSE, so "can I afford this" was only answerable by committing and being refused.
+func _rest_prompt_text() -> String:
+	var purse: int = -1
+	if GameState and GameState.has_method("get_gold"):
+		purse = int(GameState.get_gold())
+	if purse < 0:
+		return "Rest until morning? (%d G)\n[A] confirm   ·   [B] leave it" % REST_COST
+	if purse < REST_COST:
+		return "Rest until morning? (%d G)\nYou have %d G — %d short.\n[B] leave it" % [REST_COST, purse, REST_COST - purse]
+	return "Rest until morning? (%d G)\nYou have %d G.\n[A] confirm   ·   [B] leave it" % [REST_COST, purse]
+
+
+## A pending rest was cancellable ONLY by walking the character away — 44 files under src/ui honour ui_cancel and the inn honoured none, so the one screen that asks for money was the one you could not back out of.
+func _unhandled_input(event: InputEvent) -> void:
+	if not _rest_pending:
+		return
+	if event.is_action_pressed("ui_cancel"):
+		_cancel_pending_rest()
+		if SoundManager:
+			SoundManager.play_ui("menu_cancel")
+		get_viewport().set_input_as_handled()
 
 func _do_rest() -> void:
 	_rest_pending = false
