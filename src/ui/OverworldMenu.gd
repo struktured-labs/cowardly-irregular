@@ -69,6 +69,7 @@ var selected_character: int = 0
 var _menu_labels: Array = []
 var _party_panels: Array = []
 var _submenu_open: bool = false
+var _nav_repeat := MenuRepeat.new()
 var _ui_built: bool = false
 
 ## Cached node references for fast updates
@@ -132,8 +133,8 @@ func setup(game_party: Array) -> void:
 		if opt.get("id", "") == "autobattle_toggle":
 			opt["label"] = "Auto: ON" if any_auto_on else "Auto: OFF"
 			break
-	if GameState and GameState.debug_log_enabled:
-		_menu_options.append({"id": "teleport", "label": "Teleport", "enabled": true})
+	# struktured 2026-08-22: always visible. Whether it should be player-facing is DEFERRED.
+	_menu_options.append({"id": "teleport", "label": "Teleport", "enabled": true})
 	# Force full rebuild with new party data
 	_ui_built = false
 	call_deferred("_build_ui")
@@ -634,6 +635,35 @@ func _update_selection() -> void:
 		_card_bg_refs[i].color = SELECTED_COLOR if i == selected_character else Color(0.08, 0.08, 0.12)
 
 
+## One navigation step plus its feedback, shared by a keypress and a held repeat so the
+## two can never drift apart.
+func _nav_step(action: String) -> void:
+	match action:
+		"ui_up":
+			selected_index = (selected_index - 1 + _menu_options.size()) % _menu_options.size()
+		"ui_down":
+			selected_index = (selected_index + 1) % _menu_options.size()
+		"ui_left":
+			selected_character = (selected_character - 1 + party.size()) % party.size()
+		"ui_right":
+			selected_character = (selected_character + 1) % party.size()
+		_:
+			return
+	_update_selection()
+	SoundManager.play_ui("menu_move")
+
+
+## Hold-to-repeat. These guards MIRROR _input's — without them a hold would keep stepping
+## the menu underneath an open submenu or during the fade-in, which _input explicitly refuses.
+func _process(delta: float) -> void:
+	if not visible or modulate.a < 1.0 or _submenu_open or party.is_empty():
+		_nav_repeat.reset()
+		return
+	var action := _nav_repeat.tick(delta)
+	if action != "":
+		_nav_step(action)
+
+
 func _input(event: InputEvent) -> void:
 	"""Handle menu input"""
 	if not visible:
@@ -654,27 +684,19 @@ func _input(event: InputEvent) -> void:
 
 	# Navigation - check echo to prevent rapid-fire when holding keys
 	if event.is_action_pressed("ui_up") and not event.is_echo():
-		selected_index = (selected_index - 1 + _menu_options.size()) % _menu_options.size()
-		_update_selection()
-		SoundManager.play_ui("menu_move")
+		_nav_step("ui_up")
 		get_viewport().set_input_as_handled()
 
 	elif event.is_action_pressed("ui_down") and not event.is_echo():
-		selected_index = (selected_index + 1) % _menu_options.size()
-		_update_selection()
-		SoundManager.play_ui("menu_move")
+		_nav_step("ui_down")
 		get_viewport().set_input_as_handled()
 
 	elif event.is_action_pressed("ui_left") and not event.is_echo():
-		selected_character = (selected_character - 1 + party.size()) % party.size()
-		_update_selection()
-		SoundManager.play_ui("menu_move")
+		_nav_step("ui_left")
 		get_viewport().set_input_as_handled()
 
 	elif event.is_action_pressed("ui_right") and not event.is_echo():
-		selected_character = (selected_character + 1) % party.size()
-		_update_selection()
-		SoundManager.play_ui("menu_move")
+		_nav_step("ui_right")
 		get_viewport().set_input_as_handled()
 
 	# L shoulder / battle_defer = cycle leader backward
