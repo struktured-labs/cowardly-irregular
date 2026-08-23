@@ -1100,6 +1100,20 @@ const INNKEEPERS := {
 }
 
 
+## The village this interior was entered from; "" when GameLoop is absent or never set one.
+func _origin_map_id() -> String:
+	var gl: Node = get_node_or_null("/root/GameLoop")
+	if gl == null or not gl.has_method("get_village_origin_id"):
+		return ""
+	return str(gl.get_village_origin_id())
+
+
+## Split from the node lookup so the preference order is testable without a live GameLoop.
+func _keeper_lines_for(origin_map_id: String, keeper: Dictionary) -> Array:
+	var authored: Array = InnDialogue.ambient_lines(origin_map_id, str(keeper.get("name", "")))
+	return authored if not authored.is_empty() else (keeper.get("lines", []) as Array)
+
+
 func _innkeeper() -> Dictionary:
 	var w: int = 1
 	if GameState and "current_world" in GameState:
@@ -1115,7 +1129,7 @@ func _setup_npcs() -> void:
 	# Local innkeeper at the registration desk — identity follows the world.
 	# 2026-07-14 playtest: user talked to innkeeper repeatedly but couldn't find how to rest — the RegistrationDesk tile was the only rest gate; now the greeting-line close opens the rest dialog automatically.
 	var keeper := _innkeeper()
-	_create_npc(keeper["name"], "innkeeper", Vector2(2, 3), keeper["lines"])
+	_create_npc(keeper["name"], "innkeeper", Vector2(2, 3), _keeper_lines_for(_origin_map_id(), keeper))
 	var keeper_npc: Node = null
 	for child in npcs.get_children():
 		if child.get("npc_name") == keeper["name"]:
@@ -1385,11 +1399,21 @@ func _rest_prompt_text() -> String:
 	var purse: int = -1
 	if GameState and GameState.has_method("get_gold"):
 		purse = int(GameState.get_gold())
+	return _rest_prompt_for(_origin_map_id(), purse)
+
+
+## Pure: split from the gold read so every purse branch is reachable in a test. A guard that can
+## only exercise one branch passes while the others regress — measured on this function 2026-08-23.
+func _rest_prompt_for(origin_map_id: String, purse: int) -> String:
+	## The innkeeper's own words when authored; the purse and the [B] out are struktured's 2026-08-22 fix and survive either way.
+	var ask: String = InnDialogue.cost_line(origin_map_id, REST_COST)
+	if ask == "":
+		ask = "Rest until morning? (%d G)" % REST_COST
 	if purse < 0:
-		return "Rest until morning? (%d G)\n[A] confirm   ·   [B] leave it" % REST_COST
+		return ask + "\n[A] confirm   ·   [B] leave it"
 	if purse < REST_COST:
-		return "Rest until morning? (%d G)\nYou have %d G — %d short.\n[B] leave it" % [REST_COST, purse, REST_COST - purse]
-	return "Rest until morning? (%d G)\nYou have %d G.\n[A] confirm   ·   [B] leave it" % [REST_COST, purse]
+		return ask + "\nYou have %d G — %d short.\n[B] leave it" % [purse, REST_COST - purse]
+	return ask + "\nYou have %d G.\n[A] confirm   ·   [B] leave it" % purse
 
 
 ## A pending rest was cancellable ONLY by walking the character away — 44 files under src/ui honour ui_cancel and the inn honoured none, so the one screen that asks for money was the one you could not back out of.
@@ -1426,7 +1450,10 @@ func _do_rest() -> void:
 	if SoundManager:
 		SoundManager.play_ui("heal")
 
-	_rest_dialog = _make_inn_dialog("Your party is fully rested!\nHP and MP restored. (-%d G)" % REST_COST)
+	var done: String = InnDialogue.line(_origin_map_id(), "rest_complete")
+	if done == "":
+		done = "Your party is fully rested!"
+	_rest_dialog = _make_inn_dialog(done + "\nHP and MP restored. (-%d G)" % REST_COST)
 	await get_tree().create_timer(1.6).timeout
 	if _rest_dialog and is_instance_valid(_rest_dialog):
 		_rest_dialog.queue_free()
@@ -1441,7 +1468,10 @@ func _charge_for_rest() -> bool:
 	if current_gold < REST_COST:
 		if SoundManager:
 			SoundManager.play_ui("menu_error")
-		_rest_dialog = _make_inn_dialog("Not enough gold!\nNeed %d G, you have %d G." % [REST_COST, current_gold])
+		var refuse: String = InnDialogue.line(_origin_map_id(), "cant_afford")
+		if refuse == "":
+			refuse = "Not enough gold!"
+		_rest_dialog = _make_inn_dialog(refuse + "\nNeed %d G, you have %d G." % [REST_COST, current_gold])
 		return false
 	# spend_gold (not a raw party_gold write) so the gold_multiplier constant stays consistent with shop transactions.
 	if GameState.has_method("spend_gold"):
