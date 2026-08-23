@@ -216,6 +216,21 @@ if [ "${_CN_POS:-0}" -le 0 ] || [ "${_CN_NEG:-1}" -ne 0 ]; then
   echo "        every pattern as live and prints a CLEAN audit; stuck low reports them all" >&2
   echo "        dead. Neither moves an exit code or a count on its own." >&2; exit 2; fi
 
+# THE SAME FOR `_count_ever`, which splits STALE from PROPHYLACTIC — i.e. "someone wrote
+# this against a name that never existed, act on it" from "a guard against a file type
+# nobody has added, fine". A dead _count_ever calls EVERY never-matched pattern
+# prophylactic-and-fine, which is the exact mislabel fixed earlier tonight arriving by a
+# different route. Typed literals again; `tools/*` because this script's own directory
+# must have files added in history for the script to exist at all.
+_CE_POS="$(_count_ever 'tools/*')"
+_CE_NEG="$(_count_ever 'ZZZ_no_such_path_ever_*')"
+if [ "${_CE_POS:-0}" -le 0 ] || [ "${_CE_NEG:-1}" -ne 0 ]; then
+  echo "[patterns] BLOCKED: the history counter is not working — 'tools/*' counted ${_CE_POS}" >&2
+  echo "        (files under tools/ were certainly added at some point — this script is one)" >&2
+  echo "        and a fabricated pattern counted ${_CE_NEG} (must be 0)." >&2
+  echo "        That counter decides STALE vs PROPHYLACTIC, so a dead one labels every" >&2
+  echo "        never-matched pattern 'prophylactic, fine' — the reassuring verdict." >&2; exit 2; fi
+
 STALE=(); PROPH=(); LIVE=0
 for p in "${PATTERNS[@]}"; do
     if [ "$(_count_now "$p")" -gt 0 ]; then LIVE=$((LIVE + 1))
