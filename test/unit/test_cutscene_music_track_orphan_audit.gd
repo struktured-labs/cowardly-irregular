@@ -120,6 +120,14 @@ func test_known_orphan_music_list_stays_pruned() -> void:
 	## Inverse: KNOWN_ORPHAN_MUSIC entries that now DO exist in the
 	## manifest or alias map must be removed — keeps the list honest.
 	var manifest: Dictionary = _load_manifest_tracks()
+	## Downstream of the LOADER, which is what breaks. Without this the test is hollow
+	## against a dead loader: nothing resolves, `stale` stays empty, and it reports the
+	## list is pruned. It does not pass in that state -- the conditional fail_test never
+	## runs, so GUT scores it [Risky] -- but Risky leaves EC at 0 and names no cause.
+	## An UPSTREAM canary would be worse than none: it would assert, suppressing Risky,
+	## while being unable to see the defect (cowir-story, 2026-08-22).
+	assert_true(manifest.has("battle_medieval"),
+		"the manifest loader returned %d tracks and not battle_medieval -- it is dead, and every resolution below is vacuous" % manifest.size())
 	var stale: Array = []
 	for orphan in KNOWN_ORPHAN_MUSIC:
 		if manifest.has(orphan) or RESOLVED_VIA_ALIAS.has(orphan):
