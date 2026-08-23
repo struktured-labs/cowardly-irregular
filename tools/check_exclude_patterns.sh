@@ -183,8 +183,23 @@ if [ "${#STALE[@]}" -gt 0 ]; then
             echo "                        when a map/monster id reaches a consumer expecting the"
             echo "                        AUDIO FILENAME spelling. An exclude pattern IS a file path,"
             echo "                        so it has exactly one valid reading: the filename's."
+        elif [ -n "$dir" ] && [ ! -d "$dir" ]; then
+            # A THIRD SHAPE, added 2026-08-22 after a control landed outside the taxonomy.
+            # The two documented buckets are "bare extension guard" (*.jpg — prophylactic,
+            # correct) and "real directory prefix, dead spelling" (*futuristic* — STALE,
+            # act on it). A pattern whose prefix names a directory that DOES NOT EXIST is
+            # neither: it cannot be prophylactic, because a prophylactic guards a file TYPE
+            # and names no path. Printing "fine" for it asserts intent this script cannot
+            # observe — and a typo'd or renamed directory is exactly what it looks like.
+            echo "             ${p}"
+            echo "                 ^ its prefix '${dir}' IS NOT A DIRECTORY in this repo."
+            echo "                   Not prophylactic (those name a file type, not a path)."
+            echo "                   Either the directory was renamed/removed and this"
+            echo "                   pattern is now dead, or the path was mistyped when"
+            echo "                   written — in both cases whatever it MEANT to exclude"
+            echo "                   is shipping unless another pattern catches it."
         else
-            echo "             ${p}   (no populated target dir — prophylactic, fine)"
+            echo "             ${p}   (bare file-type guard, no path component — prophylactic, fine)"
         fi
     done
 fi
