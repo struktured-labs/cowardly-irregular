@@ -76,6 +76,17 @@ func _current_ability_names() -> Array[String]:
 	return out
 
 
+## Pure scan — split out so the "name is live again" branch can be exercised directly.
+func scan_offences(body: String, label: String, current: Array, retired: Array) -> Array[String]:
+	var out: Array[String] = []
+	for name in retired:
+		if current.has(name):
+			continue  # the name is live again; prose may legitimately use it
+		if body.contains(name):
+			out.append("%s names retired spell '%s'" % [label, name])
+	return out
+
+
 func test_no_player_data_names_a_retired_spell() -> void:
 	var current := _current_ability_names()
 	var offences: Array[String] = []
@@ -83,11 +94,7 @@ func test_no_player_data_names_a_retired_spell() -> void:
 		var body := _read(path)
 		if body == "":
 			continue  # file absent is another test's business, not this one's
-		for retired in RETIRED_ARCANE_NAMES:
-			if current.has(retired):
-				continue  # the name is live again; prose may legitimately use it
-			if body.contains(retired):
-				offences.append("%s names retired spell '%s'" % [path.get_file(), retired])
+		offences.append_array(scan_offences(body, path.get_file(), current, RETIRED_ARCANE_NAMES))
 	assert_eq(offences.size(), 0,
 		("player-facing prose names a spell abilities.json no longer defines — the player "
 		+ "reads a spell that does not exist: %s") % str(offences))
@@ -104,3 +111,19 @@ func test_the_scan_can_see_these_files_and_names() -> void:
 	var personas := _read("res://data/job_personas.json")
 	assert_true(personas.contains("Sanatio"), "reader could not see job_personas.json content")
 	assert_false(personas.contains("Zzznotaspell"), "fabricated token was found")
+
+
+func test_a_name_that_comes_back_stops_being_forbidden() -> void:
+	# The header advertises SELF-MAINTAINING, but 0 of 12 retired names are currently live,
+	# so that branch never ran. Measured 2026-08-22: inverting it left Passing 2 / Asserts 6
+	# byte-identical — the guard was hollow under that mutation. These arms make it fire.
+	var body := "Emergency Firia first, then Curia."
+	var retired: Array = ["Firia", "Curia"]
+
+	var both_retired := scan_offences(body, "x.json", [], retired)
+	assert_eq(both_retired.size(), 2, "a retired name in prose must be flagged")
+
+	var one_came_back := scan_offences(body, "x.json", ["Firia"], retired)
+	assert_eq(one_came_back.size(), 1, "a name abilities.json defines again must NOT be flagged")
+	assert_true(str(one_came_back).contains("Curia"), "the still-retired name must survive")
+	assert_false(str(one_came_back).contains("Firia"), "the re-rooted name must be suppressed")
