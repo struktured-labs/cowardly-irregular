@@ -3188,11 +3188,25 @@ func _on_execution_phase_started() -> void:
 	_update_ui()
 
 
+## A turn lost to a status had NO audio at all. BattleManager's six skip paths (stun,
+## cannot_act, sleep, confuse-with-no-target, fear, charm) each emit a "<status>_skip" type,
+## so keying on the SUFFIX covers a seventh for free instead of pinning today's list.
+## Returns whether the cue actually fired, so a test can assert BEHAVIOUR rather than grep
+## for the call — a source pin cannot tell live code from dead code.
+func _cue_if_turn_skipped(action: Dictionary) -> bool:
+	if not str(action.get("type", "")).ends_with("_skip"):
+		return false
+	return SoundManager.play_status_if_authored("status_cannot_act")
+
 func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 	"""Handle action executing - play animations here"""
 	# msg 2749 cycle 12: cache the signal-arg combatant so _on_damage_dealt / _play_ability_animation don't have to read the stale BattleManager.current_combatant. Cleared in _on_action_executed so a status-tick damage_dealt emit outside an action (poison at round-end, reactive counter) never carries a stale attribution.
 	_last_acting_combatant = combatant
 	_update_turn_info()
+
+	# Placed above the animator lookup deliberately — that guard returns early for any
+	# combatant without one, and losing a turn is exactly as audible either way.
+	_cue_if_turn_skipped(action)
 
 	# Get combatant's animator and sprite
 	var animator = _get_combatant_animator(combatant)
@@ -3836,9 +3850,14 @@ func _on_round_ended(round_num: int) -> void:
 	_show_round_banner(round_num)
 
 
-## Bravely Default-style round boundary: brief centered banner + AP-label gold flash on the party panel. Suppressed at 4x+ (same convention as speech bubbles); duration scales with battle speed.
+## Bravely Default-style round boundary: brief centered banner + AP-label gold flash on the party panel. Banner suppressed at 4x+ (same convention as speech bubbles); the CUE is not — struktured 2026-08-22 "still no sound to indicate next round", and the banner threshold was swallowing it whole.
 func _show_round_banner(round_num: int) -> void:
-	if turbo_mode or autogrind_console_mode or Engine.time_scale >= 1.0:
+	if turbo_mode or autogrind_console_mode:
+		return
+	# BATTLE channel, not UI: a round marker has to cut through combat and music, and SFX_UI_BASE_DB sat it 10 dB under both. Sound survives to 8x; past that rounds are too short to mark.
+	if Engine.time_scale < 4.0:
+		SoundManager.play_battle("round_ap_gain")
+	if Engine.time_scale >= 1.0:
 		return
 	var banner := Label.new()
 	banner.text = "— ROUND %d —   +1 AP" % (round_num + 1)
@@ -3855,7 +3874,6 @@ func _show_round_banner(round_num: int) -> void:
 	banner.modulate.a = 0.0
 	var ui = get_node_or_null("UI")
 	(ui if ui else self).add_child(banner)
-	SoundManager.play_ui("round_ap_gain")
 	var t := create_tween()
 	t.tween_property(banner, "modulate:a", 1.0, 0.12)
 	t.parallel().tween_property(banner, "position:y", banner.position.y - 14, 0.5).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
