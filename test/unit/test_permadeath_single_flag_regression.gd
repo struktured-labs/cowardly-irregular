@@ -1,8 +1,14 @@
 extends GutTest
 
 ## on_battle_defeat gated permadeath on `permadeath_staking_enabled OR permadeath_enabled`.
-## The alias had zero UI readers despite its "for UI binding" comment, and an OR means EITHER
-## flag arms PERMANENT character death — so a writer clearing only the canonical one leaves it live.
+## The alias had zero UI readers despite its "for UI binding" comment — every UI surface binds
+## the canonical flag or a private copy.
+## NOT a live divergence when removed: all three writes to the alias sat on the line after a
+## write of the canonical flag with the same value, and load re-derived it from the canonical
+## one, so the OR was provably equivalent to the canonical flag alone (enumerated on main,
+## 2026-08-22). This removes the HAZARD, not a firing bug: an OR means either flag arms
+## PERMANENT character death, so the day someone adds an unpaired write the divergence is
+## silent and irreversible. Deleting the alias makes that unwritable rather than unlikely.
 
 var _system
 var _party: Array[Combatant] = []
