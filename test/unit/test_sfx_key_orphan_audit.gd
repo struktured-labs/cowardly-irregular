@@ -149,7 +149,7 @@ func _extract_sfx_keys_from_text(text: String, refs: Dictionary) -> void:
 	# takes a literal sfx key. Skip play_music (different system).
 	var regex := RegEx.new()
 	# Matches: play_ui("foo") | play_battle("foo") | play_battle_scaled("foo" | play_ability("foo" | play_attack_hit("foo" | play_sfx("foo"
-	regex.compile("play_(?:ui|battle|battle_scaled|ability|attack_hit|sfx)\\(\\s*\"([a-zA-Z_0-9]+)\"")
+	regex.compile("play_(?:ui|battle|battle_scaled|ability|attack_hit|sfx|death|ambient|status_if_authored)\\(\\s*\"([a-zA-Z_0-9]+)\"")
 	for match in regex.search_all(text):
 		refs[match.get_string(1)] = true
 
@@ -199,6 +199,11 @@ func test_every_sfx_key_resolves_or_is_allowlisted() -> void:
 	assert_true(json_refs.has("boss_defeat_stinger"),
 		"cutscene scanner found no 'boss_defeat_stinger' (19 play_sfx steps) — the JSON walk has stopped matching and cutscene sfx are unaudited")
 
+	# METHOD LIST: the scanner's play_* alternation is a SECOND pattern with its own unaudited complement — play_death and play_ambient sat outside it and their literal keys went unscanned. Name one key per covered method; play_status is EXCLUDED BY CONSTRUCTION (it builds "status_" + arg, so no literal key exists to match) and its cues stay unauditable here.
+	for pair in [["enemy_death", "play_death"], ["weather_rain", "play_ambient"]]:
+		assert_true(code_refs.has(pair[0]),
+			"scanner lost coverage of %s — its literal sfx keys are unaudited, and a key-presence check on the OTHER methods still passes" % pair[1])
+
 	# FAMILY B: _walk_src returns SILENTLY on a null DirAccess, so a lost subdir drops its files unnoticed. Canaries cover the THREE HIGHEST-DENSITY sfx dirs (ui 33 files / exploration 21 / battle 4); 8 sparser dirs stay uncovered — stated, not implied.
 	for required in ["res://src/exploration/ShopScene.gd", "res://src/battle/BattleScene.gd", "res://src/ui/ItemsMenu.gd"]:
 		assert_true(_visited_src.has(required),
@@ -229,6 +234,21 @@ func test_known_orphan_sfx_list_stays_pruned() -> void:
 			stale.append(orphan)
 	if not stale.is_empty():
 		fail_test("KNOWN_ORPHAN_SFX contains entries that now DO resolve — remove them: %s" % [stale])
+
+
+func test_every_allowlisted_orphan_is_actually_REACHABLE_by_the_scanner() -> void:
+	# An allowlist entry the scanner cannot emit is INERT and looks identical to one doing real work — injury_sting sat here 4 days that way because play_death was outside the method list; the pruner cannot see it, asking only "does it resolve NOW", never "was it ever detected".
+	var reachable: Dictionary = _scan_src_for_sfx_calls()
+	for k in _scan_cutscene_sfx_refs():
+		reachable[k] = true
+	assert_true(reachable.has("menu_select"),
+		"scanner returned nothing — this reachability check would pass every entry vacuously")
+	var inert: Array = []
+	for orphan in KNOWN_ORPHAN_SFX:
+		if not reachable.has(orphan):
+			inert.append(orphan)
+	if not inert.is_empty():
+		fail_test("KNOWN_ORPHAN_SFX entries no call site can produce — either the consumer was removed (delete the line) or the scanner cannot see its play_* method (widen the alternation): %s" % [inert])
 
 
 func test_sounds_dict_scrape_finds_a_known_entry() -> void:
