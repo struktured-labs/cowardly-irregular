@@ -71,3 +71,12 @@ func test_no_interior_hand_rolls_an_exit_shape_any_more() -> void:
 				offenders.append(f)
 	assert_gt(scanned, 20, "only %d interior scripts scanned -- the directory read is not working" % scanned)
 	assert_eq(offenders, [], "these interiors still hand-roll their exit geometry: %s" % str(offenders))
+	# every exception must still SUPPRESS a real detection -- an entry whose subject was
+	# fixed goes inert while the suite stays green, documenting a hazard that is gone
+	for name in EXPECTED_EXCEPTIONS:
+		var src := FileAccess.get_file_as_string("res://src/maps/interiors/%s.gd" % name)
+		assert_true(src.length() > 0, "exception names %s, which no longer exists" % name)
+		assert_true(
+			src.contains("RectangleShape2D.new()") and src.contains("exit.collision_layer"),
+			"EXPECTED_EXCEPTIONS still lists %s but it no longer hand-rolls its exit -- the entry suppresses nothing, delete it" % name
+		)
