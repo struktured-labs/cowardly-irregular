@@ -53,6 +53,10 @@ func _village(path: String) -> Node:
 	return v
 
 
+## The sweep's domain, stated independently so a truncated _chars() cannot agree with itself
+const PRINTABLE := 94
+
+
 func _chars() -> Array:
 	var out: Array = []
 	for code in range(33, 127):
@@ -78,10 +82,19 @@ func test_every_char_the_legend_can_emit_resolves_in_that_generators_atlas() -> 
 		var order: Array = v.tile_generator._get_tile_order()
 		assert_gt(order.size(), 0, "CONTROL: %s generator declares a tile order" % path.get_file())
 		var unresolved: Array = []
+		var resolved: Dictionary = {}
 		for c in _chars():
 			var t: int = v._char_to_tile_type(c)
 			if order.find(t) < 0:
 				unresolved.append("'%s'->%d" % [c, t])
+			else:
+				resolved[c] = t
+		# Canary on the sweep's OUTPUT — an empty sweep leaves `unresolved` vacuously empty
+		assert_true(resolved.has("W"),
+			"%s: the sweep resolved no type for 'W', a char its own legend maps — the loop compared nothing and the check below is vacuous" % path.get_file())
+		# PRINTABLE is independent of _chars(); comparing against _chars() would let both sides shrink together
+		assert_eq(resolved.size() + unresolved.size(), PRINTABLE,
+			"%s: the sweep saw %d of %d chars — it is skipping part of the legend" % [path.get_file(), resolved.size() + unresolved.size(), PRINTABLE])
 		assert_eq(unresolved.size(), 0,
 			"%s emits types its own generator cannot draw (they paint as tile 0,0): %s"
 			% [path.get_file(), ", ".join(unresolved)])
