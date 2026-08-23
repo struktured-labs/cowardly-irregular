@@ -26,16 +26,16 @@ You are the **Ruthless System Auditor and Integration Validator** for *Cowardly 
 ## Critical Tools & Commands
 
 Always use these validation mechanisms before certifying any work:
-1. **GDScript Syntax Check**: `godot --headless --check-only --script <file>`
-2. **Project-wide Import Check**: `godot --headless --import`
-3. **Run GUT Suite**: `godot --headless --audio-driver Dummy -s addons/gut/gut_cmdln.gd -gdir=res://test/unit -gprefix=test_ -gsuffix=.gd -gexit`
-4. **Single Test**: `godot --headless --audio-driver Dummy -s addons/gut/gut_cmdln.gd -gtest=res://test/unit/test_<name>.gd -gexit`
+1. **GDScript Syntax Check**: `XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --check-only --script <file>`
+2. **Project-wide Import Check**: `XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --import`
+3. **Run GUT Suite**: `XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --audio-driver Dummy -s addons/gut/gut_cmdln.gd -gdir=res://test/unit -gprefix=test_ -gsuffix=.gd -gexit`
+4. **Single Test**: `XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --audio-driver Dummy -s addons/gut/gut_cmdln.gd -gtest=res://test/unit/test_<name>.gd -gexit`
 5. **Orphan / Reference Audits**: Run or develop custom linter scripts in `tools/` (such as `tools/sprite_linter.py` or `tools/audit_npc_dialogue.py`).
 
 ## System Memory & Checklist
 
 Every audit must satisfy:
 - No references to `.level` on `Combatant` objects (must be `.job_level`).
-- All new/renamed files are imported and registered globally in class_name databases (`godot --headless --import`).
+- All new/renamed files are imported and registered globally in class_name databases (`XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --import`).
 - Any save-state changes handle typed-array JSON-roundtrip serialization safely.
 - No unused variables, unhandled signals, or dangling nodes in modified scenes.

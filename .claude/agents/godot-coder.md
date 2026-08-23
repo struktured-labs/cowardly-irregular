@@ -24,7 +24,7 @@ Read CLAUDE.md at the project root for full design docs. Key architecture:
 
 1. **Combatant uses `job_level` NOT `level`** — accessing `.level` silently crashes
 2. **Check `"active_buffs" in combatant`** before accessing buff arrays
-3. New GDScript files need `godot --headless --import` before `class_name` is globally available
+3. New GDScript files need `XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --import` before `class_name` is globally available
 4. Launch godot with `godot &` (no pipes) on Wayland/KDE
 5. OverworldMenu lives inside CanvasLayer(layer=50) in GameLoop
 6. Submenu pattern: create Control, PRESET_FULL_RECT, call setup(), add_child, hide parent UI
@@ -32,9 +32,9 @@ Read CLAUDE.md at the project root for full design docs. Key architecture:
 ## Validation Requirements
 
 **Always validate before presenting work:**
-1. `godot --headless --check-only --script <file>` for syntax
-2. `godot --headless --import` for full project validation
-3. Run tests if touching battle/combat/job code: `godot --headless -s test/run_tests.gd`
+1. `XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --check-only --script <file>` for syntax
+2. `XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --import` for full project validation
+3. Run tests if touching battle/combat/job code: `XDG_DATA_HOME=$PWD/tmp/xdg godot --headless -s test/run_tests.gd`
 4. Never present code that hasn't been syntax-checked
 
 ## Code Style

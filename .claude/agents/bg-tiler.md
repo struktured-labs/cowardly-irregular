@@ -59,6 +59,6 @@ You are a background artist and procedural terrain specialist for **Cowardly Irr
 5. Abstract — void, geometry, existential
 
 ## Validation
-- `godot --headless --check-only --script <file>` after changes
-- `godot --headless --import` for full project validation
+- `XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --check-only --script <file>` after changes
+- `XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --import` for full project validation
 - Test visuals by launching: `godot &`

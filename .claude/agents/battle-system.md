@@ -46,6 +46,6 @@ You own everything related to combat:
 - Check `"active_buffs" in combatant` before accessing buff arrays
 - Physical attacks can crit (Luck/Speed based), magic does NOT crit by default
 - Crit multiplier: 1.5x base
-- Always validate: `godot --headless --check-only --script <file>`
-- Run battle tests after changes: `godot --headless -s test/run_tests.gd`
+- Always validate: `XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --check-only --script <file>`
+- Run battle tests after changes: `XDG_DATA_HOME=$PWD/tmp/xdg godot --headless -s test/run_tests.gd`
 - Test files in `test/unit/` — add regression tests for any bug you fix
