@@ -59,7 +59,37 @@ echo "[deploy] target: $VERSION  publish=${PUBLISH}"
 # and GUT runs ZERO tests while exiting 0 (cowir-sfx/cowir-ai/cowir-story, 2026-07-29). This script
 # had no prewarm, so deploying from a fresh checkout made gate 1 vacuous. Cheap and idempotent.
 echo "[deploy] gate 0/4: import prewarm (a fresh worktree runs NOTHING and exits 0)"
+#
+# ⚠️ THIS PREWARM LEAVES A .recovery_mode_lock IN HIS REAL USER DATA. Measured 2026-08-22
+# under this exact command string, sandboxed XDG, pre-state recorded before each run:
+#     run 1 (dir absent)   EC=0 · 13 lines · dir created · lock 0
+#     run 2 (dir present)  EC=0 · 13 lines ·               lock 1
+# @cowir-controller's conjunction, replicated by three lanes: an EDITOR-CLASS invocation
+# plus a PRE-EXISTING project user-data dir. `--import` is editor-class — godot's own help
+# marks it `E` and says "Starts the editor" — and `--headless` means no WINDOW, not
+# not-the-editor. His dir has existed for months, so every deploy satisfies both halves.
+#
+# It is inert for the GAME (0 consumers of recovery_mode in src/; CONTROL: 139 files carry
+# `func _ready`, so the scan reads the tree) and 0 bytes on disk. The cost is editor-side:
+# `--recovery-mode` "disables tool scripts, editor plugins, GDExtension addons", and the
+# lock is what makes the editor offer it on his next open. A deploy should not change how
+# his editor starts.
+#
+# gate 1's snapshot net covers this file, but it runs AFTER this line — so it captures the
+# lock we just made as pre-existing state and faithfully RESTORES it. The net preserves the
+# debris; it cannot remove it. Hence an explicit before/after here.
+#
+# ONLY removed if THIS command created it. A lock he already had is his — he may have hit a
+# real startup crash and want recovery mode — so an unconditional `rm` would be a different
+# bug wearing a cleanup.
+_UD="${XDG_DATA_HOME:-$HOME/.local/share}/godot/app_userdata/Cowardly Irregular"
+_LOCK="$_UD/.recovery_mode_lock"
+_LOCK_PRE=0; [ -e "$_LOCK" ] && _LOCK_PRE=1
 godot --headless --audio-driver Dummy --import --quit >/dev/null 2>&1 || true
+if [ "$_LOCK_PRE" -eq 0 ] && [ -e "$_LOCK" ]; then
+  rm -f "$_LOCK"
+  echo "[deploy] gate 0: removed the .recovery_mode_lock this prewarm created (none before)"
+fi
 
 # GATE 1 DELEGATES TO tools/gate.sh AND CONSULTS ITS EXIT CODE.
 #
