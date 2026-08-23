@@ -286,11 +286,16 @@ XDG_DATA_HOME=$PWD/tmp/xdg godot --headless -s test/run_tests.gd          # Run 
 - Unit tests in `test/unit/` using GUT framework — ~7390 tests across 1157 files. **~5-10 min headless, not seconds** (see the Tests bullet above; this line said "~30s" and two other sites said "~40s", all three ~10x low and drifted independently)
 - **Canonical test command** — use the wrapper (mutes audio AND writes its own --log-file so test runs never rotate the game's user://logs crash trace away):
   ```bash
-  tools/run_tests.sh                # full unit suite
-  tools/run_tests.sh <name>         # single file (test_<name>.gd)
-  tools/run_tests.sh --isolated     # quarantined suite (test/isolated/, own process by design)
+  XDG_DATA_HOME=$PWD/tmp/xdg tools/run_tests.sh                # full unit suite
+  XDG_DATA_HOME=$PWD/tmp/xdg tools/run_tests.sh <name>         # single file (test_<name>.gd)
+  XDG_DATA_HOME=$PWD/tmp/xdg tools/run_tests.sh --isolated     # quarantined suite (own process by design)
   ```
 - **Exit codes: `0` pass · `1` test failures · `2` bad invocation · `3` NOTHING RAN.** Codes 2 and 3 were added 2026-07-29 because GUT **exits 0 when it runs no tests at all**, which no exit code could distinguish from a real pass. Measured: a nonexistent name gave `exit 0 · Scripts 1 · Tests 5`-shaped success with zero `Tests` lines. It cost the fleet four vacuous verification runs and two wrong diagnoses in one evening — cowir-ai briefly measured a known-red branch as green, and cowir-sfx took three attempts to get a real run. The causes are open-ended (absent file · empty `-gdir` · **fresh unimported worktree**, where `res://` does not resolve while the file sits on disk · a parse error that drops the script), so the wrapper does **not** enumerate them: it asserts the OUTCOME — a real run always prints a Totals block, a vacuous one never does — and exits 3 if none appeared. That vacuity check lives in the wrapper rather than in `tools/gate.sh` because `gate.sh` runs the full suite only — a single-file run never goes through it.
+- **`run_tests.sh` HONOURS `XDG_DATA_HOME` — it does not SET one.** `:45` reads
+  `${XDG_DATA_HOME:-$HOME/.local/share}`, so a sandboxed caller nets its own path and a BARE
+  caller runs godot against HIS REAL `user://`, protected only by the net below. Three
+  greps for `XDG_DATA_HOME` in that file return two comments and that default expansion —
+  which reads as "this script sandboxes itself" and is the opposite. Set it at the call site.
 - **The suite writes over the player's exported scripts, and your protection is a property of YOUR checkout.** `test/unit` writes fixtures to `user://script_exports/` under the same filenames the shipped Shift+E export and `export_autogrind_rules()` use, so a plain full-suite run overwrote real player data — for nine deploys, the same defect class as the 2026-07-24 save-eating one. `run_tests.sh` snapshots and restores that directory around every run. It lived in `gate.sh` until 2026-07-30, which protected only the runs that typed `gate.sh` while the docs said `run_tests.sh`; **a tree predating that move has no net whatever main contains** — cowir-battle measured their own checkout 42 commits behind, gating faithfully through `gate.sh`, with zero snapshot machinery in it. Verify your tree, not the repo: `grep -c 'PLAYER-DATA NET' tools/run_tests.sh` (`0` = unprotected, rebase). The net is a backstop, not the fix: the real one is per-test, overriding the export path in your own fixture so no run writes production regardless of which tooling it went through.
 - **Gate on the EXIT CODE, captured before you shape the output.** `run_tests.sh` propagates failure correctly (verified independently by 5 lanes, 2026-07-29); every gate that ever passed a red tree broke the signal downstream:
   ```bash
