@@ -33,6 +33,7 @@ L Shoulder        L Key             —                Defer / Party Chat
 R Shoulder        R Key             —                Advance (queue action)
 Start (Plus)      F5                —                Open Autobattle Editor
 Back (Minus)      F6                —                Toggle Autobattle
+                  F1                —                [color=lime]This screen — from anywhere[/color]
                   F2                —                Quick Save
                   F3                —                Quick Load
                   F12               —                Screenshot

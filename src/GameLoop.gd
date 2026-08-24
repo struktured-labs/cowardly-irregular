@@ -99,6 +99,10 @@ var equipment_pool: Dictionary = {
 var _autobattle_editor: Control = null
 var _autobattle_layer: CanvasLayer = null  # Separate layer to avoid camera zoom
 
+## F1 controls reference — global, any state, drawn above every other overlay
+var _help_overlay: Control = null
+var _help_layer: CanvasLayer = null
+
 
 ## Exploration state
 var _current_map_id: String = "overworld"
@@ -777,6 +781,12 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 
+	# F1 controls reference — always available, any state, toggles.
+	if event is InputEventKey and event.pressed and not event.is_echo() and event.keycode == KEY_F1:
+		_toggle_help_overlay()
+		get_viewport().set_input_as_handled()
+		return
+
 	# F2 quick-save / F3 quick-load — global hotkeys, any in-game state.
 	# Skipped during title screen, character creation, and active battles
 	# (SaveSystem.can_quick_save also enforces no-battle, but we early-exit
@@ -900,6 +910,11 @@ func _input(event: InputEvent) -> void:
 			# Do NOT consume input here — AutogrindUI needs to see it
 			pass
 		elif current_state == LoopState.BATTLE:
+			# struktured 2026-08-23 wedge: current_state stays BATTLE through the victory
+			# screen, so Start there opened the editor over a fight that was already over.
+			if BattleManager and not BattleManager.is_battle_active():
+				get_viewport().set_input_as_handled()
+				return
 			if not _autobattle_editor or not is_instance_valid(_autobattle_editor):
 				# Decide: toggle off if any party has autobattle on, else open editor
 				var any_auto_on := false
@@ -977,6 +992,32 @@ func _input(event: InputEvent) -> void:
 			if PartyChatSystem and PartyChatSystem.has_available_chats():
 				_open_party_chat_menu()
 				get_viewport().set_input_as_handled()
+
+
+## F1 from anywhere. Layer 130 is deliberately above every other overlay in this file
+## (max was 128) so the reference is readable even when something else has wedged on top.
+func _toggle_help_overlay() -> void:
+	if _help_overlay and is_instance_valid(_help_overlay):
+		_close_help_overlay()
+		return
+	_help_layer = CanvasLayer.new()
+	_help_layer.layer = 130
+	add_child(_help_layer)
+	# load() not the class_name, matching every other overlay in this file
+	var HowToPlayOverlayClass = load("res://src/ui/HowToPlayOverlay.gd")
+	_help_overlay = HowToPlayOverlayClass.new()
+	_help_layer.add_child(_help_overlay)
+	if _help_overlay.has_signal("closed"):
+		_help_overlay.closed.connect(_close_help_overlay)
+
+
+func _close_help_overlay() -> void:
+	if _help_overlay and is_instance_valid(_help_overlay):
+		_help_overlay.queue_free()
+	_help_overlay = null
+	if _help_layer and is_instance_valid(_help_layer):
+		_help_layer.queue_free()
+	_help_layer = null
 
 
 func _toggle_autobattle_editor() -> void:
@@ -2985,6 +3026,14 @@ func _maybe_fire_spotlight_hint(job_id: String) -> void:
 
 func _on_battle_ended(victory: bool) -> void:
 	"""Handle battle end"""
+	# struktured 2026-08-23 wedge: nothing tore the editor down at battle end, so one opened
+	# on the victory screen survived into exploration as an orphan with no way out. Before the
+	# spotlight short-circuit below, which returns early. save_and_close keeps their rule edits.
+	if _autobattle_editor and is_instance_valid(_autobattle_editor):
+		if _autobattle_editor.has_method("save_and_close"):
+			_autobattle_editor.save_and_close()
+		else:
+			_on_autobattle_editor_closed()
 	## Tick 471: spotlight-duel short-circuit. When a cutscene owns the
 	## flow, we do the minimal spotlight bookkeeping (unlock flag on
 	## win) and emit spotlight_battle_ended for start_solo_battle to
