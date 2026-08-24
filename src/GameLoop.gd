@@ -979,6 +979,19 @@ func _input(event: InputEvent) -> void:
 				get_viewport().set_input_as_handled()
 
 
+## True while a finished battle is still showing its results. struktured 2026-08-24 wedged himself
+## by opening the autobattle editor over the victory screen: the editor's close path restores the
+## COMMAND MENU, which an ended battle no longer has, so there was nothing left to escape to.
+func _battle_results_are_showing() -> bool:
+	if current_state != LoopState.BATTLE:
+		return false
+	if current_scene == null or not is_instance_valid(current_scene):
+		return false
+	if current_scene.get_node_or_null("VictoryResults") != null:
+		return true
+	return bool(current_scene.get("_battle_ended"))
+
+
 func _toggle_autobattle_editor() -> void:
 	"""Toggle the autobattle grid editor overlay"""
 	if _autobattle_editor and is_instance_valid(_autobattle_editor):
@@ -998,6 +1011,13 @@ func _toggle_autobattle_editor() -> void:
 			_exploration_scene.resume()
 		SoundManager.play_ui("autobattle_close")
 		print("Autobattle editor closed (saved)")
+		return
+
+	## OPEN only — the close branch above returns before this, so an already-open editor can
+	## always be dismissed. Gating close as well would replace one trap with another.
+	if _battle_results_are_showing():
+		if SoundManager:
+			SoundManager.play_ui("menu_error")
 		return
 
 	# Pause exploration while editor is open (no encounters)
