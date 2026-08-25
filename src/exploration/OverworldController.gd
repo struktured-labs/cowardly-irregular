@@ -135,8 +135,13 @@ func _check_encounter() -> bool:
 		es.encounter_rate_modifier = original_modifier
 		return triggered
 
-	# Fallback: simple random check with multiplier
-	return randf() < (_encounter_rate * rate_multiplier)
+	## FAIL CLOSED. This used to `return randf() < (_encounter_rate * rate_multiplier)`, which
+	## reaches NONE of the gates check_for_encounter() enforces: encounters_enabled, Repel,
+	## forced_encounter_next_step, or the minimum-steps spacing. EncounterSystem is an autoload,
+	## so es == null means the controller is out of tree — an error state, not a licence to roll.
+	## Encounters are granted by EncounterSystem; absent it, there are none.
+	push_warning("[OVERWORLD] encounter check with no EncounterSystem — refusing to roll unguarded")
+	return false
 
 
 ## Suggested day/night multipliers (msg 2643 struktured-ack-pending). Applied
