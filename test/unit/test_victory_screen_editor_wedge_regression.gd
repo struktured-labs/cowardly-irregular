@@ -42,16 +42,20 @@ func test_battlemanager_reports_a_finished_battle_as_inactive() -> void:
 	assert_true(mid_fight, "CONTROL: a live fight must still read active, else the guard blocks normal play")
 
 
-## Guard A sits ahead of the work it guards. Ordering, not presence: a guard placed after the
-## any_auto_on scan would read as present and do nothing.
+## Guard A landed on main independently as _battle_results_are_showing(), gating INSIDE
+## _toggle_autobattle_editor — which covers all three entry points (F5, Start, L+R) where an
+## earlier draft of this branch guarded only the Start branch. Pinned at the better location.
+## OPEN-only by design: the close branch returns before it, so an open editor is never trapped.
 func test_start_cannot_open_the_editor_once_the_battle_is_over() -> void:
-	var body := _fn_body(FileAccess.get_file_as_string(GL), "_input")
-	var battle_branch := body.find("elif current_state == LoopState.BATTLE:")
-	assert_gt(battle_branch, -1, "the in-battle ui_menu branch must exist")
-	var guard := body.find("not BattleManager.is_battle_active()", battle_branch)
-	var scan := body.find("var any_auto_on", battle_branch)
-	assert_gt(guard, battle_branch, "the finished-battle guard is inside the in-battle branch")
-	assert_lt(guard, scan, "and precedes the autobattle scan — after it, the editor still opens")
+	var src := FileAccess.get_file_as_string(GL)
+	assert_gt(src.find("func _battle_results_are_showing"), -1, "the finished-battle predicate must exist")
+	var body := _fn_body(src, "_toggle_autobattle_editor")
+	var close_branch := body.find("save_and_close()")
+	var guard := body.find("_battle_results_are_showing()")
+	var open_work := body.find("_set_battle_menu_visible(false)")
+	assert_gt(guard, -1, "the toggle must consult it, so every entry point is covered")
+	assert_gt(guard, close_branch, "the guard sits AFTER the close branch — closing must never be blocked")
+	assert_lt(guard, open_work, "and BEFORE the open work, or the editor opens anyway")
 
 
 ## Guard B, and the ordering that matters: _on_battle_ended returns early for spotlight duels,
