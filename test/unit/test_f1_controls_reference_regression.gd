@@ -58,6 +58,18 @@ func test_f1_is_global_and_not_state_gated() -> void:
 		"the F1 handler must not consult game state — a player stuck in a menu still needs it")
 
 
+## A controller-only player must be able to reach it. R3 is the only button free in the whole
+## InputMap; without this the one screen that explains the buttons is keyboard-gated.
+func test_a_gamepad_can_open_the_reference_too() -> void:
+	var body := _fn_body(FileAccess.get_file_as_string(GL), "_input")
+	var r3 := body.find("JOY_BUTTON_RIGHT_STICK")
+	assert_gt(r3, -1, "a pad button must open the reference — F1 alone strands controller players")
+	var seg := body.substr(r3, 200)
+	assert_true(seg.contains("_toggle_help_overlay"), "and it opens the same overlay")
+	var text: String = load(OVERLAY).build_text()
+	assert_true(text.contains("R3"), "and the reference names the pad button, not just F1")
+
+
 ## Above everything. 128 was the highest CanvasLayer in GameLoop before this; the reference
 ## is useless if the thing you are stuck in draws over it.
 func test_the_overlay_draws_above_every_other_layer() -> void:

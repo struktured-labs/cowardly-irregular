@@ -1649,14 +1649,6 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 
-	# The legend at the bottom of this very screen has read "RClick:Close" since it shipped and
-	# nothing implemented it. struktured got stuck here on 08e90acf with a mouse in his hand:
-	# ui_cancel (X/Escape/B) deletes a cell rather than backing out, so F5 was the ONLY exit.
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_RIGHT:
-		save_and_close()
-		get_viewport().set_input_as_handled()
-		return
-
 	# Keyboard handles its own input when open
 	if _keyboard and is_instance_valid(_keyboard) and _keyboard.visible:
 		return

@@ -781,8 +781,14 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 
-	# F1 controls reference — always available, any state, toggles.
+	# Controls reference — always available, any state, toggles. F1 on keyboard, R3 on a pad:
+	# R3 is the only button free in the whole InputMap, and a controller-only player otherwise
+	# has NO route to the one screen that tells them what the buttons do.
 	if event is InputEventKey and event.pressed and not event.is_echo() and event.keycode == KEY_F1:
+		_toggle_help_overlay()
+		get_viewport().set_input_as_handled()
+		return
+	if event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_RIGHT_STICK:
 		_toggle_help_overlay()
 		get_viewport().set_input_as_handled()
 		return
