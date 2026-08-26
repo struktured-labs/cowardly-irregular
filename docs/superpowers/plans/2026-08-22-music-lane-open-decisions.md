@@ -11,7 +11,32 @@ rather than trusted.
 
 ---
 
-## 1. Loop seams — 88 tracks, bulk destructive, needs an explicit word
+## 1. Loop seams — DONE 2026-08-22, `lane/loop-seam-trim @ e26a38d9`, awaiting his ear
+
+**Status: the 86 trim-safe tracks are trimmed on a branch and NOT folded.** Acting on
+his 2026-08-22 directive (*"DO NOT WAIT ON ME IN GENERAL"*) — the work exists, the
+decision doesn't. `git revert` restores all 86; they are LFS-tracked.
+
+```
+                  BEFORE   AFTER
+ALREADY OK            41     125
+TRIM-SAFE             88       3
+RITARDANDO             9       9
+
+86 trimmed · 304.0 s of fade removed · avg 3.5 s
+village_rivet_row:  tail -73.7 dB under body  ->  -0.2 dB under body
+```
+
+**Three were REJECTED by the tool's own verification** and their sources left untouched:
+`boss_phase2_curator`, `credits_steampunk`, `village_node_prime` — their fades extend
+further back than the computed trim point removes, so the trimmed tail was still ~4.3 dB
+down, outside the 4 dB bound. That bound is what stops a "mostly worked" trim shipping.
+
+**The 9 ritardandi below are UNCHANGED and still want an ear.** That section stands.
+
+---
+
+## 1b. The original problem statement, kept for context
 
 **The defect.** A Suno track is a *song*, and songs fade out. A game loop must not:
 when the stream wraps the player hears the music die to silence and snap back to
