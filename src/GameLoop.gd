@@ -1681,6 +1681,17 @@ func check_pending_cutscene() -> void:
 		_play_story_cutscene(pending)
 
 
+## Demo builds stop at the Rat King. OFF unless --demo is passed or the constant is set, so
+## the full game is unaffected — a demo boundary that leaked into normal play would be worse
+## than not having one.
+func _demo_mode() -> bool:
+	if "--demo" in OS.get_cmdline_user_args():
+		return true
+	if GameState and "game_constants" in GameState:
+		return bool(GameState.game_constants.get("demo_mode", false))
+	return false
+
+
 func _get_pending_story_cutscene() -> String:
 	"""Check if a story cutscene should play based on flags.
 	Returns cutscene ID or empty string."""
@@ -1759,6 +1770,15 @@ func _get_pending_story_cutscene() -> String:
 	if flags.get("cutscene_flag_rat_king_defeated", false) and not flags.get("cutscene_flag_world1_rat_king_defeat_complete", false):
 		if _current_map_id == "whispering_cave":
 			return "world1_rat_king_defeat"
+	## DEMO BOUNDARY. Placed AFTER world1_rat_king_defeat so that beat still plays, and BEFORE
+	## chapter4 so nothing past the tested mission chains. Returns "" once the card is seen —
+	## short-circuiting every later gate, including the Mordaine escalation, rather than
+	## suppressing them one at a time where a new beat added below would silently escape.
+	if _demo_mode() and flags.get("cutscene_flag_world1_rat_king_defeat_complete", false):
+		if not flags.get("cutscene_flag_demo_end_complete", false):
+			return "demo_end"
+		return ""
+
 	# Chapter 4: plays after rat king boss defeat (key story beat)
 	if flags.get("cutscene_flag_rat_king_defeated", false) and not flags.get("cutscene_flag_chapter4_complete", false):
 		if _current_map_id == "overworld":
@@ -2066,6 +2086,8 @@ func _set_cutscene_flag_and_mirror(flag: String) -> void:
 
 
 const _CUTSCENE_COMPLETION_FLAGS := {
+	## Demo-build end card. Without this entry it re-fires on every gate check (the Elder Theron loop).
+	"demo_end":                         "cutscene_flag_demo_end_complete",
 	# World 1 (medieval) — flags drop the "world1_" prefix
 	"world1_prologue":                  "cutscene_flag_prologue_complete",
 	"world1_chapter1":                  "cutscene_flag_chapter1_complete",
