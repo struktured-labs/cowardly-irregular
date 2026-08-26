@@ -4938,11 +4938,9 @@ func _spawn_quip_bubble(sprite: Node2D, speaker_name: String, line: String, bord
 			if tex:
 				anchor.y -= tex.get_height() * absf(anim_sprite.scale.y) * 0.5
 	var vp_w: float = get_viewport_rect().size.x
-	if anchor.x < vp_w * 0.45:
-		anchor.x -= 50.0
-	elif anchor.x > vp_w * 0.55:
-		anchor.x -= 70.0  # 2026-07-16 smoke: party-side bubbles crowded the right party panel + AUTO button — bias toward open mid-field
-	BattleSpeechBubble.spawn(self, anchor, speaker_name, line, border_color, hold_time, audio_key)
+	# struktured playtest 2026-08-22 "style the bubble away from them": the old always-left nudge still CENTRED the bubble on the anchor, so it sat on the speaker. Offset to a side instead — right for left-half speakers, left for right-half ones so it stays off the party panel; BattleSpeechBubble flips if the clamp would re-cover them.
+	var prefer_right: bool = anchor.x < vp_w * 0.5
+	BattleSpeechBubble.spawn(self, anchor, speaker_name, line, border_color, hold_time, audio_key, prefer_right)
 
 func _on_one_shot_achieved(rank: String, setup_turns: int) -> void:
 	"""Display one-shot visual feedback when all enemies are defeated in a single execution phase"""
