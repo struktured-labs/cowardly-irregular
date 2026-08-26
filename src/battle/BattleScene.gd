@@ -1476,11 +1476,8 @@ func _refresh_status_icons(combatant: Combatant, animate: bool = true) -> void:
 	if not is_instance_valid(container):
 		return
 
-	# Clear existing icons
-	for child in container.get_children():
-		child.queue_free()
-
-	# Add icon for each active status (skip internal-only ones)
+	# Build the WANTED set first. Icons are keyed by status so a persisting one keeps its NODE — the old clear-and-rebuild restarted every idle animation on any status change AND on every round tick, which would make an animated icon stutter forever.
+	var wanted: Array = []
 	for status in combatant.status_effects:
 		# Skip taunted_* variants (internal targeting, not visual)
 		if status.begins_with("taunted_"):
@@ -1491,17 +1488,36 @@ func _refresh_status_icons(combatant: Combatant, animate: bool = true) -> void:
 		var display_text: String = config["label"]
 		if turns_left > 0:
 			display_text += " %d" % turns_left  # e.g. "STUN 2"
-		var icon = _create_status_icon_label(display_text, config["color"])
-		container.add_child(icon)
-		if animate:
-			_animate_status_icon_pop_in(icon)
+		wanted.append({"key": _status_icon_key(status), "status": status, "text": display_text, "color": config["color"]})
 
 	# doom_counter is a Combatant int field, not a status_effect — surface the lethal countdown so it's trackable after the initial log scrolls away
 	if "doom_counter" in combatant and combatant.doom_counter > 0:
-		var doom_icon = _create_status_icon_label("☠ %d" % combatant.doom_counter, Color(0.6, 0.1, 0.7))
-		container.add_child(doom_icon)
-		if animate:
-			_animate_status_icon_pop_in(doom_icon)
+		wanted.append({"key": "doom_counter", "status": "doom_counter", "text": "☠ %d" % combatant.doom_counter, "color": Color(0.6, 0.1, 0.7)})
+
+	var live_keys: Dictionary = {}
+	for w in wanted:
+		live_keys[w["key"]] = true
+	for child in container.get_children():
+		if not live_keys.has(String(child.name)):
+			child.queue_free()
+
+	var slot: int = 0
+	for w in wanted:
+		var existing: Node = container.get_node_or_null(NodePath(w["key"]))
+		if existing != null and is_instance_valid(existing) and not existing.is_queued_for_deletion():
+			# Same status, still running — only the turn counter moves. Keeps the idle animation's phase.
+			_set_status_icon_text(existing, w["text"])
+		else:
+			var icon = _create_status_icon_label(w["text"], w["color"])
+			icon.name = w["key"]
+			container.add_child(icon)
+			_start_status_icon_idle(icon, w["status"])
+			if animate:
+				_animate_status_icon_pop_in(icon)
+			existing = icon
+		if existing.get_parent() == container:
+			container.move_child(existing, slot)
+		slot += 1
 
 
 func _refresh_all_status_icons(_round_num: int = 0) -> void:
@@ -1523,6 +1539,80 @@ func _animate_status_icon_pop_in(icon: Control) -> void:
 	tween.tween_property(icon, "scale", Vector2.ONE, 0.12) \
 		.set_trans(Tween.TRANS_BACK) \
 		.set_ease(Tween.EASE_OUT)
+
+
+## Node name for a status icon — the row is keyed so a persisting status keeps its node and its animation phase.
+func _status_icon_key(status: String) -> String:
+	var k := status.strip_edges().to_lower()
+	var safe := ""
+	for i in k.length():
+		var c := k[i]
+		safe += c if (c >= "a" and c <= "z") or (c >= "0" and c <= "9") or c == "_" else "_"
+	return "st_" + safe
+
+
+## Updates only the counter on an icon that is still running, so the idle tween is not restarted.
+func _set_status_icon_text(icon: Node, text: String) -> void:
+	if icon == null or not is_instance_valid(icon):
+		return
+	for child in icon.get_children():
+		if child is Label:
+			if child.text != text:
+				child.text = text
+			return
+
+
+## Which idle motion a status gets. Families, not per-status, so a new status inherits sane motion instead of standing still.
+func _status_icon_family(status: String) -> String:
+	var s := status.to_lower()
+	if s == "sleep":
+		return "sleep"
+	if s in ["stun", "confuse", "fear", "charm", "cannot_act", "cannot_defer", "mind_swap", "controlled"]:
+		return "jitter"
+	if s in ["burn", "burning", "poison", "curse", "festered", "memory_leak", "doom_counter"]:
+		return "throb"
+	if s.ends_with("_up") or s in ["regen", "haste", "barrier", "damage_absorb", "evasion", "reflect", "shadow_step"]:
+		return "rise"
+	if s.ends_with("_down") or s in ["slow", "blind", "silence", "exposed"]:
+		return "sag"
+	return "breathe"
+
+
+## struktured 2026-08-22: "the 'ZZZ 1' status indicator is ghetto. we need an animation to indicte they are sleeping, same with all animations." Procedural idle per family — no art needed, and art can supersede it later. Animates scale/rotation/modulate only: HBoxContainer owns child POSITION and would fight a positional tween.
+func _start_status_icon_idle(icon: Control, status: String) -> void:
+	if icon == null or not is_instance_valid(icon) or not icon.is_inside_tree():
+		return
+	await icon.get_tree().process_frame
+	if not is_instance_valid(icon):
+		return
+	icon.pivot_offset = icon.size / 2.0
+	var tw := icon.create_tween().set_loops()
+	match _status_icon_family(status):
+		"sleep":
+			tw.tween_property(icon, "modulate:a", 0.45, 1.1).set_trans(Tween.TRANS_SINE)
+			tw.parallel().tween_property(icon, "scale", Vector2(1.06, 0.94), 1.1).set_trans(Tween.TRANS_SINE)
+			tw.tween_property(icon, "modulate:a", 1.0, 1.1).set_trans(Tween.TRANS_SINE)
+			tw.parallel().tween_property(icon, "scale", Vector2.ONE, 1.1).set_trans(Tween.TRANS_SINE)
+		"jitter":
+			tw.tween_property(icon, "rotation", 0.09, 0.07)
+			tw.tween_property(icon, "rotation", -0.09, 0.07)
+			tw.tween_property(icon, "rotation", 0.0, 0.07)
+			tw.tween_interval(0.55)
+		"throb":
+			tw.tween_property(icon, "scale", Vector2(1.14, 1.14), 0.34).set_trans(Tween.TRANS_SINE)
+			tw.tween_property(icon, "scale", Vector2.ONE, 0.34).set_trans(Tween.TRANS_SINE)
+			tw.tween_interval(0.2)
+		"rise":
+			tw.tween_property(icon, "scale", Vector2(1.0, 1.12), 0.5).set_trans(Tween.TRANS_SINE)
+			tw.tween_property(icon, "scale", Vector2.ONE, 0.5).set_trans(Tween.TRANS_SINE)
+			tw.tween_interval(0.5)
+		"sag":
+			tw.tween_property(icon, "scale", Vector2(1.0, 0.88), 0.6).set_trans(Tween.TRANS_SINE)
+			tw.tween_property(icon, "scale", Vector2.ONE, 0.6).set_trans(Tween.TRANS_SINE)
+			tw.tween_interval(0.5)
+		_:
+			tw.tween_property(icon, "scale", Vector2(1.05, 1.05), 0.8).set_trans(Tween.TRANS_SINE)
+			tw.tween_property(icon, "scale", Vector2.ONE, 0.8).set_trans(Tween.TRANS_SINE)
 
 
 func _create_status_icon_label(text: String, color: Color) -> PanelContainer:
