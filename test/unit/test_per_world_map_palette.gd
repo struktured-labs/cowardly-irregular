@@ -29,6 +29,14 @@ func test_an_unknown_world_fails_loudly_and_decodes_nothing() -> void:
 		rows, [],
 		"an unknown world decoded %d rows. It must decode NOTHING -- falling back to another world's table renders a plausible map built from the wrong tiles." % rows.size()
 	)
+	# every public accessor, not just the two this test originally named: landmark_chars
+	# read the palette directly and returned [] on three arms without pushing anything
+	assert_eq(Loader.palette_chars("no_such_world"), [],
+		"palette_chars leaked characters for a world the palette does not define")
+	assert_eq(Loader.palette_rgb("no_such_world", "~"), [],
+		"palette_rgb resolved a colour for a world the palette does not define")
+	assert_eq(Loader.landmark_chars("no_such_world"), [],
+		"landmark_chars leaked landmarks for a world the palette does not define")
 
 
 func test_two_worlds_disagree_about_the_same_character() -> void:
