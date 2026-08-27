@@ -12,14 +12,13 @@ from PIL import Image
 REPO = Path(__file__).resolve().parent.parent
 
 
-def main():
-    if len(sys.argv) < 4:
-        sys.exit("usage: scale_overworld_png.py <in.png> <out.png> <factor>")
-    src, dst, factor = Path(sys.argv[1]), Path(sys.argv[2]), int(sys.argv[3])
+def load_palette(world="medieval"):
+    """Decode tables for one world. A module-level entry point ON PURPOSE: while this
+    lived inside main() the guard that runs every tool could not reach it, and scored
+    green against a version of this file that could not read the palette at all."""
     pal = json.load(open(REPO / "data/maps/map_palette.json"))
     # Palette v2: sections live under worlds.<id>. Named, never defaulted silently --
     # decoding a map against the wrong world's table yields a plausible wrong map.
-    world = sys.argv[4] if len(sys.argv) > 4 else "medieval"
     if world not in pal["worlds"]:
         sys.exit(f"unknown world {world!r}; palette defines {sorted(pal['worlds'])}")
     wpal = pal["worlds"][world]
@@ -30,6 +29,14 @@ def main():
             char2rgb[ch] = tuple(v["rgb"])
             if sec == "landmarks":
                 landmark.add(ch)
+    return rgb2char, char2rgb, landmark
+
+
+def main():
+    if len(sys.argv) < 4:
+        sys.exit("usage: scale_overworld_png.py <in.png> <out.png> <factor> [world]")
+    src, dst, factor = Path(sys.argv[1]), Path(sys.argv[2]), int(sys.argv[3])
+    rgb2char, char2rgb, landmark = load_palette(sys.argv[4] if len(sys.argv) > 4 else "medieval")
 
     im = Image.open(src).convert("RGB")
     w, h = im.size

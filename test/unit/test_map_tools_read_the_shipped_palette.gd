@@ -18,6 +18,13 @@ extends GutTest
 ##
 ## BOUND: this checks the PALETTE PATH, not that a tool produces a correct map. The map's
 ## correctness is covered by test_map_image_roundtrip's golden.
+##
+## HOLLOW ARM, found by mutation 2026-08-27 and the reason absence is now a failure. The
+## first version reached a tool only through `CH2RGB` or `load_palette`. scale_overworld_png
+## exposed neither -- its read sat inside main() -- so that arm set pal=None and PASSED. I
+## reverted that tool to the broken version and this test stayed green: it defended 2 of 3
+## while its message claimed 3. A run cannot reveal that; only mutation can. The tool now
+## exposes load_palette, and a tool with no entry point fails here instead of passing.
 
 const TOOLS := ["compose_overworld_w1", "scale_overworld_png", "map_ascii_to_png"]
 
@@ -46,11 +53,11 @@ func test_every_map_tool_can_load_the_shipped_palette() -> void:
 			"import sys; sys.path.insert(0, 'tools')\n" +
 			"import %s as T\n" % tool_name +
 			# touch the palette path: module-level for some, a loader call for others
-			"pal = getattr(T, 'CH2RGB', None)\n" +
 			"fn  = getattr(T, 'load_palette', None)\n" +
-			"if fn is not None: pal = fn()\n" +
-			"assert pal is None or len(pal) > 0, 'palette decoded to nothing'\n" +
-			"print('OK', len(pal) if pal else 'n/a')\n"
+			"pal = fn() if fn is not None else getattr(T, 'CH2RGB', None)\n" +
+			"assert pal is not None, 'no palette entry point (load_palette or CH2RGB) -- unreachable, and this guard used to score such a tool GREEN'\n" +
+			"assert len(pal) > 0, 'palette decoded to nothing'\n" +
+			"print('OK', len(pal))\n"
 		)
 		var r := _run_python(snippet)
 		if int(r[0]) != 0:
