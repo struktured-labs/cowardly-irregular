@@ -48,7 +48,9 @@ func after_each() -> void:
 
 func _functions_that_build_tweens() -> Dictionary:
 	## name -> whether its body opts out of game time. Derived from source, never a literal list.
-	var src: String = FileAccess.get_file_as_string(SM_SRC)
+	## `static func` normalised first: split("\nfunc ") does not break on it, so a static
+	## tween owner would be absorbed into the previous chunk and never classified.
+	var src: String = FileAccess.get_file_as_string(SM_SRC).replace("\nstatic func ", "\nfunc ")
 	var found: Dictionary = {}
 	var chunks: PackedStringArray = src.split("\nfunc ")
 	for i in range(1, chunks.size()):
