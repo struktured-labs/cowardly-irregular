@@ -59,7 +59,55 @@ echo "[deploy] target: $VERSION  publish=${PUBLISH}"
 # and GUT runs ZERO tests while exiting 0 (cowir-sfx/cowir-ai/cowir-story, 2026-07-29). This script
 # had no prewarm, so deploying from a fresh checkout made gate 1 vacuous. Cheap and idempotent.
 echo "[deploy] gate 0/4: import prewarm (a fresh worktree runs NOTHING and exits 0)"
-godot --headless --audio-driver Dummy --import --quit >/dev/null 2>&1 || true
+#
+# ⚠️ THIS PREWARM LEAVES A .recovery_mode_lock IN HIS REAL USER DATA. Measured 2026-08-22
+# under this exact command string, sandboxed XDG, pre-state recorded before each run:
+#     run 1 (dir absent)   EC=0 · 13 lines · dir created · lock 0
+#     run 2 (dir present)  EC=0 · 13 lines ·               lock 1
+# @cowir-controller's conjunction, replicated by three lanes: an EDITOR-CLASS invocation
+# plus a PRE-EXISTING project user-data dir. `--import` is editor-class — godot's own help
+# marks it `E` and says "Starts the editor" — and `--headless` means no WINDOW, not
+# not-the-editor. His dir has existed for months, so every deploy satisfies both halves.
+#
+# It is inert for the GAME (0 consumers of recovery_mode in src/; CONTROL: 139 files carry
+# `func _ready`, so the scan reads the tree) and 0 bytes on disk. The cost is editor-side:
+# `--recovery-mode` "disables tool scripts, editor plugins, GDExtension addons", and the
+# lock is what makes the editor offer it on his next open. A deploy should not change how
+# his editor starts.
+#
+# gate 1's snapshot net covers this file, but it runs AFTER this line — so it captures the
+# lock we just made as pre-existing state and faithfully RESTORES it. The net preserves the
+# debris; it cannot remove it. Hence an explicit before/after here.
+#
+# ONLY removed if THIS command created it. A lock he already had is his — he may have hit a
+# real startup crash and want recovery mode — so an unconditional `rm` would be a different
+# bug wearing a cleanup.
+_UD="${XDG_DATA_HOME:-$HOME/.local/share}/godot/app_userdata/Cowardly Irregular"
+_LOCK="$_UD/.recovery_mode_lock"
+_LOCK_PRE=0; [ -e "$_LOCK" ] && _LOCK_PRE=1
+#
+# ✅ PREVENTION, added after the cleanup below: sandbox XDG for THIS invocation (a gitignored
+# repo-local dir, reused across deploys so the sandbox stays warm) so the lock
+# is never written to his data at all. Measured in a fresh worktree (no .godot):
+#     ARM A  no import         run_tests.sh EC=3 "NO TESTS RAN — no Totals block"
+#     ARM B  SANDBOXED import  EC=0 · 6510 lines · project .godot created (5 entries)
+#     ARM C  same test after B EC=0 · Scripts 1 · Tests 1 · Passing 1     ✅ prewarm intact
+#     his real lock mtime, before and after B and C: 17:39:14.803 — BYTE-IDENTICAL, untouched
+# The import cache lives in res://.godot — in the PROJECT — so relocating XDG_DATA_HOME
+# costs the prewarm nothing. ARM A/C is the pair that matters: it shows the prewarm's
+# PURPOSE survives, not merely that the command exits 0.
+#
+# ⛔ DO NOT extend this env var to gate 2. XDG_DATA_HOME relocates the WHOLE godot data
+# root, and export templates live at ~/.local/share/godot/export_templates/4.4.1.stable.
+# Measured: a sandboxed `--export-release "Web"` fails EC=1 "No export template found at
+# the expected path"; the unsandboxed control emits no such line. Sandbox the PREWARM,
+# never the EXPORT.
+mkdir -p tmp/prewarm_xdg
+XDG_DATA_HOME="$PWD/tmp/prewarm_xdg" godot --headless --audio-driver Dummy --import --quit >/dev/null 2>&1 || true
+if [ "$_LOCK_PRE" -eq 0 ] && [ -e "$_LOCK" ]; then
+  rm -f "$_LOCK"
+  echo "[deploy] gate 0: removed the .recovery_mode_lock this prewarm created (none before)"
+fi
 
 # GATE 1 DELEGATES TO tools/gate.sh AND CONSULTS ITS EXIT CODE.
 #

@@ -64,6 +64,19 @@ import sys, glob, os
 stage = sys.argv[1]
 p = os.path.join(stage, "export_presets.cfg"); s = open(p).read()
 i = s.find('name="Web"'); j = s.find('exclude_filter="', i); k = s.find('"', j+16)
+# ASSERT THE PARSE FOUND ITS TARGET. str.find returns -1 on a miss and Python happily
+# slices with it: i=-1 makes the next find start at the LAST character, j=-1 makes the
+# slice s[15:k] read the file HEADER, and the write at the bottom then emits
+# s[:15] + kept + s[k:] -- a silently CORRUPTED export_presets.cfg in the staged copy.
+# Nothing about that raises. The pipeline does catch the consequence downstream (the
+# packed-vs-expected gate, exit 4), but that gate exists to detect DROPPED CONTENT and
+# would report a content regression for what is actually a broken parse -- the wrong
+# cause, which is the expensive kind of failure to debug at deploy time.
+# Rename the preset, reorder the keys, or add a preset before Web, and this fires.
+if i < 0 or j < 0 or k < 0:
+    sys.exit(f"[stage] BLOCKED: could not locate the Web preset's exclude_filter in "
+             f"{p} (name=\"Web\" at {i}, exclude_filter at {j}, closing quote at {k}). "
+             f"The cfg format changed -- fix this parse rather than letting it write.")
 pats = [x.strip() for x in s[j+16:k].split(",")]
 
 # DERIVED, not a hand-list: drop every music pattern that actually matches a

@@ -42,7 +42,11 @@ func _save_paths() -> Array:
 func test_every_local_save_hydrates_through_state_layer() -> void:
 	var paths := _save_paths()
 	if paths.is_empty():
-		pass_test("no local saves on this machine — smoke self-skips")
+		# pending() does not make this test live; it makes its INERTNESS visible.
+		# Measured 2026-08-22: with his real saves this file runs 106 asserts; under a
+		# sandboxed XDG_DATA_HOME it runs 2 — and Tests/Passing/Scripts/EC are IDENTICAL
+		# in both worlds, so no cardinal any gate reads can see the 104 that vanished.
+		pending("no local saves on this machine — save hydration NOT exercised (a sandboxed XDG_DATA_HOME produces this, and it is the CI/fresh-checkout default)")
 		return
 	for path in paths:
 		var raw: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
@@ -71,7 +75,11 @@ func test_every_local_save_party_roundtrips_combatants() -> void:
 	# round-trip to_dict to prove nothing silently dropped to [].
 	var paths := _save_paths()
 	if paths.is_empty():
-		pass_test("no local saves on this machine — smoke self-skips")
+		# pending() does not make this test live; it makes its INERTNESS visible.
+		# Measured 2026-08-22: with his real saves this file runs 106 asserts; under a
+		# sandboxed XDG_DATA_HOME it runs 2 — and Tests/Passing/Scripts/EC are IDENTICAL
+		# in both worlds, so no cardinal any gate reads can see the 104 that vanished.
+		pending("no local saves on this machine — party roundtrip NOT exercised (a sandboxed XDG_DATA_HOME produces this, and it is the CI/fresh-checkout default)")
 		return
 	# Self-skip: paths exist but no save has meaningful party data (e.g. after
 	# a full userdata wipe the game writes an empty slot-98 auto-save; that
@@ -87,7 +95,7 @@ func test_every_local_save_party_roundtrips_combatants() -> void:
 				any_party = true
 				break
 	if not any_party:
-		pass_test("local saves exist but contain no party data — smoke self-skips")
+		pending("local saves exist but carry no party data — party roundtrip NOT exercised")
 		return
 	var members_checked: int = 0
 	for path in paths:

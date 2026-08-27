@@ -5,7 +5,7 @@
 #
 # Usage:
 #   tools/run_tests.sh                 # full unit suite
-#   tools/run_tests.sh <name>          # single file: test_<name>.gd or a res:// path
+#   tools/run_tests.sh <name> [<name>...]  # one or more files, in ONE godot process
 #   tools/run_tests.sh --isolated      # the quarantined suite (own process by design)
 #
 # Exit codes:  0 pass · 1 test failures · 2 bad invocation · 3 nothing ran
@@ -87,7 +87,32 @@ if [ -n "$_SNAP" ]; then
   # SAY SO. gate.sh used to print this and I nearly dropped it in the move, which would have made the
   # net unobservable in every run rather than only in the ones where it silently failed. Four lanes
   # spent this morning arguing about whether it had run, from artifacts that could not answer.
-  echo "run_tests.sh: snapshotted $(find "$_SNAP" -type f 2>/dev/null | wc -l) player data file(s) across ${#_NETTED_DIRS[@]} dir(s) + root files — restored on exit"
+  # THREE STATES, NOT TWO (cowir-ai, 2026-08-22). A sandbox drifts from "absent" into
+  # "present but empty" after its first run, so the same command gives a different header
+  # on run 2 than on run 1 — silent, then "snapshotted 0", then "snapshotted N".
+  # Measured here: run 1 -> "did NOT arm"; run 2 -> "snapshotted 0 … restored on exit".
+  # That trailing clause asserts a protection covering nothing, and a reader scanning for
+  # "did the net arm" sees a snapshot line and moves on. Truthful count, reassuring frame.
+  _SNAP_N="$(find "$_SNAP" -type f 2>/dev/null | wc -l)"
+  if [ "$_SNAP_N" -eq 0 ]; then
+    echo "run_tests.sh: player-data net ARMED but snapshotted 0 files under $_UD_BASE — it will restore nothing." >&2
+    echo "  (the netted dirs exist and are empty — a reused sandbox, or a real dir whose data has gone. Not 'protected'.)" >&2
+  else
+    echo "run_tests.sh: snapshotted $_SNAP_N player data file(s) across ${#_NETTED_DIRS[@]} dir(s) + root files — restored on exit"
+  fi
+else
+  # SAY SO IN THIS DIRECTION TOO. Measured 2026-08-22: with a fresh XDG_DATA_HOME every
+  # loop above takes its `continue`, $_SNAP stays empty, this whole block is skipped, and
+  # the run emits NOTHING — byte-identical to a run where the net armed, minus one line
+  # nobody is looking for. Two causes print the same silence:
+  #   BENIGN  a sandboxed run whose user dir is genuinely empty — nothing to protect
+  #   BAD     $_UD_BASE computed wrong (XDG semantics change, a Godot path change, a typo)
+  #           -> his real data is UNPROTECTED and the run says so nowhere
+  # Non-blocking, because the benign case is legitimate and common. Loud, because the
+  # bad case is otherwise unobservable. Same three-state rule the CI PE check uses: the
+  # instrument's inability to act must be its own outcome, never folded into silence.
+  echo "run_tests.sh: player-data net did NOT arm — nothing to snapshot under $_UD_BASE" >&2
+  echo "  (benign for a sandboxed run; if this is his real user dir, the net is not protecting it)" >&2
 fi
 # Reap snapshots abandoned by a run that died without its trap — four were sitting in TMPDIR this
 # morning, each holding a stale copy, and hand-restoring from one re-litters the real directory
@@ -157,6 +182,27 @@ run_gut() {
   # Scoped to the invocation's OWN -gdir so test/unit and test/isolated never cross-count.
   local _gdir="" _a
   for _a in "$@"; do case "$_a" in -gdir=res://*) _gdir="${_a#-gdir=res://}" ;; esac; done
+  # A -gtest SELECTION gets the same treatment, authored == the count we ASKED for. This
+  # is the arm that was structurally absent on the named-file path -- precisely where a
+  # dropped file is invisible, at THIS rung or at GUT's (-gselect eats the list too).
+  # Star form, not \s+: Scripts/Tests/Asserts sit at COLUMN 0 while Passing/Failing are
+  # indented 2, and `^\s+Scripts` matches nothing (four lanes hit this tonight; one
+  # published "delta 1307" where the truth was 9). No :-0 default -- an unmeasurable
+  # instrument WARNS, it never becomes a zero that fires the alarm.
+  if [ -z "$_gdir" ] && [ -n "${_REQUESTED:-}" ] && [ "${_REQUESTED}" -gt 0 ]; then
+    local _sel_exec
+    _sel_exec="$(command grep -aoE '^[[:space:]]*Scripts[[:space:]]+[0-9]+' "$RUN_LOG" | tail -1 | tr -dc '0-9')"
+    if [ -z "$_sel_exec" ]; then
+      echo "run_tests.sh: WARNING — no 'Scripts N' line; selection completeness NOT checked." >&2
+    elif [ "$_sel_exec" -lt "$_REQUESTED" ]; then
+      echo "run_tests.sh: NOT ALL REQUESTED FILES RAN — asked for $_REQUESTED, GUT loaded $_sel_exec." >&2
+      echo "  ⇒ DISCARD THIS RUN. A selection that silently loses a file still prints a real" >&2
+      echo "    Totals block and exits 0, so it reads as a correct smaller run." >&2
+      command grep -aiE 'Parse Error|Failed to load script|does not extend GutTest' "$RUN_LOG" | head -5 | sed 's/^/  /' >&2
+      echo "  logs kept for inspection: $RUN_LOG $GUT_LOG" >&2
+      exit 3
+    fi
+  fi
   if [ -n "$_gdir" ] && [ -d "$_gdir" ]; then
     local _authored _executed
     _authored="$(ls "$_gdir"/test_*.gd 2>/dev/null | command grep -c .)"   # grep -c PRINTS 0; no ||
@@ -210,16 +256,42 @@ run_gut() {
 # wrapper's own per-file vacuity arm cannot catch it: that arm is gated on -gdir, and the
 # named-file branches take -gtest, so it is off on precisely the path that loses files.
 # (GUT's stacked -gselect drops in the OPPOSITE direction, keeping the LAST file.)
-# Exit 2 is the documented "bad invocation" code.
-if [ "$#" -gt 1 ]; then
-  echo "run_tests.sh: takes at most one test name; got $# ($*)" >&2
-  echo "  to run several files in one process, use repeated -gtest= via gut_cmdln.gd" >&2
-  exit 2
-fi
-
+# MULTIPLE NAMES ARE ACCEPTED, and this supersedes the reject that landed in d5cea002.
+# The original defect (cowir-music): `run_tests.sh A B` referenced $1 only, so B was
+# SILENTLY DROPPED — EC=0, a real Totals block, `Scripts 1`, no warning, indistinguishable
+# from a correct single-file run because it WAS one. cowir-autogrind diagnosed why the
+# per-file arm above could not see it: that arm is gated on -gdir, and every named-file
+# branch takes a -gtest path where _gdir is empty, so the detector that catches a dropped
+# file is OFF on exactly the path that drops files.
+#
+# REJECTING was the smaller fix and its message pointed at `repeated -gtest= via
+# gut_cmdln.gd` — which cowir-story measured drops the PLAYER-DATA NET (:53 dirs, :67 root
+# arm) and the --log-file redirect at :24 that keeps a run out of his user://logs/. Three
+# protections removed to work around one bug, and five lanes ran 26-119-file post-refactor
+# checklists through that path tonight. cowir-main's call to supersede it.
+#
+# ⛔ NOT -gselect: stacked -gselect runs the file named LAST and discards the rest, with a
+#    valid Totals block and EC=0 (cowir-controller found it; cowir-battle measured that it
+#    is the LAST, not merely "one"). Repeated -gtest= is the form that composes.
 case "${1:-}" in
   "")          require_test_dir "test/unit";     run_gut -gdir=res://test/unit ;;
-  --isolated)  require_test_dir "test/isolated"; run_gut -gdir=res://test/isolated ;;
-  res://*)     require_test_file "${1#res://}";  run_gut -gtest="$1" ;;
-  *)           N="${1#test_}"; N="${N%.gd}"; require_test_file "test/unit/test_${N}.gd"; run_gut -gtest="res://test/unit/test_${N}.gd" ;;
+  --isolated)
+    [ "$#" -eq 1 ] || { echo "run_tests.sh: --isolated takes no other arguments; got $# ($*)" >&2; exit 2; }
+    require_test_dir "test/isolated"; run_gut -gdir=res://test/isolated ;;
+  *)
+    _SEL=()
+    for _n in "$@"; do
+      case "$_n" in
+        --*)     echo "run_tests.sh: unknown option: $_n" >&2; exit 2 ;;
+        res://*) require_test_file "${_n#res://}"; _SEL+=("-gtest=$_n") ;;
+        *)       N="${_n#test_}"; N="${N%.gd}"
+                 require_test_file "test/unit/test_${N}.gd"
+                 _SEL+=("-gtest=res://test/unit/test_${N}.gd") ;;
+      esac
+    done
+    # ONE godot for the whole list: the net and the log redirect still apply, and the
+    # engine boots once instead of N times (a shell loop over 26 files was measured
+    # KILLED at 2 min having reported ZERO files -- cowir-story).
+    _REQUESTED="${#_SEL[@]}"
+    run_gut "${_SEL[@]}" ;;
 esac
