@@ -66,18 +66,16 @@
       "generated_at": "2026-03-21"
     },
     "boss_rat_king": {
-      "tier": "T0",
-      "provider": "placeholder",
+      "file": "assets/audio/music/boss_rat_king.ogg",
+      "tier": "T1",
+      "provider": "suno",
       "title": "The Crown Beneath the Whispers",
-      "prompt": "First boss confrontation in a damp cave — sense of absurd grandeur giving way to mounting dread. Sewer-king pomp colliding with primal animal menace, dripping water punctuated by manic rodent squeaks, mock-heroic brass over a relentless low pulse, building to a fever pitch as the rat king bellows.",
-      "style": "SNES tutorial boss, manic minor key, comedic-yet-menacing, harpsichord + low brass + skittering percussion, 16-bit",
+      "prompt": "First boss confrontation in a damp cave — sense of absurd grandeur giving way to mounting dread. Sewer-king pomp colliding with primal animal menace, dripping water punctuated by manic rodent squeaks, mock-heroic brass over a relentless low pulse, building to a fever pitch as the rat king bellows. Must hit HARDER than the standard battle theme — overwhelming, urgent, fight-for-your-life energy under the absurdity. The comedy rides on top of real menace; it never replaces it.",
+      "style": "SNES boss battle, INTENSE and driving, pounding relentless percussion, aggressive low brass, manic minor key, comedic-yet-menacing character carried on top of the assault, harpsichord + skittering rodent detail, 16-bit",
       "model": "suno-v4",
-      "duration": 0.0,
+      "duration": 124.72,
       "loop": true,
-      "generated_at": "",
-      "placeholder": true,
-      "planned_file": "assets/audio/music/boss_rat_king.ogg",
-      "notes": "Authored track pending. Prompt/style/title live here AND in tools/music_prompts.json — the generator reads only the latter, so a prompt recorded solely here would never be produced (it wasn't, until 2026-07-29). Until the OGG ships, SoundManager falls back to procedural _start_rat_king_music() (SM:2610, dispatched at SM:1410) — the only W1 boss without a composed track. 'file' key intentionally omitted so the manifest-integrity audit doesn't fail on a known-missing placeholder, and duration stays 0.0, which JukeboxMenu renders as a blank row."
+      "generated_at": "2026-08-26"
     },
     "overworld_suburban": {
       "file": "assets/audio/music/overworld_suburban.ogg",
