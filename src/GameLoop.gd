@@ -1001,6 +1001,29 @@ func _input(event: InputEvent) -> void:
 				get_viewport().set_input_as_handled()
 
 
+## struktured 2026-08-25: "what about 'panicky mouse' buttons auto popping it up too".
+## _unhandled_input receives ONLY events nothing consumed — so a click arriving here IS, by
+## definition, a click the game did not answer. That needs no intent heuristic: clicking fast
+## through dialogue or the grid editor is HANDLED and never counts, so it cannot false-positive.
+const PANIC_CLICK_COUNT: int = 4
+const PANIC_CLICK_WINDOW_S: float = 2.0
+var _panic_clicks: Array = []
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not (event is InputEventMouseButton) or not event.pressed:
+		return
+	if _help_overlay and is_instance_valid(_help_overlay):
+		return
+	var now: float = Time.get_ticks_msec() / 1000.0
+	_panic_clicks.append(now)
+	while _panic_clicks.size() > 0 and now - float(_panic_clicks[0]) > PANIC_CLICK_WINDOW_S:
+		_panic_clicks.remove_at(0)
+	if _panic_clicks.size() >= PANIC_CLICK_COUNT:
+		_panic_clicks.clear()
+		_toggle_help_overlay()
+
+
 ## F1 from anywhere. Layer 130 is deliberately above every other overlay in this file
 ## (max was 128) so the reference is readable even when something else has wedged on top.
 func _toggle_help_overlay() -> void:
