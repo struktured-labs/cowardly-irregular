@@ -24,11 +24,25 @@ func _sm_source() -> String:
 	return s
 
 
-func test_the_brute_track_exists_and_the_goblin_ogg_is_gone() -> void:
+func test_goblins_and_brutes_have_SEPARATE_tracks() -> void:
+	## Inverted 2026-08-26. This arm used to assert battle_goblin.ogg was ABSENT, because the
+	## recast moved that file to battle_brute.ogg and goblins had no track of their own. A new
+	## goblin theme has since been generated, so absence is no longer the property worth
+	## defending -- the old arm's own message named this case and said to invert it.
+	##
+	## What actually matters is that the two are DIFFERENT AUDIO. He objected to goblins
+	## sounding like barbarians; identical bytes under two names would reproduce that exactly,
+	## and a file-existence check cannot see it.
 	assert_true(ResourceLoader.exists("res://assets/audio/music/battle_brute.ogg"),
 		"battle_brute.ogg is missing - the brute family has no theme and falls to generic battle music")
-	assert_false(ResourceLoader.exists("res://assets/audio/music/battle_goblin.ogg"),
-		"battle_goblin.ogg is back. If a NEW goblin track was generated this is correct and this arm should be inverted - but if it is the OLD barbarian bed restored, the thing he complained about is playing on goblins again.")
+	assert_true(ResourceLoader.exists("res://assets/audio/music/battle_goblin.ogg"),
+		"battle_goblin.ogg is missing - goblins fall through to the world bed")
+
+	var g: PackedByteArray = FileAccess.get_file_as_bytes("res://assets/audio/music/battle_goblin.ogg")
+	var b: PackedByteArray = FileAccess.get_file_as_bytes("res://assets/audio/music/battle_brute.ogg")
+	assert_gt(g.size(), 1000, "SCOPE control: goblin ogg read back %d bytes" % g.size())
+	assert_gt(b.size(), 1000, "SCOPE control: brute ogg read back %d bytes" % b.size())
+	assert_ne(g, b, "battle_goblin.ogg and battle_brute.ogg are BYTE-IDENTICAL - goblins are scored with the barbarian bed again, which is the complaint that started this")
 
 
 const BRUTE_OGG: String = "battle_brute.ogg"

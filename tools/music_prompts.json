@@ -305,9 +305,9 @@
       "prompt": "Chaotic demonic battle theme for fighting imps, wild chromatic runs up and down, unpredictable rhythm changes, mischievous and dangerous, cackling energy, fast and disorienting like fighting tiny demons that won't stay still"
     },
     "battle_goblin": {
-      "title_template": "Raid!",
-      "style": "JRPG battle, tribal, A minor, war drums, primitive chanting, aggressive, 140 BPM",
-      "prompt": "Aggressive tribal battle theme for fighting goblins, pounding war drums, primitive chanting rhythms, crude but effective, the energy of a goblin raiding party, aggressive and relentless, tribal percussion driving the intensity"
+      "title_template": "Vermin With Knives",
+      "style": "JRPG battle, scrappy and frantic, A minor with chromatic wriggle, skittering percussion, plucked strings, shrill woodwind, scurry-and-stop phrasing, 158 BPM, 16-bit",
+      "prompt": "Goblins — small, quick, cowardly and armed. Scurry-and-stop motion, a chromatic snicker of a hook that darts and hides, sudden stabs of dissonance like a knife from the dark. Comic menace at knee height: annoying, unpredictable, genuinely dangerous in numbers. NOT a war chant, NOT tribal drums, NOT heroic — this is vermin with knives, and it must not sound like the brutes."
     },
     "battle_skeleton": {
       "title_template": "Bone Rattle",
@@ -888,6 +888,11 @@
       "title_template": "Paused, Somewhere Else",
       "style": "Quirky experimental JRPG pause menu, 75 BPM, toy piano, muted analog synth pads, ticking mechanical clock rhythm, subtle chiptune arpeggios, glitchy tape-stops, Mother 3 / Undertale save-room / EarthBound hospital weird-ambient, unresolved minor modes, instrumental, loopable",
       "prompt": "Quirky experimental pause-menu theme for a meta-aware JRPG about automation. A toy piano figure drifts over muted analog synth pads. A ticking mechanical clock rhythm never quite locks with the beat, giving the loop gentle uncertainty. Soft glitchy tape-stop moments appear every 8 bars. Sparse chiptune arpeggios hint at the automation systems running in the background. Harmony drifts between minor modes without resolving. Spooky but playful, futuristic but analog, automated but alive. Like Mother 3's hospital, Undertale's save room, and EarthBound's inventory screen in one. Instrumental, low-velocity, no heavy drums or dramatic builds, loops cleanly."
+    },
+    "battle_brute": {
+      "title_template": "Raid!",
+      "style": "JRPG battle, tribal, A minor, war drums, primitive chanting, heavy stomping rhythm, aggressive, brutish, 140 BPM",
+      "prompt": "Hulking brutes — ogres, trolls, barbarians — crashing into you in the open. Pounding war drums and guttural chanting, the swagger of something far bigger than you that intends to swing first. Primitive and heavy, all shoulder and no finesse. This is the raiding party arriving, not sneaking."
     }
   }
 }

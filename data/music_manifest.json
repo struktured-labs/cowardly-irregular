@@ -1950,6 +1950,18 @@
       "repurposed_note": "Generated as a goblin theme; struktured 2026-08-22 heard it as barbarian rather than goblin. Audio unchanged - only its role moved, to the troll/ogre/barbarian brute family. The prompt below is kept verbatim as generation provenance and no longer describes intended use.",
       "alias_of": "battle_brute",
       "alias_note": "play_music resolves the manifest BEFORE its match arms and returns on a hit, so an unregistered battle_* key falls through to the world bed. Measured 2026-08-22: these four reached battle_medieval while the match arm sat unreachable."
+    },
+    "battle_goblin": {
+      "file": "assets/audio/music/battle_goblin.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Vermin With Knives",
+      "prompt": "Goblins — small, quick, cowardly and armed. Scurry-and-stop motion, a chromatic snicker of a hook that darts and hides, sudden stabs of dissonance like a knife from the dark. Comic menace at knee height: annoying, unpredictable, genuinely dangerous in numbers. NOT a war chant, NOT tribal drums, NOT heroic — this is vermin with knives, and it must not sound like the brutes.",
+      "style": "JRPG battle, scrappy and frantic, A minor with chromatic wriggle, skittering percussion, plucked strings, shrill woodwind, scurry-and-stop phrasing, 158 BPM, 16-bit",
+      "model": "suno-v5",
+      "duration": 57.8,
+      "loop": true,
+      "generated_at": "2026-08-26"
     }
   },
   "tier_priority": [
