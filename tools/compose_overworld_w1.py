@@ -10,9 +10,13 @@ from collections import deque
 from PIL import Image
 
 PAL = json.load(open('data/maps/map_palette.json'))
-CH2RGB = {k: tuple(v['rgb']) for k, v in {**PAL['terrain'], **PAL['landmarks']}.items()}
+# Palette v2 is PER WORLD -- 'terrain' moved under worlds.<id>. This tool composes W1
+# only, so it names medieval explicitly rather than defaulting: a default would let it
+# silently decode some other world's map against the wrong table.
+_W = PAL['worlds']['medieval']
+CH2RGB = {k: tuple(v['rgb']) for k, v in {**_W['terrain'], **_W['landmarks']}.items()}
 RGB2CH = {v: k for k, v in CH2RGB.items()}
-LANDMARK = set(PAL['landmarks'])
+LANDMARK = set(_W['landmarks'])
 BLOCK = set('~Ml')          # WATER / MOUNTAIN / LAVA -- TileGenerator._get_impassable_types()
 
 
