@@ -1807,20 +1807,21 @@ func _get_pending_story_cutscene() -> String:
 	# Mordaine escalation (cowir-story, 2026-07-26 — struktured asked why this arc wasn't in the
 	# game). She is SUPERVISING, not stalking: the distance never changes, what escalates is how
 	# much the game stops for her — no letterbox/music/dialogue on the road, through to full
-	# staging on castle F3. Each beat gates on the PREVIOUS one so entering a later floor first
-	# can't play them out of order, and the escalation only reads if it's seen in sequence.
-	# Floors 1-3 only; F4 is the boss floor and keeps world1_mordaine_intro untouched.
+	# staging on castle F3. Each beat gates on the PREVIOUS one, so the four cannot play out of
+	# order relative to each other — but that alone does NOT bound the floor, and a Skiptrotter
+	# dungeon_skip lands on F4 with beats still pending (cowir-cutscenes, 2026-08-26). The
+	# `<= 3` is what actually keeps F4 clear for world1_mordaine_intro.
 	if flags.get("cutscene_flag_chapter4_complete", false) and not flags.get("cutscene_flag_world1_mordaine_watch_road_complete", false):
 		if _current_map_id == "overworld":
 			return "world1_mordaine_watch_road"
 	if flags.get("cutscene_flag_world1_mordaine_watch_road_complete", false) and not flags.get("cutscene_flag_world1_mordaine_watch_castle_complete", false):
-		if _current_map_id == "castle_harmonia" and _cave_floor >= 1:
+		if _current_map_id == "castle_harmonia" and _cave_floor >= 1 and _cave_floor <= 3:
 			return "world1_mordaine_watch_castle"
 	if flags.get("cutscene_flag_world1_mordaine_watch_castle_complete", false) and not flags.get("cutscene_flag_world1_mordaine_speaks_complete", false):
-		if _current_map_id == "castle_harmonia" and _cave_floor >= 2:
+		if _current_map_id == "castle_harmonia" and _cave_floor >= 2 and _cave_floor <= 3:
 			return "world1_mordaine_speaks"
 	if flags.get("cutscene_flag_world1_mordaine_speaks_complete", false) and not flags.get("cutscene_flag_world1_mordaine_procedure_complete", false):
-		if _current_map_id == "castle_harmonia" and _cave_floor >= 3:
+		if _current_map_id == "castle_harmonia" and _cave_floor >= 3 and _cave_floor <= 3:
 			return "world1_mordaine_procedure"
 
 	# Chapters 5-9: auto-set flags — party commentary now opt-in via NPCs

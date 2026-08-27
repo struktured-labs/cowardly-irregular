@@ -17,8 +17,14 @@ extends GutTest
 ##   world1_mordaine_watch_castle/speaks/procedure  -> Castle Harmonia floors 1-3
 ##   world1_mordaine_watch_road                     -> the overworld
 ##
-## Their marks were all measured clean by hand (F1 (17,6), F2 (16,7), F3 (15,7)
-## are floor tiles in CastleHarmonia's own layouts), so nothing is broken today.
+## Their marks were once measured clean BY HAND, and the hand-measurement was wrong
+## — not in its arithmetic but in its scope. It checked each mark against the one
+## floor the scene was authored for; the GameLoop gates are `_cave_floor >= N`, so
+## every one of them can also fire on a DEEPER floor with a different layout.
+## watch_castle's Mordaine spawn (17,6) is floor on F1 and a WALL on F3. Fixed by
+## shifting it one tile right, and now checked on every floor its gate admits by
+## test_castle_staged_scene_floor_geometry_regression — a measurement whose scope
+## is derived rather than assumed, which is the part a human pass cannot ratchet.
 ## What was missing is anything that fails when a SEVENTH staged scene is added.
 ##
 ## This requires the DELIVERABLE, never permission to skip: a new staged scene

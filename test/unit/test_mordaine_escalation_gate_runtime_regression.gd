@@ -122,6 +122,23 @@ func test_castle_beats_respect_their_floor_gates() -> void:
 	assert_eq(_pending_at("castle_harmonia", 2), BEATS[2], "and it must fire on F2")
 
 
+## A Skiptrotter dungeon_skip warps straight to F4 with beats still pending.
+func test_no_pending_beat_fires_on_the_boss_floor() -> void:
+	var fired: Array = []
+	_complete("world1_mordaine_watch_road")
+	if _pending_at("castle_harmonia", 4) == BEATS[1]:
+		fired.append("watch_castle")
+	assert_eq(_pending_at("castle_harmonia", 1), BEATS[1], "control: it MUST still fire on F1")
+	_complete("world1_mordaine_watch_castle")
+	if _pending_at("castle_harmonia", 4) == BEATS[2]:
+		fired.append("speaks")
+	_complete("world1_mordaine_speaks")
+	if _pending_at("castle_harmonia", 4) == BEATS[3]:
+		fired.append("procedure")
+	assert_eq(_pending_at("castle_harmonia", 3), BEATS[3], "control: it MUST still fire on F3")
+	assert_eq(fired, [], "supervision beats reached F4, the boss floor, where Mordaine is present: " + str(fired) + ". The escalation only reads in sequence, so a warp arrival must miss them rather than see them out of order.")
+
+
 func test_beats_do_not_fire_on_unrelated_maps() -> void:
 	# She appears on the road and in the castle. A beat leaking into the village
 	# or a cave would fire during unrelated scenes.
