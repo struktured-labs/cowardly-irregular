@@ -4737,5 +4737,152 @@
       "source": "hand-pixeled 24x24 amber shield-with-crossed-blades \u2014 cowir-sprites (cowir-main msg 2454 approval). Sigil for THREAT_CLASS_BUFFS (counter_stance et al.); attaches as sprite child, pulses via existing _update_buff_debuff_visuals hook."
     }
   },
-  "tile_sheets": {}
+  "tile_sheets": {
+    "medieval": {
+      "path": "res://assets/sprites/tiles/medieval.png",
+      "tier": "T1",
+      "tile": 32,
+      "cliff": {
+        "face": [
+          0,
+          0
+        ],
+        "edge_1": [
+          1,
+          0
+        ],
+        "edge_2": [
+          2,
+          0
+        ],
+        "edge_3": [
+          3,
+          0
+        ],
+        "edge_4": [
+          4,
+          0
+        ],
+        "edge_5": [
+          5,
+          0
+        ],
+        "edge_6": [
+          6,
+          0
+        ],
+        "edge_7": [
+          7,
+          0
+        ],
+        "edge_8": [
+          8,
+          0
+        ],
+        "edge_9": [
+          9,
+          0
+        ],
+        "edge_10": [
+          10,
+          0
+        ],
+        "edge_11": [
+          11,
+          0
+        ],
+        "edge_12": [
+          12,
+          0
+        ],
+        "edge_13": [
+          13,
+          0
+        ],
+        "edge_14": [
+          14,
+          0
+        ],
+        "edge_15": [
+          15,
+          0
+        ]
+      },
+      "overlay": {
+        "fringe_1": [
+          0,
+          1
+        ],
+        "fringe_2": [
+          1,
+          1
+        ],
+        "fringe_3": [
+          2,
+          1
+        ],
+        "fringe_4": [
+          3,
+          1
+        ],
+        "fringe_5": [
+          4,
+          1
+        ],
+        "fringe_6": [
+          5,
+          1
+        ],
+        "fringe_7": [
+          6,
+          1
+        ],
+        "fringe_8": [
+          7,
+          1
+        ],
+        "fringe_9": [
+          8,
+          1
+        ],
+        "fringe_10": [
+          9,
+          1
+        ],
+        "fringe_11": [
+          10,
+          1
+        ],
+        "fringe_12": [
+          11,
+          1
+        ],
+        "fringe_13": [
+          12,
+          1
+        ],
+        "fringe_14": [
+          13,
+          1
+        ],
+        "fringe_15": [
+          14,
+          1
+        ],
+        "stair": [
+          15,
+          1
+        ],
+        "ramp": [
+          0,
+          2
+        ],
+        "shadow": [
+          1,
+          2
+        ]
+      },
+      "generator": "tools/gen_tile_sheet_medieval.py -- cliff+overlay only. Ground tiles stay procedural (TileGenerator already draws them); the 10 props are routed to the artist. Bitmask tiles are generated from the mask and side-checked, never hand-placed."
+    }
+  }
 }

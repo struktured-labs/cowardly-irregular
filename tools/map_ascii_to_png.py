@@ -25,11 +25,16 @@ REPO = Path(__file__).resolve().parent.parent
 PALETTE = REPO / "data" / "maps" / "map_palette.json"
 
 
-def load_palette():
+def load_palette(world="medieval"):
     p = json.loads(PALETTE.read_text())
+    # Palette v2: sections live under worlds.<id>. An unknown world DIES rather than
+    # falling back -- the wrong table decodes to a plausible map, not to an error.
+    if world not in p.get("worlds", {}):
+        die(f"unknown world {world!r}; palette defines {sorted(p.get('worlds', {}))}")
+    wp = p["worlds"][world]
     char_to_rgb = {}
     for section in ("terrain", "landmarks"):
-        for ch, spec in p[section].items():
+        for ch, spec in wp[section].items():
             if len(ch) != 1:
                 die(f"palette key {ch!r} is not a single character")
             char_to_rgb[ch] = tuple(spec["rgb"])
