@@ -3,13 +3,26 @@
   "title": "End of the Alpha",
   "world": 1,
   "trigger": "demo_end",
-  "background": "cave",
+  "background": "cave_entrance",
   "description": "Demo-build boundary. Plays once after the Rat King defeat cutscene when demo_mode is on, and nothing story-side chains after it. The player keeps their save and can still explore; what stops is the story queue, so alpha feedback lands on the mission that was actually being tested.",
   "steps": [
-    { "type": "letterbox_in", "duration": 0.5 },
-    { "type": "wait", "duration": 0.4 },
-    { "type": "chapter_title", "text": "END OF THE ALPHA", "duration": 2.6 },
-    { "type": "wait", "duration": 0.3 },
+    {
+      "type": "letterbox_in",
+      "duration": 0.5
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "chapter_title",
+      "title": "END OF THE ALPHA",
+      "subtitle": "Thanks for playing"
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
     {
       "type": "narration",
       "text": "The crown sits crooked on the cave floor. Somewhere above, a kingdom is still deciding whether any of this happened."
@@ -30,8 +43,18 @@
       "type": "narration",
       "text": "If something felt wrong, felt slow, or felt good — that is the thing we want. Press F1 at any time for the controls."
     },
-    { "type": "set_flag", "flag": "demo_end_seen", "value": true },
-    { "type": "wait", "duration": 0.4 },
-    { "type": "letterbox_out", "duration": 0.6 }
+    {
+      "type": "set_flag",
+      "flag": "demo_end_seen",
+      "value": true
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.6
+    }
   ]
 }
