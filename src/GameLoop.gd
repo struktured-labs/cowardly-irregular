@@ -781,6 +781,12 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 
+	# F8 feedback bundle — screenshot + log + save + state, one file a tester can send back
+	if event is InputEventKey and event.pressed and not event.is_echo() and event.keycode == KEY_F8:
+		_write_feedback_bundle()
+		get_viewport().set_input_as_handled()
+		return
+
 	# Controls reference — always available, any state, toggles. F1 on keyboard, R3 on a pad:
 	# R3 is the only button free in the whole InputMap, and a controller-only player otherwise
 	# has NO route to the one screen that tells them what the buttons do.
@@ -4752,6 +4758,24 @@ func _on_area_transition(target_map: String, spawn_point: String) -> void:
 	# SaveSystem.save_completed signal drives the Toast via _on_any_save_completed.
 	if transition_type != "interior" and SaveSystem and SaveSystem.has_method("auto_save"):
 		SaveSystem.auto_save()
+
+
+## F8. Best-effort by design: a bundle missing a piece still helps, so nothing here may abort
+## the write. The toast prints the ABSOLUTE path because a tester cannot act on "user://".
+func _write_feedback_bundle() -> void:
+	var shot: Image = null
+	var vp := get_viewport()
+	if vp and vp.get_texture():
+		shot = vp.get_texture().get_image()
+	var path: String = FeedbackBundle.write_bundle(FeedbackBundle.collect_state(), shot)
+	if path == "":
+		push_warning("[FEEDBACK] bundle FAILED to write")
+		if Toast:
+			Toast.show(self, "Bug report FAILED — see the log", Toast.WARNING_COLOR)
+		return
+	print("[FEEDBACK] wrote %s" % path)
+	if Toast:
+		Toast.show(self, "Bug report saved to %s" % path)
 
 
 func _take_screenshot() -> void:
