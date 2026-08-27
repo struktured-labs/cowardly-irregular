@@ -3,7 +3,7 @@ extends GutTest
 ##
 ## FOUND 2026-08-22. InteractGeometry declares the interaction contract and
 ## test_interact_geometry_contract pins its values -- and it was green while the contract
-## was NOT IN FORCE. DOOR_BOX(64,48) was read by zero source files; the 30 interior exits
+## was NOT IN FORCE. DOOR_BOX(64,48) was read by zero source files (deleted 2026-08-27); the interior exits
 ## that actually ship each hand-rolled a RectangleShape2D at Vector2(TILE_SIZE*2, TILE_SIZE)
 ## = 64x32, and hardcoded collision_layer 4 / collision_mask 2 beside it. A value pin
 ## certifies the DECLARATION; it cannot ask whether anything obeys it.
