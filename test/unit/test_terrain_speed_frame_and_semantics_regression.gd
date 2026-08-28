@@ -199,16 +199,29 @@ func test_rough_terrain_is_a_minority_of_every_world_and_never_the_common_ground
 		if layer == null:
 			continue
 
+		# STANDABLE ONLY. "the default surface" is a claim about ground a body can
+		# occupy, and MOUNTAIN/WATER sit in the rough table as inert entries the test
+		# below pins by name. Counting them made this metric largely a measure of how
+		# much OCEAN a world has -- W1 is 28% water, so the denominator was mostly sea
+		# floor. It passed at 45% only while forest was tiny, and would have gone red on
+		# any world that grew a woodland while staying entirely walkable.
+		var impassable: Array = gen._get_impassable_types()
 		var speed_of := {}
 		var count := {}
+		var standable := 0
 		var cells: Array = layer.get_used_cells()
 		for cell in cells:
 			var ac: Vector2i = layer.get_cell_atlas_coords(cell)
+			var aidx: int = ac.y * cols + ac.x
+			var atype = order[aidx] if aidx >= 0 and aidx < order.size() else -1
+			if atype in impassable:
+				continue
 			count[ac] = int(count.get(ac, 0)) + 1
+			standable += 1
 			if not speed_of.has(ac):
 				p.global_position = layer.to_global(layer.map_to_local(cell))
 				speed_of[ac] = p._get_terrain_speed_modifier()
-		if cells.is_empty():
+		if standable == 0:
 			continue
 		worlds_measured += 1
 
@@ -220,9 +233,9 @@ func test_rough_terrain_is_a_minority_of_every_world_and_never_the_common_ground
 			if commonest == Vector2i(-1, -1) or int(count[ac]) > int(count[commonest]):
 				commonest = ac
 
-		var frac := float(slowed_cells) / float(cells.size())
+		var frac := float(slowed_cells) / float(standable)
 		if frac >= 0.5:
-			offenders.append("%s: %.0f%% of placed tiles are slowed -- rough terrain is the default surface" % [world, frac * 100.0])
+			offenders.append("%s: %.0f%% of STANDABLE tiles are slowed -- rough terrain is the default surface" % [world, frac * 100.0])
 		if float(speed_of[commonest]) < 1.0:
 			var idx: int = commonest.y * cols + commonest.x
 			var tname = order[idx] if idx >= 0 and idx < order.size() else -1
