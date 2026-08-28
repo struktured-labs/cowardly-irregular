@@ -270,7 +270,7 @@ func _build_ui() -> void:
 	add_child(legend_bg)
 
 	var help_label1 = Label.new()
-	help_label1.text = "D-Pad:Navigate  A:Edit  B:Delete  L:Split/AND  \u25c0:Switch Char  Click:Edit  RClick:Close"
+	help_label1.text = "D-Pad:Navigate  A:Edit  B:Delete  L:Split/AND  \u25c0:Switch Char  \u25c0\u25c0:More Actions  Click:Edit  RClick:Close"
 	help_label1.position = Vector2(16, size.y - 44)
 	help_label1.add_theme_font_size_override("font_size", 10)
 	help_label1.add_theme_color_override("font_color", style.text.darkened(0.2))
@@ -1693,7 +1693,10 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			return
 		elif event.is_action_pressed("ui_left") and not event.is_echo():
-			SoundManager.play_ui("menu_error")
+			# Left again = enter submenu, this game's documented menu convention. Nine verbs
+			# below were raw KEY_* only, so a pad could not export, import, share, compose,
+			# toggle a row or switch profile at all. This is the pad's route to them.
+			_open_more_actions()
 			get_viewport().set_input_as_handled()
 			return
 		elif event.is_action_pressed("ui_cancel") and not event.is_echo():
@@ -2405,8 +2408,51 @@ func _apply_option_picker_selection() -> void:
 ## The single commit seam for BOTH pickers. The list overlay and the radial picker are two
 ## presentations of the same choice, so the dispatch lives here rather than being duplicated —
 ## a second copy is how one picker silently stops handling a kind the other gained.
+## Pad parity for the verbs the legend advertises but only a keyboard could reach.
+## Each id dispatches to the SAME handler the key binding calls — no duplicated behaviour.
+func _open_more_actions() -> void:
+	_open_option_picker({
+		"title": "More Actions",
+		"kind": "more_actions",
+		"selected": 0,
+		"options": [
+			{"id": "toggle_row", "label": "Enable / disable this rule    (Tab)"},
+			{"id": "copy_code", "label": "Copy share code               (Shift+E)"},
+			{"id": "paste_code", "label": "Paste share code              (Shift+I)"},
+			{"id": "export", "label": "Export script to file         (E)"},
+			{"id": "import", "label": "Import script from file       (I)"},
+			{"id": "compose", "label": "Compose rules with AI         (K)"},
+			{"id": "cycle_profile", "label": "Next preset profile           (Shift+Tab)"},
+			{"id": "rename_profile", "label": "Rename profile                (Shift+R)"},
+		],
+	})
+
+
+func _commit_more_action(chosen_id: String) -> void:
+	match chosen_id:
+		"toggle_row":
+			_toggle_row_enabled()
+			SoundManager.play_ui("menu_select")
+		"copy_code":
+			_copy_share_code()
+		"paste_code":
+			_paste_share_code()
+		"export":
+			_export_script()
+		"import":
+			_open_share_picker()
+		"compose":
+			_open_rule_composer_overlay()
+		"cycle_profile":
+			_cycle_profile()
+		"rename_profile":
+			_open_rename_profile()
+
+
 func _commit_option_choice(kind: String, chosen_id: String, ctx: Dictionary) -> void:
 	match kind:
+		"more_actions":
+			_commit_more_action(chosen_id)
 		"condition_type":
 			_apply_condition_type(chosen_id)
 		"action_type":
