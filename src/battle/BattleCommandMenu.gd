@@ -254,9 +254,16 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 	# on Bard 2026-08-22: "the bard can attack in auto mode but otherwise cant thats a bug".
 	# Cleric and Mage had the identical defect, unreported. The menu must never be able to
 	# do LESS than autobattle.
-	var attack_item = _build_attack_item(combatant, alive_enemies, canvas_transform)
-	if not attack_item.is_empty():
-		items.append(attack_item)
+	## A job whose free_move DECLARES replaces_attack gets no separate Attack row — its free move
+	## IS the attack. struktured 2026-08-29: "the bard doesnt need an attack option. riff should
+	## be attack but an attack with high chance of status ailment." This does NOT reopen the
+	## 2026-08-22 bug above: riff now deals full attack damage, so the menu still does everything
+	## autobattle can, plus a rider. A 0-cost free move that dealt LESS would.
+	var fm_spec: Dictionary = combatant.job.get("free_move", {}) if combatant.job else {}
+	if not bool(fm_spec.get("replaces_attack", false)):
+		var attack_item = _build_attack_item(combatant, alive_enemies, canvas_transform)
+		if not attack_item.is_empty():
+			items.append(attack_item)
 
 	# Free Move — per-job 0-cost canon action. For basic_attack jobs the Attack row above
 	# IS the free move (it carries their label), so this returns {} and adds no second row.
