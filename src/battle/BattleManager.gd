@@ -257,6 +257,7 @@ var _died_callbacks: Dictionary = {}
 var _full_autobattle: bool = true          # False if any player turn was manual
 var _c3_nonbasic_used: bool = false        # Milo's thesis quest: any player ability/item this battle (execution-level, so advance-embedded use counts)
 var _c3_clutch_crit: bool = false          # Milo's thesis quest: a player landed a crit while under 10% HP this battle
+var _cover_mitigation: float = 0.0         # set by _maybe_cover_ally when a hit is redirected, consumed at damage time
 var _autobattle_player_turns: int = 0      # Player turns handled by autobattle
 var _manual_player_turns: int = 0          # Player turns handled manually
 
@@ -3948,6 +3949,7 @@ func _retarget_enemy(attacker: Combatant, original_target: Combatant) -> Combata
 ## (a unit can't cover itself). Skipped when attacker is also
 ## a party member (friendly fire / mind_swap weirdness).
 func _maybe_cover_ally(attacker: Combatant, target: Combatant) -> Combatant:
+	_cover_mitigation = 0.0
 	if attacker == null or target == null:
 		return target
 	if not is_instance_valid(target) or not target.is_alive:
@@ -3976,9 +3978,24 @@ func _maybe_cover_ally(attacker: Combatant, target: Combatant) -> Combatant:
 			best_coverer = ally
 	if best_coverer == null:
 		return target
+	## A protector braces for a hit they chose to take, so the redirect is a net
+	## gain rather than a pure HP transfer. Data-driven: absent the meta_effect
+	## this is 0.0 and cover behaves exactly as before. Clamped because passive
+	## meta_effects SUM and an uncapped stack would make a coverer immortal.
+	_cover_mitigation = clampf(best_coverer._get_passive_meta_effect_sum("cover_damage_reduction"), 0.0, 0.75)
 	battle_log_message.emit("[color=cyan]%s covers %s![/color]" % [best_coverer.combatant_name, target.combatant_name])
 	print("[COVER_ALLY] %s intercepts the hit meant for %s" % [best_coverer.combatant_name, target.combatant_name])
 	return best_coverer
+
+
+## Consumed once per covered hit. Cleared on read so a cover that never lands
+## (miss, immunity, fizzle) cannot leak its reduction into the next action.
+func _consume_cover_mitigation(damage: int) -> int:
+	if _cover_mitigation <= 0.0:
+		return damage
+	var reduced: int = int(round(float(damage) * (1.0 - _cover_mitigation)))
+	_cover_mitigation = 0.0
+	return max(1, reduced)
 
 
 func _retarget_ally(caster: Combatant, original_target: Combatant, include_dead: bool = false) -> Combatant:
@@ -4004,12 +4021,10 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 	attacker.spend_ap(1)
 	# Auto-retarget if original target is dead/invalid
 	var actual_target = _retarget_enemy(attacker, target)
-	## Tick 444: cover_ally passive — passives.json authors
-	## meta_effects.auto_cover_threshold = 0.25 with description
-	## "Automatically take hits for allies below 25% HP", but
-	## pre-fix the field was decoration. Apply only on basic
-	## attacks (multi-target abilities don't sensibly cover) and
-	## only when an enemy is attacking a player (Guardian role).
+	## cover_ally passive. Also applied to SINGLE-TARGET offensive abilities in
+	## _execute_ability — this call is no longer the only one. Multi-target is
+	## still excluded (an area effect can't be body-blocked), as is a player
+	## attacker (friendly fire / mind_swap).
 	actual_target = _maybe_cover_ally(attacker, actual_target)
 	# Pacify silences offensive actions (consumer for add_status pacify).
 	if attacker.has_status("pacify"):
@@ -4133,6 +4148,7 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 	damage = _apply_pattern_recognition_bonus(attacker, actual_target, damage)
 	damage = _apply_familiar_weight_bonus(attacker, actual_target, damage)
 
+	damage = _consume_cover_mitigation(damage)
 	var actual_damage = actual_target.take_damage(damage, false)
 	damage_dealt.emit(actual_target, actual_damage, is_crit, "", 1.0)
 
@@ -4289,6 +4305,15 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 			var new_target = _retarget_ally(caster, target, is_revival)
 			if new_target:
 				retargeted.append(new_target)
+
+	## Cover Ally fired on BASIC ATTACKS ONLY, so a protector was bypassed by any
+	## monster leading with an ability — 66 of 99 carry a single-target physical,
+	## and against those the passive was inert. A single-target offensive ability
+	## is exactly as interposable as a basic attack, so it covers too. Multi-target
+	## still cannot: you can't body-block an area effect, which is the distinction
+	## the original "multi-target abilities don't sensibly cover" was reaching for.
+	if is_offensive and retargeted.size() == 1:
+		retargeted[0] = _maybe_cover_ally(caster, retargeted[0])
 
 	if retargeted.size() == 0 and targets.size() > 0:
 		## Tick 173: ability fizzle in the log. Common scenario:
@@ -4522,6 +4547,7 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 		## hit is independent (separate take_damage call → separate
 		## absorb/death/permadeath checks), matching the "barrage of
 		## smaller hits" design vs one big hit.
+		damage = _consume_cover_mitigation(damage)
 		var hits: int = max(1, int(ability.get("hits", 1)))
 		var actual_damage: int = 0
 		for hit_idx in range(hits):
@@ -4710,6 +4736,7 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 		if ignores_defense:
 			damage *= 2
 
+		damage = _consume_cover_mitigation(damage)
 		var actual_damage = 0
 		var elemental_mod = target.calculate_elemental_modifier(element) if element != "" else 1.0
 		if ignores_resistance and elemental_mod < 1.0:

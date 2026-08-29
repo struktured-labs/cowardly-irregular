@@ -276,9 +276,10 @@
 		"id": "cover_ally",
 		"name": "Cover Ally",
 		"category": 1,
-		"description": "Automatically take hits for allies below 25% HP",
+		"description": "Intercept single-target hits aimed at allies below 40% HP, taking 25% less damage on the hit you take",
 		"meta_effects": {
-			"auto_cover_threshold": 0.25
+			"auto_cover_threshold": 0.40,
+			"cover_damage_reduction": 0.25
 		}
 	},
 	"speedrun_mode": {
