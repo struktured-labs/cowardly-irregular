@@ -339,7 +339,7 @@ func _ready() -> void:
 	var party_panel = $UI/PartyStatusPanel
 	if party_panel:
 		var party_style = StyleBoxFlat.new()
-		party_style.bg_color = Color(0.08, 0.08, 0.12, 0.85)
+		party_style.bg_color = Color(0.08, 0.08, 0.12, 0.95)
 		party_style.border_color = Color(0.35, 0.35, 0.5, 0.7)
 		party_style.border_width_left = 1
 		party_style.border_width_top = 1
@@ -5021,6 +5021,11 @@ func _spawn_quip_bubble(sprite: Node2D, speaker_name: String, line: String, bord
 		return
 	# 2026-07-15 playtest: bubbles anchored at sprite CENTER — mid-body on a 300px monster, covering its head and drifting into the command menu. Anchor above the head instead, biased left for enemies (left half of screen) so wide bubbles stay clear of the center menu.
 	var anchor: Vector2 = sprite.global_position
+	# struktured playtest 2026-08-29 "not quite aligned to who says them": a speaker mid-lunge has MOVED, so global_position is its transient spot, not where the character sits.
+	if sprite.has_meta("home_position"):
+		var home = sprite.get_meta("home_position")
+		if home is Vector2:
+			anchor += (home - sprite.position)
 	if sprite is AnimatedSprite2D:
 		var anim_sprite: AnimatedSprite2D = sprite
 		if anim_sprite.sprite_frames and anim_sprite.sprite_frames.has_animation(anim_sprite.animation):

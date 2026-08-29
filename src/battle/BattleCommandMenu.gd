@@ -1245,7 +1245,7 @@ func _show_scan_popup(enemy: Combatant) -> void:
 	popup.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var style = StyleBoxFlat.new()
-	style.bg_color = Color(0.05, 0.05, 0.15, 0.9)
+	style.bg_color = Color(0.05, 0.05, 0.15, 0.97)
 	style.border_color = Color(0.3, 0.7, 1.0)
 	style.border_width_top = 2
 	style.border_width_bottom = 2
