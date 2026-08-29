@@ -194,12 +194,18 @@ func test_bard_free_move_is_riff() -> void:
 	assert_eq(fm.get("label"), "Riff", "Bard free_move label should be 'Riff'")
 
 
-func test_riff_is_a_weak_high_status_strike() -> void:
-	## Reruled by struktured 2026-08-22: "an attack that is really weak but high chance of
-	## status effect". Was an mp_restore party battery.
+func test_riff_is_a_full_strength_high_status_strike() -> void:
+	## Reruled TWICE. 2026-08-22: "an attack that is really weak but high chance of status
+	## effect" (was an mp_restore battery). 2026-08-29: "the bard doesnt need an attack option.
+	## riff should be attack but an attack with high chance of status ailment" — so it stopped
+	## being a weak poke NEXT TO Attack and became the Attack. The weakness clause is retired;
+	## the high-status clause survives both rulings.
+	## Below 1.0x, Bard's only attack row does less than autobattle's basic_attack — the exact
+	## 2026-08-22 defect, so this bound is load-bearing rather than taste.
 	assert_true(_abilities.has("riff"), "abilities.json should have 'riff'")
 	assert_eq(_abilities["riff"].get("type"), "physical", "Riff is a strike")
-	assert_lt(float(_abilities["riff"].get("damage_multiplier", 9.0)), 0.6, "and a WEAK one")
+	assert_gte(float(_abilities["riff"].get("damage_multiplier", 0.0)), 1.0, "and a FULL-strength one")
+	assert_gte(float(_abilities["riff"].get("effect_chance", 0.0)), 0.5, "with a high ailment chance")
 
 
 func test_riff_ability_has_zero_mp_cost() -> void:
