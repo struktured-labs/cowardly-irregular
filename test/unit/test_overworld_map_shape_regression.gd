@@ -61,6 +61,20 @@ func test_every_world_map_is_the_rectangle_it_declares() -> void:
 		var h := _declared(src, "MAP_HEIGHT")
 		assert_gt(w, 0, "%s: MAP_WIDTH not found -- the scan cannot see this world" % name)
 		assert_gt(h, 0, "%s: MAP_HEIGHT not found -- the scan cannot see this world" % name)
+		# A PNG-driven world (W2 since 2026-08-29) authors its rectangle in the image.
+		# Same property, measured on the artifact the runtime actually loads; the ASCII
+		# scrape below would otherwise pull arbitrary quoted strings out of loader code.
+		var img_re := RegEx.new()
+		img_re.compile("const MAP_IMAGE: String = \"(res://[^\"]+)\"")
+		var img_m := img_re.search(src)
+		if img_m != null:
+			var tex = load(img_m.get_string(1))
+			assert_not_null(tex, "%s: MAP_IMAGE %s does not load" % [name, img_m.get_string(1)])
+			if tex != null:
+				var isz: Vector2i = tex.get_image().get_size() if tex is Texture2D else Vector2i.ZERO
+				assert_eq(isz, Vector2i(w, h), "%s: MAP_IMAGE is %s against declared %dx%d" % [name, str(isz), w, h])
+			checked += 1
+			continue
 		var rows := _rows(src)
 		assert_gt(rows.size(), 0, "%s: no map_data literal found -- the scan is looking in the wrong place" % name)
 		if rows.is_empty():

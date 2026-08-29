@@ -84,13 +84,16 @@ def extract_map_rows(gd_path: Path):
 def main():
     if len(sys.argv) < 3:
         print(__doc__)
-        print("usage: map_ascii_to_png.py <SceneFile.gd> <out.png> [--verify-only]")
+        print("usage: map_ascii_to_png.py <SceneFile.gd> <out.png> [--world ID] [--verify-only]")
         sys.exit(2)
     gd = REPO / sys.argv[1] if not Path(sys.argv[1]).is_absolute() else Path(sys.argv[1])
     out = REPO / sys.argv[2] if not Path(sys.argv[2]).is_absolute() else Path(sys.argv[2])
     verify_only = "--verify-only" in sys.argv
+    # named, never inferred from the filename: decoding a map against another world's
+    # table yields a plausible wrong map rather than an error
+    world = sys.argv[sys.argv.index("--world") + 1] if "--world" in sys.argv else "medieval"
 
-    palette = load_palette()
+    palette = load_palette(world)
     rows = extract_map_rows(gd)
 
     widths = sorted({len(r) for r in rows})
@@ -117,7 +120,7 @@ def main():
     if unknown:
         die(f"characters with no palette entry: {unknown!r}. "
             f"Add them to {PALETTE.relative_to(REPO)} rather than letting them decode to grass.")
-    print(f"chars used  {len(used)} of {len(palette)} in palette")
+    print(f"chars used  {len(used)} of {len(palette)} in palette ({world})")
 
     unused = sorted(set(palette) - set(used))
     if unused:

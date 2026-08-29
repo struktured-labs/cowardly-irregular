@@ -15,8 +15,14 @@ signal battle_triggered(enemies: Array, terrain: String)
 signal area_transition(target_map: String, spawn_point: String)
 
 ## Map dimensions (in tiles)
-const MAP_WIDTH: int = 50
-const MAP_HEIGHT: int = 40
+const MAP_WIDTH: int = 150
+const MAP_HEIGHT: int = 120
+const MAP_IMAGE: String = "res://data/maps/overworld_w2.png"
+const MAP_WORLD: String = "suburban"
+## Every legacy entity coordinate below is an old 50x40 tile position; the PNG is that
+## map at 3x, so they scale by this at their tile->pixel conversion. tools/gen_w2_suburb.py
+## reserves a walkable clearing at each scaled coordinate -- change one, change both.
+const MAP_SCALE: int = 3
 const TILE_SIZE: int = 32
 
 ## Scene components
@@ -146,7 +152,7 @@ func _get_objective_position() -> Vector2:
 	if GameState.game_constants.get("cutscene_flag_warden_suburban_defeated", false):
 		return spawn_points.get("from_industrial", Vector2.ZERO)
 	if GameState.get_story_flag("visited_maple_heights"):
-		return Vector2(45 * TILE_SIZE, 20 * TILE_SIZE)  # Forward Portal
+		return Vector2(45 * MAP_SCALE * TILE_SIZE, 20 * MAP_SCALE * TILE_SIZE)  # Forward Portal
 	return spawn_points.get("maple_heights_entrance", Vector2.ZERO)
 
 
@@ -183,7 +189,7 @@ func _place_treasure_chests() -> void:
 	for c in chests:
 		var chest = TreasureChestScript.new()
 		chest.chest_id = c["id"]
-		chest.position = Vector2(c["pos"].x * TILE_SIZE + TILE_SIZE / 2, c["pos"].y * TILE_SIZE + TILE_SIZE / 2)
+		chest.position = Vector2(c["pos"].x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, c["pos"].y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 		if c["type"] == "gold":
 			chest.contents_type = "gold"
 			chest.gold_amount = c["gold"]
@@ -197,7 +203,7 @@ func _place_treasure_chests() -> void:
 func _place_save_point() -> void:
 	# Save point near main road crossroads
 	_save_point = SavePoint.new()
-	_save_point.position = Vector2(25 * TILE_SIZE + TILE_SIZE / 2, 14 * TILE_SIZE + TILE_SIZE / 2)
+	_save_point.position = Vector2(25 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 14 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	add_child(_save_point)
 
 
@@ -210,7 +216,7 @@ func _place_ambient_effects() -> void:
 	for p in smoke_positions:
 		var smoke = CPUParticles2D.new()
 		smoke.name = "ChimneySmoke"
-		smoke.position = Vector2(p.x * TILE_SIZE + TILE_SIZE / 2, p.y * TILE_SIZE - 4)
+		smoke.position = Vector2(p.x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, p.y * MAP_SCALE * TILE_SIZE - 4)
 		smoke.amount = 5
 		smoke.lifetime = 2.0
 		smoke.one_shot = false
@@ -249,7 +255,7 @@ func _place_signposts() -> void:
 	for s in signs:
 		var post = Signpost.new()
 		post.sign_text = s["text"]
-		post.position = Vector2(s["pos"].x * TILE_SIZE + TILE_SIZE / 2, s["pos"].y * TILE_SIZE + TILE_SIZE / 2)
+		post.position = Vector2(s["pos"].x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, s["pos"].y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 		add_child(post)
 
 
@@ -263,7 +269,7 @@ func _place_landmarks() -> void:
 	for l in landmarks:
 		var lm = Landmark.new()
 		lm.landmark_type = l["type"]
-		lm.position = Vector2(l["pos"].x * TILE_SIZE + TILE_SIZE / 2, l["pos"].y * TILE_SIZE + TILE_SIZE / 2)
+		lm.position = Vector2(l["pos"].x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, l["pos"].y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 		add_child(lm)
 
 
@@ -299,7 +305,7 @@ func _place_wanderers() -> void:
 			npc.dialogue_hints = w["hints"]
 		var patrol: Array[Vector2] = []
 		for pt in w["path"]:
-			patrol.append(Vector2(pt.x * TILE_SIZE + TILE_SIZE / 2, pt.y * TILE_SIZE + TILE_SIZE / 2))
+			patrol.append(Vector2(pt.x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, pt.y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2))
 		npc.set_patrol(patrol)
 		add_child(npc)
 
@@ -410,92 +416,14 @@ func _generate_map() -> void:
 
 	print("Generating suburban overworld map %dx%d..." % [MAP_WIDTH, MAP_HEIGHT])
 
-	var map_data: Array[String] = [
-		# Row 0: North edge - lawns with shade trees
-		"lllelllllllllelllllllllllllllllllllelllllllellllll",
-		# Row 1: Picket fences around houses (gap at cols 37-38 for MapleHeights path)
-		"lfffffffffflffffffffffffffflfffffffffllfffffflllll",
-		# Row 2: House row 1 - 4 houses
-		"lfhwhdhwhfllfhwhdhwhflllfhwhdhwhflfhwllhwhflllllll",
-		# Row 3: House walls continued (gap at cols 37-38 for MapleHeights path)
-		"lfhhhhhhhfllfhhhhhhhflllfhhhhhhhflfhhllhhhflllllll",
-		# Row 4: Fence bottoms, mailboxes (gap at cols 37-38 for MapleHeights path)
-		"lffmffffffllfffffffmflllfffffffmflfffllfmfllllllll",
-		# Row 5: Open yard with trees
-		"lllelllllllllellllllllelllllellllllellllllllelllll",
-		# Row 6: Second row fences
-		"lfffffffffflffffffffffffffflffffffffffffffffflllll",
-		# Row 7: House row 2 - 4 houses
-		"lfhwhdhwhfllfhwhdhwhflllfhwhdhwhflfhwhdhwhflllllll",
-		# Row 8: House walls continued
-		"lfhhhhhhhfllfhhhhhhhflllfhhhhhhhflfhhhhhhhflllllll",
-		# Row 9: Fence bottoms, mailboxes
-		"lffmffffffllfffffffmflllfffffffmflffffffmfllllllll",
-		# Row 10: Yards between houses and road
-		"lllelllllllllellllllllelllllellllllellllllllelllll",
-		# Row 11: Sidewalk along north side of main road
-		"ssssssssssssssssssssssssssssssssssssssssssssssssss",
-		# Row 12: Sidewalk with fire hydrants
-		"sssssssssyssssssssssssssyssssssssssssysssssssyssss",
-		# Row 13: Main road
-		"rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
-		# Row 14: Main road
-		"rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
-		# Row 15: Sidewalk south side of road
-		"ssssssssssssssssssssssssssssssssssssssssssssssssss",
-		# Row 16: Parking lot in front of stores
-		"kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkssss",
-		# Row 17: Store fronts - Pizza, Arcade, Burger, Mart, School
-		"tttdtttttttdttttttdttttttdtttttttdttttttttttssssss",
-		# Row 18: Store walls
-		"ttttttttttttttttttttttttttttttttttttttttttttttssss",
-		# Row 19: Parking lot south
-		"kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkssss",
-		# Row 20: Sidewalk between strip mall and side road
-		"ssssssssssssssssssssssssssssssssssssssssssssssssss",
-		# Row 21: Side road
-		"rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
-		# Row 22: Side road
-		"rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr",
-		# Row 23: Park entrance - sidewalk and grass
-		"ssssssssssssssssssssssssssssssssssssssssssssssssss",
-		# Row 24: Park with trees and flower beds
-		"llleggglllellllllllllllllllllllllllleggglllellllll",
-		# Row 25: Basketball court area and playground start
-		"llllllllllllccccccccccccllppppppppppllllblelllllll",
-		# Row 26: Basketball court and playground
-		"llelllbllllcccccccccccclpppppppppppplelllllellllll",
-		# Row 27: Basketball court and playground
-		"lllllllllllccccccccccccllppppppppppllbllllllllllll",
-		# Row 28: Open park area
-		"llleggglllellllllllblllllllllllllllleggglllelllbll",
-		# Row 29: Park benches and trees
-		"llellbllelllelllllllllelllellblllelllellllllelllll",
-		# Row 30: Open grass with flower beds
-		"lllggglllllllgggllelllllggglllllllggglllleglllllll",
-		# Row 31: Park south edge
-		"llellllellllelllllllelllllellllellllellllllellllll",
-		# Row 32: Transition to south area
-		"llllllllllllllllllllllllllllllllllllllllllllllllll",
-		# Row 33: Lawn
-		"lllelllllllllelllllllelllllellllllllelllllelllllll",
-		# Row 34: Sidewalk strip
-		"ssssssssssssssssssssssssssssssssssssssssssssssssss",
-		# Row 35: Sidewalk with portal area
-		"ssssssssssssssssssssssssssssssssssssssssssssssssss",
-		# Row 36: Portal row
-		"lllllllllllllllllllllllllsslllllllllllllllllllllll",
-		# Row 37: South lawn
-		"lllelllllllllelllllllelllllellllllllelllllelllllll",
-		# Row 38: South edge
-		"llllllllllllllllllllllllllllllllllllllllllllllllll",
-		# Row 39: South boundary
-		"llllllllllllllllllllllllllllllllllllllllllllllllll",
-	]
-
-	# Ensure map_data matches expected dimensions
-	while map_data.size() < MAP_HEIGHT:
-		map_data.append("l".repeat(50))
+	var map_data: Array[String] = []
+	# str() coercion, not a direct assign: a generic-to-typed assign ABORTS this function
+	for row in MapImageLoader.load_rows(MAP_IMAGE, MAP_WORLD):
+		map_data.append(str(row))
+	# no padding: padding turns a failed load into a silent empty lawn
+	if map_data.size() != MAP_HEIGHT:
+		push_error("[MAP] %s yielded %d rows, expected %d -- refusing to pad" % [MAP_IMAGE, map_data.size(), MAP_HEIGHT])
+		return
 
 	# Convert map_data to tiles
 	var tile_counts = {}
@@ -514,13 +442,13 @@ func _generate_map() -> void:
 
 	# Define spawn points
 	# was tile(25,11): clear on screen, but the displaced collider put a house wall on it
-	spawn_points["entrance"] = Vector2(23 * TILE_SIZE + TILE_SIZE / 2, 12 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["entrance"] = Vector2(23 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 12 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	spawn_points["default"] = spawn_points["entrance"]
 	spawn_points["suburban_portal"] = spawn_points["entrance"]
 	# Spawn point for returning from industrial world (east side of map)
-	spawn_points["from_industrial"] = Vector2(46 * TILE_SIZE + TILE_SIZE / 2, 20 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["from_industrial"] = Vector2(46 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 20 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	# Spawn point for Maple Heights village — in open lawn east of house rows (was inside house wall)
-	spawn_points["maple_heights_entrance"] = Vector2(43 * TILE_SIZE + TILE_SIZE / 2, 9 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["maple_heights_entrance"] = Vector2(43 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 9 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 
 
 func _char_to_tile_type(char: String) -> int:
@@ -558,7 +486,7 @@ func _setup_transitions() -> void:
 	portal_trans.target_spawn = "suburban_portal"
 	portal_trans.require_interaction = true
 	portal_trans.indicator_text = "Return to Overworld"
-	portal_trans.position = Vector2(25 * TILE_SIZE + TILE_SIZE / 2, 36 * TILE_SIZE + TILE_SIZE / 2)
+	portal_trans.position = Vector2(25 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 36 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	portal_trans.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
 	_setup_transition_collision(portal_trans, InteractGeometry.ENTRANCE_BOX_MODE7)
 	portal_trans.transition_triggered.connect(_on_transition_triggered)
@@ -573,7 +501,7 @@ func _setup_transitions() -> void:
 		forward_portal.target_spawn = "steampunk_portal"
 		forward_portal.require_interaction = true
 		forward_portal.indicator_text = "Enter the Clockwork Dominion"
-		forward_portal.position = Vector2(47 * TILE_SIZE + TILE_SIZE / 2, 20 * TILE_SIZE + TILE_SIZE / 2)
+		forward_portal.position = Vector2(47 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 20 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 		forward_portal.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
 		_setup_transition_collision(forward_portal, InteractGeometry.ENTRANCE_BOX_MODE7)
 		forward_portal.transition_triggered.connect(_on_transition_triggered)
@@ -599,7 +527,7 @@ func _setup_transitions() -> void:
 	underground_trans.target_spawn = "default"
 	underground_trans.require_interaction = true
 	underground_trans.indicator_text = "Descend into the Suburban Underground"
-	underground_trans.position = Vector2(10 * TILE_SIZE + TILE_SIZE / 2, 30 * TILE_SIZE + TILE_SIZE / 2)
+	underground_trans.position = Vector2(10 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 30 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	underground_trans.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
 	_setup_transition_collision(underground_trans, InteractGeometry.ENTRANCE_BOX_MODE7)
 	underground_trans.transition_triggered.connect(_on_transition_triggered)
@@ -622,7 +550,7 @@ func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
 
 func _setup_npcs() -> void:
 	# === Brad the Skateboarder - park area ===
-	var brad = _create_npc("Brad the Skateboarder", "villager", Vector2(8 * TILE_SIZE, 28 * TILE_SIZE), [
+	var brad = _create_npc("Brad the Skateboarder", "villager", Vector2(8 * MAP_SCALE * TILE_SIZE, 28 * MAP_SCALE * TILE_SIZE), [
 		"Dude... have you checked behind the school?",
 		"There's supposed to be some hidden debug menu or something.",
 		"My friend's cousin's roommate unlocked like... secret jobs.",
@@ -631,7 +559,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(brad)
 
 	# === Karen - strip mall ===
-	var karen = _create_npc("Karen", "villager", Vector2(8 * TILE_SIZE, 15 * TILE_SIZE), [
+	var karen = _create_npc("Karen", "villager", Vector2(8 * MAP_SCALE * TILE_SIZE, 15 * MAP_SCALE * TILE_SIZE), [
 		"I want to speak to whoever designed this town.",
 		"The encounter rate is UNACCEPTABLE.",
 		"I've been complaining to NPCs for HOURS.",
@@ -640,7 +568,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(karen)
 
 	# === Mall Rat Mike - near arcade store ===
-	var mike = _create_npc("Mall Rat Mike", "villager", Vector2(12 * TILE_SIZE, 15 * TILE_SIZE), [
+	var mike = _create_npc("Mall Rat Mike", "villager", Vector2(12 * MAP_SCALE * TILE_SIZE, 15 * MAP_SCALE * TILE_SIZE), [
 		"Yo, you know about autobattle? Press F5 — or squeeze both triggers, dude.",
 		"I set up my scripts to farm crows all day.",
 		"The XP isn't great but the drops are SICK.",
@@ -649,7 +577,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(mike)
 
 	# === Coach Thompson - basketball court ===
-	var coach = _create_npc("Coach Thompson", "guard", Vector2(10 * TILE_SIZE, 24 * TILE_SIZE), [
+	var coach = _create_npc("Coach Thompson", "guard", Vector2(10 * MAP_SCALE * TILE_SIZE, 24 * MAP_SCALE * TILE_SIZE), [
 		"Listen up! Combat is like basketball.",
 		"Sometimes you gotta DEFER - pass the ball, wait for an opening.",
 		"Build up that AP, then ADVANCE with everything you got!",
@@ -658,7 +586,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(coach)
 
 	# === Suspicious Dave - behind houses, east lawn ===
-	var dave = _create_npc("Suspicious Dave", "villager", Vector2(40 * TILE_SIZE, 5 * TILE_SIZE), [
+	var dave = _create_npc("Suspicious Dave", "villager", Vector2(40 * MAP_SCALE * TILE_SIZE, 5 * MAP_SCALE * TILE_SIZE), [
 		"Psst... don't tell anyone I told you this...",
 		"The monsters? They're stored in JSON files.",
 		"abilities.json... passives.json... it's all RIGHT THERE.",
@@ -667,7 +595,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(dave)
 
 	# === Pizza Delivery Pete - near pizza store ===
-	var pete = _create_npc("Pizza Delivery Pete", "villager", Vector2(3 * TILE_SIZE, 20 * TILE_SIZE), [
+	var pete = _create_npc("Pizza Delivery Pete", "villager", Vector2(3 * MAP_SCALE * TILE_SIZE, 20 * MAP_SCALE * TILE_SIZE), [
 		"30 minutes or it's free! That's my motto.",
 		"My Speed stat is maxed out. Gotta go fast!",
 		"You know what ruins a delivery? Random encounters.",
@@ -676,7 +604,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(pete)
 
 	# === Principal Sinclair - near school store ===
-	var principal = _create_npc("Principal Sinclair", "elder", Vector2(38 * TILE_SIZE, 20 * TILE_SIZE), [
+	var principal = _create_npc("Principal Sinclair", "elder", Vector2(38 * MAP_SCALE * TILE_SIZE, 20 * MAP_SCALE * TILE_SIZE), [
 		"Welcome to Suburbia Public School... sort of.",
 		"This entire neighborhood appeared overnight.",
 		"One day, medieval village. Next day, parking lots.",
@@ -685,7 +613,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(principal)
 
 	# === The Dog - park area ===
-	var dog = _create_npc("The Dog", "villager", Vector2(30 * TILE_SIZE, 30 * TILE_SIZE), [
+	var dog = _create_npc("The Dog", "villager", Vector2(30 * MAP_SCALE * TILE_SIZE, 30 * MAP_SCALE * TILE_SIZE), [
 		"*The dog stares at you*",
 		"*It seems to understand save files*",
 		"*It wags its tail knowingly*",
