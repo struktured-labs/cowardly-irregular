@@ -15,8 +15,13 @@ signal battle_triggered(enemies: Array, terrain: String)
 signal area_transition(target_map: String, spawn_point: String)
 
 ## Map dimensions (in tiles) - larger urban area
-const MAP_WIDTH: int = 60
-const MAP_HEIGHT: int = 50
+const MAP_WIDTH: int = 180
+const MAP_HEIGHT: int = 150
+const MAP_IMAGE: String = "res://data/maps/overworld_w3.png"
+const MAP_WORLD: String = "steampunk"
+## Legacy entity coordinates below are old 60x50 tiles; the PNG is that map at 3x.
+## tools/gen_w3_steampunk.py reserves a clearing at each -- change one, change both.
+const MAP_SCALE: int = 3
 const TILE_SIZE: int = 32
 
 ## Scene components
@@ -177,7 +182,7 @@ func _place_treasure_chests() -> void:
 	for c in chests:
 		var chest = TreasureChestScript.new()
 		chest.chest_id = c["id"]
-		chest.position = Vector2(c["pos"].x * TILE_SIZE + TILE_SIZE / 2, c["pos"].y * TILE_SIZE + TILE_SIZE / 2)
+		chest.position = Vector2(c["pos"].x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, c["pos"].y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 		if c["type"] == "gold":
 			chest.contents_type = "gold"
 			chest.gold_amount = c["gold"]
@@ -191,7 +196,7 @@ func _place_treasure_chests() -> void:
 func _place_save_point() -> void:
 	# Save crystal at central plaza (safe hub area)
 	_save_point = SavePoint.new()
-	_save_point.position = Vector2(22 * TILE_SIZE + TILE_SIZE / 2, 20 * TILE_SIZE + TILE_SIZE / 2)
+	_save_point.position = Vector2(22 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 20 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	add_child(_save_point)
 
 
@@ -217,7 +222,7 @@ func _place_signposts() -> void:
 	for s in signs:
 		var post = Signpost.new()
 		post.sign_text = s["text"]
-		post.position = Vector2(s["pos"].x * TILE_SIZE + TILE_SIZE / 2, s["pos"].y * TILE_SIZE + TILE_SIZE / 2)
+		post.position = Vector2(s["pos"].x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, s["pos"].y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 		add_child(post)
 
 
@@ -231,7 +236,7 @@ func _place_landmarks() -> void:
 	for l in landmarks:
 		var lm = Landmark.new()
 		lm.landmark_type = l["type"]
-		lm.position = Vector2(l["pos"].x * TILE_SIZE + TILE_SIZE / 2, l["pos"].y * TILE_SIZE + TILE_SIZE / 2)
+		lm.position = Vector2(l["pos"].x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, l["pos"].y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 		add_child(lm)
 
 
@@ -267,19 +272,19 @@ func _place_wanderers() -> void:
 			npc.dialogue_hints = w["hints"]
 		var patrol: Array[Vector2] = []
 		for pt in w["path"]:
-			patrol.append(Vector2(pt.x * TILE_SIZE + TILE_SIZE / 2, pt.y * TILE_SIZE + TILE_SIZE / 2))
+			patrol.append(Vector2(pt.x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, pt.y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2))
 		npc.set_patrol(patrol)
 		add_child(npc)
 
 
 func _setup_effects() -> void:
 	var vent_positions: Array[Vector2] = [
-		Vector2(47 * TILE_SIZE + TILE_SIZE / 2, 9 * TILE_SIZE),
-		Vector2(50 * TILE_SIZE + TILE_SIZE / 2, 11 * TILE_SIZE),
-		Vector2(48 * TILE_SIZE + TILE_SIZE / 2, 12 * TILE_SIZE),
-		Vector2(19 * TILE_SIZE + TILE_SIZE / 2, 19 * TILE_SIZE),
-		Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 43 * TILE_SIZE),
-		Vector2(22 * TILE_SIZE + TILE_SIZE / 2, 43 * TILE_SIZE),
+		Vector2(47 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 9 * MAP_SCALE * TILE_SIZE),
+		Vector2(50 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 11 * MAP_SCALE * TILE_SIZE),
+		Vector2(48 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 12 * MAP_SCALE * TILE_SIZE),
+		Vector2(19 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 19 * MAP_SCALE * TILE_SIZE),
+		Vector2(27 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 43 * MAP_SCALE * TILE_SIZE),
+		Vector2(22 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 43 * MAP_SCALE * TILE_SIZE),
 	]
 	for i in range(vent_positions.size()):
 		var emitter = CPUParticles2D.new()
@@ -392,62 +397,14 @@ func _generate_map() -> void:
 
 	print("Generating steampunk overworld map %dx%d..." % [MAP_WIDTH, MAP_HEIGHT])
 
-	var map_data: Array[String] = [
-		"bbbbbbbbbbbbccccccccccccccchccccccccccccccccbbbbbbbbbbbbbbbb",
-		"bwwwwwwwwwbcccccccccccccccccccccccccccccccccbwwwwwwwwwwwwcbc",
-		"bwdwiwdwiwbcclcccccclcccccccccclcccccccclcccbwiwdwiwdwiwwcbc",
-		"bwwwwwwwwwbccaaaaaaaaaaaaaaaaaaaaaaaaaaaaaacbwwwwwwwwwwwwcbc",
-		"bfffffffbbccaacccccccccccccccccccccccccccaaccbbfffffffbbbbcc",
-		"bgggggggccccaaccclcccccccccccccccccclccaaaccccccgggggggccccc",
-		"bgggggggccccaaccccccccccccclcccccccccaaacccccccgggggggcccccc",
-		"bgggggggccccaacccccccccccccccccccccccaacccccccccmmmmmmmmmmcc",
-		"bfffffffccccaacccclcccccccccccccclcccaacccccccccmppppppppcmc",
-		"cccccccccccaaaccccccccccccccccccccccaaaccccccccccmpppppppcmc",
-		"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaammmmmmmmcm",
-		"cccccccccccaaaccccccccccccccccccccccaaacccccccccccmpppppmcmc",
-		"cclcccccclcaaccccccccccccccccccccccccaacccccccccccmpppmpmcmc",
-		"cccccccccccaaccccccccccccccccccccccccaaccccccccccccmmmmmmcmc",
-		"cccccccccccaaccclcccccccccccclcccccccaaccccccccccccccccccmcc",
-		"cccccccccccaaccccccccccccccccccccccccaacccccccccccccnnnncmcc",
-		"cclcccccclcaaccccccccccccccccccccccccaaccccccccccccnnnnnnccc",
-		"cccccccccccaacccccccccccFccccccccccccaaccccccccccccnnnnccccc",
-		"cccccccccccaaccccccccccFFFcccccccccccaaccccccccccccccccccccc",
-		"cccccccccccaacccccccccccFccccccccccccaaccccccccchccccccccccc",
-		"cccccccccccaacccccclccccccccccclccccaaaccccccccccccclccccccc",
-		"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-		"cccccccccccaaccccccccccccccccccccccccaaccccccccccccccccccccc",
-		"ccbwwwwwbccaaccccccccccccccccccccccccaaccbwwwwwbcccccccccccc",
-		"ccbwdwiwbccaaccclcccccccccccccclcccccaaccbwidwwbcccccccccccc",
-		"ccbwwccccccaaccccccccccccccccccccccccaaccbwwwwwbcccccccccccc",
-		"ccbffccccccaaccccccccccccccccccccccccaaccbfffffbcccccccccccc",
-		"ccbgggggbccaaccccccccccccccccccccccccaaccbgggggbcccccccccccc",
-		"ccbgggggbccaaccclcccccclcccclcccclcccaaccbgggggbcccccccccccc",
-		"ccbfffffbccaaccccccccccccccccccccccccaaccbfffffbcccccccccccc",
-		"ccccccccccaaacccccccccccccccccccccccaaaccccccccccccccccccccc",
-		"cccccccccaaaccccccccccccccccccccccccaaaccccccccccccccccccccc",
-		"ccccccccaaacccccccccclccccccclccccccaaacccccccclcccccccclccc",
-		"ccggggggccaacccccccccccccccccccccccccaaccccccccccccccccccccc",
-		"cgggggggccaacccccccccccccccccccccccccaaccccccccccccccccccccc",
-		"cggggFgggcaacccccccccccccccccccccccccaaccccccccccccccccccccc",
-		"cgggFFFggcaaccclcccccccccccccclcccccaaaccccccccccccccccccccc",
-		"cggggFgggcaacccccccccccccccccccccccaaacccccccccccccccccccccc",
-		"cgggggggccaacccccccccclcccclcccccccaaccccccccccccccccccccccc",
-		"ccggggggccaacccccccccccccccccccccccaaclcccccccccccccccclcccc",
-		"cfffffffccaaaccccccccccccccccccccccaaacccccccccccccccccccccc",
-		"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-		"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
-		"cccccccccccccccccclcccccccccclcccccccccccccccccclccccccccccc",
-		"ccccccccccrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrcccccccccccccc",
-		"ccccccccccrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrcccccccccccccc",
-		"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
-		"ccccccccccccccbwwdwwbccccccccccccbwwdwwbcccccccccccccccccccc",
-		"ccccccccccccccbwwwwwbccccccccccccbwwwwwbcccccccccccccccccccc",
-		"ccccccccccccccbbbbbbbbcccccccccccbbbbbbbbccccccccccccccccccc",
-	]
-
-	# Ensure map_data matches expected dimensions
-	while map_data.size() < MAP_HEIGHT:
-		map_data.append("cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc")
+	var map_data: Array[String] = []
+	# str() coercion, not a direct assign: a generic-to-typed assign ABORTS this function
+	for row in MapImageLoader.load_rows(MAP_IMAGE, MAP_WORLD):
+		map_data.append(str(row))
+	# no padding: padding turns a failed load into a silent concrete field
+	if map_data.size() != MAP_HEIGHT:
+		push_error("[MAP] %s yielded %d rows, expected %d -- refusing to pad" % [MAP_IMAGE, map_data.size(), MAP_HEIGHT])
+		return
 
 	# Convert map_data to tiles
 	var tile_counts = {}
@@ -465,13 +422,13 @@ func _generate_map() -> void:
 	print("Steampunk tile counts: ", tile_counts)
 
 	# Define spawn points
-	spawn_points["entrance"] = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 2 * TILE_SIZE + TILE_SIZE / 2)
-	spawn_points["plaza"] = Vector2(22 * TILE_SIZE + TILE_SIZE / 2, 17 * TILE_SIZE + TILE_SIZE / 2)
-	spawn_points["station"] = Vector2(25 * TILE_SIZE + TILE_SIZE / 2, 43 * TILE_SIZE + TILE_SIZE / 2)
-	spawn_points["steampunk_portal"] = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 1 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["entrance"] = Vector2(27 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 2 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["plaza"] = Vector2(22 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 17 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["station"] = Vector2(25 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 43 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["steampunk_portal"] = Vector2(27 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 1 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	spawn_points["default"] = spawn_points["entrance"]
 	# Spawn point for returning from Brasston village (west residential quarter, row 26)
-	spawn_points["brasston_entrance"] = Vector2(11 * TILE_SIZE + TILE_SIZE / 2, 26 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["brasston_entrance"] = Vector2(11 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 26 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 
 
 func _char_to_tile_type(char: String) -> int:
@@ -552,7 +509,7 @@ func _setup_transitions() -> void:
 	mechanism_trans.target_spawn = "default"
 	mechanism_trans.require_interaction = true
 	mechanism_trans.indicator_text = "Descend into the Grand Mechanism"
-	mechanism_trans.position = Vector2(48 * TILE_SIZE + TILE_SIZE / 2, 30 * TILE_SIZE + TILE_SIZE / 2)
+	mechanism_trans.position = Vector2(48 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 30 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	mechanism_trans.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
 	_setup_transition_collision(mechanism_trans, InteractGeometry.ENTRANCE_BOX_MODE7)
 	mechanism_trans.transition_triggered.connect(_on_transition_triggered)
@@ -575,7 +532,7 @@ func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
 
 func _setup_npcs() -> void:
 	# === Brigadier Flux - off-grid house, west residential ===
-	var flux = _create_npc("Brigadier Flux", "elder", Vector2(4 * TILE_SIZE, 26 * TILE_SIZE), [
+	var flux = _create_npc("Brigadier Flux", "elder", Vector2(4 * MAP_SCALE * TILE_SIZE, 26 * MAP_SCALE * TILE_SIZE), [
 		"I keep my lamps lit by hand. No gear drives them.",
 		"Everyone says I'm paranoid, but I've SEEN the gears skip.",
 		"One skipped beat and the whole Mechanism resets.",
@@ -584,7 +541,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(flux)
 
 	# === Sprocket - mechanic, near industrial pipes ===
-	var sprocket = _create_npc("Sprocket", "villager", Vector2(50 * TILE_SIZE, 9 * TILE_SIZE), [
+	var sprocket = _create_npc("Sprocket", "villager", Vector2(50 * MAP_SCALE * TILE_SIZE, 9 * MAP_SCALE * TILE_SIZE), [
 		"Name's Sprocket. I fix things that shouldn't break.",
 		"The pipes in the east district? They're not carrying steam.",
 		"I've heard... ticking. Like a countdown.",
@@ -593,7 +550,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(sprocket)
 
 	# === Cogsworth - plaza clocktower keeper ===
-	var cogsworth = _create_npc("Cogsworth", "guard", Vector2(22 * TILE_SIZE, 17 * TILE_SIZE), [
+	var cogsworth = _create_npc("Cogsworth", "guard", Vector2(22 * MAP_SCALE * TILE_SIZE, 17 * MAP_SCALE * TILE_SIZE), [
 		"The fountain plaza runs like clockwork. Literally.",
 		"Every gear, every pipe, every cobblestone — synchronized.",
 		"I maintain the central clock. If it stops, Brasston stops.",
@@ -602,7 +559,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(cogsworth)
 
 	# === Ember - park area, southern gardens ===
-	var ember = _create_npc("Ember", "villager", Vector2(6 * TILE_SIZE, 35 * TILE_SIZE), [
+	var ember = _create_npc("Ember", "villager", Vector2(6 * MAP_SCALE * TILE_SIZE, 35 * MAP_SCALE * TILE_SIZE), [
 		"I grow flowers in the park. The only organic thing in Brasston.",
 		"The gears underground make the soil warm. Perfect for roses.",
 		"Sometimes the flowers bloom in perfect spirals. Fibonacci.",
@@ -611,7 +568,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(ember)
 
 	# === Rail Master Piston - southern rail station ===
-	var piston = _create_npc("Rail Master Piston", "guard", Vector2(28 * TILE_SIZE, 44 * TILE_SIZE), [
+	var piston = _create_npc("Rail Master Piston", "guard", Vector2(28 * MAP_SCALE * TILE_SIZE, 44 * MAP_SCALE * TILE_SIZE), [
 		"All aboard! The 3:47 to... well, nowhere, actually.",
 		"The tracks go in a circle. Always have.",
 		"Passengers get on, ride for an hour, get off where they started.",
@@ -620,7 +577,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(piston)
 
 	# === Whistler - mysterious figure near manholes ===
-	var whistler = _create_npc("Whistler", "villager", Vector2(28 * TILE_SIZE, 19 * TILE_SIZE), [
+	var whistler = _create_npc("Whistler", "villager", Vector2(28 * MAP_SCALE * TILE_SIZE, 19 * MAP_SCALE * TILE_SIZE), [
 		"*whistles tunelessly*",
 		"You want to know what's under the manholes?",
 		"Maintenance shafts. Gantries. Steam vents.",
@@ -630,7 +587,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(whistler)
 
 	# === Tinkerer Wren - neon sign district, east ===
-	var wren = _create_npc("Tinkerer Wren", "villager", Vector2(46 * TILE_SIZE, 16 * TILE_SIZE), [
+	var wren = _create_npc("Tinkerer Wren", "villager", Vector2(46 * MAP_SCALE * TILE_SIZE, 16 * MAP_SCALE * TILE_SIZE), [
 		"I make the neon signs! Each one hand-bent brass tubing.",
 		"The glow? That's pressurized aether, not electricity.",
 		"My autobattle scripts? Oh, I wrote one that uses ONLY Defer.",

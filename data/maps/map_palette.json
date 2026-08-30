@@ -344,6 +344,139 @@
       },
       "landmarks": {},
       "_landmarks_note": "SuburbanOverworld places its portals and village entrances by explicit Vector2 coordinate in _setup_transitions(), not by a map character. So this section is legitimately empty until W2 migrates to an image; it is not an oversight."
+    },
+    "steampunk": {
+      "terrain": {
+        "c": {
+          "rgb": [
+            160,
+            160,
+            158
+          ],
+          "name": "concrete"
+        },
+        "a": {
+          "rgb": [
+            90,
+            90,
+            95
+          ],
+          "name": "asphalt"
+        },
+        "b": {
+          "rgb": [
+            140,
+            72,
+            52
+          ],
+          "name": "brick_wall"
+        },
+        "m": {
+          "rgb": [
+            140,
+            145,
+            155
+          ],
+          "name": "metal_floor"
+        },
+        "p": {
+          "rgb": [
+            168,
+            120,
+            60
+          ],
+          "name": "pipe"
+        },
+        "g": {
+          "rgb": [
+            95,
+            150,
+            80
+          ],
+          "name": "park_grass"
+        },
+        "w": {
+          "rgb": [
+            110,
+            95,
+            85
+          ],
+          "name": "building_wall"
+        },
+        "d": {
+          "rgb": [
+            190,
+            140,
+            70
+          ],
+          "name": "door"
+        },
+        "i": {
+          "rgb": [
+            220,
+            200,
+            120
+          ],
+          "name": "window"
+        },
+        "r": {
+          "rgb": [
+            70,
+            60,
+            55
+          ],
+          "name": "rail_track"
+        },
+        "n": {
+          "rgb": [
+            230,
+            90,
+            180
+          ],
+          "name": "neon_sign"
+        },
+        "F": {
+          "rgb": [
+            60,
+            130,
+            190
+          ],
+          "name": "water_feature"
+        },
+        "f": {
+          "rgb": [
+            95,
+            80,
+            70
+          ],
+          "name": "fence"
+        },
+        "y": {
+          "rgb": [
+            120,
+            115,
+            110
+          ],
+          "name": "alley"
+        },
+        "l": {
+          "rgb": [
+            240,
+            210,
+            90
+          ],
+          "name": "lamppost"
+        },
+        "h": {
+          "rgb": [
+            85,
+            88,
+            90
+          ],
+          "name": "manhole"
+        }
+      },
+      "landmarks": {}
     }
   }
 }
