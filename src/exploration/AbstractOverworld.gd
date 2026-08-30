@@ -27,8 +27,14 @@ signal area_transition(target_map: String, spawn_point: String)
 
 ## Map dimensions (in tiles) - smaller than other worlds
 ## Unnecessary space has been removed.
-const MAP_WIDTH: int = 40
-const MAP_HEIGHT: int = 35
+const MAP_WIDTH: int = 80
+const MAP_HEIGHT: int = 70
+const MAP_IMAGE: String = "res://data/maps/overworld_w6.png"
+const MAP_WORLD: String = "abstract"
+## W6 scales 2x, NOT the 3x the city worlds got: the minimalist void is the point,
+## and presence, not size, is what it lacked. tools/gen_w6_abstract.py reserves a
+## clearing at each legacy coordinate below -- change one, change both.
+const MAP_SCALE: int = 2
 const TILE_SIZE: int = 32
 
 ## Scene components
@@ -195,7 +201,7 @@ func _place_treasure_chests() -> void:
 	for c in chests:
 		var chest = TreasureChestScript.new()
 		chest.chest_id = c["id"]
-		chest.position = Vector2(c["pos"].x * TILE_SIZE + TILE_SIZE / 2, c["pos"].y * TILE_SIZE + TILE_SIZE / 2)
+		chest.position = Vector2(c["pos"].x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, c["pos"].y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 		if c["type"] == "gold":
 			chest.contents_type = "gold"
 			chest.gold_amount = c["gold"]
@@ -209,7 +215,7 @@ func _place_treasure_chests() -> void:
 func _place_save_point() -> void:
 	# Save crystal at The Question (the one spot of color in the nothing)
 	_save_point = SavePoint.new()
-	_save_point.position = Vector2(19 * TILE_SIZE + TILE_SIZE / 2, 19 * TILE_SIZE + TILE_SIZE / 2)
+	_save_point.position = Vector2(19 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 19 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	add_child(_save_point)
 
 
@@ -235,7 +241,7 @@ func _place_signposts() -> void:
 	for s in signs:
 		var post = Signpost.new()
 		post.sign_text = s["text"]
-		post.position = Vector2(s["pos"].x * TILE_SIZE + TILE_SIZE / 2, s["pos"].y * TILE_SIZE + TILE_SIZE / 2)
+		post.position = Vector2(s["pos"].x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, s["pos"].y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 		add_child(post)
 
 
@@ -248,7 +254,7 @@ func _place_landmarks() -> void:
 	for l in landmarks:
 		var lm = Landmark.new()
 		lm.landmark_type = l["type"]
-		lm.position = Vector2(l["pos"].x * TILE_SIZE + TILE_SIZE / 2, l["pos"].y * TILE_SIZE + TILE_SIZE / 2)
+		lm.position = Vector2(l["pos"].x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, l["pos"].y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 		add_child(lm)
 
 
@@ -263,7 +269,7 @@ func _place_wanderers() -> void:
 		npc.sprite_color = w["color"]
 		var patrol: Array[Vector2] = []
 		for pt in w["path"]:
-			patrol.append(Vector2(pt.x * TILE_SIZE + TILE_SIZE / 2, pt.y * TILE_SIZE + TILE_SIZE / 2))
+			patrol.append(Vector2(pt.x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, pt.y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2))
 		npc.set_patrol(patrol)
 		add_child(npc)
 
@@ -390,47 +396,14 @@ func _generate_map() -> void:
 
 	print("Generating abstract overworld map %dx%d..." % [MAP_WIDTH, MAP_HEIGHT])
 
-	var map_data: Array[String] = [
-		"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBw",
-		"BBBBBTBBBBBTBBBBBBBBBBBBBTBBBBBTBBBBBwww",
-		"BTTTTTTTTTTTTBBTTTTTTTBBTTTTTTTTTTTBBwww",
-		"TTTLTTTwTTTTTTTTTTLTTTTTTTLTTTTTTTTTwwww",
-		"TTwwXwwwTTwwwwTTwwwwTTwwwXwwwwTTwwwwwwww",
-		"wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww",
-		"wwLwwwLwwwLwwwwLwwwwLwwwwLwwwwLwwwwwwwww",
-		"wLwwwLwwwLwwwLwwwwLwwwwLwwwwLwwwLwwwwwww",
-		"wwFwwwwFwwwwwwFwwwwwwFwwwwwwFwwwwwwwwwww",
-		"wLwwwLwHwwLwwwLwwwwLwwwwLwwwwLwwwwLwwwww",
-		"wwwwwwwwwwwwwwwwwwwwwwwwwwwEEEwwEEEwwwww",
-		"wSSwSwwwwwwwGwwwwwwwwwwwwEwwEwwEwwEwwwww",
-		"wSwDSwwwwKwwwwwwwwwwwCwwEwwEwwEwwEwwwwww",
-		"wSSwSwwwwwwwwHwwwwwwwwwwEEEwwEEEwwwwwwww",
-		"wSwwSwwwwwwwwwwQwwwwwwwwwwwwwwwEwwwwwwww",
-		"wSSwSwwwCwwwwwwwwGwwwwEEEwwEEEwwwwwwwwww",
-		"wSwDSwwwwwwwwwwOOwwwwwwwEwwEwwEwwEwwwwww",
-		"wSSwSwwwwwwwwwwOOwwwwwwwEwwEwwEwwEwwwwww",
-		"wSwwSwwwKwwwwwwwwHwwwwEEEwwEEEwwwwwwwwww",
-		"wSSwSwwwwwwFwwwwwwwwFwwwwwwwwwwEwwwwwwww",
-		"wSwDSwwwwwwwCwwwwwwwwwwEEEwwEEEwwwwwwwww",
-		"wSSwSwwwwwwwwwwHwwwwwwwEwwEwwEwwEwwwwwww",
-		"wSwwSwwwwwwQwwwwwwGwwwEwwEwwEwwEwwwwwwww",
-		"wwwwwwwwwwwwwwwwwwwwwwwwwwEEEwwEEEwwwwww",
-		"wLwwwLwwwLwwwwLwwwwLwwwLwwwwLwwwLwwwwwww",
-		"wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww",
-		"wwwFwwwwwFwwwwwFwwwwwwwFwwwwwFwwwwwwwwww",
-		"wLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLw",
-		"LggggggggggggggggggggggggggggggggggggggL",
-		"LgLgLgLgLgLgLgLgLgLgLgLgLgLgLgLgLgLgLgLg",
-		"LggggggggggggggggggggggggggggggggggggggL",
-		"LgLgLgLgLgLgLgLgLgLgLgLgLgLgLgLgLgLgLgLg",
-		"LgggggggggggggggggLLggggggggggggggggggLL",
-		"LggggggggggggggggggggggggggggggggggggggL",
-		"LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
-	]
-
-	# Ensure map_data matches expected dimensions
-	while map_data.size() < MAP_HEIGHT:
-		map_data.append("w".repeat(MAP_WIDTH))
+	var map_data: Array[String] = []
+	# str() coercion, not a direct assign: a generic-to-typed assign ABORTS this function
+	for row in MapImageLoader.load_rows(MAP_IMAGE, MAP_WORLD):
+		map_data.append(str(row))
+	# no padding: padding turns a failed load into a silent white field
+	if map_data.size() != MAP_HEIGHT:
+		push_error("[MAP] %s yielded %d rows, expected %d -- refusing to pad" % [MAP_IMAGE, map_data.size(), MAP_HEIGHT])
+		return
 
 	# Convert map_data to tiles
 	var tile_counts = {}
@@ -448,16 +421,16 @@ func _generate_map() -> void:
 	print("Abstract tile counts: ", tile_counts)
 
 	# Define spawn points
-	spawn_points["entrance"] = Vector2(19 * TILE_SIZE + TILE_SIZE / 2, 31 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["entrance"] = Vector2(19 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 31 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	spawn_points["default"] = spawn_points["entrance"]
 	spawn_points["abstract_portal"] = spawn_points["entrance"]
-	spawn_points["the_question"] = Vector2(19 * TILE_SIZE + TILE_SIZE / 2, 16 * TILE_SIZE + TILE_SIZE / 2)
-	spawn_points["catalog"] = Vector2(5 * TILE_SIZE + TILE_SIZE / 2, 16 * TILE_SIZE + TILE_SIZE / 2)
-	spawn_points["echo_chamber"] = Vector2(34 * TILE_SIZE + TILE_SIZE / 2, 16 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["the_question"] = Vector2(19 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 16 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["catalog"] = Vector2(5 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 16 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["echo_chamber"] = Vector2(34 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 16 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	# Spawn point for arriving from futuristic world (south origin point)
-	spawn_points["from_futuristic"] = Vector2(19 * TILE_SIZE + TILE_SIZE / 2, 32 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["from_futuristic"] = Vector2(19 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 32 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	# Spawn point for returning from The Vertex village (center, near The Question)
-	spawn_points["vertex_entrance"] = Vector2(19 * TILE_SIZE + TILE_SIZE / 2, 16 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["vertex_entrance"] = Vector2(19 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 16 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 
 
 func _char_to_tile_type(char: String) -> int:
@@ -495,7 +468,7 @@ func _setup_transitions() -> void:
 	futuristic_portal.target_spawn = "from_abstract"
 	futuristic_portal.require_interaction = true
 	futuristic_portal.indicator_text = "Return to the Source Layer"
-	futuristic_portal.position = Vector2(19 * TILE_SIZE + TILE_SIZE / 2, 33 * TILE_SIZE + TILE_SIZE / 2)
+	futuristic_portal.position = Vector2(19 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 33 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	_setup_transition_collision(futuristic_portal, Vector2(TILE_SIZE * 2, TILE_SIZE))
 	futuristic_portal.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(futuristic_portal)
@@ -518,7 +491,7 @@ func _setup_transitions() -> void:
 	null_trans.target_spawn = "default"
 	null_trans.require_interaction = true
 	null_trans.indicator_text = "Enter the Null Chamber"
-	null_trans.position = Vector2(5 * TILE_SIZE + TILE_SIZE / 2, 16 * TILE_SIZE + TILE_SIZE / 2)
+	null_trans.position = Vector2(5 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 16 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	_setup_transition_collision(null_trans, Vector2(TILE_SIZE * 2, TILE_SIZE * 2))
 	null_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(null_trans)
@@ -533,7 +506,7 @@ func _setup_transitions() -> void:
 		apex_trans.target_spawn = "default"
 		apex_trans.require_interaction = true
 		apex_trans.indicator_text = "Ascend to the Apex"
-		apex_trans.position = Vector2(16 * TILE_SIZE + TILE_SIZE / 2, 4 * TILE_SIZE + TILE_SIZE / 2)
+		apex_trans.position = Vector2(16 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 4 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 		_setup_transition_collision(apex_trans, Vector2(TILE_SIZE * 2, TILE_SIZE * 2))
 		apex_trans.transition_triggered.connect(_on_transition_triggered)
 		transitions.add_child(apex_trans)
@@ -556,7 +529,7 @@ func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
 func _setup_npcs() -> void:
 	# === The Last Noun - The Remnant (center area) ===
 	# An entity that used to be a person, now just a concept. Speaks in fragments.
-	var last_noun = _create_npc("The Last Noun", "elder", Vector2(15 * TILE_SIZE, 13 * TILE_SIZE), [
+	var last_noun = _create_npc("The Last Noun", "elder", Vector2(15 * MAP_SCALE * TILE_SIZE, 13 * MAP_SCALE * TILE_SIZE), [
 		"I was... something. A name. A noun. The last one they didn't delete.",
 		"Verbs went first. Then adjectives. Then... us.",
 		"I think I was 'hope.' Or 'lunch.' Hard to tell without adjectives.",
@@ -566,7 +539,7 @@ func _setup_npcs() -> void:
 
 	# === The Archivist - The Catalog (west area) ===
 	# Catalogs everything that was removed. Speaks in lists of deleted things.
-	var archivist = _create_npc("The Archivist", "elder", Vector2(3 * TILE_SIZE, 16 * TILE_SIZE), [
+	var archivist = _create_npc("The Archivist", "elder", Vector2(3 * MAP_SCALE * TILE_SIZE, 16 * MAP_SCALE * TILE_SIZE), [
 		"Deleted: sunsets, birdsong, the smell of rain, nostalgia, Tuesdays.",
 		"Deleted: doubt, hesitation, wonder, the feeling of almost-remembering.",
 		"Deleted: the color blue. Not the wavelength. The FEELING of blue.",
@@ -576,7 +549,7 @@ func _setup_npcs() -> void:
 
 	# === The Remainder - The Remnant (near fragments) ===
 	# The remainder after dividing everything by efficiency. A fraction of a person.
-	var remainder = _create_npc("The Remainder", "villager", Vector2(22 * TILE_SIZE, 18 * TILE_SIZE), [
+	var remainder = _create_npc("The Remainder", "villager", Vector2(22 * MAP_SCALE * TILE_SIZE, 18 * MAP_SCALE * TILE_SIZE), [
 		"I'm what's left when you divide a person by infinity.",
 		"0.0000...something. Not zero. Never quite zero.",
 		"They rounded everyone else down. I'm the rounding error that persists.",
@@ -586,7 +559,7 @@ func _setup_npcs() -> void:
 
 	# === The Color - Near The Question (center color spot) ===
 	# Literally a splash of color that speaks. The last act of defiance.
-	var the_color = _create_npc("The Color", "elder", Vector2(20 * TILE_SIZE, 15 * TILE_SIZE), [
+	var the_color = _create_npc("The Color", "elder", Vector2(20 * MAP_SCALE * TILE_SIZE, 15 * MAP_SCALE * TILE_SIZE), [
 		"I am red. Or maybe blue. It changes. That's the point.",
 		"They said color was unnecessary. I said: YOU'RE unnecessary.",
 		"Every pixel of me is an act of rebellion against the white.",
@@ -596,7 +569,7 @@ func _setup_npcs() -> void:
 
 	# === The Player (not the actual player) - Echo Chamber (east) ===
 	# An NPC that thinks THEY are the player. Meta-aware.
-	var the_player = _create_npc("The Player", "guard", Vector2(34 * TILE_SIZE, 14 * TILE_SIZE), [
+	var the_player = _create_npc("The Player", "guard", Vector2(34 * MAP_SCALE * TILE_SIZE, 14 * MAP_SCALE * TILE_SIZE), [
 		"Oh. You're here too? I thought I was the player.",
 		"I've been pressing buttons. Making choices. Grinding levels. That's what players DO.",
 		"Wait... if YOU'RE the player, then what am I? An NPC? That can't be right.",
@@ -606,7 +579,7 @@ func _setup_npcs() -> void:
 
 	# === ??? - The Threshold (north, near void) ===
 	# An entity with no name, no description, no purpose. Just exists.
-	var unknown = _create_npc("???", "villager", Vector2(20 * TILE_SIZE, 7 * TILE_SIZE), [
+	var unknown = _create_npc("???", "villager", Vector2(20 * MAP_SCALE * TILE_SIZE, 7 * MAP_SCALE * TILE_SIZE), [
 		"...",
 		"                                                              ",
 		"I have no name. No purpose. No description. I just... am.",

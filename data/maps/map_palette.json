@@ -743,6 +743,139 @@
         }
       },
       "landmarks": {}
+    },
+    "abstract": {
+      "terrain": {
+        "w": {
+          "rgb": [
+            235,
+            235,
+            240
+          ],
+          "name": "void_white"
+        },
+        "g": {
+          "rgb": [
+            80,
+            80,
+            88
+          ],
+          "name": "void_gray"
+        },
+        "B": {
+          "rgb": [
+            15,
+            15,
+            18
+          ],
+          "name": "void_black"
+        },
+        "L": {
+          "rgb": [
+            60,
+            60,
+            90
+          ],
+          "name": "grid_line"
+        },
+        "G": {
+          "rgb": [
+            95,
+            165,
+            85
+          ],
+          "name": "fragment_grass"
+        },
+        "K": {
+          "rgb": [
+            160,
+            90,
+            70
+          ],
+          "name": "fragment_brick"
+        },
+        "C": {
+          "rgb": [
+            70,
+            180,
+            190
+          ],
+          "name": "fragment_circuit"
+        },
+        "S": {
+          "rgb": [
+            120,
+            110,
+            100
+          ],
+          "name": "shelf_unit"
+        },
+        "E": {
+          "rgb": [
+            90,
+            85,
+            95
+          ],
+          "name": "echo_wall"
+        },
+        "T": {
+          "rgb": [
+            180,
+            180,
+            190
+          ],
+          "name": "threshold_fade"
+        },
+        "O": {
+          "rgb": [
+            230,
+            120,
+            60
+          ],
+          "name": "color_spot"
+        },
+        "X": {
+          "rgb": [
+            200,
+            60,
+            200
+          ],
+          "name": "static_tile"
+        },
+        "H": {
+          "rgb": [
+            45,
+            45,
+            52
+          ],
+          "name": "shadow_tile"
+        },
+        "Q": {
+          "rgb": [
+            230,
+            200,
+            80
+          ],
+          "name": "question_mark"
+        },
+        "F": {
+          "rgb": [
+            140,
+            140,
+            148
+          ],
+          "name": "footprint_tile"
+        },
+        "D": {
+          "rgb": [
+            110,
+            58,
+            44
+          ],
+          "name": "remnant_door"
+        }
+      },
+      "landmarks": {}
     }
   }
 }
