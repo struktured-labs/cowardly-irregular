@@ -38,6 +38,17 @@ extends GutTest
 
 const OVERWORLD_CONTROLLER_PATH := "res://src/exploration/OverworldController.gd"
 
+var _saved_mult: float = -1.0
+
+
+func after_each() -> void:
+	# A trailing restore line is skipped by any mid-body abort, leaking 0.0 into an autoload
+	# every later test reads; 2026-08-29 that took out the encounter control arm in a deploy gate.
+	if _saved_mult >= 0.0 and GameState:
+		GameState.encounter_rate_multiplier = _saved_mult
+	_saved_mult = -1.0
+
+
 
 func _read(path: String) -> String:
 	var text: String = FileAccess.get_file_as_string(path)
@@ -109,6 +120,7 @@ func test_modifier_is_pristine_after_check_completes() -> void:
 		return
 	var prior_modifier: float = EncounterSystem.encounter_rate_modifier
 	var prior_settings: float = GameState.encounter_rate_multiplier
+	_saved_mult = prior_settings
 	# Pick a non-trivial settings multiplier to ensure the scaling path
 	# fires (>1 so the legacy bug would have masked it).
 	GameState.encounter_rate_multiplier = 1.75
@@ -120,8 +132,7 @@ func test_modifier_is_pristine_after_check_completes() -> void:
 	ctrl._check_encounter()
 	assert_almost_eq(EncounterSystem.encounter_rate_modifier, prior_modifier, 0.0001,
 		"ES.encounter_rate_modifier must be restored to its pre-call value after _check_encounter")
-	# Restore.
-	GameState.encounter_rate_multiplier = prior_settings
+	# after_each restores the multiplier — abort-safe, unlike a trailing line here.
 
 
 func test_zero_multiplier_short_circuits_without_touching_modifier() -> void:
@@ -136,6 +147,7 @@ func test_zero_multiplier_short_circuits_without_touching_modifier() -> void:
 		return
 	var prior_modifier: float = EncounterSystem.encounter_rate_modifier
 	var prior_settings: float = GameState.encounter_rate_multiplier
+	_saved_mult = prior_settings
 	GameState.encounter_rate_multiplier = 0.0
 	var ctrl: OverworldController = OverworldControllerScript.new()
 	add_child_autofree(ctrl)
@@ -144,5 +156,4 @@ func test_zero_multiplier_short_circuits_without_touching_modifier() -> void:
 		"_check_encounter must short-circuit to false when the settings multiplier is 0")
 	assert_almost_eq(EncounterSystem.encounter_rate_modifier, prior_modifier, 0.0001,
 		"ES.encounter_rate_modifier must NOT be touched on the 0-multiplier early-return path")
-	# Restore.
-	GameState.encounter_rate_multiplier = prior_settings
+	# after_each restores the multiplier — abort-safe, unlike a trailing line here.

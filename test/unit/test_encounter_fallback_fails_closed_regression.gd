@@ -14,6 +14,40 @@ extends GutTest
 
 const ControllerScript := preload("res://src/exploration/OverworldController.gd")
 
+var _saved: Dictionary = {}
+
+
+func _es() -> Node:
+	return get_tree().root.get_node_or_null("EncounterSystem")
+
+
+func _gs() -> Node:
+	return get_tree().root.get_node_or_null("GameState")
+
+
+func before_each() -> void:
+	_saved.clear()
+	var es := _es()
+	var gs := _gs()
+	if es != null:
+		_saved["enabled"] = es.encounters_enabled
+		_saved["repel"] = int(es.repel_steps_remaining)
+		_saved["steps"] = int(es.steps_since_last_encounter)
+	if gs != null:
+		_saved["mult"] = float(gs.encounter_rate_multiplier)
+
+
+func after_each() -> void:
+	# after_each runs even when a test body aborts; a trailing restore line does not.
+	var es := _es()
+	var gs := _gs()
+	if es != null and _saved.has("enabled"):
+		es.encounters_enabled = _saved["enabled"]
+		es.repel_steps_remaining = _saved["repel"]
+		es.steps_since_last_encounter = _saved["steps"]
+	if gs != null and _saved.has("mult"):
+		gs.encounter_rate_multiplier = _saved["mult"]
+
 
 func _src() -> String:
 	var s := FileAccess.get_file_as_string("res://src/exploration/OverworldController.gd")
@@ -36,44 +70,52 @@ func test_an_unreachable_encounter_system_yields_no_encounter() -> void:
 func test_the_guarded_path_still_produces_encounters() -> void:
 	# ARM+. Without this, an unconditional `return false` would satisfy the test above and
 	# encounters would be dead everywhere.
-	var es: Node = get_tree().root.get_node_or_null("EncounterSystem")
+	#
+	# 2026-08-29: this went RED in a deploy gate at 0/50 after passing the same tree's gate
+	# minutes earlier, and it was MY defect, not a flake. _check_encounter multiplies in
+	# GameState.encounter_rate_multiplier and returns false outright when that product is <= 0.
+	# A sibling test sets it to 0.0 to prove the short-circuit and restores on its LAST line,
+	# so any abort in its body leaks a 0 into an autoload every later test reads. This arm
+	# asserted "rate 1.0" while never pinning the value that actually gates the roll.
+	var es: Node = _es()
 	if es == null:
 		pending("EncounterSystem autoload unavailable")
+		return
+	var gs: Node = _gs()
+	if gs == null:
+		pending("GameState autoload unavailable")
 		return
 	var ctrl = ControllerScript.new()
 	add_child_autofree(ctrl)
 	ctrl._encounter_rate = 1.0
-	var was_enabled: bool = es.encounters_enabled
-	var was_repel: int = int(es.repel_steps_remaining)
-	var was_steps: int = int(es.steps_since_last_encounter)
+	gs.encounter_rate_multiplier = 1.0
 	es.encounters_enabled = true
 	es.repel_steps_remaining = 0
+	# CONTROL: the early return this test cannot see from its own assert.
+	assert_gt(float(gs.encounter_rate_multiplier), 0.0,
+		"a zero settings multiplier short-circuits _check_encounter before any roll")
 	var fired := 0
 	for i in range(50):
 		es.steps_since_last_encounter = 9999
 		if ctrl._check_encounter():
 			fired += 1
-	es.encounters_enabled = was_enabled
-	es.repel_steps_remaining = was_repel
-	es.steps_since_last_encounter = was_steps
-	assert_gt(fired, 0, "in-tree with EncounterSystem enabled and rate 1.0, nothing fired in 50 tries")
+	assert_gt(fired, 0,
+		"in-tree, encounters enabled, controller rate 1.0, settings multiplier %.3f — nothing fired in 50 tries" % float(gs.encounter_rate_multiplier))
 
 
 func test_the_disabled_flag_is_honoured_on_the_guarded_path() -> void:
-	var es: Node = get_tree().root.get_node_or_null("EncounterSystem")
+	var es: Node = _es()
 	if es == null:
 		pending("EncounterSystem autoload unavailable")
 		return
 	var ctrl = ControllerScript.new()
 	add_child_autofree(ctrl)
 	ctrl._encounter_rate = 1.0
-	var was_enabled: bool = es.encounters_enabled
 	es.encounters_enabled = false
 	var fired := 0
 	for i in range(100):
 		if ctrl._check_encounter():
 			fired += 1
-	es.encounters_enabled = was_enabled
 	assert_eq(fired, 0, "encounters_enabled=false still fired %d/100" % fired)
 
 
