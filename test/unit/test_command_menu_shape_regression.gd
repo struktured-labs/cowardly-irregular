@@ -134,15 +134,36 @@ func test_every_job_can_attack_from_the_menu() -> void:
 	## in the menu while autobattle called basic_attack directly and did. Cleric and Mage
 	## carried the identical defect unreported — which is why this asserts over ALL jobs,
 	## not the one that got noticed.
+	## 2026-08-29 amendment: the invariant is "a row that deals FULL attack damage", not "a row
+	## called attack". Bard's Attack row was removed because riff now IS the attack (1.0x). The
+	## test previously matched on the row ID, which would have gone red on a change that
+	## satisfies the actual requirement — and green on a riff nerfed back to 0.4x, which does not.
 	for job_id in ["fighter", "mage", "cleric", "rogue", "bard"]:
 		var ids: Array = _ids(await _rows(job_id))
-		var has_attack: bool = ("attack_menu" in ids) or ("attack" in ids)
+		var has_attack: bool = ("attack_menu" in ids) or ("attack" in ids) \
+			or (job_id == "bard" and _bard_riff_hits_full_strength())
 		assert_true(has_attack, "%s must be able to attack from the command menu" % job_id)
+
+
+## Bard has no Attack row by design; riff carries it. If riff is nerfed below a basic attack,
+## the menu silently does less than autobattle again — so the row check falls through to this.
+func _bard_riff_hits_full_strength() -> bool:
+	var f := FileAccess.open("res://data/abilities.json", FileAccess.READ)
+	if f == null:
+		return false
+	var d = JSON.parse_string(f.get_as_text())
+	f.close()
+	if not (d is Dictionary) or not (d as Dictionary).has("riff"):
+		return false
+	return float(((d as Dictionary)["riff"] as Dictionary).get("damage_multiplier", 0.0)) >= 1.0
 
 
 func test_ability_free_move_jobs_keep_BOTH_attack_and_their_free_move() -> void:
 	## The fix must not go the other way and cost them their job identity move.
-	var expected := {"mage": "Channel", "cleric": "Pray", "bard": "Riff"}
+	## Bard dropped OUT of this set on 2026-08-29 — its free_move declares replaces_attack, so
+	## it deliberately has one row, not two. Mage and Cleric keep both: Channel and Pray are
+	## utility, not attacks, so removing their Attack row WOULD cost them the basic strike.
+	var expected := {"mage": "Channel", "cleric": "Pray"}
 	for job_id in expected:
 		var rows: Array = await _rows(job_id)
 		var ids := _ids(rows)
@@ -199,7 +220,10 @@ func test_the_tallest_REAL_battle_menu_fits() -> void:
 	var rows: Array = await _rows("bard")
 	var m = await _built_menu(rows)
 	var vh: float = get_viewport().get_visible_rect().size.y
-	assert_gt(rows.size(), 4, "CONTROL: a real, populated Bard menu")
+	## Was >4; Bard lost its Attack row on 2026-08-29 (riff replaces it) and now builds exactly 4.
+	## The control's job is "this is a real menu, not an empty list" — lowered to the live count
+	## rather than deleted, because a menu that collapses to 1 row is still the failure it guards.
+	assert_gte(rows.size(), 4, "CONTROL: a real, populated Bard menu")
 	assert_true(m.position.y + m.size.y <= vh,
 		"Bard's full command menu fits on screen (%d rows, bottom at %d of %d)" % [rows.size(), m.position.y + m.size.y, vh])
 

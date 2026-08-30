@@ -20,6 +20,9 @@ extends GutTest
 const SFX_MANIFEST_PATH := "res://data/sfx_manifest.json"
 const SOUND_MANAGER_PATH := "res://src/audio/SoundManager.gd"
 const SRC_DIR := "res://src"
+# `sfx` here is the CUTSCENE JSON step type, not a method — no `func play_sfx` exists, so it matches nothing in src and the JSON scanner covers those refs separately.
+# Hoisted so the scope guard can READ this alternation — play_death escaped the audit for months because the list was restated by hand and nothing compared it to SoundManager.
+const SFX_CALL_PATTERN := "play_(?:ui|battle|battle_scaled|ability|attack_hit|sfx|death|ambient|status_if_authored)\\(\\s*\"([a-zA-Z_0-9]+)\""
 const CUTSCENES_DIR := "res://data/cutscenes"
 
 # Snapshot 2026-05-25 — sfx keys called from somewhere but resolving via
@@ -114,11 +117,15 @@ func _load_sounds_dict_keys() -> Dictionary:
 	return keys
 
 
+var _visited_src: Dictionary = {}
+
+
 func _scan_src_for_sfx_calls() -> Dictionary:
 	## Walks src/**/*.gd, extracts the literal sfx key argument from
 	## play_ui / play_battle / play_battle_scaled / play_ability /
 	## play_attack_hit / play_sfx calls. Returns {key: true} set.
 	var refs: Dictionary = {}
+	_visited_src.clear()
 	_walk_src(SRC_DIR, refs)
 	return refs
 
@@ -135,6 +142,7 @@ func _walk_src(dir_path: String, refs: Dictionary) -> void:
 			if dir.current_is_dir():
 				_walk_src(full, refs)
 			elif name.ends_with(".gd"):
+				_visited_src[full] = true
 				_extract_sfx_keys_from_text(_read_text(full), refs)
 		name = dir.get_next()
 
@@ -144,7 +152,7 @@ func _extract_sfx_keys_from_text(text: String, refs: Dictionary) -> void:
 	# takes a literal sfx key. Skip play_music (different system).
 	var regex := RegEx.new()
 	# Matches: play_ui("foo") | play_battle("foo") | play_battle_scaled("foo" | play_ability("foo" | play_attack_hit("foo" | play_sfx("foo"
-	regex.compile("play_(?:ui|battle|battle_scaled|ability|attack_hit|sfx)\\(\\s*\"([a-zA-Z_0-9]+)\"")
+	regex.compile(SFX_CALL_PATTERN)
 	for match in regex.search_all(text):
 		refs[match.get_string(1)] = true
 
@@ -188,6 +196,28 @@ func test_every_sfx_key_resolves_or_is_allowlisted() -> void:
 	for k in code_refs: all_refs[k] = "code"
 	for k in json_refs: all_refs[k] = all_refs.get(k, "cutscene JSON")
 
+	# VACUITY: orphans derive ONLY from all_refs, so a scanner that stops matching passes at zero coverage — mutation-proven 2026-08-22, both arms. Name a known-present member, not a count.
+	assert_true(code_refs.has("menu_select"),
+		"src scanner found no 'menu_select' (125 literal call sites) — the play_* regex has stopped matching and the orphan audit below is scanning NOTHING")
+	assert_true(json_refs.has("boss_defeat_stinger"),
+		"cutscene scanner found no 'boss_defeat_stinger' (19 play_sfx steps) — the JSON walk has stopped matching and cutscene sfx are unaudited")
+
+	# RESOLUTION SIDE: every canary below names the SCANNER's output and is upstream of `resolvable` — a polluted resolution set makes every key resolve, new_orphans stays empty, and the audit passes having adjudicated nothing. Both directions, because a set that answers true to everything and one that answers false to everything fail differently.
+	assert_true(resolvable.has("menu_select"),
+		"a key that IS in the manifest does not read as resolvable — the resolution set is broken and every audited key will be reported as an orphan")
+	assert_false(resolvable.has("__never_authored_sfx_probe__"),
+		"a fabricated key reads as RESOLVABLE — the resolution set is polluted and every real orphan below will be silently absorbed")
+
+	# METHOD LIST: the scanner's play_* alternation is a SECOND pattern with its own unaudited complement — play_death and play_ambient sat outside it and their literal keys went unscanned. Name one key per covered method; play_status is EXCLUDED BY CONSTRUCTION (it builds "status_" + arg, so no literal key exists to match) and its cues stay unauditable here.
+	for pair in [["enemy_death", "play_death"], ["weather_rain", "play_ambient"]]:
+		assert_true(code_refs.has(pair[0]),
+			"scanner lost coverage of %s — its literal sfx keys are unaudited, and a key-presence check on the OTHER methods still passes" % pair[1])
+
+	# FAMILY B: _walk_src returns SILENTLY on a null DirAccess, so a lost subdir drops its files unnoticed. Canaries cover the THREE HIGHEST-DENSITY sfx dirs (ui 33 files / exploration 21 / battle 4); 8 sparser dirs stay uncovered — stated, not implied.
+	for required in ["res://src/exploration/ShopScene.gd", "res://src/battle/BattleScene.gd", "res://src/ui/ItemsMenu.gd"]:
+		assert_true(_visited_src.has(required),
+			"the src walk never reached %s — a subdirectory failed to open and its sfx calls are unaudited, which a key-presence check cannot see" % required)
+
 	var new_orphans: Array = []
 	for key in all_refs:
 		if resolvable.has(key):
@@ -207,12 +237,56 @@ func test_every_sfx_key_resolves_or_is_allowlisted() -> void:
 func test_known_orphan_sfx_list_stays_pruned() -> void:
 	var manifest_keys: Dictionary = _load_manifest_sfx_keys()
 	var sounds_keys: Dictionary = _load_sounds_dict_keys()
+	# fail_test-only: a dead loader leaves `stale` empty and this reports "pruned" while unable to tell. GUT's Risky flag cannot catch it here — _read_text's assert_not_null counts as an assert for every caller, so no test in this file can ever score Risky (measured: remove that line and this test flips to [Risky]).
+	assert_true(manifest_keys.has("menu_select"),
+		"the manifest loader returned nothing — this test cannot distinguish a pruned allowlist from an unreadable manifest, and would report the list clean either way")
+	assert_true(sounds_keys.has("attack_hit"),
+		"the SOUNDS scrape returned nothing — same blindness on the other resolution source")
+
 	var stale: Array = []
 	for orphan in KNOWN_ORPHAN_SFX:
 		if manifest_keys.has(orphan) or sounds_keys.has(orphan):
 			stale.append(orphan)
 	if not stale.is_empty():
 		fail_test("KNOWN_ORPHAN_SFX contains entries that now DO resolve — remove them: %s" % [stale])
+
+
+func test_every_allowlisted_orphan_is_actually_REACHABLE_by_the_scanner() -> void:
+	# An allowlist entry the scanner cannot emit is INERT and looks identical to one doing real work — injury_sting sat here 4 days that way because play_death was outside the method list; the pruner cannot see it, asking only "does it resolve NOW", never "was it ever detected".
+	var reachable: Dictionary = _scan_src_for_sfx_calls()
+	for k in _scan_cutscene_sfx_refs():
+		reachable[k] = true
+	assert_true(reachable.has("menu_select"),
+		"scanner returned nothing — this reachability check would pass every entry vacuously")
+	var inert: Array = []
+	for orphan in KNOWN_ORPHAN_SFX:
+		if not reachable.has(orphan):
+			inert.append(orphan)
+	if not inert.is_empty():
+		fail_test("KNOWN_ORPHAN_SFX entries no call site can produce — either the consumer was removed (delete the line) or the scanner cannot see its play_* method (widen the alternation): %s" % [inert])
+
+
+func test_scanner_scope_covers_every_sound_key_taking_play_method() -> void:
+	# The alternation IS the audit's scope — a second pattern with its own complement — so derive the requirement from SoundManager's DECLARATIONS, a source disjoint from the call sites being audited, rather than restating the list and trusting it.
+	var open_at: int = SFX_CALL_PATTERN.find("(?:")
+	var close_at: int = SFX_CALL_PATTERN.find(")", open_at)
+	assert_gt(open_at, -1, "pattern has no alternation group — this guard cannot read the scope")
+	var covered: PackedStringArray = SFX_CALL_PATTERN.substr(open_at + 3, close_at - open_at - 3).split("|")
+	assert_true(covered.has("ui"), "scope parse lost a known member ('ui') — the guard would pass vacuously")
+
+	var decl := RegEx.new()
+	decl.compile("func (play_[a-z_0-9]+)\\(sound_key")
+	var declared: Array = []
+	for m in decl.search_all(_read_text(SOUND_MANAGER_PATH)):
+		declared.append(m.get_string(1))
+	assert_gt(declared.size(), 3, "almost no play_*(sound_key) declarations found — the scrape is broken and this guard would pass vacuously")
+
+	var uncovered: Array = []
+	for method in declared:
+		if not covered.has(method.substr(5)):
+			uncovered.append(method)
+	if not uncovered.is_empty():
+		fail_test("SoundManager accepts a literal sound_key through these methods but the scanner's alternation omits them — their call sites are UNAUDITED: %s" % [uncovered])
 
 
 func test_sounds_dict_scrape_finds_a_known_entry() -> void:

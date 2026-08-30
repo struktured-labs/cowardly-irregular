@@ -199,13 +199,6 @@ func _setup_transitions() -> void:
 	exit.target_spawn = "witch_hut_exit"
 	exit.require_interaction = false
 	exit.position = Vector2(6.5 * TILE_SIZE, 9.5 * TILE_SIZE)
-	var collision = CollisionShape2D.new()
-	var shape = RectangleShape2D.new()
-	shape.size = Vector2(TILE_SIZE * 2, TILE_SIZE)
-	collision.shape = shape
-	exit.add_child(collision)
-	exit.collision_layer = 4
-	exit.collision_mask = 2
-	exit.monitoring = true
+	InteractGeometry.setup_trigger_collision(exit, InteractGeometry.INTERIOR_EXIT_BOX)
 	exit.transition_triggered.connect(_on_exit_triggered)
 	transitions.add_child(exit)

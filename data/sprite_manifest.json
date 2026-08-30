@@ -18,7 +18,7 @@
         "walk"
       ],
       "tier": "T2",
-      "source": "artist aseprite \u2014 Game graphics - Characters/BARD/Bard Base sprite.aseprite (idle 0-3, cast 4-7, attack 8-11; 2x nearest-neighbor upscale to 256px). Remaining anims (walk/hit/dead/defend/item/victory) still T1 AI-gen until artist drops them."
+      "source": "artist aseprite \u2014 Game graphics - Characters/BARD/Bard Base sprite.aseprite, REWORKED drop 2026-08-26 (18 frames, 3 tags; the previous drop was 12 frames and untagged). Ingested BY TAG: idle <- Idle 0-3, dead <- WEAK 4-8, cast <- ATK 9-12 (wind-up), attack <- ATK 13-17 (swing+recovery). The cast/attack split was re-derived by diffing the new frames against the shipped cast.png/attack.png they replace \u2014 the artist added one charge frame. 2x nearest-neighbor upscale to 256px. 'Weak' is the ARTIST'S LABEL for the downed state and is kept as such (struktured 2026-08-27: honor the artist labels); it lands in the engine's `dead` slot because HybridSpriteLoader has no `weak` animation and a weak.png would never be played. Prior AI dead.png preserved at dead.pre_artist.png. Remaining anims (walk/hit/defend/item/victory) still T1 AI-gen until the artist drops them."
     },
     "bard_sdxl": {
       "path": "res://assets/sprites/jobs/bard_sdxl",
@@ -813,24 +813,23 @@
       "animations": {
         "idle": {
           "start": 0,
-          "end": 1
+          "end": 3
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 4,
+          "end": 9
         },
         "hit": {
           "start": 4,
-          "end": 5
+          "end": 4
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
-      "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)",
-      "source": "Playtest audit 2026-07-15: single-frame multi-subject defect fixed by clone-adjacent (fix_broken_frames pattern), no regen \u2014 main body art retained."
+      "tier": "T2",
+      "source": "artist aseprite drop 2026-08-20 \u2014 Game graphics - Characters/enemies/Rat animations.aseprite (artist tags Idle 0-3, Atk 4-9; 2.25x nearest-neighbor, whole canvas scaled once with ONE shared offset so the artist's inter-frame registration is preserved. Scale = min(match-reference-height, fit-widest-frame) per the skeleton precedent: content 252x144 in a 256 frame (skeleton is 250x185), feet seated at y=217 \u2014 exactly where the T1 sheet had them. A first pass used a flat 2x and came out under convention at 224x128; struktured had already rejected that on the skeleton (\"way too small, you need like 2.5x\")). HORIZONTALLY FLIPPED on ingest: the artist drew this one facing LEFT, and monsters face RIGHT (struktured 2026-08-27); the artist's own goblin faces right, this source is the outlier. The artist authored NO hit and NO dead \u2014 hit -> frame 4 is the ATTACK WINDUP and dead -> frame 0 is a plain IDLE, both REUSED placeholders exactly as the goblin does, so the rat visibly neither flinches nor falls. Dedicated hit/dead frames are an ARTIST ask. Previous T1 sheet preserved at cave_rat.pre_artist.png."
     },
     "cave_rat_king": {
       "path": "res://assets/sprites/monsters/cave_rat_king.png",
@@ -4737,5 +4736,152 @@
       "source": "hand-pixeled 24x24 amber shield-with-crossed-blades \u2014 cowir-sprites (cowir-main msg 2454 approval). Sigil for THREAT_CLASS_BUFFS (counter_stance et al.); attaches as sprite child, pulses via existing _update_buff_debuff_visuals hook."
     }
   },
-  "tile_sheets": {}
+  "tile_sheets": {
+    "medieval": {
+      "path": "res://assets/sprites/tiles/medieval.png",
+      "tier": "T1",
+      "tile": 32,
+      "cliff": {
+        "face": [
+          0,
+          0
+        ],
+        "edge_1": [
+          1,
+          0
+        ],
+        "edge_2": [
+          2,
+          0
+        ],
+        "edge_3": [
+          3,
+          0
+        ],
+        "edge_4": [
+          4,
+          0
+        ],
+        "edge_5": [
+          5,
+          0
+        ],
+        "edge_6": [
+          6,
+          0
+        ],
+        "edge_7": [
+          7,
+          0
+        ],
+        "edge_8": [
+          8,
+          0
+        ],
+        "edge_9": [
+          9,
+          0
+        ],
+        "edge_10": [
+          10,
+          0
+        ],
+        "edge_11": [
+          11,
+          0
+        ],
+        "edge_12": [
+          12,
+          0
+        ],
+        "edge_13": [
+          13,
+          0
+        ],
+        "edge_14": [
+          14,
+          0
+        ],
+        "edge_15": [
+          15,
+          0
+        ]
+      },
+      "overlay": {
+        "fringe_1": [
+          0,
+          1
+        ],
+        "fringe_2": [
+          1,
+          1
+        ],
+        "fringe_3": [
+          2,
+          1
+        ],
+        "fringe_4": [
+          3,
+          1
+        ],
+        "fringe_5": [
+          4,
+          1
+        ],
+        "fringe_6": [
+          5,
+          1
+        ],
+        "fringe_7": [
+          6,
+          1
+        ],
+        "fringe_8": [
+          7,
+          1
+        ],
+        "fringe_9": [
+          8,
+          1
+        ],
+        "fringe_10": [
+          9,
+          1
+        ],
+        "fringe_11": [
+          10,
+          1
+        ],
+        "fringe_12": [
+          11,
+          1
+        ],
+        "fringe_13": [
+          12,
+          1
+        ],
+        "fringe_14": [
+          13,
+          1
+        ],
+        "fringe_15": [
+          14,
+          1
+        ],
+        "stair": [
+          15,
+          1
+        ],
+        "ramp": [
+          0,
+          2
+        ],
+        "shadow": [
+          1,
+          2
+        ]
+      },
+      "generator": "tools/gen_tile_sheet_medieval.py -- cliff+overlay only. Ground tiles stay procedural (TileGenerator already draws them); the 10 props are routed to the artist. Bitmask tiles are generated from the mask and side-checked, never hand-placed."
+    }
+  }
 }

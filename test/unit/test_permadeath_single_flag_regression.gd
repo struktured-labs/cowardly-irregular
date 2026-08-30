@@ -62,5 +62,9 @@ func test_staking_on_does_permakill_on_defeat() -> void:
 
 
 func test_only_the_canonical_flag_arms_permadeath() -> void:
+	## `in` must be proven to SEE a property before its absence means anything — a broken
+	## operator returns false for every name and this whole test passes on nothing.
+	assert_true("permadeath_staking_enabled" in _system,
+		"control: `in` must find the canonical flag, else the assertion below is vacuous")
 	assert_false("permadeath_enabled" in _system,
 		"The redundant alias must not exist — an OR on it lets either flag arm permanent death")

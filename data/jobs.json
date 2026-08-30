@@ -275,7 +275,8 @@
       "type": "ability",
       "ability_id": "riff",
       "label": "Riff",
-      "animation": "riff"
+      "animation": "riff",
+      "replaces_attack": true
     },
     "visual": {
       "sprite_type": "performer",

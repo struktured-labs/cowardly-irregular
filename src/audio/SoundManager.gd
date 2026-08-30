@@ -1568,6 +1568,16 @@ func _get_current_world_suffix() -> String:
 			return _current_world_suffix
 
 
+## Battle tracks with their own procedural generator in play_music's `match`. A composed
+## manifest entry still wins over these; what they must NOT lose to is the generic world-battle
+## rewrite, which would make their own arm unreachable. Pinned against the source by test.
+const PROCEDURAL_BATTLE_TRACKS := [
+	"battle_slime", "battle_bat", "battle_mushroom", "battle_imp", "battle_goblin",
+	"battle_brute", "battle_troll", "battle_cave_troll", "battle_ogre", "battle_barbarian",
+	"battle_skeleton", "battle_wolf", "battle_ghost", "battle_snake",
+]
+
+
 func play_music(track: String) -> void:
 	"""Play a music track with crossfade transition"""
 	if _current_music == track and _music_playing:
@@ -1624,9 +1634,14 @@ func play_music(track: String) -> void:
 			manifest_track_id = "danger_" + _current_world_suffix
 		"victory":
 			manifest_track_id = "victory_" + _current_world_suffix
-	# Monster-specific battle tracks (battle_snake, battle_slime, etc.)
-	# fall back to world battle track when no monster-specific manifest entry
-	if not _music_manifest.has(manifest_track_id) and track.begins_with("battle_"):
+	# Monster-specific battle tracks (battle_snake, battle_slime, etc.) fall back to the world
+	# battle track when no monster-specific manifest entry exists — EXCEPT where the monster has
+	# its own procedural theme below. struktured 2026-08-29: "The goblin music is gone and
+	# defaults to something else. I wanted it replaced not removed entirely." battle_goblin.ogg
+	# was recast as battle_brute.ogg (7e6c50d2) and no manifest key replaced it, so this rewrite
+	# sent the goblin to battle_medieval and the `match` arm below became unreachable.
+	if not _music_manifest.has(manifest_track_id) and track.begins_with("battle_") \
+			and not PROCEDURAL_BATTLE_TRACKS.has(track):
 		manifest_track_id = "battle_" + _current_world_suffix
 	if _music_manifest.has(manifest_track_id):
 		if _try_play_from_manifest(manifest_track_id):

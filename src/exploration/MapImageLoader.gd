@@ -105,7 +105,9 @@ static func ensure_palette(world_id: String) -> String:
 
 
 static func palette_chars(world_id: String) -> Array:
-	if ensure_palette(world_id) != "":
+	var err := ensure_palette(world_id)
+	if err != "":
+		push_error("[MAP] %s (palette_chars)" % err)
 		return []
 	var out: Array = (_by_world[world_id]["to_rgb"] as Dictionary).keys()
 	out.sort()
@@ -114,7 +116,9 @@ static func palette_chars(world_id: String) -> Array:
 
 ## The rgb triple `ch` decodes from in `world_id`, or [] if that world does not define it.
 static func palette_rgb(world_id: String, ch: String) -> Array:
-	if ensure_palette(world_id) != "":
+	var err := ensure_palette(world_id)
+	if err != "":
+		push_error("[MAP] %s (palette_rgb %s)" % [err, ch])
 		return []
 	var to_rgb: Dictionary = _by_world[world_id]["to_rgb"]
 	if not to_rgb.has(ch):
@@ -123,19 +127,24 @@ static func palette_rgb(world_id: String, ch: String) -> Array:
 	return [(k >> 16) & 0xFF, (k >> 8) & 0xFF, k & 0xFF]
 
 
+## On any failure returns [] and pushes an error naming the cause -- treat empty as fatal.
 ## The spawn-bearing characters for `world_id`, read from that world's own `landmarks`
 ## section rather than hand-listed. A hand-list of "which chars are landmarks" drifts the
 ## moment one is added, and it drifted within minutes of first being written: "C" and "H"
 ## each appear TWICE in W1, so an eyeballed singleton list was wrong on its first run.
 static func landmark_chars(world_id: String) -> Array:
+	# routed through ensure_palette so a bad palette or unknown world names itself once
+	var err := ensure_palette(world_id)
+	if err != "":
+		push_error("[MAP] %s (landmark_chars)" % err)
+		return []
 	var parsed = _read_palette()
 	if not (parsed is Dictionary) or not parsed.has("worlds"):
+		push_error("[MAP] palette unreadable after a successful load (landmark_chars %s)" % world_id)
 		return []
-	var worlds: Dictionary = parsed["worlds"]
-	if not worlds.has(world_id):
-		return []
-	var section: Dictionary = worlds[world_id]
+	var section: Dictionary = (parsed["worlds"] as Dictionary)[world_id]
 	if not section.has("landmarks"):
+		push_error("[MAP] world '%s' defines no landmarks section" % world_id)
 		return []
 	var out: Array = (section["landmarks"] as Dictionary).keys()
 	out.sort()

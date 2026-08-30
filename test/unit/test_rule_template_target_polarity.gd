@@ -14,7 +14,7 @@ extends GutTest
 ## Found by cowir-autogrind tracing it end to end; nothing on the battle side could see it.
 
 const ALLY_TARGETS := ["all_allies", "lowest_hp_ally", "self"]
-const ENEMY_TARGETS := ["lowest_hp_enemy", "highest_hp_enemy", "random_enemy",
+const ENEMY_TARGETS := ["lowest_hp_enemy", "highest_hp_enemy", "random_enemy", "all_enemies",
 	"highest_speed_enemy", "highest_atk_enemy", "lowest_magic_defense_enemy", "weakest_to_ability"]
 
 
@@ -77,3 +77,21 @@ func test_no_preset_aims_an_ability_at_the_wrong_side() -> void:
 			offenders.append("%s aims '%s' (%s) at %s — a support ability at an enemy" % [act["template"], act["id"], at, act["target"]])
 	assert_gt(checked, 3, "CONTROL: actually compared real pairs (%d)" % checked)
 	assert_eq(offenders.size(), 0, "preset actions aimed at the wrong side: " + str(offenders))
+
+
+## The check above can only judge a target it can CLASSIFY. An unlisted verb is in neither
+## list, so it matches no arm and passes in silence — the guard would under-cover exactly
+## when the vocabulary grew. Today 0 targets are unclassifiable, but that is a property of
+## the current data, not of the check. Fail on the unknown instead of enumerating forever.
+func test_every_preset_target_is_classifiable() -> void:
+	var unknown: Array = []
+	var seen := 0
+	for act in _template_ability_actions():
+		var t: String = str(act["target"])
+		if t == "":
+			continue
+		seen += 1
+		if not (t in ALLY_TARGETS or t in ENEMY_TARGETS):
+			unknown.append("%s aims '%s' at '%s' — this guard cannot classify that target" % [act["template"], act["id"], t])
+	assert_gt(seen, 3, "CONTROL: saw real target strings (%d)" % seen)
+	assert_eq(unknown.size(), 0, "unclassifiable preset targets (add to ALLY_TARGETS/ENEMY_TARGETS): " + str(unknown))

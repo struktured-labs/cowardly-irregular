@@ -373,8 +373,18 @@ func _get_impassable_types() -> Array:
 	return [TileType.WALL, TileType.CAVE_WALL, TileType.LAVA, TileType.WATER, TileType.MOUNTAIN, TileType.VILLAGE_HEDGE]
 
 ## Playtested W1 values; MOUNTAIN and WATER are inert — _get_impassable_types() blocks both.
+## 2026-08-26 struktured "do the change": FOREST was the only terrain on W1 that altered movement, so ~62% of the map was one surface wearing seven colours. Values stay in (0,1] — this API slows, it never speeds up.
 func _get_rough_terrain_speeds() -> Dictionary:
-	return {TileType.FOREST: 0.5, TileType.MOUNTAIN: 0.4, TileType.WATER: 0.5}
+	return {
+		TileType.SWAMP: 0.45,
+		TileType.FOREST: 0.5,
+		TileType.SNOW_TREE: 0.5,
+		TileType.COAST: 0.7,
+		TileType.SAND: 0.8,
+		TileType.ICE: 0.85,
+		TileType.MOUNTAIN: 0.4,
+		TileType.WATER: 0.5,
+	}
 
 func _get_atlas_dimensions() -> Vector2i:
 	return Vector2i(5, 8)

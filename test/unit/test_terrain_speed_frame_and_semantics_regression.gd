@@ -74,16 +74,57 @@ func test_every_generators_rough_table_names_only_its_own_tile_types() -> void:
 	assert_true(offenders.is_empty(), "\n  ".join(offenders))
 
 
-## The playtested W1 values. Pinned as a TABLE, not as atlas indices -- the indices were the bug.
-func test_world1_rough_terrain_is_unchanged_by_the_refactor() -> void:
+## The W1 values. Pinned as a TABLE, not as atlas indices -- the indices were the bug.
+func test_world1_rough_terrain_table_is_pinned() -> void:
 	var script = load("res://src/exploration/TileGenerator.gd")
 	var gen = script.new()
 	var table: Dictionary = gen._get_rough_terrain_speeds()
 	gen.free()
-	assert_eq(table.size(), 3, "W1 declares exactly three rough tile types")
+	assert_eq(table.size(), 8, "W1 declares exactly eight rough tile types")
+	assert_almost_eq(float(table.get(script.TileType.SWAMP, -1.0)), 0.45, 0.001, "swamp is the heaviest drag")
 	assert_almost_eq(float(table.get(script.TileType.FOREST, -1.0)), 0.5, 0.001, "forest half speed")
+	assert_almost_eq(float(table.get(script.TileType.SNOW_TREE, -1.0)), 0.5, 0.001, "snow trees match forest")
+	assert_almost_eq(float(table.get(script.TileType.COAST, -1.0)), 0.7, 0.001, "coast is wading")
+	assert_almost_eq(float(table.get(script.TileType.SAND, -1.0)), 0.8, 0.001, "sand is a mild drag")
+	assert_almost_eq(float(table.get(script.TileType.ICE, -1.0)), 0.85, 0.001, "ice is careful footing, not a slide")
 	assert_almost_eq(float(table.get(script.TileType.MOUNTAIN, -1.0)), 0.4, 0.001, "mountain very slow")
 	assert_almost_eq(float(table.get(script.TileType.WATER, -1.0)), 0.5, 0.001, "water half speed (wading)")
+
+
+## THE SUBJECT of the 2026-08-26 change: the table above is a declaration, this measures what a body standing on W1 actually feels.
+func test_w1_walkable_ground_offers_more_than_one_speed() -> void:
+	var built: Dictionary = await _build("medieval")
+	var m = built["map"]
+	var p = built["player"]
+	var layer = m.get_node_or_null("TileMapCollision")
+	if layer == null:
+		layer = m.get_node_or_null("TileMap")
+	assert_not_null(layer, "W1 built a tile layer")
+	var space = built["viewport"].world_2d.direct_space_state
+	var tiers := {}
+	var standable := 0
+	var seen := {}
+	for cell in layer.get_used_cells():
+		var ac: Vector2i = layer.get_cell_atlas_coords(cell)
+		if seen.has(ac):
+			continue
+		seen[ac] = true
+		var q := PhysicsShapeQueryParameters2D.new()
+		var s := CircleShape2D.new()
+		s.radius = 4.0
+		q.shape = s
+		q.collision_mask = 1
+		var pos: Vector2 = layer.to_global(layer.map_to_local(cell))
+		q.transform = Transform2D(0.0, pos)
+		if not space.intersect_shape(q, 1).is_empty():
+			continue
+		standable += 1
+		p.global_position = pos
+		tiers[snappedf(p._get_terrain_speed_modifier(), 0.01)] = true
+	# CONTROL: a dead walk samples nothing and would satisfy the tier assert vacuously.
+	assert_gt(standable, 5, "only %d standable tile variants sampled -- the walk is not reading the map" % standable)
+	assert_gt(tiers.size(), 2,
+		"W1's walkable ground offers only %d distinct speeds %s -- terrain variety is cosmetic and the map is one surface in several colours" % [tiers.size(), str(tiers.keys())])
 
 
 ## THE SUBJECT. Whatever the sampler slows, that world must itself declare rough.
