@@ -270,7 +270,7 @@ func _build_ui() -> void:
 	add_child(legend_bg)
 
 	var help_label1 = Label.new()
-	help_label1.text = "D-Pad:Navigate  A:Edit  B:Delete  L:Split/AND  \u25c0:Switch Char  \u25c0\u25c0:More Actions  Click:Edit  RClick:Close"
+	help_label1.text = "D-Pad:Navigate  A:Edit  B/Esc:Back  Del/Y:Delete  L:Split/AND  \u25c0:Switch Char  \u25c0\u25c0:More Actions  Click:Edit  RClick:Close"
 	help_label1.position = Vector2(16, size.y - 44)
 	help_label1.add_theme_font_size_override("font_size", 10)
 	help_label1.add_theme_color_override("font_color", style.text.darkened(0.2))
@@ -1744,8 +1744,16 @@ func _input(event: InputEvent) -> void:
 		_edit_current_cell()
 		get_viewport().set_input_as_handled()
 
-	# B button - Delete current cell
+	# B / X / Escape - BACK OUT. struktured's artist, 2026-08-30: "Everytime i hit Esc, the
+	# thing gets stuck in the pause menu." Escape opened this grid and then deleted cells
+	# instead of leaving, so the only exit was F5. Escape is back everywhere else in the game.
 	elif event.is_action_pressed("ui_cancel") and not event.is_echo():
+		save_and_close()
+		get_viewport().set_input_as_handled()
+
+	# Delete moved off ui_cancel: Delete/Backspace on keyboard, Y off a condition cell on a pad.
+	elif event is InputEventKey and event.pressed and not event.is_echo() \
+			and event.keycode in [KEY_DELETE, KEY_BACKSPACE]:
 		_delete_current_cell()
 		get_viewport().set_input_as_handled()
 
@@ -1823,7 +1831,8 @@ func _input(event: InputEvent) -> void:
 		if _is_on_condition_cell():
 			_cycle_condition_operator()
 		else:
-			SoundManager.play_ui("menu_error")
+			# Was a dead end. Delete lives here now that ui_cancel means back out.
+			_delete_current_cell()
 		get_viewport().set_input_as_handled()
 
 	# W/S keys - Adjust condition value when on condition cell

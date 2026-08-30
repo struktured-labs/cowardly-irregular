@@ -922,6 +922,11 @@ func _input(event: InputEvent) -> void:
 			# Do NOT consume input here — AutogrindUI needs to see it
 			pass
 		elif current_state == LoopState.BATTLE:
+			# Escape is BACK, never OPEN (struktured 2026-08-30). It binds ui_menu as well as
+			# ui_cancel, so it was opening the autobattle editor mid-fight — which his artist
+			# read as a pause menu she could not escape. Start still opens it.
+			if event is InputEventKey and event.keycode == KEY_ESCAPE:
+				return
 			if not _autobattle_editor or not is_instance_valid(_autobattle_editor):
 				# Decide: toggle off if any party has autobattle on, else open editor
 				var any_auto_on := false
