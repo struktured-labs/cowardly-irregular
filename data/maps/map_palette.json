@@ -477,6 +477,139 @@
         }
       },
       "landmarks": {}
+    },
+    "industrial": {
+      "terrain": {
+        "f": {
+          "rgb": [
+            120,
+            118,
+            112
+          ],
+          "name": "factory_floor"
+        },
+        "g": {
+          "rgb": [
+            95,
+            100,
+            105
+          ],
+          "name": "iron_grating"
+        },
+        "b": {
+          "rgb": [
+            110,
+            58,
+            44
+          ],
+          "name": "brick_wall"
+        },
+        "s": {
+          "rgb": [
+            70,
+            66,
+            64
+          ],
+          "name": "smokestack"
+        },
+        "c": {
+          "rgb": [
+            85,
+            75,
+            60
+          ],
+          "name": "conveyor_belt"
+        },
+        "r": {
+          "rgb": [
+            60,
+            55,
+            52
+          ],
+          "name": "rail_track"
+        },
+        "C": {
+          "rgb": [
+            155,
+            90,
+            40
+          ],
+          "name": "cargo_container"
+        },
+        "v": {
+          "rgb": [
+            170,
+            175,
+            178
+          ],
+          "name": "steam_vent"
+        },
+        "h": {
+          "rgb": [
+            135,
+            105,
+            80
+          ],
+          "name": "worker_housing"
+        },
+        "G": {
+          "rgb": [
+            150,
+            140,
+            60
+          ],
+          "name": "guard_post"
+        },
+        "d": {
+          "rgb": [
+            70,
+            130,
+            90
+          ],
+          "name": "drainage_channel"
+        },
+        "B": {
+          "rgb": [
+            140,
+            160,
+            60
+          ],
+          "name": "chemical_barrel"
+        },
+        "p": {
+          "rgb": [
+            160,
+            115,
+            55
+          ],
+          "name": "pipe_cluster"
+        },
+        "w": {
+          "rgb": [
+            215,
+            175,
+            40
+          ],
+          "name": "warning_sign"
+        },
+        "k": {
+          "rgb": [
+            145,
+            148,
+            150
+          ],
+          "name": "chain_link_fence"
+        },
+        "R": {
+          "rgb": [
+            170,
+            150,
+            120
+          ],
+          "name": "break_room_floor"
+        }
+      },
+      "landmarks": {}
     }
   }
 }
