@@ -434,9 +434,12 @@ static func build_combined_reply(
 	last_npc_line: String,
 	player_line: String,
 	num_choices: int,
+	quest_state_lines: Array = [],
 ) -> String:
 	var count: int = clampi(num_choices, 1, MAX_CHOICES)
 	var ctx_block: String = _format_events(recent_events, CONTEXT_EVENTS)
+	# Milo v2: the reply path dropped the voice notes the opening path threads.
+	var voice_block: String = _format_quest_state_voice(quest_state_lines)
 
 	var history_block: String = ""
 	if last_npc_line.strip_edges() != "":
@@ -453,6 +456,7 @@ static func build_combined_reply(
 		+ "Location: %s\n" % location
 		+ history_block
 		+ ctx_block
+		+ voice_block
 		+ "\n"
 		+ "Rules:\n"
 		+ "- The NPC reply must react to the player's specific words; max %d characters.\n" % MAX_LINE_CHARS
