@@ -948,14 +948,15 @@
       "prompt_influence": 0.7
     },
     "heal": {
-      "file": "assets/audio/sfx/heal.ogg",
+      "file": "assets/audio/sfx/heal_v2.ogg",
       "prompt": "Gentle wind chimes in a warm breeze, tinkling restoration with a rising shimmer, soothing healing sound",
       "duration_seconds": 1.0,
       "prompt_influence": 0.5,
       "variants": [
         "heal_v2",
         "heal_v3"
-      ]
+      ],
+      "note": "heal.ogg measured 93.9% of energy >4kHz, mean peak 9380Hz — a bird chirp; struktured 2026-08-30 'crap'"
     },
     "heal_v2": {
       "file": "assets/audio/sfx/heal_v2.ogg",
@@ -1254,10 +1255,11 @@
       "prompt_influence": 0.7
     },
     "w2_ability_heal": {
-      "file": "assets/audio/sfx/w2_ability_heal.ogg",
+      "file": "assets/audio/sfx/ability_heal.ogg",
       "prompt": "Garden hose spraying gently with backyard wind chimes tinkling, pleasant suburban afternoon, peaceful neighborhood sounds",
       "duration_seconds": 1.2,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "note": "repointed 2026-08-30: generated asset was a literal bird chirp (>8.8kHz mean peak, >82% energy above 4kHz). struktured: no animal noises on ability SFX unless the ability is animal-themed."
     },
     "w2_ability_physical": {
       "file": "assets/audio/sfx/w2_ability_physical.ogg",
@@ -1296,10 +1298,11 @@
       "prompt_influence": 0.7
     },
     "w3_ability_heal": {
-      "file": "assets/audio/sfx/w3_ability_heal.ogg",
+      "file": "assets/audio/sfx/ability_heal.ogg",
       "prompt": "Gentle steam release with ticking clockwork music box, warm brass pipes humming, steampunk healing apparatus",
       "duration_seconds": 1.2,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "note": "repointed 2026-08-30: generated asset was a literal bird chirp (>8.8kHz mean peak, >82% energy above 4kHz). struktured: no animal noises on ability SFX unless the ability is animal-themed."
     },
     "w3_ability_physical": {
       "file": "assets/audio/sfx/w3_ability_physical.ogg",
