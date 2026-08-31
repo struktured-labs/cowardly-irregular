@@ -25,6 +25,39 @@ func test_data_grants_the_widened_threshold_and_the_reduction() -> void:
 	assert_eq(float(me.get("cover_damage_reduction", -1.0)), 0.25,
 		"the protector braces: without a reduction cover is a pure HP transfer, not a gain")
 
+## The protector must act BEFORE the ward is visibly in trouble, not after.
+## DANGER_HP_THRESHOLD (0.25) is the presentation beat — music tenses, the artist's
+## weak pose plays, the boss remarks on it. cover_ally (0.40) is deliberately
+## EARLIER so the intervention is its own readable moment: the ward is not slumped,
+## the music is calm, and someone steps in anyway. Tuning cover BELOW danger inverts
+## that — the protector would only arrive once the ward is already in the danger
+## band, which is the late-arrival problem raising it to 0.40 was meant to fix.
+## The two are free to differ; cover simply may not be the lower of the pair.
+func test_cover_fires_before_the_ward_looks_hurt() -> void:
+	var raw := FileAccess.get_file_as_string("res://data/passives.json")
+	var parsed = JSON.parse_string(raw)
+	assert_not_null(parsed, "CONTROL: passives.json parses")
+	## Fallback is `parsed`, NOT {} — passives.json is id-keyed at the top level with
+	## no "passives" wrapper, and an empty-dict fallback makes the next line ABORT the
+	## whole function. That scores [Risky], which exits 0, so the assertion below never
+	## runs and the test reads green. Cost me a mutation arm that validated a different
+	## test entirely before the authored-vs-executed count caught it.
+	var ps = parsed.get("passives", parsed)
+	assert_true(ps.has("cover_ally"), "CONTROL: cover_ally is a known passive id")
+	var cover: float = float(ps["cover_ally"]["meta_effects"]["auto_cover_threshold"])
+
+	var scene := FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
+	var re := RegEx.new()
+	re.compile("DANGER_HP_THRESHOLD\\s*:\\s*float\\s*=\\s*([0-9.]+)")
+	var m := re.search(scene)
+	assert_not_null(m, "CONTROL: located DANGER_HP_THRESHOLD in BattleScene")
+	var danger: float = float(m.get_string(1))
+
+	assert_gt(danger, 0.0, "CONTROL: parsed a real danger threshold (%f)" % danger)
+	assert_gt(cover, 0.0, "CONTROL: parsed a real cover threshold (%f)" % cover)
+	assert_true(cover >= danger,
+		"cover_ally (%.2f) must not fire LATER than the danger beat (%.2f) — a protector that waits until the ward is already slumped has arrived too late to be why they lived" % [cover, danger])
+
 func test_single_target_offensive_ability_is_covered() -> void:
 	var src := FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
 	assert_gt(src.length(), 1000, "CONTROL: read BattleManager source")
