@@ -2046,6 +2046,18 @@
       "duration": 73.68,
       "loop": true,
       "generated_at": "2026-08-27"
+    },
+    "shop": {
+      "file": "assets/audio/music/shop.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "The Merchant's Welcome",
+      "prompt": "Cozy JRPG merchant's shop, warm interior with hanging lanterns, shelves of potions and gear, welcoming shopkeeper behind a wooden counter. Gentle piano arpeggios over soft harp, light flute melody drifting above, pizzicato strings underneath. Calm and inviting, lets the player browse without pressure, classic FF/Dragon Quest shop-music feel. Loops cleanly.",
+      "style": "16-bit SNES shop theme, cozy, gentle piano and harp, light woodwinds, pizzicato strings, warm, welcoming, medium tempo, loopable",
+      "model": "suno-v5",
+      "duration": 46.52,
+      "loop": true,
+      "generated_at": "2026-08-30"
     }
   },
   "tier_priority": [
