@@ -303,6 +303,13 @@ func _card_position(i: int, count: int, vp: Vector2) -> Vector2:
 		var sprite = _scene.party_sprite_nodes[i]
 		if is_instance_valid(sprite) and sprite.is_inside_tree():
 			var sp: Vector2 = sprite.get_global_transform_with_canvas().origin
+			# Anchor on the SETTLED spot, not the transient one (struktured cap 2026-08-31:
+			# Cleric's card stranded mid-screen — she was mid-return from a heal lunge when
+			# cards were placed, then settled home). Same class + fix as the bubble anchor.
+			if sprite.has_meta("home_position"):
+				var home = sprite.get_meta("home_position")
+				if home is Vector2:
+					sp += (home - sprite.position)
 			pos = Vector2(sp.x - CARD_W - 36.0, sp.y - CARD_H / 2.0)
 	pos.x = clampf(pos.x, LOG_CLEAR_X, vp.x - CARD_W - 8.0)
 	pos.y = clampf(pos.y, 56.0, vp.y - STRIP_BOTTOM_MARGIN - CARD_H)
