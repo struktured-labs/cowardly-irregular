@@ -15,10 +15,11 @@
         "idle",
         "item",
         "victory",
-        "walk"
+        "walk",
+        "weak"
       ],
       "tier": "T2",
-      "source": "artist aseprite \u2014 Game graphics - Characters/BARD/Bard Base sprite.aseprite, REWORKED drop 2026-08-26 (18 frames, 3 tags; the previous drop was 12 frames and untagged). Ingested BY TAG: idle <- Idle 0-3, dead <- WEAK 4-8, cast <- ATK 9-12 (wind-up), attack <- ATK 13-17 (swing+recovery). The cast/attack split was re-derived by diffing the new frames against the shipped cast.png/attack.png they replace \u2014 the artist added one charge frame. 2x nearest-neighbor upscale to 256px. 'Weak' is the ARTIST'S LABEL for the downed state and is kept as such (struktured 2026-08-27: honor the artist labels); it lands in the engine's `dead` slot because HybridSpriteLoader has no `weak` animation and a weak.png would never be played. Prior AI dead.png preserved at dead.pre_artist.png. Remaining anims (walk/hit/defend/item/victory) still T1 AI-gen until the artist drops them."
+      "source": "artist aseprite drop 2026-08-28 \u2014 Bard Base sprite.aseprite, 23 frames / 4 tags (Idle 0-3, Dead 4-8, Weak 9-13, ATK 14-22). Ingested BY TAG (tools/ingest_tagged_aseprite_drop.py). The artist SPLIT the downed state this drop: 'Dead' is now a true collapse to the ground, and 'Weak' is the upright-but-hurt pose that previously occupied the dead slot. Both labels are the artist's and are kept. \u26a0\ufe0f weak.png is LOADED but NOT YET PLAYED \u2014 HybridSpriteLoader has no weak trigger and BattleScene only ever calls play(\"idle\"); a low-HP hook is an open engine ask to cowir-main. cast <- ATK 14-17 (wind-up), attack <- ATK 18-22 (swing). Remaining anims (walk/hit/defend/item/victory) still T1."
     },
     "bard_sdxl": {
       "path": "res://assets/sprites/jobs/bard_sdxl",
@@ -124,10 +125,12 @@
         "idle",
         "item",
         "victory",
-        "walk"
+        "walk",
+        "weak"
       ],
       "tier": "T2",
-      "generator": "MIXED \u2014 contains ARTIST animations (attack, cast, idle) alongside v3 LoRA fills for the rest (16 PNGs total). Tier corrected 2026-07-29: was T1 with a bare LoRA generator string, which described the directory before the artist animations landed and was never updated. Provenance verified via git lineage (first decisive ancestor per file), not via this manifest \u2014 tier and generator agreed with each other while both were wrong. T1 here meant 'safe to regenerate', which would have destroyed the artist animations named above. T2, not T3: T3 is struktured's call."
+      "generator": "MIXED \u2014 contains ARTIST animations (attack, cast, idle) alongside v3 LoRA fills for the rest (16 PNGs total). Tier corrected 2026-07-29: was T1 with a bare LoRA generator string, which described the directory before the artist animations landed and was never updated. Provenance verified via git lineage (first decisive ancestor per file), not via this manifest \u2014 tier and generator agreed with each other while both were wrong. T1 here meant 'safe to regenerate', which would have destroyed the artist animations named above. T2, not T3: T3 is struktured's call.",
+      "source": "artist aseprite drop 2026-08-30 \u2014 Mage Main design.aseprite, 26 frames / 4 tags (IDLE 0-5, Weak 6-9, Atk 1 10-19, Dead 20-25). Ingested BY TAG (tools/ingest_tagged_aseprite_drop.py). The artist SPLIT the downed state this drop: 'Dead' is now a true collapse to the ground, and 'Weak' is the upright-but-hurt pose that previously occupied the dead slot. Both labels are the artist's and are kept. \u26a0\ufe0f weak.png is LOADED but NOT YET PLAYED \u2014 HybridSpriteLoader has no weak trigger and BattleScene only ever calls play(\"idle\"); a low-HP hook is an open engine ask to cowir-main. cast and attack both take the whole Atk 1 range, matching the pre-existing sheets which were byte-identical. No .pre_artist backup written: the prior mage sheets were ALREADY artist art from this same source, so that filename would misfile artist pixels as pre-artist; git history holds them."
     },
     "mage_sdxl": {
       "path": "res://assets/sprites/jobs/mage_sdxl",
