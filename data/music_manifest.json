@@ -66,18 +66,16 @@
       "generated_at": "2026-03-21"
     },
     "boss_rat_king": {
-      "tier": "T2",
+      "file": "assets/audio/music/boss_rat_king.ogg",
+      "tier": "T1",
       "provider": "suno",
       "title": "The Crown Beneath the Whispers",
-      "prompt": "First boss confrontation in a damp cave — sense of absurd grandeur giving way to mounting dread. Sewer-king pomp colliding with primal animal menace, dripping water punctuated by manic rodent squeaks, mock-heroic brass over a relentless low pulse, building to a fever pitch as the rat king bellows.",
-      "style": "SNES tutorial boss, manic minor key, comedic-yet-menacing, harpsichord + low brass + skittering percussion, 16-bit",
+      "prompt": "First boss confrontation in a damp cave — sense of absurd grandeur giving way to mounting dread. Sewer-king pomp colliding with primal animal menace, dripping water punctuated by manic rodent squeaks, mock-heroic brass over a relentless low pulse, building to a fever pitch as the rat king bellows. Must hit HARDER than the standard battle theme — overwhelming, urgent, fight-for-your-life energy under the absurdity. The comedy rides on top of real menace; it never replaces it.",
+      "style": "SNES boss battle, INTENSE and driving, pounding relentless percussion, aggressive low brass, manic minor key, comedic-yet-menacing character carried on top of the assault, harpsichord + skittering rodent detail, 16-bit",
       "model": "suno-v4",
       "duration": 124.72,
       "loop": true,
-      "generated_at": "",
-      "placeholder": false,
-      "notes": "Composed track landed 2026-08-26 (struktured heard it and approved). Was the only W1 boss on procedural audio; SoundManager's _start_rat_king_music stays as the fallback below the manifest path, which is consulted first and returns on success.",
-      "file": "assets/audio/music/boss_rat_king.ogg"
+      "generated_at": "2026-08-26"
     },
     "overworld_suburban": {
       "file": "assets/audio/music/overworld_suburban.ogg",
@@ -1952,6 +1950,114 @@
       "repurposed_note": "Generated as a goblin theme; struktured 2026-08-22 heard it as barbarian rather than goblin. Audio unchanged - only its role moved, to the troll/ogre/barbarian brute family. The prompt below is kept verbatim as generation provenance and no longer describes intended use.",
       "alias_of": "battle_brute",
       "alias_note": "play_music resolves the manifest BEFORE its match arms and returns on a hit, so an unregistered battle_* key falls through to the world bed. Measured 2026-08-22: these four reached battle_medieval while the match arm sat unreachable."
+    },
+    "battle_goblin": {
+      "file": "assets/audio/music/battle_goblin.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Vermin With Knives",
+      "prompt": "Goblins — small, quick, cowardly and armed. Scurry-and-stop motion, a chromatic snicker of a hook that darts and hides, sudden stabs of dissonance like a knife from the dark. Comic menace at knee height: annoying, unpredictable, genuinely dangerous in numbers. NOT a war chant, NOT tribal drums, NOT heroic — this is vermin with knives, and it must not sound like the brutes.",
+      "style": "JRPG battle, scrappy and frantic, A minor with chromatic wriggle, skittering percussion, plucked strings, shrill woodwind, scurry-and-stop phrasing, 158 BPM, 16-bit",
+      "model": "suno-v5",
+      "duration": 57.8,
+      "loop": true,
+      "generated_at": "2026-08-26"
+    },
+    "dungeon_dragon_lightning": {
+      "file": "assets/audio/music/dungeon_dragon_lightning.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "The Gathering Air",
+      "prompt": "Storm dragon cave dungeon theme. Static crackle in the silences, tremolo strings that climb without ever arriving, distant thunder felt more than heard. A held charge that keeps building and never discharges — the air before lightning, not the strike. Metallic shimmer on the high end, restless low pulse. Every descent adds pressure. SNES-era dungeon atmosphere, tense and expectant. Looping.",
+      "style": "SNES dungeon, electrical, static crackle, tremolo strings rising, distant thunder, restless, minor key, 108 BPM",
+      "model": "suno-v4",
+      "duration": 104.44,
+      "loop": true,
+      "generated_at": "2026-08-27"
+    },
+    "dungeon_dragon_shadow": {
+      "file": "assets/audio/music/dungeon_dragon_shadow.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "What the Dark Asks",
+      "prompt": "Void dragon cave dungeon theme. Sparse detuned bells with long decay, a low drone that never resolves, silences held slightly too long so the room feels like it is waiting for an answer. Almost no percussion. Not menacing — patient, and far older than the player. Hollow, contemplative, quietly wrong. SNES-era dungeon atmosphere, philosophical and cold. Looping.",
+      "style": "SNES dungeon, void, sparse detuned bells, low drone, long silences, unsettling, 68 BPM",
+      "model": "suno-v4",
+      "duration": 154.28,
+      "loop": true,
+      "generated_at": "2026-08-27"
+    },
+    "battle_cranky_lady": {
+      "file": "assets/audio/music/battle_cranky_lady.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Speak to Your Manager",
+      "prompt": "Battle theme for an irate suburban resident who attacks with complaints and thrown objects. Opens prim and tidy — pizzicato strings, a polite parlour organ, brushed snare. Every eight bars it gets a semitone higher and slightly faster while pretending nothing is happening. Door-slam and screen-door percussion. Comedy from restraint escalating into real force. Looping.",
+      "style": "SNES/16-bit battle theme, EarthBound and Mother 3 influenced, driving drums, passive-aggressive suburban, prim pizzicato, parlour organ, escalating, 128 BPM",
+      "model": "suno-v4",
+      "duration": 163.96,
+      "loop": true,
+      "generated_at": "2026-08-27"
+    },
+    "battle_new_age_retro_hippie": {
+      "file": "assets/audio/music/battle_new_age_retro_hippie.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Bad Vibes, Man",
+      "prompt": "Battle theme for a tie-dye pacifist who attacks with bad vibes and crystal healing. Loose psychedelic groove — sitar figure, wah guitar, a detuned organ pad that keeps bending FLAT so the peace-and-love reads slightly nauseating. Reversed tape swells on the downbeats. Driving enough to be a fight; the serenity is the threat. Looping.",
+      "style": "SNES/16-bit battle theme, EarthBound and Mother 3 influenced, driving drums, psychedelic, sitar and wah guitar, woozy detuned organ, backwards tape, 112 BPM",
+      "model": "suno-v4",
+      "duration": 209.96,
+      "loop": true,
+      "generated_at": "2026-08-27"
+    },
+    "battle_unassuming_dog": {
+      "file": "assets/audio/music/battle_unassuming_dog.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Just a Regular Neighborhood Dog",
+      "prompt": "Battle theme for a dog whose description insists there is nothing suspicious about its enormous attack stat. The joke IS the music: begins as a small harmless toy-piano-and-ukulele ditty, then without warning the full drum kit and low brass arrive, far too big for what is on screen, and the ditty keeps politely playing on top. The mismatch never resolves. Looping.",
+      "style": "SNES/16-bit battle theme, EarthBound and Mother 3 influenced, driving drums, deliberately innocuous then enormous, toy piano to full brass, whiplash dynamics, 104 BPM",
+      "model": "suno-v4",
+      "duration": 104.72,
+      "loop": true,
+      "generated_at": "2026-08-27"
+    },
+    "battle_rogue_mailbox": {
+      "file": "assets/audio/music/battle_rogue_mailbox.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "It Keeps What It Is Given",
+      "prompt": "Battle theme for a regulation blue mailbox that has stopped accepting the concept of routes. Rigidly metronomic and utterly deadpan — hollow struck-metal percussion, a single stubborn bass note refusing to move, a small brass motif that repeats without ever developing. Bureaucratically menacing. The comedy is that it will not stop and will not explain. Looping.",
+      "style": "SNES/16-bit battle theme, EarthBound and Mother 3 influenced, driving drums, deadpan mechanical, metronomic, hollow metal percussion, absurd stoicism, 120 BPM",
+      "model": "suno-v4",
+      "duration": 79.6,
+      "loop": true,
+      "generated_at": "2026-08-27"
+    },
+    "battle_skate_punk": {
+      "file": "assets/audio/music/battle_skate_punk.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "Radical, Dude",
+      "prompt": "Battle theme for a skateboarder attacking with kickflips and rail grinds. Fast surf-punk: sixteenth hi-hat, reverb-soaked tremolo guitar, walking bass, handclaps. Percussion built from board-scrape and wheel-rumble textures on the offbeats. Cocky and relentless, no menace — the threat is that he is not taking this seriously. Looping.",
+      "style": "SNES/16-bit battle theme, EarthBound and Mother 3 influenced, driving drums, surf punk, fast garage drums, reverb-drenched tremolo guitar, cowbell, 158 BPM",
+      "model": "suno-v4",
+      "duration": 73.68,
+      "loop": true,
+      "generated_at": "2026-08-27"
+    },
+    "shop": {
+      "file": "assets/audio/music/shop.ogg",
+      "tier": "T1",
+      "provider": "suno",
+      "title": "The Merchant's Welcome",
+      "prompt": "Cozy JRPG merchant's shop, warm interior with hanging lanterns, shelves of potions and gear, welcoming shopkeeper behind a wooden counter. Gentle piano arpeggios over soft harp, light flute melody drifting above, pizzicato strings underneath. Calm and inviting, lets the player browse without pressure, classic FF/Dragon Quest shop-music feel. Loops cleanly.",
+      "style": "16-bit SNES shop theme, cozy, gentle piano and harp, light woodwinds, pizzicato strings, warm, welcoming, medium tempo, loopable",
+      "model": "suno-v5",
+      "duration": 46.52,
+      "loop": true,
+      "generated_at": "2026-08-30"
     }
   },
   "tier_priority": [

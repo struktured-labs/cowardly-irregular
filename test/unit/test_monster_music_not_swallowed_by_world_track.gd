@@ -82,23 +82,3 @@ func test_the_world_rewrite_is_actually_guarded() -> void:
 	var body := _play_music_body(_src())
 	assert_true(body.contains("PROCEDURAL_BATTLE_TRACKS.has(track)"),
 		"the world-battle rewrite must consult the exemption list, or the list is decorative")
-
-
-func test_the_goblin_has_no_manifest_key_so_this_path_is_live() -> void:
-	# Why the guard matters TODAY rather than in principle: with a manifest key the composed
-	# track would win first and none of this would run. Delete this test when a goblin track ships.
-	var f := FileAccess.open("res://data/music_manifest.json", FileAccess.READ)
-	var d = JSON.parse_string(f.get_as_text())
-	f.close()
-	var found := false
-	var stack: Array = [d]
-	while not stack.is_empty():
-		var n = stack.pop_back()
-		if n is Dictionary:
-			var nd: Dictionary = n
-			if nd.has("battle_goblin"):
-				found = true
-				break
-			for k in nd:
-				stack.append(nd[k])
-	assert_false(found, "a battle_goblin manifest key now exists — the composed track landed, retire this test")
