@@ -421,9 +421,13 @@ func _generate_map() -> void:
 	spawn_points["industrial_portal"] = spawn_points["entrance"]
 	spawn_points["rail_yard"] = Vector2(30 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 3 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	spawn_points["factory_floor"] = Vector2(25 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 17 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
-	spawn_points["break_room"] = Vector2(36 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 19 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	# New-frame coords: the room's own top wall displaces +4.39 rows onto every x3-aligned
+	# interior row; (110,56) is inside the room with open factory floor as its displaced source.
+	spawn_points["break_room"] = Vector2(110 * TILE_SIZE + TILE_SIZE / 2, 56 * TILE_SIZE + TILE_SIZE / 2)
 	spawn_points["chemical_zone"] = Vector2(7 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 12 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
-	spawn_points["housing"] = Vector2(51 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 17 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	# New-frame coords: the x3 point sat in a terrace gap whose upstairs block displaces onto
+	# it; corridor column 132 is clear in both frames.
+	spawn_points["housing"] = Vector2(132 * TILE_SIZE + TILE_SIZE / 2, 51 * TILE_SIZE + TILE_SIZE / 2)
 	# Spawn point for arriving from suburban world (south gate)
 	spawn_points["from_suburban"] = Vector2(30 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 38 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	# Spawn point for returning from futuristic world (north rail yard)

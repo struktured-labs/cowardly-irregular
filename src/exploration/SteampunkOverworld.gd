@@ -422,7 +422,9 @@ func _generate_map() -> void:
 	print("Steampunk tile counts: ", tile_counts)
 
 	# Define spawn points
-	spawn_points["entrance"] = Vector2(27 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 2 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	# New-frame coords (not old x3): the x3 point sat 6 rows below the city wall, whose
+	# Mode 7 displaced collider (+4.39 rows) landed exactly on the body. On the boulevard now.
+	spawn_points["entrance"] = Vector2(88 * TILE_SIZE + TILE_SIZE / 2, 8 * TILE_SIZE + TILE_SIZE / 2)
 	spawn_points["plaza"] = Vector2(22 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 17 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	spawn_points["station"] = Vector2(25 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 43 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	spawn_points["steampunk_portal"] = Vector2(27 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 1 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
