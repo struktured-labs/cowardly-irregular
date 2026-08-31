@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Export a GDScript ASCII map literal to a 1px-per-tile PNG, losslessly.
 
-The ASCII literal does not survive the scale-up: W1 is 70 rows x 100 chars today, and a
-4x map is 140 rows x 200 hand-aligned characters where every row must be exactly 200 wide.
-IndustrialOverworld already carries that bug -- rows of 59 AND 60 -- silently.
+The ASCII literal does not survive the scale-up: a hand-aligned grid where every row must
+be exactly MAP_WIDTH characters wide is a defect class, not a format (IndustrialOverworld
+shipped rows of 59 AND 60, silently, before its 2026-08 fix). As of 2026-08-30 every
+world's literal is DELETED -- all six load PNGs -- so this tool's remaining jobs are
+verifying a literal during any future migration and converting authored ASCII drafts.
 
 WHY THE PIXEL ENCODES THE CHARACTER, NOT THE TILE TYPE:
 _char_to_tile_type collapses 25 characters into ~12 visual types. "1", "2", "3" and "4" all
