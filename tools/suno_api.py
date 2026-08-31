@@ -1194,6 +1194,7 @@ class SunoBrowser:
             print(f"  Feed-poll matched clip: {fb_clip.get('id', '?')[:12]} ({fb_clip.get('title')!r})")
             return {
                 "audio_url": fb_clip["audio_url"],
+                "media_urls": fb_clip.get("media_urls") or [],
                 "title": fb_clip.get("title", title),
                 "duration": float(fb_clip.get("duration") or 0),
                 "id": fb_clip.get("id", ""),
@@ -1264,6 +1265,7 @@ class SunoBrowser:
                               f"dur={float(best.get('duration') or 0):.0f}s")
                         return {
                             "audio_url": best["audio_url"],
+                            "media_urls": best.get("media_urls") or [],
                             "title": best.get("title", title),
                             "duration": float(best.get("duration") or 0),
                             "id": best.get("id", ""),
@@ -1323,6 +1325,78 @@ class SunoBrowser:
 # ---------------------------------------------------------------------------
 # Main
 # ---------------------------------------------------------------------------
+
+def resolve_media_url(clip: dict) -> tuple:
+    """Pick a fetchable audio URL for a clip, newest delivery path first.
+
+    Suno moved audio to CloudFront and left `audio_url` as a literal sentinel --
+    https://studio-api.prod.suno.com/api/forbidden -- so the old field is dead for
+    every clip, old and new. media_urls carries the live entries; the mp3 one 403s
+    and m4a-opus serves 200. Returns (url, suffix).
+    """
+    prefer = ("m4a-opus", "m4a", "opus", "wav")
+    media = clip.get("media_urls") or []
+    for want in prefer:
+        for m in media:
+            if m.get("content_type") == want and m.get("url"):
+                url = m["url"]
+                return url, os.path.splitext(url.split("?")[0])[1] or ".m4a"
+    for m in media:
+        if m.get("url"):
+            url = m["url"]
+            return url, os.path.splitext(url.split("?")[0])[1] or ".m4a"
+    legacy = clip.get("audio_url") or ""
+    if legacy and "forbidden" not in legacy:
+        return legacy, ".mp3"
+    cid = clip.get("id") or ""
+    if cid:
+        try:
+            jwt = get_fresh_jwt()
+            r = requests.get(f"{SUNO_API}/api/clip/{cid}", headers=suno_headers(jwt), timeout=20)
+            if r.status_code == 200:
+                fresh = r.json()
+                if fresh.get("media_urls"):
+                    return resolve_media_url({"media_urls": fresh["media_urls"]})
+        except Exception as exc:
+            print(f"  clip re-fetch failed: {exc}")
+    return "", ""
+
+
+def align_import_loops(track_keys: list) -> None:
+    """Make each new track's .import loop flag agree with its manifest entry.
+
+    Godot writes loop=false into a freshly created .import, while every generated
+    manifest entry declares loop=True. That mismatch hit 9 of 9 tracks generated on
+    2026-08-26/27 and was aligned by hand each time. The runtime only survives it
+    because _try_play_from_manifest overrides the .import value -- any code path that
+    loads the OGG directly gets a boss theme that stops mid-fight.
+    """
+    if not track_keys:
+        return
+    print("  Importing so Godot writes the .import sidecars...")
+    subprocess.run(
+        ["godot", "--headless", "--audio-driver", "Dummy", "--import", "--quit"],
+        cwd=str(PROJECT_ROOT), capture_output=True, timeout=900,
+    )
+    manifest = json.loads((PROJECT_ROOT / "data" / "music_manifest.json").read_text())["tracks"]
+    fixed, unresolved = [], []
+    for key in track_keys:
+        entry = manifest.get(key) or {}
+        if not entry.get("loop") or not entry.get("file"):
+            continue
+        imp = PROJECT_ROOT / (entry["file"] + ".import")
+        if not imp.exists():
+            unresolved.append(key)
+            continue
+        text = imp.read_text()
+        if "loop=false" in text:
+            imp.write_text(text.replace("loop=false", "loop=true", 1))
+            fixed.append(key)
+    if fixed:
+        print(f"  Aligned .import loop=true: {', '.join(fixed)}")
+    if unresolved:
+        print(f"  WARNING: no .import found for {', '.join(unresolved)} -- run --import and re-check")
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(
@@ -1485,6 +1559,7 @@ def main() -> None:
         return
 
     succeeded, failed = 0, []
+    generated_keys: list = []
     try:
         for i, track in enumerate(queue, 1):
             # Inter-track delay (skip for first track)
@@ -1518,17 +1593,47 @@ def main() -> None:
                 continue
 
             # Download and convert
-            audio_url = result["audio_url"]
             track_key = track["track_id"]
-            raw_path = args.output_dir / f"{track_key}.mp3"
             ogg_path = args.output_dir / f"{track_key}.ogg"
 
+            audio_url, _dl_suffix = resolve_media_url(result)
+            if not audio_url:
+                print(f"  FAILED: no fetchable media URL for {track_key} "
+                      f"(audio_url={str(result.get('audio_url'))[:60]!r})")
+                failed.append(track["track_id"])
+                continue
+            raw_path = args.output_dir / f"{track_key}{_dl_suffix or '.m4a'}"
+
             print(f"  Downloading: {audio_url[:80]}...")
-            resp = requests.get(audio_url, timeout=120, stream=True)
+            # The CDN returns 403 AccessDenied for a short window after a clip reports
+            # complete -- the object is not public yet. The old code never checked the
+            # status and wrote the XML error body to a .mp3, so the failure surfaced as
+            # "ffmpeg: Failed to find two consecutive MPEG audio frames" three layers
+            # downstream. Check, retry, and fail naming the real cause.
             raw_path.parent.mkdir(parents=True, exist_ok=True)
-            with raw_path.open("wb") as fh:
-                for chunk in resp.iter_content(65536):
-                    fh.write(chunk)
+            dl_ok = False
+            for attempt in range(1, 6):
+                resp = requests.get(audio_url, timeout=120, stream=True)
+                if resp.status_code == 200:
+                    with raw_path.open("wb") as fh:
+                        for chunk in resp.iter_content(65536):
+                            fh.write(chunk)
+                    head = raw_path.open("rb").read(5)
+                    if head.startswith(b"<?xml") or head.startswith(b"<Error"):
+                        print(f"  Attempt {attempt}: CDN returned an error document, not audio")
+                        raw_path.unlink(missing_ok=True)
+                    else:
+                        dl_ok = True
+                        break
+                else:
+                    print(f"  Attempt {attempt}: HTTP {resp.status_code} from the CDN")
+                if attempt < 5:
+                    time.sleep(attempt * 10)
+            if not dl_ok:
+                print(f"  FAILED: audio never became downloadable for {track_key} "
+                      f"(clip exists on Suno; credits already spent -- re-run to re-fetch)")
+                failed.append(track["track_id"])
+                continue
             print(f"  Saved: {raw_path} ({raw_path.stat().st_size // 1024} KB)")
 
             convert_to_ogg(raw_path, ogg_path)
@@ -1558,11 +1663,13 @@ def main() -> None:
                 subprocess.run(["mpv", "--no-video", str(ogg_path)])
 
             succeeded += 1
+            generated_keys.append(track_key)
 
     finally:
         browser.close()
 
     print(f"\n{'=' * 60}")
+    align_import_loops(generated_keys)
     print(f"DONE: {succeeded}/{len(queue)} succeeded")
     if failed:
         print(f"Failed: {', '.join(failed)}")
