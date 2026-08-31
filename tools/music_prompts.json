@@ -306,8 +306,8 @@
     },
     "battle_goblin": {
       "title_template": "Vermin With Knives",
-      "style": "JRPG battle, scrappy and frantic, A minor with chromatic wriggle, skittering percussion, plucked strings, shrill woodwind, scurry-and-stop phrasing, 158 BPM, 16-bit",
-      "prompt": "Goblins — small, quick, cowardly and armed. Scurry-and-stop motion, a chromatic snicker of a hook that darts and hides, sudden stabs of dissonance like a knife from the dark. Comic menace at knee height: annoying, unpredictable, genuinely dangerous in numbers. NOT a war chant, NOT tribal drums, NOT heroic — this is vermin with knives, and it must not sound like the brutes."
+      "style": "JRPG battle, scrappy and frantic, A minor with chromatic wriggle, skittering light percussion, plucked strings, shrill woodwind, scurry-and-stop phrasing, 158 BPM, 16-bit",
+      "prompt": "Goblins — small, quick, cowardly and armed. Scurry-and-stop motion, a chromatic snicker of a hook that darts and hides, sudden stabs of dissonance like a knife from the dark. Comic menace at knee height: annoying, unpredictable, genuinely dangerous in numbers. Light on its feet throughout — the threat is speed and numbers, never size or weight. Nimble, needling, and small."
     },
     "battle_skeleton": {
       "title_template": "Bone Rattle",

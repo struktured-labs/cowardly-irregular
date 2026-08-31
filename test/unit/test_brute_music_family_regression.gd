@@ -166,3 +166,31 @@ func test_goblins_never_get_the_barbarian_theme() -> void:
 	var path: String = _route_and_get_path("battle_goblin")
 	SoundManager.restore_music_state(saved)
 	assert_false(path.ends_with(BRUTE_OGG), "battle_goblin routed to the brute theme - goblins are barbarian-scored again, which is the complaint that started this")
+
+## The prompt file is a SECOND source and the generator reads only it.
+const REJECTED_GOBLIN_WORDS: Array[String] = ["tribal", "war drum", "primitive chanting", "chanting"]
+
+func test_the_goblin_PROMPT_is_not_the_brief_he_rejected() -> void:
+	## He asked for the goblin theme to be replaced because it was too barbarian. The recast
+	## moved the audio and updated the manifest -- and left tools/music_prompts.json still
+	## saying "tribal, war drums, primitive chanting". That file is what the generator reads,
+	## so regenerating would have handed back exactly the track he rejected, under a new name.
+	## Found 2026-08-30 while generating the replacement; cowir-sfx hit the identical shape
+	## with ability_heal's "birdsong" prompt the same day.
+	var raw: String = FileAccess.get_file_as_string("res://tools/music_prompts.json")
+	assert_gt(raw.length(), 1000, "SCOPE control: music_prompts.json read back %d chars" % raw.length())
+	var parsed = JSON.parse_string(raw)
+	assert_true(parsed is Dictionary, "music_prompts.json did not parse")
+	var shared: Dictionary = (parsed as Dictionary).get("shared_tracks", {})
+	assert_true(shared.has("battle_goblin"), "SCOPE control: no battle_goblin prompt entry")
+	assert_true(shared.has("battle_brute"), "battle_brute has no prompt entry - regenerating it would invent a character")
+
+	var goblin: String = (str(shared["battle_goblin"].get("style", "")) + " " + str(shared["battle_goblin"].get("prompt", ""))).to_lower()
+	for word in REJECTED_GOBLIN_WORDS:
+		assert_false(goblin.contains(word),
+			"the goblin PROMPT contains %s - that is the barbarian brief he rejected, and the generator reads this file, not the manifest" % word)
+
+	## The same vocabulary is CORRECT for the brute family: that bed is literally the old track.
+	var brute: String = (str(shared["battle_brute"].get("style", "")) + " " + str(shared["battle_brute"].get("prompt", ""))).to_lower()
+	assert_true(brute.contains("tribal") or brute.contains("war drum"),
+		"the brute prompt lost its tribal character - regenerating it would drift off the bed it describes")
