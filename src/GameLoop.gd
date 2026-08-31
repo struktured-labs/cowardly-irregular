@@ -924,7 +924,7 @@ func _input(event: InputEvent) -> void:
 		elif current_state == LoopState.BATTLE:
 			# Escape is BACK, never OPEN (struktured 2026-08-30). It binds ui_menu as well as
 			# ui_cancel, so it was opening the autobattle editor mid-fight — which his artist
-			# read as a pause menu she could not escape. Start still opens it.
+			# read as a pause menu he could not escape. Start still opens it.
 			if event is InputEventKey and event.keycode == KEY_ESCAPE:
 				return
 			if not _autobattle_editor or not is_instance_valid(_autobattle_editor):
