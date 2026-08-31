@@ -32,13 +32,13 @@ func _esc() -> InputEventKey:
 
 
 ## The artist's second press. Behavioural, because a source pin passes on a handler that is
-## present and dead — and this is the exact key she reported.
+## present and dead — and this is the exact key he reported.
 func test_escape_closes_the_editor_instead_of_deleting() -> void:
 	var closed := [false]
 	_editor.closed.connect(func(): closed[0] = true)
 	_editor._input(_esc())
 	assert_true(closed[0],
-		"Escape must back out of the editor — she pressed it repeatedly and it deleted her rules instead")
+		"Escape must back out of the editor — he pressed it repeatedly and it deleted his rules instead")
 
 
 ## Delete has to survive the move, or the fix trades one broken thing for another.
@@ -52,8 +52,8 @@ func test_delete_is_still_reachable_on_keyboard_and_pad() -> void:
 		"a pad needs a delete too — Y off a condition cell was a dead end and now carries it")
 
 
-## Escape must not OPEN the editor. This is the half that made her stuck rather than merely
-## confused: the key she used to escape was the key that summoned it.
+## Escape must not OPEN the editor. This is the half that made him stuck rather than merely
+## confused: the key he used to escape was the key that summoned it.
 func test_escape_does_not_open_the_editor_in_battle() -> void:
 	var src := FileAccess.get_file_as_string(GL)
 	var branch := src.find("elif current_state == LoopState.BATTLE:", src.find('is_action_pressed("ui_menu")'))
@@ -67,9 +67,9 @@ func test_escape_does_not_open_the_editor_in_battle() -> void:
 	assert_lt(guard, opener, "and reject it BEFORE the open, or Escape still summons the grid")
 
 
-## The legend is what she would have read. It said "B:Delete", which was true and lethal.
+## The legend is what he would have read. It said "B:Delete", which was true and lethal.
 func test_the_legend_tells_her_escape_goes_back() -> void:
 	var src := FileAccess.get_file_as_string(ED)
 	assert_true(src.contains("B/Esc:Back"), "the on-screen legend must say Escape backs out")
 	assert_false(src.contains("B:Delete"),
-		"and must no longer advertise B as delete — that is the mapping that trapped her")
+		"and must no longer advertise B as delete — that is the mapping that trapped him")
