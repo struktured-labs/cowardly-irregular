@@ -221,7 +221,14 @@ var _boss_dialogue_data: Dictionary = {}  # Stores dialogue for current boss
 var _waiting_for_dialogue: bool = false  # Pauses battle during dialogue
 var _base_music_track: String = "battle"  # battle/boss/per-monster/per-face id; "" = authored silence (unmasking)
 var _masterite_phase2_swapped: bool = false  # One-shot: latch when phase2 music kicks in
-const DANGER_HP_THRESHOLD: float = 0.25  # Switch to danger music below 25% HP
+## The low-HP beat for everything in THIS file: danger music, the hurt pose, the
+## player quip, the boss wounded line. 0-1 scale — the two get_hp_percentage()
+## consumers are 0-100 and scale it by 100, they do NOT carry their own literal.
+## ⚠️ BattleManager has its OWN const LOW_HP_PCT_THRESHOLD = 25.0 (0-100) driving
+## the voice cue's edge-crossing test. Same number, deliberately NOT bound across
+## files: the scales differ and a slip there silently stops party voice lines.
+## If you retune one, retune both.
+const DANGER_HP_THRESHOLD: float = 0.25
 
 ## Tick 428: per-battle latches so the boss `low_hp` and `defeat`
 ## dialogue lines fire ONCE per battle. Pre-fix monsters.json
@@ -2794,6 +2801,9 @@ func _process(delta: float) -> void:
 	# Check for danger music (player about to die)
 	_check_danger_music()
 
+	# Same beat, same threshold: the hurt pose tracks the danger music.
+	_refresh_low_hp_poses()
+
 	# Idle sway/breathing animations
 	_process_idle_animations(delta)
 
@@ -4600,8 +4610,10 @@ func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: St
 	# Party member taking big damage (>30% max HP) — reaction quip
 	if target in BattleManager.player_party and amount > target.max_hp * 0.3:
 		_try_combat_quip(TAKE_BIG_DAMAGE_QUIPS, target)
-	# Low HP warning (dropped below 25%)
-	if target in BattleManager.player_party and target.is_alive and target.get_hp_percentage() < 25.0:
+	# Low HP warning. Bound to DANGER_HP_THRESHOLD, not a literal 25.0 — this and the
+	# boss line below were bare copies on a 0-100 scale while the constant is 0-1, so
+	# tuning the named constant moved the music and silently left both behind.
+	if target in BattleManager.player_party and target.is_alive and target.get_hp_percentage() < DANGER_HP_THRESHOLD * 100.0:
 		_try_combat_quip(LOW_HP_QUIPS, target)
 
 	## Tick 428: boss low_hp dialogue line. Authored on cave_rat_king,
@@ -4612,7 +4624,7 @@ func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: St
 	## feels symmetric.
 	if not _boss_low_hp_spoken and target in BattleManager.enemy_party and target.is_alive:
 		if _boss_dialogue_data.has("low_hp") and _boss_dialogue_data["low_hp"].size() > 0:
-			if target.get_hp_percentage() < 25.0 and target.has_meta("is_boss"):
+			if target.get_hp_percentage() < DANGER_HP_THRESHOLD * 100.0 and target.has_meta("is_boss"):
 				_boss_low_hp_spoken = true
 				if _battle_dialogue and _battle_dialogue.has_method("show_boss_intro"):
 					_show_boss_dialogue(target.combatant_name, _boss_dialogue_data["low_hp"])
@@ -5434,6 +5446,45 @@ func _on_monster_summoned(monster_type: String, summoner: Combatant) -> void:
 
 func _spawn_damage_number(pos: Vector2, amount: int, is_heal: bool, is_crit: bool) -> void:
 	_results_display.spawn_damage_number(pos, amount, is_heal, is_crit)
+
+
+## Shared by the danger music and the weak pose so the two cannot drift. A
+## low-HP voice line (voice_<job>_low_hp) belongs on this predicate too when
+## its handles land — but EDGE-triggered, once on crossing down. Level-trigger
+## it like the pose and the line repeats every frame.
+func _is_low_hp(c: Combatant) -> bool:
+	if c == null or not is_instance_valid(c) or not c.is_alive:
+		return false
+	if c.max_hp <= 0:
+		return false
+	return float(c.current_hp) / float(c.max_hp) < DANGER_HP_THRESHOLD
+
+
+## The artist split the downed state: `dead` is a true collapse, `weak` is the
+## upright-but-hurt pose. `weak` loaded but nothing ever played it — BattleScene
+## only reached play("idle"), all four sites at spawn — so both sheets were inert.
+##
+## LEVEL-triggered: re-asserted every frame, so a heal back over the line clears
+## it for free. Only ever swaps between idle and weak, never interrupting an
+## attack/cast/hit animation mid-play. has_animation gates it because only bard
+## and mage have a weak sheet today; the other three keep idle with no branch.
+func _refresh_low_hp_poses() -> void:
+	if _battle_ended:
+		return
+	for i in range(party_sprite_nodes.size()):
+		if i >= party_members.size():
+			break
+		var sprite = party_sprite_nodes[i]
+		if not is_instance_valid(sprite) or sprite.sprite_frames == null:
+			continue
+		if not sprite.sprite_frames.has_animation(&"weak"):
+			continue
+		var current := str(sprite.animation)
+		if current != "idle" and current != "weak":
+			continue
+		var want := "weak" if _is_low_hp(party_members[i]) else "idle"
+		if current != want:
+			sprite.play(want)
 
 
 func _check_danger_music() -> void:
