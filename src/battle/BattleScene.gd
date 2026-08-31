@@ -221,7 +221,7 @@ var _boss_dialogue_data: Dictionary = {}  # Stores dialogue for current boss
 var _waiting_for_dialogue: bool = false  # Pauses battle during dialogue
 var _base_music_track: String = "battle"  # battle/boss/per-monster/per-face id; "" = authored silence (unmasking)
 var _masterite_phase2_swapped: bool = false  # One-shot: latch when phase2 music kicks in
-const DANGER_HP_THRESHOLD: float = 0.25  # Switch to danger music below 25% HP
+const DANGER_HP_THRESHOLD: float = 0.25  # The low-HP beat: danger music, player quip, boss wounded line. 0-1; BattleManager.LOW_HP_PCT_THRESHOLD is the 0-100 twin.
 
 ## Tick 428: per-battle latches so the boss `low_hp` and `defeat`
 ## dialogue lines fire ONCE per battle. Pre-fix monsters.json
@@ -4601,7 +4601,7 @@ func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: St
 	if target in BattleManager.player_party and amount > target.max_hp * 0.3:
 		_try_combat_quip(TAKE_BIG_DAMAGE_QUIPS, target)
 	# Low HP warning (dropped below 25%)
-	if target in BattleManager.player_party and target.is_alive and target.get_hp_percentage() < 25.0:
+	if target in BattleManager.player_party and target.is_alive and target.get_hp_percentage() < DANGER_HP_THRESHOLD * 100.0:
 		_try_combat_quip(LOW_HP_QUIPS, target)
 
 	## Tick 428: boss low_hp dialogue line. Authored on cave_rat_king,
@@ -4612,7 +4612,7 @@ func _on_damage_dealt(target: Combatant, amount: int, is_crit: bool, element: St
 	## feels symmetric.
 	if not _boss_low_hp_spoken and target in BattleManager.enemy_party and target.is_alive:
 		if _boss_dialogue_data.has("low_hp") and _boss_dialogue_data["low_hp"].size() > 0:
-			if target.get_hp_percentage() < 25.0 and target.has_meta("is_boss"):
+			if target.get_hp_percentage() < DANGER_HP_THRESHOLD * 100.0 and target.has_meta("is_boss"):
 				_boss_low_hp_spoken = true
 				if _battle_dialogue and _battle_dialogue.has_method("show_boss_intro"):
 					_show_boss_dialogue(target.combatant_name, _boss_dialogue_data["low_hp"])
