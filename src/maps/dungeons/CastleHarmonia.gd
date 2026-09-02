@@ -24,6 +24,11 @@ class_name CastleHarmoniaScene
 const THRONE_APPROACH_ID: String = "world1_throne_room_approach"
 const THRONE_APPROACH_FLAG: String = "cutscene_flag_world1_throne_room_approach_complete"
 
+## struktured 2026-08-22: "u shouldnt be able to fight mordain until u take out her warden".
+const WARDEN_ID: String = "castle_warden"
+const WARDEN_FLAG: String = "castle_warden_defeated"
+var _warden_triggered: bool = false
+
 
 func _init() -> void:
 	cave_name = "Castle Harmonia"
@@ -199,3 +204,35 @@ func _maybe_play_throne_approach() -> void:
 		GameState.set_story_flag(THRONE_APPROACH_FLAG)
 		return
 	await director.play_cutscene(THRONE_APPROACH_ID)
+
+
+## Grandfathered two ways: a save past Mordaine skips it, and a save already ON F4 never
+## crosses this stair. Only the F3 ascent is audited.
+func _warden_defeated() -> bool:
+	if GameState == null:
+		return true
+	if GameState.is_story_flag_set("world1_mordaine_defeated"):
+		return true
+	return GameState.is_story_flag_set(WARDEN_FLAG)
+
+
+func _on_stairs_up_entered(body: Node2D) -> void:
+	if current_floor == total_floors - 1 and not _transitioning \
+			and not _warden_triggered and not _warden_defeated():
+		if body.has_method("set_can_move"):
+			_trigger_warden_battle()
+		return
+	super._on_stairs_up_entered(body)
+
+
+## Mirrors _trigger_boss_battle's pending_boss_defeat shape — the scene is freed during the
+## battle transition, so victory flags must ride the central spec, never a local handler.
+func _trigger_warden_battle() -> void:
+	_warden_triggered = true
+	controller.pause_exploration()
+	GameState.pending_boss_defeat = {
+		"story_flags": [WARDEN_FLAG],
+		"constants": [],
+		"dungeon_flag": WARDEN_FLAG,
+	}
+	battle_triggered.emit([WARDEN_ID])

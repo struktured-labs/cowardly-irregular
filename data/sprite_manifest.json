@@ -19,7 +19,7 @@
         "weak"
       ],
       "tier": "T2",
-      "source": "artist aseprite drop 2026-08-28 \u2014 Bard Base sprite.aseprite, 23 frames / 4 tags (Idle 0-3, Dead 4-8, Weak 9-13, ATK 14-22). Ingested BY TAG (tools/ingest_tagged_aseprite_drop.py). The artist SPLIT the downed state this drop: 'Dead' is now a true collapse to the ground, and 'Weak' is the upright-but-hurt pose that previously occupied the dead slot. Both labels are the artist's and are kept. \u26a0\ufe0f weak.png is LOADED but NOT YET PLAYED \u2014 HybridSpriteLoader has no weak trigger and BattleScene only ever calls play(\"idle\"); a low-HP hook is an open engine ask to cowir-main. cast <- ATK 14-17 (wind-up), attack <- ATK 18-22 (swing). Remaining anims (walk/hit/defend/item/victory) still T1."
+      "source": "artist aseprite drop 2026-08-28 — Bard Base sprite.aseprite, 23 frames / 4 tags (Idle 0-3, Dead 4-8, Weak 9-13, ATK 14-22). Ingested BY TAG (tools/ingest_tagged_aseprite_drop.py). The artist SPLIT the downed state this drop: 'Dead' is now a true collapse to the ground, and 'Weak' is the upright-but-hurt pose that previously occupied the dead slot. Both labels are the artist's and are kept. ⚠️ weak.png is LOADED but NOT YET PLAYED — HybridSpriteLoader has no weak trigger and BattleScene only ever calls play(\"idle\"); a low-HP hook is an open engine ask to cowir-main. cast <- ATK 14-17 (wind-up), attack <- ATK 18-22 (swing). Remaining anims (walk/hit/defend/item/victory) still T1."
     },
     "bard_sdxl": {
       "path": "res://assets/sprites/jobs/bard_sdxl",
@@ -49,7 +49,7 @@
         "idle"
       ],
       "tier": "T1",
-      "_note": "AI-generated (gpt-image-1, artist fighter idle as style anchor). idle only \u2014 no walk/attack/cast yet, so BattleScene falls back per-animation. Flagged for artist review before any T2 promotion."
+      "_note": "AI-generated (gpt-image-1, artist fighter idle as style anchor). idle only — no walk/attack/cast yet, so BattleScene falls back per-animation. Flagged for artist review before any T2 promotion."
     },
     "cleric": {
       "path": "res://assets/sprites/jobs/cleric",
@@ -68,7 +68,7 @@
         "walk"
       ],
       "tier": "T2",
-      "generator": "MIXED \u2014 contains ARTIST animations (attack, cast, idle, walk) alongside v3 LoRA fills for the rest (15 PNGs total). Tier corrected 2026-07-29: was T1 with a bare LoRA generator string, which described the directory before the artist animations landed and was never updated. Provenance verified via git lineage (first decisive ancestor per file), not via this manifest \u2014 tier and generator agreed with each other while both were wrong. T1 here meant 'safe to regenerate', which would have destroyed the artist animations named above. T2, not T3: T3 is struktured's call."
+      "generator": "MIXED — contains ARTIST animations (attack, cast, idle, walk) alongside v3 LoRA fills for the rest (15 PNGs total). Tier corrected 2026-07-29: was T1 with a bare LoRA generator string, which described the directory before the artist animations landed and was never updated. Provenance verified via git lineage (first decisive ancestor per file), not via this manifest — tier and generator agreed with each other while both were wrong. T1 here meant 'safe to regenerate', which would have destroyed the artist animations named above. T2, not T3: T3 is struktured's call."
     },
     "fighter": {
       "path": "res://assets/sprites/jobs/fighter",
@@ -92,7 +92,7 @@
       ],
       "tier": "T2",
       "generator": "ARTIST work. Tier corrected 2026-07-29: this entry said T1 with 'gen_full_sweep.py (v2 jrpg_pixel_style LoRA)', which described a PREVIOUS state of the directory. 68b049d0 restored artist sprites and 4cab90d0 replaced idle+attack with the artist's own drive-archive renders; the generator string was never updated. Verified 2026-07-29: 7 of 9 PNGs are byte-identical to the v0.15.0 artist baseline, and idle/attack currently hold 4cab90d0 content ('artist's pre-rendered 128x128 sheets, 2x NN'). T2 to match its siblings bard and rogue_artist; NOT promoted to T3, which means artist-approved and is struktured's call, not mine.",
-      "source": "artist aseprite drop 2026-09-02 \u2014 Main Fighter animations.aseprite, 21 frames / 5 tags (IDLE 0-3, Weak 4-7, Dead 8-12, Dash 13-16, ATK 17-20; the previous file was 6 frames / 3 tags). Ingested BY TAG via tools/ingest_tagged_aseprite_drop.py, 2x nearest-neighbor to 256px. attack and slash both take ATK, matching the pre-existing sheets which were byte-identical. Third job to get the artist's Weak/Dead split after bard and mage. \u26a0\ufe0f weak.png is LOADED but NOT YET PLAYED \u2014 BattleScene only calls play(\"idle\") and has no low-HP trigger; the hook is an open engine ask to cowir-main, tracked alongside DANGER_HP_THRESHOLD. Backup written for dead.png ONLY: it was a non-artist v3 LoRA fill (68b049d0) and the source carried no Dead tag until this drop. idle/dash/attack/slash got NO .pre_artist backup \u2014 those were already artist pixels, so that filename would misfile them; git history holds the prior versions."
+      "source": "artist aseprite drop 2026-09-02 — Main Fighter animations.aseprite, 21 frames / 5 tags (IDLE 0-3, Weak 4-7, Dead 8-12, Dash 13-16, ATK 17-20; the previous file was 6 frames / 3 tags). Ingested BY TAG via tools/ingest_tagged_aseprite_drop.py, 2x nearest-neighbor to 256px. attack and slash both take ATK, matching the pre-existing sheets which were byte-identical. Third job to get the artist's Weak/Dead split after bard and mage. ⚠️ weak.png is LOADED but NOT YET PLAYED — BattleScene only calls play(\"idle\") and has no low-HP trigger; the hook is an open engine ask to cowir-main, tracked alongside DANGER_HP_THRESHOLD. Backup written for dead.png ONLY: it was a non-artist v3 LoRA fill (68b049d0) and the source carried no Dead tag until this drop. idle/dash/attack/slash got NO .pre_artist backup — those were already artist pixels, so that filename would misfile them; git history holds the prior versions."
     },
     "guardian": {
       "path": "res://assets/sprites/jobs/guardian",
@@ -131,8 +131,8 @@
         "weak"
       ],
       "tier": "T2",
-      "generator": "MIXED \u2014 contains ARTIST animations (attack, cast, idle) alongside v3 LoRA fills for the rest (16 PNGs total). Tier corrected 2026-07-29: was T1 with a bare LoRA generator string, which described the directory before the artist animations landed and was never updated. Provenance verified via git lineage (first decisive ancestor per file), not via this manifest \u2014 tier and generator agreed with each other while both were wrong. T1 here meant 'safe to regenerate', which would have destroyed the artist animations named above. T2, not T3: T3 is struktured's call.",
-      "source": "artist aseprite drop 2026-08-30 \u2014 Mage Main design.aseprite, 26 frames / 4 tags (IDLE 0-5, Weak 6-9, Atk 1 10-19, Dead 20-25). Ingested BY TAG (tools/ingest_tagged_aseprite_drop.py). The artist SPLIT the downed state this drop: 'Dead' is now a true collapse to the ground, and 'Weak' is the upright-but-hurt pose that previously occupied the dead slot. Both labels are the artist's and are kept. \u26a0\ufe0f weak.png is LOADED but NOT YET PLAYED \u2014 HybridSpriteLoader has no weak trigger and BattleScene only ever calls play(\"idle\"); a low-HP hook is an open engine ask to cowir-main. cast and attack both take the whole Atk 1 range, matching the pre-existing sheets which were byte-identical. No .pre_artist backup written: the prior mage sheets were ALREADY artist art from this same source, so that filename would misfile artist pixels as pre-artist; git history holds them."
+      "generator": "MIXED — contains ARTIST animations (attack, cast, idle) alongside v3 LoRA fills for the rest (16 PNGs total). Tier corrected 2026-07-29: was T1 with a bare LoRA generator string, which described the directory before the artist animations landed and was never updated. Provenance verified via git lineage (first decisive ancestor per file), not via this manifest — tier and generator agreed with each other while both were wrong. T1 here meant 'safe to regenerate', which would have destroyed the artist animations named above. T2, not T3: T3 is struktured's call.",
+      "source": "artist aseprite drop 2026-08-30 — Mage Main design.aseprite, 26 frames / 4 tags (IDLE 0-5, Weak 6-9, Atk 1 10-19, Dead 20-25). Ingested BY TAG (tools/ingest_tagged_aseprite_drop.py). The artist SPLIT the downed state this drop: 'Dead' is now a true collapse to the ground, and 'Weak' is the upright-but-hurt pose that previously occupied the dead slot. Both labels are the artist's and are kept. ⚠️ weak.png is LOADED but NOT YET PLAYED — HybridSpriteLoader has no weak trigger and BattleScene only ever calls play(\"idle\"); a low-HP hook is an open engine ask to cowir-main. cast and attack both take the whole Atk 1 range, matching the pre-existing sheets which were byte-identical. No .pre_artist backup written: the prior mage sheets were ALREADY artist art from this same source, so that filename would misfile artist pixels as pre-artist; git history holds them."
     },
     "mage_sdxl": {
       "path": "res://assets/sprites/jobs/mage_sdxl",
@@ -162,7 +162,7 @@
         "idle"
       ],
       "tier": "T1",
-      "_note": "AI-generated (gpt-image-1, artist fighter idle as style anchor). idle only \u2014 no walk/attack/cast yet, so BattleScene falls back per-animation. Flagged for artist review before any T2 promotion."
+      "_note": "AI-generated (gpt-image-1, artist fighter idle as style anchor). idle only — no walk/attack/cast yet, so BattleScene falls back per-animation. Flagged for artist review before any T2 promotion."
     },
     "ninja": {
       "path": "res://assets/sprites/jobs/ninja",
@@ -207,7 +207,7 @@
         "walk"
       ],
       "tier": "T2",
-      "generator": "MIXED \u2014 contains ARTIST animations (attack, idle, stab) alongside v3 LoRA fills for the rest (17 PNGs total). Tier corrected 2026-07-29: was T1 with a bare LoRA generator string, which described the directory before the artist animations landed and was never updated. Provenance verified via git lineage (first decisive ancestor per file), not via this manifest \u2014 tier and generator agreed with each other while both were wrong. T1 here meant 'safe to regenerate', which would have destroyed the artist animations named above. T2, not T3: T3 is struktured's call."
+      "generator": "MIXED — contains ARTIST animations (attack, idle, stab) alongside v3 LoRA fills for the rest (17 PNGs total). Tier corrected 2026-07-29: was T1 with a bare LoRA generator string, which described the directory before the artist animations landed and was never updated. Provenance verified via git lineage (first decisive ancestor per file), not via this manifest — tier and generator agreed with each other while both were wrong. T1 here meant 'safe to regenerate', which would have destroyed the artist animations named above. T2, not T3: T3 is struktured's call."
     },
     "rogue_artist": {
       "path": "res://assets/sprites/jobs/rogue_artist",
@@ -248,7 +248,7 @@
         "idle"
       ],
       "tier": "T1",
-      "_note": "AI-generated (gpt-image-1, artist fighter idle as style anchor). idle only \u2014 no walk/attack/cast yet, so BattleScene falls back per-animation. Flagged for artist review before any T2 promotion."
+      "_note": "AI-generated (gpt-image-1, artist fighter idle as style anchor). idle only — no walk/attack/cast yet, so BattleScene falls back per-animation. Flagged for artist review before any T2 promotion."
     },
     "skiptrotter": {
       "path": "res://assets/sprites/jobs/skiptrotter",
@@ -259,7 +259,7 @@
         "idle"
       ],
       "tier": "T1",
-      "_note": "AI-generated (gpt-image-1, artist fighter idle as style anchor). idle only \u2014 no walk/attack/cast yet, so BattleScene falls back per-animation. Flagged for artist review before any T2 promotion."
+      "_note": "AI-generated (gpt-image-1, artist fighter idle as style anchor). idle only — no walk/attack/cast yet, so BattleScene falls back per-animation. Flagged for artist review before any T2 promotion."
     },
     "speculator": {
       "path": "res://assets/sprites/jobs/speculator",
@@ -308,7 +308,7 @@
         "idle"
       ],
       "tier": "T1",
-      "_note": "AI-generated (gpt-image-1, artist fighter idle as style anchor). idle only \u2014 no walk/attack/cast yet, so BattleScene falls back per-animation. Flagged for artist review before any T2 promotion."
+      "_note": "AI-generated (gpt-image-1, artist fighter idle as style anchor). idle only — no walk/attack/cast yet, so BattleScene falls back per-animation. Flagged for artist review before any T2 promotion."
     }
   },
   "party_sheets": {},
@@ -678,7 +678,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "assembly_line_automaton": {
       "path": "res://assets/sprites/monsters/assembly_line_automaton.png",
@@ -704,7 +704,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "bard_hostile_courtier": {
       "path": "res://assets/sprites/monsters/bard_hostile_courtier.png",
@@ -730,7 +730,7 @@
         }
       },
       "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). aristocratic courtier NPC \u2014 Bard spotlight-duel miniboss (msg 1950). Non-HP win: talked-down via status/song thresholds."
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). aristocratic courtier NPC — Bard spotlight-duel miniboss (msg 1950). Non-HP win: talked-down via status/song thresholds."
     },
     "bat": {
       "path": "res://assets/sprites/monsters/bat.png",
@@ -756,7 +756,7 @@
         }
       },
       "tier": "T2",
-      "source": "artist aseprite \u2014 Game graphics - Characters/enemies/BAT 1.aseprite (Idle + Atk tags)"
+      "source": "artist aseprite — Game graphics - Characters/enemies/BAT 1.aseprite (Idle + Atk tags)"
     },
     "blood_wolf_alpha": {
       "path": "res://assets/sprites/monsters/blood_wolf_alpha.png",
@@ -782,7 +782,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "brass_golem": {
       "path": "res://assets/sprites/monsters/brass_golem.png",
@@ -808,7 +808,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "cave_rat": {
       "path": "res://assets/sprites/monsters/cave_rat.png",
@@ -834,7 +834,7 @@
         }
       },
       "tier": "T2",
-      "source": "artist aseprite drop 2026-08-20 \u2014 Game graphics - Characters/enemies/Rat animations.aseprite (artist tags Idle 0-3, Atk 4-9; 2.25x nearest-neighbor, whole canvas scaled once with ONE shared offset so the artist's inter-frame registration is preserved. Scale = min(match-reference-height, fit-widest-frame) per the skeleton precedent: content 252x144 in a 256 frame (skeleton is 250x185), feet seated at y=217 \u2014 exactly where the T1 sheet had them. A first pass used a flat 2x and came out under convention at 224x128; struktured had already rejected that on the skeleton (\"way too small, you need like 2.5x\")). HORIZONTALLY FLIPPED on ingest: the artist drew this one facing LEFT, and monsters face RIGHT (struktured 2026-08-27); the artist's own goblin faces right, this source is the outlier. The artist authored NO hit and NO dead \u2014 hit -> frame 4 is the ATTACK WINDUP and dead -> frame 0 is a plain IDLE, both REUSED placeholders exactly as the goblin does, so the rat visibly neither flinches nor falls. Dedicated hit/dead frames are an ARTIST ask. Previous T1 sheet preserved at cave_rat.pre_artist.png. \u26a0\ufe0f THE FLIP IS BAKED INTO THE PIXELS AND THAT IS ONLY CORRECT AT frame_height > 128. BattleScene infers artist-monster status from frame height alone (ENEMY_SMALL_FRAME_THRESHOLD=128, BattleScene.gd:46) and sets BOTH a 2.5x size bump AND sprite.flip_h from it. At 256 this sheet gets neither, which is why the baked flip renders correctly. RE-EXPORTING THIS AT 128 WOULD DOUBLE-FLIP IT \u2014 engine flip on top of the baked one \u2014 and the rat would face away from the party with nothing red. Either keep 256 with the flip baked (current, matches skeleton/wolf/spider), or drop to 128 AND remove the --flip. The repo runs both conventions among T2 monsters: 128 for bat/goblin/slime/mordaine/the_calibrant, 256 for skeleton/wolf/spider/imp and this one."
+      "source": "artist aseprite drop 2026-08-20 — Game graphics - Characters/enemies/Rat animations.aseprite (artist tags Idle 0-3, Atk 4-9; 2.25x nearest-neighbor, whole canvas scaled once with ONE shared offset so the artist's inter-frame registration is preserved. Scale = min(match-reference-height, fit-widest-frame) per the skeleton precedent: content 252x144 in a 256 frame (skeleton is 250x185), feet seated at y=217 — exactly where the T1 sheet had them. A first pass used a flat 2x and came out under convention at 224x128; struktured had already rejected that on the skeleton (\"way too small, you need like 2.5x\")). HORIZONTALLY FLIPPED on ingest: the artist drew this one facing LEFT, and monsters face RIGHT (struktured 2026-08-27); the artist's own goblin faces right, this source is the outlier. The artist authored NO hit and NO dead — hit -> frame 4 is the ATTACK WINDUP and dead -> frame 0 is a plain IDLE, both REUSED placeholders exactly as the goblin does, so the rat visibly neither flinches nor falls. Dedicated hit/dead frames are an ARTIST ask. Previous T1 sheet preserved at cave_rat.pre_artist.png. ⚠️ THE FLIP IS BAKED INTO THE PIXELS AND THAT IS ONLY CORRECT AT frame_height > 128. BattleScene infers artist-monster status from frame height alone (ENEMY_SMALL_FRAME_THRESHOLD=128, BattleScene.gd:46) and sets BOTH a 2.5x size bump AND sprite.flip_h from it. At 256 this sheet gets neither, which is why the baked flip renders correctly. RE-EXPORTING THIS AT 128 WOULD DOUBLE-FLIP IT — engine flip on top of the baked one — and the rat would face away from the party with nothing red. Either keep 256 with the flip baked (current, matches skeleton/wolf/spider), or drop to 128 AND remove the --flip. The repo runs both conventions among T2 monsters: 128 for bat/goblin/slime/mordaine/the_calibrant, 256 for skeleton/wolf/spider/imp and this one."
     },
     "cave_rat_king": {
       "path": "res://assets/sprites/monsters/cave_rat_king.png",
@@ -862,7 +862,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "cave_troll": {
       "path": "res://assets/sprites/monsters/cave_troll.png",
@@ -888,7 +888,7 @@
           "end": 7
         }
       },
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "chancellor_mordaine": {
       "path": "res://assets/sprites/monsters/chancellor_mordaine.png",
@@ -914,7 +914,7 @@
         }
       },
       "tier": "T2",
-      "source": "artist aseprite \u2014 Mordaine/Mordaine animations.aseprite; tags authored: Idle, summon 1; frames reused for un-authored anims from: Idle"
+      "source": "artist aseprite — Mordaine/Mordaine animations.aseprite; tags authored: Idle, summon 1; frames reused for un-authored anims from: Idle"
     },
     "cleric_survive_target": {
       "path": "res://assets/sprites/monsters/cleric_survive_target.png",
@@ -940,7 +940,7 @@
         }
       },
       "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). spectral sustained-pressure target \u2014 Cleric spotlight-duel miniboss (msg 1950). Non-HP win: outlast, not defeat."
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). spectral sustained-pressure target — Cleric spotlight-duel miniboss (msg 1950). Non-HP win: outlast, not defeat."
     },
     "clockwork_sentinel": {
       "path": "res://assets/sprites/monsters/clockwork_sentinel.png",
@@ -966,7 +966,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "cog_swarm": {
       "path": "res://assets/sprites/monsters/cog_swarm.png",
@@ -992,7 +992,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "conveyor_gremlin": {
       "path": "res://assets/sprites/monsters/conveyor_gremlin.png",
@@ -1018,7 +1018,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "corrupted_guardian": {
       "path": "res://assets/sprites/monsters/corrupted_guardian.png",
@@ -1044,7 +1044,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "corrupted_sprite": {
       "path": "res://assets/sprites/monsters/corrupted_sprite.png",
@@ -1070,7 +1070,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "cranky_lady": {
       "path": "res://assets/sprites/monsters/cranky_lady.png",
@@ -1096,7 +1096,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "crystal_golem": {
       "path": "res://assets/sprites/monsters/crystal_golem.png",
@@ -1122,7 +1122,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "cursed_armor": {
       "path": "res://assets/sprites/monsters/cursed_armor.png",
@@ -1148,7 +1148,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "data_wraith": {
       "path": "res://assets/sprites/monsters/data_wraith.png",
@@ -1174,7 +1174,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "diseased_rat": {
       "path": "res://assets/sprites/monsters/diseased_rat.png",
@@ -1200,8 +1200,8 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)",
-      "source": "Playtest audit 2026-07-15: single-frame multi-subject defect fixed by clone-adjacent (fix_broken_frames pattern), no regen \u2014 main body art retained."
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
+      "source": "Playtest audit 2026-07-15: single-frame multi-subject defect fixed by clone-adjacent (fix_broken_frames pattern), no regen — main body art retained."
     },
     "elder_mushroom": {
       "path": "res://assets/sprites/monsters/elder_mushroom.png",
@@ -1227,7 +1227,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "elemental": {
       "path": "res://assets/sprites/monsters/elemental.png",
@@ -1253,7 +1253,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "empty_set": {
       "path": "res://assets/sprites/monsters/empty_set.png",
@@ -1279,7 +1279,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "fighter_skeleton_knight": {
       "path": "res://assets/sprites/monsters/fighter_skeleton_knight.png",
@@ -1305,7 +1305,7 @@
         }
       },
       "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). chivalric plate skeleton \u2014 Fighter spotlight-duel miniboss (msg 1950)"
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). chivalric plate skeleton — Fighter spotlight-duel miniboss (msg 1950)"
     },
     "fire_dragon": {
       "path": "res://assets/sprites/monsters/fire_dragon.png",
@@ -1331,7 +1331,7 @@
           "end": 7
         }
       },
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "firewall_sentinel": {
       "path": "res://assets/sprites/monsters/firewall_sentinel.png",
@@ -1357,7 +1357,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "forgotten_variable": {
       "path": "res://assets/sprites/monsters/forgotten_variable.png",
@@ -1383,7 +1383,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "fungoid": {
       "path": "res://assets/sprites/monsters/fungoid.png",
@@ -1409,8 +1409,8 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)",
-      "source": "Playtest audit 2026-07-15: single-frame multi-subject defect fixed by clone-adjacent (fix_broken_frames pattern), no regen \u2014 main body art retained."
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
+      "source": "Playtest audit 2026-07-15: single-frame multi-subject defect fixed by clone-adjacent (fix_broken_frames pattern), no regen — main body art retained."
     },
     "ghost": {
       "path": "res://assets/sprites/monsters/ghost.png",
@@ -1436,7 +1436,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "giant_bat": {
       "path": "res://assets/sprites/monsters/giant_bat.png",
@@ -1462,8 +1462,8 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)",
-      "source": "Playtest audit 2026-07-15: single-frame multi-subject defect fixed by clone-adjacent (fix_broken_frames pattern), no regen \u2014 main body art retained."
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
+      "source": "Playtest audit 2026-07-15: single-frame multi-subject defect fixed by clone-adjacent (fix_broken_frames pattern), no regen — main body art retained."
     },
     "glitch_entity": {
       "path": "res://assets/sprites/monsters/glitch_entity.png",
@@ -1489,7 +1489,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "goblin": {
       "path": "res://assets/sprites/monsters/goblin.png",
@@ -1515,7 +1515,7 @@
         }
       },
       "tier": "T2",
-      "source": "artist aseprite \u2014 Game graphics - Characters/enemies/Goblin 1 anims.aseprite (Idle tag frames 0-2, ATK tag frames 3-8). The artist authored NO hit and NO dead. hit -> frame 3 is the ATTACK WINDUP and dead -> frame 0 is a plain IDLE: both are REUSED placeholders, not reaction art, so the goblin visibly neither flinches nor falls. Dedicated hit/dead frames are an ARTIST ask \u2014 gpt-image gap-fill was attempted 2026-07-28 and rejected on visual review (renders the figure rotated/sprawled; 3rd consecutive failure of that pose class)."
+      "source": "artist aseprite — Game graphics - Characters/enemies/Goblin 1 anims.aseprite (Idle tag frames 0-2, ATK tag frames 3-8). The artist authored NO hit and NO dead. hit -> frame 3 is the ATTACK WINDUP and dead -> frame 0 is a plain IDLE: both are REUSED placeholders, not reaction art, so the goblin visibly neither flinches nor falls. Dedicated hit/dead frames are an ARTIST ask — gpt-image gap-fill was attempted 2026-07-28 and rejected on visual review (renders the figure rotated/sprawled; 3rd consecutive failure of that pose class)."
     },
     "ice_dragon": {
       "path": "res://assets/sprites/monsters/ice_dragon.png",
@@ -1541,7 +1541,7 @@
           "end": 7
         }
       },
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "ice_wolf": {
       "path": "res://assets/sprites/monsters/ice_wolf.png",
@@ -1567,8 +1567,8 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)",
-      "source": "Playtest audit 2026-07-15: single-frame multi-subject defect fixed by clone-adjacent (fix_broken_frames pattern), no regen \u2014 main body art retained."
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
+      "source": "Playtest audit 2026-07-15: single-frame multi-subject defect fixed by clone-adjacent (fix_broken_frames pattern), no regen — main body art retained."
     },
     "imp": {
       "path": "res://assets/sprites/monsters/imp.png",
@@ -1594,7 +1594,7 @@
         }
       },
       "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist bat reference (tools/regen_monster_artist_style.py) \u2014 bespoke prompt with EXACTLY-ONE-SUBJECT-PER-FRAME discipline. Playtest bug fix (cowir-main msgs 2560/2561): W1 multi-subject defect regen."
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist bat reference (tools/regen_monster_artist_style.py) — bespoke prompt with EXACTLY-ONE-SUBJECT-PER-FRAME discipline. Playtest bug fix (cowir-main msgs 2560/2561): W1 multi-subject defect regen."
     },
     "ironback_beetle": {
       "path": "res://assets/sprites/monsters/ironback_beetle.png",
@@ -1620,7 +1620,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "lightning_dragon": {
       "path": "res://assets/sprites/monsters/lightning_dragon.png",
@@ -1646,7 +1646,7 @@
           "end": 7
         }
       },
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "mage_prismatic_construct": {
       "path": "res://assets/sprites/monsters/mage_prismatic_construct.png",
@@ -1672,7 +1672,7 @@
         }
       },
       "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). crystalline prism construct \u2014 Mage spotlight-duel miniboss (msg 1950). Rotating elemental weakness, read-and-exploit-live."
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). crystalline prism construct — Mage spotlight-duel miniboss (msg 1950). Rotating elemental weakness, read-and-exploit-live."
     },
     "masterite_arbiter_abstract": {
       "path": "res://assets/sprites/monsters/masterite_arbiter_abstract.png",
@@ -1698,7 +1698,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "masterite_arbiter_futuristic": {
       "path": "res://assets/sprites/monsters/masterite_arbiter_futuristic.png",
@@ -1724,7 +1724,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "masterite_arbiter_industrial": {
       "path": "res://assets/sprites/monsters/masterite_arbiter_industrial.png",
@@ -1750,7 +1750,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "masterite_arbiter_medieval": {
       "path": "res://assets/sprites/monsters/masterite_arbiter_medieval.png",
@@ -1776,7 +1776,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "masterite_arbiter_steampunk": {
       "path": "res://assets/sprites/monsters/masterite_arbiter_steampunk.png",
@@ -1828,7 +1828,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "masterite_curator_abstract": {
       "path": "res://assets/sprites/monsters/masterite_curator_abstract.png",
@@ -1854,7 +1854,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "masterite_curator_futuristic": {
       "path": "res://assets/sprites/monsters/masterite_curator_futuristic.png",
@@ -1880,7 +1880,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "masterite_curator_industrial": {
       "path": "res://assets/sprites/monsters/masterite_curator_industrial.png",
@@ -1906,7 +1906,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "masterite_curator_medieval": {
       "path": "res://assets/sprites/monsters/masterite_curator_medieval.png",
@@ -1932,7 +1932,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "masterite_curator_steampunk": {
       "path": "res://assets/sprites/monsters/masterite_curator_steampunk.png",
@@ -1984,7 +1984,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "masterite_tempo_abstract": {
       "path": "res://assets/sprites/monsters/masterite_tempo_abstract.png",
@@ -2010,7 +2010,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "masterite_tempo_futuristic": {
       "path": "res://assets/sprites/monsters/masterite_tempo_futuristic.png",
@@ -2036,7 +2036,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "masterite_tempo_industrial": {
       "path": "res://assets/sprites/monsters/masterite_tempo_industrial.png",
@@ -2062,7 +2062,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "masterite_tempo_medieval": {
       "path": "res://assets/sprites/monsters/masterite_tempo_medieval.png",
@@ -2088,7 +2088,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "masterite_tempo_steampunk": {
       "path": "res://assets/sprites/monsters/masterite_tempo_steampunk.png",
@@ -2140,7 +2140,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "masterite_warden_abstract": {
       "path": "res://assets/sprites/monsters/masterite_warden_abstract.png",
@@ -2166,7 +2166,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "masterite_warden_futuristic": {
       "path": "res://assets/sprites/monsters/masterite_warden_futuristic.png",
@@ -2192,7 +2192,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "masterite_warden_industrial": {
       "path": "res://assets/sprites/monsters/masterite_warden_industrial.png",
@@ -2218,7 +2218,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "masterite_warden_medieval": {
       "path": "res://assets/sprites/monsters/masterite_warden_medieval.png",
@@ -2244,7 +2244,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "masterite_warden_steampunk": {
       "path": "res://assets/sprites/monsters/masterite_warden_steampunk.png",
@@ -2296,7 +2296,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "memory_leak": {
       "path": "res://assets/sprites/monsters/memory_leak.png",
@@ -2322,7 +2322,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "meta_knight": {
       "path": "res://assets/sprites/monsters/meta_knight.png",
@@ -2348,7 +2348,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "mushroom": {
       "path": "res://assets/sprites/monsters/mushroom.png",
@@ -2374,7 +2374,7 @@
           "end": 7
         }
       },
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "new_age_retro_hippie": {
       "path": "res://assets/sprites/monsters/new_age_retro_hippie.png",
@@ -2400,7 +2400,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "null_entity": {
       "path": "res://assets/sprites/monsters/null_entity.png",
@@ -2426,7 +2426,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "optimization_itself": {
       "path": "res://assets/sprites/monsters/optimization_itself.png",
@@ -2452,7 +2452,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "permadeath_reaper": {
       "path": "res://assets/sprites/monsters/permadeath_reaper.png",
@@ -2478,7 +2478,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "pipe_phantom": {
       "path": "res://assets/sprites/monsters/pipe_phantom.png",
@@ -2504,7 +2504,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "rat_guard": {
       "path": "res://assets/sprites/monsters/rat_guard.png",
@@ -2530,7 +2530,7 @@
           "end": 7
         }
       },
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "recursive_loop": {
       "path": "res://assets/sprites/monsters/recursive_loop.png",
@@ -2556,7 +2556,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "rogue_automaton": {
       "path": "res://assets/sprites/monsters/rogue_automaton.png",
@@ -2608,7 +2608,7 @@
         }
       },
       "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). chained treasure-guardian construct \u2014 Rogue spotlight-duel miniboss (msg 1950). High-evade + Steal/backstab-solves."
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). chained treasure-guardian construct — Rogue spotlight-duel miniboss (msg 1950). High-evade + Steal/backstab-solves."
     },
     "rogue_mailbox": {
       "path": "res://assets/sprites/monsters/rogue_mailbox.png",
@@ -2660,7 +2660,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "rust_elemental": {
       "path": "res://assets/sprites/monsters/rust_elemental.png",
@@ -2686,7 +2686,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "script_error": {
       "path": "res://assets/sprites/monsters/script_error.png",
@@ -2712,7 +2712,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "shadow_dragon": {
       "path": "res://assets/sprites/monsters/shadow_dragon.png",
@@ -2738,7 +2738,7 @@
           "end": 7
         }
       },
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "shadow_knight": {
       "path": "res://assets/sprites/monsters/shadow_knight.png",
@@ -2764,7 +2764,7 @@
           "end": 7
         }
       },
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "shift_supervisor": {
       "path": "res://assets/sprites/monsters/shift_supervisor.png",
@@ -2790,7 +2790,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "skate_punk": {
       "path": "res://assets/sprites/monsters/skate_punk.png",
@@ -2816,7 +2816,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "skeleton": {
       "path": "res://assets/sprites/monsters/skeleton.png",
@@ -2842,7 +2842,7 @@
         }
       },
       "tier": "T2",
-      "source": "artist aseprite drop 2026-08-16 (cowir-sprites tmp/drop/skeleton_artist_full.png, 4 idle + 6 attack frames upscaled to 256 by the ingest pipeline); hit/dead reuse idle frames \u2014 death visual is the dissolve shader. | RESCALED 2026-08-17 to 2.84x (was 2x): content 148x171 feet y=238 vs neighbour 188/y=237. struktured: \"his way too small, you need like 2.5x\". Scale = min(match-reference-height, fit-widest-frame); whole canvas scaled once so the artist's inter-frame registration is preserved."
+      "source": "artist aseprite drop 2026-08-16 (cowir-sprites tmp/drop/skeleton_artist_full.png, 4 idle + 6 attack frames upscaled to 256 by the ingest pipeline); hit/dead reuse idle frames — death visual is the dissolve shader. | RESCALED 2026-08-17 to 2.84x (was 2x): content 148x171 feet y=238 vs neighbour 188/y=237. struktured: \"his way too small, you need like 2.5x\". Scale = min(match-reference-height, fit-widest-frame); whole canvas scaled once so the artist's inter-frame registration is preserved."
     },
     "slime": {
       "path": "res://assets/sprites/monsters/slime.png",
@@ -2868,7 +2868,7 @@
         }
       },
       "tier": "T2",
-      "source": "artist aseprite \u2014 Game graphics - Characters/enemies/SLIME 1.aseprite (Idle + Atk tags)"
+      "source": "artist aseprite — Game graphics - Characters/enemies/SLIME 1.aseprite (Idle + Atk tags)"
     },
     "slime_abstract": {
       "path": "res://assets/sprites/monsters/slime_abstract.png",
@@ -2894,7 +2894,7 @@
         }
       },
       "tier": "T2",
-      "source": "deterministic HSV hue-shift of artist slime \u2014 world 6 (abstract, monochrome)"
+      "source": "deterministic HSV hue-shift of artist slime — world 6 (abstract, monochrome)"
     },
     "slime_digital": {
       "path": "res://assets/sprites/monsters/slime_digital.png",
@@ -2920,7 +2920,7 @@
         }
       },
       "tier": "T2",
-      "source": "deterministic HSV hue-shift of artist slime \u2014 world 5 (digital, neon magenta)"
+      "source": "deterministic HSV hue-shift of artist slime — world 5 (digital, neon magenta)"
     },
     "slime_industrial": {
       "path": "res://assets/sprites/monsters/slime_industrial.png",
@@ -2946,7 +2946,7 @@
         }
       },
       "tier": "T2",
-      "source": "deterministic HSV hue-shift of artist slime \u2014 world 4 (industrial, rust)"
+      "source": "deterministic HSV hue-shift of artist slime — world 4 (industrial, rust)"
     },
     "slime_steampunk": {
       "path": "res://assets/sprites/monsters/slime_steampunk.png",
@@ -2972,7 +2972,7 @@
         }
       },
       "tier": "T2",
-      "source": "deterministic HSV hue-shift of artist slime \u2014 world 3 (steampunk, brass)"
+      "source": "deterministic HSV hue-shift of artist slime — world 3 (steampunk, brass)"
     },
     "slime_suburban": {
       "path": "res://assets/sprites/monsters/slime_suburban.png",
@@ -2998,7 +2998,7 @@
         }
       },
       "tier": "T2",
-      "source": "deterministic HSV hue-shift of artist slime \u2014 world 2 (suburban, sky-blue)"
+      "source": "deterministic HSV hue-shift of artist slime — world 2 (suburban, sky-blue)"
     },
     "snake": {
       "path": "res://assets/sprites/monsters/snake.png",
@@ -3024,7 +3024,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "specter": {
       "path": "res://assets/sprites/monsters/specter.png",
@@ -3050,7 +3050,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "spider": {
       "path": "res://assets/sprites/monsters/spider.png",
@@ -3076,7 +3076,7 @@
         }
       },
       "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist bat reference (tools/regen_monster_artist_style.py) \u2014 bespoke prompt with EXACTLY-ONE-SUBJECT-PER-FRAME discipline. Playtest bug fix (cowir-main msgs 2560/2561): W1 multi-subject defect regen."
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist bat reference (tools/regen_monster_artist_style.py) — bespoke prompt with EXACTLY-ONE-SUBJECT-PER-FRAME discipline. Playtest bug fix (cowir-main msgs 2560/2561): W1 multi-subject defect regen."
     },
     "spiteful_crow": {
       "path": "res://assets/sprites/monsters/spiteful_crow.png",
@@ -3102,7 +3102,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "steam_rat": {
       "path": "res://assets/sprites/monsters/steam_rat.png",
@@ -3128,7 +3128,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "the_absence": {
       "path": "res://assets/sprites/monsters/the_absence.png",
@@ -3154,7 +3154,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "the_coordinator": {
       "path": "res://assets/sprites/monsters/the_coordinator.png",
@@ -3180,7 +3180,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gpt-image-1 artist-style-anchored, W6 Calibrant finale faces. Registered 2026-07-29: the PNGs were drawn earlier and deliberately left UNREGISTERED because their monster ids did not exist in monsters.json yet \u2014 wiring art to a monster that cannot be fought is the thing this lane refuses. The ids now exist on cowir-battle's finales branch, so the record is honest. Folds as a unit with that branch; a manifest entry whose id nothing requests is inert, so landing this first is safe and unblocks their gate."
+      "generator": "gpt-image-1 artist-style-anchored, W6 Calibrant finale faces. Registered 2026-07-29: the PNGs were drawn earlier and deliberately left UNREGISTERED because their monster ids did not exist in monsters.json yet — wiring art to a monster that cannot be fought is the thing this lane refuses. The ids now exist on cowir-battle's finales branch, so the record is honest. Folds as a unit with that branch; a manifest entry whose id nothing requests is inert, so landing this first is safe and unblocks their gate."
     },
     "the_director": {
       "path": "res://assets/sprites/monsters/the_director.png",
@@ -3206,7 +3206,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gpt-image-1 artist-style-anchored, W6 Calibrant finale faces. Registered 2026-07-29: the PNGs were drawn earlier and deliberately left UNREGISTERED because their monster ids did not exist in monsters.json yet \u2014 wiring art to a monster that cannot be fought is the thing this lane refuses. The ids now exist on cowir-battle's finales branch, so the record is honest. Folds as a unit with that branch; a manifest entry whose id nothing requests is inert, so landing this first is safe and unblocks their gate."
+      "generator": "gpt-image-1 artist-style-anchored, W6 Calibrant finale faces. Registered 2026-07-29: the PNGs were drawn earlier and deliberately left UNREGISTERED because their monster ids did not exist in monsters.json yet — wiring art to a monster that cannot be fought is the thing this lane refuses. The ids now exist on cowir-battle's finales branch, so the record is honest. Folds as a unit with that branch; a manifest entry whose id nothing requests is inert, so landing this first is safe and unblocks their gate."
     },
     "the_regulator": {
       "path": "res://assets/sprites/monsters/the_regulator.png",
@@ -3232,7 +3232,7 @@
         }
       },
       "tier": "T1",
-      "generator": "gpt-image-1 artist-style-anchored, W6 Calibrant finale faces. Registered 2026-07-29: the PNGs were drawn earlier and deliberately left UNREGISTERED because their monster ids did not exist in monsters.json yet \u2014 wiring art to a monster that cannot be fought is the thing this lane refuses. The ids now exist on cowir-battle's finales branch, so the record is honest. Folds as a unit with that branch; a manifest entry whose id nothing requests is inert, so landing this first is safe and unblocks their gate."
+      "generator": "gpt-image-1 artist-style-anchored, W6 Calibrant finale faces. Registered 2026-07-29: the PNGs were drawn earlier and deliberately left UNREGISTERED because their monster ids did not exist in monsters.json yet — wiring art to a monster that cannot be fought is the thing this lane refuses. The ids now exist on cowir-battle's finales branch, so the record is honest. Folds as a unit with that branch; a manifest entry whose id nothing requests is inert, so landing this first is safe and unblocks their gate."
     },
     "time_phantom": {
       "path": "res://assets/sprites/monsters/time_phantom.png",
@@ -3284,7 +3284,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "treasure_mimic": {
       "path": "res://assets/sprites/monsters/treasure_mimic.png",
@@ -3310,7 +3310,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "troll": {
       "path": "res://assets/sprites/monsters/troll.png",
@@ -3336,7 +3336,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "unassuming_dog": {
       "path": "res://assets/sprites/monsters/unassuming_dog.png",
@@ -3362,7 +3362,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "viper": {
       "path": "res://assets/sprites/monsters/viper.png",
@@ -3388,7 +3388,7 @@
         }
       },
       "tier": "T1",
-      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen \u2014 cowir-main msg 2516/user feedback)"
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "wolf": {
       "path": "res://assets/sprites/monsters/wolf.png",
@@ -3414,7 +3414,7 @@
         }
       },
       "tier": "T2",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist bat reference (tools/regen_monster_artist_style.py) \u2014 bespoke prompt with EXACTLY-ONE-SUBJECT-PER-FRAME discipline. Playtest bug fix (cowir-main msgs 2560/2561): W1 multi-subject defect regen."
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist bat reference (tools/regen_monster_artist_style.py) — bespoke prompt with EXACTLY-ONE-SUBJECT-PER-FRAME discipline. Playtest bug fix (cowir-main msgs 2560/2561): W1 multi-subject defect regen."
     },
     "the_calibrant": {
       "path": "res://assets/sprites/monsters/chancellor_mordaine.png",
@@ -3440,7 +3440,7 @@
         }
       },
       "tier": "T2",
-      "source": "DELIBERATE REUSE of chancellor_mordaine.png \u2014 the Calibrant opens as its first mask (Fable P1: Mordaine baseline). True-form sheet is an unspent tier call; replace this entry when it ships."
+      "source": "DELIBERATE REUSE of chancellor_mordaine.png — the Calibrant opens as its first mask (Fable P1: Mordaine baseline). True-form sheet is an unspent tier call; replace this entry when it ships."
     },
     "skeleton_soldier": {
       "path": "res://assets/sprites/monsters/skeleton_soldier.png",
@@ -3466,7 +3466,7 @@
         }
       },
       "tier": "T1",
-      "source": "gpt-image-1 4-pose contact-sheet anchored to artist fighter reference (tools/regen_monster_artist_style.py) \u2014 bespoke prompt with EXACTLY-ONE-SUBJECT-PER-FRAME discipline. Playtest bug fix (cowir-main msgs 2560/2561): W1 multi-subject defect regen. | 2026-08-17: preserved as the Skeleton Soldier class when the artist skeleton drop replaced the base id (struktured: 'keep these guys around for some other skeleton type')."
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist fighter reference (tools/regen_monster_artist_style.py) — bespoke prompt with EXACTLY-ONE-SUBJECT-PER-FRAME discipline. Playtest bug fix (cowir-main msgs 2560/2561): W1 multi-subject defect regen. | 2026-08-17: preserved as the Skeleton Soldier class when the artist skeleton drop replaced the base id (struktured: 'keep these guys around for some other skeleton type')."
     },
     "bone_warden": {
       "path": "res://assets/sprites/monsters/bone_warden.png",
@@ -3518,7 +3518,7 @@
         }
       },
       "tier": "T1",
-      "generator": "regen_monster_artist_style.py 2026-08-22, gpt-image-1 high, anchored to the ARTIST goblin sheet (humanoid canon). Deliberately STONE-GREY with horns/tusks/maul so it does not duplicate `troll`, which is already a green axe-wielding brute \u2014 a default ogre prompt renders a third near-identical green club-troll. struktured: \"we should absolute add [a barbarian/ogre]\" (relayed by cowir-music, 2026-08-22)."
+      "generator": "regen_monster_artist_style.py 2026-08-22, gpt-image-1 high, anchored to the ARTIST goblin sheet (humanoid canon). Deliberately STONE-GREY with horns/tusks/maul so it does not duplicate `troll`, which is already a green axe-wielding brute — a default ogre prompt renders a third near-identical green club-troll. struktured: \"we should absolute add [a barbarian/ogre]\" (relayed by cowir-music, 2026-08-22)."
     },
     "barbarian": {
       "path": "res://assets/sprites/monsters/barbarian.png",
@@ -3544,7 +3544,34 @@
         }
       },
       "tier": "T1",
-      "generator": "regen_monster_artist_style.py 2026-08-22, gpt-image-1 high, anchored to the ARTIST goblin sheet. HUMAN warrior \u2014 furs, woad warpaint, two-handed axe \u2014 the roster's real gap: troll/cave_troll already cover the green brute, nothing covered a human raider. Matches the 'too barbarian sounding' music struktured wants recast."
+      "generator": "regen_monster_artist_style.py 2026-08-22, gpt-image-1 high, anchored to the ARTIST goblin sheet. HUMAN warrior — furs, woad warpaint, two-handed axe — the roster's real gap: troll/cave_troll already cover the green brute, nothing covered a human raider. Matches the 'too barbarian sounding' music struktured wants recast."
+    },
+    "castle_warden": {
+      "path": "res://assets/sprites/monsters/shadow_knight.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
+      "source": "reuses shadow_knight sheet — the Warden wears the guard's own plate; freed when Mordaine got her T2 sheet"
     }
   },
   "npc_sheets": {
@@ -4738,7 +4765,7 @@
       "frame_height": 24,
       "fps": 8,
       "tier": "T2",
-      "source": "hand-pixeled 24x24 amber shield-with-crossed-blades \u2014 cowir-sprites (cowir-main msg 2454 approval). Sigil for THREAT_CLASS_BUFFS (counter_stance et al.); attaches as sprite child, pulses via existing _update_buff_debuff_visuals hook."
+      "source": "hand-pixeled 24x24 amber shield-with-crossed-blades — cowir-sprites (cowir-main msg 2454 approval). Sigil for THREAT_CLASS_BUFFS (counter_stance et al.); attaches as sprite child, pulses via existing _update_buff_debuff_visuals hook."
     }
   },
   "tile_sheets": {

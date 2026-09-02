@@ -27,15 +27,19 @@ func test_chapter1_covers_the_modern_w1_arc() -> void:
 			"Chapter 1 must track '%s' — the log was stale vs the shipped W1 arc" % expected)
 
 
-func test_chapter1_optional_dragons_present() -> void:
-	var opts: Array = _chapter1().get("optional", [])
-	assert_eq(opts.size(), 4, "all four elemental dragons listed as optional")
+func test_chapter1_dragons_are_MAIN_objectives_now() -> void:
+	## Re-ruled 2026-09-02. This arm used to pin the dragons as OPTIONAL, which was true until
+	## the spine gate (bad8511c) made all four a requirement for Castle Harmonia. A quest log
+	## calling a mandatory boss "optional" telegraphs the opposite of the gate.
+	var objectives: Array = _chapter1().get("objectives", [])
 	var flags: Array = []
-	for o in opts:
-		flags.append(str(o["flag"]))
+	for q in objectives:
+		flags.append(str(q["flag"]))
 	for f in ["fire_dragon_defeated", "ice_dragon_defeated",
-			"lightning_dragon_defeated", "shadow_dragon_defeated"]:
-		assert_true(f in flags, "optional dragons must use the dungeon boss_flag_key names (%s)" % f)
+			"lightning_dragon_defeated", "shadow_dragon_defeated", "castle_warden_defeated"]:
+		assert_true(f in flags, "spine objective must be in the MAIN quest list (%s)" % f)
+	var opts: Array = _chapter1().get("optional", [])
+	assert_eq(opts.size(), 0, "nothing in W1 is optional anymore — the castle gate requires the whole spine")
 
 
 func test_flag_check_reads_dungeon_flags_namespace() -> void:

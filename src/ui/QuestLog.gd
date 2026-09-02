@@ -34,15 +34,15 @@ const CHAPTERS: Array = [
 			{"flag": "rat_king_defeated", "text": "Defeat the Cave Rat King"},
 			{"flag": "world1_rat_king_defeat_complete", "text": "A castle reveals itself on the horizon..."},
 			{"flag": "spotlight_unlocked_bard", "text": "Hear the Bard's voice in Harmonia"},
-			{"flag": "world1_mordaine_defeated", "text": "Confront Chancellor Mordaine in Castle Harmonia"},
-			{"flag": "world2_prologue_complete", "text": "Enter the Mundane Sprawl"},
-		],
-		"optional": [
 			{"flag": "fire_dragon_defeated", "text": "Slay Pyrroth, the Ember Wyrm"},
 			{"flag": "ice_dragon_defeated", "text": "Slay Glacius, the Frozen Sovereign"},
 			{"flag": "lightning_dragon_defeated", "text": "Slay Voltharion, the Storm's Edge"},
 			{"flag": "shadow_dragon_defeated", "text": "Slay Umbraxis, the Void Render"},
-		]
+			{"flag": "castle_warden_defeated", "text": "Defeat the Chancellor's Warden"},
+			{"flag": "world1_mordaine_defeated", "text": "Confront Chancellor Mordaine in Castle Harmonia"},
+			{"flag": "world2_prologue_complete", "text": "Enter the Mundane Sprawl"},
+		],
+		"optional": []
 	},
 	# Tick 271: W2-W6 entries previously used `w2_entered` /
 	# `w2_dungeon_cleared` (and equivalents for W3-W6) — flags that
