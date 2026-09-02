@@ -948,8 +948,8 @@
       "prompt_influence": 0.7
     },
     "heal": {
-      "file": "assets/audio/sfx/heal_v2.ogg",
-      "prompt": "Gentle wind chimes in a warm breeze, tinkling restoration with a rising shimmer, soothing healing sound",
+      "file": "assets/audio/sfx/heal_v4.ogg",
+      "prompt": "Soft wordless choir swelling on a sustained open vowel, warm cathedral reverb, gentle rise and settle, smooth and breathy with no bells, no chimes, no sparkle and no glissando, divine restoration landing",
       "duration_seconds": 1.0,
       "prompt_influence": 0.5,
       "variants": [
@@ -1204,7 +1204,7 @@
     },
     "ability_heal": {
       "file": "assets/audio/sfx/ability_heal.ogg",
-      "prompt": "Gentle rain on leaves with harp notes, nature healing sounds, birdsong and dewdrops, peaceful restoration",
+      "prompt": "Soft choir voices humming a soothing sustained note, angelic restoration with warm reverb, divine healing magic, smooth and vocal with no birdsong and no chirping and no tinkling",
       "duration_seconds": 1.2,
       "prompt_influence": 0.6,
       "variants": [

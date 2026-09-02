@@ -515,6 +515,11 @@ const _UI_VOLUME_TRIM_DB: Dictionary = {
 	"menu_select": -2.5,
 }
 
+## 2026-08-31 struktured: the round cue reads "a bit loud, not subtle". Moving it off the UI channel was a +10 dB step (-16 -> -6) and it overshot; this walks back half of it without returning it to the channel that buried it.
+const _BATTLE_VOLUME_TRIM_DB: Dictionary = {
+	"round_ap_gain": -5.0,
+}
+
 
 func play_ui(sound_key: String) -> void:
 	"""Play a UI sound effect — file-based if available, else procedural"""
@@ -532,9 +537,11 @@ func play_battle(sound_key: String) -> void:
 	# Cycle #13: play_ability was the ONLY prefix-aware path, so an authored
 	# w4_enemy_death could never be reached from the battle side.
 	var world_key: String = _get_world_sfx_prefix() + sound_key
-	if world_key != sound_key and _try_play_sfx_from_manifest(_battle_player, world_key):
+	# Explicit level on EVERY call, matching play_ui: volume_db persists on the shared player, so one trimmed cue would otherwise quiet every battle sound after it.
+	var level: float = SFX_BATTLE_BASE_DB + float(_BATTLE_VOLUME_TRIM_DB.get(sound_key, 0.0))
+	if world_key != sound_key and _try_play_sfx_from_manifest(_battle_player, world_key, level):
 		return
-	if _try_play_sfx_from_manifest(_battle_player, sound_key):
+	if _try_play_sfx_from_manifest(_battle_player, sound_key, level):
 		return
 	if not SOUNDS.has(sound_key):
 		return
