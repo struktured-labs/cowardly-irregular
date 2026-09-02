@@ -87,10 +87,12 @@
         "lunge",
         "slash",
         "victory",
-        "walk"
+        "walk",
+        "weak"
       ],
       "tier": "T2",
-      "generator": "ARTIST work. Tier corrected 2026-07-29: this entry said T1 with 'gen_full_sweep.py (v2 jrpg_pixel_style LoRA)', which described a PREVIOUS state of the directory. 68b049d0 restored artist sprites and 4cab90d0 replaced idle+attack with the artist's own drive-archive renders; the generator string was never updated. Verified 2026-07-29: 7 of 9 PNGs are byte-identical to the v0.15.0 artist baseline, and idle/attack currently hold 4cab90d0 content ('artist's pre-rendered 128x128 sheets, 2x NN'). T2 to match its siblings bard and rogue_artist; NOT promoted to T3, which means artist-approved and is struktured's call, not mine."
+      "generator": "ARTIST work. Tier corrected 2026-07-29: this entry said T1 with 'gen_full_sweep.py (v2 jrpg_pixel_style LoRA)', which described a PREVIOUS state of the directory. 68b049d0 restored artist sprites and 4cab90d0 replaced idle+attack with the artist's own drive-archive renders; the generator string was never updated. Verified 2026-07-29: 7 of 9 PNGs are byte-identical to the v0.15.0 artist baseline, and idle/attack currently hold 4cab90d0 content ('artist's pre-rendered 128x128 sheets, 2x NN'). T2 to match its siblings bard and rogue_artist; NOT promoted to T3, which means artist-approved and is struktured's call, not mine.",
+      "source": "artist aseprite drop 2026-09-02 \u2014 Main Fighter animations.aseprite, 21 frames / 5 tags (IDLE 0-3, Weak 4-7, Dead 8-12, Dash 13-16, ATK 17-20; the previous file was 6 frames / 3 tags). Ingested BY TAG via tools/ingest_tagged_aseprite_drop.py, 2x nearest-neighbor to 256px. attack and slash both take ATK, matching the pre-existing sheets which were byte-identical. Third job to get the artist's Weak/Dead split after bard and mage. \u26a0\ufe0f weak.png is LOADED but NOT YET PLAYED \u2014 BattleScene only calls play(\"idle\") and has no low-HP trigger; the hook is an open engine ask to cowir-main, tracked alongside DANGER_HP_THRESHOLD. Backup written for dead.png ONLY: it was a non-artist v3 LoRA fill (68b049d0) and the source carried no Dead tag until this drop. idle/dash/attack/slash got NO .pre_artist backup \u2014 those were already artist pixels, so that filename would misfile them; git history holds the prior versions."
     },
     "guardian": {
       "path": "res://assets/sprites/jobs/guardian",
