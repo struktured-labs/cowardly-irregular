@@ -69,16 +69,38 @@ func _actor_marks(id: String) -> Array:
 	return out
 
 
+## Read the gate's REAL span from source; a hardcoded upper bound over-checks once someone bounds it.
+func _admitted_floors(id: String, layouts: Dictionary) -> Array:
+	var lowest: int = FLOOR_GATES[id]
+	var highest := 0
+	for f in layouts:
+		highest = max(highest, int(f))
+	var src := FileAccess.get_file_as_string(GAMELOOP)
+	var at := src.find('return "%s"' % id)
+	if at > 0:
+		var re := RegEx.new()
+		re.compile("_cave_floor <= (?<hi>\\d+)")
+		var m := re.search(src.substr(max(0, at - 200), 200))
+		if m != null:
+			highest = min(highest, int(m.get_string("hi")))
+	var out: Array = []
+	for f in layouts:
+		if int(f) >= lowest and int(f) <= highest:
+			out.append(int(f))
+	return out
+
+
 ## The bug: a mark legal on the floor it was authored against, fatal on a deeper one the gate admits.
 func test_every_actor_mark_is_walkable_on_every_floor_its_gate_admits() -> void:
 	var layouts := _layouts()
 	assert_gt(layouts.size(), 0, "CastleHarmonia must define floor layouts")
 	var checked := 0
 	for id in FLOOR_GATES:
-		var lowest: int = FLOOR_GATES[id]
+		var admitted := _admitted_floors(id, layouts)
+		assert_gt(admitted.size(), 0, "%s must admit at least one floor, else its marks go unchecked" % id)
 		for mark in _actor_marks(id):
 			for f in layouts:
-				if int(f) < lowest:
+				if not admitted.has(int(f)):
 					continue
 				var ch := _cell_char(layouts[f], mark["pos"][0], mark["pos"][1])
 				checked += 1
