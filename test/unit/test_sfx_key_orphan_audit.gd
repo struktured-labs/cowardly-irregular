@@ -36,14 +36,10 @@ const CUTSCENES_DIR := "res://data/cutscenes"
 #     cutscene beats. cowir-sfx authoring needed; content-adjacent so
 #     each entry is its own design call (sample bank vs proc-gen).
 const KNOWN_ORPHAN_SFX := {
-	# 2026-08-18 victory revamp: 4 consumers wired behind manifest-has guards
-	# BEFORE the assets exist — cowir-sfx is authoring the kit (msg 5386).
-	# The guards mean these never fire into silence; the allowlist entries
-	# retire via test_allowlist_has_no_stale_entries when the kit folds.
-	"victory_slam": "victory kit pending (cowir-sfx 5386)",
-	"levelup_flourish": "victory kit pending (cowir-sfx 5386)",
-	"loot_pop": "victory kit pending (cowir-sfx 5386)",
-	"injury_sting": "victory kit pending (cowir-sfx 5386)",
+	# 2026-08-19: the four victory-kit entries retired here exactly as line 39 predicted —
+	# the assets landed, the keys resolve, and this list is the FORWARD audit's copy of the
+	# same retirement the reverse audit's KNOWN_PENDING_CONSUMER needed. Two lists, one
+	# event: a kit landing retires entries in BOTH, and fixing only one leaves a red.
 	# 2026-07-04: allowlist empty — quest_complete asset landed alongside
 	# the QuestTracker branch (feature/sfx-quest-complete-relanding).
 	# New orphans still fail loud below.

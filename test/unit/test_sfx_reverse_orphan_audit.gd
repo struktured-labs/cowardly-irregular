@@ -71,6 +71,15 @@ const KNOWN_PENDING_CONSUMER := {
 	"debuff_v3": "unwired alternate take",
 	"heal_v2": "unwired alternate take",
 	"heal_v3": "unwired alternate take",
+	# The EXP-bar ramp is the ONE part of the victory kit still unwired. The voice-topology
+	# ruling (cowir-main 2026-08-19) resolved the other four and they have left this list.
+	# The ramp's blocker is different and was never the voice: wiring it replaces the flat
+	# exp_tick at VictoryOverlay._animate_card_content with tier selection across the
+	# roll-up, which changes how the EXP fill SOUNDS on a surface struktured locked on
+	# 2026-08-18. Needs his call, not a routing decision.
+	"exp_bar_tick_ramp_lo": "struktured — EXP fill feel, locked surface 2026-08-18",
+	"exp_bar_tick_ramp_mid": "struktured — EXP fill feel, locked surface 2026-08-18",
+	"exp_bar_tick_ramp_hi": "struktured — EXP fill feel, locked surface 2026-08-18",
 }
 
 
