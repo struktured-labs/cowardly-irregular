@@ -15,6 +15,12 @@ const MapImageLoaderScript = preload("res://src/exploration/MapImageLoader.gd")
 const MAP_IMAGE: String = "res://data/maps/overworld_w1.png"
 ## Which palette decodes MAP_IMAGE. Required: the same character means different things per world
 const MAP_WORLD: String = "medieval"
+## The 2026-08-22 resize (14f6722d) doubled the MAP and updated exactly five values;
+## every literal content coordinate below it (chests, patrols, signs, landmarks, hidden
+## passages, Madame Orrery) stayed in the old 100x70 frame -- proven by the H markers
+## sitting at exactly 2x the passage literals. Legacy tile coords scale by this at their
+## tile->pixel conversion. Sites reading spawn_points or the PNG scan are already right.
+const MAP_SCALE: int = 2
 
 signal exploration_ready()
 signal battle_triggered(enemies: Array, terrain: String)
@@ -633,7 +639,7 @@ func _place_wanderers() -> void:
 			"dialogue": "Harmonia's got the best prices... if you can find it.",
 			"color": Color(0.5, 0.35, 0.2),
 			"archetype": "merchant",
-			"path": [Vector2(30, 23), Vector2(20, 23), Vector2(20, 26), Vector2(30, 26)],
+			"path": [Vector2(31, 22), Vector2(20, 23), Vector2(20, 26), Vector2(31, 25)],
 			"hints": [
 				{"flag": "", "text": "Head west across the bridges — Harmonia Village is just past them."},
 				{"flag": "prologue_complete", "text": "Elder Theron mentioned a cave northwest of the village. Sounds dangerous."},
@@ -647,7 +653,7 @@ func _place_wanderers() -> void:
 			"dialogue": "I've been walking north for hours... is there a village up here?",
 			"color": Color(0.4, 0.4, 0.6),
 			"archetype": "traveler",
-			"path": [Vector2(28, 10), Vector2(28, 14), Vector2(30, 14), Vector2(30, 10)],
+			"path": [Vector2(29, 9), Vector2(26, 12), Vector2(30, 14), Vector2(30, 10)],
 			"hints": [
 				{"flag": "", "text": "I heard there's a village to the west. Follow the bridges!"},
 				{"flag": "prologue_complete", "text": "Frosthold is up north in the ice fields. Eldertree is in the forest."},
@@ -684,7 +690,7 @@ func _place_wanderers() -> void:
 			npc.dialogue_hints = _with_spine_telegraph(w["hints"], _get_game_state())
 		var patrol: Array[Vector2] = []
 		for pt in w["path"]:
-			patrol.append(Vector2(pt.x * TILE_SIZE + TILE_SIZE / 2, pt.y * TILE_SIZE + TILE_SIZE / 2))
+			patrol.append(Vector2(pt.x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, pt.y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2))
 		npc.set_patrol(patrol)
 		add_child(npc)
 
@@ -706,7 +712,7 @@ func _place_quest_npcs() -> void:
 		orrery.npc_id = "madame_orrery_w1"
 		orrery.npc_type = "mysterious"
 		orrery.dialogue_lines = ["The cards will keep. They have more patience than I do."]
-		orrery.position = Vector2(14 * TILE_SIZE + TILE_SIZE / 2, 23 * TILE_SIZE + TILE_SIZE / 2)
+		orrery.position = Vector2(14 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 23 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 		add_child(orrery)
 
 	# one_chicken_problem: the wandering hen that strayed to the cave approach.
@@ -766,7 +772,7 @@ func _place_treasure_chests() -> void:
 	for c in chests:
 		var chest = TreasureChestScript.new()
 		chest.chest_id = c["id"]
-		chest.position = Vector2(c["pos"].x * TILE_SIZE + TILE_SIZE / 2, c["pos"].y * TILE_SIZE + TILE_SIZE / 2)
+		chest.position = Vector2(c["pos"].x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, c["pos"].y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 		if c["type"] == "gold":
 			chest.contents_type = "gold"
 			chest.gold_amount = c["gold"]
@@ -790,7 +796,7 @@ func _place_hidden_passages() -> void:
 		var passage = HiddenPassage.new()
 		passage.passage_id = p["id"]
 		passage.disguise = p["disguise"]
-		passage.position = Vector2(p["pos"].x * TILE_SIZE + TILE_SIZE / 2, p["pos"].y * TILE_SIZE + TILE_SIZE / 2)
+		passage.position = Vector2(p["pos"].x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, p["pos"].y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 		add_child(passage)
 
 
@@ -850,7 +856,7 @@ func _update_zone_ambient(zone: String) -> void:
 func _place_landmarks() -> void:
 	var landmarks = [
 		# Ruins along the northern forest path
-		{"pos": Vector2(28, 12), "type": Landmark.Type.RUINS},
+		{"pos": Vector2(29, 11), "type": Landmark.Type.RUINS},
 		# Campfire at the central rest area
 		{"pos": Vector2(38, 22), "type": Landmark.Type.CAMPFIRE},
 		# Stone circle in the swamp region
@@ -862,14 +868,14 @@ func _place_landmarks() -> void:
 		# Campfire on the southern desert road
 		{"pos": Vector2(20, 45), "type": Landmark.Type.CAMPFIRE},
 		# Ruins near the volcanic approach
-		{"pos": Vector2(65, 48), "type": Landmark.Type.RUINS},
+		{"pos": Vector2(66, 47), "type": Landmark.Type.RUINS},
 		# Stone circle near the bridge
 		{"pos": Vector2(38, 50), "type": Landmark.Type.STONE_CIRCLE},
 	]
 	for l in landmarks:
 		var lm = Landmark.new()
 		lm.landmark_type = l["type"]
-		lm.position = Vector2(l["pos"].x * TILE_SIZE + TILE_SIZE / 2, l["pos"].y * TILE_SIZE + TILE_SIZE / 2)
+		lm.position = Vector2(l["pos"].x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, l["pos"].y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 		add_child(lm)
 
 
@@ -915,19 +921,19 @@ func _place_signposts() -> void:
 		# Near bridge
 		{"pos": Vector2(38, 52), "text": "← Desert  →Volcanic"},
 		# Dragon cave warnings
-		{"pos": Vector2(14, 10), "text": "⚠ Glacial Sanctum — Ice Dragon"},
+		{"pos": Vector2(13, 9), "text": "⚠ Glacial Sanctum — Ice Dragon"},
 		{"pos": Vector2(72, 14), "text": "⚠ Abyssal Hollow — Shadow Dragon"},
 		{"pos": Vector2(60, 58), "text": "⚠ Stormspire — Lightning Dragon"},
-		{"pos": Vector2(80, 52), "text": "⚠ Infernal Grotto — Fire Dragon"},
+		{"pos": Vector2(81, 51), "text": "⚠ Infernal Grotto — Fire Dragon"},
 		# Ironhaven approach
-		{"pos": Vector2(78, 58), "text": "→ Ironhaven Village"},
+		{"pos": Vector2(79, 57), "text": "→ Ironhaven Village"},
 		# World portal signpost (appears regardless — context clue)
 		{"pos": Vector2(88, 30), "text": "→ World Portal  ⚙ Mundane Sprawl"},
 	]
 	for s in signs:
 		var post = Signpost.new()
 		post.sign_text = s["text"]
-		post.position = Vector2(s["pos"].x * TILE_SIZE + TILE_SIZE / 2, s["pos"].y * TILE_SIZE + TILE_SIZE / 2)
+		post.position = Vector2(s["pos"].x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, s["pos"].y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 		add_child(post)
 
 

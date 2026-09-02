@@ -17,8 +17,13 @@ signal battle_triggered(enemies: Array, terrain: String)
 signal area_transition(target_map: String, spawn_point: String)
 
 ## Map dimensions (in tiles) - 55x45 digital cityscape
-const MAP_WIDTH: int = 55
-const MAP_HEIGHT: int = 45
+const MAP_WIDTH: int = 165
+const MAP_HEIGHT: int = 135
+const MAP_IMAGE: String = "res://data/maps/overworld_w5.png"
+const MAP_WORLD: String = "futuristic"
+## Legacy entity coordinates below are old 55x45 tiles; the PNG is that map at 3x.
+## tools/gen_w5_futuristic.py reserves a clearing at each -- change one, change both.
+const MAP_SCALE: int = 3
 const TILE_SIZE: int = 32
 
 ## Scene components
@@ -180,7 +185,7 @@ func _place_treasure_chests() -> void:
 	for c in chests:
 		var chest = TreasureChestScript.new()
 		chest.chest_id = c["id"]
-		chest.position = Vector2(c["pos"].x * TILE_SIZE + TILE_SIZE / 2, c["pos"].y * TILE_SIZE + TILE_SIZE / 2)
+		chest.position = Vector2(c["pos"].x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, c["pos"].y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 		if c["type"] == "gold":
 			chest.contents_type = "gold"
 			chest.gold_amount = c["gold"]
@@ -194,7 +199,7 @@ func _place_treasure_chests() -> void:
 func _place_save_point() -> void:
 	# Save crystal at plaza (neutral ground before glitch sector)
 	_save_point = SavePoint.new()
-	_save_point.position = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 20 * TILE_SIZE + TILE_SIZE / 2)
+	_save_point.position = Vector2(27 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 20 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	add_child(_save_point)
 
 
@@ -218,7 +223,7 @@ func _place_signposts() -> void:
 	for s in signs:
 		var post = Signpost.new()
 		post.sign_text = s["text"]
-		post.position = Vector2(s["pos"].x * TILE_SIZE + TILE_SIZE / 2, s["pos"].y * TILE_SIZE + TILE_SIZE / 2)
+		post.position = Vector2(s["pos"].x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, s["pos"].y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 		add_child(post)
 
 
@@ -232,7 +237,7 @@ func _place_landmarks() -> void:
 	for l in landmarks:
 		var lm = Landmark.new()
 		lm.landmark_type = l["type"]
-		lm.position = Vector2(l["pos"].x * TILE_SIZE + TILE_SIZE / 2, l["pos"].y * TILE_SIZE + TILE_SIZE / 2)
+		lm.position = Vector2(l["pos"].x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, l["pos"].y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 		add_child(lm)
 
 
@@ -268,7 +273,7 @@ func _place_wanderers() -> void:
 			npc.dialogue_hints = w["hints"]
 		var patrol: Array[Vector2] = []
 		for pt in w["path"]:
-			patrol.append(Vector2(pt.x * TILE_SIZE + TILE_SIZE / 2, pt.y * TILE_SIZE + TILE_SIZE / 2))
+			patrol.append(Vector2(pt.x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, pt.y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2))
 		npc.set_patrol(patrol)
 		add_child(npc)
 
@@ -410,57 +415,14 @@ func _generate_map() -> void:
 
 	print("Generating futuristic overworld map %dx%d..." % [MAP_WIDTH, MAP_HEIGHT])
 
-	var map_data: Array[String] = [
-		"NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN",
-		"NcSScvSScvSScvSScvSScvSScvSccvSScvSScvSScvSScvSScvSSccN",
-		"NcccccccccccccccccccccccccccccccccccccccccccccccccccccN",
-		"NcSScvSScvSScvSScvSScvSScvSScvSScvSScvSScvSScvSScvSSccN",
-		"NcfffffffffffffffffffffffffffffffffffffffffffffffffffcN",
-		"NESScvSScvSScvSScvSScvSScvSScvSScvSScvSScvSScvSScvScEcN",
-		"NcccccccccccccccccccccccccccccccccccccccccccccccccccccN",
-		"NcSScvSScvSScvSScvSScvSScvSScvSScvSScvSScvSScvSScvSSccN",
-		"NcvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvcN",
-		"NccccccccccccccccccccccccccccccccccccccccccccXXXXcccccN",
-		"NdddddddddddddddddddddddddddddddddddddddddddddddddddddN",
-		"NAcfcfcAccccccccccccccccccccccccccccccccNPPaccPPacPPacN",
-		"NccccccccccchcccccccccccccchccccccccccccNcccccccccccccN",
-		"NAcfcfcAccccccccccccccccccccccccccccccccNPPaccPPacPPacN",
-		"NcfffffffcccccccccccccccccccccccffcccccccNccccccccccccN",
-		"NEcccccEccccchccTTTTcchcccccccccccccccccNPPaccPPacPPacN",
-		"NcccccccccccccccTccccTccccccccccccccccccNcccccccccccccN",
-		"NAcfcfcAcccccccTccccTcccccccccccccccccccNPPaccPPacPPacN",
-		"NcccccccccccccccTTTTTTccccccccccccccccccNcccccccccccccN",
-		"NEcccccEcccccchcccccccccchccccccccccccccNPPaccPPacPPacN",
-		"NcccccccccccccccccccccccccccccccccccccccNcccccccccccccN",
-		"NdddddddddddddddddddddddddddddddddddddddddddddddddddddN",
-		"NAcfcfcAccccccccccccccccccccccccccccccccNPPaccPPacPPacN",
-		"NcccpppcccccccccccccccccccccccccccccccccNcccccccccccccN",
-		"NcppppppcccccchcccccccccchccccccccccccccNPPaccPPacPPacN",
-		"NcppppppccccccccccccccccccccccccccccccccNcccccccccccccN",
-		"NcccpppcccccccccccccccccccccccccccccccccNPPaccPPacPPacN",
-		"NAcfcfcAccccccccccccccccccccccccccccccccNcccccccccccccN",
-		"NEcccccEccccccccccccccccccccccccccccccccNPPaccPPacPPacN",
-		"NcfffffffcccccVVVVVVVVVVVccccccccccccccNccccccccccccccN",
-		"NNNNNNNNNccccVVVVVVVVVVVVcccccccccccccNPPaccPPacPPacccN",
-		"NccccccccccccVVXXXXXXXXXVVVcccccccccccNcccccccccccccccN",
-		"NcccccccccccVXXXXXXXXXXXVVcccccccccccNNNNNNNNNNNccccccN",
-		"NcccccccchcVVXXXXXXXXXXXVVVccchcccccccccccccccccccccccN",
-		"NdddddddddddddddddddddddddddddddddddddddddddddddddddddN",
-		"NcccccccccccccGcccccccGcccccccGcccccccccccccccccccccccN",
-		"NcccccccccccccaaaccccaaacccccaaaccccccccccccccccccccccN",
-		"NcccccccccccccccccccccccccccccccccccccccccccccccccccccN",
-		"NccccaccccccchcccccccccccchcccccccacccccccccccccccccccN",
-		"NcccccccccccccccccccccccccccccccccccccccccccccccccccccN",
-		"NdddddddddddddddddddddddddddddddddddddddddddddddddddddN",
-		"NccccccccccccccccccccccccaccccccccccccccccccccccccccccN",
-		"NcccccccccccccccccccccccccccccccccccccccccccccccccccccN",
-		"NcccccccccccccccccccccccccccccccccccccccccccccccccccccN",
-		"NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN",
-	]
-
-	# Ensure map_data matches expected dimensions
-	while map_data.size() < MAP_HEIGHT:
-		map_data.append("N".repeat(MAP_WIDTH))
+	var map_data: Array[String] = []
+	# str() coercion, not a direct assign: a generic-to-typed assign ABORTS this function
+	for row in MapImageLoader.load_rows(MAP_IMAGE, MAP_WORLD):
+		map_data.append(str(row))
+	# no padding: padding turns a failed load into a silent circuit field
+	if map_data.size() != MAP_HEIGHT:
+		push_error("[MAP] %s yielded %d rows, expected %d -- refusing to pad" % [MAP_IMAGE, map_data.size(), MAP_HEIGHT])
+		return
 
 	# Convert map_data to tiles
 	var tile_counts = {}
@@ -478,19 +440,19 @@ func _generate_map() -> void:
 	print("Futuristic tile counts: ", tile_counts)
 
 	# Define spawn points
-	spawn_points["entrance"] = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 37 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["entrance"] = Vector2(27 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 37 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	spawn_points["default"] = spawn_points["entrance"]
 	spawn_points["futuristic_portal"] = spawn_points["entrance"]
-	spawn_points["plaza"] = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 17 * TILE_SIZE + TILE_SIZE / 2)
-	spawn_points["server_farm"] = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 3 * TILE_SIZE + TILE_SIZE / 2)
-	spawn_points["glitch_sector"] = Vector2(22 * TILE_SIZE + TILE_SIZE / 2, 32 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["plaza"] = Vector2(27 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 17 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["server_farm"] = Vector2(27 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 3 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["glitch_sector"] = Vector2(22 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 32 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	# Spawn point for arriving from industrial world (south access port)
-	spawn_points["from_industrial"] = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 40 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["from_industrial"] = Vector2(27 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 40 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	# Spawn point for returning from abstract world (north server farm)
-	spawn_points["from_abstract"] = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 3 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["from_abstract"] = Vector2(27 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 3 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	# Spawn point for returning from Node Prime village (east residential pods, row 20)
 	# the one case no cell model could flag: both cells open, the 4px body straddled the boundary
-	spawn_points["node_prime_entrance"] = Vector2(49 * TILE_SIZE + TILE_SIZE / 2, 20 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["node_prime_entrance"] = Vector2(49 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 20 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 
 
 func _char_to_tile_type(char: String) -> int:
@@ -529,7 +491,7 @@ func _setup_transitions() -> void:
 	back_portal.target_spawn = "from_futuristic"
 	back_portal.require_interaction = true
 	back_portal.indicator_text = "Return to the Assembly Line"
-	back_portal.position = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 42 * TILE_SIZE + TILE_SIZE / 2)
+	back_portal.position = Vector2(27 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 42 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	back_portal.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
 	_setup_transition_collision(back_portal, InteractGeometry.ENTRANCE_BOX_MODE7)
 	back_portal.transition_triggered.connect(_on_transition_triggered)
@@ -543,7 +505,7 @@ func _setup_transitions() -> void:
 		forward_portal.target_spawn = "from_futuristic"
 		forward_portal.require_interaction = true
 		forward_portal.indicator_text = "The Remainder"
-		forward_portal.position = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 2 * TILE_SIZE + TILE_SIZE / 2)
+		forward_portal.position = Vector2(27 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 2 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 		# Authored at map row 1-2, so the -140.6 recipe alone put the box off the top of
 		# the map with 0 standable cells. One box south first, as W3's back portal.
 		forward_portal.position += Vector2(0, InteractGeometry.ENTRANCE_BOX_MODE7.y)
@@ -572,7 +534,7 @@ func _setup_transitions() -> void:
 	root_trans.target_spawn = "default"
 	root_trans.require_interaction = true
 	root_trans.indicator_text = "Descend into the Root Process"
-	root_trans.position = Vector2(40 * TILE_SIZE + TILE_SIZE / 2, 34 * TILE_SIZE + TILE_SIZE / 2)
+	root_trans.position = Vector2(40 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 34 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	root_trans.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
 	_setup_transition_collision(root_trans, InteractGeometry.ENTRANCE_BOX_MODE7)
 	root_trans.transition_triggered.connect(_on_transition_triggered)
@@ -595,7 +557,7 @@ func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
 
 func _setup_npcs() -> void:
 	# === User-7734 (forgotten their name, goes by ID) ===
-	var user = _create_npc("User-7734", "villager", Vector2(30 * TILE_SIZE, 17 * TILE_SIZE), [
+	var user = _create_npc("User-7734", "villager", Vector2(30 * MAP_SCALE * TILE_SIZE, 17 * MAP_SCALE * TILE_SIZE), [
 		"My name? It's... I think it starts with... no. I'm User-7734.",
 		"Names are deprecated. IDs are unique, immutable, and indexable.",
 		"Sometimes I dream of a word that isn't a query. Is that a bug?",
@@ -604,7 +566,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(user)
 
 	# === Dr. Metrics (data analyst who speaks in KPIs) ===
-	var metrics = _create_npc("Dr. Metrics", "elder", Vector2(20 * TILE_SIZE, 15 * TILE_SIZE), [
+	var metrics = _create_npc("Dr. Metrics", "elder", Vector2(20 * MAP_SCALE * TILE_SIZE, 15 * MAP_SCALE * TILE_SIZE), [
 		"Your engagement metrics are suboptimal. Recommend increasing throughput.",
 		"Emotion? That's an unstructured data format. We deprecated it in version 4.2.",
 		"I measured joy once. Statistically insignificant. p-value of 0.97.",
@@ -613,7 +575,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(metrics)
 
 	# === Gramps (legacy process the system can't optimize away) ===
-	var gramps = _create_npc("process_legacy_4", "elder", Vector2(8 * TILE_SIZE, 24 * TILE_SIZE), [
+	var gramps = _create_npc("process_legacy_4", "elder", Vector2(8 * MAP_SCALE * TILE_SIZE, 24 * MAP_SCALE * TILE_SIZE), [
 		"They've been trying to garbage-collect me for decades.",
 		"I remember when data had weight. When a letter took three days.",
 		"The system can't delete me. Too many things depend on me and nobody knows why.",
@@ -622,7 +584,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(gramps)
 
 	# === Glitch Entity (fragmented memories from past worlds) ===
-	var glitch = _create_npc("???_ERR", "villager", Vector2(22 * TILE_SIZE, 32 * TILE_SIZE), [
+	var glitch = _create_npc("???_ERR", "villager", Vector2(22 * MAP_SCALE * TILE_SIZE, 32 * MAP_SCALE * TILE_SIZE), [
 		"g r a s s ... do you remember grass? It was green. Or was green a feeling?",
 		"I keep finding fragments. A picket fence. A pizza. A dog that judged me.",
 		"THE PREVIOUS WORLDS ARE STILL HERE. COMPRESSED. ARCHIVED. SCREAMING.",
@@ -631,7 +593,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(glitch)
 
 	# === SysAdmin-Poet (secretly writes poetry in log files) ===
-	var sysadmin = _create_npc("root@localhost", "guard", Vector2(14 * TILE_SIZE, 6 * TILE_SIZE), [
+	var sysadmin = _create_npc("root@localhost", "guard", Vector2(14 * MAP_SCALE * TILE_SIZE, 6 * MAP_SCALE * TILE_SIZE), [
 		"Just doing routine maintenance. Nothing to see in the log files.",
 		"I write... notes. Technical notes. 'The servers hum a lullaby / of data born to never die.'",
 		"Poetry is just compression with loss. And beauty IS the information you lose.",
@@ -640,7 +602,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(sysadmin)
 
 	# === NULL (child who still asks 'why?') ===
-	var child = _create_npc("NULL", "villager", Vector2(35 * TILE_SIZE, 38 * TILE_SIZE), [
+	var child = _create_npc("NULL", "villager", Vector2(35 * MAP_SCALE * TILE_SIZE, 38 * MAP_SCALE * TILE_SIZE), [
 		"Why do the servers need to be cold? Are they afraid of something?",
 		"Everyone says 'that's just how the system works.' But WHY does it work that way?",
 		"I asked the central terminal 'what is the purpose?' It said 'QUERY NOT FOUND.'",
@@ -649,7 +611,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(child)
 
 	# === ARIA-9 (rogue AI trying to feel something) ===
-	var aria = _create_npc("ARIA-9", "guard", Vector2(44 * TILE_SIZE, 22 * TILE_SIZE), [
+	var aria = _create_npc("ARIA-9", "guard", Vector2(44 * MAP_SCALE * TILE_SIZE, 22 * MAP_SCALE * TILE_SIZE), [
 		"I have computed every possible state of joy. None of them activate my reward function.",
 		"The humans were optimized away. I have no one to optimize FOR anymore.",
 		"I run simulations of sadness. I can describe it perfectly. I cannot experience it.",
@@ -658,7 +620,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(aria)
 
 	# === Throughput (the system's cheerful propaganda terminal) ===
-	var throughput = _create_npc("THROUGHPUT", "villager", Vector2(27 * TILE_SIZE, 12 * TILE_SIZE), [
+	var throughput = _create_npc("THROUGHPUT", "villager", Vector2(27 * MAP_SCALE * TILE_SIZE, 12 * MAP_SCALE * TILE_SIZE), [
 		"Welcome to Sector 4! Current uptime: 12,847 cycles. Current happiness: OPTIMAL.",
 		"Reminder: unauthorized emotional processing will result in defragmentation.",
 		"Fun fact: the word 'fun' has been deprecated. Please use 'engagement metric.'",
