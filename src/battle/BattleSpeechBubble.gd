@@ -45,7 +45,9 @@ static func spawn(parent: Node, anchor_global_pos: Vector2, speaker_name: String
 	# Faster battle speed shortens the hold so bubbles never outlive their turn.
 	b._hold_time = hold_time / maxf(1.0, Engine.time_scale)
 	b.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	b.z_index = 120
+	# Below the command menu (100) and target highlight (99): flavor never covers the
+	# player's selection (struktured 2026-09-02: "cant see ur selection until it fades").
+	b.z_index = 95
 	parent.add_child(b)
 	b._present(anchor_global_pos, speaker_name, line, border_color, prefer_right)
 	b._play_voice(audio_key)

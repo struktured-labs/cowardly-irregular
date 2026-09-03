@@ -33,6 +33,7 @@ L Shoulder        L Key             —                Defer / Party Chat
 R Shoulder        R Key             —                Advance (queue action)
 Start (Plus)      F5                —                Open Autobattle Editor
 Back (Minus)      F6                —                Toggle Autobattle
+X (top face)      ` (backtick)      —                Battle speed
 R3 Stick Click    F1                —                [color=lime]This screen — from anywhere[/color]
                   F2                —                Quick Save
                   F3                —                Quick Load
@@ -68,12 +69,17 @@ optional story conversations. These are flavor, not required.
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
-	z_index = 50
+	# set_anchors_preset sets ANCHORS ONLY — under the F1 CanvasLayer the offsets never resolve
+	# and the whole overlay measured (0,0), so the backdrop vanished and the text drew naked
+	# over live battles (struktured 2026-09-02: "F1 is unreadable ... in battles"). It worked on
+	# the title screen because the parent was a sized Control; the port changed the parent type.
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	var vp: Vector2 = get_viewport_rect().size
+	size = vp
+	z_index = 50
 
 	var bg := ColorRect.new()
-	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	bg.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	bg.color = Color(0.05, 0.05, 0.1, 0.96)
 	add_child(bg)
 
