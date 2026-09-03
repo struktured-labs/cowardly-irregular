@@ -202,7 +202,7 @@ def ingest_bard(dry: bool) -> None:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--target", choices=["rat", "bard", "mage", "drop30", "all"], default="all")
+    ap.add_argument("--target", choices=["rat", "bard", "mage", "fighter", "drop30", "all"], default="all")
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
     if not Path(ASEPRITE).exists():
@@ -210,6 +210,8 @@ def main() -> int:
         return 1
     if a.target == "rat":
         ingest_rat(a.dry_run)
+    elif a.target in DROPS_20260902:
+        ingest_drop2(a.target, a.dry_run)
     elif a.target in DROPS_20260830:
         ingest_drop(a.target, a.dry_run)
     else:
@@ -262,6 +264,47 @@ def ingest_drop(name: str, dry: bool) -> None:
                 continue
             out = out_dir / f"{anim}.png"
             if cfg["backup"]:
+                backup(out)
+            build_strip(frames, (a, b), False, 2.0, 0, 0).save(out)
+            print(f"      -> {out.name}")
+
+
+# 2026-09-02 drop: fighter gains Weak + a real Dead (6 frames -> 21, 3 tags -> 5)
+DROPS_20260902 = {
+    "fighter": {
+        "src": "Main Fighter animations.aseprite",
+        "dir": "assets/sprites/jobs/fighter",
+        # per-ANIM, not per-job: only `dead` is a non-artist fill (68b049d0 v3 LoRA sweep, and
+        # the source carried no Dead tag until today). Backing up the rest would file artist
+        # pixels under a pre_artist name; git history holds them.
+        "backup_anims": {"dead"},
+        "map": {"idle": ("IDLE", 0, 0), "weak": ("Weak", 0, 0), "dead": ("Dead", 0, 0),
+                "dash": ("Dash", 0, 0), "attack": ("ATK", 0, 0), "slash": ("ATK", 0, 0)},
+    },
+}
+
+
+def ingest_drop2(name: str, dry: bool) -> None:
+    cfg = DROPS_20260902[name]
+    src = DROP / cfg["src"]
+    tags = read_tags(src)
+    print(f"  {name} tags: {tags}")
+    out_dir = REPO / cfg["dir"]
+    with tempfile.TemporaryDirectory() as td:
+        frames = export_frames(src, Path(td))
+        print(f"    frames={len(frames)}")
+        for anim, (tag, lo, hi) in cfg["map"].items():
+            if tag not in tags:
+                raise RuntimeError(f"{name}: source has no tag {tag!r}; got {list(tags)}")
+            t0, t1 = tags[tag]
+            a = t0 + lo
+            b = t1 if hi == 0 else min(t1, t0 + hi)
+            mark = " [backup]" if anim in cfg["backup_anims"] else ""
+            print(f"    {anim:<7} <- {tag} {a}-{b} ({b - a + 1}){mark}")
+            if dry:
+                continue
+            out = out_dir / f"{anim}.png"
+            if anim in cfg["backup_anims"]:
                 backup(out)
             build_strip(frames, (a, b), False, 2.0, 0, 0).save(out)
             print(f"      -> {out.name}")
