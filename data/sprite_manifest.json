@@ -65,10 +65,12 @@
         "idle",
         "item",
         "victory",
-        "walk"
+        "walk",
+        "weak"
       ],
       "tier": "T2",
-      "generator": "MIXED — contains ARTIST animations (attack, cast, idle, walk) alongside v3 LoRA fills for the rest (15 PNGs total). Tier corrected 2026-07-29: was T1 with a bare LoRA generator string, which described the directory before the artist animations landed and was never updated. Provenance verified via git lineage (first decisive ancestor per file), not via this manifest — tier and generator agreed with each other while both were wrong. T1 here meant 'safe to regenerate', which would have destroyed the artist animations named above. T2, not T3: T3 is struktured's call."
+      "generator": "MIXED — contains ARTIST animations (attack, cast, idle, walk) alongside v3 LoRA fills for the rest (15 PNGs total). Tier corrected 2026-07-29: was T1 with a bare LoRA generator string, which described the directory before the artist animations landed and was never updated. Provenance verified via git lineage (first decisive ancestor per file), not via this manifest — tier and generator agreed with each other while both were wrong. T1 here meant 'safe to regenerate', which would have destroyed the artist animations named above. T2, not T3: T3 is struktured's call.",
+      "source": "artist aseprite drop 2026-09-03 — Cleric Main design.aseprite, 28 frames / 4 tags (Idle 0-6, Weak 7-10, Dead 11-18, Cast 19-27). Ingested BY TAG, 2x nearest-neighbor to 256px. cast and attack both take Cast, matching the pre-existing byte-identical sheets. Backup written for dead.png only — the prior source carried NO tags, so it was never artist-authored. Completes the artist's Weak/Dead split across all five starters (bard 08-28, mage 08-30, fighter 09-02, rogue+cleric 09-03). 🔴 NEITHER weak.png NOR dead.png RENDERS TODAY: BattleScene has no low-HP trigger AND nothing ever enters BattleAnimator's AnimState.DEAD — it is declared and name-mapped but never set, and _on_combatant_died only prints a line. Both are loaded and inert pending one engine change."
     },
     "fighter": {
       "path": "res://assets/sprites/jobs/fighter",
@@ -204,10 +206,12 @@
         "stab",
         "steal",
         "victory",
-        "walk"
+        "walk",
+        "weak"
       ],
       "tier": "T2",
-      "generator": "MIXED — contains ARTIST animations (attack, idle, stab) alongside v3 LoRA fills for the rest (17 PNGs total). Tier corrected 2026-07-29: was T1 with a bare LoRA generator string, which described the directory before the artist animations landed and was never updated. Provenance verified via git lineage (first decisive ancestor per file), not via this manifest — tier and generator agreed with each other while both were wrong. T1 here meant 'safe to regenerate', which would have destroyed the artist animations named above. T2, not T3: T3 is struktured's call."
+      "generator": "MIXED — contains ARTIST animations (attack, idle, stab) alongside v3 LoRA fills for the rest (17 PNGs total). Tier corrected 2026-07-29: was T1 with a bare LoRA generator string, which described the directory before the artist animations landed and was never updated. Provenance verified via git lineage (first decisive ancestor per file), not via this manifest — tier and generator agreed with each other while both were wrong. T1 here meant 'safe to regenerate', which would have destroyed the artist animations named above. T2, not T3: T3 is struktured's call.",
+      "source": "artist aseprite drop 2026-09-03 — Rogue Main design.aseprite, 20 frames / 4 tags (Idle 0-3, Weak 4-7, Dead 8-12, ATK 13-19). Ingested BY TAG, 2x nearest-neighbor to 256px. attack and stab both take ATK, matching the pre-existing byte-identical sheets. Backup written for dead.png only — the prior source carried NO tags, so it was never artist-authored. Completes the artist's Weak/Dead split across all five starters (bard 08-28, mage 08-30, fighter 09-02, rogue+cleric 09-03). 🔴 NEITHER weak.png NOR dead.png RENDERS TODAY: BattleScene has no low-HP trigger AND nothing ever enters BattleAnimator's AnimState.DEAD — it is declared and name-mapped but never set, and _on_combatant_died only prints a line. Both are loaded and inert pending one engine change."
     },
     "rogue_artist": {
       "path": "res://assets/sprites/jobs/rogue_artist",

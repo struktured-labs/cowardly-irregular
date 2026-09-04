@@ -36,11 +36,25 @@ SRC_FRAME = 128
 TARGET_FRAME = 256
 
 
-def export_frames(src: Path, out_dir: Path) -> list[Path]:
+def export_frames(src: Path, out_dir: Path, ignore_layers: list[str] | None = None) -> list[Path]:
     out_dir.mkdir(parents=True, exist_ok=True)
-    subprocess.run([ASEPRITE, "-b", str(src), "--save-as", str(out_dir / "frame_{frame}.png")],
-                   check=True, capture_output=True)
-    return sorted(out_dir.glob("frame_*.png"), key=lambda p: int(p.stem.split("_")[1]))
+    cmd = [ASEPRITE, "-b", str(src)]
+    # an artist BG layer left visible bakes an opaque background into every frame
+    for name in (ignore_layers or []):
+        cmd += ["--ignore-layer", name]
+    cmd += ["--save-as", str(out_dir / "frame_{frame}.png")]
+    subprocess.run(cmd, check=True, capture_output=True)
+    frames = sorted(out_dir.glob("frame_*.png"), key=lambda p: int(p.stem.split("_")[1]))
+    if frames and ignore_layers:
+        from PIL import Image as _I
+        a = _I.open(frames[0]).convert("RGBA").split()[3]
+        px = list(a.getdata())
+        clear = sum(1 for v in px if v < 5) / max(1, len(px))
+        if clear < 0.10:
+            raise RuntimeError(
+                "%s: %.1f%% transparent after excluding %s — a background layer is still rendering"
+                % (src.name, clear * 100, ignore_layers))
+    return frames
 
 
 def read_tags(src: Path) -> dict[str, tuple[int, int]]:
@@ -202,7 +216,7 @@ def ingest_bard(dry: bool) -> None:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--target", choices=["rat", "bard", "mage", "fighter", "drop30", "all"], default="all")
+    ap.add_argument("--target", choices=["rat", "bard", "mage", "fighter", "rogue", "cleric", "drop30", "drop03", "all"], default="all")
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
     if not Path(ASEPRITE).exists():
@@ -210,6 +224,11 @@ def main() -> int:
         return 1
     if a.target == "rat":
         ingest_rat(a.dry_run)
+    elif a.target in DROPS_20260903:
+        ingest_drop3(a.target, a.dry_run)
+    elif a.target == "drop03":
+        for k in DROPS_20260903:
+            ingest_drop3(k, a.dry_run)
     elif a.target in DROPS_20260902:
         ingest_drop2(a.target, a.dry_run)
     elif a.target in DROPS_20260830:
@@ -299,6 +318,53 @@ def ingest_drop2(name: str, dry: bool) -> None:
             t0, t1 = tags[tag]
             a = t0 + lo
             b = t1 if hi == 0 else min(t1, t0 + hi)
+            mark = " [backup]" if anim in cfg["backup_anims"] else ""
+            print(f"    {anim:<7} <- {tag} {a}-{b} ({b - a + 1}){mark}")
+            if dry:
+                continue
+            out = out_dir / f"{anim}.png"
+            if anim in cfg["backup_anims"]:
+                backup(out)
+            build_strip(frames, (a, b), False, 2.0, 0, 0).save(out)
+            print(f"      -> {out.name}")
+
+
+# 2026-09-03 drop: rogue and cleric complete the Weak/Dead set across all 5 starters
+DROPS_20260903 = {
+    "rogue": {
+        "src": "Rogue Main design.aseprite",
+        "dir": "assets/sprites/jobs/rogue",
+        # dead only: the prior source carried NO tags at all, so dead.png was never artist-authored
+        "backup_anims": {"dead"},
+        # the artist left an opaque "Layer 1" background visible in this drop
+        "ignore_layers": ["Layer 1"],
+        "map": {"idle": ("Idle", 0, 0), "weak": ("Weak", 0, 0), "dead": ("Dead", 0, 0),
+                "attack": ("ATK", 0, 0), "stab": ("ATK", 0, 0)},
+    },
+    "cleric": {
+        "src": "Cleric Main design.aseprite",
+        "dir": "assets/sprites/jobs/cleric",
+        "backup_anims": {"dead"},
+        "map": {"idle": ("Idle", 0, 0), "weak": ("Weak", 0, 0), "dead": ("Dead", 0, 0),
+                "cast": ("Cast", 0, 0), "attack": ("Cast", 0, 0)},
+    },
+}
+
+
+def ingest_drop3(name: str, dry: bool) -> None:
+    cfg = DROPS_20260903[name]
+    src = DROP / cfg["src"]
+    tags = read_tags(src)
+    print(f"  {name} tags: {tags}")
+    out_dir = REPO / cfg["dir"]
+    with tempfile.TemporaryDirectory() as td:
+        frames = export_frames(src, Path(td), cfg.get("ignore_layers"))
+        print(f"    frames={len(frames)} ignore_layers={cfg.get('ignore_layers') or 'none'}")
+        for anim, (tag, lo, hi) in cfg["map"].items():
+            if tag not in tags:
+                raise RuntimeError(f"{name}: source has no tag {tag!r}; got {list(tags)}")
+            t0, t1 = tags[tag]
+            a, b = t0 + lo, (t1 if hi == 0 else min(t1, t0 + hi))
             mark = " [backup]" if anim in cfg["backup_anims"] else ""
             print(f"    {anim:<7} <- {tag} {a}-{b} ({b - a + 1}){mark}")
             if dry:
