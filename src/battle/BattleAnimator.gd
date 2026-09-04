@@ -209,9 +209,32 @@ func play_animation(state: AnimState, loop: bool = false, on_complete: Callable 
 			on_complete.call()
 
 
+## Asks the owner what "at rest" means for this combatant: "idle", "weak" or "dead".
+## Unset = always idle, so enemies and old callers are byte-identical. The gate on
+## has_animation is load-bearing — procedural sheets have no weak/dead and must idle.
+var rest_state_provider: Callable = Callable()
+
+
+func rest_anim_name() -> String:
+	var want := "idle"
+	if rest_state_provider.is_valid():
+		want = str(rest_state_provider.call())
+	if want != "idle" and sprite and sprite.sprite_frames and sprite.sprite_frames.has_animation(want):
+		return want
+	return "idle"
+
+
 func set_idle() -> void:
-	"""Set sprite to idle state"""
-	play_animation(AnimState.IDLE, true)
+	"""Return the sprite to its REST state — idle, or weak/dead when the provider says so."""
+	var want := rest_anim_name()
+	if want == "idle":
+		play_animation(AnimState.IDLE, true)
+		return
+	current_state = AnimState.DEAD if want == "dead" else AnimState.IDLE
+	loop_animation = want != "dead"
+	is_playing = false
+	if sprite:
+		sprite.play(want)
 
 
 func play_attack(on_complete: Callable = Callable()) -> void:
@@ -284,7 +307,7 @@ func play_backstab(on_complete: Callable = Callable()) -> void:
 	# Return to idle
 	tween.tween_callback(func():
 		if sprite and sprite.sprite_frames and sprite.sprite_frames.has_animation("idle"):
-			sprite.play("idle")
+			sprite.play(rest_anim_name())
 		if on_complete.is_valid():
 			on_complete.call()
 	)
@@ -370,7 +393,7 @@ func _play_stealth_travel(on_complete: Callable, aggressive: bool) -> void:
 		if sprite and is_instance_valid(sprite):
 			BattleJuice.spawn_burst(sprite.global_position + Vector2(0, -20), Vector2(0, -1), 6, Color(1.0, 0.85, 0.3), 160.0)
 		if sprite and sprite.sprite_frames and sprite.sprite_frames.has_animation("idle"):
-			sprite.play("idle")
+			sprite.play(rest_anim_name())
 		if on_complete.is_valid():
 			on_complete.call())
 
@@ -409,7 +432,7 @@ func _play_steal_basic(on_complete: Callable = Callable()) -> void:
 	# Return to idle
 	tween.tween_callback(func():
 		if sprite and sprite.sprite_frames and sprite.sprite_frames.has_animation("idle"):
-			sprite.play("idle")
+			sprite.play(rest_anim_name())
 		if on_complete.is_valid():
 			on_complete.call()
 	)
@@ -451,7 +474,7 @@ func _play_mug_basic(on_complete: Callable = Callable()) -> void:
 	# Back to idle
 	tween.tween_callback(func():
 		if sprite and sprite.sprite_frames and sprite.sprite_frames.has_animation("idle"):
-			sprite.play("idle")
+			sprite.play(rest_anim_name())
 		if on_complete.is_valid():
 			on_complete.call()
 	)

@@ -1015,6 +1015,18 @@ func _create_battle_sprites() -> void:
 
 		var animator = BattleAnimatorClass.new()
 		animator.setup(sprite)
+		# Rest state follows the combatant: dead when down, weak below the danger line (strict <,
+		# same beat as danger music), else idle. Leo's weak/dead sheets shipped for five jobs with
+		# no player (struktured 2026-09-02: neither visible in the live build).
+		var _rest_member = member
+		animator.rest_state_provider = func() -> String:
+			if _rest_member == null or not is_instance_valid(_rest_member):
+				return "idle"
+			if not _rest_member.is_alive:
+				return "dead"
+			if _rest_member.get_hp_percentage() < DANGER_HP_THRESHOLD * 100.0:
+				return "weak"
+			return "idle"
 		add_child(animator)
 		party_animators.append(animator)
 
@@ -3636,8 +3648,13 @@ func _snap_party_sprites_home() -> void:
 func _on_round_started_snap_home(_round_num: int) -> void:
 	SoundManager.audio_liveness_check()
 	_snap_party_sprites_home()
-	for sprite in party_sprite_nodes:
-		_reset_presentation_state(sprite)
+	for i in range(party_sprite_nodes.size()):
+		_reset_presentation_state(party_sprite_nodes[i])
+		# Re-resolve the REST anim each round — covers deaths/revives with no hit animation
+		# (poison ticks, item revives), where nothing else would move the sprite off idle.
+		if i < party_animators.size() and is_instance_valid(party_animators[i]) \
+				and not party_animators[i].is_playing:
+			party_animators[i].set_idle()
 	for i in range(enemy_sprite_nodes.size()):
 		var sprite = enemy_sprite_nodes[i]
 		if not is_instance_valid(sprite) or sprite.get_meta("dying", false):
