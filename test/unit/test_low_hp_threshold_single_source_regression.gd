@@ -26,8 +26,13 @@ func test_no_bare_low_hp_literal_survives_in_battle_scene() -> void:
 	assert_false("get_hp_percentage() < 25.0" in s,
 		"a bare 25.0 low-HP gate is back — it will not move when DANGER_HP_THRESHOLD is tuned, " +
 		"and the two are on different scales so the mismatch does not look like a mismatch")
-	assert_eq(s.count("DANGER_HP_THRESHOLD * 100.0"), 2,
-		"both dialogue triggers must read the constant on the 0-100 scale get_hp_percentage() returns")
+	## Re-ruled 2026-09-03: this pinned the COUNT of constant-readers at 2 and went red when the
+	## weak-sprite rest-state provider became a third, correct reader — the exact
+	## coincidental-value ratchet CLAUDE.md warns about. The invariant is "every low-HP consumer
+	## reads the constant on the right scale", which the bare-literal assert above already owns;
+	## the reader count may only GROW.
+	assert_gte(s.count("DANGER_HP_THRESHOLD * 100.0"), 3,
+		"the dialogue triggers AND the weak rest-state must read the constant on the 0-100 scale")
 
 
 ## Scale is the silent failure: bind without *100.0 and the gate becomes "below 0.25%" — never fires.
