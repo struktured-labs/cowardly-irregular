@@ -183,7 +183,8 @@ func _setup_buildings() -> void:
 	# One of the 'T' tiles (row 5 col 11) hides Greenleaf's sanctum.
 	# Player walks up to it and gets the 'Enter The Hollow' prompt.
 	# Spawn-back point is just south of the tree on walkable floor.
-	spawn_points["hollow_exit"] = Vector2(13 * TILE_SIZE,8 * TILE_SIZE)
+	# Cell-centred on the floor tile under the trunk-climb; the old ramp-corner point touched derived cliff colliders (gate-29 spawn audit).
+	spawn_points["hollow_exit"] = Vector2(13 * TILE_SIZE + TILE_SIZE / 2, 9 * TILE_SIZE + TILE_SIZE / 2)
 	_add_interior_door("HollowTreeDoor", "eldertree_hollow", "Enter The Hollow", Vector2(13 * TILE_SIZE + TILE_SIZE / 2,7 * TILE_SIZE + TILE_SIZE / 2))
 	# === GRAFTING HOUSE DOOR ===
 	# South face of the GGG herb garden (cols 7-9, rows 7-9) — Marrow Root's workshop grows out of it.
