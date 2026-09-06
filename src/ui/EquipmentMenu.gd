@@ -641,6 +641,31 @@ func _handle_slot_input(event: InputEvent) -> void:
 		_close_menu()
 		get_viewport().set_input_as_handled()
 
+	# struktured 2026-09-06: "should be able to switch who ur equipping with L/R (or L2/R2)" — both map to battle_defer/battle_advance.
+	elif event.is_action_pressed("battle_defer") and not event.is_echo():
+		_cycle_character(-1)
+		get_viewport().set_input_as_handled()
+
+	elif event.is_action_pressed("battle_advance") and not event.is_echo():
+		_cycle_character(1)
+		get_viewport().set_input_as_handled()
+
+
+## Re-target the menu at the previous/next party member without leaving it. No-op solo or when the character is not in the party (a detached test combatant).
+func _cycle_character(dir: int) -> void:
+	var gl: Node = get_tree().root.get_node_or_null("GameLoop") if is_inside_tree() else null
+	var party: Array = gl.party if gl != null and "party" in gl else []
+	if party.size() < 2:
+		return
+	var idx: int = party.find(character)
+	if idx == -1:
+		return
+	character = party[wrapi(idx + dir, 0, party.size())]
+	mode = Mode.SLOT_SELECT
+	selected_item_index = 0
+	_build_ui()
+	SoundManager.play_ui("menu_move")
+
 
 func _handle_item_input(event: InputEvent) -> void:
 	"""Handle input in item selection mode"""
