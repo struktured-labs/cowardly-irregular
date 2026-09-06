@@ -9,6 +9,7 @@ const FuturisticTileGeneratorScript = preload("res://src/exploration/FuturisticT
 const VillageInnScript = preload("res://src/exploration/VillageInn.gd")
 const VillageShopScript = preload("res://src/exploration/VillageShop.gd")
 const TreasureChestScript = preload("res://src/exploration/TreasureChest.gd")
+const VillageElevatorScript = preload("res://src/exploration/VillageElevator.gd")
 
 ## Map dimensions
 const MAP_WIDTH: int = 24
@@ -50,7 +51,7 @@ func _generate_map() -> void:
 	var map_data: Array[String] = [
 		"WWWWWWWWWWWWWWWWWWWWWWWW",
 		"W......................W",
-		"W......................W",
+		"W.........^^...........W",
 		"W......................W",
 		"W...III....CCC.........W",
 		"W...III....CCC.........W",
@@ -71,6 +72,31 @@ func _generate_map() -> void:
 		"W......................W",
 		"WWWWWWWWWWWWWWWWWWWWWWWW",
 	]
+	# Elevation (CrossCode pass, 2026-09-06): tier 1 is row 1, the raised data platform; row 0 matches row 1's digit so the outer wall doesn't paint a spurious lip; row 2 on is tier 0, the mostly-blocked boundary except the '^' stair.
+	var height_data: Array[String] = [
+		"111111111111111111111111",
+		"111111111111111111111111",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+	]
 
 	for y in range(MAP_HEIGHT):
 		var row = map_data[y] if y < map_data.size() else ""
@@ -83,9 +109,12 @@ func _generate_map() -> void:
 			if char == "X" and not spawn_points.has("exit"):
 				spawn_points["exit"] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
 
+	_build_derived_layers(map_data, height_data)
+
 	spawn_points["entrance"] = Vector2(12 * TILE_SIZE,12 * TILE_SIZE)
 	spawn_points["default"] = spawn_points["entrance"]
 	spawn_points["node_prime_entrance"] = spawn_points["entrance"]
+	spawn_points["data_platform"] = Vector2(15 * TILE_SIZE + TILE_SIZE / 2, 1 * TILE_SIZE + TILE_SIZE / 2)
 
 
 ## W5 paints with its own world's generator — CrossCode phase 4
@@ -95,6 +124,15 @@ func _get_tile_generator() -> Node:
 
 func _get_fringe_ground_types() -> Array:
 	return [FuturisticTileGeneratorScript.TileType.PIXEL_GARDEN]
+
+
+## Data-platform cliffs read as a dark substrate edge with a neon cyan tint, not rock.
+func _get_cliff_palette() -> Dictionary:
+	return {
+		"face_dark": Color(0.04, 0.05, 0.08), "face_mid": Color(0.09, 0.11, 0.17), "face_light": Color(0.16, 0.20, 0.28),
+		"lip": Color(0.25, 0.95, 0.95), "lip_shadow": Color(0.05, 0.20, 0.20, 0.85),
+		"stair_tread": Color(0.11, 0.19, 0.23), "stair_riser": Color(0.05, 0.09, 0.11),
+	}
 
 
 func _char_to_tile_type(char: String) -> int:
@@ -159,6 +197,16 @@ func _setup_buildings() -> void:
 	# South face of the CCC building (cols 9-11, rows 2-4) — where the world keeps what it might render again.
 	spawn_points["cache_exit"] = Vector2(12 * TILE_SIZE,7.5 * TILE_SIZE)
 	_add_interior_door("CacheDoor", "node_prime_cache", "Enter The Cache", Vector2(12 * TILE_SIZE,6.5 * TILE_SIZE))
+
+	# === TELEPORT PAD === neon pad up to the data platform, alongside the row2 access stair.
+	var pad = VillageElevatorScript.create(VillageElevatorScript.Style.NEON,
+		Vector2(15 * TILE_SIZE,3 * TILE_SIZE), Vector2(15 * TILE_SIZE,1 * TILE_SIZE), "portal_activate")
+	pad.name = "DataPlatformPad"
+	buildings.add_child(pad)
+
+	# === PLATFORM DRESSING === data crates flanking the stair (cols9-10) and pad (col15)
+	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(7, 1))
+	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(17, 1))
 
 
 func _setup_treasures() -> void:

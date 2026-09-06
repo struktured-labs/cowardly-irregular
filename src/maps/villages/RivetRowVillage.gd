@@ -9,6 +9,7 @@ const IndustrialTileGeneratorScript = preload("res://src/exploration/IndustrialT
 const VillageInnScript = preload("res://src/exploration/VillageInn.gd")
 const VillageShopScript = preload("res://src/exploration/VillageShop.gd")
 const TreasureChestScript = preload("res://src/exploration/TreasureChest.gd")
+const VillageElevatorScript = preload("res://src/exploration/VillageElevator.gd")
 
 ## Map dimensions
 const MAP_WIDTH: int = 26
@@ -34,7 +35,8 @@ func _get_map_pixel_size() -> Vector2i:
 
 
 func _get_save_point_position() -> Vector2:
-	return Vector2(12 * TILE_SIZE,8 * TILE_SIZE)
+	# 2026-09-06: (12,8) sat inside the VVVVVVV chemical-barrel block — unreachable; moved clear.
+	return Vector2(17 * TILE_SIZE,8 * TILE_SIZE)
 
 
 func _get_player_spawn_fallback() -> Vector2:
@@ -50,7 +52,7 @@ func _generate_map() -> void:
 	var map_data: Array[String] = [
 		"WWWWWWWWWWWWWWWWWWWWWWWWWW",
 		"W........................W",
-		"W........................W",
+		"W............//..........W",
 		"W........................W",
 		"W...III..ddd..GGG........W",
 		"W...III..ddd..GGG........W",
@@ -69,6 +71,29 @@ func _generate_map() -> void:
 		"W........................W",
 		"WWWWWWWWWWWWWWWWWWWWWWWWWW",
 	]
+	# Elevation (CrossCode pass, 2026-09-06): tier 1 is row 1, the loading-dock platform; tier 0 is row 2 on (row2 is the mostly-blocked boundary, matching row0/row1's digit avoids a spurious north lip); the '/' pair at row1's south edge (row2) is the forklift ramp.
+	var height_data: Array[String] = [
+		"11111111111111111111111111",
+		"11111111111111111111111111",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+	]
 
 	for y in range(MAP_HEIGHT):
 		var row = map_data[y] if y < map_data.size() else ""
@@ -81,9 +106,12 @@ func _generate_map() -> void:
 			if char == "X" and not spawn_points.has("exit"):
 				spawn_points["exit"] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
 
+	_build_derived_layers(map_data, height_data)
+
 	spawn_points["entrance"] = Vector2(13 * TILE_SIZE,12 * TILE_SIZE)
 	spawn_points["default"] = spawn_points["entrance"]
 	spawn_points["rivet_row_entrance"] = spawn_points["entrance"]
+	spawn_points["dock_tier"] = Vector2(15 * TILE_SIZE + TILE_SIZE / 2, 1 * TILE_SIZE + TILE_SIZE / 2)
 
 
 ## W4 paints with its own world's generator — CrossCode phase 4
@@ -93,6 +121,15 @@ func _get_tile_generator() -> Node:
 
 func _get_fringe_ground_types() -> Array:
 	return []
+
+
+## Dock cliffs read as poured-concrete platform sides with a hazard-striped edge, not rock.
+func _get_cliff_palette() -> Dictionary:
+	return {
+		"face_dark": Color(0.17, 0.17, 0.18), "face_mid": Color(0.40, 0.40, 0.42), "face_light": Color(0.60, 0.60, 0.62),
+		"lip": Color(0.72, 0.36, 0.16), "lip_shadow": Color(0.12, 0.10, 0.09, 0.85),
+		"stair_tread": Color(0.55, 0.30, 0.14), "stair_riser": Color(0.26, 0.26, 0.26),
+	}
 
 
 func _char_to_tile_type(char: String) -> int:
@@ -156,6 +193,16 @@ func _setup_buildings() -> void:
 	# South face of the GGG building (cols 12-14, rows 2-4) — the safety office.
 	spawn_points["incident_exit"] = Vector2(15 * TILE_SIZE,7.5 * TILE_SIZE)
 	_add_interior_door("IncidentBoardDoor", "rivet_row_incident_board", "Enter Incident Board", Vector2(15 * TILE_SIZE,6.5 * TILE_SIZE))
+
+	# === FREIGHT ELEVATOR === hauls pallets (and the player) up to the dock tier, alongside the ramp at row2.
+	var freight_lift = VillageElevatorScript.create(VillageElevatorScript.Style.HAZARD,
+		Vector2(18 * TILE_SIZE,3 * TILE_SIZE), Vector2(18 * TILE_SIZE,1 * TILE_SIZE), "armor_clank")
+	freight_lift.name = "FreightElevator"
+	buildings.add_child(freight_lift)
+
+	# === DOCK DRESSING === crate + barrel on the platform, clear of the ramp (cols12-13) and lift (col18)
+	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(10, 1))
+	_add_prop(VillagePropScript.Kind.BARREL, Vector2i(20, 1))
 
 
 func _setup_treasures() -> void:
