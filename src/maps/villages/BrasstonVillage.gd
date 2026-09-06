@@ -9,6 +9,7 @@ const SteampunkTileGeneratorScript = preload("res://src/exploration/SteampunkTil
 const VillageInnScript = preload("res://src/exploration/VillageInn.gd")
 const VillageShopScript = preload("res://src/exploration/VillageShop.gd")
 const TreasureChestScript = preload("res://src/exploration/TreasureChest.gd")
+const VillageElevatorScript = preload("res://src/exploration/VillageElevator.gd")
 
 ## Map dimensions
 const MAP_WIDTH: int = 26
@@ -58,7 +59,7 @@ func _generate_map() -> void:
 	var map_data: Array[String] = [
 		"WWWWWWWWWWWWWWWWWWWWWWWWWW",
 		"W........................W",
-		"W........................W",
+		"W............^^..........W",
 		"W..ppfpppppppppppppfppp..W",
 		"W..pHHHppdgggdpBBBppfpp..W",
 		"W..pHHHppdgFgdpBBBppppp..W",
@@ -79,6 +80,31 @@ func _generate_map() -> void:
 		"W........................W",
 		"WWWWWWWWWWWWWWWWWWWWWWWWWW",
 	]
+	# Elevation (CrossCode pass, 2026-09-06): tier 1 is row 1, the Work Deck, a brass catwalk over the market; row 0 matches row 1's digit so the outer wall doesn't paint a spurious lip; row 2 on is tier 0, the mostly-blocked boundary except the '^' stair.
+	var height_data: Array[String] = [
+		"11111111111111111111111111",
+		"11111111111111111111111111",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+	]
 
 	for y in range(MAP_HEIGHT):
 		var row = map_data[y] if y < map_data.size() else ""
@@ -91,9 +117,12 @@ func _generate_map() -> void:
 			if char == "X" and not spawn_points.has("exit"):
 				spawn_points["exit"] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
 
+	_build_derived_layers(map_data, height_data)
+
 	spawn_points["entrance"] = Vector2(13 * TILE_SIZE,15 * TILE_SIZE)
 	spawn_points["default"] = spawn_points["entrance"]
 	spawn_points["brasston_entrance"] = spawn_points["entrance"]
+	spawn_points["work_deck"] = Vector2(9 * TILE_SIZE + TILE_SIZE / 2, 1 * TILE_SIZE + TILE_SIZE / 2)
 
 
 ## W3 paints with its own world's generator — CrossCode phase 4
@@ -103,6 +132,15 @@ func _get_tile_generator() -> Node:
 
 func _get_fringe_ground_types() -> Array:
 	return [SteampunkTileGeneratorScript.TileType.PARK_GRASS]
+
+
+## Work Deck cliffs read as riveted brass platform sides, not rock — brass/copper/dark-wood palette.
+func _get_cliff_palette() -> Dictionary:
+	return {
+		"face_dark": Color(0.22, 0.15, 0.09), "face_mid": Color(0.52, 0.36, 0.16), "face_light": Color(0.76, 0.58, 0.28),
+		"lip": Color(0.85, 0.68, 0.32), "lip_shadow": Color(0.16, 0.11, 0.06, 0.85),
+		"stair_tread": Color(0.62, 0.47, 0.22), "stair_riser": Color(0.30, 0.20, 0.10),
+	}
 
 
 func _char_to_tile_type(char: String) -> int:
@@ -172,6 +210,16 @@ func _setup_buildings() -> void:
 	# South face of the BBB building (cols 13-15, rows 2-5) — where Brasston keeps the spares.
 	spawn_points["archive_exit"] = Vector2(16 * TILE_SIZE,8.5 * TILE_SIZE)
 	_add_interior_door("RedundancyArchiveDoor", "brasston_redundancy_archive", "Enter Redundancy Archive", Vector2(16 * TILE_SIZE,7.5 * TILE_SIZE))
+
+	# === WORK DECK LIFT === brass elevator up to the Work Deck, an alternative to the row2 stair.
+	var lift = VillageElevatorScript.create(VillageElevatorScript.Style.BRASS,
+		Vector2(9 * TILE_SIZE,3 * TILE_SIZE), Vector2(9 * TILE_SIZE,1 * TILE_SIZE), "steam_hiss")
+	lift.name = "WorkDeckLift"
+	buildings.add_child(lift)
+
+	# === WORK DECK DRESSING === lamp + crate atop the catwalk, clear of the stair (cols12-13) and lift (col9)
+	_add_lamp_post(Vector2i(5, 1))
+	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(20, 1))
 
 
 func _setup_treasures() -> void:
