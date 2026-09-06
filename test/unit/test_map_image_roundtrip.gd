@@ -50,6 +50,7 @@ const GOLDEN_LANDMARKS := {
 	"2": ["150,12"],
 	"3": ["20,114"],
 	"4": ["164,112"],
+	"5": ["112,65"],  # 2026-09-06: The Backwards Warren entrance (deliberate single-pixel landmark add)
 	"C": ["6,40", "4,42"],
 	"D": ["20,110"],
 	"E": ["58,12"],
@@ -67,6 +68,7 @@ const GOLDEN_CENSUS := {
 	"2": 1,
 	"3": 1,
 	"4": 1,
+	"5": 1,
 	"B": 295,
 	"C": 2,
 	"D": 1,
@@ -82,7 +84,7 @@ const GOLDEN_CENSUS := {
 	"W": 1,
 	"c": 504,
 	"d": 642,
-	"g": 10090,
+	"g": 10089,  # one grass pixel became the '5' landmark
 	"i": 370,
 	"l": 414,
 	"s": 1467,
@@ -149,7 +151,7 @@ func test_every_landmark_survives_at_its_exact_coordinates() -> void:
 		if got != want:
 			problems.append("'%s': golden [%s] but png [%s]" % [ch, ", ".join(want), ", ".join(got)])
 	# without this, a run where the golden table was emptied would report zero problems
-	assert_eq(total_placed, 15, "the golden table must describe 15 landmark placements")
+	assert_eq(total_placed, 16, "the golden table must describe 16 landmark placements (15 + the 2026-09-06 Warren '5')")
 	assert_true(problems.is_empty(), "landmark placement changed:\n  %s" % "\n  ".join(problems))
 
 
@@ -236,5 +238,5 @@ func test_the_image_reaches_the_running_scene() -> void:
 	# registration -- `cave_entrance` is rewritten one tile east at OverworldScene.gd:337
 	# and `castle_entrance` is anchored two tiles east. I predicted 12 and measured 11; the
 	# second writer on `cave_entrance` is the difference, and it is the interesting part.
-	assert_eq(landed, 11,
-		"%d of 15 golden landmark positions reached spawn_points; unmatched: %s" % [landed, ", ".join(missing)])
+	assert_eq(landed, 12,
+		"%d of 16 golden landmark positions reached spawn_points; unmatched: %s" % [landed, ", ".join(missing)])

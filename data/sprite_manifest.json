@@ -3030,6 +3030,32 @@
       "tier": "T1",
       "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
+    "cartographer_wraith": {
+      "path": "res://assets/sprites/monsters/specter.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "PLACEHOLDER 2026-09-06: The Backwards Warren boss reuses the specter sheet pending its own art (same pattern as Mordaine on shadow_knight)"
+    },
     "specter": {
       "path": "res://assets/sprites/monsters/specter.png",
       "frame_width": 256,
