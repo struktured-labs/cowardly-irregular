@@ -268,7 +268,7 @@ func _on_body_entered(body: Node2D) -> void:
 		# BLOCKED the battle (leaked commence latch) — monsters silently vanished with no fight.
 		# Emit first (the whole chain up to GameLoop's first await runs synchronously), then fade
 		# only if THIS touch flipped the commence latch. No GameLoop found (tests) = old behavior.
-		var gl: Node = get_tree().root.get_node_or_null("GameLoop") if get_tree() else null
+		var gl: Node = get_tree().root.get_node_or_null("GameLoop") if is_inside_tree() else null
 		var latch_before: bool = gl != null and gl.get("_battle_transition_starting") == true
 		touched.emit(monster_id, monster_types)
 		var latch_after: bool = gl != null and gl.get("_battle_transition_starting") == true
