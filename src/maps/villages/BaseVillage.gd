@@ -53,6 +53,7 @@ var tile_map: TileMapLayer
 var cliff_map: TileMapLayer
 var overlay_map: TileMapLayer
 var player: Node2D
+var _weather: WeatherSystem
 var camera: Camera2D
 var controller: Node
 var tile_generator: Node
@@ -91,6 +92,7 @@ func _ready() -> void:
 	_setup_camera()
 	_setup_controller()
 	_setup_save_point()
+	_setup_weather()
 
 	if SoundManager:
 		SoundManager.play_area_music(_get_music_area_id())
@@ -632,6 +634,20 @@ func spawn_player_at(spawn_name: String) -> void:
 		player.teleport(spawn_points[spawn_name])
 		if player.has_method("reset_step_count"):
 			player.reset_step_count()
+
+
+## Weather v2 (2026-09-04): villages inherit the world's live weather — same renderer
+## as the overworld, reading GameState. Interiors don't extend BaseVillage, so they skip it.
+func _setup_weather() -> void:
+	_weather = WeatherSystem.new()
+	add_child(_weather)
+	var world_num: int = GameState.current_world if GameState else 1
+	_weather.setup(self, player, WeatherSystem.world_id_for(world_num))
+
+
+func _process(delta: float) -> void:
+	if _weather:
+		_weather.process(delta)
 
 
 ## Resume exploration input

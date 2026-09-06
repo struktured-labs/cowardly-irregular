@@ -233,6 +233,30 @@ signal time_of_day_changed(band: String)
 const DAY_PHASE_NEW_GAME: float = 0.15
 var day_phase: float = DAY_PHASE_NEW_GAME
 
+## Weather (2026-09-04, Philly demo-night suggestion): GameState-owned so villages,
+## battle, saves, and autobattle scripts all agree — WeatherSystem is a renderer of this.
+signal weather_changed(condition: String)
+
+## Per-world weighted vocabulary; W6 abstract is weatherless BY DESIGN (like Vertex).
+const WEATHER_VOCAB: Dictionary = {
+	1: [{"id": "clear", "weight": 55, "min_s": 90.0, "max_s": 240.0},
+		{"id": "rain", "weight": 30, "min_s": 45.0, "max_s": 120.0},
+		{"id": "storm", "weight": 15, "min_s": 40.0, "max_s": 90.0}],
+	2: [{"id": "clear", "weight": 70, "min_s": 90.0, "max_s": 240.0},
+		{"id": "drizzle", "weight": 30, "min_s": 45.0, "max_s": 120.0}],
+	3: [{"id": "clear", "weight": 40, "min_s": 60.0, "max_s": 150.0},
+		{"id": "fog", "weight": 60, "min_s": 60.0, "max_s": 180.0}],
+	4: [{"id": "clear", "weight": 30, "min_s": 60.0, "max_s": 120.0},
+		{"id": "smog", "weight": 70, "min_s": 60.0, "max_s": 180.0}],
+	5: [{"id": "clear", "weight": 50, "min_s": 60.0, "max_s": 150.0},
+		{"id": "glitchstorm", "weight": 50, "min_s": 30.0, "max_s": 90.0}],
+	6: [{"id": "clear", "weight": 100, "min_s": 3600.0, "max_s": 3600.0}],
+}
+
+var weather_condition: String = "clear"
+var weather_timer: float = 0.0
+var _weather_world: int = 0
+
 ## LLM event log — append-only ring buffer of deterministic game facts.
 ## Instantiated in _ready() so it is always available to LLM subsystems.
 var event_log: EventLog = null
@@ -294,6 +318,7 @@ func _process(delta: float) -> void:
 	if not playtime_paused:
 		playtime_seconds += delta
 		_advance_day_phase(delta)
+		_advance_weather(delta)
 
 
 ## Clock advances with playtime (battles included — night can fall mid-dungeon).
@@ -323,6 +348,61 @@ func is_night() -> bool:
 	return get_time_of_day_name() == "night"
 
 
+## Weather clock — advances with playtime like the day phase; a world change re-rolls
+## here rather than depending on every current_world writer remembering to notify.
+func _advance_weather(delta: float) -> void:
+	if _weather_world != current_world:
+		_weather_world = current_world
+		_roll_weather()
+		return
+	weather_timer -= delta
+	if weather_timer <= 0.0:
+		_roll_weather()
+
+
+func _roll_weather() -> void:
+	var vocab: Array = WEATHER_VOCAB.get(current_world, WEATHER_VOCAB[6])
+	var total: int = 0
+	for entry in vocab:
+		total += int(entry.get("weight", 0))
+	var pick: int = randi_range(1, maxi(total, 1))
+	var chosen: Dictionary = vocab[0]
+	for entry in vocab:
+		pick -= int(entry.get("weight", 0))
+		if pick <= 0:
+			chosen = entry
+			break
+	weather_timer = randf_range(float(chosen.get("min_s", 60.0)), float(chosen.get("max_s", 120.0)))
+	var before := weather_condition
+	weather_condition = str(chosen.get("id", "clear"))
+	if weather_condition != before:
+		weather_changed.emit(weather_condition)
+
+
+func get_weather() -> String:
+	return weather_condition
+
+
+## Debug / quest / future-Scriptweaver hook: pin a condition for a duration.
+func set_weather(condition: String, duration: float = 120.0) -> void:
+	_weather_world = current_world
+	weather_timer = maxf(duration, 1.0)
+	var before := weather_condition
+	weather_condition = condition
+	if weather_condition != before:
+		weather_changed.emit(weather_condition)
+
+
+static func all_weather_conditions() -> Array[String]:
+	var out: Array[String] = []
+	for world in WEATHER_VOCAB:
+		for entry in WEATHER_VOCAB[world]:
+			var id := str(entry.get("id", ""))
+			if id != "" and not out.has(id):
+				out.append(id)
+	return out
+
+
 ## Save/Load system
 func _ensure_save_directory() -> void:
 	"""Create save directory if it doesn't exist"""
@@ -340,6 +420,8 @@ func _create_save_data() -> Dictionary:
 		"timestamp": Time.get_unix_time_from_system(),
 		"playtime": playtime_seconds,
 		"day_phase": day_phase,
+		"weather_condition": weather_condition,
+		"weather_timer": weather_timer,
 		"corruption_level": corruption_level,
 		"macro_volatility": macro_volatility,
 		"party_gold": party_gold,
@@ -417,6 +499,9 @@ func _apply_save_data(save_data: Dictionary) -> void:
 		playtime_seconds = save_data["playtime"]
 	if save_data.has("day_phase"):
 		day_phase = clampf(float(save_data["day_phase"]), 0.0, 1.0)
+	if save_data.has("weather_condition"):
+		weather_condition = str(save_data["weather_condition"])
+		weather_timer = maxf(float(save_data.get("weather_timer", 0.0)), 0.0)
 	if save_data.has("corruption_level"):
 		## Tick 156: float() coerce + clampf to documented [0.0, 1.0]
 		## range. Pre-fix a corrupted save with negative or >1.0 value
@@ -615,6 +700,9 @@ func _apply_save_data(save_data: Dictionary) -> void:
 	## "unlock" all worlds) or WorldMapMenu's display label.
 	if save_data.has("current_world"):
 		current_world = clampi(int(save_data["current_world"]), 1, 6)
+	# Weather world-pin AFTER current_world lands — else the pre-load world re-rolls
+	# away the saved condition on the first frame. Old saves (no key) re-roll fresh.
+	_weather_world = current_world if save_data.has("weather_condition") else 0
 	if save_data.has("worlds_unlocked"):
 		worlds_unlocked = clampi(int(save_data["worlds_unlocked"]), 1, 6)
 	if save_data.has("story_flags"):
@@ -1038,6 +1126,9 @@ func reset_game_state() -> void:
 	all 6 worlds unlocked from the start. Mirrors _create_save_data."""
 	playtime_seconds = 0.0
 	day_phase = DAY_PHASE_NEW_GAME
+	weather_condition = "clear"
+	weather_timer = 0.0
+	_weather_world = 0
 	corruption_level = 0.0
 	macro_volatility = 0.0
 	party_gold = 500

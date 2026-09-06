@@ -1049,6 +1049,8 @@ func _format_condition(condition: Dictionary) -> String:
 			return "Setup Done"
 		"is_night":
 			return "IS NIGHT"
+		"weather":
+			return "Weather:\n%s" % str(condition.get("weather", "?")).capitalize()
 		"always":
 			return "ALWAYS"
 		_:
@@ -1974,6 +1976,11 @@ func _apply_condition_type(new_type: String) -> void:
 			cond["stat"] = "defense"
 		cond.erase("op")
 		cond.erase("value")
+	elif new_type == "weather":
+		if not cond.has("weather"):
+			cond["weather"] = "rain"
+		cond.erase("op")
+		cond.erase("value")
 	elif new_type == "setup_complete":
 		cond.erase("op")
 		cond.erase("value")
@@ -2026,6 +2033,16 @@ func _adjust_condition_value(delta: int) -> void:
 
 		# ALWAYS conditions don't have values
 		if cond_type == "always":
+			return
+
+		# Weather cycles through the vocabulary (shoulder buttons), not a number
+		if cond_type == "weather":
+			var vocab: Array[String] = GameState.all_weather_conditions()
+			if vocab.is_empty():
+				return
+			var idx: int = vocab.find(str(cond.get("weather", "")))
+			cond["weather"] = vocab[wrapi(idx + delta, 0, vocab.size())]
+			_refresh_grid()
 			return
 
 		var current_value = cond.get("value", 50)
