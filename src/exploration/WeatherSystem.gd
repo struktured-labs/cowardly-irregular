@@ -175,13 +175,16 @@ func _apply_condition(condition: String) -> void:
 	_glitch_timer = randf_range(3.0, 10.0)
 
 	var sm: Node = _autoload("SoundManager")
-	if sm:
+	if sm and sm.has_method("play_ambient"):
 		# Clear falls back to the world's fair-weather bed (v1 behavior), not silence.
-		var ambient := str(params.get("ambient", WORLD_CLEAR_AMBIENTS.get(_current_world, "")))
-		if ambient != "" and sm.has_method("play_ambient"):
-			sm.play_ambient(ambient)
-		elif ambient == "" and sm.has_method("stop_ambient"):
-			sm.stop_ambient()
+		# Literal keys per branch so the sfx-orphan audit can see every ambient this plays.
+		match str(params.get("ambient", WORLD_CLEAR_AMBIENTS.get(_current_world, ""))):
+			"weather_rain": sm.play_ambient("weather_rain")
+			"weather_steam": sm.play_ambient("weather_steam")
+			"weather_smog": sm.play_ambient("weather_smog")
+			"weather_glitch": sm.play_ambient("weather_glitch")
+			"weather_sunny": sm.play_ambient("weather_sunny")
+			_: if sm.has_method("stop_ambient"): sm.stop_ambient()
 
 
 func _flashes_suppressed() -> bool:
@@ -196,8 +199,8 @@ func _trigger_lightning() -> void:
 	var tween = _player_ref.create_tween()
 	tween.tween_property(_lightning_flash, "color:a", 0.0, 0.2)
 	var sm: Node = _autoload("SoundManager")
-	if sm and sm.has_method("play_ability"):
-		sm.play_ability("thunder")
+	if sm and sm.has_method("play_battle"):
+		sm.play_battle("ability_lightning")
 
 
 func _trigger_glitch() -> void:
