@@ -32,22 +32,42 @@ func _get_save_point_position() -> Vector2:
 
 
 func _get_player_spawn_fallback() -> Vector2:
-	return Vector2(384, 416)
+	return Vector2(656, 48)
+
+
+## Empty forces the procedural palette below — medieval.png otherwise wins over it (struktured 2026-09-06 W1 fix)
+func _get_cliff_sheet_key() -> String:
+	return ""
+
+
+## Dark mossy stone — struktured 2026-09-06 sunken-hollow elevation pass
+func _get_cliff_palette() -> Dictionary:
+	return {
+		"face_dark": Color(0.10, 0.11, 0.10),
+		"face_mid": Color(0.20, 0.24, 0.19),
+		"face_light": Color(0.32, 0.38, 0.28),
+		"lip": Color(0.55, 0.60, 0.42),
+		"lip_shadow": Color(0.08, 0.09, 0.08, 0.85),
+		"grass": Color(0.22, 0.34, 0.20),
+		"grass_light": Color(0.30, 0.44, 0.26),
+		"stair_tread": Color(0.42, 0.46, 0.36),
+		"stair_riser": Color(0.18, 0.20, 0.17),
+	}
 
 
 func _generate_map() -> void:
-	# Grimhollow layout: dark swamp hamlet
+	# Grimhollow layout: dark swamp hamlet, sunken around a spiral descent in the NE corner
 	# W = wall, . = floor, S = swamp pools, R = restless inn, C = cursed curios, D = decrepit chapel
-	# G = graveyard area, X = exit
+	# G = graveyard area, X = exit, / = ramp (spiral descent, cols19-22 rows1-7)
 	var map_data: Array[String] = [
 		"WWWWWWWWWWWWWWWWWWWWWWWW",
-		"W......................W",
-		"W......................W",
-		"W......................W",
-		"W....RRR....DDD........W",
-		"W....RRR....DDD........W",
-		"W....RRR....DDD........W",
-		"W......................W",
+		"W.................W....W",
+		"W.................W....W",
+		"W.................W..//W",
+		"W....RRR....DDD...W....W",
+		"W....RRR....DDD...W//..W",
+		"W....RRR....DDD...W....W",
+		"W....................//W",
 		"W.......SS.....CCC.....W",
 		"W.......SS.....CCC.....W",
 		"W.......SS.....CCC.....W",
@@ -61,6 +81,29 @@ func _generate_map() -> void:
 		"W......................W",
 		"WWWWWWWWWWWWWWWWWWWWWWWW",
 	]
+	# Spiral descent (struktured 2026-09-06): rim (3) -> 2 -> 1 -> floor (0), two switchback turns, cols19-22 walled off (col18) from the rest of the floor so the only way down is the ramps — Mort sits at (18,7), one column outside the pit, so shifting the pit to col19+ keeps him clear of the derived cliff face
+	var height_data: Array[String] = [
+		"000000000000000000000000",
+		"000000000000000000033330",
+		"000000000000000000033330",
+		"000000000000000000022220",
+		"000000000000000000022220",
+		"000000000000000000011110",
+		"000000000000000000011110",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+	]
 
 	for y in range(MAP_HEIGHT):
 		var row = map_data[y] if y < map_data.size() else ""
@@ -73,7 +116,10 @@ func _generate_map() -> void:
 			if char == "X" and not spawn_points.has("exit"):
 				spawn_points["exit"] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
 
-	spawn_points["entrance"] = Vector2(12 * TILE_SIZE,13 * TILE_SIZE)
+	_build_derived_layers(map_data, height_data)
+
+	# Entrance now spawns on the sunken hollow's rim (struktured 2026-09-06); the player spirals down into the floor where the rest of the village lives
+	spawn_points["entrance"] = Vector2(20 * TILE_SIZE + TILE_SIZE / 2,1 * TILE_SIZE + TILE_SIZE / 2)
 	spawn_points["default"] = spawn_points["entrance"]
 	spawn_points["grimhollow_entrance"] = spawn_points["entrance"]
 

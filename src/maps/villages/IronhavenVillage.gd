@@ -35,10 +35,30 @@ func _get_player_spawn_fallback() -> Vector2:
 	return Vector2(448, 544)
 
 
+## Empty forces the procedural palette below — medieval.png otherwise wins over it (struktured 2026-09-06 W1 fix)
+func _get_cliff_sheet_key() -> String:
+	return ""
+
+
+## Rusty iron / slate — struktured 2026-09-06 mining-terraces elevation pass
+func _get_cliff_palette() -> Dictionary:
+	return {
+		"face_dark": Color(0.12, 0.10, 0.09),
+		"face_mid": Color(0.42, 0.24, 0.14),
+		"face_light": Color(0.62, 0.38, 0.20),
+		"lip": Color(0.78, 0.42, 0.18),
+		"lip_shadow": Color(0.10, 0.08, 0.07, 0.85),
+		"grass": Color(0.30, 0.28, 0.26),
+		"grass_light": Color(0.40, 0.36, 0.32),
+		"stair_tread": Color(0.35, 0.33, 0.30),
+		"stair_riser": Color(0.15, 0.13, 0.12),
+	}
+
+
 func _generate_map() -> void:
-	# Ironhaven layout: industrial forge town with lava channels
+	# Ironhaven layout: industrial forge town, stepped mining terraces
 	# W = wall, . = floor, V = lava, I = ironclad inn, F = master forge
-	# S = steamworks, M = miner's tavern, X = exit
+	# S = steamworks, M = miner's tavern, X = exit, ^ = terrace stair
 	var map_data: Array[String] = [
 		"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
 		"W............................W",
@@ -49,7 +69,7 @@ func _generate_map() -> void:
 		"W....III.....FFF...SSS.......W",
 		"W............FFF...SSS.......W",
 		"W............................W",
-		"W...........VVV..............W",
+		"W.......^^..VVV.........^^...W",
 		"W...........VVV..............W",
 		"W...........VVV..............W",
 		"W............................W",
@@ -57,13 +77,40 @@ func _generate_map() -> void:
 		"W....MMM.....................W",
 		"W....MMM.....................W",
 		"W............................W",
-		"W............................W",
+		"W............^^.....^^.......W",
 		"W............................W",
 		"W..........XXXXXX............W",
 		"W..........XXXXXX............W",
 		"W............................W",
 		"W............................W",
 		"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+	]
+	# Three stepped work levels (struktured 2026-09-06): upper forge terrace (2) / mid mining terrace (1) / lower yard (0)
+	var height_data: Array[String] = [
+		"222222222222222222222222222222",
+		"222222222222222222222222222222",
+		"222222222222222222222222222222",
+		"222222222222222222222222222222",
+		"222222222222222222222222222222",
+		"222222222222222222222222222222",
+		"222222222222222222222222222222",
+		"222222222222222222222222222222",
+		"222222222222222222222222222222",
+		"111111111111111111111111111111",
+		"111111111111111111111111111111",
+		"111111111111111111111111111111",
+		"111111111111111111111111111111",
+		"111111111111111111111111111111",
+		"111111111111111111111111111111",
+		"111111111111111111111111111111",
+		"111111111111111111111111111111",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
 	]
 
 	for y in range(MAP_HEIGHT):
@@ -76,6 +123,8 @@ func _generate_map() -> void:
 
 			if char == "X" and not spawn_points.has("exit"):
 				spawn_points["exit"] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
+
+	_build_derived_layers(map_data, height_data)
 
 	spawn_points["entrance"] = Vector2(14 * TILE_SIZE,17 * TILE_SIZE)
 	spawn_points["default"] = spawn_points["entrance"]
