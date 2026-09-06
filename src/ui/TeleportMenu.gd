@@ -43,6 +43,7 @@ const DESTINATIONS: Array = [
 	{"id": "fire_dragon_cave",       "label": "Fire Dragon Cave",     "spawn": "default",     "section": ""},
 	{"id": "shadow_dragon_cave",     "label": "Shadow Dragon Cave",   "spawn": "default",     "section": ""},
 	{"id": "lightning_dragon_cave",  "label": "Lightning Dragon Cave","spawn": "default",     "section": ""},
+	{"id": "backwards_warren",       "label": "The Backwards Warren", "spawn": "default",     "section": ""},
 	# --- Other villages ---
 	{"id": "frosthold_village",      "label": "Frosthold Village",    "spawn": "default",     "section": "More Villages"},
 	{"id": "eldertree_village",      "label": "Eldertree Village",    "spawn": "default",     "section": ""},

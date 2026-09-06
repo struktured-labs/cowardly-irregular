@@ -2661,6 +2661,10 @@ func _flash_sprite(sprite: Sprite2D, flash_color: Color) -> void:
 func _on_battle_started() -> void:
 	"""Handle battle start"""
 	log_message("[color=yellow]>>> Battle commenced![/color]")
+	# MimicChest's loud tell, queued because the chest node is gone by battle start.
+	if GameState and "game_constants" in GameState and GameState.game_constants.has("pending_battle_flavor_line"):
+		log_message("[color=orange]%s[/color]" % str(GameState.game_constants["pending_battle_flavor_line"]))
+		GameState.game_constants.erase("pending_battle_flavor_line")
 	_show_hint("autobattle", "Press Select or F6 to enable Autobattle for all characters!")
 	_show_hint("controls", "L = Defer (skip, +1 AP) | R = Advance (queue extra actions)")
 

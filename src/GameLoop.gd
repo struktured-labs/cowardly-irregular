@@ -66,6 +66,7 @@ const SuburbanUndergroundScript = preload("res://src/maps/dungeons/SuburbanUnder
 const CastleHarmoniaScript = preload("res://src/maps/dungeons/CastleHarmonia.gd")
 const SteampunkMechanismScript = preload("res://src/maps/dungeons/SteampunkMechanism.gd")
 const VertexApexScript = preload("res://src/maps/dungeons/VertexApex.gd")
+const ContrarianDepthsScript = preload("res://src/maps/dungeons/ContrarianDepths.gd")
 const SteampunkOverworldScript = preload("res://src/exploration/SteampunkOverworld.gd")
 const SuburbanOverworldScript = preload("res://src/exploration/SuburbanOverworld.gd")
 const IndustrialOverworldScript = preload("res://src/exploration/IndustrialOverworld.gd")
@@ -3709,6 +3710,8 @@ func _start_exploration(force_battle_teardown: bool = false) -> void:
 			exploration_scene = _create_dragon_cave_from_script(LightningDragonCaveScript)
 		"fire_dragon_cave":
 			exploration_scene = _create_dragon_cave_from_script(FireDragonCaveScript)
+		"backwards_warren":
+			exploration_scene = _create_dragon_cave_from_script(ContrarianDepthsScript)
 		"assembly_core":
 			exploration_scene = _create_dragon_cave_from_script(AssemblyCoreScript)
 		"root_process":
@@ -3923,6 +3926,8 @@ func _prewarm_area_sprites() -> void:
 			common_enemies = ["goblin", "bat", "lightning_dragon"]
 		"fire_dragon_cave":
 			common_enemies = ["imp", "skeleton", "fire_dragon"]
+		"backwards_warren":
+			common_enemies = ["bat", "goblin", "skeleton", "cartographer_wraith"]
 		"assembly_core":
 			common_enemies = ["conveyor_gremlin", "toxic_sludge", "assembly_line_automaton", "masterite_warden_industrial"]
 		"root_process":
@@ -4967,6 +4972,8 @@ func _get_terrain_for_map(map_id: String) -> String:
 			return "storm_cave"
 		"fire_dragon_cave":
 			return "lava_cave"
+		"backwards_warren":
+			return "cave"
 		"assembly_core":
 			return "industrial"
 		"root_process":

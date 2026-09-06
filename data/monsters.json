@@ -1092,6 +1092,57 @@
       "abilities"
     ]
   },
+  "cartographer_wraith": {
+    "id": "cartographer_wraith",
+    "name": "The Lost Cartographer",
+    "description": "Fired for insisting the map was more honest than the terrain. Now the terrain agrees with nobody.",
+    "level": 13,
+    "boss": true,
+    "stats": {
+      "max_hp": 8200,
+      "max_mp": 130,
+      "attack": 380,
+      "defense": 260,
+      "magic": 430,
+      "magic_defense": 180,
+      "speed": 26
+    },
+    "abilities": [
+      "slash",
+      "dark_bolt",
+      "hallucination_spores",
+      "void_pulse"
+    ],
+    "exp_reward": 260,
+    "gold_reward": 240,
+    "drop_table": [
+      {
+        "item": "ether",
+        "chance": 0.7
+      },
+      {
+        "item": "hi_potion",
+        "chance": 0.6
+      },
+      {
+        "item": "elixir",
+        "chance": 0.2
+      }
+    ],
+    "weaknesses": [
+      "holy"
+    ],
+    "resistances": [
+      "dark",
+      "poison"
+    ],
+    "dialogue": {
+      "intro": [
+        "Hero: Is that a compass made of teeth?",
+        "The Lost Cartographer: I mapped every inch of this warren. Nobody read past page one."
+      ]
+    }
+  },
   "ironback_beetle": {
     "id": "ironback_beetle",
     "name": "Ironback Beetle",
