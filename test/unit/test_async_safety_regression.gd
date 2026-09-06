@@ -105,9 +105,11 @@ func test_battle_transition_fade_out_safety() -> void:
 	"""BattleTransition fade_out should check validity after await"""
 	var content = FileAccess.get_file_as_string("res://src/transitions/BattleTransition.gd")
 
-	# Check for validity check after await tween.finished
-	assert_true(content.contains("await tween.finished") and content.contains("is_instance_valid(self)"),
-		"BattleTransition should check validity after await in fade_out")
+	# 2026-09-06: raw `await tween.finished` is BANNED here — it hangs forever on freed
+	# targets (the spider wedge; see test_spider_wedge_regression). The invariant this test
+	# defends is unchanged: a validity check must follow the (now-bounded) await.
+	assert_true(content.contains("_await_tween_safe(tween)") and content.contains("is_instance_valid(self)"),
+		"BattleTransition should check validity after its bounded tween await in fade_out")
 
 
 func test_battle_transition_midpoint_safety() -> void:

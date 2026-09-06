@@ -36,9 +36,9 @@ const WORLD_TINTS: Dictionary = {
 ## clear state falls back to the world tint above.
 const RENDER: Dictionary = {
 	"clear": {},
-	"drizzle": {"rain_amount": 40, "rain_velocity": 160.0, "overlay": Color(0.3, 0.34, 0.4, 0.08), "ambient": "weather_rain"},
-	"rain": {"rain_amount": 110, "rain_velocity": 260.0, "overlay": Color(0.12, 0.14, 0.2, 0.18), "ambient": "weather_rain"},
-	"storm": {"rain_amount": 220, "rain_velocity": 380.0, "overlay": Color(0.08, 0.09, 0.15, 0.3), "ambient": "weather_rain", "lightning": true},
+	"drizzle": {"rain_amount": 70, "rain_velocity": 200.0, "overlay": Color(0.3, 0.34, 0.4, 0.10), "ambient": "weather_rain"},
+	"rain": {"rain_amount": 180, "rain_velocity": 320.0, "overlay": Color(0.12, 0.14, 0.2, 0.22), "ambient": "weather_rain"},
+	"storm": {"rain_amount": 320, "rain_velocity": 460.0, "overlay": Color(0.08, 0.09, 0.15, 0.34), "ambient": "weather_rain", "lightning": true},
 	"fog": {"overlay": Color(0.55, 0.45, 0.3, 0.16), "breathe": true, "ambient": "weather_steam"},
 	"smog": {"overlay": Color(0.22, 0.22, 0.2, 0.22), "breathe": true, "ambient": "weather_smog"},
 	"glitchstorm": {"overlay": Color(0.0, 0.1, 0.2, 0.1), "glitch": true, "ambient": "weather_glitch"},

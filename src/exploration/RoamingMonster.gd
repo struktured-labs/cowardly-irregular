@@ -264,8 +264,16 @@ func _on_body_entered(body: Node2D) -> void:
 	if not _active or _fading:
 		return
 	if body.has_method("set_can_move"):
-		_begin_fade()
+		# 2026-09-06 spider wedge: fading BEFORE the emit spent the monster even when GameLoop
+		# BLOCKED the battle (leaked commence latch) — monsters silently vanished with no fight.
+		# Emit first (the whole chain up to GameLoop's first await runs synchronously), then fade
+		# only if THIS touch flipped the commence latch. No GameLoop found (tests) = old behavior.
+		var gl: Node = get_tree().root.get_node_or_null("GameLoop") if get_tree() else null
+		var latch_before: bool = gl != null and gl.get("_battle_transition_starting") == true
 		touched.emit(monster_id, monster_types)
+		var latch_after: bool = gl != null and gl.get("_battle_transition_starting") == true
+		if gl == null or (not latch_before and latch_after):
+			_begin_fade()
 
 
 ## Immediately stop the monster from triggering a battle. Called by

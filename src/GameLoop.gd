@@ -3989,6 +3989,7 @@ func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> v
 	if InputLockManager:
 		InputLockManager.push_lock("encounter_transition")
 	_battle_transition_starting = true
+	_arm_battle_commence_watchdog()
 
 	# LoopState.BATTLE blocks player movement — set in _start_battle_async after transition.
 	# Do NOT set it here — transition needs EXPLORATION state to render the screenshot.
@@ -4650,6 +4651,24 @@ func _arm_transition_watchdog() -> void:
 			# the two latches that have NO expiry.
 			if current_state != LoopState.EXPLORATION and _exploration_scene != null and is_instance_valid(_exploration_scene):
 				current_state = LoopState.EXPLORATION)
+
+
+## 2026-09-06 spider wedge: _battle_transition_starting is set BEFORE the awaited transition
+## and cleared only after it — a hung await leaked it with NO expiry, and it blocks both every
+## later encounter AND the area transitions whose _start_exploration is its only other clear
+## site. The 2026-08-08 comment claimed this watchdog family covered "the latches that can
+## strand a session"; this one sat outside it. Same shape: gut-off, generation token, LOUD.
+var _battle_commence_wd_gen: int = 0
+func _arm_battle_commence_watchdog() -> void:
+	for a in OS.get_cmdline_args():
+		if "gut_cmdln" in a:
+			return
+	_battle_commence_wd_gen += 1
+	var gen: int = _battle_commence_wd_gen
+	get_tree().create_timer(20.0).timeout.connect(func() -> void:
+		if _battle_transition_starting and _battle_commence_wd_gen == gen and current_state != LoopState.BATTLE:
+			push_error("[GAMELOOP] battle-commence watchdog: _battle_transition_starting held >20s with no battle — force-clearing (spider-wedge class, 2026-09-06)")
+			_battle_transition_starting = false)
 
 
 func _on_area_transition(target_map: String, spawn_point: String) -> void:

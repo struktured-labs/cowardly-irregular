@@ -886,8 +886,23 @@ func _get_objective_position() -> Vector2:
 		# Tick 278: w1_boss_defeated is a dead story_flag (no writer in src/);
 		# Mordaine's real flag is cutscene_flag_world1_mordaine_defeated in
 		# game_constants. rat_king_defeated still works (set by WhisperingCave).
-		if gs.get_story_flag("rat_king_defeated") or gs.game_constants.get("cutscene_flag_world1_mordaine_defeated", false):
+		if gs.game_constants.get("cutscene_flag_world1_mordaine_defeated", false):
 			return spawn_points.get("steampunk_portal", Vector2.ZERO)
+		# 2026-09-06 (struktured, post-spine-gate confusion): after the Rat King the marker
+		# pointed SOUTH at the W2 portal while the actual next goal was the dragon spine —
+		# route it through the spine instead: next unbroken seal, then the castle.
+		if gs.get_story_flag("rat_king_defeated") or gs.is_story_flag_set("rat_king_defeated"):
+			var left: Array[String] = w1_spine_remaining(gs)
+			left.erase("rat_king_defeated")
+			if left.is_empty():
+				return spawn_points.get("castle_entrance", Vector2.ZERO)
+			var seal_spawns := {
+				"fire_dragon_defeated": "fire_dragon_cave",
+				"ice_dragon_defeated": "ice_dragon_cave",
+				"lightning_dragon_defeated": "lightning_dragon_cave",
+				"shadow_dragon_defeated": "shadow_dragon_cave",
+			}
+			return spawn_points.get(seal_spawns.get(left[0], ""), Vector2.ZERO)
 		# chapter1_complete is only ever written to game_constants as
 		# "cutscene_flag_chapter1_complete" (by GameLoop on cutscene finish),
 		# never to story_flags. Check both namespaces — same dual-namespace

@@ -116,6 +116,17 @@ func _play_encounter_flash() -> void:
 
 
 ## Play battle transition based on enemy type
+## 2026-09-06 spider wedge: a tween whose targets get freed mid-flight (a concurrent
+## _cleanup_effects from a second transition / fade_out) NEVER emits finished — the awaiting
+## coroutine hung forever and leaked GameLoop._battle_transition_starting, so every later
+## encounter printed BLOCKED while the touched monster still faded (19 blocks in the live log).
+## Await liveness with a wall-clock ceiling instead — no state can strand this layer.
+func _await_tween_safe(tween: Tween, max_wall_ms: int = 6000) -> void:
+	var deadline := Time.get_ticks_msec() + max_wall_ms
+	while is_instance_valid(tween) and tween.is_running() and Time.get_ticks_msec() < deadline:
+		await get_tree().process_frame
+
+
 func play_battle_transition(enemy_types: Array) -> void:
 	if _is_transitioning:
 		push_warning("[TRANSITION] Previous transition still active — force-resetting")
@@ -228,7 +239,7 @@ void fragment() {
 					_iris_shader.set_shader_parameter("radius", r),
 			0.0, 1.2, 0.35
 		).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
-		await tween.finished
+		await _await_tween_safe(tween)
 
 		if not is_instance_valid(self):
 			return
@@ -244,7 +255,7 @@ void fragment() {
 			for frag in _fragments:
 				if is_instance_valid(frag):
 					tween.tween_property(frag, "modulate:a", 0.0, 0.08)
-			await tween.finished
+			await _await_tween_safe(tween)
 
 	if not is_instance_valid(self):
 		return
@@ -281,7 +292,7 @@ func _play_victory_exit() -> void:
 	var flash_tween = create_tween()
 	flash_tween.tween_property(_overlay, "color:a", 0.4, 0.1)
 	flash_tween.tween_property(_overlay, "color:a", 0.0, 0.2)
-	await flash_tween.finished
+	await _await_tween_safe(flash_tween)
 
 	if not is_instance_valid(self):
 		return
@@ -319,7 +330,7 @@ void fragment() {
 				_iris_shader.set_shader_parameter("radius", r),
 		1.3, 0.0, 0.5
 	).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
-	await tween.finished
+	await _await_tween_safe(tween)
 
 	if not is_instance_valid(self):
 		return
@@ -337,7 +348,7 @@ func _play_defeat_exit() -> void:
 	_overlay.modulate.a = 1.0
 	var tween = create_tween()
 	tween.tween_property(_overlay, "color:a", 1.0, 0.5)
-	await tween.finished
+	await _await_tween_safe(tween)
 
 	if not is_instance_valid(self):
 		return
@@ -352,7 +363,7 @@ func reveal_exploration() -> void:
 	_overlay.modulate.a = 1.0
 	var tween = create_tween()
 	tween.tween_property(_overlay, "modulate:a", 0.0, 0.4).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	await tween.finished
+	await _await_tween_safe(tween)
 	if is_instance_valid(self):
 		_cleanup_effects()
 
@@ -655,7 +666,7 @@ func _play_shatter() -> void:
 		tween.tween_property(frag, "rotation", rot_amount, phase_duration).set_delay(delay).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
 		tween.tween_property(frag, "modulate:a", 0.0, phase_duration * 0.6).set_delay(delay + phase_duration * 0.4)
 
-	await tween.finished
+	await _await_tween_safe(tween)
 
 	# Brief white impact flash — overlay returns to transparent so battle shows through
 	_overlay.color = Color.WHITE
@@ -716,7 +727,7 @@ func _play_spiral() -> void:
 		tween.tween_property(sparkle, "position", end_pos, inward_duration).set_delay(delay).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_EXPO)
 		tween.tween_property(sparkle, "modulate:a", 0.0, inward_duration * 0.4).set_delay(delay + inward_duration * 0.6)
 
-	await tween.finished
+	await _await_tween_safe(tween)
 
 	# Implosion flash — overlay returns to transparent so battle shows through
 	_overlay.color = Color(0.6, 0.4, 0.9)
@@ -744,7 +755,7 @@ func _play_zoom_burst() -> void:
 	tween.tween_property(_screen_rect, "scale", Vector2(3.0, 3.0), phase_duration).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_EXPO)
 	tween.tween_property(_screen_rect, "modulate", Color(2.0, 2.0, 2.0, 0.0), phase_duration).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_EXPO)
 
-	await tween.finished
+	await _await_tween_safe(tween)
 
 	# Bright white flash, then back to transparent so battle shows through
 	_overlay.color = Color.WHITE
@@ -835,7 +846,7 @@ func _play_drip() -> void:
 		tween.tween_property(col_rect, "position:x", wobble_x, slide_duration * 0.3).set_delay(delay).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
 		tween.tween_property(col_rect, "position:y", _viewport_size.y, slide_duration).set_delay(delay).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
 
-	await tween.finished
+	await _await_tween_safe(tween)
 	# Columns have dripped off screen — battle is fully visible underneath
 	_overlay.modulate.a = 0.0
 
@@ -878,7 +889,7 @@ func _play_curtain() -> void:
 	tween.tween_property(left_curtain, "position:x", 0, curtain_duration).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 	tween.tween_property(right_curtain, "position:x", _viewport_size.x / 2, curtain_duration).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 
-	await tween.finished
+	await _await_tween_safe(tween)
 	# Curtains now cover the screen — use overlay black so fade_out iris-opens to reveal battle
 	_overlay.color = Color.BLACK
 	_overlay.modulate.a = 1.0
@@ -973,7 +984,7 @@ func _play_slice() -> void:
 
 		tween.tween_property(slice_rect, "position:x", target_x, phase_duration).set_delay(delay).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_BACK)
 
-	await tween.finished
+	await _await_tween_safe(tween)
 	# All slices have left the screen — battle is fully visible underneath
 	_overlay.modulate.a = 0.0
 
@@ -1015,7 +1026,7 @@ func _play_radial_wipe() -> void:
 		var delay = float(i) / _fragments.size() * wipe_duration
 		tween.parallel().tween_property(fragment, "modulate:a", 1.0, 0.05).set_delay(delay)
 
-	await tween.finished
+	await _await_tween_safe(tween)
 	# All segments cover the screen — set black overlay so fade_out iris-opens to reveal battle
 	_overlay.color = Color.BLACK
 	_overlay.modulate.a = 1.0

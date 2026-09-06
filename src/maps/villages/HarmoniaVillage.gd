@@ -577,8 +577,10 @@ func _setup_npcs() -> void:
 	_place_chicken("chicken_phil_well", Vector2(24 * TILE_SIZE,18 * TILE_SIZE),
 		"Phil: \"It keeps coming back to me. Maybe it knows something.\"")
 
-	# Bram the smith's apprentice — untested_edge giver, by Ironclad Arms
-	var bram = _create_npc("Bram Smith", "blacksmith", Vector2(27 * TILE_SIZE,9 * TILE_SIZE), [
+	# Bram the smith's apprentice — untested_edge giver, by Ironclad Arms.
+	# 2026-09-06 (struktured): at (27,9) he was boxed in — item-shop footprint S/W, sword
+	# rack + barrel + crate E, tier cliff N — "u gotta go around him to backside to talk".
+	var bram = _create_npc("Bram Smith", "blacksmith", Vector2(27 * TILE_SIZE,12 * TILE_SIZE), [
 		"Master Brutus forges them. I catalogue them. One came BACK.",
 	])
 	bram.npc_id = "bram_smith"
@@ -591,7 +593,7 @@ func _setup_npcs() -> void:
 	var SwordScript = load("res://src/exploration/SwordInscription.gd")
 	if SwordScript:
 		var sword = SwordScript.new()
-		sword.position = Vector2(29 * TILE_SIZE,9 * TILE_SIZE)
+		sword.position = Vector2(29 * TILE_SIZE,12 * TILE_SIZE)
 		npcs.add_child(sword)
 
 	# Rowan the courier — word_from_capital giver, by the fountain square

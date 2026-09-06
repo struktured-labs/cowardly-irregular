@@ -32,7 +32,7 @@ const CHAPTERS: Array = [
 			{"flag": "spotlight_unlocked_mage", "text": "Read the Prismatic Construct — the Mage's trial (floor 3)"},
 			{"flag": "spotlight_unlocked_fighter", "text": "Face the antechamber skeleton — the Fighter's trial (floor 5)"},
 			{"flag": "rat_king_defeated", "text": "Defeat the Cave Rat King"},
-			{"flag": "world1_rat_king_defeat_complete", "text": "A castle reveals itself on the horizon..."},
+			{"flag": "world1_rat_king_defeat_complete", "text": "The castle appears on the ridge — sealed behind four dragon sigils"},
 			{"flag": "spotlight_unlocked_bard", "text": "Hear the Bard's voice in Harmonia"},
 			{"flag": "fire_dragon_defeated", "text": "Slay Pyrroth, the Ember Wyrm"},
 			{"flag": "ice_dragon_defeated", "text": "Slay Glacius, the Frozen Sovereign"},

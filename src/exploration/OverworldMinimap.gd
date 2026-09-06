@@ -30,10 +30,12 @@ const DOT_COLORS: Dictionary = {
 	"cave": Color(0.8, 0.4, 0.1),      # Orange
 	"portal": Color(0.6, 0.3, 0.9),    # Purple
 	"dragon": Color(1.0, 0.2, 0.2),    # Red
+	"castle": Color(1.0, 0.84, 0.3),   # Royal gold — the W1 goal (2026-09-06: it had NO marker and struktured hunted the map for it)
 }
 
 const SHORT_NAMES: Dictionary = {
 	"village_entrance": "Harmonia",
+	"castle_entrance": "Castle",
 	"cave_entrance": "Cave",
 	"ice_dragon_cave": "Ice",
 	"shadow_dragon_cave": "Shadow",
@@ -86,6 +88,8 @@ func setup(parent: Node, player: Node2D, map_w: int, map_h: int, tile_size: int,
 		var pos: Vector2 = transitions[key]
 		if pos == Vector2.ZERO:
 			continue
+		if key == "castle_harmonia_entrance":
+			continue  # alias of castle_entrance at the same position — one gold dot, not two stacked
 		var dot_type = _get_dot_type(key)
 		var color = DOT_COLORS.get(dot_type, Color(0.7, 0.7, 0.7))
 		var label_text = SHORT_NAMES.get(key, "")
@@ -107,6 +111,7 @@ func setup(parent: Node, player: Node2D, map_w: int, map_h: int, tile_size: int,
 		["Cave", DOT_COLORS["cave"]],
 		["Dragon", DOT_COLORS["dragon"]],
 		["Portal", DOT_COLORS["portal"]],
+		["Castle", DOT_COLORS["castle"]],
 	]
 	for i in range(legend_items.size()):
 		var item = legend_items[i]
@@ -130,6 +135,10 @@ func setup(parent: Node, player: Node2D, map_w: int, map_h: int, tile_size: int,
 
 
 func _get_dot_type(key: String) -> String:
+	# Castle BEFORE the generic "entrance" arm — castle_entrance rendered as an unlabeled
+	# green village dot for two weeks and read as "the castle is not on the map".
+	if "castle" in key:
+		return "castle"
 	if "dragon" in key:
 		return "dragon"
 	if "cave" in key:

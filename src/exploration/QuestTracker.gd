@@ -27,7 +27,9 @@ const OBJECTIVES: Array = [
 	{"flag": "chapter1_complete", "text": "Investigate the Whispering Cave (northwest)"},
 	{"flag": "chapter2_complete", "text": "Descend deeper into the Whispering Cave"},
 	{"flag": "chapter3_complete", "text": "Defeat the Cave Rat King"},
-	{"flag": "rat_king_defeated", "text": "Find the portal to the next world (south)"},
+	# 2026-09-06: the portal line here predated the spine gate — post-Rat-King the real goal
+	# is the four dragon seals, and the portal only exists after Mordaine anyway.
+	{"flag": "rat_king_defeated", "text": "Break the four dragon seals to open Castle Harmonia"},
 	# Tick 281: w1_boss_defeated had no writers — Mordaine's real flag.
 	{"flag": "world1_mordaine_defeated", "text": "Enter the portal to the Mundane Sprawl"},
 	# W2 Suburban

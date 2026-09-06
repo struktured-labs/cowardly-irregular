@@ -186,8 +186,10 @@ var _pending_target_pos: Vector2 = Vector2.ZERO  # Target position for line
 var _queued_actions: Array = []  # Actions queued via Advance mode
 var _max_queue_size: int = 4  # Max actions (limited by AP)
 var _is_closing: bool = false  # Prevent double-close
-var _last_advance_ms: int = 0  # Debounce battle_advance vs dual button+axis / drifting-trigger double-fire
-var _last_defer_ms: int = 0  # Debounce battle_defer for the same reason (LB button + LT axis 4)
+## STATIC (2026-09-06): defer destroys the menu, so an instance debounce dies with it and the NEXT member's fresh menu accepts the tail of the same L2 squeeze — one press deferred two PCs.
+static var _last_advance_ms: int = 0
+static var _last_defer_ms: int = 0
+static var _defer_axis_held: bool = false  # release-edge gate: an L2 analog ramp emits many pressed events with no echo flag
 const ADVANCE_DEBOUNCE_MS: int = 120
 const DEFER_DEBOUNCE_MS: int = 120
 var _current_ap: int = 0  # Current AP for display
@@ -255,6 +257,9 @@ func _process(delta: float) -> void:
 	# Guard against running on freed node
 	if not is_instance_valid(self) or _is_closing:
 		return
+	# Self-heal the release-edge gate: a release that lands BETWEEN menus (no _input alive) would stick it and cost a press.
+	if Win98Menu._defer_axis_held and not Input.is_action_pressed("battle_defer"):
+		Win98Menu._defer_axis_held = false
 	# Hold-to-repeat. Only up/down: left/right enter and exit submenus here, so repeating
 	# them would thrash the player in and out on a single hold.
 	var repeat_action := _nav_repeat.tick(delta)
@@ -1187,11 +1192,11 @@ func _set_chain_dim(dimmed: bool) -> void:
 func _handle_advance_input() -> void:
 	"""Handle R button / Shift+Enter - queue current action or confirm if at limit"""
 	var root = _get_root_menu()
-	# Debounce: one R squeeze emits BOTH a button and a trigger-axis event, and a drifting trigger jitters across the deadzone — ignore a duplicate advance within ADVANCE_DEBOUNCE_MS so one press queues one action.
+	# Debounce: one R squeeze emits BOTH a button and a trigger-axis event, and a drifting trigger jitters across the deadzone — ignore a duplicate advance within ADVANCE_DEBOUNCE_MS so one press queues one action. Static so it survives menu rebuilds.
 	var now_ms := Time.get_ticks_msec()
-	if now_ms - root._last_advance_ms < ADVANCE_DEBOUNCE_MS:
+	if now_ms - Win98Menu._last_advance_ms < ADVANCE_DEBOUNCE_MS:
 		return
-	root._last_advance_ms = now_ms
+	Win98Menu._last_advance_ms = now_ms
 
 	var current_item = menu_items[selected_index] if selected_index >= 0 and selected_index < menu_items.size() else {}
 
@@ -1220,11 +1225,11 @@ func _handle_advance_input() -> void:
 func _handle_defer_input() -> void:
 	"""Handle L button release - undo last queued action, or defer if no queue"""
 	var root = _get_root_menu()
-	# Same debounce as advance: LB button + LT axis 4 can both fire on one squeeze; drifting trigger jitters.
+	# Same debounce as advance, static for the same reason: PC1's defer frees this menu and PC2's fresh one must still remember the squeeze.
 	var now_ms := Time.get_ticks_msec()
-	if now_ms - root._last_defer_ms < DEFER_DEBOUNCE_MS:
+	if now_ms - Win98Menu._last_defer_ms < DEFER_DEBOUNCE_MS:
 		return
-	root._last_defer_ms = now_ms
+	Win98Menu._last_defer_ms = now_ms
 	if root._queued_actions.size() > 0:
 		# Undo last queued action (from any menu depth)
 		_undo_last_action()
@@ -1560,7 +1565,12 @@ func _input(event: InputEvent) -> void:
 			return
 
 		# L button: Track press/release for hold-to-confirm
-		if event.is_action_pressed("battle_defer"):
+		if event.is_action_pressed("battle_defer") and not event.is_echo():
+			# Release-edge gate: an L2 analog ramp emits a BURST of pressed events (no echo flag on axes) — only the first counts until a genuine release.
+			if Win98Menu._defer_axis_held:
+				get_viewport().set_input_as_handled()
+				return
+			Win98Menu._defer_axis_held = true
 			var root = _get_root_menu()
 			if root._queued_actions.size() == 0:
 				# No queue — immediate defer, no timer needed
@@ -1575,6 +1585,7 @@ func _input(event: InputEvent) -> void:
 
 		if event.is_action_released("battle_defer"):
 			# L button released - check if it was a quick press
+			Win98Menu._defer_axis_held = false
 			var root = _get_root_menu()
 			if root._l_button_pressed:
 				root._l_button_pressed = false
