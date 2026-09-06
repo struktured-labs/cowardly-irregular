@@ -42,6 +42,21 @@ func _get_player_spawn_fallback() -> Vector2:
 	return Vector2(480, 512)
 
 
+## Concrete / brick grays, NOT medieval stone — struktured 2026-09-06 split-level elevation pass
+func _get_cliff_palette() -> Dictionary:
+	return {
+		"face_dark": Color(0.14, 0.14, 0.15),
+		"face_mid": Color(0.58, 0.56, 0.54),
+		"face_light": Color(0.72, 0.70, 0.68),
+		"lip": Color(0.85, 0.83, 0.80),
+		"lip_shadow": Color(0.20, 0.19, 0.18, 0.85),
+		"grass": Color(0.35, 0.68, 0.30),
+		"grass_light": Color(0.48, 0.78, 0.38),
+		"stair_tread": Color(0.75, 0.73, 0.70),
+		"stair_riser": Color(0.45, 0.44, 0.42),
+	}
+
+
 func _generate_map() -> void:
 	# Layout key:
 	# W = perimeter wall
@@ -54,6 +69,7 @@ func _generate_map() -> void:
 	# e = hedge (impassable fence line)
 	# d = dirt (worn areas, backyard)
 	# X = exit path (sidewalk leading out)
+	# ^ = retaining-wall steps up onto the raised residential shelf (cols4-7, rows1-8)
 	# Each row is exactly MAP_WIDTH (24) characters
 	var map_data: Array[String] = [
 		"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
@@ -65,7 +81,7 @@ func _generate_map() -> void:
 		"W...gHHHgggfggggggggggggfg...W",
 		"W...ggggppppppppppppppppgg...W",
 		"W...ggfgpgggSSSggggIIIgpfg...W",
-		"W...gggepgggSSSggggIIIgpgg...W",
+		"W...g^^epgggSSSggggIIIgpgg...W",
 		"W...gfgepgggSSSggggIIIgpfg...W",
 		"W...ggggppppppppppppppppgg...W",
 		"W...gfgggggfggHHHggggggfgg...W",
@@ -79,6 +95,31 @@ func _generate_map() -> void:
 		"W............................W",
 		"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
 	]
+	# A modest raised residential shelf (struktured 2026-09-06): house #1 + its yard (cols4-7, rows1-8) sit one tier up, retaining wall on the south face, steps at row9
+	var height_data: Array[String] = [
+		"000000000000000000000000000000",
+		"000011110000000000000000000000",
+		"000011110000000000000000000000",
+		"000011110000000000000000000000",
+		"000011110000000000000000000000",
+		"000011110000000000000000000000",
+		"000011110000000000000000000000",
+		"000011110000000000000000000000",
+		"000011110000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+	]
 
 	for y in range(MAP_HEIGHT):
 		var row = map_data[y] if y < map_data.size() else ""
@@ -90,6 +131,8 @@ func _generate_map() -> void:
 
 			if char == "X" and not spawn_points.has("exit"):
 				spawn_points["exit"] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
+
+	_build_derived_layers(map_data, height_data)
 
 	spawn_points["entrance"] = Vector2(15 * TILE_SIZE,16 * TILE_SIZE)
 	spawn_points["default"] = spawn_points["entrance"]

@@ -269,6 +269,11 @@ func _get_cliff_palette() -> Dictionary:
 	return {}
 
 
+## Sheet villages draw cliff/overlay art from; "" forces the procedural palette (a village whose world sheet has manifest cliff art otherwise always wins over _get_cliff_palette()).
+func _get_cliff_sheet_key() -> String:
+	return tile_generator._get_sheet_key()
+
+
 func get_terrain_speed_at(pos: Vector2) -> float:
 	var cell := Vector2i(int(floor(pos.x / TILE_SIZE)), int(floor(pos.y / TILE_SIZE)))
 	return STAIR_SPEED if _stair_cells.has(cell) else 1.0
@@ -442,12 +447,12 @@ func _setup_scene() -> void:
 
 	cliff_map = TileMapLayer.new()
 	cliff_map.name = "Cliffs"
-	cliff_map.tile_set = EnvTileSetsScript.build_cliff_tileset(_get_cliff_palette(), tile_generator._get_sheet_key())
+	cliff_map.tile_set = EnvTileSetsScript.build_cliff_tileset(_get_cliff_palette(), _get_cliff_sheet_key())
 	add_child(cliff_map)
 
 	overlay_map = TileMapLayer.new()
 	overlay_map.name = "Overlay"
-	overlay_map.tile_set = EnvTileSetsScript.build_overlay_tileset(_get_cliff_palette(), tile_generator._get_sheet_key())
+	overlay_map.tile_set = EnvTileSetsScript.build_overlay_tileset(_get_cliff_palette(), _get_cliff_sheet_key())
 	add_child(overlay_map)
 
 	transitions = Node2D.new()
