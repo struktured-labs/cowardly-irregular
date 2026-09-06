@@ -115,6 +115,10 @@
     "epithet": "Shelled Juggernaut",
     "flavor": "Horse-sized, armor-plated, and possessed of the kind of confidence you can only develop by being nothing's prey for a thousand generations."
   },
+  "cartographer_wraith": {
+    "epithet": "The Lost Cartographer",
+    "flavor": "Drew every corridor twice: once as it was, once as it should have been. Guess which one you're standing in."
+  },
   "cursed_armor": {
     "epithet": "Tenant of Regret",
     "flavor": "Empty armor, animated by the rage of the knight who wore it and was betrayed in it. It cannot speak. It does not need to. The clank says enough."

@@ -9,6 +9,7 @@ const OverworldPlayerScript = preload("res://src/exploration/OverworldPlayer.gd"
 const OverworldControllerScript = preload("res://src/exploration/OverworldController.gd")
 const AreaTransitionScript = preload("res://src/exploration/AreaTransition.gd")
 const DungeonLightingScript = preload("res://src/exploration/DungeonLighting.gd")
+const MimicChestScript = preload("res://src/exploration/MimicChest.gd")
 
 signal exploration_ready()
 signal battle_triggered(enemies: Array)
@@ -63,6 +64,19 @@ var floor_spawn_points: Dictionary = {}
 
 ## Override in subclass: floor number -> Array of enemy type strings
 var floor_encounter_pools: Dictionary = {}
+
+## DungeonPuzzleLayer opt-in knobs (struktured 2026-09-06) -- all empty by default, additive.
+## Cross-floor portal twin override for a sparse 1-occurrence portal: {"c": {"floor": 4, "cell": [x,y]}}.
+var portal_links: Dictionary = {}
+## Switch id (from DungeonPuzzleLayer.scan_switches) -> {"flip":[[x,y],...]} | {"reveal":"portal_c"} | {"trap":"encounter"|"warp"}.
+var switch_effects: Dictionary = {}
+## Chest keys ("<cave_id>_f<floor>_c<index>") that spawn a MimicChest (battle) instead of loot.
+var trap_chests: Array[String] = []
+## Chest key -> item id override, bypassing the default gold/item alternation.
+var forced_item_chests: Dictionary = {}
+## Floor numbers where the player wraps off one edge and appears on the opposite edge.
+var wrap_floors: Array[int] = []
+var _puzzle_layer: DungeonPuzzleLayer = null
 
 ## Floor state
 var current_floor: int = 1
@@ -205,6 +219,12 @@ func _setup_scene() -> void:
 	stair_sprites.name = "StairSprites"
 	add_child(stair_sprites)
 
+	# Reusable puzzle layer -- always present, a no-op for dungeons that never populate its opt-in knobs.
+	_puzzle_layer = DungeonPuzzleLayer.new()
+	_puzzle_layer.name = "PuzzleLayer"
+	add_child(_puzzle_layer)
+	_puzzle_layer.attach(self)
+
 
 func _generate_map_for_floor(floor_num: int) -> void:
 	spawn_points.clear()
@@ -241,6 +261,8 @@ func _generate_map_for_floor(floor_num: int) -> void:
 
 	_setup_transitions_for_floor(floor_num)
 	_add_stair_visuals()
+	if _puzzle_layer:
+		_puzzle_layer.rebuild_floor(floor_num)
 
 
 ## Cave ambient. Elemental caves override to tint their own dark.
@@ -283,6 +305,9 @@ func _char_to_tile_type(char: String) -> int:
 	match char:
 		"M": return TileGeneratorScript.TileType.CAVE_WALL
 		".", "T", "B", "U", "D", "X":
+			return TileGeneratorScript.TileType.CAVE_FLOOR
+		# DungeonPuzzleLayer vocabulary: portals a-f, pressure plate S, lever L -- all floor.
+		"a", "b", "c", "d", "e", "f", "S", "L":
 			return TileGeneratorScript.TileType.CAVE_FLOOR
 		_: return TileGeneratorScript.TileType.CAVE_FLOOR
 
@@ -505,6 +530,36 @@ func _transition_to_floor(target_floor: int, direction: String = "") -> void:
 	_transitioning = false
 
 
+## Portal warp for DungeonPuzzleLayer -- lands the player at an exact pixel position, not a named spawn_points key.
+func puzzle_warp_to(target_floor: int, landing_px: Vector2) -> void:
+	if target_floor < 1 or target_floor > total_floors or _transitioning:
+		return
+	_transitioning = true
+	if player and player.has_method("set_can_move"):
+		player.set_can_move(false)
+	controller.pause_exploration()
+	if SoundManager:
+		SoundManager.play_ui("portal_enter")
+	if target_floor != current_floor:
+		current_floor = target_floor
+		if GameState and cave_id != "":
+			GameState.game_constants[cave_id + "_floor"] = current_floor
+		tile_map.clear()
+		_generate_map_for_floor(current_floor)
+		_update_floor_encounters(current_floor)
+	player.teleport(landing_px)
+	player.reset_step_count()
+	if camera:
+		camera.reset_smoothing()
+	await get_tree().create_timer(0.2).timeout
+	if player and is_instance_valid(player) and player.has_method("set_can_move"):
+		player.set_can_move(true)
+	controller.resume_exploration()
+	floor_changed.emit(current_floor)
+	await get_tree().create_timer(0.3).timeout
+	_transitioning = false
+
+
 func _update_floor_encounters(floor_num: int) -> void:
 	var base_rate = 0.06
 	var encounter_rate = base_rate + (floor_num - 1) * 0.02
@@ -646,8 +701,26 @@ func _place_floor_treasure(floor_num: int) -> void:
 		var chest_key = "%s_f%d_c%d" % [cave_id, floor_num, i]
 		if GameState.get_story_flag("chest_" + chest_key):
 			continue  # Already opened
+		# DungeonPuzzleLayer opt-in: some T markers are mimics, not loot.
+		if chest_key in trap_chests:
+			var mimic = MimicChestScript.new()
+			mimic.chest_id = chest_key
+			mimic.cave_ref = self
+			mimic.position = treasure_positions[i]
+			transitions.add_child(mimic)
+			continue
 		var chest = TreasureChest.new()
 		chest.chest_id = chest_key
+		if forced_item_chests.has(chest_key):
+			chest.contents_type = "item"
+			chest.contents_id = str(forced_item_chests[chest_key])
+			chest.contents_amount = 1
+			chest.position = treasure_positions[i]
+			chest.chest_opened.connect(func(_contents):
+				GameState.set_story_flag("chest_" + chest_key)
+			)
+			transitions.add_child(chest)
+			continue
 		if i % 2 == 0:
 			# Scaling gold — deeper floors and later chests pay more
 			chest.contents_type = "gold"

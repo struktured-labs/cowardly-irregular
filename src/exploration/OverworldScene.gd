@@ -91,7 +91,7 @@ func _ready() -> void:
 
 	# Danger zone warnings near boss caves
 	var danger_pts: Array[Vector2] = []
-	for key in ["cave_entrance", "ice_dragon_cave", "shadow_dragon_cave", "lightning_dragon_cave", "fire_dragon_cave"]:
+	for key in ["cave_entrance", "ice_dragon_cave", "shadow_dragon_cave", "lightning_dragon_cave", "fire_dragon_cave", "backwards_warren_cave"]:
 		if spawn_points.has(key):
 			danger_pts.append(spawn_points[key])
 	if not danger_pts.is_empty():
@@ -299,6 +299,7 @@ func _register_spawn_point(char: String, x: int, y: int) -> void:
 			spawn_points["steampunk_portal"] = pos
 			# W2 return portal aliases — same physical spot.
 			spawn_points["suburban_portal"] = pos
+		"5": spawn_points["backwards_warren_cave"] = pos  # optional counter-intuitive side dungeon
 	# Castle Harmonia portal — placed adjacent to Whispering Cave on the central map.
 	# 'C' is the cave marker; we anchor the castle portal one tile east of it.
 	if char == "C":
@@ -419,6 +420,8 @@ func _setup_transitions() -> void:
 		spawn_points.get("lightning_dragon_cave", Vector2.ZERO), "Enter Stormspire")
 	_add_area_transition("FireDragonCave", "fire_dragon_cave", "entrance",
 		spawn_points.get("fire_dragon_cave", Vector2.ZERO), "Enter Infernal Grotto")
+	_add_area_transition("BackwardsWarren", "backwards_warren", "entrance",
+		spawn_points.get("backwards_warren_cave", Vector2.ZERO), "Enter the Backwards Warren")
 
 	# Villages
 	_add_area_transition("FrostholdEntrance", "frosthold_village", "entrance",

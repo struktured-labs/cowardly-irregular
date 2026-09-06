@@ -47,6 +47,7 @@ const SHORT_NAMES: Dictionary = {
 	"sandrift_entrance": "Sand",
 	"ironhaven_entrance": "Iron",
 	"steampunk_portal": "Portal",
+	"backwards_warren_cave": "Warren",
 }
 
 

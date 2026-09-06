@@ -208,6 +208,14 @@
             255
           ],
           "name": "hidden_passage"
+        },
+        "5": {
+          "rgb": [
+            0,
+            200,
+            90
+          ],
+          "name": "backwards_warren"
         }
       }
     },
