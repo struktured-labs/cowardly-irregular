@@ -5384,6 +5384,9 @@ func _play_staggered_victory_animations() -> void:
 		var animator = party_animators[i]
 		if not animator:
 			continue
+		# struktured 2026-09-06: the fallen do not celebrate — they stay down through the fanfare.
+		if i < BattleManager.player_party.size() and not BattleManager.player_party[i].is_alive:
+			continue
 		var delay = victory_delays[i] if i < victory_delays.size() else float(i) * 0.15
 		if delay <= 0.0:
 			animator.play_victory()

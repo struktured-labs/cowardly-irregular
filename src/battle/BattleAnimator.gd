@@ -234,6 +234,9 @@ func set_idle() -> void:
 	loop_animation = want != "dead"
 	is_playing = false
 	if sprite:
+		# struktured 2026-09-06 "bard/mage in up/down cycle": the fall is one-shot — replaying it every rest re-resolve made the corpse stand up and drop again. Already fallen = hold the last frame.
+		if want == "dead" and sprite.animation == "dead":
+			return
 		sprite.play(want)
 
 
@@ -594,8 +597,8 @@ func _on_sprite_animation_finished() -> void:
 		on_animation_complete.call()
 		on_animation_complete = Callable()
 
-	# Return to idle unless it's a looping animation
-	if not loop_animation and current_state != AnimState.IDLE:
+	# Return to idle unless it's a looping animation — the finished DEAD fall is the rest state itself; re-entering set_idle here replayed it forever.
+	if not loop_animation and current_state != AnimState.IDLE and current_state != AnimState.DEAD:
 		set_idle()
 
 	is_playing = false

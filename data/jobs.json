@@ -91,7 +91,8 @@
       ]
     },
     "passive_abilities": [
-      "healing_boost"
+      "healing_boost",
+      "posthumous_credit"
     ],
     "free_move": {
       "type": "ability",
@@ -408,7 +409,8 @@
     ],
     "passive_abilities": [
       "undead_affinity",
-      "death_resistance"
+      "death_resistance",
+      "posthumous_credit"
     ],
     "meta_powers": {
       "can_corrupt_saves": true,

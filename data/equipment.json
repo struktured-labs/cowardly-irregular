@@ -540,6 +540,17 @@
 		}
 	},
 	"accessories": {
+		"mourners_ledger": {
+			"id": "mourners_ledger",
+			"name": "Mourner's Ledger",
+			"description": "Its wearer keeps earning EXP while KO'd",
+			"cost": 1800,
+			"stat_mods": {},
+			"special_effects": {
+				"exp_while_dead": 1.0
+			},
+			"flavor": "A small black book that records what its owner would have learned. Somebody has been filling it in."
+		},
 		"power_ring": {
 			"id": "power_ring",
 			"name": "Power Ring",

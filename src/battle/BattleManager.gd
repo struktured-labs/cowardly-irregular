@@ -942,7 +942,8 @@ func end_battle(victory: bool) -> void:
 				learned_abilities.append(nm)
 			if combatant.has_signal("ability_learned"):
 				combatant.ability_learned.connect(_collect_learned)
-			if combatant.is_alive:
+			# The dead learn nothing — unless a passive/accessory says otherwise (struktured 2026-09-06).
+			if combatant.is_alive or earns_exp_while_dead(combatant):
 				exp_gained = int(base_exp * reward_multiplier * one_shot_exp_bonus * autobattle_exp_bonus * exp_multiplier)
 				combatant.gain_job_exp(exp_gained)
 			if combatant.has_signal("ability_learned") and combatant.ability_learned.is_connected(_collect_learned):
@@ -5018,6 +5019,23 @@ func _sum_equipment_special_effect(combatant: Combatant, key: String) -> float:
 		if ac_se is Dictionary:
 			total += float(ac_se.get(key, 0.0))
 	return total
+
+
+## struktured 2026-09-06: "they get no exp (unless they have a special item or passive)" — Posthumous Credit passive or the Mourner's Ledger accessory; both carry exp_while_dead.
+func earns_exp_while_dead(combatant: Combatant) -> bool:
+	if combatant == null or not is_instance_valid(combatant):
+		return false
+	if _sum_equipment_special_effect(combatant, "exp_while_dead") > 0.0:
+		return true
+	# Resolved from HERE (an autoload in the tree), not via the combatant — a detached Combatant has no tree and its own meta-effect summer returns 0.
+	var ps: Node = get_node_or_null("/root/PassiveSystem")
+	if ps == null or not ps.has_method("get_passive") or not ("equipped_passives" in combatant):
+		return false
+	for pid in combatant.equipped_passives:
+		var me: Variant = ps.get_passive(str(pid)).get("meta_effects", {})
+		if me is Dictionary and float((me as Dictionary).get("exp_while_dead", 0.0)) > 0.0:
+			return true
+	return false
 
 
 ## The ONE place a steal rate is composed. Two paths roll for a steal — the pure Steal handler and Mug's physical branch — and each grew its own inline clamp, so tick 462 wired thiefs_glove into one and the steal_boost passive reached one. A Rogue equipping a passive promising "+30% steal success" got it on Steal and not on Mug, which reads as randomness rather than as a bug.

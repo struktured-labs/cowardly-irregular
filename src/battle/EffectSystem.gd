@@ -157,18 +157,20 @@ func _play_effect_sound(effect_type: EffectType, power: float = 1.0, weapon_type
 		SoundManager.play_attack_hit(weapon_type, false)
 		return
 
+	# Impact voice = cowir-sfx's strike_<element> cues. Pre-fix this replayed the CAST cue
+	# (ability_<element>) pitch-shifted at impact — the doubled "boop" struktured kept hearing on fire (2026-09-06).
 	var sound_key = ""
 	match effect_type:
 		EffectType.FIRE:
-			sound_key = "ability_fire"
+			sound_key = "strike_fire"
 		EffectType.ICE:
-			sound_key = "ability_ice"
+			sound_key = "strike_ice"
 		EffectType.LIGHTNING:
-			sound_key = "ability_lightning"
+			sound_key = "strike_lightning"
 		EffectType.HOLY:
-			sound_key = "ability_holy"
+			sound_key = "strike_holy"
 		EffectType.DARK:
-			sound_key = "ability_dark"
+			sound_key = "strike_dark"
 		EffectType.HEAL:
 			sound_key = "ability_heal"
 		EffectType.MP_RESTORE:

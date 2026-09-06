@@ -1408,6 +1408,15 @@ func _rest_prompt_for(origin_map_id: String, purse: int) -> String:
 	return ask + "\nYou have %d G.\n[A] confirm   ·   [B] leave it" % purse
 
 
+## struktured 2026-09-06 "when u agree with A it retriggers the dialogue w/ inn keeper": the [A] confirm used to reach OverworldPlayer._unhandled_input → keeper interact → a second one-line dialogue → rest. _input runs BEFORE every _unhandled_input, so the prompt eats its own confirm here.
+func _input(event: InputEvent) -> void:
+	if not _rest_pending or event.is_echo():
+		return
+	if event.is_action_pressed("ui_accept"):
+		get_viewport().set_input_as_handled()
+		_do_rest()
+
+
 ## A pending rest was cancellable ONLY by walking the character away — 44 files under src/ui honour ui_cancel and the inn honoured none, so the one screen that asks for money was the one you could not back out of.
 func _unhandled_input(event: InputEvent) -> void:
 	if not _rest_pending:

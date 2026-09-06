@@ -300,6 +300,15 @@
 			"encounter_skip_chance": 0.25
 		}
 	},
+	"posthumous_credit": {
+		"id": "posthumous_credit",
+		"name": "Posthumous Credit",
+		"category": 4,
+		"description": "Earn full EXP from a battle even while KO'd. The dead learn nothing — except you.",
+		"meta_effects": {
+			"exp_while_dead": 1.0
+		}
+	},
 	"double_jump": {
 		"id": "double_jump",
 		"name": "Double Jump",
