@@ -234,6 +234,10 @@ func set_idle() -> void:
 	loop_animation = want != "dead"
 	is_playing = false
 	if sprite:
+		# a finished collapse stays down: play() restarts a same-name animation that ended, and
+		# the finished-handler funnels back here — replaying oscillates prone<->standing forever
+		if sprite.animation == StringName(want) and not sprite.is_playing():
+			return
 		sprite.play(want)
 
 

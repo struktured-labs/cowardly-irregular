@@ -291,8 +291,8 @@ static func _load_external_sheet(sheet_data: Dictionary, job_id: String) -> Spri
 
 		sprite_frames.add_animation(anim_name)
 		sprite_frames.set_animation_speed(anim_name, sheet_data.get("fps", 8))
-		# Only idle and victory loop; all others play once so animation_finished fires
-		sprite_frames.set_animation_loop(anim_name, anim_name in ["idle", "victory"])
+		# Rest poses loop (weak breathes like idle); action anims play once so animation_finished fires
+		sprite_frames.set_animation_loop(anim_name, anim_name in ["idle", "victory", "weak"])
 
 		var frame_count = texture.get_width() / frame_width
 		for i in range(frame_count):
