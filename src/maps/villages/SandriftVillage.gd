@@ -28,7 +28,8 @@ func _get_map_pixel_size() -> Vector2i:
 
 
 func _get_save_point_position() -> Vector2:
-	return Vector2(13 * TILE_SIZE,10 * TILE_SIZE)
+	# Moved off (13,10) — that cell is oasis WATER (impassable), so the save point was never reachable.
+	return Vector2(13 * TILE_SIZE,7 * TILE_SIZE)
 
 
 func _get_player_spawn_fallback() -> Vector2:
@@ -52,7 +53,7 @@ func _generate_map() -> void:
 		"W..........OOOO...EEE........W",
 		"W..........OOOO...EEE........W",
 		"W..........OOOO...EEE........W",
-		"W............................W",
+		"W................/.../.......W",
 		"W.....TT.....................W",
 		"W.....TT.....................W",
 		"W............................W",
@@ -62,6 +63,31 @@ func _generate_map() -> void:
 		"W............................W",
 		"W............................W",
 		"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+	]
+	# Elevation (low sandstone mesa, 2026-09-06): the Elder's tent overlooks the oasis from a raised ledge (1), '/' dune-climbs flank the tent at row 12
+	var height_data: Array[String] = [
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000001111110000000",
+		"000000000000000001111110000000",
+		"000000000000000001111110000000",
+		"000000000000000001111110000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
 	]
 
 	for y in range(MAP_HEIGHT):
@@ -75,6 +101,8 @@ func _generate_map() -> void:
 			if char == "X" and not spawn_points.has("exit"):
 				spawn_points["exit"] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
 
+	_build_derived_layers(map_data, height_data)
+
 	spawn_points["entrance"] = Vector2(15 * TILE_SIZE,15 * TILE_SIZE)
 	spawn_points["default"] = spawn_points["entrance"]
 	spawn_points["sandrift_entrance"] = spawn_points["entrance"]
@@ -85,12 +113,34 @@ func _char_to_tile_type(char: String) -> int:
 		"W": return TileGeneratorScript.TileType.WALL
 		"O": return TileGeneratorScript.TileType.WATER
 		".": return TileGeneratorScript.TileType.SAND
+		"/": return TileGeneratorScript.TileType.SAND  # dune-climb ground; elevation lives in height_data
+		"E": return TileGeneratorScript.TileType.SAND  # tent footprint has no overlay sprite, so it's exposed — keep it sandy, not grey FLOOR
 		_: return TileGeneratorScript.TileType.FLOOR
 
 
 func _get_atlas_coords(tile_type: int) -> Vector2i:
 	var tile_id = TileGeneratorScript.get_tile_id(tile_type)
 	return Vector2i(tile_id % 5, tile_id / 5)
+
+
+## Empty forces procedural cliffs — the shared medieval.png sheet art would otherwise outrank the sandstone palette below.
+func _get_cliff_sheet_key() -> String:
+	return ""
+
+
+## Warm sandstone so the mesa's ledge reads as sun-baked rock, not grey stone.
+func _get_cliff_palette() -> Dictionary:
+	return {
+		"face_dark": Color(0.42, 0.28, 0.16),
+		"face_mid": Color(0.62, 0.44, 0.26),
+		"face_light": Color(0.78, 0.60, 0.38),
+		"lip": Color(0.88, 0.74, 0.50),
+		"lip_shadow": Color(0.36, 0.24, 0.14, 0.85),
+		"grass": Color(0.70, 0.56, 0.32),
+		"grass_light": Color(0.80, 0.66, 0.40),
+		"stair_tread": Color(0.72, 0.56, 0.34),
+		"stair_riser": Color(0.46, 0.32, 0.18),
+	}
 
 
 func _setup_transitions() -> void:

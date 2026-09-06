@@ -48,11 +48,11 @@ func _generate_map() -> void:
 		"W....LLL......CCC.....W..W",
 		"W....LLL......CCC.....W..W",
 		"W........................W",
-		"W........IIII............W",
+		"W.......^IIII.......^....W",
 		"W........IIII..FFF.......W",
 		"W........IIII..FFF.......W",
 		"W........IIII..FFF.......W",
-		"W........................W",
+		"W...........^.....^......W",
 		"W........................W",
 		"W........................W",
 		"W........................W",
@@ -62,6 +62,31 @@ func _generate_map() -> void:
 		"W........................W",
 		"W........................W",
 		"WWWWWWWWWWWWWWWWWWWWWWWWWW",
+	]
+	# Elevation (ice terraces, 2026-09-06): high overlook (2) / mid ice shelf (1) / tundra floor (0), '^' stairs cascade down at cols 8/20 then 12/18
+	var height_data: Array[String] = [
+		"22222222222222222222222222",
+		"22222222222222222222222222",
+		"22222222222222222222222222",
+		"22222222222222222222222222",
+		"22222222222222222222222222",
+		"22222222222222222222222222",
+		"22222222222222222222222222",
+		"22222222222222222222222222",
+		"11111111111111111111111111",
+		"11111111111111111111111111",
+		"11111111111111111111111111",
+		"11111111111111111111111111",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
 	]
 
 	for y in range(MAP_HEIGHT):
@@ -75,6 +100,8 @@ func _generate_map() -> void:
 			if char == "X" and not spawn_points.has("exit"):
 				spawn_points["exit"] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
 
+	_build_derived_layers(map_data, height_data)
+
 	spawn_points["entrance"] = Vector2(10 * TILE_SIZE,15 * TILE_SIZE)
 	spawn_points["default"] = spawn_points["entrance"]
 	spawn_points["frosthold_entrance"] = spawn_points["entrance"]
@@ -84,12 +111,33 @@ func _char_to_tile_type(char: String) -> int:
 	match char:
 		"W": return TileGeneratorScript.TileType.WALL
 		"I": return TileGeneratorScript.TileType.ICE
+		"^": return TileGeneratorScript.TileType.FLOOR  # stair ground; elevation lives in height_data
 		_: return TileGeneratorScript.TileType.FLOOR
 
 
 func _get_atlas_coords(tile_type: int) -> Vector2i:
 	var tile_id = TileGeneratorScript.get_tile_id(tile_type)
 	return Vector2i(tile_id % 5, tile_id / 5)
+
+
+## Empty forces procedural cliffs — the shared medieval.png sheet art would otherwise outrank the icy palette below.
+func _get_cliff_sheet_key() -> String:
+	return ""
+
+
+## Icy blue-whites so the terraces read as glacier shelves, not bare rock.
+func _get_cliff_palette() -> Dictionary:
+	return {
+		"face_dark": Color(0.35, 0.48, 0.58),
+		"face_mid": Color(0.55, 0.70, 0.80),
+		"face_light": Color(0.78, 0.88, 0.94),
+		"lip": Color(0.92, 0.97, 1.0),
+		"lip_shadow": Color(0.30, 0.42, 0.52, 0.85),
+		"grass": Color(0.65, 0.80, 0.88),
+		"grass_light": Color(0.80, 0.90, 0.96),
+		"stair_tread": Color(0.82, 0.90, 0.95),
+		"stair_riser": Color(0.50, 0.65, 0.75),
+	}
 
 
 func _setup_transitions() -> void:

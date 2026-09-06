@@ -48,7 +48,7 @@ func _generate_map() -> void:
 		"W....NNN........T.HHH........W",
 		"W....NNN..........HHH........W",
 		"W.......T....T...............W",
-		"W............T....T..........W",
+		"W......./..../....T..........W",
 		"W.....T..GGG.................W",
 		"W........GGG.......T.........W",
 		"W........GGG.................W",
@@ -65,6 +65,33 @@ func _generate_map() -> void:
 		"W............................W",
 		"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
 	]
+	# Elevation (struktured's tree-trunk example, 2026-09-06): canopy (1) up in the branches / forest floor (0); the two '/' at row8 are trunk climbs
+	var height_data: Array[String] = [
+		"111111111111111111111111111111",
+		"111111111111111111111111111111",
+		"111111111111111111111111111111",
+		"111111111111111111111111111111",
+		"111111111111111111111111111111",
+		"111111111111111111111111111111",
+		"111111111111111111111111111111",
+		"111111111111111111111111111111",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+	]
 
 	for y in range(MAP_HEIGHT):
 		var row = map_data[y] if y < map_data.size() else ""
@@ -77,6 +104,8 @@ func _generate_map() -> void:
 			if char == "X" and not spawn_points.has("exit"):
 				spawn_points["exit"] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
 
+	_build_derived_layers(map_data, height_data)
+
 	spawn_points["entrance"] = Vector2(14 * TILE_SIZE,17 * TILE_SIZE)
 	spawn_points["default"] = spawn_points["entrance"]
 	spawn_points["eldertree_entrance"] = spawn_points["entrance"]
@@ -86,12 +115,33 @@ func _char_to_tile_type(char: String) -> int:
 	match char:
 		"W": return TileGeneratorScript.TileType.WALL
 		"T": return TileGeneratorScript.TileType.FOREST
+		"/": return TileGeneratorScript.TileType.FLOOR  # trunk-climb ground; elevation lives in height_data
 		_: return TileGeneratorScript.TileType.FLOOR
 
 
 func _get_atlas_coords(tile_type: int) -> Vector2i:
 	var tile_id = TileGeneratorScript.get_tile_id(tile_type)
 	return Vector2i(tile_id % 5, tile_id / 5)
+
+
+## Empty forces procedural cliffs — the shared medieval.png sheet art would otherwise outrank the bark palette below.
+func _get_cliff_sheet_key() -> String:
+	return ""
+
+
+## Bark-brown so the derived cliff faces at the canopy's edge read as roots/trunk, not stone.
+func _get_cliff_palette() -> Dictionary:
+	return {
+		"face_dark": Color(0.18, 0.11, 0.07),
+		"face_mid": Color(0.32, 0.20, 0.12),
+		"face_light": Color(0.46, 0.32, 0.18),
+		"lip": Color(0.55, 0.42, 0.24),
+		"lip_shadow": Color(0.14, 0.09, 0.05, 0.85),
+		"grass": Color(0.28, 0.46, 0.20),
+		"grass_light": Color(0.38, 0.56, 0.24),
+		"stair_tread": Color(0.42, 0.30, 0.16),
+		"stair_riser": Color(0.24, 0.15, 0.08),
+	}
 
 
 func _setup_transitions() -> void:
@@ -205,7 +255,8 @@ func _setup_npcs() -> void:
 	npcs.add_child(thorn)
 
 	# Speedrun Monk Dash (efficiency) — timeless voice, no branch.
-	var dash = _create_npc("Speedrun Monk Dash", "monk", Vector2(20 * TILE_SIZE,8 * TILE_SIZE), [
+	# Row 8 became the canopy's cliff-base row in the 2026-09-06 elevation pass; shifted 1 tile south so he isn't standing in the derived cliff face.
+	var dash = _create_npc("Speedrun Monk Dash", "monk", Vector2(20 * TILE_SIZE,9 * TILE_SIZE), [
 		"Words are experience points you're leaving on the table.",
 		"Skip my dialogue. Go. NOW.",
 		"...Why are you still reading?",
