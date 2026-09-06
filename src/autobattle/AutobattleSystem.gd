@@ -96,6 +96,7 @@ const CONDITION_TYPES = {
 	"enemy_has_status": "Enemy Has Status",
 	"ally_mp_percent": "Ally MP %",
 	"is_night": "Is Night",
+	"weather": "Weather Is",
 	"has_buff": "Has Buff",
 	"not_has_buff": "No Buff",
 	"always": "Always"
@@ -296,6 +297,15 @@ func _evaluate_grid_condition(combatant: Combatant, condition: Dictionary) -> bo
 				return false
 			return bool(gs.is_night())
 
+		"weather":
+			# Weather v2 (2026-09-04): parameterized like has_status — {type:"weather",
+			# weather:"storm"}. Truth is exactly GameState.get_weather() == value, same
+			# lying-name discipline as is_night: the term means what the engine method means.
+			var gs_w: Node = get_node_or_null("/root/GameState")
+			if gs_w == null or not gs_w.has_method("get_weather"):
+				return false
+			return str(gs_w.get_weather()) == str(condition.get("weather", ""))
+
 		"always":
 			return true
 
@@ -326,6 +336,10 @@ func validate_rule(rule: Dictionary, deep_check_character_id: String = "") -> Ar
 			continue
 		if c.has("op") and not OPERATORS.has(str(c["op"])):
 			errors.append("unknown operator: '%s'" % c["op"])
+		# Weather values validate against the flat vocabulary so an LLM-composed or
+		# hand-typed bad value fails at decode, not silently-never-fires in battle.
+		if ctype == "weather" and not GameState.all_weather_conditions().has(str(c.get("weather", ""))):
+			errors.append("unknown weather condition: '%s'" % c.get("weather", ""))
 	for a in rule["actions"]:
 		if typeof(a) != TYPE_DICTIONARY:
 			errors.append("action must be a dictionary: %s" % [a])

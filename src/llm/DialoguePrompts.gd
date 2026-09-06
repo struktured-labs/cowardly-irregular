@@ -175,7 +175,7 @@ Each rule shape:
 Conditions (AND-chained). type is one of:
   hp_percent, mp_percent, ap, has_status, enemy_hp_percent, ally_hp_percent,
   turn, enemy_count, ally_count, item_count, setup_complete,
-  ally_has_status, enemy_has_status, ally_mp_percent, is_night, always,
+  ally_has_status, enemy_has_status, ally_mp_percent, is_night, weather, always,
   has_buff, not_has_buff
 Each numeric condition takes op ∈ {<, <=, ==, >=, >, !=} and value.
 is_night and always are NULLARY — no op, no value. is_night is true only
@@ -183,6 +183,12 @@ during the night band (not dusk); pair it with other conditions to gate a
 rule on time of day.
 has_status / ally_has_status / enemy_has_status take a 'status' field (e.g.
 'poison'); enemy_has_status is true when ANY living enemy has that status.
+weather takes a 'weather' field naming a condition, exactly one of:
+clear, rain, storm, drizzle, fog, smog, glitchstorm — no op, no value. It is
+true when the world's live weather equals that value (storm boosts lightning
+damage, rain dampens fire, fog thickens the miss rate), so
+{\"type\":\"weather\",\"weather\":\"storm\"} + an ability id like 'thunder'
+casts into the storm. Any other value never fires and fails validation.
 has_buff / not_has_buff take a 'stat' field (e.g. 'defense', 'speed') and no
 op/value. Use not_has_buff to cast a buff only when it is not already up —
 {\"type\":\"not_has_buff\",\"stat\":\"defense\"} — which is how the built-in

@@ -359,6 +359,7 @@ func _ready() -> void:
 	# (User feedback 2026-05-20: "I dont know what button defers
 	# (besides the menu option)".)
 	_build_input_hint_bar()
+	_build_weather_layer()
 
 	# Connect to BattleManager signals (CTB system)
 	BattleManager.battle_started.connect(_on_battle_started)
@@ -1790,6 +1791,97 @@ func _build_input_hint_bar() -> void:
 	ui_root.add_child(hint_panel)
 
 
+## Weather v2 (2026-09-04): battle reflects the live overworld weather. Overlay tint +
+## light rain + storm lightning, plus an always-visible tag so the damage/miss modifiers
+## (BattleManager.WEATHER_DAMAGE_MODIFIERS / WEATHER_MISS_BONUS) are never invisible.
+var _weather_overlay: ColorRect = null
+var _weather_rain: CPUParticles2D = null
+var _weather_tag: Label = null
+var _weather_rendered: String = ""
+var _weather_lightning_timer: float = 0.0
+
+const BATTLE_WEATHER_TINTS: Dictionary = {
+	"drizzle": Color(0.3, 0.34, 0.4, 0.06),
+	"rain": Color(0.12, 0.14, 0.2, 0.12),
+	"storm": Color(0.08, 0.09, 0.15, 0.2),
+	"fog": Color(0.55, 0.5, 0.4, 0.14),
+	"smog": Color(0.22, 0.22, 0.2, 0.16),
+	"glitchstorm": Color(0.0, 0.1, 0.2, 0.08),
+}
+const WEATHER_TAG_TEXT: Dictionary = {
+	"drizzle": "~ DRIZZLE ~", "rain": "~ RAIN ~", "storm": "~ STORM ~",
+	"fog": "~ FOG ~", "smog": "~ SMOG ~", "glitchstorm": "~ GLITCHSTORM ~",
+}
+
+
+func _build_weather_layer() -> void:
+	var ui_root := get_node_or_null("UI")
+	_weather_overlay = ColorRect.new()
+	_weather_overlay.name = "WeatherOverlay"
+	_weather_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_weather_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_weather_overlay.color = Color(0, 0, 0, 0)
+	add_child(_weather_overlay)
+	if ui_root:
+		# Above the battlefield, below every menu/panel.
+		move_child(_weather_overlay, ui_root.get_index())
+
+	_weather_rain = CPUParticles2D.new()
+	_weather_rain.name = "WeatherRain"
+	_weather_rain.emitting = false
+	_weather_rain.amount = 80
+	_weather_rain.lifetime = 0.5
+	_weather_rain.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+	_weather_rain.emission_rect_extents = Vector2(700, 30)
+	_weather_rain.gravity = Vector2(30.0, 500.0)
+	_weather_rain.initial_velocity_min = 220.0
+	_weather_rain.initial_velocity_max = 360.0
+	_weather_rain.direction = Vector2(0.08, 1.0)
+	_weather_rain.spread = 4.0
+	_weather_rain.color = Color(0.75, 0.8, 0.9, 0.2)
+	_weather_rain.position = Vector2(640, -20)
+	_weather_overlay.add_child(_weather_rain)
+
+	if ui_root:
+		_weather_tag = Label.new()
+		_weather_tag.name = "WeatherTag"
+		_weather_tag.set_anchors_preset(Control.PRESET_TOP_RIGHT, true)
+		_weather_tag.offset_left = -170
+		_weather_tag.offset_right = -10
+		_weather_tag.offset_top = 8
+		_weather_tag.offset_bottom = 30
+		_weather_tag.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		_weather_tag.add_theme_font_size_override("font_size", TextScale.scaled(12))
+		_weather_tag.add_theme_color_override("font_color", Color(0.8, 0.85, 1.0, 0.9))
+		_weather_tag.visible = false
+		ui_root.add_child(_weather_tag)
+
+
+func _process_weather_layer(delta: float) -> void:
+	if _weather_overlay == null:
+		return
+	var condition := "clear"
+	if not autogrind_console_mode and GameState.has_method("get_weather"):
+		condition = str(GameState.get_weather())
+	if condition != _weather_rendered:
+		_weather_rendered = condition
+		var tint: Color = BATTLE_WEATHER_TINTS.get(condition, Color(0, 0, 0, 0))
+		_weather_overlay.color = tint
+		_weather_rain.emitting = condition in ["drizzle", "rain", "storm"]
+		_weather_rain.amount = 200 if condition == "storm" else 80
+		if _weather_tag:
+			_weather_tag.text = str(WEATHER_TAG_TEXT.get(condition, ""))
+			_weather_tag.visible = _weather_tag.text != ""
+		_weather_lightning_timer = randf_range(3.0, 8.0)
+	if _weather_rendered == "storm" and not _flashes_suppressed():
+		_weather_lightning_timer -= delta
+		if _weather_lightning_timer <= 0.0:
+			_weather_lightning_timer = randf_range(4.0, 12.0)
+			var flash := create_tween()
+			_weather_overlay.color = Color(0.9, 0.9, 1.0, 0.3)
+			flash.tween_property(_weather_overlay, "color", BATTLE_WEATHER_TINTS["storm"], 0.25)
+
+
 func enable_autogrind_console() -> void:
 	autogrind_console_mode = true
 
@@ -2810,6 +2902,8 @@ func _process(delta: float) -> void:
 	_process_idle_animations(delta)
 
 	_tick_menu_watchdog()
+
+	_process_weather_layer(delta)
 
 	if _battle_ended and not managed_by_game_loop:
 		if Input.is_action_just_pressed("ui_accept"):

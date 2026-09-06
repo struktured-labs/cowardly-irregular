@@ -44,6 +44,16 @@ func _ready() -> void:
 	# Note: Player will emit moved signal, we'll connect when player is available
 
 
+const WEATHER_ENCOUNTER_MULTIPLIERS: Dictionary = {"fog": 1.5, "smog": 1.5}
+
+
+func get_weather_encounter_multiplier() -> float:
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs and gs.has_method("get_weather"):
+		return float(WEATHER_ENCOUNTER_MULTIPLIERS.get(str(gs.get_weather()), 1.0))
+	return 1.0
+
+
 ## Encounter checking
 func check_for_encounter() -> bool:
 	"""Check if an encounter should trigger. Returns true if encounter triggered."""
@@ -69,6 +79,8 @@ func check_for_encounter() -> bool:
 
 	# Roll for encounter
 	var chance = encounter_rate * encounter_rate_modifier
+	# Weather v2: fog/smog thicken the field — things get the jump on you (×1.5).
+	chance *= get_weather_encounter_multiplier()
 	## Tick 468: Ninja job's overworld_abilities.reduced_encounter_rate.
 	## jobs.json authors Ninja with overworld_abilities = {... ,
 	## reduced_encounter_rate: 0.5 ...} ("Ninja: half encounters")

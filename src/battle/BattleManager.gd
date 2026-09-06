@@ -337,6 +337,34 @@ func get_terrain_damage_modifier(element: String) -> float:
 	return 1.0
 
 
+## Weather v2 (2026-09-04): twin of the terrain seam, keyed on GameState's live weather.
+## Kept as data so the battle UI tag and autobattle docs can render from one source.
+const WEATHER_DAMAGE_MODIFIERS: Dictionary = {
+	"storm": {"lightning": 1.25},
+	"rain": {"fire": 0.75, "water": 1.15, "ice": 1.15},
+	"drizzle": {"fire": 0.75, "water": 1.15, "ice": 1.15},
+}
+const WEATHER_MISS_BONUS: Dictionary = {"fog": 0.15, "smog": 0.15}
+
+
+func get_weather_damage_modifier(element: String) -> float:
+	if element == "":
+		return 1.0
+	var mods: Dictionary = WEATHER_DAMAGE_MODIFIERS.get(_current_weather(), {})
+	return float(mods.get(element, 1.0))
+
+
+func get_weather_miss_bonus() -> float:
+	return float(WEATHER_MISS_BONUS.get(_current_weather(), 0.0))
+
+
+func _current_weather() -> String:
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs and gs.has_method("get_weather"):
+		return str(gs.get_weather())
+	return "clear"
+
+
 ## Battle initialization
 func start_battle(players: Array[Combatant], enemies: Array[Combatant]) -> void:
 	"""Initialize and start a new battle"""
@@ -4047,6 +4075,7 @@ func _execute_attack(attacker: Combatant, target: Combatant) -> void:
 	var base_miss_rate = 0.10
 	if attacker.has_status("blind"):
 		base_miss_rate += 0.40  # Blind adds 40% miss chance
+	base_miss_rate += get_weather_miss_bonus()  # fog/smog thicken the air for BOTH sides
 	var speed_diff = float(attacker.speed - actual_target.speed) / max(actual_target.speed, 1)
 	var miss_rate = clamp(base_miss_rate - speed_diff * 0.05, 0.02, 0.60)
 	if randf() < miss_rate:
@@ -4672,11 +4701,11 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 		damage = _apply_market_sense(caster, damage)
 		damage = _apply_lens_execute_bonus(caster, target, damage)
 
-		# Apply terrain modifier for elemental damage
+		# Apply terrain + weather modifiers for elemental damage
 		var terrain_mod = 1.0
 		if element:
 			terrain_mod = get_terrain_damage_modifier(element)
-			damage = int(damage * terrain_mod)
+			damage = int(damage * terrain_mod * get_weather_damage_modifier(element))
 
 		# Barrier nullifies the next hit (magic counts).
 		if target.has_status("barrier"):
