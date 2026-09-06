@@ -77,17 +77,18 @@ func test_rules_with_weather_survive_the_share_roundtrip() -> void:
 	# COWIR1: codes are grammar-validated at decode; a weather rule must come back intact —
 	# a validator that never learned the new type would reject the whole code as {}.
 	var char_id := "weather_share_probe"
-	var prior: Dictionary = AutobattleSystem.get_character_script(char_id)
+	# Persistence OFF for the probe: set_character_script would otherwise write user:// — and
+	# deploy suites run UNSANDBOXED against real player data (2026-09-06 leak).
+	var saved_persist: bool = AutobattleSystem._test_disable_persistence
+	AutobattleSystem._test_disable_persistence = true
 	AutobattleSystem.set_character_script(char_id, {"rules": [{"enabled": true,
 		"conditions": [{"type": "weather", "weather": "storm"}],
 		"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]}]})
 	var code: String = ScriptShareManager.encode_share_code(char_id)
 	var decoded: Dictionary = ScriptShareManager.decode_share_code(code)
-	# Remove the probe profile entirely — set_character_script persists to user://.
 	AutobattleSystem.character_profiles.erase(char_id)
-	AutobattleSystem._save_character_profiles()
-	if not prior.is_empty():
-		AutobattleSystem.set_character_script(char_id, prior)
+	AutobattleSystem.autobattle_enabled.erase(char_id)
+	AutobattleSystem._test_disable_persistence = saved_persist
 	assert_true(code.begins_with("COWIR1:"), "CONTROL: encode must produce a share code")
 	assert_false(decoded.is_empty(), "decode must ACCEPT the weather rule — {} means the grammar rejected it")
 	var rules: Array = (decoded.get("script", {}) as Dictionary).get("rules", [])

@@ -101,6 +101,31 @@ func _make_combatant(name: String) -> Combatant:
 	return c
 
 
+## 2026-09-06: this file's fixture characters leaked into struktured's REAL profiles.json via an
+## unsandboxed deploy suite (set_character_script persists). Persistence is now OFF for the file
+## and the fixture keys are erased from both serialized dicts — the per-test net, not the backstop.
+const FIXTURE_IDS := ["testrestoredcharacter", "testrealscriptcharacter"]
+var _saved_persistence: bool = false
+
+
+func before_each() -> void:
+	var abs := _abs()
+	if abs == null:
+		return
+	_saved_persistence = abs._test_disable_persistence
+	abs._test_disable_persistence = true
+
+
+func after_each() -> void:
+	var abs := _abs()
+	if abs == null:
+		return
+	for id in FIXTURE_IDS:
+		abs.character_profiles.erase(id)
+		abs.autobattle_enabled.erase(id)
+	abs._test_disable_persistence = _saved_persistence
+
+
 func test_empty_script_gets_restored_after_force_then_restore() -> void:
 	# End-to-end: character has NO script → force writes a default →
 	# restore puts the empty state back.
