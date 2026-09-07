@@ -115,8 +115,16 @@ func _char_to_tile_type(char: String) -> int:
 	match char:
 		"W": return TileGeneratorScript.TileType.WALL
 		"T": return TileGeneratorScript.TileType.FOREST
-		"/": return TileGeneratorScript.TileType.FLOOR  # trunk-climb ground; elevation lives in height_data
-		_: return TileGeneratorScript.TileType.FLOOR
+		"N": return TileGeneratorScript.TileType.WALL  # canopy inn -- a building, not a floor you walk through
+		"G": return TileGeneratorScript.TileType.VILLAGE_FLOWER  # herb garden
+		"H": return TileGeneratorScript.TileType.VILLAGE_DIRT  # training hollow, packed earth
+		"X": return TileGeneratorScript.TileType.VILLAGE_PATH  # exit, same convention as Harmonia
+		"/": return TileGeneratorScript.TileType.VILLAGE_PATH  # trunk-climb ground; elevation lives in height_data
+		# Default is village grass, not FLOOR: this is a forest canopy village and FLOOR is
+		# the stone-floor tile, which rendered the whole place as flat tan brick. The layout
+		# legend named an inn, a herb garden and a training hollow; all three fell through
+		# to that same default, so four declared features drew as one surface.
+		_: return TileGeneratorScript.TileType.VILLAGE_GRASS
 
 
 func _get_atlas_coords(tile_type: int) -> Vector2i:
