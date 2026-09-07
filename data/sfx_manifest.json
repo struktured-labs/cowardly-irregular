@@ -960,15 +960,15 @@
     },
     "heal_v2": {
       "file": "assets/audio/sfx/heal_v2.ogg",
-      "prompt": "Warm golden light materializing, soft ascending harp glissando with crystalline sparkles, gentle magical restoration",
+      "prompt": "Brief wordless choir swell, warm and breathy with cathedral reverb, settles gently, no bells, no chimes, no sparkle, no birdsong, no chirping",
       "duration_seconds": 1.0,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.8
     },
     "heal_v3": {
       "file": "assets/audio/sfx/heal_v3.ogg",
-      "prompt": "Holy water splash with bell chime, purifying droplets with a soft resonant tone, cleansing white magic wash",
+      "prompt": "Sustained soft choral pad blooming and fading, warm and enveloping, restorative, no bells, no chimes, no glissando, no birdsong, no chirping",
       "duration_seconds": 1.0,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.8
     },
     "buff": {
       "file": "assets/audio/sfx/buff.ogg",
@@ -1110,47 +1110,53 @@
     },
     "ability_ice": {
       "file": "assets/audio/sfx/ability_ice.ogg",
-      "prompt": "Cracking frozen lake, sharp crystalline ice forming rapidly, cold brittle snapping with frosty wind howl, winter blizzard",
+      "prompt": "SYNTHESISED, not generated. struktured 2026-09-07 heard the whoop again on Fulmen (lightning) after fire was fixed — the whole mage kit had it. Measured as the spectral centroid CLIMBING mid-sound into the ear's harshest band. Regenerating from a text prompt restores it; run the tool.",
       "duration_seconds": 1.2,
       "prompt_influence": 0.7,
       "variants": [
         "ability_ice_v2",
         "ability_ice_v3"
-      ]
+      ],
+      "source": "tools/gen_chiptune_sfx.py ice"
     },
     "ability_ice_v2": {
       "file": "assets/audio/sfx/ability_ice_v2.ogg",
-      "prompt": "Ice lance shattering on impact, sharp crystalline explosion of frozen shards scattering, brittle glass-like breaking with cold reverb",
+      "prompt": "SYNTHESISED, not generated. struktured 2026-09-07 heard the whoop again on Fulmen (lightning) after fire was fixed — the whole mage kit had it. Measured as the spectral centroid CLIMBING mid-sound into the ear's harshest band. Regenerating from a text prompt restores it; run the tool.",
       "duration_seconds": 1.2,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "source": "tools/gen_chiptune_sfx.py ice_shatter"
     },
     "ability_ice_v3": {
       "file": "assets/audio/sfx/ability_ice_v3.ogg",
-      "prompt": "Freezing spell encasing target, rapid frost spreading with crackling crystallization, deep cold whoosh as ice solidifies",
+      "prompt": "SYNTHESISED, not generated. struktured 2026-09-07 heard the whoop again on Fulmen (lightning) after fire was fixed — the whole mage kit had it. Measured as the spectral centroid CLIMBING mid-sound into the ear's harshest band. Regenerating from a text prompt restores it; run the tool.",
       "duration_seconds": 1.2,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "source": "tools/gen_chiptune_sfx.py ice_freeze"
     },
     "ability_lightning": {
       "file": "assets/audio/sfx/ability_lightning.ogg",
-      "prompt": "Violent close lightning strike: bright ripping treble crack with forked electrical arcing and dense sizzling static, immediately followed by a deep rolling thunder boom with heavy low-end weight, raw and untamed, both the sharp snap and the body",
+      "prompt": "SYNTHESISED, not generated. struktured 2026-09-07 heard the whoop again on Fulmen (lightning) after fire was fixed — the whole mage kit had it. Measured as the spectral centroid CLIMBING mid-sound into the ear's harshest band. Regenerating from a text prompt restores it; run the tool.",
       "duration_seconds": 1.5,
       "prompt_influence": 0.8,
       "variants": [
         "ability_lightning_v2",
         "ability_lightning_v3"
-      ]
+      ],
+      "source": "tools/gen_chiptune_sfx.py lightning"
     },
     "ability_lightning_v2": {
       "file": "assets/audio/sfx/ability_lightning_v2.ogg",
-      "prompt": "Sharp electric bolt striking ground, quick bright zap with sizzling aftermath, concentrated lightning discharge with ozone crackle",
+      "prompt": "SYNTHESISED, not generated. struktured 2026-09-07 heard the whoop again on Fulmen (lightning) after fire was fixed — the whole mage kit had it. Measured as the spectral centroid CLIMBING mid-sound into the ear's harshest band. Regenerating from a text prompt restores it; run the tool.",
       "duration_seconds": 1.0,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "source": "tools/gen_chiptune_sfx.py lightning_snap"
     },
     "ability_lightning_v3": {
       "file": "assets/audio/sfx/ability_lightning_v3.ogg",
-      "prompt": "Chain lightning arcing between targets, rapid succession of electrical snaps and pops, crackling energy bouncing with fading static",
+      "prompt": "SYNTHESISED, not generated. struktured 2026-09-07 heard the whoop again on Fulmen (lightning) after fire was fixed — the whole mage kit had it. Measured as the spectral centroid CLIMBING mid-sound into the ear's harshest band. Regenerating from a text prompt restores it; run the tool.",
       "duration_seconds": 1.0,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "source": "tools/gen_chiptune_sfx.py lightning_chain"
     },
     "ability_holy": {
       "file": "assets/audio/sfx/ability_holy.ogg",
@@ -1160,9 +1166,10 @@
     },
     "ability_dark": {
       "file": "assets/audio/sfx/ability_dark.ogg",
-      "prompt": "Menacing shadow magic: a low guttural growl and hollow void whoosh with real weight, layered whispering and distant shrieking voices sitting in the midrange, dry rattling scrape, unstable and wild, keep the low-mid body under the texture, not thin hiss, not pure high air",
+      "prompt": "SYNTHESISED, not generated. struktured 2026-09-07 heard the whoop again on Fulmen (lightning) after fire was fixed — the whole mage kit had it. Measured as the spectral centroid CLIMBING mid-sound into the ear's harshest band. Regenerating from a text prompt restores it; run the tool.",
       "duration_seconds": 1.5,
-      "prompt_influence": 0.8
+      "prompt_influence": 0.8,
+      "source": "tools/gen_chiptune_sfx.py dark"
     },
     "ability_constant_modification": {
       "file": "assets/audio/sfx/ability_constant_modification.ogg",
@@ -1217,15 +1224,15 @@
     },
     "ability_heal_v2": {
       "file": "assets/audio/sfx/ability_heal_v2.ogg",
-      "prompt": "Soft choir voices humming a soothing note, angelic restoration with warm reverb, divine healing magic with gentle bells",
+      "prompt": "Soft wordless choir on a sustained warm chord, gentle swell and settle, cathedral air, smooth and vocal, no bells, no chimes, no sparkle, no birdsong, no chirping",
       "duration_seconds": 1.2,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.8
     },
     "ability_heal_v3": {
       "file": "assets/audio/sfx/ability_heal_v3.ogg",
-      "prompt": "Bubbling spring water with gentle flute melody, fresh brook sounds with magical sparkles, nature cure spell",
+      "prompt": "Low warm choral hum rising into a calm open vowel, broad and reverberant, restorative and still, no bells, no chimes, no glissando, no birdsong, no chirping",
       "duration_seconds": 1.2,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.8
     },
     "w2_ability_fire": {
       "file": "assets/audio/sfx/w2_ability_fire.ogg",
