@@ -1,8 +1,8 @@
 extends DragonCave
 class_name IceDragonCaveScene
 
-## Glacial Sanctum - Ice Dragon Glacius awaits on Floor 3
-## Frozen tunnels with increasing cold-themed enemies
+## Glacial Sanctum - Ice Dragon Glacius awaits on Floor 5 (struktured 2026-09-06 depth pass).
+## Frozen-lake open floors (i) alternate with narrow crevasse corridors; one lever, one portal shortcut, one ambush plate.
 
 func _init() -> void:
 	cave_name = "Glacial Sanctum"
@@ -10,79 +10,150 @@ func _init() -> void:
 	boss_id = "ice_dragon"
 	boss_flag_key = "ice_dragon_defeated"
 	boss_cutscene_id = "world1_glacius_intro"
-	total_floors = 3
+	total_floors = 5
 	overworld_exit_spawn = "ice_cave_entrance"
 
 	floor_layouts = {
 		1: [
 			"MMMMMMMMMMMMMMMMMMMM",
-			"M..................M",
-			"M..MMMM....MMMM....M",
-			"M..M..........M..T.M",
-			"M..M....T.....M....M",
-			"M..MMMMMMMMMMMM....M",
-			"M..................M",
-			"M.....MM...MM......M",
-			"M.....M.....M......M",
-			"M.....M..U..M......M",
-			"M.T...MM...MM......M",
-			"M..................M",
-			"M..................M",
-			"M.......DDDD....MMMM",
-			"M...............HT.M",
+			"MMiiiiiiiiiiiiiiM..M",
+			"MMiiiiiLiiUiiiiiM.TM",
+			"MMiiiiiiiiiiiiiiM..M",
+			"MMiiiiiiiiiiiiiiiMMM",
+			"MMMiMMMMMMMMMMMMiMMM",
+			"MMMiMMMMMMMMMMMMiMMM",
+			"MMMiMMMMMMMMMMMMiMMM",
+			"MMiiiiiiiiiiiiiiiiMM",
+			"MMiiiiiiiiiiiiiiiiMM",
+			"MMiiiiiiiiiiiiiiiiMM",
+			"MMiiiDiiiiiiiiiiiiMM",
+			"MMiiiiiiiTiiiiiiiiMM",
+			"MMiiiiiiiiiiiiiiiiMM",
+			"MMMMMMMMMMMMMMMMMMMM",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
 		2: [
 			"MMMMMMMMMMMMMMMMMMMM",
-			"M..................M",
-			"M.MMMMM......MMMMM.M",
-			"M.M..........T.M...M",
-			"M.M............M...M",
-			"M.MMMMM...T..MMMMM.M",
-			"M..................M",
-			"M..................M",
-			"M......MM.MM.......M",
-			"M.......M..M..T....M",
-			"M.......M.UM.......M",
-			"M......MM.MM.......M",
-			"M..................M",
-			"M..................M",
-			"M.........D........M",
+			"MMMMMMMMMMMMMMMMMMMM",
+			"MM................MM",
+			"MM.MMMMMMMMMMMMMM.MM",
+			"MMSMMMMMMMMMMMMMM.MM",
+			"MM.MMMMMMMMMMMMMM.MM",
+			"MM.......MMMMMMMM.MM",
+			"MM.MMMMM.MMMMMMMM.MM",
+			"MM.MMMMM.MMMMMMMM.MM",
+			"MM.MMMMM.MMMMMMMM.MM",
+			"MM.MMMMM......T...MM",
+			"MM.MMMMMMMMMMMMMMMMM",
+			"MM.MMMMMMMMMMMMMMMMM",
+			"MM..D.....U.......MM",
+			"MMMMMMMMMMMMMMMMMMMM",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
-		# Shared "boss at far corner + winding path" layout across all 4
-		# W1 dragon caves — struktured msg 2788, class-level fix.
 		3: [
 			"MMMMMMMMMMMMMMMMMMMM",
-			"M...............B..M",
-			"M..................M",
-			"M..MMMMMMM.MMMMMMM.M",
-			"M..M.T...........M.M",
-			"M..M.............M.M",
-			"M..M.......T.....M.M",
-			"M..M.............M.M",
-			"M..MMMMMMM.MMMMMMM.M",
-			"M..................M",
-			"M....MMMMM.MMMMM...M",
-			"M....M.........M...M",
-			"M....M....T....M...M",
-			"M..T.M.........M...M",
-			"M.........D........M",
+			"MMMMMMMMMMMMMMMMMMMM",
+			"MMiiiiiiiiiiiiiiiiMM",
+			"MMiiiiiiiiiiiiiiiiMM",
+			"MMiiTiiiiiiiiiiiiiMM",
+			"MMiiiiiiiiiiiiiiiiMM",
+			"MMiiiiiiiiiiiiiiiiMM",
+			"MMiiiiiiiiiiiiiiiiMM",
+			"MMiiiiiiiiiiiiiiiiMM",
+			"MMiiiiiiiiiiiiiiiiMM",
+			"MMiiiiiiiiiiiiibiiMM",
+			"MMiiiiiiiiiiiiiiiiMM",
+			"MMiiDiiiiiUiiiiiiiMM",
+			"MMiiiiiiiiiiiiiiiiMM",
+			"MMMMMMMMMMMMMMMMMMMM",
+			"MMMMMMMMMMMMMMMMMMMM",
+		],
+		4: [
+			"MMMMMMMMMMMMMMMMMMMM",
+			"MMMMMMMMMMMMMMMMMMMM",
+			"MM..D...........MMMM",
+			"MM..............MMMM",
+			"MM........H.....MMMM",
+			"MMMMMMMMM.MMMMMMMMMM",
+			"MMMMMMMMM.MMMMMMMMMM",
+			"MM..............MMMM",
+			"MM..............MMMM",
+			"MM..............MMMM",
+			"MMMMMMMMMMMMMM.MMMMM",
+			"MM..............M..M",
+			"MM..L...........M.TM",
+			"MM........U.....M..M",
+			"MMMMMMMMMMMMMMMMMMMM",
+			"MMMMMMMMMMMMMMMMMMMM",
+		],
+		5: [
+			"MMMMMMMMMMMMMMMMMMMM",
+			"MiiiiiiiiiiiiiiiiiiM",
+			"MiiiiiiiiBiiiiiiiiiM",
+			"MiiiiiiiiiiiiiiiiiiM",
+			"MiiiiiiiiiiiiiiiiiiM",
+			"MiiiiiiiiiiiiiiiiiiM",
+			"MiiiiiiiiiiiiiiiiiiM",
+			"MiiiiiiiiiiiiiiiiiiM",
+			"MiiiiiiiiiiiiiiiiiiM",
+			"MiiiiiiiiiiiiiiiiiiM",
+			"MiiiiiiiiiiiiiibiiiM",
+			"MiiiiiiiiiiiiiiiiiiM",
+			"MiiiTiiiiiiiiiiiiiiM",
+			"MiiiiiiiiDiiiiiiiiiM",
+			"MiiiiiiiiiiiiiiiiiiM",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
 	}
 
 	floor_spawn_points = {
-		1: {"entrance": Vector2(10, 12)},
-		2: {"down_stairs": Vector2(10, 14)},
-		3: {"down_stairs": Vector2(10, 14)},
+		1: {"entrance": Vector2(10, 11)},
 	}
 
 	floor_encounter_pools = {
 		1: ["ice_wolf", "bat"],
 		2: ["ice_wolf", "skeleton", "bat"],
-		3: [],
+		3: ["ice_wolf", "bat"],
+		4: ["ice_wolf", "skeleton", "bat"],
+		5: [],
 	}
+
+	switch_effects = {
+		"sw0": {"flip": [[16, 2]]},
+		"sw1": {"trap": "encounter"},
+		"sw2": {"flip": [[16, 12]]},
+	}
+	forced_item_chests = {
+		"ice_dragon_cave_f1_c0": "equipment:ice_blade",
+		"ice_dragon_cave_f2_c0": "arctic_wind",
+		"ice_dragon_cave_f4_c0": "equipment:barrier_ring",
+	}
+
+
+const _LORE := {
+	1: [
+		{"pos": Vector2(9, 8), "text": "Glacial Sanctum. The lake is frozen. The dragon is not amused by skating."},
+		{"pos": Vector2(4, 1), "text": "A lever, half-buried in frost. Someone clearly meant to come back for it."},
+	],
+	2: [
+		{"pos": Vector2(9, 2), "text": "The Crevasse: mind the gap. The gap does not mind you."},
+	],
+	3: [
+		{"pos": Vector2(9, 2), "text": "The lake widens here. So does the dragon's patience, allegedly."},
+	],
+	5: [
+		{"pos": Vector2(9, 11), "text": "The Frozen Throne. Glacius has read every strategy guide ever written about her."},
+	],
+}
+
+
+func _setup_transitions_for_floor(floor_num: int) -> void:
+	super._setup_transitions_for_floor(floor_num)
+	for entry in (_LORE.get(floor_num, []) as Array):
+		var sign := Signpost.new()
+		sign.sign_text = str(entry["text"])
+		sign.position = (entry["pos"] as Vector2) * TILE_SIZE
+		transitions.add_child(sign)
 
 
 ## Each W1 dragon cave has its own SoundManager routing arm; without

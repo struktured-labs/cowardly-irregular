@@ -1,10 +1,8 @@
 extends DragonCave
 class_name LightningDragonCaveScene
 
-## Stormspire Cavern — Lightning Dragon Voltharion awaits on Floor 3.
-## Storm-carved halls, three floors (parity with Fire/Ice/Shadow — pre-2026-07-18
-## Lightning was 2-floor, and struktured called the arrangement "silly"
-## because the dragon sat almost at the entry: msg 2788).
+## Stormspire Cavern — Lightning Dragon Voltharion awaits on Floor 5 (struktured 2026-09-06 depth pass).
+## Wide, short storm-lattice floors for a vertical/airy feel; one lever shortcut, one wind-funnel portal, one discharge trap.
 
 func _init() -> void:
 	cave_name = "Stormspire Cavern"
@@ -12,94 +10,150 @@ func _init() -> void:
 	boss_id = "lightning_dragon"
 	boss_flag_key = "lightning_dragon_defeated"
 	boss_cutscene_id = "world1_voltharion_intro"
-	total_floors = 3
+	total_floors = 5
 	overworld_exit_spawn = "lightning_cave_entrance"
 
 	floor_layouts = {
 		1: [
 			"MMMMMMMMMMMMMMMMMMMM",
-			"M..................M",
-			"M.MMM..........MMM.M",
-			"M.M..............M.M",
-			"M.M.T..MMMMMM....M.M",
-			"M.M....M....M....M.M",
-			"M.M....M.T..M...TM.M",
-			"M......M....M......M",
-			"M......MMMMMM......M",
-			"M..................M",
-			"M....MM......MM....M",
-			"M....M....U...M....M",
-			"M....MM......MM....M",
-			"M.T.....DDDD.......M",
-			"M..................M",
+			"MM..............M..M",
+			"MM.....L..U.....M.TM",
+			"MM..............M..M",
+			"MM..............MMMM",
+			"MMM.MMMMMMMMMMMM.MMM",
+			"MMM.MMMMMMMMMMMM.MMM",
+			"MMM.MMMMMMMMMMMM.MMM",
+			"MMM.MMMMMMMMMMMM.MMM",
+			"MM................MM",
+			"MM................MM",
+			"MM...D............MM",
+			"MM.......T........MM",
+			"MM................MM",
+			"MMMMMMMMMMMMMMMMMMMM",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
-		# Storm-lattice mid floor: open central chamber, tesla-coil pillars,
-		# encounters continue. Mirrors Ice/Shadow floor-2 shape so the class
-		# reads the same.
 		2: [
 			"MMMMMMMMMMMMMMMMMMMM",
-			"M..................M",
-			"M..T...........T...M",
-			"M..MMMM.....MMMM...M",
-			"M..M....T......M...M",
-			"M..M...........M...M",
-			"M..MMMM.....MMMM...M",
-			"M..................M",
-			"M......MM.MM.......M",
-			"M.......M..M...T...M",
-			"M.......M.UM.......M",
-			"M......MM.MM.......M",
-			"M..................M",
-			"M..................M",
-			"M.........D........M",
+			"MMMMMMMMMMMMMMMMMMMM",
+			"MM................MM",
+			"MM................MM",
+			"MM..S.............MM",
+			"MM....M......M.T..MM",
+			"MM.......M........MM",
+			"MM................MM",
+			"MM....M......M....MM",
+			"MM.........M......MM",
+			"MM.............c..MM",
+			"MM................MM",
+			"MM..D.....U.......MM",
+			"MM................MM",
+			"MMMMMMMMMMMMMMMMMMMM",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
-		3: _boss_floor_layout(),
+		3: [
+			"MMMMMMMMMMMMMMMMMMMM",
+			"MMMMMMMMMMMMMMMMMMMM",
+			"MM................MM",
+			"MM................MM",
+			"MM..T.............MM",
+			"MM................MM",
+			"MM................MM",
+			"MM................MM",
+			"MM................MM",
+			"MM................MM",
+			"MM................MM",
+			"MM................MM",
+			"MM..D.....U.......MM",
+			"MM................MM",
+			"MMMMMMMMMMMMMMMMMMMM",
+			"MMMMMMMMMMMMMMMMMMMM",
+		],
+		4: [
+			"MMMMMMMMMMMMMMMMMMMM",
+			"MM.....MMMMMMMMMMMMM",
+			"MM..T..MMMMMMMMMMMMM",
+			"MM.....MMMMMMMMMMMMM",
+			"MM.....MMMMMMMMMMMMM",
+			"MMMMMMMMMMMMMMMMMMMM",
+			"MM................MM",
+			"MM..L.............MM",
+			"MM..D...........c.MM",
+			"MM................MM",
+			"MM........U.......MM",
+			"MMMMMMMMMMMMMMMMMMMM",
+			"MMMMMMMMMMMMMMMMMMMM",
+			"MMMMMMMMMMMMMMMMMMMM",
+			"MMMMMMMMMMMMMMMMMMMM",
+			"MMMMMMMMMMMMMMMMMMMM",
+		],
+		5: [
+			"MMMMMMMMMMMMMMMMMMMM",
+			"M..................M",
+			"M........B.........M",
+			"M..................M",
+			"M..................M",
+			"M..................M",
+			"M..................M",
+			"M..................M",
+			"M..................M",
+			"M..................M",
+			"M..................M",
+			"M..................M",
+			"M...T..............M",
+			"M........D.........M",
+			"M..................M",
+			"MMMMMMMMMMMMMMMMMMMM",
+		],
 	}
 
-	# (10,12) put the entrance inside the F1 up-stairs trigger, so entering the cave
-	# instantly ascended and floor 1 was never playable (measured 2026-07-26: floor 1 -> 2
-	# within one physics frame, no input). (10,14) clears both stair triggers.
 	floor_spawn_points = {
-		1: {"entrance": Vector2(10, 14)},
-		2: {"down_stairs": Vector2(10, 14)},
-		3: {"down_stairs": Vector2(10, 14)},
+		1: {"entrance": Vector2(10, 11)},
 	}
 
 	floor_encounter_pools = {
 		1: ["goblin", "bat", "skeleton"],
 		2: ["goblin", "bat", "skeleton"],
-		3: [],
+		3: ["goblin", "bat"],
+		4: ["goblin", "bat", "skeleton"],
+		5: [],
+	}
+
+	switch_effects = {
+		"sw0": {"flip": [[16, 2]]},
+		"sw1": {"trap": "encounter"},
+		"sw2": {"flip": [[4, 5]]},
+	}
+	forced_item_chests = {
+		"lightning_dragon_cave_f1_c0": "equipment:thunder_rod",
+		"lightning_dragon_cave_f2_c0": "energy_drink",
+		"lightning_dragon_cave_f4_c0": "equipment:power_ring",
 	}
 
 
-## Shared boss-floor layout — struktured msg 2788: "why is the dragon at
-## the very beginning of the cave?" Winding path from the south entry
-## (D) to a far-corner boss (B at the top-right), with 4 T treasures on
-## the path — two inside the walled north chamber (accessible via a gap
-## in the chamber's south wall, a gap in the chamber's north wall for
-## the boss corridor, or the east-side corridor). All 4 dragon caves
-## share this shape now; the flavor + boss id is per-subclass.
-static func _boss_floor_layout() -> Array:
-	return [
-		"MMMMMMMMMMMMMMMMMMMM",
-		"M...............B..M",
-		"M..................M",
-		"M..MMMMMMM.MMMMMMM.M",
-		"M..M.T...........M.M",
-		"M..M.............M.M",
-		"M..M.......T.....M.M",
-		"M..M.............M.M",
-		"M..MMMMMMM.MMMMMMM.M",
-		"M..................M",
-		"M....MMMMM.MMMMM...M",
-		"M....M.........M...M",
-		"M....M....T....M...M",
-		"M..T.M.........M...M",
-		"M.........D........M",
-		"MMMMMMMMMMMMMMMMMMMM",
-	]
+const _LORE := {
+	1: [
+		{"pos": Vector2(9, 1), "text": "Stormspire Cavern. The lever hums. So does everything else, unfortunately."},
+	],
+	2: [
+		{"pos": Vector2(9, 2), "text": "Tesla Lattice: the pillars aren't decoration, they're insurance."},
+		{"pos": Vector2(4, 12), "text": "A wind funnel. It goes up. Whether YOU go up with it is your problem."},
+	],
+	3: [
+		{"pos": Vector2(9, 2), "text": "The Charged Court. Surprisingly calm. Suspiciously calm."},
+	],
+	5: [
+		{"pos": Vector2(9, 11), "text": "Spire Summit. Voltharion has been counting the milliseconds until you arrived."},
+	],
+}
+
+
+func _setup_transitions_for_floor(floor_num: int) -> void:
+	super._setup_transitions_for_floor(floor_num)
+	for entry in (_LORE.get(floor_num, []) as Array):
+		var sign := Signpost.new()
+		sign.sign_text = str(entry["text"])
+		sign.position = (entry["pos"] as Vector2) * TILE_SIZE
+		transitions.add_child(sign)
 
 
 ## Each W1 dragon cave has its own SoundManager routing arm; without
