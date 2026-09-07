@@ -598,6 +598,17 @@ func _get_sellable_inventory() -> Array:
 ## Falls back to null in test envs without a GameLoop in the tree —
 ## callers handle null by writing only to the snapshot (legacy behavior),
 ## which keeps the existing unit tests passing.
+## One predicate for "already has it": the LIVE Combatant's knows_ability (kit ∪ learned ∪ purchased ∪ level ∪ free move) when reachable, else the snapshot's learned list.
+func _member_knows(char_index: int, spell_id: String, snapshot_learned: Array) -> bool:
+	if spell_id in snapshot_learned:
+		return true
+	var live: Array = _resolve_live_party()
+	if char_index < live.size() and live[char_index] != null and is_instance_valid(live[char_index]) \
+			and live[char_index].has_method("knows_ability"):
+		return bool(live[char_index].knows_ability(spell_id))
+	return false
+
+
 func _resolve_live_party() -> Array:
 	var tree: SceneTree = get_tree()
 	if tree == null or tree.root == null:
@@ -917,8 +928,8 @@ func _open_character_select(spell_id: String, spell_data: Dictionary) -> void:
 		if member_job not in eligible_jobs:
 			continue
 
-		# Check if already knows the spell
-		if spell_id in learned:
+		# Check if already knows the spell — provenance-blind (struktured 2026-09-06: the Mage bought Ignis, which is in his starting KIT, because this only read the snapshot's learned list).
+		if _member_knows(i, spell_id, learned):
 			items.append({
 				"id": str(i),
 				"label": "%s - Already known" % member_name,
@@ -1065,7 +1076,7 @@ func _attempt_magic_purchase(char_index_str: String) -> void:
 	# THEN no-op-append silently consumed the gold for nothing.
 	var existing_member: Dictionary = game_state.player_party[char_index]
 	var existing_learned: Array = existing_member.get("learned_abilities", [])
-	if pending_spell_id in existing_learned:
+	if _member_knows(char_index, pending_spell_id, existing_learned):
 		SoundManager.play_ui("menu_error")
 		var name_str: String = str(existing_member.get("name", "Character"))
 		description_label.text = "%s already knows %s." % [name_str, pending_spell_data.get("name", "this spell")]

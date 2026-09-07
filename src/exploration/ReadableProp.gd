@@ -164,7 +164,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		_close_panel()
 		get_viewport().set_input_as_handled()
 		if SoundManager:
-			SoundManager.play_ui("menu_back")
+			SoundManager.play_ui("menu_cancel")  # menu_back exists in neither manifest nor SOUNDS (orphan audit)
 		return
 	if _entries.size() > 1 and event.is_action_pressed("ui_right"):
 		_page = mini(_page + 1, _entries.size() - 1)

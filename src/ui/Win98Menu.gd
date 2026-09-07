@@ -1544,8 +1544,8 @@ func _input(event: InputEvent) -> void:
 	# A HIDDEN menu must not eat input either — boss dialogue hides the command menu and owns the A press (struktured 2026-08-15 spotlight-duel ambiguity).
 	if not visible:
 		return
-	# A tutorial hint is capturing input, or another handler already consumed this event — don't double-fire a menu action.
-	if TutorialHint.is_any_active() or get_viewport().is_input_handled():
+	# A tutorial hint is capturing input — don't double-fire a menu action. (The old `or is_input_handled()` clause was unreachable in production — Godot stops _input propagation once handled — and only ever suppressed synthetic-input tests; cowir-controller 2026-09-06.)
+	if TutorialHint.is_any_active():
 		return
 	# Wait for input delay to prevent accidental selection
 	if not _can_accept_input:

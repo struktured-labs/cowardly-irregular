@@ -1627,6 +1627,13 @@ func play_music(track: String) -> void:
 	# (after the crossfade copied the old track's volume to B).
 	_music_player.pitch_scale = 1.0
 	_music_player.volume_db = _music_base_db
+	# struktured 2026-09-06 "victory music speeds up when the party is mostly dead": the danger
+	# tween (0.5s, ignores time_scale) outlived the track switch and wrote its 1.15x pitch onto the
+	# NEW track. A track change ends the danger envelope; battle re-arms it on the next HP change.
+	if _danger_tween and _danger_tween.is_valid():
+		_danger_tween.kill()
+	_danger_tween = null
+	_danger_intensity = 0.0
 
 	# Try manifest first — file-based music always takes priority
 	_load_music_manifest()

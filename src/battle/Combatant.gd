@@ -1439,6 +1439,29 @@ func has_learned_ability(ability_id: String) -> bool:
 	return ability_id in learned_abilities
 
 
+## struktured 2026-09-06: "just have a general guard on if u have the ability or not at all, provenance irrelevant."
+## THE predicate for "does this character have X" — kit, learned, purchased, level-unlocked, free move. Shops and can_use_ability both use it; never re-derive per source.
+func knows_ability(ability_id: String) -> bool:
+	if ability_id == "":
+		return false
+	if ability_id in learned_abilities or ability_id in purchased_abilities:
+		return true
+	if job == null or job.is_empty():
+		return false
+	if ability_id in job.get("abilities", []):
+		return true
+	var fm: Variant = job.get("free_move", {})
+	if fm is Dictionary and str((fm as Dictionary).get("ability_id", "")) == ability_id:
+		return true
+	var unlocks: Variant = job.get("abilities_at_level", {})
+	if unlocks is Dictionary:
+		for level_key in (unlocks as Dictionary).keys():
+			if int(level_key) <= job_level and (unlocks as Dictionary)[level_key] is Array \
+					and ability_id in (unlocks as Dictionary)[level_key]:
+				return true
+	return false
+
+
 ## Job profile management
 func get_profile_key() -> String:
 	"""Get current job profile key as 'primary_id:secondary_id'"""

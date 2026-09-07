@@ -456,7 +456,8 @@ func _setup_npcs() -> void:
 	# Phil's notebook, on the well kerb beside him — the game already establishes that his memory lives in objects other people carry.
 	var notebook = ReadablePropScript.new()
 	notebook.name = "PhilNotebook"
-	notebook.position = Vector2(24 * TILE_SIZE, 18 * TILE_SIZE)
+	# Cell-CENTRED at (22,18) beside Phil: a 28px prop parked on a cell corner sits 24px off every axis-aligned probe (reachability audit); (24,18) was also the chicken's cell.
+	notebook.position = Vector2(22 * TILE_SIZE + TILE_SIZE / 2, 18 * TILE_SIZE + TILE_SIZE / 2)
 	notebook.setup("Phil's Notebook", _phil_notebook_entries)
 	npcs.add_child(notebook)
 
