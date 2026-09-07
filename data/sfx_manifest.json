@@ -1085,9 +1085,9 @@
     },
     "ability_fire": {
       "file": "assets/audio/sfx/ability_fire.ogg",
-      "prompt": "Roaring campfire erupting, warm crackling flames whooshing upward, deep orange fire with wood pops and snaps, cozy but powerful",
-      "duration_seconds": 1.2,
-      "prompt_influence": 0.7,
+      "prompt": "Traditional fire magic: sharp gas ignition whoosh, then a roaring open flame with dense wood crackling and popping embers throughout, airy hiss and rushing air, dry and organic, no musical tone, no bass drop, no synth boom, no low thump",
+      "duration_seconds": 1.5,
+      "prompt_influence": 0.8,
       "variants": [
         "ability_fire_v2",
         "ability_fire_v3"
@@ -1129,9 +1129,9 @@
     },
     "ability_lightning": {
       "file": "assets/audio/sfx/ability_lightning.ogg",
-      "prompt": "Close thunderclap with electric buzzing aftermath, raw thunder strike with static discharge crackling, stormy atmospheric",
-      "duration_seconds": 1.0,
-      "prompt_influence": 0.7,
+      "prompt": "Violent close lightning strike: bright ripping treble crack with forked electrical arcing and dense sizzling static, immediately followed by a deep rolling thunder boom with heavy low-end weight, raw and untamed, both the sharp snap and the body",
+      "duration_seconds": 1.5,
+      "prompt_influence": 0.8,
       "variants": [
         "ability_lightning_v2",
         "ability_lightning_v3"
@@ -1157,9 +1157,9 @@
     },
     "ability_dark": {
       "file": "assets/audio/sfx/ability_dark.ogg",
-      "prompt": "Deep underground rumble with whispering ghostly voices, dark cavern echoing void, eerie low vibration with distant wailing",
+      "prompt": "Menacing shadow magic: a low guttural growl and hollow void whoosh with real weight, layered whispering and distant shrieking voices sitting in the midrange, dry rattling scrape, unstable and wild, keep the low-mid body under the texture, not thin hiss, not pure high air",
       "duration_seconds": 1.5,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.8
     },
     "ability_constant_modification": {
       "file": "assets/audio/sfx/ability_constant_modification.ogg",
@@ -1972,6 +1972,18 @@
       "file": "assets/audio/sfx/voice_bard_victory.ogg",
       "description": "Bard party voice line — victory",
       "source_sha": "547e1f6414605f33"
+    },
+    "weather_thunder_distant": {
+      "file": "assets/audio/sfx/weather_thunder_distant.ogg",
+      "prompt": "Distant thunder rolling across a valley, low broadband rumble swelling and fading, soft and far away with no sharp crack, wet air, natural outdoor reverb",
+      "duration_seconds": 4.0,
+      "prompt_influence": 0.8
+    },
+    "weather_storm_bed": {
+      "file": "assets/audio/sfx/weather_storm_bed.ogg",
+      "prompt": "Steady heavy rainstorm ambience, dense rain hiss on ground and leaves, gusting wind, occasional far-off thunder rumble underneath, continuous and seamless with no melody",
+      "duration_seconds": 10.0,
+      "prompt_influence": 0.75
     }
   }
 }
