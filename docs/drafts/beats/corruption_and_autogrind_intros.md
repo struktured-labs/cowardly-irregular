@@ -181,3 +181,58 @@ unexplained meter into the game's actual risk economy.
 - **struktured** — Phil recurs in W1/W3/W6. Should his condition visibly worsen with the player's
   own `corruption_level`, or on a fixed story track? Reactive is the better joke and the more
   expensive build.
+
+---
+
+## 3. It is three layers, not two — and the audio one is already built
+
+Added after cowir-sfx measured the audio layer on `aa3bcfbc`. Verified independently here.
+
+| | meter | consequence |
+|---|---|---|
+| 1 | world corruption | plot blight. 21 data files. No mechanical effect. |
+| 2 | `GameState.corruption_level` | save-threatening, 5 effects, ratcheted. **0 dialogue, 0 audio.** |
+| 3 | `AutogrindSystem.meta_corruption_level` | **drives all the corruption audio.** |
+
+`SoundManager.set_corruption_intensity()` (`SoundManager.gd:1878`) is a complete music-degradation
+system — detune, pitch wobble, volume flicker, banded 0.3 / 0.6. It has exactly two callers,
+`GameLoop.gd:5518` and `:5745`, and both read `AutogrindSystem.meta_corruption_level`.
+`GameState.corruption_level` appears in `SoundManager.gd` zero times.
+
+**So the thing that makes corruption audible is bolted to the autogrind meter, while the meter that
+eats saves is silent.** Same defect as the dialogue gap, one layer down.
+
+And it is narrower still: **both call sites sit inside autogrind-only blocks**, immediately after
+`_autogrind_dashboard.refresh(...)`. Nothing calls `set_corruption_intensity` outside the autogrind
+loop, so even meter 3's degradation is only audible *while the player is already autogrinding* —
+precisely when they are least likely to be listening, and never during the normal play the beat is
+about.
+
+The five effects also make no sound: `visual_glitch` / `stat_drain` / `encounter_surge` /
+`bp_instability` / `ability_corruption` fire 29 times across `src/` and have **0 keys in
+`sfx_manifest.json`** (control: `menu_select` present). `ability_corruption` misfires a spell 10%
+of the time and sounds identical to casting it correctly.
+
+### Ruling: point the existing degradation at both meters, and drive it from normal play
+
+This is the cheapest possible version of the collapse in §1, and it should land **before** any
+prose is written.
+
+- feed `set_corruption_intensity` the **max of both normalised meters**, not meter 3 alone
+- call it from somewhere that runs outside the autogrind loop, so a corrupted save sounds wrong
+  during ordinary play
+
+The music going subtly wrong as your own file rots **is** pillar 4, and it says nothing. The
+player notices something is off long before Phil hands them the notebook — and then the notebook
+names a thing they have already been hearing for an hour. That is a much better reveal than
+explaining a meter they have never perceived, and it is the same reason the beat uses Phil's
+symptoms rather than his exposition.
+
+It also fixes an ordering risk in §2: if the forced grind lands first for any reason, an audible
+meter means the player at least *feels* the cost accruing rather than discovering it in a menu.
+
+Sequence: **audio (both meters, normal play) → Phil's notebook (late W1) → forced grind (W2/W3).**
+
+Per-effect SFX for the five is a separate, larger ask and is not required for this arc — but
+`ability_corruption` sounding exactly like a correct cast is worth one cue on its own merits,
+independent of any of this.
