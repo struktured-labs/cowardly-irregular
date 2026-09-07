@@ -44,6 +44,9 @@ const CONDITION_TYPES = [
 	{"id": "alive_count", "label": "Alive", "has_value": true, "default_op": "<=", "default_value": 2},
 	{"id": "member_dead", "label": "Any Dead", "has_value": false, "default_op": "==", "default_value": 0},
 	{"id": "member_injured", "label": "New Injury", "has_value": false, "default_op": "==", "default_value": 0},
+	{"id": "member_hp", "label": "Member HP%", "has_value": true, "default_op": "<", "default_value": 30},
+	{"id": "member_mp", "label": "Member MP%", "has_value": true, "default_op": "<", "default_value": 20},
+	{"id": "member_status", "label": "Member Status", "has_value": false, "default_op": "==", "default_value": 0},
 	{"id": "battles_done", "label": "Battles", "has_value": true, "default_op": ">=", "default_value": 50},
 	{"id": "win_streak", "label": "Win Streak", "has_value": true, "default_op": ">=", "default_value": 20},
 	{"id": "corruption", "label": "Corruption", "has_value": true, "default_op": ">=", "default_value": 3.0},
@@ -196,6 +199,13 @@ var _region_id: String = ""
 ## Rule trigger counts for monitor display
 var _rule_trigger_counts: Dictionary = {}
 
+
+
+## "Any" vs a named member — the coarse/fine split must be visible on the cell, or two rules
+## that read identically on screen behave differently.
+func _member_label(condition: Dictionary) -> String:
+	var who := str(condition.get("member", ""))
+	return "Any" if who == "" else who.capitalize()
 
 func _ready() -> void:
 	_load_custom_presets()
@@ -1040,6 +1050,12 @@ func _format_condition(condition: Dictionary) -> String:
 			return "Member\nDead"
 		"member_injured":
 			return "New\nInjury"
+		"member_hp":
+			return "%s HP\n%s %d" % [_member_label(condition), op, value]
+		"member_mp":
+			return "%s MP\n%s %d" % [_member_label(condition), op, value]
+		"member_status":
+			return "%s\n%s" % [_member_label(condition), str(condition.get("value", "status"))]
 		"inventory_items":
 			return "Inv Items\n%s %d" % [op, value]
 		"ability_learned":
@@ -1236,7 +1252,8 @@ func _input(event: InputEvent) -> void:
 	if not visible:
 		return
 
-	# cowir-autogrind's gate: a hint-dismiss press must not also drive the menu behind it
+	## A live tutorial hint owns the press — every other _input consumer gates on this and these
+	## two did not, leaving them protected only by tree order (a hint parented elsewhere is a sibling).
 	if TutorialHint.is_any_active():
 		return
 

@@ -77,6 +77,13 @@ var style: Dictionary = PARTY_STYLE.duplicate()
 var known_characters: Array = ["hero", "mira", "zack", "vex"]
 
 
+
+## "Any" vs a named member — the coarse/fine split must be visible on the cell, or two rules
+## that read identically on screen behave differently.
+func _member_label(condition: Dictionary) -> String:
+	var who := str(condition.get("member", ""))
+	return "Any" if who == "" else who.capitalize()
+
 func _init() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -717,6 +724,12 @@ func _format_condition(condition: Dictionary) -> String:
 			return "Member Dead"
 		"member_injured":
 			return "New Injury"
+		"member_hp":
+			return "%s HP %s %d" % [_member_label(condition), op, value]
+		"member_mp":
+			return "%s MP %s %d" % [_member_label(condition), op, value]
+		"member_status":
+			return "%s has %s" % [_member_label(condition), str(condition.get("value", "status"))]
 		"win_streak":
 			return "Wins %s %d" % [op, value]
 		"time_elapsed":
@@ -953,6 +966,10 @@ func _get_current_action_index() -> int:
 func _input(event: InputEvent) -> void:
 	"""Handle input for grid navigation and editing"""
 	if not visible:
+		return
+
+	## Same gate as AutogrindUI: a hint's dismiss press must not also drive this grid.
+	if TutorialHint.is_any_active():
 		return
 
 	if _keyboard and is_instance_valid(_keyboard) and _keyboard.visible:

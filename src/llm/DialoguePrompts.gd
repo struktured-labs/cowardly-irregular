@@ -239,10 +239,14 @@ Rules are evaluated top-to-bottom, first match wins.
 
 Conditions (AND-chained). type is one of:
   party_hp_min, party_hp_avg, party_mp_avg, alive_count, member_dead,
-  member_injured, corruption, efficiency, battles_done, win_streak,
+  member_injured, member_hp, member_mp, member_status,
+  corruption, efficiency, battles_done, win_streak,
   time_elapsed, inventory_items, ability_learned, reached_level,
   rare_item_found, always
 Numeric conditions take op ∈ {<, <=, ==, >=, >, !=} and value.
+member_hp / member_mp / member_status / member_dead accept an OPTIONAL "member" (a job id
+such as "cleric", or a character name). With it the condition asks about that character;
+without it, about ANY party member. member_status takes the status name in "value".
 
 Actions. type is one of:
   stop_grinding, heal_party, restore_mp, flee_battle, switch_profile
