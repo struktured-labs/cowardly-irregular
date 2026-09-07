@@ -566,6 +566,8 @@ func _load_sprite(monster_id: String) -> void:
 
 	# Scale to fit the 180px preview box while preserving aspect
 	var tex: Texture2D = frames.get_frame_texture(anim, 0)
+	# mirror BattleScene's rule: <=128 artist sheets are authored facing left and flipped in battle
+	_detail_sprite.flip_h = tex != null and tex.get_height() <= 128
 	if tex:
 		var sz := tex.get_size()
 		var max_dim: float = max(sz.x, sz.y)
