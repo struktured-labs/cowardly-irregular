@@ -732,31 +732,45 @@ func _place_chicken(chicken_id: String, pos: Vector2, catch_line: String = "") -
 	npcs.add_child(hen)
 
 
-## PLACEHOLDER PROSE — cowir-story owns these entries; swap the text, keep the shape.
-## Structure is the point and is theirs: entries get shorter as they go, and one
-## appears twice in different hands with neither crossed out. Deliberately NOT the
-## symbol paper — that thread runs to the W6 Fool Card and must not carry mechanics.
+## Phil's notebook. Re-invoked on every open -- reads live corruption so the book
+## degrades with the player's own file rather than on a story track.
 func _phil_notebook_entries() -> Array:
-	return [
-		{
-			"heading": "First page, careful handwriting",
-			"body": "If you are reading this and you are me: the inn is on the north side. " +
-				"The woman at the well is not your sister. You have asked her twice.\n\n" +
-				"Write down what happens. You will not keep it otherwise.",
-		},
-		{
-			"heading": "Some pages later, same hand, faster",
-			"body": "Fought something in the cave. Won, I think. Cannot remember the middle of it.\n\n" +
-				"The middle is the part that goes first.",
-		},
-		{
-			"heading": "A page written twice",
-			"body": "Fought something in the cave. Won, I think.\n\n" +
-				"(The same entry appears again four pages on, in a different hand. " +
-				"Neither is crossed out.)",
-		},
-		{
-			"heading": "Near the end, few words per line",
-			"body": "Inn is north.\nWoman at well.\nNot your sister.\n\nAsked again.",
-		},
+	var c: float = GameState.corruption_level if GameState else 0.0
+	var pages: Array = [
+		"Things I have noticed, in the order I noticed them.\nNumbered so I can tell when one goes missing.\n\nThey do.",
+
+		{"heading": "Entry 4", "body": "The inn sign has been repainted. I asked the keeper when. She said it has not been repainted in eleven years.\n\nI looked again and she was right. I want it recorded that for one moment she was wrong, and that the moment was mine and not hers."},
+
+		{"heading": "Entry 7", "body": "Carried the water up from the well the way I always carry it. Arrived tired the way I never arrive.\n\nNothing about the well changed. Nothing about the hill changed. Something about the carrying did."},
+
+		{"heading": "Entry 11", "body": "Walked the east road. Four things wanted a fight.\n\nWalked it again the next day, same hour: six. The road is the same length. I have started counting, because counting is the part I can still do."},
 	]
+
+	if c >= 0.15:
+		pages.append_array([
+			{"heading": "Entry 12, or 13", "body": "Held back to gather myself before acting, the way everyone does, the way I have done ten thousand times. Got less out than I put in.\n\nDid it again. Got more out than I put in. I did not do anything differently either time.\n\nI have stopped relying on the gathering."},
+
+			{"heading": "Entry 19", "body": "Said the words right. I am certain I said them right.\n\nSomething else happened. Not nothing -- something else. It looked the same going out.\n\nI do not know how to check a thing that looks the same going out."},
+		])
+
+	if c >= 0.4:
+		pages.append_array([
+			{"heading": "Entry 23", "body": "Tired earlier than yesterday."},
+			{"heading": "Entry 24", "body": "Same."},
+			{"heading": "Entry 26", "body": "Same."},
+			{"heading": "Entry 31", "body": "The well is a good place to sit, because you can see who is coming and they think you are resting."},
+		])
+
+	if c >= 0.6:
+		pages.append_array([
+			{"heading": "Entry 31, some pages later, in a different hand", "body": "The well is a good place to sit, because you can see who is coming and they think you are resting."},
+
+			{"heading": "Entry 34", "body": "Ask about the mountain."},
+		])
+
+	pages.append_array([
+		{"heading": "Entry 40", "body": "If you are reading this and you are not me, that is the arrangement. I write things down and then I give them to somebody who can hold them.\n\nThe paper by the well is not this. Do not confuse them. That one I do not understand. This one I understand exactly.\n\nThis one is only the list of what it costs."},
+
+		{"heading": "Entry 41", "body": "The scholar says the corruption is in the forest.\n\nHe is right. He has not said where else it is, because he has not looked at anyone recently."},
+	])
+	return pages

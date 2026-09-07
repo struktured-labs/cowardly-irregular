@@ -93,3 +93,36 @@ func test_phil_notebook_is_wired_into_harmonia() -> void:
 		"and pointed at a provider")
 	assert_true(src.contains("func _phil_notebook_entries"),
 		"which must exist, or the Callable resolves to nothing and the book silently never opens")
+
+
+## The notebook is reactive on live corruption; the bands are cowir-story's beat, not decoration.
+func test_notebook_pages_grow_with_corruption() -> void:
+	var village: Node = load("res://src/maps/villages/HarmoniaVillage.gd").new()
+	autofree(village)
+	var before: float = GameState.corruption_level
+	var counts: Array = []
+	for level in [0.0, 0.15, 0.4, 0.6]:
+		GameState.corruption_level = level
+		counts.append((village._phil_notebook_entries() as Array).size())
+	GameState.corruption_level = before
+	for i in range(1, counts.size()):
+		assert_gt(counts[i], counts[i - 1],
+			"page count must grow at each band (%s) — a clean player reads a sad little book, " % str(counts) +
+			"a corrupted one reads their own save, and that difference IS the beat")
+
+
+## Entries 40 and 41 land the collapse and must render for a clean player too.
+func test_the_closing_entries_render_at_zero_corruption() -> void:
+	var village: Node = load("res://src/maps/villages/HarmoniaVillage.gd").new()
+	autofree(village)
+	var before: float = GameState.corruption_level
+	GameState.corruption_level = 0.0
+	var pages: Array = village._phil_notebook_entries()
+	GameState.corruption_level = before
+	var joined := ""
+	for p in pages:
+		joined += str(p.get("body", "")) if p is Dictionary else str(p)
+	assert_true(joined.contains("The paper by the well is not this"),
+		"entry 40 firewalls the symbol paper from the mechanics thread — it must never be gated behind corruption")
+	assert_true(joined.contains("he has not looked at anyone recently"),
+		"entry 41 is the collapse the beat exists for; a clean player must still reach it")
