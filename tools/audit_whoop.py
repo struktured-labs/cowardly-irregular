@@ -30,11 +30,19 @@ PINNED = [
     "ability_heal", "ability_heal_v2", "ability_heal_v3",
     "heal", "heal_v2", "heal_v3",
     "formation_shadow_strike", "status_poison", "status_pacify",
+    # IMPACT side. struktured heard the whoop on impact after every CAST cue was clean:
+    # EffectSystem routes spell impacts to strike_<element>, a separate family my first audit
+    # never covered.
+    "strike_fire", "strike_ice", "strike_lightning", "strike_dark", "strike_holy",
+    "weakness_flash",
 ]
-RISE_MAX, LAND_MAX = 1.8, 2200.0
+# BIDIRECTIONAL. The first version only looked for a RISE, so strike_dark sweeping 2670 -> 144 Hz
+# scored "ok" -- a fall is a sweep and reads as a whoop just as much. That one-directional blind
+# spot is why he heard it a fourth time.
+SWEEP_MAX, LAND_MAX = 2.5, 2000.0
 
 
-def measure(path, nwin=12, gate_db=-40.0):
+def measure(path, nwin=10, gate_db=-45.0):
     wav = tempfile.mktemp(suffix=".wav")
     subprocess.run(["ffmpeg", "-v", "error", "-i", str(path), "-ac", "1", "-ar", "22050", wav], check=True)
     x, sr = sf.read(wav)
@@ -56,11 +64,14 @@ def measure(path, nwin=12, gate_db=-40.0):
     third = max(1, len(cents) // 3)
     early = float(np.mean(cents[:third])) if cents else 0.0
     late = float(np.mean(cents[-third:])) if cents else 0.0
+    ratio = late / max(early, 1e-9)
+    sweep = max(ratio, 1.0 / max(ratio, 1e-9))
     return {
         "early_hz": round(early, 1),
         "late_hz": round(late, 1),
-        "rise": round(late / max(early, 1e-9), 2),
-        "whoops": bool(late / max(early, 1e-9) >= RISE_MAX and late >= LAND_MAX),
+        "sweep": round(sweep, 2),
+        "direction": "rise" if ratio > 1.0 else "fall",
+        "whoops": bool(sweep >= SWEEP_MAX and max(early, late) >= LAND_MAX),
     }
 
 
@@ -82,13 +93,13 @@ def main():
         m["file"] = rel
         out[key] = m
         flag = "WHOOP" if m["whoops"] else "ok"
-        print(f"  {flag:6s} {key:26s} {m['early_hz']:7.0f} -> {m['late_hz']:7.0f}  {m['rise']:.2f}x")
+        print(f"  {flag:6s} {key:26s} {m['early_hz']:7.0f} -> {m['late_hz']:7.0f}  {m['sweep']:5.2f}x {m['direction']}")
         if m["whoops"]:
             bad.append(key)
     if a.write:
         (root / "test/fixtures/sfx_whoop_baseline.json").write_text(
             json.dumps({"_note": "written by tools/audit_whoop.py --write; the GUT test pins these hashes",
-                        "rise_max": RISE_MAX, "land_max_hz": LAND_MAX, "cues": out}, indent=2) + "\n")
+                        "sweep_max": SWEEP_MAX, "land_max_hz": LAND_MAX, "cues": out}, indent=2) + "\n")
         print(f"\n  wrote baseline for {len(out)} cues")
     if bad:
         print(f"\n  WHOOPING: {bad}")

@@ -238,7 +238,32 @@ def shadow_strike(dur=1.05, seed=83):
     out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.88).astype(np.float32)
 
 
-VOICES = {"shadow_strike": shadow_strike, "fire": fire, "fire_burst": fire_burst, "fire_roar": fire_roar,
+def strike_dark_hit(dur=0.20, seed=97):
+    """Impact voice. The shipped one swept 2670 -> 144 Hz in 170ms — a downward glide, which is a
+    whoop by ear even though it FALLS. An impact should land, not slide."""
+    rng = np.random.default_rng(seed); n = int(SR * dur)
+    body = _sweep_lowpass(rng.uniform(-1, 1, n), 420.0, 260.0) * _env(n, 0.002, 3.0) * 0.9
+    f = np.full(n, 74.0)                      # held, not glided
+    body += np.sign(np.sin(2 * math.pi * np.cumsum(f) / SR)) * _env(n, 0.001, 3.6) * 0.65
+    body += _sweep_lowpass(rng.uniform(-1, 1, n), 1500.0, 1100.0) * _env(n, 0.0008, 9.0) * 0.35
+    out = _bitcrush(body, bits=5, hold=4)
+    out = _sweep_lowpass(out, 1500.0, 1100.0)
+    out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.9).astype(np.float32)
+
+
+def strike_lightning_hit(dur=0.16, seed=101):
+    """Impact voice. Shipped: 3495 -> 947 Hz in 90ms. Same downward slide; make it a crack."""
+    rng = np.random.default_rng(seed); n = int(SR * dur)
+    body = _sweep_lowpass(rng.uniform(-1, 1, n), 2600.0, 1900.0) * _env(n, 0.0006, 5.0) * 0.95
+    f = np.full(n, 138.0)
+    body += np.sign(np.sin(2 * math.pi * np.cumsum(f) / SR)) * _env(n, 0.001, 4.2) * 0.5
+    out = _bitcrush(body, bits=4, hold=4)
+    out = _sweep_lowpass(out, 2400.0, 1800.0)
+    out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.9).astype(np.float32)
+
+
+VOICES = {"strike_dark_hit": strike_dark_hit, "strike_lightning_hit": strike_lightning_hit,
+          "shadow_strike": shadow_strike, "fire": fire, "fire_burst": fire_burst, "fire_roar": fire_roar,
           "lightning": lightning, "lightning_snap": lightning_snap, "lightning_chain": lightning_chain,
           "ice": ice, "ice_shatter": ice_shatter, "ice_freeze": ice_freeze,
           "dark": dark}

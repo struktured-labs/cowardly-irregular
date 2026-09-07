@@ -1646,8 +1646,8 @@
     },
     "strike_lightning": {
       "file": "assets/audio/sfx/strike_lightning.ogg",
-      "source": "sox_synth",
-      "prompt": "Lightning-element weapon strike voice. Sharp 6000Hz snap + 100Hz square-wave buzz decay + bandpass noise (4500/3000Hz). Electric-arc character. ~90ms.",
+      "source": "tools/gen_chiptune_sfx.py strike_lightning_hit",
+      "prompt": "SYNTHESISED. struktured heard the whoop on IMPACT after every cast cue was clean. This one swept downward (3495->947Hz, 3.7x) — a fall is a sweep too. Impacts land, they do not glide. Run the tool.",
       "duration_seconds": 0.09,
       "prompt_influence": 0.0
     },
@@ -1660,8 +1660,8 @@
     },
     "strike_dark": {
       "file": "assets/audio/sfx/strike_dark.ogg",
-      "source": "sox_synth",
-      "prompt": "Dark-element weapon strike voice. Hollow 165Hz + 82Hz sub pad + reverse pinknoise swell (void whoosh). ~175ms.",
+      "source": "tools/gen_chiptune_sfx.py strike_dark_hit",
+      "prompt": "SYNTHESISED. struktured heard the whoop on IMPACT after every cast cue was clean. This one swept downward (2670->144Hz, 18.6x) — a fall is a sweep too. Impacts land, they do not glide. Run the tool.",
       "duration_seconds": 0.175,
       "prompt_influence": 0.0
     },
