@@ -350,7 +350,11 @@ func _typed_config() -> Dictionary:
 
 
 ## Why this config cannot be tested, or "" when it can. Also drives the save-time warning.
+## Refusing here is the point: an instant reason beats an HTTP timeout the user has to sit through.
 func _config_problem(cfg: Dictionary) -> String:
+	if GameState and "llm_custom_backend_enabled" in GameState \
+			and not bool(GameState.llm_custom_backend_enabled):
+		return "BYOK is toggled OFF in Settings — these fields are not in use, so there is nothing to test."
 	if str(cfg.get("base_url", "")) == "":
 		return "Base URL is empty. BYOK stays OFF and the game falls back to local Ollama."
 	if str(cfg.get("model", "")) == "":
