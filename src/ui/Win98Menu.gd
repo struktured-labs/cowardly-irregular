@@ -190,6 +190,7 @@ var _is_closing: bool = false  # Prevent double-close
 static var _last_advance_ms: int = 0
 static var _last_defer_ms: int = 0
 static var _defer_axis_held: bool = false  # release-edge gate: an L2 analog ramp emits many pressed events with no echo flag
+static var _advance_axis_held: bool = false  # same gate for R2 — the 4th advance auto-submits and opens the NEXT member's menu (struktured 2026-09-06 asked)
 const ADVANCE_DEBOUNCE_MS: int = 120
 const DEFER_DEBOUNCE_MS: int = 120
 var _current_ap: int = 0  # Current AP for display
@@ -260,6 +261,8 @@ func _process(delta: float) -> void:
 	# Self-heal the release-edge gate: a release that lands BETWEEN menus (no _input alive) would stick it and cost a press.
 	if Win98Menu._defer_axis_held and not Input.is_action_pressed("battle_defer"):
 		Win98Menu._defer_axis_held = false
+	if Win98Menu._advance_axis_held and not Input.is_action_pressed("battle_advance"):
+		Win98Menu._advance_axis_held = false
 	# Hold-to-repeat. Only up/down: left/right enter and exit submenus here, so repeating
 	# them would thrash the player in and out on a single hold.
 	var repeat_action := _nav_repeat.tick(delta)
@@ -1558,11 +1561,18 @@ func _input(event: InputEvent) -> void:
 
 	# Handle input actions (gamepad + keyboard unified) - only in battle mode
 	if battle_mode:
-		if event.is_action_pressed("battle_advance"):
-			# R button / Shift+Enter: Queue action (Advance mode)
+		if event.is_action_pressed("battle_advance") and not event.is_echo():
+			# R button / Shift+Enter: Queue action (Advance mode). Release-edge gated like defer.
+			if Win98Menu._advance_axis_held:
+				get_viewport().set_input_as_handled()
+				return
+			Win98Menu._advance_axis_held = true
 			_handle_advance_input()
 			get_viewport().set_input_as_handled()
 			return
+
+		if event.is_action_released("battle_advance"):
+			Win98Menu._advance_axis_held = false
 
 		# L button: Track press/release for hold-to-confirm
 		if event.is_action_pressed("battle_defer") and not event.is_echo():
