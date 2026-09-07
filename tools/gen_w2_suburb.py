@@ -46,18 +46,18 @@ BANDS = [
 ]
 
 
-# The scene's entity coordinates (chests, spawns, portals, NPC paths) are the old
-# 50x40 tile positions x3. The map must leave those cells walkable, so each gets a
-# reserved clearing: marked '_' during generation (nothing builds on non-lawn), then
-# resolved to its final char at the end. (x, y, radius, final_char), scaled coords.
-RESERVED = [
-    (132, 12, 1, "l"),   # chest w2_backyard_gold
-    (135, 60, 2, "s"),   # forward portal (objective + signpost + transition)
-    (138, 60, 2, "s"),   # spawn from_industrial
-    (69, 36, 1, "l"),    # spawn entrance / default / suburban_portal
-    (45, 60, 1, "s"),    # NPC patrol corner
-    (120, 15, 1, "l"),   # NPC Suspicious Dave
-    (9, 60, 1, "s"),     # NPC Pizza Delivery Pete
+# EVERY entity coordinate in SuburbanOverworld.gd (chests, spawns, portals, NPCs,
+# patrols, signposts, landmarks), OLD 50x40 tile coords -- x3 here. COMPLETE on purpose:
+# this file originally reserved only 7 audited spots, which is the partial-batch mistake
+# W3 proved does not converge -- fixing a subset reshuffles the seeded RNG and strands a
+# different subset. Regenerated 2026-09-06 against main; 42 spots.
+ENTITY_SPOTS = [
+    (3, 20), (4, 7), (6, 28), (8, 15), (8, 25), (8, 28), (10, 24), (10, 28),
+    (10, 30), (10, 35), (12, 15), (14, 30), (15, 15), (15, 20), (18, 17), (20, 15),
+    (20, 20), (22, 17), (22, 28), (23, 12), (25, 5), (25, 14), (25, 34), (25, 36),
+    (30, 10), (30, 15), (30, 18), (30, 30), (35, 10), (35, 15), (38, 10), (38, 20),
+    (40, 5), (40, 30), (40, 32), (42, 17), (43, 9), (44, 4), (45, 20), (46, 20),
+    (47, 20), (48, 24),
 ]
 
 
@@ -65,9 +65,9 @@ def gen(seed=20260829):
     rng = random.Random(seed)
     g = [["l"] * W for _ in range(H)]
 
-    for (rx, ry, rr, _final) in RESERVED:
-        for y in range(ry - rr, ry + rr + 1):
-            for x in range(rx - rr, rx + rr + 1):
+    for (ox, oy) in ENTITY_SPOTS:
+        for y in range(oy * 3 - 1, oy * 3 + 2):
+            for x in range(ox * 3 - 1, ox * 3 + 2):
                 if 0 <= x < W and 0 <= y < H:
                     g[y][x] = "_"
 
@@ -202,9 +202,13 @@ def gen(seed=20260829):
             g[y][x] = "y"
 
     BLOCKED = set("htwfmyeb")
-    for (rx, ry, rr, final) in RESERVED:
-        for y in range(ry - rr, ry + rr + 1):
-            for x in range(rx - rr, rx + rr + 1):
+    for (ox, oy) in ENTITY_SPOTS:
+        rx, ry = ox * 3, oy * 3
+        # zone-appropriate final, deterministic: sidewalk on the commercial bands and the
+        # roads, lawn everywhere else
+        final = "s" if (45 <= ry <= 62 or 39 <= ry <= 44 or 63 <= ry <= 68 or 104 <= ry <= 105) else "l"
+        for y in range(ry - 1, ry + 2):
+            for x in range(rx - 1, rx + 2):
                 if not (0 <= x < W and 0 <= y < H):
                     continue
                 # '_' survives untouched ground; the impassable check catches cells a
