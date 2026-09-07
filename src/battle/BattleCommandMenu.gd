@@ -271,12 +271,9 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 	if not free_move_item.is_empty():
 		items.append(free_move_item)
 
-	# Abilities -> submenu, each ability has enemy targets if offensive
-	var job_abilities = combatant.job.get("abilities", []) if combatant.job else []
-	var abilities = job_abilities.duplicate()
-	for learned_id in combatant.learned_abilities:
-		if learned_id not in abilities:
-			abilities.append(learned_id)
+	# Abilities -> submenu, each ability has enemy targets if offensive. Enumerated from the
+	# ONE list (kit + level + learned + purchased + SECONDARY job kit — struktured 2026-09-06).
+	var abilities: Array = combatant.get_known_abilities() if combatant.has_method("get_known_abilities") else []
 	if abilities.size() > 0:
 		var ability_items = []
 		for ability_id in abilities:

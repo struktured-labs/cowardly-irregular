@@ -2519,10 +2519,10 @@ func _close_option_picker() -> void:
 
 
 func _get_character_abilities() -> Array:
-	"""Get the abilities available to the current character"""
-	if combatant and combatant.job and combatant.job.has("abilities"):
+	"""Get the abilities available to the current character — the same list battle shows (incl. the secondary job's kit)."""
+	if combatant and combatant.has_method("get_known_abilities"):
 		var abilities = []
-		for ability_id in combatant.job["abilities"]:
+		for ability_id in combatant.get_known_abilities():
 			var ability = JobSystem.get_ability(ability_id)
 			if not ability.is_empty():
 				abilities.append({"id": ability_id, "name": ability.get("name", ability_id)})

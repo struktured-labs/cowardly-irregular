@@ -1459,7 +1459,37 @@ func knows_ability(ability_id: String) -> bool:
 			if int(level_key) <= job_level and (unlocks as Dictionary)[level_key] is Array \
 					and ability_id in (unlocks as Dictionary)[level_key]:
 				return true
+	# struktured 2026-09-06 "2ndary job does nothing apparently": the secondary job lends its base kit.
+	if secondary_job is Dictionary and ability_id in (secondary_job as Dictionary).get("abilities", []):
+		return true
 	return false
+
+
+## Every ability this character can pick right now, in menu order: primary kit, level unlocks,
+## learned, purchased, then the secondary job's kit. Menus and the autobattle editor enumerate
+## from HERE so they can never disagree with knows_ability.
+func get_known_abilities() -> Array[String]:
+	var out: Array[String] = []
+	var add := func(id: String) -> void:
+		if id != "" and not out.has(id):
+			out.append(id)
+	if job is Dictionary:
+		for id in (job as Dictionary).get("abilities", []):
+			add.call(str(id))
+		var unlocks: Variant = (job as Dictionary).get("abilities_at_level", {})
+		if unlocks is Dictionary:
+			for level_key in (unlocks as Dictionary).keys():
+				if int(level_key) <= job_level and (unlocks as Dictionary)[level_key] is Array:
+					for id in (unlocks as Dictionary)[level_key]:
+						add.call(str(id))
+	for id in learned_abilities:
+		add.call(str(id))
+	for id in purchased_abilities:
+		add.call(str(id))
+	if secondary_job is Dictionary:
+		for id in (secondary_job as Dictionary).get("abilities", []):
+			add.call(str(id))
+	return out
 
 
 ## Job profile management
