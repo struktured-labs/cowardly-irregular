@@ -837,9 +837,10 @@
     },
     "formation_shadow_strike": {
       "file": "assets/audio/sfx/formation_shadow_strike.ogg",
-      "prompt": "Silent deadly assassination strike, quick shadow whoosh into a precise lethal impact, ninja vanish and reappear with a sharp finishing blow",
+      "prompt": "SYNTHESISED. struktured: dark/shadow should be WILDER — low and heavy, not bright. The generated one ran 186 -> 6214 Hz across its length (33.4x), thinning as it landed. Run the tool.",
       "duration_seconds": 1.2,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "source": "tools/gen_chiptune_sfx.py shadow_strike"
     },
     "formation_chaos_theory": {
       "file": "assets/audio/sfx/formation_chaos_theory.ogg",
@@ -960,9 +961,9 @@
     },
     "heal_v2": {
       "file": "assets/audio/sfx/heal_v2.ogg",
-      "prompt": "Brief wordless choir swell, warm and breathy with cathedral reverb, settles gently, no bells, no chimes, no sparkle, no birdsong, no chirping",
+      "prompt": "Brief wordless choir swell, warm and breathy with cathedral reverb, then settling DOWNWARD into stillness, darker and softer as it fades, no bells, no chimes, no sparkle, no birdsong, no rising shimmer at the end",
       "duration_seconds": 1.0,
-      "prompt_influence": 0.8
+      "prompt_influence": 0.85
     },
     "heal_v3": {
       "file": "assets/audio/sfx/heal_v3.ogg",
@@ -1028,9 +1029,9 @@
     },
     "status_poison": {
       "file": "assets/audio/sfx/status_poison.ogg",
-      "prompt": "Toxic bubbling liquid, sickly gurgling potion, venomous dripping with a wet squelch",
+      "prompt": "Thick toxic sludge bubbling and glugging low in the throat, wet heavy squelch, sickly and viscous, settling downward into a dull gurgle, no hiss, no fizz, no bright sparkle, nothing rising at the end",
       "duration_seconds": 0.8,
-      "prompt_influence": 0.5
+      "prompt_influence": 0.85
     },
     "status_sleep": {
       "file": "assets/audio/sfx/status_sleep.ogg",
@@ -1754,9 +1755,9 @@
     },
     "status_pacify": {
       "file": "assets/audio/sfx/status_pacify.ogg",
-      "prompt": "A weapon lowering with a soft metallic sigh, tension draining out, calm muted resonance settling to stillness",
+      "prompt": "A weapon lowering and tension draining away, soft muted metallic sigh falling in pitch and settling into stillness, warm and dull, quieter and darker as it ends, no shimmer, no bright tail, nothing rising at the end",
       "duration_seconds": 0.85,
-      "prompt_influence": 0.5
+      "prompt_influence": 0.85
     },
     "status_cannot_act": {
       "file": "assets/audio/sfx/status_cannot_act.ogg",

@@ -220,7 +220,25 @@ def dark(dur=1.25, seed=71):
     out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.85).astype(np.float32)
 
 
-VOICES = {"fire": fire, "fire_burst": fire_burst, "fire_roar": fire_roar,
+def shadow_strike(dur=1.05, seed=83):
+    """Formation special. struktured: dark/shadow should be WILDER — which means low and heavy,
+    not bright. The shipped one ran 186 -> 6214 Hz (33.4x), i.e. it got THINNER as it landed."""
+    rng = np.random.default_rng(seed); n = int(SR * dur)
+    # A held breath, then the drop. Brightness falls the whole way.
+    out = _sweep_lowpass(rng.uniform(-1, 1, n), 900.0, 90.0) * _env(n, 0.10, 1.5) * 0.7
+    for f0, f1, amp in ((120.0, 38.0, 0.60), (178.0, 55.0, 0.34)):
+        f = np.linspace(f0, f1, n)
+        out += np.sign(np.sin(2 * math.pi * np.cumsum(f) / SR)) * _env(n, 0.06, 1.9) * amp
+    k = int(0.34 * n); seg = n - k          # the strike itself: heavy, low, no glint
+    out[k:] += _sweep_lowpass(rng.uniform(-1, 1, seg), 1400.0, 70.0) * _env(seg, 0.002, 2.4) * 0.95
+    f = np.linspace(70.0, 30.0, seg)
+    out[k:] += np.sign(np.sin(2 * math.pi * np.cumsum(f) / SR)) * _env(seg, 0.001, 2.8) * 0.55
+    out = _bitcrush(out, bits=5, hold=5)
+    out = _sweep_lowpass(out, 1600.0, 700.0)
+    out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.88).astype(np.float32)
+
+
+VOICES = {"shadow_strike": shadow_strike, "fire": fire, "fire_burst": fire_burst, "fire_roar": fire_roar,
           "lightning": lightning, "lightning_snap": lightning_snap, "lightning_chain": lightning_chain,
           "ice": ice, "ice_shatter": ice_shatter, "ice_freeze": ice_freeze,
           "dark": dark}
