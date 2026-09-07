@@ -76,3 +76,122 @@ static func _battles_since_last(gs: Node) -> int:
 		return 0
 	var last: int = int(gs.game_constants.get(LAST_BATTLE_KEY, -BATTLE_COOLDOWN))
 	return int(gs.battles_won) - last
+
+
+## ── Payout ────────────────────────────────────────────────────────────────────
+
+## Reward CONTENT lives in data, so retuning does not touch code.
+const TABLE_PATH: String = "res://data/conversation_rewards.json"
+
+static var _table: Dictionary = {}
+static var _table_loaded: bool = false
+
+
+## Stable reward identity. Personas are keyed by DISPLAY NAME
+## (npc_showcase_personas.json), while scenes author npc_id — so neither field
+## alone covers every NPC. Prefer the explicit id, slug the name otherwise.
+static func resolve_npc_id(npc_id: String, npc_name: String) -> String:
+	if npc_id != "":
+		return npc_id
+	return npc_name.to_lower().replace(" ", "_").strip_edges()
+
+
+## Evaluate, grant, and record in one step. Returns the announcement line, or
+## "" when nothing was owed — callers announce only on a non-empty string.
+## mark_claimed fires ONLY after a grant actually lands, so a failed payout
+## cannot burn the NPC's one claim for this quest phase.
+static func grant_if_earned(gs: Node, npc_id: String, quest_bucket: String, exchanges: int) -> String:
+	var verdict: Array = evaluate(gs, npc_id, quest_bucket, exchanges)
+	if not bool(verdict[0]):
+		return ""
+	var summary: String = _grant(gs, _entry_for(npc_id))
+	if summary == "":
+		return ""
+	mark_claimed(gs, npc_id, quest_bucket)
+	return summary
+
+
+## Per-NPC entry falls back to the shared default, never to an empty payout —
+## an unlisted NPC that passed the gate still owes the player something.
+static func _entry_for(npc_id: String) -> Dictionary:
+	_ensure_table()
+	var by_npc: Dictionary = _table.get("by_npc", {}) as Dictionary
+	if by_npc.has(npc_id):
+		return by_npc[npc_id] as Dictionary
+	return _table.get("default", {}) as Dictionary
+
+
+static func _ensure_table() -> void:
+	if _table_loaded:
+		return
+	_table_loaded = true
+	if not FileAccess.file_exists(TABLE_PATH):
+		push_warning("[ConversationRewards] table missing at %s — conversation rewards disabled" % TABLE_PATH)
+		return
+	var text: String = FileAccess.get_file_as_string(TABLE_PATH)
+	var parsed: Variant = JSON.parse_string(text)
+	if parsed is Dictionary:
+		_table = parsed as Dictionary
+	else:
+		push_warning("[ConversationRewards] %s did not parse to a Dictionary — conversation rewards disabled" % TABLE_PATH)
+
+
+## Test seam: reloads the table on next use.
+static func reset_table_cache() -> void:
+	_table = {}
+	_table_loaded = false
+
+
+## Grants gold and consumables. Returns a player-facing summary, or "" when
+## nothing landed — a table entry of all zeroes must not consume the claim.
+static func _grant(gs: Node, entry: Dictionary) -> String:
+	if entry.is_empty():
+		return ""
+	var parts: Array = []
+	var gold: int = int(entry.get("gold", 0))
+	if gold > 0 and gs.has_method("add_gold"):
+		gs.add_gold(gold)
+		parts.append("%d gold" % gold)
+	for raw in (entry.get("items", []) as Array):
+		var spec: Dictionary = raw as Dictionary
+		var iid: String = str(spec.get("item_id", ""))
+		var count: int = maxi(1, int(spec.get("count", 1)))
+		if iid == "" or not _grant_item(iid, count):
+			continue
+		parts.append(ItemNameResolver.resolve(iid) + ("" if count <= 1 else " ×%d" % count))
+	if parts.is_empty():
+		return ""
+	return "Take this — %s." % _join_natural(parts)
+
+
+## Refuses anything items.json does not know. Equipment lives in its own
+## catalogs and reaches the player through GameLoop.equipment_pool, so calling
+## add_item with a weapon id creates an inventory entry nothing can ever use.
+static func _grant_item(item_id: String, count: int) -> bool:
+	var root: Node = _tree_root()
+	if root == null:
+		return false
+	var items: Node = root.get_node_or_null("ItemSystem")
+	if items == null or items.get_item(item_id).is_empty():
+		push_warning("[ConversationRewards] '%s' does not resolve in items.json — refused (equipment must route through equipment_pool)" % item_id)
+		return false
+	var loop: Node = root.get_node_or_null("GameLoop")
+	if loop == null or not ("party" in loop) or loop.party.is_empty():
+		return false
+	if not loop.party[0].has_method("add_item"):
+		return false
+	loop.party[0].add_item(item_id, count)
+	return true
+
+
+## Autoloads are children of the scene-tree root; a static has no tree of its own.
+static func _tree_root() -> Node:
+	var loop: MainLoop = Engine.get_main_loop()
+	return (loop as SceneTree).root if loop is SceneTree else null
+
+
+static func _join_natural(parts: Array) -> String:
+	if parts.size() == 1:
+		return str(parts[0])
+	var head: Array = parts.slice(0, parts.size() - 1)
+	return "%s and %s" % [", ".join(head), str(parts[-1])]
