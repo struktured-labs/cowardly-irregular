@@ -955,6 +955,10 @@ func _input(event: InputEvent) -> void:
 	if not visible:
 		return
 
+	## Same gate as AutogrindUI: a hint's dismiss press must not also drive this grid.
+	if TutorialHint.is_any_active():
+		return
+
 	if _keyboard and is_instance_valid(_keyboard) and _keyboard.visible:
 		return
 
