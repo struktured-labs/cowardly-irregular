@@ -22,6 +22,8 @@ var _saved_rules: Array = []
 
 func before_each() -> void:
 	_gl = load(GL_SRC).new()
+	if AutogrindSystem:
+		AutogrindSystem._test_disable_persistence = true
 	_saved_rules = AutogrindSystem.get_autogrind_rules().duplicate(true) if AutogrindSystem else []
 
 

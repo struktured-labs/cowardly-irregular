@@ -15,7 +15,7 @@ const PASSIVES_PATH := "res://data/passives.json"
 const HANDLED := [
 	"auto_cover_threshold", "auto_save_before_boss", "auto_save_interval",
 	"autobattle_advanced", "boss_damage_share", "boss_pattern_memory",
-	"bp_regen_bonus", "corruption_resistance", "death_resist_chance",
+	"bp_regen_bonus", "corruption_resistance", "cover_damage_reduction", "death_resist_chance",
 	"encounter_skip_chance", "exp_while_dead", "movement_speed_bonus", "mp_regen_percent",
 	"preview_enemy_actions", "show_boss_hp", "show_boss_intent",
 	"show_boss_weakness", "show_formulas", "show_secrets", "show_splits",

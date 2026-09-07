@@ -19,6 +19,7 @@ var _saved_emitted: int = 0
 
 func before_each() -> void:
 	_saved_emitted = 0
+	AutogrindSystem._test_disable_persistence = true
 	_ui = preload("res://src/ui/autogrind/AutogrindUI.gd").new()
 	add_child_autofree(_ui)
 	_editor = preload("res://src/ui/autogrind/AutogrindGridEditor.gd").new()
