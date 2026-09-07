@@ -2689,7 +2689,12 @@ func _on_battle_started() -> void:
 	var boss_type = _get_boss_type()
 	var masterite_type = _get_masterite_type()
 	if is_boss_fight:
-		if masterite_type != "":
+		var declared_boss: String = _declared_music_track(boss_type)
+		if declared_boss != "":
+			_base_music_track = declared_boss
+			SoundManager.play_music(declared_boss)
+			print("[MUSIC] Playing declared boss theme %s for %s" % [declared_boss, boss_type])
+		elif masterite_type != "":
 			# Masterite bosses have per-role, per-world music tracks
 			var world_suffix = SoundManager._get_current_world_suffix()
 			var music_track = "boss_%s_%s" % [masterite_type, world_suffix]
@@ -2719,9 +2724,12 @@ func _on_battle_started() -> void:
 		# Play monster-specific music based on dominant enemy type
 		var dominant_monster = _get_dominant_monster_type()
 		if dominant_monster != "":
-			_base_music_track = "battle_" + dominant_monster
-			SoundManager.play_music("battle_" + dominant_monster)
-			print("[MUSIC] Playing %s battle theme" % dominant_monster)
+			## A variant with no bed of its own can name a shipped one here.
+			var declared: String = _declared_music_track(dominant_monster)
+			var mon_track: String = declared if declared != "" else "battle_" + dominant_monster
+			_base_music_track = mon_track
+			SoundManager.play_music(mon_track)
+			print("[MUSIC] Playing %s battle theme (%s)" % [dominant_monster, mon_track])
 		else:
 			# Use terrain-specific battle music for areas that have one,
 			# otherwise fall back to generic battle music
@@ -2788,6 +2796,16 @@ func _get_masterite_type() -> String:
 			if enemy.has_meta("masterite") and enemy.get_meta("masterite"):
 				return enemy.get_meta("masterite_type", "")
 	return ""
+
+
+func _declared_music_track(monster_id: String) -> String:
+	## Data-driven theme: a monsters.json `music_track` outranks every derived key.
+	if monster_id == "" or not _enemy_spawner:
+		return ""
+	var rec: Variant = _enemy_spawner.load_monsters_data().get(monster_id, {})
+	if not (rec is Dictionary):
+		return ""
+	return str((rec as Dictionary).get("music_track", ""))
 
 
 func _get_terrain_battle_track() -> String:
