@@ -697,6 +697,11 @@ func _on_battle_triggered(enemies: Array) -> void:
 
 ## Tick 86: see SuburbanOverworld._on_roaming_monster_touched for rationale.
 func _on_roaming_monster_touched(monster_id: String, _monster_types: Array) -> void:
+	# A field elite fights ALONE -- it is the encounter, not the leader of one. Sourced from
+	# the monster's own field_elite flag so this can never drift from field_elites.json.
+	if _is_field_elite(monster_id):
+		_on_battle_triggered([monster_id])
+		return
 	var enemies: Array = [monster_id]
 	var extra: int = randi_range(0, 2)
 	for _i in range(extra):
@@ -766,3 +771,15 @@ func _add_boundary_wall(parent: StaticBody2D, pos: Vector2, size: Vector2) -> vo
 	collision.shape = shape
 	collision.position = pos
 	parent.add_child(collision)
+
+
+## True when the species is authored as a field elite. Reads the monster DB rather than the
+## elite roster: the roster says which species is THIS world's rare, the flag says what the
+## species IS, and the battle only cares about the latter.
+func _is_field_elite(monster_id: String) -> bool:
+	var bs: Node = get_tree().root.get_node_or_null("BestiarySystem") if is_inside_tree() else null
+	if bs != null and bs.has_method("get_monster_data"):
+		var d = bs.get_monster_data(monster_id)
+		if d is Dictionary:
+			return bool(d.get("field_elite", false))
+	return false

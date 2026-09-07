@@ -74,6 +74,10 @@ var _player: Node2D = null
 var _monsters: Array = []
 var _enemy_pool: Array = ["slime", "bat", "goblin"]
 var _spawn_parent: Node2D = null
+const ELITE_DATA: String = "res://data/field_elites.json"
+var _elite_cfg: Dictionary = {}
+var _elite_cfg_loaded: bool = false
+var _last_elite_at: float = -100000.0
 var _check_timer: float = 0.0
 var _enabled: bool = true
 
@@ -128,6 +132,84 @@ func _fill_monsters() -> void:
 	var needed = target - _monsters.size()
 	for _i in range(needed):
 		_try_spawn_monster()
+	_try_spawn_elite()
+
+
+## Field elites -- BD2-style stationary rares. Rolled once per fill tick and only when none
+## is alive, so the rate is governed by data/field_elites.json rather than by how often the
+## spawner happens to run. struktured 2026-09-06: "There should be a really bad ass RE on
+## the overworld more often. I never see one."
+func _try_spawn_elite() -> void:
+	if not _player or not is_instance_valid(_player):
+		return
+	var cfg := _elite_config()
+	if cfg.is_empty():
+		return
+	var spawn: Dictionary = cfg.get("spawn", {})
+	var alive := 0
+	for m in _monsters:
+		if is_instance_valid(m) and m.get("elite") == true:
+			alive += 1
+	if alive >= int(spawn.get("max_alive", 1)):
+		return
+	var now := float(Time.get_ticks_msec()) / 1000.0
+	if now - _last_elite_at < float(spawn.get("min_seconds_between", 300.0)):
+		return
+	if randf() >= float(spawn.get("chance_per_fill", 0.012)):
+		return
+
+	var mid := _elite_species_for_world(cfg)
+	if mid == "":
+		return
+	# Permakill applies to elites too -- an exterminated species does not come back as a rare.
+	if GameState and "permakilled_monster_types" in GameState and mid in GameState.permakilled_monster_types:
+		return
+	var candidate := _find_spawn_position()
+	if candidate == Vector2.ZERO:
+		return
+
+	_last_elite_at = now
+	var monster = RoamingMonsterScript.new()
+	monster.monster_id = mid
+	monster.monster_types = [mid]
+	monster.elite = true
+	monster.global_position = candidate
+	monster.set_player_ref(_player)
+	monster.touched.connect(_on_monster_touched)
+	_spawn_parent.add_child(monster)
+	_monsters.append(monster)
+
+
+func _elite_config() -> Dictionary:
+	if _elite_cfg_loaded:
+		return _elite_cfg
+	_elite_cfg_loaded = true
+	var f := FileAccess.open(ELITE_DATA, FileAccess.READ)
+	if f == null:
+		push_warning("[ELITE] %s missing -- field elites disabled" % ELITE_DATA)
+		return _elite_cfg
+	var parsed = JSON.parse_string(f.get_as_text())
+	f.close()
+	if not (parsed is Dictionary):
+		push_error("[ELITE] %s did not parse as an object -- field elites disabled" % ELITE_DATA)
+		return _elite_cfg
+	_elite_cfg = parsed
+	return _elite_cfg
+
+
+## World id comes from the overworld scene that owns this spawner, so one data table serves
+## all six. An unmapped world simply has no elite rather than borrowing another world's.
+func _elite_species_for_world(cfg: Dictionary) -> String:
+	var per: Dictionary = cfg.get("per_world", {})
+	var world := ""
+	var host: Node = get_parent()
+	if host != null:
+		var w = host.get("MAP_WORLD")
+		if w != null:
+			world = str(w)
+	if world == "" or not per.has(world):
+		return ""
+	return str(per[world])
 
 
 func _try_spawn_monster() -> void:

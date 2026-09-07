@@ -3609,6 +3609,32 @@
       },
       "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
       "source": "reuses shadow_knight sheet — the Warden wears the guard's own plate; freed when Mordaine got her T2 sheet | 2026-09-06 facing audit (struktured: 'lots of backward sprites'): drawn facing LEFT, flip baked into the pixels per-frame; monsters face RIGHT."
+    },
+    "dark_knight": {
+      "path": "res://assets/sprites/monsters/shadow_knight.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "generator": "PLACEHOLDER ALIAS -- points at shadow_knight.png, no new art. struktured 2026-09-06 authorised the reuse when he named the Dark Knight field elite: 'sprite = shadow_knight sheet placeholder unless cowir-sprites has better'. Replace the path when a real sheet lands; nothing else here needs to change."
     }
   },
   "npc_sheets": {

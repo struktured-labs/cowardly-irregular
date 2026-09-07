@@ -663,7 +663,14 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 		"healing":
 			for target in targets:
 				if target and target.is_alive:
-					var heal_amount = int(caster.get_buffed_stat("magic", caster.magic) * power)
+					## `heal_amount` is what healing abilities author (6/7; regenerate is a regen
+					## effect with none) — `power`/`damage_multiplier` are authored by 0 of 7, so
+					## this read the 1.0 default and healed magic*1 instead of the authored value.
+					## cure at magic 20: 20 HP here vs 1300 live. Same field-mismatch class the two
+					## comments above document, on the arm nobody revisited. Formula mirrors
+					## BattleManager:5227 so headless and live agree.
+					var authored = int(ability.get("heal_amount", 0))
+					var heal_amount = int(authored * (1.0 + caster.get_buffed_stat("magic", caster.magic) / 20.0)) if authored > 0 else int(caster.get_buffed_stat("magic", caster.magic) * power)
 					heal_amount = max(1, heal_amount)
 					var healed = target.heal(heal_amount)
 					_log("%s heals %s for %d" % [caster.combatant_name, target.combatant_name, healed])

@@ -26,7 +26,9 @@ const CLASSIFIED: Dictionary = {
 	"play_music": true,
 	"fade_out_music": true,
 	"set_danger_intensity": true,
-	"set_corruption_intensity": true,
+	# 2026-09-06 sfx/corruption-audible: set_corruption_intensity now stores its meter and the
+	# single renderer _apply_corruption_max builds the tween (max of grind + save meters).
+	"_apply_corruption_max": true,
 }
 
 const NOMINAL_MS: float = 500.0

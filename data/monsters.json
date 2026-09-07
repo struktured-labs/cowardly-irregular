@@ -5551,5 +5551,48 @@
         "*The stairway to the throne room stands open.*"
       ]
     }
+  },
+  "dark_knight": {
+    "id": "dark_knight",
+    "name": "Dark Knight",
+    "description": "A field elite. It does not wander, it does not hunt, and it does not leave. It is simply here, and it is watching you.",
+    "level": 12,
+    "field_elite": true,
+    "stats": {
+      "max_hp": 2600,
+      "max_mp": 120,
+      "attack": 400,
+      "defense": 260,
+      "magic": 220,
+      "magic_defense": 190,
+      "speed": 14
+    },
+    "abilities": [
+      "dark_slash",
+      "shadow_step",
+      "life_drain"
+    ],
+    "exp_reward": 220,
+    "gold_reward": 180,
+    "drop_table": [
+      {
+        "item": "dark_crystal",
+        "chance": 0.85
+      },
+      {
+        "item": "shadow_blade",
+        "chance": 0.4
+      }
+    ],
+    "weaknesses": [
+      "holy"
+    ],
+    "resistances": [
+      "dark",
+      "physical"
+    ],
+    "learns_from": [
+      "abilities"
+    ]
   }
 }

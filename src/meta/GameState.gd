@@ -11,6 +11,8 @@ signal save_corrupted(corruption_level: float)
 ## toast — without it the player has no surface for WHICH effect
 ## just got applied.
 signal corruption_effect_added(effect: String)
+## Fires on EVERY corruption_level write, not just raises past a threshold: load and New Game move it too, and an audio surface that only hears raises leaves a loaded corrupt save clean and a fresh save dirty. Named for cowir-autogrind to emit through later.
+signal corruption_changed(level: float)
 signal game_constant_modified(constant_name: String, old_value, new_value)
 ## Tick 264: fired by BestiarySystem.mark_defeated when the per-monster
 ## kill count crosses a defined milestone (10/50/100/500). UI shows a
@@ -509,6 +511,7 @@ func _apply_save_data(save_data: Dictionary) -> void:
 		## (save_corrupted signal arg, _apply_random_corruption_effect)
 		## could fire with out-of-range. Sealing at load.
 		corruption_level = clampf(float(save_data["corruption_level"]), 0.0, 1.0)
+		corruption_changed.emit(corruption_level)
 	if save_data.has("macro_volatility"):
 		macro_volatility = float(save_data["macro_volatility"])
 	if save_data.has("party_gold"):
@@ -837,6 +840,7 @@ func add_corruption(amount: float) -> void:
 			amount = amount * (1.0 - clampf(resist, 0.0, 1.0))
 	var old_level = corruption_level
 	corruption_level = clampf(corruption_level + amount, 0.0, 1.0)
+	corruption_changed.emit(corruption_level)
 
 	if corruption_level > old_level:
 		save_corrupted.emit(corruption_level)
@@ -1130,6 +1134,7 @@ func reset_game_state() -> void:
 	weather_timer = 0.0
 	_weather_world = 0
 	corruption_level = 0.0
+	corruption_changed.emit(corruption_level)
 	macro_volatility = 0.0
 	party_gold = 500
 	player_party.clear()

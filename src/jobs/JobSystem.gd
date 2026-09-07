@@ -716,13 +716,8 @@ func can_use_ability(combatant: Combatant, ability_id: String) -> bool:
 		if combatant.current_mp < cost:
 			return false
 
-	# Check job restrictions (allow if in job abilities OR learned abilities)
-	var in_job = combatant.job and combatant.job.has("abilities") and ability_id in combatant.job["abilities"]
-	var in_learned = combatant.has_learned_ability(ability_id)
-	if not in_job and not in_learned:
-		return false
-
-	return true
+	# Provenance-blind (struktured 2026-09-06): kit, learned, purchased, level-unlocked, or the job's free move. Pre-fix Riff (free_move only) was refused as "can't use right now".
+	return combatant.knows_ability(ability_id)
 
 
 ## Utility

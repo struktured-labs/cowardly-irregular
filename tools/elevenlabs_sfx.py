@@ -105,6 +105,18 @@ def generate_sfx(
         print(f"  SKIP {key}: {ogg_path.name} already exists")
         return True
 
+    # Source-locked: some cues are SYNTHESISED by tools/gen_chiptune_sfx.py because generation
+    # cannot hit a chiptune target. Overwriting one from its prompt silently restores the sound
+    # struktured rejected — the same way the heal prompt still said "birdsong" after its asset
+    # was fixed. Refuse rather than warn; a warning in a batch run scrolls past.
+    # `source` is a PROVENANCE LABEL on 88 entries (sox_synth, elevenlabs_foley, lmms_sf2_fluidr3...)
+    # and 11 of those are elevenlabs-sourced and legitimately regenerable here. Refuse only when it
+    # names a TOOL PATH, which is unambiguous and cannot collide with a label.
+    src = str(entry.get("source", ""))
+    if src.startswith("tools/"):
+        print(f"  REFUSE   {key}: source-locked to `{src}` — run that, not this")
+        return False
+
     prompt = entry["prompt"]
     duration = entry.get("duration_seconds", 1.0)
     influence = entry.get("prompt_influence", 0.3)

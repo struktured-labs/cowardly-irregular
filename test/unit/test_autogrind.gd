@@ -636,6 +636,7 @@ func test_autogrind_ui_condition_types_cover_evaluator() -> void:
 		picker_ids.append(entry["id"])
 	var supported := ["party_hp_avg", "party_mp_avg", "party_hp_min", "alive_count",
 		"battles_done", "corruption", "efficiency", "member_dead", "member_injured",
+		"member_hp", "member_mp", "member_status",  # 2026-09-06 member-scoped conditions (arms in _evaluate_party_condition)
 		"win_streak", "time_elapsed", "inventory_items", "ability_learned",
 		"reached_level", "rare_item_found", "always"]
 	for id in picker_ids:

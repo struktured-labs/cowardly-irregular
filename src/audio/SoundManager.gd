@@ -189,11 +189,12 @@ func _ready() -> void:
 	if DisplayServer.get_name() == "headless" or OS.has_feature("headless"):
 		AudioServer.set_bus_mute(0, true)
 		print("[SoundManager] headless run detected — master bus muted")
+	## Deferred: autoload order is not guaranteed and a missed connection is silent — no error, just a save that never sounds corrupted.
+	call_deferred("_connect_corruption_source")
 
 
 ## 2026-08-14 silent-death class (struktured: music+SFX stopped mid-battle, zero errors, YT fine): frozen playback position while playing == game mixer dead; advancing position while silent == stream corked below the game
 var _liveness_last_pos: float = -1.0
-
 
 func audio_liveness_check() -> void:
 	var p: AudioStreamPlayer = _music_player_b if (_music_player_b and _music_player_b.playing and not _music_player.playing) else _music_player
@@ -518,6 +519,13 @@ const _UI_VOLUME_TRIM_DB: Dictionary = {
 ## 2026-08-31 struktured: the round cue reads "a bit loud, not subtle". Moving it off the UI channel was a +10 dB step (-16 -> -6) and it overshot; this walks back half of it without returning it to the channel that buried it.
 const _BATTLE_VOLUME_TRIM_DB: Dictionary = {
 	"round_ap_gain": -5.0,
+	## Corruption stings land during ordinary play, not just combat — audible and unsettling, not startling.
+	"corruption_gain_visual_glitch": -3.0,
+	"corruption_gain_stat_drain": -3.0,
+	"corruption_gain_encounter_surge": -3.0,
+	"corruption_gain_bp_instability": -3.0,
+	"corruption_gain_ability_corruption": -3.0,
+	"corruption_ap_flicker": -6.0,
 }
 
 
@@ -1627,6 +1635,13 @@ func play_music(track: String) -> void:
 	# (after the crossfade copied the old track's volume to B).
 	_music_player.pitch_scale = 1.0
 	_music_player.volume_db = _music_base_db
+	# struktured 2026-09-06 "victory music speeds up when the party is mostly dead": the danger
+	# tween (0.5s, ignores time_scale) outlived the track switch and wrote its 1.15x pitch onto the
+	# NEW track. A track change ends the danger envelope; battle re-arms it on the next HP change.
+	if _danger_tween and _danger_tween.is_valid():
+		_danger_tween.kill()
+	_danger_tween = null
+	_danger_intensity = 0.0
 
 	# Try manifest first — file-based music always takes priority
 	_load_music_manifest()
@@ -1875,11 +1890,44 @@ func reset_danger() -> void:
 ##   Mid corruption  (0.3-0.6): slight detune, hint of pitch drift
 ##   High corruption (0.6-1.0): heavy detune, pitch wobble, volume flicker
 
+## Two meters share this one surface. Storing each and rendering max() means the grind-loop callers keep passing their own value verbatim (autogrind's visible-risk signal is a closed ruling) while a rotting save is audible outside the grind loop. Setting both through one setter would make it last-writer-wins: after a grind battle the audio would drop back to grind-only until the next save event.
+var _grind_corruption: float = 0.0
+var _save_corruption: float = 0.0
+
+
+## Deferred: GameState may not be ready when SoundManager._ready runs, and a missed connection is silent.
+func _connect_corruption_source() -> void:
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs == null or not gs.has_signal("corruption_changed"):
+		return
+	if not gs.corruption_changed.is_connected(set_save_corruption):
+		gs.corruption_changed.connect(set_save_corruption)
+	if "corruption_level" in gs:
+		set_save_corruption(float(gs.corruption_level))
+
+
+## Save-side meter (GameState.corruption_level, already 0-1). Wired to GameState.corruption_changed.
+func set_save_corruption(level: float) -> void:
+	_save_corruption = clamp(level, 0.0, 1.0)
+	_apply_corruption_max()
+
+
 func set_corruption_intensity(intensity: float) -> void:
-	"""Set corruption intensity (0.0 = clean, 1.0 = fully corrupted).
+	"""Set the AUTOGRIND corruption meter (0.0 = clean, 1.0 = fully corrupted).
 	   Maps to autogrind meta_corruption_level / corruption_threshold.
-	   Call this each time the autogrind battle ends to update audio degradation."""
-	var new_intensity = clamp(intensity, 0.0, 1.0)
+	   Call this each time the autogrind battle ends to update audio degradation.
+	   The rendered level is max(this, save corruption) — see set_save_corruption."""
+	_grind_corruption = clamp(intensity, 0.0, 1.0)
+	_apply_corruption_max()
+
+
+## The level the tween is driving toward. Stored so a test can assert what the code COMPUTED rather than recomputing max() itself — a test that derives its own expectation cannot fail when the production formula changes.
+var _corruption_target: float = 0.0
+
+
+func _apply_corruption_max() -> void:
+	var new_intensity = max(_grind_corruption, _save_corruption)
+	_corruption_target = new_intensity
 
 	if abs(new_intensity - _corruption_intensity) < 0.04:
 		return

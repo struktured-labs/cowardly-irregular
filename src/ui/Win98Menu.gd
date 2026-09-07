@@ -1544,8 +1544,8 @@ func _input(event: InputEvent) -> void:
 	# A HIDDEN menu must not eat input either — boss dialogue hides the command menu and owns the A press (struktured 2026-08-15 spotlight-duel ambiguity).
 	if not visible:
 		return
-	# A tutorial hint is capturing input, or another handler already consumed this event — don't double-fire a menu action.
-	if TutorialHint.is_any_active() or get_viewport().is_input_handled():
+	# A tutorial hint is capturing input — don't double-fire. (`or is_input_handled()` was removed 2026-09-06: unreachable in production, it only suppressed synthetic-input tests.)
+	if TutorialHint.is_any_active():
 		return
 	# Wait for input delay to prevent accidental selection
 	if not _can_accept_input:

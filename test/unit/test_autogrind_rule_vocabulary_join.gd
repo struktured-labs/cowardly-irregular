@@ -34,6 +34,7 @@ const IMPOSSIBLE_VALUE: float = -99999.0
 ## Each maps to the setup that makes it true, so a fall-through is distinguishable.
 const BOOLEAN_ARMS: Array[String] = [
 	"member_dead", "member_injured", "ability_learned", "rare_item_found", "always",
+	"member_status",  # 2026-09-06: reads the status NAME from `value`, so the numeric drive can never make it true
 ]
 
 var _sys: Node
@@ -92,6 +93,9 @@ func test_every_grammar_condition_type_has_a_LIVE_evaluator_arm() -> void:
 			match type_id:
 				"member_dead":
 					party = _party_with_a_casualty()
+				"member_status":
+					party[0].status_effects.append("poison")
+					cond["value"] = "poison"
 				"member_injured":
 					continue  # needs live injury bookkeeping; covered by the source join below
 				"ability_learned":

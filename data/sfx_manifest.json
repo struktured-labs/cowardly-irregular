@@ -1085,25 +1085,28 @@
     },
     "ability_fire": {
       "file": "assets/audio/sfx/ability_fire.ogg",
-      "prompt": "Traditional fire magic: sharp gas ignition whoosh, then a roaring open flame with dense wood crackling and popping embers throughout, airy hiss and rushing air, dry and organic, no musical tone, no bass drop, no synth boom, no low thump",
+      "prompt": "SYNTHESISED, not generated — the cast: pre-swell into a falling noise burst with a 90Hz sub. struktured 2026-09-07 rejected the generated fire as a 'WHOOOOP' whose pitch was 'not human ear friendly' (brightness climbed 4x mid-sound, into the ear's harshest band) and asked for a rumbly Atari/FF1 noise. Regenerating this from a text prompt restores the whoop; run the tool.",
       "duration_seconds": 1.5,
       "prompt_influence": 0.8,
       "variants": [
         "ability_fire_v2",
         "ability_fire_v3"
-      ]
+      ],
+      "source": "tools/gen_chiptune_sfx.py fire"
     },
     "ability_fire_v2": {
       "file": "assets/audio/sfx/ability_fire_v2.ogg",
-      "prompt": "Explosive fireball detonation, quick burst of intense flame with a deep bass boom, magical fire igniting in a flash",
+      "prompt": "SYNTHESISED, not generated — rotation sibling: shorter, harder, no pre-swell. struktured 2026-09-07 rejected the generated fire as a 'WHOOOOP' whose pitch was 'not human ear friendly' (brightness climbed 4x mid-sound, into the ear's harshest band) and asked for a rumbly Atari/FF1 noise. Regenerating this from a text prompt restores the whoop; run the tool.",
       "duration_seconds": 1.2,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "source": "tools/gen_chiptune_sfx.py fire_burst"
     },
     "ability_fire_v3": {
       "file": "assets/audio/sfx/ability_fire_v3.ogg",
-      "prompt": "Dragon breath flame jet, sustained roaring fire stream with crackling embers trailing off, fierce heat wave",
+      "prompt": "SYNTHESISED, not generated — rotation sibling: longest, sustained rumble that crumbles. struktured 2026-09-07 rejected the generated fire as a 'WHOOOOP' whose pitch was 'not human ear friendly' (brightness climbed 4x mid-sound, into the ear's harshest band) and asked for a rumbly Atari/FF1 noise. Regenerating this from a text prompt restores the whoop; run the tool.",
       "duration_seconds": 1.2,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "source": "tools/gen_chiptune_sfx.py fire_roar"
     },
     "ability_ice": {
       "file": "assets/audio/sfx/ability_ice.ogg",
@@ -1984,6 +1987,48 @@
       "prompt": "Steady heavy rainstorm ambience, dense rain hiss on ground and leaves, gusting wind, occasional far-off thunder rumble underneath, continuous and seamless with no melody",
       "duration_seconds": 10.0,
       "prompt_influence": 0.75
+    },
+    "corruption_gain_visual_glitch": {
+      "file": "assets/audio/sfx/corruption_gain_visual_glitch.ogg",
+      "prompt": "Short digital corruption sting: screen-tearing static burst with a stuttering bitcrushed artifact, glass-like shatter of a clean signal, cold and synthetic, no melody",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.8
+    },
+    "corruption_gain_stat_drain": {
+      "file": "assets/audio/sfx/corruption_gain_stat_drain.ogg",
+      "prompt": "Short draining sting: a warm tone sagging downward in pitch as it thins out and loses body, energy leaving something, hollow and defeated, no melody",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.8
+    },
+    "corruption_gain_encounter_surge": {
+      "file": "assets/audio/sfx/corruption_gain_encounter_surge.ogg",
+      "prompt": "Short ominous swarm sting: a low pulse blooming into scurrying rushing texture, many things approaching at once, dread rising quickly, no melody",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.8
+    },
+    "corruption_gain_bp_instability": {
+      "file": "assets/audio/sfx/corruption_gain_bp_instability.ogg",
+      "prompt": "Short unstable-power sting: an electrical tone flickering and dropping out erratically, gating and stuttering as if the supply is failing, jittery and unreliable, no melody",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.8
+    },
+    "corruption_gain_ability_corruption": {
+      "file": "assets/audio/sfx/corruption_gain_ability_corruption.ogg",
+      "prompt": "Short reality-slip sting: a clean chime warping and folding into a wrong detuned version of itself, tape-warble and reversed tail, something rewritten, unsettling, no melody",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.8
+    },
+    "corruption_misfire": {
+      "file": "assets/audio/sfx/corruption_misfire.ogg",
+      "prompt": "A magic spell going WRONG mid-cast: a bright cast tone smearing into a detuned bitcrushed warble, pitch bending the wrong way, glitched stutter and a reversed swallow at the end, sounds broken and unintended, not triumphant, no melody",
+      "duration_seconds": 1.0,
+      "prompt_influence": 0.8
+    },
+    "corruption_ap_flicker": {
+      "file": "assets/audio/sfx/corruption_ap_flicker.ogg",
+      "prompt": "Very short resource glitch blip: a clean UI tick stuttering and misfiring, brief electrical gating artifact, wrong but small, no melody",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.8
     }
   }
 }
