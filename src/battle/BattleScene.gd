@@ -2199,7 +2199,17 @@ var _full_render_depth: int = 0
 var _full_render_dim_rect: ColorRect = null
 
 
+## ⚠️ This is a SECOND style source: AbilityVFX.resolve feeds the cast anticipation and
+## EffectSystem, while this feeds the release visual. For a Bard song the two used to disagree
+## outright — resolve said DARK, this said BUFF — so the same ability read as a shadow bolt on
+## the wind-up and a pale bloom on release. Musical abilities now defer to the resolver, which is
+## the authored source; the element arms below keep their hand-tuned Full Render colours.
+## test_bard_cast_vfx pins the agreement so the two cannot drift apart again.
 func _full_render_element_style(ability: Dictionary) -> Dictionary:
+	var resolved: Dictionary = AbilityVFX.resolve(ability)
+	if str(resolved.get("shape", "")) == "chord":
+		var mc: Color = resolved["color"] if resolved["color"] is Color else AbilityVFX.MUSIC_COLOR
+		return {"color": mc, "effect": resolved["type"], "shape": "chord"}
 	var is_heal: bool = str(ability.get("type", "")) == "healing" or int(ability.get("power", 0)) < 0
 	match str(ability.get("element", "")):
 		"fire":
@@ -2381,6 +2391,63 @@ func _full_render_release_visual(style: Dictionary, caster_sprite: Node2D, targe
 			t.tween_interval(0.1)
 			t.tween_property(line, "modulate:a", 0.0, 0.12)
 			t.tween_callback(line.queue_free)
+		"chord":
+			## Bard performance: a bar of staff lines wipes in, note glyphs rise off it, and a
+			## sound-wave ring pushes outward. Built from the same primitives as the other shapes
+			## -- no sprite dependency, so it works for every job that ever plays something.
+			for i in range(3):
+				var staff := ColorRect.new()
+				staff.color = Color(color.r, color.g, color.b, 0.0)
+				staff.size = Vector2(0, 2)
+				staff.position = to + Vector2(-46, -34 + i * 11)
+				staff.z_index = 6
+				staff.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				add_child(staff)
+				var st := create_tween()
+				st.tween_interval(i * 0.03)
+				st.tween_property(staff, "color:a", 0.55, 0.06)
+				st.parallel().tween_property(staff, "size:x", 92.0, 0.14).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+				st.tween_property(staff, "color:a", 0.0, 0.18)
+				st.tween_callback(staff.queue_free)
+			for i in range(4):
+				var head := ColorRect.new()
+				head.color = Color(color.r, color.g, color.b, 0.95)
+				head.size = Vector2(9, 7)
+				head.z_index = 7
+				head.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				add_child(head)
+				var stem := ColorRect.new()
+				stem.color = head.color
+				stem.size = Vector2(2, 16)
+				stem.z_index = 7
+				stem.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				add_child(stem)
+				var sx: float = -36.0 + i * 24.0 + randf_range(-4.0, 4.0)
+				var start := to + Vector2(sx, -18.0)
+				head.position = start
+				stem.position = start + Vector2(7, -15)
+				var rise: float = 46.0 + randf_range(-8.0, 12.0)
+				var drift: float = randf_range(-14.0, 14.0)
+				var nt := create_tween()
+				nt.tween_interval(0.04 * i)
+				nt.tween_property(head, "position", start + Vector2(drift, -rise), 0.34).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+				nt.parallel().tween_property(stem, "position", start + Vector2(drift + 7, -rise - 15), 0.34).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+				nt.parallel().tween_property(head, "color:a", 0.0, 0.34)
+				nt.parallel().tween_property(stem, "color:a", 0.0, 0.34)
+				nt.tween_callback(head.queue_free)
+				nt.tween_callback(stem.queue_free)
+			var wave := ColorRect.new()
+			wave.color = Color(color.r, color.g, color.b, 0.5)
+			wave.size = Vector2(18, 18)
+			wave.position = to + Vector2(-9, -9)
+			wave.z_index = 5
+			wave.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			add_child(wave)
+			var wt := create_tween()
+			wt.tween_property(wave, "size", Vector2(120, 120), 0.26).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+			wt.parallel().tween_property(wave, "position", to + Vector2(-60, -60), 0.26).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+			wt.parallel().tween_property(wave, "color:a", 0.0, 0.26)
+			wt.tween_callback(wave.queue_free)
 		_:
 			var ring := ColorRect.new()
 			ring.color = Color(color.r, color.g, color.b, 0.6)

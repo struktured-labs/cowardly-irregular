@@ -36,7 +36,10 @@ const ELEMENT_TYPES: Dictionary = {
 	"arcane": EffectSystemClass.EffectType.DARK,
 }
 
-const SHAPES: Array[String] = ["bolt", "shards", "strike", "bloom"]
+const SHAPES: Array[String] = ["bolt", "shards", "strike", "bloom", "chord"]
+
+## Bard performance colour — warm amber, deliberately distinct from holy's pale gold.
+const MUSIC_COLOR: Color = Color(2.3, 1.7, 0.75)
 
 ## Level 2 of the precedence chain — the pre-existing hand-tuned map, kept verbatim.
 const LEGACY_IDS: Dictionary = {
@@ -145,9 +148,25 @@ static func resolve(ability: Dictionary) -> Dictionary:
 
 	if vfx.has("shape") and str(vfx["shape"]) in SHAPES:
 		out["shape"] = str(vfx["shape"])
+	elif _is_musical(ability):
+		## The Bard had no visual identity: songs rendered as a generic buff bloom and Riff --
+		## "a sour, clashing chord" -- fell through to the physical fallback and swung a sword.
+		## An authored vfx.shape still wins, so this is a default and not an override.
+		out["shape"] = "chord"
+		if out["color"] == null:
+			out["color"] = MUSIC_COLOR
 	else:
 		out["shape"] = _shape_for(out["type"])
 	return out
+
+
+## What the Bard plays, derived from fields abilities.json already carries rather than an id list
+## that would go stale the moment a song is added. Covers the four songs plus Riff, whose type is
+## `physical` because it deals damage -- the animation is what says it is played, not swung.
+static func _is_musical(ability: Dictionary) -> bool:
+	if str(ability.get("type", "")) == "song":
+		return true
+	return str(ability.get("animation", "")) == "riff"
 
 
 ## Level 4 — derived from fields abilities.json already carries, so no authoring is required.
@@ -164,8 +183,11 @@ static func _infer(ability: Dictionary) -> Variant:
 		return EffectSystemClass.EffectType.DEBUFF
 	if effect in ["poison", "venom", "disease"]:
 		return EffectSystemClass.EffectType.POISON
-	## Unelemented magic reads as arcane rather than a sword swing.
-	if atype in ["magic", "summon", "song", "meta"]:
+	## Unelemented magic reads as arcane rather than a sword swing. `song` was in this list and
+	## sent every Bard performance out as a SHADOW BOLT; songs now fall through to the target_type
+	## arm below so a rallying hymn reads as a buff and Discord as a debuff. The musical identity
+	## rides on shape/colour instead — see _is_musical.
+	if atype in ["magic", "summon", "meta"]:
 		return EffectSystemClass.EffectType.DARK
 	## Anything non-physical left over is a utility ability; target_type says which way it points.
 	## Derived rather than hand-listed — every ability carries target_type, and it classified all 33.
