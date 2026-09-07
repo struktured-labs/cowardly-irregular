@@ -187,6 +187,8 @@ var _start_button: Control
 var _monitor: AutogrindMonitor
 var _permadeath_toggle_label: Label
 var _ludicrous_toggle_label: Label
+## Options ring — the pad's route to the 13 verbs that were keyboard-only
+var _options_ring: Control = null
 
 ## Region ID for CSI lookups (derived from _region_name)
 var _region_id: String = ""
@@ -616,7 +618,7 @@ func _create_party_status_row(member: Combatant, width: float) -> Control:
 func _build_footer(vp_size: Vector2) -> void:
 	"""Build footer with controls help, ludicrous speed toggle, and permadeath staking toggle"""
 	var footer = Label.new()
-	footer.text = "[Start/+]: Grind  [B]: Close  [1/2/3]: Presets  [4-6]: Custom  [S]: Save  [D]: Del  [E/I]: Files  [Sh+E/I]: Codes"
+	footer.text = _hint_strip_text()
 	footer.position = Vector2(8, vp_size.y - 24)
 	footer.add_theme_font_size_override("font_size", 10)
 	footer.add_theme_color_override("font_color", DISABLED_COLOR)
@@ -635,7 +637,7 @@ func _build_footer(vp_size: Vector2) -> void:
 	_add_pixel_border(ls_btn, ls_btn.size)
 
 	_ludicrous_toggle_label = Label.new()
-	_ludicrous_toggle_label.text = "[H] LUDICROUS: %s" % ("ON" if _ludicrous_speed_enabled else "OFF")
+	_ludicrous_toggle_label.text = "%s / [H] LUDICROUS: %s" % [InputProfileManager.get_button_label(JOY_BUTTON_X), "ON" if _ludicrous_speed_enabled else "OFF"]
 	_ludicrous_toggle_label.position = Vector2(8, 6)
 	_ludicrous_toggle_label.add_theme_font_size_override("font_size", 11)
 	_ludicrous_toggle_label.add_theme_color_override(
@@ -662,7 +664,7 @@ func _build_footer(vp_size: Vector2) -> void:
 	_add_pixel_border(pd_btn, pd_btn.size)
 
 	_permadeath_toggle_label = Label.new()
-	_permadeath_toggle_label.text = "[P] PERMADEATH: %s" % ("ON" if _permadeath_staking_enabled else "OFF")
+	_permadeath_toggle_label.text = "OPTIONS / [P] PERMADEATH: %s" % ("ON" if _permadeath_staking_enabled else "OFF")
 	_permadeath_toggle_label.position = Vector2(8, 6)
 	_permadeath_toggle_label.add_theme_font_size_override("font_size", 11)
 	_permadeath_toggle_label.add_theme_color_override(
@@ -1234,6 +1236,14 @@ func _input(event: InputEvent) -> void:
 	if not visible:
 		return
 
+	# cowir-autogrind's gate: a hint-dismiss press must not also drive the menu behind it
+	if TutorialHint.is_any_active() or get_viewport().is_input_handled():
+		return
+
+	# _input beats the ring's _unhandled_input, so without this the console eats its d-pad
+	if _options_ring and is_instance_valid(_options_ring):
+		return
+
 	# Navigation - check echo to prevent rapid-fire when holding keys
 	if event.is_action_pressed("ui_up") and not event.is_echo():
 		cursor_row = max(0, cursor_row - 1)
@@ -1267,6 +1277,16 @@ func _input(event: InputEvent) -> void:
 
 	elif event.is_action_pressed("ui_cancel") and not event.is_echo():
 		_handle_cancel()
+		get_viewport().set_input_as_handled()
+
+	# Shoulders were the only free buttons in this file (verified 0 prior uses)
+	elif event is InputEventJoypadButton and event.pressed \
+			and event.button_index in [JOY_BUTTON_LEFT_SHOULDER, JOY_BUTTON_RIGHT_SHOULDER]:
+		_open_options_ring()
+		get_viewport().set_input_as_handled()
+
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_O and not event.is_echo():
+		_open_options_ring()
 		get_viewport().set_input_as_handled()
 
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_TAB:
@@ -1353,6 +1373,107 @@ func _input(event: InputEvent) -> void:
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_P and not event.is_echo():
 		_toggle_permadeath_staking()
 		get_viewport().set_input_as_handled()
+
+
+## struktured 2026-09-06: "I dont know how to enable ludicrous or permadeath with controller".
+## Ludicrous WAS bound (JOY_X) but named nowhere on screen; permadeath was KEY_P only.
+func _open_options_ring() -> void:
+	if _options_ring and is_instance_valid(_options_ring):
+		return
+	var ring: Control = load("res://src/ui/RadialPicker.gd").new()
+	ring.setup(_options_ring_spec())
+	ring.set_anchors_preset(Control.PRESET_FULL_RECT)
+	ring.option_chosen.connect(func(chosen_id: String, _spec: Dictionary):
+		_close_options_ring()
+		_commit_autogrind_option(chosen_id))
+	ring.cancelled.connect(_close_options_ring)
+	_options_ring = ring
+	add_child(ring)
+	SoundManager.play_ui("menu_open")
+
+
+func _close_options_ring() -> void:
+	if _options_ring and is_instance_valid(_options_ring):
+		_options_ring.queue_free()
+	_options_ring = null
+	_update_cursor()
+
+
+## Labels carry LIVE state, so the ring answers "is it on?" without a second trip.
+func _options_ring_spec() -> Dictionary:
+	return {
+		"title": "Autogrind Options",
+		"kind": "autogrind_options",
+		"selected": 0,
+		"options": [
+			{"id": "ludicrous", "label": "Ludicrous: %s" % ("ON" if _ludicrous_speed_enabled else "OFF")},
+			{"id": "permadeath", "label": "Permadeath: %s" % ("ON" if _permadeath_staking_enabled else "OFF")},
+			{"id": "auto_advance", "label": "Auto-Advance: %s" % ("ON" if _auto_advance_enabled else "OFF")},
+			{"id": "toggle_row", "label": "Toggle This Rule"},
+			{"id": "preset_casual", "label": "Preset: Casual"},
+			{"id": "preset_standard", "label": "Preset: Standard"},
+			{"id": "preset_hardcore", "label": "Preset: Hardcore"},
+			{"id": "save_preset", "label": "Save as Preset"},
+			{"id": "delete_preset", "label": "Delete Last Preset"},
+			{"id": "custom_1", "label": "Custom Slot 1"},
+			{"id": "custom_2", "label": "Custom Slot 2"},
+			{"id": "custom_3", "label": "Custom Slot 3"},
+			{"id": "export", "label": "Export to File"},
+			{"id": "import", "label": "Import from File"},
+			{"id": "copy_code", "label": "Copy Share Code"},
+			{"id": "paste_code", "label": "Paste Share Code"},
+		],
+	}
+
+
+## Every arm calls the SAME handler its key binding calls — the pad gains a route, not a behaviour.
+func _commit_autogrind_option(chosen_id: String) -> void:
+	match chosen_id:
+		"ludicrous":
+			_toggle_ludicrous_speed()
+		"permadeath":
+			_toggle_permadeath_staking()
+		"auto_advance":
+			_toggle_auto_advance()
+		"toggle_row":
+			_toggle_current_row()
+		"preset_casual":
+			_apply_preset("casual")
+		"preset_standard":
+			_apply_preset("standard")
+		"preset_hardcore":
+			_apply_preset("hardcore")
+		"save_preset":
+			_save_current_as_preset()
+		"delete_preset":
+			_delete_last_custom_preset()
+		"custom_1":
+			_apply_custom_preset(0)
+		"custom_2":
+			_apply_custom_preset(1)
+		"custom_3":
+			_apply_custom_preset(2)
+		"export":
+			_export_scripts()
+		"import":
+			_import_scripts()
+		"copy_code":
+			_copy_rules_share_code()
+		"paste_code":
+			_paste_rules_share_code()
+
+
+## The strip a pad player actually reads. Glyphs come from the live profile, so Nintendo-mode
+## swaps here too rather than hardcoding a face letter that is wrong on half the pads.
+func _hint_strip_text() -> String:
+	var confirm: String = InputProfileManager.glyph_for_action("ui_accept")
+	var cancel: String = InputProfileManager.glyph_for_action("ui_cancel")
+	var start: String = InputProfileManager.get_button_label(JOY_BUTTON_START)
+	var resume: String = InputProfileManager.get_button_label(JOY_BUTTON_Y)
+	var ludi: String = InputProfileManager.get_button_label(JOY_BUTTON_X)
+	return "%s Edit   %s Close   %s Start/Stop   %s Resume   %s Ludicrous   L/R or [O] OPTIONS: Permadeath - Presets - Files" % [
+		confirm, cancel, start, resume, ludi,
+	]
 
 
 func _edit_current_cell() -> void:
