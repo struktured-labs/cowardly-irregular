@@ -3,19 +3,33 @@ extends GutTest
 ## Tests for autogrind pause/resume snapshot system
 
 var _system: Node = null
+var _pre_existed: bool = false
+var _pre_bytes: PackedByteArray = PackedByteArray()
+
+const SNAPSHOT_PATH := "user://autogrind_snapshot.json"
 
 
 func before_each() -> void:
 	_system = preload("res://src/autogrind/AutogrindSystem.gd").new()
 	add_child_autofree(_system)
-	# NOT setting _test_disable_persistence: these tests exercise the actual snapshot
-	# save/load roundtrip on disk. The existing before_each+after_each clear_grind_snapshot()
-	# pair is the isolation mechanism for this file — it was the well-behaved test path all along.
+	## Persistence stays ON deliberately — these exercise the real on-disk roundtrip.
+	## clear_grind_snapshot() DELETES and is ungated, so byte-snapshot first: an unsandboxed
+	## deploy run would otherwise destroy a real paused grind (sibling loud_failures pattern).
+	_pre_existed = FileAccess.file_exists(SNAPSHOT_PATH)
+	if _pre_existed:
+		_pre_bytes = FileAccess.get_file_as_bytes(SNAPSHOT_PATH)
 	_system.clear_grind_snapshot()
 
 
 func after_each() -> void:
-	_system.clear_grind_snapshot()
+	## Restore the player's bytes rather than deleting — deleting is what the isolation rule forbids.
+	if _pre_existed:
+		var f := FileAccess.open(SNAPSHOT_PATH, FileAccess.WRITE)
+		if f != null:
+			f.store_buffer(_pre_bytes)
+			f.close()
+	elif FileAccess.file_exists(SNAPSHOT_PATH):
+		DirAccess.remove_absolute(SNAPSHOT_PATH)
 
 
 func test_snapshot_path_constant() -> void:
