@@ -3037,30 +3037,30 @@
       "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "cartographer_wraith": {
-      "path": "res://assets/sprites/monsters/specter.png",
+      "path": "res://assets/sprites/monsters/cartographer_wraith.png",
       "frame_width": 256,
       "frame_height": 256,
-      "fps": 8,
+      "fps": 6,
       "animations": {
         "idle": {
           "start": 0,
-          "end": 1
+          "end": 2
         },
         "attack": {
-          "start": 2,
-          "end": 3
-        },
-        "hit": {
-          "start": 4,
+          "start": 3,
           "end": 5
         },
+        "hit": {
+          "start": 3,
+          "end": 3
+        },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
       },
       "tier": "T1",
-      "generator": "PLACEHOLDER 2026-09-06: The Backwards Warren boss reuses the specter sheet pending its own art (same pattern as Mordaine on shadow_knight)"
+      "source": "gpt-image-1 (2026-09-07 phase 2), style anchored to skeleton + data_wraith; replaces the generic specter placeholder cowir-main flagged at the Warren's launch. Authored FACING RIGHT at 256 so no flip anywhere. hit -> attack windup and dead -> idle frame are REUSED placeholders per the goblin precedent; real reactions are Leo's #2 on docs/art/leo-request-list-2026-09-07.md, and his sheet supersedes this entirely."
     },
     "specter": {
       "path": "res://assets/sprites/monsters/specter.png",
@@ -5211,6 +5211,48 @@
       "frame_height": 32,
       "tier": "T1",
       "source": "gpt-image-1 world-variant, identity+format anchored to the young_woman medieval grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)"
+    },
+    "arbiter": {
+      "path": "res://assets/sprites/npcs/arbiter/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1, identity anchored to masterite_arbiter_medieval.png (2026-09-07 phase 2; archetype was requested by maps but had NO sheet — rendered procedural)"
+    },
+    "curator": {
+      "path": "res://assets/sprites/npcs/curator/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1, identity anchored to masterite_curator_medieval.png (2026-09-07 phase 2; archetype was requested by maps but had NO sheet — rendered procedural)"
+    },
+    "warden": {
+      "path": "res://assets/sprites/npcs/warden/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1, identity anchored to masterite_warden_medieval.png (2026-09-07 phase 2; archetype was requested by maps but had NO sheet — rendered procedural)"
+    },
+    "elder": {
+      "path": "res://assets/sprites/npcs/elder/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1, identity anchored to overworld.png (2026-09-07 phase 2; archetype was requested by maps but had NO sheet — rendered procedural)"
+    },
+    "mysterious": {
+      "path": "res://assets/sprites/npcs/mysterious/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1, identity anchored to overworld.png (2026-09-07 phase 2; archetype was requested by maps but had NO sheet — rendered procedural)"
+    },
+    "tempo": {
+      "path": "res://assets/sprites/npcs/tempo/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "tier": "T1",
+      "source": "gpt-image-1, identity anchored to masterite_tempo_medieval.png (2026-09-07 phase 2; archetype was requested by maps but had NO sheet — rendered procedural)"
     }
   },
   "overworld_player_sheets": {
