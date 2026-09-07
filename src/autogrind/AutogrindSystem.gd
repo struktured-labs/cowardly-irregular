@@ -1708,6 +1708,39 @@ func _evaluate_party_rule(party: Array, rule: Dictionary) -> bool:
 	return true
 
 
+## Resolve a rule's "member" key to a live party member. Matches job id first — struktured
+## phrases rules as "if cleric is dead" — then falls back to the character name.
+func _resolve_member(party: Array, member_key: String):
+	if member_key == "":
+		return null
+	var want := member_key.to_lower()
+	for m in party:
+		if not (m is Combatant):
+			continue
+		if m.job != null and "id" in m.job and str(m.job.id).to_lower() == want:
+			return m
+	for m in party:
+		if not (m is Combatant):
+			continue
+		if str(m.name).to_lower() == want:
+			return m
+	return null
+
+
+## Coarse/fine split shared by every member_* type, mirroring member_dead: with a "member" the
+## predicate is asked of that character, without one it is asked of ANY. Both shapes must work —
+## the picker and the LLM composer build a rule from the type table alone, with no member.
+func _member_predicate(party: Array, condition: Dictionary, pred: Callable) -> bool:
+	var who := str(condition.get("member", ""))
+	if who != "":
+		var target = _resolve_member(party, who)
+		return target != null and pred.call(target)
+	for m in party:
+		if m is Combatant and pred.call(m):
+			return true
+	return false
+
+
 func _evaluate_party_condition(party: Array, condition: Dictionary) -> bool:
 	"""Evaluate a single party-level condition"""
 	var cond_type = condition.get("type", "always")
@@ -1747,6 +1780,16 @@ func _evaluate_party_condition(party: Array, condition: Dictionary) -> bool:
 				if m is Combatant:
 					total += 1
 			return total > alive  # True if any member is dead
+
+		"member_hp":
+			return _member_predicate(party, condition, func(c): return _compare_op(c.get_hp_percentage(), op, value))
+
+		"member_mp":
+			return _member_predicate(party, condition, func(c): return _compare_op(c.get_mp_percentage(), op, value))
+
+		"member_status":
+			var want_status := str(condition.get("value", ""))
+			return _member_predicate(party, condition, func(c): return c.has_status(want_status))
 
 		"member_injured":
 			return check_new_injuries() > 0  # True if any new injury this session
