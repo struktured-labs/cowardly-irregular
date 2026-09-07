@@ -39,17 +39,8 @@ signal conversation_ended(npc_name: String)
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
-## Baseline NPC-open → player-reply → NPC-reply exchange cycles.
+## Maximum NPC-open → player-reply → NPC-reply exchange cycles.
 const MAX_EXCHANGES: int = 4
-
-## Hard ceiling on the dynamic cap — B always exits sooner if the player wants out.
-const MAX_EXCHANGES_CEILING: int = 10
-
-## Extra cycles granted when the NPC has quest-phase voice notes to spend.
-const EXCHANGE_BONUS_QUEST_VOICE: int = 2
-
-## Extra cycles granted when the party is visibly in trouble — there is something to talk about.
-const EXCHANGE_BONUS_PARTY_DISTRESS: int = 2
 
 ## Sentinel value returned by DialogueChoiceMenu when the player cancels.
 const CHOICE_CANCELLED: String = ""
@@ -89,8 +80,6 @@ var _opening_lines: Array  = []
 ## as "recent voice notes" so the LLM matches the current-quest-phase tone.
 ## Passed from OverworldNPC after resolving GameState.quests state → persona bucket.
 var _quest_state_lines: Array = []
-## Live party snapshot (HP/KO, gold, supplies) resolved once per conversation.
-var _party_state: Dictionary = {}
 
 
 # ── Runtime state ─────────────────────────────────────────────────────────────
@@ -171,7 +160,6 @@ func run(player: Node) -> void:
 	_last_player_line = ""
 	_pending_choices.clear()
 	_has_pending_choices = false
-	_party_state = _resolve_party_state()
 	_state = State.IDLE
 
 	# Freeze the player.
@@ -255,7 +243,7 @@ func _do_opening() -> void:
 
 func _do_player_turn(player: Node) -> void:
 	# Enforce exchange cap: if we're at the limit, skip to sign-off.
-	if _exchange_count >= _exchange_cap():
+	if _exchange_count >= MAX_EXCHANGES:
 		_state = State.NPC_REPLY
 		return
 
@@ -287,7 +275,7 @@ func _do_player_turn(player: Node) -> void:
 
 func _do_npc_reply() -> void:
 	# On sign-off (exchange limit or player is ending): give a closing line.
-	if _exchange_count >= _exchange_cap():
+	if _exchange_count >= MAX_EXCHANGES:
 		var sign_off: String = await _fetch_npc_sign_off()
 		await _show_npc_line(sign_off)
 		_state = State.DONE
@@ -346,7 +334,6 @@ func _fetch_npc_opening() -> String:
 		recent,
 		_quest_state_lines,
 		_resolve_time_of_day(),
-		_party_state,
 	)
 
 	# Wave C: surface the "thinking" indicator while the LLM is composing.
@@ -508,8 +495,6 @@ func _fetch_combined_reply() -> Dictionary:
 		_last_npc_line,
 		_last_player_line,
 		DialoguePrompts.MAX_CHOICES,
-		_quest_state_lines,
-		_party_state,
 	)
 
 	_set_thinking(true)
@@ -704,65 +689,3 @@ func _unregister_with_llm_service() -> void:
 	var svc: Node = get_node_or_null("/root/LLMService")
 	if svc != null and svc.has_method("unregister_conversation"):
 		svc.unregister_conversation(self)
-
-
-## Dynamic exchange cap — a conversation with more to say earns more turns.
-## B still exits at any point; this only moves where the NPC signs off on its own.
-func _exchange_cap() -> int:
-	var cap: int = MAX_EXCHANGES
-	if not _quest_state_lines.is_empty():
-		cap += EXCHANGE_BONUS_QUEST_VOICE
-	if bool(_party_state.get("in_distress", false)):
-		cap += EXCHANGE_BONUS_PARTY_DISTRESS
-	return mini(cap, MAX_EXCHANGES_CEILING)
-
-
-## Snapshot live party state for the prompt. Every read is guarded — a shape
-## change in GameState must degrade to a thinner prompt, never break dialogue.
-func _resolve_party_state() -> Dictionary:
-	var gs: Node = get_node_or_null("/root/GameState")
-	if gs == null or not ("player_party" in gs):
-		return {}
-	var out: Dictionary = {}
-	var members: Array = []
-	var distress: bool = false
-	var tally: Dictionary = {}
-	for entry in (gs.player_party as Array):
-		if not (entry is Dictionary):
-			continue
-		var cur: int = int(entry.get("current_hp", 0))
-		var mx: int = int(entry.get("max_hp", 0))
-		var alive: bool = bool(entry.get("is_alive", true))
-		if not alive or (mx > 0 and float(cur) / float(mx) < 0.35):
-			distress = true
-		members.append({
-			"name": str(entry.get("name", "?")),
-			"job": str(entry.get("job_id", entry.get("job", "adventurer"))),
-			"condition": DialoguePrompts.describe_condition(cur, mx, alive),
-		})
-		var inv: Variant = entry.get("inventory", {})
-		if inv is Dictionary:
-			for item_id in (inv as Dictionary):
-				tally[item_id] = int(tally.get(item_id, 0)) + int((inv as Dictionary)[item_id])
-	if not members.is_empty():
-		out["members"] = members
-	out["in_distress"] = distress
-	if "party_gold" in gs:
-		out["gold"] = int(gs.party_gold)
-	var notable: Array = _top_items(tally)
-	if not notable.is_empty():
-		out["notable_items"] = notable
-	return out
-
-
-## The few items worth an NPC's notice — highest count first, ids humanised.
-func _top_items(tally: Dictionary, limit: int = 4) -> Array:
-	var ids: Array = tally.keys()
-	ids.sort_custom(func(a, b): return int(tally[a]) > int(tally[b]))
-	var out: Array = []
-	for i in mini(limit, ids.size()):
-		var id_str: String = str(ids[i])
-		var n: int = int(tally[id_str])
-		var pretty: String = id_str.replace("_", " ")
-		out.append("%s x%d" % [pretty, n] if n > 1 else pretty)
-	return out
