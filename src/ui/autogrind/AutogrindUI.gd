@@ -1250,6 +1250,13 @@ func _add_pixel_border(parent: Control, size: Vector2) -> void:
 func _input(event: InputEvent) -> void:
 	"""Handle input"""
 	if not visible:
+		## A grind hides the console, and every route back runs through GameLoop calling
+		## set_grinding(false). Hidden with NO grind running is the wedge state struktured hit
+		## (2026-09-06): input-dead with no way out. Cancel is the escape hatch and must not
+		## depend on the visibility that broke. Everything else stays blocked while hidden.
+		if not _is_grinding and event.is_action_pressed("ui_cancel") and not event.is_echo():
+			_close_ui()
+			get_viewport().set_input_as_handled()
 		return
 
 	## A live tutorial hint owns the press — every other _input consumer gates on this and these
@@ -1726,7 +1733,11 @@ func _toggle_grinding() -> void:
 		visible = true  # Show config UI again
 	else:
 		# Persist current rules to AutogrindSystem so the controller evaluates them
-		AutogrindSystem.set_autogrind_rules(rules.duplicate(true))
+		## Unchecked, a rejection started the grind on the PREVIOUS ruleset while the player
+		## watched their edited rules on screen — a silent divergence, not a visible refusal.
+		if not AutogrindSystem.set_autogrind_rules(rules.duplicate(true)):
+			_log_message("[color=red]Rules rejected — fix the highlighted rows before grinding.[/color]")
+			return
 		_is_grinding = true
 		_log_message("[color=%s]Autogrind started![/color]" % AccessibilityPalette.bonus_bbcode())
 		# Hide config UI FIRST, then start grinding on next frame
@@ -2097,8 +2108,26 @@ func _on_grid_cell_hover(cell: Control) -> void:
 	_update_cursor()
 
 
+## Closing was the console's ONLY unpersisted exit — edits made and then closed without ever
+## starting a grind were dropped. Rejection must NOT block the close: mid-edit rules are
+## routinely incomplete, and a console you cannot leave is the worse failure (2026-09-06 wedge).
+func _persist_rules_on_close() -> void:
+	if rules.is_empty():
+		return
+	if not AutogrindSystem.set_autogrind_rules(rules.duplicate(true)):
+		push_warning("[AUTOGRIND] rules NOT saved on close — %d rule(s) failed validation; the last valid set is kept" % rules.size())
+
+
+## @cowir-controller's transition-seam teardown entry point. Kept as a thin wrapper rather than
+## a second implementation: _close_ui already persists, so the seam and the player's own close
+## go through ONE checked path and cannot drift apart.
+func save_and_close() -> void:
+	_close_ui()
+
+
 func _close_ui() -> void:
 	"""Close the UI"""
+	_persist_rules_on_close()
 	_disconnect_autogrind_signals()
 	_hide_monitor()
 	SoundManager.play_ui("menu_close")

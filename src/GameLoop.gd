@@ -4692,6 +4692,9 @@ func _on_area_transition(target_map: String, spawn_point: String) -> void:
 	_transition_in_progress = true
 	_arm_transition_watchdog()
 
+	# The lifecycle seam: overlays do not survive a scene swap, so nothing has to notice they did
+	_free_overlays_for_scene_change()
+
 	# R2 (scene-change abort): kill any in-flight NPC dialogue LLM requests so a
 	# slow inference from the OLD map can't resolve into the NEW scene (stale
 	# bubble / wrong-NPC line). LLMService is an autoload that lands late in the
@@ -5268,6 +5271,24 @@ func _autogrind_ui_open() -> bool:
 
 static func _ui_is_showing(ui: Node) -> bool:
 	return ui != null and is_instance_valid(ui) and ui.is_inside_tree() and ("visible" in ui) and bool(ui.visible)
+
+
+## ONE rule where four symptom-site patches used to live: the encounter guard, the victory
+## teardown, the Suburbia hidden-console heal, and a map swap that had no teardown at all.
+## save_and_close on each, never a bare free — an involuntary teardown must not eat player edits.
+func _free_overlays_for_scene_change() -> void:
+	# Left alone mid-grind: auto-advance crosses regions and the grind owns the console then
+	if _autogrind_ui and is_instance_valid(_autogrind_ui) and not _is_autogrinding:
+		# save_and_close PERSISTS then emits; the explicit free follows so the teardown does not
+		# depend on a signal connection made elsewhere
+		if _autogrind_ui.has_method("save_and_close"):
+			_autogrind_ui.save_and_close()
+		_on_autogrind_ui_closed()
+	if _autobattle_editor and is_instance_valid(_autobattle_editor):
+		if _autobattle_editor.has_method("save_and_close"):
+			_autobattle_editor.save_and_close()
+		else:
+			_on_autobattle_editor_closed()
 
 
 func _on_autogrind_ui_closed() -> void:
