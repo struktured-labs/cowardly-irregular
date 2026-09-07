@@ -86,6 +86,10 @@ func _unhandled_input(event: InputEvent) -> void:
 	if not visible:
 		return
 
+	# A new input consumer arrives UNGATED by default — a hint dismiss must not also pick
+	if TutorialHint.is_any_active():
+		return
+
 	if event.is_action_pressed("ui_cancel") and not event.is_echo():
 		cancelled.emit()
 		queue_free()
