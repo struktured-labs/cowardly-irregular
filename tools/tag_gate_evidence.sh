@@ -51,9 +51,24 @@
 
 set -uo pipefail
 
-# Format fixed with cowir-main (msg 8514), field order significant:
+# Format fixed with cowir-main (msgs 8514/8519), field order significant:
 #   gated: <40-hex sha> scripts=N tests=N passing=N failing=0
+# and, ONLY when the tag names a later commit than the one the suite ran on:
+#   tagged_delta_from: <40-hex sha>
+#
+# From .227 the `gated:` sha is the sha the suite ACTUALLY RAN ON, not merely a sha the
+# tagger vouches for. v3.33.226-alpha was the one-time case where those differed and the
+# annotation explained it in prose; prose is not a check, so this is the mechanism that
+# replaces it.
+#
+# WITHOUT the second line the two shas must be EQUAL. With it, the tag may sit ahead of the
+# gated tree provided every changed path is under an allow-listed prefix — deploy tooling
+# and documentation, neither of which reaches the exported game. Anything else means the
+# suite's evidence does not describe the bits being shipped, and that is a RUN.
 MARKER_RE='gated:[[:space:]]+([0-9a-f]{40})[[:space:]]+scripts=([0-9]+)[[:space:]]+tests=([0-9]+)[[:space:]]+passing=([0-9]+)[[:space:]]+failing=([0-9]+)'
+DELTA_RE='tagged_delta_from:[[:space:]]+([0-9a-f]{40})'
+## Prefixes whose contents cannot reach the exported game. Keep this list short and boring.
+DELTA_ALLOWED_PREFIXES='^(tools/|docs/)'
 
 run() { echo "VERDICT=RUN $*"; exit 0; }
 
@@ -92,11 +107,38 @@ decide() {
     { [ "$gscripts" -gt 0 ] && [ "$gpassing" -gt 0 ]; } \
         || run "the ${tag} marker claims scripts=${gscripts} passing=${gpassing} — a run that asserted nothing is not evidence"
 
-    # 7. the evidence must name the very commit being published
+    # 7. the evidence must describe the commit being published — either the same commit, or
+    #    one whose entire delta is provably incapable of changing the game.
     local tagsha
     tagsha="$(git rev-parse "refs/tags/${tag}^{commit}" 2>/dev/null)"
-    [ "$gsha" = "$tagsha" ] \
-        || run "the ${tag} marker vouches for ${gsha:0:8} but the tag points at ${tagsha:0:8} — the evidence describes a different tree"
+    [ -n "$tagsha" ] || run "cannot resolve ${tag} to a commit"
+
+    if [ "$gsha" != "$tagsha" ]; then
+        # A bare mismatch is fatal unless the tagger DECLARED it. The declaration is what
+        # separates a deliberate tools-only re-tag from a marker pointed at the wrong tree
+        # by accident, and an accident must never be the quiet path.
+        [[ "$body" =~ $DELTA_RE ]] \
+            || run "the ${tag} marker was gated on ${gsha:0:8} but the tag points at ${tagsha:0:8}, and there is no 'tagged_delta_from:' line declaring that gap"
+        local declared="${BASH_REMATCH[1]}"
+        [ "$declared" = "$gsha" ] \
+            || run "${tag} declares tagged_delta_from ${declared:0:8} but was gated on ${gsha:0:8} — the declaration does not match the evidence"
+
+        # THE DIFF MUST BE PROVEN TO HAVE RUN. An empty result from `git diff` means "no
+        # changed paths" AND "the command failed" — and read as the former, an unknown sha
+        # or a broken invocation yields a clean allow-list and a skip. So: resolve the sha
+        # first, then require a zero exit, and only then filter.
+        git cat-file -e "${gsha}^{commit}" 2>/dev/null \
+            || run "${tag} was gated on ${gsha:0:8}, which is not a commit in this repository — the delta cannot be checked"
+        local delta rc
+        delta="$(git diff --name-only "$gsha" "$tagsha" 2>/dev/null)"; rc=$?
+        [ $rc -eq 0 ] \
+            || run "git diff ${gsha:0:8}..${tagsha:0:8} failed (exit ${rc}) — the delta is unverified, which is not the same as empty"
+
+        local offending
+        offending="$(printf '%s\n' "$delta" | grep -v '^$' | grep -Ev "$DELTA_ALLOWED_PREFIXES" | head -5)"
+        [ -z "$offending" ] \
+            || run "${tag} sits ahead of its gated tree ${gsha:0:8} and the delta touches files outside ${DELTA_ALLOWED_PREFIXES}: $(printf '%s' "$offending" | tr '\n' ' ')"
+    fi
 
     # 8-9. THE EXPORT SHIPS THE WORKING TREE, not the tag. Evidence about the tag's tree is
     #      worthless if the tree on disk is not that tree. This is the same subject-of-the-claim
@@ -199,6 +241,59 @@ gated: ${sha} scripts=99 tests=9 passing=9 failing=0")
     # HEAD moved off the tag
     (cd "$sandbox" && echo more > other && git add -A && git commit -q -m next)
     check "HEAD not at the tag"             RUN  good
+
+    # ── declared-delta phase (cowir-main msg 8519) ──────────────────────────
+    # Each case resets to the gated base and builds exactly one commit on top, so the diff
+    # under test is the ONLY delta. Zeroes are never used as a stand-in for "some other
+    # sha": a sha that does not resolve exercises a different branch (the cat-file guard)
+    # than a sha that resolves and differs, and conflating them would leave one untested.
+    local Z40="0000000000000000000000000000000000000000"
+    local F40="ffffffffffffffffffffffffffffffffffffffff"
+    dcase() { # tagname, marker-extra-lines, setup-cmd
+        ( cd "$sandbox" \
+          && git reset -q --hard "$sha" \
+          && eval "$3" >/dev/null 2>&1 \
+          && git add -A && git commit -q -m "delta-$1" ) || return 1
+    }
+
+    dcase delta_tools "" 'mkdir -p tools && echo a > tools/a.sh'
+    (cd "$sandbox" && git tag -a delta_tools -m "rel
+gated: ${sha} scripts=3 tests=9 passing=9 failing=0
+tagged_delta_from: ${sha}")
+    check "declared delta, tools/ only"     SKIP delta_tools
+
+    dcase delta_docs "" 'mkdir -p docs && echo a > docs/a.md'
+    (cd "$sandbox" && git tag -a delta_docs -m "rel
+gated: ${sha} scripts=3 tests=9 passing=9 failing=0
+tagged_delta_from: ${sha}")
+    check "declared delta, docs/ only"      SKIP delta_docs
+
+    dcase delta_game "" 'echo a > gameplay.gd'
+    (cd "$sandbox" && git tag -a delta_game -m "rel
+gated: ${sha} scripts=3 tests=9 passing=9 failing=0
+tagged_delta_from: ${sha}")
+    check "declared delta touches game code" RUN delta_game
+
+    # A real gap with NO declaration — the accident case. Must never be the quiet path.
+    dcase delta_undecl "" 'mkdir -p tools && echo a > tools/b.sh'
+    (cd "$sandbox" && git tag -a delta_undecl -m "rel
+gated: ${sha} scripts=3 tests=9 passing=9 failing=0")
+    check "gap present but undeclared"      RUN delta_undecl
+
+    # Declaration that does not match the evidence it claims to explain.
+    dcase delta_mism "" 'mkdir -p tools && echo a > tools/c.sh'
+    (cd "$sandbox" && git tag -a delta_mism -m "rel
+gated: ${sha} scripts=3 tests=9 passing=9 failing=0
+tagged_delta_from: ${Z40}")
+    check "declaration != gated sha"        RUN delta_mism
+
+    # Gated on a sha this repository does not have: the diff CANNOT be computed, and an
+    # uncomputed diff must not read as an empty one.
+    dcase delta_unk "" 'mkdir -p tools && echo a > tools/d.sh'
+    (cd "$sandbox" && git tag -a delta_unk -m "rel
+gated: ${F40} scripts=3 tests=9 passing=9 failing=0
+tagged_delta_from: ${F40}")
+    check "gated sha absent from repo"      RUN delta_unk
 
     echo
     echo "selftest: ${pass} passed, ${fail} failed"
