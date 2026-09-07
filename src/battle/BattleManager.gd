@@ -1593,6 +1593,7 @@ func _process_next_selection() -> void:
 		ap_gain = 0 if roll < 0.3 else (2 if roll > 0.7 else 1)
 		if ap_gain != 1:
 			battle_log_message.emit("[color=magenta]%s's AP flickers %s — the economy is corrupted.[/color]" % [current_combatant.combatant_name, "+2" if ap_gain == 2 else "+0"])
+			SoundManager.play_battle("corruption_ap_flicker")
 	current_combatant.gain_ap(ap_gain)
 	print("%s gains +%d AP (natural gain, now AP: %d)" % [current_combatant.combatant_name, ap_gain, current_combatant.current_ap])
 
@@ -4280,6 +4281,8 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 		if not others.is_empty():
 			var swapped: String = str(others[randi() % others.size()])
 			battle_log_message.emit("[color=magenta]✦ CORRUPTED CAST — %s's %s comes out as %s![/color]" % [caster.combatant_name, ability_id.capitalize(), swapped.capitalize()])
+			## The routing is corrupted, so the cast must SOUND wrong — the correct spell's cue plays a beat later and would otherwise read as a normal turn.
+			SoundManager.play_battle("corruption_misfire")
 			ability_id = swapped
 	var ability = JobSystem.get_ability(ability_id)
 	if ability.is_empty():
