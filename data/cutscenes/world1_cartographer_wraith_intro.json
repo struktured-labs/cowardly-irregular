@@ -28,7 +28,7 @@
     {
       "type": "dialogue",
       "lines": [
-        { "speaker": "Hero", "text": "So none of this was supposed to connect?", "theme": "party", "portrait": "hero" }
+        { "speaker": "Hero", "text": "So none of this was supposed to connect?", "theme": "hero", "portrait": "hero" }
       ]
     },
     {

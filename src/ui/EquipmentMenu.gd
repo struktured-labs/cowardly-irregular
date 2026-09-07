@@ -642,13 +642,30 @@ func _handle_slot_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 	# struktured 2026-09-06: "should be able to switch who ur equipping with L/R (or L2/R2)" — both map to battle_defer/battle_advance.
+	# Release-edge gated: he found it "too sensitive, sticky" — an L2/R2 analog ramp emits a BURST of pressed events, same class as the battle defer/advance fix.
 	elif event.is_action_pressed("battle_defer") and not event.is_echo():
-		_cycle_character(-1)
+		if not _shoulder_held:
+			_shoulder_held = true
+			_cycle_character(-1)
 		get_viewport().set_input_as_handled()
 
 	elif event.is_action_pressed("battle_advance") and not event.is_echo():
-		_cycle_character(1)
+		if not _shoulder_held:
+			_shoulder_held = true
+			_cycle_character(1)
 		get_viewport().set_input_as_handled()
+
+	elif event.is_action_released("battle_defer") or event.is_action_released("battle_advance"):
+		_shoulder_held = false
+
+
+var _shoulder_held: bool = false
+
+
+func _process(_delta: float) -> void:
+	# Self-heal: a release that lands while a rebuild swallows events must not stick the gate.
+	if _shoulder_held and not Input.is_action_pressed("battle_defer") and not Input.is_action_pressed("battle_advance"):
+		_shoulder_held = false
 
 
 ## Re-target the menu at the previous/next party member without leaving it. No-op solo or when the character is not in the party (a detached test combatant).

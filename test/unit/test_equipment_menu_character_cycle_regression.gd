@@ -82,7 +82,7 @@ func test_solo_party_is_a_no_op() -> void:
 func test_input_arms_are_wired_to_both_shoulder_actions() -> void:
 	var src := FileAccess.get_file_as_string(SRC)
 	var i: int = src.find("func _handle_slot_input(")
-	var body: String = src.substr(i, 1600)
+	var body: String = src.substr(i, 2600)  # widened: the release-edge gate grew the slot handler
 	assert_true(body.contains('is_action_pressed("battle_defer")') and body.contains("_cycle_character(-1)"),
 		"L must cycle backward from slot mode")
 	assert_true(body.contains('is_action_pressed("battle_advance")') and body.contains("_cycle_character(1)"),
