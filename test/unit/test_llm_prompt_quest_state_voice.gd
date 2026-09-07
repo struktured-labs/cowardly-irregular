@@ -155,7 +155,12 @@ func test_source_overworld_npc_resolves_and_passes_bucket_lines() -> void:
 	var src = _read(OVERWORLD_NPC_PATH)
 	assert_true(src.find("llm_quest_lines") != -1,
 		"OverworldNPC._run_dynamic_conversation must resolve bucket lines locally before setup")
-	assert_true(src.find(", llm_quest_lines)") != -1,
+	# Pinned by POSITION, not by ", llm_quest_lines)" — that spelling also required it to be
+	# the LAST arg, so appending a later param broke a correct call and passed a misordered one.
+	var args: Array = _call_args(src, "_dynamic_conv.setup(")
+	assert_gte(args.size(), 7,
+		"DynamicConversation.setup must receive at least 7 args from OverworldNPC")
+	assert_eq(args[6], "llm_quest_lines",
 		"resolved bucket lines must be passed as the 7th arg to DynamicConversation.setup — the LLM path can't see them otherwise")
 	assert_true(src.find("_quest_state_bucket_for_npc(quest_sys_for_llm)") != -1,
 		"bucket resolution must reuse the cycle-3 helper so LLM-on/LLM-off paths agree on bucket")
@@ -207,3 +212,32 @@ func test_source_dynamic_conversation_passes_quest_state_lines_to_combined_reply
 	var tail: String = src.substr(idx, 400)
 	assert_true(tail.find("_quest_state_lines") != -1,
 		"the build_combined_reply call must pass _quest_state_lines — without it the cache exists and the reply prompt never sees it")
+
+
+## Positional args of the first `needle` call, tolerating line breaks and nesting.
+## Source pins that match a single formatted line go red on a reflow that changes nothing.
+func _call_args(src: String, needle: String) -> Array:
+	var start: int = src.find(needle)
+	if start == -1:
+		return []
+	var i: int = start + needle.length()
+	var depth: int = 1
+	var buf: String = ""
+	var args: Array = []
+	while i < src.length():
+		var c: String = src[i]
+		if c == "(" or c == "[" or c == "{":
+			depth += 1
+		elif c == ")" or c == "]" or c == "}":
+			depth -= 1
+			if depth == 0:
+				break
+		if depth == 1 and c == ",":
+			args.append(buf.strip_edges())
+			buf = ""
+		else:
+			buf += c
+		i += 1
+	if buf.strip_edges() != "":
+		args.append(buf.strip_edges())
+	return args

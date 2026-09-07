@@ -92,6 +92,10 @@ var _quest_state_lines: Array = []
 ## Live party snapshot (HP/KO, gold, supplies) resolved once per conversation.
 var _party_state: Dictionary = {}
 
+## Reward identity — empty disables rewards for this NPC (ConversationRewards refuses "").
+var _npc_id: String = ""
+var _quest_bucket: String = ""
+
 
 # ── Runtime state ─────────────────────────────────────────────────────────────
 
@@ -143,6 +147,8 @@ func setup(
 	fallback_lines: Array,
 	opening_lines: Array = [],
 	quest_state_lines: Array = [],
+	npc_id: String = "",
+	quest_bucket: String = "",
 ) -> void:
 	_npc_name      = npc_name      if npc_name      != "" else "NPC"
 	_npc_persona   = npc_persona   if npc_persona   != "" else "friendly villager"
@@ -155,6 +161,8 @@ func setup(
 	# Milo v2 (msg 2600) — optional per-NPC quest_state_lines, threaded into
 	# build_npc_opening so the LLM matches the current-quest-phase voice.
 	_quest_state_lines = quest_state_lines.duplicate()
+	_npc_id = npc_id
+	_quest_bucket = quest_bucket
 
 
 ## Run the full conversation loop and await its completion.
@@ -191,6 +199,11 @@ func run(player: Node) -> void:
 			State.NPC_REPLY:
 				await _do_npc_reply()
 
+	# abort() drops _active before the loop breaks, so this pays out only on a
+	# conversation the player actually saw through.
+	if _active:
+		await _maybe_grant_reward()
+
 	# Unfreeze the player.
 	_set_player_movement(player, true)
 
@@ -203,6 +216,26 @@ func run(player: Node) -> void:
 ## Returns true while a conversation is in progress.
 func is_active() -> bool:
 	return _active
+
+
+## Exchanges completed in the last run — what ConversationRewards gates on.
+func get_exchange_count() -> int:
+	return _exchange_count
+
+
+## Pays out at most one reward per NPC per quest phase; ConversationRewards owns
+## every eligibility rule, so the LLM cannot talk its way into a payout.
+func _maybe_grant_reward() -> void:
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs == null:
+		return
+	var line: String = ConversationRewards.grant_if_earned(gs, _npc_id, _quest_bucket, _exchange_count)
+	if line == "":
+		return
+	var sound: Node = get_node_or_null("/root/SoundManager")
+	if sound != null and sound.has_method("play_ui"):
+		sound.play_ui("item_obtain")
+	await _show_npc_line(line)
 
 
 ## Abort a running conversation immediately (e.g. on scene change).

@@ -1,0 +1,22 @@
+{
+  "_comment": "Content of a conversation reward. ConversationRewards.gd owns ELIGIBILITY (state-gated, anti-farm); this file owns WHAT is paid out. Gold and consumables only, on purpose: equipment ids must reach GameLoop.equipment_pool through the resolver QuestSystem owns, and a fifth copy of that resolver is a separate change. An id that does not resolve in items.json is refused loudly here rather than granted as a dead inventory entry, which is the exact failure the quest reward path hit with returned_sword.",
+  "version": 1,
+  "default": {
+    "gold": 40,
+    "items": []
+  },
+  "by_npc": {
+    "elder_theron": {
+      "gold": 90,
+      "items": [{"item_id": "ether", "count": 1}]
+    },
+    "scholar_milo": {
+      "gold": 50,
+      "items": [{"item_id": "hi_potion", "count": 1}]
+    },
+    "guard_boris": {
+      "gold": 60,
+      "items": [{"item_id": "potion", "count": 2}]
+    }
+  }
+}

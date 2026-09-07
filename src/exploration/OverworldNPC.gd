@@ -1342,7 +1342,8 @@ func _run_dynamic_conversation(player: Node) -> void:
 	var quest_sys_for_llm = get_node_or_null("/root/QuestSystem")
 	var llm_bucket: String = _quest_state_bucket_for_npc(quest_sys_for_llm)
 	var llm_quest_lines: Array = _persona_quest_state_lines.get(llm_bucket, []) if llm_bucket != "" else []
-	_dynamic_conv.setup(npc_name, persona, location, event_log, dialogue_lines, _persona_openings, llm_quest_lines)
+	_dynamic_conv.setup(npc_name, persona, location, event_log, dialogue_lines, _persona_openings, llm_quest_lines,
+		ConversationRewards.resolve_npc_id(npc_id, npc_name), llm_bucket)
 	await _dynamic_conv.run(player)
 
 

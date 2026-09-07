@@ -462,7 +462,9 @@ func _run_dynamic_conversation(player: Node) -> void:
 	# already gated on `dynamic and persona != ""`, so the fake-persona
 	# derivation from dialogue_theme is no longer needed (and was misleading
 	# anyway — dialogue_theme is a portrait key, not a character description).
-	_dynamic_conv.setup(npc_name, persona, location, event_log, fallback_lines)
+	# Wanderers author no npc_id and no quest bucket; the name slug is the reward identity.
+	_dynamic_conv.setup(npc_name, persona, location, event_log, fallback_lines, [], [],
+		ConversationRewards.resolve_npc_id("", npc_name), "")
 	await _dynamic_conv.run(player)
 
 
