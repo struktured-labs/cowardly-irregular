@@ -154,23 +154,53 @@ fi
 _tree_id() { printf '%s %s' "$(git rev-parse HEAD)" "$(git status --porcelain | sort | md5sum | cut -d' ' -f1)"; }
 GATE_TREE_ID="$(_tree_id)"
 
-echo "[deploy] gate 1/4: unit suite (via tools/gate.sh)"
-if ! ./tools/gate.sh tmp/deploy_suite.log; then
-  cp tmp/deploy_suite.log tmp/deploy_suite.attempt1.log
-  echo "[deploy] suite attempt 1 did not pass the gate — retrying once (physics-timing flake?)"
-  if ! ./tools/gate.sh tmp/deploy_suite.log; then
-    echo "[deploy] BLOCKED: gate refused the suite on retry — see tmp/deploy_suite.log (+ attempt1)" >&2
-    grep -E "^GATE:|^exit=|^scope:" tmp/deploy_suite.log >&2 || true
-    grep -B12 "\[Failed\]" tmp/deploy_suite.log | grep -E "^res://test" | sort -u >&2 || true
-    exit 1
-  fi
-  echo "[deploy] suite passed the gate on retry — flake confirmed"
-fi
+# See tools/tag_gate_evidence.sh for why a skip demands positive proof and why an
+# unrecognised verdict must fall through to RUN. Same contract as deploy_desktop.sh.
+# The suite, when it runs, runs SANDBOXED: run_tests.sh's net restores settings.json and
+# autobattle/ on whatever user:// it is pointed at, and pointing it at struktured's live
+# profile silently reverted settings he changed mid-deploy.
+# SCOPED TO THE SUITE, NEVER EXPORTED GLOBALLY. Godot's export templates live at
+# ~/.local/share/godot/export_templates/4.4.1.stable — under XDG_DATA_HOME — so a global
+# export here would redirect gate 2's --export-release to a sandbox holding no templates.
+# Verified 2026-09-07: templates present at the real path, absent in tmp/gate_xdg.
+_GATE_XDG="$PWD/tmp/gate_xdg"
+mkdir -p "$_GATE_XDG"
+_SUITE_STAMP="tmp/suite_ok_$(printf '%s' "$GATE_TREE_ID" | md5sum | cut -d' ' -f1)"
 
+echo "[deploy] gate 1/4: unit suite"
+_EVIDENCE="$(./tools/tag_gate_evidence.sh "${VERSION}" 2>/dev/null)"
+case "${_EVIDENCE}" in
+  "VERDICT=SKIP "*)
+    echo "[deploy] gate 1: SKIPPED — ${_EVIDENCE#VERDICT=SKIP }"
+    ;;
+  *)
+    if [ -f "$_SUITE_STAMP" ]; then
+      echo "[deploy] gate 1: already run for this exact tree by an earlier chain ($(cat "$_SUITE_STAMP"))"
+    else
+      [ -n "${_EVIDENCE}" ] && echo "[deploy] gate 1: running the suite — ${_EVIDENCE#VERDICT=RUN }"
+      if ! XDG_DATA_HOME="$_GATE_XDG" ./tools/gate.sh tmp/deploy_suite.log; then
+        cp tmp/deploy_suite.log tmp/deploy_suite.attempt1.log
+        echo "[deploy] suite attempt 1 did not pass the gate — retrying once (physics-timing flake?)"
+        if ! XDG_DATA_HOME="$_GATE_XDG" ./tools/gate.sh tmp/deploy_suite.log; then
+          echo "[deploy] BLOCKED: gate refused the suite on retry — see tmp/deploy_suite.log (+ attempt1)" >&2
+          grep -E "^GATE:|^exit=|^scope:" tmp/deploy_suite.log >&2 || true
+          grep -B12 "\[Failed\]" tmp/deploy_suite.log | grep -E "^res://test" | sort -u >&2 || true
+          exit 1
+        fi
+        echo "[deploy] suite passed the gate on retry — flake confirmed"
+      fi
+      echo "web $(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$_SUITE_STAMP"
+    fi
+    ;;
+esac
+
+# 1b is NOT covered by the tag marker — that vouches for the unit corpus (test/unit), and
+# test/isolated is a separate, deliberately tiny suite. It stays unconditional: it costs
+# seconds, and a skip here would rest on evidence that never described it.
 echo "[deploy] gate 1b: movement-isolation suite (own process — suite-order contamination quarantine 2026-07-15)"
 # Same delegation. test/isolated holds very few files, so an emptied directory would have reported
 # green forever under the old [Failed] count — gate.sh's scripts-run == on-disk check catches that.
-if ! ./tools/gate.sh tmp/deploy_isolated.log --isolated; then
+if ! XDG_DATA_HOME="$_GATE_XDG" ./tools/gate.sh tmp/deploy_isolated.log --isolated; then
   echo "[deploy] BLOCKED: gate refused the isolated suite — see tmp/deploy_isolated.log" >&2
   grep -E "^GATE:|^exit=|^scope:" tmp/deploy_isolated.log >&2 || true
   exit 1

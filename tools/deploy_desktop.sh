@@ -394,17 +394,58 @@ fi
 _tree_id() { printf '%s %s' "$(git rev-parse HEAD)" "$(git status --porcelain | sort | md5sum | cut -d' ' -f1)"; }
 GATE_TREE_ID="$(_tree_id)"
 
-echo "[${PLAT}] gate 1/4: test suite (tools/gate.sh)"
-if [ -x tools/gate.sh ]; then
-    ./tools/gate.sh > tmp/${PLAT}_gate.log 2>&1 &
-    EC=0; wait $! || EC=$?
-    tail -12 tmp/${PLAT}_gate.log
-    test $EC -eq 0 || { echo "[${PLAT}] BLOCKED: suite gate failed (exit ${EC}) — tmp/${PLAT}_gate.log" >&2; exit 1; }
-else
-    echo "[${PLAT}] BLOCKED: tools/gate.sh missing. Refusing to substitute a weaker check —" >&2
-    echo "        a hand-rolled [Failed] count is what let a vacuous run reach a publish." >&2
-    exit 1
-fi
+# GATE 1 RUNS AT MOST ONCE PER TAG, AND NEVER AGAINST HIS LIVE user://.
+#
+# Two changes, both agreed with cowir-main (msgs 8510/8512/8513/8514):
+#
+#  (a) SKIP when the fold already gated this exact tree. The tag's annotation carries
+#      `gated: <40-hex> scripts=N tests=N passing=N failing=0`, and tools/tag_gate_evidence.sh
+#      demands POSITIVE PROOF before it will authorise a skip — annotated tag, full-length
+#      sha, sha == the tag's own commit, HEAD at the tag, clean tree, corpus count matching
+#      disk. Silence, malformation, or a lightweight tag all mean RUN. Read that script's
+#      header for why the failure direction is the entire design.
+#
+#  (b) When it does run, it runs SANDBOXED. Previously each chain re-ran the full
+#      1319-script suite against the shared user://, and run_tests.sh's net restores
+#      settings.json and autobattle/ there — so a deploy silently reverted any setting or
+#      keybind struktured changed while it ran. Measured 2026-09-07: he played 20 minutes
+#      (save_98 playtime +1200s) straight through a linux chain. saves/ is excluded from the
+#      net so his progress was safe; his SETTINGS were not.
+#
+# The suite is NOT weakened — it is the same tools/gate.sh with the same exit code. Only its
+# user:// moves. Tests that read his real saves self-skip under the sandbox; per cowir-main
+# that is the fold's problem to cover, not a reason to keep writing to a live profile.
+_SUITE_STAMP="tmp/suite_ok_$(printf '%s' "$GATE_TREE_ID" | md5sum | cut -d' ' -f1)"
+
+echo "[${PLAT}] gate 1/4: test suite"
+_EVIDENCE="$(./tools/tag_gate_evidence.sh "${VERSION}" 2>/dev/null)"
+# The literal token is required. An empty or unrecognised value falls through to the RUN
+# branch, which is why this is a prefix match on SKIP and not a test for a mismatch.
+case "${_EVIDENCE}" in
+    "VERDICT=SKIP "*)
+        echo "[${PLAT}] gate 1: SKIPPED — ${_EVIDENCE#VERDICT=SKIP }"
+        ;;
+    *)
+        if [ -f "$_SUITE_STAMP" ]; then
+            # Same tag, same tree, earlier chain in this batch already ran it. The three
+            # chains export ONE tree, so a second full run is redundant by construction —
+            # this needs no marker and no trust in anyone's claim.
+            echo "[${PLAT}] gate 1: already run for this exact tree by an earlier chain ($(cat "$_SUITE_STAMP"))"
+        elif [ -x tools/gate.sh ]; then
+            [ -n "${_EVIDENCE}" ] && echo "[${PLAT}] gate 1: running the suite — ${_EVIDENCE#VERDICT=RUN }"
+            mkdir -p tmp/gate_xdg
+            XDG_DATA_HOME="$PWD/tmp/gate_xdg" ./tools/gate.sh > tmp/${PLAT}_gate.log 2>&1 &
+            EC=0; wait $! || EC=$?
+            tail -12 tmp/${PLAT}_gate.log
+            test $EC -eq 0 || { echo "[${PLAT}] BLOCKED: suite gate failed (exit ${EC}) — tmp/${PLAT}_gate.log" >&2; exit 1; }
+            echo "${PLAT} $(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$_SUITE_STAMP"
+        else
+            echo "[${PLAT}] BLOCKED: tools/gate.sh missing. Refusing to substitute a weaker check —" >&2
+            echo "        a hand-rolled [Failed] count is what let a vacuous run reach a publish." >&2
+            exit 1
+        fi
+        ;;
+esac
 
 # ── gate 2: export ───────────────────────────────────────────────────────────
 # TREE IDENTITY RE-CHECK — the gate's evidence must describe the bits about to be exported.
