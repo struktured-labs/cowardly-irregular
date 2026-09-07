@@ -699,6 +699,9 @@ const PARTY_CONDITION_TYPES = {
 	"efficiency": "Efficiency",
 	"member_dead": "Member Dead",
 	"member_injured": "Member Injured",
+	"member_hp": "Member HP %",
+	"member_mp": "Member MP %",
+	"member_status": "Member Has Status",
 	"win_streak": "Win Streak",
 	"time_elapsed": "Time Elapsed",
 	"inventory_items": "Inventory Items",
@@ -1809,6 +1812,12 @@ func _evaluate_party_condition(party: Array, condition: Dictionary) -> bool:
 			return _compare_op(efficiency_multiplier, op, value)
 
 		"member_dead":
+			## Optional "member" narrows this to one character; absent keeps the original
+			## any-member semantics so every existing rule means what it did before.
+			var who = str(condition.get("member", ""))
+			if who != "":
+				var target = _resolve_member(party, who)
+				return target != null and not target.is_alive
 			var total = 0
 			var alive = _get_alive_count(party)
 			for m in party:
