@@ -827,7 +827,7 @@ func _input(event: InputEvent) -> void:
 
 	# During autogrind, block editor/menu but allow B to stop
 	if current_state == LoopState.AUTOGRIND:
-		if _autogrind_ui and is_instance_valid(_autogrind_ui):
+		if _autogrind_ui_open():
 			return  # UI handles its own input
 		if event.is_action_pressed("ui_cancel"):
 			_stop_autogrind("Manual stop")
@@ -895,7 +895,7 @@ func _input(event: InputEvent) -> void:
 	# Block when autogrind UI is open — don't toggle autobattle behind it.
 	# Action, not raw BACK: a Controls rebind moves battle_toggle_auto and this must follow it.
 	if event is InputEventJoypadButton and event.is_action_pressed("battle_toggle_auto"):
-		if _autogrind_ui and is_instance_valid(_autogrind_ui):
+		if _autogrind_ui_open():
 			get_viewport().set_input_as_handled()
 		elif current_state == LoopState.BATTLE:
 			# Pass through — BattleScene._input handles it
@@ -918,7 +918,7 @@ func _input(event: InputEvent) -> void:
 	#   instead with no obvious way to disable from there.
 	# - In exploration/village/cave: open settings menu
 	if event.is_action_pressed("ui_menu"):
-		if _autogrind_ui and is_instance_valid(_autogrind_ui):
+		if _autogrind_ui_open():
 			# Let AutogrindUI._input handle Start → toggle grinding
 			# Do NOT consume input here — AutogrindUI needs to see it
 			pass
@@ -3973,9 +3973,14 @@ func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> v
 	if _overworld_menu and is_instance_valid(_overworld_menu):
 		print("[GAMELOOP] BLOCKED — overworld menu is open")
 		return
-	if _autogrind_ui and is_instance_valid(_autogrind_ui):
+	if _autogrind_ui_open():
 		print("[GAMELOOP] BLOCKED — autogrind UI is open")
 		return
+	if _autogrind_ui and is_instance_valid(_autogrind_ui) and not _is_autogrinding:
+		# struktured 2026-09-06 (Suburbia): a HIDDEN console outlived its grind and this guard read
+		# "exists" as "open" — 33 BLOCKED lines, no encounter could start. Heal it instead of blocking.
+		push_warning("[GAMELOOP] autogrind console lingered hidden with no grind — freeing it")
+		_on_autogrind_ui_closed()
 	# 2026-08-17 wedge: battle ended under an OPEN autobattle editor, exploration rebuilt live,
 	# roamers re-triggered battles beneath it — twice, racing transitions. Third sibling of the
 	# menu/autogrind guards above.
@@ -5216,8 +5221,15 @@ func unequip_to_pool(combatant: Combatant, slot: String) -> bool:
 
 func _open_autogrind_ui() -> void:
 	"""Open the autogrind configuration UI overlay"""
-	if _autogrind_ui and is_instance_valid(_autogrind_ui):
+	if _autogrind_ui_open():
 		return  # Already open
+	if _autogrind_ui and is_instance_valid(_autogrind_ui):
+		# Lingering HIDDEN console (struktured 2026-09-06: "when I select it goes back to overworld") — free it and open fresh.
+		_autogrind_ui.queue_free()
+		_autogrind_ui = null
+		if _autogrind_ui_layer and is_instance_valid(_autogrind_ui_layer):
+			_autogrind_ui_layer.queue_free()
+			_autogrind_ui_layer = null
 
 	# Pause exploration
 	if _exploration_scene and _exploration_scene.has_method("pause"):
@@ -5246,6 +5258,16 @@ func _open_autogrind_ui() -> void:
 
 	SoundManager.play_ui("menu_open")
 	print("[AUTOGRIND] Config UI opened")
+
+
+## "Open" means SHOWING — the console hides itself while a grind runs and on resume, and a hidden
+## console that outlives its grind must not count as open (the 2026-09-06 Suburbia encounter wedge).
+func _autogrind_ui_open() -> bool:
+	return _ui_is_showing(_autogrind_ui)
+
+
+static func _ui_is_showing(ui: Node) -> bool:
+	return ui != null and is_instance_valid(ui) and ui.is_inside_tree() and ("visible" in ui) and bool(ui.visible)
 
 
 func _on_autogrind_ui_closed() -> void:
