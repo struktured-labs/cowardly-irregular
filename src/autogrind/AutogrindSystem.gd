@@ -75,6 +75,11 @@ var adaptation_on_crack: bool = true  # Monsters adapt when region cracked
 ## Danger scaling
 var monster_adaptation_level: float = 0.0  # Enemies get stronger
 var meta_corruption_level: float = 0.0     # Reality starts breaking
+
+## heal_party spends potions by design ("no free heals"). With this on it spends a healer's MP
+## first and only falls back to the inventory — struktured 2026-09-06: "some way to use
+## restorative abilities instead of potions". MP regenerates between battles; potions do not.
+var prefer_restoratives: bool = false
 var corruption_threshold: float = 5.0      # When system collapse occurs
 
 ## Region rotation advisory — fire the suggestion once per region per session
@@ -1730,6 +1735,36 @@ func _resolve_member(party: Array, member_key: String):
 ## Coarse/fine split shared by every member_* type, mirroring member_dead: with a "member" the
 ## predicate is asked of that character, without one it is asked of ANY. Both shapes must work —
 ## the picker and the LLM composer build a rule from the type table alone, with no member.
+## A living party member holding a healing ability they can currently afford. Reads `type` with
+## `category` as fallback and `power` with `damage_multiplier` — both fields are authored one way
+## and read the other elsewhere in this engine; HeadlessBattleResolver documents the same trap.
+func _find_restorative_caster(party: Array) -> Dictionary:
+	var js = _get_autoload_node("JobSystem")
+	if js == null or not js.has_method("get_ability"):
+		return {}
+	for m in party:
+		if not (m is Combatant) or not m.is_alive:
+			continue
+		for ability_id in m.learned_abilities:
+			var ability: Dictionary = js.get_ability(ability_id)
+			if str(ability.get("type", ability.get("category", ""))) != "healing":
+				continue
+			## regenerate is type "healing" but authors a regen EFFECT and no heal_amount —
+			## picking it would "heal" for 1 and burn the MP.
+			if int(ability.get("heal_amount", 0)) <= 0:
+				continue
+			var cost := int(ability.get("mp_cost", 0))
+			if m.current_mp < cost:
+				continue
+			return {
+				"caster": m,
+				"ability_id": ability_id,
+				"mp_cost": cost,
+				"heal_amount": int(ability.get("heal_amount", 0))
+			}
+	return {}
+
+
 func _member_predicate(party: Array, condition: Dictionary, pred: Callable) -> bool:
 	var who := str(condition.get("member", ""))
 	if who != "":
@@ -2029,6 +2064,15 @@ func apply_autogrind_actions(actions: Array) -> void:
 				for member in grind_party:
 					if member is Combatant and member.is_alive and member.current_hp < member.max_hp * 0.8:
 						eligible_count += 1
+						if prefer_restoratives:
+							var cast: Dictionary = _find_restorative_caster(grind_party)
+							if not cast.is_empty():
+								var caster = cast["caster"]
+								caster.current_mp -= int(cast["mp_cost"])
+								var amount := maxi(1, int(int(cast["heal_amount"]) * (1.0 + caster.get_buffed_stat("magic", caster.magic) / 20.0)))
+								member.heal(amount)
+								healed_count += 1
+								continue
 						for item_pair in [["hi_potion", 200], ["potion", 50]]:
 							if member.get_item_count(item_pair[0]) > 0:
 								member.remove_item(item_pair[0], 1)
