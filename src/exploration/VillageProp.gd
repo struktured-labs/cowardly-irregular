@@ -65,7 +65,13 @@ func _ready() -> void:
 	spr.name = "Sprite"
 	spr.centered = false
 	spr.texture = ImageTexture.create_from_image(img)
-	spr.position = Vector2(-size.x * TILE / 2.0, -size.y * TILE)
+	# Art starts at the LEFT EDGE OF THE BASE CELL, not centred on the origin. Footprint
+	# cells run base_cell + off (rightward), and the colliders follow them, so a centred
+	# sprite put every 2-wide prop 16px left of its own collision: you bumped empty air on
+	# the right and walked through the art on the left. Measured 2026-09-06 on stall, well
+	# and cart -- art x[-32..32] vs collision x[-16..48]. 1-wide props were always exact,
+	# which is why it read as "close but not spot on" rather than as obviously broken.
+	spr.position = Vector2(-TILE / 2.0, -size.y * TILE)
 	add_child(spr)
 	if not FOOTPRINTS[kind].is_empty():
 		var body := StaticBody2D.new()
@@ -76,7 +82,10 @@ func _ready() -> void:
 			var rect := RectangleShape2D.new()
 			rect.size = Vector2(TILE, TILE)
 			cs.shape = rect
-			cs.position = Vector2(off.x * TILE, -TILE / 2.0)
+			# off.y was dropped here: every box landed on the base row regardless. Inert
+			# today (all footprints are y=0) but it would silently delete the collision of
+			# the first prop anyone gives vertical extent.
+			cs.position = Vector2(off.x * TILE, off.y * TILE - TILE / 2.0)
 			body.add_child(cs)
 		add_child(body)
 

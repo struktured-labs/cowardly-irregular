@@ -336,6 +336,13 @@ func _build_derived_layers(map_rows: Array, height_rows: Array) -> void:
 	for c in _face_cells:
 		cliff_map.set_cell(c, 0, EnvTileSetsScript.atlas_coords(EnvTileSetsScript.FACE_ID))
 	for c in pieces["edges"]:
+		# A FACE WINS OVER AN EDGE. Both dicts can name the same cell, and this loop runs
+		# second, so an edge tile replaced the face tile -- keeping only a thin edge-strip
+		# collider where the face had a full-tile one. _is_cell_walkable still counted the
+		# cell as a solid face, so the grid said "wall" and the player walked through it.
+		# Measured on Grimhollow: 2 of 6 face cells, painted atlas (8,0) and (2,0).
+		if _face_cells.has(c):
+			continue
 		cliff_map.set_cell(c, 0, EnvTileSetsScript.atlas_coords(int(pieces["edges"][c])))
 	_paint_fringe()
 	# Ledge shadows go on AFTER fringe so the shadow wins the cell under a face
