@@ -1084,12 +1084,12 @@
       "prompt_influence": 0.5
     },
     "ability_fire": {
-      "file": "assets/audio/sfx/ability_fire.ogg",
+      "file": "assets/audio/sfx/ability_fire_v2.ogg",
       "prompt": "Roaring campfire erupting, warm crackling flames whooshing upward, deep orange fire with wood pops and snaps, cozy but powerful",
       "duration_seconds": 1.2,
       "prompt_influence": 0.7,
+      "routing_note": "2026-09-06 struktured 'boop': ability_fire.ogg measured as a 120 Hz tonal thump (flatness 0.087); base slot re-routed to the _v2 whoosh and the thump left the rotation until cowir-sfx re-voices fire",
       "variants": [
-        "ability_fire_v2",
         "ability_fire_v3"
       ]
     },
