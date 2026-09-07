@@ -51,6 +51,20 @@ func test_press_branch_gates_on_the_release_edge() -> void:
 		"the release branch must clear the gate, or defer locks after one use")
 
 
+func test_advance_has_the_same_release_edge_gate() -> void:
+	# struktured 2026-09-06: "is that same issue possible with advancing too?" — yes, on the
+	# 4th advance, which auto-submits and opens the NEXT member's menu. Same gate, same shape.
+	var src := FileAccess.get_file_as_string(SRC)
+	assert_true(src.contains("static var _advance_axis_held"), "advance needs its own static gate")
+	var i: int = src.find('event.is_action_pressed("battle_advance") and not event.is_echo()')
+	assert_gt(i, -1, "the advance press branch must carry the echo guard")
+	assert_true(src.substr(i, 400).contains("_advance_axis_held"), "and consult the gate before handling")
+	assert_true(src.contains('event.is_action_released("battle_advance")'), "a release branch must clear it")
+	var p: int = src.find("func _process(")
+	assert_true(src.substr(p, 700).contains('not Input.is_action_pressed("battle_advance")'),
+		"and _process must self-heal it when the release lands between menus")
+
+
 func test_gate_self_heals_when_release_lands_between_menus() -> void:
 	var src := FileAccess.get_file_as_string(SRC)
 	var i: int = src.find("func _process(")
