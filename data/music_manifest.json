@@ -2007,7 +2007,7 @@
       "prompt": "Battle theme for a tie-dye pacifist who attacks with bad vibes and crystal healing. Loose psychedelic groove — sitar figure, wah guitar, a detuned organ pad that keeps bending FLAT so the peace-and-love reads slightly nauseating. Reversed tape swells on the downbeats. Driving enough to be a fight; the serenity is the threat. Looping.",
       "style": "SNES/16-bit battle theme, EarthBound and Mother 3 influenced, driving drums, psychedelic, sitar and wah guitar, woozy detuned organ, backwards tape, 112 BPM",
       "model": "suno-v4",
-      "duration": 209.96,
+      "duration": 208.0,
       "loop": true,
       "generated_at": "2026-08-27"
     },

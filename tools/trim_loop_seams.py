@@ -29,6 +29,8 @@ USAGE
     python3 tools/trim_loop_seams.py --apply         # write in place
 """
 import argparse
+import collections
+import io
 import json
 import os
 import shutil
@@ -60,7 +62,9 @@ def main():
     ap.add_argument("--limit", type=int)
     args = ap.parse_args()
 
-    tracks = json.load(open(MANIFEST))["tracks"]
+    doc = json.load(open(MANIFEST, encoding="utf-8"),
+                    object_pairs_hook=collections.OrderedDict)
+    tracks = doc["tracks"]
     rows = []
     for key, meta in sorted(tracks.items()):
         if not meta.get("loop"):
@@ -86,6 +90,7 @@ def main():
 
     print("%-34s %8s %8s %8s  %s" % ("track", "dur", "trim@", "cut", "result"))
     ok = failed = 0
+    updated = []
     for key, path, dur, delta, trim in rows:
         cut = dur - trim
         if not args.apply:
@@ -112,10 +117,19 @@ def main():
             failed += 1
             continue
         shutil.move(tmp, path)
+        # The manifest duration describes a file we just shortened. Left stale it
+        # is a quiet lie: 107 entries drifted after the 2026-08-26 trim and had to
+        # be repaired by hand downstream. new_dur is already measured and verified.
+        tracks[key]["duration"] = round(new_dur, 1)
+        updated.append(key)
         print("%-34s %7.1fs %7.1fs %7.1fs  trimmed, tail %+0.1f dB vs body" % (key, dur, trim, cut, tail - body))
         ok += 1
 
     if args.apply:
+        if updated:
+            with io.open(MANIFEST, "w", encoding="utf-8") as fh:
+                fh.write(json.dumps(doc, indent=2, ensure_ascii=False) + "\n")
+            print("\n  manifest durations rewritten for %d track(s)" % len(updated))
         print("\n  trimmed %d, rejected %d, of %d TRIM-SAFE candidates" % (ok, failed, len(rows)))
     else:
         print("\n  %d TRIM-SAFE candidates, %.1fs of fade total. Nothing written; pass --apply."
