@@ -1,0 +1,48 @@
+{
+  "id": "w3_chat_sprocket_drift",
+  "title": "The Discrepancy Book",
+  "world": 3,
+  "trigger": "party_chat_w3_sprocket",
+  "background": "steampunk_workshop",
+  "description": "Sprocket shows the party a small notebook where he records time discrepancies. Character reveal, no plot advance.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.3},
+
+    {"type": "narration", "text": "Sprocket had a notebook. It was small, leather-bound, worn at the corners, and he carried it in an inside pocket he did not often share."},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {"speaker": "Sprocket", "text": "I've been keeping this for fourteen years, I think. Or forty. I check, but the check itself — well.", "theme": "scholar", "portrait": "scholar"},
+      {"speaker": "Alchemist", "text": "May I?", "theme": "mage", "portrait": "mage"},
+      {"speaker": "Sprocket", "text": "Please.", "theme": "scholar", "portrait": "scholar"}
+    ]},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "narration", "text": "Three columns. Date. Expected. Observed. The expected column was tidy. The observed column was not. The margin contained a single phrase, written repeatedly in different hands — Sprocket's own, at different ages — Something is wrong."},
+
+    {"type": "wait", "duration": 0.4},
+
+    {"type": "dialogue", "lines": [
+      {"speaker": "Alchemist", "text": "These aren't random. They're systematic. There's a pattern.", "theme": "mage", "portrait": "mage"},
+      {"speaker": "Sprocket", "text": "I know.", "theme": "scholar", "portrait": "scholar"},
+      {"speaker": "Alchemist", "text": "What have you done about it?", "theme": "mage", "portrait": "mage"},
+      {"speaker": "Sprocket", "text": "I've kept the book.", "theme": "scholar", "portrait": "scholar"}
+    ]},
+
+    {"type": "wait", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {"speaker": "Saboteur", "text": "Why don't you show it to the Regulator?", "theme": "rogue", "portrait": "rogue"},
+      {"speaker": "Sprocket", "text": "I've requested an audience. I've been on the schedule for it.", "theme": "scholar", "portrait": "scholar"},
+      {"speaker": "Steampriest", "text": "For how long?", "theme": "cleric", "portrait": "cleric"},
+      {"speaker": "Sprocket", "text": "Eleven years. Or fourteen. I should check. The book would know.", "theme": "scholar", "portrait": "scholar"}
+    ]},
+
+    {"type": "narration", "text": "He put the book back in the inner pocket. The pocket, the Alchemist noted quietly, was patched from the inside. It had been patched many, many times."},
+
+    {"type": "set_flag", "flag": "party_chat_viewed_w3_chat_sprocket_drift", "value": true},
+    {"type": "letterbox_out", "duration": 0.4}
+  ]
+}
