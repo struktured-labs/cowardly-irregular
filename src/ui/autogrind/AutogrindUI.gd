@@ -1237,7 +1237,7 @@ func _input(event: InputEvent) -> void:
 		return
 
 	# cowir-autogrind's gate: a hint-dismiss press must not also drive the menu behind it
-	if TutorialHint.is_any_active() or get_viewport().is_input_handled():
+	if TutorialHint.is_any_active():
 		return
 
 	# _input beats the ring's _unhandled_input, so without this the console eats its d-pad
