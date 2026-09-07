@@ -120,7 +120,110 @@ def fire_roar(dur=1.15, seed=23):
     return (out * 0.85).astype(np.float32)
 
 
-VOICES = {"fire": fire, "fire_burst": fire_burst, "fire_roar": fire_roar}
+# --- lightning -------------------------------------------------------------
+# NES "Lit": a crack, a fast descending arc, and flicker. Brighter than fire by design, but the
+# cutoff still FALLS -- the shipped ones climbed 3.0x and that climb is what reads as a whoop.
+
+def _zap(n, rng, hi, lo, decay, arc_hi, arc_lo, amp=1.0):
+    core = _sweep_lowpass(rng.uniform(-1, 1, n), hi, lo) * _env(n, 0.002, decay)
+    f = np.linspace(arc_hi, arc_lo, n)
+    arc = np.sign(np.sin(2 * math.pi * np.cumsum(f) / SR)) * _env(n, 0.001, decay * 1.4) * 0.4
+    return (core + arc) * amp
+
+
+def lightning(dur=0.85, seed=31):
+    rng = np.random.default_rng(seed); n = int(SR * dur)
+    out = _zap(n, rng, 3200.0, 260.0, 2.6, 620.0, 90.0)
+    for at, amp in ((0.16, 0.55), (0.27, 0.40), (0.44, 0.26)):   # flicker
+        k = int(at * n); seg = n - k
+        out[k:] += _zap(seg, rng, 2200.0, 200.0, 3.2, 480.0, 80.0, amp)
+    out = _bitcrush(out, bits=4, hold=4)
+    out = _sweep_lowpass(out, 3000.0, 1500.0)
+    out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.85).astype(np.float32)
+
+
+def lightning_snap(dur=0.55, seed=37):
+    rng = np.random.default_rng(seed); n = int(SR * dur)
+    out = _zap(n, rng, 3600.0, 300.0, 3.4, 700.0, 110.0)
+    k = int(0.22 * n); out[k:] += _zap(n - k, rng, 2400.0, 220.0, 3.8, 520.0, 90.0, 0.42)
+    out = _bitcrush(out, bits=4, hold=5)
+    out = _sweep_lowpass(out, 2800.0, 1400.0)
+    out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.85).astype(np.float32)
+
+
+def lightning_chain(dur=1.10, seed=41):
+    """Longest: several arcs walking away, for chain_lightning."""
+    rng = np.random.default_rng(seed); n = int(SR * dur)
+    out = _zap(n, rng, 2800.0, 240.0, 2.4, 560.0, 90.0)
+    for at, amp in ((0.20, 0.52), (0.38, 0.42), (0.56, 0.32), (0.74, 0.22)):
+        k = int(at * n); out[k:] += _zap(n - k, rng, 2000.0, 190.0, 3.4, 440.0, 80.0, amp)
+    out = _bitcrush(out, bits=5, hold=4)
+    out = _sweep_lowpass(out, 2600.0, 1300.0)
+    out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.85).astype(np.float32)
+
+
+# --- ice -------------------------------------------------------------------
+# Brittle, not piercing. The shipped v3 peaked at 5401 Hz -- a sustained tone right in the ear's
+# sore spot. Here the shards are SHORT and the body decays fast.
+
+def _shard(n, rng, hi, lo, decay):
+    return _sweep_lowpass(rng.uniform(-1, 1, n), hi, lo) * _env(n, 0.001, decay)
+
+
+def ice(dur=0.95, seed=53):
+    rng = np.random.default_rng(seed); n = int(SR * dur)
+    out = _shard(n, rng, 2600.0, 300.0, 2.2) * 0.8
+    f = np.linspace(430.0, 150.0, n)
+    out += np.sign(np.sin(2 * math.pi * np.cumsum(f) / SR)) * _env(n, 0.006, 2.8) * 0.45
+    for at, amp in ((0.22, 0.5), (0.36, 0.4), (0.52, 0.3), (0.68, 0.2)):   # cracking
+        k = int(at * n); out[k:] += _shard(n - k, rng, 1900.0, 260.0, 4.0) * amp
+    out = _bitcrush(out, bits=5, hold=4)
+    out = _sweep_lowpass(out, 2500.0, 1300.0)
+    out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.85).astype(np.float32)
+
+
+def ice_shatter(dur=0.70, seed=59):
+    rng = np.random.default_rng(seed); n = int(SR * dur)
+    out = _shard(n, rng, 3000.0, 320.0, 3.0) * 0.85
+    for at, amp in ((0.10, 0.6), (0.20, 0.5), (0.32, 0.4), (0.46, 0.3), (0.62, 0.2)):
+        k = int(at * n); out[k:] += _shard(n - k, rng, 2200.0, 280.0, 4.4) * amp
+    out = _bitcrush(out, bits=4, hold=5)
+    out = _sweep_lowpass(out, 2400.0, 1250.0)
+    out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.85).astype(np.float32)
+
+
+def ice_freeze(dur=1.20, seed=61):
+    rng = np.random.default_rng(seed); n = int(SR * dur)
+    out = _shard(n, rng, 2000.0, 220.0, 1.6) * 0.8
+    f = np.linspace(300.0, 110.0, n)
+    out += np.sign(np.sin(2 * math.pi * np.cumsum(f) / SR)) * _env(n, 0.05, 1.8) * 0.5
+    for at, amp in ((0.40, 0.34), (0.62, 0.26), (0.80, 0.18)):
+        k = int(at * n); out[k:] += _shard(n - k, rng, 1600.0, 220.0, 4.0) * amp
+    out = _bitcrush(out, bits=5, hold=4)
+    out = _sweep_lowpass(out, 2200.0, 1100.0)
+    out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.85).astype(np.float32)
+
+
+# --- dark ------------------------------------------------------------------
+def dark(dur=1.25, seed=71):
+    """Low and menacing. Dissonant pair walking down; body kept, unlike the hiss take."""
+    rng = np.random.default_rng(seed); n = int(SR * dur)
+    out = _sweep_lowpass(rng.uniform(-1, 1, n), 1100.0, 130.0) * _env(n, 0.04, 1.7) * 0.75
+    for f0, f1, amp in ((150.0, 62.0, 0.5), (212.0, 88.0, 0.34)):   # tritone-ish, unresolved
+        f = np.linspace(f0, f1, n)
+        out += np.sign(np.sin(2 * math.pi * np.cumsum(f) / SR)) * _env(n, 0.03, 2.2) * amp
+    for at, amp in ((0.44, 0.26), (0.68, 0.18)):
+        k = int(at * n); seg = n - k
+        out[k:] += _sweep_lowpass(rng.uniform(-1, 1, seg), 700.0, 110.0) * _env(seg, 0.01, 3.0) * amp
+    out = _bitcrush(out, bits=5, hold=5)
+    out = _sweep_lowpass(out, 1800.0, 900.0)
+    out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.85).astype(np.float32)
+
+
+VOICES = {"fire": fire, "fire_burst": fire_burst, "fire_roar": fire_roar,
+          "lightning": lightning, "lightning_snap": lightning_snap, "lightning_chain": lightning_chain,
+          "ice": ice, "ice_shatter": ice_shatter, "ice_freeze": ice_freeze,
+          "dark": dark}
 
 
 def main():
