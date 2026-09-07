@@ -10,6 +10,7 @@ const VillageBarScript = preload("res://src/exploration/VillageBar.gd")
 const TreasureChestScript = preload("res://src/exploration/TreasureChest.gd")
 const VillageFountainScript = preload("res://src/exploration/VillageFountain.gd")
 const CastleVistaScript = preload("res://src/exploration/CastleVista.gd")
+const ReadablePropScript = preload("res://src/exploration/ReadableProp.gd")
 
 ## Map dimensions (expanded for full village)
 const MAP_WIDTH: int = 36
@@ -452,6 +453,13 @@ func _setup_npcs() -> void:
 	existential.sprite_archetype = "phil"
 	npcs.add_child(existential)
 
+	# Phil's notebook, on the well kerb beside him — the game already establishes that his memory lives in objects other people carry.
+	var notebook = ReadablePropScript.new()
+	notebook.name = "PhilNotebook"
+	notebook.position = Vector2(24 * TILE_SIZE, 18 * TILE_SIZE)
+	notebook.setup("Phil's Notebook", _phil_notebook_entries)
+	npcs.add_child(notebook)
+
 	# Chicken Chaser wannabe
 	var chicken = _create_npc("Cluck Norris", "villager", Vector2(11 * TILE_SIZE,21 * TILE_SIZE), [
 		"HAVE YOU SEEN MY CHICKENS?!",
@@ -722,3 +730,33 @@ func _place_chicken(chicken_id: String, pos: Vector2, catch_line: String = "") -
 	hen.catch_line = catch_line
 	hen.position = pos
 	npcs.add_child(hen)
+
+
+## PLACEHOLDER PROSE — cowir-story owns these entries; swap the text, keep the shape.
+## Structure is the point and is theirs: entries get shorter as they go, and one
+## appears twice in different hands with neither crossed out. Deliberately NOT the
+## symbol paper — that thread runs to the W6 Fool Card and must not carry mechanics.
+func _phil_notebook_entries() -> Array:
+	return [
+		{
+			"heading": "First page, careful handwriting",
+			"body": "If you are reading this and you are me: the inn is on the north side. " +
+				"The woman at the well is not your sister. You have asked her twice.\n\n" +
+				"Write down what happens. You will not keep it otherwise.",
+		},
+		{
+			"heading": "Some pages later, same hand, faster",
+			"body": "Fought something in the cave. Won, I think. Cannot remember the middle of it.\n\n" +
+				"The middle is the part that goes first.",
+		},
+		{
+			"heading": "A page written twice",
+			"body": "Fought something in the cave. Won, I think.\n\n" +
+				"(The same entry appears again four pages on, in a different hand. " +
+				"Neither is crossed out.)",
+		},
+		{
+			"heading": "Near the end, few words per line",
+			"body": "Inn is north.\nWoman at well.\nNot your sister.\n\nAsked again.",
+		},
+	]
