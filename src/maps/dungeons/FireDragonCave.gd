@@ -1,8 +1,8 @@
 extends DragonCave
 class_name FireDragonCaveScene
 
-## Infernal Grotto - Fire Dragon Pyrroth awaits on Floor 3
-## Volcanic tubes with lava borders
+## Infernal Grotto - Fire Dragon Pyrroth awaits on Floor 5 (struktured 2026-09-06 depth pass).
+## Lava chokepoints (l), a caldera boss arena, one lever shortcut, one portal shortcut, one ambush plate.
 
 func _init() -> void:
 	cave_name = "Infernal Grotto"
@@ -10,82 +10,151 @@ func _init() -> void:
 	boss_id = "fire_dragon"
 	boss_flag_key = "fire_dragon_defeated"
 	boss_cutscene_id = "world1_pyrroth_intro"
-	total_floors = 3
+	total_floors = 5
 	overworld_exit_spawn = "fire_cave_entrance"
 
 	floor_layouts = {
 		1: [
 			"MMMMMMMMMMMMMMMMMMMM",
-			"M..................M",
-			"M.MMMM.......MMMM..M",
-			"M.M.............M.TM",
-			"M.M...T.........M..M",
-			"M.M.............M..M",
-			"M.MMMM.......MMMM..M",
-			"M..................M",
-			"M.T................M",
-			"M.....MMM..MMM.....M",
-			"M.....M......M.....M",
-			"M.....M..U...M.....M",
-			"M.....MMM..MMM.....M",
-			"MMMM....DDDD.......M",
-			"MT.H...............M",
+			"MM..............M..M",
+			"MM.....L..U.....M.TM",
+			"MM..............M..M",
+			"MM...............MMM",
+			"MMM.MMMMllllMMMM.MMM",
+			"MMM.MMMMllllMMMM.MMM",
+			"MMM.MMMMllllMMMM.MMM",
+			"MMM.MMMMllllMMMM.MMM",
+			"MMM.MMMMMMMMMMMM.MMM",
+			"MM..............H.MM",
+			"MM................MM",
+			"MM...D............MM",
+			"MM.......T........MM",
+			"MMMMMMMMMMMMMMMMMMMM",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
 		2: [
 			"MMMMMMMMMMMMMMMMMMMM",
-			"M..................M",
-			"M.MMMMMMM..MMMMM...M",
-			"M.M..............M.M",
-			"M.M.MMMM..MMMMM..M.M",
-			"M.M.M...T....M...M.M",
-			"M.M.M........M...M.M",
-			"M.M.M...T....M...M.M",
-			"M.M.MMMM..MMMMM..M.M",
-			"M.M..............M.M",
-			"M.MMMMMMM..MMMMM..TM",
-			"M..................M",
-			"M..................M",
-			"M......U.....D.....M",
-			"M..................M",
+			"MMMMMMMMMMMMMMMMMMMM",
+			"MM................MM",
+			"MM................MM",
+			"MM..T..........a..MM",
+			"MM................MM",
+			"MM....llllllll....MM",
+			"MM....llllllll....MM",
+			"MM....llllllll....MM",
+			"MM....llllllll....MM",
+			"MM...........T....MM",
+			"MM................MM",
+			"MM..D.....U.......MM",
+			"MM................MM",
+			"MMMMMMMMMMMMMMMMMMMM",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
-		# Shared "boss at far corner + winding path" layout across all 4
-		# W1 dragon caves — struktured msg 2788, class-level fix.
 		3: [
 			"MMMMMMMMMMMMMMMMMMMM",
-			"M...............B..M",
+			"MMMMMMMMMMMMMMMMMMMM",
+			"MM................MM",
+			"MM.MMM.MMMMMMMMMM.MM",
+			"MM.MMM.MMMMMMMMMM.MM",
+			"MM.M............M.MM",
+			"MM.M.MMM.S..MMM.M.MM",
+			"MM.M.MMM.T..MMM.M.MM",
+			"MM.M.MMM....MMM.M.MM",
+			"MM.M.MMM....MMM.M.MM",
+			"MM.M............M.MM",
+			"MM.MMMMMMMMMM.MMM.MM",
+			"MM.MMMMMMMMMM.MMM.MM",
+			"MM..D.....U.......MM",
+			"MMMMMMMMMMMMMMMMMMMM",
+			"MMMMMMMMMMMMMMMMMMMM",
+		],
+		4: [
+			"MMMMMMMMMMMMMMMMMMMM",
+			"MMMMMMMMMMMMMMMMMMMM",
+			"MMMMMMMMMMMMMMMMMMMM",
+			"MMMMMMMMMMMMMMMMMMMM",
+			"MM................MM",
+			"MM................MM",
+			"MM..D...........a.MM",
+			"MM................MM",
+			"MM.......T........MM",
+			"MM................MM",
+			"MM........U.......MM",
+			"MM................MM",
+			"MM................MM",
+			"MMMMMMMMMMMMMMMMMMMM",
+			"MMMMMMMMMMMMMMMMMMMM",
+			"MMMMMMMMMMMMMMMMMMMM",
+		],
+		5: [
+			"MMMMMMMMMMMMMMMMMMMM",
 			"M..................M",
-			"M..MMMMMMM.MMMMMMM.M",
-			"M..M.T...........M.M",
-			"M..M.............M.M",
-			"M..M.......T.....M.M",
-			"M..M.............M.M",
-			"M..MMMMMMM.MMMMMMM.M",
+			"M........B.........M",
 			"M..................M",
-			"M....MMMMM.MMMMM...M",
-			"M....M.........M...M",
-			"M....M....T....M...M",
-			"M..T.M.........M...M",
-			"M.........D........M",
+			"M...lllll.llllll...M",
+			"M...lllll.llllll...M",
+			"M...lllll.llllll...M",
+			"M...lllll.llllll...M",
+			"M...lllll.llllll...M",
+			"M...lllll.llllll...M",
+			"M..................M",
+			"M..................M",
+			"M..T...............M",
+			"M........D.........M",
+			"M..................M",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
 	}
 
-	# (10,12) put the entrance inside the F1 up-stairs trigger, so entering the cave
-	# instantly ascended and floor 1 was never playable (measured 2026-07-26: floor 1 -> 2
-	# within one physics frame, no input). (10,14) clears both stair triggers.
 	floor_spawn_points = {
-		1: {"entrance": Vector2(10, 14)},
-		2: {"down_stairs": Vector2(14, 13)},
-		3: {"down_stairs": Vector2(10, 14)},
+		1: {"entrance": Vector2(10, 13)},
 	}
 
 	floor_encounter_pools = {
 		1: ["imp", "skeleton"],
 		2: ["imp", "skeleton", "goblin"],
-		3: [],
+		3: ["imp", "goblin"],
+		4: ["imp", "skeleton", "goblin"],
+		5: [],
 	}
+
+	switch_effects = {
+		"sw0": {"flip": [[16, 2]]},
+		"sw1": {"trap": "encounter"},
+	}
+	trap_chests = ["fire_dragon_cave_f2_c0"]
+	forced_item_chests = {
+		"fire_dragon_cave_f1_c0": "equipment:flame_sword",
+		"fire_dragon_cave_f3_c0": "inferno_crystal",
+		"fire_dragon_cave_f4_c0": "hi_ether",
+	}
+
+
+const _LORE := {
+	1: [
+		{"pos": Vector2(9, 1), "text": "Infernal Grotto. Mind the lava. It minds you back."},
+		{"pos": Vector2(9, 11), "text": "A lever, conveniently unlabeled. What could possibly go wrong."},
+	],
+	2: [
+		{"pos": Vector2(9, 3), "text": "The chest by the door is bait. The one across the vent isn't. Probably."},
+	],
+	3: [
+		{"pos": Vector2(9, 2), "text": "The Slag Maze: designed by a dragon with a grudge against cartography."},
+		{"pos": Vector2(9, 12), "text": "Something ahead is guarding treasure. Something behind you is louder."},
+	],
+	5: [
+		{"pos": Vector2(9, 11), "text": "The Caldera. Pyrroth has been rehearsing his entrance for weeks."},
+	],
+}
+
+
+func _setup_transitions_for_floor(floor_num: int) -> void:
+	super._setup_transitions_for_floor(floor_num)
+	for entry in (_LORE.get(floor_num, []) as Array):
+		var sign := Signpost.new()
+		sign.sign_text = str(entry["text"])
+		sign.position = (entry["pos"] as Vector2) * TILE_SIZE
+		transitions.add_child(sign)
 
 
 ## Each W1 dragon cave has its own SoundManager routing arm; without

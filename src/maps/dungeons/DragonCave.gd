@@ -304,6 +304,8 @@ func _place_torches() -> void:
 func _char_to_tile_type(char: String) -> int:
 	match char:
 		"M": return TileGeneratorScript.TileType.CAVE_WALL
+		"l": return TileGeneratorScript.TileType.LAVA
+		"i": return TileGeneratorScript.TileType.ICE
 		".", "T", "B", "U", "D", "X":
 			return TileGeneratorScript.TileType.CAVE_FLOOR
 		# DungeonPuzzleLayer vocabulary: portals a-f, pressure plate S, lever L -- all floor.
@@ -712,8 +714,13 @@ func _place_floor_treasure(floor_num: int) -> void:
 		var chest = TreasureChest.new()
 		chest.chest_id = chest_key
 		if forced_item_chests.has(chest_key):
-			chest.contents_type = "item"
-			chest.contents_id = str(forced_item_chests[chest_key])
+			var forced_value: String = str(forced_item_chests[chest_key])
+			if forced_value.begins_with("equipment:"):
+				chest.contents_type = "equipment"
+				chest.contents_id = forced_value.substr(10)
+			else:
+				chest.contents_type = "item"
+				chest.contents_id = forced_value
 			chest.contents_amount = 1
 			chest.position = treasure_positions[i]
 			chest.chest_opened.connect(func(_contents):

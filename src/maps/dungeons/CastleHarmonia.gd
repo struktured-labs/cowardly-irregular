@@ -60,13 +60,13 @@ func _init() -> void:
 			"M..M..T......T..M..M",
 			"M..M............M..M",
 			"M..MMMM......MMMM..M",
-			"M..................M",
+			"M........L.........M",
 			"M....MMMMMMMMMM....M",
 			"M....M........M....M",
 			"M....M....U...M....M",
 			"M....M........M....M",
-			"M....MMMM..MMMM....M",
-			"M..................M",
+			"M....MMMM..MMMM..e.M",
+			"M.T................M",
 			"M..................M",
 			"M.........D........M",
 			"MMMMMMMMMMMMMMMMMMMM",
@@ -79,7 +79,7 @@ func _init() -> void:
 			"M..................M",
 			"M..MM..T....T..MM..M",
 			"M..MM..........MM..M",
-			"M..................M",
+			"M........S.........M",
 			"M.....MM....MM.....M",
 			"M.....MM....MM.....M",
 			"M..................M",
@@ -87,7 +87,7 @@ func _init() -> void:
 			"M..................M",
 			"M.....MM..U.MM.....M",
 			"M.....MM....MM.....M",
-			"M..................M",
+			"M................T.M",
 			"M..................M",
 			"M.........D........M",
 			"MMMMMMMMMMMMMMMMMMMM",
@@ -99,7 +99,7 @@ func _init() -> void:
 		3: [
 			"MMMMMMMMMMMMMMMMMMMM",
 			"M..................M",
-			"M...T..........T...M",
+			"M...T..........T.e.M",
 			"M..................M",
 			"M.MMM..........MMM.M",
 			"M.M..............M.M",
@@ -107,7 +107,7 @@ func _init() -> void:
 			"M.M....M....M....M.M",
 			"M.M....M....M....M.M",
 			"M.M....MMMMMM....M.M",
-			"M.M..............M.M",
+			"M.T..............M.M",
 			"M.MMM..........MMM.M",
 			"M..........U.......M",
 			"M..................M",
@@ -131,7 +131,7 @@ func _init() -> void:
 			"M....M........M....M",
 			"M....MMMM..MMMM....M",
 			"M..................M",
-			"M..................M",
+			"M........T.........M",
 			"M..................M",
 			"M.........D........M",
 			"MMMMMMMMMMMMMMMMMMMM",
@@ -165,6 +165,46 @@ func _init() -> void:
 		3: ["shadow_knight", "meta_knight"],
 		4: [],
 	}
+
+	# struktured 2026-09-06 depth pass: a lever shortcut (F1), an ambush plate
+	# in the Antechamber (F2), and a portal pair linking the Great Hall to the
+	# archives wing on F3 -- additive only, none of the original geometry moved.
+	switch_effects = {
+		"sw0": {"flip": [[9, 7]]},
+		"sw1": {"trap": "encounter"},
+	}
+	forced_item_chests = {
+		"castle_harmonia_f1_c2": "hi_ether",
+		"castle_harmonia_f2_c4": "gold_needle",
+		"castle_harmonia_f3_c2": "elixir",
+		"castle_harmonia_f4_c2": "equipment:dragon_mail",
+	}
+
+
+const _LORE := {
+	1: [
+		{"pos": Vector2(9, 5), "text": "A lever behind the colonnade. The staff swore they never installed one."},
+		{"pos": Vector2(17, 10), "text": "The floor grate hums faintly. Somewhere below, the archives are listening."},
+	],
+	2: [
+		{"pos": Vector2(9, 3), "text": "The Petrified Court. Do not touch the plaques. Do not touch the plate either."},
+	],
+	3: [
+		{"pos": Vector2(17, 1), "text": "The grate on the other end. The archives were never on the tour."},
+	],
+	4: [
+		{"pos": Vector2(9, 1), "text": "The Chancellor's Warden is dealt with. Whatever waits past this hall is not."},
+	],
+}
+
+
+func _setup_transitions_for_floor(floor_num: int) -> void:
+	super._setup_transitions_for_floor(floor_num)
+	for entry in (_LORE.get(floor_num, []) as Array):
+		var sign := Signpost.new()
+		sign.sign_text = str(entry["text"])
+		sign.position = (entry["pos"] as Vector2) * TILE_SIZE
+		transitions.add_child(sign)
 
 
 func _ready() -> void:

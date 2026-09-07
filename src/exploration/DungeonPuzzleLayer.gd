@@ -102,7 +102,7 @@ static func is_walkable(floor_layouts: Dictionary, switch_effects: Dictionary, f
 	var ch := _char_at(floor_layouts, floor_num, cell)
 	if ch == "":
 		return false
-	if ch != "M":
+	if ch != "M" and ch != "l":
 		return true
 	for sw_id in switch_effects:
 		if not bool(active.get(sw_id, false)):
