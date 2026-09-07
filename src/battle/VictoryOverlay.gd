@@ -9,19 +9,24 @@ class_name VictoryOverlay
 ## caller — three consumers key off that name (Select toggle, quip suppression, cleanup).
 
 ## Victory grades — he asked for it to "look more amazing against bosses or OP monsters"
-enum Grade { NORMAL = 0, ELITE = 1, BOSS = 2 }
+## SPOTLIGHT (struktured 2026-09-07 "spotlight should have a victory sequence… make it special"): a won duel is billed to the duelist, boss-scale spectacle in the spotlight's own cool white.
+enum Grade { NORMAL = 0, ELITE = 1, BOSS = 2, SPOTLIGHT = 3 }
 ## An ordinary monster this far above the party reads as "OP" even without a boss flag
 const OP_LEVEL_GAP := 3
-const GRADE_FONT := {Grade.NORMAL: 48, Grade.ELITE: 58, Grade.BOSS: 72}
-const GRADE_TRAUMA := {Grade.NORMAL: 0.22, Grade.ELITE: 0.38, Grade.BOSS: 0.62}
-const GRADE_ZOOM := {Grade.NORMAL: 0.035, Grade.ELITE: 0.055, Grade.BOSS: 0.085}
-const GRADE_RINGS := {Grade.NORMAL: 1, Grade.ELITE: 2, Grade.BOSS: 3}
-const GRADE_HOLD := {Grade.NORMAL: 0.45, Grade.ELITE: 0.62, Grade.BOSS: 0.95}
+const GRADE_FONT := {Grade.NORMAL: 48, Grade.ELITE: 58, Grade.BOSS: 72, Grade.SPOTLIGHT: 72}
+const GRADE_TRAUMA := {Grade.NORMAL: 0.22, Grade.ELITE: 0.38, Grade.BOSS: 0.62, Grade.SPOTLIGHT: 0.62}
+const GRADE_ZOOM := {Grade.NORMAL: 0.035, Grade.ELITE: 0.055, Grade.BOSS: 0.085, Grade.SPOTLIGHT: 0.085}
+const GRADE_RINGS := {Grade.NORMAL: 1, Grade.ELITE: 2, Grade.BOSS: 3, Grade.SPOTLIGHT: 4}
+const GRADE_HOLD := {Grade.NORMAL: 0.45, Grade.ELITE: 0.62, Grade.BOSS: 0.95, Grade.SPOTLIGHT: 1.1}
 const GRADE_TINT := {
 	Grade.NORMAL: Color(1.0, 0.85, 0.2),
 	Grade.ELITE: Color(1.0, 0.62, 0.95),
 	Grade.BOSS: Color(1.0, 0.97, 0.72),
+	Grade.SPOTLIGHT: Color(0.78, 0.96, 1.0),
 }
+
+## Set by BattleResultsDisplay when GameLoop reports a live Spotlight Duel: the duelist's name.
+var spotlight_duelist: String = ""
 
 const CARD_W := 210.0
 const CARD_H := 58.0
@@ -88,6 +93,8 @@ func _track(t: Tween) -> Tween:
 ## The spawner sets is_boss for minibosses too, so the boss/elite split comes from monsters.json.
 func _victory_grade() -> int:
 	var grade: int = Grade.NORMAL
+	if spotlight_duelist != "":
+		return Grade.SPOTLIGHT
 	if _scene == null or not ("test_enemies" in _scene):
 		return grade
 	var party_level: int = _party_level()
@@ -150,7 +157,7 @@ func _build_slam(flourish: bool) -> void:
 
 	var impact_at := title.position + title.pivot_offset if not flourish else center + title.pivot_offset
 	var sub: Label = null
-	if grade == Grade.BOSS:
+	if grade >= Grade.BOSS:
 		sub = _build_subtitle(center, title.size, tint, flourish)
 	if grade >= Grade.ELITE:
 		_build_letterbox(vp, grade, flourish)
@@ -159,7 +166,7 @@ func _build_slam(flourish: bool) -> void:
 		return
 
 	title.position = center
-	title.scale = Vector2(2.6 if grade == Grade.BOSS else 2.2, 2.6 if grade == Grade.BOSS else 2.2)
+	title.scale = Vector2(2.6 if grade >= Grade.BOSS else 2.2, 2.6 if grade >= Grade.BOSS else 2.2)
 	title.modulate.a = 0.0
 
 	var tw := _track(create_tween())
@@ -218,10 +225,14 @@ func _spawn_ring(at: Vector2, tint: Color, delay: float, grade: int) -> void:
 ## Boss kills get billed: the foe's name under the title
 func _build_subtitle(center: Vector2, title_size: Vector2, tint: Color, flourish: bool) -> Label:
 	var foe := _headline_foe()
-	if foe == "":
+	if foe == "" and spotlight_duelist == "":
 		return null
 	var sub := Label.new()
 	sub.text = "%s FELLED" % foe.to_upper()
+	if spotlight_duelist != "":
+		sub.text = "%s TAKES THE SPOTLIGHT" % spotlight_duelist.to_upper()
+		if foe != "":
+			sub.text += " — %s FELLED" % foe.to_upper()
 	sub.add_theme_font_size_override("font_size", TextScale.scaled(20))
 	sub.add_theme_color_override("font_color", tint)
 	sub.add_theme_constant_override("outline_size", 4)

@@ -131,6 +131,10 @@ func show_victory_results() -> void:
 		return
 	var overlay := VictoryOverlay.new()
 	overlay.name = "VictoryResults"
+	# A won Spotlight Duel is billed to its duelist (struktured 2026-09-07) — the solo party IS the duelist.
+	var gl: Node = _scene.get_node_or_null("/root/GameLoop") if is_instance_valid(_scene) else null
+	if gl != null and "_spotlight_duel_active" in gl and bool(gl._spotlight_duel_active) and BattleManager.player_party.size() == 1:
+		overlay.spotlight_duelist = str(BattleManager.player_party[0].combatant_name)
 	_scene.add_child(overlay)
 	overlay.build(results, _scene)
 

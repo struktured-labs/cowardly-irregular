@@ -3144,6 +3144,9 @@ func _on_battle_ended(victory: bool) -> void:
 			GameState.battles_won += 1
 			GameState.spotlight_duels_won += 1
 			battles_won += 1
+		# struktured 2026-09-07 "spotlight should have a victory sequence just like reg battles": BattleScene already built the overlay on this same signal; let the duelist see it before the cutscene tears the scene down.
+		if victory:
+			await _wait_for_confirm_victory()
 		spotlight_battle_ended.emit(victory)
 		return
 	if victory:
