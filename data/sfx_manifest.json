@@ -1984,6 +1984,48 @@
       "prompt": "Steady heavy rainstorm ambience, dense rain hiss on ground and leaves, gusting wind, occasional far-off thunder rumble underneath, continuous and seamless with no melody",
       "duration_seconds": 10.0,
       "prompt_influence": 0.75
+    },
+    "corruption_gain_visual_glitch": {
+      "file": "assets/audio/sfx/corruption_gain_visual_glitch.ogg",
+      "prompt": "Short digital corruption sting: screen-tearing static burst with a stuttering bitcrushed artifact, glass-like shatter of a clean signal, cold and synthetic, no melody",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.8
+    },
+    "corruption_gain_stat_drain": {
+      "file": "assets/audio/sfx/corruption_gain_stat_drain.ogg",
+      "prompt": "Short draining sting: a warm tone sagging downward in pitch as it thins out and loses body, energy leaving something, hollow and defeated, no melody",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.8
+    },
+    "corruption_gain_encounter_surge": {
+      "file": "assets/audio/sfx/corruption_gain_encounter_surge.ogg",
+      "prompt": "Short ominous swarm sting: a low pulse blooming into scurrying rushing texture, many things approaching at once, dread rising quickly, no melody",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.8
+    },
+    "corruption_gain_bp_instability": {
+      "file": "assets/audio/sfx/corruption_gain_bp_instability.ogg",
+      "prompt": "Short unstable-power sting: an electrical tone flickering and dropping out erratically, gating and stuttering as if the supply is failing, jittery and unreliable, no melody",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.8
+    },
+    "corruption_gain_ability_corruption": {
+      "file": "assets/audio/sfx/corruption_gain_ability_corruption.ogg",
+      "prompt": "Short reality-slip sting: a clean chime warping and folding into a wrong detuned version of itself, tape-warble and reversed tail, something rewritten, unsettling, no melody",
+      "duration_seconds": 1.2,
+      "prompt_influence": 0.8
+    },
+    "corruption_misfire": {
+      "file": "assets/audio/sfx/corruption_misfire.ogg",
+      "prompt": "A magic spell going WRONG mid-cast: a bright cast tone smearing into a detuned bitcrushed warble, pitch bending the wrong way, glitched stutter and a reversed swallow at the end, sounds broken and unintended, not triumphant, no melody",
+      "duration_seconds": 1.0,
+      "prompt_influence": 0.8
+    },
+    "corruption_ap_flicker": {
+      "file": "assets/audio/sfx/corruption_ap_flicker.ogg",
+      "prompt": "Very short resource glitch blip: a clean UI tick stuttering and misfiring, brief electrical gating artifact, wrong but small, no melody",
+      "duration_seconds": 0.5,
+      "prompt_influence": 0.8
     }
   }
 }
