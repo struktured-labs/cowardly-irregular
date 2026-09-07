@@ -376,9 +376,11 @@ func _create_enemy_data(enemy_id: String) -> Dictionary:
 		for flag in ["boss", "miniboss", "undead", "meta_enemy", "adaptive",
 					"autogrind_spawned", "corruption_spawned", "is_mimic",
 					"self_aware", "very_dangerous", "extremely_dangerous",
-					"can_cause_permadeath", "dialogue"]:
+					"can_cause_permadeath", "dialogue", "field_elite"]:
 			if db_entry.has(flag):
 				data[flag] = db_entry[flag]
+		if db_entry.get("field_elite", false):
+			data = _apply_field_elite_scaling(data)
 		return data
 
 	# Legacy hardcoded fallbacks for enemies not yet in database
@@ -631,3 +633,74 @@ func get_steps_until_guaranteed_encounter() -> int:
 func reset_encounter_counter() -> void:
 	"""Reset the encounter counter"""
 	steps_since_last_encounter = 0
+
+
+const FIELD_ELITE_DATA: String = "res://data/field_elites.json"
+var _field_elite_cfg: Dictionary = {}
+var _field_elite_loaded: bool = false
+
+
+func _load_field_elite_cfg() -> Dictionary:
+	if _field_elite_loaded:
+		return _field_elite_cfg
+	_field_elite_loaded = true
+	var f := FileAccess.open(FIELD_ELITE_DATA, FileAccess.READ)
+	if f == null:
+		push_warning("[ELITE] %s missing -- field elites fight at their authored stats" % FIELD_ELITE_DATA)
+		return _field_elite_cfg
+	var parsed = JSON.parse_string(f.get_as_text())
+	f.close()
+	if parsed is Dictionary:
+		_field_elite_cfg = parsed
+	else:
+		push_error("[ELITE] %s did not parse as an object" % FIELD_ELITE_DATA)
+	return _field_elite_cfg
+
+
+## The party average at the moment the fight starts, not the monster's authored level.
+## Returns -1 when there is no party to measure (tests, boot), which the caller reads as
+## "scale from the authored level instead" rather than as level zero.
+func _party_average_level() -> float:
+	var gs: Node = get_tree().root.get_node_or_null("GameState") if is_inside_tree() else null
+	if gs == null:
+		return -1.0
+	var party = gs.get("player_party")
+	if party == null or not (party is Array) or party.is_empty():
+		return -1.0
+	var total := 0.0
+	var n := 0
+	for c in party:
+		if c == null or not ("job_level" in c):
+			continue
+		total += float(c.job_level)
+		n += 1
+	return -1.0 if n == 0 else total / float(n)
+
+
+## Field elites are pinned ABOVE the party -- struktured 2026-09-06: "unfairly strong --
+## pinned to be stronger than your party by a lot. Rare drops/exp if you beat it though."
+## Every number is read from data/field_elites.json so retuning is a JSON edit, per his
+## explicit "make the scaling data, not code".
+func _apply_field_elite_scaling(data: Dictionary) -> Dictionary:
+	var cfg := _load_field_elite_cfg()
+	var sc: Dictionary = cfg.get("scaling", {})
+	if sc.is_empty():
+		return data
+
+	var base_level := float(data.get("level", 1))
+	var party_avg := _party_average_level()
+	var target := (party_avg if party_avg > 0.0 else base_level) + float(sc.get("level_offset", 5))
+	# Growth compounds the gap the further the elite is pinned above where it was authored,
+	# so a late-game party does not out-stat a rare that was written for chapter one.
+	var growth := 1.0 + maxf(0.0, target - base_level) * float(sc.get("per_level_stat_growth", 0.0))
+
+	data["level"] = int(round(target))
+	data["field_elite"] = true
+	for key in [["max_hp", "hp_multiplier"], ["attack", "attack_multiplier"],
+				["defense", "defense_multiplier"], ["magic", "magic_multiplier"],
+				["magic_defense", "magic_defense_multiplier"], ["speed", "speed_multiplier"]]:
+		if data.has(key[0]):
+			data[key[0]] = int(round(float(data[key[0]]) * float(sc.get(key[1], 1.0)) * growth))
+	data["exp_reward"] = int(round(float(data.get("exp_reward", 0)) * float(sc.get("exp_multiplier", 1.0))))
+	data["gold_reward"] = int(round(float(data.get("gold_reward", 0)) * float(sc.get("gold_multiplier", 1.0))))
+	return data
