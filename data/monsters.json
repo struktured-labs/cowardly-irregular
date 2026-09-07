@@ -270,7 +270,8 @@
     ],
     "resistances": [
       "earth"
-    ]
+    ],
+    "music_track": "battle_mushroom"
   },
   "snake": {
     "id": "snake",
@@ -373,7 +374,8 @@
     "resistances": [
       "fire",
       "earth"
-    ]
+    ],
+    "music_track": "battle_snake"
   },
   "elemental": {
     "id": "elemental",
@@ -581,7 +583,8 @@
       "fire",
       "lightning"
     ],
-    "resistances": []
+    "resistances": [],
+    "music_track": "battle_bat"
   },
   "rat_guard": {
     "id": "rat_guard",
@@ -820,7 +823,8 @@
     "resistances": [
       "ice"
     ],
-    "element": "ice"
+    "element": "ice",
+    "music_track": "battle_wolf"
   },
   "specter": {
     "id": "specter",
@@ -860,7 +864,8 @@
       "physical",
       "ice"
     ],
-    "undead": true
+    "undead": true,
+    "music_track": "battle_ghost"
   },
   "ogre": {
     "id": "ogre",
@@ -1090,7 +1095,8 @@
     },
     "learns_from": [
       "abilities"
-    ]
+    ],
+    "music_track": "battle_rogue_mailbox"
   },
   "cartographer_wraith": {
     "id": "cartographer_wraith",
@@ -1244,7 +1250,8 @@
     },
     "learns_from": [
       "abilities"
-    ]
+    ],
+    "music_track": "battle_skeleton"
   },
   "blood_wolf_alpha": {
     "id": "blood_wolf_alpha",
@@ -1302,7 +1309,8 @@
     },
     "learns_from": [
       "abilities"
-    ]
+    ],
+    "music_track": "battle_wolf"
   },
   "crystal_golem": {
     "id": "crystal_golem",
@@ -1472,7 +1480,8 @@
     "one_shot": {
       "hp_threshold": 3500,
       "setup_hint": "Build AP and strike hard."
-    }
+    },
+    "music_track": "battle_mushroom"
   },
   "corrupted_guardian": {
     "id": "corrupted_guardian",
@@ -1685,7 +1694,8 @@
       "counter",
       "mimic_ability"
     ],
-    "adaptation_speed": 2
+    "adaptation_speed": 2,
+    "music_track": "battle_slime"
   },
   "meta_knight": {
     "id": "meta_knight",
@@ -5443,7 +5453,8 @@
       "dark",
       "ice"
     ],
-    "undead": true
+    "undead": true,
+    "music_track": "battle_skeleton"
   },
   "bone_warden": {
     "id": "bone_warden",
@@ -5484,7 +5495,8 @@
       "dark",
       "ice"
     ],
-    "undead": true
+    "undead": true,
+    "music_track": "battle_skeleton"
   },
   "castle_warden": {
     "id": "castle_warden",

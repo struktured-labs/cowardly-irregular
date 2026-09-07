@@ -29,6 +29,8 @@ USAGE
     python3 tools/trim_loop_seams.py --apply         # write in place
 """
 import argparse
+import collections
+import io
 import json
 import os
 import shutil
@@ -36,7 +38,8 @@ import subprocess
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from audit_loop_seams import MANIFEST, classify, duration, mean_db, FULL_LEVEL_TOLERANCE_DB
+from audit_loop_seams import (MANIFEST, classify, duration, mean_db,
+                              FULL_LEVEL_TOLERANCE_DB, MAX_TRIM_S)
 
 DECLICK_S = 0.008
 # The trimmed tail must land within this of the body mean, or the trim did not work.
@@ -60,7 +63,9 @@ def main():
     ap.add_argument("--limit", type=int)
     args = ap.parse_args()
 
-    tracks = json.load(open(MANIFEST))["tracks"]
+    doc = json.load(open(MANIFEST, encoding="utf-8"),
+                    object_pairs_hook=collections.OrderedDict)
+    tracks = doc["tracks"]
     rows = []
     for key, meta in sorted(tracks.items()):
         if not meta.get("loop"):
@@ -86,36 +91,64 @@ def main():
 
     print("%-34s %8s %8s %8s  %s" % ("track", "dur", "trim@", "cut", "result"))
     ok = failed = 0
+    updated = []
     for key, path, dur, delta, trim in rows:
         cut = dur - trim
         if not args.apply:
             print("%-34s %7.1fs %7.1fs %7.1fs  (dry run)" % (key, dur, trim, cut))
             continue
         tmp = path + ".trim.tmp.ogg"
-        if not trim_one(path, trim, tmp):
-            print("%-34s %7.1fs %7.1fs %7.1fs  FFMPEG FAILED - source untouched" % (key, dur, trim, cut))
-            failed += 1
-            continue
-        new_dur = duration(tmp)
-        body = mean_db(tmp, 0, max(1.0, new_dur - 5)) if new_dur else None
-        tail = mean_db(tmp, max(0.0, new_dur - 1.0), 1.0) if new_dur else None
+        # classify() picks the trim point against a body window ending dur-15;
+        # the check below re-measures against one ending new_dur-5. Those are
+        # different regions, so a candidate can clear classification and miss
+        # verification by a fraction of a dB (battle_goblin: -4.1 vs -4.0).
+        # Giving up there left a fade the tool was already authorised to remove.
+        # Step deeper in 0.5 s increments instead, still refusing to pass
+        # MAX_TRIM_S — the ritardando bound is the thing that must not move.
         why = None
-        if new_dur is None or body is None or tail is None:
-            why = "unreadable output"
-        elif abs(new_dur - trim) > 0.5:
-            why = "duration %.1fs != trim point %.1fs" % (new_dur, trim)
-        elif tail < body - TAIL_TOLERANCE_DB:
-            why = "tail still %.1f dB under body - the fade was not removed" % (tail - body)
-        if why:
-            os.remove(tmp)
-            print("%-34s %7.1fs %7.1fs %7.1fs  REJECTED (%s) - source untouched" % (key, dur, trim, cut, why))
+        accepted = None
+        probe = trim
+        while probe > 1.0 and (dur - probe) <= MAX_TRIM_S:
+            if not trim_one(path, probe, tmp):
+                why = "ffmpeg failed"
+                break
+            new_dur = duration(tmp)
+            body = mean_db(tmp, 0, max(1.0, new_dur - 5)) if new_dur else None
+            tail = mean_db(tmp, max(0.0, new_dur - 1.0), 1.0) if new_dur else None
+            if new_dur is None or body is None or tail is None:
+                why = "unreadable output"
+                break
+            if abs(new_dur - probe) > 0.5:
+                why = "duration %.1fs != trim point %.1fs" % (new_dur, probe)
+                break
+            if tail >= body - TAIL_TOLERANCE_DB:
+                accepted = (probe, new_dur, tail - body)
+                why = None
+                break
+            why = "tail still %.1f dB under body after %.1fs of cut" % (tail - body, dur - probe)
+            probe -= 0.5
+        if accepted is None:
+            if os.path.exists(tmp):
+                os.remove(tmp)
+            print("%-34s %7.1fs %7.1fs %7.1fs  REJECTED (%s) - source untouched" % (key, dur, trim, cut, why or "no trim within MAX_TRIM_S passed"))
             failed += 1
             continue
+        trim, new_dur, tail_delta = accepted
+        cut = dur - trim
         shutil.move(tmp, path)
-        print("%-34s %7.1fs %7.1fs %7.1fs  trimmed, tail %+0.1f dB vs body" % (key, dur, trim, cut, tail - body))
+        # The manifest duration describes a file we just shortened. Left stale it
+        # is a quiet lie: 107 entries drifted after the 2026-08-26 trim and had to
+        # be repaired by hand downstream. new_dur is already measured and verified.
+        tracks[key]["duration"] = round(new_dur, 1)
+        updated.append(key)
+        print("%-34s %7.1fs %7.1fs %7.1fs  trimmed, tail %+0.1f dB vs body" % (key, dur, trim, cut, tail_delta))
         ok += 1
 
     if args.apply:
+        if updated:
+            with io.open(MANIFEST, "w", encoding="utf-8") as fh:
+                fh.write(json.dumps(doc, indent=2, ensure_ascii=False) + "\n")
+            print("\n  manifest durations rewritten for %d track(s)" % len(updated))
         print("\n  trimmed %d, rejected %d, of %d TRIM-SAFE candidates" % (ok, failed, len(rows)))
     else:
         print("\n  %d TRIM-SAFE candidates, %.1fs of fade total. Nothing written; pass --apply."

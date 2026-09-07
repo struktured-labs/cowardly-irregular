@@ -893,6 +893,51 @@
       "title_template": "Raid!",
       "style": "JRPG battle, tribal, A minor, war drums, primitive chanting, heavy stomping rhythm, aggressive, brutish, 140 BPM",
       "prompt": "Hulking brutes — ogres, trolls, barbarians — crashing into you in the open. Pounding war drums and guttural chanting, the swagger of something far bigger than you that intends to swing first. Primitive and heavy, all shoulder and no finesse. This is the raiding party arriving, not sneaking."
+    },
+    "boss_castle_warden": {
+      "title_template": "You Are Not On The Docket",
+      "style": "JRPG boss battle, heavy and procedural, low brass in lockstep, plate-armor percussion on a slow immovable pulse, harpsichord figure repeating like a stamp coming down, D minor, 132 BPM, 16-bit, crushing but never frantic",
+      "prompt": "The last audit before the throne. An armored seneschal who does not hate you and never will — you are simply out of spec, and it has been authorized to correct that. Percussion lands like a seal pressed into wax: unhurried, total, impossible to argue with. Brass moves in parallel blocks, a wall advancing one measured step at a time. A harpsichord figure repeats underneath, the same phrase stamped again and again, bureaucracy as a physical force. Builds not by speeding up but by adding weight until the air itself is heavier. This must HIT HARD — it is the fight before the final authority — but its power is procedure, not rage. Immovable, patient, and completely certain it will outlast you."
+    },
+    "boss_calibrant": {
+      "title_template": "A Balance Objection",
+      "style": "final boss, vast and arithmetical, full orchestra with cold synthetic pulse underneath, choir entering late, shifting meter, strings in relentless clockwork ostinato, C minor turning modal, 150 BPM, epic and enormous",
+      "prompt": "The hand on the dial. It has been adjusting this world's numbers since the first slime, and it wears the faces of everyone it already spent on you. Open enormous and controlled — a clockwork string ostinato that never loses its place, brass stating a theme like a figure being entered in a column. Its objection to you is not moral, it is a BALANCE objection, so the music is never hateful: it is vast, exact, and utterly sure of its arithmetic. A choir arrives late and sounds like accumulated cost rather than glory. Escalate through shifting meter, the ostinato subdividing faster while the theme stays calm above it. The biggest, most final piece in the game — overwhelming scale, genuine grandeur, and underneath it all a cold synthetic pulse that never once wavers."
+    },
+    "boss_dragon_fire": {
+      "title_template": "The Ember Wyrm",
+      "style": "JRPG dragon boss battle, blazing and relentless, roaring low brass, fast tremolo strings, thunderous toms, aggressive brass stabs, F# minor, 158 BPM, 16-bit, furnace-hot",
+      "prompt": "An ancient fire dragon whose scales make the cave walls glow red. Open with an eruption — the heat arrives before the creature does. Roaring low brass and tremolo strings at a rolling boil, toms hammering underneath like something enormous shifting its weight. The melody is a blast of flame: wide, bright, and moving too fast to dodge. Aggressive brass stabs punch through the texture at irregular intervals, embers cracking. This must HIT HARD — a real dragon fight, overwhelming and urgent — with a sly confidence underneath, because it has done this many times and is genuinely enjoying itself."
+    },
+    "boss_dragon_ice": {
+      "title_template": "The Frozen Sovereign",
+      "style": "JRPG dragon boss battle, glacial and immense, sustained low strings, crystalline bell and glockenspiel detail, slow-swelling brass, deep timpani, B minor, 138 BPM, 16-bit, vast and cold",
+      "prompt": "A majestic ice dragon entombed in permafrost for centuries, whose breath freezes time itself. Enormous and unhurried where the fire dragon was frantic — the threat is inevitability, not speed. Sustained low strings hold like a glacier under pressure; crystalline bells and glockenspiel glitter across the top like frost spreading over armor. Brass swells slowly and enormously, each entry bigger than the last. Deep timpani mark time like something very old waking up and finding it is still strong. Regal, ancient, and genuinely dangerous — this must HIT HARD, but with crushing weight rather than fury. A sovereign, bored for centuries, mildly delighted that something interesting is finally happening."
+    },
+    "boss_dragon_lightning": {
+      "title_template": "The Storm's Edge",
+      "style": "JRPG dragon boss battle, manic and hyperfast, machine-gun sixteenth-note strings, stuttering brass, blistering double-time percussion, electric arcs, E minor, 178 BPM, 16-bit, the fastest track in the game",
+      "prompt": "A dragon of pure electrical fury that speaks faster than you can think. The fastest, most manic boss theme in the game — machine-gun sixteenth-note strings that never stop to breathe, stuttering brass firing in bursts, double-time percussion blistering underneath. Melodic ideas arrive already interrupting each other, arcing off in new directions mid-phrase, crackling and rewiring in real time. Pure ecstatic aggression: this creature is not angry, it is THRILLED, and the music is its adrenaline. Must HIT HARD through sheer relentless velocity — dangerous because you cannot keep up with it."
+    },
+    "boss_dragon_shadow": {
+      "title_template": "Or Just A State Change",
+      "style": "JRPG dragon boss battle, heavy and unsettling, detuned low strings, deep hollow choir, sparse enormous percussion, dissonant brass swells, unstable meter, A minor with semitone drift, 128 BPM, 16-bit",
+      "prompt": "A dragon of living shadow that questions its own existence between attacks — not darkness, but an absence of light. Enormous and eerie at once: detuned low strings sit under a hollow wordless choir, and the percussion is sparse but colossal, each hit leaving a hole where the reverb should be. Dissonant brass swells rise and resolve to nothing. The meter is subtly unstable, phrases arriving a beat early or late, so the ground is never quite where you left it. Dangerously philosophical — it stops mid-assault to wonder what it is doing, then resumes harder. This must HIT HARD, but the dread does the damage: the fear is not of dying, it is of not being sure that dying means anything."
+    },
+    "boss_arbiter_steampunk": {
+      "title_template": "The Verdict Engine",
+      "style": "JRPG boss battle, mechanical and judicial, pistons and ratchets as percussion, pipe organ against brass, relentless clockwork ostinato, G minor, 148 BPM, 16-bit steampunk",
+      "prompt": "Judgment delivered by machine. Pistons and ratchets ARE the percussion — a courtroom built out of gears, where the verdict is reached by mechanism rather than thought. A pipe organ states the charge; brass answers it in hard parallel blocks. A clockwork ostinato underneath never varies, because the process does not care about your argument. Steam vents punctuate the phrase ends like a gavel. This must HIT HARD — an Arbiter fight is a real fight — with the specific menace of a machine that has already computed the outcome and is merely executing the paperwork."
+    },
+    "boss_curator_steampunk": {
+      "title_template": "Catalogued And Shelved",
+      "style": "JRPG boss battle, ornate and obsessive, music-box and celeste over heavy brass, cataloguing ostinato in the strings, ticking escapement percussion, E-flat minor, 142 BPM, 16-bit steampunk",
+      "prompt": "A collector of things that should not be collected, in a hall of brass drawers that goes back further than the building. A music-box and celeste figure repeats with obsessive precision — the sound of an index being maintained — while heavy brass moves underneath with real menace. Strings run a cataloguing ostinato, item after item after item, never resting. Ticking escapement percussion keeps time like a mechanism that has never been allowed to stop. Ornate and beautiful on the surface, genuinely dangerous below it: this must HIT HARD, because being catalogued by this thing means becoming one of the items in the drawers."
+    },
+    "battle_blood_wolf_alpha": {
+      "title_template": "The One That Leads",
+      "style": "JRPG battle, feral and driving, snarling low strings, tribal-free hard toms, aggressive brass calls answered across the stereo field, D minor, 162 BPM, 16-bit",
+      "prompt": "The alpha of the pack — bigger, older, and the reason the others are brave. Snarling low strings drive hard underneath while brass calls are thrown and ANSWERED across the field, a hunt being coordinated in real time. Percussion is hard and physical, the rhythm of something running you down rather than charging you. Builds in surges: pursuit, a pause where you think you have lost it, then the pack closing from a direction you did not expect. Feral, muscular, and smart — the danger is that it is hunting you rather than merely fighting you."
     }
   }
 }

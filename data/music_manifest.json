@@ -1711,7 +1711,7 @@
       "prompt": "A digital rest stop in the network where data flows like water and programs walk like people. Node Prime. Synthwave chords pulse slowly, lofi drums hold a chill groove, chiptune bells ring in the top end, a warm modem hum anchors the low. Glowing, welcoming, the feeling of a safe zone between scary routes. Loopable.",
       "style": "digital lounge, synthwave rest stop, lofi drums, glowing pads, chiptune bells, modem hum, 95 BPM",
       "model": "suno-v4",
-      "duration": 39.88,
+      "duration": 38.4,
       "loop": true,
       "generated_at": "2026-04-18"
     },
@@ -1843,7 +1843,7 @@
       "prompt": "Phase 2 of the Curator boss fight. The scholarly warmth is gone — the library itself has become hostile. Baroque harpsichord playing impossibly fast Bach-fugue runs, screaming string section, choir erupting at climaxes, full orchestra backing it all with pipe organ at maximum weight. Intellectual precision as violence. Like Mozart's Requiem's Dies Irae scaled up for a JRPG final phase. Curious becomes predatory. Looping.",
       "style": "intense boss phase 2, baroque harpsichord fury, screaming strings, choir bursts, full orchestra with pipe organ, Bach fugue as weapon, 150 BPM",
       "model": "suno-v4",
-      "duration": 37.16,
+      "duration": 35.7,
       "loop": true,
       "generated_at": "2026-04-18"
     },
@@ -1959,7 +1959,7 @@
       "prompt": "Goblins — small, quick, cowardly and armed. Scurry-and-stop motion, a chromatic snicker of a hook that darts and hides, sudden stabs of dissonance like a knife from the dark. Comic menace at knee height: annoying, unpredictable, genuinely dangerous in numbers. NOT a war chant, NOT tribal drums, NOT heroic — this is vermin with knives, and it must not sound like the brutes.",
       "style": "JRPG battle, scrappy and frantic, A minor with chromatic wriggle, skittering percussion, plucked strings, shrill woodwind, scurry-and-stop phrasing, 158 BPM, 16-bit",
       "model": "suno-v5",
-      "duration": 57.8,
+      "duration": 55.3,
       "loop": true,
       "generated_at": "2026-08-26"
     },
@@ -1971,7 +1971,7 @@
       "prompt": "Storm dragon cave dungeon theme. Static crackle in the silences, tremolo strings that climb without ever arriving, distant thunder felt more than heard. A held charge that keeps building and never discharges — the air before lightning, not the strike. Metallic shimmer on the high end, restless low pulse. Every descent adds pressure. SNES-era dungeon atmosphere, tense and expectant. Looping.",
       "style": "SNES dungeon, electrical, static crackle, tremolo strings rising, distant thunder, restless, minor key, 108 BPM",
       "model": "suno-v4",
-      "duration": 104.44,
+      "duration": 101.4,
       "loop": true,
       "generated_at": "2026-08-27"
     },
@@ -1983,7 +1983,7 @@
       "prompt": "Void dragon cave dungeon theme. Sparse detuned bells with long decay, a low drone that never resolves, silences held slightly too long so the room feels like it is waiting for an answer. Almost no percussion. Not menacing — patient, and far older than the player. Hollow, contemplative, quietly wrong. SNES-era dungeon atmosphere, philosophical and cold. Looping.",
       "style": "SNES dungeon, void, sparse detuned bells, low drone, long silences, unsettling, 68 BPM",
       "model": "suno-v4",
-      "duration": 154.28,
+      "duration": 151.3,
       "loop": true,
       "generated_at": "2026-08-27"
     },
@@ -2007,7 +2007,7 @@
       "prompt": "Battle theme for a tie-dye pacifist who attacks with bad vibes and crystal healing. Loose psychedelic groove — sitar figure, wah guitar, a detuned organ pad that keeps bending FLAT so the peace-and-love reads slightly nauseating. Reversed tape swells on the downbeats. Driving enough to be a fight; the serenity is the threat. Looping.",
       "style": "SNES/16-bit battle theme, EarthBound and Mother 3 influenced, driving drums, psychedelic, sitar and wah guitar, woozy detuned organ, backwards tape, 112 BPM",
       "model": "suno-v4",
-      "duration": 209.96,
+      "duration": 208.0,
       "loop": true,
       "generated_at": "2026-08-27"
     },
