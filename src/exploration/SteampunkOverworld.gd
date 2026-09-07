@@ -244,6 +244,7 @@ func _place_wanderers() -> void:
 	var wanderers = [
 		{
 			"name": "Clockwinder",
+			"archetype": "blacksmith",
 			"dialogue": "If I stop winding, the whole district stops.",
 			"color": Color(0.55, 0.4, 0.25),
 			"path": [Vector2(25, 20), Vector2(30, 20), Vector2(30, 25), Vector2(25, 25)],
@@ -254,6 +255,7 @@ func _place_wanderers() -> void:
 		},
 		{
 			"name": "Steam Collector",
+			"archetype": "farmer",
 			"dialogue": "Good steam is hard to find these days.",
 			"color": Color(0.5, 0.5, 0.5),
 			"path": [Vector2(40, 10), Vector2(45, 10), Vector2(45, 15), Vector2(40, 15)],
@@ -268,6 +270,7 @@ func _place_wanderers() -> void:
 		npc.npc_name = w["name"]
 		npc.dialogue = w["dialogue"]
 		npc.sprite_color = w["color"]
+		npc.sprite_archetype = str(w.get("archetype", ""))
 		if w.has("hints"):
 			npc.dialogue_hints = w["hints"]
 		var patrol: Array[Vector2] = []

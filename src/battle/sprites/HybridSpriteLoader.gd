@@ -47,6 +47,16 @@ static func job_asset_path(job_id: String, base_name: String, world_suffix: Stri
 static func current_world_suffix() -> String:
 	return world_suffix()
 
+
+## NPC twin of job_asset_path: <archetype>/overworld_<world>.png when it exists, else the base.
+static func npc_overworld_path(archetype: String) -> String:
+	var suffix := world_suffix()
+	if suffix != "" and suffix != "medieval":
+		var variant := "res://assets/sprites/npcs/%s/overworld_%s.png" % [archetype, suffix]
+		if ResourceLoader.exists(variant):
+			return variant
+	return "res://assets/sprites/npcs/%s/overworld.png" % archetype
+
 static func _load_manifest() -> void:
 	if _manifest_loaded:
 		return
