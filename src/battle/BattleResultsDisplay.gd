@@ -40,15 +40,34 @@ func on_healing_done(target: Combatant, amount: int) -> void:
 		spawn_heal_glow(pos)
 
 
+## struktured 2026-09-07: "if some ability gains MP it should be differently colored (purple) than HP (green) and AP should be another color (red)".
+func on_mp_restored(target: Combatant, amount: int) -> void:
+	if amount <= 0:
+		return
+	var pos = _get_combatant_sprite_position(target)
+	if pos != Vector2.ZERO:
+		spawn_damage_number(pos, amount, true, false, "mp")
+		spawn_heal_glow(pos, AccessibilityPalette.mp())
+
+
+func on_ap_granted(target: Combatant, amount: int) -> void:
+	if amount <= 0:
+		return
+	var pos = _get_combatant_sprite_position(target)
+	if pos != Vector2.ZERO:
+		spawn_damage_number(pos, amount, true, false, "ap")
+		spawn_heal_glow(pos, AccessibilityPalette.ap())
+
+
 ## Spawn a soft expanding green glow under the target sprite. Tweens alpha
 ## up over 0.18s and back down over 0.62s while scaling 0.5 → 1.3, then
 ## queue_frees. Two independent tweens because chain()/parallel()/set_parallel
 ## are easy to mis-stage; two tweens against the same target are robust.
-func spawn_heal_glow(pos: Vector2) -> void:
+func spawn_heal_glow(pos: Vector2, tint: Color = Color(0.35, 1.0, 0.5)) -> void:
 	var panel := PanelContainer.new()
 	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.35, 1.0, 0.5, 0.32)
+	sb.bg_color = Color(tint.r, tint.g, tint.b, 0.32)
 	sb.corner_radius_top_left = 40
 	sb.corner_radius_top_right = 40
 	sb.corner_radius_bottom_left = 40
@@ -57,7 +76,7 @@ func spawn_heal_glow(pos: Vector2) -> void:
 	sb.border_width_bottom = 2
 	sb.border_width_left = 2
 	sb.border_width_right = 2
-	sb.border_color = Color(0.6, 1.0, 0.7, 0.8)
+	sb.border_color = Color(tint.r * 0.5 + 0.5, tint.g * 0.5 + 0.5, tint.b * 0.5 + 0.5, 0.8)
 	panel.add_theme_stylebox_override("panel", sb)
 	panel.size = Vector2(90.0, 90.0)
 	panel.pivot_offset = panel.size / 2.0
@@ -88,10 +107,10 @@ func on_attack_missed(target: Combatant) -> void:
 		spawn_miss_number(pos)
 
 
-func spawn_damage_number(pos: Vector2, amount: int, is_heal: bool, is_crit: bool) -> void:
+func spawn_damage_number(pos: Vector2, amount: int, is_heal: bool, is_crit: bool, kind: String = "hp") -> void:
 	"""Spawn a floating damage/heal number"""
 	var dmg_num = DamageNumber.new()
-	dmg_num.setup(amount, is_heal, is_crit)
+	dmg_num.setup(amount, is_heal, is_crit, kind)
 	# Tick 208: stagger near-duplicate positions so multi-hit attacks don't cluster into one mushy popup pile.
 	var stagger_y: float = _count_recent_popups_near(pos) * STAGGER_STEP
 	dmg_num.position = pos + Vector2(randf_range(-10, 10), -30 - stagger_y)

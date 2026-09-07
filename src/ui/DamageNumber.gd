@@ -24,10 +24,15 @@ func _ready() -> void:
 	_create_label()
 
 
-func setup(amount: int, heal: bool = false, crit: bool = false) -> void:
+## struktured 2026-09-07: MP gains are purple, AP grants red, HP heals stay green — "hp" | "mp" | "ap".
+var kind: String = "hp"
+
+
+func setup(amount: int, heal: bool = false, crit: bool = false, resource_kind: String = "hp") -> void:
 	value = amount
 	is_heal = heal
 	is_critical = crit
+	kind = resource_kind
 
 
 func setup_miss() -> void:
@@ -66,6 +71,12 @@ func _create_label() -> void:
 		# Tick 226: color-blind friendly palette swaps green→cyan (heal) and orange→yellow (crit). Both are distinguishable for deuteranopia/protanopia (red-green color blindness, ~5% of males).
 		if is_heal:
 			color = _heal_color()
+			if kind == "mp":
+				color = AccessibilityPalette.mp()
+				_label.text = "%d MP" % value
+			elif kind == "ap":
+				color = AccessibilityPalette.ap()
+				_label.text = "+%d AP" % value
 		elif is_critical:
 			color = _crit_color()
 		else:

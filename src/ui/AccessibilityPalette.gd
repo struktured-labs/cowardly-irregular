@@ -41,6 +41,20 @@ static func heal() -> Color:
 	return Color.LIME_GREEN
 
 
+# struktured 2026-09-07: MP-gain popup — purple default, lavender in accessibility mode (stays apart from cyan heal + yellow crit).
+static func mp() -> Color:
+	if is_on():
+		return Color(0.80, 0.70, 1.00)  # Lavender
+	return Color(0.72, 0.40, 1.00)  # Purple
+
+
+# struktured 2026-09-07: AP-grant popup — red default, salmon in accessibility mode (magenta is taken by WEAK!).
+static func ap() -> Color:
+	if is_on():
+		return Color(1.00, 0.72, 0.65)  # Salmon
+	return Color(1.00, 0.30, 0.30)  # Red
+
+
 # Tick 226: crit popup color — ORANGE default, bright yellow in accessibility mode.
 static func crit() -> Color:
 	if is_on():

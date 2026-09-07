@@ -126,8 +126,10 @@ func test_existing_healing_done_emits_preserved() -> void:
 			break
 		count += 1
 		cursor = idx + 1
-	assert_gte(count, 5,
-		"healing_done emits must remain in all 5 heal sites — drove the green popup pre-tick-171")
+	# 2026-09-07: the two MP sites moved to mp_restored (purple popup); 3 HP sites + 2 MP sites still feed a popup.
+	var mp_count: int = src.count("BattleManager.mp_restored.emit")
+	assert_gte(count + mp_count, 5,
+		"popup emits must remain in all 5 heal sites (3 healing_done + 2 mp_restored) — drove the popup pre-tick-171")
 
 
 func test_existing_damage_dealt_emit_preserved() -> void:

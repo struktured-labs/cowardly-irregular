@@ -30,7 +30,7 @@ func _run_restore(party: Array, caster: Combatant) -> Dictionary:
 	bm.player_party = typed
 	var heals: Array = []
 	var logs: Array = []
-	bm.healing_done.connect(func(_t, a): heals.append(a))
+	bm.mp_restored.connect(func(_t, a): heals.append(a))  # 2026-09-07: MP gains ride their own purple signal
 	bm.battle_log_message.connect(func(m): logs.append(str(m)))
 	bm._execute_mp_restore_ability(caster, {"mp_amount": 5, "target_type": "all_allies"})
 	return {"heals": heals, "logs": logs}

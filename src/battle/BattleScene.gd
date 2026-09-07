@@ -384,6 +384,8 @@ func _ready() -> void:
 	BattleManager.damage_dealt.connect(_on_damage_dealt)
 	BattleManager.attack_missed.connect(_on_attack_missed)
 	BattleManager.healing_done.connect(_on_healing_done)
+	BattleManager.mp_restored.connect(_on_mp_restored)
+	BattleManager.ap_granted.connect(_on_ap_granted)
 	if BattleManager.has_signal("trust_interrupt_window_opened"):
 		BattleManager.trust_interrupt_window_opened.connect(_on_trust_interrupt_window_opened)
 	if BattleManager.has_signal("trust_interrupt_window_closed"):
@@ -480,6 +482,10 @@ func _exit_tree() -> void:
 		BattleManager.attack_missed.disconnect(_on_attack_missed)
 	if BattleManager.healing_done.is_connected(_on_healing_done):
 		BattleManager.healing_done.disconnect(_on_healing_done)
+	if BattleManager.mp_restored.is_connected(_on_mp_restored):
+		BattleManager.mp_restored.disconnect(_on_mp_restored)
+	if BattleManager.ap_granted.is_connected(_on_ap_granted):
+		BattleManager.ap_granted.disconnect(_on_ap_granted)
 	if BattleManager.battle_log_message.is_connected(_on_battle_log_message):
 		BattleManager.battle_log_message.disconnect(_on_battle_log_message)
 	if BattleManager.monster_summoned.is_connected(_on_monster_summoned):
@@ -4909,6 +4915,14 @@ func _on_attack_missed(target: Combatant) -> void:
 
 func _on_healing_done(target: Combatant, amount: int) -> void:
 	_results_display.on_healing_done(target, amount)
+
+
+func _on_mp_restored(target: Combatant, amount: int) -> void:
+	_results_display.on_mp_restored(target, amount)
+
+
+func _on_ap_granted(target: Combatant, amount: int) -> void:
+	_results_display.on_ap_granted(target, amount)
 	SoundManager.play_battle("heal")
 
 

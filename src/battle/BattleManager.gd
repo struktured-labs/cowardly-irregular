@@ -26,6 +26,9 @@ signal round_ended(round_num: int)
 signal damage_dealt(target: Combatant, amount: int, is_crit: bool, element: String, elemental_mod: float)
 signal attack_missed(target: Combatant)
 signal healing_done(target: Combatant, amount: int)
+## struktured 2026-09-07: MP gains and ability AP grants get their own popups (purple / red) — never healing_done's green.
+signal mp_restored(target: Combatant, amount: int)
+signal ap_granted(target: Combatant, amount: int)
 signal battle_log_message(message: String)
 signal monster_summoned(monster_type: String, summoner: Combatant)
 ## Tick 409: meta_autobattle_editor_requested fires when the
@@ -1395,7 +1398,7 @@ func _apply_passive_mp_regen(combatant: Combatant) -> void:
 	var amount: int = max(1, int(round(combatant.max_mp * total_pct)))
 	var restored: int = combatant.restore_mp(amount)
 	if restored > 0:
-		healing_done.emit(combatant, restored)
+		mp_restored.emit(combatant, restored)
 
 
 ## Tick 456: fire the lingering-eidolon follow-up. Reads
@@ -3398,6 +3401,7 @@ func _execute_defer(combatant: Combatant) -> void:
 	var bp_bonus: int = int(combatant._get_passive_meta_effect_sum("bp_regen_bonus"))
 	if bp_bonus > 0:
 		combatant.gain_ap(bp_bonus)
+		ap_granted.emit(combatant, bp_bonus)
 		battle_log_message.emit("[color=cyan]%s recovers %d extra AP (BP Recovery)![/color]" % [combatant.combatant_name, bp_bonus])
 	print("%s defers (AP: %d)" % [combatant.combatant_name, combatant.current_ap])
 
@@ -4801,7 +4805,7 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 		if drain_mp_amount > 0 and actual_damage > 0 and caster != null and caster.is_alive:
 			var restored: int = caster.restore_mp(drain_mp_amount)
 			if restored > 0:
-				healing_done.emit(caster, restored)
+				mp_restored.emit(caster, restored)
 				battle_log_message.emit("[color=cyan]%s drains %d MP from %s![/color]" % [caster.combatant_name, restored, target.combatant_name])
 
 		## Tick 421: permadeath enforcement for magic ability path —
@@ -5518,6 +5522,7 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 				if target and is_instance_valid(target) and target.is_alive and target.has_method("gain_ap"):
 					var ap_grant: int = int(ability.get("ap_grant", 2))
 					target.gain_ap(ap_grant)
+					ap_granted.emit(target, ap_grant)
 					battle_log_message.emit("[color=%s]%s braves the moment![/color] (+%d AP)" % [AccessibilityPalette.bonus_bbcode(), target.combatant_name, ap_grant])
 		## Tick 386: damage_absorb handler. Pre-fix fill_the_void
 		## (effect=damage_absorb, duration=2, absorb_amount=100) fell
@@ -5644,6 +5649,7 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 			if volatility:
 				volatility.shift_band(-1)
 				caster.gain_ap(1)
+				ap_granted.emit(caster, 1)
 				# Tick 238: bonus BBCode (CIRCUIT BREAKER — band-reduce + AP gain).
 				battle_log_message.emit("[color=%s]CIRCUIT BREAKER![/color] Band reduced, %s gains +1 AP" % [AccessibilityPalette.bonus_bbcode(), caster.combatant_name])
 		"default_stance":
@@ -6478,7 +6484,7 @@ func _execute_mp_restore_ability(caster: Combatant, ability: Dictionary, targets
 		any_restored = true
 		print("  → %s restores %d MP for %s" % [caster.combatant_name, restored, r.combatant_name])
 		battle_log_message.emit("[color=aqua]%s restores [color=cyan]%d MP[/color] for [color=white]%s[/color][/color]" % [caster.combatant_name, restored, r.combatant_name])
-		healing_done.emit(r, restored)
+		mp_restored.emit(r, restored)
 	if not any_restored:
 		battle_log_message.emit("[color=gray]%s's MP restore fizzles — everyone's already full.[/color]" % caster.combatant_name)
 

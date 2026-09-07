@@ -232,7 +232,8 @@ func test_mp_restore_emits_healing_done_not_damage_dealt() -> void:
 	assert_gt(fn_idx, -1, "_execute_mp_restore_ability must exist in BattleManager")
 	var next_fn = src.find("\nfunc ", fn_idx + 1)
 	var body = src.substr(fn_idx, next_fn - fn_idx if next_fn > fn_idx else 400)
-	assert_true(body.find("healing_done.emit") != -1,
-		"_execute_mp_restore_ability must emit healing_done (regression: was emitting damage_dealt)")
+	# 2026-09-07: MP gains got their own purple signal; the invariant defended here is "a gain, never damage".
+	assert_true(body.find("mp_restored.emit") != -1,
+		"_execute_mp_restore_ability must emit mp_restored (regression: was emitting damage_dealt)")
 	assert_true(body.find("damage_dealt.emit") == -1,
 		"_execute_mp_restore_ability must NOT emit damage_dealt (regression guard)")

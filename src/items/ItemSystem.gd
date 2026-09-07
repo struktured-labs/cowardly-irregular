@@ -410,7 +410,7 @@ func _apply_item_effects(user: Combatant, target: Combatant, item: Dictionary) -
 		var restore_amount = effects["heal_mp"]
 		var actual_mp = target.restore_mp(restore_amount)
 		if actual_mp > 0 and BattleManager:
-			BattleManager.healing_done.emit(target, actual_mp)
+			BattleManager.mp_restored.emit(target, actual_mp)
 			BattleManager.battle_log_message.emit("  → [color=white]%s[/color] recovers [color=cyan]%d MP[/color]!" % [target.combatant_name, actual_mp])
 		print("  → %s recovered %d MP" % [target.combatant_name, actual_mp])
 
@@ -420,7 +420,7 @@ func _apply_item_effects(user: Combatant, target: Combatant, item: Dictionary) -
 		var restore_amount = int(target.max_mp * restore_percent / 100.0)
 		var actual_mp_p = target.restore_mp(restore_amount)
 		if actual_mp_p > 0 and BattleManager:
-			BattleManager.healing_done.emit(target, actual_mp_p)
+			BattleManager.mp_restored.emit(target, actual_mp_p)
 			BattleManager.battle_log_message.emit("  → [color=white]%s[/color] recovers [color=cyan]%d MP[/color]! (%d%%)" % [target.combatant_name, actual_mp_p, restore_percent])
 		print("  → %s recovered %d MP (%d%%)" % [target.combatant_name, actual_mp_p, restore_percent])
 

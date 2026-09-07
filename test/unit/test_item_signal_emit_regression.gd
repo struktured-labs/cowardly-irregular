@@ -60,8 +60,8 @@ func test_heal_mp_path_emits_healing_done() -> void:
 	var idx := text.find("if effects.has(\"heal_mp\"):")
 	assert_gt(idx, -1, "heal_mp branch must exist")
 	var rest := text.substr(idx, 400)
-	assert_true(rest.contains("BattleManager.healing_done.emit"),
-		"heal_mp branch must emit healing_done as the MP-restore visual proxy")
+	assert_true(rest.contains("BattleManager.mp_restored.emit"),
+		"heal_mp branch must emit mp_restored (purple popup, 2026-09-07) — not the green heal signal")
 
 
 func test_heal_mp_percent_path_emits_healing_done() -> void:
@@ -69,8 +69,8 @@ func test_heal_mp_percent_path_emits_healing_done() -> void:
 	var idx := text.find("if effects.has(\"heal_mp_percent\"):")
 	assert_gt(idx, -1, "heal_mp_percent branch must exist")
 	var rest := text.substr(idx, 500)
-	assert_true(rest.contains("BattleManager.healing_done.emit"),
-		"heal_mp_percent branch must emit healing_done")
+	assert_true(rest.contains("BattleManager.mp_restored.emit"),
+		"heal_mp_percent branch must emit mp_restored (purple popup, 2026-09-07)")
 
 
 func test_revive_path_emits_healing_done() -> void:
