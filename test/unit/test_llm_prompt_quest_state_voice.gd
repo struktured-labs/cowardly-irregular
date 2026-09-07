@@ -159,3 +159,51 @@ func test_source_overworld_npc_resolves_and_passes_bucket_lines() -> void:
 		"resolved bucket lines must be passed as the 7th arg to DynamicConversation.setup — the LLM path can't see them otherwise")
 	assert_true(src.find("_quest_state_bucket_for_npc(quest_sys_for_llm)") != -1,
 		"bucket resolution must reuse the cycle-3 helper so LLM-on/LLM-off paths agree on bucket")
+
+
+# ── build_combined_reply: the reply path dropped what the opening path threads
+
+func test_reply_prompt_with_empty_quest_state_is_backward_compatible() -> void:
+	var prompt: String = DP.build_combined_reply(
+		"Milo", "scholar", "Harmonia Village", [], "prior", "player said", 4)
+	assert_true(prompt.find("recently said") == -1,
+		"empty quest_state_lines must not emit the voice block on the reply path either")
+	assert_true(prompt.find("Persona: scholar") != -1,
+		"base prompt shape intact")
+
+
+func test_reply_prompt_includes_bucket_lines_when_provided() -> void:
+	var lines: Array = ["I have a chapter drafted. It is Chapter Three."]
+	var prompt: String = DP.build_combined_reply(
+		"Milo", "scholar", "Harmonia Village", [], "prior", "player said", 4, lines)
+	assert_true(prompt.find("recently said") != -1,
+		"the reply path must emit the voice block — Milo's authored tone was reaching his opening and being dropped from every follow-up")
+	assert_true(prompt.find("Chapter Three") != -1,
+		"the bucket line itself must appear in the reply prompt")
+	assert_true(prompt.find("Echo this mood and voice.") != -1,
+		"lines without the instruction are context without direction")
+
+
+func test_opening_and_reply_paths_agree_on_the_voice_block() -> void:
+	# The defect this file now guards: build_npc_opening threaded quest_state_lines
+	# and build_combined_reply did not, so an NPC spoke in voice once and generically
+	# thereafter. Assert the two builders emit the SAME block for the same lines —
+	# a per-path assertion would pass while the paths disagreed.
+	var lines: Array = ["The corridor went the only way the corridor went."]
+	var opening: String = DP.build_npc_opening("Milo", "scholar", "Harmonia", [], lines)
+	var reply: String = DP.build_combined_reply(
+		"Milo", "scholar", "Harmonia", [], "prior", "player said", 4, lines)
+	var block: String = DP._format_quest_state_voice(lines)
+	assert_false(block.is_empty(),
+		"the shared formatter must produce a block for non-empty lines — else both asserts below are vacuous")
+	assert_true(opening.find(block) != -1, "opening path must contain the shared voice block")
+	assert_true(reply.find(block) != -1, "reply path must contain the SAME shared voice block")
+
+
+func test_source_dynamic_conversation_passes_quest_state_lines_to_combined_reply() -> void:
+	var src = _read(DYN_CONV_PATH)
+	var idx: int = src.find("build_combined_reply(")
+	assert_true(idx != -1, "DynamicConversation must still call build_combined_reply")
+	var tail: String = src.substr(idx, 400)
+	assert_true(tail.find("_quest_state_lines") != -1,
+		"the build_combined_reply call must pass _quest_state_lines — without it the cache exists and the reply prompt never sees it")

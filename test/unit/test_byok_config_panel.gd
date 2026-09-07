@@ -164,32 +164,52 @@ func test_panel_has_test_button_and_status_label() -> void:
 
 
 func test_test_handler_uses_real_llm_call() -> void:
-	# Without this, "Test" just checks is_available — which would
-	# return true even with a misconfigured endpoint that hangs.
+	# INTENT (unchanged): only a real round-trip is an honest test — an
+	# availability check passes against a misconfigured endpoint that hangs.
+	# CONTRACT CHANGED 2026-09-07: the round-trip must go to the TYPED fields,
+	# not LLMService.complete(). complete() uses the last-APPLIED backend, so a
+	# blank form probed local Ollama and printed OK — struktured ran weeks on
+	# llama3 believing his OpenAI key was validated.
 	var body := _body_of(PANEL, "_on_test_pressed")
-	assert_true(body.contains("svc.complete"),
-		"_on_test_pressed must call LLMService.complete — a real round-trip is the only honest test")
+	assert_true(body.contains("HTTPBackend.new()"),
+		"_on_test_pressed must build a throwaway backend from the typed fields — a real round-trip, to the config under test")
+	assert_true(body.contains("probe.submit("),
+		"it must actually submit a request; an availability check is not a test")
 	assert_true(body.contains("await"),
-		"_on_test_pressed must await the complete call — it's async")
-
+		"_on_test_pressed must await the probe — it is async")
+	assert_false(body.contains("svc.complete("),
+		"it must NOT route through the applied backend — that is the defect this pin now guards")
 
 func test_test_handler_detects_fallback_vs_success() -> void:
-	# The probe distinguishes 'LLM returned something' from 'fallback
-	# was used' by checking against the sentinel. Without this, every
-	# probe would report success even when the backend timed out.
+	# INTENT (unchanged): distinguish "the backend answered" from "it timed out
+	# or errored" — without it every probe reports success.
+	# CONTRACT CHANGED: the sentinel comparison is gone because request_finished
+	# reports ok/error directly, which is a stronger discrimination than
+	# string-matching a fallback constant.
 	var body := _body_of(PANEL, "_on_test_pressed")
-	assert_true(body.contains("PROBE_FALLBACK"),
-		"test must compare against the sentinel fallback to distinguish real success from timeout/error")
-
+	assert_true(body.contains("res.is_empty()"),
+		"a probe that never answered must be distinguishable from one that did — the timeout arm")
+	assert_true(body.contains("not bool(res[0])"),
+		"an error reply must be distinguishable from a success — the failure arm")
+	assert_true(body.contains("Status: OK"),
+		"and a genuine answer must still report success")
 
 func test_test_handler_short_circuits_on_unavailable() -> void:
-	# Save the user a wait if is_available is already false — show
-	# an instant 'no ready backend' message instead of timing out
-	# at the HTTP layer.
+	# INTENT (unchanged): never send a doomed probe — show an instant reason
+	# instead of making the user wait out an HTTP timeout.
+	# CONTRACT CHANGED: is_available() described the APPLIED backend, which is
+	# the wrong subject once the test probes typed fields. The guard now refuses
+	# on the typed config itself: BYOK toggled off, or empty base_url/model.
 	var body := _body_of(PANEL, "_on_test_pressed")
-	assert_true(body.contains("svc.is_available()") or body.contains("not svc.is_available()"),
-		"test must short-circuit on is_available=false instead of always sending a probe")
-
+	assert_true(body.contains("_config_problem("),
+		"the handler must consult the typed-config validator before probing")
+	assert_true(body.contains("Status: not tested"),
+		"a refused test must say it was NOT tested — silence would read as a pass")
+	var problem := _body_of(PANEL, "_config_problem")
+	assert_true(problem.contains("toggled OFF"),
+		"BYOK switched off must refuse — the typed fields are not in use, so there is nothing to test")
+	assert_true(problem.contains("Base URL is empty") and problem.contains("Model is empty"),
+		"an unfillable config must refuse instantly rather than time out at the HTTP layer")
 
 func test_test_handler_guards_concurrent_clicks() -> void:
 	# Without a guard, mashing Test would fire multiple in-flight
