@@ -1752,7 +1752,12 @@ func _on_rename_cancelled() -> void:
 
 func _save_rules() -> void:
 	"""Save current rules to active autogrind profile"""
-	AutogrindSystem.set_autogrind_rules(rules)
+	## set_autogrind_rules REFUSES invalid input with no mutation. Emitting rules_saved
+	## regardless announced a save that never happened — a phantom success, which is the exact
+	## failure its docstring warns callers about.
+	if not AutogrindSystem.set_autogrind_rules(rules):
+		push_warning("[AUTOGRIND] editor save REJECTED — %d rule(s) failed validation, nothing written" % rules.size())
+		return
 	rules_saved.emit(rules)
 
 
