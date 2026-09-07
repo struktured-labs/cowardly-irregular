@@ -32,7 +32,8 @@ func test_already_known_check_runs_before_spend() -> void:
 	# otherwise the spend already happened and we'd need to refund.
 	# Both work but pre-check is simpler and harder to break.
 	var body := _body_of("_attempt_magic_purchase")
-	var check_at := body.find("pending_spell_id in existing_learned")
+	# 2026-09-06: the guard is provenance-blind now (kit/learned/purchased/level/free-move) via _member_knows.
+	var check_at := body.find("_member_knows(char_index, pending_spell_id, existing_learned)")
 	var spend_at := body.find("game_state.spend_gold(cost)")
 	assert_gt(check_at, -1, "already-known guard must exist")
 	assert_gt(spend_at, -1, "spend_gold must still be called for the success path")

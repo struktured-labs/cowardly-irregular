@@ -106,9 +106,12 @@ func test_apply_autogrind_rules_now_validates() -> void:
 func test_autogrind_footer_documents_the_bindings() -> void:
 	# Discoverability: the console's footer must list the file AND code flows
 	# (they existed with zero mention — undiscoverable features are half-built).
+	# 2026-09-06 controller pass: the keyboard-only footer became a glyph hint strip and the file/code
+	# flows are ROWS on the options ring — discoverable on a pad, not just documented for a keyboard.
 	var src := FileAccess.get_file_as_string("res://src/ui/autogrind/AutogrindUI.gd")
-	assert_true("[E/I]: Files" in src and "[Sh+E/I]: Codes" in src,
-		"the autogrind footer documents export/import and share codes")
+	for row in ['{"id": "export", "label": "Export to File"}', '{"id": "import", "label": "Import from File"}',
+			'{"id": "copy_code", "label": "Copy Share Code"}', '{"id": "paste_code", "label": "Paste Share Code"}']:
+		assert_true(row in src, "the autogrind options ring must expose the file AND code flows: %s" % row)
 
 
 func test_editor_wires_the_clipboard_bindings() -> void:
