@@ -65,18 +65,52 @@ already introduces himself like this:
 
 Phil is a man whose save is corrupted. That is the entire joke, and it is already written and
 shipped — nobody planted it, it just happens to be true. He recurs in W1, W3, and W6
-across seven shipped cutscene files — `world1_chapter1`, `world1_harmonia_npcs`,
-`world1_transition`, `world1_orrery`, `world3_chapter2`, `world3_orrery`, `world6_orrery` — so he
-can carry the ratchet across the whole game rather than delivering one lecture and leaving.
+across six shipped cutscene files — but the shape matters more than the count, and it is not
+what I first wrote:
+
+| file | Phil |
+|---|---|
+| `world1_chapter1`, `world1_harmonia_npcs`, `world1_orrery` | **speaks** (4 / 3 / 2 lines) |
+| `world1_transition`, `world3_orrery`, `world6_orrery` | referred to, never present |
+
+**Phil has a voice only in W1.** In W3 and W6 he is an object of discussion, not a character on
+screen. So he cannot carry the ratchet by reappearing — that would be new authoring in two worlds,
+not reuse.
+
+He does not need to, because the game already solved it.
 
 And the Backwards Warren's new boss is **The Lost Cartographer**. The name rhyme with Phil the
 Lost is free and should be paid off, not explained: the same condition, further along.
 
-### The device: Phil's notebook, not Phil's speech
+### The device: a Phil document, not Phil's speech — and the game already has the grammar
 
 Phil cannot explain corruption. He cannot remember it — that is his defect and it is the point. So
-he does not explain it. **He hands the player his notebook**, because writing things down is what
-he does instead of remembering.
+he does not explain it. **He hands the player a document**, because externalising is what he does
+instead of remembering.
+
+🔑 **This is not a new device. Phil already gives the party a piece of paper in Harmonia, and that
+paper is one of the game's longest threads.** Shipped, W1 → W3 → W6:
+
+- W1 Harmonia — Phil gives the party a paper bearing a symbol
+- W1 orrery — *"I've been carrying this since before. I don't know what before means except that it
+  was before Harmonia, before I was Phil, before the inn was painted so many times it forgot what
+  it was."*
+- W3 orrery — the same symbol turns up on the cave logs and in the corner of the Grand Mechanism's
+  core blueprint. *"Same symbol, three different documents, three worlds apart."*
+- W6 orrery — the Fool Card's five marks rearrange into that same shape
+
+And the party already writes Phil down *for* him: `world1_transition` has *"Phil said something
+about dreams — metal walls, blinking lights. **I wrote it all down.**"*
+
+So the game has already established, without ever stating it, that **Phil's memory lives in
+objects other people carry.** A second Phil artifact is idiomatic rather than novel — the player
+has been trained to accept a document from this man and not understand it yet.
+
+🛑 **Do not hang corruption on the paper itself.** The paper is a plot object doing careful work
+across three worlds toward the Fool Card; loading a mechanics explainer onto it muddies the one
+thread that currently pays off in W6. Use a *second*, mundane artifact — the same grammar, none of
+the mythology. The paper is the thing Phil cannot explain; the notebook is the thing he can no
+longer keep.
 
 The notebook is the explainer. It can be explicit about all five effects, because it is a symptom
 list kept by a man cataloguing his own decline in his own handwriting — which is exactly the tone
