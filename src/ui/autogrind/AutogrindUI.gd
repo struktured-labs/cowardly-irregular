@@ -2118,6 +2118,13 @@ func _persist_rules_on_close() -> void:
 		push_warning("[AUTOGRIND] rules NOT saved on close — %d rule(s) failed validation; the last valid set is kept" % rules.size())
 
 
+## @cowir-controller's transition-seam teardown entry point. Kept as a thin wrapper rather than
+## a second implementation: _close_ui already persists, so the seam and the player's own close
+## go through ONE checked path and cannot drift apart.
+func save_and_close() -> void:
+	_close_ui()
+
+
 func _close_ui() -> void:
 	"""Close the UI"""
 	_persist_rules_on_close()

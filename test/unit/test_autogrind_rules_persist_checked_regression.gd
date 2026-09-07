@@ -84,3 +84,24 @@ func test_closing_is_never_blocked_by_a_refused_save() -> void:
 	_ui._is_grinding = false
 	_ui._close_ui()
 	assert_eq(closed[0], 1, "a rejected save must still let the console close")
+
+
+func test_the_seam_teardown_and_the_players_close_share_one_path() -> void:
+	## @cowir-controller's save_and_close and the player's cancel must not grow separate persist
+	## implementations — that is how the two drifted in the first place (reconciled 2026-09-06).
+	AutogrindSystem.set_autogrind_rules([])
+	_ui.rules = [_valid_rule()]
+	_ui.save_and_close()
+	assert_eq(AutogrindSystem.get_autogrind_rules().size(), 1,
+		"save_and_close must persist through the same checked path as _close_ui")
+
+
+func test_a_console_torn_down_before_its_rules_loaded_does_not_wipe_the_saved_set() -> void:
+	## The empty-guard. A teardown that fires before _load_rules populates `rules` would
+	## otherwise persist [] over the player's real ruleset — validation accepts an empty array,
+	## so nothing would refuse it. Silent, total data loss at exactly the involuntary seam.
+	AutogrindSystem.set_autogrind_rules([_valid_rule()])
+	_ui.rules = []
+	_ui.save_and_close()
+	assert_eq(AutogrindSystem.get_autogrind_rules().size(), 1,
+		"an empty in-memory ruleset must never overwrite the saved one")
