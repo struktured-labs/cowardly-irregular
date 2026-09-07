@@ -55,12 +55,15 @@ NAMED = {"bram", "marta", "elder_theron", "scholar_milo", "phil", "dr_temporal",
 
 
 def archetypes() -> list[str]:
+    # a variant dir also holds overworld.png — without this guard a rerun generates variants-of-variants
     return sorted(d.name for d in NPCS.iterdir()
-                  if d.is_dir() and (d / "overworld.png").exists() and d.name not in NAMED)
+                  if d.is_dir() and (d / "overworld.png").exists() and d.name not in NAMED
+                  and not any(d.name.endswith("_" + w) for w in WORLDS))
 
 
 def gen_one(client: OpenAI, arch: str, world: str, quality: str) -> Path | None:
-    out = NPCS / arch / f"overworld_{world}.png"
+    out = NPCS / f"{arch}_{world}" / "overworld.png"
+    out.parent.mkdir(exist_ok=True)
     if out.exists():
         return None
     ref = ow.pad_to_square(Image.open(NPCS / arch / "overworld.png").convert("RGBA"), 1024)
@@ -88,7 +91,7 @@ def register(arch: str, world: str) -> None:
     m = json.loads(mf.read_text())
     key = f"{arch}_{world}"
     m.setdefault("overworld_npc_sheets", {})[key] = {
-        "path": f"res://assets/sprites/npcs/{arch}/overworld_{world}.png",
+        "path": f"res://assets/sprites/npcs/{arch}_{world}/overworld.png",
         "frame_width": 32, "frame_height": 32, "tier": "T1",
         "source": f"gpt-image-1 world-variant, identity+format anchored to the {arch} medieval "
                   f"grid (2026-09-07 sweep; struktured's 'proc gen dude in suburban' report)",
