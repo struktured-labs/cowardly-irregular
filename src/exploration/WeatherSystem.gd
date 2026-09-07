@@ -38,7 +38,7 @@ const RENDER: Dictionary = {
 	"clear": {},
 	"drizzle": {"rain_amount": 70, "rain_velocity": 200.0, "overlay": Color(0.3, 0.34, 0.4, 0.10), "ambient": "weather_rain"},
 	"rain": {"rain_amount": 180, "rain_velocity": 320.0, "overlay": Color(0.12, 0.14, 0.2, 0.22), "ambient": "weather_rain"},
-	"storm": {"rain_amount": 320, "rain_velocity": 460.0, "overlay": Color(0.08, 0.09, 0.15, 0.34), "ambient": "weather_rain", "lightning": true},
+	"storm": {"rain_amount": 320, "rain_velocity": 460.0, "overlay": Color(0.08, 0.09, 0.15, 0.34), "ambient": "weather_storm_bed", "lightning": true},
 	"fog": {"overlay": Color(0.55, 0.45, 0.3, 0.16), "breathe": true, "ambient": "weather_steam"},
 	"smog": {"overlay": Color(0.22, 0.22, 0.2, 0.22), "breathe": true, "ambient": "weather_smog"},
 	"glitchstorm": {"overlay": Color(0.0, 0.1, 0.2, 0.1), "glitch": true, "ambient": "weather_glitch"},
@@ -180,6 +180,7 @@ func _apply_condition(condition: String) -> void:
 		# Literal keys per branch so the sfx-orphan audit can see every ambient this plays.
 		match str(params.get("ambient", WORLD_CLEAR_AMBIENTS.get(_current_world, ""))):
 			"weather_rain": sm.play_ambient("weather_rain")
+			"weather_storm_bed": sm.play_ambient("weather_storm_bed")
 			"weather_steam": sm.play_ambient("weather_steam")
 			"weather_smog": sm.play_ambient("weather_smog")
 			"weather_glitch": sm.play_ambient("weather_glitch")
@@ -200,7 +201,8 @@ func _trigger_lightning() -> void:
 	tween.tween_property(_lightning_flash, "color:a", 0.0, 0.2)
 	var sm: Node = _autoload("SoundManager")
 	if sm and sm.has_method("play_battle"):
-		sm.play_battle("ability_lightning")
+		# Weather thunder, not the mage's spell: ability_lightning is a cast cue and reads as someone casting Thunder offscreen.
+		sm.play_battle("weather_thunder_distant")
 
 
 func _trigger_glitch() -> void:
