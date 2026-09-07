@@ -418,5 +418,9 @@
   "castle_warden": {
     "epithet": "The Last Audit",
     "flavor": "It stands where the stairs narrow, in plate the color of a closed ledger, and asks nothing — the questions were all asked before you arrived, and your answers were found insufficient. It fights the way a form rejects you: patiently, in order, citing precedent. Somewhere behind it, the Chancellor is already reviewing the outcome."
+  },
+  "dark_knight": {
+    "epithet": "The One That Waits",
+    "flavor": "It has chosen a spot. It will not be chasing you, which is somehow worse -- a thing that hunts can be outrun, and a thing that waits has already decided it does not need to. The armour is older than the kingdom that fears it. Whatever is inside stopped being a knight some time ago and kept the posture out of habit."
   }
 }

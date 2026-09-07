@@ -1,0 +1,35 @@
+{
+  "_note": "Field elites -- BD2-style stationary rares. struktured 2026-09-06: 'it's not moving around, it just sits there on the overworld menacingly glowing or radiating. You have to make contact to decide to fight it and it's unfairly strong -- pinned to be stronger than your party by a lot. Rare drops/exp if you beat it though.'",
+  "_scaling_is_data_on_purpose": "He asked for the scaling to be data, not code. EncounterSystem._create_enemy_data reads this table when a monster carries field_elite -- so retuning difficulty is a JSON edit, and the same numbers are visible to tests without executing a battle.",
+  "_pinned_above_the_party": "level_offset and the multipliers are applied against the PARTY AVERAGE at the moment the fight starts, never against the monster's authored level. That is the whole point: a field elite is unfair at every point in the game, not just at the level it was written for.",
+
+  "scaling": {
+    "level_offset": 5,
+    "hp_multiplier": 3.0,
+    "attack_multiplier": 1.5,
+    "defense_multiplier": 1.5,
+    "magic_multiplier": 1.5,
+    "magic_defense_multiplier": 1.5,
+    "speed_multiplier": 1.15,
+    "exp_multiplier": 8.0,
+    "gold_multiplier": 5.0,
+    "per_level_stat_growth": 0.08
+  },
+
+  "_spawn_note": "chance_per_fill is rolled once per spawner fill tick (CHECK_INTERVAL 3.0s) and only when no elite is alive. min_seconds_between is the floor after one despawns or is fought. Tuned for roughly one sighting per 20-minute session: 0.012 over a ~3s tick is a mean of ~4 minutes to the roll landing, and the cooldown plus the elite needing to spawn in view-range does the rest.",
+  "spawn": {
+    "chance_per_fill": 0.012,
+    "min_seconds_between": 300.0,
+    "max_alive": 1
+  },
+
+  "_roster_note": "One per world. Medieval gets a purpose-built Dark Knight (struktured named it). The others promote that world's apex species -- already flavored as the top of its food chain -- rather than inventing five more monsters nobody asked for. Suburban's is the neighborhood dog ON PURPOSE: a perfectly ordinary dog, radiating, unfairly strong, is this game's humor rather than a failure of nerve.",
+  "per_world": {
+    "medieval": "dark_knight",
+    "suburban": "unassuming_dog",
+    "steampunk": "brass_golem",
+    "industrial": "rust_elemental",
+    "futuristic": "data_wraith",
+    "abstract": "optimization_itself"
+  }
+}
