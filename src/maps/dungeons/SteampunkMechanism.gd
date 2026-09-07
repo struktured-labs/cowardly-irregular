@@ -26,52 +26,71 @@ func _init() -> void:
 	# chapter4 only triggered AFTER the player beat W4's AssemblyCore
 	# boss — skipping the W3 narrative closer entirely.
 	defeat_cutscene_flags = ["cutscene_flag_tempo_steampunk_defeated"]
-	total_floors = 3
+	total_floors = 4
 	overworld_exit_spawn = "plaza"
 	overworld_exit_map = "steampunk_overworld"
 	unlock_story_flag = "w3_dungeon_cleared"
 
+	# struktured 2026-09-06: 4 floors now — entrance -> Gear Room (two lever-vaults) -> catwalk with a portal shortcut -> Tempo.
 	floor_layouts = {
 		1: [
 			"MMMMMMMMMMMMMMMMMMMM",
-			"M..................M",
-			"M.MMMM.....MMMM....M",
-			"M.M..T.......M..T..M",
-			"M.M..........M.....M",
-			"M.MMMM.....MMMM....M",
-			"M..................M",
-			"M......MMMMMM......M",
-			"M......M....M......M",
-			"M......M..U.M......M",
-			"M.T....MMMMMM......M",
+			"MMMMMMMMMMMMMMMMMMMM",
+			"MM...MMMMMMMMMM...MM",
+			"MM.T.MMMMMMMMMM.T.MM",
+			"MM...MMMMMMMMMM...MM",
+			"MMM.MMMMMMMMMMMM.MMM",
 			"M..................M",
 			"M..................M",
-			"M.......DDDD.......M",
+			"MMMMMMMMM..MMMMMMMMM",
+			"MMMMMMMMM.U.MMMMMMMM",
+			"MMMMMMMMM...MMMMMMMM",
+			"MMMMMMMMM..MMMMMMMMM",
+			"M..................M",
+			"M.........D........M",
 			"M..................M",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
 		2: [
 			"MMMMMMMMMMMMMMMMMMMM",
 			"M..................M",
-			"M.MMMMMM...MMMMMM..M",
-			"M.M..............M.M",
-			"M.M..T......T....M.M",
-			"M.M..............M.M",
-			"M.MMMMMM...MMMMMM..M",
 			"M..................M",
-			"M......MM..MM......M",
-			"M......M....M......M",
-			"M......M..U.M..T...M",
-			"M......MM..MM......M",
+			"M...D..............M",
 			"M..................M",
-			"M.........D........M",
+			"M..................M",
+			"MMMM...............M",
+			"MMTM.L.............M",
+			"MMMM...............M",
+			"M..................M",
+			"M.............U....M",
+			"M..............MMM.M",
+			"M............L.MTM.M",
+			"M..............MMM.M",
 			"M..................M",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
 		3: [
 			"MMMMMMMMMMMMMMMMMMMM",
 			"M..................M",
-			"M.T................M",
+			"M..................M",
+			"M..................M",
+			"M.............U....M",
+			"M..................M",
+			"M..................M",
+			"M..a............a..M",
+			"M..................M",
+			"M..................M",
+			"M..................M",
+			"M..................M",
+			"M...D..............M",
+			"M..................M",
+			"M..................M",
+			"MMMMMMMMMMMMMMMMMMMM",
+		],
+		4: [
+			"MMMMMMMMMMMMMMMMMMMM",
+			"M..................M",
+			"M..................M",
 			"M..................M",
 			"M....MMMM..MMMM....M",
 			"M....M........M....M",
@@ -80,7 +99,7 @@ func _init() -> void:
 			"M....M........M....M",
 			"M....M........M....M",
 			"M....MMMM..MMMM....M",
-			"M................T.M",
+			"M..................M",
 			"M..................M",
 			"M..................M",
 			"M.........D........M",
@@ -90,14 +109,27 @@ func _init() -> void:
 
 	floor_spawn_points = {
 		1: {"entrance": Vector2(10, 12)},
-		2: {"down_stairs": Vector2(10, 13)},
-		3: {"down_stairs": Vector2(10, 14)},
+		2: {"entrance": Vector2(13, 12)},
+		3: {"entrance": Vector2(13, 12)},
+		4: {"entrance": Vector2(3, 7)},
 	}
 
 	floor_encounter_pools = {
 		1: ["steam_rat", "cog_swarm"],
 		2: ["clockwork_sentinel", "pipe_phantom", "brass_golem"],
-		3: [],
+		3: ["cog_swarm", "clockwork_sentinel", "brass_golem"],
+		4: [],
+	}
+
+	# sw0 (lever 5,7 -> door 3,7) and sw1 (lever 13,12 -> door 15,12): optional walkway-vault detours, neither gates the main route.
+	switch_effects = {
+		"sw0": {"flip": [[3, 7]]},
+		"sw1": {"flip": [[15, 12]]},
+	}
+	trap_chests = ["steampunk_mechanism_f2_c0"]
+	forced_item_chests = {
+		"steampunk_mechanism_f1_c1": "gear_cog",
+		"steampunk_mechanism_f2_c1": "spring_coil",
 	}
 
 
@@ -127,10 +159,29 @@ func _get_music_area_id() -> String:
 	return "steampunk_dungeon"
 
 
+const _LORE := {
+	1: [
+		{"pos": Vector2(3, 6), "text": "A brass plaque: 'THE MECHANISM HAS ALWAYS BEEN RUNNING. NOBODY REMEMBERS STARTING IT.'"},
+		{"pos": Vector2(16, 6), "text": "This alcove ticks in 7/8 time. So does your pulse, now."},
+	],
+	2: [
+		{"pos": Vector2(6, 10), "text": "Two levers, two vaults. The Mechanism insists this is a choice, and technically it is."},
+	],
+	3: [
+		{"pos": Vector2(9, 10), "text": "The portal pads skip half the catwalk. Nobody has explained why they were ever installed on a floor with a catwalk."},
+	],
+}
+
+
 ## world3_before_the_regulator step 2. The authored note puts it ON the main-quest
 ## dungeon route with no separate unlock, so it rides the existing floor-2 corridor.
 func _setup_transitions_for_floor(floor_num: int) -> void:
 	super._setup_transitions_for_floor(floor_num)
+	for entry in (_LORE.get(floor_num, []) as Array):
+		var sign := Signpost.new()
+		sign.sign_text = str(entry["text"])
+		sign.position = (entry["pos"] as Vector2) * TILE_SIZE
+		transitions.add_child(sign)
 	if floor_num != 2:
 		return
 	var ExamineScript = load("res://src/exploration/QuestExaminePoint.gd")
