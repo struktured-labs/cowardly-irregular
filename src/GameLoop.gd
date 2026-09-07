@@ -5331,6 +5331,11 @@ func _start_autogrind(config: Dictionary) -> void:
 	# Start grinding
 	_autogrind_controller.start_grind(party, config, _current_terrain)
 
+	# struktured 2026-09-07 "cant exit autogrind again": a party already under the HP stop threshold makes start_grind stop SYNCHRONOUSLY — grind_complete freed the controller and restored exploration before this line, so everything below was a null deref that aborted here and left the autogrind bed playing.
+	if not _is_autogrinding or _autogrind_controller == null or not is_instance_valid(_autogrind_controller):
+		print("[AUTOGRIND] Session ended during start — summary already shown")
+		return
+
 	# Clear battle summary ring buffer for new session
 	_autogrind_battle_summaries.clear()
 
