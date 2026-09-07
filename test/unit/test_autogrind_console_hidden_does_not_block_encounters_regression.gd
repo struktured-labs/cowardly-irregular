@@ -45,14 +45,16 @@ func test_encounter_guard_uses_showing_and_heals_a_lingering_console() -> void:
 		"a hidden console with no grind must be freed so the NEXT touch starts a battle")
 
 
-func test_no_input_guard_still_tests_bare_existence() -> void:
+func test_every_input_guard_tests_showing_not_existence() -> void:
 	# The three input guards used the same existence test; a stale hidden console would also eat
-	# the toggle-auto and menu buttons. One helper, every guard.
+	# the toggle-auto and menu buttons. Assert the RELATIONSHIP per guard, not a count — lifecycle
+	# sites (free, set_grinding) legitimately keep bare existence checks.
 	var src := FileAccess.get_file_as_string(GL)
-	var bare := 0
-	var idx := src.find("if _autogrind_ui and is_instance_valid(_autogrind_ui):")
-	while idx != -1:
-		bare += 1
-		idx = src.find("if _autogrind_ui and is_instance_valid(_autogrind_ui):", idx + 1)
-	# The two legitimate survivors: the open-guard in _open_autogrind_ui and the free in the close handler.
-	assert_lte(bare, 3, "bare existence checks left: %d — input/encounter guards must use _autogrind_ui_open()" % bare)
+	for anchor in ["return  # UI handles its own input", 'is_action_pressed("battle_toggle_auto")', "# Let AutogrindUI._input handle Start"]:
+		var i: int = src.find(anchor)
+		assert_gt(i, -1, "CONTROL: guard anchor must exist: %s" % anchor)
+		var window: String = src.substr(maxi(i - 160, 0), 200)
+		assert_true(window.contains("_autogrind_ui_open()"), "guard near '%s' must use _autogrind_ui_open()" % anchor)
+	var o: int = src.find("func _open_autogrind_ui(")
+	assert_true(src.substr(o, 700).contains("_autogrind_ui_open()") and src.substr(o, 700).contains("queue_free()"),
+		"the open path must treat a hidden console as closed and free it — 'select autogrind bounces to overworld'")
