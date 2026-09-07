@@ -8,6 +8,8 @@ const TileGeneratorScript = preload("res://src/exploration/TileGenerator.gd")
 const OverworldPlayerScript = preload("res://src/exploration/OverworldPlayer.gd")
 const OverworldControllerScript = preload("res://src/exploration/OverworldController.gd")
 const AreaTransitionScript = preload("res://src/exploration/AreaTransition.gd")
+const DungeonLightingScript = preload("res://src/exploration/DungeonLighting.gd")
+const MimicChestScript = preload("res://src/exploration/MimicChest.gd")
 
 signal exploration_ready()
 signal battle_triggered(enemies: Array)
@@ -24,8 +26,35 @@ var cave_name: String = "Dragon Cave"
 var cave_id: String = "dragon_cave"
 var boss_id: String = "dragon"
 var boss_flag_key: String = "dragon_defeated"
+var boss_cutscene_id: String = ""  # Cutscene JSON ID to play before boss fight (empty = console fallback)
+# LLM dialogue persona handle — empty for plain monster bosses, set by
+# subclasses (e.g. CastleHarmonia sets "chancellor_mordaine") so BattleManager's
+# intent picker has a key into data/boss_dialogue.json. Stashed on the boss
+# combatant via set_meta("llm_persona_id", ...) right before battle_triggered.
+var boss_llm_persona_id: String = ""
 var total_floors: int = 3
 var overworld_exit_spawn: String = "cave_entrance"
+## Which overworld map this cave exits back to (default = W1 overworld)
+var overworld_exit_map: String = "overworld"
+## Optional: story flag and world to unlock on boss defeat (empty = no world unlock)
+var unlock_story_flag: String = ""
+var unlock_world: int = 0
+# Optional list of cutscene_flag_* constants to set on boss defeat. Distinct
+# from boss_flag_key (which writes to game_constants["dungeon_flags"] —
+# tick 154 moved off player_party[0] to survive party-leader changes) —
+# these cutscene_flag_* constants are flat keys on game_constants which is
+# what _get_pending_story_cutscene reads. Required for story-gate flags like
+# cutscene_flag_world1_mordaine_defeated. (2026-05-23: identified after
+# Mordaine scaffold; rat king's WhisperingCave uses a custom
+# pending_boss_defeat spec to bridge the same gap.)
+var defeat_cutscene_flags: Array[String] = []
+# (Tick 105: the legacy `defeat_cutscene` field was removed. It was set by
+# subclasses but read only by _on_boss_defeated which had no caller — pure
+# dead code. The actual post-victory cutscene mechanism lives in
+# GameLoop._get_pending_story_cutscene's defeat-cutscene gates (e.g.
+# world1_mordaine_defeat, world2_warden_defeat, …); each gate fires when
+# the matching boss-defeat flag is set and the player is in the dungeon's
+# map. Wire new defeat cutscenes there, not here.)
 
 ## Override in subclass: floor number -> Array of ASCII rows (20 chars × 16 rows)
 var floor_layouts: Dictionary = {}
@@ -35,6 +64,19 @@ var floor_spawn_points: Dictionary = {}
 
 ## Override in subclass: floor number -> Array of enemy type strings
 var floor_encounter_pools: Dictionary = {}
+
+## DungeonPuzzleLayer opt-in knobs (struktured 2026-09-06) -- all empty by default, additive.
+## Cross-floor portal twin override for a sparse 1-occurrence portal: {"c": {"floor": 4, "cell": [x,y]}}.
+var portal_links: Dictionary = {}
+## Switch id (from DungeonPuzzleLayer.scan_switches) -> {"flip":[[x,y],...]} | {"reveal":"portal_c"} | {"trap":"encounter"|"warp"}.
+var switch_effects: Dictionary = {}
+## Chest keys ("<cave_id>_f<floor>_c<index>") that spawn a MimicChest (battle) instead of loot.
+var trap_chests: Array[String] = []
+## Chest key -> item id override, bypassing the default gold/item alternation.
+var forced_item_chests: Dictionary = {}
+## Floor numbers where the player wraps off one edge and appears on the opposite edge.
+var wrap_floors: Array[int] = []
+var _puzzle_layer: DungeonPuzzleLayer = null
 
 ## Floor state
 var current_floor: int = 1
@@ -47,6 +89,7 @@ var player: Node2D
 var camera: Camera2D
 var controller: Node
 var tile_generator: Node
+var lighting: DungeonLighting
 
 ## Area transitions
 var transitions: Node2D
@@ -61,18 +104,105 @@ var spawn_points: Dictionary = {}
 func _ready() -> void:
 	_setup_scene()
 	_load_boss_state()
+	# Restore floor from save. Without this, a player who quits deep in
+	# any dragon cave / Castle Harmonia / Assembly Core / Null Chamber
+	# reloads on floor 1 and has to re-descend. The key is scoped by
+	# cave_id so each dungeon persists independently.
+	if GameState and cave_id != "":
+		var floor_key := cave_id + "_floor"
+		if GameState.game_constants.has(floor_key):
+			var saved_floor: int = int(GameState.game_constants[floor_key])
+			if saved_floor >= 1 and saved_floor <= total_floors:
+				current_floor = saved_floor
+		## Tick 153: if the boss is already defeated, reset the saved
+		## floor to 1 so re-entering a completed dungeon spawns the
+		## player at the entrance, NOT in the empty boss room they
+		## last won the fight in. Saved floor reflects "where you
+		## were last" — once the boss is dead, the cave's progression
+		## arc is complete and players who revisit want grinding
+		## access from floor 1, not insta-warp to a depopulated
+		## boss arena.
+		if boss_defeated and current_floor != 1:
+			current_floor = 1
+			GameState.game_constants[floor_key] = 1
+		## Tick 410: consume the Skiptrotter dungeon_skip flag here so
+		## the next dungeon entry warps straight to the boss room.
+		## Tick 403 wrote the flag from BattleManager.dungeon_skip arm;
+		## this is the single-shot consumer that clears it and jumps
+		## to total_floors before _generate_map_for_floor renders the
+		## level. Refuses if the boss is already defeated (skipping to
+		## an empty boss room would strand the player). Also skips for
+		## non-dragon DragonCave subclasses where boss completion is
+		## tracked differently — the cave_id "_floor" key gate above
+		## already validates this is a dragon-style dungeon.
+		var skip_pending: bool = bool(GameState.game_constants.get("meta_dungeon_skip_pending", false))
+		if skip_pending and not boss_defeated and total_floors >= 1:
+			current_floor = total_floors
+			GameState.game_constants[floor_key] = total_floors
+			GameState.game_constants["meta_dungeon_skip_pending"] = false
+			print("[DUNGEON_SKIP] meta-ability consumed — warped to boss floor %d of %s" % [current_floor, cave_id])
 	_generate_map_for_floor(current_floor)
 	_setup_player()
 	_setup_camera()
 	_setup_controller()
 
 	if SoundManager:
-		SoundManager.play_area_music("cave")
+		SoundManager.play_area_music(_get_music_area_id())
+
+	# Tick 249/254: ratchet "At the Cave Mouth" via the centralized
+	# helper. Filters to ids containing "dragon_cave" so non-dragon
+	# DragonCave subclasses (castle_harmonia / null_chamber / etc.)
+	# don't qualify.
+	if "dragon_cave" in cave_id and PartyChatSystem:
+		PartyChatSystem.fire_event_flag("event_flag_dragon_cave_entered")
+
+	# struktured 2026-07-15: out-of-league warning — a party remark, never a block ("you should be allowed to fight it of course").
+	_maybe_warn_out_of_league()
 
 	exploration_ready.emit()
 
 
+const OUT_OF_LEAGUE_LEVEL_GAP: int = 5
+const OUT_OF_LEAGUE_REMARKS: Array = [
+	"Cleric: The air here is wrong. We are not ready for what waits below.",
+	"Fighter: Whatever rules this place is leagues beyond us. We can still walk away.",
+	"Rogue: My instincts say run. My instincts are usually right.",
+	"Mage: The ambient power here exceeds anything we've faced. Noted. Loudly.",
+	"Bard: I'd sing our eulogy but I'd rather not need to. Tread carefully.",
+]
+
+## Non-blocking soft-gate (struktured 2026-07-15): when the resident boss out-levels the party average by OUT_OF_LEAGUE_LEVEL_GAP+, a party member remarks on entry. Warning only — the fight stays available.
+func _maybe_warn_out_of_league() -> void:
+	if boss_defeated:
+		return
+	var es = get_node_or_null("/root/EncounterSystem")
+	if es == null or not es.monster_database.has(boss_id):
+		return
+	var boss_level: int = int((es.monster_database[boss_id] as Dictionary).get("level", 0))
+	if boss_level <= 0:
+		return
+	var gl = get_tree().root.get_node_or_null("GameLoop") if is_inside_tree() else null
+	if gl == null or not ("party" in gl) or (gl.party as Array).is_empty():
+		return
+	var total: int = 0
+	var count: int = 0
+	for m in gl.party:
+		if is_instance_valid(m) and "job_level" in m:
+			total += int(m.job_level)
+			count += 1
+	if count == 0:
+		return
+	if boss_level - (float(total) / float(count)) < float(OUT_OF_LEAGUE_LEVEL_GAP):
+		return
+	var line: String = OUT_OF_LEAGUE_REMARKS[randi() % OUT_OF_LEAGUE_REMARKS.size()]
+	Toast.show_warning(self, line)
+	if SoundManager:
+		SoundManager.play_ui("menu_error")
+
+
 func _setup_scene() -> void:
+	_setup_lighting()
+
 	tile_generator = TileGeneratorScript.new()
 	add_child(tile_generator)
 
@@ -88,6 +218,12 @@ func _setup_scene() -> void:
 	stair_sprites = Node2D.new()
 	stair_sprites.name = "StairSprites"
 	add_child(stair_sprites)
+
+	# Reusable puzzle layer -- always present, a no-op for dungeons that never populate its opt-in knobs.
+	_puzzle_layer = DungeonPuzzleLayer.new()
+	_puzzle_layer.name = "PuzzleLayer"
+	add_child(_puzzle_layer)
+	_puzzle_layer.attach(self)
 
 
 func _generate_map_for_floor(floor_num: int) -> void:
@@ -115,18 +251,63 @@ func _generate_map_for_floor(floor_num: int) -> void:
 				spawn_points[key] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
 			elif char == "B":
 				spawn_points["boss"] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
+			elif char == "H":
+				var hkey = "secret_%d" % spawn_points.size()
+				spawn_points[hkey] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
 
 	var spawn_pos = floor_spawn_points.get(floor_num, {}).get("entrance", Vector2(10, 12))
 	spawn_points["default"] = Vector2(spawn_pos.x * TILE_SIZE, spawn_pos.y * TILE_SIZE)
+	_place_torches()
 
 	_setup_transitions_for_floor(floor_num)
 	_add_stair_visuals()
+	if _puzzle_layer:
+		_puzzle_layer.rebuild_floor(floor_num)
+
+
+## Cave ambient. Elemental caves override to tint their own dark.
+func _get_dungeon_ambient() -> Color:
+	return DungeonLightingScript.CAVE_AMBIENT
+
+
+func _setup_lighting() -> void:
+	lighting = DungeonLightingScript.new()
+	lighting.name = "Lighting"
+	lighting.ambient = _get_dungeon_ambient()
+	add_child(lighting)
+
+
+## Landmarks earn a torch: the way in, the way on, the treasure, the boss. Derived from
+## spawn_points, which _generate_map_for_floor rebuilds per floor, so nothing is pinned
+## to a coordinate that a map edit would strand.
+func _place_torches() -> void:
+	if lighting == null:
+		return
+	for l in lighting._lamps:
+		if is_instance_valid(l):
+			l.queue_free()
+	lighting._lamps.clear()
+	for key in spawn_points:
+		var k := str(key)
+		var tint := Color(1.0, 0.80, 0.45)
+		var radius := 112
+		var energy := 1.0
+		if k == "boss":
+			tint = Color(1.0, 0.45, 0.30); radius = 176; energy = 1.25
+		elif k.begins_with("treasure"):
+			tint = Color(1.0, 0.93, 0.60); radius = 88; energy = 0.85
+		elif k.begins_with("secret"):
+			tint = Color(0.65, 0.85, 1.0); radius = 80; energy = 0.7
+		lighting.add_lamp(spawn_points[key], tint, radius, energy)
 
 
 func _char_to_tile_type(char: String) -> int:
 	match char:
 		"M": return TileGeneratorScript.TileType.CAVE_WALL
 		".", "T", "B", "U", "D", "X":
+			return TileGeneratorScript.TileType.CAVE_FLOOR
+		# DungeonPuzzleLayer vocabulary: portals a-f, pressure plate S, lever L -- all floor.
+		"a", "b", "c", "d", "e", "f", "S", "L":
 			return TileGeneratorScript.TileType.CAVE_FLOOR
 		_: return TileGeneratorScript.TileType.CAVE_FLOOR
 
@@ -140,32 +321,56 @@ func _setup_transitions_for_floor(floor_num: int) -> void:
 	for child in transitions.get_children():
 		child.queue_free()
 
-	# Stairs up (to next floor)
+	# Treasure chests at each T marker on the floor (plus boss-floor drop)
+	_place_floor_treasure(floor_num)
+
+	# Hidden passages at each H marker (disguised cave-wall sections)
+	_place_hidden_passages(floor_num)
+
+	# In-dungeon orientation signposts (floor indicator, stair directions)
+	_place_dungeon_signposts(floor_num)
+
+	# Save crystal on entry floor (floor 1) and penultimate floor (rest before boss)
+	if floor_num == 1 or floor_num == total_floors - 1:
+		var save_pt = SavePoint.new()
+		var anchor = "stairs_up" if floor_num == 1 else "stairs_up"
+		var pos = spawn_points.get(anchor, Vector2(6 * TILE_SIZE, 6 * TILE_SIZE))
+		save_pt.position = pos + Vector2(-TILE_SIZE * 2, 0)
+		save_pt.save_requested.connect(func():
+			if SaveSystem and SaveSystem.has_method("quick_save"):
+				SaveSystem.quick_save()
+				print("[SAVE] Quick save in %s floor %d" % [cave_name, floor_num])
+		)
+		transitions.add_child(save_pt)
+
+	# Stairs up (to next floor) — plain Area2D sensor (ultracode audit defect #9/step 10): the old AreaTransition-based sensor self-consumed its one-shot latch on first graze, leaving dead stairs ("can't seem to hit the right button" — struktured, lightning cave); 48x48 replaces the tight 32x32.
 	if spawn_points.has("stairs_up"):
-		var up_trans = AreaTransitionScript.new()
+		var up_trans = Area2D.new()
 		up_trans.name = "StairsUp"
-		up_trans.require_interaction = false
 		up_trans.position = spawn_points["stairs_up"]
-		_setup_transition_collision(up_trans, Vector2(TILE_SIZE, TILE_SIZE))
+		_setup_transition_collision(up_trans, InteractGeometry.STAIRS_BOX)
 		up_trans.body_entered.connect(_on_stairs_up_entered)
 		transitions.add_child(up_trans)
 
-	# Stairs down / exit
+	# Stairs down / exit — floor 1 keeps the real AreaTransition (it warps to the overworld); inter-floor descent is a plain sensor at the unified 48x48 (was 64x64, overhanging every side).
 	if spawn_points.has("stairs_down"):
-		var down_trans = AreaTransitionScript.new()
-		down_trans.name = "StairsDown"
-		down_trans.require_interaction = false
-		down_trans.position = spawn_points["stairs_down"]
-		_setup_transition_collision(down_trans, Vector2(TILE_SIZE * 2, TILE_SIZE * 2))
-
 		if floor_num == 1:
-			down_trans.target_map = "overworld"
-			down_trans.target_spawn = overworld_exit_spawn
-			down_trans.transition_triggered.connect(_on_transition_triggered)
+			var exit_trans = AreaTransitionScript.new()
+			exit_trans.name = "StairsDown"
+			exit_trans.require_interaction = false
+			exit_trans.position = spawn_points["stairs_down"]
+			_setup_transition_collision(exit_trans, InteractGeometry.STAIRS_BOX)
+			exit_trans.target_map = overworld_exit_map
+			exit_trans.target_spawn = overworld_exit_spawn
+			exit_trans.transition_triggered.connect(_on_transition_triggered)
+			transitions.add_child(exit_trans)
 		else:
+			var down_trans = Area2D.new()
+			down_trans.name = "StairsDown"
+			down_trans.position = spawn_points["stairs_down"]
+			_setup_transition_collision(down_trans, InteractGeometry.STAIRS_BOX)
 			down_trans.body_entered.connect(_on_stairs_down_entered)
-
-		transitions.add_child(down_trans)
+			transitions.add_child(down_trans)
 
 	# Boss trigger on final floor
 	if floor_num == total_floors:
@@ -251,8 +456,11 @@ func _create_boss_marker(pos: Vector2) -> Node2D:
 func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
 	trans.collision_layer = 4
 	trans.collision_mask = 2
-	trans.monitoring = true
-	trans.monitorable = true
+	## Deferred: a floor change rebuilds the map from INSIDE the stair Area2D's body_entered,
+	## so setting these mid-signal threw "Function blocked during in/out signal" 9x (3 per
+	## floor change) in one play session. Overlap is still detected on the next physics step.
+	trans.set_deferred("monitoring", true)
+	trans.set_deferred("monitorable", true)
 
 	var collision = CollisionShape2D.new()
 	var shape = RectangleShape2D.new()
@@ -283,6 +491,10 @@ func _transition_to_floor(target_floor: int, direction: String = "") -> void:
 	controller.pause_exploration()
 
 	current_floor = target_floor
+	# Persist floor across save/load. Scoped by cave_id so each dungeon
+	# tracks independently.
+	if GameState and cave_id != "":
+		GameState.game_constants[cave_id + "_floor"] = current_floor
 
 	tile_map.clear()
 	_generate_map_for_floor(current_floor)
@@ -318,6 +530,36 @@ func _transition_to_floor(target_floor: int, direction: String = "") -> void:
 	_transitioning = false
 
 
+## Portal warp for DungeonPuzzleLayer -- lands the player at an exact pixel position, not a named spawn_points key.
+func puzzle_warp_to(target_floor: int, landing_px: Vector2) -> void:
+	if target_floor < 1 or target_floor > total_floors or _transitioning:
+		return
+	_transitioning = true
+	if player and player.has_method("set_can_move"):
+		player.set_can_move(false)
+	controller.pause_exploration()
+	if SoundManager:
+		SoundManager.play_ui("portal_enter")
+	if target_floor != current_floor:
+		current_floor = target_floor
+		if GameState and cave_id != "":
+			GameState.game_constants[cave_id + "_floor"] = current_floor
+		tile_map.clear()
+		_generate_map_for_floor(current_floor)
+		_update_floor_encounters(current_floor)
+	player.teleport(landing_px)
+	player.reset_step_count()
+	if camera:
+		camera.reset_smoothing()
+	await get_tree().create_timer(0.2).timeout
+	if player and is_instance_valid(player) and player.has_method("set_can_move"):
+		player.set_can_move(true)
+	controller.resume_exploration()
+	floor_changed.emit(current_floor)
+	await get_tree().create_timer(0.3).timeout
+	_transitioning = false
+
+
 func _update_floor_encounters(floor_num: int) -> void:
 	var base_rate = 0.06
 	var encounter_rate = base_rate + (floor_num - 1) * 0.02
@@ -339,12 +581,75 @@ func _update_floor_encounters(floor_num: int) -> void:
 
 func _trigger_boss_battle() -> void:
 	controller.pause_exploration()
-	_show_boss_intro()
-	await get_tree().create_timer(2.0).timeout
+
+	## Tick 447: autosave passive — passives.json authors
+	## meta_effects.auto_save_before_boss = true with description
+	## "Automatically save before boss fights and dangerous
+	## encounters", but pre-fix the field was decoration. If any
+	## party member equips autosave, force a quicksave RIGHT NOW
+	## (before the cutscene + battle_triggered emit) so a wipe
+	## rewinds to the moment the boss appeared, not the last
+	## village save point. Uses force_quick_save to bypass the
+	## interior/battle gate (we're entering the boss intro).
+	if _party_wants_auto_save_before_boss():
+		var ss: Node = get_node_or_null("/root/SaveSystem")
+		if ss != null and ss.has_method("force_quick_save"):
+			ss.force_quick_save()
+			print("[AUTOSAVE] Pre-boss quicksave fired (autosave passive)")
+
+	# Register pending boss defeat so GameLoop._on_battle_ended applies the
+	# flags on victory. The DragonCave instance gets freed during the battle
+	# transition, so any handler attached to `self` would never fire.
+	var spec: Dictionary = {
+		"story_flags": [],
+		"constants": [],
+		"dungeon_flag": boss_flag_key,
+	}
+	if unlock_story_flag != "":
+		spec["story_flags"].append(unlock_story_flag)
+	# Push any subclass-declared cutscene_flag_* constants into the
+	# game_constants write set so story-cutscene gates trigger on defeat.
+	for cf in defeat_cutscene_flags:
+		if cf != "":
+			spec["constants"].append(cf)
+	if unlock_world > 0:
+		spec["unlock_world"] = true
+		spec["unlock_world_target"] = unlock_world
+	# Wave E — pass LLM persona through pending_boss_defeat. Falls back to
+	# monster_type in BattleManager so monsters tagged in
+	# data/boss_dialogue.json don't strictly need the override; this is
+	# belt-and-suspenders for non-monster_type bosses.
+	if boss_llm_persona_id != "":
+		spec["boss_llm_persona_id"] = boss_llm_persona_id
+	GameState.pending_boss_defeat = spec
+
+	await _show_boss_intro()
 	battle_triggered.emit([boss_id])
 
 
 func _show_boss_intro() -> void:
+	"""Play boss intro cutscene if available, otherwise print to console"""
+	# Try CutsceneDirector with JSON cutscene
+	if boss_cutscene_id != "":
+		var cutscene_path = "res://data/cutscenes/%s.json" % boss_cutscene_id
+		# Tick 213: surface the silent-failure modes that drop the player to a console-only fallback. boss_cutscene_id is set but: (a) JSON missing on disk (typo, data drift, file not yet authored), (b) CutsceneDirector autoload unavailable, (c) director missing play_cutscene method.
+		if not FileAccess.file_exists(cutscene_path):
+			push_warning("[DragonCave] boss_cutscene_id='%s' but %s does not exist — falling back to console intro (boss will play, but with no cutscene)" % [boss_cutscene_id, cutscene_path])
+		else:
+			# CutsceneDirector is GameLoop-owned, NOT an autoload — a /root/ lookup silently falls back, and every W1 boss intro (Mordaine + 4 dragons) has been dropping to the console-print fallback. Same class as the TallyWall fix (2026-07-08); route through GameLoop.get_cutscene_director() so the authored intros actually play.
+			var game_loop = get_node_or_null("/root/GameLoop")
+			var director = null
+			if game_loop != null and game_loop.has_method("get_cutscene_director"):
+				director = game_loop.get_cutscene_director()
+			if director == null:
+				push_warning("[DragonCave] boss_cutscene_id='%s' configured but GameLoop.get_cutscene_director() returned null — falling back to console intro" % boss_cutscene_id)
+			elif not director.has_method("play_cutscene"):
+				push_warning("[DragonCave] boss_cutscene_id='%s' configured but CutsceneDirector lacks play_cutscene method — falling back to console intro" % boss_cutscene_id)
+			else:
+				await director.play_cutscene(boss_cutscene_id)
+				return
+
+	# Fallback: console print + brief delay
 	var lines = _get_boss_intro_dialogue()
 	print("")
 	print("=== BOSS ENCOUNTER ===")
@@ -354,6 +659,7 @@ func _show_boss_intro() -> void:
 	print("")
 	print("======================")
 	print("")
+	await get_tree().create_timer(2.0).timeout
 
 
 ## Virtual - subclass MUST override to provide boss dialogue
@@ -361,26 +667,152 @@ func _get_boss_intro_dialogue() -> Array:
 	return ["A dragon blocks the path!"]
 
 
-func _on_boss_defeated() -> void:
-	boss_defeated = true
-	_save_boss_state()
-	print("%s defeated! Exit stairs appear." % boss_id)
-	_setup_transitions_for_floor(current_floor)
+## Per-dungeon music routing. Default returns "cave", which
+## SoundManager.play_area_music maps to _start_dungeon_music("medieval").
+## EVERY subclass must override this — the four W1 dragon caves have their
+## own SoundManager arms (fire/ice/lightning/shadow) and inheriting the
+## default silently played the generic medieval bed in all four; the
+## comment here previously asserted the default was correct for them.
+## Return a key play_area_music actually matches: its default arm is
+## _start_overworld_music(), so an unmatched id plays OVERWORLD music
+## inside a dungeon rather than falling back to a cave bed.
+func _get_music_area_id() -> String:
+	return "cave"
+
+
+func _place_floor_treasure(floor_num: int) -> void:
+	"""Place one chest at each T marker on the current floor, plus a boss-floor reward."""
+	# Collect all T-marker positions (named treasure_0, treasure_1, ...)
+	var treasure_positions: Array = []
+	for key in spawn_points:
+		if key.begins_with("treasure_"):
+			treasure_positions.append(spawn_points[key])
+
+	# Fallback: if no T markers, drop one chest near stairs_up (legacy behavior)
+	if treasure_positions.is_empty() and floor_num < total_floors:
+		treasure_positions.append(spawn_points.get("stairs_up", Vector2(8 * TILE_SIZE, 4 * TILE_SIZE)) + Vector2(TILE_SIZE * 2, TILE_SIZE))
+
+	# Loot variety: alternate gold / item by position index and floor depth
+	var item_pool = ["potion", "ether", "hi_potion", "antidote"]
+	if floor_num >= total_floors - 1:
+		item_pool = ["hi_potion", "ether", "phoenix_down", "elixir"]
+
+	for i in range(treasure_positions.size()):
+		var chest_key = "%s_f%d_c%d" % [cave_id, floor_num, i]
+		if GameState.get_story_flag("chest_" + chest_key):
+			continue  # Already opened
+		# DungeonPuzzleLayer opt-in: some T markers are mimics, not loot.
+		if chest_key in trap_chests:
+			var mimic = MimicChestScript.new()
+			mimic.chest_id = chest_key
+			mimic.cave_ref = self
+			mimic.position = treasure_positions[i]
+			transitions.add_child(mimic)
+			continue
+		var chest = TreasureChest.new()
+		chest.chest_id = chest_key
+		if forced_item_chests.has(chest_key):
+			chest.contents_type = "item"
+			chest.contents_id = str(forced_item_chests[chest_key])
+			chest.contents_amount = 1
+			chest.position = treasure_positions[i]
+			chest.chest_opened.connect(func(_contents):
+				GameState.set_story_flag("chest_" + chest_key)
+			)
+			transitions.add_child(chest)
+			continue
+		if i % 2 == 0:
+			# Scaling gold — deeper floors and later chests pay more
+			chest.contents_type = "gold"
+			chest.gold_amount = 100 + floor_num * 75 + i * 40
+		else:
+			chest.contents_type = "item"
+			chest.contents_id = item_pool[(i + floor_num) % item_pool.size()]
+			chest.contents_amount = 1 + floor_num
+		chest.position = treasure_positions[i]
+		chest.chest_opened.connect(func(_contents):
+			GameState.set_story_flag("chest_" + chest_key)
+		)
+		transitions.add_child(chest)
+
+
+func _place_hidden_passages(floor_num: int) -> void:
+	"""One HiddenPassage per H marker — the tile parses as floor, the sprite disguises it as wall."""
+	var idx: int = 0
+	for key in spawn_points:
+		if not key.begins_with("secret_"):
+			continue
+		var passage = HiddenPassage.new()
+		passage.passage_id = "%s_f%d_h%d" % [cave_id, floor_num, idx]
+		passage.disguise = "cave"
+		passage.position = spawn_points[key]
+		transitions.add_child(passage)
+		idx += 1
+
+
+func _place_dungeon_signposts(floor_num: int) -> void:
+	"""Orientation helpers inside the cave: floor number, stair direction, boss warning."""
+	var floor_label = Signpost.new()
+	floor_label.sign_text = "%s · Floor %d / %d" % [cave_name, floor_num, total_floors]
+	var default_pos = spawn_points.get("default", Vector2(10 * TILE_SIZE, 12 * TILE_SIZE))
+	floor_label.position = default_pos + Vector2(0, -TILE_SIZE)
+	transitions.add_child(floor_label)
+
+	if spawn_points.has("stairs_up"):
+		var up_sign = Signpost.new()
+		if floor_num == total_floors - 1:
+			up_sign.sign_text = "▲ Boss floor ahead ⚠"
+		else:
+			up_sign.sign_text = "▲ Floor %d" % (floor_num + 1)
+		up_sign.position = spawn_points["stairs_up"] + Vector2(-TILE_SIZE * 2, 0)
+		transitions.add_child(up_sign)
+
+	if spawn_points.has("stairs_down"):
+		var down_sign = Signpost.new()
+		if floor_num == 1:
+			down_sign.sign_text = "▼ Exit to Overworld"
+		else:
+			down_sign.sign_text = "▼ Floor %d" % (floor_num - 1)
+		down_sign.position = spawn_points["stairs_down"] + Vector2(-TILE_SIZE * 2, 0)
+		transitions.add_child(down_sign)
+
+
+# (Tick 105: _on_boss_defeated removed. It was dead code with no caller in
+# the entire codebase. The boss_defeated state + unlock_story_flag + unlock_world
+# + dungeon_flag are all set via GameState.pending_boss_defeat (assembled in
+# _trigger_boss before the battle, applied by GameLoop._apply_pending_boss_defeat
+# on victory). The defeat cutscene is played by
+# GameLoop._get_pending_story_cutscene's per-dungeon defeat-cutscene gates on
+# the next pending-cutscene check after victory return. Adding any new boss
+# defeat side-effect goes into the pending spec, not here.)
 
 
 func _load_boss_state() -> void:
 	var game_state = get_node_or_null("/root/GameState")
 	if game_state and game_state.player_party.size() > 0:
-		var flags = game_state.player_party[0].get("dungeon_flags", {})
+		## Tick 154: read from game_constants["dungeon_flags"] (party-
+		## leader-independent). Fall back to the legacy player_party[0]
+		## location for save-format migration — old saves stored these
+		## on the leader, which silently broke when the player changed
+		## leader via cycle_party_leader.
+		var flags: Dictionary = {}
+		if game_state.game_constants.has("dungeon_flags"):
+			flags = game_state.game_constants["dungeon_flags"]
+		elif game_state.player_party.size() > 0 and game_state.player_party[0].has("dungeon_flags"):
+			flags = game_state.player_party[0]["dungeon_flags"]
 		boss_defeated = flags.get(boss_flag_key, false)
 
 
 func _save_boss_state() -> void:
 	var game_state = get_node_or_null("/root/GameState")
 	if game_state and game_state.player_party.size() > 0:
-		if not game_state.player_party[0].has("dungeon_flags"):
-			game_state.player_party[0]["dungeon_flags"] = {}
-		game_state.player_party[0]["dungeon_flags"][boss_flag_key] = true
+		## Tick 154: write to game_constants["dungeon_flags"] so the
+		## flag survives a party-leader change. Legacy player_party[0]
+		## location ignored on write; load-side fallback handles old
+		## saves so progress doesn't vanish on migration.
+		if not game_state.game_constants.has("dungeon_flags"):
+			game_state.game_constants["dungeon_flags"] = {}
+		game_state.game_constants["dungeon_flags"][boss_flag_key] = true
 
 
 func _setup_player() -> void:
@@ -388,6 +820,7 @@ func _setup_player() -> void:
 	player.name = "Player"
 	player.position = spawn_points.get("default", Vector2(320, 384))
 	player.set_job("fighter")
+	player._is_interior = true  # Dungeons always use interior speed (50% of overworld)
 	add_child(player)
 
 
@@ -423,6 +856,11 @@ func _setup_controller() -> void:
 
 
 func _on_transition_triggered(target_map: String, spawn_point: String) -> void:
+	# Walking back to the overworld clears the persisted floor so a
+	# fresh re-entry starts at floor 1 (dungeon-reset semantic). Same
+	# behavior as WhisperingCave.
+	if target_map != "" and target_map != cave_id and GameState and cave_id != "":
+		GameState.game_constants.erase(cave_id + "_floor")
 	area_transition.emit(target_map, spawn_point)
 
 
@@ -456,3 +894,33 @@ func set_player_job(job_name: String) -> void:
 func set_player_appearance(leader) -> void:
 	if player and player.has_method("set_appearance_from_leader"):
 		player.set_appearance_from_leader(leader)
+
+
+## Tick 447: check the dict-shaped player_party for any equipped
+## passive that authors meta_effects.auto_save_before_boss. Returns
+## false cleanly when GameState / PassiveSystem aren't available
+## (tests / preload). Any-wins (one passive on one party member
+## is enough to trigger the save — it's a safety net).
+func _party_wants_auto_save_before_boss() -> bool:
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs == null or not ("player_party" in gs):
+		return false
+	var ps: Node = get_node_or_null("/root/PassiveSystem")
+	if ps == null or not ps.has_method("get_passive"):
+		return false
+	for member in gs.player_party:
+		if not (member is Dictionary):
+			continue
+		var ep: Variant = member.get("equipped_passives", [])
+		if not (ep is Array):
+			continue
+		for passive_id in ep:
+			var passive: Dictionary = ps.get_passive(str(passive_id))
+			if passive.is_empty():
+				continue
+			var me: Variant = passive.get("meta_effects", {})
+			if not (me is Dictionary):
+				continue
+			if bool(me.get("auto_save_before_boss", false)):
+				return true
+	return false

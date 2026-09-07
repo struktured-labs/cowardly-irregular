@@ -1,0 +1,43 @@
+{
+  "id": "event_chat_one_hp_victory",
+  "title": "Close",
+  "world": 1,
+  "trigger": "event_chat_one_hp_victory",
+  "background": "prologue_forest",
+  "description": "Winning a battle with single-digit HP remaining. The party is unsettled.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.3},
+    {
+      "type": "narration",
+      "text": "The enemy fell over. So did, very nearly, the party. Everyone sat down at once. The word 'won' technically applied."
+    },
+    {"type": "wait", "duration": 0.5},
+    {
+      "type": "dialogue",
+      "lines": [
+        {"speaker": "Fighter", "text": "One more hit.", "theme": "fighter", "portrait": "fighter"},
+        {"speaker": "Rogue", "text": "One.", "theme": "rogue", "portrait": "rogue"},
+        {"speaker": "Fighter", "text": "From either of us.", "theme": "fighter", "portrait": "fighter"},
+        {"speaker": "Rogue", "text": "Either.", "theme": "rogue", "portrait": "rogue"}
+      ]
+    },
+    {"type": "wait", "duration": 0.3},
+    {
+      "type": "dialogue",
+      "lines": [
+        {"speaker": "Cleric", "text": "We should rest.", "theme": "cleric", "portrait": "cleric"},
+        {"speaker": "Mage", "text": "We should rest a lot.", "theme": "mage", "portrait": "mage"},
+        {"speaker": "Bard", "text": "Is this a victory? Technically a victory?", "theme": "bard", "portrait": "bard"},
+        {"speaker": "Mage", "text": "Technically, yes. The ledger records a win. The ledger does not record the margin.", "theme": "mage", "portrait": "mage"},
+        {"speaker": "Bard", "text": "The ledger is missing half the story.", "theme": "bard", "portrait": "bard"},
+        {"speaker": "Mage", "text": "The ledger is always missing half the story. That is the ledger's function.", "theme": "mage", "portrait": "mage"}
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "They did, in fact, rest. Not because it was time to rest, but because they could not persuade their legs to be anywhere else."
+    },
+    {"type": "set_flag", "flag": "party_chat_viewed_event_chat_one_hp_victory", "value": true},
+    {"type": "letterbox_out", "duration": 0.4}
+  ]
+}

@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://dlciwjnglq313"
+path="res://.godot/imported/boss_tempo_steampunk.ogg-0a70611ef73ed561543d4a7b5db00662.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/boss_tempo_steampunk.ogg"
+dest_files=["res://.godot/imported/boss_tempo_steampunk.ogg-0a70611ef73ed561543d4a7b5db00662.oggvorbisstr"]
 
 [params]
 

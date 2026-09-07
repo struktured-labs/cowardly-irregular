@@ -11,12 +11,17 @@ const AreaTransitionScript = preload("res://src/exploration/AreaTransition.gd")
 const OverworldNPCScript = preload("res://src/exploration/OverworldNPC.gd")
 
 signal exploration_ready()
-signal battle_triggered(enemies: Array)
+signal battle_triggered(enemies: Array, terrain: String)
 signal area_transition(target_map: String, spawn_point: String)
 
 ## Map dimensions (in tiles) - larger urban area
-const MAP_WIDTH: int = 60
-const MAP_HEIGHT: int = 50
+const MAP_WIDTH: int = 180
+const MAP_HEIGHT: int = 150
+const MAP_IMAGE: String = "res://data/maps/overworld_w3.png"
+const MAP_WORLD: String = "steampunk"
+## Legacy entity coordinates below are old 60x50 tiles; the PNG is that map at 3x.
+## tools/gen_w3_steampunk.py reserves a clearing at each -- change one, change both.
+const MAP_SCALE: int = 3
 const TILE_SIZE: int = 32
 
 ## Scene components
@@ -38,6 +43,18 @@ var spawn_points: Dictionary = {}
 ## Mode 7 perspective
 var mode7_enabled: bool = true
 var _mode7: Mode7Overlay
+var _minimap: OverworldMinimap
+
+## Zone particles
+var _zone_particles: ZoneParticles
+
+var _quest_tracker: QuestTracker
+var _weather: WeatherSystem
+var _border_indicator: MapBorderIndicator
+var _objective_arrow: ObjectiveArrow
+var _threat_meter: ThreatMeter
+var monster_spawner: MonsterSpawner
+var _save_point: SavePoint
 
 ## Steam vent effect state
 var _steam_emitters: Array = []
@@ -48,6 +65,8 @@ var _steam_intervals: Array = []
 func _ready() -> void:
 	_setup_scene()
 	_generate_map()
+	# msg 2830: terrain colliders shifted to match the warped render.
+	Mode7Overlay.apply_terrain_collision_alignment(tile_map, mode7_enabled)
 	_setup_transitions()
 	_setup_npcs()
 	_setup_player()
@@ -60,22 +79,212 @@ func _ready() -> void:
 		_mode7.apply_preset("steampunk")
 		_mode7.setup(self, player)
 
+	# Zone name popup
+	var _zone_popup = ZoneNamePopup.new()
+	add_child(_zone_popup)
+	_zone_popup.setup(self)
+	_zone_popup.show_zone("steampunk_overworld")
+
+	_zone_particles = ZoneParticles.new()
+	add_child(_zone_particles)
+	_zone_particles.setup(self, player)
+	_zone_particles.update_zone("steampunk_overworld")
+
+	GameState.set_story_flag("w3_entered")
+	_quest_tracker = QuestTracker.new()
+	add_child(_quest_tracker)
+	_quest_tracker.setup(self)
+
+	_weather = WeatherSystem.new()
+	add_child(_weather)
+	_weather.setup(self, player, "steampunk")
+
+	_place_signposts()
+	_place_landmarks()
+	_place_wanderers()
+	_place_village_markers()
+	_place_treasure_chests()
+	_place_save_point()
+
 	# Start steampunk overworld music
 	if SoundManager:
 		SoundManager.play_area_music("overworld_steampunk")
 
 	_setup_effects()
+	_minimap = OverworldMinimap.new()
+	add_child(_minimap)
+	_minimap.setup(self, player, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE, spawn_points)
+	_minimap.set_objective(_get_objective_position())
+
+	monster_spawner = MonsterSpawner.new()
+	monster_spawner.name = "MonsterSpawner"
+	add_child(monster_spawner)
+	monster_spawner.set_map_size(MAP_WIDTH, MAP_HEIGHT)
+	monster_spawner.monster_touched.connect(_on_roaming_monster_touched)
+	monster_spawner.setup(player, ["steam_rat", "cog_swarm", "clockwork_sentinel", "pipe_phantom", "brass_golem"])
+
+	_threat_meter = ThreatMeter.new()
+	add_child(_threat_meter)
+	_threat_meter.setup(self, player, monster_spawner)
+
+	_border_indicator = MapBorderIndicator.new()
+	add_child(_border_indicator)
+	_border_indicator.setup(self, player, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE)
+
+	_objective_arrow = ObjectiveArrow.new()
+	add_child(_objective_arrow)
+	_objective_arrow.setup(self, player)
+	_objective_arrow.set_target(_get_objective_position())
+
+	TutorialHints.show(self, "world_transition")
 	exploration_ready.emit()
+
+
+func _get_objective_position() -> Vector2:
+	## W3: reach rail station (Forward Portal) after visiting Brasston
+	if GameState.game_constants.get("cutscene_flag_tempo_steampunk_defeated", false):
+		return spawn_points.get("station", Vector2.ZERO)
+	if GameState.get_story_flag("visited_brasston"):
+		return spawn_points.get("station", Vector2.ZERO)
+	return spawn_points.get("brasston_entrance", Vector2.ZERO)
+
+
+func _place_village_markers() -> void:
+	var pos = spawn_points.get("brasston_entrance", Vector2.ZERO)
+	if pos != Vector2.ZERO:
+		var marker = VillageMarker.new()
+		marker.village_name = "BRASSTON"
+		marker.roof_color = Color(0.55, 0.4, 0.2)  # Copper/brass rooftops
+		marker.position = pos
+		add_child(marker)
+
+
+func _place_treasure_chests() -> void:
+	const TreasureChestScript = preload("res://src/exploration/TreasureChest.gd")
+	# 10 chests across plaza, industrial district, rail station, residential
+	var chests = [
+		# Central plaza — fountain / clock tower area
+		{"id": "w3_plaza_ether", "pos": Vector2(18, 18), "type": "item", "item": "ether", "amount": 4},
+		{"id": "w3_plaza_gold", "pos": Vector2(26, 19), "type": "gold", "gold": 400},
+		# Industrial district (NE/SE) — machinery caches
+		{"id": "w3_industrial_hipotion", "pos": Vector2(48, 10), "type": "item", "item": "hi_potion", "amount": 4},
+		{"id": "w3_industrial_elixir", "pos": Vector2(52, 18), "type": "item", "item": "elixir", "amount": 1},
+		{"id": "w3_industrial_gold", "pos": Vector2(45, 30), "type": "gold", "gold": 500},
+		# Rail station approach — commuter lost-and-found
+		{"id": "w3_station_remedy", "pos": Vector2(22, 40), "type": "item", "item": "remedy", "amount": 3},
+		{"id": "w3_station_phoenix", "pos": Vector2(30, 40), "type": "item", "item": "phoenix_down", "amount": 2},
+		# Residential blocks — tenement backyards
+		{"id": "w3_tenement_antidote", "pos": Vector2(8, 22), "type": "item", "item": "antidote", "amount": 4},
+		{"id": "w3_tenement_gold", "pos": Vector2(5, 10), "type": "gold", "gold": 250},
+		# Park / steam pipes
+		{"id": "w3_park_ether", "pos": Vector2(15, 33), "type": "item", "item": "ether", "amount": 3},
+	]
+	for c in chests:
+		var chest = TreasureChestScript.new()
+		chest.chest_id = c["id"]
+		chest.position = Vector2(c["pos"].x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, c["pos"].y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+		if c["type"] == "gold":
+			chest.contents_type = "gold"
+			chest.gold_amount = c["gold"]
+		else:
+			chest.contents_type = "item"
+			chest.contents_id = c["item"]
+			chest.contents_amount = c["amount"]
+		add_child(chest)
+
+
+func _place_save_point() -> void:
+	# Save crystal at central plaza (safe hub area)
+	_save_point = SavePoint.new()
+	_save_point.position = Vector2(22 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 20 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	add_child(_save_point)
+
+
+func _place_signposts() -> void:
+	var signs = [
+		# Orientation at entry
+		{"pos": Vector2(27, 6), "text": "W3 · Clockwork Dominion"},
+		# Brasston village (west)
+		{"pos": Vector2(14, 26), "text": "← Brasston Village"},
+		# Return portal (north)
+		{"pos": Vector2(27, 3), "text": "↑ Return  ⚙ Mundane Sprawl (W2)"},
+		# Forward portal (south)
+		{"pos": Vector2(25, 40), "text": "↓ Rail Station  ⚒ Assembly Line (W4)"},
+		# Central plaza
+		{"pos": Vector2(22, 17), "text": "→ Central Plaza · save crystal here"},
+		# Industrial district warning (east)
+		{"pos": Vector2(42, 15), "text": "→ Industrial District ⚠ Loud machinery"},
+		# Steam pipe area
+		{"pos": Vector2(16, 35), "text": "← Steam Pipes · watch the vents"},
+		# Steampunk Mechanism dungeon
+		{"pos": Vector2(46, 30), "text": "↓ The Grand Mechanism — dungeon ⚙"},
+	]
+	for s in signs:
+		var post = Signpost.new()
+		post.sign_text = s["text"]
+		post.position = Vector2(s["pos"].x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, s["pos"].y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+		add_child(post)
+
+
+func _place_landmarks() -> void:
+	var landmarks = [
+		{"pos": Vector2(45, 8), "type": Landmark.Type.GEAR_PILE},
+		{"pos": Vector2(15, 35), "type": Landmark.Type.STEAM_PIPE},
+		{"pos": Vector2(30, 25), "type": Landmark.Type.GEAR_PILE},
+		{"pos": Vector2(50, 20), "type": Landmark.Type.STEAM_PIPE},
+	]
+	for l in landmarks:
+		var lm = Landmark.new()
+		lm.landmark_type = l["type"]
+		lm.position = Vector2(l["pos"].x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, l["pos"].y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+		add_child(lm)
+
+
+func _place_wanderers() -> void:
+	var wanderers = [
+		{
+			"name": "Clockwinder",
+			"dialogue": "If I stop winding, the whole district stops.",
+			"color": Color(0.55, 0.4, 0.25),
+			"path": [Vector2(25, 20), Vector2(30, 20), Vector2(30, 25), Vector2(25, 25)],
+			"hints": [
+				{"flag": "w3_entered", "text": "Brasston is west of here. The Grand Mechanism runs everything."},
+				{"flag": "tempo_steampunk_defeated", "text": "The mechanism broke. Something opened up... smells like soot and iron."},
+			],
+		},
+		{
+			"name": "Steam Collector",
+			"dialogue": "Good steam is hard to find these days.",
+			"color": Color(0.5, 0.5, 0.5),
+			"path": [Vector2(40, 10), Vector2(45, 10), Vector2(45, 15), Vector2(40, 15)],
+			"hints": [
+				{"flag": "w3_entered", "text": "The pipes all lead to the Mechanism. Follow them if you're brave."},
+				{"flag": "tempo_steampunk_defeated", "text": "Beyond the Dominion lies a world of pure industry. No craftsmanship. Just output."},
+			],
+		},
+	]
+	for w in wanderers:
+		var npc = WanderingNPC.new()
+		npc.npc_name = w["name"]
+		npc.dialogue = w["dialogue"]
+		npc.sprite_color = w["color"]
+		if w.has("hints"):
+			npc.dialogue_hints = w["hints"]
+		var patrol: Array[Vector2] = []
+		for pt in w["path"]:
+			patrol.append(Vector2(pt.x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, pt.y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2))
+		npc.set_patrol(patrol)
+		add_child(npc)
 
 
 func _setup_effects() -> void:
 	var vent_positions: Array[Vector2] = [
-		Vector2(47 * TILE_SIZE + TILE_SIZE / 2, 9 * TILE_SIZE),
-		Vector2(50 * TILE_SIZE + TILE_SIZE / 2, 11 * TILE_SIZE),
-		Vector2(48 * TILE_SIZE + TILE_SIZE / 2, 12 * TILE_SIZE),
-		Vector2(19 * TILE_SIZE + TILE_SIZE / 2, 19 * TILE_SIZE),
-		Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 43 * TILE_SIZE),
-		Vector2(22 * TILE_SIZE + TILE_SIZE / 2, 43 * TILE_SIZE),
+		Vector2(47 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 9 * MAP_SCALE * TILE_SIZE),
+		Vector2(50 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 11 * MAP_SCALE * TILE_SIZE),
+		Vector2(48 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 12 * MAP_SCALE * TILE_SIZE),
+		Vector2(19 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 19 * MAP_SCALE * TILE_SIZE),
+		Vector2(27 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 43 * MAP_SCALE * TILE_SIZE),
+		Vector2(22 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 43 * MAP_SCALE * TILE_SIZE),
 	]
 	for i in range(vent_positions.size()):
 		var emitter = CPUParticles2D.new()
@@ -109,18 +318,28 @@ func _setup_effects() -> void:
 
 
 func _process(delta: float) -> void:
+	if _quest_tracker: _quest_tracker.update()
 	if _mode7:
-		var roaming = get_node_or_null("RoamingMonsters")
-		if roaming:
-			for child in roaming.get_children():
-				_mode7.register_billboard(child)
 		_mode7.process_frame()
+	if _weather:
+		_weather.process(delta)
 	for i in range(_steam_emitters.size()):
 		_steam_timers[i] += delta
 		if _steam_timers[i] >= _steam_intervals[i]:
 			_steam_timers[i] = 0.0
 			_steam_intervals[i] = randf_range(5.0, 12.0)
 			_steam_emitters[i].restart()
+	if player:
+		if _zone_particles:
+			_zone_particles.update_position(player.position)
+		if _minimap:
+			_minimap.update(player.position)
+		if _objective_arrow:
+			_objective_arrow.update(player.position)
+		if _border_indicator:
+			_border_indicator.update(player.position)
+		if _threat_meter:
+			_threat_meter.update(player.position)
 
 
 func _exit_tree() -> void:
@@ -178,62 +397,14 @@ func _generate_map() -> void:
 
 	print("Generating steampunk overworld map %dx%d..." % [MAP_WIDTH, MAP_HEIGHT])
 
-	var map_data: Array[String] = [
-		"bbbbbbbbbbbbccccccccccccccchccccccccccccccccbbbbbbbbbbbbbbbb",
-		"bwwwwwwwwwbcccccccccccccccccccccccccccccccccbwwwwwwwwwwwwcbc",
-		"bwdwiwdwiwbcclcccccclcccccccccclcccccccclcccbwiwdwiwdwiwwcbc",
-		"bwwwwwwwwwbccaaaaaaaaaaaaaaaaaaaaaaaaaaaaaacbwwwwwwwwwwwwcbc",
-		"bfffffffbbccaacccccccccccccccccccccccccccaaccbbfffffffbbbbcc",
-		"bgggggggccccaaccclcccccccccccccccccclccaaaccccccgggggggccccc",
-		"bgggggggccccaaccccccccccccclcccccccccaaacccccccgggggggcccccc",
-		"bgggggggccccaacccccccccccccccccccccccaacccccccccmmmmmmmmmmcc",
-		"bfffffffccccaacccclcccccccccccccclcccaacccccccccmppppppppcmc",
-		"cccccccccccaaaccccccccccccccccccccccaaaccccccccccmpppppppcmc",
-		"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaammmmmmmmcm",
-		"cccccccccccaaaccccccccccccccccccccccaaacccccccccccmpppppmcmc",
-		"cclcccccclcaaccccccccccccccccccccccccaacccccccccccmpppmpmcmc",
-		"cccccccccccaaccccccccccccccccccccccccaaccccccccccccmmmmmmcmc",
-		"cccccccccccaaccclcccccccccccclcccccccaaccccccccccccccccccmcc",
-		"cccccccccccaaccccccccccccccccccccccccaacccccccccccccnnnncmcc",
-		"cclcccccclcaaccccccccccccccccccccccccaaccccccccccccnnnnnnccc",
-		"cccccccccccaacccccccccccFccccccccccccaaccccccccccccnnnnccccc",
-		"cccccccccccaaccccccccccFFFcccccccccccaaccccccccccccccccccccc",
-		"cccccccccccaacccccccccccFccccccccccccaaccccccccchccccccccccc",
-		"cccccccccccaacccccclccccccccccclccccaaaccccccccccccclccccccc",
-		"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-		"cccccccccccaaccccccccccccccccccccccccaaccccccccccccccccccccc",
-		"ccbwwwwwbccaaccccccccccccccccccccccccaaccbwwwwwbcccccccccccc",
-		"ccbwdwiwbccaaccclcccccccccccccclcccccaaccbwidwwbcccccccccccc",
-		"ccbwwwwwbccaaccccccccccccccccccccccccaaccbwwwwwbcccccccccccc",
-		"ccbfffffbccaaccccccccccccccccccccccccaaccbfffffbcccccccccccc",
-		"ccbgggggbccaaccccccccccccccccccccccccaaccbgggggbcccccccccccc",
-		"ccbgggggbccaaccclcccccclcccclcccclcccaaccbgggggbcccccccccccc",
-		"ccbfffffbccaaccccccccccccccccccccccccaaccbfffffbcccccccccccc",
-		"ccccccccccaaacccccccccccccccccccccccaaaccccccccccccccccccccc",
-		"cccccccccaaaccccccccccccccccccccccccaaaccccccccccccccccccccc",
-		"ccccccccaaacccccccccclccccccclccccccaaacccccccclcccccccclccc",
-		"ccggggggccaacccccccccccccccccccccccccaaccccccccccccccccccccc",
-		"cgggggggccaacccccccccccccccccccccccccaaccccccccccccccccccccc",
-		"cggggFgggcaacccccccccccccccccccccccccaaccccccccccccccccccccc",
-		"cgggFFFggcaaccclcccccccccccccclcccccaaaccccccccccccccccccccc",
-		"cggggFgggcaacccccccccccccccccccccccaaacccccccccccccccccccccc",
-		"cgggggggccaacccccccccclcccclcccccccaaccccccccccccccccccccccc",
-		"ccggggggccaacccccccccccccccccccccccaaclcccccccccccccccclcccc",
-		"cfffffffccaaaccccccccccccccccccccccaaacccccccccccccccccccccc",
-		"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-		"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
-		"cccccccccccccccccclcccccclcccclccccccccccccccccclccccccccccc",
-		"ccccccccccrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrcccccccccccccc",
-		"ccccccccccrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrcccccccccccccc",
-		"cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
-		"ccccccccccccccbwwdwwbccccccccccccbwwdwwbcccccccccccccccccccc",
-		"ccccccccccccccbwwwwwbccccccccccccbwwwwwbcccccccccccccccccccc",
-		"ccccccccccccccbbbbbbbbcccccccccccbbbbbbbbccccccccccccccccccc",
-	]
-
-	# Ensure map_data matches expected dimensions
-	while map_data.size() < MAP_HEIGHT:
-		map_data.append("cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc")
+	var map_data: Array[String] = []
+	# str() coercion, not a direct assign: a generic-to-typed assign ABORTS this function
+	for row in MapImageLoader.load_rows(MAP_IMAGE, MAP_WORLD):
+		map_data.append(str(row))
+	# no padding: padding turns a failed load into a silent concrete field
+	if map_data.size() != MAP_HEIGHT:
+		push_error("[MAP] %s yielded %d rows, expected %d -- refusing to pad" % [MAP_IMAGE, map_data.size(), MAP_HEIGHT])
+		return
 
 	# Convert map_data to tiles
 	var tile_counts = {}
@@ -251,13 +422,15 @@ func _generate_map() -> void:
 	print("Steampunk tile counts: ", tile_counts)
 
 	# Define spawn points
-	spawn_points["entrance"] = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 2 * TILE_SIZE + TILE_SIZE / 2)
-	spawn_points["plaza"] = Vector2(22 * TILE_SIZE + TILE_SIZE / 2, 17 * TILE_SIZE + TILE_SIZE / 2)
-	spawn_points["station"] = Vector2(25 * TILE_SIZE + TILE_SIZE / 2, 43 * TILE_SIZE + TILE_SIZE / 2)
-	spawn_points["steampunk_portal"] = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 1 * TILE_SIZE + TILE_SIZE / 2)
+	# New-frame coords (not old x3): the x3 point sat 6 rows below the city wall, whose
+	# Mode 7 displaced collider (+4.39 rows) landed exactly on the body. On the boulevard now.
+	spawn_points["entrance"] = Vector2(88 * TILE_SIZE + TILE_SIZE / 2, 8 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["plaza"] = Vector2(22 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 17 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["station"] = Vector2(25 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 43 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["steampunk_portal"] = Vector2(27 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 1 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	spawn_points["default"] = spawn_points["entrance"]
 	# Spawn point for returning from Brasston village (west residential quarter, row 26)
-	spawn_points["brasston_entrance"] = Vector2(5 * TILE_SIZE + TILE_SIZE / 2, 26 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["brasston_entrance"] = Vector2(11 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 26 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 
 
 func _char_to_tile_type(char: String) -> int:
@@ -288,17 +461,35 @@ func _get_atlas_coords(tile_type: int) -> Vector2i:
 
 
 func _setup_transitions() -> void:
-	# Portal back to medieval overworld at north edge
-	var portal_trans = AreaTransitionScript.new()
-	portal_trans.name = "MedievalPortal"
-	portal_trans.target_map = "overworld"
-	portal_trans.target_spawn = "steampunk_portal"
-	portal_trans.require_interaction = true
-	portal_trans.indicator_text = "Return to Overworld"
-	portal_trans.position = spawn_points.get("steampunk_portal", Vector2(864, 48))
-	_setup_transition_collision(portal_trans, Vector2(TILE_SIZE, TILE_SIZE))
-	portal_trans.transition_triggered.connect(_on_transition_triggered)
-	transitions.add_child(portal_trans)
+	# Back portal to W2 Suburban
+	var back_portal = AreaTransitionScript.new()
+	back_portal.name = "BackPortal"
+	back_portal.target_map = "suburban_overworld"
+	back_portal.target_spawn = "entrance"
+	back_portal.require_interaction = true
+	back_portal.indicator_text = "Return to the Mundane Sprawl"
+	back_portal.position = spawn_points.get("steampunk_portal", Vector2(864, 48))
+	# Anchored one box south first: this arrival is at y=48, so the -140.6 recipe alone
+	# left 3.4px of 192 on-map with the body floor at y=38 -- an unreachable portal.
+	back_portal.position += Vector2(0, InteractGeometry.ENTRANCE_BOX_MODE7.y)
+	back_portal.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
+	_setup_transition_collision(back_portal, InteractGeometry.ENTRANCE_BOX_MODE7)
+	back_portal.transition_triggered.connect(_on_transition_triggered)
+	transitions.add_child(back_portal)
+
+	# Forward portal to W4 Industrial (gated on world unlock)
+	if GameState.is_world_unlocked(4) or GameState.game_constants.get("cutscene_flag_tempo_steampunk_defeated", false):
+		var forward_portal = AreaTransitionScript.new()
+		forward_portal.name = "WorldPortal"
+		forward_portal.target_map = "industrial_overworld"
+		forward_portal.target_spawn = "entrance"
+		forward_portal.require_interaction = true
+		forward_portal.indicator_text = "Enter the Assembly Line"
+		forward_portal.position = spawn_points.get("station", Vector2(864, 1400))
+		forward_portal.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
+		_setup_transition_collision(forward_portal, InteractGeometry.ENTRANCE_BOX_MODE7)
+		forward_portal.transition_triggered.connect(_on_transition_triggered)
+		transitions.add_child(forward_portal)
 
 	# Brasston village entrance (west residential quarter, row 26)
 	var brasston_trans = AreaTransitionScript.new()
@@ -308,9 +499,23 @@ func _setup_transitions() -> void:
 	brasston_trans.require_interaction = true
 	brasston_trans.indicator_text = "Enter Brasston"
 	brasston_trans.position = spawn_points.get("brasston_entrance", Vector2(176, 848))
-	_setup_transition_collision(brasston_trans, Vector2(TILE_SIZE, TILE_SIZE))
+	brasston_trans.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
+	_setup_transition_collision(brasston_trans, InteractGeometry.ENTRANCE_BOX_MODE7)
 	brasston_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(brasston_trans)
+
+	# Steampunk Mechanism dungeon entrance (industrial district, east)
+	var mechanism_trans = AreaTransitionScript.new()
+	mechanism_trans.name = "SteampunkMechanismEntrance"
+	mechanism_trans.target_map = "steampunk_mechanism"
+	mechanism_trans.target_spawn = "default"
+	mechanism_trans.require_interaction = true
+	mechanism_trans.indicator_text = "Descend into the Grand Mechanism"
+	mechanism_trans.position = Vector2(48 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 30 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	mechanism_trans.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
+	_setup_transition_collision(mechanism_trans, InteractGeometry.ENTRANCE_BOX_MODE7)
+	mechanism_trans.transition_triggered.connect(_on_transition_triggered)
+	transitions.add_child(mechanism_trans)
 
 
 func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
@@ -329,7 +534,7 @@ func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
 
 func _setup_npcs() -> void:
 	# === Brigadier Flux - off-grid house, west residential ===
-	var flux = _create_npc("Brigadier Flux", "elder", Vector2(4 * TILE_SIZE, 26 * TILE_SIZE), [
+	var flux = _create_npc("Brigadier Flux", "elder", Vector2(4 * MAP_SCALE * TILE_SIZE, 26 * MAP_SCALE * TILE_SIZE), [
 		"I keep my lamps lit by hand. No gear drives them.",
 		"Everyone says I'm paranoid, but I've SEEN the gears skip.",
 		"One skipped beat and the whole Mechanism resets.",
@@ -338,7 +543,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(flux)
 
 	# === Sprocket - mechanic, near industrial pipes ===
-	var sprocket = _create_npc("Sprocket", "villager", Vector2(50 * TILE_SIZE, 9 * TILE_SIZE), [
+	var sprocket = _create_npc("Sprocket", "villager", Vector2(50 * MAP_SCALE * TILE_SIZE, 9 * MAP_SCALE * TILE_SIZE), [
 		"Name's Sprocket. I fix things that shouldn't break.",
 		"The pipes in the east district? They're not carrying steam.",
 		"I've heard... ticking. Like a countdown.",
@@ -347,7 +552,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(sprocket)
 
 	# === Cogsworth - plaza clocktower keeper ===
-	var cogsworth = _create_npc("Cogsworth", "guard", Vector2(22 * TILE_SIZE, 17 * TILE_SIZE), [
+	var cogsworth = _create_npc("Cogsworth", "guard", Vector2(22 * MAP_SCALE * TILE_SIZE, 17 * MAP_SCALE * TILE_SIZE), [
 		"The fountain plaza runs like clockwork. Literally.",
 		"Every gear, every pipe, every cobblestone — synchronized.",
 		"I maintain the central clock. If it stops, Brasston stops.",
@@ -356,7 +561,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(cogsworth)
 
 	# === Ember - park area, southern gardens ===
-	var ember = _create_npc("Ember", "villager", Vector2(6 * TILE_SIZE, 35 * TILE_SIZE), [
+	var ember = _create_npc("Ember", "villager", Vector2(6 * MAP_SCALE * TILE_SIZE, 35 * MAP_SCALE * TILE_SIZE), [
 		"I grow flowers in the park. The only organic thing in Brasston.",
 		"The gears underground make the soil warm. Perfect for roses.",
 		"Sometimes the flowers bloom in perfect spirals. Fibonacci.",
@@ -365,7 +570,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(ember)
 
 	# === Rail Master Piston - southern rail station ===
-	var piston = _create_npc("Rail Master Piston", "guard", Vector2(28 * TILE_SIZE, 44 * TILE_SIZE), [
+	var piston = _create_npc("Rail Master Piston", "guard", Vector2(28 * MAP_SCALE * TILE_SIZE, 44 * MAP_SCALE * TILE_SIZE), [
 		"All aboard! The 3:47 to... well, nowhere, actually.",
 		"The tracks go in a circle. Always have.",
 		"Passengers get on, ride for an hour, get off where they started.",
@@ -374,7 +579,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(piston)
 
 	# === Whistler - mysterious figure near manholes ===
-	var whistler = _create_npc("Whistler", "villager", Vector2(28 * TILE_SIZE, 19 * TILE_SIZE), [
+	var whistler = _create_npc("Whistler", "villager", Vector2(28 * MAP_SCALE * TILE_SIZE, 19 * MAP_SCALE * TILE_SIZE), [
 		"*whistles tunelessly*",
 		"You want to know what's under the manholes?",
 		"Maintenance shafts. Gantries. Steam vents.",
@@ -384,7 +589,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(whistler)
 
 	# === Tinkerer Wren - neon sign district, east ===
-	var wren = _create_npc("Tinkerer Wren", "villager", Vector2(46 * TILE_SIZE, 16 * TILE_SIZE), [
+	var wren = _create_npc("Tinkerer Wren", "villager", Vector2(46 * MAP_SCALE * TILE_SIZE, 16 * MAP_SCALE * TILE_SIZE), [
 		"I make the neon signs! Each one hand-bent brass tubing.",
 		"The glow? That's pressurized aether, not electricity.",
 		"My autobattle scripts? Oh, I wrote one that uses ONLY Defer.",
@@ -432,11 +637,13 @@ func _setup_controller() -> void:
 	controller = OverworldControllerScript.new()
 	controller.name = "Controller"
 	controller.player = player
-	controller.encounter_enabled = true
+	controller.encounter_enabled = false  # Roaming monsters handle encounters, not step-based random
 	controller.current_area_id = "steampunk_overworld"
 
-	# Encounters in industrial outskirts, safe in central plaza
-	controller.set_area_config("steampunk_overworld", false, 0.04, ["clockwork_sentinel", "steam_rat", "brass_golem", "cog_swarm", "pipe_phantom"])
+	# W3 Steampunk encounters — clockwork enemies, avg lv 5
+	# Rate 0.04: fewer encounters, tougher per fight
+	controller.set_area_config("steampunk_overworld", false, 0.04,
+		["steam_rat", "cog_swarm", "clockwork_sentinel", "pipe_phantom", "brass_golem"])
 
 	# Connect signals
 	controller.battle_triggered.connect(_on_battle_triggered)
@@ -446,11 +653,24 @@ func _setup_controller() -> void:
 
 
 func _on_transition_triggered(target_map: String, spawn_point: String) -> void:
+	if "overworld" in target_map and _mode7:
+		InputLockManager.push_lock("world_transition")
+		await _mode7.play_dissolve_out()
+		InputLockManager.pop_lock("world_transition")
 	area_transition.emit(target_map, spawn_point)
 
 
 func _on_battle_triggered(enemies: Array) -> void:
-	battle_triggered.emit(enemies)
+	battle_triggered.emit(enemies, "steampunk")
+
+
+## Tick 86: see SuburbanOverworld._on_roaming_monster_touched for rationale.
+func _on_roaming_monster_touched(monster_id: String, _monster_types: Array) -> void:
+	var enemies: Array = [monster_id]
+	var extra: int = randi_range(0, 2)
+	for _i in range(extra):
+		enemies.append(monster_id)
+	_on_battle_triggered(enemies)
 
 
 func _on_menu_requested() -> void:
@@ -495,15 +715,17 @@ func _create_map_boundaries() -> void:
 	var map_w = MAP_WIDTH * TILE_SIZE
 	var map_h = MAP_HEIGHT * TILE_SIZE
 	var wall_thickness = 32.0
+	# Playtest 2026-07-11: flush walls let the sprite clip past the Mode 7 render edge — stop one tile inside (tunable).
+	var edge_inset = float(TILE_SIZE)
 
 	# Top wall
-	_add_boundary_wall(bounds, Vector2(map_w / 2, -wall_thickness / 2), Vector2(map_w + wall_thickness * 2, wall_thickness))
+	_add_boundary_wall(bounds, Vector2(map_w / 2, edge_inset - wall_thickness / 2), Vector2(map_w + wall_thickness * 2, wall_thickness))
 	# Bottom wall
-	_add_boundary_wall(bounds, Vector2(map_w / 2, map_h + wall_thickness / 2), Vector2(map_w + wall_thickness * 2, wall_thickness))
+	_add_boundary_wall(bounds, Vector2(map_w / 2, map_h - edge_inset + wall_thickness / 2), Vector2(map_w + wall_thickness * 2, wall_thickness))
 	# Left wall
-	_add_boundary_wall(bounds, Vector2(-wall_thickness / 2, map_h / 2), Vector2(wall_thickness, map_h + wall_thickness * 2))
+	_add_boundary_wall(bounds, Vector2(edge_inset - wall_thickness / 2, map_h / 2), Vector2(wall_thickness, map_h + wall_thickness * 2))
 	# Right wall
-	_add_boundary_wall(bounds, Vector2(map_w + wall_thickness / 2, map_h / 2), Vector2(wall_thickness, map_h + wall_thickness * 2))
+	_add_boundary_wall(bounds, Vector2(map_w - edge_inset + wall_thickness / 2, map_h / 2), Vector2(wall_thickness, map_h + wall_thickness * 2))
 
 
 func _add_boundary_wall(parent: StaticBody2D, pos: Vector2, size: Vector2) -> void:

@@ -40,12 +40,13 @@ func _create_label() -> void:
 	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 
-	var base_size = 16
+	# Fable pass 2026-07-16 (struktured: "font for showing damage is too small, should prob be fatter and bigger in general") — base 16→24, tiers up, outline 2→5.
+	var base_size = 24
 	var color: Color
 
 	if is_miss:
 		_label.text = "MISS"
-		base_size = 18
+		base_size = 24
 		color = Color(0.65, 0.65, 0.65)
 		_lifetime = 0.9
 	else:
@@ -53,28 +54,28 @@ func _create_label() -> void:
 
 		# Size based on damage amount
 		if value >= 100:
-			base_size = 24
+			base_size = 34
 		elif value >= 50:
-			base_size = 20
+			base_size = 30
 		elif value >= 25:
-			base_size = 18
+			base_size = 27
 
 		if is_critical:
-			base_size += 6
+			base_size += 8
 
-		# Color: green for heal, orange for crit, white for normal
+		# Tick 226: color-blind friendly palette swaps green→cyan (heal) and orange→yellow (crit). Both are distinguishable for deuteranopia/protanopia (red-green color blindness, ~5% of males).
 		if is_heal:
-			color = Color.LIME_GREEN
+			color = _heal_color()
 		elif is_critical:
-			color = Color.ORANGE
+			color = _crit_color()
 		else:
 			color = Color.WHITE
 
 	_label.add_theme_font_size_override("font_size", base_size)
 	_label.add_theme_color_override("font_color", color)
 
-	# Outline for visibility
-	_label.add_theme_constant_override("outline_size", 2)
+	# Fat outline — the "weight" half of bigger+fatter (Labels have no bold toggle without a font swap; a 5px outline reads as heavy stroke at these sizes).
+	_label.add_theme_constant_override("outline_size", 5)
 	_label.add_theme_color_override("font_outline_color", Color.BLACK)
 
 	# Center the label
@@ -97,6 +98,16 @@ func _create_label() -> void:
 		_high_damage_pulse_effect()
 
 
+# Tick 226/228: heal popup color via shared AccessibilityPalette util.
+func _heal_color() -> Color:
+	return AccessibilityPalette.heal()
+
+
+# Tick 226/228: crit popup color via shared AccessibilityPalette util.
+func _crit_color() -> Color:
+	return AccessibilityPalette.crit()
+
+
 func _flash_effect() -> void:
 	"""Flash the number for emphasis"""
 	if _flash_tween and _flash_tween.is_valid():
@@ -107,17 +118,20 @@ func _flash_effect() -> void:
 
 
 func _crit_wobble_effect() -> void:
-	"""Crit numbers get a rotation wobble of ±10 degrees"""
+	"""Crit numbers get a dramatic rotation wobble + color cycle"""
 	if _polish_tween and _polish_tween.is_valid():
 		_polish_tween.kill()
 	_polish_tween = create_tween()
-	var wobble_deg = deg_to_rad(10.0)
-	# Quick wobble: 0 -> +10 -> -10 -> +6 -> -6 -> 0 over lifetime
-	_polish_tween.tween_property(_label, "rotation", wobble_deg, 0.08)
-	_polish_tween.tween_property(_label, "rotation", -wobble_deg, 0.12)
-	_polish_tween.tween_property(_label, "rotation", deg_to_rad(6.0), 0.1)
-	_polish_tween.tween_property(_label, "rotation", deg_to_rad(-6.0), 0.1)
-	_polish_tween.tween_property(_label, "rotation", 0.0, 0.12)
+	var wobble_deg = deg_to_rad(15.0)
+	# Quick wobble: 0 -> +15 -> -15 -> +8 -> -8 -> 0 over lifetime
+	_polish_tween.tween_property(_label, "rotation", wobble_deg, 0.06)
+	_polish_tween.tween_property(_label, "rotation", -wobble_deg, 0.10)
+	_polish_tween.tween_property(_label, "rotation", deg_to_rad(8.0), 0.08)
+	_polish_tween.tween_property(_label, "rotation", deg_to_rad(-8.0), 0.08)
+	_polish_tween.tween_property(_label, "rotation", 0.0, 0.10)
+	# Tick 226: crit cycle returns to crit color (ORANGE default, yellow in color-blind mode) for consistency with the initial setup color.
+	_polish_tween.parallel().tween_property(_label, "theme_override_colors/font_color", Color(1.0, 1.0, 0.7), 0.08)
+	_polish_tween.tween_property(_label, "theme_override_colors/font_color", _crit_color(), 0.15)
 
 
 func _heal_bounce_effect() -> void:

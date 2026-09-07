@@ -1,0 +1,148 @@
+{
+  "id": "world3_chat_clockwork_bard",
+  "title": "A Song for the Schedule",
+  "world": 3,
+  "trigger": "world3_chat_clockwork_bard",
+  "background": "steampunk_workshop",
+  "description": "Busker attempts to compose for Brasston. Alchemist critiques. Comedic character beat.",
+  "steps": [
+    {
+      "type": "letterbox_in",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "The Busker had been sitting on a crate for ninety minutes, scoring a piece for Brasston. It was not going well."
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Busker",
+          "text": "The problem is the meter.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Alchemist",
+          "text": "Which one?",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Busker",
+          "text": "Any of them. All of them. Brasston isn't in 4/4 and it isn't in 3/4. It's in 47/38.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Alchemist",
+          "text": "That is not a time signature.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Busker",
+          "text": "Tell that to the clock tower.",
+          "theme": "bard",
+          "portrait": "bard"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Steamknight",
+          "text": "What's it called?",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Busker",
+          "text": "Working title: Tea at Unreasonable.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Steampriest",
+          "text": "It's lovely.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Busker",
+          "text": "Thank you. The bridge is in 13/11 and I cannot, for the life of me, make it resolve.",
+          "theme": "bard",
+          "portrait": "bard"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Saboteur",
+          "text": "Maybe that's the point.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Busker",
+          "text": "...",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Busker",
+          "text": "You know, that's the most useful thing you've ever said.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Saboteur",
+          "text": "I say useful things. Occasionally.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Busker",
+          "text": "I'll credit you in the liner notes.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Saboteur",
+          "text": "Please don't.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        }
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "The Busker scored the final bar in silence. In Brasston, silence was itself a rhythm. The piece would not resolve. The piece was not supposed to."
+    },
+    {
+      "type": "set_flag",
+      "flag": "party_chat_viewed_world3_chat_clockwork_bard",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.4
+    }
+  ]
+}

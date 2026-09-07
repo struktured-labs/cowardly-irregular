@@ -1,0 +1,43 @@
+{
+  "id": "event_chat_first_autobattle",
+  "title": "The Script Runs",
+  "world": 1,
+  "trigger": "event_chat_first_autobattle",
+  "background": "prologue_forest",
+  "description": "First time autobattle is toggled on. Meta-aware, but gentle.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.3},
+    {
+      "type": "narration",
+      "text": "The party did not attack the slime. The party's script attacked the slime. The slime did not notice the distinction. The slime is, in this respect, the most consistent member of the encounter."
+    },
+    {"type": "wait", "duration": 0.5},
+    {
+      "type": "dialogue",
+      "lines": [
+        {"speaker": "Mage", "text": "So this is it.", "theme": "mage", "portrait": "mage"},
+        {"speaker": "Fighter", "text": "This is what?", "theme": "fighter", "portrait": "fighter"},
+        {"speaker": "Mage", "text": "Delegation. Someone else decides which button we press. And we stand here.", "theme": "mage", "portrait": "mage"},
+        {"speaker": "Fighter", "text": "I was standing here anyway. This is not new.", "theme": "fighter", "portrait": "fighter"}
+      ]
+    },
+    {"type": "wait", "duration": 0.3},
+    {
+      "type": "dialogue",
+      "lines": [
+        {"speaker": "Rogue", "text": "It feels faster.", "theme": "rogue", "portrait": "rogue"},
+        {"speaker": "Cleric", "text": "It is faster. The decisions are instant.", "theme": "cleric", "portrait": "cleric"},
+        {"speaker": "Bard", "text": "Are we still playing, or are we being played?", "theme": "bard", "portrait": "bard"},
+        {"speaker": "Mage", "text": "Yes.", "theme": "mage", "portrait": "mage"},
+        {"speaker": "Bard", "text": "That is not an answer to the question I asked.", "theme": "bard", "portrait": "bard"},
+        {"speaker": "Mage", "text": "I know.", "theme": "mage", "portrait": "mage"}
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "The script ran. The slime died. The next slime was already forming."
+    },
+    {"type": "set_flag", "flag": "party_chat_viewed_event_chat_first_autobattle", "value": true},
+    {"type": "letterbox_out", "duration": 0.4}
+  ]
+}

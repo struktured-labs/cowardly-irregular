@@ -1,85 +1,60 @@
-extends Node2D
+extends BaseVillage
+
 class_name MapleHeightsVillageScene
+
+const SuburbanTileGeneratorScript = preload("res://src/exploration/SuburbanTileGenerator.gd")
 
 ## MapleHeightsVillage - Nostalgic 90s suburban neighborhood
 ## Features: Mom's Guest Room (Inn), Suburban Mart (Item Shop), Picket fences, Mailboxes, NPCs
 
-const TileGeneratorScript = preload("res://src/exploration/TileGenerator.gd")
-const OverworldPlayerScript = preload("res://src/exploration/OverworldPlayer.gd")
-const OverworldControllerScript = preload("res://src/exploration/OverworldController.gd")
-const AreaTransitionScript = preload("res://src/exploration/AreaTransition.gd")
-const OverworldNPCScript = preload("res://src/exploration/OverworldNPC.gd")
 const VillageInnScript = preload("res://src/exploration/VillageInn.gd")
 const VillageShopScript = preload("res://src/exploration/VillageShop.gd")
 const TreasureChestScript = preload("res://src/exploration/TreasureChest.gd")
 
-signal exploration_ready()
-signal battle_triggered(enemies: Array)
-signal area_transition(target_map: String, spawn_point: String)
-
 ## Map dimensions
-const MAP_WIDTH: int = 24
-const MAP_HEIGHT: int = 18
-const TILE_SIZE: int = 32
-
-## Scene components
-var tile_map: TileMapLayer
-var player: Node2D
-var camera: Camera2D
-var controller: Node
-var tile_generator: Node
-
-## Containers
-var transitions: Node2D
-var npcs: Node2D
-var buildings: Node2D
-var treasures: Node2D
-
-## Spawn points
-var spawn_points: Dictionary = {}
+const MAP_WIDTH: int = 30
+const MAP_HEIGHT: int = 22
 
 
-func _ready() -> void:
-	_setup_scene()
-	_generate_map()
-	_setup_transitions()
-	_setup_buildings()
-	_setup_treasures()
-	_setup_npcs()
-	_setup_player()
-	_setup_camera()
-	_setup_controller()
+## ---- BaseVillage hooks ----
 
-	if SoundManager:
-		SoundManager.play_area_music("village")
-
-	exploration_ready.emit()
+func _get_area_id() -> String:
+	return "maple_heights_village"
 
 
-func _setup_scene() -> void:
-	tile_generator = TileGeneratorScript.new()
-	add_child(tile_generator)
+func _get_village_display_name() -> String:
+	return "Maple Heights"
 
-	tile_map = TileMapLayer.new()
-	tile_map.name = "TileMap"
-	tile_map.tile_set = tile_generator.create_tileset()
-	add_child(tile_map)
 
-	transitions = Node2D.new()
-	transitions.name = "Transitions"
-	add_child(transitions)
+func _get_music_area_id() -> String:
+	return "maple_heights_village"
 
-	buildings = Node2D.new()
-	buildings.name = "Buildings"
-	add_child(buildings)
 
-	treasures = Node2D.new()
-	treasures.name = "Treasures"
-	add_child(treasures)
+func _get_map_pixel_size() -> Vector2i:
+	return Vector2i(MAP_WIDTH * TILE_SIZE, MAP_HEIGHT * TILE_SIZE)
 
-	npcs = Node2D.new()
-	npcs.name = "NPCs"
-	add_child(npcs)
+
+func _get_save_point_position() -> Vector2:
+	return Vector2(13 * TILE_SIZE,10 * TILE_SIZE)
+
+
+func _get_player_spawn_fallback() -> Vector2:
+	return Vector2(480, 512)
+
+
+## Concrete / brick grays, NOT medieval stone — struktured 2026-09-06 split-level elevation pass
+func _get_cliff_palette() -> Dictionary:
+	return {
+		"face_dark": Color(0.14, 0.14, 0.15),
+		"face_mid": Color(0.58, 0.56, 0.54),
+		"face_light": Color(0.72, 0.70, 0.68),
+		"lip": Color(0.85, 0.83, 0.80),
+		"lip_shadow": Color(0.20, 0.19, 0.18, 0.85),
+		"grass": Color(0.35, 0.68, 0.30),
+		"grass_light": Color(0.48, 0.78, 0.38),
+		"stair_tread": Color(0.75, 0.73, 0.70),
+		"stair_riser": Color(0.45, 0.44, 0.42),
+	}
 
 
 func _generate_map() -> void:
@@ -94,26 +69,56 @@ func _generate_map() -> void:
 	# e = hedge (impassable fence line)
 	# d = dirt (worn areas, backyard)
 	# X = exit path (sidewalk leading out)
+	# ^ = retaining-wall steps up onto the raised residential shelf (cols4-7, rows1-8)
 	# Each row is exactly MAP_WIDTH (24) characters
 	var map_data: Array[String] = [
-		"WWWWWWWWWWWWWWWWWWWWWWWW",
-		"WggggppppppppppppggfggggW",
-		"WgHHHggggfggggggfgggggggW",
-		"WgHHHggggggfgggggfggfgggW",
-		"WgHHHgggfggggggggggggfggW",
-		"WggggppppppppppppppppgggW",
-		"WggfgpgggSSSggggIIIgpfggW",
-		"WgggepgggSSSggggIIIgpgggW",
-		"WgfgepgggSSSggggIIIgpfggW",
-		"WggggppppppppppppppppgggW",
-		"WgfgggggfggHHHggggggfgggW",
-		"WgggggfgggHHHgggfgggggggW",
-		"WggfgggggfHHHgggggfgggfgW",
-		"WgggggggggggggggggggggggW",
-		"WggfggggfggggfgggggfggggW",
-		"WgggggggggggggggfgggggggW",
-		"WgfggggggggXXXXXXgggfgggW",
-		"WWWWWWWWWWWWWWWWWWWWWWWW",
+		"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+		"W............................W",
+		"W............................W",
+		"W...ggggppppppppppppggfggg...W",
+		"W...gHHHggggfggggggfgggggg...W",
+		"W...gHHHggggggfgggggfggfgg...W",
+		"W...gHHHgggfggggggggggggfg...W",
+		"W...ggggppppppppppppppppgg...W",
+		"W...ggfgpgggSSSggggIIIgpfg...W",
+		"W...g^^epgggSSSggggIIIgpgg...W",
+		"W...gfgepgggSSSggggIIIgpfg...W",
+		"W...ggggppppppppppppppppgg...W",
+		"W...gfgggggfggHHHggggggfgg...W",
+		"W...gggggfgggHHHgggfgggggg...W",
+		"W...ggfgggggfHHHgggggfgggf...W",
+		"W...gggggggggggggggggggggg...W",
+		"W...ggfggggfggggfgggggfggg...W",
+		"W...gggggggggggggggfgggggg...W",
+		"W...gfggggggggXXXXXXgggfgg...W",
+		"W............................W",
+		"W............................W",
+		"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+	]
+	# A modest raised residential shelf (struktured 2026-09-06): house #1 + its yard (cols4-7, rows1-8) sit one tier up, retaining wall on the south face, steps at row9
+	var height_data: Array[String] = [
+		"000000000000000000000000000000",
+		"000011110000000000000000000000",
+		"000011110000000000000000000000",
+		"000011110000000000000000000000",
+		"000011110000000000000000000000",
+		"000011110000000000000000000000",
+		"000011110000000000000000000000",
+		"000011110000000000000000000000",
+		"000011110000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
 	]
 
 	for y in range(MAP_HEIGHT):
@@ -121,33 +126,39 @@ func _generate_map() -> void:
 		for x in range(MAP_WIDTH):
 			var char = row[x] if x < row.length() else "W"
 			var tile_type = _char_to_tile_type(char)
-			var atlas_coords = _get_atlas_coords(tile_type)
+			var atlas_coords = _atlas_for(tile_type, Vector2i(x, y))
 			tile_map.set_cell(Vector2i(x, y), 0, atlas_coords)
 
 			if char == "X" and not spawn_points.has("exit"):
 				spawn_points["exit"] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
 
-	spawn_points["entrance"] = Vector2(12 * TILE_SIZE, 14 * TILE_SIZE)
+	_build_derived_layers(map_data, height_data)
+
+	spawn_points["entrance"] = Vector2(15 * TILE_SIZE,16 * TILE_SIZE)
 	spawn_points["default"] = spawn_points["entrance"]
 	spawn_points["maple_heights_entrance"] = spawn_points["entrance"]
 
 
+## W2 is suburbia — CrossCode phase 4 (struktured: "continue with next cross code phase")
+func _get_tile_generator() -> Node:
+	return SuburbanTileGeneratorScript.new()
+
+
+func _get_fringe_ground_types() -> Array:
+	return [SuburbanTileGeneratorScript.TileType.LAWN]
+
+
 func _char_to_tile_type(char: String) -> int:
 	match char:
-		"W": return TileGeneratorScript.TileType.WALL
-		"H", "I", "S": return TileGeneratorScript.TileType.WALL
-		"g": return TileGeneratorScript.TileType.VILLAGE_GRASS
-		"p": return TileGeneratorScript.TileType.VILLAGE_PATH
-		"d": return TileGeneratorScript.TileType.VILLAGE_DIRT
-		"f": return TileGeneratorScript.TileType.VILLAGE_FLOWER
-		"e": return TileGeneratorScript.TileType.VILLAGE_HEDGE
-		"X": return TileGeneratorScript.TileType.VILLAGE_PATH
-		_: return TileGeneratorScript.TileType.VILLAGE_GRASS
-
-
-func _get_atlas_coords(tile_type: int) -> Vector2i:
-	var tile_id = TileGeneratorScript.get_tile_id(tile_type)
-	return Vector2i(tile_id % 5, tile_id / 5)
+		"W": return SuburbanTileGeneratorScript.TileType.PICKET_FENCE
+		"H", "I", "S": return SuburbanTileGeneratorScript.TileType.HOUSE_WALL
+		"g": return SuburbanTileGeneratorScript.TileType.LAWN
+		"p": return SuburbanTileGeneratorScript.TileType.SIDEWALK
+		"d": return SuburbanTileGeneratorScript.TileType.PARKING_LOT
+		"f": return SuburbanTileGeneratorScript.TileType.FLOWER_BED
+		"e": return SuburbanTileGeneratorScript.TileType.PICKET_FENCE
+		"X": return SuburbanTileGeneratorScript.TileType.SIDEWALK
+		_: return SuburbanTileGeneratorScript.TileType.LAWN
 
 
 func _setup_transitions() -> void:
@@ -156,30 +167,17 @@ func _setup_transitions() -> void:
 	exit_trans.target_map = "suburban_overworld"
 	exit_trans.target_spawn = "maple_heights_entrance"
 	exit_trans.require_interaction = false
-	exit_trans.position = spawn_points.get("exit", Vector2(352, 544))
+	exit_trans.position = spawn_points.get("exit", Vector2(448, 608))
 	_setup_transition_collision(exit_trans, Vector2(TILE_SIZE * 6, TILE_SIZE))
 	exit_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(exit_trans)
-
-
-func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
-	trans.collision_layer = 4
-	trans.collision_mask = 2
-	trans.monitoring = true
-	trans.monitorable = true
-
-	var collision = CollisionShape2D.new()
-	var shape = RectangleShape2D.new()
-	shape.size = size
-	collision.shape = shape
-	trans.add_child(collision)
 
 
 func _setup_buildings() -> void:
 	# === INN (Mom's Guest Room) ===
 	var inn = VillageInnScript.new()
 	inn.inn_name = "Mom's Guest Room"
-	inn.position = Vector2(17.5 * TILE_SIZE, 7 * TILE_SIZE)
+	inn.position = Vector2(20.5 * TILE_SIZE,9 * TILE_SIZE)
 	buildings.add_child(inn)
 
 	# === ITEM SHOP (Suburban Mart) ===
@@ -187,8 +185,52 @@ func _setup_buildings() -> void:
 	shop.shop_name = "Suburban Mart"
 	shop.shop_type = VillageShopScript.ShopType.ITEM
 	shop.keeper_name = "Donna"
-	shop.position = Vector2(10 * TILE_SIZE, 7 * TILE_SIZE)
+	shop.position = Vector2(13 * TILE_SIZE,9 * TILE_SIZE)
 	buildings.add_child(shop)
+
+	# === EQUIPMENT (Handyman's Garage) ===
+	var smith = VillageShopScript.new()
+	smith.shop_name = "Handyman's Garage"
+	smith.shop_type = VillageShopScript.ShopType.BLACKSMITH
+	smith.keeper_name = "Greg"
+	smith.position = Vector2(16 * TILE_SIZE,9 * TILE_SIZE)
+	buildings.add_child(smith)
+
+	# === MAGIC (Crystal Therapy Studio) ===
+	var magic = VillageShopScript.new()
+	magic.shop_name = "Crystal Therapy Studio"
+	magic.shop_type = VillageShopScript.ShopType.WHITE_MAGIC
+	magic.keeper_name = "Luna"
+	magic.position = Vector2(9 * TILE_SIZE,9 * TILE_SIZE)
+	buildings.add_child(magic)
+
+	# === ARCADE DOOR ===
+	# Pete's Glitch City Arcade — pays off Greenleaf's foreshadowing
+	# from tick 37. First enterable W2 interior.
+	spawn_points["arcade_exit"] = Vector2(8 * TILE_SIZE,13 * TILE_SIZE)
+	_add_interior_door("ArcadeDoor", "maple_heights_arcade", "Enter Glitch City Arcade", Vector2(8 * TILE_SIZE,12 * TILE_SIZE))
+	# === GARAGE SALE DOOR ===
+	# South face of the HHH building (cols 2-4, rows 2-4) — the sale that never ends.
+	spawn_points["garage_sale_exit"] = Vector2(6 * TILE_SIZE,7.5 * TILE_SIZE)
+	_add_interior_door("GarageSaleDoor", "maple_garage_sale", "Enter Garage Sale", Vector2(6 * TILE_SIZE,6.5 * TILE_SIZE))
+
+	# === STRIP MALL ROAD ===
+	# Birchwood Commons — the rearranging strip mall (configuration_pending's
+	# stage + Orrery's W2 booth). A road, not a door: it's its own lot.
+	spawn_points["strip_mall_return"] = Vector2(23 * TILE_SIZE,15 * TILE_SIZE)
+	_add_interior_door("StripMallRoad", "maple_heights_strip_mall", "Birchwood Commons (Strip Mall)", Vector2(23 * TILE_SIZE,14 * TILE_SIZE))
+
+	# === COMMUNITY CENTER ===
+	# Civic heart of the W2 quest hub — bulletin board (forms giver) +
+	# front desk (forms / variance / fine_print turn-ins) live inside.
+	spawn_points["community_center_exit"] = Vector2(17 * TILE_SIZE,16 * TILE_SIZE)
+	_add_interior_door("CommunityCenterDoor", "maple_community_center", "Maple Heights Community Center", Vector2(17 * TILE_SIZE,15 * TILE_SIZE))
+
+	# === ENRICHMENT ANNEX ===
+	# At the neighborhood edge, past the last lawn — where the
+	# "community-transferred" kids actually are (relocated step 2+).
+	spawn_points["annex_exit"] = Vector2(24 * TILE_SIZE,6 * TILE_SIZE)
+	_add_interior_door("AnnexDoor", "enrichment_annex", "Enrichment Annex", Vector2(24 * TILE_SIZE,5 * TILE_SIZE))
 
 
 func _setup_treasures() -> void:
@@ -198,7 +240,7 @@ func _setup_treasures() -> void:
 	chest1.contents_type = "item"
 	chest1.contents_id = "potion"
 	chest1.contents_amount = 2
-	chest1.position = Vector2(1.5 * TILE_SIZE, 3 * TILE_SIZE)
+	chest1.position = Vector2(4.5 * TILE_SIZE,5 * TILE_SIZE)
 	treasures.add_child(chest1)
 
 	# Buried in the backyard — someone's old allowance
@@ -206,7 +248,7 @@ func _setup_treasures() -> void:
 	chest2.chest_id = "maple_heights_chest_2"
 	chest2.contents_type = "gold"
 	chest2.gold_amount = 80
-	chest2.position = Vector2(20 * TILE_SIZE, 11 * TILE_SIZE)
+	chest2.position = Vector2(23 * TILE_SIZE,13 * TILE_SIZE)
 	treasures.add_child(chest2)
 
 	# Under a garden flower patch — a dusty ether
@@ -215,13 +257,13 @@ func _setup_treasures() -> void:
 	chest3.contents_type = "item"
 	chest3.contents_id = "ether"
 	chest3.contents_amount = 1
-	chest3.position = Vector2(4 * TILE_SIZE, 14 * TILE_SIZE)
+	chest3.position = Vector2(7 * TILE_SIZE,16 * TILE_SIZE)
 	treasures.add_child(chest3)
 
 
 func _setup_npcs() -> void:
 	# Neighborhood Dad (BBQ tips / gameplay hints)
-	var dad = _create_npc("Neighborhood Dad", "villager", Vector2(6 * TILE_SIZE, 12 * TILE_SIZE), [
+	var dad = _create_npc("Neighborhood Dad", "villager", Vector2(9 * TILE_SIZE,14 * TILE_SIZE), [
 		"Hey there, sport! You look like you could use some LIFE ADVICE.",
 		"Always grill on medium heat. Never rush the char.",
 		"Same applies to leveling up, by the way.",
@@ -231,8 +273,11 @@ func _setup_npcs() -> void:
 	])
 	npcs.add_child(dad)
 
-	# Mail Carrier (gossip / rumors)
-	var mailman = _create_npc("Carriers Reg", "guard", Vector2(18 * TILE_SIZE, 4 * TILE_SIZE), [
+	# Mail Carrier (gossip / rumors) — ALSO world2_relocated's giver + the
+	# forms_in_triplicate turn-in (quest data npc_id mail_carrier_w2). Her
+	# route sees everything; QuestSystem owns her dialogue when quest
+	# business exists, these lines are the idle fallback.
+	var mailman = _create_npc("Carriers Reg", "guard", Vector2(21 * TILE_SIZE,6 * TILE_SIZE), [
 		"Mail call! Uh... none for you, actually.",
 		"But I heard some things on my route today.",
 		"Old Mrs. Petrov says the caves north of here started HUMMING.",
@@ -240,10 +285,11 @@ func _setup_npcs() -> void:
 		"And someone filed a complaint about reality 'feeling off'.",
 		"Probably nothing. Here's a coupon."
 	])
+	mailman.npc_id = "mail_carrier_w2"
 	npcs.add_child(mailman)
 
 	# Kid on Bike (weird stuff / comedy)
-	var kid = _create_npc("Tyler on Bike", "villager", Vector2(12 * TILE_SIZE, 9 * TILE_SIZE), [
+	var kid = _create_npc("Tyler on Bike", "villager", Vector2(15 * TILE_SIZE,11 * TILE_SIZE), [
 		"WHOOOOOAAA—",
 		"*skids to stop*",
 		"Dude. DUDE. There's something in the storm drain.",
@@ -254,7 +300,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(kid)
 
 	# Retired Teacher (lore about how the world changed)
-	var teacher = _create_npc("Ms. Finch", "elder", Vector2(3 * TILE_SIZE, 9 * TILE_SIZE), [
+	var teacher = _create_npc("Ms. Finch", "elder", Vector2(6 * TILE_SIZE,11 * TILE_SIZE), [
 		"Ah, a young traveler. Sit down. I used to teach history.",
 		"Not the history in your textbooks — the REAL history.",
 		"This neighborhood wasn't always... suburban.",
@@ -265,7 +311,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(teacher)
 
 	# Dog Walker (comedy relief)
-	var dogwalker = _create_npc("Doug & Pretzel", "villager", Vector2(16 * TILE_SIZE, 12 * TILE_SIZE), [
+	var dogwalker = _create_npc("Doug & Pretzel", "villager", Vector2(19 * TILE_SIZE,14 * TILE_SIZE), [
 		"Oh, don't mind Pretzel. He barks at adventurers.",
 		"*BORK BORK BORK*",
 		"He once defeated a Level 12 Goblin by sitting on it.",
@@ -275,90 +321,71 @@ func _setup_npcs() -> void:
 	])
 	npcs.add_child(dogwalker)
 
+	# === W2 SIDE-QUEST CAST (QuestSystem owns dialogue when business exists) ===
 
-func _create_npc(npc_name: String, npc_type: String, pos: Vector2, dialogue: Array) -> Area2D:
-	var npc = OverworldNPCScript.new()
-	npc.npc_name = npc_name
-	npc.npc_type = npc_type
-	npc.position = pos
-	npc.dialogue_lines = dialogue
-	return npc
+	# Gerald — acceptable_variance giver, defending one wildflower from the HOA.
+	# (He and the flower were inside the Suburban Mart block pre-2026-07-11 —
+	# the giver was unreachable and the emitter sprite invisible. Now on the
+	# garden row fronting the south houses.)
+	var gerald = _create_npc("Gerald", "villager", Vector2(10 * TILE_SIZE,15 * TILE_SIZE), [
+		"That flower is NOT a violation. It was here first.",
+	])
+	gerald.npc_id = "gerald_w2"
+	npcs.add_child(gerald)
 
+	# The wildflower itself — variance step-2 examine emitter, mid-lawn.
+	var FlowerScript = load("res://src/exploration/WildflowerPatch.gd")
+	if FlowerScript:
+		var flower = FlowerScript.new()
+		flower.position = Vector2(13 * TILE_SIZE,15 * TILE_SIZE)
+		npcs.add_child(flower)
 
-func _setup_player() -> void:
-	player = OverworldPlayerScript.new()
-	player.name = "Player"
-	player.position = spawn_points.get("default", Vector2(384, 448))
-	player.set_job("fighter")
-	add_child(player)
+	# Mrs. Pemberton — front porch next door; watching since before the HOA.
+	var pemberton = _create_npc("Mrs. Pemberton", "elder", Vector2(15 * TILE_SIZE,7 * TILE_SIZE), [
+		"That flower was there before the houses. This was all a field.",
+		"Gerald's lawn is built on top of the field. The flower knows that.",
+		"It keeps trying to remind the ground what the ground used to be.",
+	])
+	pemberton.npc_id = "mrs_pemberton_w2"
+	npcs.add_child(pemberton)
 
+	# Retired Surveyor — Birch Court; configuration_pending step-3 target.
+	# He measured this neighborhood when it was a field. Twice.
+	var surveyor = _create_npc("Retired Surveyor", "elder", Vector2(10 * TILE_SIZE,12 * TILE_SIZE), [
+		"I surveyed this whole tract in '61. Then again in '84.",
+		"The numbers didn't match. Nobody wanted to hear that then either.",
+	])
+	surveyor.npc_id = "retired_surveyor_w2"
+	npcs.add_child(surveyor)
 
-func _setup_camera() -> void:
-	camera = Camera2D.new()
-	camera.name = "Camera"
-	player.add_child(camera)
-	camera.make_current()
+	# The carrier's missing package — fine_print step-2 path A, a neighbor's
+	# yard where a mailbox has stopped accepting the concept of routes.
+	var PackageScript = load("res://src/exploration/MissingPackage.gd")
+	if PackageScript:
+		var pkg = PackageScript.new()
+		pkg.position = Vector2(10 * TILE_SIZE,17 * TILE_SIZE)
+		npcs.add_child(pkg)
 
-	camera.zoom = Vector2(2.0, 2.0)
+	# Service alley behind the Community Center — fine_print's Rogue gap.
+	var AlleyScript = load("res://src/exploration/CivicBackDoor.gd")
+	if AlleyScript:
+		var alley = AlleyScript.new()
+		alley.position = Vector2(14 * TILE_SIZE,17 * TILE_SIZE)
+		npcs.add_child(alley)
 
-	var map_pixel_width = MAP_WIDTH * TILE_SIZE
-	var map_pixel_height = MAP_HEIGHT * TILE_SIZE
+	# Basement Developer — wrong_blue step 3; rarely surfaces.
+	var developer = _create_npc("Basement Developer", "villager", Vector2(7 * TILE_SIZE,16 * TILE_SIZE), [
+		"I don't come up much. The light out here is... configured wrong.",
+	])
+	developer.npc_id = "basement_developer_w2"
+	npcs.add_child(developer)
 
-	camera.limit_left = 0
-	camera.limit_top = 0
-	camera.limit_right = map_pixel_width
-	camera.limit_bottom = map_pixel_height
-
-	camera.position_smoothing_enabled = true
-	camera.position_smoothing_speed = 8.0
-
-
-func _setup_controller() -> void:
-	controller = OverworldControllerScript.new()
-	controller.name = "Controller"
-	controller.player = player
-	controller.encounter_enabled = false
-	controller.current_area_id = "maple_heights_village"
-
-	controller.set_area_config("maple_heights_village", true, 0.0, [])
-
-	controller.battle_triggered.connect(_on_battle_triggered)
-	controller.menu_requested.connect(_on_menu_requested)
-
-	add_child(controller)
-
-
-func _on_transition_triggered(target_map: String, spawn_point: String) -> void:
-	area_transition.emit(target_map, spawn_point)
-
-
-func _on_battle_triggered(enemies: Array) -> void:
-	battle_triggered.emit(enemies)
-
-
-func _on_menu_requested() -> void:
-	pass
-
-
-func spawn_player_at(spawn_name: String) -> void:
-	if spawn_points.has(spawn_name):
-		player.teleport(spawn_points[spawn_name])
-		player.reset_step_count()
-
-
-func resume() -> void:
-	controller.resume_exploration()
-
-
-func pause() -> void:
-	controller.pause_exploration()
-
-
-func set_player_job(job_name: String) -> void:
-	if player:
-		player.set_job(job_name)
-
-
-func set_player_appearance(leader) -> void:
-	if player and player.has_method("set_appearance_from_leader"):
-		player.set_appearance_from_leader(leader)
+	# Casper — wrong_blue giver; only home after the Annex rescue.
+	var gs = get_node_or_null("/root/GameState")
+	if gs and gs.has_method("is_story_flag_set") and gs.is_story_flag_set("quest_world2_relocated_complete"):
+		var casper = _create_npc("Casper", "child", Vector2(17 * TILE_SIZE,10 * TILE_SIZE), [
+			"I'm home now. I keep looking at the sky though.",
+			"It's the wrong blue. It's been the wrong blue since Tuesday.",
+		])
+		casper.npc_id = "casper_kid"
+		npcs.add_child(casper)

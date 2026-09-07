@@ -5,14 +5,18 @@ extends Node
 
 signal grind_battle_requested(enemies: Array, terrain: String)
 signal grind_complete(reason: String)
+signal grind_paused()
+signal grind_resumed()
 signal tier_changed(new_tier: int)
+signal region_advanced(from_region: String, to_region: String, world_num: int)
 
 enum State {
 	IDLE,
 	PRE_BATTLE,
 	BATTLE_RUNNING,
 	POST_BATTLE,
-	BETWEEN_BATTLES
+	BETWEEN_BATTLES,
+	PAUSED
 }
 
 enum GrindTier {
@@ -25,18 +29,33 @@ var _state: State = State.IDLE
 var _party: Array = []
 var _config: Dictionary = {}
 var _saved_autobattle_states: Dictionary = {}
+## Per-character pre-grind script snapshot, populated ONLY for characters
+## where _force_autobattle_on overwrote an empty script with a default.
+## Restored on stop_grind so the autogrind doesn't silently mutate the
+## player's authored autobattle config. (Bug: prior to this, an empty
+## script became the autogrind default permanently — players had to
+## manually clear it after their first grind session.)
+var _autogrind_authored_scripts: Dictionary = {}
 var _terrain: String = "plains"
 var _between_battle_timer: float = 0.0
 var _skip_next_battle: bool = false
 var _current_tier: GrindTier = GrindTier.ACCELERATED
 var _pending_tier_switch: int = -1  # -1 = no pending switch
+var headless_mode: bool = false
 
 ## Tracks whether the current running battle is a meta-boss or collapse-boss fight
 var _current_battle_is_meta_boss: bool = false
 var _current_battle_is_collapse_boss: bool = false
 var _current_meta_boss_data: Dictionary = {}
 
+var _auto_advance_regions: bool = true  # Auto-advance to next world when region cracked
+var _next_battle_enemy_boost: float = 0.0
+var _next_battle_exp_bonus: float = 0.0
+var _state_before_pause: State = State.IDLE
+
 func _get_between_battle_delay() -> float:
+	if headless_mode:
+		return 0.0  # Ludicrous speed: no delay between battles
 	match _current_tier:
 		GrindTier.ACCELERATED:
 			return 0.1
@@ -89,6 +108,7 @@ func start_grind(party: Array, config: Dictionary, terrain: String = "plains") -
 	_terrain = terrain
 	var tier_val = config.get("tier", 0)
 	_current_tier = tier_val as GrindTier
+	headless_mode = config.get("ludicrous_speed", false)
 
 	# Save and force autobattle states
 	_save_autobattle_states()
@@ -107,13 +127,22 @@ func start_grind(party: Array, config: Dictionary, terrain: String = "plains") -
 	if region != "":
 		AutogrindSystem.set_current_region(region)
 
+	# Read auto-advance setting (defaults to true)
+	_auto_advance_regions = config.get("auto_advance", true)
+
+	# Connect region_cracked signal for world progression
+	if not AutogrindSystem.region_cracked.is_connected(_on_region_cracked):
+		AutogrindSystem.region_cracked.connect(_on_region_cracked)
+
 	# Apply current battle speed setting (persisted across battles in BattleScene)
-	var BattleSceneScript = load("res://src/battle/BattleScene.gd")
-	var speed_idx = BattleSceneScript._battle_speed_index
-	if speed_idx < BattleSceneScript.BATTLE_SPEEDS.size():
-		Engine.time_scale = BattleSceneScript.BATTLE_SPEEDS[speed_idx]
-	else:
-		Engine.time_scale = 2.0
+	# Headless mode doesn't need engine time scaling since battles are pure math
+	if not headless_mode:
+		var BattleSceneScript = load("res://src/battle/BattleScene.gd")
+		var speed_idx = BattleSceneScript._battle_speed_index
+		if speed_idx < BattleSceneScript.BATTLE_SPEEDS.size():
+			Engine.time_scale = BattleSceneScript.BATTLE_SPEEDS[speed_idx]
+		else:
+			Engine.time_scale = 2.0
 
 	print("[AUTOGRIND] Controller started, requesting first battle")
 	_state = State.PRE_BATTLE
@@ -165,6 +194,35 @@ func _request_next_battle() -> void:
 		_between_battle_timer = _get_between_battle_delay()
 		return
 
+	# Check for system fatigue events
+	var fatigue = AutogrindSystem.check_fatigue_event()
+	if not fatigue.is_empty():
+		match fatigue["type"]:
+			"enemy_boost":
+				_next_battle_enemy_boost = 0.2
+			"party_debuff":
+				var alive_members = _party.filter(func(m): return m is Combatant and m.is_alive)
+				if alive_members.size() > 0:
+					var target = alive_members[randi() % alive_members.size()]
+					var hp_loss = int(target.max_hp * 0.1)
+					target.take_damage(hp_loss)
+			"mp_drain":
+				var alive = _party.filter(func(m): return m is Combatant and m.is_alive)
+				if alive.size() > 0:
+					var target = alive[randi() % alive.size()]
+					var mp_loss = int(target.max_mp * 0.15)
+					target.current_mp = max(0, target.current_mp - mp_loss)
+			"item_loss":
+				var alive = _party.filter(func(m): return m is Combatant and m.is_alive)
+				if alive.size() > 0:
+					var target = alive[randi() % alive.size()]
+					for item_id in ["potion", "hi_potion", "ether", "hi_ether"]:
+						if target.get_item_count(item_id) > 0:
+							target.remove_item(item_id, 1)
+							break
+			"exp_surge":
+				_next_battle_exp_bonus = 0.5  # +50% EXP next battle
+
 	# Check interrupt conditions first
 	var interrupt_reason = AutogrindSystem.pre_battle_check()
 	if interrupt_reason != "":
@@ -173,6 +231,12 @@ func _request_next_battle() -> void:
 
 	# Check for system collapse — takes priority over regular meta-boss
 	if AutogrindSystem.meta_corruption_level >= AutogrindSystem.corruption_threshold:
+		_launch_collapse_boss_battle()
+		return
+
+	# Check for fatigue-triggered collapse
+	if AutogrindSystem.check_fatigue_collapse():
+		print("[AUTOGRIND] FATIGUE COLLAPSE — too many system events!")
 		_launch_collapse_boss_battle()
 		return
 
@@ -186,6 +250,11 @@ func _request_next_battle() -> void:
 	_current_battle_is_collapse_boss = false
 	_current_meta_boss_data = {}
 	var enemies = _generate_scaled_enemies()
+	if enemies.is_empty():
+		# Every species is permakilled — the grind stops CLEANLY instead of
+		# hanging on an empty battle (the original stuck-in-battle-mode class).
+		stop_grind("Nothing left to grind — every species here has been unwritten.")
+		return
 	_state = State.BATTLE_RUNNING
 	grind_battle_requested.emit(enemies, _terrain)
 
@@ -220,29 +289,98 @@ func _launch_collapse_boss_battle() -> void:
 	grind_battle_requested.emit([boss_data], _terrain)
 
 
-## Generate enemies with adaptation scaling
-func _generate_scaled_enemies() -> Array:
-	# Pick random enemies from BattleScene.MONSTER_TYPES
-	var BattleSceneScript = load("res://src/battle/BattleScene.gd")
-	var monster_types = BattleSceneScript.MONSTER_TYPES
+## Resolve the current region's encounter pool as enemy ids ([] = no pool, caller falls back).
+func _region_pool_ids() -> Array:
+	var es: Node = get_node_or_null("/root/EncounterSystem")
+	if es == null or not ("enemy_pools" in es):
+		return []
+	var pools: Dictionary = es.enemy_pools
+	# current_region_id arrives as a DISPLAY name on the UI start path ("Suburban Overworld", GameLoop:4715) and as a snake_case id on the auto-advance path — normalize to the pool-key form. Same derivation as AutogrindUI:208; idempotent for ids already in that form.
+	var region: String = str(AutogrindSystem.current_region_id).to_lower().replace(" ", "_")
+	if region.is_empty() or pools.is_empty():
+		return []
+	if pools.has(region):
+		return (pools[region] as Array).duplicate()
+	# Subdivided region (W1 "overworld" → overworld_central/forest/ice/…): union the zone pools so grinding a region spans its whole bestiary.
+	var union: Array = []
+	var prefix: String = region + "_"
+	for key in pools:
+		if not str(key).begins_with(prefix):
+			continue
+		for id in pools[key]:
+			if not (str(id) in union):
+				union.append(str(id))
+	return union
 
-	var num_enemies = randi_range(2, 3)
-	var selected: Array = []
 
-	for i in range(num_enemies):
-		var base_type = monster_types[randi() % monster_types.size()]
-		var base_data = {
+## Build the roster-shaped base_data for a monsters.json id ({} = unknown id).
+func _base_data_for_id(enemy_id: String) -> Dictionary:
+	var es: Node = get_node_or_null("/root/EncounterSystem")
+	if es == null or not ("monster_database" in es):
+		return {}
+	var db: Dictionary = es.monster_database
+	if not db.has(enemy_id):
+		return {}
+	var row: Dictionary = db[enemy_id]
+	var stats: Dictionary = row.get("stats", {})
+	if stats.is_empty():
+		return {}
+	# color carried so pool- and roster-drawn dicts are interchangeable — nothing reads it today, and two producers disagreeing on a field nobody reads is how that stops being true quietly (cowir-battle msg 3026).
+	return {
+		"id": str(row.get("id", enemy_id)),
+		"name": str(row.get("name", enemy_id.capitalize())),
+		"color": row.get("color", Color.WHITE),
+		"stats": stats.duplicate(true),
+		"weaknesses": (row.get("weaknesses", []) as Array).duplicate(),
+		"resistances": (row.get("resistances", []) as Array).duplicate(),
+	}
+
+
+## Candidate draw pool as base_data dicts — region pool preferred, MONSTER_TYPES const as fallback.
+func _grind_draw_candidates() -> Array:
+	var candidates: Array = []
+	for enemy_id in _region_pool_ids():
+		var data: Dictionary = _base_data_for_id(str(enemy_id))
+		if not data.is_empty():
+			candidates.append(data)
+	if not candidates.is_empty():
+		return candidates
+	# Fallback: no pool for this region, unknown region id, or the data layer failed to load.
+	for base_type in BattleEnemySpawner.MONSTER_TYPES:
+		candidates.append({
 			"id": base_type["id"],
 			"name": base_type["name"],
 			"color": base_type.get("color", Color.WHITE),
 			"stats": base_type["stats"].duplicate(true),
 			"weaknesses": base_type.get("weaknesses", []).duplicate(),
-			"resistances": base_type.get("resistances", []).duplicate()
-		}
+			"resistances": base_type.get("resistances", []).duplicate(),
+		})
+	return candidates
 
+
+## Generate enemies with adaptation scaling
+func _generate_scaled_enemies() -> Array:
+	var candidates: Array = _grind_draw_candidates()
+	# Necromancer permakill holds in grinds too — unwritten species never spawn, whichever source supplied them.
+	if GameState and "permakilled_monster_types" in GameState and not GameState.permakilled_monster_types.is_empty():
+		candidates = candidates.filter(func(c): return not str(c.get("id", "")) in GameState.permakilled_monster_types)
+	if candidates.is_empty():
+		return []
+
+	var num_enemies = randi_range(2, 3)
+	var selected: Array = []
+
+	for i in range(num_enemies):
+		var base_data: Dictionary = (candidates[randi() % candidates.size()] as Dictionary).duplicate(true)
 		# Apply AutogrindSystem scaling
 		var scaled = AutogrindSystem.create_scaled_enemy_data(base_data)
 		selected.append(scaled)
+
+	if _next_battle_enemy_boost > 0.0:
+		for enemy_data in selected:
+			for stat_key in enemy_data.get("stats", {}).keys():
+				enemy_data["stats"][stat_key] = int(enemy_data["stats"][stat_key] * (1.0 + _next_battle_enemy_boost))
+		_next_battle_enemy_boost = 0.0
 
 	return selected
 
@@ -295,14 +433,52 @@ func on_battle_ended(victory: bool, exp_gained: int = 0, items_gained: Dictionar
 
 	# Normal battle resolution
 	if victory:
-		AutogrindSystem.on_battle_victory(exp_gained, items_gained)
+		var effective_exp = exp_gained
+		if _next_battle_exp_bonus > 0.0:
+			effective_exp = int(exp_gained * (1.0 + _next_battle_exp_bonus))
+			_next_battle_exp_bonus = 0.0
+		AutogrindSystem.on_battle_victory(effective_exp, items_gained)
 		_state = State.BETWEEN_BATTLES
 		_between_battle_timer = _get_between_battle_delay()
 	else:
+		_next_battle_exp_bonus = 0.0
 		AutogrindSystem.on_battle_defeat()
 		if AutogrindSystem.is_grinding:
 			# on_battle_defeat may have triggered permadeath and already stopped things
 			stop_grind("Party defeated")
+
+	# Check for deferred pause (requested mid-battle)
+	if _state_before_pause == State.BETWEEN_BATTLES and _state == State.BETWEEN_BATTLES:
+		_state_before_pause = State.IDLE
+		_state = State.PAUSED
+		Engine.time_scale = 1.0
+		AutogrindSystem.set_automation_paused(true)
+		print("[AUTOGRIND] Deferred pause activated after battle end")
+		grind_paused.emit()
+
+
+## Handle region cracked — auto-advance to next world if enabled
+func _on_region_cracked(region_id: String, crack_level: int) -> void:
+	if not _auto_advance_regions:
+		print("[AUTOGRIND] Region %s cracked (level %d), auto-advance disabled" % [region_id, crack_level])
+		return
+
+	if crack_level < 1:
+		return  # Only advance on first crack
+
+	var next = AutogrindSystem.advance_to_next_region()
+	if next.is_empty():
+		print("[AUTOGRIND] Region cracked but no next world available (end of progression or locked)")
+		return
+
+	_terrain = next["region"]
+	region_advanced.emit(region_id, next["region"], next["world"])
+
+	# Give extra delay for the warp transition to play (~3s animation)
+	if _state == State.BETWEEN_BATTLES:
+		_between_battle_timer = maxf(_between_battle_timer, 3.5)
+
+	print("[AUTOGRIND] Auto-advancing to %s (World %d)" % [next["name"], next["world"]])
 
 
 ## Stop the grind session
@@ -315,6 +491,20 @@ func stop_grind(reason: String = "Manual stop") -> void:
 	_current_battle_is_collapse_boss = false
 	_current_meta_boss_data = {}
 	_pending_tier_switch = -1
+	# Reset deferred next-battle modifiers. _evaluate_and_apply_rules and
+	# fatigue events set these in _request_next_battle; they are consumed
+	# only when the NEXT battle actually launches. If the player stops the
+	# grind in between (between fatigue trigger and battle launch), the
+	# flags would otherwise leak into the next grind session — first
+	# battle skipped, enemies arbitrarily +20% buff, or EXP arbitrarily
+	# +50% bonus, depending on which was pending.
+	_skip_next_battle = false
+	_next_battle_enemy_boost = 0.0
+	_next_battle_exp_bonus = 0.0
+
+	# Disconnect region_cracked signal
+	if AutogrindSystem.region_cracked.is_connected(_on_region_cracked):
+		AutogrindSystem.region_cracked.disconnect(_on_region_cracked)
 
 	# Restore autobattle states
 	_restore_autobattle_states()
@@ -329,9 +519,53 @@ func stop_grind(reason: String = "Manual stop") -> void:
 	grind_complete.emit(reason)
 
 
+## Pause the grind — freezes state without stopping. Can only pause between battles.
+func pause_grind() -> void:
+	if _state == State.IDLE or _state == State.PAUSED:
+		return
+
+	# If mid-battle, defer pause until battle ends
+	if _state == State.BATTLE_RUNNING:
+		_state_before_pause = State.BETWEEN_BATTLES
+		print("[AUTOGRIND] Pause queued — will pause after current battle")
+		return
+
+	_state_before_pause = _state
+	_state = State.PAUSED
+	Engine.time_scale = 1.0
+	AutogrindSystem.set_automation_paused(true)
+	print("[AUTOGRIND] Controller paused (was %s)" % State.keys()[_state_before_pause])
+	grind_paused.emit()
+
+
+## Resume from pause — restores the pre-pause state
+func resume_grind() -> void:
+	if _state != State.PAUSED:
+		return
+
+	_state = State.BETWEEN_BATTLES
+	_between_battle_timer = _get_between_battle_delay()
+	AutogrindSystem.set_automation_paused(false)
+
+	# Restore battle speed
+	if not headless_mode:
+		var BattleSceneScript = load("res://src/battle/BattleScene.gd")
+		var speed_idx = BattleSceneScript._battle_speed_index
+		if speed_idx < BattleSceneScript.BATTLE_SPEEDS.size():
+			Engine.time_scale = BattleSceneScript.BATTLE_SPEEDS[speed_idx]
+
+	print("[AUTOGRIND] Controller resumed")
+	grind_resumed.emit()
+
+
+func is_paused() -> bool:
+	return _state == State.PAUSED
+
+
 ## Save current autobattle toggle states for all party members
 func _save_autobattle_states() -> void:
 	_saved_autobattle_states.clear()
+	_autogrind_authored_scripts.clear()
 	for member in _party:
 		if member is Combatant:
 			var char_id = member.combatant_name.to_lower().replace(" ", "_")
@@ -346,6 +580,11 @@ func _force_autobattle_on() -> void:
 			AutobattleSystem.set_autobattle_enabled(char_id, true)
 			var active_script = AutobattleSystem.get_character_script(char_id)
 			if active_script.is_empty() or not active_script.has("rules") or active_script["rules"].is_empty():
+				# Snapshot the pre-existing (empty / unfinished) script BEFORE
+				# overwriting so stop_grind can put it back. Without this,
+				# autogrind's default script would persist after the session,
+				# silently replacing whatever the player had drafted.
+				_autogrind_authored_scripts[char_id] = active_script.duplicate(true) if active_script is Dictionary else {}
 				var default_script = AutobattleSystem.create_default_character_script(char_id)
 				AutobattleSystem.set_character_script(char_id, default_script)
 				print("[AUTOGRIND] Created default autobattle script for %s" % char_id)
@@ -356,12 +595,21 @@ func _force_autobattle_on() -> void:
 func _restore_autobattle_states() -> void:
 	for char_id in _saved_autobattle_states:
 		AutobattleSystem.set_autobattle_enabled(char_id, _saved_autobattle_states[char_id])
+	# Restore the pre-grind script for any character we overwrote with the
+	# autogrind default. We only entered this branch when the player's
+	# original script was empty / had no rules — putting it back keeps the
+	# authored-state surface clean and the autobattle editor reflects
+	# pre-grind state on the next open.
+	for char_id in _autogrind_authored_scripts:
+		AutobattleSystem.set_character_script(char_id, _autogrind_authored_scripts[char_id])
 	_saved_autobattle_states.clear()
+	_autogrind_authored_scripts.clear()
 	print("[AUTOGRIND] Restored autobattle states")
 
 
 ## Get current grind stats for UI update
 func get_grind_stats() -> Dictionary:
+	var sys_stats := AutogrindSystem.get_grind_stats()
 	return {
 		"efficiency": AutogrindSystem.efficiency_multiplier,
 		"corruption": AutogrindSystem.meta_corruption_level,
@@ -371,10 +619,20 @@ func get_grind_stats() -> Dictionary:
 		"consecutive_wins": AutogrindSystem.consecutive_wins,
 		"battles_won": AutogrindSystem.battles_completed,
 		"total_exp": AutogrindSystem.total_exp_gained,
+		"total_gold": sys_stats.get("total_gold", 0),
 		"total_items": _count_total_items(),
 		"collapse_count": AutogrindSystem.collapse_count,
 		"post_collapse_debuff_battles": AutogrindSystem.post_collapse_debuff_battles,
-		"permadead": AutogrindSystem.permadead_characters.duplicate()
+		"permadead": AutogrindSystem.permadead_characters.duplicate(),
+		"time_multiplier": AutogrindSystem.get_time_multiplier(),
+		"fatigue_events_triggered": AutogrindSystem.fatigue_events_triggered,
+		"per_character_exp": AutogrindSystem.per_character_exp.duplicate(),
+		"items_consumed": AutogrindSystem.items_consumed.duplicate(),
+		"elapsed_seconds": sys_stats.get("elapsed_seconds", 0.0),
+		"battles_without_heal": AutogrindSystem.battles_without_heal,
+		"corruption_threshold": AutogrindSystem.corruption_threshold,
+		"save_corruption": sys_stats.get("save_corruption", 0.0),
+		"save_corruption_delta": sys_stats.get("save_corruption_delta", 0.0),
 	}
 
 
@@ -409,3 +667,25 @@ func cycle_tier() -> void:
 ## Check if currently grinding
 func is_grinding() -> bool:
 	return _state != State.IDLE
+
+
+## Serialize controller state for pause/resume snapshot
+func serialize_snapshot() -> Dictionary:
+	return {
+		"config": _config.duplicate(true),
+		"terrain": _terrain,
+		"tier": _current_tier as int,
+		"headless_mode": headless_mode,
+		"auto_advance": _auto_advance_regions,
+		"saved_autobattle_states": _saved_autobattle_states.duplicate(),
+	}
+
+
+## Restore controller from a snapshot (call before start_grind)
+func restore_from_snapshot(snapshot: Dictionary) -> void:
+	_config = snapshot.get("config", {}).duplicate(true)
+	_terrain = snapshot.get("terrain", "plains")
+	_current_tier = snapshot.get("tier", 0) as GrindTier
+	headless_mode = snapshot.get("headless_mode", false)
+	_auto_advance_regions = snapshot.get("auto_advance", true)
+	_saved_autobattle_states = snapshot.get("saved_autobattle_states", {}).duplicate()

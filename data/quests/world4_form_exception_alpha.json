@@ -1,0 +1,79 @@
+{
+  "id": "world4_form_exception_alpha",
+  "title": "Form Exception-Alpha",
+  "world": 4,
+  "prereq_flag": "cutscene_flag_world4_chapter2_complete",
+  "giver": {
+    "npc_id": "dorrit_w4",
+    "display_name": "Dorrit",
+    "location": {"map_id": "rivet_row", "near": "assembly_line"},
+    "spawn_flag": ""
+  },
+  "description": "Dorrit wants to formally document what the recalibration training did to her. The exception report requires a counter-signature from a supervisor. Her supervisor is the person the exception is about. The system makes documenting the system impossible — which is, itself, worth documenting.",
+  "playstyle_tags": ["bureaucratic_puzzle", "cross_quest", "labor"],
+  "dialogue": {
+    "offer": [
+      {"speaker": "Dorrit", "text": "Three months I've been trying to file this. Form Exception-Alpha. Ten pages. I filled it out correctly — I fill everything out correctly, that's what the training was FOR.", "theme": "villager"},
+      {"speaker": "Dorrit", "text": "It needs a counter-signature from outside my chain of command. My chain of command is the person I'm filing about. You see the shape of it.", "theme": "villager"},
+      {"speaker": "Dorrit", "text": "I'm not asking anyone to fix anything. I'm asking for it to be written down that it happened. Those are different sizes of ask, and I've picked the small one on purpose.", "theme": "villager"}
+    ],
+    "accept": [
+      {"speaker": "Dorrit", "text": "Outside the chain there's: the external consultant, if you can find her. The union rep, if he trusts you. Or the Director's level, which — no.", "theme": "villager"}
+    ],
+    "decline": [
+      {"speaker": "Dorrit", "text": "Alright. It keeps. Unfiled paperwork doesn't expire here. Nothing expires here. That's most of the problem.", "theme": "villager"}
+    ],
+    "in_progress": [
+      {"speaker": "Dorrit", "text": "Even signed, it can't go through the communication efficiency office — they'd route it straight back into the loop. It needs a channel older than the Director.", "theme": "villager"}
+    ],
+    "ready_to_turn_in": [
+      {"speaker": "Dorrit", "text": "It went through? It actually — something came BACK?", "theme": "villager"}
+    ],
+    "complete": [
+      {"speaker": "Dorrit", "text": "'Exception granted. Training records flagged for review.' It changes nothing. It's in the record. Both of those are true and the second one is bigger.", "theme": "villager"},
+      {"speaker": "Dorrit", "text": "The report says the questions came back after the training. 'The Director's recalibration doesn't hold perfectly. There are always deviations.' They wrote that down. About me. I'm a deviation.", "theme": "villager"},
+      {"speaker": "Dorrit", "text": "I've been a deviation my whole life and nobody wrote it down before. I think I'm going to keep this.", "theme": "villager"}
+    ]
+  },
+  "objectives": [
+    {
+      "step": 1,
+      "description": "Hear the small ask Dorrit picked on purpose.",
+      "type": "talk",
+      "target_npc": "dorrit_w4",
+      "flag_on_complete": "quest_world4_form_exception_alpha_accepted"
+    },
+    {
+      "step": 2,
+      "description": "Get a counter-signature from outside the chain of command.",
+      "type": "custom",
+      "required_flag": "quest_world4_form_exception_alpha_countersigned",
+      "flag_on_complete": "quest_world4_form_exception_alpha_countersigned"
+    },
+    {
+      "step": 3,
+      "description": "Submit the report through a channel older than the Director.",
+      "type": "custom",
+      "required_flag": "quest_world4_form_exception_alpha_submitted",
+      "flag_on_complete": "quest_world4_form_exception_alpha_submitted"
+    },
+    {
+      "step": 4,
+      "description": "Bring Dorrit what came back.",
+      "type": "talk",
+      "target_npc": "dorrit_w4",
+      "required_flag": "quest_world4_form_exception_alpha_submitted"
+    }
+  ],
+  "rewards": {
+    "gold": 0,
+    "exp": 350,
+    "items": [
+      {"item_id": "exception_record", "count": 1}
+    ],
+    "job_variants": {}
+  },
+  "flag_on_complete": "quest_world4_form_exception_alpha_complete",
+  "cross_world_connection": "The response arrives through the legacy tube system from an office that shouldn't exist — the previous chief of operations, retired before the Director arrived, still receiving messages on the pre-factory network. Someone the system replaced, still quietly doing the job. Same pattern as Hartwick. Nobody looks for what the Director replaced either.",
+  "_wiring_notes": "Step 2 emitter quest_world4_form_exception_alpha_countersigned, multi-path: (a) madame_orrery_w4 counter-signs (certified external consultant, Form 29-C signatory authority) — cross-quest with the Orrery chain's W4 presence, (b) union_rep_w4 signs under the pre-Director labor clause — requires quest_world4_words_per_conversation_complete (his trust). Neither is a hard prereq; whichever the player has. Step 3 emitter quest_world4_form_exception_alpha_submitted: the legacy message tube in the maintenance tunnels (pre-factory infrastructure) — tunnel access gate as usual (blueprint/key); cornelius_hartwick, if found (world3_before_the_regulator complete), has a tube-operation flavor line, but knowing him is NOT required to use it (examine-interact suffices). DELAYED RESPONSE per doc: canonically arrives two chapters later — v1 completes the quest at turn-in with the response in hand; if overworld wants the slow-burn, gate step 4's availability on +1 chapter flag and note the wait in Dorrit's in_progress line. exception_record granted at completion (item authored this batch)."
+}

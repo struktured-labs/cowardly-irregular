@@ -9,6 +9,7 @@ func _init() -> void:
 	cave_id = "fire_dragon_cave"
 	boss_id = "fire_dragon"
 	boss_flag_key = "fire_dragon_defeated"
+	boss_cutscene_id = "world1_pyrroth_intro"
 	total_floors = 3
 	overworld_exit_spawn = "fire_cave_entrance"
 
@@ -17,18 +18,18 @@ func _init() -> void:
 			"MMMMMMMMMMMMMMMMMMMM",
 			"M..................M",
 			"M.MMMM.......MMMM..M",
-			"M.M.............M..M",
+			"M.M.............M.TM",
 			"M.M...T.........M..M",
 			"M.M.............M..M",
 			"M.MMMM.......MMMM..M",
 			"M..................M",
-			"M..................M",
+			"M.T................M",
 			"M.....MMM..MMM.....M",
 			"M.....M......M.....M",
 			"M.....M..U...M.....M",
 			"M.....MMM..MMM.....M",
-			"M.......DDDD.......M",
-			"M..................M",
+			"MMMM....DDDD.......M",
+			"MT.H...............M",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
 		2: [
@@ -37,40 +38,45 @@ func _init() -> void:
 			"M.MMMMMMM..MMMMM...M",
 			"M.M..............M.M",
 			"M.M.MMMM..MMMMM..M.M",
-			"M.M.M........M...M.M",
 			"M.M.M...T....M...M.M",
 			"M.M.M........M...M.M",
+			"M.M.M...T....M...M.M",
 			"M.M.MMMM..MMMMM..M.M",
 			"M.M..............M.M",
-			"M.MMMMMMM..MMMMM...M",
+			"M.MMMMMMM..MMMMM..TM",
 			"M..................M",
 			"M..................M",
 			"M......U.....D.....M",
 			"M..................M",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
+		# Shared "boss at far corner + winding path" layout across all 4
+		# W1 dragon caves — struktured msg 2788, class-level fix.
 		3: [
 			"MMMMMMMMMMMMMMMMMMMM",
+			"M...............B..M",
 			"M..................M",
+			"M..MMMMMMM.MMMMMMM.M",
+			"M..M.T...........M.M",
+			"M..M.............M.M",
+			"M..M.......T.....M.M",
+			"M..M.............M.M",
+			"M..MMMMMMM.MMMMMMM.M",
 			"M..................M",
-			"M..................M",
-			"M...MMMMM..MMMMM...M",
-			"M...M..........M...M",
-			"M...M..........M...M",
-			"M.........B........M",
-			"M...M..........M...M",
-			"M...M..........M...M",
-			"M...MMMMM..MMMMM...M",
-			"M..................M",
-			"M..................M",
-			"M..................M",
+			"M....MMMMM.MMMMM...M",
+			"M....M.........M...M",
+			"M....M....T....M...M",
+			"M..T.M.........M...M",
 			"M.........D........M",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
 	}
 
+	# (10,12) put the entrance inside the F1 up-stairs trigger, so entering the cave
+	# instantly ascended and floor 1 was never playable (measured 2026-07-26: floor 1 -> 2
+	# within one physics frame, no input). (10,14) clears both stair triggers.
 	floor_spawn_points = {
-		1: {"entrance": Vector2(10, 12)},
+		1: {"entrance": Vector2(10, 14)},
 		2: {"down_stairs": Vector2(14, 13)},
 		3: {"down_stairs": Vector2(10, 14)},
 	}
@@ -80,6 +86,13 @@ func _init() -> void:
 		2: ["imp", "skeleton", "goblin"],
 		3: [],
 	}
+
+
+## Each W1 dragon cave has its own SoundManager routing arm; without
+## this override they inherited "cave" and all four played the generic
+## medieval dungeon bed.
+func _get_music_area_id() -> String:
+	return "fire_dragon_cave"
 
 
 func _get_boss_intro_dialogue() -> Array:
@@ -105,3 +118,8 @@ func _get_boss_intro_dialogue() -> Array:
 		"Pyrroth: *the temperature doubles*",
 		"Pyrroth: 'Let's find out what happens when the script breaks.'",
 	]
+
+
+## embers in the rock
+func _get_dungeon_ambient() -> Color:
+	return Color(0.42, 0.26, 0.24)

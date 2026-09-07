@@ -2,7 +2,9 @@ extends Control
 class_name CharacterCreationScreen
 
 ## CharacterCreationScreen - Full-screen UI for character customization
-## Supports 4 party members with gamepad navigation
+## Supports the strict-5 party (Fighter/Cleric/Rogue/Mage/Bard) with gamepad navigation.
+## Tab count is dynamic — driven by party_customizations.size() — so it tracks
+## whatever CharacterCustomization.create_default_party_with_script returns.
 
 signal creation_complete(party_customizations: Array)
 signal creation_skipped()
@@ -112,20 +114,25 @@ func _build_ui() -> void:
 	_character_tabs.add_theme_constant_override("separation", 10)
 	_panel.add_child(_character_tabs)
 
-	for i in range(4):
+	# Tab width shrinks as party grows so 5 tabs still fit the panel.
+	# Was 100px fixed for the 4-tab layout; 84px keeps 5 tabs + the 10px
+	# separation inside the previous footprint.
+	var tab_count: int = party_customizations.size()
+	var tab_width: int = 100 if tab_count <= 4 else 84
+	for i in range(tab_count):
 		var tab_container = Control.new()
-		tab_container.custom_minimum_size = Vector2(100, 24)
+		tab_container.custom_minimum_size = Vector2(tab_width, 24)
 
 		var tab = Label.new()
 		tab.name = "TabLabel"
-		tab.text = party_customizations[i].name if i < party_customizations.size() else "Char %d" % (i + 1)
-		tab.custom_minimum_size = Vector2(100, 24)
+		tab.text = party_customizations[i].name
+		tab.custom_minimum_size = Vector2(tab_width, 24)
 		tab.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		tab.add_theme_font_size_override("font_size", 12)
 		tab_container.add_child(tab)
 
 		# Tab click overlay
-		MenuMouseHelper.make_clickable(tab_container, i, 100, 24,
+		MenuMouseHelper.make_clickable(tab_container, i, tab_width, 24,
 			_on_char_tab_click.bind(i), func() -> void: pass)
 
 		_character_tabs.add_child(tab_container)

@@ -1,0 +1,134 @@
+{
+  "id": "world3_scheduled_revelation",
+  "title": "The Scheduled Revelation",
+  "world": 3,
+  "chain": "traveling_merchant",
+  "chain_step": 3,
+  "prereq_flag": "world2_orrery_complete",
+  "giver": {
+    "npc_id": "madame_orrery_w3",
+    "display_name": "Madame Orrery",
+    "location": {
+      "map_id": "brasston",
+      "near": "clockwork_booth"
+    },
+    "spawn_flag": ""
+  },
+  "description": "Orrery runs a 'precision futures consultation' from a rented clockwork booth in Brasston, with a seven-second mandatory delay on all appointments because the schedule requires it. She has been trying to reach Brigadier Flux for three weeks. Their appointment windows never align. She suspects this is not an accident.",
+  "playstyle_tags": [
+    "dialogue_heavy",
+    "chain",
+    "puzzle"
+  ],
+  "dialogue": {
+    "offer": [
+      {
+        "speaker": "Madame Orrery",
+        "text": "Punctual. Good. Sit \u2014 the booth requires a seven-second delay before consultations begin. I don't make the rules. I've read them, which is worse.",
+        "theme": "mysterious"
+      },
+      {
+        "speaker": "Madame Orrery",
+        "text": "I have a letter for Brigadier Flux. Three weeks I've tried to deliver it myself. His schedule and mine are offset by exactly eleven minutes \u2014 long enough that we never share an available slot. Exactly eleven. Every day. You see the problem.",
+        "theme": "mysterious"
+      },
+      {
+        "speaker": "Madame Orrery",
+        "text": "Schedules drift. That's what schedules do. Ours don't drift \u2014 ours hold at eleven, precisely, like something is maintaining the gap. I'd like you to carry the letter across it.",
+        "theme": "mysterious"
+      }
+    ],
+    "accept": [
+      {
+        "speaker": "Madame Orrery",
+        "text": "Sealed. Don't read it \u2014 not for secrecy, for sequence. Some information arrives broken if it arrives out of order.",
+        "theme": "mysterious"
+      }
+    ],
+    "decline": [
+      {
+        "speaker": "Madame Orrery",
+        "text": "Then the letter waits. It's waited three weeks. The gap doesn't mind. That's what worries me about the gap.",
+        "theme": "mysterious"
+      }
+    ],
+    "in_progress": [
+      {
+        "speaker": "Madame Orrery",
+        "text": "Flux writes slowly and thinks slower, which is the correct order. Give him the time. Unfinished answers are how this world ended up like this.",
+        "theme": "mysterious"
+      }
+    ],
+    "ready_to_turn_in": [
+      {
+        "speaker": "Madame Orrery",
+        "text": "His seal. Unbroken. Good \u2014 sit. The booth's seven seconds will feel long for this one. It should.",
+        "theme": "mysterious"
+      }
+    ],
+    "complete": [
+      {
+        "speaker": "Madame Orrery",
+        "text": "The same handwriting. On the Grand Mechanism blueprints \u2014 and in the Harmonia cave maintenance logs, dated forty years earlier. He's been sitting on this for decades, not knowing what it meant.",
+        "theme": "mysterious"
+      },
+      {
+        "speaker": "Madame Orrery",
+        "text": "Cross-referenced with the symbol from your Phil's paper, it means this: whoever designed these worlds designed them all at once. The worlds aren't sequential. They were written simultaneously.",
+        "theme": "mysterious"
+      },
+      {
+        "speaker": "Madame Orrery",
+        "text": "You're playing them in sequence. The author isn't.",
+        "theme": "mysterious"
+      }
+    ],
+    "locked": [
+      {
+        "speaker": "Madame Orrery",
+        "text": "The schedule says you're early. Not MY schedule \u2014 yours. There's a reading you haven't sat for yet.",
+        "theme": "mysterious"
+      }
+    ]
+  },
+  "objectives": [
+    {
+      "step": 1,
+      "description": "Take Orrery's sealed letter across the eleven-minute gap.",
+      "type": "talk",
+      "target_npc": "madame_orrery_w3",
+      "flag_on_complete": "quest_world3_scheduled_revelation_accepted"
+    },
+    {
+      "step": 2,
+      "description": "Deliver the letter to Brigadier Flux and wait out his answer.",
+      "type": "talk",
+      "target_npc": "brigadier_flux",
+      "required_flag": "quest_world3_scheduled_revelation_accepted",
+      "flag_on_complete": "quest_world3_scheduled_revelation_response_obtained"
+    },
+    {
+      "step": 3,
+      "description": "Bring Flux's response back to Orrery.",
+      "type": "talk",
+      "target_npc": "madame_orrery_w3",
+      "required_flag": "quest_world3_scheduled_revelation_response_obtained"
+    }
+  ],
+  "rewards": {
+    "gold": 0,
+    "exp": 350,
+    "items": [],
+    "job_variants": {}
+  },
+  "cutscene_on_complete": "world3_orrery",
+  "flag_on_complete": "quest_world3_scheduled_revelation_complete",
+  "unlocks_dialogue": [
+    {
+      "npc_id": "madame_orrery_w4",
+      "note": "W4 chain step: windowless office, 'EXTERNAL CONSULTANT \u2014 APPROVED VENDOR #4429-C', the only external consultant never reassigned to internal training."
+    }
+  ],
+  "cross_world_connection": "Chain A step 3 of 6. The world3_orrery cutscene (fired at turn-in) advances fool_card_marks to 3 and grants the cogsworth_calibration_key \u2014 which opens the pre-factory tunnels in W4 through a door that otherwise has no apparent function. The simultaneous-authorship revelation is the chain's midpoint thesis: the player experiences sequence; the Calibrant wrote all six at once.",
+  "_wiring_notes": "DEDUP RULE: all grants (cogsworth_calibration_key) + fool_card_marks=3 live in the world3_orrery cutscene; quest carries exp only \u2014 validated shape per the enforced seam. Step 2 flavor beat (design doc): Flux's response takes seven minutes to write \u2014 waitable, or skippable; skipping hands the party an UNFINISHED DRAFT with different content. v1: single response_obtained flag either way; if the wait/skip fork is cheap to wire (timer interact vs walk-away re-interact), set quest_world3_scheduled_revelation_draft_unfinished alongside, and Orrery's turn-in gains one line acknowledging the incompleteness. SABOTEUR/NINJA VARIANT (design doc): a Saboteur-lead recognizes the eleven-minute offset as an artificially inserted scheduling constraint and can find the scheduling manifesto in the clockwork city's administrative gearwork \u2014 wire as a both-flags emitter (accepted + response_obtained at once, fine_print rogue-shortcut pattern) plus quest_world3_scheduled_revelation_manifesto_found for bonus lore dialogue: how the Calibrant maintains control through subtle inconvenience. The eleven-minute offset itself is the tell \u2014 same authored-friction fingerprint as Sprocket's one-tooth gear (world3_delay_in_everything); players who do both quests get the pattern without either quest naming it. Ordering fix 2026-07-09 (cowir-main): prereq_flag world2_orrery_complete enforces the sequential chain \u2014 steps 2-5 were orderless, letting a skip-ahead player hard-set marks out of order (early-armed finale / regressed counter)."
+}

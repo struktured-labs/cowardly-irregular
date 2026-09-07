@@ -18,16 +18,152 @@ var _enemy_status_boxes: Array = []
 var _revealed_enemies: Dictionary = {}
 
 
+var _panels_themed: bool = false  # one-shot guard for transparency theming
+var _auto_toggle_button: Button = null  # Clickable global autobattle toggle (mouse path)
+
+
 func _init(scene) -> void:
 	_scene = scene
 
 
 func update_ui() -> void:
 	"""Update all UI elements"""
+	if not _panels_themed:
+		_apply_panel_transparency()
+		_panels_themed = true
+	if not _auto_toggle_button:
+		_create_auto_toggle_button()
 	update_character_status()
 	update_enemy_status()
 	update_action_buttons()
+	_update_auto_toggle_button()
 	_scene._update_danger_music()
+
+
+func _apply_panel_transparency() -> void:
+	"""Apply semi-transparent backgrounds to EnemyStatusPanel + PartyStatusPanel.
+	Without this the opaque default PanelContainer styling overlapped enemy
+	sprites awkwardly (panels live in the same screen zone as the BattleField
+	enemy markers, which can't easily move without rebalancing combat
+	choreography). Transparency lets the sprite show through.
+	(User feedback 2026-05-02: 'monster stat screen overlays awkwardly on
+	the monster sprites'.)"""
+	for panel_path in ["UI/EnemyStatusPanel", "UI/PartyStatusPanel"]:
+		var panel = _scene.get_node_or_null(panel_path)
+		if not panel:
+			continue
+		var sb := StyleBoxFlat.new()
+		sb.bg_color = Color(0.05, 0.04, 0.10, 0.72)  # deep purple, ~72% alpha
+		sb.border_color = Color(0.4, 0.35, 0.6, 0.5)
+		sb.border_width_left = 1
+		sb.border_width_top = 1
+		sb.border_width_right = 1
+		sb.border_width_bottom = 1
+		sb.corner_radius_top_left = 4
+		sb.corner_radius_top_right = 4
+		sb.corner_radius_bottom_left = 4
+		sb.corner_radius_bottom_right = 4
+		sb.content_margin_left = 6
+		sb.content_margin_right = 6
+		sb.content_margin_top = 4
+		sb.content_margin_bottom = 4
+		panel.add_theme_stylebox_override("panel", sb)
+
+
+func _create_auto_toggle_button() -> void:
+	"""Mouse-clickable global autobattle toggle. Pure mouse-path access
+	to the same sticky toggle Minus/F6 trigger from the keyboard/gamepad.
+	Positioned at top-center of the viewport so it's always visible
+	regardless of which battle UI panels are showing. Click to toggle."""
+	var ui = _scene.get_node_or_null("UI")
+	if not ui:
+		return
+	_auto_toggle_button = Button.new()
+	_auto_toggle_button.name = "AutoToggleButton"
+	_auto_toggle_button.text = "AUTO: …"  # Filled in by _update_auto_toggle_button
+	_auto_toggle_button.flat = false
+	_auto_toggle_button.focus_mode = Control.FOCUS_NONE  # Don't steal kb focus
+	_auto_toggle_button.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	# Sit above the PartyStatusPanel (which starts at y=40, offset_left=-200).
+	# Slightly bigger now (was 100×24) for discoverability — wide enough
+	# for "AUTO: OFF" without text clipping at 14pt.
+	_auto_toggle_button.offset_left = -340
+	_auto_toggle_button.offset_top = 6
+	_auto_toggle_button.offset_right = -210
+	_auto_toggle_button.offset_bottom = 36
+	_auto_toggle_button.add_theme_font_size_override("font_size", TextScale.scaled(14))
+	# Themed background so it doesn't fade into the battlefield. Two
+	# styleboxes — one for normal/hover, one for pressed.
+	var sb_normal := StyleBoxFlat.new()
+	sb_normal.bg_color = Color(0.10, 0.10, 0.18, 0.85)
+	sb_normal.border_color = Color(0.5, 0.55, 0.75, 0.9)
+	sb_normal.border_width_left = 1
+	sb_normal.border_width_top = 1
+	sb_normal.border_width_right = 1
+	sb_normal.border_width_bottom = 1
+	sb_normal.corner_radius_top_left = 4
+	sb_normal.corner_radius_top_right = 4
+	sb_normal.corner_radius_bottom_left = 4
+	sb_normal.corner_radius_bottom_right = 4
+	var sb_hover := sb_normal.duplicate()
+	sb_hover.bg_color = Color(0.18, 0.22, 0.32, 0.95)
+	sb_hover.border_color = Color(0.7, 0.78, 1.0, 1.0)
+	var sb_pressed := sb_normal.duplicate()
+	sb_pressed.bg_color = Color(0.22, 0.28, 0.42, 1.0)
+	_auto_toggle_button.add_theme_stylebox_override("normal", sb_normal)
+	_auto_toggle_button.add_theme_stylebox_override("hover", sb_hover)
+	_auto_toggle_button.add_theme_stylebox_override("pressed", sb_pressed)
+	_auto_toggle_button.tooltip_text = "Toggle global autobattle (sticky). Same as Minus / F6."
+	_auto_toggle_button.pressed.connect(_on_auto_toggle_pressed)
+	ui.add_child(_auto_toggle_button)
+
+
+func _update_auto_toggle_button() -> void:
+	"""Refresh the AUTO toggle button label + colors based on current state."""
+	if not _auto_toggle_button:
+		return
+	var any_on := false
+	var members = BattleManager.player_party if BattleManager.player_party.size() > 0 else _scene.party_members
+	for member in members:
+		var char_id: String = member.combatant_name.to_lower().replace(" ", "_")
+		if AutobattleSystem.is_autobattle_enabled(char_id):
+			any_on = true
+			break
+	if any_on:
+		_auto_toggle_button.text = "AUTO: ON"
+		_auto_toggle_button.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4))
+	else:
+		_auto_toggle_button.text = "AUTO: OFF"
+		_auto_toggle_button.add_theme_color_override("font_color", Color(0.85, 0.85, 0.95))
+
+
+func _on_auto_toggle_pressed() -> void:
+	"""Mouse click on AUTO toggle — same effect as Minus/F6/Plus-when-on.
+	Reuses GameLoop._toggle_all_autobattle so the path is identical to
+	gamepad/keyboard: clears pending player actions on disable, plays
+	the autobattle_on/off SFX, and shows a Toast in non-battle states."""
+	if not _auto_toggle_button or not is_instance_valid(_auto_toggle_button):
+		return
+	var gl = _scene.get_tree().root.get_node_or_null("GameLoop")
+	if gl and gl.has_method("_toggle_all_autobattle"):
+		gl._toggle_all_autobattle()
+	else:
+		# Fallback path — should never fire since GameLoop is the main scene.
+		var any_on: bool = false
+		for member in _scene.party_members:
+			var char_id: String = member.combatant_name.to_lower().replace(" ", "_")
+			if AutobattleSystem.is_autobattle_enabled(char_id):
+				any_on = true
+				break
+		for member in _scene.party_members:
+			var char_id: String = member.combatant_name.to_lower().replace(" ", "_")
+			AutobattleSystem.set_autobattle_enabled(char_id, not any_on)
+		if SoundManager:
+			SoundManager.play_ui("autobattle_off" if any_on else "autobattle_on")
+	# Full UI refresh — updates the [A] indicators in PartyStatusPanel
+	# AND the AUTO button label. Without this, the [A] indicators were
+	# stale until the next battle event triggered _update_ui.
+	update_ui()
 
 
 func update_character_status() -> void:
@@ -83,7 +219,23 @@ func _ensure_party_status_boxes() -> void:
 
 
 func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
-	"""Create a status box for a party member"""
+	"""Create a status box for a party member.
+
+	HP/MP bar heights shrink slightly when the party has 5+ members so all
+	status boxes fit inside the PartyStatusPanel's fixed 420px tall slot.
+	Pre-fix: 4-shaped heights at 5-PC overflowed the panel and clipped the
+	Bard box (or pushed it over the CTB timeline). The PartyStatusPanel
+	offset_bottom=460 is pinned by test_battle_4bug_22bd71e_regression to
+	prevent CTB overlap, so the fix has to be on the per-box side."""
+	var party_size: int = BattleManager.player_party.size() if BattleManager.player_party.size() > 0 else _scene.party_members.size()
+	## Live playtest 2026-07-01: with 5 boxes + portrait header rows the
+	## content exceeded the panel's 420px slot; grow_vertical=BOTH then
+	## expanded the panel ABOVE the screen top, decapitating the Fighter
+	## (first box) header. Scene now grows downward only (grow_vertical=1)
+	## and the 5-party heights below are tightened further so the stack
+	## actually fits the slot instead of relying on overflow.
+	var hp_bar_h: int = 22 if party_size <= 4 else 16
+	var mp_bar_h: int = 18 if party_size <= 4 else 12
 	var box = VBoxContainer.new()
 	box.name = "Character%d" % (idx + 1)
 
@@ -108,10 +260,14 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	var job_name = member.job.get("name", "None") if member.job else "None"
 	var char_id = member.combatant_name.to_lower().replace(" ", "_")
 	var auto_indicator = " [A]" if AutobattleSystem.is_autobattle_enabled(char_id) else ""
+	var tag_color: Color = Color(0.4, 1.0, 0.4)
+	if auto_indicator == "" and "player_trust" in member and member.player_trust:
+		auto_indicator = " [T]"
+		tag_color = Color(0.4, 0.85, 1.0)
 	name_label.text = "%s (%s)%s" % [member.combatant_name, job_name, auto_indicator]
-	name_label.add_theme_font_size_override("font_size", 13)
+	name_label.add_theme_font_size_override("font_size", TextScale.scaled(15))
 	if auto_indicator != "":
-		name_label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4))
+		name_label.add_theme_color_override("font_color", tag_color)
 	name_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	header.add_child(name_label)
 
@@ -120,7 +276,7 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	# HP bar
 	var hp_bar = ProgressBar.new()
 	hp_bar.name = "HP"
-	hp_bar.custom_minimum_size = Vector2(0, 22)
+	hp_bar.custom_minimum_size = Vector2(0, hp_bar_h)
 	hp_bar.max_value = member.max_hp
 	hp_bar.value = member.current_hp
 	hp_bar.show_percentage = false
@@ -130,7 +286,7 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	var hp_label = Label.new()
 	hp_label.name = "HPLabel"
 	hp_label.text = "HP: %d/%d" % [member.current_hp, member.max_hp]
-	hp_label.add_theme_font_size_override("font_size", 12)
+	hp_label.add_theme_font_size_override("font_size", TextScale.scaled(15))
 	hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hp_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	hp_label.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -139,7 +295,7 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	# MP bar
 	var mp_bar = ProgressBar.new()
 	mp_bar.name = "MP"
-	mp_bar.custom_minimum_size = Vector2(0, 18)
+	mp_bar.custom_minimum_size = Vector2(0, mp_bar_h)
 	mp_bar.max_value = member.max_mp
 	mp_bar.value = member.current_mp
 	mp_bar.show_percentage = false
@@ -149,7 +305,7 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	var mp_label = Label.new()
 	mp_label.name = "MPLabel"
 	mp_label.text = "MP: %d/%d" % [member.current_mp, member.max_mp]
-	mp_label.add_theme_font_size_override("font_size", 11)
+	mp_label.add_theme_font_size_override("font_size", TextScale.scaled(13))
 	mp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	mp_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	mp_label.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -161,10 +317,21 @@ func _create_character_status_box(idx: int, member: Combatant) -> VBoxContainer:
 	ap_label.bbcode_enabled = true
 	ap_label.fit_content = true
 	ap_label.custom_minimum_size = Vector2(0, 20)
-	ap_label.add_theme_font_size_override("normal_font_size", 13)
-	ap_label.add_theme_font_size_override("bold_font_size", 13)
+	ap_label.add_theme_font_size_override("normal_font_size", TextScale.scaled(15))
+	ap_label.add_theme_font_size_override("bold_font_size", TextScale.scaled(15))
 	ap_label.text = "AP: 0"
 	box.add_child(ap_label)
+
+	# Equipment/Buff stat modifiers line
+	var stat_label = RichTextLabel.new()
+	stat_label.name = "StatMods"
+	stat_label.bbcode_enabled = true
+	stat_label.fit_content = true
+	stat_label.custom_minimum_size = Vector2(0, 16)
+	stat_label.add_theme_font_size_override("normal_font_size", TextScale.scaled(12))
+	stat_label.text = ""
+	box.add_child(stat_label)
+	_update_stat_mods_label(stat_label, member)
 
 	return box
 
@@ -197,6 +364,10 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 				# Autobattle is on - show green [A]
 				auto_indicator = " [A]"
 				name_color = Color(0.4, 1.0, 0.4)  # Green for auto
+		elif "player_trust" in member and member.player_trust:
+			# trusted PCs auto-play too — invisible Trust was how the user got stuck asking "how do I disable it?"
+			auto_indicator = " [T]"
+			name_color = Color(0.4, 0.85, 1.0)
 
 		name_label.text = "%s (%s%s)%s" % [member.combatant_name, job_name, level_text, auto_indicator]
 		# Color the name based on autobattle state
@@ -209,29 +380,45 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 	var hp_bar = box.get_node_or_null("HP")
 	if hp_bar:
 		hp_bar.max_value = member.max_hp
-		hp_bar.value = member.current_hp
+		# Tweened fill (killing the prior tween so rapid ticks don't fight); instant at OFF tier
+		if _scene._tier() == BattleJuice.Tier.OFF or not BattleJuice.flag("chip_hp_bars") or absf(hp_bar.value - member.current_hp) < 0.5:
+			hp_bar.value = member.current_hp
+		else:
+			var prev = hp_bar.get_meta("hp_tween", null)
+			if prev is Tween and prev.is_valid():
+				prev.kill()
+			var hp_tween = _scene.create_tween()
+			hp_tween.tween_property(hp_bar, "value", float(member.current_hp), 0.2)
+			hp_bar.set_meta("hp_tween", hp_tween)
 		var hp_label = hp_bar.get_node_or_null("HPLabel")
 		if hp_label:
 			if not member.is_alive:
 				hp_label.text = "-- KO --"
-				hp_label.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
+				hp_label.add_theme_color_override("font_color", AccessibilityPalette.hp_low())
 			else:
 				hp_label.text = "HP: %d/%d" % [member.current_hp, member.max_hp]
-				hp_label.remove_theme_color_override("font_color")
+				# 2026-07-13: color-per-tier on the RHS party panel so a struggling ally reads at a glance without squinting at the number. Uses AccessibilityPalette so colorblind mode works.
+				var _hp_pct: float = float(member.current_hp) / float(maxi(1, member.max_hp))
+				var _hp_color: Color = AccessibilityPalette.hp_high()
+				if _hp_pct <= 0.25:
+					_hp_color = AccessibilityPalette.hp_low()
+				elif _hp_pct <= 0.5:
+					_hp_color = AccessibilityPalette.hp_mid()
+				hp_label.add_theme_color_override("font_color", _hp_color)
 
 	# Gray out the name label if KO'd
 	if name_label:
 		if not member.is_alive:
 			name_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5))
 
-	# Gray out the sprite if KO'd
+	# Gray out the sprite if KO'd; otherwise apply status tint (or reset to white)
 	if idx < _scene.party_sprite_nodes.size():
 		var sprite = _scene.party_sprite_nodes[idx]
 		if is_instance_valid(sprite):
 			if not member.is_alive:
 				sprite.modulate = Color(0.3, 0.3, 0.3, 0.7)  # Dark gray, semi-transparent
 			else:
-				sprite.modulate = Color(1, 1, 1, 1)  # Normal
+				sprite.modulate = _get_status_modulate(member.status_effects)
 
 	# Update MP
 	var mp_bar = box.get_node_or_null("MP")
@@ -240,7 +427,14 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 		mp_bar.value = member.current_mp
 		var mp_label = mp_bar.get_node_or_null("MPLabel")
 		if mp_label:
-			mp_label.text = "MP: %d/%d" % [member.current_mp, member.max_mp]
+			if not member.is_alive:
+				# KO'd party can't cast — surfacing MP+AP invited misreading them as "still can act"
+				mp_label.text = "MP: --"
+				mp_label.add_theme_color_override("font_color", Color(0.55, 0.55, 0.55))
+			else:
+				mp_label.text = "MP: %d/%d" % [member.current_mp, member.max_mp]
+				mp_label.remove_theme_color_override("font_color")
+			mp_bar.modulate = Color(1, 1, 1, 0.35) if not member.is_alive else Color(1, 1, 1, 1)
 
 	# Update AP and status - try both RichTextLabel and regular Label
 	var ap_label = box.get_node_or_null("AP")
@@ -277,6 +471,16 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 					is_deferring = true
 				break
 
+		# KO'd party can't act — surfacing AP/status invited misreading "still can act"
+		if not member.is_alive:
+			if ap_label is RichTextLabel:
+				ap_label.bbcode_enabled = true
+				ap_label.text = "[color=gray]--[/color]"
+			else:
+				ap_label.text = "--"
+				ap_label.add_theme_color_override("font_color", Color(0.55, 0.55, 0.55))
+			return
+
 		if ap_label is RichTextLabel:
 			# Ensure BBCode is enabled
 			ap_label.bbcode_enabled = true
@@ -302,7 +506,7 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 				for si in range(member.status_effects.size()):
 					if si > 0:
 						status_text += ", "
-					status_text += "[color=yellow]%s[/color]" % member.status_effects[si].capitalize()
+					status_text += _status_label(member, member.status_effects[si])
 				status_text += "]"
 
 			# Set BBCode text directly
@@ -318,6 +522,112 @@ func _update_member_status(idx: int, member: Combatant) -> void:
 				ap_label.text = "AP: %+d (-%d)" % [ap_value, committed_count]
 			else:
 				ap_label.text = "AP: %+d" % ap_value
+
+	# Update equipment/buff stat modifiers
+	var stat_label = box.get_node_or_null("StatMods")
+	if stat_label:
+		_update_stat_mods_label(stat_label, member)
+
+
+func _update_stat_mods_label(label: RichTextLabel, member: Combatant) -> void:
+	"""Build compact equipment + buff stat modifier display"""
+	var parts: Array[String] = []
+
+	# Equipment bonuses (flat numbers)
+	if EquipmentSystem:
+		var equip_mods = EquipmentSystem.get_equipment_mods(member)
+		var equip_parts: Array[String] = []
+		for stat in ["attack", "defense", "magic", "magic_defense", "speed"]:
+			var val = equip_mods.get(stat, 0)
+			if val != 0:
+				# Tick 211: shared StatNames map.
+				var abbrev: String = StatNames.short_code(stat)
+				var color = "lime" if val > 0 else "red"
+				equip_parts.append("[color=%s]%s%+d[/color]" % [color, abbrev, val])
+		if equip_parts.size() > 0:
+			parts.append(" ".join(equip_parts))
+
+	# Active buff/debuff indicators (multipliers with turn counters)
+	if "active_buffs" in member and member.active_buffs.size() > 0:
+		for buff in member.active_buffs:
+			var stat_name: String = buff.get("stat", "")
+			var modifier: float = buff.get("modifier", 1.0)
+			var turns: int = buff.get("remaining_turns", 0)
+			if stat_name == "" or modifier == 1.0:
+				continue
+			# Tick 211: shared StatNames map adds HP/MP coverage the inline dict missed.
+			var abbrev: String = StatNames.short_code(stat_name)
+			var pct = int((modifier - 1.0) * 100)
+			var color = "aqua" if pct > 0 else "orange"
+			parts.append("[color=%s]%s%+d%%(%d)[/color]" % [color, abbrev, pct, turns])
+
+	if "active_debuffs" in member and member.active_debuffs.size() > 0:
+		for debuff in member.active_debuffs:
+			var stat_name: String = debuff.get("stat", "")
+			var modifier: float = debuff.get("modifier", 1.0)
+			var turns: int = debuff.get("remaining_turns", 0)
+			if stat_name == "" or modifier == 1.0:
+				continue
+			# Tick 211: shared StatNames map adds HP/MP coverage the inline dict missed.
+			var abbrev: String = StatNames.short_code(stat_name)
+			var pct = int((modifier - 1.0) * 100)
+			parts.append("[color=%s]%s%+d%%(%d)[/color]" % [AccessibilityPalette.penalty_bbcode(), abbrev, pct, turns])
+
+	label.text = " ".join(parts) if parts.size() > 0 else ""
+
+
+## Compact buff/debuff readout for the ENEMY panel (" · ATK-30%(2)"), so the
+## player can confirm a debuff landed and how long it lasts. Buffs aqua, debuffs
+## the penalty color; equipment mods omitted (enemies rarely carry them and the
+## panel is cramped). Empty when the enemy has no active stat multipliers.
+func _enemy_stat_mods_hint(enemy: Combatant) -> String:
+	var parts: Array[String] = []
+	if "active_buffs" in enemy:
+		for buff in enemy.active_buffs:
+			var s: String = buff.get("stat", "")
+			var m: float = buff.get("modifier", 1.0)
+			if s == "" or m == 1.0:
+				continue
+			parts.append("[color=aqua]%s%+d%%(%d)[/color]" % [StatNames.short_code(s), int((m - 1.0) * 100), int(buff.get("remaining_turns", 0))])
+	if "active_debuffs" in enemy:
+		for debuff in enemy.active_debuffs:
+			var s: String = debuff.get("stat", "")
+			var m: float = debuff.get("modifier", 1.0)
+			if s == "" or m == 1.0:
+				continue
+			parts.append("[color=%s]%s%+d%%(%d)[/color]" % [AccessibilityPalette.penalty_bbcode(), StatNames.short_code(s), int((m - 1.0) * 100), int(debuff.get("remaining_turns", 0))])
+	return (" · " + " ".join(parts)) if parts.size() > 0 else ""
+
+
+func _get_status_modulate(status_effects: Array) -> Color:
+	"""Return sprite modulate color for the highest-priority active status effect.
+	Returns Color.WHITE when no relevant statuses are present."""
+	for effect in status_effects:
+		match effect:
+			"poison":
+				return Color(0.7, 1.0, 0.7)   # Green tint
+			"burning":
+				return Color(1.0, 0.6, 0.4)   # Orange-red
+			"curse":
+				return Color(0.7, 0.4, 0.8)   # Purple
+			"stun":
+				return Color(1.0, 1.0, 0.5)   # Yellow
+			"sleep":
+				return Color(0.8, 0.8, 1.0)   # Pale blue
+			"blind":
+				return Color(0.6, 0.6, 0.7)   # Dark blue-gray
+	return Color.WHITE
+
+
+## Status name plus its remaining turns ("Poison 3"). Permanent (-1) or absent
+## durations show just the name. Turn count dimmed so the yellow name stays lead.
+func _status_label(combatant, status: String) -> String:
+	var out: String = "[color=yellow]%s[/color]" % status.capitalize()
+	if combatant != null and "status_durations" in combatant:
+		var turns: int = int(combatant.status_durations.get(status, -1))
+		if turns > 0:
+			out += "[color=#bbbb77] %d[/color]" % turns
+	return out
 
 
 func update_enemy_status() -> void:
@@ -415,7 +725,7 @@ func _update_enemy_member_status(idx: int, enemy: Combatant) -> void:
 	if not is_instance_valid(box):
 		return
 
-	var is_revealed = _revealed_enemies.get(enemy, false)
+	var is_revealed = _enemy_hp_revealed(enemy)
 	var is_dead = not enemy.is_alive
 
 	# Update name with status indicator
@@ -425,7 +735,7 @@ func _update_enemy_member_status(idx: int, enemy: Combatant) -> void:
 		var status_indicator = " [color=gray]✗[/color]" if is_dead else ""
 		name_label.text = "[color=%s]%s[/color]%s" % [name_color, enemy.combatant_name, status_indicator]
 
-	# Update AP
+	# Update AP and status effects
 	var ap_label = box.get_node_or_null("AP")
 	if ap_label and ap_label is RichTextLabel:
 		var ap_color = "white"
@@ -437,23 +747,80 @@ func _update_enemy_member_status(idx: int, enemy: Combatant) -> void:
 		if is_dead:
 			ap_label.text = "[color=gray]---[/color]"
 		else:
-			ap_label.text = "[color=%s]AP: %+d[/color]" % [ap_color, enemy.current_ap]
+			var ap_text = "[color=%s]AP: %+d[/color]" % [ap_color, enemy.current_ap]
+			if enemy.status_effects.size() > 0:
+				ap_text += " ["
+				for si in range(enemy.status_effects.size()):
+					if si > 0:
+						ap_text += ", "
+					ap_text += _status_label(enemy, enemy.status_effects[si])
+				ap_text += "]"
+			ap_text += _enemy_stat_mods_hint(enemy)
+			ap_label.text = ap_text
 
 	# Update HP (hidden unless revealed or dead)
 	var hp_label = box.get_node_or_null("HP")
 	if hp_label and hp_label is RichTextLabel:
 		if is_dead:
-			hp_label.text = "[color=red]DEFEATED[/color]"
+			hp_label.text = "[color=%s]DEFEATED[/color]" % AccessibilityPalette.penalty_bbcode()
 		elif is_revealed:
 			var hp_percent = float(enemy.current_hp) / float(enemy.max_hp)
-			var hp_color = "lime" if hp_percent > 0.5 else ("yellow" if hp_percent > 0.25 else "red")
+			# Tick 230: BBCode color via AccessibilityPalette so the enemy HP tooltip matches the colorblind-aware visual HP bar palette (cyan/yellow/magenta in accessibility mode).
+			var hp_color = AccessibilityPalette.hp_bbcode_for_pct(hp_percent)
 			hp_label.text = "[color=%s]HP: %d/%d[/color]" % [hp_color, enemy.current_hp, enemy.max_hp]
 		else:
 			# Show vague HP indicator based on percentage
 			var hp_percent = float(enemy.current_hp) / float(enemy.max_hp)
 			var hp_hint = "Healthy" if hp_percent > 0.75 else ("Wounded" if hp_percent > 0.5 else ("Hurt" if hp_percent > 0.25 else "Critical"))
-			var hp_color = "lime" if hp_percent > 0.5 else ("yellow" if hp_percent > 0.25 else "red")
+			# Tick 230: BBCode color via AccessibilityPalette (matches the revealed-HP branch above).
+			var hp_color = AccessibilityPalette.hp_bbcode_for_pct(hp_percent)
 			hp_label.text = "[color=%s]%s[/color]" % [hp_color, hp_hint]
+
+		# Elemental weakness intel — surfaced once you've DEFEATED this monster
+		# before (it's in the bestiary). Rewards fighting + aids autobattle
+		# planning ("you've beaten this, you know it's weak to fire").
+		if not is_dead:
+			hp_label.text += _enemy_intel_hint(enemy)
+
+
+## Bestiary intel for a monster you've DEFEATED before: " · Weak: Fire ·
+## Immune: Ice · Resist: Dark". Empty for unfought monsters (unearned).
+## Immunity is the higher-value half — attacking an immune element wastes
+## the whole turn, so surfacing it proactively beats the reactive
+## in-battle "IMMUNE!" popup that only fires AFTER the wasted swing.
+func _enemy_intel_hint(enemy: Combatant) -> String:
+	if enemy == null or not enemy.has_meta("monster_type"):
+		return ""
+	if enemy.elemental_weaknesses.is_empty() and enemy.elemental_immunities.is_empty() \
+			and enemy.elemental_resistances.is_empty():
+		return ""
+	# Revealed by a prior defeat (bestiary) OR a Scan cast this battle.
+	var revealed: bool = enemy.get_meta("intel_revealed", false) \
+			or BestiarySystem.is_defeated(str(enemy.get_meta("monster_type")))
+	if not revealed:
+		return ""
+	var out: String = ""
+	if not enemy.elemental_weaknesses.is_empty():
+		out += " · [color=orange]Weak: %s[/color]" % ", ".join(_capitalized(enemy.elemental_weaknesses))
+	if not enemy.elemental_immunities.is_empty():
+		out += " · [color=#88aaff]Immune: %s[/color]" % ", ".join(_capitalized(enemy.elemental_immunities))
+	if not enemy.elemental_resistances.is_empty():
+		out += " · [color=#bbbb77]Resist: %s[/color]" % ", ".join(_capitalized(enemy.elemental_resistances))
+	return out
+
+
+func _capitalized(elements: Array) -> Array:
+	var names: Array = []
+	for e in elements:
+		names.append(str(e).capitalize())
+	return names
+
+
+## Exact enemy HP shows once the enemy has been attacked (_revealed_enemies) OR
+## Scanned this battle — a Scan reveals the full profile (HP + elemental intel),
+## not just weaknesses. (v3.33.11 Scan set intel_revealed but left HP vague.)
+func _enemy_hp_revealed(enemy: Combatant) -> bool:
+	return _revealed_enemies.get(enemy, false) or (enemy != null and enemy.get_meta("intel_revealed", false))
 
 
 func reveal_enemy_stats(enemy: Combatant) -> void:
@@ -503,6 +870,194 @@ func update_turn_info() -> void:
 			_scene.turn_info.text = "Round %d - Execution Phase" % BattleManager.current_round
 	else:
 		_scene.turn_info.text = "Round %d" % BattleManager.current_round
+
+	# Update turn order strip
+	_update_turn_order_strip()
+
+
+## CTB Timeline — vertical turn order display (FFX-style) on right side
+var _ctb_last_head_id: int = 0
+var _ctb_timeline: VBoxContainer = null
+var _ctb_panel: PanelContainer = null
+
+func _update_turn_order_strip() -> void:
+	"""Show upcoming turn order as a vertical CTB timeline on the right"""
+	# Create timeline panel on first call
+	if not _ctb_panel:
+		_ctb_panel = PanelContainer.new()
+		_ctb_panel.name = "CTBTimeline"
+		_ctb_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var panel_style = StyleBoxFlat.new()
+		panel_style.bg_color = Color(0.05, 0.03, 0.1, 0.75)
+		panel_style.border_color = Color(0.4, 0.35, 0.6, 0.6)
+		panel_style.border_width_right = 1
+		panel_style.corner_radius_top_right = 4
+		panel_style.corner_radius_bottom_right = 4
+		panel_style.content_margin_left = 6
+		panel_style.content_margin_right = 6
+		panel_style.content_margin_top = 4
+		panel_style.content_margin_bottom = 4
+		_ctb_panel.add_theme_stylebox_override("panel", panel_style)
+		# Bottom-LEFT — moved 2026-06-17 to clear the right-side party panel.
+		_ctb_panel.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
+		_ctb_panel.offset_left = 5
+		_ctb_panel.offset_right = 110
+		_ctb_panel.offset_bottom = -10
+		_ctb_panel.offset_top = -180
+		_ctb_panel.custom_minimum_size = Vector2(100, 0)
+		_ctb_panel.grow_horizontal = Control.GROW_DIRECTION_END
+		_ctb_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
+		_scene.get_node("UI").add_child(_ctb_panel)
+
+		# Header
+		var header = Label.new()
+		header.text = "TURN ORDER"
+		header.add_theme_font_size_override("font_size", TextScale.scaled(9))
+		header.add_theme_color_override("font_color", Color(0.6, 0.55, 0.8))
+		header.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		header.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+		_ctb_timeline = VBoxContainer.new()
+		_ctb_timeline.name = "Timeline"
+		_ctb_timeline.add_theme_constant_override("separation", 2)
+		_ctb_timeline.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+		var vbox = VBoxContainer.new()
+		vbox.add_theme_constant_override("separation", 4)
+		vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		vbox.add_child(header)
+		vbox.add_child(_ctb_timeline)
+		_ctb_panel.add_child(vbox)
+
+	# Clear existing entries
+	for child in _ctb_timeline.get_children():
+		child.queue_free()
+
+	var queue: Array = _compute_ctb_queue()
+	if queue.is_empty():
+		return
+
+	var shown = 0
+	for combatant in queue:
+		if shown >= 8:
+			break
+		if not is_instance_valid(combatant) or not combatant.is_alive:
+			continue
+		var is_current = (shown == 0)  # head of the queue = current selector / next to act
+		var is_player = combatant in BattleManager.player_party
+		var entry = _create_ctb_entry(combatant, is_current, is_player, shown)
+		_ctb_timeline.add_child(entry)
+		shown += 1
+	if shown > 0:
+		_animate_ctb_rows(queue[0])
+
+
+## Pure queue build, extracted so the ordering is unit-testable without a scene. During SELECTION it's who selects next; during EXECUTION it's execution_order (speed-sorted pending actions) so "who acts next" stays visible while actions resolve.
+func _compute_ctb_queue() -> Array:
+	var queue: Array = []
+	var st = BattleManager.current_state
+	var in_execution: bool = st == BattleManager.BattleState.EXECUTION_PHASE or st == BattleManager.BattleState.PROCESSING_ACTION
+	if in_execution and "execution_order" in BattleManager and not BattleManager.execution_order.is_empty():
+		for action in BattleManager.execution_order:
+			var c = action.get("combatant")
+			if c is Combatant:
+				queue.append(c)
+	else:
+		var order = BattleManager.selection_order
+		var current_idx = BattleManager.selection_index
+		for i in range(order.size()):
+			if i >= current_idx:
+				queue.append(order[i])
+	return queue
+
+
+## Rows are rebuilt wholesale (cheap, and only on turn changes) — the pop is what reads badly, so new rows fade in and a head CHANGE pulses. Tracked by instance id so the pulse fires on arrival, not on every repaint.
+func _animate_ctb_rows(head: Combatant) -> void:
+	if BattleJuice.battle_tier() >= BattleJuice.Tier.MINIMAL or not BattleJuice.flag("ctb_motion"):
+		return
+	for row in _ctb_timeline.get_children():
+		if row is Control:
+			row.modulate.a = 0.0
+			row.create_tween().tween_property(row, "modulate:a", 1.0, 0.14)
+	var head_id: int = head.get_instance_id() if is_instance_valid(head) else 0
+	if head_id != _ctb_last_head_id:
+		_ctb_last_head_id = head_id
+		var first = _ctb_timeline.get_child(0) if _ctb_timeline.get_child_count() > 0 else null
+		if first is Control:
+			first.pivot_offset = first.size * 0.5
+			var t := first.create_tween()
+			t.tween_property(first, "scale", Vector2(1.15, 1.15), 0.10).set_trans(Tween.TRANS_BACK)
+			t.tween_property(first, "scale", Vector2.ONE, 0.16).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+func _create_ctb_entry(combatant: Combatant, is_current: bool, is_player: bool, position_idx: int) -> HBoxContainer:
+	"""Create a single entry in the CTB timeline"""
+	var row = HBoxContainer.new()
+	row.add_theme_constant_override("separation", 4)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	# Position indicator (arrow for current, dot for others)
+	var indicator = Label.new()
+	if is_current:
+		indicator.text = "▶"
+		indicator.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
+	elif position_idx == 1:
+		indicator.text = "·"
+		indicator.add_theme_color_override("font_color", Color(0.7, 0.7, 0.7))
+	else:
+		indicator.text = "·"
+		indicator.add_theme_color_override("font_color", Color(0.4, 0.4, 0.4))
+	indicator.add_theme_font_size_override("font_size", TextScale.scaled(12))
+	indicator.custom_minimum_size = Vector2(12, 0)
+	indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(indicator)
+
+	# Name
+	var name_label = Label.new()
+	var display_name = combatant.combatant_name
+	if display_name.length() > 8:
+		display_name = display_name.substr(0, 7) + "."
+	name_label.text = display_name
+	name_label.custom_minimum_size = Vector2(60, 0)
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	var name_size = 11 if is_current else 10
+	name_label.add_theme_font_size_override("font_size", TextScale.scaled(name_size))
+
+	if is_current:
+		name_label.add_theme_color_override("font_color", Color(1.0, 0.95, 0.7))
+	elif is_player:
+		name_label.add_theme_color_override("font_color", Color(0.5, 0.7, 1.0))
+	else:
+		name_label.add_theme_color_override("font_color", Color(1.0, 0.5, 0.5))
+	row.add_child(name_label)
+
+	# Speed value (smaller, right-aligned)
+	var spd_label = Label.new()
+	spd_label.text = "%d" % combatant.speed
+	spd_label.add_theme_font_size_override("font_size", TextScale.scaled(9))
+	spd_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.6))
+	spd_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(spd_label)
+
+	return row
+
+
+## Round-boundary AP emphasis (struktured 2026-07-16, Bravely Default ref): flash every living member's AP label gold so the +1 grant registers.
+## v2 same day: "the player AP bars should flash too" — the 0.6s tint read as invisible in play; scale pop + hot gold, unmissable at 1x.
+func flash_ap_labels() -> void:
+	for box in _party_status_boxes:
+		if not is_instance_valid(box):
+			continue
+		var ap_label = box.get_node_or_null("AP")
+		if ap_label == null:
+			continue
+		ap_label.pivot_offset = ap_label.size / 2.0
+		ap_label.modulate = Color(2.2, 1.9, 0.45)
+		ap_label.scale = Vector2(1.3, 1.3)
+		var t = _scene.create_tween()
+		t.tween_property(ap_label, "scale", Vector2.ONE, 0.35).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		t.parallel().tween_property(ap_label, "modulate", Color.WHITE, 0.9).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 
 func log_message(message: String) -> void:

@@ -9,6 +9,7 @@ func _init() -> void:
 	cave_id = "shadow_dragon_cave"
 	boss_id = "shadow_dragon"
 	boss_flag_key = "shadow_dragon_defeated"
+	boss_cutscene_id = "world1_umbraxis_intro"
 	total_floors = 3
 	overworld_exit_spawn = "shadow_cave_entrance"
 
@@ -17,14 +18,14 @@ func _init() -> void:
 			"MMMMMMMMMMMMMMMMMMMM",
 			"M..................M",
 			"M.MMM.MMM..MMM.MM..M",
-			"M...M...M..M...M...M",
-			"M...M.T.M..M...M...M",
+			"M...M...M..M...M..TM",
+			"M...M.T.M..M.T.M...M",
 			"M...MMMMM..MMMMM...M",
 			"M..................M",
 			"M.....MMM..MMM.....M",
 			"M.....M......M.....M",
 			"M.....M..U...M.....M",
-			"M.....MMM..MMM.....M",
+			"M.T...MMM..MMM.....M",
 			"M..................M",
 			"M..................M",
 			"M.......DDDD.......M",
@@ -38,32 +39,34 @@ func _init() -> void:
 			"M..M.M.........M.M.M",
 			"M..M.M.MMMMMMM.M.M.M",
 			"M..M.M.M.....M.M.M.M",
-			"M..M.M.M.T...M.M...M",
+			"M..M.M.M.T...M.M.T.M",
 			"M..M...M.....M.M...M",
 			"M..MMMMM.....M.M...M",
 			"M..........U.M.M...M",
 			"M..MMMMMMMMMM..M...M",
 			"M..................M",
-			"M..................M",
+			"M..T...............M",
 			"M..................M",
 			"M.........D........M",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
+		# Shared "boss at far corner + winding path" layout across all 4
+		# W1 dragon caves — struktured msg 2788, class-level fix.
 		3: [
 			"MMMMMMMMMMMMMMMMMMMM",
+			"M...............B..M",
 			"M..................M",
+			"M..MMMMMMM.MMMMMMM.M",
+			"M..M.T...........M.M",
+			"M..M.............M.M",
+			"M..M.......T.....M.M",
+			"M..M.............M.M",
+			"M..MMMMMMM.MMMMMMM.M",
 			"M..................M",
-			"M...MMMMM..MMMMM...M",
-			"M...M..........M...M",
-			"M...M..........M...M",
-			"M...M..........M...M",
-			"M.........B........M",
-			"M...M..........M...M",
-			"M...M..........M...M",
-			"M...M..........M...M",
-			"M...MMMMM..MMMMM...M",
-			"M..................M",
-			"M..................M",
+			"M....MMMMM.MMMMM...M",
+			"M....M.........M...M",
+			"M....M....T....M...M",
+			"M..T.M.........M...M",
 			"M.........D........M",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
@@ -80,6 +83,13 @@ func _init() -> void:
 		2: ["specter", "skeleton", "imp"],
 		3: [],
 	}
+
+
+## Each W1 dragon cave has its own SoundManager routing arm; without
+## this override they inherited "cave" and all four played the generic
+## medieval dungeon bed.
+func _get_music_area_id() -> String:
+	return "shadow_dragon_cave"
 
 
 func _get_boss_intro_dialogue() -> Array:
@@ -103,3 +113,8 @@ func _get_boss_intro_dialogue() -> Array:
 		"Umbraxis: 'Don't worry. It only hurts if you think about it.'",
 		"Umbraxis: *the room inverts*",
 	]
+
+
+## the darkest of the four
+func _get_dungeon_ambient() -> Color:
+	return Color(0.20, 0.19, 0.28)

@@ -1,85 +1,39 @@
-extends Node2D
+extends BaseVillage
 class_name SandriftVillageScene
 
 ## SandriftVillage - Nomad camp/oasis in the southwestern desert
 ## Features: Oasis Inn, Bazaar (items+weapons), Nomad Elder's Tent
 
-const TileGeneratorScript = preload("res://src/exploration/TileGenerator.gd")
-const OverworldPlayerScript = preload("res://src/exploration/OverworldPlayer.gd")
-const OverworldControllerScript = preload("res://src/exploration/OverworldController.gd")
-const AreaTransitionScript = preload("res://src/exploration/AreaTransition.gd")
-const OverworldNPCScript = preload("res://src/exploration/OverworldNPC.gd")
 const VillageInnScript = preload("res://src/exploration/VillageInn.gd")
 const VillageShopScript = preload("res://src/exploration/VillageShop.gd")
 const TreasureChestScript = preload("res://src/exploration/TreasureChest.gd")
 
-signal exploration_ready()
-signal battle_triggered(enemies: Array)
-signal area_transition(target_map: String, spawn_point: String)
-
 ## Map dimensions (24x18 desert oasis)
-const MAP_WIDTH: int = 24
-const MAP_HEIGHT: int = 18
-const TILE_SIZE: int = 32
-
-## Scene components
-var tile_map: TileMapLayer
-var player: Node2D
-var camera: Camera2D
-var controller: Node
-var tile_generator: Node
-
-## Containers
-var transitions: Node2D
-var npcs: Node2D
-var buildings: Node2D
-var treasures: Node2D
-
-## Spawn points
-var spawn_points: Dictionary = {}
+const MAP_WIDTH: int = 30
+const MAP_HEIGHT: int = 22
 
 
-func _ready() -> void:
-	_setup_scene()
-	_generate_map()
-	_setup_transitions()
-	_setup_buildings()
-	_setup_treasures()
-	_setup_npcs()
-	_setup_player()
-	_setup_camera()
-	_setup_controller()
+## ---- BaseVillage hooks ----
 
-	if SoundManager:
-		SoundManager.play_area_music("village")
-
-	exploration_ready.emit()
+func _get_area_id() -> String:
+	return "sandrift_village"
 
 
-func _setup_scene() -> void:
-	tile_generator = TileGeneratorScript.new()
-	add_child(tile_generator)
+func _get_village_display_name() -> String:
+	return "Sandrift"
 
-	tile_map = TileMapLayer.new()
-	tile_map.name = "TileMap"
-	tile_map.tile_set = tile_generator.create_tileset()
-	add_child(tile_map)
 
-	transitions = Node2D.new()
-	transitions.name = "Transitions"
-	add_child(transitions)
+func _get_map_pixel_size() -> Vector2i:
+	return Vector2i(MAP_WIDTH * TILE_SIZE, MAP_HEIGHT * TILE_SIZE)
 
-	buildings = Node2D.new()
-	buildings.name = "Buildings"
-	add_child(buildings)
 
-	treasures = Node2D.new()
-	treasures.name = "Treasures"
-	add_child(treasures)
+func _get_save_point_position() -> Vector2:
+	# Moved off (13,10) — that cell is oasis WATER (impassable), so the save point was never reachable.
+	return Vector2(13 * TILE_SIZE,7 * TILE_SIZE)
 
-	npcs = Node2D.new()
-	npcs.name = "NPCs"
-	add_child(npcs)
+
+func _get_player_spawn_fallback() -> Vector2:
+	return Vector2(480, 480)
 
 
 func _generate_map() -> void:
@@ -87,24 +41,53 @@ func _generate_map() -> void:
 	# W = wall, . = floor (sand base), O = oasis water, I = oasis inn, B = bazaar, E = elder tent
 	# T = hidden tent, X = exit
 	var map_data: Array[String] = [
-		"WWWWWWWWWWWWWWWWWWWWWWWW",
-		"W......................W",
-		"W..III.......BBB.......W",
-		"W..III.......BBB.......W",
-		"W..III.......BBB.......W",
-		"W......................W",
-		"W.......OOOO...........W",
-		"W.......OOOO...EEE.....W",
-		"W.......OOOO...EEE.....W",
-		"W.......OOOO...EEE.....W",
-		"W......................W",
-		"W..TT..................W",
-		"W..TT..................W",
-		"W......................W",
-		"W......................W",
-		"W.......XXXXXX.........W",
-		"W.......XXXXXX.........W",
-		"WWWWWWWWWWWWWWWWWWWWWWWW",
+		"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+		"W............................W",
+		"W............................W",
+		"W............................W",
+		"W.....III.......BBB..........W",
+		"W.....III.......BBB..........W",
+		"W.....III.......BBB..........W",
+		"W............................W",
+		"W..........OOOO..............W",
+		"W..........OOOO...EEE........W",
+		"W..........OOOO...EEE........W",
+		"W..........OOOO...EEE........W",
+		"W................/.../.......W",
+		"W.....TT.....................W",
+		"W.....TT.....................W",
+		"W............................W",
+		"W............................W",
+		"W..........XXXXXX............W",
+		"W..........XXXXXX............W",
+		"W............................W",
+		"W............................W",
+		"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+	]
+	# Elevation (low sandstone mesa, 2026-09-06): the Elder's tent overlooks the oasis from a raised ledge (1), '/' dune-climbs flank the tent at row 12
+	var height_data: Array[String] = [
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000001111110000000",
+		"000000000000000001111110000000",
+		"000000000000000001111110000000",
+		"000000000000000001111110000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
 	]
 
 	for y in range(MAP_HEIGHT):
@@ -118,7 +101,9 @@ func _generate_map() -> void:
 			if char == "X" and not spawn_points.has("exit"):
 				spawn_points["exit"] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
 
-	spawn_points["entrance"] = Vector2(12 * TILE_SIZE, 13 * TILE_SIZE)
+	_build_derived_layers(map_data, height_data)
+
+	spawn_points["entrance"] = Vector2(15 * TILE_SIZE,15 * TILE_SIZE)
 	spawn_points["default"] = spawn_points["entrance"]
 	spawn_points["sandrift_entrance"] = spawn_points["entrance"]
 
@@ -128,6 +113,8 @@ func _char_to_tile_type(char: String) -> int:
 		"W": return TileGeneratorScript.TileType.WALL
 		"O": return TileGeneratorScript.TileType.WATER
 		".": return TileGeneratorScript.TileType.SAND
+		"/": return TileGeneratorScript.TileType.SAND  # dune-climb ground; elevation lives in height_data
+		"E": return TileGeneratorScript.TileType.SAND  # tent footprint has no overlay sprite, so it's exposed — keep it sandy, not grey FLOOR
 		_: return TileGeneratorScript.TileType.FLOOR
 
 
@@ -136,36 +123,43 @@ func _get_atlas_coords(tile_type: int) -> Vector2i:
 	return Vector2i(tile_id % 5, tile_id / 5)
 
 
+## Empty forces procedural cliffs — the shared medieval.png sheet art would otherwise outrank the sandstone palette below.
+func _get_cliff_sheet_key() -> String:
+	return ""
+
+
+## Warm sandstone so the mesa's ledge reads as sun-baked rock, not grey stone.
+func _get_cliff_palette() -> Dictionary:
+	return {
+		"face_dark": Color(0.42, 0.28, 0.16),
+		"face_mid": Color(0.62, 0.44, 0.26),
+		"face_light": Color(0.78, 0.60, 0.38),
+		"lip": Color(0.88, 0.74, 0.50),
+		"lip_shadow": Color(0.36, 0.24, 0.14, 0.85),
+		"grass": Color(0.70, 0.56, 0.32),
+		"grass_light": Color(0.80, 0.66, 0.40),
+		"stair_tread": Color(0.72, 0.56, 0.34),
+		"stair_riser": Color(0.46, 0.32, 0.18),
+	}
+
+
 func _setup_transitions() -> void:
 	var exit_trans = AreaTransitionScript.new()
 	exit_trans.name = "Exit"
 	exit_trans.target_map = "overworld"
 	exit_trans.target_spawn = "sandrift_entrance"
 	exit_trans.require_interaction = false
-	exit_trans.position = spawn_points.get("exit", Vector2(352, 512))
+	exit_trans.position = spawn_points.get("exit", Vector2(448, 576))
 	_setup_transition_collision(exit_trans, Vector2(TILE_SIZE * 6, TILE_SIZE))
 	exit_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(exit_trans)
-
-
-func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
-	trans.collision_layer = 4
-	trans.collision_mask = 2
-	trans.monitoring = true
-	trans.monitorable = true
-
-	var collision = CollisionShape2D.new()
-	var shape = RectangleShape2D.new()
-	shape.size = size
-	collision.shape = shape
-	trans.add_child(collision)
 
 
 func _setup_buildings() -> void:
 	# === OASIS INN ===
 	var inn = VillageInnScript.new()
 	inn.inn_name = "Oasis Inn"
-	inn.position = Vector2(3.5 * TILE_SIZE, 3 * TILE_SIZE)
+	inn.position = Vector2(6.5 * TILE_SIZE,5 * TILE_SIZE)
 	buildings.add_child(inn)
 
 	# === BAZAAR (Item + Weapon Shop) ===
@@ -173,15 +167,26 @@ func _setup_buildings() -> void:
 	bazaar_items.shop_name = "Desert Bazaar"
 	bazaar_items.shop_type = VillageShopScript.ShopType.ITEM
 	bazaar_items.keeper_name = "Shifty"
-	bazaar_items.position = Vector2(14 * TILE_SIZE, 3 * TILE_SIZE)
+	bazaar_items.position = Vector2(17 * TILE_SIZE,5 * TILE_SIZE)
 	buildings.add_child(bazaar_items)
 
 	var bazaar_weapons = VillageShopScript.new()
 	bazaar_weapons.shop_name = "Bazaar Arms"
 	bazaar_weapons.shop_type = VillageShopScript.ShopType.BLACKSMITH
 	bazaar_weapons.keeper_name = "Dune"
-	bazaar_weapons.position = Vector2(14 * TILE_SIZE, 5.5 * TILE_SIZE)
+	bazaar_weapons.position = Vector2(17 * TILE_SIZE,7.5 * TILE_SIZE)
 	buildings.add_child(bazaar_weapons)
+
+	# === GLASSMAKER'S WORKSHOP DOOR ===
+	# Senga's hut on the open south-east tundra of the village map.
+	# She foreshadows Pyrroth (W1 fire dragon) through the desert
+	# glass she collects from sand fused by the dragon's breath.
+	spawn_points["glassmaker_exit"] = Vector2(11 * TILE_SIZE,13 * TILE_SIZE)
+	_add_interior_door("GlassmakerDoor", "sandrift_glassmaker", "Enter Glassmaker's Workshop", Vector2(11 * TILE_SIZE,12 * TILE_SIZE))
+	# === RAIN LEDGER DOOR ===
+	# South face of the BBB building (cols 13-15, rows 2-4) — four centuries of hope, one entry.
+	spawn_points["ledger_exit"] = Vector2(17 * TILE_SIZE,7.5 * TILE_SIZE)
+	_add_interior_door("RainLedgerDoor", "sandrift_rain_ledger", "Enter Rain Ledger", Vector2(17 * TILE_SIZE,6.5 * TILE_SIZE))
 
 
 func _setup_treasures() -> void:
@@ -190,7 +195,7 @@ func _setup_treasures() -> void:
 	chest1.chest_id = "sandrift_chest_1"
 	chest1.contents_type = "gold"
 	chest1.gold_amount = 500
-	chest1.position = Vector2(2 * TILE_SIZE, 12 * TILE_SIZE)
+	chest1.position = Vector2(5 * TILE_SIZE,14 * TILE_SIZE)
 	treasures.add_child(chest1)
 
 	# Speed Boots in bazaar back room
@@ -198,13 +203,27 @@ func _setup_treasures() -> void:
 	chest2.chest_id = "sandrift_chest_2"
 	chest2.contents_type = "equipment"
 	chest2.contents_id = "speed_boots"
-	chest2.position = Vector2(17 * TILE_SIZE, 2 * TILE_SIZE)
+	chest2.position = Vector2(20 * TILE_SIZE,4 * TILE_SIZE)
 	treasures.add_child(chest2)
 
 
 func _setup_npcs() -> void:
-	# Conspiracy Theorist Rex (paranoid)
-	var rex = _create_npc("Conspiracy Theorist Rex", "villager", Vector2(6 * TILE_SIZE, 6 * TILE_SIZE), [
+	_place_masterite_warden()
+
+	# Shared post-cave state check for Gramps / Dune / Kit branches.
+	# Gate = cutscene_flag_rat_king_defeated (set the moment the cave
+	# boss falls, before the party leaves the cave). Remote villages
+	# hear via travelers/dust-borne rumor — the delay is diegetic. Same
+	# spawn-time pattern as Harmonia; village re-instances on entry so
+	# state refreshes on next visit. Rex/Shifty/Mirage untouched — their
+	# voices are timeless comedy or dragon-lore focused.
+	var _after_cave_gs = get_node_or_null("/root/GameState")
+	var _after_cave_done: bool = false
+	if _after_cave_gs:
+		_after_cave_done = bool(_after_cave_gs.game_constants.get("cutscene_flag_rat_king_defeated", false))
+
+	# Conspiracy Theorist Rex (paranoid) — timeless, no cave hook.
+	var rex = _create_npc("Conspiracy Theorist Rex", "villager", Vector2(9 * TILE_SIZE,8 * TILE_SIZE), [
 		"The encounter rate is RIGGED!",
 		"I've done the math. It's supposed to be 5%...",
 		"But I SWEAR it's higher when you're low on potions!",
@@ -214,17 +233,27 @@ func _setup_npcs() -> void:
 	npcs.add_child(rex)
 
 	# Retired Hero Gramps (nostalgic)
-	var gramps = _create_npc("Retired Hero Gramps", "elder", Vector2(18 * TILE_SIZE, 8 * TILE_SIZE), [
+	# Post-cave: brief recognition, then reasserts grumpy nostalgia. He
+	# still has his grudges. And his badge.
+	var _gramps_pre := [
 		"Back in MY game, we walked BOTH ways through the dungeon.",
 		"Uphill. In 8-bit. And we LIKED it.",
 		"No autobattle, no save states, no 'quality of life.'",
 		"We had QUALITY OF DEATH and we were GRATEFUL.",
 		"Kids these days with their scripts and their 'fun'..."
-	])
+	]
+	var _gramps_post := [
+		"You came out of a cave I would not have entered. That's data. I don't like data.",
+		"In my day we would have called that reckless. In my day I would have been wrong.",
+		"You'll pardon me if I don't hand you the badge. I still have my grudges. And my badge.",
+		"Kids these days with their scripts and their... audacity. Fine. Audacity.",
+		"Now go do it again. I want to see if it was luck. In my day we needed a second data point."
+	]
+	var gramps = _create_npc("Retired Hero Gramps", "elder", Vector2(21 * TILE_SIZE,10 * TILE_SIZE), _gramps_post if _after_cave_done else _gramps_pre)
 	npcs.add_child(gramps)
 
-	# Script Dealer Shifty (shady)
-	var shifty = _create_npc("Script Dealer Shifty", "villager", Vector2(16 * TILE_SIZE, 6 * TILE_SIZE), [
+	# Script Dealer Shifty (shady) — timeless comedic voice, no branch.
+	var shifty = _create_npc("Script Dealer Shifty", "villager", Vector2(19 * TILE_SIZE,8 * TILE_SIZE), [
 		"Psst. Got some premium autogrind configs.",
 		"One-shot setups. Very efficient.",
 		"...Totally not stolen from the dev console.",
@@ -234,16 +263,25 @@ func _setup_npcs() -> void:
 	npcs.add_child(shifty)
 
 	# Caravan Leader Dune (practical)
-	var dune = _create_npc("Caravan Leader Dune", "villager", Vector2(10 * TILE_SIZE, 10 * TILE_SIZE), [
+	# Post-cave: the wind on the road has changed. Practical man notices
+	# practical shifts. Doesn't overinterpret — but records the data.
+	var _dune_pre := [
 		"The desert teaches patience.",
 		"Also, bring water. Lots of water.",
 		"The game doesn't have a thirst mechanic yet, but still.",
 		"Better safe than sorry. Or dehydrated."
-	])
+	]
+	var _dune_post := [
+		"The road east is quieter. Everything is quieter. I don't know if that means safer or the opposite.",
+		"The desert taught me patience. Whatever you did taught the desert. The wind is different this week.",
+		"Bring water. Bring some for the road ahead of you and some for what's behind you now.",
+		"News moves faster than caravans. It got here two days before it should have. Somebody's carrying it fast."
+	]
+	var dune = _create_npc("Caravan Leader Dune", "villager", Vector2(13 * TILE_SIZE,12 * TILE_SIZE), _dune_post if _after_cave_done else _dune_pre)
 	npcs.add_child(dune)
 
-	# Sand Sage Mirage (cryptic)
-	var mirage = _create_npc("Sand Sage Mirage", "elder", Vector2(5 * TILE_SIZE, 14 * TILE_SIZE), [
+	# Sand Sage Mirage (cryptic) — dragon-lore focused, no cave branch.
+	var mirage = _create_npc("Sand Sage Mirage", "elder", Vector2(8 * TILE_SIZE,16 * TILE_SIZE), [
 		"The lightning dragon moves at the speed of thought.",
 		"Which, if your thoughts are anything like mine...",
 		"...isn't that fast.",
@@ -253,99 +291,52 @@ func _setup_npcs() -> void:
 	npcs.add_child(mirage)
 
 	# Young Adventurer Kit (enthusiastic)
-	var kit = _create_npc("Young Adventurer Kit", "villager", Vector2(20 * TILE_SIZE, 12 * TILE_SIZE), [
+	# Post-cave: awe + reverent questions. Loops back to Rex ("Did the
+	# RNG actually have EYES?") — small cross-NPC comedic thread.
+	var _kit_pre := [
 		"I'm gonna be the very best!",
 		"Like no one ever-- wait, wrong franchise.",
 		"I mean, I'm gonna automate the very best!",
 		"My autobattle scripts are gonna be LEGENDARY!",
 		"...As soon as I figure out how conditions work."
-	])
+	]
+	var _kit_post := [
+		"YOU came from the cave? THE CAVE? The one Gramps talks about?",
+		"What was it like? Was it like the songs? Were there SIX kinds of skeleton?",
+		"I'm gonna write scripts as good as yours someday. My conditions section is getting better. It's still mostly IF-THEN-TRUE though.",
+		"Wait. Wait. Did the RNG actually have EYES? I need to go talk to Rex.",
+		"Sign my journal? I don't have a journal. Sign my arm. My mom won't mind."
+	]
+	var kit = _create_npc("Young Adventurer Kit", "villager", Vector2(23 * TILE_SIZE,14 * TILE_SIZE), _kit_post if _after_cave_done else _kit_pre)
+	kit.sprite_archetype = "young_woman"
 	npcs.add_child(kit)
 
-
-func _create_npc(npc_name: String, npc_type: String, pos: Vector2, dialogue: Array) -> Area2D:
-	var npc = OverworldNPCScript.new()
-	npc.npc_name = npc_name
-	npc.npc_type = npc_type
-	npc.position = pos
-	npc.dialogue_lines = dialogue
-	return npc
-
-
-func _setup_player() -> void:
-	player = OverworldPlayerScript.new()
-	player.name = "Player"
-	player.position = spawn_points.get("default", Vector2(384, 416))
-	player.set_job("fighter")
-	add_child(player)
+	# Caravan Master Kes — water_on_the_road giver, east edge of the bazaar.
+	var kes = _create_npc("Caravan Master Kes", "traveler", Vector2(19 * TILE_SIZE,5 * TILE_SIZE), [
+		"Nine days camped at the edge of a town I was supposed to pass through.",
+		"There's a man on the road east in gold armor. He won't move.",
+		"He doesn't want a toll. He wants PROOF. Of legitimate business.",
+		"I have forty barrels of water and a route. What proof is that?",
+	])
+	# Without this the quest is UNSTARTABLE — QuestSystem.gd:125 matches npc_id to giver.npc_id.
+	kes.npc_id = "caravan_master_kes"
+	npcs.add_child(kes)
 
 
-func _setup_camera() -> void:
-	camera = Camera2D.new()
-	camera.name = "Camera"
-	player.add_child(camera)
-	camera.make_current()
 
-	camera.zoom = Vector2(2.0, 2.0)
-
-	var map_pixel_width = MAP_WIDTH * TILE_SIZE
-	var map_pixel_height = MAP_HEIGHT * TILE_SIZE
-
-	camera.limit_left = 0
-	camera.limit_top = 0
-	camera.limit_right = map_pixel_width
-	camera.limit_bottom = map_pixel_height
-
-	camera.position_smoothing_enabled = true
-	camera.position_smoothing_speed = 8.0
-
-
-func _setup_controller() -> void:
-	controller = OverworldControllerScript.new()
-	controller.name = "Controller"
-	controller.player = player
-	controller.encounter_enabled = false
-	controller.current_area_id = "sandrift_village"
-
-	controller.set_area_config("sandrift_village", true, 0.0, [])
-
-	controller.battle_triggered.connect(_on_battle_triggered)
-	controller.menu_requested.connect(_on_menu_requested)
-
-	add_child(controller)
-
-
-func _on_transition_triggered(target_map: String, spawn_point: String) -> void:
-	area_transition.emit(target_map, spawn_point)
-
-
-func _on_battle_triggered(enemies: Array) -> void:
-	battle_triggered.emit(enemies)
-
-
-func _on_menu_requested() -> void:
-	pass
-
-
-func spawn_player_at(spawn_name: String) -> void:
-	if spawn_points.has(spawn_name):
-		player.teleport(spawn_points[spawn_name])
-		player.reset_step_count()
-
-
-func resume() -> void:
-	controller.resume_exploration()
-
-
-func pause() -> void:
-	controller.pause_exploration()
-
-
-func set_player_job(job_name: String) -> void:
-	if player:
-		player.set_job(job_name)
-
-
-func set_player_appearance(leader) -> void:
-	if player and player.has_method("set_appearance_from_leader"):
-		player.set_appearance_from_leader(leader)
+## Warden of the Old Guard — L7 masterite blocking the trade road until
+## the party can prove "legitimate business" (Rat King defeated). Placement
+## on the south exit tile so a first entry post-Harmonia walks straight into
+## the encounter. Doc: docs/design/w1-progression-expansion.md.
+func _place_masterite_warden() -> void:
+	var MasteriteScript = load("res://src/exploration/MasteriteEncounter.gd")
+	if MasteriteScript == null:
+		return
+	var warden = MasteriteScript.new()
+	warden.archetype = "warden"
+	warden.monster_id = "masterite_warden_medieval"
+	warden.prereq_flag = "cave_rat_king_defeated"
+	warden.display_name = "Warden of the Old Guard"
+	warden.quest_flag = "quest_w1_sandrift_water_on_the_road_accepted"
+	warden.position = Vector2(14 * TILE_SIZE,16 * TILE_SIZE)
+	npcs.add_child(warden)

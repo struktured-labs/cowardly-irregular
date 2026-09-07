@@ -324,3 +324,46 @@ func test_sparkline_single_value_stored() -> void:
 	chart.push_value(99.5)
 	assert_eq(chart._values.size(), 1, "Should have exactly 1 value after one push")
 	assert_eq(chart._values[0], 99.5, "Stored value should match pushed value")
+
+
+## Adaptation-event marker tests (efficiency graph annotation)
+
+func test_sparkline_push_defaults_unmarked() -> void:
+	var chart = SparklineChart.new(10, Color.GREEN)
+	add_child_autofree(chart)
+	chart.push_value(1.0)
+	assert_eq(chart._markers.size(), 1, "Marker array should track every pushed value")
+	assert_false(chart._markers[0], "push_value without marked arg should default to false")
+
+
+func test_sparkline_push_records_marker() -> void:
+	var chart = SparklineChart.new(10, Color.GREEN)
+	add_child_autofree(chart)
+	chart.push_value(1.0, false)
+	chart.push_value(2.0, true)
+	chart.push_value(3.0, false)
+	assert_eq(chart._markers.size(), 3, "Markers should stay parallel to values")
+	assert_true(chart._markers[1], "Second sample should be flagged as an adaptation event")
+	assert_false(chart._markers[2], "Third sample should not be flagged")
+
+
+func test_sparkline_markers_evict_with_values() -> void:
+	var chart = SparklineChart.new(3, Color.GREEN)
+	add_child_autofree(chart)
+	chart.push_value(10.0, true)   # will be evicted
+	chart.push_value(20.0, false)
+	chart.push_value(30.0, true)
+	chart.push_value(40.0, false)
+	assert_eq(chart._markers.size(), chart._values.size(),
+		"Marker ring buffer must stay the same size as the value ring buffer")
+	assert_eq(chart._markers.size(), 3, "Markers should cap at max_values")
+	assert_false(chart._markers[0], "Oldest marker should be evicted alongside its value")
+
+
+func test_sparkline_clear_resets_markers() -> void:
+	var chart = SparklineChart.new(10, Color.GREEN)
+	add_child_autofree(chart)
+	chart.push_value(1.0, true)
+	chart.push_value(2.0, true)
+	chart.clear()
+	assert_eq(chart._markers.size(), 0, "Clear should empty all markers")

@@ -1,0 +1,84 @@
+{
+  "id": "world4_words_per_conversation",
+  "title": "Words Per Conversation",
+  "world": 4,
+  "giver": {
+    "npc_id": "union_rep_w4",
+    "display_name": "The Union Rep",
+    "location": {"map_id": "rivet_row", "near": "union_office"},
+    "spawn_flag": ""
+  },
+  "description": "The union rep wants to petition the Director about the twelve-word conversation limit. The petition is a document that communicates in words. Any document over twelve words per sentence is automatically flagged non-compliant. The system is the argument against itself, and it filters the argument.",
+  "playstyle_tags": ["writing_puzzle", "patient", "labor"],
+  "dialogue": {
+    "offer": [
+      {"speaker": "Union Rep", "text": "You asked what I'd say with more words. Eleven, then:", "theme": "villager"},
+      {"speaker": "Union Rep", "text": "I would say: help me write something they cannot ignore.", "theme": "villager"}
+    ],
+    "accept": [
+      {"speaker": "Union Rep", "text": "Twelve pages. Single-spaced. Every sentence too long to survive the filter.", "theme": "villager"},
+      {"speaker": "Union Rep", "text": "Help me compress it. Without losing what it means. That's the job.", "theme": "villager"}
+    ],
+    "decline": [
+      {"speaker": "Union Rep", "text": "Understood. The draft keeps. Drafts are patient. Twelve words exactly, that.", "theme": "villager"}
+    ],
+    "in_progress": [
+      {"speaker": "Union Rep", "text": "Read it back shorter. Keep the dignity part. Cut me instead.", "theme": "villager"}
+    ],
+    "ready_to_turn_in": [
+      {"speaker": "Union Rep", "text": "Form 99-Theta accepted the filing. Now we wait. Together, preferably.", "theme": "villager"}
+    ],
+    "complete": [
+      {"speaker": "Union Rep", "text": "Whatever happens to it now — it exists. Filed. On record. Unignorable.", "theme": "villager"},
+      {"speaker": "Union Rep", "text": "You gave me more than words. Framework stays; fragments connect. Watch:", "theme": "villager"},
+      {"speaker": "Union Rep", "text": "I think — six words — she can't stand gaps. Twelve more: she builds systems to fill all the gaps. Gaps scare her.", "theme": "villager"}
+    ]
+  },
+  "objectives": [
+    {
+      "step": 1,
+      "description": "Hear the eleven words the union rep saved up.",
+      "type": "talk",
+      "target_npc": "union_rep_w4",
+      "flag_on_complete": "quest_world4_words_per_conversation_accepted"
+    },
+    {
+      "step": 2,
+      "description": "Restructure the petition — twelve words per sentence, less than 10% of the argument lost.",
+      "type": "custom",
+      "required_flag": "quest_world4_words_per_conversation_petition_restructured",
+      "flag_on_complete": "quest_world4_words_per_conversation_petition_restructured"
+    },
+    {
+      "step": 3,
+      "description": "Submit it through Form 99-Theta: Employee Expression Request.",
+      "type": "custom",
+      "required_flag": "quest_world4_words_per_conversation_petition_submitted",
+      "flag_on_complete": "quest_world4_words_per_conversation_petition_submitted"
+    },
+    {
+      "step": 4,
+      "description": "Wait with him. That part matters too.",
+      "type": "talk",
+      "target_npc": "union_rep_w4",
+      "required_flag": "quest_world4_words_per_conversation_petition_submitted"
+    }
+  ],
+  "rewards": {
+    "gold": 0,
+    "exp": 350,
+    "items": [],
+    "job_variants": {
+      "scriptweaver": {
+        "description": "Dialogue-only: the Scriptweaver refiles the petition in formal system notation — the Director's native language — bypassing the word-count filter into her personal queue. Her response is nine words: 'Noted. Valid point. Recalibrating communication protocols. Thank you.' And a tenth word that shouldn't be there, smaller: 'Sorry.'",
+        "items": []
+      }
+    }
+  },
+  "flag_on_complete": "quest_world4_words_per_conversation_complete",
+  "unlocks_dialogue": [
+    {"npc_id": "union_rep_w4", "note": "Trust unlocked — he bypasses the 12-word limit via connected fragments. He knows three things: the foreman's watercolor archive location (feeds world4_the_watercolors), the Director's secondary monitoring hub address (optional dungeon room), and what the Director fears (gaps). His trust also grants informal counter-signature authority for world4_form_exception_alpha (labor clause predating the communication protocols)."}
+  ],
+  "cross_world_connection": "The epilogue response, if the main quest completes first: twelve words exactly — 'Your concerns have been noted. Action pending further review. Thank you.' The system answers the petition about the system in the system's voice.",
+  "_wiring_notes": "Step 2 emitter quest_world4_words_per_conversation_petition_restructured: the writing puzzle — a multi-exchange dialogue interact with the union rep (compress/expand choices). v1 can wire it as N sequential dialogue interacts (3 exchanges) before emitting; the Bard ('I know what compression costs') and Mage ('an optimization problem with a hard constraint') get flavor lines if in party — always true under strict-5, so both can fire. Step 3 emitter: Form 99-Theta filing interact at the complaints office (40 pages, 12 relevant, 28 identical — readable flavor). Post-quest slow-burn per doc: a brief union-rep check-in beat at the start of each subsequent main-quest chapter while the petition crawls through review — wire as optional dialogue variants keyed on chapter flags, not quest state. ALL dialogue for this NPC must respect the twelve-word frame: pre-trust lines are <=12 words per sentence BY DESIGN (verify in review if edited); post-trust keeps the frame but chains fragments."
+}

@@ -1,85 +1,45 @@
-extends Node2D
+extends BaseVillage
 class_name BrasstonVillageScene
+
+const SteampunkTileGeneratorScript = preload("res://src/exploration/SteampunkTileGenerator.gd")
 
 ## BrasstonVillage - Clockwork market town with brass pipes, gas lamps, and gear-shaped fountains
 ## Features: The Cog & Pillow (Inn), Gearwright's Forge (Blacksmith), Tinkerers, Steam Merchant
 
-const TileGeneratorScript = preload("res://src/exploration/TileGenerator.gd")
-const OverworldPlayerScript = preload("res://src/exploration/OverworldPlayer.gd")
-const OverworldControllerScript = preload("res://src/exploration/OverworldController.gd")
-const AreaTransitionScript = preload("res://src/exploration/AreaTransition.gd")
-const OverworldNPCScript = preload("res://src/exploration/OverworldNPC.gd")
 const VillageInnScript = preload("res://src/exploration/VillageInn.gd")
 const VillageShopScript = preload("res://src/exploration/VillageShop.gd")
 const TreasureChestScript = preload("res://src/exploration/TreasureChest.gd")
-
-signal exploration_ready()
-signal battle_triggered(enemies: Array)
-signal area_transition(target_map: String, spawn_point: String)
+const VillageElevatorScript = preload("res://src/exploration/VillageElevator.gd")
 
 ## Map dimensions
-const MAP_WIDTH: int = 22
-const MAP_HEIGHT: int = 18
-const TILE_SIZE: int = 32
-
-## Scene components
-var tile_map: TileMapLayer
-var player: Node2D
-var camera: Camera2D
-var controller: Node
-var tile_generator: Node
-
-## Containers
-var transitions: Node2D
-var npcs: Node2D
-var buildings: Node2D
-var treasures: Node2D
-
-## Spawn points
-var spawn_points: Dictionary = {}
+const MAP_WIDTH: int = 26
+const MAP_HEIGHT: int = 22
 
 
-func _ready() -> void:
-	_setup_scene()
-	_generate_map()
-	_setup_transitions()
-	_setup_buildings()
-	_setup_treasures()
-	_setup_npcs()
-	_setup_player()
-	_setup_camera()
-	_setup_controller()
+## ---- BaseVillage hooks ----
 
-	if SoundManager:
-		SoundManager.play_area_music("village")
-
-	exploration_ready.emit()
+func _get_area_id() -> String:
+	return "brasston_village"
 
 
-func _setup_scene() -> void:
-	tile_generator = TileGeneratorScript.new()
-	add_child(tile_generator)
+func _get_village_display_name() -> String:
+	return "Brasston"
 
-	tile_map = TileMapLayer.new()
-	tile_map.name = "TileMap"
-	tile_map.tile_set = tile_generator.create_tileset()
-	add_child(tile_map)
 
-	transitions = Node2D.new()
-	transitions.name = "Transitions"
-	add_child(transitions)
+func _get_music_area_id() -> String:
+	return "brasston_village"
 
-	buildings = Node2D.new()
-	buildings.name = "Buildings"
-	add_child(buildings)
 
-	treasures = Node2D.new()
-	treasures.name = "Treasures"
-	add_child(treasures)
+func _get_map_pixel_size() -> Vector2i:
+	return Vector2i(MAP_WIDTH * TILE_SIZE, MAP_HEIGHT * TILE_SIZE)
 
-	npcs = Node2D.new()
-	npcs.name = "NPCs"
-	add_child(npcs)
+
+func _get_save_point_position() -> Vector2:
+	return Vector2(10 * TILE_SIZE,10 * TILE_SIZE)
+
+
+func _get_player_spawn_fallback() -> Vector2:
+	return Vector2(416, 480)
 
 
 func _generate_map() -> void:
@@ -97,24 +57,53 @@ func _generate_map() -> void:
 	# X = exit path (cobblestone gate leading out)
 	# Each row is exactly MAP_WIDTH (22) characters
 	var map_data: Array[String] = [
-		"WWWWWWWWWWWWWWWWWWWWWW",
-		"WppfpppppppppppppfpppW",
-		"WpHHHppdgggdpBBBppfppW",
-		"WpHHHppdgFgdpBBBpppppW",
-		"WpHHHppdgFgdpBBBppfppW",
-		"WppppppdgggdppppppeppW",
-		"WppfpppddddddppppeeppW",
-		"WpppIIIpppppppppeeepW",
-		"WpppIIIpppppppppeppppW",
-		"WpppIIIppfppppppeppppW",
-		"WpppppppppppppppppfppW",
-		"WpfpppHHHpppppHHHppppW",
-		"WppppHHHpppppHHHppfppW",
-		"WpppppppppppppppppeppW",
-		"WppfpppppppppppppeppppW",
-		"WpppppppppppppppppfppW",
-		"WppfpppXXXXXXppppppppW",
-		"WWWWWWWWWWWWWWWWWWWWWW",
+		"WWWWWWWWWWWWWWWWWWWWWWWWWW",
+		"W........................W",
+		"W............^^..........W",
+		"W..ppfpppppppppppppfppp..W",
+		"W..pHHHppdgggdpBBBppfpp..W",
+		"W..pHHHppdgFgdpBBBppppp..W",
+		"W..pHHHppdgFgdpBBBppfpp..W",
+		"W..ppppppdgggdppppppepp..W",
+		"W..ppfpppddddddppppeepp..W",
+		"W..pppIIIpppppppppeeepW..W",
+		"W..pppIIIpppppppppepppp..W",
+		"W..pppIIIppfppppppepppp..W",
+		"W..pppppppppppppppppfpp..W",
+		"W..pfpppHHHpppppHHHpppp..W",
+		"W..ppppHHHpppppHHHppfpp..W",
+		"W..pppppppppppppppppepp..W",
+		"W..ppfpppppppppppppeppp..W",
+		"W..pppppppppppppppppfpp..W",
+		"W..ppfpppXXXXXXpppppppp..W",
+		"W........................W",
+		"W........................W",
+		"WWWWWWWWWWWWWWWWWWWWWWWWWW",
+	]
+	# Elevation (CrossCode pass, 2026-09-06): tier 1 is row 1, the Work Deck, a brass catwalk over the market; row 0 matches row 1's digit so the outer wall doesn't paint a spurious lip; row 2 on is tier 0, the mostly-blocked boundary except the '^' stair.
+	var height_data: Array[String] = [
+		"11111111111111111111111111",
+		"11111111111111111111111111",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
 	]
 
 	for y in range(MAP_HEIGHT):
@@ -122,34 +111,50 @@ func _generate_map() -> void:
 		for x in range(MAP_WIDTH):
 			var char = row[x] if x < row.length() else "W"
 			var tile_type = _char_to_tile_type(char)
-			var atlas_coords = _get_atlas_coords(tile_type)
+			var atlas_coords = _atlas_for(tile_type, Vector2i(x, y))
 			tile_map.set_cell(Vector2i(x, y), 0, atlas_coords)
 
 			if char == "X" and not spawn_points.has("exit"):
 				spawn_points["exit"] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
 
-	spawn_points["entrance"] = Vector2(11 * TILE_SIZE, 13 * TILE_SIZE)
+	_build_derived_layers(map_data, height_data)
+
+	spawn_points["entrance"] = Vector2(13 * TILE_SIZE,15 * TILE_SIZE)
 	spawn_points["default"] = spawn_points["entrance"]
 	spawn_points["brasston_entrance"] = spawn_points["entrance"]
+	spawn_points["work_deck"] = Vector2(9 * TILE_SIZE + TILE_SIZE / 2, 1 * TILE_SIZE + TILE_SIZE / 2)
+
+
+## W3 paints with its own world's generator — CrossCode phase 4
+func _get_tile_generator() -> Node:
+	return SteampunkTileGeneratorScript.new()
+
+
+func _get_fringe_ground_types() -> Array:
+	return [SteampunkTileGeneratorScript.TileType.PARK_GRASS]
+
+
+## Work Deck cliffs read as riveted brass platform sides, not rock — brass/copper/dark-wood palette.
+func _get_cliff_palette() -> Dictionary:
+	return {
+		"face_dark": Color(0.22, 0.15, 0.09), "face_mid": Color(0.52, 0.36, 0.16), "face_light": Color(0.76, 0.58, 0.28),
+		"lip": Color(0.85, 0.68, 0.32), "lip_shadow": Color(0.16, 0.11, 0.06, 0.85),
+		"stair_tread": Color(0.62, 0.47, 0.22), "stair_riser": Color(0.30, 0.20, 0.10),
+	}
 
 
 func _char_to_tile_type(char: String) -> int:
 	match char:
-		"W": return TileGeneratorScript.TileType.WALL
-		"H", "I", "B": return TileGeneratorScript.TileType.WALL
-		"p": return TileGeneratorScript.TileType.VILLAGE_PATH
-		"d": return TileGeneratorScript.TileType.VILLAGE_DIRT
-		"f": return TileGeneratorScript.TileType.VILLAGE_FLOWER
-		"e": return TileGeneratorScript.TileType.VILLAGE_HEDGE
-		"F": return TileGeneratorScript.TileType.WATER
-		"g": return TileGeneratorScript.TileType.VILLAGE_GRASS
-		"X": return TileGeneratorScript.TileType.VILLAGE_PATH
-		_: return TileGeneratorScript.TileType.VILLAGE_PATH
-
-
-func _get_atlas_coords(tile_type: int) -> Vector2i:
-	var tile_id = TileGeneratorScript.get_tile_id(tile_type)
-	return Vector2i(tile_id % 5, tile_id / 5)
+		"W": return SteampunkTileGeneratorScript.TileType.BUILDING_WALL
+		"H", "I", "B": return SteampunkTileGeneratorScript.TileType.BUILDING_WALL
+		"p": return SteampunkTileGeneratorScript.TileType.CONCRETE
+		"d": return SteampunkTileGeneratorScript.TileType.ASPHALT
+		"f": return SteampunkTileGeneratorScript.TileType.PARK_GRASS
+		"e": return SteampunkTileGeneratorScript.TileType.FENCE
+		"F": return SteampunkTileGeneratorScript.TileType.WATER_FEATURE
+		"g": return SteampunkTileGeneratorScript.TileType.PARK_GRASS
+		"X": return SteampunkTileGeneratorScript.TileType.CONCRETE
+		_: return SteampunkTileGeneratorScript.TileType.CONCRETE
 
 
 func _setup_transitions() -> void:
@@ -158,30 +163,17 @@ func _setup_transitions() -> void:
 	exit_trans.target_map = "steampunk_overworld"
 	exit_trans.target_spawn = "brasston_entrance"
 	exit_trans.require_interaction = false
-	exit_trans.position = spawn_points.get("exit", Vector2(320, 544))
+	exit_trans.position = spawn_points.get("exit", Vector2(384, 608))
 	_setup_transition_collision(exit_trans, Vector2(TILE_SIZE * 6, TILE_SIZE))
 	exit_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(exit_trans)
-
-
-func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
-	trans.collision_layer = 4
-	trans.collision_mask = 2
-	trans.monitoring = true
-	trans.monitorable = true
-
-	var collision = CollisionShape2D.new()
-	var shape = RectangleShape2D.new()
-	shape.size = size
-	collision.shape = shape
-	trans.add_child(collision)
 
 
 func _setup_buildings() -> void:
 	# === INN (The Cog & Pillow) ===
 	var inn = VillageInnScript.new()
 	inn.inn_name = "The Cog & Pillow"
-	inn.position = Vector2(4.5 * TILE_SIZE, 8 * TILE_SIZE)
+	inn.position = Vector2(6.5 * TILE_SIZE,10 * TILE_SIZE)
 	buildings.add_child(inn)
 
 	# === BLACKSMITH (Gearwright's Forge) ===
@@ -189,8 +181,45 @@ func _setup_buildings() -> void:
 	forge.shop_name = "Gearwright's Forge"
 	forge.shop_type = VillageShopScript.ShopType.BLACKSMITH
 	forge.keeper_name = "Vesper"
-	forge.position = Vector2(14 * TILE_SIZE, 3 * TILE_SIZE)
+	forge.position = Vector2(16 * TILE_SIZE,5 * TILE_SIZE)
 	buildings.add_child(forge)
+
+	# === ITEM SHOP (Brasston Provisions) ===
+	var provisions = VillageShopScript.new()
+	provisions.shop_name = "Brasston Provisions"
+	provisions.shop_type = VillageShopScript.ShopType.ITEM
+	provisions.keeper_name = "Ratchet"
+	provisions.position = Vector2(11 * TILE_SIZE,5 * TILE_SIZE)
+	buildings.add_child(provisions)
+
+	# === MAGIC (The Whistling Kettle) ===
+	var magic = VillageShopScript.new()
+	magic.shop_name = "The Whistling Kettle"
+	magic.shop_type = VillageShopScript.ShopType.BLACK_MAGIC
+	magic.keeper_name = "Alembic"
+	magic.position = Vector2(13 * TILE_SIZE,10 * TILE_SIZE)
+	buildings.add_child(magic)
+
+	# === CLOCKWORK LOFT DOOR ===
+	# Magister Clavis's retired-clockmaker workshop. Foreshadows the
+	# SteampunkMechanism dungeon (W3).
+	# (7,11) was inside the house block below the door — player spawned in a wall.
+	spawn_points["clockwork_loft_exit"] = Vector2(9 * TILE_SIZE + TILE_SIZE / 2, 11 * TILE_SIZE + TILE_SIZE / 2)
+	_add_interior_door("ClockworkLoftDoor", "brasston_clockwork_loft", "Enter Clockwork Loft", Vector2(9 * TILE_SIZE,12 * TILE_SIZE))
+	# === REDUNDANCY ARCHIVE DOOR ===
+	# South face of the BBB building (cols 13-15, rows 2-5) — where Brasston keeps the spares.
+	spawn_points["archive_exit"] = Vector2(16 * TILE_SIZE,8.5 * TILE_SIZE)
+	_add_interior_door("RedundancyArchiveDoor", "brasston_redundancy_archive", "Enter Redundancy Archive", Vector2(16 * TILE_SIZE,7.5 * TILE_SIZE))
+
+	# === WORK DECK LIFT === brass elevator up to the Work Deck, an alternative to the row2 stair.
+	var lift = VillageElevatorScript.create(VillageElevatorScript.Style.BRASS,
+		Vector2(9 * TILE_SIZE,3 * TILE_SIZE), Vector2(9 * TILE_SIZE,1 * TILE_SIZE), "steam_hiss")
+	lift.name = "WorkDeckLift"
+	buildings.add_child(lift)
+
+	# === WORK DECK DRESSING === lamp + crate atop the catwalk, clear of the stair (cols12-13) and lift (col9)
+	_add_lamp_post(Vector2i(5, 1))
+	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(20, 1))
 
 
 func _setup_treasures() -> void:
@@ -200,7 +229,7 @@ func _setup_treasures() -> void:
 	chest1.contents_type = "item"
 	chest1.contents_id = "ether"
 	chest1.contents_amount = 2
-	chest1.position = Vector2(1.5 * TILE_SIZE, 8 * TILE_SIZE)
+	chest1.position = Vector2(3.5 * TILE_SIZE,10 * TILE_SIZE)
 	treasures.add_child(chest1)
 
 	# Hidden under market stall corner — merchant's emergency fund
@@ -208,7 +237,7 @@ func _setup_treasures() -> void:
 	chest2.chest_id = "brasston_chest_2"
 	chest2.contents_type = "gold"
 	chest2.gold_amount = 200
-	chest2.position = Vector2(19 * TILE_SIZE, 2 * TILE_SIZE)
+	chest2.position = Vector2(21 * TILE_SIZE,4 * TILE_SIZE)
 	treasures.add_child(chest2)
 
 	# Tucked in the alley behind the clockwork buildings
@@ -216,13 +245,13 @@ func _setup_treasures() -> void:
 	chest3.chest_id = "brasston_chest_3"
 	chest3.contents_type = "equipment"
 	chest3.contents_id = "lucky_charm"
-	chest3.position = Vector2(19 * TILE_SIZE, 12 * TILE_SIZE)
+	chest3.position = Vector2(21 * TILE_SIZE,14 * TILE_SIZE)
 	treasures.add_child(chest3)
 
 
 func _setup_npcs() -> void:
 	# Sprocket the Tinkerer (upgrade hints)
-	var sprocket = _create_npc("Sprocket", "villager", Vector2(8 * TILE_SIZE, 5 * TILE_SIZE), [
+	var sprocket = _create_npc("Sprocket", "villager", Vector2(10 * TILE_SIZE,7 * TILE_SIZE), [
 		"Ahh, a newcomer! Welcome to BRASSTON, city of perpetual motion!",
 		"Everything here runs on steam, gears, and sheer stubbornness.",
 		"You know, your equipment could be AUGMENTED.",
@@ -230,10 +259,12 @@ func _setup_npcs() -> void:
 		"Vesper at the Forge does excellent work. Tell her Sprocket sent you.",
 		"She'll still overcharge you, but at least she'll be polite about it."
 	])
+	# Without this the quest is UNSTARTABLE — QuestSystem matches npc_id to giver.npc_id.
+	sprocket.npc_id = "sprocket_brasston"
 	npcs.add_child(sprocket)
 
 	# Lamplighter (night-shift, shadows in the pipes)
-	var lamplighter = _create_npc("Clem the Lamplighter", "guard", Vector2(17 * TILE_SIZE, 10 * TILE_SIZE), [
+	var lamplighter = _create_npc("Clem the Lamplighter", "guard", Vector2(19 * TILE_SIZE,12 * TILE_SIZE), [
 		"I work the night shift. Keeps the gas lamps burning.",
 		"Most folk don't notice me. That's fine.",
 		"But I notice THINGS. Things in the pipes.",
@@ -241,10 +272,12 @@ func _setup_npcs() -> void:
 		"The engineers say it's 'pressure differentials'.",
 		"I say something LIVES down there. Been there since the gears were new."
 	])
+	# Without this the quest is UNSTARTABLE — QuestSystem matches npc_id to giver.npc_id.
+	lamplighter.npc_id = "clem_lamplighter"
 	npcs.add_child(lamplighter)
 
 	# Steam Merchant (exotic goods)
-	var merchant = _create_npc("Madame Orrery", "mysterious", Vector2(10 * TILE_SIZE, 11 * TILE_SIZE), [
+	var merchant = _create_npc("Madame Orrery", "mysterious", Vector2(12 * TILE_SIZE,13 * TILE_SIZE), [
 		"You have the look of someone who travels between worlds.",
 		"Interesting. Most people don't even know there ARE other worlds.",
 		"I sell goods from all of them. Steampunk. Suburban. Medieval.",
@@ -252,10 +285,58 @@ func _setup_npcs() -> void:
 		"A potion here might be called 'Gatorade' somewhere else.",
 		"Same effect, different branding."
 	])
+	# Without this the quest is UNSTARTABLE — QuestSystem matches npc_id to giver.npc_id.
+	merchant.npc_id = "madame_orrery_w3"
 	npcs.add_child(merchant)
 
+	# Cornelius Hartwick — before_the_regulator step-3 emitter AND its step-4 turn-in.
+	# Alias display name: the notebook's last page is what identifies him, not a puzzle.
+	var repairman = _create_npc("Clock Repairman", "villager", Vector2(4 * TILE_SIZE,16 * TILE_SIZE), [
+		"Small things only. Clocks, mostly. Nothing that runs the city.",
+		"I used to work on something larger. It stopped being mine.",
+		"No, I don't take commissions. I fix what people bring me and I don't ask where it came from.",
+	])
+	repairman.npc_id = "cornelius_hartwick"
+	npcs.add_child(repairman)
+
+	_add_quest_examine_point("world3_delay_in_everything",
+		"quest_world3_delay_in_everything_gear_examined", "[A] Examine the gear cluster",
+		"The replacement gear is one unit too large. Exactly one gear-tooth of lag per cycle — seven seconds, every cycle, for six months. Too precise to be an accident.",
+		"A maintenance panel stands open at Sprocket's shoulder. The cluster inside turns a half-beat behind the rest.",
+		Vector2(11 * TILE_SIZE,7 * TILE_SIZE))
+	_add_quest_examine_point("world3_delay_in_everything",
+		"quest_world3_delay_in_everything_record_found", "[A] Read the depot record",
+		"The entry is there, in the margin, in a clerk's hand: 'substituted — standard gauge unavailable. Approved: Calibrant Logistics.' The order date precedes the maintenance incident.",
+		"The supply depot's ledger, open to a page of part numbers nobody has needed to read in six months.",
+		Vector2(13 * TILE_SIZE,14 * TILE_SIZE))
+
+	# Clem's route: 5 stops on the map's own `f` gas-lamp tiles, at the landmarks his offer names
+	# (mill, Copper Street twice, skip the arcade, bridge, back to the arcade). Each reads as a
+	# local oddity; only Brigadier Flux at step 3 names the shape they make.
+	var _lamp_idle := "A gas lamp on Clem's route, unlit at this hour. Its base is grated at the foot."
+	_add_quest_route_point("world3_lamplighters_logic",
+		"quest_world3_lamplighters_logic_route_documented", 1, 5, "[A] Document the mill lamp",
+		"The mill lamp. Its base is warm — warmer than burning gas explains, and warmest on the side facing AWAY from the flame.",
+		_lamp_idle, Vector2(5 * TILE_SIZE,3 * TILE_SIZE))
+	_add_quest_route_point("world3_lamplighters_logic",
+		"quest_world3_lamplighters_logic_route_documented", 2, 5, "[A] Document the Copper Street lamp",
+		"Copper Street, east side. The grate at the lamp's foot exhales on a slow count, like something upstream of it is breathing.",
+		_lamp_idle, Vector2(20 * TILE_SIZE,4 * TILE_SIZE))
+	_add_quest_route_point("world3_lamplighters_logic",
+		"quest_world3_lamplighters_logic_route_documented", 3, 5, "[A] Document the second Copper Street lamp",
+		"Copper Street again, further down, on the side you started from. The same slow count — offset by exactly the walk between the two.",
+		_lamp_idle, Vector2(20 * TILE_SIZE,17 * TILE_SIZE))
+	_add_quest_route_point("world3_lamplighters_logic",
+		"quest_world3_lamplighters_logic_route_documented", 4, 5, "[A] Document the bridge lamp",
+		"The bridge lamp, reached after the arcade is skipped entirely. This base is cold. Cold enough to bead water out of dry air.",
+		_lamp_idle, Vector2(5 * TILE_SIZE,8 * TILE_SIZE))
+	_add_quest_route_point("world3_lamplighters_logic",
+		"quest_world3_lamplighters_logic_route_documented", 5, 5, "[A] Document the arcade lamp",
+		"The arcade lamp, come back to last, exactly as Clem said. Warm again — the same warmth as the mill, at the opposite end of town.",
+		_lamp_idle, Vector2(5 * TILE_SIZE,18 * TILE_SIZE))
+
 	# Clockwork Cat (mechanical pet, responds with sound effects)
-	var clockcat = _create_npc("Cogsworth", "villager", Vector2(5 * TILE_SIZE, 13 * TILE_SIZE), [
+	var clockcat = _create_npc("Cogsworth", "villager", Vector2(7 * TILE_SIZE,15 * TILE_SIZE), [
 		"*whirr*",
 		"*click click*",
 		"*purr-tick-purr-tick*",
@@ -266,7 +347,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(clockcat)
 
 	# Retired Engineer (city history / exposition)
-	var engineer = _create_npc("Brigadier Flux", "elder", Vector2(17 * TILE_SIZE, 5 * TILE_SIZE), [
+	var engineer = _create_npc("Brigadier Flux", "elder", Vector2(19 * TILE_SIZE,7 * TILE_SIZE), [
 		"Fifty-three years I served the Brasston Steam Authority.",
 		"I BUILT the Great Gear Fountain in the square. By hand. With my own wrenches.",
 		"This city was wilderness when I arrived. Mud and shadows.",
@@ -275,91 +356,3 @@ func _setup_npcs() -> void:
 		"But I'm retired. That's someone else's problem now."
 	])
 	npcs.add_child(engineer)
-
-
-func _create_npc(npc_name: String, npc_type: String, pos: Vector2, dialogue: Array) -> Area2D:
-	var npc = OverworldNPCScript.new()
-	npc.npc_name = npc_name
-	npc.npc_type = npc_type
-	npc.position = pos
-	npc.dialogue_lines = dialogue
-	return npc
-
-
-func _setup_player() -> void:
-	player = OverworldPlayerScript.new()
-	player.name = "Player"
-	player.position = spawn_points.get("default", Vector2(352, 416))
-	player.set_job("fighter")
-	add_child(player)
-
-
-func _setup_camera() -> void:
-	camera = Camera2D.new()
-	camera.name = "Camera"
-	player.add_child(camera)
-	camera.make_current()
-
-	camera.zoom = Vector2(2.0, 2.0)
-
-	var map_pixel_width = MAP_WIDTH * TILE_SIZE
-	var map_pixel_height = MAP_HEIGHT * TILE_SIZE
-
-	camera.limit_left = 0
-	camera.limit_top = 0
-	camera.limit_right = map_pixel_width
-	camera.limit_bottom = map_pixel_height
-
-	camera.position_smoothing_enabled = true
-	camera.position_smoothing_speed = 8.0
-
-
-func _setup_controller() -> void:
-	controller = OverworldControllerScript.new()
-	controller.name = "Controller"
-	controller.player = player
-	controller.encounter_enabled = false
-	controller.current_area_id = "brasston_village"
-
-	controller.set_area_config("brasston_village", true, 0.0, [])
-
-	controller.battle_triggered.connect(_on_battle_triggered)
-	controller.menu_requested.connect(_on_menu_requested)
-
-	add_child(controller)
-
-
-func _on_transition_triggered(target_map: String, spawn_point: String) -> void:
-	area_transition.emit(target_map, spawn_point)
-
-
-func _on_battle_triggered(enemies: Array) -> void:
-	battle_triggered.emit(enemies)
-
-
-func _on_menu_requested() -> void:
-	pass
-
-
-func spawn_player_at(spawn_name: String) -> void:
-	if spawn_points.has(spawn_name):
-		player.teleport(spawn_points[spawn_name])
-		player.reset_step_count()
-
-
-func resume() -> void:
-	controller.resume_exploration()
-
-
-func pause() -> void:
-	controller.pause_exploration()
-
-
-func set_player_job(job_name: String) -> void:
-	if player:
-		player.set_job(job_name)
-
-
-func set_player_appearance(leader) -> void:
-	if player and player.has_method("set_appearance_from_leader"):
-		player.set_appearance_from_leader(leader)

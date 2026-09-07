@@ -68,7 +68,7 @@ SUNO_API = "https://studio-api.prod.suno.com"
 SUNO_CREATE_URL = "https://suno.com/create"
 
 POLL_INTERVAL = 10
-MAX_POLL_SEC = 300
+MAX_POLL_SEC = 600
 
 # Human-like timing ranges (milliseconds)
 HUMAN_THINK_MS = (1500, 3500)       # Pause before acting (reading the UI)
@@ -88,6 +88,29 @@ def _human_delay(range_ms: tuple[int, int]) -> None:
 def _jittered_poll_interval() -> float:
     """Return a jittered poll interval (8-14s instead of fixed 10s)."""
     return POLL_INTERVAL + random.uniform(-2, 4)
+
+
+def _fetch_feed_page0(jwt: str) -> list[dict]:
+    """Read /api/feed/?page=0 with the given Bearer JWT — the stable clip-list
+    endpoint used as an interceptor fallback (per suno-ai msg 2496). Returns
+    an empty list on any failure so callers can degrade gracefully."""
+    try:
+        r = requests.get(
+            "https://studio-api-prod.suno.com/api/feed/?page=0",
+            headers={
+                "Authorization": f"Bearer {jwt}",
+                "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36",
+            },
+            timeout=15,
+        )
+        if r.status_code != 200:
+            return []
+        data = r.json()
+        if isinstance(data, list):
+            return data
+        return data.get("clips", data.get("data", []))
+    except Exception:
+        return []
 
 WORLD_SUFFIXES = {
     1: "medieval", 2: "suburban", 3: "steampunk",
@@ -400,7 +423,7 @@ def build_batch_queue(world_arg: str | int | None, shared: bool) -> list[dict]:
 def convert_to_ogg(src: Path, dest: Path) -> None:
     print(f"  Converting to OGG: {dest.name}")
     result = subprocess.run(
-        ["ffmpeg", "-y", "-i", str(src), "-c:a", "libvorbis", "-q:a", "6", str(dest)],
+        ["ffmpeg", "-y", "-i", str(src), "-ac", "1", "-c:a", "libvorbis", "-b:a", "96k", str(dest)],
         capture_output=True, text=True,
     )
     if result.returncode != 0:
@@ -515,13 +538,47 @@ class SunoBrowser:
         # Inject cookies
         self._inject_cookies()
 
+        # DIAGNOSTIC: dump auth-relevant cookies actually on the context after
+        # inject. Distinguishes stale-profile-cookie / domain-mismatch / inject-
+        # timing failures when the browser reports "not logged in". (Per suno-ai
+        # msg 2508 Step A.)
+        try:
+            ctx_cookies = self._ctx.cookies("https://suno.com/create")
+            for c in ctx_cookies:
+                if c.get("name") in ("__session", "__client", "__client_uat"):
+                    val = str(c.get("value", ""))[:40]
+                    print(f"  cookie {c.get('name'):<20} domain={c.get('domain'):<15} exp={c.get('expires', '?')} val={val}...")
+        except Exception as _e:
+            print(f"  (cookie diag skipped: {_e})")
+
         # Network interceptor
         self._page.on("response", self._on_response)
+
+        # Cover native dialog() prompts (rare, but if Suno ever adds one it
+        # would block wait_for_selector indefinitely).
+        self._page.on("dialog", lambda d: d.dismiss())
 
         # Navigate
         print("  Navigating to suno.com/create...")
         self._page.goto(SUNO_CREATE_URL, wait_until="domcontentloaded")
-        self._page.wait_for_timeout(5000)
+
+        # Pre-dismiss any modal that renders BEFORE React hydrates the form
+        # (Privacy Preference Center is the recurring one — sits on top of
+        # the whole page, blocks textarea render + all interactions until
+        # dismissed). Doing this early avoids the wait_for_selector spinning
+        # on a form that literally cannot render until we clear the modal.
+        self._page.wait_for_timeout(1500)
+        if self._page.locator('[role="dialog"], [aria-modal="true"]').count() > 0:
+            self._page.keyboard.press("Escape")
+            self._page.wait_for_timeout(500)
+
+        # Wait for React hydration by waiting for the actual form to appear
+        # rather than a fixed sleep — warm-profile runs often hydrate in 2s,
+        # cold-profile runs can take 12s+; a fixed sleep can't cover both.
+        try:
+            self._page.wait_for_selector("textarea", timeout=20000)
+        except Exception:
+            pass  # fall through to the ta_count check below
 
         ta_count = self._page.locator("textarea").count()
         if ta_count == 0:
@@ -603,7 +660,12 @@ class SunoBrowser:
             pass
 
     def _type_human(self, page, selector: str, value: str, index: int = 0) -> bool:
-        """Type text character-by-character with human-like timing."""
+        """Type text character-by-character with human-like timing, then blur.
+
+        Blur at the end is critical for react-hook-form (Suno's stack): validation
+        fires on blur, not on input events. Without blur, Create-click no-ops
+        silently even though the DOM shows the typed text.
+        """
         try:
             el = page.locator(selector).nth(index)
             if not el.is_visible():
@@ -619,19 +681,39 @@ class SunoBrowser:
             # Type with per-character jitter
             for char in value:
                 el.type(char, delay=random.randint(HUMAN_TYPE_CHAR_MS[0], HUMAN_TYPE_CHAR_MS[1]))
+            # Blur to release focus so react-hook-form validates the field.
+            page.wait_for_timeout(50)
+            el.evaluate("el => { el.blur(); el.dispatchEvent(new FocusEvent('focusout', {bubbles: true})); }")
             return True
         except Exception:
             return False
 
     def _react_fill(self, selector: str, value: str, index: int = 0) -> bool:
-        """Fill a React controlled input/textarea — tries human typing first, falls back to JS."""
+        """Fill a React controlled input/textarea — tries human typing first, falls back to JS.
+
+        Supports Playwright's `:visible` pseudo-class: if present, the JS fallback
+        strips it from the selector and filters for visible elements in-browser.
+        """
         page = self._page
         # Try human-like typing first (more natural for hCaptcha)
         if self._type_human(page, selector, value, index):
             return True
-        # Fallback: JS injection for React controlled inputs
+        # JS fallback — strip :visible (not valid CSS) and filter in JS.
+        visible_only = ":visible" in selector
+        raw_sel = selector.replace(":visible", "")
+        escaped_sel = raw_sel.replace("'", "\\'").replace('"', '\\"')
         return page.evaluate(f"""(value) => {{
-            const els = document.querySelectorAll('{selector}');
+            let els = Array.from(document.querySelectorAll("{escaped_sel}"));
+            if ({str(visible_only).lower()}) {{
+                els = els.filter(el => {{
+                    const r = el.getBoundingClientRect();
+                    if (r.width <= 0 || r.height <= 0) return false;
+                    const s = getComputedStyle(el);
+                    if (s.display === 'none' || s.visibility === 'hidden') return false;
+                    if (el.closest('[hidden], [aria-hidden="true"]')) return false;
+                    return true;
+                }});
+            }}
             if (els.length <= {index}) return false;
             const el = els[{index}];
             const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
@@ -646,15 +728,182 @@ class SunoBrowser:
             }}
             el.dispatchEvent(new Event('input', {{ bubbles: true }}));
             el.dispatchEvent(new Event('change', {{ bubbles: true }}));
+            // Blur trap: react-hook-form validates on blur. Without these two
+            // events the form's internal state stays "empty" even though the
+            // DOM shows the value, and Create silently no-ops.
+            el.blur();
+            el.dispatchEvent(new FocusEvent('blur', {{ bubbles: true }}));
+            el.dispatchEvent(new FocusEvent('focusout', {{ bubbles: true }}));
             return true;
         }}""", value)
 
+    # Style-textarea locators, first hit wins.
+    #
+    # maxlength is FIRST because it is the only stable anchor (2026-07-26):
+    # Suno replaced static placeholder labels with rotating example copy
+    # ("90s hip hop, piano ballad, soulful" -> "accordions, post punk, ..."),
+    # so every placeholder/aria selector below is now dead on the live UI.
+    # The char caps are semantic and distinguish all three fields:
+    #     1000 = Styles   3000 = Lyrics   500 = simple-mode prompt
+    # Placeholder variants kept as fallback in case Suno reverts.
+    STYLE_SELECTORS = (
+        'textarea[maxlength="1000"]',
+        'textarea[placeholder*="Style" i]:visible',
+        'textarea[placeholder*="style of music" i]:visible',
+        'textarea[aria-label*="Style" i]:visible',
+        'textarea[data-testid*="style" i]:visible',
+    )
+
+    def _dismiss_blocking_overlays(self) -> tuple[bool, str]:
+        """Dismiss any REAL modal that gates the form. Returns (dismissed, diag_text).
+
+        The .css-re0txm Emotion hash is used across regular UI panels (including
+        the Lyrics content section itself), so a naive class-match false-flags
+        the Lyrics panel as an overlay. Only real modals carry role="dialog"
+        or aria-modal="true" — this scope filters to those.
+
+        Ladder per suno-ai msg 2511: Escape -> named dismiss buttons.
+        Terms-acceptance overlays need real user consent (surfaced as diag_text
+        so the caller can escalate to a headed --login flow).
+        """
+        page = self._page
+        modal_sel = '[role="dialog"], [aria-modal="true"]'
+        try:
+            if page.locator(modal_sel).count() == 0:
+                return True, ""
+            modal = page.locator(modal_sel).first
+            txt = (modal.text_content(timeout=2000) or "").strip()
+        except Exception:
+            return True, ""
+        low = txt.lower()
+        print(f"  Modal detected ({len(txt)} chars): {txt[:200]}")
+
+        TERMS_MARKERS = ("timbaland", "creator terms", "artist collab",
+                         "terms of service", "i agree", "accept the terms")
+        if any(m in low for m in TERMS_MARKERS):
+            print("  Modal looks like a terms-acceptance flow — NOT auto-clicking.")
+            return False, txt
+
+        try:
+            page.keyboard.press("Escape")
+            page.wait_for_selector(modal_sel, state="hidden", timeout=2000)
+            print("  Modal dismissed via Escape")
+            return True, ""
+        except Exception:
+            pass
+
+        for label in ("Got it", "Continue", "Dismiss", "Close", "Not now", "Later", "Skip"):
+            try:
+                btn = page.locator(f'{modal_sel} button:has-text("{label}")').first
+                if btn.count() > 0:
+                    btn.click(force=True, timeout=2000)
+                    page.wait_for_selector(modal_sel, state="hidden", timeout=2000)
+                    print(f"  Modal dismissed via '{label}' button")
+                    return True, ""
+            except Exception:
+                continue
+
+        try:
+            x_btn = page.locator(
+                f'{modal_sel} [aria-label*="close" i], {modal_sel} [aria-label*="dismiss" i]'
+            ).first
+            if x_btn.count() > 0:
+                x_btn.click(force=True, timeout=2000)
+                page.wait_for_selector(modal_sel, state="hidden", timeout=2000)
+                print("  Modal dismissed via X-icon")
+                return True, ""
+        except Exception:
+            pass
+
+        print("  Modal dismissal ladder exhausted — no known dismiss path")
+        return False, txt
+
+    def _ensure_instrumental_mode(self) -> bool:
+        """Suno v5.5 exposes Write | Prompt | Instrumental as a segmented button
+        group. Mode is profile-sticky in the persistent Chromium profile:
+        once set via a headed --login session, subsequent headless runs
+        inherit it. State is inferred from a confirmation banner ("This song
+        will be instrumental...") that replaces the lyrics textarea.
+
+        HAPPY PATH (profile is Instrumental-sticky): banner probe returns
+        true immediately, we skip the click. This is what suno-ai msg 2515
+        recommends — avoids the isTrusted trap where React's onClick guards
+        on real hardware events and no-ops on Playwright's synthetic clicks.
+
+        FALLBACK: try a keyboard-nav toggle (Tab-focus + Enter fires trusted
+        events, unlike force-click). If that also whiffs, raise so the caller
+        knows to prompt for a fresh headed --login.
+        """
+        page = self._page
+        banner_probe = "() => document.body.innerText.toLowerCase().includes('will be instrumental')"
+        if page.evaluate(banner_probe):
+            print("  Instrumental mode: already active (profile-sticky)")
+            return True
+
+        # Profile drifted — try the trusted-input path before giving up.
+        print("  Instrumental mode: NOT active. Attempting keyboard-nav toggle...")
+        inst_btn = page.locator("button").filter(has_text=re.compile(r"^\s*Instrumental\s*$"))
+        try:
+            inst_btn.first.wait_for(timeout=3000)
+            inst_btn.first.focus()
+            page.keyboard.press("Enter")
+            page.wait_for_function(banner_probe, timeout=3000)
+            print("  Instrumental mode: keyboard-nav Enter toggled + verified")
+            _human_delay(HUMAN_FIELD_GAP_MS)
+            return True
+        except Exception:
+            pass
+
+        raise RuntimeError(
+            "Instrumental mode not active and toggle attempts failed. "
+            "Run `uv run tools/suno_api.py --login`, click Instrumental in the "
+            "browser, close the window normally. The mode persists across runs."
+        )
+
+    def _locate_style_textarea(self):
+        """Return the Style textarea locator via attribute selectors, or None.
+
+        Falls back to exclusion heuristic only if no attribute selector hits —
+        the newer v5.5 UI adds a Song Description textarea that neither contains
+        "lyrics" nor "instrumental" in its placeholder, and the exclusion path
+        would grab THAT as style.
+        """
+        page = self._page
+        for sel in self.STYLE_SELECTORS:
+            loc = page.locator(sel).first
+            try:
+                if loc.count() and loc.is_visible():
+                    return loc, sel
+            except Exception:
+                continue
+        return None, None
+
     def _fill_form(self, title: str, style: str, instrumental: bool = True) -> None:
-        """Fill the create form with human-like timing and interaction."""
+        """Fill the create form with human-like timing and interaction.
+
+        Order matters: Instrumental toggle FIRST (mode flip re-renders the Lyrics
+        section), then Style, then Title. Each fill verifies its input_value
+        after settle — a silent fill failure now fails loud pre-Create instead
+        of burning credits on a bad gen.
+        """
         page = self._page
 
         # Simulate "looking at the page" before interacting
         _human_delay(HUMAN_THINK_MS)
+
+        # Dismiss any modal/tooltip overlay BEFORE touching the form — Suno
+        # ships onboarding + terms-acceptance overlays whose transparent divs
+        # intercept every downstream click. If the dismiss ladder can't clear
+        # it (terms-acceptance always needs real user consent), raise so the
+        # caller can escalate to a headed --login flow instead of burning
+        # credits on a broken run.
+        ok, overlay_txt = self._dismiss_blocking_overlays()
+        if not ok:
+            raise RuntimeError(
+                "_fill_form: undismissable overlay blocks the form. Run "
+                "`uv run tools/suno_api.py --login` in headed mode to accept "
+                f"the terms/tour manually. Overlay text: {overlay_txt[:200]!r}"
+            )
 
         # Enable Advanced mode
         adv_btn = page.locator("button").filter(has_text=re.compile(r"^Advanced$"))
@@ -669,28 +918,97 @@ class SunoBrowser:
 
         _human_delay(HUMAN_FIELD_GAP_MS)
 
-        # Clear lyrics (blank for instrumental) and fill style
-        self._react_fill("textarea", "", index=0)  # Lyrics
-        _human_delay(HUMAN_FIELD_GAP_MS)
-        if self._react_fill("textarea", style, index=1):
+        # 1) Instrumental mode FIRST — flipping re-renders the Lyrics section.
+        if instrumental:
+            self._ensure_instrumental_mode()
+
+        # 2) Style — attribute-based locate, exclusion heuristic as last resort.
+        style_loc, style_sel = self._locate_style_textarea()
+        style_filled = False
+        if style_loc is not None:
+            # Real click + keystrokes, NOT the React-setter path (2026-07-26).
+            # _react_fill's JS fallback writes .value and dispatches input/change,
+            # which Suno's controlled component ignores — it reported success while
+            # the app saw an empty field, so Create stayed disabled and no POST ever
+            # fired. Genuine key events commit properly. Verified: typing 22 chars
+            # into the maxlength=1000 textarea flipped Create from disabled to enabled.
+            try:
+                style_loc.click(timeout=8000)
+                page.wait_for_timeout(150)
+                style_loc.press("Control+a")
+                style_loc.press("Delete")
+                style_loc.type(style, delay=random.randint(8, 18))
+                page.wait_for_timeout(300)
+                style_filled = True
+            except Exception as e:
+                print(f"  Warning: style click+type failed ({e}); trying setter path")
+                style_filled = self._react_fill(style_sel, style, index=0)
+        else:
+            # Fallback: exclusion heuristic (kept as safety net, but now runs
+            # only when no attribute selector matches, which itself is a signal
+            # something changed in the UI).
+            visible_tas = page.locator("textarea:visible")
+            v_count = visible_tas.count()
+            for i in range(v_count):
+                ph = (visible_tas.nth(i).get_attribute("placeholder") or "").lower()
+                if "lyrics" in ph or "instrumental" in ph or "description" in ph:
+                    continue
+                if self._react_fill("textarea:visible", style, index=i):
+                    style_filled = True
+                    break
+        style_ok = False
+        if style_filled:
             print(f"  Style: {style[:60]}...")
+            page.wait_for_timeout(250)
+            # Read the DOM value directly. input_value() proved unreliable here —
+            # it returned 0 chars on a field the app had genuinely accepted, which
+            # made the old warning fire on healthy runs and hid the real failure.
+            actual = ""
+            try:
+                actual = str(page.evaluate(
+                    """() => { const t = document.querySelector('textarea[maxlength="1000"]');
+                               return t ? (t.value || '') : ''; }"""
+                ) or "")
+            except Exception:
+                pass
+            style_ok = bool(actual.strip())
+            if not style_ok:
+                print(f"  Warning: style field reads empty after fill (wanted {len(style)} chars)")
         else:
             print("  Warning: could not fill style textarea")
 
+        # Create's disabled state is the app's own verdict on whether the form is
+        # valid — a far better signal than any field read. If it never enables, the
+        # POST cannot fire, so surface that here rather than after a 180s timeout.
+        try:
+            create_state = page.evaluate(
+                """() => { const b = [...document.querySelectorAll('button')]
+                              .find(x => /create/i.test(x.textContent || ''));
+                           return b ? !b.disabled : null; }"""
+            )
+            if create_state is False:
+                print("  Warning: Create still DISABLED after fills — form validation rejected input")
+            elif create_state is True:
+                print("  Create button enabled — form accepted")
+        except Exception:
+            pass
+
         _human_delay(HUMAN_FIELD_GAP_MS)
 
-        # Title — try human typing first, fall back to JS
+        # 3) Title — try human typing first, fall back to JS.
+        title_sels = ("input[placeholder*='itle']", "input[placeholder*='ong']",
+                      "input[placeholder*='ame']")
         title_filled = False
-        for sel in ("input[placeholder*='itle']", "input[placeholder*='ong']",
-                    "input[placeholder*='ame']"):
+        title_loc = None
+        for sel in title_sels:
             if self._type_human(page, sel, title, index=0):
                 print(f"  Title: {title}")
                 title_filled = True
+                title_loc = page.locator(sel).first
                 break
-        # Fallback: JS injection
         if not title_filled:
-            for sel in ("input[placeholder*='itle']", "input[placeholder*='ong']",
-                        "input[placeholder*='ame']"):
+            # Fallback: JS injection (now with blur events per _react_fill).
+            for sel in title_sels:
                 result = page.evaluate(f"""(value) => {{
                     const el = document.querySelector("{sel}");
                     if (!el) return false;
@@ -701,14 +1019,37 @@ class SunoBrowser:
                     else el.value = value;
                     el.dispatchEvent(new Event('input', {{ bubbles: true }}));
                     el.dispatchEvent(new Event('change', {{ bubbles: true }}));
+                    el.blur();
+                    el.dispatchEvent(new FocusEvent('blur', {{ bubbles: true }}));
+                    el.dispatchEvent(new FocusEvent('focusout', {{ bubbles: true }}));
                     return true;
                 }}""", title)
                 if result:
                     print(f"  Title: {title}")
                     title_filled = True
+                    title_loc = page.locator(sel).first
                     break
+        title_ok = False
         if not title_filled:
             print("  Warning: title input not found")
+        elif title_loc is not None:
+            page.wait_for_timeout(150)
+            try:
+                actual = title_loc.input_value() or ""
+                title_ok = bool(actual.strip())
+                if actual.strip() != title.strip():
+                    print(f"  Warning: title verify mismatch (got {actual!r}, want {title!r})")
+            except Exception:
+                pass
+
+        # Fail-hard when BOTH fields verify empty — guaranteed catastrophic gen.
+        # Single-field misses stay warn-continue (Suno DOM race can lie without
+        # the fill actually failing); both-empty means Suno will run on defaults.
+        if not title_ok and not style_ok:
+            raise RuntimeError(
+                "_fill_form: both title AND style verify empty after fill — "
+                "aborting pre-Create to avoid burning credits on a defaults-only gen"
+            )
 
         _human_delay(HUMAN_FIELD_GAP_MS)
 
@@ -760,6 +1101,20 @@ class SunoBrowser:
             for c in resp.get("clips", []):
                 known_clip_ids.add(c.get("id", ""))
 
+        # Also snapshot feed-page-0 IDs as a stable diff-set for the feed-poll
+        # fallback below — the network interceptor can be blind when Suno
+        # rotates audio-URL patterns, but /api/feed/?page=0 is stable.
+        feed_snapshot_ids: set[str] = set()
+        feed_jwt = get_fresh_jwt()
+        if feed_jwt:
+            for c in _fetch_feed_page0(feed_jwt):
+                cid = c.get("id", "")
+                if cid:
+                    feed_snapshot_ids.add(cid)
+        # Wall-clock timestamp for the created_at guard: rules out ghost clips
+        # from prior failed attempts that land late with the same title.
+        gen_t0 = time.time()
+
         # Navigate if needed (stay on create page for session persistence)
         if "/create" not in page.url:
             page.goto(SUNO_CREATE_URL, wait_until="domcontentloaded")
@@ -771,8 +1126,12 @@ class SunoBrowser:
         print(f"  Create clicked, waiting for generation...")
 
         # Wait for generation API response — extract only NEW clip IDs
-        clip_ids = []
-        deadline = time.monotonic() + 30
+        # Headed mode gets a long window so a human can solve a visual captcha
+        clip_ids: list[str] = []
+        detect_sec = 30 if self._headless else 180
+        if not self._headless:
+            print("  Headed mode: solve any captcha in the browser window (waiting up to 180s)...")
+        deadline = time.monotonic() + detect_sec
         while time.monotonic() < deadline:
             page.wait_for_timeout(2000)
             # Check all responses for NEW clip IDs we haven't seen before
@@ -784,14 +1143,62 @@ class SunoBrowser:
             if clip_ids:
                 # Suno creates 2 clips per generation — take the first 2 new ones
                 clip_ids = clip_ids[:2]
-                print(f"  New clips: {clip_ids}")
+                print(f"  New clips (interceptor): {clip_ids}")
                 break
 
         if not clip_ids:
-            print("  WARNING: No new clip IDs detected. Retrying with page reload...")
-            page.reload(wait_until="domcontentloaded")
-            page.wait_for_timeout(5000)
-            return None
+            # Interceptor blind — try feed-poll fallback before giving up.
+            # Suno's stable REST feed surfaces clips even when the audio-URL
+            # heuristic misses them (URL patterns drift with UI changes).
+            print("  Interceptor timed out — falling back to feed-poll (up to 180s)...")
+            fb_jwt = get_fresh_jwt() or feed_jwt
+            if fb_jwt is None:
+                print("  WARNING: no JWT for feed-poll fallback; treating as failure.")
+                return None
+            fb_deadline = time.monotonic() + 180
+            fb_clip: dict | None = None
+            title_lc = (title or "").strip().lower()
+            while time.monotonic() < fb_deadline:
+                time.sleep(5)
+                for c in _fetch_feed_page0(fb_jwt):
+                    cid = c.get("id", "")
+                    if not cid or cid in feed_snapshot_ids:
+                        continue  # existed before Create click
+                    if c.get("status") != "complete":
+                        continue  # placeholder audio_url during streaming
+                    got_title = (c.get("title") or "").strip().lower()
+                    if not title_lc:
+                        continue
+                    if not (title_lc in got_title or got_title in title_lc):
+                        continue
+                    # created_at guard: rule out ghost clips from prior failed
+                    # attempts that Suno completes late with the same title.
+                    ca = c.get("created_at", "")
+                    if ca:
+                        try:
+                            from datetime import datetime as _dt
+                            ts = _dt.fromisoformat(ca.replace("Z", "+00:00")).timestamp()
+                            if ts < gen_t0 - 5:  # 5s clock skew allowance
+                                continue
+                        except ValueError:
+                            pass  # unparseable timestamp — fall through on title-only
+                    fb_clip = c
+                    break
+                if fb_clip:
+                    break
+            if fb_clip is None:
+                print("  WARNING: feed-poll fallback found no matching clip.")
+                page.reload(wait_until="domcontentloaded")
+                page.wait_for_timeout(5000)
+                return None
+            print(f"  Feed-poll matched clip: {fb_clip.get('id', '?')[:12]} ({fb_clip.get('title')!r})")
+            return {
+                "audio_url": fb_clip["audio_url"],
+                "media_urls": fb_clip.get("media_urls") or [],
+                "title": fb_clip.get("title", title),
+                "duration": float(fb_clip.get("duration") or 0),
+                "id": fb_clip.get("id", ""),
+            }
 
         # Poll for completion via REST API using ONLY our clip IDs
         jwt = get_fresh_jwt()
@@ -821,21 +1228,48 @@ class SunoBrowser:
                     feed = poll_resp.json()
                     if not isinstance(feed, list):
                         feed = feed.get("clips", feed.get("data", []))
+                    # Suno returns 2 clips per generation and they can differ
+                    # wildly in length (measured 2026-07-26: 37s vs 146s from
+                    # one prompt). Returning the first to COMPLETE is biased
+                    # toward the SHORT one — shorter audio finishes rendering
+                    # sooner — so the pipeline was systematically picking the
+                    # worst take. A 24s "boss theme" was the symptom.
+                    # Collect all finished clips, then choose by duration.
+                    done: list[dict] = []
+                    failed = 0
                     for clip in feed:
                         cid = clip.get("id", "")
                         if cid not in clip_ids:
                             continue  # Skip clips not from this generation
                         if clip.get("status") == "complete" and clip.get("audio_url"):
-                            print(f"  Complete! ({elapsed}s) clip={cid[:12]}")
-                            return {
-                                "audio_url": clip["audio_url"],
-                                "title": clip.get("title", title),
-                                "duration": float(clip.get("duration") or 0),
-                                "id": cid,
-                            }
+                            done.append(clip)
                         elif clip.get("status") in ("error", "failed"):
+                            failed += 1
                             print(f"  Clip {cid[:12]} failed: {clip.get('error_message', '?')}")
-                            return None
+
+                    if failed and failed >= len(clip_ids):
+                        return None  # every sibling errored
+
+                    # Wait for the whole set while time remains, so the choice is
+                    # real rather than whoever happened to finish first.
+                    all_settled = (len(done) + failed) >= len(clip_ids)
+                    time_left = poll_deadline - time.monotonic()
+                    if done and (all_settled or time_left <= 45):
+                        best = max(done, key=lambda c: float(c.get("duration") or 0))
+                        if len(done) > 1:
+                            spread = ", ".join(
+                                f"{c.get('id','')[:8]}={float(c.get('duration') or 0):.0f}s"
+                                for c in done)
+                            print(f"  {len(done)} clips ready ({spread}) -> taking longest")
+                        print(f"  Complete! ({elapsed}s) clip={best.get('id','')[:12]} "
+                              f"dur={float(best.get('duration') or 0):.0f}s")
+                        return {
+                            "audio_url": best["audio_url"],
+                            "media_urls": best.get("media_urls") or [],
+                            "title": best.get("title", title),
+                            "duration": float(best.get("duration") or 0),
+                            "id": best.get("id", ""),
+                        }
             except Exception as e:
                 print(f"  Poll error: {e}")
 
@@ -892,6 +1326,78 @@ class SunoBrowser:
 # Main
 # ---------------------------------------------------------------------------
 
+def resolve_media_url(clip: dict) -> tuple:
+    """Pick a fetchable audio URL for a clip, newest delivery path first.
+
+    Suno moved audio to CloudFront and left `audio_url` as a literal sentinel --
+    https://studio-api.prod.suno.com/api/forbidden -- so the old field is dead for
+    every clip, old and new. media_urls carries the live entries; the mp3 one 403s
+    and m4a-opus serves 200. Returns (url, suffix).
+    """
+    prefer = ("m4a-opus", "m4a", "opus", "wav")
+    media = clip.get("media_urls") or []
+    for want in prefer:
+        for m in media:
+            if m.get("content_type") == want and m.get("url"):
+                url = m["url"]
+                return url, os.path.splitext(url.split("?")[0])[1] or ".m4a"
+    for m in media:
+        if m.get("url"):
+            url = m["url"]
+            return url, os.path.splitext(url.split("?")[0])[1] or ".m4a"
+    legacy = clip.get("audio_url") or ""
+    if legacy and "forbidden" not in legacy:
+        return legacy, ".mp3"
+    cid = clip.get("id") or ""
+    if cid:
+        try:
+            jwt = get_fresh_jwt()
+            r = requests.get(f"{SUNO_API}/api/clip/{cid}", headers=suno_headers(jwt), timeout=20)
+            if r.status_code == 200:
+                fresh = r.json()
+                if fresh.get("media_urls"):
+                    return resolve_media_url({"media_urls": fresh["media_urls"]})
+        except Exception as exc:
+            print(f"  clip re-fetch failed: {exc}")
+    return "", ""
+
+
+def align_import_loops(track_keys: list) -> None:
+    """Make each new track's .import loop flag agree with its manifest entry.
+
+    Godot writes loop=false into a freshly created .import, while every generated
+    manifest entry declares loop=True. That mismatch hit 9 of 9 tracks generated on
+    2026-08-26/27 and was aligned by hand each time. The runtime only survives it
+    because _try_play_from_manifest overrides the .import value -- any code path that
+    loads the OGG directly gets a boss theme that stops mid-fight.
+    """
+    if not track_keys:
+        return
+    print("  Importing so Godot writes the .import sidecars...")
+    subprocess.run(
+        ["godot", "--headless", "--audio-driver", "Dummy", "--import", "--quit"],
+        cwd=str(PROJECT_ROOT), capture_output=True, timeout=900,
+    )
+    manifest = json.loads((PROJECT_ROOT / "data" / "music_manifest.json").read_text())["tracks"]
+    fixed, unresolved = [], []
+    for key in track_keys:
+        entry = manifest.get(key) or {}
+        if not entry.get("loop") or not entry.get("file"):
+            continue
+        imp = PROJECT_ROOT / (entry["file"] + ".import")
+        if not imp.exists():
+            unresolved.append(key)
+            continue
+        text = imp.read_text()
+        if "loop=false" in text:
+            imp.write_text(text.replace("loop=false", "loop=true", 1))
+            fixed.append(key)
+    if fixed:
+        print(f"  Aligned .import loop=true: {', '.join(fixed)}")
+    if unresolved:
+        print(f"  WARNING: no .import found for {', '.join(unresolved)} -- run --import and re-check")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Generate Cowardly Irregular music via Suno (fully automated)",
@@ -899,7 +1405,8 @@ def main() -> None:
 
     # Generation args
     gen = parser.add_argument_group("generation")
-    gen.add_argument("--track-id", metavar="ID", help="Track ID")
+    gen.add_argument("--track-id", metavar="ID", nargs="+", default=None,
+                     help="Track ID(s) — multiple ride one browser session (one captcha solve)")
     gen.add_argument("--title", default="")
     gen.add_argument("--style", default="")
     gen.add_argument("--prompt", default="")
@@ -1009,16 +1516,24 @@ def main() -> None:
         queue = []
     else:
         world = int(args.world) if args.world else None
-        title, style, prompt = args.title, args.style, args.prompt
-        if world:
-            template = load_world_template(world, args.track_id)
-            title = title or template.get("title", "")
-            style = style or template.get("style", "")
-            prompt = prompt or template.get("prompt", "")
-        # Single track: check if pinned
-        if is_pinned(args.track_id):
-            die(f"Track '{args.track_id}' is pinned. Use --unpin first.")
-        queue = [{"track_id": args.track_id, "title": title, "style": style, "prompt": prompt}]
+        queue = []
+        for track_id in args.track_id:
+            title, style, prompt = args.title, args.style, args.prompt
+            if world:
+                template = load_world_template(world, track_id)
+                title = title or template.get("title", "")
+                style = style or template.get("style", "")
+                prompt = prompt or template.get("prompt", "")
+            else:
+                shared = load_prompts().get("shared_tracks", {})
+                if track_id in shared:
+                    entry = shared[track_id]
+                    title = title or entry.get("title_template", "")
+                    style = style or entry.get("style", "")
+                    prompt = prompt or entry.get("prompt", "")
+            if is_pinned(track_id):
+                die(f"Track '{track_id}' is pinned. Use --unpin first.")
+            queue.append({"track_id": track_id, "title": title, "style": style, "prompt": prompt})
 
     if not args.login and not queue:
         print("Nothing to generate.")
@@ -1044,6 +1559,7 @@ def main() -> None:
         return
 
     succeeded, failed = 0, []
+    generated_keys: list = []
     try:
         for i, track in enumerate(queue, 1):
             # Inter-track delay (skip for first track)
@@ -1077,17 +1593,47 @@ def main() -> None:
                 continue
 
             # Download and convert
-            audio_url = result["audio_url"]
             track_key = track["track_id"]
-            raw_path = args.output_dir / f"{track_key}.mp3"
             ogg_path = args.output_dir / f"{track_key}.ogg"
 
+            audio_url, _dl_suffix = resolve_media_url(result)
+            if not audio_url:
+                print(f"  FAILED: no fetchable media URL for {track_key} "
+                      f"(audio_url={str(result.get('audio_url'))[:60]!r})")
+                failed.append(track["track_id"])
+                continue
+            raw_path = args.output_dir / f"{track_key}{_dl_suffix or '.m4a'}"
+
             print(f"  Downloading: {audio_url[:80]}...")
-            resp = requests.get(audio_url, timeout=120, stream=True)
+            # The CDN returns 403 AccessDenied for a short window after a clip reports
+            # complete -- the object is not public yet. The old code never checked the
+            # status and wrote the XML error body to a .mp3, so the failure surfaced as
+            # "ffmpeg: Failed to find two consecutive MPEG audio frames" three layers
+            # downstream. Check, retry, and fail naming the real cause.
             raw_path.parent.mkdir(parents=True, exist_ok=True)
-            with raw_path.open("wb") as fh:
-                for chunk in resp.iter_content(65536):
-                    fh.write(chunk)
+            dl_ok = False
+            for attempt in range(1, 6):
+                resp = requests.get(audio_url, timeout=120, stream=True)
+                if resp.status_code == 200:
+                    with raw_path.open("wb") as fh:
+                        for chunk in resp.iter_content(65536):
+                            fh.write(chunk)
+                    head = raw_path.open("rb").read(5)
+                    if head.startswith(b"<?xml") or head.startswith(b"<Error"):
+                        print(f"  Attempt {attempt}: CDN returned an error document, not audio")
+                        raw_path.unlink(missing_ok=True)
+                    else:
+                        dl_ok = True
+                        break
+                else:
+                    print(f"  Attempt {attempt}: HTTP {resp.status_code} from the CDN")
+                if attempt < 5:
+                    time.sleep(attempt * 10)
+            if not dl_ok:
+                print(f"  FAILED: audio never became downloadable for {track_key} "
+                      f"(clip exists on Suno; credits already spent -- re-run to re-fetch)")
+                failed.append(track["track_id"])
+                continue
             print(f"  Saved: {raw_path} ({raw_path.stat().st_size // 1024} KB)")
 
             convert_to_ogg(raw_path, ogg_path)
@@ -1117,11 +1663,13 @@ def main() -> None:
                 subprocess.run(["mpv", "--no-video", str(ogg_path)])
 
             succeeded += 1
+            generated_keys.append(track_key)
 
     finally:
         browser.close()
 
     print(f"\n{'=' * 60}")
+    align_import_loops(generated_keys)
     print(f"DONE: {succeeded}/{len(queue)} succeeded")
     if failed:
         print(f"Failed: {', '.join(failed)}")

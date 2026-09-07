@@ -12,7 +12,7 @@ dest_files=["res://.godot/imported/battle_slime.ogg-86c23f9c788db3b57a8d6616e97e
 
 [params]
 
-loop=false
+loop=true
 loop_offset=0
 bpm=0
 beat_count=0

@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://dtfn465d8wgjp"
+path="res://.godot/imported/boss_curator_medieval.ogg-54ee46504e1af23162bd98520c5ada93.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/boss_curator_medieval.ogg"
+dest_files=["res://.godot/imported/boss_curator_medieval.ogg-54ee46504e1af23162bd98520c5ada93.oggvorbisstr"]
 
 [params]
 

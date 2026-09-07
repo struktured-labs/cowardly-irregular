@@ -29,8 +29,8 @@ const SLOTS = ["Weapon", "Armor", "Accessory"]
 ## Style
 const BG_COLOR = Color(0.05, 0.05, 0.1, 0.95)
 const PANEL_COLOR = Color(0.1, 0.1, 0.15)
-const BORDER_LIGHT = Color(0.7, 0.7, 0.85)
-const BORDER_SHADOW = Color(0.25, 0.25, 0.4)
+const BORDER_LIGHT = RetroPanel.BORDER_LIGHT
+const BORDER_SHADOW = RetroPanel.BORDER_SHADOW
 const SELECTED_COLOR = Color(0.2, 0.3, 0.5)
 const TEXT_COLOR = Color(1.0, 1.0, 1.0)
 const DISABLED_COLOR = Color(0.4, 0.4, 0.4)
@@ -40,30 +40,42 @@ const WEAPON_COLOR = Color(1.0, 0.6, 0.3)
 const ARMOR_COLOR = Color(0.5, 0.7, 1.0)
 const ACCESSORY_COLOR = Color(0.9, 0.5, 0.9)
 
+# Tick 211: stat display maps extracted to StatNames (src/ui/StatNames.gd) — same surfaces should display the same names. Local helpers below now delegate.
+
 
 func _ready() -> void:
 	call_deferred("_build_ui")
 
 
-func setup(target: Combatant, weapons: Array = [], armors: Array = [], accessories: Array = []) -> void:
+# Tick 210/211: long-form stat name with HP/MP acronym preservation. Delegates to StatNames (the shared map source-of-truth).
+func _stat_display_name(stat_name: String) -> String:
+	return StatNames.display_name(stat_name)
+
+
+# Tick 210/211: compact stat code for per-item comparison rows. Delegates to StatNames.
+func _stat_short_name(stat_name: String) -> String:
+	return StatNames.short_code(stat_name)
+
+
+## Lists default to null, NOT []. An empty list is a real answer ("you own
+## none") and must stay empty; only an omitted list falls back to the full
+## catalog. Passing [] used to be indistinguishable from passing nothing,
+## which is how the caller's omission silently offered every item in the game.
+func setup(target: Combatant, weapons = null, armors = null, accessories = null) -> void:
 	"""Initialize menu with character and available equipment"""
 	character = target
-	available_weapons = weapons
-	available_armors = armors
-	available_accessories = accessories
-
-	# If no equipment passed, use defaults from EquipmentSystem
-	if available_weapons.is_empty():
-		for weapon_id in EquipmentSystem.weapons:
-			available_weapons.append(weapon_id)
-	if available_armors.is_empty():
-		for armor_id in EquipmentSystem.armors:
-			available_armors.append(armor_id)
-	if available_accessories.is_empty():
-		for acc_id in EquipmentSystem.accessories:
-			available_accessories.append(acc_id)
+	available_weapons = weapons if weapons is Array else _all_catalog_ids(EquipmentSystem.weapons)
+	available_armors = armors if armors is Array else _all_catalog_ids(EquipmentSystem.armors)
+	available_accessories = accessories if accessories is Array else _all_catalog_ids(EquipmentSystem.accessories)
 
 	call_deferred("_build_ui")
+
+
+func _all_catalog_ids(catalog: Dictionary) -> Array:
+	var ids: Array = []
+	for item_id in catalog:
+		ids.append(item_id)
+	return ids
 
 
 func _build_ui() -> void:
@@ -257,27 +269,44 @@ func _create_slot_row(slot_index: int) -> Control:
 
 
 func _get_equipped_name(slot_index: int) -> String:
-	"""Get name of currently equipped item"""
+	## Tick 140: pre-fix an equipped item not found in EquipmentSystem
+	## (deleted entry, custom Scriptweaver item, save-format drift)
+	## rendered as "(empty)" — implying the slot was empty when it
+	## actually held something. Player couldn't tell whether their
+	## character was wearing armor or not. Now: fall back to
+	## ItemNameResolver for any non-empty-id case, so the player at
+	## least sees the item's id (prettified) instead of the
+	## misleading "(empty)".
 	if not character:
 		return "(empty)"
 
+	var equipped_id: String = ""
 	match slot_index:
-		0:  # Weapon
-			if character.equipped_weapon.is_empty():
+		0:
+			equipped_id = character.equipped_weapon
+			if equipped_id.is_empty():
 				return "(empty)"
-			var weapon = EquipmentSystem.get_weapon(character.equipped_weapon)
-			return weapon.get("name", "(empty)")
-		1:  # Armor
-			if character.equipped_armor.is_empty():
+			var weapon = EquipmentSystem.get_weapon(equipped_id)
+			if not weapon.is_empty():
+				return weapon.get("name", ItemNameResolver.resolve(equipped_id))
+		1:
+			equipped_id = character.equipped_armor
+			if equipped_id.is_empty():
 				return "(empty)"
-			var armor = EquipmentSystem.get_armor(character.equipped_armor)
-			return armor.get("name", "(empty)")
-		2:  # Accessory
-			if character.equipped_accessory.is_empty():
+			var armor = EquipmentSystem.get_armor(equipped_id)
+			if not armor.is_empty():
+				return armor.get("name", ItemNameResolver.resolve(equipped_id))
+		2:
+			equipped_id = character.equipped_accessory
+			if equipped_id.is_empty():
 				return "(empty)"
-			var acc = EquipmentSystem.get_accessory(character.equipped_accessory)
-			return acc.get("name", "(empty)")
+			var acc = EquipmentSystem.get_accessory(equipped_id)
+			if not acc.is_empty():
+				return acc.get("name", ItemNameResolver.resolve(equipped_id))
 
+	# Equipped id is non-empty but EquipmentSystem doesn't know it.
+	if not equipped_id.is_empty():
+		return ItemNameResolver.resolve(equipped_id)
 	return "(empty)"
 
 
@@ -314,10 +343,16 @@ func _create_stats_panel(panel_size: Vector2) -> Control:
 		return panel
 
 	# Stats display
+	# MDF pairs with MAG the way DEF pairs with ATK. It was the ONLY Combatant.MODDABLE_STATS entry
+	# with no display here, which mattered from 2026-07-29: magic_defense became a real stat and
+	# equipment gained the ability to modify ANY stat, so the comparison row — generic, driven off
+	# stat_mods — would print "+40 MDF" for a stat the panel beside it never showed. Delta visible,
+	# total invisible. The grid flows on stats.size(), so this needed content, not layout.
 	var stats = [
 		["ATK", character.attack],
 		["DEF", character.defense],
 		["MAG", character.magic],
+		["MDF", character.magic_defense],
 		["SPD", character.speed],
 		["HP", character.max_hp],
 		["MP", character.max_mp]
@@ -355,10 +390,10 @@ func _create_stats_panel(panel_size: Vector2) -> Control:
 		var mod_value = equip_mods[stat_name]
 		if mod_value != 0:
 			var mod_label = Label.new()
-			mod_label.text = "%s: %s%d" % [stat_name.capitalize(), "+" if mod_value > 0 else "", mod_value]
+			mod_label.text = "%s: %s%d" % [_stat_display_name(stat_name), "+" if mod_value > 0 else "", mod_value]
 			mod_label.position = Vector2(16, bonus_y)
 			mod_label.add_theme_font_size_override("font_size", 10)
-			mod_label.add_theme_color_override("font_color", POSITIVE_COLOR if mod_value > 0 else NEGATIVE_COLOR)
+			mod_label.add_theme_color_override("font_color", AccessibilityPalette.bonus() if mod_value > 0 else AccessibilityPalette.penalty())
 			panel.add_child(mod_label)
 			bonus_y += 16
 
@@ -401,9 +436,13 @@ func _create_items_panel(panel_size: Vector2) -> Control:
 	var item_height = 60
 	var max_visible = int((panel_size.y - 50) / item_height)
 
-	for i in range(min(items.size(), max_visible)):
-		var item_id = items[i]
-		var item_row = _create_item_row(item_id, i)
+	# Handle scroll offset so the selection always stays in view
+	var scroll_offset = max(0, selected_item_index - max_visible + 1)
+
+	for i in range(min(items.size() - scroll_offset, max_visible)):
+		var item_idx = i + scroll_offset
+		var item_id = items[item_idx]
+		var item_row = _create_item_row(item_id, item_idx)
 		item_row.position = Vector2(4, y_offset + i * item_height)
 		item_row.size = Vector2(panel_size.x - 8, item_height - 4)
 		panel.add_child(item_row)
@@ -450,33 +489,47 @@ func _create_item_row(item_id: String, index: int) -> Control:
 	row.add_child(cursor)
 
 	# Item name
+	## Tick 140: prefer canonical name from item_data when available;
+	## fall back to ItemNameResolver (canonical from any data source)
+	## before raw snake_case id. Affects equipment pool entries that
+	## came from external sources (chest drops via save-format drift,
+	## Scriptweaver custom items) — pre-fix those rendered as e.g.
+	## "iron_sword" instead of "Iron Sword".
 	var name_label = Label.new()
-	name_label.text = item_data.get("name", item_id)
+	name_label.text = item_data.get("name", ItemNameResolver.resolve(item_id))
 	name_label.position = Vector2(24, 4)
 	name_label.add_theme_font_size_override("font_size", 12)
 	name_label.add_theme_color_override("font_color", _get_slot_color(selected_slot))
 	row.add_child(name_label)
 
-	# Stat comparison
+	# Stat comparison (union of old + new stats so we catch drops from stats-only-on-old)
 	var stat_mods = item_data.get("stat_mods", {})
 	var current_mods = _get_current_equipped_mods()
+	var all_stats := {}
+	for s in stat_mods:
+		all_stats[s] = true
+	for s in current_mods:
+		all_stats[s] = true
 	var stat_text = ""
 	var positive_count = 0
 	var negative_count = 0
 
-	for stat_name in stat_mods:
-		var new_val = stat_mods[stat_name]
+	for stat_name in all_stats:
+		var new_val = stat_mods.get(stat_name, 0)
 		var current_val = current_mods.get(stat_name, 0)
 		var diff = new_val - current_val
 
 		if diff > 0:
-			stat_text += "+%d %s  " % [diff, stat_name.substr(0, 3).to_upper()]
+			stat_text += "+%d %s  " % [diff, _stat_short_name(stat_name)]
 			positive_count += 1
 		elif diff < 0:
-			stat_text += "%d %s  " % [diff, stat_name.substr(0, 3).to_upper()]
+			stat_text += "%d %s  " % [diff, _stat_short_name(stat_name)]
 			negative_count += 1
 
-	if stat_text.is_empty():
+	var special_text := _special_effects_summary(item_data)
+	if not special_text.is_empty():
+		stat_text += special_text
+	if stat_text.strip_edges().is_empty():
 		stat_text = "(no change)"
 
 	var stats_label = Label.new()
@@ -484,9 +537,9 @@ func _create_item_row(item_id: String, index: int) -> Control:
 	stats_label.position = Vector2(24, 20)
 	stats_label.add_theme_font_size_override("font_size", 10)
 	if positive_count > 0 and negative_count == 0:
-		stats_label.add_theme_color_override("font_color", POSITIVE_COLOR)
+		stats_label.add_theme_color_override("font_color", AccessibilityPalette.bonus())
 	elif negative_count > 0 and positive_count == 0:
-		stats_label.add_theme_color_override("font_color", NEGATIVE_COLOR)
+		stats_label.add_theme_color_override("font_color", AccessibilityPalette.penalty())
 	else:
 		stats_label.add_theme_color_override("font_color", TEXT_COLOR)
 	row.add_child(stats_label)
@@ -504,6 +557,25 @@ func _create_item_row(item_id: String, index: int) -> Control:
 		_on_equip_item_click.bind(index), _on_equip_item_hover.bind(index))
 
 	return row
+
+
+## Compact tokens for an item's special_effects so hidden value (elemental
+## damage, crit, on-hit procs) shows in the compare preview — not just raw
+## stat_mods. Empty string when the item has none. Appended to the stat line.
+func _special_effects_summary(item_data: Dictionary) -> String:
+	var se: Variant = item_data.get("special_effects", {})
+	if not (se is Dictionary) or (se as Dictionary).is_empty():
+		return ""
+	var tokens: Array[String] = []
+	for key in se:
+		tokens.append(_humanize_special_effect(str(key)))
+	return "  ✦ " + ", ".join(tokens) if not tokens.is_empty() else ""
+
+
+func _humanize_special_effect(key: String) -> String:
+	if key.ends_with("_damage_bonus"):
+		return key.trim_suffix("_damage_bonus").capitalize() + " Dmg"
+	return key.replace("_bonus", "").replace("_", " ").strip_edges().capitalize()
 
 
 func _get_current_equipped_mods() -> Dictionary:
@@ -569,6 +641,31 @@ func _handle_slot_input(event: InputEvent) -> void:
 		_close_menu()
 		get_viewport().set_input_as_handled()
 
+	# struktured 2026-09-06: "should be able to switch who ur equipping with L/R (or L2/R2)" — both map to battle_defer/battle_advance.
+	elif event.is_action_pressed("battle_defer") and not event.is_echo():
+		_cycle_character(-1)
+		get_viewport().set_input_as_handled()
+
+	elif event.is_action_pressed("battle_advance") and not event.is_echo():
+		_cycle_character(1)
+		get_viewport().set_input_as_handled()
+
+
+## Re-target the menu at the previous/next party member without leaving it. No-op solo or when the character is not in the party (a detached test combatant).
+func _cycle_character(dir: int) -> void:
+	var gl: Node = get_tree().root.get_node_or_null("GameLoop") if is_inside_tree() else null
+	var party: Array = gl.party if gl != null and "party" in gl else []
+	if party.size() < 2:
+		return
+	var idx: int = party.find(character)
+	if idx == -1:
+		return
+	character = party[wrapi(idx + dir, 0, party.size())]
+	mode = Mode.SLOT_SELECT
+	selected_item_index = 0
+	_build_ui()
+	SoundManager.play_ui("menu_move")
+
 
 func _handle_item_input(event: InputEvent) -> void:
 	"""Handle input in item selection mode"""
@@ -604,6 +701,34 @@ func _handle_item_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
+## GameLoop owns the shared equipment pool. Null outside a running game (tests, standalone menu harnesses) — callers fall back to a direct equip.
+func _gameloop() -> Node:
+	var tree: SceneTree = get_tree()
+	if tree == null or tree.root == null:
+		return null
+	return tree.root.get_node_or_null("GameLoop")
+
+
+## "weapon" / "armor" / "accessory" — the slot vocabulary GameLoop's pool API speaks.
+func _slot_key(slot_index: int) -> String:
+	match slot_index:
+		0: return "weapon"
+		1: return "armor"
+		2: return "accessory"
+	return ""
+
+
+## Re-read the pool after it changes so the list can't offer gear that is no longer owned (and does offer what was just swapped out).
+func _refresh_from_pool(gl: Node) -> void:
+	if gl == null or not ("equipment_pool" in gl):
+		return
+	var pool: Dictionary = gl.equipment_pool
+	available_weapons = (pool.get("weapons", []) as Array).duplicate()
+	available_armors = (pool.get("armors", []) as Array).duplicate()
+	available_accessories = (pool.get("accessories", []) as Array).duplicate()
+	selected_item_index = clampi(selected_item_index, 0, max(0, _get_available_items_for_slot().size() - 1))
+
+
 func _equip_selected_item() -> void:
 	"""Equip the selected item"""
 	var items = _get_available_items_for_slot()
@@ -613,13 +738,22 @@ func _equip_selected_item() -> void:
 	var item_id = items[selected_item_index]
 	var success = false
 
-	match selected_slot:
-		0:
-			success = EquipmentSystem.equip_weapon(character, item_id)
-		1:
-			success = EquipmentSystem.equip_armor(character, item_id)
-		2:
-			success = EquipmentSystem.equip_accessory(character, item_id)
+	# Route through the pool so the gear is CONSUMED and the replaced piece comes back. Equipping straight through EquipmentSystem left the pool untouched, so one purchased sword outfitted the whole party.
+	var gl: Node = _gameloop()
+	var slot_key: String = _slot_key(selected_slot)
+	if gl != null and gl.has_method("equip_from_pool") and slot_key != "":
+		success = gl.equip_from_pool(character, slot_key, item_id)
+		if success:
+			_refresh_from_pool(gl)
+
+	if not success:
+		match selected_slot:
+			0:
+				success = EquipmentSystem.equip_weapon(character, item_id)
+			1:
+				success = EquipmentSystem.equip_armor(character, item_id)
+			2:
+				success = EquipmentSystem.equip_accessory(character, item_id)
 
 	if success:
 		equipment_changed.emit(SLOTS[selected_slot].to_lower(), item_id)
@@ -640,6 +774,18 @@ func _unequip_slot() -> void:
 		0: slot_enum = EquipmentSystem.EquipSlot.WEAPON
 		1: slot_enum = EquipmentSystem.EquipSlot.ARMOR
 		2: slot_enum = EquipmentSystem.EquipSlot.ACCESSORY
+
+	# Return it to the shared pool instead of deleting it — a bare unequip destroyed the gear outright.
+	var gl: Node = _gameloop()
+	var slot_key: String = _slot_key(selected_slot)
+	if gl != null and gl.has_method("unequip_to_pool") and slot_key != "":
+		if gl.unequip_to_pool(character, slot_key):
+			_refresh_from_pool(gl)
+			equipment_changed.emit(SLOTS[selected_slot].to_lower(), "")
+			SoundManager.play_ui("menu_select")
+			mode = Mode.SLOT_SELECT
+			_build_ui()
+			return
 
 	if EquipmentSystem.unequip_slot(character, slot_enum):
 		equipment_changed.emit(SLOTS[selected_slot].to_lower(), "")

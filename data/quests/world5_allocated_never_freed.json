@@ -1,0 +1,75 @@
+{
+  "id": "world5_allocated_never_freed",
+  "title": "Allocated and Never Freed",
+  "world": 5,
+  "giver": {
+    "npc_id": "memory_leak_district",
+    "display_name": "The Stuttering District",
+    "location": {"map_id": "node_prime", "near": "residential_sector"},
+    "spawn_flag": ""
+  },
+  "description": "A district of Node Prime loads slower than the rest of the world. The frame rate stutters. Something is allocating without freeing, and the timestamps say it has been running since World 1. It started small. It's growing.",
+  "playstyle_tags": ["value_choice", "code_parable", "calibrant_tracked"],
+  "dialogue": {
+    "offer": [
+      {"speaker": "", "text": "The district hitches as the party walks — a held frame, a beat late, another held frame. Somewhere under the streets, something is keeping more than it can carry.", "theme": "narrator"},
+      {"speaker": "Mage", "text": "Memory leak. Something is allocating without freeing. It's growing.", "theme": "mage"},
+      {"speaker": "Mage", "text": "And it's old. Look at the timestamps — this has been running since we set foot in the first world.", "theme": "mage"}
+    ],
+    "accept": [
+      {"speaker": "Mage", "text": "Trace first, judge later. Whatever is hoarding this memory has been doing it for a very long time, very consistently. Consistency like that is usually love or usually a bug, and I've stopped assuming those are different.", "theme": "mage"}
+    ],
+    "decline": [
+      {"speaker": "", "text": "The district keeps stuttering. The allocation keeps growing. Somewhere, something keeps every detail, because no one ever told it to stop.", "theme": "narrator"}
+    ],
+    "in_progress": [
+      {"speaker": "Mage", "text": "The function is called remember_all(). Once per NPC encounter. It allocates a block for 'every detail of the interaction' and never frees it. Version 0.3 — older than everything except the goblin. This isn't a bug. Someone WANTED every interaction remembered. They just never designed the letting-go.", "theme": "mage"}
+    ],
+    "ready_to_turn_in": [
+      {"speaker": "Cached Memory", "text": "You resolved the allocation. I felt the district exhale. Come closer — tell me which way you chose.", "theme": "mysterious"}
+    ],
+    "complete": [
+      {"speaker": "Cached Memory", "text": "You came back. You saved the records. I have — I have all of them now. I know I didn't have room before. I have room now.", "theme": "mysterious"},
+      {"speaker": "Cached Memory", "text": "Thank you for making room.", "theme": "mysterious"}
+    ]
+  },
+  "objectives": [
+    {
+      "step": 1,
+      "description": "Diagnose the leak.",
+      "type": "custom",
+      "required_flag": "quest_world5_allocated_never_freed_leak_diagnosed",
+      "flag_on_complete": "quest_world5_allocated_never_freed_leak_diagnosed"
+    },
+    {
+      "step": 2,
+      "description": "Find where remember_all() came from — and why.",
+      "type": "custom",
+      "required_flag": "quest_world5_allocated_never_freed_origin_found",
+      "flag_on_complete": "quest_world5_allocated_never_freed_origin_found"
+    },
+    {
+      "step": 3,
+      "description": "Choose: free the memory, or build an archive before letting go.",
+      "type": "custom",
+      "required_flag": "quest_world5_allocated_never_freed_resolved",
+      "flag_on_complete": "quest_world5_allocated_never_freed_resolved"
+    },
+    {
+      "step": 4,
+      "description": "Tell the Cached Memory which way you chose.",
+      "type": "talk",
+      "target_npc": "cached_memory_w5",
+      "required_flag": "quest_world5_allocated_never_freed_resolved"
+    }
+  ],
+  "rewards": {
+    "gold": 0,
+    "exp": 450,
+    "items": [],
+    "job_variants": {}
+  },
+  "flag_on_complete": "quest_world5_allocated_never_freed_complete",
+  "cross_world_connection": "The Calibrant's adaptive system tracks the choice and references it in W6: 'You freed the memory. I would have archived it. We have different ideas about what's worth keeping.' / 'You archived everything. Even the things that seemed minor. I should have done that.'",
+  "_wiring_notes": "Step 3 is a VALUE CHOICE, not a skill check — two emitters, either sets _resolved plus its own path flag: (a) quest_world5_allocated_never_freed_archived — the hard path: Compiler writes an archival function from 3 components findable in the inner network (3 pickup interacts, then the archive interact); grants npc_interaction_log at the archive moment (item authored this batch — the largest single lore item in the game: every conversation, timestamped, one-line summaries), (b) quest_world5_allocated_never_freed_freed — the immediate path: free the allocation on the spot; grants a Compiler/Mage passive instead (slightly lower AP costs on scripted actions — engine promotion later, documented intent). COMPLETE dialogue above is the ARCHIVED variant; FREED variant for the cached memory node: 'I know. Some things have to be let go to make room. I understand. I'll hold what I can for as long as I can.' — wire as dialogue branch on the path flags. Both choices valid by design; no reward-size judgment between them. cached_memory_w5 = the Cached Memory node from the main quest (Chain B W5 Curator of the Cache's home). W6 Calibrant reference lines key on the path flags."
+}

@@ -1,85 +1,38 @@
-extends Node2D
+extends BaseVillage
 class_name EldertreeVillageScene
 
 ## EldertreeVillage - Elven treehouse village in the northern forest
 ## Features: Canopy Inn, Herb Garden (items), Training Hollow (weapons)
 
-const TileGeneratorScript = preload("res://src/exploration/TileGenerator.gd")
-const OverworldPlayerScript = preload("res://src/exploration/OverworldPlayer.gd")
-const OverworldControllerScript = preload("res://src/exploration/OverworldController.gd")
-const AreaTransitionScript = preload("res://src/exploration/AreaTransition.gd")
-const OverworldNPCScript = preload("res://src/exploration/OverworldNPC.gd")
 const VillageInnScript = preload("res://src/exploration/VillageInn.gd")
 const VillageShopScript = preload("res://src/exploration/VillageShop.gd")
 const TreasureChestScript = preload("res://src/exploration/TreasureChest.gd")
 
-signal exploration_ready()
-signal battle_triggered(enemies: Array)
-signal area_transition(target_map: String, spawn_point: String)
-
 ## Map dimensions (25x20 forest village)
-const MAP_WIDTH: int = 25
-const MAP_HEIGHT: int = 20
-const TILE_SIZE: int = 32
-
-## Scene components
-var tile_map: TileMapLayer
-var player: Node2D
-var camera: Camera2D
-var controller: Node
-var tile_generator: Node
-
-## Containers
-var transitions: Node2D
-var npcs: Node2D
-var buildings: Node2D
-var treasures: Node2D
-
-## Spawn points
-var spawn_points: Dictionary = {}
+const MAP_WIDTH: int = 30
+const MAP_HEIGHT: int = 24
 
 
-func _ready() -> void:
-	_setup_scene()
-	_generate_map()
-	_setup_transitions()
-	_setup_buildings()
-	_setup_treasures()
-	_setup_npcs()
-	_setup_player()
-	_setup_camera()
-	_setup_controller()
+## ---- BaseVillage hooks ----
 
-	if SoundManager:
-		SoundManager.play_area_music("village")
-
-	exploration_ready.emit()
+func _get_area_id() -> String:
+	return "eldertree_village"
 
 
-func _setup_scene() -> void:
-	tile_generator = TileGeneratorScript.new()
-	add_child(tile_generator)
+func _get_village_display_name() -> String:
+	return "Eldertree"
 
-	tile_map = TileMapLayer.new()
-	tile_map.name = "TileMap"
-	tile_map.tile_set = tile_generator.create_tileset()
-	add_child(tile_map)
 
-	transitions = Node2D.new()
-	transitions.name = "Transitions"
-	add_child(transitions)
+func _get_map_pixel_size() -> Vector2i:
+	return Vector2i(MAP_WIDTH * TILE_SIZE, MAP_HEIGHT * TILE_SIZE)
 
-	buildings = Node2D.new()
-	buildings.name = "Buildings"
-	add_child(buildings)
 
-	treasures = Node2D.new()
-	treasures.name = "Treasures"
-	add_child(treasures)
+func _get_save_point_position() -> Vector2:
+	return Vector2(14 * TILE_SIZE,10 * TILE_SIZE)
 
-	npcs = Node2D.new()
-	npcs.name = "NPCs"
-	add_child(npcs)
+
+func _get_player_spawn_fallback() -> Vector2:
+	return Vector2(448, 544)
 
 
 func _generate_map() -> void:
@@ -87,26 +40,57 @@ func _generate_map() -> void:
 	# W = wall, . = floor, T = tree, N = canopy inn, G = herb garden, H = training hollow
 	# X = exit
 	var map_data: Array[String] = [
-		"WWWWWWWWWWWWWWWWWWWWWWWWW",
-		"W.....T....T.....T......W",
-		"W..NNN..T.......HHH..T..W",
-		"W..NNN........T.HHH.....W",
-		"W..NNN..........HHH.....W",
-		"W.....T....T.............W",
-		"W..........T....T........W",
-		"W...T..GGG...............W",
-		"W......GGG.......T.......W",
-		"W......GGG...............W",
-		"W..T.........T...........W",
-		"W............T.....T.....W",
-		"W.....T..................W",
-		"W..T...........T.........W",
-		"W........................W",
-		"W...T..........T.........W",
-		"W........................W",
-		"W.......XXXXXX...........W",
-		"W.......XXXXXX...........W",
-		"WWWWWWWWWWWWWWWWWWWWWWWWW",
+		"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+		"W............................W",
+		"W............................W",
+		"W.......T....T.....T.........W",
+		"W....NNN..T.......HHH..T.....W",
+		"W....NNN........T.HHH........W",
+		"W....NNN..........HHH........W",
+		"W.......T....T...............W",
+		"W......./..../....T..........W",
+		"W.....T..GGG.................W",
+		"W........GGG.......T.........W",
+		"W........GGG.................W",
+		"W....T.........T.............W",
+		"W..............T.....T.......W",
+		"W.......T....................W",
+		"W....T...........T...........W",
+		"W............................W",
+		"W.....T..........T...........W",
+		"W............................W",
+		"W.........XXXXXX.............W",
+		"W.........XXXXXX.............W",
+		"W............................W",
+		"W............................W",
+		"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+	]
+	# Elevation (struktured's tree-trunk example, 2026-09-06): canopy (1) up in the branches / forest floor (0); the two '/' at row8 are trunk climbs
+	var height_data: Array[String] = [
+		"111111111111111111111111111111",
+		"111111111111111111111111111111",
+		"111111111111111111111111111111",
+		"111111111111111111111111111111",
+		"111111111111111111111111111111",
+		"111111111111111111111111111111",
+		"111111111111111111111111111111",
+		"111111111111111111111111111111",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
 	]
 
 	for y in range(MAP_HEIGHT):
@@ -120,7 +104,9 @@ func _generate_map() -> void:
 			if char == "X" and not spawn_points.has("exit"):
 				spawn_points["exit"] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
 
-	spawn_points["entrance"] = Vector2(12 * TILE_SIZE, 15 * TILE_SIZE)
+	_build_derived_layers(map_data, height_data)
+
+	spawn_points["entrance"] = Vector2(14 * TILE_SIZE,17 * TILE_SIZE)
 	spawn_points["default"] = spawn_points["entrance"]
 	spawn_points["eldertree_entrance"] = spawn_points["entrance"]
 
@@ -129,6 +115,7 @@ func _char_to_tile_type(char: String) -> int:
 	match char:
 		"W": return TileGeneratorScript.TileType.WALL
 		"T": return TileGeneratorScript.TileType.FOREST
+		"/": return TileGeneratorScript.TileType.FLOOR  # trunk-climb ground; elevation lives in height_data
 		_: return TileGeneratorScript.TileType.FLOOR
 
 
@@ -137,36 +124,43 @@ func _get_atlas_coords(tile_type: int) -> Vector2i:
 	return Vector2i(tile_id % 5, tile_id / 5)
 
 
+## Empty forces procedural cliffs — the shared medieval.png sheet art would otherwise outrank the bark palette below.
+func _get_cliff_sheet_key() -> String:
+	return ""
+
+
+## Bark-brown so the derived cliff faces at the canopy's edge read as roots/trunk, not stone.
+func _get_cliff_palette() -> Dictionary:
+	return {
+		"face_dark": Color(0.18, 0.11, 0.07),
+		"face_mid": Color(0.32, 0.20, 0.12),
+		"face_light": Color(0.46, 0.32, 0.18),
+		"lip": Color(0.55, 0.42, 0.24),
+		"lip_shadow": Color(0.14, 0.09, 0.05, 0.85),
+		"grass": Color(0.28, 0.46, 0.20),
+		"grass_light": Color(0.38, 0.56, 0.24),
+		"stair_tread": Color(0.42, 0.30, 0.16),
+		"stair_riser": Color(0.24, 0.15, 0.08),
+	}
+
+
 func _setup_transitions() -> void:
 	var exit_trans = AreaTransitionScript.new()
 	exit_trans.name = "Exit"
 	exit_trans.target_map = "overworld"
 	exit_trans.target_spawn = "eldertree_entrance"
 	exit_trans.require_interaction = false
-	exit_trans.position = spawn_points.get("exit", Vector2(352, 576))
+	exit_trans.position = spawn_points.get("exit", Vector2(416, 640))
 	_setup_transition_collision(exit_trans, Vector2(TILE_SIZE * 6, TILE_SIZE))
 	exit_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(exit_trans)
-
-
-func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
-	trans.collision_layer = 4
-	trans.collision_mask = 2
-	trans.monitoring = true
-	trans.monitorable = true
-
-	var collision = CollisionShape2D.new()
-	var shape = RectangleShape2D.new()
-	shape.size = size
-	collision.shape = shape
-	trans.add_child(collision)
 
 
 func _setup_buildings() -> void:
 	# === CANOPY INN ===
 	var inn = VillageInnScript.new()
 	inn.inn_name = "Canopy Inn"
-	inn.position = Vector2(3.5 * TILE_SIZE, 3 * TILE_SIZE)
+	inn.position = Vector2(5.5 * TILE_SIZE,5 * TILE_SIZE)
 	buildings.add_child(inn)
 
 	# === HERB GARDEN (Item Shop) ===
@@ -174,7 +168,7 @@ func _setup_buildings() -> void:
 	herb_garden.shop_name = "Herb Garden"
 	herb_garden.shop_type = VillageShopScript.ShopType.ITEM
 	herb_garden.keeper_name = "Thorn"
-	herb_garden.position = Vector2(8 * TILE_SIZE, 8 * TILE_SIZE)
+	herb_garden.position = Vector2(10 * TILE_SIZE,10 * TILE_SIZE)
 	buildings.add_child(herb_garden)
 
 	# === TRAINING HOLLOW (Weapon Shop) ===
@@ -182,8 +176,20 @@ func _setup_buildings() -> void:
 	training.shop_name = "Training Hollow"
 	training.shop_type = VillageShopScript.ShopType.BLACKSMITH
 	training.keeper_name = "Ranger Oak"
-	training.position = Vector2(19 * TILE_SIZE, 3 * TILE_SIZE)
+	training.position = Vector2(21 * TILE_SIZE,5 * TILE_SIZE)
 	buildings.add_child(training)
+
+	# === HOLLOW TREE DOOR ===
+	# One of the 'T' tiles (row 5 col 11) hides Greenleaf's sanctum.
+	# Player walks up to it and gets the 'Enter The Hollow' prompt.
+	# Spawn-back point is just south of the tree on walkable floor.
+	# Cell-centred on the floor tile under the trunk-climb; the old ramp-corner point touched derived cliff colliders (gate-29 spawn audit).
+	spawn_points["hollow_exit"] = Vector2(13 * TILE_SIZE + TILE_SIZE / 2, 9 * TILE_SIZE + TILE_SIZE / 2)
+	_add_interior_door("HollowTreeDoor", "eldertree_hollow", "Enter The Hollow", Vector2(13 * TILE_SIZE + TILE_SIZE / 2,7 * TILE_SIZE + TILE_SIZE / 2))
+	# === GRAFTING HOUSE DOOR ===
+	# South face of the GGG herb garden (cols 7-9, rows 7-9) — Marrow Root's workshop grows out of it.
+	spawn_points["grafting_exit"] = Vector2(10 * TILE_SIZE,12.5 * TILE_SIZE)
+	_add_interior_door("GraftingHouseDoor", "eldertree_grafting_house", "Enter Grafting House", Vector2(10 * TILE_SIZE,11.5 * TILE_SIZE))
 
 
 func _setup_treasures() -> void:
@@ -193,32 +199,55 @@ func _setup_treasures() -> void:
 	chest1.contents_type = "item"
 	chest1.contents_id = "ether"
 	chest1.contents_amount = 3
-	chest1.position = Vector2(6 * TILE_SIZE, 9 * TILE_SIZE)
+	chest1.position = Vector2(8 * TILE_SIZE,11 * TILE_SIZE)
 	treasures.add_child(chest1)
 
 	# Forest Amulet behind training grounds
 	var chest2 = TreasureChestScript.new()
 	chest2.chest_id = "eldertree_chest_2"
 	chest2.contents_type = "equipment"
-	chest2.contents_id = "forest_amulet"
-	chest2.position = Vector2(22 * TILE_SIZE, 2 * TILE_SIZE)
+	chest2.contents_id = "elven_cloak"
+	chest2.position = Vector2(24 * TILE_SIZE,4 * TILE_SIZE)
 	treasures.add_child(chest2)
 
 
 func _setup_npcs() -> void:
+	_place_masterite_tempo()
+
+	# Shared post-cave state check for Pip / Moss / Ivy branches. Same
+	# spawn-time pattern as Sandrift/Harmonia (village re-instances on
+	# entry; state refreshes on next visit). Gate = rat_king_defeated
+	# (news reaches Eldertree via forest birds — Ivy's post lines seed
+	# the lore: "News moves through the forest via the birds"). Thorn/
+	# Dash/Spore untouched — timeless-gag voices, no cave hook.
+	var _after_cave_gs = get_node_or_null("/root/GameState")
+	var _after_cave_done: bool = false
+	if _after_cave_gs:
+		_after_cave_done = bool(_after_cave_gs.game_constants.get("cutscene_flag_rat_king_defeated", false))
+
 	# Tutorial Fairy Pip (unwanted help)
-	var pip = _create_npc("Tutorial Fairy Pip", "villager", Vector2(12 * TILE_SIZE, 5 * TILE_SIZE), [
+	# Post-cave: melancholy turn — the player didn't need her hints. Faux-
+	# brave dignity about obsolescence. Closes on pivot to moss tutorial.
+	var _pip_pre := [
 		"HEY! LISTEN!",
 		"Did you know you can press buttons to do things?",
 		"You're WELCOME!",
 		"Also, did you know walking moves you FORWARD?",
 		"I'm SO helpful. You'd be LOST without me.",
 		"...Please don't mute me. I get lonely."
-	])
+	]
+	var _pip_post := [
+		"HEY! ...oh. It's you. The cave one. You didn't need any of my hints for that, huh.",
+		"I had a whole tutorial written. 'How to Cave.' Six pages. Nobody read it.",
+		"You did it without me. That's... good? That's good. You're supposed to grow beyond the tutorial. That's development.",
+		"I'll be over here. Not muted. Just... reflective. It's fine.",
+		"...Do you want to hear about the moss? I have a moss tutorial. Six pages. Different mushrooms though."
+	]
+	var pip = _create_npc("Tutorial Fairy Pip", "fairy", Vector2(14 * TILE_SIZE,7 * TILE_SIZE), _pip_post if _after_cave_done else _pip_pre)
 	npcs.add_child(pip)
 
-	# Merchant Thorn (suspicious)
-	var thorn = _create_npc("Merchant Thorn", "villager", Vector2(10 * TILE_SIZE, 7 * TILE_SIZE), [
+	# Merchant Thorn (suspicious) — timeless voice, no branch.
+	var thorn = _create_npc("Merchant Thorn", "merchant", Vector2(12 * TILE_SIZE,9 * TILE_SIZE), [
 		"These goods? Oh, they fell off a caravan.",
 		"Several caravans. Look, do you want them or not?",
 		"I have potions, ethers, and 'definitely not stolen' equipment.",
@@ -226,8 +255,9 @@ func _setup_npcs() -> void:
 	])
 	npcs.add_child(thorn)
 
-	# Speedrun Monk Dash (efficiency)
-	var dash = _create_npc("Speedrun Monk Dash", "villager", Vector2(18 * TILE_SIZE, 6 * TILE_SIZE), [
+	# Speedrun Monk Dash (efficiency) — timeless voice, no branch.
+	# Row 8 became the canopy's cliff-base row in the 2026-09-06 elevation pass; shifted 1 tile south so he isn't standing in the derived cliff face.
+	var dash = _create_npc("Speedrun Monk Dash", "monk", Vector2(20 * TILE_SIZE,9 * TILE_SIZE), [
 		"Words are experience points you're leaving on the table.",
 		"Skip my dialogue. Go. NOW.",
 		"...Why are you still reading?",
@@ -237,26 +267,47 @@ func _setup_npcs() -> void:
 	npcs.add_child(dash)
 
 	# Elder Moss (wisdom)
-	var moss = _create_npc("Elder Moss", "elder", Vector2(5 * TILE_SIZE, 13 * TILE_SIZE), [
+	# Post-cave: forest-remembers gag refracted — the trees have added a
+	# chapter about the cave victory alongside their catalogue of the
+	# party's slime deaths. Peak voice: mystical + comedic + on-tone.
+	var _moss_pre := [
 		"The forest remembers all who pass.",
 		"It also remembers your embarrassing defeats.",
 		"ALL of them.",
 		"That time you died to a slime? The trees whisper about it.",
 		"But fear not. Growth comes from failure. And fertilizer."
-	])
+	]
+	var _moss_post := [
+		"The forest heard about the cave. Word travels faster on roots than roads. The trees have opinions. They usually don't.",
+		"You died to a slime, once. The trees still whisper about it. They now whisper the slime AND the rat king. Balance.",
+		"Growth comes from failure. It also comes, occasionally, from succeeding. The trees are noting the second thing today. Rarely useful, but noted.",
+		"The forest remembers all who pass. It has added a chapter."
+	]
+	var moss = _create_npc("Elder Moss", "elder", Vector2(7 * TILE_SIZE,15 * TILE_SIZE), _moss_post if _after_cave_done else _moss_pre)
 	npcs.add_child(moss)
 
 	# Ranger Ivy (practical)
-	var ivy = _create_npc("Ranger Ivy", "guard", Vector2(20 * TILE_SIZE, 12 * TILE_SIZE), [
+	# Post-cave: seeds the "Rangers' Empty House" W1 quest without
+	# resolving it — quest owns the rangers' fate. Ivy notes news arrival
+	# via birds (Eldertree's diegetic vector for the news-spreading beat).
+	# The wolves-being-quieter line stays ominous, not celebratory.
+	var _ivy_pre := [
 		"Watch for wolves. They hunt in packs.",
 		"And they've learned your autobattle patterns.",
 		"I've seen one dodge a scripted Fire spell.",
 		"Nature adapts. Your scripts should too."
-	])
+	]
+	var _ivy_post := [
+		"The wolves are quieter. Not fewer. Quieter.",
+		"News moves through the forest via the birds. The birds are... editorial. What they said about you was mostly positive.",
+		"The rangers still haven't come back. You did. That's data. I use data. But not this data. Not for what it's data of.",
+		"Watch your scripts. The wolves haven't unlearned them. They just aren't attacking as often. That's worse."
+	]
+	var ivy = _create_npc("Ranger Ivy", "guard", Vector2(22 * TILE_SIZE,14 * TILE_SIZE), _ivy_post if _after_cave_done else _ivy_pre)
 	npcs.add_child(ivy)
 
-	# Mushroom Collector Spore (weird)
-	var spore = _create_npc("Mushroom Collector Spore", "villager", Vector2(15 * TILE_SIZE, 14 * TILE_SIZE), [
+	# Mushroom Collector Spore (weird) — timeless voice, no branch.
+	var spore = _create_npc("Mushroom Collector Spore", "villager", Vector2(17 * TILE_SIZE,16 * TILE_SIZE), [
 		"The mushrooms here talk to me.",
 		"They say you need more defense.",
 		"The mushrooms are usually right.",
@@ -265,90 +316,36 @@ func _setup_npcs() -> void:
 	])
 	npcs.add_child(spore)
 
+	# Elder Vesper — rangers_empty_house giver, the village common by the herb garden.
+	var vesper = _create_npc("Elder Vesper", "elder", Vector2(14 * TILE_SIZE,11 * TILE_SIZE), [
+		"Four rangers went out on the patrol they have walked for eleven years.",
+		"They are never late. Not once. That is the entire point of a ranger.",
+		"Their house is empty and it is TIDY. Someone put it in order.",
+		"Rangers do not tidy before a patrol. Somebody came back who was not them.",
+	])
+	# Without this the quest is UNSTARTABLE — QuestSystem.gd:125 matches npc_id to giver.npc_id.
+	vesper.npc_id = "elder_vesper"
+	npcs.add_child(vesper)
 
-func _create_npc(npc_name: String, npc_type: String, pos: Vector2, dialogue: Array) -> Area2D:
-	var npc = OverworldNPCScript.new()
-	npc.npc_name = npc_name
-	npc.npc_type = npc_type
-	npc.position = pos
-	npc.dialogue_lines = dialogue
-	return npc
-
-
-func _setup_player() -> void:
-	player = OverworldPlayerScript.new()
-	player.name = "Player"
-	player.position = spawn_points.get("default", Vector2(384, 480))
-	player.set_job("fighter")
-	add_child(player)
-
-
-func _setup_camera() -> void:
-	camera = Camera2D.new()
-	camera.name = "Camera"
-	player.add_child(camera)
-	camera.make_current()
-
-	camera.zoom = Vector2(2.0, 2.0)
-
-	var map_pixel_width = MAP_WIDTH * TILE_SIZE
-	var map_pixel_height = MAP_HEIGHT * TILE_SIZE
-
-	camera.limit_left = 0
-	camera.limit_top = 0
-	camera.limit_right = map_pixel_width
-	camera.limit_bottom = map_pixel_height
-
-	camera.position_smoothing_enabled = true
-	camera.position_smoothing_speed = 8.0
+	_add_quest_examine_point("w1_eldertree_rangers_empty_house",
+		"quest_w1_eldertree_rangers_empty_house_accepted", "[A] Search the rangers' house",
+		"Every arrow in the quiver sits at the same rotation. Rangers never store arrows that way. Someone who has never held a bow TIDIED this.",
+		"The rangers' house, at the top of the path. Empty, and in perfect order.",
+		Vector2(22 * TILE_SIZE,5 * TILE_SIZE))
 
 
-func _setup_controller() -> void:
-	controller = OverworldControllerScript.new()
-	controller.name = "Controller"
-	controller.player = player
-	controller.encounter_enabled = false
-	controller.current_area_id = "eldertree_village"
-
-	controller.set_area_config("eldertree_village", true, 0.0, [])
-
-	controller.battle_triggered.connect(_on_battle_triggered)
-	controller.menu_requested.connect(_on_menu_requested)
-
-	add_child(controller)
-
-
-func _on_transition_triggered(target_map: String, spawn_point: String) -> void:
-	area_transition.emit(target_map, spawn_point)
-
-
-func _on_battle_triggered(enemies: Array) -> void:
-	battle_triggered.emit(enemies)
-
-
-func _on_menu_requested() -> void:
-	pass
-
-
-func spawn_player_at(spawn_name: String) -> void:
-	if spawn_points.has(spawn_name):
-		player.teleport(spawn_points[spawn_name])
-		player.reset_step_count()
-
-
-func resume() -> void:
-	controller.resume_exploration()
-
-
-func pause() -> void:
-	controller.pause_exploration()
-
-
-func set_player_job(job_name: String) -> void:
-	if player:
-		player.set_job(job_name)
-
-
-func set_player_appearance(leader) -> void:
-	if player and player.has_method("set_appearance_from_leader"):
-		player.set_appearance_from_leader(leader)
+## Tempo of the Hunt — L7 masterite ranging Eldertree's forest edge after
+## the village's own rangers were hunted. Placed in the mid-village grass
+## clearing so the party walks into the encounter while exploring the woods.
+## Doc: docs/design/w1-progression-expansion.md.
+func _place_masterite_tempo() -> void:
+	var MasteriteScript = load("res://src/exploration/MasteriteEncounter.gd")
+	if MasteriteScript == null:
+		return
+	var tempo = MasteriteScript.new()
+	tempo.archetype = "tempo"
+	tempo.monster_id = "masterite_tempo_medieval"
+	tempo.display_name = "Tempo of the Hunt"
+	tempo.quest_flag = "quest_w1_eldertree_rangers_house_searched"
+	tempo.position = Vector2(14 * TILE_SIZE,14 * TILE_SIZE)
+	npcs.add_child(tempo)

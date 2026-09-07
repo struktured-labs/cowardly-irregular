@@ -1,0 +1,138 @@
+{
+  "id": "world4_chat_union_pamphlet",
+  "title": "Pamphlet, Unapproved",
+  "world": 4,
+  "trigger": "world4_chat_union_pamphlet",
+  "background": "rivet_row_factory",
+  "description": "Union Agitator hands out a pamphlet that was never cleared. Line Worker reads it. Character beat.",
+  "steps": [
+    {
+      "type": "letterbox_in",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "The pamphlet had been hand-printed on a press the Line Administrator believed was broken. The Line Administrator was wrong. The Line Administrator was often wrong about the press."
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Union Agitator",
+          "text": "Take one. It's free.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Line Worker",
+          "text": "Is it approved?",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Union Agitator",
+          "text": "...",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Union Agitator",
+          "text": "I'm going to need you to take one.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "The Line Worker took one. The cover said WE DON'T HAVE TO WORK THIS WAY in letters that had been set individually by hand, slightly crooked, much louder than was strictly appropriate."
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Line Worker",
+          "text": "This is... twelve pages.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Union Agitator",
+          "text": "Most of them are about lunch.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Line Worker",
+          "text": "Lunch?",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Union Agitator",
+          "text": "The length of it. The right to it. The structural significance of not working through it.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Chem Tech",
+          "text": "Can I have one?",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Union Agitator",
+          "text": "You don't strike me as an organizer.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Chem Tech",
+          "text": "I want to read the one about lunch.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Union Agitator",
+          "text": "That's how we start.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        }
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "The Union Agitator pressed a second pamphlet into the Chem Tech's hand. Pamphlet #247 of #500, the back cover noted, hand-numbered in soft pencil. None of them were on the manifest."
+    },
+    {
+      "type": "set_flag",
+      "flag": "party_chat_viewed_world4_chat_union_pamphlet",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.4
+    }
+  ]
+}

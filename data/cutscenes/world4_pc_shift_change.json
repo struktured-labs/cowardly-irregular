@@ -1,0 +1,61 @@
+{
+  "id": "world4_pc_shift_change",
+  "title": "Shift Change",
+  "world": 4,
+  "trigger": "world4_pc_shift_change",
+  "background": "prologue_forest",
+  "description": "First steps in the industrial world. A horn sounds. Everyone moves.",
+  "steps": [
+    {
+      "type": "letterbox_in",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "A horn sounded. Half the city walked left. The other half walked right. Nobody bumped."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Fighter",
+          "text": "Hard hats. Everyone. Even the pigeons look compliant.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "There are painted lines on the ground for WALKING. I've never felt so seen and so insulted.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "The safety board lists 'days since last incident'. Someone has been resetting it out of honesty. I respect that.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Mage",
+          "text": "My robes violate at least four posted regulations.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Bard",
+          "text": "The horn's a B-flat. Every shift, B-flat. This world has ONE note and it made it load-bearing.",
+          "theme": "bard",
+          "portrait": "bard"
+        }
+      ]
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.3
+    }
+  ]
+}

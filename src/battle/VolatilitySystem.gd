@@ -23,6 +23,13 @@ var local_volatility: Dictionary = {}
 ## Global band (0-3)
 var global_band: int = 0
 
+## Test-only macro volatility override.
+## When set to a value in [0.0, 1.0], _get_macro_volatility() returns this
+## instead of reading from GameState. Lets unit tests verify band transitions
+## without standing up a GameState autoload. Set to NAN (default) to use the
+## production GameState path.
+var _macro_override: float = NAN
+
 
 func get_variance_range(combatant) -> Vector2:
 	"""Get (min_mult, max_mult) for damage variance, factoring local x global x macro."""
@@ -50,7 +57,7 @@ func check_tail_event() -> bool:
 	var macro = _get_macro_volatility()
 	# Macro volatility increases tail event chance
 	var final_pct = tail_pct * (1.0 + macro)
-	return randf() < final_pct
+	return randf() < clampf(final_pct, 0.0, 1.0)
 
 
 func set_local(combatant, value: float) -> void:
@@ -92,10 +99,14 @@ func reset_battle() -> void:
 	local_volatility.clear()
 	# Macro volatility determines starting band
 	var macro = _get_macro_volatility()
-	if macro >= 0.75:
-		global_band = Band.SHIFTING
-	else:
+	if macro < 0.4:
 		global_band = Band.STABLE
+	elif macro < 0.7:
+		global_band = Band.SHIFTING
+	elif macro < 0.9:
+		global_band = Band.UNSTABLE
+	else:
+		global_band = Band.FRACTURED
 	print("[VOLATILITY] Battle started at band: %s (macro: %.2f)" % [BAND_NAMES[global_band], macro])
 
 
@@ -110,15 +121,26 @@ func get_tail_event_pct() -> float:
 
 
 func _get_macro_volatility() -> float:
-	"""Read macro volatility from GameState."""
-	var game_state = Engine.get_singleton("GameState") if Engine.has_singleton("GameState") else null
-	if game_state == null:
-		# Try node path
-		var tree = Engine.get_main_loop()
-		if tree and tree.has_method("get_root"):
-			var root = tree.get_root()
-			if root:
-				game_state = root.get_node_or_null("GameState")
+	"""Read macro volatility from GameState (or test override).
+
+	GameState.macro_volatility is documented as 0.0-1.0 (soft cap) but no
+	caller enforces it. A corrupted save, a buggy Speculator effect, or a
+	hand-edited save could write a wildly out-of-range value (negative or
+	>1.0). Downstream consumers use the result as a multiplier or in band
+	thresholds — out-of-range inputs produce silently broken variance,
+	wrong starting band, and tail-event probabilities that would otherwise
+	be impossible. Clamp here so every consumer gets the documented
+	contract regardless of upstream hygiene. The test override is exempt
+	so unit tests can probe the boundary math directly."""
+	# Test override path — short-circuit if a unit test has set it.
+	if not is_nan(_macro_override):
+		return _macro_override
+	# Engine.has_singleton("GameState") is ALWAYS FALSE for autoloads in
+	# Godot 4 — resolve from the scene tree root directly.
+	var tree: SceneTree = Engine.get_main_loop() as SceneTree
+	var game_state: Node = null
+	if tree != null and tree.root != null:
+		game_state = tree.root.get_node_or_null("GameState")
 	if game_state and "macro_volatility" in game_state:
-		return game_state.macro_volatility
+		return clampf(float(game_state.macro_volatility), 0.0, 1.0)
 	return 0.0

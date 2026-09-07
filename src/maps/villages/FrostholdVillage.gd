@@ -1,85 +1,38 @@
-extends Node2D
+extends BaseVillage
 class_name FrostholdVillageScene
 
 ## FrostholdVillage - Nordic outpost in the frozen northwest
 ## Features: Nordic Lodge (inn), Fur Trader (items), Ice Chapel (magic shop)
 
-const TileGeneratorScript = preload("res://src/exploration/TileGenerator.gd")
-const OverworldPlayerScript = preload("res://src/exploration/OverworldPlayer.gd")
-const OverworldControllerScript = preload("res://src/exploration/OverworldController.gd")
-const AreaTransitionScript = preload("res://src/exploration/AreaTransition.gd")
-const OverworldNPCScript = preload("res://src/exploration/OverworldNPC.gd")
 const VillageInnScript = preload("res://src/exploration/VillageInn.gd")
 const VillageShopScript = preload("res://src/exploration/VillageShop.gd")
 const TreasureChestScript = preload("res://src/exploration/TreasureChest.gd")
 
-signal exploration_ready()
-signal battle_triggered(enemies: Array)
-signal area_transition(target_map: String, spawn_point: String)
-
 ## Map dimensions (22x18 ice village)
-const MAP_WIDTH: int = 22
-const MAP_HEIGHT: int = 18
-const TILE_SIZE: int = 32
-
-## Scene components
-var tile_map: TileMapLayer
-var player: Node2D
-var camera: Camera2D
-var controller: Node
-var tile_generator: Node
-
-## Containers
-var transitions: Node2D
-var npcs: Node2D
-var buildings: Node2D
-var treasures: Node2D
-
-## Spawn points
-var spawn_points: Dictionary = {}
+const MAP_WIDTH: int = 26
+const MAP_HEIGHT: int = 22
 
 
-func _ready() -> void:
-	_setup_scene()
-	_generate_map()
-	_setup_transitions()
-	_setup_buildings()
-	_setup_treasures()
-	_setup_npcs()
-	_setup_player()
-	_setup_camera()
-	_setup_controller()
+## ---- BaseVillage hooks ----
 
-	if SoundManager:
-		SoundManager.play_area_music("village")
-
-	exploration_ready.emit()
+func _get_area_id() -> String:
+	return "frosthold_village"
 
 
-func _setup_scene() -> void:
-	tile_generator = TileGeneratorScript.new()
-	add_child(tile_generator)
+func _get_village_display_name() -> String:
+	return "Frosthold"
 
-	tile_map = TileMapLayer.new()
-	tile_map.name = "TileMap"
-	tile_map.tile_set = tile_generator.create_tileset()
-	add_child(tile_map)
 
-	transitions = Node2D.new()
-	transitions.name = "Transitions"
-	add_child(transitions)
+func _get_map_pixel_size() -> Vector2i:
+	return Vector2i(MAP_WIDTH * TILE_SIZE, MAP_HEIGHT * TILE_SIZE)
 
-	buildings = Node2D.new()
-	buildings.name = "Buildings"
-	add_child(buildings)
 
-	treasures = Node2D.new()
-	treasures.name = "Treasures"
-	add_child(treasures)
+func _get_save_point_position() -> Vector2:
+	return Vector2(10 * TILE_SIZE,10 * TILE_SIZE)
 
-	npcs = Node2D.new()
-	npcs.name = "NPCs"
-	add_child(npcs)
+
+func _get_player_spawn_fallback() -> Vector2:
+	return Vector2(320, 480)
 
 
 func _generate_map() -> void:
@@ -87,24 +40,53 @@ func _generate_map() -> void:
 	# W = wall, . = floor, L = lodge (inn), F = fur trader, C = chapel
 	# I = ice/snow decoration, X = exit
 	var map_data: Array[String] = [
-		"WWWWWWWWWWWWWWWWWWWWWW",
-		"W....................W",
-		"W..LLL......CCC.....W",
-		"W..LLL......CCC.....W",
-		"W..LLL......CCC.....W",
-		"W....................W",
-		"W......IIII..........W",
-		"W......IIII..FFF.....W",
-		"W......IIII..FFF.....W",
-		"W......IIII..FFF.....W",
-		"W....................W",
-		"W....................W",
-		"W....................W",
-		"W....................W",
-		"W....................W",
-		"W.....XXXXXX.........W",
-		"W.....XXXXXX.........W",
-		"WWWWWWWWWWWWWWWWWWWWWW",
+		"WWWWWWWWWWWWWWWWWWWWWWWWWW",
+		"W........................W",
+		"W........................W",
+		"W........................W",
+		"W....LLL......CCC.....W..W",
+		"W....LLL......CCC.....W..W",
+		"W....LLL......CCC.....W..W",
+		"W........................W",
+		"W.......^IIII.......^....W",
+		"W........IIII..FFF.......W",
+		"W........IIII..FFF.......W",
+		"W........IIII..FFF.......W",
+		"W...........^.....^......W",
+		"W........................W",
+		"W........................W",
+		"W........................W",
+		"W........................W",
+		"W.......XXXXXX...........W",
+		"W.......XXXXXX...........W",
+		"W........................W",
+		"W........................W",
+		"WWWWWWWWWWWWWWWWWWWWWWWWWW",
+	]
+	# Elevation (ice terraces, 2026-09-06): high overlook (2) / mid ice shelf (1) / tundra floor (0), '^' stairs cascade down at cols 8/20 then 12/18
+	var height_data: Array[String] = [
+		"22222222222222222222222222",
+		"22222222222222222222222222",
+		"22222222222222222222222222",
+		"22222222222222222222222222",
+		"22222222222222222222222222",
+		"22222222222222222222222222",
+		"22222222222222222222222222",
+		"22222222222222222222222222",
+		"11111111111111111111111111",
+		"11111111111111111111111111",
+		"11111111111111111111111111",
+		"11111111111111111111111111",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
+		"00000000000000000000000000",
 	]
 
 	for y in range(MAP_HEIGHT):
@@ -118,7 +100,9 @@ func _generate_map() -> void:
 			if char == "X" and not spawn_points.has("exit"):
 				spawn_points["exit"] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
 
-	spawn_points["entrance"] = Vector2(8 * TILE_SIZE, 13 * TILE_SIZE)
+	_build_derived_layers(map_data, height_data)
+
+	spawn_points["entrance"] = Vector2(10 * TILE_SIZE,15 * TILE_SIZE)
 	spawn_points["default"] = spawn_points["entrance"]
 	spawn_points["frosthold_entrance"] = spawn_points["entrance"]
 
@@ -127,6 +111,7 @@ func _char_to_tile_type(char: String) -> int:
 	match char:
 		"W": return TileGeneratorScript.TileType.WALL
 		"I": return TileGeneratorScript.TileType.ICE
+		"^": return TileGeneratorScript.TileType.FLOOR  # stair ground; elevation lives in height_data
 		_: return TileGeneratorScript.TileType.FLOOR
 
 
@@ -135,36 +120,43 @@ func _get_atlas_coords(tile_type: int) -> Vector2i:
 	return Vector2i(tile_id % 5, tile_id / 5)
 
 
+## Empty forces procedural cliffs — the shared medieval.png sheet art would otherwise outrank the icy palette below.
+func _get_cliff_sheet_key() -> String:
+	return ""
+
+
+## Icy blue-whites so the terraces read as glacier shelves, not bare rock.
+func _get_cliff_palette() -> Dictionary:
+	return {
+		"face_dark": Color(0.35, 0.48, 0.58),
+		"face_mid": Color(0.55, 0.70, 0.80),
+		"face_light": Color(0.78, 0.88, 0.94),
+		"lip": Color(0.92, 0.97, 1.0),
+		"lip_shadow": Color(0.30, 0.42, 0.52, 0.85),
+		"grass": Color(0.65, 0.80, 0.88),
+		"grass_light": Color(0.80, 0.90, 0.96),
+		"stair_tread": Color(0.82, 0.90, 0.95),
+		"stair_riser": Color(0.50, 0.65, 0.75),
+	}
+
+
 func _setup_transitions() -> void:
 	var exit_trans = AreaTransitionScript.new()
 	exit_trans.name = "Exit"
 	exit_trans.target_map = "overworld"
 	exit_trans.target_spawn = "frosthold_entrance"
 	exit_trans.require_interaction = false
-	exit_trans.position = spawn_points.get("exit", Vector2(256, 512))
+	exit_trans.position = spawn_points.get("exit", Vector2(320, 576))
 	_setup_transition_collision(exit_trans, Vector2(TILE_SIZE * 6, TILE_SIZE))
 	exit_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(exit_trans)
-
-
-func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
-	trans.collision_layer = 4
-	trans.collision_mask = 2
-	trans.monitoring = true
-	trans.monitorable = true
-
-	var collision = CollisionShape2D.new()
-	var shape = RectangleShape2D.new()
-	shape.size = size
-	collision.shape = shape
-	trans.add_child(collision)
 
 
 func _setup_buildings() -> void:
 	# === NORDIC LODGE (Inn) ===
 	var inn = VillageInnScript.new()
 	inn.inn_name = "Nordic Lodge"
-	inn.position = Vector2(3.5 * TILE_SIZE, 3 * TILE_SIZE)
+	inn.position = Vector2(5.5 * TILE_SIZE,5 * TILE_SIZE)
 	buildings.add_child(inn)
 
 	# === FUR TRADER (Item Shop) ===
@@ -172,7 +164,7 @@ func _setup_buildings() -> void:
 	fur_trader.shop_name = "Fur Trader"
 	fur_trader.shop_type = VillageShopScript.ShopType.ITEM
 	fur_trader.keeper_name = "Helga"
-	fur_trader.position = Vector2(15 * TILE_SIZE, 8 * TILE_SIZE)
+	fur_trader.position = Vector2(17 * TILE_SIZE,10 * TILE_SIZE)
 	buildings.add_child(fur_trader)
 
 	# === ICE CHAPEL (Magic Shop) ===
@@ -180,8 +172,18 @@ func _setup_buildings() -> void:
 	chapel.shop_name = "Ice Chapel"
 	chapel.shop_type = VillageShopScript.ShopType.WHITE_MAGIC
 	chapel.keeper_name = "Brother Frost"
-	chapel.position = Vector2(14 * TILE_SIZE, 3 * TILE_SIZE)
+	chapel.position = Vector2(16 * TILE_SIZE,5 * TILE_SIZE)
 	buildings.add_child(chapel)
+
+	# === WARDEN'S HUT DOOR ===
+	# Standalone hut on the empty south-west tundra. Trygg foreshadows
+	# the Glacius fight. Spawn-back point is just south of the door.
+	spawn_points["warden_hut_exit"] = Vector2(6 * TILE_SIZE,14 * TILE_SIZE)
+	_add_interior_door("WardenHutDoor", "frosthold_warden_hut", "Enter Warden's Hut", Vector2(6 * TILE_SIZE,13 * TILE_SIZE))
+	# === MELTWATER CLOCK DOOR ===
+	# South face of the CCC building (cols 12-14, rows 2-4) — Frosthold's timekeeping.
+	spawn_points["clock_exit"] = Vector2(15 * TILE_SIZE,7.5 * TILE_SIZE)
+	_add_interior_door("MeltwaterClockDoor", "frosthold_meltwater_clock", "Enter Meltwater Clock", Vector2(15 * TILE_SIZE,6.5 * TILE_SIZE))
 
 
 func _setup_treasures() -> void:
@@ -191,21 +193,30 @@ func _setup_treasures() -> void:
 	chest1.contents_type = "item"
 	chest1.contents_id = "hi_potion"
 	chest1.contents_amount = 2
-	chest1.position = Vector2(1.5 * TILE_SIZE, 5 * TILE_SIZE)
+	chest1.position = Vector2(3.5 * TILE_SIZE,7 * TILE_SIZE)
 	treasures.add_child(chest1)
 
 	# Ice Charm in chapel corner
 	var chest2 = TreasureChestScript.new()
 	chest2.chest_id = "frosthold_chest_2"
 	chest2.contents_type = "equipment"
-	chest2.contents_id = "ice_charm"
-	chest2.position = Vector2(17 * TILE_SIZE, 2 * TILE_SIZE)
+	chest2.contents_id = "resist_ring"
+	chest2.position = Vector2(19 * TILE_SIZE,4 * TILE_SIZE)
 	treasures.add_child(chest2)
 
 
 func _setup_npcs() -> void:
+	# Shared post-cave state check for Ingrid / Kael / Lumi — closes the
+	# six-village sweep. Same spawn-time pattern, gate = rat_king_defeated.
+	# Björn (ice-dragon exposition), Helga + Fynn (timeless meta gags)
+	# untouched — no cave hook, and their jokes don't want a sequel.
+	var _after_cave_gs = get_node_or_null("/root/GameState")
+	var _after_cave_done: bool = false
+	if _after_cave_gs:
+		_after_cave_done = bool(_after_cave_gs.game_constants.get("cutscene_flag_rat_king_defeated", false))
+
 	# Old Man Björn (exposition)
-	var bjorn = _create_npc("Old Man Björn", "elder", Vector2(6 * TILE_SIZE, 6 * TILE_SIZE), [
+	var bjorn = _create_npc("Old Man Björn", "elder", Vector2(8 * TILE_SIZE,8 * TILE_SIZE), [
 		"The ice dragon Glacius has been here since the first compile...",
 		"I mean, the first winter.",
 		"It guards the frozen peak with breath that freezes code— er, BONE.",
@@ -214,26 +225,47 @@ func _setup_npcs() -> void:
 	npcs.add_child(bjorn)
 
 	# Guard Ingrid (pessimistic)
-	var ingrid = _create_npc("Guard Ingrid", "guard", Vector2(8 * TILE_SIZE, 14 * TILE_SIZE), [
+	# Post-cave: she called them underleveled and was wrong. Concedes on
+	# the record without stopping being herself, then ends warm.
+	var _ingrid_pre := [
 		"Turn back. You're clearly not high enough level.",
 		"I can see your stats from here.",
 		"...What? No, I can't literally SEE them.",
 		"It's a figure of speech. But seriously, you look weak."
-	])
+	]
+	var _ingrid_post := [
+		"You're back. And alive. I had you at 'not high enough level.'",
+		"I was wrong. I want that on the record, because I am never wrong, and this is the exception.",
+		"...I still cannot literally see your stats. But I would revise the estimate. Upward. Slightly.",
+		"Don't let it go to your head. Plenty out there I would still turn you back from.",
+		"Turn back from THOSE. Not this one. This one you earned."
+	]
+	var ingrid = _create_npc("Guard Ingrid", "guard", Vector2(10 * TILE_SIZE,16 * TILE_SIZE), _ingrid_post if _after_cave_done else _ingrid_pre)
 	npcs.add_child(ingrid)
 
 	# Hermit Kael (autobattle)
-	var kael = _create_npc("Hermit Kael", "villager", Vector2(10 * TILE_SIZE, 10 * TILE_SIZE), [
+	# Post-cave: the cave victory earns him an actual character beat — he
+	# revises "automate EVERYTHING" down to "keep one part manual." First
+	# advice he has changed in eleven years.
+	var _kael_pre := [
 		"I automated my entire LIFE, friend.",
 		"Breakfast? Automated. Conversations? Scripted.",
 		"Do I regret it? ...That's also scripted.",
 		"Press F5 to open the Autobattle Editor. Trust me.",
 		"Once you automate combat, you'll want to automate EVERYTHING."
-	])
+	]
+	var _kael_post := [
+		"You went into a cave. Did you automate it, or did you do it by hand?",
+		"I ask because I automated my regrets, and now I cannot find them.",
+		"...That was scripted. Obviously. But lately I wonder who wrote it.",
+		"Automate the combat. Keep the walking-back-out-alive part manual. That is my new advice.",
+		"It is the first advice I have changed in eleven years."
+	]
+	var kael = _create_npc("Hermit Kael", "villager", Vector2(12 * TILE_SIZE,12 * TILE_SIZE), _kael_post if _after_cave_done else _kael_pre)
 	npcs.add_child(kael)
 
 	# Merchant Helga (shivering)
-	var helga = _create_npc("Merchant Helga", "villager", Vector2(16 * TILE_SIZE, 11 * TILE_SIZE), [
+	var helga = _create_npc("Merchant Helga", "merchant", Vector2(18 * TILE_SIZE,13 * TILE_SIZE), [
 		"B-buy something warm, please.",
 		"The d-developer forgot to add heating.",
 		"I've been standing here since the scene loaded.",
@@ -242,7 +274,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(helga)
 
 	# Scholar Fynn (lore)
-	var fynn = _create_npc("Scholar Fynn", "villager", Vector2(4 * TILE_SIZE, 11 * TILE_SIZE), [
+	var fynn = _create_npc("Scholar Fynn", "scholar", Vector2(6 * TILE_SIZE,13 * TILE_SIZE), [
 		"Legend says four dragons guard four elemental scales.",
 		"Collect them all and... actually, nobody remembers what happens next.",
 		"The ancient texts just say 'TODO: implement endgame.'",
@@ -251,98 +283,38 @@ func _setup_npcs() -> void:
 	npcs.add_child(fynn)
 
 	# Child Lumi (cheerful)
-	var lumi = _create_npc("Child Lumi", "villager", Vector2(12 * TILE_SIZE, 4 * TILE_SIZE), [
+	# Post-cave: keeps her programming-gag register, but the joke resolves
+	# into something sincere. "Not crashing is the whole thing" is the
+	# closing note of the whole six-village sweep.
+	var _lumi_pre := [
 		"I built a snowman! I named him 'Null Reference.'",
 		"He keeps crashing.",
 		"Every time I try to give him a nose, he throws an exception!",
 		"Mom says I should try-catch him but that sounds mean."
-	])
+	]
+	var _lumi_post := [
+		"You went in the CAVE? The real one? With the—",
+		"I made a new snowman and I named him after you. He doesn't crash.",
+		"He doesn't do anything else either. He just stands there, being fine.",
+		"It's the best one I ever made. Mom says that's not how you judge snowmen.",
+		"Mom is wrong. Not crashing is the whole thing."
+	]
+	var lumi = _create_npc("Child Lumi", "child", Vector2(14 * TILE_SIZE,6 * TILE_SIZE), _lumi_post if _after_cave_done else _lumi_pre)
 	npcs.add_child(lumi)
 
+	# Clockkeeper Yara — meltwater_clock giver, beside the Meltwater Clock door at (15,6.5).
+	var yara = _create_npc("Clockkeeper Yara", "elder", Vector2(17 * TILE_SIZE,6 * TILE_SIZE), [
+		"Two minutes fast. Every day. The same two minutes.",
+		"A clock that breaks runs wrong by a DIFFERENT amount each day. That's what broken means.",
+		"This one is wrong on purpose. Someone is melting the source pool on a schedule.",
+		"I've kept this clock for thirty-one years. I would like to know whose schedule.",
+	])
+	# Without this the quest is UNSTARTABLE — QuestSystem.gd:125 matches npc_id to giver.npc_id.
+	yara.npc_id = "clockkeeper_yara"
+	npcs.add_child(yara)
 
-func _create_npc(npc_name: String, npc_type: String, pos: Vector2, dialogue: Array) -> Area2D:
-	var npc = OverworldNPCScript.new()
-	npc.npc_name = npc_name
-	npc.npc_type = npc_type
-	npc.position = pos
-	npc.dialogue_lines = dialogue
-	return npc
-
-
-func _setup_player() -> void:
-	player = OverworldPlayerScript.new()
-	player.name = "Player"
-	player.position = spawn_points.get("default", Vector2(256, 416))
-	player.set_job("fighter")
-	add_child(player)
-
-
-func _setup_camera() -> void:
-	camera = Camera2D.new()
-	camera.name = "Camera"
-	player.add_child(camera)
-	camera.make_current()
-
-	camera.zoom = Vector2(2.0, 2.0)
-
-	var map_pixel_width = MAP_WIDTH * TILE_SIZE
-	var map_pixel_height = MAP_HEIGHT * TILE_SIZE
-
-	camera.limit_left = 0
-	camera.limit_top = 0
-	camera.limit_right = map_pixel_width
-	camera.limit_bottom = map_pixel_height
-
-	camera.position_smoothing_enabled = true
-	camera.position_smoothing_speed = 8.0
-
-
-func _setup_controller() -> void:
-	controller = OverworldControllerScript.new()
-	controller.name = "Controller"
-	controller.player = player
-	controller.encounter_enabled = false
-	controller.current_area_id = "frosthold_village"
-
-	controller.set_area_config("frosthold_village", true, 0.0, [])
-
-	controller.battle_triggered.connect(_on_battle_triggered)
-	controller.menu_requested.connect(_on_menu_requested)
-
-	add_child(controller)
-
-
-func _on_transition_triggered(target_map: String, spawn_point: String) -> void:
-	area_transition.emit(target_map, spawn_point)
-
-
-func _on_battle_triggered(enemies: Array) -> void:
-	battle_triggered.emit(enemies)
-
-
-func _on_menu_requested() -> void:
-	pass
-
-
-func spawn_player_at(spawn_name: String) -> void:
-	if spawn_points.has(spawn_name):
-		player.teleport(spawn_points[spawn_name])
-		player.reset_step_count()
-
-
-func resume() -> void:
-	controller.resume_exploration()
-
-
-func pause() -> void:
-	controller.pause_exploration()
-
-
-func set_player_job(job_name: String) -> void:
-	if player:
-		player.set_job(job_name)
-
-
-func set_player_appearance(leader) -> void:
-	if player and player.has_method("set_appearance_from_leader"):
-		player.set_appearance_from_leader(leader)
+	_add_quest_examine_point("w1_frosthold_meltwater_clock",
+		"quest_w1_frosthold_meltwater_clock_accepted", "[A] Examine the source pool",
+		"A rune cut into the pool's lip, melting the ice on a schedule. An expert hand cut it. Whoever paid never came here.",
+		"Meltwater runs from the pool above the village. Steady. Too steady.",
+		Vector2(12 * TILE_SIZE,2 * TILE_SIZE))

@@ -17,14 +17,45 @@ signal interrupt_triggered(reason: String)
 signal meta_boss_spawned(boss_name: String)
 signal system_collapse()
 signal region_cracked(region_id: String, crack_level: int)
+signal region_advanced(from_region: String, to_region: String, world_num: int)
+## Fires once per region per session when monster_adaptation_level crosses ROTATION_SUGGEST_THRESHOLD; suggested may be empty if no next region exists.
+signal region_rotation_suggested(current_region_id: String, suggested: Dictionary, adaptation_level: float)
+## Fires once per band per session when meta_corruption crosses WARNING/DANGER/CRITICAL. Band is "warning" | "danger" | "critical".
+signal corruption_threshold_crossed(band: String, level: float)
 signal autobattle_interrupted(reason: String)
 signal autogrind_rules_changed()
+signal fatigue_event(event_type: String, description: String)
+
+## World region progression order (world_num -> overworld map_id)
+const WORLD_REGIONS: Array[Dictionary] = [
+	{"world": 1, "region": "overworld", "name": "Medieval Overworld"},
+	{"world": 2, "region": "suburban_overworld", "name": "Suburban Overworld"},
+	{"world": 3, "region": "steampunk_overworld", "name": "Steampunk Overworld"},
+	{"world": 4, "region": "industrial_overworld", "name": "Industrial Overworld"},
+	{"world": 5, "region": "futuristic_overworld", "name": "Futuristic Overworld"},
+	{"world": 6, "region": "abstract_overworld", "name": "Abstract Overworld"},
+]
+
+## System fatigue
+var fatigue_events_triggered: int = 0
+const FATIGUE_BATTLE_THRESHOLD: int = 30
+const FATIGUE_CHANCE: float = 0.05
 
 ## Grind state
 var is_grinding: bool = false
 var battles_completed: int = 0
 var total_exp_gained: int = 0
 var total_items_gained: Dictionary = {}
+var items_consumed: Dictionary = {}  # {item_id: count} — tracks items used during grind session
+var per_character_exp: Dictionary = {}  # {char_name: total_exp_gained} — per-character EXP tracking
+var injuries_this_session: int = 0  # Tracks new injuries sustained during grind
+var _injury_baseline: int = 0  # Total injuries at session start (to detect new ones)
+var _ability_learned_this_session: bool = false
+var _rare_drop_this_session: bool = false
+var _ability_learned_conns: Array = []
+var _rare_drop_conn: Callable
+var _automation_paused: bool = false
+var battles_without_heal: int = 0  # Longest un-broken run of victorious battles with no healing consumed
 
 ## Efficiency system
 var efficiency_multiplier: float = 1.0  # Increases rewards but also danger
@@ -45,6 +76,17 @@ var adaptation_on_crack: bool = true  # Monsters adapt when region cracked
 var monster_adaptation_level: float = 0.0  # Enemies get stronger
 var meta_corruption_level: float = 0.0     # Reality starts breaking
 var corruption_threshold: float = 5.0      # When system collapse occurs
+
+## Region rotation advisory — fire the suggestion once per region per session
+const ROTATION_SUGGEST_THRESHOLD: float = 3.0
+var _rotation_suggested_regions: Dictionary = {}
+
+## Corruption threshold bands — fired at most once per band per session so a bumpy corruption graph doesn't repeat-spam the same warning.
+const CORRUPTION_BAND_WARNING: float = 3.0
+const CORRUPTION_BAND_DANGER: float = 4.0
+const CORRUPTION_BAND_CRITICAL: float = 4.5
+var _corruption_bands_crossed: Dictionary = {}
+var _save_corruption_baseline: float = 0.0
 
 ## Interrupt conditions
 var interrupt_rules: Dictionary = {
@@ -69,7 +111,9 @@ var post_collapse_debuff_battles: int = 0      # Remaining battles with reduced 
 
 ## Permadeath persistence — names of permanently dead characters (loaded/saved via user://autogrind/)
 var permadead_characters: Array[String] = []
-var permadeath_enabled: bool = false  # Alias for permadeath_staking_enabled (for UI binding)
+
+## Set to true in tests to prevent writes to user://autogrind/*.json — otherwise test-suite runs overwrite the user's real save data with fixture content ("TestChar0" in permadead, test presets in profiles, etc.). No-op in production.
+var _test_disable_persistence: bool = false
 
 ## Adaptive AI pattern database
 ## {region_id: {ability_frequency: {}, target_priority: {}, common_opener: "", counter_strategy: "", battles_analyzed: int}}
@@ -99,6 +143,14 @@ var _csi_timestamps: Dictionary = {}
 ## Automation Affinity - meta tracking of how much the player automates (0.0-1.0)
 var _automation_affinity: float = 0.0
 
+## Time-based risk/reward multiplier breakpoints: [minutes, multiplier]
+const TIME_MULTIPLIER_CURVE: Array = [
+	[0.0, 1.0],
+	[5.0, 1.5],
+	[10.0, 2.0],
+	[20.0, 3.0],
+]
+
 ## Grind session statistics for per-minute rate tracking
 var _grind_stats: Dictionary = {
 	"start_time": 0.0,
@@ -108,6 +160,11 @@ var _grind_stats: Dictionary = {
 	"total_encounters": 0,
 	"elapsed_seconds": 0.0
 }
+
+## Session history — last N completed grind sessions (persisted)
+const MAX_SESSION_HISTORY: int = 10
+const SESSION_HISTORY_PATH: String = "user://autogrind_history.json"
+var session_history: Array = []  # Array of session summary dicts
 
 ## ═══════════════════════════════════════════════════════════════════════
 ## ADAPTIVE AI - Pattern Learning & Counter Strategy
@@ -219,6 +276,45 @@ func get_learned_patterns_for_region(region_id: String) -> Dictionary:
 	return learned_patterns[region_id]
 
 
+func validate_rule(rule: Dictionary) -> Array[String]:
+	## Accepts against PARTY_CONDITION_TYPES / OPERATORS / AUTOGRIND_ACTION_TYPES below, the single source of truth.
+	var errors: Array[String] = []
+	if not rule.has("conditions"):
+		errors.append("missing 'conditions' array")
+	elif typeof(rule["conditions"]) != TYPE_ARRAY:
+		errors.append("'conditions' must be an array")
+	if not rule.has("actions"):
+		errors.append("missing 'actions' array")
+	elif typeof(rule["actions"]) != TYPE_ARRAY:
+		errors.append("'actions' must be an array")
+	if errors.size() > 0:
+		return errors
+	for c in rule["conditions"]:
+		if typeof(c) != TYPE_DICTIONARY:
+			errors.append("condition must be a dictionary: %s" % [c])
+			continue
+		var ctype: String = str(c.get("type", ""))
+		if not PARTY_CONDITION_TYPES.has(ctype):
+			errors.append("unknown autogrind condition type: '%s'" % ctype)
+			continue
+		if c.has("op") and not OPERATORS.has(str(c["op"])):
+			errors.append("unknown operator: '%s'" % c["op"])
+	for a in rule["actions"]:
+		if typeof(a) != TYPE_DICTIONARY:
+			errors.append("action must be a dictionary: %s" % [a])
+			continue
+		var atype: String = str(a.get("type", ""))
+		if not AUTOGRIND_ACTION_TYPES.has(atype):
+			errors.append("unknown autogrind action type: '%s'" % atype)
+			continue
+		if atype == "switch_profile":
+			if not a.has("character_id"):
+				errors.append("action type 'switch_profile' requires 'character_id'")
+			if not a.has("profile_index"):
+				errors.append("action type 'switch_profile' requires 'profile_index'")
+	return errors
+
+
 ## ═══════════════════════════════════════════════════════════════════════
 ## COMBAT SATURATION INDEX (CSI) - Diminishing Returns Per Region
 ## ═══════════════════════════════════════════════════════════════════════
@@ -242,6 +338,12 @@ func update_csi(region_id: String, encounter_type: String = "normal") -> void:
 	var level_weight: float = 1.0 + monster_adaptation_level * 0.1
 
 	var delta_csi: float = CSI_BASE_GROWTH * encounter_weight * mode_weight * level_weight
+
+	# Smooth diminishing returns: growth scales down as CSI approaches 1.0
+	# At CSI 0.0 = full growth, CSI 0.5 = 75% growth, CSI 0.8 = 36% growth, CSI 0.95 = 10% growth
+	var current_csi = _region_csi[region_id]
+	delta_csi *= (1.0 - current_csi * current_csi)
+
 	_region_csi[region_id] = clampf(_region_csi[region_id] + delta_csi, 0.0, 1.0)
 
 	# Record timestamp for this region
@@ -292,6 +394,42 @@ func get_automation_affinity() -> float:
 	return _automation_affinity
 
 
+func check_fatigue_event() -> Dictionary:
+	if battles_completed < FATIGUE_BATTLE_THRESHOLD:
+		return {}
+	if randf() > FATIGUE_CHANCE:
+		return {}
+
+	fatigue_events_triggered += 1
+	var event_type = ["screen_glitch", "enemy_boost", "party_debuff", "mp_drain", "item_loss", "exp_surge"][randi() % 6]
+	var description = ""
+
+	match event_type:
+		"screen_glitch":
+			description = "System instability detected — visual artifacts"
+		"enemy_boost":
+			description = "Enemies adapting — next battle +20% stats"
+		"party_debuff":
+			description = "System fatigue — party member weakened"
+		"mp_drain":
+			description = "System interference — MP reserves fluctuating"
+		"item_loss":
+			description = "Inventory anomaly — items corrupted"
+		"exp_surge":
+			description = "Reality fold — experience amplified!"
+
+	fatigue_event.emit(event_type, description)
+	return {"type": event_type, "description": description}
+
+
+func check_fatigue_collapse() -> bool:
+	if battles_completed < 50:
+		return false
+	if fatigue_events_triggered < 5:
+		return false
+	return randf() < 0.03
+
+
 func get_grind_stats() -> Dictionary:
 	"""Get grind session statistics with per-minute rates.
 	Returns {exp_per_min, gold_per_min, jp_per_min, encounters_per_min,
@@ -302,6 +440,9 @@ func get_grind_stats() -> Dictionary:
 
 	var minutes: float = maxf(elapsed / 60.0, 0.0001)  # Avoid division by zero
 
+	var csi_val = get_csi(current_region_id) if not current_region_id.is_empty() else 0.0
+	var yield_val = get_yield_multiplier(current_region_id) if not current_region_id.is_empty() else 1.0
+
 	return {
 		"exp_per_min": _grind_stats["total_exp"] / minutes,
 		"gold_per_min": _grind_stats["total_gold"] / minutes,
@@ -310,8 +451,39 @@ func get_grind_stats() -> Dictionary:
 		"total_exp": _grind_stats["total_exp"],
 		"total_gold": _grind_stats["total_gold"],
 		"total_encounters": _grind_stats["total_encounters"],
-		"elapsed_seconds": elapsed
+		"elapsed_seconds": elapsed,
+		"fatigue_events_triggered": fatigue_events_triggered,
+		"csi": csi_val,
+		"yield_multiplier": yield_val,
+		"automation_affinity": _automation_affinity,
+		"items_consumed": items_consumed.duplicate(),
+		"per_character_exp": per_character_exp.duplicate(),
+		"injuries_this_session": injuries_this_session,
+		"battles_without_heal": battles_without_heal,
+		"corruption_threshold": corruption_threshold,
+		"save_corruption": _get_save_corruption(),
+		"save_corruption_delta": _get_save_corruption() - _save_corruption_baseline,
 	}
+
+
+func get_time_multiplier() -> float:
+	## Reads the FINALIZED elapsed once stopped, mirroring get_grind_stats — the end-of-session summary is built after is_grinding goes false, so gating on it reported 1.0x for every session.
+	var elapsed_sec: float = _grind_stats["elapsed_seconds"]
+	if is_grinding and _grind_stats["start_time"] > 0.0:
+		elapsed_sec = Time.get_unix_time_from_system() - _grind_stats["start_time"]
+	if elapsed_sec <= 0.0:
+		return 1.0
+
+	var elapsed_min = elapsed_sec / 60.0
+
+	for i in range(TIME_MULTIPLIER_CURVE.size() - 1):
+		var bp_start = TIME_MULTIPLIER_CURVE[i]
+		var bp_end = TIME_MULTIPLIER_CURVE[i + 1]
+		if elapsed_min <= bp_end[0]:
+			var t = (elapsed_min - bp_start[0]) / max(bp_end[0] - bp_start[0], 0.001)
+			return lerpf(bp_start[1], bp_end[1], clampf(t, 0.0, 1.0))
+
+	return TIME_MULTIPLIER_CURVE[-1][1]
 
 
 ## ═══════════════════════════════════════════════════════════════════════
@@ -350,6 +522,22 @@ func create_scaled_enemy_data(base_data: Dictionary) -> Dictionary:
 		if scaled.has(key):
 			scaled[key] = int(scaled[key] * (1.0 + adaptation_bonus))
 
+	# cowir-battle's canonical night-scaling helper. Mirrors the adaptation pattern above:
+	# the two stat shapes (`scaled["stats"]` nested dict + `scaled["max_hp"]` etc. scattered
+	# top-level) are INDEPENDENT storage locations (deep-duplicated at line 516), so scaling
+	# each once each yields no double-scaling — consistent with how adaptation has always
+	# worked. Helper is defensive: no-op at identity / !is_night / missing plumbing (msg 2655).
+	if scaled.has("stats"):
+		scaled["stats"] = BattleEnemySpawner.apply_night_scaling_to_stats(scaled["stats"])
+	var top_stats: Dictionary = {}
+	for key in BattleEnemySpawner.NIGHT_SCALED_STATS:
+		if scaled.has(key):
+			top_stats[key] = scaled[key]
+	if not top_stats.is_empty():
+		var scaled_top: Dictionary = BattleEnemySpawner.apply_night_scaling_to_stats(top_stats)
+		for key in scaled_top:
+			scaled[key] = scaled_top[key]
+
 	# Apply meta-corruption effects
 	if meta_corruption_level >= 2.0:
 		scaled["corruption_effects"] = _get_corruption_effects()
@@ -368,6 +556,7 @@ func on_battle_victory(exp_gained: int, items_gained: Dictionary = {}) -> void:
 	Updates stats, CSI, efficiency, checks thresholds."""
 	battles_completed += 1
 	consecutive_wins += 1
+	battles_without_heal += 1
 	tick_post_collapse_debuff()
 
 	# Apply yield multiplier from CSI
@@ -380,12 +569,20 @@ func on_battle_victory(exp_gained: int, items_gained: Dictionary = {}) -> void:
 
 	# Combined reward scaling
 	var reward_scale: float = yield_mult * (1.0 - crack_penalty)
-	var adjusted_exp: int = int(exp_gained * reward_scale)
+	var adjusted_exp: int = int(exp_gained * reward_scale * get_time_multiplier())
 
 	total_exp_gained += adjusted_exp
 
 	# Track items
+	# Tick 343: skip the "gold" key — tick 342 added it to items_gained as
+	# the gold-forwarding channel, but it's NOT an item ID. AutogrindController
+	# .get_grind_stats counts total_items_gained values as item drops (line
+	# ~568); without this filter the gold amount would be misreported as a
+	# huge fake item count ("you got 5000 'gold' items this session"). The
+	# gold value is handled separately below in the party_gold credit path.
 	for item_id in items_gained:
+		if item_id == "gold":
+			continue
 		var quantity = items_gained[item_id]
 		if total_items_gained.has(item_id):
 			total_items_gained[item_id] += quantity
@@ -402,7 +599,23 @@ func on_battle_victory(exp_gained: int, items_gained: Dictionary = {}) -> void:
 
 	# Update grind stats tracking
 	_grind_stats["total_exp"] += adjusted_exp
-	_grind_stats["total_gold"] += int(items_gained.get("gold", 0) * reward_scale)
+	# Tick 342: gold actually credits the player's pool now. Pre-fix
+	# this line tracked total_gold for the autogrind display but the
+	# player's party_gold never moved — autogrind farms gave EXP but
+	# ZERO gold despite the display implying otherwise. Now both the
+	# display tracker AND GameState.party_gold receive the gold. Skip
+	# GameState.add_gold to avoid re-applying gold_multiplier — incoming
+	# gold already had it applied at the source (HeadlessBattleResolver
+	# tick 341 / live-autogrind tick 342).
+	var raw_gold_in: int = int(items_gained.get("gold", 0))
+	var scaled_gold: int = int(raw_gold_in * reward_scale)
+	_grind_stats["total_gold"] += scaled_gold
+	var gs: Node = null
+	var tree: SceneTree = Engine.get_main_loop() as SceneTree
+	if tree != null and tree.root != null:
+		gs = tree.root.get_node_or_null("GameState")
+	if gs != null and "party_gold" in gs and scaled_gold > 0:
+		gs.party_gold += scaled_gold
 	_grind_stats["total_jp"] += jp_gained
 	_grind_stats["total_encounters"] += 1
 
@@ -443,7 +656,7 @@ func on_battle_defeat() -> void:
 	# Update automation affinity (still autogrinding even on defeat)
 	update_automation_affinity("autogrind")
 
-	if permadeath_staking_enabled or permadeath_enabled:
+	if permadeath_staking_enabled:
 		_trigger_permadeath()
 		return  # _trigger_permadeath calls stop_autogrind
 
@@ -479,6 +692,14 @@ const PARTY_CONDITION_TYPES = {
 	"battles_done": "Battles Done",
 	"corruption": "Corruption",
 	"efficiency": "Efficiency",
+	"member_dead": "Member Dead",
+	"member_injured": "Member Injured",
+	"win_streak": "Win Streak",
+	"time_elapsed": "Time Elapsed",
+	"inventory_items": "Inventory Items",
+	"ability_learned": "Ability Learned",
+	"reached_level": "Reached Level",
+	"rare_item_found": "Rare Item Found",
 	"always": "Always"
 }
 
@@ -495,7 +716,10 @@ const OPERATORS = {
 ## Autogrind action types
 const AUTOGRIND_ACTION_TYPES = {
 	"switch_profile": "Switch Profile",
-	"stop_grinding": "Stop Grinding"
+	"stop_grinding": "Stop Grinding",
+	"heal_party": "Heal Party",
+	"restore_mp": "Restore MP",
+	"flee_battle": "Flee Battle"
 }
 
 ## Default autogrind profile templates
@@ -507,19 +731,50 @@ func _ready() -> void:
 	_load_learned_patterns()
 	_load_csi_data()
 	_load_permadead_characters()
+	_load_session_history()
 
 
 ## Autogrind control
-func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config: Dictionary = {}) -> void:
-	"""Start automated grinding session"""
+## Cadence #20: void → bool return so callers can detect refusal. Backward-compat — existing void-return callers still work (GDScript). Two silent-fail branches now push_warning: already-active (caller-bug: double-start) + empty-party (would start a grind with no members).
+func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config: Dictionary = {}) -> bool:
 	if is_grinding:
-		print("Autogrind already active!")
-		return
+		push_warning("[AUTOGRIND] start_autogrind called while grind already active — refusing double-start (caller bug: stop_autogrind first)")
+		return false
+	# Empty-party guard — a session with 0 alive members has no meaningful loop and would trip fatigue/collapse math with div-by-zero-shaped defaults.
+	var live_count: int = 0
+	for m in party:
+		if m is Combatant:
+			live_count += 1
+	if live_count == 0:
+		push_warning("[AUTOGRIND] start_autogrind called with empty/invalid party (%d entries, 0 Combatants) — refusing to start a memberless grind" % party.size())
+		return false
 
 	is_grinding = true
 	battles_completed = 0
 	total_exp_gained = 0
 	total_items_gained.clear()
+	items_consumed.clear()
+	per_character_exp.clear()
+	injuries_this_session = 0
+	# Reset session-scoped fatigue counter. fatigue_events_triggered is
+	# displayed as a SESSION stat in AutogrindSummary (label "Fatigue
+	# Events") and is the gate for check_fatigue_collapse (requires >= 5
+	# alongside >= 50 battles this session). Without this reset, the
+	# lifetime count carried across sessions — collapse could fire on
+	# battle 50 of a fresh grind with no new fatigue events, just because
+	# the lifetime tally had already crossed the threshold months ago.
+	fatigue_events_triggered = 0
+	battles_without_heal = 0
+	_rotation_suggested_regions.clear()
+	_corruption_bands_crossed.clear()
+	_save_corruption_baseline = _get_save_corruption()
+	_automation_paused = false
+	# Capture injury baseline to detect new injuries
+	_injury_baseline = 0
+	for member in party:
+		if member is Combatant:
+			_injury_baseline += member.permanent_injuries.size()
+	_wire_smart_interrupt_signals(party)
 	efficiency_multiplier = 1.0
 	monster_adaptation_level = 0.0
 	meta_corruption_level = 0.0
@@ -554,7 +809,6 @@ func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config
 	if config.has("permadeath_staking"):
 		var pd_enabled: bool = config["permadeath_staking"]
 		permadeath_staking_enabled = pd_enabled
-		permadeath_enabled = pd_enabled
 		if pd_enabled:
 			efficiency_growth_rate = 0.15  # 50% boost for permadeath staking
 
@@ -564,6 +818,7 @@ func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config
 		efficiency_multiplier, meta_corruption_level,
 		get_csi(current_region_id) if not current_region_id.is_empty() else 0.0
 	])
+	return true
 
 
 func stop_autogrind(reason: String = "Manual stop") -> void:
@@ -572,6 +827,8 @@ func stop_autogrind(reason: String = "Manual stop") -> void:
 		return
 
 	is_grinding = false
+	_automation_paused = false
+	_unwire_smart_interrupt_signals()
 
 	# Finalize grind stats elapsed time
 	if _grind_stats["start_time"] > 0.0:
@@ -592,6 +849,10 @@ func stop_autogrind(reason: String = "Manual stop") -> void:
 	}
 
 	grind_stopped.emit(results)
+
+	# Record session in history
+	_record_session(results, stats)
+
 	print("=== AUTOGRIND STOPPED ===")
 	print("Reason: %s" % reason)
 	print("Battles: %d | EXP: %d | Efficiency: %.1fx" % [
@@ -600,7 +861,6 @@ func stop_autogrind(reason: String = "Manual stop") -> void:
 	print("Yield: %.0f%% | AA: %.3f | EXP/min: %.1f" % [
 		results["yield_multiplier"] * 100.0, _automation_affinity, stats["exp_per_min"]
 	])
-
 
 
 func _run_automated_battle() -> void:
@@ -736,11 +996,11 @@ func _increase_efficiency() -> void:
 	efficiency_multiplier = min(efficiency_multiplier + efficiency_growth_rate, max_efficiency)
 
 	# Increase monster adaptation
-	monster_adaptation_level += 0.05
+	_add_monster_adaptation(0.05)
 
 	# Increase meta-corruption (danger!)
 	var corruption_gain = 0.02 * efficiency_multiplier
-	meta_corruption_level += corruption_gain
+	_add_meta_corruption(corruption_gain)
 
 	# Increase meta-boss spawn chance
 	meta_boss_spawn_chance = min(meta_corruption_level * 0.05, 0.3)
@@ -873,18 +1133,18 @@ func build_meta_boss_enemy_data(is_collapse_boss: bool = false) -> Dictionary:
 func _build_fallback_meta_boss(is_collapse_boss: bool) -> Dictionary:
 	"""Fallback boss when monsters.json cannot be read"""
 	var name_str := "NULL::ENTITY" if is_collapse_boss else _generate_meta_boss_name()
-	var hp := int(600 * (1.0 + meta_corruption_level * 0.2))
+	var hp := int(6000 * (1.0 + meta_corruption_level * 0.2))
 	if is_collapse_boss:
 		hp = int(hp * 1.5)
 	return {
 		"id": "null_entity" if is_collapse_boss else "meta_boss_generated",
 		"name": name_str,
 		"color": Color(0.5, 0.0, 0.8),
-		"stats": {"max_hp": hp, "max_mp": 100, "attack": 40, "defense": 30, "magic": 35, "speed": 16},
+		"stats": {"max_hp": hp, "max_mp": 100, "attack": 400, "defense": 300, "magic": 350, "speed": 16},
 		"max_hp": hp,
-		"attack": 40,
-		"defense": 30,
-		"magic": 35,
+		"attack": 400,
+		"defense": 300,
+		"magic": 350,
 		"speed": 16,
 		"exp_reward": 500,
 		"gold_reward": 300,
@@ -946,7 +1206,7 @@ func on_meta_boss_defeat(boss_data: Dictionary) -> void:
 	"""Called by AutogrindController after the party loses to a meta-boss.
 	Significantly increases corruption."""
 	var corruption_increase := 1.5
-	meta_corruption_level += corruption_increase
+	_add_meta_corruption(corruption_increase)
 	consecutive_wins = 0
 	print("[AUTOGRIND] Meta-boss defeated the party! Corruption increased by %.1f (now %.2f)" % [
 		corruption_increase, meta_corruption_level
@@ -1057,6 +1317,7 @@ func is_character_permadead(character_name: String) -> bool:
 
 func _save_permadead_characters() -> void:
 	"""Write the permadead list to user://autogrind/permadead.json"""
+	if _test_disable_persistence: return
 	var dir := DirAccess.open("user://")
 	if dir and not dir.dir_exists("autogrind"):
 		dir.make_dir("autogrind")
@@ -1085,17 +1346,9 @@ func _load_permadead_characters() -> void:
 	file.close()
 
 
-## Configuration
-func set_interrupt_rule(rule_name: String, value: Variant) -> void:
-	"""Set an interrupt rule"""
-	interrupt_rules[rule_name] = value
-	print("Interrupt rule set: %s = %s" % [rule_name, value])
-
-
 func enable_permadeath_staking(enabled: bool) -> void:
 	"""Enable/disable permadeath staking"""
 	permadeath_staking_enabled = enabled
-	permadeath_enabled = enabled
 	if enabled:
 		# 50% efficiency bonus while permadeath staking is active
 		efficiency_growth_rate = 0.15
@@ -1146,8 +1399,8 @@ func _check_region_crack() -> void:
 
 func _apply_meta_adaptation(crack_level: int) -> void:
 	"""Apply meta-adaptation when region is cracked"""
-	# Increase monster adaptation significantly
-	monster_adaptation_level += crack_level * 0.3  # +30% stats per crack level
+	# Increase monster adaptation significantly (+30% stats per crack level)
+	_add_monster_adaptation(crack_level * 0.3)
 
 	# Monsters gain new behaviors
 	print("[color=purple]Monsters are adapting...[/color]")
@@ -1158,7 +1411,7 @@ func _apply_meta_adaptation(crack_level: int) -> void:
 	if crack_level >= 3:
 		print("  - Enemies exploit weaknesses in your script")
 		# Could trigger corruption increase
-		meta_corruption_level += 0.5
+		_add_meta_corruption(0.5)
 
 
 func _get_region_crack_penalty() -> float:
@@ -1170,43 +1423,43 @@ func _get_region_crack_penalty() -> float:
 	return min(crack_level * reward_penalty_per_crack, 0.75)  # Max 75% penalty
 
 
-func get_region_crack_level(region_id: String) -> int:
-	"""Get crack level for a region"""
-	return region_crack_levels.get(region_id, 0)
+func get_current_world_index() -> int:
+	"""Get the WORLD_REGIONS index for the current region."""
+	for i in range(WORLD_REGIONS.size()):
+		if WORLD_REGIONS[i]["region"] == current_region_id:
+			return i
+	return 0
 
 
-func is_region_cracked(region_id: String) -> bool:
-	"""Check if a region is cracked"""
-	return region_crack_levels.get(region_id, 0) > 0
+func get_next_region() -> Dictionary:
+	"""Get the next region in world progression order. Returns empty if at end or locked."""
+	var current_idx = get_current_world_index()
+	var next_idx = current_idx + 1
+	if next_idx >= WORLD_REGIONS.size():
+		return {}  # Already at final world
+	var next = WORLD_REGIONS[next_idx]
+	# Use runtime lookup — GameState as a global identifier doesn't
+	# resolve in preload() parse contexts used by the test suite, so
+	# we keep this runtime-scoped.
+	if not has_node("/root/GameState"):
+		push_warning("[AUTOGRIND] GameState not available — cannot verify world unlock")
+		return {}
+	var gs = get_node("/root/GameState")
+	if not gs.is_world_unlocked(next["world"]):
+		return {}  # World not unlocked yet
+	return next
 
 
-## Autobattle interrupt system
-func check_autobattle_interrupt(combatant: Combatant) -> String:
-	"""Check if autobattle should interrupt to manual control"""
-	# Check HP danger
-	if combatant.get_hp_percentage() < 30.0:
-		return "Low HP - interrupting to manual control"
-
-	# Check if about to die (enemy can one-shot)
-	# In full implementation, would calculate enemy damage
-
-	# Check if surrounded (multiple enemies targeting)
-	# In full implementation, would check battle state
-
-	return ""  # No interrupt
-
-
-func interrupt_to_manual(reason: String) -> void:
-	"""Interrupt autobattle/autogrind to manual control"""
-	if is_grinding:
-		stop_autogrind(reason)
-
-	autobattle_interrupted.emit(reason)
-	print("[color=orange]⚠ AUTOBATTLE INTERRUPTED ⚠[/color]")
-	print("Reason: %s" % reason)
-	print("Switching to manual control...")
-
-	# In full implementation, would disable autobattle and return control to player
+func advance_to_next_region() -> Dictionary:
+	"""Advance to the next region if available. Returns the new region info or empty."""
+	var next = get_next_region()
+	if next.is_empty():
+		return {}
+	var old_region = current_region_id
+	set_current_region(next["region"])
+	region_advanced.emit(old_region, next["region"], next["world"])
+	print("[AUTOGRIND] Advanced from %s to %s (World %d)" % [old_region, next["region"], next["world"]])
+	return next
 
 
 ## ═══════════════════════════════════════════════════════════════════════
@@ -1229,6 +1482,22 @@ func _create_default_autogrind_profiles() -> Dictionary:
 		profile_list.append({"name": profile_name, "rules": profile_rules})
 
 	return {"profiles": profile_list, "active": 0}
+
+
+## Restore the shipped profile set. _create_default_autogrind_profiles is otherwise reachable ONLY on first run, so a clobbered profiles.json is permanent (2026-08-06: slot 0 became `always -> stop_grinding`, which halts every profile because slots 1-2 defer to it).
+func reset_autogrind_profiles_to_defaults() -> Dictionary:
+	var before_count: int = int((autogrind_profiles.get("profiles", []) as Array).size())
+	var before_active: int = int(autogrind_profiles.get("active", 0))
+	autogrind_profiles = _create_default_autogrind_profiles()
+	_save_autogrind_profiles()
+	var after: Array = autogrind_profiles.get("profiles", [])
+	return {
+		"profiles_before": before_count,
+		"profiles_after": after.size(),
+		"active_before": before_active,
+		"active_after": int(autogrind_profiles.get("active", 0)),
+		"rules_in_first": int(((after[0] as Dictionary).get("rules", []) as Array).size()) if after.size() > 0 else 0
+	}
 
 
 func _create_default_autogrind_rules() -> Array:
@@ -1283,8 +1552,23 @@ func get_autogrind_rules() -> Array:
 	return _create_empty_autogrind_rules()
 
 
-func set_autogrind_rules(rules: Array) -> void:
-	"""Set active autogrind rules"""
+func set_autogrind_rules(rules: Array) -> bool:
+	"""Set active autogrind rules. Returns true on apply, false on rejection.
+	Validates via validate_rule and refuses invalid input (push_warning + no mutation).
+	The choke point for every rule-write path — clipboard import (ScriptShareManager
+	pre-validates too, harmless double-check), grid editor UI, template installer,
+	LLM Rule Composer. Callers that instantiate a UI overlay MUST check the return
+	so the user sees the rejection rather than a phantom "installed" success."""
+	var errors: Array = []
+	for i in range(rules.size()):
+		if typeof(rules[i]) != TYPE_DICTIONARY:
+			errors.append("rule %d: not a dictionary" % i)
+			continue
+		for e in validate_rule(rules[i]):
+			errors.append("rule %d: %s" % [i, str(e)])
+	if not errors.is_empty():
+		push_warning("[AUTOGRIND] set_autogrind_rules REJECTED — %d invalid rule(s), no mutation: %s" % [errors.size(), str(errors)])
+		return false
 	_ensure_autogrind_profiles()
 	var active_idx = autogrind_profiles.get("active", 0)
 	var profiles = autogrind_profiles.get("profiles", [])
@@ -1292,6 +1576,7 @@ func set_autogrind_rules(rules: Array) -> void:
 		profiles[active_idx]["rules"] = rules
 	_save_autogrind_profiles()
 	autogrind_rules_changed.emit()
+	return true
 
 
 func get_autogrind_profiles() -> Array:
@@ -1316,14 +1601,17 @@ func get_active_autogrind_profile_name() -> String:
 	return "Default"
 
 
-func set_active_autogrind_profile(index: int) -> void:
-	"""Set active autogrind profile by index"""
+## Cadence #15: bool return (was void) so grid-editor stale-idx bookmarks fail loud instead of silent no-op. Pre-cadence callers that ignore the return still work — GDScript treats it as backward-compatible.
+func set_active_autogrind_profile(index: int) -> bool:
 	_ensure_autogrind_profiles()
 	var profiles = autogrind_profiles.get("profiles", [])
-	if index >= 0 and index < profiles.size():
-		autogrind_profiles["active"] = index
-		_save_autogrind_profiles()
-		autogrind_rules_changed.emit()
+	if index < 0 or index >= profiles.size():
+		push_warning("[AUTOGRIND] set_active_autogrind_profile: idx %d out of range [0..%d) — no-op (stale bookmark? off-by-one after delete?)" % [index, profiles.size()])
+		return false
+	autogrind_profiles["active"] = index
+	_save_autogrind_profiles()
+	autogrind_rules_changed.emit()
+	return true
 
 
 func create_new_autogrind_profile(name: String = "") -> int:
@@ -1332,6 +1620,7 @@ func create_new_autogrind_profile(name: String = "") -> int:
 	var profiles = autogrind_profiles.get("profiles", [])
 
 	if profiles.size() >= MAX_AUTOGRIND_PROFILES:
+		push_warning("[AUTOGRIND] create_new_autogrind_profile: profile cap reached (%d/%d) — delete a profile first" % [profiles.size(), MAX_AUTOGRIND_PROFILES])
 		return -1
 
 	if name.is_empty():
@@ -1351,7 +1640,11 @@ func rename_autogrind_profile(index: int, new_name: String) -> bool:
 	_ensure_autogrind_profiles()
 	var profiles = autogrind_profiles.get("profiles", [])
 
-	if index < 0 or index >= profiles.size() or new_name.is_empty():
+	if index < 0 or index >= profiles.size():
+		push_warning("[AUTOGRIND] rename_autogrind_profile: idx %d out of range [0..%d) — no-op" % [index, profiles.size()])
+		return false
+	if new_name.is_empty():
+		push_warning("[AUTOGRIND] rename_autogrind_profile: empty name refused for idx %d — no-op" % index)
 		return false
 
 	profiles[index]["name"] = new_name
@@ -1364,7 +1657,11 @@ func delete_autogrind_profile(index: int) -> bool:
 	_ensure_autogrind_profiles()
 	var profiles = autogrind_profiles.get("profiles", [])
 
-	if profiles.size() <= 1 or index < 0 or index >= profiles.size():
+	if profiles.size() <= 1:
+		push_warning("[AUTOGRIND] delete_autogrind_profile: only 1 profile remains — refusing to delete the last one (idx %d)" % index)
+		return false
+	if index < 0 or index >= profiles.size():
+		push_warning("[AUTOGRIND] delete_autogrind_profile: idx %d out of range [0..%d) — no-op" % [index, profiles.size()])
 		return false
 
 	profiles.remove_at(index)
@@ -1443,6 +1740,38 @@ func _evaluate_party_condition(party: Array, condition: Dictionary) -> bool:
 		"efficiency":
 			return _compare_op(efficiency_multiplier, op, value)
 
+		"member_dead":
+			var total = 0
+			var alive = _get_alive_count(party)
+			for m in party:
+				if m is Combatant:
+					total += 1
+			return total > alive  # True if any member is dead
+
+		"member_injured":
+			return check_new_injuries() > 0  # True if any new injury this session
+
+		"win_streak":
+			return _compare_op(consecutive_wins, op, value)
+
+		"time_elapsed":
+			var elapsed_min = 0.0
+			if is_grinding and _grind_stats["start_time"] > 0.0:
+				elapsed_min = (Time.get_unix_time_from_system() - _grind_stats["start_time"]) / 60.0
+			return _compare_op(elapsed_min, op, value)
+
+		"inventory_items":
+			return _compare_op(_get_party_unique_item_count(party), op, value)
+
+		"ability_learned":
+			return _ability_learned_this_session
+
+		"reached_level":
+			return _compare_op(_get_party_max_job_level(party), op, value)
+
+		"rare_item_found":
+			return _rare_drop_this_session
+
 		"always":
 			return true
 
@@ -1501,6 +1830,137 @@ func _get_alive_count(party: Array) -> int:
 	return count
 
 
+func _get_party_unique_item_count(party: Array) -> int:
+	var seen: Dictionary = {}
+	for member in party:
+		if member is Combatant:
+			for item_id in member.inventory:
+				seen[item_id] = true
+	return seen.size()
+
+
+func _get_party_max_job_level(party: Array) -> int:
+	var top: int = 0
+	for member in party:
+		if member is Combatant and member.job_level > top:
+			top = member.job_level
+	return top
+
+
+func _wire_smart_interrupt_signals(party: Array) -> void:
+	_ability_learned_this_session = false
+	_rare_drop_this_session = false
+	_ability_learned_conns.clear()
+	for member in party:
+		if member is Combatant and member.has_signal("ability_learned"):
+			var cb: Callable = Callable(self, "_on_smart_interrupt_ability_learned")
+			member.ability_learned.connect(cb)
+			_ability_learned_conns.append({"combatant": member, "callable": cb})
+	var bm: Node = _get_autoload_node("BattleManager")
+	if bm != null and bm.has_signal("rare_drop_found"):
+		_rare_drop_conn = Callable(self, "_on_smart_interrupt_rare_drop")
+		bm.rare_drop_found.connect(_rare_drop_conn)
+
+
+func _unwire_smart_interrupt_signals() -> void:
+	for entry in _ability_learned_conns:
+		var member = entry.get("combatant")
+		var cb: Callable = entry.get("callable")
+		if member != null and is_instance_valid(member) and member.ability_learned.is_connected(cb):
+			member.ability_learned.disconnect(cb)
+	_ability_learned_conns.clear()
+	var bm: Node = _get_autoload_node("BattleManager")
+	if bm != null and _rare_drop_conn.is_valid() and bm.rare_drop_found.is_connected(_rare_drop_conn):
+		bm.rare_drop_found.disconnect(_rare_drop_conn)
+
+
+func _on_smart_interrupt_ability_learned(_ability_id: String) -> void:
+	_ability_learned_this_session = true
+
+
+func _on_smart_interrupt_rare_drop(_item_id: String, _base_chance: float) -> void:
+	_rare_drop_this_session = true
+
+
+## Public seam for battle paths that bypass BattleManager's rare_drop_found signal (headless).
+func notify_rare_drop(item_id: String, base_chance: float) -> void:
+	_on_smart_interrupt_rare_drop(item_id, base_chance)
+
+
+## Controller bridge — set true when the controller actually ENTERS PAUSED (deferred pause included), false on resume.
+func set_automation_paused(paused: bool) -> void:
+	_automation_paused = paused
+
+
+## "Was THIS battle automated?" — the quest manual_only credit gate (kill_n hook) predicate.
+## True only while the controller actively chains. A paused grind is NOT automated: manual
+## encounters fought during pause credit normally. Headless battles only run while chaining,
+## so headless ⇒ automated by construction — refactors must preserve that invariant.
+func is_battle_automated() -> bool:
+	return is_grinding and not _automation_paused
+
+
+func _get_autoload_node(name_: String) -> Node:
+	var tree: SceneTree = Engine.get_main_loop() as SceneTree
+	if tree != null and tree.root != null:
+		return tree.root.get_node_or_null(name_)
+	return null
+
+
+## All meta-corruption INCREASES route here so the threshold-band warning is never skipped.
+## (Bands originally fired only on the efficiency path; meta-boss defeat +1.5 and region-crack +0.5 bypassed them.)
+func _add_meta_corruption(amount: float) -> void:
+	if amount <= 0.0:
+		return
+	meta_corruption_level += amount
+	_maybe_emit_corruption_band()
+
+
+## All monster-adaptation INCREASES route here so the region-rotation advisory is never skipped.
+## (Advisory originally fired only on the efficiency path; region-crack +crack_level*0.3 bypassed it — the
+## very moment the "monsters have adapted, consider moving" hint is most apt.)
+func _add_monster_adaptation(amount: float) -> void:
+	if amount <= 0.0:
+		return
+	monster_adaptation_level += amount
+	_maybe_suggest_region_rotation()
+
+
+func _maybe_emit_corruption_band() -> void:
+	# Fire the signal once per band per session — a bumpy corruption graph shouldn't repeat-spam the same warning.
+	var bands := [
+		["critical", CORRUPTION_BAND_CRITICAL],
+		["danger", CORRUPTION_BAND_DANGER],
+		["warning", CORRUPTION_BAND_WARNING],
+	]
+	for entry in bands:
+		var name: String = entry[0]
+		var threshold: float = entry[1]
+		if meta_corruption_level >= threshold and not _corruption_bands_crossed.get(name, false):
+			_corruption_bands_crossed[name] = true
+			corruption_threshold_crossed.emit(name, meta_corruption_level)
+
+
+func _get_save_corruption() -> float:
+	var gs: Node = _get_autoload_node("GameState")
+	if gs != null and "corruption_level" in gs:
+		return float(gs.corruption_level)
+	return 0.0
+
+
+func _maybe_suggest_region_rotation() -> void:
+	# Once-per-region-per-session advisory — Suggest moving before the region cracks + the danger multiplier kicks in.
+	if current_region_id.is_empty():
+		return
+	if monster_adaptation_level < ROTATION_SUGGEST_THRESHOLD:
+		return
+	if _rotation_suggested_regions.get(current_region_id, false):
+		return
+	_rotation_suggested_regions[current_region_id] = true
+	var suggested: Dictionary = get_next_region()
+	region_rotation_suggested.emit(current_region_id, suggested, monster_adaptation_level)
+
+
 func apply_autogrind_actions(actions: Array) -> void:
 	"""Apply autogrind rule actions (switch profiles, stop grinding, heal party, flee, etc.)"""
 	for action in actions:
@@ -1520,22 +1980,117 @@ func apply_autogrind_actions(actions: Array) -> void:
 				stop_autogrind("Autogrind rule triggered stop")
 
 			"heal_party":
-				# Restore 30% of max HP and MP for each living party member
-				var heal_pct: float = action.get("value", 30.0) / 100.0
+				# Use potions from inventory to heal party (no free heals). Cadence #18: distinguish "no eligible member" from "no consumable" so a player debugging why their heal_party rule doesn't seem to fire can tell rule-design-mismatch from empty-inventory.
+				var healed_count = 0
+				var eligible_count = 0
 				for member in grind_party:
-					if member is Combatant and member.is_alive:
-						var hp_restore: int = int(member.max_hp * heal_pct)
-						var mp_restore: int = int(member.max_mp * heal_pct)
-						member.current_hp = min(member.current_hp + hp_restore, member.max_hp)
-						member.current_mp = min(member.current_mp + mp_restore, member.max_mp)
-				print("[AUTOGRIND] heal_party: restored %.0f%% HP/MP to living party members" % (heal_pct * 100.0))
+					if member is Combatant and member.is_alive and member.current_hp < member.max_hp * 0.8:
+						eligible_count += 1
+						for item_pair in [["hi_potion", 200], ["potion", 50]]:
+							if member.get_item_count(item_pair[0]) > 0:
+								member.remove_item(item_pair[0], 1)
+								member.heal(item_pair[1])
+								_track_item_consumed(item_pair[0])
+								healed_count += 1
+								break
+				if healed_count > 0:
+					print("[AUTOGRIND] heal_party: used potions on %d members" % healed_count)
+				elif eligible_count == 0:
+					print("[AUTOGRIND] heal_party: no members needed healing (all ≥80%% HP) — no-op")
+				else:
+					print("[AUTOGRIND] heal_party: %d members needed healing but no potions in party inventory" % eligible_count)
+
+			"restore_mp":
+				# Use ethers from inventory to restore MP (no free restores). Cadence #18: same eligibility/consumable split as heal_party above.
+				var restored_count = 0
+				var eligible_count = 0
+				for member in grind_party:
+					if member is Combatant and member.is_alive and member.current_mp < member.max_mp * 0.5:
+						eligible_count += 1
+						for item_pair in [["hi_ether", 100], ["ether", 30]]:
+							if member.get_item_count(item_pair[0]) > 0:
+								member.remove_item(item_pair[0], 1)
+								member.restore_mp(item_pair[1])
+								_track_item_consumed(item_pair[0])
+								restored_count += 1
+								break
+				if restored_count > 0:
+					print("[AUTOGRIND] restore_mp: used ethers on %d members" % restored_count)
+				elif eligible_count == 0:
+					print("[AUTOGRIND] restore_mp: no members needed MP (all ≥50%% MP) — no-op")
+				else:
+					print("[AUTOGRIND] restore_mp: %d members needed MP but no ethers in party inventory" % eligible_count)
 
 			"flee_battle":
-				# flee_battle is handled by AutogrindController (_skip_next_battle flag).
-				# If apply_autogrind_actions is called directly (e.g. from old code paths),
-				# fall back to stopping the grind so the action is never silently ignored.
-				print("[AUTOGRIND] flee_battle action reached AutogrindSystem directly — stopping grind as fallback")
-				stop_autogrind("Flee triggered by autogrind rule")
+				# flee_battle is handled by AutogrindController (_skip_next_battle flag). Reaching this branch means the controller filter was bypassed — a real code-path regression. push_warning surfaces it in the editor warnings panel + CI (cadence #18).
+				push_warning("[AUTOGRIND] flee_battle action reached AutogrindSystem.apply_autogrind_actions directly — AutogrindController filter regression; falling back to stop_autogrind so the action is never silently ignored")
+				stop_autogrind("Flee triggered by autogrind rule (unexpected controller-filter bypass)")
+
+
+func _track_item_consumed(item_id: String) -> void:
+	"""Track an item consumed during the grind session."""
+	# Cadence #21: empty string would create a phantom items_consumed[""] entry that leaks into get_items_consumed_summary — refuse it and warn the caller (typo in the id string, or a caller passing an unset var).
+	if item_id.is_empty():
+		push_warning("[AUTOGRIND] track_item_consumed called with empty item_id — refusing to create phantom entry (caller bug)")
+		return
+	# Cadence #21: unknown id → still track (so an id drift is visible in the summary), but push_warning so the drift surfaces in the editor warnings panel + CI. Defensive: only checks if ItemSystem is reachable.
+	var item_system: Node = _get_autoload_node("ItemSystem")
+	if item_system != null and item_system.has_method("get_item"):
+		var rec: Dictionary = item_system.get_item(item_id)
+		if rec.is_empty():
+			push_warning("[AUTOGRIND] track_item_consumed: id '%s' not in items.json — tracking anyway (typo? data drift? new id?)" % item_id)
+	items_consumed[item_id] = items_consumed.get(item_id, 0) + 1
+	# Iron Vigil streak breaks if any healing item is used, in or between battles.
+	if _is_healing_item(item_id):
+		battles_without_heal = 0
+
+
+const _HEAL_EFFECT_KEYS := ["heal_hp", "heal_mp", "heal_hp_percent", "heal_mp_percent", "revive"]
+
+
+## Effects-driven so new healing items in items.json break the streak with zero code change.
+func _is_healing_item(item_id: String) -> bool:
+	var item_system: Node = _get_autoload_node("ItemSystem")
+	if item_system == null or not item_system.has_method("get_item"):
+		# Fallback for bare-instance tests without autoloads — the original hardcoded set.
+		return item_id in ["potion", "hi_potion", "mega_potion", "ether", "hi_ether", "phoenix_down"]
+	var rec: Dictionary = item_system.get_item(item_id)
+	var effects = rec.get("effects", {})
+	for key in _HEAL_EFFECT_KEYS:
+		if key in effects:
+			return true
+	return false
+
+
+func track_item_consumed(item_id: String) -> void:
+	"""Public API for external callers (GameLoop between-battle healing)."""
+	_track_item_consumed(item_id)
+
+
+func track_character_exp(char_name: String, exp_amount: int) -> void:
+	"""Track EXP gained by a specific character during this session."""
+	per_character_exp[char_name] = per_character_exp.get(char_name, 0) + exp_amount
+
+
+func check_new_injuries() -> int:
+	"""Count new injuries since session start. Updates injuries_this_session."""
+	var current_total = 0
+	for member in grind_party:
+		if member is Combatant:
+			current_total += member.permanent_injuries.size()
+	injuries_this_session = max(0, current_total - _injury_baseline)
+	return injuries_this_session
+
+
+func get_items_consumed_summary() -> String:
+	"""Get a human-readable summary of items consumed."""
+	if items_consumed.is_empty():
+		return "None"
+	var parts: Array = []
+	for item_id in items_consumed:
+		var name = ItemNameResolver.resolve(item_id)
+		parts.append("%s x%d" % [name, items_consumed[item_id]])
+	return ", ".join(parts)
 
 
 ## ═══════════════════════════════════════════════════════════════════════
@@ -1569,6 +2124,7 @@ func _load_autogrind_profiles() -> void:
 
 func _save_autogrind_profiles() -> void:
 	"""Save autogrind profiles to file"""
+	if _test_disable_persistence: return
 	var save_path = "user://autogrind/profiles.json"
 
 	var dir = DirAccess.open("user://")
@@ -1588,6 +2144,7 @@ func _save_autogrind_profiles() -> void:
 
 func _save_learned_patterns() -> void:
 	"""Save learned patterns to file"""
+	if _test_disable_persistence: return
 	var save_path = "user://autogrind/learned_patterns.json"
 
 	var dir = DirAccess.open("user://")
@@ -1628,6 +2185,7 @@ func _load_learned_patterns() -> void:
 
 func _save_csi_data() -> void:
 	"""Save CSI and automation affinity data to file"""
+	if _test_disable_persistence: return
 	var save_path = "user://autogrind/csi_data.json"
 
 	var dir = DirAccess.open("user://")
@@ -1700,40 +2258,214 @@ func save_data() -> Dictionary:
 	}
 
 
-func load_data(data: Dictionary) -> void:
-	"""Restore persistent autogrind state from a save file dictionary.
-	Applies CSI decay based on time since last save."""
-	if not data is Dictionary:
+const SNAPSHOT_PATH: String = "user://autogrind_snapshot.json"
+
+
+func save_grind_snapshot(controller_snapshot: Dictionary) -> bool:
+	"""Save current grind state for resume after game close.
+	Cadence #14: symmetric with load_grind_snapshot's tick-344 hardening —
+	every failure mode push_warns so a snapshot-save miss is diagnosable
+	from the console instead of vanishing silently."""
+	if _test_disable_persistence: return false
+	if not is_grinding:
+		push_warning("[AUTOGRIND] save_grind_snapshot called while not grinding — caller bug (only save mid-session); snapshot not written")
+		return false
+
+	# Finalize elapsed time for snapshot
+	var elapsed = 0.0
+	if _grind_stats.has("start_time") and _grind_stats["start_time"] > 0.0:
+		elapsed = Time.get_unix_time_from_system() - _grind_stats["start_time"]
+
+	var snapshot = {
+		"version": 1,
+		"saved_at": Time.get_datetime_string_from_system(),
+		"controller": controller_snapshot,
+		"system": {
+			"battles_completed": battles_completed,
+			"total_exp_gained": total_exp_gained,
+			"total_items_gained": total_items_gained.duplicate(),
+			"items_consumed": items_consumed.duplicate(),
+			"per_character_exp": per_character_exp.duplicate(),
+			"efficiency_multiplier": efficiency_multiplier,
+			"monster_adaptation_level": monster_adaptation_level,
+			"meta_corruption_level": meta_corruption_level,
+			"meta_boss_spawn_chance": meta_boss_spawn_chance,
+			"consecutive_wins": consecutive_wins,
+			"collapse_count": collapse_count,
+			"fatigue_events_triggered": fatigue_events_triggered,
+			"current_region_id": current_region_id,
+			"permadeath_staking_enabled": permadeath_staking_enabled,
+			"elapsed_seconds": elapsed,
+			"grind_stats_gold": _grind_stats.get("total_gold", 0),
+			"grind_stats_jp": _grind_stats.get("total_jp", 0),
+			"grind_stats_encounters": _grind_stats.get("total_encounters", 0),
+			# Session-scoped dedup/streak state — without these, resume re-fires
+			# already-shown corruption/rotation toasts and resets the Iron Vigil streak.
+			"battles_without_heal": battles_without_heal,
+			"corruption_bands_crossed": _corruption_bands_crossed.duplicate(),
+			"rotation_suggested_regions": _rotation_suggested_regions.duplicate(),
+			"save_corruption_baseline": _save_corruption_baseline,
+		},
+	}
+
+	var file = FileAccess.open(SNAPSHOT_PATH, FileAccess.WRITE)
+	if not file:
+		push_warning("[AUTOGRIND] save_grind_snapshot: FileAccess.open failed for %s (error %d) — resume next session will be unavailable" % [SNAPSHOT_PATH, FileAccess.get_open_error()])
+		return false
+	file.store_string(JSON.stringify(snapshot, "\t"))
+	file.close()
+	print("[AUTOGRIND] Grind snapshot saved (%d battles, %d EXP)" % [battles_completed, total_exp_gained])
+	return true
+
+
+func load_grind_snapshot() -> Dictionary:
+	"""Load a saved grind snapshot. Returns empty if none exists.
+
+	Tick 344: every failure mode AFTER existence push_warns instead of
+	silently returning {}. Pre-fix a corrupted snapshot (e.g., game
+	crashed mid-write, hand-edited JSON, version-bump migration) just
+	returned {} — the player's resume button vanished with zero
+	diagnostic. The file-missing case stays silent (most players never
+	have a snapshot). Same loud-fail pattern as tick 322 (load_monsters_
+	data) and tick 323 (load_custom_presets).
+	"""
+	if not FileAccess.file_exists(SNAPSHOT_PATH):
+		return {}
+	var file = FileAccess.open(SNAPSHOT_PATH, FileAccess.READ)
+	if not file:
+		push_warning("[AUTOGRIND] grind snapshot at %s exists but FileAccess.open failed (error %d) — resume disabled this session" % [SNAPSHOT_PATH, FileAccess.get_open_error()])
+		return {}
+	var json = JSON.new()
+	var parse_result: int = json.parse(file.get_as_text())
+	file.close()
+	if parse_result != OK:
+		push_warning("[AUTOGRIND] grind snapshot JSON parse error: %s — file likely corrupted by interrupted write; resume disabled" % json.get_error_message())
+		return {}
+	if not (json.data is Dictionary):
+		push_warning("[AUTOGRIND] grind snapshot parsed but root is not a Dictionary (got %s) — file shape changed; resume disabled" % typeof(json.data))
+		return {}
+	if json.data.get("version", 0) != 1:
+		push_warning("[AUTOGRIND] grind snapshot version mismatch (expected 1, got %s) — snapshot from a different game version; resume disabled" % str(json.data.get("version", 0)))
+		return {}
+	return json.data
+
+
+func has_grind_snapshot() -> bool:
+	"""Check if a grind snapshot exists (for UI 'Resume' button)."""
+	return FileAccess.file_exists(SNAPSHOT_PATH)
+
+
+## Cadence #11: existence-alone was a silent-fail UX bug — a corrupted snapshot passed has_grind_snapshot() so the Resume button rendered as "RESUME (0 battles, 0 EXP)", click fell through in _resume_autogrind with only a console log, and the menu hid with zero UI feedback. Callers that gate a user-visible Resume button MUST use this loadability probe instead.
+func is_snapshot_loadable() -> bool:
+	if not FileAccess.file_exists(SNAPSHOT_PATH):
+		return false
+	# load_grind_snapshot already push_warns on every failure mode (tick 344) —
+	# emptying-out here is enough signal for the gate.
+	return not load_grind_snapshot().is_empty()
+
+
+func clear_grind_snapshot() -> void:
+	"""Delete the snapshot after clean stop or successful resume."""
+	if FileAccess.file_exists(SNAPSHOT_PATH):
+		DirAccess.remove_absolute(SNAPSHOT_PATH)
+		print("[AUTOGRIND] Snapshot cleared")
+
+
+func restore_system_from_snapshot(system_data: Dictionary) -> void:
+	"""Restore AutogrindSystem mid-session state from a snapshot."""
+	battles_completed = system_data.get("battles_completed", 0)
+	total_exp_gained = system_data.get("total_exp_gained", 0)
+	total_items_gained = system_data.get("total_items_gained", {}).duplicate()
+	items_consumed = system_data.get("items_consumed", {}).duplicate()
+	per_character_exp = system_data.get("per_character_exp", {}).duplicate()
+	efficiency_multiplier = system_data.get("efficiency_multiplier", 1.0)
+	monster_adaptation_level = system_data.get("monster_adaptation_level", 0.0)
+	meta_corruption_level = system_data.get("meta_corruption_level", 0.0)
+	meta_boss_spawn_chance = system_data.get("meta_boss_spawn_chance", 0.0)
+	consecutive_wins = system_data.get("consecutive_wins", 0)
+	collapse_count = system_data.get("collapse_count", 0)
+	fatigue_events_triggered = system_data.get("fatigue_events_triggered", 0)
+	current_region_id = system_data.get("current_region_id", "")
+	permadeath_staking_enabled = system_data.get("permadeath_staking_enabled", false)
+
+	# Session-scoped dedup/streak state. restore runs AFTER start_autogrind cleared
+	# these, so restored values win. Old (pre-field) snapshots lack the keys and
+	# keep the cleared defaults — same behavior they had before, no version bump.
+	battles_without_heal = int(system_data.get("battles_without_heal", 0))
+	_corruption_bands_crossed = (system_data.get("corruption_bands_crossed", {}) as Dictionary).duplicate()
+	_rotation_suggested_regions = (system_data.get("rotation_suggested_regions", {}) as Dictionary).duplicate()
+	# Missing key ⇒ keep start_autogrind's re-baseline (previous behavior).
+	_save_corruption_baseline = float(system_data.get("save_corruption_baseline", _save_corruption_baseline))
+
+	# Reconstruct grind_stats with adjusted start_time
+	var saved_elapsed = system_data.get("elapsed_seconds", 0.0)
+	_grind_stats = {
+		"start_time": Time.get_unix_time_from_system() - saved_elapsed,
+		"total_exp": total_exp_gained,
+		"total_gold": system_data.get("grind_stats_gold", 0),
+		"total_jp": system_data.get("grind_stats_jp", 0),
+		"total_encounters": system_data.get("grind_stats_encounters", 0),
+		"elapsed_seconds": saved_elapsed,
+	}
+
+	print("[AUTOGRIND] System state restored (%d battles, %.1fx efficiency)" % [battles_completed, efficiency_multiplier])
+
+
+## ═══════════════════════════════════════════════════════════════════════
+## SESSION HISTORY
+## ═══════════════════════════════════════════════════════════════════════
+
+func _record_session(results: Dictionary, stats: Dictionary) -> void:
+	"""Record a completed grind session to history."""
+	var entry = {
+		"timestamp": Time.get_datetime_string_from_system(),
+		"battles": results.get("battles_completed", 0),
+		"total_exp": results.get("total_exp_gained", 0),
+		"efficiency": results.get("final_efficiency", 1.0),
+		"corruption": results.get("corruption_level", 0.0),
+		"region": current_region_id,
+		"reason": results.get("stop_reason", "Unknown"),
+		"duration_sec": stats.get("elapsed_seconds", _grind_stats.get("elapsed_seconds", 0.0)),
+		"exp_per_min": stats.get("exp_per_min", 0.0),
+		"gold": stats.get("total_gold", 0),
+		"collapses": collapse_count,
+		"permadeaths": permadead_characters.size(),
+		"items_consumed": items_consumed.duplicate(),
+	}
+	session_history.append(entry)
+	if session_history.size() > MAX_SESSION_HISTORY:
+		session_history.remove_at(0)
+	_save_session_history()
+
+
+func get_session_history() -> Array:
+	"""Get the session history array (most recent last)."""
+	return session_history
+
+
+func _save_session_history() -> void:
+	"""Persist session history to file."""
+	if _test_disable_persistence: return
+	var file = FileAccess.open(SESSION_HISTORY_PATH, FileAccess.WRITE)
+	if not file:
+		print("[AUTOGRIND] Warning: could not save session history")
 		return
+	file.store_string(JSON.stringify(session_history, "\t"))
+	file.close()
 
-	# Restore CSI data
-	_region_csi = data.get("region_csi", {}).duplicate()
-	_csi_timestamps = data.get("csi_timestamps", {}).duplicate()
-	_automation_affinity = data.get("automation_affinity", 0.0)
-	region_crack_levels = data.get("region_crack_levels", {}).duplicate()
-	current_region_id = data.get("current_region_id", "")
-	_grind_stats = data.get("grind_stats", {
-		"start_time": 0.0,
-		"total_exp": 0,
-		"total_gold": 0,
-		"total_jp": 0,
-		"total_encounters": 0,
-		"elapsed_seconds": 0.0
-	}).duplicate()
 
-	# Restore learned patterns
-	var saved_patterns = data.get("learned_patterns", {})
-	if saved_patterns is Dictionary and not saved_patterns.is_empty():
-		learned_patterns = saved_patterns.duplicate(true)
-
-	# Apply time-based CSI decay since last save
-	var now: float = Time.get_unix_time_from_system()
-	for region_id in _csi_timestamps.keys():
-		var last_time: float = _csi_timestamps[region_id]
-		var hours_away: float = (now - last_time) / 3600.0
-		if hours_away > 0.0 and _region_csi.has(region_id):
-			_region_csi[region_id] = maxf(0.0, _region_csi[region_id] - CSI_DECAY_RATE * hours_away)
-
-	print("Loaded autogrind data (AA: %.3f, CSI regions: %d)" % [
-		_automation_affinity, _region_csi.size()
-	])
+func _load_session_history() -> void:
+	"""Load session history from file."""
+	if not FileAccess.file_exists(SESSION_HISTORY_PATH):
+		return
+	var file = FileAccess.open(SESSION_HISTORY_PATH, FileAccess.READ)
+	if not file:
+		return
+	var text = file.get_as_text()
+	file.close()
+	var json = JSON.new()
+	if json.parse(text) == OK and json.data is Array:
+		session_history = json.data
+		print("[AUTOGRIND] Loaded %d session history entries" % session_history.size())
+	else:
+		print("[AUTOGRIND] Warning: corrupt session history file, starting fresh")

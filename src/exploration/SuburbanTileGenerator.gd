@@ -235,6 +235,14 @@ func _get_impassable_types() -> Array:
 func _get_debug_atlas_name() -> String:
 	return "debug_suburban_atlas"
 
+
+func _get_sheet_key() -> String:
+	return "suburban"
+
+
+func _get_tile_type_name(type: int) -> String:
+	return TileType.keys()[type] if type >= 0 and type < TileType.size() else ""
+
 func _draw_tile(img: Image, tile_type: int, palette: Dictionary, variant: int) -> void:
 	match tile_type:
 		TileType.SIDEWALK:

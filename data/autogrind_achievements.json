@@ -1,0 +1,58 @@
+{
+  "achievements": [
+    {
+      "id": "achievement_autogrind_first_grind",
+      "name": "First Steps",
+      "description": "Complete your first autogrind session",
+      "icon": "•",
+      "stat_key": "battles_won",
+      "threshold": 1,
+      "session_scope": false
+    },
+    {
+      "id": "achievement_autogrind_century",
+      "name": "Centurion",
+      "description": "Win 100 battles in a single grind session",
+      "icon": "C",
+      "stat_key": "battles_won",
+      "threshold": 100,
+      "session_scope": true
+    },
+    {
+      "id": "achievement_autogrind_millennium",
+      "name": "Millennial",
+      "description": "Win 1,000 battles in a single grind session",
+      "icon": "M",
+      "stat_key": "battles_won",
+      "threshold": 1000,
+      "session_scope": true
+    },
+    {
+      "id": "achievement_autogrind_ten_thousand_exp",
+      "name": "Ten Thousand Suns",
+      "description": "Earn 10,000 EXP in a single grind session",
+      "icon": "*",
+      "stat_key": "total_exp",
+      "threshold": 10000,
+      "session_scope": true
+    },
+    {
+      "id": "achievement_autogrind_unhealed",
+      "name": "Iron Vigil",
+      "description": "Survive 50 battles without healing in one session",
+      "icon": "+",
+      "stat_key": "battles_without_heal",
+      "threshold": 50,
+      "session_scope": true
+    },
+    {
+      "id": "achievement_autogrind_survived_collapse",
+      "name": "Reality Broke",
+      "description": "Trigger a system collapse and keep grinding",
+      "icon": "!",
+      "stat_key": "collapse_count",
+      "threshold": 1,
+      "session_scope": true
+    }
+  ]
+}

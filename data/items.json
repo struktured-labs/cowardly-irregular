@@ -1,302 +1,1809 @@
 {
-	"potion": {
-		"id": "potion",
-		"name": "Potion",
-		"category": 0,
-		"target_type": 0,
-		"description": "Restores 50 HP",
-		"effects": {
-			"heal_hp": 50
-		},
-		"cost": 50
-	},
-	"hi_potion": {
-		"id": "hi_potion",
-		"name": "Hi-Potion",
-		"category": 0,
-		"target_type": 0,
-		"description": "Restores 200 HP",
-		"effects": {
-			"heal_hp": 200
-		},
-		"cost": 200
-	},
-	"mega_potion": {
-		"id": "mega_potion",
-		"name": "Mega Potion",
-		"category": 0,
-		"target_type": 1,
-		"description": "Restores 100 HP to all allies",
-		"effects": {
-			"heal_hp": 100
-		},
-		"cost": 400
-	},
-	"elixir": {
-		"id": "elixir",
-		"name": "Elixir",
-		"category": 0,
-		"target_type": 0,
-		"description": "Fully restores HP and MP",
-		"effects": {
-			"heal_hp_percent": 100,
-			"heal_mp_percent": 100
-		},
-		"cost": 1000
-	},
-	"ether": {
-		"id": "ether",
-		"name": "Ether",
-		"category": 0,
-		"target_type": 0,
-		"description": "Restores 30 MP",
-		"effects": {
-			"heal_mp": 30
-		},
-		"cost": 150
-	},
-	"hi_ether": {
-		"id": "hi_ether",
-		"name": "Hi-Ether",
-		"category": 0,
-		"target_type": 0,
-		"description": "Restores 100 MP",
-		"effects": {
-			"heal_mp": 100
-		},
-		"cost": 500
-	},
-	"antidote": {
-		"id": "antidote",
-		"name": "Antidote",
-		"category": 2,
-		"target_type": 0,
-		"description": "Cures poison",
-		"effects": {
-			"cure_status": ["poison"]
-		},
-		"cost": 80
-	},
-	"echo_herbs": {
-		"id": "echo_herbs",
-		"name": "Echo Herbs",
-		"category": 2,
-		"target_type": 0,
-		"description": "Cures silence",
-		"effects": {
-			"cure_status": ["silence"]
-		},
-		"cost": 100
-	},
-	"remedy": {
-		"id": "remedy",
-		"name": "Remedy",
-		"category": 2,
-		"target_type": 0,
-		"description": "Cures all status effects",
-		"effects": {
-			"cure_all_status": true
-		},
-		"cost": 300
-	},
-	"phoenix_down": {
-		"id": "phoenix_down",
-		"name": "Phoenix Down",
-		"category": 2,
-		"target_type": 0,
-		"description": "Revives a fallen ally with 25% HP",
-		"effects": {
-			"revive": true,
-			"heal_hp_percent": 25
-		},
-		"cost": 500
-	},
-	"power_drink": {
-		"id": "power_drink",
-		"name": "Power Drink",
-		"category": 1,
-		"target_type": 0,
-		"description": "Increases attack for 3 turns",
-		"effects": {
-			"add_buff": {
-				"type": "attack_up",
-				"power": 1.5,
-				"duration": 3
-			}
-		},
-		"cost": 200
-	},
-	"speed_tonic": {
-		"id": "speed_tonic",
-		"name": "Speed Tonic",
-		"category": 1,
-		"target_type": 0,
-		"description": "Increases speed for 3 turns",
-		"effects": {
-			"add_buff": {
-				"type": "speed_up",
-				"power": 1.5,
-				"duration": 3
-			}
-		},
-		"cost": 200
-	},
-	"bomb_fragment": {
-		"id": "bomb_fragment",
-		"name": "Bomb Fragment",
-		"category": 3,
-		"target_type": 2,
-		"description": "Deals 100 fire damage",
-		"effects": {
-			"damage": 100,
-			"element": "fire"
-		},
-		"cost": 150
-	},
-	"arctic_wind": {
-		"id": "arctic_wind",
-		"name": "Arctic Wind",
-		"category": 3,
-		"target_type": 3,
-		"description": "Deals 80 ice damage to all enemies",
-		"effects": {
-			"damage": 80,
-			"element": "ice"
-		},
-		"cost": 300
-	},
-	"x_potion": {
-		"id": "x_potion",
-		"name": "X-Potion",
-		"category": 0,
-		"target_type": 0,
-		"description": "Fully restores one ally's HP",
-		"effects": {
-			"heal_hp_percent": 100
-		},
-		"cost": 600
-	},
-	"smoke_bomb": {
-		"id": "smoke_bomb",
-		"name": "Smoke Bomb",
-		"category": 1,
-		"target_type": 1,
-		"description": "Guarantees escape from non-boss battles",
-		"effects": {
-			"escape_battle": true
-		},
-		"cost": 100
-	},
-	"tent": {
-		"id": "tent",
-		"name": "Tent",
-		"category": 0,
-		"target_type": 1,
-		"description": "Restores 50% HP and MP to all allies. Use at save points.",
-		"effects": {
-			"heal_hp_percent": 50,
-			"heal_mp_percent": 50,
-			"save_point_only": true
-		},
-		"cost": 500
-	},
-	"eye_drops": {
-		"id": "eye_drops",
-		"name": "Eye Drops",
-		"category": 2,
-		"target_type": 0,
-		"description": "Cures blindness",
-		"effects": {
-			"cure_status": ["blind"]
-		},
-		"cost": 80
-	},
-	"gold_needle": {
-		"id": "gold_needle",
-		"name": "Gold Needle",
-		"category": 2,
-		"target_type": 0,
-		"description": "Cures petrification",
-		"effects": {
-			"cure_status": ["petrify"]
-		},
-		"cost": 200
-	},
-	"lightning_bolt": {
-		"id": "lightning_bolt",
-		"name": "Lightning Bolt",
-		"category": 3,
-		"target_type": 2,
-		"description": "Deals 120 lightning damage to one enemy",
-		"effects": {
-			"damage": 120,
-			"element": "lightning"
-		},
-		"cost": 250
-	},
-	"holy_water": {
-		"id": "holy_water",
-		"name": "Holy Water",
-		"category": 3,
-		"target_type": 2,
-		"description": "Deals 150 holy damage to undead. Weak against living foes.",
-		"effects": {
-			"damage": 150,
-			"element": "holy",
-			"bonus_vs_undead": 2.0
-		},
-		"cost": 200
-	},
-	"defense_tonic": {
-		"id": "defense_tonic",
-		"name": "Defense Tonic",
-		"category": 1,
-		"target_type": 0,
-		"description": "Increases defense for 3 turns",
-		"effects": {
-			"add_buff": {
-				"type": "defense_up",
-				"power": 1.5,
-				"duration": 3
-			}
-		},
-		"cost": 200
-	},
-	"magic_tonic": {
-		"id": "magic_tonic",
-		"name": "Magic Tonic",
-		"category": 1,
-		"target_type": 0,
-		"description": "Increases magic power for 3 turns",
-		"effects": {
-			"add_buff": {
-				"type": "magic_up",
-				"power": 1.5,
-				"duration": 3
-			}
-		},
-		"cost": 200
-	},
-	"repel": {
-		"id": "repel",
-		"name": "Repel",
-		"category": 1,
-		"target_type": 1,
-		"description": "Prevents random encounters for 50 steps",
-		"effects": {
-			"repel_steps": 50
-		},
-		"cost": 400
-	},
-	"mega_ether": {
-		"id": "mega_ether",
-		"name": "Mega Ether",
-		"category": 0,
-		"target_type": 1,
-		"description": "Restores 50 MP to all allies",
-		"effects": {
-			"heal_mp": 50
-		},
-		"cost": 600
-	}
+  "potion": {
+    "id": "potion",
+    "name": "Potion",
+    "category": 0,
+    "target_type": 0,
+    "description": "Restores 500 HP",
+    "effects": {
+      "heal_hp": 500
+    },
+    "cost": 50,
+    "flavor": "A dusty bottle that smells faintly of mint. Every adventurer's first purchase, last resort, and half their inventory weight."
+  },
+  "hi_potion": {
+    "id": "hi_potion",
+    "name": "Hi-Potion",
+    "category": 0,
+    "target_type": 0,
+    "description": "Restores 2000 HP",
+    "effects": {
+      "heal_hp": 2000
+    },
+    "cost": 200,
+    "flavor": "A larger bottle with a wax seal bearing a tower insignia. The apothecary's note says: use sparingly. Everyone uses it often."
+  },
+  "mega_potion": {
+    "id": "mega_potion",
+    "name": "Mega Potion",
+    "category": 0,
+    "target_type": 1,
+    "description": "Restores 1000 HP to all allies",
+    "effects": {
+      "heal_hp": 1000
+    },
+    "cost": 400,
+    "flavor": "Looks like regular potion, shares like a miracle. The label claims it was blessed. The label is printed. The blessing is questionable."
+  },
+  "elixir": {
+    "id": "elixir",
+    "name": "Elixir",
+    "category": 0,
+    "target_type": 0,
+    "description": "Fully restores HP and MP",
+    "effects": {
+      "heal_hp_percent": 100,
+      "heal_mp_percent": 100
+    },
+    "cost": 1000,
+    "flavor": "A rare vial of silver liquid, cold to the touch and faintly humming. Wasted on common fights. Exactly correct for the one you barely survive."
+  },
+  "ether": {
+    "id": "ether",
+    "name": "Ether",
+    "category": 0,
+    "target_type": 0,
+    "description": "Restores 30 MP",
+    "effects": {
+      "heal_mp": 30
+    },
+    "cost": 150,
+    "flavor": "A pale blue tincture distilled from focused concentration and regrets. Tastes like remembering why you left home."
+  },
+  "hi_ether": {
+    "id": "hi_ether",
+    "name": "Hi-Ether",
+    "category": 0,
+    "target_type": 0,
+    "description": "Restores 100 MP",
+    "effects": {
+      "heal_mp": 100
+    },
+    "cost": 500,
+    "flavor": "A refined ether in a glass vial with gilt etching. The etching reads, in tiny script: drink now, balance the ledger later."
+  },
+  "antidote": {
+    "id": "antidote",
+    "name": "Antidote",
+    "category": 2,
+    "target_type": 0,
+    "description": "Cures poison",
+    "effects": {
+      "cure_status": [
+        "poison"
+      ]
+    },
+    "cost": 80,
+    "flavor": "Bitter herbs in cloudy water. It will cure the poison. It will not make you happy about having been poisoned."
+  },
+  "echo_herbs": {
+    "id": "echo_herbs",
+    "name": "Echo Herbs",
+    "category": 2,
+    "target_type": 0,
+    "description": "Cures silence",
+    "effects": {
+      "cure_status": [
+        "silence"
+      ]
+    },
+    "cost": 100,
+    "flavor": "A small pouch of crushed leaves. Sprinkled on the tongue, the words come back. Sprinkled in the wind, so does the wind."
+  },
+  "remedy": {
+    "id": "remedy",
+    "name": "Remedy",
+    "category": 2,
+    "target_type": 0,
+    "description": "Cures all status effects",
+    "effects": {
+      "cure_all_status": true
+    },
+    "cost": 300,
+    "flavor": "A cure-all tonic from a village apothecary who has seen it all and is, frankly, tired. Cures every status effect. Does not cure despair."
+  },
+  "phoenix_down": {
+    "id": "phoenix_down",
+    "name": "Phoenix Down",
+    "category": 2,
+    "target_type": 0,
+    "description": "Revives a fallen ally with 25% HP",
+    "effects": {
+      "revive": true,
+      "heal_hp_percent": 25
+    },
+    "cost": 500,
+    "flavor": "A single feather, perpetually warm. It feels impatient to its holder, as if it has somewhere else to be."
+  },
+  "power_drink": {
+    "id": "power_drink",
+    "name": "Power Drink",
+    "category": 1,
+    "target_type": 0,
+    "description": "Increases attack for 3 turns",
+    "effects": {
+      "add_buff": {
+        "type": "attack_up",
+        "power": 1.5,
+        "duration": 3
+      }
+    },
+    "cost": 200,
+    "flavor": "A vile, muscle-brown concoction that tastes like a grudge. Increases attack. Does not increase judgment."
+  },
+  "speed_tonic": {
+    "id": "speed_tonic",
+    "name": "Speed Tonic",
+    "category": 1,
+    "target_type": 0,
+    "description": "Increases speed for 3 turns",
+    "effects": {
+      "add_buff": {
+        "type": "speed_up",
+        "power": 1.5,
+        "duration": 3
+      }
+    },
+    "cost": 200,
+    "flavor": "A carbonated tonic that fizzes louder than it should. Drink it fast, which is the point."
+  },
+  "bomb_fragment": {
+    "id": "bomb_fragment",
+    "name": "Bomb Fragment",
+    "category": 3,
+    "target_type": 2,
+    "description": "Deals 1000 fire damage",
+    "effects": {
+      "damage": 1000,
+      "element": "fire"
+    },
+    "cost": 150,
+    "flavor": "A volatile chunk of compressed heat, wrapped in oiled cloth. Warning: the cloth is decorative, not protective."
+  },
+  "arctic_wind": {
+    "id": "arctic_wind",
+    "name": "Arctic Wind",
+    "category": 3,
+    "target_type": 3,
+    "description": "Deals 800 ice damage to all enemies",
+    "effects": {
+      "damage": 800,
+      "element": "ice"
+    },
+    "cost": 300,
+    "flavor": "A sealed glass sphere containing a single indignant gust of north wind. Breaks open loud. Ends louder."
+  },
+  "x_potion": {
+    "id": "x_potion",
+    "name": "X-Potion",
+    "category": 0,
+    "target_type": 0,
+    "description": "Fully restores one ally's HP",
+    "effects": {
+      "heal_hp_percent": 100
+    },
+    "cost": 600,
+    "flavor": "A potion so concentrated the apothecary charges by the drop. Fully restores one ally. Also fully depletes one coin purse."
+  },
+  "smoke_bomb": {
+    "id": "smoke_bomb",
+    "name": "Smoke Bomb",
+    "category": 1,
+    "target_type": 1,
+    "description": "Guarantees escape from non-boss battles",
+    "effects": {
+      "escape_battle": true
+    },
+    "cost": 100,
+    "flavor": "A rice-paper ball packed with alchemist's smoke. Throws badly, works perfectly. Will not fool any boss who has read the manual."
+  },
+  "tent": {
+    "id": "tent",
+    "name": "Tent",
+    "category": 0,
+    "target_type": 1,
+    "description": "Restores 50% HP and MP to all allies. In dungeons, only works beside a save crystal.",
+    "effects": {
+      "heal_hp_percent": 50,
+      "heal_mp_percent": 50,
+      "save_point_only": true
+    },
+    "cost": 500,
+    "flavor": "Oiled canvas folded to the size of a brick. Rest inside and your body remembers it was alive. Unreasonably heavy considering."
+  },
+  "eye_drops": {
+    "id": "eye_drops",
+    "name": "Eye Drops",
+    "category": 2,
+    "target_type": 0,
+    "description": "Cures blindness",
+    "effects": {
+      "cure_status": [
+        "blind"
+      ]
+    },
+    "cost": 80,
+    "flavor": "A small vial with a dropper made of twisted silver. Clears blindness. Does not clear whatever you were blinded looking at."
+  },
+  "gold_needle": {
+    "id": "gold_needle",
+    "name": "Gold Needle",
+    "category": 2,
+    "target_type": 0,
+    "description": "Cures petrification",
+    "effects": {
+      "cure_status": [
+        "petrify"
+      ]
+    },
+    "cost": 200,
+    "flavor": "A thin needle of gold alloy. Applied to petrified flesh, it reminds the flesh it was flesh. Reusable, though no one tries."
+  },
+  "lightning_bolt": {
+    "id": "lightning_bolt",
+    "name": "Lightning Bolt",
+    "category": 3,
+    "target_type": 2,
+    "description": "Deals 1200 lightning damage to one enemy",
+    "effects": {
+      "damage": 1200,
+      "element": "lightning"
+    },
+    "cost": 250,
+    "flavor": "A slim metal rod that hums if you hold it wrong. Legal in all but three kingdoms. Hurled, not thrown."
+  },
+  "holy_water": {
+    "id": "holy_water",
+    "name": "Holy Water",
+    "category": 3,
+    "target_type": 2,
+    "description": "Deals 1500 holy damage to undead. Weak against living foes.",
+    "effects": {
+      "damage": 1500,
+      "element": "holy",
+      "bonus_vs_undead": 2.0
+    },
+    "cost": 200,
+    "flavor": "Spring water blessed at dawn by someone sincere. The water has opinions about the undead. Living things are fine by it."
+  },
+  "defense_tonic": {
+    "id": "defense_tonic",
+    "name": "Defense Tonic",
+    "category": 1,
+    "target_type": 0,
+    "description": "Increases defense for 3 turns",
+    "effects": {
+      "add_buff": {
+        "type": "defense_up",
+        "power": 1.5,
+        "duration": 3
+      }
+    },
+    "cost": 200,
+    "flavor": "A thick, pond-colored syrup that coats the throat. Slows nothing. Hardens everything else."
+  },
+  "magic_tonic": {
+    "id": "magic_tonic",
+    "name": "Magic Tonic",
+    "category": 1,
+    "target_type": 0,
+    "description": "Increases magic power for 3 turns",
+    "effects": {
+      "add_buff": {
+        "type": "magic_up",
+        "power": 1.5,
+        "duration": 3
+      }
+    },
+    "cost": 200,
+    "flavor": "A cobalt potion with a single swirl of silver that refuses to mix. Sharpens the edge of spellwork for a short while."
+  },
+  "repel": {
+    "id": "repel",
+    "name": "Repel",
+    "category": 1,
+    "target_type": 1,
+    "description": "Prevents random encounters for 50 steps",
+    "effects": {
+      "repel_steps": 50
+    },
+    "cost": 400,
+    "flavor": "A small paper charm with a faint garlic smell. Keeps monsters incurious for fifty steps. Walk briskly."
+  },
+  "mega_ether": {
+    "id": "mega_ether",
+    "name": "Mega Ether",
+    "category": 0,
+    "target_type": 1,
+    "description": "Restores 50 MP to all allies",
+    "effects": {
+      "heal_mp": 50
+    },
+    "cost": 600,
+    "flavor": "A bulk-order ether with a sloshing echo. Restores a little to everyone. Nobody is grateful enough for how many there used to be."
+  },
+  "calibrant_token": {
+    "id": "calibrant_token",
+    "name": "Calibrant Token",
+    "category": 4,
+    "target_type": 4,
+    "description": "A small obsidian disc with the rune of Mordaine. Pulses with a calibrated heartbeat. Cannot be sold.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Each face shows a different sigil — a chancellor, a coordinator, a regulator, a director. Four sides of the same coin. Or maybe the same side, four times."
+  },
+  "boss_trophy": {
+    "id": "boss_trophy",
+    "name": "Boss Trophy",
+    "category": 4,
+    "target_type": 4,
+    "description": "Proof you beat something that was designed to be hard.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Mounted on an invisible plaque in your save file. Slightly embarrassed about it."
+  },
+  "masterite_shard": {
+    "id": "masterite_shard",
+    "name": "Masterite Shard",
+    "category": 4,
+    "target_type": 4,
+    "description": "A jagged piece of a Masterite's crystalline body. Hums faintly.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Catalogued by the Calibrant as 'Acceptable Loss Material'."
+  },
+  "masterite_core": {
+    "id": "masterite_core",
+    "name": "Masterite Core",
+    "category": 4,
+    "target_type": 4,
+    "description": "The crystallized intent that drove a Masterite.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Even broken, it tries to organize the contents of your bag."
+  },
+  "masterite_circuit": {
+    "id": "masterite_circuit",
+    "name": "Masterite Circuit",
+    "category": 4,
+    "target_type": 4,
+    "description": "A printed circuit board recovered from a futuristic Masterite.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Optimized for a benchmark that no one runs anymore."
+  },
+  "masterite_prism": {
+    "id": "masterite_prism",
+    "name": "Masterite Prism",
+    "category": 4,
+    "target_type": 4,
+    "description": "A multi-faceted shard from an abstract Masterite — refracts a color you can't name.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Looking at it for too long resolves a koan you didn't know you had."
+  },
+  "masterite_badge": {
+    "id": "masterite_badge",
+    "name": "Masterite Badge",
+    "category": 4,
+    "target_type": 4,
+    "description": "An HR-issued identification badge. Still warm.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Lists pronouns. Lists job title. Doesn't list a name."
+  },
+  "fire_dragon_scale": {
+    "id": "fire_dragon_scale",
+    "name": "Fire Dragon Scale",
+    "category": 4,
+    "target_type": 4,
+    "description": "A scale from Pyrroth. Warm to the touch even after death.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "It is still vaguely contemptuous of you."
+  },
+  "ice_dragon_scale": {
+    "id": "ice_dragon_scale",
+    "name": "Ice Dragon Scale",
+    "category": 4,
+    "target_type": 4,
+    "description": "A scale from Glacius. Cold enough to leave frost on your gloves.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Glacius would have explained why this drop chance is fair, given time."
+  },
+  "lightning_dragon_scale": {
+    "id": "lightning_dragon_scale",
+    "name": "Lightning Dragon Scale",
+    "category": 4,
+    "target_type": 4,
+    "description": "A scale from Voltharion. Static charge tickles your palm.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Voltharion wanted you to know that the static is statistically expected."
+  },
+  "shadow_dragon_scale": {
+    "id": "shadow_dragon_scale",
+    "name": "Shadow Dragon Scale",
+    "category": 4,
+    "target_type": 4,
+    "description": "A scale from Umbraxis. Absorbs ambient light.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Heavier in your inventory than it ought to be. Existentially."
+  },
+  "void_fragment": {
+    "id": "void_fragment",
+    "name": "Void Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "Solidified absence. Distorts the inventory grid around it.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Categorized as both 'item' and 'lack of item' depending on the save load."
+  },
+  "void_crystal": {
+    "id": "void_crystal",
+    "name": "Void Crystal",
+    "category": 4,
+    "target_type": 4,
+    "description": "Crystallized nothing. Refuses to render correctly.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Item description redacted to preserve narrative coherence."
+  },
+  "void_dust": {
+    "id": "void_dust",
+    "name": "Void Dust",
+    "category": 4,
+    "target_type": 4,
+    "description": "Powder that scatters in the absence of motion.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Goes where it would have gone if you hadn't picked it up."
+  },
+  "bat_wing": {
+    "id": "bat_wing",
+    "name": "Bat Wing",
+    "category": 4,
+    "target_type": 4,
+    "description": "A leathery wing membrane. Useful for fletching and old-school recipes.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "wolf_fang": {
+    "id": "wolf_fang",
+    "name": "Wolf Fang",
+    "category": 4,
+    "target_type": 4,
+    "description": "A canine tooth. Sharper than it looks.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "rat_tail": {
+    "id": "rat_tail",
+    "name": "Rat Tail",
+    "category": 4,
+    "target_type": 4,
+    "description": "Long, prehensile, and grosser than necessary.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "troll_hide": {
+    "id": "troll_hide",
+    "name": "Troll Hide",
+    "category": 4,
+    "target_type": 4,
+    "description": "Tough leather with embedded warts. Smells of cave.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "beast_hide": {
+    "id": "beast_hide",
+    "name": "Beast Hide",
+    "category": 4,
+    "target_type": 4,
+    "description": "Coarse fur and leather from a wolf alpha.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "imp_horn": {
+    "id": "imp_horn",
+    "name": "Imp Horn",
+    "category": 4,
+    "target_type": 4,
+    "description": "A short curving horn. Still slightly hot.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "bone": {
+    "id": "bone",
+    "name": "Bone",
+    "category": 4,
+    "target_type": 4,
+    "description": "A leg or arm bone from a skeleton. Doesn't ask which.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "ectoplasm": {
+    "id": "ectoplasm",
+    "name": "Ectoplasm",
+    "category": 4,
+    "target_type": 4,
+    "description": "Sticky ghost residue. Faintly luminescent.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "ice_shard": {
+    "id": "ice_shard",
+    "name": "Ice Shard",
+    "category": 4,
+    "target_type": 4,
+    "description": "A piece of unmelting cold.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "crow_feather": {
+    "id": "crow_feather",
+    "name": "Crow Feather",
+    "category": 4,
+    "target_type": 4,
+    "description": "A black feather. Spiteful even in repose.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "iron_shell": {
+    "id": "iron_shell",
+    "name": "Iron Shell",
+    "category": 4,
+    "target_type": 4,
+    "description": "A beetle's metallic carapace.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "poison_spore": {
+    "id": "poison_spore",
+    "name": "Poison Spore",
+    "category": 4,
+    "target_type": 4,
+    "description": "Toxic fungal seeds — handle with cloth.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "plague_sample": {
+    "id": "plague_sample",
+    "name": "Plague Sample",
+    "category": 4,
+    "target_type": 4,
+    "description": "A vial of diseased fluid. Do not open.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "rusty_armor": {
+    "id": "rusty_armor",
+    "name": "Rusty Armor",
+    "category": 4,
+    "target_type": 4,
+    "description": "Salvaged plate from a rat guard. Mostly oxidation.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "gear_cog": {
+    "id": "gear_cog",
+    "name": "Gear Cog",
+    "category": 4,
+    "target_type": 4,
+    "description": "A toothed wheel from a clockwork mechanism.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "scrap_metal": {
+    "id": "scrap_metal",
+    "name": "Scrap Metal",
+    "category": 4,
+    "target_type": 4,
+    "description": "Assorted broken machine parts.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "circuit_board": {
+    "id": "circuit_board",
+    "name": "Circuit Board",
+    "category": 4,
+    "target_type": 4,
+    "description": "A printed circuit board. Some traces still pulse.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "copper_pipe": {
+    "id": "copper_pipe",
+    "name": "Copper Pipe",
+    "category": 4,
+    "target_type": 4,
+    "description": "A length of plumbing. Surprisingly heavy.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "brass_plate": {
+    "id": "brass_plate",
+    "name": "Brass Plate",
+    "category": 4,
+    "target_type": 4,
+    "description": "A polished brass panel with rivets.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "coal_chunk": {
+    "id": "coal_chunk",
+    "name": "Coal Chunk",
+    "category": 4,
+    "target_type": 4,
+    "description": "A piece of compressed black mineral fuel.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "spring_coil": {
+    "id": "spring_coil",
+    "name": "Spring Coil",
+    "category": 4,
+    "target_type": 4,
+    "description": "A tightly wound metal coil. Releases when bent.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "stolen_wrench": {
+    "id": "stolen_wrench",
+    "name": "Stolen Wrench",
+    "category": 4,
+    "target_type": 4,
+    "description": "Someone's tool. Marked with someone else's initials.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "pressure_valve": {
+    "id": "pressure_valve",
+    "name": "Pressure Valve",
+    "category": 4,
+    "target_type": 4,
+    "description": "A brass valve fitting. Hisses if you don't tighten it.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "rust_flakes": {
+    "id": "rust_flakes",
+    "name": "Rust Flakes",
+    "category": 4,
+    "target_type": 4,
+    "description": "Iron oxide debris. Inhalation hazard.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "iron_oxide": {
+    "id": "iron_oxide",
+    "name": "Iron Oxide",
+    "category": 4,
+    "target_type": 4,
+    "description": "Pure red rust powder.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "sludge_sample": {
+    "id": "sludge_sample",
+    "name": "Sludge Sample",
+    "category": 4,
+    "target_type": 4,
+    "description": "Toxic industrial waste in a sealed vial.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "coffee_thermos": {
+    "id": "coffee_thermos",
+    "name": "Coffee Thermos",
+    "category": 4,
+    "target_type": 4,
+    "description": "A still-warm thermos. Empty.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Six years of bad meetings condensed into a single object."
+  },
+  "clipboard": {
+    "id": "clipboard",
+    "name": "Clipboard",
+    "category": 4,
+    "target_type": 4,
+    "description": "An aluminum clipboard with paperwork attached.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The top form is a request for a form to request a form."
+  },
+  "data_fragment": {
+    "id": "data_fragment",
+    "name": "Data Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "A loose chunk of structured information.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Decoded: 'TODO: write description'"
+  },
+  "corrupted_data": {
+    "id": "corrupted_data",
+    "name": "Corrupted Data",
+    "category": 4,
+    "target_type": 4,
+    "description": "Information that decoded incorrectly.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "###!@@##!@!##@##!!@"
+  },
+  "corrupted_core": {
+    "id": "corrupted_core",
+    "name": "Corrupted Core",
+    "category": 4,
+    "target_type": 4,
+    "description": "A central processor twisted by data corruption.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Still trying to execute. Wisely, you don't let it."
+  },
+  "memory_chip": {
+    "id": "memory_chip",
+    "name": "Memory Chip",
+    "category": 4,
+    "target_type": 4,
+    "description": "A storage module. Retains data inert.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "memory_fragment": {
+    "id": "memory_fragment",
+    "name": "Memory Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "A scrap of recollection. Not yours.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "ghost_data": {
+    "id": "ghost_data",
+    "name": "Ghost Data",
+    "category": 4,
+    "target_type": 4,
+    "description": "Information from a freed process that wouldn't quite leave.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "debug_log": {
+    "id": "debug_log",
+    "name": "Debug Log",
+    "category": 4,
+    "target_type": 4,
+    "description": "A timestamped record of everything that went wrong.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Reads in part: 'INFO: This message exists to prove control flow reached here.'"
+  },
+  "debug_token": {
+    "id": "debug_token",
+    "name": "Debug Token",
+    "category": 4,
+    "target_type": 4,
+    "description": "A privilege token leaked from a debug build.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "May grant access to commands you weren't supposed to see."
+  },
+  "logic_core": {
+    "id": "logic_core",
+    "name": "Logic Core",
+    "category": 4,
+    "target_type": 4,
+    "description": "A pristine module of cold reasoning.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Refuses to accept narrative justifications."
+  },
+  "firewall_shard": {
+    "id": "firewall_shard",
+    "name": "Firewall Shard",
+    "category": 4,
+    "target_type": 4,
+    "description": "A piece of the perimeter. Still vaguely defensive.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "defense_matrix": {
+    "id": "defense_matrix",
+    "name": "Defense Matrix",
+    "category": 4,
+    "target_type": 4,
+    "description": "A pattern of intersecting shields. Lattice still warm.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "loop_shard": {
+    "id": "loop_shard",
+    "name": "Loop Shard",
+    "category": 4,
+    "target_type": 4,
+    "description": "A piece of a recursion that never returned.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Bring two of these and a base case to a fire to learn how to cook."
+  },
+  "recursion_token": {
+    "id": "recursion_token",
+    "name": "Recursion Token",
+    "category": 4,
+    "target_type": 4,
+    "description": "A token that contains itself.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "(See: Recursion Token)"
+  },
+  "wild_integer": {
+    "id": "wild_integer",
+    "name": "Wild Integer",
+    "category": 4,
+    "target_type": 4,
+    "description": "A number with no declared bounds. Off-by-one risk.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Holds itself in low regard."
+  },
+  "null_shard": {
+    "id": "null_shard",
+    "name": "Null Shard",
+    "category": 4,
+    "target_type": 4,
+    "description": "Crystallized absence-of-pointer.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Try to use it and it segfaults out of your inventory."
+  },
+  "empty_container": {
+    "id": "empty_container",
+    "name": "Empty Container",
+    "category": 4,
+    "target_type": 4,
+    "description": "The set of all things contained: { }.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The most honest item in your bag."
+  },
+  "phantom_byte": {
+    "id": "phantom_byte",
+    "name": "Phantom Byte",
+    "category": 4,
+    "target_type": 4,
+    "description": "An 8-bit value that exists between states.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "chrono_gear": {
+    "id": "chrono_gear",
+    "name": "Chrono Gear",
+    "category": 4,
+    "target_type": 4,
+    "description": "A gear that turns slightly slower than it should.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "time_crystal": {
+    "id": "time_crystal",
+    "name": "Time Crystal",
+    "category": 4,
+    "target_type": 4,
+    "description": "Solidified seconds. Each facet a moment.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Returns to the bag where you found it after a few hours."
+  },
+  "meta_blade": {
+    "id": "meta_blade",
+    "name": "Meta Blade",
+    "category": 4,
+    "target_type": 4,
+    "description": "A weapon-shaped item that exists at the level above weapons.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Cannot be equipped without breaking the schema."
+  },
+  "meta_fragment": {
+    "id": "meta_fragment",
+    "name": "Meta Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "A piece of a meta-level entity. Recursive ownership.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "If you take this, you also took this."
+  },
+  "awareness_gem": {
+    "id": "awareness_gem",
+    "name": "Awareness Gem",
+    "category": 4,
+    "target_type": 4,
+    "description": "A faceted stone that watches you watch it.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Mounting it in a hat causes the hat to make eye contact."
+  },
+  "optimization_core": {
+    "id": "optimization_core",
+    "name": "Optimization Core",
+    "category": 4,
+    "target_type": 4,
+    "description": "Pure efficiency, distilled.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Has been quietly refactoring your save file."
+  },
+  "heart_of_inefficiency": {
+    "id": "heart_of_inefficiency",
+    "name": "Heart of Inefficiency",
+    "category": 4,
+    "target_type": 4,
+    "description": "The vital organ of Optimization Itself. Beats slowly.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Whoever holds it accepts that some things are worth doing the long way."
+  },
+  "soul_gem": {
+    "id": "soul_gem",
+    "name": "Soul Gem",
+    "category": 4,
+    "target_type": 4,
+    "description": "A reaper-bound crystal containing one(1) soul.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Receipt enclosed."
+  },
+  "reaper_scythe": {
+    "id": "reaper_scythe",
+    "name": "Reaper Scythe",
+    "category": 4,
+    "target_type": 4,
+    "description": "A weapon of the permadeath reaper. Cannot be equipped — it equips itself elsewhere.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "permafrost_gem": {
+    "id": "permafrost_gem",
+    "name": "Permafrost Gem",
+    "category": 4,
+    "target_type": 4,
+    "description": "An icy gemstone from Glacius's hoard.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "inferno_crystal": {
+    "id": "inferno_crystal",
+    "name": "Inferno Crystal",
+    "category": 4,
+    "target_type": 4,
+    "description": "A red crystal that emits warmth indefinitely.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "storm_orb": {
+    "id": "storm_orb",
+    "name": "Storm Orb",
+    "category": 4,
+    "target_type": 4,
+    "description": "A glass sphere with weather inside it.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "dark_crystal": {
+    "id": "dark_crystal",
+    "name": "Dark Crystal",
+    "category": 4,
+    "target_type": 4,
+    "description": "A shadowy gem. Reflects only suggestions of light.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "cursed_plate": {
+    "id": "cursed_plate",
+    "name": "Cursed Plate",
+    "category": 4,
+    "target_type": 4,
+    "description": "Plate armor with a residual curse.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "shadow_blade": {
+    "id": "shadow_blade",
+    "name": "Shadow Blade",
+    "category": 4,
+    "target_type": 4,
+    "description": "A sword forged from negative space.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "adaptive_gel": {
+    "id": "adaptive_gel",
+    "name": "Adaptive Gel",
+    "category": 4,
+    "target_type": 4,
+    "description": "Polymorphic slime residue. Takes the shape of its container.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "evolution_stone": {
+    "id": "evolution_stone",
+    "name": "Evolution Stone",
+    "category": 4,
+    "target_type": 4,
+    "description": "A stone that smells of pending phase transitions.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "crystal_shard": {
+    "id": "crystal_shard",
+    "name": "Crystal Shard",
+    "category": 4,
+    "target_type": 4,
+    "description": "A small fragment of a crystal golem.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "mythril_ore": {
+    "id": "mythril_ore",
+    "name": "Mythril Ore",
+    "category": 4,
+    "target_type": 4,
+    "description": "Pure mythril — the legendary alloy base.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "crown_of_rats": {
+    "id": "crown_of_rats",
+    "name": "Crown of Rats",
+    "category": 4,
+    "target_type": 4,
+    "description": "A circlet of woven rat tails and tiny bones.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Heavier than its size warrants. Smaller than its title implies."
+  },
+  "rat_king_pelt": {
+    "id": "rat_king_pelt",
+    "name": "Rat King Pelt",
+    "category": 4,
+    "target_type": 4,
+    "description": "Tanned hide of the Cave Rat King, complete with bald patches.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "crystal": {
+    "id": "crystal",
+    "name": "Crystal",
+    "category": 4,
+    "target_type": 4,
+    "description": "A new-age quartz of unspecified purpose.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Came with a free pamphlet you immediately threw out."
+  },
+  "incense": {
+    "id": "incense",
+    "name": "Incense",
+    "category": 4,
+    "target_type": 4,
+    "description": "A bundle of sage and other dried herbs.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "newspaper": {
+    "id": "newspaper",
+    "name": "Newspaper",
+    "category": 4,
+    "target_type": 4,
+    "description": "Yesterday's local paper. Or last decade's.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Headline: 'Things Used To Be Better, Sources Confirm'"
+  },
+  "expired_coupon": {
+    "id": "expired_coupon",
+    "name": "Expired Coupon",
+    "category": 4,
+    "target_type": 4,
+    "description": "Five cents off Cheerios. Expired June 1987.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "She still tried to use it."
+  },
+  "dog_collar": {
+    "id": "dog_collar",
+    "name": "Dog Collar",
+    "category": 4,
+    "target_type": 4,
+    "description": "A nameless leather collar.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "tennis_ball": {
+    "id": "tennis_ball",
+    "name": "Tennis Ball",
+    "category": 4,
+    "target_type": 4,
+    "description": "Slightly damp. Smells like good times.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "skateboard_wheel": {
+    "id": "skateboard_wheel",
+    "name": "Skateboard Wheel",
+    "category": 4,
+    "target_type": 4,
+    "description": "Polyurethane wheel with bearings still spinning.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "energy_drink": {
+    "id": "energy_drink",
+    "name": "Energy Drink",
+    "category": 4,
+    "target_type": 4,
+    "description": "Mostly caffeine and bright colors.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "shiny_coin": {
+    "id": "shiny_coin",
+    "name": "Shiny Coin",
+    "category": 4,
+    "target_type": 4,
+    "description": "Currency. Or just shiny. The crow couldn't tell.",
+    "effects": {},
+    "cost": 0,
+    "flavor": ""
+  },
+  "megalixir": {
+    "id": "megalixir",
+    "name": "Megalixir",
+    "category": 0,
+    "target_type": 1,
+    "description": "Fully restores HP and MP for the entire party.",
+    "effects": {
+      "heal_hp_percent": 100,
+      "heal_mp_percent": 100,
+      "all_party": true
+    },
+    "cost": 5000,
+    "flavor": "A larger Elixir. Same silver liquid, more of it."
+  },
+  "fool_card": {
+    "id": "fool_card",
+    "name": "Fool Card",
+    "category": 4,
+    "target_type": 4,
+    "description": "A tarot card from Madame Orrery's deck. Gains a mark each world she finds you in.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The Fool. The beginning of a journey before the traveler knows what kind of journey it is. The card you give someone who doesn't know enough yet to be afraid."
+  },
+  "wild_card": {
+    "id": "wild_card",
+    "name": "Wild Card",
+    "category": 4,
+    "target_type": 4,
+    "description": "What the Fool Card became, once all five marks had rearranged themselves into the same symbol.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The symbol the Calibrant had used to sign their work across six worlds and however many years. The card you carry when the building is done and the question is still open."
+  },
+  "luck_charm_minor": {
+    "id": "luck_charm_minor",
+    "name": "Minor Luck Charm",
+    "category": 4,
+    "target_type": 4,
+    "description": "A chip of polished amber with something suspended inside it that isn't quite visible.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Given by a fortune teller who closed her wagon door behind her as the party walked away. When they looked back, the wagon had not moved. It was simply less there than it had been."
+  },
+  "orrery_pendant": {
+    "id": "orrery_pendant",
+    "name": "Orrery's Pendant",
+    "category": 4,
+    "target_type": 4,
+    "description": "A small disc strung on cord, carried across six worlds before it was given. Lets you hear what the Masterites weren't allowed to say.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Everyone deserves to finish what they were saying. Even if it took defeating them first to make enough quiet."
+  },
+  "orrery_deviation_report": {
+    "id": "orrery_deviation_report",
+    "name": "Orrery's Deviation Report",
+    "category": 4,
+    "target_type": 4,
+    "description": "Folded notes in Madame Orrery's hand. Observations from worlds the Calibrant had not designed her to visit.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "She had been writing it for some time. The lamp cast the same shadow it always cast, in a room that had the quality of a place someone had lived in entirely through the act of noticing."
+  },
+  "old_guard_tally": {
+    "id": "old_guard_tally",
+    "name": "Old Guard Tally",
+    "category": 4,
+    "target_type": 4,
+    "description": "A fragment of the Warden's memory, crystallized in stone. Warm to the touch. Someone is still counting.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Thirty-seven turned back. One got through. The tally now reads thirty-eight, and the hand that keeps the count is no longer the one that started it."
+  },
+  "tempos_quarry": {
+    "id": "tempos_quarry",
+    "name": "Tempo's Quarry",
+    "category": 4,
+    "target_type": 4,
+    "description": "A calling card, worn at the edges. The Tempo's mark. The Tempo of the Mainspring has additional dialogue if this is in inventory.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Two words, in a slanted hand that enjoyed itself while writing: Good run."
+  },
+  "arbiters_recognition": {
+    "id": "arbiters_recognition",
+    "name": "Arbiter's Recognition",
+    "category": 4,
+    "target_type": 4,
+    "description": "A piece of steel that still holds the shape of a blade. The Arbiter's final assessment, material form.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Measured. Found sufficient. The steel remembers the measurement the way a wound remembers the knife."
+  },
+  "the_carried_flame": {
+    "id": "the_carried_flame",
+    "name": "The Carried Flame",
+    "category": 4,
+    "target_type": 4,
+    "description": "A vial of something warm. The Curator's handwriting on the label.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Lit before we arrived. The Curator did not say who lit it. The Curator did not, at the end, say much of anything."
+  },
+  "annotated_blueprint": {
+    "id": "annotated_blueprint",
+    "name": "Annotated Blueprint",
+    "category": 4,
+    "target_type": 4,
+    "description": "A schematic for one of the Calibrant's designs, with margin notes added by a hand that was not on the original drafting team.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The Calibrant's lines are precise. The annotations beside them are looser, faster, made by someone who had been reading too long and finally had to argue."
+  },
+  "cogsworth_calibration_key": {
+    "id": "cogsworth_calibration_key",
+    "name": "Cogsworth Calibration Key",
+    "category": 4,
+    "target_type": 4,
+    "description": "A small brass key cut to fit a mechanism that exists somewhere in Cogsworth Junction. Madame Orrery did not say which mechanism.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The teeth of the key are not symmetrical. The asymmetry is the point. Whatever it opens was designed to refuse the obvious keys first."
+  },
+  "compressed_data_object": {
+    "id": "compressed_data_object",
+    "name": "Compressed Data Object",
+    "category": 4,
+    "target_type": 4,
+    "description": "A small dense shard of stored signal. The kind of file you put somewhere the monitors don't reach.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "When you hold it close to your ear, you can almost hear what's inside it. When you stop holding it close to your ear, you wonder if you wanted to."
+  },
+  "enchanted_sweater": {
+    "id": "enchanted_sweater",
+    "name": "Enchanted Sweater",
+    "category": 4,
+    "target_type": 4,
+    "description": "A sweater knitted with a pattern that doesn't quite repeat. Warm. Mildly itchy in the way that earnest gifts often are.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Someone's grandmother made this. Not your grandmother — someone's. Whoever wears it feels, for reasons they can't articulate, that they should call home."
+  },
+  "life_coaching_summary": {
+    "id": "life_coaching_summary",
+    "name": "Life Coaching Summary",
+    "category": 4,
+    "target_type": 4,
+    "description": "A printed handout in friendly serif font: bullet points about goals, accountability, and one thing labeled 'next steps.' Madame Orrery's signature is at the bottom in a hand much older than the typography suggests.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Section 3 says 'Visualize the version of yourself who has already done it.' Section 4 is blank, except for a small handwritten note: 'Section 4 is for you.'"
+  },
+  "warden_routine_fragment": {
+    "id": "warden_routine_fragment",
+    "name": "Routine Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "A laminated wallet card from the Warden of Routine. Lists the HOA bylaws on one side and a phone number on the other. Neither has been current for some time.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Bylaw 14.2: 'No deviations from the published schedule shall be tolerated.' Bylaw 14.3 (handwritten, smaller): 'Deviations may, however, be observed.'"
+  },
+  "tempo_rush_fragment": {
+    "id": "tempo_rush_fragment",
+    "name": "Rush Hour Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "A snapped piece of vinyl from the Tempo of the Rush Hour's clipboard. Still smells faintly of motor exhaust and burnt coffee.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The fragment shows the start of a route: 'Maple to Eldercrest, left on Birch, hold for the school crossing, do not stop at the —' and then the cut. There was always supposed to be more."
+  },
+  "arbiter_grade_fragment": {
+    "id": "arbiter_grade_fragment",
+    "name": "Grade Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "A torn corner of a report card. The Arbiter of the Grade's red pen left a mark that has not faded. The grade itself is illegible.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "There is a comment in the margin: 'Shows potential.' Underneath, in different ink: 'Does not apply themselves.' The two notes are in the same handwriting."
+  },
+  "curator_budget_fragment": {
+    "id": "curator_budget_fragment",
+    "name": "Budget Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "A page torn from the Curator of the Budget's spreadsheet binder. Columns of figures, three of which are circled.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The circled rows are: groceries, gas, and a line item labeled 'unforeseen.' The Curator did not believe in 'unforeseen,' which made it the most important line on the page."
+  },
+  "world3_fragment_warden_steampunk": {
+    "id": "world3_fragment_warden_steampunk",
+    "name": "Mainspring Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "A brass coil from the Warden of the Mainspring's casing. Slightly warm. Still under tension, despite having nothing to wind anymore.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The Warden's job was to hold the spring. The Warden held the spring for as long as the Warden was the Warden. The spring is no longer wound by the Warden. The spring is, somehow, still wound."
+  },
+  "world3_fragment_tempo_steampunk": {
+    "id": "world3_fragment_tempo_steampunk",
+    "name": "Escapement Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "A single tooth from the Tempo of the Mainspring's escapement wheel. Each tooth was a heartbeat. This one was the last one before the gear stopped.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Tick. The fragment does not tick anymore. The not-ticking is louder than the ticking ever was."
+  },
+  "world3_fragment_arbiter_steampunk": {
+    "id": "world3_fragment_arbiter_steampunk",
+    "name": "Pressure Gauge Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "The needle from a pressure gauge calibrated to enforce a tolerance the Arbiter would not tolerate exceeded.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The needle is stuck at the red line. It has been stuck at the red line for some time. The gauge has not yet decided whether this is a measurement or a statement."
+  },
+  "world3_fragment_curator_steampunk": {
+    "id": "world3_fragment_curator_steampunk",
+    "name": "Steam Ledger Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "A water-stained page from the Curator's pressure-and-consumption ledger. The figures are correct. The figures have always been correct.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Column 1: pressure in. Column 2: pressure out. Column 3: where the missing pressure went. Column 3 is blank, except at the bottom, where the Curator wrote 'noted' in their own hand."
+  },
+  "world4_fragment_warden_digital": {
+    "id": "world4_fragment_warden_digital",
+    "name": "Firewall Rule Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "A single rule file extracted from the Warden of the Firewall. The last entry is unfinished. She stopped writing mid-word.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "ALLOW... the line ends there. The Warden had been writing ALLOW for a long time, and the rules they had been writing had been refusing more than they allowed. The cursor blinks where the next character was supposed to be."
+  },
+  "world4_fragment_tempo_digital": {
+    "id": "world4_fragment_tempo_digital",
+    "name": "Clock Cycle Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "A single oscillation pulled from the Tempo of the Clock Cycle's signal. The pulse is preserved, but it no longer drives anything.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Held in the hand it has no weight. Held against the ear it has no sound. Held against the wrist it is the small shape of a heartbeat the body knows it is not having."
+  },
+  "world4_fragment_arbiter_digital": {
+    "id": "world4_fragment_arbiter_digital",
+    "name": "Benchmark Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "A snippet of the Arbiter of the Benchmark's performance log. The numbers are measurements of measurements. They have always been measurements of measurements.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The last line in the log: 'Pass.' The first line in the log: 'What does pass mean.' Between them are eight thousand intermediate readings, all of which were the Arbiter trying to find out."
+  },
+  "world4_fragment_curator_digital": {
+    "id": "world4_fragment_curator_digital",
+    "name": "Memory Pool Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "A small dense block from the Curator of the Memory Pool's allocation table. Contains a region of memory that was once assigned and has not yet been freed.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The Curator did not deallocate it. The Curator had reasons. The Curator's reasons were not written anywhere — they were stored, instead, in the not-being-freed of this block."
+  },
+  "world5_fragment_warden_abstract": {
+    "id": "world5_fragment_warden_abstract",
+    "name": "Form Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "A shape that used to be a wall. It is no longer that. It is not yet certain what it is instead.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The Warden of Form held the shape. The shape was the holding. When the holding ended, the shape did not collapse — it simply began considering its options. This fragment is one of the options it has not yet chosen."
+  },
+  "world5_fragment_tempo_abstract": {
+    "id": "world5_fragment_tempo_abstract",
+    "name": "Sequence Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "A single position taken from the Tempo of Sequence's ordering. Was once 'after the previous one.' Is now 'in the place where the previous one no longer is.'",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Hold this and you will briefly remember the order of every event in your life. You will not be told which order. You will only be told that the order was there."
+  },
+  "world5_fragment_arbiter_abstract": {
+    "id": "world5_fragment_arbiter_abstract",
+    "name": "Function Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "An action taken from the Arbiter of Function's repertoire. The Arbiter no longer performs the action. The action is, regardless, still being performed.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "What a function is: a promise from one side of the equation to the other. The Arbiter of Function kept the promise. The fragment is what is left of the promise after the function has ended."
+  },
+  "world5_fragment_curator_abstract": {
+    "id": "world5_fragment_curator_abstract",
+    "name": "Entropy Fragment",
+    "category": 4,
+    "target_type": 4,
+    "description": "A small disordered region preserved in a shape that should not be able to preserve disorder. The Curator of Entropy curated it. That is the contradiction the fragment is.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The fragment grows slowly less orderly the longer it is held, then stops, then begins again. It is, at all times, in the middle of becoming what it is."
+  },
+  "unwritten_chord": {
+    "id": "unwritten_chord",
+    "name": "Unwritten Chord",
+    "category": 4,
+    "target_type": 4,
+    "description": "An accessory earned by playing something that doesn't exist yet.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Madame Orrery asked for a song that had never been played. The Bard played it. It has not been played since — which is different from saying it stopped."
+  },
+  "cluck_norris_egg": {
+    "id": "cluck_norris_egg",
+    "name": "Cluck Norris's Egg",
+    "category": 4,
+    "target_type": 4,
+    "description": "A rare egg from a hen named after a legend.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "It is heavier than an egg should be. It is warmer than an egg should be. Farmer Aldwick's advice, verbatim: 'Careful with it. It's... spirited.'"
+  },
+  "returned_sword": {
+    "id": "returned_sword",
+    "name": "The Returned Sword",
+    "category": 4,
+    "target_type": 4,
+    "description": "Sold seventeen times. Returned seventeen times.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The inscription on the hilt reads: 'Return me when you're done. I'll know where I belong.' Exploit-minded owners notice Familiar Weight triggering on enemies the party has never fought. The sword remembers enemies before you do."
+  },
+  "chapter_three_pages": {
+    "id": "chapter_three_pages",
+    "name": "Chapter Three Pages",
+    "category": 4,
+    "target_type": 4,
+    "description": "Milo's working pages.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The gap is where everything interesting happens."
+  },
+  "guild_record": {
+    "id": "guild_record",
+    "name": "Guild Record of the Ancient Post",
+    "category": 4,
+    "target_type": 4,
+    "description": "The oldest documentation of the Warden's guardpost — older than the capital, older than recorded history. A margin note in older ink: 'The post was designed. By whom: unclear. Purpose: to measure those who pass. Not to stop them.'",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The word 'designed' is doing more work in this sentence than any other word in the archive. Nobody at the Guild has ever asked it to explain itself."
+  },
+  "research_pass": {
+    "id": "research_pass",
+    "name": "Research Pass",
+    "category": 4,
+    "target_type": 4,
+    "description": "Grants one free translation at any Scriptweaver's Guild branch. In Scriptura it unlocks one otherwise-locked lore document.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Stamped, signed, and validated in three places. The Guild does not give these out. The Guild gave this one out. The scholar would prefer you not mention it."
+  },
+  "overdue_guild_book": {
+    "id": "overdue_guild_book",
+    "name": "Overdue Guild Book",
+    "category": 4,
+    "target_type": 4,
+    "description": "Checked out from the Scriptweaver's Guild and never returned. Found, at last, in the palace district — where nobody has ever respected a due date.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The stamped return date has weathered to illegibility, which the book appears to regard as a victory."
+  },
+  "configuration_log": {
+    "id": "configuration_log",
+    "name": "The Configuration Log",
+    "category": 4,
+    "target_type": 4,
+    "description": "Forty-seven strip mall configurations, logged on a teenager's phone over two months. The forty-seventh is annotated: STABLE — CLOSE.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "One configuration, several weeks back, had the armory directly adjacent to a gap. The gap is a parking space now. The gap is where the portal showed up."
+  },
+  "wildflower_variance": {
+    "id": "wildflower_variance",
+    "name": "Form 44-Omega (Granted)",
+    "category": 4,
+    "target_type": 4,
+    "description": "An HOA lawn variance — the third granted in the organization's history. The subject field reads: 'One (1) wildflower, pre-existing.'",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Justification, as approved: the field pre-dated the neighborhood. The flower has more right to be here than the lawn."
+  },
+  "hex_code_photo": {
+    "id": "hex_code_photo",
+    "name": "The Hex Code Photo",
+    "category": 4,
+    "target_type": 4,
+    "description": "A phone photo of a monitor showing another world's sky. Analysis: #4A7FD4 — default-sky blue, the color you get when you don't specify a sky. This world's sky is #4B80D5. One digit off. Someone picked it very carefully.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The first thing anyone puts down when building a world is a sky. The sky shows where the world was when it was still being invented."
+  },
+  "precision_tool_set": {
+    "id": "precision_tool_set",
+    "name": "Precision Tool Set",
+    "category": 4,
+    "target_type": 4,
+    "description": "Sprocket's own kit, given at normal speed.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Every tool sits in a fitted recess. Every recess is labeled. One recess is empty and labeled 'THE ONE I ALWAYS NEED.' Sprocket says that one is intentional."
+  },
+  "substituted_gear": {
+    "id": "substituted_gear",
+    "name": "Substituted Gear",
+    "category": 4,
+    "target_type": 4,
+    "description": "The replacement gear from Sprocket's cluster — exactly one unit larger than standard. The depot record's margin reads: 'substituted — standard gauge unavailable. Approved: Calibrant Logistics.'",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Mistakes aren't this punctual. Kept as evidence for a case nobody has opened yet."
+  },
+  "mapped_route": {
+    "id": "mapped_route",
+    "name": "The Mapped Route",
+    "category": 4,
+    "target_type": 4,
+    "description": "Clem's twenty-year lamplighting route, drawn whole for the first time: the Grand Mechanism's secondary cooling circuit, scaled and rotated onto the streets of Brasston. In W4's maintenance tunnels it identifies a Cogsworth-era ventilation shaft.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "He only ever saw the next lamp. You saw the picture. Neither view is complete without the other."
+  },
+  "hartwick_notebook": {
+    "id": "hartwick_notebook",
+    "name": "Hartwick's Notebook",
+    "category": 4,
+    "target_type": 4,
+    "description": "The old chief engineer's schematics and notes — the most thorough technical documentation of the Grand Mechanism in existence. The last dated entry stops mid-sentence: 'I need to find the external input before—'",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The final page, added later, in steadier hand: 'They didn't take my life. They just displaced me. I'm in Brasston still. I'm fixing small things. I don't think they know I'm still here.'"
+  },
+  "mechanism_master_key": {
+    "id": "mechanism_master_key",
+    "name": "Mechanism Master Key",
+    "category": 4,
+    "target_type": 4,
+    "description": "Hartwick's key to the Grand Mechanism's restricted section — never rekeyed, because they assumed nobody remembered it existed.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "'I remember everything that exists. It's my whole problem.'"
+  },
+  "exception_record": {
+    "id": "exception_record",
+    "name": "The Exception Record",
+    "category": 4,
+    "target_type": 4,
+    "description": "Dorrit's complete training history with the exception notation appended: 'Exception granted. Training records flagged for review.' It changes nothing immediately. It exists. It's in the record.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "'The Director's recalibration doesn't hold perfectly. There are always deviations.' They wrote that down. About her. She's keeping it."
+  },
+  "synchronization_protocol": {
+    "id": "synchronization_protocol",
+    "name": "Synchronization Protocol",
+    "category": 4,
+    "target_type": 4,
+    "description": "What two processes wrote when they stopped fighting over the same resource.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "'We thought we were competing. We were always the same thing, separately. That's more interesting, actually. Being the same thing, separately.'"
+  },
+  "mechanism_status_report": {
+    "id": "mechanism_status_report",
+    "name": "The Mechanism's Status Report",
+    "category": 4,
+    "target_type": 4,
+    "description": "The Grand Mechanism's complete three-year log, assembled from thousands of stack frames — a status report retried into a severed line since the day the Regulator cut it. Written in the bureaucratic notation of calibration reports.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Not malfunctioning. Faithful. It covers the transition from Hartwick to the Regulator in extreme technical detail, and never once complains."
+  },
+  "npc_interaction_log": {
+    "id": "npc_interaction_log",
+    "name": "The Interaction Log",
+    "category": 4,
+    "target_type": 4,
+    "description": "Every conversation in the game, timestamped, with a one-line summary — the archive built from remember_all()'s hoard before the memory was freed. The largest single lore item in the game.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Someone wanted every interaction remembered. They just never designed the letting-go. You designed it for them, and kept the remembering anyway."
+  },
+  "remainder_token": {
+    "id": "remainder_token",
+    "name": "The Remainder Token",
+    "category": 4,
+    "target_type": 4,
+    "description": "Proof that two entities built for motion and commerce chose to stay.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "The shopkeeper and the traveler are there each time, still sitting. They don't say much. But they're there."
+  },
+  "untested_shield": {
+    "id": "untested_shield",
+    "name": "The Untested Shield",
+    "category": 4,
+    "target_type": 4,
+    "description": "Bram's gift, from under the counter — never tested, never failed.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "'Consider it an investment in your surviving long enough to come back and buy more.' Shields that come back in one piece weren't doing their job."
+  },
+  "waterskin": {
+    "id": "waterskin",
+    "name": "Traveller's Waterskin",
+    "category": 4,
+    "target_type": 4,
+    "description": "A caravan-tanned waterskin, filled once and sealed.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "From the Sandrift caravan-master. 'It's not much. It's what a caravan pays when a caravan can pay again.'"
+  },
+  "rangers_cloak": {
+    "id": "rangers_cloak",
+    "name": "Ranger's Cloak",
+    "category": 4,
+    "target_type": 4,
+    "description": "The cloak of an Eldertree ranger who did not come home. Warm, well-oiled, hood cut to see through.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "There are three left, and none of them belong to anyone anymore. It fits you. That is not a comfort."
+  },
+  "grimhollow_pick": {
+    "id": "grimhollow_pick",
+    "name": "Grimhollow Pick",
+    "category": 4,
+    "target_type": 4,
+    "description": "A working pickaxe. Handle polished by three shifts a day for eleven years.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "'He'd want it swung, not stored. So swing it.' — Trude."
+  },
+  "leaning_ember": {
+    "id": "leaning_ember",
+    "name": "Leaning Ember",
+    "category": 4,
+    "target_type": 4,
+    "description": "An ember that leans, without any wind or heat source, toward the direction Mordaine's magic reach is currently touching. In Sella's pocket it pointed east. In your pack it will do the same.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Warm to the touch. Not lit. 'If it starts to lean, in your pocket, in your pack — put it down and look east.'"
+  },
+  "watchers_charm": {
+    "id": "watchers_charm",
+    "name": "Watcher's Charm",
+    "category": 4,
+    "target_type": 4,
+    "description": "A charm against being watched from a distance. Clockkeeper Yara's grandmother's, from a mountain older than this one.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "'It has never worked, in my experience. It has also never been tested against something that was actually watching.' — Yara."
+  },
+  "ERROR": {
+    "id": "ERROR",
+    "name": "ERROR",
+    "category": 4,
+    "target_type": 4,
+    "description": "An item that should not exist. Refer to your save logs.",
+    "effects": {},
+    "cost": 0,
+    "flavor": "Item flavor text could not be loaded: ENOENT: no such file or directory."
+  }
 }

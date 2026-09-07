@@ -1,0 +1,1622 @@
+extends CanvasLayer
+class_name CutsceneDialogue
+
+## CutsceneDialogue - General-purpose dialogue box for cutscenes.
+## Adapted from BattleDialogue but works in any context.
+## Supports NPC themes, narrator mode, party member portraits, and await-based sequencing.
+
+signal dialogue_finished()
+signal dialogue_advanced()
+## Emitted when the LLM "thinking" indicator activates / deactivates. Lets
+## consumers observe the bridge that DynamicConversation drives during awaited
+## LLM calls (Wave C).
+signal thinking_started()
+signal thinking_ended()
+
+## Dialogue queue
+var _dialogue_queue: Array = []
+var _current_index: int = 0
+var _is_typing: bool = false
+var _typing_speed: float = 0.03
+var _current_text: String = ""
+var _displayed_chars: int = 0
+var _typing_timer: Timer
+## Does THIS panel own the music duck? Freeing mid-line must unduck, but only its own.
+var _ducked_music: bool = false
+
+## Typewriter speed per GameState.text_speed setting. "instant" returns 0.0
+## which the dialogue start path interprets as "skip the typewriter entirely
+## and reveal the full line at once". Values picked for JRPG dialogue feel:
+## slow ≈ 16 cps, normal ≈ 33 cps, fast ≈ 67 cps.
+const TYPING_SPEED_PRESETS := {
+	"slow": 0.06,
+	"normal": 0.03,
+	"fast": 0.015,
+	"instant": 0.0,
+}
+
+## Voice blip playback (Undertale-style per-character typing sound)
+var _voice_blip_player: AudioStreamPlayer = null
+var _voice_blip_stream: AudioStream = null
+var _voice_blip_speaker_key: String = ""
+var _voice_blip_pitch_base: float = 1.0  # Per-speaker deterministic offset
+var _voice_blip_next_char: int = 0        # Index at which next blip fires
+const VOICE_BLIP_DIR := "res://assets/audio/sfx/"
+const VOICE_BLIP_STEP_MIN := 2
+const VOICE_BLIP_STEP_MAX := 4
+const VOICE_BLIP_FALLBACK := "voice_blip_default"
+static var _voice_blip_stream_cache: Dictionary = {}
+static var _voice_blip_missing: Dictionary = {}
+
+## Alias map: cutscene theme/portrait keys that don't map 1:1 to a file.
+## Left side is the value parsed from entry.theme/entry.portrait, right is the
+## <id> part of voice_blip_<id>.ogg. Anything unmapped uses its raw key.
+const VOICE_BLIP_ALIASES := {
+	"narrator": "narrator",
+	"elder": "theron",
+	"scholar": "scholar",
+	"shopkeeper": "generic_npc",
+	"villager": "generic_npc",
+	"merchant": "generic_npc",
+	"guard": "generic_npc",
+}
+
+## UI Elements
+var _background: ColorRect
+var _dialogue_box: Control
+var _portrait_frame: Control
+var _portrait_image: TextureRect
+var _speaker_label: Label
+var _text_label: RichTextLabel
+var _advance_hint: Label
+
+## Wave C: thinking indicator. Renders animated dots ("·", "··", "···") in
+## place of the dialogue body while the LLM is fetching a line. The advance
+## hint is hidden and input is swallowed so the player can't blow past an
+## empty box. Toggled by set_thinking(active: bool).
+var _thinking_label: Label
+var _thinking_timer: Timer
+var _thinking_dots_step: int = 0
+const THINKING_FRAMES: Array[String] = ["·", "··", "···"]
+const THINKING_TICK_SEC: float = 0.25
+
+## Styling
+const TILE_SIZE = 4
+const BOX_HEIGHT = 150
+const PORTRAIT_SIZE = 80
+const MARGIN = 16
+
+## Expression tints — applied to portrait modulate for emotional coloring
+## Usage in cutscene JSON: "portrait": "fighter_angry" or "cleric_sad"
+const EXPRESSION_TINTS = {
+	"angry": Color(1.3, 0.8, 0.8),       # Red-warm tint
+	"sad": Color(0.8, 0.85, 1.2),         # Blue-cool tint
+	"happy": Color(1.2, 1.15, 0.9),       # Warm gold tint
+	"surprised": Color(1.3, 1.3, 1.1),    # Bright flash
+	"worried": Color(0.9, 0.9, 1.1),      # Slight cool desaturation
+	"determined": Color(1.1, 1.0, 0.85),  # Warm focused
+	"mysterious": Color(0.85, 0.8, 1.15), # Purple-ish mystery
+}
+
+## Character color themes - extended for cutscene NPCs
+const CHARACTER_THEMES = {
+	"hero": {
+		"bg": Color(0.1, 0.1, 0.25),
+		"border": Color(0.7, 0.7, 1.0),
+		"text": Color(1.0, 1.0, 1.0),
+		"name": Color(0.5, 0.7, 1.0),
+		"portrait_bg": Color(0.15, 0.15, 0.35)
+	},
+	"fighter": {
+		"bg": Color(0.1, 0.1, 0.25),
+		"border": Color(0.7, 0.7, 1.0),
+		"text": Color(1.0, 1.0, 1.0),
+		"name": Color(0.5, 0.7, 1.0),
+		"portrait_bg": Color(0.15, 0.15, 0.35)
+	},
+	"cleric": {
+		"bg": Color(0.15, 0.1, 0.2),
+		"border": Color(1.0, 0.8, 0.9),
+		"text": Color(1.0, 0.95, 1.0),
+		"name": Color(1.0, 0.7, 0.85),
+		"portrait_bg": Color(0.2, 0.1, 0.25)
+	},
+	"healer": {
+		"bg": Color(0.15, 0.1, 0.2),
+		"border": Color(1.0, 0.8, 0.9),
+		"text": Color(1.0, 0.95, 1.0),
+		"name": Color(1.0, 0.7, 0.85),
+		"portrait_bg": Color(0.2, 0.1, 0.25)
+	},
+	"rogue": {
+		"bg": Color(0.08, 0.08, 0.12),
+		"border": Color(0.6, 0.5, 0.7),
+		"text": Color(0.9, 0.85, 1.0),
+		"name": Color(0.7, 0.9, 0.5),
+		"portrait_bg": Color(0.1, 0.1, 0.15)
+	},
+	"mage": {
+		"bg": Color(0.05, 0.0, 0.12),
+		"border": Color(0.6, 0.3, 0.8),
+		"text": Color(0.85, 0.75, 1.0),
+		"name": Color(0.9, 0.5, 0.9),
+		"portrait_bg": Color(0.08, 0.02, 0.15)
+	},
+	"bard": {
+		"bg": Color(0.12, 0.08, 0.02),
+		"border": Color(0.9, 0.75, 0.4),
+		"text": Color(1.0, 0.95, 0.85),
+		"name": Color(1.0, 0.85, 0.4),
+		"portrait_bg": Color(0.15, 0.1, 0.05)
+	},
+	"narrator": {
+		"bg": Color(0.02, 0.02, 0.05),
+		"border": Color(0.4, 0.4, 0.5),
+		"text": Color(0.8, 0.8, 0.85),
+		"name": Color(0.6, 0.6, 0.7),
+		"portrait_bg": Color(0.05, 0.05, 0.08)
+	},
+	"elder": {
+		"bg": Color(0.1, 0.08, 0.05),
+		"border": Color(0.7, 0.6, 0.4),
+		"text": Color(1.0, 0.95, 0.85),
+		"name": Color(0.85, 0.75, 0.5),
+		"portrait_bg": Color(0.12, 0.1, 0.06)
+	},
+	"scholar": {
+		"bg": Color(0.05, 0.08, 0.1),
+		"border": Color(0.4, 0.7, 0.8),
+		"text": Color(0.9, 0.95, 1.0),
+		"name": Color(0.5, 0.85, 0.95),
+		"portrait_bg": Color(0.06, 0.1, 0.12)
+	},
+	"merchant": {
+		"bg": Color(0.08, 0.1, 0.05),
+		"border": Color(0.6, 0.8, 0.4),
+		"text": Color(0.95, 1.0, 0.9),
+		"name": Color(0.7, 0.9, 0.4),
+		"portrait_bg": Color(0.1, 0.12, 0.06)
+	},
+	# Added 2026-08-01 so NPCs can be typed by their actual role. These three
+	# archetypes had sheets and portraits but NO theme, so retyping an NPC to
+	# them would have fixed the sprite and dropped the box to narrator grey.
+	"child": {
+		"bg": Color(0.11, 0.09, 0.04),
+		"border": Color(0.95, 0.8, 0.45),
+		"text": Color(1.0, 0.97, 0.88),
+		"name": Color(1.0, 0.85, 0.5),
+		"portrait_bg": Color(0.13, 0.11, 0.05)
+	},
+	"blacksmith": {
+		"bg": Color(0.12, 0.06, 0.04),
+		"border": Color(0.85, 0.45, 0.2),
+		"text": Color(1.0, 0.92, 0.85),
+		"name": Color(0.95, 0.55, 0.25),
+		"portrait_bg": Color(0.14, 0.07, 0.04)
+	},
+	"monk": {
+		"bg": Color(0.1, 0.08, 0.04),
+		"border": Color(0.8, 0.62, 0.3),
+		"text": Color(0.98, 0.94, 0.86),
+		"name": Color(0.9, 0.72, 0.38),
+		"portrait_bg": Color(0.12, 0.09, 0.05)
+	},
+	"shopkeeper": {
+		"bg": Color(0.1, 0.08, 0.04),
+		"border": Color(0.8, 0.65, 0.3),
+		"text": Color(1.0, 0.95, 0.85),
+		"name": Color(0.9, 0.75, 0.35),
+		"portrait_bg": Color(0.12, 0.1, 0.05)
+	},
+	"guard": {
+		"bg": Color(0.06, 0.08, 0.10),
+		"border": Color(0.55, 0.62, 0.72),
+		"text": Color(0.92, 0.95, 1.0),
+		"name": Color(0.75, 0.85, 0.95),
+		"portrait_bg": Color(0.08, 0.10, 0.13)
+	},
+	"villager": {
+		"bg": Color(0.06, 0.06, 0.05),
+		"border": Color(0.5, 0.5, 0.4),
+		"text": Color(0.9, 0.88, 0.82),
+		"name": Color(0.7, 0.68, 0.55),
+		"portrait_bg": Color(0.08, 0.08, 0.06)
+	},
+	"mysterious": {
+		"bg": Color(0.03, 0.02, 0.06),
+		"border": Color(0.5, 0.3, 0.6),
+		"text": Color(0.85, 0.8, 0.95),
+		"name": Color(0.7, 0.5, 0.9),
+		"portrait_bg": Color(0.05, 0.03, 0.08)
+	},
+	"enemy": {
+		"bg": Color(0.15, 0.05, 0.05),
+		"border": Color(0.8, 0.3, 0.3),
+		"text": Color(1.0, 0.9, 0.9),
+		"name": Color(1.0, 0.5, 0.4),
+		"portrait_bg": Color(0.2, 0.08, 0.08)
+	},
+	"goblin": {
+		"bg": Color(0.08, 0.1, 0.04),
+		"border": Color(0.5, 0.7, 0.3),
+		"text": Color(0.9, 1.0, 0.85),
+		"name": Color(0.6, 0.85, 0.3),
+		"portrait_bg": Color(0.1, 0.12, 0.05)
+	},
+	"system": {
+		"bg": Color(0.0, 0.02, 0.05),
+		"border": Color(0.0, 0.6, 0.4),
+		"text": Color(0.0, 1.0, 0.7),
+		"name": Color(0.0, 0.8, 0.5),
+		"portrait_bg": Color(0.0, 0.03, 0.06)
+	},
+	# Tick 294: per-job dialogue themes for the advanced + meta jobs.
+	# Pre-fix any cutscene line tagged with one of these jobs as
+	# `theme` fell through to "narrator"'s flat gray (line 585
+	## fallback), losing the per-job voice carrying through ticks
+	## 124 (JOB_QUIP_COLORS) and 293 (Win98Menu CHARACTER_STYLES).
+	## Each scheme anchors on JOB_QUIP_COLORS base color.
+	# ---- Advanced jobs ----
+	"guardian": {
+		"bg": Color(0.10, 0.09, 0.06),
+		"border": Color(0.85, 0.78, 0.55),
+		"text": Color(1.0, 0.95, 0.85),
+		"name": Color(0.95, 0.85, 0.55),
+		"portrait_bg": Color(0.12, 0.10, 0.07)
+	},
+	"ninja": {
+		"bg": Color(0.05, 0.05, 0.08),
+		"border": Color(0.65, 0.65, 0.75),
+		"text": Color(0.92, 0.92, 0.98),
+		"name": Color(0.85, 0.85, 0.95),
+		"portrait_bg": Color(0.06, 0.06, 0.10)
+	},
+	"summoner": {
+		"bg": Color(0.05, 0.12, 0.12),
+		"border": Color(0.4, 0.9, 0.8),
+		"text": Color(0.85, 1.0, 0.95),
+		"name": Color(0.55, 0.95, 0.85),
+		"portrait_bg": Color(0.06, 0.13, 0.13)
+	},
+	"speculator": {
+		"bg": Color(0.06, 0.12, 0.06),
+		"border": Color(0.4, 0.85, 0.4),
+		"text": Color(0.92, 1.0, 0.92),
+		"name": Color(0.55, 0.9, 0.50),
+		"portrait_bg": Color(0.07, 0.13, 0.07)
+	},
+	# ---- Meta jobs ----
+	"scriptweaver": {
+		"bg": Color(0.0, 0.08, 0.04),
+		"border": Color(0.0, 0.95, 0.55),
+		"text": Color(0.7, 1.0, 0.75),
+		"name": Color(0.4, 1.0, 0.65),
+		"portrait_bg": Color(0.0, 0.09, 0.05)
+	},
+	"time_mage": {
+		"bg": Color(0.06, 0.08, 0.14),
+		"border": Color(0.75, 0.88, 1.0),
+		"text": Color(0.9, 0.95, 1.0),
+		"name": Color(0.85, 0.92, 1.0),
+		"portrait_bg": Color(0.07, 0.09, 0.15)
+	},
+	"necromancer": {
+		"bg": Color(0.06, 0.02, 0.08),
+		"border": Color(0.65, 0.35, 0.75),
+		"text": Color(0.92, 0.85, 1.0),
+		"name": Color(0.80, 0.55, 0.95),
+		"portrait_bg": Color(0.07, 0.03, 0.09)
+	},
+	"bossbinder": {
+		"bg": Color(0.10, 0.02, 0.04),
+		"border": Color(0.95, 0.25, 0.35),
+		"text": Color(1.0, 0.92, 0.92),
+		"name": Color(1.0, 0.45, 0.50),
+		"portrait_bg": Color(0.11, 0.03, 0.05)
+	},
+	"skiptrotter": {
+		"bg": Color(0.10, 0.10, 0.02),
+		"border": Color(0.95, 0.85, 0.35),
+		"text": Color(1.0, 1.0, 0.85),
+		"name": Color(1.0, 0.95, 0.55),
+		"portrait_bg": Color(0.11, 0.11, 0.03)
+	},
+}
+
+## npc_type -> an EXISTING theme, for roles with no palette of their own. Every target
+## must be a CHARACTER_THEMES key; aliasing to another missing name re-enters the same
+## silent narrator fallback and looks fixed. A real palette added later wins on its own.
+const THEME_ALIASES := {
+	"soldier": "guard", "knight": "guard",
+	"hooded_mage": "mage", "apprentice": "mage",
+	"herbalist": "cleric", "pilgrim": "cleric",
+	"scholarly": "scholar",
+	"bartender": "shopkeeper", "innkeeper": "shopkeeper", "traveler": "merchant",
+	"fairy": "mage", "ghost": "mysterious",
+	"adventurer": "hero", "dancer": "bard",
+	"farmer": "villager", "maid": "villager", "nervous": "villager",
+}
+## `child` and `blacksmith` removed 2026-08-05 — they now carry their OWN palettes above,
+## so the aliases were dead weight that reads as intent. test_an_alias_never_shadows_a_real_palette
+## went red and handed over this exact deletion: the self-expiring exemption doing its job,
+## with the second lane to land paying the one-line cost.
+
+
+## Direct hit wins, then the alias, then narrator. Order-independent by construction:
+## if a real palette for an aliased role lands later, this returns it without an edit.
+func resolve_theme(theme_name: String) -> Dictionary:
+	if CHARACTER_THEMES.has(theme_name):
+		return CHARACTER_THEMES[theme_name]
+	var aliased: String = str(THEME_ALIASES.get(theme_name, ""))
+	if aliased != "" and CHARACTER_THEMES.has(aliased):
+		return CHARACTER_THEMES[aliased]
+	return CHARACTER_THEMES["narrator"]
+
+
+func _ready() -> void:
+	layer = 96  # Above CutsceneDirector (95), below transitions (100)
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	_setup_typing_timer()
+	_build_ui()
+	visible = false
+
+
+func _exit_tree() -> void:
+	if _typing_timer and is_instance_valid(_typing_timer):
+		_typing_timer.stop()
+	# The duck lives on the SoundManager AUTOLOAD, which outlives this node — freeing mid-line otherwise strands music at DUCK_TARGET_DB for the rest of the session.
+	if _ducked_music:
+		_duck_music_for_dialogue(false)
+
+
+func _setup_typing_timer() -> void:
+	_typing_timer = Timer.new()
+	_typing_timer.one_shot = false
+	_typing_timer.process_mode = Node.PROCESS_MODE_ALWAYS
+	_typing_timer.timeout.connect(_on_typing_tick)
+	add_child(_typing_timer)
+
+	# Wave C: thinking-indicator tick. Driven only while set_thinking(true)
+	# is active so it doesn't waste frames during normal dialogue. PROCESS_MODE_ALWAYS
+	# so it ticks through pause / input-locked states.
+	_thinking_timer = Timer.new()
+	_thinking_timer.one_shot = false
+	_thinking_timer.wait_time = THINKING_TICK_SEC
+	_thinking_timer.process_mode = Node.PROCESS_MODE_ALWAYS
+	_thinking_timer.timeout.connect(_on_thinking_tick)
+	add_child(_thinking_timer)
+
+	# Dedicated stream player for voice blips — bypasses SoundManager
+	# cooldown so rapid per-character beeps play cleanly.
+	_voice_blip_player = AudioStreamPlayer.new()
+	_voice_blip_player.bus = "SFX" if AudioServer.get_bus_index("SFX") >= 0 else "Master"
+	_voice_blip_player.volume_db = -6.0
+	_voice_blip_player.process_mode = Node.PROCESS_MODE_ALWAYS
+	add_child(_voice_blip_player)
+
+
+func _resolve_voice_blip_key(portrait_type: String, theme_name: String) -> String:
+	"""Pick the voice blip id for the given speaker. Priority:
+	  1. VOICE_BLIP_ALIASES lookup on portrait_type then theme_name
+	  2. raw portrait_type
+	  3. raw theme_name
+	  4. VOICE_BLIP_FALLBACK"""
+	if VOICE_BLIP_ALIASES.has(portrait_type):
+		return VOICE_BLIP_ALIASES[portrait_type]
+	if VOICE_BLIP_ALIASES.has(theme_name):
+		return VOICE_BLIP_ALIASES[theme_name]
+	if portrait_type != "":
+		return portrait_type
+	if theme_name != "":
+		return theme_name
+	return VOICE_BLIP_FALLBACK
+
+
+func _load_voice_blip(speaker_key: String, speaker_name: String = "") -> void:
+	"""Load and cache the voice blip stream for a speaker. Falls back to
+	VOICE_BLIP_FALLBACK if the speaker-specific file is missing. Pitch
+	always derives from the speaker name (when provided) so two NPCs
+	sharing a blip family — eight scholars, two guards — still sound
+	individually distinct. speaker_name="" reverts to the legacy
+	speaker_key hash for back-compat with callers that don't plumb the
+	name through."""
+	var pitch_source: String = speaker_name if speaker_name != "" else speaker_key
+	_voice_blip_pitch_base = _hash_pitch(pitch_source)
+	if speaker_key == _voice_blip_speaker_key and _voice_blip_stream != null:
+		return
+	_voice_blip_speaker_key = speaker_key
+	_voice_blip_stream = _load_voice_blip_stream(speaker_key)
+	if _voice_blip_stream == null and speaker_key != VOICE_BLIP_FALLBACK:
+		_voice_blip_stream = _load_voice_blip_stream(VOICE_BLIP_FALLBACK)
+
+
+static func _hash_pitch(key: String) -> float:
+	"""Deterministic pitch multiplier in [0.82, 1.22] from a speaker name."""
+	if key.is_empty():
+		return 1.0
+	var h: int = hash(key)
+	# Map low bits into a ±20% window around 1.0
+	var frac: float = float(h & 0xFFFF) / 65535.0
+	return 0.82 + frac * 0.40
+
+
+static func _load_voice_blip_stream(key: String) -> AudioStream:
+	if _voice_blip_stream_cache.has(key):
+		return _voice_blip_stream_cache[key]
+	if _voice_blip_missing.get(key, false):
+		return null
+	var path := VOICE_BLIP_DIR + "voice_blip_" + key + ".ogg"
+	if not ResourceLoader.exists(path):
+		_voice_blip_missing[key] = true
+		return null
+	var stream := load(path) as AudioStream
+	_voice_blip_stream_cache[key] = stream
+	return stream
+
+
+func _play_voice_blip() -> void:
+	if _voice_blip_stream == null or _voice_blip_player == null:
+		# Graceful fallback when no clips are installed yet — matches
+		# the prior menu_move tick so typing still has audible feedback.
+		if SoundManager:
+			SoundManager.play_ui("menu_move")
+		return
+	_voice_blip_player.stream = _voice_blip_stream
+	_voice_blip_player.pitch_scale = _voice_blip_pitch_base * randf_range(0.9, 1.1)
+	_voice_blip_player.play()
+
+
+# Tick 222/223: scale a base font size via the shared TextScale util.
+func _scaled_font_size(base: int) -> int:
+	return TextScale.scaled(base)
+
+
+func _build_ui() -> void:
+	# Semi-transparent overlay (dimmer than battle - cutscenes are more immersive)
+	_background = ColorRect.new()
+	_background.color = Color(0, 0, 0, 0.3)
+	_background.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_background.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_background)
+
+	# Calculate positions
+	var screen_size = get_viewport().get_visible_rect().size
+	var box_width = screen_size.x - MARGIN * 2
+	var box_y = screen_size.y - BOX_HEIGHT - MARGIN
+
+	# Main dialogue container
+	_dialogue_box = Control.new()
+	_dialogue_box.position = Vector2(MARGIN, box_y)
+	_dialogue_box.size = Vector2(box_width, BOX_HEIGHT)
+	_dialogue_box.clip_contents = true
+	add_child(_dialogue_box)
+
+	# Create initial empty state
+	_create_dialogue_visuals(CHARACTER_THEMES["narrator"])
+
+
+func _create_dialogue_visuals(theme: Dictionary) -> void:
+	for child in _dialogue_box.get_children():
+		child.queue_free()
+
+	var box_width = _dialogue_box.size.x
+	var box_height = _dialogue_box.size.y
+
+	# Box background
+	var box_bg = ColorRect.new()
+	box_bg.color = theme["bg"]
+	box_bg.size = Vector2(box_width, box_height)
+	_dialogue_box.add_child(box_bg)
+
+	# Border (pixel-tile style)
+	_draw_retro_border(_dialogue_box, box_width, box_height, theme["border"])
+
+	# Portrait frame (left side)
+	_portrait_frame = Control.new()
+	_portrait_frame.position = Vector2(TILE_SIZE * 2, TILE_SIZE * 2)
+	_portrait_frame.size = Vector2(PORTRAIT_SIZE, PORTRAIT_SIZE)
+	_dialogue_box.add_child(_portrait_frame)
+
+	var portrait_bg = ColorRect.new()
+	portrait_bg.color = theme["portrait_bg"]
+	portrait_bg.size = Vector2(PORTRAIT_SIZE, PORTRAIT_SIZE)
+	_portrait_frame.add_child(portrait_bg)
+
+	_draw_retro_border(_portrait_frame, PORTRAIT_SIZE, PORTRAIT_SIZE, theme["border"].darkened(0.2))
+
+	# Enable clipping so large artist portraits don't overflow the frame
+	_portrait_frame.clip_contents = true
+
+	# Portrait image
+	_portrait_image = TextureRect.new()
+	_portrait_image.position = Vector2(4, 4)
+	_portrait_image.size = Vector2(PORTRAIT_SIZE - 8, PORTRAIT_SIZE - 8)
+	_portrait_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	_portrait_image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_portrait_frame.add_child(_portrait_image)
+
+	# Text area (right of portrait)
+	var text_x = PORTRAIT_SIZE + TILE_SIZE * 4
+	var text_width = box_width - text_x - TILE_SIZE * 3
+
+	# Speaker name
+	_speaker_label = Label.new()
+	# 2026-07-16 struktured: post-font-bump (+25%) the 18pt speaker name clipped into the body text — raised 8px + taller box, body pushed down to match.
+	_speaker_label.position = Vector2(text_x, TILE_SIZE * 2 - 8)
+	_speaker_label.size = Vector2(text_width, 26)
+	_speaker_label.clip_text = false
+	_speaker_label.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
+	# Tick 222: scale via GameState.text_size_scale (accessibility). Reads live so a SettingsMenu change applies on next cutscene.
+	_speaker_label.add_theme_font_size_override("font_size", _scaled_font_size(18))
+	_speaker_label.add_theme_color_override("font_color", theme["name"])
+	_dialogue_box.add_child(_speaker_label)
+
+	# Dialogue text — scroll stays off during typing (character-by-character
+	# reveal would fight scrollbar) but enables in _finish_typing so the
+	# player can scroll any overflow before advancing.
+	_text_label = RichTextLabel.new()
+	_text_label.position = Vector2(text_x, TILE_SIZE * 2 + 22)
+	_text_label.size = Vector2(text_width, box_height - TILE_SIZE * 4 - 30)
+	_text_label.bbcode_enabled = true
+	_text_label.scroll_active = false
+	_text_label.clip_contents = true
+	# Tick 222: scale.
+	_text_label.add_theme_font_size_override("normal_font_size", _scaled_font_size(16))
+	_text_label.add_theme_color_override("default_color", theme["text"])
+	_dialogue_box.add_child(_text_label)
+
+	# Advance hint — list all three input methods so kb/mouse users know
+	# what works. (Pre-2026-05-03 only mentioned gamepad/keyboard.)
+	_advance_hint = Label.new()
+	_advance_hint.text = "Z / A / Click ▶"
+	_advance_hint.position = Vector2(box_width - 140, box_height - 20)
+	# Tick 222: scale.
+	_advance_hint.add_theme_font_size_override("font_size", _scaled_font_size(12))
+	_advance_hint.add_theme_color_override("font_color", theme["text"].darkened(0.4))
+	_advance_hint.visible = false
+	_dialogue_box.add_child(_advance_hint)
+
+	# Wave C: thinking indicator. Same anchor + size as _text_label so the
+	# animated dots replace the body content without re-flowing the panel.
+	# Hidden by default; surfaced by set_thinking(true) during awaited LLM
+	# calls so the player can see "the NPC is composing a reply" instead of
+	# a blank box (or a stuck player) for the full HTTPRequest timeout.
+	_thinking_label = Label.new()
+	_thinking_label.position = _text_label.position
+	_thinking_label.size = _text_label.size
+	_thinking_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	_thinking_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	# Tick 222: scale.
+	_thinking_label.add_theme_font_size_override("font_size", _scaled_font_size(18))
+	_thinking_label.add_theme_color_override("font_color", theme["text"].darkened(0.2))
+	_thinking_label.visible = false
+	_thinking_label.text = THINKING_FRAMES[0]
+	_dialogue_box.add_child(_thinking_label)
+
+
+func _draw_retro_border(parent: Control, width: float, height: float, color: Color) -> void:
+	var shadow_color = color.darkened(0.5)
+
+	var top = ColorRect.new()
+	top.color = color
+	top.position = Vector2(0, 0)
+	top.size = Vector2(width, TILE_SIZE)
+	parent.add_child(top)
+
+	var bottom = ColorRect.new()
+	bottom.color = shadow_color
+	bottom.position = Vector2(0, height - TILE_SIZE)
+	bottom.size = Vector2(width, TILE_SIZE)
+	parent.add_child(bottom)
+
+	var left = ColorRect.new()
+	left.color = color
+	left.position = Vector2(0, 0)
+	left.size = Vector2(TILE_SIZE, height)
+	parent.add_child(left)
+
+	var right = ColorRect.new()
+	right.color = shadow_color
+	right.position = Vector2(width - TILE_SIZE, 0)
+	right.size = Vector2(TILE_SIZE, height)
+	parent.add_child(right)
+
+	var inner_top = ColorRect.new()
+	inner_top.color = color.lightened(0.3)
+	inner_top.position = Vector2(TILE_SIZE, TILE_SIZE)
+	inner_top.size = Vector2(width - TILE_SIZE * 2, 1)
+	parent.add_child(inner_top)
+
+	var inner_left = ColorRect.new()
+	inner_left.color = color.lightened(0.3)
+	inner_left.position = Vector2(TILE_SIZE, TILE_SIZE)
+	inner_left.size = Vector2(1, height - TILE_SIZE * 2)
+	parent.add_child(inner_left)
+
+
+## =====================
+## PUBLIC API
+## =====================
+
+func show_dialogue(dialogue_lines: Array) -> void:
+	_dialogue_queue = dialogue_lines
+	_current_index = 0
+	visible = true
+	# Music duck for modal dialogue — thinking indicator lives inside this panel so it composes safely (idempotent same-state). Forward-compat: no-op until cowir-music's SoundManager fold lands (feature/cowardly-irregular-music, msg 2707).
+	_duck_music_for_dialogue(true)
+	_show_current_line()
+
+
+func skip_all() -> void:
+	"""Immediately finish all dialogue (for cutscene skip)."""
+	_finish_dialogue()
+
+
+## Wave C: toggle the LLM "thinking" indicator.
+##
+## When active=true:
+##   - the dialogue text + advance hint are hidden
+##   - the typing timer is paused so any in-flight typewriter doesn't race
+##   - an animated "·" / "··" / "···" cycle renders in the body area
+##   - _input() ignores ui_accept / mouse-advance so the player can't blow past
+##
+## When active=false:
+##   - the indicator disappears and the panel returns to its prior state
+##     (the next line is shown by _show_current_line or by the caller)
+##
+## Safe to call before the UI is built; toggles a flag and exits.
+## Idempotent — successive true→true / false→false calls are no-ops.
+func set_thinking(active: bool) -> void:
+	if _thinking_label == null:
+		# UI not built yet (e.g. called before show_dialogue). Defer; the next
+		# show_current_line rebuild will reflect the desired state through the
+		# stored typing-state machinery if needed.
+		return
+	if active == _thinking_label.visible:
+		return  # Idempotent.
+
+	if active:
+		# Pause the typewriter so the line under construction doesn't keep
+		# rendering behind the indicator.
+		if _typing_timer and is_instance_valid(_typing_timer):
+			_typing_timer.stop()
+		# Blank the body and hide the advance hint.
+		if _text_label and is_instance_valid(_text_label):
+			_text_label.text = ""
+		if _advance_hint and is_instance_valid(_advance_hint):
+			_advance_hint.visible = false
+		_thinking_dots_step = 0
+		_thinking_label.text = THINKING_FRAMES[0]
+		_thinking_label.visible = true
+		if _thinking_timer and is_instance_valid(_thinking_timer):
+			_thinking_timer.start()
+		visible = true  # Make sure the dialogue panel is on-screen.
+		thinking_started.emit()
+	else:
+		_thinking_label.visible = false
+		if _thinking_timer and is_instance_valid(_thinking_timer):
+			_thinking_timer.stop()
+		thinking_ended.emit()
+
+
+func is_thinking() -> bool:
+	return _thinking_label != null and _thinking_label.visible
+
+
+func _on_thinking_tick() -> void:
+	if _thinking_label == null or not _thinking_label.visible:
+		return
+	_thinking_dots_step = (_thinking_dots_step + 1) % THINKING_FRAMES.size()
+	_thinking_label.text = THINKING_FRAMES[_thinking_dots_step]
+
+
+## =====================
+## DIALOGUE FLOW
+## =====================
+
+func _show_current_line() -> void:
+	if _current_index >= _dialogue_queue.size():
+		_finish_dialogue()
+		return
+
+	var entry = _dialogue_queue[_current_index]
+	var theme_name = entry.get("theme", "narrator")
+	var theme = resolve_theme(str(theme_name))
+
+	_create_dialogue_visuals(theme)
+
+	_speaker_label.text = entry.get("speaker", "")
+
+	# Set portrait (supports expression suffix: "fighter_angry", "cleric_sad")
+	var portrait_raw = entry.get("portrait", theme_name)
+	var portrait_type = portrait_raw
+	var expression = ""
+	# Parse expression suffix
+	for expr in EXPRESSION_TINTS.keys():
+		if portrait_raw.ends_with("_" + expr):
+			portrait_type = portrait_raw.substr(0, portrait_raw.length() - expr.length() - 1)
+			expression = expr
+			break
+	_portrait_image.texture = _create_portrait(portrait_type)
+	# Apply expression tint to portrait
+	_portrait_image.modulate = EXPRESSION_TINTS.get(expression, Color.WHITE)
+
+	# Load voice blip for this speaker — pitch derived from the speaker
+	# NAME so NPCs sharing a blip family (8 scholars / 2 guards) still
+	# sound individually distinct.
+	_load_voice_blip(_resolve_voice_blip_key(portrait_type, theme_name), entry.get("speaker", ""))
+
+	# Hide portrait frame for narrator (no-portrait mode)
+	var hide_portrait = entry.get("hide_portrait", false)
+	if portrait_type == "narrator" and entry.get("speaker", "") == "":
+		hide_portrait = true
+
+	if hide_portrait:
+		_portrait_frame.visible = false
+		# Expand text area to use full width
+		var text_x = TILE_SIZE * 4
+		var box_width = _dialogue_box.size.x
+		_speaker_label.position.x = text_x
+		_text_label.position.x = text_x
+		_text_label.size.x = box_width - text_x - TILE_SIZE * 3
+	else:
+		_portrait_frame.visible = true
+
+	# Start typing effect — pull the resolved speed FROM SETTINGS each line
+	# so a toggle through the in-cutscene settings menu takes effect at the
+	# next box, not the next cutscene.
+	_current_text = entry.get("text", "")
+	_displayed_chars = 0
+	_voice_blip_next_char = randi_range(VOICE_BLIP_STEP_MIN, VOICE_BLIP_STEP_MAX)
+	_text_label.text = ""
+	_text_label.scroll_active = false  # Disable scroll during typing
+	_advance_hint.visible = false
+	_typing_speed = _resolve_typing_speed()
+	if _typing_speed <= 0.0:
+		# "Instant" — bypass the typewriter, reveal the full line, fall
+		# straight into _finish_typing so scroll/advance hint come up
+		# without waiting on a single timer tick.
+		_displayed_chars = _current_text.length()
+		_text_label.text = _current_text
+		_is_typing = true
+		_finish_typing()
+		return
+	_is_typing = true
+	_typing_timer.start(_typing_speed)
+
+
+func _resolve_typing_speed() -> float:
+	# Read GameState.text_speed live so changes through SettingsMenu apply on
+	# the very next dialogue line. Falls back to normal cadence when GameState
+	# or the field is missing (which matters in unit-test contexts that don't
+	# spin up the full autoload graph).
+	var key: String = "normal"
+	if GameState and "text_speed" in GameState:
+		key = str(GameState.text_speed)
+	if TYPING_SPEED_PRESETS.has(key):
+		return TYPING_SPEED_PRESETS[key]
+	return TYPING_SPEED_PRESETS["normal"]
+
+
+func _on_typing_tick() -> void:
+	if not is_instance_valid(self) or not is_instance_valid(_text_label):
+		return
+
+	if _displayed_chars < _current_text.length():
+		_displayed_chars += 1
+		_text_label.text = _current_text.substr(0, _displayed_chars)
+
+		# Voice blip at jittered cadence (every 2-4 voiced characters) so it
+		# doesn't feel metronomic. Punctuation and whitespace don't advance
+		# the step counter so natural pauses stay silent.
+		var ch := _current_text.substr(_displayed_chars - 1, 1)
+		if _is_voiced_char(ch):
+			if _displayed_chars >= _voice_blip_next_char:
+				_play_voice_blip()
+				_voice_blip_next_char = _displayed_chars + randi_range(VOICE_BLIP_STEP_MIN, VOICE_BLIP_STEP_MAX)
+	else:
+		_finish_typing()
+
+
+static func _is_voiced_char(ch: String) -> bool:
+	if ch.is_empty():
+		return false
+	# Alphanumeric (including accented) = voiced; whitespace/punctuation = silent
+	var c := ch.unicode_at(0)
+	if c >= 0x30 and c <= 0x39: return true   # 0-9
+	if c >= 0x41 and c <= 0x5A: return true   # A-Z
+	if c >= 0x61 and c <= 0x7A: return true   # a-z
+	if c > 0x7F: return true                  # non-ASCII letters (é, ñ, etc.)
+	return false
+
+
+func _finish_typing() -> void:
+	if _typing_timer and is_instance_valid(_typing_timer):
+		_typing_timer.stop()
+	_is_typing = false
+	if _text_label and is_instance_valid(_text_label):
+		_text_label.text = _current_text
+		# Enable scroll after typing so the player can read overflow
+		_text_label.scroll_active = true
+	if _advance_hint and is_instance_valid(_advance_hint):
+		_advance_hint.visible = true
+
+
+func _advance_dialogue() -> void:
+	if _is_typing:
+		_finish_typing()
+	else:
+		_current_index += 1
+		dialogue_advanced.emit()
+		_show_current_line()
+
+	if SoundManager:
+		SoundManager.play_ui("menu_select")
+
+
+func _finish_dialogue() -> void:
+	visible = false
+	_dialogue_queue.clear()
+	_current_index = 0
+	# Pair with the duck-on from show_dialogue. Idempotent per cowir-music's API — safe to call even if we never ducked (autoload was absent, etc.).
+	_duck_music_for_dialogue(false)
+	dialogue_finished.emit()
+
+
+## Forward-compat wrapper: guards on SoundManager autoload presence + method availability so test contexts without the autoload (and pre-fold builds without the API) are clean no-ops. cowir-music branch feature/cowardly-irregular-music @ 6833cc4a folds into v3.33.198.
+func _duck_music_for_dialogue(active: bool) -> void:
+	if SoundManager and SoundManager.has_method("duck_music_for_dialogue"):
+		SoundManager.duck_music_for_dialogue(active)
+		_ducked_music = active
+
+
+func _input(event: InputEvent) -> void:
+	if not visible:
+		return
+
+	# Wave C: while the LLM "thinking" indicator is active, swallow advance
+	# input so the player can't blow past the empty box. This is the chokepoint
+	# that pairs with set_thinking(true) elsewhere — DynamicConversation toggles
+	# the flag, this guard enforces it. We still apply `not event.is_echo()` to
+	# the ui_accept branch so OS key-repeat doesn't fire menu_select / sfx via
+	# a chained handler — matches the post-2026-04-30 regression bar.
+	if _thinking_label != null and _thinking_label.visible:
+		if event.is_action_pressed("ui_accept") and not event.is_echo():
+			get_viewport().set_input_as_handled()
+			return
+		# Also swallow ui_cancel (B / Esc) so the player can't skip the queue
+		# out from under an in-flight LLM response — the thinking guard must
+		# block fast-exit just as it blocks advance.
+		if event.is_action_pressed("ui_cancel") and not event.is_echo():
+			get_viewport().set_input_as_handled()
+			return
+		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+			get_viewport().set_input_as_handled()
+			return
+
+	# Bug fix (2026-04-30): added `not event.is_echo()` so holding Enter
+	# doesn't rapid-fire _advance_dialogue at echo rate (was burning past
+	# multiple lines per held key, also spamming the menu_select cue).
+	if event.is_action_pressed("ui_accept") and not event.is_echo():
+		_advance_dialogue()
+		get_viewport().set_input_as_handled()
+		return
+
+	# ui_cancel (B / Esc): skip the rest of the dialogue queue. For story
+	# cutscenes CutsceneDirector renders a hold-B-to-skip pill — for plain
+	# NPC dialogue (no Director) this is the only way to fast-exit.
+	# Bug user-reported 2026-06-04: "can't skip Elder Theron dialogue."
+	# (Guarded above while the LLM "thinking" indicator is active.)
+	if event.is_action_pressed("ui_cancel") and not event.is_echo():
+		_finish_dialogue()
+		get_viewport().set_input_as_handled()
+		return
+
+	# Left-click to advance dialogue
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		_advance_dialogue()
+		get_viewport().set_input_as_handled()
+
+
+## =====================
+## PORTRAIT LOADING / GENERATION
+## =====================
+
+## Mapping from portrait type to sprite asset paths
+const PORTRAIT_SPRITES = {
+	"fighter": "res://assets/sprites/portraits/fighter.png",
+	"hero": "res://assets/sprites/portraits/fighter.png",
+	"mage": "res://assets/sprites/portraits/mage.png",
+	"bard": "res://assets/sprites/portraits/bard.png",
+	"cleric": "res://assets/sprites/portraits/cleric.png",
+	"healer": "res://assets/sprites/portraits/cleric.png",
+	"rogue": "res://assets/sprites/portraits/rogue.png",
+	# NPC portraits cropped from sprite sheets (first frame, upper body)
+	"elder": "res://assets/sprites/portraits/npcs/elder.png",
+	"scholar": "res://assets/sprites/portraits/npcs/scholar.png",
+	"shopkeeper": "res://assets/sprites/portraits/npcs/shopkeeper.png",
+	"brigadier": "res://assets/sprites/portraits/npcs/brigadier.png",
+	"guard": "res://assets/sprites/portraits/npcs/guard.png",
+	# Masterite portraits — 4 roles × 5 world variants (matches monsters.json ids). Paths point at cowir-sprites' artist-anchored PNGs; missing files fall through to the procedural mysterious draw via the masterite match arm.
+	"masterite_warden_medieval": "res://assets/sprites/portraits/masterite_warden_medieval.png",
+	"masterite_warden_suburban": "res://assets/sprites/portraits/masterite_warden_suburban.png",
+	"masterite_warden_industrial": "res://assets/sprites/portraits/masterite_warden_industrial.png",
+	"masterite_warden_futuristic": "res://assets/sprites/portraits/masterite_warden_futuristic.png",
+	"masterite_warden_abstract": "res://assets/sprites/portraits/masterite_warden_abstract.png",
+	"masterite_tempo_medieval": "res://assets/sprites/portraits/masterite_tempo_medieval.png",
+	"masterite_tempo_suburban": "res://assets/sprites/portraits/masterite_tempo_suburban.png",
+	"masterite_tempo_industrial": "res://assets/sprites/portraits/masterite_tempo_industrial.png",
+	"masterite_tempo_futuristic": "res://assets/sprites/portraits/masterite_tempo_futuristic.png",
+	"masterite_tempo_abstract": "res://assets/sprites/portraits/masterite_tempo_abstract.png",
+	"masterite_arbiter_medieval": "res://assets/sprites/portraits/masterite_arbiter_medieval.png",
+	"masterite_arbiter_suburban": "res://assets/sprites/portraits/masterite_arbiter_suburban.png",
+	"masterite_arbiter_industrial": "res://assets/sprites/portraits/masterite_arbiter_industrial.png",
+	"masterite_arbiter_futuristic": "res://assets/sprites/portraits/masterite_arbiter_futuristic.png",
+	"masterite_arbiter_abstract": "res://assets/sprites/portraits/masterite_arbiter_abstract.png",
+	"masterite_curator_medieval": "res://assets/sprites/portraits/masterite_curator_medieval.png",
+	"masterite_curator_suburban": "res://assets/sprites/portraits/masterite_curator_suburban.png",
+	"masterite_curator_industrial": "res://assets/sprites/portraits/masterite_curator_industrial.png",
+	"masterite_curator_futuristic": "res://assets/sprites/portraits/masterite_curator_futuristic.png",
+	"masterite_curator_abstract": "res://assets/sprites/portraits/masterite_curator_abstract.png",
+	# Story-tier figures — major recurring speakers with >30 dialogue lines each. Root path per Masterite convention (PR #154). Interim: fall through to mysterious procedural via named-principal prefix arm.
+	"calibrant": "res://assets/sprites/portraits/calibrant.png",
+	"orrery": "res://assets/sprites/portraits/orrery.png",
+	"mordaine": "res://assets/sprites/portraits/npcs/chancellor_mordaine.png",  # was the Batch-A knight placeholder; her real face lived under the chancellor_ key only
+	# Named W1 principals (currently appear in cutscenes) — cowir-sprites Batch B target.
+	"theron": "res://assets/sprites/portraits/npcs/theron.png",
+	"milo": "res://assets/sprites/portraits/npcs/milo.png",
+	"bram": "res://assets/sprites/portraits/npcs/bram.png",
+	"marta": "res://assets/sprites/portraits/npcs/marta.png",
+	"phil": "res://assets/sprites/portraits/npcs/phil.png",
+	"sprocket": "res://assets/sprites/portraits/npcs/sprocket.png",
+	"herta": "res://assets/sprites/portraits/npcs/herta.png",
+	"anya": "res://assets/sprites/portraits/npcs/anya.png",
+	# Named W1 (pre-registered for cowir-story's imminent post-cave lines — Boris/Pip/Flora already promoted with dialogue on main).
+	"boris": "res://assets/sprites/portraits/npcs/boris.png",
+	"pip": "res://assets/sprites/portraits/npcs/pip.png",
+	"flora": "res://assets/sprites/portraits/npcs/flora.png",
+	"greta": "res://assets/sprites/portraits/npcs/greta.png",
+	"aldwick": "res://assets/sprites/portraits/npcs/aldwick.png",
+	"rowan": "res://assets/sprites/portraits/npcs/rowan.png",
+	"cluck": "res://assets/sprites/portraits/npcs/cluck.png",
+	# Bard spotlight-duel opponent. His lines carried portrait "villager", so the aristocrat who interrogates you rendered as a generic townsperson.
+	"courtier": "res://assets/sprites/portraits/npcs/courtier.png",
+	# W1 bosses.
+	"boss_rat_king": "res://assets/sprites/portraits/npcs/boss_rat_king.png",
+	# Pre-registered pending art (same pattern as the masterite variants). NOT on disk — assets/sprites/npcs/dr_temporal/ is his OVERWORLD sheet dir, not a portrait; PR #155 registered this claiming otherwise. Renders the mysterious procedural until a real bust lands here.
+	"dr_temporal": "res://assets/sprites/portraits/npcs/dr_temporal.png",
+	# Generic archetype pool — every OverworldNPC.npc_type value that OverworldNPC:1112 passes as `portrait` when the player interacts. Aliased to closest existing procedural via the archetype prefix arm; cowir-sprites replaces individually as art lands.
+	"farmer": "res://assets/sprites/portraits/npcs/farmer.png",
+	"traveler": "res://assets/sprites/portraits/npcs/traveler.png",
+	"child": "res://assets/sprites/portraits/npcs/child.png",
+	"blacksmith": "res://assets/sprites/portraits/npcs/blacksmith.png",
+	"bartender": "res://assets/sprites/portraits/npcs/bartender.png",
+	"maid": "res://assets/sprites/portraits/npcs/maid.png",
+	"dancer": "res://assets/sprites/portraits/npcs/dancer.png",
+	"adventurer": "res://assets/sprites/portraits/npcs/adventurer.png",
+	"apprentice": "res://assets/sprites/portraits/npcs/apprentice.png",
+	"herbalist": "res://assets/sprites/portraits/npcs/herbalist.png",
+	"hooded_mage": "res://assets/sprites/portraits/npcs/hooded_mage.png",
+	"knight": "res://assets/sprites/portraits/npcs/knight.png",
+	"nervous": "res://assets/sprites/portraits/npcs/nervous.png",
+	"pilgrim": "res://assets/sprites/portraits/npcs/pilgrim.png",
+	"scholarly": "res://assets/sprites/portraits/npcs/scholarly.png",
+	"soldier": "res://assets/sprites/portraits/npcs/soldier.png",
+	# Gendered generics from cowir-sprites' Batch C. Shipped 256x256 and sat with ZERO consumers — the generic `villager`/`elder` keys keep their current look so scenes struktured has played don't change; these are addressable when an author wants a specific one.
+	"villager_m": "res://assets/sprites/portraits/npcs/villager_m.png",
+	"villager_f": "res://assets/sprites/portraits/npcs/villager_f.png",
+	"elder_f": "res://assets/sprites/portraits/npcs/elder_f.png",
+	# struktured 2026-07-31 ("phil the lost: no portrait … MAKE PORTRAITS FOR ALL SPRITES").
+	# `villager` is the npc_type of 55 placed NPCs and had no art — Phil, Young Pip, Milo,
+	# Flora, Sprocket and 50 more all rendered the generic shopkeeper procedural.
+	"villager": "res://assets/sprites/portraits/npcs/villager.png",
+	"mysterious": "res://assets/sprites/portraits/npcs/mysterious.png",
+	# Name-hash pair targets — OverworldNPC picks these for villager/elder npc_types.
+	"young_man": "res://assets/sprites/portraits/npcs/young_man.png",
+	"young_woman": "res://assets/sprites/portraits/npcs/young_woman.png",
+	"old_man": "res://assets/sprites/portraits/npcs/old_man.png",
+	"old_woman": "res://assets/sprites/portraits/npcs/old_woman.png",
+	# Archetype sheets that existed with no matching portrait.
+	"merchant": "res://assets/sprites/portraits/npcs/merchant.png",
+	"innkeeper": "res://assets/sprites/portraits/npcs/innkeeper.png",
+	"fisherman": "res://assets/sprites/portraits/npcs/fisherman.png",
+	"monk": "res://assets/sprites/portraits/npcs/monk.png",
+	"priestess": "res://assets/sprites/portraits/npcs/priestess.png",
+	"noble": "res://assets/sprites/portraits/npcs/noble.png",
+	"noblewoman": "res://assets/sprites/portraits/npcs/noblewoman.png",
+	"king": "res://assets/sprites/portraits/npcs/king.png",
+	"queen": "res://assets/sprites/portraits/npcs/queen.png",
+	# Named W1 principals reached via OverworldNPC.sprite_archetype.
+	"elder_theron": "res://assets/sprites/portraits/npcs/theron.png",  # one face per NPC: Batch B was built for Theron by name, the archetype face was generic
+	"scholar_milo": "res://assets/sprites/portraits/npcs/milo.png",  # one face per NPC: Batch B was built for Milo by name, the archetype face was generic
+	"chancellor_mordaine": "res://assets/sprites/portraits/npcs/chancellor_mordaine.png",
+	# Advanced + meta jobs. The 5 meta jobs have no idle.png, so the job-sheet
+	# bust rung cannot fire for them and this is their only portrait source.
+	"guardian": "res://assets/sprites/portraits/guardian.png",
+	"ninja": "res://assets/sprites/portraits/ninja.png",
+	"summoner": "res://assets/sprites/portraits/summoner.png",
+	"speculator": "res://assets/sprites/portraits/speculator.png",
+	"scriptweaver": "res://assets/sprites/portraits/scriptweaver.png",
+	"time_mage": "res://assets/sprites/portraits/time_mage.png",
+	"necromancer": "res://assets/sprites/portraits/necromancer.png",
+	"bossbinder": "res://assets/sprites/portraits/bossbinder.png",
+	"skiptrotter": "res://assets/sprites/portraits/skiptrotter.png",
+	## Non-human named NPCs. Both were _create_npc(..., "villager") with no archetype, so
+	## a fairy and a ghost both resolved to the young_man/young_woman name-hash pair.
+	"fairy": "res://assets/sprites/portraits/npcs/fairy.png",
+	"ghost": "res://assets/sprites/portraits/npcs/ghost.png",
+}
+
+## Named-principal + archetype → existing procedural fallback. Any key here without a PNG on disk renders via the mapped procedural until cowir-sprites' art lands (matches the pre-fix visual so nothing regresses on interim frames).
+const PORTRAIT_PROCEDURAL_FALLBACK := {
+	# Story tier
+	"calibrant": "mysterious", "orrery": "mysterious", "mordaine": "mysterious",
+	# Named W1 (shared identity anchor with their overworld archetype)
+	"theron": "elder", "milo": "scholar", "bram": "shopkeeper", "marta": "shopkeeper",
+	"phil": "mysterious", "sprocket": "scholar", "herta": "elder", "anya": "elder",
+	"boris": "guard", "pip": "villager", "flora": "villager", "greta": "elder",
+	"aldwick": "shopkeeper", "rowan": "mysterious", "cluck": "villager",
+	"dr_temporal": "mysterious",
+	# Bosses
+	"boss_rat_king": "goblin",
+	# Generic archetype pool — closest procedural per role tone
+	"farmer": "shopkeeper", "traveler": "mysterious", "child": "villager",
+	"blacksmith": "shopkeeper", "bartender": "shopkeeper", "maid": "villager",
+	"dancer": "villager", "adventurer": "guard", "apprentice": "scholar",
+	"herbalist": "scholar", "hooded_mage": "mysterious", "knight": "guard",
+	"nervous": "villager", "pilgrim": "elder", "scholarly": "scholar", "soldier": "guard",
+	"villager_m": "villager", "villager_f": "villager", "elder_f": "elder",
+}
+
+## Cache loaded portrait textures to avoid repeated disk reads
+var _portrait_cache: Dictionary = {}
+
+
+func _create_portrait(portrait_type: String) -> Texture2D:
+	# Try loading artist sprite portrait first (hand-crafted bust art)
+	var sprite_path = PORTRAIT_SPRITES.get(portrait_type, "")
+	if sprite_path != "":
+		# Must stay ABOVE the base load below, or that rung returns first and this never runs
+		var _pw := HybridSpriteLoader.current_world_suffix()
+		if _pw != "" and _pw != "medieval":
+			var variant: String = sprite_path.get_basename() + "_" + _pw + ".png"
+			if _portrait_cache.has(variant):
+				return _portrait_cache[variant]
+			if ResourceLoader.exists(variant):
+				var vtex = load(variant)
+				if vtex:
+					_portrait_cache[variant] = vtex
+					return vtex
+		if _portrait_cache.has(sprite_path):
+			return _portrait_cache[sprite_path]
+		if ResourceLoader.exists(sprite_path):
+			var tex = load(sprite_path)
+			if tex:
+				_portrait_cache[sprite_path] = tex
+				return tex
+
+	# Second: auto-cropped bust from the job's idle sprite sheet.
+	# Covers advanced + meta jobs (guardian, ninja, summoner, speculator,
+	# scriptweaver, time_mage, necromancer, bossbinder, skiptrotter) and
+	# any named speaker that matches a job id, without requiring hand-drawn
+	# portrait art first.
+	var bust = _create_bust_from_job_sheet(portrait_type)
+	if bust != null:
+		return bust
+
+	# Fallback to procedural portrait generation
+	var size = int(PORTRAIT_SIZE - 8)
+	var img = Image.create(size, size, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+
+	# Named-principal + archetype pool alias: any key in PORTRAIT_PROCEDURAL_FALLBACK renders via the mapped existing procedural until cowir-sprites' art lands. Keeps 200+ named-speaker dialogue lines rendering intentionally instead of grey narrator blur.
+	var draw_type: String = str(PORTRAIT_PROCEDURAL_FALLBACK.get(portrait_type, portrait_type))
+
+	match draw_type:
+		"hero", "fighter":
+			_draw_fighter_portrait(img, size)
+		"cleric", "healer":
+			_draw_cleric_portrait(img, size)
+		"rogue":
+			_draw_rogue_portrait(img, size)
+		"mage":
+			_draw_mage_portrait(img, size)
+		"bard":
+			_draw_bard_portrait(img, size)
+		"elder":
+			_draw_elder_portrait(img, size)
+		"scholar":
+			_draw_scholar_portrait(img, size)
+		"shopkeeper", "merchant", "villager":
+			# Villager reuses the shopkeeper procedural (generic townsfolk face); the villager THEME registered in PR #146 already differentiates it visually via the tan border/box — the portrait fallback was still a grey narrator blur before this arm.
+			_draw_shopkeeper_portrait(img, size)
+		"guard", "brigadier":
+			_draw_elder_portrait(img, size)
+		"goblin":
+			_draw_goblin_portrait(img, size)
+		"mysterious":
+			_draw_mysterious_portrait(img, size)
+		"system":
+			_draw_system_portrait(img, size)
+		"narrator":
+			_draw_narrator_portrait(img, size)
+		_:
+			# Masterite portraits (masterite_<role>_<world>) fall through to mysterious until cowir-sprites' per-world PNGs land; PORTRAIT_SPRITES lookup wins once they exist.
+			if portrait_type.begins_with("masterite_"):
+				_draw_mysterious_portrait(img, size)
+			else:
+				_draw_narrator_portrait(img, size)
+
+	return ImageTexture.create_from_image(img)
+
+
+## Bust-crop helper: loads <job>/idle.png and crops the top ~55% of the
+## first frame so we get a head-and-shoulders shot sized for the
+## TextureRect's STRETCH_KEEP_ASPECT_CENTERED stretch mode. Returns null
+## when the job has no idle sheet (caller then falls back to procedural).
+const BUST_CROP_RATIO: float = 0.55
+
+func _create_bust_from_job_sheet(job_id: String) -> Texture2D:
+	if job_id.is_empty():
+		return null
+	# Suffix in the cache key, or a world transition serves the previous world's face forever.
+	var _bust_w := HybridSpriteLoader.current_world_suffix()
+	var cache_key := "bust:%s:%s" % [job_id, _bust_w]
+	if _portrait_cache.has(cache_key):
+		return _portrait_cache[cache_key]
+
+	var sheet_path := HybridSpriteLoader.job_asset_path(job_id, "idle", _bust_w)
+	if not ResourceLoader.exists(sheet_path):
+		_portrait_cache[cache_key] = null
+		return null
+
+	var sheet := load(sheet_path) as Texture2D
+	if sheet == null:
+		_portrait_cache[cache_key] = null
+		return null
+
+	# Frames are square in the canonical layout; use the sheet height as
+	# the frame dimension. First frame lives at x=0, y=0.
+	var size: Vector2 = sheet.get_size()
+	var frame: int = int(size.y)
+	if frame <= 0:
+		return null
+	var crop_h: int = int(float(frame) * BUST_CROP_RATIO)
+
+	var atlas := AtlasTexture.new()
+	atlas.atlas = sheet
+	atlas.region = Rect2(0, 0, frame, crop_h)
+	_portrait_cache[cache_key] = atlas
+	return atlas
+
+
+func _draw_fighter_portrait(img: Image, size: int) -> void:
+	var cx = size / 2
+	var cy = size / 2
+	var skin = Color(0.95, 0.8, 0.7)
+	var hair = Color(0.4, 0.3, 0.2)
+	var eyes = Color(0.2, 0.4, 0.7)
+
+	# Hair
+	for y in range(size / 5, size / 2):
+		for x in range(size / 4, size * 3 / 4):
+			var dy = y - size / 3
+			var dx = x - cx
+			if dx * dx / 200.0 + dy * dy / 100.0 < 1.0:
+				img.set_pixel(x, y, hair)
+
+	# Face
+	for y in range(size / 3, size * 4 / 5):
+		for x in range(size / 4, size * 3 / 4):
+			var dy = y - size / 2 - 5
+			var dx = x - cx
+			if dx * dx / 180.0 + dy * dy / 200.0 < 1.0:
+				img.set_pixel(x, y, skin)
+
+	# Eyes
+	img.set_pixel(cx - 8, cy, eyes)
+	img.set_pixel(cx - 7, cy, eyes)
+	img.set_pixel(cx + 7, cy, eyes)
+	img.set_pixel(cx + 8, cy, eyes)
+
+	# Mouth
+	for x in range(-5, 6):
+		img.set_pixel(cx + x, cy + 12, Color(0.7, 0.4, 0.4))
+
+
+func _draw_cleric_portrait(img: Image, size: int) -> void:
+	var cx = size / 2
+	var cy = size / 2
+	var skin = Color(0.95, 0.85, 0.8)
+	var hair = Color(0.9, 0.85, 0.7)
+	var eyes = Color(0.4, 0.7, 0.5)
+	var hood = Color(1.0, 0.95, 0.95)
+
+	for y in range(size / 6, size * 2 / 3):
+		for x in range(size / 5, size * 4 / 5):
+			var dy = y - size / 3
+			var dx = x - cx
+			if dx * dx / 250.0 + dy * dy / 180.0 < 1.0:
+				img.set_pixel(x, y, hood)
+
+	for y in range(size / 3, size * 3 / 4):
+		for x in range(size / 3, size * 2 / 3):
+			var dy = y - size / 2
+			var dx = x - cx
+			if dx * dx / 120.0 + dy * dy / 150.0 < 1.0:
+				img.set_pixel(x, y, skin)
+
+	img.set_pixel(cx - 6, cy - 2, eyes)
+	img.set_pixel(cx + 6, cy - 2, eyes)
+
+	for x in range(-4, 5):
+		img.set_pixel(cx + x, cy + 8, Color(0.8, 0.5, 0.5))
+
+
+func _draw_rogue_portrait(img: Image, size: int) -> void:
+	var cx = size / 2
+	var cy = size / 2
+	var skin = Color(0.85, 0.75, 0.65)
+	var hair = Color(0.15, 0.1, 0.1)
+	var eyes = Color(0.3, 0.25, 0.2)
+	var bandana = Color(0.4, 0.3, 0.5)
+
+	for y in range(size / 5, size / 3):
+		for x in range(size / 5, size * 4 / 5):
+			img.set_pixel(x, y, bandana)
+
+	for y in range(size / 4, size / 2):
+		for x in range(size / 5, size / 3):
+			img.set_pixel(x, y, hair)
+
+	for y in range(size / 3, size * 3 / 4):
+		for x in range(size / 4, size * 3 / 4):
+			var dy = y - size / 2
+			var dx = x - cx
+			if dx * dx / 180.0 + dy * dy / 180.0 < 1.0:
+				img.set_pixel(x, y, skin)
+
+	for x in range(-3, 0):
+		img.set_pixel(cx - 7 + x, cy, eyes)
+		img.set_pixel(cx + 7 + x, cy, eyes)
+
+	for x in range(0, 6):
+		img.set_pixel(cx + x, cy + 10 - x / 3, Color(0.6, 0.4, 0.4))
+
+
+func _draw_mage_portrait(img: Image, size: int) -> void:
+	var cx = size / 2
+	var cy = size / 2
+	var hat = Color(0.1, 0.05, 0.2)
+	var eyes = Color(1.0, 0.9, 0.3)
+
+	for y in range(0, size * 2 / 3):
+		var hat_width = (size * 2 / 3 - y) / 3 + 5
+		for x in range(cx - hat_width, cx + hat_width):
+			if x >= 0 and x < size:
+				img.set_pixel(x, y, hat)
+
+	for x in range(size / 5, size * 4 / 5):
+		for y in range(size / 2 - 5, size / 2):
+			img.set_pixel(x, y, hat)
+
+	for y in range(size / 2, size * 4 / 5):
+		for x in range(size / 3, size * 2 / 3):
+			img.set_pixel(x, y, Color(0.05, 0.02, 0.08))
+
+	for dx in range(-2, 3):
+		img.set_pixel(cx - 8 + dx, cy + 5, eyes)
+		img.set_pixel(cx + 8 + dx, cy + 5, eyes)
+
+
+func _draw_bard_portrait(img: Image, size: int) -> void:
+	var cx = size / 2
+	var cy = size / 2
+	var skin = Color(0.9, 0.78, 0.68)
+	var hair = Color(0.6, 0.35, 0.15)
+	var eyes = Color(0.35, 0.55, 0.3)
+	var hat = Color(0.5, 0.2, 0.2)
+	var feather = Color(0.9, 0.3, 0.2)
+
+	# Feathered cap (tilted beret)
+	for y in range(size / 6, size / 2 - 5):
+		for x in range(size / 5, size * 3 / 4):
+			var dy = y - size / 3
+			var dx = x - cx + 5
+			if dx * dx / 200.0 + dy * dy / 80.0 < 1.0:
+				img.set_pixel(x, y, hat)
+
+	# Feather
+	for i in range(15):
+		var fx = cx + 10 + i
+		var fy = size / 5 - i / 2
+		if fx >= 0 and fx < size and fy >= 0 and fy < size:
+			img.set_pixel(fx, fy, feather)
+			if fy + 1 < size:
+				img.set_pixel(fx, fy + 1, feather)
+
+	# Hair
+	for y in range(size / 3, size * 2 / 3):
+		for x in range(size / 4, size / 3):
+			img.set_pixel(x, y, hair)
+		for x in range(size * 2 / 3, size * 3 / 4):
+			img.set_pixel(x, y, hair)
+
+	# Face
+	for y in range(size / 3, size * 3 / 4):
+		for x in range(size / 4, size * 3 / 4):
+			var dy = y - size / 2
+			var dx = x - cx
+			if dx * dx / 170.0 + dy * dy / 180.0 < 1.0:
+				img.set_pixel(x, y, skin)
+
+	# Bright eyes
+	img.set_pixel(cx - 7, cy - 2, eyes)
+	img.set_pixel(cx - 6, cy - 2, eyes)
+	img.set_pixel(cx + 6, cy - 2, eyes)
+	img.set_pixel(cx + 7, cy - 2, eyes)
+
+	# Cheerful smile
+	for x in range(-6, 7):
+		var smile_y = cy + 8 + abs(x) / 3
+		if smile_y < size:
+			img.set_pixel(cx + x, smile_y, Color(0.75, 0.45, 0.45))
+
+
+func _draw_elder_portrait(img: Image, size: int) -> void:
+	var cx = size / 2
+	var cy = size / 2
+	var skin = Color(0.85, 0.72, 0.62)
+	var hair = Color(0.75, 0.73, 0.7)
+	var eyes = Color(0.4, 0.35, 0.3)
+	var robe = Color(0.35, 0.25, 0.15)
+
+	# White/gray hair
+	for y in range(size / 5, size / 2):
+		for x in range(size / 4, size * 3 / 4):
+			var dy = y - size / 3
+			var dx = x - cx
+			if dx * dx / 200.0 + dy * dy / 120.0 < 1.0:
+				img.set_pixel(x, y, hair)
+
+	# Face (wrinkled)
+	for y in range(size / 3, size * 4 / 5):
+		for x in range(size / 4, size * 3 / 4):
+			var dy = y - size / 2 - 5
+			var dx = x - cx
+			if dx * dx / 180.0 + dy * dy / 200.0 < 1.0:
+				img.set_pixel(x, y, skin)
+
+	# Wrinkle lines
+	for x in range(-3, 4):
+		img.set_pixel(cx + x - 8, cy - 5, skin.darkened(0.15))
+		img.set_pixel(cx + x + 8, cy - 5, skin.darkened(0.15))
+
+	# Tired but wise eyes
+	img.set_pixel(cx - 8, cy, eyes)
+	img.set_pixel(cx - 7, cy, eyes)
+	img.set_pixel(cx + 7, cy, eyes)
+	img.set_pixel(cx + 8, cy, eyes)
+
+	# Slight frown
+	for x in range(-4, 5):
+		img.set_pixel(cx + x, cy + 12, Color(0.6, 0.4, 0.4))
+
+	# Robe collar hint
+	for y in range(size * 3 / 4, size * 4 / 5):
+		for x in range(size / 3, size * 2 / 3):
+			img.set_pixel(x, y, robe)
+
+
+func _draw_scholar_portrait(img: Image, size: int) -> void:
+	var cx = size / 2
+	var cy = size / 2
+	var skin = Color(0.88, 0.78, 0.68)
+	var hair = Color(0.3, 0.25, 0.2)
+	var eyes = Color(0.3, 0.5, 0.6)
+	var glasses = Color(0.6, 0.65, 0.7)
+
+	# Messy hair
+	for y in range(size / 5, size / 2):
+		for x in range(size / 4 - 3, size * 3 / 4 + 3):
+			var dy = y - size / 3
+			var dx = x - cx
+			if dx * dx / 220.0 + dy * dy / 110.0 < 1.0:
+				img.set_pixel(x, y, hair)
+
+	# Face
+	for y in range(size / 3, size * 4 / 5):
+		for x in range(size / 4, size * 3 / 4):
+			var dy = y - size / 2 - 5
+			var dx = x - cx
+			if dx * dx / 170.0 + dy * dy / 200.0 < 1.0:
+				img.set_pixel(x, y, skin)
+
+	# Glasses frames
+	for dx in range(-3, 4):
+		img.set_pixel(cx - 8 + dx, cy - 4, glasses)
+		img.set_pixel(cx - 8 + dx, cy + 2, glasses)
+		img.set_pixel(cx + 8 + dx, cy - 4, glasses)
+		img.set_pixel(cx + 8 + dx, cy + 2, glasses)
+	# Bridge
+	for x in range(cx - 4, cx + 5):
+		img.set_pixel(x, cy - 2, glasses)
+
+	# Eyes behind glasses
+	img.set_pixel(cx - 8, cy - 1, eyes)
+	img.set_pixel(cx + 8, cy - 1, eyes)
+
+	# Excited open mouth
+	for x in range(-3, 4):
+		img.set_pixel(cx + x, cy + 10, Color(0.6, 0.35, 0.35))
+		img.set_pixel(cx + x, cy + 12, Color(0.6, 0.35, 0.35))
+
+
+func _draw_shopkeeper_portrait(img: Image, size: int) -> void:
+	var cx = size / 2
+	var cy = size / 2
+	var skin = Color(0.9, 0.75, 0.65)
+	var hair = Color(0.35, 0.25, 0.15)
+	var eyes = Color(0.35, 0.3, 0.25)
+	var apron = Color(0.6, 0.5, 0.35)
+
+	# Hair
+	for y in range(size / 5, size / 2):
+		for x in range(size / 4, size * 3 / 4):
+			var dy = y - size / 3
+			var dx = x - cx
+			if dx * dx / 200.0 + dy * dy / 100.0 < 1.0:
+				img.set_pixel(x, y, hair)
+
+	# Face
+	for y in range(size / 3, size * 4 / 5):
+		for x in range(size / 4, size * 3 / 4):
+			var dy = y - size / 2 - 5
+			var dx = x - cx
+			if dx * dx / 190.0 + dy * dy / 200.0 < 1.0:
+				img.set_pixel(x, y, skin)
+
+	# Eyes (skeptical)
+	img.set_pixel(cx - 8, cy, eyes)
+	img.set_pixel(cx - 7, cy, eyes)
+	img.set_pixel(cx + 7, cy, eyes)
+	img.set_pixel(cx + 8, cy, eyes)
+	# Raised eyebrow
+	for x in range(-3, 4):
+		img.set_pixel(cx + 6 + x, cy - 5, hair)
+
+	# Smirk
+	for x in range(-2, 5):
+		img.set_pixel(cx + x, cy + 11 - x / 4, Color(0.6, 0.4, 0.4))
+
+	# Apron hint
+	for y in range(size * 3 / 4, size * 4 / 5):
+		for x in range(size / 3, size * 2 / 3):
+			img.set_pixel(x, y, apron)
+
+
+func _draw_goblin_portrait(img: Image, size: int) -> void:
+	var cx = size / 2
+	var cy = size / 2
+	var skin = Color(0.4, 0.55, 0.3)
+	var eyes = Color(0.9, 0.8, 0.2)
+	var ears = Color(0.35, 0.48, 0.25)
+
+	# Pointy ears
+	for i in range(12):
+		var lx = size / 5 - i
+		var rx = size * 4 / 5 + i
+		var ey = size / 3 + i / 2
+		if lx >= 0 and lx < size and ey >= 0 and ey < size:
+			img.set_pixel(lx, ey, ears)
+			img.set_pixel(lx, ey + 1, ears)
+		if rx >= 0 and rx < size and ey >= 0 and ey < size:
+			img.set_pixel(rx, ey, ears)
+			img.set_pixel(rx, ey + 1, ears)
+
+	# Round face
+	for y in range(size / 4, size * 3 / 4):
+		for x in range(size / 4, size * 3 / 4):
+			var dy = y - cy
+			var dx = x - cx
+			if dx * dx / 180.0 + dy * dy / 180.0 < 1.0:
+				img.set_pixel(x, y, skin)
+
+	# Big yellow eyes
+	for dy in range(-2, 3):
+		for dx in range(-2, 3):
+			if dx * dx + dy * dy <= 4:
+				img.set_pixel(cx - 10 + dx, cy - 3 + dy, eyes)
+				img.set_pixel(cx + 10 + dx, cy - 3 + dy, eyes)
+	# Pupils
+	img.set_pixel(cx - 10, cy - 3, Color(0.1, 0.1, 0.1))
+	img.set_pixel(cx + 10, cy - 3, Color(0.1, 0.1, 0.1))
+
+	# Big grin
+	for x in range(-8, 9):
+		var gy = cy + 8 + abs(x) / 2
+		if gy < size:
+			img.set_pixel(cx + x, gy, Color(0.3, 0.1, 0.1))
+
+
+func _draw_mysterious_portrait(img: Image, size: int) -> void:
+	var cx = size / 2
+	var cy = size / 2
+	var cloak = Color(0.15, 0.1, 0.2)
+	var eyes = Color(0.7, 0.5, 0.9)
+
+	# Hood/cloak
+	for y in range(size / 6, size * 5 / 6):
+		for x in range(size / 5, size * 4 / 5):
+			var dy = y - size / 3
+			var dx = x - cx
+			if dx * dx / 250.0 + dy * dy / 300.0 < 1.0:
+				img.set_pixel(x, y, cloak)
+
+	# Shadowed face
+	for y in range(size / 3, size * 2 / 3):
+		for x in range(size / 3, size * 2 / 3):
+			var dy = y - cy
+			var dx = x - cx
+			if dx * dx / 120.0 + dy * dy / 120.0 < 1.0:
+				img.set_pixel(x, y, cloak.lightened(0.05))
+
+	# Glowing eyes
+	for dx in range(-2, 3):
+		img.set_pixel(cx - 8 + dx, cy - 2, eyes)
+		img.set_pixel(cx + 8 + dx, cy - 2, eyes)
+
+
+func _draw_system_portrait(img: Image, size: int) -> void:
+	var cx = size / 2
+	var cy = size / 2
+	var green = Color(0.0, 0.8, 0.4)
+	var dark_green = Color(0.0, 0.4, 0.2)
+
+	# Terminal cursor block
+	for y in range(cy - 10, cy + 10):
+		for x in range(cx - 6, cx + 7):
+			img.set_pixel(x, y, green)
+
+	# Blinking underscore
+	for x in range(cx - 8, cx + 9):
+		img.set_pixel(x, cy + 12, green)
+		img.set_pixel(x, cy + 13, green)
+
+	# Bracket frame
+	for y in range(cy - 15, cy + 16):
+		img.set_pixel(cx - 15, y, dark_green)
+		img.set_pixel(cx - 14, y, dark_green)
+		img.set_pixel(cx + 14, y, dark_green)
+		img.set_pixel(cx + 15, y, dark_green)
+	for x in range(cx - 15, cx - 10):
+		img.set_pixel(x, cy - 15, dark_green)
+		img.set_pixel(x, cy + 15, dark_green)
+	for x in range(cx + 10, cx + 16):
+		img.set_pixel(x, cy - 15, dark_green)
+		img.set_pixel(x, cy + 15, dark_green)
+
+
+func _draw_narrator_portrait(img: Image, size: int) -> void:
+	var cx = size / 2
+	var cy = size / 2
+	var color = Color(0.5, 0.5, 0.6)
+	var glow = Color(0.7, 0.7, 0.8)
+
+	# Eye symbol
+	for angle in range(360):
+		var rad = deg_to_rad(angle)
+		var r = 20 + sin(rad * 2) * 8
+		var x = int(cx + cos(rad) * r)
+		var y = int(cy + sin(rad) * r * 0.6)
+		if x >= 0 and x < size and y >= 0 and y < size:
+			img.set_pixel(x, y, color)
+
+	for dy in range(-8, 9):
+		for dx in range(-8, 9):
+			if dx * dx + dy * dy < 64:
+				var c = glow if dx * dx + dy * dy < 16 else color
+				img.set_pixel(cx + dx, cy + dy, c)
+
+	img.set_pixel(cx - 3, cy - 3, Color.WHITE)
+	img.set_pixel(cx - 2, cy - 3, Color.WHITE)

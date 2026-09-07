@@ -1,0 +1,81 @@
+{
+  "id": "world2_wrong_blue",
+  "title": "The Wrong Blue",
+  "world": 2,
+  "prereq_flag": "quest_world2_relocated_complete",
+  "giver": {
+    "npc_id": "casper_kid",
+    "display_name": "Casper",
+    "location": {"map_id": "maple_heights", "near": "casper_home"},
+    "spawn_flag": "quest_world2_relocated_complete"
+  },
+  "description": "The sky in Maple Heights is the wrong blue. The Mage noticed it on day one. Casper saw it on the Coordinator's monitor. Not wrong like a mistake — wrong like someone picked the wrong hex code.",
+  "playstyle_tags": ["completionist", "observation", "most_meta_forward_w2"],
+  "dialogue": {
+    "offer": [
+      {"speaker": "Casper", "text": "I remembered more. About the monitor. From when I got called in, before you got us out.", "theme": "villager"},
+      {"speaker": "Casper", "text": "It was showing a place with a cave. Medieval. People fighting a wizard. And the sky in the video was the wrong blue. Not wrong like a mistake. Wrong like someone picked the wrong hex code.", "theme": "villager"},
+      {"speaker": "Casper", "text": "I photographed it through the window. On my phone. You want to see?", "theme": "villager"}
+    ],
+    "accept": [
+      {"speaker": "Casper", "text": "The surplus shop girl has a color analysis app. She analyzes everything. She'll know what blue this is.", "theme": "villager"}
+    ],
+    "decline": [
+      {"speaker": "Casper", "text": "Okay. I'm keeping the photo though. Some things you keep even when nobody wants to look at them yet.", "theme": "villager"}
+    ],
+    "in_progress": [
+      {"speaker": "Casper", "text": "One digit off. She said our sky is one digit off from the sky in the video. Who picks a sky one digit off from another sky? On purpose?", "theme": "villager"}
+    ],
+    "ready_to_turn_in": [
+      {"speaker": "Madame Orrery", "text": "A photograph of a monitor showing a sky. Yes. Sit down. This is worth sitting for.", "theme": "mysterious"}
+    ],
+    "complete": [
+      {"speaker": "Madame Orrery", "text": "The monitor in the Coordinator's office is showing the current state of the previous world. In real time — or what passes for real time between worlds. Someone built that monitor to watch the last world while running this one.", "theme": "mysterious"},
+      {"speaker": "Madame Orrery", "text": "And the sky was specified wrong. Not a mistake — a placeholder. A sky entered quickly, before someone finished thinking about what the world should look like.", "theme": "mysterious"},
+      {"speaker": "Madame Orrery", "text": "The first thing anyone puts down when building a world is a sky. The sky shows where the world was when it was still being invented.", "theme": "mysterious"}
+    ]
+  },
+  "objectives": [
+    {
+      "step": 1,
+      "description": "See Casper's photo of the Coordinator's monitor.",
+      "type": "talk",
+      "target_npc": "casper_kid",
+      "flag_on_complete": "quest_world2_wrong_blue_accepted"
+    },
+    {
+      "step": 2,
+      "description": "Have the surplus teenager run the color analysis.",
+      "type": "talk",
+      "target_npc": "surplus_teen_w2",
+      "required_flag": "quest_world2_wrong_blue_accepted",
+      "flag_on_complete": "quest_world2_wrong_blue_color_analyzed"
+    },
+    {
+      "step": 3,
+      "description": "Find the basement developer who can trace the monitor's signal.",
+      "type": "talk",
+      "target_npc": "basement_developer_w2",
+      "required_flag": "quest_world2_wrong_blue_color_analyzed",
+      "flag_on_complete": "quest_world2_wrong_blue_signal_traced"
+    },
+    {
+      "step": 4,
+      "description": "Bring all of it to Madame Orrery.",
+      "type": "talk",
+      "target_npc": "madame_orrery_w2",
+      "required_flag": "quest_world2_wrong_blue_signal_traced"
+    }
+  ],
+  "rewards": {
+    "gold": 0,
+    "exp": 300,
+    "items": [
+      {"item_id": "hex_code_photo", "count": 1}
+    ],
+    "job_variants": {}
+  },
+  "flag_on_complete": "quest_world2_wrong_blue_complete",
+  "cross_world_connection": "W3: with hex_code_photo in inventory, the Lab Technician notices Cogsworth Junction's sky is #4B80D4 — two digits from W2. Orrery: 'Each world's sky is one digit removed from the last. If you extrapolate to World 6—' She stops. 'The sky in the last world won't have a color. It'll be pure white. Like a value that was never assigned.'",
+  "_wiring_notes": "Gated entirely behind world2_relocated (Casper must be rescued; his giver spawn_flag doubles the gate). Dialogue content for the middle steps, wire into the talk interactions: surplus teen's analysis — 'Hex code #4A7FD4. That's the blue that shows up in stock photo libraries for default sky. The blue you get when you don't specify a sky. Ours is #4B80D5. One digit off. Someone picked ours very carefully.' basement_developer_w2 (new NPC, basement office, available once Casper's question-asking kid network exists): 'It's not a recording. It's a live feed. Same engine, different parameters.' — metadata timestamp sequence matches W1's day-night cycle. madame_orrery_w2 must exist for step 4: if the Orrery-chain W2 presence isn't placed yet, this quest is the forcing function — she sits in the ORRERY LIFE COACHING booth by the strip mall per the chain doc. NOTE: this quest only READS Orrery; the chain-step quest (fine_print) is deliberately NOT in this batch pending the fool_card_marks reconciliation question."
+}

@@ -26,6 +26,15 @@
 			"crit_chance": 0.25
 		}
 	},
+	"devastating_criticals": {
+		"id": "devastating_criticals",
+		"name": "Devastating Criticals",
+		"category": 0,
+		"description": "+0.5x critical hit damage (1.5x -> 2.0x base)",
+		"stat_mods": {
+			"crit_damage_bonus": 0.5
+		}
+	},
 	"iron_skin": {
 		"id": "iron_skin",
 		"name": "Iron Skin",
@@ -188,7 +197,7 @@
 		"id": "debug_mode",
 		"name": "Debug Mode",
 		"category": 4,
-		"description": "See internal game variables and error logs in battle",
+		"description": "See internal game variables and error logs in battle (Currently no effect)",
 		"meta_effects": {
 			"show_debug_info": true,
 			"show_error_log": true
@@ -227,7 +236,7 @@
 		"id": "undead_affinity",
 		"name": "Undead Affinity",
 		"category": 0,
-		"description": "+40% dark damage, heal from dark attacks",
+		"description": "+40% dark damage, heal from dark attacks (Currently no effect)",
 		"stat_mods": {
 			"magic_multiplier": 1.4
 		},
@@ -291,11 +300,20 @@
 			"encounter_skip_chance": 0.25
 		}
 	},
+	"posthumous_credit": {
+		"id": "posthumous_credit",
+		"name": "Posthumous Credit",
+		"category": 4,
+		"description": "Earn full EXP from a battle even while KO'd. The dead learn nothing — except you.",
+		"meta_effects": {
+			"exp_while_dead": 1.0
+		}
+	},
 	"double_jump": {
 		"id": "double_jump",
 		"name": "Double Jump",
 		"category": 2,
-		"description": "Jump over gaps and obstacles on the overworld",
+		"description": "Jump over gaps and obstacles on the overworld (Currently no effect)",
 		"meta_effects": {
 			"overworld_double_jump": true
 		}
@@ -304,7 +322,7 @@
 		"id": "wall_climb",
 		"name": "Wall Climb",
 		"category": 2,
-		"description": "Scale walls to reach hidden shortcuts",
+		"description": "Scale walls to reach hidden shortcuts (Currently no effect)",
 		"meta_effects": {
 			"overworld_wall_climb": true
 		}
@@ -385,7 +403,7 @@
 		"id": "optional_detector",
 		"name": "Optional Detector",
 		"category": 4,
-		"description": "Highlights skippable vs required content",
+		"description": "Highlights skippable vs required content (Currently no effect)",
 		"meta_effects": {
 			"show_optional_markers": true,
 			"show_critical_path": true

@@ -1,0 +1,818 @@
+#!/usr/bin/env python3
+"""Regenerate a T1 monster sheet using gpt-image-1 anchored to artist references.
+
+Pipeline (per monster, ~$0.042 at medium quality):
+  1. Look up best artist reference(s) via reference_library.refs_for()
+  2. Export .aseprite → PNG if needed
+  3. Call gpt-image-1 ONCE, prompting for a 2×2 contact sheet with the
+     four core poses (idle / attack windup / hit recoil / defeated)
+  4. Split the 1024×1024 output into four 512×512 tiles
+  5. Downscale each tile 512→256, arrange as an 8-frame 2048×256 strip
+     with each unique pose duplicated (idle×2, attack×2, hit×2, dead×2)
+  6. Save to assets/sprites/monsters/<id>.png, back up prior as
+     <id>.pre_artist_style.png
+
+Trade-off vs pixel-perfect artist redraw:
+  + one API call per monster (~4¢), no LoRA training required
+  + all four poses share identity (single latent, single generation)
+  + style-anchored to the actual artist enemy (not generic pixel art)
+  - each pose only has one frame, so animations are less lively than
+    a hand-drawn 8-frame set. Still better than current AI sheets
+    where hit/dead were multi-body grid dumps (see item 16 fix).
+
+Usage:
+    uv run python tools/regen_monster_artist_style.py cave_rat skeleton
+    uv run python tools/regen_monster_artist_style.py cave_rat --quality high
+    uv run python tools/regen_monster_artist_style.py --dry-run
+"""
+import argparse
+import base64
+import io
+import json
+import os
+import shutil
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+from openai import OpenAI
+import numpy as np
+from PIL import Image
+
+PROJECT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(PROJECT))
+from tools.pipeline.reference_library import refs_for
+
+GAME_REPO = Path(os.environ.get(
+    "GAME_REPO",
+    "/home/struktured/projects/cowardly-irregular-artist-ship"
+))
+OUTPUT_DIR = PROJECT / "tmp" / "monster_artist_regen"
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+COST_PER_IMAGE = {"low": 0.011, "medium": 0.042, "high": 0.167}
+
+# Battle sheet layout (from sprite_manifest for T1 monsters):
+#   frame 0-1  = idle
+#   frame 2-3  = attack
+#   frame 4-5  = hit
+#   frame 6-7  = dead
+POSE_PROMPTS = [
+    ("idle",   "in a neutral resting stance, alert battle pose"),
+    ("attack", "mid-swing during an attack action, weapon or claws forward"),
+    ("hit",    "recoiling backward after taking a hit, staggered pained expression"),
+    ("dead",   "collapsed on the ground defeated, limp body"),
+]
+
+# Per-monster identity notes (fold into prompt to reinforce reference)
+MONSTER_DESC = {
+    "cave_rat":       "large dark gray cave rat with scruffy fur, red eyes, exposed teeth, small clawed paws",
+    "cave_rat_king":  "a DISAPPOINTINGLY LARGE quadruped rat, four legs firmly on the ground (NOT bipedal, NOT humanoid, NOT goblin-shaped), fat rotund pear-shaped body, matted brown-gray fur, tiny beady black eyes, whiskers, a long naked pink tail, small clawed paws, and — sitting comically small and lopsided on his head — a TINY bronze crown that is obviously too small for him. Whimsical menace: he looks silly but not friendly. Read: the joke IS the sprite. NO cloak, NO weapon, NO armor, NO humanoid stance. He is a rat wearing a bad crown",
+    "rat_guard":      "bipedal humanoid rat guard wearing tattered leather armor, gripping a rusty short sword in two paws, hunched aggressive stance",
+    "skeleton":       "SINGLE ONE undead human skeleton warrior alone in the frame, gripping ONE tarnished rusted iron sword firmly in his right hand (never dropped, never floating), a small battered round wooden shield in the left, hollow eye sockets, cracked yellowed bones with a slightly darker jaw, tattered brown belt cloth wrapped around the pelvis, worn undead posture — CRITICAL: EXACTLY ONE FIGURE per frame, weapon held not dangling, no fragmented bones scattered nearby. Style consistent with the artist's fighter_skeleton_knight — same undead palette family, same one-subject-per-frame discipline",
+    "wolf":           "SINGLE ONE gaunt gray timber wolf alone in the frame, standing on all four legs in profile, tangled dark-gray fur, glowing amber eyes, curled black lips exposing sharp white fangs, ears flattened aggressive posture, bushy tail — CRITICAL: EXACTLY ONE WOLF per frame (not a pair, not a pack, not a shadow-double), quadruped stance never bipedal",
+    "cave_troll":     "hulking green-gray cave troll with a knotted wooden club, sagging leathery skin, tusked jaw, small angry eyes",
+    "shadow_knight":  "dark armored knight in blackened plate mail with glowing violet visor eyes and a longsword wreathed in shadow",
+    "cursed_armor":   "empty haunted suit of medieval plate armor animated by dark energy, wielding a rusted greatsword, purple wisps leaking from the joints",
+    "spider":         "SINGLE ONE large hairy cave spider alone in the frame, dark charcoal-brown chitin body with a bulbous swollen abdomen and prominent spinnerets, EXACTLY EIGHT spindly hairy legs (four on each side, symmetric), a cluster of small glinting red multi-faceted eyes near the front of the head, no mandibles overly detailed — CRITICAL: ONE SPIDER per frame (never two side-by-side, never with a small offspring)",
+    "lightning_dragon": (
+        "Voltharion, the Storm's Edge — a large regal serpentine storm-dragon "
+        "wreathed in crackling lightning arcs, EXACTLY ONE FIGURE per frame. "
+        "Sinuous quadruped body with a long powerful tail, tattered "
+        "storm-cloud wings with jagged trailing edges (not smooth bat-wings — "
+        "read as CLOUDS given wing-shape); a slender reptilian head with two "
+        "hot-white eyes that read as 'charged'; a crest of upswept horns "
+        "sparking with static; four clawed limbs each ending in gold-yellow "
+        "talons; arcs of visible chained-lightning zig-zag between horns, "
+        "along the spine ridge, and dance along the belly scales. Palette: "
+        "deep storm-blue and gunmetal-slate scales as the base, hot electric-"
+        "yellow highlights along scale edges and belly ridges, white-hot "
+        "lightning arcs and eye-glow, faint violet aura along the wing "
+        "trailing edges. CRITICAL: the CRACKLING LIGHTNING is the identity — "
+        "not decoration. Every pose has visible arcing lightning branching "
+        "off the body somewhere, not just static glow. Boss-scale presence: "
+        "fills more of the frame than the trash-mob dragons, silhouette "
+        "reads dragon-shaped-storm-cloud. Same character across all four "
+        "poses (idle coiled with slow bright arcs cycling / attack lunge "
+        "with a discharged white-hot bolt from the maw / hit recoil with "
+        "static crackling erratically around the body / dead collapsed "
+        "with the arcs sputtering and mostly dark, wings drooped). "
+        "Consistent identity every frame, majestic aggression not feral"
+    ),
+    # ─── Orphan monsters: in monsters.json since forever, never had a
+    # ─── sheet, so they render procedurally today. Descriptions lifted
+    # ─── from their monsters.json entries, not invented.
+    "rogue_automaton": (
+        "ROGUE AUTOMATON — canon: 'a malfunctioning machine that speaks in "
+        "error codes. Its attacks glitch reality.' A humanoid industrial "
+        "automaton, riveted brass-and-iron plating gone green with verdigris, "
+        "one arm ending in a heavy piston-clamp. Its chest hatch hangs open "
+        "showing sparking copper coils, and a cracked glass gauge-face where "
+        "a head should be, displaying a garbled glowing readout instead of "
+        "features. Malfunction is the identity: sparks arcing from a shoulder "
+        "joint, one plate hanging loose, a faint magenta glitch-fringe "
+        "displacing its outline. Palette: verdigris brass, oil-black, hot "
+        "copper, with sickly magenta glitch accents. SOLID and fully opaque; "
+        "the glitching is in the DETAILS, never in the transparency."
+    ),
+    "rogue_mailbox": (
+        "ROGUE MAILBOX — canon: 'a regulation blue mailbox that has stopped "
+        "accepting the concept of routes. It keeps what it's given.' A "
+        "standard American pillar mailbox, regulation post-office BLUE, "
+        "domed lid, standing on its single squat post — but ALIVE and "
+        "hostile: the pull-down flap is a hinged mouth crammed with "
+        "envelopes it refuses to release, letters jammed at angles in the "
+        "gap, a hand-written envelope caught half-swallowed. Two small "
+        "glinting points of light inside the slot for eyes. Slightly "
+        "hunched forward on its post, leaning at the viewer. Comedic menace "
+        "— absurd object, entirely serious about itself. Palette: "
+        "regulation blue, weathered steel, cream envelope-paper, a red "
+        "flag on one side."
+    ),
+    "time_phantom": (
+        "TIME PHANTOM — canon: 'a meta-boss that exists between save states. "
+        "Can rewind its own actions.' A hooded spectral figure in a tattered "
+        "deep-violet cloak, hood empty except for a floating pale-cyan clock "
+        "face where features should be, hands frozen mid-sweep. Its own "
+        "silhouette is echoed by two fainter after-images offset behind it "
+        "like a stuttering rewind, each a step further out. Skeletal hands "
+        "emerging from the sleeves hold nothing. Palette: deep violet, "
+        "spectral cyan, bone-white, with a faint gold ring of numerals. "
+        "CRITICAL: the MAIN figure must be SOLID and fully opaque and clearly "
+        "readable — only the two trailing echoes are faint. The rewind reads "
+        "from the repeated silhouettes, never from the body being see-through."
+    ),
+    # ─── World-finale faces of the Calibrant ────────────────────────────
+    # Canon: docs/novellas/. The through-line struktured's story lane calls
+    # DE-COSTUMING — each face wears less than the last. Robes -> glasses ->
+    # goggles -> gray suit -> nothing. Descriptions below are lifted from the
+    # novella text, NOT invented; the tag/appearance is the author's word.
+    # All five share ONE pair of eyes (w3:577 "the same eyes ... that looked
+    # out from whatever costume it was currently wearing and found the
+    # costume quite adequate") — so identity must carry across sheets.
+    "the_coordinator": (
+        "THE COORDINATOR — the suburban face of the Calibrant, a middle-aged "
+        "HOA-administrator woman. Canon (novella w2:578): 'neat, precise, "
+        "controlled. Middle-aged. Glasses. The kind of person who had never "
+        "been late for anything in her life, including her own birth. She "
+        "wore the expression of someone who has found a variance in their "
+        "system and is assessing whether it is a problem or data.' "
+        "Plain rimless or thin-wire GLASSES, mousy brown hair in a short "
+        "neat set style with not one strand loose, a muted mauve cardigan "
+        "over a plain blouse with a small round collar, a lanyard or a pen "
+        "clipped precisely straight. Holding a clipboard she is mid-annotating. "
+        "CRITICAL: she is NOT a monster and NOT a witch. She is unremarkable "
+        "on purpose. The menace is total composure and the absence of anger — "
+        "she is assessing you, not fighting you. Muted suburban palette: "
+        "mauve, beige, oatmeal, dull brass. Nothing glows, nothing floats."
+    ),
+    "the_regulator": (
+        "THE REGULATOR — the steampunk face of the Calibrant. Canon "
+        "(novella w3:577): 'looked like a Victorian engineer. Goggles pushed "
+        "up on the forehead. Brass-buttoned coat. Gloves stained with oil "
+        "that might have been oil and might have been something else.' "
+        "Brass-rimmed GOGGLES pushed up onto the forehead (never over the "
+        "eyes — the eyes must be visible), a long double-breasted coat with "
+        "two columns of brass buttons, heavy oil-stained leather work gloves, "
+        "a high collar. Calm certainty in the face, the same unbothered "
+        "assessing expression as the Coordinator. LESS COSTUME than a "
+        "medieval sorceress but MORE than a middle manager — this is the "
+        "middle rung of the de-costuming ladder. Palette: brass, oiled "
+        "leather brown, soot black, dull copper. Grimy and functional, not "
+        "ornate; a working engineer, not a steampunk aristocrat."
+    ),
+    "the_director": (
+        "THE DIRECTOR — the industrial face of the Calibrant, a corporate "
+        "middle manager who is FORGETTABLE ON PURPOSE. Canon (novella w4): "
+        "refuses to fight — 'Those were... performances. Genre-appropriate "
+        "confrontations designed to provide narrative satisfaction.' Sits "
+        "behind a wood desk, hands folded. "
+        "A plain mid-gray suit with no pattern, a flat unremarkable tie, a "
+        "cheap laminated badge on a lanyard, thinning neutral hair combed "
+        "without style, a face you would fail to describe five minutes after "
+        "meeting it. NEARLY the least costume of any face — one rung above "
+        "nothing. CRITICAL: no menace in the styling at all; the horror is "
+        "how ordinary and tired this is. No cape, no glow, no insignia of "
+        "power, no villain silhouette. Palette: office grays, beige, "
+        "fluorescent-lit skin, one small patch of warm wood-brown."
+    ),
+    "chancellor_mordaine": (
+        "Chancellor Mordaine — a sorceress-usurper of Castle Harmonia, the "
+        "architect of World 1 and the first mask of the Calibrant. EXACTLY "
+        "ONE FIGURE per frame. A tall regal adult woman with severe elegant "
+        "features: high cheekbones, cold pale skin, silver-white hair pulled "
+        "back sharply from the forehead in a single long straight sweep down "
+        "the back, unnervingly calm pale-cyan eyes that read as 'already "
+        "knows your build'. A subtle silver circlet or thin diadem across "
+        "the brow with a single pale-blue gem centered. Wearing an ornate "
+        "high-collared deep-teal sorceress gown with cold silver hexagon-"
+        "lattice trim at the collar and sleeves (the same subtle mathematical "
+        "motif that marks Calibrant kin — she IS his first mask). A staff of "
+        "pale silver-white metal topped with a small floating hexagonal "
+        "prism held vertically in one hand. Isolated on a completely uniform "
+        "pure-white background — NO environmental effects, NO ground shadow, "
+        "NO aura leaking off-body. Palette: deep teal + silver + pale cyan + "
+        "porcelain-cold skin + silver-white hair. CRITICAL: identity read is "
+        "'JUDGE-of-your-choices made queen', NOT feral sorceress, NOT raving. "
+        "Cold deliberate authority. Same character across all four poses "
+        "(idle standing composed with staff angled forward slightly / attack "
+        "casting with the prism aglow and free hand raised palm-out / hit "
+        "recoil with one step back and diadem gem cracked / dead collapsed "
+        "with staff fallen, silver-white hair spread across the ground, "
+        "hexagon-lattice trim dimmed). Consistent identity every frame, "
+        "philosophical menace not physical rage."
+    ),
+    "fire_dragon": (
+        "Pyrroth, the Ember Wyrm — a large regal serpentine fire-dragon "
+        "whose SCALES ARE SMOLDERING COAL, radiating unbearable heat conveyed "
+        "ENTIRELY through the dragon's own body (glowing fissures, hot molten "
+        "eye-glow, ember highlights on scale edges) — NO environmental effects, "
+        "NO red floor-pool under the dragon, NO red bloom into the background, "
+        "NO ground shadow, NO aura leaking off-body. The dragon is isolated "
+        "on a completely uniform pure-white background with nothing else "
+        "in the frame. EXACTLY ONE FIGURE per frame. Sinuous quadruped "
+        "body with a long powerful tail, jagged bat-wings with tattered "
+        "trailing edges that glow like heated iron along the trailing membrane; "
+        "a broad reptilian head with two molten-orange eyes that read as "
+        "'furnace-lit'; a crown of upswept horns with cracked-lava fissures "
+        "running through them; four clawed limbs each ending in blackened "
+        "talons; visible ember-orange fissures crackle along the neck, spine "
+        "ridge, and belly scales like cooling magma. Palette: deep charcoal-"
+        "black scales as the base, molten-orange and hot-yellow fissures/eyes/"
+        "wing-glow, ember-red aura at the outline, small drift of dark smoke "
+        "trailing from the nostrils. CRITICAL: the CRACKED-MAGMA fissures ARE "
+        "the identity — not decoration. Every pose has visible glowing cracks "
+        "somewhere. Boss-scale presence: fills more of the frame than the "
+        "trash-mob dragons, silhouette reads dragon-carved-from-cooling-coal. "
+        "Same character across all four poses (idle coiled with slow ember "
+        "pulse / attack lunge with a discharged fire-breath / hit recoil with "
+        "fissures flaring bright / dead collapsed with the ember light "
+        "sputtering out, wings drooped). Consistent identity every frame, "
+        "majestic aggression not feral"
+    ),
+    "ice_dragon": (
+        "Glacius, the Frozen Sovereign — a large regal serpentine ice-dragon "
+        "entombed in living permafrost, whose breath freezes time itself. "
+        "EXACTLY ONE FIGURE per frame. Sinuous quadruped body with a long "
+        "powerful tail, elegant crystalline bat-wings that look like carved "
+        "glacier-shards with pale-blue translucent membranes; a noble reptilian "
+        "head with two pale-cyan eyes that read as 'ancient and calm'; a "
+        "regal crown of upswept ice-horns with visible frost crystals branching "
+        "along their edges; four clawed limbs each ending in translucent-blue "
+        "ice talons; a mantle of jagged ice-crystals encrusting the shoulders "
+        "and running down the spine ridge like a sovereign's collar; faint "
+        "wisps of cold vapor drift from the maw and along the wing edges. "
+        "Palette: deep glacier-blue and steel-gray scales as the base, pale "
+        "cyan and white-frost highlights on the ice-crystal accents, "
+        "translucent-white wing membranes, faint silver rim-light along scale "
+        "edges. CRITICAL: the CRYSTALLINE ICE-CRUST is the identity — not "
+        "decoration. Every pose has visible ice-crystals on shoulders, horns, "
+        "or wing-tips. Boss-scale presence: fills more of the frame than the "
+        "trash-mob dragons, silhouette reads dragon-carved-from-a-glacier. "
+        "Same character across all four poses (idle coiled with slow vapor "
+        "curling / attack lunge with a frost-breath discharge / hit recoil "
+        "with crystals cracking visibly / dead collapsed with ice starting "
+        "to shatter along the ridge, wings drooped). Consistent identity "
+        "every frame, sovereign dignity not feral aggression"
+    ),
+    "shadow_dragon":  (
+        "Umbraxis, the Void Render — a large regal serpentine void-dragon "
+        "of living shadow that questions its own existence between attacks, "
+        "coalescing out of dark violet-black smoke, EXACTLY ONE FIGURE per "
+        "frame. Long sinuous body with tattered semi-translucent bat-wings "
+        "trailing wisps of purple void-smoke at their edges; a slender "
+        "reptilian head with two pale cyan eyes that read as 'philosophically "
+        "aware'; curling horns swept back; four clawed limbs; a long spade-"
+        "tipped tail dissolving into smoke where it meets the ground; faint "
+        "cyan void-glyphs occasionally flicker inside the smoke-body like "
+        "half-formed questions. Palette: deep indigo scales with violet "
+        "highlights, cool cyan eye-glow, smoky purple-gray aura, faint gold "
+        "rim-light along scale edges. CRITICAL: preserve a 'MANIFESTING FROM "
+        "VOID' visual language — the smoke/dissolve edges are the identity, "
+        "not decoration. Every pose has visible smoke-dissolve at some body "
+        "edge (tail, wingtip, or shoulder). Boss-scale presence: fills more "
+        "of the frame than the trash-mob dragons. Same character across all "
+        "four poses (idle solidified with contemplative posture / attack "
+        "lunge with wing-sweep / hit recoil with body flare / dead collapsed "
+        "and half-dissolving back into smoke). Consistent identity every "
+        "frame, philosophical calm not feral aggression"
+    ),
+    "ghost":          "translucent pale spirit with tattered floating shroud, hollow blue eye sockets, wispy ethereal form",
+    "imp":            "SINGLE ONE small mischievous red imp alone in the frame, deep crimson skin, small bat-like wings folded or spread but attached to THIS imp, sharp curled horns, pointed tail with a spade tip, wielding a tiny obsidian dagger in one hand, snarling grin exposing sharp fangs — CRITICAL: EXACTLY ONE IMP per frame (NOT two side-by-side, NOT a pair, NOT a small buddy floating nearby, ONE), red not pale-white",
+    "troll":          "large ugly forest troll with warty green skin, sagging belly, knotted club, angry underbite",
+    "snake":          "coiled dark scaled viper with venomous fangs bared, forked tongue flicking, patterned scales",
+    "mushroom":       "hostile spore-belching giant purple mushroom creature with beady eyes on the cap and stubby legs",
+    "elder_mushroom": "large ancient fungal creature, moss-covered cap with glowing spore vents, spindly wooden limbs",
+    "fungoid":        "shambling fungus-based creature with a pale bulbous body and drooping caps for arms, spore mist trailing",
+    # Spotlight-duel minibosses (msg 1950). Each solo-duels one PC job.
+    "fighter_skeleton_knight":  "chivalric skeleton knight in polished plate armor, wielding a two-handed longsword and a kite shield with a fading heraldic emblem, hollow eye sockets glowing pale amber, worn cloth surcoat, honor-fight stance",
+    "cleric_survive_target":    "tall grim spectral figure in tattered gray-white burial robes, faceless with two hollow black eye pits, floating slightly above the ground, arms outstretched palms-forward channeling continuous dark energy — an oppressive sustained-pressure enemy, not a striker",
+    "rogue_lockward":           "hulking treasure-guardian construct wrapped in chains and lockplates, cracked stone body with steel banding, a heavy iron padlock sealing its chest cavity, ember-orange eyes, high-guard defensive stance with a giant iron key clutched as a mace",
+    "mage_prismatic_construct": "geometric crystalline construct made of interlocking floating faceted prism shards in shifting fire-red / ice-blue / lightning-yellow hues, no organic body, central glowing core, arcane sigils floating in the negative space between shards",
+    "bard_hostile_courtier":    "haughty aristocratic courtier in an elaborate deep-purple velvet doublet with gold trim, powdered gray wig with a small ribbon bow, holding a lace kerchief in one hand and a folded fan in the other, disdainful sneer — not a fighter, a talker",
+    # Masterite Tempo family — 5 bosses, each a different concept of "time
+    # applied against you." Bespoke identities so they DON'T homogenize into
+    # the goblin-family read that the July bulk regen caused (playtest bug,
+    # cowir-main msg 2516).
+    "masterite_tempo_medieval": (
+        "Tempo of the Hunt — lean human huntsman/scout in dark forest-green "
+        "hooded leather cloak with the hood UP, face partly shadowed, sharp "
+        "amber eyes glinting from under the hood, drawing a longbow with an "
+        "arrow nocked, a quiver strapped diagonally across his back, worn "
+        "leather boots and gloves, a low crouched stalking stance. "
+        "NOT armored, NOT goblin-shaped, NOT a warrior — a predator that hunts "
+        "by patience. Silhouette must read as 'ranger with drawn bow' at a "
+        "glance"
+    ),
+    "masterite_tempo_suburban": (
+        "Tempo of the Rush Hour — a harried modern middle-manager human man "
+        "in a crumpled navy suit jacket with the tie loosened and askew, "
+        "shirt untucked at the front, disheveled brown hair, a briefcase held "
+        "up in one hand like a bludgeon (mid-swing) and a paper coffee cup "
+        "clutched in the other, running/lunging forward, exhausted furious "
+        "expression, dress shoes. NOT fantasy, NOT armored — modern office "
+        "attire. Silhouette must read as 'stressed commuter attacking with "
+        "briefcase' at a glance"
+    ),
+    "masterite_tempo_industrial": (
+        "Tempo of the Shift — a factory shift-supervisor human man in a "
+        "high-visibility neon-orange safety vest over a gray work coverall, "
+        "a yellow hard hat with a small numeral 'B' on the front, "
+        "steel-toe boots, holding a heavy metal clipboard in one hand and a "
+        "punch-card timesheet in the other, oil-smudged face, tired angry "
+        "expression, a wristwatch prominently visible on the raised arm. "
+        "Silhouette must read as 'foreman on the clock' at a glance"
+    ),
+    "masterite_tempo_futuristic": (
+        "Tempo of the Clock Cycle — a humanoid digital daemon whose BODY "
+        "is a translucent clock face (roman numerals visible on the torso, "
+        "spinning clock hands where the heart would be), head is a floating "
+        "monospaced terminal-cursor block (a solid glowing rectangle for a "
+        "face, no organic features), thin geometric limbs made of stacked "
+        "digital-numeric segments, hovering slightly off the ground, "
+        "cool cyan and violet neon palette. NOT organic, NOT armored. "
+        "Silhouette must read as 'CPU-scheduler ghost' at a glance"
+    ),
+    # REWRITTEN 2026-07-28. The previous prompt asked for a "semi-transparent
+    # humanoid outline ... more implied than drawn ... a suggestion of a
+    # person, not a body" — and the model obeyed exactly: the IDLE frames
+    # came back with SEVEN opaque pixels against 30933 in the attack. The
+    # monster was invisible until it swung. Abstract must mean abstract in
+    # DESIGN, never in opacity; a battle sprite that isn't drawn isn't a
+    # battle sprite. Found by tools/sprite_structural_qa.py ALPHA_EMPTY.
+    "masterite_tempo_abstract": (
+        "Tempo of Sequence — ORDER given a body. A SOLID, FULLY OPAQUE "
+        "humanoid figure standing upright and clearly visible, built out of "
+        "stacked geometric plates like a mannequin assembled from timetable "
+        "cards. Its surface is covered in crisp glowing marks: cascading "
+        "downward arrows, dashed timeline segments, numbered sequence ticks "
+        "(1-2-3). A featureless plate for a head with a single horizontal "
+        "indicator bar for eyes. Palette: matte bone-white and pale gold "
+        "plating with luminous amber marks, deep charcoal in the seams. "
+        "CRITICAL: every frame must be a SOLID, OPAQUE, clearly readable "
+        "silhouette — NOT translucent, NOT a wireframe, NOT an outline, NOT "
+        "implied or ghostly. It reads as 'the schedule, walking' because of "
+        "its MARKINGS, not because it is faint."
+    ),
+    # Also previously undescribed — fell to the generic default and came back
+    # with a 204px idle against a 7760px attack. Same class, same fix.
+    "masterite_curator_abstract": (
+        "Curator of Entropy — PRESERVATION given a body. A SOLID, FULLY "
+        "OPAQUE robed figure standing upright and clearly visible, its deep "
+        "indigo ceremonial robe hung with small brass reliquary frames, each "
+        "holding a single glowing ember. Where a face would be, a closed "
+        "brass locket. Cupped in its hands, a contained flame that does not "
+        "spread. Palette: deep indigo and aged brass with warm ember-orange "
+        "points of light, matte and heavy. CRITICAL: every frame must be a "
+        "SOLID, OPAQUE, clearly readable silhouette — NOT translucent, NOT a "
+        "wireframe, NOT ghostly. The abstraction is in the DESIGN (a curator "
+        "who is only robe, frames and flame), never in the opacity."
+    ),
+    # ── W3 steampunk masterites. The last world-shaped hole in the roster:
+    # every other world had 4/4 sheets, steampunk had 0/4 (cowir-battle
+    # confirmed against monsters.json, msg 3332). Descriptions below are
+    # built FROM the authored canon text, not invented alongside it.
+    #
+    # Shared world palette, anchored on the two shipped steampunk enemies
+    # (brass_golem "salvaged boiler plate", clockwork_sentinel "brass-plated"):
+    # aged brass and copper, blackened wrought iron, coal-soot black, rivets,
+    # warm amber gaslight, and white steam used SPARINGLY as an accent —
+    # never as the body, because steam is exactly the thing that renders as
+    # near-transparent and produced the two invisible abstract sheets.
+    #
+    # TEMPO is the risk case and is deliberately handled first: its canon
+    # text is explicitly non-figurative ("Not a figure so much as a cadence"),
+    # which is the SAME framing that made masterite_tempo_abstract come back
+    # at 5 opaque pixels. Resolution is the one already proven above — honour
+    # the concept, refuse the transparency. A cadence gets a housing.
+    "masterite_tempo_steampunk": (
+        "The Grand Schedule — a monumental brass STATION CLOCK AND TIMETABLE "
+        "BOARD standing as one solid machine, the size of a person. A SOLID, "
+        "FULLY OPAQUE upright object, clearly visible and heavy. A great "
+        "riveted brass clock face at the top with black iron hands; below it "
+        "a departures board of flip-tiles mid-flutter, some tiles caught "
+        "half-turned. Squat iron feet bolted to the ground. Palette: aged "
+        "brass and blackened iron, coal-black shadow, amber gaslight glowing "
+        "behind the clock face and between the tiles. A few small white steam "
+        "wisps at the base ONLY as accent. CRITICAL: every frame must be a "
+        "SOLID, OPAQUE, clearly readable silhouette — NOT translucent, NOT a "
+        "wireframe, NOT ghostly, NOT made of steam or motion lines. It reads "
+        "as 'a cadence' because of the flipping tiles and the clock, never "
+        "because it is faint."
+    ),
+    "masterite_warden_steampunk": (
+        "The Standing Order — an enormous brass PRESSURE GAUGE whose needle "
+        "has never once moved, mounted in a squat armoured iron housing on "
+        "heavy bolted feet. A SOLID, FULLY OPAQUE upright object. The gauge "
+        "face dominates it like a single unblinking eye: cracked convex glass, "
+        "a black needle pinned hard at rest, engraved graduations around the "
+        "rim. Thick riveted pipes enter from below and are sealed off. Deep "
+        "verdigris in every crevice — this thing has held its position for a "
+        "very long time. Palette: aged brass, verdigris green, blackened "
+        "wrought iron, coal-black shadow, dim amber backlight behind the "
+        "glass. CRITICAL: SOLID, OPAQUE, heavy and immovable in every frame — "
+        "never translucent, never a wireframe. It reads as endurance because "
+        "it looks IMMOVABLE, not because it looks strong."
+    ),
+    "masterite_curator_steampunk": (
+        "The Requisition — a brass BUREAUCRATIC APPARATUS that bills you: a "
+        "standing ledger-machine of stamps, spools and pneumatic tubes. A "
+        "SOLID, FULLY OPAQUE upright object, clearly visible. A heavy iron "
+        "ledger lies open on a brass lectern body; above it a rack of "
+        "date-stamps and a spool feeding a long punched receipt-tape that "
+        "curls down its front. Pneumatic tube mouths at its shoulders. Brass "
+        "counter-wheels showing figures. Palette: aged brass and copper, "
+        "oxblood-red ledger leather, ink-black, cream paper tape, amber "
+        "gaslight. CRITICAL: SOLID, OPAQUE, clearly readable in every frame — "
+        "never translucent, never ghostly. It reads as an invoice made "
+        "physical: paperwork as a machine, not a wisp."
+    ),
+    "masterite_arbiter_steampunk": (
+        "The Tolerance Limit — a precision GO/NO-GO GAUGE, a machinist's "
+        "caliper built at the scale of a body and mounted upright on an iron "
+        "base. A SOLID, FULLY OPAQUE object. Two polished steel measuring "
+        "jaws form its head, held slightly apart as if about to close on "
+        "something; a fine engraved vernier scale runs down its brass spine. "
+        "Its posture is WATCHFUL AND MEASURING, poised and still — patient, "
+        "not aggressive, not lunging. Machined to an uncomfortable degree of "
+        "precision: every edge crisp, every surface true. Palette: polished "
+        "steel and aged brass, blackened iron base, coal-black shadow, a "
+        "single cold amber indicator light. CRITICAL: SOLID, OPAQUE, crisply "
+        "readable in every frame — never translucent, never a wireframe. It "
+        "reads as judgement because it looks EXACT, not because it looks "
+        "violent; the violence is one event, not its posture."
+    ),
+}
+
+
+def sheet_prompt(monster_id: str, ref_name: str) -> str:
+    desc = MONSTER_DESC.get(monster_id, f"a {monster_id.replace('_', ' ')}")
+    poses_str = ", ".join(
+        f"Top-{p_pos}: same character {p_desc}"
+        for p_pos, (_, p_desc) in zip(["left", "right", "left", "right"], POSE_PROMPTS)
+    )
+    poses_txt = (
+        f"Top-left: same monster in a neutral resting stance, alert battle pose. "
+        f"Top-right: same monster mid-swing during an attack action, weapon or claws forward. "
+        f"Bottom-left: same monster recoiling backward after taking a hit, staggered pained expression. "
+        f"Bottom-right: same monster collapsed on the ground defeated, limp body."
+    )
+    return (
+        f"16-bit JRPG pixel-art battle sprite contact sheet. 2×2 grid layout, "
+        f"four poses of the SAME monster, identical character identity across all four "
+        f"tiles — same silhouette, same palette, same size, same lineart weight. "
+        f"Fully transparent background between tiles, no scenery, no shadows. "
+        f"Character: {desc}. "
+        f"{poses_txt} "
+        f"Style-match the reference sprite: same clean pixel-art discipline, bold "
+        f"outlines, soft cel shading, no anti-aliasing artifacts, no floating pixels, "
+        f"no duplicate limbs, no text, no labels. Each tile centered in its quadrant. "
+        f"Reference character is a {ref_name} — copy the reference's outlining, "
+        f"palette saturation, and shading style, not the reference's specific "
+        f"anatomy (the target is {monster_id.replace('_', ' ')}, not a {ref_name})."
+    )
+
+
+def load_reference_bytes(paths: list[Path]) -> bytes:
+    """Combine 1-2 artist reference sheets into a single 1024×1024 anchor image."""
+    if not paths:
+        raise RuntimeError("no artist reference paths provided")
+    # For each aseprite, export the first tag's frames as a strip
+    ref_images = []
+    for p in paths:
+        if p.suffix == ".aseprite":
+            tmp = OUTPUT_DIR / (p.stem + "_ref.png")
+            subprocess.run(
+                ["aseprite", "--batch", "--sheet", str(tmp), str(p)],
+                check=True, capture_output=True,
+            )
+            ref_images.append(Image.open(tmp).convert("RGBA"))
+        else:
+            ref_images.append(Image.open(p).convert("RGBA"))
+
+    target = 1024
+    canvas = Image.new("RGBA", (target, target), (0, 0, 0, 0))
+    # Stack vertically if 2 refs, single centered if 1
+    if len(ref_images) == 1:
+        img = ref_images[0]
+        scale = min(target / img.width, target / img.height)
+        new_w, new_h = int(img.width * scale), int(img.height * scale)
+        img = img.resize((new_w, new_h), Image.NEAREST)
+        canvas.paste(img, ((target - new_w) // 2, (target - new_h) // 2), img)
+    else:
+        half = target // 2
+        for i, img in enumerate(ref_images[:2]):
+            scale = min(target / img.width, half / img.height)
+            new_w, new_h = int(img.width * scale), int(img.height * scale)
+            img = img.resize((new_w, new_h), Image.NEAREST)
+            y_offset = i * half + (half - new_h) // 2
+            canvas.paste(img, ((target - new_w) // 2, y_offset), img)
+
+    buf = io.BytesIO()
+    canvas.save(buf, format="PNG")
+    return buf.getvalue()
+
+
+def call_gpt_image(client, prompt: str, ref_bytes: bytes, quality: str,
+                   max_retries: int = 3) -> Image.Image:
+    for attempt in range(max_retries):
+        try:
+            resp = client.images.edit(
+                model="gpt-image-1",
+                image=("reference.png", ref_bytes, "image/png"),
+                prompt=prompt,
+                size="1024x1024",
+                quality=quality,
+                n=1,
+            )
+            b64 = resp.data[0].b64_json
+            return Image.open(io.BytesIO(base64.b64decode(b64)))
+        except Exception as e:
+            msg = str(e).lower()
+            if "rate" in msg or "429" in msg:
+                wait = 30 * (attempt + 1)
+                print(f"    Rate limit; backing off {wait}s...")
+                time.sleep(wait)
+            elif any(k in msg for k in ("billing", "quota", "insufficient")):
+                raise
+            else:
+                print(f"    Error: {e}; retry {attempt+1}/{max_retries}")
+                time.sleep(5)
+    raise RuntimeError(f"Failed after {max_retries} retries")
+
+
+def downscale_pose(tile_512: Image.Image, target: int = 256) -> Image.Image:
+    img = tile_512.convert("RGBA")
+    intermediate = target * 2
+    img = img.resize((intermediate, intermediate), Image.LANCZOS)
+    img = img.resize((target, target), Image.BOX)
+    return img
+
+
+def make_transparent_bg(img: Image.Image, tolerance: int = 45) -> Image.Image:
+    """Key the flat background out by CORNER SAMPLE, not a fixed white test.
+
+    The previous version required r,g,b all >= 240. gpt-image-1 routinely
+    returns a warm or cool off-white — the_coordinator came back on
+    (243,241,236) and the_regulator on (250,245,232). Both read as white to
+    the eye; both have a blue channel under 240, so nothing keyed and the
+    sheets shipped with fully opaque backgrounds. A fixed threshold encodes
+    an assumption about the generator's white point that the generator does
+    not honour.
+
+    Sampling the corner makes the check relative to whatever background
+    actually arrived, so warm white, cool white and near-black all key.
+    """
+    img = img.convert("RGBA")
+    px = img.load()
+    W, H = img.size
+    corners = [px[0, 0], px[W - 1, 0], px[0, H - 1], px[W - 1, H - 1]]
+    opaque = [c for c in corners if c[3] > 0]
+    if not opaque:
+        return img  # already keyed
+    sr, sg, sb = opaque[0][:3]
+    for y in range(H):
+        for x in range(W):
+            r, g, b, a = px[x, y]
+            if a and abs(r - sr) + abs(g - sg) + abs(b - sb) <= tolerance:
+                px[x, y] = (r, g, b, 0)
+    return img
+
+
+def despeckle(img: Image.Image, min_px: int = 24) -> Image.Image:
+    """Drop disconnected specks left behind by the chromakey.
+
+    The corner-sample key clears the flat background but leaves the
+    antialiased dust between figure and background — pixels too far from
+    the sampled colour to key, too small to be anything. On
+    masterite_arbiter_steampunk that was 48 stray pixels in idle and 444
+    in the defeated frame, visible as a dotted haze around the sprite.
+
+    Deliberately NOT caught by sprite_structural_qa's DETACHED check,
+    which floors at 1% of the figure so that held weapons and wings do
+    not swamp the signal — 1-4px specks are far below that and always
+    will be. Two instruments, two jobs: QA reports structure, this
+    removes dust. Do not raise DETACHED's floor to cover this; that was
+    measured at 301 hits / 108 sheets and is why it is advisory.
+
+    Keeps every component >= min_px, so a genuinely detached part (a
+    thrown weapon, a separated jaw) survives untouched.
+
+    ⚠️ ONLY EVER CALL THIS ON A SHEET YOU JUST GENERATED, never across the
+    corpus. Measured 2026-07-28 before making that mistake: 79 of 103
+    monster sheets carry sub-24px components totalling 11,755px, and the
+    single worst offender is fighter_skeleton_knight at 1,944px — TIER
+    T2, artist-made. 15 of the 79 are T2. Those specks are the artist
+    DRAWING: the sword tip, the torn scarf, the orange eye glints, the
+    gaps between bones. A corpus sweep justified by that 79/103 number
+    would have deleted artist work, which is the one thing this lane must
+    never do (struktured: "not outright manipulation or subbing gpt2
+    sprites where we have artist ones").
+
+    The number does not distinguish chromakey dust from intentional
+    detail — only provenance does, and provenance lives in the manifest's
+    tier field, not in the pixels. On a freshly generated T1 sheet the
+    specks are known to be keying residue because nothing else could have
+    put them there. On any sheet you did not just make, they are somebody's
+    decision until proven otherwise.
+    """
+    from scipy import ndimage
+
+    arr = np.array(img)
+    opaque = arr[:, :, 3] > 8
+    lab, n = ndimage.label(opaque)
+    if n <= 1:
+        return img
+    sizes = ndimage.sum(opaque, lab, range(1, n + 1))
+    doomed = {i + 1 for i, s in enumerate(sizes) if s < min_px}
+    if not doomed:
+        return img
+    arr[np.isin(lab, list(doomed)), 3] = 0
+    return Image.fromarray(arr)
+
+
+def artist_write_refusal(monster_id: str, allow_override: bool) -> str:
+    """Refuse to overwrite artist-tier art. Returns a reason, or "" to proceed.
+
+    Until 2026-07-29 this did not exist, and the absence was invisible
+    because the METADATA looked like protection. I corrected four job
+    sheets from T1 to T2 and reported that protection was restored — then
+    checked what actually reads `tier` before writing. Nothing did. Every
+    generation tool in this repo WRITES tier into the manifest and none
+    consults it. The field encoded an intention that no code enforced, so
+    a regen aimed at `fighter` would have proceeded exactly as before.
+
+    (cowir-sfx's inversion class: a premise that is load-bearing, true by
+    convention, and asserted nowhere. The question is not "is it true" but
+    "what breaks if it stops being true" — here, nothing visible, which is
+    precisely why it needed enforcing rather than documenting.)
+
+    The backup in tmp/ is not a substitute. It is gitignored, per-machine,
+    and only ever holds the FIRST overwrite — regen twice and the artist
+    original is gone from disk entirely.
+    """
+    try:
+        manifest = json.loads((GAME_REPO / "data" / "sprite_manifest.json").read_text())
+    except (OSError, json.JSONDecodeError) as exc:
+        # Fail CLOSED. If provenance can't be read, nothing may be
+        # overwritten — the failure mode of guessing is unrecoverable.
+        return (f"'{monster_id}': sprite_manifest.json unreadable ({exc}). "
+                f"Refusing to write when provenance is unknown.")
+    entry = manifest.get("monster_sheets", {}).get(monster_id, {})
+    tier = entry.get("tier", "")
+    target = GAME_REPO / "assets" / "sprites" / "monsters" / f"{monster_id}.png"
+    if not entry and target.exists() and not allow_override:
+        # A sheet on disk with no manifest entry has UNKNOWN provenance, and
+        # unknown is not the same as T1. Fail closed: register it (with a
+        # tier you can defend) before regenerating over it. Writing a brand
+        # new id is still free — that path has no file to destroy.
+        return (f"'{monster_id}' has a sheet on disk but NO manifest entry, "
+                f"so its provenance is unknown. Register it before "
+                f"regenerating — unknown is not T1.")
+    if tier in ("T2", "T3") and not allow_override:
+        return (f"'{monster_id}' is tier {tier} — ARTIST work. Regenerating "
+                f"would overwrite it. Pass --allow-artist-overwrite only "
+                f"with struktured's explicit approval; the tmp/ backup is "
+                f"gitignored and holds only the first overwrite.")
+    return ""
+
+
+def assemble_sheet(sheet_1024: Image.Image, monster_id: str) -> Image.Image:
+    """Split 1024×1024 into 4 tiles, downscale each, assemble as 2048×256 strip."""
+    half = 512
+    tiles = [
+        sheet_1024.crop((0, 0, half, half)),        # idle (top-left)
+        sheet_1024.crop((half, 0, 1024, half)),     # attack (top-right)
+        sheet_1024.crop((0, half, half, 1024)),     # hit (bottom-left)
+        sheet_1024.crop((half, half, 1024, 1024)),  # dead (bottom-right)
+    ]
+    tiles_256 = [make_transparent_bg(downscale_pose(t, 256)) for t in tiles]
+
+    # 8-frame strip: idle×2 + attack×2 + hit×2 + dead×2
+    # The second frame of each anim is shifted down 1px so test_idle_frames_differ
+    # (and any equivalent frame-differ tests) sees a real change — creates a
+    # subtle breathing-bob animation. Empty top row is transparent.
+    strip = Image.new("RGBA", (2048, 256), (0, 0, 0, 0))
+    for i in range(8):
+        pose_idx = i // 2
+        tile = tiles_256[pose_idx]
+        if i % 2 == 1:  # second copy of each pose — 1px bob
+            bobbed = Image.new("RGBA", tile.size, (0, 0, 0, 0))
+            bobbed.paste(tile, (0, 1), tile)
+            tile = bobbed
+        strip.paste(tile, (i * 256, 0), tile)
+    return strip
+
+
+def regen_one(client, monster_id: str, quality: str,
+              allow_artist_overwrite: bool = False) -> dict:
+    refs = refs_for(monster_id)
+    if not refs:
+        return {"monster": monster_id, "status": "no-refs"}
+    ref_name = refs[0].stem.split()[0].lower()  # "SLIME 1" → "slime"
+    print(f"[{monster_id}] refs={[r.name for r in refs]}  ${COST_PER_IMAGE[quality]}")
+    refusal = artist_write_refusal(monster_id, allow_artist_overwrite)
+    if refusal:
+        print(f"  REFUSED {refusal}")
+        return {"monster": monster_id, "status": "refused", "cost": 0.0}
+
+    prompt = sheet_prompt(monster_id, ref_name)
+    ref_bytes = load_reference_bytes(refs)
+    result_1024 = call_gpt_image(client, prompt, ref_bytes, quality)
+    raw_path = OUTPUT_DIR / f"{monster_id}_raw_{quality}.png"
+    result_1024.save(raw_path)
+
+    strip = assemble_sheet(result_1024, monster_id)
+    out_path = GAME_REPO / "assets" / "sprites" / "monsters" / f"{monster_id}.png"
+    if out_path.exists():
+        backup_dir = PROJECT / "tmp" / "pre_artist_style_backups"
+        backup_dir.mkdir(parents=True, exist_ok=True)
+        backup = backup_dir / (out_path.stem + ".pre_artist_style" + out_path.suffix)
+        if not backup.exists():
+            shutil.copy2(out_path, backup)
+    strip.save(out_path)
+    print(f"  → {out_path.relative_to(GAME_REPO)} (raw at {raw_path.relative_to(PROJECT)})")
+    return {"monster": monster_id, "status": "ok", "cost": COST_PER_IMAGE[quality]}
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("monsters", nargs="+", help="monster ids to regen")
+    parser.add_argument("--quality", choices=["low", "medium", "high"],
+                        default="medium")
+    parser.add_argument("--dry-run", action="store_true")
+    parser.add_argument("--allow-artist-overwrite", action="store_true",
+                        help="Overwrite T2/T3 artist sheets. Requires struktured's "
+                             "explicit approval — the tmp/ backup is gitignored "
+                             "and holds only the first overwrite.")
+    args = parser.parse_args()
+
+    # Refuse BEFORE anything is constructed or spent. Checking inside
+    # regen_one meant OpenAI() was built first, so a run aimed at artist art
+    # died on a missing API key instead of on the refusal — the right
+    # outcome for the wrong reason, and it made the guard unrunnable without
+    # credentials. A protection you can only exercise by paying for it is
+    # one nobody exercises.
+    refused = [(m, r) for m in args.monsters
+               if (r := artist_write_refusal(m, args.allow_artist_overwrite))]
+    for m, reason in refused:
+        print(f"REFUSED {reason}")
+    args.monsters = [m for m in args.monsters if m not in dict(refused)]
+    if not args.monsters:
+        print("\nNothing to do — every target was refused.")
+        return 1
+
+    if args.dry_run:
+        total = COST_PER_IMAGE[args.quality] * len(args.monsters)
+        print(f"DRY RUN — would regen {len(args.monsters)} monsters at "
+              f"{args.quality} (~${total:.3f})")
+        for m in args.monsters:
+            refs = refs_for(m)
+            print(f"  {m}: refs={[r.name for r in refs]}")
+        return 0
+
+    client = OpenAI()
+    results = []
+    total = 0.0
+    for m in args.monsters:
+        try:
+            r = regen_one(client, m, args.quality,
+                          args.allow_artist_overwrite)
+            results.append(r)
+            total += r.get("cost", 0.0)
+        except Exception as e:
+            print(f"[{m}] FAILED: {e}")
+            results.append({"monster": m, "status": "error", "error": str(e)})
+
+    print(f"\nTotal spent: ${total:.3f} on {len(args.monsters)} monsters")
+    log = OUTPUT_DIR / "_cost.json"
+    prev = json.loads(log.read_text()) if log.exists() else {"sessions": [], "total": 0.0}
+    prev["sessions"].append({"quality": args.quality, "results": results, "cost": total})
+    prev["total"] = prev.get("total", 0.0) + total
+    log.write_text(json.dumps(prev, indent=2))
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

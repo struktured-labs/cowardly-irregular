@@ -230,11 +230,22 @@ func _get_impassable_types() -> Array:
 	return [
 		TileType.BRICK_WALL, TileType.SMOKESTACK, TileType.CARGO_CONTAINER,
 		TileType.WORKER_HOUSING, TileType.GUARD_POST, TileType.CHEMICAL_BARREL,
-		TileType.PIPE_CLUSTER, TileType.WARNING_SIGN, TileType.CHAIN_LINK_FENCE
+		TileType.PIPE_CLUSTER, TileType.WARNING_SIGN, TileType.CHAIN_LINK_FENCE,
+		# DRAINAGE_CHANNEL is described as a "green-tinted water channel" — the
+		# analogue of the medieval world's WATER tile and should block movement.
+		TileType.DRAINAGE_CHANNEL,
 	]
 
 func _get_debug_atlas_name() -> String:
 	return "debug_industrial_atlas"
+
+
+func _get_sheet_key() -> String:
+	return "industrial"
+
+
+func _get_tile_type_name(type: int) -> String:
+	return TileType.keys()[type] if type >= 0 and type < TileType.size() else ""
 
 func _draw_tile(img: Image, tile_type: int, palette: Dictionary, variant: int) -> void:
 	match tile_type:
@@ -1265,7 +1276,8 @@ func _draw_worker_housing(img: Image, palette: Dictionary, variant: int) -> void
 
 ## Guard post / checkpoint booth with red/white barrier stripe and window
 func _draw_guard_post(img: Image, palette: Dictionary) -> void:
-	img.fill(palette["concrete"])
+	# "concrete" is not a key in this tile's palette — the read aborted the whole function, leaving the tile blank.
+	img.fill(palette["light"])
 
 	# Concrete ground
 	for y in range(TILE_SIZE - 4, TILE_SIZE):

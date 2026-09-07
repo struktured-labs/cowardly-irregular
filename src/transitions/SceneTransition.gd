@@ -19,15 +19,15 @@ func _ready() -> void:
 	# Create fade overlay
 	_create_fade_overlay()
 
-	# Connect to encounter system
-	if EncounterSystem:
-		EncounterSystem.encounter_triggered.connect(_on_encounter_triggered)
+	## NOT connected to EncounterSystem.encounter_triggered. That signal carries
+	## (enemy_data, terrain_type) and the old handler took one argument, so every random
+	## encounter threw "expected 1 arguments, but called with 2" and the handler never ran.
+	## BattleTransition's SHAKE_FLASH owns encounter transitions — reconnecting this would
+	## play a SECOND transition on top of it, so do not "fix" the arity.
 
 
 func _exit_tree() -> void:
 	"""Cleanup signal connections when freed"""
-	if EncounterSystem and EncounterSystem.encounter_triggered.is_connected(_on_encounter_triggered):
-		EncounterSystem.encounter_triggered.disconnect(_on_encounter_triggered)
 	if BattleManager and BattleManager.battle_ended.is_connected(_on_battle_ended):
 		BattleManager.battle_ended.disconnect(_on_battle_ended)
 
@@ -78,10 +78,9 @@ func transition_to_battle(enemy_data: Array) -> void:
 	battle_transition_started.emit()
 	print("Transitioning to battle...")
 
-	# Disable player movement immediately
+	# Lock movement during battle transition
+	InputLockManager.push_lock("battle_transition")
 	var player = MapSystem.get_player()
-	if player:
-		player.set_can_move(false)
 
 	# Extract enemy types for transition effect
 	var enemy_types: Array = []
@@ -126,11 +125,16 @@ func transition_from_battle(victory: bool) -> void:
 	if battle_scene:
 		battle_scene.queue_free()
 
+	# Release the input lock pushed by transition_to_battle — UNCONDITIONALLY.
+	# Previously this sat inside `if player:`; if the player was freed mid-
+	# battle (scene change, map mid-load) the lock would leak and the
+	# overworld stayed permanently input-locked the next time it loaded.
+	InputLockManager.pop_lock("battle_transition")
+
 	# Show player controller
 	var player = MapSystem.get_player()
 	if player:
 		player.visible = true
-		player.set_can_move(true)
 
 		# Reset step counter to prevent immediate re-encounter
 		player.reset_step_count()
@@ -181,11 +185,6 @@ func _on_battle_ended(victory: bool) -> void:
 	if not is_instance_valid(self):
 		return
 	transition_from_battle(victory)
-
-
-func _on_encounter_triggered(enemy_data: Array) -> void:
-	"""Handle random encounter trigger"""
-	transition_to_battle(enemy_data)
 
 
 ## Map transitions

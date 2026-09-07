@@ -1,112 +1,116 @@
-extends Node2D
+extends BaseVillage
 class_name IronhavenVillageScene
 
 ## IronhavenVillage - Industrial frontier forge town in the volcanic southeast
 ## Features: Ironclad Inn, Master Forge (weapons), Steamworks (unique), Miner's Tavern
 
-const TileGeneratorScript = preload("res://src/exploration/TileGenerator.gd")
-const OverworldPlayerScript = preload("res://src/exploration/OverworldPlayer.gd")
-const OverworldControllerScript = preload("res://src/exploration/OverworldController.gd")
-const AreaTransitionScript = preload("res://src/exploration/AreaTransition.gd")
-const OverworldNPCScript = preload("res://src/exploration/OverworldNPC.gd")
 const VillageInnScript = preload("res://src/exploration/VillageInn.gd")
 const VillageShopScript = preload("res://src/exploration/VillageShop.gd")
 const TreasureChestScript = preload("res://src/exploration/TreasureChest.gd")
 
-signal exploration_ready()
-signal battle_triggered(enemies: Array)
-signal area_transition(target_map: String, spawn_point: String)
-
 ## Map dimensions (25x20 industrial town)
-const MAP_WIDTH: int = 25
-const MAP_HEIGHT: int = 20
-const TILE_SIZE: int = 32
-
-## Scene components
-var tile_map: TileMapLayer
-var player: Node2D
-var camera: Camera2D
-var controller: Node
-var tile_generator: Node
-
-## Containers
-var transitions: Node2D
-var npcs: Node2D
-var buildings: Node2D
-var treasures: Node2D
-
-## Spawn points
-var spawn_points: Dictionary = {}
+const MAP_WIDTH: int = 30
+const MAP_HEIGHT: int = 24
 
 
-func _ready() -> void:
-	_setup_scene()
-	_generate_map()
-	_setup_transitions()
-	_setup_buildings()
-	_setup_treasures()
-	_setup_npcs()
-	_setup_player()
-	_setup_camera()
-	_setup_controller()
+## ---- BaseVillage hooks ----
 
-	if SoundManager:
-		SoundManager.play_area_music("village")
-
-	exploration_ready.emit()
+func _get_area_id() -> String:
+	return "ironhaven_village"
 
 
-func _setup_scene() -> void:
-	tile_generator = TileGeneratorScript.new()
-	add_child(tile_generator)
+func _get_village_display_name() -> String:
+	return "Ironhaven"
 
-	tile_map = TileMapLayer.new()
-	tile_map.name = "TileMap"
-	tile_map.tile_set = tile_generator.create_tileset()
-	add_child(tile_map)
 
-	transitions = Node2D.new()
-	transitions.name = "Transitions"
-	add_child(transitions)
+func _get_map_pixel_size() -> Vector2i:
+	return Vector2i(MAP_WIDTH * TILE_SIZE, MAP_HEIGHT * TILE_SIZE)
 
-	buildings = Node2D.new()
-	buildings.name = "Buildings"
-	add_child(buildings)
 
-	treasures = Node2D.new()
-	treasures.name = "Treasures"
-	add_child(treasures)
+func _get_save_point_position() -> Vector2:
+	return Vector2(12 * TILE_SIZE,10 * TILE_SIZE)
 
-	npcs = Node2D.new()
-	npcs.name = "NPCs"
-	add_child(npcs)
+
+func _get_player_spawn_fallback() -> Vector2:
+	return Vector2(448, 544)
+
+
+## Empty forces the procedural palette below — medieval.png otherwise wins over it (struktured 2026-09-06 W1 fix)
+func _get_cliff_sheet_key() -> String:
+	return ""
+
+
+## Rusty iron / slate — struktured 2026-09-06 mining-terraces elevation pass
+func _get_cliff_palette() -> Dictionary:
+	return {
+		"face_dark": Color(0.12, 0.10, 0.09),
+		"face_mid": Color(0.42, 0.24, 0.14),
+		"face_light": Color(0.62, 0.38, 0.20),
+		"lip": Color(0.78, 0.42, 0.18),
+		"lip_shadow": Color(0.10, 0.08, 0.07, 0.85),
+		"grass": Color(0.30, 0.28, 0.26),
+		"grass_light": Color(0.40, 0.36, 0.32),
+		"stair_tread": Color(0.35, 0.33, 0.30),
+		"stair_riser": Color(0.15, 0.13, 0.12),
+	}
 
 
 func _generate_map() -> void:
-	# Ironhaven layout: industrial forge town with lava channels
+	# Ironhaven layout: industrial forge town, stepped mining terraces
 	# W = wall, . = floor, V = lava, I = ironclad inn, F = master forge
-	# S = steamworks, M = miner's tavern, X = exit
+	# S = steamworks, M = miner's tavern, X = exit, ^ = terrace stair
 	var map_data: Array[String] = [
-		"WWWWWWWWWWWWWWWWWWWWWWWWW",
-		"W.......................W",
-		"W..III.....FFF..........W",
-		"W..III.....FFF...SSS....W",
-		"W..III.....FFF...SSS....W",
-		"W..........FFF...SSS....W",
-		"W.......................W",
-		"W.........VVV...........W",
-		"W.........VVV...........W",
-		"W.........VVV...........W",
-		"W.......................W",
-		"W..MMM..................W",
-		"W..MMM..................W",
-		"W..MMM..................W",
-		"W.......................W",
-		"W.......................W",
-		"W.......................W",
-		"W........XXXXXX.........W",
-		"W........XXXXXX.........W",
-		"WWWWWWWWWWWWWWWWWWWWWWWWW",
+		"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+		"W............................W",
+		"W............................W",
+		"W............................W",
+		"W....III.....FFF.............W",
+		"W....III.....FFF...SSS.......W",
+		"W....III.....FFF...SSS.......W",
+		"W............FFF...SSS.......W",
+		"W............................W",
+		"W.......^^..VVV.........^^...W",
+		"W...........VVV..............W",
+		"W...........VVV..............W",
+		"W............................W",
+		"W....MMM.....................W",
+		"W....MMM.....................W",
+		"W....MMM.....................W",
+		"W............................W",
+		"W............^^.....^^.......W",
+		"W............................W",
+		"W..........XXXXXX............W",
+		"W..........XXXXXX............W",
+		"W............................W",
+		"W............................W",
+		"WWWWWWWWWWWWWWWWWWWWWWWWWWWWWW",
+	]
+	# Three stepped work levels (struktured 2026-09-06): upper forge terrace (2) / mid mining terrace (1) / lower yard (0)
+	var height_data: Array[String] = [
+		"222222222222222222222222222222",
+		"222222222222222222222222222222",
+		"222222222222222222222222222222",
+		"222222222222222222222222222222",
+		"222222222222222222222222222222",
+		"222222222222222222222222222222",
+		"222222222222222222222222222222",
+		"222222222222222222222222222222",
+		"222222222222222222222222222222",
+		"111111111111111111111111111111",
+		"111111111111111111111111111111",
+		"111111111111111111111111111111",
+		"111111111111111111111111111111",
+		"111111111111111111111111111111",
+		"111111111111111111111111111111",
+		"111111111111111111111111111111",
+		"111111111111111111111111111111",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
+		"000000000000000000000000000000",
 	]
 
 	for y in range(MAP_HEIGHT):
@@ -120,7 +124,9 @@ func _generate_map() -> void:
 			if char == "X" and not spawn_points.has("exit"):
 				spawn_points["exit"] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
 
-	spawn_points["entrance"] = Vector2(12 * TILE_SIZE, 15 * TILE_SIZE)
+	_build_derived_layers(map_data, height_data)
+
+	spawn_points["entrance"] = Vector2(14 * TILE_SIZE,17 * TILE_SIZE)
 	spawn_points["default"] = spawn_points["entrance"]
 	spawn_points["ironhaven_entrance"] = spawn_points["entrance"]
 
@@ -143,30 +149,17 @@ func _setup_transitions() -> void:
 	exit_trans.target_map = "overworld"
 	exit_trans.target_spawn = "ironhaven_entrance"
 	exit_trans.require_interaction = false
-	exit_trans.position = spawn_points.get("exit", Vector2(384, 576))
+	exit_trans.position = spawn_points.get("exit", Vector2(448, 640))
 	_setup_transition_collision(exit_trans, Vector2(TILE_SIZE * 6, TILE_SIZE))
 	exit_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(exit_trans)
-
-
-func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
-	trans.collision_layer = 4
-	trans.collision_mask = 2
-	trans.monitoring = true
-	trans.monitorable = true
-
-	var collision = CollisionShape2D.new()
-	var shape = RectangleShape2D.new()
-	shape.size = size
-	collision.shape = shape
-	trans.add_child(collision)
 
 
 func _setup_buildings() -> void:
 	# === IRONCLAD INN ===
 	var inn = VillageInnScript.new()
 	inn.inn_name = "Ironclad Inn"
-	inn.position = Vector2(3.5 * TILE_SIZE, 3 * TILE_SIZE)
+	inn.position = Vector2(5.5 * TILE_SIZE,5 * TILE_SIZE)
 	buildings.add_child(inn)
 
 	# === MASTER FORGE (Weapon Shop) ===
@@ -174,7 +167,7 @@ func _setup_buildings() -> void:
 	forge.shop_name = "Master Forge"
 	forge.shop_type = VillageShopScript.ShopType.BLACKSMITH
 	forge.keeper_name = "Magda"
-	forge.position = Vector2(12.5 * TILE_SIZE, 4 * TILE_SIZE)
+	forge.position = Vector2(14.5 * TILE_SIZE,6 * TILE_SIZE)
 	buildings.add_child(forge)
 
 	# === STEAMWORKS (Item Shop - unique tech items) ===
@@ -182,14 +175,25 @@ func _setup_buildings() -> void:
 	steamworks.shop_name = "Steamworks"
 	steamworks.shop_type = VillageShopScript.ShopType.ITEM
 	steamworks.keeper_name = "Dr. Cog"
-	steamworks.position = Vector2(20 * TILE_SIZE, 4 * TILE_SIZE)
+	steamworks.position = Vector2(22 * TILE_SIZE,6 * TILE_SIZE)
 	buildings.add_child(steamworks)
 
 	# === MINER'S TAVERN ===
 	var tavern = VillageInnScript.new()
 	tavern.inn_name = "Miner's Tavern"
-	tavern.position = Vector2(3.5 * TILE_SIZE, 12 * TILE_SIZE)
+	tavern.position = Vector2(5.5 * TILE_SIZE,14 * TILE_SIZE)
 	buildings.add_child(tavern)
+
+	# === STORM WATCHTOWER DOOR ===
+	# Drogal's tower on the open eastern side of the village. He
+	# foreshadows Voltharion — the last of the four W1 dragons to
+	# get an interior NPC.
+	spawn_points["watchtower_exit"] = Vector2(20 * TILE_SIZE,14 * TILE_SIZE)
+	_add_interior_door("WatchtowerDoor", "ironhaven_watchtower", "Enter Storm Watchtower", Vector2(20 * TILE_SIZE,13 * TILE_SIZE))
+	# === STRIKE REGISTRY DOOR ===
+	# South face of the MMM building (cols 3-5, rows 11-13) — lightning paperwork.
+	spawn_points["registry_exit"] = Vector2(6 * TILE_SIZE,16.5 * TILE_SIZE)
+	_add_interior_door("StrikeRegistryDoor", "ironhaven_strike_registry", "Enter Strike Registry", Vector2(6 * TILE_SIZE,15.5 * TILE_SIZE))
 
 
 func _setup_treasures() -> void:
@@ -197,8 +201,8 @@ func _setup_treasures() -> void:
 	var chest1 = TreasureChestScript.new()
 	chest1.chest_id = "ironhaven_chest_1"
 	chest1.contents_type = "equipment"
-	chest1.contents_id = "iron_shield"
-	chest1.position = Vector2(10 * TILE_SIZE, 2 * TILE_SIZE)
+	chest1.contents_id = "iron_armor"
+	chest1.position = Vector2(12 * TILE_SIZE,4 * TILE_SIZE)
 	treasures.add_child(chest1)
 
 	# 3x Hi-Potion in tavern cellar
@@ -207,13 +211,27 @@ func _setup_treasures() -> void:
 	chest2.contents_type = "item"
 	chest2.contents_id = "hi_potion"
 	chest2.contents_amount = 3
-	chest2.position = Vector2(1.5 * TILE_SIZE, 14 * TILE_SIZE)
+	chest2.position = Vector2(3.5 * TILE_SIZE,16 * TILE_SIZE)
 	treasures.add_child(chest2)
 
 
 func _setup_npcs() -> void:
+	_place_masterite_curator()
+
+	# Shared post-cave state check for Cog / Bolt / Ember. Same spawn-time
+	# pattern as the other four villages; gate = rat_king_defeated.
+	# Ironhaven is the automation-philosophy village, so Cog and Bolt's
+	# post lines engage the game's actual thesis: neither of them can tell
+	# whether the party automated the win or fought it by hand — and the
+	# PLAYER knows. The joke lands on the player, not on them.
+	# Magda/Pete (dragon-focused), Koss/Stranger (W2 foreshadowing) untouched.
+	var _after_cave_gs = get_node_or_null("/root/GameState")
+	var _after_cave_done: bool = false
+	if _after_cave_gs:
+		_after_cave_done = bool(_after_cave_gs.game_constants.get("cutscene_flag_rat_king_defeated", false))
+
 	# Blacksmith Magda (eager)
-	var magda = _create_npc("Blacksmith Magda", "villager", Vector2(14 * TILE_SIZE, 6 * TILE_SIZE), [
+	var magda = _create_npc("Blacksmith Magda", "blacksmith", Vector2(16 * TILE_SIZE,8 * TILE_SIZE), [
 		"Dragon scales, you say?",
 		"Oh, I could forge LEGENDARY equipment from those.",
 		"Come back with four. Bring receipts.",
@@ -223,7 +241,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(magda)
 
 	# War Veteran Koss (mysterious)
-	var koss = _create_npc("War Veteran Koss", "guard", Vector2(18 * TILE_SIZE, 10 * TILE_SIZE), [
+	var koss = _create_npc("War Veteran Koss", "guard", Vector2(20 * TILE_SIZE,12 * TILE_SIZE), [
 		"I've seen what lies beyond the southern gate.",
 		"Concrete. Streetlights. ...Saxophone music.",
 		"The future is WEIRD.",
@@ -233,17 +251,29 @@ func _setup_npcs() -> void:
 	npcs.add_child(koss)
 
 	# Automation Researcher Dr. Cog (philosophical)
-	var cog = _create_npc("Dr. Cog", "villager", Vector2(21 * TILE_SIZE, 6 * TILE_SIZE), [
+	# Post-cave: he asks the game's actual question and cannot answer it —
+	# did the party fight, or did their rules fight? He can't tell about
+	# them because he can't tell about himself. Inverts his pre-line's
+	# "Hypothesis confirmed."
+	var _cog_pre := [
 		"What if the NPCs could automate too?",
 		"What if I already HAVE and this dialogue is just my script running?",
 		"...Hypothesis confirmed.",
 		"I've been running my own autobattle scripts for YEARS.",
 		"My dialogue tree is fully optimized. You're in the fast path."
-	])
+	]
+	var _cog_post := [
+		"You beat the thing in the cave. I have a question and it is not a polite one.",
+		"Did YOU fight it, or did your rules fight it? Do you know? Can you tell?",
+		"I ask because I have never once been able to tell about myself.",
+		"...My script says change the subject here. Watch. How about this weather.",
+		"Hypothesis unconfirmed. Hypothesis, in fact, worse."
+	]
+	var cog = _create_npc("Dr. Cog", "villager", Vector2(23 * TILE_SIZE,8 * TILE_SIZE), _cog_post if _after_cave_done else _cog_pre)
 	npcs.add_child(cog)
 
 	# Miner Pete (tired)
-	var pete = _create_npc("Miner Pete", "villager", Vector2(6 * TILE_SIZE, 10 * TILE_SIZE), [
+	var pete = _create_npc("Miner Pete", "villager", Vector2(8 * TILE_SIZE,12 * TILE_SIZE), [
 		"The volcanic caves are brutal.",
 		"My pickaxe melted. MY BOOTS melted.",
 		"The dragon just laughed.",
@@ -253,27 +283,49 @@ func _setup_npcs() -> void:
 	npcs.add_child(pete)
 
 	# Apprentice Bolt (eager)
-	var bolt = _create_npc("Apprentice Bolt", "villager", Vector2(8 * TILE_SIZE, 14 * TILE_SIZE), [
+	# Post-cave: his thesis lives or dies on how the party won, and they
+	# won't say. He counts it anyway, because he needs to. Keeps the gag,
+	# lands warmer than it started.
+	var _bolt_pre := [
 		"I'm building a machine that plays the game FOR you!",
 		"...Wait, isn't that just autobattle?",
 		"Oh NO.",
 		"My entire thesis is redundant.",
 		"Well, at least mine has GEARS. That counts for something, right?"
-	])
+	]
+	var _bolt_post := [
+		"You did it! Did you use a machine? Please say you used a machine.",
+		"...You used RULES. That is sort of a machine. I am counting it. I need to count it.",
+		"My thesis is back. Provisionally. Pending an answer you have not actually given me.",
+		"It still has gears, though. Nothing you did had gears.",
+		"That is what I have. Gears. It is not nothing."
+	]
+	var bolt = _create_npc("Apprentice Bolt", "villager", Vector2(10 * TILE_SIZE,16 * TILE_SIZE), _bolt_post if _after_cave_done else _bolt_pre)
 	npcs.add_child(bolt)
 
 	# Barkeep Ember (warm)
-	var ember = _create_npc("Barkeep Ember", "villager", Vector2(4 * TILE_SIZE, 14 * TILE_SIZE), [
+	# Post-cave: the "last inn before" framing means she watches people go
+	# and mostly not come back. Her warmth gets a ledger under it — same
+	# structure as Boris's gate, opposite temperature.
+	var _ember_pre := [
 		"Welcome to the last inn before the fire cave.",
 		"We serve drinks and existential dread.",
 		"Both are on the house.",
 		"The special today is 'Lava Lager.' It's... warm.",
 		"Like, REALLY warm. We haven't figured out cooling yet."
-	])
+	]
+	var _ember_post := [
+		"You came back. Sit. First one's free — so is the second, the sign is a formality.",
+		"I keep a list of everyone who walks past here toward a cave. It has two columns.",
+		"You moved columns. Most people don't move columns.",
+		"I don't like keeping the list. I keep it anyway. Somebody should.",
+		"Lava Lager's still warm. Everything here is warm. You're the good kind today."
+	]
+	var ember = _create_npc("Barkeep Ember", "villager", Vector2(6 * TILE_SIZE,16 * TILE_SIZE), _ember_post if _after_cave_done else _ember_pre)
 	npcs.add_child(ember)
 
 	# Mysterious Stranger (foreshadowing)
-	var stranger = _create_npc("Mysterious Stranger", "villager", Vector2(20 * TILE_SIZE, 16 * TILE_SIZE), [
+	var stranger = _create_npc("Mysterious Stranger", "villager", Vector2(22 * TILE_SIZE,18 * TILE_SIZE), [
 		"The portal to the south...",
 		"It leads to a place where magic runs on coal...",
 		"And dreams run on rails.",
@@ -282,90 +334,35 @@ func _setup_npcs() -> void:
 	])
 	npcs.add_child(stranger)
 
+	# Temple Keeper Sella — flame_speaks_wrong giver, west of the forge temple block.
+	var sella = _create_npc("Temple Keeper Sella", "elder", Vector2(12 * TILE_SIZE,6 * TILE_SIZE), [
+		"Six hundred years it burned straight up. Three weeks ago it started to lean.",
+		"East. Precisely east. Not a draft — a draft wanders. This does not wander.",
+		"A flame with a direction has an opinion. I don't know who gave it one.",
+		"And there's a woman tending it now. Nobody appointed her. She was simply there.",
+	])
+	# Without this the quest is UNSTARTABLE — QuestSystem.gd:125 matches npc_id to giver.npc_id.
+	sella.npc_id = "temple_keeper_sella"
+	npcs.add_child(sella)
 
-func _create_npc(npc_name: String, npc_type: String, pos: Vector2, dialogue: Array) -> Area2D:
-	var npc = OverworldNPCScript.new()
-	npc.npc_name = npc_name
-	npc.npc_type = npc_type
-	npc.position = pos
-	npc.dialogue_lines = dialogue
-	return npc
-
-
-func _setup_player() -> void:
-	player = OverworldPlayerScript.new()
-	player.name = "Player"
-	player.position = spawn_points.get("default", Vector2(384, 480))
-	player.set_job("fighter")
-	add_child(player)
-
-
-func _setup_camera() -> void:
-	camera = Camera2D.new()
-	camera.name = "Camera"
-	player.add_child(camera)
-	camera.make_current()
-
-	camera.zoom = Vector2(2.0, 2.0)
-
-	var map_pixel_width = MAP_WIDTH * TILE_SIZE
-	var map_pixel_height = MAP_HEIGHT * TILE_SIZE
-
-	camera.limit_left = 0
-	camera.limit_top = 0
-	camera.limit_right = map_pixel_width
-	camera.limit_bottom = map_pixel_height
-
-	camera.position_smoothing_enabled = true
-	camera.position_smoothing_speed = 8.0
+	_add_quest_examine_point("w1_ironhaven_flame_speaks_wrong",
+		"quest_w1_ironhaven_flame_speaks_wrong_accepted", "[A] Listen to the flame",
+		"It leans east, and it SPEAKS — fragments, in a measured beat. Not a flame's cadence. A court's.",
+		"Six hundred years it burned straight up. Now it leans, and the lean has a direction.",
+		Vector2(16 * TILE_SIZE,4 * TILE_SIZE))
 
 
-func _setup_controller() -> void:
-	controller = OverworldControllerScript.new()
-	controller.name = "Controller"
-	controller.player = player
-	controller.encounter_enabled = false
-	controller.current_area_id = "ironhaven_village"
-
-	controller.set_area_config("ironhaven_village", true, 0.0, [])
-
-	controller.battle_triggered.connect(_on_battle_triggered)
-	controller.menu_requested.connect(_on_menu_requested)
-
-	add_child(controller)
-
-
-func _on_transition_triggered(target_map: String, spawn_point: String) -> void:
-	area_transition.emit(target_map, spawn_point)
-
-
-func _on_battle_triggered(enemies: Array) -> void:
-	battle_triggered.emit(enemies)
-
-
-func _on_menu_requested() -> void:
-	pass
-
-
-func spawn_player_at(spawn_name: String) -> void:
-	if spawn_points.has(spawn_name):
-		player.teleport(spawn_points[spawn_name])
-		player.reset_step_count()
-
-
-func resume() -> void:
-	controller.resume_exploration()
-
-
-func pause() -> void:
-	controller.pause_exploration()
-
-
-func set_player_job(job_name: String) -> void:
-	if player:
-		player.set_job(job_name)
-
-
-func set_player_appearance(leader) -> void:
-	if player and player.has_method("set_appearance_from_leader"):
-		player.set_appearance_from_leader(leader)
+## Curator of the Flame — L8 masterite tending the warped temple flame in
+## a duel-of-belief encounter. Placed south of the FFF temple block on the
+## approach walkway. Doc: docs/design/w1-progression-expansion.md.
+func _place_masterite_curator() -> void:
+	var MasteriteScript = load("res://src/exploration/MasteriteEncounter.gd")
+	if MasteriteScript == null:
+		return
+	var curator = MasteriteScript.new()
+	curator.archetype = "curator"
+	curator.monster_id = "masterite_curator_medieval"
+	curator.display_name = "Curator of the Flame"
+	curator.quest_flag = "quest_w1_ironhaven_flame_heard"
+	curator.position = Vector2(14 * TILE_SIZE,8 * TILE_SIZE)
+	npcs.add_child(curator)

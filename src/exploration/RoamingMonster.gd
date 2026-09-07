@@ -76,8 +76,10 @@ func _setup_sprite() -> void:
 
 
 func _draw_fallback_sprite() -> void:
+	# Placeholder until overworld art lands — hue-hashed per monster_id so species are
+	# distinguishable (was a single red box, which read as "all the same" for art-less worlds).
 	var img = Image.create(FRAME_W, FRAME_H, false, Image.FORMAT_RGBA8)
-	img.fill(Color(0.8, 0.2, 0.2, 0.9))
+	img.fill(_placeholder_color(monster_id))
 	for x in range(FRAME_W):
 		img.set_pixel(x, 0, Color.BLACK)
 		img.set_pixel(x, FRAME_H - 1, Color.BLACK)
@@ -88,16 +90,27 @@ func _draw_fallback_sprite() -> void:
 	_sprite.region_enabled = false
 
 
+func _placeholder_color(id: String) -> Color:
+	var h := 0
+	for i in id.length():
+		h = (h * 31 + id.unicode_at(i)) & 0xFFFFFF
+	return Color.from_hsv(float(h % 360) / 360.0, 0.6, 0.85, 0.95)
+
+
 func _apply_frame(row: int, col: int) -> void:
 	if not _sheet_loaded:
 		return
 	_sprite.region_rect = Rect2(col * FRAME_W, row * FRAME_H, FRAME_W, FRAME_H)
 
 
+## Touch radius tuned to ~1.4x the 32px sprite half-width — encounter fires only on actual sprite overlap.
+const TOUCH_RADIUS_PX: float = 48.0
+
+
 func _setup_collision() -> void:
 	_collision = CollisionShape2D.new()
-	var shape = RectangleShape2D.new()
-	shape.size = Vector2(16.0, 16.0)
+	var shape = CircleShape2D.new()
+	shape.radius = TOUCH_RADIUS_PX
 	_collision.shape = shape
 	add_child(_collision)
 
@@ -251,8 +264,33 @@ func _on_body_entered(body: Node2D) -> void:
 	if not _active or _fading:
 		return
 	if body.has_method("set_can_move"):
-		_begin_fade()
+		# 2026-09-06 spider wedge: fading BEFORE the emit spent the monster even when GameLoop
+		# BLOCKED the battle (leaked commence latch) — monsters silently vanished with no fight.
+		# Emit first (the whole chain up to GameLoop's first await runs synchronously), then fade
+		# only if THIS touch flipped the commence latch. No GameLoop found (tests) = old behavior.
+		var gl: Node = get_tree().root.get_node_or_null("GameLoop") if is_inside_tree() else null
+		var latch_before: bool = gl != null and gl.get("_battle_transition_starting") == true
 		touched.emit(monster_id, monster_types)
+		var latch_after: bool = gl != null and gl.get("_battle_transition_starting") == true
+		if gl == null or (not latch_before and latch_after):
+			_begin_fade()
+
+
+## Immediately stop the monster from triggering a battle. Called by
+## MonsterSpawner when exploration pauses (menu opens) so queued
+## body_entered signals in the same physics frame don't leak into
+## battle after the player is supposed to be safe.
+func deactivate() -> void:
+	_active = false
+	_fading = false
+	if _collision:
+		## Deferred: this runs INSIDE body_entered (touch -> battle -> pause ->
+		## set_enabled(false) -> _despawn_all), and changing shape state mid-flush threw
+		## "Can't change this state while flushing queries" 52x in one play session.
+		## The battle-leak guard is _active above, which stays synchronous.
+		_collision.set_deferred("disabled", true)
+	if _sprite:
+		_sprite.visible = false
 
 
 func _begin_fade() -> void:

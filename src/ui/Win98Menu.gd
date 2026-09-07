@@ -5,12 +5,10 @@ class_name Win98Menu
 ## Classic pixel-tile borders like FF/DQ style
 
 signal item_selected(item_id: String, item_data: Variant)
-signal item_held(item_id: String, item_data: Variant)  # For long press actions
 signal menu_closed()
 signal actions_submitted(actions: Array)  # For Advance mode - multiple actions
 signal defer_requested()  # L button with no queue - defer turn
 signal go_back_requested()  # B button at root to go back to previous player
-signal confirm_turn_requested()  # L button held - confirm current queue and end turn
 
 
 ## Get currently selected item ID (for hold detection)
@@ -71,15 +69,107 @@ const CHARACTER_STYLES = {
 		"highlight_bg": Color(0.4, 0.32, 0.1),
 		"highlight_text": Color(1.0, 0.9, 0.4),  # Bright gold
 		"cursor": Color(0.85, 0.72, 0.2)
-	}
+	},
+	# Tick 293: advanced + meta jobs were falling through to fighter's
+	# blue scheme (see line 439 fallback). Same visual-voice gap as
+	# tick 124's JOB_QUIP_COLORS fix. Each scheme anchors on the
+	# JOB_QUIP_COLORS base color and modulates for menu palette
+	# (dark bg, bright border, accent highlight).
+	# ---- Advanced jobs ----
+	"guardian": {
+		"bg": Color(0.10, 0.09, 0.06),           # Dark bronze
+		"border": Color(0.85, 0.78, 0.55),       # Bright bronze
+		"border_shadow": Color(0.25, 0.22, 0.15),
+		"text": Color(1.0, 0.95, 0.85),
+		"highlight_bg": Color(0.30, 0.27, 0.18),
+		"highlight_text": Color(1.0, 0.9, 0.55),
+		"cursor": Color(0.85, 0.78, 0.55)
+	},
+	"ninja": {
+		"bg": Color(0.05, 0.05, 0.08),           # Near black
+		"border": Color(0.65, 0.65, 0.75),       # Shadow steel
+		"border_shadow": Color(0.18, 0.18, 0.22),
+		"text": Color(0.92, 0.92, 0.98),
+		"highlight_bg": Color(0.20, 0.20, 0.28),
+		"highlight_text": Color(0.85, 1.0, 0.85),
+		"cursor": Color(0.65, 0.65, 0.75)
+	},
+	"summoner": {
+		"bg": Color(0.05, 0.12, 0.12),           # Dark teal
+		"border": Color(0.4, 0.9, 0.8),          # Bright teal
+		"border_shadow": Color(0.10, 0.25, 0.22),
+		"text": Color(0.85, 1.0, 0.95),
+		"highlight_bg": Color(0.15, 0.35, 0.32),
+		"highlight_text": Color(0.6, 1.0, 0.9),
+		"cursor": Color(0.4, 0.9, 0.8)
+	},
+	"speculator": {
+		"bg": Color(0.06, 0.12, 0.06),           # Dark forest
+		"border": Color(0.4, 0.85, 0.4),         # Money green
+		"border_shadow": Color(0.12, 0.25, 0.12),
+		"text": Color(0.92, 1.0, 0.92),
+		"highlight_bg": Color(0.18, 0.36, 0.18),
+		"highlight_text": Color(1.0, 0.9, 0.4),  # Gold accent — market
+		"cursor": Color(0.4, 0.85, 0.4)
+	},
+	# ---- Meta jobs ----
+	"scriptweaver": {
+		"bg": Color(0.0, 0.08, 0.04),            # Terminal black-green
+		"border": Color(0.0, 0.95, 0.55),        # Neon green
+		"border_shadow": Color(0.0, 0.22, 0.12),
+		"text": Color(0.7, 1.0, 0.75),
+		"highlight_bg": Color(0.0, 0.30, 0.15),
+		"highlight_text": Color(0.85, 1.0, 0.7),
+		"cursor": Color(0.0, 0.95, 0.55)
+	},
+	"time_mage": {
+		"bg": Color(0.06, 0.08, 0.14),           # Twilight blue
+		"border": Color(0.75, 0.88, 1.0),        # Pale chrono blue
+		"border_shadow": Color(0.18, 0.22, 0.35),
+		"text": Color(0.9, 0.95, 1.0),
+		"highlight_bg": Color(0.22, 0.28, 0.45),
+		"highlight_text": Color(1.0, 1.0, 0.9),
+		"cursor": Color(0.75, 0.88, 1.0)
+	},
+	"necromancer": {
+		"bg": Color(0.06, 0.02, 0.08),           # Crypt black
+		"border": Color(0.65, 0.35, 0.75),       # Violet
+		"border_shadow": Color(0.18, 0.08, 0.22),
+		"text": Color(0.92, 0.85, 1.0),
+		"highlight_bg": Color(0.25, 0.10, 0.32),
+		"highlight_text": Color(0.85, 1.0, 0.7),
+		"cursor": Color(0.65, 0.35, 0.75)
+	},
+	"bossbinder": {
+		"bg": Color(0.10, 0.02, 0.04),           # Boss-arena red-black
+		"border": Color(0.95, 0.25, 0.35),       # Boss-red
+		"border_shadow": Color(0.30, 0.05, 0.10),
+		"text": Color(1.0, 0.92, 0.92),
+		"highlight_bg": Color(0.36, 0.10, 0.14),
+		"highlight_text": Color(1.0, 1.0, 0.6),
+		"cursor": Color(0.95, 0.25, 0.35)
+	},
+	"skiptrotter": {
+		"bg": Color(0.10, 0.10, 0.02),           # Glitchy dark yellow
+		"border": Color(0.95, 0.85, 0.35),       # Frame-skip yellow
+		"border_shadow": Color(0.30, 0.26, 0.08),
+		"text": Color(1.0, 1.0, 0.85),
+		"highlight_bg": Color(0.35, 0.30, 0.10),
+		"highlight_text": Color(0.65, 1.0, 0.65),  # Glitch green accent
+		"cursor": Color(0.95, 0.85, 0.35)
+	},
 }
 
 var style: Dictionary = CHARACTER_STYLES["fighter"]
 var menu_items: Array = []
 var selected_index: int = 0
+var _scroll_offset: int = 0        # first visible row index
+var _max_visible_rows: int = 0     # 0 = uncapped (menu fits)
+var _items_base_y: float = 0.0
 var submenu: Win98Menu = null
 var parent_menu: Win98Menu = null
 var anchor_position: Vector2 = Vector2.ZERO
+var _character_class: String = "fighter"
 var menu_title: String = ""
 var expand_left: bool = true  # Submenus expand to the left (tree style)
 var expand_up: bool = true  # Submenus expand upward (tree style)
@@ -91,10 +181,18 @@ var _cursor_blink_timer: Timer = null  # Blinking cursor
 var _cursor_visible: bool = true
 var _audio_player: AudioStreamPlayer = null
 var _target_highlight: Control = null  # Rectangle highlight around target
+var _target_pulse_tween: Tween = null
 var _pending_target_pos: Vector2 = Vector2.ZERO  # Target position for line
 var _queued_actions: Array = []  # Actions queued via Advance mode
 var _max_queue_size: int = 4  # Max actions (limited by AP)
 var _is_closing: bool = false  # Prevent double-close
+## STATIC (2026-09-06): defer destroys the menu, so an instance debounce dies with it and the NEXT member's fresh menu accepts the tail of the same L2 squeeze — one press deferred two PCs.
+static var _last_advance_ms: int = 0
+static var _last_defer_ms: int = 0
+static var _defer_axis_held: bool = false  # release-edge gate: an L2 analog ramp emits many pressed events with no echo flag
+static var _advance_axis_held: bool = false  # same gate for R2 — the 4th advance auto-submits and opens the NEXT member's menu (struktured 2026-09-06 asked)
+const ADVANCE_DEBOUNCE_MS: int = 120
+const DEFER_DEBOUNCE_MS: int = 120
 var _current_ap: int = 0  # Current AP for display
 var _ap_label: Label = null  # AP display label
 var _can_go_back: bool = false  # Whether B button can go to previous player
@@ -106,13 +204,33 @@ var _l_button_press_time: float = 0.0  # When L was pressed
 const L_HOLD_CONFIRM_TIME: float = 0.15  # Seconds to hold L for confirm (reduced for snappier response)
 var _tooltip_label: Label = null  # Ability tooltip shown below menu
 
-## Signals for target selection with position
-signal target_selected(item_id: String, item_data: Variant, target_pos: Vector2)
+## Pixel tile size (scaled 1.5x for readability)
+const TILE_SIZE = 6
+const ITEM_HEIGHT = 24
+const MENU_PADDING = 12
+## Hard ceiling so a tall menu SCROLLS instead of running off the bottom of the screen.
+## struktured playtest 2026-08-22: "bard menu is cutoff on bottom" — Bard ran 10-11 rows and
+## menu_height had no cap, so _clamp_to_screen computed a negative y, hit its `y < 0` branch,
+## and pinned the panel at y=10 with the tail off-screen. Repositioning cannot fit a menu
+## taller than the viewport; only capping can.
+const MENU_SCREEN_MARGIN = 24
+## Cost suffixes render as their OWN right-aligned span, not concatenated into the name
+## (struktured 2026-08-22: the cost "should be colorized differently or stylized from the
+## other text"). Dimmer than the name so the eye reads NAME first; red when unaffordable,
+## which makes a greyed row self-explanatory without a message.
+const COST_COLOR := Color(0.65, 0.78, 0.95, 0.85)
+const COST_COLOR_UNAFFORDABLE := Color(0.92, 0.45, 0.45, 0.95)
+const COST_COLUMN_WIDTH = 46
 
-## Pixel tile size
-const TILE_SIZE = 4
-const ITEM_HEIGHT = 16
-const MENU_PADDING = 8
+## struktured 2026-08-22: "the main battle menu for ap layer can prob be more translucent
+## not just prev ones, unclear though we need to play test it" — he flagged it as UNCERTAIN,
+## so this is one named number to move rather than a value to agonise over.
+## 0.55 is deliberately the SAME alpha cowir-cutscenes gave the speech bubbles the same
+## night; two independently-chosen values would read as sloppy, one reads as a house style.
+## BORDERS STAY OPAQUE ON PURPOSE: the frame is what keeps the menu legible over the Mode 7
+## floor and bright battle backgrounds. A menu you cannot read is worse than one that covers
+## scenery, and fading the border is what costs legibility, not fading the fill.
+const PANEL_ALPHA := 0.55
 const SUBMENU_DELAY = 0.12  # Delay before submenu expands
 
 
@@ -123,6 +241,7 @@ func _init() -> void:
 
 
 func _ready() -> void:
+	add_to_group("win98_menus")
 	_setup_timers()
 	_setup_audio()
 	# Don't call _build_menu() here - setup() will call it with proper data
@@ -132,10 +251,25 @@ func _ready() -> void:
 	grab_focus()
 
 
+var _nav_repeat := MenuRepeat.new(PackedStringArray(["ui_up", "ui_down"]))
+
+
 func _process(delta: float) -> void:
 	# Guard against running on freed node
 	if not is_instance_valid(self) or _is_closing:
 		return
+	# Self-heal the release-edge gate: a release that lands BETWEEN menus (no _input alive) would stick it and cost a press.
+	if Win98Menu._defer_axis_held and not Input.is_action_pressed("battle_defer"):
+		Win98Menu._defer_axis_held = false
+	if Win98Menu._advance_axis_held and not Input.is_action_pressed("battle_advance"):
+		Win98Menu._advance_axis_held = false
+	# Hold-to-repeat. Only up/down: left/right enter and exit submenus here, so repeating
+	# them would thrash the player in and out on a single hold.
+	var repeat_action := _nav_repeat.tick(delta)
+	if repeat_action == "ui_up":
+		_nav_step(-1)
+	elif repeat_action == "ui_down":
+		_nav_step(1)
 	# Check for L button hold-to-confirm
 	if _l_button_pressed and battle_mode:
 		var hold_time = Time.get_ticks_msec() / 1000.0 - _l_button_press_time
@@ -156,6 +290,12 @@ func _exit_tree() -> void:
 	if submenu and is_instance_valid(submenu):
 		submenu.queue_free()
 		submenu = null
+	# Root menu leaving (turn submitted/cancelled) — restore the default
+	# hint so queue-context text never lingers into execution.
+	if parent_menu == null:
+		var label := _find_hint_label()
+		if label != null:
+			label.text = HINT_DEFAULT_TEXT
 
 
 func _setup_timers() -> void:
@@ -204,6 +344,7 @@ func _update_target_highlight() -> void:
 	# Get current item data
 	if selected_index < 0 or selected_index >= menu_items.size():
 		_target_highlight.visible = false
+		_set_chain_dim(false)
 		return
 
 	var item = menu_items[selected_index]
@@ -216,6 +357,7 @@ func _update_target_highlight() -> void:
 
 	if target_pos == Vector2.ZERO:
 		_target_highlight.visible = false
+		_set_chain_dim(false)
 		_pending_target_pos = Vector2.ZERO
 		return
 
@@ -224,6 +366,7 @@ func _update_target_highlight() -> void:
 	# Build the highlight box around target
 	_build_target_highlight_box(target_pos)
 	_target_highlight.visible = true
+	_set_chain_dim(true)
 
 
 func _build_target_highlight_box(target_pos: Vector2) -> void:
@@ -294,8 +437,22 @@ func _build_target_highlight_box(target_pos: Vector2) -> void:
 	pointer.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	pointer.position = Vector2(box_width / 2 - 8, -18)
 	pointer.add_theme_color_override("font_color", border_color)
-	pointer.add_theme_font_size_override("font_size", 16)
+	pointer.add_theme_font_size_override("font_size", TextScale.scaled(24))
 	_target_highlight.add_child(pointer)
+	_start_target_pulse()
+
+
+func _start_target_pulse() -> void:
+	# Breathing cursor: one looping tween that survives selection rebuilds, killed on hide
+	if _target_pulse_tween and _target_pulse_tween.is_valid():
+		return
+	if not _target_highlight or not is_instance_valid(_target_highlight):
+		return
+	if BattleJuice.battle_tier() >= BattleJuice.Tier.MINIMAL or not BattleJuice.flag("target_pulse"):
+		return
+	_target_pulse_tween = create_tween().set_loops()
+	_target_pulse_tween.tween_property(_target_highlight, "modulate:a", 0.72, 0.45).set_trans(Tween.TRANS_SINE)
+	_target_pulse_tween.tween_property(_target_highlight, "modulate:a", 1.0, 0.45).set_trans(Tween.TRANS_SINE)
 
 
 func _update_tooltip() -> void:
@@ -312,7 +469,7 @@ func _update_tooltip() -> void:
 	if not _tooltip_label or not is_instance_valid(_tooltip_label):
 		_tooltip_label = Label.new()
 		_tooltip_label.name = "TooltipLabel"
-		_tooltip_label.add_theme_font_size_override("font_size", 9)
+		_tooltip_label.add_theme_font_size_override("font_size", TextScale.scaled(13))
 		_tooltip_label.add_theme_color_override("font_color", style.get("text", Color.WHITE).lightened(0.2))
 		_tooltip_label.z_index = z_index + 2
 		_tooltip_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -349,6 +506,7 @@ func _fade_target_highlight(on_complete: Callable = Callable()) -> void:
 	tween.tween_callback(func():
 		if is_instance_valid(_target_highlight):
 			_target_highlight.visible = false
+			_set_chain_dim(false)
 			_target_highlight.modulate.a = 1.0  # Reset for next use
 		if on_complete.is_valid():
 			on_complete.call()
@@ -376,9 +534,14 @@ func _play_expand_sound() -> void:
 	SoundManager.play_ui("menu_expand")
 
 
-func _play_advance_sound() -> void:
+func _play_advance_sound(depth: int = 1) -> void:
 	"""Play sound when queueing an action (Advance mode)"""
-	SoundManager.play_ui("advance_queue")
+	# Per-job escalation ladder (struktured-approved, all 5 starters: fighter/cleric/rogue/mage/bard); jobs without a ladder key fall back to the arcade credit.
+	var key := "advance_%s_%d" % [_character_class, clampi(depth, 1, 3)]
+	if SoundManager._sfx_manifest.has(key):
+		SoundManager.play_battle(key)
+	else:
+		SoundManager.play_battle("advance_queue")
 
 
 func _play_undo_sound() -> void:
@@ -427,11 +590,20 @@ func _on_submenu_timer_timeout() -> void:
 
 func setup(title: String, items: Array, pos: Vector2, character_class: String = "fighter") -> void:
 	"""Setup the menu with items and position"""
+	_character_class = character_class
 	menu_title = title
 	menu_items = items
 	anchor_position = pos
 	selected_index = 0
+	# Don't open with the cursor resting on a leading disabled row (skip-disabled).
+	# Bounded scan; if every item is disabled, fall back to index 0.
+	for i in range(menu_items.size()):
+		if not menu_items[i].get("disabled", false):
+			selected_index = i
+			break
 
+	# Tick 293: now covers all 14 jobs; fighter remains the
+	# defensive default for unknown / modded job ids.
 	if CHARACTER_STYLES.has(character_class):
 		style = CHARACTER_STYLES[character_class]
 	else:
@@ -459,14 +631,29 @@ func _build_menu() -> void:
 		if item.has("submenu"):
 			label_text += " >"
 		var text_width = font.get_string_size(label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 11).x
+		if item.has("cost"):
+			text_width += COST_COLUMN_WIDTH  # the cost column sits to the right of the name
 		max_label_width = max(max_label_width, text_width)
-	var menu_width = max(140, int(max_label_width) + content_padding)
+	var viewport_width = 1280
+	if is_inside_tree():
+		viewport_width = int(get_viewport_rect().size.x)
+	var menu_width = clampi(max(210, int(max_label_width) + content_padding), 210, viewport_width / 2)
 
 	var ap_label_height = 14 if (is_root_menu and battle_mode) else 0  # Only show AP in battle
-	var menu_height = MENU_PADDING * 2 + menu_items.size() * ITEM_HEIGHT + TILE_SIZE * 2 + ap_label_height
+	var chrome_height = MENU_PADDING * 2 + TILE_SIZE * 2 + ap_label_height
+	var viewport_height = 720
+	if is_inside_tree():
+		viewport_height = int(get_viewport_rect().size.y)
+	var room_for_rows = viewport_height - MENU_SCREEN_MARGIN * 2 - chrome_height
+	_max_visible_rows = maxi(1, room_for_rows / ITEM_HEIGHT)
+	if menu_items.size() <= _max_visible_rows:
+		_max_visible_rows = 0  # fits; no scrolling
+	var shown_rows = menu_items.size() if _max_visible_rows == 0 else _max_visible_rows
+	var menu_height = chrome_height + shown_rows * ITEM_HEIGHT
 
 	# Create the menu texture with pixel borders
 	var menu_panel = _create_retro_panel(menu_width, menu_height)
+	menu_panel.clip_contents = true  # rows past the cap are scrolled, not drawn outside the panel
 	add_child(menu_panel)
 
 	# AP label at top for root menu in battle mode (compact, right-aligned)
@@ -474,9 +661,9 @@ func _build_menu() -> void:
 		_ap_label = Label.new()
 		_ap_label.name = "APLabel"
 		_ap_label.position = Vector2(MENU_PADDING + TILE_SIZE, MENU_PADDING)
-		_ap_label.size = Vector2(menu_width - MENU_PADDING * 2 - TILE_SIZE * 2, 12)
+		_ap_label.size = Vector2(menu_width - MENU_PADDING * 2 - TILE_SIZE * 2, 18)
 		_ap_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-		_ap_label.add_theme_font_size_override("font_size", 9)
+		_ap_label.add_theme_font_size_override("font_size", TextScale.scaled(13))
 		_update_ap_label()
 		menu_panel.add_child(_ap_label)
 
@@ -486,6 +673,8 @@ func _build_menu() -> void:
 	# Items container (offset by AP label if present)
 	var items_container = VBoxContainer.new()
 	items_container.position = Vector2(MENU_PADDING + TILE_SIZE, MENU_PADDING + TILE_SIZE + ap_label_height)
+	_items_base_y = items_container.position.y
+	_scroll_offset = 0
 	items_container.add_theme_constant_override("separation", 0)
 	menu_panel.add_child(items_container)
 
@@ -534,7 +723,7 @@ func _create_retro_panel(w: int, h: int) -> Control:
 
 	# Background
 	var bg = ColorRect.new()
-	bg.color = style.bg
+	bg.color = Color(style.bg.r, style.bg.g, style.bg.b, style.bg.a * PANEL_ALPHA)
 	bg.position = Vector2(TILE_SIZE, TILE_SIZE)
 	bg.size = Vector2(w - TILE_SIZE * 2, h - TILE_SIZE * 2)
 	panel.add_child(bg)
@@ -635,7 +824,7 @@ func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -
 	cursor.text = "▶"  # Filled triangle for better visibility
 	cursor.position = Vector2(-4, 0)
 	cursor.add_theme_color_override("font_color", style.cursor)
-	cursor.add_theme_font_size_override("font_size", 10)
+	cursor.add_theme_font_size_override("font_size", TextScale.scaled(15))
 	cursor.visible = false
 	row.add_child(cursor)
 
@@ -647,17 +836,39 @@ func _create_menu_item(index: int, item: Dictionary, content_width: int = 120) -
 	var text_label = Label.new()
 	text_label.name = "Label"
 	text_label.position = Vector2(10, 0)
+	text_label.size = Vector2(content_width - 14, ITEM_HEIGHT)
+	text_label.clip_text = true
+	text_label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 	if has_submenu:
 		text_label.text = label + " >"
 	else:
 		text_label.text = label
 
+	# Cost as a separate right-aligned span so it can carry its own colour AND its own
+	# affordability tint, independent of the row's disabled state.
+	if item.has("cost"):
+		text_label.size.x -= COST_COLUMN_WIDTH
+		var cost_label = Label.new()
+		cost_label.name = "Cost"
+		cost_label.text = "%d MP" % int(item["cost"])
+		cost_label.position = Vector2(10 + text_label.size.x, 0)
+		cost_label.size = Vector2(COST_COLUMN_WIDTH - 4, ITEM_HEIGHT)
+		cost_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		cost_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		cost_label.add_theme_font_size_override("font_size", TextScale.scaled(10))
+		var affordable: bool = bool(item.get("cost_affordable", true))
+		cost_label.add_theme_color_override("font_color", COST_COLOR if affordable else COST_COLOR_UNAFFORDABLE)
+		row.add_child(cost_label)
+
 	if disabled:
 		text_label.add_theme_color_override("font_color", style.text.darkened(0.5))
+	elif item.get("text_color", null) is Color:
+		# Optional per-row tint (shop affordability/owned cues) — row stays selectable, unlike disabled.
+		text_label.add_theme_color_override("font_color", item["text_color"])
 	else:
 		text_label.add_theme_color_override("font_color", style.text)
 
-	text_label.add_theme_font_size_override("font_size", 11)
+	text_label.add_theme_font_size_override("font_size", TextScale.scaled(16))
 	row.add_child(text_label)
 
 	# Make clickable
@@ -678,6 +889,8 @@ func _update_selection() -> void:
 	var container = _get_items_container()
 	if not container:
 		return
+	_restore_hint_after_reason()
+	_scroll_selection_into_view(container)
 
 	for i in range(container.get_child_count()):
 		var row = container.get_child(i)
@@ -706,6 +919,8 @@ func _update_selection() -> void:
 			var disabled = item.get("disabled", false)
 			if disabled:
 				label.add_theme_color_override("font_color", style.text.darkened(0.5))
+			elif item.get("text_color", null) is Color:
+				label.add_theme_color_override("font_color", item["text_color"])
 			else:
 				label.add_theme_color_override("font_color", style.text)
 
@@ -728,6 +943,7 @@ func _on_item_pressed(index: int) -> void:
 	var item = menu_items[index]
 
 	if item.get("disabled", false):
+		_reject_selection(item)
 		return
 
 	if item.has("submenu"):
@@ -780,6 +996,19 @@ func _auto_expand_submenu() -> void:
 			_submenu_timer.start()
 
 
+## Keep the selected row inside the capped window. No-op when the menu fits (_max_visible_rows 0).
+func _scroll_selection_into_view(container: VBoxContainer) -> void:
+	if _max_visible_rows <= 0:
+		return
+	var last_visible: int = _scroll_offset + _max_visible_rows - 1
+	if selected_index < _scroll_offset:
+		_scroll_offset = selected_index
+	elif selected_index > last_visible:
+		_scroll_offset = selected_index - _max_visible_rows + 1
+	_scroll_offset = clampi(_scroll_offset, 0, maxi(0, menu_items.size() - _max_visible_rows))
+	container.position.y = _items_base_y - float(_scroll_offset * ITEM_HEIGHT)
+
+
 func _get_items_container() -> VBoxContainer:
 	"""Get the items container node"""
 	var container = get_node_or_null("Control/VBoxContainer")
@@ -810,9 +1039,9 @@ func _open_submenu(parent_index: int, item: Dictionary) -> void:
 	var item_y = parent_index * ITEM_HEIGHT + TILE_SIZE + MENU_PADDING
 	if expand_left:
 		# Position to the left of current menu
-		submenu_pos.x = global_position.x - size.x - 4  # Menu width + gap
+		submenu_pos.x = global_position.x - size.x - 6  # Menu width + gap
 	else:
-		submenu_pos.x = global_position.x + size.x + 4
+		submenu_pos.x = global_position.x + size.x + 6
 
 	if expand_up:
 		# Align bottom of submenu with current item, expand upward
@@ -879,11 +1108,13 @@ func _clamp_to_screen() -> void:
 
 func close_all() -> void:
 	"""Close this menu and all parent menus"""
-	# Clean up our own target highlight
+	# Clean up our own target highlight + tooltip
 	_cleanup_target_highlight()
+	_cleanup_tooltip()
 
 	if submenu and is_instance_valid(submenu):
-		submenu.queue_free()
+		# force_close cascades to grandchildren and cleans their scene-parented highlights/tooltips; bare queue_free orphaned them
+		submenu.force_close()
 		submenu = null
 
 	if parent_menu and is_instance_valid(parent_menu):
@@ -908,8 +1139,9 @@ func force_close() -> void:
 	# Hide immediately (queue_free happens at end of frame)
 	hide()
 
-	# Clean up target highlight
+	# Clean up target highlight AND tooltip — both are scene-parented siblings that outlive queue_free
 	_cleanup_target_highlight()
+	_cleanup_tooltip()
 
 	# Recursively close submenus first
 	if submenu and is_instance_valid(submenu):
@@ -926,6 +1158,10 @@ func force_close() -> void:
 
 func _cleanup_target_highlight() -> void:
 	"""Remove target highlight from scene"""
+	_set_chain_dim(false)
+	if _target_pulse_tween and _target_pulse_tween.is_valid():
+		_target_pulse_tween.kill()
+	_target_pulse_tween = null
 	if _target_highlight and is_instance_valid(_target_highlight):
 		_target_highlight.queue_free()
 		_target_highlight = null
@@ -938,10 +1174,33 @@ func _cleanup_tooltip() -> void:
 		_tooltip_label = null
 
 
+## Targeting dim: monsters must read THROUGH the menu chain while picking a target (struktured 2026-08-14 report); active list stays readable, ancestors go faint
+func _set_chain_dim(dimmed: bool) -> void:
+	if dimmed and not BattleJuice.flag("targeting_dim"):
+		return
+	var m = _get_root_menu()
+	while m and is_instance_valid(m):
+		if dimmed:
+			if not m.has_meta("pre_dim_alpha"):
+				m.set_meta("pre_dim_alpha", m.modulate.a)
+			m.modulate.a = minf(m.modulate.a, 0.65 if m == self else 0.35)
+		elif m.has_meta("pre_dim_alpha"):
+			m.modulate.a = m.get_meta("pre_dim_alpha")
+			m.remove_meta("pre_dim_alpha")
+		m = m.submenu
+
+
 ## Advance Mode Functions
 
 func _handle_advance_input() -> void:
 	"""Handle R button / Shift+Enter - queue current action or confirm if at limit"""
+	var root = _get_root_menu()
+	# Debounce: one R squeeze emits BOTH a button and a trigger-axis event, and a drifting trigger jitters across the deadzone — ignore a duplicate advance within ADVANCE_DEBOUNCE_MS so one press queues one action. Static so it survives menu rebuilds.
+	var now_ms := Time.get_ticks_msec()
+	if now_ms - Win98Menu._last_advance_ms < ADVANCE_DEBOUNCE_MS:
+		return
+	Win98Menu._last_advance_ms = now_ms
+
 	var current_item = menu_items[selected_index] if selected_index >= 0 and selected_index < menu_items.size() else {}
 
 	if current_item.has("submenu"):
@@ -952,13 +1211,13 @@ func _handle_advance_input() -> void:
 		return
 
 	if current_item.get("disabled", false):
+		_reject_selection(current_item)
 		return
 
 	# Check if we're at the queue limit - if so, act as confirm
-	var root = _get_root_menu()
 	if root._queued_actions.size() >= root._max_queue_size - 1:
 		# At or near limit - this will be the last action, so submit
-		_play_advance_sound()  # Consistent advance sound even when auto-submitting
+		_play_advance_sound(root._queued_actions.size() + 1)  # Consistent advance sound even when auto-submitting
 		_submit_actions()
 		return
 
@@ -969,6 +1228,11 @@ func _handle_advance_input() -> void:
 func _handle_defer_input() -> void:
 	"""Handle L button release - undo last queued action, or defer if no queue"""
 	var root = _get_root_menu()
+	# Same debounce as advance, static for the same reason: PC1's defer frees this menu and PC2's fresh one must still remember the squeeze.
+	var now_ms := Time.get_ticks_msec()
+	if now_ms - Win98Menu._last_defer_ms < DEFER_DEBOUNCE_MS:
+		return
+	Win98Menu._last_defer_ms = now_ms
 	if root._queued_actions.size() > 0:
 		# Undo last queued action (from any menu depth)
 		_undo_last_action()
@@ -980,7 +1244,7 @@ func _handle_defer_input() -> void:
 
 
 func _confirm_turn_with_queue() -> void:
-	"""L button held for 2 seconds - confirm current queue and end turn"""
+	"""L held past L_HOLD_CONFIRM_TIME (0.15s) - confirm current queue and end turn"""
 	var root = _get_root_menu()
 	if root._queued_actions.size() > 0:
 		# Submit queued actions as advance
@@ -1010,7 +1274,7 @@ func _queue_current_action(item: Dictionary) -> void:
 		"label": item.get("label", "")
 	}
 	root._queued_actions.append(action)
-	_play_advance_sound()
+	_play_advance_sound(root._queued_actions.size())
 
 	# Update AP display to show pending cost
 	root._update_ap_label()
@@ -1021,11 +1285,12 @@ func _queue_current_action(item: Dictionary) -> void:
 
 func _close_submenu_to_root() -> void:
 	"""Close this submenu chain but keep root menu open"""
-	# Clean up our target highlight
+	# Clean up our target highlight + tooltip
 	_cleanup_target_highlight()
+	_cleanup_tooltip()
 
 	if submenu and is_instance_valid(submenu):
-		submenu.queue_free()
+		submenu.force_close()
 		submenu = null
 
 	if parent_menu:
@@ -1069,6 +1334,7 @@ func _submit_actions() -> void:
 	var current_item = menu_items[selected_index] if selected_index >= 0 and selected_index < menu_items.size() else {}
 
 	if current_item.get("disabled", false):
+		_reject_selection(current_item)
 		return
 
 	if current_item.has("submenu"):
@@ -1094,6 +1360,7 @@ func _submit_actions() -> void:
 	# Hide target highlight immediately
 	if _target_highlight and is_instance_valid(_target_highlight):
 		_target_highlight.visible = false
+		_set_chain_dim(false)
 
 	# Emit signal from root
 	if all_actions.size() == 1:
@@ -1152,8 +1419,77 @@ func _apply_command_memory() -> void:
 	_initial_selection_id = ""
 
 
+## "[+/-] Speed" was a dead instruction: nothing in src/ binds +/- to battle speed (2026-07-28).
+## The real toggle is JOY_BUTTON_Y — north/top face, physically X on the Nintendo-layout pads this
+## game targets — plus the ` key. BattleScene.gd carries the same string; keep them in step.
+const HINT_DEFAULT_TEXT := "[L] Defer  ·  [R] Advance  ·  [X] Speed  ·  [Select] Auto"
+
+var _hint_label_cache: Label = null
+var _hint_showing_reason: bool = false
+
+
+## Selecting an unaffordable row used to fail SILENTLY — the row was already marked
+## `disabled: not can_afford`, but nothing told the player why nothing happened.
+## struktured 2026-08-22: "a wasted action because of insufficient resources - mp, ap, etc,
+## should have a noise and/or text to indicate it". menu_error is the canonical key
+## (cowir-sfx, 21 existing call sites, falls back to menu_cancel if the asset ever fails).
+func _reject_selection(item: Dictionary) -> void:
+	SoundManager.play_ui("menu_error")
+	var reason := "Can't use that right now"
+	if item.has("cost") and not bool(item.get("cost_affordable", true)):
+		reason = "Not enough MP (%d needed)" % int(item.get("cost", 0))
+	elif item.has("ap_cost"):
+		reason = "Not enough AP"
+	var label := _find_hint_label()
+	if label:
+		label.text = reason
+		_hint_showing_reason = true
+
+
+## Restore the hint bar as soon as the player moves — no timer, so it cannot drift with
+## Engine.time_scale the way a create_timer() restore would at 4x/8x battle speed.
+func _restore_hint_after_reason() -> void:
+	if not _hint_showing_reason:
+		return
+	_hint_showing_reason = false
+	var label := _find_hint_label()
+	if label:
+		label.text = HINT_DEFAULT_TEXT
+
+
+func _find_hint_label() -> Label:
+	# Cached — the recursive find_child was a full-tree scan on every
+	# queue mutation (reviewer note 2026-07-02).
+	if _hint_label_cache != null and is_instance_valid(_hint_label_cache):
+		return _hint_label_cache
+	if not is_inside_tree():
+		return null
+	var bar = get_tree().root.find_child("InputHintBar", true, false)
+	if bar == null:
+		return null
+	_hint_label_cache = bar.get_node_or_null("HintLabel")
+	return _hint_label_cache
+
+
+## Item 22 (user: "there should be a button to undo an advance with
+## unwinding the menu") — the unwind EXISTED (B pops one queued action,
+## L undoes-or-defers) but nothing surfaced it. While the queue is
+## non-empty the battle hint bar swaps to queue context.
+func _update_hint_bar() -> void:
+	var label := _find_hint_label()
+	if label == null:
+		return
+	var root = _get_root_menu()
+	var n: int = root._queued_actions.size()
+	if n > 0:
+		label.text = "[A] Confirm  ·  [B]/[L] Undo last  ·  queued %d/%d" % [n, root._max_queue_size]
+	else:
+		label.text = HINT_DEFAULT_TEXT
+
+
 func _update_ap_label() -> void:
 	"""Update the AP display label showing current and pending cost"""
+	_update_hint_bar()
 	if not _ap_label or not is_instance_valid(_ap_label):
 		return
 
@@ -1172,8 +1508,45 @@ func _update_ap_label() -> void:
 		_ap_label.add_theme_color_override("font_color", color)
 
 
+func _step_selection(delta: int) -> void:
+	"""Move selection by delta, skipping disabled rows (wraps around).
+
+	Mirrors TitleScreen._move_selection skip-disabled behavior so the cursor
+	never rests on an unselectable row (where A would do nothing, reading as a
+	'stuck' cursor). If every item is disabled, selection is left unchanged.
+	"""
+	var n := menu_items.size()
+	if n == 0:
+		return
+	var idx := selected_index
+	for _i in range(n):
+		idx = (idx + delta + n) % n
+		if not menu_items[idx].get("disabled", false):
+			selected_index = idx
+			return
+	# all items disabled: leave selected_index unchanged
+
+
+## One navigation step plus its feedback. Extracted so a HELD direction repeats through
+## the exact same path a keypress takes — a second implementation would drift.
+func _nav_step(dir: int) -> void:
+	_step_selection(dir)
+	_play_move_sound()
+	_update_selection()
+	_auto_expand_submenu()
+
+
 func _input(event: InputEvent) -> void:
 	"""Handle input for menu navigation"""
+	# A closing/queued-free menu still receives _input until freed — bail so one press isn't handled twice (double Advance / menu overlap).
+	if is_queued_for_deletion() or _is_closing:
+		return
+	# A HIDDEN menu must not eat input either — boss dialogue hides the command menu and owns the A press (struktured 2026-08-15 spotlight-duel ambiguity).
+	if not visible:
+		return
+	# A tutorial hint is capturing input, or another handler already consumed this event — don't double-fire a menu action.
+	if TutorialHint.is_any_active() or get_viewport().is_input_handled():
+		return
 	# Wait for input delay to prevent accidental selection
 	if not _can_accept_input:
 		return
@@ -1188,14 +1561,26 @@ func _input(event: InputEvent) -> void:
 
 	# Handle input actions (gamepad + keyboard unified) - only in battle mode
 	if battle_mode:
-		if event.is_action_pressed("battle_advance"):
-			# R button / Shift+Enter: Queue action (Advance mode)
+		if event.is_action_pressed("battle_advance") and not event.is_echo():
+			# R button / Shift+Enter: Queue action (Advance mode). Release-edge gated like defer.
+			if Win98Menu._advance_axis_held:
+				get_viewport().set_input_as_handled()
+				return
+			Win98Menu._advance_axis_held = true
 			_handle_advance_input()
 			get_viewport().set_input_as_handled()
 			return
 
+		if event.is_action_released("battle_advance"):
+			Win98Menu._advance_axis_held = false
+
 		# L button: Track press/release for hold-to-confirm
-		if event.is_action_pressed("battle_defer"):
+		if event.is_action_pressed("battle_defer") and not event.is_echo():
+			# Release-edge gate: an L2 analog ramp emits a BURST of pressed events (no echo flag on axes) — only the first counts until a genuine release.
+			if Win98Menu._defer_axis_held:
+				get_viewport().set_input_as_handled()
+				return
+			Win98Menu._defer_axis_held = true
 			var root = _get_root_menu()
 			if root._queued_actions.size() == 0:
 				# No queue — immediate defer, no timer needed
@@ -1210,6 +1595,7 @@ func _input(event: InputEvent) -> void:
 
 		if event.is_action_released("battle_defer"):
 			# L button released - check if it was a quick press
+			Win98Menu._defer_axis_held = false
 			var root = _get_root_menu()
 			if root._l_button_pressed:
 				root._l_button_pressed = false
@@ -1221,114 +1607,13 @@ func _input(event: InputEvent) -> void:
 			get_viewport().set_input_as_handled()
 			return
 
-	# Keyboard navigation
-	if event is InputEventKey and event.pressed and not event.echo:
-		# Check for Shift+Enter/Z (also triggers Advance) - only in battle mode
-		if battle_mode and event.keycode in [KEY_Z, KEY_ENTER, KEY_SPACE] and event.shift_pressed:
-			_handle_advance_input()
-			get_viewport().set_input_as_handled()
-			return
-
-		match event.keycode:
-			KEY_UP:
-				selected_index = (selected_index - 1) if selected_index > 0 else menu_items.size() - 1
-				_play_move_sound()
-				_update_selection()
-				_auto_expand_submenu()
-				get_viewport().set_input_as_handled()
-			KEY_DOWN:
-				selected_index = (selected_index + 1) % menu_items.size()
-				_play_move_sound()
-				_update_selection()
-				_auto_expand_submenu()
-				get_viewport().set_input_as_handled()
-			KEY_Z, KEY_ENTER, KEY_SPACE:
-				var current_item = menu_items[selected_index] if selected_index >= 0 and selected_index < menu_items.size() else {}
-				if current_item.has("submenu"):
-					# Has submenu - expand it immediately
-					_play_expand_sound()
-					if not submenu:
-						_do_open_submenu(selected_index, current_item)
-				else:
-					# No submenu - submit all queued actions + current
-					_play_select_sound()
-					_submit_actions()
-				get_viewport().set_input_as_handled()
-			KEY_X, KEY_ESCAPE:
-				# Priority: close submenu first, then unadvance (undo one, battle mode only), then go back
-				var root = _get_root_menu()
-				if parent_menu:
-					# We're in a submenu - close it and return to parent
-					_play_move_sound()
-					_cleanup_target_highlight()
-					parent_menu.submenu = null
-					queue_free()
-				elif battle_mode and root._queued_actions.size() > 0:
-					# At root with queue - undo ONE queued action (unadvance) - battle mode only
-					_undo_last_action()
-					# Also close any open submenu
-					if submenu and is_instance_valid(submenu):
-						submenu.queue_free()
-						submenu = null
-				elif is_root_menu and _can_go_back:
-					# At root with no queue - go back to previous player
-					_play_cancel_sound()
-					go_back_requested.emit()
-					force_close()
-				elif is_root_menu and not battle_mode:
-					# Non-battle root menu (shops, etc) - close on cancel
-					_play_cancel_sound()
-					force_close()
-				# In battle mode at root with no queue and can't go back: B is a no-op
-				get_viewport().set_input_as_handled()
-			KEY_RIGHT:
-				# For left-expanding: RIGHT goes back to parent
-				# For right-expanding: RIGHT goes into submenu
-				if expand_left:
-					if parent_menu:
-						_play_move_sound()
-						queue_free()
-					elif is_root_menu and not battle_mode:
-						# Non-battle root menu - close on back
-						_play_cancel_sound()
-						force_close()
-				else:
-					if submenu:
-						_play_move_sound()
-						submenu.grab_focus()
-				get_viewport().set_input_as_handled()
-			KEY_LEFT:
-				# For left-expanding: LEFT confirms selection or enters submenu
-				# For right-expanding: LEFT goes back to parent
-				if expand_left:
-					var current_item = menu_items[selected_index] if selected_index >= 0 and selected_index < menu_items.size() else {}
-					if current_item.has("submenu"):
-						# Item has submenu - let auto-expand handle it
-						_play_move_sound()
-						_auto_expand_submenu()
-					else:
-						# No submenu - submit all queued + current
-						_play_select_sound()
-						_submit_actions()
-				else:
-					if parent_menu:
-						_play_move_sound()
-						queue_free()
-				get_viewport().set_input_as_handled()
-
-	# Handle gamepad navigation via input actions
+	# Unified navigation via input actions (covers both keyboard and gamepad)
 	# Note: Check echo to prevent rapid-fire when holding d-pad
 	if event.is_action_pressed("ui_up") and not event.is_echo():
-		selected_index = (selected_index - 1) if selected_index > 0 else menu_items.size() - 1
-		_play_move_sound()
-		_update_selection()
-		_auto_expand_submenu()
+		_nav_step(-1)
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_down") and not event.is_echo():
-		selected_index = (selected_index + 1) % menu_items.size()
-		_play_move_sound()
-		_update_selection()
-		_auto_expand_submenu()
+		_nav_step(1)
 		get_viewport().set_input_as_handled()
 	elif event.is_action_pressed("ui_accept") and not event.is_echo():
 		var current_item = menu_items[selected_index] if selected_index >= 0 and selected_index < menu_items.size() else {}

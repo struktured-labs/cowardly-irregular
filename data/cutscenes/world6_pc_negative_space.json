@@ -1,0 +1,61 @@
+{
+  "id": "world6_pc_negative_space",
+  "title": "Negative Space",
+  "world": 6,
+  "trigger": "world6_pc_negative_space",
+  "background": "prologue_forest",
+  "description": "First steps in the abstract world. There is exactly enough of everything.",
+  "steps": [
+    {
+      "type": "letterbox_in",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "The world stopped pretending. What remained was exactly enough: a floor, a light, a direction."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Fighter",
+          "text": "No cover. No terrain. Nothing to put my back against except all of you.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "It's not empty. It's... finished. Everything extra has been forgiven.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "I can't steal anything here. Everything that exists is load-bearing.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Mage",
+          "text": "The mana is perfectly still. Like it's waiting for us to say something true.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Bard",
+          "text": "So this is the venue. Five of us, one light, no acoustics. Fine. I've played worse.",
+          "theme": "bard",
+          "portrait": "bard"
+        }
+      ]
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.3
+    }
+  ]
+}

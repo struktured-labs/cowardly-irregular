@@ -1,0 +1,79 @@
+{
+  "id": "world4_the_watercolors",
+  "title": "The Watercolors",
+  "world": 4,
+  "giver": {
+    "npc_id": "foreman_w4",
+    "display_name": "The Foreman",
+    "location": {"map_id": "rivet_row", "near": "foreman_alley"},
+    "spawn_flag": ""
+  },
+  "description": "The foreman painted forty-seven watercolors before the efficiency reclassification removed the want. He believes they were destroyed. They weren't. The Curator of Output archived them instead of deleting them — and checked on them every audit cycle, running a subroutine that was not in its original design.",
+  "playstyle_tags": ["completionist", "cross_quest_gated", "the_quiet_payoff"],
+  "dialogue": {
+    "offer": [
+      {"speaker": "Foreman", "text": "The paintings? I don't know. I don't think they exist anymore. The recalibration was thorough.", "theme": "villager"},
+      {"speaker": "Foreman", "text": "Forty-seven of them. Landscapes. I remember making them the way you remember a house you lived in as a child — the shape of it, not the rooms.", "theme": "villager"},
+      {"speaker": "Foreman", "text": "Why do you ask? Nobody asks. Asking isn't productive.", "theme": "villager"}
+    ],
+    "accept": [
+      {"speaker": "Foreman", "text": "If they existed — and they don't — they'd be somewhere the Director filed things she didn't finish deciding about. That's not a place. That's a habit.", "theme": "villager"}
+    ],
+    "decline": [
+      {"speaker": "Foreman", "text": "Right. Forget I said anything. That's the procedure, and the procedure works.", "theme": "villager"}
+    ],
+    "in_progress": [
+      {"speaker": "Foreman", "text": "The tunnels under the factory are older than the factory. If anything of mine survived, it survived down there — where the Director's thoroughness runs out of map.", "theme": "villager"}
+    ],
+    "ready_to_turn_in": [
+      {"speaker": "Foreman", "text": "You found — you're certain? Forty-seven? On a rack? Climate-controlled?", "theme": "villager"}
+    ],
+    "complete": [
+      {"speaker": "Foreman", "text": "I didn't know I wanted it. And then I had it back, and — I know I wanted it. I've wanted it the whole time. I just stopped feeling it.", "theme": "villager"},
+      {"speaker": "Foreman", "text": "I'll take this one. Keep the rest here. The Director forgot she archived them. When we leave, she'll forget again. They'll be safe.", "theme": "villager"},
+      {"speaker": "Foreman", "text": "She archived them instead of deleting them. That was a mistake — you don't archive what you don't value. She valued them. She didn't know she was doing it. That's not cruelty. That's — confusion, maybe. About what things are worth.", "theme": "villager"}
+    ]
+  },
+  "objectives": [
+    {
+      "step": 1,
+      "description": "Ask the foreman what happened to the paintings.",
+      "type": "talk",
+      "target_npc": "foreman_w4",
+      "flag_on_complete": "quest_world4_the_watercolors_accepted"
+    },
+    {
+      "step": 2,
+      "description": "Learn where the Director archives what she doesn't finish deciding about.",
+      "type": "custom",
+      "required_flag": "quest_world4_the_watercolors_archive_located",
+      "flag_on_complete": "quest_world4_the_watercolors_archive_located"
+    },
+    {
+      "step": 3,
+      "description": "Reach the LEGACY ARCHIVE — INACTIVE section of the maintenance tunnels.",
+      "type": "custom",
+      "required_flag": "quest_world4_the_watercolors_archive_reached",
+      "flag_on_complete": "quest_world4_the_watercolors_archive_reached"
+    },
+    {
+      "step": 4,
+      "description": "Bring the foreman to his forty-seven landscapes.",
+      "type": "talk",
+      "target_npc": "foreman_w4",
+      "required_flag": "quest_world4_the_watercolors_archive_reached"
+    }
+  ],
+  "rewards": {
+    "gold": 0,
+    "exp": 400,
+    "items": [],
+    "job_variants": {}
+  },
+  "flag_on_complete": "quest_world4_the_watercolors_complete",
+  "unlocks_dialogue": [
+    {"npc_id": "foreman_w4", "note": "Fully unlocked post-quest: factory history, the pre-factory tunnels, and his Director theory (the archived-not-deleted reading). The quiet thesis of W4."}
+  ],
+  "cross_world_connection": "Six of the forty-seven paintings depict W1/W2/W3 scenery in the foreman's style — places he has never been. 'Where did you paint these?' goes unanswered. The foremans_watercolor lore item itself is granted by Chain B's Curator of Output fragment, NOT this quest — this quest's reward is the foreman.",
+  "_wiring_notes": "DELIBERATELY CROSS-GATED (the W4 completionist quest): step 2 emitter quest_world4_the_watercolors_archive_located has two sources — (a) the Curator of Output fragment (Chain B W4, found in the foreman's old workspace via tunnels) reveals the archive habit, (b) dorrit_w4 rumor dialogue ('things the Director archived instead of deleted'). Step 3 emitter quest_world4_the_watercolors_archive_reached: entering the LEGACY ARCHIVE — INACTIVE tunnel section; tunnel ACCESS itself requires redundant_blueprint (Chain B W3 fragment) OR cogsworth_calibration_key (Orrery chain W3) — enforce at the tunnel door, not in this quest's data. Step 4: the foreman must reach the archive — v1 wires it as the turn-in talk AT the archive location if positional turn-in is supported, else standard turn-in with the scene narrated (his archive visit as dialogue). He takes ONE painting, leaves 46 — do not grant an inventory item from this quest (Chain B owns foremans_watercolor); double-grant guard. NO prereq_flag: the quest is discoverable early but unfinishable until the gates open — that's the design (playstyle tag: completionist)."
+}

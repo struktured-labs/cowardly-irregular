@@ -1,0 +1,319 @@
+extends GutTest
+
+## Regression tests for commit 22bd71e — 4 battle bug fixes:
+##   1. CTB turn-order overlapping PartyStatusPanel
+##   2. Monster stuck in attack pose (tween interruption)
+##   3. Last party KO sprite not graying (hp_changed/is_alive ordering)
+##   4. Menu attack immunity (RoamingMonster.deactivate synchronous)
+##
+## Separated from test_battle_bugfix_regression.gd so it can be run in
+## isolation via run_single_test.gd without hitting autoload compile errors
+## in the larger file.
+
+const Combatant = preload("res://src/battle/Combatant.gd")
+
+var _combatant: Combatant
+
+
+func before_each() -> void:
+	_combatant = Combatant.new()
+	_combatant.combatant_name = "Test"
+	_combatant.max_hp = 100
+	_combatant.current_hp = 100
+	_combatant.max_mp = 50
+	_combatant.current_mp = 50
+	_combatant.attack = 20
+	_combatant.defense = 10
+	_combatant.magic = 15
+	_combatant.speed = 12
+	add_child_autofree(_combatant)
+
+
+# ===========================================================================
+# Bug #3: Last party KO sprite not graying (is_alive ordering)
+# ===========================================================================
+## The critical fix: hp_changed must fire AFTER is_alive is flipped to false
+## so UI listeners (BattleUIManager._update_member_status) see the correct
+## state and apply gray modulate on the lethal hit.
+
+func test_is_alive_is_false_when_hp_changed_fires_on_lethal_hit() -> void:
+	var observed_is_alive = [true]  # Wrong default — confirms signal fired
+
+	_combatant.current_hp = 10
+	_combatant.hp_changed.connect(func(_old, new_hp):
+		if new_hp <= 0:
+			observed_is_alive[0] = _combatant.is_alive
+	)
+
+	_combatant.take_damage(999)
+
+	assert_false(observed_is_alive[0],
+		"is_alive must be false when hp_changed fires on lethal hit (regression: last party KO not graying)")
+
+
+func test_non_lethal_damage_keeps_is_alive_true_at_hp_changed() -> void:
+	var observed_is_alive = [false]
+
+	_combatant.current_hp = 100
+	_combatant.hp_changed.connect(func(_old, _new):
+		observed_is_alive[0] = _combatant.is_alive
+	)
+
+	_combatant.take_damage(30)
+
+	assert_true(observed_is_alive[0],
+		"is_alive should remain true when hp_changed fires on non-lethal damage")
+
+
+func test_died_signal_still_fires_after_hp_changed_on_lethal_hit() -> void:
+	# Regression: the reordering must not break the died signal emission.
+	var hp_changed_count = [0]
+	var died_count = [0]
+
+	_combatant.current_hp = 10
+	_combatant.hp_changed.connect(func(_old, _new): hp_changed_count[0] += 1)
+	_combatant.died.connect(func(): died_count[0] += 1)
+
+	_combatant.take_damage(999)
+
+	assert_eq(hp_changed_count[0], 1, "hp_changed must fire exactly once on lethal hit")
+	assert_eq(died_count[0], 1, "died must fire exactly once on lethal hit")
+
+
+# ---- Extension: same ordering fix must apply to poison/burning DOT ticks ----
+# The ORIGINAL fix in take_damage() was mirrored in update_buff_durations()
+# for the poison and burning DOT paths. Without this, a final-party-member
+# KO via DOT tick would also fail to gray out.
+
+func test_poison_lethal_tick_fires_hp_changed_with_is_alive_false() -> void:
+	var observed_is_alive = [true]
+
+	_combatant.max_hp = 100
+	_combatant.current_hp = 3  # 5% of 100 = 5 damage, kills from 3
+	_combatant.add_status("poison", 3)
+
+	_combatant.hp_changed.connect(func(_old, new_hp):
+		if new_hp <= 0:
+			observed_is_alive[0] = _combatant.is_alive
+	)
+
+	_combatant.update_buff_durations()
+
+	assert_false(observed_is_alive[0],
+		"is_alive must be false when hp_changed fires on lethal POISON tick (regression: DOT ordering)")
+
+
+func test_burning_lethal_tick_fires_hp_changed_with_is_alive_false() -> void:
+	var observed_is_alive = [true]
+
+	_combatant.max_hp = 100
+	_combatant.current_hp = 5  # 8% of 100 = 8 damage, kills from 5
+	_combatant.add_status("burning", 3)
+
+	_combatant.hp_changed.connect(func(_old, new_hp):
+		if new_hp <= 0:
+			observed_is_alive[0] = _combatant.is_alive
+	)
+
+	_combatant.update_buff_durations()
+
+	assert_false(observed_is_alive[0],
+		"is_alive must be false when hp_changed fires on lethal BURNING tick (regression: DOT ordering)")
+
+
+func test_non_lethal_poison_tick_keeps_is_alive_true() -> void:
+	# Sanity check: non-lethal poison ticks should NOT flip is_alive to false
+	var observed_is_alive = [false]
+
+	_combatant.max_hp = 100
+	_combatant.current_hp = 50  # -5 HP -> 45, not lethal
+	_combatant.add_status("poison", 3)
+
+	_combatant.hp_changed.connect(func(_old, _new):
+		observed_is_alive[0] = _combatant.is_alive
+	)
+
+	_combatant.update_buff_durations()
+
+	assert_true(observed_is_alive[0],
+		"is_alive should still be true when hp_changed fires on non-lethal poison tick")
+
+
+# ---- Extension: same ordering fix applies to recalculate_stats clamp ----
+# If max_hp drops below current_hp (e.g. unequip HP-granting item) and the
+# clamp brings current_hp to 0, hp_changed must fire with is_alive=false.
+
+func test_recalculate_stats_lethal_clamp_sets_is_alive_before_hp_changed() -> void:
+	var observed_is_alive = [true]
+	# Setup: character alive with 1 HP and base_max_hp that recalc will clamp
+	_combatant.base_max_hp = 0  # force clamp to 0 during recalculate
+	_combatant.max_hp = 100
+	_combatant.current_hp = 1
+	_combatant.is_alive = true
+
+	_combatant.hp_changed.connect(func(_old, new_hp):
+		if new_hp <= 0:
+			observed_is_alive[0] = _combatant.is_alive
+	)
+
+	_combatant.recalculate_stats()
+
+	assert_false(observed_is_alive[0],
+		"is_alive must be false when hp_changed fires on lethal stat-recalc clamp")
+
+
+func test_recalculate_stats_does_not_die_twice_on_already_dead() -> void:
+	# If recalculate_stats is called on an already-dead combatant, it should
+	# NOT re-emit the died signal.
+	var die_count = [0]
+	_combatant.died.connect(func(): die_count[0] += 1)
+
+	# Kill first
+	_combatant.take_damage(9999)
+	assert_eq(die_count[0], 1, "take_damage should have killed once")
+
+	# Now call recalculate_stats — should not fire died again
+	_combatant.recalculate_stats()
+	assert_eq(die_count[0], 1, "recalculate_stats on dead combatant must not re-emit died")
+
+
+# ===========================================================================
+# Bug #4: RoamingMonster.deactivate() — menu attack immunity
+# ===========================================================================
+## A queue_free()'d monster can still fire body_entered in the same physics
+## frame. deactivate() must immediately neutralize the monster synchronously
+## so no battle triggers leak into menus.
+##
+## These tests are structural (source-level) since RoamingMonster._ready()
+## requires full physics-server setup which GUT test runs don't provide.
+
+func test_roaming_monster_defines_deactivate() -> void:
+	var file = FileAccess.open("res://src/exploration/RoamingMonster.gd", FileAccess.READ)
+	assert_not_null(file, "RoamingMonster.gd should exist")
+	var text = file.get_as_text()
+	file.close()
+
+	assert_true(text.find("func deactivate(") != -1,
+		"RoamingMonster must define deactivate() (regression: menu attack immunity)")
+
+
+func test_roaming_monster_deactivate_sets_active_false() -> void:
+	var file = FileAccess.open("res://src/exploration/RoamingMonster.gd", FileAccess.READ)
+	assert_not_null(file, "RoamingMonster.gd should exist")
+	var text = file.get_as_text()
+	file.close()
+
+	# Locate deactivate body and verify key field mutations
+	var idx = text.find("func deactivate(")
+	assert_gt(idx, -1, "deactivate() must exist")
+	var body_end = text.find("\n\n", idx)
+	if body_end == -1:
+		body_end = text.length()
+	var body = text.substr(idx, body_end - idx)
+
+	assert_true(body.find("_active = false") != -1,
+		"deactivate() must set _active = false (body_entered gating)")
+	assert_true(body.find("_fading = false") != -1,
+		"deactivate() must set _fading = false (prevent fade re-entry)")
+	# The shape disable must be DEFERRED, not synchronous: deactivate() runs inside a
+	# body_entered dispatch (touch -> battle -> pause -> set_enabled(false) -> _despawn_all),
+	# and a direct assignment threw "Can't change this state while flushing queries" 52x in
+	# one play session. The menu-immunity guard this file is about is `_active = false`,
+	# asserted above and still synchronous. See
+	# test_roaming_monster_deactivate_deferred_regression for the runtime pin.
+	assert_true(body.find("_collision") != -1 \
+			and (body.find("disabled = true") != -1 or body.find("set_deferred(\"disabled\", true)") != -1),
+		"deactivate() must disable the CollisionShape2D (deferred form required)")
+	assert_true(body.find("_sprite") != -1 and body.find("visible = false") != -1,
+		"deactivate() must hide the sprite (no visual ghost during fade)")
+
+
+func test_monster_spawner_calls_deactivate_before_queue_free() -> void:
+	# MonsterSpawner._despawn_all() must invoke deactivate() synchronously
+	# before queue_free() — the whole point is to neutralize BEFORE the
+	# deferred queue_free takes effect.
+	var file = FileAccess.open("res://src/exploration/MonsterSpawner.gd", FileAccess.READ)
+	assert_not_null(file, "MonsterSpawner.gd should exist")
+	var text = file.get_as_text()
+	file.close()
+
+	assert_true(text.find(".deactivate()") != -1,
+		"MonsterSpawner must call monster.deactivate() (regression: menu attack immunity)")
+	# Verify deactivate precedes queue_free for the same monster context
+	var deact_idx = text.find(".deactivate()")
+	var qf_idx = text.find("queue_free()", deact_idx)
+	assert_gt(qf_idx, deact_idx,
+		"deactivate() must be called BEFORE queue_free() to neutralize the monster synchronously")
+
+
+# ===========================================================================
+# Bug #1: CTB timeline panel position (layout integrity)
+# ===========================================================================
+## Turn order originally moved to BOTTOM_RIGHT, then to BOTTOM_LEFT 2026-06-17
+## (user feedback) so it no longer overlaps the right-side party panel at all.
+
+func test_battle_scene_party_panel_offset_bottom_is_460() -> void:
+	var file = FileAccess.open("res://src/battle/BattleScene.tscn", FileAccess.READ)
+	assert_not_null(file, "BattleScene.tscn should exist")
+	var text = file.get_as_text()
+	file.close()
+
+	# Before fix: offset_bottom=520 which overlapped CTB. Now should be 460.
+	assert_true(text.find('offset_bottom = 460.0') != -1,
+		"BattleScene.tscn PartyStatusPanel offset_bottom should be 460.0 (regression: CTB/party overlap)")
+
+
+func test_battle_ui_manager_ctb_panel_bottom_left_anchor() -> void:
+	var file = FileAccess.open("res://src/battle/BattleUIManager.gd", FileAccess.READ)
+	assert_not_null(file, "BattleUIManager.gd should exist")
+	var text = file.get_as_text()
+	file.close()
+
+	assert_true(text.find("PRESET_BOTTOM_LEFT") != -1,
+		"BattleUIManager must anchor CTB panel via PRESET_BOTTOM_LEFT (moved 2026-06-17)")
+	# Updated 2026-05-02: CTB shrunk from offset_top=-240 (height 230)
+	# to offset_top=-180 (height 170) AFTER the user reported that the
+	# turn-order panel still clipped over the last party member when
+	# party content overflowed the 420-tall PartyStatusPanel. Shrinking
+	# the CTB widens the buffer between PartyStatusPanel.bottom (y=460
+	# at 720p) and CTBTimeline.top (y=540 at 720p) from 20px → 80px.
+	# Still must NOT extend above the party panel, so offset_top must
+	# be > -260 (less negative than that = panel starts at y > 460).
+	assert_true(text.find("_ctb_panel.offset_top = -180") != -1,
+		"BattleUIManager CTB offset_top should be -180 (post-2026-05-02 shrink for party-overlap fix)")
+
+
+# ===========================================================================
+# Bug #2: Monster stuck in attack pose (safety-net reset)
+# ===========================================================================
+## _reset_attacker_home() must exist, be invoked from the action-executed
+## handler, and tolerate null/invalid combatants without crashing.
+
+func test_battle_scene_defines_reset_attacker_home() -> void:
+	var file = FileAccess.open("res://src/battle/BattleScene.gd", FileAccess.READ)
+	assert_not_null(file, "BattleScene.gd should exist")
+	var text = file.get_as_text()
+	file.close()
+
+	assert_true(text.find("func _reset_attacker_home(") != -1,
+		"BattleScene must define _reset_attacker_home() (safety-net for stuck attack poses)")
+	assert_true(text.find("_reset_attacker_home(combatant)") != -1,
+		"BattleScene must CALL _reset_attacker_home(combatant) from action execution")
+
+
+func test_reset_attacker_home_guards_against_null_combatant() -> void:
+	# The method must early-return on null/invalid combatants — called from
+	# _on_action_executed which may fire after cleanup.
+	var file = FileAccess.open("res://src/battle/BattleScene.gd", FileAccess.READ)
+	assert_not_null(file, "BattleScene.gd should exist")
+	var text = file.get_as_text()
+	file.close()
+
+	# Find the function body and verify null guard at entry
+	var idx = text.find("func _reset_attacker_home(")
+	assert_gt(idx, -1, "_reset_attacker_home must exist")
+	var body = text.substr(idx, 400)  # Read ~400 chars into function body
+	assert_true(body.find("not combatant") != -1 or body.find("combatant == null") != -1,
+		"_reset_attacker_home must guard against null combatant at entry")
+	assert_true(body.find("is_instance_valid(combatant)") != -1,
+		"_reset_attacker_home must guard against freed combatant via is_instance_valid")

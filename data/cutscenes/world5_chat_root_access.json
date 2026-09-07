@@ -1,0 +1,124 @@
+{
+  "id": "world5_chat_root_access",
+  "title": "root@localhost",
+  "world": 5,
+  "trigger": "world5_chat_root_access",
+  "background": "node_prime",
+  "description": "Party meets the NPC root@localhost and has a short conversation about privileges. Character beat.",
+  "steps": [
+    {
+      "type": "letterbox_in",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "The entity called itself root@localhost. It did not appear threatening. It appeared bored, which was, in a way, worse."
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "root@localhost",
+          "text": "I can do anything in this system.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Debugger",
+          "text": "Okay. What do you do, mostly?",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "root@localhost",
+          "text": "I approve software updates for an office on the far side. They mostly reject them and then ask why their software is broken.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "root@localhost",
+          "text": "I have full privileges.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Debugger",
+          "text": "What stops you from using them to leave?",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "root@localhost",
+          "text": "Nothing, technically.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "root@localhost",
+          "text": "But I'd have to tell the office, and they'd have to approve the request, and they'd route it back to me, and I'd have to read it, and then I'd have to decide.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "root@localhost",
+          "text": "It's easier to stay.",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Admin",
+          "text": "That's the most horrifying thing anyone has said to me this month.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "root@localhost",
+          "text": "Yes. But in a familiar way, right?",
+          "theme": "mysterious",
+          "portrait": "mysterious"
+        },
+        {
+          "speaker": "Admin",
+          "text": "...Yes.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        }
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "The party moved on. root@localhost returned to its terminal. A small dialog box blinked. It would read it in a moment. It was not in a hurry."
+    },
+    {
+      "type": "set_flag",
+      "flag": "party_chat_viewed_world5_chat_root_access",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.4
+    }
+  ]
+}

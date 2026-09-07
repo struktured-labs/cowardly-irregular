@@ -1,0 +1,61 @@
+{
+  "id": "world3_pc_calibration",
+  "title": "Calibration",
+  "world": 3,
+  "trigger": "world3_pc_calibration",
+  "background": "prologue_forest",
+  "description": "First steps in the steampunk world. Everything is on time.",
+  "steps": [
+    {
+      "type": "letterbox_in",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "The air ticks. Somewhere beneath the street, something enormous keeps the beat."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mage",
+          "text": "The mana here is under PRESSURE. Someone plumbed it.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "Four clocks on this street. All agreeing. That's not trust, that's enforcement.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "The train arrived as we did. Exactly as we did.",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Cleric",
+          "text": "Is it blasphemy to say the schedule feels like a god here?",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Bard",
+          "text": "It has a tempo. Gods usually do. This one's in 4/4 and I don't fully approve.",
+          "theme": "bard",
+          "portrait": "bard"
+        }
+      ]
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.3
+    }
+  ]
+}

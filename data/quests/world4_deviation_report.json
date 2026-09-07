@@ -1,0 +1,138 @@
+{
+  "id": "world4_deviation_report",
+  "title": "The Deviation Report",
+  "world": 4,
+  "chain": "traveling_merchant",
+  "chain_step": 4,
+  "prereq_flag": "world3_orrery_complete",
+  "giver": {
+    "npc_id": "madame_orrery_w4",
+    "display_name": "Madame Orrery",
+    "location": {
+      "map_id": "rivet_row",
+      "near": "consultant_office"
+    },
+    "spawn_flag": ""
+  },
+  "description": "Orrery sits in a windowless office marked EXTERNAL CONSULTANT \u2014 APPROVED VENDOR #4429-C. She has been there three months. She is the only external consultant who has not been reassigned to internal training. She has been compiling something the Company doesn't know about, and it needs to reach the union rep before the monitors update.",
+  "playstyle_tags": [
+    "dialogue_heavy",
+    "chain",
+    "timed_flavor"
+  ],
+  "dialogue": {
+    "offer": [
+      {
+        "speaker": "Madame Orrery",
+        "text": "Close the door. Doors are the last technology in this building that still works for the occupant.",
+        "theme": "mysterious"
+      },
+      {
+        "speaker": "Madame Orrery",
+        "text": "Forty pages. 'Behavioral Deviation Analysis: Subjects Unknown Origin, Pattern Exceptional.' I wrote it in the Company's own report format so it wouldn't flag. It is not a Company report. It is everything I know about the one who builds the worlds, written in productivity language.",
+        "theme": "mysterious"
+      },
+      {
+        "speaker": "Madame Orrery",
+        "text": "It has to reach the union rep before the hour-end monitor refresh, or the transfer gets flagged and the report becomes a confession. You're faster than I am. You're faster than the schedule thinks you are \u2014 that's rather the report's thesis.",
+        "theme": "mysterious"
+      }
+    ],
+    "accept": [
+      {
+        "speaker": "Madame Orrery",
+        "text": "His break spot: Section C, near the cooling pipes. A construction oversight the monitors don't cover. He eats a sandwich there at the same time every day, which in this building constitutes a personality.",
+        "theme": "mysterious"
+      }
+    ],
+    "decline": [
+      {
+        "speaker": "Madame Orrery",
+        "text": "Then it waits in the drawer, and the drawer is not as private as either of us would like. Come back quickly or not at all \u2014 those are the honest options.",
+        "theme": "mysterious"
+      }
+    ],
+    "in_progress": [
+      {
+        "speaker": "Madame Orrery",
+        "text": "The monitors refresh on the hour. The corridor cameras sweep in sequence. Walk like you're expected somewhere. You are \u2014 just not by them.",
+        "theme": "mysterious"
+      }
+    ],
+    "ready_to_turn_in": [
+      {
+        "speaker": "Madame Orrery",
+        "text": "He has it. He read the summary. Tell me his face did the thing. The fold-and-quiet thing.",
+        "theme": "mysterious"
+      }
+    ],
+    "complete": [
+      {
+        "speaker": "Madame Orrery",
+        "text": "'Somewhere the monitors don't reach.' Good. That's the correct shelf for it.",
+        "theme": "mysterious"
+      },
+      {
+        "speaker": "Madame Orrery",
+        "text": "The Fool Card. Four marks now. One more world before it's complete.",
+        "theme": "mysterious"
+      },
+      {
+        "speaker": "Madame Orrery",
+        "text": "Find me in the next place I'm not supposed to be.",
+        "theme": "mysterious"
+      }
+    ],
+    "locked": [
+      {
+        "speaker": "Madame Orrery",
+        "text": "The report cites sources. One of them is a conversation you haven't had. Have it first.",
+        "theme": "mysterious"
+      }
+    ]
+  },
+  "objectives": [
+    {
+      "step": 1,
+      "description": "Take the report Orrery wrote in the Company's own language.",
+      "type": "talk",
+      "target_npc": "madame_orrery_w4",
+      "flag_on_complete": "quest_world4_deviation_report_accepted"
+    },
+    {
+      "step": 2,
+      "description": "Reach the union rep's uncovered break spot before the monitor refresh.",
+      "type": "talk",
+      "target_npc": "union_rep_w4",
+      "required_flag": "quest_world4_deviation_report_accepted",
+      "flag_on_complete": "quest_world4_deviation_report_delivered"
+    },
+    {
+      "step": 3,
+      "description": "Tell Orrery it's shelved where the monitors don't reach.",
+      "type": "talk",
+      "target_npc": "madame_orrery_w4",
+      "required_flag": "quest_world4_deviation_report_delivered"
+    }
+  ],
+  "rewards": {
+    "gold": 0,
+    "exp": 400,
+    "items": [],
+    "job_variants": {}
+  },
+  "cutscene_on_complete": "world4_orrery",
+  "flag_on_complete": "quest_world4_deviation_report_complete",
+  "unlocks_dialogue": [
+    {
+      "npc_id": "union_rep_w4",
+      "note": "Post-delivery: the union rep references the report in later main-quest dialogue ('This says the Director isn't a person. It says the Director is a... function. Something that has decided to be a person.')."
+    },
+    {
+      "npc_id": "madame_orrery_w5",
+      "note": "W5 chain step: a data packet in Node Prime taking an unreasonably indirect route, identifying itself as Orrery_v5."
+    }
+  ],
+  "cross_world_connection": "Chain A step 4 of 6. The world4_orrery cutscene (fired at turn-in) grants orrery_deviation_report + advances fool_card_marks to 4. With the cogsworth_calibration_key in inventory, the maintenance-tunnel shortcut trivializes the delivery route \u2014 the chain rewarding its own continuity.",
+  "_wiring_notes": "DEDUP RULE: grants (orrery_deviation_report) + marks=4 live in the world4_orrery cutscene; quest carries exp only. The cutscene contains the atmospheric 300s HUD timer (start_timer/stop_timer \u2014 my earlier spec: never a fail state, cinematic tension only) and plays as the turn-in cinematic per the fine_print convention; its legacy internal flags (world4_orrery_timed_delivery etc.) are superseded by this quest's flags. The doc's 'timed delivery, ~2 real minutes, cogsworth key opens a tunnel shortcut' pressure: v1 keeps the timer INSIDE the cinematic (no overworld fail state \u2014 consistent with the shipped timer semantics); if overworld later wants a real timed traversal, it's a step-2 wrapper (timer between accept and delivery interact) \u2014 design says generous-enough-to-never-fail regardless. Scriptweaver variant (design doc, wire as dialogue variant on step 2): a Lab-Technician-adjacent lead can identify three deliberate falsifications Orrery softened, and correct them pre-delivery \u2014 the union rep's reaction is significantly more disturbed; flag quest_world4_deviation_report_corrections_made if wired. Ordering fix 2026-07-09 (cowir-main): prereq_flag world3_orrery_complete enforces the sequential chain \u2014 steps 2-5 were orderless, letting a skip-ahead player hard-set marks out of order (early-armed finale / regressed counter)."
+}

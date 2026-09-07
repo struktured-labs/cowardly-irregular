@@ -57,6 +57,7 @@ func _process(delta: float) -> void:
 
 	if changed:
 		_rebuild_log_display()
+		_update_visibility()
 
 
 func add_log(message: String) -> void:
@@ -72,6 +73,7 @@ func add_log(message: String) -> void:
 		_logs.pop_front()
 
 	_rebuild_log_display()
+	_update_visibility()
 
 
 func _rebuild_log_display() -> void:
@@ -121,11 +123,13 @@ func set_enabled(enabled: bool) -> void:
 
 
 func _update_visibility() -> void:
-	"""Update visibility based on enabled state"""
+	"""Visible only when enabled AND holding lines — an empty gray panel was
+	painting itself over every player's screen (caught by the web smoke)."""
+	var show := _enabled and _logs.size() > 0
 	if _background:
-		_background.visible = _enabled
+		_background.visible = show
 	if _log_container:
-		_log_container.visible = _enabled
+		_log_container.visible = show
 
 
 ## Helper to log from anywhere (call as DebugLogOverlay.log())

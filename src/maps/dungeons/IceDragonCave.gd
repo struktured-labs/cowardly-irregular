@@ -9,6 +9,7 @@ func _init() -> void:
 	cave_id = "ice_dragon_cave"
 	boss_id = "ice_dragon"
 	boss_flag_key = "ice_dragon_defeated"
+	boss_cutscene_id = "world1_glacius_intro"
 	total_floors = 3
 	overworld_exit_spawn = "ice_cave_entrance"
 
@@ -17,18 +18,18 @@ func _init() -> void:
 			"MMMMMMMMMMMMMMMMMMMM",
 			"M..................M",
 			"M..MMMM....MMMM....M",
-			"M..M..........M....M",
+			"M..M..........M..T.M",
 			"M..M....T.....M....M",
 			"M..MMMMMMMMMMMM....M",
 			"M..................M",
 			"M.....MM...MM......M",
 			"M.....M.....M......M",
 			"M.....M..U..M......M",
-			"M.....MM...MM......M",
+			"M.T...MM...MM......M",
 			"M..................M",
 			"M..................M",
-			"M.......DDDD.......M",
-			"M..................M",
+			"M.......DDDD....MMMM",
+			"M...............HT.M",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
 		2: [
@@ -37,11 +38,11 @@ func _init() -> void:
 			"M.MMMMM......MMMMM.M",
 			"M.M..........T.M...M",
 			"M.M............M...M",
-			"M.MMMMM......MMMMM.M",
+			"M.MMMMM...T..MMMMM.M",
 			"M..................M",
 			"M..................M",
 			"M......MM.MM.......M",
-			"M.......M..M.......M",
+			"M.......M..M..T....M",
 			"M.......M.UM.......M",
 			"M......MM.MM.......M",
 			"M..................M",
@@ -49,21 +50,23 @@ func _init() -> void:
 			"M.........D........M",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
+		# Shared "boss at far corner + winding path" layout across all 4
+		# W1 dragon caves — struktured msg 2788, class-level fix.
 		3: [
 			"MMMMMMMMMMMMMMMMMMMM",
+			"M...............B..M",
 			"M..................M",
+			"M..MMMMMMM.MMMMMMM.M",
+			"M..M.T...........M.M",
+			"M..M.............M.M",
+			"M..M.......T.....M.M",
+			"M..M.............M.M",
+			"M..MMMMMMM.MMMMMMM.M",
 			"M..................M",
-			"M..................M",
-			"M....MMMM..MMMM....M",
-			"M....M..........M..M",
-			"M....M..........M..M",
-			"M.........B........M",
-			"M....M..........M..M",
-			"M....M..........M..M",
-			"M....MMMM..MMMM....M",
-			"M..................M",
-			"M..................M",
-			"M..................M",
+			"M....MMMMM.MMMMM...M",
+			"M....M.........M...M",
+			"M....M....T....M...M",
+			"M..T.M.........M...M",
 			"M.........D........M",
 			"MMMMMMMMMMMMMMMMMMMM",
 		],
@@ -80,6 +83,13 @@ func _init() -> void:
 		2: ["ice_wolf", "skeleton", "bat"],
 		3: [],
 	}
+
+
+## Each W1 dragon cave has its own SoundManager routing arm; without
+## this override they inherited "cave" and all four played the generic
+## medieval dungeon bed.
+func _get_music_area_id() -> String:
+	return "ice_dragon_cave"
 
 
 func _get_boss_intro_dialogue() -> Array:
@@ -100,3 +110,8 @@ func _get_boss_intro_dialogue() -> Array:
 		"Glacius: *exhales a cloud of absolute zero*",
 		"Glacius: 'Let's see how your autobattle handles THIS.'",
 	]
+
+
+## blue under the frost
+func _get_dungeon_ambient() -> Color:
+	return Color(0.28, 0.36, 0.48)

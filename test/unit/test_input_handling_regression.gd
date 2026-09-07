@@ -146,8 +146,24 @@ func test_scene_transition_has_signal_cleanup() -> void:
 
 	assert_true(content.contains("func _exit_tree()"),
 		"SceneTransition should have _exit_tree for cleanup")
-	assert_true(content.contains("EncounterSystem.encounter_triggered.disconnect"),
-		"SceneTransition should disconnect EncounterSystem signal")
+	# Derived, not a hand-list. This used to name EncounterSystem.encounter_triggered, but
+	# that connection was REMOVED — its handler took 1 arg on a 2-arg signal, so it never ran
+	# and only logged an error per encounter. Naming a signal here pins a connection that may
+	# legitimately go away; requiring every connect to have a disconnect does not.
+	var connect_re := RegEx.new()
+	connect_re.compile("([A-Za-z_][A-Za-z0-9_.]*)\\.connect\\(")
+	var connected: Array = []
+	var unmatched: Array = []
+	for m in connect_re.search_all(content):
+		var sig_path: String = m.get_string(1)
+		if not connected.has(sig_path):
+			connected.append(sig_path)
+		if not content.contains("%s.disconnect(" % sig_path) and not unmatched.has(sig_path):
+			unmatched.append(sig_path)
+	assert_gt(connected.size(), 0,
+		"CONTROL: the sweep must find at least one connect in SceneTransition, else it proves nothing")
+	assert_eq(unmatched, [],
+		"every signal SceneTransition connects must be disconnected in _exit_tree, or it leaks: %s" % str(unmatched))
 	assert_true(content.contains("BattleManager.battle_ended.disconnect"),
 		"SceneTransition should disconnect BattleManager signal")
 

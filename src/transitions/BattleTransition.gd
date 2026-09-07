@@ -116,13 +116,33 @@ func _play_encounter_flash() -> void:
 
 
 ## Play battle transition based on enemy type
+## 2026-09-06 spider wedge: a tween whose targets get freed mid-flight (a concurrent
+## _cleanup_effects from a second transition / fade_out) NEVER emits finished — the awaiting
+## coroutine hung forever and leaked GameLoop._battle_transition_starting, so every later
+## encounter printed BLOCKED while the touched monster still faded (19 blocks in the live log).
+## Await liveness with a wall-clock ceiling instead — no state can strand this layer.
+func _await_tween_safe(tween: Tween, max_wall_ms: int = 6000) -> void:
+	var deadline := Time.get_ticks_msec() + max_wall_ms
+	while is_instance_valid(tween) and tween.is_running() and Time.get_ticks_msec() < deadline:
+		await get_tree().process_frame
+
+
 func play_battle_transition(enemy_types: Array) -> void:
 	if _is_transitioning:
-		return
+		push_warning("[TRANSITION] Previous transition still active — force-resetting")
+		_cleanup_effects()
+		_is_transitioning = false
 
 	_is_transitioning = true
 	_viewport_size = get_viewport().get_visible_rect().size
 	_current_enemy_types = enemy_types  # Store for sound generation
+
+	# Resolve transition type up-front so the sound can fire in sync with the flash.
+	var transition_type = _get_transition_for_enemies(enemy_types)
+	var type_name = TransitionType.keys()[transition_type]
+
+	# Fire encounter sound before screen capture so audio lands at the flash, not after.
+	_play_encounter_sound(transition_type)
 
 	# Capture screen before any effects are drawn
 	await _capture_screen()
@@ -136,15 +156,8 @@ func play_battle_transition(enemy_types: Array) -> void:
 	# Keep overlay visible for effects
 	_overlay.modulate.a = 0.0
 
-	# Determine transition type from first enemy
-	var transition_type = _get_transition_for_enemies(enemy_types)
-	var type_name = TransitionType.keys()[transition_type]
-
 	print("[TRANSITION] Playing %s transition for enemies: %s" % [type_name, enemy_types])
 	transition_started.emit(type_name)
-
-	# Play monster-specific encounter sound
-	_play_encounter_sound(transition_type)
 
 	# Execute the transition — fragments/slices sit on top of the battle scene
 	# and animate away, revealing it naturally underneath
@@ -226,7 +239,7 @@ void fragment() {
 					_iris_shader.set_shader_parameter("radius", r),
 			0.0, 1.2, 0.35
 		).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
-		await tween.finished
+		await _await_tween_safe(tween)
 
 		if not is_instance_valid(self):
 			return
@@ -242,7 +255,7 @@ void fragment() {
 			for frag in _fragments:
 				if is_instance_valid(frag):
 					tween.tween_property(frag, "modulate:a", 0.0, 0.08)
-			await tween.finished
+			await _await_tween_safe(tween)
 
 	if not is_instance_valid(self):
 		return
@@ -252,6 +265,107 @@ void fragment() {
 	_is_transitioning = false
 	print("[TRANSITION] Overlay visible: %s, layer: %s" % [_overlay.visible, layer])
 	transition_finished.emit()
+
+
+func play_exit_transition(victory: bool = true) -> void:
+	"""Play transition when leaving battle — iris-close for victory, fade for defeat"""
+	if _is_transitioning:
+		_cleanup_effects()
+	_is_transitioning = true
+	_viewport_size = get_viewport().get_visible_rect().size
+
+	if victory:
+		await _play_victory_exit()
+	else:
+		await _play_defeat_exit()
+
+	if not is_instance_valid(self):
+		return
+	_is_transitioning = false
+
+
+func _play_victory_exit() -> void:
+	"""Iris-close centered on party side of screen, with gold flash"""
+	# Brief gold flash for victory feel
+	_overlay.color = Color(1.0, 0.9, 0.3, 0.0)
+	_overlay.modulate.a = 1.0
+	var flash_tween = create_tween()
+	flash_tween.tween_property(_overlay, "color:a", 0.4, 0.1)
+	flash_tween.tween_property(_overlay, "color:a", 0.0, 0.2)
+	await _await_tween_safe(flash_tween)
+
+	if not is_instance_valid(self):
+		return
+
+	# Iris-close: black circle shrinks from full to zero
+	var shader_code = """
+shader_type canvas_item;
+uniform float radius : hint_range(0.0, 1.5) = 1.2;
+uniform vec2 center = vec2(0.65, 0.5);
+
+void fragment() {
+    vec2 uv = UV - center;
+    uv.x *= SCREEN_PIXEL_SIZE.x / SCREEN_PIXEL_SIZE.y;
+    float dist = length(uv);
+    float edge = smoothstep(radius - 0.02, radius + 0.02, dist);
+    COLOR = vec4(0.0, 0.0, 0.0, edge);
+}
+"""
+	var shader = Shader.new()
+	shader.code = shader_code
+	_iris_shader = ShaderMaterial.new()
+	_iris_shader.shader = shader
+	_iris_shader.set_shader_parameter("radius", 1.3)
+	_iris_shader.set_shader_parameter("center", Vector2(0.65, 0.5))  # Party side
+
+	_overlay.material = _iris_shader
+	_overlay.color = Color.BLACK
+	_overlay.modulate.a = 1.0
+
+	# Shrink iris from 1.3 to 0 over 0.5s
+	var tween = create_tween()
+	tween.tween_method(
+		func(r: float) -> void:
+			if is_instance_valid(_iris_shader):
+				_iris_shader.set_shader_parameter("radius", r),
+		1.3, 0.0, 0.5
+	).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	await _await_tween_safe(tween)
+
+	if not is_instance_valid(self):
+		return
+
+	# Screen is now fully black — hold briefly
+	_overlay.material = null
+	_overlay.color = Color.BLACK
+	_overlay.modulate.a = 1.0
+	await get_tree().create_timer(0.2).timeout
+
+
+func _play_defeat_exit() -> void:
+	"""Simple fade to black for defeat"""
+	_overlay.color = Color(0.0, 0.0, 0.0, 0.0)
+	_overlay.modulate.a = 1.0
+	var tween = create_tween()
+	tween.tween_property(_overlay, "color:a", 1.0, 0.5)
+	await _await_tween_safe(tween)
+
+	if not is_instance_valid(self):
+		return
+	await get_tree().create_timer(0.3).timeout
+
+
+func reveal_exploration() -> void:
+	"""Fade from black to reveal the exploration scene after battle exit"""
+	if not _overlay:
+		return
+	_overlay.color = Color.BLACK
+	_overlay.modulate.a = 1.0
+	var tween = create_tween()
+	tween.tween_property(_overlay, "modulate:a", 0.0, 0.4).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	await _await_tween_safe(tween)
+	if is_instance_valid(self):
+		_cleanup_effects()
 
 
 func _get_transition_for_enemies(enemy_types: Array) -> TransitionType:
@@ -311,6 +425,9 @@ func _play_encounter_sound(transition_type: TransitionType) -> void:
 	if sound:
 		var player = AudioStreamPlayer.new()
 		player.stream = sound
+		# SFX bus, or the volume slider cannot reach this — it played at a hardcoded level
+		# even with SFX set to 0 (cowir-sfx, 2026-07-28).
+		player.bus = "SFX" if AudioServer.get_bus_index("SFX") != -1 else "Master"
 		player.volume_db = -15.0  # Reduced from -6.0 to be less jarring
 		add_child(player)
 		player.play()
@@ -358,6 +475,19 @@ func _generate_monster_sound(profile: Dictionary, transition_type: TransitionTyp
 	var base_freq = profile.get("base_freq", 400)
 	var mod_type = profile.get("mod", "growl")
 	var pitch = profile.get("pitch", 1.0)
+
+	# Tick 305: validate mod_type ONCE before the sample loop. The
+	# match below has 11 arms but no `_:` default — an unknown
+	# mod_type left `sample = 0.0` for every iteration, producing
+	# silent audio that played back inaudibly. Symptom looked like
+	# the SFX channel was muted. Now: warn + fall back to "growl"
+	# (the same default the .get() above uses).
+	const _KNOWN_MOD_TYPES := ["gloop", "screech", "growl", "rattle",
+		"wail", "skitter", "howl", "hiss", "roar", "squelch",
+		"cackle", "rumble", "doom"]
+	if not (mod_type in _KNOWN_MOD_TYPES):
+		push_warning("[BattleTransition] _generate_monster_sound: unknown mod_type '%s' — falling back to 'growl' (typo? new mod_type added to monster profile without match arm?)" % mod_type)
+		mod_type = "growl"
 
 	for i in range(samples):
 		var t = float(i) / sample_rate
@@ -536,7 +666,7 @@ func _play_shatter() -> void:
 		tween.tween_property(frag, "rotation", rot_amount, phase_duration).set_delay(delay).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
 		tween.tween_property(frag, "modulate:a", 0.0, phase_duration * 0.6).set_delay(delay + phase_duration * 0.4)
 
-	await tween.finished
+	await _await_tween_safe(tween)
 
 	# Brief white impact flash — overlay returns to transparent so battle shows through
 	_overlay.color = Color.WHITE
@@ -597,7 +727,7 @@ func _play_spiral() -> void:
 		tween.tween_property(sparkle, "position", end_pos, inward_duration).set_delay(delay).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_EXPO)
 		tween.tween_property(sparkle, "modulate:a", 0.0, inward_duration * 0.4).set_delay(delay + inward_duration * 0.6)
 
-	await tween.finished
+	await _await_tween_safe(tween)
 
 	# Implosion flash — overlay returns to transparent so battle shows through
 	_overlay.color = Color(0.6, 0.4, 0.9)
@@ -625,7 +755,7 @@ func _play_zoom_burst() -> void:
 	tween.tween_property(_screen_rect, "scale", Vector2(3.0, 3.0), phase_duration).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_EXPO)
 	tween.tween_property(_screen_rect, "modulate", Color(2.0, 2.0, 2.0, 0.0), phase_duration).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_EXPO)
 
-	await tween.finished
+	await _await_tween_safe(tween)
 
 	# Bright white flash, then back to transparent so battle shows through
 	_overlay.color = Color.WHITE
@@ -716,7 +846,7 @@ func _play_drip() -> void:
 		tween.tween_property(col_rect, "position:x", wobble_x, slide_duration * 0.3).set_delay(delay).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_SINE)
 		tween.tween_property(col_rect, "position:y", _viewport_size.y, slide_duration).set_delay(delay).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_CUBIC)
 
-	await tween.finished
+	await _await_tween_safe(tween)
 	# Columns have dripped off screen — battle is fully visible underneath
 	_overlay.modulate.a = 0.0
 
@@ -759,7 +889,7 @@ func _play_curtain() -> void:
 	tween.tween_property(left_curtain, "position:x", 0, curtain_duration).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 	tween.tween_property(right_curtain, "position:x", _viewport_size.x / 2, curtain_duration).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
 
-	await tween.finished
+	await _await_tween_safe(tween)
 	# Curtains now cover the screen — use overlay black so fade_out iris-opens to reveal battle
 	_overlay.color = Color.BLACK
 	_overlay.modulate.a = 1.0
@@ -854,7 +984,7 @@ func _play_slice() -> void:
 
 		tween.tween_property(slice_rect, "position:x", target_x, phase_duration).set_delay(delay).set_ease(Tween.EASE_IN_OUT).set_trans(Tween.TRANS_BACK)
 
-	await tween.finished
+	await _await_tween_safe(tween)
 	# All slices have left the screen — battle is fully visible underneath
 	_overlay.modulate.a = 0.0
 
@@ -896,7 +1026,7 @@ func _play_radial_wipe() -> void:
 		var delay = float(i) / _fragments.size() * wipe_duration
 		tween.parallel().tween_property(fragment, "modulate:a", 1.0, 0.05).set_delay(delay)
 
-	await tween.finished
+	await _await_tween_safe(tween)
 	# All segments cover the screen — set black overlay so fade_out iris-opens to reveal battle
 	_overlay.color = Color.BLACK
 	_overlay.modulate.a = 1.0
@@ -979,3 +1109,4 @@ func _cleanup_effects() -> void:
 	_screen_texture = null
 	_iris_shader = null
 	_effect_container.modulate = Color.WHITE
+	_is_transitioning = false  # Safety reset — prevent stuck transitions

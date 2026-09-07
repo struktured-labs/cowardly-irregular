@@ -1,0 +1,130 @@
+{
+  "id": "world3_chat_teatime_brasston",
+  "title": "The 4:07 Event",
+  "world": 3,
+  "trigger": "world3_chat_teatime_brasston",
+  "background": "steampunk_workshop",
+  "description": "Party watches Brasston's synchronized teatime. Character beat, no plot advance.",
+  "steps": [
+    {
+      "type": "letterbox_in",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "At exactly 4:07 pm Brasston Mean Time, every citizen of Brasston put down what they were holding, picked up a teacup from the nearest designated shelf, and took a single synchronized sip."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Saboteur",
+          "text": "Did they all just...",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Alchemist",
+          "text": "Drink tea simultaneously. Yes.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Saboteur",
+          "text": "At the same time. Across the entire town.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Alchemist",
+          "text": "The Schedule is very thorough. Page 144 of the civic appendix, I'd assume.",
+          "theme": "mage",
+          "portrait": "mage"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Steampriest",
+          "text": "Some of them don't even like tea.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Steamknight",
+          "text": "How can you tell?",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Steampriest",
+          "text": "That one over there. Her face, during the sip. Exactly the face my mother made when the parish handed out that herbal mint that tasted like a pond.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        },
+        {
+          "speaker": "Steampriest",
+          "text": "She's done this every day for decades. She still makes that face.",
+          "theme": "cleric",
+          "portrait": "cleric"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Busker",
+          "text": "I could write a song about that.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Alchemist",
+          "text": "Please don't.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Busker",
+          "text": "Three stanzas. One of them a pond metaphor.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Alchemist",
+          "text": "Please really don't.",
+          "theme": "mage",
+          "portrait": "mage"
+        }
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "The clock tower struck 4:08. Every citizen returned their cup to the shelf, picked up what they had been holding, and resumed the work of the day as if nothing had happened. Because, in the Schedule, nothing had."
+    },
+    {
+      "type": "set_flag",
+      "flag": "party_chat_viewed_world3_chat_teatime_brasston",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.4
+    }
+  ]
+}

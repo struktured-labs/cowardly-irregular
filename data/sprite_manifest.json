@@ -1,175 +1,33 @@
 {
   "_comment": "Hybrid sprite manifest - maps IDs to external sprite sheet paths. HybridSpriteLoader reads from 'sheets' key.",
   "sheets": {
-    "fighter": {
-      "path": "res://assets/sprites/jobs/fighter",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 8,
-      "animations": [
-        "idle",
-        "walk",
-        "attack",
-        "hit",
-        "dead",
-        "cast",
-        "defend",
-        "item",
-        "victory",
-        "advance",
-        "defer",
-        "power_strike",
-        "cleave",
-        "provoke"
-      ],
-      "extra_animations": {
-        "slash": {
-          "path": "res://assets/sprites/jobs/fighter/slash.png",
-          "frame_width": 128,
-          "frame_height": 128,
-          "frame_count": 3,
-          "fps": 8,
-          "tier": "T2_artist_draft",
-          "notes": "Body-only slash animation, no weapon. Compose with weapon_sheets/iron_sword/slash for full attack."
-        }
-      }
-    },
-    "mage": {
-      "path": "res://assets/sprites/jobs/mage",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 10,
-      "animations": [
-        "idle",
-        "walk",
-        "attack",
-        "hit",
-        "dead",
-        "cast",
-        "defend",
-        "item",
-        "victory",
-        "advance",
-        "defer",
-        "cast_fire",
-        "cast_ice",
-        "cast_lightning",
-        "cast_fira"
-      ]
-    },
-    "cleric": {
-      "path": "res://assets/sprites/jobs/cleric_artist",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 4,
-      "tier": "T2",
-      "source": "artist Aseprite design (Cleric Main design.aseprite)",
-      "animations": [
-        "idle",
-        "walk",
-        "attack",
-        "hit",
-        "dead",
-        "cast",
-        "defend",
-        "item",
-        "victory"
-      ],
-      "_previous_sdxl": {
-        "path": "res://assets/sprites/jobs/cleric_sdxl",
-        "frame_width": 256,
-        "frame_height": 256,
-        "fps": 8,
-        "tier": "T1",
-        "generator": "SDXL + fighter_ci_pixel LoRA + IP-Adapter (manual downscale)",
-        "animations": [
-          "idle",
-          "walk",
-          "attack",
-          "hit",
-          "dead",
-          "cast",
-          "defend",
-          "item",
-          "victory"
-        ],
-        "_fallback_path": "res://assets/sprites/jobs/cleric",
-        "_fallback_note": "Procedural cleric with extended anims (advance, defer, heal, raise, buff) still in cleric/"
-      }
-    },
-    "rogue": {
-      "path": "res://assets/sprites/jobs/rogue",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 8,
-      "tier": "T0",
-      "_design_source": {
-        "aseprite": "assets/sprites/jobs/aseprite/Rogue Main design.aseprite",
-        "tier": "T1",
-        "generator": "Procedural Lua/Aseprite (pixel-by-pixel, palette from Cleric design)",
-        "layers": [
-          "Shadow",
-          "Cloak_Back",
-          "Leg_R",
-          "Boot_R",
-          "Leg_L",
-          "Boot_L",
-          "Body",
-          "Belt_Pouches",
-          "Arm_R",
-          "Cloak_Front",
-          "Arm_L",
-          "Scarf",
-          "Head",
-          "Hood",
-          "Eyes"
-        ],
-        "palette_basis": "Cleric Main design.aseprite palette, shifted to dark navy/charcoal hood, dusty purple scarf, dark brown leather",
-        "notes": "Gender-ambiguous, deep hood with eyes in shadow, dusty purple scarf, torn asymmetric cloak, empty hands (weapons composited at runtime)"
-      },
-      "animations": [
-        "idle",
-        "walk",
-        "attack",
-        "hit",
-        "dead",
-        "cast",
-        "defend",
-        "item",
-        "victory",
-        "advance",
-        "defer",
-        "steal",
-        "backstab",
-        "mug",
-        "flee"
-      ]
-    },
     "bard": {
       "path": "res://assets/sprites/jobs/bard",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
       "animations": [
-        "idle",
-        "walk",
         "attack",
-        "hit",
+        "cast",
         "dead",
-        "advance",
-        "defer",
-        "battle_hymn",
-        "lullaby",
-        "discord",
-        "inspiring_melody"
+        "defend",
+        "hit",
+        "idle",
+        "item",
+        "victory",
+        "walk",
+        "weak"
       ],
-      "_note": "bard/ contains old 80x100 sprites for idle/walk/attack/hit/dead and new 256x256 for extended anims. Loader skips files it can't load."
+      "tier": "T2",
+      "source": "artist aseprite drop 2026-08-28 — Bard Base sprite.aseprite, 23 frames / 4 tags (Idle 0-3, Dead 4-8, Weak 9-13, ATK 14-22). Ingested BY TAG (tools/ingest_tagged_aseprite_drop.py). The artist SPLIT the downed state this drop: 'Dead' is now a true collapse to the ground, and 'Weak' is the upright-but-hurt pose that previously occupied the dead slot. Both labels are the artist's and are kept. ⚠️ weak.png is LOADED but NOT YET PLAYED — HybridSpriteLoader has no weak trigger and BattleScene only ever calls play(\"idle\"); a low-HP hook is an open engine ask to cowir-main. cast <- ATK 14-17 (wind-up), attack <- ATK 18-22 (swing). Remaining anims (walk/hit/defend/item/victory) still T1."
     },
     "bard_sdxl": {
       "path": "res://assets/sprites/jobs/bard_sdxl",
       "frame_width": 256,
       "frame_height": 256,
-      "fps": 8,
+      "fps": 10,
+      "tier": "T1",
+      "generator": "SDXL + jrpg_pixel_style LoRA + IP-Adapter + ControlNet",
       "animations": [
         "idle",
         "walk",
@@ -182,30 +40,107 @@
         "victory"
       ]
     },
-    "rogue_sdxl": {
-      "path": "res://assets/sprites/jobs/rogue_sdxl",
+    "bossbinder": {
+      "path": "res://assets/sprites/jobs/bossbinder",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
-      "tier": "T1",
-      "generator": "SDXL + jrpg_pixel_style LoRA (artist-trained) + IP-Adapter + ControlNet",
       "animations": [
-        "idle",
-        "walk",
+        "idle"
+      ],
+      "tier": "T1",
+      "_note": "AI-generated (gpt-image-1, artist fighter idle as style anchor). idle only — no walk/attack/cast yet, so BattleScene falls back per-animation. Flagged for artist review before any T2 promotion."
+    },
+    "cleric": {
+      "path": "res://assets/sprites/jobs/cleric",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": [
         "attack",
-        "hit",
-        "dead",
         "cast",
+        "dead",
         "defend",
+        "hit",
+        "idle",
         "item",
-        "victory"
-      ]
+        "victory",
+        "walk",
+        "weak"
+      ],
+      "tier": "T2",
+      "generator": "MIXED — contains ARTIST animations (attack, cast, idle, walk) alongside v3 LoRA fills for the rest (15 PNGs total). Tier corrected 2026-07-29: was T1 with a bare LoRA generator string, which described the directory before the artist animations landed and was never updated. Provenance verified via git lineage (first decisive ancestor per file), not via this manifest — tier and generator agreed with each other while both were wrong. T1 here meant 'safe to regenerate', which would have destroyed the artist animations named above. T2, not T3: T3 is struktured's call.",
+      "source": "artist aseprite drop 2026-09-03 — Cleric Main design.aseprite, 28 frames / 4 tags (Idle 0-6, Weak 7-10, Dead 11-18, Cast 19-27). Ingested BY TAG, 2x nearest-neighbor to 256px. cast and attack both take Cast, matching the pre-existing byte-identical sheets. Backup written for dead.png only — the prior source carried NO tags, so it was never artist-authored. Completes the artist's Weak/Dead split across all five starters (bard 08-28, mage 08-30, fighter 09-02, rogue+cleric 09-03). 🔴 NEITHER weak.png NOR dead.png RENDERS TODAY: BattleScene has no low-HP trigger AND nothing ever enters BattleAnimator's AnimState.DEAD — it is declared and name-mapped but never set, and _on_combatant_died only prints a line. Both are loaded and inert pending one engine change."
+    },
+    "fighter": {
+      "path": "res://assets/sprites/jobs/fighter",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": [
+        "attack",
+        "cast",
+        "dash",
+        "dead",
+        "defend",
+        "hit",
+        "idle",
+        "item",
+        "lunge",
+        "slash",
+        "victory",
+        "walk",
+        "weak"
+      ],
+      "tier": "T2",
+      "generator": "ARTIST work. Tier corrected 2026-07-29: this entry said T1 with 'gen_full_sweep.py (v2 jrpg_pixel_style LoRA)', which described a PREVIOUS state of the directory. 68b049d0 restored artist sprites and 4cab90d0 replaced idle+attack with the artist's own drive-archive renders; the generator string was never updated. Verified 2026-07-29: 7 of 9 PNGs are byte-identical to the v0.15.0 artist baseline, and idle/attack currently hold 4cab90d0 content ('artist's pre-rendered 128x128 sheets, 2x NN'). T2 to match its siblings bard and rogue_artist; NOT promoted to T3, which means artist-approved and is struktured's call, not mine.",
+      "source": "artist aseprite drop 2026-09-02 — Main Fighter animations.aseprite, 21 frames / 5 tags (IDLE 0-3, Weak 4-7, Dead 8-12, Dash 13-16, ATK 17-20; the previous file was 6 frames / 3 tags). Ingested BY TAG via tools/ingest_tagged_aseprite_drop.py, 2x nearest-neighbor to 256px. attack and slash both take ATK, matching the pre-existing sheets which were byte-identical. Third job to get the artist's Weak/Dead split after bard and mage. ⚠️ weak.png is LOADED but NOT YET PLAYED — BattleScene only calls play(\"idle\") and has no low-HP trigger; the hook is an open engine ask to cowir-main, tracked alongside DANGER_HP_THRESHOLD. Backup written for dead.png ONLY: it was a non-artist v3 LoRA fill (68b049d0) and the source carried no Dead tag until this drop. idle/dash/attack/slash got NO .pre_artist backup — those were already artist pixels, so that filename would misfile them; git history holds the prior versions."
+    },
+    "guardian": {
+      "path": "res://assets/sprites/jobs/guardian",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": [
+        "attack",
+        "cast",
+        "dead",
+        "defend",
+        "hit",
+        "idle",
+        "item",
+        "victory",
+        "walk"
+      ],
+      "tier": "T1",
+      "generator": "gen_full_sweep.py (v2 jrpg_pixel_style LoRA)"
+    },
+    "mage": {
+      "path": "res://assets/sprites/jobs/mage",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": [
+        "attack",
+        "cast",
+        "dead",
+        "defend",
+        "hit",
+        "idle",
+        "item",
+        "victory",
+        "walk",
+        "weak"
+      ],
+      "tier": "T2",
+      "generator": "MIXED — contains ARTIST animations (attack, cast, idle) alongside v3 LoRA fills for the rest (16 PNGs total). Tier corrected 2026-07-29: was T1 with a bare LoRA generator string, which described the directory before the artist animations landed and was never updated. Provenance verified via git lineage (first decisive ancestor per file), not via this manifest — tier and generator agreed with each other while both were wrong. T1 here meant 'safe to regenerate', which would have destroyed the artist animations named above. T2, not T3: T3 is struktured's call.",
+      "source": "artist aseprite drop 2026-08-30 — Mage Main design.aseprite, 26 frames / 4 tags (IDLE 0-5, Weak 6-9, Atk 1 10-19, Dead 20-25). Ingested BY TAG (tools/ingest_tagged_aseprite_drop.py). The artist SPLIT the downed state this drop: 'Dead' is now a true collapse to the ground, and 'Weak' is the upright-but-hurt pose that previously occupied the dead slot. Both labels are the artist's and are kept. ⚠️ weak.png is LOADED but NOT YET PLAYED — HybridSpriteLoader has no weak trigger and BattleScene only ever calls play(\"idle\"); a low-HP hook is an open engine ask to cowir-main. cast and attack both take the whole Atk 1 range, matching the pre-existing sheets which were byte-identical. No .pre_artist backup written: the prior mage sheets were ALREADY artist art from this same source, so that filename would misfile artist pixels as pre-artist; git history holds them."
     },
     "mage_sdxl": {
       "path": "res://assets/sprites/jobs/mage_sdxl",
       "frame_width": 256,
       "frame_height": 256,
-      "fps": 8,
+      "fps": 10,
       "tier": "T1",
       "generator": "SDXL + jrpg_pixel_style LoRA (artist-trained) + ControlNet",
       "animations": [
@@ -219,6 +154,165 @@
         "item",
         "victory"
       ]
+    },
+    "necromancer": {
+      "path": "res://assets/sprites/jobs/necromancer",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": [
+        "idle"
+      ],
+      "tier": "T1",
+      "_note": "AI-generated (gpt-image-1, artist fighter idle as style anchor). idle only — no walk/attack/cast yet, so BattleScene falls back per-animation. Flagged for artist review before any T2 promotion."
+    },
+    "ninja": {
+      "path": "res://assets/sprites/jobs/ninja",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": [
+        "attack",
+        "cast",
+        "dead",
+        "defend",
+        "hit",
+        "idle",
+        "item",
+        "victory",
+        "walk"
+      ],
+      "tier": "T1",
+      "generator": "gen_full_sweep.py (v2 jrpg_pixel_style LoRA)"
+    },
+    "rogue": {
+      "path": "res://assets/sprites/jobs/rogue",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": [
+        "advance",
+        "attack",
+        "backstab",
+        "cast",
+        "dead",
+        "defend",
+        "defer",
+        "flee",
+        "hit",
+        "idle",
+        "item",
+        "mug",
+        "stab",
+        "steal",
+        "victory",
+        "walk",
+        "weak"
+      ],
+      "tier": "T2",
+      "generator": "MIXED — contains ARTIST animations (attack, idle, stab) alongside v3 LoRA fills for the rest (17 PNGs total). Tier corrected 2026-07-29: was T1 with a bare LoRA generator string, which described the directory before the artist animations landed and was never updated. Provenance verified via git lineage (first decisive ancestor per file), not via this manifest — tier and generator agreed with each other while both were wrong. T1 here meant 'safe to regenerate', which would have destroyed the artist animations named above. T2, not T3: T3 is struktured's call.",
+      "source": "artist aseprite drop 2026-09-03 — Rogue Main design.aseprite, 20 frames / 4 tags (Idle 0-3, Weak 4-7, Dead 8-12, ATK 13-19). Ingested BY TAG, 2x nearest-neighbor to 256px. attack and stab both take ATK, matching the pre-existing byte-identical sheets. Backup written for dead.png only — the prior source carried NO tags, so it was never artist-authored. Completes the artist's Weak/Dead split across all five starters (bard 08-28, mage 08-30, fighter 09-02, rogue+cleric 09-03). 🔴 NEITHER weak.png NOR dead.png RENDERS TODAY: BattleScene has no low-HP trigger AND nothing ever enters BattleAnimator's AnimState.DEAD — it is declared and name-mapped but never set, and _on_combatant_died only prints a line. Both are loaded and inert pending one engine change."
+    },
+    "rogue_artist": {
+      "path": "res://assets/sprites/jobs/rogue_artist",
+      "frame_width": 128,
+      "frame_height": 128,
+      "fps": 8,
+      "tier": "T2",
+      "source": "artist (Rogue Base sprite.png from Google Drive)",
+      "animations": [
+        "base"
+      ]
+    },
+    "rogue_sdxl": {
+      "path": "res://assets/sprites/jobs/rogue_sdxl",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 10,
+      "tier": "T1",
+      "generator": "SDXL + jrpg_pixel_style LoRA (v3, with artist rogue) + IP-Adapter (artist ref)",
+      "animations": [
+        "idle",
+        "walk",
+        "attack",
+        "hit",
+        "dead",
+        "cast",
+        "defend",
+        "item",
+        "victory"
+      ]
+    },
+    "scriptweaver": {
+      "path": "res://assets/sprites/jobs/scriptweaver",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": [
+        "idle"
+      ],
+      "tier": "T1",
+      "_note": "AI-generated (gpt-image-1, artist fighter idle as style anchor). idle only — no walk/attack/cast yet, so BattleScene falls back per-animation. Flagged for artist review before any T2 promotion."
+    },
+    "skiptrotter": {
+      "path": "res://assets/sprites/jobs/skiptrotter",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": [
+        "idle"
+      ],
+      "tier": "T1",
+      "_note": "AI-generated (gpt-image-1, artist fighter idle as style anchor). idle only — no walk/attack/cast yet, so BattleScene falls back per-animation. Flagged for artist review before any T2 promotion."
+    },
+    "speculator": {
+      "path": "res://assets/sprites/jobs/speculator",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": [
+        "attack",
+        "cast",
+        "dead",
+        "defend",
+        "hit",
+        "idle",
+        "item",
+        "victory",
+        "walk"
+      ],
+      "tier": "T1",
+      "generator": "gen_full_sweep.py (v2 jrpg_pixel_style LoRA)"
+    },
+    "summoner": {
+      "path": "res://assets/sprites/jobs/summoner",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": [
+        "attack",
+        "cast",
+        "dead",
+        "defend",
+        "hit",
+        "idle",
+        "item",
+        "victory",
+        "walk"
+      ],
+      "tier": "T1",
+      "generator": "gen_full_sweep.py (v2 jrpg_pixel_style LoRA)"
+    },
+    "time_mage": {
+      "path": "res://assets/sprites/jobs/time_mage",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": [
+        "idle"
+      ],
+      "tier": "T1",
+      "_note": "AI-generated (gpt-image-1, artist fighter idle as style anchor). idle only — no walk/attack/cast yet, so BattleScene falls back per-animation. Flagged for artist review before any T2 promotion."
     }
   },
   "party_sheets": {},
@@ -564,11 +658,11 @@
     }
   },
   "monster_sheets": {
-    "slime": {
-      "path": "res://assets/sprites/monsters/slime.png",
+    "adaptive_slime": {
+      "path": "res://assets/sprites/monsters/adaptive_slime.png",
       "frame_width": 256,
       "frame_height": 256,
-      "fps": 6,
+      "fps": 8,
       "animations": {
         "idle": {
           "start": 0,
@@ -586,10 +680,90 @@
           "start": 6,
           "end": 7
         }
-      }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "assembly_line_automaton": {
+      "path": "res://assets/sprites/monsters/assembly_line_automaton.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "bard_hostile_courtier": {
+      "path": "res://assets/sprites/monsters/bard_hostile_courtier.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). aristocratic courtier NPC — Bard spotlight-duel miniboss (msg 1950). Non-HP win: talked-down via status/song thresholds."
     },
     "bat": {
       "path": "res://assets/sprites/monsters/bat.png",
+      "frame_width": 128,
+      "frame_height": 128,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 3
+        },
+        "attack": {
+          "start": 4,
+          "end": 12
+        },
+        "hit": {
+          "start": 10,
+          "end": 12
+        },
+        "dead": {
+          "start": 12,
+          "end": 12
+        }
+      },
+      "tier": "T2",
+      "source": "artist aseprite — Game graphics - Characters/enemies/BAT 1.aseprite (Idle + Atk tags)"
+    },
+    "blood_wolf_alpha": {
+      "path": "res://assets/sprites/monsters/blood_wolf_alpha.png",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -610,34 +784,12 @@
           "start": 6,
           "end": 7
         }
-      }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
-    "goblin": {
-      "path": "res://assets/sprites/monsters/goblin.png",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 6,
-      "animations": {
-        "idle": {
-          "start": 0,
-          "end": 1
-        },
-        "attack": {
-          "start": 2,
-          "end": 3
-        },
-        "hit": {
-          "start": 4,
-          "end": 5
-        },
-        "dead": {
-          "start": 6,
-          "end": 7
-        }
-      }
-    },
-    "wolf": {
-      "path": "res://assets/sprites/monsters/wolf.png",
+    "brass_golem": {
+      "path": "res://assets/sprites/monsters/brass_golem.png",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -658,183 +810,43 @@
           "start": 6,
           "end": 7
         }
-      }
-    },
-    "spider": {
-      "path": "res://assets/sprites/monsters/spider.png",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 6,
-      "animations": {
-        "idle": {
-          "start": 0,
-          "end": 1
-        },
-        "attack": {
-          "start": 2,
-          "end": 3
-        },
-        "hit": {
-          "start": 4,
-          "end": 5
-        },
-        "dead": {
-          "start": 6,
-          "end": 7
-        }
-      }
-    },
-    "skeleton": {
-      "path": "res://assets/sprites/monsters/skeleton.png",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 6,
-      "animations": {
-        "idle": {
-          "start": 0,
-          "end": 1
-        },
-        "attack": {
-          "start": 2,
-          "end": 3
-        },
-        "hit": {
-          "start": 4,
-          "end": 5
-        },
-        "dead": {
-          "start": 6,
-          "end": 7
-        }
-      }
-    },
-    "ghost": {
-      "path": "res://assets/sprites/monsters/ghost.png",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 5,
-      "animations": {
-        "idle": {
-          "start": 0,
-          "end": 1
-        },
-        "attack": {
-          "start": 2,
-          "end": 3
-        },
-        "hit": {
-          "start": 4,
-          "end": 5
-        },
-        "dead": {
-          "start": 6,
-          "end": 7
-        }
-      }
-    },
-    "imp": {
-      "path": "res://assets/sprites/monsters/imp.png",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 8,
-      "animations": {
-        "idle": {
-          "start": 0,
-          "end": 1
-        },
-        "attack": {
-          "start": 2,
-          "end": 3
-        },
-        "hit": {
-          "start": 4,
-          "end": 5
-        },
-        "dead": {
-          "start": 6,
-          "end": 7
-        }
-      }
-    },
-    "troll": {
-      "path": "res://assets/sprites/monsters/troll.png",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 5,
-      "animations": {
-        "idle": {
-          "start": 0,
-          "end": 1
-        },
-        "attack": {
-          "start": 2,
-          "end": 3
-        },
-        "hit": {
-          "start": 4,
-          "end": 5
-        },
-        "dead": {
-          "start": 6,
-          "end": 7
-        }
-      }
-    },
-    "snake": {
-      "path": "res://assets/sprites/monsters/snake.png",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 6,
-      "animations": {
-        "idle": {
-          "start": 0,
-          "end": 1
-        },
-        "attack": {
-          "start": 2,
-          "end": 3
-        },
-        "hit": {
-          "start": 4,
-          "end": 5
-        },
-        "dead": {
-          "start": 6,
-          "end": 7
-        }
-      }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "cave_rat": {
       "path": "res://assets/sprites/monsters/cave_rat.png",
       "frame_width": 256,
       "frame_height": 256,
-      "fps": 6,
-      "tier": "T1",
+      "fps": 8,
       "animations": {
         "idle": {
           "start": 0,
-          "end": 1
+          "end": 3
         },
         "attack": {
-          "start": 2,
-          "end": 3
+          "start": 4,
+          "end": 9
         },
         "hit": {
           "start": 4,
-          "end": 5
+          "end": 4
         },
         "dead": {
-          "start": 6,
-          "end": 7
+          "start": 0,
+          "end": 0
         }
-      }
+      },
+      "tier": "T2",
+      "source": "artist aseprite drop 2026-08-20 — Game graphics - Characters/enemies/Rat animations.aseprite (artist tags Idle 0-3, Atk 4-9; 2.25x nearest-neighbor, whole canvas scaled once with ONE shared offset so the artist's inter-frame registration is preserved. Scale = min(match-reference-height, fit-widest-frame) per the skeleton precedent: content 252x144 in a 256 frame (skeleton is 250x185), feet seated at y=217 — exactly where the T1 sheet had them. A first pass used a flat 2x and came out under convention at 224x128; struktured had already rejected that on the skeleton (\"way too small, you need like 2.5x\")). HORIZONTALLY FLIPPED on ingest: the artist drew this one facing LEFT, and monsters face RIGHT (struktured 2026-08-27); the artist's own goblin faces right, this source is the outlier. The artist authored NO hit and NO dead — hit -> frame 4 is the ATTACK WINDUP and dead -> frame 0 is a plain IDLE, both REUSED placeholders exactly as the goblin does, so the rat visibly neither flinches nor falls. Dedicated hit/dead frames are an ARTIST ask. Previous T1 sheet preserved at cave_rat.pre_artist.png. ⚠️ THE FLIP IS BAKED INTO THE PIXELS AND THAT IS ONLY CORRECT AT frame_height > 128. BattleScene infers artist-monster status from frame height alone (ENEMY_SMALL_FRAME_THRESHOLD=128, BattleScene.gd:46) and sets BOTH a 2.5x size bump AND sprite.flip_h from it. At 256 this sheet gets neither, which is why the baked flip renders correctly. RE-EXPORTING THIS AT 128 WOULD DOUBLE-FLIP IT — engine flip on top of the baked one — and the rat would face away from the party with nothing red. Either keep 256 with the flip baked (current, matches skeleton/wolf/spider), or drop to 128 AND remove the --flip. The repo runs both conventions among T2 monsters: 128 for bat/goblin/slime/mordaine/the_calibrant, 256 for skeleton/wolf/spider/imp and this one."
     },
-    "rat_guard": {
-      "path": "res://assets/sprites/monsters/rat_guard.png",
+    "cave_rat_king": {
+      "path": "res://assets/sprites/monsters/cave_rat_king.png",
+      "flip_h": true,
+      "flip_h_reason": "authored facing LEFT unlike the other 256px sheets; without this it renders backwards in battle (playtest 2026-07-25)",
       "frame_width": 256,
       "frame_height": 256,
-      "fps": 6,
-      "tier": "T1",
+      "fps": 8,
       "animations": {
         "idle": {
           "start": 0,
@@ -852,32 +864,9 @@
           "start": 6,
           "end": 7
         }
-      }
-    },
-    "mushroom": {
-      "path": "res://assets/sprites/monsters/mushroom.png",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 5,
+      },
       "tier": "T1",
-      "animations": {
-        "idle": {
-          "start": 0,
-          "end": 1
-        },
-        "attack": {
-          "start": 2,
-          "end": 3
-        },
-        "hit": {
-          "start": 4,
-          "end": 5
-        },
-        "dead": {
-          "start": 6,
-          "end": 7
-        }
-      }
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "cave_troll": {
       "path": "res://assets/sprites/monsters/cave_troll.png",
@@ -902,14 +891,40 @@
           "start": 6,
           "end": 7
         }
-      }
+      },
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
-    "shadow_knight": {
-      "path": "res://assets/sprites/monsters/shadow_knight.png",
+    "chancellor_mordaine": {
+      "path": "res://assets/sprites/monsters/chancellor_mordaine.png",
+      "frame_width": 128,
+      "frame_height": 128,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 3
+        },
+        "attack": {
+          "start": 4,
+          "end": 16
+        },
+        "hit": {
+          "start": 0,
+          "end": 0
+        },
+        "dead": {
+          "start": 0,
+          "end": 0
+        }
+      },
+      "tier": "T2",
+      "source": "artist aseprite — Mordaine/Mordaine animations.aseprite; tags authored: Idle, summon 1; frames reused for un-authored anims from: Idle"
+    },
+    "cleric_survive_target": {
+      "path": "res://assets/sprites/monsters/cleric_survive_target.png",
       "frame_width": 256,
       "frame_height": 256,
-      "fps": 6,
-      "tier": "T1",
+      "fps": 8,
       "animations": {
         "idle": {
           "start": 0,
@@ -927,7 +942,374 @@
           "start": 6,
           "end": 7
         }
-      }
+      },
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). spectral sustained-pressure target — Cleric spotlight-duel miniboss (msg 1950). Non-HP win: outlast, not defeat."
+    },
+    "clockwork_sentinel": {
+      "path": "res://assets/sprites/monsters/clockwork_sentinel.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "cog_swarm": {
+      "path": "res://assets/sprites/monsters/cog_swarm.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "conveyor_gremlin": {
+      "path": "res://assets/sprites/monsters/conveyor_gremlin.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "corrupted_guardian": {
+      "path": "res://assets/sprites/monsters/corrupted_guardian.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "corrupted_sprite": {
+      "path": "res://assets/sprites/monsters/corrupted_sprite.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "cranky_lady": {
+      "path": "res://assets/sprites/monsters/cranky_lady.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "crystal_golem": {
+      "path": "res://assets/sprites/monsters/crystal_golem.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "cursed_armor": {
+      "path": "res://assets/sprites/monsters/cursed_armor.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "data_wraith": {
+      "path": "res://assets/sprites/monsters/data_wraith.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "diseased_rat": {
+      "path": "res://assets/sprites/monsters/diseased_rat.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
+      "source": "Playtest audit 2026-07-15: single-frame multi-subject defect fixed by clone-adjacent (fix_broken_frames pattern), no regen — main body art retained."
+    },
+    "elder_mushroom": {
+      "path": "res://assets/sprites/monsters/elder_mushroom.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "elemental": {
+      "path": "res://assets/sprites/monsters/elemental.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "empty_set": {
+      "path": "res://assets/sprites/monsters/empty_set.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "fighter_skeleton_knight": {
+      "path": "res://assets/sprites/monsters/fighter_skeleton_knight.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). chivalric plate skeleton — Fighter spotlight-duel miniboss (msg 1950)"
     },
     "fire_dragon": {
       "path": "res://assets/sprites/monsters/fire_dragon.png",
@@ -952,7 +1334,192 @@
           "start": 6,
           "end": 7
         }
-      }
+      },
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "firewall_sentinel": {
+      "path": "res://assets/sprites/monsters/firewall_sentinel.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "forgotten_variable": {
+      "path": "res://assets/sprites/monsters/forgotten_variable.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "fungoid": {
+      "path": "res://assets/sprites/monsters/fungoid.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
+      "source": "Playtest audit 2026-07-15: single-frame multi-subject defect fixed by clone-adjacent (fix_broken_frames pattern), no regen — main body art retained."
+    },
+    "ghost": {
+      "path": "res://assets/sprites/monsters/ghost.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "giant_bat": {
+      "path": "res://assets/sprites/monsters/giant_bat.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
+      "source": "Playtest audit 2026-07-15: single-frame multi-subject defect fixed by clone-adjacent (fix_broken_frames pattern), no regen — main body art retained."
+    },
+    "glitch_entity": {
+      "path": "res://assets/sprites/monsters/glitch_entity.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "goblin": {
+      "path": "res://assets/sprites/monsters/goblin.png",
+      "frame_width": 128,
+      "frame_height": 128,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 2
+        },
+        "attack": {
+          "start": 3,
+          "end": 8
+        },
+        "hit": {
+          "start": 3,
+          "end": 3
+        },
+        "dead": {
+          "start": 0,
+          "end": 0
+        }
+      },
+      "tier": "T2",
+      "source": "artist aseprite — Game graphics - Characters/enemies/Goblin 1 anims.aseprite (Idle tag frames 0-2, ATK tag frames 3-8). The artist authored NO hit and NO dead. hit -> frame 3 is the ATTACK WINDUP and dead -> frame 0 is a plain IDLE: both are REUSED placeholders, not reaction art, so the goblin visibly neither flinches nor falls. Dedicated hit/dead frames are an ARTIST ask — gpt-image gap-fill was attempted 2026-07-28 and rejected on visual review (renders the figure rotated/sprawled; 3rd consecutive failure of that pose class)."
     },
     "ice_dragon": {
       "path": "res://assets/sprites/monsters/ice_dragon.png",
@@ -977,7 +1544,87 @@
           "start": 6,
           "end": 7
         }
-      }
+      },
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "ice_wolf": {
+      "path": "res://assets/sprites/monsters/ice_wolf.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
+      "source": "Playtest audit 2026-07-15: single-frame multi-subject defect fixed by clone-adjacent (fix_broken_frames pattern), no regen — main body art retained."
+    },
+    "imp": {
+      "path": "res://assets/sprites/monsters/imp.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist bat reference (tools/regen_monster_artist_style.py) — bespoke prompt with EXACTLY-ONE-SUBJECT-PER-FRAME discipline. Playtest bug fix (cowir-main msgs 2560/2561): W1 multi-subject defect regen."
+    },
+    "ironback_beetle": {
+      "path": "res://assets/sprites/monsters/ironback_beetle.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "lightning_dragon": {
       "path": "res://assets/sprites/monsters/lightning_dragon.png",
@@ -1002,7 +1649,1074 @@
           "start": 6,
           "end": 7
         }
-      }
+      },
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "mage_prismatic_construct": {
+      "path": "res://assets/sprites/monsters/mage_prismatic_construct.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). crystalline prism construct — Mage spotlight-duel miniboss (msg 1950). Rotating elemental weakness, read-and-exploit-live."
+    },
+    "masterite_arbiter_abstract": {
+      "path": "res://assets/sprites/monsters/masterite_arbiter_abstract.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "masterite_arbiter_futuristic": {
+      "path": "res://assets/sprites/monsters/masterite_arbiter_futuristic.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "masterite_arbiter_industrial": {
+      "path": "res://assets/sprites/monsters/masterite_arbiter_industrial.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "masterite_arbiter_medieval": {
+      "path": "res://assets/sprites/monsters/masterite_arbiter_medieval.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "masterite_arbiter_steampunk": {
+      "path": "res://assets/sprites/monsters/masterite_arbiter_steampunk.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "gpt-image-1 high, artist-style-anchored (Goblin 1 anims) via tools/regen_monster_artist_style.py 2026-07-28. Steampunk was the only world with 0/4 masterite sheets; identities built from the authored monsters.json canon text supplied by cowir-battle (msg 3332), not invented. Structural-QA clean; despeckled."
+    },
+    "masterite_arbiter_suburban": {
+      "path": "res://assets/sprites/monsters/masterite_arbiter_suburban.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "masterite_curator_abstract": {
+      "path": "res://assets/sprites/monsters/masterite_curator_abstract.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "masterite_curator_futuristic": {
+      "path": "res://assets/sprites/monsters/masterite_curator_futuristic.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "masterite_curator_industrial": {
+      "path": "res://assets/sprites/monsters/masterite_curator_industrial.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "masterite_curator_medieval": {
+      "path": "res://assets/sprites/monsters/masterite_curator_medieval.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "masterite_curator_steampunk": {
+      "path": "res://assets/sprites/monsters/masterite_curator_steampunk.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "gpt-image-1 high, artist-style-anchored (Goblin 1 anims) via tools/regen_monster_artist_style.py 2026-07-28. Steampunk was the only world with 0/4 masterite sheets; identities built from the authored monsters.json canon text supplied by cowir-battle (msg 3332), not invented. Structural-QA clean; despeckled."
+    },
+    "masterite_curator_suburban": {
+      "path": "res://assets/sprites/monsters/masterite_curator_suburban.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "masterite_tempo_abstract": {
+      "path": "res://assets/sprites/monsters/masterite_tempo_abstract.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "masterite_tempo_futuristic": {
+      "path": "res://assets/sprites/monsters/masterite_tempo_futuristic.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "masterite_tempo_industrial": {
+      "path": "res://assets/sprites/monsters/masterite_tempo_industrial.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "masterite_tempo_medieval": {
+      "path": "res://assets/sprites/monsters/masterite_tempo_medieval.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "masterite_tempo_steampunk": {
+      "path": "res://assets/sprites/monsters/masterite_tempo_steampunk.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "gpt-image-1 high, artist-style-anchored (Goblin 1 anims) via tools/regen_monster_artist_style.py 2026-07-28. Steampunk was the only world with 0/4 masterite sheets; identities built from the authored monsters.json canon text supplied by cowir-battle (msg 3332), not invented. Structural-QA clean; despeckled."
+    },
+    "masterite_tempo_suburban": {
+      "path": "res://assets/sprites/monsters/masterite_tempo_suburban.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "masterite_warden_abstract": {
+      "path": "res://assets/sprites/monsters/masterite_warden_abstract.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "masterite_warden_futuristic": {
+      "path": "res://assets/sprites/monsters/masterite_warden_futuristic.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "masterite_warden_industrial": {
+      "path": "res://assets/sprites/monsters/masterite_warden_industrial.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "masterite_warden_medieval": {
+      "path": "res://assets/sprites/monsters/masterite_warden_medieval.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "masterite_warden_steampunk": {
+      "path": "res://assets/sprites/monsters/masterite_warden_steampunk.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "gpt-image-1 high, artist-style-anchored (Goblin 1 anims) via tools/regen_monster_artist_style.py 2026-07-28. Steampunk was the only world with 0/4 masterite sheets; identities built from the authored monsters.json canon text supplied by cowir-battle (msg 3332), not invented. Structural-QA clean; despeckled."
+    },
+    "masterite_warden_suburban": {
+      "path": "res://assets/sprites/monsters/masterite_warden_suburban.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "memory_leak": {
+      "path": "res://assets/sprites/monsters/memory_leak.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "meta_knight": {
+      "path": "res://assets/sprites/monsters/meta_knight.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "mushroom": {
+      "path": "res://assets/sprites/monsters/mushroom.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 5,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "new_age_retro_hippie": {
+      "path": "res://assets/sprites/monsters/new_age_retro_hippie.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "null_entity": {
+      "path": "res://assets/sprites/monsters/null_entity.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "optimization_itself": {
+      "path": "res://assets/sprites/monsters/optimization_itself.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "permadeath_reaper": {
+      "path": "res://assets/sprites/monsters/permadeath_reaper.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "pipe_phantom": {
+      "path": "res://assets/sprites/monsters/pipe_phantom.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "rat_guard": {
+      "path": "res://assets/sprites/monsters/rat_guard.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "tier": "T1",
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "recursive_loop": {
+      "path": "res://assets/sprites/monsters/recursive_loop.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "rogue_automaton": {
+      "path": "res://assets/sprites/monsters/rogue_automaton.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "source": "gpt-image-1 4-pose contact sheet, description lifted from the monsters.json entry (tools/regen_monster_artist_style.py). Previously had NO sheet entry and rendered procedurally."
+    },
+    "rogue_lockward": {
+      "path": "res://assets/sprites/monsters/rogue_lockward.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference (tools/regen_monster_artist_style.py). chained treasure-guardian construct — Rogue spotlight-duel miniboss (msg 1950). High-evade + Steal/backstab-solves."
+    },
+    "rogue_mailbox": {
+      "path": "res://assets/sprites/monsters/rogue_mailbox.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "source": "gpt-image-1 4-pose contact sheet, description lifted from the monsters.json entry (tools/regen_monster_artist_style.py). Previously had NO sheet entry and rendered procedurally."
+    },
+    "rogue_process": {
+      "path": "res://assets/sprites/monsters/rogue_process.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "rust_elemental": {
+      "path": "res://assets/sprites/monsters/rust_elemental.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "script_error": {
+      "path": "res://assets/sprites/monsters/script_error.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "shadow_dragon": {
       "path": "res://assets/sprites/monsters/shadow_dragon.png",
@@ -1027,10 +2741,11 @@
           "start": 6,
           "end": 7
         }
-      }
+      },
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
-    "fungoid": {
-      "path": "res://assets/sprites/monsters/fungoid.png",
+    "shadow_knight": {
+      "path": "res://assets/sprites/monsters/shadow_knight.png",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 6,
@@ -1052,14 +2767,14 @@
           "start": 6,
           "end": 7
         }
-      }
+      },
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
-    "viper": {
-      "path": "res://assets/sprites/monsters/viper.png",
+    "shift_supervisor": {
+      "path": "res://assets/sprites/monsters/shift_supervisor.png",
       "frame_width": 256,
       "frame_height": 256,
-      "fps": 6,
-      "tier": "T1",
+      "fps": 8,
       "animations": {
         "idle": {
           "start": 0,
@@ -1077,14 +2792,15 @@
           "start": 6,
           "end": 7
         }
-      }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
-    "elemental": {
-      "path": "res://assets/sprites/monsters/elemental.png",
+    "skate_punk": {
+      "path": "res://assets/sprites/monsters/skate_punk.png",
       "frame_width": 256,
       "frame_height": 256,
-      "fps": 6,
-      "tier": "T1",
+      "fps": 8,
       "animations": {
         "idle": {
           "start": 0,
@@ -1102,14 +2818,197 @@
           "start": 6,
           "end": 7
         }
-      }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
-    "corrupted_sprite": {
-      "path": "res://assets/sprites/monsters/corrupted_sprite.png",
+    "skeleton": {
+      "path": "res://assets/sprites/monsters/skeleton.png",
       "frame_width": 256,
       "frame_height": 256,
-      "fps": 6,
-      "tier": "T1",
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 3
+        },
+        "attack": {
+          "start": 4,
+          "end": 9
+        },
+        "hit": {
+          "start": 0,
+          "end": 1
+        },
+        "dead": {
+          "start": 3,
+          "end": 3
+        }
+      },
+      "tier": "T2",
+      "source": "artist aseprite drop 2026-08-16 (cowir-sprites tmp/drop/skeleton_artist_full.png, 4 idle + 6 attack frames upscaled to 256 by the ingest pipeline); hit/dead reuse idle frames — death visual is the dissolve shader. | RESCALED 2026-08-17 to 2.84x (was 2x): content 148x171 feet y=238 vs neighbour 188/y=237. struktured: \"his way too small, you need like 2.5x\". Scale = min(match-reference-height, fit-widest-frame); whole canvas scaled once so the artist's inter-frame registration is preserved."
+    },
+    "slime": {
+      "path": "res://assets/sprites/monsters/slime.png",
+      "frame_width": 128,
+      "frame_height": 128,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 3
+        },
+        "attack": {
+          "start": 4,
+          "end": 10
+        },
+        "hit": {
+          "start": 8,
+          "end": 10
+        },
+        "dead": {
+          "start": 10,
+          "end": 10
+        }
+      },
+      "tier": "T2",
+      "source": "artist aseprite — Game graphics - Characters/enemies/SLIME 1.aseprite (Idle + Atk tags)"
+    },
+    "slime_abstract": {
+      "path": "res://assets/sprites/monsters/slime_abstract.png",
+      "frame_width": 128,
+      "frame_height": 128,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 3
+        },
+        "attack": {
+          "start": 4,
+          "end": 10
+        },
+        "hit": {
+          "start": 8,
+          "end": 10
+        },
+        "dead": {
+          "start": 10,
+          "end": 10
+        }
+      },
+      "tier": "T2",
+      "source": "deterministic HSV hue-shift of artist slime — world 6 (abstract, monochrome)"
+    },
+    "slime_digital": {
+      "path": "res://assets/sprites/monsters/slime_digital.png",
+      "frame_width": 128,
+      "frame_height": 128,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 3
+        },
+        "attack": {
+          "start": 4,
+          "end": 10
+        },
+        "hit": {
+          "start": 8,
+          "end": 10
+        },
+        "dead": {
+          "start": 10,
+          "end": 10
+        }
+      },
+      "tier": "T2",
+      "source": "deterministic HSV hue-shift of artist slime — world 5 (digital, neon magenta)"
+    },
+    "slime_industrial": {
+      "path": "res://assets/sprites/monsters/slime_industrial.png",
+      "frame_width": 128,
+      "frame_height": 128,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 3
+        },
+        "attack": {
+          "start": 4,
+          "end": 10
+        },
+        "hit": {
+          "start": 8,
+          "end": 10
+        },
+        "dead": {
+          "start": 10,
+          "end": 10
+        }
+      },
+      "tier": "T2",
+      "source": "deterministic HSV hue-shift of artist slime — world 4 (industrial, rust)"
+    },
+    "slime_steampunk": {
+      "path": "res://assets/sprites/monsters/slime_steampunk.png",
+      "frame_width": 128,
+      "frame_height": 128,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 3
+        },
+        "attack": {
+          "start": 4,
+          "end": 10
+        },
+        "hit": {
+          "start": 8,
+          "end": 10
+        },
+        "dead": {
+          "start": 10,
+          "end": 10
+        }
+      },
+      "tier": "T2",
+      "source": "deterministic HSV hue-shift of artist slime — world 3 (steampunk, brass)"
+    },
+    "slime_suburban": {
+      "path": "res://assets/sprites/monsters/slime_suburban.png",
+      "frame_width": 128,
+      "frame_height": 128,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 3
+        },
+        "attack": {
+          "start": 4,
+          "end": 10
+        },
+        "hit": {
+          "start": 8,
+          "end": 10
+        },
+        "dead": {
+          "start": 10,
+          "end": 10
+        }
+      },
+      "tier": "T2",
+      "source": "deterministic HSV hue-shift of artist slime — world 2 (suburban, sky-blue)"
+    },
+    "snake": {
+      "path": "res://assets/sprites/monsters/snake.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
       "animations": {
         "idle": {
           "start": 0,
@@ -1127,14 +3026,15 @@
           "start": 6,
           "end": 7
         }
-      }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
-    "giant_bat": {
-      "path": "res://assets/sprites/monsters/giant_bat.png",
+    "cartographer_wraith": {
+      "path": "res://assets/sprites/monsters/specter.png",
       "frame_width": 256,
       "frame_height": 256,
-      "fps": 6,
-      "tier": "T1",
+      "fps": 8,
       "animations": {
         "idle": {
           "start": 0,
@@ -1152,89 +3052,15 @@
           "start": 6,
           "end": 7
         }
-      }
-    },
-    "diseased_rat": {
-      "path": "res://assets/sprites/monsters/diseased_rat.png",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 6,
+      },
       "tier": "T1",
-      "animations": {
-        "idle": {
-          "start": 0,
-          "end": 1
-        },
-        "attack": {
-          "start": 2,
-          "end": 3
-        },
-        "hit": {
-          "start": 4,
-          "end": 5
-        },
-        "dead": {
-          "start": 6,
-          "end": 7
-        }
-      }
-    },
-    "cave_rat_king": {
-      "path": "res://assets/sprites/monsters/cave_rat_king.png",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 6,
-      "tier": "T1",
-      "animations": {
-        "idle": {
-          "start": 0,
-          "end": 1
-        },
-        "attack": {
-          "start": 2,
-          "end": 3
-        },
-        "hit": {
-          "start": 4,
-          "end": 5
-        },
-        "dead": {
-          "start": 6,
-          "end": 7
-        }
-      }
-    },
-    "ice_wolf": {
-      "path": "res://assets/sprites/monsters/ice_wolf.png",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 6,
-      "tier": "T1",
-      "animations": {
-        "idle": {
-          "start": 0,
-          "end": 1
-        },
-        "attack": {
-          "start": 2,
-          "end": 3
-        },
-        "hit": {
-          "start": 4,
-          "end": 5
-        },
-        "dead": {
-          "start": 6,
-          "end": 7
-        }
-      }
+      "generator": "PLACEHOLDER 2026-09-06: The Backwards Warren boss reuses the specter sheet pending its own art (same pattern as Mordaine on shadow_knight)"
     },
     "specter": {
       "path": "res://assets/sprites/monsters/specter.png",
       "frame_width": 256,
       "frame_height": 256,
-      "fps": 6,
-      "tier": "T1",
+      "fps": 8,
       "animations": {
         "idle": {
           "start": 0,
@@ -1252,14 +3078,249 @@
           "start": 6,
           "end": 7
         }
-      }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "spider": {
+      "path": "res://assets/sprites/monsters/spider.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist bat reference (tools/regen_monster_artist_style.py) — bespoke prompt with EXACTLY-ONE-SUBJECT-PER-FRAME discipline. Playtest bug fix (cowir-main msgs 2560/2561): W1 multi-subject defect regen."
+    },
+    "spiteful_crow": {
+      "path": "res://assets/sprites/monsters/spiteful_crow.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "steam_rat": {
+      "path": "res://assets/sprites/monsters/steam_rat.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "the_absence": {
+      "path": "res://assets/sprites/monsters/the_absence.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "the_coordinator": {
+      "path": "res://assets/sprites/monsters/the_coordinator.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "gpt-image-1 artist-style-anchored, W6 Calibrant finale faces. Registered 2026-07-29: the PNGs were drawn earlier and deliberately left UNREGISTERED because their monster ids did not exist in monsters.json yet — wiring art to a monster that cannot be fought is the thing this lane refuses. The ids now exist on cowir-battle's finales branch, so the record is honest. Folds as a unit with that branch; a manifest entry whose id nothing requests is inert, so landing this first is safe and unblocks their gate."
+    },
+    "the_director": {
+      "path": "res://assets/sprites/monsters/the_director.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "gpt-image-1 artist-style-anchored, W6 Calibrant finale faces. Registered 2026-07-29: the PNGs were drawn earlier and deliberately left UNREGISTERED because their monster ids did not exist in monsters.json yet — wiring art to a monster that cannot be fought is the thing this lane refuses. The ids now exist on cowir-battle's finales branch, so the record is honest. Folds as a unit with that branch; a manifest entry whose id nothing requests is inert, so landing this first is safe and unblocks their gate."
+    },
+    "the_regulator": {
+      "path": "res://assets/sprites/monsters/the_regulator.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "gpt-image-1 artist-style-anchored, W6 Calibrant finale faces. Registered 2026-07-29: the PNGs were drawn earlier and deliberately left UNREGISTERED because their monster ids did not exist in monsters.json yet — wiring art to a monster that cannot be fought is the thing this lane refuses. The ids now exist on cowir-battle's finales branch, so the record is honest. Folds as a unit with that branch; a manifest entry whose id nothing requests is inert, so landing this first is safe and unblocks their gate."
+    },
+    "time_phantom": {
+      "path": "res://assets/sprites/monsters/time_phantom.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "source": "gpt-image-1 4-pose contact sheet, description lifted from the monsters.json entry (tools/regen_monster_artist_style.py). Previously had NO sheet entry and rendered procedurally."
+    },
+    "toxic_sludge": {
+      "path": "res://assets/sprites/monsters/toxic_sludge.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "treasure_mimic": {
       "path": "res://assets/sprites/monsters/treasure_mimic.png",
       "frame_width": 256,
       "frame_height": 256,
-      "fps": 6,
-      "tier": "T1",
+      "fps": 8,
       "animations": {
         "idle": {
           "start": 0,
@@ -1277,10 +3338,246 @@
           "start": 6,
           "end": 7
         }
-      }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
-    "ironback_beetle": {
-      "path": "res://assets/sprites/monsters/ironback_beetle.png",
+    "troll": {
+      "path": "res://assets/sprites/monsters/troll.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "unassuming_dog": {
+      "path": "res://assets/sprites/monsters/unassuming_dog.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "viper": {
+      "path": "res://assets/sprites/monsters/viper.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
+    },
+    "wolf": {
+      "path": "res://assets/sprites/monsters/wolf.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T2",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist bat reference (tools/regen_monster_artist_style.py) — bespoke prompt with EXACTLY-ONE-SUBJECT-PER-FRAME discipline. Playtest bug fix (cowir-main msgs 2560/2561): W1 multi-subject defect regen."
+    },
+    "the_calibrant": {
+      "path": "res://assets/sprites/monsters/chancellor_mordaine.png",
+      "frame_width": 128,
+      "frame_height": 128,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 3
+        },
+        "attack": {
+          "start": 4,
+          "end": 16
+        },
+        "hit": {
+          "start": 0,
+          "end": 0
+        },
+        "dead": {
+          "start": 0,
+          "end": 0
+        }
+      },
+      "tier": "T2",
+      "source": "DELIBERATE REUSE of chancellor_mordaine.png — the Calibrant opens as its first mask (Fable P1: Mordaine baseline). True-form sheet is an unspent tier call; replace this entry when it ships."
+    },
+    "skeleton_soldier": {
+      "path": "res://assets/sprites/monsters/skeleton_soldier.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "source": "gpt-image-1 4-pose contact-sheet anchored to artist fighter reference (tools/regen_monster_artist_style.py) — bespoke prompt with EXACTLY-ONE-SUBJECT-PER-FRAME discipline. Playtest bug fix (cowir-main msgs 2560/2561): W1 multi-subject defect regen. | 2026-08-17: preserved as the Skeleton Soldier class when the artist skeleton drop replaced the base id (struktured: 'keep these guys around for some other skeleton type')."
+    },
+    "bone_warden": {
+      "path": "res://assets/sprites/monsters/bone_warden.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 8,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 3
+        },
+        "attack": {
+          "start": 4,
+          "end": 9
+        },
+        "hit": {
+          "start": 0,
+          "end": 1
+        },
+        "dead": {
+          "start": 3,
+          "end": 3
+        }
+      },
+      "tier": "T2",
+      "source": "ARTIST 'enemies/Skeleton animations.aseprite' (2026-08-16), palette-shifted elite variant (blue->venom green, gold->bone). Artist linework and shading unmodified. Same frame layout as skeleton; hit/dead reference idle, dissolve shader owns death."
+    },
+    "ogre": {
+      "path": "res://assets/sprites/monsters/ogre.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "regen_monster_artist_style.py 2026-08-22, gpt-image-1 high, anchored to the ARTIST goblin sheet (humanoid canon). Deliberately STONE-GREY with horns/tusks/maul so it does not duplicate `troll`, which is already a green axe-wielding brute — a default ogre prompt renders a third near-identical green club-troll. struktured: \"we should absolute add [a barbarian/ogre]\" (relayed by cowir-music, 2026-08-22)."
+    },
+    "barbarian": {
+      "path": "res://assets/sprites/monsters/barbarian.png",
+      "frame_width": 256,
+      "frame_height": 256,
+      "fps": 6,
+      "animations": {
+        "idle": {
+          "start": 0,
+          "end": 1
+        },
+        "attack": {
+          "start": 2,
+          "end": 3
+        },
+        "hit": {
+          "start": 4,
+          "end": 5
+        },
+        "dead": {
+          "start": 6,
+          "end": 7
+        }
+      },
+      "tier": "T1",
+      "generator": "regen_monster_artist_style.py 2026-08-22, gpt-image-1 high, anchored to the ARTIST goblin sheet. HUMAN warrior — furs, woad warpaint, two-handed axe — the roster's real gap: troll/cave_troll already cover the green brute, nothing covered a human raider. Matches the 'too barbarian sounding' music struktured wants recast."
+    },
+    "castle_warden": {
+      "path": "res://assets/sprites/monsters/shadow_knight.png",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 6,
@@ -1302,10 +3599,14 @@
           "start": 6,
           "end": 7
         }
-      }
-    },
-    "cursed_armor": {
-      "path": "res://assets/sprites/monsters/cursed_armor.png",
+      },
+      "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)",
+      "source": "reuses shadow_knight sheet — the Warden wears the guard's own plate; freed when Mordaine got her T2 sheet"
+    }
+  },
+  "npc_sheets": {
+    "bram": {
+      "path": "res://assets/sprites/npcs/bram.png",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 6,
@@ -1315,22 +3616,22 @@
           "start": 0,
           "end": 1
         },
-        "attack": {
+        "talk": {
           "start": 2,
           "end": 3
         },
-        "hit": {
+        "react": {
           "start": 4,
           "end": 5
         },
-        "dead": {
+        "gesture": {
           "start": 6,
           "end": 7
         }
       }
     },
-    "blood_wolf_alpha": {
-      "path": "res://assets/sprites/monsters/blood_wolf_alpha.png",
+    "scholar_milo": {
+      "path": "res://assets/sprites/npcs/scholar_milo.png",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 6,
@@ -1340,22 +3641,22 @@
           "start": 0,
           "end": 1
         },
-        "attack": {
+        "talk": {
           "start": 2,
           "end": 3
         },
-        "hit": {
+        "react": {
           "start": 4,
           "end": 5
         },
-        "dead": {
+        "gesture": {
           "start": 6,
           "end": 7
         }
       }
     },
-    "crystal_golem": {
-      "path": "res://assets/sprites/monsters/crystal_golem.png",
+    "sprocket": {
+      "path": "res://assets/sprites/npcs/sprocket.png",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 6,
@@ -1365,22 +3666,22 @@
           "start": 0,
           "end": 1
         },
-        "attack": {
+        "talk": {
           "start": 2,
           "end": 3
         },
-        "hit": {
+        "react": {
           "start": 4,
           "end": 5
         },
-        "dead": {
+        "gesture": {
           "start": 6,
           "end": 7
         }
       }
     },
-    "elder_mushroom": {
-      "path": "res://assets/sprites/monsters/elder_mushroom.png",
+    "marta": {
+      "path": "res://assets/sprites/npcs/marta.png",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 6,
@@ -1390,544 +3691,1259 @@
           "start": 0,
           "end": 1
         },
-        "attack": {
+        "talk": {
           "start": 2,
           "end": 3
         },
-        "hit": {
+        "react": {
           "start": 4,
           "end": 5
         },
-        "dead": {
+        "gesture": {
           "start": 6,
           "end": 7
+        }
+      }
+    }
+  },
+  "overworld_npc_sheets": {
+    "blacksmith": {
+      "path": "res://assets/sprites/npcs/blacksmith/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
         }
       }
     },
-    "corrupted_guardian": {
-      "path": "res://assets/sprites/monsters/corrupted_guardian.png",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 6,
+    "bram": {
+      "path": "res://assets/sprites/npcs/bram/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
       "tier": "T1",
       "animations": {
-        "idle": {
-          "start": 0,
-          "end": 1
+        "walk_down": {
+          "row": 0,
+          "frames": 4
         },
-        "attack": {
-          "start": 2,
-          "end": 3
+        "walk_left": {
+          "row": 1,
+          "frames": 4
         },
-        "hit": {
-          "start": 4,
-          "end": 5
+        "walk_right": {
+          "row": 2,
+          "frames": 4
         },
-        "dead": {
-          "start": 6,
-          "end": 7
+        "walk_up": {
+          "row": 3,
+          "frames": 4
         }
       }
     },
-    "masterite_warden_medieval": {
-      "path": "res://assets/sprites/monsters/masterite_warden_medieval.png",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 6,
+    "child": {
+      "path": "res://assets/sprites/npcs/child/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
       "tier": "T1",
       "animations": {
-        "idle": {
-          "start": 0,
-          "end": 1
+        "walk_down": {
+          "row": 0,
+          "frames": 4
         },
-        "attack": {
-          "start": 2,
-          "end": 3
+        "walk_left": {
+          "row": 1,
+          "frames": 4
         },
-        "hit": {
-          "start": 4,
-          "end": 5
+        "walk_right": {
+          "row": 2,
+          "frames": 4
         },
-        "dead": {
-          "start": 6,
-          "end": 7
+        "walk_up": {
+          "row": 3,
+          "frames": 4
         }
       }
     },
-    "masterite_arbiter_medieval": {
-      "path": "res://assets/sprites/monsters/masterite_arbiter_medieval.png",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 6,
+    "dr_temporal": {
+      "path": "res://assets/sprites/npcs/dr_temporal/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
       "tier": "T1",
       "animations": {
-        "idle": {
-          "start": 0,
-          "end": 1
+        "walk_down": {
+          "row": 0,
+          "frames": 4
         },
-        "attack": {
-          "start": 2,
-          "end": 3
+        "walk_left": {
+          "row": 1,
+          "frames": 4
         },
-        "hit": {
-          "start": 4,
-          "end": 5
+        "walk_right": {
+          "row": 2,
+          "frames": 4
         },
-        "dead": {
-          "start": 6,
-          "end": 7
+        "walk_up": {
+          "row": 3,
+          "frames": 4
         }
       }
     },
-    "masterite_tempo_medieval": {
-      "path": "res://assets/sprites/monsters/masterite_tempo_medieval.png",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 6,
+    "elder_theron": {
+      "path": "res://assets/sprites/npcs/elder_theron/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
       "tier": "T1",
       "animations": {
-        "idle": {
-          "start": 0,
-          "end": 1
+        "walk_down": {
+          "row": 0,
+          "frames": 4
         },
-        "attack": {
-          "start": 2,
-          "end": 3
+        "walk_left": {
+          "row": 1,
+          "frames": 4
         },
-        "hit": {
-          "start": 4,
-          "end": 5
+        "walk_right": {
+          "row": 2,
+          "frames": 4
         },
-        "dead": {
-          "start": 6,
-          "end": 7
+        "walk_up": {
+          "row": 3,
+          "frames": 4
         }
       }
     },
-    "masterite_curator_medieval": {
-      "path": "res://assets/sprites/monsters/masterite_curator_medieval.png",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 6,
+    "farmer": {
+      "path": "res://assets/sprites/npcs/farmer/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
       "tier": "T1",
       "animations": {
-        "idle": {
-          "start": 0,
-          "end": 1
+        "walk_down": {
+          "row": 0,
+          "frames": 4
         },
-        "attack": {
-          "start": 2,
-          "end": 3
+        "walk_left": {
+          "row": 1,
+          "frames": 4
         },
-        "hit": {
-          "start": 4,
-          "end": 5
+        "walk_right": {
+          "row": 2,
+          "frames": 4
         },
-        "dead": {
-          "start": 6,
-          "end": 7
+        "walk_up": {
+          "row": 3,
+          "frames": 4
         }
       }
     },
-    "masterite_warden_suburban": {
-      "path": "res://assets/sprites/monsters/masterite_warden_suburban.png",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 6,
+    "fisherman": {
+      "path": "res://assets/sprites/npcs/fisherman/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
       "tier": "T1",
       "animations": {
-        "idle": {
-          "start": 0,
-          "end": 1
+        "walk_down": {
+          "row": 0,
+          "frames": 4
         },
-        "attack": {
-          "start": 2,
-          "end": 3
+        "walk_left": {
+          "row": 1,
+          "frames": 4
         },
-        "hit": {
-          "start": 4,
-          "end": 5
+        "walk_right": {
+          "row": 2,
+          "frames": 4
         },
-        "dead": {
-          "start": 6,
-          "end": 7
+        "walk_up": {
+          "row": 3,
+          "frames": 4
         }
       }
     },
-    "masterite_arbiter_suburban": {
-      "path": "res://assets/sprites/monsters/masterite_arbiter_suburban.png",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 6,
+    "guard": {
+      "path": "res://assets/sprites/npcs/guard/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
       "tier": "T1",
       "animations": {
-        "idle": {
-          "start": 0,
-          "end": 1
+        "walk_down": {
+          "row": 0,
+          "frames": 4
         },
-        "attack": {
-          "start": 2,
-          "end": 3
+        "walk_left": {
+          "row": 1,
+          "frames": 4
         },
-        "hit": {
-          "start": 4,
-          "end": 5
+        "walk_right": {
+          "row": 2,
+          "frames": 4
         },
-        "dead": {
-          "start": 6,
-          "end": 7
+        "walk_up": {
+          "row": 3,
+          "frames": 4
         }
       }
     },
-    "masterite_tempo_suburban": {
-      "path": "res://assets/sprites/monsters/masterite_tempo_suburban.png",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 6,
+    "innkeeper": {
+      "path": "res://assets/sprites/npcs/innkeeper/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
       "tier": "T1",
       "animations": {
-        "idle": {
-          "start": 0,
-          "end": 1
+        "walk_down": {
+          "row": 0,
+          "frames": 4
         },
-        "attack": {
-          "start": 2,
-          "end": 3
+        "walk_left": {
+          "row": 1,
+          "frames": 4
         },
-        "hit": {
-          "start": 4,
-          "end": 5
+        "walk_right": {
+          "row": 2,
+          "frames": 4
         },
-        "dead": {
-          "start": 6,
-          "end": 7
+        "walk_up": {
+          "row": 3,
+          "frames": 4
         }
       }
     },
-    "masterite_curator_suburban": {
-      "path": "res://assets/sprites/monsters/masterite_curator_suburban.png",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 6,
+    "king": {
+      "path": "res://assets/sprites/npcs/king/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
       "tier": "T1",
       "animations": {
-        "idle": {
-          "start": 0,
-          "end": 1
+        "walk_down": {
+          "row": 0,
+          "frames": 4
         },
-        "attack": {
-          "start": 2,
-          "end": 3
+        "walk_left": {
+          "row": 1,
+          "frames": 4
         },
-        "hit": {
-          "start": 4,
-          "end": 5
+        "walk_right": {
+          "row": 2,
+          "frames": 4
         },
-        "dead": {
-          "start": 6,
-          "end": 7
+        "walk_up": {
+          "row": 3,
+          "frames": 4
         }
       }
     },
-    "masterite_warden_industrial": {
-      "path": "res://assets/sprites/monsters/masterite_warden_industrial.png",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 6,
+    "marta": {
+      "path": "res://assets/sprites/npcs/marta/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
       "tier": "T1",
       "animations": {
-        "idle": {
-          "start": 0,
-          "end": 1
+        "walk_down": {
+          "row": 0,
+          "frames": 4
         },
-        "attack": {
-          "start": 2,
-          "end": 3
+        "walk_left": {
+          "row": 1,
+          "frames": 4
         },
-        "hit": {
-          "start": 4,
-          "end": 5
+        "walk_right": {
+          "row": 2,
+          "frames": 4
         },
-        "dead": {
-          "start": 6,
-          "end": 7
+        "walk_up": {
+          "row": 3,
+          "frames": 4
         }
       }
     },
-    "masterite_arbiter_industrial": {
-      "path": "res://assets/sprites/monsters/masterite_arbiter_industrial.png",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 6,
+    "merchant": {
+      "path": "res://assets/sprites/npcs/merchant/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
       "tier": "T1",
       "animations": {
-        "idle": {
-          "start": 0,
-          "end": 1
+        "walk_down": {
+          "row": 0,
+          "frames": 4
         },
-        "attack": {
-          "start": 2,
-          "end": 3
+        "walk_left": {
+          "row": 1,
+          "frames": 4
         },
-        "hit": {
-          "start": 4,
-          "end": 5
+        "walk_right": {
+          "row": 2,
+          "frames": 4
         },
-        "dead": {
-          "start": 6,
-          "end": 7
+        "walk_up": {
+          "row": 3,
+          "frames": 4
         }
       }
     },
-    "masterite_tempo_industrial": {
-      "path": "res://assets/sprites/monsters/masterite_tempo_industrial.png",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 6,
+    "monk": {
+      "path": "res://assets/sprites/npcs/monk/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
       "tier": "T1",
       "animations": {
-        "idle": {
-          "start": 0,
-          "end": 1
+        "walk_down": {
+          "row": 0,
+          "frames": 4
         },
-        "attack": {
-          "start": 2,
-          "end": 3
+        "walk_left": {
+          "row": 1,
+          "frames": 4
         },
-        "hit": {
-          "start": 4,
-          "end": 5
+        "walk_right": {
+          "row": 2,
+          "frames": 4
         },
-        "dead": {
-          "start": 6,
-          "end": 7
+        "walk_up": {
+          "row": 3,
+          "frames": 4
         }
       }
     },
-    "masterite_curator_industrial": {
-      "path": "res://assets/sprites/monsters/masterite_curator_industrial.png",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 6,
+    "noble": {
+      "path": "res://assets/sprites/npcs/noble/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
       "tier": "T1",
       "animations": {
-        "idle": {
-          "start": 0,
-          "end": 1
+        "walk_down": {
+          "row": 0,
+          "frames": 4
         },
-        "attack": {
-          "start": 2,
-          "end": 3
+        "walk_left": {
+          "row": 1,
+          "frames": 4
         },
-        "hit": {
-          "start": 4,
-          "end": 5
+        "walk_right": {
+          "row": 2,
+          "frames": 4
         },
-        "dead": {
-          "start": 6,
-          "end": 7
+        "walk_up": {
+          "row": 3,
+          "frames": 4
         }
       }
     },
-    "masterite_warden_futuristic": {
-      "path": "res://assets/sprites/monsters/masterite_warden_futuristic.png",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 6,
+    "noblewoman": {
+      "path": "res://assets/sprites/npcs/noblewoman/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
       "tier": "T1",
       "animations": {
-        "idle": {
-          "start": 0,
-          "end": 1
+        "walk_down": {
+          "row": 0,
+          "frames": 4
         },
-        "attack": {
-          "start": 2,
-          "end": 3
+        "walk_left": {
+          "row": 1,
+          "frames": 4
         },
-        "hit": {
-          "start": 4,
-          "end": 5
+        "walk_right": {
+          "row": 2,
+          "frames": 4
         },
-        "dead": {
-          "start": 6,
-          "end": 7
+        "walk_up": {
+          "row": 3,
+          "frames": 4
         }
       }
     },
-    "masterite_arbiter_futuristic": {
-      "path": "res://assets/sprites/monsters/masterite_arbiter_futuristic.png",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 6,
+    "old_man": {
+      "path": "res://assets/sprites/npcs/old_man/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
       "tier": "T1",
       "animations": {
-        "idle": {
-          "start": 0,
-          "end": 1
+        "walk_down": {
+          "row": 0,
+          "frames": 4
         },
-        "attack": {
-          "start": 2,
-          "end": 3
+        "walk_left": {
+          "row": 1,
+          "frames": 4
         },
-        "hit": {
-          "start": 4,
-          "end": 5
+        "walk_right": {
+          "row": 2,
+          "frames": 4
         },
-        "dead": {
-          "start": 6,
-          "end": 7
+        "walk_up": {
+          "row": 3,
+          "frames": 4
         }
       }
     },
-    "masterite_tempo_futuristic": {
-      "path": "res://assets/sprites/monsters/masterite_tempo_futuristic.png",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 6,
+    "old_woman": {
+      "path": "res://assets/sprites/npcs/old_woman/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
       "tier": "T1",
       "animations": {
-        "idle": {
-          "start": 0,
-          "end": 1
+        "walk_down": {
+          "row": 0,
+          "frames": 4
         },
-        "attack": {
-          "start": 2,
-          "end": 3
+        "walk_left": {
+          "row": 1,
+          "frames": 4
         },
-        "hit": {
-          "start": 4,
-          "end": 5
+        "walk_right": {
+          "row": 2,
+          "frames": 4
         },
-        "dead": {
-          "start": 6,
-          "end": 7
+        "walk_up": {
+          "row": 3,
+          "frames": 4
         }
       }
     },
-    "masterite_curator_futuristic": {
-      "path": "res://assets/sprites/monsters/masterite_curator_futuristic.png",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 6,
+    "phil": {
+      "path": "res://assets/sprites/npcs/phil/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
       "tier": "T1",
       "animations": {
-        "idle": {
-          "start": 0,
-          "end": 1
+        "walk_down": {
+          "row": 0,
+          "frames": 4
         },
-        "attack": {
-          "start": 2,
-          "end": 3
+        "walk_left": {
+          "row": 1,
+          "frames": 4
         },
-        "hit": {
-          "start": 4,
-          "end": 5
+        "walk_right": {
+          "row": 2,
+          "frames": 4
         },
-        "dead": {
-          "start": 6,
-          "end": 7
+        "walk_up": {
+          "row": 3,
+          "frames": 4
         }
       }
     },
-    "masterite_warden_abstract": {
-      "path": "res://assets/sprites/monsters/masterite_warden_abstract.png",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 6,
+    "priestess": {
+      "path": "res://assets/sprites/npcs/priestess/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
       "tier": "T1",
       "animations": {
-        "idle": {
-          "start": 0,
-          "end": 1
+        "walk_down": {
+          "row": 0,
+          "frames": 4
         },
-        "attack": {
-          "start": 2,
-          "end": 3
+        "walk_left": {
+          "row": 1,
+          "frames": 4
         },
-        "hit": {
-          "start": 4,
-          "end": 5
+        "walk_right": {
+          "row": 2,
+          "frames": 4
         },
-        "dead": {
-          "start": 6,
-          "end": 7
+        "walk_up": {
+          "row": 3,
+          "frames": 4
         }
       }
     },
-    "masterite_arbiter_abstract": {
-      "path": "res://assets/sprites/monsters/masterite_arbiter_abstract.png",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 6,
+    "queen": {
+      "path": "res://assets/sprites/npcs/queen/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
       "tier": "T1",
       "animations": {
-        "idle": {
-          "start": 0,
-          "end": 1
+        "walk_down": {
+          "row": 0,
+          "frames": 4
         },
-        "attack": {
-          "start": 2,
-          "end": 3
+        "walk_left": {
+          "row": 1,
+          "frames": 4
         },
-        "hit": {
-          "start": 4,
-          "end": 5
+        "walk_right": {
+          "row": 2,
+          "frames": 4
         },
-        "dead": {
-          "start": 6,
-          "end": 7
+        "walk_up": {
+          "row": 3,
+          "frames": 4
         }
       }
     },
-    "masterite_tempo_abstract": {
-      "path": "res://assets/sprites/monsters/masterite_tempo_abstract.png",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 6,
+    "scholar": {
+      "path": "res://assets/sprites/npcs/scholar/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
       "tier": "T1",
       "animations": {
-        "idle": {
-          "start": 0,
-          "end": 1
+        "walk_down": {
+          "row": 0,
+          "frames": 4
         },
-        "attack": {
-          "start": 2,
-          "end": 3
+        "walk_left": {
+          "row": 1,
+          "frames": 4
         },
-        "hit": {
-          "start": 4,
-          "end": 5
+        "walk_right": {
+          "row": 2,
+          "frames": 4
         },
-        "dead": {
-          "start": 6,
-          "end": 7
+        "walk_up": {
+          "row": 3,
+          "frames": 4
         }
       }
     },
-    "masterite_curator_abstract": {
-      "path": "res://assets/sprites/monsters/masterite_curator_abstract.png",
-      "frame_width": 256,
-      "frame_height": 256,
-      "fps": 6,
+    "scholar_milo": {
+      "path": "res://assets/sprites/npcs/scholar_milo/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
       "tier": "T1",
       "animations": {
-        "idle": {
-          "start": 0,
-          "end": 1
+        "walk_down": {
+          "row": 0,
+          "frames": 4
         },
-        "attack": {
-          "start": 2,
-          "end": 3
+        "walk_left": {
+          "row": 1,
+          "frames": 4
         },
-        "hit": {
-          "start": 4,
-          "end": 5
+        "walk_right": {
+          "row": 2,
+          "frames": 4
         },
-        "dead": {
-          "start": 6,
-          "end": 7
+        "walk_up": {
+          "row": 3,
+          "frames": 4
         }
       }
+    },
+    "soldier": {
+      "path": "res://assets/sprites/npcs/soldier/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "traveler": {
+      "path": "res://assets/sprites/npcs/traveler/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "young_man": {
+      "path": "res://assets/sprites/npcs/young_man/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "young_woman": {
+      "path": "res://assets/sprites/npcs/young_woman/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "chancellor_mordaine": {
+      "path": "res://assets/sprites/npcs/chancellor_mordaine/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      },
+      "source": "gpt-image-1 anchored to the ARTIST battle sheet (Mordaine animations.aseprite, T2); priestess archetype as 4x4 chibi format anchor; up-row headroom normalized (17 -> 0 at cell y+0)"
+    },
+    "fairy": {
+      "path": "res://assets/sprites/npcs/fairy/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      },
+      "source": "gpt-image-1 anchored to named battle strip (tools/gen_named_npc_overworld.py)"
+    },
+    "ghost": {
+      "path": "res://assets/sprites/npcs/ghost/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      },
+      "source": "gpt-image-1 anchored to named battle strip (tools/gen_named_npc_overworld.py)"
+    }
+  },
+  "overworld_player_sheets": {
+    "fighter": {
+      "path": "res://assets/sprites/jobs/fighter/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "cleric": {
+      "path": "res://assets/sprites/jobs/cleric/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "mage": {
+      "path": "res://assets/sprites/jobs/mage/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "rogue": {
+      "path": "res://assets/sprites/jobs/rogue/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "bard": {
+      "path": "res://assets/sprites/jobs/bard/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "bossbinder": {
+      "path": "res://assets/sprites/jobs/bossbinder/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "guardian": {
+      "path": "res://assets/sprites/jobs/guardian/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "necromancer": {
+      "path": "res://assets/sprites/jobs/necromancer/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "ninja": {
+      "path": "res://assets/sprites/jobs/ninja/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "scriptweaver": {
+      "path": "res://assets/sprites/jobs/scriptweaver/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "skiptrotter": {
+      "path": "res://assets/sprites/jobs/skiptrotter/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "speculator": {
+      "path": "res://assets/sprites/jobs/speculator/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "summoner": {
+      "path": "res://assets/sprites/jobs/summoner/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    },
+    "time_mage": {
+      "path": "res://assets/sprites/jobs/time_mage/overworld.png",
+      "frame_width": 32,
+      "frame_height": 32,
+      "fps": 8,
+      "tier": "T1",
+      "animations": {
+        "walk_down": {
+          "row": 0,
+          "frames": 4
+        },
+        "walk_left": {
+          "row": 1,
+          "frames": 4
+        },
+        "walk_right": {
+          "row": 2,
+          "frames": 4
+        },
+        "walk_up": {
+          "row": 3,
+          "frames": 4
+        }
+      }
+    }
+  },
+  "battle_effects": {
+    "threat_buff_sigil": {
+      "path": "res://assets/sprites/effects/threat_buff_sigil.png",
+      "frame_width": 24,
+      "frame_height": 24,
+      "fps": 8,
+      "tier": "T2",
+      "source": "hand-pixeled 24x24 amber shield-with-crossed-blades — cowir-sprites (cowir-main msg 2454 approval). Sigil for THREAT_CLASS_BUFFS (counter_stance et al.); attaches as sprite child, pulses via existing _update_buff_debuff_visuals hook."
+    }
+  },
+  "tile_sheets": {
+    "medieval": {
+      "path": "res://assets/sprites/tiles/medieval.png",
+      "tier": "T1",
+      "tile": 32,
+      "cliff": {
+        "face": [
+          0,
+          0
+        ],
+        "edge_1": [
+          1,
+          0
+        ],
+        "edge_2": [
+          2,
+          0
+        ],
+        "edge_3": [
+          3,
+          0
+        ],
+        "edge_4": [
+          4,
+          0
+        ],
+        "edge_5": [
+          5,
+          0
+        ],
+        "edge_6": [
+          6,
+          0
+        ],
+        "edge_7": [
+          7,
+          0
+        ],
+        "edge_8": [
+          8,
+          0
+        ],
+        "edge_9": [
+          9,
+          0
+        ],
+        "edge_10": [
+          10,
+          0
+        ],
+        "edge_11": [
+          11,
+          0
+        ],
+        "edge_12": [
+          12,
+          0
+        ],
+        "edge_13": [
+          13,
+          0
+        ],
+        "edge_14": [
+          14,
+          0
+        ],
+        "edge_15": [
+          15,
+          0
+        ]
+      },
+      "overlay": {
+        "fringe_1": [
+          0,
+          1
+        ],
+        "fringe_2": [
+          1,
+          1
+        ],
+        "fringe_3": [
+          2,
+          1
+        ],
+        "fringe_4": [
+          3,
+          1
+        ],
+        "fringe_5": [
+          4,
+          1
+        ],
+        "fringe_6": [
+          5,
+          1
+        ],
+        "fringe_7": [
+          6,
+          1
+        ],
+        "fringe_8": [
+          7,
+          1
+        ],
+        "fringe_9": [
+          8,
+          1
+        ],
+        "fringe_10": [
+          9,
+          1
+        ],
+        "fringe_11": [
+          10,
+          1
+        ],
+        "fringe_12": [
+          11,
+          1
+        ],
+        "fringe_13": [
+          12,
+          1
+        ],
+        "fringe_14": [
+          13,
+          1
+        ],
+        "fringe_15": [
+          14,
+          1
+        ],
+        "stair": [
+          15,
+          1
+        ],
+        "ramp": [
+          0,
+          2
+        ],
+        "shadow": [
+          1,
+          2
+        ]
+      },
+      "generator": "tools/gen_tile_sheet_medieval.py -- cliff+overlay only. Ground tiles stay procedural (TileGenerator already draws them); the 10 props are routed to the artist. Bitmask tiles are generated from the mask and side-checked, never hand-placed."
     }
   }
 }

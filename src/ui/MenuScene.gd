@@ -293,7 +293,8 @@ func _show_status_view() -> void:
 	hp_mp.bbcode_enabled = true
 	hp_mp.fit_content = true
 	hp_mp.scroll_active = false
-	hp_mp.text = "[color=lime]HP:[/color] %d / %d\n[color=cyan]MP:[/color] %d / %d" % [
+	hp_mp.text = "[color=%s]HP:[/color] %d / %d\n[color=cyan]MP:[/color] %d / %d" % [
+		AccessibilityPalette.bonus_bbcode(),
 		member.current_hp, member.max_hp,
 		member.current_mp, member.max_mp
 	]
@@ -360,7 +361,11 @@ func _show_status_view() -> void:
 
 	for passive_id in member.equipped_passives:
 		var passive = PassiveSystem.get_passive(passive_id)
-		var p_name = passive.get("name", passive_id) if passive else passive_id
+		## Tick 185: prettify raw-id fallback (snake_case → Title
+		## Case). Pre-fix unknown passives surfaced as "counter_attack"
+		## instead of "Counter Attack". Same treatment as tick 141's
+		## JobMenu.
+		var p_name = passive.get("name", passive_id.replace("_", " ").capitalize()) if passive else passive_id.replace("_", " ").capitalize()
 		var p_lbl = Label.new()
 		p_lbl.text = "  - %s" % p_name
 		p_lbl.add_theme_font_size_override("font_size", 11)
@@ -391,9 +396,14 @@ func _get_equipment_name(item_id: String, slot: String) -> String:
 		"accessory":
 			item = EquipmentSystem.get_accessory(item_id)
 
+	## Tick 184: prettify raw-id fallback via ItemNameResolver
+	## (Item → Job → Equipment → prettifier). Pre-fix returned raw
+	## snake_case ("iron_sword") when EquipmentSystem didn't know
+	## the id (Scriptweaver custom items, save-format drift). Now
+	## consistent with tick 140's EquipmentMenu treatment.
 	if item and item.size() > 0:
-		return item.get("name", item_id)
-	return item_id
+		return item.get("name", ItemNameResolver.resolve(item_id))
+	return ItemNameResolver.resolve(item_id)
 
 
 ## Equipment View
@@ -530,7 +540,9 @@ func _show_equipment_selection(slot: String) -> void:
 			"accessory":
 				item = EquipmentSystem.get_accessory(item_id)
 
-		var item_name = item.get("name", item_id) if item.size() > 0 else item_id
+		## Tick 184: prettify raw-id fallback. Same treatment as
+		## _get_equipment_name above + tick 140's EquipmentMenu.
+		var item_name = item.get("name", ItemNameResolver.resolve(item_id)) if item.size() > 0 else ItemNameResolver.resolve(item_id)
 
 		# Show stat mods
 		var stat_text = ""
@@ -538,7 +550,7 @@ func _show_equipment_selection(slot: String) -> void:
 			var mods = []
 			for stat in item.stat_mods:
 				var val = item.stat_mods[stat]
-				mods.append("%s%+d" % [stat.substr(0, 3).to_upper(), val])
+				mods.append("%s%+d" % [StatNames.short_code(stat), val])
 			stat_text = " (%s)" % ", ".join(mods)
 
 		var btn = Button.new()
@@ -849,7 +861,8 @@ func _show_passives_view() -> void:
 		if i < member.equipped_passives.size():
 			var passive_id = member.equipped_passives[i]
 			var passive = PassiveSystem.get_passive(passive_id)
-			var p_name = passive.get("name", passive_id) if passive else passive_id
+			## Tick 185: prettify raw-id fallback.
+			var p_name = passive.get("name", passive_id.replace("_", " ").capitalize()) if passive else passive_id.replace("_", " ").capitalize()
 
 			var btn = Button.new()
 			btn.text = p_name
@@ -878,7 +891,8 @@ func _show_passives_view() -> void:
 			continue  # Already equipped
 
 		var passive = PassiveSystem.get_passive(passive_id)
-		var p_name = passive.get("name", passive_id) if passive else passive_id
+		## Tick 185: prettify raw-id fallback.
+		var p_name = passive.get("name", passive_id.replace("_", " ").capitalize()) if passive else passive_id.replace("_", " ").capitalize()
 		var p_desc = ""
 		if passive:
 			p_desc = passive.get("description", "")
@@ -971,7 +985,11 @@ func _show_items_view() -> void:
 	else:
 		for item_id in combined:
 			var item = ItemSystem.get_item(item_id)
-			var item_name = item.get("name", item_id) if item else item_id
+			## Tick 184: prettify raw-id fallback via ItemNameResolver.
+			## Pre-fix MenuScene's items view showed raw snake_case
+			## ("hi_potion") for unknown items. Same treatment as the
+			## equipment paths above.
+			var item_name = item.get("name", ItemNameResolver.resolve(item_id)) if item else ItemNameResolver.resolve(item_id)
 			var quantity = combined[item_id]
 
 			var row = HBoxContainer.new()
@@ -1024,8 +1042,19 @@ func _on_item_use_pressed(item_id: String) -> void:
 			break
 
 	if source_member:
-		ItemSystem.use_item(source_member, item_id, [member])
-		source_member.remove_item(item_id, 1)
+		# F3: save_point_only items refuse deep-dungeon use (fine at crystals and outside dungeons).
+		var block: String = ItemSystem.field_use_blocked_reason(item_id)
+		if block != "":
+			SoundManager.play_ui("menu_error")
+			Toast.show_warning(self, block)
+			if PartyChatSystem:
+				PartyChatSystem.fire_event_flag("event_flag_tent_blocked")
+			return
+		# Tick 190: only consume on successful use — pre-fix unknown-id / no-effects items got consumed for no benefit.
+		if ItemSystem.use_item(source_member, item_id, [member]):
+			source_member.remove_item(item_id, 1)
+		else:
+			push_warning("[MenuScene] _on_item_use_pressed: ItemSystem.use_item('%s') failed for %s — item NOT consumed" % [item_id, source_member.combatant_name])
 		_update_party_list_hp()
 		_show_items_view()
 
@@ -1261,8 +1290,7 @@ func _open_autobattle_editor(char_id: String, char_name: String) -> void:
 	# Create editor
 	var AutobattleGridEditorClass = load("res://src/ui/autobattle/AutobattleGridEditor.gd")
 	autobattle_editor = AutobattleGridEditorClass.new()
-	autobattle_editor.set_anchors_preset(Control.PRESET_FULL_RECT)
-	autobattle_editor.size = size
+	autobattle_editor.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(autobattle_editor)
 
 	autobattle_editor.setup(char_id, char_name)
@@ -1373,6 +1401,21 @@ func _show_autogrind_view() -> void:
 	vbox.add_child(edit_btn)
 	buttons.append(edit_btn)
 
+	var history_btn = Button.new()
+	var history_count: int = AutogrindSystem.get_session_history().size() if AutogrindSystem else 0
+	history_btn.text = "View Session History (%d)" % history_count
+	history_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	history_btn.pressed.connect(_open_autogrind_history)
+	vbox.add_child(history_btn)
+	buttons.append(history_btn)
+
+	var templates_btn = Button.new()
+	templates_btn.text = "Load Rule Template..."
+	templates_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	templates_btn.pressed.connect(_open_autogrind_template_picker)
+	vbox.add_child(templates_btn)
+	buttons.append(templates_btn)
+
 	# Current party profiles
 	vbox.add_child(HSeparator.new())
 
@@ -1449,8 +1492,7 @@ func _open_autogrind_editor() -> void:
 
 	var AutogrindGridEditorClass = load("res://src/ui/autogrind/AutogrindGridEditor.gd")
 	autogrind_editor = AutogrindGridEditorClass.new()
-	autogrind_editor.set_anchors_preset(Control.PRESET_FULL_RECT)
-	autogrind_editor.size = size
+	autogrind_editor.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	add_child(autogrind_editor)
 
 	autogrind_editor.setup(party)
@@ -1466,6 +1508,46 @@ func _on_autogrind_editor_closed() -> void:
 	if main_menu and is_instance_valid(main_menu):
 		main_menu.visible = true
 
+	_show_autogrind_view()
+
+
+var _autogrind_history_screen: Control = null
+var _autogrind_template_picker: Control = null
+
+
+func _open_autogrind_history() -> void:
+	if main_menu and is_instance_valid(main_menu):
+		main_menu.visible = false
+	var HistoryScreenClass = load("res://src/ui/autogrind/AutogrindHistoryScreen.gd")
+	_autogrind_history_screen = HistoryScreenClass.new()
+	add_child(_autogrind_history_screen)
+	_autogrind_history_screen.closed.connect(_on_autogrind_history_closed)
+
+
+func _on_autogrind_history_closed() -> void:
+	if _autogrind_history_screen and is_instance_valid(_autogrind_history_screen):
+		_autogrind_history_screen.queue_free()
+		_autogrind_history_screen = null
+	if main_menu and is_instance_valid(main_menu):
+		main_menu.visible = true
+	_show_autogrind_view()
+
+
+func _open_autogrind_template_picker() -> void:
+	if main_menu and is_instance_valid(main_menu):
+		main_menu.visible = false
+	var PickerClass = load("res://src/ui/autogrind/AutogrindTemplatePicker.gd")
+	_autogrind_template_picker = PickerClass.new()
+	add_child(_autogrind_template_picker)
+	_autogrind_template_picker.closed.connect(_on_autogrind_template_picker_closed)
+
+
+func _on_autogrind_template_picker_closed() -> void:
+	if _autogrind_template_picker and is_instance_valid(_autogrind_template_picker):
+		_autogrind_template_picker.queue_free()
+		_autogrind_template_picker = null
+	if main_menu and is_instance_valid(main_menu):
+		main_menu.visible = true
 	_show_autogrind_view()
 
 

@@ -27,6 +27,13 @@ const COLOR_NEUTRAL = Color(0.7, 0.7, 0.8)
 var _battle_viewport: SubViewport = null
 var _battle_viewport_container: SubViewportContainer = null
 
+## STOPGAP (cadence #26) — text readout standing in for the unrendered SubViewport. Signal-driven, no state machine, no cache. Deletes with _wire_battle_readout + its _build_mini_battle_panel block.
+const _BATTLE_READOUT_IDLE := "— no battle in progress —"
+var _battle_readout: Label = null
+var _readout_round: int = 0
+var _readout_action: String = ""
+var _readout_last_hit: String = ""
+
 ## Corruption visual tinting
 var _corruption_tint: ColorRect = null
 const CORRUPTION_TINT_MAX_ALPHA: float = 0.22  # Max overlay opacity at full corruption
@@ -36,14 +43,19 @@ const CORRUPTION_THRESHOLD: float = 5.0        # corruption value considered "ma
 var _exp_sparkline: SparklineChart = null
 var _gold_sparkline: SparklineChart = null
 var _winrate_sparkline: SparklineChart = null
+var _battlesmin_sparkline: SparklineChart = null
 
 ## Stats labels
 var _stat_labels: Dictionary = {}
 var _projection_labels: Dictionary = {}
 var _elapsed_label: Label = null
+var _permadeath_label: Label = null
 
 ## Stats strip
 var _stats_strip: AutogrindStatsStrip = null
+
+## Ludicrous speed indicator
+var _ludicrous_label: Label = null
 
 ## Tracking for projections
 var _session_start_time: float = 0.0
@@ -53,15 +65,127 @@ var _total_gold: int = 0
 var _wins: int = 0
 var _party_levels: Array = []
 
+## Rolling average state
+var _exp_history: Array[int] = []
+var _battle_times: Array[float] = []
+const ROLLING_WINDOW = 10
+var _last_total_exp: int = 0
+var _last_total_gold: int = 0
+var _last_battle_count: int = 0
+var _last_refresh_time: float = 0.0
+
+## Adaptation-event annotation — sentinel -1 skips the spurious first-refresh mark
+var _last_adaptation: float = -1.0
+
+## Prediction accuracy tracking
+var _predictions: Array[Dictionary] = []
+
+## Battle log
+var _battle_log_entries: Array = []
+var _battle_log_container: VBoxContainer = null
+var _battle_log_scroll: ScrollContainer = null
+
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	_session_start_time = Time.get_ticks_msec() / 1000.0
+	_last_refresh_time = _session_start_time
 	call_deferred("_build_ui")
 
 
 func get_battle_viewport() -> SubViewport:
 	return _battle_viewport
+
+
+## STOPGAP (cadence #26) — connect the readout to BattleManager. Signals are the whole
+## mechanism: no polling (would race the execution phase), no cached combatant (current_combatant
+## is STALE mid-execution — the acting combatant comes from the signal args, per cowir-battle
+## cycle 12). CONNECT_REFERENCE_COUNTED so a dashboard rebuild can't double-connect.
+func _wire_battle_readout() -> void:
+	var bm: Node = get_node_or_null("/root/BattleManager")
+	if bm == null:
+		return
+	var flags := CONNECT_REFERENCE_COUNTED
+	if bm.has_signal("round_started"):
+		bm.round_started.connect(_on_readout_round_started, flags)
+	if bm.has_signal("action_executing"):
+		bm.action_executing.connect(_on_readout_action_executing, flags)
+	if bm.has_signal("damage_dealt"):
+		bm.damage_dealt.connect(_on_readout_damage_dealt, flags)
+	if bm.has_signal("battle_ended"):
+		bm.battle_ended.connect(_on_readout_battle_ended, flags)
+
+
+func _on_readout_round_started(round_num: int) -> void:
+	_readout_round = round_num
+	_readout_action = ""
+	_refresh_battle_readout()
+
+
+func _on_readout_action_executing(combatant: Combatant, action: Dictionary) -> void:
+	var who: String = combatant.combatant_name if is_instance_valid(combatant) else "?"
+	_readout_action = "%s → %s" % [who, str(action.get("type", "act")).replace("_", " ")]
+	_refresh_battle_readout()
+
+
+func _on_readout_damage_dealt(target: Combatant, amount: int, is_crit: bool, _element: String, elemental_mod: float) -> void:
+	var who: String = target.combatant_name if is_instance_valid(target) else "?"
+	var tag: String = " CRIT" if is_crit else (" WEAK" if elemental_mod > 1.0 else "")
+	_readout_last_hit = "%s took %d%s" % [who, amount, tag]
+	_refresh_battle_readout()
+
+
+func _on_readout_battle_ended(_victory: bool) -> void:
+	_readout_round = 0
+	_readout_action = ""
+	_readout_last_hit = ""
+	_refresh_battle_readout()
+
+
+func _refresh_battle_readout() -> void:
+	if not is_instance_valid(_battle_readout):
+		return
+	if _readout_round <= 0 and _readout_action.is_empty():
+		_battle_readout.text = _BATTLE_READOUT_IDLE
+		return
+	var lines: Array[String] = ["Round %d" % _readout_round]
+	if not _readout_action.is_empty():
+		lines.append(_readout_action)
+	if not _readout_last_hit.is_empty():
+		lines.append(_readout_last_hit)
+	lines.append(_readout_party_line())
+	lines.append(_readout_enemy_line())
+	_battle_readout.text = "\n".join(lines)
+
+
+func _readout_party_line() -> String:
+	var bm: Node = get_node_or_null("/root/BattleManager")
+	if bm == null or not ("player_party" in bm):
+		return ""
+	var hp := 0
+	var max_hp := 0
+	var alive := 0
+	for c in bm.player_party:
+		if c is Combatant:
+			hp += c.current_hp
+			max_hp += c.max_hp
+			if c.is_alive:
+				alive += 1
+	return "Party %d/%d HP · %d up" % [hp, max_hp, alive]
+
+
+func _readout_enemy_line() -> String:
+	var bm: Node = get_node_or_null("/root/BattleManager")
+	if bm == null or not ("enemy_party" in bm):
+		return ""
+	var alive := 0
+	var total := 0
+	for c in bm.enemy_party:
+		if c is Combatant:
+			total += 1
+			if c.is_alive:
+				alive += 1
+	return "Enemies %d/%d" % [alive, total]
 
 
 func _build_ui() -> void:
@@ -112,8 +236,10 @@ func _build_ui() -> void:
 
 	_stats_strip = AutogrindStatsStrip.new()
 	_stats_strip.position = Vector2(8, content_y)
-	_stats_strip.size = Vector2(vp_size.x - 16, 42)
+	_stats_strip.size = Vector2(stats_w, 42)
 	add_child(_stats_strip)
+
+	_build_battle_log_panel(Vector2(proj_w, 42), Vector2(mini_w + 16, content_y))
 
 	_build_footer(vp_size)
 
@@ -139,6 +265,14 @@ func _build_header(vp_size: Vector2) -> void:
 	tier_lbl.add_theme_font_size_override("font_size", 13)
 	tier_lbl.add_theme_color_override("font_color", COLOR_WARN)
 	add_child(tier_lbl)
+
+	_ludicrous_label = Label.new()
+	_ludicrous_label.text = ""
+	_ludicrous_label.position = Vector2(vp_size.x - 380, 14)
+	_ludicrous_label.add_theme_font_size_override("font_size", 13)
+	_ludicrous_label.add_theme_color_override("font_color", Color(0.8, 0.4, 1.0))
+	_ludicrous_label.visible = false
+	add_child(_ludicrous_label)
 
 	_elapsed_label = Label.new()
 	_elapsed_label.text = "00:00:00"
@@ -179,21 +313,29 @@ func _build_mini_battle_panel(panel_size: Vector2, pos: Vector2) -> void:
 	_battle_viewport.transparent_bg = false
 	_battle_viewport_container.add_child(_battle_viewport)
 
-	# CRT scanline overlay — alternating semi-transparent dark bars every 3 pixels
-	var scan_overlay = Control.new()
-	scan_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	# STOPGAP (cadence #26): the SubViewport above renders nothing — reparenting a live
+	# BattleScene needs every one-per-battle latch instance-scoped, which is an ownership
+	# refactor, not a reparent (cowir-battle msg 2904). Until then this text readout does the
+	# panel's informational job. Delete this block + _wire_battle_readout to remove.
+	_battle_readout = Label.new()
+	_battle_readout.position = _battle_viewport_container.position + Vector2(6, 6)
+	_battle_readout.size = _battle_viewport_container.size - Vector2(12, 12)
+	_battle_readout.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_battle_readout.add_theme_font_size_override("font_size", 11)
+	_battle_readout.add_theme_color_override("font_color", TEXT_COLOR)
+	_battle_readout.text = _BATTLE_READOUT_IDLE
+	panel.add_child(_battle_readout)
+	_wire_battle_readout()
+
+	# CRT scanline overlay — single ColorRect + shader replaces ~120 ColorRect nodes.
+	var scan_overlay = ColorRect.new()
+	scan_overlay.position = _battle_viewport_container.position
+	scan_overlay.size = _battle_viewport_container.size
 	scan_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var vp_h := int(_battle_viewport_container.size.y)
-	var vp_w := _battle_viewport_container.size.x
-	var scan_y := 0
-	while scan_y < vp_h:
-		var line = ColorRect.new()
-		line.color = Color(0.0, 0.0, 0.0, 0.18)
-		line.position = Vector2(0.0, float(scan_y))
-		line.size = Vector2(vp_w, 1.0)
-		line.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		scan_overlay.add_child(line)
-		scan_y += 3  # every third row = subtle but visible
+	scan_overlay.color = Color(1, 1, 1, 1)  # shader overrides via COLOR
+	var scan_mat := ShaderMaterial.new()
+	scan_mat.shader = preload("res://src/shaders/crt_scanlines.gdshader")
+	scan_overlay.material = scan_mat
 	panel.add_child(scan_overlay)
 
 	# CRT bezel frame — a colored inner border around the viewport to mimic a monitor bezel
@@ -257,11 +399,20 @@ func _build_sparkline_panel(panel_size: Vector2, pos: Vector2) -> void:
 	title.add_theme_color_override("font_color", DISABLED_COLOR)
 	panel.add_child(title)
 
-	var chart_h = (panel_size.y - 24) / 3.0
+	# Legend for the amber adaptation-event ticks drawn on each chart
+	var legend = Label.new()
+	legend.text = "| = monsters adapted"
+	legend.position = Vector2(panel_size.x - 132, 2)
+	legend.add_theme_font_size_override("font_size", 9)
+	legend.add_theme_color_override("font_color", Color(1.0, 0.55, 0.15, 0.85))
+	panel.add_child(legend)
+
+	var chart_h = (panel_size.y - 24) / 4.0
 	var chart_w = panel_size.x - 80
 
 	var charts_data = [
 		{"label": "EXP/min", "color": COLOR_GOOD, "field": "exp"},
+		{"label": "Battles/min", "color": Color(0.7, 0.5, 1.0), "field": "battles"},
 		{"label": "Gold/min", "color": Color(1.0, 0.85, 0.2), "field": "gold"},
 		{"label": "Win Rate", "color": Color(0.4, 0.7, 1.0), "field": "winrate"},
 	]
@@ -282,7 +433,7 @@ func _build_sparkline_panel(panel_size: Vector2, pos: Vector2) -> void:
 		spark.size = Vector2(chart_w, chart_h - 6)
 		panel.add_child(spark)
 
-		if i < 2:
+		if i < 3:
 			var sep = ColorRect.new()
 			sep.color = Color(0.15, 0.12, 0.2)
 			sep.position = Vector2(8, y + chart_h - 1)
@@ -291,6 +442,7 @@ func _build_sparkline_panel(panel_size: Vector2, pos: Vector2) -> void:
 
 		match data["field"]:
 			"exp": _exp_sparkline = spark
+			"battles": _battlesmin_sparkline = spark
 			"gold": _gold_sparkline = spark
 			"winrate": _winrate_sparkline = spark
 
@@ -317,9 +469,13 @@ func _build_session_stats_panel(panel_size: Vector2, pos: Vector2) -> void:
 	var stats = [
 		{"key": "battles", "label": "Battles:", "default": "0"},
 		{"key": "total_exp", "label": "Total EXP:", "default": "0"},
-		{"key": "win_rate", "label": "Win Rate:", "default": "100%"},
 		{"key": "total_gold", "label": "Total Gold:", "default": "0"},
+		{"key": "win_rate", "label": "Win Rate:", "default": "100%"},
+		{"key": "csi", "label": "Saturation:", "default": "0%"},
+		{"key": "yield", "label": "Yield:", "default": "100%"},
+		{"key": "items_used", "label": "Items Used:", "default": "0"},
 		{"key": "collapses", "label": "Collapses:", "default": "0"},
+		{"key": "time_mult", "label": "Time Bonus:", "default": "1.0x"},
 	]
 
 	var row_h = (panel_size.y - 20) / stats.size()
@@ -342,6 +498,14 @@ func _build_session_stats_panel(panel_size: Vector2, pos: Vector2) -> void:
 		panel.add_child(val)
 
 		_stat_labels[s["key"]] = val
+
+	var last_y = 18 + stats.size() * row_h
+	_permadeath_label = Label.new()
+	_permadeath_label.text = "PERMADEATH: OFF"
+	_permadeath_label.position = Vector2(12, last_y + 4)
+	_permadeath_label.add_theme_font_size_override("font_size", 12)
+	_permadeath_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.6))
+	panel.add_child(_permadeath_label)
 
 
 func _build_projections_panel(panel_size: Vector2, pos: Vector2) -> void:
@@ -366,8 +530,10 @@ func _build_projections_panel(panel_size: Vector2, pos: Vector2) -> void:
 	var projs = [
 		{"key": "avg_exp_battle", "label": "Avg EXP/battle:", "default": "--"},
 		{"key": "battles_per_min", "label": "Battles/min:", "default": "--"},
+		{"key": "battles_per_sec", "label": "Battles/sec:", "default": "--"},
 		{"key": "projected_exp_10m", "label": "EXP in 10min:", "default": "--"},
 		{"key": "projected_gold_10m", "label": "Gold in 10min:", "default": "--"},
+		{"key": "accuracy", "label": "Accuracy:", "default": "--"},
 	]
 
 	var row_h = (panel_size.y - 20) / projs.size()
@@ -423,6 +589,57 @@ func _build_footer(vp_size: Vector2) -> void:
 		footer.add_child(lbl)
 
 
+func _build_battle_log_panel(panel_size: Vector2, pos: Vector2) -> void:
+	var panel = Control.new()
+	panel.position = pos
+	panel.size = panel_size
+	add_child(panel)
+
+	var panel_bg = ColorRect.new()
+	panel_bg.color = PANEL_BG
+	panel_bg.size = panel_size
+	panel.add_child(panel_bg)
+	_add_border(panel, panel_size)
+
+	var title = Label.new()
+	title.text = "BATTLE LOG"
+	title.position = Vector2(8, 2)
+	title.add_theme_font_size_override("font_size", 10)
+	title.add_theme_color_override("font_color", DISABLED_COLOR)
+	panel.add_child(title)
+
+	_battle_log_scroll = ScrollContainer.new()
+	_battle_log_scroll.position = Vector2(4, 18)
+	_battle_log_scroll.size = Vector2(panel_size.x - 8, panel_size.y - 22)
+	_battle_log_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	panel.add_child(_battle_log_scroll)
+
+	_battle_log_container = VBoxContainer.new()
+	_battle_log_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_battle_log_container.add_theme_constant_override("separation", 2)
+	_battle_log_scroll.add_child(_battle_log_container)
+
+
+func add_battle_result(victory: bool, turns: int, exp_gained: int) -> void:
+	_battle_log_entries.append({"victory": victory, "turns": turns, "exp": exp_gained})
+	if _battle_log_entries.size() > 10:
+		_battle_log_entries.remove_at(0)
+	_refresh_battle_log()
+
+
+func _refresh_battle_log() -> void:
+	if not _battle_log_container or not is_instance_valid(_battle_log_container):
+		return
+	for child in _battle_log_container.get_children():
+		child.queue_free()
+	for entry in _battle_log_entries:
+		var lbl = Label.new()
+		lbl.text = "%s  %d turns  +%d EXP" % ["WIN" if entry["victory"] else "LOSS", entry["turns"], entry["exp"]]
+		lbl.add_theme_font_size_override("font_size", 11)
+		lbl.add_theme_color_override("font_color", Color(0.4, 0.9, 0.4) if entry["victory"] else Color(0.9, 0.3, 0.3))
+		_battle_log_container.add_child(lbl)
+
+
 ## ═══════════════════════════════════════════════════════════════════════
 ## PUBLIC API
 ## ═══════════════════════════════════════════════════════════════════════
@@ -431,41 +648,141 @@ func refresh(stats: Dictionary, region_id: String) -> void:
 	if not is_inside_tree():
 		return
 
-	_battles_completed = stats.get("battles_won", _battles_completed)
-	_total_exp = stats.get("total_exp", _total_exp)
+	var current_battles = stats.get("battles_won", _battles_completed)
+	var current_exp = stats.get("total_exp", _total_exp)
+	var current_gold = stats.get("total_gold", _total_gold)
 	_wins = stats.get("consecutive_wins", _wins)
 
-	var elapsed = Time.get_ticks_msec() / 1000.0 - _session_start_time
+	var now = Time.get_ticks_msec() / 1000.0
+	var elapsed = now - _session_start_time
+
 	if _elapsed_label:
 		var hours = int(elapsed) / 3600
 		var mins = (int(elapsed) % 3600) / 60
 		var secs = int(elapsed) % 60
 		_elapsed_label.text = "%02d:%02d:%02d" % [hours, mins, secs]
 
-	var elapsed_min = max(elapsed / 60.0, 0.01)
-	var exp_per_min = _total_exp / elapsed_min
-	var gold_per_min = stats.get("total_items", 0) * 10.0 / elapsed_min
+	# Track per-battle EXP delta for rolling average
+	if current_battles > _last_battle_count and _last_battle_count > 0:
+		var new_battles = current_battles - _last_battle_count
+		var delta_exp = current_exp - _last_total_exp
+		var time_delta = now - _last_refresh_time
+		var time_per_battle = time_delta / float(new_battles) if new_battles > 0 else 0.0
+		var exp_per_new_battle = delta_exp / new_battles if new_battles > 0 else 0
+
+		for _i in range(new_battles):
+			_exp_history.append(exp_per_new_battle)
+			_battle_times.append(time_per_battle)
+			if _exp_history.size() > ROLLING_WINDOW:
+				_exp_history.remove_at(0)
+			if _battle_times.size() > ROLLING_WINDOW:
+				_battle_times.remove_at(0)
+
+	_last_refresh_time = now
+	_last_battle_count = current_battles
+	_last_total_exp = current_exp
+	_last_total_gold = current_gold
+	_battles_completed = current_battles
+	_total_exp = current_exp
+	_total_gold = current_gold
+
+	# Rolling average EXP per battle
+	var avg_exp_per_battle := 0.0
+	if _exp_history.size() > 0:
+		var exp_sum := 0
+		for e in _exp_history:
+			exp_sum += e
+		avg_exp_per_battle = float(exp_sum) / _exp_history.size()
+	elif _battles_completed > 0:
+		avg_exp_per_battle = float(_total_exp) / _battles_completed
+
+	# Rolling average seconds per battle → battles per minute
+	var avg_secs_per_battle := 0.0
+	if _battle_times.size() > 0:
+		var time_sum := 0.0
+		for t in _battle_times:
+			time_sum += t
+		avg_secs_per_battle = time_sum / _battle_times.size()
+	var battles_per_min := 0.0
+	if avg_secs_per_battle > 0.0:
+		battles_per_min = 60.0 / avg_secs_per_battle
+	else:
+		var elapsed_min = max(elapsed / 60.0, 0.01)
+		battles_per_min = _battles_completed / elapsed_min
+
+	# Rolling gold per battle
+	var avg_gold_per_battle := 0.0
+	if _battles_completed > 0:
+		avg_gold_per_battle = float(_total_gold) / _battles_completed
+
+	var exp_per_min = avg_exp_per_battle * battles_per_min
+	var gold_per_min = avg_gold_per_battle * battles_per_min
 	var win_rate = 100.0 * _battles_completed / max(_battles_completed + stats.get("collapse_count", 0), 1)
-	var battles_per_min = _battles_completed / elapsed_min
+
+	# Mark this sample if monster adaptation rose since last refresh (efficiency-drop cue)
+	var adaptation: float = stats.get("adaptation", 0.0)
+	var adapt_event: bool = _last_adaptation >= 0.0 and adaptation > _last_adaptation + 0.001
+	_last_adaptation = adaptation
 
 	if _exp_sparkline:
-		_exp_sparkline.push_value(exp_per_min)
+		_exp_sparkline.push_value(exp_per_min, adapt_event)
+	if _battlesmin_sparkline:
+		_battlesmin_sparkline.push_value(battles_per_min, adapt_event)
 	if _gold_sparkline:
-		_gold_sparkline.push_value(gold_per_min)
+		_gold_sparkline.push_value(gold_per_min, adapt_event)
 	if _winrate_sparkline:
-		_winrate_sparkline.push_value(win_rate)
+		_winrate_sparkline.push_value(win_rate, adapt_event)
 
 	_update_stat("battles", str(_battles_completed))
 	_update_stat("total_exp", str(_total_exp))
+	_update_stat("total_gold", str(_total_gold))
 	_update_stat("win_rate", "%.0f%%" % win_rate)
-	_update_stat("total_gold", "~%d" % int(gold_per_min * elapsed_min))
+	var csi_val = stats.get("csi", 0.0)
+	_update_stat("csi", "%.0f%%" % (csi_val * 100.0))
+	var yield_val = stats.get("yield_multiplier", 1.0)
+	_update_stat("yield", "%.0f%%" % (yield_val * 100.0))
+	var consumed = stats.get("items_consumed", {})
+	var total_consumed = 0
+	for key in consumed:
+		total_consumed += consumed[key]
+	_update_stat("items_used", str(total_consumed) if total_consumed > 0 else "0")
 	_update_stat("collapses", str(stats.get("collapse_count", 0)))
+	var time_mult = stats.get("time_multiplier", 1.0)
+	_update_stat("time_mult", "%.1fx" % time_mult)
 
-	var avg_exp = _total_exp / max(_battles_completed, 1)
-	_update_projection("avg_exp_battle", "~%d" % avg_exp)
-	_update_projection("battles_per_min", "%.1f" % battles_per_min)
-	_update_projection("projected_exp_10m", "~%d" % int(exp_per_min * 10))
-	_update_projection("projected_gold_10m", "~%d" % int(gold_per_min * 10))
+	if _permadeath_label and is_instance_valid(_permadeath_label):
+		var staking = AutogrindSystem.permadeath_staking_enabled
+		_permadeath_label.text = "PERMADEATH: %s (3x EXP)" % ("ON" if staking else "OFF")
+		_permadeath_label.add_theme_color_override("font_color", Color(0.9, 0.2, 0.2) if staking else Color(0.5, 0.5, 0.6))
+
+	var avg_label := "~%d" % int(avg_exp_per_battle) if _exp_history.size() > 0 else ("~%d" % int(avg_exp_per_battle) if _battles_completed >= 3 else "--")
+	_update_projection("avg_exp_battle", avg_label)
+	_update_projection("battles_per_min", "%.1f" % battles_per_min if battles_per_min > 0 else "--")
+	var bps = battles_per_min / 60.0
+	_update_projection("battles_per_sec", "%.1f" % bps if bps >= 1.0 else ("--" if bps <= 0 else "%.2f" % bps))
+	_update_projection("projected_exp_10m", "~%d" % int(avg_exp_per_battle * battles_per_min * 10) if battles_per_min > 0 else "--")
+	_update_projection("projected_gold_10m", "~%d" % int(gold_per_min * 10) if battles_per_min > 0 else "--")
+
+	# Record a prediction every 5 battles
+	if _battles_completed > 0 and _battles_completed % 5 == 0 and avg_exp_per_battle > 0:
+		var already_recorded := false
+		for pred in _predictions:
+			if pred["at_battle"] == _battles_completed:
+				already_recorded = true
+				break
+		if not already_recorded:
+			var predicted_5 = _total_exp + int(avg_exp_per_battle * 5)
+			_predictions.append({"predicted": predicted_5, "at_battle": _battles_completed, "target_battle": _battles_completed + 5})
+
+	# Check old predictions for accuracy
+	for pred in _predictions.duplicate():
+		if _battles_completed >= pred["target_battle"]:
+			var actual = _total_exp
+			var predicted = pred["predicted"]
+			var error_pct = abs(actual - predicted) / max(float(predicted), 1.0) * 100.0
+			var accuracy = max(0.0, 100.0 - error_pct)
+			_update_projection("accuracy", "%.0f%%" % accuracy)
+			_predictions.erase(pred)
 
 	if _stats_strip and is_instance_valid(_stats_strip):
 		_stats_strip.refresh(stats, region_id)
@@ -473,12 +790,19 @@ func refresh(stats: Dictionary, region_id: String) -> void:
 	_update_corruption_tint(stats)
 
 
-func add_highlight(_text: String, _severity: String = "info") -> void:
-	pass
+func set_ludicrous_mode(enabled: bool) -> void:
+	if _ludicrous_label and is_instance_valid(_ludicrous_label):
+		_ludicrous_label.text = "LUDICROUS SPEED" if enabled else ""
+		_ludicrous_label.visible = enabled
 
 
-func update_rule_triggers(_triggers: Dictionary) -> void:
-	pass
+# Tick 266: removed dead stub methods. `add_highlight` and
+# `update_rule_triggers` were no-op pass stubs from a now-stale
+# anticipated parity with AutogrindMonitor. AutogrindUI only calls
+# these on `_monitor` (never on `_dashboard`), and GameLoop's
+# `_autogrind_dashboard` doesn't call them either. They were dead
+# code that read as "intentionally swallow events" — misleading.
+# Reintroduce when the Dashboard actually needs the surface.
 
 
 func _update_stat(key: String, value: String) -> void:
@@ -498,36 +822,19 @@ func _update_projection(key: String, value: String) -> void:
 func _input(event: InputEvent) -> void:
 	if not visible:
 		return
-
-	if event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_BACK:
-		pause_requested.emit()
-		get_viewport().set_input_as_handled()
-
-	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_START:
-		adjust_rules_requested.emit()
-		get_viewport().set_input_as_handled()
-
-	elif event.is_action_pressed("ui_cancel") and not event.is_echo():
-		exit_requested.emit()
-		get_viewport().set_input_as_handled()
-
-	elif event is InputEventJoypadButton and event.pressed:
-		if event.button_index == JOY_BUTTON_LEFT_SHOULDER or event.button_index == JOY_BUTTON_RIGHT_SHOULDER:
-			if Input.is_joy_button_pressed(0, JOY_BUTTON_LEFT_SHOULDER) and Input.is_joy_button_pressed(0, JOY_BUTTON_RIGHT_SHOULDER):
-				tier_cycle_requested.emit()
-				get_viewport().set_input_as_handled()
-
-	elif event is InputEventKey and event.pressed:
-		match event.keycode:
-			KEY_P:
-				pause_requested.emit()
-				get_viewport().set_input_as_handled()
-			KEY_R:
-				adjust_rules_requested.emit()
-				get_viewport().set_input_as_handled()
-			KEY_T:
-				tier_cycle_requested.emit()
-				get_viewport().set_input_as_handled()
+	var action = AutogrindInputHelper.classify_event(event)
+	match action:
+		"pause":
+			pause_requested.emit()
+		"adjust_rules":
+			adjust_rules_requested.emit()
+		"exit":
+			exit_requested.emit()
+		"tier_cycle":
+			tier_cycle_requested.emit()
+		_:
+			return
+	get_viewport().set_input_as_handled()
 
 
 ## ═══════════════════════════════════════════════════════════════════════

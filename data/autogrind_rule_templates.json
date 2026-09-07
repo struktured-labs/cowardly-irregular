@@ -1,0 +1,65 @@
+{
+  "templates": [
+    {
+      "id": "template_safe_grind",
+      "name": "Safe Grind",
+      "description": "Stops at 30% HP, on any death, or when corruption gets scary. Best for early runs and unfamiliar regions.",
+      "rules": [
+        {
+          "conditions": [{"type": "party_hp_min", "op": "<", "value": 30}],
+          "actions": [{"type": "stop_grinding"}],
+          "enabled": true
+        },
+        {
+          "conditions": [{"type": "member_dead", "op": "==", "value": 0}],
+          "actions": [{"type": "stop_grinding"}],
+          "enabled": true
+        },
+        {
+          "conditions": [{"type": "corruption", "op": ">=", "value": 4.0}],
+          "actions": [{"type": "stop_grinding"}],
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "template_exp_rush",
+      "name": "EXP Rush",
+      "description": "Only stops on party wipe. Ignores HP and corruption for max efficiency uptime. High risk, high yield.",
+      "rules": [
+        {
+          "conditions": [{"type": "alive_count", "op": "<=", "value": 1}],
+          "actions": [{"type": "stop_grinding"}],
+          "enabled": true
+        },
+        {
+          "conditions": [{"type": "party_hp_min", "op": "<", "value": 40}],
+          "actions": [{"type": "heal_party"}],
+          "enabled": true
+        }
+      ]
+    },
+    {
+      "id": "template_gold_farm",
+      "name": "Gold Farm",
+      "description": "Stops when inventory gets crowded so you can go sell. Also bails on very low HP.",
+      "rules": [
+        {
+          "conditions": [{"type": "inventory_items", "op": ">=", "value": 30}],
+          "actions": [{"type": "stop_grinding"}],
+          "enabled": true
+        },
+        {
+          "conditions": [{"type": "party_hp_min", "op": "<", "value": 15}],
+          "actions": [{"type": "stop_grinding"}],
+          "enabled": true
+        },
+        {
+          "conditions": [{"type": "member_dead", "op": "==", "value": 0}],
+          "actions": [{"type": "stop_grinding"}],
+          "enabled": true
+        }
+      ]
+    }
+  ]
+}

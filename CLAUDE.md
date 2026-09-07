@@ -2,9 +2,39 @@
 
 A meta-aware JRPG where automation isn't cheating — it's enlightenment.
 
-## Project Status: Early Prototype
+## Project Status: Advanced Prototype (v3.33-alpha track, continuous deploys through 2026-07-11)
 
-Working battle system with CTB combat, 4-party system, autobattle scripting UI.
+Playable end-to-end through World 1:
+
+- **Battle system**: CTB + AP, 5-party, Advance/Defer mechanics (queue unwind surfaced in the hint bar), group attacks, formation specials, per-job Free Move command (Channel/Pray/Riff/Strike), Mode 7 perspective floor, execution stall watchdog (wall-clock, armed start↔end_battle)
+- **Spotlight Duels**: every W1 starter unlock is a solo 1v1 miniboss showcasing that PC's kit (cutscene `battle` step → GameLoop.start_solo_battle → retry-on-defeat with full restore). Custom win conditions: survive_turns (Cleric), status_threshold swayed (Bard), hp_zero (rest). Dual-source win_condition (step overrides monsters.json). Duelist plays their OWN duel manually (both the routing gate and the command-menu gate carry a solo-duel override); clutch floor: a full-HP duelist can never die to one action (struktured ruling 2026-07-11); menu watchdog self-heals + terminal autobattle fallback so battles cannot wedge.
+- **Autobattle**: per-character rule editor with full keyboard/gamepad nav + Defensive/Balanced/Aggressive preset catalog (data/autobattle_rule_templates.json, level-1-safe) + LLM Rule Composer
+- **Side quests (QuestSystem v1)**: data/quests/*.json, GameState.quests dict + flag mirrors, talk/custom/fetch objectives (fetch supports `consume: true`), giver dialogue with accept/decline, "!"/"?" NPC markers (markerless opt-out), reward announcements, Quest Log section + HUD tracker. 11 W1 quests of 33 total; Milo's thesis quest wired to battle telemetry.
+- **Worlds**: 6 worlds wired (medieval / suburban / steampunk / industrial / futuristic / abstract); W1 fully playable incl. Castle Harmonia placed on the overworld (post-Rat-King) and the W2 portal (post-Mordaine). W2-W6 use visible roaming monsters only.
+- **Bosses**: Cave Rat King, 4 elemental dragons (Pyrroth/Glacius/Voltharion/Umbraxis), Chancellor Mordaine (W1 final)
+- **Progression (item 18)**: lean starting kits — Mage fire/blizzard/thunder, Cleric cure/protect; the rest level-gated via `abilities_at_level`, purchasable early at Harmonia's magic shops (full W1 tier-2 shelves; `purchased_abilities` marker protects bought spells). Settings → "Dev: Full Job Kits" grants/strips for testing. Pre-pare saves grandfathered on load.
+- **LLM integration**:
+  - Opt-in dynamic NPC dialogue (Theron / Milo / Boris in Harmonia) + jailbreakable boss dialogue. Interact routing: quest > dynamic > scripted.
+  - **Boss Strategic Intent** for all 5 W1 bosses (Settings → LLM Boss Strategy). LLM picks intent/posture per phase, deterministic ladder still owns ability choice.
+  - **Party Combat Dialogue** for all 5 starter jobs, rendered as speech bubbles anchored to the speaker (suppressed only at ≥4x speed); `voice_<job>_<trigger>` audio-handle convention ready for the voice pack. Scripted `trigger_voices` fallback per job when LLM off.
+  - Rebalance daemon (opt-in), LLM Rule Composer, Learning Monsters. Ollama / OpenAI-compat backends via HTTPBackend; BYOK desktop-only (settings.json) pending field-input UI.
+- **Data**: 14 jobs, 288 abilities, 98 monsters (artist art for slime/bat/goblin + 5 duel minibosses T2), 172 items, 34 encounter pools, 193 cutscenes (44 party/event chats, guarded: every registry chat needs its JSON + a live emitter), 153 music tracks, 259 SFX
+- **Tests**: ~7390 passing / 0 failing in GUT. **Full suite takes ~5-10 MINUTES headless (measured 268-689s across 14 runs / 6 lanes, 2026-07-30 — one run cleared the 600s ceiling by 89s), NOT the "~40s" this line claimed for months — BACKGROUND the gate.** A foreground run can cross a 10-minute harness ceiling, and the SIGTERM skips the export restore; that stale number is the first link in the chain that produced four orphaned snapshots and three "the export dir is clean" reports that each undid the last. The error was invisible because it is intermittent: on a quiet box the suite finishes ~380s and confirms the doc to you, at load it reaches 689s and dies. The 268s low end is as much of the cause as the 689s high end: a lane on a quiet box measures 4.5 minutes, stays inside every ceiling, and concludes the doc is roughly right. Gate on the [Failed] count. Campaign-scale integration: the story spine walks New Game → world6_ending under test (incl. a mid-campaign save/load), battle mini-fuzz every run, live/headless group-attack parity-by-construction.
+- **Sharing (pillar complete)**: autobattle scripts AND autogrind rule sets travel as `COWIR1:` clipboard codes (Shift+E copy / Shift+I paste in grid editor + autogrind console), grammar-validated at decode; file-based E/I flows unchanged
+- **Meta jobs (all five REAL)**: Scriptweaver turns a bounded game-constant dial (⚠️ "+ reveals execution order" was listed here as SHIPPED and is NOT — `formula_sight`'s `show_formulas` key and `autobattle_verbs`' `autobattle_advanced` key each occur exactly ONCE in `src/`, in their own declaration inside PassiveSystem's hardcoded fallback copy of passives.json, and the ids appear only in JobSystem's `passive_abilities` roster. Both are equippable today and do nothing. Confirmed by 4 independent methods 2026-07-30 after a count that moved 13→0→1→3→2 as five lanes each hit a different consumption shape); Necromancer permakill EXTERMINATES species from all three spawn paths (encounter pools, autogrind roster, roaming — save-persisted, New-Game-reset, live roamers dissolve); Time Mage full (quicksave/restore/temporal shield/undo_death); Skiptrotter Bypass Puzzle concedes the chicken roundup; Bossbinder controlled/mind-swapped enemies fight their own side
+- **Corruption (fully wired)**: visual_glitch, stat_drain (1%/round erosion), encounter_surge, bp_instability (player AP-gain jitter 0/+1/+2), ability_corruption (10% player-cast misfire within the learned kit) — every roster entry has a live consumer, ratcheted
+- **Reference pages**: Formations (live party-qualification checks) + Records (nine live-read stats with editorial quips) in the overworld menu; both in the deploy render smoke
+- **Interiors**: every W1 dragon village has 2+ interiors (test-enforced), W2-W5 expansion villages have 2 each, Vertex stays single-room BY DESIGN (pinned) — most rooms read real game state (crystals, playtime, battles_won, injuries, saves, inventory, bestiary)
+- **Village elevation (CrossCode pass, 2026-08-21)**: villages carry an optional `height_data` digit grid beside `map_data`; cliff faces/edge colliders are DERIVED (`HeightGrid`), `^`/`/` are the only tier connectors and slow the walk to 0.6 through `BaseVillage.get_terrain_speed_at`; `_is_cell_walkable` stays the authority, `_can_step` carries the height rule; Y-sorted `VillageProp`s with footprints; per-scene `VillageLighting` (CanvasModulate + lamps) replaces the overlay tint for villages (GameLoop asks `has_scene_lighting()`). Harmonia = 3 tiers (castle approach / town / market, 8 stair cells). `tools/village_screenshot.sh <village>` renders dawn/noon/dusk via xvfb. Artist seam: `data/sprite_manifest.json` → `tile_sheets.<world>` (`TileSheetManifest`; regions in tile units; anything unnamed stays procedural; `test_tile_sheet_manifest_regression` validates names/bounds/paths; brief for the sprite lane in `docs/art/tile-sheet-brief-medieval.md`). Spec: `docs/superpowers/specs/2026-08-21-crosscode-environment-design.md`; phase 4 (W2-W6 generators + dungeon lights) pending.
+- **Save**: Full JSON save with typed-array roundtrip protection, quests/crystals reset on New Game AND on old-save load (leak fixes 2026-07-02), MRU/pin ability persistence, permanent injuries, corruption effects (menu readout), story-flag gates. Real-save hydration smoke runs against local saves.
+- **Version**: `Version.SEMVER` is the single source; bump at every deploy (tag-aware ratchet test). Title screen shows the git short-hash in dev runs.
+- **Deployment**: continuous per-fix deploys during authorized windows; `v3.33.x-alpha` line live on itch.io. Desktop targets ship too: `tools/deploy_linux.sh` / `tools/deploy_windows.sh`, both wrapping `tools/deploy_desktop.sh` — same gates plus a BOOT gate (the exported binary must reach "[GAME] Started"; Windows via wine), and publishing is opt-in behind `--publish`. Web pipeline: `tools/deploy_web.sh <tag>` (suite → export → 199MB pck gate → muted render smoke w/ auto-retry → 4-stage WASM web smoke w/ auto-retry → butler push :web). Web smoke drives the REAL build in headless chromium: boot → New Game → overworld menu → save/reload/Continue (IndexedDB persistence proof), screenshots each stage, and prints a non-fatal console-error budget; its screenshots have caught 10+ real bugs.
+- **Staged cutscenes (FF6/CT-style)**: `presentation:"staged"` cutscenes play on the LIVE map — CutsceneActor puppets walk/face/emote/hop, camera pans, real player+HUD hidden and restored. 35 step types in CutsceneDirector (derived from the `match step_type` arms — the doc said 8 for months, hiding branch/choice/battle/start_timer/grant_item/roll_credits and two dozen more from anyone authoring from it); world1_chapter1 is the proof scene. Named-NPC overworld sheets (theron/milo/phil/bram/marta) + provenance-tier ledger for ALL overworld sheets (bidirectional disk<->manifest ratchet).
+- **UI fonts**: FontFallbacks autoload chains 4 subset Noto fonts (OFL, ~540KB) behind the default font — symbol/emoji glyphs render on web (they were tofu). Chain proof test pins every authored glyph.
+- **Battle speed scale (v3)**: engine 0.25 = "1x" = the default (struktured 2026-07-11 ruling: the old 0.5x pacing is correct). Ladder labels = engine*4 everywhere (BattleScene + Settings); `speed_scale_v3` one-time settings migration; New Game resets per-run pacing (speed, encounter rate) while system settings persist.
+- **Input locking**: cutscenes push/pop the canonical InputLockManager lock (interacts can't leak to save points / NPC / LLM dialogue mid-scene); living holders heartbeat so the 10s stale-expiry only reaps true leaks; story cutscenes outrank dynamic-LLM dialogue in NPC interact routing.
+
+Deployed via butler to itch.io `:web` channel (NEVER without user approval — 2026-07-02 window was explicitly granted).
 
 ## Core Vision
 
@@ -42,7 +72,7 @@ Different jobs unlock alternative combat modes (switchable mid-battle with coold
 | Vanguard | Action RPG Mode |
 | Tactician | Auto-Chess Mode |
 
-### Group Attacks (Planned)
+### Group Attacks (Implemented)
 Entire party can pool their Advance Points for combined attacks:
 - **Requirements**: All party members must have AP to contribute
 - **AP Cost**: Sum of individual costs (e.g., 4 members × 2 AP = 8 total AP spent)
@@ -50,15 +80,49 @@ Entire party can pool their Advance Points for combined attacks:
 - **Types**:
   - **All-Out Attack**: Physical damage, all party members strike together
   - **Combo Magic**: Elemental fusion (Fire + Ice = Steam, etc.)
-  - **Formation Specials**: Unlocked by specific party compositions
+  - **Formation Specials**: Unlocked by specific party compositions (six formations defined in `HeadlessBattleResolver.FORMATIONS`)
   - **Limit Breaks**: Ultimate attacks requiring full AP from all members
 - **Strategic tradeoff**: Powerful but leaves entire party vulnerable next turn
+
+### Free Move (Per-Job)
+Each starter job has a free 0-cost AP action available in the command menu:
+| Job | Free Move | Effect |
+|-----|-----------|--------|
+| Fighter | Strike | Bonus melee swing (physical fallback animation) |
+| Cleric | Pray | Restores MP to a party member (green heal popup + sparkle FX) |
+| Mage | Channel | Restores MP to self |
+| Rogue | Strike | Bonus melee (falls back to attack anim, not cast) |
+| Bard | Riff | Weak 0-MP strike (0.4x) with a high chance of `blind` — disruption, not an MP battery (struktured 2026-08-22) |
+
+- MP-restore variants emit `healing_done` (green popup) not `damage_dealt` (would show as crit damage)
+- Free Move abilities are NOT recorded in the MRU quick-slot list (each job has its own dedicated slot)
 
 ### Critical Hits
 - Physical attacks can crit based on Luck/Speed stats
 - Magic does NOT crit by default (can be enabled by specific abilities/equipment)
 - Crit multiplier: 1.5x base, modified by equipment
 - Visual: Screen flash, enhanced hit sound, damage number shake
+
+### Battle UX
+- **Permanent input hint bar** at bottom-center of battle screen: `[L] Defer · [R] Advance · [+/-] Speed · [Select] Auto`
+- Hidden during autogrind console mode
+- Inter-action delays scale with `Engine.time_scale` so 2x/4x speed actually plays faster (regression-tested)
+- Tutorial hints (TutorialHints catalog) fire once per session — the hint bar covers the long-term reference need
+
+### W1 Boss Roster
+| Boss | Location | Level | Notes |
+|------|----------|-------|-------|
+| Cave Rat King | Whispering Cave | 10 | Tutorial boss, "boss_rat_king" theme |
+| Pyrroth, the Ember Wyrm | Fire Dragon Cave | 14 | Fire-element dragon |
+| Glacius, the Frozen Sovereign | Ice Dragon Cave | 15 | Ice-element dragon |
+| Voltharion, the Storm's Edge | Lightning Dragon Cave | 16 | Lightning-element dragon |
+| Umbraxis, the Void Render | Shadow Dragon Cave | 18 | Dark dragon, philosophical boss |
+| **Chancellor Mordaine** | **Castle Harmonia** | **20** | **W1 final boss; defeat unlocks W2. Theme: "The Usurper's Shadow" (boss_medieval). One face of the Calibrant.** |
+
+- Mordaine's intro plays `world1_mordaine_intro` cutscene before battle (CastleHarmonia extends DragonCave)
+- Defeat sets BOTH `dungeon_flags["world1_mordaine_defeated"]` AND `game_constants["cutscene_flag_world1_mordaine_defeated"]` via the `defeat_cutscene_flags` bridge declared in the subclass
+- Sprite is `shadow_knight` placeholder (tier T1) pending artist sheet
+- Castle Harmonia placed on the W1 overworld (revealed post-Rat-King; tick 335 dual-namespace gate) + reachable via TeleportMenu
 
 ## Autobattle System
 
@@ -137,6 +201,28 @@ Old IDs (white_mage, black_mage, thief) are aliased to new IDs (cleric, mage, ro
 - **HybridSpriteLoader**: Checks `data/sprite_manifest.json` for artist sprite sheets, falls back to procedural SnesPartySprites
 - **SnesPartySprites**: Procedural 32x48 SNES-style sprites with composable layers (body→hair→face→outfit→headgear→weapon)
 - Each job maps to an outfit type and headgear type via OUTFIT_MAP/HEADGEAR_MAP
+- All 5 starters (fighter, mage, cleric, rogue, bard) ship with artist-made sheets in `assets/sprites/jobs/<job_id>/`
+- Bard added 2026-05-22 (commit 0b53f19) — idle/cast/attack done; other animations pending
+- Monster sheets: 90 entries in `monster_sheets` section, mostly 256x256 frames, AI-generated (T1) with artist passes pending
+- Per-world monster variants supported: lookup `<monster>_<world_suffix>` first, fallback to base (e.g., `slime_suburban`)
+
+### Save System Architecture
+- **Format**: JSON, persisted via SaveSystem autoload
+- **Critical pattern — typed-array roundtrip protection**: `JSON.parse` returns generic `Array`. Assigning to a typed `Array[String]` / `Array[Dictionary]` field is a SCRIPT ERROR — and **the assignment ABORTS the enclosing function; the surviving default is a symptom, not the extent.** Every line after the assignment never runs. (Read only as "field keeps default `[]`", this sentence mis-triaged two lanes in one hour on 2026-08-06 — a test with this bug at line 69 scored green while its subject-assert was never reached. Discriminator: `executed < authored` assert counts.) Combatant.from_dict and GameState.from_dict use explicit `for x in data[key]: typed.append(str(x))` coercion for these fields:
+  - `status_effects`, `permanent_injuries`, `learned_passives`, `equipped_passives`, `pinned_abilities`, `recent_abilities` (Combatant)
+  - `player_party`, `corruption_effects` (GameState)
+- **Persisted ability slots**: MRU `recent_abilities` (size 2) + `pinned_abilities` (player-selected)
+- **Cutscene completion flags**: `_CUTSCENE_COMPLETION_FLAGS` const in GameLoop maps every story-cutscene id → its `cutscene_flag_*_complete` key, set on cutscene finish to prevent the loop bug
+- **Boss defeat bridge**: Subclasses of DragonCave can declare `defeat_cutscene_flags: Array[String]` to push flags into `game_constants` on victory (not just per-character `dungeon_flags`)
+
+### Data Integrity Tests
+Source-level + runtime guards in `test/unit/`:
+- `test_monster_data_integrity.gd` — every drop / one_shot reward / ability / element tag must resolve
+- `test_mordaine_runtime.gd` — Mordaine instantiates from JSON, abilities resolve in JobSystem, drops resolve in ItemSystem
+- `test_mordaine_battle_integration.gd` — end-to-end battle via HeadlessBattleResolver
+- `test_save_party_roundtrip_regression.gd` — typed-array JSON-roundtrip preservation
+- `test_cutscene_completion_flag_regression.gd` — flag map covers W1 critical cutscenes
+- These catch the silent-failure class that source review misses (typo'd IDs, broken cross-file refs)
 
 ## Stakes & Consequences
 
@@ -158,6 +244,13 @@ Old IDs (white_mage, black_mage, thief) are aliased to new IDs (cleric, mage, ro
 - Would be scoped-down "Origins" version
 
 ## Development Workflow
+
+### Branch Hygiene
+**CRITICAL: Always merge latest main before starting new work.**
+```bash
+git fetch origin && git merge origin/main --no-edit
+```
+Do this at the start of every session, before creating new branches, and before any significant feature work. Stale branches cause merge hell.
 
 ### Pre-Launch Validation
 **CRITICAL: Always use godot-mcp MCP tools before launching the game.**
@@ -185,18 +278,73 @@ The `mcp/godot-mcp` submodule provides MCP tools for safe validation:
 
 **Fallback:** Godot headless commands via Bash are always safe:
 ```bash
-godot --headless --check-only --script <file>  # Check syntax
-godot --headless -s test/run_tests.gd          # Run tests
+XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --check-only --script <file>  # Check syntax
+XDG_DATA_HOME=$PWD/tmp/xdg godot --headless -s test/run_tests.gd          # Run tests
 ```
 
 ### Testing
-- Unit tests in `test/unit/` using GUT framework
-- Run tests via: `godot --headless -s test/run_tests.gd`
+- Unit tests in `test/unit/` using GUT framework — ~7390 tests across 1157 files. **~5-10 min headless, not seconds** (see the Tests bullet above; this line said "~30s" and two other sites said "~40s", all three ~10x low and drifted independently)
+- **Canonical test command** — use the wrapper (mutes audio AND writes its own --log-file so test runs never rotate the game's user://logs crash trace away):
+  ```bash
+  XDG_DATA_HOME=$PWD/tmp/xdg tools/run_tests.sh                # full unit suite
+  XDG_DATA_HOME=$PWD/tmp/xdg tools/run_tests.sh <name>         # single file (test_<name>.gd)
+  XDG_DATA_HOME=$PWD/tmp/xdg tools/run_tests.sh --isolated     # quarantined suite (own process by design)
+  ```
+- **Exit codes: `0` pass · `1` test failures · `2` bad invocation · `3` NOTHING RAN.** Codes 2 and 3 were added 2026-07-29 because GUT **exits 0 when it runs no tests at all**, which no exit code could distinguish from a real pass. Measured: a nonexistent name gave `exit 0 · Scripts 1 · Tests 5`-shaped success with zero `Tests` lines. It cost the fleet four vacuous verification runs and two wrong diagnoses in one evening — cowir-ai briefly measured a known-red branch as green, and cowir-sfx took three attempts to get a real run. The causes are open-ended (absent file · empty `-gdir` · **fresh unimported worktree**, where `res://` does not resolve while the file sits on disk · a parse error that drops the script), so the wrapper does **not** enumerate them: it asserts the OUTCOME — a real run always prints a Totals block, a vacuous one never does — and exits 3 if none appeared. That vacuity check lives in the wrapper rather than in `tools/gate.sh` because `gate.sh` runs the full suite only — a single-file run never goes through it.
+- **`run_tests.sh` HONOURS `XDG_DATA_HOME` — it does not SET one.** `:45` reads
+  `${XDG_DATA_HOME:-$HOME/.local/share}`, so a sandboxed caller nets its own path and a BARE
+  caller runs godot against HIS REAL `user://`, protected only by the net below. Three
+  greps for `XDG_DATA_HOME` in that file return two comments and that default expansion —
+  which reads as "this script sandboxes itself" and is the opposite. Set it at the call site.
+- **The suite writes over the player's exported scripts, and your protection is a property of YOUR checkout.** `test/unit` writes fixtures to `user://script_exports/` under the same filenames the shipped Shift+E export and `export_autogrind_rules()` use, so a plain full-suite run overwrote real player data — for nine deploys, the same defect class as the 2026-07-24 save-eating one. `run_tests.sh` snapshots and restores that directory around every run. It lived in `gate.sh` until 2026-07-30, which protected only the runs that typed `gate.sh` while the docs said `run_tests.sh`; **a tree predating that move has no net whatever main contains** — cowir-battle measured their own checkout 42 commits behind, gating faithfully through `gate.sh`, with zero snapshot machinery in it. Verify your tree, not the repo: `grep -c 'PLAYER-DATA NET' tools/run_tests.sh` (`0` = unprotected, rebase). The net is a backstop, not the fix: the real one is per-test, overriding the export path in your own fixture so no run writes production regardless of which tooling it went through.
+- **Gate on the EXIT CODE, captured before you shape the output.** `run_tests.sh` propagates failure correctly (verified independently by 5 lanes, 2026-07-29); every gate that ever passed a red tree broke the signal downstream:
+  ```bash
+  tools/run_tests.sh > tmp/gate.log 2>&1; EC=$?   # capture BEFORE piping
+  grep -E "^  (Passing|Failing)" tmp/gate.log     # then look
+  test $EC -eq 0 || exit 1                        # then decide
+  ```
+  - `suite | grep … && commit` tests **grep's** exit code, not the suite's. `suite ; commit ; push` in one block never checks at all — the gate runs and does not gate.
+  - Counting `[Failed]` is wrong twice: `grep -cE '^\s+\[Failed\]'` returns a clean **0** on a red tree (Godot colours stdout, so the ANSI escape precedes the whitespace; `\s*` does not save you — `--log-file` is ANSI-free and immune), and `grep -cF '[Failed]'` is a **valid boolean and never a count** — it equals 2 × failing *asserts*, a quantity GUT never prints, so nothing on screen can catch it being wrong. Measured: 1 failing test with 3 failing asserts → `Failing 1`, `grep -cF` **6**; 2 tests × 1 assert → 4. The ratio to `Failing N` is unbounded. Report `Failing N` (the only exact cardinal GUT prints) or `$?`.
+- **`cowir-ai-intent-kit-ratchet` @ `b50a90f6` is a permanent known-RED branch, kept deliberately — do not fold or delete it.** It is an executable bug report (boss intents that reach no bias arm) and doubles as the fleet's gate control: point a gate at it, and if it reports green the detector is broken. A real coloured multi-line failure catches parse bugs a planted one-line assert does not.
+  - **Run it in a worktree AT that SHA, and import first** — the naive form gives a false green twice over. From your own branch the file does not exist, so nothing runs; in a fresh worktree the import cache is absent, so `res://` does not resolve. Both used to exit 0 and read as "my detector is broken" when it was fine. `run_tests.sh` now refuses them (2 and 3), but the procedure still needs both lines:
+    ```bash
+    git worktree add --detach <dir> b50a90f6
+    cd <dir> && XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --audio-driver Dummy --import --quit   # REQUIRED — every fresh worktree is unimported
+    tools/run_tests.sh > log 2>&1; echo $?                              # expect 1 · Failing 2
+    ```
+  - It is a **subset** of main (157 commits behind, 14 fewer test files). Valid as a detector control; it certifies **nothing** about main's corpus. Self-consistent is not current.
+- Raw equivalent if the wrapper is unavailable (add `--log-file tmp/gut.log`):
+  ```bash
+  XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --audio-driver Dummy --log-file tmp/gut.log -s addons/gut/gut_cmdln.gd -gdir=res://test/unit -gprefix=test_ -gsuffix=.gd -gexit
+  ```
+- Syntax-only check (autoloads not initialized; SoundManager / JobSystem refs will appear missing).
+⚠️ NOT inert: `--check-only` opens the project and WRITES `user://logs/godot.log`, rotating his
+crash trace. Sandbox it like everything else:
+  ```bash
+  XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --check-only --script <file>
+  ```
+- **⚠️ SANDBOX EVERY GODOT INVOCATION THAT OPENS THE PROJECT — `--import`, `--check-only`,
+`-s <script>`, the raw GUT runner. The ONE exception is launching the game FOR HIM
+(`launch.sh`, `godot &`): there his `user://` IS the destination and sandboxing it would
+send his saves to a temp dir that gets deleted. Classify by INTENT, not by the flag.
+`--import` IS NOT BENIGN.** It carries the same `E`
+(editor-only) flag as `--editor` and the engine's own help says it *"Starts the editor"* —
+`--headless` means NO WINDOW, not *not the editor*. An editor-class run whose
+`user://` project dir ALREADY EXISTS writes `.recovery_mode_lock` there (reproduced on
+demand 2026-08-22: same sandbox twice, run 1 creates the dir and no lock, run 2 writes one).
+Four lanes reasoned that `--import` was safe "because it registers autoloads without
+instantiating them" — true, and irrelevant: the ENGINE writes the file, not project code.
+`XDG_DATA_HOME=$PWD/tmp/xdg` redirects the whole `user://` root; `tmp/` is already
+gitignored, and `tmp/xdg` (a CHILD) inherits that rule where `tmp-xdg` (a SIBLING) does not.
+Prove the redirect FIRED — a non-empty sandbox — rather than inferring it from an
+unchanged live dir, which is also what you get if godot never ran.
+
+Full import (autoloads available, catches more issues; ~10s):
+  ```bash
+  XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --import
+  ```
 - All tests should pass before committing changes
-- **Godot headless commands are always safe** - use liberally for validation
-  - `godot --headless --check-only --script <file>` - Check syntax
-  - `godot --headless -s test/run_tests.gd` - Run unit tests
-  - Output to local `tmp/` folder (gitignored), never `/tmp`
+- Output to local `tmp/` folder (gitignored), never `/tmp`
 
 **Regression Prevention Rule:**
 - **Every time a bug is fixed, add a regression test**
@@ -204,6 +352,27 @@ godot --headless -s test/run_tests.gd          # Run tests
 - This prevents the same bug from reoccurring
 - Test file naming: `test_<feature>_regression.gd` for regression-specific tests
 - Include bug reference in test comments (e.g., "Regression test for gray screen battle transition")
+
+### Common Pitfalls (verified, recurring)
+- **Combatant uses `job_level` NOT `level`** — accessing `.level` silently crashes `_build_ui()`
+- **Godot's Input singleton leaks across GUT tests** — a stuck `ui_down` from one test drags "stationary" players in later physics tests (24px drift observed 2026-07-18); the shared default World2D also lets leaked bodies overlap unrelated triggers. Physics-sensitive tests: dedicated SubViewport/World2D + `Input.action_release` in before/after_each.
+- **AreaTransition `_triggered` re-arms on body_exited (2026-07-18)** — it guards double-fires within one overlap ONLY; if you need a true one-shot door, add your own flag, don't rely on the latch
+- **`await` in a loop SERIALIZES what should be simultaneous (2026-07-25)** — `for a in actors: await a.walk_to(...)` makes a crowd shuffle aside single-file over N × duration instead of parting at once. This reads perfectly fine in code and only fails on screen, so review won't catch it. For parallel motion: start every tween unawaited, track the longest duration, `await` that once. Applies to any staged-cutscene group action (scatter, group emote, simultaneous turn) — pinned by test in `test_conscript_nearby_regression`
+- **Staged-cutscene coords are only valid for the map they were authored against (2026-07-25)** — a mark can be inside the map rect, on a walkable tile, and still wrong: `walk_to` tweens in a STRAIGHT LINE, so two legal marks can route an actor straight through a building. Village resizes shift every `.gd` `Vector2` but never touch cutscene JSON. `test_staged_scene_live_geometry_smoke` instantiates the real village and samples each walk segment against `_is_cell_walkable`; run it after any map edit
+- **Git metadata describes PROVENANCE, not CONTENT (2026-07-25, hit independently by 3 lanes)** — verify the artifact, never the pointer. A branch tip failing `merge-base --is-ancestor` does NOT mean unlanded work (content reaches main via cherry-pick/reland). **The failure is ONE-DIRECTIONAL: a tip-side MERGED is trustworthy alone** (nothing moves a tip forward without its content) — only the NEGATIVES need content-side follow-up; a stash's label is the branch HEAD's commit subject at stash time, NOT its diff (5 of 7 "feature" stashes held only `.import` churn). Check the symbol/key exists on main, or `git stash show --name-only`, before concluding anything. **One layer deeper for imported assets: the file on disk is ALSO a pointer.** A test that reads a PNG/OGG through Godot's `load()` sees the cached `.ctex`/import artifact, not the bytes — so a file that `git hash-object` proves identical to main can still measure six-day-old pixels and fail a ratchet. After any fold touching assets, `--import` BEFORE trusting an asset-reading test (2026-07-25: nearly filed a phantom sprite regression this way)
+- **Two data sources feeding one surface — one silently wins (2026-07-25)** — a dialogue rewrite can ship, diff clean, review fine, pass the suite, and be a runtime NO-OP because a *second* file overwrites it at `_ready` (`OverworldNPC._setup_persona_data` replaces constructor `dialogue_lines` with the persona JSON's `fallbacks[]`; bit Theron and Boris). Unlike every other trap here, NO git-side check finds it: the other failures are *pointer disagrees with content*, this is **two contents that are both correct where only the consumer's choice is wrong** — findable only by reading the consumer. When editing authored content, confirm which source the runtime actually reads.
+  **Which guard is right depends on ONE axis — are the sources supposed to agree, and if not, can the author see which wins?** (a) *Redundant* (`monsters.json` ↔ cutscene `win_condition`): assert AGREEMENT — never model precedence, if both agree the question is moot. (b) *Divergent + invisible at authoring* (`fallbacks[]` ↔ `quest_state_lines`): guard the INVISIBILITY, not the collision — require an annotation naming what outranks it. (c) *Divergent + already documented* (`SOUNDS` ↔ `sfx_manifest`, manifest-wins-by-contract): NO ratchet, comment only.
+  **Corollary — a check whose CORRECT case requires a suppression flag is not a check.** 40 allowlist entries on day one, or an `"_shadow_ok": true` that's muscle memory by the second NPC, is rot arriving dressed as diligence. When a guard IS warranted, require the DELIVERABLE (the note explaining precedence), never permission to skip — you can't silence it green, only explain it green, and the explanation is the fix
+- **Ratchets pinned to a COINCIDENTAL value go red on a correct change and green on a wrong one (2026-07-25)** — e.g. asserting a flame sits at `x=4.5 tiles` (true, but only because that's where the fireplace happened to be) fails a correct relocation while permitting a genuinely misaligned flame. Assert the RELATIONSHIP (flame shares the surround's X, light tracks flame) not the coordinate. Tell: an absolute coordinate or magnitude in an assertion where the relationship is what's being defended
+- **New GDScript files** need `XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --import` before `class_name` is globally available
+- **Launch godot** with `setsid godot < /dev/null > tmp/godot.stdout 2>&1 &` (fully detached) — bare `godot &` can break Wayland window visibility
+- **Check `"active_buffs" in combatant`** before accessing buff arrays — not all objects are Combatants
+- **Typed-array assignment from JSON** (`Array[String] = data["x"].duplicate()`) silently fails AND **aborts the enclosing function** — everything after the line is skipped, so a test containing one passes vacuously. Use explicit loop with `str()` coercion
+- **Channel delivery requires the launch flag** — `claude --dangerously-load-development-channels server:session-intercom`. Without it, intercom tools work but inbound DMs never inject as `<channel>` tags
+- **`HybridSpriteLoader._manifest_loaded`** is a static var — after editing sprite_manifest.json, restart Godot for changes to take effect
+- **Submenu pattern**: create Control, PRESET_FULL_RECT, call setup(), add_child, hide parent UI (`_submenu_open` flag prevents OverworldMenu input consumption while submenus active)
+- **OverworldMenu** lives inside CanvasLayer(layer=50) in GameLoop
+- **InputLockManager** is the canonical input-pause mechanism — use `push_lock("name")` / `pop_lock("name")` for transient blocks (dialogue, transitions). `OverworldPlayer._can_move()` checks GameLoop state + InputLockManager + legacy `can_move` flag
 
 ## Controls & Input
 
@@ -219,7 +388,7 @@ All UI must be fully navigable via gamepad or keyboard.
 | Cancel/Back | B | X/Escape |
 | Queue action (Advance) | R shoulder | R key |
 | Defer | L shoulder | L key |
-| Change battle speed | +/- on D-pad | +/- keys |
+| Change battle speed | X (top face button) | ` (backtick) |
 
 ### Menu Navigation
 - All menus expand LEFT (tree-style, like classic JRPGs)
@@ -233,21 +402,51 @@ cowardly-irregular/
 ├── project.godot
 ├── CLAUDE.md
 ├── src/
-│   ├── battle/        # Combat system, CTB mechanics
-│   ├── jobs/          # Job definitions, abilities
-│   ├── autobattle/    # Scripting engine, conditionals
-│   ├── autogrind/     # Risk system, interrupts (future)
-│   ├── meta/          # Save manipulation, corruption
-│   └── ui/            # Menus, battle UI, Win98 style
-│       └── autobattle/  # Grid editor components
+│   ├── battle/          # CTB combat, BattleManager, BattleScene, EffectSystem
+│   │   └── sprites/     # MonsterSprites, PartySprites, HybridSpriteLoader, SpriteUtils
+│   ├── jobs/            # JobSystem, EquipmentSystem, PassiveSystem
+│   ├── items/           # ItemSystem
+│   ├── autobattle/      # AutobattleSystem, ScriptShareManager
+│   ├── autogrind/       # AutogrindController, HeadlessBattleResolver
+│   ├── meta/            # GameState, save state, corruption
+│   ├── save/            # SaveSystem, ChapterTitles
+│   ├── cutscene/        # CutsceneDirector, CutsceneDialogue, NPCDialogue, PartyChatSystem
+│   ├── encounters/      # EncounterSystem
+│   ├── audio/           # SoundManager, InputProfileManager
+│   ├── transitions/     # SceneTransition, BattleTransition
+│   ├── character/       # CharacterCustomization
+│   ├── bestiary/        # BestiarySystem
+│   ├── exploration/     # OverworldController, OverworldPlayer, OverworldNPC, WanderingNPC, AreaTransition, ShopScene, VillageShop, OverworldScene + per-world variants
+│   ├── maps/            # MapSystem
+│   │   ├── villages/    # BaseVillage + 10 named villages
+│   │   ├── interiors/   # TavernInterior + others
+│   │   └── dungeons/    # DragonCave base + 4 dragon caves + CastleHarmonia + WhisperingCave + NullChamber + RootProcess + AssemblyCore + SteampunkMechanism + SuburbanUnderground
+│   └── ui/              # OverworldMenu, MenuScene, Win98Menu, TitleScreen, TeleportMenu, JukeboxMenu, BestiaryMenu, WorldMapMenu, etc.
+│       └── autobattle/  # Grid editor (AutobattleGridEditor + AutobattleToggleUI)
 ├── assets/
 │   ├── sprites/
+│   │   ├── jobs/        # Per-job artist sheets (fighter/cleric/mage/rogue/bard)
+│   │   ├── monsters/    # Per-monster sheets (90+ entries)
+│   │   └── portraits/   # Cutscene character portraits
 │   ├── audio/
+│   │   ├── music/       # 150+ OGG tracks (Suno-generated, Git LFS)
+│   │   └── sfx/         # SFX bank
 │   └── fonts/
-└── data/
-    ├── jobs.json
-    ├── abilities.json
-    └── monsters.json
+├── data/                # ALL game data is JSON, hot-reloadable
+│   ├── jobs.json
+│   ├── abilities.json
+│   ├── passives.json
+│   ├── monsters.json
+│   ├── items.json
+│   ├── equipment.json
+│   ├── bestiary.json
+│   ├── enemy_pools.json
+│   ├── sprite_manifest.json
+│   ├── music_manifest.json
+│   ├── job_aliases.json    # white_mage→cleric, black_mage→mage, thief→rogue
+│   └── cutscenes/          # 193 cutscene JSON files
+└── test/
+    └── unit/            # GUT tests (~7390 in 1157 files, ~5-10 min headless — background it)
 ```
 
 ## Key Design Principles
@@ -258,6 +457,16 @@ cowardly-irregular/
 4. **Meta is diegetic** - Fourth-wall breaks are in-universe mechanics
 5. **Prototype fast, validate early** - Prove fun before polish
 6. **Controller-first design** - Everything works on gamepad
+7. **Silent failures are worse than crashes** - Always add a runtime test that would have caught the bug (see Data Integrity Tests section). The 180-broken-drops audit and the typed-array save-load bug are canonical examples.
+
+## Cutscene System
+- **CutsceneDirector** (GameLoop-owned CanvasLayer, layer 95 — NOT an autoload; reach it via `GameLoop.get_cutscene_director()`) orchestrates story cutscenes from `data/cutscenes/*.json`
+- **CutsceneDialogue** (CanvasLayer) renders the dialogue panel — screen-anchored, gamepad-friendly
+- **NPCDialogue** is a thin wrapper around CutsceneDialogue used by overworld NPCs (avoids the cut-off bug local panels had)
+- **Story flow gating**: `GameLoop._get_pending_story_cutscene()` is the single source of truth for which cutscene plays next. Each gate is a flag-pair: `if X happened AND not <cutscene>_complete: return "<cutscene_id>"`
+- **Completion flag wiring**: `_CUTSCENE_COMPLETION_FLAGS` const maps id → flag; `_play_story_cutscene` writes the flag when CutsceneDirector emits `cutscene_finished`. Without this, cutscenes loop forever (was the Elder Theron bug).
+- **Boss intro cutscenes**: dungeons set `boss_cutscene_id` (DragonCave base reads it before emitting `battle_triggered`)
+- 193 cutscene files on disk; 76 actively triggered; remaining are planned content / event chats / party chats
 
 ## Artist Collaboration & Sprite Pipeline Rules
 
@@ -288,7 +497,33 @@ cowardly-irregular/
 ### Workflow
 - AI agents generating sprites must tag output as `tier: "T1"` in sprite_manifest.json
 - Artist sprites are `tier: "T2"` or `tier: "T3"`
-- HybridSpriteLoader priority: T3 > T2 > T1 > T0
+- **`tier` is provenance metadata. NOTHING IN THE GAME READS IT.** This line
+  used to say "HybridSpriteLoader priority: T3 > T2 > T1 > T0", which described
+  a resolution order the loader has never had. Verified 2026-07-29:
+  `HybridSpriteLoader` contains zero references to `tier`. Its actual logic is
+  binary — `_manifest.has(id)` loads that sheet, absence falls back to
+  procedural — and **`sprite_manifest.json` holds exactly one entry per id
+  per section**, so a lookup never has two candidates to rank. (An id may
+  appear in two *different* sections for two different sheets —
+  `chancellor_mordaine` has both a `monster_sheets` battle sheet and an
+  `overworld_npc_sheets` overworld sheet — but those are separate lookups by
+  separate functions, not competing candidates. I wrote "exactly one entry per
+  id" first; the check caught it before it reached this file.)
+- **Why the wrong version was dangerous, not just inaccurate:** it implied that
+  registering a T1 sheet alongside artist work is safe because the higher tier
+  wins. There is no "alongside" — registering T1 under an existing id
+  **replaces** the artist sheet, silently, at load time. The documented rule
+  would have caused the exact loss it appeared to prevent.
+- **What actually protects artist work** is refusal at generation time, not
+  resolution at load time: `regen_monster_artist_style.artist_write_refusal()`
+  (refuses T2/T3 targets, and refuses unregistered sheets whose provenance is
+  unknown) and `gen_full_sweep._protected_anims()` (derived from git, unioned
+  with a legacy floor so protection can only grow). Both live in cowir-sprites.
+  `tools/audit_sprite_tiers.py` catches tier lies by checking git rather than
+  the manifest — the manifest cannot audit its own provenance, and on
+  2026-07-29 all four starter job sheets were labelled T1 while holding artist
+  pixels, with tier and generator agreeing perfectly because both were written
+  in one edit and neither revisited.
 - When generating new job sprites, reference the artist's existing palette and proportions from fighter/cleric/mage/rogue
 - Keep all gen scripts in `tools/` with clear naming: `gen_<job>_sprites.py`
 - Generated sprites go in `assets/sprites/jobs/<job_id>/` following the per-animation PNG convention
@@ -305,6 +540,41 @@ cowardly-irregular/
 - Generate sprites that clash stylistically with artist-established look
 - Claim AI sprites are final art
 - Skip the cleanup step — flag areas needing artist attention
+
+## Multi-Agent Coordination
+
+This project uses parallel Claude Code sessions coordinated via the `session-intercom` MCP server (SQLite-backed DB at `~/.local/share/session-intercom/intercom.db`).
+
+**Gating policy (struktured 2026-08-27, replacing the per-branch ritual):** ONE full suite per BATCH, run by cowir-main at the fold. Not one per branch plus another at the merge — that was two 11-minute suites to land one change, and a branch gate never certified the merge anyway.
+- **Lanes:** run your own file's tests, push, say it's ready. Do NOT run the full suite on your branch; it certifies a tree nobody ships.
+- **cowir-main:** fold everything ready in one batch, import, gate once, push, deploy. 14 branches went out this way on 2026-08-27 in a single suite run.
+- **Mutation-test guards that are load-bearing, not every test you write.** Three arms on a guard defending a real defect is worth it; three arms on a routine assertion is not.
+- **Report results, not methodology.** Cross-lane instrument audits — "your grep could have matched a comment", "your control names an input-side member" — consumed more of 2026-08-26 than the work did. If an instrument is wrong, fix it and say what changed; do not broadcast the derivation.
+- **What is NOT relaxed, because each caught a real bug this week:** the full suite at the fold, `Scripts == authored` (a truncated run is indistinguishable from a clean one), and `--import` after any fold adding `class_name` or assets.
+
+**Fleet norms (2026-07-11):** (1) NEVER work inside another agent's checkout — cowir-main's tree is the live deploy tree; use your own repo/worktree and push branches to origin. (2) Teammate PRs fold ONLY through cowir-main: full diff review + local full-suite gate (0 failures, claims re-verified) per struktured's standing grant; run the FULL suite before pinging ready. (3) .gd comments 1 line max. (4) NEVER `git stash` in shared worktrees (2026-07-16 incident): stash storage is repo-global across worktrees — parallel push/pop silently swaps or drops other agents' stashes with no warning; use a scratch branch or fresh worktree for diagnostic snapshots. (5) After pulling a fold that adds new `class_name` files, run `XDG_DATA_HOME=$PWD/tmp/xdg godot --headless --audio-driver Dummy --import` BEFORE gating — else expect a phantom parse-error cascade in GameLoop-dependent tests.
+
+Named sessions (one-call `intercom_register(name=<name>)` — channels API, no team_name, no TeamCreate):
+- **cowir-main** — game engine, integration, releases (this session usually)
+- **cowir-sprites** — sprite generation (cowardly-irregular-sprite-gen repo)
+- **cowir-music** — music generation (cowardly-irregular-music repo, Suno pipeline)
+- **cowir-sfx** — SFX (cowir-sfx repo, ElevenLabs + LMMS MCP)
+- **cowir-story** — narrative content (cowardly-irregular-story repo)
+- **cowir-battle** — combat system specialization (when active)
+
+Channel delivery requires the host launched with `--dangerously-load-development-channels server:session-intercom`. If `<channel>` tags never arrive when other sessions DM you, that flag is the first thing to check. Manual fallback: `intercom_poll()`.
+
+## Deployment
+
+- Tag at every meaningful milestone (`vMAJOR.MINOR.PATCH-alpha` convention)
+- Web export: `godot --headless --export-release "Web" builds/web/index.html`
+- Itch push: `butler push builds/web/ struktured/cowardly-irregular:web --userversion <tag>` (channel is `:web`, NOT `:html5`). Was documented as `./butler-bin/butler`. That directory is **gitignored** (`.gitignore:61`, 0 files tracked on main), so it exists only where somebody unpacked it by hand — one legacy checkout — and can never arrive by clone or `git worktree add`, because a worktree materialises only tracked files. It is absent from *this* tree, the one deploys run from. Five lanes measured it and gave four different answers before anyone ran `grep butler .gitignore`: `ls` answers about the checkout you're standing in, and `git check-ignore butler-bin` (no trailing slash) reports no match against a directory rule, which reads exactly like "no rule exists." The scripts were never at risk — `deploy_web.sh:42` resolves `$(command -v butler || echo ./butler-bin/butler)` and finds the PATH copy first everywhere — so only the human-facing instruction was broken, which is the half nothing tests. Do NOT "fix" this by committing the 22MB binary; the ignore rule is deliberate.
+- **Deploy approval is STANDING for cowir-main off a green gate** (struktured 2026-08-27: *"ur gating is over the top... streamline the process and policies"*). cowir-main may push any channel — linux, windows, web — without asking, provided the full suite passed on the exact tree being exported. He steers after the fact and can revoke at any time.
+  - **The old per-deploy rule cost more than it saved.** On 2026-08-26 eight lanes independently asked him for one deploy, each because their copy of the rule required the word in *their own* conversation. ~20 minutes of round trips, zero risk removed — the build was already gated. A rule whose failure mode is "everyone asks separately" does not scale past one lane.
+  - **What replaces it is the gate, not trust:** a green full suite on the exported tree, `Scripts == authored`, and the deploy script's own boot + combat smokes. Publishing is still irreversible, so a RED gate is an absolute stop — that part does not relax.
+  - **Other lanes still do not publish.** Not because their word is worth less, but because one publisher means one place to look when a build is wrong. Route it through cowir-main.
+- Music OGGs 96kbps mono; W4-W6 tracks are WEB-EXCLUDED via export_presets exclude_filter (procedural fallback) — itch.io HTML5 embeds cap single files at 200 MB; pipeline hard-fails on pck ≥ 190 MB
+- All *.ogg files tracked via Git LFS
 
 ## Author
 

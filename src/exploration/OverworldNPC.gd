@@ -12,17 +12,156 @@ signal dialogue_ended(npc_name: String)
 @export var npc_type: String = "villager"  # villager, elder, shopkeeper, guard
 @export var dialogue_lines: Array = ["Hello, traveler!"]
 @export var facing_direction: int = 0  # 0=down, 1=up, 2=left, 3=right
+## Quest-system identity; "" derives snake_case from npc_name ("Phil the Lost" → phil_the_lost).
+@export var npc_id: String = ""
+## Scenery mode: present in the world but not talkable (Mordaine's ambient
+## watch beats). Suppresses BOTH interaction paths — the "interactables"
+## group OverworldPlayer scans AND this node's own proximity _input — plus
+## the name label and quest marker, which would advertise a talk that
+## can't happen. Persists through normal play, unlike a CutsceneActor.
+@export var interactable: bool = true
+
+## Quest "!" marker over givers with live quest business
+const QUEST_MARKER_BASE_Y: float = -46.0
+var _quest_marker: Label = null
+var _quest_marker_y: float = QUEST_MARKER_BASE_Y
+var _quest_bob_t: float = 0.0
+## Sprite archetype override. If empty, auto-derived from npc_type.
+## Available: old_man, old_woman, young_man, young_woman, child, guard, merchant, scholar.
+@export var sprite_archetype: String = ""
+
+## LLM dynamic dialogue opt-in (per docs/llm-integration-design.md:157).
+## Only NPCs with `dynamic = true` AND a non-empty `persona` participate
+## in the LLM-driven DynamicConversation path. All other NPCs continue
+## using the static dialogue_lines pipeline.
+## Default OFF — design doc explicitly says do NOT retrofit every NPC.
+## Showcase set is the 3 W1 NPCs flagged in scene/spawn code.
+##
+## R5 fix (2026-06-14): `dynamic` and `persona` use setters that re-run the
+## persona overlay (_setup_persona_data) when assigned AFTER _ready. Before
+## this, _setup_persona_data was ONLY called from _ready() gated on `dynamic`
+## at that instant — so any code path that flips dynamic=true post-construction
+## (a village factory that add_child's BEFORE setting the flag, or a future
+## save-restore that re-applies NPC state) silently dropped the persona +
+## opening lines. The showcase NPCs (Theron/Milo/Boris) reverted to scene
+## defaults on save→load→re-spawn. The setters make BOTH orderings correct
+## and idempotent. (CLAUDE.md principle #7 — silent failures > crashes.)
+@export var dynamic: bool = false:
+	set(value):
+		dynamic = value
+		# Only re-hydrate once the node has entered the tree (post-_ready).
+		# In-_ready ordering is handled by the explicit _setup_persona_data()
+		# call in _ready(); guarding on _ready_done prevents a redundant
+		# double-load while still covering every post-construction assignment.
+		if _ready_done and dynamic:
+			_setup_persona_data()
+@export_multiline var persona: String = "":
+	set(value):
+		persona = value
+		# A non-empty persona implies the NPC is meant to be dynamic-capable;
+		# re-running setup after _ready captures fallback/opening overlays even
+		# if persona is assigned on its own (e.g. inline designer override that
+		# lands after the node is already in the tree).
+		if _ready_done and dynamic:
+			_setup_persona_data()
+
+## Mapping from npc_type → preferred archetype. "" = picked by name hash
+## from a pair (defined in _resolve_archetype). All 20 archetype sheets
+## are now available: old_man, old_woman, young_man, young_woman, child,
+## guard, merchant, scholar, blacksmith, farmer, fisherman, innkeeper,
+## king, monk, noble, noblewoman, priestess, queen, soldier, traveler.
+const NPC_TYPE_TO_ARCHETYPE: Dictionary = {
+	"elder": "",        # picked by name hash → old_man / old_woman
+	"villager": "",     # picked by name hash → young_man / young_woman
+	"noble_pair": "",   # picked by name hash → noble / noblewoman
+	"shopkeeper": "merchant",
+	"merchant": "merchant",     # npc_type "merchant" was a VALUE but never a KEY, so Senga and Crusher Pete fell to procedural while merchant/overworld.png sat on disk
+	"guard": "guard",
+	"scholar": "scholar",
+	"child": "child",
+	## Non-human named NPCs. Registered as npc_types rather than sprite_archetype
+	## overrides so all THREE surfaces agree: the sprite resolves here, the portrait
+	## through _portrait_key(), and the dialogue THEME through npc_type — which is what
+	## the line dicts below actually carry. An archetype override would have fixed the
+	## first two and left the theme reading "villager".
+	"fairy": "fairy",
+	"ghost": "ghost",
+	"blacksmith": "blacksmith",
+	"farmer": "farmer",
+	"fisherman": "fisherman",
+	"innkeeper": "innkeeper",
+	"king": "king",
+	"queen": "queen",
+	"monk": "monk",
+	"priestess": "priestess",
+	"soldier": "soldier",
+	"traveler": "traveler",
+	"noble": "noble",
+	"noblewoman": "noblewoman",
+	# ShopInterior + tavern + role-specific customer types — map onto
+	# existing archetype sheets so they stop falling to the generic
+	# villager procedural render (playtest 2026-07-15: cowir-main msg 2551,
+	# "tall red humanoid" was herbalist/pilgrim/apprentice sharing the
+	# proc-gen chibi shape).
+	"herbalist": "priestess",     # robed, gentle, gathers-things silhouette
+	"hooded_mage": "scholar",     # hooded scholarly figure (deep-navy scholar reads as arcane)
+	"nervous": "young_woman",     # generic customer, gendered by name-hash if empty preferred
+	"pilgrim": "monk",            # hooded traveling holy figure
+	"apprentice": "young_man",    # blacksmith journeyman, plain workwear
+	"knight": "soldier",          # armored infantry — closest existing sheet
+	"mysterious": "traveler",     # hooded stranger — traveler sheet has the cloak silhouette
+	"bartender": "innkeeper",     # apron behind counter, same silhouette family
+	"maid": "young_woman",        # apron-and-dress silhouette
+	"adventurer": "traveler",     # cloaked wanderer
+	"bard": "traveler",           # NPC bards in cutscenes — cloak+lute reads as traveler
+	"rogue": "traveler",          # NPC rogues — hooded generic
+	"scholarly": "scholar",       # alias (a few files use "scholarly" instead of "scholar")
+	# "dancer" is absent deliberately: it does not take a static sheet, it drives a 4-frame cycle from DANCER_FRAME_PATHS (artist frames, procedural only as fallback). This line used to read "stays procedural", which was true until 42b0c123 landed the frames and stale from that moment on.
+}
 
 ## Visual
 var sprite: Sprite2D
 var name_label: Label
+# Legacy local dialogue UI (kept as fallback only — production path uses
+# NPCDialogue/CutsceneDialogue, which is CanvasLayer-anchored and avoids
+# the screen-edge cut-off bug the old Node2D-relative panel caused).
+# (User feedback 2026-05-20: "dialogue boxes get cut off near edges of
+# the screen in the village".)
 var dialogue_box: Control
 var dialogue_label: Label
+var _npc_dialogue: Node = null  # NPCDialogue instance, lazy-init
+var _dynamic_conv: DynamicConversation = null  # LLM-driven conversation, lazy-init
+## Wave F R3 fix — authored opening lines from npc_showcase_personas.json,
+## passed to DynamicConversation.setup() so the LLM-off path uses richer
+## per-character voice for the opening turn (the rest of the conversation
+## continues to draw from `dialogue_lines`).
+var _persona_openings: Array = []
+## Milo v2 (msg 2600): quest-state bucketed idle lines, populated from
+## npc_showcase_personas.json's optional quest_state_lines block. Buckets
+## are keyed pre_task_1 / in_progress / post_quest (matching the 3-state
+## quest lifecycle). Empty when the persona has no quest_state_lines.
+var _persona_quest_state_lines: Dictionary = {}
+## Weight-boost pointer per bucket — first visit to a fresh bucket shows
+## this line. Defaults to 0 when the JSON omits the *_money_pick_index sibling.
+var _persona_quest_state_money_picks: Dictionary = {}
+## Per-bucket visit counter so rotation restarts from money-pick when the
+## quest transitions to a new state (avoids "landed on line 3 of the new
+## bucket because the global visit counter was there").
+var _quest_state_bucket_visits: Dictionary = {}
 
 ## State
 var _current_line: int = 0
 var _is_talking: bool = false
 var _player_nearby: bool = false
+## Rotates the starting index of dialogue_lines on each interaction so
+## the player doesn't hear the same opener every time they re-talk to
+## a static NPC. Preserves relative order (still cycles through the
+## scripted set) — just shifts the entry point.
+var _dialogue_visit_count: int = 0
+## True once _ready() has finished. Gates the dynamic/persona setters so they
+## only trigger a re-hydrate for POST-construction assignments (the in-_ready
+## path is handled by the explicit _setup_persona_data() call). R5 fix.
+var _ready_done: bool = false
 
 ## Animation
 var _is_dancing: bool = false
@@ -30,15 +169,39 @@ var _dance_frame: int = 0
 var _dance_timer: float = 0.0
 const DANCE_SPEED: float = 0.2  # Seconds per frame
 const DANCE_FRAMES: int = 4
+## Artist-anchored dancer frames (42b0c123, 2026-07-18). VillageBar has loaded these since the day they landed; this consumer did not, because the alias table's carve-out was written BEFORE they existed. Struktured flagged Aria as "horrific proc gen" 2026-07-30 — she is the only dancer NPC in the game, so this was the whole symptom. Kept in sync with VillageBar's copy by test_dancer_artist_frames_regression.
+const DANCER_FRAME_PATHS: Array = [
+	"res://assets/sprites/npcs/dancer/frame_0.png",
+	"res://assets/sprites/npcs/dancer/frame_1.png",
+	"res://assets/sprites/npcs/dancer/frame_2.png",
+	"res://assets/sprites/npcs/dancer/frame_3.png",
+]
 var _sprite_cache: Dictionary = {}  # frame -> texture
 
 const TILE_SIZE: int = 32
 
+## Persona JSON cache — parsed once per process, shared across all NPC
+## instances. Per CLAUDE.md/plan-risk-4: file read at _ready() per NPC
+## would be wasteful; this static dictionary makes it free after the first
+## opt-in NPC spawns. Map: npc_name → { persona, openings[], fallbacks[] }.
+const PERSONA_DATA_PATH: String = "res://data/cutscenes/npc_showcase_personas.json"
+static var _persona_cache: Dictionary = {}
+static var _persona_cache_loaded: bool = false
+
 
 func _ready() -> void:
+	# Wave D: hydrate persona & fallback lines from data/cutscenes/
+	# npc_showcase_personas.json for dynamic-opt-in showcase NPCs (design
+	# doc :157). Must run BEFORE sprite generation so the resolved persona
+	# is visible to any other _ready-time consumer; ordering chosen to
+	# match the existing static dialogue_lines workflow.
+	if dynamic:
+		_setup_persona_data()
+
 	_generate_sprite()
 	_setup_collision()
 	_setup_name_label()
+	_setup_quest_marker()
 	_setup_dialogue_box()
 
 	# Pre-generate animation frames for dancer
@@ -46,10 +209,113 @@ func _ready() -> void:
 		_generate_dance_frames()
 
 	# Add to interactables group for reliable interaction detection
-	add_to_group("interactables")
+	if interactable:
+		add_to_group("interactables")
 
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
+
+	# Mark ready LAST so the dynamic/persona setters now re-hydrate on any
+	# post-construction assignment (save-restore re-spawn, late factory flag).
+	# R5 fix — see the @export blocks above.
+	_ready_done = true
+
+
+## Public: force a re-hydrate of persona/opening/fallback overlay from
+## npc_showcase_personas.json. Safe to call any time after construction;
+## no-ops if this NPC isn't dynamic. Idempotent. Provided so a village/
+## save-restore path can deterministically re-apply the overlay after
+## flipping `dynamic`/`persona` (rather than relying on setter side effects).
+func refresh_persona() -> void:
+	if dynamic:
+		_setup_persona_data()
+
+
+## Load and apply persona + fallback dialogue for showcase NPCs.
+## Called from _ready() ONLY when @export dynamic is true. The persona
+## text is resolved by `npc_name` lookup; if the name isn't in the JSON
+## the NPC silently falls through to whatever `persona` / `dialogue_lines`
+## were already set on the scene node (so a designer can author one
+## inline without breaking the JSON-driven path for the rest).
+func _setup_persona_data() -> void:
+	if not _persona_cache_loaded:
+		_load_persona_cache()
+	if not _persona_cache.has(npc_name):
+		return  # No JSON entry — keep whatever the scene set inline.
+	var entry: Dictionary = _persona_cache[npc_name]
+	# Persona takes precedence from JSON unless the scene already set
+	# a non-empty one (allowing per-instance overrides for testing).
+	if persona == "" and entry.has("persona"):
+		persona = str(entry["persona"])
+	# Fallback dialogue lines: replace the scene's static list with the
+	# JSON-authored set. These are also what DynamicConversation hands
+	# to LLMService as the deterministic fallback when the null backend
+	# is in use (web build / LLM disabled), so they need to read as
+	# in-character first-line dialogue, not stage directions.
+	if entry.has("fallbacks"):
+		var fb_raw: Variant = entry["fallbacks"]
+		if fb_raw is Array:
+			var typed_lines: Array = []
+			for line in (fb_raw as Array):
+				typed_lines.append(str(line))
+			if typed_lines.size() > 0:
+				dialogue_lines = typed_lines
+	# Wave F R3 fix — capture authored openings; passed to DynamicConversation
+	# via setup() so the LLM-off opening turn uses richer per-character voice.
+	if entry.has("openings"):
+		var op_raw: Variant = entry["openings"]
+		if op_raw is Array:
+			var typed_openings: Array = []
+			for line in (op_raw as Array):
+				typed_openings.append(str(line))
+			_persona_openings = typed_openings
+	# Milo v2: capture optional quest_state_lines block (buckets + money-pick indices).
+	if entry.has("quest_state_lines"):
+		var qsl_raw: Variant = entry["quest_state_lines"]
+		if qsl_raw is Dictionary:
+			for k in (qsl_raw as Dictionary).keys():
+				var key_str: String = str(k)
+				if key_str.begins_with("_"):
+					continue
+				var v: Variant = (qsl_raw as Dictionary)[k]
+				if v is Array:
+					var typed_bucket: Array = []
+					for line in (v as Array):
+						typed_bucket.append(str(line))
+					_persona_quest_state_lines[key_str] = typed_bucket
+				elif (v is int or v is float) and key_str.ends_with("_money_pick_index"):
+					var bucket_name: String = key_str.substr(0, key_str.length() - "_money_pick_index".length())
+					_persona_quest_state_money_picks[bucket_name] = int(v)
+
+
+static func _load_persona_cache() -> void:
+	# Tick 282: split parse-error and non-Dict-root paths so devs can
+	# tell apart "JSON is malformed" from "JSON parses but root isn't
+	# a Dictionary" (matches the canonical loud-fail pattern from
+	# tick 274/275/276). Pre-fix both fell under one generic warning.
+	_persona_cache_loaded = true  # Set first so a malformed file doesn't retry every NPC.
+	if not FileAccess.file_exists(PERSONA_DATA_PATH):
+		push_warning("[OverworldNPC] persona data missing at %s — dynamic NPC dialogue scoped-personas will be empty" % PERSONA_DATA_PATH)
+		return
+	var f := FileAccess.open(PERSONA_DATA_PATH, FileAccess.READ)
+	if f == null:
+		push_warning("[OverworldNPC] %s exists but FileAccess.open failed — persona cache empty" % PERSONA_DATA_PATH)
+		return
+	var text: String = f.get_as_text()
+	f.close()
+	var json := JSON.new()
+	var parse_result := json.parse(text)
+	if parse_result != OK:
+		push_warning("[OverworldNPC] %s parse error: %s — persona cache empty" % [PERSONA_DATA_PATH, json.get_error_message()])
+		return
+	if not (json.data is Dictionary):
+		push_warning("[OverworldNPC] %s parsed but root is not a Dictionary — persona cache empty" % PERSONA_DATA_PATH)
+		return
+	# Only keep keys that look like NPC entries (have a "persona" subkey).
+	for key in (json.data as Dictionary).keys():
+		var v: Variant = (json.data as Dictionary)[key]
+		if v is Dictionary and (v as Dictionary).has("persona"):
+			_persona_cache[str(key)] = v
 
 
 func _process(delta: float) -> void:
@@ -59,19 +325,145 @@ func _process(delta: float) -> void:
 			_dance_timer -= DANCE_SPEED
 			_dance_frame = (_dance_frame + 1) % DANCE_FRAMES
 			_update_dance_sprite()
+	if _quest_marker != null and _quest_marker.visible:
+		_quest_bob_t += delta * 3.0
+		_quest_marker.position.y = _quest_marker_y + sin(_quest_bob_t) * 3.0
+
+
+## Returns the sprite scale for our current scene context — same logic as
+## WanderingNPC._get_context_scale. Open overworlds need 3x for Mode 7
+## visibility; villages/dungeons use 1x to match the rest of the room.
+## (User feedback 2026-05-03: 653eae1 brought all NPCs down to 1x to fix
+## an in-village size bug, but that broke the open-overworld visibility.)
+func _get_context_scale() -> Vector2:
+	# Same signal as collision sizing (InteractGeometry.is_mode7) — sprite and zone can never diverge again (audit defect #2's root: two predicates drifting apart). Name-walk kept as fallback for detached/test contexts without the overlay autoload.
+	if InteractGeometry.is_mode7():
+		return Vector2(3.0, 3.0)
+	var p = get_parent()
+	if p:
+		var pname = p.name.to_lower()
+		if "overworld" in pname:
+			return Vector2(3.0, 3.0)
+		var gp = p.get_parent()
+		if gp and "overworld" in gp.name.to_lower():
+			return Vector2(3.0, 3.0)
+	return Vector2.ONE
 
 
 func _generate_sprite() -> void:
 	sprite = Sprite2D.new()
 	sprite.name = "Sprite"
+	sprite.centered = true
+	sprite.scale = _get_context_scale()
+	add_child(sprite)
+
+	# Try archetype sheet first (artist-style 4-row × 4-col 32x32 grid).
+	# Falls back to procedural drawing if no archetype matches.
+	var archetype = _resolve_archetype()
+	if archetype != "" and _try_load_archetype_sprite(archetype):
+		return
 
 	var image = Image.create(TILE_SIZE, TILE_SIZE, false, Image.FORMAT_RGBA8)
 	_draw_npc(image)
+	sprite.texture = ImageTexture.create_from_image(image)
 
-	var texture = ImageTexture.create_from_image(image)
-	sprite.texture = texture
-	sprite.centered = true
-	add_child(sprite)
+
+## Resolve which archetype this NPC should use, falling back to "" if procedural.
+func _resolve_archetype() -> String:
+	# Explicit override wins.
+	if sprite_archetype != "":
+		return sprite_archetype
+	# npc_type → archetype mapping (some types defer to name-hash variants).
+	if npc_type in NPC_TYPE_TO_ARCHETYPE:
+		var mapped = NPC_TYPE_TO_ARCHETYPE[npc_type]
+		if mapped != "":
+			return mapped
+		# Hash-pair fallbacks for gendered villager/elder/noble.
+		var pair: Array = ["young_man", "young_woman"]
+		if npc_type == "elder":
+			pair = ["old_man", "old_woman"]
+		elif npc_type == "noble_pair":
+			pair = ["noble", "noblewoman"]
+		return pair[hash(npc_name) % 2]
+	return ""
+
+
+## Portrait key for dialogue — the ARCHETYPE, not the npc_type (struktured 2026-07-31).
+## Phil the Lost is _create_npc(..., "villager") with sprite_archetype "phil": his sprite
+## was Phil and his portrait was "villager", so phil.png never rendered once in the
+## overworld. Same for Bram, Milo, Theron, Dr. Temporal. Resolving through
+## _resolve_archetype makes the face match the sprite the player is looking at,
+## including the name-hash pick for plain villagers.
+func _portrait_key() -> String:
+	var key: String = _resolve_archetype()
+	return key if key != "" else npc_type
+
+
+## Cached source sheet + geometry for the archetype path. Populated on
+## the first successful sprite load; consumed by _apply_facing whenever
+## the NPC needs to turn (e.g. on dialogue start, msg 2764 item 1).
+var _archetype_sheet: Image = null
+const _ARCHETYPE_FRAME_W: int = 32
+const _ARCHETYPE_FRAME_H: int = 32
+
+
+## Load the archetype overworld sheet and slice the (facing_direction, frame 0)
+## frame as a static portrait. Returns true on success, false on missing/bad asset.
+func _try_load_archetype_sprite(archetype: String) -> bool:
+	var path = "res://assets/sprites/npcs/%s/overworld.png" % archetype
+	if not ResourceLoader.exists(path):
+		return false
+	var tex = load(path) as Texture2D
+	if not tex:
+		return false
+	var img = tex.get_image()
+	if not img or img.get_width() < 128 or img.get_height() < 128:
+		return false
+	_archetype_sheet = img
+	_apply_facing()
+	# Note: scale is set in _generate_sprite() via _get_context_scale()
+	# (3x for open overworld / Mode 7, 1x for village/dungeon).
+	# Don't override here — would clobber the context-aware scale.
+	return true
+
+
+## Re-slice the cached archetype sheet using the current facing_direction.
+## Cheap enough to call every dialogue start — a 32×32 sub-region + one
+## ImageTexture.create. Procedural (non-archetype) NPCs bail via null-cache
+## and stay on their generated 4-direction-agnostic sprite.
+func _apply_facing() -> void:
+	if _archetype_sheet == null or sprite == null:
+		return
+	# 4×4 grid, 32x32 frames. Row mapping: 0=down, 1=left, 2=right, 3=up.
+	# OverworldNPC.facing_direction uses: 0=down, 1=up, 2=left, 3=right.
+	var sheet_row := 0
+	match facing_direction:
+		0: sheet_row = 0  # down
+		1: sheet_row = 3  # up
+		2: sheet_row = 1  # left
+		3: sheet_row = 2  # right
+	var region := Rect2i(0, sheet_row * _ARCHETYPE_FRAME_H,
+		_ARCHETYPE_FRAME_W, _ARCHETYPE_FRAME_H)
+	var frame_img := _archetype_sheet.get_region(region)
+	sprite.texture = ImageTexture.create_from_image(frame_img)
+
+
+## Point this NPC at target_pos (struktured msg 2764 item 1: "when you
+## talk to the innkeeper, it's completely in the wrong direction compared
+## to where your character is"). Picks the dominant axis so the sprite
+## reads "facing the player" cleanly instead of splitting hairs on
+## diagonal offsets.
+func face_toward(target_pos: Vector2) -> void:
+	var delta := target_pos - global_position
+	var new_dir: int = facing_direction
+	if absf(delta.x) >= absf(delta.y):
+		new_dir = 3 if delta.x >= 0.0 else 2  # right / left
+	else:
+		new_dir = 0 if delta.y >= 0.0 else 1  # down / up
+	if new_dir == facing_direction:
+		return
+	facing_direction = new_dir
+	_apply_facing()
 
 
 func _safe_pixel(image: Image, x: int, y: int, color: Color) -> void:
@@ -296,11 +688,34 @@ func _get_npc_hair_color() -> Color:
 
 func _generate_dance_frames() -> void:
 	"""Generate all dance animation frames for dancer NPC"""
+	## Artist frames first, procedural only as fallback — the 4-frame animation is the reason to keep FOUR frames, never a reason to draw them by hand.
+	if _try_load_artist_dance_frames():
+		return
 	for frame in range(DANCE_FRAMES):
 		var image = Image.create(TILE_SIZE, TILE_SIZE, false, Image.FORMAT_RGBA8)
 		_draw_dancer_frame(image, frame)
 		var texture = ImageTexture.create_from_image(image)
 		_sprite_cache[frame] = texture
+
+
+## Mirrors VillageBar._try_load_artist_dancer_frames: all-or-nothing, so a partial drop cannot leave a half-artist half-procedural dance cycle.
+func _try_load_artist_dance_frames(paths: Array = DANCER_FRAME_PATHS) -> bool:
+	if paths.size() != DANCE_FRAMES:
+		return false
+	var loaded: Array[ImageTexture] = []
+	for path in paths:
+		if not ResourceLoader.exists(path):
+			return false
+		var tex: Texture2D = load(path)
+		if tex == null:
+			return false
+		var img: Image = tex.get_image()
+		if img == null:
+			return false
+		loaded.append(ImageTexture.create_from_image(img))
+	for i in range(loaded.size()):
+		_sprite_cache[i] = loaded[i]
+	return true
 
 
 func _draw_dancer_frame(image: Image, frame: int) -> void:
@@ -473,6 +888,18 @@ func _get_clothes_color() -> Color:
 			return Color(0.25, 0.2, 0.35)  # Dark purple cloak
 		"bard":
 			return Color(0.7, 0.55, 0.3)  # Gold/tan tunic
+		"scholar":
+			# tick 69: docstring listed scholar as valid but
+			# _get_clothes_color had no arm — fell through to random
+			# villager. Sister Concord / Cantor Vell / Greenleaf /
+			# Mire / Clavis / Vetch / SUDO-1 / The Witness all carry
+			# this type. Deep teal-grey reads as 'studious quiet'.
+			return Color(0.30, 0.40, 0.45)
+		"merchant":
+			# tick 69: same gap — Senga / Crusher Pete carry merchant.
+			# Earthy mustard distinguishes from innkeeper's brown
+			# (0.7/0.5/0.3) and bard's gold/tan (0.7/0.55/0.3).
+			return Color(0.60, 0.45, 0.20)
 		_:
 			# Random villager colors
 			var colors = [
@@ -486,18 +913,41 @@ func _get_clothes_color() -> Color:
 
 func _setup_collision() -> void:
 	var collision = CollisionShape2D.new()
-	var shape = RectangleShape2D.new()
-	shape.size = Vector2(TILE_SIZE, TILE_SIZE)
+	var shape = CircleShape2D.new()
+	shape.radius = InteractGeometry.NPC_TALK_RADIUS  # cardinal-adjacent in, diagonal out (ultracode audit step 5)
 	collision.shape = shape
+	collision.position = Vector2(0, 0)
 	add_child(collision)
+	# Enlarge for Mode 7 overworld after scene tree is ready
+	call_deferred("_adjust_collision_for_mode7", shape)
 
-	# Set collision layer/mask for interaction
+
+func _adjust_collision_for_mode7(shape: CircleShape2D) -> void:
+	# Tick 349: collision layer/mask setup moved BEFORE the Mode 7 check
+	# so it runs for ALL NPCs, not just non-Mode-7 ones. Pre-fix the
+	# early `return` inside the Mode 7 branch skipped lines 794-797 —
+	# Mode 7 overworld NPCs never got collision_layer = 4, so
+	# OverworldController._on_interaction_requested's primary physics
+	# intersect_point query (mask=4) couldn't find them. The fallback
+	# group/distance loop (line ~201) still worked, but every Mode 7
+	# NPC interaction routed through the slower path. Same NPC, two
+	# different code paths depending on world type.
+	#
 	# Layer 4 = interactables (NPCs, signs, etc.) - detected by controller queries
 	# Mask 2 = player layer - for detecting when player enters NPC zone
 	collision_layer = 4  # So controller can find us via physics query
 	collision_mask = 2   # To detect player entering our zone
 	monitoring = true
 	monitorable = true
+
+	# Ultracode audit 2026-07-18 defect #2: the old ancestor property/ends_with("Overworld") walk was DEAD CODE (no scene root matches either predicate — W1 is "OverworldScene", W2-W6 are auto-named "@Node2D@N"), so Mode 7 NPCs kept a 40px zone under a 96px sprite. is_mode7() is the ONLY context signal now.
+	if InteractGeometry.is_mode7():
+		shape.radius = InteractGeometry.NPC_TALK_RADIUS_MODE7
+		# Y-stretch: matches Mode 7 billboard Y:X ratio (0.3:0.5)
+		for child in get_children():
+			if child is CollisionShape2D and child.shape == shape:
+				child.scale = Vector2(1.0, InteractGeometry.MODE7_Y_STRETCH)
+				break
 
 
 func _setup_name_label() -> void:
@@ -513,6 +963,64 @@ func _setup_name_label() -> void:
 	name_label.add_theme_constant_override("shadow_offset_y", 1)
 	name_label.visible = false
 	add_child(name_label)
+
+
+## Gold "!" over NPCs with quest business (offerable or mid-quest
+## dialogue). Without a marker the W1 givers are only discoverable by
+## talking to every NPC in the village. Always visible (unlike the
+## proximity-gated name label) — that's the point of the affordance.
+func _setup_quest_marker() -> void:
+	# Scenery can't be talked to, so it can never have quest business.
+	if not interactable:
+		return
+	# Only the SPRITE gets context scale (3x on open overworld) — a
+	# fixed marker height sat on the scaled sprite's face there. Clear
+	# the sprite's actual scaled top instead; villages (1x) keep the
+	# original height.
+	_quest_marker_y = QUEST_MARKER_BASE_Y
+	if sprite and is_instance_valid(sprite) and sprite.texture:
+		var scaled_half: float = sprite.texture.get_height() * 0.5 * sprite.scale.y
+		_quest_marker_y = minf(QUEST_MARKER_BASE_Y, -scaled_half - 14.0)
+	_quest_marker = Label.new()
+	_quest_marker.text = "!"
+	_quest_marker.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_quest_marker.position = Vector2(-40, _quest_marker_y)
+	_quest_marker.size = Vector2(80, 22)
+	_quest_marker.add_theme_font_size_override("font_size", 18)
+	_quest_marker.add_theme_color_override("font_color", Color(1.0, 0.85, 0.2))
+	_quest_marker.add_theme_color_override("font_shadow_color", Color.BLACK)
+	_quest_marker.add_theme_constant_override("shadow_offset_x", 1)
+	_quest_marker.add_theme_constant_override("shadow_offset_y", 1)
+	_quest_marker.visible = false
+	add_child(_quest_marker)
+	var qs = get_node_or_null("/root/QuestSystem")
+	if qs != null:
+		# Method callables (not lambdas) so Godot auto-disconnects when
+		# this NPC frees — village unloads must not leave dead listeners
+		# on the autoload's signals.
+		qs.quest_state_changed.connect(_on_quest_progress_changed)
+		qs.objective_advanced.connect(_on_quest_progress_changed)
+	_refresh_quest_marker()
+
+
+func _on_quest_progress_changed(_a = null, _b = null) -> void:
+	_refresh_quest_marker()
+
+
+func _refresh_quest_marker() -> void:
+	if _quest_marker == null or not is_instance_valid(_quest_marker):
+		return
+	var qs = get_node_or_null("/root/QuestSystem")
+	var kind: String = qs.giver_business_kind(get_npc_id()) if qs != null else ""
+	match kind:
+		"offer":
+			_quest_marker.text = "!"
+			_quest_marker.visible = true
+		"talk":
+			_quest_marker.text = "?"
+			_quest_marker.visible = true
+		_:
+			_quest_marker.visible = false
 
 
 func _setup_dialogue_box() -> void:
@@ -549,7 +1057,8 @@ func _setup_dialogue_box() -> void:
 func _on_body_entered(body: Node2D) -> void:
 	if body.has_method("set_can_move"):  # It's the player
 		_player_nearby = true
-		name_label.visible = true
+		# Scenery stays unlabelled — a name tag promises a conversation.
+		name_label.visible = interactable
 
 
 func _on_body_exited(body: Node2D) -> void:
@@ -563,45 +1072,298 @@ func _on_body_exited(body: Node2D) -> void:
 func _input(event: InputEvent) -> void:
 	if not _player_nearby:
 		return
+	# Scenery NPCs: this handler is a SECOND interaction path, independent of
+	# the "interactables" group — suppressing only the group leaves her talkable.
+	if not interactable:
+		return
+	# Zone-listener lock gate: this handler grabs ui_accept directly — mid-cutscene presses opened phantom dialogue over the scene (struktured 2026-07-11, SavePoint-class leak).
+	var ilm_gate = get_tree().root.get_node_or_null("InputLockManager") if is_inside_tree() else null
+	if ilm_gate and ilm_gate.is_locked():
+		return
+	# 2026-07-12: also gate on tutorial hints — a hint dismiss press near an NPC would fire dialogue.
+	if TutorialHint.is_any_active():
+		return
+	# Facing cone (ultracode audit defect #3): talking requires facing the NPC — zone presence alone let NPCs catch presses aimed at the player's back.
+	var _pl = get_tree().get_first_node_in_group("player") if is_inside_tree() else null
+	if _pl is Node2D and not InteractGeometry.facing_allows(_pl, self):
+		return
 
-	if event.is_action_pressed("ui_accept"):
-		if _is_talking:
-			_advance_dialogue()
-		else:
-			_start_dialogue()
+	# Only intercept ui_accept to OPEN dialogue. Once open, CutsceneDialogue
+	# (via NPCDialogue) handles ui_accept itself for advance/close.
+	# Defer to the next frame to avoid awaiting inside _input.
+	if event.is_action_pressed("ui_accept") and not _is_talking:
 		get_viewport().set_input_as_handled()
+		call_deferred("_start_dialogue")
 
 
 func _start_dialogue() -> void:
-	if dialogue_lines.is_empty():
+	if dialogue_lines.is_empty() or _is_talking:
 		return
+
+	# msg 2764 item 1: turn to face the player before the dialogue lands
+	# so the innkeeper (etc) reads as talking TO you, not past you.
+	var _player_ref := _get_nearby_player()
+	if _player_ref and _player_ref is Node2D:
+		face_toward((_player_ref as Node2D).global_position)
 
 	_is_talking = true
 	_current_line = 0
-	dialogue_box.visible = true
-	dialogue_label.text = dialogue_lines[0]
 	dialogue_started.emit(npc_name)
 	if SoundManager:
 		SoundManager.play_ui("menu_open")
+
+	# Set story flags for key NPC interactions and trigger pending cutscenes
+	if npc_name == "Bram Smith" and GameState:
+		GameState.game_constants["talked_to_bram_smith"] = true
+		dialogue_ended.connect(func(_name):
+			var game_loop_b = get_node_or_null("/root/GameLoop")
+			if game_loop_b and game_loop_b.has_method("check_pending_cutscene"):
+				game_loop_b.check_pending_cutscene()
+		, CONNECT_ONE_SHOT)
+
+	if npc_name == "Elder Theron" and GameState:
+		GameState.game_constants["talked_to_theron"] = true
+		# Notify GameLoop to check for pending cutscenes after dialogue finishes
+		dialogue_ended.connect(func(_name):
+			var game_loop = get_node_or_null("/root/GameLoop")
+			if game_loop and game_loop.has_method("check_pending_cutscene"):
+				game_loop.check_pending_cutscene()
+		, CONNECT_ONE_SHOT)
 
 	# Dancer starts dancing when talked to
 	if npc_type == "dancer":
 		start_dancing()
 
+	# ── Quest path — quest business outranks dynamic chat + scripted lines
+	# (routing chain settled in huddle msgs 2124/2126: quest > dynamic > static).
+	# notify_talk always fires first: it silently progresses talk objectives
+	# TARGETING this NPC (their own lines still play — e.g. Phil mid-quest),
+	# and returns a quest_id when this talk completed the FINAL step so the
+	# completion beat plays with this NPC as presenter (thirty_seven's
+	# scholar turn-in). Giver business (offer/turn-in/in-progress) replaces
+	# the NPC's normal dialogue entirely for that interaction.
+	var quest_sys = get_node_or_null("/root/QuestSystem")
+	if quest_sys:
+		var qplayer := _get_nearby_player()
+		if qplayer and qplayer.has_method("set_can_move"):
+			qplayer.set_can_move(false)
+		var has_giver: bool = quest_sys.has_giver_business(get_npc_id())
+		var yield_to_llm: bool = _quest_should_yield_to_llm(quest_sys, has_giver)
+		var was_giver: bool = false
+		if has_giver and not yield_to_llm:
+			await quest_sys.run_giver_dialogue(get_npc_id(), self)
+			was_giver = true
+		elif not has_giver:
+			var done_qid: String = quest_sys.notify_talk(get_npc_id())
+			if done_qid != "":
+				await quest_sys.run_completion_dialogue(done_qid, self)
+				was_giver = true
+		if qplayer and is_instance_valid(qplayer) and qplayer.has_method("set_can_move"):
+			qplayer.set_can_move(true)
+		if was_giver:
+			_end_dialogue()
+			return
+
+	# ── LLM-driven path: use DynamicConversation when LLMService is available
+	# AND this NPC is opt-in for dynamic dialogue. Per design doc :157, only
+	# the showcase W1 NPCs (dynamic = true with authored persona) take this
+	# branch; every other NPC continues through the static dialogue_lines
+	# pipeline below.
+	# Story beats outrank freeform chat: Theron's first talk arms the
+	# chapter1 cutscene, and the LLM prompt hijacked it (struktured
+	# 2026-07-11). With a story cutscene pending, fall through to static
+	# lines so dialogue_ended → check_pending_cutscene plays the beat.
+	var gl_story = get_node_or_null("/root/GameLoop")
+	var story_pending: bool = gl_story != null \
+		and gl_story.has_method("_get_pending_story_cutscene") \
+		and str(gl_story._get_pending_story_cutscene()) != ""
+	if dynamic and persona != "" and not story_pending and _llm_conversation_available():
+		var player := _get_nearby_player()
+		await _run_dynamic_conversation(player)
+		_end_dialogue()
+		return
+
+	# ── Static path (NPCDialogue, CanvasLayer-anchored). ──
+	# Resolves both the screen-edge cut-off bug AND the gamepad-input
+	# bug (ui_accept now reaches CutsceneDialogue's _input handler
+	# without competing with NPCDialogue's nearby-NPC consumer).
+	# (User feedback 2026-05-20: "dialogue boxes get cut off near edges
+	# of the screen in the village", "gamepad doesn't advance cutscene".)
+	if not _npc_dialogue or not is_instance_valid(_npc_dialogue):
+		var NPCDialogueClass = load("res://src/cutscene/NPCDialogue.gd")
+		_npc_dialogue = NPCDialogueClass.new()
+		add_child(_npc_dialogue)
+
+	# Freeze player while talking (matching WanderingNPC behavior)
+	var player := _get_nearby_player()
+	if player and player.has_method("set_can_move"):
+		player.set_can_move(false)
+
+	var lines: Array = []
+	var _quest_sys_for_lines = get_node_or_null("/root/QuestSystem")
+	var _quest_bucket: String = _quest_state_bucket_for_npc(_quest_sys_for_lines)
+	# PRECEDENCE: a resolved bucket SHADOWS dialogue_lines (i.e. persona fallbacks[]) on this path only — they still render inside DynamicConversation. Pinned by test_persona_shadow_annotation_ratchet.gd.
+	var source_lines: Array = _quest_state_bucket_rotation(_quest_bucket)
+	if source_lines.is_empty():
+		var n: int = dialogue_lines.size()
+		var offset: int = (_dialogue_visit_count % n) if n > 0 else 0
+		for i in range(n):
+			var line_text = dialogue_lines[(i + offset) % n]
+			lines.append({
+				"speaker": npc_name,
+				"text": line_text,
+				"theme": npc_type,
+				"portrait": _portrait_key(),
+			})
+		_dialogue_visit_count += 1
+	else:
+		for line_text in source_lines:
+			lines.append({
+				"speaker": npc_name,
+				"text": str(line_text),
+				"theme": npc_type,
+				"portrait": _portrait_key(),
+			})
+		_quest_state_bucket_visits[_quest_bucket] = int(_quest_state_bucket_visits.get(_quest_bucket, 0)) + 1
+	await _npc_dialogue.say_lines(lines)
+
+	if player and is_instance_valid(player) and player.has_method("set_can_move"):
+		player.set_can_move(true)
+
+	_end_dialogue()
+
 
 func _advance_dialogue() -> void:
+	# Retained for backward compatibility with any direct callers / tests.
+	# Production path uses NPCDialogue/CutsceneDialogue which advances
+	# internally on ui_accept.
 	_current_line += 1
 	if _current_line >= dialogue_lines.size():
 		_end_dialogue()
 	else:
-		dialogue_label.text = dialogue_lines[_current_line]
+		if dialogue_label and is_instance_valid(dialogue_label):
+			dialogue_label.text = dialogue_lines[_current_line]
 		if SoundManager:
 			SoundManager.play_ui("menu_select")
 
 
+## Quest identity: explicit npc_id export, else snake_case of npc_name.
+func get_npc_id() -> String:
+	if npc_id != "":
+		return npc_id
+	return npc_name.to_lower().replace(" ", "_").replace("'", "").replace("-", "_")
+
+
+func _get_nearby_player() -> Node:
+	"""Find the player node currently inside our trigger Area2D."""
+	var players = get_tree().get_nodes_in_group("player")
+	if players.size() > 0:
+		return players[0]
+	return null
+
+
+func _llm_conversation_available() -> bool:
+	"""Returns true when LLMService is present and reporting availability."""
+	# Engine.has_singleton("LLMService") is ALWAYS FALSE for autoloads in
+	# Godot 4 — look up the autoload via the scene tree root.
+	var svc: Node = get_node_or_null("/root/LLMService")
+	return svc != null and svc.is_available()
+
+
+## For LLM-opt-in NPCs (dynamic + persona), mid-quest in_progress giver-flavor yields to dynamic chat; offer/talk-completion still preempts (msg 2164, huddle 2124/2126).
+func _quest_should_yield_to_llm(quest_sys: Node, has_giver: bool) -> bool:
+	if not has_giver or not (dynamic and persona != ""):
+		return false
+	if not quest_sys.has_method("giver_business_kind"):
+		return false
+	var kind: String = str(quest_sys.giver_business_kind(get_npc_id()))
+	return kind != "offer" and kind != "talk"
+
+
+## Milo v2 (msg 2600): map QuestSystem state for the quest THIS NPC gives → persona bucket ("" if no override applies).
+func _quest_state_bucket_for_npc(quest_sys: Node) -> String:
+	if quest_sys == null or not quest_sys.has_method("get_all_ids") or not quest_sys.has_method("get_quest") or not quest_sys.has_method("get_state"):
+		return ""
+	var npc: String = get_npc_id()
+	for qid in quest_sys.get_all_ids():
+		var q: Dictionary = quest_sys.get_quest(qid)
+		if str(q.get("giver", {}).get("npc_id", "")) != npc:
+			continue
+		var state: String = str(quest_sys.get_state(qid))
+		if state == "active":
+			return "in_progress"
+		if state == "completed" or state == "turned_in":
+			return "post_quest"
+		if state == "":
+			return "pre_task_1"
+		return ""
+	return ""
+
+
+## Milo v2: return the bucket lines rotated so a fresh bucket-visit lands on money_pick_index; [] means no override, keep dialogue_lines.
+func _quest_state_bucket_rotation(bucket: String) -> Array:
+	if bucket == "" or _persona_quest_state_lines.is_empty() or not _persona_quest_state_lines.has(bucket):
+		return []
+	var bucket_lines: Array = _persona_quest_state_lines[bucket]
+	if bucket_lines.is_empty():
+		return []
+	var money_pick: int = int(_persona_quest_state_money_picks.get(bucket, 0))
+	var count: int = int(_quest_state_bucket_visits.get(bucket, 0))
+	var start: int = (money_pick + count) % bucket_lines.size()
+	var rotated: Array = []
+	for i in range(bucket_lines.size()):
+		rotated.append(str(bucket_lines[(i + start) % bucket_lines.size()]))
+	return rotated
+
+
+func _run_dynamic_conversation(player: Node) -> void:
+	"""Spin up (or reuse) a DynamicConversation and run a full LLM-driven exchange.
+
+	The caller (`interact()`) must gate on `dynamic and persona != ""` so this
+	path is only taken by opt-in showcase NPCs (design doc :157). The persona
+	is the authored @export string — there is no longer a npc_type → fake
+	persona table.
+	"""
+	if not _dynamic_conv or not is_instance_valid(_dynamic_conv):
+		_dynamic_conv = DynamicConversation.new()
+		_dynamic_conv.name = "DynamicConversation"
+		add_child(_dynamic_conv)
+
+	# Resolve EventLog from the GameState autoload (engine has_singleton check
+	# is ALWAYS FALSE for autoloads in Godot 4 — use scene tree root).
+	var event_log: EventLog = null
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs != null and "event_log" in gs:
+		event_log = gs.event_log
+
+	# Resolve location name from parent scene.
+	var location: String = _resolve_location_name()
+
+	var quest_sys_for_llm = get_node_or_null("/root/QuestSystem")
+	var llm_bucket: String = _quest_state_bucket_for_npc(quest_sys_for_llm)
+	var llm_quest_lines: Array = _persona_quest_state_lines.get(llm_bucket, []) if llm_bucket != "" else []
+	_dynamic_conv.setup(npc_name, persona, location, event_log, dialogue_lines, _persona_openings, llm_quest_lines)
+	await _dynamic_conv.run(player)
+
+
+func _resolve_location_name() -> String:
+	var p = get_parent()
+	if p:
+		var n: String = p.name
+		if n != "" and n != "Node":
+			return n
+		var gp = p.get_parent()
+		if gp:
+			var gn: String = gp.name
+			if gn != "" and gn != "Node":
+				return gn
+	return "Unknown Land"
+
+
 func _end_dialogue() -> void:
 	_is_talking = false
-	dialogue_box.visible = false
+	if dialogue_box and is_instance_valid(dialogue_box):
+		dialogue_box.visible = false
 	_current_line = 0
 	dialogue_ended.emit(npc_name)
 	if SoundManager:
@@ -617,4 +1379,7 @@ func interact(player: Node2D) -> void:
 	if _is_talking:
 		_advance_dialogue()
 	else:
+		# Cone applies to the controller's omnidirectional stages too (stage-1 probe passes trivially — it IS directional).
+		if player != null and not InteractGeometry.facing_allows(player, self):
+			return
 		_start_dialogue()

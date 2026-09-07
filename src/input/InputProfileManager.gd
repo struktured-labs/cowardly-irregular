@@ -5,7 +5,7 @@ extends Node
 ## Persists custom bindings to user://input/controls.json.
 
 const CONFIG_PATH = "user://input/controls.json"
-const CONFIG_VERSION = 1
+const CONFIG_VERSION = 2
 
 ## Remappable actions (gamepad only - keyboard stays fixed)
 const REMAPPABLE_ACTIONS = [
@@ -27,76 +27,177 @@ const ACTION_LABELS = {
 	"ui_menu": "Menu",
 }
 
+## Confirm sits on the EAST face when true — the SNES layout (Y X / B A). False puts it on
+## SOUTH, native for Xbox and PlayStation. Every profile below is authored EAST-confirm and
+## this derives the other convention, so there is one table instead of two that can drift.
+var nintendo_mode: bool = true
+
+## Face glyphs keyed by BUTTON INDEX (position) — SDL numbers by position, the silkscreen
+## differs per family. All verified to render through FontFallbacks; squared 🅰/🅱 are tofu.
+const FACE_GLYPHS := {
+	"nintendo": {0: "Ⓑ", 1: "Ⓐ", 2: "Ⓨ", 3: "Ⓧ"},
+	"xbox": {0: "Ⓐ", 1: "Ⓑ", 2: "Ⓧ", 3: "Ⓨ"},
+	"playstation": {0: "✕", 1: "○", 2: "□", 3: "△"},
+}
+
+## Device-name substrings -> face-glyph family. First match wins; unmatched gets xbox, because
+## an unknown pad on Windows is overwhelmingly an XInput device.
+const FACE_FAMILY_HINTS := [
+	["dualsense", "playstation"], ["dualshock", "playstation"], ["ps5", "playstation"],
+	["ps4", "playstation"], ["playstation", "playstation"], ["sony", "playstation"],
+	["switch", "nintendo"], ["nintendo", "nintendo"], ["pro controller", "nintendo"],
+	["snes", "nintendo"], ["sn30", "nintendo"], ["8bitdo", "nintendo"],
+]
+
 ## Built-in profile definitions: action -> button index(es)
-## Button indices follow SDL GameController standard:
-##   SN30:  0=A(South), 1=B(East), 2=X(West), 3=Y(North)
-##          4=Back/Select, 6=Guide, 7=Start
-##          9=LeftShoulder(LB/L), 10=RightShoulder(RB/R)
-##          11=DPadUp, 12=DPadDown, 13=DPadLeft, 14=DPadRight
-##   Ultimate Pro 2 (XInput mode):
-##          0=A(South), 1=B(East), 2=X(West), 3=Y(North)
-##          4=LB (Left Bumper), 5=RB (Right Bumper)
-##          6=Back/Select, 7=Start
-##          9=LeftShoulder(L3), 10=RightShoulder(R3)
+## Button indices use the GODOT 4 JoyButton enum (matches SDL2 normalized):
+##   0  = A          (Nintendo B / PS Cross / Xbox A — SOUTH face button)
+##   1  = B          (Nintendo A / PS Circle / Xbox B — EAST face button)
+##   2  = X          (Nintendo Y / PS Square / Xbox X — WEST face button)
+##   3  = Y          (Nintendo X / PS Triangle / Xbox Y — NORTH face button)
+##   4  = BACK       (Nintendo MINUS / PS Select / Xbox Back)
+##   5  = GUIDE      (Nintendo HOME / PS Home / Xbox Guide)
+##   6  = START      (Nintendo PLUS / PS Start / Xbox Start)
+##   7  = LEFT_STICK (L3 click)
+##   8  = RIGHT_STICK (R3 click)
+##   9  = LEFT_SHOULDER  (Nintendo L / PS L1 / Xbox LB)
+##   10 = RIGHT_SHOULDER (Nintendo R / PS R1 / Xbox RB)
+##   11-14 = D-Pad U/D/L/R
+##   Triggers (ZL/ZR / L2/R2 / LT/RT) are AXES 4/5, not buttons —
+##   handled by motion events in project.godot, not here.
+##
+## Bug fix (2026-05-02): the prior PROFILE_ULTIMATE_PRO_2 used Godot 3's
+## button numbers (4=LB, 5=RB, 6=Back, 7=Start) which silently misfired in
+## Godot 4 — Start (button 6) was bound to battle_toggle_auto, so pressing
+## Plus on Switch Pro would auto-enable autobattle every time. Both
+## profiles now use Godot 4 numbers consistently.
+## Mirrors project.godot exactly — correct for any pad SDL NORMALIZES, i.e. one `Input.is_joy_known()` reports true for.
+## Standard semantics come from SDL having a GUID mapping, NOT from the device's evdev codes being tidy. The 8BitDo
+## Ultimate 2 IS bound by xpad (1-9.2:1.0 -> xpad, measured 2026-07-25) and so reports textbook BTN_A/BTN_TL/ABS_HAT0 —
+## and it STILL arrives raw, because Godot's bundled DB lacks its product id. Tidy codes are necessary, not sufficient:
+## without a GUID entry Godot passes evdev ORDER through, so BTN_TL lands on index 4 (Back) instead of 9 (LeftShoulder).
+## That is what put toggle-all-autobattle on struktured's physical L for ~6 months. ControllerMappings supplies the
+## missing mapping; without that autoload this profile is wrong for that pad.
+const PROFILE_STANDARD = {
+	"ui_accept": [1],          # B (East face)
+	"ui_cancel": [0],          # A (South face)
+	"battle_advance": [10],    # RIGHT_SHOULDER (R) — matches "[R] Advance" hint bar
+	"battle_defer": [9],       # LEFT_SHOULDER (L) — matches "[L] Defer" hint bar
+	"battle_toggle_auto": [4], # BACK (Select/Minus)
+	"ui_menu": [6, 7],         # START + L3 — project.godot binds both; dropping 7 was a silent regression
+}
+
 const PROFILE_SN30 = {
-	"ui_accept": [1],        # B (East) = SNES A
-	"ui_cancel": [0],        # A (South) = SNES B
-	"battle_advance": [10],  # RB/R
-	"battle_defer": [9],     # LB/L
-	"battle_toggle_auto": [4], # Select/Back
-	"ui_menu": [6, 7],       # Start (both for compatibility)
+	"ui_accept": [1],          # B (East face)
+	"ui_cancel": [0],          # A (South face)
+	"battle_advance": [10],    # RIGHT_SHOULDER (R)
+	"battle_defer": [9],       # LEFT_SHOULDER (L)
+	"battle_toggle_auto": [4], # BACK (Select/Minus)
+	"ui_menu": [6, 7],         # START + L3 — project.godot declares both; dropping 7 here was the same silent loss already fixed in PROFILE_STANDARD
 }
 
 const PROFILE_ULTIMATE_PRO_2 = {
-	"ui_accept": [1],          # B (East)
-	"ui_cancel": [0],          # A (South)
-	"battle_advance": [5],     # RB (Right Bumper)
-	"battle_defer": [4],       # LB (Left Bumper)
-	"battle_toggle_auto": [6], # Back/Select
-	"ui_menu": [7],            # Start
+	"ui_accept": [1],          # B (East face)
+	"ui_cancel": [0],          # A (South face)
+	# struktured 2026-07-18: on the actual 8BitDo Ultimate Pro 2 hardware, L physically sends button 10 and R sends button 9 — the Godot JOY_BUTTON_LEFT/RIGHT_SHOULDER constants (9/10) don't match this device's reported indices. Hint bar reads "[L] Defer · [R] Advance"; keep hardware matching the hint bar, not the constant names.
+	# 2026-07-29 ALIGNED. The swap above was measured on real hardware BEFORE ControllerMappings
+	# existed, when a raw index genuinely did not mean what the constant said. With a mapping
+	# registered, 9 IS the left shoulder and 10 IS the right by definition, so keeping the swap
+	# INVERTED Defer and Advance against the hint bar for anyone who picked this profile.
+	# Autodetect never reaches it (neither Ultimate 2 identity contains "ultimate pro 2", pinned
+	# by test) but it stays MANUALLY selectable, and it is the listed name closest to struktured's
+	# actual pad — the tempting choice. Aligning is correct under either half of the open
+	# retire-vs-keep ruling; that ruling now only decides whether the entry exists at all.
+	"battle_advance": [10],    # RIGHT_SHOULDER — aligned with Standard and the hint bar
+	"battle_defer": [9],       # LEFT_SHOULDER — aligned with Standard and the hint bar
+	"battle_toggle_auto": [4], # BACK (Select/Minus)
+	"ui_menu": [6, 7],         # START + L3 — project.godot declares both; dropping 7 here was the same silent loss already fixed in PROFILE_STANDARD
 }
 
 ## Profile names
-const PROFILE_NAMES = ["8BitDo SN30", "8BitDo Ultimate Pro 2", "Custom"]
+const PROFILE_NAMES = ["Standard", "8BitDo SN30", "8BitDo Ultimate Pro 2", "Custom"]
 
-## Human-readable button labels by index
-## These labels reflect the Ultimate Pro 2 (XInput) layout where buttons 4/5 are
-## LB/RB and 6/7 are Back/Start.  SN30 uses 9/10 for shoulders and 4 for Select.
+## Device-name substrings (lowercased) → profile. First match wins; anything unmatched gets Standard.
+const PROFILE_AUTODETECT = [
+	["ultimate pro 2", "8BitDo Ultimate Pro 2"],
+	["sn30", "8BitDo SN30"],
+	["sf30", "8BitDo SN30"],
+]
+
+## Human-readable button labels by index — Godot 4 JoyButton enum.
+## (Pre-2026-05-02 these labels were transcribed from Godot 3, which silently
+## misled user-facing remap UI when the underlying button numbers shifted.)
 const BUTTON_LABELS = {
-	0: "A (South)",
-	1: "B (East)",
-	2: "X (West)",
-	3: "Y (North)",
-	4: "LB / Select",
-	5: "RB",
-	6: "Back / Select",
-	7: "Start",
-	9: "L3 / LB (SN30)",
-	10: "R3 / RB (SN30)",
+	0: "A / South (Nintendo B)",
+	1: "B / East (Nintendo A)",
+	2: "X / West (Nintendo Y)",
+	3: "Y / North (Nintendo X)",
+	4: "Back / Select / Minus",
+	5: "Guide / Home",
+	6: "Start / Plus",
+	7: "L3 (Left Stick Click)",
+	8: "R3 (Right Stick Click)",
+	9: "L / LB (Left Shoulder)",
+	10: "R / RB (Right Shoulder)",
 	11: "D-Up",
 	12: "D-Down",
 	13: "D-Left",
 	14: "D-Right",
-	15: "Paddle 1",
-	16: "Paddle 2",
-	17: "Paddle 3",
-	18: "Paddle 4",
+	15: "Misc1",
+	16: "Paddle 1",
+	17: "Paddle 2",
+	18: "Paddle 3",
+	19: "Paddle 4",
 }
 
 ## Runtime state
-var active_profile: String = "8BitDo Ultimate Pro 2"
+var active_profile: String = "Standard"
 var custom_bindings: Dictionary = {}
+## True once the player picks a profile in Settings or a saved config supplies one — autodetect never overrides an explicit choice.
+var profile_chosen_by_user: bool = false
 
 
 func _ready() -> void:
-	# Initialize custom bindings from Ultimate Pro 2 defaults
-	custom_bindings = PROFILE_ULTIMATE_PRO_2.duplicate(true)
+	custom_bindings = PROFILE_STANDARD.duplicate(true)
 	load_config()
-	apply_profile(active_profile)
+	match profile_chosen_by_user:
+		true: apply_profile(active_profile)
+		false: _autodetect_and_apply()
+	# The pad may enumerate AFTER boot (hotplug, or a wireless dongle settling) — redetect so it isn't stuck on the no-device default.
+	Input.joy_connection_changed.connect(_on_joy_connection_changed)
+
+
+func _on_joy_connection_changed(_device: int, connected: bool) -> void:
+	if connected and not profile_chosen_by_user:
+		_autodetect_and_apply()
+
+
+## Picks a profile from the connected pad's reported name. Standard is the default because Godot/SDL already normalizes conforming devices.
+func detect_profile_for_device(device_name: String) -> String:
+	var lowered := device_name.to_lower()
+	for entry in PROFILE_AUTODETECT:
+		if lowered.find(entry[0]) != -1:
+			return entry[1]
+	return "Standard"
+
+
+func _autodetect_and_apply() -> void:
+	var pads := Input.get_connected_joypads()
+	match pads.is_empty():
+		true:
+			print("[InputProfileManager] No gamepad connected — applying Standard until one appears")
+			apply_profile("Standard")
+		false:
+			var pad_name: String = Input.get_joy_name(pads[0])
+			var detected := detect_profile_for_device(pad_name)
+			print("[InputProfileManager] Detected '%s' -> profile '%s'" % [pad_name, detected])
+			apply_profile(detected)
 
 
 func get_profile_bindings(profile_name: String) -> Dictionary:
 	match profile_name:
+		"Standard":
+			return PROFILE_STANDARD
 		"8BitDo SN30":
 			return PROFILE_SN30
 		"8BitDo Ultimate Pro 2":
@@ -104,22 +205,79 @@ func get_profile_bindings(profile_name: String) -> Dictionary:
 		"Custom":
 			return custom_bindings
 		_:
-			return PROFILE_SN30
+			return PROFILE_STANDARD
 
 
 func apply_profile(profile_name: String) -> void:
 	active_profile = profile_name
 	var bindings = get_profile_bindings(profile_name)
 
-	print("[InputProfileManager] Applying profile: %s" % profile_name)
+	print("[InputProfileManager] Applying profile: %s (nintendo_mode=%s)" % [profile_name, nintendo_mode])
 	for action in REMAPPABLE_ACTIONS:
 		if not bindings.has(action):
 			continue
-		var indices = bindings[action]
+		var indices = face_convention_indices(action, bindings[action])
 		print("[InputProfileManager]   %s -> buttons %s" % [action, str(indices)])
 		_replace_joypad_buttons(action, indices)
 
 	print("[InputProfileManager] Profile applied: %s" % profile_name)
+
+
+## Swaps SOUTH<->EAST for confirm/cancel when nintendo_mode is off. Pure, so it is testable
+## without a pad; every other action passes through untouched.
+func face_convention_indices(action: String, indices: Array) -> Array:
+	if nintendo_mode or action not in ["ui_accept", "ui_cancel"]:
+		return indices
+	var swapped: Array = []
+	for i in indices:
+		match i:
+			0: swapped.append(1)
+			1: swapped.append(0)
+			_: swapped.append(i)
+	return swapped
+
+
+## Sets the convention and re-applies, so the InputMap and the flag can never disagree.
+func set_nintendo_mode(enabled: bool) -> void:
+	if nintendo_mode == enabled:
+		return
+	nintendo_mode = enabled
+	apply_profile(active_profile)
+	save_config()
+
+
+## The face layout as it is PRINTED, written west-north / south-east — the notation people
+## actually use, so a Nintendo pad reads "Ⓨ Ⓧ / Ⓑ Ⓐ" and an Xbox one "Ⓧ Ⓨ / Ⓐ Ⓑ".
+func face_layout_diagram(family: String) -> String:
+	var t: Dictionary = FACE_GLYPHS.get(family, FACE_GLYPHS["xbox"])
+	return "%s %s / %s %s" % [t.get(2, "?"), t.get(3, "?"), t.get(0, "?"), t.get(1, "?")]
+
+
+## Glyph family for a pad NAME. Unmatched returns "xbox" — an unknown pad on Windows is
+## almost always XInput, and that is the demo case.
+func face_family_for_device(device_name: String) -> String:
+	var lowered := device_name.to_lower()
+	for entry in FACE_FAMILY_HINTS:
+		if lowered.find(entry[0]) != -1:
+			return entry[1]
+	return "xbox"
+
+
+## The glyph printed on the physical button an action currently fires from.
+func glyph_for_action(action: String, device_name: String = "") -> String:
+	var name := device_name
+	if name == "":
+		var pads := Input.get_connected_joypads()
+		name = Input.get_joy_name(pads[0]) if not pads.is_empty() else ""
+	var family: String = face_family_for_device(name)
+	var bindings := get_profile_bindings(active_profile)
+	if not bindings.has(action):
+		return "?"
+	var indices := face_convention_indices(action, bindings[action])
+	if indices.is_empty():
+		return "?"
+	var table: Dictionary = FACE_GLYPHS[family]
+	return table.get(indices[0], "?")
 
 
 func _replace_joypad_buttons(action: String, button_indices: Array) -> void:
@@ -170,6 +328,58 @@ func get_action_button_label(action: String) -> String:
 	return " / ".join(labels)
 
 
+## Read-only: derive a human-readable keyboard label for an action by
+## scanning its current InputMap events. Used by ControlsMenu to surface
+## kb bindings alongside gamepad bindings (per user request 2026-05-03:
+## "make sure ... bindings for them is visible in the settings").
+##
+## Returns "—" if the action has no key event. Joins multiple keys with
+## " / " (matches the gamepad label format).
+func get_action_key_label(action: String) -> String:
+	if not InputMap.has_action(action):
+		return "—"
+	var events := InputMap.action_get_events(action)
+	var labels: Array[String] = []
+	for ev in events:
+		if ev is InputEventKey:
+			var ke := ev as InputEventKey
+			# Prefer keycode (logical) over physical_keycode for display so
+			# users see the printed key name, e.g. "L" instead of "OS-keycode-76".
+			var kc: Key = ke.keycode if ke.keycode != 0 else ke.physical_keycode
+			if kc == 0:
+				continue
+			var name := OS.get_keycode_string(kc)
+			if name == "":
+				continue
+			labels.append(name)
+	return " / ".join(labels) if labels.size() > 0 else "—"
+
+
+## Read-only: same idea for mouse bindings. Returns "—" if no mouse event
+## is bound. Most actions in this game don't have explicit mouse bindings
+## (mouse is handled at UI level via MenuMouseHelper), but ui_accept and
+## ui_cancel often map to L/R-click logically; this surfaces anything
+## actually wired up at the InputMap layer.
+func get_action_mouse_label(action: String) -> String:
+	if not InputMap.has_action(action):
+		return "—"
+	var events := InputMap.action_get_events(action)
+	var labels: Array[String] = []
+	for ev in events:
+		if ev is InputEventMouseButton:
+			var mb := ev as InputEventMouseButton
+			match mb.button_index:
+				MOUSE_BUTTON_LEFT:    labels.append("LMB")
+				MOUSE_BUTTON_RIGHT:   labels.append("RMB")
+				MOUSE_BUTTON_MIDDLE:  labels.append("MMB")
+				MOUSE_BUTTON_WHEEL_UP:    labels.append("Wheel↑")
+				MOUSE_BUTTON_WHEEL_DOWN:  labels.append("Wheel↓")
+				MOUSE_BUTTON_XBUTTON1: labels.append("X1")
+				MOUSE_BUTTON_XBUTTON2: labels.append("X2")
+				_: labels.append("Mouse %d" % mb.button_index)
+	return " / ".join(labels) if labels.size() > 0 else "—"
+
+
 func detect_conflicts() -> Array:
 	var bindings = get_profile_bindings(active_profile)
 	var conflicts = []
@@ -198,7 +408,7 @@ func detect_conflicts() -> Array:
 func reset_custom_to_preset() -> void:
 	var source = get_profile_bindings(active_profile)
 	if active_profile == "Custom":
-		source = PROFILE_ULTIMATE_PRO_2
+		source = PROFILE_STANDARD
 	custom_bindings = source.duplicate(true)
 	if active_profile == "Custom":
 		apply_profile("Custom")
@@ -210,6 +420,7 @@ func cycle_profile(delta: int) -> String:
 	if idx < 0:
 		idx = 0
 	idx = wrapi(idx + delta, 0, PROFILE_NAMES.size())
+	profile_chosen_by_user = true
 	apply_profile(PROFILE_NAMES[idx])
 	save_config()
 	return active_profile
@@ -224,6 +435,7 @@ func save_config() -> void:
 	var data = {
 		"version": CONFIG_VERSION,
 		"active_profile": active_profile,
+		"nintendo_mode": nintendo_mode,
 		"custom_bindings": {},
 	}
 
@@ -236,19 +448,34 @@ func save_config() -> void:
 			data["custom_bindings"][action] = [indices]
 
 	var json_str = JSON.stringify(data, "\t")
+	## Tick 168: surface save failures. Pre-fix a silent
+	## `if file:` short-circuit meant a player who customized
+	## their controls would think their bindings were saved (no
+	## error toast, no warning) when the write actually failed
+	## (perms, disk full, RO filesystem). Next launch reverts to
+	## defaults — surprise loss of config.
 	var file = FileAccess.open(CONFIG_PATH, FileAccess.WRITE)
-	if file:
-		file.store_string(json_str)
-		file.close()
-		print("[InputProfileManager] Config saved")
+	if file == null:
+		push_warning("[InputProfileManager] Could not open %s for write — custom input bindings will NOT persist across launches (error: %s)" % [CONFIG_PATH, FileAccess.get_open_error()])
+		return
+	file.store_string(json_str)
+	file.close()
+	print("[InputProfileManager] Config saved")
 
 
 func load_config() -> void:
+	## Tick 167: file-missing stays silent (legitimate first-launch
+	## state — no config yet to load). FileAccess.open-fail and
+	## root-type-mismatch were silent pre-fix; both deserve warnings
+	## because they indicate a real problem (perms / corruption)
+	## that the player would experience as "my custom input
+	## profile didn't load" with no console hint.
 	if not FileAccess.file_exists(CONFIG_PATH):
 		return
 
 	var file = FileAccess.open(CONFIG_PATH, FileAccess.READ)
 	if not file:
+		push_warning("[InputProfileManager] Config exists at %s but FileAccess.open failed — using default profile" % CONFIG_PATH)
 		return
 
 	var json_str = file.get_as_text()
@@ -261,19 +488,39 @@ func load_config() -> void:
 		return
 
 	var data = json.data
-	if not data is Dictionary:
+	if not (data is Dictionary):
+		push_warning("[InputProfileManager] Config parsed but root is not a Dictionary — using default profile")
 		return
+
+	# An unrecognized saved profile was silently discarded — the player's explicit Settings choice
+	# vanished with no console hint, presenting as "the game forgot my controller profile". Benign
+	# while PROFILE_NAMES only ever grows; the moment a profile is renamed or retired it becomes the
+	# difference between a diagnosable message and a mystery. Warn, then fall through to autodetect.
+	if data.has("active_profile") and not (data["active_profile"] in PROFILE_NAMES):
+		push_warning("[InputProfileManager] Saved profile '%s' is not a known profile (known: %s) — falling back to autodetect. A profile was likely renamed or retired." % [str(data["active_profile"]), str(PROFILE_NAMES)])
 
 	if data.has("active_profile") and data["active_profile"] in PROFILE_NAMES:
 		active_profile = data["active_profile"]
+		profile_chosen_by_user = true
+		# v1 hardcoded "8BitDo Ultimate Pro 2" as the startup default, so a persisted copy of it is indistinguishable from a real choice — treat it as unset so autodetect can correct the L/R inversion it carries.
+		var cfg_version: int = int(data.get("version", 1))
+		if cfg_version < 2 and active_profile == "8BitDo Ultimate Pro 2":
+			profile_chosen_by_user = false
+
+	# Absent key keeps the east-confirm default rather than flipping a returning player's
+	# convention on upgrade — v2 configs predate this flag and must not read as "off".
+	if data.has("nintendo_mode"):
+		nintendo_mode = bool(data["nintendo_mode"])
 
 	if data.has("custom_bindings") and data["custom_bindings"] is Dictionary:
 		for action in data["custom_bindings"]:
-			if action in REMAPPABLE_ACTIONS:
-				var val = data["custom_bindings"][action]
-				if val is Array:
-					custom_bindings[action] = val
-				else:
-					custom_bindings[action] = [int(val)]
+			if not (action in REMAPPABLE_ACTIONS):
+				push_warning("[InputProfileManager] Saved custom binding for '%s' ignored — not a remappable action. Its persisted button choice is being dropped silently otherwise." % str(action))
+				continue
+			var val = data["custom_bindings"][action]
+			if val is Array:
+				custom_bindings[action] = val
+			else:
+				custom_bindings[action] = [int(val)]
 
 	print("[InputProfileManager] Config loaded (profile: %s)" % active_profile)

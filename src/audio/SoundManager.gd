@@ -7,16 +7,82 @@ class_name SoundManagerClass
 # Audio players for different channels
 var _ui_player: AudioStreamPlayer
 var _battle_player: AudioStreamPlayer
+var _death_player: AudioStreamPlayer  # dedicated voice: death cries survive the next action's sounds (2026-08-18)
 var _ability_player: AudioStreamPlayer
 var _music_player: AudioStreamPlayer
 var _music_player_b: AudioStreamPlayer  # Second player for crossfade
+var _ambient_player: AudioStreamPlayer  # Looping weather/environment ambience
+var _sub_player: AudioStreamPlayer  # Crit sub-layer only; separate so the thud LAYERS under the hit instead of replacing it on _battle_player
+var _current_ambient_key: String = ""
 var _crossfade_tween: Tween = null
 
 # Music state
 var _music_playing: bool = false
 var _current_music: String = ""
+var _stinger_resume_state: Dictionary = {}  # Full state to restore after a stinger — a bare track id cannot describe AREA music
 const CROSSFADE_DURATION: float = 0.5  # Seconds for crossfade
-var _music_base_db: float = -12.0  # Base volume for music
+var _music_base_db: float = -12.0  # Base volume for music (overwritten by set_music_volume)
+const AMBIENT_OFFSET_DB: float = -8.0  # ambient (weather/room tone) sits this far below music, tracking the slider
+# Music ceiling: at slider=100%, music plays at MUSIC_VOLUME_CEILING_DB.
+# -10 dB sits music well below the SFX peak so battle hits and footstep
+# clips stay audible. User feedback (2026-05-02): -6 dB still felt too
+# loud relative to SFX, dropped to -10 dB. Slider scales below this.
+const MUSIC_VOLUME_CEILING_DB: float = -10.0
+
+# Per-channel SFX base offsets — restored when set_sfx_volume(1.0) is called.
+# These shape the mix: menu blips quiet, battle hits prominent, abilities mid.
+const SFX_UI_BASE_DB: float = -16.0      # Menu blips: present but below music
+const SFX_BATTLE_BASE_DB: float = -6.0   # Battle SFX: punchy alongside music
+const SFX_ABILITY_BASE_DB: float = -12.0 # Ability SFX: same level as music
+# NOTE: ambient has NO base const here on purpose — it is not an SFX channel.
+# _ambient_player tracks the MUSIC slider at _music_base_db + AMBIENT_OFFSET_DB
+# (set_music_volume, not set_sfx_volume). To retune ambience, change that offset.
+
+# Night-music bus: music players route through this so the day/night system
+# can toggle a low-pass + reverb "nocturnal" filter on all playing music
+# without touching individual tracks. Effects default DISABLED; a GameState
+# is_night listener flips set_night_music_effects(true) at dusk-→-night.
+# Values chosen for "distant/hushed" without being murky — LPF cutoff still
+# lets bass and low-mids through, reverb tail is short so battle music stays
+# tight if a caller elects to nightify it.
+const MUSIC_NIGHT_BUS: String = "MusicNight"
+## struktured reported this as "muffled … did u lower the music volume?" —
+## it was 1500 Hz, which removes everything above it: cymbals, string
+## harmonics, the top of a harpsichord. That is a behind-a-door effect, not a
+## nocturnal one. Measured: 1500 Hz costs 3.05 dB of total level, 7000 Hz costs
+## 2.79 dB — so the muffled character bought 0.26 dB and nothing else.
+## Keep this well above the ~4 kHz region where presence lives.
+const NIGHT_LPF_CUTOFF_HZ: float = 7000.0
+const NIGHT_REVERB_WET: float = 0.15
+const NIGHT_REVERB_ROOM_SIZE: float = 0.55
+const NIGHT_AMBIENCE_KEY: String = "night_crickets_wind"
+
+# Duck-music bus: sits downstream of MusicNight (MusicPlayers → MusicNight →
+# MusicDuck → Master). Modal dialogue pulls music -6dB during CutsceneDialogue
+# / NPCDialogue show/hide (cowir-cutscenes wires the API into their panels).
+# Battle speech bubbles do NOT duck (per cowir-main msg 2700 — they're
+# seasoning, not conversation). Composes with night filter + slider volume
+# because it's a downstream bus, not a write to _music_player.volume_db.
+const MUSIC_DUCK_BUS: String = "MusicDuck"
+const DUCK_TARGET_DB: float = -6.0
+const DUCK_TAPER_TIME: float = 0.25
+## Kill duck: cowir-main's envelope (-4dB / 50ms attack / 400ms release) — a beat, not a dropout. Slot 1 keeps it off dialogue's slot 0 so the two compose instead of overwriting.
+const KILL_DUCK_EFFECT_SLOT: int = 1
+const KILL_DUCK_TARGET_DB: float = -4.0
+const KILL_DUCK_ATTACK_TIME: float = 0.05
+const KILL_DUCK_RELEASE_TIME: float = 0.4
+## Crit sub-layer: sits UNDER the existing crit cue (which already carries pitch/echo identity in its OGG) so crits land in the chest without doubling the transient.
+const CRIT_THUD_FREQ: float = 62.0
+const CRIT_THUD_DURATION: float = 0.18
+const CRIT_THUD_TRIM_DB: float = -4.0
+## Death punctuation (struktured 2026-08-20: "cant hear the sfx when a monster dies"). The authored cue is a gentle scorch ("no bass no tones") measured at the SAME mean level as a plain hit (-22.8 vs -21.8 dB) — it cannot read as a climax. Boost the cue and give it the low body it was authored without.
+const DEATH_PLAYER_BASE_DB: float = SFX_BATTLE_BASE_DB + 2.0
+const DEATH_CUE_BOOST_DB: float = 6.0
+const DEATH_THUD_FREQ: float = 48.0
+const DEATH_THUD_DURATION: float = 0.28
+## Combo ramp: a BIAS multiplied onto pitch_scale, so the existing ±5% jitter survives underneath it.
+const COMBO_PITCH_STEP: float = 0.03
+const COMBO_PITCH_CAP: float = 0.12
 
 # Music cache - stores pre-generated AudioStreamWAV for each monster type
 var _music_cache: Dictionary = {}
@@ -34,8 +100,20 @@ static var _sfx_manifest: Dictionary = {}
 static var _sfx_manifest_loaded: bool = false
 # Cache loaded AudioStream objects so we only hit disk once per key
 static var _sfx_stream_cache: Dictionary = {}
+# Per-key cooldown timestamps to prevent SFX pileup at high battle speeds
+var _sfx_cooldowns: Dictionary = {}
+const SFX_MIN_INTERVAL_MS: int = 80  # Minimum ms between same sound plays
 
-# Sound definitions - procedural parameters
+# Sound definitions - procedural parameters.
+# HEADS UP: sfx_manifest.json OUTRANKS this table (play_* tries the manifest
+# first), so 40 of these 46 keys are shadowed by an OGG and editing them here
+# changes nothing you can hear on a normal run. To retune those, edit the OGG.
+# DORMANT, NOT DEAD — do not delete them. _try_play_sfx_from_manifest returns
+# false when a file is missing, export-excluded, or fails import, and then
+# THESE play. They are the safety net on exactly the platforms (web/PCK) where
+# a missing asset is hardest to notice.
+# Unshadowed, so audible on every run: grind_stop_{hp,death,corruption,manual,
+# generic} and adaptation_warning — the last purely procedural audio in-game.
 const SOUNDS = {
 	# UI Sounds
 	"menu_move": {"freq": 800, "duration": 0.03, "type": "blip"},
@@ -56,13 +134,20 @@ const SOUNDS = {
 	"tier_zoom_out": {"freq": 320, "duration": 0.22, "type": "tier_zoom_out"},   # Tier 1 -> Dashboard
 	"tier_zoom_in": {"freq": 520, "duration": 0.18, "type": "tier_zoom_in"},    # Dashboard -> Tier 1
 	"speed_change": {"freq": 700, "duration": 0.08, "type": "blip"},  # Battle speed toggle
+	# Autogrind interrupt sounds
+	"grind_stop_hp": {"freq": 280, "duration": 0.5, "type": "alarm_low"},       # HP threshold
+	"grind_stop_death": {"freq": 180, "duration": 0.8, "type": "sad"},          # Party death
+	"grind_stop_corruption": {"freq": 150, "duration": 0.6, "type": "glitch"},  # Corruption event
+	"grind_stop_manual": {"freq": 600, "duration": 0.15, "type": "descending"}, # Manual stop
+	"grind_stop_generic": {"freq": 350, "duration": 0.3, "type": "falling"},    # Generic stop
+	"adaptation_warning": {"freq": 500, "duration": 0.35, "type": "woozy"},     # Enemies adapting
 
 	# Battle Sounds
 	"attack_hit": {"freq": 200, "duration": 0.12, "type": "noise_hit"},
 	"attack_miss": {"freq": 150, "duration": 0.15, "type": "swoosh"},
 	"critical_hit": {"freq": 250, "duration": 0.2, "type": "impact"},
 	"damage_taken": {"freq": 180, "duration": 0.1, "type": "thud"},
-	"enemy_death": {"freq": 180, "duration": 0.35, "type": "dying_fall"},
+	"enemy_death": {"freq": 1200, "duration": 0.5, "type": "vanish_shimmer"},
 	"heal": {"freq": 800, "duration": 0.3, "type": "sparkle"},
 	"buff": {"freq": 600, "duration": 0.25, "type": "ascending"},
 	"debuff": {"freq": 400, "duration": 0.25, "type": "descending"},
@@ -95,6 +180,30 @@ func _ready() -> void:
 	_load_sfx_manifest()
 	_setup_audio_players()
 	_setup_default_ability_sounds()
+	_derive_ability_sounds_from_data()
+	_setup_night_ambience_listener()
+	# Headless runs (--headless, i.e. GUT test suites + CI) MUST NOT emit audio —
+	# multiple background agents can be running suites simultaneously and the
+	# user hears every one of them. Mute the master bus at boot so play_ui /
+	# play_battle / play_music become no-ops without needing per-caller guards.
+	if DisplayServer.get_name() == "headless" or OS.has_feature("headless"):
+		AudioServer.set_bus_mute(0, true)
+		print("[SoundManager] headless run detected — master bus muted")
+
+
+## 2026-08-14 silent-death class (struktured: music+SFX stopped mid-battle, zero errors, YT fine): frozen playback position while playing == game mixer dead; advancing position while silent == stream corked below the game
+var _liveness_last_pos: float = -1.0
+
+
+func audio_liveness_check() -> void:
+	var p: AudioStreamPlayer = _music_player_b if (_music_player_b and _music_player_b.playing and not _music_player.playing) else _music_player
+	if p and p.playing and not p.stream_paused:
+		var pos := p.get_playback_position()
+		if _liveness_last_pos >= 0.0 and absf(pos - _liveness_last_pos) < 0.001:
+			push_warning("[AUDIO] playback position frozen at %.2fs while playing — game audio mixer is dead (2026-08-14 class); restart recovers" % pos)
+		_liveness_last_pos = pos
+	else:
+		_liveness_last_pos = -1.0
 
 
 func _exit_tree() -> void:
@@ -110,37 +219,94 @@ func _exit_tree() -> void:
 	_corruption_tween = null
 
 
+## The SFX bus every sound-effect player routes through, so the volume slider attenuates ONE
+## thing instead of an enumerated list of players.
+##
+## Bug 2026-07-28 (cowir-sfx): set_sfx_volume wrote volume_db on exactly the three players
+## SoundManager owns and made no AudioServer call at all. Two players are constructed in OTHER
+## files with hardcoded volumes — BattleTransition's monster-transition sting and
+## CutsceneDialogue's per-character voice blip — so setting SFX to 0 still played a sound on
+## every battle transition and every dialogue character. Enumerating "SoundManager's players"
+## was complete for its original direction and blind to players any other file creates.
+##
+## CutsceneDialogue already wrote `bus = "SFX" if AudioServer.get_bus_index("SFX") >= 0` — the
+## author anticipated this bus. It simply never existed, so that line always fell to Master.
+##
+## A bus makes the class structurally impossible rather than currently-fixed: anything that sets
+## bus = SFX_BUS is attenuated forever, with no list to maintain and nothing to rot.
+const SFX_BUS := "SFX"
+
+
+func _ensure_sfx_bus() -> void:
+	if AudioServer.get_bus_index(SFX_BUS) != -1:
+		return  # already added (autoload re-init safety)
+	var idx: int = AudioServer.bus_count
+	AudioServer.add_bus(idx)
+	AudioServer.set_bus_name(idx, SFX_BUS)
+	AudioServer.set_bus_send(idx, "Master")
+
+
 func _setup_audio_players() -> void:
 	"""Create audio players for different channels"""
+	_ensure_sfx_bus()
+
+	# Players sit permanently at their DESIGN-INTENT base level; the slider attenuates the BUS.
+	# That keeps the per-channel mix (UI quietest, battle loudest) exactly as authored while
+	# making the slider a single control point.
 	_ui_player = AudioStreamPlayer.new()
 	_ui_player.name = "UIPlayer"
-	_ui_player.volume_db = -10.0  # Menu blips: subtle (files normalized to -12dB peak)
-	_ui_player.bus = "Master"
+	_ui_player.volume_db = SFX_UI_BASE_DB  # Menu blips: present but below music
+	_ui_player.bus = SFX_BUS
 	add_child(_ui_player)
 
 	_battle_player = AudioStreamPlayer.new()
 	_battle_player.name = "BattlePlayer"
-	_battle_player.volume_db = -8.0  # Battle SFX: present alongside music (files at -12dB peak)
-	_battle_player.bus = "Master"
+	_battle_player.volume_db = SFX_BATTLE_BASE_DB  # Battle SFX: punchy alongside music
+	_battle_player.bus = SFX_BUS
 	add_child(_battle_player)
+
+	_death_player = AudioStreamPlayer.new()
+	_death_player.name = "DeathPlayer"
+	_death_player.volume_db = DEATH_PLAYER_BASE_DB
+	_death_player.bus = SFX_BUS
+	add_child(_death_player)
+
+	_sub_player = AudioStreamPlayer.new()
+	_sub_player.name = "SubPlayer"
+	_sub_player.volume_db = SFX_BATTLE_BASE_DB + CRIT_THUD_TRIM_DB
+	_sub_player.bus = SFX_BUS
+	add_child(_sub_player)
 
 	_ability_player = AudioStreamPlayer.new()
 	_ability_player.name = "AbilityPlayer"
-	_ability_player.volume_db = -6.0  # Ability SFX: prominent, spells should be felt (files at -12dB peak)
-	_ability_player.bus = "Master"
+	_ability_player.volume_db = SFX_ABILITY_BASE_DB  # Ability SFX: same level as music — spells should be felt
+	_ability_player.bus = SFX_BUS
 	add_child(_ability_player)
+
+	# Duck bus BEFORE night bus so night can send into it (signal chain:
+	# player → MusicNight → MusicDuck → Master).
+	_ensure_music_duck_bus()
+	_ensure_music_night_bus()
 
 	_music_player = AudioStreamPlayer.new()
 	_music_player.name = "MusicPlayer"
 	_music_player.volume_db = _music_base_db
-	_music_player.bus = "Master"
+	_music_player.bus = MUSIC_NIGHT_BUS
 	add_child(_music_player)
 
 	_music_player_b = AudioStreamPlayer.new()
 	_music_player_b.name = "MusicPlayerB"
 	_music_player_b.volume_db = -80.0  # Start silent
-	_music_player_b.bus = "Master"
+	_music_player_b.bus = MUSIC_NIGHT_BUS
 	add_child(_music_player_b)
+
+	_ambient_player = AudioStreamPlayer.new()
+	_ambient_player.name = "AmbientPlayer"
+	# tracks the music slider a fixed amount below it — hardcoded -20.0 ignored the slider and could exceed music at low volume (cowir-sfx audit msg 2218)
+	_ambient_player.volume_db = _music_base_db + AMBIENT_OFFSET_DB
+	_ambient_player.bus = "Master"
+	add_child(_ambient_player)
+	_ambient_player.finished.connect(_on_ambient_finished)
 
 
 func _setup_default_ability_sounds() -> void:
@@ -174,6 +340,69 @@ func _setup_default_ability_sounds() -> void:
 	_ability_sounds["slash"] = "ability_physical"
 	_ability_sounds["steal"] = "ability_physical"
 	_ability_sounds["mug"] = "ability_physical"
+	# Meta-job signature cues (cowir-sfx 2026-07-11) — reality edits must not sound like sword hits.
+	_ability_sounds["constant_modification"] = "ability_constant_modification"
+	_ability_sounds["analyze_code"] = "ability_analyze_code"
+	_ability_sounds["permakill"] = "ability_permakill"
+	_ability_sounds["permakill_strike"] = "ability_permakill"
+	_ability_sounds["mind_swap"] = "ability_mind_swap"
+	_ability_sounds["bypass_puzzle"] = "ability_bypass_puzzle"
+
+
+## Element -> cue for the derived pass. poison/earth/wind are absent because no such cue exists yet.
+const _ELEMENT_SFX: Dictionary = {
+	"fire": "ability_fire",
+	"ice": "ability_ice",
+	"lightning": "ability_lightning",
+	"dark": "ability_dark",
+	"holy": "ability_holy",
+}
+
+
+func _derive_ability_sounds_from_data() -> void:
+	"""Fill gaps in the hand map from abilities.json so a spell never plays the melee thump.
+
+	play_ability defaults unmapped ids to "ability_physical". The hand map above covers 24
+	ids, so 49 magic/healing abilities -- fire_breath, ice_breath, chain_lightning,
+	magma_eruption, every Necromancer dark spell -- played a punch while their correct cue
+	sat unused in the manifest. Derived from `type`, NOT element alone: the 4 physical
+	abilities that carry an element (dark_slash, cursed_strike, glitch_strike,
+	lightning_dash) are weapon strikes and keep the thump deliberately.
+
+	The hand map WINS -- it holds the meta-job signature cues, so permakill_strike stays
+	ability_permakill rather than being overwritten with ability_dark.
+	"""
+	var text: String = FileAccess.get_file_as_string("res://data/abilities.json")
+	if text == "":
+		push_warning("[SFX] abilities.json unreadable — elemental spells fall back to ability_physical")
+		return
+	var parsed: Variant = JSON.parse_string(text)
+	if not (parsed is Dictionary):
+		push_warning("[SFX] abilities.json did not parse as a Dictionary — derived ability cues skipped")
+		return
+	var abilities: Variant = parsed.get("abilities", parsed)
+	if not (abilities is Dictionary):
+		return
+	var derived: int = 0
+	for aid in abilities.keys():
+		var ability_id: String = str(aid)
+		if _ability_sounds.has(ability_id):
+			continue
+		var entry: Variant = abilities[aid]
+		if not (entry is Dictionary):
+			continue
+		var ability_type: String = str(entry.get("type", ""))
+		if ability_type != "magic" and ability_type != "healing":
+			continue
+		var cue: String = str(_ELEMENT_SFX.get(str(entry.get("element", "")).to_lower(), ""))
+		if cue == "" and ability_type == "healing":
+			cue = "ability_heal"
+		if cue == "" or not _sfx_manifest.has(cue):
+			continue
+		_ability_sounds[ability_id] = cue
+		derived += 1
+	if derived > 0:
+		print("[SFX] Derived %d ability cues from abilities.json (hand map: %d)" % [derived, _ability_sounds.size() - derived])
 
 
 ## SFX Manifest (file-based SFX take priority over procedural)
@@ -181,15 +410,33 @@ func _setup_default_ability_sounds() -> void:
 static func _load_sfx_manifest() -> void:
 	if _sfx_manifest_loaded:
 		return
-	_sfx_manifest_loaded = true
-	var file = FileAccess.open("res://data/sfx_manifest.json", FileAccess.READ)
+	## Tick 166: surface each failure mode. Pre-fix every gap was
+	## silent — open fail, parse fail, missing "sfx" key all
+	## degraded to procedural-only audio with zero console hint.
+	## Players (and devs) had no way to tell whether the manifest
+	## was loading or being silently rejected.
+	var file_path: String = "res://data/sfx_manifest.json"
+	if not FileAccess.file_exists(file_path):
+		push_warning("[SFX] sfx_manifest.json not found at %s — falling back to procedural audio only" % file_path)
+		return
+	var file = FileAccess.open(file_path, FileAccess.READ)
 	if not file:
+		push_warning("[SFX] sfx_manifest.json exists but FileAccess.open failed — falling back to procedural audio only")
 		return
 	var parsed = JSON.parse_string(file.get_as_text())
-	if parsed and parsed.has("sfx"):
-		_sfx_manifest = parsed["sfx"]
-		if _sfx_manifest.size() > 0:
-			print("[SFX] Loaded sfx manifest: %d sounds" % _sfx_manifest.size())
+	if parsed == null:
+		push_warning("[SFX] sfx_manifest.json parse error — falling back to procedural audio only")
+		return
+	if not (parsed is Dictionary):
+		push_warning("[SFX] sfx_manifest.json parsed but root is not a Dictionary — falling back to procedural audio only")
+		return
+	if not parsed.has("sfx"):
+		push_warning("[SFX] sfx_manifest.json parsed but missing 'sfx' key — manifest empty")
+		return
+	_sfx_manifest = parsed["sfx"]
+	_sfx_manifest_loaded = true
+	if _sfx_manifest.size() > 0:
+		print("[SFX] Loaded sfx manifest: %d sounds" % _sfx_manifest.size())
 
 
 func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, volume_db_override: float = NAN, pitch_scale: float = 1.0) -> bool:
@@ -198,50 +445,87 @@ func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, v
 	If set, overrides volume (used by play_battle_scaled)."""
 	if not _sfx_manifest.has(sound_key):
 		return false
-	var entry = _sfx_manifest[sound_key]
+
+	# Cooldown: skip if same sound played too recently (prevents pileup at high battle speeds)
+	# LOAD-BEARING BEYOND ITS NAME: this stamp is also the only thing bounding the fallback_to
+	# recursion below. The `fallback_key != sound_key` checks catch self-loops ONLY, so an a->b->a
+	# cycle would recurse forever (the cached-null branch recurses too) — except the second visit
+	# to any key hits its own fresh stamp and returns here. Do NOT move the stamp after the load.
+	var now_ms = Time.get_ticks_msec()
+	var last_played = _sfx_cooldowns.get(sound_key, 0)
+	if now_ms - last_played < SFX_MIN_INTERVAL_MS:
+		return true  # Return true to suppress procedural fallback too
+	_sfx_cooldowns[sound_key] = now_ms
+
+	# Variant randomization: if entry has "variants", randomly pick original or a variant
+	var resolved_key = sound_key
+	var base_entry = _sfx_manifest[sound_key]
+	if base_entry.has("variants") and base_entry["variants"].size() > 0:
+		var all_keys = [sound_key] + Array(base_entry["variants"])
+		resolved_key = all_keys[randi() % all_keys.size()]
+
+	var entry = _sfx_manifest[resolved_key] if _sfx_manifest.has(resolved_key) else base_entry
 	var path = entry.get("file", "")
 	if path == "":
 		return false
 	if not path.begins_with("res://"):
 		path = "res://" + path
 
+	# Subtle pitch randomization (±5%) prevents ear fatigue on repeated sounds
+	var pitch_variation = randf_range(0.95, 1.05)
+	var final_pitch = pitch_scale * pitch_variation
+
 	# Check stream cache first
-	if _sfx_stream_cache.has(sound_key):
-		var cached_stream = _sfx_stream_cache[sound_key]
+	if _sfx_stream_cache.has(resolved_key):
+		var cached_stream = _sfx_stream_cache[resolved_key]
 		if cached_stream:
 			player.stream = cached_stream
 			if not is_nan(volume_db_override):
 				player.volume_db = volume_db_override
-			player.pitch_scale = pitch_scale
+			player.pitch_scale = final_pitch
 			player.play()
 			return true
-		else:
-			# Cached null = file doesn't exist, fall through to procedural
-			return false
-
-	# Try loading from disk
-	if not FileAccess.file_exists(path):
-		_sfx_stream_cache[sound_key] = null  # Cache miss
+		var cached_fallback: String = str(entry.get("fallback_to", ""))
+		if cached_fallback != "" and cached_fallback != sound_key and _sfx_manifest.has(cached_fallback):
+			return _try_play_sfx_from_manifest(player, cached_fallback, volume_db_override, pitch_scale)
 		return false
+
+	# Try loading directly — skip existence checks that can fail in web/PCK exports
 	var stream = load(path) as AudioStream
 	if not stream:
-		push_warning("[SFX] Failed to load: %s" % path)
-		_sfx_stream_cache[sound_key] = null
+		_sfx_stream_cache[resolved_key] = null
+		var fallback_key: String = str(entry.get("fallback_to", ""))
+		if fallback_key != "" and fallback_key != sound_key and _sfx_manifest.has(fallback_key):
+			return _try_play_sfx_from_manifest(player, fallback_key, volume_db_override, pitch_scale)
+		push_warning("[SFX] Failed to load: %s (key: %s)" % [path, resolved_key])
 		return false
-	_sfx_stream_cache[sound_key] = stream
+	_sfx_stream_cache[resolved_key] = stream
 	player.stream = stream
 	if not is_nan(volume_db_override):
 		player.volume_db = volume_db_override
-	player.pitch_scale = pitch_scale
+	player.pitch_scale = final_pitch
 	player.play()
 	return true
 
 
 ## Public API
 
+## 2026-07-14 playtest: menu_select was ~25% too loud vs the rest of the UI bank. Per-key offset in dB — 20*log10(0.75) ≈ -2.5.
+const _UI_VOLUME_TRIM_DB: Dictionary = {
+	"menu_select": -2.5,
+}
+
+## 2026-08-31 struktured: the round cue reads "a bit loud, not subtle". Moving it off the UI channel was a +10 dB step (-16 -> -6) and it overshot; this walks back half of it without returning it to the channel that buried it.
+const _BATTLE_VOLUME_TRIM_DB: Dictionary = {
+	"round_ap_gain": -5.0,
+}
+
+
 func play_ui(sound_key: String) -> void:
 	"""Play a UI sound effect — file-based if available, else procedural"""
-	if _try_play_sfx_from_manifest(_ui_player, sound_key):
+	# Always pass an explicit volume — otherwise a prior trimmed play sticks (volume_db persists on the AudioStreamPlayer).
+	var trim: float = float(_UI_VOLUME_TRIM_DB.get(sound_key, 0.0))
+	if _try_play_sfx_from_manifest(_ui_player, sound_key, SFX_UI_BASE_DB + trim):
 		return
 	if not SOUNDS.has(sound_key):
 		return
@@ -249,12 +533,38 @@ func play_ui(sound_key: String) -> void:
 
 
 func play_battle(sound_key: String) -> void:
-	"""Play a battle sound effect — file-based if available, else procedural"""
-	if _try_play_sfx_from_manifest(_battle_player, sound_key):
+	"""Play a battle sound effect — world variant first, then default, else procedural"""
+	# Cycle #13: play_ability was the ONLY prefix-aware path, so an authored
+	# w4_enemy_death could never be reached from the battle side.
+	var world_key: String = _get_world_sfx_prefix() + sound_key
+	# Explicit level on EVERY call, matching play_ui: volume_db persists on the shared player, so one trimmed cue would otherwise quiet every battle sound after it.
+	var level: float = SFX_BATTLE_BASE_DB + float(_BATTLE_VOLUME_TRIM_DB.get(sound_key, 0.0))
+	if world_key != sound_key and _try_play_sfx_from_manifest(_battle_player, world_key, level):
+		return
+	if _try_play_sfx_from_manifest(_battle_player, sound_key, level):
 		return
 	if not SOUNDS.has(sound_key):
 		return
 	_play_sound(_battle_player, SOUNDS[sound_key])
+
+
+## Death cries on their OWN voice — on the shared _battle_player the 1s scorch was stomped by the killing blow's hit sound, then (post-fix) by the NEXT action's sounds at 2x+ speed. Never audible either way (struktured 2026-08-15 + 2026-08-18).
+func play_death(sound_key: String) -> void:
+	var world_key: String = _get_world_sfx_prefix() + sound_key
+	# A group kill drops 2-3 enemies inside SFX_MIN_INTERVAL_MS; the per-key cooldown would swallow every death but the first (and its `return true` suppresses the fallback too). Deaths are the one cue that must never dedupe.
+	_sfx_cooldowns.erase(world_key)
+	_sfx_cooldowns.erase(sound_key)
+	# Low body under the cue, on the sub channel — NOT the battle player, whose hit tail is exactly why the cry got its own voice
+	if _sub_player != null:
+		_play_sound(_sub_player, {"freq": DEATH_THUD_FREQ, "duration": DEATH_THUD_DURATION, "type": "thud"})
+	# ABSOLUTE from the base const, never from the live player: the override persists on the player, so `volume_db + boost` would ratchet +6 dB per death
+	var boosted_db: float = DEATH_PLAYER_BASE_DB + DEATH_CUE_BOOST_DB
+	if world_key != sound_key and _try_play_sfx_from_manifest(_death_player, world_key, boosted_db):
+		return
+	if _try_play_sfx_from_manifest(_death_player, sound_key, boosted_db):
+		return
+	if SOUNDS.has(sound_key):
+		_play_sound(_death_player, SOUNDS[sound_key])
 
 
 func play_battle_scaled(sound_key: String, volume_db: float = 0.0, pitch_scale: float = 1.0) -> void:
@@ -274,18 +584,319 @@ func play_battle_scaled(sound_key: String, volume_db: float = 0.0, pitch_scale: 
 	_play_sound(_battle_player, params)
 
 
+func play_attack_hit(weapon_type: String = "", is_crit: bool = false) -> void:
+	# Per-weapon OGGs from cowir-sfx have the crit identity (pitch shift,
+	# echo) baked in, so we don't pile additional volume/pitch on top.
+	# The procedural fallback still gets the old crit boost.
+	var suffix = "_crit" if is_crit else ""
+	var generic_key = "critical_hit" if is_crit else "attack_hit"
+	# Step 0 yields exactly 1.0, so a non-chained hit is bit-identical to the pre-ramp path.
+	var bias: float = _combo_pitch_bias()
+	_combo_step += 1
+	if not weapon_type.is_empty():
+		var per_weapon_key = "attack_hit_%s%s" % [weapon_type, suffix]
+		if _try_play_sfx_from_manifest(_battle_player, per_weapon_key, NAN, bias):
+			return
+	if _try_play_sfx_from_manifest(_battle_player, generic_key, NAN, bias):
+		return
+	if not SOUNDS.has(generic_key):
+		return
+	if is_crit:
+		var params = SOUNDS[generic_key].duplicate()
+		params["volume_db"] = 2.0
+		if params.has("freq"):
+			params["freq"] = params["freq"] * 1.3 * bias
+		_play_sound(_battle_player, params)
+	else:
+		var plain = SOUNDS[generic_key].duplicate()
+		if plain.has("freq"):
+			plain["freq"] = plain["freq"] * bias
+		_play_sound(_battle_player, plain)
+
+
+## Consecutive-hit pitch bias. Reset per ACTION by the caller — an unreset counter would ramp across a whole battle.
+var _combo_step: int = 0
+
+
+func _combo_pitch_bias() -> float:
+	return 1.0 + minf(float(_combo_step) * COMBO_PITCH_STEP, COMBO_PITCH_CAP)
+
+
+## Public: call at the start of each action so multi-hit chains ramp but separate actions do not.
+func reset_hit_chain() -> void:
+	_combo_step = 0
+
+
+## Public: test/inspection seam for the current ramp multiplier.
+func get_combo_pitch_bias() -> float:
+	return _combo_pitch_bias()
+
+
+## Public: low sub-layer UNDER a crit. Its own player so it stacks with the crit cue rather than replacing it; the caller owns tier/flag gating.
+func play_crit_thud() -> void:
+	if _sub_player == null:
+		return
+	_play_sound(_sub_player, {"freq": CRIT_THUD_FREQ, "duration": CRIT_THUD_DURATION, "type": "thud"})
+
+
 func play_ability(ability_id: String) -> void:
-	"""Play sound for an ability (looks up mapping or uses default)"""
+	"""Play sound for an ability — tries world-variant first, then default"""
 	var sound_key = _ability_sounds.get(ability_id, "ability_physical")
+	# Try world-specific variant (e.g., "w2_ability_fire" for suburban world)
+	var world_key = _get_world_sfx_prefix() + sound_key
+	if _try_play_sfx_from_manifest(_ability_player, world_key):
+		return
+	# Fall back to default (medieval/W1) sound
 	if _try_play_sfx_from_manifest(_ability_player, sound_key):
 		return
 	if SOUNDS.has(sound_key):
 		_play_sound(_ability_player, SOUNDS[sound_key])
 
 
-func register_ability_sound(ability_id: String, sound_key: String) -> void:
-	"""Register a custom sound for an ability"""
-	_ability_sounds[ability_id] = sound_key
+func _get_world_sfx_prefix() -> String:
+	"""Return SFX key prefix for current world. Empty string = W1 medieval (default)."""
+	var suffix = _get_current_world_suffix()
+	match suffix:
+		"suburban": return "w2_"
+		"steampunk": return "w3_"
+		"industrial": return "w4_"
+		"digital": return "w5_"
+		"abstract": return "w6_"
+		_: return ""  # W1 medieval uses unprefixed keys
+
+
+func play_ambient(sound_key: String) -> void:
+	"""Start a looping ambient sound (weather, environment). Stops previous ambient."""
+	if sound_key == _current_ambient_key and _ambient_player.playing:
+		return  # Already playing this ambient
+	stop_ambient()
+	_current_ambient_key = sound_key
+	if not _sfx_manifest.has(sound_key):
+		return
+	var entry = _sfx_manifest[sound_key]
+	var path = entry.get("file", "")
+	if path == "":
+		return
+	if not path.begins_with("res://"):
+		path = "res://" + path
+	var stream = load(path) as AudioStream
+	if not stream:
+		return
+	_ambient_player.stream = stream
+	_ambient_player.play()
+
+
+func stop_ambient() -> void:
+	"""Stop the current ambient loop."""
+	_ambient_player.stop()
+	_current_ambient_key = ""
+
+
+func _on_ambient_finished() -> void:
+	"""Re-loop the ambient sound when it finishes."""
+	if _current_ambient_key != "":
+		_ambient_player.play()
+
+
+## Night-music bus setup + toggle (2026-07-16, cowir-main directive msg 2643/2659).
+## Music players are routed to a dedicated bus so day/night can toggle a
+## low-pass + reverb filter over all playing music without re-routing tracks.
+## Effects default DISABLED (bus is transparent) so no gameplay change until
+## someone calls set_night_music_effects(true).
+func _ensure_music_night_bus() -> void:
+	if AudioServer.get_bus_index(MUSIC_NIGHT_BUS) != -1:
+		return  # already added (autoload re-init safety)
+	# Sends to MUSIC_DUCK_BUS if it exists (compose: night filter → duck →
+	# Master); otherwise straight to Master for backwards compat.
+	var duck_idx: int = AudioServer.get_bus_index(MUSIC_DUCK_BUS)
+	var send_target: String = MUSIC_DUCK_BUS if duck_idx != -1 else "Master"
+	var idx: int = AudioServer.bus_count
+	AudioServer.add_bus(idx)
+	AudioServer.set_bus_name(idx, MUSIC_NIGHT_BUS)
+	AudioServer.set_bus_send(idx, send_target)
+	var lpf := AudioEffectLowPassFilter.new()
+	lpf.cutoff_hz = NIGHT_LPF_CUTOFF_HZ
+	var reverb := AudioEffectReverb.new()
+	reverb.wet = NIGHT_REVERB_WET
+	reverb.room_size = NIGHT_REVERB_ROOM_SIZE
+	AudioServer.add_bus_effect(idx, lpf)
+	AudioServer.add_bus_effect(idx, reverb)
+	# Both start disabled — flip on for night via set_night_music_effects(true).
+	AudioServer.set_bus_effect_enabled(idx, 0, false)
+	AudioServer.set_bus_effect_enabled(idx, 1, false)
+
+
+## Public: enable or disable the nocturnal filter on all playing music.
+## Caller is expected to be a GameState is_night / day_phase listener
+## (cowir-main's clock PR wires this). Idempotent, cheap, works mid-playback.
+func set_night_music_effects(enabled: bool) -> void:
+	var idx: int = AudioServer.get_bus_index(MUSIC_NIGHT_BUS)
+	if idx == -1:
+		_ensure_music_night_bus()
+		idx = AudioServer.get_bus_index(MUSIC_NIGHT_BUS)
+	AudioServer.set_bus_effect_enabled(idx, 0, enabled)
+	AudioServer.set_bus_effect_enabled(idx, 1, enabled)
+
+
+## Public: report current toggle state (both effects should agree).
+func are_night_music_effects_enabled() -> bool:
+	var idx: int = AudioServer.get_bus_index(MUSIC_NIGHT_BUS)
+	if idx == -1:
+		return false
+	return AudioServer.is_bus_effect_enabled(idx, 0)
+
+
+## Public: play weapon-strike voice for the equipped element (msg 2789 axis A).
+func play_strike_element(element: String) -> void:
+	if element == "":
+		return
+	_try_play_sfx_from_manifest(_battle_player, "strike_" + element.to_lower())
+
+
+## Public: play weakness-hit stinger (msg 2789 axis D + cowir-battle msg 2787 visual).
+func play_weakness_flash() -> void:
+	_try_play_sfx_from_manifest(_battle_player, "weakness_flash")
+
+
+## Public: start/stop the night ambience loop; mirror of set_night_music_effects.
+func set_night_ambience(enabled: bool) -> void:
+	if enabled:
+		if _sfx_manifest.has(NIGHT_AMBIENCE_KEY):
+			play_ambient(NIGHT_AMBIENCE_KEY)
+	else:
+		if _current_ambient_key == NIGHT_AMBIENCE_KEY:
+			stop_ambient()
+
+
+func _setup_night_ambience_listener() -> void:
+	var gs: Node = get_node_or_null("/root/GameState")
+	if gs == null or not gs.has_signal("time_of_day_changed"):
+		return
+	if not gs.time_of_day_changed.is_connected(_on_time_of_day_changed_for_ambience):
+		gs.time_of_day_changed.connect(_on_time_of_day_changed_for_ambience)
+	if gs.has_method("is_night") and bool(gs.is_night()):
+		set_night_ambience(true)
+
+
+func _on_time_of_day_changed_for_ambience(band: String) -> void:
+	set_night_ambience(band == "night")
+## Duck-music bus setup + toggle (2026-07-16, cowir-main directive msg 2700).
+## Downstream of MusicNight, so signal chain is: player → MusicNight (LPF+reverb)
+## → MusicDuck (amplify) → Master. Ducking is a taper on the Amplify effect's
+## volume_db (0→-6 over 250ms) rather than an enable/disable toggle — a hard
+## step would be audibly obvious.
+var _duck_tween: Tween = null
+var _duck_active: bool = false
+
+
+func _ensure_music_duck_bus() -> void:
+	if AudioServer.get_bus_index(MUSIC_DUCK_BUS) != -1:
+		return  # already added (autoload re-init safety)
+	var idx: int = AudioServer.bus_count
+	AudioServer.add_bus(idx)
+	AudioServer.set_bus_name(idx, MUSIC_DUCK_BUS)
+	AudioServer.set_bus_send(idx, "Master")
+	var amp := AudioEffectAmplify.new()
+	amp.volume_db = 0.0  # transparent at rest; taper to DUCK_TARGET_DB when active
+	AudioServer.add_bus_effect(idx, amp)
+	# Stay enabled so the taper tween can smoothly move volume_db; leaving it
+	# disabled would require an enable-flip at taper-start, which we chose to
+	# avoid (see class doc — hard steps are audible).
+	AudioServer.set_bus_effect_enabled(idx, 0, true)
+	# Slot 1 (kill duck) is built here too, so the bus has one slot per source from boot.
+	# Creating it lazily made the bus's SHAPE depend on whether a kill had happened yet.
+	var kill_amp := AudioEffectAmplify.new()
+	kill_amp.volume_db = 0.0
+	AudioServer.add_bus_effect(idx, kill_amp)
+	AudioServer.set_bus_effect_enabled(idx, KILL_DUCK_EFFECT_SLOT, true)
+
+
+## Public: modal-dialogue enter/exit hook. Idempotent, tapered.
+## Scope per cowir-main msg 2700: CutsceneDialogue + NPCDialogue only.
+## Battle speech bubbles must NOT call this (they're seasoning, not
+## conversation — ducking on every quip would exhaust the player).
+func duck_music_for_dialogue(active: bool) -> void:
+	if active == _duck_active:
+		return  # idempotent, no thrash
+	_duck_active = active
+	var idx: int = AudioServer.get_bus_index(MUSIC_DUCK_BUS)
+	if idx == -1:
+		_ensure_music_duck_bus()
+		idx = AudioServer.get_bus_index(MUSIC_DUCK_BUS)
+	var amp = AudioServer.get_bus_effect(idx, 0)
+	if amp == null:
+		return
+	if _duck_tween and _duck_tween.is_valid():
+		_duck_tween.kill()
+	_duck_tween = create_tween()
+	var target_db: float = DUCK_TARGET_DB if active else 0.0
+	_duck_tween.tween_property(amp, "volume_db", target_db, DUCK_TAPER_TIME)
+
+
+## Public: report whether music is currently ducked for dialogue.
+func is_music_ducked_for_dialogue() -> bool:
+	return _duck_active
+
+
+## Kill-duck lives on its OWN Amplify (slot 1) instead of sharing the dialogue one: duck_music_for_dialogue() hardcodes slot 0 and KILLS any running tween, so one shared property would let a kill silently release an active dialogue duck mid-conversation. Serial Amplifies sum in dB, so the two sources compose (-6 dialogue + -4 kill = -10) with no shared state to coordinate.
+var _kill_duck_tween: Tween = null
+
+
+## Slot 0 is dialogue's (msg 2700); never write it from here.
+func _ensure_kill_duck_effect() -> int:
+	var idx: int = AudioServer.get_bus_index(MUSIC_DUCK_BUS)
+	if idx == -1:
+		_ensure_music_duck_bus()
+		idx = AudioServer.get_bus_index(MUSIC_DUCK_BUS)
+	if idx == -1:
+		return -1
+	# Not folded into _ensure_music_duck_bus(): that early-returns when the bus already
+	# exists, so a bus built before this slot existed would never gain it.
+	while AudioServer.get_bus_effect_count(idx) <= KILL_DUCK_EFFECT_SLOT:
+		var amp := AudioEffectAmplify.new()
+		amp.volume_db = 0.0
+		AudioServer.add_bus_effect(idx, amp)
+		AudioServer.set_bus_effect_enabled(idx, AudioServer.get_bus_effect_count(idx) - 1, true)
+	return idx
+
+
+## One-shot punctuation duck for a kill. Tier-gated by the CALLER (BattleScene owns turbo/autogrind); this only owns the bus math.
+func duck_music_for_kill() -> void:
+	var idx: int = _ensure_kill_duck_effect()
+	if idx == -1:
+		return
+	var amp = AudioServer.get_bus_effect(idx, KILL_DUCK_EFFECT_SLOT)
+	if amp == null:
+		return
+	# Retrigger restarts the envelope from wherever it is rather than stacking a second
+	# tween on the same property — two live tweens would fight and land anywhere.
+	if _kill_duck_tween and _kill_duck_tween.is_valid():
+		_kill_duck_tween.kill()
+	_kill_duck_tween = create_tween()
+	# Tween durations are ENGINE time, but the music this ducks runs on the mixer clock and
+	# does not slow with battle speed. Bare, the 0.4s release costs 1.6s of wall clock at the
+	# default 1x rung (engine 0.25) — a dropout, not the beat that was asked for. Ignoring the
+	# time scale is the right primitive here rather than a `* time_scale` compensation, which
+	# samples the scale ONCE at creation and so latches a hitlag's 0.1 if a kill lands inside
+	# a crit window (cowir-battle measured that fragility, 2026-08-15).
+	_kill_duck_tween.set_ignore_time_scale(true)
+	_kill_duck_tween.tween_property(amp, "volume_db", KILL_DUCK_TARGET_DB, KILL_DUCK_ATTACK_TIME)
+	_kill_duck_tween.tween_property(amp, "volume_db", 0.0, KILL_DUCK_RELEASE_TIME)
+
+
+## Public: current kill-duck attenuation in dB (0.0 at rest). Test seam — reading the bus is the only way to observe this without ears.
+func get_kill_duck_db() -> float:
+	var idx: int = AudioServer.get_bus_index(MUSIC_DUCK_BUS)
+	if idx == -1 or AudioServer.get_bus_effect_count(idx) <= KILL_DUCK_EFFECT_SLOT:
+		return 0.0
+	var amp = AudioServer.get_bus_effect(idx, KILL_DUCK_EFFECT_SLOT)
+	return amp.volume_db if amp else 0.0
+
+
+func play_footstep(terrain: String = "grass") -> void:
+	"""Play a footstep sound for the given terrain type (grass, stone, sand)."""
+	var key = "footstep_" + terrain
+	_try_play_sfx_from_manifest(_ui_player, key)
 
 
 func play_status(status_name: String) -> void:
@@ -298,6 +909,11 @@ func play_status(status_name: String) -> void:
 	else:
 		# Fallback: generic descending blip for unknown statuses
 		_play_sound(_battle_player, {"freq": 350, "duration": 0.2, "type": "descending"})
+
+
+## Manifest-gated status cue for callers that must stay SILENT when unauthored — the blip above is struktured's ruling-15 "not even close to good", and buffs fire far too often to spend it on them.
+func play_status_if_authored(sound_key: String) -> bool:
+	return _try_play_sfx_from_manifest(_battle_player, sound_key)
 
 
 ## Sound Generation
@@ -376,6 +992,8 @@ func _play_sound(player: AudioStreamPlayer, params: Dictionary) -> void:
 			_generate_heal(playback, samples, freq, sample_rate, duration)
 		"dying_fall":
 			_generate_dying_fall(playback, samples, freq, sample_rate, duration)
+		"vanish_shimmer":
+			_generate_vanish_shimmer(playback, samples, freq, sample_rate, duration)
 		"woozy":
 			_generate_woozy(playback, samples, freq, sample_rate, duration)
 		"crackle_lock":
@@ -384,6 +1002,10 @@ func _play_sound(player: AudioStreamPlayer, params: Dictionary) -> void:
 			_generate_tier_zoom_out(playback, samples, freq, sample_rate, duration)
 		"tier_zoom_in":
 			_generate_tier_zoom_in(playback, samples, freq, sample_rate, duration)
+		"alarm_low":
+			_generate_alarm_low(playback, samples, freq, sample_rate, duration)
+		"glitch":
+			_generate_glitch(playback, samples, freq, sample_rate, duration)
 		_:
 			_generate_blip(playback, samples, freq, sample_rate, duration)
 
@@ -690,6 +1312,23 @@ func _generate_dying_fall(playback: AudioStreamGeneratorPlayback, samples: int, 
 		playback.push_frame(Vector2(sample, sample) * 0.35)
 
 
+func _generate_vanish_shimmer(playback: AudioStreamGeneratorPlayback, samples: int, freq: float, rate: int, dur: float) -> void:
+	"""FF-style monster vanish: soft high-pitched shimmer that fades to silence"""
+	for i in range(samples):
+		var t = float(i) / rate
+		var progress = t / dur
+		# Gentle pitch rise then fade
+		var f = freq * (1.0 + progress * 0.3)
+		# Soft sine with slight detuned harmonic for shimmer
+		var sine1 = sin(t * f * TAU) * 0.3
+		var sine2 = sin(t * f * 1.5 * TAU) * 0.15
+		var sine3 = sin(t * f * 2.01 * TAU) * 0.08
+		# Quick fade envelope — sharp start, smooth decay
+		var envelope = pow(1.0 - progress, 2.5) * min(1.0, t * 40.0)
+		var sample = (sine1 + sine2 + sine3) * envelope
+		playback.push_frame(Vector2(sample, sample) * 0.3)
+
+
 func _generate_woozy(playback: AudioStreamGeneratorPlayback, samples: int, freq: float, rate: int, dur: float) -> void:
 	"""Status ailment (poison/sleep/confuse): warbling pitch wobble, murky tone"""
 	for i in range(samples):
@@ -755,6 +1394,36 @@ func _generate_tier_zoom_in(playback: AudioStreamGeneratorPlayback, samples: int
 		playback.push_frame(Vector2(s, s))
 
 
+func _generate_alarm_low(playback: AudioStreamGeneratorPlayback, samples: int, freq: float, rate: int, dur: float) -> void:
+	"""Low repeating alarm — two-tone warble for HP/danger interrupts."""
+	for i in range(samples):
+		var t = float(i) / rate
+		var progress = t / dur
+		# Alternate between two tones every 0.1s
+		var alt_freq = freq if fmod(t, 0.2) < 0.1 else freq * 1.4
+		var envelope = (1.0 - progress) * (0.7 + 0.3 * sin(t * 12.0))
+		var tone = sin(t * alt_freq * TAU) * 0.6 * envelope
+		var s = tone * 0.4
+		playback.push_frame(Vector2(s, s))
+
+
+func _generate_glitch(playback: AudioStreamGeneratorPlayback, samples: int, freq: float, rate: int, dur: float) -> void:
+	"""Glitchy corruption sound — bitcrushed noise with intermittent tone."""
+	for i in range(samples):
+		var t = float(i) / rate
+		var progress = t / dur
+		var envelope = 1.0 - progress * progress
+		# Crushed noise
+		var noise = randf_range(-1.0, 1.0) * 0.4
+		# Quantize to simulate bitcrushing
+		noise = round(noise * 4.0) / 4.0
+		# Intermittent square wave
+		var gate = 1.0 if fmod(t, 0.08) < 0.04 else 0.3
+		var tone = _pulse_wave(t * freq, 0.15) * 0.3 * gate
+		var s = (noise * 0.5 + tone) * envelope * 0.35
+		playback.push_frame(Vector2(s, s))
+
+
 ## ============================================================================
 ## MUSIC SYSTEM
 ## ============================================================================
@@ -762,18 +1431,58 @@ func _generate_tier_zoom_in(playback: AudioStreamGeneratorPlayback, samples: int
 ## Replace _generate_battle_music() internals with file loading when real
 ## music assets are available (e.g., load("res://assets/audio/battle.ogg"))
 
+## True when play_music(track) will actually produce audio — a manifest entry
+## or a procedural arm. play_music crossfades the CURRENT track out before it
+## resolves, so an unknown id leaves the scene silent rather than unchanged;
+## callers that would rather keep the existing music check this first.
+static func has_music_track(track: String) -> bool:
+	if track == "":
+		return false
+	_load_music_manifest()
+	if _music_manifest.has(track):
+		return true
+	# Mirrors play_music's own resolution order: generic names take the world
+	# suffix, battle_*/boss* fall back to the generic procedural themes.
+	if track in ["battle", "boss", "danger", "victory", "title", "autogrind", "game_over"]:
+		return true
+	return track.begins_with("battle_") or track.begins_with("boss")
+
+
 static func _load_music_manifest() -> void:
 	if _manifest_loaded:
 		return
-	_manifest_loaded = true
-	var file = FileAccess.open("res://data/music_manifest.json", FileAccess.READ)
+	# Do NOT set _manifest_loaded until successful — allows retry if PCK isn't ready yet
+	# Tick 276: added the file_exists pre-check (was missing — pre-fix
+	# a deleted/moved music_manifest.json conflated with a permission
+	# issue under the single "Cannot open" warning, no path printed).
+	# Aligns with _load_sfx_manifest's 5-stage shape from tick 166.
+	var file_path: String = "res://data/music_manifest.json"
+	if not FileAccess.file_exists(file_path):
+		push_warning("[MUSIC] music_manifest.json not found at %s — procedural fallbacks only, will retry next call" % file_path)
+		return
+	var file = FileAccess.open(file_path, FileAccess.READ)
 	if not file:
+		push_warning("[MUSIC] music_manifest.json exists but FileAccess.open failed at %s — will retry next call" % file_path)
 		return
 	var parsed = JSON.parse_string(file.get_as_text())
-	if parsed and parsed.has("tracks"):
-		_music_manifest = parsed["tracks"]
-		if _music_manifest.size() > 0:
-			print("[MUSIC] Loaded music manifest: %d tracks" % _music_manifest.size())
+	## Tick 166: split the conflated failure modes. Pre-fix the
+	## fallback warning ("Failed to parse") fired for parse failure
+	## AND root-type mismatch AND missing "tracks" key — devs
+	## couldn't tell which was the real cause. Now each surfaces
+	## distinctly.
+	if parsed == null:
+		push_warning("[MUSIC] music_manifest.json parse error — will retry")
+		return
+	if not (parsed is Dictionary):
+		push_warning("[MUSIC] music_manifest.json parsed but root is not a Dictionary — will retry")
+		return
+	if not parsed.has("tracks"):
+		push_warning("[MUSIC] music_manifest.json parsed but missing 'tracks' key — manifest empty, will retry")
+		return
+	_music_manifest = parsed["tracks"]
+	_manifest_loaded = true  # Only set after successful load
+	if _music_manifest.size() > 0:
+		print("[MUSIC] Loaded music manifest: %d tracks" % _music_manifest.size())
 
 
 func _try_play_from_manifest(track_id: String) -> bool:
@@ -786,50 +1495,105 @@ func _try_play_from_manifest(track_id: String) -> bool:
 		return false
 	if not path.begins_with("res://"):
 		path = "res://" + path
-	if not FileAccess.file_exists(path):
-		return false
+	# Skip file existence checks — just try to load directly.
+	# FileAccess.file_exists() and ResourceLoader.exists() can fail in web/PCK exports
+	# even when the resource is actually available via load().
 	var stream = load(path) as AudioStream
 	if not stream:
-		push_warning("[MUSIC] Failed to load audio file: %s" % path)
+		push_warning("[MUSIC] Failed to load audio: %s (track_id: %s)" % [path, track_id])
 		return false
-	# Set looping based on manifest (default true for music)
-	var should_loop = entry.get("loop", true)
+	# Stingers never loop and resume previous music when done.
+	# Bug fix (2026-05-02): stinger_level_up + 4 other stingers had
+	# loop=true in the manifest, which made them loop forever and never
+	# fire the `finished` signal — so the previous music never resumed
+	# (user: "level up music repeats itself"). Force-override here so a
+	# stinger can never loop regardless of what the manifest says.
+	var is_stinger = track_id.begins_with("stinger_")
+	var should_loop: bool
+	if is_stinger:
+		should_loop = false
+	else:
+		should_loop = entry.get("loop", true)
 	if stream is AudioStreamOggVorbis:
 		stream.loop = should_loop
 	_music_player.stream = stream
 	_music_player.volume_db = _music_base_db
 	_music_player.play()
 	_music_playing = true
-	print("[MUSIC] Playing from manifest: %s (%s) loop=%s" % [track_id, path, should_loop])
+	print("[MUSIC] Playing from manifest: %s (%s) loop=%s stinger=%s resume=%s" % [track_id, path, should_loop, is_stinger, _stinger_resume_state if is_stinger else ""])
+	# Resume whatever was playing once the stinger ends. Restores through the
+	# captured STATE, not a track id: area beds live in _current_area and leave
+	# _current_music empty, so a track-only resume silently did nothing there.
+	if is_stinger and not _stinger_resume_state.is_empty() and str(_stinger_resume_state.get("track", "")) != track_id:
+		var resume: Dictionary = _stinger_resume_state.duplicate()
+		_music_player.finished.connect(func():
+			restore_music_state(resume)
+		, CONNECT_ONE_SHOT)
 	return true
+
+
+## Public entry point for this file's world vocabulary — it exists to stop a FOURTH re-derivation of the area→suffix map (three were built in one day), NOT because visual lanes should call it: sprites and cutscenes deliberately resolve costume identity from GameState.current_world instead, which after the interior fix has no known hole while this serves a CACHE, not a live read, whenever play_music has cleared _current_area — menu, battle AND victory, not battle alone: play_area_music is the cache's ONLY writer, so the fallthrough reports the last AREA's world, which is correct-by-design for battle music but diverges from GameState.current_world until area music plays for a newly-entered world; restore_music_state clears _current_area too and stays accurate only because it re-calls play_area_music. Correct for audio-adjacent callers wanting the suffix STRING; returns "medieval" where sheets want "" — translate at your consumer. See test_world_suffix_vocabulary_regression.gd.
+func get_current_world_suffix() -> String:
+	return _get_current_world_suffix()
 
 
 func _get_current_world_suffix() -> String:
 	"""Map current area to world suffix for manifest track lookup.
 	When _current_area is empty (cleared by play_music for battle/victory),
-	returns the last known world suffix so battle music stays world-aware."""
+	returns the last known world suffix so battle music stays world-aware.
+
+	Tick 359: added the canonical `<world>_overworld` map_id forms
+	(suburban_overworld, steampunk_overworld, etc.) alongside the
+	legacy `overworld_<world>` strings. GameLoop._on_area_transition
+	calls play_area_music(_current_map_id), passing the canonical
+	`<world>_overworld` form. Pre-fix the match arms only listed the
+	legacy reversed form, so the canonical-form call fell through to
+	the `_:` arm and returned the cached `_current_world_suffix`
+	(initialized to "medieval"). Result: every battle in
+	suburban/steampunk/industrial/futuristic/abstract overworlds used
+	MEDIEVAL battle music regardless of where the player actually was.
+	"""
 	match _current_area:
-		"overworld", "village", "harmonia_village", "cave", "dungeon", "whispering_cave":
+		"overworld", "village", "harmonia_village", "cave", "whispering_cave":
 			return "medieval"
-		"overworld_suburban", "maple_heights_village":
+		"ice_dragon_cave", "shadow_dragon_cave", "lightning_dragon_cave", "fire_dragon_cave":
+			return "medieval"
+		"castle_harmonia":
+			return "medieval"
+		"overworld_suburban", "suburban_overworld", "maple_heights_village", "suburban_dungeon", "suburban_underground":
 			return "suburban"
-		"overworld_steampunk", "brasston_village":
+		"overworld_steampunk", "steampunk_overworld", "brasston_village", "steampunk_dungeon", "steampunk_mechanism":
 			return "steampunk"
-		"overworld_industrial", "rivet_row_village":
+		"overworld_industrial", "industrial_overworld", "rivet_row_village", "industrial_dungeon", "assembly_core":
 			return "industrial"
-		"overworld_futuristic", "node_prime_village":
+		"overworld_futuristic", "futuristic_overworld", "node_prime_village", "digital_dungeon", "root_process":
 			return "digital"
-		"overworld_abstract", "vertex_village":
+		"overworld_abstract", "abstract_overworld", "vertex_village", "abstract_dungeon", "null_chamber":
 			return "abstract"
 		_:
 			# During battles, _current_area is cleared — use persisted suffix
 			return _current_world_suffix
 
 
+## Battle tracks with their own procedural generator in play_music's `match`. A composed
+## manifest entry still wins over these; what they must NOT lose to is the generic world-battle
+## rewrite, which would make their own arm unreachable. Pinned against the source by test.
+const PROCEDURAL_BATTLE_TRACKS := [
+	"battle_slime", "battle_bat", "battle_mushroom", "battle_imp", "battle_goblin",
+	"battle_brute", "battle_troll", "battle_cave_troll", "battle_ogre", "battle_barbarian",
+	"battle_skeleton", "battle_wolf", "battle_ghost", "battle_snake",
+]
+
+
 func play_music(track: String) -> void:
 	"""Play a music track with crossfade transition"""
 	if _current_music == track and _music_playing:
 		return  # Already playing
+
+	# Capture here, ABOVE the clear below — not at the old site further down,
+	# which ran after _current_area was already emptied and so could only ever
+	# describe a play_music() bed.
+	_stinger_resume_state = capture_music_state()
 
 	# Clear area tracking so play_area_music() doesn't skip after battle/victory
 	_current_area = ""
@@ -849,10 +1613,20 @@ func play_music(track: String) -> void:
 
 		# Fade out old track on B
 		_crossfade_tween = create_tween()
+		# Mixer-clock subject: a bare envelope stretches by 1/time_scale while the audio it drives does not (9a883dcf).
+		_crossfade_tween.set_ignore_time_scale(true)
 		_crossfade_tween.tween_property(_music_player_b, "volume_db", -40.0, CROSSFADE_DURATION)
 		_crossfade_tween.tween_callback(func(): _music_player_b.stop())
 
 	_current_music = track
+
+	# Clean slate for the new track: the danger-intensity system elevates
+	# _music_player pitch + volume during a tense battle; the cache branch
+	# reset neither and the manifest branch reset only volume, so a new
+	# track could inherit a stale higher pitch / boost. Reset both here
+	# (after the crossfade copied the old track's volume to B).
+	_music_player.pitch_scale = 1.0
+	_music_player.volume_db = _music_base_db
 
 	# Try manifest first — file-based music always takes priority
 	_load_music_manifest()
@@ -865,9 +1639,16 @@ func play_music(track: String) -> void:
 			manifest_track_id = "boss_" + _current_world_suffix
 		"danger":
 			manifest_track_id = "danger_" + _current_world_suffix
-	# Monster-specific battle tracks (battle_snake, battle_slime, etc.)
-	# fall back to world battle track when no monster-specific manifest entry
-	if not _music_manifest.has(manifest_track_id) and track.begins_with("battle_"):
+		"victory":
+			manifest_track_id = "victory_" + _current_world_suffix
+	# Monster-specific battle tracks (battle_snake, battle_slime, etc.) fall back to the world
+	# battle track when no monster-specific manifest entry exists — EXCEPT where the monster has
+	# its own procedural theme below. struktured 2026-08-29: "The goblin music is gone and
+	# defaults to something else. I wanted it replaced not removed entirely." battle_goblin.ogg
+	# was recast as battle_brute.ogg (7e6c50d2) and no manifest key replaced it, so this rewrite
+	# sent the goblin to battle_medieval and the `match` arm below became unreachable.
+	if not _music_manifest.has(manifest_track_id) and track.begins_with("battle_") \
+			and not PROCEDURAL_BATTLE_TRACKS.has(track):
 		manifest_track_id = "battle_" + _current_world_suffix
 	if _music_manifest.has(manifest_track_id):
 		if _try_play_from_manifest(manifest_track_id):
@@ -908,6 +1689,9 @@ func play_music(track: String) -> void:
 			_start_monster_music("imp")
 		"battle_goblin":
 			_start_monster_music("goblin")
+		# Brute-family floor: the LIVE routing is the manifest aliases — this arm is reached only if the manifest misses entirely (measured 2026-08-22).
+		"battle_brute", "battle_troll", "battle_cave_troll", "battle_ogre", "battle_barbarian":
+			_start_monster_music("brute")
 		"battle_skeleton":
 			_start_monster_music("skeleton")
 		"battle_wolf":
@@ -919,7 +1703,12 @@ func play_music(track: String) -> void:
 		# Terrain-specific battle themes
 		"battle_suburban":
 			_start_suburban_battle_music()
-		"battle_urban":
+		# Tick 91: W3 Steampunk battles emit 'battle_steampunk' but
+		# pre-fix the match arm only knew 'battle_urban'. The
+		# _start_urban_battle_music helper actually plays the
+		# battle_steampunk.ogg manifest track (confusingly named) —
+		# so both keys route to it.
+		"battle_steampunk", "battle_urban":
 			_start_urban_battle_music()
 		"battle_industrial":
 			_start_industrial_battle_music()
@@ -933,14 +1722,16 @@ func play_music(track: String) -> void:
 				var monster = track.substr(7)
 				# Try stripping prefixes (cave_bat → bat, forest_spider → spider)
 				var parts = monster.split("_")
-				var base_name = parts[-1] if parts.size() > 1 else monster
-				var base_track = "battle_" + base_name
-				if base_track != track and base_track in ["battle_slime", "battle_bat", "battle_mushroom", "battle_imp", "battle_goblin", "battle_skeleton", "battle_wolf", "battle_ghost", "battle_snake"]:
-					print("[MUSIC] Mapping %s → %s" % [track, base_track])
-					play_music(base_track)
-				else:
-					print("[MUSIC] No specific theme for %s, using default battle music" % track)
-					_start_battle_music()
+				var known := ["battle_slime", "battle_bat", "battle_mushroom", "battle_imp", "battle_goblin", "battle_skeleton", "battle_wolf", "battle_ghost", "battle_snake", "battle_troll", "battle_ogre", "battle_barbarian"]
+				# Try suffix (cave_bat → bat) AND prefix (skeleton_soldier → skeleton): a monster FAMILY shares one theme (struktured 2026-08-17).
+				for base_name in [parts[-1], parts[0]]:
+					var base_track = "battle_" + base_name
+					if parts.size() > 1 and base_track != track and base_track in known:
+						print("[MUSIC] Mapping %s → %s" % [track, base_track])
+						play_music(base_track)
+						return
+				print("[MUSIC] No specific theme for %s, using default battle music" % track)
+				_start_battle_music()
 			elif track.begins_with("boss"):
 				print("[MUSIC] Unknown boss track %s, using generic boss music" % track)
 				_start_boss_music()
@@ -950,6 +1741,46 @@ func play_music(track: String) -> void:
 	# Cache the generated stream for instant replay on future calls
 	if _music_player.stream and not _music_cache.has(track):
 		_music_cache[track] = _music_player.stream
+
+
+## Capture whatever music is currently playing, from EITHER API, so a caller
+## that temporarily takes over the music (a cutscene, the pause menu) can put
+## it back. This exists because the two paths keep separate state:
+##
+##     play_music("victory")   -> sets _current_music, leaves _current_area
+##     play_area_music("cave") -> sets _current_area, CLEARS _current_music
+##
+## So a caller snapshotting only `_current_music` reads "" in any map — every
+## map sets its bed via play_area_music — and its restore silently no-ops,
+## leaving the caller's own music playing over gameplay. That was bug 2801
+## (menu music bleeding) and, verified at runtime 2026-07-26, the same defect
+## in CutsceneDirector affecting all 93 authored play_music steps.
+##
+## Restore prefers the AREA when one is active, because that is what a map is:
+## play_area_music re-derives world-suffixed and interior-variant keys, which
+## a raw track name cannot.
+func capture_music_state() -> Dictionary:
+	return {"track": _current_music, "area": _current_area, "playing": _music_playing}
+
+
+## Put back a state captured by capture_music_state(). Safe to call with an
+## empty/garbage dict; does nothing if nothing was playing.
+func restore_music_state(state: Dictionary) -> void:
+	if state == null or state.is_empty():
+		return
+	if not bool(state.get("playing", false)):
+		return
+	var area: String = str(state.get("area", ""))
+	if area != "":
+		# _current_area is compared for the already-playing early-out, so clear
+		# it first — otherwise restoring the area we are nominally still "in"
+		# is treated as a no-op and the takeover music keeps playing.
+		_current_area = ""
+		play_area_music(area)
+		return
+	var track: String = str(state.get("track", ""))
+	if track != "":
+		play_music(track)
 
 
 func stop_music() -> void:
@@ -964,11 +1795,28 @@ func stop_music() -> void:
 		_music_player_b.stop()
 
 
-func is_music_playing() -> bool:
-	return _music_playing
+func fade_out_music(duration: float = CROSSFADE_DURATION) -> void:
+	"""Smoothly fade out currently-playing music over `duration` seconds, then
+	stop. No-op when no music is playing. Used by CutsceneDirector to avoid
+	the abrupt hard-cut at cutscene start; the eventual play_music() for any
+	cutscene-specific track will crossfade on top of the fading stream
+	cleanly via the existing tween-kill path in play_music().
+	"""
+	if not _music_playing or not _music_player:
+		return
+	if _crossfade_tween and _crossfade_tween.is_valid():
+		_crossfade_tween.kill()
+	_crossfade_tween = create_tween()
+	# Mixer-clock subject: a bare envelope stretches by 1/time_scale while the audio it drives does not (9a883dcf).
+	_crossfade_tween.set_ignore_time_scale(true)
+	_crossfade_tween.tween_property(_music_player, "volume_db", -40.0, duration)
+	_crossfade_tween.tween_callback(func() -> void:
+		if _music_player:
+			_music_player.stop()
+		_music_playing = false
+		_current_music = "")
 
 
-## Danger intensity system - modulates music when party is hurt
 var _danger_intensity: float = 0.0  # 0.0 = safe, 1.0 = critical
 var _danger_tween: Tween = null
 
@@ -990,6 +1838,8 @@ func set_danger_intensity(intensity: float) -> void:
 		_danger_tween.kill()
 
 	_danger_tween = create_tween()
+	# Mixer-clock subject: a bare envelope stretches by 1/time_scale while the audio it drives does not (9a883dcf).
+	_danger_tween.set_ignore_time_scale(true)
 	_danger_tween.tween_method(_apply_danger_intensity, _danger_intensity, new_intensity, 0.5)
 
 
@@ -1007,11 +1857,8 @@ func _apply_danger_intensity(intensity: float) -> void:
 
 	# Volume boost at high danger (slightly louder, more in-your-face)
 	var volume_boost = intensity * 3.0  # Up to +3dB at max danger
-	_music_player.volume_db = -12.0 + volume_boost
-
-
-func get_danger_intensity() -> float:
-	return _danger_intensity
+	# relative to the user's music-volume setting — hardcoded -12.0 clobbered the slider whenever danger rose
+	_music_player.volume_db = _music_base_db + volume_boost
 
 
 func reset_danger() -> void:
@@ -1019,7 +1866,7 @@ func reset_danger() -> void:
 	set_danger_intensity(0.0)
 	if _music_player:
 		_music_player.pitch_scale = 1.0
-		_music_player.volume_db = -12.0
+		_music_player.volume_db = _music_base_db  # restore to the user's volume, not the -12.0 default
 
 
 ## Corruption audio degradation - ties into autogrind meta-awareness theme.
@@ -1041,6 +1888,8 @@ func set_corruption_intensity(intensity: float) -> void:
 		_corruption_tween.kill()
 
 	_corruption_tween = create_tween()
+	# Mixer-clock subject: a bare envelope stretches by 1/time_scale while the audio it drives does not (9a883dcf).
+	_corruption_tween.set_ignore_time_scale(true)
 	_corruption_tween.tween_method(_apply_corruption_intensity, _corruption_intensity, new_intensity, 1.5)
 
 
@@ -1064,10 +1913,6 @@ func _apply_corruption_intensity(intensity: float) -> void:
 	if intensity > 0.6:
 		vol_noise = randf_range(0.0, (intensity - 0.6) * 4.0)
 	_music_player.volume_db = _music_base_db - vol_noise
-
-
-func get_corruption_intensity() -> float:
-	return _corruption_intensity
 
 
 func reset_corruption() -> void:
@@ -2684,18 +3529,68 @@ func _stereo_spread(sample_l: float, sample_r: float, pan: float) -> Vector2:
 ## Volume control
 
 func set_music_volume(normalized: float) -> void:
-	"""Set music volume (0.0 to 1.0)"""
-	var db = linear_to_db(clamp(normalized, 0.0, 1.0)) if normalized > 0.01 else -80.0
+	"""Set music volume (0.0 to 1.0).
+
+	Slider applies attenuation BELOW MUSIC_VOLUME_CEILING_DB (-10.0 dB):
+	  - slider 1.00 → -10 dB (ceiling — battle SFX still punches through)
+	  - slider 0.50 → -16 dB (-6 dB attenuation from ceiling)
+	  - slider 0.10 → -30 dB (-20 dB attenuation)
+
+	These were -6/-12/-26 until 2026-08-05: correct for a -6 dB ceiling, and
+	the ceiling had since moved to -10 with the prose left behind. Derive them
+	from MUSIC_VOLUME_CEILING_DB if you change it — they are that constant plus
+	linear_to_db(slider), not independent facts.
+
+	The ceiling is also why a track's file true-peak is NOT its output peak:
+	at +2.9 dBTP, title.ogg plays at -7.1 dBFS. Reading a file's dBTP as the
+	playback level says the library clips when it has ~7 dB of headroom.
+
+	Safe to call before _ready() — the base db is latched into
+	_music_base_db and applied when _setup_audio_players creates
+	the AudioStreamPlayer nodes."""
+	var attenuation = linear_to_db(clamp(normalized, 0.0, 1.0)) if normalized > 0.01 else -80.0
+	var db = MUSIC_VOLUME_CEILING_DB + attenuation if normalized > 0.01 else -80.0
 	_music_base_db = db
-	_music_player.volume_db = db
+	if _music_player:
+		_music_player.volume_db = db
+	# ambient (weather / room tone) sits a fixed offset below music — keep it tracking the slider (cowir-sfx msg 2218)
+	if _ambient_player:
+		_ambient_player.volume_db = db + AMBIENT_OFFSET_DB
 
 
 func set_sfx_volume(normalized: float) -> void:
-	"""Set SFX volume (0.0 to 1.0) — applies to UI, battle, and ability players"""
-	var db = linear_to_db(clamp(normalized, 0.0, 1.0)) if normalized > 0.01 else -80.0
-	_ui_player.volume_db = db
-	_battle_player.volume_db = db
-	_ability_player.volume_db = db
+	"""Set SFX volume (0.0 to 1.0) — applies to UI, battle, and ability players.
+
+	Each channel's slider value scales attenuation FROM its design-intent
+	base level (defined by SFX_*_BASE_DB constants). At slider=1.0 each
+	channel sits at its base; below 1.0 the slider attenuates uniformly.
+	This preserves the per-channel mix (UI quietest, battle loudest)
+	instead of unifying everything to a single db value.
+
+	Bug fix (2026-05-02): pre-fix, slider=1.0 forced all three channels
+	to 0 dB, which drowned music (because music ceiling is -10 dB) and
+	flattened the intended channel hierarchy. Now slider=1.0 reproduces
+	the design-time mix exactly.
+
+	Safe to call before _ready(): writes to nil players are a no-op."""
+	var atten_db = linear_to_db(clamp(normalized, 0.0, 1.0)) if normalized > 0.01 else -80.0
+	# 2026-07-28: attenuate the BUS, not an enumerated list of players. Players keep their
+	# design-intent base level so the per-channel mix is preserved exactly as before, but the
+	# slider now also reaches every player any OTHER file creates on this bus — which is what
+	# BattleTransition's sting and CutsceneDialogue's voice blip were escaping.
+	_ensure_sfx_bus()
+	var sfx_idx := AudioServer.get_bus_index(SFX_BUS)
+	if sfx_idx != -1:
+		AudioServer.set_bus_volume_db(sfx_idx, atten_db)
+		AudioServer.set_bus_mute(sfx_idx, normalized <= 0.01)
+	# Base levels are set once at construction; re-assert defensively in case a caller
+	# mutated them, but do NOT fold the slider in again or it attenuates twice.
+	if _ui_player:
+		_ui_player.volume_db = SFX_UI_BASE_DB
+	if _battle_player:
+		_battle_player.volume_db = SFX_BATTLE_BASE_DB
+	if _ability_player:
+		_ability_player.volume_db = SFX_ABILITY_BASE_DB
 
 
 func _warm_wave(phase: float) -> float:
@@ -2726,8 +3621,8 @@ const MONSTER_MUSIC_PARAMS = {
 		"style": "chaotic", "bass_style": "chromatic"
 	},
 	"goblin": {
-		"bpm": 140, "bars": 24, "key": "A_minor",
-		"style": "tribal", "bass_style": "drums"
+		"bpm": 158, "bars": 24, "key": "A_minor",
+		"style": "frantic", "bass_style": "staccato"
 	},
 	"skeleton": {
 		"bpm": 120, "bars": 24, "key": "B_minor",
@@ -2748,16 +3643,27 @@ const MONSTER_MUSIC_PARAMS = {
 }
 
 func _start_monster_music(monster_type: String) -> void:
-	"""Start monster-specific battle music — unique per monster type"""
+	"""Start monster-specific battle music — unique per monster type.
+	Prefers OGG file from assets/audio/music/ if available, falls back to proc-gen."""
 	_music_playing = true
 
-	# Check cache first (monster-specific proc-gen themes)
+	# Try loading OGG file first (artist/Suno-generated tracks take priority)
+	var ogg_path = "res://assets/audio/music/battle_%s.ogg" % monster_type
+	if ResourceLoader.exists(ogg_path):
+		var stream = load(ogg_path)
+		if stream:
+			_music_player.stream = stream
+			_music_player.play()
+			print("[MUSIC] Loaded OGG: %s" % ogg_path)
+			return
+
+	# Check proc-gen cache
 	if _music_cache.has(monster_type):
 		_music_player.stream = _music_cache[monster_type]
 		_music_player.play()
 		return
 
-	# Generate and cache if not found
+	# Generate and cache if no OGG and not cached
 	var wav = _generate_and_cache_music(monster_type)
 	_music_player.stream = wav
 	_music_player.play()
@@ -3297,28 +4203,27 @@ func _get_monster_melody(monster_type: String) -> Array:
 				F4, 0, Gb4, 0, Ab4, 0, Bb4, Ab4,  Gb4, F4, 0, Gb4, F4, 0, 0, 0,
 				Ab4, Bb4, Ab4, Gb4, F4, 0, Ab4, F4,  Gb4, F4, 0, 0, F4, 0, 0, 0]
 		"goblin":
-			# TRIBAL A MINOR - war drums, pentatonic, primal
-			# Hook: A-C-A-G-E (war chant)
+			# SCRAPPY A MINOR - chromatic wriggle, scurry-and-stop; vermin with knives, NOT a war chant (struktured 2026-08-22)
+			# Hook: A-Bb-A-Gs (a snicker), stabbed with the Eb tritone
 			return [
-				# Section A - THE WAR CHANT
-				A4, 0, C5, 0, A4, 0, G4, E4,  A4, 0, 0, 0, A4, 0, 0, 0,
-				A4, 0, C5, 0, A4, 0, G4, E4,  G4, A4, 0, 0, 0, 0, 0, 0,
-				# Section A with response
-				A4, 0, C5, 0, A4, 0, G4, E4,  A4, 0, C5, A4, G4, 0, 0, 0,
-				E4, G4, A4, 0, C5, A4, G4, E4,  A4, 0, 0, 0, 0, 0, 0, 0,
-				# Section B - battle intensifies
-				A4, A4, C5, C5, A4, A4, G4, G4,  E4, E4, G4, G4, A4, 0, 0, 0,
-				C5, A4, G4, E4, G4, A4, C5, 0,  A4, G4, E4, 0, A4, 0, 0, 0,
-				# Section B - marching stomp
-				A4, 0, A4, 0, C5, 0, C5, 0,  A4, 0, G4, 0, E4, 0, A4, 0,
-				G4, A4, C5, A4, G4, E4, G4, A4,  0, 0, A4, 0, 0, 0, 0, 0,
-				# Section C - victory surge
-				C5, 0, E5, 0, C5, 0, A4, G4,  A4, C5, A4, G4, E4, 0, 0, 0,
-				A4, C5, E5, C5, A4, G4, A4, 0,  E4, G4, A4, 0, 0, 0, 0, 0,
-				# Section C - return to war chant
-				A4, 0, C5, 0, A4, 0, G4, E4,  A4, 0, C5, 0, A4, 0, 0, 0,
-				E4, G4, A4, C5, A4, G4, E4, G4,  A4, 0, 0, 0, A4, 0, 0, 0]
-		"skeleton":
+				# Section A - THE SKITTER
+				A4, Bb4, A4, Gs4, A4, 0, 0, 0,  Bb4, A4, Gs4, A4, 0, 0, 0, 0,
+				A4, Bb4, A4, Gs4, A4, Bb4, B4, 0,  Eb5, 0, 0, 0, 0, 0, 0, 0,
+				# Section A' - the snicker answers
+				Gs4, A4, Bb4, A4, 0, Gs4, 0, A4,  Bb4, B4, Bb4, A4, 0, 0, 0, 0,
+				A4, 0, Eb5, 0, D5, Cs5, C5, B4,  Bb4, A4, 0, 0, 0, 0, 0, 0,
+				# Section B - the ambush
+				A4, Bb4, B4, C5, Cs5, D5, Ds5, E5,  0, 0, Eb5, 0, A4, 0, 0, 0,
+				E5, Ds5, D5, Cs5, C5, B4, Bb4, A4,  0, A4, 0, Gs4, A4, 0, 0, 0,
+				# Section B' - stab, then scatter
+				A4, 0, 0, Eb5, 0, 0, A4, 0,  Bb4, A4, Gs4, 0, A4, 0, 0, 0,
+				Eb5, 0, D5, 0, Bb4, 0, A4, 0,  Gs4, A4, 0, 0, 0, 0, 0, 0,
+				# Section C - the swarm
+				A4, Bb4, A4, Bb4, A4, Bb4, B4, C5,  Bb4, A4, Gs4, A4, 0, 0, 0, 0,
+				C5, B4, Bb4, A4, Gs4, A4, Bb4, 0,  A4, 0, 0, 0, A4, 0, 0, 0,
+				# Section C' - back to the skitter, then gone
+				A4, Bb4, A4, Gs4, A4, 0, 0, 0,  Bb4, A4, Gs4, A4, 0, 0, 0, 0,
+				A4, 0, Eb5, 0, A4, 0, Gs4, 0,  A4, 0, 0, 0, 0, 0, 0, 0]
 			# SPOOKY B MINOR - Castlevania bone-rattling, staccato
 			# Hook: B-D-B..Fs-B (bone clatter)
 			return [
@@ -3454,13 +4359,12 @@ func _get_monster_counter_melody(monster_type: String) -> Array:
 				F4, 0, Ab4, Bb4, Ab4, 0, Gb4, F4,  Ab4, 0, Gb4, F4, Ab4, 0, 0, 0,
 				Gb4, Ab4, F4, 0, Ab4, Bb4, Ab4, Gb4,  F4, 0, Ab4, 0, F4, 0, 0, 0]
 		"goblin":
-			# Pentatonic war harmony
+			# Chromatic stabs, sparse - needling rather than chanting
 			return [
-				C5, 0, A4, 0, E4, 0, G4, 0,  A4, 0, C5, 0, A4, 0, G4, 0,
-				E4, G4, A4, 0, G4, E4, C5, 0,  A4, 0, G4, 0, E4, 0, A4, 0,
-				A4, 0, C5, 0, A4, G4, E4, 0,  G4, A4, C5, 0, A4, 0, 0, 0,
-				E4, 0, G4, A4, C5, A4, G4, E4,  A4, 0, G4, 0, A4, 0, 0, 0]
-		"skeleton":
+				C5, 0, Bb4, 0, A4, 0, Ab4, 0,  A4, 0, Bb4, 0, B4, 0, Bb4, 0,
+				A4, 0, 0, Eb4, 0, 0, A4, 0,  Ab4, 0, A4, 0, Bb4, 0, 0, 0,
+				Bb4, 0, A4, 0, Ab4, 0, A4, 0,  0, Eb4, 0, D5, 0, Bb4, 0, 0,
+				A4, 0, Bb4, B4, Bb4, A4, Ab4, 0,  A4, 0, 0, 0, A4, 0, 0, 0]
 			# Sparse bone harmonics
 			return [
 				D5, 0, 0, B4, 0, 0, Fs4, 0,  0, B4, 0, 0, 0, 0, 0, 0,
@@ -3533,14 +4437,13 @@ func _get_monster_bass(monster_type: String) -> Array:
 					Bb2, Ab2, Gb2, F2, Gb2, Ab2, F2, Gb2,  # Section C - dance
 					F2, Gb2, Ab2, Bb2, Ab2, Gb2, F2, F2]  # Section C' - wild
 		"goblin":
-			# Tribal bass - 6 sections
-			return [A2, A2, E2, A2, A2, G2, E2, A2,  # Section A - war
-					A2, E2, A2, G2, A2, E2, G2, A2,  # Section A'
-					E2, G2, A2, A2, G2, E2, A2, G2,  # Section B - battle
-					A2, G2, E2, G2, A2, G2, E2, A2,  # Section B'
-					A2, A2, A2, A2, G2, G2, E2, E2,  # Section C - march
-					A2, G2, E2, G2, A2, E2, G2, A2]  # Section C' - stomp
-		"skeleton":
+			# Nervous bass - 6 sections, off-beat chromatic neighbours instead of a stomp
+			return [A2, 0, A2, Bb2, 0, A2, 0, Gb2,  # Section A - skitter
+					A2, 0, Bb2, 0, A2, 0, Ab2, A2,  # Section A'
+					A2, Bb2, A2, Ab2, A2, 0, Eb2, 0,  # Section B - ambush
+					A2, 0, Eb2, 0, A2, Ab2, A2, 0,  # Section B'
+					A2, A2, Bb2, 0, A2, 0, Ab2, 0,  # Section C - swarm
+					A2, 0, Ab2, A2, Bb2, 0, A2, 0]  # Section C' - gone
 			# Staccato bass - 6 sections
 			return [B2, 0, B2, 0, Fs2, 0, B2, 0,  # Section A - rattle
 					B2, 0, Fs2, 0, B2, 0, D2, 0,  # Section A'
@@ -3718,6 +4621,17 @@ func play_area_music(area_type: String) -> void:
 	if _current_area == area_type and _music_playing:
 		return  # Already playing
 
+	# Interior sub-area keys inherit the current (village) bed when their track
+	# is absent — checked BEFORE stop_music so an unauthored room never goes silent.
+	# _current_area != "" is load-bearing: play_music() clears it for menu/battle/
+	# victory, so an empty one means there is no AREA bed to inherit. Without that
+	# term the pause-menu restore path inherited the MENU track into unauthored
+	# rooms and bled it into the overworld (bug 2801 round 3, 2026-07-26).
+	if area_type.begins_with("interior_") and _music_playing and _current_area != "":
+		_load_music_manifest()
+		if _resolve_interior_track(area_type) == "":
+			return
+
 	_current_area = area_type
 	_current_world_suffix = _get_current_world_suffix()
 	_pending_music_area = area_type
@@ -3730,6 +4644,10 @@ func _start_area_music_deferred(area_type: String) -> void:
 	"""Actually generate and start music - called deferred so scene renders first."""
 	if _pending_music_area != area_type:
 		return  # A newer area was requested before this ran; skip stale call
+
+	if area_type.begins_with("interior_"):
+		_start_interior_music(area_type)
+		return
 
 	match area_type:
 		"overworld":
@@ -3745,19 +4663,39 @@ func _start_area_music_deferred(area_type: String) -> void:
 		"overworld_abstract":
 			_start_abstract_music()
 		"village", "harmonia_village":
-			_start_village_music()
+			_start_village_location_music("harmonia", "medieval")
+		"scriptura_village":
+			_start_village_location_music("scriptura", "medieval")
 		"maple_heights_village":
-			_start_village_world_music("suburban")
+			_start_village_location_music("maple_heights", "suburban")
 		"brasston_village":
-			_start_village_world_music("steampunk")
+			_start_village_location_music("brasston", "steampunk")
 		"rivet_row_village":
-			_start_village_world_music("industrial")
+			_start_village_location_music("rivet_row", "industrial")
 		"node_prime_village":
-			_start_village_world_music("digital")
+			_start_village_location_music("node_prime", "digital")
 		"vertex_village":
-			_start_village_world_music("abstract")
-		"cave", "dungeon", "whispering_cave":
-			_start_cave_music()
+			_start_village_location_music("vertex", "abstract")
+		"cave", "whispering_cave":
+			_start_dungeon_music("medieval")
+		"fire_dragon_cave":
+			_start_dungeon_music("dragon_fire")
+		"ice_dragon_cave":
+			_start_dungeon_music("dragon_ice")
+		"lightning_dragon_cave":
+			_start_dungeon_music("dragon_lightning")
+		"shadow_dragon_cave":
+			_start_dungeon_music("dragon_shadow")
+		"suburban_dungeon":
+			_start_dungeon_music("suburban")
+		"steampunk_dungeon":
+			_start_dungeon_music("steampunk")
+		"industrial_dungeon":
+			_start_dungeon_music("industrial")
+		"digital_dungeon":
+			_start_dungeon_music("digital")
+		"abstract_dungeon":
+			_start_dungeon_music("abstract")
 		_:
 			_start_overworld_music()
 
@@ -3800,6 +4738,19 @@ func _start_village_music() -> void:
 	_create_and_play_looping_wav(_music_buffer, sample_rate, "village")
 
 
+func _start_village_location_music(location_id: String, world_suffix: String) -> void:
+	"""Play village music: try per-location OGG, then per-world, then generic medieval."""
+	_music_playing = true
+	# Try per-location track (village_harmonia, village_brasston, etc.)
+	if _try_play_from_manifest("village_" + location_id):
+		return
+	# Fall back to per-world track (village_suburban, village_steampunk, etc.)
+	if _try_play_from_manifest("village_" + world_suffix):
+		return
+	# Fall back to generic village
+	_start_village_music()
+
+
 func _start_village_world_music(world_suffix: String) -> void:
 	"""Play world-specific village music from manifest, fall back to generic village"""
 	_music_playing = true
@@ -3808,11 +4759,41 @@ func _start_village_world_music(world_suffix: String) -> void:
 	_start_village_music()
 
 
-func _start_cave_music() -> void:
-	"""Generate mysterious dungeon/cave theme"""
+func _resolve_interior_track(key: String) -> String:
+	"""Manifest key for an interior_ sub-area: per-world variant first, then base."""
+	var variant := key + "_" + _get_current_world_suffix()
+	if _music_manifest.has(variant):
+		return variant
+	if _music_manifest.has(key):
+		return key
+	return ""
+
+
+func _start_interior_music(key: String) -> void:
+	"""Play a sub-area room track; unauthored keys fall back to this world's village bed."""
+	_load_music_manifest()
 	_music_playing = true
-	if _try_play_from_manifest("dungeon_medieval"):
+	var resolved := _resolve_interior_track(key)
+	if resolved != "" and _try_play_from_manifest(resolved):
 		return
+	# Cold start only: nothing was playing to inherit, and no track authored yet.
+	_start_village_world_music(_get_current_world_suffix())
+
+
+func _start_dungeon_music(world_id: String) -> void:
+	"""Play dungeon music for the given world. Tries OGG first, falls back to proc-gen cave."""
+	_music_playing = true
+	if _try_play_from_manifest("dungeon_" + world_id):
+		return
+	# Fall back to generic medieval dungeon if world-specific not found
+	if world_id != "medieval" and _try_play_from_manifest("dungeon_medieval"):
+		return
+	_start_cave_music()
+
+
+func _start_cave_music() -> void:
+	"""Generate mysterious dungeon/cave theme (proc-gen fallback)"""
+	_music_playing = true
 	print("[MUSIC] Playing cave/dungeon theme")
 	if _play_area_wav_cached("cave"):
 		return

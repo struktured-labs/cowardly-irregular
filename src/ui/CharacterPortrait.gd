@@ -6,6 +6,7 @@ class_name CharacterPortrait
 ## Inspired by FF4/FF5/FF6 menu portraits
 
 const CustomizationScript = preload("res://src/character/CharacterCustomization.gd")
+const SpriteLoader = preload("res://src/battle/sprites/HybridSpriteLoader.gd")
 
 ## Size presets
 enum PortraitSize {
@@ -51,23 +52,36 @@ func _calculate_size() -> void:
 	size = _portrait_size
 
 
-func set_customization(custom, job: String = "") -> void:
-	customization = custom
-	if job != "":
-		job_id = job
-	_build_portrait()
-
-
 func _build_portrait() -> void:
 	# Clear existing
 	for child in get_children():
 		child.queue_free()
 
+	# Resolver, not a literal — this widget feeds 6 surfaces and all showed medieval art
+	var portrait_path = SpriteLoader.portrait_path(job_id)
+	if ResourceLoader.exists(portrait_path):
+		var tex = load(portrait_path) as Texture2D
+		if tex:
+			# Downscale to target size as Image first, then display
+			# This avoids TextureRect layout expansion issues
+			var src_img = tex.get_image()
+			src_img.resize(int(_portrait_size.x), int(_portrait_size.y), Image.INTERPOLATE_NEAREST)
+			var small_tex = ImageTexture.create_from_image(src_img)
+			var sprite = TextureRect.new()
+			sprite.texture = small_tex
+			sprite.stretch_mode = TextureRect.STRETCH_KEEP
+			sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+			sprite.custom_minimum_size = _portrait_size
+			sprite.size = _portrait_size
+			sprite.position = Vector2.ZERO
+			add_child(sprite)
+			return
+
 	if not customization:
 		_build_placeholder()
 		return
 
-	# Render portrait as pixel-art image at fixed resolution, then display scaled
+	# Fall back to procedural portrait
 	var img = Image.create(RENDER_SIZE, RENDER_SIZE, false, Image.FORMAT_RGBA8)
 	_draw_portrait(img)
 
@@ -75,6 +89,9 @@ func _build_portrait() -> void:
 
 	var sprite = TextureRect.new()
 	sprite.texture = tex
+	## expand_mode BEFORE size: the procedural image is RENDER_SIZE (48), so at SMALL (32)
+	## the minimum size is still the texture's and the 32 is clamped straight back up.
+	sprite.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	sprite.stretch_mode = TextureRect.STRETCH_SCALE
 	sprite.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
 	sprite.size = _portrait_size

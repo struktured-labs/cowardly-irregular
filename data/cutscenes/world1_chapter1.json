@@ -1,0 +1,521 @@
+{
+  "id": "world1_chapter1",
+  "title": "The Village That Knew Too Much",
+  "world": 1,
+  "trigger": "after_prologue",
+  "presentation": "staged",
+  "background": "prologue_village",
+  "description": "Elder Theron's briefing, Scholar Milo introduces autobattle, NPC encounters in Harmonia. Staged live in the village square.",
+  "steps": [
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "chapter_title",
+      "title": "Chapter 1",
+      "subtitle": "The Village That Knew Too Much"
+    },
+    {
+      "type": "play_music",
+      "track": "village_medieval"
+    },
+    {
+      "type": "camera_focus",
+      "target": [
+        640,
+        416
+      ],
+      "duration": 0.8
+    },
+    {
+      "type": "spawn_actor",
+      "id": "fighter",
+      "kind": "party",
+      "job": "fighter",
+      "at": [
+        592,
+        416
+      ],
+      "facing": "down"
+    },
+    {
+      "type": "wait",
+      "duration": 0.15
+    },
+    {
+      "type": "spawn_actor",
+      "id": "bard",
+      "kind": "party",
+      "job": "bard",
+      "at": [
+        544,
+        416
+      ],
+      "facing": "down"
+    },
+    {
+      "type": "wait",
+      "duration": 0.15
+    },
+    {
+      "type": "spawn_actor",
+      "id": "cleric",
+      "kind": "party",
+      "job": "cleric",
+      "at": [
+        640,
+        416
+      ],
+      "facing": "down"
+    },
+    {
+      "type": "wait",
+      "duration": 0.15
+    },
+    {
+      "type": "spawn_actor",
+      "id": "mage",
+      "kind": "party",
+      "job": "mage",
+      "at": [
+        688,
+        416
+      ],
+      "facing": "down"
+    },
+    {
+      "type": "wait",
+      "duration": 0.15
+    },
+    {
+      "type": "spawn_actor",
+      "id": "rogue",
+      "kind": "party",
+      "job": "rogue",
+      "at": [
+        736,
+        416
+      ],
+      "facing": "down"
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "spawn_actor",
+      "id": "elder",
+      "kind": "npc",
+      "archetype": "elder_theron",
+      "replace_npc": "Elder Theron",
+      "facing": "down"
+    },
+    {
+      "type": "spawn_actor",
+      "id": "milo",
+      "kind": "npc",
+      "archetype": "scholar_milo",
+      "replace_npc": "Scholar Milo",
+      "facing": "down"
+    },
+    {
+      "type": "move_actor",
+      "id": "elder",
+      "to": [
+        352,
+        416
+      ]
+    },
+    {
+      "type": "move_actor",
+      "id": "elder",
+      "to": [
+        496,
+        416
+      ]
+    },
+    {
+      "type": "face_actor",
+      "id": "elder",
+      "dir": "right"
+    },
+    {
+      "type": "face_actor",
+      "id": "fighter",
+      "toward": "elder"
+    },
+    {
+      "type": "face_actor",
+      "id": "bard",
+      "toward": "elder"
+    },
+    {
+      "type": "face_actor",
+      "id": "cleric",
+      "toward": "elder"
+    },
+    {
+      "type": "face_actor",
+      "id": "mage",
+      "toward": "elder"
+    },
+    {
+      "type": "face_actor",
+      "id": "rogue",
+      "toward": "elder"
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "Harmonia was the kind of village that existed to be left. A waypoint. A place you were from, not a place you stayed.",
+        "The bats were bigger. The slimes were angrier. Traders stopped coming through, then stopped sending messages, then stopped existing in conversation entirely.",
+        "Elder Theron stood in the village square and regarded the party with a look that suggested they absolutely would not do, but that complaining about it would take energy he didn't have."
+      ]
+    },
+    {
+      "type": "emote",
+      "id": "elder",
+      "emote": "ellipsis",
+      "duration": 0.9
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Elder Theron",
+          "text": "You'll do.",
+          "theme": "elder",
+          "portrait": "theron"
+        }
+      ]
+    },
+    {
+      "type": "emote",
+      "id": "bard",
+      "emote": "note",
+      "duration": 0.8
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Bard",
+          "text": "Such inspiring leadership.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Elder Theron",
+          "text": "The cave to the north... something's changed in there. The monsters aren't just wandering anymore. They're organized. Deliberate. You need to find out why.",
+          "theme": "elder",
+          "portrait": "theron"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "emote",
+      "id": "milo",
+      "emote": "exclaim",
+      "duration": 0.8
+    },
+    {
+      "type": "move_actor",
+      "id": "milo",
+      "to": [
+        608,
+        384
+      ]
+    },
+    {
+      "type": "face_actor",
+      "id": "milo",
+      "dir": "down"
+    },
+    {
+      "type": "face_actor",
+      "id": "fighter",
+      "toward": "milo"
+    },
+    {
+      "type": "face_actor",
+      "id": "cleric",
+      "toward": "milo"
+    },
+    {
+      "type": "narration",
+      "text": "Scholar Milo appeared at the party's elbow with the enthusiasm of a man who had been waiting his entire life for someone to listen to him."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Scholar Milo",
+          "text": "Before you go... have you considered the philosophical implications of combat automation?",
+          "theme": "scholar",
+          "portrait": "milo"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "...What?",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Scholar Milo",
+          "text": "Imagine a world where you don't fight your battles. You DESIGN them. You build a system of rules — if this, then that — and the system fights for you.",
+          "theme": "scholar",
+          "portrait": "milo"
+        },
+        {
+          "speaker": "Scholar Milo",
+          "text": "Not laziness. Enlightenment.",
+          "theme": "scholar",
+          "portrait": "milo"
+        }
+      ]
+    },
+    {
+      "type": "emote",
+      "id": "fighter",
+      "emote": "question",
+      "duration": 0.9
+    },
+    {
+      "type": "narration",
+      "text": "He pressed a leather-bound journal into the Fighter's hands. The cover read: AUTOBATTLE: A Practical Guide to Strategic Detachment."
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Fighter",
+          "text": "This is a real book?",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Scholar Milo",
+          "text": "Chapter one is about letting go.",
+          "theme": "scholar",
+          "portrait": "milo"
+        },
+        {
+          "speaker": "Scholar Milo",
+          "text": "Chapter two is about letting go faster.",
+          "theme": "scholar",
+          "portrait": "milo"
+        },
+        {
+          "speaker": "Bard",
+          "text": "What's chapter three?",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "Scholar Milo",
+          "text": "Chapter three is about accepting that the gap between letting go and having it taken from you is smaller than most people think.",
+          "theme": "scholar",
+          "portrait": "milo"
+        },
+        {
+          "speaker": "",
+          "text": "He said it with the cheerful tone of a man discussing weather. Nobody thought anything of it. That was what scholars were for.",
+          "theme": "narrator",
+          "portrait": "narrator"
+        }
+      ]
+    },
+    {
+      "type": "hop",
+      "id": "milo",
+      "times": 1
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "The village offered what it could. A few familiar faces had things to say."
+    },
+    {
+      "type": "spawn_actor",
+      "id": "phil",
+      "kind": "npc",
+      "archetype": "phil",
+      "replace_npc": "Phil the Lost",
+      "facing": "up"
+    },
+    {
+      "type": "camera_focus",
+      "target": "phil",
+      "duration": 0.7
+    },
+    {
+      "type": "move_actor",
+      "id": "mage",
+      "to": [
+        736,
+        416
+      ]
+    },
+    {
+      "type": "move_actor",
+      "id": "mage",
+      "to": [
+        736,
+        528
+      ]
+    },
+    {
+      "type": "face_actor",
+      "id": "mage",
+      "dir": "down"
+    },
+    {
+      "type": "emote",
+      "id": "phil",
+      "emote": "ellipsis",
+      "duration": 0.9
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Phil the Lost",
+          "text": "Phil. Phil the Lost. Called that because I lose things. Mostly I lose track of... well. Of what's happened before.",
+          "theme": "mysterious",
+          "portrait": "phil"
+        },
+        {
+          "speaker": "Mage",
+          "text": "Before what?",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Phil the Lost",
+          "text": "Before anything much. The village. The seasons. Years blur together. You forget which winter was which.",
+          "theme": "mysterious",
+          "portrait": "phil"
+        },
+        {
+          "speaker": "Phil the Lost",
+          "text": "Though I will say this: good luck with the cave. Try not to die in the first room. It's bad for the spirit.",
+          "theme": "mysterious",
+          "portrait": "phil"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "The spirit of whom?",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Phil the Lost",
+          "text": "Unclear.",
+          "theme": "mysterious",
+          "portrait": "phil"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.2
+    },
+    {
+      "type": "spawn_actor",
+      "id": "bram",
+      "kind": "npc",
+      "archetype": "bram",
+      "replace_npc": "Bram Smith",
+      "facing": "down"
+    },
+    {
+      "type": "camera_focus",
+      "target": "bram",
+      "duration": 0.7
+    },
+    {
+      "type": "move_actor",
+      "id": "rogue",
+      "to": [
+        736,
+        224
+      ],
+      "speed": 160
+    },
+    {
+      "type": "move_actor",
+      "id": "rogue",
+      "to": [
+        864,
+        224
+      ],
+      "speed": 160
+    },
+    {
+      "type": "face_actor",
+      "id": "rogue",
+      "dir": "down"
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Bram",
+          "text": "Testing dulls the edge! That's the philosophy. Every sword here is in pristine, never-been-used condition.",
+          "theme": "shopkeeper",
+          "portrait": "bram"
+        },
+        {
+          "speaker": "Rogue",
+          "text": "That's... technically backward.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "Bram",
+          "text": "You look like someone who's going to get hit a lot. Take the shield. Consider it an investment in your surviving long enough to come back and buy more.",
+          "theme": "shopkeeper",
+          "portrait": "bram"
+        }
+      ]
+    },
+    {
+      "type": "camera_focus",
+      "target": [
+        640,
+        416
+      ],
+      "duration": 0.9
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The Cleric said a blessing over the equipment. The Mage documented it in his notes as 'ritual application of perceived divine endorsement, efficacy unclear but morale effect measurable.'",
+        "The Bard began composing the verse about their departure before they had actually departed.",
+        "The Rogue stole a health potion from the back shelf, felt guilty about it, and left a coin that couldn't be afforded.",
+        "Elder Theron watched them go with the expression of a man who has planted seeds in difficult soil and has made peace with the uncertainty."
+      ]
+    },
+    {
+      "type": "set_flag",
+      "flag": "chapter1_complete",
+      "value": true
+    },
+    {
+      "type": "camera_restore",
+      "duration": 0.6
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.5
+    }
+  ]
+}

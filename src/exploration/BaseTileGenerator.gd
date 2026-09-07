@@ -7,6 +7,9 @@ class_name BaseTileGenerator
 
 const TILE_SIZE: int = 32
 
+## Suppresses the user:// debug-atlas dump. Self-defaults ON under headless (GUT) because generators are built TRANSITIVELY by overworld scenes — no test names this class, so an opt-in flag alone would never be set.
+static var _test_disable_persistence: bool = DisplayServer.get_name() == "headless" or OS.has_feature("headless")
+
 var _tile_cache: Dictionary = {}
 
 
@@ -36,6 +39,10 @@ func _get_impassable_types() -> Array:
 func _get_atlas_dimensions() -> Vector2i:
 	return Vector2i(4, 4)
 
+## Return {tile_type: speed_multiplier} for terrain that slows instead of blocking; empty = nothing slows.
+func _get_rough_terrain_speeds() -> Dictionary:
+	return {}
+
 ## Return tile variant overrides: {tile_index: variant_number}
 ## Only needed for generators with multiple variants per tile type in the atlas
 func _get_tile_variants() -> Dictionary:
@@ -44,6 +51,14 @@ func _get_tile_variants() -> Dictionary:
 ## Return debug atlas filename (without extension)
 func _get_debug_atlas_name() -> String:
 	return "debug_atlas"
+
+## Manifest key under tile_sheets ("" = this generator never consults artist sheets)
+func _get_sheet_key() -> String:
+	return ""
+
+## Enum key for a tile type value — the name an artist sheet addresses it by
+func _get_tile_type_name(type: int) -> String:
+	return ""
 
 
 # --- Shared implementation ---
@@ -63,6 +78,19 @@ func generate_tile(type: int, variant: int = 0) -> ImageTexture:
 	var texture = ImageTexture.create_from_image(img)
 	_tile_cache[cache_key] = texture
 	return texture
+
+
+## Artist region for (type, variant) from the manifest sheet, or null to draw procedurally
+func _artist_tile(tile_type: int, variant: int) -> Image:
+	var key := _get_sheet_key()
+	if key == "":
+		return null
+	var name := _get_tile_type_name(tile_type)
+	if name == "":
+		return null
+	if variant > 0:
+		name += ":%d" % variant
+	return TileSheetManifest.region(key, "tiles", name)
 
 
 ## Create a TileSet with all tile types for use in TileMap
@@ -91,8 +119,9 @@ func create_tileset() -> TileSet:
 		var tile_type = tile_order[i]
 		var variant = tile_variants.get(i, 0)
 
-		var tile_tex = generate_tile(tile_type, variant)
-		var tile_img = tile_tex.get_image()
+		var tile_img: Image = _artist_tile(tile_type, variant)
+		if tile_img == null:
+			tile_img = generate_tile(tile_type, variant).get_image()
 
 		# Use blit_rect for native C++ image copy instead of per-pixel GDScript loop
 		var col = i % atlas_cols
@@ -104,7 +133,7 @@ func create_tileset() -> TileSet:
 	atlas.texture_region_size = Vector2i(TILE_SIZE, TILE_SIZE)
 
 	# Debug: Save atlas to disk for inspection
-	if OS.is_debug_build():
+	if OS.is_debug_build() and not _test_disable_persistence:
 		var debug_name = _get_debug_atlas_name()
 		atlas_img.save_png("user://%s.png" % debug_name)
 		print("%s saved (size: %dx%d, %d tiles)" % [debug_name, atlas_img.get_width(), atlas_img.get_height(), tile_order.size()])

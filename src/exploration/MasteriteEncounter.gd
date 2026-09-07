@@ -1,0 +1,201 @@
+extends Area2D
+class_name MasteriteEncounter
+
+## MasteriteEncounter — once-per-save W1 mini-boss trigger placed on the
+## four W1 outer villages (Sandrift/Eldertree/Grimhollow/Ironhaven) per
+## docs/design/w1-progression-expansion.md. Uses the BossTrigger shape
+## the dragon caves ship with — collision_layer=4/mask=2, "interactables"
+## group membership — but fires on body_entered (not require_interaction)
+## and stakes `pending_boss_defeat` before emitting battle_triggered so
+## GameLoop._apply_pending_boss_defeat sets the flag on victory. Once
+## defeated, the trigger hides itself and stops monitoring.
+##
+## Design contract per the doc:
+##  - Fires ONCE per save (gated on `w1_<archetype>_defeated` story flag).
+##  - Drops that flag on victory via `pending_boss_defeat.story_flags`.
+##  - Optional prereq_flag lets Sandrift's Warden wait for the Rat King
+##    defeat before appearing on the trade road ("legitimate business").
+##  - Framework compat: the trigger owns a small AABB (2×2 tiles) tuned
+##    so `test_overworld_reachability_framework` sees no eclipsed sibling.
+
+const TILE_SIZE: int = 32
+
+## The archetype id — used to compose the defeat flag `w1_<id>_defeated`.
+## E.g. "warden", "tempo", "arbiter", "curator".
+@export var archetype: String = ""
+
+## Full monster id in data/monsters.json (e.g. "masterite_warden_medieval").
+@export var monster_id: String = ""
+
+## Optional story-flag gate. Empty = always active; non-empty = only
+## renders once GameState.is_story_flag_set(prereq_flag) is true (all 4 namespaces).
+## Design v1: Sandrift's Warden uses "cave_rat_king_defeated" here.
+@export var prereq_flag: String = ""
+
+## Display label above the pre-fight silhouette (design flavor).
+@export var display_name: String = ""
+
+## Optional custom objective this fight RESOLVES — the step's `required_flag`.
+## Setting a flag never advances a quest; only notify_flag does.
+@export var quest_flag: String = ""
+
+var _fired: bool = false
+
+
+func _ready() -> void:
+	add_to_group("interactables")
+	collision_layer = 4
+	collision_mask = 2
+	monitoring = true
+	monitorable = true
+
+	if _defeat_flag_set() or not _prereq_met():
+		# Catch-up: killed BEFORE the quest reached this step, so the victory
+		# notify found no active objective. Idempotent — a no-op once past it.
+		if _defeat_flag_set():
+			_notify_quest()
+		visible = false
+		monitoring = false
+		return
+
+	_build_collision()
+	_build_silhouette()
+	body_entered.connect(_on_body_entered)
+
+
+func defeat_flag() -> String:
+	return "w1_%s_defeated" % archetype
+
+
+## notify_flag advances only a CURRENT custom objective whose required_flag
+## matches, so this is safe to call whenever the fight is already resolved.
+func _notify_quest() -> void:
+	if quest_flag == "":
+		return
+	var qs = get_node_or_null("/root/QuestSystem")
+	if qs:
+		qs.notify_flag(quest_flag)
+
+
+func _defeat_flag_set() -> bool:
+	if GameState == null:
+		return false
+	return GameState.is_story_flag_set(defeat_flag())
+
+
+func _prereq_met() -> bool:
+	if prereq_flag == "":
+		return true
+	if GameState == null:
+		return true
+	# Canonical helper: rat-king prereq lives in dungeon_flags — bare get_story_flag left ALL W1 Masterites invisible (struktured 2026-07-18)
+	return GameState.is_story_flag_set(prereq_flag)
+
+
+func _build_collision() -> void:
+	var cs := CollisionShape2D.new()
+	var shape := RectangleShape2D.new()
+	# 2×2 tiles — small enough that no dragon-cave / village-shop AABB
+	# eclipses it, wide enough that a Mode 7-stretched sprite still lands
+	# a hit at the center. Framework check: `test_overworld_reachability_framework`.
+	shape.size = Vector2(TILE_SIZE * 2, TILE_SIZE * 2)
+	cs.shape = shape
+	add_child(cs)
+
+
+## Artist sheet if one exists, procedural figure otherwise. Same path convention
+## RoamingMonster._setup_sprite consumes, so masterite art drops in without a code change.
+func _build_silhouette() -> void:
+	var art := "res://assets/sprites/monsters/overworld/%s.png" % monster_id
+	if monster_id != "" and ResourceLoader.exists(art):
+		var art_sprite := Sprite2D.new()
+		art_sprite.name = "MasteriteSilhouette"
+		art_sprite.texture = load(art)
+		art_sprite.centered = true
+		add_child(art_sprite)
+		return
+	# The procedural fallback reads as "someone is standing in your way" at
+	# overworld scale. 32x64 — a sheet of the same size replaces it directly.
+	var sprite := Sprite2D.new()
+	sprite.name = "MasteriteSilhouette"
+	var img := Image.create(TILE_SIZE, TILE_SIZE * 2, false, Image.FORMAT_RGBA8)
+	img.fill(Color.TRANSPARENT)
+	var body := Color(0.14, 0.13, 0.18)
+	var body_lt := Color(0.22, 0.20, 0.26)
+	var trim := Color(0.55, 0.42, 0.20)
+	# head
+	for y in range(4, 14):
+		for x in range(10, 22):
+			var dx := float(x - 16) / 6.0
+			var dy := float(y - 9) / 5.0
+			if dx * dx + dy * dy <= 1.0:
+				img.set_pixel(x, y, body if x < 16 else body_lt)
+	# shoulders → torso
+	for y in range(14, 42):
+		for x in range(8, 24):
+			img.set_pixel(x, y, body if x < 16 else body_lt)
+	# trim (sash / belt)
+	for x in range(8, 24):
+		img.set_pixel(x, 30, trim)
+	# legs
+	for y in range(42, 60):
+		for x in range(10, 15):
+			img.set_pixel(x, y, body)
+		for x in range(17, 22):
+			img.set_pixel(x, y, body_lt)
+	sprite.texture = ImageTexture.create_from_image(img)
+	sprite.centered = true
+	sprite.position = Vector2(0, -TILE_SIZE / 2)
+	add_child(sprite)
+
+	if display_name != "":
+		var label := Label.new()
+		label.text = display_name
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.position = Vector2(-64, -TILE_SIZE * 2 - 8)
+		label.size = Vector2(128, 14)
+		label.add_theme_font_size_override("font_size", 10)
+		label.add_theme_color_override("font_color", Color(0.92, 0.88, 0.72))
+		label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		add_child(label)
+
+
+func _on_body_entered(body: Node2D) -> void:
+	if _fired:
+		return
+	# Belt-and-suspenders vs _ready's monitoring=false: if the flag flips
+	# after _ready (defeat lands late-frame) or an external caller invokes
+	# _on_body_entered on a hidden trigger, still refuse to re-stake.
+	if _defeat_flag_set():
+		return
+	if not (body.is_in_group("player") or body.has_method("set_can_move")):
+		return
+	if monster_id == "" or archetype == "":
+		push_warning("[MasteriteEncounter] missing archetype/monster_id — skipping fire")
+		return
+	_fired = true
+	# Stake pending_boss_defeat so GameLoop._apply_pending_boss_defeat writes
+	# the w1_<archetype>_defeated flag on victory — matches the DragonCave
+	# contract, minus dungeon_flag/unlock_world (masterites are mid-arc, they
+	# don't gate world unlock).
+	if GameState:
+		GameState.pending_boss_defeat = {
+			"story_flags": [defeat_flag()],
+			"constants": [],
+			"dungeon_flag": "",
+			"quest_flags": [quest_flag] if quest_flag != "" else [],
+		}
+	monitoring = false
+	_fire_battle()
+
+
+func _fire_battle() -> void:
+	# Parent-walk to the scene that owns the battle relay (village
+	# scenes have _on_battle_triggered from BaseVillage's signal chain).
+	var node = get_parent()
+	while node:
+		if node.has_method("_on_battle_triggered"):
+			node._on_battle_triggered([monster_id])
+			return
+		node = node.get_parent()
+	push_warning("[MasteriteEncounter] no ancestor exposes _on_battle_triggered — battle not fired")

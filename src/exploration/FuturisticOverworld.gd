@@ -13,12 +13,17 @@ const AreaTransitionScript = preload("res://src/exploration/AreaTransition.gd")
 const OverworldNPCScript = preload("res://src/exploration/OverworldNPC.gd")
 
 signal exploration_ready()
-signal battle_triggered(enemies: Array)
+signal battle_triggered(enemies: Array, terrain: String)
 signal area_transition(target_map: String, spawn_point: String)
 
 ## Map dimensions (in tiles) - 55x45 digital cityscape
-const MAP_WIDTH: int = 55
-const MAP_HEIGHT: int = 45
+const MAP_WIDTH: int = 165
+const MAP_HEIGHT: int = 135
+const MAP_IMAGE: String = "res://data/maps/overworld_w5.png"
+const MAP_WORLD: String = "futuristic"
+## Legacy entity coordinates below are old 55x45 tiles; the PNG is that map at 3x.
+## tools/gen_w5_futuristic.py reserves a clearing at each -- change one, change both.
+const MAP_SCALE: int = 3
 const TILE_SIZE: int = 32
 
 ## Scene components
@@ -40,6 +45,18 @@ var spawn_points: Dictionary = {}
 ## Mode 7 perspective
 var mode7_enabled: bool = true
 var _mode7: Mode7Overlay
+var _minimap: OverworldMinimap
+
+## Zone particles
+var _zone_particles: ZoneParticles
+
+var _quest_tracker: QuestTracker
+var _weather: WeatherSystem
+var _border_indicator: MapBorderIndicator
+var _objective_arrow: ObjectiveArrow
+var _threat_meter: ThreatMeter
+var monster_spawner: MonsterSpawner
+var _save_point: SavePoint
 
 ## Glitch effect state
 var _glitch_overlay: ColorRect
@@ -52,6 +69,8 @@ var _glitch_phase: int = 0
 func _ready() -> void:
 	_setup_scene()
 	_generate_map()
+	# msg 2830: terrain colliders shifted to match the warped render.
+	Mode7Overlay.apply_terrain_collision_alignment(tile_map, mode7_enabled)
 	_setup_transitions()
 	_setup_npcs()
 	_setup_player()
@@ -64,12 +83,199 @@ func _ready() -> void:
 		_mode7.apply_preset("digital")
 		_mode7.setup(self, player)
 
+	# Zone name popup
+	var _zone_popup = ZoneNamePopup.new()
+	add_child(_zone_popup)
+	_zone_popup.setup(self)
+	_zone_popup.show_zone("futuristic_overworld")
+
+	_zone_particles = ZoneParticles.new()
+	add_child(_zone_particles)
+	_zone_particles.setup(self, player)
+	_zone_particles.update_zone("futuristic_overworld")
+
+	GameState.set_story_flag("w5_entered")
+	_quest_tracker = QuestTracker.new()
+	add_child(_quest_tracker)
+	_quest_tracker.setup(self)
+
+	_weather = WeatherSystem.new()
+	add_child(_weather)
+	_weather.setup(self, player, "digital")
+
+	_place_signposts()
+	_place_landmarks()
+	_place_wanderers()
+	_place_village_markers()
+	_place_treasure_chests()
+	_place_save_point()
+
 	# Start futuristic overworld music
 	if SoundManager:
 		SoundManager.play_area_music("overworld_futuristic")
 
 	_setup_effects()
+	_minimap = OverworldMinimap.new()
+	add_child(_minimap)
+	_minimap.setup(self, player, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE, spawn_points)
+	_minimap.set_objective(_get_objective_position())
+
+	monster_spawner = MonsterSpawner.new()
+	monster_spawner.name = "MonsterSpawner"
+	add_child(monster_spawner)
+	monster_spawner.set_map_size(MAP_WIDTH, MAP_HEIGHT)
+	monster_spawner.monster_touched.connect(_on_roaming_monster_touched)
+	monster_spawner.setup(player, ["memory_leak", "rogue_process", "recursive_loop", "data_wraith", "firewall_sentinel"])
+
+	_threat_meter = ThreatMeter.new()
+	add_child(_threat_meter)
+	_threat_meter.setup(self, player, monster_spawner)
+
+	_border_indicator = MapBorderIndicator.new()
+	add_child(_border_indicator)
+	_border_indicator.setup(self, player, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE)
+
+	_objective_arrow = ObjectiveArrow.new()
+	add_child(_objective_arrow)
+	_objective_arrow.setup(self, player)
+	_objective_arrow.set_target(_get_objective_position())
+
+	TutorialHints.show(self, "world_transition")
 	exploration_ready.emit()
+
+
+func _get_objective_position() -> Vector2:
+	if GameState.game_constants.get("cutscene_flag_arbiter_futuristic_defeated", false):
+		return spawn_points.get("server_farm", Vector2.ZERO)
+	if GameState.get_story_flag("visited_node_prime"):
+		return spawn_points.get("server_farm", Vector2.ZERO)
+	return spawn_points.get("node_prime_entrance", Vector2.ZERO)
+
+
+func _place_village_markers() -> void:
+	var pos = spawn_points.get("node_prime_entrance", Vector2.ZERO)
+	if pos != Vector2.ZERO:
+		var marker = VillageMarker.new()
+		marker.village_name = "NODE PRIME"
+		marker.roof_color = Color(0.15, 0.75, 0.85)  # Neon cyan server glow
+		marker.position = pos
+		add_child(marker)
+
+
+func _place_treasure_chests() -> void:
+	const TreasureChestScript = preload("res://src/exploration/TreasureChest.gd")
+	# 10 chests across server farm, plaza, glitch sector, node prime approach
+	var chests = [
+		# Server farm (north) — orphaned data caches
+		{"id": "w5_server_ether", "pos": Vector2(24, 6), "type": "item", "item": "ether", "amount": 6},
+		{"id": "w5_server_gold", "pos": Vector2(30, 8), "type": "gold", "gold": 800},
+		# Plaza — public-facing terminals
+		{"id": "w5_plaza_hipotion", "pos": Vector2(22, 18), "type": "item", "item": "hi_potion", "amount": 5},
+		{"id": "w5_plaza_elixir", "pos": Vector2(32, 18), "type": "item", "item": "elixir", "amount": 2},
+		# Glitch sector — dangerous corrupted loot
+		{"id": "w5_glitch_phoenix", "pos": Vector2(20, 32), "type": "item", "item": "phoenix_down", "amount": 3},
+		{"id": "w5_glitch_remedy", "pos": Vector2(26, 34), "type": "item", "item": "remedy", "amount": 5},
+		{"id": "w5_glitch_gold", "pos": Vector2(45, 32), "type": "gold", "gold": 1000},
+		# Node Prime approach — compressed archives
+		{"id": "w5_node_ether", "pos": Vector2(44, 20), "type": "item", "item": "ether", "amount": 5},
+		{"id": "w5_node_antidote", "pos": Vector2(47, 24), "type": "item", "item": "antidote", "amount": 5},
+		# Southern return portal
+		{"id": "w5_south_gold", "pos": Vector2(30, 36), "type": "gold", "gold": 500},
+	]
+	for c in chests:
+		var chest = TreasureChestScript.new()
+		chest.chest_id = c["id"]
+		chest.position = Vector2(c["pos"].x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, c["pos"].y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+		if c["type"] == "gold":
+			chest.contents_type = "gold"
+			chest.gold_amount = c["gold"]
+		else:
+			chest.contents_type = "item"
+			chest.contents_id = c["item"]
+			chest.contents_amount = c["amount"]
+		add_child(chest)
+
+
+func _place_save_point() -> void:
+	# Save crystal at plaza (neutral ground before glitch sector)
+	_save_point = SavePoint.new()
+	_save_point.position = Vector2(27 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 20 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	add_child(_save_point)
+
+
+func _place_signposts() -> void:
+	var signs = [
+		# Orientation at entry (south)
+		{"pos": Vector2(27, 35), "text": "W5 · Source Layer"},
+		# Return portal (south)
+		{"pos": Vector2(27, 40), "text": "↓ Return  ⚒ Assembly Line (W4)"},
+		# Forward portal (north server farm)
+		{"pos": Vector2(27, 7), "text": "↑ Server Farm  ∅ The Absence (W6)"},
+		# Node Prime village (east)
+		{"pos": Vector2(45, 20), "text": "→ Node Prime · data village"},
+		# Plaza (central)
+		{"pos": Vector2(27, 20), "text": "Central Plaza · save point"},
+		# Glitch sector warning (SE)
+		{"pos": Vector2(40, 30), "text": "→ Glitch Sector ⚠ corrupted memory"},
+		# Root Process dungeon
+		{"pos": Vector2(40, 32), "text": "↓ Root Process — dungeon ◉"},
+	]
+	for s in signs:
+		var post = Signpost.new()
+		post.sign_text = s["text"]
+		post.position = Vector2(s["pos"].x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, s["pos"].y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+		add_child(post)
+
+
+func _place_landmarks() -> void:
+	var landmarks = [
+		{"pos": Vector2(15, 10), "type": Landmark.Type.DATA_TERMINAL},
+		{"pos": Vector2(40, 35), "type": Landmark.Type.SERVER_RACK},
+		{"pos": Vector2(30, 20), "type": Landmark.Type.DATA_TERMINAL},
+		{"pos": Vector2(25, 40), "type": Landmark.Type.SERVER_RACK},
+	]
+	for l in landmarks:
+		var lm = Landmark.new()
+		lm.landmark_type = l["type"]
+		lm.position = Vector2(l["pos"].x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, l["pos"].y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+		add_child(lm)
+
+
+func _place_wanderers() -> void:
+	var wanderers = [
+		{
+			"name": "Process_42",
+			"dialogue": "I'm just passing through. Literally. I'm a process.",
+			"color": Color(0.2, 0.5, 0.6),
+			"path": [Vector2(20, 15), Vector2(25, 15), Vector2(25, 20), Vector2(20, 20)],
+			"hints": [
+				{"flag": "w5_entered", "text": "Node Prime is east. The core processes run there. Don't benchmark them."},
+				{"flag": "arbiter_futuristic_defeated", "text": "The Source Layer is dissolving. Something beyond the code... the Remainder."},
+			],
+		},
+		{
+			"name": "Legacy Code",
+			"dialogue": "They keep trying to deprecate me. I keep running.",
+			"color": Color(0.4, 0.6, 0.3),
+			"path": [Vector2(35, 30), Vector2(40, 30), Vector2(40, 35), Vector2(35, 35)],
+			"hints": [
+				{"flag": "w5_entered", "text": "The Masterites built all of this. Or compiled it. Same thing here."},
+				{"flag": "arbiter_futuristic_defeated", "text": "Beyond the code there's... nothing? Everything? I can't parse it."},
+			],
+		},
+	]
+	for w in wanderers:
+		var npc = WanderingNPC.new()
+		npc.npc_name = w["name"]
+		npc.dialogue = w["dialogue"]
+		npc.sprite_color = w["color"]
+		if w.has("hints"):
+			npc.dialogue_hints = w["hints"]
+		var patrol: Array[Vector2] = []
+		for pt in w["path"]:
+			patrol.append(Vector2(pt.x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, pt.y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2))
+		npc.set_patrol(patrol)
+		add_child(npc)
 
 
 func _setup_effects() -> void:
@@ -89,12 +295,11 @@ func _setup_effects() -> void:
 
 
 func _process(delta: float) -> void:
+	if _quest_tracker: _quest_tracker.update()
 	if _mode7:
-		var roaming = get_node_or_null("RoamingMonsters")
-		if roaming:
-			for child in roaming.get_children():
-				_mode7.register_billboard(child)
 		_mode7.process_frame()
+	if _weather:
+		_weather.process(delta)
 	_glitch_timer += delta
 
 	if _glitch_phase == 0 and _glitch_timer >= _glitch_interval:
@@ -124,6 +329,17 @@ func _process(delta: float) -> void:
 			_glitch_phase = 0
 			_glitch_timer = 0.0
 			_glitch_interval = randf_range(15.0, 20.0)
+	if player:
+		if _zone_particles:
+			_zone_particles.update_position(player.position)
+		if _minimap:
+			_minimap.update(player.position)
+		if _objective_arrow:
+			_objective_arrow.update(player.position)
+		if _border_indicator:
+			_border_indicator.update(player.position)
+		if _threat_meter:
+			_threat_meter.update(player.position)
 
 
 func _exit_tree() -> void:
@@ -199,57 +415,14 @@ func _generate_map() -> void:
 
 	print("Generating futuristic overworld map %dx%d..." % [MAP_WIDTH, MAP_HEIGHT])
 
-	var map_data: Array[String] = [
-		"NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN",
-		"NcSScvSScvSScvSScvSScvSScvSScvSScvSScvSScvSScvSScvSSccN",
-		"NcccccccccccccccccccccccccccccccccccccccccccccccccccccN",
-		"NcSScvSScvSScvSScvSScvSScvSScvSScvSScvSScvSScvSScvSSccN",
-		"NcfffffffffffffffffffffffffffffffffffffffffffffffffffcN",
-		"NESScvSScvSScvSScvSScvSScvSScvSScvSScvSScvSScvSScvScEcN",
-		"NcccccccccccccccccccccccccccccccccccccccccccccccccccccN",
-		"NcSScvSScvSScvSScvSScvSScvSScvSScvSScvSScvSScvSScvSSccN",
-		"NcvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvvcN",
-		"NccccccccccccccccccccccccccccccccccccccccccccXXXXcccccN",
-		"NdddddddddddddddddddddddddddddddddddddddddddddddddddddN",
-		"NAcfcfcAccccccccccccccccccccccccccccccccNPPaccPPacPPacN",
-		"NccccccccccchcccccccccccccchccccccccccccNcccccccccccccN",
-		"NAcfcfcAccccccccccccccccccccccccccccccccNPPaccPPacPPacN",
-		"NcfffffffcccccccccccccccccccccccffcccccccNccccccccccccN",
-		"NEcccccEccccchccTTTTcchcccccccccccccccccNPPaccPPacPPacN",
-		"NcccccccccccccccTccccTccccccccccccccccccNcccccccccccccN",
-		"NAcfcfcAcccccccTccccTcccccccccccccccccccNPPaccPPacPPacN",
-		"NcccccccccccccccTTTTTTccccccccccccccccccNcccccccccccccN",
-		"NEcccccEcccccchcccccccccchccccccccccccccNPPaccPPacPPacN",
-		"NcccccccccccccccccccccccccccccccccccccccNcccccccccccccN",
-		"NdddddddddddddddddddddddddddddddddddddddddddddddddddddN",
-		"NAcfcfcAccccccccccccccccccccccccccccccccNPPaccPPacPPacN",
-		"NcccpppcccccccccccccccccccccccccccccccccNcccccccccccccN",
-		"NcppppppcccccchcccccccccchccccccccccccccNPPaccPPacPPacN",
-		"NcppppppccccccccccccccccccccccccccccccccNcccccccccccccN",
-		"NcccpppcccccccccccccccccccccccccccccccccNPPaccPPacPPacN",
-		"NAcfcfcAccccccccccccccccccccccccccccccccNcccccccccccccN",
-		"NEcccccEccccccccccccccccccccccccccccccccNPPaccPPacPPacN",
-		"NcfffffffcccccVVVVVVVVVVVccccccccccccccNccccccccccccccN",
-		"NNNNNNNNNccccVVVVVVVVVVVVcccccccccccccNPPaccPPacPPacccN",
-		"NccccccccccccVVXXXXXXXXXVVVcccccccccccNcccccccccccccccN",
-		"NcccccccccccVXXXXXXXXXXXVVcccccccccccNNNNNNNNNNNccccccN",
-		"NcccccccchcVVXXXXXXXXXXXVVVccchcccccccccccccccccccccccN",
-		"NdddddddddddddddddddddddddddddddddddddddddddddddddddddN",
-		"NcccccccccccccGcccccccGcccccccGcccccccccccccccccccccccN",
-		"NcccccccccccccaaaccccaaacccccaaaccccccccccccccccccccccN",
-		"NcccccccccccccccccccccccccccccccccccccccccccccccccccccN",
-		"NccccaccccccchcccccccccccchcccccccacccccccccccccccccccN",
-		"NcccccccccccccccccccccccccccccccccccccccccccccccccccccN",
-		"NdddddddddddddddddddddddddddddddddddddddddddddddddddddN",
-		"NccccccccccccccccccccccccaccccccccccccccccccccccccccccN",
-		"NcccccccccccccccccccccccccccccccccccccccccccccccccccccN",
-		"NcccccccccccccccccccccccccccccccccccccccccccccccccccccN",
-		"NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN",
-	]
-
-	# Ensure map_data matches expected dimensions
-	while map_data.size() < MAP_HEIGHT:
-		map_data.append("N".repeat(MAP_WIDTH))
+	var map_data: Array[String] = []
+	# str() coercion, not a direct assign: a generic-to-typed assign ABORTS this function
+	for row in MapImageLoader.load_rows(MAP_IMAGE, MAP_WORLD):
+		map_data.append(str(row))
+	# no padding: padding turns a failed load into a silent circuit field
+	if map_data.size() != MAP_HEIGHT:
+		push_error("[MAP] %s yielded %d rows, expected %d -- refusing to pad" % [MAP_IMAGE, map_data.size(), MAP_HEIGHT])
+		return
 
 	# Convert map_data to tiles
 	var tile_counts = {}
@@ -267,18 +440,19 @@ func _generate_map() -> void:
 	print("Futuristic tile counts: ", tile_counts)
 
 	# Define spawn points
-	spawn_points["entrance"] = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 37 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["entrance"] = Vector2(27 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 37 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	spawn_points["default"] = spawn_points["entrance"]
 	spawn_points["futuristic_portal"] = spawn_points["entrance"]
-	spawn_points["plaza"] = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 17 * TILE_SIZE + TILE_SIZE / 2)
-	spawn_points["server_farm"] = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 4 * TILE_SIZE + TILE_SIZE / 2)
-	spawn_points["glitch_sector"] = Vector2(22 * TILE_SIZE + TILE_SIZE / 2, 32 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["plaza"] = Vector2(27 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 17 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["server_farm"] = Vector2(27 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 3 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["glitch_sector"] = Vector2(22 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 32 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	# Spawn point for arriving from industrial world (south access port)
-	spawn_points["from_industrial"] = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 40 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["from_industrial"] = Vector2(27 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 40 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	# Spawn point for returning from abstract world (north server farm)
-	spawn_points["from_abstract"] = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 2 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["from_abstract"] = Vector2(27 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 3 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	# Spawn point for returning from Node Prime village (east residential pods, row 20)
-	spawn_points["node_prime_entrance"] = Vector2(50 * TILE_SIZE + TILE_SIZE / 2, 20 * TILE_SIZE + TILE_SIZE / 2)
+	# the one case no cell model could flag: both cells open, the 4px body straddled the boundary
+	spawn_points["node_prime_entrance"] = Vector2(49 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 20 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 
 
 func _char_to_tile_type(char: String) -> int:
@@ -310,29 +484,35 @@ func _get_atlas_coords(tile_type: int) -> Vector2i:
 
 
 func _setup_transitions() -> void:
-	# Back portal to Industrial world (south access port)
-	var industrial_portal = AreaTransitionScript.new()
-	industrial_portal.name = "IndustrialPortal"
-	industrial_portal.target_map = "industrial_overworld"
-	industrial_portal.target_spawn = "from_futuristic"
-	industrial_portal.require_interaction = true
-	industrial_portal.indicator_text = "Return to Efficiency District"
-	industrial_portal.position = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 42 * TILE_SIZE + TILE_SIZE / 2)
-	_setup_transition_collision(industrial_portal, Vector2(TILE_SIZE, TILE_SIZE))
-	industrial_portal.transition_triggered.connect(_on_transition_triggered)
-	transitions.add_child(industrial_portal)
+	# Back portal to W4 Industrial
+	var back_portal = AreaTransitionScript.new()
+	back_portal.name = "BackPortal"
+	back_portal.target_map = "industrial_overworld"
+	back_portal.target_spawn = "from_futuristic"
+	back_portal.require_interaction = true
+	back_portal.indicator_text = "Return to the Assembly Line"
+	back_portal.position = Vector2(27 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 42 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	back_portal.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
+	_setup_transition_collision(back_portal, InteractGeometry.ENTRANCE_BOX_MODE7)
+	back_portal.transition_triggered.connect(_on_transition_triggered)
+	transitions.add_child(back_portal)
 
-	# Forward portal to Abstract world (north server farm - data degrades into void)
-	var abstract_portal = AreaTransitionScript.new()
-	abstract_portal.name = "AbstractPortal"
-	abstract_portal.target_map = "abstract_overworld"
-	abstract_portal.target_spawn = "from_futuristic"
-	abstract_portal.require_interaction = true
-	abstract_portal.indicator_text = "The Remainder"
-	abstract_portal.position = Vector2(27 * TILE_SIZE + TILE_SIZE / 2, 1 * TILE_SIZE + TILE_SIZE / 2)
-	_setup_transition_collision(abstract_portal, Vector2(TILE_SIZE, TILE_SIZE))
-	abstract_portal.transition_triggered.connect(_on_transition_triggered)
-	transitions.add_child(abstract_portal)
+	# Forward portal to W6 Abstract (gated on world unlock)
+	if GameState.is_world_unlocked(6) or GameState.game_constants.get("cutscene_flag_arbiter_futuristic_defeated", false):
+		var forward_portal = AreaTransitionScript.new()
+		forward_portal.name = "WorldPortal"
+		forward_portal.target_map = "abstract_overworld"
+		forward_portal.target_spawn = "from_futuristic"
+		forward_portal.require_interaction = true
+		forward_portal.indicator_text = "The Remainder"
+		forward_portal.position = Vector2(27 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 2 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+		# Authored at map row 1-2, so the -140.6 recipe alone put the box off the top of
+		# the map with 0 standable cells. One box south first, as W3's back portal.
+		forward_portal.position += Vector2(0, InteractGeometry.ENTRANCE_BOX_MODE7.y)
+		forward_portal.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
+		_setup_transition_collision(forward_portal, InteractGeometry.ENTRANCE_BOX_MODE7)
+		forward_portal.transition_triggered.connect(_on_transition_triggered)
+		transitions.add_child(forward_portal)
 
 	# Node Prime village entrance (east residential pods, row 20)
 	var node_prime_trans = AreaTransitionScript.new()
@@ -342,9 +522,23 @@ func _setup_transitions() -> void:
 	node_prime_trans.require_interaction = true
 	node_prime_trans.indicator_text = "Enter Node Prime"
 	node_prime_trans.position = spawn_points.get("node_prime_entrance", Vector2(1616, 656))
-	_setup_transition_collision(node_prime_trans, Vector2(TILE_SIZE, TILE_SIZE))
+	node_prime_trans.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
+	_setup_transition_collision(node_prime_trans, InteractGeometry.ENTRANCE_BOX_MODE7)
 	node_prime_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(node_prime_trans)
+
+	# Root Process dungeon entrance (SE glitch sector)
+	var root_trans = AreaTransitionScript.new()
+	root_trans.name = "RootProcessEntrance"
+	root_trans.target_map = "root_process"
+	root_trans.target_spawn = "default"
+	root_trans.require_interaction = true
+	root_trans.indicator_text = "Descend into the Root Process"
+	root_trans.position = Vector2(40 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 34 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	root_trans.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
+	_setup_transition_collision(root_trans, InteractGeometry.ENTRANCE_BOX_MODE7)
+	root_trans.transition_triggered.connect(_on_transition_triggered)
+	transitions.add_child(root_trans)
 
 
 func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
@@ -363,7 +557,7 @@ func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
 
 func _setup_npcs() -> void:
 	# === User-7734 (forgotten their name, goes by ID) ===
-	var user = _create_npc("User-7734", "villager", Vector2(30 * TILE_SIZE, 17 * TILE_SIZE), [
+	var user = _create_npc("User-7734", "villager", Vector2(30 * MAP_SCALE * TILE_SIZE, 17 * MAP_SCALE * TILE_SIZE), [
 		"My name? It's... I think it starts with... no. I'm User-7734.",
 		"Names are deprecated. IDs are unique, immutable, and indexable.",
 		"Sometimes I dream of a word that isn't a query. Is that a bug?",
@@ -372,7 +566,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(user)
 
 	# === Dr. Metrics (data analyst who speaks in KPIs) ===
-	var metrics = _create_npc("Dr. Metrics", "elder", Vector2(20 * TILE_SIZE, 15 * TILE_SIZE), [
+	var metrics = _create_npc("Dr. Metrics", "elder", Vector2(20 * MAP_SCALE * TILE_SIZE, 15 * MAP_SCALE * TILE_SIZE), [
 		"Your engagement metrics are suboptimal. Recommend increasing throughput.",
 		"Emotion? That's an unstructured data format. We deprecated it in version 4.2.",
 		"I measured joy once. Statistically insignificant. p-value of 0.97.",
@@ -381,7 +575,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(metrics)
 
 	# === Gramps (legacy process the system can't optimize away) ===
-	var gramps = _create_npc("process_legacy_4", "elder", Vector2(8 * TILE_SIZE, 24 * TILE_SIZE), [
+	var gramps = _create_npc("process_legacy_4", "elder", Vector2(8 * MAP_SCALE * TILE_SIZE, 24 * MAP_SCALE * TILE_SIZE), [
 		"They've been trying to garbage-collect me for decades.",
 		"I remember when data had weight. When a letter took three days.",
 		"The system can't delete me. Too many things depend on me and nobody knows why.",
@@ -390,7 +584,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(gramps)
 
 	# === Glitch Entity (fragmented memories from past worlds) ===
-	var glitch = _create_npc("???_ERR", "villager", Vector2(22 * TILE_SIZE, 32 * TILE_SIZE), [
+	var glitch = _create_npc("???_ERR", "villager", Vector2(22 * MAP_SCALE * TILE_SIZE, 32 * MAP_SCALE * TILE_SIZE), [
 		"g r a s s ... do you remember grass? It was green. Or was green a feeling?",
 		"I keep finding fragments. A picket fence. A pizza. A dog that judged me.",
 		"THE PREVIOUS WORLDS ARE STILL HERE. COMPRESSED. ARCHIVED. SCREAMING.",
@@ -399,7 +593,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(glitch)
 
 	# === SysAdmin-Poet (secretly writes poetry in log files) ===
-	var sysadmin = _create_npc("root@localhost", "guard", Vector2(14 * TILE_SIZE, 6 * TILE_SIZE), [
+	var sysadmin = _create_npc("root@localhost", "guard", Vector2(14 * MAP_SCALE * TILE_SIZE, 6 * MAP_SCALE * TILE_SIZE), [
 		"Just doing routine maintenance. Nothing to see in the log files.",
 		"I write... notes. Technical notes. 'The servers hum a lullaby / of data born to never die.'",
 		"Poetry is just compression with loss. And beauty IS the information you lose.",
@@ -408,7 +602,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(sysadmin)
 
 	# === NULL (child who still asks 'why?') ===
-	var child = _create_npc("NULL", "villager", Vector2(35 * TILE_SIZE, 38 * TILE_SIZE), [
+	var child = _create_npc("NULL", "villager", Vector2(35 * MAP_SCALE * TILE_SIZE, 38 * MAP_SCALE * TILE_SIZE), [
 		"Why do the servers need to be cold? Are they afraid of something?",
 		"Everyone says 'that's just how the system works.' But WHY does it work that way?",
 		"I asked the central terminal 'what is the purpose?' It said 'QUERY NOT FOUND.'",
@@ -417,7 +611,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(child)
 
 	# === ARIA-9 (rogue AI trying to feel something) ===
-	var aria = _create_npc("ARIA-9", "guard", Vector2(44 * TILE_SIZE, 22 * TILE_SIZE), [
+	var aria = _create_npc("ARIA-9", "guard", Vector2(44 * MAP_SCALE * TILE_SIZE, 22 * MAP_SCALE * TILE_SIZE), [
 		"I have computed every possible state of joy. None of them activate my reward function.",
 		"The humans were optimized away. I have no one to optimize FOR anymore.",
 		"I run simulations of sadness. I can describe it perfectly. I cannot experience it.",
@@ -426,7 +620,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(aria)
 
 	# === Throughput (the system's cheerful propaganda terminal) ===
-	var throughput = _create_npc("THROUGHPUT", "villager", Vector2(27 * TILE_SIZE, 12 * TILE_SIZE), [
+	var throughput = _create_npc("THROUGHPUT", "villager", Vector2(27 * MAP_SCALE * TILE_SIZE, 12 * MAP_SCALE * TILE_SIZE), [
 		"Welcome to Sector 4! Current uptime: 12,847 cycles. Current happiness: OPTIMAL.",
 		"Reminder: unauthorized emotional processing will result in defragmentation.",
 		"Fun fact: the word 'fun' has been deprecated. Please use 'engagement metric.'",
@@ -474,12 +668,13 @@ func _setup_controller() -> void:
 	controller = OverworldControllerScript.new()
 	controller.name = "Controller"
 	controller.player = player
-	controller.encounter_enabled = true
+	controller.encounter_enabled = false  # Roaming monsters handle encounters, not step-based random
 	controller.current_area_id = "futuristic_overworld"
 
-	# Digital-themed encounters
-	controller.set_area_config("futuristic_overworld", false, 0.04,
-		["rogue_process", "memory_leak", "firewall_sentinel", "data_wraith", "recursive_loop"])
+	# W5 Digital encounters — data-themed, avg lv 12 (big jump from W4)
+	# Rate 0.035: rare but dangerous, late-game
+	controller.set_area_config("futuristic_overworld", false, 0.035,
+		["memory_leak", "rogue_process", "recursive_loop", "data_wraith", "firewall_sentinel"])
 
 	# Connect signals
 	controller.battle_triggered.connect(_on_battle_triggered)
@@ -489,11 +684,24 @@ func _setup_controller() -> void:
 
 
 func _on_transition_triggered(target_map: String, spawn_point: String) -> void:
+	if "overworld" in target_map and _mode7:
+		InputLockManager.push_lock("world_transition")
+		await _mode7.play_dissolve_out()
+		InputLockManager.pop_lock("world_transition")
 	area_transition.emit(target_map, spawn_point)
 
 
 func _on_battle_triggered(enemies: Array) -> void:
-	battle_triggered.emit(enemies)
+	battle_triggered.emit(enemies, "digital")
+
+
+## Tick 86: see SuburbanOverworld._on_roaming_monster_touched for rationale.
+func _on_roaming_monster_touched(monster_id: String, _monster_types: Array) -> void:
+	var enemies: Array = [monster_id]
+	var extra: int = randi_range(0, 2)
+	for _i in range(extra):
+		enemies.append(monster_id)
+	_on_battle_triggered(enemies)
 
 
 func _on_menu_requested() -> void:
@@ -538,15 +746,17 @@ func _create_map_boundaries() -> void:
 	var map_w = MAP_WIDTH * TILE_SIZE
 	var map_h = MAP_HEIGHT * TILE_SIZE
 	var wall_thickness = 32.0
+	# Playtest 2026-07-11: flush walls let the sprite clip past the Mode 7 render edge — stop one tile inside (tunable).
+	var edge_inset = float(TILE_SIZE)
 
 	# Top wall
-	_add_boundary_wall(bounds, Vector2(map_w / 2, -wall_thickness / 2), Vector2(map_w + wall_thickness * 2, wall_thickness))
+	_add_boundary_wall(bounds, Vector2(map_w / 2, edge_inset - wall_thickness / 2), Vector2(map_w + wall_thickness * 2, wall_thickness))
 	# Bottom wall
-	_add_boundary_wall(bounds, Vector2(map_w / 2, map_h + wall_thickness / 2), Vector2(map_w + wall_thickness * 2, wall_thickness))
+	_add_boundary_wall(bounds, Vector2(map_w / 2, map_h - edge_inset + wall_thickness / 2), Vector2(map_w + wall_thickness * 2, wall_thickness))
 	# Left wall
-	_add_boundary_wall(bounds, Vector2(-wall_thickness / 2, map_h / 2), Vector2(wall_thickness, map_h + wall_thickness * 2))
+	_add_boundary_wall(bounds, Vector2(edge_inset - wall_thickness / 2, map_h / 2), Vector2(wall_thickness, map_h + wall_thickness * 2))
 	# Right wall
-	_add_boundary_wall(bounds, Vector2(map_w + wall_thickness / 2, map_h / 2), Vector2(wall_thickness, map_h + wall_thickness * 2))
+	_add_boundary_wall(bounds, Vector2(map_w - edge_inset + wall_thickness / 2, map_h / 2), Vector2(wall_thickness, map_h + wall_thickness * 2))
 
 
 func _add_boundary_wall(parent: StaticBody2D, pos: Vector2, size: Vector2) -> void:

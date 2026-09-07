@@ -160,20 +160,30 @@ static func get_personality_description(p: Personality) -> String:
 	return ""
 
 
-## Apply personality stat bonus to a combatant
+## Apply personality stat bonus to a combatant.
+##
+## Pre-fix this mutated the DERIVED stat (combatant.attack += 2) then
+## immediately called recalculate_stats(), which rebuilds derived stats
+## from base_X — so the +2 was wiped the same frame it landed. Every
+## personality bonus in the UI ("+2 ATK" / "+2 DEF" / "+2 MAG" / "+2 SPD"
+## / "+2 MAG +1 SPD") was effectively dead at character creation.
+##
+## Fix: modify the BASE stat so recalculate_stats picks the bonus up
+## like any other source (job mods, level multiplier, passives). The
+## bonus persists across stat recalcs and is intrinsic to the character.
 func apply_stat_bonus(combatant: Combatant) -> void:
 	match personality:
 		Personality.BRAVE:
-			combatant.base_stats["attack"] = combatant.base_stats.get("attack", 10) + 2
+			combatant.base_attack += 2
 		Personality.CAUTIOUS:
-			combatant.base_stats["defense"] = combatant.base_stats.get("defense", 10) + 2
+			combatant.base_defense += 2
 		Personality.SCHOLARLY:
-			combatant.base_stats["magic"] = combatant.base_stats.get("magic", 10) + 2
+			combatant.base_magic += 2
 		Personality.QUICK:
-			combatant.base_stats["speed"] = combatant.base_stats.get("speed", 10) + 2
+			combatant.base_speed += 2
 		Personality.CHARISMATIC:
-			combatant.base_stats["magic"] = combatant.base_stats.get("magic", 10) + 2
-			combatant.base_stats["speed"] = combatant.base_stats.get("speed", 10) + 1
+			combatant.base_magic += 2
+			combatant.base_speed += 1
 	combatant.recalculate_stats()
 
 
@@ -281,5 +291,19 @@ static func create_default_party_with_script(script: GDScript) -> Array:
 	vex.personality = Personality.SCHOLARLY
 	vex.starting_jobs = ["mage", "cleric"]
 	party.append(vex)
+
+	# Bard - Bard/Rogue/Cheerful (performer look)
+	# Internal ID "bard" matches the job_id; see GameLoop._create_party.
+	var bard = script.new("Bard")
+	bard.eye_shape = EyeShape.WIDE
+	bard.eyebrow_style = EyebrowStyle.ARCHED
+	bard.nose_shape = NoseShape.SMALL
+	bard.mouth_style = MouthStyle.SMILE
+	bard.hair_style = HairStyle.LONG
+	bard.hair_color = HAIR_COLORS[5] if HAIR_COLORS.size() > 5 else HAIR_COLORS[2]
+	bard.skin_tone = SKIN_TONES[1]
+	bard.personality = Personality.CHARISMATIC
+	bard.starting_jobs = ["bard", "rogue"]
+	party.append(bard)
 
 	return party

@@ -1,0 +1,281 @@
+extends GutTest
+
+## ×10 numeric re-denomination, 2026-07-29 (struktured ruling: "these HP values are stupidly low
+## ... multiply by 10 practically if we playing along canon Bravely Default / Octopath / FF6").
+##
+## At the World 1 FINAL BOSS the fighter hit for 21 and Mordaine had 1650 HP. Two-digit damage,
+## four-digit boss HP, sixteen rounds.
+##
+## The damage formula is dealt = raw² / (raw + def), homogeneous of degree 1 — scale raw and def
+## together and dealt scales with them. So ×10 on stats AND hp is a PURE RE-DENOMINATION: every
+## fight plays identically, the numbers just read like a JRPG. That property is the entire
+## justification for the change, so it is what this file pins.
+##
+## SCALED: monster/job max_hp, attack, defense, magic, magic_defense · equipment stat_mods attack,
+##         defense, magic, max_hp · ability heal_amount + absorb_amount · item heal_hp + damage
+## NOT SCALED, deliberately:
+##   speed          purely comparative (turn order) — scaling it changes nothing and risks
+##                  the `speed >= 18` assassin threshold
+##   MP economy     max_mp, mp_cost, heal_mp are self-consistent; scaling one side breaks it
+##   exp / gold     progression pacing must not move
+##   *_percent      already scale-free
+##   poison tick    int(max_hp * 0.05), a percentage
+##
+## ONE code constant had to move with the data: BattleManager's tank archetype gated on
+## `max_hp >= 150`. At ×10 every combatant clears that, so the entire roster would have silently
+## reclassified as "tank" — a game-wide AI change hiding inside a "pure re-denomination". It was
+## the ONLY absolute HP threshold in src/, found by scanning for the shape rather than by reading.
+
+const JRPG_FLOOR := 10000
+
+
+func _dealt(raw: int, def_val: int) -> int:
+	return maxi(1, int((raw * raw) / float(maxi(1, raw + def_val))))
+
+
+# ── the property that makes ×10 safe ────────────────────────────────
+
+func test_the_formula_is_scale_invariant() -> void:
+	# Compared against the UNTRUNCATED value, not against 10x the small integer.
+	#
+	# Exact 10x does not hold, and the reason is worth stating: dealt() truncates to int, and at
+	# small numbers that truncation is proportionally large. _dealt(15, 8) computes 9.78 and
+	# returns 9; the x10 form computes 97.8 and returns 97. Asserting big == small * 10 would
+	# demand 90 and fail on a change that is mathematically correct — it would be pinning the
+	# OLD ROUNDING ERROR, not the fight.
+	#
+	# So the honest invariant is that the x10 game is the same fight computed MORE precisely:
+	# every scaled result lands within a unit of ten times the real-valued formula.
+	for raw in [15, 75, 260, 900]:
+		for def_val in [8, 32, 52, 340]:
+			var exact: float = float(raw * raw) / float(raw + def_val)
+			var big := _dealt(raw * 10, def_val * 10)
+			assert_almost_eq(float(big), exact * 10.0, 1.5,
+				"raw=%d def=%d — ×10 must reproduce the real-valued fight, not a different one"
+					% [raw, def_val])
+
+
+func test_round_counts_are_unchanged_at_the_new_scale() -> void:
+	# Measured pre-scale against the live formula: Rat King 8.8 rounds, Umbraxis 12.2, Mordaine
+	# 16.5, using fighter power_strike + mage fire + rogue backstab at the boss's own level.
+	var expected := {"cave_rat_king": 8.8, "shadow_dragon": 12.2, "chancellor_mordaine": 16.5}
+	var mons: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/monsters.json"))
+	var jobs: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/jobs.json"))
+	var abils: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/abilities.json"))
+
+	for boss_id in expected:
+		var boss: Dictionary = mons[boss_id]
+		var bstats: Dictionary = boss["stats"]
+		var lvl: int = int(boss["level"])
+		var mult: float = 1.0 + (lvl - 1) * 0.04
+		var per_round := 0
+		for pair in [["fighter", "power_strike"], ["mage", "fire"], ["rogue", "backstab"]]:
+			var mods: Dictionary = (jobs[pair[0]] as Dictionary)["stat_modifiers"]
+			var ability: Dictionary = abils[pair[1]]
+			var is_mag: bool = str(ability.get("type", "")) == "magic"
+			var stat: int = int(int(mods["magic" if is_mag else "attack"]) * mult)
+			var raw: int = int(stat * float(ability.get("damage_multiplier", 1.0)))
+			var def_key: String = "magic_defense" if is_mag else "defense"
+			per_round += _dealt(raw, int(bstats[def_key]))
+		var rounds: float = float(int(bstats["max_hp"])) / float(maxi(1, per_round))
+		assert_almost_eq(rounds, float(expected[boss_id]), 0.6,
+			"%s must still take ~%.1f rounds — ×10 is a re-denomination, not a rebalance"
+				% [boss_id, expected[boss_id]])
+
+
+# ── the goal: numbers that read like the genre ──────────────────────
+
+func test_the_w1_final_boss_reaches_the_jrpg_band() -> void:
+	var mons: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/monsters.json"))
+	var hp: int = int(((mons["chancellor_mordaine"] as Dictionary)["stats"] as Dictionary)["max_hp"])
+	assert_gte(hp, JRPG_FLOOR,
+		"Mordaine ends World 1 — her HP should read like a JRPG boss, not like an NES one (was 1650)")
+
+
+# ── the exclusions, each pinned so a later pass cannot quietly scale them ──
+
+func test_speed_was_not_scaled() -> void:
+	var mons: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/monsters.json"))
+	var slime_speed: int = int(((mons["slime"] as Dictionary)["stats"] as Dictionary)["speed"])
+	assert_lt(slime_speed, 100,
+		"speed is comparative — scaling it gains nothing and breaks the `speed >= 18` assassin gate")
+
+
+func test_mp_economy_was_not_scaled() -> void:
+	var abils: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/abilities.json"))
+	assert_lt(int((abils["fire"] as Dictionary).get("mp_cost", 0)), 100,
+		"mp_cost must not scale — max_mp did not either, and moving one side breaks the economy")
+
+
+func test_exp_and_gold_were_not_scaled() -> void:
+	var mons: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/monsters.json"))
+	var boss: Dictionary = mons["chancellor_mordaine"]
+	assert_lt(int(boss.get("exp_reward", 0)), 5000,
+		"exp must not scale — the level curve and every gate on it would move")
+
+
+func test_the_tank_threshold_moved_with_the_data() -> void:
+	# Was `assert_string_contains(src, "combatant.max_hp >= 1500")`. Mutation-tested it per
+	# cowir-battle's 6/6 result and it FAILED — on a CORRECT refactor. Rewriting the gate as
+	# `max_hp > 1499` is identical for integers and turned this red, while a pin like that stays
+	# green for any wrong value spelled the same way. Coincidental spelling, in a guard written
+	# hours after citing that exact rule to another lane.
+	#
+	# Asserts the RELATIONSHIP instead: whatever the threshold is, it must sit in the scaled HP
+	# band rather than the pre-scale one. Survives >=1500, >1499, >=1600; fails at 150.
+	var src := FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
+	var gate := RegEx.create_from_string("combatant\\.max_hp\\s*>=?\\s*([0-9]+)")
+	var m := gate.search(src)
+	assert_not_null(m, "the tank archetype gate must still compare max_hp against a literal — "
+		+ "if it was rewritten some other way this guard is measuring nothing")
+	if m == null:
+		return
+	var threshold: int = int(m.get_string(1))
+	# Floor derived from the data: the weakest job in the game at level 1.
+	var jobs: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/jobs.json"))
+	var weakest: int = 999999
+	for jid in jobs:
+		var mods: Variant = (jobs[jid] as Dictionary).get("stat_modifiers")
+		if mods is Dictionary and (mods as Dictionary).has("max_hp"):
+			weakest = mini(weakest, int((mods as Dictionary)["max_hp"]))
+	assert_gt(threshold, weakest,
+		"the tank gate (%d) must sit ABOVE the frailest level-1 job (%d hp) — at the pre-scale "
+		% [threshold, weakest]
+		+ "150 every combatant clears it and the entire roster classifies as tank, changing "
+		+ "enemy AI game-wide")
+
+
+# ── lie-in-the-label ratchet ────────────────────────────────────────
+
+func test_no_description_misstates_its_own_heal_value() -> void:
+	# "Restores 50 HP" on an item that heals 500 is the failure this catches. Generalised rather
+	# than pinned to the five that needed fixing, so the next rescale cannot reintroduce it.
+	var offenders: Array = []
+	var num := RegEx.create_from_string("([0-9]+)\\s*HP")
+	for spec in [["res://data/items.json", "heal_hp"], ["res://data/abilities.json", "heal_amount"]]:
+		var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(spec[0]))
+		for id in data:
+			var entry: Variant = data[id]
+			if not (entry is Dictionary):
+				continue
+			var e: Dictionary = entry
+			var effects: Dictionary = e.get("effects", e)
+			if not effects.has(spec[1]):
+				continue
+			var m := num.search(str(e.get("description", "")))
+			if m != null and int(m.get_string(1)) != int(effects[spec[1]]):
+				offenders.append("%s says %s HP but heals %d" % [id, m.get_string(1), int(effects[spec[1]])])
+	assert_eq(offenders, [], "descriptions contradicting their own effect:\n  %s" % "\n  ".join(offenders))
+
+
+func test_no_monster_prose_misstates_its_own_hp() -> void:
+	# Umbraxis is the dragon who knows he is in a game — "My HP is 1200 because someone typed it"
+	# works ONLY because a player who checks finds it true. After ×10 he was citing a number the
+	# player can see is wrong, which does not read as a stale constant; it reads as the meta-joke
+	# failing, in the one character whose credibility is being right about the implementation.
+	#
+	# The line lived in TWO files (boss_dialogue.json and monsters.json) — the two-sources shape.
+	# Four of my own W3/W4 setup_hints were stale the same way, written hours earlier in this
+	# session. Prose asserting a stat has no mechanical coupling to the stat, so nothing but this
+	# scan can catch it.
+	var offenders: Array = []
+	var hp_claim := RegEx.create_from_string("([0-9]{2,6})\\s*HP")
+	var mons: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/monsters.json"))
+	for id in mons:
+		var entry: Dictionary = mons[id]
+		var real_hp: int = int((entry.get("stats", {}) as Dictionary).get("max_hp", 0))
+		var texts: Array = [str((entry.get("one_shot", {}) as Dictionary).get("setup_hint", ""))]
+		for line in ((entry.get("dialogue", {}) as Dictionary).get("opening_lines", []) as Array):
+			texts.append(str(line))
+		for text in texts:
+			for m in hp_claim.search_all(text):
+				if int(m.get_string(1)) != real_hp:
+					offenders.append("%s claims '%s HP' but has %d" % [id, m.get_string(1), real_hp])
+	assert_eq(offenders, [], "prose contradicting its own stat block:\n  %s" % "\n  ".join(offenders))
+
+
+func test_umbraxis_still_names_a_true_number() -> void:
+	# Pinned separately from the sweep above because it lives in a SECOND file the sweep cannot
+	# see — the same line is authored in both boss_dialogue.json and monsters.json, and fixing
+	# one is indistinguishable from fixing both until you look.
+	var mons: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/monsters.json"))
+	var hp: int = int(((mons["shadow_dragon"] as Dictionary)["stats"] as Dictionary)["max_hp"])
+	var bd := FileAccess.get_file_as_string("res://data/boss_dialogue.json")
+	assert_string_contains(bd, "My HP is %d because someone typed it" % hp,
+		"boss_dialogue.json is a SECOND home for this line — the joke needs the number true in "
+		+ "both places, and monsters.json agreeing proves nothing about this file")
+
+
+func test_no_prose_grants_a_bonus_smaller_than_the_game_can_produce() -> void:
+	# My first prose sweep matched `\d+\s*(HP|MP|%)` and found five offenders. It never looked at
+	# DEF / ATK / MAG at all — complete for the direction I was thinking in, silent about every
+	# other. cowir-story found "+3 DEF" on rangers_cloak that my regex could not have seen.
+	#
+	# These live on cat-4 items and grant_item steps with EMPTY effects, so nothing is wrong at
+	# runtime today. That makes them WORSE, not better: they are documentation of future intent,
+	# and whoever promotes them to real gear follows the stale number and reintroduces pre-scale
+	# values into a post-scale game. A wrong spec outlives a wrong value.
+	#
+	# Floor derived from the data, not chosen: the smallest positive scaled stat_mod any real
+	# equipment grants. A prose bonus below it is below anything the game can produce.
+	var floor_val: int = 9999
+	var eq: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/equipment.json"))
+	for category in eq:
+		for item_id in (eq[category] as Dictionary):
+			var mods: Variant = ((eq[category] as Dictionary)[item_id] as Dictionary).get("stat_mods")
+			if mods is Dictionary:
+				for stat in (mods as Dictionary):
+					if stat in ["attack", "defense", "magic", "max_hp"]:
+						var v: int = int((mods as Dictionary)[stat])
+						if v > 0:
+							floor_val = mini(floor_val, v)
+	assert_lt(floor_val, 9999, "must find at least one positive equipment bonus to derive a floor")
+
+	# SPD / EVA / MP / AP are absent by design — none of them were scaled. Percentages are
+	# scale-free and never match. The second alternative catches the SPELLED-OUT form
+	# ("+20 to party defense"), which is the eleventh offender in this class and the one that beat
+	# both hand-sweeps AND the first version of this ratchet — it names the stat in prose rather
+	# than as an abbreviation, so an abbreviation-only pattern is blind to it by construction.
+	#
+	# SCOPED TO SPEC-BEARING CORPORA (items.json + cutscene grant_item descriptions). bestiary.json
+	# is deliberately excluded: meta_knight's "Gains +2 damage against any character who quicksaved
+	# within the last minute" is flavour with no mechanical backing, and the pettiness of +2 IS the
+	# joke — scaling it to +20 would make it a real bonus and kill the line. Same ruling as
+	# cowir-cutscenes' world5_chapter2 "You'd deal three damage", where an obsolete enemy being
+	# pathetic is the entire subject. A number in prose is not automatically a stat, and a ratchet
+	# that cannot tell those apart will eventually demand that a joke be wrong.
+	var claim := RegEx.create_from_string(
+		"\\+([0-9]{1,4})\\s*(DEF|ATK|MAG|max HP)\\b|\\+([0-9]{1,4})\\s+to\\s+(?:party\\s+)?(defense|attack|magic)\\b")
+	var offenders: Array = []
+	var files: Array = ["res://data/items.json"]
+	var dir := DirAccess.open("res://data/cutscenes")
+	if dir != null:
+		for f in dir.get_files():
+			if f.ends_with(".json"):
+				files.append("res://data/cutscenes/" + f)
+	for path in files:
+		var raw := FileAccess.get_file_as_string(path)
+		for m in claim.search_all(raw):
+			# Two alternatives: abbreviated form fills groups 1/2, spelled-out form fills 3/4.
+			var num_s: String = m.get_string(1) if m.get_string(1) != "" else m.get_string(3)
+			var stat_s: String = m.get_string(2) if m.get_string(2) != "" else m.get_string(4)
+			if num_s != "" and int(num_s) < floor_val:
+				offenders.append("%s: '+%s %s' is below the %d the game's weakest gear grants"
+					% [str(path).get_file(), num_s, stat_s, floor_val])
+	assert_eq(offenders, [], "prose promising a pre-scale bonus:\n  %s" % "\n  ".join(offenders))
+
+
+func test_the_bonus_floor_ratchet_can_see_a_stale_claim() -> void:
+	# Positive control — this regex is the half my HP-only version was missing entirely.
+	var claim := RegEx.create_from_string("\\+([0-9]{1,4})\\s*(DEF|ATK|MAG|max HP)\\b")
+	var m := claim.search("light-armor slot, +4 EVA +3 DEF, leather-armor tier")
+	assert_not_null(m, "the ratchet must match the authored '+N DEF' shape it exists to catch")
+	assert_eq(int(m.get_string(1)), 3, "and extract the figure it compares against the floor")
+
+
+func test_the_label_ratchet_can_see_a_mismatch() -> void:
+	# Positive control — an empty offender list and a broken regex read identically.
+	var num := RegEx.create_from_string("([0-9]+)\\s*HP")
+	var m := num.search("Restores 50 HP")
+	assert_not_null(m, "the ratchet's regex must actually match the authored description shape")
+	assert_eq(int(m.get_string(1)), 50, "and must extract the number it compares against")

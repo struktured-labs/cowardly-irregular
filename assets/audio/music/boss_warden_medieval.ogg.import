@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://cqbdvc01xyijg"
+path="res://.godot/imported/boss_warden_medieval.ogg-b5b32d1746c560a2ab0b614c15fe9497.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/boss_warden_medieval.ogg"
+dest_files=["res://.godot/imported/boss_warden_medieval.ogg-b5b32d1746c560a2ab0b614c15fe9497.oggvorbisstr"]
 
 [params]
 

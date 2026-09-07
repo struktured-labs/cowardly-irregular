@@ -9,14 +9,29 @@ const OverworldPlayerScript = preload("res://src/exploration/OverworldPlayer.gd"
 const OverworldControllerScript = preload("res://src/exploration/OverworldController.gd")
 const AreaTransitionScript = preload("res://src/exploration/AreaTransition.gd")
 const MonsterSpawnerScript = preload("res://src/exploration/MonsterSpawner.gd")
+const MapImageLoaderScript = preload("res://src/exploration/MapImageLoader.gd")
+
+## The map is a 1px-per-tile PNG, not an ASCII literal -- see MapImageLoader for why.
+const MAP_IMAGE: String = "res://data/maps/overworld_w1.png"
+## Which palette decodes MAP_IMAGE. Required: the same character means different things per world
+const MAP_WORLD: String = "medieval"
+## The 2026-08-22 resize (14f6722d) doubled the MAP and updated exactly five values;
+## every literal content coordinate below it (chests, patrols, signs, landmarks, hidden
+## passages, Madame Orrery) stayed in the old 100x70 frame -- proven by the H markers
+## sitting at exactly 2x the passage literals. Legacy tile coords scale by this at their
+## tile->pixel conversion. Sites reading spawn_points or the PNG scan are already right.
+const MAP_SCALE: int = 2
 
 signal exploration_ready()
-signal battle_triggered(enemies: Array)
+signal battle_triggered(enemies: Array, terrain: String)
 signal area_transition(target_map: String, spawn_point: String)
 
 ## Map dimensions (in tiles)
-const MAP_WIDTH: int = 100
-const MAP_HEIGHT: int = 70
+const MAP_WIDTH: int = 200
+const MAP_HEIGHT: int = 140
+
+## The painted character grid, kept so encounter zones can read the authored biome
+var map_rows: Array[String] = []
 const TILE_SIZE: int = 32
 
 ## Scene components
@@ -42,11 +57,22 @@ var _last_tile_pos: Vector2i = Vector2i(-1, -1)
 ## Mode 7 perspective
 var mode7_enabled: bool = true
 var _mode7: Mode7Overlay
+var _zone_popup: ZoneNamePopup
+var _danger_zone: DangerZone
+var _minimap: OverworldMinimap
+var _zone_particles: ZoneParticles
+var _quest_tracker: QuestTracker
+var _weather: WeatherSystem
+var _border_indicator: MapBorderIndicator
+var _objective_arrow: ObjectiveArrow
+var _threat_meter: ThreatMeter
 
 
 func _ready() -> void:
 	_setup_scene()
 	_generate_map()
+	# msg 2830: terrain colliders shifted to match the warped render.
+	Mode7Overlay.apply_terrain_collision_alignment(tile_map, mode7_enabled)
 	_setup_transitions()
 	_setup_player()
 	_setup_camera()
@@ -59,8 +85,85 @@ func _ready() -> void:
 		_mode7.apply_preset("medieval")
 		_mode7.setup(self, player)
 
-	if SoundManager:
-		SoundManager.play_area_music("overworld")
+	_zone_popup = ZoneNamePopup.new()
+	add_child(_zone_popup)
+	_zone_popup.setup(self)
+
+	# Danger zone warnings near boss caves
+	var danger_pts: Array[Vector2] = []
+	for key in ["cave_entrance", "ice_dragon_cave", "shadow_dragon_cave", "lightning_dragon_cave", "fire_dragon_cave", "backwards_warren_cave"]:
+		if spawn_points.has(key):
+			danger_pts.append(spawn_points[key])
+	if not danger_pts.is_empty():
+		_danger_zone = DangerZone.new()
+		add_child(_danger_zone)
+		_danger_zone.setup(self, player, danger_pts)
+
+	# Minimap with transition dots
+	_minimap = OverworldMinimap.new()
+	add_child(_minimap)
+	_minimap.setup(self, player, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE, spawn_points)
+	_minimap.set_objective(_get_objective_position())
+
+	# Zone ambient particles (leaves, snow, dust, etc.)
+	_zone_particles = ZoneParticles.new()
+	add_child(_zone_particles)
+	_zone_particles.setup(self, player)
+
+	# Quest objective tracker
+	_quest_tracker = QuestTracker.new()
+	add_child(_quest_tracker)
+	_quest_tracker.setup(self)
+
+	# Threat meter (monster proximity)
+	_threat_meter = ThreatMeter.new()
+	add_child(_threat_meter)
+	_threat_meter.setup(self, player, monster_spawner)
+
+	# Weather effects (rain, fog, etc.)
+	_weather = WeatherSystem.new()
+	add_child(_weather)
+	_weather.setup(self, player, "medieval")
+
+	# Map edge indicators
+	_border_indicator = MapBorderIndicator.new()
+	add_child(_border_indicator)
+	_border_indicator.setup(self, player, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE)
+
+	# Objective arrow (screen-edge directional indicator)
+	_objective_arrow = ObjectiveArrow.new()
+	add_child(_objective_arrow)
+	_objective_arrow.setup(self, player)
+	_objective_arrow.set_target(_get_objective_position())
+
+	# Signposts at key intersections for navigation
+	_place_signposts()
+
+	# Visual landmarks between towns
+	_place_landmarks()
+
+	# Village markers (visible building clusters at entrances)
+	_place_village_markers()
+
+	# Wandering NPCs on paths between towns
+	_place_wanderers()
+
+	# Treasure chests with loot
+	_place_treasure_chests()
+
+	# Ambient details (chimney smoke, campfire glow)
+	_place_ambient_effects()
+
+	# Runtime lookup keeps this file preload-safe for tests.
+	var sm = get_tree().root.get_node_or_null("SoundManager") if is_inside_tree() else null
+	if sm:
+		sm.play_area_music("overworld")
+
+	# First-time tutorial hints. Both are idempotent (TutorialHint tracks
+	# _shown_hints statically) so calling them on every overworld load is
+	# safe — only the very first visit per session actually surfaces a hint.
+	TutorialHints.show(self, "movement")
+	TutorialHints.show(self, "quest_log")
 
 	exploration_ready.emit()
 
@@ -68,13 +171,24 @@ func _ready() -> void:
 func _process(_delta: float) -> void:
 	if player:
 		_update_encounter_zone(player.position)
+		if _minimap:
+			_minimap.update(player.position)
+		if _objective_arrow:
+			_objective_arrow.update(player.position)
+		if _zone_particles:
+			_zone_particles.update_position(player.position)
+		if _border_indicator:
+			_border_indicator.update(player.position)
+		if _threat_meter:
+			_threat_meter.update(player.position)
+	if _danger_zone:
+		_danger_zone.process(_delta)
+	if _quest_tracker:
+		_quest_tracker.update()
 	if _mode7:
-		# Register roaming monsters as billboards (deduplicates automatically)
-		var roaming = get_node_or_null("RoamingMonsters")
-		if roaming:
-			for child in roaming.get_children():
-				_mode7.register_billboard(child)
 		_mode7.process_frame()
+	if _weather:
+		_weather.process(_delta)
 
 
 func _exit_tree() -> void:
@@ -116,108 +230,27 @@ func _generate_map() -> void:
 	## W=Mountains  CENTER=Grassland  E=Coast
 	## SW=Desert    S=Rivers/Bridges  SE=Volcanic
 	##
-	## Legend:
-	## ~ = water, M = mountain, . = path, g = grass, F = forest, B = bridge
-	## C = whispering cave, V = harmonia village
-	## i = ice/snow, s = sand/desert, S = swamp, d = dark/corrupted
-	## 1 = ice dragon cave, 2 = shadow dragon cave
-	## 3 = lightning dragon cave, 4 = fire dragon cave
-	## W = frosthold, E = eldertree, G = grimhollow, D = sandrift, I = ironhaven
-	## P = steampunk portal
+	## The character legend lives in data/maps/map_palette.json, which is the file the
+	## loader and the exporter both read -- a copy here would be a second source that
+	## drifts silently, and it already had one: this comment omitted "c" (coast) and "l"
+	## (lava) while both are used 126 and 108 times in the map.
 
 	print("Generating overworld map %dx%d..." % [MAP_WIDTH, MAP_HEIGHT])
 
-	var map_data: Array[String] = [
-		# Row 0-9: Northern region (Ice NW, Forest N, Swamp NE)
-		"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",  # 0
-		"~~MMMMMMiiiiiiiiii~~~FFFFFFFFFFFFFFFFFFFFFFFFFFFFF~~~~~~~~~~~~~SSSSSSSSSSdddddddddddd~~~~~~~~~~~~~~~",  # 1
-		"~~MMMMMiiiiiiiiiii~~~FFFFFFFFFFFFFFFFFFFFFFFFFFFF~~~~~~~~~~~~~~SSSSSSSSSdddddddddddddd~~~~~~~~~~~~~~",  # 2
-		"~~MMMMiiii.iiiiiii~~FFFFFFFFFFgFFFFFFFFFFFFFFFFF~~~~~~~~~~~~~~~SSSSSSSSddddddddddddddd~~~~~~~~~~~~~~",  # 3
-		"~~MMMiii..1.iiiiii~~FFFFFFFgggggFFFFFFFFFFFFFFFF~~~~~~~~~~~~~~~SSSSSSSdddddd..ddddddddd~~~~~~~~~~~~~",  # 4
-		"~~MMiiii....iiiiiii~FFFFFFgggggggFFFFFFFFFFFFFFF~~~~~~~~~~~~~~~SSSSSSddddd.....dddddddd~~~~~~~~~~~~~",  # 5
-		"~~MMiii..W..iiiiii~~FFFFFggggEggggFFFFFFFFFFFFF~~~~~~~~~~~~~~~~SSSSSdddd...2...ddddddd~~~~~~~~~~~~~~",  # 6
-		"~~MMiiii....iiiii~~~FFFFggggg.gggggFFFFFFFFFFFF~~~~~~~~~~~~~~~~SSSSdddd.........dddddd~~~~~~~~~~~~~~",  # 7
-		"~~MMMiii..iiiii~~~~~FFFgggg.....ggggFFFFFFFFFFF~~~~~~~~~~~~~~~~SSSddddd..G......ddddd~~~~~~~~~~~~~~~",  # 8
-		"~~MMMMiiiiiiii~~~~~~FFggg.........gggFFFFFFFFFF~~~~~~~~~~~~~~~~SSdddddd.........ddddd~~~~~~~~~~~~~~~",  # 9
-		# Row 10-19: Transition from north to central
-		"~~MMMMMiiiii~~~~~~~~~Fgg...........ggFFFFFFFFF~~~~~~~~~~~~~~~~~Sddddddd........dddddd~~~~~~~~~~~~~~~",  # 10
-		"~~~MMMMiii~~~~~~~~~~~Fg.............gFFFFFFFF~~~~~~~~~~~~~~~~~~Sdddddd.......dddddd~~~~~~~~~~~~~~~~~",  # 11
-		"~~~~MMMii~~~~~~~~~~~~g..............gFFFFFFF~~~~~~~~~~~~~~~~~~~Sddddd......ddddddd~~~~~~~~~~~~~~~~~~",  # 12
-		"~~~~~MMi~~~~~~~~~~~~~g..............gFFFFFF~~~~~~~~~~~~~~~~~~~~SSddd.....ddddddd~~~~~~~~~~~~~~~~~~~~",  # 13
-		"~~~~~~M~~~~~~~~~~~~~~................FFFFF~~~~~~~~~~~~~~~~~~~~~SSdd....ddddddd~~~~~~~~~~~~~~~~~~~~~~",  # 14
-		"~~~~~~~~~~~~~~~~~~~~~~~~~.........................................dd..ddddd~~~~~~~~~~~~~~~~~~~~~~~~~",  # 15
-		"~~~~~~~~~~~~~~~~~~~~~~~~~~.........................................................................",  # 16
-		"~~~~~~~~~~~~~~~~~~~~~~~~~~.........................................................................",  # 17
-		"~~~~~~~~~~~~~~~~~~~~~~~~~~.........................................................................",  # 18
-		"~~~~~~~~~~~~~~~~~~~~~~~~~~.........................................................................",  # 19
-		# Row 20-29: Central grassland (Harmonia Village + Whispering Cave)
-		"~~MMMMM~~~~~~~~~~~~~~~~~~~~~~~....gggggggggggg.........gggggg......................................",  # 20
-		"~~MC..........~~~~~~~~~~~~~~~~~...ggggggggggggg........gggggggg.....................................",  # 21
-		"~~MM..~~~~~~~~~~~~~~~~~~~~~~~~....ggggggggggggggg.....gggggggggg...................................",  # 22
-		"~~~~..~~~~.....~~~~~~~~~~~~~~~~...ggggggggggggggg....ggggggggggg................................ccc",  # 23
-		"~~~~..~~.......~~~~~~~~~~~~~~~~...gggggggggggggg....gggggggggggg...............................cccc",  # 24
-		"~~~~...V.......~~~~~~~~~~~~~~~~...ggggggggggggg....ggggggggggg................................ccccc",  # 25
-		"~~~~~~~.......~~~~~~~~~~~~~~~~~...gggggggggggg....gggggggggg.................................cccccc",  # 26
-		"~~~~~~~........~~~~~~~~~~~~~~~~...ggggggggggg....ggggggggg..................................ccccccc",  # 27
-		"~~~~~~~.......gggggg...............gggggggggg...gggggggg...................................cccccccc",  # 28
-		"~~~~~~~~.....gggggggg..............ggggggggg...ggggggg....................................ccccccccc",  # 29
-		# Row 30-39: Central-south transition
-		"~~~~~~~~....ggggggggggg.............gggggggg..ggggggg....................................cccccccccc",  # 30
-		"~~~~~~~~~..ggggggggggggg............ggggggg..gggggg.....................................ccccccccccc",  # 31
-		"~~~~~~~~~~ggggggggggggggg...........gggggg..ggggg......................................cccccccccccc",  # 32
-		"~~~~~~~~~~ggggggggggggggg............ggggg.gggg.......................................ccccccc~~~ccc",  # 33
-		"~~~~~~~~~ggggggggggggggg.............gggg.ggg........................................cccccc~~~~~cc",  # 34
-		"~~~~~~~~gggggggggggggg................ggg.gg........................................ccccc~~~~~~~~c",  # 35
-		"~~~~~~~ggggggggggggg...................gg.g........................................ccccc~~~~~~~~~~",  # 36
-		"~~~~~~gggggggggggg..........................................................................~~~~~~",  # 37
-		"~~~~~ggggggggg.................................................................................~~~~",  # 38
-		"~~~~gggggggg....................................................................................~~~",  # 39
-		# Row 40-49: Southern transition (Desert SW, Rivers, Volcanic SE)
-		"~~~ggggggg.......................................................................................~~",  # 40
-		"~~gggggg.........................................................................................~",  # 41
-		"~ggggg............................................................................................",  # 42
-		"gggg..............................................................................................",  # 43
-		"ggg...............................................................................................",  # 44
-		"gg................................................................................................",  # 45
-		"g..............................~~...............~~.............................................~~~~",  # 46
-		"..............................~~~~.............~~~~...........................................~~~~~~",  # 47
-		".............................~~~~~~...........~~~~~~.........................................~~~~~~~~",  # 48
-		"............................~~~~~~~~.........~~~~~~~~........................................~~~~~~~~",  # 49
-		# Row 50-59: Desert and Volcanic regions
-		"ssssssssssssssss............~~~~~~~~~~BBB~~~~~~~~~~............................MMMMMM~~~~MMM~~~~~~~~",  # 50
-		"sssssssssssssssss..........~~~~~~~~~~~...~~~~~~~~~~...........................MMMMMMlllMMMMM~~~~~~~~",  # 51
-		"ssssssssssssssssss.........~~~~~~~~~~~...~~~~~~~~~~..........................MMMMMlllllMMMMM~~~~~~~~",  # 52
-		"ssssssssss..sssssss........~~~~~~~~~~~...~~~~~~~~~~.........................MMMMlllllllMMMMMM~~~~~~~",  # 53
-		"sssssssss....sssssss.......~~~~~~~~~~~...~~~~~~~~~~........................MMMMllll.llllMMMMM~~~~~~~",  # 54
-		"ssssssss..D...ssssss.......~~~~~~~~~~~...~~~~~~~~~~.......................MMMlllll...lllMMMM~~~~~~~~",  # 55
-		"sssssss.......ssssss.......~~~~~~~~~~~...~~~~~~~~~~......................MMlllll..4..lllMMM~~~~~~~~~",  # 56
-		"ssssssss..3..sssssss.......~~~~~~~~~~~.P.~~~~~~~~~~.....................MMlllll......lllMM~~~~~~~~~~",  # 57
-		"sssssssss....sssssss.......~~~~~~~~~~~...~~~~~~~~~~....................MMllllll..I..llllMM~~~~~~~~~~",  # 58
-		"ssssssssss..sssssssss......~~~~~~~~~~~...~~~~~~~~~~...................MMlllllll.....lllMM~~~~~~~~~~~",  # 59
-		# Row 60-69: Southern edge
-		"sssssssssssssssssssss......~~~~~~~~~~~~.~~~~~~~~~~~~..................MMMllllllllllllllMM~~~~~~~~~~~",  # 60
-		"ssssssssssssssssssssss.....~~~~~~~~~~~~~~~~~~~~~~~~~.................MMMMlllllllllllMMM~~~~~~~~~~~~",  # 61
-		"sssssssssssssssssssssss....~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.............MMMMMlllllllMMMMM~~~~~~~~~~~~~",  # 62
-		"ssssssssssssssssssssssss...~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~............MMMMMMlllllMMMMMM~~~~~~~~~~~~~",  # 63
-		"sssssssssssssssssssssssss..~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~...........MMMMMMMlllMMMMMMM~~~~~~~~~~~~~~",  # 64
-		"ssssssssssssssssssssssssss.~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~..........MMMMMMMMMMMMMMMM~~~~~~~~~~~~~~",  # 65
-		"ssssssssssssssssssssssssss~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.........MMMMMMMMMMMMMM~~~~~~~~~~~~~~~~",  # 66
-		"ssssssssssssssssssssssssss~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~........MMMMMMMMMMMMM~~~~~~~~~~~~~~~~~",  # 67
-		"ssssssssssssssssssssssssss~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.......MMMMMMMMMMMM~~~~~~~~~~~~~~~~~~",  # 68
-		"~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~",  # 69
-	]
+	map_rows.clear()
+	# str() coercion, not `= load_rows(...)`: a generic-to-typed assign ABORTS this function
+	for row in MapImageLoaderScript.load_rows(MAP_IMAGE, MAP_WORLD):
+		map_rows.append(str(row))
 
-	# Ensure map_data matches expected dimensions
-	while map_data.size() < MAP_HEIGHT:
-		var pad = ""
-		for _x in range(MAP_WIDTH):
-			pad += "~"
-		map_data.append(pad)
+	# no padding: the old water-pad turned a failed load into a silent ocean
+	if map_rows.size() != MAP_HEIGHT:
+		push_error("[MAP] %s yielded %d rows, expected %d -- refusing to pad" % [MAP_IMAGE, map_rows.size(), MAP_HEIGHT])
+		return
 
-	# Convert map_data to tiles
+	# Convert the painted grid to tiles
 	var tile_counts = {}
 	for y in range(MAP_HEIGHT):
-		var row = map_data[y] if y < map_data.size() else ""
+		var row = map_rows[y] if y < map_rows.size() else ""
 		for x in range(MAP_WIDTH):
 			var char = row[x] if x < row.length() else "~"
 			var tile_type = _char_to_tile_type(char)
@@ -232,24 +265,47 @@ func _generate_map() -> void:
 	print("Tile counts: ", tile_counts)
 
 	# Default spawn: central grassland (column 40, row 25 — clear of water)
-	spawn_points["default"] = Vector2(40 * TILE_SIZE + TILE_SIZE / 2, 25 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["default"] = Vector2(80 * TILE_SIZE + TILE_SIZE / 2, 50 * TILE_SIZE + TILE_SIZE / 2)
+
+
+## Markers sit under ridge; the Mode 7 collider shift drops that ridge onto the marker tile, so these arrivals step aside to ground that is clear in the DISPLACED frame.
+const SPAWN_CLEARANCE := {"1": Vector2i(0, -1), "4": Vector2i(-1, -1), "I": Vector2i(1, 2)}
 
 
 func _register_spawn_point(char: String, x: int, y: int) -> void:
-	var pos = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
+	var off: Vector2i = SPAWN_CLEARANCE.get(char, Vector2i.ZERO)
+	var pos = Vector2((x + off.x) * TILE_SIZE + TILE_SIZE / 2, (y + off.y) * TILE_SIZE + TILE_SIZE / 2)
 	match char:
 		"C": spawn_points["cave_entrance"] = pos
 		"V": spawn_points["village_entrance"] = pos
-		"1": spawn_points["ice_dragon_cave"] = pos
-		"2": spawn_points["shadow_dragon_cave"] = pos
-		"3": spawn_points["lightning_dragon_cave"] = pos
-		"4": spawn_points["fire_dragon_cave"] = pos
+		"1":
+			spawn_points["ice_dragon_cave"] = pos
+			spawn_points["ice_cave_entrance"] = pos
+		"2":
+			spawn_points["shadow_dragon_cave"] = pos
+			spawn_points["shadow_cave_entrance"] = pos
+		"3":
+			spawn_points["lightning_dragon_cave"] = pos
+			spawn_points["lightning_cave_entrance"] = pos
+		"4":
+			spawn_points["fire_dragon_cave"] = pos
+			spawn_points["fire_cave_entrance"] = pos
 		"W": spawn_points["frosthold_entrance"] = pos
 		"E": spawn_points["eldertree_entrance"] = pos
 		"G": spawn_points["grimhollow_entrance"] = pos
 		"D": spawn_points["sandrift_entrance"] = pos
 		"I": spawn_points["ironhaven_entrance"] = pos
-		"P": spawn_points["steampunk_portal"] = pos
+		"P":
+			spawn_points["steampunk_portal"] = pos
+			# W2 return portal aliases — same physical spot.
+			spawn_points["suburban_portal"] = pos
+		"5": spawn_points["backwards_warren_cave"] = pos  # optional counter-intuitive side dungeon
+	# Castle Harmonia portal — placed adjacent to Whispering Cave on the central map.
+	# 'C' is the cave marker; we anchor the castle portal one tile east of it.
+	if char == "C":
+		var castle_pos = Vector2((x + 2) * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
+		spawn_points["castle_entrance"] = castle_pos
+		spawn_points["castle_harmonia_entrance"] = castle_pos
 
 
 func _char_to_tile_type(char: String) -> int:
@@ -273,6 +329,7 @@ func _char_to_tile_type(char: String) -> int:
 		"1", "2", "3", "4": return TileGeneratorScript.TileType.CAVE_ENTRANCE
 		"W", "E", "G", "D", "I": return TileGeneratorScript.TileType.VILLAGE_GATE
 		"P": return TileGeneratorScript.TileType.BRIDGE  # Portal uses bridge tile
+		"H": return TileGeneratorScript.TileType.PATH  # Hidden passage — walkable; HiddenPassage sprite disguises it
 		_: return TileGeneratorScript.TileType.GRASS
 
 
@@ -280,6 +337,69 @@ func _get_atlas_coords(tile_type: int) -> Vector2i:
 	var tile_id = TileGeneratorScript.get_tile_id(tile_type)
 	return Vector2i(tile_id % 5, tile_id / 5)
 
+
+const W1_SPINE_FLAGS: Array[String] = [
+	"rat_king_defeated",
+	"fire_dragon_defeated",
+	"ice_dragon_defeated",
+	"lightning_dragon_defeated",
+	"shadow_dragon_defeated",
+]
+
+
+func _castle_is_earned(gs: Node) -> bool:
+	"""Castle Harmonia opens only after the whole W1 spine; a player who already beat Mordaine keeps access."""
+	if gs.is_story_flag_set("world1_mordaine_defeated"):
+		return true
+	for flag in W1_SPINE_FLAGS:
+		if not gs.is_story_flag_set(flag):
+			return false
+	return true
+
+
+func w1_spine_remaining(gs: Node) -> Array[String]:
+	"""Spine flags still unset, in order — for telegraphing which bosses remain."""
+	var remaining: Array[String] = []
+	if gs == null or not gs.has_method("is_story_flag_set"):
+		return remaining
+	for flag in W1_SPINE_FLAGS:
+		if not gs.is_story_flag_set(flag):
+			remaining.append(flag)
+	return remaining
+
+
+## Cave names for the four elemental seals, matching the AreaTransition indicator strings.
+const SPINE_SEAL_NAMES := {
+	"fire_dragon_defeated": "the Infernal Grotto",
+	"ice_dragon_defeated": "the Glacial Sanctum",
+	"lightning_dragon_defeated": "the Stormspire",
+	"shadow_dragon_defeated": "the Abyssal Hollow",
+}
+
+
+## The post-Rat-King line promised an open castle; the spine gate makes that false until all five fall.
+func _spine_telegraph_text(gs: Node) -> String:
+	if gs == null:
+		return "The castle showed itself on the eastern ridge, then sealed itself just as fast."
+	var left: Array[String] = w1_spine_remaining(gs)
+	left.erase("rat_king_defeated")
+	if left.is_empty():
+		return "Every seal is broken. The castle stands open on the eastern ridge — I'd think twice before walking in."
+	var names: Array[String] = []
+	for flag in left:
+		names.append(str(SPINE_SEAL_NAMES.get(flag, flag)))
+	return "The castle showed itself on the eastern ridge, then sealed itself just as fast. Still burning: %s." % ", ".join(names)
+
+
+## Rewrites the rat-king line in place so it keeps its slot in the last-match-wins order.
+func _with_spine_telegraph(hints: Array, gs: Node) -> Array:
+	var out: Array = []
+	for hint in hints:
+		var entry: Dictionary = (hint as Dictionary).duplicate()
+		if entry.get("flag", "") == "rat_king_defeated":
+			entry["text"] = _spine_telegraph_text(gs)
+		out.append(entry)
+	return out
 
 func _setup_transitions() -> void:
 	# Harmonia Village
@@ -300,6 +420,8 @@ func _setup_transitions() -> void:
 		spawn_points.get("lightning_dragon_cave", Vector2.ZERO), "Enter Stormspire")
 	_add_area_transition("FireDragonCave", "fire_dragon_cave", "entrance",
 		spawn_points.get("fire_dragon_cave", Vector2.ZERO), "Enter Infernal Grotto")
+	_add_area_transition("BackwardsWarren", "backwards_warren", "entrance",
+		spawn_points.get("backwards_warren_cave", Vector2.ZERO), "Enter the Backwards Warren")
 
 	# Villages
 	_add_area_transition("FrostholdEntrance", "frosthold_village", "entrance",
@@ -313,23 +435,56 @@ func _setup_transitions() -> void:
 	_add_area_transition("IronhavenEntrance", "ironhaven_village", "entrance",
 		spawn_points.get("ironhaven_entrance", Vector2.ZERO), "Enter Ironhaven")
 
-	# Steampunk portal
-	_add_area_transition("SteampunkPortal", "steampunk_overworld", "entrance",
-		spawn_points.get("steampunk_portal", Vector2.ZERO), "??? Gateway ???")
+	# World progression portal — leads to next world (W2 Suburban)
+	# Only visible after W1 boss (Mordaine) is defeated, or world 2+ is unlocked.
+	# Tick 278: was reading dead story_flag "w1_boss_defeated" (no
+	# writer in src/) — the alternative path was permanently false.
+	# Mordaine's real defeat flag is cutscene_flag_world1_mordaine
+	# _defeated in game_constants (set by CastleHarmonia's
+	# defeat_cutscene_flags ratchet).
+	var gs = _get_game_state()
+	if gs and (gs.is_world_unlocked(2) or gs.game_constants.get("cutscene_flag_world1_mordaine_defeated", false)):
+		_add_area_transition("WorldPortal", "suburban_overworld", "entrance",
+			spawn_points.get("steampunk_portal", Vector2.ZERO), "Enter the Mundane Sprawl")
+
+	# Castle Harmonia — gated on rat_king_defeated (Rat King reveals castle).
+	# Tick 335: dual-namespace check via GameState.is_story_flag_set so a
+	# save-format migration or debug toggle that set ONLY cutscene_flag_
+	# rat_king_defeated still reveals the castle. Pre-fix bare
+	# get_story_flag would silently miss that and the player would be
+	# stranded mid-W1.
+	if gs and gs.has_method("is_story_flag_set") and _castle_is_earned(gs):
+		_add_area_transition("CastleHarmonia", "castle_harmonia", "castle_entrance",
+			spawn_points.get("castle_entrance", Vector2.ZERO), "Enter Castle Harmonia")
+
+		# Scriptura capital district — the capital notices Harmonia once the cave
+		# is cleared (Rowan's letter routes the player here). Anchored beside the
+		# Harmonia entrance on the central grassland so it's on known-walkable
+		# ground; nudge the offset if playtest wants it elsewhere.
+		var scriptura_pos: Vector2 = spawn_points.get("village_entrance", Vector2(320, 224)) \
+			+ Vector2(TILE_SIZE * 7, TILE_SIZE * 3)
+		_add_area_transition("ScripturaEntrance", "scriptura_plaza", "entrance",
+			scriptura_pos, "Road to Scriptura (Capital)")
+		spawn_points["scriptura_return"] = scriptura_pos + Vector2(0, TILE_SIZE * 3)
 
 
 func _add_area_transition(trans_name: String, target_map: String, target_spawn: String,
 		pos: Vector2, indicator: String) -> void:
 	if pos == Vector2.ZERO:
 		return  # Skip if spawn point not found in map
+	print("[SETUP] Transition '%s' → %s at pos %s" % [trans_name, target_map, pos])
 	var trans = AreaTransitionScript.new()
 	trans.name = trans_name
 	trans.target_map = target_map
 	trans.target_spawn = target_spawn
-	trans.require_interaction = true
+	trans.require_interaction = true  # Press A to enter — prevents accidental teleportation
 	trans.indicator_text = indicator
-	trans.position = pos
-	_setup_transition_collision(trans, Vector2(TILE_SIZE, TILE_SIZE))
+	# Offset position upward in world space to compensate for Mode 7 visual offset.
+	# Mode 7 renders the player lower on screen than their collision position,
+	# so the player has to walk "above" targets. Shifting zones up fixes the mismatch.
+	trans.position = pos + Vector2(0, -TILE_SIZE * 3)  # 3 tiles up — Mode 7 log-warp shifts visual north
+	# 2026-07-13: was 4×10 tiles — but Castle Harmonia sits only 2 tiles east of CaveEntrance, so their 4-tile-wide boxes overlapped by 2 tiles and the earlier sibling (Cave) stole every ui_accept in the shared cells → player trying to enter castle got warped to cave. 2×6 is wide enough to catch the player and tall enough for Mode 7's -3-tile Y-offset.
+	_setup_transition_collision(trans, Vector2(TILE_SIZE * 2, TILE_SIZE * 6))
 	trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(trans)
 
@@ -351,7 +506,8 @@ func _setup_player() -> void:
 	player = OverworldPlayerScript.new()
 	player.name = "Player"
 	player.position = spawn_points.get("default", Vector2(320, 256))
-	var leader = GameState.get_party_leader()
+	var gs = _get_game_state()
+	var leader = gs.get_party_leader() if gs else null
 	var job_id = leader.get("job_id", "fighter") if leader else "fighter"
 	player.set_job(job_id)
 	add_child(player)
@@ -375,7 +531,7 @@ func _setup_controller() -> void:
 	controller = OverworldControllerScript.new()
 	controller.name = "Controller"
 	controller.player = player
-	controller.encounter_enabled = true
+	controller.encounter_enabled = false  # Roaming monsters handle encounters, not step-based random
 	controller.current_area_id = "overworld"
 
 	# Default central zone encounters
@@ -392,6 +548,7 @@ func _setup_monster_spawner() -> void:
 	monster_spawner.name = "MonsterSpawner"
 	monster_spawner.monster_touched.connect(_on_roaming_monster_touched)
 	add_child(monster_spawner)
+	monster_spawner.set_map_size(MAP_WIDTH, MAP_HEIGHT)
 	monster_spawner.setup(player, ["slime", "bat", "goblin"])
 
 
@@ -405,75 +562,436 @@ func _update_encounter_zone(pos: Vector2) -> void:
 	if new_zone != _current_zone:
 		_current_zone = new_zone
 		_apply_zone_encounters(new_zone)
+		if _zone_popup:
+			_zone_popup.show_zone(new_zone)
+		if _zone_particles:
+			_zone_particles.update_zone(new_zone)
+		_update_zone_ambient(new_zone)
+
+
+func biome_char_at(tx: int, ty: int) -> String:
+	if ty < 0 or ty >= map_rows.size():
+		return ""
+	var row: String = map_rows[ty]
+	if tx < 0 or tx >= row.length():
+		return ""
+	return row[tx]
+
+
+## Painted terrain char -> encounter zone; the authored biome IS the zone
+const BIOME_ZONES := {
+	"i": "ice", "F": "forest", "S": "swamp", "s": "desert",
+	"l": "volcanic", "d": "volcanic", "c": "coast", "~": "coast",
+	"g": "plains", ".": "central", "B": "central", "M": "central",
+}
+
+
+func _pool_id_map() -> Dictionary:
+	return {
+		"central": "overworld_central", "plains": "overworld_plains",
+		"forest": "overworld_forest", "ice": "overworld_ice",
+		"swamp": "overworld_swamp", "desert": "overworld_desert",
+		"volcanic": "overworld_volcanic", "coast": "overworld_coast",
+	}
+
+
+func _zone_pool_ids() -> Array:
+	return _pool_id_map().values()
 
 
 func _get_zone_for_tile(tx: int, ty: int) -> String:
-	# NW quadrant: Ice/Snow (top-left)
-	if tx < 30 and ty < 15:
-		return "ice"
-	# N quadrant: Forest (top-center)
-	if tx >= 20 and tx < 65 and ty < 15:
-		return "forest"
-	# NE quadrant: Swamp/Spooky (top-right)
-	if tx >= 60 and ty < 15:
-		return "swamp"
-	# SW quadrant: Desert (bottom-left)
-	if tx < 35 and ty >= 50:
-		return "desert"
-	# SE quadrant: Volcanic (bottom-right)
-	if tx >= 65 and ty >= 50:
-		return "volcanic"
-	# E side: Coast
-	if tx >= 85 and ty >= 20 and ty < 45:
-		return "coast"
-	# Central: Grassland
-	return "central"
+	return BIOME_ZONES.get(biome_char_at(tx, ty), "central")
 
 
 func _apply_zone_encounters(zone: String) -> void:
-	var pool: Array = []
-	match zone:
-		"central":
-			pool = ["slime", "bat", "goblin"]
-			controller.set_area_config("overworld_central", false, 0.05, pool)
-		"forest":
-			pool = ["wolf", "spider", "goblin"]
-			controller.set_area_config("overworld_forest", false, 0.06, pool)
-		"ice":
-			pool = ["skeleton", "wolf", "goblin"]
-			controller.set_area_config("overworld_ice", false, 0.06, pool)
-		"swamp":
-			pool = ["snake", "ghost", "imp"]
-			controller.set_area_config("overworld_swamp", false, 0.07, pool)
-		"desert":
-			pool = ["skeleton", "snake", "goblin"]
-			controller.set_area_config("overworld_desert", false, 0.07, pool)
-		"volcanic":
-			pool = ["imp", "skeleton", "troll"]
-			controller.set_area_config("overworld_volcanic", false, 0.08, pool)
-		"coast":
-			pool = ["slime", "bat", "spider"]
-			controller.set_area_config("overworld_coast", false, 0.05, pool)
+	# Source of truth: enemy_pools.json. Zone -> pool_id mapping below.
+	var pool_id_map = _pool_id_map()
+	var rate_map = {
+		"central": 0.05, "forest": 0.06, "ice": 0.06,
+		"swamp": 0.06, "desert": 0.06, "volcanic": 0.065, "coast": 0.05, "plains": 0.05,
+	}
+	var pool_id: String = pool_id_map.get(zone, "")
+	if pool_id == "":
+		return
+	var pool: Array = _load_zone_pool(pool_id)
+	controller.set_area_config(pool_id, false, rate_map.get(zone, 0.05), pool)
 	if monster_spawner and not pool.is_empty():
 		monster_spawner.set_enemy_pool(pool)
 
 
+func _load_zone_pool(pool_id: String) -> Array:
+	# Read pool from data/enemy_pools.json. Falls back to empty Array on miss.
+	var path = "res://data/enemy_pools.json"
+	if not FileAccess.file_exists(path):
+		return []
+	var f = FileAccess.open(path, FileAccess.READ)
+	if f == null:
+		return []
+	var txt = f.get_as_text()
+	f.close()
+	var parsed = JSON.parse_string(txt)
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return []
+	return parsed.get(pool_id, [])
+
+
+func _place_wanderers() -> void:
+	var wanderers = [
+		{
+			"name": "Merchant",
+			"dialogue": "Harmonia's got the best prices... if you can find it.",
+			"color": Color(0.5, 0.35, 0.2),
+			"archetype": "merchant",
+			"path": [Vector2(31, 22), Vector2(20, 23), Vector2(20, 26), Vector2(31, 25)],
+			"hints": [
+				{"flag": "", "text": "Head west across the bridges — Harmonia Village is just past them."},
+				{"flag": "prologue_complete", "text": "Elder Theron mentioned a cave northwest of the village. Sounds dangerous."},
+				{"flag": "chapter1_complete", "text": "The Whispering Cave? Northwest of here. Bring potions."},
+				{"flag": "rat_king_defeated", "text": "That castle on the eastern ridge... I'd swear it wasn't there last week."},
+				{"flag": "world1_mordaine_defeated", "text": "That portal south of the bridge leads somewhere... different."},
+			],
+		},
+		{
+			"name": "Lost Pilgrim",
+			"dialogue": "I've been walking north for hours... is there a village up here?",
+			"color": Color(0.4, 0.4, 0.6),
+			"archetype": "traveler",
+			"path": [Vector2(29, 9), Vector2(26, 12), Vector2(30, 14), Vector2(30, 10)],
+			"hints": [
+				{"flag": "", "text": "I heard there's a village to the west. Follow the bridges!"},
+				{"flag": "prologue_complete", "text": "Frosthold is up north in the ice fields. Eldertree is in the forest."},
+				{"flag": "chapter3_complete", "text": "Something terrible lurks in that cave... the ground shakes at night."},
+				{"flag": "world1_mordaine_defeated", "text": "The world feels... wider now. Like a door opened somewhere."},
+			],
+		},
+		{
+			"name": "Retired Guard",
+			"dialogue": "Don't go near the cave. Trust me on this one.",
+			"color": Color(0.55, 0.45, 0.35),
+			"archetype": "guard",
+			"path": [Vector2(12, 20), Vector2(12, 24), Vector2(8, 24), Vector2(8, 20)],
+			"hints": [
+				{"flag": "", "text": "Harmonia Village is just south of here. Talk to Elder Theron."},
+				{"flag": "prologue_complete", "text": "The cave northwest of the village... it whispers at night."},
+				{"flag": "chapter1_complete", "text": "That cave goes deep. Five floors, they say. A king of rats at the bottom."},
+				{"flag": "rat_king_defeated", "text": "You actually beat it? Then look east — the castle is showing itself now. That's not a coincidence."},
+				{"flag": "world1_mordaine_defeated", "text": "Beyond the portal... they say the world looks completely different."},
+			],
+		},
+	]
+	for w in wanderers:
+		var npc = WanderingNPC.new()
+		npc.npc_name = w["name"]
+		npc.dialogue = w["dialogue"]
+		npc.sprite_color = w["color"]
+		if w.has("archetype"):
+			npc.sprite_archetype = w["archetype"]
+			# Sync the dialogue portrait+theme to the archetype (2026-07-18: Lost Pilgrim rendered mysterious/no portrait — every overworld wanderer inherited WanderingNPC's default). CutsceneDialogue safely falls back if the theme key doesn't exist.
+			npc.dialogue_portrait = w["archetype"]
+			npc.dialogue_theme = w["archetype"]
+		if w.has("hints"):
+			npc.dialogue_hints = _with_spine_telegraph(w["hints"], _get_game_state())
+		var patrol: Array[Vector2] = []
+		for pt in w["path"]:
+			patrol.append(Vector2(pt.x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, pt.y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2))
+		npc.set_patrol(patrol)
+		add_child(npc)
+
+	_place_quest_npcs()
+
+
+func _place_quest_npcs() -> void:
+	## Madame Orrery's wagon — fools_spread giver on the east road out of
+	## Harmonia. Spawn-gated: appears only after the Rat King falls
+	## ("It was not there before the cave.").
+	var gs = get_node_or_null("/root/GameState")
+	var orrery_gate := false
+	if gs and gs.has_method("is_story_flag_set"):
+		orrery_gate = gs.is_story_flag_set("cutscene_flag_rat_king_defeated")
+	if orrery_gate:
+		var OverworldNPCScript = load("res://src/exploration/OverworldNPC.gd")
+		var orrery = OverworldNPCScript.new()
+		orrery.npc_name = "Madame Orrery"
+		orrery.npc_id = "madame_orrery_w1"
+		orrery.npc_type = "mysterious"
+		orrery.dialogue_lines = ["The cards will keep. They have more patience than I do."]
+		orrery.position = Vector2(14 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 23 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+		add_child(orrery)
+
+	# one_chicken_problem: the wandering hen that strayed to the cave approach.
+	var ChickenScript = load("res://src/exploration/QuestChicken.gd")
+	if ChickenScript:
+		var cave_pos: Vector2 = spawn_points.get("cave_entrance", Vector2(96, 96))
+		var hen = ChickenScript.new()
+		hen.chicken_id = "chicken_cave_approach"
+		hen.position = cave_pos + Vector2(TILE_SIZE * 2, TILE_SIZE)
+		add_child(hen)
+
+
+func _place_village_markers() -> void:
+	var villages = [
+		{"key": "village_entrance", "name": "HARMONIA", "roof": Color(0.65, 0.2, 0.15)},
+		{"key": "frosthold_entrance", "name": "FROSTHOLD", "roof": Color(0.3, 0.4, 0.6)},
+		{"key": "eldertree_entrance", "name": "ELDERTREE", "roof": Color(0.25, 0.45, 0.2)},
+		{"key": "grimhollow_entrance", "name": "GRIMHOLLOW", "roof": Color(0.3, 0.2, 0.35)},
+		{"key": "sandrift_entrance", "name": "SANDRIFT", "roof": Color(0.65, 0.5, 0.25)},
+		{"key": "ironhaven_entrance", "name": "IRONHAVEN", "roof": Color(0.4, 0.35, 0.3)},
+	]
+	for v in villages:
+		var pos = spawn_points.get(v["key"], Vector2.ZERO)
+		if pos == Vector2.ZERO:
+			continue
+		var marker = VillageMarker.new()
+		marker.village_name = v["name"]
+		marker.roof_color = v["roof"]
+		marker.position = pos
+		add_child(marker)
+
+
+func _place_treasure_chests() -> void:
+	const TreasureChestScript = preload("res://src/exploration/TreasureChest.gd")
+	var chests = [
+		# Near Harmonia Village — early game help
+		{"id": "w1_village_potion", "pos": Vector2(10, 24), "type": "item", "item": "potion", "amount": 3},
+		{"id": "w1_village_gold", "pos": Vector2(12, 27), "type": "gold", "gold": 150},
+		# Forest path — reward for exploring north
+		{"id": "w1_forest_ether", "pos": Vector2(32, 8), "type": "item", "item": "ether", "amount": 2},
+		{"id": "w1_forest_antidote", "pos": Vector2(38, 12), "type": "item", "item": "antidote", "amount": 3},
+		# Near cave entrance — preparation supplies
+		{"id": "w1_cave_hipotion", "pos": Vector2(6, 20), "type": "item", "item": "hi_potion", "amount": 2},
+		# Central crossroads — off the beaten path
+		{"id": "w1_central_gold", "pos": Vector2(45, 18), "type": "gold", "gold": 300},
+		{"id": "w1_central_phoenix", "pos": Vector2(50, 30), "type": "item", "item": "phoenix_down", "amount": 1},
+		# Desert approach — dangerous territory reward
+		{"id": "w1_desert_elixir", "pos": Vector2(18, 48), "type": "item", "item": "elixir", "amount": 1},
+		# Near Ironhaven — endgame area
+		{"id": "w1_iron_gold", "pos": Vector2(80, 56), "type": "gold", "gold": 500},
+		# Swamp region — hidden reward
+		{"id": "w1_swamp_remedy", "pos": Vector2(72, 8), "type": "item", "item": "remedy", "amount": 2},
+		# Secret-passage pockets — sealed behind HiddenPassage walls
+		{"id": "w1_secret_ice_hollow", "pos": Vector2(5, 2), "type": "item", "item": "x_potion", "amount": 2},
+		{"id": "w1_secret_magma_vault", "pos": Vector2(81, 51), "type": "gold", "gold": 999},
+	]
+	for c in chests:
+		var chest = TreasureChestScript.new()
+		chest.chest_id = c["id"]
+		chest.position = Vector2(c["pos"].x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, c["pos"].y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+		if c["type"] == "gold":
+			chest.contents_type = "gold"
+			chest.gold_amount = c["gold"]
+		else:
+			chest.contents_type = "item"
+			chest.contents_id = c["item"]
+			chest.contents_amount = c["amount"]
+		add_child(chest)
+
+	_place_hidden_passages()
+
+
+func _place_hidden_passages() -> void:
+	## Disguised wall sections at the H map markers — each seals a
+	## secret pocket carved into the mountain clusters above.
+	var passages = [
+		{"id": "w1_ice_hollow", "pos": Vector2(6, 2), "disguise": "mountain"},
+		{"id": "w1_magma_vault", "pos": Vector2(81, 50), "disguise": "mountain"},
+	]
+	for p in passages:
+		var passage = HiddenPassage.new()
+		passage.passage_id = p["id"]
+		passage.disguise = p["disguise"]
+		passage.position = Vector2(p["pos"].x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, p["pos"].y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+		add_child(passage)
+
+
+func _place_ambient_effects() -> void:
+	## Chimney smoke at village locations + campfire flicker at rest areas
+	var smoke_positions = [
+		spawn_points.get("village_entrance", Vector2.ZERO),
+		spawn_points.get("frosthold_entrance", Vector2.ZERO),
+		spawn_points.get("eldertree_entrance", Vector2.ZERO),
+		spawn_points.get("grimhollow_entrance", Vector2.ZERO),
+		spawn_points.get("sandrift_entrance", Vector2.ZERO),
+		spawn_points.get("ironhaven_entrance", Vector2.ZERO),
+	]
+	for pos in smoke_positions:
+		if pos == Vector2.ZERO:
+			continue
+		var smoke = CPUParticles2D.new()
+		smoke.name = "ChimneySmoke"
+		smoke.position = pos + Vector2(0, -12)
+		smoke.amount = 6
+		smoke.lifetime = 2.5
+		smoke.one_shot = false
+		smoke.explosiveness = 0.0
+		smoke.randomness = 0.4
+		smoke.emission_shape = CPUParticles2D.EMISSION_SHAPE_RECTANGLE
+		smoke.emission_rect_extents = Vector2(8, 2)
+		smoke.gravity = Vector2(3.0, -18.0)
+		smoke.initial_velocity_min = 2.0
+		smoke.initial_velocity_max = 6.0
+		smoke.scale_amount_min = 0.4
+		smoke.scale_amount_max = 1.0
+		smoke.color = Color(0.6, 0.6, 0.6, 0.25)
+		smoke.z_index = 2
+		add_child(smoke)
+
+
+func _update_zone_ambient(zone: String) -> void:
+	var sm = get_tree().root.get_node_or_null("SoundManager") if is_inside_tree() else null
+	if sm == null:
+		return
+	var ambient_key = ""
+	match zone:
+		"forest": ambient_key = "ambient_forest"
+		"ice": ambient_key = "ambient_cave"
+		"coast": ambient_key = "ambient_coast"
+		"central": ambient_key = "ambient_plains"
+		"desert": ambient_key = "ambient_plains"
+		"swamp": ambient_key = "ambient_forest"
+		"volcanic": ambient_key = "ambient_dungeon"
+	if true:
+		if ambient_key != "":
+			sm.play_ambient(ambient_key)
+		else:
+			sm.stop_ambient()
+
+
+func _place_landmarks() -> void:
+	var landmarks = [
+		# Ruins along the northern forest path
+		{"pos": Vector2(29, 11), "type": Landmark.Type.RUINS},
+		# Campfire at the central rest area
+		{"pos": Vector2(38, 22), "type": Landmark.Type.CAMPFIRE},
+		# Stone circle in the swamp region
+		{"pos": Vector2(68, 10), "type": Landmark.Type.STONE_CIRCLE},
+		# Well near Harmonia village approach
+		{"pos": Vector2(15, 24), "type": Landmark.Type.WELL},
+		# Ancient statue near the ice region bridge
+		{"pos": Vector2(18, 13), "type": Landmark.Type.STATUE},
+		# Campfire on the southern desert road
+		{"pos": Vector2(20, 45), "type": Landmark.Type.CAMPFIRE},
+		# Ruins near the volcanic approach
+		{"pos": Vector2(66, 47), "type": Landmark.Type.RUINS},
+		# Stone circle near the bridge
+		{"pos": Vector2(38, 50), "type": Landmark.Type.STONE_CIRCLE},
+	]
+	for l in landmarks:
+		var lm = Landmark.new()
+		lm.landmark_type = l["type"]
+		lm.position = Vector2(l["pos"].x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, l["pos"].y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+		add_child(lm)
+
+
+func _get_objective_position() -> Vector2:
+	## Return the world position of the current quest objective for minimap highlighting.
+	var gs = _get_game_state()
+	if gs:
+		# Tick 278: w1_boss_defeated is a dead story_flag (no writer in src/);
+		# Mordaine's real flag is cutscene_flag_world1_mordaine_defeated in
+		# game_constants. rat_king_defeated still works (set by WhisperingCave).
+		if gs.game_constants.get("cutscene_flag_world1_mordaine_defeated", false):
+			return spawn_points.get("steampunk_portal", Vector2.ZERO)
+		# 2026-09-06 (struktured, post-spine-gate confusion): after the Rat King the marker
+		# pointed SOUTH at the W2 portal while the actual next goal was the dragon spine —
+		# route it through the spine instead: next unbroken seal, then the castle.
+		if gs.get_story_flag("rat_king_defeated") or gs.is_story_flag_set("rat_king_defeated"):
+			var left: Array[String] = w1_spine_remaining(gs)
+			left.erase("rat_king_defeated")
+			if left.is_empty():
+				return spawn_points.get("castle_entrance", Vector2.ZERO)
+			var seal_spawns := {
+				"fire_dragon_defeated": "fire_dragon_cave",
+				"ice_dragon_defeated": "ice_dragon_cave",
+				"lightning_dragon_defeated": "lightning_dragon_cave",
+				"shadow_dragon_defeated": "shadow_dragon_cave",
+			}
+			return spawn_points.get(seal_spawns.get(left[0], ""), Vector2.ZERO)
+		# chapter1_complete is only ever written to game_constants as
+		# "cutscene_flag_chapter1_complete" (by GameLoop on cutscene finish),
+		# never to story_flags. Check both namespaces — same dual-namespace
+		# guard QuestTracker.gd already uses — so the cave marker appears
+		# right after the Elder Theron / chapter1 cutscene, not only after
+		# the cave is already cleared (rat_king_defeated / w1_boss_defeated).
+		if gs.get_story_flag("chapter1_complete") or gs.game_constants.get("cutscene_flag_chapter1_complete", false):
+			return spawn_points.get("cave_entrance", Vector2.ZERO)
+	return spawn_points.get("village_entrance", Vector2.ZERO)
+
+
+## Runtime lookup helper — GameState as a global identifier doesn't
+## resolve in preload() parse contexts used by the test suite.
+func _get_game_state() -> Node:
+	if not is_inside_tree():
+		return null
+	return get_tree().root.get_node_or_null("GameState")
+
+
+func _place_signposts() -> void:
+	var signs = [
+		# Near default spawn — point toward village and cave
+		{"pos": Vector2(35, 24), "text": "← Harmonia Village"},
+		{"pos": Vector2(35, 20), "text": "↑ Whispering Cave"},
+		# Central crossroads
+		{"pos": Vector2(30, 15), "text": "↑ Eldertree / ← Frosthold"},
+		{"pos": Vector2(50, 15), "text": "→ Grimhollow / Dark Lands"},
+		# Southern crossroads
+		{"pos": Vector2(25, 40), "text": "↓ Sandrift / Desert"},
+		{"pos": Vector2(40, 48), "text": "↓ Bridge / Portal South"},
+		# Near bridge
+		{"pos": Vector2(38, 52), "text": "← Desert  →Volcanic"},
+		# Dragon cave warnings
+		{"pos": Vector2(13, 9), "text": "⚠ Glacial Sanctum — Ice Dragon"},
+		{"pos": Vector2(72, 14), "text": "⚠ Abyssal Hollow — Shadow Dragon"},
+		{"pos": Vector2(60, 58), "text": "⚠ Stormspire — Lightning Dragon"},
+		{"pos": Vector2(81, 51), "text": "⚠ Infernal Grotto — Fire Dragon"},
+		# Ironhaven approach
+		{"pos": Vector2(79, 57), "text": "→ Ironhaven Village"},
+		# World portal signpost (appears regardless — context clue)
+		{"pos": Vector2(88, 30), "text": "→ World Portal  ⚙ Mundane Sprawl"},
+	]
+	for s in signs:
+		var post = Signpost.new()
+		post.sign_text = s["text"]
+		post.position = Vector2(s["pos"].x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, s["pos"].y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+		add_child(post)
+
+
 func _on_transition_triggered(target_map: String, spawn_point: String) -> void:
+	# Dissolve effect for world-to-world portal transitions
+	if "overworld" in target_map and _mode7:
+		var ilm = get_tree().root.get_node_or_null("InputLockManager") if is_inside_tree() else null
+		if ilm:
+			ilm.push_lock("world_transition")
+		await _mode7.play_dissolve_out()
+		if ilm:
+			ilm.pop_lock("world_transition")
 	area_transition.emit(target_map, spawn_point)
 
 
 func _on_battle_triggered(enemies: Array) -> void:
-	battle_triggered.emit(enemies)
+	print("[OVERWORLD] Re-emitting battle_triggered: %s" % [enemies])
+	# NOTE: GameLoop expects (enemies, terrain) — pass terrain to match signature
+	var terrain = _get_terrain_for_zone(_current_zone)
+	battle_triggered.emit(enemies, terrain)
+
+
+func _get_terrain_for_zone(zone: String) -> String:
+	match zone:
+		"forest": return "forest"
+		"ice": return "ice"
+		"swamp": return "swamp"
+		"desert": return "desert"
+		"volcanic": return "volcanic"
+		"coast": return "coast"
+		_: return "plains"
 
 
 func _on_roaming_monster_touched(monster_id: String, _monster_types: Array) -> void:
-	if player:
-		player.set_can_move(false)
+	# GameLoop sets LoopState.BATTLE — no need for can_move
 	var enemies = [monster_id]
 	var extra = randi_range(0, 2)
 	for _i in range(extra):
 		enemies.append(monster_id)
-	battle_triggered.emit(enemies)
+	battle_triggered.emit(enemies, _get_terrain_for_zone(_current_zone))
 
 
 func _on_menu_requested() -> void:
@@ -522,11 +1040,13 @@ func _create_map_boundaries() -> void:
 	var map_w = MAP_WIDTH * TILE_SIZE
 	var map_h = MAP_HEIGHT * TILE_SIZE
 	var wall_thickness = 32.0
+	# Playtest 2026-07-11: flush walls let the sprite clip past the Mode 7 render edge — stop one tile inside (tunable).
+	var edge_inset = float(TILE_SIZE)
 
-	_add_boundary_wall(bounds, Vector2(map_w / 2, -wall_thickness / 2), Vector2(map_w + wall_thickness * 2, wall_thickness))
-	_add_boundary_wall(bounds, Vector2(map_w / 2, map_h + wall_thickness / 2), Vector2(map_w + wall_thickness * 2, wall_thickness))
-	_add_boundary_wall(bounds, Vector2(-wall_thickness / 2, map_h / 2), Vector2(wall_thickness, map_h + wall_thickness * 2))
-	_add_boundary_wall(bounds, Vector2(map_w + wall_thickness / 2, map_h / 2), Vector2(wall_thickness, map_h + wall_thickness * 2))
+	_add_boundary_wall(bounds, Vector2(map_w / 2, edge_inset - wall_thickness / 2), Vector2(map_w + wall_thickness * 2, wall_thickness))
+	_add_boundary_wall(bounds, Vector2(map_w / 2, map_h - edge_inset + wall_thickness / 2), Vector2(map_w + wall_thickness * 2, wall_thickness))
+	_add_boundary_wall(bounds, Vector2(edge_inset - wall_thickness / 2, map_h / 2), Vector2(wall_thickness, map_h + wall_thickness * 2))
+	_add_boundary_wall(bounds, Vector2(map_w - edge_inset + wall_thickness / 2, map_h / 2), Vector2(wall_thickness, map_h + wall_thickness * 2))
 
 
 func _add_boundary_wall(parent: StaticBody2D, pos: Vector2, size: Vector2) -> void:

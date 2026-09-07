@@ -1,0 +1,166 @@
+"""Artist reference library for AI sprite regeneration.
+
+Maps monster categories → best artist source references. Used by
+regen_monster_artist_style.py (and future gen scripts) to anchor
+gpt-image-1 / IP-Adapter output to the artist's actual style rather
+than generic "pixel art JRPG."
+
+Adding a new artist enemy? Extend ARTIST_ENEMY_REFS and, if it introduces
+a new archetype, add a category and update MONSTER_CATEGORY_TO_REF.
+"""
+from pathlib import Path
+
+PROJECT = Path(__file__).resolve().parents[2]
+DRIVE = PROJECT / "assets/sprites/drive_archive/Game graphics - Characters"
+
+# Full T2 artist enemy sheets — canonical style anchors for AI regen
+ARTIST_ENEMY_REFS = {
+    # low-lvl blob/creature — slug/dragon-like, small, soft body
+    "slime":  DRIVE / "enemies/SLIME 1.aseprite",
+    # flying/winged — bat with wing-flap idle + dive/bite atk
+    "bat":    DRIVE / "enemies/BAT 1.aseprite",
+    # humanoid melee — goblin with sword, 2-hand grip
+    "goblin": DRIVE / "enemies/Goblin 1 anims.aseprite",
+}
+
+# Party artist sheets — usable as style/palette anchor for humanoid monsters
+ARTIST_PARTY_REFS = {
+    "fighter": DRIVE / "FIGHTER/Main Fighter animations.aseprite",
+    "mage":    DRIVE / "MAGE/Mage Main design.aseprite",
+    "cleric":  DRIVE / "CLERIC/Cleric Main design.aseprite",
+    "rogue":   DRIVE / "ROGUE/Rogue Main design.aseprite",
+    "bard":    DRIVE / "BARD/Bard Base sprite.aseprite",
+}
+
+# Monster archetype → best-matching artist reference. When regenerating
+# a T1 monster, pick the reference whose silhouette + palette is closest.
+# Multiple candidates in a list are blended (first is primary).
+MONSTER_CATEGORY_TO_REF = {
+    # Blob / gelatinous / small creature — slime canon
+    "blob":       ["slime"],
+    "mushroom":   ["slime"],       # elder_mushroom, fungoid (blob-like body)
+    "fungoid":    ["slime"],
+    # Winged / flying — bat canon
+    "winged":     ["bat"],
+    "ghost":      ["bat"],         # soft silhouette
+    "crow":       ["bat"],
+    "bird":       ["bat"],
+    # Melee humanoid — goblin canon (weapon-holding, 2-armed grip)
+    "humanoid":   ["goblin"],
+    "skeleton":   ["goblin"],
+    "rat":        ["goblin"],      # bipedal rat guards, cave_rat_king
+    "imp":        ["goblin"],
+    "orc":        ["goblin"],
+    # Beast / four-legged — no artist canon yet; fall back to bat
+    # for the darker palette + action pose, style-hint in prompt
+    "beast":      ["bat"],         # wolf, dog, snake (no legs though)
+    "wolf":       ["bat"],
+    "dog":        ["bat"],
+    "snake":      ["bat"],
+    # Large / boss — combine goblin (weapon-holding) + fighter (armored plate)
+    "boss":       ["goblin", "fighter"],
+    "knight":     ["fighter", "goblin"],  # shadow_knight, cursed_armor
+    "dragon":     ["bat", "goblin"],
+}
+
+# NAMED-BOSS OVERRIDES — bosses opt out of archetype defaults so future
+# regens can't silently drift them back into goblin-family. When
+# refs_for() sees a key here, it wins over any MONSTER_CATEGORY_TO_REF
+# entry. Rescued from the July 2 bulk-regen homogenization (cowir-main
+# msg 2516): five Tempos + Rat King all shared source string
+# "gpt-image-1 4-pose contact-sheet anchored to artist goblin reference"
+# despite being wildly different concepts. Anchor picked per-boss for
+# silhouette/palette fit.
+_NAMED_BOSS_OVERRIDES = {
+    # Rat King: anchor to SLIME (the only non-humanoid enemy in the
+    # artist canon). Slime is the closest "small chunky non-humanoid"
+    # shape available — between the slime scale/palette anchor and the
+    # description text (explicitly quadruped, whiskers, tail, four legs
+    # firmly on the ground, tiny crown), the AI should land far from
+    # goblin-family. Alternative would be prompt-only (no ref) but
+    # gpt-image-1 lands more consistently with SOME anchor than none.
+    "cave_rat_king":              ["slime"],
+    # Tempos — five distinct concepts, one anchor each
+    "masterite_tempo_medieval":   ["rogue"],   # hooded scout/ranger silhouette
+    "masterite_tempo_suburban":   ["cleric"],  # standing humanoid, non-armored proportions
+    "masterite_tempo_industrial": ["fighter"], # worker with tools, sturdy build
+    "masterite_tempo_futuristic": ["mage"],    # geometric/arcane feel, robed silhouette
+    "masterite_tempo_abstract":   ["mage"],    # style-anchor only (implied humanoid)
+    # W1-pool multi-subject defect regens (2026-07-15, cowir-main msgs 2560/2561):
+    # skeleton in-family anchor per msg 2560 — same undead palette family
+    "skeleton":                   ["fighter"],  # via fighter_skeleton_knight canon; artist fighter as base identity
+    "imp":                        ["bat"],      # small winged creature
+    "wolf":                       ["bat"],      # bat is the closest artist quadruped-ish anchor
+    "spider":                     ["bat"],      # multi-limbed small crawler
+    # W1 BOSS — Umbraxis the Void Render. Bat is the only winged artist
+    # anchor; description carries the manifesting-from-smoke identity beat.
+    "shadow_dragon":              ["bat"],
+    # W1 FINALE — Chancellor Mordaine, sorceress-usurper (mask of the
+    # Calibrant). Cold arcane humanoid; anchor on party mage for the
+    # robed-sorcerer silhouette + palette, prompt carries the icy-
+    # philosophical identity beat. NOT goblin (would drag into raving-
+    # warrior read); NOT shadow_knight (the placeholder she'll replace —
+    # would fixate on plate armor).
+    "chancellor_mordaine":        ["mage"],
+    # World-finale faces of the Calibrant. All humanoid, none armoured, none
+    # monstrous — anchor on party humanoids for proportion and lineart weight
+    # rather than the goblin default, which would drag them toward creature.
+    # cleric = plainly-dressed standing humanoid, the closest proportion match
+    # for an administrator / engineer / middle manager.
+    "the_coordinator":            ["cleric"],
+    "the_regulator":              ["cleric"],
+    "the_director":               ["cleric"],
+}
+
+# Explicit per-monster overrides where the archetype match isn't obvious
+MONSTER_ID_TO_REF = {
+    # W1 medieval — targeted for item 29 pilot regen
+    "cave_rat":            ["goblin"],
+    "cave_rat_king":       ["goblin"],
+    "rat_guard":           ["goblin"],
+    "skeleton":            ["goblin"],
+    "wolf":                ["bat"],
+    "cave_troll":          ["goblin", "fighter"],
+    "shadow_knight":       ["fighter", "goblin"],
+    "cursed_armor":        ["fighter"],
+    "spider":              ["bat"],
+    # W1 boss
+    "fire_dragon":         ["bat", "goblin"],
+    "ice_dragon":          ["bat", "goblin"],
+    "lightning_dragon":    ["bat", "goblin"],
+    "shadow_dragon":       ["bat", "goblin"],
+    # Spotlight-duel minibosses (msg 1950 spec) — one per PC job. Each
+    # designed so THAT job's kit solos it. Ref picked by miniboss silhouette.
+    "fighter_skeleton_knight":  ["fighter", "goblin"],  # chivalric plate skeleton
+    "cleric_survive_target":    ["goblin"],             # NPC-shape sustained-damage target
+    "rogue_lockward":           ["goblin", "fighter"],  # armored treasure-guardian, high evade
+    "mage_prismatic_construct": ["fighter"],            # crystal/geometric construct
+    "bard_hostile_courtier":    ["goblin"],             # NPC courtier w/ dry rebuff
+}
+
+
+def refs_for(monster_id: str, category: str | None = None) -> list[Path]:
+    """Return artist reference paths for a monster.
+
+    Priority:
+      1. NAMED_BOSS_OVERRIDES — beats everything, including empty-list
+         (prompt-only, no anchor) for bosses whose identity is
+         description-driven and any humanoid ref drags them off-model.
+      2. explicit id override in MONSTER_ID_TO_REF
+      3. category map
+      4. default to goblin (broadest-applicable humanoid archetype)
+    """
+    if monster_id in _NAMED_BOSS_OVERRIDES:
+        keys = _NAMED_BOSS_OVERRIDES[monster_id]
+    else:
+        keys = (
+            MONSTER_ID_TO_REF.get(monster_id)
+            or (MONSTER_CATEGORY_TO_REF.get(category or "") if category else None)
+            or ["goblin"]
+        )
+    out = []
+    for k in keys:
+        p = ARTIST_ENEMY_REFS.get(k) or ARTIST_PARTY_REFS.get(k)
+        if p and p.exists():
+            out.append(p)
+    return out

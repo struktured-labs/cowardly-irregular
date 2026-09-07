@@ -30,6 +30,7 @@ enum AnimState {
 	DEAD,
 	ADVANCE,
 	DEFER,
+	LUNGE,
 	POWER_STRIKE,
 	CLEAVE,
 	PROVOKE,
@@ -51,6 +52,7 @@ enum AnimState {
 }
 
 ## Animation speeds (frames per animation frame) - slower for visibility
+## Reserved for future per-animation speed control
 const ANIM_SPEED: Dictionary = {
 	"idle": 0.4,
 	"attack": 0.25,
@@ -60,6 +62,15 @@ const ANIM_SPEED: Dictionary = {
 	"item": 0.25,
 	"victory": 0.35,
 	"defeat": 0.3
+}
+
+# spell anims degrade to a base pose; EXCLUDES windup/transition anims (lunge/advance/defer) which keep their synchronous-skip contract (cowir-main 2026-07-04)
+const ANIM_FALLBACKS: Dictionary = {
+	"defeat": "dead", "dead": "defeat",
+	"cast": "attack",
+	"cast_fire": "cast", "cast_ice": "cast", "cast_lightning": "cast", "cast_fira": "cast",
+	"heal": "cast", "raise": "cast", "buff": "cast",
+	"battle_hymn": "cast", "lullaby": "cast", "discord": "cast", "inspiring_melody": "cast",
 }
 
 ## Sprite size configuration - delegates to SpriteUtils for shared constants
@@ -171,6 +182,9 @@ func play_animation(state: AnimState, loop: bool = false, on_complete: Callable 
 	"""Play an animation state"""
 	if not sprite:
 		push_warning("BattleAnimator: No sprite assigned!")
+		# Invoke callback so queued action chains don't stall on a missing sprite.
+		if on_complete.is_valid():
+			on_complete.call()
 		return
 
 	current_state = state
@@ -179,8 +193,8 @@ func play_animation(state: AnimState, loop: bool = false, on_complete: Callable 
 	is_playing = true
 	current_frame = 0
 
-	# Map state to animation name
-	var anim_name = _get_animation_name(state)
+	# Map state to animation name, degrading through the fallback chain if the sheet lacks it
+	var anim_name = _resolve_animation(_get_animation_name(state))
 
 	if sprite.sprite_frames and sprite.sprite_frames.has_animation(anim_name):
 		sprite.play(anim_name)
@@ -188,18 +202,42 @@ func play_animation(state: AnimState, loop: bool = false, on_complete: Callable 
 	else:
 		push_warning("BattleAnimator: Animation '%s' not found!" % anim_name)
 		is_playing = false
+		# Invoke callback synchronously so battle action chains that depend on
+		# on_complete (e.g. "play attack → trigger damage on finish") don't
+		# silently stall when an animation is missing.
+		if on_complete.is_valid():
+			on_complete.call()
 
 
-func stop_animation() -> void:
-	"""Stop current animation"""
-	if sprite:
-		sprite.stop()
-	is_playing = false
+## Asks the owner what "at rest" means for this combatant: "idle", "weak" or "dead".
+## Unset = always idle, so enemies and old callers are byte-identical. The gate on
+## has_animation is load-bearing — procedural sheets have no weak/dead and must idle.
+var rest_state_provider: Callable = Callable()
+
+
+func rest_anim_name() -> String:
+	var want := "idle"
+	if rest_state_provider.is_valid():
+		want = str(rest_state_provider.call())
+	if want != "idle" and sprite and sprite.sprite_frames and sprite.sprite_frames.has_animation(want):
+		return want
+	return "idle"
 
 
 func set_idle() -> void:
-	"""Set sprite to idle state"""
-	play_animation(AnimState.IDLE, true)
+	"""Return the sprite to its REST state — idle, or weak/dead when the provider says so."""
+	var want := rest_anim_name()
+	if want == "idle":
+		play_animation(AnimState.IDLE, true)
+		return
+	current_state = AnimState.DEAD if want == "dead" else AnimState.IDLE
+	loop_animation = want != "dead"
+	is_playing = false
+	if sprite:
+		# struktured 2026-09-06 "bard/mage in up/down cycle": the fall is one-shot — replaying it every rest re-resolve made the corpse stand up and drop again. Already fallen = hold the last frame.
+		if want == "dead" and sprite.animation == "dead":
+			return
+		sprite.play(want)
 
 
 func play_attack(on_complete: Callable = Callable()) -> void:
@@ -272,14 +310,99 @@ func play_backstab(on_complete: Callable = Callable()) -> void:
 	# Return to idle
 	tween.tween_callback(func():
 		if sprite and sprite.sprite_frames and sprite.sprite_frames.has_animation("idle"):
-			sprite.play("idle")
+			sprite.play(rest_anim_name())
 		if on_complete.is_valid():
 			on_complete.call()
 	)
 
 
 func play_steal(on_complete: Callable = Callable()) -> void:
-	"""Quick dash in and out animation for stealing"""
+	"""Stealth-travel steal (struktured 2026-08-14: 'something stealthy to travel to the monster and back')"""
+	if not sprite:
+		if on_complete.is_valid():
+			on_complete.call()
+		return
+	if not BattleJuice.flag("steal_sauce") or BattleJuice.battle_tier() == BattleJuice.Tier.OFF:
+		_play_steal_basic(on_complete)
+		return
+	_play_stealth_travel(on_complete, false)
+
+
+func play_mug(on_complete: Callable = Callable()) -> void:
+	"""Mug = the loud cousin: same stealth travel plus spin and a gold grab-flash"""
+	if not sprite:
+		if on_complete.is_valid():
+			on_complete.call()
+		return
+	if not BattleJuice.flag("steal_sauce") or BattleJuice.battle_tier() == BattleJuice.Tier.OFF:
+		_play_mug_basic(on_complete)
+		return
+	_play_stealth_travel(on_complete, true)
+
+
+## Travel target: the nearest enemy's column via the battle scene (BattleJuice.burst_host); fixed hop when unavailable
+func _stealth_apex() -> Vector2:
+	var scene = BattleJuice.burst_host
+	if scene and is_instance_valid(scene) and "enemy_sprite_nodes" in scene:
+		var best: Node2D = null
+		var best_d := INF
+		for e in scene.enemy_sprite_nodes:
+			if e and is_instance_valid(e) and e.visible:
+				var d: float = absf(e.global_position.x - sprite.global_position.x)
+				if d > 1.0 and d < best_d:
+					best_d = d
+					best = e
+		if best:
+			return sprite.position + Vector2(best.global_position.x - sprite.global_position.x + 40.0, 0)
+	return sprite.position + Vector2(-90, 0)
+
+
+func _play_stealth_travel(on_complete: Callable, aggressive: bool) -> void:
+	if _current_tween and _current_tween.is_valid():
+		_current_tween.kill()
+	var original_pos = sprite.position
+	var original_mod = sprite.modulate
+	var apex := _stealth_apex()
+	if sprite.sprite_frames and sprite.sprite_frames.has_animation("attack"):
+		sprite.play("attack")
+	_current_tween = create_tween()
+	var tween = _current_tween
+	# Stealth engage: go translucent, ghosts trail the dash
+	tween.tween_property(sprite, "modulate:a", 0.4, 0.05)
+	tween.tween_callback(func() -> void:
+		for gi in range(3):
+			if sprite and is_instance_valid(sprite):
+				sprite.get_tree().create_timer(0.03 + 0.035 * gi).timeout.connect(BattleJuice.spawn_ghost.bind(sprite)))
+	tween.set_trans(Tween.TRANS_EXPO)
+	tween.set_ease(Tween.EASE_IN)
+	tween.tween_property(sprite, "position", apex, 0.14)
+	if aggressive:
+		tween.parallel().tween_property(sprite, "rotation", 0.3, 0.14)
+	# The grab: vanish-blink + swipe burst at the mark
+	tween.tween_callback(func() -> void:
+		if sprite and is_instance_valid(sprite):
+			BattleJuice.spawn_burst(sprite.global_position + Vector2(-24, -8), Vector2(-0.6, -0.4), 8, Color(0.75, 0.95, 1.0), 300.0))
+	tween.tween_property(sprite, "modulate:a", 0.12, 0.04)
+	tween.tween_property(sprite, "modulate:a", 0.4, 0.05)
+	if aggressive:
+		tween.tween_property(sprite, "modulate", Color(1.25, 1.05, 0.7, 0.4), 0.05)
+	# Expo dash home, re-materialize, loot glint
+	tween.set_ease(Tween.EASE_OUT)
+	tween.tween_property(sprite, "position", original_pos, 0.16)
+	if aggressive:
+		tween.parallel().tween_property(sprite, "rotation", 0.0, 0.16)
+	tween.tween_property(sprite, "modulate", original_mod, 0.06)
+	tween.tween_callback(func() -> void:
+		if sprite and is_instance_valid(sprite):
+			BattleJuice.spawn_burst(sprite.global_position + Vector2(0, -20), Vector2(0, -1), 6, Color(1.0, 0.85, 0.3), 160.0)
+		if sprite and sprite.sprite_frames and sprite.sprite_frames.has_animation("idle"):
+			sprite.play(rest_anim_name())
+		if on_complete.is_valid():
+			on_complete.call())
+
+
+func _play_steal_basic(on_complete: Callable = Callable()) -> void:
+	"""Legacy quick dash — the OFF-tier / flag-off fallback"""
 	if not sprite:
 		if on_complete.is_valid():
 			on_complete.call()
@@ -312,56 +435,14 @@ func play_steal(on_complete: Callable = Callable()) -> void:
 	# Return to idle
 	tween.tween_callback(func():
 		if sprite and sprite.sprite_frames and sprite.sprite_frames.has_animation("idle"):
-			sprite.play("idle")
+			sprite.play(rest_anim_name())
 		if on_complete.is_valid():
 			on_complete.call()
 	)
 
 
-func play_skill(on_complete: Callable = Callable()) -> void:
-	"""Generic physical skill animation with pose hold"""
-	if not sprite:
-		if on_complete.is_valid():
-			on_complete.call()
-		return
-
-	# Kill any existing animation tween
-	if _current_tween and _current_tween.is_valid():
-		_current_tween.kill()
-
-	var original_pos = sprite.position
-
-	# Play attack animation with a slight forward lean
-	_current_tween = create_tween()
-	var tween = _current_tween
-
-	# Prep pose - lean back
-	tween.tween_property(sprite, "position", original_pos + Vector2(10, 0), 0.1)
-
-	# Execute - quick forward lunge
-	tween.tween_callback(func():
-		if sprite and sprite.sprite_frames and sprite.sprite_frames.has_animation("attack"):
-			sprite.play("attack")
-	)
-	tween.tween_property(sprite, "position", original_pos + Vector2(-25, 0), 0.08)
-
-	# Brief pause at impact
-	tween.tween_interval(0.1)
-
-	# Return
-	tween.tween_property(sprite, "position", original_pos, 0.12)
-
-	# Back to idle
-	tween.tween_callback(func():
-		if sprite and sprite.sprite_frames and sprite.sprite_frames.has_animation("idle"):
-			sprite.play("idle")
-		if on_complete.is_valid():
-			on_complete.call()
-	)
-
-
-func play_mug(on_complete: Callable = Callable()) -> void:
-	"""Combination attack + steal animation"""
+func _play_mug_basic(on_complete: Callable = Callable()) -> void:
+	"""Legacy dash+spin — the OFF-tier / flag-off fallback"""
 	if not sprite:
 		if on_complete.is_valid():
 			on_complete.call()
@@ -396,18 +477,17 @@ func play_mug(on_complete: Callable = Callable()) -> void:
 	# Back to idle
 	tween.tween_callback(func():
 		if sprite and sprite.sprite_frames and sprite.sprite_frames.has_animation("idle"):
-			sprite.play("idle")
+			sprite.play(rest_anim_name())
 		if on_complete.is_valid():
 			on_complete.call()
 	)
 
 
-func play_advance(on_complete: Callable = Callable()) -> void:
-	play_animation(AnimState.ADVANCE, false, on_complete)
-
-
-func play_defer_anim(on_complete: Callable = Callable()) -> void:
-	play_animation(AnimState.DEFER, false, on_complete)
+func play_lunge(on_complete: Callable = Callable()) -> void:
+	"""Play windup/lunge animation before an attack lands.
+	   Falls back gracefully when SpriteFrames has no 'lunge' animation —
+	   play_animation invokes on_complete synchronously (commit 0a02aed)."""
+	play_animation(AnimState.LUNGE, false, on_complete)
 
 
 func play_named_animation(anim_name: String, on_complete: Callable = Callable()) -> void:
@@ -425,6 +505,9 @@ func play_named_animation(anim_name: String, on_complete: Callable = Callable())
 		match anim_name:
 			"power_strike", "cleave", "provoke":
 				play_attack(on_complete)
+			"strike":
+				# Rogue free-move — physical attack fallback (not cast)
+				play_attack(on_complete)
 			"cast_fire", "cast_ice", "cast_lightning", "cast_fira":
 				play_cast(on_complete)
 			"heal", "raise", "buff":
@@ -437,12 +520,18 @@ func play_named_animation(anim_name: String, on_complete: Callable = Callable())
 				play_mug(on_complete)
 			"flee":
 				play_item(on_complete)
-			"battle_hymn", "lullaby", "discord", "inspiring_melody":
+			"battle_hymn", "lullaby", "discord", "inspiring_melody", "riff":
+				play_cast(on_complete)
+			"pray", "channel":
 				play_cast(on_complete)
 			"advance":
 				play_attack(on_complete)
 			"defer":
 				play_defend(on_complete)
+			"lunge", "dash":
+				# No dedicated lunge anim — fall back to attack so combat flow
+				# continues without stalling. The on_complete still fires.
+				play_attack(on_complete)
 			_:
 				play_cast(on_complete)
 
@@ -461,6 +550,7 @@ func _get_animation_name(state: AnimState) -> String:
 		AnimState.DEAD: return "dead"
 		AnimState.ADVANCE: return "advance"
 		AnimState.DEFER: return "defer"
+		AnimState.LUNGE: return "lunge"
 		AnimState.POWER_STRIKE: return "power_strike"
 		AnimState.CLEAVE: return "cleave"
 		AnimState.PROVOKE: return "provoke"
@@ -482,6 +572,22 @@ func _get_animation_name(state: AnimState) -> String:
 	return "idle"
 
 
+## Walk the explicit ANIM_FALLBACKS chain (cycle-guarded); unmapped anims return unchanged so the caller's sync-skip path still runs
+func _resolve_animation(anim_name: String) -> String:
+	if sprite == null or sprite.sprite_frames == null:
+		return anim_name
+	if sprite.sprite_frames.has_animation(anim_name):
+		return anim_name
+	var seen: Dictionary = {}
+	var name: String = anim_name
+	while ANIM_FALLBACKS.has(name) and not seen.has(name):
+		seen[name] = true
+		name = ANIM_FALLBACKS[name]
+		if sprite.sprite_frames.has_animation(name):
+			return name
+	return anim_name  # no chain entry resolved — caller warns + fires on_complete
+
+
 func _on_sprite_animation_finished() -> void:
 	"""Handle animation completion"""
 	animation_finished.emit(current_state)
@@ -491,35 +597,11 @@ func _on_sprite_animation_finished() -> void:
 		on_animation_complete.call()
 		on_animation_complete = Callable()
 
-	# Return to idle unless it's a looping animation
-	if not loop_animation and current_state != AnimState.IDLE:
+	# Return to idle unless it's a looping animation — the finished DEAD fall is the rest state itself; re-entering set_idle here replayed it forever.
+	if not loop_animation and current_state != AnimState.IDLE and current_state != AnimState.DEAD:
 		set_idle()
 
 	is_playing = false
-
-
-## Helper functions for common animation sequences
-
-func attack_sequence(target_sprite: AnimatedSprite2D, damage_callback: Callable) -> void:
-	"""Complete attack sequence: attack -> target hit -> return to idle"""
-	play_attack(func():
-		if target_sprite:
-			var target_animator = get_script().new()
-			target_animator.setup(target_sprite)
-			target_animator.play_hit(func():
-				damage_callback.call()
-			)
-	)
-
-
-func defend_sequence(on_complete: Callable = Callable()) -> void:
-	"""Complete defend sequence"""
-	play_defend(on_complete)
-
-
-func cast_sequence(on_complete: Callable = Callable()) -> void:
-	"""Complete spell cast sequence"""
-	play_cast(on_complete)
 
 
 ## =================

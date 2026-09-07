@@ -26,25 +26,44 @@ const TILE_SIZE: int = 32
 
 
 func _ready() -> void:
+	# Save-tracking footgun guard: a chest that never overrode chest_id shares
+	# its opened-flag ("chest_" + id) with every other forgetter — open one and
+	# all of them vanish. Nothing legitimately uses the "chest_001" default, so
+	# hitting it (or an empty id) means a scene forgot to assign a unique one.
+	if chest_id == "" or chest_id == "chest_001":
+		push_warning("[TreasureChest] '%s' still has the default/empty chest_id ('%s') — set a unique id or its opened state collides with other chests" % [name, chest_id])
 	_check_if_opened()
 	_generate_sprite()
 	_setup_collision()
 	_setup_name_label()
 	_setup_dialogue_box()
 
+	## Tick 455: register the chest in a "treasure" group so the
+	## content_radar passive can find and count nearby unopened
+	## chests for its HUD readout. Plain group membership avoids
+	## any scene-specific coupling.
+	add_to_group("treasure")
+
 	body_entered.connect(_on_body_entered)
 	body_exited.connect(_on_body_exited)
 
 
 func _check_if_opened() -> void:
-	# Check GameState for opened chests (if implemented)
-	# For now, all chests start closed
-	_is_opened = false
+	_is_opened = GameState.get_story_flag("chest_" + chest_id)
 
 
+## Artist art if it exists, procedural chest otherwise. assets/sprites/objects/
+## holds chest_open/chest_closed and had NO consumer — art we owned, unreachable.
 func _generate_sprite() -> void:
 	sprite = Sprite2D.new()
 	sprite.name = "Sprite"
+
+	var art := "res://assets/sprites/objects/chest_%s.png" % ("open" if _is_opened else "closed")
+	if ResourceLoader.exists(art):
+		sprite.texture = load(art)
+		sprite.centered = true
+		add_child(sprite)
+		return
 
 	var image = Image.create(TILE_SIZE, TILE_SIZE, false, Image.FORMAT_RGBA8)
 	_draw_chest(image)
@@ -240,8 +259,14 @@ func _draw_chest(image: Image) -> void:
 
 func _setup_collision() -> void:
 	var collision = CollisionShape2D.new()
-	var shape = RectangleShape2D.new()
-	shape.size = Vector2(TILE_SIZE, TILE_SIZE)
+	var shape = CircleShape2D.new()
+	# Mode 7 overworld needs the tall billboard grab zone; flat villages read that as a 4-tile grabber arm (struktured 2026-07-12: "opened a chest 5 tiles away").
+	if Mode7Overlay.is_active:
+		shape.radius = InteractGeometry.CHEST_GRAB_RADIUS_MODE7
+		collision.scale = Vector2(1.0, InteractGeometry.MODE7_Y_STRETCH)  # Mode 7 billboard Y:X ratio (0.3:0.5)
+	else:
+		shape.radius = InteractGeometry.CHEST_GRAB_RADIUS_FLAT  # ~1.25 tiles for flat villages/interiors
+		collision.scale = Vector2.ONE
 	collision.shape = shape
 	add_child(collision)
 
@@ -272,9 +297,13 @@ func _setup_dialogue_box() -> void:
 	dialogue_box.visible = false
 	dialogue_box.z_index = 100
 
+	# Item 14 (2026-07-01 playtest): panel was 200×50 @ y=-70 — bottom at
+	# y=-20 sat 4px above the 32px chest sprite, reading as "on the chest".
+	# Enlarged + lifted so it floats clearly above with visible air. Chest
+	# center → panel bottom is now 46px, plenty of separation.
 	var panel = Panel.new()
-	panel.position = Vector2(-100, -70)
-	panel.size = Vector2(200, 50)
+	panel.position = Vector2(-120, -110)
+	panel.size = Vector2(240, 60)
 
 	var style = StyleBoxFlat.new()
 	style.bg_color = Color(0.1, 0.08, 0.05, 0.95)
@@ -284,10 +313,12 @@ func _setup_dialogue_box() -> void:
 	panel.add_theme_stylebox_override("panel", style)
 	dialogue_box.add_child(panel)
 
+	# Item 14: label geometry follows the enlarged panel — 224×44 inside
+	# the 240×60 panel, 8px inset all around.
 	dialogue_label = Label.new()
-	dialogue_label.position = Vector2(-92, -62)
-	dialogue_label.size = Vector2(184, 34)
-	dialogue_label.add_theme_font_size_override("font_size", 11)
+	dialogue_label.position = Vector2(-112, -102)
+	dialogue_label.size = Vector2(224, 44)
+	dialogue_label.add_theme_font_size_override("font_size", 12)
 	dialogue_label.add_theme_color_override("font_color", Color.WHITE)
 	dialogue_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	dialogue_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -312,6 +343,7 @@ func _on_body_exited(body: Node2D) -> void:
 
 func interact(player: Node2D) -> void:
 	if _is_opened:
+		_clamp_dialogue_box_to_viewport()
 		dialogue_box.visible = true
 		dialogue_label.text = "The chest is empty."
 		await get_tree().create_timer(1.0).timeout
@@ -323,17 +355,57 @@ func interact(player: Node2D) -> void:
 	_open_chest(player)
 
 
+## Chest popup at (-120, -110) relative to the chest world position clips at dungeon-room edges when the chest sits close to a wall (struktured playtest msg 2802). Same class as the old local-panel cutoff bug that NPCDialogue was created to fix. Clamp the panel's world position inside the visible viewport with a 16px margin by shifting dialogue_box.position.
+const _POPUP_MARGIN := 16.0
+const _POPUP_LOCAL_OFFSET := Vector2(-120.0, -110.0)
+const _POPUP_SIZE := Vector2(240.0, 60.0)
+
+func _clamp_dialogue_box_to_viewport() -> void:
+	if not is_instance_valid(dialogue_box):
+		return
+	dialogue_box.position = Vector2.ZERO
+	var vp := get_viewport()
+	if vp == null:
+		return
+	var cam := vp.get_camera_2d()
+	if cam == null:
+		return
+	var vp_size := vp.get_visible_rect().size
+	var half := vp_size * 0.5
+	var cam_center := cam.get_screen_center_position()
+	var screen_min := cam_center - half + Vector2(_POPUP_MARGIN, _POPUP_MARGIN)
+	var screen_max := cam_center + half - Vector2(_POPUP_MARGIN, _POPUP_MARGIN)
+	var panel_min := global_position + _POPUP_LOCAL_OFFSET
+	var panel_max := panel_min + _POPUP_SIZE
+	var delta := Vector2.ZERO
+	if panel_min.x < screen_min.x:
+		delta.x = screen_min.x - panel_min.x
+	elif panel_max.x > screen_max.x:
+		delta.x = screen_max.x - panel_max.x
+	if panel_min.y < screen_min.y:
+		delta.y = screen_min.y - panel_min.y
+	elif panel_max.y > screen_max.y:
+		delta.y = screen_max.y - panel_max.y
+	dialogue_box.position = delta
+
+
 func _open_chest(player: Node2D) -> void:
 	_is_opened = true
+	GameState.set_story_flag("chest_" + chest_id)
 
 	# Play sound
 	if SoundManager:
 		SoundManager.play_ui("chest_open")
 
-	# Update sprite
-	var image = Image.create(TILE_SIZE, TILE_SIZE, false, Image.FORMAT_RGBA8)
-	_draw_chest(image)
-	sprite.texture = ImageTexture.create_from_image(image)
+	# Update sprite — the SAME art convention _generate_sprite uses. Without this
+	# an artist-rendered chest snaps to the procedural drawing the moment it opens.
+	var art := "res://assets/sprites/objects/chest_open.png"
+	if ResourceLoader.exists(art):
+		sprite.texture = load(art)
+	else:
+		var image = Image.create(TILE_SIZE, TILE_SIZE, false, Image.FORMAT_RGBA8)
+		_draw_chest(image)
+		sprite.texture = ImageTexture.create_from_image(image)
 
 	# Update label
 	name_label.text = "(Empty)"
@@ -345,37 +417,94 @@ func _open_chest(player: Node2D) -> void:
 	match contents_type:
 		"gold":
 			contents_text = "Found %d Gold!" % gold_amount
-			# Add gold to party (if implemented)
+			# Actually add the gold to the party. Pre-fix the comment said
+			# "(if implemented)" and the call was never wired — players saw
+			# "Found 100 Gold!" but party_gold stayed unchanged. Silent
+			# regression: the chest_opened signal fires but no listener
+			# touches GameState, and PartyStatusScreen's gold display
+			# showed stale values. Routes through GameState.add_gold so
+			# the gold_multiplier game_constant still applies.
+			if GameState and GameState.has_method("add_gold"):
+				GameState.add_gold(gold_amount)
 		"item":
-			var item_name = contents_id.replace("_", " ").capitalize()
+			var item_name = _resolve_display_name(contents_id)
 			contents_text = "Found %s x%d!" % [item_name, contents_amount]
 			# Add items to party
 			var game_loop = get_tree().root.get_node_or_null("GameLoop")
 			if game_loop and game_loop.party.size() > 0:
 				game_loop.party[0].add_item(contents_id, contents_amount)
 		"equipment":
-			var equip_name = contents_id.replace("_", " ").capitalize()
+			var equip_name = _resolve_display_name(contents_id)
 			contents_text = "Found %s!" % equip_name
-			# Add to equipment pool
+			# Add to equipment pool. Slot is resolved against EquipmentSystem's
+			# weapons/armors/accessories dicts so the categorization is correct
+			# regardless of naming convention. Pre-fix used keyword heuristics
+			# ("armor" or "robe" or "mail" → armors) which misclassified items
+			# like "iron_breastplate" or "obsidian_cuirass" into the weapons
+			# pool, leaving them stuck and un-equippable as armor. Falls back
+			# to "weapons" only when EquipmentSystem can't resolve the ID at
+			# all (genuinely unknown item — better than dropping silently).
 			var game_loop = get_tree().root.get_node_or_null("GameLoop")
 			if game_loop:
-				var pool_key = "weapons"  # Default, should determine from item
-				if "armor" in contents_id or "robe" in contents_id or "mail" in contents_id:
-					pool_key = "armors"
-				elif "ring" in contents_id or "amulet" in contents_id or "boots" in contents_id:
-					pool_key = "accessories"
+				var pool_key = _resolve_equipment_pool(contents_id)
 				if not game_loop.equipment_pool.has(pool_key):
 					game_loop.equipment_pool[pool_key] = []
 				game_loop.equipment_pool[pool_key].append(contents_id)
 
 	# Show dialogue
+	_clamp_dialogue_box_to_viewport()
 	dialogue_box.visible = true
 	dialogue_label.text = contents_text
 
 	chest_opened.emit({"type": contents_type, "id": contents_id, "amount": contents_amount})
+	# Content-aware "loot received" cue. Pre-fix this also played
+	# "chest_open" — the same sound the opening at line 331 already fired,
+	# so every chest played chest_open TWICE. Gold gets the canonical
+	# gold_pickup chime (matches BattleResultsDisplay's gold count-up).
+	#
+	# Equipment now takes the composed stinger_item_found fanfare. The old note
+	# here said a music stinger "caused a loop bug" — that bug was manifest
+	# stingers carrying loop=true, so they never emitted `finished` and the
+	# previous track never came back. Fixed 2026-05-02: SoundManager force-clears
+	# loop for any "stinger_" id regardless of the manifest, and all five entries
+	# now also carry loop=false. Consumables stay quiet — a fanfare per potion is
+	# what makes a fanfare stop meaning anything.
+	if SoundManager:
+		match contents_type:
+			"gold":
+				SoundManager.play_ui("gold_pickup")
+			"equipment":
+				SoundManager.play_music("stinger_item_found")
 
 	# Hide after delay
 	await get_tree().create_timer(2.0).timeout
 	if not is_instance_valid(self) or not is_instance_valid(dialogue_box):
 		return
 	dialogue_box.visible = false
+
+
+## Tick 135: thin wrapper around ItemNameResolver. Local helper
+## stays so call sites don't change shape.
+func _resolve_display_name(contents_id: String) -> String:
+	return ItemNameResolver.resolve(contents_id)
+
+
+func _resolve_equipment_pool(item_id: String) -> String:
+	## Returns "weapons" / "armors" / "accessories" based on which
+	## EquipmentSystem dict actually contains the item ID. Falls back to
+	## "weapons" only when EquipmentSystem isn't available or genuinely
+	## doesn't know the item — better than silently dropping the chest
+	## reward. The fallback matches pre-fix default behavior so existing
+	## save data with mis-pooled items doesn't change shape.
+	# Engine.has_singleton("EquipmentSystem") is ALWAYS FALSE for autoloads in
+	# Godot 4. The autoload lookup below (eq_node) is the only path that ever
+	# fires; keep it as the sole source of truth.
+	var eq_node = get_node_or_null("/root/EquipmentSystem")
+	if eq_node:
+		if eq_node.has_method("get_weapon") and not eq_node.get_weapon(item_id).is_empty():
+			return "weapons"
+		if eq_node.has_method("get_armor") and not eq_node.get_armor(item_id).is_empty():
+			return "armors"
+		if eq_node.has_method("get_accessory") and not eq_node.get_accessory(item_id).is_empty():
+			return "accessories"
+	return "weapons"

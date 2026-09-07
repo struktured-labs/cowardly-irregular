@@ -231,11 +231,22 @@ func _get_impassable_types() -> Array:
 	return [
 		TileType.SERVER_TOWER, TileType.SLEEP_POD, TileType.TERMINAL_STATION,
 		TileType.ANTENNA_ARRAY, TileType.ENERGY_CELL, TileType.SCAN_GATE,
-		TileType.NEON_WALL
+		TileType.NEON_WALL,
+		# VOID_FLOOR is described as "near-black floor hinting at the abyss below" —
+		# analogue of the Abstract world's VOID_BLACK and should block movement.
+		TileType.VOID_FLOOR,
 	]
 
 func _get_debug_atlas_name() -> String:
 	return "debug_futuristic_atlas"
+
+
+func _get_sheet_key() -> String:
+	return "futuristic"
+
+
+func _get_tile_type_name(type: int) -> String:
+	return TileType.keys()[type] if type >= 0 and type < TileType.size() else ""
 
 func _draw_tile(img: Image, tile_type: int, palette: Dictionary, variant: int) -> void:
 	match tile_type:

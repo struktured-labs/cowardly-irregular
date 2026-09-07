@@ -32,12 +32,16 @@ var cancel_all_next_turn: bool = false
 ## Max profiles per character (GBA-like limit)
 const MAX_PROFILES_PER_CHARACTER: int = 8
 
-## Default profile names for each job
-const DEFAULT_PROFILE_TEMPLATES: Dictionary = {
-	"hero": ["Aggressive", "Defensive", "Balanced"],
-	"mira": ["Healer", "Support", "Offensive"],
-	"zack": ["Steal First", "DPS", "Cautious"],
-	"vex": ["Nuke", "Conserve MP", "AoE Focus"]
+## character_id → job_id for the named starter party. Item 13: used to seed
+## real Defensive/Aggressive preset profiles from AutobattleRuleTemplates
+## (pre-fix the named profiles existed but held empty attack-only scripts —
+## "Defensive" contained nothing defensive, user playtest complaint).
+const CHARACTER_JOB_IDS: Dictionary = {
+	"hero": "fighter",
+	"mira": "cleric",
+	"zack": "rogue",
+	"vex": "mage",
+	"bard": "bard",
 }
 
 ## Condition types
@@ -88,6 +92,13 @@ const CONDITION_TYPES = {
 	"ally_count": "Ally Count",
 	"item_count": "Has Item",
 	"setup_complete": "Setup Complete",
+	"ally_has_status": "Ally Has Status",
+	"enemy_has_status": "Enemy Has Status",
+	"ally_mp_percent": "Ally MP %",
+	"is_night": "Is Night",
+	"weather": "Weather Is",
+	"has_buff": "Has Buff",
+	"not_has_buff": "No Buff",
 	"always": "Always"
 }
 
@@ -106,8 +117,7 @@ const ACTION_TYPES = {
 	"attack": "Attack",
 	"ability": "Ability",
 	"item": "Item",
-	"defer": "Defer",
-	"all_out_attack": "All-Out Attack"
+	"defer": "Defer"
 }
 
 ## Target types
@@ -115,7 +125,12 @@ const TARGET_TYPES = {
 	"lowest_hp_enemy": "Lowest HP Enemy",
 	"highest_hp_enemy": "Highest HP Enemy",
 	"random_enemy": "Random Enemy",
+	"highest_speed_enemy": "Highest Speed Enemy",
+	"highest_atk_enemy": "Highest ATK Enemy",
+	"lowest_magic_defense_enemy": "Lowest M.DEF Enemy",
+	"weakest_to_ability": "Exploit Weakness",
 	"lowest_hp_ally": "Lowest HP Ally",
+	"all_allies": "All Allies",
 	"self": "Self"
 }
 
@@ -125,24 +140,6 @@ func _ready() -> void:
 	_load_character_scripts()
 
 
-## Autobattle execution (legacy - single action)
-func execute_autobattle(combatant: Combatant, script: Dictionary) -> Dictionary:
-	"""Execute autobattle script for a combatant, returns action to take"""
-	if not script.has("rules"):
-		return _get_default_action(combatant)
-
-	# Evaluate rules in order (first match wins)
-	for rule in script["rules"]:
-		if _evaluate_rule(combatant, rule):
-			var action = _rule_to_action(combatant, rule)
-			script_executed.emit(combatant, rule, [action])
-			return action
-
-	# No rule matched, use default
-	return _get_default_action(combatant)
-
-
-## New 2D Grid-based execution - returns array of actions for Advance
 func execute_grid_autobattle(combatant: Combatant) -> Array[Dictionary]:
 	"""Execute autobattle for a combatant using their character script.
 	Returns array of actions (1-4) for Advance mode."""
@@ -203,6 +200,26 @@ func _evaluate_grid_condition(combatant: Combatant, condition: Dictionary) -> bo
 			var status = condition.get("status", "")
 			return status in combatant.status_effects
 
+		"ally_has_status":
+			# True if any living ally (including self) has the given status
+			var status = condition.get("status", "")
+			var allies = _get_allies_for(combatant)
+			allies.append(combatant)
+			for ally in allies:
+				if status in ally.status_effects:
+					return true
+			return false
+
+		"enemy_has_status":
+			# True if any living enemy has the given status — lets rules react to
+			# enemy state (all-out attack a stunned foe, dispel an enemy's regen,
+			# hold fire while a debuff is still ticking).
+			var enemy_status = condition.get("status", "")
+			for enemy in _get_enemies_for(combatant):
+				if enemy_status in enemy.status_effects:
+					return true
+			return false
+
 		"enemy_hp_percent":
 			var target = _get_lowest_hp_enemy(combatant)
 			if target:
@@ -214,6 +231,17 @@ func _evaluate_grid_condition(combatant: Combatant, condition: Dictionary) -> bo
 			if ally:
 				return _compare_str(ally.get_hp_percentage(), op, value)
 			return false
+
+		"ally_mp_percent":
+			# True if the lowest-MP ally (including self) satisfies the comparison
+			var lowest_mp_pct: float = 100.0
+			var allies = _get_allies_for(combatant)
+			allies.append(combatant)
+			for ally in allies:
+				var pct = ally.get_mp_percentage() if ally.has_method("get_mp_percentage") else 100.0
+				if pct < lowest_mp_pct:
+					lowest_mp_pct = pct
+			return _compare_str(lowest_mp_pct, op, value)
 
 		"turn":
 			var battle_mgr = get_node_or_null("/root/BattleManager")
@@ -236,9 +264,47 @@ func _evaluate_grid_condition(combatant: Combatant, condition: Dictionary) -> bo
 
 		"setup_complete":
 			# True when combatant has buffs and max AP (ready for one-shot)
-			var has_buffs = combatant.active_buffs.size() > 0
+			var has_buffs = combatant.active_buffs.size() > 0 if "active_buffs" in combatant else false
 			var max_ap = combatant.current_ap >= 4
 			return has_buffs and max_ap
+
+		"has_buff":
+			# True when combatant has at least one active buff on the given stat.
+			# Use {type: "has_buff", stat: "defense"} to check for a defense buff.
+			var stat = condition.get("stat", "")
+			if not ("active_buffs" in combatant):
+				return false
+			for buff in combatant.active_buffs:
+				if buff.get("stat", "") == stat:
+					return true
+			return false
+
+		"not_has_buff":
+			# True when combatant does NOT have any active buff on the given stat.
+			# Use {type: "not_has_buff", stat: "defense"} to gate "apply Iron Guard when unbuffed".
+			var stat = condition.get("stat", "")
+			if not ("active_buffs" in combatant):
+				return true
+			for buff in combatant.active_buffs:
+				if buff.get("stat", "") == stat:
+					return false
+			return true
+
+		"is_night":
+			# msg 2916/2959 (cowir-ai grammar ruling): NULLARY and night-band ONLY — no operator, no value, no dusk. Truth condition is exactly GameState.is_night(), because shipping a rule vocabulary term whose meaning diverges from the identically-named engine method is a lying name: the player reads `is_night`, reasons from observed game behaviour, and gets a rule that fires on a band they didn't expect. If "at dusk" is ever wanted it's a SECOND nullary sibling (is_dusk), never a band parameter — a parameterized band can be malformed by the Rule Composer LLM ("midnight"), a nullary cannot.
+			var gs: Node = get_node_or_null("/root/GameState")
+			if gs == null or not gs.has_method("is_night"):
+				return false
+			return bool(gs.is_night())
+
+		"weather":
+			# Weather v2 (2026-09-04): parameterized like has_status — {type:"weather",
+			# weather:"storm"}. Truth is exactly GameState.get_weather() == value, same
+			# lying-name discipline as is_night: the term means what the engine method means.
+			var gs_w: Node = get_node_or_null("/root/GameState")
+			if gs_w == null or not gs_w.has_method("get_weather"):
+				return false
+			return str(gs_w.get_weather()) == str(condition.get("weather", ""))
 
 		"always":
 			return true
@@ -246,6 +312,116 @@ func _evaluate_grid_condition(combatant: Combatant, condition: Dictionary) -> bo
 	# Unknown condition type - log warning for debugging
 	push_warning("AutobattleSystem: Unknown condition type '%s'" % cond_type)
 	return false
+
+
+func validate_rule(rule: Dictionary, deep_check_character_id: String = "") -> Array[String]:
+	var errors: Array[String] = []
+	if not rule.has("conditions"):
+		errors.append("missing 'conditions' array")
+	elif typeof(rule["conditions"]) != TYPE_ARRAY:
+		errors.append("'conditions' must be an array")
+	if not rule.has("actions"):
+		errors.append("missing 'actions' array")
+	elif typeof(rule["actions"]) != TYPE_ARRAY:
+		errors.append("'actions' must be an array")
+	if errors.size() > 0:
+		return errors
+	for c in rule["conditions"]:
+		if typeof(c) != TYPE_DICTIONARY:
+			errors.append("condition must be a dictionary: %s" % [c])
+			continue
+		var ctype: String = str(c.get("type", ""))
+		if not CONDITION_TYPES.has(ctype):
+			errors.append("unknown condition type: '%s'" % ctype)
+			continue
+		if c.has("op") and not OPERATORS.has(str(c["op"])):
+			errors.append("unknown operator: '%s'" % c["op"])
+		# Weather values validate against the flat vocabulary so an LLM-composed or
+		# hand-typed bad value fails at decode, not silently-never-fires in battle.
+		if ctype == "weather" and not GameState.all_weather_conditions().has(str(c.get("weather", ""))):
+			errors.append("unknown weather condition: '%s'" % c.get("weather", ""))
+	for a in rule["actions"]:
+		if typeof(a) != TYPE_DICTIONARY:
+			errors.append("action must be a dictionary: %s" % [a])
+			continue
+		var atype: String = str(a.get("type", ""))
+		if not ACTION_TYPES.has(atype):
+			errors.append("unknown action type: '%s'" % atype)
+			continue
+		if atype == "ability" and not a.has("id"):
+			errors.append("action type 'ability' requires 'id'")
+		if atype == "item" and not a.has("id"):
+			errors.append("action type 'item' requires 'id'")
+		if a.has("target") and not TARGET_TYPES.has(str(a["target"])):
+			errors.append("unknown target type: '%s'" % a["target"])
+	if errors.is_empty() and deep_check_character_id != "":
+		errors.append_array(_deep_check_rule(rule, deep_check_character_id))
+	return errors
+
+
+## Item 13 fast-follow (cowir-ai convergence, msg 2038): fizzle-correctness
+## deep-check for one rule against one character. Catches what grammar can't:
+## hallucinated ability/item ids, abilities outside the character's level-1
+## kit, and MP-starved rules — all three fizzle-consume a turn at runtime via
+## BM's can_use_ability path. RuleComposer's second-pass lint opts in with
+## validate_rule(rule, character_id). Per-rule scope is deliberately STRICTER
+## than the preset catalog's whole-script lint (no earlier-refill-rule
+## credit): stricter = safer for LLM-composed output.
+func _deep_check_rule(rule: Dictionary, character_id: String) -> Array[String]:
+	var errors: Array[String] = []
+	var job_id: String = _resolve_job_for_character(character_id)
+	var job: Dictionary = JobSystem.get_job(job_id)
+	if job.is_empty():
+		errors.append("cannot resolve job for character '%s' — deep check unavailable" % character_id)
+		return errors
+	var kit: Array = (job.get("abilities", []) as Array).duplicate()
+	var free_move: Dictionary = job.get("free_move", {})
+	if free_move.has("ability_id"):
+		kit.append(free_move["ability_id"])
+	var full_kit: Array = kit.duplicate()
+	for lvl_key in (job.get("abilities_at_level", {}) as Dictionary).keys():
+		for aid in (job["abilities_at_level"][lvl_key] as Array):
+			full_kit.append(aid)
+	var max_mp: int = int(job.get("stat_modifiers", {}).get("max_mp", 1))
+	var mp_cost_sum: int = 0
+	for a in rule.get("actions", []):
+		var atype: String = str(a.get("type", ""))
+		if atype == "ability":
+			var aid: String = str(a.get("id", ""))
+			var ability: Dictionary = JobSystem.get_ability(aid)
+			if ability.is_empty():
+				errors.append("unknown ability '%s'" % aid)
+				continue
+			if not (aid in kit):
+				errors.append("ability '%s' not in %s's level-1 kit" % [aid, job_id])
+			var action_cost: int = int(ability.get("mp_cost", 0))
+			# Upgrades: baseline must be level-1-safe (above), each upgrade must be
+			# learnable somewhere in the job's roster, cost check uses worst case.
+			for up in (a.get("upgrades", []) as Array):
+				var up_id: String = str(up)
+				var up_ability: Dictionary = JobSystem.get_ability(up_id)
+				if up_ability.is_empty():
+					errors.append("unknown upgrade ability '%s'" % up_id)
+					continue
+				if not (up_id in full_kit):
+					errors.append("upgrade ability '%s' not learnable by %s at any level" % [up_id, job_id])
+					continue
+				action_cost = maxi(action_cost, int(up_ability.get("mp_cost", 0)))
+			mp_cost_sum += action_cost
+		elif atype == "item":
+			var iid: String = str(a.get("id", ""))
+			if ItemSystem.get_item(iid).is_empty():
+				errors.append("unknown item '%s'" % iid)
+	if mp_cost_sum > 0 and max_mp > 0:
+		var need_pct: int = ceili(float(mp_cost_sum) / float(max_mp) * 100.0)
+		var guarded: bool = false
+		for c in rule.get("conditions", []):
+			if str(c.get("type", "")) == "mp_percent" and str(c.get("op", "")) == ">=" \
+					and int(c.get("value", 0)) >= need_pct:
+				guarded = true
+		if not guarded:
+			errors.append("rule costs %d MP (%d%% of %s's base pool) with no mp_percent >= %d guard — would fizzle-consume the turn" % [mp_cost_sum, need_pct, job_id, need_pct])
+	return errors
 
 
 func _compare_str(a: float, op: String, b: float) -> bool:
@@ -263,6 +439,8 @@ func _compare_str(a: float, op: String, b: float) -> bool:
 			return a > b
 		"!=":
 			return a != b
+	# Tick 216: unknown comparison operator — symmetry with the existing _evaluate_grid_condition unknown-type warning at line ~295. Pre-fix a corrupt op like "=" or ">>" silently returned false; rules never matched and players had no way to diagnose.
+	push_warning("[AutobattleSystem] _compare_str: unknown op='%s' (expected <, <=, ==, >=, >, !=) — comparison treated as false" % op)
 	return false
 
 
@@ -298,11 +476,11 @@ func _action_def_to_action(combatant: Combatant, action_def: Dictionary) -> Dict
 			}
 
 		"ability":
-			var ability_id = action_def.get("id", "")
+			var ability_id: String = _resolve_ability_upgrade(combatant, action_def)
 			return {
 				"type": "ability",
 				"ability_id": ability_id,
-				"targets": [_get_target_by_type(combatant, target_type)]
+				"targets": _resolve_ability_targets(combatant, ability_id, target_type)
 			}
 
 		"item":
@@ -318,13 +496,6 @@ func _action_def_to_action(combatant: Combatant, action_def: Dictionary) -> Dict
 				"type": "defer"
 			}
 
-		"all_out_attack":
-			# Queue max actions on lowest HP enemy (signals advance mode)
-			return {
-				"type": "attack",
-				"target": _get_target_by_type(combatant, "lowest_hp_enemy"),
-				"force_advance": true  # Signal to queue max actions
-			}
 		_:
 			push_warning("AutobattleSystem: Unknown action type '%s', defaulting to attack" % action_type)
 			return {
@@ -333,8 +504,48 @@ func _action_def_to_action(combatant: Combatant, action_def: Dictionary) -> Dict
 			}
 
 
+## Preset level-evolution: walk optional upgrades weakest→strongest, pick the
+## last one this combatant has learned; fall back to the baseline id when none
+## qualify. Same target_type required per upgrade (author responsibility).
+func _resolve_ability_upgrade(combatant: Combatant, action_def: Dictionary) -> String:
+	var baseline: String = str(action_def.get("id", ""))
+	var upgrades: Array = action_def.get("upgrades", []) as Array
+	if upgrades.is_empty():
+		return baseline
+	var chosen: String = baseline
+	for candidate in upgrades:
+		var cand_id: String = str(candidate)
+		if cand_id == "":
+			continue
+		if _combatant_has_learned(combatant, cand_id):
+			chosen = cand_id
+	return chosen
+
+
+func _combatant_has_learned(combatant: Combatant, ability_id: String) -> bool:
+	if combatant == null or ability_id == "":
+		return false
+	var character_id: String = _get_character_id(combatant)
+	var job_id: String = _resolve_job_for_character(character_id)
+	var job: Dictionary = JobSystem.get_job(job_id)
+	if job.is_empty():
+		return false
+	if ability_id in (job.get("abilities", []) as Array):
+		return true
+	if str(job.get("free_move", {}).get("ability_id", "")) == ability_id:
+		return true
+	var level: int = int(combatant.job_level) if "job_level" in combatant else 1
+	var at_level: Dictionary = job.get("abilities_at_level", {})
+	for key in at_level.keys():
+		if int(str(key)) <= level and ability_id in (at_level[key] as Array):
+			return true
+	return false
+
+
 func _get_target_by_type(combatant: Combatant, target_type: String) -> Combatant:
-	"""Get target based on target type string"""
+	"""Get target based on target type string. For multi-target types like all_allies,
+	returns the first member of the group; callers needing the full array should call
+	_get_targets_by_type or rely on _resolve_ability_targets for ability execution."""
 	match target_type:
 		"lowest_hp_enemy":
 			return _get_lowest_hp_enemy(combatant)
@@ -345,10 +556,79 @@ func _get_target_by_type(combatant: Combatant, target_type: String) -> Combatant
 			return enemies[randi() % enemies.size()] if enemies.size() > 0 else null
 		"lowest_hp_ally":
 			return _get_lowest_hp_ally(combatant)
+		"lowest_magic_defense_enemy":
+			return _get_lowest_magic_defense_enemy(combatant)
+		"highest_atk_enemy":
+			return _get_highest_atk_enemy(combatant)
+		"highest_speed_enemy":
+			return _get_highest_speed_enemy(combatant)
+		"weakest_to_ability":
+			# Attack/item path has no ability element — collapse to lowest-HP of
+			# non-immune. Ability actions route through _resolve_ability_targets,
+			# which supplies the real element.
+			return _get_weakness_target(combatant, "")
+		"all_allies":
+			# Single-target fallback: first living ally (used when caller can't expand)
+			var allies = _get_all_alive_allies(combatant)
+			return allies[0] if allies.size() > 0 else combatant
 		"self":
 			return combatant
 		_:
+			push_warning("AutobattleSystem: Unknown target type '%s', defaulting to lowest_hp_enemy" % target_type)
 			return _get_lowest_hp_enemy(combatant)
+
+
+func _get_targets_by_type(combatant: Combatant, target_type: String) -> Array[Combatant]:
+	"""Multi-target resolver. Returns the full party for 'all_allies' / 'all_enemies',
+	otherwise wraps the single _get_target_by_type result in a one-element array."""
+	match target_type:
+		"all_allies":
+			return _get_all_alive_allies(combatant)
+		"all_enemies":
+			return _get_enemies_for(combatant)
+		_:
+			var t = _get_target_by_type(combatant, target_type)
+			var arr: Array[Combatant] = []
+			if t != null:
+				arr.append(t)
+			return arr
+
+
+func _resolve_ability_targets(combatant: Combatant, ability_id: String, target_type: String) -> Array[Combatant]:
+	"""Resolve the targets array for an ability action.
+	If the ability's own target_type is 'all_allies' / 'all_enemies', expand to the
+	full group regardless of the script target string — fixes Bard Battle Hymn /
+	Inspiring Melody silently hitting one enemy."""
+	var js = get_node_or_null("/root/JobSystem")
+	if js and js.has_method("get_ability"):
+		var ability = js.get_ability(ability_id)
+		if ability is Dictionary and not ability.is_empty():
+			var ab_target = ability.get("target_type", "")
+			if ab_target == "all_allies":
+				return _get_all_alive_allies(combatant)
+			if ab_target == "all_enemies":
+				return _get_enemies_for(combatant)
+	# "Exploit Weakness": aim this ability at the enemy weak to its own element.
+	if target_type == "weakest_to_ability":
+		var element: String = ""
+		if js and js.has_method("get_ability"):
+			var ab2 = js.get_ability(ability_id)
+			if ab2 is Dictionary and ab2.get("element") != null:
+				element = str(ab2.get("element"))
+		var wt: Combatant = _get_weakness_target(combatant, element)
+		var out: Array[Combatant] = []
+		if wt != null:
+			out.append(wt)
+		return out
+	return _get_targets_by_type(combatant, target_type)
+
+
+func _get_all_alive_allies(combatant: Combatant) -> Array[Combatant]:
+	"""Living allies for a combatant, including the combatant itself when alive."""
+	var allies := _get_allies_for(combatant)
+	if combatant.is_alive and not (combatant in allies):
+		allies.append(combatant)
+	return allies
 
 
 func _get_character_id(combatant: Combatant) -> String:
@@ -379,6 +659,10 @@ func set_autobattle_enabled(character_id: String, enabled: bool) -> void:
 	"""Enable or disable autobattle for a character"""
 	autobattle_enabled[character_id] = enabled
 	character_script_changed.emit(character_id)
+	# Tick 247 / 254: centralized event-flag ratchet so a toast fires
+	# the first time the player enables autobattle for any character.
+	if enabled and PartyChatSystem:
+		PartyChatSystem.fire_event_flag("event_flag_first_autobattle_enabled")
 
 
 func toggle_autobattle(character_id: String) -> bool:
@@ -397,6 +681,75 @@ func get_character_script(character_id: String) -> Dictionary:
 	if active_idx < profiles.size():
 		return profiles[active_idx].get("script", {})
 	return create_default_character_script(character_id)
+
+
+## Render a character's active rules as prose an LLM can reason about.
+## Priority order is the strategy — rules are numbered because first match wins.
+func describe_script_for_llm(character_id: String, max_rules: int = 6) -> String:
+	return describe_rules_for_llm(get_character_script(character_id).get("rules", []) as Array, max_rules)
+
+
+## Pure half of describe_script_for_llm — takes rules directly so it is testable
+## without touching character_profiles or the user:// save path.
+func describe_rules_for_llm(rules: Array, max_rules: int = 6) -> String:
+	if rules.is_empty():
+		return ""
+	var lines: PackedStringArray = PackedStringArray()
+	var shown: int = mini(max_rules, rules.size())
+	for i in range(shown):
+		var rule: Variant = rules[i]
+		if not (rule is Dictionary):
+			continue
+		lines.append("%d. %s" % [i + 1, describe_rule_for_llm(rule as Dictionary)])
+	# Say what was withheld rather than truncate silently.
+	if rules.size() > shown:
+		lines.append("   (+%d further rules, lower priority)" % (rules.size() - shown))
+	return "\n".join(lines)
+
+
+## One rule as "IF <conditions> THEN <actions>". Unknown keys degrade to their raw id.
+func describe_rule_for_llm(rule: Dictionary) -> String:
+	var conds: Array = rule.get("conditions", []) as Array
+	var cond_parts: PackedStringArray = PackedStringArray()
+	for c in conds:
+		if c is Dictionary:
+			cond_parts.append(_describe_condition_for_llm(c as Dictionary))
+	var acts: Array = rule.get("actions", []) as Array
+	var act_parts: PackedStringArray = PackedStringArray()
+	for a in acts:
+		if a is Dictionary:
+			act_parts.append(_describe_action_for_llm(a as Dictionary))
+	var cond_text: String = " AND ".join(cond_parts) if cond_parts.size() > 0 else "ALWAYS"
+	var act_text: String = " + ".join(act_parts) if act_parts.size() > 0 else "(no action)"
+	return "IF %s THEN %s" % [cond_text, act_text]
+
+
+func _describe_condition_for_llm(c: Dictionary) -> String:
+	var ctype: String = str(c.get("type", "?"))
+	if ctype == "always":
+		return "ALWAYS"
+	var label: String = str(CONDITION_TYPES.get(ctype, ctype))
+	# The subject key varies by condition type; take whichever identifying one is present.
+	var subject: String = ""
+	for key in ["status", "item_id", "buff", "ability_id"]:
+		if c.has(key):
+			subject = " " + str(c[key])
+			break
+	var op: String = str(c.get("op", c.get("compare_op", "")))
+	if op == "" or not c.has("value"):
+		return (label + subject).strip_edges()
+	return "%s%s %s %s" % [label, subject, op, str(c.get("value", ""))]
+
+
+func _describe_action_for_llm(a: Dictionary) -> String:
+	var atype: String = str(a.get("type", "?"))
+	var name: String = str(ACTION_TYPES.get(atype, atype)).to_lower()
+	var id: String = str(a.get("id", ""))
+	var target: String = str(a.get("target", ""))
+	var out: String = name if id == "" else "%s %s" % [name, id]
+	if target != "":
+		out += " -> " + str(TARGET_TYPES.get(target, target))
+	return out
 
 
 func set_character_script(character_id: String, script: Dictionary) -> void:
@@ -430,16 +783,39 @@ func _ensure_character_profiles(character_id: String) -> void:
 
 
 func _create_default_profiles(character_id: String) -> Dictionary:
-	"""Create default profile set for a character"""
-	var profile_names = DEFAULT_PROFILE_TEMPLATES.get(character_id, ["Default", "Custom 1", "Custom 2"])
-	var profiles = []
-
-	for i in range(profile_names.size()):
-		var name = profile_names[i]
-		var script = create_default_character_script(character_id) if i == 0 else _create_empty_script(character_id)
-		profiles.append({"name": name, "script": script})
-
+	"""Create default profile set for a character.
+	Item 13: profile 0 stays the tuned per-job default script; profiles 1-2
+	seed the job's Defensive/Aggressive presets from AutobattleRuleTemplates
+	so their names promise what they contain. Jobs without catalog presets
+	(advanced/meta) fall back to legacy empty custom slots."""
+	var profiles = [
+		{"name": "Default", "script": create_default_character_script(character_id)}
+	]
+	var job_id: String = _resolve_job_for_character(character_id)
+	for template in AutobattleRuleTemplates.find_for_job(job_id):
+		var stance: String = str(template.get("stance", ""))
+		if stance == "balanced":
+			continue  # profile 0's tuned default already covers the balanced stance
+		profiles.append({
+			"name": str(template.get("name", "Preset")),
+			"script": AutobattleRuleTemplates.build_script(template, character_id)
+		})
+	while profiles.size() < 3:
+		profiles.append({"name": "Custom %d" % profiles.size(), "script": _create_empty_script(character_id)})
 	return {"profiles": profiles, "active": 0}
+
+
+func _resolve_job_for_character(character_id: String) -> String:
+	"""character_id → job_id: named starters first, then GameState lookup,
+	then the id itself (covers job-named characters like 'bard')."""
+	if CHARACTER_JOB_IDS.has(character_id):
+		return CHARACTER_JOB_IDS[character_id]
+	var game_state = get_node_or_null("/root/GameState") if is_inside_tree() else null
+	if game_state and game_state.has_method("get_character_job_id"):
+		var job_id: String = game_state.get_character_job_id(character_id)
+		if job_id != "":
+			return job_id
+	return character_id
 
 
 func _create_empty_script(character_id: String) -> Dictionary:
@@ -510,27 +886,6 @@ func create_new_profile(character_id: String, name: String = "") -> int:
 	return profiles.size() - 1
 
 
-func delete_profile(character_id: String, index: int) -> bool:
-	"""Delete a profile (cannot delete last one)"""
-	_ensure_character_profiles(character_id)
-	var profiles = character_profiles[character_id].get("profiles", [])
-
-	if profiles.size() <= 1 or index < 0 or index >= profiles.size():
-		return false
-
-	profiles.remove_at(index)
-
-	# Adjust active index if needed
-	var active = character_profiles[character_id].get("active", 0)
-	if active >= profiles.size():
-		character_profiles[character_id]["active"] = profiles.size() - 1
-	elif active > index:
-		character_profiles[character_id]["active"] = active - 1
-
-	_save_character_profiles()
-	return true
-
-
 func rename_profile(character_id: String, index: int, new_name: String) -> bool:
 	"""Rename a profile"""
 	_ensure_character_profiles(character_id)
@@ -544,45 +899,44 @@ func rename_profile(character_id: String, index: int, new_name: String) -> bool:
 	return true
 
 
-func reset_profile_to_default(character_id: String, index: int) -> bool:
-	"""Reset a profile back to default values"""
+func install_composition_as_new_profile(character_id: String, composition: Dictionary) -> int:
+	"""Install an LLM-composed script as a brand-new profile; never overwrites, -1 if at max"""
 	_ensure_character_profiles(character_id)
 	var profiles = character_profiles[character_id].get("profiles", [])
 
-	if index < 0 or index >= profiles.size():
-		return false
-
-	var name = profiles[index].get("name", "Default")
-	profiles[index]["script"] = create_default_character_script(character_id)
-	_save_character_profiles()
-	return true
-
-
-func copy_profile(character_id: String, source_index: int, new_name: String = "") -> int:
-	"""Copy a profile, returns new index or -1 if at max"""
-	_ensure_character_profiles(character_id)
-	var profiles = character_profiles[character_id].get("profiles", [])
-
-	if profiles.size() >= MAX_PROFILES_PER_CHARACTER or source_index < 0 or source_index >= profiles.size():
+	if profiles.size() >= MAX_PROFILES_PER_CHARACTER:
 		return -1
 
-	var source = profiles[source_index]
-	if new_name.is_empty():
-		new_name = source.get("name", "Copy") + " Copy"
-
+	var comp_name: String = str(composition.get("name", ""))
+	if comp_name.is_empty() or comp_name == "<null>":
+		comp_name = "Composed %d" % (profiles.size() + 1)
+	var raw_rules = composition.get("rules", [])
+	var rules: Array = raw_rules if raw_rules is Array else []
 	profiles.append({
-		"name": new_name,
-		"script": source.get("script", {}).duplicate(true)
+		"name": comp_name,
+		"script": {
+			"character_id": character_id,
+			"name": comp_name,
+			"description": str(composition.get("description", "")),
+			"rules": rules.duplicate(true)
+		}
 	})
 
 	_save_character_profiles()
+	character_script_changed.emit(character_id)
 	return profiles.size() - 1
 
 
 func create_default_character_script(character_id: String) -> Dictionary:
-	"""Create a default autobattle script for a character based on job class"""
-	# Map character IDs to job-specific conservative scripts
+	"""Create a default autobattle script for a character based on job class.
+	Routing priority:
+	  1. Known character names (hero/mira/zack/vex)
+	  2. Job name aliases (fighter/cleric/mage/rogue/bard) — for future party members
+	     or any character whose combatant_name matches their job
+	  3. GameState party lookup — resolve job from saved party data
+	  4. Generic attack fallback"""
 	match character_id:
+		# ── Named party members (primary route) ──────────────────────────────
 		"hero":
 			return _create_fighter_default_script(character_id)
 		"mira":
@@ -591,12 +945,81 @@ func create_default_character_script(character_id: String) -> Dictionary:
 			return _create_thief_default_script(character_id)
 		"vex":
 			return _create_black_mage_default_script(character_id)
+		# ── Job-name aliases (renamed jobs + bard, for future characters) ─────
+		"fighter":
+			return _create_fighter_default_script(character_id)
+		"cleric", "white_mage":
+			return _create_white_mage_default_script(character_id)
+		"rogue", "thief":
+			return _create_thief_default_script(character_id)
+		"mage", "black_mage":
+			return _create_black_mage_default_script(character_id)
+		"bard":
+			return _create_bard_default_script(character_id)
+		"guardian":
+			return _create_guardian_default_script(character_id)
+		"ninja":
+			return _create_ninja_default_script(character_id)
+		"summoner":
+			return _create_summoner_default_script(character_id)
+		"speculator":
+			return _create_speculator_default_script(character_id)
+		"scriptweaver":
+			return _create_scriptweaver_default_script(character_id)
+		"time_mage":
+			return _create_time_mage_default_script(character_id)
+		"necromancer":
+			return _create_necromancer_default_script(character_id)
+		"bossbinder":
+			return _create_bossbinder_default_script(character_id)
+		"skiptrotter":
+			return _create_skiptrotter_default_script(character_id)
 		_:
-			# Generic fallback - just attack
+			# Job lookup via GameState: handles any named character whose primary job
+			# is known but whose name doesn't match the cases above
+			var game_state = get_node_or_null("/root/GameState")
+			if game_state and game_state.has_method("get_character_job_id"):
+				var job_id: String = game_state.get_character_job_id(character_id)
+				match job_id:
+					"fighter":
+						return _create_fighter_default_script(character_id)
+					"cleric", "white_mage":
+						return _create_white_mage_default_script(character_id)
+					"rogue", "thief":
+						return _create_thief_default_script(character_id)
+					"mage", "black_mage":
+						return _create_black_mage_default_script(character_id)
+					"bard":
+						return _create_bard_default_script(character_id)
+					"guardian":
+						return _create_guardian_default_script(character_id)
+					"ninja":
+						return _create_ninja_default_script(character_id)
+					"summoner":
+						return _create_summoner_default_script(character_id)
+					"scriptweaver":
+						return _create_scriptweaver_default_script(character_id)
+					"time_mage":
+						return _create_time_mage_default_script(character_id)
+					"necromancer":
+						return _create_necromancer_default_script(character_id)
+					"bossbinder":
+						return _create_bossbinder_default_script(character_id)
+					"skiptrotter":
+						return _create_skiptrotter_default_script(character_id)
+			# Generic fallback — potion if in danger, then attack lowest HP enemy
 			return {
 				"character_id": character_id,
 				"name": "Default",
 				"rules": [
+					# Use potion at <40% HP so unknown characters don't silently die in W1
+					{
+						"conditions": [
+							{"type": "hp_percent", "op": "<", "value": 40},
+							{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
+						],
+						"actions": [{"type": "item", "id": "potion", "target": "self"}]
+					},
 					{
 						"conditions": [{"type": "always"}],
 						"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
@@ -606,25 +1029,37 @@ func create_default_character_script(character_id: String) -> Dictionary:
 
 
 func _create_fighter_default_script(character_id: String) -> Dictionary:
-	"""Conservative Fighter script - basic attacks, power strike on weakened enemies"""
+	"""Fighter script - aggressive physical damage, proactive potion use, Power Strike finisher.
+	Potion threshold raised to 50% so Fighter doesn't get two-shot before healing triggers."""
 	return {
 		"character_id": character_id,
 		"name": "Fighter Default",
 		"rules": [
-			# Low HP - defer to recover
-			{
-				"conditions": [{"type": "hp_percent", "op": "<", "value": 20}],
-				"actions": [{"type": "defer"}]
-			},
-			# Finish off weak enemy with Power Strike
+			# Poison: use antidote before HP drain kills — higher priority than potion
 			{
 				"conditions": [
-					{"type": "enemy_hp_percent", "op": "<", "value": 30},
-					{"type": "mp_percent", "op": ">=", "value": 20}
+					{"type": "has_status", "status": "poison"},
+					{"type": "item_count", "item_id": "antidote", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "antidote", "target": "self"}]
+			},
+			# HP below 50%: use potion proactively — Fighter has the biggest HP pool and can
+			# absorb a second hit; waiting until 30% risks dying before the next turn
+			{
+				"conditions": [
+					{"type": "hp_percent", "op": "<", "value": 50},
+					{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "potion", "target": "self"}]
+			},
+			# Power Strike to finish off a wounded enemy
+			{
+				"conditions": [
+					{"type": "enemy_hp_percent", "op": "<", "value": 40}
 				],
 				"actions": [{"type": "ability", "id": "power_strike", "target": "lowest_hp_enemy"}]
 			},
-			# Default - basic attack
+			# Default - attack lowest HP enemy to kill off threats quickly
 			{
 				"conditions": [{"type": "always"}],
 				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
@@ -634,33 +1069,87 @@ func _create_fighter_default_script(character_id: String) -> Dictionary:
 
 
 func _create_white_mage_default_script(character_id: String) -> Dictionary:
-	"""Conservative White Mage script - heal allies, conserve MP"""
+	"""Cleric script - proactive healing first, potion when dry, attack when party is healthy.
+	Heal threshold raised to 60% so the Cleric acts before damage compounds into a death spiral."""
 	return {
 		"character_id": character_id,
 		"name": "Healer Default",
 		"rules": [
-			# Emergency self-heal
+			# Status priority: Esuna cleanse when any ally has a negative status
+			# Esuna removes ALL negative statuses from one target — use it on the worst-off ally
 			{
 				"conditions": [
-					{"type": "hp_percent", "op": "<", "value": 30},
+					{"type": "ally_has_status", "status": "poison"},
+					{"type": "mp_percent", "op": ">=", "value": 15}
+				],
+				"actions": [{"type": "ability", "id": "esuna", "target": "lowest_hp_ally"}]
+			},
+			{
+				"conditions": [
+					{"type": "ally_has_status", "status": "blind"},
+					{"type": "mp_percent", "op": ">=", "value": 15}
+				],
+				"actions": [{"type": "ability", "id": "esuna", "target": "lowest_hp_ally"}]
+			},
+			{
+				"conditions": [
+					{"type": "ally_has_status", "status": "confuse"},
+					{"type": "mp_percent", "op": ">=", "value": 15}
+				],
+				"actions": [{"type": "ability", "id": "esuna", "target": "lowest_hp_ally"}]
+			},
+			# Fallback: self poisoned and low MP — use antidote instead
+			{
+				"conditions": [
+					{"type": "has_status", "status": "poison"},
+					{"type": "item_count", "item_id": "antidote", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "antidote", "target": "self"}]
+			},
+			# Fallback: self blinded and low MP — use echo_herbs
+			{
+				"conditions": [
+					{"type": "has_status", "status": "blind"},
+					{"type": "item_count", "item_id": "echo_herbs", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "echo_herbs", "target": "self"}]
+			},
+			# Emergency: self at or below 30% HP and has MP — self-heal immediately before
+			# worrying about allies; a dead Cleric heals nobody
+			{
+				"conditions": [
+					{"type": "hp_percent", "op": "<=", "value": 30},
 					{"type": "mp_percent", "op": ">=", "value": 10}
 				],
 				"actions": [{"type": "ability", "id": "cure", "target": "self"}]
 			},
-			# Heal critically low ally
+			# Proactive: any ally (including self) at or below 60% HP — heal before it gets
+			# critical. 60% gives a two-turn buffer against average W1 enemy damage.
 			{
 				"conditions": [
-					{"type": "ally_hp_percent", "op": "<", "value": 40},
+					{"type": "ally_hp_percent", "op": "<=", "value": 60},
 					{"type": "mp_percent", "op": ">=", "value": 10}
 				],
 				"actions": [{"type": "ability", "id": "cure", "target": "lowest_hp_ally"}]
 			},
-			# Low MP - conserve with basic attack
+			# Self at or below 60% but MP is gone: use a potion — Cleric can't help others
+			# if she drops first
 			{
-				"conditions": [{"type": "mp_percent", "op": "<", "value": 20}],
-				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
+				"conditions": [
+					{"type": "hp_percent", "op": "<=", "value": 60},
+					{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "potion", "target": "self"}]
 			},
-			# Default - attack if everyone healthy
+			# Out of MP but ally critically low (<=40%): use potion on them
+			{
+				"conditions": [
+					{"type": "ally_hp_percent", "op": "<=", "value": 40},
+					{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "potion", "target": "lowest_hp_ally"}]
+			},
+			# Default - attack when party is safe
 			{
 				"conditions": [{"type": "always"}],
 				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
@@ -670,25 +1159,47 @@ func _create_white_mage_default_script(character_id: String) -> Dictionary:
 
 
 func _create_thief_default_script(character_id: String) -> Dictionary:
-	"""Conservative Thief script - fast attacks, steal when safe"""
+	"""Rogue script - steal opener, backstab finisher opener, proactive potion, fast cleanup.
+	Steal comes before backstab so it fires on a healthy enemy before we damage them.
+	Potion threshold raised to 40% — Rogue's thin HP can't afford the 30% danger zone."""
 	return {
 		"character_id": character_id,
-		"name": "Thief Default",
+		"name": "Rogue Default",
 		"rules": [
-			# Low HP - defer
-			{
-				"conditions": [{"type": "hp_percent", "op": "<", "value": 25}],
-				"actions": [{"type": "defer"}]
-			},
-			# Steal from high HP enemy (safe to try)
+			# Poison: antidote before the DoT compounds — Rogue's HP pool is thin
 			{
 				"conditions": [
-					{"type": "enemy_hp_percent", "op": ">", "value": 70},
-					{"type": "mp_percent", "op": ">=", "value": 15}
+					{"type": "has_status", "status": "poison"},
+					{"type": "item_count", "item_id": "antidote", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "antidote", "target": "self"}]
+			},
+			# HP below 40%: use potion now — Rogue is fragile and one bad hit at 30% is fatal
+			{
+				"conditions": [
+					{"type": "hp_percent", "op": "<", "value": 40},
+					{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "potion", "target": "self"}]
+			},
+			# Steal: grab items from a healthy enemy at fight start.
+			# Must come before backstab so steal fires on a fully-HP target (steal
+			# is more likely to succeed on undamaged enemies in many JRPG conventions)
+			{
+				"conditions": [
+					{"type": "enemy_hp_percent", "op": ">", "value": 75},
+					{"type": "hp_percent", "op": ">", "value": 70}
 				],
 				"actions": [{"type": "ability", "id": "steal", "target": "highest_hp_enemy"}]
 			},
-			# Default - attack weakest
+			# Backstab: high-damage hit while the enemy is still mostly healthy
+			{
+				"conditions": [
+					{"type": "enemy_hp_percent", "op": ">", "value": 60}
+				],
+				"actions": [{"type": "ability", "id": "backstab", "target": "lowest_hp_enemy"}]
+			},
+			# Default - attack weakest to finish fights fast
 			{
 				"conditions": [{"type": "always"}],
 				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
@@ -698,35 +1209,478 @@ func _create_thief_default_script(character_id: String) -> Dictionary:
 
 
 func _create_black_mage_default_script(character_id: String) -> Dictionary:
-	"""Conservative Black Mage script - magic damage, conserve MP"""
+	"""Mage script - lead with magic, target low-defense enemies, proactive potion safety net.
+	Potion threshold raised to 40% — Mage has the lowest HP in the party and routinely gets
+	focused by enemies. 30% was one hit away from death in W1 encounters."""
 	return {
 		"character_id": character_id,
-		"name": "Nuker Default",
+		"name": "Mage Default",
 		"rules": [
-			# Low HP - defer
+			# Poison: antidote immediately — poison ticks are especially punishing on low-HP Mage
 			{
-				"conditions": [{"type": "hp_percent", "op": "<", "value": 25}],
-				"actions": [{"type": "defer"}]
+				"conditions": [
+					{"type": "has_status", "status": "poison"},
+					{"type": "item_count", "item_id": "antidote", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "antidote", "target": "self"}]
 			},
-			# Low MP - conserve with basic attack
+			# HP below 40%: use potion now — Mage can't cast if she's dead
 			{
-				"conditions": [{"type": "mp_percent", "op": "<", "value": 25}],
+				"conditions": [
+					{"type": "hp_percent", "op": "<", "value": 40},
+					{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "potion", "target": "self"}]
+			},
+			# Multiple enemies with enough MP: Fire hits all and softens the pack
+			{
+				"conditions": [
+					{"type": "enemy_count", "op": ">=", "value": 2},
+					{"type": "mp_percent", "op": ">=", "value": 25}
+				],
+				"actions": [{"type": "ability", "id": "fire", "target": "lowest_magic_defense_enemy"}]
+			},
+			# Single enemy, good MP: Thunder for solid single-target damage
+			{
+				"conditions": [
+					{"type": "mp_percent", "op": ">=", "value": 20}
+				],
+				"actions": [{"type": "ability", "id": "thunder", "target": "lowest_magic_defense_enemy"}]
+			},
+			# MP depleted: basic attack rather than deferring dead weight
+			{
+				"conditions": [{"type": "always"}],
 				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
+			}
+		]
+	}
+
+
+func _create_bard_default_script(character_id: String) -> Dictionary:
+	"""Bard script - buff party with Battle Hymn, crowd-control with Lullaby, restore MP,
+	heal self with potion when critical, fall back to basic attack"""
+	return {
+		"character_id": character_id,
+		"name": "Bard Default",
+		"rules": [
+			# Survival first: HP below 40%, use potion — Bard's support is worthless if dead
+			{
+				"conditions": [
+					{"type": "hp_percent", "op": "<", "value": 40},
+					{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "potion", "target": "self"}]
 			},
-			# Multiple enemies - use Fire for damage
+			# Battle Hymn: cast on turn 1 (setup phase) to get attack buff on the whole party
+			# Re-cast at turn 4+ so the 3-turn buff never fully drops between fights
+			{
+				"conditions": [
+					{"type": "turn", "op": "<=", "value": 1},
+					{"type": "mp_percent", "op": ">=", "value": 20}
+				],
+				"actions": [{"type": "ability", "id": "battle_hymn", "target": "all_allies"}]
+			},
+			# Lullaby: sleep a crowd when 2+ enemies are alive and we have enough MP
+			{
+				"conditions": [
+					{"type": "enemy_count", "op": ">=", "value": 2},
+					{"type": "mp_percent", "op": ">=", "value": 20}
+				],
+				"actions": [{"type": "ability", "id": "lullaby", "target": "lowest_hp_enemy"}]
+			},
+			# Inspiring Melody: restore MP when any ally is running low (below 30%) and
+			# the Bard still has enough MP to cast it (20%+ own MP)
+			{
+				"conditions": [
+					{"type": "ally_mp_percent", "op": "<", "value": 30},
+					{"type": "mp_percent", "op": ">=", "value": 20}
+				],
+				"actions": [{"type": "ability", "id": "inspiring_melody", "target": "all_allies"}]
+			},
+			# Fallback: basic attack
+			{
+				"conditions": [{"type": "always"}],
+				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
+			}
+		]
+	}
+
+
+func _create_guardian_default_script(character_id: String) -> Dictionary:
+	"""Guardian script - tank/protect role. Iron Guard self-buff, Taunt the hardest hitter,
+	Protect a wounded ally, potion safety net, basic attack fallback."""
+	return {
+		"character_id": character_id,
+		"name": "Guardian Default",
+		"rules": [
+			# Survival first: HP below 30%, use potion — Guardian must stay alive to protect the party
+			{
+				"conditions": [
+					{"type": "hp_percent", "op": "<", "value": 30},
+					{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "potion", "target": "self"}]
+			},
+			# Iron Guard: apply defense buff on self when not already defended — priority setup move
+			{
+				"conditions": [
+					{"type": "not_has_buff", "stat": "defense"},
+					{"type": "mp_percent", "op": ">=", "value": 10}
+				],
+				"actions": [{"type": "ability", "id": "iron_guard", "target": "self"}]
+			},
+			# Taunt: force the highest-ATK enemy to attack the Guardian
+			{
+				"conditions": [
+					{"type": "mp_percent", "op": ">=", "value": 10}
+				],
+				"actions": [{"type": "ability", "id": "taunt", "target": "highest_atk_enemy"}]
+			},
+			# Protect: cover the lowest-HP ally when they are at risk and Guardian has MP
+			{
+				"conditions": [
+					{"type": "ally_hp_percent", "op": "<", "value": 50},
+					{"type": "mp_percent", "op": ">=", "value": 15}
+				],
+				"actions": [{"type": "ability", "id": "protect", "target": "lowest_hp_ally"}]
+			},
+			# Default - attack to contribute damage while tanking
+			{
+				"conditions": [{"type": "always"}],
+				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
+			}
+		]
+	}
+
+
+func _create_ninja_default_script(character_id: String) -> Dictionary:
+	"""Ninja script - speed/burst role. Steal opener, Backstab on healthy targets,
+	Quick Strike cleanup, potion safety net, basic attack fallback."""
+	return {
+		"character_id": character_id,
+		"name": "Ninja Default",
+		"rules": [
+			# Survival first: HP below 30%, use potion — Ninja is fragile and can't burst if dead
+			{
+				"conditions": [
+					{"type": "hp_percent", "op": "<", "value": 30},
+					{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "potion", "target": "self"}]
+			},
+			# Backstab opener: maximum damage on a healthy enemy before they act
+			# Fires while enemy is above 60% HP — the opener window
+			{
+				"conditions": [
+					{"type": "enemy_hp_percent", "op": ">", "value": 60}
+				],
+				"actions": [{"type": "ability", "id": "backstab", "target": "highest_hp_enemy"}]
+			},
+			# Steal: grab items from an undamaged enemy who still has their loot
+			# Must come after backstab check so we don't steal from a target we just wounded
+			{
+				"conditions": [
+					{"type": "enemy_hp_percent", "op": ">", "value": 75}
+				],
+				"actions": [{"type": "ability", "id": "steal", "target": "highest_hp_enemy"}]
+			},
+			# Quick Strike: fast follow-up on a wounded target to finish them before they act
+			{
+				"conditions": [
+					{"type": "enemy_hp_percent", "op": "<", "value": 40}
+				],
+				"actions": [{"type": "ability", "id": "quick_strike", "target": "lowest_hp_enemy"}]
+			},
+			# Default - attack lowest HP to kill off threats quickly
+			{
+				"conditions": [{"type": "always"}],
+				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
+			}
+		]
+	}
+
+
+func _create_summoner_default_script(character_id: String) -> Dictionary:
+	"""Summoner script - AOE/support role. Summon Ifrit and Shiva against groups,
+	Cure wounded allies, potion safety net, basic attack fallback."""
+	return {
+		"character_id": character_id,
+		"name": "Summoner Default",
+		"rules": [
+			# Survival first: HP below 30%, use potion — can't summon while dead
+			{
+				"conditions": [
+					{"type": "hp_percent", "op": "<", "value": 30},
+					{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "potion", "target": "self"}]
+			},
+			# Summon Ifrit: AOE fire damage against packs — highest priority summon
 			{
 				"conditions": [
 					{"type": "enemy_count", "op": ">=", "value": 2},
 					{"type": "mp_percent", "op": ">=", "value": 30}
 				],
-				"actions": [{"type": "ability", "id": "fire", "target": "lowest_hp_enemy"}]
+				"actions": [{"type": "ability", "id": "summon_ifrit", "target": "lowest_hp_enemy"}]
 			},
-			# Single enemy - Thunder for efficiency
+			# Summon Shiva: AOE ice damage — fires when Ifrit is on cooldown or already used
 			{
-				"conditions": [{"type": "mp_percent", "op": ">=", "value": 25}],
-				"actions": [{"type": "ability", "id": "thunder", "target": "lowest_hp_enemy"}]
+				"conditions": [
+					{"type": "enemy_count", "op": ">=", "value": 2},
+					{"type": "mp_percent", "op": ">=", "value": 30}
+				],
+				"actions": [{"type": "ability", "id": "summon_shiva", "target": "lowest_hp_enemy"}]
 			},
-			# Default fallback
+			# Cure: heal a critically wounded ally when MP allows
+			{
+				"conditions": [
+					{"type": "ally_hp_percent", "op": "<", "value": 50},
+					{"type": "mp_percent", "op": ">=", "value": 15}
+				],
+				"actions": [{"type": "ability", "id": "cure", "target": "lowest_hp_ally"}]
+			},
+			# Default - basic attack when MP is depleted
+			{
+				"conditions": [{"type": "always"}],
+				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
+			}
+		]
+	}
+
+
+func _create_speculator_default_script(character_id: String) -> Dictionary:
+	"""Speculator script - volatility manipulation and risk/reward plays.
+	Opens with Forecast for intel, leverages self for burst, hedges allies for safety."""
+	return {
+		"character_id": character_id,
+		"name": "Speculator Default",
+		"rules": [
+			# Survival: potion when critically low
+			{
+				"conditions": [
+					{"type": "hp_percent", "op": "<=", "value": 30},
+					{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "potion", "target": "self"}]
+			},
+			# Forecast first turn — cheap intel gathering (3 MP)
+			{
+				"conditions": [
+					{"type": "turn", "op": "<=", "value": 1},
+					{"type": "mp_percent", "op": ">=", "value": 10}
+				],
+				"actions": [{"type": "ability", "id": "forecast", "target": "self"}]
+			},
+			# Press the Edge when band is Shifting+ for burst damage
+			{
+				"conditions": [
+					{"type": "mp_percent", "op": ">=", "value": 20}
+				],
+				"actions": [{"type": "ability", "id": "press_the_edge", "target": "lowest_hp_enemy"}]
+			},
+			# Hedge lowest HP ally for protection
+			{
+				"conditions": [
+					{"type": "ally_hp_percent", "op": "<=", "value": 50},
+					{"type": "mp_percent", "op": ">=", "value": 15}
+				],
+				"actions": [{"type": "ability", "id": "hedge_position", "target": "lowest_hp_ally"}]
+			},
+			# Leverage self for damage boost when HP is healthy
+			{
+				"conditions": [
+					{"type": "hp_percent", "op": ">=", "value": 60},
+					{"type": "mp_percent", "op": ">=", "value": 15}
+				],
+				"actions": [{"type": "ability", "id": "leverage_position", "target": "self"}]
+			},
+			# Fallback — basic attack
+			{
+				"conditions": [{"type": "always"}],
+				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
+			}
+		]
+	}
+
+
+func _create_scriptweaver_default_script(character_id: String) -> Dictionary:
+	"""Scriptweaver script - meta/debug manipulation role. Potion safety net,
+	highest-damage ability when MP allows, basic attack fallback.
+	Abilities are meta in nature so targeting stays generic."""
+	return {
+		"character_id": character_id,
+		"name": "Scriptweaver Default",
+		"rules": [
+			# Survival: potion when critically low — Scriptweaver's HP is modest
+			{
+				"conditions": [
+					{"type": "hp_percent", "op": "<", "value": 30},
+					{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "potion", "target": "self"}]
+			},
+			# Use best available ability (analyze_code / modify_constant) when MP allows
+			{
+				"conditions": [
+					{"type": "mp_percent", "op": ">=", "value": 20}
+				],
+				"actions": [{"type": "ability", "id": "analyze_code", "target": "lowest_hp_enemy"}]
+			},
+			# Fallback - basic attack when MP is low
+			{
+				"conditions": [{"type": "always"}],
+				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
+			}
+		]
+	}
+
+
+func _create_time_mage_default_script(character_id: String) -> Dictionary:
+	"""Time Mage script - speed/rewind manipulation role. Haste on self for AP economy,
+	Slow the fastest enemy to delay their turns, cast attack spell when MP allows,
+	potion safety net, basic attack fallback."""
+	return {
+		"character_id": character_id,
+		"name": "Time Mage Default",
+		"rules": [
+			# Survival: potion when critically low — Time Mage has the lowest HP of meta jobs
+			{
+				"conditions": [
+					{"type": "hp_percent", "op": "<", "value": 30},
+					{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "potion", "target": "self"}]
+			},
+			# Haste self: priority setup move — only cast if no speed buff already active
+			{
+				"conditions": [
+					{"type": "not_has_buff", "stat": "speed"},
+					{"type": "mp_percent", "op": ">=", "value": 15}
+				],
+				"actions": [{"type": "ability", "id": "temporal_shield", "target": "self"}]
+			},
+			# Slow the fastest enemy to reduce their turn frequency
+			{
+				"conditions": [
+					{"type": "mp_percent", "op": ">=", "value": 20}
+				],
+				"actions": [{"type": "ability", "id": "rewind", "target": "highest_speed_enemy"}]
+			},
+			# Attack spell against lowest HP enemy when MP allows
+			{
+				"conditions": [
+					{"type": "mp_percent", "op": ">=", "value": 20}
+				],
+				"actions": [{"type": "ability", "id": "restore_point", "target": "lowest_hp_enemy"}]
+			},
+			# Fallback - basic attack when MP is depleted
+			{
+				"conditions": [{"type": "always"}],
+				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
+			}
+		]
+	}
+
+
+func _create_necromancer_default_script(character_id: String) -> Dictionary:
+	"""Necromancer script - dark magic/drain role. Drain Life for self-healing through
+	damage, dark magic finisher on low-HP enemies, potion last resort, basic attack fallback.
+	Necromancer avoids the save-corrupting abilities in automation — those require intent."""
+	return {
+		"character_id": character_id,
+		"name": "Necromancer Default",
+		"rules": [
+			# Survival: potion when critically low — Necromancer has the thinnest HP pool
+			{
+				"conditions": [
+					{"type": "hp_percent", "op": "<", "value": 30},
+					{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "potion", "target": "self"}]
+			},
+			# Drain Life: self-heal by dealing damage — fires when HP is below 60%
+			# so Necromancer sustains without burning potion stocks
+			{
+				"conditions": [
+					{"type": "hp_percent", "op": "<", "value": 60},
+					{"type": "mp_percent", "op": ">=", "value": 15}
+				],
+				"actions": [{"type": "ability", "id": "drain_life", "target": "lowest_hp_enemy"}]
+			},
+			# Necro Blast: concentrated dark magic on the weakest target to kill it off
+			{
+				"conditions": [
+					{"type": "mp_percent", "op": ">=", "value": 15}
+				],
+				"actions": [{"type": "ability", "id": "necro_blast", "target": "lowest_hp_enemy"}]
+			},
+			# Fallback - basic attack when MP is depleted
+			{
+				"conditions": [{"type": "always"}],
+				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
+			}
+		]
+	}
+
+
+func _create_bossbinder_default_script(character_id: String) -> Dictionary:
+	"""Bossbinder script - boss control role. Highly situational; keep automation minimal
+	to avoid accidental boss-control-victory save corruption. Strongest ability when MP
+	allows, target lowest HP enemy, basic attack fallback."""
+	return {
+		"character_id": character_id,
+		"name": "Bossbinder Default",
+		"rules": [
+			# Survival: potion when critically low
+			{
+				"conditions": [
+					{"type": "hp_percent", "op": "<", "value": 30},
+					{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "potion", "target": "self"}]
+			},
+			# Boss Puppet: use strongest control ability when MP allows
+			# NOTE: mind_swap and control_override deliberately excluded from default
+			# automation — those abilities carry save-corruption risk if the boss wins
+			{
+				"conditions": [
+					{"type": "mp_percent", "op": ">=", "value": 20}
+				],
+				"actions": [{"type": "ability", "id": "boss_puppet", "target": "lowest_hp_enemy"}]
+			},
+			# Fallback - basic attack on lowest HP enemy
+			{
+				"conditions": [{"type": "always"}],
+				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
+			}
+		]
+	}
+
+
+func _create_skiptrotter_default_script(character_id: String) -> Dictionary:
+	"""Skiptrotter script - overworld warp utility role. Combat kit is thin by design;
+	abilities are mostly overworld. Potion safety net, strongest in-battle ability
+	when MP allows, basic attack fallback."""
+	return {
+		"character_id": character_id,
+		"name": "Skiptrotter Default",
+		"rules": [
+			# Survival: potion when critically low
+			{
+				"conditions": [
+					{"type": "hp_percent", "op": "<", "value": 30},
+					{"type": "item_count", "item_id": "potion", "op": ">", "value": 0}
+				],
+				"actions": [{"type": "item", "id": "potion", "target": "self"}]
+			},
+			# Sequence Break: best in-combat option — hits hard when MP allows
+			{
+				"conditions": [
+					{"type": "mp_percent", "op": ">=", "value": 15}
+				],
+				"actions": [{"type": "ability", "id": "sequence_break", "target": "lowest_hp_enemy"}]
+			},
+			# Fallback - basic attack when MP is low
 			{
 				"conditions": [{"type": "always"}],
 				"actions": [{"type": "attack", "target": "lowest_hp_enemy"}]
@@ -746,19 +1700,43 @@ func _load_character_scripts() -> void:
 		dir.make_dir("autobattle")
 
 	# Load new profiles format first
+	## Tick 167: surface each failure mode. Pre-fix the primary
+	## profiles load had THREE silent fall-throughs (open fail,
+	## parse fail, root not Dictionary) — if any failed, the code
+	## dropped through to the legacy fallback without surfacing
+	## the real cause. Players who'd authored custom autobattle
+	## scripts could lose them silently.
 	if FileAccess.file_exists(profiles_path):
 		var file = FileAccess.open(profiles_path, FileAccess.READ)
-		if file:
+		if not file:
+			push_warning("[AutobattleSystem] profiles exists at %s but FileAccess.open failed — falling back to legacy format" % profiles_path)
+		else:
 			var json_string = file.get_as_text()
 			file.close()
 			var json = JSON.new()
-			if json.parse(json_string) == OK:
-				var data = json.data
-				if data is Dictionary:
-					character_profiles = data.get("profiles", {})
-					autobattle_enabled = data.get("enabled", {})
-					print("Loaded profiles for %d characters" % character_profiles.size())
-					return
+			if json.parse(json_string) != OK:
+				push_warning("[AutobattleSystem] profiles.json parse error: %s — falling back to legacy format" % json.get_error_message())
+			elif not (json.data is Dictionary):
+				push_warning("[AutobattleSystem] profiles.json parsed but root is not a Dictionary — falling back to legacy format")
+			else:
+				## Tick 367: type-guard the .get() return value before
+				## typed-Dict assignment. Pre-fix a profiles.json with
+				## profiles=null or enabled=null (hand-edited corruption,
+				## migration drift) crashed with the typed-Dictionary
+				## assignment error and dropped the player's autobattle
+				## scripts onto the legacy fallback unannounced.
+				var raw_profiles: Variant = json.data.get("profiles", {})
+				var raw_enabled: Variant = json.data.get("enabled", {})
+				if raw_profiles is Dictionary:
+					character_profiles = raw_profiles
+				else:
+					push_warning("[AutobattleSystem] profiles.json profiles field malformed (type=%s) — keeping empty dict" % typeof(raw_profiles))
+				if raw_enabled is Dictionary:
+					autobattle_enabled = raw_enabled
+				else:
+					push_warning("[AutobattleSystem] profiles.json enabled field malformed (type=%s) — keeping empty dict" % typeof(raw_enabled))
+				print("Loaded profiles for %d characters" % character_profiles.size())
+				return
 
 	# Fallback: load legacy format for migration
 	if not FileAccess.file_exists(save_path):
@@ -773,15 +1751,30 @@ func _load_character_scripts() -> void:
 		if json.parse(json_string) == OK:
 			var data = json.data
 			if data is Dictionary:
-				character_scripts = data.get("scripts", {})
-				autobattle_enabled = data.get("enabled", {})
+				## Tick 367: same type guard as the profiles path above
+				## for the legacy characters.json migration.
+				var raw_scripts: Variant = data.get("scripts", {})
+				var raw_legacy_enabled: Variant = data.get("enabled", {})
+				if raw_scripts is Dictionary:
+					character_scripts = raw_scripts
+				else:
+					push_warning("[AutobattleSystem] legacy characters.json scripts field malformed (type=%s) — keeping empty dict" % typeof(raw_scripts))
+				if raw_legacy_enabled is Dictionary:
+					autobattle_enabled = raw_legacy_enabled
+				else:
+					push_warning("[AutobattleSystem] legacy characters.json enabled field malformed (type=%s) — keeping empty dict" % typeof(raw_legacy_enabled))
 				# Migrate old format scripts to new format
 				_migrate_old_format_scripts()
 				print("Loaded %d character autobattle scripts (legacy)" % character_scripts.size())
 
 
+## Set to true in tests to prevent writes to user://autobattle/*.json and user://autobattle_scripts.json — otherwise test-suite runs overwrite the player's real autobattle scripts with fixture content. Mirrors AutogrindSystem; no-op in production.
+var _test_disable_persistence: bool = false
+
+
 func _save_character_profiles() -> void:
 	"""Save all character profiles to file"""
+	if _test_disable_persistence: return
 	var save_path = "user://autobattle/profiles.json"
 
 	# Create directory if it doesn't exist
@@ -836,6 +1829,7 @@ func _migrate_old_format_scripts() -> void:
 
 func _save_character_scripts() -> void:
 	"""Legacy save - redirects to profile save after migration"""
+	if _test_disable_persistence: return
 	# First migrate any legacy scripts to profiles
 	for character_id in character_scripts.keys():
 		if not character_profiles.has(character_id):
@@ -911,7 +1905,7 @@ func _evaluate_condition(combatant: Combatant, condition: Dictionary) -> bool:
 
 		ConditionType.ITEM_COUNT:
 			var item_id = condition.get("item_id", "")
-			var count = combatant.get_item_count(item_id)
+			var count = combatant.get_item_count(item_id) if combatant.has_method("get_item_count") else 0
 			return _compare(count, compare_op, value)
 
 		ConditionType.ALWAYS:
@@ -921,6 +1915,8 @@ func _evaluate_condition(combatant: Combatant, condition: Dictionary) -> bool:
 			push_warning("AutobattleSystem: CUSTOM conditions not yet implemented")
 			return false
 
+	# Tick 216: unknown ConditionType enum value — save drift, deprecated value left in a rule, Scriptweaver custom condition not registered. Pre-fix this returned false silently and the autobattle rule never matched — player thinks their script is broken and can't diagnose.
+	push_warning("[AutobattleSystem] _evaluate_condition: unknown ConditionType=%s — rule will NOT match (autobattle may silently misbehave; check rule JSON for stale type values)" % str(type))
 	return false
 
 
@@ -939,6 +1935,8 @@ func _compare(a: float, op: CompareOp, b: float) -> bool:
 			return a > b
 		CompareOp.NOT_EQUAL:
 			return a != b
+	# Tick 216: unknown CompareOp — same silent-fail class as above. A condition with a bad op silently never matches.
+	push_warning("[AutobattleSystem] _compare: unknown CompareOp=%s — comparison treated as false (check rule JSON for stale op values)" % str(op))
 	return false
 
 
@@ -974,6 +1972,10 @@ func _rule_to_action(combatant: Combatant, rule: Dictionary) -> Dictionary:
 		ActionType.SKIP:
 			action["type"] = "skip"
 
+		_:
+			# Tick 217: unknown ActionType enum value. Pre-fix the function returned an action with only {"type": ...} but no target/ability/item — execution would misbehave silently. Same silent-fail class as tick 216's _evaluate_condition.
+			push_warning("[AutobattleSystem] _rule_to_action: unknown ActionType=%s — action will lack target data (check rule JSON for stale action_type values)" % str(action_type))
+
 	return action
 
 
@@ -994,6 +1996,8 @@ func _get_target_for_rule(combatant: Combatant, rule: Dictionary) -> Combatant:
 		"self":
 			return combatant
 		_:
+			# Tick 217: unknown target_type silently picks lowest_hp_enemy — could mislead player about what their rule actually targets. Same warning shape as _get_target_by_type at line ~406 (which has had the warning since the grid format landed).
+			push_warning("[AutobattleSystem] _get_target_for_rule: unknown target_type='%s' — defaulting to lowest_hp_enemy (check rule JSON for stale target_type values)" % target_type)
 			return _get_lowest_hp_enemy(combatant)
 
 
@@ -1005,8 +2009,16 @@ func _get_default_action(combatant: Combatant) -> Dictionary:
 			"type": "attack",
 			"target": enemies[0]
 		}
+	# Tick 330: return "defer" instead of "skip". Pre-fix the no-enemies
+	# fallback returned {"type": "skip"} — a string BattleManager's
+	# action dispatch at line ~1972 has no arm for. The default `_:` arm
+	# fired push_warning("Unknown action type 'skip'") and recovered by
+	# advancing the chain, but every "all enemies dead before this turn
+	# fires" path produced a misleading runtime warning. Defer's semantics
+	# ("skip turn, gain AP, defend") match what we actually want here:
+	# the combatant has nothing to attack, so step back and bank AP.
 	return {
-		"type": "skip"
+		"type": "defer"
 	}
 
 
@@ -1025,6 +2037,8 @@ func _action_type_to_string(action_type: ActionType) -> String:
 			return "brave"
 		ActionType.SKIP:
 			return "skip"
+	# Tick 217: unknown ActionType silently became "attack" — the rule would attack instead of doing whatever the player intended. Warn loudly so a save with a stale enum surfaces.
+	push_warning("[AutobattleSystem] _action_type_to_string: unknown ActionType=%s — falling back to 'attack' (rule may behave unexpectedly; check rule JSON for stale action_type values)" % str(action_type))
 	return "attack"
 
 
@@ -1059,24 +2073,80 @@ func _get_lowest_hp_enemy(combatant: Combatant) -> Combatant:
 	return enemies[0]
 
 
+func _get_weakness_target(combatant: Combatant, element: String) -> Combatant:
+	"""'Exploit Weakness' autobattle targeting. Prefers an enemy weak to `element`
+	(lowest HP among them, to secure a kill); failing that, the lowest-HP enemy
+	that is NOT immune (never waste the cast on a 0x wall); degenerate all-immune
+	falls back to lowest HP. Empty `element` collapses to lowest-HP-of-non-immune."""
+	var enemies := _get_enemies_for(combatant)
+	if enemies.is_empty():
+		return null
+	var weak: Array[Combatant] = []
+	var non_immune: Array[Combatant] = []
+	for e in enemies:
+		if element != "" and element in e.elemental_weaknesses:
+			weak.append(e)
+		if element == "" or not (element in e.elemental_immunities):
+			non_immune.append(e)
+	var pool: Array[Combatant] = weak
+	if pool.is_empty():
+		pool = non_immune if not non_immune.is_empty() else enemies
+	pool.sort_custom(func(a, b): return a.get_hp_percentage() < b.get_hp_percentage())
+	return pool[0]
+
+
 func _get_highest_hp_enemy(combatant: Combatant) -> Combatant:
-	"""Get enemy with highest HP"""
+	"""Get enemy with highest HP percentage (symmetric with _get_lowest_hp_* — the 'healthy targets first' picker)."""
 	var enemies = _get_enemies_for(combatant)
 	if enemies.size() == 0:
 		return null
 
-	enemies.sort_custom(func(a, b): return a.current_hp > b.current_hp)
+	enemies.sort_custom(func(a, b): return a.get_hp_percentage() > b.get_hp_percentage())
 	return enemies[0]
 
 
 func _get_lowest_hp_ally(combatant: Combatant) -> Combatant:
-	"""Get ally with lowest HP percentage"""
+	"""Get ally with lowest HP percentage. Returns null if no alive allies
+	(consistent with _get_lowest_hp_enemy at line 1707). Previously returned
+	`combatant` itself, which is misleading when the caller is dead — heal
+	targeting a dead combatant short-circuits in restore_mp / take_damage
+	but the visible "target self" intent was wrong."""
 	var allies = _get_allies_for(combatant)
 	if allies.size() == 0:
-		return combatant
+		return null
 
 	allies.sort_custom(func(a, b): return a.get_hp_percentage() < b.get_hp_percentage())
 	return allies[0]
+
+
+func _get_lowest_magic_defense_enemy(combatant: Combatant) -> Combatant:
+	"""Get enemy with lowest magic_defense — the best target for a magic ability"""
+	var enemies = _get_enemies_for(combatant)
+	if enemies.size() == 0:
+		return null
+
+	enemies.sort_custom(func(a, b): return a.magic_defense < b.magic_defense)
+	return enemies[0]
+
+
+func _get_highest_atk_enemy(combatant: Combatant) -> Combatant:
+	"""Get enemy with highest base_attack — the biggest threat to a tank"""
+	var enemies = _get_enemies_for(combatant)
+	if enemies.size() == 0:
+		return null
+
+	enemies.sort_custom(func(a, b): return a.base_attack > b.base_attack)
+	return enemies[0]
+
+
+func _get_highest_speed_enemy(combatant: Combatant) -> Combatant:
+	"""Get enemy with highest speed — the Time Mage's Slow/Rewind target"""
+	var enemies = _get_enemies_for(combatant)
+	if enemies.size() == 0:
+		return null
+
+	enemies.sort_custom(func(a, b): return a.speed > b.speed)
+	return enemies[0]
 
 
 ## Script management
@@ -1127,21 +2197,6 @@ func create_condition(type: ConditionType, compare_op: CompareOp, value: Variant
 	return condition
 
 
-## Save/Load
-func save_script(script_name: String, script: Dictionary) -> void:
-	"""Save a script to file"""
-	saved_scripts[script_name] = script
-
-	var save_path = "user://autobattle_scripts.json"
-	var file = FileAccess.open(save_path, FileAccess.WRITE)
-	if file:
-		var json_string = JSON.stringify(saved_scripts, "\t")
-		file.store_string(json_string)
-		file.close()
-		script_saved.emit(script_name)
-		print("Saved autobattle script: %s" % script_name)
-
-
 func load_script(script_name: String) -> Dictionary:
 	"""Load a script by name"""
 	if saved_scripts.has(script_name):
@@ -1168,7 +2223,10 @@ func _load_saved_scripts() -> void:
 			saved_scripts = json.data
 			print("Loaded %d autobattle scripts" % saved_scripts.size())
 		else:
-			print("Error parsing autobattle scripts")
+			## Tick 181: surface autobattle script parse failures.
+			## Pre-fix print() only — player's custom scripts
+			## silently reverted to defaults with zero hint why.
+			push_warning("[AutobattleSystem] failed to parse autobattle scripts JSON: %s — falling back to defaults" % json.get_error_message())
 			_create_default_scripts()
 	else:
 		_create_default_scripts()

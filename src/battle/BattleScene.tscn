@@ -24,20 +24,20 @@ layout_mode = 1
 anchors_preset = 4
 anchor_top = 0.5
 anchor_bottom = 0.5
-offset_left = 100.0
+offset_left = 240.0
 offset_top = -200.0
-offset_right = 500.0
+offset_right = 580.0
 offset_bottom = 200.0
 grow_vertical = 2
 
 [node name="Enemy1Pos" type="Marker2D" parent="BattleField/EnemyArea"]
-position = Vector2(150, 100)
+position = Vector2(120, 100)
 
 [node name="Enemy2Pos" type="Marker2D" parent="BattleField/EnemyArea"]
-position = Vector2(200, 200)
+position = Vector2(170, 200)
 
 [node name="Enemy3Pos" type="Marker2D" parent="BattleField/EnemyArea"]
-position = Vector2(100, 300)
+position = Vector2(110, 300)
 
 [node name="PartyArea" type="Control" parent="BattleField"]
 layout_mode = 1
@@ -46,24 +46,27 @@ anchor_left = 1.0
 anchor_top = 0.5
 anchor_right = 1.0
 anchor_bottom = 0.5
-offset_left = -400.0
-offset_top = -250.0
-offset_right = -50.0
-offset_bottom = 250.0
+offset_left = -480.0
+offset_top = -280.0
+offset_right = -130.0
+offset_bottom = 280.0
 grow_horizontal = 0
 grow_vertical = 2
 
 [node name="Player1Pos" type="Marker2D" parent="BattleField/PartyArea"]
-position = Vector2(100, 50)
+position = Vector2(150, 60)
 
 [node name="Player2Pos" type="Marker2D" parent="BattleField/PartyArea"]
-position = Vector2(50, 150)
+position = Vector2(105, 170)
 
 [node name="Player3Pos" type="Marker2D" parent="BattleField/PartyArea"]
-position = Vector2(100, 250)
+position = Vector2(60, 280)
 
 [node name="Player4Pos" type="Marker2D" parent="BattleField/PartyArea"]
-position = Vector2(50, 350)
+position = Vector2(15, 390)
+
+[node name="Player5Pos" type="Marker2D" parent="BattleField/PartyArea"]
+position = Vector2(-30, 500)
 
 [node name="EnemySprites" type="Node2D" parent="BattleField"]
 
@@ -107,12 +110,12 @@ layout_mode = 1
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
-offset_left = -180.0
-offset_top = 60.0
+offset_left = -200.0
+offset_top = 40.0
 offset_right = -5.0
-offset_bottom = 380.0
+offset_bottom = 460.0
 grow_horizontal = 0
-grow_vertical = 2
+grow_vertical = 1
 
 [node name="VBoxContainer" type="VBoxContainer" parent="UI/PartyStatusPanel"]
 layout_mode = 2
@@ -182,34 +185,25 @@ anchor_left = 0.5
 anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
-offset_left = -310.0
-offset_top = -220.0
-offset_right = 310.0
-offset_bottom = -10.0
+offset_left = -510.0
+offset_top = -128.0
+offset_right = 10.0
+offset_bottom = -38.0
 grow_horizontal = 2
 grow_vertical = 0
 
 [node name="MarginContainer" type="MarginContainer" parent="UI/BattleLogPanel"]
 layout_mode = 2
-theme_override_constants/margin_left = 8
-theme_override_constants/margin_top = 8
-theme_override_constants/margin_right = 8
-theme_override_constants/margin_bottom = 8
+theme_override_constants/margin_left = 6
+theme_override_constants/margin_top = 4
+theme_override_constants/margin_right = 6
+theme_override_constants/margin_bottom = 4
 
 [node name="VBoxContainer" type="VBoxContainer" parent="UI/BattleLogPanel/MarginContainer"]
 layout_mode = 2
 
-[node name="Label" type="Label" parent="UI/BattleLogPanel/MarginContainer/VBoxContainer"]
-layout_mode = 2
-theme_type_variation = &"HeaderSmall"
-text = "BATTLE LOG"
-horizontal_alignment = 1
-
-[node name="HSeparator" type="HSeparator" parent="UI/BattleLogPanel/MarginContainer/VBoxContainer"]
-layout_mode = 2
-
 [node name="BattleLog" type="RichTextLabel" parent="UI/BattleLogPanel/MarginContainer/VBoxContainer"]
-custom_minimum_size = Vector2(0, 140)
+custom_minimum_size = Vector2(0, 80)
 layout_mode = 2
 size_flags_vertical = 3
 bbcode_enabled = true
@@ -293,6 +287,6 @@ grow_horizontal = 2
 [node name="TurnInfo" type="Label" parent="UI/TurnInfoPanel"]
 layout_mode = 2
 theme_type_variation = &"HeaderMedium"
-text = "Round 1 - Hero's Turn"
+text = "Round 1"
 horizontal_alignment = 1
 vertical_alignment = 1

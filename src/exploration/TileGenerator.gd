@@ -367,7 +367,24 @@ func _get_tile_order() -> Array:
 	]
 
 func _get_impassable_types() -> Array:
-	return [TileType.FOREST, TileType.MOUNTAIN, TileType.WATER, TileType.WALL, TileType.CAVE_WALL, TileType.LAVA, TileType.VILLAGE_HEDGE]
+	# Water and mountain are visually impassable so they must block — forest stays walkable for traversal flexibility.
+	# VILLAGE_HEDGE is a decorative barrier used in HarmoniaVillage's border ("e" tile) — comment in that
+	# layout explicitly calls it "impassable decorative border" but it was missing from this list.
+	return [TileType.WALL, TileType.CAVE_WALL, TileType.LAVA, TileType.WATER, TileType.MOUNTAIN, TileType.VILLAGE_HEDGE]
+
+## Playtested W1 values; MOUNTAIN and WATER are inert — _get_impassable_types() blocks both.
+## 2026-08-26 struktured "do the change": FOREST was the only terrain on W1 that altered movement, so ~62% of the map was one surface wearing seven colours. Values stay in (0,1] — this API slows, it never speeds up.
+func _get_rough_terrain_speeds() -> Dictionary:
+	return {
+		TileType.SWAMP: 0.45,
+		TileType.FOREST: 0.5,
+		TileType.SNOW_TREE: 0.5,
+		TileType.COAST: 0.7,
+		TileType.SAND: 0.8,
+		TileType.ICE: 0.85,
+		TileType.MOUNTAIN: 0.4,
+		TileType.WATER: 0.5,
+	}
 
 func _get_atlas_dimensions() -> Vector2i:
 	return Vector2i(5, 8)
@@ -394,6 +411,14 @@ func _get_tile_variants() -> Dictionary:
 
 func _get_debug_atlas_name() -> String:
 	return "debug_atlas"
+
+
+func _get_sheet_key() -> String:
+	return "medieval"
+
+
+func _get_tile_type_name(type: int) -> String:
+	return TileType.keys()[type] if type >= 0 and type < TileType.size() else ""
 
 func _draw_tile(img: Image, tile_type: int, palette: Dictionary, variant: int) -> void:
 	match tile_type:
@@ -2999,6 +3024,29 @@ static func get_tile_id(type: TileType) -> int:
 		TileType.VILLAGE_FLOWER: return 33
 		TileType.VILLAGE_HEDGE: return 34
 	return 0
+
+
+## Atlas ids per type, base id first; derived from _get_tile_order (water frames excluded — they animate).
+const VARIANT_IDS := {
+	TileType.GRASS: [0, 12, 13],
+	TileType.FOREST: [1, 14],
+	TileType.MOUNTAIN: [2, 19],
+	TileType.SAND: [20, 27],
+	TileType.ICE: [21, 28],
+	TileType.LAVA: [26, 29],
+	TileType.VILLAGE_GRASS: [30, 30, 35, 39],
+	TileType.VILLAGE_PATH: [31, 36],
+	TileType.VILLAGE_DIRT: [32, 37],
+	TileType.VILLAGE_FLOWER: [33, 38],
+}
+
+
+## Per-cell variant pick; callers pass a cell-derived salt so the choice is stable across rebuilds.
+static func get_tile_id_variant(type: TileType, salt: int) -> int:
+	var ids: Array = VARIANT_IDS.get(type, [])
+	if ids.is_empty():
+		return get_tile_id(type)
+	return int(ids[absi(salt) % ids.size()])
 
 
 ## Get atlas coordinates for a tile ID (for 5-column layout)

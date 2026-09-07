@@ -1,0 +1,43 @@
+{
+  "id": "event_chat_first_group_attack",
+  "title": "All at Once",
+  "world": 1,
+  "trigger": "event_chat_first_group_attack",
+  "background": "prologue_forest",
+  "description": "First group attack. The party is surprised it worked.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.3},
+    {
+      "type": "narration",
+      "text": "All of them moved at the same time. This should, historically, have ended in a pile of limbs and apologies. Somehow it didn't."
+    },
+    {"type": "wait", "duration": 0.4},
+    {
+      "type": "dialogue",
+      "lines": [
+        {"speaker": "Fighter", "text": "Did we just all...", "theme": "fighter", "portrait": "fighter"},
+        {"speaker": "Rogue", "text": "Yes.", "theme": "rogue", "portrait": "rogue"},
+        {"speaker": "Fighter", "text": "At the same time.", "theme": "fighter", "portrait": "fighter"},
+        {"speaker": "Rogue", "text": "Yes.", "theme": "rogue", "portrait": "rogue"},
+        {"speaker": "Fighter", "text": "I didn't stab anyone by accident.", "theme": "fighter", "portrait": "fighter"},
+        {"speaker": "Cleric", "text": "Statistically improbable, but we're counting it.", "theme": "cleric", "portrait": "cleric"}
+      ]
+    },
+    {"type": "wait", "duration": 0.3},
+    {
+      "type": "dialogue",
+      "lines": [
+        {"speaker": "Bard", "text": "That was a formation. An actual formation.", "theme": "bard", "portrait": "bard"},
+        {"speaker": "Mage", "text": "It was more of a suggestion the monster strongly disagreed with.", "theme": "mage", "portrait": "mage"},
+        {"speaker": "Bard", "text": "Either way, I'm writing it down.", "theme": "bard", "portrait": "bard"},
+        {"speaker": "Mage", "text": "We'll regret making this a habit. Briefly.", "theme": "mage", "portrait": "mage"}
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "They all had to rest afterward. Everyone's Action Points were, as Mage put it, 'spiritually overdrawn.'"
+    },
+    {"type": "set_flag", "flag": "party_chat_viewed_event_chat_first_group_attack", "value": true},
+    {"type": "letterbox_out", "duration": 0.4}
+  ]
+}

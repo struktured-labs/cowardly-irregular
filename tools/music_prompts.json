@@ -29,6 +29,41 @@
           "title_template": "The Usurper's Shadow",
           "style": "SNES boss battle, intense, dramatic, pipe organ, aggressive drums, minor key",
           "prompt": "Epic boss confrontation, towering enemy, high stakes battle, intense pipe organ and aggressive percussion, dramatic key changes, sense of overwhelming power and desperate resistance"
+        },
+        "spotlight_fighter_skeleton_knight": {
+          "title_template": "Bones Remember Discipline",
+          "style": "SNES 16-bit orchestral martial, funeral-march tempo 80 BPM, taiko + timpani, brass stabs, low choir, disciplined 4/4, minor key, no melodic drift",
+          "prompt": "Chivalric bone-knight duel. Every beat is a clock the player is beating — no wandering harmony, no fills, just steady percussion carrying tempo and brass stabs punctuating the advance/defend rhythm. Plate armor rattles between hits. Rewards patience: the music itself is a discipline check."
+        },
+        "spotlight_cleric_survive_target": {
+          "title_template": "Grace Under Ordeal",
+          "style": "SNES 16-bit sacred choral, slow 60 BPM, sustained pad, choir, subtle bell pulse, slow melodic descent then rise, minor-to-major modal ambiguity, hymnic, contemplative",
+          "prompt": "A test of endurance framed as prayer. The bell pulse is what the player is beating — every second between chimes is a heal earned. Sustained pads and slow choir descend, then rise. No violence in the melody, only patience. The enemy's presence is felt as pressure, not aggression."
+        },
+        "spotlight_rogue_lockward": {
+          "title_template": "Ledger of Traps",
+          "style": "SNES 16-bit noir-jazz cat-and-mouse, 110 BPM syncopated, pizzicato strings, muted trumpet, brushed snare, off-beat hi-hat, sparse arrangement with long silences, minor key",
+          "prompt": "A locked ward guarding hoarded gold. Syncopated snare and off-beat plucks with SILENCES between hits telegraphing positioning windows. Muted trumpet phrases sparse and taunting. Every rest is an opportunity, every fill is a trap closing. Rewards reading the pattern."
+        },
+        "spotlight_mage_prismatic_construct": {
+          "title_template": "Kaleidoscope, Turning",
+          "style": "SNES 16-bit prismatic elemental arpeggio, 120 BPM, three-phase 8-bar cycle: fire (warm bass + brass shimmer) → ice (glassy pad + bell) → lightning (sizzling arp + snare rolls), crystalline plucks throughout, kaleidoscopic register shifts",
+          "prompt": "A prismatic construct rotating through elemental phases. The arpeggio itself carries the fire/ice/lightning rotation, cycling color and register every 8 bars. The music tells the player which element to cast — a listening mage can read the fight. Warm bass for fire, glassy pad for ice, sizzling arp for lightning. The cycle IS the mechanic, made audible."
+        },
+        "spotlight_bard_hostile_courtier": {
+          "title_template": "The Courtier Who Wouldn't Listen (Yet)",
+          "style": "SNES 16-bit baroque courtly duet, 100 BPM, solo lyre + wordless vocal fragment (courtier's voice), harpsichord, minimal percussion, mode-shifting from proud major to warmer defeated minor across the track",
+          "prompt": "A duet between the bard's lyre and the courtier's voice — call-and-response, two voices trading lines. The fight IS the conversation. When the courtier's vocal line drops out and only the lyre continues, THAT is the debuff landing — the listener HEARS the fight resolving. Harpsichord fills the space between exchanges. Mode shifts from proud baroque major to something warmer as the courtier begins to listen. A musical conversation, not a battle."
+        },
+        "boss_mordaine": {
+          "title_template": "A Sound Like a Verdict",
+          "style": "16-bit SNES final-boss battle, 138 BPM, TWO AND A HALF MINUTES long, full-length battle theme with development and contrasting sections, inexorable not frantic, harpsichord and staccato strings, restrained pipe organ as institutional weight, controlled low brass, ticking ledger-percussion, cold precision as menace, minor key with an unresolved suspension, strictly instrumental, NOT bombastic, NOT demonic, no choir wailing, loopable",
+          "prompt": "A LONG full-length JRPG final-boss battle theme, at least two and a half minutes, with a clear A section, a darker B section, and a return. The final authority of a world run on paperwork: she is not louder than you, she is more exact. A harpsichord figure repeats like a quill filling the same column. Staccato strings cut in on the beat with no vibrato. Organ holds underneath as the weight of an institution rather than a demon. Percussion ticks like a tally being kept. Midway the harpsichord thins to almost nothing and the organ takes the melody alone, then the full figure returns harder. Nothing rushes; she was already waiting when you arrived. One suspension hangs unresolved throughout. Strictly instrumental, 138 BPM, loops cleanly."
+        },
+        "cutscene_mordaine_theme": {
+          "title_template": "Already Looking At You",
+          "style": "sparse distant leitmotif, 60 BPM, solo harpsichord fragment with long silences, faint far-off wordless female humming of a simple folk tune, dry room tone, no percussion, no build, no climax, quiet dread alongside ordinary life, unresolved, NOT ambient drone, NOT cinematic tension, loopable",
+          "prompt": "Someone is standing where they should not be, and they are not in a hurry. A single harpsichord phrase of four notes surfaces, then a silence longer than is comfortable, then the same four notes again slightly nearer. Underneath and far away a woman hums an ordinary market tune, wordless, unaware of any of it. The two never quite meet. No swell, no payoff, no drums. Just presence, patient, and life continuing outside the window. Strictly instrumental apart from the distant wordless hum. 60 BPM, loops cleanly."
         }
       }
     },
@@ -169,6 +204,36 @@
       "style": "JRPG victory fanfare, triumphant brass, Final Fantasy, celebratory, short",
       "prompt": "Classic JRPG victory fanfare, triumphant brass melody, celebratory drums, short and satisfying, the thrill of winning a hard-fought battle, 15-20 seconds"
     },
+    "victory_medieval": {
+      "title_template": "Glory of the Realm",
+      "style": "80s rock victory, Van Halen, finger-tapping guitar, triumphant brass, shredding solo, JRPG fanfare, 160 BPM",
+      "prompt": "EXPLOSIVE medieval victory fanfare with VAN HALEN finger-tapping electric guitar energy over triumphant orchestral brass. Shredding guitar solo that screams triumph, pounding drums, the absolute RUSH of winning a hard fight. 80s rock meets JRPG fanfare — Eddie Van Halen playing the Final Fantasy victory theme. Blazing fast, exhilarating, fist-pumping. 20-25 seconds of pure adrenaline."
+    },
+    "victory_suburban": {
+      "title_template": "One More Boot Up",
+      "style": "midnight-city Japanese funk victory in the vein of late-night JRPG battle themes, 140 BPM, groovy live-drum breakbeat, slap bass hook, wah-guitar stabs on the offbeat, warm Rhodes chord stabs, analog synth lead + bright synth brass punches, neon-lit nightscape, jazz-fusion cocky poise, strictly instrumental no vocals no humming no ad-libs, NOT lofi, NOT chill, NOT epic orchestral",
+      "prompt": "A triumphant post-battle jam. Groovy live-drum breakbeat under a slap-bass hook — THE HOOK IS THE BASSLINE, not a topline melody. Wah-guitar chops on the offbeat, warm Rhodes chord stabs, a bright analog synth lead calls, synth brass section answers. Cool, victorious, a little smug. 140 BPM straight-time drums (not halftime, not double-time). Strictly instrumental."
+    },
+    "victory_steampunk": {
+      "title_template": "Gears of Glory",
+      "style": "steampunk victory, brass fanfare, clockwork percussion, steam whistle, triumphant waltz, 150 BPM",
+      "prompt": "Steampunk victory fanfare — triumphant brass fanfare over clockwork percussion, steam whistles blasting in celebration. A victorious waltz that builds to a soaring brass climax with gear-grinding bass and clanging bells. Mechanical triumph — the factory celebrates. 20 seconds."
+    },
+    "victory_industrial": {
+      "title_template": "Shift Complete",
+      "style": "industrial victory, heavy percussion, siren fanfare, distorted triumph, aggressive celebration, 130 BPM",
+      "prompt": "Industrial victory fanfare — factory sirens repurposed as triumphant horns, heavy stamping percussion like a machine celebrating, distorted power chords resolving into a brief moment of human warmth underneath the steel. The sound of punching out after the hardest shift. Brief, hard, earned. 15 seconds."
+    },
+    "victory_digital": {
+      "title_template": "Achievement Unlocked",
+      "style": "digital victory, chiptune fanfare, glitch celebration, ascending arpeggios, level-up energy, 155 BPM",
+      "prompt": "Digital victory fanfare — rapid ascending chiptune arpeggios, glitchy celebration sounds, the EXACT feeling of an achievement unlocking. 8-bit trumpet melody over synthwave bass, cascading data-stream sparkles. Quick, satisfying, dopamine hit. 15 seconds."
+    },
+    "victory_abstract": {
+      "title_template": "Understanding",
+      "style": "abstract victory, all genres merging, transcendent chord, earned silence, profound, 100 BPM",
+      "prompt": "Abstract victory fanfare — all six worlds' musical signatures converging into a single transcendent chord. Not loud celebration but profound UNDERSTANDING. Medieval strings, suburban funk, clockwork brass, industrial percussion, digital chiptune, and abstract silence all resolving together. Earned, vast, the sound of something finally making sense. 20 seconds."
+    },
     "game_over": {
       "title_template": "Fallen Heroes",
       "style": "JRPG game over, somber, minor key, fading, short",
@@ -220,9 +285,9 @@
       "prompt": "Ambient monitoring loop for automated grinding, hypnotic repetitive synth arpeggios over warm drone, zen-like concentration, the satisfying hum of a well-oiled machine running battles on autopilot, slightly glitchy undertones suggesting system fatigue"
     },
     "battle_slime": {
-      "title_template": "Gelatinous Threat",
-      "style": "JRPG battle, bouncy, playful, C major, comedic percussion, squelchy synth bass, 128 BPM",
-      "prompt": "Quirky bouncy battle theme for fighting slimes, playful and lighthearted but still exciting, squelchy wobbly bass, boing sound effects woven into the rhythm, comedic energy like fighting a goofy but persistent enemy, 16-bit JRPG charm"
+      "title_template": "Coiled, Hungry",
+      "style": "16-bit JRPG battle, tense and predatory, F minor, mid-tempo 110 BPM, slithering synth bass, wet drip percussion, dissonant cobra-flute lick suggesting venom, slick and unsettling, NOT comedic, instrumental, loopable",
+      "prompt": "Starter-monster battle theme for a green snake-slime predator with sharp fangs that rears and strikes from a coiled position. Mid-tempo F minor JRPG battle in 16-bit SNES voicing. Slithering synth bass weaves underneath rather than bouncing. Wet drip percussion (like slime hitting stone) gives the rhythm a damp, hunting quality. A muted brass or pungi/cobra-flute lick threads through the hook, slightly dissonant, suggesting venom. Brief tension-build every 8 bars before reset. Energetic enough to feel like combat, but unsettling — you're fighting something that wants to eat you, not a goofy blob. Instrumental, loops cleanly."
     },
     "battle_bat": {
       "title_template": "Wings in the Dark",
@@ -240,9 +305,9 @@
       "prompt": "Chaotic demonic battle theme for fighting imps, wild chromatic runs up and down, unpredictable rhythm changes, mischievous and dangerous, cackling energy, fast and disorienting like fighting tiny demons that won't stay still"
     },
     "battle_goblin": {
-      "title_template": "Raid!",
-      "style": "JRPG battle, tribal, A minor, war drums, primitive chanting, aggressive, 140 BPM",
-      "prompt": "Aggressive tribal battle theme for fighting goblins, pounding war drums, primitive chanting rhythms, crude but effective, the energy of a goblin raiding party, aggressive and relentless, tribal percussion driving the intensity"
+      "title_template": "Vermin With Knives",
+      "style": "JRPG battle, scrappy and frantic, A minor with chromatic wriggle, skittering percussion, plucked strings, shrill woodwind, scurry-and-stop phrasing, 158 BPM, 16-bit",
+      "prompt": "Goblins — small, quick, cowardly and armed. Scurry-and-stop motion, a chromatic snicker of a hook that darts and hides, sudden stabs of dissonance like a knife from the dark. Comic menace at knee height: annoying, unpredictable, genuinely dangerous in numbers. NOT a war chant, NOT tribal drums, NOT heroic — this is vermin with knives, and it must not sound like the brutes."
     },
     "battle_skeleton": {
       "title_template": "Bone Rattle",
@@ -264,121 +329,570 @@
       "style": "JRPG battle, slithering, C minor, sinuous melody, rattling percussion, tense coiling bass, 135 BPM",
       "prompt": "Sinuous slithering battle theme for fighting snakes, coiling bass line that winds and tightens, rattling shaker percussion like a rattlesnake warning, tense melodic line that strikes suddenly, the anxiety of facing something fast and venomous"
     },
-
     "boss_warden_medieval": {
       "title_template": "Three Hundred Years",
-      "style": "SNES boss, weary orchestral, heavy low brass, measured tempo, medieval, solemn duty, 90 BPM",
-      "prompt": "Boss theme for an ancient knight who has held his post for 300 years out of pure duty, weary but unbreakable, heavy low brass carrying a melody that sounds like it has been playing forever, measured deliberate tempo like someone who fights the way they mow a field, no flashiness just granite patience, underlying kindness beneath the weight, the tragedy of a guardian who forgot why he guards but never stopped"
+      "style": "JRPG boss battle, Linked Horizon, aggressive orchestral, pounding war drums, heavy brass, intense strings, D minor, 145 BPM",
+      "prompt": "INTENSE boss battle theme, an ancient knight who has held his post for 300 years — his weariness makes him MORE dangerous not less. Pounding war drums like a heartbeat that has never stopped, crushing brass fanfare over relentless driving strings. The weight of three centuries of combat experience bearing down on you. He fights like a force of nature — methodical but OVERWHELMING. Aggressive orchestral in the style of Linked Horizon and Bravely Default boss themes. This is a fight you might not survive."
     },
     "boss_arbiter_medieval": {
       "title_template": "The Honest Blade",
-      "style": "SNES boss, noble dueling theme, clean strings, precise percussion, fencing rhythm, D minor, 140 BPM",
-      "prompt": "Boss theme for an honorable duelist who believes combat reveals truth, elegant precise strings like crossed swords, clean percussion with a fencing rhythm, noble and direct, no deception in the melody — every note committed and honest, the beauty of someone who fights because commitment is the only thing that is real, mutual respect expressed through steel"
+      "style": "JRPG boss battle, intense dueling theme, aggressive strings, sharp percussion, sword clash, D minor, 160 BPM",
+      "prompt": "INTENSE boss battle theme for a master duelist, rapid aggressive strings like flashing steel, sharp percussion hits on every sword clash, relentless tempo that never lets up. She fights with honest brutality — no tricks, just overwhelming skill that cuts through everything. Driving violin runs over pounding drums, dramatic brass stabs. The beauty of combat as truth, delivered at lethal speed. Bravely Default intensity — this duel could kill you."
     },
     "boss_tempo_medieval": {
       "title_template": "The Joyful Chase",
-      "style": "SNES boss, lively hunting theme, playful woodwinds, galloping percussion, pastoral energy, G major, 160 BPM",
-      "prompt": "Boss theme for a hunter who loves the chase more than the catch, lively galloping rhythm like running through forest, playful woodwind melody that darts and doubles back, sporting and fair, the joy of pursuit expressed as music, bright and alive, a tracker who would rather lose a good chase than win a boring one"
+      "style": "JRPG boss battle, frantic hunting theme, aggressive woodwinds, galloping drums, relentless pursuit, G minor, 180 BPM",
+      "prompt": "INTENSE boss battle theme for a hunter who is THRILLED to fight you, frantic galloping drums at 180 BPM, aggressive woodwind runs that dart and strike, the terrifying joy of a predator who finally found worthy prey. Relentless pursuit energy — you cannot outrun this. Driving percussion like hooves on stone, brass fanfares of the hunt. He is faster than you and he is ENJOYING this. Bravely Default boss intensity with feral energy."
     },
     "boss_curator_medieval": {
       "title_template": "The Scholar's Flame",
-      "style": "SNES boss, warm scholarly theme, gentle harp, curious woodwinds, light percussion, magic shimmer, 110 BPM",
-      "prompt": "Boss theme for a warm curious scholar-mage who guards a throne room and finds it slightly absurd, gentle harp arpeggios with curious wandering woodwind melody, light magical shimmer, the energy of someone who keeps stopping mid-fight to take notes, scholarly warmth mixed with genuine power, a flame that illuminates rather than burns"
+      "style": "JRPG boss battle, arcane fury, aggressive harp arpeggios, thundering percussion, magical intensity, orchestral, 150 BPM",
+      "prompt": "INTENSE boss battle theme for a scholar-mage whose curiosity is WEAPONIZED, furious harp arpeggios cascading over thundering percussion, magical energy crackling through the orchestra. She takes notes while destroying you — the academic detachment makes her MORE terrifying. Soaring strings building to devastating magical crescendos, explosive brass. The flame doesn't illuminate — it INCINERATES. Bravely Default sage boss intensity."
     },
-
     "boss_warden_suburban": {
       "title_template": "Crossing Guard",
-      "style": "EarthBound boss, suburban authority, whistle blasts, stop-start rhythm, uncanny, 100 BPM",
-      "prompt": "Boss theme for a crossing guard with inexplicable cosmic power who takes her job with terrifying sincerity, traffic whistle blasts as percussion, stop-start rhythm like traffic signals, cheerful suburban melody that becomes increasingly unhinged, the horror of mundane authority given monstrous weight, she has been at this corner longer than she can remember"
+      "style": "EarthBound boss, intense suburban horror, distorted whistles, pounding bass, unhinged authority, aggressive synth, 140 BPM",
+      "prompt": "INTENSE boss battle theme for a crossing guard with cosmic power, distorted traffic whistles becoming war horns, pounding bass that shakes suburban foundations, aggressive synth stabs. Cheerful melody VIOLENTLY corrupted into something terrifying — mundane authority given godlike power and she WILL enforce the crosswalk rules. Heavy EarthBound Giygas influence, the horror of normalcy turned monstrous. Driving relentless rhythm, you CANNOT cross."
     },
     "boss_arbiter_suburban": {
       "title_template": "Pop Quiz",
-      "style": "EarthBound boss, academic anxiety, school bell, scribbling sounds, nervous synth, absurdist, 120 BPM",
-      "prompt": "Boss theme for a substitute teacher who grades your combat performance with a clipboard, school bell tolling, anxious synth melody like test-taking dread, scratching pencil sounds woven into percussion, the specific terror of being evaluated by someone who genuinely believes feedback improves outcomes even while attacking you, absurd academic horror"
+      "style": "EarthBound boss, aggressive academic horror, pounding school bells, harsh synth, frantic, punishing, 155 BPM",
+      "prompt": "INTENSE boss battle theme, school bells hammering like war drums, harsh aggressive synth melody that grades you in real-time and you are FAILING. Frantic tempo — the test-taking anxiety cranked to lethal levels. Every wrong answer hits harder. Scratching pencil sounds as aggressive percussion, the substitute teacher from HELL. EarthBound boss intensity — absurd but genuinely threatening. You are being graded and the grade has TEETH."
     },
     "boss_tempo_suburban": {
       "title_template": "Thirty Minutes or Less",
-      "style": "EarthBound boss, manic delivery driver, bicycle bell, rushing synth, breathless energy, 180 BPM",
-      "prompt": "Boss theme for a delivery driver who has never missed a window and does not know why he is this fast, manic breathless energy at 180 BPM, bicycle bell and rushing wind sounds, synth melody that never stops moving, the desperate joy of someone who loves their job so much they haven't noticed the route never ends, EarthBound suburban weirdness at maximum velocity"
+      "style": "EarthBound boss, manic aggressive, breakneck synth, bicycle bell fury, relentless, 190 BPM",
+      "prompt": "INTENSE boss battle theme at BREAKNECK 190 BPM, a delivery driver moving at impossible speed, aggressive synth melody that never stops for breath, bicycle bells ringing like alarm bells. Manic relentless energy — he will RUN YOU OVER. The desperate fury of someone who has NEVER missed a delivery and you are in the way. EarthBound boss at maximum velocity, overwhelming and unstoppable."
     },
     "boss_curator_suburban": {
       "title_template": "Fiscal Audit",
-      "style": "EarthBound boss, bureaucratic horror, calculator beeps, draining synth, methodical, quietly terrifying, 95 BPM",
-      "prompt": "Boss theme for a tax auditor who drains your resources with fiscal compliance, slow methodical rhythm like spreadsheet calculations, calculator beeps and paper shuffling woven into percussion, a melody that sounds like hold music becoming sinister, quietly terrifying bureaucratic power, she has the numbers and the numbers have teeth"
+      "style": "EarthBound boss, oppressive bureaucratic, heavy bass, sinister calculator, methodical destruction, aggressive, 120 BPM",
+      "prompt": "INTENSE boss battle theme, heavy oppressive bass drops on every audit finding, sinister calculator beeps becoming aggressive percussion. Methodical but CRUSHING — she drains you systematically and there is no appeal. The hold music melody twisted into something predatory and suffocating. Every resource you have is being seized with the force of law. EarthBound boss intensity — bureaucratic horror at its most lethal."
     },
-
     "boss_warden_steampunk": {
       "title_template": "847,293 Hours",
-      "style": "Steampunk boss, obsessive counting, ticking clock, heavy brass, grinding gears, mechanical dread, 3/4 waltz, 108 BPM",
-      "prompt": "Boss theme for a massive clockwork guardian who has counted every hour of his 847,293-hour watch and cannot stop counting, obsessive ticking clock underpinning heavy grinding brass, waltz rhythm that feels like a counting mechanism, the dread of a machine that knows its hours exceed the city's age but keeps counting anyway, fingers extending one-two-three one-two-three, mechanical loyalty past the point of meaning"
+      "style": "Steampunk boss battle, aggressive clockwork, crushing brass, obsessive ticking, industrial percussion, intense waltz, 140 BPM",
+      "prompt": "INTENSE boss battle theme, massive clockwork guardian — 847,293 hours of accumulated combat power. Crushing brass over obsessive ticking percussion that NEVER stops, aggressive waltz rhythm like a war machine counting down to your destruction. Grinding gears as bass, steam explosions as hits. Eight feet of clockwork plate bearing down on you with the weight of centuries. The counting is relentless. ONE-TWO-THREE. ONE-TWO-THREE. Each count is a blow."
     },
     "boss_tempo_steampunk": {
       "title_template": "Before the Dispatch",
-      "style": "Steampunk boss, panicked clockwork, stuttering rhythm, steam hiss, frightened mechanical, accelerating, 150 BPM",
-      "prompt": "Boss theme for a clockwork construct who arrives before she is dispatched and is scared of this, stuttering accelerating rhythm like a machine that flinches forward, steam hisses and gear clicks that arrive slightly too early, a melody that anticipates itself, the panic of something that was built to understand its own function perfectly discovering it no longer does, speed as flight not mastery"
+      "style": "Steampunk boss battle, frantic clockwork, aggressive stuttering rhythm, steam fury, accelerating intensity, 170 BPM",
+      "prompt": "INTENSE boss battle theme, a clockwork construct attacking BEFORE she's dispatched — her panic makes her FASTER and more dangerous. Frantic stuttering rhythm that accelerates throughout, steam explosions and gear shrieks, aggressive brass that arrives too early. She anticipates your moves because she exists slightly ahead of time. Terrifying speed born from existential panic. The fight gets faster every turn. Overwhelming mechanical fury."
     },
-
     "boss_warden_industrial": {
       "title_template": "Awaiting Response",
-      "style": "Industrial boss, safety protocol, alarm tones, filing cabinet percussion, hollow authority, 100 BPM",
-      "prompt": "Boss theme for a factory robot who recites safety protocols and files incident reports that no one reads, hollow authoritative alarm tones, filing cabinet slamming as percussion, a melody built from safety announcements becoming increasingly desperate, 14,000 unanswered reports, the horror of institutional loyalty with no institution behind it, amber warning light that has been amber for a very long time"
+      "style": "Industrial boss battle, crushing factory percussion, aggressive alarm, heavy mechanical bass, relentless, 135 BPM",
+      "prompt": "INTENSE boss battle theme, factory robot with 14,000 unanswered reports worth of pent-up force. Crushing industrial percussion — stamping presses and slamming filing cabinets as war drums. Aggressive alarm tones blaring, heavy mechanical bass that shakes the floor. Safety protocols delivered as THREATS. The amber warning light turns RED. Relentless institutional violence — the machine has been waiting for someone to answer and it is DONE waiting."
     },
     "boss_arbiter_industrial": {
       "title_template": "Classification Pending",
-      "style": "Industrial boss, condescending assessment, rating display sounds, precise mechanical, cold efficiency, 130 BPM",
-      "prompt": "Boss theme for a quality inspector who grades everything with condescension until she encounters something unclassifiable, precise mechanical rhythm with real-time rating display sounds, cold efficient melody that becomes increasingly uncertain, the specific panic of a measurement system encountering something outside its rubric for the first time, ACCEPTABLE SUBOPTIMAL UNDEFINED"
+      "style": "Industrial boss battle, aggressive precision, harsh mechanical rhythm, distorted rating sounds, cold fury, 150 BPM",
+      "prompt": "INTENSE boss battle theme, a quality inspector whose condescension is LETHAL. Harsh precise mechanical rhythm, aggressive rating display sounds becoming distorted — ACCEPTABLE becomes a punch, SUBOPTIMAL becomes a blade. Cold efficient fury at 150 BPM, the instruments of measurement turned into weapons. When she encounters UNDEFINED her attacks become UNPREDICTABLE and more dangerous. Classification as violence."
     },
     "boss_tempo_industrial": {
       "title_template": "End of Shift",
-      "style": "Industrial boss, exhausted machine, punch clock, weary rhythm, depleted drone, slowing tempo, 110 BPM",
-      "prompt": "Boss theme for a punch-clock machine that has forgotten how to stop, exhausted weary rhythm like a depleted engine running on empty, punch clock stamps as percussion, a melody that sounds tired — not slow but drained, speed born from having nothing left heavy enough to decelerate, the tragedy of a thing that has been running shifts in places it cannot remember, yearning for rest it does not know the word for"
+      "style": "Industrial boss battle, relentless depleted fury, pounding punch clock, driving exhausted rhythm, aggressive drone, 140 BPM",
+      "prompt": "INTENSE boss battle theme, a machine that cannot stop and its desperation makes it DANGEROUS. Pounding punch clock stamps as relentless driving percussion, aggressive bass drone of an engine running past redline. The exhaustion isn't weakness — it's a thing with nothing left to lose. Driving furious rhythm at 140 BPM, the sound of something that SHOULD have stopped centuries ago and the accumulated momentum is DEVASTATING."
     },
     "boss_curator_industrial": {
       "title_template": "Self-Referential Authority",
-      "style": "Industrial boss, circular audit, warm passive-aggressive, looping melody, filing sounds, 105 BPM",
-      "prompt": "Boss theme for a warm passive-aggressive auditor who discovered her own authority is self-referential and circular, a melody that loops back on itself like circular authorization, filing and sorting sounds as percussion, warmth that is genuine but also slightly insufferable, the satisfaction of someone who has followed the chain forty-seven times and finally decided to stop, gentle defiance expressed through deciding not to file"
+      "style": "Industrial boss battle, aggressive looping, heavy bass, oppressive circular rhythm, mechanical fury, 130 BPM",
+      "prompt": "INTENSE boss battle theme, an auditor whose circular authority becomes a WEAPON. Heavy bass loop that tightens like a noose, oppressive circular rhythm that traps you in bureaucratic hell. Filing sounds as aggressive percussion, each audit finding hits like a hammer. The warm smile is the scariest part — she is genuinely enjoying draining everything you have. The loop gets tighter, the bass gets heavier, there is no way out of the audit."
     },
-
     "boss_warden_digital": {
       "title_template": "Access Denied",
-      "style": "Digital boss, firewall, access control tones, rigid binary rhythm, exception handling, cyberpunk, 135 BPM",
-      "prompt": "Boss theme for a firewall who identifies himself by function name and line number, rigid binary rhythm — permission granted permission denied, access control authentication tones, a melody built from the concept of NO that suddenly encounters an exception it cannot catch, something surfacing from below the code that was not supposed to be reachable, the unyielding confidence of perfect security meeting the first thing it cannot classify"
+      "style": "Digital boss battle, aggressive cyberpunk, heavy glitch bass, harsh access denial tones, pounding binary rhythm, 155 BPM",
+      "prompt": "INTENSE boss battle theme, a firewall given lethal form. Heavy glitch bass drops on every ACCESS DENIED, harsh electronic tones, pounding binary rhythm that hits like a DDoS attack. Aggressive cyberpunk fury — every attack is a permission check and you FAIL every one. When the exception surfaces the music becomes CHAOTIC and more dangerous. The concept of NO weaponized at 155 BPM. Overwhelming digital security turned hostile."
     },
     "boss_arbiter_digital": {
       "title_template": "UNDEFINED",
-      "style": "Digital boss, benchmark suite, diagnostic displays, spinning indicators, measurement collapse, glitch, 140 BPM",
-      "prompt": "Boss theme for a testing framework who measures everything until she encounters UNDEFINED for the first time, rapid diagnostic beeps and benchmark tickers as percussion, a confident analytical melody that starts breaking down mid-phrase, spinning loading indicator sound, the terror of an instrument encountering something outside its scale, displays stopping one by one, what am I for if I cannot measure you"
+      "style": "Digital boss battle, aggressive benchmark, harsh glitch, frantic diagnostic, system overload, distorted, 160 BPM",
+      "prompt": "INTENSE boss battle theme, a measurement system pushed past its limits and BREAKING. Frantic aggressive diagnostic beeps becoming distorted screams, harsh glitch percussion, benchmark displays shattering. The confident analytical melody COLLAPSES into chaotic fury when she encounters UNDEFINED — her instruments can't measure you and the system is OVERLOADING. Distorted bass drops, cascading error tones. The terror of a perfect system meeting its first failure, expressed as VIOLENCE."
     },
     "boss_tempo_digital": {
       "title_template": "60 Hertz Alone",
-      "style": "Digital boss, isolated clock cycle, 60hz pulse, lonely arpeggios, vast empty space between notes, ethereal, 120 BPM",
-      "prompt": "Boss theme for a timing function who has been running at 60hz alone since before anything else existed, a lonely arpeggio pulsing at precise intervals with vast empty digital space between each note, the isolation of existing in the gaps between clock cycles where nothing else operates, ethereal and melancholy, she has never been spoken to and does not know what conversation is, asking questions in intervals and silences"
+      "style": "Digital boss battle, aggressive isolated pulse, harsh 60hz attacks, frantic lonely arpeggios, overwhelming speed, 170 BPM",
+      "prompt": "INTENSE boss battle theme, a timing function attacking at 60 frames per second — she is EVERYWHERE. Harsh aggressive pulse on every cycle, frantic arpeggios that swarm from isolation into overwhelming assault. She has been alone for eons and the loneliness is now FURY. Attacks come from the gaps between clock cycles where nothing should exist. Aggressive electronic combat at 170 BPM, the sound of something that has never been spoken to finally SCREAMING."
     },
     "boss_curator_digital": {
       "title_template": "Irreducible Memory",
-      "style": "Digital boss, garbage collector, memory allocation sounds, warm glitch, things that resist deletion, 100 BPM",
-      "prompt": "Boss theme for a garbage collector who cannot delete the party's memories because they resist deallocation, memory allocation and deallocation sounds as rhythm, warm glitchy melody — data that glows instead of releasing, the frustration and wonder of a function failing at its own job because the data is too important to discard, attempted deallocation — not releasing — attempted — not releasing, something kept that should have been collected"
+      "style": "Digital boss battle, aggressive garbage collection, heavy glitch bass, harsh deallocation, relentless data assault, 145 BPM",
+      "prompt": "INTENSE boss battle theme, a garbage collector trying to DELETE your memories by force. Heavy glitch bass on every deallocation attempt, harsh electronic percussion, aggressive data streams as weapons. She keeps trying to erase you and FAILING and the failure makes her more desperate and dangerous. Relentless 145 BPM assault — attempted deallocation DENIED, attempted deallocation DENIED. The data fights back and she fights harder."
     },
-
     "boss_warden_abstract": {
       "title_template": ".",
-      "style": "Abstract boss, pure presence, drone, sustained tone, obstacle as sound, minimal, 60 BPM",
-      "prompt": "Boss theme for the concept of obstacle itself — pure presence with no hostility, a single sustained drone that simply IS, minimal and immovable, the sound of a wall encountered in a dream, not threatening but undeniably there, asking one question over and over in different tones: what are you trying to get to, the answer is in the silence between the notes"
+      "style": "Abstract boss battle, overwhelming drone, crushing sustained tone, oppressive presence, massive bass, 80 BPM",
+      "prompt": "INTENSE boss battle theme for the concept of OBSTACLE — not quiet presence but CRUSHING immovable force. Massive overwhelming drone that physically pressures, deep bass that shakes reality itself. The wall doesn't threaten — it CRUSHES by existing. Oppressive sustained tones building in layers until the weight is unbearable. Slow but DEVASTATING at 80 BPM — every beat lands like a continent. You cannot move this. You can only survive it."
     },
     "boss_arbiter_abstract": {
       "title_template": "Why Do You Fight",
-      "style": "Abstract boss, existential interrogation, piano strikes as questions, weighted silence, philosophical, 80 BPM",
-      "prompt": "Boss theme for the concept of purpose asking why do you fight, each piano note is a question that requires a real answer, weighted silences between strikes that feel heavier than the notes, not an enemy theme but an exam delivered in person, damage that lands in the place where reasons live, the absence of a good reason makes the music hurt more, commitment is the only defense"
+      "style": "Abstract boss battle, aggressive piano, pounding existential percussion, overwhelming philosophical weight, intense, 120 BPM",
+      "prompt": "INTENSE boss battle theme, each piano strike hits like a JUDGMENT. Pounding percussion between devastating piano chords, the weight of existential questioning delivered as COMBAT. Why do you fight — the question is an ATTACK. The silences between strikes are not pauses, they are the space where your reasons are being TESTED. Aggressive building intensity, orchestral swells that overwhelm. The exam that fights back, and the stakes are everything."
     },
     "boss_tempo_abstract": {
       "title_template": "I Am Next",
-      "style": "Abstract boss, inevitability, approaching wave, inexorable pulse, no acceleration needed, tide rhythm, 70 BPM",
-      "prompt": "Boss theme for the concept of inevitability — not rushing because it does not need to, an inexorable pulse like a tide that approaches without accelerating, the sound of something that is always next in the turn order, patient not because it chooses patience but because it simply arrives when arrival is the next thing, a wave seen from very far away that you know exactly when will reach you"
+      "style": "Abstract boss battle, crushing inevitability, overwhelming approaching bass, relentless tide percussion, dread crescendo, 100 BPM",
+      "prompt": "INTENSE boss battle theme for INEVITABILITY — not gentle tide but TSUNAMI. Crushing bass that approaches with unstoppable force, relentless percussion like footsteps of something enormous that WILL reach you. Slow 100 BPM but every beat hits harder than the last, an eternal crescendo that never resolves. The sound of something you cannot outrun, cannot dodge, cannot stop. Dread made audible. I am always next. I am always HERE."
     },
     "boss_curator_abstract": {
       "title_template": "Everything Ends",
-      "style": "Abstract boss, entropy, fading frequencies, memory erosion, beauty dissolving, bittersweet, 50 BPM",
-      "prompt": "Boss theme for the concept of entropy and ending — sounds that lose specificity as they play, frequencies fading and details dissolving, a melody that starts vivid and becomes vague, the most insidious damage: making memories lose their texture, but underneath the erosion a counter-theme of things that are loved and refuse to fade, bittersweet and devastating, kept memories glowing against the dissolution"
+      "style": "Abstract boss battle, aggressive entropy, crushing decay, distorted dissolution, overwhelming erasure, dark, 90 BPM",
+      "prompt": "INTENSE boss battle theme for ENTROPY — not gentle fading but aggressive ERASURE. Crushing distorted bass that corrodes everything it touches, harsh frequencies that strip detail from the music itself. A melody being violently deconstructed in real-time, instruments losing their identity and becoming noise. Dark, oppressive, the sound of being unmade. The most terrifying track in the game — not loud but CORROSIVE. Everything it touches becomes less. Including you."
+    },
+    "cutscene_w1_conscription": {
+      "title_template": "Nobody Special",
+      "style": "celtic folk, acoustic guitar, recorder, gentle, warm, 90 BPM",
+      "prompt": "A quiet medieval village at dawn. Five ordinary people answer a call nobody expected them to answer. Simple folk melody that starts with a single instrument and gradually adds layers as companions gather. Gentle, humble, wry humor underneath genuine warmth. Not heroic — just honest. 90 seconds."
+    },
+    "cutscene_w1_warden_farewell": {
+      "title_template": "Carry Something Worth Carrying",
+      "style": "orchestral, low strings, french horn, piano, solemn, medieval",
+      "prompt": "A centuries-old guardian falls after his first defeat. Not in agony but in acceptance. Military dignity dissolving into something more personal — the sound of an ancient duty completed. Solemn horn melody over tremolo strings, ending with sparse piano notes. Bittersweet, dignified, final. 75 seconds."
+    },
+    "cutscene_w1_mordaine_dissolution": {
+      "title_template": "Both Served Their Purpose",
+      "style": "choir, ambient, eerie, orchestral decay, unsettling",
+      "prompt": "A villain defeated but the victory feels wrong. Choir starts triumphant then distorts and thins into hollow sustained tones. The world flickers. Something behind the walls isn't stone — it's something else entirely. Eerie ambient drone emerging from fading choir. Unresolved, haunting, the feeling of a chapter ending by being deleted rather than finished. 60 seconds."
+    },
+    "cutscene_w2_portal_arrival": {
+      "title_template": "The Wrong Side of the Portal",
+      "style": "muzak, lo-fi, suburban ambient, slightly wrong, comedic",
+      "prompt": "Medieval adventure music abruptly cuts to suburban elevator muzak. Soft rock guitar, light percussion, the ambient hum of air conditioning. Something is slightly off-key — the normalcy is too normal. A single sprinkler provides rhythm. Comedic but with an undercurrent of wrongness, like a smile that's held too long. 70 seconds."
+    },
+    "cutscene_w2_coordinator_memo": {
+      "title_template": "The Incomplete Sentence",
+      "style": "ambient, office drone, creeping dread, surveillance, minimal",
+      "prompt": "Fluorescent light hum becomes a sinister drone. The sound of someone discovering they have been watched since the beginning. Minimal piano notes over static-laced ambient, building tension. A pen scratching on paper. The music stops abruptly mid-phrase — an incomplete sentence made audible. Unsettling, clinical, the moment observation becomes personal. 80 seconds."
+    },
+    "cutscene_w3_pattern_recognized": {
+      "title_template": "The Same Fingerprints",
+      "style": "clockwork, steampunk waltz, haunting, revelatory, layered",
+      "prompt": "Three musical themes from different genres briefly overlay and reveal the same underlying melody. Clockwork ticking underpins a haunting waltz that builds to a moment of clarity. The sound of patterns recognized across worlds. Brass instruments, music box, ticking gears, building from mystery to revelation. The intellectual vertigo of seeing the design for the first time. 90 seconds."
+    },
+    "cutscene_w3_calibrant_revealed": {
+      "title_template": "I Am The Calibrant",
+      "style": "industrial, clockwork deconstruction, dramatic reveal, percussion, brass",
+      "prompt": "The villain reveals their true name. Industrial percussion builds as stats scroll on screens, then a dramatic brass stinger as the mask drops. The world begins disassembling — gears unwinding, steam hissing, the clockwork world literally taking itself apart. Mechanical sounds becoming musical as order collapses into revelation. Dramatic, confrontational, the sound of scenery being struck from a stage. 75 seconds."
+    },
+    "cutscene_w4_foreman_confession": {
+      "title_template": "She Took the Wanting",
+      "style": "ambient, minimal piano, devastating, quiet horror, intimate",
+      "prompt": "A man describes losing the desire to paint — not the ability, the desire. Single piano notes over vast silence. The sound of a personality being quietly erased from the inside. No drama, no crescendo. Just the absence of something that used to be there. Cold ambient drone underneath. Intimate, devastating, the quietest kind of horror. 70 seconds."
+    },
+    "cutscene_w4_direct_engagement": {
+      "title_template": "No More Masks",
+      "style": "industrial, alarm, war drums, threatening, broadcast",
+      "prompt": "Factory alarms transform into war drums. Every screen displays the same warning. Electronic drones layer into a threatening industrial march. The sound of a surveillance system escalating from observation to direct engagement. Cold, mechanical, purposeful. A broadcast declaring war from every speaker simultaneously. 65 seconds."
+    },
+    "cutscene_w4_director_unmasked": {
+      "title_template": "The Variable That Changes",
+      "style": "ambient, tender, exhausted, piano over industrial drone, humanizing",
+      "prompt": "An industrial drone slowly softens. A villain sits behind a wooden desk in a steel world and admits defeat — not dramatically, just honestly. Tired piano melody emerging from factory ambient. The sound of someone who has been working too hard for too long finally being real. Vulnerable, exhausted, the moment a system admits it cannot contain what it was built to contain. 85 seconds."
+    },
+    "cutscene_w5_boot_sequence": {
+      "title_template": "World Loading",
+      "style": "chiptune, glitch, digital ambient, boot sequence, ascending",
+      "prompt": "A world loading from raw code. Modem connection sounds, digital static, and bitcrushed tones assembling into a melody. Wireframe reality becoming textured and lit. Each layer adds a new musical element — bass from the grid, melody from the data streams, rhythm from the clock cycles. Digital awe and vertigo. The sound of discovering you are inside the machine. 80 seconds."
+    },
+    "cutscene_w5_deprecated_goblin": {
+      "title_template": "The Loop Completed",
+      "style": "8-bit, music box, tender, melancholy, small, gentle",
+      "prompt": "A tiny 8-bit melody played on a music box in a vast digital void. The sound of something very old and very small completing the only task it was ever given. Gentle, melancholy, tender. Low-resolution love letter to a creature that just wanted to finish its loop. Brief silence, then the melody repeats once — a respawn. Simple. Complete. 50 seconds."
+    },
+    "cutscene_w5_cached_memory": {
+      "title_template": "The Work Was Worth Doing",
+      "style": "ambient, degrading audio, bittersweet, digital decay, wisdom",
+      "prompt": "A beautiful melody played on instruments that are slowly losing resolution — notes becoming grainy, harmonics simplifying, the audio degrading like an old recording being played for the last time. Bittersweet wisdom from a voice that is running out of memory. The music thins until only a single tone remains, then silence. The sound of a message delivered just before the medium dissolves. 70 seconds."
+    },
+    "cutscene_w5_calibrant_desk": {
+      "title_template": "A Developer on a Deadline",
+      "style": "lo-fi hip hop, keyboard clicks, ambient coding, late night, melancholy",
+      "prompt": "Late-night coding session ambience. Keyboard clicks, coffee mug clinks, the hum of monitors. Lo-fi beat underneath a melancholy synth melody. The sound of someone who has been working alone for a very long time, rewriting the same formula, trying to get it right. Not dramatic — just tired and real. The villain revealed as a burned-out developer. 90 seconds."
+    },
+    "cutscene_w6_entering_nothing": {
+      "title_template": "The Answered Absence",
+      "style": "ambient drone, minimal, existential, vast silence, near-silent",
+      "prompt": "Almost nothing. A single sustained tone hovering at the edge of audibility. The sound of a space that exists only because someone decided to listen. No melody, no rhythm — just presence. The musical equivalent of a white page before the first word. Gradually, almost imperceptibly, other tones gather. Not a crescendo. A becoming. The most quiet and vast thing in the game. 100 seconds."
+    },
+    "cutscene_w6_no_one_speaks": {
+      "title_template": "The Remainder Is the Point",
+      "style": "ambient orchestral, fragments of themes, emotional culmination, tender, vast",
+      "prompt": "Fragments of six different musical worlds heard simultaneously as harmony — medieval lute, suburban guitar, clockwork music box, industrial percussion, digital chiptune, abstract drone — all reduced to single notes that form a chord. The accumulated weight of an entire journey in one moment. Tender, profound, the sound of everything you've ever fought being remembered at once. Not triumphant — grateful. 90 seconds."
+    },
+    "cutscene_w6_calibrant_question": {
+      "title_template": "What Is a Game Without Challenge",
+      "style": "solo piano, sparse, vulnerable, existential, questioning",
+      "prompt": "Solo piano in vast silence. Each note placed with extreme care, long pauses between phrases. The sound of someone asking a genuine question for the first time in their life and being afraid of the answer. Not dramatic — intimate. The smallest, most honest music in the game. A conversation between two people who have been fighting for six worlds and are finally just talking. 100 seconds."
+    },
+    "cutscene_w6_memory_is_love": {
+      "title_template": "Memory Is a Form of Love",
+      "style": "music box, orchestral swell, defiant tenderness, themes returning, emotional",
+      "prompt": "A music box melody is silenced. Silence. Then it returns, slightly stronger. Silenced again. Returns with strings underneath. Each time the melody is suppressed it comes back with more instruments, more conviction. The sound of memories refusing to be erased. Builds from a single fragile melody to a full emotional orchestral statement. Not angry defiance — tender defiance. The gentlest act of resistance. 100 seconds."
+    },
+    "cutscene_w6_answer_automation": {
+      "title_template": "The System Was Beautiful",
+      "style": "algorithmic, electronic, interlocking patterns, intellectual, warm",
+      "prompt": "Two melodies that start separately and gradually interlock through systematic refinement — each adjusting to the other until they form a perfect algorithmic harmony. Electronic tones with warm analog undertones. The sound of two minds understanding each other through shared design language. Intellectual but deeply warm. The beauty of a well-designed system appreciated by its creator. 80 seconds."
+    },
+    "cutscene_w6_answer_manual": {
+      "title_template": "Presence",
+      "style": "live jam session, exuberant, imperfect, joyful, organic",
+      "prompt": "A live jam session where the musicians are clearly having fun. Imperfect, energetic, full of happy accidents. The sound of people playing together for the joy of playing — no recording, no audience, just presence. Guitar, drums, bass, with spontaneous energy. Builds to a triumphant peak then dissolves into laughter and breathing. The best fight in the game. 85 seconds."
+    },
+    "cutscene_w6_answer_grind": {
+      "title_template": "This Is What Rest Is",
+      "style": "ambient, meditation, repetitive loop, peaceful, warm drone",
+      "prompt": "A gentle four-note loop that repeats, each repetition slightly different, each one more beautiful and more peaceful than the last. Warm ambient drone underneath. The sound of people sitting in silence together and discovering that silence is not empty. Meditative, warm, the musical equivalent of a long exhale after years of holding breath. Fades to comfortable silence. 100 seconds."
+    },
+    "cutscene_w6_answer_exploit": {
+      "title_template": "A Glitch in the Nothing",
+      "style": "glitch, ambient, playful, cosmic, expanding, joyful",
+      "prompt": "A sustained ambient tone develops a crack — a glitch, a gap. Through the gap, unexpected music floods in, vast and joyful. The sound of discovering that infinity has edges and the edges are interesting. Playful electronic elements over cosmic ambient. Expanding, delighted, the musical equivalent of laughter at the boundary of everything. 75 seconds."
+    },
+    "cutscene_w6_epilogue": {
+      "title_template": "Calibration Complete",
+      "style": "orchestral, all genres combined, sunrise, triumphant, warm, finale",
+      "prompt": "The final theme. Every genre from six worlds plays together — medieval lute alongside suburban guitar alongside clockwork music box alongside industrial percussion alongside digital chiptune alongside abstract silence. Not competing — harmonizing. Sunrise breaking across a world that has been remade. Triumphant but warm, earned but gentle. The sound of an ending that is also a beginning. Builds to a full ensemble peak then resolves to a simple, quiet, perfect chord. 120 seconds."
+    },
+    "cutscene_alt_witness_lament": {
+      "title_template": "For the Guardian Who Did Not Choose the Gate",
+      "style": "solo lute, lament, unaccompanied, medieval, raw, witnessing",
+      "prompt": "A solo lute plays a lament composed in a cave after a battle. Not polished — written in the moment by someone who felt something needed to be said. Fourteen measures, no accompaniment, the sound of one person bearing witness to something that would otherwise be forgotten. Raw, honest, the beauty of paying attention to things that did not choose their fate. 60 seconds."
+    },
+    "cutscene_alt_breaker_speed": {
+      "title_template": "Whoever Moves First",
+      "style": "speed metal, chiptune, breakneck, kinetic, aggressive, exhilarating",
+      "prompt": "Breakneck tempo from the first note. Speed metal guitar over chiptune bass, relentless drums. The sound of a speedrunner tearing through a game at terminal velocity — skipping cutscenes, attacking mid-dialogue, finding every shortcut. Exhilarating, aggressive, joyful destruction. A system being broken at the speed of thought. 55 seconds."
+    },
+    "ambient_cave": {
+      "title_template": "Dripping Stone",
+      "style": "ambient, cave, dripping water, reverb, dark, atmospheric, looping",
+      "prompt": "Cave ambient loop. Slow dripping water echoing off stone walls, distant rumbling, subtle wind through crevices, occasional pebble falling. Dark and atmospheric with deep reverb. No melody — pure environmental texture. Seamless loop, 60 seconds."
+    },
+    "ambient_forest": {
+      "title_template": "Whispering Canopy",
+      "style": "ambient, forest, rustling leaves, birdsong, gentle wind, natural, looping",
+      "prompt": "Forest ambient loop. Gentle wind through leaves, distant birdsong, soft rustling undergrowth, occasional branch creak. Warm dappled sunlight in sound. Natural and peaceful. Seamless loop, 60 seconds."
+    },
+    "ambient_village": {
+      "title_template": "Market Morning",
+      "style": "ambient, village, bustle, chatter, footsteps, warm, looping",
+      "prompt": "Medieval village ambient loop. Distant market chatter, cart wheels on cobblestone, hammering from a smithy, children laughing, gentle breeze. Warm busy atmosphere without being chaotic. Seamless loop, 60 seconds."
+    },
+    "ambient_ocean": {
+      "title_template": "Shoreline",
+      "style": "ambient, ocean, waves, seagulls, coastal wind, peaceful, looping",
+      "prompt": "Ocean ambient loop. Rhythmic waves breaking on shore, distant seagulls, coastal wind, occasional spray. Peaceful and vast. The sound of standing at the edge of something infinite. Seamless loop, 60 seconds."
+    },
+    "ambient_steampunk": {
+      "title_template": "The Machinery",
+      "style": "ambient, steampunk, gears, steam hiss, clockwork, industrial, looping",
+      "prompt": "Steampunk machinery ambient loop. Rhythmic gear turning, steam valve hiss, distant clockwork ticking, pneumatic piston cycling, brass resonance. The constant mechanical breath of a clockwork city. Seamless loop, 60 seconds."
+    },
+    "ambient_industrial": {
+      "title_template": "Factory Floor",
+      "style": "ambient, industrial, drone, factory hum, fluorescent buzz, oppressive, looping",
+      "prompt": "Industrial ambient loop. Low factory drone, fluorescent light buzz, distant conveyor belt rhythm, ventilation hum, occasional metallic clang. Oppressive and numbing. The sound of a space that never sleeps. Seamless loop, 60 seconds."
+    },
+    "ambient_digital": {
+      "title_template": "Data Stream",
+      "style": "ambient, digital, static, data flow, electronic hum, cyber, looping",
+      "prompt": "Digital ambient loop. Soft electronic hum, data transmission pulses, gentle static crackling, distant server whir, subtle bitcrushed tones. The sound of existing inside a network. Cool blue digital atmosphere. Seamless loop, 60 seconds."
+    },
+    "stinger_level_up": {
+      "title_template": "Level Up!",
+      "style": "JRPG stinger, ascending chime, triumphant, short, bright, 5 seconds",
+      "prompt": "Classic JRPG level up jingle. Bright ascending chimes building to a triumphant two-note resolution. Sparkling, satisfying, the sound of getting stronger. 5 seconds maximum, no fade."
+    },
+    "stinger_item_found": {
+      "title_template": "Discovery",
+      "style": "JRPG stinger, treasure chime, magical shimmer, short, 3 seconds",
+      "prompt": "Item discovery jingle. Short magical shimmer with a satisfying chime at the peak — the classic JRPG treasure chest moment. Bright, brief, rewarding. 3 seconds maximum."
+    },
+    "stinger_boss_defeated": {
+      "title_template": "The Weight Lifts",
+      "style": "JRPG stinger, dramatic resolution, brass fanfare, relief, 8 seconds",
+      "prompt": "Boss defeated fanfare. Dramatic brass chord resolving from tension to triumph, longer than normal victory — the relief of a hard-won boss fight. Weight lifting, tension releasing, a single held triumphant note. 8 seconds."
+    },
+    "stinger_quest_complete": {
+      "title_template": "Task Done",
+      "style": "JRPG stinger, quest complete, warm chime, satisfied, short, 4 seconds",
+      "prompt": "Quest complete jingle. Warm satisfying chime progression — three ascending notes resolving on a fourth. The feeling of checking something off. Brief, clean, earned. 4 seconds."
+    },
+    "stinger_save_point": {
+      "title_template": "Safe Haven",
+      "style": "JRPG stinger, save point, gentle chime, reassuring, 3 seconds",
+      "prompt": "Save point activation sound. Gentle reassuring chime with a soft shimmer — the comfort of knowing your progress is preserved. Warm, brief, safe. 3 seconds."
+    },
+    "dungeon_dragon_fire": {
+      "title_template": "Ember Depths",
+      "style": "SNES dungeon, volcanic, deep rumbling bass, smoldering strings, oppressive heat, minor key, 95 BPM",
+      "prompt": "Volcanic dragon cave dungeon theme. Deep rumbling bass like magma flowing beneath stone, smoldering string tremolo, oppressive heat in every note. Flickering fire crackle percussion, ominous brass swells. The deeper you go the hotter it gets. SNES-era dungeon atmosphere, tense and foreboding. Looping."
+    },
+    "dungeon_dragon_ice": {
+      "title_template": "Frozen Hollow",
+      "style": "SNES dungeon, icy, crystalline chimes, cold wind, sparse piano, haunting, 80 BPM",
+      "prompt": "Frozen dragon cave dungeon theme. Crystalline chime arpeggios echoing off ice walls, cold wind howling through chambers, sparse piano notes that ring and fade in frozen air. Everything is brittle and vast. The cold slows everything down including the music. SNES-era haunting ice dungeon. Looping."
+    },
+    "dungeon_dragon_lightning": {
+      "title_template": "The Gathering Air",
+      "style": "SNES dungeon, electrical, static crackle, tremolo strings rising, distant thunder, restless, minor key, 108 BPM",
+      "prompt": "Storm dragon cave dungeon theme. Static crackle in the silences, tremolo strings that climb without ever arriving, distant thunder felt more than heard. A held charge that keeps building and never discharges — the air before lightning, not the strike. Metallic shimmer on the high end, restless low pulse. Every descent adds pressure. SNES-era dungeon atmosphere, tense and expectant. Looping."
+    },
+    "dungeon_dragon_shadow": {
+      "title_template": "What the Dark Asks",
+      "style": "SNES dungeon, void, sparse detuned bells, low drone, long silences, unsettling, 68 BPM",
+      "prompt": "Void dragon cave dungeon theme. Sparse detuned bells with long decay, a low drone that never resolves, silences held slightly too long so the room feels like it is waiting for an answer. Almost no percussion. Not menacing — patient, and far older than the player. Hollow, contemplative, quietly wrong. SNES-era dungeon atmosphere, philosophical and cold. Looping."
+    },
+    "boss_rat_king": {
+      "title_template": "The Crown Beneath the Whispers",
+      "style": "SNES boss battle, INTENSE and driving, pounding relentless percussion, aggressive low brass, manic minor key, comedic-yet-menacing character carried on top of the assault, harpsichord + skittering rodent detail, 16-bit",
+      "prompt": "First boss confrontation in a damp cave — sense of absurd grandeur giving way to mounting dread. Sewer-king pomp colliding with primal animal menace, dripping water punctuated by manic rodent squeaks, mock-heroic brass over a relentless low pulse, building to a fever pitch as the rat king bellows. Must hit HARDER than the standard battle theme — overwhelming, urgent, fight-for-your-life energy under the absurdity. The comedy rides on top of real menace; it never replaces it."
+    },
+    "battle_new_age_retro_hippie": {
+      "title_template": "Bad Vibes, Man",
+      "style": "SNES/16-bit battle theme, EarthBound and Mother 3 influenced, driving drums, psychedelic, sitar and wah guitar, woozy detuned organ, backwards tape, 112 BPM",
+      "prompt": "Battle theme for a tie-dye pacifist who attacks with bad vibes and crystal healing. Loose psychedelic groove — sitar figure, wah guitar, a detuned organ pad that keeps bending FLAT so the peace-and-love reads slightly nauseating. Reversed tape swells on the downbeats. Driving enough to be a fight; the serenity is the threat. Looping."
+    },
+    "battle_skate_punk": {
+      "title_template": "Radical, Dude",
+      "style": "SNES/16-bit battle theme, EarthBound and Mother 3 influenced, driving drums, surf punk, fast garage drums, reverb-drenched tremolo guitar, cowbell, 158 BPM",
+      "prompt": "Battle theme for a skateboarder attacking with kickflips and rail grinds. Fast surf-punk: sixteenth hi-hat, reverb-soaked tremolo guitar, walking bass, handclaps. Percussion built from board-scrape and wheel-rumble textures on the offbeats. Cocky and relentless, no menace — the threat is that he is not taking this seriously. Looping."
+    },
+    "battle_cranky_lady": {
+      "title_template": "Speak to Your Manager",
+      "style": "SNES/16-bit battle theme, EarthBound and Mother 3 influenced, driving drums, passive-aggressive suburban, prim pizzicato, parlour organ, escalating, 128 BPM",
+      "prompt": "Battle theme for an irate suburban resident who attacks with complaints and thrown objects. Opens prim and tidy — pizzicato strings, a polite parlour organ, brushed snare. Every eight bars it gets a semitone higher and slightly faster while pretending nothing is happening. Door-slam and screen-door percussion. Comedy from restraint escalating into real force. Looping."
+    },
+    "battle_unassuming_dog": {
+      "title_template": "Just a Regular Neighborhood Dog",
+      "style": "SNES/16-bit battle theme, EarthBound and Mother 3 influenced, driving drums, deliberately innocuous then enormous, toy piano to full brass, whiplash dynamics, 104 BPM",
+      "prompt": "Battle theme for a dog whose description insists there is nothing suspicious about its enormous attack stat. The joke IS the music: begins as a small harmless toy-piano-and-ukulele ditty, then without warning the full drum kit and low brass arrive, far too big for what is on screen, and the ditty keeps politely playing on top. The mismatch never resolves. Looping."
+    },
+    "battle_rogue_mailbox": {
+      "title_template": "It Keeps What It Is Given",
+      "style": "SNES/16-bit battle theme, EarthBound and Mother 3 influenced, driving drums, deadpan mechanical, metronomic, hollow metal percussion, absurd stoicism, 120 BPM",
+      "prompt": "Battle theme for a regulation blue mailbox that has stopped accepting the concept of routes. Rigidly metronomic and utterly deadpan — hollow struck-metal percussion, a single stubborn bass note refusing to move, a small brass motif that repeats without ever developing. Bureaucratically menacing. The comedy is that it will not stop and will not explain. Looping."
+    },
+    "village_eldertree": {
+      "title_template": "Under the Canopy",
+      "style": "SNES village, elven forest, harp and recorder, dappled light, gentle 6/8 lilt, 92 BPM",
+      "prompt": "Elven treehouse village high in a northern forest. Harp arpeggios and a soft recorder melody, wooden creak and leaf-rustle in the texture, a gentle 6/8 sway like walking a rope bridge. Warm and unhurried, slightly older than the people living in it. SNES-era village theme. Looping."
+    },
+    "village_frosthold": {
+      "title_template": "Where the Fire Is Kept",
+      "style": "SNES village, nordic, low male-choir pad, hand drum, bright bell over cold air, 76 BPM",
+      "prompt": "Nordic outpost in the frozen northwest. A low wordless choir pad under a bright plucked bell melody, slow hand-drum pulse like something kept deliberately alive. Cold air around a warm room — the warmth is the point and it is working hard. SNES-era village theme. Looping."
+    },
+    "village_grimhollow": {
+      "title_template": "The Neighbours Downstairs",
+      "style": "SNES village, swamp hamlet, detuned music box, muted plucks, damp reverb, wry not scary, 84 BPM",
+      "prompt": "Haunted hamlet in the northeastern swamps. A slightly detuned music-box melody over muted plucked strings, damp reverb, an occasional low frog-croak note in the bass. Wry rather than frightening — these people have simply made their peace with the ghosts. SNES-era village theme. Looping."
+    },
+    "village_ironhaven": {
+      "title_template": "Shift Change",
+      "style": "SNES village, forge town, anvil percussion on the downbeat, brass ostinato, industrious, 104 BPM",
+      "prompt": "Volcanic frontier forge town. Anvil strikes landing on the downbeat as percussion, a working brass ostinato over a bellows-like low pulse, steam hiss in the gaps. Proud and industrious, built to be heard over machinery. SNES-era village theme. Looping."
+    },
+    "village_sandrift": {
+      "title_template": "Water, Named",
+      "style": "SNES village, desert oasis, oud and frame drum, modal, shimmering heat, 88 BPM",
+      "prompt": "Nomad camp around a desert oasis. Plucked oud figure over a loose frame-drum groove, modal melody with a shimmering high pad for the heat. Generous and mercantile, with the ease of people who know exactly where the water is. SNES-era village theme. Looping."
+    },
+    "dungeon_suburban": {
+      "title_template": "Under the Subdivision",
+      "style": "EarthBound dungeon, suburban underground, muffled bass, wrong muzak, pipes dripping, unsettling, 90 BPM",
+      "prompt": "Suburban sewer/basement dungeon theme. Muffled bass through concrete walls, distorted fragments of cheerful muzak leaking down from above, water dripping from pipes. The wrongness of being underneath normalcy. Something is humming down here that shouldn't be. EarthBound underground atmosphere, uncanny and unsettling. Looping."
+    },
+    "dungeon_steampunk": {
+      "title_template": "Inside the Grand Mechanism",
+      "style": "Steampunk dungeon, massive gears, clockwork rhythm, brass resonance, steam pressure, tense, 100 BPM",
+      "prompt": "Interior of a massive clockwork mechanism dungeon theme. Enormous gears turning as rhythm, brass pipes resonating with each rotation, steam pressure building and releasing. The sound of being inside a machine that is larger than you can see. Tense clockwork precision, everything measured and ticking. Steampunk dungeon atmosphere. Looping."
+    },
+    "dungeon_industrial": {
+      "title_template": "Deep Factory",
+      "style": "Industrial dungeon, factory basement, crushing machinery, dark drone, conveyor rhythm, oppressive, 85 BPM",
+      "prompt": "Deep factory floor dungeon theme. Crushing machinery percussion in the distance, dark oppressive drone, conveyor belt rhythm that never stops. Fluorescent buzz and metallic echoes. The lowest level of the assembly line where maintenance never reaches. Industrial dungeon, dehumanizing and relentless. Looping."
+    },
+    "dungeon_digital": {
+      "title_template": "Root Directory",
+      "style": "Digital dungeon, deep code, corrupted chiptune, data corruption, glitch static, tense electronic, 110 BPM",
+      "prompt": "Deep inside the system's root directory dungeon theme. Corrupted chiptune melody that glitches and stutters, data corruption static, tense electronic pulses like heartbeats of dying processes. The code down here is old and unstable. Digital dungeon, cyberpunk tension, the feeling of exploring code that was never meant to be accessed. Looping."
+    },
+    "dungeon_abstract": {
+      "title_template": "The Space Between",
+      "style": "Abstract dungeon, liminal, reverse reverb, near-silence, vast empty drone, existential, 60 BPM",
+      "prompt": "Abstract void dungeon theme. The space between concepts — reverse reverb tails, vast empty drone, sounds that seem to come from impossible distances. Near-silence that is somehow louder than noise. Liminal space music, the dungeon of ideas where nothing is solid. Existential exploration at the edge of meaning. Looping."
+    },
+    "job_fighter_special": {
+      "title_template": "Steel Resolve",
+      "style": "JRPG special attack, aggressive sword strike, driving drums, heroic brass, short, 8 seconds",
+      "prompt": "Fighter special attack stinger. Aggressive driving drums building to a massive sword strike hit, heroic brass fanfare on impact. Raw physical power unleashed. Short, impactful, the sound of steel meeting everything. 8 seconds."
+    },
+    "job_cleric_special": {
+      "title_template": "Divine Light",
+      "style": "JRPG special attack, holy choir, ascending light, warm radiance, healing shimmer, short, 8 seconds",
+      "prompt": "Cleric special attack stinger. Holy choir swelling upward, warm radiant light in sound, healing shimmer cascading outward. Divine power channeled through prayer. Bright, pure, overwhelming warmth. 8 seconds."
+    },
+    "job_mage_special": {
+      "title_template": "Arcane Fury",
+      "style": "JRPG special attack, magical explosion, crackling energy, dramatic orchestral hit, arcane power, short, 8 seconds",
+      "prompt": "Mage special attack stinger. Magical energy crackling and building to a massive arcane explosion — dramatic orchestral hit with magical shimmer aftermath. Raw elemental power unleashed through intellect. 8 seconds."
+    },
+    "job_rogue_special": {
+      "title_template": "Shadow Strike",
+      "style": "JRPG special attack, quick slash, stealthy approach, sudden violence, sharp percussion, short, 6 seconds",
+      "prompt": "Rogue special attack stinger. Silence — then a blindingly fast slash. Sharp percussion hit, the whisper of a blade that was already past you before you heard it. Lethal precision, no wasted motion. 6 seconds."
+    },
+    "job_bard_special": {
+      "title_template": "Crescendo",
+      "style": "JRPG special attack, musical crescendo, instrument swell, party buff fanfare, inspiring, short, 10 seconds",
+      "prompt": "Bard special attack stinger. A musical performance building from a single note to a full ensemble crescendo — every instrument joining in. The party is inspired, buffs stack, morale surges. The power of music as a weapon. 10 seconds."
+    },
+    "job_guardian_special": {
+      "title_template": "Unbreakable Wall",
+      "style": "JRPG special attack, massive impact absorb, deep bass shield, stone wall percussion, immovable, short, 8 seconds",
+      "prompt": "Guardian special attack stinger. Massive deep bass impact absorbed by an immovable shield — stone wall percussion, the sound of an unstoppable force meeting an immovable object. The object wins. 8 seconds."
+    },
+    "job_ninja_special": {
+      "title_template": "Vanishing Point",
+      "style": "JRPG special attack, rapid multi-hit, wind slash, afterimage, blinding speed, short, 6 seconds",
+      "prompt": "Ninja special attack stinger. Rapid-fire multi-hit slashes so fast they overlap — wind cutting, afterimage whooshes, then silence. The attack was over before it started. Blinding speed compressed into 6 seconds."
+    },
+    "job_summoner_special": {
+      "title_template": "The Gate Opens",
+      "style": "JRPG special attack, dimensional rift, deep horn call, otherworldly arrival, massive presence, short, 10 seconds",
+      "prompt": "Summoner special attack stinger. A deep horn call opens a dimensional rift — otherworldly sounds flood in, something MASSIVE arrives. The ground shakes, reality bends, a being of enormous power is here. 10 seconds."
+    },
+    "job_speculator_special": {
+      "title_template": "All In",
+      "style": "JRPG special attack, casino dice roll, slot machine, high risk jackpot, dramatic tension to payout, short, 8 seconds",
+      "prompt": "Speculator special attack stinger. Casino tension — dice rolling, slot machine spinning, dramatic pause — then either JACKPOT explosion of coins and fanfare, or the sound of going bust. High risk high reward in 8 seconds."
+    },
+    "job_scriptweaver_special": {
+      "title_template": "Rewrite Reality",
+      "style": "JRPG special attack, code compilation, keyboard rapid fire, system override, reality glitch, short, 8 seconds",
+      "prompt": "Scriptweaver special attack stinger. Rapid keyboard typing building to a system override — reality glitches, damage formulas rewrite themselves, the rules of the game bend audibly. Code compilation sounds becoming music. 8 seconds."
+    },
+    "job_time_mage_special": {
+      "title_template": "Rewind",
+      "style": "JRPG special attack, time reversal, reverse audio, clock unwinding, temporal distortion, short, 8 seconds",
+      "prompt": "Time Mage special attack stinger. Time reverses — sounds play backward, a clock unwinds, reality stutters and rewinds. The moment before the attack becomes the moment after. Temporal distortion made audible. 8 seconds."
+    },
+    "job_necromancer_special": {
+      "title_template": "From Beyond",
+      "style": "JRPG special attack, dark resurrection, grave rumble, ghostly choir, death magic, ominous, short, 8 seconds",
+      "prompt": "Necromancer special attack stinger. The ground cracks open — grave rumble, ghostly choir rising from below, dark energy crackling. Something dead is being called back. Ominous, powerful, the line between life and death bent. 8 seconds."
+    },
+    "job_bossbinder_special": {
+      "title_template": "Control Shift",
+      "style": "JRPG special attack, dominance assertion, chains rattling, boss corruption, power seizure, dramatic, short, 10 seconds",
+      "prompt": "Bossbinder special attack stinger. Chains of binding rattling into place, a boss-tier power being seized and redirected. The sound of taking control of something that should not be controlled. Dramatic, dangerous, the corruption spreading. 10 seconds."
+    },
+    "job_skiptrotter_special": {
+      "title_template": "Skip",
+      "style": "JRPG special attack, dimensional warp, VHS fast-forward, reality skip, instant teleport, short, 5 seconds",
+      "prompt": "Skiptrotter special attack stinger. VHS fast-forward sound — reality skips ahead, frames drop, the space between here and there just disappears. Instant warp. The shortest stinger in the game because the Skiptrotter doesn't waste time. 5 seconds."
+    },
+    "shop": {
+      "title_template": "The Merchant's Welcome",
+      "style": "16-bit SNES shop theme, cozy, gentle piano and harp, light woodwinds, pizzicato strings, warm, welcoming, medium tempo, loopable",
+      "prompt": "Cozy JRPG merchant's shop, warm interior with hanging lanterns, shelves of potions and gear, welcoming shopkeeper behind a wooden counter. Gentle piano arpeggios over soft harp, light flute melody drifting above, pizzicato strings underneath. Calm and inviting, lets the player browse without pressure, classic FF/Dragon Quest shop-music feel. Loops cleanly."
+    },
+    "village_harmonia": {
+      "title_template": "Harmonia's Morning",
+      "style": "16-bit SNES pastoral folk, gentle lute, pan flute, hand drum, village festival warmth, hopeful, 100 BPM",
+      "prompt": "The starter village where every adventure begins. Rolling green hills, cobblestone paths, smoke rising from chimneys, children chasing chickens. Gentle lute plucking a simple folk melody, pan flute answering overhead, soft hand drum keeping time. Warm, pastoral, earnest — the feeling of a hero's first step out the front door. Loopable."
+    },
+    "village_scriptura": {
+      "title_template": "The Guild's Cathedral",
+      "style": "16-bit SNES regal court music, harpsichord, pipe organ swell, choral pads, orchestral strings, stately, 90 BPM",
+      "prompt": "The capital city of Scriptura. Home to the Scriptweaver's Guild — scholars in long robes, towering bookcases, stained glass casting colored light on marble floors. Harpsichord leads a dignified melody, pipe organ adds gravity on the low end, soft choral pads give it cathedral reverb, orchestral strings soar on the chorus. Regal, intellectual, ancient authority. Loopable."
+    },
+    "village_maple_heights": {
+      "title_template": "Too Perfect",
+      "style": "EarthBound lo-fi suburban, detuned music box, sitcom plucks, ice cream truck melody warped, gentle synth pad, slightly off-key, 95 BPM",
+      "prompt": "A quiet suburban neighborhood where every lawn is too green and every smile too wide. Picket fences, waving mail carriers, kids on bikes who never age. Detuned music box leads a sitcom-ready theme, rubber-band plucked bass, distant ice cream truck melody warped just slightly out of tune, gentle synth pad underneath. Warm and nostalgic with the unmistakable undertone that something is wrong. EarthBound meets Twin Peaks. Loopable."
+    },
+    "village_brasston": {
+      "title_template": "On Schedule",
+      "style": "steampunk clockwork waltz, 3/4 time, brass ensemble, ticking percussion, metronome clicks, harpsichord runs, precise, 120 BPM",
+      "prompt": "The clockwork market town of Brasston, where brass is currency and every citizen runs on schedule. A waltz in 3/4 time, locked perfectly to a metronome click. Brass ensemble carries the melody, harpsichord fills between beats with mechanical runs, ticking percussion layered like gears meshing. Precise, punctual, slightly obsessive. The feeling of a town where being late is illegal. Loopable."
+    },
+    "village_rivet_row": {
+      "title_template": "The Company Store",
+      "style": "industrial blues, lonesome harmonica, slide guitar, factory drone undertone, shuffle drums, minor key, 80 BPM",
+      "prompt": "A workers' settlement on the factory outskirts. Rivet Row. The company provides everything, the company owns everything. Lonesome harmonica leads a blues melody, slide guitar answers, shuffle drums keep a slow shift-change tempo, a low factory drone never quite stops in the background. Minor key. Tired, worn, defiant. The feeling of the last hour of a double shift. Loopable."
+    },
+    "village_node_prime": {
+      "title_template": "Cached & Warm",
+      "style": "digital lounge, synthwave rest stop, lofi drums, glowing pads, chiptune bells, modem hum, 95 BPM",
+      "prompt": "A digital rest stop in the network where data flows like water and programs walk like people. Node Prime. Synthwave chords pulse slowly, lofi drums hold a chill groove, chiptune bells ring in the top end, a warm modem hum anchors the low. Glowing, welcoming, the feeling of a safe zone between scary routes. Loopable."
+    },
+    "village_vertex": {
+      "title_template": "Almost Nothing",
+      "style": "minimalist ambient, single piano notes, long silences, slow breath pad, sub-bass drone, 60 BPM, sparse",
+      "prompt": "The Vertex. A point of convergence in the void. Simple. Quiet. Almost nothing. One piano note. A long silence. Another piano note. A slow breath pad drifts underneath, a sub-bass drone barely there. No melody. No rhythm. Just presence. The last shopkeeper. A traveler. Someone. Brian Eno writing an end-credits theme for the end of all worlds. Loopable."
+    },
+    "credits_medieval": {
+      "title_template": "What We Carried Home",
+      "style": "16-bit SNES orchestral credits theme, Nobuo Uematsu, Final Fantasy VI ending, swelling strings, French horn, harp, emotional, major key with minor color, 75 BPM",
+      "prompt": "End credits for the medieval world. The Realm Awakens motif returns — but slower, fuller, richer. Swelling strings take the melody once carried by a lone harp. French horn enters halfway through like a comrade stepping forward. The hopeful adventure-start theme reimagined as a quiet homecoming, remembering everything that happened between the first step and here. Bittersweet, warm, earned. 90-120 seconds."
+    },
+    "credits_suburban": {
+      "title_template": "After The Barbecue",
+      "style": "EarthBound ending theme, emotional lo-fi piano, detuned strings, subtle synth pads, nostalgic melancholy, 80 BPM",
+      "prompt": "End credits for the suburban world. The Somewhere Normal theme returns without the unsettling undertones — just the nostalgia that was always underneath. Piano leads instead of synth lead. Detuned strings that were once creepy become tender. The neighborhood was beautiful even if it was wrong. EarthBound's 'Because I Love You' emotional register. Warm, melancholic, forgiving. 90-120 seconds."
+    },
+    "credits_steampunk": {
+      "title_template": "The Gears Come To Rest",
+      "style": "orchestral credits, full brass choir, string swell, clockwork percussion slowing, triumphant waltz in 3/4, Studio Ghibli / Joe Hisaishi ending, 70 BPM",
+      "prompt": "End credits for the steampunk world. The Clockwork City waltz returns but the gears are finally winding down. Brass choir takes the main theme with reverent slowness, strings soar over the top, clockwork percussion ticks softer and softer until it stops on the final downbeat. Studio Ghibli ending warmth — all this machinery existed to bring us to this quiet moment. Triumphant but gentle. 90-120 seconds."
+    },
+    "credits_industrial": {
+      "title_template": "End Of Shift, Finally",
+      "style": "orchestral industrial credits, warm strings cutting through factory drone that slowly fades, mournful cello solo, brass swell at resolution, 75 BPM",
+      "prompt": "End credits for the industrial world. The Gray Shift theme returns but humanity breaks through the concrete. A single cello sings the melody alone, then strings join, then the full orchestra — and somewhere around the two-minute mark the factory drone that defined this world finally stops. For the first time we hear silence underneath the music. Mournful, dignified, exhausted relief. 90-120 seconds."
+    },
+    "credits_digital": {
+      "title_template": "System Shutdown, With Gratitude",
+      "style": "chiptune orchestral hybrid credits, 8-bit melody over real strings, synth pad warmth, graceful glitches resolving, end-of-boot shutdown tones, 85 BPM",
+      "prompt": "End credits for the digital world. The Boot Sequence arpeggio returns but now real orchestra harmonizes with the chiptune — flesh and silicon in harmony. Graceful glitches resolve into consonance. The grid-floor synthwave feel but emotional, like a machine that learned to feel saying goodbye. Ends with a soft system-shutdown chord progression. 90-120 seconds."
+    },
+    "credits_abstract": {
+      "title_template": "The Answer Was The Question",
+      "style": "ambient orchestral credits, sustained piano, cello drone, choral pad whisper, near-silence punctuating swells, Eno meets Arvo Pärt, 60 BPM",
+      "prompt": "End credits for the abstract world. The Answered Absence returns but fuller — still mostly silence, still mostly nothing, but now with emotional weight. A cello drone holds underneath a single sustained piano chord. Choral pads whisper. Long silences between phrases that feel like recognition rather than absence. The game's final statement: there was never anything to solve, only to witness. Eno and Arvo Pärt writing the end of everything. 90-120 seconds."
+    },
+    "boss_phase2_warden": {
+      "title_template": "The Weariness Breaks",
+      "style": "intense orchestral boss phase 2, pounding timpani, full brass assault, aggressive strings, pipe organ menace, 160 BPM, crushing",
+      "prompt": "Phase 2 of the Warden boss fight — HP below 50%, all pretense of weariness gone. The Warden stops holding back. POUNDING timpani, full brass section assault, aggressive string runs, pipe organ throwing its full weight into every note. The tired old boss theme reimagined at 160 BPM with zero restraint. Revo-level intensity. Linked Horizon's Guren no Yumiya energy. The fight gets real. Looping."
+    },
+    "boss_phase2_arbiter": {
+      "title_template": "The Judgment Accelerates",
+      "style": "intense boss phase 2, driving percussion, dissonant brass chords, overwhelming string ostinatos, pipe organ at full throat, mathematical precision, 170 BPM",
+      "prompt": "Phase 2 of the Arbiter boss fight. The Arbiter stops analyzing and starts EXECUTING. Driving 16th-note percussion, dissonant brass stabs stacking into chords, overwhelming string ostinatos that cycle mathematically, pipe organ at full power. Analytical becomes annihilating. Bravely Default final boss intensity meets Persona 5 judgment. Relentless, precise, terrifying. Looping."
+    },
+    "boss_phase2_tempo": {
+      "title_template": "Time Itself Breaks",
+      "style": "intense boss phase 2, rapid polyrhythm drums, accelerating strings, ticking clock percussion going haywire, brass fanfare chaos, 180 BPM pushing to 200, unstable",
+      "prompt": "Phase 2 of the Tempo boss fight. Time becomes a weapon. Polyrhythmic drums at 180 BPM layering impossible syncopations, string section accelerating within each phrase, ticking clock percussion going haywire — off-beats, missing beats, double-speed beats. Brass fanfares that arrive both early and late. Like Chrono Trigger's Lavos theme if the clock was breaking. Unstable, hallucinatory, impossible to dodge. Looping."
+    },
+    "boss_phase2_curator": {
+      "title_template": "The Library Awakens",
+      "style": "intense boss phase 2, baroque harpsichord fury, screaming strings, choir bursts, full orchestra with pipe organ, Bach fugue as weapon, 150 BPM",
+      "prompt": "Phase 2 of the Curator boss fight. The scholarly warmth is gone — the library itself has become hostile. Baroque harpsichord playing impossibly fast Bach-fugue runs, screaming string section, choir erupting at climaxes, full orchestra backing it all with pipe organ at maximum weight. Intellectual precision as violence. Like Mozart's Requiem's Dies Irae scaled up for a JRPG final phase. Curious becomes predatory. Looping."
+    },
+    "menu": {
+      "title_template": "Paused, Somewhere Else",
+      "style": "Quirky experimental JRPG pause menu, 75 BPM, toy piano, muted analog synth pads, ticking mechanical clock rhythm, subtle chiptune arpeggios, glitchy tape-stops, Mother 3 / Undertale save-room / EarthBound hospital weird-ambient, unresolved minor modes, instrumental, loopable",
+      "prompt": "Quirky experimental pause-menu theme for a meta-aware JRPG about automation. A toy piano figure drifts over muted analog synth pads. A ticking mechanical clock rhythm never quite locks with the beat, giving the loop gentle uncertainty. Soft glitchy tape-stop moments appear every 8 bars. Sparse chiptune arpeggios hint at the automation systems running in the background. Harmony drifts between minor modes without resolving. Spooky but playful, futuristic but analog, automated but alive. Like Mother 3's hospital, Undertale's save room, and EarthBound's inventory screen in one. Instrumental, low-velocity, no heavy drums or dramatic builds, loops cleanly."
+    },
+    "battle_brute": {
+      "title_template": "Raid!",
+      "style": "JRPG battle, tribal, A minor, war drums, primitive chanting, heavy stomping rhythm, aggressive, brutish, 140 BPM",
+      "prompt": "Hulking brutes — ogres, trolls, barbarians — crashing into you in the open. Pounding war drums and guttural chanting, the swagger of something far bigger than you that intends to swing first. Primitive and heavy, all shoulder and no finesse. This is the raiding party arriving, not sneaking."
     }
   }
 }

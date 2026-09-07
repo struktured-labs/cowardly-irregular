@@ -55,24 +55,20 @@ func test_menu_scene_uses_bounds_checks() -> void:
 func test_combatant_job_null_safe() -> void:
 	"""Combatant job access should handle null"""
 	var combatant = Combatant.new()
-	add_child(combatant)
+	add_child_autofree(combatant)
 
 	# Job might be null initially
 	var job_name = combatant.job.get("name", "None") if combatant.job else "None"
 	assert_eq(job_name, "None", "Null job should return default")
 
-	combatant.queue_free()
-
 
 func test_combatant_status_effects_initialized() -> void:
 	"""Combatant status_effects should be initialized"""
 	var combatant = Combatant.new()
-	add_child(combatant)
+	add_child_autofree(combatant)
 
 	assert_typeof(combatant.status_effects, TYPE_ARRAY,
 		"status_effects should be an array")
-
-	combatant.queue_free()
 
 
 ## Equipment System Null Safety
@@ -141,7 +137,7 @@ func test_has_node_before_get_node() -> void:
 func test_signal_is_connected_check() -> void:
 	"""Signals should check is_connected before disconnect"""
 	var test_obj = Node.new()
-	add_child(test_obj)
+	add_child_autofree(test_obj)
 
 	# Safe disconnect pattern
 	if test_obj.ready.is_connected(func(): pass):
@@ -149,8 +145,6 @@ func test_signal_is_connected_check() -> void:
 
 	# This pattern should not crash
 	assert_true(true, "Signal disconnect pattern is safe")
-
-	test_obj.queue_free()
 
 
 ## Dictionary Access Safety

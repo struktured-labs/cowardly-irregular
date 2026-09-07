@@ -1,0 +1,87 @@
+{
+  "id": "world1_chapter3",
+  "title": "The Whispering Cave",
+  "world": 1,
+  "trigger": "enter_whispering_cave",
+  "background": "cave_entrance",
+  "description": "Entering the Whispering Cave. The honorable skeleton, designed monsters, and deepening mystery.",
+  "steps": [
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "chapter_title",
+      "title": "Chapter 3",
+      "subtitle": "The Whispering Cave"
+    },
+    {
+      "type": "play_music",
+      "track": "dungeon_medieval"
+    },
+    {
+      "type": "play_sfx",
+      "sfx": "cave_whispers"
+    },
+    {
+      "type": "narration",
+      "lines": [
+        "The cave had earned its name honestly. It whispered.",
+        "Not words, exactly. More like the memory of words — the sound a sentence makes after everyone has forgotten what it meant.",
+        "The air tasted of iron and wet limestone, and something older beneath that. Shadows moved before they did."
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "The monsters here were different from the road fodder. Sharper. More deliberate. As if performing the role of 'cave monster' rather than simply being one."
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "The antechamber held a knight in ancient plate — still at parade rest, waiting. The party moved past. It was the Fighter's duel to answer, when the moment came."
+    },
+    {
+      "type": "wait",
+      "duration": 0.6
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Mage",
+          "text": "Someone made this harder. Someone went through the cave and... arranged it. Court magic. The formal kind. The kind with a wax seal.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "Fighter",
+          "text": "Someone in the capital designed this floor?",
+          "theme": "fighter",
+          "portrait": "fighter"
+        },
+        {
+          "speaker": "Mage",
+          "text": "Someone in the capital designed this floor.",
+          "theme": "mage",
+          "portrait": "mage"
+        }
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "The deepest chamber was where the whispers converged."
+    },
+    {
+      "type": "set_flag",
+      "flag": "chapter3_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.5
+    }
+  ]
+}

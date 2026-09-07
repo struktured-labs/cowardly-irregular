@@ -1,0 +1,100 @@
+extends GutTest
+
+## tick 349: OverworldNPC._adjust_collision_for_mode7 now sets
+## collision_layer = 4 / collision_mask = 2 / monitoring for ALL
+## NPCs, not just non-Mode-7 ones.
+##
+## Pre-fix the layer/mask setup lived in the ELSE branch of the
+## Mode 7 ancestor check:
+##
+##   while parent:
+##       if parent is Mode 7:
+##           shape.radius = 128.0
+##           # Y-stretch
+##           return  # <-- early return skips layer setup
+##       parent = parent.get_parent()
+##
+##   # Only reaches here if NOT Mode 7
+##   collision_layer = 4
+##   collision_mask = 2
+##   monitoring = true
+##
+## So Mode 7 overworld NPCs never got collision_layer = 4.
+## OverworldController._on_interaction_requested's PRIMARY physics
+## intersect_point query (collision_mask=4 at line ~181) couldn't
+## find them. The fallback group/distance loop (line ~201) still
+## worked, but every Mode 7 NPC interaction routed through the
+## slower path.
+##
+## Symptom: "interactions feel slightly laggy in overworlds compared
+## to villages" — invisible to most players, real for the engine
+## profile.
+##
+## Fix: set collision layer/mask BEFORE the Mode 7 check so the
+## early return in the Mode 7 branch doesn't skip it.
+
+const OVERWORLD_NPC_PATH := "res://src/exploration/OverworldNPC.gd"
+
+
+func _read(p: String) -> String:
+	return FileAccess.get_file_as_string(p)
+
+
+# ── Source pin: collision_layer set BEFORE Mode 7 check ─────────────
+
+func test_layer_set_before_mode7_check() -> void:
+	var src := _read(OVERWORLD_NPC_PATH)
+	var fn_idx: int = src.find("func _adjust_collision_for_mode7")
+	assert_gt(fn_idx, -1)
+	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
+	var body: String = src.substr(fn_idx, next_fn - fn_idx) if next_fn > 0 else src.substr(fn_idx)
+
+	# 2026-07-18 ultracode: the ancestor while-loop was DEAD CODE (no real scene root matched its predicates) — replaced by InteractGeometry.is_mode7(), the single context signal. Ordering intent preserved: layer setup precedes the Mode 7 branch.
+	var layer_idx: int = body.find("collision_layer = 4")
+	var mode7_idx: int = body.find("InteractGeometry.is_mode7()")
+	assert_gt(layer_idx, -1, "collision_layer = 4 must still exist")
+	assert_gt(mode7_idx, -1, "Mode 7 branch must use the unified is_mode7() signal — ancestor-walk detectors are retired")
+	assert_lt(layer_idx, mode7_idx,
+		"collision_layer = 4 must come BEFORE the Mode 7 branch — pre-fix it was after the early return, so Mode 7 NPCs never got the layer set")
+
+
+# ── Source pin: collision_mask + monitoring also before the check ───
+
+func test_mask_and_monitoring_set_before_mode7_check() -> void:
+	var src := _read(OVERWORLD_NPC_PATH)
+	var fn_idx: int = src.find("func _adjust_collision_for_mode7")
+	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
+	var body: String = src.substr(fn_idx, next_fn - fn_idx) if next_fn > 0 else src.substr(fn_idx)
+
+	var mode7_idx: int = body.find("InteractGeometry.is_mode7()")
+	var mask_idx: int = body.find("collision_mask = 2")
+	var monitor_idx: int = body.find("monitoring = true")
+	var monitorable_idx: int = body.find("monitorable = true")
+	assert_gt(mask_idx, -1)
+	assert_gt(monitor_idx, -1)
+	assert_gt(monitorable_idx, -1)
+	assert_lt(mask_idx, mode7_idx, "collision_mask must come BEFORE the Mode 7 branch")
+	assert_lt(monitor_idx, mode7_idx, "monitoring must come BEFORE the Mode 7 branch")
+	assert_lt(monitorable_idx, mode7_idx, "monitorable must come BEFORE the Mode 7 branch")
+
+
+# ── Source pin: Mode 7 branch still has the shape adjustment ────────
+
+func test_mode7_branch_still_adjusts_shape() -> void:
+	# Regression guard — don't accidentally drop the Mode 7 shape boost
+	# while refactoring.
+	var src := _read(OVERWORLD_NPC_PATH)
+	var fn_idx: int = src.find("func _adjust_collision_for_mode7")
+	var next_fn: int = src.find("\nfunc ", fn_idx + 1)
+	var body: String = src.substr(fn_idx, next_fn - fn_idx) if next_fn > 0 else src.substr(fn_idx)
+	# Pins the VALUE through the contract, not the literal spelling. These asserted the
+	# text "shape.radius = 128.0"; routing the site to InteractGeometry (2026-08-22) kept
+	# the value identical and broke the pin — a guard that reds on a correct refactor and
+	# would go green on a wrong value re-typed as a literal.
+	assert_true(body.contains("InteractGeometry.NPC_TALK_RADIUS_MODE7"),
+		"Mode 7 branch must read the radius from the interaction contract")
+	assert_eq(InteractGeometry.NPC_TALK_RADIUS_MODE7, 128.0,
+		"the Mode 7 talk radius is still 128 (ruling 2026-07-11)")
+	assert_true(body.contains("InteractGeometry.MODE7_Y_STRETCH"),
+		"Mode 7 branch must read the Y-stretch from the contract")
+	assert_eq(InteractGeometry.MODE7_Y_STRETCH, 1.67, "the Y-stretch is still 1.67")

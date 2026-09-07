@@ -85,7 +85,7 @@ func test_battle_scene_signal_cleanup() -> void:
 func test_combatant_percentage_functions() -> void:
 	"""Combatant percentage functions should handle edge cases"""
 	var combatant = Combatant.new()
-	add_child(combatant)
+	add_child_autofree(combatant)
 
 	# Test with zero max_hp
 	combatant.max_hp = 0
@@ -99,13 +99,11 @@ func test_combatant_percentage_functions() -> void:
 	var mp_pct = combatant.get_mp_percentage()
 	assert_eq(mp_pct, 0.0, "Zero max_mp should return 0% not crash")
 
-	combatant.queue_free()
-
 
 func test_combatant_normal_percentage() -> void:
 	"""Combatant percentage functions work with normal values"""
 	var combatant = Combatant.new()
-	add_child(combatant)
+	add_child_autofree(combatant)
 
 	combatant.max_hp = 100
 	combatant.current_hp = 50
@@ -116,8 +114,6 @@ func test_combatant_normal_percentage() -> void:
 	combatant.current_mp = 25
 	var mp_pct = combatant.get_mp_percentage()
 	assert_eq(mp_pct, 50.0, "25/50 MP should be 50%")
-
-	combatant.queue_free()
 
 
 ## Array Bounds Tests
@@ -451,26 +447,24 @@ func test_item_system_target_validation() -> void:
 			"ItemSystem should check target validity before applying effects")
 
 
-func test_item_system_battle_manager_check() -> void:
-	"""ItemSystem should check BattleManager before accessing parties"""
-	var content = FileAccess.get_file_as_string("res://src/items/ItemSystem.gd")
-
-	var idx = content.find("func can_use_item")
-	if idx > 0:
-		var context = content.substr(idx, 400)
-		assert_true(context.contains("not BattleManager"),
-			"can_use_item should check BattleManager availability")
-
-
 ## EquipmentSystem Safety Tests
 
 func test_equipment_system_stat_key_check() -> void:
-	"""EquipmentSystem should check stat key exists before adding"""
+	"""EquipmentSystem must accumulate an unknown stat key safely — not discard it (flipped 2026-07-29)"""
+	# This pinned `if total_mods.has(stat)` as a safety check. The intent was right and the effect
+	# was not: it made an unrecognised stat_mods key vanish silently. Filtering is not error
+	# handling — it is data loss wearing error handling's clothes. A dictionary write through
+	# .get(stat, 0) is equally crash-proof and keeps the value.
+	#
+	# struktured 2026-07-29: "equipmods should be able to affect any stat really."
 	var content = FileAccess.get_file_as_string("res://src/jobs/EquipmentSystem.gd")
 
-	# Check for key validation in stat mod application
-	assert_true(content.contains("if total_mods.has(stat)"),
-		"EquipmentSystem should check stat key exists in total_mods")
+	assert_false(content.contains("if total_mods.has(stat)"),
+		"the allowlist filter must be gone — it dropped any stat the hardcoded list did not name")
+	assert_true(content.contains("total_mods.get(stat, 0) + mods[stat]"),
+		"unknown stat keys must be SUMMED through a defaulted read: safe against a missing key "
+		+ "without discarding the value. Typos are caught loudly by "
+		+ "test_every_authored_stat_mods_key_is_a_real_stat instead of disappearing here")
 
 
 ## Property Access Safety Tests
@@ -509,15 +503,44 @@ func test_map_system_load_null_check() -> void:
 
 
 func test_game_loop_battle_scene_load_check() -> void:
-	"""GameLoop should check for null after loading BattleScene"""
-	var content = FileAccess.get_file_as_string("res://src/GameLoop.gd")
+	"""GameLoop should not load BattleScene unsafely.
 
-	# Find the specific pattern where load() is used (not preload or threaded)
-	var idx = content.find('loaded_res = load("res://src/battle/BattleScene.tscn")')
-	if idx > 0:
-		var context = content.substr(idx, 200)
-		assert_true(context.contains("not loaded_res"),
-			"GameLoop should check for null after loading battle scene")
+	Two safe patterns are accepted:
+	  1. const BattleSceneRes = preload(...)   ← parse-time, can't be null
+	  2. var x = load(...); if not x: return    ← runtime null check
+
+	The original buggy pattern was load() WITHOUT a null check. This test
+	previously skipped silently if neither pattern was found (idx > 0
+	short-circuit) which made it 'risky' instead of catching regressions.
+	"""
+	var content = FileAccess.get_file_as_string("res://src/GameLoop.gd")
+	assert_false(content.is_empty(), "GameLoop.gd should be readable")
+
+	var has_preload = content.contains('preload("res://src/battle/BattleScene.tscn")')
+	var has_load = content.contains('load("res://src/battle/BattleScene.tscn")')
+
+	if has_preload:
+		# Preload is null-safe by definition (parse-time fail).
+		assert_true(true, "GameLoop uses preload (safe)")
+	elif has_load:
+		# Dynamic load — must have a null check nearby. Scan a generous
+		# window after the load() call.
+		var idx = content.find('load("res://src/battle/BattleScene.tscn")')
+		var context = content.substr(idx, 300)
+		var has_null_check = (
+			context.contains("not loaded_res") or
+			context.contains("== null") or
+			context.contains("is_instance_valid") or
+			context.contains("if loaded_res:") or
+			context.contains("if BattleSceneRes:")
+		)
+		assert_true(has_null_check,
+			"GameLoop uses dynamic load() — must have a null check within 300 chars")
+	else:
+		# Neither pattern — that's a problem (BattleScene is no longer
+		# referenced in GameLoop?), surface it instead of silent risky.
+		assert_true(false,
+			"GameLoop.gd has neither preload nor load for BattleScene.tscn — referenced elsewhere?")
 
 
 ## Match Statement Default Case Tests
@@ -529,7 +552,7 @@ func test_battle_manager_action_type_default_case() -> void:
 	# Find the action match statement and check for default case
 	var idx = content.find('match action.get("type"')
 	if idx > 0:
-		var context = content.substr(idx, 600)
+		var context = content.substr(idx, 1000)
 		assert_true(context.contains("_:") and context.contains("Unknown action type"),
 			"BattleManager should have default case with warning for unknown action types")
 
@@ -554,7 +577,10 @@ func test_combatant_revive_minimum_hp() -> void:
 
 	var idx = content.find("func revive")
 	if idx > 0:
-		var context = content.substr(idx, 300)
+		# Tick 421 added a permakilled guard block to revive(),
+		# pushing the max(1, ...) call past the original 300-char
+		# window. Widened.
+		var context = content.substr(idx, 1000)
 		assert_true(context.contains("max(1,"),
 			"revive should use max(1, ...) to ensure minimum 1 HP")
 

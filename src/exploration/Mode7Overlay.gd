@@ -2,49 +2,97 @@ extends Node
 class_name Mode7Overlay
 
 var enabled: bool = true
-var player_display_size: float = 240.0
+var player_display_size: float = 120.0  # Scaled down from 160 — less oversized on Mode 7
 var player_screen_pos: Vector2 = Vector2(640, 540)
 
 var horizon: float = 0.0
-var near_scale: float = 0.22
+## Playtest tuning (2026-07-01, per cowir-overworld msg 2008): the
+## visual/collision mismatch on mountain edges is a fundamental
+## Mode 7 property — log() depth compression means no fixed collision
+## margin matches at all distances. Option-1 fix: raise near_scale +
+## lower default curvature so foreshortening is less aggressive and
+## visual/physics parity is closer. Reversible if playtest wants the
+## old feel back.
+var near_scale: float = 0.55  # was 0.45 — less horizontal compression
 var ground_y: float = 0.52
-var curvature: float = 0.01
+var curvature: float = 0.003  # 2026-07-14 — less warp at player
 var fog_color: Color = Color(0.50, 0.60, 0.78, 1.0)
+# was hardcoded at shader's 0.7 max; 0.45 default per playtest — per-world preset can override
+var fog_strength: float = 0.45
+## Sky-side horizon-band height (0.02–0.6), decoupled from near_scale. The band
+## used to be near_scale tall (~55% of screen) = an opaque blue slab; 0.18 is a
+## slim atmospheric strip. Playtest 2026-07-05 (struktured). Per-world overridable.
+var horizon_band: float = 0.18
 var sky_top: Color = Color(0.25, 0.35, 0.65, 1.0)
 var sky_bottom: Color = Color(0.55, 0.65, 0.85, 1.0)
+var scanline_intensity: float = 0.0
+var dissolve_progress: float = 0.0
+var cloud_density: float = 0.0
+var cloud_color: Color = Color(1.0, 1.0, 1.0, 1.0)
+var _cloud_time: float = 0.0
+
+## Day/night cycle — tints the entire Mode 7 view
+## Cycle: dawn (warm) → day (neutral) → dusk (warm) → night (cool blue)
+## Set day_night_enabled = false for worlds that don't cycle (W5 digital, W6 abstract)
+var day_night_enabled: bool = true
+var day_night_speed: float = 1.0 / 300.0  # Full cycle every 300 seconds (5 min)
+var _day_night_phase: float = 0.25  # Start at day (0=dawn, 0.25=day, 0.5=dusk, 0.75=night)
+var _fixed_tint: Color = Color.WHITE  # For worlds with fixed time (empty = cycle)
+
+const TINT_DAWN: Color = Color(1.0, 0.85, 0.7)
+const TINT_DAY: Color = Color(1.0, 1.0, 1.0)
+const TINT_DUSK: Color = Color(1.0, 0.75, 0.6)
+const TINT_NIGHT: Color = Color(0.6, 0.65, 0.9)
 
 ## Per-world Mode 7 visual presets — the shader evolution IS the narrative.
 ## W1 classic SNES → W5 wireframe/data → W6 shader dissolves entirely.
 const WORLD_PRESETS: Dictionary = {
 	"medieval": {
-		"curvature": 0.01,
+		"curvature": 0.003,  # 2026-07-14 — mountain-edge parity tuning
 		"fog_color": Color(0.50, 0.60, 0.78),
+		"fog_strength": 0.35,  # clear open sky
 		"sky_top": Color(0.25, 0.35, 0.65),
 		"sky_bottom": Color(0.55, 0.65, 0.85),
+		"cloud_density": 0.7,  # Fluffy cumulus clouds
+		"cloud_color": Color(1.0, 1.0, 1.0),
 	},
 	"suburban": {
-		"curvature": 0.005,  # Flatter — suburban grid regularity
-		"fog_color": Color(0.72, 0.75, 0.80),  # Artificial-bright HOA haze
+		"curvature": 0.005,
+		"fog_color": Color(0.72, 0.75, 0.80),
+		"fog_strength": 0.45,  # muggy sprawl
 		"sky_top": Color(0.45, 0.55, 0.75),
 		"sky_bottom": Color(0.70, 0.78, 0.90),
+		"cloud_density": 0.4,  # Light suburban haze clouds
+		"cloud_color": Color(0.95, 0.95, 0.98),
 	},
 	"steampunk": {
-		"curvature": 0.02,  # More curved — gear-like horizon
-		"fog_color": Color(0.60, 0.45, 0.25),  # Bronze/warm fog
-		"sky_top": Color(0.35, 0.25, 0.15),  # Dark brass sky
+		"curvature": 0.02,
+		"fog_color": Color(0.60, 0.45, 0.25),
+		"fog_strength": 0.55,  # amber smog rolls in
+		"sky_top": Color(0.35, 0.25, 0.15),
 		"sky_bottom": Color(0.55, 0.45, 0.30),
+		"cloud_density": 0.6,
+		"cloud_color": Color(0.75, 0.65, 0.50),
+		"fixed_tint": Color(1.0, 0.85, 0.65),  # Always dusk — amber lamplight
 	},
 	"industrial": {
-		"curvature": 0.0,  # Zero curvature — brutalist flat
-		"fog_color": Color(0.42, 0.40, 0.38),  # Gray-brown smog
-		"sky_top": Color(0.28, 0.27, 0.26),  # Oppressive dark gray
+		"curvature": 0.0,
+		"fog_color": Color(0.42, 0.40, 0.38),
+		"fog_strength": 0.6,  # choking factory smog
+		"sky_top": Color(0.28, 0.27, 0.26),
 		"sky_bottom": Color(0.38, 0.37, 0.36),
+		"cloud_density": 0.8,  # Thick industrial smog
+		"cloud_color": Color(0.50, 0.48, 0.45),
 	},
 	"digital": {
 		"curvature": 0.005,
-		"fog_color": Color(0.02, 0.40, 0.70),  # Neon blue
-		"sky_top": Color(0.0, 0.05, 0.12),  # Near black
-		"sky_bottom": Color(0.0, 0.15, 0.30),  # Dark blue
+		"fog_color": Color(0.02, 0.40, 0.70),
+		"fog_strength": 0.25,  # crisp code — no atmosphere to speak of
+		"sky_top": Color(0.0, 0.05, 0.12),
+		"sky_bottom": Color(0.0, 0.15, 0.30),
+		"scanline_intensity": 0.3,
+		"day_night_enabled": false,  # Always night — terminal glow
+		"fixed_tint": Color(0.7, 0.8, 1.0),
 	},
 	# "abstract" intentionally omitted — W6 disables Mode 7 entirely
 }
@@ -63,9 +111,16 @@ const BILLBOARD_MAX_DIST: float = 400.0
 const BILLBOARD_MIN_SCALE: float = 0.3
 const BILLBOARD_BASE_SIZE: float = 96.0
 
+## Compass HUD
+var _compass_container: Control
+var _compass_needle: Label
+var _compass_ring: Array[Label] = []
+const COMPASS_RADIUS: float = 28.0
+const COMPASS_DIRS: Array = ["N", "E", "S", "W"]
+
 var _current_rotation: float = 0.0
-const ROTATION_SPEED: float = 2.5
-const MAX_ROTATION: float = PI / 2.0  # ±90° = 180° total range (authentic SNES feel)
+const ROTATION_SPEED: float = 4.0  # ~1.6s for full 360°
+const ROTATION_SPEED_FAST: float = 5.5  # ~1.1s for full 360° (debug)
 const SWAY_PIXELS: float = 16.0
 const BOB_AMPLITUDE: float = 2.5
 const BOB_SPEED: float = 10.0
@@ -74,6 +129,16 @@ var _last_player_pos: Vector2 = Vector2.ZERO
 var _player_moving: bool = false
 
 static var camera_angle: float = 0.0
+static var _pending_dissolve_in: bool = false
+## Tick 348: static flag mirroring the most-recently-applied `mode7` param
+## from apply_camera. OverworldPlayer reads this to gate its Mode 7
+## horizontal compensation — pre-fix the 2x X boost (input_dir.x *= 2.0)
+## fired unconditionally, so non-Mode-7 contexts (villages, interiors,
+## dungeons rendered with the flat camera) saw their diagonal movement
+## biased toward horizontal. Diagonal up-right would visibly walk more
+## right than up. Defaults to false so the boost stays OFF until an
+## overworld explicitly turns Mode 7 on.
+static var is_active: bool = false
 
 
 ## Apply a per-world visual preset. Call BEFORE setup().
@@ -86,6 +151,10 @@ func apply_preset(world_id: String) -> void:
 		curvature = preset["curvature"]
 	if preset.has("fog_color"):
 		fog_color = preset["fog_color"]
+	if preset.has("fog_strength"):
+		fog_strength = float(preset["fog_strength"])
+	if preset.has("horizon_band"):
+		horizon_band = float(preset["horizon_band"])
 	if preset.has("sky_top"):
 		sky_top = preset["sky_top"]
 	if preset.has("sky_bottom"):
@@ -96,6 +165,19 @@ func apply_preset(world_id: String) -> void:
 		near_scale = preset["near_scale"]
 	if preset.has("ground_y"):
 		ground_y = preset["ground_y"]
+	if preset.has("scanline_intensity"):
+		scanline_intensity = preset["scanline_intensity"]
+	if preset.has("dissolve_progress"):
+		dissolve_progress = preset["dissolve_progress"]
+	if preset.has("cloud_density"):
+		cloud_density = preset["cloud_density"]
+	if preset.has("cloud_color"):
+		cloud_color = preset["cloud_color"]
+	if preset.has("day_night_enabled"):
+		day_night_enabled = preset["day_night_enabled"]
+	if preset.has("fixed_tint"):
+		_fixed_tint = preset["fixed_tint"]
+		day_night_enabled = false
 	print("[MODE7] Applied '%s' world preset" % world_id)
 
 
@@ -131,8 +213,16 @@ func setup(scene: Node2D, player: Node2D) -> void:
 	_shader_mat.set_shader_parameter("ground_y", ground_y)
 	_shader_mat.set_shader_parameter("curvature", curvature)
 	_shader_mat.set_shader_parameter("fog_color", fog_color)
+	_shader_mat.set_shader_parameter("fog_strength", fog_strength)
+	_shader_mat.set_shader_parameter("horizon_band", horizon_band)
 	_shader_mat.set_shader_parameter("sky_top", sky_top)
 	_shader_mat.set_shader_parameter("sky_bottom", sky_bottom)
+	_shader_mat.set_shader_parameter("scanline_intensity", scanline_intensity)
+	_shader_mat.set_shader_parameter("dissolve_progress", dissolve_progress)
+	_shader_mat.set_shader_parameter("cloud_density", cloud_density)
+	_shader_mat.set_shader_parameter("cloud_color", cloud_color)
+	_shader_mat.set_shader_parameter("cloud_scroll", 0.0)
+	_shader_mat.set_shader_parameter("time_tint", Color.WHITE)
 	_shader_mat.set_shader_parameter("world_rotation", 0.0)
 	overlay.material = _shader_mat
 
@@ -153,6 +243,74 @@ func setup(scene: Node2D, player: Node2D) -> void:
 	_last_player_pos = player.position
 	print("[MODE7] Screen-texture Mode 7 overlay active (360° camera)")
 
+	# Auto dissolve-in if previous scene dissolved out (world portal transition)
+	if _pending_dissolve_in:
+		_pending_dissolve_in = false
+		call_deferred("_auto_dissolve_in")
+
+	# Compass disabled — only useful with camera rotation (future)
+	# _setup_compass()
+
+
+func _setup_compass() -> void:
+	if not _player_overlay_layer:
+		return
+	_compass_container = Control.new()
+	_compass_container.name = "Compass"
+	_compass_container.size = Vector2(70, 70)
+	_compass_container.position = Vector2(20, 20)
+	_player_overlay_layer.add_child(_compass_container)
+
+	# Semi-transparent background circle
+	var bg = ColorRect.new()
+	bg.color = Color(0.0, 0.0, 0.0, 0.35)
+	bg.size = Vector2(64, 64)
+	bg.position = Vector2(3, 3)
+	_compass_container.add_child(bg)
+
+	# Cardinal direction labels
+	for i in range(4):
+		var lbl = Label.new()
+		lbl.text = COMPASS_DIRS[i]
+		lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		lbl.size = Vector2(20, 20)
+		lbl.add_theme_font_size_override("font_size", 12)
+		if i == 0:  # N is highlighted
+			lbl.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
+		else:
+			lbl.add_theme_color_override("font_color", Color(0.9, 0.9, 0.9))
+		_compass_container.add_child(lbl)
+		_compass_ring.append(lbl)
+
+
+func _update_compass() -> void:
+	if _compass_ring.is_empty():
+		return
+	var center = Vector2(35, 35)
+	for i in range(4):
+		# Each direction is 90° apart: N=up, E=right, S=down, W=left
+		var base_angle = i * PI / 2.0 - PI / 2.0  # N=-90°, E=0°, S=90°, W=180°
+		var angle = base_angle - _current_rotation
+		var pos = center + Vector2(cos(angle), sin(angle)) * COMPASS_RADIUS
+		_compass_ring[i].position = pos - Vector2(10, 10)
+
+
+func _get_day_night_tint(phase: float) -> Color:
+	# phase: 0.0=dawn, 0.25=day, 0.5=dusk, 0.75=night, 1.0=dawn again
+	if phase < 0.25:
+		return TINT_DAWN.lerp(TINT_DAY, phase / 0.25)
+	elif phase < 0.5:
+		return TINT_DAY.lerp(TINT_DUSK, (phase - 0.25) / 0.25)
+	elif phase < 0.75:
+		return TINT_DUSK.lerp(TINT_NIGHT, (phase - 0.5) / 0.25)
+	else:
+		return TINT_NIGHT.lerp(TINT_DAWN, (phase - 0.75) / 0.25)
+
+
+func _auto_dissolve_in() -> void:
+	await play_dissolve_in()
+
 
 func process_frame() -> void:
 	if not enabled or not _player_overlay_sprite or not _player_ref:
@@ -162,12 +320,8 @@ func process_frame() -> void:
 
 	var src = _player_ref.get_node_or_null("Sprite")
 	if not src or not src.texture:
-		# Ensure player stays visible if overlay can't take over
-		if _player_overlay_sprite:
-			_player_overlay_sprite.visible = false
 		return
 	_player_overlay_sprite.texture = src.texture
-	_player_overlay_sprite.visible = true
 	var tex_h = src.texture.get_height()
 	var s = player_display_size / max(float(tex_h), 1.0)
 	_player_overlay_sprite.flip_h = src.flip_h
@@ -177,35 +331,41 @@ func process_frame() -> void:
 	_player_moving = move_delta.length_squared() > 0.5
 	_last_player_pos = _player_ref.position
 
-	# Camera rotation: right stick only (no movement-based auto-turn)
-	var cam_input = GamepadFilter.right_stick_x
-	if abs(cam_input) < 0.2:
-		# Keyboard fallback for camera rotation
-		if Input.is_key_pressed(KEY_E):
-			cam_input = 1.0
-		elif Input.is_key_pressed(KEY_Q):
-			cam_input = -1.0
+	# Camera rotation DISABLED — deferred to future release.
+	# The infrastructure works (camera-driven rotation, input correction)
+	# but needs more polish before shipping. Keeping code for later.
+	_current_rotation = 0.0
+	camera_angle = 0.0
 
-	if abs(cam_input) > 0.2:
-		_current_rotation += cam_input * ROTATION_SPEED * delta
-		_current_rotation = clampf(_current_rotation, -MAX_ROTATION, MAX_ROTATION)
-
-	camera_angle = _current_rotation
-
-	# Drive rotation via Camera2D instead of shader UV rotation.
-	# This fixes texture sampling degradation past ~180 degrees —
-	# the screen texture now contains the correctly rotated world view,
-	# so the shader only needs to apply the perspective warp.
 	var cam = _player_ref.get_node_or_null("Camera") as Camera2D
 	if cam:
-		cam.ignore_rotation = false
-		cam.rotation = _current_rotation
+		cam.ignore_rotation = true
+		cam.rotation = 0.0
 
-	# Sway
+	# Scroll clouds
+	if cloud_density > 0.0 and _shader_mat:
+		_cloud_time += delta * 0.5
+		_shader_mat.set_shader_parameter("cloud_scroll", _cloud_time)
+
+	# Day/night tint cycle
+	if _shader_mat:
+		if day_night_enabled:
+			_day_night_phase = fmod(_day_night_phase + day_night_speed * delta, 1.0)
+			var tint = _get_day_night_tint(_day_night_phase)
+			_shader_mat.set_shader_parameter("time_tint", tint)
+		elif _fixed_tint != Color.WHITE:
+			_shader_mat.set_shader_parameter("time_tint", _fixed_tint)
+
+	# _update_compass()  # Disabled — no rotation
+
+	# Sway — proportional to horizontal velocity instead of binary step.
+	# Smoothly ramps from 0 → ±SWAY_PIXELS based on how fast the player moves
+	# sideways. Feels more natural than a sudden snap at any non-zero speed.
 	var screen_move = move_delta.rotated(-_current_rotation)
 	var sway_x = 0.0
-	if abs(screen_move.x) > 0.5:
-		sway_x = -sign(screen_move.x) * SWAY_PIXELS
+	if abs(screen_move.x) > 0.1:
+		var vel_factor = clampf(screen_move.x / 6.0, -1.0, 1.0)
+		sway_x = -vel_factor * SWAY_PIXELS
 
 	# Bob
 	var bob_y = 0.0
@@ -225,17 +385,30 @@ func process_frame() -> void:
 	_update_billboards()
 
 
-func register_billboard(obj: Node2D) -> void:
-	if obj not in _billboard_sources:
-		_billboard_sources.append(obj)
+func set_dissolve(progress: float) -> void:
+	dissolve_progress = clampf(progress, 0.0, 1.0)
+	if _shader_mat:
+		_shader_mat.set_shader_parameter("dissolve_progress", dissolve_progress)
 
 
-func unregister_billboard(obj: Node2D) -> void:
-	_billboard_sources.erase(obj)
-	var obj_id = obj.get_instance_id()
-	if _billboard_sprites.has(obj_id):
-		_billboard_sprites[obj_id].queue_free()
-		_billboard_sprites.erase(obj_id)
+## Animate dissolve out (world breaking apart). Await this before transitioning.
+func play_dissolve_out(duration: float = 1.2) -> void:
+	if not _shader_mat or not _player_ref:
+		return
+	var tween = _player_ref.create_tween()
+	tween.tween_method(set_dissolve, 0.0, 1.0, duration)
+	await tween.finished
+	_pending_dissolve_in = true
+
+
+## Animate dissolve in (world reassembling). Call after new scene is loaded.
+func play_dissolve_in(duration: float = 0.8) -> void:
+	if not _shader_mat or not _player_ref:
+		return
+	set_dissolve(1.0)
+	var tween = _player_ref.create_tween()
+	tween.tween_method(set_dissolve, 1.0, 0.0, duration)
+	await tween.finished
 
 
 func _update_billboards() -> void:
@@ -313,6 +486,8 @@ func _update_billboards() -> void:
 
 
 func cleanup() -> void:
+	# Static leak: stale true gave VILLAGES the 2x horizontal boost after visiting the overworld — movement overshoot made doors near-impossible to hit (struktured playtest 2026-07-11).
+	is_active = false
 	camera_angle = 0.0
 	_current_rotation = 0.0
 	# Free billboard sprites
@@ -333,17 +508,69 @@ func cleanup() -> void:
 			cam.ignore_rotation = true
 
 
+## Align terrain COLLISION with what the warped render actually shows
+## (struktured msg 2830: standing ~4 tiles inside rendered water, unblocked).
+##
+## The shader warps terrain as a post-process; TileMap physics is unwarped;
+## the player is drawn screen-locked on the overlay. Net effect measured in
+## PR #171: the terrain pixels under the player's feet belong to tiles
+## InteractGeometry.MODE7_GROUND_DISPLACEMENT_PX (140.6 world px, 4.39
+## tiles) NORTH of where the player physically stands.
+##
+## Moving the TileMapLayer itself cannot fix this — the collider and the
+## visual are the same node, so they travel together and the relationship
+## is unchanged. Instead we SPLIT them: the authored layer keeps the pixels
+## and drops its physics, and an invisible duplicate carries the physics
+## shifted SOUTH by the displacement, so the collider for the tile you can
+## SEE under your feet is the collider you actually hit.
+##
+## Shifts south (+Y) because the visible terrain is north of the player: a
+## water collider moved south reaches the player earlier as they walk north,
+## blocking them at the visual shoreline instead of 4 tiles past it.
+##
+## No-op outside Mode 7 — flat villages/interiors render 1:1, so their
+## colliders are already where their pixels are.
+static func apply_terrain_collision_alignment(tile_map: TileMapLayer, mode7: bool) -> TileMapLayer:
+	if tile_map == null or not mode7:
+		return null
+	var parent := tile_map.get_parent()
+	if parent == null:
+		return null
+	# duplicate() carries the cell data, so the clone's colliders match the
+	# authored terrain without re-walking every cell.
+	var collider_layer := tile_map.duplicate() as TileMapLayer
+	if collider_layer == null:
+		return null
+	collider_layer.name = "TileMapCollision"
+	collider_layer.visible = false
+	collider_layer.collision_enabled = true
+	collider_layer.position.y += InteractGeometry.MODE7_GROUND_DISPLACEMENT_PX
+	# The authored layer becomes pixels-only. Both halves must change or the
+	# player collides with two offset copies of the world.
+	tile_map.collision_enabled = false
+	parent.add_child(collider_layer)
+	return collider_layer
+
+
 static func apply_camera(cam: Camera2D, mode7: bool) -> void:
+	# Tick 348: surface mode7 state via the static is_active flag so
+	# OverworldPlayer can gate its 2x horizontal-compensation boost.
+	is_active = mode7
 	if mode7:
-		cam.zoom = Vector2(0.65, 0.65)
-		cam.offset = Vector2(0, -30)
+		cam.zoom = Vector2(0.85, 0.85)  # Closer zoom = tiles near player match collision size
+		cam.offset = Vector2(0, -20)
 	else:
 		cam.zoom = Vector2(2.0, 2.0)
 		cam.offset = Vector2.ZERO
 
 
 static func apply_camera_limits(cam: Camera2D, map_w: int, map_h: int, tile_size: int) -> void:
-	cam.limit_left = -tile_size * 8
-	cam.limit_top = -tile_size * 12
-	cam.limit_right = map_w * tile_size + tile_size * 8
-	cam.limit_bottom = map_h * tile_size + tile_size * 8
+	# DISABLED for Mode 7: camera limits cause the player to APPEAR stuck
+	# when near map edges. The Mode 7 overlay renders the player at a fixed
+	# screen position, so when the camera hits a limit and stops scrolling,
+	# the world freezes but the player keeps moving invisibly.
+	# Boundary StaticBody2D walls prevent the player from leaving the map.
+	cam.limit_left = -100000
+	cam.limit_top = -100000
+	cam.limit_right = 100000
+	cam.limit_bottom = 100000

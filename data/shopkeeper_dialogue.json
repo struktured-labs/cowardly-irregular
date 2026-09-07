@@ -1,0 +1,346 @@
+{
+  "description": "Per-village shopkeeper dialogue. Keyed by village_id then shop_type (item/blacksmith/black_magic/white_magic). Each entry has 5 lines: greeting (on shop open), browse (while browsing inventory), buy (after purchase), sell (after sell), farewell (on shop close). Speaker is resolved from ShopkeeperData.get_shopkeeper_for_type; dialogue adds per-village personality on top.",
+  "schema_version": 1,
+  "villages": {
+    "harmonia": {
+      "item": {
+        "greeting": "Welcome, friend. The herbs came in fresh this morning.",
+        "browse": "Take your time. We've been here a hundred years, and we'll be here tomorrow.",
+        "buy": "A sensible choice. May it serve you on the road.",
+        "sell": "I'll take that off your hands. Fair trade is fair trade.",
+        "farewell": "Travel safely. The cave takes its due, so mind your footing."
+      },
+      "blacksmith": {
+        "greeting": "You look like you've been in a scrape. Need steel?",
+        "browse": "Feel the blade. Don't just look at it — steel tells you what it's for.",
+        "buy": "It'll hold. That's all I can promise about any steel.",
+        "sell": "That blade's worn through. I'll take it for the iron, nothing more.",
+        "farewell": "Swing true. Or don't swing — that works too."
+      },
+      "black_magic": {
+        "greeting": "You've come seeking... elsewhere. Elsewhere is in the back.",
+        "browse": "Browse. The books do not bite. Most of them.",
+        "buy": "You are certain. I will note your certainty, for later.",
+        "sell": "I will take this back. It may still remember you.",
+        "farewell": "Close the door behind you. The draft disagrees with the candles."
+      },
+      "white_magic": {
+        "greeting": "Bless you, traveler. You've walked a long road.",
+        "browse": "The prayers are arranged by urgency. The urgent ones are on the left.",
+        "buy": "May it keep you whole. Whole-ish, at least.",
+        "sell": "It has served. Let it serve someone else now.",
+        "farewell": "Go in peace. The cave's door is not the last door."
+      }
+    },
+
+    "eldertree": {
+      "item": {
+        "greeting": "A guest. Please wipe your boots. The moss takes offense.",
+        "browse": "Everything is labeled in the old script. If you cannot read it, I can translate. Slowly.",
+        "buy": "An acceptable choice for a human. The forest approves, I believe.",
+        "sell": "The tree will assess the offering. You are fortunate — it seems willing.",
+        "farewell": "Walk lightly. The roots remember every footstep."
+      },
+      "blacksmith": {
+        "greeting": "You want — forgive me — iron? We prefer silver and living wood.",
+        "browse": "The silverwork is on the upper shelves. The lower shelves are for guests who insist.",
+        "buy": "A choice made. I will not ask what it is for.",
+        "sell": "I accept it. I will melt it down and make it something gentler.",
+        "farewell": "The canopy parts for the humble. Be humble."
+      },
+      "black_magic": {
+        "greeting": "You have come to the Elder Grove. The Grove has agreed to see you.",
+        "browse": "These are not spells. They are agreements. Read them twice.",
+        "buy": "The agreement is witnessed. The witness was the tree.",
+        "sell": "Returned. The tree thanks you for its restitution.",
+        "farewell": "Leave without looking back. The Grove prefers it that way."
+      },
+      "white_magic": {
+        "greeting": "Welcome. The singing has been for you this hour.",
+        "browse": "Each blessing is a song. You will hear it when you learn it.",
+        "buy": "Sung into you. Carry it carefully — songs can forget themselves.",
+        "sell": "I will hold it again. The song rests now.",
+        "farewell": "May the canopy remember you kindly."
+      }
+    },
+
+    "frosthold": {
+      "item": {
+        "greeting": "You're in. Shut the door.",
+        "browse": "Supplies on the left. If it's frozen, hit it. If it isn't, don't.",
+        "buy": "Taken. Pay when your hands work.",
+        "sell": "Fine. It'll keep.",
+        "farewell": "Don't die out there. The pass gets mean after sundown."
+      },
+      "blacksmith": {
+        "greeting": "You need a blade or an axe. Those are the choices.",
+        "browse": "All honest iron. No enchanted nonsense.",
+        "buy": "Yours. Sharpen it yourself — I don't do favors.",
+        "sell": "I'll take the steel. The rest goes in the forge.",
+        "farewell": "Cold kills more than steel does. Mind that."
+      },
+      "black_magic": {
+        "greeting": "The fire's under the floor. Mind the trapdoor.",
+        "browse": "Whatever you pick, the wind's already carrying word of it.",
+        "buy": "Done. Don't speak the word above ground.",
+        "sell": "I'll take it. The old ones keep the books.",
+        "farewell": "Walk fast. Wind carries things it shouldn't."
+      },
+      "white_magic": {
+        "greeting": "The halls of Ullra welcome you. Remove the frost first.",
+        "browse": "Prayers are chipped into the pillars. Find one that suits your winter.",
+        "buy": "Carved into your name. It will find you when the cold does.",
+        "sell": "Returned to stone. All prayer is borrowed, eventually.",
+        "farewell": "Walk warm. If you can't walk warm, walk fast."
+      }
+    },
+
+    "grimhollow": {
+      "item": {
+        "greeting": "Oh. A visitor. We don't see many. Most leave before the third day.",
+        "browse": "The bottles on the top shelf are fine. The ones on the bottom shelf are also fine, but differently.",
+        "buy": "Yours. Don't open it at night. That's friendly advice.",
+        "sell": "I'll take it. The swamp takes everything eventually. I'm just faster.",
+        "farewell": "Safe travels. If you hear your name called from the fog, it's not for you. Probably."
+      },
+      "blacksmith": {
+        "greeting": "Steel. Fine. I can do that. It won't rust. Much.",
+        "browse": "The edges hold. The handles are bone — local supply. You get used to it.",
+        "buy": "Sold. Don't bury it. It comes back up.",
+        "sell": "Mine now. I'll melt it tonight. Nothing personal.",
+        "farewell": "Walk straight out. Don't turn at the crooked tree. You know the one."
+      },
+      "black_magic": {
+        "greeting": "You came. I thought you would. The bog told me someone was coming.",
+        "browse": "The spells are not in books. They are in jars. Do not shake the jars.",
+        "buy": "Bought. The jar will keep you awake for three nights. That is the price.",
+        "sell": "Received. I will put it back in the pond. The pond will decide.",
+        "farewell": "If you find a path you don't recognize, take it. That was mine."
+      },
+      "white_magic": {
+        "greeting": "Come to the lantern. The lantern is the only honest light here.",
+        "browse": "The prayers are soft. Soft is what grows here.",
+        "buy": "Spoken into your hair. You will feel it when the fog does.",
+        "sell": "Released. The swamp is gentler than it seems. Sometimes.",
+        "farewell": "Carry the lantern if you can. Leave it if you must. It will find its way back."
+      }
+    },
+
+    "ironhaven": {
+      "item": {
+        "greeting": "Welcome to the forge town. Mind the sparks.",
+        "browse": "Everything's rated for heat. The tonics keep in the volcano's shadow better than cool places.",
+        "buy": "Wrapped. Don't drop it on the coals.",
+        "sell": "I'll take it. The furnace likes variety.",
+        "farewell": "Watch the lava flows on the road east. They've been moody."
+      },
+      "blacksmith": {
+        "greeting": "You came to the right place. Everyone's a blacksmith here. I'm just the one who charges money.",
+        "browse": "Every blade was quenched in the caldera. They remember the heat.",
+        "buy": "Yours. Re-quench it in a year. Blades get lazy.",
+        "sell": "Back to the fire it goes. Nothing wasted in Ironhaven.",
+        "farewell": "Keep your steel hot. Or at least warm. Cold steel's a bad omen around here."
+      },
+      "black_magic": {
+        "greeting": "Fire magic, you want? We've got the best fire magic. We invented some of it by accident.",
+        "browse": "All fire-adjacent. The volcano imbues everything — you can smell it.",
+        "buy": "Bought. Don't cast it in the forge. Everyone's been there. It's not funny.",
+        "sell": "I'll take it. Back into the rotation.",
+        "farewell": "Walk carefully. The cobblestones are hot till noon."
+      },
+      "white_magic": {
+        "greeting": "The smokehouse chapel welcomes you. Prayer is best heard over the bellows.",
+        "browse": "Each blessing is forge-annealed. They don't break easy.",
+        "buy": "Hammered in. It'll hold.",
+        "sell": "The forge receives it. Grace doesn't spoil in heat.",
+        "farewell": "Go warm. Ironhaven always goes warm."
+      }
+    },
+
+    "sandrift": {
+      "item": {
+        "greeting": "A traveler! Welcome to the camp. Water's four coppers a skin.",
+        "browse": "Caravan stock. Fresh from the last run, or the run before that.",
+        "buy": "A bargain. Don't tell the next caravan what you paid.",
+        "sell": "I'll take it. There's a market two dunes over who'll want it.",
+        "farewell": "Walk at night. The sand is a liar by day."
+      },
+      "blacksmith": {
+        "greeting": "Hot work in the heat. You came at a good hour — I'm in a bad mood and I give discounts.",
+        "browse": "Desert steel. The sand polishes everything it doesn't eat.",
+        "buy": "Yours. Oil it tonight. The sand's patient.",
+        "sell": "Swapped. The caravan will want it.",
+        "farewell": "The oasis is kind. The road is not. Pack extra water."
+      },
+      "black_magic": {
+        "greeting": "You found us. Most don't. We move the tent every six days.",
+        "browse": "Desert magic is sand magic. Everything here shifts.",
+        "buy": "Bought. The spell likes to come undone in humidity. We're in no danger of that.",
+        "sell": "Taken. I'll barter it in the next camp.",
+        "farewell": "The stars hold. Walk by them, not by the sun."
+      },
+      "white_magic": {
+        "greeting": "Peace to you, traveler. Tea first, commerce after.",
+        "browse": "Prayers from seven deserts. Each one a different flavor of grace.",
+        "buy": "Drunk in. Grace keeps better in dry country.",
+        "sell": "Returned. Someone else's thirst will find it.",
+        "farewell": "May the wells rise to meet you."
+      }
+    },
+
+    "maple_heights": {
+      "item": {
+        "greeting": "Hi there! Did you sign in at the front desk?",
+        "browse": "Everything's clearly labeled. The HOA requires clear labeling. You're welcome.",
+        "buy": "Great choice! This one's really popular on the block.",
+        "sell": "Sure thing. Receipt's in your folder — you'll want that for insurance.",
+        "farewell": "Have a nice day! Remember, trash pickup is Thursday."
+      },
+      "blacksmith": {
+        "greeting": "Oh! You need a weapon? Well. That's — that's something we can discuss.",
+        "browse": "Browse away. It's all up to code. I had it inspected.",
+        "buy": "Good pick! Been meaning to move that one off the display.",
+        "sell": "Sure, I can take that. The yard's got space for another one.",
+        "farewell": "Take care of yourself out there. And please — not on the neighborhood."
+      },
+      "black_magic": {
+        "greeting": "...you followed the notice? Come in. Quickly. And shut the blinds.",
+        "browse": "Keep your voice down. The HOA does not know about this corner.",
+        "buy": "A choice. I am impressed. Most come in and leave.",
+        "sell": "I'll take it. It will not be missed, and neither will you, if this conversation is discovered.",
+        "farewell": "Leave the way you came. Forget the notice. Forget the blinds."
+      },
+      "white_magic": {
+        "greeting": "Welcome to the community prayer corner! Have you registered?",
+        "browse": "Everything's organized by category. Category A is Sunday morning service.",
+        "buy": "Lovely choice. I'll have the team pray over it tonight.",
+        "sell": "We can receive donations. The program is 501(c)(3), of course.",
+        "farewell": "Stay blessed! There's a potluck next week — you should come."
+      }
+    },
+
+    "brasston": {
+      "item": {
+        "greeting": "Welcome. You have arrived at 4:06. Please wait one minute. We open at 4:07.",
+        "browse": "The catalog is in the third drawer. The second drawer is also the catalog but for a prior quarter.",
+        "buy": "An efficient selection. Your efficiency is noted.",
+        "sell": "Accepted. It will be entered on the ledger. The ledger runs one day behind reality. This is standard.",
+        "farewell": "Good afternoon. Tea is at 4:07. We have four seconds."
+      },
+      "blacksmith": {
+        "greeting": "Welcome. Your sword is out of specification. I will measure it.",
+        "browse": "Each blade has a calibration card. Please review the card before the blade.",
+        "buy": "The measurements are acceptable. Accept delivery.",
+        "sell": "Surrender the blade. I will archive it in the out-of-specification rack.",
+        "farewell": "Your next inspection is in ninety days. Mind the calendar."
+      },
+      "black_magic": {
+        "greeting": "The shop opens for you. Close the door. Pressure must be maintained.",
+        "browse": "Browse the pressure-gauged shelves. Shelf 4 is at 4.7 atmospheres. Do not exhale there.",
+        "buy": "Selected. The payment is automatic. The cost is calibrated.",
+        "sell": "Surrendered. It will be added to the reclaim line.",
+        "farewell": "The door. Pressure. Please."
+      },
+      "white_magic": {
+        "greeting": "Welcome. The chapel opens on the sevens. You are punctual.",
+        "browse": "The prayers are in order by efficacy. The most efficacious are prohibitively priced. This is also efficient.",
+        "buy": "Blessed. The efficacy will be measured on your next visit.",
+        "sell": "Accepted. The grace is transferable only twice. You are the first.",
+        "farewell": "Good afternoon. Do not miss tea."
+      }
+    },
+
+    "rivet_row": {
+      "item": {
+        "greeting": "Welcome to the company store. Present your company token.",
+        "browse": "Inventory is on Line 3. Line 3 is always running.",
+        "buy": "Acquired. The deduction comes off your next shift.",
+        "sell": "I'll take it. The salvage yard is around back.",
+        "farewell": "Your shift ends at the standard hour. The standard hour has not been announced. Watch the signal tower."
+      },
+      "blacksmith": {
+        "greeting": "You're looking for hardware. You'll want the warehouse. Here's the claim form.",
+        "browse": "All stock is manifest-tracked. Do not lift anything without signing.",
+        "buy": "Claim approved. Hardware has been released to you.",
+        "sell": "I will receive the item. Please also sign the release form.",
+        "farewell": "Shift change in seven minutes. Good luck."
+      },
+      "black_magic": {
+        "greeting": "You are off-manifest. However, I have a variance form.",
+        "browse": "The... materials... are in the back room. Please be careful with the paperwork.",
+        "buy": "Approved. Do not mention the paperwork to the foreman.",
+        "sell": "Accepted. I will file it under 'salvage, unlisted'.",
+        "farewell": "Forget where the back room is. It helps the variance."
+      },
+      "white_magic": {
+        "greeting": "Welcome to the chapel. The shift chaplain is on break. You have me.",
+        "browse": "Prayers are on the board. Line 1 is Monday. Line 7 is also Monday, because Monday is long.",
+        "buy": "A good choice. I'll log it on the prayer board.",
+        "sell": "The chapel accepts donations. The chapel files them as 'prayer'.",
+        "farewell": "Your shift is sacred. So is the break. See you on Sunday."
+      }
+    },
+
+    "node_prime": {
+      "item": {
+        "greeting": "> welcome. list of items follows. press up arrow to recall last purchase.",
+        "browse": "$ browse --verbose. pipe the output through less if it doesn't fit.",
+        "buy": "$ buy item_id=your_pick. transaction complete. exit code: 0.",
+        "sell": "$ sell. receipt printed to stdout. record kept in /var/log/transactions.",
+        "farewell": "$ logout. your session has ended. thank you for shopping from user-space."
+      },
+      "blacksmith": {
+        "greeting": "> hardware shop. you need root to enter the kernel-grade aisle.",
+        "browse": "$ ls weapons/. the metadata is the spec sheet. read it.",
+        "buy": "$ commit. your purchase has been added to the index.",
+        "sell": "$ sell. the item is now in /tmp. it will be garbage-collected at end of day.",
+        "farewell": "$ exit. free() called successfully on your shopping session."
+      },
+      "black_magic": {
+        "greeting": "> chmod +x your_life. proceed.",
+        "browse": "$ grep -r 'power' /var/forbidden/. results pending your privilege level.",
+        "buy": "$ sudo install. you have been granted the spell. do not lose the receipt.",
+        "sell": "$ sudo rm. the spell has been deallocated. the memory is now free.",
+        "farewell": "$ logout. do not try to reconnect. there is nothing to reconnect to."
+      },
+      "white_magic": {
+        "greeting": "> grace service listening on port 443. authenticate to proceed.",
+        "browse": "$ ls --blessed. the list is alphabetical by patron saint.",
+        "buy": "$ install blessing --permanent. committed.",
+        "sell": "$ uninstall. the blessing has been returned to the pool. thank you for your service.",
+        "farewell": "$ logout. may your session resume in another process."
+      }
+    },
+
+    "vertex": {
+      "item": {
+        "greeting": "You arrived. An item is here. The item has been here.",
+        "browse": "Look. Take. Or don't. The exchange is the exchange.",
+        "buy": "You have selected. Selection is a form of having.",
+        "sell": "You are giving. That is a form of not-having. Both are acceptable.",
+        "farewell": "You leave. The exchange remains. The exchange is the same exchange."
+      },
+      "blacksmith": {
+        "greeting": "Welcome to The Remainder. Nothing here was optimized away.",
+        "browse": "The pieces are shaped like what they do. You will notice.",
+        "buy": "You have the blade. The blade was made for being-had.",
+        "sell": "I will take it. It will become The Remainder again. Everything does.",
+        "farewell": "Go. Use it. Use is a form of remainder."
+      },
+      "black_magic": {
+        "greeting": "There is no shop here. This is acceptable.",
+        "browse": "There is nothing to browse. This is also acceptable.",
+        "buy": "Nothing purchased. The void refunds in kind.",
+        "sell": "Nothing sold. The absence has been preserved.",
+        "farewell": "You leave with what you brought. That is the trade."
+      },
+      "white_magic": {
+        "greeting": "The Recall remembers spells that used to exist.",
+        "browse": "The index is in order. The order is: forgotten, almost-forgotten, remembered.",
+        "buy": "You have the memory. The memory will teach itself to your hand.",
+        "sell": "I will take it back. The memory prefers to be shared. Somewhere.",
+        "farewell": "Go. Remember. That is enough for the Recall."
+      }
+    }
+  }
+}

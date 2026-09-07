@@ -13,30 +13,42 @@ config_version=5
 config/name="Cowardly Irregular"
 config/description="A meta-aware JRPG where automation isn't cheating — it's enlightenment."
 run/main_scene="res://src/GameLoop.tscn"
-config/features=PackedStringArray("4.3", "Forward Plus")
+config/features=PackedStringArray("4.4", "Forward Plus")
 config/icon="res://icon.svg"
 
 [autoload]
 
-BattleManager="*res://src/battle/BattleManager.gd"
+FontFallbacks="*res://src/ui/FontFallbacks.gd"
 JobSystem="*res://src/jobs/JobSystem.gd"
 GameState="*res://src/meta/GameState.gd"
 PassiveSystem="*res://src/jobs/PassiveSystem.gd"
+LensSystem="*res://src/jobs/LensSystem.gd"
 EquipmentSystem="*res://src/jobs/EquipmentSystem.gd"
 ItemSystem="*res://src/items/ItemSystem.gd"
 AutobattleSystem="*res://src/autobattle/AutobattleSystem.gd"
 AutogrindSystem="*res://src/autogrind/AutogrindSystem.gd"
 MapSystem="*res://src/maps/MapSystem.gd"
 EncounterSystem="*res://src/encounters/EncounterSystem.gd"
+BattleManager="*res://src/battle/BattleManager.gd"
 SceneTransition="*res://src/transitions/SceneTransition.gd"
 BattleTransition="*res://src/transitions/BattleTransition.gd"
 SaveSystem="*res://src/save/SaveSystem.gd"
 SoundManager="*res://src/audio/SoundManager.gd"
 EffectSystem="*res://src/battle/EffectSystem.gd"
+BattleJuice="*res://src/battle/BattleJuice.gd"
 DebugLogOverlay="*res://src/ui/DebugLogOverlay.gd"
+ControllerMappings="*res://src/input/ControllerMappings.gd"
 GamepadFilter="*res://src/input/GamepadFilter.gd"
 InputProfileManager="*res://src/input/InputProfileManager.gd"
 MouseCursorManager="*res://src/input/MouseCursorManager.gd"
+VirtualGamepad="*res://src/ui/VirtualGamepad.gd"
+InputLockManager="*res://src/input/InputLockManager.gd"
+PartyChatSystem="*res://src/cutscene/PartyChatSystem.gd"
+QuestSystem="*res://src/quests/QuestSystem.gd"
+LLMService="*res://src/llm/LLMService.gd"
+RuleComposer="*res://src/llm/RuleComposer.gd"
+BossDialogue="*res://src/llm/BossDialogue.gd"
+PartyPersonas="*res://src/llm/PartyPersonas.gd"
 
 [display]
 
@@ -66,13 +78,15 @@ ui_cancel={
 battle_advance={
 "deadzone": 0.5,
 "events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":82,"physical_keycode":0,"key_label":0,"unicode":114,"location":0,"echo":false,"script":null)
-, Object(InputEventJoypadButton,"resource_local_to_scene":false,"resource_name":"","device":-1,"button_index":5,"pressure":0.0,"pressed":true,"script":null)
+, Object(InputEventJoypadButton,"resource_local_to_scene":false,"resource_name":"","device":-1,"button_index":10,"pressure":0.0,"pressed":true,"script":null)
+, Object(InputEventJoypadMotion,"resource_local_to_scene":false,"resource_name":"","device":-1,"axis":5,"axis_value":1.0,"script":null)
 ]
 }
 battle_defer={
 "deadzone": 0.5,
 "events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":76,"physical_keycode":0,"key_label":0,"unicode":108,"location":0,"echo":false,"script":null)
-, Object(InputEventJoypadButton,"resource_local_to_scene":false,"resource_name":"","device":-1,"button_index":4,"pressure":0.0,"pressed":true,"script":null)
+, Object(InputEventJoypadButton,"resource_local_to_scene":false,"resource_name":"","device":-1,"button_index":9,"pressure":0.0,"pressed":true,"script":null)
+, Object(InputEventJoypadMotion,"resource_local_to_scene":false,"resource_name":"","device":-1,"axis":4,"axis_value":1.0,"script":null)
 ]
 }
 ui_up={
@@ -117,6 +131,12 @@ battle_toggle_auto={
 , Object(InputEventJoypadButton,"resource_local_to_scene":false,"resource_name":"","device":-1,"button_index":4,"pressure":0.0,"pressed":true,"script":null)
 ]
 }
+party_chat={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":76,"physical_keycode":0,"key_label":0,"unicode":108,"location":0,"echo":false,"script":null)
+, Object(InputEventJoypadButton,"resource_local_to_scene":false,"resource_name":"","device":-1,"button_index":9,"pressure":0.0,"pressed":true,"script":null)
+]
+}
 camera_rotate_left={
 "deadzone": 0.32,
 "events": [Object(InputEventJoypadMotion,"resource_local_to_scene":false,"resource_name":"","device":0,"axis":3,"axis_value":-1.0,"script":null)
@@ -129,12 +149,20 @@ camera_rotate_right={
 , Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":69,"physical_keycode":0,"key_label":0,"unicode":101,"location":0,"echo":false,"script":null)
 ]
 }
+dash={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"resource_local_to_scene":false,"resource_name":"","device":-1,"window_id":0,"alt_pressed":false,"shift_pressed":false,"ctrl_pressed":false,"meta_pressed":false,"pressed":false,"keycode":4194325,"physical_keycode":0,"key_label":0,"unicode":0,"location":0,"echo":false,"script":null)
+, Object(InputEventJoypadButton,"resource_local_to_scene":false,"resource_name":"","device":-1,"button_index":2,"pressure":0.0,"pressed":true,"script":null)
+]
+}
 
 [editor_plugins]
 
 enabled=PackedStringArray("res://addons/gut/plugin.cfg")
 
 [rendering]
+
+textures/vram_compression/import_etc2_astc=true
 
 renderer/rendering_method="forward_plus"
 textures/canvas_textures/default_texture_filter=0

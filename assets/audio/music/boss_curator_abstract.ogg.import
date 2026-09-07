@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://ceh8xo1e7ct5o"
+path="res://.godot/imported/boss_curator_abstract.ogg-4f49b33e5fec66035a8819ec57691da2.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/boss_curator_abstract.ogg"
+dest_files=["res://.godot/imported/boss_curator_abstract.ogg-4f49b33e5fec66035a8819ec57691da2.oggvorbisstr"]
 
 [params]
 

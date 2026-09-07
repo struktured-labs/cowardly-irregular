@@ -1,0 +1,63 @@
+{
+  "id": "world1_tempo_encounter",
+  "title": "The Tempo of the Hunt",
+  "world": 1,
+  "trigger": "world1_tempo_pre_fight",
+  "background": "prologue_forest",
+  "description": "The Tempo is delighted the trail was wrong about the party's speed. This isn't a threat — it's a game. Don't let it catch you. FIX 2026-07-28 (cowir-ai msg-3206): this scene's hospitality beat was gated on a 'completionist' branch key that _detect_playstyle CAN NEVER RETURN (it returns automator/grinder/exploiter/manual/balanced only), so it had never played for any player. The beat is unconditional in canon — W1 ch.4 has the Warden offer the guardhouse food with no condition attached — so it is now the default arm rather than a playstyle reward. Playstyle-specific arms (e.g. grinder) are untouched and still take precedence.",
+  "steps": [
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "play_music",
+      "track": "boss_tempo_medieval"
+    },
+    {
+      "type": "branch",
+      "condition": "playstyle",
+      "cases": {
+        "default": [
+          {
+            "type": "dialogue",
+            "lines": [
+              {
+                "speaker": "Tempo",
+                "text": "Track me first. Find where I've been. Then we'll see if you can find where I am.",
+                "theme": "enemy",
+                "portrait": "mysterious"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Tempo",
+          "text": "You're faster than the trail suggested. I like it when the trail is wrong.",
+          "theme": "enemy",
+          "portrait": "masterite_tempo_medieval"
+        },
+        {
+          "speaker": "Tempo",
+          "text": "Don't let me catch you. That's not a threat. That's the game.",
+          "theme": "enemy",
+          "portrait": "masterite_tempo_medieval"
+        }
+      ]
+    },
+    {
+      "type": "set_flag",
+      "flag": "world1_tempo_encounter_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.3
+    }
+  ]
+}

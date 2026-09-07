@@ -1,0 +1,889 @@
+{
+  "version": 2,
+  "_note": "SINGLE SOURCE OF TRUTH for the overworld map image format. Both tools/map_ascii_to_png.py and src/exploration/MapImageLoader.gd read THIS FILE. Do not transcribe these values into either one -- a second copy is how a mapping silently drifts.",
+  "_per_world": "THE PALETTE IS PER WORLD AND THE WORLD ID IS REQUIRED. Measured 2026-08-22: 48 distinct map characters across the six worlds, 30 used by more than one world, and ZERO of those 30 meaning the same thing in two. 'c' is COAST in medieval, BASKETBALL_COURT in suburban, CONCRETE in steampunk, CONVEYOR_BELT in industrial, CIRCUIT_FLOOR in futuristic. A shared table cannot serve two worlds, and the failure mode is silent: an image decoded against the wrong world's table yields a PLAUSIBLE MAP MADE OF THE WRONG TILES, not an error. So the loader takes a world id and refuses an unknown one rather than defaulting.",
+  "_format": "One pixel per tile. The pixel encodes the MAP CHARACTER, not the tile type: _char_to_tile_type collapses many chars into fewer visual types (all four dragon caves return CAVE_ENTRANCE), so a tile-type image cannot round-trip and would erase every landmark's spawn identity.",
+  "_authoring": "Paint at 1px = 1 tile. Colours are exact-match WITHIN A WORLD; an unknown colour is a hard error naming its coordinate, never a silent fallback. Terrain colours are naturalistic so the map reads while painting; landmark colours are deliberately vivid and far apart in RGB because most landmarks are a SINGLE PIXEL and must survive a stray stroke being noticed. Colours may repeat ACROSS worlds -- they are only ever resolved against one world's table.",
+  "worlds": {
+    "medieval": {
+      "terrain": {
+        "~": {
+          "rgb": [
+            0,
+            80,
+            160
+          ],
+          "name": "water"
+        },
+        "c": {
+          "rgb": [
+            120,
+            190,
+            220
+          ],
+          "name": "coast"
+        },
+        ".": {
+          "rgb": [
+            200,
+            180,
+            130
+          ],
+          "name": "path"
+        },
+        "g": {
+          "rgb": [
+            80,
+            160,
+            70
+          ],
+          "name": "grass"
+        },
+        "F": {
+          "rgb": [
+            30,
+            100,
+            45
+          ],
+          "name": "forest"
+        },
+        "M": {
+          "rgb": [
+            130,
+            130,
+            130
+          ],
+          "name": "mountain"
+        },
+        "s": {
+          "rgb": [
+            230,
+            210,
+            150
+          ],
+          "name": "sand"
+        },
+        "i": {
+          "rgb": [
+            200,
+            235,
+            245
+          ],
+          "name": "ice"
+        },
+        "S": {
+          "rgb": [
+            90,
+            110,
+            60
+          ],
+          "name": "swamp"
+        },
+        "d": {
+          "rgb": [
+            70,
+            50,
+            90
+          ],
+          "name": "dark_ground"
+        },
+        "l": {
+          "rgb": [
+            220,
+            70,
+            20
+          ],
+          "name": "lava"
+        },
+        "B": {
+          "rgb": [
+            150,
+            100,
+            55
+          ],
+          "name": "bridge"
+        }
+      },
+      "landmarks": {
+        "C": {
+          "rgb": [
+            255,
+            0,
+            255
+          ],
+          "name": "whispering_cave"
+        },
+        "V": {
+          "rgb": [
+            255,
+            255,
+            0
+          ],
+          "name": "harmonia_village"
+        },
+        "1": {
+          "rgb": [
+            0,
+            255,
+            255
+          ],
+          "name": "ice_dragon_cave"
+        },
+        "2": {
+          "rgb": [
+            128,
+            0,
+            255
+          ],
+          "name": "shadow_dragon_cave"
+        },
+        "3": {
+          "rgb": [
+            255,
+            128,
+            0
+          ],
+          "name": "lightning_dragon_cave"
+        },
+        "4": {
+          "rgb": [
+            255,
+            0,
+            0
+          ],
+          "name": "fire_dragon_cave"
+        },
+        "W": {
+          "rgb": [
+            255,
+            255,
+            255
+          ],
+          "name": "frosthold"
+        },
+        "E": {
+          "rgb": [
+            0,
+            255,
+            0
+          ],
+          "name": "eldertree"
+        },
+        "G": {
+          "rgb": [
+            150,
+            150,
+            0
+          ],
+          "name": "grimhollow"
+        },
+        "D": {
+          "rgb": [
+            255,
+            200,
+            100
+          ],
+          "name": "sandrift"
+        },
+        "I": {
+          "rgb": [
+            180,
+            180,
+            255
+          ],
+          "name": "ironhaven"
+        },
+        "P": {
+          "rgb": [
+            255,
+            0,
+            128
+          ],
+          "name": "steampunk_portal"
+        },
+        "H": {
+          "rgb": [
+            0,
+            128,
+            255
+          ],
+          "name": "hidden_passage"
+        },
+        "5": {
+          "rgb": [
+            0,
+            200,
+            90
+          ],
+          "name": "backwards_warren"
+        }
+      }
+    },
+    "suburban": {
+      "terrain": {
+        "r": {
+          "rgb": [
+            70,
+            70,
+            78
+          ],
+          "name": "road"
+        },
+        "s": {
+          "rgb": [
+            176,
+            176,
+            172
+          ],
+          "name": "sidewalk"
+        },
+        "k": {
+          "rgb": [
+            120,
+            120,
+            128
+          ],
+          "name": "parking_lot"
+        },
+        "l": {
+          "rgb": [
+            95,
+            175,
+            80
+          ],
+          "name": "lawn"
+        },
+        "g": {
+          "rgb": [
+            210,
+            110,
+            160
+          ],
+          "name": "flower_bed"
+        },
+        "c": {
+          "rgb": [
+            192,
+            122,
+            70
+          ],
+          "name": "basketball_court"
+        },
+        "p": {
+          "rgb": [
+            235,
+            150,
+            60
+          ],
+          "name": "playground"
+        },
+        "d": {
+          "rgb": [
+            132,
+            60,
+            45
+          ],
+          "name": "house_door"
+        },
+        "h": {
+          "rgb": [
+            200,
+            170,
+            140
+          ],
+          "name": "house_wall"
+        },
+        "w": {
+          "rgb": [
+            150,
+            200,
+            232
+          ],
+          "name": "house_window"
+        },
+        "t": {
+          "rgb": [
+            60,
+            140,
+            150
+          ],
+          "name": "store_front"
+        },
+        "f": {
+          "rgb": [
+            226,
+            220,
+            205
+          ],
+          "name": "picket_fence"
+        },
+        "e": {
+          "rgb": [
+            35,
+            95,
+            50
+          ],
+          "name": "shade_tree"
+        },
+        "b": {
+          "rgb": [
+            110,
+            70,
+            45
+          ],
+          "name": "park_bench"
+        },
+        "m": {
+          "rgb": [
+            90,
+            110,
+            142
+          ],
+          "name": "mailbox"
+        },
+        "y": {
+          "rgb": [
+            200,
+            40,
+            40
+          ],
+          "name": "fire_hydrant"
+        }
+      },
+      "landmarks": {},
+      "_landmarks_note": "SuburbanOverworld places its portals and village entrances by explicit Vector2 coordinate in _setup_transitions(), not by a map character. So this section is legitimately empty until W2 migrates to an image; it is not an oversight."
+    },
+    "steampunk": {
+      "terrain": {
+        "c": {
+          "rgb": [
+            160,
+            160,
+            158
+          ],
+          "name": "concrete"
+        },
+        "a": {
+          "rgb": [
+            90,
+            90,
+            95
+          ],
+          "name": "asphalt"
+        },
+        "b": {
+          "rgb": [
+            140,
+            72,
+            52
+          ],
+          "name": "brick_wall"
+        },
+        "m": {
+          "rgb": [
+            140,
+            145,
+            155
+          ],
+          "name": "metal_floor"
+        },
+        "p": {
+          "rgb": [
+            168,
+            120,
+            60
+          ],
+          "name": "pipe"
+        },
+        "g": {
+          "rgb": [
+            95,
+            150,
+            80
+          ],
+          "name": "park_grass"
+        },
+        "w": {
+          "rgb": [
+            110,
+            95,
+            85
+          ],
+          "name": "building_wall"
+        },
+        "d": {
+          "rgb": [
+            190,
+            140,
+            70
+          ],
+          "name": "door"
+        },
+        "i": {
+          "rgb": [
+            220,
+            200,
+            120
+          ],
+          "name": "window"
+        },
+        "r": {
+          "rgb": [
+            70,
+            60,
+            55
+          ],
+          "name": "rail_track"
+        },
+        "n": {
+          "rgb": [
+            230,
+            90,
+            180
+          ],
+          "name": "neon_sign"
+        },
+        "F": {
+          "rgb": [
+            60,
+            130,
+            190
+          ],
+          "name": "water_feature"
+        },
+        "f": {
+          "rgb": [
+            95,
+            80,
+            70
+          ],
+          "name": "fence"
+        },
+        "y": {
+          "rgb": [
+            120,
+            115,
+            110
+          ],
+          "name": "alley"
+        },
+        "l": {
+          "rgb": [
+            240,
+            210,
+            90
+          ],
+          "name": "lamppost"
+        },
+        "h": {
+          "rgb": [
+            85,
+            88,
+            90
+          ],
+          "name": "manhole"
+        }
+      },
+      "landmarks": {}
+    },
+    "industrial": {
+      "terrain": {
+        "f": {
+          "rgb": [
+            120,
+            118,
+            112
+          ],
+          "name": "factory_floor"
+        },
+        "g": {
+          "rgb": [
+            95,
+            100,
+            105
+          ],
+          "name": "iron_grating"
+        },
+        "b": {
+          "rgb": [
+            110,
+            58,
+            44
+          ],
+          "name": "brick_wall"
+        },
+        "s": {
+          "rgb": [
+            70,
+            66,
+            64
+          ],
+          "name": "smokestack"
+        },
+        "c": {
+          "rgb": [
+            85,
+            75,
+            60
+          ],
+          "name": "conveyor_belt"
+        },
+        "r": {
+          "rgb": [
+            60,
+            55,
+            52
+          ],
+          "name": "rail_track"
+        },
+        "C": {
+          "rgb": [
+            155,
+            90,
+            40
+          ],
+          "name": "cargo_container"
+        },
+        "v": {
+          "rgb": [
+            170,
+            175,
+            178
+          ],
+          "name": "steam_vent"
+        },
+        "h": {
+          "rgb": [
+            135,
+            105,
+            80
+          ],
+          "name": "worker_housing"
+        },
+        "G": {
+          "rgb": [
+            150,
+            140,
+            60
+          ],
+          "name": "guard_post"
+        },
+        "d": {
+          "rgb": [
+            70,
+            130,
+            90
+          ],
+          "name": "drainage_channel"
+        },
+        "B": {
+          "rgb": [
+            140,
+            160,
+            60
+          ],
+          "name": "chemical_barrel"
+        },
+        "p": {
+          "rgb": [
+            160,
+            115,
+            55
+          ],
+          "name": "pipe_cluster"
+        },
+        "w": {
+          "rgb": [
+            215,
+            175,
+            40
+          ],
+          "name": "warning_sign"
+        },
+        "k": {
+          "rgb": [
+            145,
+            148,
+            150
+          ],
+          "name": "chain_link_fence"
+        },
+        "R": {
+          "rgb": [
+            170,
+            150,
+            120
+          ],
+          "name": "break_room_floor"
+        }
+      },
+      "landmarks": {}
+    },
+    "futuristic": {
+      "terrain": {
+        "c": {
+          "rgb": [
+            45,
+            52,
+            70
+          ],
+          "name": "circuit_floor"
+        },
+        "d": {
+          "rgb": [
+            70,
+            180,
+            190
+          ],
+          "name": "data_highway"
+        },
+        "S": {
+          "rgb": [
+            60,
+            80,
+            140
+          ],
+          "name": "server_tower"
+        },
+        "h": {
+          "rgb": [
+            120,
+            220,
+            230
+          ],
+          "name": "hologram_display"
+        },
+        "P": {
+          "rgb": [
+            100,
+            90,
+            150
+          ],
+          "name": "sleep_pod"
+        },
+        "v": {
+          "rgb": [
+            150,
+            160,
+            175
+          ],
+          "name": "cooling_vent"
+        },
+        "f": {
+          "rgb": [
+            210,
+            140,
+            60
+          ],
+          "name": "fiber_conduit"
+        },
+        "T": {
+          "rgb": [
+            230,
+            200,
+            80
+          ],
+          "name": "terminal_station"
+        },
+        "A": {
+          "rgb": [
+            170,
+            175,
+            185
+          ],
+          "name": "antenna_array"
+        },
+        "E": {
+          "rgb": [
+            90,
+            230,
+            140
+          ],
+          "name": "energy_cell"
+        },
+        "G": {
+          "rgb": [
+            230,
+            90,
+            90
+          ],
+          "name": "scan_gate"
+        },
+        "p": {
+          "rgb": [
+            80,
+            160,
+            90
+          ],
+          "name": "pixel_garden"
+        },
+        "X": {
+          "rgb": [
+            200,
+            60,
+            200
+          ],
+          "name": "glitch_tile"
+        },
+        "N": {
+          "rgb": [
+            230,
+            90,
+            180
+          ],
+          "name": "neon_wall"
+        },
+        "a": {
+          "rgb": [
+            140,
+            150,
+            160
+          ],
+          "name": "access_panel"
+        },
+        "V": {
+          "rgb": [
+            18,
+            18,
+            24
+          ],
+          "name": "void_floor"
+        }
+      },
+      "landmarks": {}
+    },
+    "abstract": {
+      "terrain": {
+        "w": {
+          "rgb": [
+            235,
+            235,
+            240
+          ],
+          "name": "void_white"
+        },
+        "g": {
+          "rgb": [
+            80,
+            80,
+            88
+          ],
+          "name": "void_gray"
+        },
+        "B": {
+          "rgb": [
+            15,
+            15,
+            18
+          ],
+          "name": "void_black"
+        },
+        "L": {
+          "rgb": [
+            60,
+            60,
+            90
+          ],
+          "name": "grid_line"
+        },
+        "G": {
+          "rgb": [
+            95,
+            165,
+            85
+          ],
+          "name": "fragment_grass"
+        },
+        "K": {
+          "rgb": [
+            160,
+            90,
+            70
+          ],
+          "name": "fragment_brick"
+        },
+        "C": {
+          "rgb": [
+            70,
+            180,
+            190
+          ],
+          "name": "fragment_circuit"
+        },
+        "S": {
+          "rgb": [
+            120,
+            110,
+            100
+          ],
+          "name": "shelf_unit"
+        },
+        "E": {
+          "rgb": [
+            90,
+            85,
+            95
+          ],
+          "name": "echo_wall"
+        },
+        "T": {
+          "rgb": [
+            180,
+            180,
+            190
+          ],
+          "name": "threshold_fade"
+        },
+        "O": {
+          "rgb": [
+            230,
+            120,
+            60
+          ],
+          "name": "color_spot"
+        },
+        "X": {
+          "rgb": [
+            200,
+            60,
+            200
+          ],
+          "name": "static_tile"
+        },
+        "H": {
+          "rgb": [
+            45,
+            45,
+            52
+          ],
+          "name": "shadow_tile"
+        },
+        "Q": {
+          "rgb": [
+            230,
+            200,
+            80
+          ],
+          "name": "question_mark"
+        },
+        "F": {
+          "rgb": [
+            140,
+            140,
+            148
+          ],
+          "name": "footprint_tile"
+        },
+        "D": {
+          "rgb": [
+            110,
+            58,
+            44
+          ],
+          "name": "remnant_door"
+        }
+      },
+      "landmarks": {}
+    }
+  }
+}

@@ -13,12 +13,44 @@ const TitleScreenClass = preload("res://src/ui/TitleScreen.gd")
 const HarmoniaVillageRes = preload("res://src/maps/villages/HarmoniaVillage.tscn")
 const WhisperingCaveRes = preload("res://src/maps/dungeons/WhisperingCave.tscn")
 const TavernInteriorScript = preload("res://src/maps/interiors/TavernInterior.gd")
+const InnInteriorScript = preload("res://src/maps/interiors/InnInterior.gd")
+const ScripturaPlazaScript = preload("res://src/maps/villages/ScripturaPlaza.gd")
+const ScripturaGuildInteriorScript = preload("res://src/maps/interiors/ScripturaGuildInterior.gd")
+const ScripturaBookshopInteriorScript = preload("res://src/maps/interiors/ScripturaBookshopInterior.gd")
+const ShopInteriorScript = preload("res://src/maps/interiors/ShopInterior.gd")
+const BlacksmithInteriorScript = preload("res://src/maps/interiors/BlacksmithInterior.gd")
+const HarmoniaChapelInteriorScript = preload("res://src/maps/interiors/HarmoniaChapelInterior.gd")
+const HarmoniaCartographerInteriorScript = preload("res://src/maps/interiors/HarmoniaCartographerInterior.gd")
+const EldertreeGraftingHouseInteriorScript = preload("res://src/maps/interiors/EldertreeGraftingHouseInterior.gd")
+const IronhavenStrikeRegistryInteriorScript = preload("res://src/maps/interiors/IronhavenStrikeRegistryInterior.gd")
+const FrostholdMeltwaterClockInteriorScript = preload("res://src/maps/interiors/FrostholdMeltwaterClockInterior.gd")
+const SandriftRainLedgerInteriorScript = preload("res://src/maps/interiors/SandriftRainLedgerInterior.gd")
+const MapleGarageSaleInteriorScript = preload("res://src/maps/interiors/MapleGarageSaleInterior.gd")
+const BrasstonRedundancyArchiveInteriorScript = preload("res://src/maps/interiors/BrasstonRedundancyArchiveInterior.gd")
+const RivetRowIncidentBoardInteriorScript = preload("res://src/maps/interiors/RivetRowIncidentBoardInterior.gd")
+const NodePrimeCacheInteriorScript = preload("res://src/maps/interiors/NodePrimeCacheInterior.gd")
+const GrimhollowLanternDebtInteriorScript = preload("res://src/maps/interiors/GrimhollowLanternDebtInterior.gd")
+const HarmoniaLibraryInteriorScript = preload("res://src/maps/interiors/HarmoniaLibraryInterior.gd")
+const EldertreeHollowTreeInteriorScript = preload("res://src/maps/interiors/EldertreeHollowTreeInterior.gd")
+const FrostholdWardenHutInteriorScript = preload("res://src/maps/interiors/FrostholdWardenHutInterior.gd")
+const SandriftGlassmakerInteriorScript = preload("res://src/maps/interiors/SandriftGlassmakerInterior.gd")
+const GrimhollowWitchHutInteriorScript = preload("res://src/maps/interiors/GrimhollowWitchHutInterior.gd")
+const IronhavenWatchtowerInteriorScript = preload("res://src/maps/interiors/IronhavenWatchtowerInterior.gd")
+const MapleHeightsArcadeInteriorScript = preload("res://src/maps/interiors/MapleHeightsArcadeInterior.gd")
+const BrasstonClockworkLoftInteriorScript = preload("res://src/maps/interiors/BrasstonClockworkLoftInterior.gd")
+const RivetRowUnionHallInteriorScript = preload("res://src/maps/interiors/RivetRowUnionHallInterior.gd")
+const NodePrimeDaemonLoungeInteriorScript = preload("res://src/maps/interiors/NodePrimeDaemonLoungeInterior.gd")
+const VertexThresholdInteriorScript = preload("res://src/maps/interiors/VertexThresholdInterior.gd")
+const RebalanceDaemonScript = preload("res://src/llm/RebalanceDaemon.gd")
 const FrostholdVillageScript = preload("res://src/maps/villages/FrostholdVillage.gd")
 const EldertreeVillageScript = preload("res://src/maps/villages/EldertreeVillage.gd")
 const GrimhollowVillageScript = preload("res://src/maps/villages/GrimhollowVillage.gd")
 const SandriftVillageScript = preload("res://src/maps/villages/SandriftVillage.gd")
 const IronhavenVillageScript = preload("res://src/maps/villages/IronhavenVillage.gd")
 const MapleHeightsVillageScript = preload("res://src/maps/villages/MapleHeightsVillage.gd")
+const MapleStripMallScript = preload("res://src/maps/villages/MapleStripMall.gd")
+const MapleCommunityCenterInteriorScript = preload("res://src/maps/interiors/MapleCommunityCenterInterior.gd")
+const EnrichmentAnnexInteriorScript = preload("res://src/maps/interiors/EnrichmentAnnexInterior.gd")
 const BrasstonVillageScript = preload("res://src/maps/villages/BrasstonVillage.gd")
 const RivetRowVillageScript = preload("res://src/maps/villages/RivetRowVillage.gd")
 const NodePrimeVillageScript = preload("res://src/maps/villages/NodePrimeVillage.gd")
@@ -27,6 +59,14 @@ const IceDragonCaveScript = preload("res://src/maps/dungeons/IceDragonCave.gd")
 const ShadowDragonCaveScript = preload("res://src/maps/dungeons/ShadowDragonCave.gd")
 const LightningDragonCaveScript = preload("res://src/maps/dungeons/LightningDragonCave.gd")
 const FireDragonCaveScript = preload("res://src/maps/dungeons/FireDragonCave.gd")
+const AssemblyCoreScript = preload("res://src/maps/dungeons/AssemblyCore.gd")
+const RootProcessScript = preload("res://src/maps/dungeons/RootProcess.gd")
+const NullChamberScript = preload("res://src/maps/dungeons/NullChamber.gd")
+const SuburbanUndergroundScript = preload("res://src/maps/dungeons/SuburbanUnderground.gd")
+const CastleHarmoniaScript = preload("res://src/maps/dungeons/CastleHarmonia.gd")
+const SteampunkMechanismScript = preload("res://src/maps/dungeons/SteampunkMechanism.gd")
+const VertexApexScript = preload("res://src/maps/dungeons/VertexApex.gd")
+const ContrarianDepthsScript = preload("res://src/maps/dungeons/ContrarianDepths.gd")
 const SteampunkOverworldScript = preload("res://src/exploration/SteampunkOverworld.gd")
 const SuburbanOverworldScript = preload("res://src/exploration/SuburbanOverworld.gd")
 const IndustrialOverworldScript = preload("res://src/exploration/IndustrialOverworld.gd")
@@ -37,7 +77,8 @@ enum LoopState {
 	TITLE,
 	BATTLE,
 	EXPLORATION,
-	AUTOGRIND
+	AUTOGRIND,
+	CUTSCENE
 }
 
 var current_state: LoopState = LoopState.EXPLORATION
@@ -59,22 +100,151 @@ var equipment_pool: Dictionary = {
 var _autobattle_editor: Control = null
 var _autobattle_layer: CanvasLayer = null  # Separate layer to avoid camera zoom
 
+## F1 controls reference — global, any state, drawn above every other overlay
+var _help_overlay: Control = null
+var _help_layer: CanvasLayer = null
+
 
 ## Exploration state
 var _current_map_id: String = "overworld"
+
+## When entering an interior scene (tavern/inn/shop), the source village id is
+## saved here so the interior's exit door can target "village_return" and we
+## resolve back to where the player came from. The existing INTERIOR_MAP_IDS
+## const (declared near _get_transition_type) is the authoritative interior set.
+var _village_origin_id: String = ""
+
+
+## Public read of the current map_id — exposed so SaveSystem.can_quick_save()
+## and others can interrogate location without needing to grep the scene tree.
+func get_current_map_id() -> String:
+	return _current_map_id
+
+
+## Public read of the village an interior was entered from -- shop/inn dialogue keys on it.
+func get_village_origin_id() -> String:
+	return _village_origin_id
+
+
+## Tick 307: setter that keeps MapSystem.current_map_id in sync with our
+## _current_map_id. Pre-fix MapSystem.current_map_id was only updated by
+## MapSystem.load_map, which is bypassed by GameLoop's direct scene routing
+## for villages/dungeons/interiors. Result: bestiary mark_seen/mark_defeated
+## (BattleScene/BattleManager/HeadlessBattleResolver), WorldMapMenu location
+## label, autogrind dashboard location, and the save serialization all read
+## a stale value (empty string or last MapSystem.load_map target — usually
+## "overworld") regardless of where the player actually was. A monster
+## defeated in fire_dragon_cave was logged as defeated in "overworld" in
+## the bestiary; save records of a player at a dungeon save crystal stored
+## the wrong map_id. Keeping MapSystem.current_map_id in sync via this
+## setter fixes every read site at once without touching the load path.
+func _set_current_map_id(id: String) -> void:
+	_current_map_id = id
+	if MapSystem and "current_map_id" in MapSystem:
+		MapSystem.current_map_id = id
+	# Tick 310: also sync GameState.current_world from the map_id so
+	# GameOverScreen + LLMContext + any other reader sees the correct
+	# world. Pre-fix current_world was set ONLY by autogrind's region-
+	# advance signal, so a player dying in suburban_overworld with a
+	# fresh save (never touched autogrind) saw the W1 game-over title.
+	# Skip when GameState is unreachable (test envs).
+	if GameState and "current_world" in GameState:
+		var w: int = _get_world_for_map(id)
+		# Shared interiors (inn/shop/quest rooms) carry no world in their id, so prefix matching zeroes them to W1 — the village we entered from is the truth.
+		if id in INTERIOR_MAP_IDS and _village_origin_id != "":
+			w = _get_world_for_map(_village_origin_id)
+		if w != GameState.current_world:
+			GameState.current_world = w
+	# Tick 311: derive _current_terrain from the map_id at the same point
+	# so save-load and autogrind hand-off see fresh terrain. Pre-fix the
+	# terrain was only re-derived on battle-trigger and area-transition;
+	# loading a save inside fire_dragon_cave and immediately starting
+	# autogrind passed "plains" (the default) into start_grind, which
+	# rendered the wrong battle background until the first ENEMY scripted
+	# event ticked. Closes the same drift class as the world sync above.
+	_current_terrain = _get_terrain_for_map(id)
+
+
+## Tick 310: derive world number (1-6) from a map_id. Used by
+## _set_current_map_id to keep GameState.current_world in sync with
+## exploration. Heuristic-based prefix matching: W2 (suburban), W3
+## (steampunk), W4 (industrial), W5 (futuristic), W6 (abstract) keys
+## are distinctive; everything else falls back to W1 (medieval —
+## covers harmonia / dragon caves / 5 side villages / Castle Harmonia
+## / Whispering Cave). Adding a new W2-W6 region without updating
+## this needs a push_warning at the call site so the gap is loud.
+func _get_world_for_map(id: String) -> int:
+	# W2 — Suburban
+	if id.begins_with("suburban_") or id.begins_with("maple_heights"):
+		return 2
+	# W3 — Steampunk
+	if id.begins_with("steampunk_") or id.begins_with("brasston"):
+		return 3
+	# W4 — Industrial
+	if id.begins_with("industrial_") or id.begins_with("rivet_row") or id.begins_with("assembly_"):
+		return 4
+	# W5 — Futuristic
+	if id.begins_with("futuristic_") or id.begins_with("node_prime") or id == "root_process":
+		return 5
+	# W6 — Abstract
+	if id.begins_with("abstract_") or id.begins_with("vertex") or id == "null_chamber":
+		return 6
+	# W1 — Medieval (default; covers all original-world ids)
+	return 1
+
+
+## True when the player is inside one of the small village-side interior
+## rooms. SaveSystem skips auto-save in this state because MapSystem
+## doesn't track interiors (they're loaded by GameLoop's scene-routing,
+## not MapSystem.load_map), so MapSystem.current_map_id would be stale —
+## the resume path would either spawn the player in the wrong location
+## or fail to load any map at all.
+func is_inside_interior() -> bool:
+	return _current_map_id in INTERIOR_MAP_IDS
+
 var _spawn_point: String = "default"
 var _exploration_scene: Node = null
 var _player_position: Vector2 = Vector2.ZERO  # Save position for battle return
 var _current_cave_floor: int = 1  # Track current floor in multi-floor dungeons
 var _current_terrain: String = "plains"  # Current terrain type for battle backgrounds
 
+## Last battle config for retry
+var _last_battle_enemies: Array = []  # Enemy IDs from last battle
+var _last_battle_is_encounter: bool = false  # Was it a random encounter?
+
+## Tick 471: Spotlight Duel state. `start_solo_battle` sets these
+## before firing `_start_battle_async`; `_on_battle_ended` reads them
+## to short-circuit its normal exploration-return flow (the cutscene
+## is still driving; we don't fade/scene-swap). Cleared by
+## `start_solo_battle` after `spotlight_battle_ended` is emitted.
+var _spotlight_duel_active: bool = false
+var _pending_spotlight_unlock: String = ""  # PC job id ("fighter", etc.); "" when no unlock target
+var _pending_spotlight_unlock_toast: String = ""  # deferred to _resume_exploration_after_cutscene — an immediate toast rendered under the aftermath dialogue
+var _spotlight_saved_autobattle: bool = false  # duelist's pre-duel autobattle toggle, restored after (duels force manual)
+var _stashed_boss_defeat: Dictionary = {}  # boss spec parked across a game-over retry (defeat clears the live spec)
+var _spotlight_saved_party: Array[Combatant] = []
+signal spotlight_battle_ended(victory: bool)
+
+## Loss thresholds that promote a duelist to the next hint tier (msg 2472). Fires TutorialHints spotlight_hint_<job>_<tier> at start_solo_battle. Struktured's morale-friendly cadence: player gets 2 losses to figure it out themselves before tier-1 fires; extend the array to add tier 4+ later. Explicit thresholds over a formula so per-boss tuning is one edit.
+const SPOTLIGHT_HINT_THRESHOLDS: Array = [2, 4, 6]
+
 ## Area transition fade overlay (reused across all area transitions)
 var _area_fade_layer: CanvasLayer = null
+var _day_night_overlay: DayNightOverlay = null
+var _day_clock: DayClockWidget = null
 var _area_fade_rect: ColorRect = null
 
 ## Overworld menu
 var _overworld_menu: Control = null
 var _overworld_menu_layer: CanvasLayer = null
+var _pre_menu_music_state: Dictionary = {}  # capture_music_state() snapshot while pause menu is open — a raw _current_music string cannot carry AREA beds, so W2+ overworlds restored wrong (struktured in-play report 2026-08-08)
+var _menu_hidden_hud: Array = []
+
+## Party Chat (opt-in flavor cutscenes)
+var _party_chat_menu: Control = null
+var _party_chat_menu_layer: CanvasLayer = null
+var _party_chat_indicator: Control = null
+var _party_chat_indicator_layer: CanvasLayer = null
 
 ## Autogrind
 var _autogrind_controller: Node = null
@@ -85,6 +255,7 @@ var _autogrind_dashboard: Control = null
 var _autogrind_overlay: Control = null
 var _autogrind_overlay_layer: CanvasLayer = null
 var _autogrind_battle_summaries: Array = []
+var _autogrind_summary: Control = null
 var _controller_overlay: ControllerOverlay = null
 var _controller_overlay_layer: CanvasLayer = null
 
@@ -96,9 +267,72 @@ var _first_launch: bool = true  # True if no save exists
 var _title_screen: Control = null
 var _title_layer: CanvasLayer = null
 
+## R9 (inference_failed breadcrumb, principle #7): one-time latch so the FIRST
+## LLM fallback in a session surfaces a brief, in-voice notice instead of being
+## truly silent. Subsequent failures stay quiet (no toast spam).
+var _llm_notice_shown: bool = false
+
+## Companion latch — first successful non-fallback LLM response in a session
+## surfaces a "Dynamic dialogue active" toast so desktop+Ollama players know
+## the LLM is wired up. Subsequent successes stay quiet.
+var _llm_success_notice_shown: bool = false
+
+## First-open latch for the autobattle editor — fires the autobattle_intro
+## tutorial hint once per save (TutorialHints itself enforces the once-per-save).
+var _autobattle_editor_ever_opened: bool = false
+
 func _ready() -> void:
+	## Boot canary (2026-07-01 gray-void post-mortem): if load-bearing
+	## scene scripts failed to compile (stale class cache after new
+	## class_name merges), the game used to boot into an empty
+	## default-clear viewport with live input and 37 SCRIPT ERRORs
+	## buried in the log. Detect it and put an actionable message on
+	## screen instead.
+	_check_boot_canaries()
+
 	# Initialize equipment pool with extra items
 	_init_equipment_pool()
+
+	## Tick 178: surface save corruption events to the player.
+	## Pre-fix save_corrupted and the new corruption_effect_added
+	## signals fired but had NO listeners — player corrupted their
+	## save via Scriptweaver/etc. and got zero visible feedback
+	## that the corruption increased or that a NEW effect landed.
+	## Toast banner is the right surface (matches the existing
+	## save-toast / autosave-toast pattern at _on_any_save_completed).
+	if GameState:
+		if GameState.has_signal("save_corrupted") and not GameState.save_corrupted.is_connected(_on_save_corruption_increased):
+			GameState.save_corrupted.connect(_on_save_corruption_increased)
+		if GameState.has_signal("corruption_effect_added") and not GameState.corruption_effect_added.is_connected(_on_corruption_effect_added):
+			GameState.corruption_effect_added.connect(_on_corruption_effect_added)
+		## Tick 179: surface Scriptweaver edits to game constants.
+		## game_constant_modified fires from modify_constant (the
+		## Scriptweaver's main verb) but had ZERO listeners — same
+		## silent failure class as tick 178's save_corrupted gap.
+		if GameState.has_signal("game_constant_modified") and not GameState.game_constant_modified.is_connected(_on_game_constant_modified):
+			GameState.game_constant_modified.connect(_on_game_constant_modified)
+		# Tick 264: bestiary kill-milestone toast — fires once per
+		# (monster, threshold) pair across the save.
+		if GameState.has_signal("bestiary_kill_milestone") and not GameState.bestiary_kill_milestone.is_connected(_on_bestiary_kill_milestone):
+			GameState.bestiary_kill_milestone.connect(_on_bestiary_kill_milestone)
+
+	## Tick 254: surface party-chat event unlocks. Pre-fix the player
+	## triggered an event flag (boss kill, level 10, magic shop, etc.)
+	## and the chat silently appeared in PartyChatMenu — they wouldn't
+	## notice until next menu visit. Toast banner ("New chat: <title>")
+	## gives the immediate feedback signal.
+	if PartyChatSystem and PartyChatSystem.has_signal("event_chat_unlocked") \
+			and not PartyChatSystem.event_chat_unlocked.is_connected(_on_event_chat_unlocked):
+		PartyChatSystem.event_chat_unlocked.connect(_on_event_chat_unlocked)
+
+	# Day/night tint (layer 40, world-only) + band-change consumers (music bus etc.)
+	_day_night_overlay = DayNightOverlay.new()
+	add_child(_day_night_overlay)
+	_day_clock = DayClockWidget.new()
+	add_child(_day_clock)
+	if GameState and GameState.has_signal("time_of_day_changed") \
+			and not GameState.time_of_day_changed.is_connected(_on_time_of_day_changed):
+		GameState.time_of_day_changed.connect(_on_time_of_day_changed)
 
 	# Create the persistent area-transition fade overlay (layer=90, below BattleTransition=100)
 	_area_fade_layer = CanvasLayer.new()
@@ -121,15 +355,472 @@ func _ready() -> void:
 	# Check for existing save to determine if this is first launch
 	_first_launch = not _save_exists()
 
+	# Toast on any save (manual or auto)
+	if SaveSystem and SaveSystem.has_signal("save_completed"):
+		if not SaveSystem.save_completed.is_connected(_on_any_save_completed):
+			SaveSystem.save_completed.connect(_on_any_save_completed)
+
+	# Toast on any save failure — pre-fix, save_failed had ZERO listeners
+	# so a player who pressed Save in the chapel got silent rejection
+	# with no feedback. Surface the specific reason from _save_block_reason.
+	if SaveSystem and SaveSystem.has_signal("save_failed"):
+		if not SaveSystem.save_failed.is_connected(_on_any_save_failed):
+			SaveSystem.save_failed.connect(_on_any_save_failed)
+
+	# Flush runtime party → GameState BEFORE every save reads it.
+	# Pre-fix this only ran when the overworld menu opened, so battle
+	# gains since the last menu open vanished from auto-saves.
+	if SaveSystem and SaveSystem.has_signal("pre_save_sync"):
+		if not SaveSystem.pre_save_sync.is_connected(_sync_party_to_game_state):
+			SaveSystem.pre_save_sync.connect(_sync_party_to_game_state)
+
 	# Always show title screen first
 	_show_title_screen()
+
+	# R9 (inference_failed breadcrumb): connect deferred — LLMService autoloads
+	# late, so /root/LLMService may not exist yet at our _ready. Deferring runs
+	# the hookup after the current frame's autoload init settles.
+	_connect_llm_breadcrumb.call_deferred()
 
 	# Log startup
 	if DebugLogOverlay:
 		DebugLogOverlay.log("[GAME] Started")
 
+	# Arg-gated render smoke — see _maybe_run_battle_smoke.
+	_maybe_run_battle_smoke()
+	_maybe_run_dev_fight()
+
+
+## `godot -- --fight=skeleton,skeleton` — boot straight into an interactive battle (dev art/feel testing, struktured 2026-08-17).
+func _maybe_run_dev_fight() -> void:
+	for a in OS.get_cmdline_user_args():
+		if a.begins_with("--fight="):
+			var ids := a.trim_prefix("--fight=").split(",", false)
+			if ids.is_empty():
+				return
+			await get_tree().create_timer(1.0).timeout
+			_close_title_screen()
+			await get_tree().process_frame
+			_create_party()
+			var enemies: Array = []
+			for id in ids:
+				enemies.append(str(id).strip_edges())
+			print("[DEV] --fight boot: %s" % [enemies])
+			_start_battle_async(enemies, false)
+			return
+
+
+## `xvfb-run godot -- --battle-smoke` (battle only) or `-- --render-smoke` (overworld walk frames + battle) — pixels catch what source pins can't
+func _maybe_run_battle_smoke() -> void:
+	var full: bool = "--render-smoke" in OS.get_cmdline_user_args()
+	if not full and not ("--battle-smoke" in OS.get_cmdline_user_args()):
+		return
+	# Smoke runs are headed (xvfb) so the headless auto-mute never engages — mute here or music hits real speakers.
+	AudioServer.set_bus_mute(0, true)
+	await get_tree().create_timer(1.0).timeout
+	print("[SMOKE] render smoke starting (full=%s)" % str(full))
+	# Deterministic smoke: neutralize this box's dev flags — debug_all_pcs_unlocked force-clears is_player_trusted (BattleManager) and breaks the game-over leg's auto-play.
+	if GameState and "debug_all_pcs_unlocked" in GameState:
+		GameState.debug_all_pcs_unlocked = false
+	# ...and random encounters: one firing during the walk legs made EVERY later map leg bail
+	if EncounterSystem:
+		EncounterSystem.encounters_enabled = false
+	_close_title_screen()
+	await get_tree().process_frame
+	await get_tree().process_frame
+	_create_party()
+	DirAccess.make_dir_recursive_absolute("user://smoke")
+	if full:
+		await _smoke_enter_map("overworld")
+		await get_tree().create_timer(1.5).timeout
+		# mid-stride captures — the garbled-walk sprite class is only visible while moving
+		for dir_action in ["ui_right", "ui_left"]:
+			Input.action_press(dir_action)
+			await get_tree().create_timer(0.7).timeout
+			await _smoke_shot("overworld_walk_%s" % dir_action.trim_prefix("ui_"))
+			Input.action_release(dir_action)
+		# village: NPC sheets + quest markers in one frame
+		await _smoke_enter_map("harmonia_village")
+		await get_tree().create_timer(1.5).timeout
+		await _smoke_shot("village")
+		# the 5 villages holding W1 quest givers + QuestExaminePoints — no smoke on any platform had ever entered one
+		for _vid in ["sandrift_village", "frosthold_village", "grimhollow_village", "ironhaven_village", "eldertree_village"]:
+			await _smoke_enter_map(_vid)
+			await get_tree().create_timer(1.0).timeout
+			await _smoke_shot(_vid)
+		# interiors: NOTHING on any platform had ever loaded one in a built game (inn charges gold, the rest carry quest content)
+		for _iid in ["inn_interior", "tavern_interior", "sandrift_glassmaker", "frosthold_meltwater_clock", "ironhaven_watchtower"]:
+			await _smoke_enter_map(_iid)
+			await get_tree().create_timer(0.8).timeout
+			await _smoke_shot(_iid)
+		# The Vertex Apex — the LAST ROOM IN THE GAME had never had a screenshot taken of it
+		# by anything, human or automated, until this leg (struktured's go, wishlist item).
+		await _smoke_enter_map("vertex_apex")
+		await get_tree().create_timer(1.2).timeout
+		await _smoke_shot("vertex_apex")
+		await _smoke_enter_map("harmonia_village")
+		await get_tree().create_timer(1.0).timeout
+		# settings (Start) then the overworld/party menu (X) — the week's UI churn surfaces
+		_smoke_tap("ui_menu")
+		await get_tree().create_timer(1.0).timeout
+		await _smoke_shot("settings")
+		_smoke_tap("ui_cancel")
+		await get_tree().create_timer(0.5).timeout
+		_smoke_key(KEY_X)
+		await get_tree().create_timer(1.0).timeout
+		await _smoke_shot("overworld_menu")
+		# cursor rests on Quest Log — one confirm renders the QuestSystem UI
+		_smoke_tap("ui_accept")
+		await get_tree().create_timer(1.0).timeout
+		await _smoke_shot("quest_log")
+		_smoke_tap("ui_cancel")
+		await get_tree().create_timer(0.4).timeout
+		_smoke_tap("ui_cancel")
+		await get_tree().create_timer(0.5).timeout
+		# autobattle grid editor (F5) — the design-pillar surface, never before in automation
+		_smoke_key(KEY_F5)
+		await get_tree().create_timer(1.2).timeout
+		await _smoke_shot("autobattle_editor")
+		# verified close: the tutorial hint consumes one keypress, so a blind F5 left the editor ghosting under later screens
+		for close_try in range(3):
+			_smoke_key(KEY_F5)
+			await get_tree().create_timer(0.6).timeout
+			if _autobattle_editor == null or not is_instance_valid(_autobattle_editor):
+				break
+		# Formations + Records reference pages (v3.33.66/.72) — direct-instanced so
+		# render coverage doesn't depend on brittle menu-cursor driving.
+		# 2026-07-16: parent them in a CanvasLayer like real play (OverworldMenu lives in layer 50) — bare add_child put them in WORLD space under the scrolled village camera, so the smoke shot a screen no player can see (rows at world coords, no backdrop).
+		var smoke_ui_layer := CanvasLayer.new()
+		smoke_ui_layer.layer = 50
+		add_child(smoke_ui_layer)
+		var FormationsScript = load("res://src/ui/FormationsMenu.gd")
+		if FormationsScript:
+			var fm = FormationsScript.new()
+			fm.party = party
+			smoke_ui_layer.add_child(fm)
+			await get_tree().create_timer(0.6).timeout
+			await _smoke_shot("formations_page")
+			fm.queue_free()
+			await get_tree().process_frame
+		var RecordsScript = load("res://src/ui/RecordsMenu.gd")
+		if RecordsScript:
+			var rm = RecordsScript.new()
+			smoke_ui_layer.add_child(rm)
+			await get_tree().create_timer(0.6).timeout
+			await _smoke_shot("records_page")
+			rm.queue_free()
+			await get_tree().process_frame
+		smoke_ui_layer.queue_free()
+		await get_tree().process_frame
+		# shop UI via the real VillageShop path — the progression item's purchase surface
+		var smoke_shop = load("res://src/exploration/VillageShop.gd").new()
+		smoke_shop.shop_type = VillageShop.ShopType.BLACK_MAGIC
+		smoke_shop.shop_name = "The Arcanum"
+		add_child(smoke_shop)
+		smoke_shop._show_shop_menu(null)
+		await get_tree().create_timer(1.2).timeout
+		await _smoke_shot("shop")
+		if smoke_shop._shop_layer and is_instance_valid(smoke_shop._shop_layer):
+			smoke_shop._shop_layer.queue_free()
+		smoke_shop.queue_free()
+		await get_tree().create_timer(0.5).timeout
+		# cave, then battle FROM it — the scene that leaked under battle 2026-07-02
+		await _smoke_enter_map("whispering_cave")
+		await get_tree().create_timer(1.5).timeout
+		await _smoke_shot("cave")
+	await _start_battle_async(["goblin"], true)
+	await get_tree().create_timer(2.5).timeout
+	var xform := get_viewport().get_canvas_transform()
+	print("[SMOKE] canvas transform origin=%s scale=%s" % [str(xform.origin), str(xform.get_scale())])
+	if xform.origin != Vector2.ZERO:
+		_smoke_failed = true
+	await _smoke_shot("battle_smoke")
+	# auto-play only AFTER battle_smoke: with no input the party waits in PLAYER_SELECTING forever
+	for m in party:
+		if m and is_instance_valid(m) and "player_trust" in m:
+			m.player_trust = true
+	# the Select-key path — enabling autobattle alone leaves the already-open menu waiting on input
+	if current_scene and is_instance_valid(current_scene) and current_scene.has_method("_enable_all_autobattle"):
+		current_scene._enable_all_autobattle()
+	# the duel must wait for the live battle to end — a fixed sleep raced RNG-length battles
+	var _bwait := 0.0
+	while BattleManager.current_state != BattleManager.BattleState.INACTIVE and _bwait < 90.0:
+		await get_tree().create_timer(0.5).timeout
+		_bwait += 0.5
+	# a SILENT timeout here shot a live battle into both legs below and still printed PASS
+	if BattleManager.current_state != BattleManager.BattleState.INACTIVE:
+		print("[SMOKE] FAIL: battle still active after %.1fs — post_battle_return/duel_smoke show a live battle" % _bwait)
+		_smoke_failed = true
+	# dismiss victory and walk the battle→exploration seam — the gray-screen regression class
+	# repeat: a tutorial hint eats the first tap, so one tap left the victory panel up
+	var _battle_ref := current_scene
+	var _rwait := 0.0
+	while current_scene == _battle_ref and _rwait < 25.0:
+		_smoke_tap("ui_accept")
+		await get_tree().create_timer(1.0).timeout
+		_rwait += 1.0
+	if current_scene == _battle_ref:
+		print("[SMOKE] FAIL: still in the battle scene after %.0fs of dismiss taps — no exploration return" % _rwait)
+		_smoke_failed = true
+	await get_tree().create_timer(1.5).timeout
+	await _smoke_shot("post_battle_return")
+	if full:
+		# start_solo_battle REFUSES while a battle is live, and only push_warning'd about it
+		if BattleManager.current_state != BattleManager.BattleState.INACTIVE:
+			print("[SMOKE] FAIL: battle still live — solo duel will be refused, duel_smoke shows no duel")
+			_smoke_failed = true
+		# spotlight duel leg: trust the fighter so turns auto-play, capture mid-duel
+		for m in party:
+			if m and is_instance_valid(m) and "player_trust" in m:
+				m.player_trust = true
+		start_solo_battle("fighter", "fighter_skeleton_knight")
+		await get_tree().create_timer(4.0).timeout
+		await _smoke_shot("duel_smoke")
+		# game-over leg: force-resolve the duel, cripple the party, lose to a dragon
+		BattleManager.end_battle(true)
+		var _gwait := 0.0
+		while BattleManager.current_state != BattleManager.BattleState.INACTIVE and _gwait < 20.0:
+			await get_tree().create_timer(0.5).timeout
+			_gwait += 0.5
+		for m in party:
+			if m and is_instance_valid(m):
+				m.current_hp = 1
+		await _start_battle_async(["shadow_dragon"], true)
+		_gwait = 0.0
+		var game_over_node: Node = null
+		while game_over_node == null and _gwait < 30.0:
+			await get_tree().create_timer(0.5).timeout
+			_gwait += 0.5
+			for c in get_children():
+				if c is GameOverScreen:
+					game_over_node = c
+					break
+		if game_over_node == null:
+			print("[SMOKE] game_over screen never appeared within 30s")
+			_smoke_failed = true
+		else:
+			await get_tree().create_timer(1.0).timeout
+			await _smoke_shot("game_over", 0.97)
+	await get_tree().create_timer(0.2).timeout
+	print("[SMOKE] VERDICT: %s" % ("FAIL" if _smoke_failed else "PASS"))
+	get_tree().quit(1 if _smoke_failed else 0)
+
+
+var _smoke_failed: bool = false
+
+
+## raw key event — the overworld menu binds to physical keys, not an action
+func _smoke_key(keycode: int) -> void:
+	var ev := InputEventKey.new()
+	ev.keycode = keycode
+	ev.pressed = true
+	Input.parse_input_event(ev)
+	var up := InputEventKey.new()
+	up.keycode = keycode
+	up.pressed = false
+	Input.parse_input_event(up)
+
+
+## real InputEventAction pair — Input.action_press only sets poll-state and never reaches event handlers
+## Every map leg enters through here. _start_exploration BAILS while a battle owns the screen,
+## leaving the previous frame up — and the shot still saved "OK", so 13 legs went vacuous silently.
+func _smoke_enter_map(map_id: String) -> void:
+	_cutscene_cooldown = true
+	# A successful entry frees the old scene and instantiates a new one, so an
+	# UNCHANGED instance means _start_exploration returned early. Battle state is
+	# only one of its early returns; this catches the rest, and a map that fails
+	# to build at all. Without it the shot is silently of the previous map.
+	var before_id: int = current_scene.get_instance_id() if is_instance_valid(current_scene) else 0
+	_set_current_map_id(map_id)
+	await _start_exploration()
+	if BattleManager and BattleManager.current_state != BattleManager.BattleState.INACTIVE:
+		print("[SMOKE] FAIL: '%s' leg bailed — a live battle owns the screen, this shot is the previous frame" % map_id)
+		_smoke_failed = true
+	elif not is_instance_valid(current_scene) or current_scene.get_instance_id() == before_id:
+		print("[SMOKE] FAIL: '%s' leg built no new scene — _start_exploration returned early, this shot is the previous map" % map_id)
+		_smoke_failed = true
+
+
+func _smoke_tap(action: String) -> void:
+	var ev := InputEventAction.new()
+	ev.action = action
+	ev.pressed = true
+	Input.parse_input_event(ev)
+	var up := InputEventAction.new()
+	up.action = action
+	up.pressed = false
+	Input.parse_input_event(up)
+
+
+func _smoke_shot(shot_name: String, max_dominant: float = 0.92) -> void:
+	var img: Image = null
+	var dominant: float = 1.0
+	# a solid frame is usually a capture racing a scene fade — ride it out before calling it a void
+	for attempt in range(4):
+		img = get_viewport().get_texture().get_image()
+		if img == null or img.is_empty():
+			# headless has no viewport texture — smoke there is for log mining, not pixels
+			print("[SMOKE] %s skipped (no viewport texture — headless run)" % shot_name)
+			return
+		dominant = _dominant_color_ratio(img)
+		if dominant < max_dominant:
+			break
+		await get_tree().create_timer(0.7).timeout
+	var err := img.save_png("user://smoke/%s.png" % shot_name)
+	# past the cap = a void/black screen wearing a UI — the boot-canary class, but caught pre-deploy
+	var ok: bool = err == OK and dominant < max_dominant
+	if not ok:
+		_smoke_failed = true
+	print("[SMOKE] %s saved err=%d size=%s dominant=%.2f %s" % [shot_name, err, str(img.get_size()), dominant, "OK" if ok else "FAIL"])
+
+
+func _dominant_color_ratio(img: Image) -> float:
+	var counts: Dictionary = {}
+	var total: int = 0
+	for y in range(0, img.get_height(), 8):
+		for x in range(0, img.get_width(), 8):
+			var c: Color = img.get_pixel(x, y)
+			var key: int = (int(c.r * 15) << 8) | (int(c.g * 15) << 4) | int(c.b * 15)
+			counts[key] = int(counts.get(key, 0)) + 1
+			total += 1
+	var best: int = 0
+	for k in counts:
+		best = maxi(best, int(counts[k]))
+	return float(best) / float(maxi(1, total))
+
+
+func _connect_llm_breadcrumb() -> void:
+	"""R9: safe-connect to LLMService.inference_failed. Guards the singleton
+	(autoload may not exist if the subsystem is stripped) AND the signal (so a
+	future LLMService refactor that renames/drops it degrades to a no-op rather
+	than a crash). Idempotent — won't double-connect on a re-entrant call."""
+	var llm := get_node_or_null("/root/LLMService")
+	if not llm:
+		return
+	if not llm.has_signal("inference_failed"):
+		return
+	if not llm.inference_failed.is_connected(_on_llm_inference_failed):
+		llm.inference_failed.connect(_on_llm_inference_failed)
+	# Companion-success breadcrumb — symmetric to inference_failed.
+	if llm.has_signal("inference_succeeded") and not llm.inference_succeeded.is_connected(_on_llm_inference_succeeded):
+		llm.inference_succeeded.connect(_on_llm_inference_succeeded)
+
+
+func _on_llm_inference_failed(_mode: String, reason: String) -> void:
+	"""R9 (principle #7 — silent failures are worse than crashes): the FIRST
+	time dynamic dialogue falls back in a session, surface a brief, unobtrusive,
+	in-voice notice so the player knows scripted lines are a fallback, not a bug.
+	Latched to one-shot via _llm_notice_shown so repeated failures never spam.
+	Toast auto-dismisses (~2s hold + fade); no input is stolen.
+
+	Reason-aware gating: inference_failed is a BROAD telemetry signal emitted on
+	EVERY fallback — including per-response guard rejections (one refusal-pattern
+	line or one schema-invalid JSON) from a perfectly HEALTHY backend. Those are
+	NOT an outage: dynamic dialogue is available, one turn just fell back. Only
+	surface the "unavailable" breadcrumb for genuine backend-availability
+	failures; quiet otherwise (whitelist, so a future outage reason simply won't
+	toast rather than mis-toast as available)."""
+	const _AVAILABILITY_REASONS := ["no ready backend", "request failed or cancelled", "client_timeout"]
+	if reason not in _AVAILABILITY_REASONS:
+		return  # quiet: guard rejection from a working backend, not an outage
+	if _llm_notice_shown:
+		return
+	_llm_notice_shown = true
+	if current_state == LoopState.TITLE:
+		return  # Nothing dialogue-facing on the title screen — stay quiet there.
+	if Toast:
+		Toast.show(self, "Dynamic dialogue unavailable — falling back to scripted lines.", Toast.WARNING_COLOR)
+
+
+func _on_llm_inference_succeeded(_mode: String) -> void:
+	"""Companion to _on_llm_inference_failed: one-shot confirmation that the
+	LLM is alive in this session. Closes the telemetry loop for desktop+Ollama
+	players who otherwise can't tell scripted from dynamic dialogue."""
+	if _llm_success_notice_shown:
+		return
+	if current_state == LoopState.TITLE:
+		return
+	# defer (not consume) during battle presentation — first inference is often the boss's own dialogue, and the toast landed center-screen mid-duel
+	if BattleManager and BattleManager.current_state != BattleManager.BattleState.INACTIVE:
+		return
+	# boss INTRO dialogue runs before BattleManager arms — gate on the loop state too or the toast slips in pre-battle
+	if current_state == LoopState.BATTLE:
+		return
+	_llm_success_notice_shown = true
+	if Toast:
+		Toast.show(self, "Dynamic dialogue active.", Toast.SUCCESS_COLOR)
+
+
+## Helper for the EXPLORATION→BATTLE transition race that ticks 15/16
+## first caught. An encounter pushes 'encounter_transition' onto
+## InputLockManager and awaits ~0.5s of BattleTransition. During that
+## window current_state is still EXPLORATION, but opening any menu
+## puts it under the loading battle scene. Returns true ONLY for the
+## EXPLORATION + locked combination, so BATTLE-state dialogue locks
+## (which legitimately want to allow some hotkeys) aren't affected.
+##
+## Tick 79 extension: also true during area-transition fade-IN.
+## _transition_in_progress is set true at the start of
+## _on_area_transition and stays true until the match block clears
+## the fade-out. The 'area_transition_fade' InputLockManager lock
+## only covers fade-OUT (tick 77 — pushed after _start_exploration's
+## pop_all), so fade-IN previously slipped past callers that only
+## checked InputLockManager. Now F5/F6/Select autobattle inputs are
+## blocked across the entire fade window, not just fade-out.
+func _in_exploration_transition() -> bool:
+	if current_state != LoopState.EXPLORATION:
+		return false
+	if _transition_in_progress:
+		return true
+	return InputLockManager != null and InputLockManager.is_locked()
+
 
 func _input(event: InputEvent) -> void:
+	# F12 screenshot — always available, any state
+	if event is InputEventKey and event.pressed and not event.is_echo() and event.keycode == KEY_F12:
+		_take_screenshot()
+		get_viewport().set_input_as_handled()
+		return
+
+	# F8 feedback bundle — screenshot + log + save + state, one file a tester can send back
+	if event is InputEventKey and event.pressed and not event.is_echo() and event.keycode == KEY_F8:
+		_write_feedback_bundle()
+		get_viewport().set_input_as_handled()
+		return
+
+	# Controls reference — always available, any state, toggles. F1 on keyboard, R3 on a pad:
+	# R3 is the only button free in the whole InputMap, and a controller-only player otherwise
+	# has NO route to the one screen that tells them what the buttons do.
+	if event is InputEventKey and event.pressed and not event.is_echo() and event.keycode == KEY_F1:
+		_toggle_help_overlay()
+		get_viewport().set_input_as_handled()
+		return
+	if event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_RIGHT_STICK:
+		_toggle_help_overlay()
+		get_viewport().set_input_as_handled()
+		return
+
+	# F2 quick-save / F3 quick-load — global hotkeys, any in-game state.
+	# Skipped during title screen, character creation, and active battles
+	# (SaveSystem.can_quick_save also enforces no-battle, but we early-exit
+	# here too so the toast doesn't try to flash mid-cutscene).
+	# Added 2026-05-03 per QOL audit.
+	if event is InputEventKey and event.pressed and not event.is_echo():
+		# F2 quick-save is blocked during CUTSCENE state (Spotlight Duels
+		# spec, cowir-main msg 1964): mid-cutscene captures an ambiguous
+		# state because the cutscene now embeds a battle step. SaveSystem.
+		# can_quick_save() also gates on cutscene state (belt + suspenders
+		# so a stray call from anywhere else in the tree hits the same
+		# defense).
+		if event.keycode == KEY_F2 and current_state != LoopState.TITLE and current_state != LoopState.CUTSCENE and not _character_creation_screen:
+			_quick_save_with_toast()
+			get_viewport().set_input_as_handled()
+			return
+		if event.keycode == KEY_F3 and current_state != LoopState.TITLE and current_state != LoopState.CUTSCENE and not _character_creation_screen:
+			_quick_load_with_toast()
+			get_viewport().set_input_as_handled()
+			return
+
 	# Block input handling during title screen or character creation
 	if current_state == LoopState.TITLE or _character_creation_screen:
 		return
@@ -164,6 +855,11 @@ func _input(event: InputEvent) -> void:
 				_autogrind_controller.cycle_tier()
 			get_viewport().set_input_as_handled()
 			return
+		# P key toggles pause/resume
+		if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_P:
+			_toggle_autogrind_pause()
+			get_viewport().set_input_as_handled()
+			return
 		# L+R shoulder together cycles tier
 		if event is InputEventJoypadButton and event.pressed:
 			if event.button_index == JOY_BUTTON_LEFT_SHOULDER or event.button_index == JOY_BUTTON_RIGHT_SHOULDER:
@@ -176,25 +872,92 @@ func _input(event: InputEvent) -> void:
 
 	# F5 = Open autobattle editor for current/first player
 	if event is InputEventKey and event.pressed and event.keycode == KEY_F5:
+		if _in_exploration_transition():
+			get_viewport().set_input_as_handled()
+			return
 		_toggle_autobattle_editor()
 		get_viewport().set_input_as_handled()
 
 	# F6 or Select button = Toggle autobattle for ALL players
 	if event is InputEventKey and event.pressed and event.keycode == KEY_F6:
+		if _in_exploration_transition():
+			get_viewport().set_input_as_handled()
+			return
 		_toggle_all_autobattle()
 		get_viewport().set_input_as_handled()
 
 	# Gamepad Select button (button 4 on most controllers)
-	if event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_BACK:
-		_toggle_all_autobattle()
-		get_viewport().set_input_as_handled()
-
-	# Start button = Open autobattle editor for current deciding player
-	# Only when editor is not already open (editor handles its own Start to close)
-	if not _autobattle_editor or not is_instance_valid(_autobattle_editor):
-		if event.is_action_pressed("ui_menu"):
-			_toggle_autobattle_editor()
+	# IMPORTANT: skip in BATTLE state — BattleScene._input has its own
+	# battle_toggle_auto handler that fires on the same Minus press, and
+	# BOTH firing means GameLoop toggles ON→OFF then BattleScene sees OFF
+	# and toggles back to ON. Net effect: nothing. (Audit-fix 2026-05-04
+	# for the persistent "I press Minus, autobattle stays on" bug.)
+	# Block when autogrind UI is open — don't toggle autobattle behind it.
+	# Action, not raw BACK: a Controls rebind moves battle_toggle_auto and this must follow it.
+	if event is InputEventJoypadButton and event.is_action_pressed("battle_toggle_auto"):
+		if _autogrind_ui and is_instance_valid(_autogrind_ui):
 			get_viewport().set_input_as_handled()
+		elif current_state == LoopState.BATTLE:
+			# Pass through — BattleScene._input handles it
+			pass
+		elif _in_exploration_transition():
+			get_viewport().set_input_as_handled()
+		else:
+			_toggle_all_autobattle()
+			get_viewport().set_input_as_handled()
+
+	# Start button = context-dependent:
+	# - Autogrind UI open: consumed here so AutogrindUI handles it (toggle grinding)
+	# - In battle: SMART — if autobattle is currently ON for any character,
+	#   disable it (matches user expectation that pressing the obvious button
+	#   stops the auto-fighting). If autobattle is OFF, open the editor (the
+	#   pre-2026-05-03 behavior, preserved so existing tutorial hints and
+	#   NPC dialogue references stay accurate).
+	#   User feedback: "I pressed start/select etc. and I didn't auto battle
+	#   disable" — pressing Plus expecting toggle, but it opened the editor
+	#   instead with no obvious way to disable from there.
+	# - In exploration/village/cave: open settings menu
+	if event.is_action_pressed("ui_menu"):
+		if _autogrind_ui and is_instance_valid(_autogrind_ui):
+			# Let AutogrindUI._input handle Start → toggle grinding
+			# Do NOT consume input here — AutogrindUI needs to see it
+			pass
+		elif current_state == LoopState.BATTLE:
+			# Escape is BACK, never OPEN (struktured 2026-08-30). It binds ui_menu as well as
+			# ui_cancel, so it was opening the autobattle editor mid-fight — which his artist
+			# read as a pause menu he could not escape. Start still opens it.
+			if event is InputEventKey and event.keycode == KEY_ESCAPE:
+				return
+			if not _autobattle_editor or not is_instance_valid(_autobattle_editor):
+				# Decide: toggle off if any party has autobattle on, else open editor
+				var any_auto_on := false
+				for member in party:
+					var char_id: String = member.combatant_name.to_lower().replace(" ", "_")
+					if AutobattleSystem.is_autobattle_enabled(char_id):
+						any_auto_on = true
+						break
+				if any_auto_on:
+					_toggle_all_autobattle()  # disables (since any was on)
+				else:
+					_toggle_autobattle_editor()
+				get_viewport().set_input_as_handled()
+		elif current_state == LoopState.EXPLORATION:
+			# Escape belongs to the overworld menu (x_pressed block below).
+			# ui_menu ALSO binds it, so one press opened Settings stacked
+			# OVER the overworld menu (web-smoke stage-3 find 2026-07-11).
+			if event is InputEventKey and event.keycode == KEY_ESCAPE:
+				pass
+			else:
+				# Block during battle transition (encounter fired but state
+				# hasn't flipped to BATTLE yet — that flip happens after the
+				# transition await in _on_exploration_battle_triggered, so
+				# raw state-check leaves a ~0.5s window where Start would
+				# open settings UNDER the loading battle scene).
+				if InputLockManager and InputLockManager.is_locked():
+					get_viewport().set_input_as_handled()
+					return
+				_open_settings_menu()
+				get_viewport().set_input_as_handled()
 
 	# X key or gamepad X/Y button = Open overworld menu (only in exploration mode)
 	# Note: JOY_BUTTON_X=2 (Xbox X), JOY_BUTTON_Y=3 (Xbox Y) - support both for different controllers
@@ -210,8 +973,100 @@ func _input(event: InputEvent) -> void:
 
 	if x_pressed:
 		if current_state == LoopState.EXPLORATION and not _overworld_menu:
+			# Same race as the Start→settings guard above: an
+			# encounter-transition holds the lock but current_state is
+			# still EXPLORATION until _start_battle_async flips it.
+			# Opening the overworld menu in that window puts it under
+			# the loading battle scene.
+			if InputLockManager and InputLockManager.is_locked():
+				get_viewport().set_input_as_handled()
+				return
+			# Tick 78: also block menu open during area-transition fade-IN.
+			# _transition_in_progress is true from the moment a transition
+			# starts until the fade-out finishes. Without this gate, the
+			# player can press Esc mid-fade-in — pausing the OLD scene
+			# that's about to be freed by _start_exploration, while the
+			# NEW scene runs unpaused behind the menu overlay.
+			if _transition_in_progress:
+				get_viewport().set_input_as_handled()
+				return
 			_open_overworld_menu()
 			get_viewport().set_input_as_handled()
+
+	# L shoulder / L key = open Party Chat menu (exploration only, opt-in flavor cutscenes)
+	if event.is_action_pressed("party_chat"):
+		if current_state == LoopState.EXPLORATION and not _party_chat_menu and not _overworld_menu:
+			if InputLockManager and InputLockManager.is_locked():
+				get_viewport().set_input_as_handled()
+				return
+			if _transition_in_progress:
+				get_viewport().set_input_as_handled()
+				return
+			if PartyChatSystem and PartyChatSystem.has_available_chats():
+				_open_party_chat_menu()
+				get_viewport().set_input_as_handled()
+
+
+## struktured 2026-08-25: "what about 'panicky mouse' buttons auto popping it up too".
+## _unhandled_input receives ONLY events nothing consumed — so a click arriving here IS, by
+## definition, a click the game did not answer. That needs no intent heuristic: clicking fast
+## through dialogue or the grid editor is HANDLED and never counts, so it cannot false-positive.
+const PANIC_CLICK_COUNT: int = 4
+const PANIC_CLICK_WINDOW_S: float = 2.0
+var _panic_clicks: Array = []
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if not (event is InputEventMouseButton) or not event.pressed:
+		return
+	if _help_overlay and is_instance_valid(_help_overlay):
+		return
+	var now: float = Time.get_ticks_msec() / 1000.0
+	_panic_clicks.append(now)
+	while _panic_clicks.size() > 0 and now - float(_panic_clicks[0]) > PANIC_CLICK_WINDOW_S:
+		_panic_clicks.remove_at(0)
+	if _panic_clicks.size() >= PANIC_CLICK_COUNT:
+		_panic_clicks.clear()
+		_toggle_help_overlay()
+
+
+## F1 from anywhere. Layer 130 is deliberately above every other overlay in this file
+## (max was 128) so the reference is readable even when something else has wedged on top.
+func _toggle_help_overlay() -> void:
+	if _help_overlay and is_instance_valid(_help_overlay):
+		_close_help_overlay()
+		return
+	_help_layer = CanvasLayer.new()
+	_help_layer.layer = 130
+	add_child(_help_layer)
+	# load() not the class_name, matching every other overlay in this file
+	var HowToPlayOverlayClass = load("res://src/ui/HowToPlayOverlay.gd")
+	_help_overlay = HowToPlayOverlayClass.new()
+	_help_layer.add_child(_help_overlay)
+	if _help_overlay.has_signal("closed"):
+		_help_overlay.closed.connect(_close_help_overlay)
+
+
+func _close_help_overlay() -> void:
+	if _help_overlay and is_instance_valid(_help_overlay):
+		_help_overlay.queue_free()
+	_help_overlay = null
+	if _help_layer and is_instance_valid(_help_layer):
+		_help_layer.queue_free()
+	_help_layer = null
+
+
+## True while a finished battle is still showing its results. struktured 2026-08-24 wedged himself
+## by opening the autobattle editor over the victory screen: the editor's close path restores the
+## COMMAND MENU, which an ended battle no longer has, so there was nothing left to escape to.
+func _battle_results_are_showing() -> bool:
+	if current_state != LoopState.BATTLE:
+		return false
+	if current_scene == null or not is_instance_valid(current_scene):
+		return false
+	if current_scene.get_node_or_null("VictoryResults") != null:
+		return true
+	return bool(current_scene.get("_battle_ended"))
 
 
 func _toggle_autobattle_editor() -> void:
@@ -233,6 +1088,13 @@ func _toggle_autobattle_editor() -> void:
 			_exploration_scene.resume()
 		SoundManager.play_ui("autobattle_close")
 		print("Autobattle editor closed (saved)")
+		return
+
+	## OPEN only — the close branch above returns before this, so an already-open editor can
+	## always be dismissed. Gating close as well would replace one trap with another.
+	if _battle_results_are_showing():
+		if SoundManager:
+			SoundManager.play_ui("menu_error")
 		return
 
 	# Pause exploration while editor is open (no encounters)
@@ -270,6 +1132,10 @@ func _toggle_autobattle_editor() -> void:
 	_autobattle_editor.setup(char_id, char_name, combatant, party)  # Pass party for R to cycle
 	_autobattle_editor.closed.connect(_on_autobattle_editor_closed)
 	SoundManager.play_ui("autobattle_open")
+	# Fire the catalog's authored autobattle intro hint on first open per save.
+	if not _autobattle_editor_ever_opened:
+		_autobattle_editor_ever_opened = true
+		TutorialHints.show(self, "autobattle_intro")
 	print("Autobattle editor opened for %s (R to switch character, Start to save & exit)" % char_name)
 
 
@@ -286,7 +1152,13 @@ func _set_battle_menu_visible(visible: bool) -> void:
 
 
 func _toggle_all_autobattle() -> void:
-	"""Toggle autobattle for ALL party members at once"""
+	"""Toggle the GLOBAL/STICKY autobattle state for all party members.
+	Persists across turns AND across battles AND in the overworld.
+	(Per user feedback 2026-05-03: 'Minus button = enable for all players,
+	continues for future turns including future battles. Pressing - in
+	the overworld should also disable autobattle.')
+
+	Distinct from the per-character menu 'Auto' pick which is one-shot."""
 	if party.size() == 0:
 		return
 
@@ -304,12 +1176,49 @@ func _toggle_all_autobattle() -> void:
 		var char_id = member.combatant_name.to_lower().replace(" ", "_")
 		AutobattleSystem.set_autobattle_enabled(char_id, new_state)
 
+	# Also clear the queue side-effects so the toggle is INSTANT.
+	# Without this, when toggling OFF mid-execution the already-queued
+	# autobattle actions kept playing through the current round before
+	# the user could regain manual control.
+	if not new_state:
+		AutobattleSystem.cancel_all_next_turn = false
+		# Strip player actions from the queue. Keep enemy actions —
+		# clearing them would stall the round.
+		if BattleManager and BattleManager.has_method("clear_pending_player_actions"):
+			BattleManager.clear_pending_player_actions()
+	else:
+		# Enabling: if a player is currently in PLAYER_SELECTING, kick off
+		# their autobattle decision immediately so they don't sit waiting
+		# for manual input. Mirrors the BattleScene._enable_all_autobattle
+		# behavior so the AUTO button click feels identical to pressing
+		# Minus on the gamepad. (Audit 2026-05-04 consistency fix.)
+		if BattleManager and BattleManager.current_state == BattleManager.BattleState.PLAYER_SELECTING:
+			if BattleManager.has_method("execute_autobattle_for_current"):
+				BattleManager.execute_autobattle_for_current()
+
 	var status = "ON" if new_state else "OFF"
 	if new_state:
 		SoundManager.play_ui("autobattle_on")
 	else:
 		SoundManager.play_ui("autobattle_off")
 	print("[AUTOBATTLE] All party members: %s (F6/Select to toggle)" % status)
+	# Visual feedback Toast — works in overworld AND battle (battle scene
+	# also has its own log_message but the Toast is more discoverable).
+	# Only show in non-battle states; in battle the existing log_message
+	# from _enable_all_autobattle / _cancel_all_autobattle is enough.
+	if current_state != LoopState.BATTLE:
+		var msg = "Autobattle: %s" % status
+		if Toast:
+			if new_state:
+				Toast.show_success(self, msg)
+			else:
+				Toast.show_warning(self, msg)
+	# Live-refresh the OverworldMenu label if it's open. Without this, the
+	# user could open the menu, hit Minus to toggle, and the menu label
+	# would stay stale until reopened. Audit-fix 2026-05-04.
+	if _overworld_menu and is_instance_valid(_overworld_menu) \
+			and _overworld_menu.has_method("refresh_autobattle_label"):
+		_overworld_menu.refresh_autobattle_label()
 
 
 func _on_autobattle_editor_closed() -> void:
@@ -328,22 +1237,42 @@ func _on_autobattle_editor_closed() -> void:
 
 
 func _sync_party_to_game_state() -> void:
-	"""Sync runtime Combatant party into GameState.player_party for leader lookup"""
+	"""Sync runtime Combatant party into GameState.player_party for menus + saving.
+
+	Bug fix (2026-04-30): previously this synthesized a 5-field dict
+	(name + job_id + equipment IDs only). When SaveSystem serialized
+	GameState.player_party, all level/HP/MP/EXP/abilities were lost.
+	On load, _create_party() then constructed fresh defaults from scratch,
+	silently resetting every saved character to level 1 / starter gear.
+
+	Now uses Combatant.to_dict() (which was also expanded today) so the
+	full character state survives save → load cycles. Companion change:
+	GameLoop.gd added _restore_party_from_save_data() which reconstructs
+	live Combatants from this dict array and is wired into the load paths.
+	"""
+	# 2026-07-15 playtest: during a spotlight duel `party` is the transient [duelist] — a save fired in that window wrote a 1-member roster (autosave slot poisoned, later crash when the Mage duel found no Mage). Sync from the saved full roster instead; the duelist Combatant is the SAME instance in both arrays (shallow duplicate), so its live HP/EXP still serialize.
+	var roster: Array = party
+	if _spotlight_duel_active and not _spotlight_saved_party.is_empty():
+		roster = _spotlight_saved_party
 	GameState.player_party.clear()
-	for member in party:
-		var job_id = "fighter"
-		if member.job and member.job is Dictionary:
-			job_id = member.job.get("id", "fighter")
-		GameState.player_party.append({"job_id": job_id, "name": member.combatant_name})
+	for member in roster:
+		if not is_instance_valid(member) or not (member is Combatant):
+			continue
+		GameState.player_party.append(member.to_dict())
 	# Clamp leader index in case party size changed
 	if not GameState.player_party.is_empty():
 		GameState.party_leader_index = clampi(GameState.party_leader_index, 0, GameState.player_party.size() - 1)
+	# Shared equipment pool: shop/chest/battle drops all land in the live
+	# GameLoop store, which was never serialized — every earned drop was
+	# lost on reload. One-way push; the load path is the only reader.
+	GameState.equipment_pool = equipment_pool.duplicate(true)
 
 
 func _open_overworld_menu() -> void:
 	"""Open the overworld/pause menu"""
 	if _overworld_menu and is_instance_valid(_overworld_menu):
 		return  # Already open
+	print("[MENU] Overworld menu opened")  # web-smoke sync point — stage 3 retries Escape until this line lands
 
 	# Sync party data into GameState so leader cycling has job info
 	_sync_party_to_game_state()
@@ -351,6 +1280,9 @@ func _open_overworld_menu() -> void:
 	# Pause exploration
 	if _exploration_scene and _exploration_scene.has_method("pause"):
 		_exploration_scene.pause()
+	_set_field_hud_hidden(true)
+	if _day_clock:
+		_day_clock.set_menu_open(true)
 
 	# Create menu in CanvasLayer
 	_overworld_menu_layer = CanvasLayer.new()
@@ -365,16 +1297,23 @@ func _open_overworld_menu() -> void:
 	_overworld_menu.closed.connect(_on_overworld_menu_closed)
 	_overworld_menu.menu_action.connect(_on_overworld_menu_action)
 	_overworld_menu.quit_to_title.connect(_on_quit_to_title)
+	if _overworld_menu.has_signal("start_boss_battle"):
+		_overworld_menu.start_boss_battle.connect(_on_settings_boss_battle)
 	if _overworld_menu.has_signal("teleport_requested"):
 		_overworld_menu.teleport_requested.connect(_on_teleport_requested)
 	if _overworld_menu.has_signal("party_leader_changed"):
 		_overworld_menu.party_leader_changed.connect(_on_party_leader_changed)
 	SoundManager.play_ui("menu_open")
+	# Snapshot underlying music, swap to the pause-menu theme ("Paused, Somewhere Else").
+	# Restore in _on_overworld_menu_closed, guarded against underlying swaps.
+	if SoundManager:
+		_pre_menu_music_state = SoundManager.capture_music_state()
+		SoundManager.play_music("menu")
 	print("Overworld menu opened")
 
 
-func _on_overworld_menu_closed() -> void:
-	"""Handle overworld menu close"""
+func _teardown_overworld_menu_widget() -> void:
+	"""Free the OverworldMenu widget + its CanvasLayer WITHOUT resuming exploration. Use this from menu-action handlers that will immediately open a submenu (autobattle editor, autogrind UI, etc.) — else the brief resume-then-repause lets the player move for one frame ("artist saw overworld went live" 2026-07-13). Music restore ALSO happens here (bug 2801: multiple exit paths — teleport / boss battle / quit-to-title / menu action → submenu — all reach teardown but bypassed the closed-signal, so menu music persisted forever)."""
 	if _overworld_menu and is_instance_valid(_overworld_menu):
 		_overworld_menu.queue_free()
 		_overworld_menu = null
@@ -382,7 +1321,146 @@ func _on_overworld_menu_closed() -> void:
 		_overworld_menu_layer.queue_free()
 		_overworld_menu_layer = null
 
+	# Music restore from EVERY exit path (bug 2801). Two-stage design after
+	# cowir-main msg 2829: if menu music is still playing at teardown, get
+	# OFF menu no matter what. Snapshot preferred (msg 2687 guard against
+	# underneath swaps), scene-derived key as fallback so "menu" can't
+	# persist even when the snapshot was lost. Clear runs unconditionally.
+	if SoundManager and SoundManager._current_music == "menu":
+		SoundManager.restore_music_state(_pre_menu_music_state)
+		if SoundManager._current_music == "menu":
+			# Restore no-oped (empty/not-playing snapshot) — bug 2801's second stage still applies.
+			var fallback: String = _derive_current_scene_music_key()
+			if fallback != "":
+				# AREA key, not a track name — play_music("village") has no case and warns "Unknown music track", leaving the menu bed to bleed into the overworld (struktured 2026-07-25). play_area_music resolves village/interior_*/overworld properly.
+				SoundManager.play_area_music(fallback)
+	_pre_menu_music_state = {}
+
+
+func _derive_current_scene_music_key() -> String:
+	"""Ask the current exploration scene what music key it wants — the
+	fallback for bug 2801 when the pause-menu snapshot was lost. Tries the
+	BaseVillage convention first (_get_music_area_id), then the BaseInterior
+	convention (_get_music_track), then the OverworldScene hardcoded default.
+	Returns "" only if _exploration_scene is null/freed, in which case the
+	caller leaves menu playing (nothing sensible to swap to)."""
+	if _exploration_scene == null or not is_instance_valid(_exploration_scene):
+		return ""
+	if _exploration_scene.has_method("_get_music_area_id"):
+		var key: String = str(_exploration_scene._get_music_area_id())
+		if key != "":
+			return key
+	if _exploration_scene.has_method("_get_music_track"):
+		var key: String = str(_exploration_scene._get_music_track())
+		if key != "":
+			return key
+	return "overworld"
+
+
+func _on_overworld_menu_closed() -> void:
+	"""Handle overworld menu close — teardown + resume exploration. Called when user backs out to the field (no submenu follows). Music restore lives inside _teardown_overworld_menu_widget so every exit path catches it, not just this one."""
+	_teardown_overworld_menu_widget()
+
 	# Resume exploration
+	if _exploration_scene and _exploration_scene.has_method("resume"):
+		_exploration_scene.resume()
+	_set_field_hud_hidden(false)
+	if _day_clock:
+		_day_clock.set_menu_open(false)
+	_flush_chat_toasts()
+
+
+## Field-HUD props on exploration scenes; each is either a CanvasItem or a Node wrapping a _canvas CanvasLayer (minimap/tracker/arrows all sit on layers ABOVE the menu's 50).
+const _FIELD_HUD_PROPS := ["_minimap", "_quest_tracker", "_objective_arrow", "_border_indicator", "_threat_meter", "_danger_zone"]
+
+
+func _set_field_hud_hidden(hidden: bool) -> void:
+	# JRPG convention: field HUD must not paint over the pause menu — the quest tracker covered the PARTY header and the objective arrow crossed the Mage row (web-smoke stage-3 find 2026-07-11).
+	if not hidden:
+		for n in _menu_hidden_hud:
+			if n and is_instance_valid(n):
+				n.visible = true
+		_menu_hidden_hud.clear()
+		return
+	_menu_hidden_hud.clear()
+	if _exploration_scene == null or not is_instance_valid(_exploration_scene):
+		return
+	for prop in _FIELD_HUD_PROPS:
+		if not (prop in _exploration_scene):
+			continue
+		var w = _exploration_scene.get(prop)
+		if w == null or (w is Object and not is_instance_valid(w)):
+			continue
+		var target = null
+		if w is CanvasItem or w is CanvasLayer:
+			target = w
+		elif w is Node and "_canvas" in w and w._canvas is CanvasLayer:
+			target = w._canvas
+		if target and is_instance_valid(target) and target.visible:
+			target.visible = false
+			_menu_hidden_hud.append(target)
+
+
+## Party Chat helpers
+
+func _ensure_party_chat_indicator() -> void:
+	"""Show the [L] Party Chat indicator in exploration if any chats are available."""
+	if current_state != LoopState.EXPLORATION:
+		_remove_party_chat_indicator()
+		return
+	if not PartyChatSystem:
+		return
+	# Only mount when needed; the indicator hides itself when empty
+	if _party_chat_indicator and is_instance_valid(_party_chat_indicator):
+		return
+	_party_chat_indicator_layer = CanvasLayer.new()
+	_party_chat_indicator_layer.layer = 45
+	add_child(_party_chat_indicator_layer)
+	var IndicatorScript = load("res://src/ui/PartyChatIndicator.gd")
+	_party_chat_indicator = IndicatorScript.new()
+	_party_chat_indicator_layer.add_child(_party_chat_indicator)
+	## Tick 470: mouse-click on the indicator opens the chat menu,
+	## mirroring the party_chat action (L key / gamepad button). Gated
+	## the same way as the input path so a click with no available
+	## chats is a no-op instead of an empty menu.
+	if _party_chat_indicator.has_signal("clicked"):
+		_party_chat_indicator.clicked.connect(func():
+			if current_state == LoopState.EXPLORATION and not _party_chat_menu and not _overworld_menu \
+					and PartyChatSystem and PartyChatSystem.has_available_chats():
+				_open_party_chat_menu())
+
+
+func _remove_party_chat_indicator() -> void:
+	if _party_chat_indicator and is_instance_valid(_party_chat_indicator):
+		_party_chat_indicator.queue_free()
+	_party_chat_indicator = null
+	if _party_chat_indicator_layer and is_instance_valid(_party_chat_indicator_layer):
+		_party_chat_indicator_layer.queue_free()
+	_party_chat_indicator_layer = null
+
+
+func _open_party_chat_menu() -> void:
+	if _party_chat_menu and is_instance_valid(_party_chat_menu):
+		return
+	if _exploration_scene and _exploration_scene.has_method("pause"):
+		_exploration_scene.pause()
+	_party_chat_menu_layer = CanvasLayer.new()
+	_party_chat_menu_layer.layer = 60
+	add_child(_party_chat_menu_layer)
+	var MenuScript = load("res://src/ui/PartyChatMenu.gd")
+	_party_chat_menu = MenuScript.new()
+	_party_chat_menu_layer.add_child(_party_chat_menu)
+	_party_chat_menu.closed.connect(_on_party_chat_closed)
+	SoundManager.play_ui("menu_open")
+
+
+func _on_party_chat_closed(_played_id: String) -> void:
+	if _party_chat_menu and is_instance_valid(_party_chat_menu):
+		_party_chat_menu.queue_free()
+	_party_chat_menu = null
+	if _party_chat_menu_layer and is_instance_valid(_party_chat_menu_layer):
+		_party_chat_menu_layer.queue_free()
+	_party_chat_menu_layer = null
 	if _exploration_scene and _exploration_scene.has_method("resume"):
 		_exploration_scene.resume()
 
@@ -427,18 +1505,39 @@ func _on_quit_to_title() -> void:
 	_show_title_screen()
 
 
+func _on_settings_boss_battle(boss_id: String) -> void:
+	"""Handle boss battle request from settings debug menu"""
+	print("[GAME] Debug fight boss: %s" % boss_id)
+	if _overworld_menu and is_instance_valid(_overworld_menu):
+		_overworld_menu.queue_free()
+		_overworld_menu = null
+	if _overworld_menu_layer and is_instance_valid(_overworld_menu_layer):
+		_overworld_menu_layer.queue_free()
+		_overworld_menu_layer = null
+	current_state = LoopState.EXPLORATION
+	_start_battle_async([boss_id], false)
+
+
 func _on_overworld_menu_action(action: String, target: Combatant) -> void:
 	"""Handle menu action from overworld menu"""
 	match action:
 		"autobattle":
-			# Close menu first, then open autobattle editor
-			_on_overworld_menu_closed()
+			# Teardown widget only — do NOT resume exploration. Autobattle editor pauses again immediately; the old close-plus-resume path let the player move for one frame between resume and re-pause.
 			if target:
+				_teardown_overworld_menu_widget()
 				var char_id = target.combatant_name.to_lower().replace(" ", "_")
 				_open_autobattle_for_character(char_id, target.combatant_name, target)
+			else:
+				# No target = no editor will follow — degrade to a plain close, else the player is stranded paused with no UI (menu gone, lock heartbeating forever).
+				_on_overworld_menu_closed()
+		"autobattle_toggle":
+			# Sticky global toggle from overworld menu (mouse path,
+			# matches Minus button behavior). Toast feedback comes from
+			# _toggle_all_autobattle itself when not in BATTLE state.
+			_toggle_all_autobattle()
 		"autogrind":
-			# Close menu first, then open autogrind config UI
-			_on_overworld_menu_closed()
+			# Teardown widget only — do NOT resume exploration; autogrind UI pauses again.
+			_teardown_overworld_menu_widget()
 			_open_autogrind_ui()
 
 
@@ -496,6 +1595,7 @@ func _show_title_screen() -> void:
 	# Connect signals
 	_title_screen.new_game_selected.connect(_on_title_new_game)
 	_title_screen.continue_selected.connect(_on_title_continue)
+	_title_screen.load_selected.connect(_on_title_load)
 	_title_screen.settings_selected.connect(_on_title_settings)
 
 	print("[GAME] Showing title screen")
@@ -511,21 +1611,736 @@ func _close_title_screen() -> void:
 		_title_layer = null
 
 
+## Cutscene system
+var _cutscene_director: Node = null
+
 func _on_title_new_game() -> void:
 	"""Handle new game selected from title screen"""
 	print("[GAME] New Game selected")
 	_close_title_screen()
-	# Show character creation for new game
-	_show_character_creation()
+	# Wait for title screen to actually be removed before starting
+	await get_tree().process_frame
+	await get_tree().process_frame
+	# Clear autobattle state for new game — default to manual combat
+	AutobattleSystem.autobattle_enabled.clear()
+	AutobattleSystem.cancel_all_next_turn = false
+	BattleManager.is_autobattle_enabled = false
+	# Per-RUN gameplay settings reset (struktured 2026-07-11: "started a new
+	# game, battle speed was 16x, encounter rate 50%... prob not the right
+	# choice"). System settings (volumes, text, accessibility) persist;
+	# run-pacing choices start fresh.
+	if GameState:
+		GameState.default_battle_speed = 0.25
+		GameState.encounter_rate_multiplier = 1.0
+	var BattleSceneScript = load("res://src/battle/BattleScene.gd")
+	BattleSceneScript._battle_speed_index = 0
+	if SaveSystem and SaveSystem.has_method("save_settings"):
+		SaveSystem.save_settings()
+	# Wipe persistent GameState so a fresh playthrough doesn't inherit
+	# story flags / unlocked worlds / meta features from the prior session.
+	# Bug fix (2026-04-30): pre-fix, New Game on a save where you'd beaten
+	# the game would still show all 6 worlds unlocked and skip the prologue
+	# (since cutscene_flag_prologue_complete persisted in story_flags).
+	if GameState and GameState.has_method("reset_game_state"):
+		GameState.reset_game_state()
+	# Skip character creation — use default party (fighter/cleric/rogue/mage)
+	_create_party()
+	# Go straight to exploration — prologue triggers on first Theron interaction
+	_set_current_map_id("overworld")
+	_start_exploration()
+
+
+## Lazy accessor — CutsceneDirector is GameLoop-owned, NOT an autoload (QuestSystem's cutscene_on_complete flush + both internal lazy-create sites route here).
+func get_cutscene_director() -> CutsceneDirector:
+	if not _cutscene_director:
+		_cutscene_director = CutsceneDirector.new()
+		add_child(_cutscene_director)
+	return _cutscene_director
+
+
+func _play_new_game_cutscenes() -> void:
+	"""Play prologue cutscene on new game, then start exploration."""
+	current_state = LoopState.CUTSCENE
+	if not _cutscene_director:
+		_cutscene_director = CutsceneDirector.new()
+		add_child(_cutscene_director)
+	_cutscene_director.cutscene_finished.connect(_on_prologue_finished, CONNECT_ONE_SHOT)
+	_cutscene_director.play_cutscene("world1_prologue")
+
+
+func _on_prologue_finished(_cutscene_id: String) -> void:
+	"""After prologue, chain into chapter1 (Elder Theron briefing)."""
+	# This path plays cutscenes DIRECTLY, so it must set the completion flags itself — _play_story_cutscene is the only other place that does, and it isn't involved here (2026-07-25: prologue replayed on every harmonia_village entry forever).
+	_mark_story_cutscene_complete("world1_prologue")
+	_cutscene_director.cutscene_finished.connect(_on_chapter1_finished, CONNECT_ONE_SHOT)
+	_cutscene_director.play_cutscene("world1_chapter1")
+
+
+func _on_chapter1_finished(_cutscene_id: String) -> void:
+	"""After chapter1 briefing, start exploration."""
+	_mark_story_cutscene_complete("world1_chapter1")
+	current_state = LoopState.EXPLORATION
+	_start_exploration()
+
+
+## Sets a cutscene's completion flag from _CUTSCENE_COMPLETION_FLAGS. Shared by the new-game chain and _play_story_cutscene so a cutscene can never complete without its gate closing.
+func _mark_story_cutscene_complete(cutscene_id: String) -> void:
+	var completion_flag: String = _CUTSCENE_COMPLETION_FLAGS.get(cutscene_id, "")
+	if completion_flag == "":
+		push_warning("[GameLoop] '%s' missing from _CUTSCENE_COMPLETION_FLAGS — flag NOT set, it will replay on the next gate check (loop bug)" % cutscene_id)
+		return
+	_set_cutscene_flag_and_mirror(completion_flag)
+	print("[CUTSCENE] %s complete → set flag %s" % [cutscene_id, completion_flag])
+
+
+func check_pending_cutscene() -> void:
+	# One at a time: pending checks fired while a scene was ALREADY playing double-played it (the completion flag only lands at the end).
+	if _cutscene_director and is_instance_valid(_cutscene_director) and "_active" in _cutscene_director and _cutscene_director._active:
+		return
+	"""Public: called by NPCs after setting story flags to trigger pending cutscenes."""
+	var pending = _get_pending_story_cutscene()
+	if pending != "":
+		## Tick 401: Skiptrotter skip_cutscene meta_effect sets the
+		## meta_skip_next_cutscene flag. Consume it here by writing the
+		## cutscene's completion flag (so it doesn't replay) and
+		## skipping the actual playback. The single-shot flag clears
+		## itself so subsequent cutscenes play normally.
+		if GameState and "game_constants" in GameState:
+			if bool(GameState.game_constants.get("meta_skip_next_cutscene", false)):
+				GameState.game_constants["meta_skip_next_cutscene"] = false
+				var completion_flag: String = _CUTSCENE_COMPLETION_FLAGS.get(pending, "")
+				if completion_flag != "":
+					_set_cutscene_flag_and_mirror(completion_flag)
+					print("[CUTSCENE] %s skipped via Skiptrotter meta-ability — flag %s set" % [pending, completion_flag])
+				return
+		_play_story_cutscene(pending)
+
+
+## Demo builds stop at the Rat King. OFF unless --demo is passed or the constant is set, so
+## the full game is unaffected — a demo boundary that leaked into normal play would be worse
+## than not having one.
+func _demo_mode() -> bool:
+	if "--demo" in OS.get_cmdline_user_args():
+		return true
+	if GameState and "game_constants" in GameState:
+		return bool(GameState.game_constants.get("demo_mode", false))
+	return false
+
+
+func _get_pending_story_cutscene() -> String:
+	"""Check if a story cutscene should play based on flags.
+	Returns cutscene ID or empty string."""
+	var flags = GameState.game_constants
+	# Prologue: first time entering Harmonia Village (triggered by Theron interaction)
+	if not flags.get("cutscene_flag_prologue_complete", false):
+		if _current_map_id == "harmonia_village":
+			return "world1_prologue"
+	# Chapter 1: triggers when player talks to Elder Theron (flag set by NPC interaction)
+	if flags.get("talked_to_theron", false) and not flags.get("cutscene_flag_chapter1_complete", false):
+		if _current_map_id == "harmonia_village":
+			return "world1_chapter1"
+	# Bram's shield gift (struktured 2026-07-11): first smith talk, gated
+	# after chapter1 so the opening beat always wins the race.
+	if flags.get("talked_to_bram_smith", false) and flags.get("cutscene_flag_chapter1_complete", false) \
+			and not flags.get("cutscene_flag_world1_bram_shield_complete", false):
+		if _current_map_id == "harmonia_village":
+			return "world1_bram_shield"
+	# Chapter 2: SKIPPED — party road commentary now opt-in
+	# Auto-set the flag so chapter 3 can trigger
+	# Tick 97: cleric spotlight unlock — fires in Harmonia village after
+	# chapter1 cutscene (Mira/Cleric joins the player's controllable
+	# roster at the village well). Pre-fix, spotlight cutscenes were
+	# referenced by _CUTSCENE_COMPLETION_FLAGS + _reconcile_spotlight_locks
+	# but NEVER triggered by any code path — so non-Fighter PCs were
+	# permanently locked into autobattle. Gating on chapter1_complete +
+	# being in harmonia_village makes the cleric unlock at the natural
+	# story moment, matching the design comment at line ~1607.
+	# 2026-07-12: previously guarded on `not _chaining_story_cutscene` which blocked chapter1→cleric chain, leaving the player wondering "wait, what now?" after Theron's briefing. Drop the guard so the spotlight fires as chapter1's payoff.
+	if flags.get("cutscene_flag_chapter1_complete", false) and not flags.get("cutscene_flag_spotlight_unlocked_cleric", false):
+		if _current_map_id == "harmonia_village":
+			return "world1_spotlight_cleric_ch1"
+	if flags.get("cutscene_flag_chapter1_complete", false) and not flags.get("cutscene_flag_chapter2_complete", false):
+		# Tick 220: auto-advance via helper so QuestLog's chapter2 objective also flips.
+		_set_cutscene_flag_and_mirror("cutscene_flag_chapter2_complete")
+	# Chapter 3: plays when first entering the cave (key story beat)
+	if flags.get("cutscene_flag_chapter2_complete", false) and not flags.get("cutscene_flag_chapter3_complete", false):
+		if _current_map_id == "whispering_cave":
+			return "world1_chapter3"
+	# Tick 98: rogue + mage spotlight unlocks — fire IN the Whispering
+	# Cave after chapter3 (the party discovers Rogue and Mage need
+	# manual control to navigate the dungeon). Rogue first (chapter3
+	# discovery beat), Mage next visit (gated on rogue already
+	# unlocked so they sequence cleanly across map re-entries instead
+	# of stacking on a single trigger). _cutscene_cooldown prevents
+	# back-to-back firing on the same entry.
+	# 2026-07-15 pacing fix (v3.33.167 playtest, task #23): stacked all
+	# three at the entrance regardless of exploration — struktured
+	# "I would imagine going up floors of the dungeon first, not just
+	# all at the dungeon entrance." Floor gates now spread duels 1→3→5
+	# so 2 floors of exploration/battles separate each one. Floor comes
+	# from _get_current_cave_floor() (live from the scene when possible;
+	# falls back to the battle-synced _current_cave_floor). Fires on
+	# floor descent via floor_changed → check_pending_cutscene() wired
+	# in _create_cave_scene().
+	var _cave_floor: int = _get_current_cave_floor()
+	if flags.get("cutscene_flag_chapter3_complete", false) and not flags.get("cutscene_flag_spotlight_unlocked_rogue", false):
+		if _current_map_id == "whispering_cave" and _cave_floor >= 1:
+			return "world1_spotlight_rogue_ch3"
+	if flags.get("cutscene_flag_spotlight_unlocked_rogue", false) and not flags.get("cutscene_flag_spotlight_unlocked_mage", false) and not _chaining_story_cutscene:
+		if _current_map_id == "whispering_cave" and _cave_floor >= 3:
+			return "world1_spotlight_mage_ch3"
+	# Fighter spotlight — the antechamber skeleton duel (Spotlight Duels
+	# spec msg 1950: skeleton duel is Fighter's; chapter3's prose beat was
+	# stripped to a breadcrumb pointing here). Sequenced after mage so the
+	# three cave duels space across separate cave entries per cowir-story's
+	# pacing directive (rogue → mage → fighter). Fighter is never
+	# autobattle_locked (he's the lead), so the _unlocked_ flag here is
+	# purely the duel-completion gate, not a control unlock. Pre-fix this
+	# cutscene was authored + mapped but NO gate fired it — the exact
+	# authored-but-never-wired class the tick-97/98/99 comments describe.
+	if flags.get("cutscene_flag_spotlight_unlocked_mage", false) and not flags.get("cutscene_flag_spotlight_unlocked_fighter", false) and not _chaining_story_cutscene:
+		if _current_map_id == "whispering_cave" and _cave_floor >= 5:
+			return "world1_spotlight_fighter_ch2"
+	# Rat king defeat cutscene: plays IN the cave right after victory, before chapter4.
+	if flags.get("cutscene_flag_rat_king_defeated", false) and not flags.get("cutscene_flag_world1_rat_king_defeat_complete", false):
+		if _current_map_id == "whispering_cave":
+			return "world1_rat_king_defeat"
+	## DEMO BOUNDARY. Placed AFTER world1_rat_king_defeat so that beat still plays, and BEFORE
+	## chapter4 so nothing past the tested mission chains. Returns "" once the card is seen —
+	## short-circuiting every later gate, including the Mordaine escalation, rather than
+	## suppressing them one at a time where a new beat added below would silently escape.
+	if _demo_mode() and flags.get("cutscene_flag_world1_rat_king_defeat_complete", false):
+		if not flags.get("cutscene_flag_demo_end_complete", false):
+			return "demo_end"
+		return ""
+
+	# Chapter 4: plays after rat king boss defeat (key story beat)
+	if flags.get("cutscene_flag_rat_king_defeated", false) and not flags.get("cutscene_flag_chapter4_complete", false):
+		if _current_map_id == "overworld":
+			return "world1_chapter4"
+	# Tick 99: bard spotlight unlock — completes the spotlight series.
+	# Original design point was "capital gate" (Scriptura) but
+	# village_capital is registered in locations.json without an
+	# actual scene route, so the capital isn't reachable in W1. Bard
+	# instead unlocks on return to harmonia_village after the rat
+	# king is defeated (matching the cleric spotlight cadence at the
+	# same village). chapter4_complete is the natural trigger — it's
+	# set by world1_chapter4 (post-rat-king cutscene in overworld),
+	# so the player heading back to town for re-supply gets Bard's
+	# join cutscene next.
+	# 2026-07-15 (task #27, struktured ask): staged village-reaction scene on FIRST Harmonia entry post-Rat-King. Above the Bard gate so the reaction beat wins entry 1; Bard follows on the next visit (option B per cowir-story msg 2567 — chapter4's overworld auto-cascade runs in parallel, different map, no race).
+	if flags.get("cutscene_flag_rat_king_defeated", false) and not flags.get("cutscene_flag_world1_harmonia_after_cave_complete", false) and not _chaining_story_cutscene:
+		if _current_map_id == "harmonia_village":
+			return "world1_harmonia_after_cave"
+	if flags.get("cutscene_flag_chapter4_complete", false) and not flags.get("cutscene_flag_spotlight_unlocked_bard", false) and not _chaining_story_cutscene:
+		if _current_map_id == "harmonia_village":
+			return "world1_spotlight_bard_ch7"
+
+	# Mordaine escalation (cowir-story, 2026-07-26 — struktured asked why this arc wasn't in the
+	# game). She is SUPERVISING, not stalking: the distance never changes, what escalates is how
+	# much the game stops for her — no letterbox/music/dialogue on the road, through to full
+	# staging on castle F3. Each beat gates on the PREVIOUS one, so the four cannot play out of
+	# order relative to each other — but that alone does NOT bound the floor, and a Skiptrotter
+	# dungeon_skip lands on F4 with beats still pending (cowir-cutscenes, 2026-08-26). The
+	# `<= 3` is what actually keeps F4 clear for world1_mordaine_intro.
+	if flags.get("cutscene_flag_chapter4_complete", false) and not flags.get("cutscene_flag_world1_mordaine_watch_road_complete", false):
+		if _current_map_id == "overworld":
+			return "world1_mordaine_watch_road"
+	if flags.get("cutscene_flag_world1_mordaine_watch_road_complete", false) and not flags.get("cutscene_flag_world1_mordaine_watch_castle_complete", false):
+		if _current_map_id == "castle_harmonia" and _cave_floor >= 1 and _cave_floor <= 3:
+			return "world1_mordaine_watch_castle"
+	if flags.get("cutscene_flag_world1_mordaine_watch_castle_complete", false) and not flags.get("cutscene_flag_world1_mordaine_speaks_complete", false):
+		if _current_map_id == "castle_harmonia" and _cave_floor >= 2 and _cave_floor <= 3:
+			return "world1_mordaine_speaks"
+	if flags.get("cutscene_flag_world1_mordaine_speaks_complete", false) and not flags.get("cutscene_flag_world1_mordaine_procedure_complete", false):
+		if _current_map_id == "castle_harmonia" and _cave_floor >= 3 and _cave_floor <= 3:
+			return "world1_mordaine_procedure"
+
+	# Chapters 5-9: auto-set flags — party commentary now opt-in via NPCs
+	# These cutscenes are still available but won't auto-trigger on map entry
+	if flags.get("cutscene_flag_chapter4_complete", false) and not flags.get("cutscene_flag_chapter9_complete", false):
+		for skip_flag in ["chapter5_complete", "chapter5_forest_entered", "chapter7_complete", "chapter8_complete", "chapter9_complete"]:
+			if not flags.get("cutscene_flag_" + skip_flag, false):
+				# Tick 220: route auto-skipped chapter flags through the helper so QuestLog stays consistent.
+				_set_cutscene_flag_and_mirror("cutscene_flag_" + skip_flag)
+
+	# Tick 104: W1 Mordaine post-defeat dialogue — plays IN Castle
+	# Harmonia on return from final-boss victory. Mirrors the W2-W5
+	# defeat-cutscene gates added in ticks 102-103. Pre-fix, the
+	# world1_mordaine_defeat cutscene was never played (DragonCave._on_boss_defeated
+	# code path is dead). The post-Mordaine moment — the W1 narrative
+	# closer — was silently skipped, sending the player straight to
+	# W2 prologue with no Mordaine resolution.
+	if flags.get("cutscene_flag_world1_mordaine_defeated", false) and not flags.get("cutscene_flag_world1_mordaine_defeat_complete", false):
+		if _current_map_id == "castle_harmonia":
+			return "world1_mordaine_defeat"
+
+	# ===== WORLD 2: THE MUNDANE SPRAWL (Suburban) =====
+	# W2 Prologue: portal arrival, gear transformation
+	if flags.get("cutscene_flag_world1_mordaine_defeated", false) and not flags.get("cutscene_flag_world2_prologue_complete", false):
+		if _current_map_id == "suburban_overworld":
+			return "world2_prologue"
+	# W2 Chapter 1: first look at suburb, HOA foreshadow
+	if flags.get("cutscene_flag_world2_prologue_complete", false) and not flags.get("cutscene_flag_world2_chapter1_complete", false):
+		if _current_map_id == "maple_heights_village":
+			return "world2_chapter1"
+	# W2 Chapter 2: first suburban combat, mail carrier hints
+	if flags.get("cutscene_flag_world2_chapter1_complete", false) and not flags.get("cutscene_flag_world2_chapter2_complete", false):
+		if _current_map_id == "suburban_overworld":
+			return "world2_chapter2"
+	# Tick 102: W2 Warden of Routine defeat cutscene — plays IN the
+	# dungeon on return from boss victory. Pre-fix, the world2_warden_defeat
+	# cutscene was unreachable because the DragonCave._on_boss_defeated
+	# code path is dead (no caller), so tick 95's defeat_cutscene field
+	# was a no-op. This gate mirrors the W1 rat_king_defeat pattern:
+	# play the defeat cutscene in-place once on return from victory.
+	if flags.get("cutscene_flag_warden_suburban_defeated", false) and not flags.get("cutscene_flag_world2_warden_defeat_complete", false):
+		if _current_map_id == "suburban_underground":
+			return "world2_warden_defeat"
+	# W2 Chapter 3: Warden of Routine aftermath
+	if flags.get("cutscene_flag_warden_suburban_defeated", false) and not flags.get("cutscene_flag_world2_chapter3_complete", false):
+		return "world2_chapter3"
+	# W2 Chapter 4 Garage: garage sale encounter, Cleric keeps sweater
+	if flags.get("cutscene_flag_world2_chapter3_complete", false) and not flags.get("cutscene_flag_chapter4_garage_complete", false):
+		if _current_map_id == "maple_heights_village":
+			return "world2_chapter4_garage"
+	# W2 Chapter 4: school entry, Arbiter introduction
+	if flags.get("cutscene_flag_chapter4_garage_complete", false) and not flags.get("cutscene_flag_arbiter_suburban_intro_complete", false):
+		if _current_map_id == "maple_heights_village":
+			return "world2_chapter4"
+	# Tick 101: auto-set arbiter_suburban_defeated after the arbiter intro
+	# cutscene completes. Pre-fix, this flag was set ONLY by
+	# world2_arbiter_defeat.json — a cutscene NO code path triggers — so
+	# W2 chapter5 was unreachable. The Masterite Arbiter battle is treated
+	# as an off-screen narrative beat that happens between intro and the
+	# community center reveal. Mirror of the chapter5→curator auto-set
+	# below for the same reason.
+	if flags.get("cutscene_flag_arbiter_suburban_intro_complete", false) and not flags.get("cutscene_flag_arbiter_suburban_defeated", false):
+		_set_cutscene_flag_and_mirror("cutscene_flag_arbiter_suburban_defeated")
+	# W2 Chapter 5: community center, Coordinator reveal
+	if flags.get("cutscene_flag_arbiter_suburban_defeated", false) and not flags.get("cutscene_flag_world2_chapter5_complete", false):
+		return "world2_chapter5"
+	# Tick 101: auto-set curator_suburban_defeated after chapter5
+	# (Coordinator reveal). world2_curator_defeat.json exists but has no
+	# code path — same situation as arbiter above. The Curator battle is
+	# treated as an off-screen narrative beat between chapter5 (reveal)
+	# and chapter7_infrastructure (feral shopping cart aftermath).
+	if flags.get("cutscene_flag_world2_chapter5_complete", false) and not flags.get("cutscene_flag_curator_suburban_defeated", false):
+		_set_cutscene_flag_and_mirror("cutscene_flag_curator_suburban_defeated")
+	# W2 Chapter 7: feral shopping cart (after curator defeat)
+	if flags.get("cutscene_flag_curator_suburban_defeated", false) and not flags.get("cutscene_flag_chapter7_infrastructure_complete", false):
+		return "world2_chapter7_infrastructure"
+	# W2 Chapter 8: Coordinator's memos found
+	if flags.get("cutscene_flag_chapter7_infrastructure_complete", false) and not flags.get("cutscene_flag_chapter8_memos_found", false):
+		return "world2_chapter8_memos"
+	# W2 Chapter 11: incomplete memo + suburb→steampunk transition
+	# Gates on all W2 Masterites being defeated (memos found = last Masterite chain)
+	if flags.get("cutscene_flag_chapter8_memos_found", false) and not flags.get("cutscene_flag_chapter11_complete", false):
+		return "world2_chapter11"
+	# Tick 100: auto-set world2_complete when chapter11 finishes — pre-fix,
+	# nothing set this flag, so the W3 prologue gate at line ~1092 (which
+	# reads cutscene_flag_world2_complete) was never satisfied. Players
+	# couldn't progress past W2 even after finishing chapter11.
+	if flags.get("cutscene_flag_chapter11_complete", false) and not flags.get("cutscene_flag_world2_complete", false):
+		_set_cutscene_flag_and_mirror("cutscene_flag_world2_complete")
+
+	# ===== WORLD 3: STEAMPUNK =====
+	if flags.get("cutscene_flag_world2_complete", false) and not flags.get("cutscene_flag_world3_prologue_complete", false):
+		if _current_map_id == "steampunk_overworld":
+			return "world3_prologue"
+	if flags.get("cutscene_flag_world3_prologue_complete", false) and not flags.get("cutscene_flag_world3_chapter1_complete", false):
+		if _current_map_id == "brasston_village":
+			return "world3_chapter1"
+	if flags.get("cutscene_flag_world3_chapter1_complete", false) and not flags.get("cutscene_flag_world3_chapter2_complete", false):
+		if _current_map_id == "steampunk_overworld":
+			return "world3_chapter2"
+	if flags.get("cutscene_flag_world3_chapter2_complete", false) and not flags.get("cutscene_flag_world3_chapter3_complete", false):
+		return "world3_chapter3"
+	# Tick 102: W3 Tempo of the Shift defeat cutscene — plays IN the
+	# Mechanism on return from boss victory. Same pattern as the W2
+	# warden defeat gate above.
+	if flags.get("cutscene_flag_tempo_steampunk_defeated", false) and not flags.get("cutscene_flag_world3_tempo_defeat_complete", false):
+		if _current_map_id == "steampunk_mechanism":
+			return "world3_tempo_defeat"
+	if flags.get("cutscene_flag_world3_chapter3_complete", false) and not flags.get("cutscene_flag_world3_chapter4_complete", false):
+		# Tick 96: was gated on `cutscene_flag_warden_industrial_defeated`
+		# (a W4 flag set by AssemblyCore), so W3 chapter4 — the
+		# Regulator post-defeat dialogue — only triggered after the
+		# player beat W4's dungeon. Now correctly gated on the W3
+		# Mechanism's own boss-defeat flag set by SteampunkMechanism.
+		if flags.get("cutscene_flag_tempo_steampunk_defeated", false):
+			return "world3_chapter4"
+	if flags.get("cutscene_flag_world3_chapter4_complete", false) and not flags.get("cutscene_flag_world3_chapter5_complete", false):
+		return "world3_chapter5"
+	# Tick 100: auto-set world3_complete after chapter5 — same fix pattern
+	# as W2. Unblocks the W4 prologue gate which reads world3_complete.
+	if flags.get("cutscene_flag_world3_chapter5_complete", false) and not flags.get("cutscene_flag_world3_complete", false):
+		_set_cutscene_flag_and_mirror("cutscene_flag_world3_complete")
+
+	# ===== WORLD 4: INDUSTRIAL / DIGITAL =====
+	# Tick 102: W4 Warden of Industrial defeat cutscene — plays IN
+	# Assembly Core on return from boss victory.
+	if flags.get("cutscene_flag_warden_industrial_defeated", false) and not flags.get("cutscene_flag_world4_warden_defeat_complete", false):
+		if _current_map_id == "assembly_core":
+			return "world4_warden_defeat"
+	if flags.get("cutscene_flag_world3_complete", false) and not flags.get("cutscene_flag_world4_prologue_complete", false):
+		if _current_map_id == "industrial_overworld":
+			return "world4_prologue"
+	if flags.get("cutscene_flag_world4_prologue_complete", false) and not flags.get("cutscene_flag_world4_chapter1_complete", false):
+		if _current_map_id == "rivet_row_village":
+			return "world4_chapter1"
+	if flags.get("cutscene_flag_world4_chapter1_complete", false) and not flags.get("cutscene_flag_world4_chapter2_complete", false):
+		if _current_map_id == "industrial_overworld":
+			return "world4_chapter2"
+	if flags.get("cutscene_flag_world4_chapter2_complete", false) and not flags.get("cutscene_flag_world4_chapter3_complete", false):
+		return "world4_chapter3"
+	if flags.get("cutscene_flag_world4_chapter3_complete", false) and not flags.get("cutscene_flag_world4_chapter4_complete", false):
+		return "world4_chapter4"
+	if flags.get("cutscene_flag_world4_chapter4_complete", false) and not flags.get("cutscene_flag_world4_chapter5_complete", false):
+		return "world4_chapter5"
+	# Tick 100: auto-set world4_complete after chapter5.
+	if flags.get("cutscene_flag_world4_chapter5_complete", false) and not flags.get("cutscene_flag_world4_complete", false):
+		_set_cutscene_flag_and_mirror("cutscene_flag_world4_complete")
+
+	# ===== WORLD 5: ABSTRACT / NETWORK =====
+	# Tick 103: W5 Arbiter of Futuristic defeat cutscene — plays IN
+	# Root Process on return from boss victory. Same pattern as W2-W4
+	# defeat gates (tick 102).
+	if flags.get("cutscene_flag_arbiter_futuristic_defeated", false) and not flags.get("cutscene_flag_world5_arbiter_defeat_complete", false):
+		if _current_map_id == "root_process":
+			return "world5_arbiter_defeat"
+	# Same shape as its three sibling masterite dungeons; NullChamber declared no defeat flag, so this scene could never play.
+	if flags.get("cutscene_flag_curator_abstract_defeated", false) and not flags.get("cutscene_flag_world5_curator_defeat_complete", false):
+		if _current_map_id == "null_chamber":
+			return "world5_curator_defeat"
+	if flags.get("cutscene_flag_world4_complete", false) and not flags.get("cutscene_flag_world5_prologue_complete", false):
+		if _current_map_id == "abstract_overworld":
+			return "world5_prologue"
+	if flags.get("cutscene_flag_world5_prologue_complete", false) and not flags.get("cutscene_flag_world5_chapter1_complete", false):
+		if _current_map_id == "node_prime_village":
+			return "world5_chapter1"
+	if flags.get("cutscene_flag_world5_chapter1_complete", false) and not flags.get("cutscene_flag_world5_chapter2_complete", false):
+		if _current_map_id == "abstract_overworld":
+			return "world5_chapter2"
+	if flags.get("cutscene_flag_world5_chapter2_complete", false) and not flags.get("cutscene_flag_world5_chapter3_complete", false):
+		return "world5_chapter3"
+	if flags.get("cutscene_flag_world5_chapter3_complete", false) and not flags.get("cutscene_flag_world5_chapter4_complete", false):
+		return "world5_chapter4"
+	if flags.get("cutscene_flag_world5_chapter4_complete", false) and not flags.get("cutscene_flag_world5_chapter5_complete", false):
+		return "world5_chapter5"
+	# Tick 100: auto-set world5_complete after chapter5 — unblocks W6
+	# prologue gate.
+	if flags.get("cutscene_flag_world5_chapter5_complete", false) and not flags.get("cutscene_flag_world5_complete", false):
+		_set_cutscene_flag_and_mirror("cutscene_flag_world5_complete")
+
+	# ===== WORLD 6: THE VERTEX (Final) =====
+	if flags.get("cutscene_flag_world5_complete", false) and not flags.get("cutscene_flag_world6_prologue_complete", false):
+		if _current_map_id == "vertex_village":
+			return "world6_prologue"
+	if flags.get("cutscene_flag_world6_prologue_complete", false) and not flags.get("cutscene_flag_world6_chapter1_complete", false):
+		if _current_map_id == "vertex_village":
+			return "world6_chapter1"
+	if flags.get("cutscene_flag_world6_chapter1_complete", false) and not flags.get("cutscene_flag_world6_chapter2_complete", false):
+		return "world6_chapter2"
+	if flags.get("cutscene_flag_world6_chapter2_complete", false) and not flags.get("cutscene_flag_world6_chapter3_complete", false):
+		return "world6_chapter3"
+	# W6 endgame closer — chapter3 (The Question) → the Vertex Apex → calibrant defeat (the
+	# answer + class offer) → ending (worlds reform). The Calibrant battle used to be ELIDED as
+	# narrative because no arena existed, so the game's antagonist was never fought and
+	# world6_calibrant_intro (86 authored steps) never played. VertexApex is that arena; the
+	# closer now waits on the real defeat flag the boss sets.
+	if flags.get("cutscene_flag_world6_chapter3_complete", false) \
+			and flags.get("cutscene_flag_world6_calibrant_defeated", false) \
+			and not flags.get("cutscene_flag_world6_calibrant_defeat_complete", false):
+		if _current_map_id == "vertex_village":
+			return "world6_calibrant_defeat"
+	if flags.get("cutscene_flag_world6_calibrant_defeat_complete", false) and not flags.get("cutscene_flag_world6_ending_complete", false):
+		if _current_map_id == "vertex_village":
+			return "world6_ending"
+
+	# ===== GUIDANCE HINTS — disabled (now opt-in via party chat) =====
+	# These were auto-triggering too aggressively. Guidance hints are now
+	# available via NPC dialogue hints instead of forced cutscenes.
+	return ""
+
+
+## Prevents back-to-back story cutscenes on same map entry
+var _cutscene_cooldown: bool = false
+
+## Live-playtest fix 2026-07-11 (intercom 2359): completing a story cutscene can satisfy the NEXT gate on the same entry (chapter3 → rogue spotlight), but the completion path's _start_exploration consumed _cutscene_cooldown and skipped the recheck — the player had to exit/re-enter the cave.
+const _STORY_CHAIN_CAP: int = 3
+var _story_chain_depth: int = 0
+## True only while the post-completion recheck runs; gates authored for cross-entry pacing (cleric/mage/fighter/bard spotlights) refuse to fire as chain targets.
+var _chaining_story_cutscene: bool = false
+
+
+## Pure decision: the cutscene to chain after finished_id, or "" (capped, same-id, or nothing pending).
+func _next_chained_story_cutscene(finished_id: String) -> String:
+	if _story_chain_depth >= _STORY_CHAIN_CAP:
+		return ""
+	_chaining_story_cutscene = true
+	var next: String = _get_pending_story_cutscene()
+	_chaining_story_cutscene = false
+	if next == finished_id:
+		return ""
+	return next
+
+## Maps cutscene_id → GameState flag that marks it complete.
+## Without this, _get_pending_story_cutscene returns the same id every
+## map-enter forever (talked-to-theron + !chapter1_complete loops).
+## (Bug fix 2026-05-20: cutscene completion flags were never being set
+## by _play_story_cutscene — only chapter2 auto-set itself inline.)
+# Tick 214: defeat flags that _get_pending_story_cutscene actually reads. When a subclass declares defeat_cutscene_flags = ["cutscene_flag_X"] and X isn't here, the flag gets set but no gate fires — silent narrative drop. Update both this set AND the gate when adding a new boss defeat cutscene.
+const _KNOWN_DEFEAT_CUTSCENE_FLAGS := {
+	"cutscene_flag_arbiter_futuristic_defeated": true,
+	"cutscene_flag_curator_abstract_defeated": true,
+	"cutscene_flag_world6_calibrant_defeated": true,
+	"cutscene_flag_arbiter_suburban_defeated": true,
+	"cutscene_flag_curator_suburban_defeated": true,
+	"cutscene_flag_rat_king_defeated": true,
+	"cutscene_flag_tempo_steampunk_defeated": true,
+	"cutscene_flag_warden_industrial_defeated": true,
+	"cutscene_flag_warden_suburban_defeated": true,
+	"cutscene_flag_world1_mordaine_defeated": true,
+}
+
+
+# Tick 214: check whether a defeat flag name is consumed by any _get_pending_story_cutscene gate.
+func _is_known_defeat_flag(flag: String) -> bool:
+	return _KNOWN_DEFEAT_CUTSCENE_FLAGS.has(flag)
+
+
+# Tick 220: set a cutscene_flag_X game_constant AND mirror to story_flags as bare 'X'. QuestLog reads story_flags — without the mirror, objective lines stay stale even after the cutscene fires and the game_constants flag is set. Pre-fix this mirror lived only in _play_story_cutscene; direct game_constants writes elsewhere (boss defeats via _apply_pending_boss_defeat, chapter auto-advance gates) silently skipped it. Same bug class as 2026-06-04 Elder Theron.
+func _set_cutscene_flag_and_mirror(flag: String) -> void:
+	if not GameState or flag == "":
+		return
+	GameState.game_constants[flag] = true
+	if flag.begins_with("cutscene_flag_"):
+		var bare = flag.substr("cutscene_flag_".length())
+		GameState.set_story_flag(bare)
+
+
+const _CUTSCENE_COMPLETION_FLAGS := {
+	## Demo-build end card. Without this entry it re-fires on every gate check (the Elder Theron loop).
+	"demo_end":                         "cutscene_flag_demo_end_complete",
+	# World 1 (medieval) — flags drop the "world1_" prefix
+	"world1_prologue":                  "cutscene_flag_prologue_complete",
+	"world1_chapter1":                  "cutscene_flag_chapter1_complete",
+	"world1_bram_shield":               "cutscene_flag_world1_bram_shield_complete",
+	# Mordaine escalation — a missing entry here does NOT fail loudly, it re-fires the beat on
+	# every qualifying entry (the original Elder Theron loop). Four beats, four entries.
+	"world1_mordaine_watch_road":       "cutscene_flag_world1_mordaine_watch_road_complete",
+	"world1_mordaine_watch_castle":     "cutscene_flag_world1_mordaine_watch_castle_complete",
+	"world1_mordaine_speaks":           "cutscene_flag_world1_mordaine_speaks_complete",
+	"world1_mordaine_procedure":        "cutscene_flag_world1_mordaine_procedure_complete",
+	"world1_chapter3":                  "cutscene_flag_chapter3_complete",
+	"world1_chapter4":                  "cutscene_flag_chapter4_complete",
+	"world1_rat_king_defeat":           "cutscene_flag_world1_rat_king_defeat_complete",
+	# 2026-07-15 (task #27): staged village-reaction scene after the Rat King falls
+	"world1_harmonia_after_cave":       "cutscene_flag_world1_harmonia_after_cave_complete",
+	# Tick 104: W1 Mordaine final post-defeat dialogue
+	"world1_mordaine_defeat":           "cutscene_flag_world1_mordaine_defeat_complete",
+	# W1 spotlight cutscenes — dual-signal per Spotlight Duels spec (cowir-
+	# main msg 1950, 2026-06-30). Cutscene finish now writes the _watched_
+	# flag ("player saw the intro/aftermath narration"). The _unlocked_
+	# flag ("PC manual control granted") is written separately by
+	# _on_battle_ended's spotlight-duel short-circuit (GameLoop:2224) on
+	# battle_won — that path also calls _reconcile_spotlight_locks(). The
+	# _get_pending_story_cutscene gates below still key off _unlocked_
+	# because story-progression should require the duel win, not just
+	# watching the beat. Filenames stay as-is (fighter_ch2, bard_ch7
+	# vestigial per option B).
+	"world1_spotlight_cleric_ch1":      "cutscene_flag_spotlight_watched_cleric",
+	"world1_spotlight_fighter_ch2":     "cutscene_flag_spotlight_watched_fighter",
+	"world1_spotlight_rogue_ch3":       "cutscene_flag_spotlight_watched_rogue",
+	"world1_spotlight_mage_ch3":        "cutscene_flag_spotlight_watched_mage",
+	"world1_spotlight_bard_ch7":        "cutscene_flag_spotlight_watched_bard",
+	# World 2 (suburban) — irregular naming mirrored from _get_pending
+	"world2_prologue":                  "cutscene_flag_world2_prologue_complete",
+	"world2_chapter1":                  "cutscene_flag_world2_chapter1_complete",
+	"world2_chapter2":                  "cutscene_flag_world2_chapter2_complete",
+	"world2_chapter3":                  "cutscene_flag_world2_chapter3_complete",
+	"world2_chapter4_garage":           "cutscene_flag_chapter4_garage_complete",
+	"world2_chapter4":                  "cutscene_flag_arbiter_suburban_intro_complete",
+	"world2_chapter5":                  "cutscene_flag_world2_chapter5_complete",
+	"world2_chapter7_infrastructure":   "cutscene_flag_chapter7_infrastructure_complete",
+	"world2_chapter8_memos":            "cutscene_flag_chapter8_memos_found",
+	"world2_chapter11":                 "cutscene_flag_chapter11_complete",
+	# Tick 102: W2 Warden of Routine post-defeat dialogue
+	"world2_warden_defeat":             "cutscene_flag_world2_warden_defeat_complete",
+	# World 3 (steampunk)
+	"world3_prologue":                  "cutscene_flag_world3_prologue_complete",
+	"world3_chapter1":                  "cutscene_flag_world3_chapter1_complete",
+	"world3_chapter2":                  "cutscene_flag_world3_chapter2_complete",
+	"world3_chapter3":                  "cutscene_flag_world3_chapter3_complete",
+	"world3_chapter4":                  "cutscene_flag_world3_chapter4_complete",
+	"world3_chapter5":                  "cutscene_flag_world3_chapter5_complete",
+	# Tick 102: W3 Tempo of the Shift post-defeat dialogue
+	"world3_tempo_defeat":              "cutscene_flag_world3_tempo_defeat_complete",
+	# World 4 (industrial)
+	"world4_prologue":                  "cutscene_flag_world4_prologue_complete",
+	"world4_chapter1":                  "cutscene_flag_world4_chapter1_complete",
+	"world4_chapter2":                  "cutscene_flag_world4_chapter2_complete",
+	"world4_chapter3":                  "cutscene_flag_world4_chapter3_complete",
+	"world4_chapter4":                  "cutscene_flag_world4_chapter4_complete",
+	"world4_chapter5":                  "cutscene_flag_world4_chapter5_complete",
+	# Tick 102: W4 Warden of Industrial post-defeat dialogue
+	"world4_warden_defeat":             "cutscene_flag_world4_warden_defeat_complete",
+	# World 5 (digital/abstract)
+	"world5_prologue":                  "cutscene_flag_world5_prologue_complete",
+	"world5_chapter1":                  "cutscene_flag_world5_chapter1_complete",
+	"world5_chapter2":                  "cutscene_flag_world5_chapter2_complete",
+	"world5_chapter3":                  "cutscene_flag_world5_chapter3_complete",
+	"world5_chapter4":                  "cutscene_flag_world5_chapter4_complete",
+	"world5_chapter5":                  "cutscene_flag_world5_chapter5_complete",
+	# Tick 103: W5 Arbiter of Futuristic post-defeat dialogue
+	"world5_arbiter_defeat":            "cutscene_flag_world5_arbiter_defeat_complete",
+	"world5_curator_defeat":            "cutscene_flag_world5_curator_defeat_complete",
+	# World 6 (vertex/final)
+	"world6_prologue":                  "cutscene_flag_world6_prologue_complete",
+	"world6_chapter1":                  "cutscene_flag_world6_chapter1_complete",
+	"world6_chapter2":                  "cutscene_flag_world6_chapter2_complete",
+	"world6_chapter3":                  "cutscene_flag_world6_chapter3_complete",
+	# Tick 107: W6 endgame closer
+	"world6_calibrant_defeat":          "cutscene_flag_world6_calibrant_defeat_complete",
+	"world6_ending":                    "cutscene_flag_world6_ending_complete",
+}
+
+
+func _play_story_cutscene(cutscene_id: String) -> void:
+	"""Play a story cutscene, then resume exploration."""
+	current_state = LoopState.CUTSCENE
+	_cutscene_cooldown = true  # Suppress next check on same map entry
+	_remove_party_chat_indicator()
+	if not _cutscene_director:
+		_cutscene_director = CutsceneDirector.new()
+		add_child(_cutscene_director)
+	_cutscene_director.cutscene_finished.connect(func(_id: String):
+		# completing an aborted run would lock the spotlight PC forever (flag blocks the replay)
+		if _cutscene_director.has_method("last_finished_was_aborted") and _cutscene_director.last_finished_was_aborted():
+			push_warning("[GameLoop] '%s' was ABORTED — completion flag skipped; it will replay when runnable" % cutscene_id)
+			_story_chain_depth = 0
+			return
+		# Mark this story cutscene complete so it won't replay.
+		# (Bug 2026-05-20: chapter1_complete was never set, so Elder
+		# Theron's cutscene looped forever and quest log stayed stale.)
+		var completion_flag: String = _CUTSCENE_COMPLETION_FLAGS.get(cutscene_id, "")
+		# Tick 212: surface missing map entries loudly. Pre-fix a new cutscene id added to _get_pending without a matching map entry silently played → loop forever, no signal in the editor logs. Same class of silent failure as the 2026-05-20 Elder Theron bug.
+		if completion_flag == "":
+			push_warning("[GameLoop] _play_story_cutscene: '%s' missing from _CUTSCENE_COMPLETION_FLAGS — flag NOT set, cutscene will replay on next gate check (loop bug)" % cutscene_id)
+		if completion_flag != "" and GameState:
+			# Tick 220: route through the shared helper so the constant + story_flags mirror always travel together (this site WAS the only mirror pre-fix; the other 8 game_constants writes silently skipped it — see ticks 212/214 audit + the 2026-06-04 Elder Theron user report that prompted the original mirror here).
+			_set_cutscene_flag_and_mirror(completion_flag)
+			print("[CUTSCENE] %s complete → set flag %s" % [cutscene_id, completion_flag])
+			# W1 spotlight completion also unlocks the matching PC's
+			# manual control. Reconcile is idempotent so a no-op for
+			# non-spotlight cutscenes.
+			if completion_flag.begins_with("cutscene_flag_spotlight_unlocked_"):
+				_reconcile_spotlight_locks()
+			# Tick 108: world6_ending is the game's narrative closer.
+			# Mark the run as complete + surface a celebratory toast so
+			# the player has acknowledgment that they finished, rather
+			# than just dropping back into vertex_village wandering.
+			# The flag is durable + per-save so NG+ flows / replay UI
+			# can branch on it without re-deriving from cutscene state.
+			if cutscene_id == "world6_ending":
+				GameState.game_constants["game_complete"] = true
+				GameState.set_story_flag("game_complete")
+				if Toast:
+					Toast.show_success(self,
+						"Calibration complete — thank you for playing Cowardly Irregular.")
+		# Wave D: record cutscene completion in the EventLog so LLM-driven
+		# NPC dialogue can reference recently-witnessed story beats. The
+		# completion_flag is already in game_constants so LLMContext picks
+		# it up — but the EventLog gives the LLM a chronological "what just
+		# happened" rather than a sparse boolean flag soup.
+		if GameState and "event_log" in GameState and GameState.event_log != null:
+			GameState.event_log.record(
+				EventLog.TYPE_STORY_FLAG,
+				"Cutscene complete: %s" % cutscene_id,
+				{"cutscene_id": cutscene_id, "flag": completion_flag}
+			)
+		# Chain a newly-satisfied gate NOW — _start_exploration's own recheck is eaten by the cooldown this play just set (intercom 2359: chapter3 → rogue needed an exit/re-enter).
+		var chained: String = _next_chained_story_cutscene(cutscene_id)
+		if chained != "":
+			_story_chain_depth += 1
+			print("[CUTSCENE] chaining '%s' after '%s' (depth %d/%d)" % [chained, cutscene_id, _story_chain_depth, _STORY_CHAIN_CAP])
+			_play_story_cutscene(chained)
+			return
+		_story_chain_depth = 0
+		_resume_exploration_after_cutscene()
+		_flush_chat_toasts()
+	, CONNECT_ONE_SHOT)
+	_cutscene_director.play_cutscene(cutscene_id)
 
 
 func _on_title_continue() -> void:
 	"""Handle continue selected from title screen"""
 	print("[GAME] Continue selected")
+	var slot := -1
+	if SaveSystem and SaveSystem.has_method("get_most_recent_slot"):
+		slot = SaveSystem.get_most_recent_slot()
+	await _title_load_slot(slot)
+
+
+## The picker's path and Continue's path are ONE function on purpose — a chosen slot gets
+## the identical load-then-restore-then-toast hardening, never a second copy that drifts.
+func _on_title_load(slot: int) -> void:
+	print("[GAME] Load Game selected: slot %d" % slot)
+	await _title_load_slot(slot)
+
+
+func _title_load_slot(slot: int) -> void:
 	_close_title_screen()
-	# Load saved party and start exploration
-	_create_party()
-	_start_exploration()
+	# Load the save FIRST (writes into GameState), THEN restore the
+	# live party from the loaded GameState. Bug fix (2026-04-30): previously
+	# we went straight to _create_party() (defaults) and ignored the save.
+	var loaded = false
+	if SaveSystem and SaveSystem.has_method("load_game"):
+		if slot >= 0:
+			loaded = SaveSystem.load_game(slot)
+	if loaded and _restore_party_from_save_data():
+		print("[GAME] Continue: restored party from save")
+	else:
+		# Silent fallback to default party was a UX trap — the player clicks
+		# Continue expecting to resume, gets a brand-new party with no
+		# explanation, and assumes their progress is gone. Toast the failure
+		# so they at least know what happened before the fresh game begins.
+		var why: String = "no save found" if slot < 0 \
+			else ("save load failed (slot %d)" % slot) if not loaded \
+			else ("save restored but party data was empty (slot %d)" % slot)
+		print("[GAME] Continue: %s — creating default party" % why)
+		Toast.show_warning(self, "Continue: %s. Starting fresh." % why)
+		_create_party()
+	if _area_fade_rect:
+		_area_fade_rect.modulate.a = 1.0
+	await _start_exploration()
+	await _area_fade_from_black()
+
+
+func _open_settings_menu() -> void:
+	"""Open settings menu during exploration (Start button)"""
+	print("[GAME] Settings menu opened from exploration")
+	var SettingsMenuClass = load("res://src/ui/SettingsMenu.gd")
+	if SettingsMenuClass:
+		var settings_layer = CanvasLayer.new()
+		settings_layer.layer = 110
+		add_child(settings_layer)
+		var settings_menu = SettingsMenuClass.new()
+		settings_menu.set_anchors_preset(Control.PRESET_FULL_RECT)
+		settings_layer.add_child(settings_menu)
+		if _exploration_scene and _exploration_scene.has_method("pause"):
+			_exploration_scene.pause()
+		settings_menu.closed.connect(func():
+			settings_layer.queue_free()
+			if _exploration_scene and _exploration_scene.has_method("resume"):
+				_exploration_scene.resume()
+		)
+		settings_menu.start_boss_battle.connect(_on_settings_boss_battle)
+		# Debug teleport from settings menu — same handler as the OverworldMenu
+		# teleport, which closes the menu first then transitions.
+		if settings_menu.has_signal("teleport_requested"):
+			settings_menu.teleport_requested.connect(_on_settings_teleport_requested)
 
 
 func _on_title_settings() -> void:
@@ -539,6 +2354,7 @@ func _on_title_settings() -> void:
 		add_child(settings_layer)
 
 		var settings_menu = SettingsMenuClass.new()
+		settings_menu.from_title = true
 		settings_menu.set_anchors_preset(Control.PRESET_FULL_RECT)
 		settings_layer.add_child(settings_menu)
 
@@ -550,6 +2366,7 @@ func _on_title_settings() -> void:
 				if _title_screen.has_method("_build_menu"):
 					_title_screen._build_menu()
 		)
+		settings_menu.start_boss_battle.connect(_on_settings_boss_battle)
 
 
 func _show_character_creation() -> void:
@@ -608,11 +2425,14 @@ func _create_party_from_customizations(customizations: Array) -> void:
 	party.clear()
 
 	# Base stats for party members
+	# Overwritten by JobSystem.assign_job for any customization with a job (all of them today —
+	# starting_jobs defaults to two). Kept as the no-job floor, and scaled with the 2026-07-29 ×10
+	# pass so that floor is in the same denomination as everything it would sit beside.
 	var base_stats_list = [
-		{"max_hp": 150, "max_mp": 50, "attack": 25, "defense": 15, "magic": 12, "speed": 12},
-		{"max_hp": 100, "max_mp": 120, "attack": 10, "defense": 12, "magic": 28, "speed": 14},
-		{"max_hp": 90, "max_mp": 40, "attack": 18, "defense": 10, "magic": 8, "speed": 22},
-		{"max_hp": 80, "max_mp": 150, "attack": 8, "defense": 8, "magic": 35, "speed": 12}
+		{"max_hp": 1500, "max_mp": 50, "attack": 250, "defense": 150, "magic": 120, "speed": 12},
+		{"max_hp": 1000, "max_mp": 120, "attack": 100, "defense": 120, "magic": 280, "speed": 14},
+		{"max_hp": 900, "max_mp": 40, "attack": 180, "defense": 100, "magic": 80, "speed": 22},
+		{"max_hp": 800, "max_mp": 150, "attack": 80, "defense": 80, "magic": 350, "speed": 12}
 	]
 
 	for i in range(min(customizations.size(), 4)):
@@ -660,6 +2480,20 @@ func _create_party_from_customizations(customizations: Array) -> void:
 			CustomizationScript.get_personality_name(custom.personality)
 		])
 
+	# Fresh party starts at FULL — same init-order gap as the default path (personality bonuses + jobs raise max after initialize).
+	for m in party:
+		m.current_hp = m.max_hp
+		m.current_mp = m.max_mp
+
+	# Tick 82: wire leveled_up + ability_learned signals so the new
+	# party fires Toast on every level-up and ability unlock. Without
+	# this, character-creation players got silent level-ups —
+	# discord/inspiring_melody (Bard), shield_bash/slash (Fighter),
+	# regenerate/crystal_heal (Cleric), etc. all popped without
+	# feedback. _create_party() (the default-party path) already calls
+	# this; the character-creation path was the only one missing it.
+	_wire_party_level_up_listeners()
+
 
 func _save_customizations(customizations: Array) -> void:
 	"""Save character customizations to file"""
@@ -702,6 +2536,144 @@ func _load_customizations() -> Array:
 	return customizations
 
 
+## Rehydrate the live shared equipment pool from the save. Missing/legacy
+## saves leave the current pool alone rather than blanking it.
+func _restore_equipment_pool_from_game_state() -> void:
+	if not GameState or not ("equipment_pool" in GameState):
+		return
+	var saved: Dictionary = GameState.equipment_pool
+	if saved.is_empty():
+		return
+	for slot_key in equipment_pool.keys():
+		var entries: Variant = saved.get(slot_key, null)
+		if not (entries is Array):
+			continue
+		var restored: Array = []
+		for entry in entries:
+			restored.append(str(entry))
+		equipment_pool[slot_key] = restored
+
+
+func _restore_party_from_save_data() -> bool:
+	"""Reconstruct runtime party from GameState.player_party (post-load).
+
+	Returns true if a party was restored, false if no save data available
+	(in which case caller should fall back to _create_party() defaults).
+
+	Bug fix (2026-04-30): SaveSystem.load_game wrote into GameState but
+	GameLoop.party was never rehydrated — every Continue / Game Over →
+	Continue from save effectively reset the party to defaults. This
+	function closes the gap. Pairs with the expanded Combatant.to_dict /
+	from_dict and the full-state _sync_party_to_game_state.
+	"""
+	if not GameState or GameState.player_party.is_empty():
+		return false
+
+	_restore_equipment_pool_from_game_state()
+
+	# Tear down any existing live party — we're replacing it.
+	for old in party:
+		if is_instance_valid(old):
+			old.queue_free()
+	party.clear()
+
+	for entry in GameState.player_party:
+		if not (entry is Dictionary):
+			continue
+		var c = Combatant.new()
+		add_child(c)
+		c.from_dict(entry)
+		# Reapply job dict + abilities via JobSystem (the dict is data-driven
+		# and not safe to serialize verbatim — we keep job_id and rebuild).
+		var job_id = entry.get("job_id", "fighter")
+		# Legacy saves may have stored the synthetic "job" string instead of "job_id"
+		if job_id == "" and entry.has("job") and entry["job"] is String:
+			job_id = entry["job"]
+		if job_id == "":
+			job_id = "fighter"
+		# Tick 188: assign_job failure fell silently before — fall back to fighter so character has a valid job.
+		if not JobSystem.assign_job(c, job_id):
+			push_warning("[GameLoop] _restore_party_from_save_data: assign_job('%s') failed for %s — falling back to 'fighter'" % [job_id, c.combatant_name])
+			JobSystem.assign_job(c, "fighter")
+		# pre-pare saves (no purchased_abilities key) owned the full kit innately — never repossess
+		if not entry.has("purchased_abilities"):
+			JobSystem.learn_abilities_for_level(c, 99)
+		var sec_id = entry.get("secondary_job_id", "")
+		if sec_id != "":
+			# Secondary is optional — failure leaves it unset, no fallback.
+			if not JobSystem.assign_secondary_job(c, sec_id):
+				push_warning("[GameLoop] _restore_party_from_save_data: assign_secondary_job('%s') failed for %s — leaving secondary unset" % [sec_id, c.combatant_name])
+		# Re-apply equipment so stat mods attach; tick 189 warns on equip failure (unknown id, removed item). Empty is valid — no fallback.
+		var w = entry.get("equipped_weapon", "")
+		if w != "" and not EquipmentSystem.equip_weapon(c, w):
+			push_warning("[GameLoop] _restore_party_from_save_data: equip_weapon('%s') failed for %s — slot left empty" % [w, c.combatant_name])
+		var a = entry.get("equipped_armor", "")
+		if a != "" and not EquipmentSystem.equip_armor(c, a):
+			push_warning("[GameLoop] _restore_party_from_save_data: equip_armor('%s') failed for %s — slot left empty" % [a, c.combatant_name])
+		var acc = entry.get("equipped_accessory", "")
+		if acc != "" and not EquipmentSystem.equip_accessory(c, acc):
+			push_warning("[GameLoop] _restore_party_from_save_data: equip_accessory('%s') failed for %s — slot left empty" % [acc, c.combatant_name])
+		# from_dict already filled equipped_passives; re-equipping tripped idempotency (never applied mods) — validate ids + recalc once (cowir-main live-log 2026-07-04)
+		for pid in c.equipped_passives.duplicate():
+			if PassiveSystem.get_passive(pid).is_empty():
+				c.equipped_passives.erase(pid)
+				push_warning("[GameLoop] _restore_party_from_save_data: passive '%s' no longer in passives table — dropped from %s" % [pid, c.combatant_name])
+		c.recalculate_stats()
+		party.append(c)
+
+	# After equip/passive reapply, restore HP/MP/AP from the saved data
+	# (EquipmentSystem may have bumped max_hp via equipment, which clamps
+	# current_hp upward in some equip paths). We re-clamp to saved values.
+	for i in party.size():
+		if i >= GameState.player_party.size():
+			break
+		var saved = GameState.player_party[i]
+		if not (saved is Dictionary):
+			continue
+		var c: Combatant = party[i]
+		if saved.has("current_hp"):
+			c.current_hp = clampi(saved["current_hp"], 0, c.max_hp)
+		if saved.has("current_mp"):
+			c.current_mp = clampi(saved["current_mp"], 0, c.max_mp)
+		if saved.has("current_ap"):
+			c.current_ap = clampi(saved["current_ap"], -4, 4)
+		if saved.has("is_alive"):
+			c.is_alive = saved["is_alive"]
+	# Spotlight reconcile after load — flags persist in game_constants
+	# so a save mid-W1 may carry already-unlocked PCs even though the
+	# Combatant.autobattle_locked field is freshly set by from_dict.
+	_reconcile_spotlight_locks()
+	# tick 55: rewire level-up listeners after a load — the freshly-
+	# constructed Combatants don't carry connections from the previous
+	# session.
+	_wire_party_level_up_listeners()
+	# Tick 308: pull the saved map_id out of MapSystem.current_map_id (which
+	# SaveSystem._apply_save_data wrote unconditionally) and sync our private
+	# _current_map_id so _start_exploration routes to the right scene. Pre-
+	# fix Continue/quick_load always landed the player on whatever GameLoop
+	# was already showing (typically "overworld") regardless of where the
+	# save was taken — symptom looked like "the save didn't remember my
+	# location". Skip empty/unknown ids so a corrupt save doesn't strand the
+	# player on a no-match scene.
+	if MapSystem and "current_map_id" in MapSystem:
+		var saved_map_id: String = str(MapSystem.current_map_id)
+		if saved_map_id != "" and saved_map_id != _current_map_id:
+			_set_current_map_id(saved_map_id)
+	# Tick 309: pull the pending player position from SaveSystem (set by
+	# _apply_save_data) into _player_position so the post-_start_exploration
+	# restore step in Continue / quick_load snaps the player to the saved
+	# coords. Pre-fix the saved position was teleported to a stale scene's
+	# player that got queue_free()'d during scene swap, and the new scene's
+	# player spawned at its default marker — saved position silently lost
+	# every Continue from anywhere except the in-overworld autosave path.
+	if SaveSystem and "pending_player_position" in SaveSystem:
+		var pending: Vector2 = SaveSystem.pending_player_position
+		if pending != Vector2.INF:
+			_player_position = pending
+			SaveSystem.pending_player_position = Vector2.INF
+	return true
+
+
 func _create_party() -> void:
 	"""Create the persistent party"""
 	party.clear()
@@ -709,15 +2681,15 @@ func _create_party() -> void:
 	# Get default customizations
 	var default_customs = CustomizationScript.create_default_party_with_script(CustomizationScript)
 
-	# Create Hero (Fighter / secondary: Rogue)
+	# Create Fighter (primary: Fighter / secondary: Rogue)
 	var hero = Combatant.new()
 	hero.initialize({
-		"name": "Hero",
-		"max_hp": 150,
+		"name": "Fighter",
+		"max_hp": 1500,
 		"max_mp": 50,
-		"attack": 25,
-		"defense": 15,
-		"magic": 12,
+		"attack": 250,
+		"defense": 150,
+		"magic": 120,
 		"speed": 12
 	})
 	add_child(hero)
@@ -737,15 +2709,23 @@ func _create_party() -> void:
 	hero.add_item("phoenix_down", 1)
 	party.append(hero)
 
-	# Create Mira (Cleric / secondary: Bard)
+	# Spotlight pattern: party_leader_index=0 (hero/Fighter) is the default
+	# lead PC and is freely controllable. The other 4 PCs join the party
+	# from the prologue (canon-respecting 5-PC roster) but their turns are
+	# routed through autobattle until their spotlight cutscene fires (see
+	# _CUTSCENE_COMPLETION_FLAGS spotlight_unlocked_<job> entries). The
+	# debug flag GameState.debug_all_pcs_unlocked overrides all locks.
+	hero.autobattle_locked = false
+
+	# Create Cleric (primary: Cleric / secondary: Bard)
 	var mira = Combatant.new()
 	mira.initialize({
-		"name": "Mira",
-		"max_hp": 100,
+		"name": "Cleric",
+		"max_hp": 1000,
 		"max_mp": 120,
-		"attack": 10,
-		"defense": 12,
-		"magic": 28,
+		"attack": 100,
+		"defense": 120,
+		"magic": 280,
 		"speed": 14
 	})
 	add_child(mira)
@@ -759,41 +2739,43 @@ func _create_party() -> void:
 	mira.learn_passive("mp_boost")
 	PassiveSystem.equip_passive(mira, "magic_boost")
 	PassiveSystem.equip_passive(mira, "mp_boost")
+	mira.autobattle_locked = true  # spotlight unlock via world1_spotlight_cleric_ch1
 	party.append(mira)
 
-	# Create Zack (Rogue / secondary: Fighter)
-	var zack = Combatant.new()
-	zack.initialize({
-		"name": "Zack",
-		"max_hp": 90,
+	# Create Rogue (primary: Rogue / secondary: Fighter)
+	var rogue = Combatant.new()
+	rogue.initialize({
+		"name": "Rogue",
+		"max_hp": 900,
 		"max_mp": 40,
-		"attack": 18,
-		"defense": 10,
-		"magic": 8,
+		"attack": 180,
+		"defense": 100,
+		"magic": 80,
 		"speed": 22
 	})
-	add_child(zack)
-	zack.customization = default_customs[2] if default_customs.size() > 2 else null
-	JobSystem.assign_job(zack, "rogue")
-	JobSystem.assign_secondary_job(zack, "fighter")
-	EquipmentSystem.equip_weapon(zack, "iron_dagger")
-	EquipmentSystem.equip_armor(zack, "thief_garb")
-	EquipmentSystem.equip_accessory(zack, "speed_boots")
-	zack.learn_passive("critical_strike")
-	zack.learn_passive("speed_boost")
-	PassiveSystem.equip_passive(zack, "critical_strike")
-	PassiveSystem.equip_passive(zack, "speed_boost")
-	party.append(zack)
+	add_child(rogue)
+	rogue.customization = default_customs[2] if default_customs.size() > 2 else null
+	JobSystem.assign_job(rogue, "rogue")
+	JobSystem.assign_secondary_job(rogue, "fighter")
+	EquipmentSystem.equip_weapon(rogue, "iron_dagger")
+	EquipmentSystem.equip_armor(rogue, "thief_garb")
+	EquipmentSystem.equip_accessory(rogue, "speed_boots")
+	rogue.learn_passive("critical_strike")
+	rogue.learn_passive("speed_boost")
+	PassiveSystem.equip_passive(rogue, "critical_strike")
+	PassiveSystem.equip_passive(rogue, "speed_boost")
+	rogue.autobattle_locked = true  # spotlight unlock via world1_spotlight_rogue_ch3
+	party.append(rogue)
 
-	# Create Vex (Mage / secondary: Cleric)
+	# Create Mage (primary: Mage / secondary: Cleric)
 	var vex = Combatant.new()
 	vex.initialize({
-		"name": "Vex",
-		"max_hp": 80,
+		"name": "Mage",
+		"max_hp": 800,
 		"max_mp": 150,
-		"attack": 8,
-		"defense": 8,
-		"magic": 35,
+		"attack": 80,
+		"defense": 80,
+		"magic": 350,
 		"speed": 12
 	})
 	add_child(vex)
@@ -807,13 +2789,377 @@ func _create_party() -> void:
 	vex.learn_passive("mp_efficiency")
 	PassiveSystem.equip_passive(vex, "magic_boost")
 	PassiveSystem.equip_passive(vex, "mp_efficiency")
+	vex.autobattle_locked = true  # spotlight unlock via world1_spotlight_mage_ch3
 	party.append(vex)
+
+	# Create Bard (primary: Bard / secondary: Rogue)
+	# Internal ID "bard" matches the job_id — story chose class-title as
+	# placeholder rather than a fantasy codename, may be revisited later.
+	var bard = Combatant.new()
+	bard.initialize({
+		"name": "Bard",
+		"max_hp": 950,
+		"max_mp": 90,
+		"attack": 120,
+		"defense": 90,
+		"magic": 220,
+		"speed": 16
+	})
+	add_child(bard)
+	bard.customization = default_customs[4] if default_customs.size() > 4 else null
+	JobSystem.assign_job(bard, "bard")
+	JobSystem.assign_secondary_job(bard, "rogue")
+	EquipmentSystem.equip_weapon(bard, "piano_scythe")
+	EquipmentSystem.equip_armor(bard, "cloth_robe")
+	EquipmentSystem.equip_accessory(bard, "magic_ring")
+	bard.learn_passive("magic_boost")
+	bard.learn_passive("mp_boost")
+	PassiveSystem.equip_passive(bard, "magic_boost")
+	PassiveSystem.equip_passive(bard, "mp_boost")
+	bard.autobattle_locked = true  # spotlight unlock via world1_spotlight_bard_ch7
+	party.append(bard)
+	# Fresh party starts at FULL: passives/equipment raise max_hp AFTER initialize set current=max, so Fighter spawned visibly damaged at 132/181 (web-smoke shot, 2026-07-11).
+	for m in party:
+		m.current_hp = m.max_hp
+		m.current_mp = m.max_mp
+	# Apply any spotlight unlocks already in flags (relevant for NG+ or
+	# debug fast-travel — usually a no-op on a fresh game).
+	_reconcile_spotlight_locks()
+	# tick 55: wire the level-up listener so the rebalance daemon sees
+	# the passive progression signal in addition to wipes / boss defeats.
+	_wire_party_level_up_listeners()
+
+
+## tick 55: connect each Combatant's leveled_up signal to the daemon
+## bridge. Idempotent — checking is_connected before connecting so
+## save/load reuse paths don't double-connect.
+## tick 58: also connects ability_learned so level-up unlocks Toast
+## the player.
+func _wire_party_level_up_listeners() -> void:
+	for member in party:
+		if not (member is Combatant):
+			continue
+		if member.has_signal("leveled_up"):
+			if not member.leveled_up.is_connected(_on_party_leveled_up):
+				member.leveled_up.connect(_on_party_leveled_up.bind(member))
+		if member.has_signal("ability_learned"):
+			if not member.ability_learned.is_connected(_on_party_ability_learned):
+				member.ability_learned.connect(_on_party_ability_learned.bind(member))
+
+
+## Handler for any party Combatant's leveled_up signal. Records the
+## event in EventLog AND (if rebalance is enabled) fires a consider
+## trigger so the daemon can react to passive progression — not just
+## the high-stakes wipe/defeat signals.
+##
+## Throttling: the daemon's own min_consideration_interval guards
+## against firing on every level when the player chain-levels in a
+## grinding session. Recording is unconditional so the audit log has
+## the level changes regardless of rebalance opt-in.
+## tick 58: Toast on ability unlock so the player sees the reward.
+func _on_party_ability_learned(ability_id: String, member: Combatant) -> void:
+	if member == null:
+		return
+	# Tick 128: prefer the JobSystem's canonical display name; fall
+	# back to the prettified ability_id (snake_case → Title Case)
+	# rather than the raw key. Pre-fix, a Combatant.learn_ability
+	# call for an id JobSystem couldn't resolve (debug paths,
+	# Scriptweaver custom abilities, save-format drift) surfaced
+	# "Mira learned shield_bash!" with the underscore — ugly and
+	# clearly an engineer-facing string.
+	var ability_name: String = ability_id.replace("_", " ").capitalize()
+	if JobSystem and JobSystem.has_method("get_ability"):
+		var a: Dictionary = JobSystem.get_ability(ability_id)
+		if not a.is_empty() and a.has("name"):
+			ability_name = str(a["name"])
+	if Toast:
+		Toast.show(self,
+			"%s learned %s!" % [member.combatant_name, ability_name],
+			Toast.SUCCESS_COLOR)
+
+
+func _on_party_leveled_up(new_level: int, member: Combatant) -> void:
+	if GameState == null:
+		return
+	# Tick 313: world key now uses current_world (where THIS event happened)
+	# instead of worlds_unlocked (progression marker). Pre-fix `world` meant
+	# "highest unlocked" not "current location" — the rebalance LLM seeing
+	# a level-up event with world=4 thought the level-up happened in W4
+	# even when the player was in W2. Both fields surface so the LLM has
+	# the full picture; "world" is renamed via the comment, the dict key
+	# stays "world" for backward compatibility with existing EventLog rows
+	# and tests pinning the key name.
+	var ctx: Dictionary = {
+		"member": member.combatant_name if member else "?",
+		"new_level": new_level,
+		"map_id": _current_map_id,
+		"world": GameState.current_world,
+		"worlds_unlocked": GameState.worlds_unlocked,
+	}
+	if "event_log" in GameState and GameState.event_log != null:
+		GameState.event_log.record(
+			EventLog.TYPE_LEVEL_UP,
+			"%s reached level %d" % [str(ctx["member"]), new_level],
+			ctx)
+	# tick 60: Toast the level-up unless we're in battle (the battle's
+	# own victory screen already surfaces per-character level info, so
+	# a parallel Toast would just be noise — but out-of-battle leveling
+	# from debug paths / future event-driven exp sources still wants
+	# a visible cue).
+	# VICTORY/DEFEAT count as in-battle here — the results screen shows its own level rows, so toasts must stay suppressed through presentation
+	var in_battle: bool = BattleManager != null and BattleManager.current_state != BattleManager.BattleState.INACTIVE
+	if Toast and not in_battle and member != null:
+		Toast.show(self,
+			"%s reached job level %d!" % [member.combatant_name, new_level],
+			Toast.SUCCESS_COLOR)
+	if GameState.llm_rebalance_enabled and GameState.rebalance_daemon != null:
+		var fired: bool = GameState.rebalance_daemon.consider(
+			RebalanceDaemonScript.TRIGGER_LEVEL_UP, ctx)
+		if fired:
+			_kick_off_rebalance_fetch.call_deferred(
+				GameState.rebalance_daemon.pending.size() - 1)
+	# Tick 247 / 254: ratchet "Double Digits" event flag via the
+	# centralized helper so a toast fires on first unlock.
+	if new_level >= 10 and PartyChatSystem:
+		PartyChatSystem.fire_event_flag("event_flag_level_10_reached")
+
+
+func _reconcile_spotlight_locks() -> void:
+	# Walk the party and unlock any PC whose spotlight cutscene flag is
+	# set. Idempotent — safe to call on init, post-load, or after any
+	# cutscene completes. Debug flag is handled at the lock-check sites
+	# (BattleManager turn routing, UI gates) rather than mutating state
+	# here so toggling the debug flag at runtime takes effect immediately.
+	if not GameState:
+		return
+	var flags = GameState.game_constants
+	var any_flipped: bool = false
+	for member in party:
+		if member == null or not "autobattle_locked" in member:
+			continue
+		if not member.job is Dictionary:
+			continue
+		var job_id: String = member.job.get("id", "")
+		if job_id.is_empty():
+			continue
+		var flag = "cutscene_flag_spotlight_unlocked_" + job_id
+		if flags.get(flag, false) and member.autobattle_locked:
+			member.autobattle_locked = false
+			any_flipped = true
+	# Mid-battle locked → unlocked transition fires the spotlight_unlock
+	# tutorial hint exactly once per session (TutorialHints handles the
+	# session dedupe). Out-of-battle flips are silent — the affordance
+	# only matters while a battle is on screen.
+	# Duels skip the immediate toast — it rendered under the aftermath cutscene; the deferred per-job toast in _resume_exploration_after_cutscene owns it.
+	if any_flipped and not _spotlight_duel_active and BattleManager and BattleManager.current_state != BattleManager.BattleState.INACTIVE:
+		var scene = get_tree().current_scene if is_inside_tree() else null
+		if scene:
+			TutorialHints.show(scene, "spotlight_unlock")
+
+
+## Boot canary (2026-07-01): try-load a handful of load-bearing scene
+## scripts. load() returns null when a script failed to parse — the
+## signature of a stale global class cache (new class_name merged
+## without --import). On any failure: push_error per script + a
+## fullscreen red overlay telling the player exactly how to fix it.
+## Canaries chosen as the cascade roots from the real incident
+## (OverworldScene + SavePoint) plus the battle scene.
+const _BOOT_CANARY_SCRIPTS: Array = [
+	"res://src/exploration/OverworldScene.gd",
+	"res://src/exploration/SavePoint.gd",
+	"res://src/battle/BattleScene.gd",
+]
+
+
+func _check_boot_canaries() -> void:
+	var failed: Array[String] = []
+	for path in _BOOT_CANARY_SCRIPTS:
+		var script: Variant = load(path)
+		if script == null:
+			failed.append(str(path))
+			push_error("[BOOT-CANARY] failed to load %s — stale class cache? Run: godot --headless --import (or ./launch.sh)" % path)
+	if failed.is_empty():
+		return
+	var layer := CanvasLayer.new()
+	layer.name = "BootCanaryOverlay"
+	layer.layer = 128
+	add_child(layer)
+	var bg := ColorRect.new()
+	bg.color = Color(0.08, 0.0, 0.0, 0.96)
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(bg)
+	var label := Label.new()
+	label.set_anchors_preset(Control.PRESET_FULL_RECT)
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.add_theme_color_override("font_color", Color(1.0, 0.85, 0.85))
+	label.add_theme_font_size_override("font_size", 22)
+	label.text = "ASSETS OUT OF DATE\n\n%d core script(s) failed to compile:\n%s\n\nThis usually means new scripts were merged without reimporting.\nFix: close the game and run  ./launch.sh  (it reimports automatically)\nor:  godot --headless --import" % [failed.size(), "\n".join(failed)]
+	layer.add_child(label)
+
+
+## Tick 471: enter a solo-duel battle for the Spotlight Duels step
+## type. Benches all but the spotlight PC (looked up by job id), fires
+## the standard _start_battle_async pipeline, awaits our own
+## spotlight_battle_ended signal (emitted from _on_battle_ended's
+## short-circuit path), restores the party, and returns "victory" |
+## "defeat" so CutsceneDirector._step_battle can drive its retry loop.
+## Cutscene stays paused across attempts — _on_battle_ended skips its
+## normal exploration-return flow while _spotlight_duel_active is on.
+func start_solo_battle(job_id: String, enemy_id: String, _opts: Dictionary = {}) -> String:
+	# entering mid-battle frees the live battle's combatants under BattleManager — freed-instance errors every frame
+	if BattleManager.current_state != BattleManager.BattleState.INACTIVE:
+		push_warning("GameLoop.start_solo_battle: refused — a battle is already active (state %d)" % BattleManager.current_state)
+		return "unavailable"
+	var spotlight_pc: Combatant = null
+	for m in party:
+		if m == null or not is_instance_valid(m):
+			continue
+		var m_job_id: String = ""
+		if m.job is Dictionary:
+			m_job_id = str((m.job as Dictionary).get("id", ""))
+		if m_job_id == job_id:
+			spotlight_pc = m
+			break
+	if spotlight_pc == null:
+		# "defeat" would retry forever — "unavailable" tells the cutscene to abort
+		push_warning("GameLoop.start_solo_battle: no party member with job '%s' — cutscene battle skipped" % job_id)
+		return "unavailable"
+	_spotlight_saved_party = party.duplicate()
+	party = [spotlight_pc]
+	# struktured 2026-07-18: "auto battle should be forced off in spotlight by default" — the duel showcases MANUAL play of that kit; restore the player's setting afterward.
+	var duel_char_id: String = spotlight_pc.combatant_name.to_lower().replace(" ", "_")
+	_spotlight_saved_autobattle = AutobattleSystem.is_autobattle_enabled(duel_char_id)
+	AutobattleSystem.set_autobattle_enabled(duel_char_id, false)
+	_pending_spotlight_unlock = job_id
+	_spotlight_duel_active = true
+	# the spotlight short-circuit skips post-battle healing, so a retry would re-enter at 0 HP
+	_restore_duelist(spotlight_pc)
+	# Progressive death-tiered hint (msg 2472): if prior attempts against this job's duel have accrued past a threshold, fire the matching spotlight_hint_<job>_<tier> before combat starts. Missing content in the TutorialHints catalog logs a push_warning that CI catches — cowir-story owns the copy.
+	_maybe_fire_spotlight_hint(job_id)
+	# step win_condition overrides; monsters.json is the data fallback (agreement ratchet-tested)
+	if BattleManager:
+		var wc: Variant = _opts.get("win_condition", {})
+		if wc is Dictionary and not (wc as Dictionary).is_empty():
+			BattleManager._win_condition = (wc as Dictionary).duplicate()
+		elif EncounterSystem and EncounterSystem.monster_database.has(enemy_id):
+			var mdata: Dictionary = EncounterSystem.monster_database[enemy_id]
+			var monster_wc: Variant = mdata.get("win_condition", {})
+			if monster_wc is Dictionary and not (monster_wc as Dictionary).is_empty():
+				BattleManager._win_condition = (monster_wc as Dictionary).duplicate()
+				print("[SPOTLIGHT] win_condition from monsters.json fallback: %s" % str(monster_wc))
+	await _start_battle_async([enemy_id], false)
+	var result: bool = await spotlight_battle_ended
+	party = _spotlight_saved_party.duplicate()
+	_spotlight_saved_party.clear()
+	AutobattleSystem.set_autobattle_enabled(duel_char_id, _spotlight_saved_autobattle)
+	_spotlight_duel_active = false
+	_pending_spotlight_unlock = ""
+	# Tear the stale BattleScene down under the cutscene's opaque layer so aftermath narration doesn't overlay a live battle: boss music kept playing + survive_turns re-fired end_battle every tick (the "background restart"), and _unfreeze_player at cutscene end had no player behind the layer (Rogue "frozen" after "everyone back"). Skip on defeat: the retry loop owns the next _start_battle_async which frees the scene itself.
+	if result:
+		_cutscene_cooldown = true  # skip pending-story re-fire from _start_exploration
+		await _return_to_exploration(true)  # force: BattleManager is still VICTORY inside this emit stack
+	return "victory" if result else "defeat"
+
+
+## statuses cleared via remove_status (not .clear()) so buff bookkeeping stays consistent
+static func _restore_duelist(pc: Combatant) -> void:
+	if pc == null or not is_instance_valid(pc):
+		return
+	if not pc.is_alive and pc.has_method("revive"):
+		pc.revive(pc.max_hp)
+	pc.current_hp = pc.max_hp
+	pc.current_mp = pc.max_mp
+	if "status_effects" in pc:
+		for s in (pc.status_effects as Array).duplicate():
+			# the permadeath marker must survive every restore or a later Raise undoes it
+			if str(s) == "permakilled":
+				continue
+			if pc.has_method("remove_status"):
+				pc.remove_status(str(s))
+
+
+## Loss count → hint tier (msg 2472). Returns 0 for "no hint" (first attempts), 1..N when the count crosses successive thresholds. Static so tests can exercise it without spinning up the whole GameLoop.
+static func _spotlight_hint_tier(losses: int) -> int:
+	var tier: int = 0
+	for t in SPOTLIGHT_HINT_THRESHOLDS:
+		if losses >= int(t):
+			tier += 1
+	return tier
+
+
+## Fire every threshold-met spotlight_hint_<job>_<tier> that hasn't been shown yet. cowir-story's gate (msg 2478): tier N fires iff `losses >= threshold_N AND not tutorial_<hint_id>`. TutorialHints.show dedupes internally via game_constants.tutorial_<id> — so if a player's counter jumps past threshold_1 without seeing tier 1 (save-load edge, bug, etc.), tier 1 still catches up on the next duel start. Monotone non-decreasing per tier; no "== threshold" comparison anywhere.
+func _maybe_fire_spotlight_hint(job_id: String) -> void:
+	if not GameState or not "game_constants" in GameState:
+		return
+	var loss_key: String = "spotlight_losses_" + job_id
+	var losses: int = int(GameState.game_constants.get(loss_key, 0))
+	for i in range(SPOTLIGHT_HINT_THRESHOLDS.size()):
+		var threshold: int = int(SPOTLIGHT_HINT_THRESHOLDS[i])
+		if losses >= threshold:
+			var tier: int = i + 1
+			var hint_id: String = "spotlight_hint_%s_%d" % [job_id, tier]
+			TutorialHints.show(self, hint_id)
 
 
 func _on_battle_ended(victory: bool) -> void:
 	"""Handle battle end"""
+	# struktured 2026-08-23 wedge: nothing tore the editor down at battle end, so one opened
+	# on the victory screen survived into exploration as an orphan with no way out. Before the
+	# spotlight short-circuit below, which returns early. save_and_close keeps their rule edits.
+	if _autobattle_editor and is_instance_valid(_autobattle_editor):
+		if _autobattle_editor.has_method("save_and_close"):
+			_autobattle_editor.save_and_close()
+		else:
+			_on_autobattle_editor_closed()
+	## Tick 471: spotlight-duel short-circuit. When a cutscene owns the
+	## flow, we do the minimal spotlight bookkeeping (unlock flag on
+	## win) and emit spotlight_battle_ended for start_solo_battle to
+	## resume. Skip healing, exploration return, transitions — the
+	## cutscene is still on screen and will drive the next step (retry
+	## or aftermath). Retry loop's next _start_battle_async will
+	## queue_free the stale battle scene.
+	if _spotlight_duel_active:
+		if victory and _pending_spotlight_unlock != "" and GameState and "game_constants" in GameState:
+			var flag: String = "cutscene_flag_spotlight_unlocked_" + _pending_spotlight_unlock
+			GameState.game_constants[flag] = true
+			# Clear the loss counter so a hypothetical replay starts fresh (msg 2472). Erase over set-to-0 keeps game_constants tidy — future consumers reading via .get(key, 0) get the same answer.
+			var loss_key: String = "spotlight_losses_" + _pending_spotlight_unlock
+			GameState.game_constants.erase(loss_key)
+			print("[SPOTLIGHT] battle won → set %s + cleared %s" % [flag, loss_key])
+			_pending_spotlight_unlock_toast = _pending_spotlight_unlock
+			_reconcile_spotlight_locks()
+		elif not victory and _pending_spotlight_unlock != "" and GameState and "game_constants" in GameState:
+			# Death-tier hint counter (msg 2472). Persisted via game_constants so a save+quit between attempts preserves the tier. start_solo_battle reads it on the next attempt and fires the appropriate spotlight_hint_<job>_<tier> via TutorialHints.
+			var loss_key: String = "spotlight_losses_" + _pending_spotlight_unlock
+			var current: int = int(GameState.game_constants.get(loss_key, 0))
+			GameState.game_constants[loss_key] = current + 1
+			print("[SPOTLIGHT] battle lost → %s = %d" % [loss_key, current + 1])
+		if victory and GameState:
+			# struktured ruling 2026-07-29: a duel IS a battle won — it belongs in battles_won and
+			# in Records. It is excluded from the AUTOMATION RATIO instead, via spotlight_duels_won,
+			# because a forced-manual tutorial fight is not evidence about automation habits.
+			# Previously this early return skipped battles_won entirely, under-counting by five.
+			GameState.battles_won += 1
+			GameState.spotlight_duels_won += 1
+			battles_won += 1
+		spotlight_battle_ended.emit(victory)
+		return
 	if victory:
 		battles_won += 1
+		## Tick 418: sync to GameState's persistent counter so SaveSystem
+		## and CutsceneDirector can read across save+quit. GameLoop's
+		## battles_won stays as a session-local mirror — convenient for
+		## the same-frame consumers below (miniboss every 3, dashboard
+		## summary, etc.) that don't need to round-trip through GameState.
+		if GameState:
+			GameState.battles_won += 1
+
+		# Apply pending boss-defeat flags (set by dungeon._trigger_boss_battle).
+		# Must happen BEFORE _return_to_exploration so the new dungeon instance
+		# can pick up cave_rat_king_defeated / boss_flag_key from dungeon_flags.
+		_apply_pending_boss_defeat()
 
 		# Heal party between battles (rest bonus)
 		for member in party:
@@ -824,38 +3170,442 @@ func _on_battle_ended(victory: bool) -> void:
 			member.current_ap = 0
 
 		# Wait for player to confirm before leaving victory screen
-		await _wait_for_confirm()
-		_return_to_exploration()
+		# (first press completes the overlay's choreography, the next one leaves — victory revamp 2026-08-18)
+		await _wait_for_confirm_victory()
+
+		# Play exit transition (iris-close) before returning to overworld
+		if BattleTransition:
+			await BattleTransition.play_exit_transition(true)
+
+		# Must `await` — _return_to_exploration is async (it awaits the
+		# scene-swap _start_exploration). On desktop the scene load is
+		# ~1 frame so the bug was invisible; on Android web the scene
+		# instantiation takes seconds, the reveal_exploration tween below
+		# fired immediately, faded the iris from black to transparent
+		# while NO scene was rendered, and the player saw a black screen
+		# until the new scene finally appeared.
+		await _return_to_exploration()
+
+		# Reveal the overworld with a smooth fade — runs ONLY after the
+		# new scene is in the tree.
+		if BattleTransition:
+			await BattleTransition.reveal_exploration()
 	else:
-		# Game over - wait for confirm then restart
-		await _wait_for_confirm()
-		_create_party()
-		battles_won = 0
-		_current_map_id = "overworld"
-		_spawn_point = "default"
-		_start_exploration()
+		# Escape vs wipe: type="escape" abilities (Flee) call end_battle(false) —
+		# the SAME path as a party wipe — so a successful flee was hitting the
+		# game-over screen. A flee leaves LIVING party members; a true wipe leaves
+		# none. Gate the whole defeat/game-over flow on the party actually being
+		# down: any survivor means we escaped, so just return to the overworld.
+		var _escape_survivors := 0
+		for _m in party:
+			if _m is Combatant and _m.is_alive:
+				_escape_survivors += 1
+		if _escape_survivors > 0:
+			if BattleTransition:
+				await BattleTransition.play_exit_transition(true)
+			await _return_to_exploration()
+			if BattleTransition:
+				await BattleTransition.reveal_exploration()
+			return
+		## Tick 411: consume meta_auto_rewind_pending (set by the Time
+		## Mage temporal_shield meta-ability in tick 404). If the
+		## player armed the shield and the wipe just hit, fire the
+		## rewind BEFORE the game-over flow so the wipe never reaches
+		## the screen. Single-shot — clear the flag whether the rewind
+		## succeeded or not, so a stuck shield can't infinitely re-arm
+		## on every wipe in the same battle. Falls through to the
+		## normal game-over path if rewind_to_previous_save returns
+		## false (rewind locked, no history, etc.).
+		if GameState and "game_constants" in GameState and bool(GameState.game_constants.get("meta_auto_rewind_pending", false)):
+			GameState.game_constants["meta_auto_rewind_pending"] = false
+			if GameState.rewind_to_previous_save():
+				print("[META] temporal_shield auto-rewind consumed — wipe averted")
+				# Skip game-over flow entirely; the save data has been
+				# restored to a pre-wipe state.
+				return
+			else:
+				print("[META] temporal_shield auto-rewind failed — rewind not enabled or no history; falling through to game over")
+
+		# Game over — show dramatic screen with retry/continue options
+		# Defeat STASHES the boss spec (struktured 2026-07-18: beat Umbraxis on a RETRY, stayed 'unbeaten' forever — the old unconditional clear meant retry victories fired no flags). Retry re-arms it; continue/quit discards.
+		_stashed_boss_defeat = GameState.pending_boss_defeat.duplicate(true)
+		GameState.pending_boss_defeat = {}
+		# ── EventLog: record party wipe fact ─────────────────────────────────
+		if GameState and "event_log" in GameState and GameState.event_log != null:
+			var survivors: int = 0
+			for m in party:
+				if m is Combatant and m.is_alive:
+					survivors += 1
+			var enemy_names: Array = []
+			for e in BattleManager.enemy_party:
+				if e is Combatant:
+					var etype: String = e.get_meta("monster_type", e.combatant_name)
+					if etype not in enemy_names:
+						enemy_names.append(etype)
+			var wipe_ctx: Dictionary = {
+				"map_id":      _current_map_id,
+				"survivors":   survivors,
+				"party_size":  party.size(),
+				"enemy_types": enemy_names,
+				# Tick 313: world = current_world (where the wipe happened),
+				# worlds_unlocked carries the progression marker. See the
+				# matching comment in _on_party_leveled_up.
+				"world":       GameState.current_world,
+				"worlds_unlocked": GameState.worlds_unlocked,
+			}
+			GameState.event_log.record(
+				EventLog.TYPE_PARTY_WIPE,
+				"Party wiped in %s" % _current_map_id.replace("_", " ").capitalize(),
+				wipe_ctx
+			)
+			# Rebalance trigger: a wipe is the strongest 'this is too hard'
+			# signal we have. Daemon's own throttle keeps a streak from
+			# spending the LLM budget; opt-in flag keeps this off by default.
+			if GameState.llm_rebalance_enabled and GameState.rebalance_daemon != null:
+				var fired: bool = GameState.rebalance_daemon.consider(RebalanceDaemonScript.TRIGGER_PARTY_WIPE, wipe_ctx)
+				if fired:
+					_kick_off_rebalance_fetch.call_deferred(GameState.rebalance_daemon.pending.size() - 1)
+		# Diegetic retry (Fable's design): a boss authored with diegetic_retry files the
+		# player's death as ITS OWN calibration error and refuses the game over — full
+		# restore, same fight, its player_wiped line as the retried battle's opener.
+		if await _maybe_diegetic_retry():
+			return
+		await _show_game_over_screen()
+
+
+## tick 44: deferred coroutine that fires the LLM call for a freshly
+## queued rebalance proposal. call_deferred from the trigger sites so
+## the sync wipe/defeat handlers don't block on the await — the LLM
+## call happens on the next idle frame and lands in the proposal
+## record by the time the player checks the (forthcoming) review UI.
+##
+## Recent EventLog entries are passed in for trend context — the
+## daemon uses them so the LLM can tell "first wipe of the session"
+## from "tenth wipe in 20 minutes".
+func _kick_off_rebalance_fetch(proposal_idx: int) -> void:
+	if GameState == null or GameState.rebalance_daemon == null:
+		return
+	var recent: Array = []
+	if "event_log" in GameState and GameState.event_log != null:
+		recent = GameState.event_log.recent(10)
+	var ok: bool = await GameState.rebalance_daemon.request_llm_proposal(proposal_idx, recent)
+	if not ok:
+		return
+	# LLM returned a proposal — try to auto-apply it. Safe deltas at
+	# high confidence land instantly; out-of-band or low-confidence
+	# proposals stay in pending[] for the review UI to surface.
+	# Surface the result diegetically via Toast — matches the "what
+	# did the AI change for me" directive (not hidden).
+	#
+	# pending is ordered by append; the proposal we just filled may
+	# have moved if older entries were ring-dropped during the await,
+	# so re-find it by status rather than trust the idx blindly.
+	var fresh_idx: int = -1
+	for i in range(GameState.rebalance_daemon.pending.size()):
+		var p: Dictionary = GameState.rebalance_daemon.pending[i]
+		if str(p.get("status", "")) == "proposed":
+			fresh_idx = i
+			break
+	if fresh_idx < 0:
+		return
+	var proposal_copy: Dictionary = GameState.rebalance_daemon.pending[fresh_idx].duplicate(true)
+	var result: String = GameState.rebalance_daemon.try_auto_apply(fresh_idx)
+	if result == GameState.rebalance_daemon.APPLY_APPLIED or result == GameState.rebalance_daemon.APPLY_NO_CHANGE:
+		# Look up the moved-to-applied proposal (it has the
+		# applied_changes annotation now).
+		var summary_target: Dictionary = proposal_copy
+		if GameState.rebalance_daemon.applied.size() > 0:
+			summary_target = GameState.rebalance_daemon.applied[-1]
+		var msg: String = GameState.rebalance_daemon.summarize_applied(summary_target)
+		if Toast:
+			Toast.show(self, msg, Toast.SUCCESS_COLOR if result == GameState.rebalance_daemon.APPLY_APPLIED else Toast.WARNING_COLOR)
+	elif result == GameState.rebalance_daemon.APPLY_NEEDS_REVIEW:
+		if Toast:
+			Toast.show(self, "Auto-rebalance proposal needs your review (Settings → review queue)", Toast.WARNING_COLOR)
+
+
+func _apply_pending_boss_defeat() -> void:
+	"""Apply GameState.pending_boss_defeat on battle victory.
+	Set by dungeon._trigger_boss_battle() before emitting battle_triggered.
+	Without this central handler the cave/dungeon instance gets freed during
+	_return_to_exploration before any local defeat handler could run, so the
+	story flags silently never get set (regression: Rat King quest log)."""
+	var spec: Dictionary = GameState.pending_boss_defeat
+	if spec.is_empty():
+		return
+	# Story flags
+	for flag in spec.get("story_flags", []):
+		GameState.set_story_flag(flag)
+	# Quest notifies. A custom objective advances ONLY via notify_flag — setting
+	# the flag above is invisible to QuestSystem, so a kill-gated step strands.
+	var qs = get_node_or_null("/root/QuestSystem")
+	for qf in spec.get("quest_flags", []):
+		if qs and str(qf) != "":
+			qs.notify_flag(str(qf))
+	# Game constants (typically cutscene_flag_*)
+	# Tick 214: warn on cutscene_flag_* names that don't appear anywhere in this file's body. A subclass typo (e.g. "cutscene_flag_wardin_industrial_defeated") sets the wrong flag silently — defeat applies but no post-defeat cutscene gate ever fires.
+	# Tick 220: route through the helper so each flag also mirrors to story_flags. Pre-fix the direct write here meant QuestLog never saw boss defeat objectives flip to "complete".
+	for c in spec.get("constants", []):
+		_set_cutscene_flag_and_mirror(str(c))
+		if c is String and c.begins_with("cutscene_flag_") and not _is_known_defeat_flag(c):
+			push_warning("[GameLoop] _apply_pending_boss_defeat: '%s' set but not referenced by any _get_pending_story_cutscene gate — post-defeat cutscene will NOT fire (subclass typo?)" % c)
+	## Tick 154: dungeon flag now lives on game_constants
+	## (party-leader-independent). Pre-fix it was stored on
+	## player_party[0]["dungeon_flags"]; if the player changed
+	## leader via GameState.cycle_party_leader, the old leader's
+	## flags became invisible to is_alive checks at dungeon
+	## re-entry — a defeated boss would silently respawn.
+	var df: String = spec.get("dungeon_flag", "")
+	if df != "":
+		if not GameState.game_constants.has("dungeon_flags"):
+			GameState.game_constants["dungeon_flags"] = {}
+		GameState.game_constants["dungeon_flags"][df] = true
+	# World unlock — either advance once, or to a specific world
+	if spec.get("unlock_world", false):
+		var target: int = spec.get("unlock_world_target", 0)
+		if target > 0:
+			while GameState.worlds_unlocked < target:
+				GameState.unlock_next_world()
+		else:
+			GameState.unlock_next_world()
+	# Defeat cutscene — left for the dungeon to play after re-instantiation
+	# (we don't play it here because the battle scene is still up)
+	print("[BOSS] Applied pending defeat: %s" % spec)
+	# ── EventLog: record boss defeat fact ────────────────────────────────────
+	if GameState and "event_log" in GameState and GameState.event_log != null:
+		var boss_id: String = spec.get("dungeon_flag", "")
+		if boss_id.is_empty():
+			var flags: Array = spec.get("story_flags", [])
+			boss_id = flags[0] if flags.size() > 0 else "unknown_boss"
+		var boss_name: String = boss_id.replace("_defeated", "").replace("_", " ").capitalize()
+		var defeat_data: Dictionary = {
+			"boss_id":    boss_id,
+			"boss_name":  boss_name,
+			"map_id":     _current_map_id,
+			# Tick 313: world = current_world (where THIS boss was beaten),
+			# worlds_unlocked carries progression. See matching comment
+			# in _on_party_leveled_up.
+			"world":      GameState.current_world,
+			"worlds_unlocked": GameState.worlds_unlocked,
+		}
+		# Tactics snapshot — HOW the player won, not just THAT they won. NPC
+		# dialogue prompts pull this from EventLog so future chats can react
+		# ("you autobattled your way past the Rat King?"). BattleManager's
+		# tracking flags are still live at this point — they reset on the next
+		# start_battle, not on end_battle.
+		if BattleManager and BattleManager.has_method("get_battle_tactics_snapshot"):
+			defeat_data["tactics"] = BattleManager.get_battle_tactics_snapshot()
+		GameState.event_log.record(
+			EventLog.TYPE_BOSS_DEFEAT,
+			"Defeated %s" % boss_name,
+			defeat_data
+		)
+		# Rebalance trigger: a boss victory is a 'curve looks right' signal
+		# (or 'too easy' if the player one-shot it). Daemon decides whether
+		# to nudge based on the tactics snapshot — opt-in flag gates the
+		# whole call so vanilla play isn't affected.
+		if GameState.llm_rebalance_enabled and GameState.rebalance_daemon != null:
+			var fired: bool = GameState.rebalance_daemon.consider(RebalanceDaemonScript.TRIGGER_BOSS_DEFEAT, defeat_data)
+			if fired:
+				_kick_off_rebalance_fetch.call_deferred(GameState.rebalance_daemon.pending.size() - 1)
+	# One-shot: clear after applying
+	GameState.pending_boss_defeat = {}
+	# Auto-save immediately after boss flags land. Without this, a crash or
+	# quit between victory and the next area transition / 5-min auto-tick
+	# loses the boss-defeat flag entirely — and boss fights are the longest,
+	# highest-stakes encounters in the game.
+	if SaveSystem and SaveSystem.has_method("auto_save"):
+		SaveSystem.auto_save()
+
+
+## Victory variant of _wait_for_confirm: the FIRST accept snaps the overlay's
+## animations to their end state; only a press on a COMPLETED overlay leaves.
+func _wait_for_confirm_victory() -> void:
+	await get_tree().create_timer(0.5).timeout
+	var confirm_t0: int = Time.get_ticks_msec()
+	while Time.get_ticks_msec() - confirm_t0 < 120000:
+		await get_tree().process_frame
+		if Input.is_action_just_pressed("ui_accept") or Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+			var overlay = current_scene.get_node_or_null("VictoryResults") if current_scene and is_instance_valid(current_scene) else null
+			if overlay and overlay.has_method("is_complete") and not overlay.is_complete():
+				overlay.complete_now()
+				await get_tree().create_timer(0.25).timeout  # debounce so one press can't both snap and dismiss
+				continue
+			break
+	if Time.get_ticks_msec() - confirm_t0 >= 120000:
+		push_warning("[GAMELOOP] _wait_for_confirm_victory timed out after 120s — advancing without a press")
 
 
 func _wait_for_confirm() -> void:
 	"""Wait for the player to press confirm (A/Z/Enter/mouse click) before continuing"""
 	# Small delay so the press that ended the battle doesn't immediately confirm
 	await get_tree().create_timer(0.5).timeout
-	while true:
+	# Bounded per the house pattern (its four teardown siblings all are; this was the file's sole unbounded wait). 120s is generous for a human reading a victory screen; the else is LOUD because silently advancing past an unseen screen would be worse than the hang.
+	var confirm_t0: int = Time.get_ticks_msec()
+	while Time.get_ticks_msec() - confirm_t0 < 120000:
 		await get_tree().process_frame
 		if Input.is_action_just_pressed("ui_accept"):
 			break
 		if Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 			break
+	if Time.get_ticks_msec() - confirm_t0 >= 120000:
+		push_warning("[GAMELOOP] _wait_for_confirm timed out after 120s — advancing without a press (report if you were present)")
+
+
+## The diegetic-retry boss in the LAST battle, or {} — data-driven via monsters.json
+## `diegetic_retry`, so any future boss can refuse a game over by authoring one flag.
+func _diegetic_retry_boss() -> Dictionary:
+	if EncounterSystem == null or EncounterSystem.monster_database.is_empty():
+		return {}
+	for id in _last_battle_enemies:
+		var md: Dictionary = EncounterSystem.monster_database.get(str(id), {})
+		if bool(md.get("diegetic_retry", false)):
+			return {"id": str(id), "name": str(md.get("name", str(id))),
+				"lines": md.get("dialogue", {}).get("player_wiped", [])}
+	return {}
+
+
+## Fable's design: the Calibrant files the player's death as ITS OWN calibration error.
+## No GameOverScreen — dark beat, its line, full restore, same fight. Returns false when
+## the last battle held no diegetic_retry boss, and the normal game over proceeds.
+func _maybe_diegetic_retry() -> bool:
+	var boss := _diegetic_retry_boss()
+	if boss.is_empty():
+		return false
+	var count_key: String = "diegetic_retries_" + str(boss["id"])
+	var n: int = int(GameState.game_constants.get(count_key, 0))
+	GameState.game_constants[count_key] = n + 1
+
+	var overlay := CanvasLayer.new()
+	overlay.layer = 96
+	var bg := ColorRect.new()
+	bg.color = Color(0.0, 0.0, 0.02)
+	bg.set_anchors_preset(Control.PRESET_FULL_RECT)
+	overlay.add_child(bg)
+	var lbl := Label.new()
+	var lines: Array = boss["lines"]
+	var line: String = str(lines[n % lines.size()]) if not lines.is_empty() else "Recalibrating."
+	lbl.text = "%s\n\n\"%s\"" % [str(boss["name"]).to_upper(), line]
+	lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	lbl.set_anchors_preset(Control.PRESET_FULL_RECT)
+	lbl.add_theme_font_size_override("font_size", 18)
+	lbl.add_theme_color_override("font_color", Color(0.85, 0.6, 0.95))
+	overlay.add_child(lbl)
+	add_child(overlay)
+	await get_tree().create_timer(3.0).timeout
+	overlay.queue_free()
+
+	# The same restore the GameOverScreen retry arm performs — statuses stripped, AP zeroed.
+	for member in party:
+		if is_instance_valid(member):
+			_restore_duelist(member)
+			member.current_ap = 0
+	await _start_battle_async(_last_battle_enemies, _last_battle_is_encounter)
+	if BattleTransition:
+		await BattleTransition.fade_out()
+	return true
+
+
+func _show_game_over_screen() -> void:
+	"""Show the game over screen and handle retry/continue."""
+	var game_over = GameOverScreen.new()
+	add_child(game_over)
+
+	# Check if a save exists
+	var has_save = SaveSystem != null and SaveSystem.has_method("has_save") and SaveSystem.has_save()
+
+	# Array-wrapped flags because GDScript lambdas capture primitives by VALUE.
+	var choice_made: Array[bool] = [false]
+	var retry: Array[bool] = [true]
+
+	game_over.retry_selected.connect(func():
+		choice_made[0] = true
+		retry[0] = true
+	)
+	game_over.continue_selected.connect(func():
+		choice_made[0] = true
+		retry[0] = false
+	)
+
+	await game_over.show_game_over(has_save)
+
+	# Wait for player choice
+	while not choice_made[0]:
+		await get_tree().process_frame
+
+	game_over.queue_free()
+
+	if not retry[0]:
+		_stashed_boss_defeat = {}  # walking away forfeits the boss spec
+	if retry[0]:
+		# Retry the same battle with the same enemy formation
+		if _last_battle_enemies.size() > 0:
+			# Same fight, same stakes — the boss spec rides the retry
+			if not _stashed_boss_defeat.is_empty():
+				GameState.pending_boss_defeat = _stashed_boss_defeat.duplicate(true)
+				_stashed_boss_defeat = {}
+			# canonical restore: raw is_alive=true carried statuses into the retry AND resurrected permakilled PCs
+			for member in party:
+				if is_instance_valid(member):
+					_restore_duelist(member)
+					member.current_ap = 0
+			await _start_battle_async(_last_battle_enemies, _last_battle_is_encounter)
+			if BattleTransition:
+				await BattleTransition.fade_out()
+		else:
+			# No battle to retry — restart from overworld
+			_create_party()
+			battles_won = 0
+			## Tick 418: also reset the canonical persistent counter
+			## on the new-game-after-defeat path.
+			if GameState:
+				GameState.battles_won = 0
+			_set_current_map_id("overworld")
+			_spawn_point = "default"
+			await _start_exploration()
+	else:
+		# Continue: Load most recent save and rehydrate the live party from it.
+		var loaded = false
+		if SaveSystem and SaveSystem.has_method("load_game"):
+			var slot = SaveSystem.get_most_recent_slot() if SaveSystem.has_method("get_most_recent_slot") else -1
+			if slot >= 0:
+				loaded = SaveSystem.load_game(slot)
+		if not (loaded and _restore_party_from_save_data()):
+			_create_party()
+		await _start_exploration()
 
 
 ## Exploration Management
 
-func _start_exploration() -> void:
+func _start_exploration(force_battle_teardown: bool = false) -> void:
 	"""Start exploration mode (overworld or interior)"""
+	# 2026-07-16 smoke find: a stale _return_to_exploration racing a NEW battle spawned its scene VISIBLE under the live battle (village Exit gate bled into the game-over screen) and stomped current_state. If a battle owns the screen, this return is stale — bail; the live battle's own teardown drives the next return.
+	# force_battle_teardown: spotlight victory resumes INSIDE the battle_ended emit (before _cleanup_battle sets INACTIVE) — that legit teardown read as stale here and the swayed-alive duel kept ticking behind the aftermath dialogue (struktured cap 2026-07-16).
+	if not force_battle_teardown and current_state == LoopState.BATTLE and BattleManager \
+			and BattleManager.current_state != BattleManager.BattleState.INACTIVE:
+		print("[GAMELOOP] _start_exploration bailed — a live battle owns the screen (stale return)")
+		return
+	# Check for pending story cutscenes — 2026-07-16 struktured cap: the check used to EARLY-RETURN before the scene was built, so a village-gated STAGED cutscene played over the OLD map (after_cave narrated on the Mode 7 overworld). Now the destination scene builds first; the cutscene fires at the tail, on the map it's gated to.
+	var pending_story_cutscene: String = ""
+	if _cutscene_cooldown:
+		_cutscene_cooldown = false
+	else:
+		pending_story_cutscene = _get_pending_story_cutscene()
+
 	current_state = LoopState.EXPLORATION
+	_battle_transition_starting = false  # safety pop — never leak the mutex if a battle bailed mid-transition
+	InputLockManager.pop_all()  # Clear any leaked locks from previous state
 
 	# Ensure normal speed in exploration (battle speed is separate)
 	Engine.time_scale = 1.0
+
+	# Clean up victory overlay before freeing battle scene (prevents persistence)
+	if current_scene and is_instance_valid(current_scene):
+		var victory_overlay = current_scene.get_node_or_null("VictoryResults")
+		if victory_overlay and is_instance_valid(victory_overlay):
+			victory_overlay.free()  # Immediate free, not queue_free
 
 	# Remove old scene
 	if current_scene and is_instance_valid(current_scene):
@@ -874,6 +3624,74 @@ func _start_exploration() -> void:
 			exploration_scene = _create_cave_scene()
 		"tavern_interior":
 			exploration_scene = _create_tavern_scene()
+		"inn_interior":
+			exploration_scene = InnInteriorScript.new()
+		"shop_interior_item":
+			exploration_scene = _create_shop_interior(0)
+		"shop_interior_black_magic":
+			exploration_scene = _create_shop_interior(1)
+		"shop_interior_white_magic":
+			exploration_scene = _create_shop_interior(2)
+		"shop_interior_blacksmith":
+			exploration_scene = _create_shop_interior(3)
+		"blacksmith_interior":
+			exploration_scene = BlacksmithInteriorScript.new()
+		"scriptura_plaza":
+			exploration_scene = ScripturaPlazaScript.new()
+		"scriptura_guild":
+			exploration_scene = ScripturaGuildInteriorScript.new()
+		"scriptura_bookshop":
+			exploration_scene = ScripturaBookshopInteriorScript.new()
+		"harmonia_chapel":
+			exploration_scene = HarmoniaChapelInteriorScript.new()
+		"harmonia_library":
+			exploration_scene = HarmoniaLibraryInteriorScript.new()
+		"harmonia_cartographer":
+			exploration_scene = HarmoniaCartographerInteriorScript.new()
+		"eldertree_hollow":
+			exploration_scene = EldertreeHollowTreeInteriorScript.new()
+		"eldertree_grafting_house":
+			exploration_scene = EldertreeGraftingHouseInteriorScript.new()
+		"frosthold_warden_hut":
+			exploration_scene = FrostholdWardenHutInteriorScript.new()
+		"frosthold_meltwater_clock":
+			exploration_scene = FrostholdMeltwaterClockInteriorScript.new()
+		"sandrift_glassmaker":
+			exploration_scene = SandriftGlassmakerInteriorScript.new()
+		"sandrift_rain_ledger":
+			exploration_scene = SandriftRainLedgerInteriorScript.new()
+		"grimhollow_witch_hut":
+			exploration_scene = GrimhollowWitchHutInteriorScript.new()
+		"grimhollow_lantern_debt":
+			exploration_scene = GrimhollowLanternDebtInteriorScript.new()
+		"ironhaven_watchtower":
+			exploration_scene = IronhavenWatchtowerInteriorScript.new()
+		"ironhaven_strike_registry":
+			exploration_scene = IronhavenStrikeRegistryInteriorScript.new()
+		"maple_heights_arcade":
+			exploration_scene = MapleHeightsArcadeInteriorScript.new()
+		"maple_garage_sale":
+			exploration_scene = MapleGarageSaleInteriorScript.new()
+		"maple_heights_strip_mall":
+			exploration_scene = MapleStripMallScript.new()
+		"maple_community_center":
+			exploration_scene = MapleCommunityCenterInteriorScript.new()
+		"enrichment_annex":
+			exploration_scene = EnrichmentAnnexInteriorScript.new()
+		"brasston_clockwork_loft":
+			exploration_scene = BrasstonClockworkLoftInteriorScript.new()
+		"brasston_redundancy_archive":
+			exploration_scene = BrasstonRedundancyArchiveInteriorScript.new()
+		"rivet_row_union_hall":
+			exploration_scene = RivetRowUnionHallInteriorScript.new()
+		"rivet_row_incident_board":
+			exploration_scene = RivetRowIncidentBoardInteriorScript.new()
+		"node_prime_daemon_lounge":
+			exploration_scene = NodePrimeDaemonLoungeInteriorScript.new()
+		"node_prime_cache":
+			exploration_scene = NodePrimeCacheInteriorScript.new()
+		"vertex_threshold":
+			exploration_scene = VertexThresholdInteriorScript.new()
 		"frosthold_village":
 			exploration_scene = FrostholdVillageScript.new()
 		"eldertree_village":
@@ -892,6 +3710,22 @@ func _start_exploration() -> void:
 			exploration_scene = _create_dragon_cave_from_script(LightningDragonCaveScript)
 		"fire_dragon_cave":
 			exploration_scene = _create_dragon_cave_from_script(FireDragonCaveScript)
+		"backwards_warren":
+			exploration_scene = _create_dragon_cave_from_script(ContrarianDepthsScript)
+		"assembly_core":
+			exploration_scene = _create_dragon_cave_from_script(AssemblyCoreScript)
+		"root_process":
+			exploration_scene = _create_dragon_cave_from_script(RootProcessScript)
+		"null_chamber":
+			exploration_scene = _create_dragon_cave_from_script(NullChamberScript)
+		"suburban_underground":
+			exploration_scene = _create_dragon_cave_from_script(SuburbanUndergroundScript)
+		"castle_harmonia":
+			exploration_scene = _create_dragon_cave_from_script(CastleHarmoniaScript)
+		"steampunk_mechanism":
+			exploration_scene = _create_dragon_cave_from_script(SteampunkMechanismScript)
+		"vertex_apex":
+			exploration_scene = _create_dragon_cave_from_script(VertexApexScript)
 		"steampunk_overworld":
 			exploration_scene = SteampunkOverworldScript.new()
 		"suburban_overworld":
@@ -919,9 +3753,32 @@ func _start_exploration() -> void:
 	current_scene = exploration_scene
 	_exploration_scene = exploration_scene
 
+	# A battle can end while the autobattle editor is still open (autobattle finished it) —
+	# the rebuilt world must come up PAUSED under the editor, not live (2026-08-17 wedge).
+	if _autobattle_editor and is_instance_valid(_autobattle_editor) and exploration_scene.has_method("pause"):
+		exploration_scene.pause()
+
+	# Mount the [L] Party Chat indicator for exploration
+	_ensure_party_chat_indicator()
+
 	# Spawn player at correct position
 	if exploration_scene.has_method("spawn_player_at"):
 		exploration_scene.spawn_player_at(_spawn_point)
+
+	# Tick 309: override the default spawn marker with _player_position
+	# when one is pending. Sources: battle-return path (saved live coords
+	# pre-battle) and load-from-save path (_restore_party_from_save_data
+	# pulls from SaveSystem.pending_player_position). Consumed-and-cleared
+	# semantics so subsequent _start_exploration calls without a pending
+	# value (e.g. fresh area transitions) use spawn_player_at's marker.
+	# Was previously only applied by _return_to_exploration, missing the
+	# load-from-save case entirely — saves outside the in-overworld
+	# autosave window respawned the player at the dungeon entrance.
+	if _player_position != Vector2.ZERO:
+		var scene_player = exploration_scene.get("player") if "player" in exploration_scene else null
+		if scene_player:
+			scene_player.position = _player_position
+		_player_position = Vector2.ZERO
 
 	# Set player appearance based on party leader (respects party_leader_index)
 	if party.size() > 0:
@@ -945,17 +3802,70 @@ func _start_exploration() -> void:
 	if exploration_scene.has_signal("area_transition"):
 		exploration_scene.area_transition.connect(_on_area_transition)
 
+	# Day/night tint follows the map class: outdoors only (interiors have PR-153's modulate, caves are lightless)
+	var outdoor_scene: bool = exploration_scene is OverworldScene or exploration_scene is BaseVillage
+	# A scene that lights itself (VillageLighting CanvasModulate) must not ALSO be multiplied by the overlay
+	var scene_lit: bool = exploration_scene.has_method("has_scene_lighting") and bool(exploration_scene.has_scene_lighting())
+	if _day_night_overlay:
+		_day_night_overlay.set_outdoor(outdoor_scene and not scene_lit)
+	if _day_clock:
+		_day_clock.set_outdoor(outdoor_scene)
+		_day_clock.set_world(GameState.current_world if GameState else 1)
+	# Re-sync the night audio mood the battle exemption stripped (band may also have changed mid-fight)
+	var night_now: bool = GameState and GameState.has_method("is_night") and bool(GameState.is_night())
+	if SoundManager and SoundManager.has_method("set_night_music_effects"):
+		if night_now:
+			# Deferred past the victory jingle — hushing the fanfare mid-note read as a defeat sting (struktured 2026-07-18, mechanism: cowir-music msg 2784); conditions re-checked at fire time.
+			get_tree().create_timer(3.5).timeout.connect(func():
+				if current_state == LoopState.EXPLORATION and GameState and GameState.has_method("is_night") \
+						and bool(GameState.is_night()) and SoundManager and SoundManager.has_method("set_night_music_effects"):
+					SoundManager.set_night_music_effects(true)
+			, CONNECT_ONE_SHOT)
+		else:
+			SoundManager.set_night_music_effects(false)
+	if SoundManager and SoundManager.has_method("set_night_ambience"):
+		SoundManager.set_night_ambience(night_now and outdoor_scene)
+
 	# Pre-warm common area sprites in background (deferred to not block scene setup)
 	call_deferred("_prewarm_area_sprites")
 
+	# Fire the gated story cutscene ON the freshly-built map (see top-of-function note) — director owns state/locks from here; finish path light-resumes via _resume_exploration_after_cutscene.
+	if pending_story_cutscene != "":
+		_play_story_cutscene(pending_story_cutscene)
 
-func _return_to_exploration() -> void:
+
+## Day/night band-change fan-out — every consumer guarded so fold order can't break boot.
+func _on_time_of_day_changed(band: String) -> void:
+	var night: bool = band == "night"
+	# Battle music stays full-energy — night falling mid-fight read as a random volume drop (struktured 2026-07-17); _start_exploration re-syncs on return.
+	if SoundManager and SoundManager.has_method("set_night_music_effects") and current_state != LoopState.BATTLE:
+		SoundManager.set_night_music_effects(night)
+
+
+## Post-cutscene resume: the scene is already live under the cutscene (built pre-play since 2026-07-16) — just unlock. Full rebuild only when the cutscene tore scenes down (battle-step duels) or a battle owns the screen.
+func _resume_exploration_after_cutscene() -> void:
+	_cutscene_cooldown = false  # consume — the old rebuild path consumed it at _start_exploration's top
+	# Deferred spotlight-unlock toast: per-job dedupe key so bard/mage/etc each get their moment (the shared key only ever fired once per save)
+	if _pending_spotlight_unlock_toast != "":
+		TutorialHints.show(self, "spotlight_unlock", "spotlight_unlock_" + _pending_spotlight_unlock_toast)
+		_pending_spotlight_unlock_toast = ""
+	if _exploration_scene and is_instance_valid(_exploration_scene) \
+			and current_state != LoopState.BATTLE:
+		current_state = LoopState.EXPLORATION
+		InputLockManager.pop_all()
+		Engine.time_scale = 1.0
+		_ensure_party_chat_indicator()
+		return
+	_start_exploration()
+
+
+func _return_to_exploration(force_battle_teardown: bool = false) -> void:
 	"""Return to exploration after battle"""
 	# Reset engine time scale to normal (battle speed shouldn't affect overworld)
 	Engine.time_scale = 1.0
 
 	# Keep same map, restore player to saved position
-	await _start_exploration()
+	await _start_exploration(force_battle_teardown)
 
 	# Restore player position after scene is fully set up
 	if _player_position != Vector2.ZERO and _exploration_scene:
@@ -1016,6 +3926,18 @@ func _prewarm_area_sprites() -> void:
 			common_enemies = ["goblin", "bat", "lightning_dragon"]
 		"fire_dragon_cave":
 			common_enemies = ["imp", "skeleton", "fire_dragon"]
+		"backwards_warren":
+			common_enemies = ["bat", "goblin", "skeleton", "cartographer_wraith"]
+		"assembly_core":
+			common_enemies = ["conveyor_gremlin", "toxic_sludge", "assembly_line_automaton", "masterite_warden_industrial"]
+		"root_process":
+			common_enemies = ["rogue_process", "memory_leak", "recursive_loop", "data_wraith", "masterite_arbiter_futuristic"]
+		"null_chamber":
+			common_enemies = ["null_entity", "forgotten_variable", "empty_set", "the_absence", "masterite_curator_abstract"]
+		"suburban_underground":
+			common_enemies = ["spiteful_crow", "unassuming_dog", "skate_punk", "cranky_lady", "masterite_warden_suburban"]
+		"steampunk_mechanism":
+			common_enemies = ["steam_rat", "cog_swarm", "clockwork_sentinel", "brass_golem", "meta_knight"]
 		"steampunk_overworld":
 			common_enemies = ["clockwork_sentinel", "steam_rat", "brass_golem", "cog_swarm", "pipe_phantom"]
 		"suburban_overworld":
@@ -1042,18 +3964,40 @@ func _prewarm_area_sprites() -> void:
 
 func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> void:
 	"""Handle battle triggered from exploration"""
+	print("[GAMELOOP] _on_exploration_battle_triggered called! state=%s enemies=%s" % [current_state, enemies])
 	# Guard against battle triggers during non-exploration states
 	if current_state != LoopState.EXPLORATION:
+		print("[GAMELOOP] BLOCKED — state is %s, not EXPLORATION" % current_state)
 		return
 	# Guard against battles while menus/UIs are open
 	if _overworld_menu and is_instance_valid(_overworld_menu):
+		print("[GAMELOOP] BLOCKED — overworld menu is open")
 		return
 	if _autogrind_ui and is_instance_valid(_autogrind_ui):
+		print("[GAMELOOP] BLOCKED — autogrind UI is open")
+		return
+	# 2026-08-17 wedge: battle ended under an OPEN autobattle editor, exploration rebuilt live,
+	# roamers re-triggered battles beneath it — twice, racing transitions. Third sibling of the
+	# menu/autogrind guards above.
+	if _autobattle_editor and is_instance_valid(_autobattle_editor):
+		print("[GAMELOOP] BLOCKED — autobattle editor is open")
+		return
+	if _battle_transition_starting:
+		print("[GAMELOOP] BLOCKED — a battle transition is already starting (double-commence guard)")
+		return
+	# 2026-07-14: reciprocal mutex against _on_area_transition. If the player is mid-scene-load (walked into a village) and an encounter fires the same frame, drop the encounter — the transition owns the scene state.
+	if _transition_in_progress:
+		print("[GAMELOOP] BLOCKED — area transition in flight, dropping encounter")
 		return
 
-	# Disable player input during battle transition
-	if _exploration_scene and _exploration_scene.has_method("pause"):
-		_exploration_scene.pause()
+	# Dead-stop player during transition; pop_all in _start_exploration clears it.
+	if InputLockManager:
+		InputLockManager.push_lock("encounter_transition")
+	_battle_transition_starting = true
+	_arm_battle_commence_watchdog()
+
+	# LoopState.BATTLE blocks player movement — set in _start_battle_async after transition.
+	# Do NOT set it here — transition needs EXPLORATION state to render the screenshot.
 
 	# NOTE: Do NOT hide the exploration scene here — BattleTransition needs one rendered
 	# frame to capture the overworld screenshot. We hide it at transition_midpoint instead,
@@ -1073,9 +4017,7 @@ func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> v
 		if player:
 			_player_position = player.position
 			print("[POSITION] Saved player at: %s" % _player_position)
-			# Explicitly disable movement
-			if player.has_method("set_can_move"):
-				player.set_can_move(false)
+			# Movement blocked by LoopState.BATTLE — no manual freeze needed
 
 		# Save current floor if in cave (any multi-floor dungeon)
 		if "current_floor" in _exploration_scene:
@@ -1101,9 +4043,8 @@ func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> v
 		await BattleTransition.play_battle_transition(enemy_types)
 		print("[GAMELOOP] Battle transition effect complete")
 
-		# Hide exploration scene (screenshot already taken)
-		if _exploration_scene and is_instance_valid(_exploration_scene):
-			_exploration_scene.visible = false
+		# hide AFTER the transition captured its screenshot of the scene
+		_hide_exploration_scenes()
 
 		# Load battle scene (uses preloaded resource, always available)
 		await _start_battle_async(enemies, true)
@@ -1118,9 +4059,76 @@ func _on_exploration_battle_triggered(enemies: Array, terrain: String = "") -> v
 
 
 
+## Scenes hide via three routes because they parent three ways: tracked ref, MapSystem (/root), or directly under GameLoop
+func _hide_exploration_scenes() -> void:
+	var hidden_names: Array = []
+	if _exploration_scene and is_instance_valid(_exploration_scene):
+		_exploration_scene.visible = false
+		hidden_names.append(_exploration_scene.name)
+	if MapSystem and "current_map" in MapSystem and MapSystem.current_map \
+			and is_instance_valid(MapSystem.current_map):
+		MapSystem.current_map.visible = false
+		hidden_names.append("map:" + str(MapSystem.current_map.name))
+	for child in get_children():
+		if child is Node2D and not child.name.begins_with("BattleScene"):
+			child.visible = false
+			hidden_names.append(str(child.name))
+	print("[GAMELOOP] Exploration hidden — %d scene(s): %s" % [hidden_names.size(), str(hidden_names)])
+
+
+## Adopt a monsters.json win_condition for any battle whose enemies are
+## known by id. Never overwrites an already-set condition, so the
+## step-beats-data precedence start_solo_battle established is preserved
+## rather than re-litigated here. First authored condition wins — a
+## multi-enemy fight with two of them is an authoring error, not a
+## runtime decision, and the source-agreement ratchet is where that lives.
+func _adopt_monster_win_condition(enemy_ids: Array) -> void:
+	if BattleManager == null or not BattleManager._win_condition.is_empty():
+		return
+	if EncounterSystem == null:
+		return
+	for eid in enemy_ids:
+		var key: String = str(eid)
+		if not EncounterSystem.monster_database.has(key):
+			continue
+		var wc: Variant = (EncounterSystem.monster_database[key] as Dictionary).get("win_condition", {})
+		if wc is Dictionary and not (wc as Dictionary).is_empty():
+			BattleManager._win_condition = (wc as Dictionary).duplicate()
+			print("[BATTLE] win_condition adopted from monsters.json (%s): %s" % [key, str(wc)])
+			return
+
+
 func _start_battle_async(specific_enemies: Array = [], is_encounter: bool = false) -> void:
 	"""Start battle using async-loaded scene"""
+	# Mid-dissolve battle kills the transition tween -> emit never runs (2026-08-08 stuck class): drop the unearned encounter, clear the mutex.
+	if InputLockManager and InputLockManager.has_lock("world_transition"):
+		_battle_transition_starting = false
+		push_warning("[BATTLE] entry suppressed — world transition mid-dissolve; encounter dropped")
+		return
 	current_state = LoopState.BATTLE
+	_battle_transition_starting = false  # state=BATTLE now owns the mutex vs area transitions
+	if _day_night_overlay:
+		_day_night_overlay.set_outdoor(false)  # battle owns the canvas; _start_exploration recomputes on return
+	# Battle audio is mood-exempt: strip the night hush + crickets for the fight
+	if SoundManager and SoundManager.has_method("set_night_music_effects"):
+		SoundManager.set_night_music_effects(false)
+	if SoundManager and SoundManager.has_method("set_night_ambience"):
+		SoundManager.set_night_ambience(false)
+	_remove_party_chat_indicator()
+	# every battle-entry path funnels through here — sweep once, not per call site
+	_hide_exploration_scenes()
+
+	# Save battle config for retry
+	_last_battle_enemies = specific_enemies.duplicate()
+	_last_battle_is_encounter = is_encounter
+
+	# W6 (msg 3225): let a monsters.json-authored win_condition reach NORMAL
+	# battles, not just Spotlight Duels. Before this, _win_condition was set
+	# only inside start_solo_battle — so a win_condition on a monster fought
+	# as a regular encounter was data with no reader. Fills only an EMPTY
+	# condition, so start_solo_battle's step override (set just before it
+	# calls us) still outranks the data exactly as before.
+	_adopt_monster_win_condition(specific_enemies)
 
 	# Remove old scene
 	if current_scene and is_instance_valid(current_scene):
@@ -1189,9 +4197,21 @@ func _start_battle_async(specific_enemies: Array = [], is_encounter: bool = fals
 
 func _on_teleport_requested(target_map: String, spawn_point: String) -> void:
 	"""Handle debug teleport from overworld menu"""
-	# Close the overworld menu first
-	_on_overworld_menu_closed()
+	# Teardown widget only — the scene is about to be replaced by the transition, so resuming the OLD exploration briefly would just let the player move for one frame before it's freed. Same class as the autobattle/autogrind menu-action paths.
+	_teardown_overworld_menu_widget()
 	# Then transition
+	_on_area_transition(target_map, spawn_point)
+
+
+func _on_settings_teleport_requested(target_map: String, spawn_point: String) -> void:
+	"""Handle debug teleport from settings menu.
+	The settings_menu emits `closed` BEFORE `teleport_requested` (see
+	SettingsMenu._on_teleport_chosen) so its CanvasLayer is already
+	queue-freed by the time we arrive here. We just need to fire the
+	transition. Mirrors _on_teleport_requested but skips the overworld-
+	menu close path."""
+	if _exploration_scene and _exploration_scene.has_method("resume"):
+		_exploration_scene.resume()
 	_on_area_transition(target_map, spawn_point)
 
 
@@ -1213,8 +4233,41 @@ func _area_fade_from_black() -> void:
 	await tween.finished
 
 
+## Interior map_ids — stepping into one of these should use the
+## quick interior transition, not the dramatic "Arriving at..." wipe
+## meant for entering a new village from the overworld.
+const INTERIOR_MAP_IDS: PackedStringArray = [
+	"harmonia_chapel", "harmonia_library", "tavern_interior",
+	"eldertree_hollow", "frosthold_warden_hut", "sandrift_glassmaker",
+	"grimhollow_witch_hut", "ironhaven_watchtower",
+	"maple_heights_arcade", "brasston_clockwork_loft",
+	"rivet_row_union_hall", "node_prime_daemon_lounge",
+	"vertex_threshold",
+	# W2 quest interiors (forms_in_triplicate / relocated / fine_print).
+	"maple_community_center", "enrichment_annex",
+	# Generic village-scene interiors reused across all 11 villages —
+	# routed by VillageInn / VillageShop's transition_triggered emission.
+	"inn_interior",
+	"shop_interior_item", "shop_interior_black_magic",
+	"shop_interior_white_magic", "shop_interior_blacksmith",
+	# Dedicated forge-experience scene (atmospheric, not the shop UI).
+	"blacksmith_interior",
+	# Scriptura capital-district interiors (Guild + bookshop).
+	"scriptura_guild", "scriptura_bookshop",
+	# Village-interior expansion: Cartographer's Attic (Harmonia PPP building)
+	# + the Grafting House (Eldertree GGG garden) + the Strike Registry
+	# (Ironhaven MMM building).
+	"harmonia_cartographer", "eldertree_grafting_house", "ironhaven_strike_registry",
+	"frosthold_meltwater_clock", "sandrift_rain_ledger", "grimhollow_lantern_debt",
+	"maple_garage_sale", "brasston_redundancy_archive", "rivet_row_incident_board",
+	"node_prime_cache",
+]
+
+
 func _get_transition_type(map_id: String) -> String:
-	"""Classify destination into cave, village, overworld, or generic."""
+	"""Classify destination into interior, cave, village, overworld, or generic."""
+	if map_id in INTERIOR_MAP_IDS:
+		return "interior"
 	var t = map_id.to_lower()
 	if "cave" in t or "dungeon" in t:
 		return "cave"
@@ -1222,7 +4275,7 @@ func _get_transition_type(map_id: String) -> String:
 			or "prime" in t or "vertex" in t or "brasston" in t \
 			or "harmonia" in t or "tavern" in t or "frosthold" in t \
 			or "eldertree" in t or "grimhollow" in t or "sandrift" in t \
-			or "ironhaven" in t:
+			or "ironhaven" in t or "scriptura_plaza" in t:
 		return "village"
 	if "overworld" in t or t == "overworld":
 		return "overworld"
@@ -1267,6 +4320,10 @@ func _area_cave_transition_in(location_name: String) -> void:
 	if not _area_fade_rect or not _area_fade_layer:
 		await _area_fade_to_black()
 		return
+
+	# door_close SFX layers under the stone-door slam animation (cowir-sfx msg 2165)
+	if SoundManager:
+		SoundManager.play_ui("door_close")
 
 	var screen_size = get_viewport().get_visible_rect().size
 
@@ -1412,6 +4469,52 @@ func _area_village_transition_out() -> void:
 	wipe.queue_free()
 
 
+func _area_interior_transition_in(location_name: String) -> void:
+	"""Quick black fade with a subtle bottom-left room label. Distinct
+	from the dramatic village wipe — the player is stepping into a
+	small room within the village they already know, not arriving at
+	a new town."""
+	if not _area_fade_rect or not _area_fade_layer:
+		await _area_fade_to_black()
+		return
+
+	# door_open SFX cues the interior threshold (cowir-sfx msg 2165)
+	if SoundManager:
+		SoundManager.play_ui("door_open")
+
+	var fade_tween = create_tween()
+	fade_tween.tween_property(_area_fade_rect, "modulate:a", 1.0, 0.20).set_ease(Tween.EASE_IN)
+	await fade_tween.finished
+
+	# Subtle small label in the lower-left — just the room name, no prefix.
+	var lbl = Label.new()
+	lbl.text = location_name
+	lbl.add_theme_font_size_override("font_size", 16)
+	lbl.add_theme_color_override("font_color", Color(0.85, 0.80, 0.70))
+	lbl.add_theme_color_override("font_shadow_color", Color.BLACK)
+	lbl.add_theme_constant_override("shadow_offset_x", 1)
+	lbl.add_theme_constant_override("shadow_offset_y", 1)
+	lbl.position = Vector2(32, get_viewport().get_visible_rect().size.y - 56)
+	lbl.modulate.a = 0.0
+	_area_fade_layer.add_child(lbl)
+	var lbl_tween = create_tween()
+	lbl_tween.tween_property(lbl, "modulate:a", 1.0, 0.12)
+	await lbl_tween.finished
+	await get_tree().create_timer(0.22).timeout
+	lbl.queue_free()
+
+
+func _area_interior_transition_out() -> void:
+	"""Quick black fade-out to reveal the interior. ~half the duration
+	of village fade — the room should feel close at hand."""
+	if not _area_fade_rect or not _area_fade_layer:
+		await _area_fade_from_black()
+		return
+	var fade_tween = create_tween()
+	fade_tween.tween_property(_area_fade_rect, "modulate:a", 0.0, 0.18).set_ease(Tween.EASE_OUT)
+	await fade_tween.finished
+
+
 func _area_overworld_transition_in() -> void:
 	"""Circular iris-out: screen shrinks to a point at center, hold black."""
 	if not _area_fade_rect or not _area_fade_layer:
@@ -1429,9 +4532,10 @@ func _area_overworld_transition_in() -> void:
 	var cy = screen_size.y * 0.5
 
 	# Four black rects collapsing toward center from all four sides
+	# (no anchor preset on left_r — explicit size/position is correct,
+	# and PRESET_FULL_RECT would fight the tween that animates size:x).
 	var left_r = ColorRect.new()
 	left_r.color = Color.BLACK
-	left_r.set_anchors_preset(Control.PRESET_FULL_RECT)
 	left_r.size = Vector2(cx, screen_size.y)
 	left_r.position = Vector2(0, 0)
 	left_r.pivot_offset = Vector2(0, 0)
@@ -1532,9 +4636,93 @@ func _area_overworld_transition_out() -> void:
 	bottom_r.queue_free()
 
 
+var _transition_in_progress: bool = false
+var _battle_transition_starting: bool = false  # set by _on_exploration_battle_triggered — mutex against area transitions
+var _transition_wd_gen: int = 0  # generation token so a watchdog never fires on a LATER transition
+
+## Wall-clock floor under the two no-expiry latches that can strand a session (2026-08-08: InputLockManager's 10s net covered the only gate that never needed one — nets grow where failure is FELT, not where it is severe). Mirrors the battle stall watchdog: gut hard-off, generation token, fires only if THIS transition is still latched, LOUD.
+func _arm_transition_watchdog() -> void:
+	for a in OS.get_cmdline_args():
+		if "gut_cmdln" in a:
+			return
+	_transition_wd_gen += 1
+	var gen: int = _transition_wd_gen
+	get_tree().create_timer(20.0).timeout.connect(func() -> void:
+		if _transition_in_progress and _transition_wd_gen == gen:
+			push_error("[GAMELOOP] transition watchdog: latch held >20s — force-clearing (stranded-session class, 2026-08-08)")
+			_transition_in_progress = false
+			# The fade lock is NOT popped here: InputLockManager's own 10s stale expiry covers
+			# locks, and a signal-lambda pop trips the heartbeat guard. This watchdog exists for
+			# the two latches that have NO expiry.
+			if current_state != LoopState.EXPLORATION and _exploration_scene != null and is_instance_valid(_exploration_scene):
+				current_state = LoopState.EXPLORATION)
+
+
+## 2026-09-06 spider wedge: _battle_transition_starting is set BEFORE the awaited transition
+## and cleared only after it — a hung await leaked it with NO expiry, and it blocks both every
+## later encounter AND the area transitions whose _start_exploration is its only other clear
+## site. The 2026-08-08 comment claimed this watchdog family covered "the latches that can
+## strand a session"; this one sat outside it. Same shape: gut-off, generation token, LOUD.
+var _battle_commence_wd_gen: int = 0
+func _arm_battle_commence_watchdog() -> void:
+	for a in OS.get_cmdline_args():
+		if "gut_cmdln" in a:
+			return
+	_battle_commence_wd_gen += 1
+	var gen: int = _battle_commence_wd_gen
+	get_tree().create_timer(20.0).timeout.connect(func() -> void:
+		if _battle_transition_starting and _battle_commence_wd_gen == gen and current_state != LoopState.BATTLE:
+			push_error("[GAMELOOP] battle-commence watchdog: _battle_transition_starting held >20s with no battle — force-clearing (spider-wedge class, 2026-09-06)")
+			_battle_transition_starting = false)
+
+
 func _on_area_transition(target_map: String, spawn_point: String) -> void:
 	"""Handle contextual area transition based on destination type."""
-	_current_map_id = target_map
+	# 2026-07-14: struktured playtest — a random encounter can fire the same physics frame the player crosses into an auto-enter AreaTransition; both scene changes race, screen freezes. Bail here if the battle transition already committed.
+	if _battle_transition_starting:
+		push_warning("[GAMELOOP] Area transition to '%s' suppressed — battle transition already in flight" % target_map)
+		return
+	if _transition_in_progress:
+		return
+	_transition_in_progress = true
+	_arm_transition_watchdog()
+
+	# R2 (scene-change abort): kill any in-flight NPC dialogue LLM requests so a
+	# slow inference from the OLD map can't resolve into the NEW scene (stale
+	# bubble / wrong-NPC line). LLMService is an autoload that lands late in the
+	# boot order, so guard the lookup. GameLoop does not hold a reference to the
+	# active DynamicConversation — cancel_all is sufficient: the conversation's
+	# _safe await path takes its null fallback and its own teardown clears UI.
+	var _llm := get_node_or_null("/root/LLMService")
+	if _llm and _llm.has_method("cancel_all"):
+		_llm.cancel_all("scene_change")
+	# Idempotent UI/movement reset for any active conversation (cancel_all only
+	# unblocks awaits — the choice menu + frozen player needed an explicit abort).
+	if _llm and _llm.has_method("abort_all_conversations"):
+		_llm.abort_all_conversations()
+
+	# If an interior is asking to "return to the village we came from", resolve
+	# the magic token to the saved origin map. Falls back to overworld if we
+	# somehow never set one (e.g. dev jump).
+	if target_map == "village_return":
+		if _village_origin_id != "":
+			target_map = _village_origin_id
+			# The interior's spawn name (inn_exit / shop_exit) is specific to
+			# interior types, but villages won't have those spawn points
+			# registered. Substitute a name the village does know.
+			spawn_point = "default"
+		else:
+			target_map = "overworld"
+			spawn_point = "default"
+
+	# Capture origin if entering an interior so its exit can route back.
+	if target_map in INTERIOR_MAP_IDS:
+		# Don't overwrite if we're already inside an interior (interior→interior
+		# isn't a thing today, but if it ever happens, keep the original village).
+		if not (_current_map_id in INTERIOR_MAP_IDS):
+			_village_origin_id = _current_map_id
+
+	_set_current_map_id(target_map)
 	_spawn_point = spawn_point
 	_player_position = Vector2.ZERO
 	_current_terrain = _get_terrain_for_map(target_map)
@@ -1542,23 +4730,40 @@ func _on_area_transition(target_map: String, spawn_point: String) -> void:
 	var transition_type = _get_transition_type(target_map)
 	var display_name = _get_location_display_name(target_map)
 
+	# Hold a movement lock through the fade-out: _start_exploration sets
+	# state=EXPLORATION and pops all locks, so without this the player
+	# can press D-pad and start walking before the fade-out reveals the
+	# new scene. Push AFTER _start_exploration in each arm so pop_all
+	# doesn't clobber it. The pop in the safety cleanup block below
+	# also covers exception paths.
 	match transition_type:
 		"cave":
 			await _area_cave_transition_in(display_name)
 			await _start_exploration()
+			InputLockManager.push_lock("area_transition_fade")
 			await _area_cave_transition_out()
 		"village":
 			await _area_village_transition_in(display_name)
 			await _start_exploration()
+			InputLockManager.push_lock("area_transition_fade")
 			await _area_village_transition_out()
+		"interior":
+			await _area_interior_transition_in(display_name)
+			await _start_exploration()
+			InputLockManager.push_lock("area_transition_fade")
+			await _area_interior_transition_out()
 		"overworld":
 			await _area_overworld_transition_in()
 			await _start_exploration()
+			InputLockManager.push_lock("area_transition_fade")
 			await _area_overworld_transition_out()
 		_:
 			await _area_fade_to_black()
 			await _start_exploration()
+			InputLockManager.push_lock("area_transition_fade")
 			await _area_fade_from_black()
+	# Release the fade lock — the new scene is now fully visible.
+	InputLockManager.pop_lock("area_transition_fade")
 
 	# Safety cleanup: ensure fade overlay is transparent and no stale children remain
 	if _area_fade_rect:
@@ -1567,6 +4772,157 @@ func _on_area_transition(target_map: String, spawn_point: String) -> void:
 		for child in _area_fade_layer.get_children():
 			if child != _area_fade_rect:
 				child.queue_free()
+	_transition_in_progress = false
+
+	# ── EventLog: record area transition fact ────────────────────────────────
+	var area_ctx: Dictionary = {}
+	if GameState and "event_log" in GameState and GameState.event_log != null:
+		var area_display_name: String = _get_location_display_name(target_map)
+		area_ctx = {
+			"map_id":      target_map,
+			"spawn_point": spawn_point,
+			# Tick 313: world = current_world (the new area's world),
+			# worlds_unlocked carries progression. See matching comment
+			# in _on_party_leveled_up.
+			"world":       GameState.current_world,
+			"worlds_unlocked": GameState.worlds_unlocked,
+		}
+		GameState.event_log.record(
+			EventLog.TYPE_AREA_ENTERED,
+			"Entered %s" % area_display_name,
+			area_ctx,
+		)
+	# Tick 252: fire the matching RebalanceDaemon trigger so daemon gets
+	# the area-transition signal it was designed to react to (not just
+	# the wipe/defeat/level_up triggers). TRIGGER_AREA_ENTERED was
+	# defined but unfired before this — the daemon's min_consideration
+	# _interval_sec throttle prevents flooding when the player chains
+	# transitions.
+	if GameState and GameState.llm_rebalance_enabled and GameState.rebalance_daemon != null:
+		var fired: bool = GameState.rebalance_daemon.consider(
+			RebalanceDaemonScript.TRIGGER_AREA_ENTERED, area_ctx)
+		if fired:
+			_kick_off_rebalance_fetch.call_deferred(
+				GameState.rebalance_daemon.pending.size() - 1)
+
+	# Auto-save on zone transition (villages/overworld only; dungeons use save points;
+	# interiors skipped — MapSystem.current_map_id is stale for them).
+	# SaveSystem.save_completed signal drives the Toast via _on_any_save_completed.
+	if transition_type != "interior" and SaveSystem and SaveSystem.has_method("auto_save"):
+		SaveSystem.auto_save()
+
+
+## F8. Best-effort by design: a bundle missing a piece still helps, so nothing here may abort
+## the write. The toast prints the ABSOLUTE path because a tester cannot act on "user://".
+func _write_feedback_bundle() -> void:
+	var shot: Image = null
+	var vp := get_viewport()
+	if vp and vp.get_texture():
+		shot = vp.get_texture().get_image()
+	var path: String = FeedbackBundle.write_bundle(FeedbackBundle.collect_state(), shot)
+	if path == "":
+		push_warning("[FEEDBACK] bundle FAILED to write")
+		if Toast:
+			Toast.show(self, "Bug report FAILED — see the log", Toast.WARNING_COLOR)
+		return
+	print("[FEEDBACK] wrote %s" % path)
+	if Toast:
+		Toast.show(self, "Bug report saved to %s" % path)
+
+
+func _take_screenshot() -> void:
+	"""Save a screenshot to user://screenshots/ with timestamp"""
+	var img = get_viewport().get_texture().get_image()
+	if not img:
+		print("[SCREENSHOT] Failed to capture viewport")
+		return
+	DirAccess.make_dir_recursive_absolute("user://screenshots")
+	var timestamp = Time.get_datetime_string_from_system().replace(":", "-").replace("T", "_")
+	var path = "user://screenshots/screenshot_%s.png" % timestamp
+	img.save_png(path)
+	var abs_path = ProjectSettings.globalize_path(path)
+	print("[SCREENSHOT] Saved: %s" % abs_path)
+	# Flash feedback
+	var flash = ColorRect.new()
+	flash.color = Color(1, 1, 1, 0.5)
+	flash.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(flash)
+	var tween = create_tween()
+	tween.tween_property(flash, "color:a", 0.0, 0.2)
+	tween.tween_callback(flash.queue_free)
+
+
+func _quick_save_with_toast() -> void:
+	"""F2 hotkey: quick-save to the dedicated quicksave slot with toast feedback.
+	Blocked mid-battle (via can_quick_save) AND during autogrind — the
+	autogrind run statistics and rule state would be lost on a mid-grind
+	save and the user would be confused why autogrind didn't resume.
+	Tick 80: also blocked during area-transition fade (in or out) — the
+	scene swap is in flight, _current_map_id was updated but the scene
+	itself isn't loaded yet, so the save would capture inconsistent state."""
+	if not SaveSystem:
+		return
+	if not SaveSystem.has_method("quick_save"):
+		return
+	if current_state == LoopState.AUTOGRIND:
+		Toast.show_warning(self, "Cannot quick-save during autogrind — stop grinding first")
+		return
+	if _in_exploration_transition():
+		Toast.show_warning(self, "Cannot quick-save mid-transition — wait for the scene to settle")
+		return
+	if not SaveSystem.can_quick_save():
+		Toast.show_warning(self, "Cannot quick-save right now")
+		return
+	var ok: bool = SaveSystem.quick_save()
+	if ok:
+		# save_completed signal drives the standard Toast; we add nothing here
+		# to avoid double-toasting. (See _on_any_save_completed connection in _ready.)
+		print("[QUICKSAVE] F2 — quick save committed")
+	else:
+		Toast.show_warning(self, "Quick-save failed")
+
+
+func _quick_load_with_toast() -> void:
+	"""F3 hotkey: load most recent save with toast feedback.
+	Returns to overworld via the same _restore_party_from_save_data path
+	used by Continue. Only works if a save exists.
+	Blocked during active battle AND during autogrind — mid-grind load
+	would corrupt the run statistics and the autogrind state machine.
+	Tick 80: also blocked during area-transition fade — loading would
+	collide with the in-flight scene swap (MapSystem.load_map racing
+	against GameLoop's direct-scene routing for the destination map)."""
+	if not SaveSystem:
+		return
+	if not SaveSystem.has_method("load_game"):
+		return
+	if BattleManager and BattleManager.is_battle_active():
+		Toast.show_warning(self, "Cannot quick-load mid-battle")
+		return
+	if current_state == LoopState.AUTOGRIND:
+		Toast.show_warning(self, "Cannot quick-load during autogrind — stop grinding first")
+		return
+	if _in_exploration_transition():
+		Toast.show_warning(self, "Cannot quick-load mid-transition — wait for the scene to settle")
+		return
+	var slot: int = SaveSystem.get_most_recent_slot() if SaveSystem.has_method("get_most_recent_slot") else -1
+	if slot < 0:
+		Toast.show_warning(self, "No save to load")
+		return
+	var ok: bool = SaveSystem.load_game(slot)
+	if not ok:
+		Toast.show_warning(self, "Quick-load failed")
+		return
+	# Rehydrate party + transition into the saved map (mirrors Continue path).
+	if not _restore_party_from_save_data():
+		Toast.show_warning(self, "Save data could not restore party")
+		return
+	Toast.show_success(self, "Loaded slot %d" % slot)
+	# If we're already exploring, restart exploration to teleport the player
+	# to the saved position. If not (e.g. in autogrind UI), do nothing more —
+	# the next exploration entry picks up the loaded state.
+	if current_state == LoopState.EXPLORATION:
+		_start_exploration()
 
 
 func _get_terrain_for_map(map_id: String) -> String:
@@ -1576,8 +4932,28 @@ func _get_terrain_for_map(map_id: String) -> String:
 			return "plains"
 		"whispering_cave":
 			return "cave"
-		"harmonia_village", "tavern_interior":
+		"harmonia_village", "tavern_interior", "harmonia_chapel", "harmonia_library", "harmonia_cartographer":
 			return "village"
+		"eldertree_hollow", "eldertree_grafting_house":
+			return "forest"
+		"frosthold_warden_hut", "frosthold_meltwater_clock":
+			return "ice"
+		"sandrift_glassmaker", "sandrift_rain_ledger":
+			return "desert"
+		"grimhollow_witch_hut", "grimhollow_lantern_debt":
+			return "swamp"
+		"ironhaven_watchtower", "ironhaven_strike_registry":
+			return "volcanic"
+		"maple_heights_arcade", "maple_garage_sale":
+			return "suburban"
+		"brasston_clockwork_loft", "brasston_redundancy_archive":
+			return "steampunk"
+		"rivet_row_union_hall", "rivet_row_incident_board":
+			return "industrial"
+		"node_prime_daemon_lounge", "node_prime_cache":
+			return "digital"
+		"vertex_threshold":
+			return "abstract"
 		"frosthold_village":
 			return "ice"
 		"eldertree_village":
@@ -1596,8 +4972,20 @@ func _get_terrain_for_map(map_id: String) -> String:
 			return "storm_cave"
 		"fire_dragon_cave":
 			return "lava_cave"
+		"backwards_warren":
+			return "cave"
+		"assembly_core":
+			return "industrial"
+		"root_process":
+			return "digital"
+		"null_chamber":
+			return "void"
+		"suburban_underground":
+			return "cave"
+		"steampunk_mechanism":
+			return "steampunk"
 		"steampunk_overworld":
-			return "urban"
+			return "steampunk"
 		"suburban_overworld":
 			return "suburban"
 		"industrial_overworld":
@@ -1606,19 +4994,38 @@ func _get_terrain_for_map(map_id: String) -> String:
 			return "digital"
 		"abstract_overworld":
 			return "void"
+		# Tick 88: W2-W6 villages map to their WORLD's terrain string,
+		# not generic "village". Pre-fix, a battle triggered inside Maple
+		# Heights (e.g. from a story cutscene) got the medieval village
+		# backdrop instead of the suburban art — visual inconsistency
+		# breaking the W2-W6 world identity.
 		"maple_heights_village":
-			return "village"
+			return "suburban"
 		"brasston_village":
-			return "village"
+			return "steampunk"
 		"rivet_row_village":
-			return "village"
+			return "industrial"
 		"node_prime_village":
-			return "village"
+			return "digital"
 		"vertex_village":
+			return "void"
+		# Tick 360: castle_harmonia (W1 final boss arena, indoor stone
+		# setting) was falling through to the `_:` default and returning
+		# "plains" because no substring keyword matched. Players fought
+		# Chancellor Mordaine in front of a plains background instead of
+		# a medieval indoor scene. Maps to "village" — same terrain the
+		# other medieval indoor spaces use (harmonia_chapel,
+		# harmonia_library) for visual continuity.
+		"castle_harmonia":
 			return "village"
 		_:
 			if "cave" in map_id or "dungeon" in map_id:
 				return "cave"
+			elif "castle" in map_id:
+				# Tick 360: keyword guard for future castle-style arenas
+				# (e.g., castle_<world> if added) so they default to the
+				# village-style medieval background instead of plains.
+				return "village"
 			elif "village" in map_id or "town" in map_id:
 				return "village"
 			elif "forest" in map_id:
@@ -1627,7 +5034,7 @@ func _get_terrain_for_map(map_id: String) -> String:
 
 
 func _create_village_scene() -> Node:
-	"""Create Harmonia Village scene (placeholder until scene file exists)"""
+	"""Create Harmonia Village scene (the starter village, extends BaseVillage)."""
 	return HarmoniaVillageRes.instantiate()
 
 
@@ -1637,7 +5044,28 @@ func _create_cave_scene() -> Node:
 	if _current_cave_floor > 1 and "current_floor" in cave_scene:
 		cave_scene.current_floor = _current_cave_floor
 		print("[CAVE] Restoring to floor %d" % _current_cave_floor)
+	# 2026-07-15 (task #23): floor descent must re-trigger the story
+	# cutscene check so the floor-gated ch.3 spotlights (rogue→mage→
+	# fighter at floors 1/3/5) fire when the player crosses their
+	# threshold, not just on cave (re)entry. Without this, a descent
+	# with no interposed battle would skip the check.
+	if cave_scene.has_signal("floor_changed"):
+		cave_scene.floor_changed.connect(_on_cave_floor_changed)
 	return cave_scene
+
+
+func _on_cave_floor_changed(new_floor: int) -> void:
+	_current_cave_floor = new_floor
+	check_pending_cutscene()
+
+
+func _get_current_cave_floor() -> int:
+	# Live-read from the exploration scene when the cave is loaded;
+	# fall back to the battle-synced _current_cave_floor otherwise.
+	# Default 1 lets rogue's floor-1 gate fire on first entry.
+	if _exploration_scene and "current_floor" in _exploration_scene:
+		return int(_exploration_scene.current_floor)
+	return _current_cave_floor
 
 
 func _create_script_scene(script_path: String) -> Node:
@@ -1675,6 +5103,26 @@ func _create_dragon_cave_from_script(script_res: GDScript) -> Node:
 func _create_tavern_scene() -> Node:
 	"""Create The Dancing Tonberry tavern interior scene"""
 	return TavernInteriorScript.new()
+
+
+func _create_shop_interior(shop_type_value: int) -> Node:
+	"""Instantiate ShopInterior with the right shop_type and a sensible name.
+
+	`shop_type_value` mirrors VillageShop.ShopType:
+	  0 = ITEM, 1 = BLACK_MAGIC, 2 = WHITE_MAGIC, 3 = BLACKSMITH
+	The scene self-themes (palette, decoration, NPCs) from this value.
+	"""
+	var scene = ShopInteriorScript.new()
+	scene.shop_type = shop_type_value
+	# Default per-type names — outdoor shop instances can pass their own
+	# via a future override hook, but for now generic names work everywhere.
+	match shop_type_value:
+		0: scene.shop_name = "Mystic Remedies"
+		1: scene.shop_name = "The Arcanum"
+		2: scene.shop_name = "Chapel of Light"
+		3: scene.shop_name = "Ironclad Arms"
+		_: scene.shop_name = "Shop"
+	return scene
 
 
 ## Equipment Pool Management
@@ -1716,21 +5164,24 @@ func equip_from_pool(combatant: Combatant, slot: String, item_id: String) -> boo
 		"accessory":
 			old_item = combatant.equipped_accessory
 
+	# Equip FIRST — consuming the pool entry before knowing the equip took would delete the item on any id the catalog no longer knows (renamed gear in an old save).
+	var equipped: bool = false
+	match slot:
+		"weapon":
+			equipped = EquipmentSystem.equip_weapon(combatant, item_id)
+		"armor":
+			equipped = EquipmentSystem.equip_armor(combatant, item_id)
+		"accessory":
+			equipped = EquipmentSystem.equip_accessory(combatant, item_id)
+	if not equipped:
+		return false
+
 	# Remove new item from pool
 	equipment_pool[pool_key].erase(item_id)
 
 	# Add old item to pool if it exists
 	if old_item and old_item != "":
 		equipment_pool[pool_key].append(old_item)
-
-	# Equip new item
-	match slot:
-		"weapon":
-			EquipmentSystem.equip_weapon(combatant, item_id)
-		"armor":
-			EquipmentSystem.equip_armor(combatant, item_id)
-		"accessory":
-			EquipmentSystem.equip_accessory(combatant, item_id)
 
 	return true
 
@@ -1789,6 +5240,7 @@ func _open_autogrind_ui() -> void:
 	# Connect signals
 	_autogrind_ui.closed.connect(_on_autogrind_ui_closed)
 	_autogrind_ui.grind_requested.connect(_start_autogrind)
+	_autogrind_ui.grind_resume_requested.connect(_resume_autogrind)
 	_autogrind_ui.grind_stop_requested.connect(_on_autogrind_stop_requested)
 	_autogrind_ui.tier_cycle_requested.connect(_on_ui_tier_cycle_requested)
 
@@ -1824,10 +5276,17 @@ func _start_autogrind(config: Dictionary) -> void:
 	# Connect controller signals
 	_autogrind_controller.grind_battle_requested.connect(_on_grind_battle_requested)
 	_autogrind_controller.grind_complete.connect(_on_grind_complete)
+	_autogrind_controller.grind_paused.connect(_on_autogrind_paused)
+	_autogrind_controller.grind_resumed.connect(_on_autogrind_resumed)
+	_autogrind_controller.tier_changed.connect(_on_autogrind_tier_changed)
+	_autogrind_controller.region_advanced.connect(_on_autogrind_region_advanced)
+	if not AutogrindSystem.region_rotation_suggested.is_connected(_on_autogrind_region_rotation_suggested):
+		AutogrindSystem.region_rotation_suggested.connect(_on_autogrind_region_rotation_suggested)
+	if not AutogrindSystem.corruption_threshold_crossed.is_connected(_on_autogrind_corruption_band):
+		AutogrindSystem.corruption_threshold_crossed.connect(_on_autogrind_corruption_band)
 
 	# Start grinding
 	_autogrind_controller.start_grind(party, config, _current_terrain)
-	_autogrind_controller.tier_changed.connect(_on_autogrind_tier_changed)
 
 	# Clear battle summary ring buffer for new session
 	_autogrind_battle_summaries.clear()
@@ -1836,9 +5295,18 @@ func _start_autogrind(config: Dictionary) -> void:
 	SoundManager.reset_corruption()
 	SoundManager.play_music("autogrind")
 
-	_show_controller_overlay(ControllerOverlay.autogrind_context())
+	# Show appropriate controller overlay
+	if _autogrind_controller.headless_mode:
+		_show_controller_overlay(ControllerOverlay.autogrind_ludicrous_context())
+		_show_autogrind_dashboard()
+		TutorialHints.show(self, "ludicrous_speed")
+	else:
+		_show_controller_overlay(ControllerOverlay.autogrind_context())
 
-	print("[AUTOGRIND] Session started")
+	# Tutorial hint on first autogrind session
+	TutorialHints.show(self, "autogrind")
+
+	print("[AUTOGRIND] Session started%s" % (" (LUDICROUS SPEED)" if _autogrind_controller.headless_mode else ""))
 
 
 func _on_autogrind_stop_requested() -> void:
@@ -1852,6 +5320,18 @@ func _stop_autogrind(reason: String) -> void:
 		return
 
 	_is_autogrinding = false
+
+	# Capture stats before controller is stopped and freed
+	var final_stats = {}
+	if _autogrind_controller and is_instance_valid(_autogrind_controller):
+		final_stats = _autogrind_controller.get_grind_stats()
+
+	# Clear snapshot on clean stop (user chose to stop)
+	AutogrindSystem.clear_grind_snapshot()
+
+	# Disconnect stale battle_ended signal if we stopped mid-battle
+	if BattleManager.battle_ended.is_connected(_on_autogrind_battle_ended):
+		BattleManager.battle_ended.disconnect(_on_autogrind_battle_ended)
 
 	# Stop controller
 	if _autogrind_controller and is_instance_valid(_autogrind_controller):
@@ -1882,13 +5362,25 @@ func _stop_autogrind(reason: String) -> void:
 	SoundManager.reset_corruption()
 	SoundManager.play_area_music(_current_map_id)
 
+	# Play interrupt SFX based on stop reason
+	_play_grind_stop_sfx(reason)
+	_show_grind_stop_notification(reason)
+
 	print("[AUTOGRIND] Session stopped: %s" % reason)
 
-	# Return to exploration if UI is also closed
-	if not _autogrind_ui or not is_instance_valid(_autogrind_ui):
-		_return_to_exploration()
+	# If a BattleScene is still the active scene (grind stopped between/after a battle),
+	# tear it down and return to exploration. The AutogrindUI lives on its own CanvasLayer
+	# and is not indicative of the active scene — during a grind it stays instantiated but hidden.
+	# MUST await — _return_to_exploration is async; firing the summary
+	# before the scene swap completes causes a black-summary flash on
+	# slow scene-load platforms (Android web through Brave especially).
+	if not _exploration_scene or not is_instance_valid(_exploration_scene):
+		await _return_to_exploration()
 	else:
 		current_state = LoopState.EXPLORATION
+		InputLockManager.pop_all()  # Clear any leaked locks
+
+	_show_autogrind_summary(final_stats, reason)
 
 
 func _on_grind_battle_requested(enemies: Array, terrain: String) -> void:
@@ -1902,8 +5394,133 @@ func _on_grind_battle_requested(enemies: Array, terrain: String) -> void:
 	# Set terrain
 	_current_terrain = terrain
 
+	# Headless mode: resolve instantly without BattleScene
+	if _autogrind_controller and is_instance_valid(_autogrind_controller) and _autogrind_controller.headless_mode:
+		_resolve_headless_battle(enemies)
+		return
+
 	# Start battle without transition animation (fast chain)
 	await _start_autogrind_battle(enemies)
+
+
+func _resolve_headless_battle(enemy_data: Array) -> void:
+	var resolver = HeadlessBattleResolver.new()
+
+	var enemies: Array = []
+	for data in enemy_data:
+		var enemy = Combatant.new()
+		var stats = data.get("stats", {})
+		enemy.initialize({
+			"name": data.get("name", "Enemy"),
+			"max_hp": stats.get("max_hp", 50),
+			"max_mp": stats.get("max_mp", 20),
+			"attack": stats.get("attack", 10),
+			"defense": stats.get("defense", 8),
+			"magic": stats.get("magic", 5),
+			"speed": stats.get("speed", 8)
+		})
+		# Live spawns (BattleEnemySpawner) always set this; its absence here silently
+		# no-opped bestiary defeat-credit AND drop lookup for the whole ludicrous path.
+		var mtype: String = str(data.get("id", ""))
+		if mtype != "":
+			enemy.set_meta("monster_type", mtype)
+		enemies.append(enemy)
+
+	var result = resolver.resolve_battle(party, enemies)
+	var victory = result.get("victory", false)
+	var exp_gained = result.get("exp_gained", 0)
+	# Tick 342: pick up gold_gained too — the resolver (tick 341) pre-applied
+	# gold_multiplier, so we just forward as-is.
+	var gold_gained_headless: int = int(result.get("gold_gained", 0))
+	var rounds = result.get("rounds", 0)
+	var headless_item_drops: Dictionary = result.get("item_drops", {})
+	var headless_rare_drops: Array = result.get("rare_drops", [])
+
+	for e in enemies:
+		e.free()
+
+	# Route resolver-rolled drops the same way BattleManager does live: equipment
+	# → shared pool, consumables → party leader. Rare drops flip the same Glow
+	# flag + interrupt-condition flag the live path fires.
+	if victory:
+		for item_id in headless_item_drops:
+			var qty: int = int(headless_item_drops[item_id])
+			if not BattleManager.route_drop_to_equipment_pool(item_id):
+				if party.size() > 0 and party[0].is_alive:
+					party[0].add_item(item_id, qty)
+		for rd in headless_rare_drops:
+			if PartyChatSystem:
+				PartyChatSystem.fire_event_flag("event_flag_rare_drop_found")
+			AutogrindSystem.notify_rare_drop(str(rd.get("item", "")), float(rd.get("chance", 0.0)))
+
+	# Heal party using items (same as visual battle path)
+	if victory:
+		for member in party:
+			member.current_ap = 0
+			if member.is_alive and member.current_hp < member.max_hp:
+				_autogrind_heal_member(member)
+			if member.is_alive and member.current_mp < member.max_mp * 0.5:
+				_autogrind_restore_mp(member)
+
+	# Track per-character EXP distribution (headless path)
+	if victory and exp_gained > 0:
+		var alive_count = 0
+		for member in party:
+			if member is Combatant and member.is_alive:
+				alive_count += 1
+		if alive_count > 0:
+			var per_char_exp = exp_gained / alive_count
+			for member in party:
+				if member is Combatant and member.is_alive:
+					AutogrindSystem.track_character_exp(member.combatant_name, per_char_exp)
+
+	# Forward to controller with headless-computed EXP + gold (tick 342:
+	# gold was previously dropped — empty items_gained dict meant the
+	# autogrind player got zero gold despite total_gold display).
+	if _autogrind_controller and is_instance_valid(_autogrind_controller):
+		var items_gained: Dictionary = {"gold": gold_gained_headless}
+		for item_id in headless_item_drops:
+			items_gained[item_id] = int(headless_item_drops[item_id])
+		_autogrind_controller.on_battle_ended(victory, exp_gained, items_gained)
+
+		var stats = _autogrind_controller.get_grind_stats()
+
+		# Build summary for console ring buffer
+		var summary_text: String
+		if victory:
+			summary_text = "[color=#44ff44]#%d Victory[/color] +%d EXP (%d rounds) [color=#cc88ff]HEADLESS[/color]" % [stats.get("battles_won", 0), exp_gained, rounds]
+			var drop_count: int = 0
+			for item_id in headless_item_drops:
+				drop_count += int(headless_item_drops[item_id])
+			if drop_count > 0:
+				summary_text += " [color=#ffcc44]+%d item%s[/color]" % [drop_count, "s" if drop_count > 1 else ""]
+		else:
+			summary_text = "[color=#ff4444]#%d Defeat[/color] (%d rounds) [color=#cc88ff]HEADLESS[/color]" % [stats.get("battles_won", 0), rounds]
+		_autogrind_battle_summaries.append(summary_text)
+		if _autogrind_battle_summaries.size() > 50:
+			_autogrind_battle_summaries.remove_at(0)
+
+		# Update UI with latest stats
+		if _autogrind_ui and is_instance_valid(_autogrind_ui):
+			_autogrind_ui.update_stats(stats)
+			_autogrind_ui.update_party_status()
+
+		# Update dashboard if in Tier 2
+		if _autogrind_dashboard and is_instance_valid(_autogrind_dashboard):
+			var region_id = _current_map_id.replace(" ", "_").to_lower()
+			_autogrind_dashboard.refresh(stats, region_id)
+			_autogrind_dashboard.add_battle_result(victory, rounds, exp_gained)
+
+		# Corruption audio degradation
+		var corruption_raw = AutogrindSystem.meta_corruption_level
+		var corruption_threshold = AutogrindSystem.corruption_threshold
+		var corruption_norm = clamp(corruption_raw / max(corruption_threshold, 0.001), 0.0, 1.0)
+		SoundManager.set_corruption_intensity(corruption_norm)
+
+		# Milestone toasts
+		var battles = stats.get("battles_won", 0)
+		if battles in [10, 20, 30, 50, 100]:
+			_show_autogrind_toast(_get_milestone_text(battles))
 
 
 func _show_autogrind_transition() -> void:
@@ -2017,10 +5634,44 @@ func _on_autogrind_battle_ended(victory: bool) -> void:
 	var items_gained = {}
 
 	if victory:
-		# Calculate base EXP from defeated enemies (estimate from enemy stats)
-		for enemy in BattleManager.enemy_party:
-			if enemy is Combatant:
-				exp_gained += int(enemy.max_hp * 0.5 + enemy.attack * 2)
+		# Cadence #24 (arc closer per cowir-main msg 2751): read authored rewards from BattleManager.get_battle_results() instead of the stat-derived formula that had drifted from actually-granted values. struktured watches this number LIVE on the autogrind dashboard; a total that reads "free money" vs actual grants (pre-fix ran high — 15*0.5+5*2=17 estimate vs authored exp_reward=10 for a low slime) is a trust-killer for the automation pillar. BM already computes base_exp (sum of monsters_db.exp_reward) + total_gold (post-#22 gold_multiplier applied) + total_multiplier (reward*one_shot*autobattle) in _battle_results — read them directly for parity-by-construction. Fallback stat formula preserved for the mock-BM/results-empty case so bare-instance tests still work.
+		var battle_results: Dictionary = BattleManager.get_battle_results()
+		var exp_mult: float = 1.0
+		if GameState and "game_constants" in GameState:
+			exp_mult = clampf(
+				float(GameState.game_constants.get("exp_multiplier", 1.0)),
+				0.1, 10.0)
+		if not battle_results.is_empty():
+			# Authored parity: BM's actual per-character grant = base_exp * total_multiplier * exp_multiplier (BM:868). Report that same number as the dashboard telemetry.
+			var base_exp: int = int(battle_results.get("base_exp", 0))
+			var total_mult: float = float(battle_results.get("total_multiplier", 1.0))
+			exp_gained = int(base_exp * total_mult * exp_mult)
+			# gold: BM.total_gold already has one_shot_gold_bonus * reward_multiplier * gold_multiplier applied (BM:743, post-cadence #22). Read as-is; re-multiplying here would double-apply.
+			items_gained["gold"] = int(battle_results.get("total_gold", 0))
+		else:
+			# Fallback for mock-BM / instance-tests where _battle_results wasn't populated: stat-derived estimate. Kept only as a safety net.
+			for enemy in BattleManager.enemy_party:
+				if enemy is Combatant:
+					exp_gained += int(enemy.max_hp * 0.5 + enemy.attack * 2)
+			exp_gained = int(exp_gained * exp_mult)
+			var gold_gained_live: int = 0
+			for enemy in BattleManager.enemy_party:
+				if enemy is Combatant:
+					gold_gained_live += int(enemy.max_hp * 0.3 + enemy.defense)
+			var gold_mult: float = 1.0
+			if GameState and "game_constants" in GameState:
+				gold_mult = clampf(
+					float(GameState.game_constants.get("gold_multiplier", 1.0)),
+					0.1, 10.0)
+			items_gained["gold"] = int(gold_gained_live * gold_mult)
+
+		# BattleManager already routed these drops to inventory; without this merge
+		# the live path reported 0 items in total_items_gained while headless (drop
+		# parity fix) reported correctly — dashboard/summary counts diverged by tier.
+		for drop_entry in BattleManager.get_battle_results().get("item_drops", []):
+			var drop_id: String = str(drop_entry.get("item", ""))
+			if drop_id != "":
+				items_gained[drop_id] = int(items_gained.get(drop_id, 0)) + int(drop_entry.get("qty", 1))
 
 		# Feed battle action summary into adaptive AI pattern learning
 		var region_id = AutogrindSystem.current_region_id
@@ -2035,6 +5686,18 @@ func _on_autogrind_battle_ended(victory: bool) -> void:
 				_autogrind_heal_member(member)
 			if member.is_alive and member.current_mp < member.max_mp * 0.5:
 				_autogrind_restore_mp(member)
+
+	# Track per-character EXP distribution
+	if victory and exp_gained > 0:
+		var alive_count = 0
+		for member in party:
+			if member is Combatant and member.is_alive:
+				alive_count += 1
+		if alive_count > 0:
+			var per_char_exp = exp_gained / alive_count
+			for member in party:
+				if member is Combatant and member.is_alive:
+					AutogrindSystem.track_character_exp(member.combatant_name, per_char_exp)
 
 	# Forward to controller
 	if _autogrind_controller and is_instance_valid(_autogrind_controller):
@@ -2055,6 +5718,16 @@ func _on_autogrind_battle_ended(victory: bool) -> void:
 		if _autogrind_battle_summaries.size() > 50:
 			_autogrind_battle_summaries.remove_at(0)
 
+		# Check for new injuries and warn
+		var prev_injuries = stats.get("injuries_this_session", 0)
+		AutogrindSystem.check_new_injuries()
+		var cur_injuries = AutogrindSystem.injuries_this_session
+		if cur_injuries > prev_injuries:
+			_autogrind_battle_summaries.append("[color=#ff4444]PERMANENT INJURY sustained! Check party status.[/color]")
+			if _autogrind_battle_summaries.size() > 50:
+				_autogrind_battle_summaries.remove_at(0)
+			_show_autogrind_toast("PERMANENT INJURY! A party member took lasting damage.")
+
 		# Update UI with latest stats
 		if _autogrind_ui and is_instance_valid(_autogrind_ui):
 			_autogrind_ui.update_stats(stats)
@@ -2071,11 +5744,57 @@ func _on_autogrind_battle_ended(victory: bool) -> void:
 		var corruption_norm = clamp(corruption_raw / max(corruption_threshold, 0.001), 0.0, 1.0)
 		SoundManager.set_corruption_intensity(corruption_norm)
 
+		# Monster adaptation feedback — warn when enemies level up
+		var adapt_level = AutogrindSystem.monster_adaptation_level
+		var adapt_battles = AutogrindSystem.battles_completed
+		# Adaptation thresholds: level 1 at 5 battles, level 2 at 10, level 3 at 20
+		if adapt_battles in [5, 10, 20]:
+			var adapt_msg = ""
+			if adapt_battles == 5:
+				adapt_msg = "[color=#ffaa44]Enemies are studying your patterns...[/color]"
+			elif adapt_battles == 10:
+				adapt_msg = "[color=#ff8844]Enemies have adapted! Stats +%.0f%%[/color]" % (adapt_level * 15)
+			elif adapt_battles == 20:
+				adapt_msg = "[color=#ff4444]FULLY ADAPTED! Enemies counter your strategies![/color]"
+			_autogrind_battle_summaries.append(adapt_msg)
+			if _autogrind_battle_summaries.size() > 50:
+				_autogrind_battle_summaries.remove_at(0)
+			SoundManager.play_ui("adaptation_warning")
+
+		# Milestone toast notifications
+		var battles = stats.get("battles_won", 0)
+		if battles in [10, 20, 30, 50, 100]:
+			_show_autogrind_toast(_get_milestone_text(battles))
+
+		# Auto-save snapshot every 5 battles for crash recovery
+		if battles > 0 and battles % 5 == 0:
+			_autogrind_save_snapshot()
+
+		# Log any fatigue event that fired this cycle to the console
+		if AutogrindSystem.fatigue_events_triggered > 0:
+			var last_fatigue = AutogrindSystem.fatigue_events_triggered
+			if current_scene and is_instance_valid(current_scene) and current_scene.has_method("autogrind_console_log"):
+				current_scene.autogrind_console_log("[color=#ff8844][FATIGUE #%d] Check system stability[/color]" % last_fatigue)
+
+		# Update battle log on dashboard
+		if _autogrind_dashboard and is_instance_valid(_autogrind_dashboard) and _autogrind_dashboard.has_method("add_battle_result"):
+			_autogrind_dashboard.add_battle_result(victory, BattleManager.current_round, exp_gained)
+
 
 func _on_grind_complete(reason: String) -> void:
 	"""Handle autogrind session completion"""
 	_is_autogrinding = false
 	current_state = LoopState.EXPLORATION
+	InputLockManager.pop_all()  # Clear any leaked locks
+
+	# Disconnect stale battle_ended signal if grind ended mid-battle
+	if BattleManager.battle_ended.is_connected(_on_autogrind_battle_ended):
+		BattleManager.battle_ended.disconnect(_on_autogrind_battle_ended)
+
+	# Capture stats before controller is freed
+	var final_stats = {}
+	if _autogrind_controller and is_instance_valid(_autogrind_controller):
+		final_stats = _autogrind_controller.get_grind_stats()
 
 	# Clean up controller
 	if _autogrind_controller and is_instance_valid(_autogrind_controller):
@@ -2097,14 +5816,114 @@ func _on_grind_complete(reason: String) -> void:
 	# Reset engine speed
 	Engine.time_scale = 1.0
 
-	# Update UI
+	# Update UI state (hidden in background during a session)
 	if _autogrind_ui and is_instance_valid(_autogrind_ui):
 		_autogrind_ui.set_grinding(false)
-	else:
-		# If UI is closed, return to exploration
-		_return_to_exploration()
+
+	# If a BattleScene is still the active scene (rule-triggered stop between battles,
+	# pre_battle_check interrupt, party wipe, etc.), tear it down and return to exploration.
+	# Otherwise the player is stranded in an empty BattleScene with no enemies.
+	# MUST await — see _on_battle_ended for the same web/mobile black-screen
+	# race when the follow-up code fires before the scene swap completes.
+	if not _exploration_scene or not is_instance_valid(_exploration_scene):
+		await _return_to_exploration()
+
+	# Play interrupt SFX based on stop reason
+	_play_grind_stop_sfx(reason)
+	_show_grind_stop_notification(reason)
 
 	print("[AUTOGRIND] Grind complete: %s" % reason)
+	_show_autogrind_summary(final_stats, reason)
+
+
+func _play_grind_stop_sfx(reason: String) -> void:
+	"""Play an appropriate sound effect for the autogrind stop reason."""
+	var reason_lower = reason.to_lower()
+	if "hp" in reason_lower or "health" in reason_lower:
+		SoundManager.play_ui("grind_stop_hp")
+	elif "died" in reason_lower or "death" in reason_lower or "dead" in reason_lower or "wipe" in reason_lower:
+		SoundManager.play_ui("grind_stop_death")
+	elif "corruption" in reason_lower or "collapse" in reason_lower:
+		SoundManager.play_ui("grind_stop_corruption")
+	elif "manual" in reason_lower:
+		SoundManager.play_ui("grind_stop_manual")
+	else:
+		SoundManager.play_ui("grind_stop_generic")
+
+
+## Full-screen flash + OS taskbar attention + loud sting so the player notices the grind stop even when tabbed out.
+## Manual stops skip the fanfare — the player already knows.
+func _show_grind_stop_notification(reason: String) -> void:
+	if "manual" in reason.to_lower():
+		return
+	SoundManager.play_ui("autogrind_stop_sting")
+	# No-op on headless / unsupported platforms.
+	if DisplayServer.has_method("window_request_attention"):
+		DisplayServer.window_request_attention()
+
+	var layer := CanvasLayer.new()
+	layer.layer = 90
+	add_child(layer)
+
+	var flash := ColorRect.new()
+	flash.color = Color(1.0, 0.95, 0.35, 0.0)
+	flash.set_anchors_preset(Control.PRESET_FULL_RECT)
+	flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(flash)
+
+	var banner_bg := ColorRect.new()
+	banner_bg.color = Color(0.0, 0.0, 0.0, 0.6)
+	var vp_size := get_viewport().get_visible_rect().size
+	if vp_size.x == 0:
+		vp_size = Vector2(1280, 720)
+	banner_bg.position = Vector2(0, vp_size.y * 0.42)
+	banner_bg.size = Vector2(vp_size.x, 56)
+	banner_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(banner_bg)
+
+	var banner_lbl := Label.new()
+	banner_lbl.text = "AUTOGRIND STOPPED — %s" % reason.to_upper()
+	banner_lbl.position = Vector2(0, vp_size.y * 0.42 + 16)
+	banner_lbl.size = Vector2(vp_size.x, 24)
+	banner_lbl.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	banner_lbl.add_theme_font_size_override("font_size", 22)
+	banner_lbl.add_theme_color_override("font_color", Color(1.0, 0.9, 0.3))
+	banner_lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	layer.add_child(banner_lbl)
+
+	var tween := create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(flash, "color:a", 0.55, 0.12)
+	tween.chain().tween_property(flash, "color:a", 0.0, 0.55)
+	tween.chain().tween_callback(func():
+		if is_instance_valid(layer):
+			layer.queue_free()
+	)
+
+
+func _show_autogrind_summary(stats: Dictionary, reason: String) -> void:
+	if _autogrind_summary and is_instance_valid(_autogrind_summary):
+		return
+
+	var summary_layer = CanvasLayer.new()
+	summary_layer.layer = 60
+	add_child(summary_layer)
+
+	var AutogrindSummaryClass = load("res://src/ui/autogrind/AutogrindSummary.gd")
+	_autogrind_summary = AutogrindSummaryClass.new()
+	_autogrind_summary.set_anchors_preset(Control.PRESET_FULL_RECT)
+	summary_layer.add_child(_autogrind_summary)
+
+	_autogrind_summary.setup(stats, reason)
+	# 2026-07-14 playtest: _stop_autogrind pops all locks + resumes exploration, so without this the player was walking the overworld with the summary modal on top of them.
+	if InputLockManager:
+		InputLockManager.push_lock("autogrind_summary")
+	_autogrind_summary.dismissed.connect(func():
+		if InputLockManager:
+			InputLockManager.pop_lock("autogrind_summary")
+		summary_layer.queue_free()
+		_autogrind_summary = null
+	)
 
 
 func _on_autogrind_tier_changed(new_tier: int) -> void:
@@ -2123,6 +5942,197 @@ func _on_autogrind_tier_changed(new_tier: int) -> void:
 		_autogrind_ui.on_tier_changed(new_tier)
 
 
+func _toggle_autogrind_pause() -> void:
+	"""Toggle pause/resume on the autogrind session."""
+	if not _autogrind_controller or not is_instance_valid(_autogrind_controller):
+		return
+
+	if _autogrind_controller.is_paused():
+		_autogrind_controller.resume_grind()
+	else:
+		_autogrind_controller.pause_grind()
+
+
+func _on_autogrind_paused() -> void:
+	"""Handle autogrind session pause."""
+	# Return to exploration while paused so the player can move around.
+	# MUST await — see _on_battle_ended; the summary overlay update
+	# below otherwise fires against a half-loaded scene on Android web.
+	if not _exploration_scene or not is_instance_valid(_exploration_scene):
+		await _return_to_exploration()
+
+	# Update overlay to show paused state
+	var summary = _autogrind_overlay.get_node_or_null("SummaryLabel") if _autogrind_overlay and is_instance_valid(_autogrind_overlay) else null
+	if summary:
+		summary.text = "|| PAUSED — Press P to Resume"
+		summary.add_theme_color_override("font_color", Color(1.0, 0.7, 0.3))
+
+	_show_autogrind_toast("Autogrind paused. Press P to resume.")
+	SoundManager.play_ui("grind_stop_manual")
+	print("[AUTOGRIND] Session paused")
+
+
+func _on_autogrind_resumed() -> void:
+	"""Handle autogrind session resume."""
+	var summary = _autogrind_overlay.get_node_or_null("SummaryLabel") if _autogrind_overlay and is_instance_valid(_autogrind_overlay) else null
+	if summary:
+		summary.add_theme_color_override("font_color", Color(1.0, 1.0, 0.4))
+
+	SoundManager.play_ui("autobattle_on")
+	SoundManager.play_music("autogrind")
+	print("[AUTOGRIND] Session resumed")
+
+
+func _on_autogrind_region_advanced(from_region: String, to_region: String, world_num: int) -> void:
+	"""Handle auto-advance to next world region during autogrind."""
+	_set_current_map_id(to_region)
+	_current_terrain = to_region
+	if has_node("/root/GameState"):
+		GameState.current_world = world_num
+
+	var world_names = {
+		1: "Medieval", 2: "Suburban", 3: "Steampunk",
+		4: "Industrial", 5: "Futuristic", 6: "Abstract"
+	}
+	var world_name = world_names.get(world_num, "World %d" % world_num)
+
+	# Visual warp transition
+	_show_region_warp_transition(world_num, world_name)
+
+	# Add to battle log
+	_autogrind_battle_summaries.append("[color=#ff88ff]>>> ADVANCED TO WORLD %d: %s <<<[/color]" % [world_num, world_name.to_upper()])
+	if _autogrind_battle_summaries.size() > 50:
+		_autogrind_battle_summaries.remove_at(0)
+
+	# Update dashboard if active
+	if _autogrind_dashboard and is_instance_valid(_autogrind_dashboard):
+		var stats = _autogrind_controller.get_grind_stats() if _autogrind_controller and is_instance_valid(_autogrind_controller) else {}
+		_autogrind_dashboard.refresh(stats, to_region)
+
+	# Play tier transition sound for the warp feel
+	SoundManager.play_ui("tier_zoom_out")
+
+	# Tutorial hint on first world transition
+	TutorialHints.show(self, "world_transition")
+
+	print("[AUTOGRIND] Region advanced: %s -> %s (World %d)" % [from_region, to_region, world_num])
+
+
+func _on_autogrind_corruption_band(band: String, level: float) -> void:
+	# One toast per band crossed this session — the signal is already deduped per band by AutogrindSystem.
+	var msg: String
+	match band:
+		"warning":
+			msg = "Corruption warning — reality is thinning (%.2f / 5.0)" % level
+		"danger":
+			msg = "Corruption DANGER — meta-boss risk high (%.2f / 5.0)" % level
+		"critical":
+			msg = "Corruption CRITICAL — collapse imminent (%.2f / 5.0)" % level
+		_:
+			msg = "Corruption %s — %.2f / 5.0" % [band, level]
+	_show_autogrind_toast(msg)
+	_autogrind_battle_summaries.append("[color=#ff6688]>>> CORRUPTION %s: %.2f / 5.0 <<<[/color]" % [band.to_upper(), level])
+	if _autogrind_battle_summaries.size() > 50:
+		_autogrind_battle_summaries.remove_at(0)
+
+
+func _on_autogrind_region_rotation_suggested(current_region_id: String, suggested: Dictionary, adaptation_level: float) -> void:
+	# Advisory toast — no auto-move; player decides. Fires at most once per region per session (dedup lives in AutogrindSystem).
+	var world_names := {
+		1: "Medieval", 2: "Suburban", 3: "Steampunk",
+		4: "Industrial", 5: "Futuristic", 6: "Abstract"
+	}
+	var msg: String
+	if suggested.is_empty():
+		msg = "Adaptation %.1f — monsters here have adapted. No new region available." % adaptation_level
+	else:
+		var zone_name: String = str(suggested.get("name", suggested.get("region", "next zone")))
+		msg = "Consider moving to %s — monsters here have adapted (Adapt %.1f)" % [zone_name, adaptation_level]
+	_show_autogrind_toast(msg)
+	_autogrind_battle_summaries.append("[color=#ffaa44]>>> ADAPTATION ADVISORY: %s <<<[/color]" % msg)
+	if _autogrind_battle_summaries.size() > 50:
+		_autogrind_battle_summaries.remove_at(0)
+	SoundManager.play_ui("menu_move")
+	print("[AUTOGRIND] Region rotation suggested: %s -> %s (adaptation %.2f)" % [current_region_id, suggested.get("region", "n/a"), adaptation_level])
+
+
+func _show_region_warp_transition(world_num: int, world_name: String) -> void:
+	"""Cinematic warp overlay when auto-advancing to a new world region."""
+	var layer = CanvasLayer.new()
+	layer.layer = 90
+	add_child(layer)
+
+	var vp_size = get_viewport().get_visible_rect().size
+	if vp_size.x == 0:
+		vp_size = Vector2(1280, 720)
+
+	# Flash overlay
+	var flash = ColorRect.new()
+	flash.color = Color(1.0, 1.0, 1.0, 0.0)
+	flash.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(flash)
+
+	# Dark backdrop for text
+	var backdrop = ColorRect.new()
+	backdrop.color = Color(0.02, 0.01, 0.05, 0.0)
+	backdrop.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(backdrop)
+
+	# "REGION CRACKED" title
+	var title = Label.new()
+	title.text = "REGION CRACKED"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.position = Vector2(0, vp_size.y * 0.35)
+	title.size = Vector2(vp_size.x, 40)
+	title.add_theme_font_size_override("font_size", 28)
+	title.add_theme_color_override("font_color", Color(1.0, 0.3, 0.3))
+	title.modulate.a = 0.0
+	layer.add_child(title)
+
+	# World name subtitle
+	var subtitle = Label.new()
+	subtitle.text = "Warping to World %d: %s" % [world_num, world_name]
+	subtitle.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	subtitle.position = Vector2(0, vp_size.y * 0.35 + 40)
+	subtitle.size = Vector2(vp_size.x, 30)
+	subtitle.add_theme_font_size_override("font_size", 18)
+	subtitle.add_theme_color_override("font_color", Color(1.0, 1.0, 0.4))
+	subtitle.modulate.a = 0.0
+	layer.add_child(subtitle)
+
+	# "Enemies reset for new region" hint
+	var hint = Label.new()
+	hint.text = "Enemy adaptation reset — fresh hunting grounds!"
+	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint.position = Vector2(0, vp_size.y * 0.35 + 76)
+	hint.size = Vector2(vp_size.x, 24)
+	hint.add_theme_font_size_override("font_size", 13)
+	hint.add_theme_color_override("font_color", Color(0.5, 0.9, 0.5))
+	hint.modulate.a = 0.0
+	layer.add_child(hint)
+
+	# Animation: flash → dark → text → fade out
+	var tween = create_tween()
+	# White flash (0.15s)
+	tween.tween_property(flash, "color:a", 0.7, 0.15)
+	tween.tween_property(flash, "color:a", 0.0, 0.2)
+	# Dark backdrop fades in
+	tween.parallel().tween_property(backdrop, "color:a", 0.85, 0.3)
+	# Text fades in
+	tween.tween_property(title, "modulate:a", 1.0, 0.3)
+	tween.parallel().tween_property(subtitle, "modulate:a", 1.0, 0.3)
+	tween.tween_property(hint, "modulate:a", 1.0, 0.2)
+	# Hold (1.5s)
+	tween.tween_interval(1.5)
+	# Fade everything out
+	tween.tween_property(title, "modulate:a", 0.0, 0.4)
+	tween.parallel().tween_property(subtitle, "modulate:a", 0.0, 0.4)
+	tween.parallel().tween_property(hint, "modulate:a", 0.0, 0.4)
+	tween.parallel().tween_property(backdrop, "color:a", 0.0, 0.4)
+	# Cleanup
+	tween.tween_callback(layer.queue_free)
+
+
 func _create_autogrind_overlay() -> void:
 	if _autogrind_overlay and is_instance_valid(_autogrind_overlay):
 		return
@@ -2139,7 +6149,7 @@ func _create_autogrind_overlay() -> void:
 	if vp_size.x == 0 or vp_size.y == 0:
 		vp_size = Vector2(1280, 720)
 
-	var bar_height = 120.0
+	var bar_height = 148.0
 	var bar_bg = ColorRect.new()
 	bar_bg.color = Color(0.03, 0.02, 0.06, 0.85)
 	bar_bg.position = Vector2(0, vp_size.y - bar_height)
@@ -2156,24 +6166,93 @@ func _create_autogrind_overlay() -> void:
 	var summary = Label.new()
 	summary.name = "SummaryLabel"
 	summary.text = "Battle #1 | EXP: 0 | Streak: 0 | Efficiency: 1.0x"
-	summary.position = Vector2(16, vp_size.y - bar_height + 8)
-	summary.size = Vector2(vp_size.x - 32, 28)
-	summary.add_theme_font_size_override("font_size", 18)
+	summary.position = Vector2(16, vp_size.y - bar_height + 6)
+	summary.size = Vector2(vp_size.x - 32, 24)
+	summary.add_theme_font_size_override("font_size", 16)
 	summary.add_theme_color_override("font_color", Color(1.0, 1.0, 0.4))
 	_autogrind_overlay.add_child(summary)
 
-	# Stats strip — full width, taller
+	# Party HP/MP bars — compact row
+	var party_container = Control.new()
+	party_container.name = "PartyBars"
+	party_container.position = Vector2(12, vp_size.y - bar_height + 30)
+	party_container.size = Vector2(vp_size.x - 24, 28)
+	_autogrind_overlay.add_child(party_container)
+
+	var slot_w = (vp_size.x - 32) / max(party.size(), 1)
+	# Tick 269: strict-5 party — was capped at 4. slot_w is already
+	# derived from party.size() so the 5th slot was correctly sized
+	# but never filled (silent empty column).
+	for i in range(min(party.size(), 5)):
+		var member = party[i]
+		if not member is Combatant:
+			continue
+
+		var x = i * slot_w
+		# Name
+		var name_lbl = Label.new()
+		name_lbl.name = "Name_%d" % i
+		name_lbl.text = member.combatant_name.left(8)
+		name_lbl.position = Vector2(x, 0)
+		name_lbl.add_theme_font_size_override("font_size", 10)
+		name_lbl.add_theme_color_override("font_color", Color(0.8, 0.8, 0.9))
+		party_container.add_child(name_lbl)
+
+		# HP bar background
+		var bar_w = slot_w - 12
+		var hp_bg = ColorRect.new()
+		hp_bg.color = Color(0.15, 0.05, 0.05)
+		hp_bg.position = Vector2(x, 14)
+		hp_bg.size = Vector2(bar_w, 6)
+		party_container.add_child(hp_bg)
+
+		# HP bar fill
+		var hp_fill = ColorRect.new()
+		hp_fill.name = "HP_%d" % i
+		hp_fill.color = Color(0.2, 0.8, 0.2)
+		hp_fill.position = Vector2(x, 14)
+		hp_fill.size = Vector2(bar_w, 6)
+		party_container.add_child(hp_fill)
+
+		# MP bar background
+		var mp_bg = ColorRect.new()
+		mp_bg.color = Color(0.05, 0.05, 0.15)
+		mp_bg.position = Vector2(x, 22)
+		mp_bg.size = Vector2(bar_w, 4)
+		party_container.add_child(mp_bg)
+
+		# MP bar fill
+		var mp_fill = ColorRect.new()
+		mp_fill.name = "MP_%d" % i
+		mp_fill.color = Color(0.3, 0.4, 0.9)
+		mp_fill.position = Vector2(x, 22)
+		mp_fill.size = Vector2(bar_w, 4)
+		party_container.add_child(mp_fill)
+
+	# Battle log — last 5 outcomes, right side of party bars row
+	var log_rtl = RichTextLabel.new()
+	log_rtl.name = "BattleLog"
+	log_rtl.bbcode_enabled = true
+	log_rtl.scroll_following = true
+	log_rtl.position = Vector2(vp_size.x * 0.55, vp_size.y - bar_height + 30)
+	log_rtl.size = Vector2(vp_size.x * 0.43, 28)
+	log_rtl.add_theme_font_size_override("normal_font_size", 9)
+	log_rtl.add_theme_color_override("default_color", Color(0.7, 0.7, 0.8))
+	log_rtl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_autogrind_overlay.add_child(log_rtl)
+
+	# Stats strip
 	var strip = AutogrindStatsStrip.new()
 	strip.name = "StatsStrip"
-	strip.position = Vector2(4, vp_size.y - bar_height + 38)
+	strip.position = Vector2(4, vp_size.y - bar_height + 62)
 	strip.size = Vector2(vp_size.x - 8, 42)
 	_autogrind_overlay.add_child(strip)
 
-	# Control hints — clearer
+	# Control hints
 	var hints = Label.new()
 	hints.name = "HintsLabel"
-	hints.text = "Y: Turbo    +/-: Speed    T: Dashboard    B: Exit"
-	hints.position = Vector2(16, vp_size.y - bar_height + 88)
+	hints.text = "Y: Turbo    T: Dashboard    P: Pause    B: Exit"
+	hints.position = Vector2(16, vp_size.y - bar_height + 112)
 	hints.size = Vector2(vp_size.x - 32, 24)
 	hints.add_theme_font_size_override("font_size", 13)
 	hints.add_theme_color_override("font_color", Color(0.6, 0.6, 0.7))
@@ -2192,7 +6271,63 @@ func _update_autogrind_overlay(stats: Dictionary) -> void:
 		var wins = stats.get("consecutive_wins", 0)
 		var eff = stats.get("efficiency", 1.0)
 		var turbo_txt = " TURBO" if BattleManager.turbo_mode else ""
-		summary.text = "Battle #%d | EXP: %d | Streak: %d | Efficiency: %.1fx%s" % [battles, exp, wins, eff, turbo_txt]
+		var tier_txt = ""
+		if _autogrind_controller and is_instance_valid(_autogrind_controller):
+			var tier = _autogrind_controller.get_current_tier()
+			if _autogrind_controller.headless_mode:
+				tier_txt = " [LUDICROUS]"
+			elif tier == 1:  # DASHBOARD
+				tier_txt = " [DASHBOARD]"
+			else:
+				tier_txt = " [ACCELERATED]"
+		summary.text = "Battle #%d | EXP: %d | Streak: %d | Efficiency: %.1fx%s%s" % [battles, exp, wins, eff, turbo_txt, tier_txt]
+
+	# Update party HP/MP bars
+	var party_bars = _autogrind_overlay.get_node_or_null("PartyBars")
+	if party_bars:
+		var vp_size = get_viewport().get_visible_rect().size
+		if vp_size.x == 0:
+			vp_size = Vector2(1280, 720)
+		var slot_w = (vp_size.x - 32) / max(party.size(), 1)
+		var bar_w = slot_w - 12
+		var char_exp = stats.get("per_character_exp", {})
+		# Tick 269: strict-5 party — was capped at 4 (matching the
+		# initial build above; both sites needed bumping together).
+		for i in range(min(party.size(), 5)):
+			var member = party[i]
+			if not member is Combatant:
+				continue
+			# Update name with session EXP total
+			var name_lbl = party_bars.get_node_or_null("Name_%d" % i)
+			if name_lbl:
+				var member_exp = char_exp.get(member.combatant_name, 0)
+				if member_exp > 0:
+					name_lbl.text = "%s +%d" % [member.combatant_name.left(6), member_exp]
+				else:
+					name_lbl.text = member.combatant_name.left(8)
+			var hp_fill = party_bars.get_node_or_null("HP_%d" % i)
+			if hp_fill:
+				var hp_pct = member.current_hp / max(float(member.max_hp), 1.0)
+				hp_fill.size.x = bar_w * hp_pct
+				if hp_pct > 0.5:
+					hp_fill.color = Color(0.2, 0.8, 0.2)
+				elif hp_pct > 0.25:
+					hp_fill.color = Color(0.8, 0.7, 0.1)
+				else:
+					hp_fill.color = Color(0.9, 0.2, 0.2)
+			var mp_fill = party_bars.get_node_or_null("MP_%d" % i)
+			if mp_fill:
+				var mp_pct = member.current_mp / max(float(member.max_mp), 1.0)
+				mp_fill.size.x = bar_w * mp_pct
+
+	# Update battle log with last 5 summaries
+	var log_rtl = _autogrind_overlay.get_node_or_null("BattleLog")
+	if log_rtl and log_rtl is RichTextLabel:
+		log_rtl.clear()
+		var show_count = min(_autogrind_battle_summaries.size(), 5)
+		var start_idx = _autogrind_battle_summaries.size() - show_count
+		for i in range(start_idx, _autogrind_battle_summaries.size()):
+			log_rtl.append_text(_autogrind_battle_summaries[i] + "\n")
 
 	var strip = _autogrind_overlay.get_node_or_null("StatsStrip")
 	if strip and strip.has_method("refresh"):
@@ -2259,12 +6394,17 @@ func _show_autogrind_dashboard() -> void:
 	else:
 		add_child(_autogrind_dashboard)
 
-	_autogrind_dashboard.pause_requested.connect(func(): _stop_autogrind("Paused"))
+	_autogrind_dashboard.pause_requested.connect(_toggle_autogrind_pause)
 	_autogrind_dashboard.exit_requested.connect(func(): _stop_autogrind("Manual stop"))
 	_autogrind_dashboard.tier_cycle_requested.connect(func():
 		if _autogrind_controller and is_instance_valid(_autogrind_controller):
 			_autogrind_controller.cycle_tier()
 	)
+
+	# Show ludicrous speed indicator if headless mode is active
+	if _autogrind_controller and is_instance_valid(_autogrind_controller):
+		if _autogrind_dashboard.has_method("set_ludicrous_mode"):
+			_autogrind_dashboard.set_ludicrous_mode(_autogrind_controller.headless_mode)
 
 	print("[AUTOGRIND] Dashboard shown (Tier 2)")
 
@@ -2289,6 +6429,7 @@ func _autogrind_heal_member(member: Combatant) -> void:
 		if member.get_item_count(item_id) > 0:
 			member.remove_item(item_id, 1)
 			member.heal(heal_amount)
+			AutogrindSystem.track_item_consumed(item_id)
 			print("[AUTOGRIND] %s used %s (healed %d HP)" % [member.combatant_name, item_id, heal_amount])
 			return
 
@@ -2301,12 +6442,57 @@ func _autogrind_restore_mp(member: Combatant) -> void:
 		if member.get_item_count(item_id) > 0:
 			member.remove_item(item_id, 1)
 			member.restore_mp(restore)
+			AutogrindSystem.track_item_consumed(item_id)
 			print("[AUTOGRIND] %s used %s (restored %d MP)" % [member.combatant_name, item_id, restore])
 			return
 
 
+func _autogrind_save_snapshot() -> void:
+	"""Save a grind snapshot for pause/resume recovery."""
+	if not _autogrind_controller or not is_instance_valid(_autogrind_controller):
+		return
+	var ctrl_snapshot = _autogrind_controller.serialize_snapshot()
+	AutogrindSystem.save_grind_snapshot(ctrl_snapshot)
+
+
+func _resume_autogrind() -> void:
+	"""Resume a previously saved autogrind session."""
+	var snapshot = AutogrindSystem.load_grind_snapshot()
+	if snapshot.is_empty():
+		print("[AUTOGRIND] No snapshot to resume")
+		return
+
+	var ctrl_data = snapshot.get("controller", {})
+	var sys_data = snapshot.get("system", {})
+	var config = ctrl_data.get("config", {})
+
+	# Inject headless_mode into config so _start_autogrind sets it correctly
+	# (controller reads ludicrous_speed from config during start_grind)
+	if ctrl_data.get("headless_mode", false) and not config.has("ludicrous_speed"):
+		config["ludicrous_speed"] = true
+
+	# Start autogrind first (this resets system state to zero)
+	_start_autogrind(config)
+
+	# THEN restore system state on top (overrides the zeros from start_autogrind)
+	AutogrindSystem.restore_system_from_snapshot(sys_data)
+
+	# Restore controller-specific state (tier, headless, terrain)
+	if _autogrind_controller and is_instance_valid(_autogrind_controller):
+		_autogrind_controller.restore_from_snapshot(ctrl_data)
+
+	# Clear the snapshot now that we've successfully resumed
+	AutogrindSystem.clear_grind_snapshot()
+
+	print("[AUTOGRIND] Session resumed from snapshot (%d battles, %d EXP)" % [
+		sys_data.get("battles_completed", 0), sys_data.get("total_exp_gained", 0)])
+
+
 func _exit_tree() -> void:
-	"""Disconnect signals on cleanup to prevent dangling connections"""
+	"""Save snapshot on exit if grinding, then disconnect signals"""
+	if _is_autogrinding and _autogrind_controller and is_instance_valid(_autogrind_controller):
+		_autogrind_save_snapshot()
+		print("[AUTOGRIND] Snapshot saved on exit")
 	if _exploration_scene and is_instance_valid(_exploration_scene):
 		if _exploration_scene.has_signal("battle_triggered") and _exploration_scene.is_connected("battle_triggered", _on_exploration_battle_triggered):
 			_exploration_scene.disconnect("battle_triggered", _on_exploration_battle_triggered)
@@ -2322,3 +6508,186 @@ func _exit_tree() -> void:
 			_title_screen.disconnect("continue_selected", _on_title_continue)
 		if _title_screen.is_connected("settings_selected", _on_title_settings):
 			_title_screen.disconnect("settings_selected", _on_title_settings)
+
+
+func _get_milestone_text(battles: int) -> String:
+	match battles:
+		10: return "ADAPTATION Lv.1 — Enemies are learning..."
+		20: return "ADAPTATION Lv.2 — Enemies growing stronger!"
+		30: return "SYSTEM FATIGUE — Instability events possible!"
+		50: return "DEEP GRIND — Maximum adaptation reached!"
+		100: return "LEGENDARY SESSION — Reality is bending..."
+		_: return "Milestone: %d battles!" % battles
+
+
+func _on_any_save_failed(reason: String) -> void:
+	"""Surface every save failure as a warning toast. Pre-fix, save_failed
+	had no listeners — silent rejection was indistinguishable from
+	'something is broken'. Now the player sees the actual blocker
+	('Cannot save inside this room — leave to a village or overworld first')."""
+	if not Toast:
+		return
+	var msg: String = reason if reason != "" else "Save failed"
+	Toast.show_warning(self, msg)
+
+
+func _on_any_save_completed(_slot: int) -> void:
+	"""Fire a green 'Game Saved ✓ — <location>' toast whenever SaveSystem
+	completes a save. The location label is pulled live from MapSystem so the
+	player can confirm WHERE the save landed (matters when juggling multiple
+	slots across worlds). Falls back to the legacy short form when no map is
+	loaded (e.g. saving from the title screen via debug paths)."""
+	var location := ""
+	if MapSystem and "current_map_id" in MapSystem and MapSystem.current_map_id:
+		location = str(MapSystem.current_map_id).capitalize()
+	Toast.show_save(self, location)
+
+
+## Tick 178: surface save-corruption events. The signals were
+## firing pre-fix with NO listeners — Scriptweaver / Necromancer
+## actions silently corrupted the save and the player got zero
+## visible feedback. Now: every corruption level increase shows
+## a warning-color toast with the new level, and every NEW
+## corruption effect shows a distinct danger-color toast.
+func _on_save_corruption_increased(corruption_level: float) -> void:
+	## Don't spam the player — only show the toast at meaningful
+	## thresholds (10%, 25%, 50%, 75%, 100%) so an Edit Formula
+	## that nudges level by 0.01 doesn't yield a noisy toast.
+	var pct: int = int(corruption_level * 100.0)
+	var prev_threshold: int = -1
+	var thresholds: Array[int] = [10, 25, 50, 75, 100]
+	for t in thresholds:
+		if pct >= t:
+			prev_threshold = t
+	if prev_threshold < 0:
+		return
+	# Track which thresholds we've shown so we don't re-show every
+	# add_corruption call between thresholds.
+	if not has_meta("corruption_thresholds_shown"):
+		set_meta("corruption_thresholds_shown", {})
+	var shown: Dictionary = get_meta("corruption_thresholds_shown", {})
+	if shown.has(prev_threshold):
+		return
+	shown[prev_threshold] = true
+	set_meta("corruption_thresholds_shown", shown)
+	Toast.show(self,
+		"⚠ Save corruption: %d%%" % prev_threshold,
+		Toast.WARNING_COLOR)
+
+
+func _on_corruption_effect_added(effect: String) -> void:
+	## Each new corruption effect is distinct and worth surfacing
+	## immediately — these affect gameplay (visual_glitch, stat_drain,
+	## etc.) so the player should know which effect just landed.
+	var display: String = effect.replace("_", " ").to_upper()
+	Toast.show(self,
+		"⚠ Reality glitches: %s" % display,
+		Toast.DANGER_COLOR)
+
+
+## Tick 179: Scriptweaver edits via modify_constant fire
+## game_constant_modified. Pre-fix nobody listened — the player
+## edited a constant and saw zero confirmation that it landed
+## (modify_constant returns true but no UI surface). Toast format
+## shows the constant name + the change ("3.0 → 4.5"). Uses
+## DEFAULT_COLOR (yellow) since this is a player-initiated edit,
+## not a corruption-induced event — different severity from the
+## corruption Toasts above.
+func _on_game_constant_modified(constant_name: String, old_value, new_value) -> void:
+	var display_name: String = constant_name.replace("_", " ").capitalize()
+	Toast.show(self,
+		"✎ %s: %s → %s" % [display_name, str(old_value), str(new_value)],
+		Toast.DEFAULT_COLOR)
+
+
+## Tick 254: visible feedback when an event chat unlocks. Listener
+## wired in _ready against PartyChatSystem.event_chat_unlocked, which
+## fires from fire_event_flag the moment a registry entry transitions
+## from locked to available.
+func _on_event_chat_unlocked(_chat_id: String, title: String) -> void:
+	# Defer to a CLEAN exploration moment — it fired over GAME OVER, then over the shop Buy menu (smoke-shot finds 2026-07-11). Unlock announcements aren't time-critical.
+	_pending_chat_toasts.append(title)
+	_flush_chat_toasts()
+
+
+var _pending_chat_toasts: Array[String] = []
+
+
+func _flush_chat_toasts() -> void:
+	if _pending_chat_toasts.is_empty() or current_state != LoopState.EXPLORATION:
+		return
+	if InputLockManager and InputLockManager.is_locked():
+		return
+	if _overworld_menu and is_instance_valid(_overworld_menu):
+		return
+	for title in _pending_chat_toasts:
+		Toast.show_success(self, "New party chat: %s" % title)
+	_pending_chat_toasts.clear()
+
+
+## Tick 264: visible feedback for bestiary kill milestones (10/50/100
+## /500 of one monster). Pluralization handled with a naive +s — fine
+## for current monster names ("Slime"/"Bat"/"Goblin"); add a real
+## pluralizer if monster names start ending in y/s/x.
+## Tick 358: simple English pluralization that handles the most common
+## non-trivial endings monsters.json names hit: Entity → Entities,
+## Process → Processes, Lady → Ladies. Pre-fix the bare `%ss` append
+## produced "Entitys", "Processs", "Ladys" toast text on milestone
+## hits. Only covers the rules the actual monster name set needs;
+## extend the helper as new data lands rather than pulling in a full
+## inflection lib for a polish nit.
+func _pluralize_monster_name(name: String) -> String:
+	if name.is_empty():
+		return name
+	var lower: String = name.to_lower()
+	# -y after a consonant → -ies (Lady → Ladies, Entity → Entities)
+	if lower.ends_with("y") and lower.length() >= 2:
+		var penultimate: String = lower.substr(lower.length() - 2, 1)
+		if not (penultimate in ["a", "e", "i", "o", "u"]):
+			return name.substr(0, name.length() - 1) + "ies"
+	# -s, -sh, -ch, -x, -z → -es (Process → Processes, Wretch → Wretches)
+	if lower.ends_with("sh") or lower.ends_with("ch") or lower.ends_with("s") or lower.ends_with("x") or lower.ends_with("z"):
+		return name + "es"
+	return name + "s"
+
+
+func _on_bestiary_kill_milestone(_monster_id: String, monster_name: String, count: int) -> void:
+	Toast.show_success(self, "%d %s defeated!" % [count, _pluralize_monster_name(monster_name)])
+
+
+func _show_autogrind_toast(text: String) -> void:
+	var layer = CanvasLayer.new()
+	layer.layer = 80
+	add_child(layer)
+
+	var label = Label.new()
+	label.text = text
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var vp_size = get_viewport().get_visible_rect().size
+	if vp_size.x == 0:
+		vp_size = Vector2(1280, 720)
+	label.position = Vector2(0, 80)
+	label.size = Vector2(vp_size.x, 40)
+	label.add_theme_font_size_override("font_size", 20)
+	label.add_theme_color_override("font_color", Color(1.0, 1.0, 0.4))
+	label.modulate.a = 0.0
+	layer.add_child(label)
+
+	var shadow = Label.new()
+	shadow.text = text
+	shadow.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	shadow.position = Vector2(2, 82)
+	shadow.size = Vector2(vp_size.x, 40)
+	shadow.add_theme_font_size_override("font_size", 20)
+	shadow.add_theme_color_override("font_color", Color(0, 0, 0, 0.6))
+	shadow.modulate.a = 0.0
+	layer.add_child(shadow)
+	layer.move_child(shadow, 0)
+
+	var tween = create_tween()
+	tween.tween_property(label, "modulate:a", 1.0, 0.3)
+	tween.parallel().tween_property(shadow, "modulate:a", 1.0, 0.3)
+	tween.tween_interval(2.0)
+	tween.tween_property(label, "modulate:a", 0.0, 0.5)
+	tween.parallel().tween_property(shadow, "modulate:a", 0.0, 0.5)
+	tween.tween_callback(layer.queue_free)

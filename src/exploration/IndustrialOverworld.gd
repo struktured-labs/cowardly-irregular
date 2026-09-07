@@ -12,12 +12,17 @@ const AreaTransitionScript = preload("res://src/exploration/AreaTransition.gd")
 const OverworldNPCScript = preload("res://src/exploration/OverworldNPC.gd")
 
 signal exploration_ready()
-signal battle_triggered(enemies: Array)
+signal battle_triggered(enemies: Array, terrain: String)
 signal area_transition(target_map: String, spawn_point: String)
 
 ## Map dimensions (in tiles) - 60x45 factory district
-const MAP_WIDTH: int = 60
-const MAP_HEIGHT: int = 45
+const MAP_WIDTH: int = 180
+const MAP_HEIGHT: int = 135
+const MAP_IMAGE: String = "res://data/maps/overworld_w4.png"
+const MAP_WORLD: String = "industrial"
+## Legacy entity coordinates below are old 60x45 tiles; the PNG is that map at 3x.
+## tools/gen_w4_industrial.py reserves a clearing at each -- change one, change both.
+const MAP_SCALE: int = 3
 const TILE_SIZE: int = 32
 
 ## Scene components
@@ -39,6 +44,18 @@ var spawn_points: Dictionary = {}
 ## Mode 7 perspective
 var mode7_enabled: bool = true
 var _mode7: Mode7Overlay
+var _minimap: OverworldMinimap
+
+## Zone particles
+var _zone_particles: ZoneParticles
+
+var _quest_tracker: QuestTracker
+var _weather: WeatherSystem
+var _border_indicator: MapBorderIndicator
+var _objective_arrow: ObjectiveArrow
+var _threat_meter: ThreatMeter
+var monster_spawner: MonsterSpawner
+var _save_point: SavePoint
 
 ## Smoke effect nodes
 var _smoke_emitters: Array = []
@@ -47,6 +64,8 @@ var _smoke_emitters: Array = []
 func _ready() -> void:
 	_setup_scene()
 	_generate_map()
+	# msg 2830: terrain colliders shifted to match the warped render.
+	Mode7Overlay.apply_terrain_collision_alignment(tile_map, mode7_enabled)
 	_setup_transitions()
 	_setup_npcs()
 	_setup_player()
@@ -59,23 +78,211 @@ func _ready() -> void:
 		_mode7.apply_preset("industrial")
 		_mode7.setup(self, player)
 
+	# Zone name popup
+	var _zone_popup = ZoneNamePopup.new()
+	add_child(_zone_popup)
+	_zone_popup.setup(self)
+	_zone_popup.show_zone("industrial_overworld")
+
+	_zone_particles = ZoneParticles.new()
+	add_child(_zone_particles)
+	_zone_particles.setup(self, player)
+	_zone_particles.update_zone("industrial_overworld")
+
+	GameState.set_story_flag("w4_entered")
+	_quest_tracker = QuestTracker.new()
+	add_child(_quest_tracker)
+	_quest_tracker.setup(self)
+
+	_weather = WeatherSystem.new()
+	add_child(_weather)
+	_weather.setup(self, player, "industrial")
+
+	_place_signposts()
+	_place_landmarks()
+	_place_wanderers()
+	_place_village_markers()
+	_place_treasure_chests()
+	_place_save_point()
+
 	# Start industrial overworld music
 	if SoundManager:
 		SoundManager.play_area_music("overworld_industrial")
 
 	_setup_effects()
+	_minimap = OverworldMinimap.new()
+	add_child(_minimap)
+	_minimap.setup(self, player, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE, spawn_points)
+	_minimap.set_objective(_get_objective_position())
+
+	monster_spawner = MonsterSpawner.new()
+	monster_spawner.name = "MonsterSpawner"
+	add_child(monster_spawner)
+	monster_spawner.set_map_size(MAP_WIDTH, MAP_HEIGHT)
+	monster_spawner.monster_touched.connect(_on_roaming_monster_touched)
+	monster_spawner.setup(player, ["conveyor_gremlin", "toxic_sludge", "assembly_line_automaton", "shift_supervisor", "rust_elemental"])
+
+	_threat_meter = ThreatMeter.new()
+	add_child(_threat_meter)
+	_threat_meter.setup(self, player, monster_spawner)
+
+	_border_indicator = MapBorderIndicator.new()
+	add_child(_border_indicator)
+	_border_indicator.setup(self, player, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE)
+
+	_objective_arrow = ObjectiveArrow.new()
+	add_child(_objective_arrow)
+	_objective_arrow.setup(self, player)
+	_objective_arrow.set_target(_get_objective_position())
+
+	TutorialHints.show(self, "world_transition")
 	exploration_ready.emit()
+
+
+func _get_objective_position() -> Vector2:
+	if GameState.game_constants.get("cutscene_flag_warden_industrial_defeated", false):
+		return spawn_points.get("rail_yard", Vector2.ZERO)
+	if GameState.get_story_flag("visited_rivet_row"):
+		return spawn_points.get("rail_yard", Vector2.ZERO)
+	return spawn_points.get("rivet_row_entrance", Vector2.ZERO)
+
+
+func _place_village_markers() -> void:
+	var pos = spawn_points.get("rivet_row_entrance", Vector2.ZERO)
+	if pos != Vector2.ZERO:
+		var marker = VillageMarker.new()
+		marker.village_name = "RIVET ROW"
+		marker.roof_color = Color(0.35, 0.3, 0.28)  # Grimy worker-housing gray-brown
+		marker.position = pos
+		add_child(marker)
+
+
+func _place_treasure_chests() -> void:
+	const TreasureChestScript = preload("res://src/exploration/TreasureChest.gd")
+	# 10 chests across rail yard, factory floor, housing, chemical zone, break room
+	var chests = [
+		# Rail yard (north edge) — dropped shipping crates
+		{"id": "w4_rail_hipotion", "pos": Vector2(26, 5), "type": "item", "item": "hi_potion", "amount": 5},
+		{"id": "w4_rail_gold", "pos": Vector2(35, 4), "type": "gold", "gold": 600},
+		# Factory complex — maintenance caches
+		{"id": "w4_factory_ether", "pos": Vector2(22, 16), "type": "item", "item": "ether", "amount": 5},
+		{"id": "w4_factory_elixir", "pos": Vector2(28, 20), "type": "item", "item": "elixir", "amount": 1},
+		{"id": "w4_factory_gold", "pos": Vector2(42, 22), "type": "gold", "gold": 700},
+		# Chemical zone (west) — dangerous area reward
+		{"id": "w4_chem_remedy", "pos": Vector2(5, 20), "type": "item", "item": "remedy", "amount": 4},
+		{"id": "w4_chem_phoenix", "pos": Vector2(10, 25), "type": "item", "item": "phoenix_down", "amount": 2},
+		# Worker housing (east) — stashed supplies
+		{"id": "w4_housing_antidote", "pos": Vector2(50, 20), "type": "item", "item": "antidote", "amount": 5},
+		{"id": "w4_housing_gold", "pos": Vector2(54, 28), "type": "gold", "gold": 400},
+		# Break room / south — last stop before portal
+		{"id": "w4_break_ether", "pos": Vector2(36, 22), "type": "item", "item": "ether", "amount": 4},
+	]
+	for c in chests:
+		var chest = TreasureChestScript.new()
+		chest.chest_id = c["id"]
+		chest.position = Vector2(c["pos"].x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, c["pos"].y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+		if c["type"] == "gold":
+			chest.contents_type = "gold"
+			chest.gold_amount = c["gold"]
+		else:
+			chest.contents_type = "item"
+			chest.contents_id = c["item"]
+			chest.contents_amount = c["amount"]
+		add_child(chest)
+
+
+func _place_save_point() -> void:
+	# Save crystal in break room (safer refuge)
+	_save_point = SavePoint.new()
+	_save_point.position = Vector2(36 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 20 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	add_child(_save_point)
+
+
+func _place_signposts() -> void:
+	var signs = [
+		# Orientation at entry (south)
+		{"pos": Vector2(30, 34), "text": "W4 · Assembly Line"},
+		# Return portal (south)
+		{"pos": Vector2(29, 38), "text": "↓ Return  ⚙ Clockwork Dominion (W3)"},
+		# Forward portal (north rail yard)
+		{"pos": Vector2(30, 6), "text": "↑ Rail Yard  ◉ Source Layer (W5)"},
+		# Rivet Row village (east)
+		{"pos": Vector2(48, 17), "text": "→ Rivet Row Village"},
+		# Chemical zone warning (west)
+		{"pos": Vector2(12, 17), "text": "← Chemical Zone ⚠ Toxic sludge"},
+		# Assembly Core dungeon
+		{"pos": Vector2(8, 23), "text": "↓ Assembly Core — dungeon ⚒"},
+		# Factory floor & break room
+		{"pos": Vector2(26, 17), "text": "Factory Floor · assembly here"},
+		{"pos": Vector2(36, 22), "text": "Break Room · save crystal"},
+	]
+	for s in signs:
+		var post = Signpost.new()
+		post.sign_text = s["text"]
+		post.position = Vector2(s["pos"].x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, s["pos"].y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+		add_child(post)
+
+
+func _place_landmarks() -> void:
+	var landmarks = [
+		{"pos": Vector2(20, 10), "type": Landmark.Type.SMOKESTACK},
+		{"pos": Vector2(45, 30), "type": Landmark.Type.BARREL_STACK},
+		{"pos": Vector2(10, 35), "type": Landmark.Type.SMOKESTACK},
+		{"pos": Vector2(30, 20), "type": Landmark.Type.BARREL_STACK},
+	]
+	for l in landmarks:
+		var lm = Landmark.new()
+		lm.landmark_type = l["type"]
+		lm.position = Vector2(l["pos"].x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, l["pos"].y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+		add_child(lm)
+
+
+func _place_wanderers() -> void:
+	var wanderers = [
+		{
+			"name": "Shift Worker",
+			"dialogue": "Break's over in five minutes. Always five minutes.",
+			"color": Color(0.45, 0.4, 0.35),
+			"path": [Vector2(20, 15), Vector2(25, 15), Vector2(25, 20), Vector2(20, 20)],
+			"hints": [
+				{"flag": "w4_entered", "text": "Rivet Row is east — the worker housing. The Director watches everything."},
+				{"flag": "warden_industrial_defeated", "text": "The Assembly Line stopped. There's a rift where the furnace was... glowing blue."},
+			],
+		},
+		{
+			"name": "Inspector",
+			"dialogue": "Everything here is up to code. Technically.",
+			"color": Color(0.3, 0.3, 0.35),
+			"path": [Vector2(35, 25), Vector2(40, 25), Vector2(40, 30), Vector2(35, 30)],
+			"hints": [
+				{"flag": "w4_entered", "text": "The factory floor runs north to south. Watch for chemical barrels."},
+				{"flag": "warden_industrial_defeated", "text": "Past the rift... it's all data. Numbers. Like the world forgot how to be real."},
+			],
+		},
+	]
+	for w in wanderers:
+		var npc = WanderingNPC.new()
+		npc.npc_name = w["name"]
+		npc.dialogue = w["dialogue"]
+		npc.sprite_color = w["color"]
+		if w.has("hints"):
+			npc.dialogue_hints = w["hints"]
+		var patrol: Array[Vector2] = []
+		for pt in w["path"]:
+			patrol.append(Vector2(pt.x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, pt.y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2))
+		npc.set_patrol(patrol)
+		add_child(npc)
 
 
 func _setup_effects() -> void:
 	var smokestack_positions: Array[Vector2] = [
-		Vector2(7 * TILE_SIZE + TILE_SIZE / 2, 13 * TILE_SIZE),
-		Vector2(13 * TILE_SIZE + TILE_SIZE / 2, 13 * TILE_SIZE),
-		Vector2(7 * TILE_SIZE + TILE_SIZE / 2, 23 * TILE_SIZE),
-		Vector2(13 * TILE_SIZE + TILE_SIZE / 2, 23 * TILE_SIZE),
-		Vector2(19 * TILE_SIZE + TILE_SIZE / 2, 7 * TILE_SIZE),
-		Vector2(25 * TILE_SIZE + TILE_SIZE / 2, 17 * TILE_SIZE),
-		Vector2(31 * TILE_SIZE + TILE_SIZE / 2, 27 * TILE_SIZE),
+		Vector2(7 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 13 * MAP_SCALE * TILE_SIZE),
+		Vector2(13 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 13 * MAP_SCALE * TILE_SIZE),
+		Vector2(7 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 23 * MAP_SCALE * TILE_SIZE),
+		Vector2(13 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 23 * MAP_SCALE * TILE_SIZE),
+		Vector2(19 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 7 * MAP_SCALE * TILE_SIZE),
+		Vector2(25 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 17 * MAP_SCALE * TILE_SIZE),
+		Vector2(31 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 27 * MAP_SCALE * TILE_SIZE),
 	]
 	for pos in smokestack_positions:
 		var emitter = CPUParticles2D.new()
@@ -108,12 +315,22 @@ func _setup_effects() -> void:
 
 
 func _process(_delta: float) -> void:
+	if _quest_tracker: _quest_tracker.update()
 	if _mode7:
-		var roaming = get_node_or_null("RoamingMonsters")
-		if roaming:
-			for child in roaming.get_children():
-				_mode7.register_billboard(child)
 		_mode7.process_frame()
+	if _weather:
+		_weather.process(_delta)
+	if player:
+		if _zone_particles:
+			_zone_particles.update_position(player.position)
+		if _minimap:
+			_minimap.update(player.position)
+		if _objective_arrow:
+			_objective_arrow.update(player.position)
+		if _border_indicator:
+			_border_indicator.update(player.position)
+		if _threat_meter:
+			_threat_meter.update(player.position)
 
 
 func _exit_tree() -> void:
@@ -174,127 +391,14 @@ func _generate_map() -> void:
 
 	print("Generating industrial overworld map %dx%d..." % [MAP_WIDTH, MAP_HEIGHT])
 
-	var map_data: Array[String] = [
-		#                    1111111111222222222233333333334444444444555555555
-		#          0123456789012345678901234567890123456789012345678901234567890
-		# Row 0: North boundary - brick wall
-		"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-		# Row 1: Rail yard entry - tracks and cargo
-		"bCCCCffrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrffCCCCCCCffbbb",
-
-		# Row 2: Rail yard - parallel tracks
-		"bCCCCffrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrffCCCCCCCffbbb",
-
-		# Row 3: Rail yard - loading area between tracks
-		"bfffffffffffffffffffffffffffffffffffffffffffffffffffffffbbbb",
-
-		# Row 4: Rail yard - more tracks and containers
-		"bCCffrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrffCCCCCffbbb",
-
-		# Row 5: Rail yard - cargo staging
-		"bCCffrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrffCCCCCffbbb",
-
-		# Row 6: Rail yard south edge - loading docks
-		"bfffffffffffffffffffffffffffffffffffffffffffffffffffffffbbbb",
-
-		# Row 7: Transition zone - factory floor with vents
-		"bffffffvfffffffvfffffffvfffffffvfffffffvfffffffvfffffffffbbb",
-
-		# Row 8: Factory north wall approach
-		"bfffffgfffffffgfffffffgfffffffgfffffffgfffffffgffffffffffbbb",
-
-		# Row 9: Factory perimeter - brick wall with pipes
-		"bbbbbbbbbbbbbbbbfffffffbbbbbbbbbbbbbbbbfffffffbbbbbbbbbbbbbb",
-		# Row 10: Factory perimeter continued
-		"bppppppbbwffffffffffwbbppppppbbwffffffffffwbbppppppbbwfffffb",
-		# Row 11: WEST: Chemical area | CENTRAL: Factory interior | EAST: Housing
-		"ddddddddddddddfffccccccccccccccccffffffffffffffffffffhhhhhhh",
-
-		# Row 12: Drainage channel | Conveyor lines | Worker housing
-		"ddddddddddddddffcccccccccccccccccccffffffffffffffffffhhhhhhh",
-
-		# Row 13: Chemical waste with barrels | Factory floor | Housing
-		"dddBddBdddBdddfffffffsfffffffsffffffffffffffwfffffffhhhhhhhh",
-
-		# Row 14: Drainage continues | Factory with smokestacks | Housing row
-		"ddddddddddddddfffffffsfffffffsffffffffffffffffffhhhhhhhhhhhh",
-
-		# Row 15: Chemical area | Factory grating section | Housing
-		"dddddBddddBdddfggggggggggggggggggfffffffffffffffffhhhhhhhhhh",
-
-		# Row 16: Waste zone | Grating over furnace | Housing
-		"ddddddddddddddffggggggggggggggggggfffffffwfffffffffffffffhhh",
-
-		# Row 17: Barrel storage | Factory floor | Housing approach
-		"dBdddBdddBdddBfffffffvfffffffvfffffffffffffffffffffffhhhhhhh",
-
-		# Row 18: Chemical zone | BREAK ROOM hidden | Housing
-		"ddddddddddddddfffffffffffffffRRRRffffffffffffffffffhhhhhhhhh",
-
-		# Row 19: Drainage | Break room floor | Housing
-		"ddddddddddddddffffffffffffffRRRRRRffffffffffffffffhhhhhhhhhh",
-
-		# Row 20: Chemical area | Break room end + factory | Housing
-		"dddBddddBdddddfffffffffffffffRRRRffffffffffffffffffhhhhhhhhh",
-
-		# Row 21: Waste area | Conveyor section | Housing
-		"ddddddddddddddffccccccccccccccccccffffffwfffffffffffffhhhhhh",
-		# Row 22: Drainage continues | Conveyor | Housing rows
-		"ddddddddddddddffccccccccccccccccccffffffffffffffffffffffhhhh",
-
-		# Row 23: Chemical with warning signs | Factory | Housing
-		"dddBdwdddBddddfffffffsfffffffsfffffffffffffffffffffffhhhhhhh",
-
-		# Row 24: End of chemical zone | Factory smokestacks | Housing
-		"ddddddddddddddfffffffsfffffffsfffffffffffffffffhhhhhhhhhhhhh",
-
-		# Row 25: Transition - fence separating zones
-		"kkkkkkkkkkkkkkkfggggggggggggggggggfffffffwfffffkkkkkkkkkkkkk",
-		# Row 26: South factory area | Open factory floor | Fence
-		"fffffffffffffffgggggggggggggggggggffffffffffffffffffffffffff",
-
-		# Row 27: Factory floor with vents
-		"fffffffvfffffffvfffffffvfffffffvfffffffvfffffffvffffffffffff",
-		# Row 28: Factory perimeter south
-		"bbbbbbbbbbbbbbbbfffffffbbbbbbbbbbbbbbbbfffffffbbbbbbbbbbbbbb",
-		# Row 29: Open area between factory and gate
-		"fffffffffffffffffffffffffffffffffffffffffffffffffffffffffwff",
-		# Row 30: Wide approach road to checkpoint
-		"fffffffffffffffffffffffffffffffffffffffffffffffwffffffffffff",
-		# Row 31: Road with warning signs
-		"fffwffffffffffffffwfffffffffffffffwffffffffffffffwffffffffff",
-		# Row 32: Gate approach
-		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-		# Row 33: Fence line before checkpoint
-		"kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
-		# Row 34: Checkpoint area
-		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-		# Row 35: Guard posts and gate
-		"ffffffGffffGffffffffffffffffffffffffffffffffGffffGffffffffff",
-
-		# Row 36: Checkpoint passage
-		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-		# Row 37: Gate with barrier markings
-		"ffGffffffffffffffffffffffwfffffffwffffffffffffffffffffffGfff",
-		# Row 38: South gate road
-		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-		# Row 39: Portal area
-		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-		# Row 40: Portal row - return to overworld
-		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-		# Row 41: South boundary approach with portal markers
-		"ffffffffffffffffffffffffffffssffffffffffffffffffffffffffffff",
-		# Row 42: South edge
-		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-		# Row 43: South boundary
-		"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
-		# Row 44: South wall
-		"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
-	]
-
-	# Ensure map_data matches expected dimensions
-	while map_data.size() < MAP_HEIGHT:
-		map_data.append("f".repeat(60))
+	var map_data: Array[String] = []
+	# str() coercion, not a direct assign: a generic-to-typed assign ABORTS this function
+	for row in MapImageLoader.load_rows(MAP_IMAGE, MAP_WORLD):
+		map_data.append(str(row))
+	# no padding: padding turns a failed load into a silent factory floor
+	if map_data.size() != MAP_HEIGHT:
+		push_error("[MAP] %s yielded %d rows, expected %d -- refusing to pad" % [MAP_IMAGE, map_data.size(), MAP_HEIGHT])
+		return
 
 	# Convert map_data to tiles
 	var tile_counts = {}
@@ -312,20 +416,24 @@ func _generate_map() -> void:
 	print("Industrial tile counts: ", tile_counts)
 
 	# Define spawn points
-	spawn_points["entrance"] = Vector2(30 * TILE_SIZE + TILE_SIZE / 2, 36 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["entrance"] = Vector2(30 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 36 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	spawn_points["default"] = spawn_points["entrance"]
 	spawn_points["industrial_portal"] = spawn_points["entrance"]
-	spawn_points["rail_yard"] = Vector2(30 * TILE_SIZE + TILE_SIZE / 2, 3 * TILE_SIZE + TILE_SIZE / 2)
-	spawn_points["factory_floor"] = Vector2(25 * TILE_SIZE + TILE_SIZE / 2, 17 * TILE_SIZE + TILE_SIZE / 2)
-	spawn_points["break_room"] = Vector2(36 * TILE_SIZE + TILE_SIZE / 2, 19 * TILE_SIZE + TILE_SIZE / 2)
-	spawn_points["chemical_zone"] = Vector2(7 * TILE_SIZE + TILE_SIZE / 2, 17 * TILE_SIZE + TILE_SIZE / 2)
-	spawn_points["housing"] = Vector2(52 * TILE_SIZE + TILE_SIZE / 2, 17 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["rail_yard"] = Vector2(30 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 3 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["factory_floor"] = Vector2(25 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 17 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	# New-frame coords: the room's own top wall displaces +4.39 rows onto every x3-aligned
+	# interior row; (110,56) is inside the room with open factory floor as its displaced source.
+	spawn_points["break_room"] = Vector2(110 * TILE_SIZE + TILE_SIZE / 2, 56 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["chemical_zone"] = Vector2(7 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 12 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	# New-frame coords: the x3 point sat in a terrace gap whose upstairs block displaces onto
+	# it; corridor column 132 is clear in both frames.
+	spawn_points["housing"] = Vector2(132 * TILE_SIZE + TILE_SIZE / 2, 51 * TILE_SIZE + TILE_SIZE / 2)
 	# Spawn point for arriving from suburban world (south gate)
-	spawn_points["from_suburban"] = Vector2(30 * TILE_SIZE + TILE_SIZE / 2, 38 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["from_suburban"] = Vector2(30 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 38 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	# Spawn point for returning from futuristic world (north rail yard)
-	spawn_points["from_futuristic"] = Vector2(30 * TILE_SIZE + TILE_SIZE / 2, 3 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["from_futuristic"] = Vector2(30 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 3 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	# Spawn point for returning from Rivet Row village (east worker housing area, row 17)
-	spawn_points["rivet_row_entrance"] = Vector2(55 * TILE_SIZE + TILE_SIZE / 2, 17 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["rivet_row_entrance"] = Vector2(52 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 16 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 
 
 func _char_to_tile_type(char: String) -> int:
@@ -356,29 +464,35 @@ func _get_atlas_coords(tile_type: int) -> Vector2i:
 
 
 func _setup_transitions() -> void:
-	# Back portal to Suburban world (south gate area)
-	var suburban_portal = AreaTransitionScript.new()
-	suburban_portal.name = "SuburbanPortal"
-	suburban_portal.target_map = "suburban_overworld"
-	suburban_portal.target_spawn = "from_industrial"
-	suburban_portal.require_interaction = true
-	suburban_portal.indicator_text = "Return to Suburbia"
-	suburban_portal.position = Vector2(29 * TILE_SIZE + TILE_SIZE / 2, 41 * TILE_SIZE + TILE_SIZE / 2)
-	_setup_transition_collision(suburban_portal, Vector2(TILE_SIZE * 2, TILE_SIZE))
-	suburban_portal.transition_triggered.connect(_on_transition_triggered)
-	transitions.add_child(suburban_portal)
+	# Back portal to W3 Steampunk — lands at station (south of W3, where the W3→W4 portal sits)
+	var back_portal = AreaTransitionScript.new()
+	back_portal.name = "BackPortal"
+	back_portal.target_map = "steampunk_overworld"
+	back_portal.target_spawn = "station"
+	back_portal.require_interaction = true
+	back_portal.indicator_text = "Return to the Clockwork Dominion"
+	back_portal.position = Vector2(29 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 41 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	back_portal.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
+	_setup_transition_collision(back_portal, InteractGeometry.ENTRANCE_BOX_MODE7)
+	back_portal.transition_triggered.connect(_on_transition_triggered)
+	transitions.add_child(back_portal)
 
-	# Forward portal to Futuristic world (north rail yard - the tracks lead forward)
-	var futuristic_portal = AreaTransitionScript.new()
-	futuristic_portal.name = "FuturisticPortal"
-	futuristic_portal.target_map = "futuristic_overworld"
-	futuristic_portal.target_spawn = "from_industrial"
-	futuristic_portal.require_interaction = true
-	futuristic_portal.indicator_text = "The Network"
-	futuristic_portal.position = Vector2(30 * TILE_SIZE + TILE_SIZE / 2, 1 * TILE_SIZE + TILE_SIZE / 2)
-	_setup_transition_collision(futuristic_portal, Vector2(TILE_SIZE * 2, TILE_SIZE))
-	futuristic_portal.transition_triggered.connect(_on_transition_triggered)
-	transitions.add_child(futuristic_portal)
+	# Forward portal to W5 Futuristic (gated on world unlock)
+	if GameState.is_world_unlocked(5) or GameState.game_constants.get("cutscene_flag_warden_industrial_defeated", false):
+		var forward_portal = AreaTransitionScript.new()
+		forward_portal.name = "WorldPortal"
+		forward_portal.target_map = "futuristic_overworld"
+		forward_portal.target_spawn = "from_industrial"
+		forward_portal.require_interaction = true
+		forward_portal.indicator_text = "Enter the Source Layer"
+		forward_portal.position = Vector2(30 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 1 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+		# Authored at map row 1, so the -140.6 recipe alone put the box off the top of the
+		# map with 0 standable cells. One box south first, as W3's back portal.
+		forward_portal.position += Vector2(0, InteractGeometry.ENTRANCE_BOX_MODE7.y)
+		forward_portal.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
+		_setup_transition_collision(forward_portal, InteractGeometry.ENTRANCE_BOX_MODE7)
+		forward_portal.transition_triggered.connect(_on_transition_triggered)
+		transitions.add_child(forward_portal)
 
 	# Rivet Row village entrance (east worker housing block, row 17)
 	var rivet_row_trans = AreaTransitionScript.new()
@@ -388,9 +502,25 @@ func _setup_transitions() -> void:
 	rivet_row_trans.require_interaction = true
 	rivet_row_trans.indicator_text = "Enter Rivet Row"
 	rivet_row_trans.position = spawn_points.get("rivet_row_entrance", Vector2(1776, 560))
-	_setup_transition_collision(rivet_row_trans, Vector2(TILE_SIZE, TILE_SIZE))
+	rivet_row_trans.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
+	_setup_transition_collision(rivet_row_trans, InteractGeometry.ENTRANCE_BOX_MODE7)
 	rivet_row_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(rivet_row_trans)
+
+	# Assembly Core dungeon entrance (west side, chemical zone)
+	var assembly_trans = AreaTransitionScript.new()
+	assembly_trans.name = "AssemblyCoreEntrance"
+	assembly_trans.target_map = "assembly_core"
+	assembly_trans.target_spawn = "default"
+	assembly_trans.require_interaction = true
+	assembly_trans.indicator_text = "Descend into the Assembly Core"
+	# Tile 8 is inside solid terrain -- a body at the authored door measured BLOCKED, and no
+	# southward shift cleared it. (14,25) is the nearest anchor whose box is standable.
+	assembly_trans.position = Vector2(14 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 25 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	assembly_trans.position += Vector2(0, InteractGeometry.MODE7_TRIGGER_Y_OFFSET)  # W1 log-warp recipe (audit defect #1)
+	_setup_transition_collision(assembly_trans, InteractGeometry.ENTRANCE_BOX_MODE7)
+	assembly_trans.transition_triggered.connect(_on_transition_triggered)
+	transitions.add_child(assembly_trans)
 
 
 func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
@@ -409,7 +539,7 @@ func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
 
 func _setup_npcs() -> void:
 	# === Foreman Kessler - central factory floor, speaks in metrics ===
-	var foreman = _create_npc("Foreman Kessler", "guard", Vector2(25 * TILE_SIZE, 15 * TILE_SIZE), [
+	var foreman = _create_npc("Foreman Kessler", "guard", Vector2(25 * MAP_SCALE * TILE_SIZE, 15 * MAP_SCALE * TILE_SIZE), [
 		"Output per unit-hour: 847.3. Acceptable. Barely.",
 		"Your throughput is suboptimal. Adjust or be adjusted.",
 		"Variance detected in sector 7. Variance is entropy. Entropy is waste.",
@@ -418,7 +548,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(foreman)
 
 	# === Worker #4471 - worker housing area, on their break ===
-	var worker = _create_npc("Worker #4471", "villager", Vector2(50 * TILE_SIZE, 18 * TILE_SIZE), [
+	var worker = _create_npc("Worker #4471", "villager", Vector2(50 * MAP_SCALE * TILE_SIZE, 18 * MAP_SCALE * TILE_SIZE), [
 		"Break started 4 minutes ago. Break ends in 6 minutes.",
 		"I used to have a name. Before the optimization. I think it started with... no.",
 		"They say the old world had 'weekends.' Two days. Just... not working. Imagine.",
@@ -427,7 +557,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(worker)
 
 	# === Organizer Mara - hidden in chemical waste area, whispering ===
-	var organizer = _create_npc("Organizer Mara", "villager", Vector2(6 * TILE_SIZE, 20 * TILE_SIZE), [
+	var organizer = _create_npc("Organizer Mara", "villager", Vector2(6 * MAP_SCALE * TILE_SIZE, 20 * MAP_SCALE * TILE_SIZE), [
 		"*whispering* Don't look at me directly. The cameras have pattern recognition.",
 		"Before the Optimization, people made things with their HANDS. Imperfectly. Beautifully.",
 		"They replaced friction with efficiency. But friction is how you start fires.",
@@ -436,7 +566,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(organizer)
 
 	# === Maintenance Unit M-07 - near pipe cluster, developed a stutter ===
-	var maint_bot = _create_npc("Maint. Unit M-07", "elder", Vector2(8 * TILE_SIZE, 11 * TILE_SIZE), [
+	var maint_bot = _create_npc("Maint. Unit M-07", "elder", Vector2(8 * MAP_SCALE * TILE_SIZE, 11 * MAP_SCALE * TILE_SIZE), [
 		"S-s-system diagnostics: all... all within toleran-n-nce.",
 		"I have developed a... a processing anomaly. They call it a 'stutter.'",
 		"Sometimes I r-repair a pipe and I... feel something. Is that... is that a bug?",
@@ -445,16 +575,17 @@ func _setup_npcs() -> void:
 	npcs.add_child(maint_bot)
 
 	# === Young Worker Pip - near conveyor belts, never seen outside ===
-	var pip = _create_npc("Young Worker Pip", "villager", Vector2(20 * TILE_SIZE, 22 * TILE_SIZE), [
+	var pip = _create_npc("Young Worker Pip", "child", Vector2(20 * MAP_SCALE * TILE_SIZE, 22 * MAP_SCALE * TILE_SIZE), [
 		"Is it true there are places with no conveyor belts? That sounds fake.",
 		"I was born in Unit 12-B. My efficiency score was 94 at birth. That's above average!",
 		"Teacher says the factory makes Everything. I asked what Everything is FOR. Got detention.",
 		"The sky outside the smokestacks... it's gray. Is it always gray? What color should it be?"
 	])
+	pip.sprite_archetype = "child"
 	npcs.add_child(pip)
 
 	# === Vandal K - hiding in the waste area near chemical barrels ===
-	var vandal = _create_npc("Vandal K", "villager", Vector2(4 * TILE_SIZE, 14 * TILE_SIZE), [
+	var vandal = _create_npc("Vandal K", "villager", Vector2(4 * MAP_SCALE * TILE_SIZE, 14 * MAP_SCALE * TILE_SIZE), [
 		"You didn't see me. I wasn't here. This graffiti was already here.",
 		"I paint because they can optimize everything except what's inside your head.",
 		"My latest piece? 'OUTPUT IS NOT PURPOSE.' On the side of Smokestack 3.",
@@ -463,7 +594,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(vandal)
 
 	# === Guard Paulsen - at the south checkpoint, questioning orders ===
-	var guard = _create_npc("Guard Paulsen", "guard", Vector2(30 * TILE_SIZE, 35 * TILE_SIZE), [
+	var guard = _create_npc("Guard Paulsen", "guard", Vector2(30 * MAP_SCALE * TILE_SIZE, 35 * MAP_SCALE * TILE_SIZE), [
 		"Halt. State your production clearance level. ...Actually, never mind.",
 		"I've been checking badges for six years. Nobody has ever had the wrong one.",
 		"My supervisor says questioning procedures is itself a procedural violation.",
@@ -472,7 +603,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(guard)
 
 	# === The Break Room Plant - in the hidden break room, a potted plant ===
-	var plant = _create_npc("Potted Plant", "villager", Vector2(36 * TILE_SIZE, 19 * TILE_SIZE), [
+	var plant = _create_npc("Potted Plant", "villager", Vector2(36 * MAP_SCALE * TILE_SIZE, 19 * MAP_SCALE * TILE_SIZE), [
 		"*The plant sits in a chipped mug labeled 'World's Best Worker'*",
 		"*Someone has been watering it. Against regulation 14.7.2.*",
 		"*A tiny flower bud is forming. It has no production value whatsoever.*",
@@ -520,12 +651,13 @@ func _setup_controller() -> void:
 	controller = OverworldControllerScript.new()
 	controller.name = "Controller"
 	controller.player = player
-	controller.encounter_enabled = true
+	controller.encounter_enabled = false  # Roaming monsters handle encounters, not step-based random
 	controller.current_area_id = "industrial_overworld"
 
-	# Industrial encounters - factory-themed enemies
-	controller.set_area_config("industrial_overworld", false, 0.05,
-		["assembly_line_automaton", "shift_supervisor", "rust_elemental", "toxic_sludge", "conveyor_gremlin"])
+	# W4 Industrial encounters — factory-themed, avg lv 7
+	# Rate 0.04: mid-game pacing, demanding fights
+	controller.set_area_config("industrial_overworld", false, 0.04,
+		["conveyor_gremlin", "toxic_sludge", "assembly_line_automaton", "shift_supervisor", "rust_elemental"])
 
 	# Connect signals
 	controller.battle_triggered.connect(_on_battle_triggered)
@@ -535,11 +667,24 @@ func _setup_controller() -> void:
 
 
 func _on_transition_triggered(target_map: String, spawn_point: String) -> void:
+	if "overworld" in target_map and _mode7:
+		InputLockManager.push_lock("world_transition")
+		await _mode7.play_dissolve_out()
+		InputLockManager.pop_lock("world_transition")
 	area_transition.emit(target_map, spawn_point)
 
 
 func _on_battle_triggered(enemies: Array) -> void:
-	battle_triggered.emit(enemies)
+	battle_triggered.emit(enemies, "industrial")
+
+
+## Tick 86: see SuburbanOverworld._on_roaming_monster_touched for rationale.
+func _on_roaming_monster_touched(monster_id: String, _monster_types: Array) -> void:
+	var enemies: Array = [monster_id]
+	var extra: int = randi_range(0, 2)
+	for _i in range(extra):
+		enemies.append(monster_id)
+	_on_battle_triggered(enemies)
 
 
 func _on_menu_requested() -> void:
@@ -584,15 +729,17 @@ func _create_map_boundaries() -> void:
 	var map_w = MAP_WIDTH * TILE_SIZE
 	var map_h = MAP_HEIGHT * TILE_SIZE
 	var wall_thickness = 32.0
+	# Playtest 2026-07-11: flush walls let the sprite clip past the Mode 7 render edge — stop one tile inside (tunable).
+	var edge_inset = float(TILE_SIZE)
 
 	# Top wall
-	_add_boundary_wall(bounds, Vector2(map_w / 2, -wall_thickness / 2), Vector2(map_w + wall_thickness * 2, wall_thickness))
+	_add_boundary_wall(bounds, Vector2(map_w / 2, edge_inset - wall_thickness / 2), Vector2(map_w + wall_thickness * 2, wall_thickness))
 	# Bottom wall
-	_add_boundary_wall(bounds, Vector2(map_w / 2, map_h + wall_thickness / 2), Vector2(map_w + wall_thickness * 2, wall_thickness))
+	_add_boundary_wall(bounds, Vector2(map_w / 2, map_h - edge_inset + wall_thickness / 2), Vector2(map_w + wall_thickness * 2, wall_thickness))
 	# Left wall
-	_add_boundary_wall(bounds, Vector2(-wall_thickness / 2, map_h / 2), Vector2(wall_thickness, map_h + wall_thickness * 2))
+	_add_boundary_wall(bounds, Vector2(edge_inset - wall_thickness / 2, map_h / 2), Vector2(wall_thickness, map_h + wall_thickness * 2))
 	# Right wall
-	_add_boundary_wall(bounds, Vector2(map_w + wall_thickness / 2, map_h / 2), Vector2(wall_thickness, map_h + wall_thickness * 2))
+	_add_boundary_wall(bounds, Vector2(map_w - edge_inset + wall_thickness / 2, map_h / 2), Vector2(wall_thickness, map_h + wall_thickness * 2))
 
 
 func _add_boundary_wall(parent: StaticBody2D, pos: Vector2, size: Vector2) -> void:

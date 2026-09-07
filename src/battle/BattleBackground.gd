@@ -9,7 +9,17 @@ enum TerrainType {
 	CAVE,     # Dark purple-brown with stalactites
 	FOREST,   # Dark green with tree silhouettes
 	VILLAGE,  # Warm brown with building shapes
-	BOSS      # Red-tinted dramatic lighting
+	BOSS,     # Red-tinted dramatic lighting
+	ICE,      # Frozen tundra - white/blue
+	DESERT,   # Sandy dunes - warm yellows
+	SWAMP,    # Murky wetlands - dark greens/browns
+	COAST,    # Beach/shoreline - sand and blue
+	VOLCANIC, # Lava/fire terrain - reds/oranges
+	SUBURBAN, # Urban neighborhood
+	STEAMPUNK,# Gears and metal
+	INDUSTRIAL,# Factory/warehouse
+	DIGITAL,  # Cyberspace/neon
+	ABSTRACT  # Void/ethereal
 }
 
 enum TimeOfDay {
@@ -105,12 +115,146 @@ const TERRAIN_PALETTES = {
 		"accent": Color(0.48, 0.14, 0.18),
 		"horizon": Color(0.55, 0.15, 0.20),
 		"glow": Color(0.80, 0.25, 0.15)
-	}
+	},
+	TerrainType.ICE: {
+		"sky_top": Color(0.15, 0.20, 0.35),
+		"sky_mid": Color(0.30, 0.40, 0.55),
+		"sky_bottom": Color(0.55, 0.65, 0.75),
+		"ground": Color(0.75, 0.82, 0.90),
+		"ground_dark": Color(0.55, 0.65, 0.78),
+		"ground_light": Color(0.88, 0.92, 0.96),
+		"accent": Color(0.40, 0.60, 0.80),
+		"horizon": Color(0.70, 0.78, 0.88)
+	},
+	TerrainType.DESERT: {
+		"sky_top": Color(0.25, 0.15, 0.05),
+		"sky_mid": Color(0.55, 0.35, 0.15),
+		"sky_bottom": Color(0.75, 0.55, 0.25),
+		"ground": Color(0.72, 0.58, 0.35),
+		"ground_dark": Color(0.55, 0.42, 0.25),
+		"ground_light": Color(0.85, 0.72, 0.48),
+		"accent": Color(0.80, 0.60, 0.30),
+		"horizon": Color(0.85, 0.65, 0.35)
+	},
+	TerrainType.SWAMP: {
+		"sky_top": Color(0.08, 0.12, 0.06),
+		"sky_mid": Color(0.15, 0.22, 0.12),
+		"sky_bottom": Color(0.22, 0.30, 0.18),
+		"ground": Color(0.18, 0.25, 0.12),
+		"ground_dark": Color(0.12, 0.18, 0.08),
+		"ground_light": Color(0.28, 0.35, 0.18),
+		"accent": Color(0.30, 0.38, 0.15),
+		"horizon": Color(0.25, 0.32, 0.15)
+	},
+	TerrainType.COAST: {
+		"sky_top": Color(0.12, 0.18, 0.35),
+		"sky_mid": Color(0.25, 0.40, 0.60),
+		"sky_bottom": Color(0.45, 0.60, 0.75),
+		"ground": Color(0.72, 0.65, 0.48),
+		"ground_dark": Color(0.55, 0.48, 0.35),
+		"ground_light": Color(0.85, 0.78, 0.58),
+		"accent": Color(0.30, 0.50, 0.70),
+		"horizon": Color(0.40, 0.55, 0.72)
+	},
+	## Tick 89: W2-W6 procedural-fallback palettes.
+	## Artist backdrops at BACKDROP_PATHS are loaded preferentially —
+	## these palettes only show if the .png ever fails to load. Without
+	## them, the fallback used PLAINS colors (green) for every world.
+	TerrainType.SUBURBAN: {
+		# Cul-de-sac daylight — soft lawn green sky-down, pastel pavement
+		"sky_top": Color(0.45, 0.62, 0.85),
+		"sky_mid": Color(0.62, 0.78, 0.92),
+		"sky_bottom": Color(0.78, 0.88, 0.95),
+		"ground": Color(0.52, 0.55, 0.50),
+		"ground_dark": Color(0.38, 0.42, 0.38),
+		"ground_light": Color(0.70, 0.72, 0.65),
+		"accent": Color(0.55, 0.68, 0.42),
+		"horizon": Color(0.75, 0.78, 0.72)
+	},
+	TerrainType.STEAMPUNK: {
+		# Brass + copper + sepia, smokey grey sky
+		"sky_top": Color(0.18, 0.14, 0.10),
+		"sky_mid": Color(0.32, 0.24, 0.16),
+		"sky_bottom": Color(0.52, 0.38, 0.22),
+		"ground": Color(0.40, 0.28, 0.16),
+		"ground_dark": Color(0.25, 0.18, 0.10),
+		"ground_light": Color(0.62, 0.45, 0.22),
+		"accent": Color(0.78, 0.55, 0.20),
+		"horizon": Color(0.55, 0.40, 0.22)
+	},
+	TerrainType.INDUSTRIAL: {
+		# Rusty steel, smog-grey sky, oxidised metal ground
+		"sky_top": Color(0.22, 0.20, 0.18),
+		"sky_mid": Color(0.35, 0.32, 0.28),
+		"sky_bottom": Color(0.48, 0.42, 0.36),
+		"ground": Color(0.30, 0.28, 0.25),
+		"ground_dark": Color(0.18, 0.16, 0.14),
+		"ground_light": Color(0.45, 0.40, 0.35),
+		"accent": Color(0.55, 0.32, 0.18),
+		"horizon": Color(0.40, 0.35, 0.30)
+	},
+	TerrainType.DIGITAL: {
+		# Cyan/magenta neon on near-black grid
+		"sky_top": Color(0.03, 0.02, 0.10),
+		"sky_mid": Color(0.06, 0.04, 0.18),
+		"sky_bottom": Color(0.12, 0.06, 0.28),
+		"ground": Color(0.04, 0.08, 0.14),
+		"ground_dark": Color(0.02, 0.04, 0.08),
+		"ground_light": Color(0.08, 0.18, 0.28),
+		"accent": Color(0.20, 0.85, 0.95),
+		"horizon": Color(0.45, 0.20, 0.65)
+	},
+	TerrainType.ABSTRACT: {
+		# Minimalist near-white with faint pastel grid
+		"sky_top": Color(0.88, 0.88, 0.92),
+		"sky_mid": Color(0.92, 0.92, 0.94),
+		"sky_bottom": Color(0.95, 0.95, 0.96),
+		"ground": Color(0.85, 0.85, 0.88),
+		"ground_dark": Color(0.72, 0.72, 0.78),
+		"ground_light": Color(0.94, 0.94, 0.96),
+		"accent": Color(0.60, 0.65, 0.72),
+		"horizon": Color(0.78, 0.78, 0.82)
+	},
+	TerrainType.VOLCANIC: {
+		"sky_top": Color(0.15, 0.04, 0.02),
+		"sky_mid": Color(0.35, 0.10, 0.05),
+		"sky_bottom": Color(0.55, 0.18, 0.08),
+		"ground": Color(0.25, 0.12, 0.08),
+		"ground_dark": Color(0.15, 0.06, 0.04),
+		"ground_light": Color(0.40, 0.18, 0.10),
+		"accent": Color(0.85, 0.35, 0.10),
+		"horizon": Color(0.70, 0.25, 0.10),
+		"glow": Color(0.95, 0.45, 0.10)
+	},
 }
 
 var current_terrain: TerrainType = TerrainType.PLAINS
 var current_time_of_day: TimeOfDay = TimeOfDay.DAY
 var _background_elements: Array[Node] = []
+
+## Artist backdrop — when present, replaces procedural generation
+var _using_artist_backdrop: bool = false
+var _artist_backdrop_rect: TextureRect = null
+
+## Terrain name → backdrop image path mapping
+const BACKDROP_PATHS = {
+	TerrainType.PLAINS: "res://assets/battle_backdrops/battle_plains.png",
+	TerrainType.CAVE: "res://assets/battle_backdrops/battle_cave.png",
+	TerrainType.FOREST: "res://assets/battle_backdrops/battle_forest.png",
+	TerrainType.VILLAGE: "res://assets/battle_backdrops/battle_village.png",
+	TerrainType.BOSS: "res://assets/battle_backdrops/battle_boss.png",
+	# msg 2724 cowir-sprites finding: 5 finished PNGs had been sitting in assets/sprites/backgrounds/ without dict entries — battles on these terrains rendered procedural despite the finished art. Wired now. Ratchet in test_orphan_battle_backdrops_regression prevents the class from recurring.
+	TerrainType.COAST: "res://assets/sprites/backgrounds/coast_battle.png",
+	TerrainType.DESERT: "res://assets/sprites/backgrounds/desert_battle.png",
+	TerrainType.ICE: "res://assets/sprites/backgrounds/ice_battle.png",
+	TerrainType.SWAMP: "res://assets/sprites/backgrounds/swamp_battle.png",
+	TerrainType.VOLCANIC: "res://assets/sprites/backgrounds/volcanic_battle.png",
+	TerrainType.SUBURBAN: "res://assets/sprites/backgrounds/battle_world2_suburban.png",
+	TerrainType.STEAMPUNK: "res://assets/sprites/backgrounds/battle_world3_steampunk.png",
+	TerrainType.INDUSTRIAL: "res://assets/sprites/backgrounds/battle_world4_industrial.png",
+	TerrainType.DIGITAL: "res://assets/sprites/backgrounds/battle_world5_digital.png",
+	TerrainType.ABSTRACT: "res://assets/sprites/backgrounds/battle_world6_abstract.png",
+}
 
 ## Seed-based RNG for reproducible but varied backgrounds
 var background_seed: int = 0
@@ -131,42 +275,128 @@ var _sky_base_modulate: Color = Color.WHITE
 ## Transition state
 var _transition_tween: Tween = null
 var _has_drawn: bool = false
+var _frames_in_tree: int = 0  # Safety counter for background draw retry
+
+
+var _pulse_tween: Tween = null
+var _unrest_amplitude: float = 0.0
+
+
+## Bass-thump: the arena flinches under heavy hits (brightness dip + 2px drop, fast recovery)
+func pulse(strength: float = 0.5) -> void:
+	var s := clampf(strength, 0.0, 1.0)
+	if _pulse_tween and _pulse_tween.is_valid():
+		_pulse_tween.kill()
+	var dip := 1.0 - 0.06 * s
+	modulate = Color(dip, dip, dip)
+	position.y = 2.0 * s
+	_pulse_tween = create_tween()
+	_pulse_tween.tween_property(self, "modulate", Color.WHITE, 0.22).set_ease(Tween.EASE_OUT)
+	_pulse_tween.parallel().tween_property(self, "position:y", 0.0, 0.22).set_ease(Tween.EASE_OUT)
+
+
+## Arena unrest: slow vertical sway of the parallax layers (masterite phase 2 — the ground stops being trustworthy)
+func set_unrest(amplitude: float) -> void:
+	_unrest_amplitude = amplitude
+	if amplitude <= 0.0 and _layer_far and _layer_mid and _layer_near:
+		_layer_far.position.y = 0.0
+		_layer_mid.position.y = 0.0
+		_layer_near.position.y = 0.0
 
 
 func _ready() -> void:
-	set_anchors_preset(Control.PRESET_FULL_RECT)
+	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	z_index = -100  # Render behind everything
 	_setup_layers()
+	_sync_to_game_state_clock()
+
+
+func _exit_tree() -> void:
+	_disconnect_game_state_clock()
+
+
+## Read the current time-of-day band from GameState (v3.33.197 day/night clock) and subscribe to time_of_day_changed so mid-battle band transitions retint the background. Defensive: no-op if GameState missing, if get_time_of_day_name is missing, or if the signal isn't there — same discipline the night_monster_multiplier seam uses in BattleEnemySpawner.
+func _sync_to_game_state_clock() -> void:
+	var gs: Node = _resolve_game_state()
+	if gs == null:
+		return
+	if gs.has_method("get_time_of_day_name"):
+		var band: String = str(gs.get_time_of_day_name())
+		set_time_of_day(_time_of_day_from_name(band))
+	if gs.has_signal("time_of_day_changed") and not gs.time_of_day_changed.is_connected(_on_time_of_day_changed):
+		gs.time_of_day_changed.connect(_on_time_of_day_changed)
+
+
+func _disconnect_game_state_clock() -> void:
+	var gs: Node = _resolve_game_state()
+	if gs == null:
+		return
+	if gs.has_signal("time_of_day_changed") and gs.time_of_day_changed.is_connected(_on_time_of_day_changed):
+		gs.time_of_day_changed.disconnect(_on_time_of_day_changed)
+
+
+func _on_time_of_day_changed(band: String) -> void:
+	set_time_of_day(_time_of_day_from_name(band))
+
+
+## Map GameState's lower-case band name to BattleBackground's TimeOfDay enum. Unknown or empty band falls back to DAY so a data drift on the GameState side doesn't blank the background. Static — pure mapping, no instance state needed.
+static func _time_of_day_from_name(band: String) -> int:
+	match band.to_lower():
+		"dawn": return TimeOfDay.DAWN
+		"dusk": return TimeOfDay.DUSK
+		"night": return TimeOfDay.NIGHT
+		_: return TimeOfDay.DAY
+
+
+static func _resolve_game_state() -> Node:
+	var ml: MainLoop = Engine.get_main_loop()
+	if not (ml is SceneTree):
+		return null
+	return (ml as SceneTree).root.get_node_or_null("GameState")
 
 
 func _setup_layers() -> void:
 	"""Create the 3-layer depth system"""
 	_layer_far = Control.new()
-	_layer_far.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_layer_far.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_layer_far.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_layer_far.z_index = -100
 	add_child(_layer_far)
 
 	_layer_mid = Control.new()
-	_layer_mid.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_layer_mid.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_layer_mid.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_layer_mid.z_index = -50
 	add_child(_layer_mid)
 
 	_layer_near = Control.new()
-	_layer_near.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_layer_near.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_layer_near.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_layer_near.z_index = -10
 	add_child(_layer_near)
 
 
 func _process(delta: float) -> void:
+	# Safety: if background never drew after 3 frames, force a draw attempt
+	if not _has_drawn:
+		_frames_in_tree += 1
+		if _frames_in_tree >= 3:
+			var vp = get_viewport_rect().size
+			if vp.x > 0 and vp.y > 0:
+				print("[BG] Safety redraw triggered after %d frames (viewport: %s)" % [_frames_in_tree, vp])
+				_draw_background_immediate()
+				_has_drawn = true
+
 	_parallax_time += delta
 	if _layer_far and _layer_mid and _layer_near:
 		_layer_far.position.x = sin(_parallax_time * PARALLAX_SPEED_FAR * 0.1) * PARALLAX_RANGE * 0.3
 		_layer_mid.position.x = sin(_parallax_time * PARALLAX_SPEED_MID * 0.1) * PARALLAX_RANGE * 0.6
 		_layer_near.position.x = sin(_parallax_time * PARALLAX_SPEED_NEAR * 0.1) * PARALLAX_RANGE
+		if _unrest_amplitude > 0.0:
+			_layer_far.position.y = sin(_parallax_time * 0.9) * _unrest_amplitude * 0.3
+			_layer_mid.position.y = sin(_parallax_time * 0.9 + 0.7) * _unrest_amplitude * 0.6
+			_layer_near.position.y = sin(_parallax_time * 0.9 + 1.4) * _unrest_amplitude
 
 	if _sky_rect and is_instance_valid(_sky_rect):
 		var pulse = sin(_parallax_time * 0.4) * 0.025
@@ -226,15 +456,10 @@ func set_terrain(terrain: TerrainType) -> void:
 	if background_seed == 0:
 		background_seed = randi()
 	_rng.seed = background_seed
-	_draw_background()
-
-
-func set_terrain_with_seed(terrain: TerrainType, seed_value: int) -> void:
-	"""Set terrain with a specific seed for reproducible backgrounds"""
-	background_seed = seed_value
-	current_terrain = terrain
-	_rng.seed = background_seed
-	_draw_background()
+	# Defer draw to next frame so viewport size is resolved
+	if not is_inside_tree():
+		await ready
+	call_deferred("_draw_background")
 
 
 func set_terrain_from_string(terrain_name: String) -> void:
@@ -242,7 +467,7 @@ func set_terrain_from_string(terrain_name: String) -> void:
 	match terrain_name.to_lower():
 		"plains", "overworld":
 			set_terrain(TerrainType.PLAINS)
-		"cave", "dungeon":
+		"cave", "dungeon", "ice_cave", "dark_cave", "storm_cave", "lava_cave":
 			set_terrain(TerrainType.CAVE)
 		"forest", "woods":
 			set_terrain(TerrainType.FOREST)
@@ -250,6 +475,26 @@ func set_terrain_from_string(terrain_name: String) -> void:
 			set_terrain(TerrainType.VILLAGE)
 		"boss":
 			set_terrain(TerrainType.BOSS)
+		"ice", "snow", "frozen":
+			set_terrain(TerrainType.ICE)
+		"desert", "sand":
+			set_terrain(TerrainType.DESERT)
+		"swamp", "marsh", "bog":
+			set_terrain(TerrainType.SWAMP)
+		"coast", "beach", "shore":
+			set_terrain(TerrainType.COAST)
+		"volcanic", "lava", "fire":
+			set_terrain(TerrainType.VOLCANIC)
+		"suburban", "urban":
+			set_terrain(TerrainType.SUBURBAN)
+		"steampunk", "clockwork":
+			set_terrain(TerrainType.STEAMPUNK)
+		"industrial", "factory":
+			set_terrain(TerrainType.INDUSTRIAL)
+		"digital", "cyber", "neon":
+			set_terrain(TerrainType.DIGITAL)
+		"void", "abstract", "ethereal":
+			set_terrain(TerrainType.ABSTRACT)
 		_:
 			set_terrain(TerrainType.PLAINS)
 
@@ -277,6 +522,12 @@ func _draw_background_immediate() -> void:
 	"""Immediately clear and redraw the background without any transition"""
 	_sky_rect = null
 	_sky_base_modulate = Color.WHITE
+	_using_artist_backdrop = false
+
+	# Clear artist backdrop if present
+	if _artist_backdrop_rect and is_instance_valid(_artist_backdrop_rect):
+		_artist_backdrop_rect.queue_free()
+		_artist_backdrop_rect = null
 
 	# Clear existing elements
 	for element in _background_elements:
@@ -304,7 +555,24 @@ func _draw_background_immediate() -> void:
 	if not _layer_far:
 		_setup_layers()
 
+	# Ensure this control fills its parent (belt-and-suspenders for code-created Controls)
+	var vp = get_viewport_rect().size
+	if vp.x > 0 and vp.y > 0:
+		size = vp
+
+	# Try artist backdrop first — if available, skip procedural generation
+	if _try_load_artist_backdrop():
+		print("[BG] Artist backdrop loaded for terrain %d, size=%s" % [current_terrain, size])
+		return
+
 	var viewport_size = get_viewport_rect().size
+	print("[BG] Drawing procedural background — terrain=%d, viewport=%s, bg_size=%s" % [current_terrain, viewport_size, size])
+	if viewport_size.x == 0 or viewport_size.y == 0:
+		# Viewport not ready yet — retry next frame
+		print("[BG] Viewport size is zero, deferring draw")
+		_has_drawn = false
+		call_deferred("_draw_background")
+		return
 	var base_palette = TERRAIN_PALETTES.get(current_terrain, TERRAIN_PALETTES[TerrainType.PLAINS])
 	var palette = _apply_time_tint(base_palette)
 
@@ -332,6 +600,44 @@ func _draw_background_immediate() -> void:
 	_spawn_ambient_particles(viewport_size, palette)
 
 
+func _try_load_artist_backdrop() -> bool:
+	"""Try to load an artist-made backdrop image for the current terrain.
+	Returns true if loaded, false to fall through to procedural generation."""
+	var path = BACKDROP_PATHS.get(current_terrain, "")
+	if path == "" or not ResourceLoader.exists(path):
+		print("[BG] No artist backdrop for terrain %d (path=%s, exists=%s)" % [current_terrain, path, ResourceLoader.exists(path) if path != "" else false])
+		return false
+
+	var tex = load(path) as Texture2D
+	if not tex:
+		print("[BG] Failed to load artist backdrop texture: %s" % path)
+		return false
+
+	_artist_backdrop_rect = TextureRect.new()
+	_artist_backdrop_rect.texture = tex
+	_artist_backdrop_rect.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_artist_backdrop_rect.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	_artist_backdrop_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	_artist_backdrop_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_artist_backdrop_rect)
+	move_child(_artist_backdrop_rect, 0)
+
+	# Apply time-of-day tinting to artist backdrops
+	var tint_data = TIME_TINTS.get(current_time_of_day, TIME_TINTS[TimeOfDay.DAY])
+	var tint = Color(
+		1.0 + tint_data["r"],
+		1.0 + tint_data["g"],
+		1.0 + tint_data["b"],
+		1.0
+	) * (1.0 + tint_data["brightness"])
+	_artist_backdrop_rect.modulate = tint
+
+	_sky_rect = _artist_backdrop_rect
+	_sky_base_modulate = tint
+	_using_artist_backdrop = true
+	return true
+
+
 func _add_to_layer(element: Node, layer: Control) -> void:
 	"""Add an element to a specific depth layer"""
 	layer.add_child(element)
@@ -351,6 +657,9 @@ func _draw_gradient(viewport_size: Vector2, palette: Dictionary) -> void:
 		var sky_rect = TextureRect.new()
 		sky_rect.texture = cached["sky_tex"]
 		sky_rect.position = Vector2.ZERO
+		sky_rect.size = Vector2(w, sky_height)
+		sky_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		sky_rect.stretch_mode = TextureRect.STRETCH_SCALE
 		sky_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(sky_rect)
 		_sky_rect = sky_rect
@@ -359,6 +668,9 @@ func _draw_gradient(viewport_size: Vector2, palette: Dictionary) -> void:
 		var ground_rect = TextureRect.new()
 		ground_rect.texture = cached["ground_tex"]
 		ground_rect.position = Vector2(0, sky_height)
+		ground_rect.size = Vector2(w, int(viewport_size.y) - sky_height)
+		ground_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		ground_rect.stretch_mode = TextureRect.STRETCH_SCALE
 		ground_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(ground_rect)
 	else:
@@ -395,6 +707,9 @@ func _draw_gradient(viewport_size: Vector2, palette: Dictionary) -> void:
 		var sky_rect = TextureRect.new()
 		sky_rect.texture = sky_tex
 		sky_rect.position = Vector2.ZERO
+		sky_rect.size = Vector2(w, sky_height)
+		sky_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		sky_rect.stretch_mode = TextureRect.STRETCH_SCALE
 		sky_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(sky_rect)
 		_sky_rect = sky_rect
@@ -416,6 +731,9 @@ func _draw_gradient(viewport_size: Vector2, palette: Dictionary) -> void:
 		var ground_rect = TextureRect.new()
 		ground_rect.texture = ground_tex
 		ground_rect.position = Vector2(0, sky_height)
+		ground_rect.size = Vector2(w, ground_height)
+		ground_rect.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		ground_rect.stretch_mode = TextureRect.STRETCH_SCALE
 		ground_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		add_child(ground_rect)
 
@@ -2158,6 +2476,34 @@ func _spawn_ambient_particles(viewport_size: Vector2, palette: Dictionary) -> vo
 		TerrainType.BOSS:
 			var spark_color = palette.get("glow", palette["accent"]).lightened(0.2)
 			_spawn_particle_type(viewport_size, count, Color(spark_color.r, spark_color.g, spark_color.b, 0.5), "erratic")
+		# Tick 90: W1 sub-zones — pre-fix these match arms didn't exist
+		# and battles in ice/desert/swamp/coast/volcanic zones got zero
+		# ambient particles. PLAINS gets pollen, FOREST gets falling
+		# leaves, etc — these terrains had nothing.
+		TerrainType.ICE:
+			_spawn_particle_type(viewport_size, count, Color(0.95, 0.97, 1.0, 0.6), "fall")
+		TerrainType.DESERT:
+			_spawn_particle_type(viewport_size, count, Color(0.85, 0.72, 0.45, 0.5), "drift_random")
+		TerrainType.SWAMP:
+			_spawn_particle_type(viewport_size, int(count * 0.6), Color(0.35, 0.45, 0.20, 0.45), "drift_random")
+		TerrainType.COAST:
+			_spawn_particle_type(viewport_size, count, Color(0.92, 0.95, 0.98, 0.55), "drift_random")
+		TerrainType.VOLCANIC:
+			var ember_color = palette.get("glow", palette["accent"]).lightened(0.1)
+			_spawn_particle_type(viewport_size, count, Color(ember_color.r, ember_color.g, ember_color.b, 0.6), "rise_fade")
+		# Tick 90: W2-W6 defensive — artist backdrop normally loads,
+		# but if it fails the procedural fallback gets world-themed
+		# atmosphere instead of a static gradient.
+		TerrainType.SUBURBAN:
+			_spawn_particle_type(viewport_size, int(count * 0.5), Color(0.95, 0.95, 0.70, 0.4), "drift_up")
+		TerrainType.STEAMPUNK:
+			_spawn_particle_type(viewport_size, count, Color(0.78, 0.72, 0.62, 0.45), "rise_fade")
+		TerrainType.INDUSTRIAL:
+			_spawn_particle_type(viewport_size, count, Color(0.42, 0.40, 0.38, 0.45), "rise_fade")
+		TerrainType.DIGITAL:
+			_spawn_particle_type(viewport_size, count, Color(0.30, 0.85, 0.95, 0.6), "drift_random")
+		TerrainType.ABSTRACT:
+			_spawn_particle_type(viewport_size, int(count * 0.5), Color(0.78, 0.80, 0.85, 0.35), "drift_random")
 
 
 func _spawn_particle_type(viewport_size: Vector2, count: int, color: Color, motion: String) -> void:
@@ -2239,38 +2585,3 @@ func _spawn_particle_type(viewport_size: Vector2, count: int, color: Color, moti
 				tween.parallel().tween_property(rect, "modulate:a", 0.9, dur * 0.3)
 				tween.tween_property(rect, "position", Vector2(start_x, start_y), dur * 0.3)
 
-
-## Terrain modifier data (used by BattleManager)
-static func get_terrain_modifiers(terrain: TerrainType) -> Dictionary:
-	"""Get elemental damage modifiers for terrain"""
-	match terrain:
-		TerrainType.CAVE:
-			return {
-				"boost": ["ice", "dark"],
-				"reduce": ["fire", "lightning"]
-			}
-		TerrainType.FOREST:
-			return {
-				"boost": ["fire", "wind"],
-				"reduce": ["water"]
-			}
-		TerrainType.VILLAGE:
-			return {
-				"boost": ["holy"],
-				"reduce": ["dark"]
-			}
-		TerrainType.BOSS:
-			return {
-				"boost": ["dark"],
-				"reduce": []
-			}
-		_:  # PLAINS and default
-			return {
-				"boost": [],
-				"reduce": []
-			}
-
-
-static func get_terrain_modifier_value() -> float:
-	"""Get the modifier percentage (0.25 = 25% boost/reduction)"""
-	return 0.25

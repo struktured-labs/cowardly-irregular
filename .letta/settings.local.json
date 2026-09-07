@@ -1,0 +1,13 @@
+{
+  "lastAgent": "agent-local-d6fc9fac-043d-41b0-b093-ed683deb3f65",
+  "sessionsByServer": {
+    "local:/home/struktured/.letta/lc-local-backend": {
+      "agentId": "agent-local-d6fc9fac-043d-41b0-b093-ed683deb3f65",
+      "conversationId": "default"
+    }
+  },
+  "lastSession": {
+    "agentId": "agent-local-d6fc9fac-043d-41b0-b093-ed683deb3f65",
+    "conversationId": "default"
+  }
+}

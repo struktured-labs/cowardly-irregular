@@ -1,39 +1,43 @@
 extends Node
 
-## MapSystem - Manages all maps and locations in the game world
-## Handles transitions between overworld, villages, and dungeons
+## MapSystem — tracks the currently loaded map scene and provides
+## transition helpers. Per-location metadata (villages, dungeons) is
+## now managed by the individual scene scripts (BaseVillage, DragonCave,
+## WhisperingCave, etc.), so MapSystem is intentionally narrow.
 
 signal map_loaded(map_id: String)
 signal map_unloaded(map_id: String)
-signal location_entered(location_id: String, location_type: String)
-signal location_exited(location_id: String)
 
-## Map types
+## Map types — kept for save-format compatibility; DUNGEON is live via is_dungeon_map.
 enum MapType {
 	OVERWORLD,    # Main world map
 	VILLAGE,      # Safe towns with NPCs, shops
 	DUNGEON,      # Dangerous areas with encounters
-	INTERIOR,     # Building interiors (shops, houses)
-	SPECIAL       # Unique locations
 }
+
+## Every dungeon map id — the save_point_only gate (F3) keys off this list; completeness guarded by test_save_point_only_enforcement_regression.
+const DUNGEON_MAP_IDS: PackedStringArray = [
+	"whispering_cave", "fire_dragon_cave", "ice_dragon_cave",
+	"lightning_dragon_cave", "shadow_dragon_cave", "castle_harmonia",
+	"null_chamber", "root_process", "assembly_core",
+	"steampunk_mechanism", "suburban_underground", "vertex_apex",
+	"backwards_warren",
+]
+
+
+## True when map_id is a dungeon (GameLoop.get_current_map_id() is the runtime authority).
+static func is_dungeon_map(map_id: String) -> bool:
+	return map_id in DUNGEON_MAP_IDS
 
 ## Current state
 var current_map: Node2D = null
 var current_map_id: String = ""
-var current_location_id: String = ""
 
 ## Loaded maps cache
 var loaded_maps: Dictionary = {}  # {map_id: map_node}
 
-## Location data (villages, dungeons, etc.)
-var locations: Dictionary = {}  # {location_id: LocationData}
-
 ## Player reference
 var player: Node2D = null
-
-
-func _ready() -> void:
-	_load_location_data()
 
 
 ## Map management
@@ -50,7 +54,13 @@ func load_map(map_id: String, spawn_point: String = "default") -> void:
 		# Load map scene
 		var map_path = _get_map_path(map_id)
 		if not ResourceLoader.exists(map_path):
-			print("Error: Map not found: %s" % map_path)
+			## Tick 182: surface missing-map failures. Pre-fix print()
+			## only — load_map silently returned with current_map
+			## unchanged. Callers couldn't tell whether the load
+			## succeeded or whether they were still on the old map.
+			## push_error matches the severity of the existing
+			## load-scene-fail path at the next branch.
+			push_error("[MapSystem] load_map: map not found at '%s' — load silently aborted, current_map unchanged" % map_path)
 			return
 
 		var map_scene = load(map_path)
@@ -84,14 +94,37 @@ func unload_current_map() -> void:
 
 
 func transition_to_map(map_id: String, spawn_point: String = "default") -> void:
-	"""Transition to a different map with fade effect"""
-	# TODO: Add fade transition
+	"""Transition to a different map. SceneTransition handles the fade —
+	this just waits a frame to let it start before swapping the scene."""
 	await get_tree().create_timer(0.1).timeout
 	load_map(map_id, spawn_point)
 
 
 func _get_map_path(map_id: String) -> String:
-	"""Get resource path for a map"""
+	"""Get resource path for a map.
+
+	Only PackedScene (.tscn) paths are returned: load_map uses
+	`scene.instantiate()` (PackedScene), not `Script.new()`, so
+	pointing at a .gd file silently produces a broken instance.
+
+	Most maps are loaded directly by GameLoop via preloaded Script
+	constants + .new() (the dragon caves, the .gd-only villages, the
+	Steampunk overworld). Those are NOT in this table — MapSystem's
+	routing is reserved for the handful of maps that genuinely have
+	a .tscn entry point and round-trip through save_data's
+	current_map_id field.
+
+	Prior to this trim, the table contained 10 entries pointing at
+	.gd scripts (would have silently failed if any caller routed
+	through MapSystem) plus 2 entries pointing at .tscn files that
+	no longer exist (StarterVillage, Cave). All 12 were unreachable
+	dead code — confirmed via grep of `MapSystem.load_map(\"...\")`
+	and `MapSystem.transition_to_map(\"...\")` callers — but a
+	future caller hitting any of them would have crashed silently.
+	The fallback wildcard at the bottom is kept as a sane default
+	but will return a path that doesn't match the real
+	villages/dungeons subdir layout — callers should add explicit
+	entries here when they wire MapSystem-driven loads."""
 	match map_id:
 		"overworld":
 			return "res://src/exploration/OverworldScene.tscn"
@@ -99,33 +132,6 @@ func _get_map_path(map_id: String) -> String:
 			return "res://src/maps/villages/HarmoniaVillage.tscn"
 		"whispering_cave":
 			return "res://src/maps/dungeons/WhisperingCave.tscn"
-		"village_starter":
-			return "res://src/maps/villages/StarterVillage.tscn"
-		"dungeon_cave":
-			return "res://src/maps/dungeons/Cave.tscn"
-		# New villages
-		"frosthold_village":
-			return "res://src/maps/villages/FrostholdVillage.gd"
-		"eldertree_village":
-			return "res://src/maps/villages/EldertreeVillage.gd"
-		"grimhollow_village":
-			return "res://src/maps/villages/GrimhollowVillage.gd"
-		"sandrift_village":
-			return "res://src/maps/villages/SandriftVillage.gd"
-		"ironhaven_village":
-			return "res://src/maps/villages/IronhavenVillage.gd"
-		# Dragon caves
-		"ice_dragon_cave":
-			return "res://src/maps/dungeons/IceDragonCave.gd"
-		"shadow_dragon_cave":
-			return "res://src/maps/dungeons/ShadowDragonCave.gd"
-		"lightning_dragon_cave":
-			return "res://src/maps/dungeons/LightningDragonCave.gd"
-		"fire_dragon_cave":
-			return "res://src/maps/dungeons/FireDragonCave.gd"
-		# Steampunk overworld
-		"steampunk_overworld":
-			return "res://src/exploration/SteampunkOverworld.gd"
 		_:
 			return "res://src/maps/%s.tscn" % map_id
 
@@ -140,73 +146,12 @@ func _position_player_at_spawn(spawn_point: String) -> void:
 	if spawn_marker and spawn_marker is Marker2D:
 		player.global_position = spawn_marker.global_position
 	else:
-		print("Warning: Spawn point not found: %s" % spawn_point)
-
-
-## Location management
-func register_location(location_id: String, data: Dictionary) -> void:
-	"""Register a location (village, dungeon, etc.)"""
-	locations[location_id] = data
-	print("Location registered: %s (%s)" % [location_id, data.get("name", "Unknown")])
-
-
-func get_location(location_id: String) -> Dictionary:
-	"""Get location data"""
-	return locations.get(location_id, {})
-
-
-func enter_location(location_id: String) -> void:
-	"""Enter a location (triggers events, music, etc.)"""
-	var location = get_location(location_id)
-	if location.is_empty():
-		print("Warning: Unknown location: %s" % location_id)
-		return
-
-	current_location_id = location_id
-	var location_type = location.get("type", "unknown")
-
-	# Trigger location-specific effects
-	match location_type:
-		"village":
-			_on_enter_village(location)
-		"dungeon":
-			_on_enter_dungeon(location)
-
-	location_entered.emit(location_id, location_type)
-	print("Entered location: %s" % location.get("name", location_id))
-
-
-func exit_location() -> void:
-	"""Exit current location"""
-	if current_location_id.is_empty():
-		return
-
-	location_exited.emit(current_location_id)
-	current_location_id = ""
-
-
-func _on_enter_village(location: Dictionary) -> void:
-	"""Handle entering a village"""
-	# Villages are safe zones - no random encounters
-	EncounterSystem.set_encounters_enabled(false)
-
-	# Play village music
-	# TODO: Implement music system
-	pass
-
-
-func _on_enter_dungeon(location: Dictionary) -> void:
-	"""Handle entering a dungeon"""
-	# Dungeons have encounters
-	EncounterSystem.set_encounters_enabled(true)
-
-	# Set encounter rate from dungeon data
-	var encounter_rate = location.get("encounter_rate", 0.05)
-	EncounterSystem.set_encounter_rate(encounter_rate)
-
-	# Play dungeon music
-	# TODO: Implement music system
-	pass
+		## Tick 182: surface missing spawn point. Pre-fix print()
+		## only — player would silently spawn at the default
+		## position (often 0,0 or wherever they were last) instead
+		## of at the requested spawn marker. Symptom looked like
+		## "the transition didn't work" with no diagnostic surface.
+		push_warning("[MapSystem] _position_player_at_spawn: spawn point '%s' not found in current_map — player will remain at last position" % spawn_point)
 
 
 ## Player management
@@ -220,189 +165,3 @@ func get_player() -> Node2D:
 	return player
 
 
-## Location data loading
-func _load_location_data() -> void:
-	"""Load location data from file or create defaults"""
-	var data_path = "res://data/locations.json"
-
-	if FileAccess.file_exists(data_path):
-		var file = FileAccess.open(data_path, FileAccess.READ)
-		if file:
-			var json_string = file.get_as_text()
-			file.close()
-
-			var json = JSON.new()
-			if json.parse(json_string) == OK:
-				locations = json.data
-				print("Loaded %d locations" % locations.size())
-				return
-
-	# Create default locations
-	_create_default_locations()
-
-
-func _create_default_locations() -> void:
-	"""Create default location data"""
-	locations = {
-		"starter_village": {
-			"id": "starter_village",
-			"name": "Harmonia Village",
-			"type": "village",
-			"description": "A peaceful starting village",
-			"map_id": "village_starter",
-			"has_shop": true,
-			"has_inn": true,
-			"has_save_point": true
-		},
-
-		"cave_dungeon": {
-			"id": "cave_dungeon",
-			"name": "Whispering Cave",
-			"type": "dungeon",
-			"description": "A dark cave filled with monsters",
-			"map_id": "dungeon_cave",
-			"encounter_rate": 0.05,  # 5% chance per step
-			"enemy_types": ["slime", "bat", "goblin"],
-			"boss": "cave_guardian",
-			"recommended_level": 3
-		},
-
-		"forest_dungeon": {
-			"id": "forest_dungeon",
-			"name": "Corrupted Forest",
-			"type": "dungeon",
-			"description": "A forest twisted by meta-corruption",
-			"map_id": "dungeon_forest",
-			"encounter_rate": 0.07,
-			"enemy_types": ["wolf", "corrupted_sprite"],
-			"corruption_level": 1.0,
-			"recommended_level": 5
-		},
-
-		# New villages
-		"frosthold_village": {
-			"id": "frosthold_village",
-			"name": "Frosthold",
-			"type": "village",
-			"description": "A hardy Nordic outpost in the frozen northwest",
-			"map_id": "frosthold_village",
-			"has_shop": true,
-			"has_inn": true,
-			"has_save_point": true
-		},
-		"eldertree_village": {
-			"id": "eldertree_village",
-			"name": "Eldertree",
-			"type": "village",
-			"description": "An ancient forest settlement among towering trees",
-			"map_id": "eldertree_village",
-			"has_shop": true,
-			"has_inn": true,
-			"has_save_point": true
-		},
-		"grimhollow_village": {
-			"id": "grimhollow_village",
-			"name": "Grimhollow",
-			"type": "village",
-			"description": "A spooky swamp village shrouded in mist",
-			"map_id": "grimhollow_village",
-			"has_shop": true,
-			"has_inn": true,
-			"has_save_point": true
-		},
-		"sandrift_village": {
-			"id": "sandrift_village",
-			"name": "Sandrift",
-			"type": "village",
-			"description": "A desert trading post battered by sandstorms",
-			"map_id": "sandrift_village",
-			"has_shop": true,
-			"has_inn": true,
-			"has_save_point": true
-		},
-		"ironhaven_village": {
-			"id": "ironhaven_village",
-			"name": "Ironhaven",
-			"type": "village",
-			"description": "An industrial volcanic settlement on the edge of progress",
-			"map_id": "ironhaven_village",
-			"has_shop": true,
-			"has_inn": true,
-			"has_save_point": true
-		},
-
-		# Dragon caves
-		"ice_dragon_cave": {
-			"id": "ice_dragon_cave",
-			"name": "Glacial Sanctum",
-			"type": "dungeon",
-			"description": "Frozen tunnels where Glacius the ice dragon waits",
-			"map_id": "ice_dragon_cave",
-			"encounter_rate": 0.06,
-			"enemy_types": ["bat", "skeleton"],
-			"boss": "ice_dragon",
-			"recommended_level": 15
-		},
-		"shadow_dragon_cave": {
-			"id": "shadow_dragon_cave",
-			"name": "Void Depths",
-			"type": "dungeon",
-			"description": "Dark corridors where Umbraxis the shadow dragon lurks",
-			"map_id": "shadow_dragon_cave",
-			"encounter_rate": 0.07,
-			"enemy_types": ["specter", "skeleton", "imp"],
-			"boss": "shadow_dragon",
-			"recommended_level": 18
-		},
-		"lightning_dragon_cave": {
-			"id": "lightning_dragon_cave",
-			"name": "Storm Spire",
-			"type": "dungeon",
-			"description": "Storm-carved halls where Voltharion crackles with lightning",
-			"map_id": "lightning_dragon_cave",
-			"encounter_rate": 0.06,
-			"enemy_types": ["goblin", "bat", "skeleton"],
-			"boss": "lightning_dragon",
-			"recommended_level": 16
-		},
-		"fire_dragon_cave": {
-			"id": "fire_dragon_cave",
-			"name": "Molten Core",
-			"type": "dungeon",
-			"description": "Volcanic lava tubes where Pyrroth the fire dragon rages",
-			"map_id": "fire_dragon_cave",
-			"encounter_rate": 0.07,
-			"enemy_types": ["imp", "skeleton", "goblin"],
-			"boss": "fire_dragon",
-			"recommended_level": 14
-		}
-	}
-
-	print("Created %d default locations" % locations.size())
-
-
-## Utility
-func get_current_map_type() -> MapType:
-	"""Get the type of the current map"""
-	if current_location_id.is_empty():
-		return MapType.OVERWORLD
-
-	var location = get_location(current_location_id)
-	var type_str = location.get("type", "overworld")
-
-	match type_str:
-		"village":
-			return MapType.VILLAGE
-		"dungeon":
-			return MapType.DUNGEON
-		"interior":
-			return MapType.INTERIOR
-		"special":
-			return MapType.SPECIAL
-		_:
-			return MapType.OVERWORLD
-
-
-func is_in_safe_zone() -> bool:
-	"""Check if player is in a safe zone (no encounters)"""
-	return get_current_map_type() in [MapType.VILLAGE, MapType.INTERIOR]

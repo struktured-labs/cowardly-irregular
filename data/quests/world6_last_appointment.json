@@ -1,0 +1,72 @@
+{
+  "id": "world6_last_appointment",
+  "title": "The Last Appointment",
+  "world": 6,
+  "chain": "traveling_merchant",
+  "chain_step": 6,
+  "prereq_flag": "quest_wiring_fool_card_five_marks",
+  "giver": {
+    "npc_id": "madame_orrery_w6",
+    "display_name": "Something That Feels Like Waiting",
+    "location": {"map_id": "the_vertex", "near": "near_the_traveler_but_not_quite"},
+    "spawn_flag": "quest_wiring_fool_card_five_marks"
+  },
+  "description": "In The Vertex there is something that feels like waiting. It's near the traveler but not quite there. If the Fool Card carries all five marks, it has begun to pulse — gently, the way a thing pulses when it has been patient for six worlds and is almost allowed to stop.",
+  "playstyle_tags": ["chain_finale", "conversation", "completionist_payoff"],
+  "dialogue": {
+    "offer": [
+      {"speaker": "Madame Orrery", "text": "You followed the pulse. Good. I wasn't sure I still registered as findable.", "theme": "mysterious"},
+      {"speaker": "Madame Orrery", "text": "I remember why I started traveling. I was looking for someone who had left without saying goodbye. I've looked in six worlds. I've found many interesting things. I found you.", "theme": "mysterious"},
+      {"speaker": "Madame Orrery", "text": "I never found them.", "theme": "mysterious"}
+    ],
+    "accept": [
+      {"speaker": "Madame Orrery", "text": "Sit with me a moment. The card in your pocket has five marks and one question left in it. So do I.", "theme": "mysterious"}
+    ],
+    "decline": [
+      {"speaker": "Madame Orrery", "text": "Then not yet. The waiting doesn't mind. The waiting is the one thing that has never minded.", "theme": "mysterious"}
+    ],
+    "in_progress": [
+      {"speaker": "Madame Orrery", "text": "Six worlds of notes to compare, and it turns out the only entry that matters is the first one. It usually is.", "theme": "mysterious"}
+    ],
+    "ready_to_turn_in": [
+      {"speaker": "Madame Orrery", "text": "Ask me if I'm ready. I've been asking travelers variations of that question my whole route. I would like to hear it pointed the other way.", "theme": "mysterious"}
+    ],
+    "complete": [
+      {"speaker": "Madame Orrery", "text": "Good. That's enough.", "theme": "mysterious"},
+      {"speaker": "Madame Orrery", "text": "I think I'll stop here for a while.", "theme": "mysterious"}
+    ]
+  },
+  "objectives": [
+    {
+      "step": 1,
+      "description": "Follow the Fool Card's pulse to what has been waiting.",
+      "type": "talk",
+      "target_npc": "madame_orrery_w6",
+      "flag_on_complete": "quest_world6_last_appointment_accepted"
+    },
+    {
+      "step": 2,
+      "description": "Sit with her. Hear the whole route.",
+      "type": "custom",
+      "required_flag": "quest_world6_last_appointment_route_heard",
+      "flag_on_complete": "quest_world6_last_appointment_route_heard"
+    },
+    {
+      "step": 3,
+      "description": "Answer the question she has carried for six worlds.",
+      "type": "talk",
+      "target_npc": "madame_orrery_w6",
+      "required_flag": "quest_world6_last_appointment_route_heard"
+    }
+  ],
+  "rewards": {
+    "gold": 0,
+    "exp": 600,
+    "items": [],
+    "job_variants": {}
+  },
+  "cutscene_on_complete": "world6_orrery",
+  "flag_on_complete": "quest_world6_last_appointment_complete",
+  "cross_world_connection": "Chain A finale, 6 of 6. The world6_orrery cutscene (fired at turn-in) is the chain's full payoff, already authored and fully dispatchable: the four-option choice climax ('Her voice doesn't expect an answer. It expects company.'), the Orrery Pendant grant, the Calibrant's true name spoken-not-spelled, and the Fool Card's five marks rearranging into the symbol from Phil's paper — fool_card -> wild_card via update_item. She sits down. In The Vertex, sitting is how things that are ending choose to continue.",
+  "_wiring_notes": "DEDUP RULE: all grants (orrery_pendant) + the fool_card->wild_card update_item live in the world6_orrery cutscene; quest carries exp only. prereq_flag quest_wiring_fool_card_five_marks is a WIRING-OWNED boolean: emit when the fool_card_marks value flag reaches 5 (QuestSystem v1 prereqs are boolean; the marks counter is a value — one-line emitter wherever marks are set, or a QuestSystem check hook, wirer's choice). The giver 'NPC' is a presence, not a sprite — the Fool Card's pulse is the diegetic marker (if a visual is needed: a faint shimmer near-but-not-at the traveler, per the doc's 'near the traveler but not quite there'). Step 2 emitter: a sit-and-listen dialogue chain (2-3 beats, her route retold briefly). THE CHOICE (four responses, none wrong, silence included) lives INSIDE the cutscene per the shipped choice-step semantics — the quest deliberately does not model it; the doc's only fail-path (skipping the dialogue entirely = chain remains unresolved) maps to declining/never-completing the quest, which leaves her traveling: correct. If the player somehow reaches W6 without five marks, the presence never spawns and the chain resolves as 'she is still traveling' — acceptable incompleteness BY DESIGN (the completionist payoff is the payoff FOR completionists)."
+}

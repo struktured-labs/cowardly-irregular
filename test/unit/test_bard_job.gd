@@ -56,11 +56,11 @@ func test_bard_has_correct_name() -> void:
 
 func test_bard_stat_modifiers() -> void:
 	var mods = _jobs["bard"]["stat_modifiers"]
-	assert_eq(int(mods["max_hp"]), 85, "Bard HP should be 85")
+	assert_eq(int(mods["max_hp"]), 850, "Bard HP should be 850")
 	assert_eq(int(mods["max_mp"]), 65, "Bard MP should be 65")
-	assert_eq(int(mods["attack"]), 9, "Bard ATK should be 9")
-	assert_eq(int(mods["defense"]), 8, "Bard DEF should be 8")
-	assert_eq(int(mods["magic"]), 14, "Bard MAG should be 14")
+	assert_eq(int(mods["attack"]), 90, "Bard ATK should be 90")
+	assert_eq(int(mods["defense"]), 80, "Bard DEF should be 80")
+	assert_eq(int(mods["magic"]), 140, "Bard MAG should be 140")
 	assert_eq(int(mods["speed"]), 14, "Bard SPD should be 14")
 
 
@@ -78,16 +78,30 @@ func test_bard_stats_apply_to_combatant() -> void:
 	c.magic = int(mods["magic"])
 	c.speed = int(mods["speed"])
 
-	assert_eq(c.max_hp, 85, "Applied Bard HP should be 85")
-	assert_eq(c.magic, 14, "Applied Bard MAG should be 14")
+	assert_eq(c.max_hp, 850, "Applied Bard HP should be 850")
+	assert_eq(c.magic, 140, "Applied Bard MAG should be 140")
 	assert_eq(c.speed, 14, "Applied Bard SPD should be 14")
 
 
 ## ---- Bard Abilities ----
 
 func test_bard_has_4_abilities() -> void:
-	var abilities = _jobs["bard"]["abilities"]
-	assert_eq(abilities.size(), 4, "Bard should have exactly 4 abilities")
+	# Tick 81: 2 of the 4 abilities moved to abilities_at_level — the
+	# union must still total 4 so existing high-level saves work and
+	# the kit feels complete. L1 list is now 2; level-gated unlocks
+	# bring it back up to 4.
+	var l1: Array = _jobs["bard"]["abilities"]
+	var unlocks: Dictionary = _jobs["bard"].get("abilities_at_level", {})
+	var total: Array[String] = []
+	for a in l1:
+		total.append(str(a))
+	for level_key in unlocks.keys():
+		var ids: Variant = unlocks[level_key]
+		if ids is Array:
+			for a in ids:
+				total.append(str(a))
+	assert_eq(total.size(), 4,
+		"Bard should have exactly 4 abilities across L1 + abilities_at_level union")
 
 
 func test_bard_abilities_exist_in_data() -> void:
@@ -165,3 +179,60 @@ func test_bard_has_evolution_data() -> void:
 	assert_true(evo.has("future_targets"), "Bard evolution should have future_targets")
 	assert_true("troubadour" in evo["future_targets"], "Troubadour should be a future target")
 	assert_true("cantor" in evo["future_targets"], "Cantor should be a future target")
+
+
+## ---- Bard Free Move (Riff) ----
+
+func test_bard_has_free_move() -> void:
+	assert_true(_jobs["bard"].has("free_move"), "Bard should have a free_move spec")
+
+
+func test_bard_free_move_is_riff() -> void:
+	var fm = _jobs["bard"]["free_move"]
+	assert_eq(fm.get("type"), "ability", "Bard free_move type should be 'ability'")
+	assert_eq(fm.get("ability_id"), "riff", "Bard free_move ability_id should be 'riff'")
+	assert_eq(fm.get("label"), "Riff", "Bard free_move label should be 'Riff'")
+
+
+func test_riff_is_a_full_strength_high_status_strike() -> void:
+	## Reruled TWICE. 2026-08-22: "an attack that is really weak but high chance of status
+	## effect" (was an mp_restore battery). 2026-08-29: "the bard doesnt need an attack option.
+	## riff should be attack but an attack with high chance of status ailment" — so it stopped
+	## being a weak poke NEXT TO Attack and became the Attack. The weakness clause is retired;
+	## the high-status clause survives both rulings.
+	## Below 1.0x, Bard's only attack row does less than autobattle's basic_attack — the exact
+	## 2026-08-22 defect, so this bound is load-bearing rather than taste.
+	assert_true(_abilities.has("riff"), "abilities.json should have 'riff'")
+	assert_eq(_abilities["riff"].get("type"), "physical", "Riff is a strike")
+	assert_gte(float(_abilities["riff"].get("damage_multiplier", 0.0)), 1.0, "and a FULL-strength one")
+	assert_gte(float(_abilities["riff"].get("effect_chance", 0.0)), 0.5, "with a high ailment chance")
+
+
+func test_riff_ability_has_zero_mp_cost() -> void:
+	assert_eq(_abilities["riff"].get("mp_cost", -1), 0,
+		"Riff should cost 0 MP so Bard can always act")
+
+
+func test_riff_inflicts_a_real_implemented_status_at_high_odds() -> void:
+	## The status must be one the engine CONSUMES. "slow" has 0 references in src/ and
+	## "silence"'s only has_status() occurrence is inside a comment — both would be inert.
+	var effect := str(_abilities["riff"].get("effect", ""))
+	assert_eq(effect, "blind", "blind is consumed at BattleManager:4048 (+40% miss)")
+	assert_gt(float(_abilities["riff"].get("effect_chance", 0.0)), 0.5, "HIGH chance, per the ruling")
+	var mgr := FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
+	assert_true('has_status("%s")' % effect in mgr, "the status is actually read somewhere")
+
+
+func test_mp_restore_emits_healing_done_not_damage_dealt() -> void:
+	"""Regression (2026-05-09): _execute_mp_restore_ability was emitting
+	damage_dealt(caster, -restored, true) — showed as a crit-damage popup.
+	Must emit healing_done(caster, restored) instead."""
+	var src = FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
+	var fn_idx = src.find("func _execute_mp_restore_ability")
+	assert_gt(fn_idx, -1, "_execute_mp_restore_ability must exist in BattleManager")
+	var next_fn = src.find("\nfunc ", fn_idx + 1)
+	var body = src.substr(fn_idx, next_fn - fn_idx if next_fn > fn_idx else 400)
+	assert_true(body.find("healing_done.emit") != -1,
+		"_execute_mp_restore_ability must emit healing_done (regression: was emitting damage_dealt)")
+	assert_true(body.find("damage_dealt.emit") == -1,
+		"_execute_mp_restore_ability must NOT emit damage_dealt (regression guard)")

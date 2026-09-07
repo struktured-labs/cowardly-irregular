@@ -229,7 +229,39 @@ func _refresh_keys() -> void:
 			key_label.add_theme_color_override("font_color", TEXT_COLOR)
 			_key_grid.add_child(key_label)
 
+			# Mouse-clickable overlay — hover moves cursor, click presses key.
+			# (Audit-fix 2026-05-04: pre-fix character creation was kb/gamepad-
+			# only; mouse users couldn't enter character names.)
+			var btn = Button.new()
+			btn.flat = true
+			btn.position = key_pos
+			btn.size = KEY_SIZE
+			btn.mouse_filter = Control.MOUSE_FILTER_STOP
+			btn.focus_mode = Control.FOCUS_NONE
+			btn.pressed.connect(_on_key_clicked.bind(row, col))
+			btn.mouse_entered.connect(_on_key_hovered.bind(row, col))
+			_key_grid.add_child(btn)
+
 	_update_cursor()
+
+
+func _on_key_clicked(row: int, col: int) -> void:
+	"""Mouse click on a virtual key — move cursor to it and press."""
+	cursor_row = row
+	cursor_col = col
+	_update_cursor()
+	_press_key()
+
+
+func _on_key_hovered(row: int, col: int) -> void:
+	"""Mouse hover moves the highlight cursor (no key press)."""
+	if cursor_row == row and cursor_col == col:
+		return
+	cursor_row = row
+	cursor_col = col
+	_update_cursor()
+	if SoundManager:
+		SoundManager.play_ui("menu_move")
 
 
 func _get_current_layout() -> Array:

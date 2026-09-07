@@ -1,85 +1,45 @@
-extends Node2D
+extends BaseVillage
 class_name NodePrimeVillageScene
+
+const FuturisticTileGeneratorScript = preload("res://src/exploration/FuturisticTileGenerator.gd")
 
 ## NodePrimeVillage - Digital rest stop / data hub in the futuristic overworld
 ## Features: Sleep.exe (inn), Cache Store (magic shop), holographic signs, geometric architecture
 
-const TileGeneratorScript = preload("res://src/exploration/TileGenerator.gd")
-const OverworldPlayerScript = preload("res://src/exploration/OverworldPlayer.gd")
-const OverworldControllerScript = preload("res://src/exploration/OverworldController.gd")
-const AreaTransitionScript = preload("res://src/exploration/AreaTransition.gd")
-const OverworldNPCScript = preload("res://src/exploration/OverworldNPC.gd")
 const VillageInnScript = preload("res://src/exploration/VillageInn.gd")
 const VillageShopScript = preload("res://src/exploration/VillageShop.gd")
 const TreasureChestScript = preload("res://src/exploration/TreasureChest.gd")
-
-signal exploration_ready()
-signal battle_triggered(enemies: Array)
-signal area_transition(target_map: String, spawn_point: String)
+const VillageElevatorScript = preload("res://src/exploration/VillageElevator.gd")
 
 ## Map dimensions
-const MAP_WIDTH: int = 20
-const MAP_HEIGHT: int = 18
-const TILE_SIZE: int = 32
-
-## Scene components
-var tile_map: TileMapLayer
-var player: Node2D
-var camera: Camera2D
-var controller: Node
-var tile_generator: Node
-
-## Containers
-var transitions: Node2D
-var npcs: Node2D
-var buildings: Node2D
-var treasures: Node2D
-
-## Spawn points
-var spawn_points: Dictionary = {}
+const MAP_WIDTH: int = 24
+const MAP_HEIGHT: int = 22
 
 
-func _ready() -> void:
-	_setup_scene()
-	_generate_map()
-	_setup_transitions()
-	_setup_buildings()
-	_setup_treasures()
-	_setup_npcs()
-	_setup_player()
-	_setup_camera()
-	_setup_controller()
+## ---- BaseVillage hooks ----
 
-	if SoundManager:
-		SoundManager.play_area_music("village")
-
-	exploration_ready.emit()
+func _get_area_id() -> String:
+	return "node_prime_village"
 
 
-func _setup_scene() -> void:
-	tile_generator = TileGeneratorScript.new()
-	add_child(tile_generator)
+func _get_village_display_name() -> String:
+	return "Node Prime"
 
-	tile_map = TileMapLayer.new()
-	tile_map.name = "TileMap"
-	tile_map.tile_set = tile_generator.create_tileset()
-	add_child(tile_map)
 
-	transitions = Node2D.new()
-	transitions.name = "Transitions"
-	add_child(transitions)
+func _get_music_area_id() -> String:
+	return "node_prime_village"
 
-	buildings = Node2D.new()
-	buildings.name = "Buildings"
-	add_child(buildings)
 
-	treasures = Node2D.new()
-	treasures.name = "Treasures"
-	add_child(treasures)
+func _get_map_pixel_size() -> Vector2i:
+	return Vector2i(MAP_WIDTH * TILE_SIZE, MAP_HEIGHT * TILE_SIZE)
 
-	npcs = Node2D.new()
-	npcs.name = "NPCs"
-	add_child(npcs)
+
+func _get_save_point_position() -> Vector2:
+	return Vector2(10 * TILE_SIZE,10 * TILE_SIZE)
+
+
+func _get_player_spawn_fallback() -> Vector2:
+	return Vector2(384, 384)
 
 
 func _generate_map() -> void:
@@ -89,24 +49,53 @@ func _generate_map() -> void:
 	# X = exit, W = water (coolant channels)
 	# Each row is exactly MAP_WIDTH (20) characters
 	var map_data: Array[String] = [
-		"WWWWWWWWWWWWWWWWWWWW",
-		"W..................W",
-		"W.III....CCC.......W",
-		"W.III....CCC.......W",
-		"W.III....CCC.......W",
-		"W..................W",
-		"W...pppppppp.......W",
-		"W...pppppppp.......W",
-		"W..................W",
-		"W..................W",
-		"W..FFFF............W",
-		"W..FFFF............W",
-		"W..FFFF............W",
-		"W..................W",
-		"W..................W",
-		"W......XXXXXX......W",
-		"W......XXXXXX......W",
-		"WWWWWWWWWWWWWWWWWWWW",
+		"WWWWWWWWWWWWWWWWWWWWWWWW",
+		"W......................W",
+		"W.........^^...........W",
+		"W......................W",
+		"W...III....CCC.........W",
+		"W...III....CCC.........W",
+		"W...III....CCC.........W",
+		"W......................W",
+		"W.....pppppppp.........W",
+		"W.....pppppppp.........W",
+		"W......................W",
+		"W......................W",
+		"W....FFFF..............W",
+		"W....FFFF..............W",
+		"W....FFFF..............W",
+		"W......................W",
+		"W......................W",
+		"W........XXXXXX........W",
+		"W........XXXXXX........W",
+		"W......................W",
+		"W......................W",
+		"WWWWWWWWWWWWWWWWWWWWWWWW",
+	]
+	# Elevation (CrossCode pass, 2026-09-06): tier 1 is row 1, the raised data platform; row 0 matches row 1's digit so the outer wall doesn't paint a spurious lip; row 2 on is tier 0, the mostly-blocked boundary except the '^' stair.
+	var height_data: Array[String] = [
+		"111111111111111111111111",
+		"111111111111111111111111",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
+		"000000000000000000000000",
 	]
 
 	for y in range(MAP_HEIGHT):
@@ -114,29 +103,45 @@ func _generate_map() -> void:
 		for x in range(MAP_WIDTH):
 			var char = row[x] if x < row.length() else "W"
 			var tile_type = _char_to_tile_type(char)
-			var atlas_coords = _get_atlas_coords(tile_type)
+			var atlas_coords = _atlas_for(tile_type, Vector2i(x, y))
 			tile_map.set_cell(Vector2i(x, y), 0, atlas_coords)
 
 			if char == "X" and not spawn_points.has("exit"):
 				spawn_points["exit"] = Vector2(x * TILE_SIZE + TILE_SIZE / 2, y * TILE_SIZE + TILE_SIZE / 2)
 
-	spawn_points["entrance"] = Vector2(10 * TILE_SIZE, 10 * TILE_SIZE)
+	_build_derived_layers(map_data, height_data)
+
+	spawn_points["entrance"] = Vector2(12 * TILE_SIZE,12 * TILE_SIZE)
 	spawn_points["default"] = spawn_points["entrance"]
 	spawn_points["node_prime_entrance"] = spawn_points["entrance"]
+	spawn_points["data_platform"] = Vector2(15 * TILE_SIZE + TILE_SIZE / 2, 1 * TILE_SIZE + TILE_SIZE / 2)
+
+
+## W5 paints with its own world's generator — CrossCode phase 4
+func _get_tile_generator() -> Node:
+	return FuturisticTileGeneratorScript.new()
+
+
+func _get_fringe_ground_types() -> Array:
+	return [FuturisticTileGeneratorScript.TileType.PIXEL_GARDEN]
+
+
+## Data-platform cliffs read as a dark substrate edge with a neon cyan tint, not rock.
+func _get_cliff_palette() -> Dictionary:
+	return {
+		"face_dark": Color(0.04, 0.05, 0.08), "face_mid": Color(0.09, 0.11, 0.17), "face_light": Color(0.16, 0.20, 0.28),
+		"lip": Color(0.25, 0.95, 0.95), "lip_shadow": Color(0.05, 0.20, 0.20, 0.85),
+		"stair_tread": Color(0.11, 0.19, 0.23), "stair_riser": Color(0.05, 0.09, 0.11),
+	}
 
 
 func _char_to_tile_type(char: String) -> int:
 	match char:
-		"W": return TileGeneratorScript.TileType.WALL
-		"F": return TileGeneratorScript.TileType.WALL
-		"p": return TileGeneratorScript.TileType.VILLAGE_PATH
-		"X": return TileGeneratorScript.TileType.VILLAGE_PATH
-		_: return TileGeneratorScript.TileType.FLOOR
-
-
-func _get_atlas_coords(tile_type: int) -> Vector2i:
-	var tile_id = TileGeneratorScript.get_tile_id(tile_type)
-	return Vector2i(tile_id % 5, tile_id / 5)
+		"W": return FuturisticTileGeneratorScript.TileType.NEON_WALL
+		"F": return FuturisticTileGeneratorScript.TileType.NEON_WALL
+		"p": return FuturisticTileGeneratorScript.TileType.DATA_HIGHWAY
+		"X": return FuturisticTileGeneratorScript.TileType.DATA_HIGHWAY
+		_: return FuturisticTileGeneratorScript.TileType.CIRCUIT_FLOOR
 
 
 func _setup_transitions() -> void:
@@ -145,30 +150,17 @@ func _setup_transitions() -> void:
 	exit_trans.target_map = "futuristic_overworld"
 	exit_trans.target_spawn = "node_prime_entrance"
 	exit_trans.require_interaction = false
-	exit_trans.position = spawn_points.get("exit", Vector2(320, 512))
+	exit_trans.position = spawn_points.get("exit", Vector2(384, 576))
 	_setup_transition_collision(exit_trans, Vector2(TILE_SIZE * 6, TILE_SIZE))
 	exit_trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(exit_trans)
-
-
-func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
-	trans.collision_layer = 4
-	trans.collision_mask = 2
-	trans.monitoring = true
-	trans.monitorable = true
-
-	var collision = CollisionShape2D.new()
-	var shape = RectangleShape2D.new()
-	shape.size = size
-	collision.shape = shape
-	trans.add_child(collision)
 
 
 func _setup_buildings() -> void:
 	# === SLEEP.EXE (Inn) ===
 	var inn = VillageInnScript.new()
 	inn.inn_name = "Sleep.exe"
-	inn.position = Vector2(2.5 * TILE_SIZE, 3 * TILE_SIZE)
+	inn.position = Vector2(4.5 * TILE_SIZE,5 * TILE_SIZE)
 	buildings.add_child(inn)
 
 	# === CACHE STORE (White Magic Shop) ===
@@ -176,8 +168,45 @@ func _setup_buildings() -> void:
 	cache_store.shop_name = "Cache Store"
 	cache_store.shop_type = VillageShopScript.ShopType.WHITE_MAGIC
 	cache_store.keeper_name = "CACHE-1"
-	cache_store.position = Vector2(10 * TILE_SIZE, 3 * TILE_SIZE)
+	cache_store.position = Vector2(12 * TILE_SIZE,5 * TILE_SIZE)
 	buildings.add_child(cache_store)
+
+	# === HEAP (Item Shop) ===
+	var heap = VillageShopScript.new()
+	heap.shop_name = "Heap Allocator"
+	heap.shop_type = VillageShopScript.ShopType.ITEM
+	heap.keeper_name = "MALLOC-7"
+	heap.position = Vector2(8 * TILE_SIZE,5 * TILE_SIZE)
+	buildings.add_child(heap)
+
+	# === KERNEL SMITHY (Equipment) ===
+	var smith = VillageShopScript.new()
+	smith.shop_name = "Kernel Smithy"
+	smith.shop_type = VillageShopScript.ShopType.BLACKSMITH
+	smith.keeper_name = "COMPILE-R"
+	smith.position = Vector2(16 * TILE_SIZE,5 * TILE_SIZE)
+	buildings.add_child(smith)
+
+	# === DAEMON LOUNGE DOOR ===
+	# SUDO-1's terminal room. Foreshadows RootProcess (W5) AND
+	# NullChamber (W6) — the only W5 interior, so it does double
+	# duty.
+	spawn_points["daemon_lounge_exit"] = Vector2(8 * TILE_SIZE,11 * TILE_SIZE)
+	_add_interior_door("DaemonLoungeDoor", "node_prime_daemon_lounge", "Enter Daemon Lounge", Vector2(8 * TILE_SIZE,10 * TILE_SIZE))
+	# === CACHE DOOR ===
+	# South face of the CCC building (cols 9-11, rows 2-4) — where the world keeps what it might render again.
+	spawn_points["cache_exit"] = Vector2(12 * TILE_SIZE,7.5 * TILE_SIZE)
+	_add_interior_door("CacheDoor", "node_prime_cache", "Enter The Cache", Vector2(12 * TILE_SIZE,6.5 * TILE_SIZE))
+
+	# === TELEPORT PAD === neon pad up to the data platform, alongside the row2 access stair.
+	var pad = VillageElevatorScript.create(VillageElevatorScript.Style.NEON,
+		Vector2(15 * TILE_SIZE,3 * TILE_SIZE), Vector2(15 * TILE_SIZE,1 * TILE_SIZE), "portal_activate")
+	pad.name = "DataPlatformPad"
+	buildings.add_child(pad)
+
+	# === PLATFORM DRESSING === data crates flanking the stair (cols9-10) and pad (col15)
+	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(7, 1))
+	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(17, 1))
 
 
 func _setup_treasures() -> void:
@@ -187,7 +216,7 @@ func _setup_treasures() -> void:
 	chest1.contents_type = "item"
 	chest1.contents_id = "ether"
 	chest1.contents_amount = 2
-	chest1.position = Vector2(17 * TILE_SIZE, 1.5 * TILE_SIZE)
+	chest1.position = Vector2(19 * TILE_SIZE,3.5 * TILE_SIZE)
 	treasures.add_child(chest1)
 
 	# Archived gold — old transaction log
@@ -195,13 +224,13 @@ func _setup_treasures() -> void:
 	chest2.chest_id = "node_prime_chest_2"
 	chest2.contents_type = "gold"
 	chest2.gold_amount = 200
-	chest2.position = Vector2(17 * TILE_SIZE, 13 * TILE_SIZE)
+	chest2.position = Vector2(19 * TILE_SIZE,15 * TILE_SIZE)
 	treasures.add_child(chest2)
 
 
 func _setup_npcs() -> void:
 	# System Admin ADMIN-01 (terminal commands)
-	var admin = _create_npc("ADMIN-01", "guard", Vector2(7 * TILE_SIZE, 2 * TILE_SIZE), [
+	var admin = _create_npc("ADMIN-01", "guard", Vector2(9 * TILE_SIZE,4 * TILE_SIZE), [
 		"> QUERY: purpose_of_visit",
 		"> INPUT RECEIVED: adventurer",
 		"> STATUS: access_granted",
@@ -212,7 +241,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(admin)
 
 	# Debugger DEBUG-7 (glitches)
-	var debugger = _create_npc("DEBUG-7", "villager", Vector2(14 * TILE_SIZE, 7 * TILE_SIZE), [
+	var debugger = _create_npc("DEBUG-7", "villager", Vector2(16 * TILE_SIZE,9 * TILE_SIZE), [
 		"Oh good, you can see me. That means the render pass is working.",
 		"I've been flagging anomalies in sector nine for three cycles.",
 		"Something keeps rewriting the encounter tables.",
@@ -223,7 +252,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(debugger)
 
 	# Tourist Program TOURIST.EXE (confused)
-	var tourist = _create_npc("TOURIST.EXE", "villager", Vector2(10 * TILE_SIZE, 12 * TILE_SIZE), [
+	var tourist = _create_npc("TOURIST.EXE", "villager", Vector2(12 * TILE_SIZE,14 * TILE_SIZE), [
 		"ERROR: context_mismatch — expected 'scenic overlook', received 'data hub'",
 		"I booked a package tour. The brochure said 'breathtaking vistas.'",
 		"This is a floor. It is very flat. I am not taking breath.",
@@ -234,7 +263,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(tourist)
 
 	# Data Archivist (lore keeper)
-	var archivist = _create_npc("Data Archivist", "elder", Vector2(3 * TILE_SIZE, 9 * TILE_SIZE), [
+	var archivist = _create_npc("Data Archivist", "elder", Vector2(5 * TILE_SIZE,11 * TILE_SIZE), [
 		"Before the optimization, this place had a name.",
 		"A real name. Not a designation.",
 		"People lived here. They had routines that were not mandated.",
@@ -245,7 +274,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(archivist)
 
 	# Firewall Guard (blocks path, future content hint)
-	var firewall = _create_npc("FIREWALL-ALPHA", "guard", Vector2(3 * TILE_SIZE, 13 * TILE_SIZE), [
+	var firewall = _create_npc("FIREWALL-ALPHA", "guard", Vector2(5 * TILE_SIZE,15 * TILE_SIZE), [
 		"HALT. Access to sector twelve is restricted.",
 		"Clearance level required: DELTA.",
 		"Your current clearance level: NONE.",
@@ -254,91 +283,3 @@ func _setup_npcs() -> void:
 		"I have been here for four hundred cycles. I am fine. Everything is fine."
 	])
 	npcs.add_child(firewall)
-
-
-func _create_npc(npc_name: String, npc_type: String, pos: Vector2, dialogue: Array) -> Area2D:
-	var npc = OverworldNPCScript.new()
-	npc.npc_name = npc_name
-	npc.npc_type = npc_type
-	npc.position = pos
-	npc.dialogue_lines = dialogue
-	return npc
-
-
-func _setup_player() -> void:
-	player = OverworldPlayerScript.new()
-	player.name = "Player"
-	player.position = spawn_points.get("default", Vector2(320, 320))
-	player.set_job("fighter")
-	add_child(player)
-
-
-func _setup_camera() -> void:
-	camera = Camera2D.new()
-	camera.name = "Camera"
-	player.add_child(camera)
-	camera.make_current()
-
-	camera.zoom = Vector2(2.0, 2.0)
-
-	var map_pixel_width = MAP_WIDTH * TILE_SIZE
-	var map_pixel_height = MAP_HEIGHT * TILE_SIZE
-
-	camera.limit_left = 0
-	camera.limit_top = 0
-	camera.limit_right = map_pixel_width
-	camera.limit_bottom = map_pixel_height
-
-	camera.position_smoothing_enabled = true
-	camera.position_smoothing_speed = 8.0
-
-
-func _setup_controller() -> void:
-	controller = OverworldControllerScript.new()
-	controller.name = "Controller"
-	controller.player = player
-	controller.encounter_enabled = false
-	controller.current_area_id = "node_prime_village"
-
-	controller.set_area_config("node_prime_village", true, 0.0, [])
-
-	controller.battle_triggered.connect(_on_battle_triggered)
-	controller.menu_requested.connect(_on_menu_requested)
-
-	add_child(controller)
-
-
-func _on_transition_triggered(target_map: String, spawn_point: String) -> void:
-	area_transition.emit(target_map, spawn_point)
-
-
-func _on_battle_triggered(enemies: Array) -> void:
-	battle_triggered.emit(enemies)
-
-
-func _on_menu_requested() -> void:
-	pass
-
-
-func spawn_player_at(spawn_name: String) -> void:
-	if spawn_points.has(spawn_name):
-		player.teleport(spawn_points[spawn_name])
-		player.reset_step_count()
-
-
-func resume() -> void:
-	controller.resume_exploration()
-
-
-func pause() -> void:
-	controller.pause_exploration()
-
-
-func set_player_job(job_name: String) -> void:
-	if player:
-		player.set_job(job_name)
-
-
-func set_player_appearance(leader) -> void:
-	if player and player.has_method("set_appearance_from_leader"):
-		player.set_appearance_from_leader(leader)

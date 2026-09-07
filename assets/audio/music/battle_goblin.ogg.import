@@ -2,7 +2,7 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
-uid="uid://ckw83s5tn7nwg"
+uid="uid://wqf6455shmd"
 path="res://.godot/imported/battle_goblin.ogg-e79dfdce524a56360501a5abbd0c5079.oggvorbisstr"
 
 [deps]
@@ -13,7 +13,7 @@ dest_files=["res://.godot/imported/battle_goblin.ogg-e79dfdce524a56360501a5abbd0
 [params]
 
 loop=true
-loop_offset=0.0
-bpm=0.0
+loop_offset=0
+bpm=0
 beat_count=0
 bar_beats=4

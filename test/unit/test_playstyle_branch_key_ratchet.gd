@@ -1,0 +1,267 @@
+extends GutTest
+
+const CD := preload("res://src/cutscene/CutsceneDirector.gd")
+
+## Every authored playstyle branch key must be a value the classifier can return.
+##
+## THE DEFECT THIS EXISTS FOR: `CutsceneDirector` resolves a playstyle branch with
+##   cases.get(playstyle, cases.get("default", []))
+## so a key the classifier never returns doesn't error, doesn't warn, and doesn't
+## show up in any log — it silently takes the default branch forever. The authored
+## content simply never plays.
+##
+## FOUND LIVE (cowir-ai, 2026-07-28): "completionist" is authored in all FOUR
+## Masterite encounter cutscenes — warden, arbiter, curator, tempo — and
+## `_detect_playstyle()` returns exactly five values, none of which is that. Those
+## are the four-axis PROFILING encounters, so a completionist branch is thematically
+## the whole point there; this reads as an unimplemented playstyle rather than a
+## typo. Either way the branches have never rendered.
+##
+## Same class as cowir-overworld's typo'd `target_map` (silently dumps the player on
+## the overworld) and my own persona/boss-id joins: a reference that is PRESENT BUT
+## UNRESOLVABLE fails differently from one that's absent, and every cheap check
+## passes.
+##
+## DERIVED, NOT LISTED. The valid set is parsed out of `_detect_playstyle`'s own
+## `return` statements rather than hardcoded here, so adding a playstyle to the
+## classifier automatically widens what authors may use — no table to fall out of
+## date, which is the failure mode that retired the hand-maintained canon tables
+## elsewhere in this suite.
+
+const DIRECTOR_PATH: String = "res://src/cutscene/CutsceneDirector.gd"
+const CUTSCENE_DIR: String = "res://data/cutscenes"
+
+## The cutscene whose branches a finishing player sees. Named explicitly because
+## "which scene is the ending" is a fact about the game, not something derivable.
+const ENDING_CUTSCENE: String = "world6_chapter3.json"
+
+## Always legal — the explicit fallback arm, not a playstyle.
+const RESERVED_KEYS: Array[String] = ["default"]
+
+
+## Parse the classifier's reachable outputs from its own source.
+func _classifier_returns() -> Array:
+	var src: String = FileAccess.get_file_as_string(DIRECTOR_PATH)
+	assert_false(src.is_empty(), "CutsceneDirector must be readable")
+	var start: int = src.find("func _detect_playstyle")
+	assert_gt(start, -1, "_detect_playstyle must exist — if it was renamed, this ratchet is measuring nothing")
+	# Bound at the next top-level func so we never absorb a neighbour's returns.
+	var end: int = src.find("\nfunc ", start + 1)
+	if end == -1:
+		end = src.length()
+	var body: String = src.substr(start, end - start)
+	var out: Array = []
+	var re := RegEx.new()
+	re.compile('return\\s+"([a-z_]+)"')
+	for m in re.search_all(body):
+		var v: String = m.get_string(1)
+		if not out.has(v):
+			out.append(v)
+	return out
+
+
+## Every {condition:"playstyle"} step's case keys, with the file they came from.
+func _authored_keys() -> Array:
+	var found: Array = []
+	var dir := DirAccess.open(CUTSCENE_DIR)
+	assert_not_null(dir, "cutscene dir must be readable")
+	dir.list_dir_begin()
+	var fname: String = dir.get_next()
+	while fname != "":
+		if fname.ends_with(".json"):
+			var path: String = CUTSCENE_DIR.path_join(fname)
+			var json := JSON.new()
+			if json.parse(FileAccess.get_file_as_string(path)) == OK:
+				_collect(json.data, fname, found)
+		fname = dir.get_next()
+	dir.list_dir_end()
+	return found
+
+
+func _collect(node: Variant, fname: String, out: Array) -> void:
+	if node is Dictionary:
+		var d: Dictionary = node
+		if str(d.get("condition", "")) == "playstyle":
+			var cases: Variant = d.get("cases", {})
+			if cases is Dictionary:
+				for k in (cases as Dictionary).keys():
+					out.append({"file": fname, "key": str(k)})
+		for v in d.values():
+			_collect(v, fname, out)
+	elif node is Array:
+		for v in node:
+			_collect(v, fname, out)
+
+
+# ── Positive controls — a vacuous pass must be impossible ────────────────────
+
+func test_scan_actually_finds_the_classifier_outputs() -> void:
+	# cowir-cutscenes' point: a sweep returning zero and a sweep that iterated
+	# nothing are indistinguishable without this.
+	var returns: Array = _classifier_returns()
+	assert_gt(returns.size(), 2,
+		"parsed only %d classifier returns — the parse has broken, so an empty offender list would prove nothing" % returns.size())
+
+
+func test_scan_actually_finds_authored_branches() -> void:
+	var keys: Array = _authored_keys()
+	assert_gt(keys.size(), 2,
+		"found only %d authored playstyle keys — the JSON walk has broken" % keys.size())
+
+
+# ── The guard ────────────────────────────────────────────────────────────────
+
+func test_every_authored_key_is_reachable() -> void:
+	var valid: Array = _classifier_returns()
+	for entry in _authored_keys():
+		var key: String = str(entry["key"])
+		if RESERVED_KEYS.has(key):
+			continue
+		assert_true(valid.has(key),
+			("%s authors playstyle branch '%s', which _detect_playstyle() can never return " +
+			"(reachable: %s). CutsceneDirector resolves via cases.get(playstyle, default), so this " +
+			"branch silently takes the default arm and its content has NEVER played — no error, no warning.")
+			% [entry["file"], key, str(valid)])
+
+
+## Mirror of _detect_playstyle's arms, for reachability analysis only.
+## Kept in test-land deliberately: this is not a second implementation anyone
+## ships against, it exists so the arms can be exercised over an input grid.
+## If it drifts from the real function, test_mirror_matches_source_arm_order
+## fails and this file stops being trustworthy — which is the honest outcome.
+## 2026-07-28: rewritten after PR #187 fixed the classifier. The OLD mirror encoded the buggy
+## arm order (volume before ratio), and this test failing on that change is the mirror working
+## exactly as designed — it refused to report reachability against a function it no longer
+## reflected. Exploitation is now categorical and outranks everything; below the sample floor
+## nothing is proportional yet; ratio separates automator/manual; volume only distinguishes the
+## players left in the middle.
+func _mirror_classify(ratio: float, total: int, exploited: bool = false) -> String:
+	if exploited:
+		return "exploiter"
+	if total < CD.PLAYSTYLE_MIN_SAMPLE:
+		return "balanced"
+	if ratio > CD.PLAYSTYLE_AUTOMATOR_RATIO:
+		return "automator"
+	if ratio < CD.PLAYSTYLE_MANUAL_RATIO:
+		return "manual"
+	if total > CD.PLAYSTYLE_GRINDER_BATTLES:
+		return "grinder"
+	return "balanced"
+
+
+func test_mirror_matches_source_arm_order() -> void:
+	# The mirror is only evidence if it still reflects the source. Pin the
+	# thresholds textually so a change to the real function invalidates it
+	# loudly rather than letting the reachability tests below quietly lie.
+	var src: String = FileAccess.get_file_as_string(DIRECTOR_PATH)
+	# Pin the NAMED CONSTANTS and the arm ORDER rather than literal thresholds: struktured owns
+	# the numbers, so a retune must stay green while a reordering — which is what silently killed
+	# two endings — must go red.
+	# 2026-07-28 (cowir-ai): this loop said ORDER in the comment and only checked
+	# PRESENCE in the code — every needle survives a reorder, so the one defect it
+	# names could pass straight through it. Positions must strictly increase.
+	var prev: int = -1
+	var prev_needle: String = ""
+	for needle in [
+		"if _has_exploited_systems():",
+		"if total_battles < PLAYSTYLE_MIN_SAMPLE:",
+		"if autobattle_ratio > PLAYSTYLE_AUTOMATOR_RATIO:",
+		"if autobattle_ratio < PLAYSTYLE_MANUAL_RATIO:",
+		"if total_battles > PLAYSTYLE_GRINDER_BATTLES:",
+	]:
+		var at: int = src.find(needle)
+		assert_gt(at, -1,
+			("_detect_playstyle no longer contains `%s`. The reachability mirror in this file is " +
+			"now stale — update it before trusting any reachability result here.") % needle)
+		if at == -1:
+			return
+		assert_gt(at, prev,
+			("_detect_playstyle tests `%s` BEFORE `%s`, but the mirror in this file assumes the " +
+			"reverse. Arm order decides which playstyles are reachable at which battle counts — " +
+			"reordering silently kills endings, which is exactly what it did once. Update the " +
+			"mirror, then re-read test_every_ending_branch_is_reachable_at_endgame.")
+			% [needle, prev_needle])
+		prev = at
+		prev_needle = needle
+
+
+func test_every_classifier_output_is_reachable_by_some_input() -> void:
+	# STATIC key-validity (above) is not runtime reachability. An arm can be a
+	# legal return value and still be shadowed into unreachability by an earlier
+	# arm — a different defect, invisible to a key check, and the one that
+	# actually bit: two of W6's four authored endings COULD NOT PLAY until PR
+	# #187 reordered the arms. Fixed; this file is why it stays fixed.
+	#
+	# This guards the total case only: an output no input can ever produce.
+	# Reachability within a specific battle-count band is asserted separately by
+	# test_every_ending_branch_is_reachable_at_endgame, which is the clause that
+	# sees that defect — a total-reachability check passes straight through it.
+	# 2026-07-28: the grid now spans THREE dimensions, not two. PR #187 made exploitation
+	# CATEGORICAL — _has_exploited_systems() reads permakill and corruption, facts about how the
+	# player played, at any battle count. So no (ratio, battles) pair can produce "exploiter" and
+	# a two-dimensional grid would report it unreachable, which is the test being stale rather
+	# than the classifier being broken. Sweep the exploited flag too.
+	var produced: Dictionary = {}
+	for exploited in [false, true]:
+		for total in range(0, 260, 1):
+			for r10 in range(0, 11):
+				produced[_mirror_classify(float(r10) / 10.0, total, exploited)] = true
+	for value in _classifier_returns():
+		assert_true(produced.has(value),
+			("_detect_playstyle can return '%s' but NO (ratio, battles, exploited) input produces it — an earlier arm " +
+			"shadows it completely. Any cutscene branching on it is dead content.") % value)
+
+
+func test_ending_cutscene_exists_and_branches_on_playstyle() -> void:
+	# Without this, renaming the ending turns the guard below into a silent no-op
+	# that passes forever while checking nothing.
+	var n: int = 0
+	for entry in _authored_keys():
+		if str(entry["file"]) == ENDING_CUTSCENE:
+			n += 1
+	assert_gt(n, 1,
+		("%s authors %d playstyle branches. If the ending was renamed or restructured, " +
+		"test_every_ending_branch_is_reachable_at_endgame is guarding NOTHING — repoint ENDING_CUTSCENE.")
+		% [ENDING_CUTSCENE, n])
+
+
+func test_every_ending_branch_is_reachable_at_endgame() -> void:
+	# 2026-07-28 (cowir-ai): this asserted only ">= 2 outputs reachable", with a
+	# comment calling the dead endings a LIVE open issue. PR #187 fixed them, so
+	# the comment described a bug that no longer existed and the assertion stayed
+	# green at exactly the broken value. Now it asserts the FIX: every non-default
+	# branch the ending authors must be producible past the grinder threshold.
+	# Authored = {automator, exploiter, grinder, manual}, all four now reachable.
+	var endgame: Dictionary = {}
+	for exploited in [false, true]:
+		for total in range(CD.PLAYSTYLE_GRINDER_BATTLES + 1, CD.PLAYSTYLE_GRINDER_BATTLES * 2):
+			for r10 in range(0, 11):
+				endgame[_mirror_classify(float(r10) / 10.0, total, exploited)] = true
+	for entry in _authored_keys():
+		if str(entry["file"]) != ENDING_CUTSCENE:
+			continue
+		var key: String = str(entry["key"])
+		if RESERVED_KEYS.has(key):
+			continue
+		assert_true(endgame.has(key),
+			("%s authors ending branch '%s', but no player past %d battles can be classified as it " +
+			"(reachable at endgame: %s). An earlier arm shadows it, so that ending can NEVER play — " +
+			"the exact defect that hid two of the four endings.")
+			% [ENDING_CUTSCENE, key, CD.PLAYSTYLE_GRINDER_BATTLES, str(endgame.keys())])
+
+
+func test_classifier_outputs_are_not_silently_unauthored() -> void:
+	# The reverse direction. A playstyle the classifier can return but which no
+	# cutscene ever branches on isn't a defect — it's just unused — so this is
+	# informational rather than strict. It fails only if NOTHING authors ANY of
+	# them, which would mean the whole mechanism is dead.
+	var valid: Array = _classifier_returns()
+	var authored: Dictionary = {}
+	for entry in _authored_keys():
+		authored[str(entry["key"])] = true
+	var used: int = 0
+	for v in valid:
+		if authored.has(v):
+			used += 1
+	assert_gt(used, 0,
+		"no cutscene branches on ANY classifier output (%s) — the playstyle mechanism would be entirely dead" % str(valid))

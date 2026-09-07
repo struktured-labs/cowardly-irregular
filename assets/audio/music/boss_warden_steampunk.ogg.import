@@ -2,6 +2,13 @@
 
 importer="oggvorbisstr"
 type="AudioStreamOggVorbis"
+uid="uid://crbaivv1nllwx"
+path="res://.godot/imported/boss_warden_steampunk.ogg-3f18db4f39f108c7496c329cf502294d.oggvorbisstr"
+
+[deps]
+
+source_file="res://assets/audio/music/boss_warden_steampunk.ogg"
+dest_files=["res://.godot/imported/boss_warden_steampunk.ogg-3f18db4f39f108c7496c329cf502294d.oggvorbisstr"]
 
 [params]
 

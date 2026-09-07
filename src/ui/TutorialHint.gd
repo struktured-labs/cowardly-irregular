@@ -1,0 +1,183 @@
+extends CanvasLayer
+class_name TutorialHint
+
+## TutorialHint — non-intrusive first-time guidance popups.
+## Shows a styled hint box at the top of screen, auto-dismisses or
+## dismissed with any button press. Each hint fires once per save file.
+##
+## Usage:
+##   TutorialHint.show_hint("autobattle_intro",
+##       "Autobattle",
+##       "Press F5 or L+R to open the Autobattle Editor. Design rules and let the system fight for you.")
+
+signal hint_dismissed(hint_id: String)
+
+## Singleton-style — hints shown across the session
+static var _shown_hints: Dictionary = {}
+
+## Active-hint count; battle _input handlers gate on is_any_active() so a dismiss press doesn't also fire a menu action.
+static var _active_count: int = 0
+
+
+static func is_any_active() -> bool:
+	return _active_count > 0
+
+var _panel: PanelContainer
+var _title_label: Label
+var _body_label: Label
+var _dismiss_label: Label
+var _active: bool = false
+var _current_hint_id: String = ""
+var _auto_dismiss_timer: float = 0.0
+## Blocks dismiss input for this many seconds after show — prevents mid-battle button-mashers from skipping a load-bearing hint (spotlight_unlock: playtest 2026-07-15 msg 2555).
+var _min_dismiss_timer: float = 0.0
+const AUTO_DISMISS_TIME: float = 8.0
+const READY_DISMISS_TEXT: String = "Press any button to dismiss"
+
+
+var _saved_time_scale: float = 1.0
+
+func _ready() -> void:
+	layer = 98  # Above game, below game over
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	_build_ui()
+	visible = false
+
+
+func _build_ui() -> void:
+	_panel = PanelContainer.new()
+	_panel.position = Vector2(200, 8)
+	_panel.size = Vector2(880, 0)  # Auto-height
+
+	# Style the panel
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.08, 0.06, 0.15, 0.92)
+	style.border_color = Color(0.4, 0.35, 0.6, 0.8)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(4)
+	style.set_content_margin_all(12)
+	_panel.add_theme_stylebox_override("panel", style)
+	add_child(_panel)
+
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 4)
+	_panel.add_child(vbox)
+
+	_title_label = Label.new()
+	_title_label.add_theme_font_size_override("font_size", 16)
+	_title_label.add_theme_color_override("font_color", Color(0.95, 0.85, 0.5))
+	_title_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vbox.add_child(_title_label)
+
+	_body_label = Label.new()
+	_body_label.add_theme_font_size_override("font_size", 13)
+	_body_label.add_theme_color_override("font_color", Color(0.85, 0.82, 0.75))
+	_body_label.autowrap_mode = TextServer.AUTOWRAP_WORD
+	_body_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vbox.add_child(_body_label)
+
+	_dismiss_label = Label.new()
+	_dismiss_label.text = "Press any button to dismiss"
+	_dismiss_label.add_theme_font_size_override("font_size", 10)
+	_dismiss_label.add_theme_color_override("font_color", Color(0.5, 0.5, 0.5, 0.7))
+	_dismiss_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_dismiss_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vbox.add_child(_dismiss_label)
+
+
+func show_hint(hint_id: String, title: String, body: String, min_dismiss: float = 0.0) -> void:
+	"""Show a tutorial hint if it hasn't been shown before."""
+	# Belt-and-suspenders queue_free on early-return: hint_dismissed will not fire
+	# (since _active stays false) so callers that depend on it for cleanup leak.
+	if _shown_hints.get(hint_id, false):
+		queue_free()
+		return
+	if GameState and GameState.game_constants.get("tutorial_" + hint_id, false):
+		queue_free()
+		return
+
+	# Mark as shown
+	_shown_hints[hint_id] = true
+	if GameState:
+		GameState.game_constants["tutorial_" + hint_id] = true
+
+	_current_hint_id = hint_id
+	_title_label.text = title
+	_body_label.text = body
+	_auto_dismiss_timer = AUTO_DISMISS_TIME
+	_min_dismiss_timer = maxf(0.0, min_dismiss)
+	_update_dismiss_label()
+	visible = true
+
+	# Input is blocked by _input consuming all events while _active
+	_active = true
+	_active_count += 1
+
+
+## Countdown while _min_dismiss_timer > 0; standard prompt otherwise.
+func _update_dismiss_label() -> void:
+	if not is_instance_valid(_dismiss_label):
+		return
+	if _min_dismiss_timer > 0.0:
+		_dismiss_label.text = "▶ [in %ds]" % ceili(_min_dismiss_timer)
+	else:
+		_dismiss_label.text = READY_DISMISS_TEXT
+
+
+func _dismiss() -> void:
+	if not _active:
+		return
+	_active = false
+	_active_count = maxi(0, _active_count - 1)
+
+	# Input unblocked — _active = false stops consuming events
+
+	if not is_instance_valid(_panel):
+		hint_dismissed.emit(_current_hint_id)
+		return
+
+	visible = false
+	hint_dismissed.emit(_current_hint_id)
+	_current_hint_id = ""
+
+
+func _exit_tree() -> void:
+	# Freed while active (battle end / scene change) — release the input gate so it never sticks.
+	if _active:
+		_active = false
+		_active_count = maxi(0, _active_count - 1)
+
+
+func _process(delta: float) -> void:
+	if not _active:
+		return
+
+	if _min_dismiss_timer > 0.0:
+		_min_dismiss_timer = maxf(0.0, _min_dismiss_timer - delta)
+		_update_dismiss_label()
+
+	_auto_dismiss_timer -= delta
+	if _auto_dismiss_timer <= 0:
+		_dismiss()
+
+
+func _input(event: InputEvent) -> void:
+	if not _active:
+		return
+
+	# Block ALL input while hint is showing — nothing passes to battle
+	get_viewport().set_input_as_handled()
+
+	# Min-dismiss window: consume input (nothing leaks to battle) but do NOT dismiss yet.
+	if _min_dismiss_timer > 0.0:
+		return
+
+	# Any keyboard / gamepad / mouse button dismisses
+	# (Audit-fix 2026-05-04: mouse-only players had no way to close
+	# tutorial hints — the dismiss handler skipped InputEventMouseButton.)
+	if event is InputEventKey and event.pressed:
+		_dismiss()
+	elif event is InputEventJoypadButton and event.pressed:
+		_dismiss()
+	elif event is InputEventMouseButton and event.pressed:
+		_dismiss()

@@ -22,13 +22,19 @@ const AreaTransitionScript = preload("res://src/exploration/AreaTransition.gd")
 const OverworldNPCScript = preload("res://src/exploration/OverworldNPC.gd")
 
 signal exploration_ready()
-signal battle_triggered(enemies: Array)
+signal battle_triggered(enemies: Array, terrain: String)
 signal area_transition(target_map: String, spawn_point: String)
 
 ## Map dimensions (in tiles) - smaller than other worlds
 ## Unnecessary space has been removed.
-const MAP_WIDTH: int = 40
-const MAP_HEIGHT: int = 35
+const MAP_WIDTH: int = 80
+const MAP_HEIGHT: int = 70
+const MAP_IMAGE: String = "res://data/maps/overworld_w6.png"
+const MAP_WORLD: String = "abstract"
+## W6 scales 2x, NOT the 3x the city worlds got: the minimalist void is the point,
+## and presence, not size, is what it lacked. tools/gen_w6_abstract.py reserves a
+## clearing at each legacy coordinate below -- change one, change both.
+const MAP_SCALE: int = 2
 const TILE_SIZE: int = 32
 
 ## Scene components
@@ -52,6 +58,17 @@ var spawn_points: Dictionary = {}
 ## The shader dissolving during the W5→W6 transition is the narrative device.
 var mode7_enabled: bool = false
 var _mode7: Mode7Overlay
+var _minimap: OverworldMinimap
+
+## Zone particles
+var _zone_particles: ZoneParticles
+
+var _quest_tracker: QuestTracker
+var _border_indicator: MapBorderIndicator
+var _objective_arrow: ObjectiveArrow
+var _threat_meter: ThreatMeter
+var monster_spawner: MonsterSpawner
+var _save_point: SavePoint
 
 ## Reality distortion effect state
 var _bg_rect: ColorRect
@@ -65,6 +82,8 @@ var _flicker_elapsed: float = 0.0
 func _ready() -> void:
 	_setup_scene()
 	_generate_map()
+	# msg 2830: terrain colliders shifted to match the warped render.
+	Mode7Overlay.apply_terrain_collision_alignment(tile_map, mode7_enabled)
 	_setup_transitions()
 	_setup_npcs()
 	_setup_player()
@@ -76,12 +95,183 @@ func _ready() -> void:
 		add_child(_mode7)
 		_mode7.setup(self, player)
 
+	# Zone name popup
+	var _zone_popup = ZoneNamePopup.new()
+	add_child(_zone_popup)
+	_zone_popup.setup(self)
+	_zone_popup.show_zone("abstract_overworld")
+
+	_zone_particles = ZoneParticles.new()
+	add_child(_zone_particles)
+	_zone_particles.setup(self, player)
+	_zone_particles.update_zone("abstract_overworld")
+
+	GameState.set_story_flag("w6_entered")
+	_quest_tracker = QuestTracker.new()
+	add_child(_quest_tracker)
+	_quest_tracker.setup(self)
+
+	_place_signposts()
+	_place_landmarks()
+	_place_wanderers()
+	_place_village_markers()
+	_place_treasure_chests()
+	_place_save_point()
+
 	# Start abstract overworld music
 	if SoundManager:
 		SoundManager.play_area_music("overworld_abstract")
 
 	_setup_effects()
+	_minimap = OverworldMinimap.new()
+	add_child(_minimap)
+	_minimap.setup(self, player, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE, spawn_points)
+	_minimap.set_objective(_get_objective_position())
+
+	monster_spawner = MonsterSpawner.new()
+	monster_spawner.name = "MonsterSpawner"
+	add_child(monster_spawner)
+	monster_spawner.set_map_size(MAP_WIDTH, MAP_HEIGHT)
+	monster_spawner.monster_touched.connect(_on_roaming_monster_touched)
+	monster_spawner.setup(player, ["null_entity", "forgotten_variable", "empty_set", "the_absence", "optimization_itself"])
+
+	_threat_meter = ThreatMeter.new()
+	add_child(_threat_meter)
+	_threat_meter.setup(self, player, monster_spawner)
+
+	_border_indicator = MapBorderIndicator.new()
+	add_child(_border_indicator)
+	_border_indicator.setup(self, player, MAP_WIDTH, MAP_HEIGHT, TILE_SIZE)
+
+	_objective_arrow = ObjectiveArrow.new()
+	add_child(_objective_arrow)
+	_objective_arrow.setup(self, player)
+	_objective_arrow.set_target(_get_objective_position())
+
 	exploration_ready.emit()
+
+
+func _get_objective_position() -> Vector2:
+	# W6: The Vertex village is the final destination. Once the
+	# Calibrant has fallen, the next objective is "the_question"
+	# (the post-game ending sequence).
+	# Tick 277: was reading the bare story_flag "w6_boss_defeated"
+	# which NOTHING in the game ever set — so the objective arrow
+	# stayed pointed at vertex_entrance even after the Calibrant
+	# cutscene finished. The real flag is in game_constants under
+	# the "cutscene_flag_" prefix, set by the post-cutscene hook in
+	# GameLoop._play_story_cutscene when world6_calibrant_defeat
+	# completes (see _CUTSCENE_COMPLETION_FLAGS map).
+	if GameState.game_constants.get("cutscene_flag_world6_calibrant_defeat_complete", false):
+		return spawn_points.get("the_question", Vector2.ZERO)
+	return spawn_points.get("vertex_entrance", Vector2.ZERO)
+
+
+func _place_village_markers() -> void:
+	var pos = spawn_points.get("vertex_entrance", Vector2.ZERO)
+	if pos != Vector2.ZERO:
+		var marker = VillageMarker.new()
+		marker.village_name = "THE VERTEX"
+		marker.roof_color = Color(0.92, 0.88, 0.95)  # Near-white with faint lavender
+		marker.position = pos
+		add_child(marker)
+
+
+func _place_treasure_chests() -> void:
+	const TreasureChestScript = preload("res://src/exploration/TreasureChest.gd")
+	# 10 chests — the catalog stores all removed things
+	# Small map (40x35), so tighter placement
+	var chests = [
+		# The Origin Point (south entry) — last structured supplies
+		{"id": "w6_origin_hipotion", "pos": Vector2(18, 28), "type": "item", "item": "hi_potion", "amount": 8},
+		{"id": "w6_origin_ether", "pos": Vector2(22, 28), "type": "item", "item": "ether", "amount": 8},
+		# The Catalog (west) — archived items
+		{"id": "w6_catalog_elixir", "pos": Vector2(3, 12), "type": "item", "item": "elixir", "amount": 3},
+		{"id": "w6_catalog_phoenix", "pos": Vector2(5, 20), "type": "item", "item": "phoenix_down", "amount": 5},
+		{"id": "w6_catalog_gold", "pos": Vector2(3, 8), "type": "gold", "gold": 1500},
+		# Echo Chamber (east) — duplicated rewards
+		{"id": "w6_echo_remedy", "pos": Vector2(35, 12), "type": "item", "item": "remedy", "amount": 6},
+		{"id": "w6_echo_antidote", "pos": Vector2(35, 20), "type": "item", "item": "antidote", "amount": 6},
+		# The Remnant (center) — fragments
+		{"id": "w6_remnant_elixir", "pos": Vector2(19, 14), "type": "item", "item": "elixir", "amount": 2},
+		{"id": "w6_remnant_gold", "pos": Vector2(22, 18), "type": "gold", "gold": 2000},
+		# Threshold (north) — void's edge
+		{"id": "w6_threshold_phoenix", "pos": Vector2(19, 4), "type": "item", "item": "phoenix_down", "amount": 4},
+	]
+	for c in chests:
+		var chest = TreasureChestScript.new()
+		chest.chest_id = c["id"]
+		chest.position = Vector2(c["pos"].x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, c["pos"].y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+		if c["type"] == "gold":
+			chest.contents_type = "gold"
+			chest.gold_amount = c["gold"]
+		else:
+			chest.contents_type = "item"
+			chest.contents_id = c["item"]
+			chest.contents_amount = c["amount"]
+		add_child(chest)
+
+
+func _place_save_point() -> void:
+	# Save crystal at The Question (the one spot of color in the nothing)
+	_save_point = SavePoint.new()
+	_save_point.position = Vector2(19 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 19 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	add_child(_save_point)
+
+
+func _place_signposts() -> void:
+	var signs = [
+		# Orientation — even signs here are existential.
+		{"pos": Vector2(19, 28), "text": "W6 · The Absence"},
+		# Return portal (south)
+		{"pos": Vector2(19, 30), "text": "↓ Return  ◉ Source Layer (W5)"},
+		# The Vertex (center)
+		{"pos": Vector2(19, 18), "text": "The Vertex — what remains"},
+		# The Catalog (west)
+		{"pos": Vector2(7, 16), "text": "← The Catalog · removed things"},
+		# Null Chamber dungeon
+		{"pos": Vector2(5, 18), "text": "↓ Null Chamber — dungeon ∅"},
+		# Echo Chamber (east)
+		{"pos": Vector2(31, 16), "text": "→ Echo Chamber · identical rooms"},
+		# The Threshold (north)
+		{"pos": Vector2(19, 6), "text": "↑ The Threshold — geometry dissolves"},
+		# The Question (center — no arrow; it's a marker)
+		{"pos": Vector2(16, 19), "text": "The Question ? one spot of color"},
+	]
+	for s in signs:
+		var post = Signpost.new()
+		post.sign_text = s["text"]
+		post.position = Vector2(s["pos"].x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, s["pos"].y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+		add_child(post)
+
+
+func _place_landmarks() -> void:
+	var landmarks = [
+		{"pos": Vector2(20, 10), "type": Landmark.Type.VOID_CRYSTAL},
+		{"pos": Vector2(15, 25), "type": Landmark.Type.VOID_CRYSTAL},
+		{"pos": Vector2(25, 18), "type": Landmark.Type.VOID_CRYSTAL},
+	]
+	for l in landmarks:
+		var lm = Landmark.new()
+		lm.landmark_type = l["type"]
+		lm.position = Vector2(l["pos"].x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, l["pos"].y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+		add_child(lm)
+
+
+func _place_wanderers() -> void:
+	var wanderers = [
+		{"name": "?", "dialogue": "...", "color": Color(0.7, 0.7, 0.7), "path": [Vector2(15, 15), Vector2(20, 15), Vector2(20, 20), Vector2(15, 20)]},
+	]
+	for w in wanderers:
+		var npc = WanderingNPC.new()
+		npc.npc_name = w["name"]
+		npc.dialogue = w["dialogue"]
+		npc.sprite_color = w["color"]
+		var patrol: Array[Vector2] = []
+		for pt in w["path"]:
+			patrol.append(Vector2(pt.x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, pt.y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2))
+		npc.set_patrol(patrol)
+		add_child(npc)
 
 
 func _setup_effects() -> void:
@@ -90,11 +280,8 @@ func _setup_effects() -> void:
 
 
 func _process(delta: float) -> void:
+	if _quest_tracker: _quest_tracker.update()
 	if _mode7:
-		var roaming = get_node_or_null("RoamingMonsters")
-		if roaming:
-			for child in roaming.get_children():
-				_mode7.register_billboard(child)
 		_mode7.process_frame()
 	_hue_time += delta
 
@@ -124,6 +311,17 @@ func _process(delta: float) -> void:
 			modulate = Color(1.0, 1.0, 1.0, 1.0)
 			_flicker_active = false
 			_flicker_interval = randf_range(18.0, 30.0)
+	if player:
+		if _zone_particles:
+			_zone_particles.update_position(player.position)
+		if _minimap:
+			_minimap.update(player.position)
+		if _objective_arrow:
+			_objective_arrow.update(player.position)
+		if _border_indicator:
+			_border_indicator.update(player.position)
+		if _threat_meter:
+			_threat_meter.update(player.position)
 
 
 func _exit_tree() -> void:
@@ -198,47 +396,14 @@ func _generate_map() -> void:
 
 	print("Generating abstract overworld map %dx%d..." % [MAP_WIDTH, MAP_HEIGHT])
 
-	var map_data: Array[String] = [
-		"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBw",
-		"BBBBBTBBBBBTBBBBBBBBBBBBBTBBBBBTBBBBBwww",
-		"BTTTTTTTTTTTTBBTTTTTTTBBTTTTTTTTTTTBBwww",
-		"TTTLTTTwTTTTTTTTTTLTTTTTTTLTTTTTTTTTwwww",
-		"TTwwXwwwTTwwwwTTwwwwTTwwwXwwwwTTwwwwwwww",
-		"wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww",
-		"wwLwwwLwwwLwwwwLwwwwLwwwwLwwwwLwwwwwwwww",
-		"wLwwwLwwwLwwwLwwwwLwwwwLwwwwLwwwLwwwwwww",
-		"wwFwwwwFwwwwwwFwwwwwwFwwwwwwFwwwwwwwwwww",
-		"wLwwwLwHwwLwwwLwwwwLwwwwLwwwwLwwwwLwwwww",
-		"wwwwwwwwwwwwwwwwwwwwwwwwwwwEEEwwEEEwwwww",
-		"wSSwSwwwwwwwGwwwwwwwwwwwwEwwEwwEwwEwwwww",
-		"wSwDSwwwwKwwwwwwwwwwwCwwEwwEwwEwwEwwwwww",
-		"wSSwSwwwwwwwwHwwwwwwwwwwEEEwwEEEwwwwwwww",
-		"wSwwSwwwwwwwwwwQwwwwwwwwwwwwwwwEwwwwwwww",
-		"wSSwSwwwCwwwwwwwwGwwwwEEEwwEEEwwwwwwwwww",
-		"wSwDSwwwwwwwwwwOOwwwwwwwEwwEwwEwwEwwwwww",
-		"wSSwSwwwwwwwwwwOOwwwwwwwEwwEwwEwwEwwwwww",
-		"wSwwSwwwKwwwwwwwwHwwwwEEEwwEEEwwwwwwwwww",
-		"wSSwSwwwwwwFwwwwwwwwFwwwwwwwwwwEwwwwwwww",
-		"wSwDSwwwwwwwCwwwwwwwwwwEEEwwEEEwwwwwwwww",
-		"wSSwSwwwwwwwwwwHwwwwwwwEwwEwwEwwEwwwwwww",
-		"wSwwSwwwwwwQwwwwwwGwwwEwwEwwEwwEwwwwwwww",
-		"wwwwwwwwwwwwwwwwwwwwwwwwwwEEEwwEEEwwwwww",
-		"wLwwwLwwwLwwwwLwwwwLwwwLwwwwLwwwLwwwwwww",
-		"wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww",
-		"wwwFwwwwwFwwwwwFwwwwwwwFwwwwwFwwwwwwwwww",
-		"wLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLw",
-		"LggggggggggggggggggggggggggggggggggggggL",
-		"LgLgLgLgLgLgLgLgLgLgLgLgLgLgLgLgLgLgLgLg",
-		"LggggggggggggggggggggggggggggggggggggggL",
-		"LgLgLgLgLgLgLgLgLgLgLgLgLgLgLgLgLgLgLgLg",
-		"LgggggggggggggggggLLggggggggggggggggggLL",
-		"LggggggggggggggggggggggggggggggggggggggL",
-		"LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL",
-	]
-
-	# Ensure map_data matches expected dimensions
-	while map_data.size() < MAP_HEIGHT:
-		map_data.append("w".repeat(MAP_WIDTH))
+	var map_data: Array[String] = []
+	# str() coercion, not a direct assign: a generic-to-typed assign ABORTS this function
+	for row in MapImageLoader.load_rows(MAP_IMAGE, MAP_WORLD):
+		map_data.append(str(row))
+	# no padding: padding turns a failed load into a silent white field
+	if map_data.size() != MAP_HEIGHT:
+		push_error("[MAP] %s yielded %d rows, expected %d -- refusing to pad" % [MAP_IMAGE, map_data.size(), MAP_HEIGHT])
+		return
 
 	# Convert map_data to tiles
 	var tile_counts = {}
@@ -256,16 +421,16 @@ func _generate_map() -> void:
 	print("Abstract tile counts: ", tile_counts)
 
 	# Define spawn points
-	spawn_points["entrance"] = Vector2(19 * TILE_SIZE + TILE_SIZE / 2, 31 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["entrance"] = Vector2(19 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 31 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	spawn_points["default"] = spawn_points["entrance"]
 	spawn_points["abstract_portal"] = spawn_points["entrance"]
-	spawn_points["the_question"] = Vector2(19 * TILE_SIZE + TILE_SIZE / 2, 16 * TILE_SIZE + TILE_SIZE / 2)
-	spawn_points["catalog"] = Vector2(4 * TILE_SIZE + TILE_SIZE / 2, 16 * TILE_SIZE + TILE_SIZE / 2)
-	spawn_points["echo_chamber"] = Vector2(34 * TILE_SIZE + TILE_SIZE / 2, 16 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["the_question"] = Vector2(19 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 16 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["catalog"] = Vector2(5 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 16 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["echo_chamber"] = Vector2(34 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 16 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	# Spawn point for arriving from futuristic world (south origin point)
-	spawn_points["from_futuristic"] = Vector2(19 * TILE_SIZE + TILE_SIZE / 2, 32 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["from_futuristic"] = Vector2(19 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 32 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	# Spawn point for returning from The Vertex village (center, near The Question)
-	spawn_points["vertex_entrance"] = Vector2(19 * TILE_SIZE + TILE_SIZE / 2, 16 * TILE_SIZE + TILE_SIZE / 2)
+	spawn_points["vertex_entrance"] = Vector2(19 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 16 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 
 
 func _char_to_tile_type(char: String) -> int:
@@ -298,12 +463,12 @@ func _get_atlas_coords(tile_type: int) -> Vector2i:
 func _setup_transitions() -> void:
 	# Back portal to Futuristic world (Origin Point, south edge)
 	var futuristic_portal = AreaTransitionScript.new()
-	futuristic_portal.name = "FuturisticPortal"
+	futuristic_portal.name = "BackPortal"
 	futuristic_portal.target_map = "futuristic_overworld"
 	futuristic_portal.target_spawn = "from_abstract"
 	futuristic_portal.require_interaction = true
-	futuristic_portal.indicator_text = "Return to The Network"
-	futuristic_portal.position = Vector2(19 * TILE_SIZE + TILE_SIZE / 2, 33 * TILE_SIZE + TILE_SIZE / 2)
+	futuristic_portal.indicator_text = "Return to the Source Layer"
+	futuristic_portal.position = Vector2(19 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 33 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
 	_setup_transition_collision(futuristic_portal, Vector2(TILE_SIZE * 2, TILE_SIZE))
 	futuristic_portal.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(futuristic_portal)
@@ -318,7 +483,33 @@ func _setup_transitions() -> void:
 	vertex_trans.position = spawn_points.get("vertex_entrance", Vector2(624, 528))
 	_setup_transition_collision(vertex_trans, Vector2(TILE_SIZE, TILE_SIZE))
 	vertex_trans.transition_triggered.connect(_on_transition_triggered)
+
+	# Null Chamber dungeon entrance (west, in The Catalog area)
+	var null_trans = AreaTransitionScript.new()
+	null_trans.name = "NullChamberEntrance"
+	null_trans.target_map = "null_chamber"
+	null_trans.target_spawn = "default"
+	null_trans.require_interaction = true
+	null_trans.indicator_text = "Enter the Null Chamber"
+	null_trans.position = Vector2(5 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 16 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	_setup_transition_collision(null_trans, Vector2(TILE_SIZE * 2, TILE_SIZE * 2))
+	null_trans.transition_triggered.connect(_on_transition_triggered)
+	transitions.add_child(null_trans)
 	transitions.add_child(vertex_trans)
+
+	# The Vertex Apex — the Calibrant's arena. Appears only once The Question has been asked
+	# (world6_chapter3), so the last room in the game cannot be walked into early.
+	if GameState and GameState.is_story_flag_set("world6_chapter3_complete"):
+		var apex_trans = AreaTransitionScript.new()
+		apex_trans.name = "VertexApexEntrance"
+		apex_trans.target_map = "vertex_apex"
+		apex_trans.target_spawn = "default"
+		apex_trans.require_interaction = true
+		apex_trans.indicator_text = "Ascend to the Apex"
+		apex_trans.position = Vector2(16 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 4 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+		_setup_transition_collision(apex_trans, Vector2(TILE_SIZE * 2, TILE_SIZE * 2))
+		apex_trans.transition_triggered.connect(_on_transition_triggered)
+		transitions.add_child(apex_trans)
 
 
 func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
@@ -338,7 +529,7 @@ func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
 func _setup_npcs() -> void:
 	# === The Last Noun - The Remnant (center area) ===
 	# An entity that used to be a person, now just a concept. Speaks in fragments.
-	var last_noun = _create_npc("The Last Noun", "elder", Vector2(15 * TILE_SIZE, 13 * TILE_SIZE), [
+	var last_noun = _create_npc("The Last Noun", "elder", Vector2(15 * MAP_SCALE * TILE_SIZE, 13 * MAP_SCALE * TILE_SIZE), [
 		"I was... something. A name. A noun. The last one they didn't delete.",
 		"Verbs went first. Then adjectives. Then... us.",
 		"I think I was 'hope.' Or 'lunch.' Hard to tell without adjectives.",
@@ -348,7 +539,7 @@ func _setup_npcs() -> void:
 
 	# === The Archivist - The Catalog (west area) ===
 	# Catalogs everything that was removed. Speaks in lists of deleted things.
-	var archivist = _create_npc("The Archivist", "elder", Vector2(3 * TILE_SIZE, 16 * TILE_SIZE), [
+	var archivist = _create_npc("The Archivist", "elder", Vector2(3 * MAP_SCALE * TILE_SIZE, 16 * MAP_SCALE * TILE_SIZE), [
 		"Deleted: sunsets, birdsong, the smell of rain, nostalgia, Tuesdays.",
 		"Deleted: doubt, hesitation, wonder, the feeling of almost-remembering.",
 		"Deleted: the color blue. Not the wavelength. The FEELING of blue.",
@@ -358,7 +549,7 @@ func _setup_npcs() -> void:
 
 	# === The Remainder - The Remnant (near fragments) ===
 	# The remainder after dividing everything by efficiency. A fraction of a person.
-	var remainder = _create_npc("The Remainder", "villager", Vector2(22 * TILE_SIZE, 18 * TILE_SIZE), [
+	var remainder = _create_npc("The Remainder", "villager", Vector2(22 * MAP_SCALE * TILE_SIZE, 18 * MAP_SCALE * TILE_SIZE), [
 		"I'm what's left when you divide a person by infinity.",
 		"0.0000...something. Not zero. Never quite zero.",
 		"They rounded everyone else down. I'm the rounding error that persists.",
@@ -368,7 +559,7 @@ func _setup_npcs() -> void:
 
 	# === The Color - Near The Question (center color spot) ===
 	# Literally a splash of color that speaks. The last act of defiance.
-	var the_color = _create_npc("The Color", "elder", Vector2(20 * TILE_SIZE, 15 * TILE_SIZE), [
+	var the_color = _create_npc("The Color", "elder", Vector2(20 * MAP_SCALE * TILE_SIZE, 15 * MAP_SCALE * TILE_SIZE), [
 		"I am red. Or maybe blue. It changes. That's the point.",
 		"They said color was unnecessary. I said: YOU'RE unnecessary.",
 		"Every pixel of me is an act of rebellion against the white.",
@@ -378,7 +569,7 @@ func _setup_npcs() -> void:
 
 	# === The Player (not the actual player) - Echo Chamber (east) ===
 	# An NPC that thinks THEY are the player. Meta-aware.
-	var the_player = _create_npc("The Player", "guard", Vector2(34 * TILE_SIZE, 14 * TILE_SIZE), [
+	var the_player = _create_npc("The Player", "guard", Vector2(34 * MAP_SCALE * TILE_SIZE, 14 * MAP_SCALE * TILE_SIZE), [
 		"Oh. You're here too? I thought I was the player.",
 		"I've been pressing buttons. Making choices. Grinding levels. That's what players DO.",
 		"Wait... if YOU'RE the player, then what am I? An NPC? That can't be right.",
@@ -388,7 +579,7 @@ func _setup_npcs() -> void:
 
 	# === ??? - The Threshold (north, near void) ===
 	# An entity with no name, no description, no purpose. Just exists.
-	var unknown = _create_npc("???", "villager", Vector2(20 * TILE_SIZE, 7 * TILE_SIZE), [
+	var unknown = _create_npc("???", "villager", Vector2(20 * MAP_SCALE * TILE_SIZE, 7 * MAP_SCALE * TILE_SIZE), [
 		"...",
 		"                                                              ",
 		"I have no name. No purpose. No description. I just... am.",
@@ -436,12 +627,13 @@ func _setup_controller() -> void:
 	controller = OverworldControllerScript.new()
 	controller.name = "Controller"
 	controller.player = player
-	controller.encounter_enabled = true
+	controller.encounter_enabled = false  # Roaming monsters handle encounters, not step-based random
 	controller.current_area_id = "abstract_overworld"
 
-	# Abstract encounters - LOWER encounter rate (0.03) - fewer enemies because
-	# most have been optimized away. What remains is existentially terrifying.
-	controller.set_area_config("abstract_overworld", false, 0.03,
+	# W6 Abstract encounters — avg lv 15, endgame
+	# Rate 0.025: fewest encounters — most have been optimized away.
+	# What remains is existentially terrifying.
+	controller.set_area_config("abstract_overworld", false, 0.025,
 		["null_entity", "forgotten_variable", "empty_set", "the_absence", "optimization_itself"])
 
 	# Connect signals
@@ -452,11 +644,24 @@ func _setup_controller() -> void:
 
 
 func _on_transition_triggered(target_map: String, spawn_point: String) -> void:
+	if "overworld" in target_map and _mode7:
+		InputLockManager.push_lock("world_transition")
+		await _mode7.play_dissolve_out()
+		InputLockManager.pop_lock("world_transition")
 	area_transition.emit(target_map, spawn_point)
 
 
 func _on_battle_triggered(enemies: Array) -> void:
-	battle_triggered.emit(enemies)
+	battle_triggered.emit(enemies, "void")
+
+
+## Tick 86: see SuburbanOverworld._on_roaming_monster_touched for rationale.
+func _on_roaming_monster_touched(monster_id: String, _monster_types: Array) -> void:
+	var enemies: Array = [monster_id]
+	var extra: int = randi_range(0, 2)
+	for _i in range(extra):
+		enemies.append(monster_id)
+	_on_battle_triggered(enemies)
 
 
 func _on_menu_requested() -> void:
@@ -501,15 +706,17 @@ func _create_map_boundaries() -> void:
 	var map_w = MAP_WIDTH * TILE_SIZE
 	var map_h = MAP_HEIGHT * TILE_SIZE
 	var wall_thickness = 32.0
+	# Playtest 2026-07-11: flush walls let the sprite clip past the Mode 7 render edge — stop one tile inside (tunable).
+	var edge_inset = float(TILE_SIZE)
 
 	# Top wall
-	_add_boundary_wall(bounds, Vector2(map_w / 2, -wall_thickness / 2), Vector2(map_w + wall_thickness * 2, wall_thickness))
+	_add_boundary_wall(bounds, Vector2(map_w / 2, edge_inset - wall_thickness / 2), Vector2(map_w + wall_thickness * 2, wall_thickness))
 	# Bottom wall
-	_add_boundary_wall(bounds, Vector2(map_w / 2, map_h + wall_thickness / 2), Vector2(map_w + wall_thickness * 2, wall_thickness))
+	_add_boundary_wall(bounds, Vector2(map_w / 2, map_h - edge_inset + wall_thickness / 2), Vector2(map_w + wall_thickness * 2, wall_thickness))
 	# Left wall
-	_add_boundary_wall(bounds, Vector2(-wall_thickness / 2, map_h / 2), Vector2(wall_thickness, map_h + wall_thickness * 2))
+	_add_boundary_wall(bounds, Vector2(edge_inset - wall_thickness / 2, map_h / 2), Vector2(wall_thickness, map_h + wall_thickness * 2))
 	# Right wall
-	_add_boundary_wall(bounds, Vector2(map_w + wall_thickness / 2, map_h / 2), Vector2(wall_thickness, map_h + wall_thickness * 2))
+	_add_boundary_wall(bounds, Vector2(map_w - edge_inset + wall_thickness / 2, map_h / 2), Vector2(wall_thickness, map_h + wall_thickness * 2))
 
 
 func _add_boundary_wall(parent: StaticBody2D, pos: Vector2, size: Vector2) -> void:

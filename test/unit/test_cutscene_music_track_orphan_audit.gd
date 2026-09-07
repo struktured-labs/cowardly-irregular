@@ -1,0 +1,191 @@
+extends GutTest
+
+## Audit: cross-reference cutscene play_music step track names against
+## music_manifest.json AND the known generic-alias / proc-gen handler
+## lists in SoundManager.play_music. Pre-audit, 6 distinct music track
+## names referenced by W1 chapters 7-9 and W2 chapter 11 cutscenes
+## don't exist in any of the three resolvable paths — they get silently
+## dropped at runtime, so the cutscene's intended atmospheric music
+## simply doesn't play.
+##
+## Orphan-ratchet pattern (same shape as test_cutscene_grant_item_
+## orphan_audit): NEW orphans fail loud; existing orphans being closed
+## (track added to manifest or proc-gen handler) keeps passing; stale
+## allowlist entries (now-resolved tracks still in KNOWN_ORPHAN_MUSIC)
+## fail to force pruning.
+
+const MUSIC_MANIFEST_PATH := "res://data/music_manifest.json"
+const CUTSCENES_DIR := "res://data/cutscenes"
+const SOUND_MANAGER_PATH := "res://src/audio/SoundManager.gd"
+
+# Music track names that SoundManager.play_music resolves WITHOUT a
+# manifest entry — generic aliases mapped to world-specific tracks, OR
+# proc-gen handlers via _start_<name>_music. Verified by reading
+# play_music's match blocks (lines ~1066 / ~1090 in SoundManager.gd).
+const RESOLVED_VIA_ALIAS := {
+	"battle": true,
+	"boss": true,
+	"danger": true,
+	"victory": true,
+	"title": true,
+	"autogrind": true,
+	"boss_rat_king": true,
+	"game_over": true,
+}
+
+
+# Snapshot 2026-05-25 — cutscene play_music tracks referenced from
+# JSON but not in music_manifest.json and not resolved via alias/proc-gen.
+# Remove entries from this list as cowir-music authors the tracks (or
+# corrects the cutscene JSON to point at a real manifest entry).
+# EMPTY as of 2026-08-05, and that is the correct state — every entry was
+# pruned because NO cutscene references any of them any more.
+#
+# All five (cutscene_w1_palace, cutscene_w2_coordinator_after, dungeon,
+# mystery_w1, town_w1) were stale in a direction the prune check could not
+# see: it only asked "does the track exist now", never "does anything still
+# ask for it". So the suppressions outlived the references by months while
+# the suite stayed green. Each stale entry is a PRE-ARMED SUPPRESSION — the
+# day a cutscene names `town_w1` again, that genuine new orphan gets absorbed
+# silently instead of failing. That is the failure mode this list is for.
+const KNOWN_ORPHAN_MUSIC := {}
+
+
+func _read_text(path: String) -> String:
+	var file = FileAccess.open(path, FileAccess.READ)
+	assert_not_null(file, "file should exist: %s" % path)
+	var text = file.get_as_text()
+	file.close()
+	return text
+
+
+func _load_manifest_tracks() -> Dictionary:
+	var raw = _read_text(MUSIC_MANIFEST_PATH)
+	var parsed = JSON.parse_string(raw)
+	if parsed is Dictionary and parsed.has("tracks"):
+		return parsed["tracks"]
+	return {}
+
+
+func _collect_cutscene_music_refs() -> Dictionary:
+	## Returns {music_track: [cutscene_basenames]}.
+	var refs: Dictionary = {}
+	var dir = DirAccess.open(CUTSCENES_DIR)
+	if dir == null:
+		return refs
+	dir.list_dir_begin()
+	var name = dir.get_next()
+	while name != "":
+		if name.ends_with(".json"):
+			var path = CUTSCENES_DIR + "/" + name
+			var parsed = JSON.parse_string(_read_text(path))
+			if parsed is Dictionary and parsed.has("steps"):
+				for step in _flatten_steps(parsed["steps"]):
+					if step is Dictionary and step.get("type", "") == "play_music":
+						var track = str(step.get("track", ""))
+						if track != "":
+							refs[track] = refs.get(track, []) + [name]
+		name = dir.get_next()
+	return refs
+
+
+func test_every_cutscene_music_track_resolves() -> void:
+	var refs: Dictionary = _collect_cutscene_music_refs()
+	var manifest: Dictionary = _load_manifest_tracks()
+	assert_gt(refs.size(), 0, "Test setup: should find some cutscene music refs")
+	assert_gt(manifest.size(), 50, "Test setup: music_manifest.json should have many tracks")
+
+	var new_orphans: Array = []
+	for track in refs:
+		if manifest.has(track):
+			continue
+		if RESOLVED_VIA_ALIAS.has(track):
+			continue
+		if KNOWN_ORPHAN_MUSIC.has(track):
+			continue
+		new_orphans.append({
+			"track": track,
+			"sources": refs[track],
+		})
+
+	if not new_orphans.is_empty():
+		var msg: String = "NEW orphan cutscene music tracks (no manifest entry, no alias, no proc-gen):\n"
+		for o in new_orphans:
+			msg += "  - %s (in: %s)\n" % [o.track, ", ".join(o.sources)]
+		msg += "Either add the track to music_manifest.json OR fix the cutscene JSON OR add to KNOWN_ORPHAN_MUSIC."
+		fail_test(msg)
+
+
+func test_known_orphan_music_list_stays_pruned() -> void:
+	## Inverse: KNOWN_ORPHAN_MUSIC entries that now DO exist in the
+	## manifest or alias map must be removed — keeps the list honest.
+	var manifest: Dictionary = _load_manifest_tracks()
+	## Downstream of the LOADER, which is what breaks. Without this the test is hollow
+	## against a dead loader: nothing resolves, `stale` stays empty, and it reports the
+	## list is pruned. It does not pass in that state -- the conditional fail_test never
+	## runs, so GUT scores it [Risky] -- but Risky leaves EC at 0 and names no cause.
+	## An UPSTREAM canary would be worse than none: it would assert, suppressing Risky,
+	## while being unable to see the defect (cowir-story, 2026-08-22).
+	assert_true(manifest.has("battle_medieval"),
+		"the manifest loader returned %d tracks and not battle_medieval -- it is dead, and every resolution below is vacuous" % manifest.size())
+	var stale: Array = []
+	for orphan in KNOWN_ORPHAN_MUSIC:
+		if manifest.has(orphan) or RESOLVED_VIA_ALIAS.has(orphan):
+			stale.append("%s (track now resolves)" % orphan)
+	if not stale.is_empty():
+		fail_test("KNOWN_ORPHAN_MUSIC contains entries that now DO resolve — remove them: %s" % [stale])
+
+
+func test_known_orphan_entries_are_still_referenced_by_something() -> void:
+	## The staleness direction the check above cannot see, and the one that
+	## actually happened: an entry stops being referenced by ANY cutscene.
+	## The track never appears, so "does it resolve" stays false forever and
+	## the suppression is immortal. All five original entries sat here for
+	## months in exactly that state while this file reported green.
+	##
+	## Why it is worth failing over rather than ignoring: an unreferenced entry
+	## is a suppression armed for a defect that has not happened yet. Re-add a
+	## cutscene naming `town_w1` and the orphan it introduces is absorbed
+	## silently — the list would be protecting the bug it was written to expose.
+	var refs: Dictionary = _collect_cutscene_music_refs()
+	assert_gt(refs.size(), 0, "setup: the cutscene walker must find refs, or every entry reads as unreferenced")
+	var unreferenced: Array = []
+	for orphan in KNOWN_ORPHAN_MUSIC:
+		if not refs.has(orphan):
+			unreferenced.append(orphan)
+	assert_eq(unreferenced.size(), 0,
+		"KNOWN_ORPHAN_MUSIC suppresses %d track(s) that NO cutscene asks for any more — delete them, or the suppression will silently absorb a future real orphan of the same name: %s" % [unreferenced.size(), str(unreferenced)])
+
+
+func test_alias_list_matches_sound_manager_dispatch() -> void:
+	## Source pin: RESOLVED_VIA_ALIAS must match what SoundManager.play_music
+	## actually handles. Catches drift where someone removes a play_music
+	## case (e.g. retires "victory" alias) without updating this test, which
+	## would let real orphans slip through.
+	var sm_text = _read_text(SOUND_MANAGER_PATH)
+	for alias in RESOLVED_VIA_ALIAS:
+		# Either a match case OR a generic-alias rewrite must exist.
+		var case_pat = "\"" + alias + "\":"
+		assert_true(sm_text.find(case_pat) > -1,
+			"SoundManager.play_music must still have a case for alias '%s' — RESOLVED_VIA_ALIAS is now stale" % alias)
+
+
+## Flattens branch sub-steps. This audit walked the top-level array only, so
+## the four nested play_music steps in world6_chapter3 — the W6 ending themes,
+## one per canon ending — were never checked. One of THREE music walkers with
+## this gap; I fixed one first and came back for the other two (@cowir-sfx's
+## scope lesson: the check was real, its scope was the file in front of me).
+## Which one is "last" is a state claim that rots, so it isn't made here.
+static func _flatten_steps(steps: Array) -> Array:
+	var out: Array = []
+	for step in steps:
+		if not (step is Dictionary):
+			continue
+		out.append(step)
+		for case_steps in (step.get("cases", {}) as Dictionary).values():
+			if case_steps is Array:
+				out.append_array(_flatten_steps(case_steps))
+		for key in ["if_true", "if_false"]:
+			if step.get(key) is Array:
+				out.append_array(_flatten_steps(step[key]))
+	return out

@@ -1,0 +1,157 @@
+{
+  "id": "world6_chat_the_player",
+  "title": "Who Is Playing Who",
+  "world": 6,
+  "trigger": "world6_chat_the_player",
+  "background": "vertex_village",
+  "description": "Party speaks with the NPC who thinks they're the player. Meta beat. Careful, not heavy-handed.",
+  "steps": [
+    {
+      "type": "letterbox_in",
+      "duration": 0.3
+    },
+    {
+      "type": "narration",
+      "text": "The Player sat at the edge of the plaza, hunched over nothing. Their hands moved as though they were holding a controller. They appeared to be in the middle of something important."
+    },
+    {
+      "type": "wait",
+      "duration": 0.5
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "The Player",
+          "text": "Oh! Hi. You again. I was grinding levels on this one spot. The enemies come back.",
+          "theme": "guard",
+          "portrait": "guard"
+        },
+        {
+          "speaker": "Logic",
+          "text": "...What spot?",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "The Player",
+          "text": "This one. Right here.",
+          "theme": "guard",
+          "portrait": "guard"
+        },
+        {
+          "speaker": "The Player",
+          "text": "They respawn if you wait long enough. It's very efficient.",
+          "theme": "guard",
+          "portrait": "guard"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.3
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Logic",
+          "text": "There are no enemies here.",
+          "theme": "mage",
+          "portrait": "mage"
+        },
+        {
+          "speaker": "The Player",
+          "text": "Well, of course not. I cleared them. They'll come back.",
+          "theme": "guard",
+          "portrait": "guard"
+        },
+        {
+          "speaker": "The Player",
+          "text": "That's how grinding works.",
+          "theme": "guard",
+          "portrait": "guard"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Voice",
+          "text": "Do you ever leave this spot?",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "The Player",
+          "text": "Why would I? The experience curve is optimal here.",
+          "theme": "guard",
+          "portrait": "guard"
+        },
+        {
+          "speaker": "The Player",
+          "text": "I'm thirty levels above anything in this world. Eventually I'll be high enough for the postgame.",
+          "theme": "guard",
+          "portrait": "guard"
+        },
+        {
+          "speaker": "Voice",
+          "text": "...There isn't a postgame.",
+          "theme": "bard",
+          "portrait": "bard"
+        },
+        {
+          "speaker": "The Player",
+          "text": "There always is. You just have to grind enough.",
+          "theme": "guard",
+          "portrait": "guard"
+        }
+      ]
+    },
+    {
+      "type": "wait",
+      "duration": 0.4
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Edge",
+          "text": "You know, I think we've met someone like you in every world.",
+          "theme": "rogue",
+          "portrait": "rogue"
+        },
+        {
+          "speaker": "The Player",
+          "text": "That's the thing about players. We're consistent.",
+          "theme": "guard",
+          "portrait": "guard"
+        },
+        {
+          "speaker": "The Player",
+          "text": "Good luck with whatever you're doing. Watch your step at the edges. They've been patching the collision.",
+          "theme": "guard",
+          "portrait": "guard"
+        }
+      ]
+    },
+    {
+      "type": "narration",
+      "text": "The Player returned to their task. Their hands kept moving, holding a controller that was not there, pressing buttons that did nothing, in a world that was slowly being optimized out from around them. They did not appear concerned. Grinding, after all, was consistent."
+    },
+    {
+      "type": "set_flag",
+      "flag": "party_chat_viewed_world6_chat_the_player",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.4
+    }
+  ]
+}

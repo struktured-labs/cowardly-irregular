@@ -1,0 +1,69 @@
+{
+  "id": "world1_curator_encounter",
+  "title": "The Curator of the Flame",
+  "world": 1,
+  "trigger": "world1_curator_pre_fight",
+  "background": "throne_room",
+  "description": "The Curator offers tea and genuine curiosity. Eleven years studying this room. The most interesting thing to happen all decade is that the party might be looking for something that isn't here. FIX 2026-07-28 (cowir-ai msg-3206): this scene's hospitality beat was gated on a 'completionist' branch key that _detect_playstyle CAN NEVER RETURN (it returns automator/grinder/exploiter/manual/balanced only), so it had never played for any player. The beat is unconditional in canon — W1 ch.4 has the Warden offer the guardhouse food with no condition attached — so it is now the default arm rather than a playstyle reward. Playstyle-specific arms (e.g. grinder) are untouched and still take precedence.",
+  "steps": [
+    {
+      "type": "letterbox_in",
+      "duration": 0.4
+    },
+    {
+      "type": "play_music",
+      "track": "boss_curator_medieval"
+    },
+    {
+      "type": "branch",
+      "condition": "playstyle",
+      "cases": {
+        "default": [
+          {
+            "type": "dialogue",
+            "lines": [
+              {
+                "speaker": "Curator",
+                "text": "Tea? I have tea. It's a restorative, technically. Also it's good tea.",
+                "theme": "enemy",
+                "portrait": "mysterious"
+              },
+              {
+                "speaker": "Curator",
+                "text": "Since you're not in a hurry — let me tell you about the guardian order. All four of us. What we were made for. What we became instead.",
+                "theme": "enemy",
+                "portrait": "mysterious"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        {
+          "speaker": "Curator",
+          "text": "Before we begin — and we will begin, I'm sorry about that — can I ask what you think is behind the flame? Not the literal throne room. Behind all of it.",
+          "theme": "enemy",
+          "portrait": "masterite_curator_medieval"
+        },
+        {
+          "speaker": "Curator",
+          "text": "I've studied this room for eleven years. I know exactly what's in it. I am genuinely uncertain if what you're looking for is here. That's the most interesting thing that's happened all decade.",
+          "theme": "enemy",
+          "portrait": "masterite_curator_medieval"
+        }
+      ]
+    },
+    {
+      "type": "set_flag",
+      "flag": "world1_curator_encounter_complete",
+      "value": true
+    },
+    {
+      "type": "letterbox_out",
+      "duration": 0.3
+    }
+  ]
+}

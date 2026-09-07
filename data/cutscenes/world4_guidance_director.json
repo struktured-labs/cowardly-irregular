@@ -1,0 +1,35 @@
+{
+  "id": "world4_guidance_director",
+  "title": "Industrial Guidance — The Director",
+  "world": 4,
+  "trigger": "world4_guidance_director",
+  "background": "industrial_factory",
+  "description": "The union rep warns the party about the Director and points them toward the factory's upper levels.",
+  "steps": [
+    {"type": "letterbox_in", "duration": 0.3},
+
+    {"type": "dialogue", "lines": [
+      {
+        "speaker": "Union Rep",
+        "text": "The Director's office is at the top of the main factory. Only elevator in Rivet Row. It opens when the Director decides it opens.",
+        "theme": "elder",
+        "portrait": "elder"
+      },
+      {
+        "speaker": "Union Rep",
+        "text": "Clear enough of the production floor and the system will flag you for 'direct engagement.' That's when the elevator comes.",
+        "theme": "elder",
+        "portrait": "elder"
+      },
+      {
+        "speaker": "Union Rep",
+        "text": "Fair warning — the Director doesn't punish. The Director restructures. It's worse.",
+        "theme": "elder",
+        "portrait": "elder"
+      }
+    ]},
+
+    {"type": "set_flag", "flag": "world4_guidance_director_shown", "value": true},
+    {"type": "letterbox_out", "duration": 0.3}
+  ]
+}
