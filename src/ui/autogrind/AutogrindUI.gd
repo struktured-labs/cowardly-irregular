@@ -1250,6 +1250,13 @@ func _add_pixel_border(parent: Control, size: Vector2) -> void:
 func _input(event: InputEvent) -> void:
 	"""Handle input"""
 	if not visible:
+		## A grind hides the console, and every route back runs through GameLoop calling
+		## set_grinding(false). Hidden with NO grind running is the wedge state struktured hit
+		## (2026-09-06): input-dead with no way out. Cancel is the escape hatch and must not
+		## depend on the visibility that broke. Everything else stays blocked while hidden.
+		if not _is_grinding and event.is_action_pressed("ui_cancel") and not event.is_echo():
+			_close_ui()
+			get_viewport().set_input_as_handled()
 		return
 
 	## A live tutorial hint owns the press — every other _input consumer gates on this and these
