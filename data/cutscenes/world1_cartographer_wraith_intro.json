@@ -1,0 +1,44 @@
+{
+  "id": "world1_cartographer_wraith_intro",
+  "title": "The Lost Cartographer",
+  "world": 1,
+  "trigger": "boss_cartographer_wraith",
+  "background": "cave_entrance",
+  "description": "Boss intro for the cartographer wraith at the bottom of the Backwards Warren. He drew the one honest line in a dungeon nobody was supposed to build, and resents having been made to map it.",
+  "steps": [
+    { "type": "stop_music" },
+    { "type": "letterbox_in", "duration": 0.5 },
+    { "type": "play_sfx", "sfx": "boss_intro_stinger" },
+    { "type": "boss_intro", "name": "The Lost Cartographer", "title": "Keeper of the Backwards Warren" },
+    { "type": "wait", "duration": 0.5 },
+    {
+      "type": "narration",
+      "lines": [
+        "The corridor behind you seals. Ink-stained ribbons drift in a wind that isn't there."
+      ]
+    },
+    { "type": "wait", "duration": 0.4 },
+    {
+      "type": "dialogue",
+      "lines": [
+        { "speaker": "The Lost Cartographer", "text": "You found the shortcut. Nobody finds the shortcut.", "theme": "enemy", "portrait": "mysterious" },
+        { "speaker": "The Lost Cartographer", "text": "I drew it in on my last day, out of spite. The only honest line in the whole warren.", "theme": "enemy", "portrait": "mysterious" }
+      ]
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        { "speaker": "Hero", "text": "So none of this was supposed to connect?", "theme": "party", "portrait": "hero" }
+      ]
+    },
+    {
+      "type": "dialogue",
+      "lines": [
+        { "speaker": "The Lost Cartographer", "text": "None of it was supposed to be BUILT. I was a cartographer, not an architect. They made me draw it anyway.", "theme": "enemy", "portrait": "mysterious" },
+        { "speaker": "The Lost Cartographer", "text": "Let's see if you read the map better than they did.", "theme": "enemy", "portrait": "mysterious" }
+      ]
+    },
+    { "type": "screen_shake", "duration": 0.3, "intensity": 3.0 },
+    { "type": "letterbox_out", "duration": 0.3 }
+  ]
+}

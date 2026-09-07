@@ -11,6 +11,7 @@ func _init() -> void:
 	cave_id = "backwards_warren"
 	boss_id = "cartographer_wraith"
 	boss_flag_key = "cartographer_wraith_defeated"
+	boss_cutscene_id = "world1_cartographer_wraith_intro"
 	total_floors = 4
 	overworld_exit_spawn = "backwards_warren_cave"
 
