@@ -45,6 +45,9 @@ var _test_btn: Button
 var _testing: bool = false
 
 const PROBE_PROMPT := "Reply with exactly: PONG"
+
+## Wall-clock ceiling on a BYOK test probe.
+const PROBE_TIMEOUT_SEC: float = 12.0
 const PROBE_FALLBACK := "__BYOK_PROBE_FAIL__"
 const STATUS_IDLE_COLOR := Color(0.65, 0.65, 0.70)
 const STATUS_OK_COLOR := Color(0.45, 0.85, 0.50)
@@ -267,12 +270,17 @@ func _on_save_pressed() -> void:
 		svc.apply_byok_config()
 	if SoundManager:
 		SoundManager.play_ui("menu_select")
+	# An incomplete config silently falls back to local Ollama — say so at save time.
+	var problem: String = _config_problem(_typed_config())
 	if Toast:
-		var masked: String = ""
-		if GameState.has_method("get_llm_custom_api_key_masked"):
-			masked = GameState.get_llm_custom_api_key_masked()
-		Toast.show(self, "BYOK saved (key=%s)" % (masked if masked != "" else "<empty>"),
-			Toast.SUCCESS_COLOR)
+		if problem != "":
+			Toast.show(self, "BYOK INCOMPLETE — %s" % problem, STATUS_FAIL_COLOR)
+		else:
+			var masked: String = ""
+			if GameState.has_method("get_llm_custom_api_key_masked"):
+				masked = GameState.get_llm_custom_api_key_masked()
+			Toast.show(self, "BYOK saved (key=%s)" % (masked if masked != "" else "<empty>"),
+				Toast.SUCCESS_COLOR)
 	closed.emit()
 	queue_free()
 
@@ -284,48 +292,85 @@ func _on_cancel_pressed() -> void:
 	queue_free()
 
 
-## tick 52: async probe. Uses the CURRENTLY APPLIED LLMService config
-## (whatever was last Save & Apply'd). To test a new config the user
-## edits the form, hits Save & Apply (which calls LLMService.apply_
-## byok_config — tick 39), then comes back and hits Test. Single-flow
-## is simpler than the temporarily-apply-then-revert dance.
-##
-## Sends a tiny probe prompt with a sentinel fallback string. If
-## the LLM returns anything OTHER than the sentinel, the round-trip
-## works. Times out via LLMService's own internal timeout — if no
-## answer arrives, the fallback wins and we report failure.
+## Probe the TYPED fields, not the applied backend. The old version called
+## LLMService.complete() — which uses whatever was last Save & Applied — so a
+## blank form tested Ollama and printed OK. struktured ran that for weeks
+## believing it validated his OpenAI key (2026-09-07).
 func _on_test_pressed() -> void:
 	if _testing:
 		return
+	var cfg: Dictionary = _typed_config()
+	var problem: String = _config_problem(cfg)
+	if problem != "":
+		_set_status("Status: not tested — %s" % problem, STATUS_FAIL_COLOR)
+		return
 	_testing = true
 	_test_btn.disabled = true
-	_set_status("Testing... (sending small probe)", STATUS_BUSY_COLOR)
+	_set_status("Testing %s @ %s ..." % [cfg["model"], cfg["base_url"]], STATUS_BUSY_COLOR)
 	if SoundManager:
 		SoundManager.play_ui("menu_select")
-	var svc: Node = get_node_or_null("/root/LLMService")
-	if svc == null or not svc.has_method("complete"):
-		_set_status("Status: failed — LLMService not available", STATUS_FAIL_COLOR)
-		_testing = false
-		_test_btn.disabled = false
-		return
-	if not svc.is_available():
-		_set_status("Status: failed — no ready backend (is BYOK toggled ON? did you Save & Apply?)", STATUS_FAIL_COLOR)
-		_testing = false
-		_test_btn.disabled = false
-		return
+
+	var probe := HTTPBackend.new()
+	probe.base_url = cfg["base_url"]
+	probe.api_format = cfg["api_format"]
+	probe.model = cfg["model"]
+	probe.api_key = cfg["api_key"]
+	add_child(probe)
+
 	var start_ms: int = Time.get_ticks_msec()
-	var result: Variant = await svc.complete(PROBE_PROMPT, PROBE_FALLBACK, {"max_tokens": 16})
+	probe.submit("byok_test", PROBE_PROMPT, {"max_tokens": 16})
+	var res: Array = await _await_probe(probe)
 	var elapsed_ms: int = Time.get_ticks_msec() - start_ms
-	var result_str: String = str(result)
-	if result_str == PROBE_FALLBACK or result_str == "":
-		_set_status("Status: failed — backend returned fallback (timeout? bad key? wrong model?)", STATUS_FAIL_COLOR)
+
+	probe.cancel_all()
+	probe.queue_free()
+
+	# Every outcome names the endpoint that produced it — a green that names no backend is the bug.
+	var where: String = "%s @ %s" % [cfg["model"], cfg["base_url"]]
+	if res.is_empty():
+		_set_status("Status: FAILED — %s did not answer in %ds" % [where, int(PROBE_TIMEOUT_SEC)], STATUS_FAIL_COLOR)
+	elif not bool(res[0]):
+		_set_status("Status: FAILED — %s: %s" % [where, str(res[2])], STATUS_FAIL_COLOR)
 	else:
-		# Truncate the response so the status line doesn't blow out;
-		# we just need to show the user that SOMETHING came back.
-		var preview: String = result_str.strip_edges().substr(0, 40)
-		_set_status("Status: OK (%d ms) — got: \"%s\"" % [elapsed_ms, preview], STATUS_OK_COLOR)
+		var preview: String = str(res[1]).strip_edges().substr(0, 32)
+		_set_status("Status: OK (%d ms) — %s replied \"%s\"" % [elapsed_ms, where, preview], STATUS_OK_COLOR)
 	_testing = false
-	_test_btn.disabled = false
+	if is_instance_valid(_test_btn):
+		_test_btn.disabled = false
+
+
+## The form's CURRENT contents — never GameState, which may hold an older config.
+func _typed_config() -> Dictionary:
+	return {
+		"base_url": _base_url_field.text.strip_edges(),
+		"api_format": "ollama" if _format_picker.selected == 1 else "openai",
+		"model": _model_field.text.strip_edges(),
+		"api_key": _api_key_field.text,
+	}
+
+
+## Why this config cannot be tested, or "" when it can. Also drives the save-time warning.
+func _config_problem(cfg: Dictionary) -> String:
+	if str(cfg.get("base_url", "")) == "":
+		return "Base URL is empty. BYOK stays OFF and the game falls back to local Ollama."
+	if str(cfg.get("model", "")) == "":
+		return "Model is empty. BYOK stays OFF and the game falls back to local Ollama."
+	if str(cfg.get("api_format", "")) == "openai" and str(cfg.get("api_key", "")) == "":
+		return "OpenAI-compatible format with no API key — the endpoint will reject this."
+	return ""
+
+
+## Await request_finished with a timeout. [] means the probe never answered.
+func _await_probe(probe: HTTPBackend) -> Array:
+	var done: Array = []
+	var cb := func(_id: String, ok: bool, text: String, error: String) -> void:
+		done.append_array([ok, text, error])
+	probe.request_finished.connect(cb, CONNECT_ONE_SHOT)
+	var waited: float = 0.0
+	while done.is_empty() and waited < PROBE_TIMEOUT_SEC:
+		await get_tree().create_timer(0.1).timeout
+		waited += 0.1
+	return done
 
 
 func _set_status(msg: String, color: Color) -> void:

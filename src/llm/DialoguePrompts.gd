@@ -283,10 +283,12 @@ static func build_npc_opening(
 	recent_events: Array,
 	quest_state_lines: Array = [],
 	time_of_day: String = "",
+	party_state: Dictionary = {},
 ) -> String:
 	var ctx_block: String = _format_events(recent_events, CONTEXT_EVENTS)
 	var voice_block: String = _format_quest_state_voice(quest_state_lines)
 	var time_block: String = _format_time_of_day(time_of_day)
+	var party_block: String = _format_party_state(party_state)
 
 	return (
 		"You are writing dialogue for a meta-aware JRPG called 'Cowardly Irregular'.\n"
@@ -296,6 +298,7 @@ static func build_npc_opening(
 		+ "Persona: %s\n" % npc_persona
 		+ "Location: %s\n" % location
 		+ time_block
+		+ party_block
 		+ ctx_block
 		+ voice_block
 		+ "\n"
@@ -440,9 +443,14 @@ static func build_combined_reply(
 	last_npc_line: String,
 	player_line: String,
 	num_choices: int,
+	quest_state_lines: Array = [],
+	party_state: Dictionary = {},
 ) -> String:
 	var count: int = clampi(num_choices, 1, MAX_CHOICES)
 	var ctx_block: String = _format_events(recent_events, CONTEXT_EVENTS)
+	# Milo v2: the reply path dropped the voice notes the opening path threads.
+	var voice_block: String = _format_quest_state_voice(quest_state_lines)
+	var party_block: String = _format_party_state(party_state)
 
 	var history_block: String = ""
 	if last_npc_line.strip_edges() != "":
@@ -458,7 +466,9 @@ static func build_combined_reply(
 		+ "Persona: %s\n" % npc_persona
 		+ "Location: %s\n" % location
 		+ history_block
+		+ party_block
 		+ ctx_block
+		+ voice_block
 		+ "\n"
 		+ "Rules:\n"
 		+ "- The NPC reply must react to the player's specific words; max %d characters.\n" % MAX_LINE_CHARS
@@ -1057,6 +1067,53 @@ static func _format_quest_state_voice(quest_state_lines: Array) -> String:
 	if quoted.is_empty():
 		return ""
 	return "\nThis character has recently said things like:\n" + "\n".join(quoted) + "\nEcho this mood and voice.\n"
+
+
+## Live party state as prose — an NPC that can't see a downed PC isn't in the world.
+static func _format_party_state(party_state: Dictionary) -> String:
+	if party_state.is_empty():
+		return ""
+	var out: String = ""
+	var members: Array = party_state.get("members", []) as Array
+	if not members.is_empty():
+		var rows: PackedStringArray = PackedStringArray()
+		for m in members:
+			if not (m is Dictionary):
+				continue
+			rows.append("  - %s the %s, %s" % [
+				str(m.get("name", "?")),
+				str(m.get("job", "adventurer")),
+				str(m.get("condition", "unhurt")),
+			])
+		if not rows.is_empty():
+			out += "\nThe party standing in front of you:\n" + "\n".join(rows) + "\n"
+	if party_state.has("gold"):
+		out += "They are carrying %d gold.\n" % int(party_state["gold"])
+	var items: Array = party_state.get("notable_items", []) as Array
+	if not items.is_empty():
+		out += "Visible supplies: %s.\n" % ", ".join(PackedStringArray(items))
+	if out == "":
+		return ""
+	return out + "Notice this if it is worth noticing — a wound, an empty purse, a full pack. Do not recite it.\n"
+
+
+## HP band → the words an onlooker would use; ordered worst-first so DOWNED wins.
+static func describe_condition(current_hp: int, max_hp: int, is_alive: bool) -> String:
+	if not is_alive:
+		return "DOWNED — unconscious and being carried"
+	# No HP data is not evidence of injury — never invent a condition from a malformed entry.
+	if max_hp <= 0:
+		return "unhurt"
+	if current_hp <= 0:
+		return "DOWNED — unconscious and being carried"
+	var pct: float = float(current_hp) / float(max_hp)
+	if pct < 0.15:
+		return "barely standing (%d%% health)" % int(round(pct * 100.0))
+	if pct < 0.35:
+		return "badly hurt (%d%% health)" % int(round(pct * 100.0))
+	if pct < 0.7:
+		return "wounded (%d%% health)" % int(round(pct * 100.0))
+	return "unhurt"
 
 
 ## Day/night compose (msg 2659): tuck time_of_day into the prompt as a peer of Location.
