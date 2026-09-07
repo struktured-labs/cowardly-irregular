@@ -1234,11 +1234,6 @@ func _input(event: InputEvent) -> void:
 	if not visible:
 		return
 
-	## A live tutorial hint owns the press — every other _input consumer gates on this and these
-	## two did not, leaving them protected only by tree order (a hint parented elsewhere is a sibling).
-	if TutorialHint.is_any_active():
-		return
-
 	# Navigation - check echo to prevent rapid-fire when holding keys
 	if event.is_action_pressed("ui_up") and not event.is_echo():
 		cursor_row = max(0, cursor_row - 1)

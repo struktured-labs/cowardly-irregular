@@ -299,10 +299,6 @@ func validate_rule(rule: Dictionary) -> Array[String]:
 			continue
 		if c.has("op") and not OPERATORS.has(str(c["op"])):
 			errors.append("unknown operator: '%s'" % c["op"])
-		## Member-scoped types are meaningless without a target — an absent key would silently
-		## evaluate false forever, which reads as "the rule never fires" and not as a typo.
-		if ctype in MEMBER_SCOPED_CONDITIONS and str(c.get("member", "")) == "":
-			errors.append("condition type '%s' requires a 'member' (job id or character name)" % ctype)
 	for a in rule["actions"]:
 		if typeof(a) != TYPE_DICTIONARY:
 			errors.append("action must be a dictionary: %s" % [a])
@@ -698,9 +694,6 @@ const PARTY_CONDITION_TYPES = {
 	"efficiency": "Efficiency",
 	"member_dead": "Member Dead",
 	"member_injured": "Member Injured",
-	"member_hp": "Member HP %",
-	"member_mp": "Member MP %",
-	"member_status": "Member Has Status",
 	"win_streak": "Win Streak",
 	"time_elapsed": "Time Elapsed",
 	"inventory_items": "Inventory Items",
@@ -709,10 +702,6 @@ const PARTY_CONDITION_TYPES = {
 	"rare_item_found": "Rare Item Found",
 	"always": "Always"
 }
-
-## Condition types that REQUIRE a "member" key. member_dead is deliberately absent: its
-## "member" is optional and its no-member form is the pre-existing any-member rule.
-const MEMBER_SCOPED_CONDITIONS = ["member_hp", "member_mp", "member_status"]
 
 ## Operators (shared with autobattle)
 const OPERATORS = {
@@ -1719,25 +1708,6 @@ func _evaluate_party_rule(party: Array, rule: Dictionary) -> bool:
 	return true
 
 
-## Resolve a rule's "member" key to a live party member. Matches job id first — struktured
-## phrases rules as "if cleric is dead" — then falls back to the character name.
-func _resolve_member(party: Array, member_key: String):
-	if member_key == "":
-		return null
-	var want := member_key.to_lower()
-	for m in party:
-		if not (m is Combatant):
-			continue
-		if m.job != null and "id" in m.job and str(m.job.id).to_lower() == want:
-			return m
-	for m in party:
-		if not (m is Combatant):
-			continue
-		if str(m.name).to_lower() == want:
-			return m
-	return null
-
-
 func _evaluate_party_condition(party: Array, condition: Dictionary) -> bool:
 	"""Evaluate a single party-level condition"""
 	var cond_type = condition.get("type", "always")
@@ -1771,36 +1741,12 @@ func _evaluate_party_condition(party: Array, condition: Dictionary) -> bool:
 			return _compare_op(efficiency_multiplier, op, value)
 
 		"member_dead":
-			## Optional "member" narrows this to one character; absent keeps the original
-			## any-member semantics so every existing rule means what it did before.
-			var who = str(condition.get("member", ""))
-			if who != "":
-				var target = _resolve_member(party, who)
-				return target != null and not target.is_alive
 			var total = 0
 			var alive = _get_alive_count(party)
 			for m in party:
 				if m is Combatant:
 					total += 1
 			return total > alive  # True if any member is dead
-
-		"member_hp":
-			var mh = _resolve_member(party, str(condition.get("member", "")))
-			if mh == null:
-				return false
-			return _compare_op(mh.get_hp_percentage(), op, value)
-
-		"member_mp":
-			var mm = _resolve_member(party, str(condition.get("member", "")))
-			if mm == null:
-				return false
-			return _compare_op(mm.get_mp_percentage(), op, value)
-
-		"member_status":
-			var ms = _resolve_member(party, str(condition.get("member", "")))
-			if ms == null:
-				return false
-			return ms.has_status(str(condition.get("value", "")))
 
 		"member_injured":
 			return check_new_injuries() > 0  # True if any new injury this session
