@@ -128,8 +128,26 @@ def main():
         for x in range(w):
             if grid[y][x] in landmark_chars:
                 sites.append((grid[y][x], (x, y)))
-    if len(sites) != 15:
-        sys.exit(f"expected 15 landmark tiles, found {len(sites)} -- refusing to paint")
+    # Derived, not hardcoded. This said "!= 15" and W1 gained a 16th landmark when the
+    # Backwards Warren shipped ('5', 2026-09), which would have made this tool refuse to
+    # run on a correct map. The invariant that matters is "the map has landmarks and this
+    # pass preserves every one of them" -- the per-character check after PASS 3 enforces
+    # the second half, so here we only refuse a map that lost them entirely.
+    declared = len(landmark_chars)
+    if len(sites) < declared:
+        sys.exit(f"palette declares {declared} landmark chars but the map paints only "
+                 f"{len(sites)} tiles -- refusing to paint over a damaged map")
+
+    # NOT IDEMPOTENT, and it fails QUIETLY if re-run: pass 1 would re-grass the roads
+    # pass 2 just carved, and pass 3 would grow a second forest on top of the first.
+    # Measured on the shipped map: a second run moves '.' -80 and 'F' +2010 and reports
+    # a clean balanced ledger while degrading the map. An already-grounded map is the
+    # one state this tool must refuse.
+    already = before.get(GROUND, 0)
+    frac = already / float(w * h)
+    if frac < 0.05 and "--force" not in sys.argv:
+        sys.exit(f"map is already ground-passed ('{GROUND}' is {100*frac:.1f}% of the map, "
+                 f"pre-pass was ~43%) -- re-running compounds. Pass --force if you mean it.")
 
     # PASS 1 -- grass becomes the land
     for y in range(h):
