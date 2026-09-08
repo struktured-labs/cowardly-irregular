@@ -37,6 +37,8 @@ PINNED = [
     "weakness_flash",
     # Everything else a W1 battle/shop/menu can reach that was found gliding.
     "purchase_complete", "autobattle_open", "portal_activate", "attack_hit_piano_scythe_crit",
+    # Found only after the silent-skip fix: their loud part is under 3 windows.
+    "autobattle_on", "attack_hit_staff",
 ]
 # BIDIRECTIONAL. The first version only looked for a RISE, so strike_dark sweeping 2670 -> 144 Hz
 # scored "ok" -- a fall is a sweep and reads as a whoop just as much. That one-directional blind
@@ -63,6 +65,13 @@ def measure(path, nwin=10, gate_db=-18.0):
         X = np.abs(np.fft.rfft(seg * np.hanning(len(seg)))) + 1e-12
         f = np.fft.rfftfreq(len(seg), 1 / sr)
         cents.append(float((f * X).sum() / X.sum()))
+    # NEVER return silently on too-few windows. The -18dB gate dropped 46 of 264 W1 cues (17%)
+    # because their loud part spans fewer than 3 windows, and "no result" was being read as
+    # "nothing to report" -- attack_hit_staff (2.8x) and autobattle_on (3.8x) hid there.
+    if len(cents) < 3 and gate_db > -42.0:
+        m = measure(path, nwin, gate_db - 12.0)
+        m["gate_widened"] = True
+        return m
     third = max(1, len(cents) // 3)
     early = float(np.mean(cents[:third])) if cents else 0.0
     late = float(np.mean(cents[-third:])) if cents else 0.0
@@ -74,6 +83,7 @@ def measure(path, nwin=10, gate_db=-18.0):
         "sweep": round(sweep, 2),
         "direction": "rise" if ratio > 1.0 else "fall",
         "whoops": bool(sweep >= SWEEP_MAX and max(early, late) >= LAND_MAX),
+        "gate_widened": False,
     }
 
 

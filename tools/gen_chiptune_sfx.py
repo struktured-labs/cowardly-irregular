@@ -312,7 +312,26 @@ def scythe_crit(dur=1.10, seed=137):
     out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.9).astype(np.float32)
 
 
-VOICES = {"ui_confirm": ui_confirm, "ui_open": ui_open, "portal_hum": portal_hum,
+def ui_toggle_on(dur=0.34, seed=149):
+    """autobattle_on. Was 2276 -> 593 (3.8x) — a downward glide on a toggle he hits constantly."""
+    n = int(SR * dur); h = n // 2
+    out = np.zeros(n)
+    out[:h] += _flat_tone(h, 440.0, 3.0, 0.7)
+    out[h:] += _flat_tone(n - h, 660.0, 2.6, 0.72)
+    out = _bitcrush(out, bits=5, hold=4); out = _sweep_lowpass(out, 1800.0, 1650.0)
+    out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.78).astype(np.float32)
+
+
+def staff_hit(dur=0.30, seed=151):
+    """attack_hit_staff — the Mage's weapon hit. Was 2427 -> 381 (6.4x)."""
+    rng = np.random.default_rng(seed); n = int(SR * dur)
+    out = _sweep_lowpass(rng.uniform(-1, 1, n), 1500.0, 1150.0) * _env(n, 0.001, 4.0) * 0.9
+    out += _flat_tone(n, 165.0, 3.4, 0.5)
+    out = _bitcrush(out, bits=5, hold=4); out = _sweep_lowpass(out, 1700.0, 1400.0)
+    out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.86).astype(np.float32)
+
+
+VOICES = {"ui_toggle_on": ui_toggle_on, "staff_hit": staff_hit, "ui_confirm": ui_confirm, "ui_open": ui_open, "portal_hum": portal_hum,
           "scythe_crit": scythe_crit, "strike_dark_hit": strike_dark_hit, "strike_lightning_hit": strike_lightning_hit,
           "shadow_strike": shadow_strike, "fire": fire, "fire_burst": fire_burst, "fire_roar": fire_roar,
           "lightning": lightning, "lightning_snap": lightning_snap, "lightning_chain": lightning_chain,
