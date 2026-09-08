@@ -78,7 +78,10 @@ func test_element_styles_map_shapes() -> void:
 	autofree(gl)
 	assert_eq(str(gl._full_render_element_style({"element": "fire"})["shape"]), "bolt")
 	assert_eq(str(gl._full_render_element_style({"element": "ice"})["shape"]), "shards")
-	assert_eq(str(gl._full_render_element_style({"element": "lightning"})["shape"]), "strike")
+	## Was "strike" — a single thin polyline shared with the physical fallback. struktured
+	## 2026-09-07 asked for "the whole screen … like a storm with bolts", so lightning has its
+	## own shape now. Deliberate behaviour change, not a regression.
+	assert_eq(str(gl._full_render_element_style({"element": "lightning"})["shape"]), "storm")
 	var heal: Dictionary = gl._full_render_element_style({"type": "healing"})
 	assert_eq(int(heal["effect"]), EffectSystem.EffectType.HEAL, "heals bloom green, never play a hit reaction")
 	var buff: Dictionary = gl._full_render_element_style({"element": "unknown_thing"})

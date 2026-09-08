@@ -36,7 +36,7 @@ const ELEMENT_TYPES: Dictionary = {
 	"arcane": EffectSystemClass.EffectType.DARK,
 }
 
-const SHAPES: Array[String] = ["bolt", "shards", "strike", "bloom", "chord"]
+const SHAPES: Array[String] = ["bolt", "shards", "strike", "bloom", "chord", "storm"]
 
 ## Bard performance colour — warm amber, deliberately distinct from holy's pale gold.
 const MUSIC_COLOR: Color = Color(2.3, 1.7, 0.75)
@@ -200,7 +200,12 @@ static func _infer(ability: Dictionary) -> Variant:
 
 static func _shape_for(effect_type: int) -> String:
 	match effect_type:
-		EffectSystemClass.EffectType.LIGHTNING, EffectSystemClass.EffectType.DARK:
+		## struktured 2026-09-07: "the lightning needs work … flashier and more absurd. Fat and the
+		## whole screen is like a storm with bolts etc." Lightning gets its own shape rather than
+		## sharing `bolt` with dark, so the storm can never leak onto a shadow bolt.
+		EffectSystemClass.EffectType.LIGHTNING:
+			return "storm"
+		EffectSystemClass.EffectType.DARK:
 			return "bolt"
 		EffectSystemClass.EffectType.ICE:
 			return "shards"
