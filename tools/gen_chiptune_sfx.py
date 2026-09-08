@@ -262,7 +262,58 @@ def strike_lightning_hit(dur=0.16, seed=101):
     out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.9).astype(np.float32)
 
 
-VOICES = {"strike_dark_hit": strike_dark_hit, "strike_lightning_hit": strike_lightning_hit,
+def _flat_tone(n, f, decay, amp=1.0, duty=0.5):
+    ph = (np.cumsum(np.full(n, f)) / SR) % 1.0
+    return (np.where(ph < duty, 1.0, -1.0)) * _env(n, 0.002, decay) * amp
+
+
+def ui_confirm(dur=0.42, seed=113):
+    """purchase_complete. Was 2756 -> 446 Hz (6.2x) — a descending glide, i.e. a whoop.
+    A confirm should be two HELD steps, not a slide."""
+    rng = np.random.default_rng(seed); n = int(SR * dur); h = n // 2
+    out = np.zeros(n)
+    out[:h] += _flat_tone(h, 523.0, 3.0, 0.7)          # C5, held
+    out[h:] += _flat_tone(n - h, 784.0, 2.6, 0.75)     # G5, held — up a fifth, no glide between
+    out += _sweep_lowpass(rng.uniform(-1, 1, n), 1400.0, 1200.0) * _env(n, 0.001, 6.0) * 0.18
+    out = _bitcrush(out, bits=5, hold=4); out = _sweep_lowpass(out, 1900.0, 1700.0)
+    out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.8).astype(np.float32)
+
+
+def ui_open(dur=0.55, seed=127):
+    """autobattle_open. Was 3133 -> 1185 (2.6x). Held two-note open, no sweep."""
+    rng = np.random.default_rng(seed); n = int(SR * dur); h = int(n * 0.45)
+    out = np.zeros(n)
+    out[:h] += _flat_tone(h, 392.0, 3.2, 0.65)
+    out[h:] += _flat_tone(n - h, 587.0, 2.4, 0.7)
+    out += _sweep_lowpass(rng.uniform(-1, 1, n), 1200.0, 1000.0) * _env(n, 0.001, 7.0) * 0.15
+    out = _bitcrush(out, bits=5, hold=5); out = _sweep_lowpass(out, 1800.0, 1600.0)
+    out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.78).astype(np.float32)
+
+
+def portal_hum(dur=2.0, seed=131):
+    """portal_activate. Was 4347 -> 1581 (2.7x). A portal should HOLD, not descend away."""
+    rng = np.random.default_rng(seed); n = int(SR * dur)
+    out = _flat_tone(n, 196.0, 0.9, 0.55) + _flat_tone(n, 294.0, 1.0, 0.35)
+    out += _sweep_lowpass(rng.uniform(-1, 1, n), 1500.0, 1300.0) * _env(n, 0.25, 1.1) * 0.45
+    trem = 1.0 + 0.18 * np.sin(2 * math.pi * 7.0 * np.arange(n) / SR)
+    out *= trem
+    out = _bitcrush(out, bits=5, hold=4); out = _sweep_lowpass(out, 1900.0, 1700.0)
+    out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.82).astype(np.float32)
+
+
+def scythe_crit(dur=1.10, seed=137):
+    """attack_hit_piano_scythe_crit. Was 4357 -> 1127 over 3.5s (3.9x) — a long descending wail.
+    A crit should hit and stop."""
+    rng = np.random.default_rng(seed); n = int(SR * dur)
+    out = _sweep_lowpass(rng.uniform(-1, 1, n), 2100.0, 1700.0) * _env(n, 0.001, 3.4) * 0.95
+    out += _flat_tone(n, 147.0, 3.0, 0.55)
+    k = int(0.14 * n); out[k:] += _flat_tone(n - k, 220.0, 3.4, 0.4)
+    out = _bitcrush(out, bits=4, hold=4); out = _sweep_lowpass(out, 2300.0, 2000.0)
+    out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.9).astype(np.float32)
+
+
+VOICES = {"ui_confirm": ui_confirm, "ui_open": ui_open, "portal_hum": portal_hum,
+          "scythe_crit": scythe_crit, "strike_dark_hit": strike_dark_hit, "strike_lightning_hit": strike_lightning_hit,
           "shadow_strike": shadow_strike, "fire": fire, "fire_burst": fire_burst, "fire_roar": fire_roar,
           "lightning": lightning, "lightning_snap": lightning_snap, "lightning_chain": lightning_chain,
           "ice": ice, "ice_shatter": ice_shatter, "ice_freeze": ice_freeze,

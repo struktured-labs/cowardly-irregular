@@ -209,9 +209,10 @@
     },
     "autobattle_open": {
       "file": "assets/audio/sfx/autobattle_open.ogg",
-      "prompt": "Old computer terminal booting up, warm CRT monitor turning on with an electronic hum, retro tech startup",
+      "prompt": "SYNTHESISED. Swept downward and read as a whoop; replaced with held steps that do not glide. struktured has rejected sweeping cues four times. Run the tool.",
       "duration_seconds": 0.6,
-      "prompt_influence": 0.5
+      "prompt_influence": 0.5,
+      "source": "tools/gen_chiptune_sfx.py ui_open"
     },
     "autobattle_close": {
       "file": "assets/audio/sfx/autobattle_close.ogg",
@@ -348,8 +349,8 @@
     },
     "attack_hit_piano_scythe_crit": {
       "file": "assets/audio/sfx/attack_hit_piano_scythe_crit.ogg",
-      "source": "ffmpeg_derive",
-      "prompt": "Piano-scythe crit = 3-layer dissonant chord (original + 18% up + 16% down) + sustained 3-tap reverb (120/240/380ms) — thicker discord, more notes",
+      "source": "tools/gen_chiptune_sfx.py scythe_crit",
+      "prompt": "SYNTHESISED. Swept downward and read as a whoop; replaced with held steps that do not glide. struktured has rejected sweeping cues four times. Run the tool.",
       "duration_seconds": 0.9,
       "prompt_influence": 0.0
     },
@@ -1497,9 +1498,10 @@
     },
     "portal_activate": {
       "file": "assets/audio/sfx/portal_activate.ogg",
-      "prompt": "Magical portal opening with swirling energy hum, reality warping distortion building to a resonant tone, interdimensional gateway powering up",
+      "prompt": "SYNTHESISED. Swept downward and read as a whoop; replaced with held steps that do not glide. struktured has rejected sweeping cues four times. Run the tool.",
       "duration_seconds": 2.0,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "source": "tools/gen_chiptune_sfx.py portal_hum"
     },
     "portal_enter": {
       "file": "assets/audio/sfx/portal_enter.ogg",
@@ -1625,8 +1627,8 @@
     },
     "purchase_complete": {
       "file": "assets/audio/sfx/purchase_complete.ogg",
-      "source": "sox_synth",
-      "prompt": "Purchase-confirmation ka-ching for ShopScene (struktured msg 2774) — coins clinking + warm register-bell confirm. 4 metallic coin pings at 2400/3200/2800/3600 Hz staggered 18-68ms, then a warm 320 Hz confirm tone + 640 Hz octave harm + soft 200 Hz drawer-thump, gentle echo tail. ~410ms. Deliberately distinct from item_obtain (that's the celebration chord for chests/rewards; this is COMMERCE). NO fallback_to — cowir-overworld consumes with a manifest-has guard.",
+      "source": "tools/gen_chiptune_sfx.py ui_confirm",
+      "prompt": "SYNTHESISED. Swept downward and read as a whoop; replaced with held steps that do not glide. struktured has rejected sweeping cues four times. Run the tool.",
       "duration_seconds": 0.41,
       "prompt_influence": 0.0
     },
