@@ -197,9 +197,10 @@
     },
     "autobattle_on": {
       "file": "assets/audio/sfx/autobattle_on.ogg",
-      "prompt": "Heavy industrial lever being pulled, solid mechanical clunk engaging with a confident ka-chunk, machine activated",
+      "prompt": "SYNTHESISED. Glided downward; found only after the audit stopped silently skipping cues whose loud part is under 3 windows. Run the tool.",
       "duration_seconds": 0.5,
-      "prompt_influence": 0.6
+      "prompt_influence": 0.6,
+      "source": "tools/gen_chiptune_sfx.py ui_toggle_on"
     },
     "autobattle_off": {
       "file": "assets/audio/sfx/autobattle_off.ogg",
@@ -303,9 +304,10 @@
     },
     "attack_hit_staff": {
       "file": "assets/audio/sfx/attack_hit_staff.ogg",
-      "prompt": "Quick crunchy mid-range smack of impact, sharp punchy hit with crispy texture, satisfying combat blow with NO bass rumble and NO metallic ring, dry and punchy",
+      "prompt": "SYNTHESISED. Glided downward; found only after the audit stopped silently skipping cues whose loud part is under 3 windows. Run the tool.",
       "duration_seconds": 0.5,
-      "prompt_influence": 0.7
+      "prompt_influence": 0.7,
+      "source": "tools/gen_chiptune_sfx.py staff_hit"
     },
     "attack_hit_axe": {
       "file": "assets/audio/sfx/attack_hit_axe.ogg",
