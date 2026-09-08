@@ -11,7 +11,7 @@ The baseline lives under test/fixtures, NOT data/, on purpose: test_sfx_reverse_
 treats any literal key mention in data/*.json as a CONSUMER, so a baseline there would fake a
 consumer for every cue it pins and silently satisfy that audit forever.
 
-GUT cannot do an FFT, so the ratchet is split: this tool measures and writes
+The -18dB gate matters: at -45dB the measurement runs deep into the decay tail and EVERY\npercussive cue looks like a sweep (attack_hit_dagger scored 6.3x and is simply a hit dying).\nA whoop GLIDES while still loud; a decay's centroid falls because the highs die first.\n\nGUT cannot do an FFT, so the ratchet is split: this tool measures and writes
 data/sfx_whoop_baseline.json (metrics + the sha256 of the exact bytes measured), and the GUT test
 asserts the shipped bytes still hash to what was measured. Change a pinned cue and the test reds,
 naming this tool -- you must re-measure rather than silently re-roll.
@@ -35,6 +35,8 @@ PINNED = [
     # never covered.
     "strike_fire", "strike_ice", "strike_lightning", "strike_dark", "strike_holy",
     "weakness_flash",
+    # Everything else a W1 battle/shop/menu can reach that was found gliding.
+    "purchase_complete", "autobattle_open", "portal_activate", "attack_hit_piano_scythe_crit",
 ]
 # BIDIRECTIONAL. The first version only looked for a RISE, so strike_dark sweeping 2670 -> 144 Hz
 # scored "ok" -- a fall is a sweep and reads as a whoop just as much. That one-directional blind
@@ -42,7 +44,7 @@ PINNED = [
 SWEEP_MAX, LAND_MAX = 2.5, 2000.0
 
 
-def measure(path, nwin=10, gate_db=-45.0):
+def measure(path, nwin=10, gate_db=-18.0):
     wav = tempfile.mktemp(suffix=".wav")
     subprocess.run(["ffmpeg", "-v", "error", "-i", str(path), "-ac", "1", "-ar", "22050", wav], check=True)
     x, sr = sf.read(wav)
