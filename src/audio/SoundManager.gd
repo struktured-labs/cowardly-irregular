@@ -485,6 +485,7 @@ func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, v
 				player.volume_db = volume_db_override
 			player.pitch_scale = final_pitch
 			player.play()
+			print("[SFX] %s -> %s pitch=%.2f (%s)" % [sound_key, resolved_key, final_pitch, player.name])
 			return true
 		var cached_fallback: String = str(entry.get("fallback_to", ""))
 		if cached_fallback != "" and cached_fallback != sound_key and _sfx_manifest.has(cached_fallback):
@@ -506,6 +507,7 @@ func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, v
 		player.volume_db = volume_db_override
 	player.pitch_scale = final_pitch
 	player.play()
+	print("[SFX] %s -> %s pitch=%.2f (%s)" % [sound_key, resolved_key, final_pitch, player.name])
 	return true
 
 
@@ -940,6 +942,7 @@ func _play_sound(player: AudioStreamPlayer, params: Dictionary) -> void:
 	player.stream = generator
 	player.volume_db = volume_db
 	player.play()
+	print("[SFX] procedural %s freq=%s dur=%s (%s)" % [sound_type, str(freq), str(duration), player.name])
 
 	var playback = player.get_stream_playback()
 	if not playback:
