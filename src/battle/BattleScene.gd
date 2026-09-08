@@ -2223,7 +2223,9 @@ func _full_render_element_style(ability: Dictionary) -> Dictionary:
 		"ice":
 			return {"color": Color(0.55, 0.8, 1.0), "effect": EffectSystem.EffectType.ICE, "shape": "shards"}
 		"lightning":
-			return {"color": Color(1.0, 0.95, 0.4), "effect": EffectSystem.EffectType.LIGHTNING, "shape": "strike"}
+			## `power` rides along so the storm can scale with the -a / -aga tier; every other arm
+			## ignores it. Taken from the resolver rather than re-derived — one ladder, one answer.
+			return {"color": Color(1.0, 0.95, 0.4), "effect": EffectSystem.EffectType.LIGHTNING, "shape": "storm", "power": float(resolved.get("power", 1.0))}
 		"holy":
 			return {"color": Color(1.0, 0.95, 0.75), "effect": EffectSystem.EffectType.HOLY, "shape": "bloom"}
 		"dark":
@@ -2347,7 +2349,102 @@ func _spawn_gather_motes(caster_sprite: Node2D, color: Color) -> void:
 		t.tween_callback(mote.queue_free)
 
 
-## Element release: fire bolt travels, ice shards form and converge, lightning strikes from above, bloom rises in place.
+## struktured 2026-09-07: "flashier and more absurd. Fat and the whole screen is like a storm with
+## bolts etc." Sky drops, 2-5 fat forked bolts fall staggered, each with a screen flash and a
+## ground burst. Power tier (-a / -aga) buys MORE bolts and WIDER cores, so Fulgur reads as weather
+## and Fulguraga reads as an event. Fire-and-forget: every element is its own tween and nothing is
+## awaited, so the execution watchdog's cadence is untouched.
+func _full_render_storm(color: Color, to: Vector2, power: float) -> void:
+	var strikes: int = clampi(2 + int(round((power - 1.0) * 3.0)), 2, 5)
+	var core_w: float = 7.0 * clampf(power, 1.0, 1.8)
+	var vp: Vector2 = get_viewport_rect().size
+
+	## The sky drops first so the bolts land on a dark stage rather than a lit one.
+	var sky := ColorRect.new()
+	sky.color = Color(0.05, 0.06, 0.14, 0.0)
+	sky.anchors_preset = Control.PRESET_FULL_RECT
+	sky.size = vp
+	sky.z_index = 3
+	sky.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(sky)
+	var skt := create_tween()
+	skt.tween_property(sky, "color:a", 0.55, 0.10)
+	skt.tween_interval(0.10 + 0.09 * strikes)
+	skt.tween_property(sky, "color:a", 0.0, 0.22)
+	skt.tween_callback(sky.queue_free)
+
+	for s in range(strikes):
+		var delay: float = 0.06 + s * 0.09
+		var hit: Vector2 = to + Vector2(randf_range(-70.0, 70.0), 0.0) if s > 0 else to
+		var t := create_tween()
+		t.tween_interval(delay)
+		t.tween_callback(func() -> void:
+			_storm_bolt(color, hit, core_w * randf_range(0.8, 1.25), vp)
+			_spawn_screen_flash(Color(0.92, 0.95, 1.0, 0.55), 0.13)
+			if BattleJuice:
+				BattleJuice.add_trauma(0.35 + 0.1 * power, Vector2(randf_range(-1.0, 1.0), -1.0))
+				BattleJuice.punch_zoom(hit, 0.035 * power, 0.13)
+				BattleJuice.spawn_burst(hit, Vector2(0, -1), 10, color, 210.0))
+
+
+## One fat forked bolt from above the viewport down to `hit`, with a soft glow pass behind the
+## core and 1-3 branches peeling off. Two Line2Ds rather than a shader so it survives every tier.
+func _storm_bolt(color: Color, hit: Vector2, width: float, vp: Vector2) -> void:
+	var pts := PackedVector2Array()
+	var x: float = hit.x + randf_range(-90.0, 90.0)
+	var y: float = -40.0
+	var step: float = max(34.0, (hit.y + 40.0) / 9.0)
+	while y < hit.y:
+		pts.append(Vector2(x, y))
+		x += randf_range(-30.0, 30.0)
+		x = clampf(x, 8.0, max(9.0, vp.x - 8.0))
+		y += step
+	pts.append(hit)
+
+	var glow := Line2D.new()
+	glow.points = pts
+	glow.width = width * 3.2
+	glow.default_color = Color(color.r, color.g, color.b, 0.30)
+	glow.z_index = 6
+	glow.joint_mode = Line2D.LINE_JOINT_ROUND
+	add_child(glow)
+
+	var core := Line2D.new()
+	core.points = pts
+	core.width = width
+	core.default_color = Color(1.0, 1.0, 1.0, 0.95)
+	core.z_index = 7
+	core.joint_mode = Line2D.LINE_JOINT_ROUND
+	add_child(core)
+
+	for b in range(randi_range(1, 3)):
+		if pts.size() < 3:
+			break
+		var idx: int = randi_range(1, pts.size() - 2)
+		var branch := Line2D.new()
+		var bp := PackedVector2Array()
+		bp.append(pts[idx])
+		bp.append(pts[idx] + Vector2(randf_range(-55.0, 55.0), randf_range(20.0, 60.0)))
+		bp.append(bp[1] + Vector2(randf_range(-30.0, 30.0), randf_range(15.0, 40.0)))
+		branch.points = bp
+		branch.width = width * 0.5
+		branch.default_color = Color(color.r, color.g, color.b, 0.8)
+		branch.z_index = 7
+		add_child(branch)
+		var bt := create_tween()
+		bt.tween_interval(0.05)
+		bt.tween_property(branch, "modulate:a", 0.0, 0.14)
+		bt.tween_callback(branch.queue_free)
+
+	var t := create_tween()
+	t.tween_interval(0.05)
+	t.tween_property(core, "modulate:a", 0.0, 0.14)
+	t.parallel().tween_property(glow, "modulate:a", 0.0, 0.18)
+	t.tween_callback(core.queue_free)
+	t.tween_callback(glow.queue_free)
+
+
+## Element release: fire bolt travels, ice shards form and converge, lightning storms the screen, bloom rises in place.
 func _full_render_release_visual(style: Dictionary, caster_sprite: Node2D, target_sprite: Node2D) -> void:
 	var color: Color = style["color"]
 	var to: Vector2 = _stable_sprite_anchor(target_sprite)
@@ -2397,6 +2494,8 @@ func _full_render_release_visual(style: Dictionary, caster_sprite: Node2D, targe
 			t.tween_interval(0.1)
 			t.tween_property(line, "modulate:a", 0.0, 0.12)
 			t.tween_callback(line.queue_free)
+		"storm":
+			_full_render_storm(color, to, float(style.get("power", 1.0)))
 		"chord":
 			## Bard performance: a bar of staff lines wipes in, note glyphs rise off it, and a
 			## sound-wave ring pushes outward. Built from the same primitives as the other shapes
