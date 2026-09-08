@@ -22,7 +22,7 @@ var _current_music: String = ""
 var _stinger_resume_state: Dictionary = {}  # Full state to restore after a stinger — a bare track id cannot describe AREA music
 const CROSSFADE_DURATION: float = 0.5  # Seconds for crossfade
 var _music_base_db: float = -12.0  # Base volume for music (overwritten by set_music_volume)
-const AMBIENT_OFFSET_DB: float = -8.0  # ambient (weather/room tone) sits this far below music, tracking the slider
+const AMBIENT_OFFSET_DB: float = -16.0  # ambient (weather/room tone) sits this far below music, tracking the slider — was -8; struktured 2026-09-07 "some water or rain sound… too loud"
 # Music ceiling: at slider=100%, music plays at MUSIC_VOLUME_CEILING_DB.
 # -10 dB sits music well below the SFX peak so battle hits and footstep
 # clips stay audible. User feedback (2026-05-02): -6 dB still felt too
