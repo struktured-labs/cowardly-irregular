@@ -1432,6 +1432,20 @@ func _maybe_play_signature_sfx(combatant: Combatant) -> void:
 		SoundManager.play_battle(sfx)
 
 
+## Sibling of _maybe_play_signature_sfx above. The signature half was wired when cowir-sfx surfaced
+## it; victory_sfx was authored in the same rows and left with no reader — 5 real .ogg files.
+func victory_cue_for(enemies: Array, fallback: String = "victory_stinger") -> String:
+	if EncounterSystem == null or EncounterSystem.monster_database.is_empty():
+		return fallback
+	for e in enemies:
+		if e == null or not is_instance_valid(e) or not e.has_meta("monster_type"):
+			continue
+		var cue: String = str(EncounterSystem.monster_database.get(str(e.get_meta("monster_type")), {}).get("victory_sfx", ""))
+		if cue != "":
+			return cue
+	return fallback
+
+
 func _tick_summon_followup(combatant: Combatant) -> void:
 	if combatant == null or not is_instance_valid(combatant) or not combatant.is_alive:
 		return
