@@ -167,3 +167,39 @@ func test_no_prop_stands_inside_a_wall() -> void:
 					embedded.append("%s: %s at %s is inside solid ground" % [label, str(p.name), str(c)])
 	assert_gt(checked, 60, "CONTROL: only %d props inspected across every village" % checked)
 	assert_eq(embedded, [], "props standing in walls -- drawn behind the building, so the coordinate is a typo: %s" % str(embedded))
+
+
+## Reachability of DESTINATIONS is not the whole story: a prop can sever a stretch of map that
+## contains nothing, and nothing is exactly what makes it invisible.
+##
+## FOUND 2026-09-09. Brasston, NodePrime and RivetRow each carry an upper ledge along row 1, reached
+## by a single stair, and it is ONE TILE TALL. The five props those villages already had were all
+## placed on it -- it looks like empty space, because it is -- and each one is a full wall across the
+## only corridor. 32 walkable cells across three villages that no player could stand on. The
+## destination flood above passed the whole time and was right to: no door, shop or NPC was up there.
+## The pockets were noted months earlier as "empty, benign" and the emptiness was taken as the reason
+## not to look; it was the symptom.
+func test_no_prop_orphans_a_stretch_of_walkable_map() -> void:
+	var orphans: Array = []
+	var villages_checked := 0
+	var cells_reached := 0
+
+	for label in VILLAGES:
+		var v = await _build(VILLAGES[label])
+		villages_checked += 1
+		var walk := {}
+		for y in range(SPAN):
+			for x in range(SPAN):
+				var c := Vector2i(x, y)
+				if v._is_cell_walkable(c):
+					walk[c] = true
+		var reach := _reachable_from_spawn(v)
+		cells_reached += reach.size()
+		var lost := walk.size() - reach.size()
+		if lost > 0:
+			orphans.append("%s: %d of %d walkable cells cannot be stood on" % [label, lost, walk.size()])
+
+	assert_eq(villages_checked, VILLAGES.size(), "checked %d of %d villages" % [villages_checked, VILLAGES.size()])
+	assert_gt(cells_reached, 3000, "CONTROL: only %d cells reached across every village -- the flood is not running and any zero below is free" % cells_reached)
+	assert_eq(orphans, [],
+		"walkable map the player can never stand on -- usually a prop dropped on a one-tile ledge, which reads as decorating empty space: %s" % str(orphans))
