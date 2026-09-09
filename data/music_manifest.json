@@ -9,7 +9,7 @@
       "prompt": "Peaceful Arthurian countryside, golden morning light over rolling green hills, earnest adventure beginning, slight melancholy undertone, a hero setting out on an uncertain journey, warm strings and gentle harp arpeggios building to a hopeful melody",
       "style": "16-bit SNES orchestral, Nobuo Uematsu, Final Fantasy, harp, strings, adventurous",
       "model": "suno-v4",
-      "duration": 197.88,
+      "duration": 182.4,
       "loop": true,
       "generated_at": "2026-03-21",
       "pinned": true
@@ -48,7 +48,7 @@
       "prompt": "Dark cave with dripping water, torch-lit corridors, ancient stone walls, tense exploration, mysterious and foreboding, low strings and sparse percussion, echoing melodic fragments",
       "style": "16-bit SNES orchestral, mysterious, minor key, sparse percussion, reverb",
       "model": "suno-v4",
-      "duration": 119.84,
+      "duration": 103.8,
       "loop": true,
       "generated_at": "2026-03-21",
       "pinned": true
@@ -174,7 +174,7 @@
       "prompt": "Cozy steampunk workshop district, tinkerers and inventors, gentle piano over rhythmic clockwork ticking, warm brass accents, whimsical and inventive atmosphere",
       "style": "Victorian parlor music, gentle piano, music box, light brass, clockwork sounds",
       "model": "suno-v4",
-      "duration": 86.64,
+      "duration": 76.1,
       "loop": true,
       "generated_at": "2026-03-21",
       "pinned": true
@@ -302,7 +302,7 @@
       "prompt": "A village that exists only in memory, music box playing a half-remembered melody, sounds arriving from impossible distances, warm but fading, like a dream you're waking from",
       "style": "ambient, music box, distant reverb, memory, ethereal",
       "model": "suno-v4",
-      "duration": 146.56,
+      "duration": 134.1,
       "loop": true,
       "generated_at": "2026-03-21",
       "pinned": true
@@ -328,7 +328,7 @@
       "prompt": "Final confrontation with the void itself, starting from absolute silence, slowly building as all musical styles from all worlds merge together, overwhelming crescendo, transcendent and terrifying",
       "style": "abstract boss, crescendo from silence, all genres merging, overwhelming, transcendent",
       "model": "suno-v4",
-      "duration": 224.96,
+      "duration": 192.0,
       "loop": true,
       "generated_at": "2026-03-21"
     },
