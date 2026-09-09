@@ -3081,7 +3081,8 @@ func _on_battle_ended(victory: bool) -> void:
 		_battle_victory = true
 		if not turbo_mode:
 			log_message("[color=gray]Z / A / Click to continue...[/color]")
-			SoundManager.play_battle("victory_stinger")
+			## A spotlight duel authors its own victory cue; every ordinary fight falls back.
+			SoundManager.play_battle(BattleManager.victory_cue_for(test_enemies))
 			_play_staggered_victory_animations()
 			_show_victory_quip()
 			if _check_for_boss():
