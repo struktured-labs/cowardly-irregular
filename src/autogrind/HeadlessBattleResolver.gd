@@ -658,6 +658,14 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 	if js and js.has_method("get_ability"):
 		ability = js.get_ability(ability_id)
 
+	## An id JobSystem cannot resolve returns {}, and `type` then defaults to "magic" below — so a
+	## typo'd or removed ability in an autobattle script DEALT MAGIC DAMAGE, to an ally when the
+	## script aimed it at one. Found by a census control asserting an unknown id is a no-op.
+	## You cannot resolve what you cannot read: do nothing, and do not charge MP for it.
+	if ability.is_empty():
+		_log("%s: unknown ability '%s' — no effect" % [caster.combatant_name, ability_id])
+		return
+
 	var mp_cost = ability.get("mp_cost", 5)
 	if not caster.spend_mp(mp_cost):
 		_log("%s has no MP for %s" % [caster.combatant_name, ability_id])
