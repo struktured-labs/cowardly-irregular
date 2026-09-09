@@ -706,7 +706,9 @@ func _step_screen_shake(step: Dictionary) -> void:
 		return
 
 	var camera = get_viewport().get_camera_2d()
-	if not camera:
+	# Overlay scenes paint an opaque backdrop INSIDE this layer, which ignores the camera — shaking the camera there moves something the player cannot see (49 of 50 authored shakes). Shake the layer itself.
+	if not _staged or camera == null:
+		await _shake_layer(duration, intensity)
 		return
 
 	var original_offset = camera.offset
@@ -720,6 +722,21 @@ func _step_screen_shake(step: Dictionary) -> void:
 		shake_tween.tween_property(camera, "offset", original_offset + offset, 0.05)
 	shake_tween.tween_property(camera, "offset", original_offset, 0.05)
 	await shake_tween.finished
+
+
+## Jitters this CanvasLayer's offset — backdrop, vignette and letterbox all ride it; the dialogue layer (96) stays readable.
+func _shake_layer(duration: float, intensity: float) -> void:
+	var shake_tween = create_tween()
+	var steps_count = maxi(1, int(duration / 0.05))
+	for i in range(steps_count):
+		var jitter = Vector2(randf_range(-intensity, intensity), randf_range(-intensity, intensity))
+		shake_tween.tween_property(self, "offset", jitter, 0.05)
+	shake_tween.tween_property(self, "offset", Vector2.ZERO, 0.05)
+	while not _skipping and is_instance_valid(shake_tween) and shake_tween.is_valid() and shake_tween.is_running():
+		await get_tree().process_frame
+	if is_instance_valid(shake_tween) and shake_tween.is_valid():
+		shake_tween.kill()
+	offset = Vector2.ZERO
 
 
 func _step_screen_flash(step: Dictionary) -> void:
