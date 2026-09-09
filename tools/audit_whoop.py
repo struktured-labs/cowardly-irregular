@@ -67,6 +67,7 @@ PINNED = [
     "ability_song", "ability_summon", "ability_revive",
     "ability_poison", "ability_earth", "ability_wind", "ability_arcane",
     "ability_mp_restore", "ability_flee",
+    "status_cured",
     "ability_riff",
 ]
 # BIDIRECTIONAL. The first version only looked for a RISE, so strike_dark sweeping 2670 -> 144 Hz

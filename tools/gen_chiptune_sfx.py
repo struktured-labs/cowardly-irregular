@@ -497,6 +497,20 @@ def flee(dur=0.48, seed=223):
     out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.78).astype(np.float32)
 
 
+def cure(dur=0.60, seed=227):
+    """status_cured — using an Antidote/Eye Drops/Echo Herb was SILENT. Distinct from the status_*
+    cues, which announce an affliction ARRIVING; this is one leaving. A short noise wash that
+    settles onto a clean held fifth: the wash is the affliction clearing, the fifth is what is left."""
+    rng = np.random.default_rng(seed); n = int(SR * dur)
+    wash = _sweep_lowpass(rng.uniform(-1, 1, n), 1500.0, 1400.0) * _env(n, 0.01, 5.0) * 0.34
+    out = wash
+    tail = int(n * 0.62); off = n - tail
+    _place(out, _held(tail, 587.33, 2.2, 0.42, duty=0.35), off)
+    _place(out, _held(tail, 880.00, 2.4, 0.26, duty=0.25), off)
+    out = _bitcrush(out, bits=5, hold=4); out = _sweep_lowpass(out, 2000.0, 1800.0)
+    out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.76).astype(np.float32)
+
+
 VOICES = {"ui_toggle_on": ui_toggle_on, "staff_hit": staff_hit, "ui_confirm": ui_confirm, "ui_open": ui_open, "portal_hum": portal_hum,
           "scythe_crit": scythe_crit, "strike_dark_hit": strike_dark_hit, "strike_lightning_hit": strike_lightning_hit,
           "shadow_strike": shadow_strike, "fire": fire, "fire_burst": fire_burst, "fire_roar": fire_roar,
@@ -505,7 +519,7 @@ VOICES = {"ui_toggle_on": ui_toggle_on, "staff_hit": staff_hit, "ui_confirm": ui
           "dark": dark,
           "song": song, "summon": summon, "revive": revive, "riff": riff,
           "poison": poison, "earth": earth, "wind": wind, "arcane": arcane,
-          "mp_restore": mp_restore, "flee": flee}
+          "mp_restore": mp_restore, "flee": flee, "cure": cure}
 
 
 def main():
