@@ -169,3 +169,50 @@ func test_ambient_music_entries_are_all_unreachable_as_pinned() -> void:
 	assert_eq(found, pinned,
 		"the ambient_* set in the music manifest changed (found %s, pinned %s) — every entry here is unreachable (play_ambient reads the SFX manifest), so adding one ships audio nothing can play. Remove it, or move it to the SFX manifest where the consumer looks." % [found, pinned])
 
+	## 🛑 THE SET CHECK ABOVE IS HOLLOW ON ITS OWN, proven not argued: wire
+	## play_music("ambient_cave") into SoundManager and it stays GREEN, because
+	## it compares KEY SETS and never asks whether anything reaches them. That is
+	## cowir-sfx's shape (a guard looping the same constant that drives its own
+	## exclusion) one file over. The claim is UNREACHABLE, so verify THAT.
+	## Walk ALL of src/ — a hand-listed set of files is the wrong corpus and the
+	## control caught it: my first version scanned three files and the known
+	## play_music("boss_mordaine") lives in a fourth (BattleScene.gd). Any file
+	## could wire an ambient key, so any file must be scanned.
+	var all_src: String = _walk_gd("res://src")
+	assert_gt(all_src.length(), 100000,
+		"SCOPE control: the src walk read back only %d chars — it is not reaching the code, and a zero-hit result below would be vacuous" % all_src.length())
+
+	## Control: the scan must FIND a real play_music call, or its silence proves nothing.
+	assert_true(all_src.contains("play_music(\"boss_mordaine\")"),
+		"CONTROL FAILED: a play_music call we know exists was not found — the scan cannot detect a new one either")
+
+	var wired: Array[String] = []
+	for key in found:
+		if all_src.contains("play_music(\"%s\")" % key):
+			wired.append(str(key))
+	assert_eq(wired.size(), 0,
+		"an ambient music entry is now REACHED by play_music (%s) — it is no longer unreachable, so remove it from the pin and delete the claim that these never play" % wired)
+
+
+func _walk_gd(dir_path: String) -> String:
+	## Recursive .gd concatenation. Kept simple deliberately: the SCOPE control
+	## on its output length is what proves it reached the code, not this code.
+	var out: String = ""
+	var d := DirAccess.open(dir_path)
+	if d == null:
+		return out
+	d.list_dir_begin()
+	var name := d.get_next()
+	while name != "":
+		if name.begins_with("."):
+			name = d.get_next()
+			continue
+		var full: String = dir_path + "/" + name
+		if d.current_is_dir():
+			out += _walk_gd(full)
+		elif name.ends_with(".gd"):
+			out += FileAccess.get_file_as_string(full)
+		name = d.get_next()
+	d.list_dir_end()
+	return out
+
