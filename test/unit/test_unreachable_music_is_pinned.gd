@@ -20,6 +20,22 @@ extends GutTest
 ## data/cutscenes/ — instead of re-implementing a corpus heuristic that was
 ## wrong three times.
 ##
+## 🔑 MEASURED 2026-09-09, and it is why the heuristic is not used here at all.
+## The same sweep, varying only which DEFINER files sit in the consumer corpus:
+##
+##     both definers in corpus       ->  0 unreachable   <- what I published
+##     music_manifest excluded       ->  8
+##     BOTH manifests excluded       ->  9
+##     direct consumer tracing       -> 11               <- the true answer
+##
+## Two lessons, and the second is the one that matters. (1) "Exclude the
+## definer" is not a single step: audio keys have TWO definers, and removing
+## one still inflated the answer. (2) Even with a PERFECT corpus the heuristic
+## stops at 9, because ambient_cave and ambient_forest ARE named in
+## OverworldScene — by play_ambient, which reads the SFX manifest and never
+## looks here. A string search can only ever show a key is MENTIONED; it cannot
+## show THIS entry is the one a consumer loads. No corpus fix reaches that.
+##
 ## Bidirectional, like the loop-agreement ratchet: a NEW unreachable track
 ## fails, and a pinned one that becomes reachable ALSO fails, so the list
 ## cannot rot into a stale claim. When the story lane writes these scenes the
