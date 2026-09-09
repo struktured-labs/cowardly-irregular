@@ -106,3 +106,17 @@ func test_an_unmodelled_type_still_damages_a_genuine_ENEMY() -> void:
 	resolver._resolve_ability(caster, "rat_swarm", [foe])
 	assert_lt(foe.current_hp, before,
 		"the refusal must be side-aware — an unmodelled offensive ability on an ENEMY still lands")
+
+
+func test_pray_actually_restores_mp_not_merely_stops_hurting() -> void:
+	## Union with cowir-battle's a0e74614: my friendly-fire refusal alone made pray a NO-OP —
+	## harmless but still broken. Their mp_restore arm makes it do its job. Refusing harm and
+	## doing the right thing are different bars and only the second one is a fix.
+	var resolver := HeadlessBattleResolver.new()
+	var cleric := _combatant("Cleric")
+	var ally := _combatant("Ally")
+	resolver._player_party = [cleric, ally]
+	ally.current_mp = 0
+	resolver._resolve_ability(cleric, "pray", [ally])
+	assert_gt(ally.current_mp, 0, "pray must actually restore the ally's MP")
+	assert_eq(ally.current_hp, ally.max_hp, "and must still not damage them")

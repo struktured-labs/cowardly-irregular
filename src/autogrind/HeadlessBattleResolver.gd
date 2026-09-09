@@ -715,6 +715,18 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					var dmg = _resolve_attack_with_power(caster, target, base_dmg)
 					_log("%s uses %s on %s for %d" % [caster.combatant_name, ability_id, target.combatant_name, dmg])
 
+		"mp_restore":
+			## pray (single_ally) and channel (self) had no arm and fell to the default, which
+			## DAMAGED the ally they restore. Arm from cowir-battle's a0e74614 — the authored
+			## mp_amount is the source and `power` is only the fallback, mirroring the healing
+			## arm and avoiding the field-mismatch class this file documents twice already.
+			for target in targets:
+				if target and target.is_alive:
+					var authored_mp := int(ability.get("mp_amount", 0))
+					var mp_amount := authored_mp if authored_mp > 0 else int(caster.get_buffed_stat("magic", caster.magic) * power)
+					var restored = target.restore_mp(max(1, mp_amount))
+					_log("%s restores %d MP to %s" % [caster.combatant_name, restored, target.combatant_name])
+
 		"support", "song", "status":
 			## BattleManager:4424 groups these three in one arm; headless had only "support", so
 			## every song fell to the `_:` damage default below — battle_hymn cost the ally it
