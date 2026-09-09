@@ -18,7 +18,20 @@ const ELEMENT_SFX: Dictionary = {
 	"lightning": "ability_lightning",
 	"dark": "ability_dark",
 	"holy": "ability_holy",
+	"poison": "ability_poison",
+	"earth": "ability_earth",
+	"wind": "ability_wind",
 }
+
+## Every cue the DERIVED pass can produce. A resolved cue outside this set came from the hand
+## map, which legitimately outranks derivation; one inside it that is not the expected cue is a
+## derivation bug.
+const DERIVED_VOCAB: Array[String] = [
+	"ability_fire", "ability_ice", "ability_lightning", "ability_dark", "ability_holy",
+	"ability_poison", "ability_earth", "ability_wind", "ability_heal", "ability_arcane",
+	"ability_song", "ability_summon", "ability_revive",
+]
+
 
 ## Physical abilities that CARRY an element. A weapon strike should thump, so these
 ## are deliberately excluded from the derived pass — a negative control on the fix.
@@ -113,19 +126,73 @@ func test_no_spell_is_left_playing_the_melee_thump() -> void:
 		if t != "magic" and t != "healing":
 			continue
 		var cue: String = str(ELEMENT_SFX.get(str(entry.get("element", "")).to_lower(), ""))
-		if cue == "" and t == "healing":
-			cue = "ability_heal"
-		## No cue exists for poison/earth/wind yet — those legitimately fall through.
+		if cue == "":
+			cue = "ability_heal" if t == "healing" else "ability_arcane"
+		## This used to exempt poison/earth/wind "until a cue exists". It was TRUE when written,
+		## and that is exactly how it converted "we owe four assets" into "this is fine" and never
+		## expired — 36 spells thumped behind it. An exemption justified by an ABSENCE has to name
+		## what ends it. The cues exist now, so the exemption is deleted rather than updated; what
+		## survives is the manifest check, which is a live condition and not a standing pass.
 		if cue == "" or not sm._sfx_manifest.has(cue):
 			continue
 		checked += 1
-		if str(sm._ability_sounds.get(str(aid), "ability_physical")) == "ability_physical":
-			unmapped.append("%s (%s -> wants %s)" % [aid, t, cue])
+		var got: String = str(sm._ability_sounds.get(str(aid), "ability_physical"))
+		if got == cue:
+			continue
+		## A cue OUTSIDE the derived vocabulary is a deliberate signature override (permakill_strike
+		## -> ability_permakill) and the hand map is allowed to win. A cue INSIDE it that is not the
+		## expected one is a derivation bug — which is the case the thump-only check missed: once
+		## ability_arcane exists it CATCHES a deleted element mapping, so acid_splash silently
+		## degrades from poison to generic magic and never resolves to ability_physical at all.
+		if DERIVED_VOCAB.has(got):
+			unmapped.append("%s (%s) -> %s, wanted %s" % [aid, t, got, cue])
 
 	assert_gt(checked, 0,
 		"control: zero magic/healing abilities had an available cue — the sweep is broken, so the assert below checked nothing")
 	assert_eq(unmapped.size(), 0,
-		"%d spell(s) resolve to ability_physical while their own cue exists in the manifest — they play a melee thump: %s" % [unmapped.size(), unmapped])
+		"%d spell(s) resolve to the WRONG derived cue while their own cue exists in the manifest. ability_physical means a melee thump; any other wrong value means the spell degraded to a different element's sound: %s" % [unmapped.size(), unmapped])
+
+
+func test_the_four_late_elements_resolve() -> void:
+	## 2026-09-09: 36 spells were STILL thumping after the 2026-07-30 fix, hidden behind an
+	## exemption comment in this very file that said poison/earth/wind "legitimately fall through".
+	## Named, not counted — the sweep above passes if abilities.json loses these rows entirely.
+	var sm: Node = _sm()
+	var expected: Dictionary = {
+		"acid_splash": "ability_poison", "toxic_cloud": "ability_poison",
+		"root_bind": "ability_earth", "sandstorm": "ability_earth",
+		"whirlwind": "ability_wind",
+		## element=none — the largest bucket of the 36 and the one no element cue could reach.
+		"fork_bomb": "ability_arcane", "null_reference": "ability_arcane",
+		"phantom_wail": "ability_arcane", "fourth_wall_break": "ability_arcane",
+	}
+	for aid in expected.keys():
+		assert_eq(str(sm._ability_sounds.get(aid, "ability_physical")), str(expected[aid]),
+			"%s must play %s, not the melee thump" % [aid, expected[aid]])
+
+
+func test_no_magic_spell_resolves_to_the_fallback() -> void:
+	## RESOLUTION-shaped, not ELIGIBILITY-shaped. Asking "does type=magic have an arm" answered
+	## "yes, 100%" while 36 rows resolved to the thump — eligibility is a property of the CODE,
+	## resolution is a property of every ROW. That distinction is the whole bug.
+	var sm: Node = _sm()
+	var abilities: Dictionary = _abilities()
+	var checked: int = 0
+	var thumping: Array[String] = []
+	for aid in abilities.keys():
+		var entry: Variant = abilities[aid]
+		if not (entry is Dictionary) or str(entry.get("type", "")) != "magic":
+			continue
+		checked += 1
+		if str(sm._ability_sounds.get(str(aid), "ability_physical")) == "ability_physical":
+			thumping.append("%s (element=%s)" % [aid, entry.get("element", "none")])
+	assert_gte(checked, 80, "control: only %d magic abilities swept — the corpus moved" % checked)
+	## CONTROL the resolver itself: if _ability_sounds were empty or my lookup were broken, the
+	## count above would be 89 and this would fire first with a comprehensible reason.
+	assert_eq(str(sm._ability_sounds.get("fire", "")), "ability_fire",
+		"control: a known-good spell must reach its bespoke cue, or the sweep is measuring a dead map")
+	assert_eq(thumping.size(), 0,
+		"%d magic spell(s) resolve to the melee thump: %s" % [thumping.size(), thumping])
 
 
 func test_every_derived_cue_target_exists_in_the_manifest() -> void:

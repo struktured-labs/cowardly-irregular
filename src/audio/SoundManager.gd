@@ -313,6 +313,9 @@ func _setup_audio_players() -> void:
 func _setup_default_ability_sounds() -> void:
 	"""Map abilities to their default sounds based on element/type"""
 	# Fire abilities
+	## riff is type=physical so derivation cannot reach it, and ability_physical is a sword
+	## unsheathing — its own description says "a sour, clashing chord struck like a weapon".
+	_ability_sounds["riff"] = "ability_riff"
 	_ability_sounds["fire"] = "ability_fire"
 	_ability_sounds["fira"] = "ability_fire"
 	_ability_sounds["firaga"] = "ability_fire"
@@ -350,13 +353,16 @@ func _setup_default_ability_sounds() -> void:
 	_ability_sounds["bypass_puzzle"] = "ability_bypass_puzzle"
 
 
-## Element -> cue for the derived pass. poison/earth/wind are absent because no such cue exists yet.
+## Element -> cue for the derived pass. Every element abilities.json declares is covered.
 const _ELEMENT_SFX: Dictionary = {
 	"fire": "ability_fire",
 	"ice": "ability_ice",
 	"lightning": "ability_lightning",
 	"dark": "ability_dark",
 	"holy": "ability_holy",
+	"poison": "ability_poison",
+	"earth": "ability_earth",
+	"wind": "ability_wind",
 }
 
 ## Type -> cue when the element yields nothing. song/summon/revival had NO cue at all and fell
@@ -364,6 +370,9 @@ const _ELEMENT_SFX: Dictionary = {
 ## sword thump. physical/support/meta are deliberately absent — the thump is right for physical,
 ## and buff cues are keyed on the ability id, not the type.
 const _TYPE_SFX: Dictionary = {
+	## magic is the LAST resort for a spell whose element has no cue -- 28 spells declare no
+	## element at all (call_stack, fork_bomb, null_reference, phantom_wail) and thumped.
+	"magic": "ability_arcane",
 	"healing": "ability_heal",
 	"song": "ability_song",
 	"summon": "ability_summon",

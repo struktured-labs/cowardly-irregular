@@ -395,13 +395,85 @@ def revive(dur=1.15, seed=173):
     out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.78).astype(np.float32)
 
 
+def poison(dur=1.00, seed=191):
+    """ability_poison — 5 corrosive spells (acid_splash, acid_spray, corrode, dissolve,
+    toxic_cloud) played the melee thump because no poison cue existed. Irregular low blips over a
+    held hiss: corrosion is intermittent, not a swing. The hiss band is HELD, not swept."""
+    rng = np.random.default_rng(seed); n = int(SR * dur)
+    out = _sweep_lowpass(rng.uniform(-1, 1, n), 1500.0, 1400.0) * _env(n, 0.06, 1.4) * 0.42
+    t = 0
+    while t < n - int(SR * 0.05):                      # bubbles, irregular by construction
+        k = int(SR * rng.uniform(0.03, 0.07))
+        f = rng.uniform(70.0, 190.0)
+        _place(out, _held(min(k, n - t), f, 3.4, 0.42, duty=0.25), t)
+        t += k + int(SR * rng.uniform(0.02, 0.09))
+    out = _bitcrush(out, bits=5, hold=5); out = _sweep_lowpass(out, 1700.0, 1500.0)
+    out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.80).astype(np.float32)
+
+
+def earth(dur=0.95, seed=193):
+    """ability_earth — root_bind and sandstorm played a sword. Weight without a glide: a low
+    struck root, a stone-grit noise body and a second thud, all at held pitch."""
+    rng = np.random.default_rng(seed); n = int(SR * dur)
+    out = np.zeros(n)
+    for start, f, a in ((0.0, 55.0, 0.85), (0.16, 41.2, 0.55), (0.34, 61.7, 0.40)):
+        k = int(SR * 0.22); off = int(SR * start)
+        _place(out, _held(min(k, n - off), f, 2.4, a), off)
+    grit = _sweep_lowpass(rng.uniform(-1, 1, n), 800.0, 700.0) * _env(n, 0.02, 1.9) * 0.45
+    out += grit
+    out = _bitcrush(out, bits=5, hold=6); out = _sweep_lowpass(out, 1300.0, 1100.0)
+    out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.82).astype(np.float32)
+
+
+def wind(dur=1.10, seed=197):
+    """ability_wind — whirlwind. Wind is the easiest cue to accidentally build as a whoop, because
+    the obvious synthesis IS a swept filter. This holds the band and gets motion from tremolo
+    instead, so the brightness never travels."""
+    rng = np.random.default_rng(seed); n = int(SR * dur)
+    out = _sweep_lowpass(rng.uniform(-1, 1, n), 1100.0, 1050.0) * _env(n, 0.22, 1.1)
+    out *= 1.0 + 0.42 * np.sin(2 * math.pi * 9.0 * np.arange(n) / SR)   # gusting, not gliding
+    out += _held(n, 146.8, 1.3, 0.22) * _env(n, 0.2, 1.2)
+    out = _bitcrush(out, bits=5, hold=5); out = _sweep_lowpass(out, 1500.0, 1400.0)
+    out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.78).astype(np.float32)
+
+
+def arcane(dur=0.90, seed=199):
+    """ability_arcane — 28 magic spells declare NO element (call_stack, fork_bomb, null_reference,
+    fourth_wall_break, phantom_wail...) so the element lookup found nothing and they thumped. A
+    neutral non-elemental pulse: a held fifth with a bitcrushed shimmer. Deliberately NOT a glitch
+    effect — two thirds of the 28 are the meta/system family and would suit one, but the other
+    third are spectral or organic, and inventing an element the data does not declare is how a cue
+    ends up lying about the ability."""
+    rng = np.random.default_rng(seed); n = int(SR * dur)
+    out = _held(n, 174.6, 1.5, 0.50) + _held(n, 261.6, 1.6, 0.38, duty=0.35)
+    out += _held(n, 349.2, 1.9, 0.22, duty=0.25, vib_hz=5.5, vib_cents=22.0)
+    out += _sweep_lowpass(rng.uniform(-1, 1, n), 1900.0, 1700.0) * _env(n, 0.10, 2.4) * 0.20
+    out = _bitcrush(out, bits=4, hold=5); out = _sweep_lowpass(out, 2000.0, 1800.0)
+    out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.80).astype(np.float32)
+def riff(dur=0.55, seed=179):
+    """ability_riff — the Bard's Free Move, which IS her attack. type=physical, so it resolved to
+    ability_physical: a sword unsheathing. Its own shipped description is "a sour, clashing chord
+    struck like a weapon", which the sword cue directly contradicts. Root + tritone + minor 2nd
+    struck together with a noise transient — dissonant by construction, no glide."""
+    rng = np.random.default_rng(seed); n = int(SR * dur)
+    out = np.zeros(n)
+    for f, a, d in ((220.00, 0.55, 2.6), (311.13, 0.45, 2.8), (233.08, 0.38, 3.0), (110.00, 0.40, 2.2)):
+        stagger = int(SR * rng.uniform(0.0, 0.012))          # a strum, not a keyboard chord
+        _place(out, _held(n - stagger, f, d, a, duty=0.35), stagger)
+    k = int(SR * 0.05)
+    out[:k] += _sweep_lowpass(rng.uniform(-1, 1, k), 2600.0, 1800.0) * _env(k, 0.001, 5.0) * 0.55
+    out = _bitcrush(out, bits=5, hold=4); out = _sweep_lowpass(out, 2200.0, 1800.0)
+    out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.84).astype(np.float32)
+
+
 VOICES = {"ui_toggle_on": ui_toggle_on, "staff_hit": staff_hit, "ui_confirm": ui_confirm, "ui_open": ui_open, "portal_hum": portal_hum,
           "scythe_crit": scythe_crit, "strike_dark_hit": strike_dark_hit, "strike_lightning_hit": strike_lightning_hit,
           "shadow_strike": shadow_strike, "fire": fire, "fire_burst": fire_burst, "fire_roar": fire_roar,
           "lightning": lightning, "lightning_snap": lightning_snap, "lightning_chain": lightning_chain,
           "ice": ice, "ice_shatter": ice_shatter, "ice_freeze": ice_freeze,
           "dark": dark,
-          "song": song, "summon": summon, "revive": revive}
+          "song": song, "summon": summon, "revive": revive, "riff": riff,
+          "poison": poison, "earth": earth, "wind": wind, "arcane": arcane}
 
 
 def main():

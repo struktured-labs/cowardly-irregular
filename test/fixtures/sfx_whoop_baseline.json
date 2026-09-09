@@ -342,6 +342,56 @@
       "gate_widened": false,
       "sha256": "8284abbdc2dd2a5d216d4ea6325a13bf42fd9ecbf66f9ba88e6497c49ac913c7",
       "file": "assets/audio/sfx/ability_revive.ogg"
+    },
+    "ability_poison": {
+      "early_hz": 1720.0,
+      "late_hz": 1029.7,
+      "sweep": 1.67,
+      "direction": "fall",
+      "whoops": false,
+      "gate_widened": false,
+      "sha256": "197781f8641c9d1dc22e80b3c1b551dadfc6d1f67d3b5b64c35e60dbf8bbe15f",
+      "file": "assets/audio/sfx/ability_poison.ogg"
+    },
+    "ability_earth": {
+      "early_hz": 923.9,
+      "late_hz": 1029.8,
+      "sweep": 1.11,
+      "direction": "rise",
+      "whoops": false,
+      "gate_widened": false,
+      "sha256": "5cf4f4d81e299c68b890086a12cf04843e972c6c5ef24ffefa56b56b319a7bbe",
+      "file": "assets/audio/sfx/ability_earth.ogg"
+    },
+    "ability_wind": {
+      "early_hz": 1589.4,
+      "late_hz": 1713.2,
+      "sweep": 1.08,
+      "direction": "rise",
+      "whoops": false,
+      "gate_widened": false,
+      "sha256": "a92c6af8dd2bd0dada8c16eab42f2cbfbbe033a6edfc61221fbf7105283cf93d",
+      "file": "assets/audio/sfx/ability_wind.ogg"
+    },
+    "ability_arcane": {
+      "early_hz": 1359.5,
+      "late_hz": 1372.8,
+      "sweep": 1.01,
+      "direction": "rise",
+      "whoops": false,
+      "gate_widened": false,
+      "sha256": "98d85148e60c6f82f15ff457c7288b7df04c3498bbdf525fb423ff041ce11532",
+      "file": "assets/audio/sfx/ability_arcane.ogg"
+    },
+    "ability_riff": {
+      "early_hz": 1167.4,
+      "late_hz": 1129.1,
+      "sweep": 1.03,
+      "direction": "fall",
+      "whoops": false,
+      "gate_widened": false,
+      "sha256": "7e27f9570dcd6bd145994405e67c5b04c94bfd4fe5447500162fc48f7b967cfe",
+      "file": "assets/audio/sfx/ability_riff.ogg"
     }
   }
 }
