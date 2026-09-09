@@ -149,6 +149,25 @@ def crossfade_loop(body, xfade_n):
     return np.concatenate([blend, body[xfade_n: n - xfade_n]])
 
 
+def wrap_step_ok(out):
+    """Is the wrap a CLICK? Level continuity cannot answer this.
+
+    Two segments can match in RMS and still jump in waveform, which is a tick
+    every loop. Compare the single sample step the wrap creates against the
+    distribution of every other step in the track — the music's own dynamics
+    set the scale, so there is no threshold to tune.
+
+    ⚠️ NOT sufficient alone, and the control proves it: the ORIGINAL fading
+    files pass this too, because a fade ends near zero and a head starts near
+    zero. It is the companion to the level check, never a replacement. Neither
+    speaks to beat alignment or harmony across the wrap; that needs an ear, and
+    is what --preview is for.
+    """
+    steps = np.abs(np.diff(out))
+    wrap = abs(float(out[0] - out[-1]))
+    return wrap <= float(np.percentile(steps, 99)), wrap
+
+
 def wrap_sample(y, seconds=3.0):
     """What the player hears ACROSS the loop point: tail then head, twice."""
     k = int(seconds * SR)
@@ -179,8 +198,10 @@ def process(key, path, xfade_s, apply_it, preview_dir):
             if 20.0 * np.log10(g) < -3.0:
                 continue
         scaled = cand * g
-        if (db(scaled[-SR:]) > body_db - SEAM_TOLERANCE_DB
-                and db(scaled[:SR]) > body_db - SEAM_TOLERANCE_DB):
+        level_ok = (db(scaled[-SR:]) > body_db - SEAM_TOLERANCE_DB
+                    and db(scaled[:SR]) > body_db - SEAM_TOLERANCE_DB)
+        click_ok, _ = wrap_step_ok(scaled)
+        if level_ok and click_ok:
             chosen = (end, cand)
             break
     if chosen is None:
@@ -210,6 +231,7 @@ def process(key, path, xfade_s, apply_it, preview_dir):
     # The two seconds the player actually hears back to back.
     seam_out = db(out[-SR:])
     seam_in = db(out[:SR])
+    _click_ok, wrap_step = wrap_step_ok(out)
     ok = (seam_out > body_db - SEAM_TOLERANCE_DB) and (seam_in > body_db - SEAM_TOLERANCE_DB)
 
     info = {
@@ -222,6 +244,7 @@ def process(key, path, xfade_s, apply_it, preview_dir):
         "seam_in": seam_in,
         "peak": peak,
         "gain_db": gain_db,
+        "wrap_step": wrap_step,
         "ok": ok,
     }
     if not ok:
