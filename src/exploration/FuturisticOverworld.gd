@@ -696,11 +696,11 @@ func _on_battle_triggered(enemies: Array) -> void:
 
 
 ## Tick 86: see SuburbanOverworld._on_roaming_monster_touched for rationale.
-func _on_roaming_monster_touched(monster_id: String, _monster_types: Array) -> void:
+func _on_roaming_monster_touched(monster_id: String, _monster_types: Array, is_elite: bool = false) -> void:
 	# A field elite fights ALONE -- it is the encounter, not the leader of one. Sourced from
 	# the monster's own field_elite flag so this can never drift from field_elites.json.
-	if _is_field_elite(monster_id):
-		_on_battle_triggered([monster_id])
+	if is_elite or _is_field_elite(monster_id):
+		_on_battle_triggered([_elite_id(monster_id)])
 		return
 	var enemies: Array = [monster_id]
 	var extra: int = randi_range(0, 2)
@@ -782,3 +782,10 @@ func _is_field_elite(monster_id: String) -> bool:
 	# and field elites never once fought alone. They spawned with the 0-2 random duplicates
 	# any ordinary roamer gets, which is exactly what the solo guard exists to prevent.
 	return bool(BestiarySystem.get_monster_data(monster_id).get("field_elite", false))
+
+## The elite marker rides IN the id, not in a latch. GameLoop hands the id straight to
+## BattleScene and on to EncounterSystem._create_enemy_data, so a value that travels the whole
+## way cannot leak the way a "next encounter is elite" flag would if the battle is blocked --
+## and this chain has already cost the fleet one leaked latch (the 2026-09-06 spider wedge).
+func _elite_id(monster_id: String) -> String:
+	return monster_id + EncounterSystem.ELITE_SUFFIX if not monster_id.ends_with(EncounterSystem.ELITE_SUFFIX) else monster_id

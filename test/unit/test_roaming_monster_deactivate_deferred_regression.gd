@@ -39,7 +39,7 @@ func test_deactivate_stops_touches_synchronously() -> void:
 	# emit `touched`, even though the collision shape is still enabled until end of frame.
 	var m := _monster()
 	var fired: Array = []
-	m.touched.connect(func(_id, _types): fired.append(1))
+	m.touched.connect(func(_id, _types, _elite): fired.append(1))
 	var body := _BodyStub.new()
 	add_child_autofree(body)
 

@@ -76,7 +76,7 @@ func test_touching_an_elite_asks_instead_of_starting_a_fight() -> void:
 	var player := FakePlayer.new()
 	add_child_autofree(player)
 	var fired := [0]
-	m.touched.connect(func(_id, _types): fired[0] += 1)
+	m.touched.connect(func(_id, _types, _elite): fired[0] += 1)
 	m._active = true
 	m._on_body_entered(player)
 	assert_eq(fired[0], 0,
@@ -87,7 +87,7 @@ func test_touching_an_elite_asks_instead_of_starting_a_fight() -> void:
 	# elite branch and not a broken rig.
 	var ord := _make(false)
 	var fired2 := [0]
-	ord.touched.connect(func(_id, _types): fired2[0] += 1)
+	ord.touched.connect(func(_id, _types, _elite): fired2[0] += 1)
 	ord._active = true
 	ord._on_body_entered(player)
 	assert_eq(fired2[0], 1, "CONTROL: an ordinary touch must still fire immediately")
@@ -277,3 +277,62 @@ func test_an_elite_is_recognised_as_one() -> void:
 		"the authored field elite must be recognised, or it spawns with the 0-2 random duplicates any roamer gets")
 	assert_false(scene._is_field_elite("goblin"),
 		"CONTROL: an ordinary monster must not be treated as an elite")
+
+## ELITE IS A PROPERTY OF THE SPAWN, NOT OF THE SPECIES -- the distinction the data model
+## could not express until 2026-09-09, and the reason a correct-looking fix was reverted.
+## Five of six worlds promote an ORDINARY monster to elite duty (only dark_knight was authored
+## elite-only), so setting field_elite on the species would have made every routine encounter
+## with a rust elemental, a brass golem, a suburban dog, a data wraith or optimization_itself
+## a party-average+5, x3 HP, x8 EXP fight -- a difficulty inversion and a grind exploit in five
+## worlds, shipping as a bug fix.
+func test_a_promoted_species_is_only_elite_when_the_SPAWN_says_so() -> void:
+	var es: Node = get_tree().root.get_node_or_null("EncounterSystem")
+	var gs: Node = get_tree().root.get_node_or_null("GameState")
+	assert_not_null(es); assert_not_null(gs)
+	if es == null or gs == null:
+		return
+	var cfg := _read_json(ELITE_DATA)
+	var monsters := _read_json("res://data/monsters.json")
+	var pools := _read_json("res://data/enemy_pools.json")
+	var saved: Array[Dictionary] = gs.player_party
+	var party: Array[Dictionary] = []
+	for i2 in range(4):
+		party.append({"name": "p%d" % i2, "job_level": 10})
+	gs.player_party = party
+
+	var checked := 0
+	var offenders: Array = []
+	for world in cfg.get("per_world", {}):
+		var sp := str(cfg["per_world"][world])
+		checked += 1
+		var flagged := bool(monsters.get(sp, {}).get("field_elite", false))
+		var in_ordinary_pool := false
+		for pk in pools:
+			var ids = pools[pk]
+			if ids is Array and sp in ids:
+				in_ordinary_pool = true
+
+		# BIDIRECTIONAL. A species that also roams ordinarily must NOT carry the flag, or every
+		# routine encounter with it becomes an elite fight. A species that exists only as an
+		# elite MUST carry it, or it never scales however it spawns.
+		if flagged and in_ordinary_pool:
+			offenders.append("%s: %s carries field_elite AND appears in an ordinary pool -- every routine encounter with it is now a party-average+5, x3 HP, x8 EXP fight" % [world, sp])
+		if not flagged and not in_ordinary_pool:
+			offenders.append("%s: %s exists only as an elite but carries no field_elite flag -- it will never scale" % [world, sp])
+
+		if in_ordinary_pool:
+			var authored_hp := float(monsters.get(sp, {}).get("stats", {}).get("max_hp", 0))
+			var ordinary: Dictionary = es._create_enemy_data(sp)
+			var elite: Dictionary = es._create_enemy_data(sp + EncounterSystem.ELITE_SUFFIX)
+			if int(ordinary.get("max_hp", -1)) != int(authored_hp):
+				offenders.append("%s: an ORDINARY %s resolved to %s hp, not its authored %d" % [world, sp, str(ordinary.get("max_hp")), int(authored_hp)])
+			if int(elite.get("max_hp", -1)) <= int(authored_hp):
+				offenders.append("%s: a SPAWN-MARKED %s resolved to %s hp, not scaled above its authored %d" % [world, sp, str(elite.get("max_hp")), int(authored_hp)])
+
+	assert_eq(checked, 6, "all six worlds' elite species must be examined, saw %d" % checked)
+	assert_eq(offenders, [], "\n  ".join(offenders))
+
+	var dk: Dictionary = es._create_enemy_data("dark_knight")
+	assert_true(bool(dk.get("field_elite", false)),
+		"dark_knight is authored elite-only and must stay elite with no spawn marker")
+	gs.player_party = saved

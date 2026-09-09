@@ -69,7 +69,7 @@ func _make_monster_rig(latch_start: bool, flip_on_touch: bool) -> Dictionary:
 	monster._active = true
 	monster._fading = false
 	if flip_on_touch:
-		monster.touched.connect(func(_id, _types): gl._battle_transition_starting = true)
+		monster.touched.connect(func(_id, _types, _elite): gl._battle_transition_starting = true)
 	return {"gl": gl, "monster": monster}
 
 

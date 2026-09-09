@@ -5,7 +5,10 @@ class_name RoamingMonster
 ## Sprite sheet: 128x128, 4 rows x 4 cols, 32x32 per frame
 ## Row 0=walk_down, 1=walk_left, 2=walk_right, 3=walk_up
 
-signal touched(monster_id: String, monster_types: Array)
+## is_elite travels with the touch because ELITE IS A PROPERTY OF THE SPAWN, not of the
+## species. Five of six worlds promote an ORDINARY monster to elite duty, so a species-level
+## flag would turn every routine encounter with that species into an elite fight.
+signal touched(monster_id: String, monster_types: Array, is_elite: bool)
 
 const FRAME_W: int = 32
 const FRAME_H: int = 32
@@ -471,7 +474,7 @@ func _emit_touch_and_maybe_fade() -> void:
 	# only if THIS touch flipped the commence latch. No GameLoop found (tests) = old behavior.
 	var gl: Node = get_tree().root.get_node_or_null("GameLoop") if is_inside_tree() else null
 	var latch_before: bool = gl != null and gl.get("_battle_transition_starting") == true
-	touched.emit(monster_id, monster_types)
+	touched.emit(monster_id, monster_types, elite)
 	var latch_after: bool = gl != null and gl.get("_battle_transition_starting") == true
 	if gl == null or (not latch_before and latch_after):
 		_begin_fade()

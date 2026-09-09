@@ -6,7 +6,7 @@ class_name MonsterSpawner
 
 const RoamingMonsterScript = preload("res://src/exploration/RoamingMonster.gd")
 
-signal monster_touched(monster_id: String, monster_types: Array)
+signal monster_touched(monster_id: String, monster_types: Array, is_elite: bool)
 
 const TILE_SIZE: int = 32
 const SPAWN_COUNT_MIN: int = 3
@@ -341,5 +341,5 @@ func _get_valid_pool_for_overworld() -> Array:
 	return ["slime"]
 
 
-func _on_monster_touched(monster_id: String, monster_types: Array) -> void:
-	monster_touched.emit(monster_id, monster_types)
+func _on_monster_touched(monster_id: String, monster_types: Array, is_elite: bool = false) -> void:
+	monster_touched.emit(monster_id, monster_types, is_elite)
