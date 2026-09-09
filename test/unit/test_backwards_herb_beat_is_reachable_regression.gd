@@ -5,6 +5,16 @@ extends GutTest
 ## could ever reach it (audit 2026-09-09: 6 *_npcs.json cutscenes, 77 lines, 0 src refs).
 ## It now lives on a live village NPC. This pins REACHABILITY, not which NPC carries it.
 
+##
+## ⛔ WHAT THIS GUARD DOES NOT PROVE (stated 2026-09-09, from cowir-battle's retraction: "a test that
+## calls the repaired function directly cannot tell either -- reachability is not a property you can
+## observe from inside the thing you are reaching").
+## It proves the NPC is IN THE TREE CARRYING THESE LINES. It does NOT prove a player can reach and
+## talk to them. An NPC standing on a sealed one-tile ledge, behind a prop footprint, or with a
+## missing interaction Area2D passes every assertion below -- and all three of those shipped in this
+## repo this week. "reachable" in the filename means CONTENT-reachable, never INTERACTION-reachable.
+## The instrument for the latter is a navigation/interaction probe and it does not live in this lane.
+
 const VILLAGE_DIR := "res://src/maps/villages/"
 ## Any one of these phrases is the beat; a rewrite may keep the idea and drop a word.
 const BEAT_MARKERS := ["healed the wrong direction", "heals backwards", "healing herb"]

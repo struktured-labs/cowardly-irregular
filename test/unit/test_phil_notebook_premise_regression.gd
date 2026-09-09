@@ -5,6 +5,16 @@ extends GutTest
 ## mentioned losing, forgetting or the book, so a player met the prop with no reason for it to exist.
 ## Pins the COUPLING: while the notebook sits beside him, his dialogue must establish it.
 
+##
+## ⛔ WHAT THIS GUARD DOES NOT PROVE (stated 2026-09-09, from cowir-battle's retraction: "a test that
+## calls the repaired function directly cannot tell either -- reachability is not a property you can
+## observe from inside the thing you are reaching").
+## It proves the NPC is IN THE TREE CARRYING THESE LINES. It does NOT prove a player can reach and
+## talk to them. An NPC standing on a sealed one-tile ledge, behind a prop footprint, or with a
+## missing interaction Area2D passes every assertion below -- and all three of those shipped in this
+## repo this week. "reachable" in the filename means CONTENT-reachable, never INTERACTION-reachable.
+## The instrument for the latter is a navigation/interaction probe and it does not live in this lane.
+
 const VILLAGE := "res://src/maps/villages/HarmoniaVillage.tscn"
 
 
