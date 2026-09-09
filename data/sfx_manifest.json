@@ -2041,6 +2041,27 @@
       "prompt": "Very short resource glitch blip: a clean UI tick stuttering and misfiring, brief electrical gating artifact, wrong but small, no melody",
       "duration_seconds": 0.5,
       "prompt_influence": 0.8
+    },
+    "ability_song": {
+      "file": "assets/audio/sfx/ability_song.ogg",
+      "prompt": "SYNTHESISED, not generated — a three-step major triad on a reedy 25% pulse with vibrato on the sustain. The bard's four songs (battle_hymn, lullaby, discord, inspiring_melody) had no cue and fell through to ability_physical, a sword thump. Steps, never a slide: an arpeggio is discrete pitch, so it cannot become the glide struktured rejected. A text prompt would give a real instrument, not chiptune — run the tool.",
+      "duration_seconds": 0.85,
+      "prompt_influence": 0.8,
+      "source": "tools/gen_chiptune_sfx.py song"
+    },
+    "ability_summon": {
+      "file": "assets/audio/sfx/ability_summon.ogg",
+      "prompt": "SYNTHESISED, not generated — held low root+fifth drone with a noise swell and a sub thump. All seven summons (Ifrit/Shiva/Ramuh/Bahamut/rat_swarm/royal_summon/pack_call) played the melee thump. Weight comes from held low pitch, NOT a descending glide — a fall is a sweep too. Run the tool.",
+      "duration_seconds": 1.3,
+      "prompt_influence": 0.8,
+      "source": "tools/gen_chiptune_sfx.py summon"
+    },
+    "ability_revive": {
+      "file": "assets/audio/sfx/ability_revive.ogg",
+      "prompt": "SYNTHESISED, not generated — a low breath resolving into a C major triad arriving together. `raise` (Anima Reddita) is the one moment a dead party member returns and it played a sword hit. Fundamentals held at 260-520 Hz so it reads warm, not as the birdsong chirp that got the old cure cue rejected. Run the tool.",
+      "duration_seconds": 1.15,
+      "prompt_influence": 0.8,
+      "source": "tools/gen_chiptune_sfx.py revive"
     }
   }
 }
