@@ -295,7 +295,7 @@ func _exit_tree() -> void:
 	if parent_menu == null:
 		var label := _find_hint_label()
 		if label != null:
-			label.text = HINT_DEFAULT_TEXT
+			label.text = hint_text()
 
 
 func _setup_timers() -> void:
@@ -1424,6 +1424,18 @@ func _apply_command_memory() -> void:
 ## game targets — plus the ` key. BattleScene.gd carries the same string; keep them in step.
 const HINT_DEFAULT_TEXT := "[L] Defer  ·  [R] Advance  ·  [X] Speed  ·  [Select] Auto"
 
+
+## The bar is on screen for the whole game and named Nintendo face letters unconditionally. Speed
+## is raw JOY_BUTTON_Y (index 3) — Ⓧ on Nintendo, Ⓨ on Xbox, △ on PlayStation — so a PlayStation
+## player reading "[X] Speed" presses ✕, which is Cancel. Derived per family; const is the fallback.
+static func hint_text() -> String:
+	if not InputProfileManager:
+		return HINT_DEFAULT_TEXT
+	var speed: String = InputProfileManager.face_glyph_for_index(JOY_BUTTON_Y)
+	if speed == "?":
+		return HINT_DEFAULT_TEXT
+	return "[L] Defer  ·  [R] Advance  ·  %s Speed  ·  [Select] Auto" % speed
+
 var _hint_label_cache: Label = null
 var _hint_showing_reason: bool = false
 
@@ -1454,7 +1466,7 @@ func _restore_hint_after_reason() -> void:
 	_hint_showing_reason = false
 	var label := _find_hint_label()
 	if label:
-		label.text = HINT_DEFAULT_TEXT
+		label.text = hint_text()
 
 
 func _find_hint_label() -> Label:
@@ -1484,7 +1496,7 @@ func _update_hint_bar() -> void:
 	if n > 0:
 		label.text = "[A] Confirm  ·  [B]/[L] Undo last  ·  queued %d/%d" % [n, root._max_queue_size]
 	else:
-		label.text = HINT_DEFAULT_TEXT
+		label.text = hint_text()
 
 
 func _update_ap_label() -> void:

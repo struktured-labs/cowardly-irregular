@@ -280,6 +280,17 @@ func glyph_for_action(action: String, device_name: String = "") -> String:
 	return table.get(indices[0], "?")
 
 
+## The glyph printed on a RAW button index, for bindings that are a button rather than an action.
+## No convention swap here: a raw JOY_BUTTON_* binding fires from that physical position always.
+func face_glyph_for_index(button_index: int, device_name: String = "") -> String:
+	var name := device_name
+	if name == "":
+		var pads := Input.get_connected_joypads()
+		name = Input.get_joy_name(pads[0]) if not pads.is_empty() else ""
+	var table: Dictionary = FACE_GLYPHS[face_family_for_device(name)]
+	return table.get(button_index, "?")
+
+
 func _replace_joypad_buttons(action: String, button_indices: Array) -> void:
 	# Remove existing joypad button events (keep keyboard + joypad motion)
 	var existing_events = InputMap.action_get_events(action)
