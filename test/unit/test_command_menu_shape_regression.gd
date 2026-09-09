@@ -319,7 +319,10 @@ func test_the_reason_line_restores_itself_on_the_next_move() -> void:
 	m.selected_index = 0
 	m._update_selection()
 	assert_false(m._hint_showing_reason, "moving clears the reason")
-	assert_eq(hint.text, m.HINT_DEFAULT_TEXT, "and the hint bar is back to its default")
+	# Repinned 2026-09-09: the default bar is now DERIVED per pad family (a PlayStation player was
+	# told to press the button that means Cancel), so the claim is "restored to the default", not
+	# "equal to this literal". HINT_DEFAULT_TEXT remains the no-pad fallback inside hint_text().
+	assert_eq(hint.text, m.hint_text(), "and the hint bar is back to its default")
 
 
 func test_panel_is_translucent_but_its_border_is_not() -> void:
