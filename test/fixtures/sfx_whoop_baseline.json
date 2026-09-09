@@ -563,6 +563,20 @@
       "sha256": "c4164804600ec666ea05b50c4022a0de197e7aa96eb9234114a2dea0bb1dafcd",
       "file": "assets/audio/sfx/ability_flee.ogg"
     },
+    "status_cured": {
+      "early_hz": 1721.8,
+      "late_hz": 1688.8,
+      "low_hz": 1687.5,
+      "high_hz": 1741.9,
+      "sweep": 1.03,
+      "rho_time": -0.89,
+      "rho_energy": 0.89,
+      "direction": "fall",
+      "whoops": false,
+      "gate_widened": false,
+      "sha256": "0c15e5aa70e5bc303ee5e93e1f909a8836ce537fb798d7a3d12ef216771c76ff",
+      "file": "assets/audio/sfx/status_cured.ogg"
+    },
     "ability_riff": {
       "early_hz": 1065.3,
       "late_hz": 1051.8,

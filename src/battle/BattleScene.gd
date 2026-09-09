@@ -3684,6 +3684,7 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 			if animator and animator.has_named_animation("advance"):
 				animator.play_named_animation("advance")
 		"item":
+			SoundManager.play_item(str(action.get("item_id", "")))
 			animator.play_item()
 		"defer":
 			animator.play_named_animation("defer")
