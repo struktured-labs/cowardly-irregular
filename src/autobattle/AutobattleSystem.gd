@@ -523,29 +523,14 @@ func _resolve_ability_upgrade(combatant: Combatant, action_def: Dictionary) -> S
 
 
 func _combatant_has_learned(combatant: Combatant, ability_id: String) -> bool:
+	## Delegates to Combatant.knows_ability — struktured 2026-09-06: "just have a general guard on
+	## if u have the ability or not at all, provenance irrelevant." This was a SECOND derivation
+	## covering only kit + free_move + level, so autobattle upgrade resolution denied anything you
+	## LEARNED, PURCHASED, or got from a SECONDARY JOB — the last being the exact gap he reported as
+	## "2ndary job does nothing apparently", fixed in knows_ability and not in this copy.
 	if combatant == null or ability_id == "":
 		return false
-	## The combatant is right here and carries its own job — going out through name → id → a
-	## static map was how a job change produced the wrong answer for the caller that matters most.
-	var job_id: String = ""
-	if combatant.job is Dictionary:
-		job_id = str(combatant.job.get("id", ""))
-	if job_id == "":
-		job_id = _resolve_job_for_character(_get_character_id(combatant))
-	var job: Dictionary = JobSystem.get_job(job_id)
-	if job.is_empty():
-		return false
-	if ability_id in (job.get("abilities", []) as Array):
-		return true
-	if str(job.get("free_move", {}).get("ability_id", "")) == ability_id:
-		return true
-	var level: int = int(combatant.job_level) if "job_level" in combatant else 1
-	var at_level: Dictionary = job.get("abilities_at_level", {})
-	for key in at_level.keys():
-		if int(str(key)) <= level and ability_id in (at_level[key] as Array):
-			return true
-	return false
-
+	return combatant.knows_ability(ability_id)
 
 func _get_target_by_type(combatant: Combatant, target_type: String) -> Combatant:
 	"""Get target based on target type string. For multi-target types like all_allies,
