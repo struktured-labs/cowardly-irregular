@@ -4553,6 +4553,15 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 		damage = _apply_market_sense(caster, damage)
 		damage = _apply_lens_execute_bonus(caster, target, damage)
 
+		## Terrain and weather elemental modifiers key on ELEMENT, not on ability type, but both
+		## had exactly one call site — in _execute_magic_ability. The 6 physical abilities that
+		## carry an element (lightning_dash, dark_slash, cursed_strike, glitch_strike,
+		## permakill_strike, toxic_embrace) were skipped purely by which function they run through,
+		## so a lightning dash got no storm bonus while a lightning spell did.
+		var phys_element: String = str(ability.get("element", ""))
+		if phys_element != "":
+			damage = int(damage * get_terrain_damage_modifier(phys_element) * get_weather_damage_modifier(phys_element))
+
 		# Barrier absorbs the next hit.
 		if target.has_status("barrier"):
 			target.remove_status("barrier")
