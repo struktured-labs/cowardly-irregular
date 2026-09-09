@@ -320,7 +320,10 @@ func _setup_npcs() -> void:
 		"They say you need more defense.",
 		"The mushrooms are usually right.",
 		"Last week they predicted the weather. And a boss fight.",
-		"...I should probably stop eating them."
+		"...I should probably stop eating them.",
+		"Found a healing herb by the black sap. Ate it. Took damage.",
+		"Not spoiled. Not poison. It healed. It healed the wrong direction.",
+		"The mushrooms went quiet about that one."
 	])
 	npcs.add_child(spore)
 
