@@ -97,6 +97,8 @@ func _char_to_tile_type(char: String) -> int:
 		"W": return AbstractTileGeneratorScript.TileType.ECHO_WALL
 		"D": return AbstractTileGeneratorScript.TileType.SHADOW_TILE
 		"X": return AbstractTileGeneratorScript.TileType.GRID_LINE
+		"I": return TileGeneratorScript.TileType.WALL  # inn (The Rest)
+		"G": return TileGeneratorScript.TileType.WALL  # shop (The Exchange)
 		_: return AbstractTileGeneratorScript.TileType.VOID_GRAY
 
 

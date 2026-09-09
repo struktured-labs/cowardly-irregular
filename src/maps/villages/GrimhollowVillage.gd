@@ -129,6 +129,10 @@ func _char_to_tile_type(char: String) -> int:
 		"W": return TileGeneratorScript.TileType.WALL
 		"S": return TileGeneratorScript.TileType.SWAMP
 		"G": return TileGeneratorScript.TileType.DARK_GROUND
+		"R": return TileGeneratorScript.TileType.WALL  # restless inn
+		"C": return TileGeneratorScript.TileType.WALL  # cursed curios
+		"D": return TileGeneratorScript.TileType.WALL  # decrepit chapel
+		"X": return TileGeneratorScript.TileType.VILLAGE_PATH  # exit
 		_: return TileGeneratorScript.TileType.FLOOR
 
 
@@ -169,7 +173,8 @@ func _setup_buildings() -> void:
 	chapel.shop_name = "Decrepit Chapel"
 	chapel.shop_type = VillageShopScript.ShopType.BLACK_MAGIC
 	chapel.keeper_name = "Sister Shadow"
-	chapel.position = Vector2(13 * TILE_SIZE,5 * TILE_SIZE)
+		# Moved to the building's face 2026-09-09: the shop sat at the block's CENTRE, which was reachable only while the building rendered as walk-through floor.
+	chapel.position = Vector2(13 * TILE_SIZE,3 * TILE_SIZE)
 	buildings.add_child(chapel)
 
 	# === WITCH'S HUT DOOR ===

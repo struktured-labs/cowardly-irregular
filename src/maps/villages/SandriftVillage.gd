@@ -115,6 +115,10 @@ func _char_to_tile_type(char: String) -> int:
 		".": return TileGeneratorScript.TileType.SAND
 		"/": return TileGeneratorScript.TileType.SAND  # dune-climb ground; elevation lives in height_data
 		"E": return TileGeneratorScript.TileType.SAND  # tent footprint has no overlay sprite, so it's exposed — keep it sandy, not grey FLOOR
+		"I": return TileGeneratorScript.TileType.WALL  # oasis inn
+		"B": return TileGeneratorScript.TileType.WALL  # bazaar
+		"T": return TileGeneratorScript.TileType.WALL  # hidden tent
+		"X": return TileGeneratorScript.TileType.VILLAGE_PATH  # exit
 		_: return TileGeneratorScript.TileType.FLOOR
 
 
@@ -167,7 +171,8 @@ func _setup_buildings() -> void:
 	bazaar_items.shop_name = "Desert Bazaar"
 	bazaar_items.shop_type = VillageShopScript.ShopType.ITEM
 	bazaar_items.keeper_name = "Shifty"
-	bazaar_items.position = Vector2(17 * TILE_SIZE,5 * TILE_SIZE)
+		# Moved to the building's face 2026-09-09: the shop sat at the block's CENTRE, which was reachable only while the building rendered as walk-through floor.
+	bazaar_items.position = Vector2(17 * TILE_SIZE,3 * TILE_SIZE)
 	buildings.add_child(bazaar_items)
 
 	var bazaar_weapons = VillageShopScript.new()

@@ -112,6 +112,10 @@ func _char_to_tile_type(char: String) -> int:
 		"W": return TileGeneratorScript.TileType.WALL
 		"I": return TileGeneratorScript.TileType.ICE
 		"^": return TileGeneratorScript.TileType.FLOOR  # stair ground; elevation lives in height_data
+		"L": return TileGeneratorScript.TileType.WALL  # lodge (inn)
+		"F": return TileGeneratorScript.TileType.WALL  # fur trader
+		"C": return TileGeneratorScript.TileType.WALL  # chapel
+		"X": return TileGeneratorScript.TileType.VILLAGE_PATH  # exit
 		_: return TileGeneratorScript.TileType.FLOOR
 
 
@@ -299,7 +303,7 @@ func _setup_npcs() -> void:
 		"It's the best one I ever made. Mom says that's not how you judge snowmen.",
 		"Mom is wrong. Not crashing is the whole thing."
 	]
-	var lumi = _create_npc("Child Lumi", "child", Vector2(14 * TILE_SIZE,6 * TILE_SIZE), _lumi_post if _after_cave_done else _lumi_pre)
+	var lumi = _create_npc("Child Lumi", "child", Vector2(13 * TILE_SIZE,6 * TILE_SIZE), _lumi_post if _after_cave_done else _lumi_pre)
 	npcs.add_child(lumi)
 
 	# Clockkeeper Yara — meltwater_clock giver, beside the Meltwater Clock door at (15,6.5).
