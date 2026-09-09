@@ -1586,6 +1586,78 @@ func _cycle_condition_type() -> void:
 		_refresh_grid()
 
 
+## validate_rule REFUSES an action missing its required fields, and _cycle_action_type only ever set
+## `type`. So cycling onto member_ability produced {"type": "member_ability"} — structurally invalid,
+## rejected on save, with a push_warning the player never sees. The picker offered a state the
+## editor could not author. Seed the fields at creation so every cyclable action is saveable the
+## moment it appears.
+func _seed_required_action_fields(action: Dictionary) -> void:
+	match str(action.get("type", "")):
+		"member_ability":
+			if str(action.get("member", "")) == "":
+				action["member"] = _default_member_id()
+			if str(action.get("ability", "")) == "":
+				action["ability"] = _default_ability_for(str(action["member"]))
+		"switch_profile":
+			## PRE-EXISTING, not introduced with member_ability: switch_profile needs
+			## character_id + profile_index and the cycle path only ever set `target`, so it has
+			## been unsaveable from the picker for as long as both have existed.
+			if str(action.get("character_id", "")) == "":
+				action["character_id"] = _default_character_id()
+			if not action.has("profile_index"):
+				action["profile_index"] = 0
+		_:
+			pass
+
+
+## The first living party member's job id — the console is always opened WITH a party, so this is
+## available whenever the picker is reachable.
+## Autobattle keys profiles on AutobattleSystem._get_character_id — combatant_name lowercased with
+## spaces underscored (AutobattleSystem:627). ASK the system rather than restating the rule; a
+## duplicated convention here would drift the moment theirs changed, and a WRONG id is worse than
+## a missing one because it saves fine and silently switches a profile nobody has.
+func _default_character_id() -> String:
+	var abs_node = get_tree().root.get_node_or_null("AutobattleSystem") if is_inside_tree() else null
+	for m in _party:
+		if m == null or not ("combatant_name" in m):
+			continue
+		if abs_node != null and abs_node.has_method("_get_character_id"):
+			return str(abs_node._get_character_id(m))
+		return str(m.combatant_name).to_lower().replace(" ", "_")
+	return ""
+
+
+func _default_member_id() -> String:
+	for m in _party:
+		if m != null and "is_alive" in m and m.is_alive and m.job != null and "id" in m.job:
+			return str(m.job.id)
+	for m in _party:
+		if m != null and m.job != null and "id" in m.job:
+			return str(m.job.id)
+	return "cleric"
+
+
+## A healing ability that member actually knows, else anything they know. A seeded ability the
+## member cannot cast still SAVES and the executor refuses it by name at runtime — which is a
+## debuggable rule, unlike one that cannot be stored at all.
+func _default_ability_for(member_id: String) -> String:
+	for m in _party:
+		if m == null or m.job == null or not ("id" in m.job) or str(m.job.id) != member_id:
+			continue
+		if not ("learned_abilities" in m):
+			break
+		var js = get_tree().root.get_node_or_null("JobSystem") if is_inside_tree() else null
+		if js != null and js.has_method("get_ability"):
+			for aid in m.learned_abilities:
+				var a: Dictionary = js.get_ability(str(aid))
+				if str(a.get("type", "")) == "healing":
+					return str(aid)
+		if m.learned_abilities.size() > 0:
+			return str(m.learned_abilities[0])
+		break
+	return "cure"
+
+
 func _cycle_action_type() -> void:
 	"""Cycle through action types"""
 	if cursor_row >= rules.size():
@@ -1626,6 +1698,7 @@ func _cycle_action_type() -> void:
 			action["target"] = "all"
 		else:
 			action.erase("target")
+		_seed_required_action_fields(action)
 
 		_refresh_grid()
 
