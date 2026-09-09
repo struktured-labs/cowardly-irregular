@@ -46,7 +46,12 @@ func _fresh(cname: String) -> Combatant:
 ## Observable state, not source text: HP, MP, buff/debuff count, status count. An ability that
 ## changes none of these did nothing to its target, whatever its implementation looks like.
 func _fingerprint(c: Combatant) -> Array:
-	return [c.current_hp, c.current_mp, c.active_buffs.size(), c.status_effects.size()]
+	## active_debuffs is a SEPARATE array from active_buffs (Combatant:89-90). Omitting it made
+	## this census BLIND TO EVERY DEBUFF — a debuff-only ability read as inert, so the instrument
+	## under-reported working abilities and would have missed a broken one. Found when mapping
+	## volatility_down turned hedge_position from a bogus status into a real debuff and the census
+	## called that a regression.
+	return [c.current_hp, c.current_mp, c.active_buffs.size(), c.active_debuffs.size(), c.status_effects.size()]
 
 
 func _ally_targeted_ability_ids() -> Array[String]:
@@ -173,3 +178,101 @@ func test_the_ally_list_actually_selects_something_known() -> void:
 	assert_true(ids.has("pray"), "control: pray (single_ally) must be a candidate")
 	assert_true(ids.has("battle_hymn"), "control: battle_hymn (all_allies) must be a candidate — the case the substring filter LOST")
 	assert_false(ids.has("fire"), "control: an enemy-targeted ability must NOT be a candidate")
+
+
+## ── SUPPORT-ARM CENSUS ──────────────────────────────────────────────────────────────────────
+## The census above counts abilities reaching the `_:` default. My .242 support/song/status arm
+## moved a different population OUT of that default and into add_status(effect) — so those 54 are
+## outside the census BY CONSTRUCTION, which is the blind spot my own fix created.
+##
+## add_status() accepts ANY string, so a fabricated status is inert rather than an error: it
+## neither works nor complains. This names the population instead of judging it — which effects
+## are real statuses (invisible/reflect/regen are) versus fabrications (dispel/cleanse are not) is
+## a design question, and there is NO canonical status vocabulary to answer it from: Combatant
+## branches on 5 names, BattleManager carries a separate list of 10, no single source of truth.
+
+## DERIVED from _effect_to_stat's own source, never copied. A hardcoded duplicate made this test
+## hollow: deleting magic_defense_up from the RESOLVER left the suite green, because the test was
+## consulting its own copy of the map. Mutation caught it; the same two-sources-one-surface class
+## this file exists to police.
+func _mapped_effects() -> Array[String]:
+	var out: Array[String] = []
+	var src: String = load("res://src/autogrind/HeadlessBattleResolver.gd").source_code
+	var start: int = src.find("func _effect_to_stat")
+	var stop: int = src.find("\nfunc ", start + 1)
+	if start < 0 or stop < 0:
+		return out
+	var body: String = src.substr(start, stop - start)
+	var re := RegEx.new()
+	re.compile('"([a-z_]+)":\\s*return')
+	for m in re.search_all(body):
+		out.append(m.get_string(1))
+	return out
+
+## Handled by their own branch rather than by the stat map.
+const SPECIAL_EFFECTS := ["all_stats_down", "mp_restore_and_ap"]
+
+
+func _support_arm_effects_falling_to_add_status() -> Array[String]:
+	var out: Array[String] = []
+	var f := FileAccess.open("res://data/abilities.json", FileAccess.READ)
+	if f == null:
+		return out
+	var parsed = JSON.parse_string(f.get_as_text())
+	f.close()
+	var table: Dictionary = parsed.get("abilities", parsed)
+	for k in table.keys():
+		var v = table[k]
+		if typeof(v) != TYPE_DICTIONARY:
+			continue
+		if not ["support", "song", "status"].has(str(v.get("type", ""))):
+			continue
+		if str(v.get("stat", "")) != "":
+			continue          # explicit stat wins; never reaches the effect map
+		var e := str(v.get("effect", ""))
+		if e == "" or _mapped_effects().has(e) or SPECIAL_EFFECTS.has(e):
+			continue
+		if not out.has(e):
+			out.append(e)
+	out.sort()
+	return out
+
+
+func test_every_stat_shaped_effect_is_mapped() -> void:
+	## The part with no design content: an effect ending _up/_down names a STAT, so falling to
+	## add_status is unambiguously wrong. This is how magic_defense_up and volatility_down were
+	## found — I had shipped a map covering only the effects the four songs happened to use.
+	var unmapped: Array[String] = []
+	for e in _support_arm_effects_falling_to_add_status():
+		if e.ends_with("_up") or e.ends_with("_down"):
+			unmapped.append(e)
+	assert_eq(unmapped.size(), 0,
+		"stat-shaped effects with no map entry — they become a bogus status instead of a buff: %s" % str(unmapped))
+
+
+func test_the_unmapped_effect_population_is_reported() -> void:
+	## Names what routes to add_status every run, so the set cannot quietly become "fine".
+	## NOT asserting a count: which of these are real statuses is undecided, and pinning a number
+	## would freeze a figure nobody has ruled on.
+	var falling := _support_arm_effects_falling_to_add_status()
+	gut.p("EFFECTS ROUTED TO add_status (%d distinct): %s" % [falling.size(), str(falling)])
+	assert_true(falling.size() > 0,
+		"if this reaches zero every effect is modelled — delete this census, it has done its job")
+
+
+func test_the_effect_scan_can_actually_find_something() -> void:
+	# ARM+: a filter that selected nothing would pass the stat-shaped assertion vacuously.
+	var falling := _support_arm_effects_falling_to_add_status()
+	assert_true(falling.has("dispel"),
+		"control: dispel authors no stat and is unmapped, so the scan must see it")
+	assert_false(falling.has("attack_up"),
+		"control: a MAPPED effect must NOT appear — it never reaches add_status")
+
+
+func test_the_map_derivation_reads_the_real_function() -> void:
+	## ARM+ for the derivation: if this returned [] the stat-shaped assertion would pass by
+	## calling EVERY effect unmapped... no — it would FAIL loudly, which is the safe direction.
+	## But an over-broad match would silently mark everything mapped, so pin both ends.
+	var mapped := _mapped_effects()
+	assert_true(mapped.has("attack_up"), "control: a known map entry must be derived, got %s" % str(mapped))
+	assert_false(mapped.has("dispel"), "control: a non-entry must NOT be derived — the regex is over-broad")
