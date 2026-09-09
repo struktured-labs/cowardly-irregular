@@ -183,7 +183,7 @@ def wrap_sample(y, seconds=3.0):
     return np.concatenate([one, one])
 
 
-def process(key, path, xfade_s, apply_it, preview_dir):
+def process(key, path, xfade_s, apply_it, preview_dir, max_trim_db=3.0):
     y = decode(path)
     if len(y) < SR * 10:
         return key, "unreadable or too short", None
@@ -197,6 +197,14 @@ def process(key, path, xfade_s, apply_it, preview_dir):
     xfade_n = int(xfade_s * SR)
     attempts = 0
     chosen = None
+    # Track WHY candidates died. The first version reported the seam message
+    # unconditionally, so a run rejected entirely by the clipping bound said
+    # "no cut point gave a seam within 4 dB" — naming a failure that never
+    # happened and sending the reader after the wrong problem. autogrind is
+    # exactly that case: every cut point's seam PASSES and it needs 3.2 dB of
+    # trim against a 3.0 bound.
+    clipped = 0
+    worst_gain = 0.0
     for end in body_end_candidates(y, body_db):
         body = y[:end]
         if len(body) < xfade_n * 3:
@@ -207,7 +215,10 @@ def process(key, path, xfade_s, apply_it, preview_dir):
         g = 1.0
         if pk >= 1.0:
             g = 0.99 / pk
-            if 20.0 * np.log10(g) < -3.0:
+            gdb = 20.0 * np.log10(g)
+            if gdb < -max_trim_db:
+                clipped += 1
+                worst_gain = min(worst_gain, gdb) if worst_gain else gdb
                 continue
         scaled = cand * g
         level_ok = (db(scaled[-SR:]) > body_db - SEAM_TOLERANCE_DB
@@ -219,8 +230,13 @@ def process(key, path, xfade_s, apply_it, preview_dir):
     if chosen is None:
         if attempts == 0:
             return key, "never returns to full level within %.0fs" % MAX_SCAN_S, None
-        return key, "no cut point in %d tries gave a seam within %.0f dB of body" % (
-            attempts, SEAM_TOLERANCE_DB), None
+        if clipped == attempts:
+            return key, ("every one of %d cut points needs more than %.1f dB of trim "
+                         "(best %.1f dB) - the SEAM is fine, the master is hot. "
+                         "Raise --max-trim to accept a quieter track."
+                         % (attempts, max_trim_db, worst_gain)), None
+        return key, "no cut point in %d tries gave a seam within %.0f dB of body (%d also over the trim bound)" % (
+            attempts, SEAM_TOLERANCE_DB, clipped), None
     end, out = chosen
     body = y[:end]
     peak = float(np.max(np.abs(out)))
@@ -236,8 +252,11 @@ def process(key, path, xfade_s, apply_it, preview_dir):
     if peak >= 1.0:
         gain = 0.99 / peak
         gain_db = 20.0 * np.log10(gain)
-        if gain_db < -3.0:
-            return key, "needs %.1f dB of trim to stop clipping - too hot to fold" % gain_db, None
+        # Same bound as the retry loop above. These were two separate hardcoded
+        # -3.0 checks; raising one left the other refusing, so --max-trim
+        # appeared not to work. Two sources for one rule, one silently winning.
+        if gain_db < -max_trim_db:
+            return key, "needs %.1f dB of trim to stop clipping (bound %.1f) - raise --max-trim to accept it" % (gain_db, max_trim_db), None
         out = out * gain
 
     # The two seconds the player actually hears back to back.
@@ -280,6 +299,10 @@ def main():
     ap.add_argument("--only", action="append", default=[],
                     help="track key; repeatable. Default: every looping bed that needs it.")
     ap.add_argument("--xfade", type=float, default=DEFAULT_XFADE_S)
+    ap.add_argument("--max-trim", type=float, default=3.0, metavar="DB",
+                    help="largest uniform gain reduction to accept, in dB (default 3.0). "
+                         "A hot master whose head and tail sum constructively can need more; "
+                         "raising this makes the WHOLE track quieter, so it is a mix decision.")
     ap.add_argument("--apply", action="store_true")
     ap.add_argument("--preview", metavar="DIR", nargs="?", const="tmp/loop_preview",
                     default=None, help="write before/after wrap audio for listening")
@@ -302,7 +325,7 @@ def main():
         path = tracks[key].get("file", "")
         if not path or not os.path.exists(path):
             continue
-        k, why, info = process(key, path, args.xfade, args.apply, args.preview)
+        k, why, info = process(key, path, args.xfade, args.apply, args.preview, args.max_trim)
         if why:
             if why.startswith("SKIP "):
                 skipped.append(key)
