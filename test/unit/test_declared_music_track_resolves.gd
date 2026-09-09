@@ -118,3 +118,46 @@ func test_the_resolver_SELECTS_the_track_from_a_real_enemy() -> void:
 	assert_eq(selected, "battle_wolf",
 		"a real ice_wolf enemy selected '%s', not battle_wolf — the mapping resolves for a hand-typed string but the enemy-driven path does not reach it" % selected)
 
+
+func test_a_mapping_only_fires_when_its_monster_is_DOMINANT() -> void:
+	## cowir-battle's method: assert MORE than the fix delivers and watch it
+	## fail. Theirs showed _ai_tank sorts and always takes [0], so widening the
+	## pool changed WHICH ability a tank uses, not HOW MANY.
+	##
+	## Mine: I reported "12 monster variants now reach beds that were already on
+	## disk". Measured, that is true only when the mapped monster is DOMINANT.
+	## _get_dominant_monster_type counts types and keeps the max with a strict
+	## `>`, so on a TIE the FIRST-SPAWNED type wins:
+	##
+	##     [ice_wolf, wolf, spider]     -> ice_wolf -> battle_wolf
+	##     [spider, ice_wolf, wolf]     -> spider   -> no mapping -> generic bed
+	##
+	## Both are 1-of-each. The only difference is spawn order. That is the
+	## design working — "dominant monster" is the stated rule — but it means an
+	## UNMAPPED monster winning a tie sends the whole encounter to the world bed
+	## while a mapped one stands right there. Pinning it so the behaviour cannot
+	## change silently, and so the next reader does not inherit my overstatement.
+	var script: Script = load(BATTLE_SCENE_SCRIPT)
+
+	var cases := [
+		{"pack": ["ice_wolf", "wolf", "spider"], "want": "battle_wolf", "why": "mapped monster spawned first wins the tie"},
+		{"pack": ["spider", "ice_wolf", "wolf"], "want": "", "why": "unmapped monster spawned first takes the encounter"},
+		{"pack": ["ice_wolf", "ice_wolf", "spider"], "want": "battle_wolf", "why": "a real majority wins regardless of order"},
+	]
+	for c in cases:
+		var scene: Node = script.new()
+		scene._enemy_spawner = BattleEnemySpawner.new(scene)
+		var arr: Array[Combatant] = []
+		for id in c["pack"]:
+			var m := Combatant.new()
+			m.initialize({"name": str(id), "max_hp": 20, "max_mp": 0, "attack": 4, "defense": 2, "magic": 1, "speed": 6})
+			m.set_meta("monster_type", str(id))
+			arr.append(m)
+		scene.test_enemies = arr
+		var got: String = scene._declared_music_track(scene._get_dominant_monster_type())
+		for m2 in arr:
+			m2.free()
+		scene.free()
+		assert_eq(got, str(c["want"]),
+			"pack %s selected '%s', expected '%s' — %s" % [c["pack"], got, c["want"], c["why"]])
+
