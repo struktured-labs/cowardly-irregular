@@ -19,6 +19,11 @@ const EFFECT_CUE: Dictionary = {
 	"cure_all_status": "status_cured",
 	"heal_mp": "ability_mp_restore",
 	"heal_mp_percent": "ability_mp_restore",
+	## Added after the first version of this file EXCLUDED these on a false premise — see
+	## test_potions_are_audible_in_battle. Without them the sweep could not see the most common
+	## item in the game, and only the named assert caught the regression.
+	"heal_hp": "heal",
+	"heal_hp_percent": "heal",
 }
 
 
@@ -89,16 +94,35 @@ func test_named_items_reach_the_right_cue() -> void:
 			"%s must not reuse the HP-heal cue — the popups were separated on purpose, the audio should agree" % iid)
 
 
-func test_plain_hp_potions_stay_out_of_the_map() -> void:
-	## NEGATIVE CONTROL. heal_hp already reaches `heal` through healing_done. Adding a second cue
-	## on top would be louder, not clearer — and would double-fire on the most-used item in the game.
+func test_potions_are_audible_in_battle() -> void:
+	## ⛔ THIS ASSERTION USED TO SAY THE OPPOSITE, and it was wrong. It excluded potions on the
+	## reasoning "healing_done already plays `heal`". _on_healing_done is FOUR lines and plays
+	## nothing — the probe that "verified" it used a fixed 12-line window from the func header and
+	## ran into the NEXT function, reading _on_ap_granted's cue as this one's. So the guard pinned
+	## the silence it was written to prevent.
+	##
+	## Discriminator, and the reason the shape is worth remembering: a fixed-size window around a
+	## symbol is not a scope. Bound the read at the next `func`, or count CALLERS of the cue.
 	var sm: Node = _sm()
 	var items: Dictionary = _items()
 	assert_true(items.has("potion"), "control: potion must exist or this control is vacuous")
 	var eff: Variant = (items.get("potion", {}) as Dictionary).get("effects", {})
 	assert_true((eff as Dictionary).has("heal_hp"), "control: potion must still be a heal_hp item")
-	assert_eq(str(sm._item_sounds.get("potion", "")), "",
-		"potion must NOT be in the item cue map — healing_done already plays `heal` for it")
+	assert_eq(str(sm._item_sounds.get("potion", "")), "heal",
+		"the most-used item in the game is SILENT in battle — _on_healing_done plays nothing")
+
+
+func test_healing_done_still_plays_nothing_so_this_cannot_double_fire() -> void:
+	## The premise the mapping above depends on, asserted rather than assumed this time. If someone
+	## gives _on_healing_done a cue, potions fire TWICE and this reds instead of going quietly loud.
+	var src: String = FileAccess.get_file_as_string("res://src/battle/BattleScene.gd")
+	assert_ne(src, "", "BattleScene.gd unreadable — this guard would pass vacuously")
+	var i := src.find("func _on_healing_done(")
+	assert_gt(i, -1, "control: _on_healing_done not found — the scope below is meaningless")
+	var j := src.find("\nfunc ", i + 1)
+	var body := src.substr(i, (j - i) if j > i else 200)
+	assert_false(body.contains("SoundManager."),
+		"_on_healing_done now plays a cue — potions would fire twice, once from it and once from the item map")
 
 
 func test_the_call_site_exists() -> void:
