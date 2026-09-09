@@ -1541,8 +1541,7 @@ func _try_play_from_manifest(track_id: String) -> bool:
 	# fire the `finished` signal — so the previous music never resumed
 	# (user: "level up music repeats itself"). Force-override here so a
 	# stinger can never loop regardless of what the manifest says.
-	## 2026-09-09: the name check missed all 14 job_*_special, so a Limit Break looped a 5s fragment.
-	var is_stinger: bool = bool(entry.get("stinger", track_id.begins_with("stinger_")))
+	var is_stinger: bool = _is_stinger_track(track_id)
 	var should_loop: bool
 	if is_stinger:
 		should_loop = false
@@ -1559,6 +1558,10 @@ func _try_play_from_manifest(track_id: String) -> bool:
 	# captured STATE, not a track id: area beds live in _current_area and leave
 	# _current_music empty, so a track-only resume silently did nothing there.
 	if is_stinger and not _stinger_resume_state.is_empty() and str(_stinger_resume_state.get("track", "")) != track_id:
+		## Only one resume may be armed: every stale one-shot fires on the SAME
+		## finished signal and the last to run wins.
+		for c in _music_player.finished.get_connections():
+			_music_player.finished.disconnect(c["callable"])
 		var resume: Dictionary = _stinger_resume_state.duplicate()
 		_music_player.finished.connect(func():
 			restore_music_state(resume)
@@ -1619,6 +1622,15 @@ const PROCEDURAL_BATTLE_TRACKS := [
 ]
 
 
+## 2026-09-09: the name check missed all 14 job_*_special, so a Limit Break looped a 5s fragment.
+func _is_stinger_track(track_id: String) -> bool:
+	if track_id == "":
+		return false
+	_load_music_manifest()
+	var e: Dictionary = _music_manifest.get(track_id, {})
+	return bool(e.get("stinger", track_id.begins_with("stinger_")))
+
+
 func play_music(track: String) -> void:
 	"""Play a music track with crossfade transition"""
 	if _current_music == track and _music_playing:
@@ -1627,7 +1639,11 @@ func play_music(track: String) -> void:
 	# Capture here, ABOVE the clear below — not at the old site further down,
 	# which ran after _current_area was already emptied and so could only ever
 	# describe a play_music() bed.
-	_stinger_resume_state = capture_music_state()
+	## A stinger must never become the resume TARGET. Two Limit Breaks in one
+	## fight made the second stinger resume to the FIRST, so a 5s fragment
+	## played as the bed and the battle music never came back.
+	if not _is_stinger_track(_current_music):
+		_stinger_resume_state = capture_music_state()
 
 	# Clear area tracking so play_area_music() doesn't skip after battle/victory
 	_current_area = ""
