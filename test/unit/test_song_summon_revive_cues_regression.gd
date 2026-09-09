@@ -113,6 +113,23 @@ func test_element_still_outranks_type() -> void:
 			"%s declares no element — it must land on the generic summon cue" % aid)
 
 
+func test_riff_is_a_chord_not_a_sword() -> void:
+	## The Bard's Free Move IS her attack (struktured 2026-08-29: "the bard doesnt need an attack
+	## option"). It is type=physical, so DERIVATION CANNOT REACH IT — only the hand map can, which
+	## is why it survived the fix above and needs its own assert. Its shipped description reads "a
+	## sour, clashing chord struck like a weapon"; ability_physical is a sword unsheathing, so the
+	## audio contradicted the text the player is shown.
+	var sm: Node = _sm()
+	assert_eq(str(sm._ability_sounds.get("riff", "ability_physical")), "ability_riff",
+		"riff must play its own chord, not the sword thump")
+	assert_true(sm._sfx_manifest.has("ability_riff"), "ability_riff missing from the manifest")
+	## The engine already groups riff with the four songs (BattleAnimator play_cast) and routes its
+	## VFX to MP_RESTORE. Audio was the last channel still calling it a sword — pin that agreement.
+	var abilities: Dictionary = _abilities()
+	assert_eq(str((abilities.get("riff", {}) as Dictionary).get("animation", "")), "riff",
+		"control: riff's animation field changed — the engine grouping this assert relies on has moved")
+
+
 func test_physical_and_support_were_not_swept_in() -> void:
 	## NEGATIVE CONTROL on scope. Mapping every unmapped type would have caught 185 abilities
 	## including all 85 support buffs — an over-fix that changes the whole battle mix at once.

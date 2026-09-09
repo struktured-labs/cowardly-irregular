@@ -182,6 +182,13 @@
       "prompt_influence": 0.8,
       "source": "tools/gen_chiptune_sfx.py revive"
     },
+    "ability_riff": {
+      "file": "assets/audio/sfx/ability_riff.ogg",
+      "prompt": "SYNTHESISED, not generated — root + tritone + minor 2nd struck together with a noise transient. The Bard's Free Move IS her attack and is type=physical, so it resolved to ability_physical, a sword unsheathing, against its own shipped description: 'a sour, clashing chord struck like a weapon'. Dissonant by construction, no glide. Run the tool.",
+      "duration_seconds": 0.55,
+      "prompt_influence": 0.8,
+      "source": "tools/gen_chiptune_sfx.py riff"
+    },
     "ability_song": {
       "file": "assets/audio/sfx/ability_song.ogg",
       "prompt": "SYNTHESISED, not generated — a three-step major triad on a reedy 25% pulse with vibrato on the sustain. The bard's four songs (battle_hymn, lullaby, discord, inspiring_melody) had no cue and fell through to ability_physical, a sword thump. Steps, never a slide: an arpeggio is discrete pitch, so it cannot become the glide struktured rejected. A text prompt would give a real instrument, not chiptune — run the tool.",

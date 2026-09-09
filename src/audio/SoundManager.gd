@@ -313,6 +313,9 @@ func _setup_audio_players() -> void:
 func _setup_default_ability_sounds() -> void:
 	"""Map abilities to their default sounds based on element/type"""
 	# Fire abilities
+	## riff is type=physical so derivation cannot reach it, and ability_physical is a sword
+	## unsheathing — its own description says "a sour, clashing chord struck like a weapon".
+	_ability_sounds["riff"] = "ability_riff"
 	_ability_sounds["fire"] = "ability_fire"
 	_ability_sounds["fira"] = "ability_fire"
 	_ability_sounds["firaga"] = "ability_fire"
