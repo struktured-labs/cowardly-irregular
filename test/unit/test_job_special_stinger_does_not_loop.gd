@@ -103,3 +103,22 @@ func test_a_job_special_restores_the_music_it_interrupted() -> void:
 
 	assert_eq(with_stinger - baseline, 1,
 		"job_bard_special added %d `finished` listeners, not 1 — when the stinger ends the battle theme never comes back, because the resume hookup is gated on the same name check that missed it" % (with_stinger - baseline))
+
+
+func test_stop_music_cancels_a_pending_stinger_resume() -> void:
+	## Found by probing my own test's teardown, then true in the GAME: win a
+	## battle while the Limit Break stinger is still playing and stop_music()
+	## left the resume armed, so when the VICTORY track finished the battle bed
+	## started over the victory screen.
+	SoundManager.play_music("battle_medieval")
+	SoundManager.play_music("stinger_level_up")
+	var armed: int = SoundManager._music_player.finished.get_connections().size()
+	assert_gt(armed, 0,
+		"SCOPE control: no resume was armed, so this test cannot show stop_music cancelling one")
+
+	SoundManager.stop_music()
+	assert_eq(SoundManager._music_player.finished.get_connections().size(), 0,
+		"stop_music left %d pending finished listener(s) — the next track to end restarts music the player never asked for" % SoundManager._music_player.finished.get_connections().size())
+	assert_true(SoundManager._stinger_resume_state.is_empty(),
+		"stop_music left _stinger_resume_state holding %s" % SoundManager._stinger_resume_state)
+

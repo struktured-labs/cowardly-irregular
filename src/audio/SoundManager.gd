@@ -1808,6 +1808,11 @@ func stop_music() -> void:
 	_current_music = ""
 	if _crossfade_tween and _crossfade_tween.is_valid():
 		_crossfade_tween.kill()
+	## stop means "and do not come back": a pending stinger resume would otherwise fire on the NEXT track's finish.
+	if _music_player:
+		for c in _music_player.finished.get_connections():
+			_music_player.finished.disconnect(c["callable"])
+	_stinger_resume_state = {}
 	if _music_player:
 		_music_player.stop()
 	if _music_player_b:
