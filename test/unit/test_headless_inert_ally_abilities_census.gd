@@ -292,6 +292,14 @@ func test_the_map_derivation_reads_the_real_function() -> void:
 
 const STARTER_JOB_TYPE := 0
 
+## EIGHT, not the seven I first wrote: the ratchet below caught my own hardcoded list being short by
+## new_game_plus_warp (skiptrotter, unlock_condition "beat_game_once"). I produced the seven with a
+## throwaway script and the guard — which reads the real store — disagreed and named the missing one.
+## File-level so both the missing-entry arm AND the stale-entry arm read ONE list; two copies would
+## be the duplication class this file exists to police.
+const KNOWN_INERT := ["flee", "raise", "bypass_puzzle", "sequence_break", "skip_cutscene",
+	"warp_to_boss", "recursive_summon", "new_game_plus_warp"]
+
 
 ## ⛔ CORRECTED 2026-09-09: this read STARTER jobs only, because a comment of mine asserted that
 ## advanced/meta jobs are "gated behind debug mode" and a grinding party cannot have them. I never
@@ -354,16 +362,11 @@ func test_no_NEW_starter_reachable_ability_becomes_inert() -> void:
 	## regression and names itself here rather than hiding inside an aggregate of 20.
 	## The seven a player can actually reach without debug mode. Was ["flee","raise"] while this
 	## read starter jobs only — skiptrotter's four and summoner's recursive_summon were invisible.
-	## EIGHT, not the seven I first wrote: this ratchet caught my own hardcoded list being short by
-	## new_game_plus_warp (skiptrotter, type 2, unlock_condition "beat_game_once"). I had produced
-	## the seven with a throwaway script and the guard — which reads the real store — disagreed and
-	## named the missing one. That is the ratchet doing its job against its own author.
-	const KNOWN := ["flee", "raise", "bypass_puzzle", "sequence_break", "skip_cutscene",
-		"warp_to_boss", "recursive_summon", "new_game_plus_warp"]
+	var unexpected_known := KNOWN_INERT
 	var reach := _player_reachable_abilities()
 	var unexpected: Array[String] = []
 	for a in _inert_ids():
-		if reach.has(a) and not KNOWN.has(a):
+		if reach.has(a) and not unexpected_known.has(a):
 			unexpected.append(a)
 	assert_eq(unexpected.size(), 0,
 		"a starter-reachable ability became inert in headless: %s" % str(unexpected))
@@ -380,3 +383,26 @@ func test_the_reachability_reader_is_not_vacuous() -> void:
 		"control: undo_death belongs to Time Mage, which has NO unlock_condition — debug-only, so not reachable")
 	assert_true(reach.has("warp_to_boss"),
 		"control: skiptrotter HAS an unlock_condition, so its abilities ARE reachable — the case my starter-only reader missed")
+
+
+func test_the_KNOWN_allowlist_can_EXPIRE() -> void:
+	## cowir-sprites: "an exception justified by a HUMAN JUDGEMENT cannot expire on its own, because
+	## the judgement is not re-computable." KNOWN is exactly that — its reason is "these are design
+	## questions for struktured", which no check re-derives.
+	##
+	## The rot was one-directional. The ratchet above catches a NEW inert ability missing from
+	## KNOWN, but nothing catches an entry that no longer needs suppressing: implement headless
+	## revival and `raise` drops out of the inert set, the ratchet stops consulting it, and the
+	## entry survives forever suppressing nothing. That is a suppression whose condition has ended
+	## with no transition anyone can detect.
+	##
+	## This makes it expire: every KNOWN entry must STILL be inert. When one gets fixed, this reds
+	## and names it, and a human removes it deliberately.
+	var inert := _inert_ids()
+	var stale: Array[String] = []
+	for a in KNOWN_INERT:
+		if not inert.has(a):
+			stale.append(a)
+	assert_eq(stale.size(), 0,
+		("these are allowlisted as known-inert but are NOT inert any more — someone fixed them, " +
+		"so remove them from KNOWN_INERT rather than leaving a suppression with no subject: %s") % str(stale))
