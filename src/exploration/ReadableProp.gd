@@ -22,6 +22,13 @@ const PANEL_W: float = 420.0
 const PANEL_H: float = 240.0
 const LOCK_NAME: String = "readable_prop"
 
+
+## Same physical-cap rule as CutsceneDirector.skip_prompt_text: "[B]" named the wrong cap on Nintendo-family pads.
+static func close_glyph(device_name: String = "") -> String:
+	if InputProfileManager:
+		return InputProfileManager.glyph_for_action("ui_cancel", device_name)
+	return "B"
+
 @export var display_name: String = "Notebook"
 
 var _provider: Callable = Callable()
@@ -142,7 +149,8 @@ func _render_page() -> void:
 	if _body_label:
 		_body_label.text = e["body"]
 	if _footer_label:
-		var nav := "[<-/->] Page   [B] Close" if _entries.size() > 1 else "[B] Close"
+		var close := "[%s] Close" % close_glyph()
+		var nav := "[<-/->] Page   " + close if _entries.size() > 1 else close
 		_footer_label.text = "%d / %d      %s" % [_page + 1, _entries.size(), nav]
 
 

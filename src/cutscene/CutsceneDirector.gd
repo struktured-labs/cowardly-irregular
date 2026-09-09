@@ -57,6 +57,14 @@ const SKIP_BAR_HEIGHT: float = 10.0
 const SKIP_PILL_PAD: float = 12.0
 const SKIP_PILL_HEIGHT: float = 48.0
 
+
+## The prompt names the PHYSICAL cancel cap: "Hold B" was wrong on every Nintendo-family pad (8BitDo/SN30 cancel sits under the Ⓐ cap).
+static func skip_prompt_text(device_name: String = "") -> String:
+	var glyph := "B"
+	if InputProfileManager:
+		glyph = InputProfileManager.glyph_for_action("ui_cancel", device_name)
+	return "Hold %s / Esc to skip..." % glyph
+
 ## Per-world backdrop colors (top, bottom gradient) for cutscenes without game scene behind them
 const WORLD_BACKDROP_COLORS = {
 	1: [Color(0.08, 0.12, 0.22), Color(0.15, 0.20, 0.10)],  # Medieval: dark blue sky → dark green
@@ -157,7 +165,7 @@ func _build_ui() -> void:
 	_skip_indicator.add_child(_skip_pill_bg)
 
 	_skip_label = Label.new()
-	_skip_label.text = "Hold B / Esc to skip..."
+	_skip_label.text = skip_prompt_text()
 	_skip_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_skip_label.add_theme_font_size_override("font_size", 14)
 	_skip_label.add_theme_color_override("font_color", Color(0.95, 0.95, 0.75, 0.95))
@@ -266,6 +274,8 @@ func play_cutscene(cutscene_id: String) -> void:
 	_skipping = false
 	_fast_forward = false
 	_skip_hold_time = 0.0
+	if _skip_label:
+		_skip_label.text = skip_prompt_text()  # re-resolved per scene: a pad plugged in after boot changes the answer
 	_current_world = data.get("world", 0)
 	visible = true
 
@@ -326,6 +336,8 @@ func play_cutscene_from_data(cutscene_id: String, data: Dictionary) -> void:
 	_skipping = false
 	_fast_forward = false
 	_skip_hold_time = 0.0
+	if _skip_label:
+		_skip_label.text = skip_prompt_text()  # re-resolved per scene: a pad plugged in after boot changes the answer
 	_current_world = data.get("world", 0)
 	visible = true
 
