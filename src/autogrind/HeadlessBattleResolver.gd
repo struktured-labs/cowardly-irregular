@@ -631,6 +631,27 @@ func _resolve_attack(attacker, target) -> int:
 	return actual
 
 
+## Canonical effect -> [stat, modifier] pairs, mirroring BattleManager's own names. Only the
+## shapes headless actually needs; anything absent is handled as a status or a no-op, never damage.
+func _effect_to_stat(effect: String) -> Array:
+	match effect:
+		"attack_up": return ["attack", 1.5]
+		"defense_up": return ["defense", 1.5]
+		"magic_up": return ["magic", 1.5]
+		"speed_up": return ["speed", 1.5]
+		"attack_down": return ["attack", 0.75]
+		"defense_down": return ["defense", 0.75]
+		"magic_down": return ["magic", 0.75]
+		"speed_down": return ["speed", 0.75]
+	return []
+
+
+## Same side = both in the player party, or neither. Used to refuse friendly fire from an
+## ability type this resolver does not model.
+func _is_same_side(a, b) -> bool:
+	return (a in _player_party) == (b in _player_party)
+
+
 func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 	var js = _get_autoload("JobSystem")
 	var ability: Dictionary = {}
@@ -694,24 +715,55 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					var dmg = _resolve_attack_with_power(caster, target, base_dmg)
 					_log("%s uses %s on %s for %d" % [caster.combatant_name, ability_id, target.combatant_name, dmg])
 
-		"support":
+		"support", "song", "status":
+			## BattleManager:4424 groups these three in one arm; headless had only "support", so
+			## every song fell to the `_:` damage default below — battle_hymn cost the ally it
+			## buffs 25 HP. Grouping alone is not enough: the support path reads stat/modifier
+			## and songs author `effect`, so discord would have BUFFED the enemy's attack.
 			for target in targets:
-				if target and target.is_alive:
-					var stat = ability.get("stat", "attack")
-					var modifier = ability.get("modifier", 1.5)
-					var duration = ability.get("duration", 3)
-					if modifier >= 1.0:
-						target.add_buff(ability_id, stat, modifier, duration)
+				if target == null or not target.is_alive:
+					continue
+				var duration = int(ability.get("duration", 3))
+				var effect := str(ability.get("effect", ""))
+				var stat = ability.get("stat", "")
+				var modifier = float(ability.get("modifier", ability.get("stat_modifier", 1.5)))
+				if stat == "" and effect != "":
+					var mapped: Array = _effect_to_stat(effect)
+					if not mapped.is_empty():
+						stat = mapped[0]
+						modifier = float(mapped[1])
+					elif effect == "mp_restore_and_ap":
+						target.restore_mp(int(target.max_mp * 0.25))
+						target.gain_ap(1)
+						_log("%s uses %s on %s (MP + AP)" % [caster.combatant_name, ability_id, target.combatant_name])
+						continue
 					else:
-						target.add_debuff(ability_id, stat, modifier, duration)
-					_log("%s uses %s on %s" % [caster.combatant_name, ability_id, target.combatant_name])
+						## Live owns a ~40-arm effect table; headless deliberately does NOT mirror
+						## it. An effect we do not model is a NO-OP, never damage.
+						target.add_status(effect, duration)
+						_log("%s uses %s on %s (%s)" % [caster.combatant_name, ability_id, target.combatant_name, effect])
+						continue
+				if stat == "":
+					stat = "attack"
+				if modifier >= 1.0:
+					target.add_buff(ability_id, stat, modifier, duration)
+				else:
+					target.add_debuff(ability_id, stat, modifier, duration)
+				_log("%s uses %s on %s" % [caster.combatant_name, ability_id, target.combatant_name])
 
 		_:
+			## Was: magic damage to targets[0]. AutobattleSystem builds targets from target_type,
+			## so an all_allies ability arrived holding the PARTY and this attacked them. 39
+			## abilities author a type with no arm (meta 24 · summon 7 · song 4 · mp_restore 2 ·
+			## revival 1 · escape 1), so the blast radius was never just the Bard.
 			var target = targets[0] if targets.size() > 0 else null
 			if target and target.is_alive:
-				var base_dmg = int(caster.get_buffed_stat("magic", caster.magic) * power)
-				target.take_damage(max(1, base_dmg), true)
-				_log("%s uses %s on %s" % [caster.combatant_name, ability_id, target.combatant_name])
+				if _is_same_side(caster, target):
+					_log("%s uses %s on %s (unmodelled type — no effect)" % [caster.combatant_name, ability_id, target.combatant_name])
+				else:
+					var base_dmg = int(caster.get_buffed_stat("magic", caster.magic) * power)
+					target.take_damage(max(1, base_dmg), true)
+					_log("%s uses %s on %s" % [caster.combatant_name, ability_id, target.combatant_name])
 
 
 func _resolve_attack_with_power(attacker, target, base_damage: int) -> int:
