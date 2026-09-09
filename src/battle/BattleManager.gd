@@ -2348,22 +2348,15 @@ func _ai_caster(combatant: Combatant, abilities: Array, alive_enemies: Array) ->
 	# 75% chance (intent-biased) to cast a spell if MP allows
 	if magic_abilities.size() > 0 and randf() < cast_chance:
 		# Prefer spells that exploit target weaknesses
-		var best_spell = magic_abilities[0]
-		var best_score = 0.0
-		for spell in magic_abilities:
-			var element = spell.get("element", "")
-			var score = _ability_power(spell)
-			# Check if any enemy is weak to this element.
-			# Combatant's field is elemental_weaknesses (Array[String]), not
-			# weaknesses — a prior typo silently errored at runtime when
-			# cast by a caster-AI enemy, defeating the weakness-exploit
-			# heuristic.
-			for enemy in alive_enemies:
-				if element != "" and "elemental_weaknesses" in enemy and element in enemy.elemental_weaknesses:
-					score *= 2.0  # Double score for weakness exploitation
-			if score > best_score:
-				best_score = score
-				best_spell = spell
+		## Was: keep the single highest-scoring spell. Measured, Mordaine cast firaga 2268 times in
+		## 3000 turns and NOTHING else — void_pulse, the W1 final boss's silence, never once. Same
+		## single-slot rule the tank and assassin had; scoring still orders the list, the bias just
+		## stops it being the only entry that can win. Weakness exploitation stays the primary sort.
+		var scored: Array = magic_abilities.duplicate()
+		scored.sort_custom(func(a, b): return _caster_spell_score(a, alive_enemies) > _caster_spell_score(b, alive_enemies))
+		var best_spell = _pick_biased_by_power(scored)
+		if best_spell.is_empty():
+			best_spell = magic_abilities[0]
 
 		var spell_target = _choose_target(combatant, alive_enemies, best_spell)
 		return {
@@ -2422,6 +2415,19 @@ func _ai_debuffer(combatant: Combatant, abilities: Array, alive_allies: Array, a
 	# Fallback: basic attack
 	var target = _choose_target(combatant, alive_enemies, {})
 	return {"type": "attack", "combatant": combatant, "target": target, "speed": _compute_action_speed(combatant, "attack")}
+
+
+## Caster ordering: raw power, doubled when an enemy is weak to the spell's element. Combatant's
+## field is elemental_weaknesses, not weaknesses — a prior typo silently errored at runtime here.
+func _caster_spell_score(spell: Dictionary, alive_enemies: Array) -> float:
+	var element: String = str(spell.get("element", ""))
+	var score: float = _ability_power(spell)
+	if element == "":
+		return score
+	for enemy in alive_enemies:
+		if enemy != null and "elemental_weaknesses" in enemy and element in enemy.elemental_weaknesses:
+			score *= 2.0
+	return score
 
 
 ## Prefers the strongest, without being ONLY the strongest. Three archetypes sorted by power and
