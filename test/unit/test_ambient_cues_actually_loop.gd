@@ -19,6 +19,26 @@ extends GutTest
 ## what play_ambient needs.
 ##
 ## All 11 comply today. This holds it.
+##
+## ⚠️ AN AUTOMATED PROSE-VS-CODE SWEEP WAS TRIED AND DISCARDED — recording the
+## numbers so nobody rebuilds it. Over 180 SoundManager functions, filtering on
+## "docstring mentions loop" and checking the body for a loop mechanism:
+##   14 hits, essentially all noise. stop_ambient's doc says "stop the ambient
+##   LOOP" — a mention, not a promise. _generate_victory_rock_loop has it in the
+##   NAME.
+##   AND A FALSE NEGATIVE ON THE MOST LOOP-SETTING FUNCTION IN THE FILE:
+##   _create_and_play_looping_wav sets wav.loop_mode / loop_begin / loop_end,
+##   and my `\.loop\b` pattern could not match `loop_mode` because `_` is a
+##   word character.
+## Wrong in both directions at once, which is cowir-sfx's ~1-in-9 word-list rate
+## in a new domain. The doc/body split itself was FINE (controlled against
+## cowir-autogrind's blindness: play_ambient's body does not contain "looping"),
+## so the corpus was right and the PREDICATE was wrong — the two failure modes
+## are independent and fixing one says nothing about the other.
+##
+## The finding this file defends came from READING play_ambient, not from the
+## sweep. Recorded because "I automated it and got 14 results" is exactly the
+## shape that gets published.
 
 const SFX_MANIFEST := "res://data/sfx_manifest.json"
 
