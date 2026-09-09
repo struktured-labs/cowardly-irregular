@@ -138,6 +138,9 @@ func _char_to_tile_type(char: String) -> int:
 		"V": return IndustrialTileGeneratorScript.TileType.CHEMICAL_BARREL
 		"d": return IndustrialTileGeneratorScript.TileType.FACTORY_FLOOR
 		"X": return IndustrialTileGeneratorScript.TileType.IRON_GRATING
+		"I": return TileGeneratorScript.TileType.WALL  # inn (barracks)
+		"G": return TileGeneratorScript.TileType.WALL  # general store
+		"C": return TileGeneratorScript.TileType.WALL  # canteen
 		_: return IndustrialTileGeneratorScript.TileType.FACTORY_FLOOR
 
 
@@ -247,7 +250,7 @@ func _setup_npcs() -> void:
 	npcs.add_child(union_rep)
 
 	# Canteen Cook (heals party, humor)
-	var cook = _create_npc("Canteen Cook Murl", "villager", Vector2(5 * TILE_SIZE,13 * TILE_SIZE), [
+	var cook = _create_npc("Canteen Cook Murl", "villager", Vector2(5 * TILE_SIZE,14 * TILE_SIZE), [
 		"Welcome to the canteen! Today's special is Mystery Stew.",
 		"Yesterday's special was also Mystery Stew.",
 		"Every day is Mystery Stew. We haven't solved the mystery yet.",

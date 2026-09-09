@@ -141,6 +141,8 @@ func _char_to_tile_type(char: String) -> int:
 		"F": return FuturisticTileGeneratorScript.TileType.NEON_WALL
 		"p": return FuturisticTileGeneratorScript.TileType.DATA_HIGHWAY
 		"X": return FuturisticTileGeneratorScript.TileType.DATA_HIGHWAY
+		"I": return TileGeneratorScript.TileType.WALL  # inn (Sleep.exe)
+		"C": return TileGeneratorScript.TileType.WALL  # cache store
 		_: return FuturisticTileGeneratorScript.TileType.CIRCUIT_FLOOR
 
 
@@ -168,7 +170,8 @@ func _setup_buildings() -> void:
 	cache_store.shop_name = "Cache Store"
 	cache_store.shop_type = VillageShopScript.ShopType.WHITE_MAGIC
 	cache_store.keeper_name = "CACHE-1"
-	cache_store.position = Vector2(12 * TILE_SIZE,5 * TILE_SIZE)
+		# Moved to the building's face 2026-09-09: the shop sat at the block's CENTRE, which was reachable only while the building rendered as walk-through floor.
+	cache_store.position = Vector2(12 * TILE_SIZE,3 * TILE_SIZE)
 	buildings.add_child(cache_store)
 
 	# === HEAP (Item Shop) ===

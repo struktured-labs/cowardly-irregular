@@ -135,6 +135,11 @@ func _char_to_tile_type(char: String) -> int:
 	match char:
 		"W": return TileGeneratorScript.TileType.WALL
 		"V": return TileGeneratorScript.TileType.LAVA
+		"I": return TileGeneratorScript.TileType.WALL  # ironclad inn
+		"F": return TileGeneratorScript.TileType.WALL  # master forge
+		"S": return TileGeneratorScript.TileType.WALL  # steamworks
+		"M": return TileGeneratorScript.TileType.WALL  # miner's tavern
+		"X": return TileGeneratorScript.TileType.VILLAGE_PATH  # exit
 		_: return TileGeneratorScript.TileType.FLOOR
 
 
@@ -167,7 +172,8 @@ func _setup_buildings() -> void:
 	forge.shop_name = "Master Forge"
 	forge.shop_type = VillageShopScript.ShopType.BLACKSMITH
 	forge.keeper_name = "Magda"
-	forge.position = Vector2(14.5 * TILE_SIZE,6 * TILE_SIZE)
+		# Moved to the building's face 2026-09-09: the shop sat at the block's CENTRE, which was reachable only while the building rendered as walk-through floor.
+	forge.position = Vector2(12 * TILE_SIZE,6 * TILE_SIZE)
 	buildings.add_child(forge)
 
 	# === STEAMWORKS (Item Shop - unique tech items) ===
