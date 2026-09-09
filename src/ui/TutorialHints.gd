@@ -63,19 +63,19 @@ const HINTS = {
 	},
 	"autogrind_menu": {
 		"title": "Autogrind Setup",
-		"body": "Configure interrupt rules: IF party HP drops below 30% THEN use potions. IF a member dies THEN stop. Press 1/2/3 for quick presets (Casual/Standard/Hardcore). Press Start to begin grinding.",
+		"body": "Rules run top to bottom, first match wins: IF party HP drops below 30% THEN use potions. IF the cleric dies THEN stop grinding. {confirm} edits the highlighted cell. Presets, permadeath and file sharing all live under {options}. The strip along the bottom always shows the live buttons for your controller.",
 	},
 	"autogrind_presets": {
 		"title": "Quick Presets",
-		"body": "Casual: safe, stops on death. Standard: balanced with auto-advance. Hardcore: ludicrous speed, minimal stops. Presets configure rules + toggles in one keypress.",
+		"body": "Casual: safe, stops on death. Standard: balanced with auto-advance. Hardcore: ludicrous speed, minimal stops. Each rewrites your rules and toggles in a single pick — open {options} and choose Presets.",
 	},
 	"autogrind_export": {
 		"title": "Script Sharing",
-		"body": "Your autobattle scripts and autogrind rules are saved to script_exports/. Share JSON files with other players or back them up. Press I to import shared scripts.",
+		"body": "Your autobattle scripts and autogrind rules are saved to script_exports/. Share the JSON with other players or back it up. Import and export both live under {options}, in Files.",
 	},
 	"autogrind_resume": {
 		"title": "Resume Session",
-		"body": "Your grind progress was saved automatically. Press Resume to continue where you left off — all battles, EXP, and items are preserved.",
+		"body": "Your grind progress was saved automatically. Choose Resume on the console to continue where you left off — all battles, EXP and items are preserved.",
 	},
 	"spotlight_unlock": {
 		"title": "Spotlight Unlocked",
@@ -215,6 +215,7 @@ static func resolve_tokens(text: String) -> String:
 	out = out.replace("{menu}", "Start / Enter")
 	out = out.replace("{defer}", "L shoulder / L key")
 	out = out.replace("{advance}", "R shoulder / R key")
+	out = out.replace("{options}", "L/R shoulder or the O key")
 	return out
 
 
