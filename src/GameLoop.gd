@@ -579,7 +579,11 @@ func _maybe_run_battle_smoke() -> void:
 		# game-over leg: force-resolve the duel, cripple the party, lose to a dragon
 		BattleManager.end_battle(true)
 		var _gwait := 0.0
+		# A duel victory now runs the confirm-gated victory sequence, so the smoke has to press
+		# through it exactly like the post-battle leg above — without this the smoke waits on a
+		# button no one is holding and the game-over leg never gets its turn.
 		while BattleManager.current_state != BattleManager.BattleState.INACTIVE and _gwait < 20.0:
+			_smoke_tap("ui_accept")
 			await get_tree().create_timer(0.5).timeout
 			_gwait += 0.5
 		for m in party:
@@ -3424,7 +3428,14 @@ func _apply_pending_boss_defeat() -> void:
 ## Victory variant of _wait_for_confirm: the FIRST accept snaps the overlay's
 ## animations to their end state; only a press on a COMPLETED overlay leaves.
 func _wait_for_confirm_victory() -> void:
+	## Nothing to confirm means nothing to wait for. BattleScene only builds the overlay when
+	## `not turbo_mode`, so at turbo a spotlight win used to block up to 120s on a press for a
+	## prompt that was never drawn — a two-minute freeze with the cutscene still on screen
+	## (found via cowir-deploy's .236 web render smoke, 2026-09-09).
 	await get_tree().create_timer(0.5).timeout
+	if current_scene == null or not is_instance_valid(current_scene) \
+			or current_scene.get_node_or_null("VictoryResults") == null:
+		return
 	var confirm_t0: int = Time.get_ticks_msec()
 	while Time.get_ticks_msec() - confirm_t0 < 120000:
 		await get_tree().process_frame
