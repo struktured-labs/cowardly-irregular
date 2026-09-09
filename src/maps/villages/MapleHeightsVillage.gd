@@ -283,6 +283,8 @@ func _setup_npcs() -> void:
 		"Old Mrs. Petrov says the caves north of here started HUMMING.",
 		"The Hendersons got a new car. Very suspicious.",
 		"And someone filed a complaint about reality 'feeling off'.",
+		"Appliances going rogue. Kids not missing, exactly. Relocated.",
+		"Nobody files about that one. You met the Coordinator yet?",
 		"Probably nothing. Here's a coupon."
 	])
 	mailman.npc_id = "mail_carrier_w2"
@@ -295,6 +297,8 @@ func _setup_npcs() -> void:
 		"Dude. DUDE. There's something in the storm drain.",
 		"It blinks at me every Tuesday.",
 		"I've been documenting it in a notebook.",
+		"Cool cosplay, by the way. What convention?",
+		"...Wait. You're not in costume.",
 		"Anyway, gotta go. Mom said dinner's at 6. BYE."
 	])
 	npcs.add_child(kid)
