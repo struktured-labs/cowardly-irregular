@@ -20,6 +20,10 @@ class_name MasteriteEncounter
 
 const TILE_SIZE: int = 32
 
+## Overworld sheet frame size — same convention RoamingMonster._setup_sprite reads.
+const FRAME_W: int = 32
+const FRAME_H: int = 32
+
 ## The archetype id — used to compose the defeat flag `w1_<id>_defeated`.
 ## E.g. "warden", "tempo", "arbiter", "curator".
 @export var archetype: String = ""
@@ -112,6 +116,11 @@ func _build_silhouette() -> void:
 		art_sprite.name = "MasteriteSilhouette"
 		art_sprite.texture = load(art)
 		art_sprite.centered = true
+		# Overworld sheets are frame grids; without a region the WHOLE sheet draws as a block of figures
+		art_sprite.region_enabled = true
+		art_sprite.region_rect = Rect2(0, 0, FRAME_W, FRAME_H)
+		# One frame is mob-sized; a masterite fills its own 2x2 trigger so what you see is what you touch
+		art_sprite.scale = Vector2(float(TILE_SIZE * 2) / FRAME_W, float(TILE_SIZE * 2) / FRAME_H)
 		add_child(art_sprite)
 		return
 	# The procedural fallback reads as "someone is standing in your way" at
