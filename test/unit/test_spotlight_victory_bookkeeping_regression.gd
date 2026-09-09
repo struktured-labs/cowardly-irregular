@@ -1,5 +1,10 @@
 extends GutTest
 
+## 2026-09-09: every anchor here is scoped to _on_battle_ended. The bare find() matched the
+## FIRST `if _spotlight_duel_active:` in the file, and the render smoke gained one of its own
+## higher up — so these tests silently began asserting against the smoke leg instead of the
+## short-circuit they defend, and reported the smoke body as a missing unlock flag.
+
 ## Cycle 13 (msg 2754 → task #2 = spotlight victory bookkeeping audit).
 ##
 ## Spotlight duels are 1v1 solo battles wrapping each W1 starter unlock.
@@ -75,7 +80,7 @@ func test_bm_end_battle_appends_prev_bosses_before_signal_emit() -> void:
 
 func test_spotlight_short_circuit_sets_unlock_flag_on_victory() -> void:
 	var src: String = FileAccess.get_file_as_string(GL_PATH)
-	var idx: int = src.find("if _spotlight_duel_active:")
+	var idx: int = src.find("if _spotlight_duel_active:", src.find("func _on_battle_ended"))
 	assert_gt(idx, -1, "spotlight short-circuit must exist")
 	var window: String = _short_circuit_block(src, idx)
 	assert_string_contains(window, "cutscene_flag_spotlight_unlocked_",
@@ -88,7 +93,7 @@ func test_spotlight_short_circuit_clears_loss_counter_on_victory() -> void:
 	## Clearing (not resetting to 0) matches msg 2472 ruling: a hypothetical
 	## replay starts fresh, and .get(key, 0) sees the same 0 either way.
 	var src: String = FileAccess.get_file_as_string(GL_PATH)
-	var idx: int = src.find("if _spotlight_duel_active:")
+	var idx: int = src.find("if _spotlight_duel_active:", src.find("func _on_battle_ended"))
 	assert_gt(idx, -1)
 	var window: String = _short_circuit_block(src, idx)
 	assert_string_contains(window, "spotlight_losses_",
@@ -115,7 +120,7 @@ func test_spotlight_short_circuit_calls_reconcile_locks_on_victory() -> void:
 	## Must fire IN the short-circuit so the mid-battle unlock takes
 	## immediate effect (post-cutscene party menu shows unlocked kit).
 	var src: String = FileAccess.get_file_as_string(GL_PATH)
-	var idx: int = src.find("if _spotlight_duel_active:")
+	var idx: int = src.find("if _spotlight_duel_active:", src.find("func _on_battle_ended"))
 	assert_gt(idx, -1)
 	var window: String = _short_circuit_block(src, idx)
 	var flag_idx: int = window.find("cutscene_flag_spotlight_unlocked_")
@@ -129,7 +134,7 @@ func test_spotlight_short_circuit_emits_signal_and_returns() -> void:
 	## emit the coroutine deadlocks; without the return, the normal
 	## victory flow runs a second teardown under the cutscene.
 	var src: String = FileAccess.get_file_as_string(GL_PATH)
-	var idx: int = src.find("if _spotlight_duel_active:")
+	var idx: int = src.find("if _spotlight_duel_active:", src.find("func _on_battle_ended"))
 	assert_gt(idx, -1)
 	var window: String = _short_circuit_block(src, idx)
 	assert_string_contains(window, "spotlight_battle_ended.emit(victory)",
@@ -152,7 +157,7 @@ func test_spotlight_victory_counts_as_a_battle_won() -> void:
 	## This test previously PINNED the skip as design-ambiguous, with a comment instructing
 	## exactly this flip once he ruled. Flipped rather than deleted — the pin did its job.
 	var src: String = FileAccess.get_file_as_string(GL_PATH)
-	var sc: int = src.find("if _spotlight_duel_active:")
+	var sc: int = src.find("if _spotlight_duel_active:", src.find("func _on_battle_ended"))
 	assert_gt(sc, -1)
 	var emit_idx: int = src.find("spotlight_battle_ended.emit(victory)", sc)
 	var inside: String = src.substr(sc, emit_idx - sc)
