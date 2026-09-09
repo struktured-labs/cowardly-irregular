@@ -522,6 +522,28 @@ VOICES = {"ui_toggle_on": ui_toggle_on, "staff_hit": staff_hit, "ui_confirm": ui
           "mp_restore": mp_restore, "flee": flee, "cure": cure}
 
 
+def _refuse_if_degenerate(voice, y):
+    """REFUSE to write near-silence. Every voice here ends with `out /= max(abs(out))` then a ~0.8
+    scale, so a correct render ALWAYS peaks near -2 dBFS. A quiet result means the voice function
+    produced garbage — an envelope that never opened, a filter that ate everything, a _place() that
+    wrote past the buffer — and none of that raises. The .ogg would be written, imported, pinned by
+    sha256 and shipped as a cue that plays nothing, which is indistinguishable from a cue nobody
+    happens to trigger. Cheap to check at the one place that can still stop it.
+
+    Thresholds are far below any correct output rather than tuned: measured across all 11 voices
+    authored 2026-09-09, peak sits at -2.0 dBFS and the live fraction at 48-100%.
+    """
+    peak = float(np.max(np.abs(y))) if len(y) else 0.0
+    peak_db = 20.0 * math.log10(peak + 1e-12)
+    live = float((np.abs(y) > 10 ** (-60.0 / 20.0)).mean()) if len(y) else 0.0
+    if peak_db < -20.0 or live < 0.05:
+        raise SystemExit(
+            "REFUSED to write %s: peak %.1f dBFS, %.1f%% of samples above -60 dBFS.\n"
+            "A correct render peaks near -2 dBFS — this voice produced near-silence. Fix the voice;\n"
+            "do NOT lower this floor. Writing it would ship a cue that plays nothing and pin its\n"
+            "sha256 in the whoop baseline as if it were real." % (voice, peak_db, live * 100.0))
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("voice", choices=sorted(VOICES))
@@ -529,6 +551,7 @@ def main():
     ap.add_argument("--seed", type=int, default=7)
     a = ap.parse_args()
     y = VOICES[a.voice](seed=a.seed)
+    _refuse_if_degenerate(a.voice, y)
     wav = Path(tempfile.mktemp(suffix=".wav"))
     import wave
     with wave.open(str(wav), "wb") as w:
