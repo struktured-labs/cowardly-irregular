@@ -11,9 +11,15 @@ extends GutTest
 ##
 ## Post-fix routes "summon" → _execute_magic_ability. The eidolons
 ## have the magic-ability shape (damage_multiplier + element +
-## target_type=all_enemies) so they fit cleanly. The ally-spawning
-## summons (rat_swarm, pack_call) aren't in any player job, so this
-## route doesn't break enemy-only paths.
+## target_type=all_enemies) so they fit cleanly.
+##
+## ⚠️ CORRECTED 2026-09-09: this docstring used to end "The ally-spawning summons (rat_swarm,
+## pack_call) aren't in any player job, so this route doesn't break enemy-only paths." The first
+## clause is true; the second is not. Those abilities had no enemy-only path either — _execute_summon
+## is gated on _can_monster_summon's hardcoded roster, which names neither owner — so routing them
+## to magic was the ONLY thing that ran, and the Rat King's Royal Summon spawned nothing for months.
+## The arm now branches on summon_id; the eidolon half asserted below is deliberately unchanged.
+## See test_ability_summons_actually_spawn.
 
 const BATTLE_MANAGER_PATH := "res://src/battle/BattleManager.gd"
 
