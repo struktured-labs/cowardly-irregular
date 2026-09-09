@@ -99,6 +99,12 @@ const CHARACTER_THEMES = {
 }
 
 
+
+## Same physical-cap rule as CutsceneDialogue.advance_hint_text — one source for the confirm glyph.
+static func advance_hint_text(device_name: String = "") -> String:
+	return "Z / %s / Click to continue..." % CutsceneDialogue.confirm_glyph(device_name)
+
+
 func _ready() -> void:
 	layer = 100  # Above everything else
 	process_mode = Node.PROCESS_MODE_ALWAYS  # Independent of battle speed
@@ -204,7 +210,7 @@ func _create_dialogue_visuals(theme: Dictionary) -> void:
 
 	# Advance hint
 	_advance_hint = Label.new()
-	_advance_hint.text = "Z / A / Click to continue..."
+	_advance_hint.text = advance_hint_text()
 	_advance_hint.position = Vector2(box_width - 150, box_height - 20)
 	_advance_hint.add_theme_font_size_override("font_size", 10)
 	_advance_hint.add_theme_color_override("font_color", theme["text"].darkened(0.4))
@@ -393,6 +399,7 @@ func _finish_typing() -> void:
 	if _text_label and is_instance_valid(_text_label):
 		_text_label.text = _current_text
 	if _advance_hint and is_instance_valid(_advance_hint):
+		_advance_hint.text = advance_hint_text()  # re-resolved per line, same reason as CutsceneDialogue
 		_advance_hint.visible = true
 
 

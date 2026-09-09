@@ -17,6 +17,17 @@ signal thinking_ended()
 var _dialogue_queue: Array = []
 var _current_index: int = 0
 var _is_typing: bool = false
+
+
+## The cap printed on the pad's confirm button; "A" was wrong on every Nintendo-family pad (8BitDo/SN30 confirm sits under Ⓑ).
+static func confirm_glyph(device_name: String = "") -> String:
+	if InputProfileManager:
+		return InputProfileManager.glyph_for_action("ui_accept", device_name)
+	return "A"
+
+
+static func advance_hint_text(device_name: String = "") -> String:
+	return "Z / %s / Click ▶" % confirm_glyph(device_name)
 var _typing_speed: float = 0.03
 var _current_text: String = ""
 var _displayed_chars: int = 0
@@ -568,7 +579,7 @@ func _create_dialogue_visuals(theme: Dictionary) -> void:
 	# Advance hint — list all three input methods so kb/mouse users know
 	# what works. (Pre-2026-05-03 only mentioned gamepad/keyboard.)
 	_advance_hint = Label.new()
-	_advance_hint.text = "Z / A / Click ▶"
+	_advance_hint.text = advance_hint_text()
 	_advance_hint.position = Vector2(box_width - 140, box_height - 20)
 	# Tick 222: scale.
 	_advance_hint.add_theme_font_size_override("font_size", _scaled_font_size(12))
@@ -839,6 +850,7 @@ func _finish_typing() -> void:
 		# Enable scroll after typing so the player can read overflow
 		_text_label.scroll_active = true
 	if _advance_hint and is_instance_valid(_advance_hint):
+		_advance_hint.text = advance_hint_text()  # re-resolved per line: a pad plugged in mid-scene changes the cap
 		_advance_hint.visible = true
 
 
