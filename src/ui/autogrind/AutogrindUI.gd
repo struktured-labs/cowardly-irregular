@@ -1658,8 +1658,9 @@ func _default_ability_for(member_id: String) -> String:
 				var a: Dictionary = js.get_ability(str(aid))
 				if str(a.get("type", "")) == "healing":
 					return str(aid)
-		if m.learned_abilities.size() > 0:
-			return str(m.learned_abilities[0])
+		for aid in m.learned_abilities:
+			if _can_apply_between_battles(str(aid)):
+				return str(aid)
 		break
 	return "cure"
 
@@ -1724,6 +1725,43 @@ func _cursor_ability_label() -> String:
 	return str(d.get("ability", "?"))
 
 
+## What _member_ability_apply can ACTUALLY do between battles: it reads the authored heal_amount /
+## mp_amount and refuses anything else by name at runtime. Measured 2026-09-09, only the Cleric has
+## any (cure / crystal_heal / cura) — fighter, mage, rogue and bard have ZERO between them, so the
+## editor was happily seeding a Fighter's power_strike into a rule that could never fire.
+## cowir-sfx's placement rule: refuse where the thing is AUTHORED, not in a test on what shipped.
+## By the time it is a saved rule, "never fires" is indistinguishable from "never triggered".
+func _can_apply_between_battles(ability_id: String) -> bool:
+	if ability_id == "":
+		return false
+	var js = get_tree().root.get_node_or_null("JobSystem") if is_inside_tree() else null
+	if js == null or not js.has_method("get_ability"):
+		return true          # cannot check without the store; do not block authoring on that
+	var a: Dictionary = js.get_ability(ability_id)
+	if a.is_empty():
+		return false
+	return int(a.get("heal_amount", 0)) > 0 or int(a.get("mp_amount", 0)) > 0
+
+
+## Members with at least one ability this action can actually execute.
+func _members_with_an_applicable_ability() -> Array:
+	var out: Array = []
+	for m in _party:
+		if m == null or m.job == null or not ("id" in m.job):
+			continue
+		if not _applicable_abilities_for(str(m.job.id)).is_empty():
+			out.append(str(m.job.id))
+	return out
+
+
+func _applicable_abilities_for(member_id: String) -> Array:
+	var out: Array = []
+	for a in _known_abilities_for(member_id):
+		if _can_apply_between_battles(str(a)):
+			out.append(str(a))
+	return out
+
+
 func _cycle_member_on_cursor_cell() -> void:
 	var d := _cursor_cell_dict()
 	if d.is_empty():
@@ -1736,6 +1774,12 @@ func _cycle_member_on_cursor_cell() -> void:
 	## never offers "Any". The condition form does: absent member IS the coarse any-member rule.
 	if is_action:
 		choices = choices.filter(func(c): return str(c) != "")
+		## Skip members with nothing this action can execute — cycling onto them authors a rule
+		## that cannot fire. Fall back to the unfiltered list only if NOBODY qualifies, so the
+		## verb stays usable and the runtime refusal names the reason.
+		var usable := _members_with_an_applicable_ability()
+		if not usable.is_empty():
+			choices = choices.filter(func(c): return usable.has(str(c)))
 	if choices.is_empty():
 		return
 	var idx := choices.find(str(d.get("member", "")))
@@ -1749,7 +1793,9 @@ func _cycle_ability_on_cursor_cell() -> void:
 	var d := _cursor_cell_dict()
 	if d.is_empty() or str(d.get("type", "")) != "member_ability":
 		return
-	var known := _known_abilities_for(str(d.get("member", "")))
+	## Only offer what the executor can run. Offering the rest produced a saveable rule that
+	## silently never fires — the failure this feature is most prone to.
+	var known := _applicable_abilities_for(str(d.get("member", "")))
 	if known.is_empty():
 		return
 	var idx := known.find(str(d.get("ability", "")))
