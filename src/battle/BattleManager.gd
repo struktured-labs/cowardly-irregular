@@ -5730,7 +5730,7 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 					if target and is_instance_valid(target) and target.is_alive:
 						target.add_buff("Hedged", "volatility", stat_modifier, duration)
 						# Tick 238: bonus BBCode (hedge buff).
-					battle_log_message.emit("[color=%s]%s is hedged![/color]" % [AccessibilityPalette.bonus_bbcode(), target.combatant_name])
+						battle_log_message.emit("[color=%s]%s is hedged![/color]" % [AccessibilityPalette.bonus_bbcode(), target.combatant_name])
 		"press_the_edge":
 			if volatility:
 				var band = volatility.global_band
