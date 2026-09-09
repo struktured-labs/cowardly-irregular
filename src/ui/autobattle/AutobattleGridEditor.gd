@@ -277,7 +277,7 @@ func _build_ui() -> void:
 	add_child(help_label1)
 
 	var help_label2 = Label.new()
-	help_label2.text = "Y:CycleOp  Tab:Toggle  Sh+Tab:Profile  Sh+R:Rename  E:Export  I:Import  Sh+E:CopyCode  Sh+I:PasteCode  K:Compose  Sel:Auto  Start:Save"
+	help_label2.text = "Y:CycleOp  T:Target  Tab:Toggle  Sh+Tab:Profile  Sh+R:Rename  E:Export  I:Import  Sh+E:CopyCode  Sh+I:PasteCode  K:Compose  Sel:Auto  Start:Save"
 	help_label2.position = Vector2(16, size.y - 28)
 	help_label2.add_theme_font_size_override("font_size", 10)
 	help_label2.add_theme_color_override("font_color", style.text.darkened(0.2))
@@ -2472,6 +2472,7 @@ func _open_more_actions() -> void:
 		"kind": "more_actions",
 		"selected": 0,
 		"options": [
+			{"id": "set_target", "label": "Choose this action's target   (T)"},
 			{"id": "toggle_row", "label": "Enable / disable this rule    (Tab)"},
 			{"id": "copy_code", "label": "Copy share code               (Shift+E)"},
 			{"id": "paste_code", "label": "Paste share code              (Shift+I)"},
@@ -2486,6 +2487,8 @@ func _open_more_actions() -> void:
 
 func _commit_more_action(chosen_id: String) -> void:
 	match chosen_id:
+		"set_target":
+			_open_target_picker()
 		"toggle_row":
 			_toggle_row_enabled()
 			SoundManager.play_ui("menu_select")
