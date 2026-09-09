@@ -75,6 +75,25 @@ esac
 # deploy_web.sh already carries this fix; I copied its pre-fix shape.
 VERSION="${1:-$(git for-each-ref --sort=-creatordate --count=1 --format='%(refname:short)' refs/tags)}"
 
+# ── version identity ─────────────────────────────────────────────────────────
+# The label this build publishes under and the version it will SHOW A PLAYER must agree.
+# v3.33.247-alpha shipped to all three channels on 2026-09-09 with Version.gd still reading
+# 3.33.246-alpha — a tools-only re-cut whose semver bump was missed. Nothing in this chain
+# looked, so it published three times. The fold's test_version_display_regression protects
+# the REPOSITORY at merge time; this protects the PUBLISH, and a tag can be cut and pushed
+# between those two moments — which is exactly what happened.
+#
+# First gate deliberately: it costs milliseconds and the alternative is finding out after a
+# 15-minute build, or not at all. Blocks on mismatch AND on any failure to read the version;
+# an unreadable version is never a matching one.
+if [ -x tools/check_version_matches_tag.sh ]; then
+    ./tools/check_version_matches_tag.sh "$VERSION" || exit 5
+else
+    echo "BLOCKED: tools/check_version_matches_tag.sh missing — refusing to publish a label" >&2
+    echo "        nothing has checked against the build's own version string." >&2
+    exit 5
+fi
+
 # THE VERSION LABEL DOES NOT IDENTIFY THE BUILD, AND UNTIL NOW NOTHING DID.
 # This script EXPORTS THE WORKING TREE. The tag is a string passed to --userversion; it
 # is never checked out. So the tag and the bits can be arbitrarily far apart, and the
