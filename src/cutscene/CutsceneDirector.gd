@@ -1966,14 +1966,33 @@ func last_finished_was_aborted() -> bool:
 	return _last_finished_aborted
 
 
+## A player skip tears the scene down in one frame — backdrop, puppets and dialogue vanish at once. Dip through black across the cut so the snap reads as intentional.
+const SKIP_DIP_OUT_SEC: float = 0.12
+const SKIP_DIP_IN_SEC: float = 0.25
+
+
+func _fade_effects_rect(to_alpha: float, sec: float) -> void:
+	_effects_rect.visible = true
+	var t := create_tween()
+	t.tween_property(_effects_rect, "color", Color(0, 0, 0, to_alpha), sec)
+	while is_instance_valid(t) and t.is_valid() and t.is_running():
+		await get_tree().process_frame
+	_effects_rect.color = Color(0, 0, 0, to_alpha)
+
+
 func _end_cutscene() -> void:
+	var dip: bool = _skipping and not _aborted and is_inside_tree()
+	if dip:
+		await _fade_effects_rect(1.0, SKIP_DIP_OUT_SEC)
+
 	# Hide letterbox if still showing
 	if _letterbox_visible:
 		await _step_letterbox_out({"duration": 0.3 if not _skipping else 0.0})
 
-	# Clear effects and background
-	_effects_rect.visible = false
-	_effects_rect.color = Color(0, 0, 0, 0)
+	# Clear effects and background (under black when dipping — the rect is the curtain until the fade-in below)
+	if not dip:
+		_effects_rect.visible = false
+		_effects_rect.color = Color(0, 0, 0, 0)
 	_clear_background()
 
 	# Destroy dialogue
@@ -2011,11 +2030,18 @@ func _end_cutscene() -> void:
 	var finished_id: String = _cutscene_id
 	_last_finished_aborted = _aborted
 	_active = false
-	visible = false
+	if not dip:
+		visible = false
 	_cutscene_id = ""
 	_skipping = false
 	_aborted = false
 	cutscene_finished.emit(finished_id)
+	# The fade-in runs AFTER the emit, and only if no listener chained a new scene into this layer.
+	if dip and not _active:
+		await _fade_effects_rect(0.0, SKIP_DIP_IN_SEC)
+		if not _active:
+			_effects_rect.visible = false
+			visible = false
 
 
 ## =====================
