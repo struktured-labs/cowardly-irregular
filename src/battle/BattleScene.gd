@@ -5051,9 +5051,11 @@ func _on_mp_restored(target: Combatant, amount: int) -> void:
 	_results_display.on_mp_restored(target, amount)
 
 
+## An AP grant pops RED and sounded like an HP heal. Its sibling _on_mp_restored plays nothing, so
+## the green cue under a red popup was an oversight in 062e36e2, not a choice (cowir-sfx, verified).
 func _on_ap_granted(target: Combatant, amount: int) -> void:
 	_results_display.on_ap_granted(target, amount)
-	SoundManager.play_battle("heal")
+	SoundManager.play_battle("round_ap_gain")
 
 
 ## Tick 143: spawn floating damage/healing popups when poison /
