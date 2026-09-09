@@ -23,6 +23,30 @@ extends GutTest
 ## the old prefix) so a future stinger declares itself instead of needing
 ## to be named correctly.
 
+## ✅ WHO SELECTS IT, AND CAN THEY? — cowir-main's standing pre-fold question,
+## after THREE correct fixes in one day turned out to sit behind selection gates
+## (Pyrroth's fire, the Rat King's summons, silence itself: repaired, folded,
+## tagged, announced, and unreachable). Answered here rather than assumed:
+##
+##     BattleCommandMenu:431   builds the entry {"group_type": "limit_break"}
+##                 :1052       labels it "Limit Break"
+##                 :1058       -> BattleManager.player_group_attack(...)
+##                             -> _execute_group_action
+##                             -> group_attack_executing.emit(...)
+##                             -> BattleScene._on_group_attack_executing
+##                             -> play_music("job_<id>_special")
+##
+## A player picks it from the battle menu, so this fix is reachable. The AP gate
+## is real but is a CONDITION, not a wall — BattleManager:1859 emits "Limit Break
+## requires ALL participants at full AP (4)!", and a player-facing refusal only
+## exists on a path that is offered.
+##
+## ⚠️ NOT reachable in autogrind: HeadlessBattleResolver has ZERO mentions of
+## limit_break (it uses all_out_attack and formation only). No audio consequence
+## there — SoundManager mutes on headless — but worth stating, because "the fix
+## works" and "the fix works everywhere" are different claims and the second one
+## is false.
+
 const MANIFEST_PATH := "res://data/music_manifest.json"
 
 
