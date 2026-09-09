@@ -787,9 +787,8 @@ func _add_boundary_wall(parent: StaticBody2D, pos: Vector2, size: Vector2) -> vo
 ## elite roster: the roster says which species is THIS world's rare, the flag says what the
 ## species IS, and the battle only cares about the latter.
 func _is_field_elite(monster_id: String) -> bool:
-	var bs: Node = get_tree().root.get_node_or_null("BestiarySystem") if is_inside_tree() else null
-	if bs != null and bs.has_method("get_monster_data"):
-		var d = bs.get_monster_data(monster_id)
-		if d is Dictionary:
-			return bool(d.get("field_elite", false))
-	return false
+	# BestiarySystem is a class_name with STATIC functions, NOT an autoload -- the node
+	# lookup this used returned null every time, so this returned false for every monster
+	# and field elites never once fought alone. They spawned with the 0-2 random duplicates
+	# any ordinary roamer gets, which is exactly what the solo guard exists to prevent.
+	return bool(BestiarySystem.get_monster_data(monster_id).get("field_elite", false))

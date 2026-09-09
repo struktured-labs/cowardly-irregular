@@ -265,12 +265,11 @@ func _is_outmatched() -> bool:
 
 
 func _monster_level() -> int:
-	var bs: Node = get_tree().root.get_node_or_null("BestiarySystem") if is_inside_tree() else null
-	if bs != null and bs.has_method("get_monster_data"):
-		var d = bs.get_monster_data(monster_id)
-		if d is Dictionary and d.has("level"):
-			return int(d["level"])
-	return 1
+	# Same defect as _is_field_elite: BestiarySystem is a class_name with static functions,
+	# so the node lookup was always null and EVERY monster read as level 1. AFRAID compares
+	# the party average against this, so "afraid, for monsters much weaker than the party"
+	# was really "afraid, for every monster once the party passes level 5".
+	return int(BestiarySystem.get_monster_data(monster_id).get("level", 1))
 
 
 func _face_player() -> void:

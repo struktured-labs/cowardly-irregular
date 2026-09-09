@@ -226,3 +226,54 @@ func test_the_source_of_the_scaling_is_the_json_not_a_literal() -> void:
 	assert_true(src.contains("_apply_field_elite_scaling"), "and applied at the enemy-data seam")
 	assert_true(src.contains("_party_average_level"),
 		"pinned against the PARTY, not the monster's authored level -- that is the whole design")
+
+## BestiarySystem is a class_name with STATIC functions, NOT an autoload. Seven call sites in
+## this lane reached it with get_node_or_null("BestiarySystem"), which returns null forever,
+## so both helpers silently returned their fallbacks and TWO shipped features were inert:
+## field elites never fought alone, and every monster read as level 1 so AFRAID fired for the
+## whole bestiary once the party passed level 5. Nothing errored -- a null check took the
+## other branch and returned a plausible default.
+func test_the_bestiary_is_reached_by_the_static_call_not_a_node_lookup() -> void:
+	var monsters := _read_json("res://data/monsters.json")
+	var goblin_level := int(monsters.get("goblin", {}).get("level", 0))
+	assert_gt(goblin_level, 1, "CONTROL: goblin's authored level must exceed the fallback of 1, or this cannot detect the bug")
+
+	var rm = load("res://src/exploration/RoamingMonster.gd").new()
+	var host := Node2D.new()
+	add_child_autofree(host)
+	host.add_child(rm)
+	rm.monster_id = "goblin"
+	assert_eq(rm._monster_level(), goblin_level,
+		"a monster must report its AUTHORED level; a fallback of 1 makes every monster read as trivially weak")
+
+	rm.monster_id = "zzz_not_a_monster"
+	assert_eq(rm._monster_level(), 1, "CONTROL: an unknown id still falls back rather than crashing")
+
+	# and the pattern itself must not come back anywhere in the lane
+	var offenders: Array = []
+	var dir := DirAccess.open("res://src/exploration")
+	if dir:
+		dir.list_dir_begin()
+		var f := dir.get_next()
+		while f != "":
+			if f.ends_with(".gd"):
+				var src := FileAccess.get_file_as_string("res://src/exploration/%s" % f)
+				if src.contains("get_node_or_null(\"BestiarySystem\")"):
+					offenders.append(f)
+			f = dir.get_next()
+	assert_eq(offenders, [],
+		"BestiarySystem has no autoload to find; these look it up as a node and get null every time: %s" % str(offenders))
+
+
+## The solo-elite guard depends on that lookup, so it was inert in all six worlds.
+func test_an_elite_is_recognised_as_one() -> void:
+	var scene = load("res://src/exploration/OverworldScene.gd").new()
+	var vp := SubViewport.new()
+	vp.size = Vector2i(64, 64)
+	add_child_autofree(vp)
+	vp.add_child(scene)
+	await get_tree().physics_frame
+	assert_true(scene._is_field_elite("dark_knight"),
+		"the authored field elite must be recognised, or it spawns with the 0-2 random duplicates any roamer gets")
+	assert_false(scene._is_field_elite("goblin"),
+		"CONTROL: an ordinary monster must not be treated as an elite")
