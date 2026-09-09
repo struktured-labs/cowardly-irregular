@@ -218,8 +218,9 @@ func _setup_buildings() -> void:
 	buildings.add_child(lift)
 
 	# === WORK DECK DRESSING === lamp + crate atop the catwalk, clear of the stair (cols12-13) and lift (col9)
-	_add_lamp_post(Vector2i(5, 1))
-	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(20, 1))
+	# Row 1 is the upper ledge and it is ONE tile tall, so a prop there is a wall across it
+	_add_lamp_post(Vector2i(5, 2))
+	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(20, 2))
 
 
 func _setup_treasures() -> void:
@@ -248,6 +249,15 @@ func _setup_treasures() -> void:
 	chest3.position = Vector2(21 * TILE_SIZE,14 * TILE_SIZE)
 	treasures.add_child(chest3)
 
+
+	# End of the upper walkway -- the reward for noticing the stair at all
+	var ledge_chest = TreasureChestScript.new()
+	ledge_chest.chest_id = "brasston_chest_4"
+	ledge_chest.contents_type = "item"
+	ledge_chest.contents_id = "elixir"
+	ledge_chest.contents_amount = 1
+	ledge_chest.position = Vector2(2 * TILE_SIZE,1 * TILE_SIZE)
+	treasures.add_child(ledge_chest)
 
 func _setup_npcs() -> void:
 	# Sprocket the Tinkerer (upgrade hints)

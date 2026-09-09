@@ -286,6 +286,10 @@ var _battle_action_log: Array[Dictionary] = []  # Log every player action per ba
 ## summary a second time per battle for no reader.
 
 ## Action speed modifiers (lower = faster)
+## Subtracted from a priority action's speed. Larger than any reachable speed_value, so a priority
+## action outruns the whole queue while priority actions still sort against each other.
+const PRIORITY_OFFSET: float = 1000.0
+
 const ACTION_SPEEDS = {
 	"attack": 5,
 	"ability": 10,
@@ -1432,6 +1436,20 @@ func _maybe_play_signature_sfx(combatant: Combatant) -> void:
 		SoundManager.play_battle(sfx)
 
 
+## Sibling of _maybe_play_signature_sfx above. The signature half was wired when cowir-sfx surfaced
+## it; victory_sfx was authored in the same rows and left with no reader — 5 real .ogg files.
+func victory_cue_for(enemies: Array, fallback: String = "victory_stinger") -> String:
+	if EncounterSystem == null or EncounterSystem.monster_database.is_empty():
+		return fallback
+	for e in enemies:
+		if e == null or not is_instance_valid(e) or not e.has_meta("monster_type"):
+			continue
+		var cue: String = str(EncounterSystem.monster_database.get(str(e.get_meta("monster_type")), {}).get("victory_sfx", ""))
+		if cue != "":
+			return cue
+	return fallback
+
+
 func _tick_summon_followup(combatant: Combatant) -> void:
 	if combatant == null or not is_instance_valid(combatant) or not combatant.is_alive:
 		return
@@ -2050,6 +2068,11 @@ func _compute_action_speed(combatant: Combatant, action_type: String, ability: D
 	var jitter = volatility.get_ctb_jitter() if volatility else 1.0
 	speed_value += randf_range(-jitter, jitter)
 
+	## quick_strike authors priority=true and is described as "always goes first"; nothing read it.
+	## Offset rather than a flat constant so two priority actions still order by their own speed.
+	if bool(ability.get("priority", false)):
+		speed_value -= PRIORITY_OFFSET
+
 	return speed_value
 
 
@@ -2290,6 +2313,20 @@ func _ai_healer(combatant: Combatant, abilities: Array, alive_allies: Array, ali
 			"speed": _compute_action_speed(combatant, "ability", buff)
 		}
 
+	## The docstring says "attack only when no one needs healing" and the attack was a BASIC one, so
+	## a healer's own offensive kit was decoration: elder_mushroom never released a spore in its life.
+	## Same 30% as _ai_brute rather than a new invented number; healing and support still come first.
+	var offensive_abilities = abilities.filter(func(a): return a.get("type", "") in ["physical", "magic"])
+	if offensive_abilities.size() > 0 and randf() < 0.3:
+		var spell = offensive_abilities[randi() % offensive_abilities.size()]
+		return {
+			"type": "ability",
+			"combatant": combatant,
+			"ability_id": spell.get("id", ""),
+			"targets": [_choose_target(combatant, alive_enemies, spell)],
+			"speed": _compute_action_speed(combatant, "ability", spell)
+		}
+
 	# Fallback: basic attack
 	var target = _choose_target(combatant, alive_enemies, {})
 	return {"type": "attack", "combatant": combatant, "target": target, "speed": _compute_action_speed(combatant, "attack")}
@@ -2308,25 +2345,22 @@ func _ai_caster(combatant: Combatant, abilities: Array, alive_enemies: Array) ->
 	var cast_chance: float = 0.75 * float(bias.get("attack_weight", 1.0))
 	cast_chance = clampf(cast_chance, 0.1, 0.99)
 
+	var caster_utility: Dictionary = _ai_utility_action(combatant, abilities, alive_enemies, 0.2)
+	if not caster_utility.is_empty():
+		return caster_utility
+
 	# 75% chance (intent-biased) to cast a spell if MP allows
 	if magic_abilities.size() > 0 and randf() < cast_chance:
 		# Prefer spells that exploit target weaknesses
-		var best_spell = magic_abilities[0]
-		var best_score = 0.0
-		for spell in magic_abilities:
-			var element = spell.get("element", "")
-			var score = _ability_power(spell)
-			# Check if any enemy is weak to this element.
-			# Combatant's field is elemental_weaknesses (Array[String]), not
-			# weaknesses — a prior typo silently errored at runtime when
-			# cast by a caster-AI enemy, defeating the weakness-exploit
-			# heuristic.
-			for enemy in alive_enemies:
-				if element != "" and "elemental_weaknesses" in enemy and element in enemy.elemental_weaknesses:
-					score *= 2.0  # Double score for weakness exploitation
-			if score > best_score:
-				best_score = score
-				best_spell = spell
+		## Was: keep the single highest-scoring spell. Measured, Mordaine cast firaga 2268 times in
+		## 3000 turns and NOTHING else — void_pulse, the W1 final boss's silence, never once. Same
+		## single-slot rule the tank and assassin had; scoring still orders the list, the bias just
+		## stops it being the only entry that can win. Weakness exploitation stays the primary sort.
+		var scored: Array = magic_abilities.duplicate()
+		scored.sort_custom(func(a, b): return _caster_spell_score(a, alive_enemies) > _caster_spell_score(b, alive_enemies))
+		var best_spell = _pick_biased_by_power(scored)
+		if best_spell.is_empty():
+			best_spell = magic_abilities[0]
 
 		var spell_target = _choose_target(combatant, alive_enemies, best_spell)
 		return {
@@ -2387,10 +2421,71 @@ func _ai_debuffer(combatant: Combatant, abilities: Array, alive_allies: Array, a
 	return {"type": "attack", "combatant": combatant, "target": target, "speed": _compute_action_speed(combatant, "attack")}
 
 
+## Shared utility slot. _ai_tank had one; assassin, brute and caster did not, so 25 monsters
+## carried support abilities no archetype they reach could ever select — including Voltharion's
+## storm_gathering, whose own comment says "without this the telegraph never lands", and two
+## Spotlight Duel minibosses. Returns {} when the roll declines, so callers fall through unchanged.
+func _ai_utility_action(combatant: Combatant, abilities: Array, alive_enemies: Array, chance: float) -> Dictionary:
+	var utility: Array = abilities.filter(func(a): return a.get("type", "") in ["buff", "support", "defensive", "song", "summon"])
+	## These are OPENERS, not spam. As a flat per-turn roll the slot cost the common roster ~21% of
+	## its damage output — measured as party HP lost over 25 rounds — because a howl or a web_shot
+	## deals nothing and add_buff only refreshes a duration. Each utility ability fires at most once
+	## per combatant per battle, so a wolf howls and then fights, and Voltharion's storm_gathering
+	## telegraphs instead of stuttering.
+	var spent: Dictionary = combatant.get_meta("_utility_spent", {})
+	utility = utility.filter(func(a): return not spent.has(str(a.get("id", ""))))
+	if utility.is_empty() or randf() >= chance:
+		return {}
+	var pick: Dictionary = utility[randi() % utility.size()]
+	spent[str(pick.get("id", ""))] = true
+	combatant.set_meta("_utility_spent", spent)
+	## These three archetypes are handed enemies, not allies. An enemy-facing debuff goes to an
+	## enemy; anything else — self-buff, ally-buff with no ally list here, summon — goes to the
+	## caster. I first passed alive_enemies into a parameter named alive_allies, which would have
+	## aimed a self-buff at the party.
+	var target: Combatant = combatant
+	if str(pick.get("target_type", "self")).contains("enemy") and not alive_enemies.is_empty():
+		target = alive_enemies[randi() % alive_enemies.size()]
+	return {
+		"type": "ability",
+		"combatant": combatant,
+		"ability_id": pick.get("id", ""),
+		"targets": [target],
+		"speed": _compute_action_speed(combatant, "ability", pick)
+	}
+
+
+## Caster ordering: raw power, doubled when an enemy is weak to the spell's element. Combatant's
+## field is elemental_weaknesses, not weaknesses — a prior typo silently errored at runtime here.
+func _caster_spell_score(spell: Dictionary, alive_enemies: Array) -> float:
+	var element: String = str(spell.get("element", ""))
+	var score: float = _ability_power(spell)
+	if element == "":
+		return score
+	for enemy in alive_enemies:
+		if enemy != null and "elemental_weaknesses" in enemy and element in enemy.elemental_weaknesses:
+			score *= 2.0
+	return score
+
+
+## Prefers the strongest, without being ONLY the strongest. Three archetypes sorted by power and
+## took [0] unconditionally, so a 5-ability boss fought with 1 move: Pyrroth showed magma_eruption
+## and nothing else, Voltharion one spell, dark_knight's life_drain lost a 1.5 tie to the sort.
+func _pick_biased_by_power(sorted_desc: Array) -> Dictionary:
+	if sorted_desc.is_empty():
+		return {}
+	if sorted_desc.size() == 1 or randf() < 0.5:
+		return sorted_desc[0]
+	return sorted_desc[1 + randi() % (sorted_desc.size() - 1)]
+
+
 func _ai_tank(combatant: Combatant, abilities: Array, alive_allies: Array, alive_enemies: Array) -> Dictionary:
 	"""Tank AI: use defensive abilities, protect allies, heavy single hits"""
-	var defensive_abilities = abilities.filter(func(a): return a.get("type", "") in ["buff", "support", "defensive"])
-	var physical_abilities = abilities.filter(func(a): return a.get("type", "") == "physical")
+	## "summon" joins the utility pool and "magic" the offensive one, because this filter was
+	## PERMISSION where it meant PREFERENCE: Pyrroth and Glacius classify as tanks and their breath
+	## is magic, so neither dragon could ever pick it. Same for the Rat King's summons.
+	var defensive_abilities = abilities.filter(func(a): return a.get("type", "") in ["buff", "support", "defensive", "summon"])
+	var physical_abilities = abilities.filter(func(a): return a.get("type", "") in ["physical", "magic"])
 
 	# Use defensive/buff ability if available (40% chance)
 	if defensive_abilities.size() > 0 and randf() < 0.4:
@@ -2413,7 +2508,7 @@ func _ai_tank(combatant: Combatant, abilities: Array, alive_allies: Array, alive
 	if physical_abilities.size() > 0 and randf() < 0.5:
 		# Sorted on damage_multiplier: no ability authors `power`, so the old key was constant 0 and "strongest" was whichever happened to be first.
 		physical_abilities.sort_custom(func(a, b): return _ability_power(a) > _ability_power(b))
-		var ability = physical_abilities[0]
+		var ability = _pick_biased_by_power(physical_abilities)
 		var target = _choose_target(combatant, alive_enemies, ability)
 		return {
 			"type": "ability",
@@ -2447,10 +2542,14 @@ func _ai_assassin(combatant: Combatant, abilities: Array, alive_enemies: Array) 
 			lowest_hp_pct = hp_pct
 			target = enemy
 
+	var assassin_utility: Dictionary = _ai_utility_action(combatant, abilities, alive_enemies, 0.25)
+	if not assassin_utility.is_empty():
+		return assassin_utility
+
 	# Use strongest offensive ability on wounded target (60% chance)
 	if offensive_abilities.size() > 0 and randf() < 0.6:
 		offensive_abilities.sort_custom(func(a, b): return _ability_power(a) > _ability_power(b))
-		var ability = offensive_abilities[0]
+		var ability = _pick_biased_by_power(offensive_abilities)
 		return {
 			"type": "ability",
 			"combatant": combatant,
@@ -2464,6 +2563,10 @@ func _ai_assassin(combatant: Combatant, abilities: Array, alive_enemies: Array) 
 
 func _ai_brute(combatant: Combatant, abilities: Array, alive_enemies: Array) -> Dictionary:
 	"""Brute AI: mostly physical attacks, occasionally use abilities"""
+	var brute_utility: Dictionary = _ai_utility_action(combatant, abilities, alive_enemies, 0.2)
+	if not brute_utility.is_empty():
+		return brute_utility
+
 	# 30% chance to use offensive ability
 	if randf() < 0.3:
 		var offensive_abilities = abilities.filter(
@@ -3406,6 +3509,10 @@ func _execute_defer(combatant: Combatant) -> void:
 	print("%s defers (AP: %d)" % [combatant.combatant_name, combatant.current_ap])
 
 
+## Field ceiling shared by BOTH summon paths — the AI roster below and ability summons.
+const MAX_FIELD_ENEMIES: int = 5
+
+
 func _can_monster_summon(combatant: Combatant) -> bool:
 	"""Check if this monster can summon reinforcements"""
 	# Only enemies can summon
@@ -3413,8 +3520,7 @@ func _can_monster_summon(combatant: Combatant) -> bool:
 		return false
 
 	# Limit total enemies to prevent overwhelming battles
-	var alive_enemies = enemy_party.filter(func(e): return e.is_alive)
-	if alive_enemies.size() >= 5:
+	if _alive_enemy_count() >= MAX_FIELD_ENEMIES:
 		return false
 
 	# Check if this monster type can summon
@@ -3455,6 +3561,30 @@ func _execute_summon(combatant: Combatant, monster_type: String) -> void:
 	battle_log_message.emit("[color=purple]%s summons %s %s![/color]" % [combatant.combatant_name, article, display_name])
 	print("  → %s summons %s %s!" % [combatant.combatant_name, article, display_name])
 	monster_summoned.emit(monster_type, combatant)
+
+
+func _alive_enemy_count() -> int:
+	return enemy_party.filter(func(e): return e != null and is_instance_valid(e) and e.is_alive).size()
+
+
+## Spawns the allies an ability authors, honouring summon_count and the shared field ceiling.
+func _execute_ally_summon(caster: Combatant, ability: Dictionary) -> void:
+	var summon_id: String = str(ability.get("summon_id", ""))
+	if caster == null or summon_id == "":
+		return
+	var flavour: String = str(ability.get("summon_message", ""))
+	if flavour != "":
+		battle_log_message.emit("[color=purple]%s[/color]" % flavour)
+	var wanted: int = maxi(1, int(ability.get("summon_count", 1)))
+	var spawned: int = 0
+	for _i in wanted:
+		## Re-checked per spawn: BattleScene appends to enemy_party inside the signal handler.
+		if _alive_enemy_count() >= MAX_FIELD_ENEMIES:
+			break
+		_execute_summon(caster, summon_id)
+		spawned += 1
+	if spawned == 0:
+		battle_log_message.emit("[color=gray]%s calls out, but there is no room on the field.[/color]" % caster.combatant_name)
 
 
 func _execute_group_action(action: Dictionary) -> void:
@@ -4315,6 +4445,11 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 		return
 
 	if not JobSystem.can_use_ability(caster, ability_id):
+		## Name the reason — "can't use right now" reads as a bug when the cause is a boss debuff.
+		if caster != null and caster.has_status("silence"):
+			battle_log_message.emit("[color=gray]%s is silenced — %s won't come out![/color]" % [caster.combatant_name, ability["name"]])
+			print("%s is silenced and cannot cast %s" % [caster.combatant_name, ability["name"]])
+			return
 		## Tick 173: surface in the log. Pre-fix the ability was
 		## blocked (insufficient MP, missing prerequisite, etc.) and
 		## the player saw nothing — character appeared to pass turn.
@@ -4446,11 +4581,18 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 		## the `_:` push_warning default. Route through the magic
 		## execution path so the eidolon damage actually lands. The
 		## ally-spawning summons (rat_swarm, pack_call) are not in any
-		## player job — only enemy AI uses them via _execute_summon at
-		## line 2076 — so routing all "summon" ability_types to magic
+		## player job — so routing all "summon" ability_types to magic
 		## doesn't break any player path.
+		## CORRECTED: that comment also claimed enemy AI reaches them via _execute_summon. It
+		## does not — _execute_summon's only gate is _can_monster_summon's hardcoded roster,
+		## which names neither owner, so summon_id/summon_count/summon_message had ZERO readers
+		## and the Rat King's Royal Summon cast a 1.0x magic hit at itself. summon_id is the
+		## discriminator: authored means spawn allies, absent means eidolon damage.
 		"summon":
-			_execute_magic_ability(caster, ability, retargeted)
+			if str(ability.get("summon_id", "")) != "" and not (caster in player_party):
+				_execute_ally_summon(caster, ability)
+			else:
+				_execute_magic_ability(caster, ability, retargeted)
 		"meta":
 			_execute_meta_ability(caster, ability, retargeted)
 		"escape":
@@ -4672,6 +4814,17 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 		_trigger_monster_counter(target, caster)
 
 
+## Strongest matching element_boost buff, or 0.0. MAX not product — buffs already clamp elsewhere.
+func _element_buff_bonus(c: Combatant, element: String) -> float:
+	if c == null or not is_instance_valid(c) or element == "" or not ("active_buffs" in c):
+		return 0.0
+	var best: float = 0.0
+	for b in c.active_buffs:
+		if b is Dictionary and str(b.get("stat", "")) == element + "_damage":
+			best = maxf(best, float(b.get("modifier", 0.0)))
+	return best
+
+
 func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Array) -> void:
 	# Pacify silences offensive magic too.
 	if caster.has_status("pacify"):
@@ -4698,6 +4851,10 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 		var elem_bonus: float = _sum_equipment_special_effect(caster, element + "_damage_bonus")
 		if elem_bonus > 0.0:
 			multiplier *= elem_bonus
+		## Buff-side twin of the gear bonus — element_boost, from a support ability.
+		var elem_buff: float = _element_buff_bonus(caster, element)
+		if elem_buff > 0.0:
+			multiplier *= elem_buff
 
 	## msg 2787 Voltharion gimmick: consume _next_attack_multiplier on the magic path (mirror of the physical path around line 3877). Storm Gathering authors next_attack_multiplier=1.8 and Voltharion's kit is 4/5 magic — without this the telegraph never lands. Consume BEFORE the target loop so all AoE targets get the boosted multiplier once, meta clears once. Distinct log line so player sees the unleash and can correlate to the earlier gather.
 	var mag_nam: float = float(caster.get_meta("_next_attack_multiplier", 0.0)) if caster != null else 0.0
@@ -5377,6 +5534,19 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 			var progress_suffix: String = " (%d/%d)" % [current + 1, need] if need > 0 else " (%d)" % (current + 1)
 			battle_log_message.emit("[color=magenta]%s is swayed...%s[/color]" % [target.combatant_name, progress_suffix])
 
+	## element_boost had no reader, so Pyrroth's Inferno Rage bought a 2.0x ATTACK buff for a kit
+	## that is 4/5 MAGIC — the same defect already fixed on Voltharion's Storm Gathering. Stored as
+	## a buff on a stat nothing queries, so the existing duration tick expires it for free.
+	## element_boost_modifier is separate from stat_modifier ON PURPOSE: the 2.0 was authored for an
+	## ATTACK buff nothing read, so it was never balanced as a magic multiplier. Falls back to it.
+	var elem_boost: String = str(ability.get("element_boost", ""))
+	if elem_boost != "":
+		var elem_mult: float = float(ability.get("element_boost_modifier", stat_modifier))
+		for target in targets:
+			if target and is_instance_valid(target) and target.is_alive:
+				target.add_buff("%s Fury" % elem_boost.capitalize(), elem_boost + "_damage", elem_mult, duration)
+				battle_log_message.emit("[color=orange]%s's %s attacks blaze up![/color] (x%.1f for %d turns)" % [target.combatant_name, elem_boost, elem_mult, duration])
+
 	match effect:
 		## Tick 170: 10 support-ability branches lacked
 		## battle_log_message emits — buff/debuff/taunt/doom applied
@@ -5640,7 +5810,7 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 					if target and is_instance_valid(target) and target.is_alive:
 						target.add_buff("Hedged", "volatility", stat_modifier, duration)
 						# Tick 238: bonus BBCode (hedge buff).
-					battle_log_message.emit("[color=%s]%s is hedged![/color]" % [AccessibilityPalette.bonus_bbcode(), target.combatant_name])
+						battle_log_message.emit("[color=%s]%s is hedged![/color]" % [AccessibilityPalette.bonus_bbcode(), target.combatant_name])
 		"press_the_edge":
 			if volatility:
 				var band = volatility.global_band
@@ -7223,7 +7393,10 @@ func _convert_autobattle_action(combatant: Combatant, action_data: Dictionary, a
 				print("[AUTOBATTLE] Unknown ability: %s" % ability_id)
 				return {}
 			if not JobSystem.can_use_ability(combatant, ability_id):
-				print("[AUTOBATTLE] Cannot use ability: %s (MP: %d)" % [ability_id, combatant.current_mp])
+				## Names the real reason — silence is now a second way this fails, and blaming MP
+				## for a boss debuff sends the next reader to the wrong system.
+				var why: String = "silenced" if combatant.has_status("silence") else "MP %d" % combatant.current_mp
+				print("[AUTOBATTLE] Cannot use ability: %s (%s)" % [ability_id, why])
 				return {}
 			# Tick 111: if the action explicitly carries a `targets` key
 			# (AutobattleSystem always does for abilities) but the array

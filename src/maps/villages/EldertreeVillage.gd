@@ -200,6 +200,18 @@ func _setup_buildings() -> void:
 	_add_interior_door("GraftingHouseDoor", "eldertree_grafting_house", "Enter Grafting House", Vector2(10 * TILE_SIZE,11.5 * TILE_SIZE))
 
 
+	# Forest village: herb beds by the garden, gear outside the Training Hollow, lamps at the road head.
+	_add_prop(VillagePropScript.Kind.PLANTER, Vector2i(8, 10))
+	_add_prop(VillagePropScript.Kind.PLANTER, Vector2i(12, 10))
+	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(17, 7))
+	_add_prop(VillagePropScript.Kind.BARREL, Vector2i(21, 7))
+	_add_prop(VillagePropScript.Kind.CART, Vector2i(5, 8))
+	_add_prop(VillagePropScript.Kind.WELL, Vector2i(24, 10))
+	_add_prop(VillagePropScript.Kind.TREE, Vector2i(26, 15))
+	_add_prop(VillagePropScript.Kind.TREE, Vector2i(3, 18))
+	_add_lamp_post(Vector2i(9, 18))
+	_add_lamp_post(Vector2i(16, 18))
+
 func _setup_treasures() -> void:
 	# 3x Ether in herb garden
 	var chest1 = TreasureChestScript.new()

@@ -385,11 +385,16 @@ const _TYPE_SFX: Dictionary = {
 }
 
 
-## Item EFFECT -> cue, in priority order. Using an item played NO sound at all: the "item" arm in
-## BattleScene calls animator.play_item() and nothing else, so the only audio was whatever the
-## EFFECT happened to emit. heal_hp reaches `heal` through healing_done and is deliberately absent
-## here -- adding it would double up. MP restore does NOT reach it: struktured ruled 2026-09-07 that
-## MP gains get their own popup and never healing_done's green, so ethers were silent.
+## Item EFFECT -> cue, in priority order. Using an item in BATTLE played NO sound at all: the "item"
+## arm calls animator.play_item() and nothing else.
+##
+## ⛔ heal_hp WAS excluded here on 2026-09-09 with the reasoning "healing_done already plays `heal`".
+## THAT WAS FALSE and I measured it wrong: _on_healing_done is FOUR lines and plays nothing. My probe
+## used a fixed 12-line window from the func header, which ran past the end of a 4-line function into
+## _on_ap_granted and read ITS cue as this one's. So potions were silent in battle and the exclusion
+## enshrined it. cowir-battle caught it by counting callers of play_battle("heal") -- exactly one,
+## and it was the AP grant.
+## The overworld menu is a separate surface and already sounds: ItemsMenu plays play_ui("heal").
 const _ITEM_EFFECT_SFX: Array[Array] = [
 	["revive", "ability_revive"],
 	["escape_battle", "ability_flee"],
@@ -397,6 +402,9 @@ const _ITEM_EFFECT_SFX: Array[Array] = [
 	["cure_status", "status_cured"],
 	["heal_mp", "ability_mp_restore"],
 	["heal_mp_percent", "ability_mp_restore"],
+	## LAST, so a hybrid item (elixir restores HP and MP) takes the MP cue above rather than this.
+	["heal_hp", "heal"],
+	["heal_hp_percent", "heal"],
 ]
 var _item_sounds: Dictionary = {}
 

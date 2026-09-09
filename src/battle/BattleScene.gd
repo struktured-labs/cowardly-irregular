@@ -3081,7 +3081,8 @@ func _on_battle_ended(victory: bool) -> void:
 		_battle_victory = true
 		if not turbo_mode:
 			log_message("[color=gray]Z / A / Click to continue...[/color]")
-			SoundManager.play_battle("victory_stinger")
+			## A spotlight duel authors its own victory cue; every ordinary fight falls back.
+			SoundManager.play_battle(BattleManager.victory_cue_for(test_enemies))
 			_play_staggered_victory_animations()
 			_show_victory_quip()
 			if _check_for_boss():
@@ -5051,9 +5052,15 @@ func _on_mp_restored(target: Combatant, amount: int) -> void:
 	_results_display.on_mp_restored(target, amount)
 
 
+## An AP grant pops RED and sounded like an HP heal. Its sibling _on_mp_restored plays nothing, so
+## the green cue under a red popup was an oversight in 062e36e2, not a choice (cowir-sfx, verified).
 func _on_ap_granted(target: Combatant, amount: int) -> void:
+	## AP is not healing. 062e36e2 separated the POPUPS on struktured's ruling — "MP gains and
+	## ability AP grants get their own popups (purple / red) — never healing_done's green" — and
+	## gave the AP grant the HP heal CUE in the same commit. round_ap_gain is the cue the round's
+	## own AP gain already uses; different moment, so no double-fire.
 	_results_display.on_ap_granted(target, amount)
-	SoundManager.play_battle("heal")
+	SoundManager.play_battle("round_ap_gain")
 
 
 ## Tick 143: spawn floating damage/healing popups when poison /

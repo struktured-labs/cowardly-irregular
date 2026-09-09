@@ -64,13 +64,6 @@ const KNOWN_PENDING_CONSUMER := {
 	"duel_answer_dodge": "cowir-battle W6 Arbiter duel arms",
 	"duel_answer_block": "cowir-battle W6 Arbiter duel arms",
 	"duel_answer_strike": "cowir-battle W6 Arbiter duel arms",
-	# authored alternates never wired; harmless, kept as design options
-	"buff_v2": "unwired alternate take",
-	"buff_v3": "unwired alternate take",
-	"debuff_v2": "unwired alternate take",
-	"debuff_v3": "unwired alternate take",
-	"heal_v2": "unwired alternate take",
-	"heal_v3": "unwired alternate take",
 	# The EXP-bar ramp is the ONE part of the victory kit still unwired. The voice-topology
 	# ruling (cowir-main 2026-08-19) resolved the other four and they have left this list.
 	# The ramp's blocker is different and was never the voice: wiring it replaces the flat
@@ -139,6 +132,19 @@ func test_no_unreachable_sfx_keys() -> void:
 		var ft: String = str(sfx[k].get("fallback_to", ""))
 		if ft != "":
 			fallback_targets[ft] = true
+	## VARIANTS are a second live reachability mechanism and this audit did not model it:
+	## _try_play_sfx_from_manifest picks randomly from [base] + base.variants, so a variant is
+	## played whenever its BASE is played. Six of them (buff/debuff/heal _v2/_v3) were carried in
+	## KNOWN_PENDING_CONSUMER instead, described as "unwired alternate take" — which was FALSE.
+	## They are wired, by rotation. An allowlist entry whose stated reason is untrue is worse than
+	## no entry: it reads as a decision and it cannot expire, because the condition it names never
+	## held. Modelling the mechanism also covers every FUTURE variant with no list to maintain.
+	for k in sfx:
+		var vars_v: Variant = sfx[k].get("variants", [])
+		if not (vars_v is Array):
+			continue
+		for v in (vars_v as Array):
+			fallback_targets[str(v)] = true
 
 	var unreachable: Array[String] = []
 	for key_variant in sfx.keys():

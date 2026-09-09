@@ -208,8 +208,9 @@ func _setup_buildings() -> void:
 	buildings.add_child(pad)
 
 	# === PLATFORM DRESSING === data crates flanking the stair (cols9-10) and pad (col15)
-	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(7, 1))
-	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(17, 1))
+	# Row 1 is the upper ledge and it is ONE tile tall, so a prop there is a wall across it
+	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(7, 2))
+	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(17, 2))
 
 
 func _setup_treasures() -> void:
@@ -230,6 +231,15 @@ func _setup_treasures() -> void:
 	chest2.position = Vector2(19 * TILE_SIZE,15 * TILE_SIZE)
 	treasures.add_child(chest2)
 
+
+	# Far end of the maintenance ledge, where nobody has any reason to walk
+	var ledge_chest = TreasureChestScript.new()
+	ledge_chest.chest_id = "node_prime_chest_3"
+	ledge_chest.contents_type = "item"
+	ledge_chest.contents_id = "hi_ether"
+	ledge_chest.contents_amount = 2
+	ledge_chest.position = Vector2(2 * TILE_SIZE,1 * TILE_SIZE)
+	treasures.add_child(ledge_chest)
 
 func _setup_npcs() -> void:
 	# System Admin ADMIN-01 (terminal commands)

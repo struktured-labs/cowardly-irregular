@@ -233,6 +233,19 @@ func _setup_buildings() -> void:
 	_add_interior_door("AnnexDoor", "enrichment_annex", "Enrichment Annex", Vector2(24 * TILE_SIZE,5 * TILE_SIZE))
 
 
+	# Suburbia: planters and street lamps, not barrels -- the clutter here is municipal.
+	_add_lamp_post(Vector2i(8, 7))
+	_add_lamp_post(Vector2i(23, 7))
+	_add_lamp_post(Vector2i(8, 16))
+	_add_prop(VillagePropScript.Kind.PLANTER, Vector2i(10, 15))
+	# Not (17,15): a prop collider reaches the y=(base+1)*TILE line, which IS community_center_exit
+	_add_prop(VillagePropScript.Kind.PLANTER, Vector2i(19, 15))
+	_add_prop(VillagePropScript.Kind.PLANTER, Vector2i(5, 12))
+	_add_prop(VillagePropScript.Kind.FENCE, Vector2i(24, 14))
+	_add_prop(VillagePropScript.Kind.FENCE, Vector2i(24, 15))
+	_add_prop(VillagePropScript.Kind.PLANTER, Vector2i(22, 12))
+	_add_lamp_post(Vector2i(12, 3))
+
 func _setup_treasures() -> void:
 	# Hidden behind the house — a forgotten lunchbox with supplies
 	var chest1 = TreasureChestScript.new()

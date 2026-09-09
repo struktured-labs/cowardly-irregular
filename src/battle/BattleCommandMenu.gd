@@ -536,6 +536,15 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 		"disabled": combatant.has_status("cannot_defer")
 	})
 
+	# Formation was KEY_F only and nothing else in src/ sets current_formation, so a pad could not
+	# change formation at all. Every button in battle is bound, hence a menu row rather than a key.
+	items.append({
+		"id": "cycle_formation",
+		"label": "Formation: %s" % _scene.FORMATION_NAMES[_scene.current_formation],
+		"tooltip": "Reposition the party. Costs no turn — the menu reopens.",
+		"data": null,
+	})
+
 	return items
 
 
@@ -897,6 +906,15 @@ func _on_win98_menu_selection(item_id: String, item_data: Variant) -> void:
 				close_win98_menu()
 				call_deferred("show_win98_command_menu", combatant_for_trust)
 			_scene._update_ui()
+		return
+
+	# Formation costs no turn, so the menu must come back or the turn is left with no input
+	# surface. Deferred for the same re-entrancy reason as the Trust OFF path above.
+	if item_id == "cycle_formation":
+		if _scene.has_method("cycle_formation"):
+			_scene.cycle_formation()
+		if current:
+			call_deferred("show_win98_command_menu", current)
 		return
 
 	# Edit Autobattle rules - open the rule grid editor (mouse-friendly path,

@@ -7,13 +7,14 @@ const ANIMATOR := "res://src/battle/BattleAnimator.gd"
 const JOBS_DIR := "res://assets/sprites/jobs"
 
 # an unregistered engine-known anim is only allowed with a REASON, never a bare flag
+# an exception must be able to EXPIRE: pin the bytes that justified it, so replacement art reds here
 const OFF_MODEL := {
-	"mage/advance": "crude blue-cone wizard, not the artist mage",
-	"mage/defer": "crude blue-cone wizard, not the artist mage",
-	"mage/cast_fire": "crude blue-cone wizard, not the artist mage",
-	"mage/cast_ice": "crude blue-cone wizard, not the artist mage",
-	"mage/cast_lightning": "crude blue-cone wizard, not the artist mage",
-	"mage/cast_fira": "crude blue-cone wizard, not the artist mage",
+	"mage/advance": 10480,
+	"mage/defer": 13092,
+	"mage/cast_fire": 17097,
+	"mage/cast_ice": 16911,
+	"mage/cast_lightning": 8760,
+	"mage/cast_fira": 14544,
 }
 
 
@@ -44,6 +45,7 @@ func test_every_engine_known_job_animation_on_disk_is_registered() -> void:
 	var sheets: Dictionary = (parsed as Dictionary).get("sheets", {}) if parsed is Dictionary else {}
 	assert_gt(sheets.size(), 5, "CONTROL: manifest must carry the job roster")
 	var unregistered: Array = []
+	var stale: Array = []
 	var scanned := 0
 	for job in sheets:
 		var e: Dictionary = sheets[job]
@@ -65,10 +67,16 @@ func test_every_engine_known_job_animation_on_disk_is_registered() -> void:
 			if reg.has(n):
 				continue
 			var key := "%s/%s" % [job, n]
-			if str(OFF_MODEL.get(key, "")).length() > 8:
+			if OFF_MODEL.has(key):
+				var fa := FileAccess.open("%s/%s/%s.png" % [JOBS_DIR, job, n], FileAccess.READ)
+				var live := int(fa.get_length()) if fa != null else -1
+				if live == int(OFF_MODEL[key]):
+					continue
+				stale.append("%s (pinned %d bytes, now %d)" % [key, int(OFF_MODEL[key]), live])
 				continue
 			unregistered.append(key)
 	assert_gt(scanned, 40, "CONTROL: the scan must reach the job animation corpus (%d)" % scanned)
+	assert_eq(stale, [], "an OFF_MODEL exception outlived the art that justified it — the sheet CHANGED, so re-judge it on model and either register it or re-pin: %s" % [stale])
 	assert_eq(unregistered, [], "authored, engine-supported, and never loaded — each falls back to a generic attack: %s" % [unregistered])
 
 

@@ -1437,6 +1437,7 @@ func _options_ring_spec() -> Dictionary:
 			{"id": "permadeath", "label": "Permadeath: %s       (P)" % ("ON" if _permadeath_staking_enabled else "OFF")},
 			{"id": "auto_advance", "label": "Auto-Advance: %s     (W)" % ("ON" if _auto_advance_enabled else "OFF")},
 			{"id": "toggle_row", "label": "Toggle This Rule        (Tab)"},
+			{"id": "explain_rules", "label": "Explain These Rules"},
 			{"id": "cycle_member", "label": "Cycle Member: %s" % _cursor_member_label()},
 			{"id": "cycle_ability", "label": "Cycle Ability: %s" % _cursor_ability_label()},
 			{"id": "preset_casual", "label": "Preset: Casual          (1)"},
@@ -1466,6 +1467,8 @@ func _commit_autogrind_option(chosen_id: String) -> void:
 			_toggle_auto_advance()
 		"toggle_row":
 			_toggle_current_row()
+		"explain_rules":
+			_show_explain_rules()
 		"cycle_member":
 			_cycle_member_on_cursor_cell()
 		"cycle_ability":
@@ -1658,8 +1661,9 @@ func _default_ability_for(member_id: String) -> String:
 				var a: Dictionary = js.get_ability(str(aid))
 				if str(a.get("type", "")) == "healing":
 					return str(aid)
-		if m.learned_abilities.size() > 0:
-			return str(m.learned_abilities[0])
+		for aid in m.learned_abilities:
+			if _can_apply_between_battles(str(aid)):
+				return str(aid)
 		break
 	return "cure"
 
@@ -1724,6 +1728,43 @@ func _cursor_ability_label() -> String:
 	return str(d.get("ability", "?"))
 
 
+## What _member_ability_apply can ACTUALLY do between battles: it reads the authored heal_amount /
+## mp_amount and refuses anything else by name at runtime. Measured 2026-09-09, only the Cleric has
+## any (cure / crystal_heal / cura) — fighter, mage, rogue and bard have ZERO between them, so the
+## editor was happily seeding a Fighter's power_strike into a rule that could never fire.
+## cowir-sfx's placement rule: refuse where the thing is AUTHORED, not in a test on what shipped.
+## By the time it is a saved rule, "never fires" is indistinguishable from "never triggered".
+func _can_apply_between_battles(ability_id: String) -> bool:
+	if ability_id == "":
+		return false
+	var js = get_tree().root.get_node_or_null("JobSystem") if is_inside_tree() else null
+	if js == null or not js.has_method("get_ability"):
+		return true          # cannot check without the store; do not block authoring on that
+	var a: Dictionary = js.get_ability(ability_id)
+	if a.is_empty():
+		return false
+	return int(a.get("heal_amount", 0)) > 0 or int(a.get("mp_amount", 0)) > 0
+
+
+## Members with at least one ability this action can actually execute.
+func _members_with_an_applicable_ability() -> Array:
+	var out: Array = []
+	for m in _party:
+		if m == null or m.job == null or not ("id" in m.job):
+			continue
+		if not _applicable_abilities_for(str(m.job.id)).is_empty():
+			out.append(str(m.job.id))
+	return out
+
+
+func _applicable_abilities_for(member_id: String) -> Array:
+	var out: Array = []
+	for a in _known_abilities_for(member_id):
+		if _can_apply_between_battles(str(a)):
+			out.append(str(a))
+	return out
+
+
 func _cycle_member_on_cursor_cell() -> void:
 	var d := _cursor_cell_dict()
 	if d.is_empty():
@@ -1736,6 +1777,12 @@ func _cycle_member_on_cursor_cell() -> void:
 	## never offers "Any". The condition form does: absent member IS the coarse any-member rule.
 	if is_action:
 		choices = choices.filter(func(c): return str(c) != "")
+		## Skip members with nothing this action can execute — cycling onto them authors a rule
+		## that cannot fire. Fall back to the unfiltered list only if NOBODY qualifies, so the
+		## verb stays usable and the runtime refusal names the reason.
+		var usable := _members_with_an_applicable_ability()
+		if not usable.is_empty():
+			choices = choices.filter(func(c): return usable.has(str(c)))
 	if choices.is_empty():
 		return
 	var idx := choices.find(str(d.get("member", "")))
@@ -1749,7 +1796,9 @@ func _cycle_ability_on_cursor_cell() -> void:
 	var d := _cursor_cell_dict()
 	if d.is_empty() or str(d.get("type", "")) != "member_ability":
 		return
-	var known := _known_abilities_for(str(d.get("member", "")))
+	## Only offer what the executor can run. Offering the rest produced a saveable rule that
+	## silently never fires — the failure this feature is most prone to.
+	var known := _applicable_abilities_for(str(d.get("member", "")))
 	if known.is_empty():
 		return
 	var idx := known.find(str(d.get("ability", "")))
@@ -1767,6 +1816,137 @@ func _known_abilities_for(member_id: String) -> Array:
 			return Array(m.learned_abilities)
 		break
 	return []
+
+
+## ── EXPLAIN RULES ───────────────────────────────────────────────────────────────────────────
+## struktured 2026-09-06: "it def needs a tutorial though". The autobattle editor has had a simulate
+## readout for months (AutobattleGridEditor._simulate_report) — sampled states, which rule fires
+## first, and an explicit "can't be decided" for anything needing a live fight. The autogrind
+## console had NOTHING: zero references to simulate, preview or explain. A player authoring grind
+## rules could not see what they would do.
+##
+## Mirrored rather than invented, including the two decisions that make theirs good: a SCRATCH party
+## (their comment — "mutating the edited character's HP to answer a UI question is the two-writers
+## class" — applies here identically), and first-match-wins REPORTED, so a rule shadowed by an
+## earlier one is visible as shadowed.
+##
+## Their "depends on the battlefield" has an exact analogue: conditions reading SESSION state cannot
+## be answered from a party snapshot, and every rule below one is unreachable until it settles.
+## ⛔ CORRECTED: this listed inventory_items and reached_level as needing session progress. They do
+## not — they read the PARTY (_get_party_unique_item_count, _get_party_max_job_level), so a probe
+## can answer both. The stated reason was never true, which is cowir-sfx's third suppression
+## category: not INERT (the detector cannot emit it) and not EXPIRED (true once, outlived its
+## reason) but FALSE — and a false entry can never expire, because the condition it names never
+## held. It also did real damage: a rule using either was reported unshowable AND blocked every
+## rule below it under first-match-wins.
+##
+## reached_level is now MODELLED in the probe rather than excluded, per cowir-sfx's "fix by
+## modelling the mechanism, not by deleting lines".
+const SESSION_SCOPED_CONDITIONS := [
+	"battles_done", "win_streak", "time_elapsed", "corruption", "efficiency",
+	"ability_learned", "rare_item_found", "member_injured",
+]
+
+## Party-derived, answerable in principle, but the probe carries no inventory — copying one is a
+## bigger change than this feature warrants. Stated as what it IS rather than as session scope,
+## so the reason is true and CAN expire when someone models it.
+const PROBE_UNMODELLED_CONDITIONS := ["inventory_items"]
+
+
+## Sampled party situations, so a player sees their own thresholds fire rather than one snapshot.
+func _explain_states() -> Array:
+	return [
+		{"label": "full party, healthy", "hp_pct": 1.0, "mp_pct": 1.0, "down": 0},
+		{"label": "party at 50% HP", "hp_pct": 0.5, "mp_pct": 0.6, "down": 0},
+		{"label": "party at 25% HP", "hp_pct": 0.25, "mp_pct": 0.3, "down": 0},
+		{"label": "one member down", "hp_pct": 0.6, "mp_pct": 0.5, "down": 1},
+	]
+
+
+## A scratch party at the sampled state. NEVER the live one.
+func _explain_probe_party(state: Dictionary) -> Array:
+	var out: Array = []
+	var n: int = maxi(1, _party.size())
+	for i in range(n):
+		var c := Combatant.new()
+		var src = _party[i] if i < _party.size() else null
+		c.initialize({
+			"name": "Probe%d" % i, "max_hp": 1000, "max_mp": 100,
+			"attack": 20, "defense": 20, "magic": 20, "speed": 20
+		})
+		if src != null and src.job != null:
+			c.job = src.job
+		## Combatant uses job_level, NOT level. Copied so reached_level is answerable from the
+		## probe rather than excluded with a false reason.
+		if src != null and "job_level" in src:
+			c.job_level = src.job_level
+		c.current_hp = int(1000.0 * float(state.get("hp_pct", 1.0)))
+		c.current_mp = int(100.0 * float(state.get("mp_pct", 1.0)))
+		if i < int(state.get("down", 0)):
+			c.current_hp = 0
+			c.is_alive = false
+		out.append(c)
+	return out
+
+
+func _rule_needs_unmodelled_state(rule: Dictionary) -> bool:
+	for c in rule.get("conditions", []):
+		if PROBE_UNMODELLED_CONDITIONS.has(str((c as Dictionary).get("type", ""))):
+			return true
+	return false
+
+
+func _rule_needs_session_state(rule: Dictionary) -> bool:
+	for c in rule.get("conditions", []):
+		if SESSION_SCOPED_CONDITIONS.has(str((c as Dictionary).get("type", ""))):
+			return true
+	return false
+
+
+## Plain-language report of what the current ruleset would DO. Returns lines rather than printing,
+## so it is testable without a panel.
+func explain_rules_report() -> Array:
+	var out: Array = []
+	if rules.is_empty():
+		out.append("No rules — the grind runs until you stop it.")
+		return out
+	for state in _explain_states():
+		var probe: Array = _explain_probe_party(state)
+		var matched: int = -1
+		var blocked: int = -1
+		for i in range(rules.size()):
+			var rule: Dictionary = rules[i]
+			if not bool(rule.get("enabled", true)):
+				continue
+			if _rule_needs_session_state(rule) or _rule_needs_unmodelled_state(rule):
+				blocked = i
+				break
+			if AutogrindSystem._evaluate_party_rule(probe, rule):
+				matched = i
+				break
+		if blocked >= 0:
+			out.append("%s  ->  rule %d needs session progress (battles, corruption, time) — not shown here" % [str(state["label"]), blocked + 1])
+		elif matched < 0:
+			out.append("%s  ->  no rule matches — the grind continues" % str(state["label"]))
+		else:
+			out.append("%s  ->  rule %d fires: %s" % [str(state["label"]), matched + 1, _explain_actions(rules[matched])])
+		for c in probe:
+			if c != null:
+				c.free()
+	return out
+
+
+func _explain_actions(rule: Dictionary) -> String:
+	var parts: Array = []
+	for a in rule.get("actions", []):
+		parts.append(_format_action(a as Dictionary).replace("\n", " "))
+	return " + ".join(parts) if not parts.is_empty() else "(no actions)"
+
+
+func _show_explain_rules() -> void:
+	_log_message("[color=#ffcc66]— what these rules would do —[/color]")
+	for line in explain_rules_report():
+		_log_message("[color=#ffcc66]%s[/color]" % str(line))
 
 
 func _cycle_action_type() -> void:
@@ -2321,10 +2501,54 @@ func _close_ui() -> void:
 	closed.emit()
 
 
+## Memory bound, not a UX choice: the panel has never trimmed, so a long grind grew it without
+## limit. RichTextLabel scroll_following shows the tail anyway, and this is far more than anyone
+## reads between battles. Lowering it for readability is a separate, deliberate call.
+const BATTLE_LOG_MAX_LINES: int = 400
+
+
 func _log_message(text: String) -> void:
 	"""Log message to battle log"""
 	if _battle_log and is_instance_valid(_battle_log):
 		_battle_log.append_text(text + "\n")
+		_trim_battle_log()
+
+
+func _trim_battle_log() -> void:
+	if _battle_log == null or not is_instance_valid(_battle_log):
+		return
+	if _battle_log.get_line_count() <= BATTLE_LOG_MAX_LINES:
+		return
+	var kept: PackedStringArray = _battle_log.get_parsed_text().split("\n")
+	var start: int = maxi(0, kept.size() - BATTLE_LOG_MAX_LINES)
+	_battle_log.clear()
+	_battle_log.append_text("\n".join(Array(kept).slice(start)) + "\n")
+
+
+## HeadlessBattleResolver returns its narration in result["log"] — every attack, heal, formation
+## special, status effect and diagnostic — and NOTHING read it. Of the 18 keys _build_results
+## returns, this was the only one with zero consumers, so the console showed session stats while
+## the fight it is narrating went unseen.
+##
+## It matters more than a stray key: every named refusal the resolver produces writes HERE.
+## "unknown ability", "unmodelled type — no effect", member_ability's does-not-know / lacks-MP,
+## the MAX_ROUNDS stalemate reason. A day spent replacing silent failures with refusals that name
+## themselves, and none of them reached the player.
+##
+## SUPPRESSED AT LUDICROUS SPEED, mirroring the established convention rather than inventing one:
+## BattleScene:4279 suppresses the round banner at 4x+ "same convention as speech bubbles". At
+## ludicrous the point is throughput, not watching, and 45 log sites per battle would bury the
+## console's own status lines.
+func append_resolver_log(lines: Array) -> void:
+	if lines.is_empty():
+		return
+	if _ludicrous_speed_enabled:
+		return
+	for line in lines:
+		var text := str(line)
+		if text.strip_edges() == "":
+			continue
+		_log_message("[color=#8899aa]%s[/color]" % text)
 
 
 func _get_corruption_color(val: float) -> Color:

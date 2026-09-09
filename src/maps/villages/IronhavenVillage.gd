@@ -202,6 +202,18 @@ func _setup_buildings() -> void:
 	_add_interior_door("StrikeRegistryDoor", "ironhaven_strike_registry", "Enter Strike Registry", Vector2(6 * TILE_SIZE,15.5 * TILE_SIZE))
 
 
+	# Forge town: ore carts and stock between the workshops, banners on the walls.
+	_add_prop(VillagePropScript.Kind.CART, Vector2i(8, 4))
+	_add_prop(VillagePropScript.Kind.BARREL, Vector2i(17, 5))
+	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(17, 6))
+	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(10, 13))
+	_add_prop(VillagePropScript.Kind.BARREL, Vector2i(11, 13))
+	_add_prop(VillagePropScript.Kind.BANNER, Vector2i(16, 4))
+	_add_lamp_post(Vector2i(10, 18))
+	_add_lamp_post(Vector2i(17, 18))
+	_add_prop(VillagePropScript.Kind.WELL, Vector2i(23, 13))
+	_add_prop(VillagePropScript.Kind.FENCE, Vector2i(3, 10))
+
 func _setup_treasures() -> void:
 	# Iron Shield near forge
 	var chest1 = TreasureChestScript.new()

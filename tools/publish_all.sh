@@ -113,13 +113,27 @@ XDG_DATA_HOME="$PWD/tmp/prewarm_xdg" godot --headless --audio-driver Dummy --imp
     > tmp/publish_all_import.log 2>&1
 IMPORT_EC=$?
 IMPORTED="$(find .godot/imported -type f 2>/dev/null | wc -l)"
-# A non-zero exit here is NOT decisive: godot has been observed segfaulting during editor
-# teardown AFTER `reimport: end`, with the cache fully built. Judge the cache, not the code.
 if [ "$IMPORTED" -lt 100 ]; then
     echo "[pub] BLOCKED: import produced only ${IMPORTED} files (exit ${IMPORT_EC}) — see tmp/publish_all_import.log" >&2
     exit 4
 fi
-echo "[pub] prebuild: ${IMPORTED} imported files (import exit ${IMPORT_EC}; teardown crashes are tolerated when the cache is built)"
+
+# Delegated to tools/check_import_ok.sh so the decision is exercised by ITS OWN selftest as a
+# subprocess, rather than by a copy of the condition living in whatever shell I happened to be
+# in. The inline version was "tested" by me re-implementing the grep in a probe function — four
+# green arms that proved my copy worked and never invoked this file at all. (cowir-battle,
+# 2026-09-09: a test that calls the repaired function directly cannot tell either; testing a
+# re-implementation does not even execute the shipped code.)
+if [ -x tools/check_import_ok.sh ]; then
+    if ! ./tools/check_import_ok.sh tmp/publish_all_import.log "$IMPORT_EC" 100 "$IMPORTED"; then
+        echo "[pub] BLOCKED: refusing to build on this import cache — see above." >&2
+        exit 4
+    fi
+else
+    echo "[pub] BLOCKED: tools/check_import_ok.sh missing. Refusing to accept a non-zero import" >&2
+    echo "      exit on a file count alone — that is the guard whose stated reason did not hold." >&2
+    exit 4
+fi
 
 echo "[pub] prebuild: 48k audio tier"
 if ! ./tools/make_web_audio.sh 48 > tmp/publish_all_audio.log 2>&1; then
