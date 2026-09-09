@@ -37,6 +37,8 @@ func test_every_engine_known_job_animation_on_disk_is_registered() -> void:
 	var known := _engine_known()
 	assert_true(known.has("battle_hymn"), "CONTROL: the known-set must reach a real ability anim name (%d names)" % known.size())
 	assert_true(known.has("idle"), "CONTROL: the known-set must include idle")
+	# without this arm a regex that matched EVERY quoted string would look identical to a correct one
+	assert_false(known.has("zzq_not_an_animation"), "CONTROL: the known-set must be able to say NO — it is over-broad, so its scope is meaningless")
 	var txt := FileAccess.get_file_as_string(MANIFEST)
 	var parsed = JSON.parse_string(txt)
 	var sheets: Dictionary = (parsed as Dictionary).get("sheets", {}) if parsed is Dictionary else {}
