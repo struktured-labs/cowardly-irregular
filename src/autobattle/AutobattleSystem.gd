@@ -525,8 +525,13 @@ func _resolve_ability_upgrade(combatant: Combatant, action_def: Dictionary) -> S
 func _combatant_has_learned(combatant: Combatant, ability_id: String) -> bool:
 	if combatant == null or ability_id == "":
 		return false
-	var character_id: String = _get_character_id(combatant)
-	var job_id: String = _resolve_job_for_character(character_id)
+	## The combatant is right here and carries its own job — going out through name → id → a
+	## static map was how a job change produced the wrong answer for the caller that matters most.
+	var job_id: String = ""
+	if combatant.job is Dictionary:
+		job_id = str(combatant.job.get("id", ""))
+	if job_id == "":
+		job_id = _resolve_job_for_character(_get_character_id(combatant))
 	var job: Dictionary = JobSystem.get_job(job_id)
 	if job.is_empty():
 		return false
@@ -806,16 +811,34 @@ func _create_default_profiles(character_id: String) -> Dictionary:
 
 
 func _resolve_job_for_character(character_id: String) -> String:
-	"""character_id → job_id: named starters first, then GameState lookup,
-	then the id itself (covers job-named characters like 'bard')."""
+	"""character_id → job_id: the LIVE party first, then the named-starter map, then the id
+	itself (covers job-named characters like 'bard')."""
+	## The GameState arm was gated on a has_method check for a getter declared NOWHERE in src/,
+	## so the guard was permanently false and the branch dead. That left
+	## CHARACTER_JOB_IDS, a STATIC map, as the only answer for the five starters — and jobs are
+	## changeable (JobSystem.job_changed), so Mira read as a cleric forever after switching.
+	## Live job first; the map is now the fallback for characters not currently in the party.
+	var live: String = _live_job_id_for(character_id)
+	if live != "":
+		return live
 	if CHARACTER_JOB_IDS.has(character_id):
 		return CHARACTER_JOB_IDS[character_id]
-	var game_state = get_node_or_null("/root/GameState") if is_inside_tree() else null
-	if game_state and game_state.has_method("get_character_job_id"):
-		var job_id: String = game_state.get_character_job_id(character_id)
-		if job_id != "":
-			return job_id
 	return character_id
+
+
+## Reads the job the character actually has right now. Party entries are Combatant.to_dict(),
+## which carries job_id; matched on the same name→id derivation _get_character_id uses.
+func _live_job_id_for(character_id: String) -> String:
+	var game_state = get_node_or_null("/root/GameState") if is_inside_tree() else null
+	if game_state == null or not ("player_party" in game_state):
+		return ""
+	for entry in game_state.player_party:
+		if not (entry is Dictionary):
+			continue
+		if str(entry.get("name", "")).to_lower().replace(" ", "_") != character_id:
+			continue
+		return str(entry.get("job_id", ""))
+	return ""
 
 
 func _create_empty_script(character_id: String) -> Dictionary:
@@ -975,11 +998,12 @@ func create_default_character_script(character_id: String) -> Dictionary:
 		"skiptrotter":
 			return _create_skiptrotter_default_script(character_id)
 		_:
-			# Job lookup via GameState: handles any named character whose primary job
-			# is known but whose name doesn't match the cases above
-			var game_state = get_node_or_null("/root/GameState")
-			if game_state and game_state.has_method("get_character_job_id"):
-				var job_id: String = game_state.get_character_job_id(character_id)
+			## Handles any named character whose primary job is known but whose name doesn't match
+			## the cases above. Was gated on a GameState method declared nowhere in src/, so this
+			## whole ladder was unreachable — a named character never got a job-appropriate default
+			## script. Routes through the shared resolver, which reads the LIVE job.
+			var job_id: String = _resolve_job_for_character(character_id)
+			if job_id != "":
 				match job_id:
 					"fighter":
 						return _create_fighter_default_script(character_id)
