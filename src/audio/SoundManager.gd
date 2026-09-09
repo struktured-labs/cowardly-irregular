@@ -1519,7 +1519,8 @@ func _try_play_from_manifest(track_id: String) -> bool:
 	# fire the `finished` signal — so the previous music never resumed
 	# (user: "level up music repeats itself"). Force-override here so a
 	# stinger can never loop regardless of what the manifest says.
-	var is_stinger = track_id.begins_with("stinger_")
+	## 2026-09-09: the name check missed all 14 job_*_special, so a Limit Break looped a 5s fragment.
+	var is_stinger: bool = bool(entry.get("stinger", track_id.begins_with("stinger_")))
 	var should_loop: bool
 	if is_stinger:
 		should_loop = false

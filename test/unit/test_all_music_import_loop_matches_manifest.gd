@@ -18,7 +18,15 @@ extends GutTest
 ##   2. Any KNOWN_LOOP_MISMATCHES entry that now agrees fails the gate
 ##      until it's removed from the snapshot — no stale allowlist drift.
 ##
-## The current snapshot covers 53 tracks whose loop semantics are a
+## 2026-09-09: the 14 job_*_special entries LEFT this list because the
+## question resolved itself. They are 1.9-5.3s fragments that a Limit Break
+## plays over an ongoing battle, and _try_play_from_manifest classified a
+## stinger by NAME ("stinger_" prefix), so all 14 took manifest loop=true and
+## looped forever while the battle theme never returned. They now declare
+## `stinger: true` and loop=false, which agrees with their .import. What is
+## left below is genuinely still his call.
+##
+## The current snapshot covers the tracks whose loop semantics are a
 ## user design ruling (should victory theme loop? should job_special
 ## stingers keep playing after triggering? etc. — logged on
 ## struktured's open-questions list per cowir-main msg 2625). Once he
@@ -27,8 +35,8 @@ extends GutTest
 
 const MANIFEST_PATH := "res://data/music_manifest.json"
 
-## Snapshot of manifest.loop ≠ .import loop as of 2026-07-16. All 53
-## entries have manifest.loop=true, .import loop=false (runtime is
+## Snapshot of manifest.loop ≠ .import loop as of 2026-07-16, pruned
+## 2026-09-09. Entries have manifest.loop=true, .import loop=false (runtime is
 ## correct because _try_play_from_manifest overrides). Remove an entry
 ## when the two files agree; add nothing without cowir-main sign-off.
 const KNOWN_LOOP_MISMATCHES: Array[String] = [
@@ -40,20 +48,6 @@ const KNOWN_LOOP_MISMATCHES: Array[String] = [
 	"victory_industrial",
 	"victory_digital",
 	"victory_abstract",
-	"job_fighter_special",
-	"job_cleric_special",
-	"job_mage_special",
-	"job_rogue_special",
-	"job_bard_special",
-	"job_guardian_special",
-	"job_ninja_special",
-	"job_summoner_special",
-	"job_speculator_special",
-	"job_scriptweaver_special",
-	"job_time_mage_special",
-	"job_necromancer_special",
-	"job_bossbinder_special",
-	"job_skiptrotter_special",
 	# Long-play candidates (should loop while player sits — currently manifest
 	# says loop, .import says no; runtime override keeps them looping)
 	"game_over",
