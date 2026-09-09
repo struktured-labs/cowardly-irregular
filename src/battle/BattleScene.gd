@@ -5052,6 +5052,8 @@ func _on_mp_restored(target: Combatant, amount: int) -> void:
 	_results_display.on_mp_restored(target, amount)
 
 
+## An AP grant pops RED and sounded like an HP heal. Its sibling _on_mp_restored plays nothing, so
+## the green cue under a red popup was an oversight in 062e36e2, not a choice (cowir-sfx, verified).
 func _on_ap_granted(target: Combatant, amount: int) -> void:
 	## AP is not healing. 062e36e2 separated the POPUPS on struktured's ruling — "MP gains and
 	## ability AP grants get their own popups (purple / red) — never healing_done's green" — and
