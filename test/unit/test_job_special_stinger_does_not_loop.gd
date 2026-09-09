@@ -122,3 +122,45 @@ func test_stop_music_cancels_a_pending_stinger_resume() -> void:
 	assert_true(SoundManager._stinger_resume_state.is_empty(),
 		"stop_music left _stinger_resume_state holding %s" % SoundManager._stinger_resume_state)
 
+
+## Derived from the measured corpus, not picked: the stingers fixed here run
+## 1.9-5.3s and the shortest LEGITIMATE looping bed is village_brasston at
+## 20.0s. 15s sits in that gap with margin either side. Re-derive it if the
+## corpus changes rather than trusting the constant.
+const STINGER_SUSPECT_S := 15.0
+
+
+func test_no_short_track_loops_under_any_name() -> void:
+	## The arm above enumerates job_*_special — the family already fixed — so it
+	## is blind to the NEXT family with the same defect under a different name.
+	## That is the shape cowir-sfx hit the same day: the fix for the reported
+	## defect blinds the guard to its successor. This arm asks the ROLE question
+	## (is it too short to be a bed?) instead of the NAME question.
+	##
+	## ⚠️ NOT sufficient alone, and the corpus proves it: job_necromancer_special
+	## is 57.6s, so duration would never have caught the very family this file
+	## was written for. Duration catches a short stinger under any name; the
+	## manifest `stinger` flag catches a long one. Two oracles, neither
+	## substituting for the other.
+	var raw: String = FileAccess.get_file_as_string(MANIFEST_PATH)
+	assert_gt(raw.length(), 1000, "SCOPE control: manifest read back %d chars" % raw.length())
+	var tracks: Dictionary = (JSON.parse_string(raw) as Dictionary).get("tracks", {})
+
+	var looping: int = 0
+	var suspects: Array[String] = []
+	for key in tracks.keys():
+		var e: Dictionary = tracks[key]
+		if not bool(e.get("loop", false)):
+			continue
+		if bool(e.get("stinger", false)):
+			continue
+		looping += 1
+		var d: float = float(e.get("duration", 0.0))
+		if d > 0.0 and d < STINGER_SUSPECT_S:
+			suspects.append("%s (%.1fs)" % [key, d])
+
+	assert_gt(looping, 100,
+		"SCOPE control: only %d looping non-stinger tracks walked — a green here would be vacuous" % looping)
+	assert_eq(suspects.size(), 0,
+		"tracks under %.0fs declaring loop=true (%d): %s — a fragment that short is a stinger by role whatever it is named, and looping it over live gameplay is the defect this file exists for. Mark it `stinger: true` or give it a real bed's length." % [STINGER_SUSPECT_S, suspects.size(), suspects])
+
