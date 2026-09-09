@@ -48,6 +48,25 @@ else
 	VERSION="$(git for-each-ref --sort=-creatordate --count=1 --format='%(refname:short)' refs/tags)"
 fi
 [ -n "$VERSION" ] || { echo "deploy_web.sh: no version tag given and no tags in the repo" >&2; exit 2; }
+
+# ── version identity ─────────────────────────────────────────────────────────
+# The label this build publishes under and the version it will SHOW A PLAYER must agree.
+# v3.33.247-alpha shipped to all three channels on 2026-09-09 with Version.gd still reading
+# 3.33.246-alpha — a tools-only re-cut whose semver bump was missed. Nothing in this chain
+# looked, so it published three times. The fold's test_version_display_regression protects
+# the REPOSITORY at merge time; this protects the PUBLISH, and a tag can be cut and pushed
+# between those two moments — which is exactly what happened.
+#
+# First gate deliberately: it costs milliseconds and the alternative is finding out after a
+# 15-minute build, or not at all. Blocks on mismatch AND on any failure to read the version;
+# an unreadable version is never a matching one.
+if [ -x tools/check_version_matches_tag.sh ]; then
+    ./tools/check_version_matches_tag.sh "$VERSION" || exit 5
+else
+    echo "BLOCKED: tools/check_version_matches_tag.sh missing — refusing to publish a label" >&2
+    echo "        nothing has checked against the build's own version string." >&2
+    exit 5
+fi
 ITCH_TARGET="struktured/cowardly-irregular:web"
 PCK_LIMIT=199000000   # itch refuses HTML5 embeds with any file >= 200 MB
 PCK_WARN=180000000    # early-warning band: plan the next diet before it bites
