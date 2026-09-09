@@ -639,10 +639,12 @@ func _effect_to_stat(effect: String) -> Array:
 		"defense_up": return ["defense", 1.5]
 		"magic_up": return ["magic", 1.5]
 		"speed_up": return ["speed", 1.5]
+		"magic_defense_up": return ["magic_defense", 1.5]
 		"attack_down": return ["attack", 0.75]
 		"defense_down": return ["defense", 0.75]
 		"magic_down": return ["magic", 0.75]
 		"speed_down": return ["speed", 0.75]
+		"volatility_down": return ["volatility", 0.75]
 	return []
 
 
@@ -752,6 +754,17 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					if not mapped.is_empty():
 						stat = mapped[0]
 						modifier = float(mapped[1])
+					elif effect == "all_stats_down":
+						## Mirrors BattleManager:5887. Four DISTINCT names on purpose — add_debuff
+						## keys on the name and refreshes in place, so one shared name would
+						## debuff a single stat and look like it worked.
+						var mod := float(ability.get("stat_modifier", ability.get("modifier", 0.75)))
+						target.add_debuff("Despair (ATK)", "attack", mod, duration)
+						target.add_debuff("Despair (DEF)", "defense", mod, duration)
+						target.add_debuff("Despair (SPD)", "speed", mod, duration)
+						target.add_debuff("Despair (MAG)", "magic", mod, duration)
+						_log("%s uses %s on %s (all stats down)" % [caster.combatant_name, ability_id, target.combatant_name])
+						continue
 					elif effect == "mp_restore_and_ap":
 						target.restore_mp(int(target.max_mp * 0.25))
 						target.gain_ap(1)
