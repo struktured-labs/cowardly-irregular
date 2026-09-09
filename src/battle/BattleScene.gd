@@ -1886,6 +1886,13 @@ func _process_weather_layer(delta: float) -> void:
 			var flash := create_tween()
 			_weather_overlay.color = Color(0.9, 0.9, 1.0, 0.3)
 			flash.tween_property(_weather_overlay, "color", BATTLE_WEATHER_TINTS["storm"], 0.25)
+			## A storm with no bolt reads as heavy rain plus a tint pulse. Reuses the ability
+			## storm's builder, deliberately weaker: one thin dim bolt, no trauma or punch_zoom —
+			## ambient weather must never punch the screen the way a cast does.
+			if _tier() == BattleJuice.Tier.FULL:
+				var vp: Vector2 = get_viewport_rect().size
+				var strike := Vector2(randf_range(vp.x * 0.12, vp.x * 0.88), vp.y * randf_range(0.42, 0.66))
+				_storm_bolt(Color(0.72, 0.82, 1.0), strike, 3.0, vp)
 
 
 func enable_autogrind_console() -> void:
