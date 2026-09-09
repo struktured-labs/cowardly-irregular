@@ -22,6 +22,29 @@ import numpy as np
 import soundfile as sf
 
 # Cues struktured rejected by ear, plus every slot their rotation can reach.
+# ------------------------------------------------------------------------------------------------
+# A CORPUS FLAG IS A REVIEW ITEM, NOT A DEFECT. Triaged all 5 flags on main 2026-09-09 (v3.33.246):
+# ZERO were defects. Recorded so the next reader does not "fix" them, and so the precision of this
+# tool on real content is on the record rather than implied by the flag count.
+#
+#   w6_ability_fire        DELIBERATE. Its prompt is "Pure rising tone -- concept of heat", and
+#                          w6_ability_ice is "Pure descending tone -- concept of cold". The abstract
+#                          world's ENTIRE vocabulary is pure glides, authored as a mirrored pair.
+#                          ⛔ Do not fix one without the other, and do not fix either without
+#                          struktured -- this instrument flags a design language, not a bug.
+#   ability_bypass_puzzle  DELIBERATE. Skiptrotter's warp: the glide IS the semantic (you are being
+#                          moved past content). 13.71x, the corpus maximum, and on purpose.
+#   formation_arcane_tempest  borderline; a storm crescendo, quiet (-14 dB), 2.56x.
+#   advance_mage_2         ARTIFACT. Two struck celesta chimes (a wrong note, then the right one),
+#                          not a glide -- one outlier window at 2849 among a settled ~1050.
+#   attack_hit_axe_crit    ARTIFACT. An impact bouncing down 2859->125; rho_energy +0.70 says the
+#                          centroid is largely falling WITH the level, just under the 0.75 cut.
+#
+# A step-wise "monotonic fraction" was tried to separate the two artifacts and REJECTED on
+# measurement: local wobble dominates it, so the genuine w6_ability_fire glide scored 0.60 while the
+# axe impact scored 0.78 -- it inverts the very cases it was built to separate. Rank correlation is
+# used precisely because it tolerates wobble while a step count cannot.
+# ------------------------------------------------------------------------------------------------
 PINNED = [
     "ability_fire", "ability_fire_v2", "ability_fire_v3",
     "ability_lightning", "ability_lightning_v2", "ability_lightning_v3",
