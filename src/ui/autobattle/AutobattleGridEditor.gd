@@ -270,7 +270,7 @@ func _build_ui() -> void:
 	add_child(legend_bg)
 
 	var help_label1 = Label.new()
-	help_label1.text = "D-Pad:Navigate  A:Edit  B/Esc:Back  Del/Y:Delete  L:Split/AND  \u25c0:Switch Char  \u25c0\u25c0:More Actions  Click:Edit  RClick:Close"
+	help_label1.text = "D-Pad:Navigate  A:Edit  B/Esc:Back  Del/Y:Delete  W/S/RStick:Value  L:Split/AND  \u25c0:Switch Char  \u25c0\u25c0:More Actions  Click:Edit  RClick:Close"
 	help_label1.position = Vector2(16, size.y - 44)
 	help_label1.add_theme_font_size_override("font_size", 10)
 	help_label1.add_theme_color_override("font_color", style.text.darkened(0.2))
@@ -1678,6 +1678,12 @@ func _input(event: InputEvent) -> void:
 		# Edit modal handles input
 		return
 
+	# Right stick X only — ui_up/ui_down bind axis 1, so a blanket motion return kills navigation
+	if event is InputEventJoypadMotion and event.axis == JOY_AXIS_RIGHT_X:
+		if _handle_value_stick(event):
+			get_viewport().set_input_as_handled()
+		return
+
 	# Portrait panel focus mode (character selection via D-pad)
 	if _portrait_focused:
 		if event.is_action_pressed("ui_up") and not event.is_echo():
@@ -2020,6 +2026,30 @@ func _cycle_condition_operator() -> void:
 		_refresh_grid()
 	else:
 		print("[CYCLE_OP] cursor_col >= conditions.size, not on condition")
+
+
+## Same dial as the autogrind editor, deliberately identical so the two grids agree. A pad could
+## pick a condition's type and its operator and never its NUMBER — W/S was keyboard-only here too,
+## in the screen this project calls a design pillar. Right stick is the only free input: every face
+## button and both triggers are bound (battle_defer/battle_advance carry axes 4 and 5), and Select
+## is battle_toggle_auto here.
+const VALUE_STICK_DEADZONE := 0.6
+
+var _value_stick_latched: bool = false
+
+
+## One step per push, re-armed by returning to centre — an axis repeats every frame while held.
+func _handle_value_stick(event: InputEventJoypadMotion) -> bool:
+	if absf(event.axis_value) < VALUE_STICK_DEADZONE:
+		_value_stick_latched = false
+		return false
+	if _value_stick_latched:
+		return true
+	_value_stick_latched = true
+	if _is_on_condition_cell():
+		_adjust_condition_value(1 if event.axis_value > 0.0 else -1)
+		SoundManager.play_ui("menu_move")
+	return true
 
 
 func _adjust_condition_value(delta: int) -> void:
