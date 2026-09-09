@@ -382,7 +382,7 @@ func test_staged_scenes_reference_only_spawned_actor_ids() -> void:
 			match t:
 				"spawn_actor":
 					spawned[str(step.get("id"))] = true
-				"despawn_actor", "move_actor", "face_actor", "emote", "hop":
+				"despawn_actor", "move_actor", "face_actor", "emote", "hop", "say":
 					assert_true(spawned.has(str(step.get("id"))),
 						"%s: %s references unspawned actor '%s'" % [path, t, step.get("id")])
 					if t == "face_actor" and step.has("toward"):
