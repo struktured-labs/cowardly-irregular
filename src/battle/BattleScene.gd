@@ -5052,8 +5052,12 @@ func _on_mp_restored(target: Combatant, amount: int) -> void:
 
 
 func _on_ap_granted(target: Combatant, amount: int) -> void:
+	## AP is not healing. 062e36e2 separated the POPUPS on struktured's ruling — "MP gains and
+	## ability AP grants get their own popups (purple / red) — never healing_done's green" — and
+	## gave the AP grant the HP heal CUE in the same commit. round_ap_gain is the cue the round's
+	## own AP gain already uses; different moment, so no double-fire.
 	_results_display.on_ap_granted(target, amount)
-	SoundManager.play_battle("heal")
+	SoundManager.play_battle("round_ap_gain")
 
 
 ## Tick 143: spawn floating damage/healing popups when poison /
