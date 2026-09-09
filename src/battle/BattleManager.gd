@@ -2427,9 +2427,18 @@ func _ai_debuffer(combatant: Combatant, abilities: Array, alive_allies: Array, a
 ## Spotlight Duel minibosses. Returns {} when the roll declines, so callers fall through unchanged.
 func _ai_utility_action(combatant: Combatant, abilities: Array, alive_enemies: Array, chance: float) -> Dictionary:
 	var utility: Array = abilities.filter(func(a): return a.get("type", "") in ["buff", "support", "defensive", "song", "summon"])
+	## These are OPENERS, not spam. As a flat per-turn roll the slot cost the common roster ~21% of
+	## its damage output — measured as party HP lost over 25 rounds — because a howl or a web_shot
+	## deals nothing and add_buff only refreshes a duration. Each utility ability fires at most once
+	## per combatant per battle, so a wolf howls and then fights, and Voltharion's storm_gathering
+	## telegraphs instead of stuttering.
+	var spent: Dictionary = combatant.get_meta("_utility_spent", {})
+	utility = utility.filter(func(a): return not spent.has(str(a.get("id", ""))))
 	if utility.is_empty() or randf() >= chance:
 		return {}
 	var pick: Dictionary = utility[randi() % utility.size()]
+	spent[str(pick.get("id", ""))] = true
+	combatant.set_meta("_utility_spent", spent)
 	## These three archetypes are handed enemies, not allies. An enemy-facing debuff goes to an
 	## enemy; anything else — self-buff, ally-buff with no ally list here, summon — goes to the
 	## caster. I first passed alive_enemies into a parameter named alive_allies, which would have

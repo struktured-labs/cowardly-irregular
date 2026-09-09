@@ -102,18 +102,34 @@ func test_a_self_buff_is_not_aimed_at_the_party() -> void:
 	for t in debuff_targets:
 		assert_eq(t, hero, "an enemy-targeted utility must land on the enemy")
 
-func test_the_utility_slot_declines_often_enough_to_fall_through() -> void:
-	## The discriminator. If it always fired, an assassin would stop being an assassin.
+func test_the_slot_is_an_opener_not_a_loop() -> void:
+	## The contract that keeps this from costing the roster its damage. As a flat per-turn roll the
+	## slot cost the common W1 monsters ~21% of their output — measured as party HP lost over 25
+	## rounds — because a howl or a web_shot deals nothing and add_buff only refreshes a duration.
+	## Each utility ability now fires at most ONCE per combatant per battle: ~4% instead of ~21%.
+	var buff: Dictionary = {"id": "brace", "type": "support", "target_type": "self"}
+
+	## A fresh combatant takes it at roughly the given chance.
+	var taken: int = 0
+	for _i in 1000:
+		var fresh := Combatant.new()
+		autofree(fresh)
+		fresh.combatant_name = "Fresh"
+		if not _bm._ai_utility_action(fresh, [buff], [], 0.25).is_empty():
+			taken += 1
+	assert_gt(taken, 150, "CONTROL: it fires on a fresh combatant — %d of 1000 at 0.25" % taken)
+	assert_lt(taken, 400, "and declines most of the time, or the archetype's own behaviour is drowned")
+
+	## The SAME combatant spends it once and never again, however many turns the fight runs.
 	var boss := Combatant.new()
 	autofree(boss)
 	boss.combatant_name = "Boss"
-	var buff: Dictionary = {"id": "brace", "type": "support", "target_type": "self"}
-	var taken: int = 0
+	var repeats: int = 0
 	for _i in 1000:
-		if not _bm._ai_utility_action(boss, [buff], [], 0.25).is_empty():
-			taken += 1
-	assert_gt(taken, 150, "CONTROL: it fires — %d of 1000 at a 0.25 chance" % taken)
-	assert_lt(taken, 400, "and it declines most of the time, or the archetype's own behaviour is drowned")
+		if not _bm._ai_utility_action(boss, [buff], [], 1.0).is_empty():
+			repeats += 1
+	assert_eq(repeats, 1,
+		"a one-ability monster must spend exactly one turn on it per battle, not %d" % repeats)
 
 func test_an_empty_utility_pool_returns_nothing() -> void:
 	var boss := Combatant.new()
