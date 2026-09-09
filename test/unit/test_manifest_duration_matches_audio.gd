@@ -62,8 +62,17 @@ func test_every_manifest_duration_matches_the_shipped_audio() -> void:
 		var f: String = str((entry as Dictionary).get("file", ""))
 		if f == "":
 			continue
+		## An unrendered track has NO FILE, and that skip is above. Reaching here
+		## with duration 0.0 means the track HAS audio and claims no length —
+		## which is the defect, not an exemption from it. The original wrote the
+		## skip on the duration instead of the file, so its stated reason ("not
+		## rendered yet") did not match its condition and a real track with a
+		## zeroed duration was silently exempt. Inert today (0 such tracks), but
+		## an exemption is not harmless for covering nothing — that is exactly
+		## the shape that converts "we owe something" into "this is fine".
 		var declared: float = float((entry as Dictionary).get("duration", UNRENDERED))
 		if declared == UNRENDERED:
+			drifted.append("%s: has a file but declares duration 0.0" % key)
 			continue
 		var res_path: String = f if f.begins_with("res://") else "res://" + f
 		if not ResourceLoader.exists(res_path):
