@@ -342,6 +342,16 @@
       "gate_widened": false,
       "sha256": "8284abbdc2dd2a5d216d4ea6325a13bf42fd9ecbf66f9ba88e6497c49ac913c7",
       "file": "assets/audio/sfx/ability_revive.ogg"
+    },
+    "ability_riff": {
+      "early_hz": 1167.4,
+      "late_hz": 1129.1,
+      "sweep": 1.03,
+      "direction": "fall",
+      "whoops": false,
+      "gate_widened": false,
+      "sha256": "7e27f9570dcd6bd145994405e67c5b04c94bfd4fe5447500162fc48f7b967cfe",
+      "file": "assets/audio/sfx/ability_riff.ogg"
     }
   }
 }

@@ -395,13 +395,29 @@ def revive(dur=1.15, seed=173):
     out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.78).astype(np.float32)
 
 
+def riff(dur=0.55, seed=179):
+    """ability_riff — the Bard's Free Move, which IS her attack. type=physical, so it resolved to
+    ability_physical: a sword unsheathing. Its own shipped description is "a sour, clashing chord
+    struck like a weapon", which the sword cue directly contradicts. Root + tritone + minor 2nd
+    struck together with a noise transient — dissonant by construction, no glide."""
+    rng = np.random.default_rng(seed); n = int(SR * dur)
+    out = np.zeros(n)
+    for f, a, d in ((220.00, 0.55, 2.6), (311.13, 0.45, 2.8), (233.08, 0.38, 3.0), (110.00, 0.40, 2.2)):
+        stagger = int(SR * rng.uniform(0.0, 0.012))          # a strum, not a keyboard chord
+        _place(out, _held(n - stagger, f, d, a, duty=0.35), stagger)
+    k = int(SR * 0.05)
+    out[:k] += _sweep_lowpass(rng.uniform(-1, 1, k), 2600.0, 1800.0) * _env(k, 0.001, 5.0) * 0.55
+    out = _bitcrush(out, bits=5, hold=4); out = _sweep_lowpass(out, 2200.0, 1800.0)
+    out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.84).astype(np.float32)
+
+
 VOICES = {"ui_toggle_on": ui_toggle_on, "staff_hit": staff_hit, "ui_confirm": ui_confirm, "ui_open": ui_open, "portal_hum": portal_hum,
           "scythe_crit": scythe_crit, "strike_dark_hit": strike_dark_hit, "strike_lightning_hit": strike_lightning_hit,
           "shadow_strike": shadow_strike, "fire": fire, "fire_burst": fire_burst, "fire_roar": fire_roar,
           "lightning": lightning, "lightning_snap": lightning_snap, "lightning_chain": lightning_chain,
           "ice": ice, "ice_shatter": ice_shatter, "ice_freeze": ice_freeze,
           "dark": dark,
-          "song": song, "summon": summon, "revive": revive}
+          "song": song, "summon": summon, "revive": revive, "riff": riff}
 
 
 def main():
