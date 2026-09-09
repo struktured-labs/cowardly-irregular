@@ -91,3 +91,52 @@ func test_cutscene_track_reachability_matches_the_pin() -> void:
 			resolved.append(k)
 	assert_eq(resolved.size(), 0,
 		"pinned tracks that a scene now PLAYS (%d): %s — remove them from KNOWN_UNREACHABLE_CUTSCENE_TRACKS so this list cannot rot into a stale claim" % [resolved.size(), resolved])
+
+
+## The MUSIC manifest's ambient_* entries. play_ambient reads the SFX manifest,
+## not this one, and play_music is never called with an ambient key — so every
+## one of these is unreachable regardless of whether the key also exists in the
+## SFX manifest.
+##
+## ⚠️ THREE OF THEM ARE SHADOWED, and reading the neighbours is the only reason
+## I found it. cave/forest/village exist in BOTH manifests under the same key
+## pointing at DIFFERENT FILES:
+##     ambient_cave    music 187s/1.5MB    sfx 5s/0.0MB   <- the 5s one plays
+##     ambient_forest  music 214s/2.0MB    sfx 5s/0.0MB
+##     ambient_village music 145s/1.5MB    sfx 5s/0.0MB
+## My first pass called those three REACHABLE because the literal "ambient_cave"
+## appears in OverworldScene — conflating "this key appears in code" with "this
+## manifest entry is reachable". The consumer of that literal is play_ambient,
+## which never looks here.
+##
+## NOT asserting which is intended. _ambient_player is a separate layer from
+## _music_player, so a short ambient texture UNDER music is a legitimate design
+## and these long beds are most likely superseded legacy. That is struktured's
+## call, not this file's — the guard only ensures the 17 MB is visible.
+const KNOWN_UNREACHABLE_AMBIENT_TRACKS: Array[String] = [
+	"ambient_cave",
+	"ambient_digital",
+	"ambient_forest",
+	"ambient_industrial",
+	"ambient_ocean",
+	"ambient_steampunk",
+	"ambient_village",
+]
+
+
+func test_ambient_music_entries_are_all_unreachable_as_pinned() -> void:
+	var raw: String = FileAccess.get_file_as_string(MANIFEST)
+	var tracks: Dictionary = (JSON.parse_string(raw) as Dictionary).get("tracks", {})
+	var found: Array[String] = []
+	for key in tracks.keys():
+		var k: String = str(key)
+		if k.begins_with("ambient_") and str((tracks[k] as Dictionary).get("file", "")) != "":
+			found.append(k)
+	found.sort()
+	var pinned: Array[String] = KNOWN_UNREACHABLE_AMBIENT_TRACKS.duplicate()
+	pinned.sort()
+	assert_gt(found.size(), 3,
+		"SCOPE control: only %d ambient music entries walked — a green here would be vacuous" % found.size())
+	assert_eq(found, pinned,
+		"the ambient_* set in the music manifest changed (found %s, pinned %s) — every entry here is unreachable (play_ambient reads the SFX manifest), so adding one ships audio nothing can play. Remove it, or move it to the SFX manifest where the consumer looks." % [found, pinned])
+
