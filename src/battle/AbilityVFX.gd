@@ -75,7 +75,10 @@ const LEGACY_IDS: Dictionary = {
 	"megalixir": EffectSystemClass.EffectType.MP_RESTORE,
 	"channel": EffectSystemClass.EffectType.MP_RESTORE,
 	"pray": EffectSystemClass.EffectType.MP_RESTORE,
-	"riff": EffectSystemClass.EffectType.MP_RESTORE,
+	## `riff` sat here beside the two real MP free moves because it WAS an MP battery. struktured
+	## retired that 2026-08-22 ("disruption, not an MP battery") and this entry outlived the design,
+	## so a damage strike still rendered as an ether. It now falls through to PHYSICAL and takes the
+	## musical shape from _is_musical.
 	"protect": EffectSystemClass.EffectType.BUFF,
 	"shell": EffectSystemClass.EffectType.BUFF,
 	"haste": EffectSystemClass.EffectType.BUFF,
