@@ -76,6 +76,14 @@ FULL_LEVEL_TOLERANCE_DB = 4.0
 MAX_SCAN_S = 60.0
 # The seam is only fixed if BOTH sides of the wrap sit this close to the body.
 SEAM_TOLERANCE_DB = 4.0
+# ENTRY GATE. A tail this far under the track's own mean is a fade; anything
+# shallower is a mix choice and must be left alone. Without this the tool
+# happily rebuilt tracks that already loop fine — battle_skate_punk's tail is
+# -2.8 dB and it was offered a 0.5s cut. trim_loop_seams has the equivalent
+# gate (classify() must say TRIM-SAFE); this one shipped without it, so a bare
+# --apply would have modified good audio across the corpus.
+# Same value audit_loop_seams uses to call something a fade rather than a dip.
+FADE_THRESHOLD_DB = -12.0
 
 
 def decode(path):
@@ -181,6 +189,10 @@ def process(key, path, xfade_s, apply_it, preview_dir):
         return key, "unreadable or too short", None
     dur = len(y) / SR
     body_db = db(y[: max(SR, len(y) - int(30 * SR))])
+
+    tail_db = db(y[-int(1.5 * SR):])
+    if tail_db - body_db > FADE_THRESHOLD_DB:
+        return key, "tail is only %.1f dB under body - not a fade, leave it alone" % (tail_db - body_db), None
 
     xfade_n = int(xfade_s * SR)
     attempts = 0
