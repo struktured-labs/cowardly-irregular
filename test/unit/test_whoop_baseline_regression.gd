@@ -33,6 +33,49 @@ func test_no_pinned_cue_was_recorded_whooping() -> void:
 		fail_test("cues recorded as WHOOPING in the baseline — he has rejected this sound three times: %s" % [whooping])
 
 
+func test_the_baseline_was_written_by_the_TREND_AWARE_tool() -> void:
+	## The metric changed on 2026-09-09: mean-of-thirds COMPRESSED a monotonic ramp, so a synthetic
+	## glide with a true 3.43x centroid ratio reported 2.10x and passed a 2.5x threshold. It fired
+	## on the extremes and so looked like it worked while being blind to the case struktured
+	## complained about.
+	##
+	## THE HAZARD THIS CLOSES: every assert in this file reads the baseline FILE. A baseline written
+	## by the OLD tool records old-metric verdicts, and "no pinned cue was recorded whooping" is
+	## then true of a measurement that could not see the defect. Reverting tools/audit_whoop.py
+	## would leave this whole ratchet green while disarming it. The discriminator fields are the
+	## only in-file evidence of WHICH instrument produced the numbers.
+	var cues := _baseline()
+	var missing: Array = []
+	for k in cues:
+		var e := cues[k] as Dictionary
+		if not (e.has("rho_time") and e.has("rho_energy") and e.has("low_hz") and e.has("high_hz")):
+			missing.append(k)
+	assert_gt(cues.size(), 10, "control: baseline nearly empty — the loop below checked almost nothing")
+	if not missing.is_empty():
+		fail_test("%d pinned cue(s) lack the trend fields — the baseline was written by the pre-2026-09-09 mean-of-thirds tool, which cannot see a 3.4x glide. Re-run `tools/audit_whoop.py --write`: %s" % [missing.size(), missing])
+
+
+func test_recorded_sweep_is_the_excursion_not_the_endpoints() -> void:
+	## Guards the specific regression: excursion (high/low) must be at least the endpoint ratio.
+	## If someone restores mean-of-thirds, recorded sweeps drop below high_hz/low_hz and this reds.
+	var cues := _baseline()
+	var wrong: Array = []
+	var checked := 0
+	for k in cues:
+		var e := cues[k] as Dictionary
+		var lo := float(e.get("low_hz", 0.0))
+		var hi := float(e.get("high_hz", 0.0))
+		if lo <= 0.0 or hi <= 0.0:
+			continue
+		checked += 1
+		## allow rounding slack; the compression this catches was 2.10 vs 3.43, not 0.01
+		if float(e.get("sweep", 0.0)) < (hi / lo) - 0.05:
+			wrong.append("%s: sweep %s but excursion %.2f" % [k, e.get("sweep"), hi / lo])
+	assert_gt(checked, 10, "control: no cue carried low/high — this guard checked nothing")
+	if not wrong.is_empty():
+		fail_test("recorded sweep is smaller than the measured excursion — the endpoint-averaging metric is back: %s" % [wrong])
+
+
 func test_shipped_bytes_match_what_was_measured() -> void:
 	# The hash is of the actual audio, so this cannot drift without someone noticing.
 	var cues := _baseline()
