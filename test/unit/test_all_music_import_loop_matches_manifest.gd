@@ -13,6 +13,25 @@ extends GutTest
 ## the same class of bug for every future new play-code path that skips
 ## the override.
 ##
+## ⚠️ MEASURED 2026-09-09 — THE NAMED BYPASS IS DORMANT, NOT ACTIVE.
+## The rationale above cites _start_monster_music as a path where .import wins.
+## Grepped the consumer rather than trusting the comment (fleet rule, same day):
+##   the comment is TRUE about the function — it builds "battle_%s.ogg" and
+##   load()s it directly, never touching the manifest. Verified by reading it.
+##   BUT it has exactly 10 call sites, all match arms inside play_music, and
+##   play_music RETURNS on a manifest hit BEFORE reaching the match. All 10
+##   keys (slime bat mushroom imp goblin brute skeleton wolf ghost snake) have
+##   shipped files. So it cannot execute on the current corpus — on web either,
+##   since none of those 10 match the Web preset's exclude patterns.
+##
+## That does NOT retire this ratchet, and the distinction matters: the function
+## is a FALLBACK, not dead code. It fires the moment any of those 10 manifest
+## entries loses its file — which is exactly when a loop-flag disagreement
+## would start mattering. The guard defends a real class whose cited instance
+## is currently asleep. Do not delete _start_monster_music, and do not read the
+## 39 remaining allowlist entries as an ACTIVE runtime hazard; they are a
+## design ruling awaiting struktured, and that is all.
+##
 ## Two guarantees:
 ##   1. Any NEW mismatched track fails the gate on the first CI run.
 ##   2. Any KNOWN_LOOP_MISMATCHES entry that now agrees fails the gate
