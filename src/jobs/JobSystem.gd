@@ -596,13 +596,21 @@ func set_dev_full_kits(enabled: bool, party_members: Array) -> void:
 
 
 func assign_secondary_job(combatant: Combatant, job_id: String) -> bool:
-	"""Assign a secondary job to a combatant (visual accents + minor stat boost)."""
+	"""Assign a secondary job: visual accents, its base ability kit, and
+	Combatant.SECONDARY_JOB_STAT_FRACTION of its stats."""
 	job_id = resolve_job_id(job_id)
 	if not jobs.has(job_id):
 		push_warning("Secondary job '%s' not found" % job_id)
 		return false
 	combatant.secondary_job = jobs[job_id]
 	combatant.secondary_job_id = job_id
+	# Same omission class as tick 328: setting the field is not applying it.
+	# The lent stats live in recalculate_stats, so without this call they
+	# only appeared the next time something ELSE recalculated (an equip, a
+	# level-up, a passive change) — a boost that arrives minutes later and
+	# looks like a different bug.
+	if combatant.has_method("recalculate_stats"):
+		combatant.recalculate_stats()
 	secondary_job_changed.emit(combatant, job_id)
 	return true
 
