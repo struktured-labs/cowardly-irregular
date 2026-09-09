@@ -466,6 +466,51 @@ def riff(dur=0.55, seed=179):
     out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.84).astype(np.float32)
 
 
+def mp_restore(dur=0.70, seed=211):
+    """ability_mp_restore — pray (Cleric free move) and channel (Mage free move) played the SWORD.
+    Deliberately not ability_heal: that cue is the angelic HP restore, and MP returning should read
+    as a quieter, more inward replenish. A low intake pulse, then two held bells a fourth apart."""
+    rng = np.random.default_rng(seed); n = int(SR * dur)
+    out = np.zeros(n)
+    k = int(SR * 0.09)
+    _place(out, _held(k, 98.0, 3.0, 0.40), 0)                                    # intake
+    body = n - k
+    _place(out, _held(body, 523.25, 2.0, 0.36, duty=0.35, vib_hz=5.0, vib_cents=16.0), k)
+    _place(out, _held(body, 698.46, 2.2, 0.28, duty=0.25, vib_hz=5.0, vib_cents=16.0), k)
+    out += _sweep_lowpass(rng.uniform(-1, 1, n), 1700.0, 1500.0) * _env(n, 0.14, 3.0) * 0.11
+    out = _bitcrush(out, bits=5, hold=4); out = _sweep_lowpass(out, 2000.0, 1800.0)
+    out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.74).astype(np.float32)
+
+
+def flee(dur=0.48, seed=223):
+    """ability_flee — the Rogue's escape, type=escape, the last type with no arm. Three DISCRETE
+    descending blips (a scamper) plus a scuff. Stepped, never slid: a descending slide is a whoop
+    in the other direction, which is the blind spot that let struktured hear it a fourth time."""
+    rng = np.random.default_rng(seed); n = int(SR * dur)
+    out = np.zeros(n)
+    step = int(n * 0.20)
+    for i, f in enumerate((659.25, 493.88, 392.00)):
+        _place(out, _held(step, f, 3.2, 0.50, duty=0.25), i * step)
+    scuff = _sweep_lowpass(rng.uniform(-1, 1, n), 1300.0, 1200.0) * _env(n, 0.02, 3.4) * 0.30
+    out += scuff
+    out = _bitcrush(out, bits=5, hold=5); out = _sweep_lowpass(out, 1800.0, 1600.0)
+    out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.78).astype(np.float32)
+
+
+def cure(dur=0.60, seed=227):
+    """status_cured — using an Antidote/Eye Drops/Echo Herb was SILENT. Distinct from the status_*
+    cues, which announce an affliction ARRIVING; this is one leaving. A short noise wash that
+    settles onto a clean held fifth: the wash is the affliction clearing, the fifth is what is left."""
+    rng = np.random.default_rng(seed); n = int(SR * dur)
+    wash = _sweep_lowpass(rng.uniform(-1, 1, n), 1500.0, 1400.0) * _env(n, 0.01, 5.0) * 0.34
+    out = wash
+    tail = int(n * 0.62); off = n - tail
+    _place(out, _held(tail, 587.33, 2.2, 0.42, duty=0.35), off)
+    _place(out, _held(tail, 880.00, 2.4, 0.26, duty=0.25), off)
+    out = _bitcrush(out, bits=5, hold=4); out = _sweep_lowpass(out, 2000.0, 1800.0)
+    out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.76).astype(np.float32)
+
+
 VOICES = {"ui_toggle_on": ui_toggle_on, "staff_hit": staff_hit, "ui_confirm": ui_confirm, "ui_open": ui_open, "portal_hum": portal_hum,
           "scythe_crit": scythe_crit, "strike_dark_hit": strike_dark_hit, "strike_lightning_hit": strike_lightning_hit,
           "shadow_strike": shadow_strike, "fire": fire, "fire_burst": fire_burst, "fire_roar": fire_roar,
@@ -473,7 +518,30 @@ VOICES = {"ui_toggle_on": ui_toggle_on, "staff_hit": staff_hit, "ui_confirm": ui
           "ice": ice, "ice_shatter": ice_shatter, "ice_freeze": ice_freeze,
           "dark": dark,
           "song": song, "summon": summon, "revive": revive, "riff": riff,
-          "poison": poison, "earth": earth, "wind": wind, "arcane": arcane}
+          "poison": poison, "earth": earth, "wind": wind, "arcane": arcane,
+          "mp_restore": mp_restore, "flee": flee, "cure": cure}
+
+
+def _refuse_if_degenerate(voice, y):
+    """REFUSE to write near-silence. Every voice here ends with `out /= max(abs(out))` then a ~0.8
+    scale, so a correct render ALWAYS peaks near -2 dBFS. A quiet result means the voice function
+    produced garbage — an envelope that never opened, a filter that ate everything, a _place() that
+    wrote past the buffer — and none of that raises. The .ogg would be written, imported, pinned by
+    sha256 and shipped as a cue that plays nothing, which is indistinguishable from a cue nobody
+    happens to trigger. Cheap to check at the one place that can still stop it.
+
+    Thresholds are far below any correct output rather than tuned: measured across all 11 voices
+    authored 2026-09-09, peak sits at -2.0 dBFS and the live fraction at 48-100%.
+    """
+    peak = float(np.max(np.abs(y))) if len(y) else 0.0
+    peak_db = 20.0 * math.log10(peak + 1e-12)
+    live = float((np.abs(y) > 10 ** (-60.0 / 20.0)).mean()) if len(y) else 0.0
+    if peak_db < -20.0 or live < 0.05:
+        raise SystemExit(
+            "REFUSED to write %s: peak %.1f dBFS, %.1f%% of samples above -60 dBFS.\n"
+            "A correct render peaks near -2 dBFS — this voice produced near-silence. Fix the voice;\n"
+            "do NOT lower this floor. Writing it would ship a cue that plays nothing and pin its\n"
+            "sha256 in the whoop baseline as if it were real." % (voice, peak_db, live * 100.0))
 
 
 def main():
@@ -483,6 +551,7 @@ def main():
     ap.add_argument("--seed", type=int, default=7)
     a = ap.parse_args()
     y = VOICES[a.voice](seed=a.seed)
+    _refuse_if_degenerate(a.voice, y)
     wav = Path(tempfile.mktemp(suffix=".wav"))
     import wave
     with wave.open(str(wav), "wb") as w:

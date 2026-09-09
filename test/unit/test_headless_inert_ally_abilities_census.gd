@@ -276,3 +276,85 @@ func test_the_map_derivation_reads_the_real_function() -> void:
 	var mapped := _mapped_effects()
 	assert_true(mapped.has("attack_up"), "control: a known map entry must be derived, got %s" % str(mapped))
 	assert_false(mapped.has("dispel"), "control: a non-entry must NOT be derived — the regex is over-broad")
+
+
+## ── REACHABILITY ────────────────────────────────────────────────────────────────────────────
+## The census reported "21 inert" all day. Accurate for its corpus and MISLEADING ABOUT IMPACT:
+## 18 of them belong to advanced/meta jobs a grinding party cannot have, or to monsters. The
+## number invited exactly the reading I gave it, which is the same way field elites "working in
+## W1 only" hid which cases mattered.
+##
+## And "in a starter job's kit" is itself a DEFINITION, not what a party holds — cowir-music's
+## rule: a key being mentioned is not the same as a consumer loading it. Starting kits are lean
+## and the rest are level-gated, so this reads BOTH stores: the base `abilities` list and
+## `abilities_at_level`. Traced 2026-09-09: flee is a Rogue base ability (level 1), raise unlocks
+## for the Cleric at level 10 — mid-W1, so a cleric carries it for most of a real playthrough.
+
+const STARTER_JOB_TYPE := 0
+
+
+## ability id -> unlock level, for every STARTER job only. Reads both stores a party loads from.
+func _starter_reachable_abilities() -> Dictionary:
+	var out: Dictionary = {}
+	var f := FileAccess.open("res://data/jobs.json", FileAccess.READ)
+	if f == null:
+		return out
+	var parsed = JSON.parse_string(f.get_as_text())
+	f.close()
+	var jobs: Dictionary = parsed.get("jobs", parsed)
+	for jid in jobs.keys():
+		var j = jobs[jid]
+		if typeof(j) != TYPE_DICTIONARY:
+			continue
+		if int(j.get("type", j.get("job_type", -1))) != STARTER_JOB_TYPE:
+			continue
+		for a in j.get("abilities", []):
+			out[str(a)] = 1
+		var gated = j.get("abilities_at_level", {})
+		if typeof(gated) == TYPE_DICTIONARY:
+			for lv in gated.keys():
+				for a in gated[lv]:
+					var prev: int = int(out.get(str(a), 9999))
+					out[str(a)] = mini(prev, int(str(lv)))
+	return out
+
+
+func test_the_census_separates_REACHABLE_from_unreachable() -> void:
+	## The headline count is not the actionable one. Print the split so nobody (including me)
+	## reads 20 as 20 problems.
+	var reach := _starter_reachable_abilities()
+	var hit: Array[String] = []
+	var unreachable := 0
+	for a in _inert_ids():
+		if reach.has(a):
+			hit.append("%s(lv%d)" % [a, int(reach[a])])
+		else:
+			unreachable += 1
+	hit.sort()
+	gut.p("INERT + REACHABLE BY A STARTER JOB (%d): %s" % [hit.size(), str(hit)])
+	gut.p("INERT but unreachable in a normal grind (%d): meta/advanced jobs or monster abilities" % unreachable)
+	assert_gt(reach.size(), 0, "control: the starter-kit store must load, else everything reads unreachable")
+
+
+func test_no_NEW_starter_reachable_ability_becomes_inert() -> void:
+	## The ratchet that matters. These two are known and go to struktured as design questions —
+	## raise lands in the headless-revival gap he already owns. A THIRD one appearing is a
+	## regression and names itself here rather than hiding inside an aggregate of 20.
+	const KNOWN := ["flee", "raise"]
+	var reach := _starter_reachable_abilities()
+	var unexpected: Array[String] = []
+	for a in _inert_ids():
+		if reach.has(a) and not KNOWN.has(a):
+			unexpected.append(a)
+	assert_eq(unexpected.size(), 0,
+		"a starter-reachable ability became inert in headless: %s" % str(unexpected))
+
+
+func test_the_reachability_reader_is_not_vacuous() -> void:
+	# ARM+: an empty or wrong store would make every ability look unreachable and the ratchet above
+	# would pass no matter what broke.
+	var reach := _starter_reachable_abilities()
+	assert_true(reach.has("cure"), "control: cure is a Cleric base ability and must resolve")
+	assert_true(reach.has("raise"), "control: raise is level-gated and must still be found")
+	assert_eq(int(reach.get("raise", -1)), 10, "raise unlocks at level 10 — the gate must be READ, not assumed")
+	assert_false(reach.has("undo_death"), "control: a META job ability must NOT count as starter-reachable")

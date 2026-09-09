@@ -4553,14 +4553,20 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 		damage = _apply_market_sense(caster, damage)
 		damage = _apply_lens_execute_bonus(caster, target, damage)
 
-		## Terrain and weather elemental modifiers key on ELEMENT, not on ability type, but both
-		## had exactly one call site — in _execute_magic_ability. The 6 physical abilities that
-		## carry an element (lightning_dash, dark_slash, cursed_strike, glitch_strike,
-		## permakill_strike, toxic_embrace) were skipped purely by which function they run through,
-		## so a lightning dash got no storm bonus while a lightning spell did.
-		var phys_element: String = str(ability.get("element", ""))
-		if phys_element != "":
-			damage = int(damage * get_terrain_damage_modifier(phys_element) * get_weather_damage_modifier(phys_element))
+		## NO elemental modifier here, deliberately — and the evidence is THIS FUNCTION, not a
+		## comment elsewhere. Six abilities carry an element (lightning_dash, dark_slash,
+		## cursed_strike, glitch_strike, permakill_strike, toxic_embrace) and this path consults it
+		## nowhere: calculate_elemental_modifier 0, take_elemental_damage 0, and
+		## _maybe_heal_from_damage receives an EMPTY element. The magic path is 1/2/6. A weapon
+		## strike's element is flavour here by construction.
+		## I added weather scaling on 2026-09-09 and reverted it the same day: it made weather the
+		## ONLY mechanical consequence of an element on a weapon strike, so a storm boosted
+		## lightning_dash while the target's lightning IMMUNITY stayed ignored. Making elements live
+		## here is a coherent design change — resistance, absorb, weakness visuals and those six
+		## abilities' balance move together — and it is struktured's call, not a gap to close.
+		## Corroborated INDEPENDENTLY: HeadlessBattleResolver's magic arm applies
+		## calculate_elemental_modifier and its physical arm does not. Two damage paths,
+		## different authors, same position — so this is the engine's stance, not one file's.
 
 		# Barrier absorbs the next hit.
 		if target.has_status("barrier"):

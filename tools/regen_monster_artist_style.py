@@ -67,6 +67,16 @@ POSE_PROMPTS = [
 
 # Per-monster identity notes (fold into prompt to reinforce reference)
 MONSTER_DESC = {
+    # dark_knight: W1 field elite. From its SHIPPED monsters.json line — "It does not wander,
+    # it does not hunt, and it does not leave. It is simply here, and it is watching you." —
+    # plus struktured's "sits there menacingly glowing". It is a LANDMARK, not a roamer.
+    "dark_knight": (
+        "a heavy black-armoured knight standing perfectly motionless, a greatsword planted "
+        "point-down in the ground before it, both gauntlets resting on the pommel, faint violet "
+        "light leaking from the helm slit and from the seams between armour plates, a tattered "
+        "dark cape hanging still, ominous and watchful rather than advancing"
+    ),
+
     "cave_rat":       "large dark gray cave rat with scruffy fur, red eyes, exposed teeth, small clawed paws",
     "cave_rat_king":  "a DISAPPOINTINGLY LARGE quadruped rat, four legs firmly on the ground (NOT bipedal, NOT humanoid, NOT goblin-shaped), fat rotund pear-shaped body, matted brown-gray fur, tiny beady black eyes, whiskers, a long naked pink tail, small clawed paws, and — sitting comically small and lopsided on his head — a TINY bronze crown that is obviously too small for him. Whimsical menace: he looks silly but not friendly. Read: the joke IS the sprite. NO cloak, NO weapon, NO armor, NO humanoid stance. He is a rat wearing a bad crown",
     "rat_guard":      "bipedal humanoid rat guard wearing tattered leather armor, gripping a rusty short sword in two paws, hunched aggressive stance",
@@ -751,6 +761,20 @@ def regen_one(client, monster_id: str, quality: str,
         backup = backup_dir / (out_path.stem + ".pre_artist_style" + out_path.suffix)
         if not backup.exists():
             shutil.copy2(out_path, backup)
+    # A near-black subject on a near-black background survives generation and dies in cleanup:
+    # dark_knight came back bg (12,12,12) vs armour (0,0,0), L1 38, and keying the background took
+    # the knight with it — a 96%-transparent strip that looks like a bad generation and is a good
+    # one destroyed downstream. Refuse rather than write an empty sheet.
+    _a = strip.split()[3]
+    _clear = sum(1 for v in _a.getdata() if v <= 10) / float(strip.width * strip.height)
+    if _clear > 0.90:
+        raise SystemExit(
+            f"REFUSING to write {out_path.name}: {_clear*100:.1f}% transparent — the sheet is "
+            f"effectively EMPTY. Cleanup most likely keyed out a dark subject along with a dark "
+            f"background (compare: healthy sheets here run 60-75%). The raw is intact at "
+            f"{raw_path}; re-cut it with a border-connected flood at a TIGHT tolerance "
+            f"(~10) instead of regenerating."
+        )
     strip.save(out_path)
     print(f"  → {out_path.relative_to(GAME_REPO)} (raw at {raw_path.relative_to(PROJECT)})")
     return {"monster": monster_id, "status": "ok", "cost": COST_PER_IMAGE[quality]}

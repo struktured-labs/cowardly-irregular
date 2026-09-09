@@ -49,7 +49,8 @@ extends GutTest
 
 ## job -> the non-physical ability count that is currently mute. Every entry is DEBT, not
 ## an exemption: a summon, a song, a rewind and a buff all deserve to sound like themselves.
-## RETIRED 2026-09-09 in the same fold that earned it: bard and summoner came off this list when
+## RETIRED 2026-09-09, three times as the cues landed: bard and summoner (song/summon/revival),
+## then rogue (mp_restore + escape — flee was its last mute ability). Each came off when
 ## cowir-sfx's song/summon/revival cues landed (v3.33.240). The ratchet failed on the way past --
 ## "GOOD NEWS, STALE LIST" -- which is the bidirectional half working: a debt list that only grows
 ## becomes a lie about the game the moment someone pays one down.
@@ -57,7 +58,6 @@ const BASELINE: Dictionary = {
 	"fighter": 1,       # provoke — a taunt is not a weapon hit
 	"guardian": 3,
 	"ninja": 3,
-	"rogue": 5,
 	"speculator": 6,
 	"time_mage": 5,     # the entire meta kit
 }

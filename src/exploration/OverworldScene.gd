@@ -484,9 +484,14 @@ func _add_area_transition(trans_name: String, target_map: String, target_spawn: 
 	# so the player has to walk "above" targets. Shifting zones up fixes the mismatch.
 	trans.position = pos + Vector2(0, -TILE_SIZE * 3)  # 3 tiles up — Mode 7 log-warp shifts visual north
 	# 2026-07-13: was 4×10 tiles — but Castle Harmonia sits only 2 tiles east of CaveEntrance, so their 4-tile-wide boxes overlapped by 2 tiles and the earlier sibling (Cave) stole every ui_accept in the shared cells → player trying to enter castle got warped to cave. 2×6 is wide enough to catch the player and tall enough for Mode 7's -3-tile Y-offset.
+	# The box stays FULL SIZE. Trimming it to dodge a neighbour was tried on 2026-09-09 and
+	# was worse: the zone sits 3 tiles above its landmark to compensate for Mode 7, so a box
+	# shorter than 6 tiles no longer reaches the landmark it belongs to. Sandrift became
+	# unenterable. Overlaps are resolved by AreaTransition instead -- nearest destination wins.
 	_setup_transition_collision(trans, Vector2(TILE_SIZE * 2, TILE_SIZE * 6))
 	trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(trans)
+
 
 
 func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:

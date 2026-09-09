@@ -542,8 +542,16 @@ func test_silhouette_is_a_fallback_not_the_only_path() -> void:
 	assert_true(src.contains("ResourceLoader.exists(art)"),
 		"the artist sheet is tried before the procedural figure is drawn")
 	var i := src.find("func _build_silhouette")
-	var body: String = src.substr(i, 700)
-	assert_lt(body.find("ResourceLoader.exists"), body.find("Image.create"),
+	assert_gt(i, -1, "CONTROL: _build_silhouette not found, so the ordering check below reads two -1s as ordered")
+	# Window = the whole function. A fixed char count silently excluded the fallback once the
+	# artist branch grew, and an absent marker returns -1, which compares as "earliest".
+	var end := src.find("\nfunc ", i + 1)
+	var body: String = src.substr(i, (end - i) if end > i else -1)
+	var sheet_at := body.find("ResourceLoader.exists")
+	var proc_at := body.find("Image.create")
+	assert_gt(sheet_at, -1, "CONTROL: the sheet lookup is not in this function at all")
+	assert_gt(proc_at, -1, "CONTROL: the procedural draw is not in this function at all")
+	assert_lt(sheet_at, proc_at,
 		"the sheet lookup must precede the procedural draw — after it, the fallback always wins")
 
 
@@ -558,9 +566,9 @@ func test_overworld_art_path_matches_the_roaming_monster_convention() -> void:
 			"%s must use the shared overworld-art path convention" % path.get_file())
 
 
-## With no masterite art on disk today, every placed encounter must still draw
-## its procedural figure — the fallback is what ships until the art lands.
-func test_every_placed_masterite_still_renders_without_art() -> void:
+## All four masterites have art as of 2026-09-09, so this now pins the weaker property both
+## branches share: something is drawn. The frame itself is pinned in test_masterite_silhouette_draws_one_frame.
+func test_every_placed_masterite_renders_a_silhouette() -> void:
 	var checked := 0
 	for s in _kill_gated_steps():
 		var arch: String = s["archetype"]

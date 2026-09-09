@@ -277,7 +277,7 @@ func _build_ui() -> void:
 	add_child(help_label1)
 
 	var help_label2 = Label.new()
-	help_label2.text = "Y:CycleOp  Tab:Toggle  Sh+Tab:Profile  Sh+R:Rename  E:Export  I:Import  Sh+E:CopyCode  Sh+I:PasteCode  K:Compose  Sel:Auto  Start:Save"
+	help_label2.text = "Y:CycleOp  T:Target  Tab:Toggle  Sh+Tab:Profile  Sh+R:Rename  E:Export  I:Import  Sh+E:CopyCode  Sh+I:PasteCode  K:Compose  Sel:Auto  Start:Save"
 	help_label2.position = Vector2(16, size.y - 28)
 	help_label2.add_theme_font_size_override("font_size", 10)
 	help_label2.add_theme_color_override("font_color", style.text.darkened(0.2))
@@ -1765,6 +1765,13 @@ func _input(event: InputEvent) -> void:
 		_delete_current_cell()
 		get_viewport().set_input_as_handled()
 
+	# Shift+R must precede battle_advance: that action binds R and matches with modifiers held, so
+	# the legend's "Sh+R:Rename" only fired on a key REPEAT, which is not a control.
+	# Shift+R - Rename current profile
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_R and event.shift_pressed:
+		_open_rename_profile()
+		get_viewport().set_input_as_handled()
+
 	# R trigger / R key - Simulate: what does this grid actually DO?
 	elif event.is_action_pressed("battle_advance") and not event.is_echo():
 		_open_simulate()
@@ -1781,11 +1788,6 @@ func _input(event: InputEvent) -> void:
 	# Tab key - Cycle profiles
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_TAB and event.shift_pressed:
 		_cycle_profile()
-		get_viewport().set_input_as_handled()
-
-	# Shift+R - Rename current profile
-	elif event is InputEventKey and event.pressed and event.keycode == KEY_R and event.shift_pressed:
-		_open_rename_profile()
 		get_viewport().set_input_as_handled()
 
 	# E - Export current character's script (+ party bundle) to user://script_exports/
@@ -2472,6 +2474,7 @@ func _open_more_actions() -> void:
 		"kind": "more_actions",
 		"selected": 0,
 		"options": [
+			{"id": "set_target", "label": "Choose this action's target   (T)"},
 			{"id": "toggle_row", "label": "Enable / disable this rule    (Tab)"},
 			{"id": "copy_code", "label": "Copy share code               (Shift+E)"},
 			{"id": "paste_code", "label": "Paste share code              (Shift+I)"},
@@ -2486,6 +2489,8 @@ func _open_more_actions() -> void:
 
 func _commit_more_action(chosen_id: String) -> void:
 	match chosen_id:
+		"set_target":
+			_open_target_picker()
 		"toggle_row":
 			_toggle_row_enabled()
 			SoundManager.play_ui("menu_select")

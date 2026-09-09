@@ -1433,22 +1433,24 @@ func _options_ring_spec() -> Dictionary:
 		"kind": "autogrind_options",
 		"selected": 0,
 		"options": [
-			{"id": "ludicrous", "label": "Ludicrous: %s" % ("ON" if _ludicrous_speed_enabled else "OFF")},
-			{"id": "permadeath", "label": "Permadeath: %s" % ("ON" if _permadeath_staking_enabled else "OFF")},
-			{"id": "auto_advance", "label": "Auto-Advance: %s" % ("ON" if _auto_advance_enabled else "OFF")},
-			{"id": "toggle_row", "label": "Toggle This Rule"},
-			{"id": "preset_casual", "label": "Preset: Casual"},
-			{"id": "preset_standard", "label": "Preset: Standard"},
-			{"id": "preset_hardcore", "label": "Preset: Hardcore"},
-			{"id": "save_preset", "label": "Save as Preset"},
-			{"id": "delete_preset", "label": "Delete Last Preset"},
-			{"id": "custom_1", "label": "Custom Slot 1"},
-			{"id": "custom_2", "label": "Custom Slot 2"},
-			{"id": "custom_3", "label": "Custom Slot 3"},
-			{"id": "export", "label": "Export to File"},
-			{"id": "import", "label": "Import from File"},
-			{"id": "copy_code", "label": "Copy Share Code"},
-			{"id": "paste_code", "label": "Paste Share Code"},
+			{"id": "ludicrous", "label": "Ludicrous: %s        (H)" % ("ON" if _ludicrous_speed_enabled else "OFF")},
+			{"id": "permadeath", "label": "Permadeath: %s       (P)" % ("ON" if _permadeath_staking_enabled else "OFF")},
+			{"id": "auto_advance", "label": "Auto-Advance: %s     (W)" % ("ON" if _auto_advance_enabled else "OFF")},
+			{"id": "toggle_row", "label": "Toggle This Rule        (Tab)"},
+			{"id": "cycle_member", "label": "Cycle Member: %s" % _cursor_member_label()},
+			{"id": "cycle_ability", "label": "Cycle Ability: %s" % _cursor_ability_label()},
+			{"id": "preset_casual", "label": "Preset: Casual          (1)"},
+			{"id": "preset_standard", "label": "Preset: Standard        (2)"},
+			{"id": "preset_hardcore", "label": "Preset: Hardcore        (3)"},
+			{"id": "save_preset", "label": "Save as Preset          (S)"},
+			{"id": "delete_preset", "label": "Delete Last Preset      (D)"},
+			{"id": "custom_1", "label": "Custom Slot 1           (4)"},
+			{"id": "custom_2", "label": "Custom Slot 2           (5)"},
+			{"id": "custom_3", "label": "Custom Slot 3           (6)"},
+			{"id": "export", "label": "Export to File          (E)"},
+			{"id": "import", "label": "Import from File        (I)"},
+			{"id": "copy_code", "label": "Copy Share Code   (Shift+E)"},
+			{"id": "paste_code", "label": "Paste Share Code  (Shift+I)"},
 		],
 	}
 
@@ -1464,6 +1466,10 @@ func _commit_autogrind_option(chosen_id: String) -> void:
 			_toggle_auto_advance()
 		"toggle_row":
 			_toggle_current_row()
+		"cycle_member":
+			_cycle_member_on_cursor_cell()
+		"cycle_ability":
+			_cycle_ability_on_cursor_cell()
 		"preset_casual":
 			_apply_preset("casual")
 		"preset_standard":
@@ -1586,6 +1592,183 @@ func _cycle_condition_type() -> void:
 		_refresh_grid()
 
 
+## validate_rule REFUSES an action missing its required fields, and _cycle_action_type only ever set
+## `type`. So cycling onto member_ability produced {"type": "member_ability"} — structurally invalid,
+## rejected on save, with a push_warning the player never sees. The picker offered a state the
+## editor could not author. Seed the fields at creation so every cyclable action is saveable the
+## moment it appears.
+func _seed_required_action_fields(action: Dictionary) -> void:
+	match str(action.get("type", "")):
+		"member_ability":
+			if str(action.get("member", "")) == "":
+				action["member"] = _default_member_id()
+			if str(action.get("ability", "")) == "":
+				action["ability"] = _default_ability_for(str(action["member"]))
+		"switch_profile":
+			## PRE-EXISTING, not introduced with member_ability: switch_profile needs
+			## character_id + profile_index and the cycle path only ever set `target`, so it has
+			## been unsaveable from the picker for as long as both have existed.
+			if str(action.get("character_id", "")) == "":
+				action["character_id"] = _default_character_id()
+			if not action.has("profile_index"):
+				action["profile_index"] = 0
+		_:
+			pass
+
+
+## The first living party member's job id — the console is always opened WITH a party, so this is
+## available whenever the picker is reachable.
+## Autobattle keys profiles on AutobattleSystem._get_character_id — combatant_name lowercased with
+## spaces underscored (AutobattleSystem:627). ASK the system rather than restating the rule; a
+## duplicated convention here would drift the moment theirs changed, and a WRONG id is worse than
+## a missing one because it saves fine and silently switches a profile nobody has.
+func _default_character_id() -> String:
+	var abs_node = get_tree().root.get_node_or_null("AutobattleSystem") if is_inside_tree() else null
+	for m in _party:
+		if m == null or not ("combatant_name" in m):
+			continue
+		if abs_node != null and abs_node.has_method("_get_character_id"):
+			return str(abs_node._get_character_id(m))
+		return str(m.combatant_name).to_lower().replace(" ", "_")
+	return ""
+
+
+func _default_member_id() -> String:
+	for m in _party:
+		if m != null and "is_alive" in m and m.is_alive and m.job != null and "id" in m.job:
+			return str(m.job.id)
+	for m in _party:
+		if m != null and m.job != null and "id" in m.job:
+			return str(m.job.id)
+	return "cleric"
+
+
+## A healing ability that member actually knows, else anything they know. A seeded ability the
+## member cannot cast still SAVES and the executor refuses it by name at runtime — which is a
+## debuggable rule, unlike one that cannot be stored at all.
+func _default_ability_for(member_id: String) -> String:
+	for m in _party:
+		if m == null or m.job == null or not ("id" in m.job) or str(m.job.id) != member_id:
+			continue
+		if not ("learned_abilities" in m):
+			break
+		var js = get_tree().root.get_node_or_null("JobSystem") if is_inside_tree() else null
+		if js != null and js.has_method("get_ability"):
+			for aid in m.learned_abilities:
+				var a: Dictionary = js.get_ability(str(aid))
+				if str(a.get("type", "")) == "healing":
+					return str(aid)
+		if m.learned_abilities.size() > 0:
+			return str(m.learned_abilities[0])
+		break
+	return "cure"
+
+
+
+## ── MEMBER / ABILITY AUTHORING ──────────────────────────────────────────────────────────────
+## The member-scoped grammar shipped in .239/.242 with NO way to set `member` from the editor:
+## condition["member"] had zero writes in this file and action["member"] only the seeding one. So
+## the FINE tier — the whole point, "if CLERIC is dead", "have CLERIC cast" — was reachable only
+## through the LLM composer or hand-edited JSON. Found by running cowir-controller's legend sweep
+## BACKWARDS: not "is what we say true" but "is what the grammar allows actually authorable".
+
+## Every member-scoped condition type, derived from the system's own table rather than restated.
+func _is_member_scoped(dict: Dictionary) -> bool:
+	var t := str(dict.get("type", ""))
+	return t.begins_with("member_") and t != "member_injured"
+
+
+## Party job ids, plus "" meaning ANY — the coarse tier stays reachable by cycling past the end.
+func _member_choices() -> Array:
+	var out: Array = [""]
+	for m in _party:
+		if m != null and m.job != null and "id" in m.job:
+			out.append(str(m.job.id))
+	return out
+
+
+func _cursor_cell_dict() -> Dictionary:
+	if cursor_row >= rules.size():
+		return {}
+	var rule: Dictionary = rules[cursor_row]
+	var conditions: Array = rule.get("conditions", [])
+	var actions: Array = rule.get("actions", [])
+	var has_always := false
+	for c in conditions:
+		if (c as Dictionary).get("type", "") == "always":
+			has_always = true
+			break
+	var slots := conditions.size()
+	if conditions.size() < MAX_CONDITIONS and not has_always:
+		slots += 1
+	if cursor_col < conditions.size():
+		return conditions[cursor_col]
+	var ai := cursor_col - slots
+	if ai >= 0 and ai < actions.size():
+		return actions[ai]
+	return {}
+
+
+func _cursor_member_label() -> String:
+	var d := _cursor_cell_dict()
+	if d.is_empty() or not (_is_member_scoped(d) or str(d.get("type", "")) == "member_ability"):
+		return "n/a"
+	var who := str(d.get("member", ""))
+	return "Any" if who == "" else who.capitalize()
+
+
+func _cursor_ability_label() -> String:
+	var d := _cursor_cell_dict()
+	if d.is_empty() or str(d.get("type", "")) != "member_ability":
+		return "n/a"
+	return str(d.get("ability", "?"))
+
+
+func _cycle_member_on_cursor_cell() -> void:
+	var d := _cursor_cell_dict()
+	if d.is_empty():
+		return
+	var is_action := str(d.get("type", "")) == "member_ability"
+	if not is_action and not _is_member_scoped(d):
+		return
+	var choices := _member_choices()
+	## member_ability REQUIRES a member — validate_rule refuses an empty one — so the action form
+	## never offers "Any". The condition form does: absent member IS the coarse any-member rule.
+	if is_action:
+		choices = choices.filter(func(c): return str(c) != "")
+	if choices.is_empty():
+		return
+	var idx := choices.find(str(d.get("member", "")))
+	d["member"] = choices[(idx + 1) % choices.size()]
+	if is_action:
+		d["ability"] = _default_ability_for(str(d["member"]))
+	_refresh_grid()
+
+
+func _cycle_ability_on_cursor_cell() -> void:
+	var d := _cursor_cell_dict()
+	if d.is_empty() or str(d.get("type", "")) != "member_ability":
+		return
+	var known := _known_abilities_for(str(d.get("member", "")))
+	if known.is_empty():
+		return
+	var idx := known.find(str(d.get("ability", "")))
+	d["ability"] = known[(idx + 1) % known.size()]
+	_refresh_grid()
+
+
+## What that member can actually cast, so cycling can never land on an ability the executor will
+## refuse by name at runtime.
+func _known_abilities_for(member_id: String) -> Array:
+	for m in _party:
+		if m == null or m.job == null or not ("id" in m.job) or str(m.job.id) != member_id:
+			continue
+		if "learned_abilities" in m and m.learned_abilities.size() > 0:
+			return Array(m.learned_abilities)
+		break
+	return []
+
+
 func _cycle_action_type() -> void:
 	"""Cycle through action types"""
 	if cursor_row >= rules.size():
@@ -1626,6 +1809,7 @@ func _cycle_action_type() -> void:
 			action["target"] = "all"
 		else:
 			action.erase("target")
+		_seed_required_action_fields(action)
 
 		_refresh_grid()
 

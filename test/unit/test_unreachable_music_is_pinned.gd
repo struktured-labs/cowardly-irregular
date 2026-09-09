@@ -40,6 +40,18 @@ extends GutTest
 ## fails, and a pinned one that becomes reachable ALSO fails, so the list
 ## cannot rot into a stale claim. When the story lane writes these scenes the
 ## entries drop off and this file eventually deletes itself.
+##
+## 🔑 AND THE SECOND DIRECTION MAKES THIS GUARD IMMUNE TO THE ERROR THAT
+## CREATED IT, which is worth stating because it is not obvious. cowir-story
+## proposed a fleet precondition: before a reachability sweep, name the
+## DEFINER and the CONSUMER corpus and assert they are disjoint. This file
+## satisfies it structurally (definer music_manifest.json, corpus
+## data/cutscenes/) — but it also DETECTS a violation without needing the
+## assertion, and that is proven rather than argued. Feed the manifest into
+## the corpus, as my morning sweep did, and every pinned track reads as
+## reachable, so the stale arm fires naming all four (mutation-verified).
+## A one-directional "no orphans" assertion goes GREEN on exactly that
+## contamination, which is why the sweep it replaced reported zero.
 
 const MANIFEST := "res://data/music_manifest.json"
 const CUTSCENE_DIR := "res://data/cutscenes/"

@@ -17,6 +17,11 @@ signal thinking_ended()
 var _dialogue_queue: Array = []
 var _current_index: int = 0
 var _is_typing: bool = false
+## Hold confirm to fast-forward: after HOLD_SEC the typewriter finishes and lines advance every LINE_SEC while held. A tap still advances exactly one line.
+const FAST_FORWARD_HOLD_SEC: float = 0.5
+const FAST_FORWARD_LINE_SEC: float = 0.25
+var _accept_hold: float = 0.0
+var _ff_line_timer: float = 0.0
 
 
 ## The cap printed on the pad's confirm button; "A" was wrong on every Nintendo-family pad (8BitDo/SN30 confirm sits under Ⓑ).
@@ -652,6 +657,8 @@ func _draw_retro_border(parent: Control, width: float, height: float, color: Col
 func show_dialogue(dialogue_lines: Array) -> void:
 	_dialogue_queue = dialogue_lines
 	_current_index = 0
+	_accept_hold = 0.0  # a button still held from closing the last box must not blow through this one
+	_ff_line_timer = 0.0
 	visible = true
 	# Music duck for modal dialogue — thinking indicator lives inside this panel so it composes safely (idempotent same-state). Forward-compat: no-op until cowir-music's SoundManager fold lands (feature/cowardly-irregular-music, msg 2707).
 	_duck_music_for_dialogue(true)
@@ -880,6 +887,27 @@ func _duck_music_for_dialogue(active: bool) -> void:
 	if SoundManager and SoundManager.has_method("duck_music_for_dialogue"):
 		SoundManager.duck_music_for_dialogue(active)
 		_ducked_music = active
+
+
+func _process(delta: float) -> void:
+	if not visible or _dialogue_queue.is_empty() or (_thinking_label != null and _thinking_label.visible):
+		_accept_hold = 0.0
+		return
+	if not Input.is_action_pressed("ui_accept"):
+		_accept_hold = 0.0
+		_ff_line_timer = 0.0
+		return
+	_accept_hold += delta
+	if _accept_hold < FAST_FORWARD_HOLD_SEC:
+		return
+	if _is_typing:
+		_finish_typing()
+		_ff_line_timer = 0.0
+		return
+	_ff_line_timer += delta
+	if _ff_line_timer >= FAST_FORWARD_LINE_SEC:
+		_ff_line_timer = 0.0
+		_advance_dialogue()
 
 
 func _input(event: InputEvent) -> void:

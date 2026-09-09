@@ -181,6 +181,7 @@ func _ready() -> void:
 	_setup_audio_players()
 	_setup_default_ability_sounds()
 	_derive_ability_sounds_from_data()
+	_derive_item_sounds_from_data()
 	_setup_night_ambience_listener()
 	# Headless runs (--headless, i.e. GUT test suites + CI) MUST NOT emit audio —
 	# multiple background agents can be running suites simultaneously and the
@@ -377,7 +378,70 @@ const _TYPE_SFX: Dictionary = {
 	"song": "ability_song",
 	"summon": "ability_summon",
 	"revival": "ability_revive",
+	## The last two types with no arm. mp_restore is pray/channel, the Cleric and Mage FREE MOVES --
+	## the moves those two jobs use most, and they played a sword unsheathing.
+	"mp_restore": "ability_mp_restore",
+	"escape": "ability_flee",
 }
+
+
+## Item EFFECT -> cue, in priority order. Using an item played NO sound at all: the "item" arm in
+## BattleScene calls animator.play_item() and nothing else, so the only audio was whatever the
+## EFFECT happened to emit. heal_hp reaches `heal` through healing_done and is deliberately absent
+## here -- adding it would double up. MP restore does NOT reach it: struktured ruled 2026-09-07 that
+## MP gains get their own popup and never healing_done's green, so ethers were silent.
+const _ITEM_EFFECT_SFX: Array[Array] = [
+	["revive", "ability_revive"],
+	["escape_battle", "ability_flee"],
+	["cure_all_status", "status_cured"],
+	["cure_status", "status_cured"],
+	["heal_mp", "ability_mp_restore"],
+	["heal_mp_percent", "ability_mp_restore"],
+]
+var _item_sounds: Dictionary = {}
+
+
+func play_item(item_id: String) -> void:
+	"""Cue for USING an item. Silent for plain HP potions by design — healing_done already plays
+	`heal`, and a second cue on top of it would just be louder, not clearer."""
+	var cue: String = str(_item_sounds.get(item_id, ""))
+	if cue == "":
+		return
+	play_battle(cue)
+
+
+func _derive_item_sounds_from_data() -> void:
+	"""Map each item to a cue from its OWN effects, so a new consumable is covered on the day it is
+	authored rather than when someone notices it is silent."""
+	var text: String = FileAccess.get_file_as_string("res://data/items.json")
+	if text == "":
+		push_warning("[SFX] items.json unreadable — item use stays silent")
+		return
+	var parsed: Variant = JSON.parse_string(text)
+	if not (parsed is Dictionary):
+		push_warning("[SFX] items.json did not parse as a Dictionary — item cues skipped")
+		return
+	var items: Variant = parsed.get("items", parsed)
+	if not (items is Dictionary):
+		return
+	var derived: int = 0
+	for iid in (items as Dictionary).keys():
+		var entry: Variant = (items as Dictionary)[iid]
+		if not (entry is Dictionary):
+			continue
+		var effects: Variant = (entry as Dictionary).get("effects", {})
+		if not (effects is Dictionary):
+			continue
+		for pair in _ITEM_EFFECT_SFX:
+			if not (effects as Dictionary).has(pair[0]):
+				continue
+			if not _sfx_manifest.has(pair[1]):
+				break
+			_item_sounds[str(iid)] = str(pair[1])
+			derived += 1
+			break
+	if derived > 0:
+		print("[SFX] Derived %d item cues from items.json" % derived)
 
 
 func _derive_ability_sounds_from_data() -> void:

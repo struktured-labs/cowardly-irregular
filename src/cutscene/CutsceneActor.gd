@@ -27,6 +27,8 @@ var _facing: int = Dir.DOWN
 var _anim_time: float = 0.0
 var _anim_frame: int = 0
 var _walking: bool = false
+var _walk_tween: Tween = null
+var _walk_target: Vector2 = Vector2.INF
 var _emote_label: Label = null
 var _bubble: Control = null
 
@@ -111,9 +113,23 @@ func walk_to(target_global: Vector2, speed: float = DEFAULT_WALK_SPEED) -> void:
 		return
 	face_vector(delta_v)
 	_walking = true
-	var tween := create_tween()
-	tween.tween_property(self, "global_position", target_global, delta_v.length() / speed)
-	await tween.finished
+	_walk_target = target_global
+	_walk_tween = create_tween()
+	_walk_tween.tween_property(self, "global_position", target_global, delta_v.length() / speed)
+	# Polled, not `await tween.finished`: a snap_walk (skip) or a freed target must release this, never hang it.
+	while _walking and is_instance_valid(_walk_tween) and _walk_tween.is_valid() and _walk_tween.is_running():
+		await get_tree().process_frame
+	stand()
+
+
+## Skip contract: land on the mark now and release the walk_to that is polling.
+func snap_walk() -> void:
+	if is_instance_valid(_walk_tween) and _walk_tween.is_valid():
+		_walk_tween.kill()
+	_walk_tween = null
+	if _walk_target != Vector2.INF and is_inside_tree():
+		global_position = _walk_target
+	_walk_target = Vector2.INF
 	stand()
 
 
@@ -220,4 +236,6 @@ func hop(times: int = 1, duration: float = 0.2) -> void:
 	for i in maxi(1, times):
 		tween.tween_property(self, "position:y", position.y - 6.0, half)
 		tween.tween_property(self, "position:y", position.y, half)
-	await tween.finished
+	# Polled for the same reason as walk_to: a freed puppet must release the awaiting step, never hang it.
+	while is_instance_valid(tween) and tween.is_valid() and tween.is_running():
+		await get_tree().process_frame

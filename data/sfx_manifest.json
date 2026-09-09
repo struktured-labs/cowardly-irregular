@@ -70,6 +70,13 @@
       "prompt_influence": 0.7,
       "source": "tools/gen_chiptune_sfx.py fire_roar"
     },
+    "ability_flee": {
+      "file": "assets/audio/sfx/ability_flee.ogg",
+      "prompt": "SYNTHESISED, not generated — three DISCRETE descending blips plus a scuff. The Rogue's escape; type=escape was the last type with no cue arm. Stepped, never slid: a descending slide is a whoop in the other direction, which is the blind spot that let struktured hear it a fourth time. Run the tool.",
+      "duration_seconds": 0.48,
+      "prompt_influence": 0.8,
+      "source": "tools/gen_chiptune_sfx.py flee"
+    },
     "ability_heal": {
       "file": "assets/audio/sfx/ability_heal.ogg",
       "prompt": "Soft choir voices humming a soothing sustained note, angelic restoration with warm reverb, divine healing magic, smooth and vocal with no birdsong and no chirping and no tinkling",
@@ -154,6 +161,13 @@
       "prompt": "Bossbinder mind-swap — a disorienting rising sine warp with a pulsator tremolo + echo. Possession/control seizing the enemy. Meta ability cast cue.",
       "duration_seconds": 0.61,
       "prompt_influence": 0.0
+    },
+    "ability_mp_restore": {
+      "file": "assets/audio/sfx/ability_mp_restore.ogg",
+      "prompt": "SYNTHESISED, not generated — a low intake pulse then two held bells a fourth apart. pray (Cleric) and channel (Mage) are those jobs' FREE MOVES and played ability_physical, a sword unsheathing. Deliberately NOT ability_heal: that is the angelic HP restore, and MP returning should read quieter and more inward. Run the tool.",
+      "duration_seconds": 0.7,
+      "prompt_influence": 0.8,
+      "source": "tools/gen_chiptune_sfx.py mp_restore"
     },
     "ability_permakill": {
       "file": "assets/audio/sfx/ability_permakill.ogg",
@@ -1438,6 +1452,13 @@
       "duration_seconds": 0.9,
       "prompt_influence": 0.5
     },
+    "status_cured": {
+      "file": "assets/audio/sfx/status_cured.ogg",
+      "prompt": "SYNTHESISED, not generated — a short noise wash settling onto a clean held fifth. Using an Antidote/Eye Drops/Echo Herb was SILENT: the item arm plays an animation and no cue, and only effects that emit healing_done made any sound. Distinct from the status_* cues, which announce an affliction ARRIVING; this is one leaving. Run the tool.",
+      "duration_seconds": 0.6,
+      "prompt_influence": 0.8,
+      "source": "tools/gen_chiptune_sfx.py cure"
+    },
     "status_curse": {
       "file": "assets/audio/sfx/status_curse.ogg",
       "source": "sox_synth",
@@ -1838,7 +1859,7 @@
     },
     "w2_ability_heal": {
       "file": "assets/audio/sfx/ability_heal.ogg",
-      "prompt": "Garden hose spraying gently with backyard wind chimes tinkling, pleasant suburban afternoon, peaceful neighborhood sounds",
+      "prompt": "Garden hose spraying gently onto grass, warm suburban afternoon air, soft sprinkler hiss settling into calm — smooth and continuous with no birdsong and no chirping and no tinkling. NOT YET GENERATED: this entry still points at ability_heal.ogg (the W1 choir). The prompt was rewritten 2026-09-09 because it requested wind chimes TINKLING — the exact texture struktured rejected on the W1 cure, recorded in ability_heal's own prompt.",
       "duration_seconds": 1.2,
       "prompt_influence": 0.7,
       "note": "repointed 2026-08-30: generated asset was a literal bird chirp (>8.8kHz mean peak, >82% energy above 4kHz). struktured: no animal noises on ability SFX unless the ability is animal-themed."

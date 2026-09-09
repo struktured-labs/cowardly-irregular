@@ -1831,6 +1831,20 @@ func _lowest_hp_ally():
 	return best
 
 
+## HeadlessBattleResolver sets termination_reason="stalemate" when a battle exhausts MAX_ROUNDS,
+## and cadence #19 added it precisely so a caller could tell "timed out" from "died fairly". NOTHING
+## READ IT — 3 writes in the resolver, 0 consumers anywhere. So a party in the middle band ground
+## forever, losing every battle, behind a push_warning nobody sees.
+## Reachable because my .242 healing fix turned enemy healing on: measured on new_age_retro_hippie,
+## a party at atk 150 stalemates at 50 rounds with 6 heals, while atk 60 loses fairly and atk 300
+## wins in 2. A stalemate is a property of the MATCHUP, not a dice roll, so repeating it only burns
+## real time to reach the same answer — stop on the first one and say why.
+func on_battle_stalemate() -> void:
+	if not is_grinding:
+		return
+	stop_autogrind("Battle timed out — this encounter cannot be resolved (the enemy out-heals your party). Try a different region, or a stronger party.")
+
+
 func _member_predicate(party: Array, condition: Dictionary, pred: Callable) -> bool:
 	var who := str(condition.get("member", ""))
 	if who != "":

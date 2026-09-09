@@ -2261,10 +2261,18 @@ func _full_render_active(caster: Combatant) -> bool:
 		return false
 	if caster == null or not (caster in BattleManager.player_party):
 		return false
+	## struktured asked for lightning "flashier and more absurd ... the whole screen is like a storm"
+	## AND told us the autobattle system is "incredible to watch when u pop it off". This gate used
+	## to require a MANUAL turn, so the player who asked for the spectacle was configured never to
+	## see it. SPEED is the intent signal he already controls: at 1x/2x he is watching, at 4x+ he is
+	## grinding, and the speed test above already draws that line. Automated turns now get the
+	## cinematic at watching speeds; `full_render_on_autobattle` turns it off for anyone who
+	## disagrees. (cowir-deploy could not photograph the storm for six attempts because of this.)
 	var char_id: String = caster.combatant_name.to_lower().replace(" ", "_")
 	var manual: bool = not AutobattleSystem.is_autobattle_enabled(char_id)
-	print("[SHOWCASE] gate for %s: speed=%.2f manual=%s -> %s" % [caster.combatant_name, Engine.time_scale, str(manual), str(manual)])
-	return manual
+	var allowed: bool = manual or BattleJuice.flag("full_render_on_autobattle")
+	print("[SHOWCASE] gate for %s: speed=%.2f manual=%s -> %s" % [caster.combatant_name, Engine.time_scale, str(manual), str(allowed)])
+	return allowed
 
 
 func _play_ability_full_render(caster: Combatant, caster_sprite: Node2D, animator: BattleAnimatorClass, ability: Dictionary, targets: Array) -> void:
@@ -3684,6 +3692,7 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 			if animator and animator.has_named_animation("advance"):
 				animator.play_named_animation("advance")
 		"item":
+			SoundManager.play_item(str(action.get("item_id", "")))
 			animator.play_item()
 		"defer":
 			animator.play_named_animation("defer")

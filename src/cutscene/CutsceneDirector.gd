@@ -630,11 +630,26 @@ func _step_fade_from_black(step: Dictionary) -> void:
 	_effects_rect.visible = false
 
 
+## Held confirm runs the scene's holds this many times faster — the same hold that fast-forwards the dialogue box, so "hold A" means one thing across a scene.
+const FAST_FORWARD_RATE: float = 4.0
+
+
+## A hold that a skip cuts short: holding B for 1.5s and then sitting through the rest of a wait read as an ignored press.
+func _sleep(duration: float) -> void:
+	if duration <= 0.0 or _skipping:
+		return
+	var elapsed := 0.0
+	while not _skipping and elapsed < duration:
+		await get_tree().process_frame
+		var rate: float = FAST_FORWARD_RATE if Input.is_action_pressed("ui_accept") else 1.0
+		elapsed += get_process_delta_time() * rate
+
+
 func _step_wait(step: Dictionary) -> void:
 	var duration = step.get("duration", 1.0)
 	if _skipping:
 		return
-	await get_tree().create_timer(duration).timeout
+	await _sleep(duration)
 
 
 func _step_letterbox_in(step: Dictionary) -> void:
@@ -696,7 +711,9 @@ func _step_screen_shake(step: Dictionary) -> void:
 		return
 
 	var camera = get_viewport().get_camera_2d()
-	if not camera:
+	# Overlay scenes paint an opaque backdrop INSIDE this layer, which ignores the camera — shaking the camera there moves something the player cannot see (49 of 50 authored shakes). Shake the layer itself.
+	if not _staged or camera == null:
+		await _shake_layer(duration, intensity)
 		return
 
 	var original_offset = camera.offset
@@ -710,6 +727,21 @@ func _step_screen_shake(step: Dictionary) -> void:
 		shake_tween.tween_property(camera, "offset", original_offset + offset, 0.05)
 	shake_tween.tween_property(camera, "offset", original_offset, 0.05)
 	await shake_tween.finished
+
+
+## Jitters this CanvasLayer's offset — backdrop, vignette and letterbox all ride it; the dialogue layer (96) stays readable.
+func _shake_layer(duration: float, intensity: float) -> void:
+	var shake_tween = create_tween()
+	var steps_count = maxi(1, int(duration / 0.05))
+	for i in range(steps_count):
+		var jitter = Vector2(randf_range(-intensity, intensity), randf_range(-intensity, intensity))
+		shake_tween.tween_property(self, "offset", jitter, 0.05)
+	shake_tween.tween_property(self, "offset", Vector2.ZERO, 0.05)
+	while not _skipping and is_instance_valid(shake_tween) and shake_tween.is_valid() and shake_tween.is_running():
+		await get_tree().process_frame
+	if is_instance_valid(shake_tween) and shake_tween.is_valid():
+		shake_tween.kill()
+	offset = Vector2.ZERO
 
 
 func _step_screen_flash(step: Dictionary) -> void:
@@ -1217,7 +1249,11 @@ func _step_move_actor(step: Dictionary) -> void:
 		a.stand()
 		return
 	var speed: float = float(step.get("speed", CutsceneActor.DEFAULT_WALK_SPEED))
-	await a.walk_to(target, speed)
+	a.walk_to(target, speed)  # unawaited: a skip mid-walk must land the actor now, not after the walk
+	while not _skipping and is_instance_valid(a) and a._walking:
+		await get_tree().process_frame
+	if _skipping and is_instance_valid(a):
+		a.snap_walk()
 
 
 func _step_face_actor(step: Dictionary) -> void:
@@ -1240,7 +1276,7 @@ func _step_emote(step: Dictionary) -> void:
 	var duration: float = float(step.get("duration", 1.0))
 	a.show_emote(str(step.get("emote", "exclaim")), duration)
 	if duration > 0.0:
-		await get_tree().create_timer(duration).timeout
+		await _sleep(duration)
 
 
 func _step_hop(step: Dictionary) -> void:
@@ -1258,7 +1294,7 @@ func _step_say(step: Dictionary) -> void:
 	var duration: float = float(step.get("duration", 1.5))
 	a.say(str(step.get("text", "")), duration)
 	if bool(step.get("wait", true)) and duration > 0.0:
-		await get_tree().create_timer(duration).timeout
+		await _sleep(duration)
 
 
 ## Pan the live camera to frame an actor or point; offset-tween holds because
@@ -1285,8 +1321,7 @@ func _step_camera_focus(step: Dictionary) -> void:
 		_stage_cam_base_offset = cam.offset
 	var new_offset: Vector2 = cam.offset + (target - cam.get_screen_center_position())
 	_run_camera_tween(cam, new_offset, step)
-	# Await the tween via a fresh handle — _run_camera_tween returns it.
-	await _last_camera_tween.finished
+	await _await_pan(cam, new_offset)
 
 
 func _step_camera_restore(step: Dictionary) -> void:
@@ -1298,7 +1333,18 @@ func _step_camera_restore(step: Dictionary) -> void:
 		cam.offset = _stage_cam_base_offset
 		return
 	_run_camera_tween(cam, _stage_cam_base_offset, step)
-	await _last_camera_tween.finished
+	await _await_pan(cam, _stage_cam_base_offset)
+
+
+## Awaits the running pan unless a skip lands first — then the camera snaps to `dest`.
+func _await_pan(cam: Camera2D, dest: Vector2) -> void:
+	var t := _last_camera_tween
+	while not _skipping and is_instance_valid(t) and t.is_valid() and t.is_running():
+		await get_tree().process_frame
+	if _skipping and is_instance_valid(cam):
+		if is_instance_valid(t) and t.is_valid():
+			t.kill()
+		cam.offset = dest
 
 
 ## Cinematic camera pan — SINE ease-in-out by default (film-camera feel: smooth start, accelerate through middle, settle at target). Optional `ease` step field: "linear" | "in" | "out" | "in_out". `trans` field selects transition ("sine" | "quad" | "cubic" | "linear"), default sine.
@@ -1364,7 +1410,7 @@ func _step_nearby_scatter(step: Dictionary) -> void:
 		a.walk_to(dest, speed)
 		longest = maxf(longest, a.global_position.distance_to(dest) / maxf(1.0, speed))
 	if not _skipping and longest > 0.0:
-		await get_tree().create_timer(longest).timeout
+		await _sleep(longest)
 
 
 ## Accept either an actor id or an [x,y] pair; Vector2.INF means unresolvable.
@@ -1451,7 +1497,7 @@ func _step_chapter_title(step: Dictionary) -> void:
 	await tween.finished
 
 	# Hold
-	await get_tree().create_timer(hold_duration).timeout
+	await _sleep(hold_duration)
 
 	# Fade out
 	var fade_out = create_tween()
@@ -1483,7 +1529,7 @@ func _step_boss_intro(step: Dictionary) -> void:
 	if not _skipping:
 		var shake_tween = create_tween()
 		shake_tween.tween_property(vignette, "color:a", 0.7, 0.3)
-	await get_tree().create_timer(0.3).timeout
+	await _sleep(0.3)
 
 	# Boss name label — large, dramatic
 	var name_label = Label.new()
@@ -1531,7 +1577,7 @@ func _step_boss_intro(step: Dictionary) -> void:
 		await title_tween.finished
 
 	# Hold
-	await get_tree().create_timer(1.5).timeout
+	await _sleep(1.5)
 
 	# Fade everything out
 	var fade = create_tween()
