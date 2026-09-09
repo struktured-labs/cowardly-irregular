@@ -290,6 +290,28 @@ def process(key, path, xfade_s, apply_it, preview_dir, max_trim_db=3.0):
         tmp = path + ".xfade.tmp.ogg"
         if not encode(out, tmp):
             return key, "ffmpeg encode failed - source untouched", info
+        # RE-READ WHAT WE ARE ABOUT TO SHIP. Everything above measured the
+        # in-memory array; ffmpeg's exit code is not evidence about the FILE.
+        # A truncated or gutted encode returning 0 would replace the original
+        # and every number reported here would describe the array instead —
+        # verified upstream, destroyed downstream, nothing errors. Sibling
+        # trim_loop_seams already re-reads its temp file before replacing;
+        # this one shipped without it.
+        back = decode(tmp)
+        why_enc = None
+        if len(back) < SR:
+            why_enc = "encoded file decodes to %.2fs" % (len(back) / SR)
+        elif abs(len(back) / SR - len(out) / SR) > 0.5:
+            why_enc = "encoded %.1fs but built %.1fs" % (len(back) / SR, len(out) / SR)
+        elif db(back) < body_db - 12.0:
+            why_enc = "encoded file is %.1f dB, body was %.1f - the encode gutted it" % (db(back), body_db)
+        elif not (db(back[-SR:]) > body_db - SEAM_TOLERANCE_DB
+                  and db(back[:SR]) > body_db - SEAM_TOLERANCE_DB):
+            why_enc = "seam does not hold in the ENCODED file (%.1f / %.1f vs body %.1f)" % (
+                db(back[-SR:]), db(back[:SR]), body_db)
+        if why_enc:
+            os.remove(tmp)
+            return key, "%s - source untouched" % why_enc, info
         os.replace(tmp, path)
     return key, None, info
 
