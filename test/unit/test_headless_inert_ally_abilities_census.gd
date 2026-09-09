@@ -14,7 +14,12 @@ extends GutTest
 ## message NAMES the abilities, so implementing one forces a deliberate edit here rather than
 ## letting the set drift silently in either direction.
 
-const ALLY_MARKERS := ["ally", "self", "party"]
+## ENUMERATED, not substring-matched. The first version used markers ["ally","self","party"] and
+## silently dropped every all_allies ability, because "all_allies" does NOT contain "ally" — it
+## contains "alli". Six abilities invisible, and the census under-reported with nothing to show it.
+## Pinned by test_the_target_type_vocabulary_has_not_grown so a new shape cannot reopen the hole.
+const ALLY_TARGET_TYPES := ["all_allies", "all_rat_allies", "dead_ally", "self", "single_ally"]
+const ENEMY_TARGET_TYPES := ["all_enemies", "single_enemy", "last_attacker"]
 
 
 func _type_of(ability_id: String) -> String:
@@ -58,11 +63,8 @@ func _ally_targeted_ability_ids() -> Array[String]:
 		var v = table[k]
 		if typeof(v) != TYPE_DICTIONARY:
 			continue
-		var tt := str(v.get("target_type", ""))
-		for marker in ALLY_MARKERS:
-			if tt.contains(marker):
-				out.append(str(k))
-				break
+		if ALLY_TARGET_TYPES.has(str(v.get("target_type", ""))):
+			out.append(str(k))
 	return out
 
 
@@ -133,3 +135,41 @@ func test_the_census_can_actually_detect_inertness() -> void:
 	resolver._resolve_ability(caster, "zzq_not_a_real_ability", [target])
 	assert_eq(_fingerprint(target), before,
 		"control: an unknown ability must leave the target untouched, or the fingerprint is blind")
+
+
+func _all_target_types() -> Array[String]:
+	var seen: Array[String] = []
+	var f := FileAccess.open("res://data/abilities.json", FileAccess.READ)
+	if f == null:
+		return seen
+	var parsed = JSON.parse_string(f.get_as_text())
+	f.close()
+	var table: Dictionary = parsed.get("abilities", parsed)
+	for k in table.keys():
+		var v = table[k]
+		if typeof(v) != TYPE_DICTIONARY:
+			continue
+		var tt := str(v.get("target_type", ""))
+		if tt != "" and not seen.has(tt):
+			seen.append(tt)
+	return seen
+
+
+func test_the_target_type_vocabulary_has_not_grown() -> void:
+	## The census can only see target types it enumerates. A new one silently falls outside BOTH
+	## lists and its abilities become invisible — which is exactly how the substring version lost
+	## all_allies. This makes that failure loud instead.
+	var unknown: Array[String] = []
+	for tt in _all_target_types():
+		if not ALLY_TARGET_TYPES.has(tt) and not ENEMY_TARGET_TYPES.has(tt):
+			unknown.append(tt)
+	assert_eq(unknown.size(), 0,
+		"unrecognised target_type(s) %s — add each to ALLY_ or ENEMY_TARGET_TYPES, or this census is blind to them" % str(unknown))
+
+
+func test_the_ally_list_actually_selects_something_known() -> void:
+	# ARM+: an empty or wrong ALLY list would make the census trivially pass everything above.
+	var ids := _ally_targeted_ability_ids()
+	assert_true(ids.has("pray"), "control: pray (single_ally) must be a candidate")
+	assert_true(ids.has("battle_hymn"), "control: battle_hymn (all_allies) must be a candidate — the case the substring filter LOST")
+	assert_false(ids.has("fire"), "control: an enemy-targeted ability must NOT be a candidate")
