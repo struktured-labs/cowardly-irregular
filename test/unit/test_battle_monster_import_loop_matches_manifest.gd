@@ -12,6 +12,31 @@ extends GutTest
 ## This test walks the 9 monster tracks and asserts .import loop matches
 ## the manifest — catches both directions of drift (loop-should-be-true
 ## and loop-should-be-false) for every battle_<monster>.ogg.
+##
+## 🛑 DO NOT DELETE THIS AS REDUNDANT. test_all_music_import_loop_matches_manifest
+## walks every track including all 25 battle_* and exempts none of them, so by
+## coverage arithmetic this file looks like a strict subset with nothing extra.
+## I nearly retired it on exactly that reasoning (2026-09-09), then measured
+## instead — cowir-main's rule the same day: "a second weaker copy of a working
+## guard is not redundancy", and cowir-overworld's answer to a suggested guard,
+## which was to BUILD it, run it against the live defect, and refuse it with the
+## number.
+##
+## MEASURED, flipping battle_wolf's .import flag against its manifest:
+##     defect alone                     all-ratchet RED   this one RED
+##     defect + battle_wolf ALLOWLISTED all-ratchet GREEN this one RED
+##
+## The all-ratchet carries KNOWN_LOOP_MISMATCHES and can therefore be SILENCED
+## by adding one line. This file has no allowlist and cannot. It is not a weaker
+## copy — it is the un-silenceable subset, covering exactly the tracks the
+## bypass path makes .import authoritative for. The redundancy is in the
+## coverage; the difference is in what can turn each one off.
+##
+## (The bypass named above is currently DORMANT — _start_monster_music has 10
+## call sites, all match arms in play_music, which returns on a manifest hit
+## before reaching them, and all 10 keys have shipped files. It is a FALLBACK
+## that revives the moment one of those files goes missing. Measured
+## 2026-09-09; see the sibling ratchet's header.)
 
 const MANIFEST_PATH := "res://data/music_manifest.json"
 
