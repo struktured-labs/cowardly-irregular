@@ -198,7 +198,7 @@ func _build_ui() -> void:
 	add_child(help1)
 
 	var help2 = Label.new()
-	help2.text = "C:Cycle  W/S:Adjust  Tab:Toggle  Sh+Tab:Profile  Sh+D:Defaults  K:Compose  Start:Save"
+	help2.text = "C:Cycle  W/S or RStick:Adjust  Tab:Toggle  Sh+Tab:Profile  Sh+D:Defaults  K:Compose  Start:Save"
 	help2.position = Vector2(16, size.y - 28)
 	help2.add_theme_font_size_override("font_size", 10)
 	help2.add_theme_color_override("font_color", style.text.darkened(0.2))
@@ -979,6 +979,12 @@ func _input(event: InputEvent) -> void:
 	if _rule_composer_overlay and is_instance_valid(_rule_composer_overlay) and _rule_composer_overlay.visible:
 		return
 
+	# Right stick X only — ui_up/ui_down bind axis 1, so a blanket motion return kills navigation
+	if event is InputEventJoypadMotion and event.axis == JOY_AXIS_RIGHT_X:
+		if _handle_value_stick(event):
+			get_viewport().set_input_as_handled()
+		return
+
 	# Reset confirmation takes priority over everything below it
 	if _reset_confirm and is_instance_valid(_reset_confirm):
 		if event is InputEventKey and event.pressed:
@@ -1224,6 +1230,33 @@ func _cycle_condition_operator() -> void:
 
 	SoundManager.play_ui("menu_select")
 	_refresh_grid()
+
+
+## The pad's value dial. Every face button and BOTH triggers are already bound in this editor
+## (A type, Y operator, X delete, L/R +AND/+Action, Start save), and W/S had no pad route — so a
+## controller could pick a condition's type and its operator but never its NUMBER, which is the
+## part that makes a rule mean anything. Right stick is free here and in the autobattle editor.
+const VALUE_STICK_DEADZONE := 0.6
+
+var _value_stick_latched: bool = false
+
+
+## One step per push, re-armed by returning to centre — an axis repeats every frame while held.
+func _handle_value_stick(event: InputEventJoypadMotion) -> bool:
+	if absf(event.axis_value) < VALUE_STICK_DEADZONE:
+		_value_stick_latched = false
+		return false
+	if _value_stick_latched:
+		return true
+	_value_stick_latched = true
+	var delta: int = 1 if event.axis_value > 0.0 else -1
+	if _is_on_condition_cell():
+		_adjust_condition_value(delta)
+		SoundManager.play_ui("menu_move")
+	elif _is_on_action_cell():
+		_cycle_action_profile(delta)
+		SoundManager.play_ui("menu_move")
+	return true
 
 
 func _adjust_condition_value(delta: int) -> void:
