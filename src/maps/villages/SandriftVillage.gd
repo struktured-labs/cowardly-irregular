@@ -194,6 +194,18 @@ func _setup_buildings() -> void:
 	_add_interior_door("RainLedgerDoor", "sandrift_rain_ledger", "Enter Rain Ledger", Vector2(17 * TILE_SIZE,6.5 * TILE_SIZE))
 
 
+	# Trade road: stalls at the inn, a caravan cart, a well that matters in a desert.
+	_add_prop(VillagePropScript.Kind.STALL, Vector2i(10, 4))
+	_add_prop(VillagePropScript.Kind.STALL, Vector2i(19, 6))
+	_add_prop(VillagePropScript.Kind.CART, Vector2i(8, 16))
+	_add_prop(VillagePropScript.Kind.BARREL, Vector2i(10, 7))
+	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(23, 7))
+	_add_prop(VillagePropScript.Kind.WELL, Vector2i(23, 13))
+	_add_prop(VillagePropScript.Kind.FENCE, Vector2i(4, 10))
+	_add_prop(VillagePropScript.Kind.FENCE, Vector2i(4, 11))
+	_add_lamp_post(Vector2i(10, 16))
+	_add_lamp_post(Vector2i(17, 16))
+
 func _setup_treasures() -> void:
 	# 500 Gold in hidden tent
 	var chest1 = TreasureChestScript.new()

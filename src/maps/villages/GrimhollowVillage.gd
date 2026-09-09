@@ -188,6 +188,18 @@ func _setup_buildings() -> void:
 	_add_interior_door("LanternDebtDoor", "grimhollow_lantern_debt", "Enter Lantern Debt Office", Vector2(16 * TILE_SIZE,10.5 * TILE_SIZE))
 
 
+	# The dark one: lamps are the character here, and the pit head is where the gear sits.
+	_add_lamp_post(Vector2i(3, 8))
+	_add_lamp_post(Vector2i(17, 13))
+	_add_lamp_post(Vector2i(8, 17))
+	_add_prop(VillagePropScript.Kind.BARREL, Vector2i(10, 4))
+	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(11, 4))
+	_add_prop(VillagePropScript.Kind.CART, Vector2i(15, 12))
+	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(7, 11))
+	_add_prop(VillagePropScript.Kind.BARREL, Vector2i(8, 11))
+	_add_prop(VillagePropScript.Kind.FENCE, Vector2i(4, 16))
+	_add_prop(VillagePropScript.Kind.FENCE, Vector2i(5, 16))
+
 func _setup_treasures() -> void:
 	# Phoenix Down in cemetery
 	var chest1 = TreasureChestScript.new()
