@@ -304,6 +304,15 @@ func _cull_far_monsters() -> void:
 	for m in _monsters:
 		if not is_instance_valid(m):
 			continue
+		# A FIELD ELITE IS A LANDMARK, NOT A ROAMER. It does not wander, and struktured's
+		# brief is that it "just sits there" and you "make contact to DECIDE to fight it".
+		# Culling it on distance made that decision one-way: fighting it preserved it (it
+		# fades and respawns at its origin), while declining and walking 640px away deleted
+		# it permanently and the 5-minute cooldown had to elapse before another could roll
+		# anywhere. Ignoring a rare must not destroy it. max_alive bounds the cost at one.
+		if m.get("elite") == true:
+			alive.append(m)
+			continue
 		if m.global_position.distance_to(player_pos) > DESPAWN_DISTANCE:
 			# Tick 85: deactivate BEFORE queue_free — matches _despawn_all.
 			# queue_free is end-of-frame, so without deactivate() any
