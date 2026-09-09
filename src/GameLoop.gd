@@ -674,7 +674,23 @@ func _smoke_tap(action: String) -> void:
 	Input.parse_input_event(up)
 
 
+## Roaming monsters are the SECOND battle-start path and the smoke only ever gated the first.
+## EncounterSystem.encounters_enabled stops random encounters; a roamer walking into the player is
+## MonsterSpawner -> monster_touched -> _on_roaming_monster_touched, which nothing suppressed. It
+## surfaced as an intermittent "a live battle owns the screen" on a DIFFERENT map leg each attempt
+## (cowir-deploy, .265 web) — and it got worse today because several dead-lookup repairs turned
+## monster moods and elite spawning on for the first time. Re-applied per shot: every map leg
+## builds a fresh scene with a fresh spawner.
+func _smoke_quiet_the_roamers() -> void:
+	if current_scene == null or not is_instance_valid(current_scene):
+		return
+	var spawner: Node = current_scene.get("monster_spawner") if "monster_spawner" in current_scene else null
+	if spawner != null and is_instance_valid(spawner) and spawner.has_method("set_enabled"):
+		spawner.set_enabled(false)
+
+
 func _smoke_shot(shot_name: String, max_dominant: float = 0.92) -> void:
+	_smoke_quiet_the_roamers()
 	var img: Image = null
 	var dominant: float = 1.0
 	# a solid frame is usually a capture racing a scene fade — ride it out before calling it a void
