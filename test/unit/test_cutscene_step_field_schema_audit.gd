@@ -25,6 +25,7 @@ const STEP_SCHEMA := {
 	"face_actor":    {"required": ["id"], "optional": ["dir", "toward"]},
 	"emote":         {"required": ["id", "emote"], "optional": ["duration"]},
 	"hop":           {"required": ["id"], "optional": ["times", "duration"]},
+	"say":           {"required": ["id", "text"], "optional": ["duration", "wait"]},
 
 	# Camera
 	"camera_focus":  {"required": ["target"], "optional": ["duration"]},

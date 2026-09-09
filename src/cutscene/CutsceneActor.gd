@@ -9,6 +9,7 @@ class_name CutsceneActor
 enum Dir { DOWN = 0, LEFT = 1, RIGHT = 2, UP = 3 }
 
 const FRAME_SIZE: int = 32
+const BUBBLE_MAX_WIDTH: float = 128.0
 const WALK_FRAMES: int = 4
 const ANIM_SPEED: float = 0.12
 const DEFAULT_WALK_SPEED: float = 120.0
@@ -27,6 +28,7 @@ var _anim_time: float = 0.0
 var _anim_frame: int = 0
 var _walking: bool = false
 var _emote_label: Label = null
+var _bubble: Control = null
 
 
 ## spec: {kind:"party"|"npc", job|archetype:String, facing:String}
@@ -168,6 +170,45 @@ func clear_emote() -> void:
 	if _emote_label and is_instance_valid(_emote_label):
 		_emote_label.queue_free()
 	_emote_label = null
+
+
+## CT-style line over the head — an aside while the scene keeps moving; the panel stays the voice for lines that matter.
+func say(text: String, duration: float = 1.5) -> void:
+	clear_bubble()
+	var panel := PanelContainer.new()
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.05, 0.05, 0.08, 0.88)
+	sb.border_color = Color(0.95, 0.95, 0.75, 0.9)
+	sb.set_border_width_all(1)
+	sb.set_corner_radius_all(4)
+	sb.set_content_margin_all(4)
+	panel.add_theme_stylebox_override("panel", sb)
+	var label := Label.new()
+	label.text = text
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.custom_minimum_size = Vector2(minf(BUBBLE_MAX_WIDTH, maxf(36.0, text.length() * 5.5)), 0)
+	label.add_theme_font_size_override("font_size", 10)
+	label.add_theme_constant_override("line_spacing", -6)  # the fallback font chain inflates line height; pull wrapped lines together
+	label.add_theme_color_override("font_color", Color(0.95, 0.95, 0.9))
+	panel.add_child(label)
+	panel.z_index = 21
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(panel)
+	panel.size = panel.get_combined_minimum_size()
+	var head_y := -float(FRAME_SIZE) * scale.y * 0.5 - 8.0
+	panel.position = Vector2(-panel.size.x * 0.5, head_y - panel.size.y)
+	_bubble = panel
+	if duration > 0.0 and is_inside_tree():
+		var tween := create_tween()
+		tween.tween_interval(duration)
+		tween.tween_callback(clear_bubble)
+
+
+func clear_bubble() -> void:
+	if _bubble and is_instance_valid(_bubble):
+		_bubble.queue_free()
+	_bubble = null
 
 
 ## Small surprise-hop; awaited. Instant no-op off-tree (headless). `duration` is per-hop cycle time (default 0.2s = 0.1 up + 0.1 down); prior signature ignored JSON `duration` silently (cadence-8 audit finding).

@@ -438,6 +438,8 @@ func _execute_step(step: Dictionary) -> void:
 			await _step_emote(step)
 		"hop":
 			await _step_hop(step)
+		"say":
+			await _step_say(step)
 		"nearby_face":
 			_step_nearby_face(step)
 		"nearby_scatter":
@@ -1246,6 +1248,17 @@ func _step_hop(step: Dictionary) -> void:
 	if a == null or _skipping:
 		return
 	await a.hop(int(step.get("times", 1)), float(step.get("duration", 0.2)))
+
+
+## `wait: false` lets the scene keep moving under the bubble; skip drops it like every other staged beat.
+func _step_say(step: Dictionary) -> void:
+	var a := _get_actor(str(step.get("id", "")))
+	if a == null or _skipping:
+		return
+	var duration: float = float(step.get("duration", 1.5))
+	a.say(str(step.get("text", "")), duration)
+	if bool(step.get("wait", true)) and duration > 0.0:
+		await get_tree().create_timer(duration).timeout
 
 
 ## Pan the live camera to frame an actor or point; offset-tween holds because
