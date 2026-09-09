@@ -191,7 +191,7 @@ func _build_ui() -> void:
 	add_child(legend_bg)
 
 	var help1 = Label.new()
-	help1.text = "D-Pad:Navigate  A:Edit  B:Delete  L:+AND  R:+Action  Click:Edit  RClick:Close"
+	help1.text = "D-Pad:Navigate  A:Edit  B/Esc:Back  Del/X:Delete  L:+AND  R:+Action  RClick:Close"
 	help1.position = Vector2(16, size.y - 44)
 	help1.add_theme_font_size_override("font_size", 10)
 	help1.add_theme_color_override("font_color", style.text.darkened(0.2))
@@ -1025,8 +1025,21 @@ func _input(event: InputEvent) -> void:
 		_edit_current_cell()
 		get_viewport().set_input_as_handled()
 
-	# B button - Delete cell
+	# B / Escape - BACK OUT. Escape binds ui_cancel AND ui_menu, and ui_cancel wins this chain,
+	# so Escape deleted a rule and could never close — Leo's wedge, third editor (2026-09-09).
 	elif event.is_action_pressed("ui_cancel") and not event.is_echo():
+		_save_rules()
+		closed.emit()
+		SoundManager.play_ui("menu_select")
+		get_viewport().set_input_as_handled()
+
+	# Delete rehomed off ui_cancel: Delete/Backspace on a keyboard, X on a pad (both were free)
+	elif event is InputEventKey and event.pressed and not event.is_echo() \
+			and event.keycode in [KEY_DELETE, KEY_BACKSPACE]:
+		_delete_current_cell()
+		get_viewport().set_input_as_handled()
+
+	elif event is InputEventJoypadButton and event.pressed and event.button_index == JOY_BUTTON_X:
 		_delete_current_cell()
 		get_viewport().set_input_as_handled()
 
@@ -1115,11 +1128,8 @@ func _input(event: InputEvent) -> void:
 	# Godot 4. Shadowed by ui_menu/battle_defer/ui_up, so latent rather than live, but it would
 	# save-and-close on navigation for any profile whose ui_menu omits 7. ui_menu handles Start.
 
-	elif event is InputEventKey and event.pressed and (event.keycode == KEY_ESCAPE or event.keycode == KEY_ENTER):
-		_save_rules()
-		closed.emit()
-		SoundManager.play_ui("menu_select")
-		get_viewport().set_input_as_handled()
+	# DEAD as written and left deliberately unrestored: ui_cancel takes ESCAPE and ui_accept takes
+	# ENTER, both above. Escape now backs out via ui_cancel; Enter edits a cell.
 
 
 ## ═══════════════════════════════════════════════════════════════════════
