@@ -92,6 +92,12 @@ var _quest_state_lines: Array = []
 ## Live party snapshot (HP/KO, gold, supplies) resolved once per conversation.
 var _party_state: Dictionary = {}
 
+## What this NPC remembers the player saying, loaded once at run() start.
+var _memory_lines: Array = []
+
+## Player choices made THIS conversation — becomes the next visit's memory.
+var _player_lines: Array = []
+
 ## Reward identity — empty disables rewards for this NPC (ConversationRewards refuses "").
 var _npc_id: String = ""
 var _quest_bucket: String = ""
@@ -180,6 +186,8 @@ func run(player: Node) -> void:
 	_pending_choices.clear()
 	_has_pending_choices = false
 	_party_state = _resolve_party_state()
+	_player_lines.clear()
+	_memory_lines = ConversationMemory.recall(get_node_or_null("/root/GameState"), _npc_id)
 	_state = State.IDLE
 
 	# Freeze the player.
@@ -203,6 +211,7 @@ func run(player: Node) -> void:
 	# conversation the player actually saw through.
 	if _active:
 		await _maybe_grant_reward()
+		ConversationMemory.remember(get_node_or_null("/root/GameState"), _npc_id, _player_lines)
 
 	# Unfreeze the player.
 	_set_player_movement(player, true)
@@ -309,6 +318,8 @@ func _do_player_turn(player: Node) -> void:
 	# moment _do_player_turn returned, leaving _fetch_npc_reply with nothing
 	# to react to (regression noted in plan slice item 5).
 	_last_player_line = chosen if chosen != CHOICE_CANCELLED else ""
+	if _last_player_line != "":
+		_player_lines.append(_last_player_line)
 
 	if chosen == CHOICE_CANCELLED or _is_farewell(chosen):
 		_state = State.DONE
@@ -380,6 +391,7 @@ func _fetch_npc_opening() -> String:
 		_quest_state_lines,
 		_resolve_time_of_day(),
 		_party_state,
+		_memory_lines,
 	)
 
 	# Wave C: surface the "thinking" indicator while the LLM is composing.

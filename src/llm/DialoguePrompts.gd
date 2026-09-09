@@ -288,11 +288,13 @@ static func build_npc_opening(
 	quest_state_lines: Array = [],
 	time_of_day: String = "",
 	party_state: Dictionary = {},
+	memory_lines: Array = [],
 ) -> String:
 	var ctx_block: String = _format_events(recent_events, CONTEXT_EVENTS)
 	var voice_block: String = _format_quest_state_voice(quest_state_lines)
 	var time_block: String = _format_time_of_day(time_of_day)
 	var party_block: String = _format_party_state(party_state)
+	var memory_block: String = _format_memory(memory_lines)
 
 	return (
 		"You are writing dialogue for a meta-aware JRPG called 'Cowardly Irregular'.\n"
@@ -303,6 +305,7 @@ static func build_npc_opening(
 		+ "Location: %s\n" % location
 		+ time_block
 		+ party_block
+		+ memory_block
 		+ ctx_block
 		+ voice_block
 		+ "\n"
@@ -1074,6 +1077,26 @@ static func _format_quest_state_voice(quest_state_lines: Array) -> String:
 
 
 ## Live party state as prose — an NPC that can't see a downed PC isn't in the world.
+## Frames memory as the NPC's own recollection, and asks for a glance rather than
+## a recap — an NPC that quotes you back verbatim reads as a database, not a person.
+static func _format_memory(memory_lines: Array) -> String:
+	if memory_lines.is_empty():
+		return ""
+	var rows: PackedStringArray = PackedStringArray()
+	for line in memory_lines:
+		var text: String = str(line).strip_edges()
+		if text != "":
+			rows.append("  - \"%s\"" % text)
+	if rows.is_empty():
+		return ""
+	return (
+		"\n\nYou have spoken with this traveler before. Last time, they said to you:\n"
+		+ "\n".join(rows)
+		+ "\nYou may acknowledge having met them. Do not quote them back or recap the"
+		+ " conversation — carry it the way a person carries a half-remembered chat."
+	)
+
+
 static func _format_party_state(party_state: Dictionary) -> String:
 	if party_state.is_empty():
 		return ""
