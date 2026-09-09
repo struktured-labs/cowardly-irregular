@@ -5526,6 +5526,10 @@ func _resolve_headless_battle(enemy_data: Array) -> void:
 	## cowir-autogrind: the resolver has set termination_reason since cadence #19 and nothing read it.
 	if str(result.get("termination_reason", "")) == "stalemate" and AutogrindSystem.has_method("on_battle_stalemate"):
 		AutogrindSystem.on_battle_stalemate()
+	## cowir-autogrind: result["log"] was the only one of 18 result keys with zero consumers — the
+	## resolver narrates every battle and nothing displayed it.
+	if _autogrind_ui and is_instance_valid(_autogrind_ui) and _autogrind_ui.has_method("append_resolver_log"):
+		_autogrind_ui.append_resolver_log(result.get("log", []))
 	var victory = result.get("victory", false)
 	var exp_gained = result.get("exp_gained", 0)
 	# Tick 342: pick up gold_gained too — the resolver (tick 341) pre-applied
