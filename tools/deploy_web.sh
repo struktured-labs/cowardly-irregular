@@ -269,7 +269,36 @@ mkdir -p tmp
 # Retry once: Xvfb intermittently dies mid-run on this box ("X connection
 # broken", 3 distinct steps 2026-07-08/09) — a REAL regression fails twice;
 # first attempt's log is kept as deploy_smoke.attempt1.log for comparison.
-SMOKE_CMD=(xvfb-run -a timeout 300 godot --rendering-driver opengl3 --audio-driver Dummy -- --render-smoke)
+# SANDBOXED PROFILE. Gate 3b on the desktop chain has isolated its combat smoke since it was
+# written (deploy_desktop.sh: HOME="$SMOKE_HOME"); this gate never did, and the gate-1 hardening
+# of 2026-09-07 fixed the suite and stopped there — so a second writer kept running against
+# struktured's live user:// on every web deploy. Measured 2026-09-09: 26 smoke screenshots sitting
+# in his real profile under app_userdata/Cowardly Irregular/smoke/, one batch per deploy.
+#
+# TWO reasons, and the second is the one that makes this a correctness fix rather than tidiness:
+#
+#  (a) DATA. The smoke boots the real game and fights real battles. Nothing here nets or restores
+#      user://, and saves/ is not protected by the suite's exclusion because the suite is not what
+#      is running. Whatever it writes, stays.
+#
+#  (b) DETERMINISM. Godot loads settings.json at startup, so this gate currently inherits the
+#      OPERATOR'S PERSONAL SETTINGS — his live profile carries battle_speed_index=2,
+#      default_battle_speed=0.25, text_speed=fast. A gate whose result depends on who is running it
+#      and how they like their battle speed is not a gate; it cannot be reproduced on another box
+#      or in CI. A sandboxed profile means the smoke always tests DEFAULTS, which is what a new
+#      player gets.
+#
+# Safe by inspection, checked before changing it: the smoke READS nothing from user:// (no
+# SaveSystem, no has_save, no load_game anywhere in GameLoop.gd:414-610) and only WRITES
+# user://smoke/<name>.png — and nothing downstream in this chain reads those shots back.
+#
+# XDG_DATA_HOME rather than HOME: it is the minimal redirect that moves user://, verified in both
+# directions 2026-09-07 (sandboxed -> resolves inside the sandbox, bare -> his real profile). Safe
+# HERE because this runs the project directly; it must NEVER wrap gate 2, whose --export-release
+# needs the templates that live under the real XDG_DATA_HOME (see the ⛔ note above).
+_SMOKE_XDG="$PWD/tmp/smoke_xdg"
+mkdir -p "$_SMOKE_XDG"
+SMOKE_CMD=(env "XDG_DATA_HOME=$_SMOKE_XDG" xvfb-run -a timeout 300 godot --rendering-driver opengl3 --audio-driver Dummy -- --render-smoke)
 if ! "${SMOKE_CMD[@]}" > tmp/deploy_smoke.log 2>&1; then
   cp tmp/deploy_smoke.log tmp/deploy_smoke.attempt1.log
   echo "[deploy] smoke attempt 1 failed (xvfb flake?) — retrying once"
