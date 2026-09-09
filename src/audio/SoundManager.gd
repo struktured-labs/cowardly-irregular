@@ -516,6 +516,8 @@ func _try_play_sfx_from_manifest(player: AudioStreamPlayer, sound_key: String, v
 ## 2026-07-14 playtest: menu_select was ~25% too loud vs the rest of the UI bank. Per-key offset in dB — 20*log10(0.75) ≈ -2.5.
 const _UI_VOLUME_TRIM_DB: Dictionary = {
 	"menu_select": -2.5,
+	## menu_error's asset is deliberately attenuated -12 dB ("soft negative feedback", its own provenance note) but that lands it 28.5 dB under the music bed against menu_select's 22.0 — soft became masked. +6.6 restores parity with menu_select, keeping it the quietest UI cue without making it inaudible. Measured 2026-09-09; the asset is untouched so its note stays true.
+	"menu_error": 6.6,
 }
 
 ## 2026-08-31 struktured: the round cue reads "a bit loud, not subtle". Moving it off the UI channel was a +10 dB step (-16 -> -6) and it overshot; this walks back half of it without returning it to the channel that buried it.
