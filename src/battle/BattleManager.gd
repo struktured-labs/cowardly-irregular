@@ -2424,6 +2424,17 @@ func _ai_debuffer(combatant: Combatant, abilities: Array, alive_allies: Array, a
 	return {"type": "attack", "combatant": combatant, "target": target, "speed": _compute_action_speed(combatant, "attack")}
 
 
+## Prefers the strongest, without being ONLY the strongest. Three archetypes sorted by power and
+## took [0] unconditionally, so a 5-ability boss fought with 1 move: Pyrroth showed magma_eruption
+## and nothing else, Voltharion one spell, dark_knight's life_drain lost a 1.5 tie to the sort.
+func _pick_biased_by_power(sorted_desc: Array) -> Dictionary:
+	if sorted_desc.is_empty():
+		return {}
+	if sorted_desc.size() == 1 or randf() < 0.5:
+		return sorted_desc[0]
+	return sorted_desc[1 + randi() % (sorted_desc.size() - 1)]
+
+
 func _ai_tank(combatant: Combatant, abilities: Array, alive_allies: Array, alive_enemies: Array) -> Dictionary:
 	"""Tank AI: use defensive abilities, protect allies, heavy single hits"""
 	## "summon" joins the utility pool and "magic" the offensive one, because this filter was
@@ -2453,7 +2464,7 @@ func _ai_tank(combatant: Combatant, abilities: Array, alive_allies: Array, alive
 	if physical_abilities.size() > 0 and randf() < 0.5:
 		# Sorted on damage_multiplier: no ability authors `power`, so the old key was constant 0 and "strongest" was whichever happened to be first.
 		physical_abilities.sort_custom(func(a, b): return _ability_power(a) > _ability_power(b))
-		var ability = physical_abilities[0]
+		var ability = _pick_biased_by_power(physical_abilities)
 		var target = _choose_target(combatant, alive_enemies, ability)
 		return {
 			"type": "ability",
@@ -2490,7 +2501,7 @@ func _ai_assassin(combatant: Combatant, abilities: Array, alive_enemies: Array) 
 	# Use strongest offensive ability on wounded target (60% chance)
 	if offensive_abilities.size() > 0 and randf() < 0.6:
 		offensive_abilities.sort_custom(func(a, b): return _ability_power(a) > _ability_power(b))
-		var ability = offensive_abilities[0]
+		var ability = _pick_biased_by_power(offensive_abilities)
 		return {
 			"type": "ability",
 			"combatant": combatant,
