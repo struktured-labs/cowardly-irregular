@@ -38,6 +38,9 @@ var transitions: Node2D
 var stair_sprites: Node2D
 
 ## Spawn points
+const DungeonLightingScript = preload("res://src/exploration/DungeonLighting.gd")
+
+var lighting: DungeonLighting
 var spawn_points: Dictionary = {}
 
 ## Floor layouts (U = stairs up, D = stairs down, B = boss)
@@ -222,6 +225,13 @@ func _ready() -> void:
 
 
 func _setup_scene() -> void:
+	# The Whispering Cave extends Node2D rather than DragonCave, so it inherited none of the
+	# dungeon lighting rig -- and it is the FIRST cave in the game. Measured 2026-09-09: every
+	# other dungeon builds a Lighting node with 4-6 torches and a cave ambient; this one built
+	# neither, so the tutorial dungeon was the one flat-lit room in a game where every later
+	# cave has atmosphere.
+	_setup_lighting()
+
 	tile_generator = TileGeneratorScript.new()
 	add_child(tile_generator)
 
@@ -273,6 +283,7 @@ func _generate_map_for_floor(floor_num: int) -> void:
 	spawn_points["default"] = Vector2(spawn_pos.x * TILE_SIZE, spawn_pos.y * TILE_SIZE)
 
 	# Setup transitions for this floor
+	_place_torches()
 	_setup_transitions_for_floor(floor_num)
 
 	# Add visual markers for stairs
@@ -785,3 +796,34 @@ func set_player_job(job_name: String) -> void:
 func set_player_appearance(leader) -> void:
 	if player and player.has_method("set_appearance_from_leader"):
 		player.set_appearance_from_leader(leader)
+
+
+## Mirrors DragonCave's rig. Same ambient constant and the same landmark-earns-a-torch rule,
+## so the first cave reads like the rest of the game's caves rather than like a lit room.
+func _setup_lighting() -> void:
+	lighting = DungeonLightingScript.new()
+	lighting.name = "Lighting"
+	lighting.ambient = DungeonLightingScript.CAVE_AMBIENT
+	add_child(lighting)
+
+
+## Landmarks earn a torch: the way in, the way on, the treasure, the boss.
+func _place_torches() -> void:
+	if lighting == null:
+		return
+	for l in lighting._lamps:
+		if is_instance_valid(l):
+			l.queue_free()
+	lighting._lamps.clear()
+	for key in spawn_points:
+		var k := str(key)
+		var tint := Color(1.0, 0.80, 0.45)
+		var radius := 112
+		var energy := 1.0
+		if k == "boss":
+			tint = Color(1.0, 0.45, 0.30); radius = 176; energy = 1.25
+		elif k.begins_with("treasure"):
+			tint = Color(1.0, 0.93, 0.60); radius = 88; energy = 0.85
+		elif k.begins_with("secret"):
+			tint = Color(0.65, 0.85, 1.0); radius = 80; energy = 0.7
+		lighting.add_lamp(spawn_points[key], tint, radius, energy)
