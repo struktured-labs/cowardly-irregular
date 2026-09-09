@@ -2273,7 +2273,8 @@
     "effect": "attack_up",
     "stat_modifier": 2.0,
     "duration": 3,
-    "element_boost": "fire"
+    "element_boost": "fire",
+    "element_boost_modifier": 1.5
   },
   "infinite_loop": {
     "id": "infinite_loop",

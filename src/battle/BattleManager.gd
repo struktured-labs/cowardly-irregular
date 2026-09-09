@@ -4711,6 +4711,17 @@ func _execute_physical_ability(caster: Combatant, ability: Dictionary, targets: 
 		_trigger_monster_counter(target, caster)
 
 
+## Strongest matching element_boost buff, or 0.0. MAX not product — buffs already clamp elsewhere.
+func _element_buff_bonus(c: Combatant, element: String) -> float:
+	if c == null or not is_instance_valid(c) or element == "" or not ("active_buffs" in c):
+		return 0.0
+	var best: float = 0.0
+	for b in c.active_buffs:
+		if b is Dictionary and str(b.get("stat", "")) == element + "_damage":
+			best = maxf(best, float(b.get("modifier", 0.0)))
+	return best
+
+
 func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Array) -> void:
 	# Pacify silences offensive magic too.
 	if caster.has_status("pacify"):
@@ -4737,6 +4748,10 @@ func _execute_magic_ability(caster: Combatant, ability: Dictionary, targets: Arr
 		var elem_bonus: float = _sum_equipment_special_effect(caster, element + "_damage_bonus")
 		if elem_bonus > 0.0:
 			multiplier *= elem_bonus
+		## Buff-side twin of the gear bonus — element_boost, from a support ability.
+		var elem_buff: float = _element_buff_bonus(caster, element)
+		if elem_buff > 0.0:
+			multiplier *= elem_buff
 
 	## msg 2787 Voltharion gimmick: consume _next_attack_multiplier on the magic path (mirror of the physical path around line 3877). Storm Gathering authors next_attack_multiplier=1.8 and Voltharion's kit is 4/5 magic — without this the telegraph never lands. Consume BEFORE the target loop so all AoE targets get the boosted multiplier once, meta clears once. Distinct log line so player sees the unleash and can correlate to the earlier gather.
 	var mag_nam: float = float(caster.get_meta("_next_attack_multiplier", 0.0)) if caster != null else 0.0
@@ -5415,6 +5430,19 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 			var need: int = int(_win_condition.get("value", 0)) if str(_win_condition.get("type", "")) == "status_threshold" else 0
 			var progress_suffix: String = " (%d/%d)" % [current + 1, need] if need > 0 else " (%d)" % (current + 1)
 			battle_log_message.emit("[color=magenta]%s is swayed...%s[/color]" % [target.combatant_name, progress_suffix])
+
+	## element_boost had no reader, so Pyrroth's Inferno Rage bought a 2.0x ATTACK buff for a kit
+	## that is 4/5 MAGIC — the same defect already fixed on Voltharion's Storm Gathering. Stored as
+	## a buff on a stat nothing queries, so the existing duration tick expires it for free.
+	## element_boost_modifier is separate from stat_modifier ON PURPOSE: the 2.0 was authored for an
+	## ATTACK buff nothing read, so it was never balanced as a magic multiplier. Falls back to it.
+	var elem_boost: String = str(ability.get("element_boost", ""))
+	if elem_boost != "":
+		var elem_mult: float = float(ability.get("element_boost_modifier", stat_modifier))
+		for target in targets:
+			if target and is_instance_valid(target) and target.is_alive:
+				target.add_buff("%s Fury" % elem_boost.capitalize(), elem_boost + "_damage", elem_mult, duration)
+				battle_log_message.emit("[color=orange]%s's %s attacks blaze up![/color] (x%.1f for %d turns)" % [target.combatant_name, elem_boost, elem_mult, duration])
 
 	match effect:
 		## Tick 170: 10 support-ability branches lacked
