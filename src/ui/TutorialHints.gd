@@ -15,7 +15,7 @@ const HINTS = {
 	},
 	"autobattle_intro": {
 		"title": "Autobattle System",
-		"body": "Press F5 or L+R together to open the Autobattle Editor. Design rules — if HP is low, heal. If enemy is weak to fire, cast fire. Let the system fight for you. Not laziness. Enlightenment.",
+		"body": "F5 opens the Autobattle Editor anywhere; on a pad, {menu} opens it mid-battle, and Menu → Auto Rules opens it in the field. Design rules — if HP is low, heal. If enemy is weak to fire, cast fire. Let the system fight for you. Not laziness. Enlightenment.",
 	},
 	"autobattle_toggle": {
 		"title": "Toggle Autobattle",
