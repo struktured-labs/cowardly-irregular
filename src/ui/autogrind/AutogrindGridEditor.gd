@@ -1057,6 +1057,13 @@ func _input(event: InputEvent) -> void:
 			_add_and_condition()
 		get_viewport().set_input_as_handled()
 
+	# Shift+R must precede battle_advance: that action binds R, and Godot matches an action even
+	# when extra modifiers are held, so Shift+R fired Add Action and rename was unreachable.
+	# Shift+R - Rename profile
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_R and event.shift_pressed:
+		_open_rename_profile()
+		get_viewport().set_input_as_handled()
+
 	# R trigger - Add action
 	elif event.is_action_pressed("battle_advance"):
 		_add_action()
@@ -1070,11 +1077,6 @@ func _input(event: InputEvent) -> void:
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_TAB:
 		_toggle_row_enabled()
 		SoundManager.play_ui("menu_select")
-		get_viewport().set_input_as_handled()
-
-	# Shift+R - Rename profile
-	elif event is InputEventKey and event.pressed and event.keycode == KEY_R and event.shift_pressed:
-		_open_rename_profile()
 		get_viewport().set_input_as_handled()
 
 	# Shift+D - restore the shipped autogrind profiles (destructive, confirms first)
