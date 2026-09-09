@@ -23,6 +23,16 @@ extends GutTest
 ## Measured on origin/main ceeedf00: EIGHT of fourteen jobs. The Bard was noticed because
 ## struktured plays one. The other seven have the identical defect and nobody had looked.
 ##
+## ⚠️ THIS IS ONE CHANNEL, NOT A CHARACTER CERTIFICATE. Do not quote a green run here as
+## "the class is verified". On 2026-09-09 five lanes independently enumerated "the channels
+## a character can be broken in" and EVERY list was presentation-only — art, animation, vfx,
+## audio. Nobody listed SIMULATION or DATA, because everyone doing the counting owned a
+## rendering seam. A walk over the four visible channels would have scored `pray` 4/4 green
+## while its mechanics were wrong in every autogrind run, where nothing renders at all.
+## Presentation breaks are silent but still draw the right shape; a simulation break commits
+## a wrong answer to the save. This file covers ONE of the four visible channels, and the
+## visible channels are the half a player watches, not the half that decides the fight.
+##
 ## KNOWN BLIND SPOT, stated so this file cannot imply a completeness it does not have:
 ## the physical exclusion is a real hole. cowir-sfx found `riff` — the Bard's Free Move and
 ## per struktured 2026-08-29 her ACTUAL attack — carries type=physical while its own shipped
