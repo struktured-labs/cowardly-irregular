@@ -286,6 +286,10 @@ var _battle_action_log: Array[Dictionary] = []  # Log every player action per ba
 ## summary a second time per battle for no reader.
 
 ## Action speed modifiers (lower = faster)
+## Subtracted from a priority action's speed. Larger than any reachable speed_value, so a priority
+## action outruns the whole queue while priority actions still sort against each other.
+const PRIORITY_OFFSET: float = 1000.0
+
 const ACTION_SPEEDS = {
 	"attack": 5,
 	"ability": 10,
@@ -2063,6 +2067,11 @@ func _compute_action_speed(combatant: Combatant, action_type: String, ability: D
 	# Add random variance (scaled by volatility)
 	var jitter = volatility.get_ctb_jitter() if volatility else 1.0
 	speed_value += randf_range(-jitter, jitter)
+
+	## quick_strike authors priority=true and is described as "always goes first"; nothing read it.
+	## Offset rather than a flat constant so two priority actions still order by their own speed.
+	if bool(ability.get("priority", false)):
+		speed_value -= PRIORITY_OFFSET
 
 	return speed_value
 
@@ -7304,7 +7313,10 @@ func _convert_autobattle_action(combatant: Combatant, action_data: Dictionary, a
 				print("[AUTOBATTLE] Unknown ability: %s" % ability_id)
 				return {}
 			if not JobSystem.can_use_ability(combatant, ability_id):
-				print("[AUTOBATTLE] Cannot use ability: %s (MP: %d)" % [ability_id, combatant.current_mp])
+				## Names the real reason — silence is now a second way this fails, and blaming MP
+				## for a boss debuff sends the next reader to the wrong system.
+				var why: String = "silenced" if combatant.has_status("silence") else "MP %d" % combatant.current_mp
+				print("[AUTOBATTLE] Cannot use ability: %s (%s)" % [ability_id, why])
 				return {}
 			# Tick 111: if the action explicitly carries a `targets` key
 			# (AutobattleSystem always does for abilities) but the array
