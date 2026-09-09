@@ -92,3 +92,48 @@ func test_the_captured_state_ACTUALLY_restores_the_bed() -> void:
 	assert_true(SoundManager._music_player.playing,
 		"the bed was restored as state but nothing is playing — silence after every Limit Break")
 
+
+func test_a_stinger_over_AREA_music_restores_it_after_one_frame() -> void:
+	## The OTHER restore path, and the one four stingers actually use.
+	## restore_music_state branches: area != "" -> play_area_music (DEFERRED via
+	## call_deferred), else -> play_music (synchronous). The arm above only ever
+	## exercised the synchronous branch, because a capture taken mid-battle has
+	## area == "". But stinger_level_up / item_found / quest_complete /
+	## save_point all fire during EXPLORATION, over area music — so the deferred
+	## branch is the common case and had no coverage at all.
+	##
+	## ⚠️ THE WAIT DECIDES WHAT YOU MEASURE (cowir-overworld, same day: they
+	## awaited physics frames and read a CanvasModulate's constructor value, and
+	## nearly reported the whole lighting feature inert). Measured here:
+	##     immediately after restore : playing=FALSE, still the stinger's stream
+	##     after 1 process frame     : playing=true, the area bed is back
+	## One frame of silence is ~16 ms and is not a defect. Asserting immediately
+	## would fail on a system that works.
+	##
+	## And _current_area is the WRONG probe — play_area_music records it
+	## synchronously and defers only the music, so it reads correct before
+	## anything plays. Assert the STREAM, which is what the player hears.
+	SoundManager.play_area_music("cave")
+	await get_tree().process_frame
+	await get_tree().process_frame
+	var player: AudioStreamPlayer = SoundManager._music_player
+	assert_true(player.playing,
+		"SCOPE control: no area music started, so there is nothing for a stinger to interrupt")
+	var bed: String = player.stream.resource_path if player.stream else ""
+	assert_ne(bed, "", "SCOPE control: area music has no stream")
+
+	SoundManager.play_music("stinger_level_up")
+	var captured: Dictionary = SoundManager._stinger_resume_state.duplicate()
+	assert_eq(str(captured.get("area", "")), "cave",
+		"CONTROL: the capture did not record the AREA, so this exercises the synchronous branch again rather than the deferred one")
+
+	SoundManager.restore_music_state(captured)
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+	var back: String = player.stream.resource_path if player.stream else ""
+	assert_eq(back, bed,
+		"the area bed did not come back: playing '%s', expected '%s'. Four exploration stingers resume through this branch." % [back, bed])
+	assert_true(player.playing,
+		"the stream was restored but nothing is playing — silence after every level-up, item pickup, quest completion and save")
+
