@@ -1437,6 +1437,7 @@ func _options_ring_spec() -> Dictionary:
 			{"id": "permadeath", "label": "Permadeath: %s       (P)" % ("ON" if _permadeath_staking_enabled else "OFF")},
 			{"id": "auto_advance", "label": "Auto-Advance: %s     (W)" % ("ON" if _auto_advance_enabled else "OFF")},
 			{"id": "toggle_row", "label": "Toggle This Rule        (Tab)"},
+			{"id": "explain_rules", "label": "Explain These Rules"},
 			{"id": "cycle_member", "label": "Cycle Member: %s" % _cursor_member_label()},
 			{"id": "cycle_ability", "label": "Cycle Ability: %s" % _cursor_ability_label()},
 			{"id": "preset_casual", "label": "Preset: Casual          (1)"},
@@ -1466,6 +1467,8 @@ func _commit_autogrind_option(chosen_id: String) -> void:
 			_toggle_auto_advance()
 		"toggle_row":
 			_toggle_current_row()
+		"explain_rules":
+			_show_explain_rules()
 		"cycle_member":
 			_cycle_member_on_cursor_cell()
 		"cycle_ability":
@@ -1813,6 +1816,111 @@ func _known_abilities_for(member_id: String) -> Array:
 			return Array(m.learned_abilities)
 		break
 	return []
+
+
+## ── EXPLAIN RULES ───────────────────────────────────────────────────────────────────────────
+## struktured 2026-09-06: "it def needs a tutorial though". The autobattle editor has had a simulate
+## readout for months (AutobattleGridEditor._simulate_report) — sampled states, which rule fires
+## first, and an explicit "can't be decided" for anything needing a live fight. The autogrind
+## console had NOTHING: zero references to simulate, preview or explain. A player authoring grind
+## rules could not see what they would do.
+##
+## Mirrored rather than invented, including the two decisions that make theirs good: a SCRATCH party
+## (their comment — "mutating the edited character's HP to answer a UI question is the two-writers
+## class" — applies here identically), and first-match-wins REPORTED, so a rule shadowed by an
+## earlier one is visible as shadowed.
+##
+## Their "depends on the battlefield" has an exact analogue: conditions reading SESSION state cannot
+## be answered from a party snapshot, and every rule below one is unreachable until it settles.
+const SESSION_SCOPED_CONDITIONS := [
+	"battles_done", "win_streak", "time_elapsed", "corruption", "efficiency",
+	"ability_learned", "rare_item_found", "member_injured", "inventory_items", "reached_level",
+]
+
+
+## Sampled party situations, so a player sees their own thresholds fire rather than one snapshot.
+func _explain_states() -> Array:
+	return [
+		{"label": "full party, healthy", "hp_pct": 1.0, "mp_pct": 1.0, "down": 0},
+		{"label": "party at 50% HP", "hp_pct": 0.5, "mp_pct": 0.6, "down": 0},
+		{"label": "party at 25% HP", "hp_pct": 0.25, "mp_pct": 0.3, "down": 0},
+		{"label": "one member down", "hp_pct": 0.6, "mp_pct": 0.5, "down": 1},
+	]
+
+
+## A scratch party at the sampled state. NEVER the live one.
+func _explain_probe_party(state: Dictionary) -> Array:
+	var out: Array = []
+	var n: int = maxi(1, _party.size())
+	for i in range(n):
+		var c := Combatant.new()
+		var src = _party[i] if i < _party.size() else null
+		c.initialize({
+			"name": "Probe%d" % i, "max_hp": 1000, "max_mp": 100,
+			"attack": 20, "defense": 20, "magic": 20, "speed": 20
+		})
+		if src != null and src.job != null:
+			c.job = src.job
+		c.current_hp = int(1000.0 * float(state.get("hp_pct", 1.0)))
+		c.current_mp = int(100.0 * float(state.get("mp_pct", 1.0)))
+		if i < int(state.get("down", 0)):
+			c.current_hp = 0
+			c.is_alive = false
+		out.append(c)
+	return out
+
+
+func _rule_needs_session_state(rule: Dictionary) -> bool:
+	for c in rule.get("conditions", []):
+		if SESSION_SCOPED_CONDITIONS.has(str((c as Dictionary).get("type", ""))):
+			return true
+	return false
+
+
+## Plain-language report of what the current ruleset would DO. Returns lines rather than printing,
+## so it is testable without a panel.
+func explain_rules_report() -> Array:
+	var out: Array = []
+	if rules.is_empty():
+		out.append("No rules — the grind runs until you stop it.")
+		return out
+	for state in _explain_states():
+		var probe: Array = _explain_probe_party(state)
+		var matched: int = -1
+		var blocked: int = -1
+		for i in range(rules.size()):
+			var rule: Dictionary = rules[i]
+			if not bool(rule.get("enabled", true)):
+				continue
+			if _rule_needs_session_state(rule):
+				blocked = i
+				break
+			if AutogrindSystem._evaluate_party_rule(probe, rule):
+				matched = i
+				break
+		if blocked >= 0:
+			out.append("%s  ->  rule %d needs session progress (battles, corruption, time) — not shown here" % [str(state["label"]), blocked + 1])
+		elif matched < 0:
+			out.append("%s  ->  no rule matches — the grind continues" % str(state["label"]))
+		else:
+			out.append("%s  ->  rule %d fires: %s" % [str(state["label"]), matched + 1, _explain_actions(rules[matched])])
+		for c in probe:
+			if c != null:
+				c.free()
+	return out
+
+
+func _explain_actions(rule: Dictionary) -> String:
+	var parts: Array = []
+	for a in rule.get("actions", []):
+		parts.append(_format_action(a as Dictionary).replace("\n", " "))
+	return " + ".join(parts) if not parts.is_empty() else "(no actions)"
+
+
+func _show_explain_rules() -> void:
+	_log_message("[color=#ffcc66]— what these rules would do —[/color]")
+	for line in explain_rules_report():
+		_log_message("[color=#ffcc66]%s[/color]" % str(line))
 
 
 func _cycle_action_type() -> void:
