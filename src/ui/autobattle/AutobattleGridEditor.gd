@@ -1765,6 +1765,13 @@ func _input(event: InputEvent) -> void:
 		_delete_current_cell()
 		get_viewport().set_input_as_handled()
 
+	# Shift+R must precede battle_advance: that action binds R and matches with modifiers held, so
+	# the legend's "Sh+R:Rename" only fired on a key REPEAT, which is not a control.
+	# Shift+R - Rename current profile
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_R and event.shift_pressed:
+		_open_rename_profile()
+		get_viewport().set_input_as_handled()
+
 	# R trigger / R key - Simulate: what does this grid actually DO?
 	elif event.is_action_pressed("battle_advance") and not event.is_echo():
 		_open_simulate()
@@ -1781,11 +1788,6 @@ func _input(event: InputEvent) -> void:
 	# Tab key - Cycle profiles
 	elif event is InputEventKey and event.pressed and event.keycode == KEY_TAB and event.shift_pressed:
 		_cycle_profile()
-		get_viewport().set_input_as_handled()
-
-	# Shift+R - Rename current profile
-	elif event is InputEventKey and event.pressed and event.keycode == KEY_R and event.shift_pressed:
-		_open_rename_profile()
 		get_viewport().set_input_as_handled()
 
 	# E - Export current character's script (+ party bundle) to user://script_exports/
