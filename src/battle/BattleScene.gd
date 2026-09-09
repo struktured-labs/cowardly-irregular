@@ -2187,6 +2187,17 @@ func _spawn_cast_anticipation(caster_sprite: Variant, ability: Variant) -> void:
 	BattleJuice.flash_sprite(caster_sprite, color * 0.5, 0.0, 0.15)
 
 
+## Bespoke per-ability art was unreachable: the engine asked for the ability's `animation` FIELD,
+## which is a shared bucket ("buff", "skill", "cast_meta"), so a sheet carrying `battle_hymn` or
+## `cleave` was never requested by that name. Prefer the ability ID when the sheet actually has it;
+## otherwise nothing changes. Strictly additive — an unregistered id falls back exactly as before.
+func _ability_anim_name(ability: Dictionary, animator: BattleAnimatorClass) -> String:
+	var id: String = str(ability.get("id", ""))
+	if id != "" and animator and animator.has_named_animation(id):
+		return id
+	return str(ability.get("animation", "cast"))
+
+
 func _play_ability_animation(anim_type: String, animator: BattleAnimatorClass = null) -> void:
 	"""Play animation based on ability animation type"""
 	if not animator:
@@ -2280,7 +2291,7 @@ func _play_ability_full_render(caster: Combatant, caster_sprite: Node2D, animato
 		t.parallel().tween_property(caster_sprite, "modulate", Color(1.0 + color.r * 0.8, 1.0 + color.g * 0.8, 1.0 + color.b * 0.8), 0.16)
 		_spawn_gather_motes(caster_sprite, color)
 	if animator:
-		animator.play_named_animation(str(ability.get("animation", "cast")))
+		animator.play_named_animation(_ability_anim_name(ability, animator))
 	await get_tree().create_timer(0.24).timeout
 
 	# Release: element visual travels/forms per target.
@@ -3667,7 +3678,11 @@ func _on_action_executing(combatant: Combatant, action: Dictionary) -> void:
 				_play_ability_animation(anim_type, animator)
 				_spawn_ability_effects(ability, targets)
 		"advance":
-			pass  # Advance sub-actions handle their own animations
+			## Sub-actions still play their own animations; the QUEUEING beat had none at all, so
+			## a job shipping bespoke `advance` art had it sit unreachable. Gated on the sheet
+			## actually carrying it, so jobs without the art are unchanged.
+			if animator and animator.has_named_animation("advance"):
+				animator.play_named_animation("advance")
 		"item":
 			animator.play_item()
 		"defer":
