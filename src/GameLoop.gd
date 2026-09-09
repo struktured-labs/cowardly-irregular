@@ -586,6 +586,19 @@ func _maybe_run_battle_smoke() -> void:
 			_smoke_tap("ui_accept")
 			await get_tree().create_timer(0.5).timeout
 			_gwait += 0.5
+		# start_solo_battle is STILL SUSPENDED on `await spotlight_battle_ended` at this point, and
+		# resuming it tears the duel scene down and returns to exploration. Starting the next battle
+		# before that unwinds ran both at once: exploration came back mid-execution and the resolver
+		# kept iterating freed combatants ("previously freed" x3, cowir-deploy's .239 web smoke).
+		# INACTIVE means the BATTLE ended, not that the DUEL finished unwinding — wait for the flag.
+		var _dwait := 0.0
+		while _spotlight_duel_active and _dwait < 15.0:
+			await get_tree().create_timer(0.25).timeout
+			_dwait += 0.25
+		if _spotlight_duel_active:
+			print("[SMOKE] FAIL: spotlight duel never unwound after %.1fs — next battle would race its teardown" % _dwait)
+			_smoke_failed = true
+		await get_tree().create_timer(0.5).timeout
 		for m in party:
 			if m and is_instance_valid(m):
 				m.current_hp = 1

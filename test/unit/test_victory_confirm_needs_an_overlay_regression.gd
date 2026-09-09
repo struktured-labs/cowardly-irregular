@@ -59,3 +59,30 @@ func test_the_spotlight_path_still_shows_the_sequence_at_all() -> void:
 	var wait_at: int = body.find("await _wait_for_confirm_victory()", block_at)
 	assert_true(wait_at > 0 and wait_at < emit_at,
 		"a duelist must still get the victory sequence before the cutscene resumes")
+
+
+func test_the_smoke_waits_for_the_duel_to_unwind_before_the_next_battle() -> void:
+	## .239 fixed the 120s hang and exposed the race behind it: start_solo_battle stays suspended
+	## on `await spotlight_battle_ended`, and resuming it returns to exploration. The smoke used to
+	## start the dragon fight the moment BattleManager went INACTIVE — which is when the BATTLE
+	## ended, not when the DUEL finished unwinding — so the resolver iterated freed combatants.
+	var src := FileAccess.get_file_as_string(GL_SRC)
+	var i: int = src.find("BattleManager.end_battle(true)")
+	assert_gt(i, -1, "CONTROL: the smoke's duel leg still force-resolves the duel")
+	var leg := src.substr(i, 2400)  # window must clear the unwind wait added below end_battle
+	var wait_at: int = leg.find("while _spotlight_duel_active")
+	var next_at: int = leg.find('_start_battle_async(["shadow_dragon"]')
+	assert_gt(wait_at, -1, "the smoke must wait on the duel flag, not just on battle state")
+	assert_gt(next_at, -1, "CONTROL: the game-over leg still starts the dragon fight")
+	assert_lt(wait_at, next_at, "the wait has to come BEFORE the next battle or it guards nothing")
+
+
+func test_the_unwind_wait_is_bounded_and_loud() -> void:
+	# An unbounded wait here would trade a 120s hang for a different one, and a silent timeout
+	# would let the race back in while still printing PASS — the failure mode this leg already
+	# carries a comment about for its own battle wait.
+	var src := FileAccess.get_file_as_string(GL_SRC)
+	var i: int = src.find("while _spotlight_duel_active")
+	var body := src.substr(i, 400)
+	assert_true(body.contains("_dwait < 15.0"), "the unwind wait must be bounded")
+	assert_true(body.contains("_smoke_failed = true"), "and must FAIL loudly rather than proceed into the race")
