@@ -765,6 +765,8 @@ func _format_action(action: Dictionary) -> String:
 		"stop_grinding":
 			return "STOP\nGRINDING"
 
+		"member_ability":
+			return "%s casts %s" % [str(action.get("member", "Any")).capitalize(), str(action.get("ability", "?"))]
 		"heal_party":
 			return "Use\nPotions"
 

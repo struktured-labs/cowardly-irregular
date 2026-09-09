@@ -249,8 +249,11 @@ such as "cleric", or a character name). With it the condition asks about that ch
 without it, about ANY party member. member_status takes the status name in "value".
 
 Actions. type is one of:
-  stop_grinding, heal_party, restore_mp, flee_battle, switch_profile
+  stop_grinding, heal_party, restore_mp, flee_battle, switch_profile, member_ability
 switch_profile requires character_id (PC id string) and profile_index (int).
+member_ability takes "member" (job id such as "cleric", or a character name), "ability" (an
+ability id that member knows), and an optional "target" (defaults to the lowest-HP living ally).
+Use it for "have <member> cast <ability>"; heal_party spends POTIONS, member_ability spends MP.
 
 Canonical example:
   {\"conditions\":[{\"type\":\"party_hp_min\",\"op\":\"<\",\"value\":30}],

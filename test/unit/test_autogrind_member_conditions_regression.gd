@@ -40,8 +40,13 @@ func test_resolve_finds_a_member_by_job_id() -> void:
 
 
 func test_resolve_is_case_insensitive_and_falls_back_to_name() -> void:
+	## This asserted _member("Fighter") and passed via the JOB branch — "fighter" is a job id in
+	## this fixture, so the name fallback was never exercised and was DEAD (it compared Node.name,
+	## not combatant_name). Give one member a name that is not any job id, or the arm is hollow.
 	assert_not_null(_member("CLERIC"), "job id match must be case-insensitive")
-	assert_not_null(_member("Fighter"), "the character name is the documented fallback")
+	_party[2].combatant_name = "Bram"
+	assert_not_null(_member("Bram"), "the character name is the documented fallback")
+	assert_not_null(_member("bram"), "and it must be case-insensitive too")
 
 
 func test_resolve_returns_null_for_an_absent_member() -> void:

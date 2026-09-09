@@ -312,6 +312,13 @@ func validate_rule(rule: Dictionary) -> Array[String]:
 		if not AUTOGRIND_ACTION_TYPES.has(atype):
 			errors.append("unknown autogrind action type: '%s'" % atype)
 			continue
+		## "have cleric use restorative" is meaningless without BOTH halves — an absent field would
+		## silently no-op, which reads as "my rule never fires" rather than as an incomplete rule.
+		if atype == "member_ability":
+			if str(a.get("member", "")) == "":
+				errors.append("action 'member_ability' requires 'member' (job id or character name)")
+			if str(a.get("ability", "")) == "":
+				errors.append("action 'member_ability' requires 'ability'")
 		if atype == "switch_profile":
 			if not a.has("character_id"):
 				errors.append("action type 'switch_profile' requires 'character_id'")
@@ -727,7 +734,8 @@ const AUTOGRIND_ACTION_TYPES = {
 	"stop_grinding": "Stop Grinding",
 	"heal_party": "Heal Party",
 	"restore_mp": "Restore MP",
-	"flee_battle": "Flee Battle"
+	"flee_battle": "Flee Battle",
+	"member_ability": "Member Casts"
 }
 
 ## Default autogrind profile templates
@@ -1730,7 +1738,9 @@ func _resolve_member(party: Array, member_key: String):
 	for m in party:
 		if not (m is Combatant):
 			continue
-		if str(m.name).to_lower() == want:
+		## `name` is the NODE name on a Combatant (@Node@28); the character name is
+		## `combatant_name`. Comparing Node.name made this fallback DEAD from the day it shipped.
+		if str(m.combatant_name).to_lower() == want:
 			return m
 	return null
 
@@ -1766,6 +1776,59 @@ func _find_restorative_caster(party: Array) -> Dictionary:
 				"heal_amount": int(ability.get("heal_amount", 0))
 			}
 	return {}
+
+
+## Apply one ability from one named party member, between battles. Reads the AUTHORED amount
+## (heal_amount / mp_amount) — reading `power` is the field-mismatch class this engine has now hit
+## three times. Returns a reason rather than failing silently: a rule that never fires is the
+## hardest kind to debug from the console.
+func _member_ability_apply(caster, ability_id: String, target_key: String) -> Dictionary:
+	if caster == null:
+		return {"ok": false, "reason": "caster not in party"}
+	if not caster.is_alive:
+		return {"ok": false, "reason": "%s is down" % caster.combatant_name}
+	if ability_id == "":
+		return {"ok": false, "reason": "no ability named"}
+	var js = _get_autoload_node("JobSystem")
+	if js == null or not js.has_method("get_ability"):
+		return {"ok": false, "reason": "JobSystem unavailable"}
+	var ability: Dictionary = js.get_ability(ability_id)
+	if ability.is_empty():
+		return {"ok": false, "reason": "unknown ability '%s'" % ability_id}
+	## knows_ability is struktured's provenance-blind predicate (kit / secondary / learned /
+	## purchased / level / free_move). Guarded rather than assumed so a Combatant stub in a test
+	## does not abort the whole action.
+	if caster.has_method("knows_ability") and not caster.knows_ability(ability_id):
+		return {"ok": false, "reason": "%s does not know %s" % [caster.combatant_name, ability_id]}
+	var cost := int(ability.get("mp_cost", 0))
+	if caster.current_mp < cost:
+		return {"ok": false, "reason": "%s lacks MP for %s" % [caster.combatant_name, ability_id]}
+
+	## Default target: the ally who most needs it. Explicit `target` wins when the rule names one.
+	var target = _resolve_member(grind_party, target_key) if target_key != "" else _lowest_hp_ally()
+	if target == null:
+		return {"ok": false, "reason": "no valid target"}
+
+	var heal := int(ability.get("heal_amount", 0))
+	var mp_amt := int(ability.get("mp_amount", 0))
+	if heal <= 0 and mp_amt <= 0:
+		return {"ok": false, "reason": "'%s' has no between-battle effect this system models" % ability_id}
+
+	caster.current_mp -= cost
+	if heal > 0:
+		target.heal(heal)
+	if mp_amt > 0:
+		target.restore_mp(mp_amt)
+	return {"ok": true, "caster": caster.combatant_name, "target": target.combatant_name}
+
+
+func _lowest_hp_ally():
+	var best = null
+	for m in grind_party:
+		if m is Combatant and m.is_alive:
+			if best == null or m.current_hp < best.current_hp:
+				best = m
+	return best
 
 
 func _member_predicate(party: Array, condition: Dictionary, pred: Callable) -> bool:
@@ -2065,6 +2128,18 @@ func apply_autogrind_actions(actions: Array) -> void:
 
 			"stop_grinding":
 				stop_autogrind("Autogrind rule triggered stop")
+
+			"member_ability":
+				## struktured 2026-09-06: "if mage is dead, have cleric [use] restorative". The
+				## condition half shipped in .239; this is the action half. Between battles, like
+				## heal_party — it spends the caster's MP rather than a potion.
+				var caster = _resolve_member(grind_party, str(action.get("member", "")))
+				var ability_id := str(action.get("ability", ""))
+				var info: Dictionary = _member_ability_apply(caster, ability_id, str(action.get("target", "")))
+				if info.get("ok", false):
+					print("[AUTOGRIND] %s used %s on %s" % [info["caster"], ability_id, info["target"]])
+				else:
+					print("[AUTOGRIND] member_ability skipped: %s" % str(info.get("reason", "unknown")))
 
 			"heal_party":
 				# Use potions from inventory to heal party (no free heals). Cadence #18: distinguish "no eligible member" from "no consumable" so a player debugging why their heal_party rule doesn't seem to fire can tell rule-design-mismatch from empty-inventory.
