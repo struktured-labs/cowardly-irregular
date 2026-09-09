@@ -92,7 +92,7 @@ Each starter job has a free 0-cost AP action available in the command menu:
 | Cleric | Pray | Restores MP to a party member (green heal popup + sparkle FX) |
 | Mage | Channel | Restores MP to self |
 | Rogue | Strike | Bonus melee (falls back to attack anim, not cast) |
-| Bard | Riff | Weak 0-MP strike (0.4x) with a high chance of `blind` — disruption, not an MP battery (struktured 2026-08-22) |
+| Bard | Riff | 0-MP strike at **1.0x** with a 70% `blind` — disruption, not an MP battery (struktured 2026-08-22). Said 0.4x here until 2026-09-09; it was raised to 1.0x when Riff became the Bard's attack row and the doc kept the old number, so three lanes quoted 0.4x at each other in one morning. `abilities.json` is the source. |
 
 - MP-restore variants emit `healing_done` (green popup) not `damage_dealt` (would show as crit damage)
 - Free Move abilities are NOT recorded in the MRU quick-slot list (each job has its own dedicated slot)
