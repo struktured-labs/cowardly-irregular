@@ -7,7 +7,12 @@ extends GutTest
 ## from being undone.
 
 const MANIFEST := "res://data/sfx_manifest.json"
-const BIRD_WORDS := ["birdsong", "chirp", "tweet", "songbird"]
+## He rejected THREE textures in one sentence — and ability_heal's own prompt records all three:
+## "smooth and vocal with no birdsong and no chirping and NO TINKLING". This list held two of them.
+## The third was the one still being requested: w2_ability_heal asked for "wind chimes tinkling"
+## and passed cleanly, because the guard was named after the complaint's headline rather than
+## written from its content.
+const BIRD_WORDS := ["birdsong", "chirp", "tweet", "songbird", "tinkl"]
 
 
 func _sfx() -> Dictionary:
@@ -34,7 +39,7 @@ func test_no_heal_cue_asks_the_generator_for_a_bird() -> void:
 			if w in prompt and not ("no " + w) in prompt:
 				offenders.append("%s: %s" % [k, w])
 	if not offenders.is_empty():
-		fail_test("heal/cure prompts REQUEST bird sounds — regenerating from these restores the cue struktured rejected: %s" % [offenders])
+		fail_test("heal/cure prompts REQUEST a texture struktured rejected (birdsong, chirping OR tinkling — all three are named in ability_heal's own prompt). Regenerating from these restores the cue he turned down twice: %s" % [offenders])
 
 
 func test_the_scan_actually_reaches_prompts() -> void:
