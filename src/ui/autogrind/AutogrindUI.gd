@@ -1437,6 +1437,8 @@ func _options_ring_spec() -> Dictionary:
 			{"id": "permadeath", "label": "Permadeath: %s" % ("ON" if _permadeath_staking_enabled else "OFF")},
 			{"id": "auto_advance", "label": "Auto-Advance: %s" % ("ON" if _auto_advance_enabled else "OFF")},
 			{"id": "toggle_row", "label": "Toggle This Rule"},
+			{"id": "cycle_member", "label": "Cycle Member: %s" % _cursor_member_label()},
+			{"id": "cycle_ability", "label": "Cycle Ability: %s" % _cursor_ability_label()},
 			{"id": "preset_casual", "label": "Preset: Casual"},
 			{"id": "preset_standard", "label": "Preset: Standard"},
 			{"id": "preset_hardcore", "label": "Preset: Hardcore"},
@@ -1464,6 +1466,10 @@ func _commit_autogrind_option(chosen_id: String) -> void:
 			_toggle_auto_advance()
 		"toggle_row":
 			_toggle_current_row()
+		"cycle_member":
+			_cycle_member_on_cursor_cell()
+		"cycle_ability":
+			_cycle_ability_on_cursor_cell()
 		"preset_casual":
 			_apply_preset("casual")
 		"preset_standard":
@@ -1656,6 +1662,111 @@ func _default_ability_for(member_id: String) -> String:
 			return str(m.learned_abilities[0])
 		break
 	return "cure"
+
+
+
+## ── MEMBER / ABILITY AUTHORING ──────────────────────────────────────────────────────────────
+## The member-scoped grammar shipped in .239/.242 with NO way to set `member` from the editor:
+## condition["member"] had zero writes in this file and action["member"] only the seeding one. So
+## the FINE tier — the whole point, "if CLERIC is dead", "have CLERIC cast" — was reachable only
+## through the LLM composer or hand-edited JSON. Found by running cowir-controller's legend sweep
+## BACKWARDS: not "is what we say true" but "is what the grammar allows actually authorable".
+
+## Every member-scoped condition type, derived from the system's own table rather than restated.
+func _is_member_scoped(dict: Dictionary) -> bool:
+	var t := str(dict.get("type", ""))
+	return t.begins_with("member_") and t != "member_injured"
+
+
+## Party job ids, plus "" meaning ANY — the coarse tier stays reachable by cycling past the end.
+func _member_choices() -> Array:
+	var out: Array = [""]
+	for m in _party:
+		if m != null and m.job != null and "id" in m.job:
+			out.append(str(m.job.id))
+	return out
+
+
+func _cursor_cell_dict() -> Dictionary:
+	if cursor_row >= rules.size():
+		return {}
+	var rule: Dictionary = rules[cursor_row]
+	var conditions: Array = rule.get("conditions", [])
+	var actions: Array = rule.get("actions", [])
+	var has_always := false
+	for c in conditions:
+		if (c as Dictionary).get("type", "") == "always":
+			has_always = true
+			break
+	var slots := conditions.size()
+	if conditions.size() < MAX_CONDITIONS and not has_always:
+		slots += 1
+	if cursor_col < conditions.size():
+		return conditions[cursor_col]
+	var ai := cursor_col - slots
+	if ai >= 0 and ai < actions.size():
+		return actions[ai]
+	return {}
+
+
+func _cursor_member_label() -> String:
+	var d := _cursor_cell_dict()
+	if d.is_empty() or not (_is_member_scoped(d) or str(d.get("type", "")) == "member_ability"):
+		return "n/a"
+	var who := str(d.get("member", ""))
+	return "Any" if who == "" else who.capitalize()
+
+
+func _cursor_ability_label() -> String:
+	var d := _cursor_cell_dict()
+	if d.is_empty() or str(d.get("type", "")) != "member_ability":
+		return "n/a"
+	return str(d.get("ability", "?"))
+
+
+func _cycle_member_on_cursor_cell() -> void:
+	var d := _cursor_cell_dict()
+	if d.is_empty():
+		return
+	var is_action := str(d.get("type", "")) == "member_ability"
+	if not is_action and not _is_member_scoped(d):
+		return
+	var choices := _member_choices()
+	## member_ability REQUIRES a member — validate_rule refuses an empty one — so the action form
+	## never offers "Any". The condition form does: absent member IS the coarse any-member rule.
+	if is_action:
+		choices = choices.filter(func(c): return str(c) != "")
+	if choices.is_empty():
+		return
+	var idx := choices.find(str(d.get("member", "")))
+	d["member"] = choices[(idx + 1) % choices.size()]
+	if is_action:
+		d["ability"] = _default_ability_for(str(d["member"]))
+	_refresh_grid()
+
+
+func _cycle_ability_on_cursor_cell() -> void:
+	var d := _cursor_cell_dict()
+	if d.is_empty() or str(d.get("type", "")) != "member_ability":
+		return
+	var known := _known_abilities_for(str(d.get("member", "")))
+	if known.is_empty():
+		return
+	var idx := known.find(str(d.get("ability", "")))
+	d["ability"] = known[(idx + 1) % known.size()]
+	_refresh_grid()
+
+
+## What that member can actually cast, so cycling can never land on an ability the executor will
+## refuse by name at runtime.
+func _known_abilities_for(member_id: String) -> Array:
+	for m in _party:
+		if m == null or m.job == null or not ("id" in m.job) or str(m.job.id) != member_id:
+			continue
+		if "learned_abilities" in m and m.learned_abilities.size() > 0:
+			return Array(m.learned_abilities)
+		break
+	return []
 
 
 func _cycle_action_type() -> void:
