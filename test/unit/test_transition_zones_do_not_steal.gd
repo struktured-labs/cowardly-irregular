@@ -20,9 +20,13 @@ extends GutTest
 ## decisions have never been observed. "The proven W1 recipe" described a value that had not
 ## run once.
 ##
-## WHAT IS ASSERTED is the property, not the geometry: no two transitions overlap, and every
-## transition keeps at least a tile of reach so "no overlap" cannot be satisfied by shrinking
-## a doorway to nothing.
+## WHAT IS ASSERTED, after a wrong turn worth recording: my first fix TRIMMED the overlapping
+## box so the zones no longer touched. That satisfied "no overlap" and broke the thing the zone
+## exists for -- Sandrift shrank to 2x2 and a 2-tall box cannot reach a landmark 3 tiles below
+## it. I had asserted a PROPERTY (>= one tile of reach) instead of the OUTCOME (a player can
+## enter), which is the same substitution this file was written to document. Overlaps are now
+## resolved by AreaTransition choosing the NEAREST destination, and what is pinned here is that
+## no zone is ever silently shortened.
 
 const MODE7_WORLDS := {
 	"medieval": "res://src/exploration/OverworldScene.gd",
@@ -69,21 +73,16 @@ func test_no_entrance_swallows_another() -> void:
 		worlds_built += 1
 		boxes_seen += boxes.size()
 
-		for b in boxes:
-			# A doorway trimmed to nothing satisfies "no overlap" while being unusable, so the
-			# floor is asserted alongside the property it protects.
-			if b["half"].x < float(w.TILE_SIZE) / 2.0 or b["half"].y < float(w.TILE_SIZE) / 2.0:
-				problems.append("%s: %s shrank below one tile of reach (%s)" % [label, b["name"], str(b["half"] * 2.0)])
 
-		for i in range(boxes.size()):
-			for j in range(i + 1, boxes.size()):
-				var a = boxes[i]
-				var b2 = boxes[j]
-				var dx: float = absf(a["pos"].x - b2["pos"].x)
-				var dy: float = absf(a["pos"].y - b2["pos"].y)
-				if dx < a["half"].x + b2["half"].x and dy < a["half"].y + b2["half"].y:
-					problems.append("%s: %s and %s overlap -- the earlier sibling takes the shared cells and the player enters the wrong place"
-						% [label, a["name"], b2["name"]])
+
+		# OVERLAPS ARE NO LONGER THE DEFECT -- AreaTransition arbitrates them by distance. What
+		# must not happen is a zone being SHRUNK to dodge one: the zone sits 3 tiles above its
+		# landmark to compensate for Mode 7, so a box under 6 tiles tall stops covering its own
+		# doorway. That was shipped in .254 (Sandrift trimmed to 2x2) and reverted here.
+		for b in boxes:
+			if b["half"].y * 2.0 < float(w.TILE_SIZE) * 6.0:
+				problems.append("%s: %s has a %s-tile box -- a zone shorter than 6 tiles no longer reaches the landmark it belongs to"
+					% [label, b["name"], str(b["half"].y * 2.0 / float(w.TILE_SIZE))])
 
 	assert_eq(worlds_built, MODE7_WORLDS.size(),
 		"built %d of %d Mode 7 worlds" % [worlds_built, MODE7_WORLDS.size()])

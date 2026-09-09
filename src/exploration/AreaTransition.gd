@@ -224,7 +224,7 @@ func _input(event: InputEvent) -> void:
 		# change pipeline processed the first emit, racing the loader.
 		if event.is_action_pressed("ui_accept") and not event.is_echo():
 			var player = _get_player_in_zone()
-			if player:
+			if player and not _a_nearer_transition_has(player):
 				_trigger_transition(player)
 				get_viewport().set_input_as_handled()
 		# Mouse click to interact
@@ -275,3 +275,32 @@ func _trigger_transition(_player: Node2D) -> void:
 func interact(player: Node2D) -> void:
 	if require_interaction and _player_in_zone:
 		_trigger_transition(player)
+
+## True when a sibling transition also contains this player and its centre is NEARER.
+##
+## Every transition grabs ui_accept in its own handler and calls set_input_as_handled(), so
+## in a shared cell the FIRST SIBLING TO PROCESS wins regardless of which destination the
+## player is standing on. That is arbitrary: on 2026-07-13 Castle Harmonia lost to the
+## Whispering Cave, and on 2026-09-09 Sandrift's doorway lost to the Lightning Dragon Cave --
+## walk south from the cave toward the village and you got a level-16 boss dungeon.
+##
+## Shrinking the boxes was tried first and was worse: a zone sits 3 tiles above its landmark
+## for Mode 7, so a trimmed box stops covering its own doorway. Deciding by DISTANCE keeps
+## every zone at full reach and matches what the player is looking at -- you enter the thing
+## you are standing on. Ties keep the existing sibling order, so nothing changes where there
+## is no overlap.
+func _a_nearer_transition_has(player: Node2D) -> bool:
+	var parent := get_parent()
+	if parent == null or player == null:
+		return false
+	var mine: float = global_position.distance_to(player.global_position)
+	for other in parent.get_children():
+		if other == self or not (other is AreaTransition):
+			continue
+		if not other.has_method("_get_player_in_zone"):
+			continue
+		if other._get_player_in_zone() != player:
+			continue
+		if other.global_position.distance_to(player.global_position) < mine:
+			return true
+	return false
