@@ -159,6 +159,36 @@ static func load_sprite_frames(customization, primary_job_id: String, secondary_
 ##     }
 ##   }
 ## Sheets are horizontal strips: frame_width * num_frames wide, frame_height tall.
+## One monster frame as a plain texture — for map markers that want the CREATURE, not a letter.
+## struktured 2026-09-06: "I want bosses to not be labeld as a 'B' tile any longer lets get a sprite there".
+## Returns the idle frame from the same monster_sheets ledger the battle sprite uses, so a boss can
+## never show one face on the map and another in the fight. Null when the id has no sheet.
+static func monster_frame_texture(monster_id: String, anim: String = "idle") -> AtlasTexture:
+	_load_manifest()
+	if not _monster_manifest.has(monster_id):
+		return null
+	var sheet_data: Dictionary = _monster_manifest[monster_id]
+	var sheet_path: String = sheet_data.get("path", "res://assets/sprites/monsters/%s.png" % monster_id)
+	if not ResourceLoader.exists(sheet_path):
+		return null
+	var texture := load(sheet_path) as Texture2D
+	if texture == null:
+		return null
+	var frame_width: int = sheet_data.get("frame_width", 256)
+	var frame_height: int = sheet_data.get("frame_height", 256)
+	if frame_width <= 0 or frame_height <= 0:
+		return null
+	var animations: Dictionary = sheet_data.get("animations", {})
+	var frame_idx: int = 0
+	if animations.has(anim):
+		frame_idx = int((animations[anim] as Dictionary).get("start", 0))
+	var cols_per_row: int = maxi(1, texture.get_width() / frame_width)
+	var atlas := AtlasTexture.new()
+	atlas.atlas = texture
+	atlas.region = Rect2(float((frame_idx % cols_per_row) * frame_width), float((frame_idx / cols_per_row) * frame_height), float(frame_width), float(frame_height))
+	return atlas
+
+
 static func load_monster_sprite_frames(monster_id: String) -> SpriteFrames:
 	_load_manifest()
 

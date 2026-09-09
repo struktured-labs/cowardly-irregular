@@ -432,31 +432,46 @@ func _create_boss_marker(pos: Vector2) -> Node2D:
 	var marker = Node2D.new()
 	marker.position = pos
 
-	# Red background tile to make boss stand out
-	var bg = ColorRect.new()
-	bg.size = Vector2(TILE_SIZE, TILE_SIZE)
-	bg.position = Vector2(-TILE_SIZE/2, -TILE_SIZE/2)
-	bg.color = Color(0.8, 0.2, 0.2, 0.8)  # Bright red
-	marker.add_child(bg)
+	## struktured 2026-09-06: "I want bosses to not be labeld as a 'B' tile any longer lets get a sprite there".
+	## The sprite is the boss's OWN battle idle frame, so what stalks the map is what you fight.
+	var tex := HybridSpriteLoader.monster_frame_texture("cave_rat_king")
 
-	# Boss text marker
-	var label = Label.new()
-	label.text = "B"  # Simple B for Boss
-	label.position = Vector2(-8, -12)
-	label.add_theme_font_size_override("font_size", 32)
-	label.add_theme_color_override("font_color", Color.YELLOW)
-	marker.add_child(label)
+	var glow := ColorRect.new()
+	glow.size = Vector2(TILE_SIZE * 1.6, TILE_SIZE * 1.6)
+	glow.position = -glow.size / 2.0
+	glow.color = Color(0.85, 0.15, 0.15, 0.30 if tex != null else 0.8)
+	glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	marker.add_child(glow)
 
-	# Pulsing animation - bind to marker so it gets cleaned up when marker is freed
+	var pulse_target: CanvasItem = glow
+	if tex != null:
+		var spr := Sprite2D.new()
+		spr.texture = tex
+		spr.centered = true
+		# Fit the frame to ~2 tiles tall regardless of whether the sheet is 128 or 256.
+		var h: float = maxf(1.0, float(tex.region.size.y))
+		spr.scale = Vector2.ONE * (TILE_SIZE * 2.0 / h)
+		spr.position = Vector2(0, -TILE_SIZE * 0.35)
+		spr.flip_h = not HybridSpriteLoader.monster_faces_party("cave_rat_king", tex.region.size.y > 128.0)
+		marker.add_child(spr)
+		pulse_target = spr
+	else:
+		# No sheet for this id — keep a readable marker rather than an empty tile.
+		var label := Label.new()
+		label.text = "!"
+		label.position = Vector2(-8, -12)
+		label.add_theme_font_size_override("font_size", 32)
+		label.add_theme_color_override("font_color", Color.YELLOW)
+		marker.add_child(label)
+
 	marker.ready.connect(func():
 		var tween = marker.create_tween()
 		tween.set_loops()
-		tween.tween_property(bg, "modulate:a", 0.6, 0.5)
-		tween.tween_property(bg, "modulate:a", 1.0, 0.5)
+		tween.tween_property(pulse_target, "modulate:a", 0.62, 0.7)
+		tween.tween_property(pulse_target, "modulate:a", 1.0, 0.7)
 	)
 
 	return marker
-
 
 func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
 	# Set collision layers for interaction
