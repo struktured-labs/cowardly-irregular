@@ -2367,10 +2367,54 @@ func _close_ui() -> void:
 	closed.emit()
 
 
+## Memory bound, not a UX choice: the panel has never trimmed, so a long grind grew it without
+## limit. RichTextLabel scroll_following shows the tail anyway, and this is far more than anyone
+## reads between battles. Lowering it for readability is a separate, deliberate call.
+const BATTLE_LOG_MAX_LINES: int = 400
+
+
 func _log_message(text: String) -> void:
 	"""Log message to battle log"""
 	if _battle_log and is_instance_valid(_battle_log):
 		_battle_log.append_text(text + "\n")
+		_trim_battle_log()
+
+
+func _trim_battle_log() -> void:
+	if _battle_log == null or not is_instance_valid(_battle_log):
+		return
+	if _battle_log.get_line_count() <= BATTLE_LOG_MAX_LINES:
+		return
+	var kept: PackedStringArray = _battle_log.get_parsed_text().split("\n")
+	var start: int = maxi(0, kept.size() - BATTLE_LOG_MAX_LINES)
+	_battle_log.clear()
+	_battle_log.append_text("\n".join(Array(kept).slice(start)) + "\n")
+
+
+## HeadlessBattleResolver returns its narration in result["log"] — every attack, heal, formation
+## special, status effect and diagnostic — and NOTHING read it. Of the 18 keys _build_results
+## returns, this was the only one with zero consumers, so the console showed session stats while
+## the fight it is narrating went unseen.
+##
+## It matters more than a stray key: every named refusal the resolver produces writes HERE.
+## "unknown ability", "unmodelled type — no effect", member_ability's does-not-know / lacks-MP,
+## the MAX_ROUNDS stalemate reason. A day spent replacing silent failures with refusals that name
+## themselves, and none of them reached the player.
+##
+## SUPPRESSED AT LUDICROUS SPEED, mirroring the established convention rather than inventing one:
+## BattleScene:4279 suppresses the round banner at 4x+ "same convention as speech bubbles". At
+## ludicrous the point is throughput, not watching, and 45 log sites per battle would bury the
+## console's own status lines.
+func append_resolver_log(lines: Array) -> void:
+	if lines.is_empty():
+		return
+	if _ludicrous_speed_enabled:
+		return
+	for line in lines:
+		var text := str(line)
+		if text.strip_edges() == "":
+			continue
+		_log_message("[color=#8899aa]%s[/color]" % text)
 
 
 func _get_corruption_color(val: float) -> Color:
