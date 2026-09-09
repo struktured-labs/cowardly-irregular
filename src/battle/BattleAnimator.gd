@@ -490,6 +490,12 @@ func play_lunge(on_complete: Callable = Callable()) -> void:
 	play_animation(AnimState.LUNGE, false, on_complete)
 
 
+## Does this combatant's sheet actually carry `anim_name`? Callers use it to prefer bespoke
+## per-ability art over the generic `animation` field without changing behaviour when it is absent.
+func has_named_animation(anim_name: String) -> bool:
+	return sprite != null and sprite.sprite_frames != null and sprite.sprite_frames.has_animation(anim_name)
+
+
 func play_named_animation(anim_name: String, on_complete: Callable = Callable()) -> void:
 	if not sprite:
 		if on_complete.is_valid():
