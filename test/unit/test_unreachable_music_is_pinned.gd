@@ -109,10 +109,23 @@ func test_cutscene_track_reachability_matches_the_pin() -> void:
 ## manifest entry is reachable". The consumer of that literal is play_ambient,
 ## which never looks here.
 ##
-## NOT asserting which is intended. _ambient_player is a separate layer from
-## _music_player, so a short ambient texture UNDER music is a legitimate design
-## and these long beds are most likely superseded legacy. That is struktured's
-## call, not this file's — the guard only ensures the 17 MB is visible.
+## THEY HAVE NEVER PLAYED, and git settles it — this is measured, not inferred:
+##   2026-03-23  the 7 beds land in music/ + music_manifest (13818c62).
+##               play_ambient DOES NOT EXIST. There is no ambient playback
+##               system at all, only procedural music generators.
+##   2026-04-06  func play_ambient introduced (60ed1886) reading the SFX
+##               manifest. `-S _music_manifest.has(sound_key)` over the whole
+##               history of this file returns NOTHING: no version of
+##               play_ambient ever consulted the music manifest.
+##   2026-04-07  the 5s ambient SFX land in sfx/ + sfx_manifest (5ebe90e9).
+##               Those work.
+##
+## So these are not superseded legacy — they are STILLBORN. Composed, committed,
+## and the consumer that arrived two weeks later looked somewhere else. Nothing
+## a player has ever heard is at stake either way, which makes the decision
+## cheap: DELETE for 11.4 MB back, or WIRE them and cave/forest/village get a
+## 2.5-3.5 minute composed bed instead of a 5-second loop. That is struktured's
+## call; the guard only ensures the 17 MB is visible while he makes it.
 const KNOWN_UNREACHABLE_AMBIENT_TRACKS: Array[String] = [
 	"ambient_cave",
 	"ambient_digital",
