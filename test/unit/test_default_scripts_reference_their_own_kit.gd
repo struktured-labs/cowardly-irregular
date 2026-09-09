@@ -1,6 +1,17 @@
 extends GutTest
 
 ## Every job's default autobattle script should only use abilities that job can actually have.
+##
+## ⚠️ CORRECTED 2026-09-09, same day: I first wrote that every one of Guardian's rules "can never
+## fire". That was a PROPERTY (not in the job's own kit) asserted as an OUTCOME (unfirable), which
+## is the substitution cowir-overworld named while committing it inside the commit documenting it.
+## Measured, the six split two ways and both are defects for different reasons:
+##   iron_guard · taunt        MONSTER abilities (brass_golem, spiteful_crow). No player job has
+##                             them. Genuinely unfirable — my original claim, true for these two.
+##   protect · backstab ·      other JOBS' kit (cleric, rogue). knows_ability covers a SECONDARY
+##   steal · cure              job, so these fire IF the player happens to have picked that exact
+##                             secondary. A default script cannot assume one, so it is still wrong
+##                             — but "can never fire" was overstated for four of the six.
 ## Three do not — and nobody had ever seen them run: the ladder that builds them was gated on a
 ## GameState method declared nowhere in src/, so it was UNREACHABLE until 2026-09-09. Fixing that
 ## dead lookup did not just restore behaviour, it exposed authoring nothing had ever executed
@@ -93,7 +104,7 @@ func test_no_new_default_script_references_an_ability_its_job_lacks() -> void:
 			if not (aid in listed):
 				unlisted.append("%s/%s" % [jid, aid])
 	assert_eq(unlisted.size(), 0,
-		"a default script uses an ability the job cannot know — the rule can never fire: " + str(unlisted))
+		"a default script uses an ability outside its job's own kit — unfirable, or firable only if the player picked a specific secondary job, which a default cannot assume: " + str(unlisted))
 
 func test_no_listed_mismatch_has_quietly_been_fixed() -> void:
 	var found := _mismatches()
