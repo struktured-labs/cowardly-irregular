@@ -190,6 +190,18 @@ func _setup_buildings() -> void:
 	_add_interior_door("MeltwaterClockDoor", "frosthold_meltwater_clock", "Enter Meltwater Clock", Vector2(15 * TILE_SIZE,6.5 * TILE_SIZE))
 
 
+	# Snow: warm lamps read hardest against the ice, and a wind break along the west wall.
+	_add_lamp_post(Vector2i(3, 7))
+	_add_lamp_post(Vector2i(19, 7))
+	_add_lamp_post(Vector2i(6, 16))
+	_add_lamp_post(Vector2i(16, 16))
+	_add_prop(VillagePropScript.Kind.BARREL, Vector2i(12, 4))
+	_add_prop(VillagePropScript.Kind.CRATE, Vector2i(13, 4))
+	_add_prop(VillagePropScript.Kind.CART, Vector2i(18, 4))
+	_add_prop(VillagePropScript.Kind.FENCE, Vector2i(3, 12))
+	_add_prop(VillagePropScript.Kind.WELL, Vector2i(20, 14))
+	_add_prop(VillagePropScript.Kind.TREE, Vector2i(24, 9))
+
 func _setup_treasures() -> void:
 	# 2x Hi-Potion behind lodge
 	var chest1 = TreasureChestScript.new()
