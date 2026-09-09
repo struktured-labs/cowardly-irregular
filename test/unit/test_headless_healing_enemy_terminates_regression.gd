@@ -130,3 +130,24 @@ func test_a_stalemate_signal_is_inert_when_not_grinding() -> void:
 	sys.is_grinding = false
 	sys.on_battle_stalemate()
 	assert_false(sys.is_grinding, "no-op outside a grind")
+
+
+func test_the_CONSUMER_IS_WIRED_not_just_present() -> void:
+	## My mutation removed stop_autogrind from on_battle_stalemate and watched this file go red —
+	## which proves the HELPER works and says nothing about whether anything CALLS it. That is the
+	## unit-versus-wiring gap I hit two hours ago on the action picker and shipped again here.
+	##
+	## The call lives in GameLoop, at the only place a headless result is consumed, and GameLoop is
+	## not instantiable in a unit test. A source pin is the RIGHT instrument for this particular
+	## claim rather than a substitute for a behavioural one: the question is literally "does a call
+	## site exist", which is a property of the text. It cannot tell you the call fires — the arms
+	## above cover that half — but it does catch the failure that actually happened to cadence #19,
+	## where a signal had three writers and no reader for months.
+	## ⚠️ MY FIRST PIN WAS ITSELF HOLLOW: it asserted contains("on_battle_stalemate"), which also
+	## matches the has_method("on_battle_stalemate") GUARD on the line above — so deleting the CALL
+	## left it green. A mention is not a call. Pin the invocation syntax, receiver and parens.
+	var src: String = load("res://src/GameLoop.gd").source_code
+	assert_true(src.contains("AutogrindSystem.on_battle_stalemate()"),
+		"GameLoop must CALL it — a has_method mention is not a call site, and this signal already went unread once")
+	assert_true(src.contains('result.get("termination_reason"'),
+		"and it must read the field off the battle result, not merely name the method")
