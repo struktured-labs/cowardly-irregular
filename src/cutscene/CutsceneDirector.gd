@@ -1227,7 +1227,11 @@ func _step_move_actor(step: Dictionary) -> void:
 		a.stand()
 		return
 	var speed: float = float(step.get("speed", CutsceneActor.DEFAULT_WALK_SPEED))
-	await a.walk_to(target, speed)
+	a.walk_to(target, speed)  # unawaited: a skip mid-walk must land the actor now, not after the walk
+	while not _skipping and is_instance_valid(a) and a._walking:
+		await get_tree().process_frame
+	if _skipping and is_instance_valid(a):
+		a.snap_walk()
 
 
 func _step_face_actor(step: Dictionary) -> void:
@@ -1295,8 +1299,7 @@ func _step_camera_focus(step: Dictionary) -> void:
 		_stage_cam_base_offset = cam.offset
 	var new_offset: Vector2 = cam.offset + (target - cam.get_screen_center_position())
 	_run_camera_tween(cam, new_offset, step)
-	# Await the tween via a fresh handle — _run_camera_tween returns it.
-	await _last_camera_tween.finished
+	await _await_pan(cam, new_offset)
 
 
 func _step_camera_restore(step: Dictionary) -> void:
@@ -1308,7 +1311,18 @@ func _step_camera_restore(step: Dictionary) -> void:
 		cam.offset = _stage_cam_base_offset
 		return
 	_run_camera_tween(cam, _stage_cam_base_offset, step)
-	await _last_camera_tween.finished
+	await _await_pan(cam, _stage_cam_base_offset)
+
+
+## Awaits the running pan unless a skip lands first — then the camera snaps to `dest`.
+func _await_pan(cam: Camera2D, dest: Vector2) -> void:
+	var t := _last_camera_tween
+	while not _skipping and is_instance_valid(t) and t.is_valid() and t.is_running():
+		await get_tree().process_frame
+	if _skipping and is_instance_valid(cam):
+		if is_instance_valid(t) and t.is_valid():
+			t.kill()
+		cam.offset = dest
 
 
 ## Cinematic camera pan — SINE ease-in-out by default (film-camera feel: smooth start, accelerate through middle, settle at target). Optional `ease` step field: "linear" | "in" | "out" | "in_out". `trans` field selects transition ("sine" | "quad" | "cubic" | "linear"), default sine.
