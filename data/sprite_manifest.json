@@ -3628,10 +3628,10 @@
       "source": "reuses shadow_knight sheet — the Warden wears the guard's own plate; freed when Mordaine got her T2 sheet | 2026-09-06 facing audit (struktured: 'lots of backward sprites'): drawn facing LEFT, flip baked into the pixels per-frame; monsters face RIGHT."
     },
     "dark_knight": {
-      "path": "res://assets/sprites/monsters/shadow_knight.png",
+      "path": "res://assets/sprites/monsters/dark_knight.png",
       "frame_width": 256,
       "frame_height": 256,
-      "fps": 6,
+      "fps": 8,
       "tier": "T1",
       "animations": {
         "idle": {
@@ -3651,7 +3651,8 @@
           "end": 7
         }
       },
-      "generator": "PLACEHOLDER ALIAS -- points at shadow_knight.png, no new art. struktured 2026-09-06 authorised the reuse when he named the Dark Knight field elite: 'sprite = shadow_knight sheet placeholder unless cowir-sprites has better'. Replace the path when a real sheet lands; nothing else here needs to change."
+      "generator": "PLACEHOLDER ALIAS -- points at shadow_knight.png, no new art. struktured 2026-09-06 authorised the reuse when he named the Dark Knight field elite: 'sprite = shadow_knight sheet placeholder unless cowir-sprites has better'. Replace the path when a real sheet lands; nothing else here needs to change.",
+      "source": "AI-gen 2026-09-09 (gpt-image-1 medium, artist-anchored, $0.042). The W1 BD2 FIELD ELITE finally looks like itself: it shared shadow_knight.png, a placeholder cowir-main put there in .228 to clear a magenta box, so the one monster a player is meant to stop and stare at rendered as an ordinary guard. Briefed from its SHIPPED monsters.json line ('It does not wander, it does not hunt, and it does not leave. It is simply here, and it is watching you') plus struktured's 'sits there menacingly glowing' — hence the planted greatsword, the motionless stance and the violet helm-glow. ⚠️ RECOVERED FROM THE RAW, NOT THE PIPELINE OUTPUT: the generator returned a near-black background (12,12,12) behind black armour (0,0,0), L1 distance 38, and the standard cleanup keyed the subject away with it — the shipped strip came out 96% transparent, i.e. empty. Re-cut with a border-connected flood at tolerance 10, which separates them; final sheet is 60.5% transparent. HORIZONTALLY FLIPPED per-frame: generated facing left, monsters face right; at 256px there is no engine flip so THE FLIP IS BAKED and is only correct above the 128px threshold. T1, not final — the sprite is near-black and may read poorly at night; the violet eyes are its only focal point. shadow_knight.png untouched and still serves shadow_knight + castle_warden (the latter deliberately, per its own note)."
     }
   },
   "npc_sheets": {
