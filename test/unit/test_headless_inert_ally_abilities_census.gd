@@ -293,8 +293,15 @@ func test_the_map_derivation_reads_the_real_function() -> void:
 const STARTER_JOB_TYPE := 0
 
 
-## ability id -> unlock level, for every STARTER job only. Reads both stores a party loads from.
-func _starter_reachable_abilities() -> Dictionary:
+## ⛔ CORRECTED 2026-09-09: this read STARTER jobs only, because a comment of mine asserted that
+## advanced/meta jobs are "gated behind debug mode" and a grinding party cannot have them. I never
+## grepped the consumer. JobSystem.is_job_unlocked returns true for a starter job, true under
+## debug, and otherwise consults unlock_condition — so debug is a BYPASS, not the gate. Measured:
+## all 4 advanced jobs and 2 of 5 meta jobs (bossbinder, skiptrotter) carry unlock_conditions and
+## are reachable in normal play. My "2 reachable" was really 7.
+## cowir-main's rule, the day it went fleet-wide: a comment naming a consumer is a QUERY, not a
+## fact — and this one was mine, in the guard whose job is to stop exactly this kind of overreach.
+func _player_reachable_abilities() -> Dictionary:
 	var out: Dictionary = {}
 	var f := FileAccess.open("res://data/jobs.json", FileAccess.READ)
 	if f == null:
@@ -306,7 +313,12 @@ func _starter_reachable_abilities() -> Dictionary:
 		var j = jobs[jid]
 		if typeof(j) != TYPE_DICTIONARY:
 			continue
-		if int(j.get("type", j.get("job_type", -1))) != STARTER_JOB_TYPE:
+		## Starter always, everything else only if it carries an unlock_condition — mirroring
+		## is_job_unlocked, minus the debug bypass, which is not "normal play".
+		var jt: int = int(j.get("type", j.get("job_type", -1)))
+		var cond = j.get("unlock_condition", {})
+		var unlockable: bool = (jt == STARTER_JOB_TYPE) or (typeof(cond) == TYPE_DICTIONARY and not (cond as Dictionary).is_empty())
+		if not unlockable:
 			continue
 		for a in j.get("abilities", []):
 			out[str(a)] = 1
@@ -322,7 +334,7 @@ func _starter_reachable_abilities() -> Dictionary:
 func test_the_census_separates_REACHABLE_from_unreachable() -> void:
 	## The headline count is not the actionable one. Print the split so nobody (including me)
 	## reads 20 as 20 problems.
-	var reach := _starter_reachable_abilities()
+	var reach := _player_reachable_abilities()
 	var hit: Array[String] = []
 	var unreachable := 0
 	for a in _inert_ids():
@@ -331,7 +343,7 @@ func test_the_census_separates_REACHABLE_from_unreachable() -> void:
 		else:
 			unreachable += 1
 	hit.sort()
-	gut.p("INERT + REACHABLE BY A STARTER JOB (%d): %s" % [hit.size(), str(hit)])
+	gut.p("INERT + REACHABLE WITHOUT DEBUG (%d): %s" % [hit.size(), str(hit)])
 	gut.p("INERT but unreachable in a normal grind (%d): meta/advanced jobs or monster abilities" % unreachable)
 	assert_gt(reach.size(), 0, "control: the starter-kit store must load, else everything reads unreachable")
 
@@ -340,8 +352,15 @@ func test_no_NEW_starter_reachable_ability_becomes_inert() -> void:
 	## The ratchet that matters. These two are known and go to struktured as design questions —
 	## raise lands in the headless-revival gap he already owns. A THIRD one appearing is a
 	## regression and names itself here rather than hiding inside an aggregate of 20.
-	const KNOWN := ["flee", "raise"]
-	var reach := _starter_reachable_abilities()
+	## The seven a player can actually reach without debug mode. Was ["flee","raise"] while this
+	## read starter jobs only — skiptrotter's four and summoner's recursive_summon were invisible.
+	## EIGHT, not the seven I first wrote: this ratchet caught my own hardcoded list being short by
+	## new_game_plus_warp (skiptrotter, type 2, unlock_condition "beat_game_once"). I had produced
+	## the seven with a throwaway script and the guard — which reads the real store — disagreed and
+	## named the missing one. That is the ratchet doing its job against its own author.
+	const KNOWN := ["flee", "raise", "bypass_puzzle", "sequence_break", "skip_cutscene",
+		"warp_to_boss", "recursive_summon", "new_game_plus_warp"]
+	var reach := _player_reachable_abilities()
 	var unexpected: Array[String] = []
 	for a in _inert_ids():
 		if reach.has(a) and not KNOWN.has(a):
@@ -353,8 +372,11 @@ func test_no_NEW_starter_reachable_ability_becomes_inert() -> void:
 func test_the_reachability_reader_is_not_vacuous() -> void:
 	# ARM+: an empty or wrong store would make every ability look unreachable and the ratchet above
 	# would pass no matter what broke.
-	var reach := _starter_reachable_abilities()
+	var reach := _player_reachable_abilities()
 	assert_true(reach.has("cure"), "control: cure is a Cleric base ability and must resolve")
 	assert_true(reach.has("raise"), "control: raise is level-gated and must still be found")
 	assert_eq(int(reach.get("raise", -1)), 10, "raise unlocks at level 10 — the gate must be READ, not assumed")
-	assert_false(reach.has("undo_death"), "control: a META job ability must NOT count as starter-reachable")
+	assert_false(reach.has("undo_death"),
+		"control: undo_death belongs to Time Mage, which has NO unlock_condition — debug-only, so not reachable")
+	assert_true(reach.has("warp_to_boss"),
+		"control: skiptrotter HAS an unlock_condition, so its abilities ARE reachable — the case my starter-only reader missed")
