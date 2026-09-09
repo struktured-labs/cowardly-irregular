@@ -1859,7 +1859,7 @@
     },
     "w2_ability_heal": {
       "file": "assets/audio/sfx/ability_heal.ogg",
-      "prompt": "Garden hose spraying gently with backyard wind chimes tinkling, pleasant suburban afternoon, peaceful neighborhood sounds",
+      "prompt": "Garden hose spraying gently onto grass, warm suburban afternoon air, soft sprinkler hiss settling into calm — smooth and continuous with no birdsong and no chirping and no tinkling. NOT YET GENERATED: this entry still points at ability_heal.ogg (the W1 choir). The prompt was rewritten 2026-09-09 because it requested wind chimes TINKLING — the exact texture struktured rejected on the W1 cure, recorded in ability_heal's own prompt.",
       "duration_seconds": 1.2,
       "prompt_influence": 0.7,
       "note": "repointed 2026-08-30: generated asset was a literal bird chirp (>8.8kHz mean peak, >82% energy above 4kHz). struktured: no animal noises on ability SFX unless the ability is animal-themed."
