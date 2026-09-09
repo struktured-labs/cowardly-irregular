@@ -238,7 +238,9 @@ func _setup_buildings() -> void:
 	_add_lamp_post(Vector2i(23, 7))
 	_add_lamp_post(Vector2i(8, 16))
 	_add_prop(VillagePropScript.Kind.PLANTER, Vector2i(10, 15))
-	_add_prop(VillagePropScript.Kind.PLANTER, Vector2i(17, 15))
+	# NOT (17,15): the prop's collider spans the cell BELOW its anchor, and community_center_exit
+	# spawns the player at (17,16) — a planter there drops you inside solid geometry on every exit.
+	_add_prop(VillagePropScript.Kind.PLANTER, Vector2i(19, 15))
 	_add_prop(VillagePropScript.Kind.PLANTER, Vector2i(5, 12))
 	_add_prop(VillagePropScript.Kind.FENCE, Vector2i(24, 14))
 	_add_prop(VillagePropScript.Kind.FENCE, Vector2i(24, 15))
