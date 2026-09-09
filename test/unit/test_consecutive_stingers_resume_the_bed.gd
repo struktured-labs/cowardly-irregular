@@ -64,3 +64,31 @@ func test_a_normal_track_after_a_stinger_still_becomes_the_resume_target() -> vo
 	SoundManager.play_music("job_mage_special")
 	assert_eq(str(SoundManager._stinger_resume_state.get("track", "")), "boss_medieval",
 		"after bed -> stinger -> NEW bed -> stinger, the resume target must be the new bed; got '%s'. Otherwise a phase-2 swap during a Limit Break makes every later stinger restore the old track." % SoundManager._stinger_resume_state.get("track", ""))
+
+
+func test_the_captured_state_ACTUALLY_restores_the_bed() -> void:
+	## ⚠️ The two arms above assert a PROPERTY — the resume dict holds the right
+	## track, and one listener is armed. Neither shows the OUTCOME: that the bed
+	## comes BACK. cowir-overworld made exactly this substitution today
+	## ("asserted a property instead of the outcome") and said so inside the
+	## commit documenting it, so it is worth closing here rather than nodding at.
+	##
+	## What this CAN show headlessly: the restore call the armed lambda makes
+	## does put the bed back. What it CANNOT show: that `finished` fires at all
+	## on a real 4.9s stinger — that needs wall-clock playback, and the listener
+	## count above is the only evidence for the wiring half. Two arms, two
+	## halves, neither sufficient alone.
+	SoundManager.play_music("battle_medieval")
+	SoundManager.play_music("job_bard_special")
+	var captured: Dictionary = SoundManager._stinger_resume_state.duplicate()
+	assert_eq(str(captured.get("track", "")), "battle_medieval",
+		"CONTROL: nothing useful was captured, so restoring it proves nothing")
+
+	## Exactly what the armed one-shot does when the stinger ends.
+	SoundManager.restore_music_state(captured)
+
+	assert_eq(SoundManager._current_music, "battle_medieval",
+		"restore_music_state left _current_music as '%s' — the resume is wired and captures correctly but does not actually put the bed back" % SoundManager._current_music)
+	assert_true(SoundManager._music_player.playing,
+		"the bed was restored as state but nothing is playing — silence after every Limit Break")
+
