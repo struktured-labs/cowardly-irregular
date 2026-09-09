@@ -2412,8 +2412,11 @@ func _ai_debuffer(combatant: Combatant, abilities: Array, alive_allies: Array, a
 
 func _ai_tank(combatant: Combatant, abilities: Array, alive_allies: Array, alive_enemies: Array) -> Dictionary:
 	"""Tank AI: use defensive abilities, protect allies, heavy single hits"""
-	var defensive_abilities = abilities.filter(func(a): return a.get("type", "") in ["buff", "support", "defensive"])
-	var physical_abilities = abilities.filter(func(a): return a.get("type", "") == "physical")
+	## "summon" joins the utility pool and "magic" the offensive one, because this filter was
+	## PERMISSION where it meant PREFERENCE: Pyrroth and Glacius classify as tanks and their breath
+	## is magic, so neither dragon could ever pick it. Same for the Rat King's summons.
+	var defensive_abilities = abilities.filter(func(a): return a.get("type", "") in ["buff", "support", "defensive", "summon"])
+	var physical_abilities = abilities.filter(func(a): return a.get("type", "") in ["physical", "magic"])
 
 	# Use defensive/buff ability if available (40% chance)
 	if defensive_abilities.size() > 0 and randf() < 0.4:
