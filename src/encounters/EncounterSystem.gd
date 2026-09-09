@@ -368,6 +368,7 @@ func _create_enemy_data(enemy_id: String) -> Dictionary:
 			"elemental_weaknesses": db_entry.get("weaknesses", []),
 			"elemental_resistances": db_entry.get("resistances", []),
 			"abilities": db_entry.get("abilities", []),
+			"level": db_entry.get("level", 1),
 			"exp_reward": db_entry.get("exp_reward", 10),
 			"gold_reward": db_entry.get("gold_reward", 5),
 			"drop_table": db_entry.get("drop_table", [])
@@ -687,9 +688,18 @@ func _apply_field_elite_scaling(data: Dictionary) -> Dictionary:
 	if sc.is_empty():
 		return data
 
+	# base_level was reading a DEFAULT OF 1, because "level" was never copied into the enemy
+	# data dict above -- so growth compounded from 1 instead of the authored level and every
+	# elite fought 1.4x-1.7x tougher than the table says, worst at low party levels. Measured
+	# 2026-09-09: dark_knight (authored 12) resolved to level 6 with hp 10920 against a
+	# designed 7800. The source-level test that shipped with it asserted only that this
+	# function EXISTS.
 	var base_level := float(data.get("level", 1))
 	var party_avg := _party_average_level()
 	var target := (party_avg if party_avg > 0.0 else base_level) + float(sc.get("level_offset", 5))
+	# ...and never below its authored level: a field elite is unfair by definition, so meeting
+	# one with a low-level party must not hand you a WEAKER monster than the table describes.
+	target = maxf(target, base_level)
 	# Growth compounds the gap the further the elite is pinned above where it was authored,
 	# so a late-game party does not out-stat a rare that was written for chapter one.
 	var growth := 1.0 + maxf(0.0, target - base_level) * float(sc.get("per_level_stat_growth", 0.0))

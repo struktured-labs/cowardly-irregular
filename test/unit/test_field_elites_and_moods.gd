@@ -151,6 +151,72 @@ func test_elite_scaling_is_data_not_code() -> void:
 	assert_eq(bad, [], "elite roster must resolve: %s" % str(bad))
 
 
+## THE SIMULATION CLAIM, and the reason the source-text test below is not enough on its own.
+## That one asserts this file CONTAINS the right words. It shipped green in .225 while the
+## scaling read a DEFAULT LEVEL OF 1 -- "level" was never copied into the enemy-data dict --
+## so growth compounded from 1 instead of the monster's authored level and every field elite
+## fought 1.4x-1.7x tougher than the table says, worst at low party levels. dark_knight
+## (authored 12) resolved to LEVEL 6. A test that reads source can never see that; only
+## resolving a monster through the real path can.
+func test_an_elite_actually_resolves_to_the_stats_the_table_describes() -> void:
+	var es: Node = get_tree().root.get_node_or_null("EncounterSystem")
+	var gs: Node = get_tree().root.get_node_or_null("GameState")
+	assert_not_null(es, "EncounterSystem autoload")
+	assert_not_null(gs, "GameState autoload")
+	if es == null or gs == null:
+		return
+
+	var cfg := _read_json(ELITE_DATA)
+	var sc: Dictionary = cfg.get("scaling", {})
+	var monsters := _read_json("res://data/monsters.json")
+	var dk: Dictionary = monsters.get("dark_knight", {})
+	assert_true(dk.get("field_elite", false), "dark_knight must be the authored field elite")
+	var authored_level := float(dk.get("level", 0))
+	var authored_hp := float(dk.get("stats", {}).get("max_hp", 0))
+	assert_gt(authored_level, 1.0, "CONTROL: the authored level must be > 1, or the bug this defends is unobservable")
+
+	var saved: Array[Dictionary] = gs.player_party
+	var party: Array[Dictionary] = []
+	for i in range(4):
+		party.append({"name": "probe%d" % i, "job_level": 10})
+	gs.player_party = party
+
+	var d: Dictionary = es._create_enemy_data("dark_knight")
+
+	# level is pinned ABOVE the party, never below the monster's own authored level
+	var expect_level := maxf(10.0 + float(sc.get("level_offset", 5)), authored_level)
+	assert_eq(int(d.get("level", -1)), int(round(expect_level)),
+		"an elite met by a level-10 party must be level %d" % int(round(expect_level)))
+
+	# growth is measured from the AUTHORED level, which is the half that was broken
+	var growth := 1.0 + maxf(0.0, expect_level - authored_level) * float(sc.get("per_level_stat_growth", 0.0))
+	var expect_hp := int(round(authored_hp * float(sc.get("hp_multiplier", 1.0)) * growth))
+	assert_eq(int(d.get("max_hp", -1)), expect_hp,
+		"hp must follow authored x multiplier x growth-from-AUTHORED-level (%d). Reading a default base of 1 inflates this ~1.7x" % expect_hp)
+
+	# CONTROL: a non-elite must come back untouched, or "scaled" is meaningless
+	var plain: Dictionary = es._create_enemy_data("goblin")
+	var goblin_hp := float(monsters.get("goblin", {}).get("stats", {}).get("max_hp", 0))
+	assert_eq(int(plain.get("max_hp", -1)), int(goblin_hp),
+		"CONTROL: an ordinary monster must resolve to its authored hp, unscaled")
+
+	# THE LOW-PARTY CASE, where the authored floor is load-bearing. Without it a party below
+	# (authored_level - level_offset) meets an elite WEAKER than its own table entry -- the
+	# opposite of "unfairly strong". Mutating the floor away is green at party 10 (the target
+	# already clears the authored level there), so this case is what actually guards it.
+	var low: Array[Dictionary] = []
+	for i in range(3):
+		low.append({"name": "low%d" % i, "job_level": 5})
+	gs.player_party = low
+	var dlow: Dictionary = es._create_enemy_data("dark_knight")
+	assert_gte(float(dlow.get("level", 0)), authored_level,
+		"a field elite met by a weak party must never resolve BELOW its authored level %d" % int(authored_level))
+	assert_gte(float(dlow.get("max_hp", 0)), authored_hp * float(sc.get("hp_multiplier", 1.0)),
+		"nor below its authored hp times the table's multiplier")
+
+	gs.player_party = saved
+
+
 func test_the_source_of_the_scaling_is_the_json_not_a_literal() -> void:
 	# The failure this defends: someone "simplifies" the table away into constants, the JSON
 	# goes stale, and retuning difficulty silently stops working while every test still passes.
