@@ -16,6 +16,9 @@ const TYPE_SFX: Dictionary = {
 	"song": "ability_song",
 	"summon": "ability_summon",
 	"revival": "ability_revive",
+	## 2026-09-09, second pass: the last two types with no arm.
+	"mp_restore": "ability_mp_restore",
+	"escape": "ability_flee",
 }
 
 ## Types that must NOT have been swept in. support is 85 abilities whose cues are struktured's
@@ -128,6 +131,23 @@ func test_riff_is_a_chord_not_a_sword() -> void:
 	var abilities: Dictionary = _abilities()
 	assert_eq(str((abilities.get("riff", {}) as Dictionary).get("animation", "")), "riff",
 		"control: riff's animation field changed — the engine grouping this assert relies on has moved")
+
+
+func test_the_free_moves_are_not_sword_swings() -> void:
+	## pray and channel are the Cleric's and Mage's FREE MOVES — the action those two jobs take most
+	## often — and both played ability_physical, a sword unsheathing, against descriptions that say
+	## "offer a brief prayer" and "focus the arcane currents". They reach play_ability through the
+	## ordinary ability path: BattleCommandMenu._build_free_move_item delegates a free_move of
+	## type "ability" to _build_ability_menu_item, so nothing about them is special-cased.
+	var sm: Node = _sm()
+	for aid in ["pray", "channel"]:
+		assert_eq(str(sm._ability_sounds.get(aid, "ability_physical")), "ability_mp_restore",
+			"%s is a free move that restores MP — it must not play a sword" % aid)
+	assert_eq(str(sm._ability_sounds.get("flee", "ability_physical")), "ability_flee",
+		"flee is the Rogue's escape — it must not play a sword")
+	## NOT ability_heal: that is the angelic HP cue. Distinguishing them is the point of the asset.
+	assert_ne(str(sm._ability_sounds.get("pray", "")), "ability_heal",
+		"pray must not reuse the HP-heal cue — MP restore is a different event to the player")
 
 
 func test_physical_and_support_were_not_swept_in() -> void:

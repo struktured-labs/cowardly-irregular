@@ -66,6 +66,7 @@ PINNED = [
     # ability_physical. Synthesised, so the sha256 here is what stops a later regenerate.
     "ability_song", "ability_summon", "ability_revive",
     "ability_poison", "ability_earth", "ability_wind", "ability_arcane",
+    "ability_mp_restore", "ability_flee",
     "ability_riff",
 ]
 # BIDIRECTIONAL. The first version only looked for a RISE, so strike_dark sweeping 2670 -> 144 Hz
