@@ -630,11 +630,21 @@ func _step_fade_from_black(step: Dictionary) -> void:
 	_effects_rect.visible = false
 
 
+## A hold that a skip cuts short: holding B for 1.5s and then sitting through the rest of a wait read as an ignored press.
+func _sleep(duration: float) -> void:
+	if duration <= 0.0 or _skipping:
+		return
+	var elapsed := 0.0
+	while not _skipping and elapsed < duration:
+		await get_tree().process_frame
+		elapsed += get_process_delta_time()
+
+
 func _step_wait(step: Dictionary) -> void:
 	var duration = step.get("duration", 1.0)
 	if _skipping:
 		return
-	await get_tree().create_timer(duration).timeout
+	await _sleep(duration)
 
 
 func _step_letterbox_in(step: Dictionary) -> void:
@@ -1240,7 +1250,7 @@ func _step_emote(step: Dictionary) -> void:
 	var duration: float = float(step.get("duration", 1.0))
 	a.show_emote(str(step.get("emote", "exclaim")), duration)
 	if duration > 0.0:
-		await get_tree().create_timer(duration).timeout
+		await _sleep(duration)
 
 
 func _step_hop(step: Dictionary) -> void:
@@ -1258,7 +1268,7 @@ func _step_say(step: Dictionary) -> void:
 	var duration: float = float(step.get("duration", 1.5))
 	a.say(str(step.get("text", "")), duration)
 	if bool(step.get("wait", true)) and duration > 0.0:
-		await get_tree().create_timer(duration).timeout
+		await _sleep(duration)
 
 
 ## Pan the live camera to frame an actor or point; offset-tween holds because
@@ -1364,7 +1374,7 @@ func _step_nearby_scatter(step: Dictionary) -> void:
 		a.walk_to(dest, speed)
 		longest = maxf(longest, a.global_position.distance_to(dest) / maxf(1.0, speed))
 	if not _skipping and longest > 0.0:
-		await get_tree().create_timer(longest).timeout
+		await _sleep(longest)
 
 
 ## Accept either an actor id or an [x,y] pair; Vector2.INF means unresolvable.
@@ -1451,7 +1461,7 @@ func _step_chapter_title(step: Dictionary) -> void:
 	await tween.finished
 
 	# Hold
-	await get_tree().create_timer(hold_duration).timeout
+	await _sleep(hold_duration)
 
 	# Fade out
 	var fade_out = create_tween()
@@ -1483,7 +1493,7 @@ func _step_boss_intro(step: Dictionary) -> void:
 	if not _skipping:
 		var shake_tween = create_tween()
 		shake_tween.tween_property(vignette, "color:a", 0.7, 0.3)
-	await get_tree().create_timer(0.3).timeout
+	await _sleep(0.3)
 
 	# Boss name label — large, dramatic
 	var name_label = Label.new()
@@ -1531,7 +1541,7 @@ func _step_boss_intro(step: Dictionary) -> void:
 		await title_tween.finished
 
 	# Hold
-	await get_tree().create_timer(1.5).timeout
+	await _sleep(1.5)
 
 	# Fade everything out
 	var fade = create_tween()
