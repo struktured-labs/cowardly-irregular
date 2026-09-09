@@ -630,6 +630,10 @@ func _step_fade_from_black(step: Dictionary) -> void:
 	_effects_rect.visible = false
 
 
+## Held confirm runs the scene's holds this many times faster — the same hold that fast-forwards the dialogue box, so "hold A" means one thing across a scene.
+const FAST_FORWARD_RATE: float = 4.0
+
+
 ## A hold that a skip cuts short: holding B for 1.5s and then sitting through the rest of a wait read as an ignored press.
 func _sleep(duration: float) -> void:
 	if duration <= 0.0 or _skipping:
@@ -637,7 +641,8 @@ func _sleep(duration: float) -> void:
 	var elapsed := 0.0
 	while not _skipping and elapsed < duration:
 		await get_tree().process_frame
-		elapsed += get_process_delta_time()
+		var rate: float = FAST_FORWARD_RATE if Input.is_action_pressed("ui_accept") else 1.0
+		elapsed += get_process_delta_time() * rate
 
 
 func _step_wait(step: Dictionary) -> void:
