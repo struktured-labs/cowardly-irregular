@@ -26,8 +26,17 @@ const ANGRY_SPEED: float = 145.0
 ## what makes a chase read as a reaction instead of a magnet.
 const ALERT_RADIUS: float = 150.0
 const ALERT_DURATION: float = 0.55
-## A monster this far below the party's average level flees instead of charging.
+## A monster this far below the party's average level is ELIGIBLE to flee.
 const AFRAID_LEVEL_GAP: int = 4
+## ...and this fraction of eligible monsters actually does. struktured 2026-09-06 asked that
+## "SOME monsters should be angry or alerted or afraid", a MIX. The level gap alone is an
+## absolute threshold, so it swallows the whole roster as the party levels: measured
+## 2026-09-09, at party level 10 every monster in W1, W2 and W3 flees, and by 20 every monster
+## in every world does. You outlevel a world before you leave it, so "some are afraid" became
+## "everything runs away" for most of the game, and every encounter became a chase (the player
+## moves at 240 against a flee speed of 130 -- it is a chore, not an escape).
+## Per MONSTER, not per frame: a disposition it is born with, so it never flickers mid-chase.
+const TIMID_FRACTION: float = 0.5
 
 ## Mood, distinct from _state (which is locomotion). struktured 2026-09-06: "some monsters
 ## should be angry or alerted or afraid on overworld etc, not just wandering aimlessly, but
@@ -247,7 +256,16 @@ func _tick_mood(delta: float) -> void:
 ## Afraid is for monsters much weaker than the party, per the ask. Reads the party's average
 ## level from GameState; absent that (tests, early boot) nothing is outmatched and every
 ## monster is simply angry -- the pre-mood behaviour.
+## Deterministic from the spawn, so the same monster always has the same nerve and two runs of
+## the same seed agree. Nothing about it changes while the player is looking.
+func _is_timid() -> bool:
+	var h: int = (int(_spawn_origin.x) * 73856093) ^ (int(_spawn_origin.y) * 19349663) ^ monster_id.hash()
+	return float(absi(h) % 1000) / 1000.0 < TIMID_FRACTION
+
+
 func _is_outmatched() -> bool:
+	if not _is_timid():
+		return false
 	var gs: Node = get_tree().root.get_node_or_null("GameState") if is_inside_tree() else null
 	if gs == null:
 		return false

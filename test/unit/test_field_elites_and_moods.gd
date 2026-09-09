@@ -378,3 +378,60 @@ func test_walking_away_from_an_elite_does_not_delete_it() -> void:
 	# is really a broken cull and this test proves nothing about elites.
 	assert_false(ordinary in sp._monsters,
 		"CONTROL: an ordinary roamer at the same distance must still be culled")
+
+## "SOME monsters should be angry or alerted or AFRAID" -- a MIX, and the level gap alone
+## cannot deliver one. It is an absolute threshold, so it swallows the whole roster as the
+## party levels: measured 2026-09-09, at party level 10 every monster in W1/W2/W3 flees and by
+## 20 every monster in every world does. You outlevel a world before you leave it, so the
+## common case was "everything runs away", and since the player moves at 240 against a flee
+## speed of 130 that is a chase on every single encounter rather than an escape.
+func test_fear_is_a_disposition_so_a_world_always_has_both_kinds() -> void:
+	var RM := load("res://src/exploration/RoamingMonster.gd")
+	var host := Node2D.new()
+	add_child_autofree(host)
+
+	var timid := 0
+	var bold := 0
+	for i in range(120):
+		var m = RM.new()
+		m.monster_id = "goblin"
+		host.add_child(m)
+		m._spawn_origin = Vector2((i * 37) % 3000, (i * 53) % 2000)
+		if m._is_timid():
+			timid += 1
+		else:
+			bold += 1
+
+	assert_gt(timid, 10, "a world with no timid monsters has no AFRAID mood at all (%d/120)" % timid)
+	assert_gt(bold, 10, "a world where every outmatched monster flees makes every late-game encounter a chase (%d/120 bold)" % bold)
+
+	# STABILITY: a monster must not change its nerve while the player is looking at it.
+	var m2 = RM.new()
+	m2.monster_id = "goblin"
+	host.add_child(m2)
+	m2._spawn_origin = Vector2(512, 384)
+	var first: bool = m2._is_timid()
+	for i in range(30):
+		assert_eq(m2._is_timid(), first, "timidity must be a fixed disposition, not a per-frame roll")
+
+	# and a BOLD monster stays bold even when the party badly outlevels it
+	var gs: Node = get_tree().root.get_node_or_null("GameState")
+	if gs != null:
+		var saved: Array[Dictionary] = gs.player_party
+		var party: Array[Dictionary] = []
+		for i in range(4):
+			party.append({"name": "p%d" % i, "job_level": 30})
+		gs.player_party = party
+		var found_bold := false
+		for i in range(120):
+			var m3 = RM.new()
+			m3.monster_id = "goblin"
+			host.add_child(m3)
+			m3._spawn_origin = Vector2((i * 91) % 2500, (i * 41) % 1700)
+			if not m3._is_timid():
+				found_bold = true
+				assert_false(m3._is_outmatched(),
+					"a BOLD monster must charge even a level-30 party -- otherwise the mix collapses back to all-flee")
+				break
+		assert_true(found_bold, "CONTROL: the sweep must actually find a bold monster, or the assert above never ran")
+		gs.player_party = saved
