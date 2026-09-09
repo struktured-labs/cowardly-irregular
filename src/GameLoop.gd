@@ -5507,6 +5507,9 @@ func _resolve_headless_battle(enemy_data: Array) -> void:
 		enemies.append(enemy)
 
 	var result = resolver.resolve_battle(party, enemies)
+	## cowir-autogrind: the resolver has set termination_reason since cadence #19 and nothing read it.
+	if str(result.get("termination_reason", "")) == "stalemate" and AutogrindSystem.has_method("on_battle_stalemate"):
+		AutogrindSystem.on_battle_stalemate()
 	var victory = result.get("victory", false)
 	var exp_gained = result.get("exp_gained", 0)
 	# Tick 342: pick up gold_gained too — the resolver (tick 341) pre-applied
