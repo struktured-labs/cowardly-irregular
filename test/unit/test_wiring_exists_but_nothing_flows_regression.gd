@@ -69,6 +69,26 @@ func _src_files() -> Array[String]:
 	return out
 
 
+## The main scene's root node name, derived from project.godot -> the .tscn's first
+## [node name="..."] line. Empty string if either read fails, which the caller asserts on
+## rather than silently exempting nothing (or exempting a stale name).
+func _main_scene_root_name() -> String:
+	var scene_path := ""
+	for raw in _read(PROJECT).split("\n"):
+		var line := raw.strip_edges()
+		if line.begins_with("run/main_scene="):
+			scene_path = line.split("=", true, 1)[1].strip_edges().trim_prefix('"').trim_suffix('"')
+			break
+	if scene_path == "":
+		return ""
+	var scene_text: String = FileAccess.get_file_as_string(scene_path)
+	if scene_text == "":
+		return ""
+	var rx := RegEx.create_from_string('\\[node name="([^"]+)"')
+	var m := rx.search(scene_text)
+	return m.get_string(1) if m != null else ""
+
+
 func _registered_autoloads() -> Array[String]:
 	var out: Array[String] = []
 	var in_section := false
@@ -119,11 +139,22 @@ func test_every_autoload_lookup_addresses_a_registered_autoload() -> void:
 	assert_gt(addressed.size(), 10,
 		"found only %d addressed names — the regexes are not matching the real call shapes" % addressed.size())
 
+	# THE EXEMPTION DERIVES ITSELF RATHER THAN RESTATING A JUDGEMENT.
+	# GameLoop is legitimately addressable as /root/GameLoop without being an autoload,
+	# because it is the MAIN SCENE'S ROOT NODE. Hardcoding the string "GameLoop" would
+	# state that as a fact and then never re-check it — so renaming the main scene, or
+	# pointing run/main_scene somewhere else, would leave this quietly skipping a name
+	# that no longer resolves, forever, with no transition for a rot check to detect.
+	# That is @cowir-sprites' 2026-09-09 form of the EXPIRED shape: an exception whose
+	# reason is not re-computable cannot expire on its own. So compute it — read
+	# run/main_scene from project.godot and take the root node's name out of the scene.
+	var main_root := _main_scene_root_name()
+	assert_ne(main_root, "",
+		"could not derive the main scene's root node from project.godot's run/main_scene — the exemption below would either skip nothing or skip the wrong name")
+
 	var unregistered: Array[String] = []
 	for n in addressed.keys():
-		# GameLoop is the main scene's ROOT NODE (GameLoop.tscn), so /root/GameLoop
-		# resolves at runtime without being an autoload. Named, not pattern-matched.
-		if str(n) == "GameLoop":
+		if str(n) == main_root:
 			continue
 		if not registered.has(str(n)):
 			unregistered.append("%s (in %s)" % [n, addressed[n]])
