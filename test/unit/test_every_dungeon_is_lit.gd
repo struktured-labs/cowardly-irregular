@@ -17,20 +17,58 @@ extends GutTest
 ## lighting rather than of its constructor.
 
 const DUNGEON_DIR := "res://src/maps/dungeons"
-const NOT_DUNGEONS := ["BossTrigger.gd", "DragonCave.gd"]
 
 
+## SELECTED BY SHAPE, NOT BY A SKIP LIST (2026-09-09, after the fleet's suppression audit).
+## This read `NOT_DUNGEONS := ["BossTrigger.gd", "DragonCave.gd"]`. Both entries were TRUE --
+## BossTrigger extends Area2D and is a component, DragonCave is a base nothing instantiates -- but a
+## list only stays true by someone rechecking it, and the failure is silent in the direction that
+## matters: a new component dropped in this directory would be BUILT and reported unlit, and a new
+## base would be skipped forever. Derive both instead. A file is out if its extends-chain roots at
+## something other than Node2D (components), or if another file in the directory extends it (bases).
 func _dungeon_scripts() -> Array:
-	var out: Array = []
+	var files: Array = []
 	var dir := DirAccess.open(DUNGEON_DIR)
 	if dir == null:
-		return out
+		return files
 	dir.list_dir_begin()
 	var f := dir.get_next()
 	while f != "":
-		if f.ends_with(".gd") and not (f in NOT_DUNGEONS):
-			out.append(f)
+		if f.ends_with(".gd"):
+			files.append(f)
 		f = dir.get_next()
+
+	var base_of := {}
+	var extended := {}
+	for name in files:
+		var src := FileAccess.get_file_as_string("%s/%s" % [DUNGEON_DIR, name])
+		var rx := RegEx.new()
+		rx.compile("(?m)^extends\\s+(\\w+)")
+		var m := rx.search(src)
+		var parent: String = (m.get_string(1) if m != null else "")
+		base_of[name] = parent
+		# a parent named in this directory makes that file a base rather than a map
+		for other in files:
+			if other != name and parent == other.get_basename():
+				extended[other] = true
+
+	var out: Array = []
+	for name in files:
+		if extended.has(name):
+			continue
+		# walk the chain to its root; only Node2D-rooted scripts are maps
+		var cur: String = name
+		var root: String = base_of.get(cur, "")
+		var hops := 0
+		while hops < 8:
+			var parent_file := root + ".gd"
+			if not (parent_file in files):
+				break
+			cur = parent_file
+			root = base_of.get(cur, "")
+			hops += 1
+		if root == "Node2D":
+			out.append(name)
 	out.sort()
 	return out
 
