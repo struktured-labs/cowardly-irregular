@@ -6,8 +6,25 @@ extends GutTest
 ## game: tools/trim_loop_seams.py shortened OGGs and left the manifest saying
 ## the old length (107 entries repaired by hand after the 2026-08-26 run), and
 ## the same tool did it again on a later batch. Nothing failed, nothing warned
-## — the number is read by the Jukebox's M:SS display and by anything sizing a
-## loop, so a stale value is a quiet lie rather than a crash.
+## — a stale value is a quiet lie rather than a crash.
+##
+## ⚠️ I ORIGINALLY WROTE "read by the Jukebox's M:SS display and by anything
+## sizing a loop". Grepped the consumer instead of trusting my own sentence
+## (fleet rule, 2026-09-09) and the second half is FALSE — I named a consumer
+## that does not exist. The manifest's `duration` has exactly ONE reader in
+## src/: JukeboxMenu.gd:96. Every other `duration` in the codebase belongs to a
+## different dictionary — status effects, ability durations, cutscene steps,
+## procedural generation params. Nothing sizes a loop from it.
+##
+## The Jukebox half DOES hold, and in code rather than in its own comment:
+## _format_duration returns "" for sec <= 0.0, which is the 0.0-means-unrendered
+## convention below.
+##
+## So the honest stake is smaller than I claimed: a stale duration shows the
+## player the wrong time in the Jukebox. That is still worth catching — this
+## drift has happened twice and cost 107 hand-repairs — but the guard defends a
+## display, not the audio engine, and overstating it is the thing this file
+## exists to prevent.
 ##
 ## Godot can settle it without ffprobe: the imported AudioStream knows its own
 ## length. That makes this a CONTENT check, not a bookkeeping one — it compares
