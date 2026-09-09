@@ -153,6 +153,12 @@ def main():
     else:
         print("\n  %d TRIM-SAFE candidates, %.1fs of fade total. Nothing written; pass --apply."
               % (len(rows), sum(r[2] - r[4] for r in rows)))
+    # A batch --apply that REJECTED tracks printed the count and returned 0,
+    # so "3 rejected" and "all clean" were the same exit status. The --only
+    # path already returned 2; the batch path did not.
+    if args.apply and failed:
+        print("  EXIT 1: %d track(s) rejected or failed during --apply" % failed)
+        return 1
     return 0
 
 
