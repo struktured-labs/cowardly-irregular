@@ -168,7 +168,12 @@ func test_goblins_never_get_the_barbarian_theme() -> void:
 	assert_false(path.ends_with(BRUTE_OGG), "battle_goblin routed to the brute theme - goblins are barbarian-scored again, which is the complaint that started this")
 
 ## The prompt file is a SECOND source and the generator reads only it.
-const REJECTED_GOBLIN_WORDS: Array[String] = ["tribal", "war drum", "primitive chanting", "chanting"]
+## Matched at a WORD BOUNDARY, not as a substring: bare contains("chanting")
+## fires on "enchanting", which a fantasy music brief would plausibly use, and
+## a false red here reads as "the rejected brief came back". Stemmed, so
+## "chant" still catches chants/chanting. cowir-sfx hit the same class the
+## same day ("sing" matching "causing", then \bsing matching "a SINGle blow").
+const REJECTED_GOBLIN_PATTERNS: Array[String] = ["\\btribal", "\\bwar drum", "\\bprimitive chant", "\\bchant"]
 
 func test_the_goblin_PROMPT_is_not_the_brief_he_rejected() -> void:
 	## He asked for the goblin theme to be replaced because it was too barbarian. The recast
@@ -186,9 +191,22 @@ func test_the_goblin_PROMPT_is_not_the_brief_he_rejected() -> void:
 	assert_true(shared.has("battle_brute"), "battle_brute has no prompt entry - regenerating it would invent a character")
 
 	var goblin: String = (str(shared["battle_goblin"].get("style", "")) + " " + str(shared["battle_goblin"].get("prompt", ""))).to_lower()
-	for word in REJECTED_GOBLIN_WORDS:
-		assert_false(goblin.contains(word),
-			"the goblin PROMPT contains %s - that is the barbarian brief he rejected, and the generator reads this file, not the manifest" % word)
+	for pattern in REJECTED_GOBLIN_PATTERNS:
+		var re := RegEx.new()
+		assert_eq(re.compile(pattern), OK, "SCOPE control: pattern %s did not compile, so it can never match" % pattern)
+		assert_null(re.search(goblin),
+			"the goblin PROMPT matches %s - that is the barbarian brief he rejected, and the generator reads this file, not the manifest" % pattern)
+
+	## Control that this is a WORD matcher, not a substring matcher. Without it,
+	## tightening the patterns and breaking them look identical from outside.
+	var neg := RegEx.new()
+	neg.compile("\\bchant")
+	assert_null(neg.search("an enchanting, disenchanting melody"),
+		"the matcher fires on 'enchanting' - it is matching substrings again, and a false red reads as the rejected brief returning")
+	var pos := RegEx.new()
+	pos.compile("\\bchant")
+	assert_not_null(pos.search("primitive chanting over war drums"),
+		"CONTROL FAILED: the matcher no longer catches real chanting, so every arm above is vacuous")
 
 	## The same vocabulary is CORRECT for the brute family: that bed is literally the old track.
 	var brute: String = (str(shared["battle_brute"].get("style", "")) + " " + str(shared["battle_brute"].get("prompt", ""))).to_lower()
