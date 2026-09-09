@@ -69,3 +69,52 @@ func test_an_unmapped_boss_falls_through_rather_than_erroring() -> void:
 	assert_eq(scene._declared_music_track("no_such_monster_zzz"), "",
 		"an unknown id must return empty, not crash or invent")
 	scene.free()
+
+
+func test_the_resolver_SELECTS_the_track_from_a_real_enemy() -> void:
+	## 🔑 cowir-battle, retracting the day's "sharpest instance": "A TEST THAT
+	## CALLS THE REPAIRED FUNCTION DIRECTLY CANNOT TELL EITHER. That demonstrates
+	## EXECUTION and says nothing about SELECTION. Reachability is not a property
+	## you can observe from inside the thing you are reaching."
+	##
+	## Their seven tests were behavioural, watched a real signal, had arms both
+	## ways — and every one invoked the entry point BY HAND, so all seven were
+	## green while Pyrroth could not SELECT a single fire ability.
+	##
+	## The arms above have that shape: they pass "ice_wolf" as a LITERAL. This
+	## one hands the resolver a real Combatant carrying a monster_type meta and
+	## makes it derive the id itself, so the chain under test is
+	##     enemy meta -> _get_dominant_monster_type -> _declared_music_track
+	## which is what _on_battle_started actually walks.
+	##
+	## ⚠️ RESIDUAL LIMIT, stated rather than left to be discovered: this still
+	## cannot prove _on_battle_started RUNS that chain. Instantiating it needs
+	## the full scene tree and its _ready() builds UI that has no viewport here
+	## (measured: add_child gives "Cannot call method 'add_theme_font_size_override'
+	## on a null value"). The ORDERING arm in
+	## test_boss_music_routing_regression is the only evidence for that half,
+	## and it is a source pin. Two instruments, two halves, neither sufficient.
+	var script: Script = load(BATTLE_SCENE_SCRIPT)
+	var scene: Node = script.new()
+	scene._enemy_spawner = BattleEnemySpawner.new(scene)
+
+	var wolf := Combatant.new()
+	wolf.initialize({"name": "Ice Wolf", "max_hp": 30, "max_mp": 0, "attack": 5, "defense": 3, "magic": 1, "speed": 8})
+	wolf.set_meta("monster_type", "ice_wolf")
+	var pack: Array[Combatant] = [wolf]
+	scene.test_enemies = pack
+
+	## Control: the id must come from the ENEMY, not from anything this test typed.
+	var derived: String = scene._get_dominant_monster_type()
+	assert_eq(derived, "ice_wolf",
+		"CONTROL FAILED: the resolver read '%s' from the enemy meta, so the selection below is not being driven by real game state" % derived)
+	assert_false(scene._check_for_boss(),
+		"CONTROL: this fixture must take the MONSTER branch, not the boss branch")
+
+	var selected: String = scene._declared_music_track(derived)
+	wolf.free()
+	scene.free()
+
+	assert_eq(selected, "battle_wolf",
+		"a real ice_wolf enemy selected '%s', not battle_wolf — the mapping resolves for a hand-typed string but the enemy-driven path does not reach it" % selected)
+
