@@ -441,7 +441,11 @@ func _setup_npcs() -> void:
 	# === HUMOROUS NPCs ===
 
 	# Existential Villager
+	# His NAME carried the premise and nothing he said did — so the notebook beside him had no reason to exist.
 	var existential = _create_npc("Phil the Lost", "villager", Vector2(23 * TILE_SIZE,18 * TILE_SIZE), [
+		"Phil. Phil the Lost. Called that because I lose things.",
+		"Mostly I lose track of what's happened before.",
+		"That's why I write it down. In the book. I can't hold it myself.",
 		"Do you ever wonder if we're just... NPCs?",
 		"Standing here... saying the same things...",
 		"Waiting for someone to talk to us...",
