@@ -2284,7 +2284,8 @@
         "*It looks... normal?*",
         "*Something about its eyes says otherwise.*"
       ]
-    }
+    },
+    "field_elite": true
   },
   "cranky_lady": {
     "id": "cranky_lady",
@@ -2443,7 +2444,8 @@
       "physical",
       "fire",
       "poison"
-    ]
+    ],
+    "field_elite": true
   },
   "cog_swarm": {
     "id": "cog_swarm",
@@ -2655,7 +2657,8 @@
       "physical",
       "ice"
     ],
-    "element": "poison"
+    "element": "poison",
+    "field_elite": true
   },
   "toxic_sludge": {
     "id": "toxic_sludge",
@@ -2924,7 +2927,8 @@
       "dark",
       "ice"
     ],
-    "undead": true
+    "undead": true,
+    "field_elite": true
   },
   "recursive_loop": {
     "id": "recursive_loop",
@@ -3314,7 +3318,8 @@
     "counter_abilities": [
       "counter",
       "adapt"
-    ]
+    ],
+    "field_elite": true
   },
   "masterite_warden_medieval": {
     "id": "masterite_warden_medieval",
