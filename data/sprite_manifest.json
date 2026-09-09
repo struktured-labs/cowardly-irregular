@@ -3053,7 +3053,7 @@
       "generator": "legacy AI-gen (pre-2026-07-02 bulk regen; identity preserved via mass revert of homogenizing regen — cowir-main msg 2516/user feedback)"
     },
     "cartographer_wraith": {
-      "path": "res://assets/sprites/monsters/specter.png",
+      "path": "res://assets/sprites/monsters/cartographer_wraith.png",
       "frame_width": 256,
       "frame_height": 256,
       "fps": 8,
@@ -3076,7 +3076,8 @@
         }
       },
       "tier": "T1",
-      "generator": "PLACEHOLDER 2026-09-06: The Backwards Warren boss reuses the specter sheet pending its own art (same pattern as Mordaine on shadow_knight)"
+      "generator": "PLACEHOLDER 2026-09-06: The Backwards Warren boss reuses the specter sheet pending its own art (same pattern as Mordaine on shadow_knight)",
+      "source": "AI-gen 2026-09-09 (gpt-image-1 medium, artist-anchored on Goblin 1 anims.aseprite, $0.042). REPLACES a shared placeholder: cartographer_wraith and specter both pointed at specter.png, so a named boss was pixel-identical to a generic mob. Brief from its own monsters.json line — The Lost Cartographer, 'fired for insisting the map was more honest than the terrain' — hence the hood and the scroll. HORIZONTALLY FLIPPED per-frame on ingest: generated facing LEFT and monsters face RIGHT; at 256px this sheet gets NO engine flip, so THE FLIP IS BAKED and is only correct above the 128px threshold (BattleScene ENEMY_SMALL_FRAME_THRESHOLD) — re-exporting at 128 would double-flip it. ⚠️ T1, NOT final: the palette is muddy olive and may read poorly against a dark dungeon; an artist pass is welcome and this is explicitly temporary. specter.png is untouched and still serves `specter`."
     },
     "specter": {
       "path": "res://assets/sprites/monsters/specter.png",
