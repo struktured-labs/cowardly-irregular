@@ -49,15 +49,16 @@ extends GutTest
 
 ## job -> the non-physical ability count that is currently mute. Every entry is DEBT, not
 ## an exemption: a summon, a song, a rewind and a buff all deserve to sound like themselves.
-## cowir-sfx's song/summon/revival cues retire bard and summoner when they land.
+## RETIRED 2026-09-09 in the same fold that earned it: bard and summoner came off this list when
+## cowir-sfx's song/summon/revival cues landed (v3.33.240). The ratchet failed on the way past --
+## "GOOD NEWS, STALE LIST" -- which is the bidirectional half working: a debt list that only grows
+## becomes a lie about the game the moment someone pays one down.
 const BASELINE: Dictionary = {
-	"bard": 4,          # battle_hymn lullaby discord inspiring_melody — struktured reported this one
 	"fighter": 1,       # provoke — a taunt is not a weapon hit
 	"guardian": 3,
 	"ninja": 3,
 	"rogue": 5,
 	"speculator": 6,
-	"summoner": 5,      # the summons plus recursive_summon
 	"time_mage": 5,     # the entire meta kit
 }
 
