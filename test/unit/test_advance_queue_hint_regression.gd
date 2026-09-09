@@ -16,7 +16,7 @@ func _make_bar(host: Node) -> Label:
 	bar.name = "InputHintBar"
 	var label := Label.new()
 	label.name = "HintLabel"
-	label.text = Win98MenuScript.HINT_DEFAULT_TEXT
+	label.text = Win98MenuScript.hint_text()
 	bar.add_child(label)
 	host.add_child(bar)
 	return label
@@ -36,7 +36,7 @@ func test_hint_swaps_with_queue_and_restores() -> void:
 	assert_true(label.text.contains("2/"), "queue count must display")
 	menu._queued_actions.clear()
 	menu._update_hint_bar()
-	assert_eq(label.text, Win98MenuScript.HINT_DEFAULT_TEXT,
+	assert_eq(label.text, Win98MenuScript.hint_text(),
 		"empty queue restores the default hints")
 	menu.queue_free()
 
@@ -52,7 +52,7 @@ func test_menu_close_restores_default_hint() -> void:
 	assert_true(label.text.contains("Undo last"))
 	host.remove_child(menu)
 	menu.free()
-	assert_eq(label.text, Win98MenuScript.HINT_DEFAULT_TEXT,
+	assert_eq(label.text, Win98MenuScript.hint_text(),
 		"root menu leaving must never strand queue-context text into execution")
 
 

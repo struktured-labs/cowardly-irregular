@@ -1787,7 +1787,7 @@ func _build_input_hint_bar() -> void:
 	# Use [L]/[R] notation that works for both gamepad (shoulder)
 	# and keyboard (L/R keys per InputMap).
 	# One source for the bar; a second literal here drifted from Win98Menu's once already.
-	label.text = Win98Menu.HINT_DEFAULT_TEXT
+	label.text = Win98Menu.hint_text()
 	label.add_theme_font_size_override("font_size", TextScale.scaled(12))
 	label.add_theme_color_override("font_color", Color(0.85, 0.85, 0.95, 0.95))
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
