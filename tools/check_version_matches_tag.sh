@@ -87,7 +87,8 @@ check() {
 # expected exit and BOTH outcomes must occur — a check hardwired to 0 passes every match
 # case, and one hardwired to 1 passes every block case.
 selftest() {
-    local dir pass=0 fail=0 saw_ok=0 saw_block=0
+    local dir pass=0 fail=0 saw_ok=0 saw_block=0 SELF
+    SELF="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
     dir="$(mktemp -d "${TMPDIR:-/tmp}/vercheck.XXXXXX")"
     # shellcheck disable=SC2064
     trap "rm -rf '$dir'" EXIT
@@ -97,7 +98,8 @@ selftest() {
         local name="$1" want="$2" body="$3" label="$4" got
         if [ "$body" = "__MISSING__" ]; then rm -f "$dir/src/meta/Version.gd"
         else printf '%s\n' "$body" > "$dir/src/meta/Version.gd"; fi
-        ( cd "$dir" && VERSION_FILE="src/meta/Version.gd" check "$label" ) >/dev/null 2>&1
+        # SUBPROCESS: the file under test is the file that ships.
+        ( cd "$dir" && VERSION_FILE="src/meta/Version.gd" "$SELF" "$label" ) >/dev/null 2>&1
         got=$?
         [ "$got" -eq 0 ] && saw_ok=1 || saw_block=1
         if [ "$got" -eq "$want" ]; then
