@@ -192,7 +192,7 @@ def process(key, path, xfade_s, apply_it, preview_dir):
 
     tail_db = db(y[-int(1.5 * SR):])
     if tail_db - body_db > FADE_THRESHOLD_DB:
-        return key, "tail is only %.1f dB under body - not a fade, leave it alone" % (tail_db - body_db), None
+        return key, "SKIP tail is only %.1f dB under body - not a fade, leave it alone" % (tail_db - body_db), None
 
     xfade_n = int(xfade_s * SR)
     attempts = 0
@@ -297,13 +297,18 @@ def main():
         sys.exit("not in the manifest: %s" % ", ".join(missing))
 
     print("%-30s %8s %8s %7s  %s" % ("track", "before", "after", "cut", "seam out/in vs body"))
-    changed, refused = [], []
+    changed, refused, skipped = [], [], []
     for key in keys:
         path = tracks[key].get("file", "")
         if not path or not os.path.exists(path):
             continue
         k, why, info = process(key, path, args.xfade, args.apply, args.preview)
         if why:
+            if why.startswith("SKIP "):
+                skipped.append(key)
+                if args.only:
+                    print("%-30s skipped: %s" % (key, why[5:]))
+                continue
             print("%-30s REFUSED: %s" % (key, why))
             refused.append(key)
             continue
@@ -322,8 +327,30 @@ def main():
         print("\n  rewrote %d file(s) and their manifest durations" % len(changed))
     elif not args.apply:
         print("\n  dry run - nothing written. Pass --apply.")
+    if skipped:
+        print("  skipped %d (already loop cleanly)" % len(skipped))
     if refused:
         print("  refused %d: %s" % (len(refused), ", ".join(refused)))
+
+    # EXIT CODE. This used to be a bare `return 0`, so asking for a specific
+    # track, being refused, and exiting SUCCESS were the same thing — a gate
+    # built on it would read a refusal as a fix. Sibling trim_loop_seams
+    # already returned 2 for the same case, which made the inconsistency a
+    # trap rather than a quirk.
+    #
+    # SKIP and REFUSE are NOT the same and the first version of this fix
+    # conflated them: with the entry gate in place a bare --apply skips ~142
+    # healthy tracks, and counting those as failures reports a RED on a
+    # perfectly clean corpus. A skip means "does not need work"; a refusal
+    # means "needs work and I could not". Only the second is a failure.
+    if args.only:
+        denied = [k for k in refused if k in args.only]
+        if denied:
+            print("  EXIT 1: named target(s) needed work and were not fixed: %s" % ", ".join(denied))
+            return 1
+    if args.apply and refused:
+        print("  EXIT 1: %d track(s) needed work and failed during --apply" % len(refused))
+        return 1
     return 0
 
 
