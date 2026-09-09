@@ -91,6 +91,16 @@ func _read(path: String) -> String:
 	return t
 
 
+## Files that DEFINE the audio key space rather than consume it. Both must be excluded from the
+## consumer corpus: a definer in the corpus certifies its own keys as reachable. sfx_manifest is
+## obvious; music_manifest is NOT, and it is the one four lanes tripped on 2026-09-09 — audio keys
+## have TWO definers, and 4 keys (ambient_cave/forest/village, victory) exist in both stores with
+## DIFFERENT files. Today this changes nothing (the ambient_ dynamic prefix covers the only
+## affected key), so it is preventive: the day an SFX key coincides with a new track name, the
+## audit would silently certify it against a file that can never play it.
+const KEY_SPACE_DEFINERS: Array[String] = ["sfx_manifest.json", "music_manifest.json"]
+
+
 func _slurp_dir(root: String, ext: String, skip_file: String = "") -> String:
 	## Concatenate every file under root with the given extension.
 	var out := ""
@@ -107,7 +117,7 @@ func _slurp_dir(root: String, ext: String, skip_file: String = "") -> String:
 			if d.current_is_dir():
 				if not name.begins_with("."):
 					dirs.append(full)
-			elif name.ends_with(ext) and name != skip_file:
+			elif name.ends_with(ext) and name != skip_file and not KEY_SPACE_DEFINERS.has(name):
 				out += _read(full)
 			name = d.get_next()
 		d.list_dir_end()
@@ -155,6 +165,33 @@ func test_no_unreachable_sfx_keys() -> void:
 		"Either wire a consumer, or add to KNOWN_PENDING_CONSUMER with the owner " +
 		"and what they're waiting on, or delete the asset. Do NOT add an entry " +
 		"without a named owner — that just hides a dead asset.") % [unreachable.size(), unreachable])
+
+
+func test_the_consumer_corpus_excludes_every_definer() -> void:
+	## @cowir-story's precondition, applied to this file: name every DEFINER of the key space —
+	## plural — and assert it is disjoint from the CONSUMER corpus. A definer inside the corpus
+	## makes its own keys look consumed, which is guaranteed-zero rather than measured-zero.
+	##
+	## The arm that matters is music_manifest: it is a definer of the SAME key space and reads as
+	## an ordinary data file. Excluding only the obvious one is the mistake this catches.
+	## ⛔ DELIBERATELY NOT KEY_SPACE_DEFINERS. Looping the constant that drives the exclusion makes
+	## this guard move WITH the bug: delete music_manifest from that list and the loop stops
+	## checking it, so the arm scores green. Measured — that is exactly what happened on the first
+	## attempt. The subject list has to be independent of the mechanism under test.
+	const DEFINERS_ON_DISK: Array[String] = ["sfx_manifest.json", "music_manifest.json"]
+	var corpus := _slurp_dir("res://data", ".json", "sfx_manifest.json")
+	for definer in DEFINERS_ON_DISK:
+		var text := _read("res://data/" + definer)
+		assert_ne(text, "", "control: %s unreadable — the check below cannot fail honestly" % definer)
+		if text == "":
+			continue
+		## A long, distinctive slice: if the definer leaked into the corpus this is present verbatim.
+		var probe := text.substr(0, 240)
+		assert_false(corpus.contains(probe),
+			"%s is a DEFINER of the audio key space and is inside the consumer corpus — every key it names reads as consumed" % definer)
+	## CONTROL: the corpus must still hold a real consumer, or the assertions above pass by being empty.
+	assert_gt(corpus.length(), 5000,
+		"control: the consumer corpus is only %d chars — the exclusion took the whole directory with it" % corpus.length())
 
 
 func test_pending_consumer_allowlist_has_not_rotted() -> void:
