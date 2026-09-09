@@ -128,6 +128,42 @@ func test_the_census_is_not_vacuous() -> void:
 		"CONTROL: the walk still resolves real abilities (%d)" % _inert_ally_abilities().size())
 	assert_gt(_abilities().size(), 200, "CONTROL: read the whole ability corpus")
 
+## The two that a REAL party reaches. cowir-autogrind corrected my framing: reporting "21 inert
+## abilities" is accurate for the corpus and misleading about impact, because 19 belong to advanced
+## and meta jobs a grinding party cannot have. Smaller and worse is the right direction — these two
+## are owned by STARTER jobs, so they are live for every player.
+##   raise  Cleric revival  -> a downed member stays down; the party grinds on with a corpse
+##   flee   Rogue escape    -> a flee rule cannot disengage
+const STARTER_REACHABLE := ["flee", "raise"]
+
+func test_the_starter_reachable_subset_is_named_not_buried() -> void:
+	var jobs_parsed = JSON.parse_string(FileAccess.get_file_as_string("res://data/jobs.json"))
+	assert_not_null(jobs_parsed, "CONTROL: jobs.json parses")
+	var jobs: Dictionary = jobs_parsed.get("jobs", jobs_parsed)
+	var starter_kit: Dictionary = {}
+	for jid in ["fighter", "cleric", "mage", "rogue", "bard"]:
+		var j: Dictionary = jobs.get(jid, {})
+		for a in (j.get("abilities", []) as Array):
+			starter_kit[str(a)] = true
+		var at_level = j.get("abilities_at_level", {})
+		if at_level is Dictionary:
+			for lv in (at_level as Dictionary).keys():
+				for a in ((at_level as Dictionary)[lv] as Array):
+					starter_kit[str(a)] = true
+		var fm = j.get("free_move", {})
+		if fm is Dictionary and str((fm as Dictionary).get("ability_id", "")) != "":
+			starter_kit[str((fm as Dictionary)["ability_id"])] = true
+	assert_gt(starter_kit.size(), 10, "CONTROL: the starter kits read non-empty (%d)" % starter_kit.size())
+
+	var reachable: Array = []
+	for id in _inert_ally_abilities():
+		if starter_kit.has(id):
+			reachable.append(id)
+	reachable.sort()
+	assert_eq(reachable, STARTER_REACHABLE,
+		"the inert abilities a REAL party can reach changed — these are the ones that hurt a player, the other 19 need an advanced or meta job: " + str(reachable))
+
+
 func test_the_meta_job_kit_is_the_bulk_of_it() -> void:
 	## Records WHY this matters rather than just that it is true: CLAUDE.md calls the meta jobs a
 	## design pillar and "all five REAL", and in autogrind their kit is inert.

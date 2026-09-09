@@ -3406,6 +3406,10 @@ func _execute_defer(combatant: Combatant) -> void:
 	print("%s defers (AP: %d)" % [combatant.combatant_name, combatant.current_ap])
 
 
+## Field ceiling shared by BOTH summon paths — the AI roster below and ability summons.
+const MAX_FIELD_ENEMIES: int = 5
+
+
 func _can_monster_summon(combatant: Combatant) -> bool:
 	"""Check if this monster can summon reinforcements"""
 	# Only enemies can summon
@@ -3413,8 +3417,7 @@ func _can_monster_summon(combatant: Combatant) -> bool:
 		return false
 
 	# Limit total enemies to prevent overwhelming battles
-	var alive_enemies = enemy_party.filter(func(e): return e.is_alive)
-	if alive_enemies.size() >= 5:
+	if _alive_enemy_count() >= MAX_FIELD_ENEMIES:
 		return false
 
 	# Check if this monster type can summon
@@ -3455,6 +3458,30 @@ func _execute_summon(combatant: Combatant, monster_type: String) -> void:
 	battle_log_message.emit("[color=purple]%s summons %s %s![/color]" % [combatant.combatant_name, article, display_name])
 	print("  → %s summons %s %s!" % [combatant.combatant_name, article, display_name])
 	monster_summoned.emit(monster_type, combatant)
+
+
+func _alive_enemy_count() -> int:
+	return enemy_party.filter(func(e): return e != null and is_instance_valid(e) and e.is_alive).size()
+
+
+## Spawns the allies an ability authors, honouring summon_count and the shared field ceiling.
+func _execute_ally_summon(caster: Combatant, ability: Dictionary) -> void:
+	var summon_id: String = str(ability.get("summon_id", ""))
+	if caster == null or summon_id == "":
+		return
+	var flavour: String = str(ability.get("summon_message", ""))
+	if flavour != "":
+		battle_log_message.emit("[color=purple]%s[/color]" % flavour)
+	var wanted: int = maxi(1, int(ability.get("summon_count", 1)))
+	var spawned: int = 0
+	for _i in wanted:
+		## Re-checked per spawn: BattleScene appends to enemy_party inside the signal handler.
+		if _alive_enemy_count() >= MAX_FIELD_ENEMIES:
+			break
+		_execute_summon(caster, summon_id)
+		spawned += 1
+	if spawned == 0:
+		battle_log_message.emit("[color=gray]%s calls out, but there is no room on the field.[/color]" % caster.combatant_name)
 
 
 func _execute_group_action(action: Dictionary) -> void:
@@ -4446,11 +4473,18 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 		## the `_:` push_warning default. Route through the magic
 		## execution path so the eidolon damage actually lands. The
 		## ally-spawning summons (rat_swarm, pack_call) are not in any
-		## player job — only enemy AI uses them via _execute_summon at
-		## line 2076 — so routing all "summon" ability_types to magic
+		## player job — so routing all "summon" ability_types to magic
 		## doesn't break any player path.
+		## CORRECTED: that comment also claimed enemy AI reaches them via _execute_summon. It
+		## does not — _execute_summon's only gate is _can_monster_summon's hardcoded roster,
+		## which names neither owner, so summon_id/summon_count/summon_message had ZERO readers
+		## and the Rat King's Royal Summon cast a 1.0x magic hit at itself. summon_id is the
+		## discriminator: authored means spawn allies, absent means eidolon damage.
 		"summon":
-			_execute_magic_ability(caster, ability, retargeted)
+			if str(ability.get("summon_id", "")) != "" and not (caster in player_party):
+				_execute_ally_summon(caster, ability)
+			else:
+				_execute_magic_ability(caster, ability, retargeted)
 		"meta":
 			_execute_meta_ability(caster, ability, retargeted)
 		"escape":
