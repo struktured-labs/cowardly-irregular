@@ -2313,6 +2313,20 @@ func _ai_healer(combatant: Combatant, abilities: Array, alive_allies: Array, ali
 			"speed": _compute_action_speed(combatant, "ability", buff)
 		}
 
+	## The docstring says "attack only when no one needs healing" and the attack was a BASIC one, so
+	## a healer's own offensive kit was decoration: elder_mushroom never released a spore in its life.
+	## Same 30% as _ai_brute rather than a new invented number; healing and support still come first.
+	var offensive_abilities = abilities.filter(func(a): return a.get("type", "") in ["physical", "magic"])
+	if offensive_abilities.size() > 0 and randf() < 0.3:
+		var spell = offensive_abilities[randi() % offensive_abilities.size()]
+		return {
+			"type": "ability",
+			"combatant": combatant,
+			"ability_id": spell.get("id", ""),
+			"targets": [_choose_target(combatant, alive_enemies, spell)],
+			"speed": _compute_action_speed(combatant, "ability", spell)
+		}
+
 	# Fallback: basic attack
 	var target = _choose_target(combatant, alive_enemies, {})
 	return {"type": "attack", "combatant": combatant, "target": target, "speed": _compute_action_speed(combatant, "attack")}
