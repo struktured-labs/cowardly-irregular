@@ -86,3 +86,17 @@ func test_the_unwind_wait_is_bounded_and_loud() -> void:
 	var body := src.substr(i, 400)
 	assert_true(body.contains("_dwait < 15.0"), "the unwind wait must be bounded")
 	assert_true(body.contains("_smoke_failed = true"), "and must FAIL loudly rather than proceed into the race")
+
+
+func test_the_unwind_loop_actually_presses_the_button_it_is_waiting_on() -> void:
+	## The first fix deadlocked: end_battle(true) makes BattleManager INACTIVE immediately, so the
+	## battle-state loop (which taps) exits before pressing anything, and the flag loop (which did
+	## not tap) then waited on a confirm no one would ever give. _spotlight_duel_active cannot clear
+	## until _wait_for_confirm_victory returns, and that needs a press — so the loop waiting on the
+	## flag is the loop that has to send one.
+	var src := FileAccess.get_file_as_string(GL_SRC)
+	var i: int = src.find("while _spotlight_duel_active")
+	assert_gt(i, -1, "CONTROL: the unwind wait still exists")
+	var body := src.substr(i, 260)
+	assert_true(body.contains('_smoke_tap("ui_accept")'),
+		"the loop waiting on the confirm must press the confirm, or it waits forever")

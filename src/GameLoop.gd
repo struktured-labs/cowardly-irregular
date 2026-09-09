@@ -591,8 +591,13 @@ func _maybe_run_battle_smoke() -> void:
 		# before that unwinds ran both at once: exploration came back mid-execution and the resolver
 		# kept iterating freed combatants ("previously freed" x3, cowir-deploy's .239 web smoke).
 		# INACTIVE means the BATTLE ended, not that the DUEL finished unwinding — wait for the flag.
+		# The tap belongs to the CONFIRM WAIT, not to the battle-state wait, and the two stopped
+		# coinciding the moment this flag loop was added: end_battle(true) makes the state INACTIVE
+		# immediately, so the loop above exits before pressing anything, while the duel is still
+		# suspended on a press that now never comes. Deadlock by construction — keep tapping here.
 		var _dwait := 0.0
 		while _spotlight_duel_active and _dwait < 15.0:
+			_smoke_tap("ui_accept")
 			await get_tree().create_timer(0.25).timeout
 			_dwait += 0.25
 		if _spotlight_duel_active:
