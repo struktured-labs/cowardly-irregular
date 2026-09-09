@@ -15,9 +15,13 @@ extends GutTest
 const GL := "res://src/GameLoop.gd"
 const OVERLAY := "res://src/ui/HowToPlayOverlay.gd"
 
-## Bound in GameLoop's global _input and deliberately NOT advertised: F5 opens the autobattle
-## editor and is printed on that editor's own legend; listing it twice is not the claim here.
-const ALLOWED_UNLISTED := ["F5"]
+## NO SUPPRESSION LIST. There was one, holding "F5", and its stated reason — "printed on that
+## editor's own legend" — was NEVER TRUE: F5 appears in zero on-screen strings in
+## AutobattleGridEditor. @cowir-sfx named this shape FALSE (never true; the mechanism was simply
+## unmodelled), distinct from EXPIRED, and it is the dangerous one because no rot check can catch
+## it — there is no transition to detect. The entry was also UNNECESSARY: F5 is listed on the F1
+## overlay, so the assertion passes without it. An exemption that is both false and unneeded reads
+## as a considered decision and hides that nobody checked.
 
 
 func _global_fkeys() -> Array:
@@ -41,8 +45,6 @@ func test_the_reference_lists_every_global_fkey() -> void:
 	var overlay := FileAccess.get_file_as_string(OVERLAY)
 	assert_gt(overlay.length(), 0, "CONTROL: the overlay must be readable")
 	for k in keys:
-		if ALLOWED_UNLISTED.has(k):
-			continue
 		assert_true(overlay.contains(k),
 			"%s is bound globally and the controls reference never names it — the only screen that tells a player the keys" % k)
 
