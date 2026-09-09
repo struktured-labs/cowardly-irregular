@@ -377,6 +377,10 @@ const _TYPE_SFX: Dictionary = {
 	"song": "ability_song",
 	"summon": "ability_summon",
 	"revival": "ability_revive",
+	## The last two types with no arm. mp_restore is pray/channel, the Cleric and Mage FREE MOVES --
+	## the moves those two jobs use most, and they played a sword unsheathing.
+	"mp_restore": "ability_mp_restore",
+	"escape": "ability_flee",
 }
 
 

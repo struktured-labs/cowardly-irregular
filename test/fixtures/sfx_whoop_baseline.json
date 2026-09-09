@@ -535,6 +535,34 @@
       "sha256": "98d85148e60c6f82f15ff457c7288b7df04c3498bbdf525fb423ff041ce11532",
       "file": "assets/audio/sfx/ability_arcane.ogg"
     },
+    "ability_mp_restore": {
+      "early_hz": 1483.5,
+      "late_hz": 1654.5,
+      "low_hz": 1174.3,
+      "high_hz": 1683.7,
+      "sweep": 1.43,
+      "rho_time": 0.37,
+      "rho_energy": -0.05,
+      "direction": "rise",
+      "whoops": false,
+      "gate_widened": false,
+      "sha256": "8bf8d8299ff9639ad850f151ae9d7696d1a1a0fb01bf8857561162eecff42e38",
+      "file": "assets/audio/sfx/ability_mp_restore.ogg"
+    },
+    "ability_flee": {
+      "early_hz": 1718.8,
+      "late_hz": 1323.3,
+      "low_hz": 1298.3,
+      "high_hz": 1766.5,
+      "sweep": 1.36,
+      "rho_time": -0.83,
+      "rho_energy": -0.26,
+      "direction": "fall",
+      "whoops": false,
+      "gate_widened": false,
+      "sha256": "c4164804600ec666ea05b50c4022a0de197e7aa96eb9234114a2dea0bb1dafcd",
+      "file": "assets/audio/sfx/ability_flee.ogg"
+    },
     "ability_riff": {
       "early_hz": 1065.3,
       "late_hz": 1051.8,
