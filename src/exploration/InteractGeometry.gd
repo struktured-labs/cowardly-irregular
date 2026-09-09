@@ -88,13 +88,26 @@ const MASK_PLAYER := 2  # (pin)
 
 
 ## The ONLY Mode 7 context signal — dead ancestor-name/property detectors are retired.
+##
+## 2026-09-09: THIS DETECTOR WAS ALSO DEAD, and it was the replacement for one the
+## 2026-07-18 audit killed for the same reason. It read
+## `SceneTree.root.get_node_or_null("Mode7Overlay")`, which asks for a DIRECT CHILD OF
+## ROOT. The CanvasLayer of that name is created in Mode7Overlay.setup(scene, player) and
+## parented to `scene` — the overworld itself — so the real path is
+## root/GameLoop/<Overworld>/Mode7Overlay and the lookup returned null in every world,
+## every frame. `return false` then reads as "we are not in Mode 7", which is exactly what
+## a flat world looks like, so nothing errored and nothing logged.
+##
+## Consequence while it was dead: every consumer below took its FLAT branch under Mode-7
+## scaled sprites — NPC interaction and collision zones (OverworldNPC, WanderingNPC),
+## signpost radii, save-point zones. The 2026-07-18 note on the previous corpse describes
+## the same symptom it caused then: "Mode 7 NPCs kept a 40px zone under a 96px sprite".
+##
+## Now reads the static the working call sites already use — TreasureChest:264,
+## OverworldController:230, OverworldPlayer:424 — set from the real mode7 state in
+## Mode7Overlay.gd:558. No tree walk, so there is no path for it to be wrong about.
 static func is_mode7() -> bool:
-	var ml := Engine.get_main_loop()
-	if ml is SceneTree:
-		var overlay = (ml as SceneTree).root.get_node_or_null("Mode7Overlay")
-		if overlay != null and "is_active" in overlay:
-			return bool(overlay.is_active)
-	return false
+	return Mode7Overlay.is_active
 
 
 ## Unifies the three coexisting player-identity predicates.
