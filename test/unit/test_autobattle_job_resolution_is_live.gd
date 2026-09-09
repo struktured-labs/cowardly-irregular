@@ -52,20 +52,19 @@ func test_the_live_lookup_reads_the_job_the_character_actually_has() -> void:
 	assert_true(body.contains("player_party"), "it must read the live party")
 	assert_true(body.contains("job_id"), "party entries are Combatant.to_dict(), which carries job_id")
 
-func test_has_learned_uses_the_combatants_own_job() -> void:
-	## The caller that matters most already HAS the combatant; routing through name → static map
-	## was the longest path to the wrong answer.
+## SUPERSEDED ON PURPOSE. This asserted that _combatant_has_learned reads combatant.job.get("id")
+## — correct when written, and now wrong: the function delegates to Combatant.knows_ability, which
+## resolves the job itself and additionally covers learned/purchased/secondary sources this file's
+## fix could not. Deleting a stale pin rather than loosening it; the replacement lives in
+## test_autobattle_upgrades_use_knows_ability.
+func test_has_learned_delegates_to_the_canonical_predicate() -> void:
 	var s := _src()
 	var i := s.find("func _combatant_has_learned(")
 	assert_gt(i, -1, "CONTROL: located the predicate")
 	var j := s.find("\nfunc ", i + 10)
 	var body := s.substr(i, j - i)
-	## `combatant.job` also matches `combatant.job_level`, so a bare substring stayed green when
-	## the mutation deleted the read — caught by ARM+C. Assert the READ, not the prefix.
-	assert_true(body.contains("combatant.job.get(\"id\""),
-		"it must prefer the combatant's own job over a name-keyed lookup")
-	assert_true(body.contains("_resolve_job_for_character("),
-		"CONTROL: the resolver remains the fallback for a combatant with no job dict")
+	assert_true(body.contains("combatant.knows_ability("),
+		"it must delegate to the one predicate rather than resolve a job itself")
 
 func test_the_static_map_still_covers_the_named_starters() -> void:
 	## Guards the fallback: the fix must not have deleted the map, which is the only answer for a
