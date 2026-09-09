@@ -484,9 +484,41 @@ func _add_area_transition(trans_name: String, target_map: String, target_spawn: 
 	# so the player has to walk "above" targets. Shifting zones up fixes the mismatch.
 	trans.position = pos + Vector2(0, -TILE_SIZE * 3)  # 3 tiles up — Mode 7 log-warp shifts visual north
 	# 2026-07-13: was 4×10 tiles — but Castle Harmonia sits only 2 tiles east of CaveEntrance, so their 4-tile-wide boxes overlapped by 2 tiles and the earlier sibling (Cave) stole every ui_accept in the shared cells → player trying to enter castle got warped to cave. 2×6 is wide enough to catch the player and tall enough for Mode 7's -3-tile Y-offset.
-	_setup_transition_collision(trans, Vector2(TILE_SIZE * 2, TILE_SIZE * 6))
+	# 2026-09-09: the same defect returned as soon as is_mode7() started working. The 2x6 box
+	# assumes landmarks sit 6+ tiles apart; the Lightning Dragon Cave and Sandrift's entrance are
+	# authored 4 apart on one column, so their boxes overlapped by 2 tiles and the earlier sibling
+	# (the cave) took the shared cells -- a player walking to the village got the dragon dungeon.
+	# Shrink the NEW box to stop at its nearest neighbour instead of stealing from it. Each
+	# entrance keeps every cell it does not have to share, and no future landmark pair can steal.
+	_setup_transition_collision(trans, _transition_box_clear_of_neighbours(trans.position))
 	trans.transition_triggered.connect(_on_transition_triggered)
 	transitions.add_child(trans)
+
+
+## The full box, vertically trimmed so it never overlaps a transition already registered.
+## Vertical only: the boxes are 2 tiles wide and landmarks that close horizontally would be the
+## same doorway, while 4-tile vertical spacing is authored map geometry that has to keep working.
+func _transition_box_clear_of_neighbours(pos: Vector2) -> Vector2:
+	var full := Vector2(TILE_SIZE * 2, TILE_SIZE * 6)
+	if transitions == null:
+		return full
+	var half_h: float = full.y / 2.0
+	for other in transitions.get_children():
+		if not (other is Area2D):
+			continue
+		var shape: CollisionShape2D = null
+		for c in other.get_children():
+			if c is CollisionShape2D and c.shape is RectangleShape2D:
+				shape = c
+		if shape == null:
+			continue
+		var o_size: Vector2 = (shape.shape as RectangleShape2D).size
+		if absf(other.position.x - pos.x) >= (full.x + o_size.x) / 2.0:
+			continue                       # different column, cannot overlap
+		var gap: float = absf(other.position.y - pos.y) - o_size.y / 2.0
+		if gap < half_h:
+			half_h = maxf(gap, TILE_SIZE)  # never shrink below one tile of reach
+	return Vector2(full.x, half_h * 2.0)
 
 
 func _setup_transition_collision(trans: Area2D, size: Vector2) -> void:
