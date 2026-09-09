@@ -111,3 +111,31 @@ func test_the_ring_offers_and_dispatches_it() -> void:
 	var src: String = load("res://src/ui/autogrind/AutogrindUI.gd").source_code
 	assert_true(src.contains('"id": "explain_rules"'), "the OPTIONS ring must offer it")
 	assert_true(src.contains('"explain_rules":'), "and must dispatch it")
+
+
+func test_reached_level_is_ANSWERED_not_excluded() -> void:
+	## It reads _get_party_max_job_level(party) — party-derived, so a probe can answer it. I had it
+	## listed as "needs session progress", which was never true (cowir-sfx's FALSE suppression) and
+	## blocked every rule below it under first-match-wins.
+	for m in _ui._party:
+		m.job_level = 20
+	_ui.rules = [{
+		"conditions": [{"type": "reached_level", "op": ">=", "value": 10}],
+		"actions": [{"type": "stop_grinding"}], "enabled": true
+	}]
+	var report := _joined()
+	assert_false(report.contains("needs session progress"),
+		"reached_level reads the party — it must be answered, not excluded: %s" % report)
+	assert_true(report.contains("rule 1 fires"),
+		"a level-20 probe party must satisfy >= 10: %s" % report)
+
+
+func test_an_unmodelled_condition_says_what_is_actually_true() -> void:
+	## inventory_items IS party-derived, but the probe carries no inventory. The reason must name
+	## THAT rather than claim session scope — a false reason can never expire.
+	_ui.rules = [{
+		"conditions": [{"type": "inventory_items", "op": ">=", "value": 1}],
+		"actions": [{"type": "heal_party"}], "enabled": true
+	}]
+	assert_true(_joined().contains("not shown here"),
+		"an unmodelled condition must still be reported as unshowable")
