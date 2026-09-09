@@ -717,6 +717,10 @@ func can_use_ability(combatant: Combatant, ability_id: String) -> bool:
 	if ability.is_empty():
 		return false
 
+	## Silence blocks abilities — tick 382 cited consumers that never existed (see the test).
+	if combatant != null and combatant.has_status("silence"):
+		return false
+
 	# Check MP cost — route through get_ability_mp_cost so passive
 	# mp_cost_multiplier mods apply (tick 374).
 	if ability.has("mp_cost"):

@@ -59,7 +59,14 @@ func test_can_use_ability_routes_through_the_predicate() -> void:
 	assert_false(JobSystem.can_use_ability(c, "cure"), "CONTROL: an unknown spell stays refused")
 	var src := FileAccess.get_file_as_string("res://src/jobs/JobSystem.gd")
 	var i: int = src.find("func can_use_ability(")
-	assert_true(src.substr(i, 900).contains("combatant.knows_ability(ability_id)"),
+	assert_gt(i, -1, "CONTROL: located can_use_ability")
+	## Bounded by the FUNCTION, not by a 900-char window. The window was a coincidental magnitude:
+	## it went red when a legitimate transient gate (silence) was added ahead of the delegation and
+	## pushed it to char 901, while a re-derivation parked at 901 would have passed. Same defect
+	## either way — it measured LENGTH where it meant SCOPE.
+	var j: int = src.find("\nfunc ", i + 10)
+	var body: String = src.substr(i, j - i) if j > i else src.substr(i)
+	assert_true(body.contains("combatant.knows_ability(ability_id)"),
 		"can_use_ability must delegate to the ONE predicate, not re-derive kit/learned")
 	c.free()
 

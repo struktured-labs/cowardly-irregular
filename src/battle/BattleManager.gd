@@ -4342,6 +4342,11 @@ func _execute_ability(caster: Combatant, ability_id: String, targets: Array) -> 
 		return
 
 	if not JobSystem.can_use_ability(caster, ability_id):
+		## Name the reason — "can't use right now" reads as a bug when the cause is a boss debuff.
+		if caster != null and caster.has_status("silence"):
+			battle_log_message.emit("[color=gray]%s is silenced — %s won't come out![/color]" % [caster.combatant_name, ability["name"]])
+			print("%s is silenced and cannot cast %s" % [caster.combatant_name, ability["name"]])
+			return
 		## Tick 173: surface in the log. Pre-fix the ability was
 		## blocked (insufficient MP, missing prerequisite, etc.) and
 		## the player saw nothing — character appeared to pass turn.
