@@ -262,6 +262,14 @@ def process(key, path, xfade_s, apply_it, preview_dir, max_trim_db=3.0):
     # The two seconds the player actually hears back to back.
     seam_out = db(out[-SR:])
     seam_in = db(out[:SR])
+    # THE OTHER SURFACE. The fold mixes the full-level tail over the intro, so
+    # a piece with a deliberate quiet opening gets materially louder on FIRST
+    # play — measured after the fact on village_abstract (+11.1 dB) and
+    # boss_abstract (+6.1 dB), both W6 pieces that open in near-silence on
+    # purpose. The wrap is what a looping player hears; the intro is what they
+    # hear on ENTERING the area, and I had only ever measured the wrap.
+    intro_before = db(y[: int(4.0 * SR)])
+    intro_after = db(out[: int(4.0 * SR)])
     _click_ok, wrap_step = wrap_step_ok(out)
     ok = (seam_out > body_db - SEAM_TOLERANCE_DB) and (seam_in > body_db - SEAM_TOLERANCE_DB)
 
@@ -276,6 +284,7 @@ def process(key, path, xfade_s, apply_it, preview_dir, max_trim_db=3.0):
         "peak": peak,
         "gain_db": gain_db,
         "wrap_step": wrap_step,
+        "intro_delta": intro_after - intro_before,
         "ok": ok,
     }
     if not ok:
@@ -362,6 +371,10 @@ def main():
             info["seam_out"] - info["body_db"], info["seam_in"] - info["body_db"],
             info["tail_before"] - info["body_db"],
             "  [trim %.2f dB]" % info["gain_db"] if info["gain_db"] else ""))
+        if info["intro_delta"] > 6.0:
+            print("%-30s   ⚠ INTRO is %+.1f dB louder — this piece opens quietly on purpose; "
+                  "the fold mixes the tail into it. Heard on entering the area, not on the loop. "
+                  "A shorter --xfade bleeds in less." % ("", info["intro_delta"]))
         if args.apply:
             tracks[key]["duration"] = round(info["dur_after"], 1)
             changed.append(key)
