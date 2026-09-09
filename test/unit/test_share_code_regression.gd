@@ -109,9 +109,15 @@ func test_autogrind_footer_documents_the_bindings() -> void:
 	# 2026-09-06 controller pass: the keyboard-only footer became a glyph hint strip and the file/code
 	# flows are ROWS on the options ring — discoverable on a pad, not just documented for a keyboard.
 	var src := FileAccess.get_file_as_string("res://src/ui/autogrind/AutogrindUI.gd")
-	for row in ['{"id": "export", "label": "Export to File"}', '{"id": "import", "label": "Import from File"}',
-			'{"id": "copy_code", "label": "Copy Share Code"}', '{"id": "paste_code", "label": "Paste Share Code"}']:
-		assert_true(row in src, "the autogrind options ring must expose the file AND code flows: %s" % row)
+	# 2026-09-09: repinned from the whole literal row to the ID. The claim is that these flows are
+	# EXPOSED on the ring; the id carries that and the label does not. Pinning the label text made
+	# an IMPROVEMENT to it (adding the keyboard hint "(E)") report as a missing feature.
+	for id in ["export", "import", "copy_code", "paste_code"]:
+		assert_true('"id": "%s"' % id in src,
+			"the autogrind options ring must expose the file AND code flows: %s" % id)
+	# and the rows must still be legible as those flows, so the ids cannot drift to a stub
+	for word in ["Export", "Import", "Copy Share Code", "Paste Share Code"]:
+		assert_true(word in src, "the ring row for '%s' must still name it to the player" % word)
 
 
 func test_editor_wires_the_clipboard_bindings() -> void:
