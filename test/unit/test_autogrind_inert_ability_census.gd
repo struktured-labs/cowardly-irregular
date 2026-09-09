@@ -10,7 +10,13 @@ extends GutTest
 ## failure cowir-sfx deleted a true-when-written comment for this morning.
 
 const RESOLVER := "res://src/autogrind/HeadlessBattleResolver.gd"
-const ALLY_TARGETS := ["self", "single_ally", "all_allies", "dead_ally"]
+
+## Enumerated, never pattern-matched. cowir-autogrind's census used substring markers and
+## `"all_allies".contains("ally")` is FALSE — it contains "alli" — so every all_allies ability
+## was invisible, including battle_hymn. Under-reporting reads as "fewer things broken", so no
+## number on screen looked wrong.
+const ALLY_TARGETS := ["self", "single_ally", "all_allies", "dead_ally", "all_rat_allies"]
+const ENEMY_TARGETS := ["single_enemy", "all_enemies", "last_attacker"]
 
 ## Every ally-targeted ability that reaches the resolver's `_:` default and therefore does NOTHING
 ## in a grind. This is the meta-job kit plus Raise — routed to struktured as a design question
@@ -63,6 +69,30 @@ func _inert_ally_abilities() -> Array:
 			out.append(str(id))
 	out.sort()
 	return out
+
+## Without this, a NINTH target_type falls outside both lists and leaves the walk silently — the
+## same hole the substring matcher had, reached by a different route. `all_rat_allies` is why this
+## is not hypothetical: it is an ally target that looks nothing like the other four, and my first
+## version of this file omitted it.
+func test_the_target_type_vocabulary_is_closed() -> void:
+	var seen: Dictionary = {}
+	for id in _abilities():
+		var t := str(_abilities()[id].get("target_type", ""))
+		if t != "":
+			seen[t] = true
+	var known: Dictionary = {}
+	for t in ALLY_TARGETS + ENEMY_TARGETS:
+		known[t] = true
+	var unclassified: Array = []
+	for t in seen:
+		if not known.has(t):
+			unclassified.append(t)
+	unclassified.sort()
+	assert_eq(unclassified.size(), 0,
+		"an unclassified target_type leaves the census silently — add it to ALLY_TARGETS or ENEMY_TARGETS: " + str(unclassified))
+	assert_gt(seen.size(), 5, "CONTROL: read a real vocabulary (%d values)" % seen.size())
+	assert_true(seen.has("all_rat_allies"),
+		"CONTROL: the odd-shaped ally target is present in the data — this test exists because it was missed")
 
 func test_the_arm_parser_sees_multi_value_arms() -> void:
 	## The control that caught the broken version: `support` lives in a grouped arm, so a parser
