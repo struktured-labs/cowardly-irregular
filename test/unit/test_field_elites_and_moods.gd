@@ -336,3 +336,45 @@ func test_a_promoted_species_is_only_elite_when_the_SPAWN_says_so() -> void:
 	assert_true(bool(dk.get("field_elite", false)),
 		"dark_knight is authored elite-only and must stay elite with no spawn marker")
 	gs.player_party = saved
+
+## IGNORING A RARE MUST NOT DESTROY IT. The elite is a landmark you decide about -- "it just
+## sits there", "you have to make contact to DECIDE to fight it". Distance culling made that
+## decision one-way: FIGHTING it preserved it (it fades and respawns at its spawn origin),
+## while DECLINING and walking past DESPAWN_DISTANCE deleted it outright, and the cooldown
+## then had to elapse before another could roll anywhere at all. Walking away was the
+## destructive option, which is the opposite of what a decision should cost.
+func test_walking_away_from_an_elite_does_not_delete_it() -> void:
+	var Spawner = load("res://src/exploration/MonsterSpawner.gd")
+	var RM = load("res://src/exploration/RoamingMonster.gd")
+	var sp = Spawner.new()
+	add_child_autofree(sp)
+	var host := Node2D.new()
+	add_child_autofree(host)
+
+	var player := Node2D.new()
+	add_child_autofree(player)
+	player.global_position = Vector2.ZERO
+	sp._player = player
+
+	var elite = RM.new()
+	elite.elite = true
+	host.add_child(elite)
+	var ordinary = RM.new()
+	ordinary.elite = false
+	host.add_child(ordinary)
+	await get_tree().physics_frame
+
+	# both parked well beyond the cull radius
+	var far := Vector2(sp.DESPAWN_DISTANCE * 3.0, 0.0)
+	elite.global_position = far
+	ordinary.global_position = far
+	sp._monsters = [elite, ordinary]
+
+	sp._cull_far_monsters()
+
+	assert_true(is_instance_valid(elite) and elite in sp._monsters,
+		"a field elite must survive the player walking away -- declining a fight cannot be the destructive choice")
+	# CONTROL: an ordinary roamer at the same distance MUST still be culled, or the exemption
+	# is really a broken cull and this test proves nothing about elites.
+	assert_false(ordinary in sp._monsters,
+		"CONTROL: an ordinary roamer at the same distance must still be culled")
