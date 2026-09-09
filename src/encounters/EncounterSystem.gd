@@ -352,6 +352,13 @@ func _generate_hero_mimics_party() -> Array:
 
 func _create_enemy_data(enemy_id: String) -> Dictionary:
 	"""Create enemy data from monster database or fallback"""
+	# A spawn-marked elite: strip the marker, build the ordinary species, then scale it.
+	var spawn_is_elite := enemy_id.ends_with(ELITE_SUFFIX)
+	if spawn_is_elite:
+		enemy_id = enemy_id.substr(0, enemy_id.length() - ELITE_SUFFIX.length())
+		var base: Dictionary = _create_enemy_data(enemy_id)
+		base["field_elite"] = true
+		return _apply_field_elite_scaling(base)
 	# Load from monster database first
 	if monster_database.has(enemy_id):
 		var db_entry = monster_database[enemy_id]
@@ -635,6 +642,13 @@ func reset_encounter_counter() -> void:
 	"""Reset the encounter counter"""
 	steps_since_last_encounter = 0
 
+
+## An id suffix marking THIS SPAWN as a field elite. Elite-ness belongs to the spawn, not the
+## species: five of six worlds promote an ordinary monster to elite duty, so flagging the
+## species would make every routine encounter with it an elite fight. The marker rides in the
+## id because the id is the only thing that already travels scene -> GameLoop -> BattleScene
+## -> here; a "next encounter is elite" latch would leak whenever a battle is blocked.
+const ELITE_SUFFIX: String = "@elite"
 
 const FIELD_ELITE_DATA: String = "res://data/field_elites.json"
 var _field_elite_cfg: Dictionary = {}

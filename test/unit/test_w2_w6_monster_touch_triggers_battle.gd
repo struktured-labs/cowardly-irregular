@@ -42,8 +42,11 @@ func test_every_w2_w6_defines_handler() -> void:
 		var path: String = entry[0]
 		var label: String = entry[1]
 		var src := _read(path)
-		assert_true(src.contains("func _on_roaming_monster_touched(monster_id: String, _monster_types: Array)"),
-			"%s must define _on_roaming_monster_touched(monster_id, _monster_types) handler" % label)
+		# Pinned by NAME, not by the full parameter list. The claim is "this world defines the
+		# handler and connects it"; the signature is incidental, and pinning it reds on a
+		# correct widening (is_elite was added 2026-09-09) while permitting a renamed handler.
+		assert_true(src.contains("func _on_roaming_monster_touched("),
+			"%s must define an _on_roaming_monster_touched handler" % label)
 
 
 func test_handler_delegates_through_on_battle_triggered() -> void:
