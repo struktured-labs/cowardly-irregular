@@ -168,7 +168,8 @@ decide() {
 # Every case below names its expected verdict, and BOTH verdicts must actually occur —
 # a suite of cases that all expect RUN would pass with `decide()` hardwired to run.
 selftest() {
-    local sandbox pass=0 fail=0 saw_skip=0 saw_run=0
+    local sandbox pass=0 fail=0 saw_skip=0 saw_run=0 SELF
+    SELF="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
     sandbox="$(mktemp -d "${TMPDIR:-/tmp}/taggate_selftest.XXXXXX")"
     # shellcheck disable=SC2064
     trap "rm -rf '$sandbox'" EXIT
@@ -184,7 +185,10 @@ selftest() {
 
     check() { # name expected tag
         local name="$1" expect="$2" tag="$3" out verdict
-        out="$(cd "$sandbox" && decide "$tag")"
+        # SUBPROCESS, not decide(). Calling the function in-process tests whatever decide()
+        # happens to be in this shell; invoking the file tests what ships. (cowir-battle,
+        # 2026-09-09 — and my own worse version of it, testing a re-typed copy entirely.)
+        out="$(cd "$sandbox" && "$SELF" "$tag")"
         verdict="${out%% *}"; verdict="${verdict#VERDICT=}"
         [ "$verdict" = "SKIP" ] && saw_skip=1
         [ "$verdict" = "RUN" ] && saw_run=1

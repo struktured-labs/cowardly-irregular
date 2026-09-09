@@ -107,24 +107,15 @@ func test_the_warren_boss_can_finally_cast() -> void:
 	assert_true(wraith.has("dark_bolt") or wraith.has("void_pulse") or wraith.has("hallucination_spores"),
 		"the Warren's boss must be able to select something other than `slash`")
 
-func test_a_tank_reaches_only_its_STRONGEST_hit_and_that_is_the_next_problem() -> void:
-	## ⚠️ MEASURED LIMIT OF THIS FIX, pinned rather than described, because I asserted more than it
-	## delivers and the assertion failed. _ai_tank sorts its offensive pool by damage_multiplier and
-	## always takes [0], so widening the pool changes WHICH single ability a tank uses, not how many.
-	##   fire_dragon      5 abilities -> magma_eruption + inferno_rage   (was tail_sweep + rage)
-	##   cartographer_wraith 4 -> void_pulse                             (was slash)
-	##   dark_knight      3 -> dark_slash + shadow_step, UNCHANGED: life_drain ties dark_slash at
-	##                    1.5 and the sort keeps the first, so the elite's drain stays unreachable
-	##   rust_elemental   3 -> tetanus_touch, UNCHANGED: corrode 0.7 and oxidize 0.5 lose to 0.9
-	## So a tank boss fights with one move on repeat. That is a variety problem the design comment
-	## calls deliberate ("use strongest"), and changing it is a second behaviour change on top of
-	## this one — routed to struktured with the numbers rather than taken in the same commit.
+func test_the_known_gaps_closed_and_the_pin_expired_as_designed() -> void:
+	## This test used to be test_a_tank_reaches_only_its_STRONGEST_hit, holding two INVERTED asserts
+	## pinning dark_knight's life_drain and rust_elemental's corrode as KNOWN GAPS — with the note
+	## "when the tank's single-slot rule changes, this reds and someone deletes it". It reded. This
+	## is the deletion, and the pin is the reason the gap could not quietly outlive its own reason.
 	var elite := _selectable("dark_knight")
-	assert_false(elite.has("life_drain"),
-		"pinned as a KNOWN GAP, not a pass: when the tank's single-slot rule changes, this reds and someone deletes it")
+	assert_true(elite.has("life_drain"), "the field elite reaches its drain now")
 	var rust := _selectable("rust_elemental")
-	assert_false(rust.has("corrode") or rust.has("oxidize"),
-		"same gap — a rust elemental that cannot corrode is still a reskinned punch")
+	assert_true(rust.has("corrode") or rust.has("oxidize"), "and the rust elemental corrodes")
 
 func test_every_boss_can_reach_at_least_one_offensive_ability() -> void:
 	## The general property, over the W1 spine. A boss that can only basic-attack is not a boss.

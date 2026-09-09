@@ -2313,6 +2313,20 @@ func _ai_healer(combatant: Combatant, abilities: Array, alive_allies: Array, ali
 			"speed": _compute_action_speed(combatant, "ability", buff)
 		}
 
+	## The docstring says "attack only when no one needs healing" and the attack was a BASIC one, so
+	## a healer's own offensive kit was decoration: elder_mushroom never released a spore in its life.
+	## Same 30% as _ai_brute rather than a new invented number; healing and support still come first.
+	var offensive_abilities = abilities.filter(func(a): return a.get("type", "") in ["physical", "magic"])
+	if offensive_abilities.size() > 0 and randf() < 0.3:
+		var spell = offensive_abilities[randi() % offensive_abilities.size()]
+		return {
+			"type": "ability",
+			"combatant": combatant,
+			"ability_id": spell.get("id", ""),
+			"targets": [_choose_target(combatant, alive_enemies, spell)],
+			"speed": _compute_action_speed(combatant, "ability", spell)
+		}
+
 	# Fallback: basic attack
 	var target = _choose_target(combatant, alive_enemies, {})
 	return {"type": "attack", "combatant": combatant, "target": target, "speed": _compute_action_speed(combatant, "attack")}
@@ -2334,22 +2348,15 @@ func _ai_caster(combatant: Combatant, abilities: Array, alive_enemies: Array) ->
 	# 75% chance (intent-biased) to cast a spell if MP allows
 	if magic_abilities.size() > 0 and randf() < cast_chance:
 		# Prefer spells that exploit target weaknesses
-		var best_spell = magic_abilities[0]
-		var best_score = 0.0
-		for spell in magic_abilities:
-			var element = spell.get("element", "")
-			var score = _ability_power(spell)
-			# Check if any enemy is weak to this element.
-			# Combatant's field is elemental_weaknesses (Array[String]), not
-			# weaknesses — a prior typo silently errored at runtime when
-			# cast by a caster-AI enemy, defeating the weakness-exploit
-			# heuristic.
-			for enemy in alive_enemies:
-				if element != "" and "elemental_weaknesses" in enemy and element in enemy.elemental_weaknesses:
-					score *= 2.0  # Double score for weakness exploitation
-			if score > best_score:
-				best_score = score
-				best_spell = spell
+		## Was: keep the single highest-scoring spell. Measured, Mordaine cast firaga 2268 times in
+		## 3000 turns and NOTHING else — void_pulse, the W1 final boss's silence, never once. Same
+		## single-slot rule the tank and assassin had; scoring still orders the list, the bias just
+		## stops it being the only entry that can win. Weakness exploitation stays the primary sort.
+		var scored: Array = magic_abilities.duplicate()
+		scored.sort_custom(func(a, b): return _caster_spell_score(a, alive_enemies) > _caster_spell_score(b, alive_enemies))
+		var best_spell = _pick_biased_by_power(scored)
+		if best_spell.is_empty():
+			best_spell = magic_abilities[0]
 
 		var spell_target = _choose_target(combatant, alive_enemies, best_spell)
 		return {
@@ -2410,6 +2417,30 @@ func _ai_debuffer(combatant: Combatant, abilities: Array, alive_allies: Array, a
 	return {"type": "attack", "combatant": combatant, "target": target, "speed": _compute_action_speed(combatant, "attack")}
 
 
+## Caster ordering: raw power, doubled when an enemy is weak to the spell's element. Combatant's
+## field is elemental_weaknesses, not weaknesses — a prior typo silently errored at runtime here.
+func _caster_spell_score(spell: Dictionary, alive_enemies: Array) -> float:
+	var element: String = str(spell.get("element", ""))
+	var score: float = _ability_power(spell)
+	if element == "":
+		return score
+	for enemy in alive_enemies:
+		if enemy != null and "elemental_weaknesses" in enemy and element in enemy.elemental_weaknesses:
+			score *= 2.0
+	return score
+
+
+## Prefers the strongest, without being ONLY the strongest. Three archetypes sorted by power and
+## took [0] unconditionally, so a 5-ability boss fought with 1 move: Pyrroth showed magma_eruption
+## and nothing else, Voltharion one spell, dark_knight's life_drain lost a 1.5 tie to the sort.
+func _pick_biased_by_power(sorted_desc: Array) -> Dictionary:
+	if sorted_desc.is_empty():
+		return {}
+	if sorted_desc.size() == 1 or randf() < 0.5:
+		return sorted_desc[0]
+	return sorted_desc[1 + randi() % (sorted_desc.size() - 1)]
+
+
 func _ai_tank(combatant: Combatant, abilities: Array, alive_allies: Array, alive_enemies: Array) -> Dictionary:
 	"""Tank AI: use defensive abilities, protect allies, heavy single hits"""
 	## "summon" joins the utility pool and "magic" the offensive one, because this filter was
@@ -2439,7 +2470,7 @@ func _ai_tank(combatant: Combatant, abilities: Array, alive_allies: Array, alive
 	if physical_abilities.size() > 0 and randf() < 0.5:
 		# Sorted on damage_multiplier: no ability authors `power`, so the old key was constant 0 and "strongest" was whichever happened to be first.
 		physical_abilities.sort_custom(func(a, b): return _ability_power(a) > _ability_power(b))
-		var ability = physical_abilities[0]
+		var ability = _pick_biased_by_power(physical_abilities)
 		var target = _choose_target(combatant, alive_enemies, ability)
 		return {
 			"type": "ability",
@@ -2476,7 +2507,7 @@ func _ai_assassin(combatant: Combatant, abilities: Array, alive_enemies: Array) 
 	# Use strongest offensive ability on wounded target (60% chance)
 	if offensive_abilities.size() > 0 and randf() < 0.6:
 		offensive_abilities.sort_custom(func(a, b): return _ability_power(a) > _ability_power(b))
-		var ability = offensive_abilities[0]
+		var ability = _pick_biased_by_power(offensive_abilities)
 		return {
 			"type": "ability",
 			"combatant": combatant,
