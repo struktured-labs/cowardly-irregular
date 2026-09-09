@@ -63,6 +63,7 @@ const CONDITION_TYPES = [
 const ACTION_TYPES = [
 	{"id": "stop_grinding", "label": "Stop Grind"},
 	{"id": "heal_party", "label": "Use Potions"},
+	{"id": "member_ability", "label": "Member Casts"},
 	{"id": "restore_mp", "label": "Use Ethers"},
 	{"id": "flee_battle", "label": "Flee Next Battle"},
 	{"id": "switch_profile", "label": "Switch Profile", "has_target": true},
@@ -1080,6 +1081,8 @@ func _format_action(action: Dictionary) -> String:
 		"switch_profile":
 			var target = action.get("target", "all")
 			return "Switch\nProfile (%s)" % target
+		"member_ability":
+			return "%s casts\n%s" % [str(action.get("member", "Any")).capitalize(), str(action.get("ability", "?"))]
 		"heal_party":
 			return "Use\nPotions"
 		"restore_mp":
