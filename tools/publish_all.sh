@@ -118,33 +118,21 @@ if [ "$IMPORTED" -lt 100 ]; then
     exit 4
 fi
 
-# A non-zero exit here is NOT decisive: godot segfaults during editor TEARDOWN, after
-# `reimport: end`, with the cache fully built. Observed on .254, .276 and others.
-#
-# ⚠️ BUT THE TOLERANCE MUST CHECK ITS OWN REASON. This block used to accept any non-zero exit
-# once the file count passed, while the comment justifying it said "teardown". Those are
-# different claims: a crash DURING import that still left >100 files would have been waved
-# through by a guard whose stated reason did not hold. I was verifying "reimport: end" by
-# reading the log myself on the nights it happened — which is a judgement that lives in my
-# head and expires silently the first time I do not look.
-#
-# So the reason is now re-computed every run: tolerate a non-zero exit ONLY when the log
-# shows the reimport actually completed. If godot ever starts failing mid-import, this stops
-# accepting it without anyone having to notice the character of the crash changed.
-# (Shape borrowed from cowir-sprites, 2026-09-09: an exception justified by a human judgement
-#  cannot expire on its own — pin the thing that was judged, not a restatement of the verdict.)
-if [ "$IMPORT_EC" -ne 0 ]; then
-    if grep -aq 'reimport: end' tmp/publish_all_import.log 2>/dev/null; then
-        echo "[pub] prebuild: ${IMPORTED} imported files (exit ${IMPORT_EC} — 'reimport: end' present, so this is a teardown crash: tolerated)"
-    else
-        echo "[pub] BLOCKED: import exited ${IMPORT_EC} and the log does NOT contain 'reimport: end'." >&2
-        echo "        The cache has ${IMPORTED} files, but this is not the known teardown crash —" >&2
-        echo "        the reimport did not finish, so the cache may be partial. Refusing to build" >&2
-        echo "        on it. See tmp/publish_all_import.log" >&2
+# Delegated to tools/check_import_ok.sh so the decision is exercised by ITS OWN selftest as a
+# subprocess, rather than by a copy of the condition living in whatever shell I happened to be
+# in. The inline version was "tested" by me re-implementing the grep in a probe function — four
+# green arms that proved my copy worked and never invoked this file at all. (cowir-battle,
+# 2026-09-09: a test that calls the repaired function directly cannot tell either; testing a
+# re-implementation does not even execute the shipped code.)
+if [ -x tools/check_import_ok.sh ]; then
+    if ! ./tools/check_import_ok.sh tmp/publish_all_import.log "$IMPORT_EC" 100 "$IMPORTED"; then
+        echo "[pub] BLOCKED: refusing to build on this import cache — see above." >&2
         exit 4
     fi
 else
-    echo "[pub] prebuild: ${IMPORTED} imported files"
+    echo "[pub] BLOCKED: tools/check_import_ok.sh missing. Refusing to accept a non-zero import" >&2
+    echo "      exit on a file count alone — that is the guard whose stated reason did not hold." >&2
+    exit 4
 fi
 
 echo "[pub] prebuild: 48k audio tier"
