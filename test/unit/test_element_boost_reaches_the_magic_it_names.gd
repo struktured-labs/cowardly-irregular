@@ -12,6 +12,12 @@ extends GutTest
 ## Voltharion's Storm Gathering says "Voltharion's kit is 4/5 magic — without this the telegraph
 ## never lands." One dragon got carried across; the other did not.
 ##
+## ⛔ LIMIT: the probe below calls _execute_support_ability and _execute_magic_ability BY HAND, so it
+## proves the boost reaches the damage and nothing about whether Pyrroth ever casts either. It did
+## not — as a tank it could select inferno_rage but no magic at all, so this repair was invisible in
+## a real fight until _ai_tank's vocabulary was widened. Selection is pinned in
+## test_bosses_can_select_their_own_kit; a green here is a statement about the formula, not the fight.
+##
 ## ⚠️ The 2.0 is NOT the boost. It was authored for an attack buff nothing read, so it was never
 ## balanced as a magic multiplier — reviving a dormant branch is what finally tests the numbers it
 ## preserved. element_boost_modifier (1.5) is the tunable, falling back to stat_modifier when a

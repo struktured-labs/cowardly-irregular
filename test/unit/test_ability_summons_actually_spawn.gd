@@ -15,8 +15,16 @@ extends GutTest
 ## "The Rat King SQUEAKS imperiously!" — had never once printed.
 ##
 ## The trap is the one the fleet keeps naming: the case that worked (eidolons) certified the ones
-## that did not. So these drive the REAL entry point and watch the monster_summoned signal, rather
-## than asserting that a branch exists.
+## that did not. So these watch the monster_summoned signal rather than asserting a branch exists.
+##
+## ⛔ LIMIT OF THIS FILE, added the same day after it turned out to matter. "The REAL entry point"
+## is what I called _execute_ability, and it is not one — every test below hands it the ability id.
+## That proves EXECUTION and says nothing about SELECTION, and the Rat King could not select this
+## move at all: it classifies as a tank, and `summon` was in no archetype's vocabulary until
+## _ai_tank was widened. So this file was green, armed, and describing something the game could not
+## do. Reachability lives in test_bosses_can_select_their_own_kit, which drives the archetype
+## decision path and asserts the id comes back OUT of it. Neither file is sufficient alone; do not
+## read a green here as "the boss summons".
 
 const BattleManagerScript = preload("res://src/battle/BattleManager.gd")
 const SpawnerScript = preload("res://src/battle/BattleEnemySpawner.gd")
@@ -61,7 +69,7 @@ func test_royal_summon_spawns_a_rat_guard() -> void:
 	var king := _monster("Cave Rat King", "cave_rat_king")
 	_bm._execute_ability(king, "royal_summon", [king])
 	assert_eq(_spawned, ["rat_guard"],
-		"the W1 tutorial boss's signature move must put a rat guard on the field, not cast magic at itself")
+		"asked to cast it, the boss must put a rat guard on the field rather than magic at itself — whether it is ever ASKED is test_bosses_can_select_their_own_kit's question")
 
 func test_rat_swarm_honours_summon_count() -> void:
 	var king := _monster("Cave Rat King", "cave_rat_king")

@@ -1832,10 +1832,25 @@ func _known_abilities_for(member_id: String) -> Array:
 ##
 ## Their "depends on the battlefield" has an exact analogue: conditions reading SESSION state cannot
 ## be answered from a party snapshot, and every rule below one is unreachable until it settles.
+## ⛔ CORRECTED: this listed inventory_items and reached_level as needing session progress. They do
+## not — they read the PARTY (_get_party_unique_item_count, _get_party_max_job_level), so a probe
+## can answer both. The stated reason was never true, which is cowir-sfx's third suppression
+## category: not INERT (the detector cannot emit it) and not EXPIRED (true once, outlived its
+## reason) but FALSE — and a false entry can never expire, because the condition it names never
+## held. It also did real damage: a rule using either was reported unshowable AND blocked every
+## rule below it under first-match-wins.
+##
+## reached_level is now MODELLED in the probe rather than excluded, per cowir-sfx's "fix by
+## modelling the mechanism, not by deleting lines".
 const SESSION_SCOPED_CONDITIONS := [
 	"battles_done", "win_streak", "time_elapsed", "corruption", "efficiency",
-	"ability_learned", "rare_item_found", "member_injured", "inventory_items", "reached_level",
+	"ability_learned", "rare_item_found", "member_injured",
 ]
+
+## Party-derived, answerable in principle, but the probe carries no inventory — copying one is a
+## bigger change than this feature warrants. Stated as what it IS rather than as session scope,
+## so the reason is true and CAN expire when someone models it.
+const PROBE_UNMODELLED_CONDITIONS := ["inventory_items"]
 
 
 ## Sampled party situations, so a player sees their own thresholds fire rather than one snapshot.
@@ -1861,6 +1876,10 @@ func _explain_probe_party(state: Dictionary) -> Array:
 		})
 		if src != null and src.job != null:
 			c.job = src.job
+		## Combatant uses job_level, NOT level. Copied so reached_level is answerable from the
+		## probe rather than excluded with a false reason.
+		if src != null and "job_level" in src:
+			c.job_level = src.job_level
 		c.current_hp = int(1000.0 * float(state.get("hp_pct", 1.0)))
 		c.current_mp = int(100.0 * float(state.get("mp_pct", 1.0)))
 		if i < int(state.get("down", 0)):
@@ -1868,6 +1887,13 @@ func _explain_probe_party(state: Dictionary) -> Array:
 			c.is_alive = false
 		out.append(c)
 	return out
+
+
+func _rule_needs_unmodelled_state(rule: Dictionary) -> bool:
+	for c in rule.get("conditions", []):
+		if PROBE_UNMODELLED_CONDITIONS.has(str((c as Dictionary).get("type", ""))):
+			return true
+	return false
 
 
 func _rule_needs_session_state(rule: Dictionary) -> bool:
@@ -1892,7 +1918,7 @@ func explain_rules_report() -> Array:
 			var rule: Dictionary = rules[i]
 			if not bool(rule.get("enabled", true)):
 				continue
-			if _rule_needs_session_state(rule):
+			if _rule_needs_session_state(rule) or _rule_needs_unmodelled_state(rule):
 				blocked = i
 				break
 			if AutogrindSystem._evaluate_party_rule(probe, rule):
