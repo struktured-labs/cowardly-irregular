@@ -669,6 +669,12 @@ func _assign_selected_job() -> void:
 			character.load_profile(new_key)
 		else:
 			character.fork_profile(old_key, new_key)
+		# load_profile recalculates; fork_profile does NOT. Dropping a
+		# secondary must give back the stats it lent
+		# (Combatant.SECONDARY_JOB_STAT_FRACTION) on BOTH arms, or the first
+		# time you clear a secondary on a never-used profile key you keep the
+		# boost until some unrelated equip triggers a recalc.
+		character.recalculate_stats()
 		job_changed.emit(character, "", true)
 		SoundManager.play_ui("menu_select")
 		mode = Mode.SLOT_SELECT

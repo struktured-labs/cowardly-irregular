@@ -40,6 +40,13 @@ signal status_tick_heal(amount: int, source: String)
 ## The stats gear/passives may modify — the single authority. Add a stat here and equipment can move it with no EquipmentSystem change; a stat_mods key outside this list is a typo, caught by test_equipment_stat_mods_regression rather than silently dropped.
 const MODDABLE_STATS := ["max_hp", "max_mp", "attack", "defense", "magic", "magic_defense", "speed"]
 
+## How much of its aptitude a SECONDARY job lends, applied in recalculate_stats
+## over the primary's stats and before the job-level multiplier. One knob, one
+## place: 0.0 restores the pre-2026-09-09 behaviour exactly (secondary worth a
+## sprite tint and a menu line only), 1.0 would make a secondary as strong as a
+## primary. 0.10 is a starting value, not a tuned one — struktured's call.
+const SECONDARY_JOB_STAT_FRACTION: float = 0.10
+
 ## Denomination of the stat fields below. Bumped by the 2026-07-29 ×10 pass; every save records it so a file written at an older scale can be migrated instead of loading a 1/10th-strength party into a ×10 world.
 const STAT_SCALE := 10
 ## Exactly the fields the ×10 data pass touched. max_mp/speed are absent because the MP economy and turn order were deliberately left alone.
@@ -1574,6 +1581,31 @@ func recalculate_stats() -> void:
 			magic_defense = int(job_mods["defense"] * 0.5)
 		if job_mods.has("speed"):
 			speed = job_mods["speed"]
+
+	# struktured 2026-09-06 "2ndary job does nothing apparently". The ABILITY
+	# half landed that day (knows_ability / get_known_abilities lend the
+	# secondary's base kit). The STAT half never did: assign_secondary_job's
+	# own docstring promised a "minor stat boost" and nothing in this pipeline
+	# applied one, so a secondary job was worth a sprite tint and a menu line.
+	# A secondary lends a FRACTION of its aptitude on top of the primary's — a
+	# fighter/mage stays a fighter but is meaningfully more magical than a
+	# fighter/rogue. Placed before the level multiplier so lent aptitude scales
+	# with job_level exactly as the primary's does, and driven off
+	# MODDABLE_STATS for the reason the equipment block below states: a
+	# hand-listed six silently omits whatever it does not name.
+	if secondary_job is Dictionary and SECONDARY_JOB_STAT_FRACTION > 0.0:
+		var sec_mods: Variant = (secondary_job as Dictionary).get("stat_modifiers", {})
+		if sec_mods is Dictionary:
+			for stat in MODDABLE_STATS:
+				# roundi, NOT int(): speed and max_mp were left off the
+				# 2026-07-29 x10 pass (see SCALED_STAT_FIELDS), so they sit on a
+				# 1-16 scale while max_hp sits near 1000. Truncating 10% of a
+				# speed of 9 gives 0, which silently excluded the two smallest
+				# stats from lending entirely — caught by the moved-members
+				# canary in test_secondary_job_lends_stats_regression.
+				var lent: int = roundi(float((sec_mods as Dictionary).get(stat, 0)) * SECONDARY_JOB_STAT_FRACTION)
+				if lent != 0:
+					set(stat, int(get(stat)) + lent)
 
 	# Apply job level bonuses (+4% all stats per level)
 	var level_mult = 1.0 + (job_level - 1) * 0.04
