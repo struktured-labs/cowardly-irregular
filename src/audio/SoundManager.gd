@@ -359,6 +359,17 @@ const _ELEMENT_SFX: Dictionary = {
 	"holy": "ability_holy",
 }
 
+## Type -> cue when the element yields nothing. song/summon/revival had NO cue at all and fell
+## through to ability_physical: the bard's four songs, all seven summons and `raise` played a
+## sword thump. physical/support/meta are deliberately absent — the thump is right for physical,
+## and buff cues are keyed on the ability id, not the type.
+const _TYPE_SFX: Dictionary = {
+	"healing": "ability_heal",
+	"song": "ability_song",
+	"summon": "ability_summon",
+	"revival": "ability_revive",
+}
+
 
 func _derive_ability_sounds_from_data() -> void:
 	"""Fill gaps in the hand map from abilities.json so a spell never plays the melee thump.
@@ -393,11 +404,11 @@ func _derive_ability_sounds_from_data() -> void:
 		if not (entry is Dictionary):
 			continue
 		var ability_type: String = str(entry.get("type", ""))
-		if ability_type != "magic" and ability_type != "healing":
+		if ability_type != "magic" and not _TYPE_SFX.has(ability_type):
 			continue
 		var cue: String = str(_ELEMENT_SFX.get(str(entry.get("element", "")).to_lower(), ""))
-		if cue == "" and ability_type == "healing":
-			cue = "ability_heal"
+		if cue == "":
+			cue = str(_TYPE_SFX.get(ability_type, ""))
 		if cue == "" or not _sfx_manifest.has(cue):
 			continue
 		_ability_sounds[ability_id] = cue

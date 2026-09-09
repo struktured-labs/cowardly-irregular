@@ -312,6 +312,36 @@
       "gate_widened": false,
       "sha256": "81689a6310f2216fa3da63b948d42993fbe7b009de58a8eef9e6f0934451d01a",
       "file": "assets/audio/sfx/attack_hit_staff.ogg"
+    },
+    "ability_song": {
+      "early_hz": 1656.6,
+      "late_hz": 1804.9,
+      "sweep": 1.09,
+      "direction": "rise",
+      "whoops": false,
+      "gate_widened": false,
+      "sha256": "5026c2291ec0974249519d2cbf785cd91f0e73c33b567b15e8ff0fd5b6d4030a",
+      "file": "assets/audio/sfx/ability_song.ogg"
+    },
+    "ability_summon": {
+      "early_hz": 933.2,
+      "late_hz": 985.3,
+      "sweep": 1.06,
+      "direction": "rise",
+      "whoops": false,
+      "gate_widened": false,
+      "sha256": "a72c6abff772310445687e5980e19d85bef774f8328dcb25d3062f9daa67352a",
+      "file": "assets/audio/sfx/ability_summon.ogg"
+    },
+    "ability_revive": {
+      "early_hz": 1607.8,
+      "late_hz": 1684.5,
+      "sweep": 1.05,
+      "direction": "rise",
+      "whoops": false,
+      "gate_widened": false,
+      "sha256": "8284abbdc2dd2a5d216d4ea6325a13bf42fd9ecbf66f9ba88e6497c49ac913c7",
+      "file": "assets/audio/sfx/ability_revive.ogg"
     }
   }
 }

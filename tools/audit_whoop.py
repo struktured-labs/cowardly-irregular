@@ -39,6 +39,9 @@ PINNED = [
     "purchase_complete", "autobattle_open", "portal_activate", "attack_hit_piano_scythe_crit",
     # Found only after the silent-skip fix: their loud part is under 3 windows.
     "autobattle_on", "attack_hit_staff",
+    # New cue families, pinned at birth: song/summon/revival abilities had NO cue and played
+    # ability_physical. Synthesised, so the sha256 here is what stops a later regenerate.
+    "ability_song", "ability_summon", "ability_revive",
 ]
 # BIDIRECTIONAL. The first version only looked for a RISE, so strike_dark sweeping 2670 -> 144 Hz
 # scored "ok" -- a fall is a sweep and reads as a whoop just as much. That one-directional blind

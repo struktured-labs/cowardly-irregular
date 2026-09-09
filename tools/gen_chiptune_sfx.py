@@ -331,12 +331,77 @@ def staff_hit(dur=0.30, seed=151):
     out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.86).astype(np.float32)
 
 
+def _held(n, f, decay, amp=1.0, duty=0.5, vib_hz=0.0, vib_cents=0.0):
+    """A held pulse note. Vibrato is depth-limited in CENTS so the fundamental never GLIDES."""
+    f_inst = np.full(n, float(f))
+    if vib_hz > 0.0 and vib_cents > 0.0:
+        f_inst = f_inst * (2.0 ** ((vib_cents / 1200.0) * np.sin(2 * math.pi * vib_hz * np.arange(n) / SR)))
+    ph = (np.cumsum(f_inst) / SR) % 1.0
+    return np.where(ph < duty, 1.0, -1.0) * _env(n, 0.004, decay) * amp
+
+
+def _place(out, seg, start):
+    end = min(len(out), start + len(seg))
+    out[start:end] += seg[:end - start]
+
+
+def song(dur=0.85, seed=163):
+    """ability_song — bard's four songs (battle_hymn/lullaby/discord/inspiring_melody) had NO cue
+    and fell through to ability_physical, a melee thump. A song has to read as MUSIC: three held
+    triad steps on a reedy 25% pulse, vibrato on the sustain. Stepped, never slid — an arpeggio is
+    discrete pitch, which is why it does not register as the whoop struktured rejected."""
+    rng = np.random.default_rng(seed); n = int(SR * dur)
+    out = np.zeros(n)
+    step = int(n * 0.17)
+    _place(out, _held(step, 523.25, 3.0, 0.55, duty=0.25), 0)                      # C5
+    _place(out, _held(step, 659.25, 3.0, 0.55, duty=0.25), step)                   # E5
+    tail = n - 2 * step
+    _place(out, _held(tail, 783.99, 1.9, 0.60, duty=0.25, vib_hz=6.5, vib_cents=28.0), 2 * step)
+    _place(out, _held(tail, 392.00, 1.7, 0.30, duty=0.5), 2 * step)                # G4 body under it
+    out = _bitcrush(out, bits=5, hold=4); out = _sweep_lowpass(out, 2000.0, 1500.0)
+    out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.80).astype(np.float32)
+
+
+def summon(dur=1.30, seed=167):
+    """ability_summon — 7 summons incl. Bahamut/Ifrit/Shiva/Ramuh played the melee thump. Weight
+    comes from a held low root+fifth drone and a noise swell, NOT from a descending glide."""
+    rng = np.random.default_rng(seed); n = int(SR * dur)
+    out = _held(n, 65.41, 0.85, 0.75) + _held(n, 98.00, 0.95, 0.42) + _held(n, 130.81, 1.2, 0.26)
+    swell = _sweep_lowpass(rng.uniform(-1, 1, n), 900.0, 700.0) * _env(n, 0.35, 1.3) * 0.5
+    out += swell
+    thump = np.zeros(n); k = int(SR * 0.16)
+    thump[:k] = _held(k, 49.0, 2.2, 1.0)
+    out += thump
+    out *= 1.0 + 0.12 * np.sin(2 * math.pi * 5.5 * np.arange(n) / SR)
+    out = _bitcrush(out, bits=5, hold=5); out = _sweep_lowpass(out, 1500.0, 1200.0)
+    out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.82).astype(np.float32)
+
+
+def revive(dur=1.15, seed=173):
+    """ability_revive — `raise` (Anima Reddita) is the one moment a dead party member comes back
+    and it played a sword hit. Two held steps resolving into a major chord: low breath, then the
+    triad arriving together. Fundamentals stay 260-520 Hz so it reads warm, not as the chirp that
+    got the old cure cue rejected."""
+    rng = np.random.default_rng(seed); n = int(SR * dur)
+    out = np.zeros(n); lead = int(n * 0.26)
+    _place(out, _held(lead, 261.63, 2.4, 0.45, duty=0.5), 0)                        # C4 breath
+    tail = n - lead
+    for f, a in ((523.25, 0.42), (659.25, 0.34), (783.99, 0.28)):                   # C5-E5-G5, together
+        _place(out, _held(tail, f, 1.5, a, duty=0.35, vib_hz=5.0, vib_cents=18.0), lead)
+    _place(out, _held(tail, 130.81, 1.1, 0.30, duty=0.5), lead)                     # C3 under the chord
+    shimmer = _sweep_lowpass(rng.uniform(-1, 1, n), 1600.0, 1400.0) * _env(n, 0.30, 2.2) * 0.13
+    out += shimmer
+    out = _bitcrush(out, bits=5, hold=4); out = _sweep_lowpass(out, 2100.0, 1700.0)
+    out /= max(np.max(np.abs(out)), 1e-9); return (out * 0.78).astype(np.float32)
+
+
 VOICES = {"ui_toggle_on": ui_toggle_on, "staff_hit": staff_hit, "ui_confirm": ui_confirm, "ui_open": ui_open, "portal_hum": portal_hum,
           "scythe_crit": scythe_crit, "strike_dark_hit": strike_dark_hit, "strike_lightning_hit": strike_lightning_hit,
           "shadow_strike": shadow_strike, "fire": fire, "fire_burst": fire_burst, "fire_roar": fire_roar,
           "lightning": lightning, "lightning_snap": lightning_snap, "lightning_chain": lightning_chain,
           "ice": ice, "ice_shatter": ice_shatter, "ice_freeze": ice_freeze,
-          "dark": dark}
+          "dark": dark,
+          "song": song, "summon": summon, "revive": revive}
 
 
 def main():
