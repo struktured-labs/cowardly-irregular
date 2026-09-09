@@ -30,7 +30,7 @@ set -euo pipefail
 cd "$(cd "$(dirname "$0")/.." && pwd)"
 
 STAGE="tmp/web_stage"
-[ "${1:-}" = "--clean" ] && { rm -rf "$STAGE"; echo "[stage] removed $STAGE"; exit 0; }
+[ "${1:-}" = "--clean" ] && { rm -rf "$STAGE" tmp/web_stage.id; echo "[stage] removed $STAGE (+ its reuse marker)"; exit 0; }
 
 BITRATE="${1:-48}"
 TIER="tmp/web_audio/music_${BITRATE}k"
@@ -49,10 +49,52 @@ SRC_N=$(find assets/audio/music -name '*.ogg' | wc -l)
 echo "[stage]     ${TIER_N}/${SRC_N} tracks"
 
 # ── 2. the copy ─────────────────────────────────────────────────────────────
-echo "[stage] 2/4 copying project (real copy — see header on why not hardlinks)"
-rm -rf "$STAGE"; mkdir -p "$STAGE"
-tar -cf - --exclude=.git --exclude=tmp --exclude=build --exclude=builds --exclude=.godot . \
-  | ( cd "$STAGE" && tar -xf - )
+# RESUMABLE. The copy plus the stage's first import is ~15 minutes, and the whole of it
+# used to be discarded by any interruption. Measured 2026-09-09: five consecutive memory
+# kills of the web chain threw away a completed 163-track transcode and a full project
+# copy every time, and the deploy only landed once both were rebuilt by hand outside the
+# killer. `make_web_audio.sh` already reuses an up-to-date tier; this gives the stage the
+# same property, and it also preserves $STAGE/.godot so the slow first import survives.
+#
+# ⚠️ THE FAILURE DIRECTION IS THE DESIGN. Reusing a STALE stage would export the wrong
+# source and ship it — silently, because a stale stage builds and packs perfectly well.
+# So reuse demands POSITIVE PROOF and every other outcome rebuilds:
+#   * the id file must exist, be readable, and match HEAD + working-tree hash + bitrate;
+#   * the stage must still look like a project (project.godot present);
+#   * its music directory must already hold the tier's track count.
+# A missing, empty, unreadable or mismatched id rebuilds. There is no "assume fresh" path.
+#
+# The id is written only AFTER step 3 finishes, so a stage killed mid-copy or mid-swap has
+# no id and is rebuilt. That is the whole reason the marker lives at the END of the work it
+# vouches for rather than the start.
+#
+# It lives OUTSIDE $STAGE (tmp/web_stage.id, which the tar excludes anyway) so it can never
+# be packed into the exported project.
+STAGE_ID_FILE="tmp/web_stage.id"
+_stage_id() {
+    printf '%s %s %s' \
+        "$(git rev-parse HEAD 2>/dev/null || echo nogit)" \
+        "$(git status --porcelain 2>/dev/null | sort | md5sum | cut -d' ' -f1)" \
+        "$BITRATE"
+}
+WANT_ID="$(_stage_id)"
+REUSE=0
+if [ -s "$STAGE_ID_FILE" ] && [ "$(cat "$STAGE_ID_FILE" 2>/dev/null)" = "$WANT_ID" ] \
+   && [ -f "$STAGE/project.godot" ] \
+   && [ "$(find "$STAGE/assets/audio/music" -name '*.ogg' 2>/dev/null | wc -l)" -eq "$TIER_N" ]; then
+    REUSE=1
+fi
+
+if [ "$REUSE" -eq 1 ]; then
+    echo "[stage] 2/4 REUSING the existing stage — tree, working copy and bitrate all unchanged"
+    echo "[stage]     (${STAGE}/.godot preserved, so the slow first import does not repeat)"
+else
+    echo "[stage] 2/4 copying project (real copy — see header on why not hardlinks)"
+    rm -f "$STAGE_ID_FILE"
+    rm -rf "$STAGE"; mkdir -p "$STAGE"
+    tar -cf - --exclude=.git --exclude=tmp --exclude=build --exclude=builds --exclude=.godot . \
+      | ( cd "$STAGE" && tar -xf - )
+fi
 
 # ── 3. swap the audio and drop the music exclusions, IN THE STAGE ONLY ──────
 echo "[stage] 3/4 swapping audio + deriving the exclusion list"
@@ -114,6 +156,11 @@ print(f"[stage]     expect {expected} of {len(masters)} masters packed "
       f"({len(excluded)} deliberately excluded)")
 open(os.path.join(stage, ".expected_music"), "w").write(str(expected))
 PY
+
+# The stage is now fully prepared: copied, audio swapped, exclusions derived. Only now is
+# it safe to vouch for it. Written here rather than after the export because the EXPORT is
+# the part we want to be able to re-run cheaply after an interruption.
+printf '%s' "$WANT_ID" > "$STAGE_ID_FILE"
 
 # ── 4. import + export + measure the REAL artifact ─────────────────────────
 echo "[stage] 4/4 import + export (first run builds a fresh cache, ~minutes)"
