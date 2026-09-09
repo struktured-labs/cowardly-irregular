@@ -22,18 +22,43 @@ extends GutTest
 const MANIFEST := "res://data/music_manifest.json"
 const PRESETS := "res://export_presets.cfg"
 
-## Every fallback target reachable when a world-specific track is missing.
-## Derived from SoundManager: _start_dungeon_music -> dungeon_medieval,
-## _start_village_location_music -> village_<world>, and play_music's world
-## mapping for the generic battle/boss/danger/victory keys.
+## ⛔ THIS WAS A HAND-LIST AND FOUR OF ITS SEVEN ENTRIES WERE **FALSE** —
+## cowir-sfx's third suppression shape (2026-09-09): never true, the mechanism
+## simply unmodelled. No rot check can catch that; there is no transition.
+##
+## I listed battle_medieval / boss_medieval / danger_medieval / victory_medieval
+## as fallback anchors "derived from SoundManager". Measured: ZERO literal
+## occurrences of any of them in SoundManager.gd. Those families are built
+## dynamically as "battle_" + suffix, so a web-excluded W5 track resolves to
+## battle_digital and falls to PROCEDURAL generation — it never tries the
+## medieval member. I had confused "the medieval member of a world-mapped
+## family" with "a fallback target". The assertions passed anyway, for the
+## wrong reason, protecting nothing.
+##
+## Only three were genuine, each named EXPLICITLY as a fallback:
+##     _start_dungeon_music         -> dungeon_medieval
+##     _start_village_music         -> village_medieval
+##     _start_overworld_music       -> overworld_medieval
+##
+## ⛔ I THEN TRIED cowir-sfx's FIX SHAPE — model the mechanism, derive every
+## literal passed to _try_play_from_manifest — AND REFUSED IT WITH THE NUMBER,
+## the way cowir-overworld refused a guard suggested to them. It derives 18
+## anchors and goes RED ON A HEALTHY TREE, naming six:
+##     battle_abstract · battle_digital · battle_industrial
+##     overworld_abstract · overworld_digital · overworld_industrial
+## Those are not fallback targets. They are each world's FIRST attempt —
+## _start_abstract_music tries overworld_abstract, then falls to procedural —
+## so being web-excluded is the DESIGNED path, not a broken anchor. The
+## derivation cannot tell "first attempt for this world" from "what another
+## world falls back to", and a guard that reds on health is worse than the
+## hand-list it replaced.
+##
+## So: a hand-list, but only the three that were VERIFIED BY READING, with the
+## four false ones gone. Small enough to check, and each carries its call site.
 const FALLBACK_ANCHORS: Array[String] = [
-	"dungeon_medieval",
-	"village_medieval",
-	"battle_medieval",
-	"boss_medieval",
-	"danger_medieval",
-	"victory_medieval",
-	"overworld_medieval",
+	"dungeon_medieval",    # _start_dungeon_music, when world_id != "medieval"
+	"village_medieval",    # _start_village_music, the generic fallback
+	"overworld_medieval",  # _start_overworld_music, the generic fallback
 ]
 
 
