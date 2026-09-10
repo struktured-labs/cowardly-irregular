@@ -359,6 +359,46 @@ func validate_rule(rule: Dictionary, deep_check_character_id: String = "") -> Ar
 	return errors
 
 
+## The kit the fizzle deep-check validates against, exposed so the LLM prompt can
+## be built from the SAME source it will be judged by.
+##
+## RuleComposer knows the character; build_rule_composition never received it, so
+## the prompt said "must belong to THIS character's level-1 kit" without naming
+## the character or listing the kit, and could not state MP costs or the pool at
+## all. Measured against 20 real llama3 replies: 0 of 10 compositions survived the
+## deep check for cleric, fighter OR mage — every one lost to a guessed ability id
+## or an mp_percent guard the model had no numbers to compute.
+##
+## Returning it from here rather than re-deriving it in the prompt builder is the
+## point: a second copy of this derivation would drift from the validator, and the
+## failure mode of that drift is a prompt that confidently teaches rules the
+## validator then rejects.
+func get_deep_check_kit(character_id: String) -> Dictionary:
+	var job_id: String = _resolve_job_for_character(character_id)
+	var job: Dictionary = JobSystem.get_job(job_id)
+	if job.is_empty():
+		return {"resolved": false, "job_id": job_id, "kit": [], "full_kit": [], "max_mp": 0, "costs": {}}
+	var kit: Array = (job.get("abilities", []) as Array).duplicate()
+	var free_move: Dictionary = job.get("free_move", {})
+	if free_move.has("ability_id"):
+		kit.append(free_move["ability_id"])
+	var full_kit: Array = kit.duplicate()
+	for lvl_key in (job.get("abilities_at_level", {}) as Dictionary).keys():
+		for aid in (job["abilities_at_level"][lvl_key] as Array):
+			full_kit.append(aid)
+	var costs: Dictionary = {}
+	for aid in kit:
+		costs[str(aid)] = int(JobSystem.get_ability(str(aid)).get("mp_cost", 0))
+	return {
+		"resolved": true,
+		"job_id": job_id,
+		"kit": kit,
+		"full_kit": full_kit,
+		"max_mp": int(job.get("stat_modifiers", {}).get("max_mp", 1)),
+		"costs": costs,
+	}
+
+
 ## Item 13 fast-follow (cowir-ai convergence, msg 2038): fizzle-correctness
 ## deep-check for one rule against one character. Catches what grammar can't:
 ## hallucinated ability/item ids, abilities outside the character's level-1
@@ -369,20 +409,14 @@ func validate_rule(rule: Dictionary, deep_check_character_id: String = "") -> Ar
 ## credit): stricter = safer for LLM-composed output.
 func _deep_check_rule(rule: Dictionary, character_id: String) -> Array[String]:
 	var errors: Array[String] = []
-	var job_id: String = _resolve_job_for_character(character_id)
-	var job: Dictionary = JobSystem.get_job(job_id)
-	if job.is_empty():
+	var ctx: Dictionary = get_deep_check_kit(character_id)
+	if not bool(ctx.get("resolved", false)):
 		errors.append("cannot resolve job for character '%s' — deep check unavailable" % character_id)
 		return errors
-	var kit: Array = (job.get("abilities", []) as Array).duplicate()
-	var free_move: Dictionary = job.get("free_move", {})
-	if free_move.has("ability_id"):
-		kit.append(free_move["ability_id"])
-	var full_kit: Array = kit.duplicate()
-	for lvl_key in (job.get("abilities_at_level", {}) as Dictionary).keys():
-		for aid in (job["abilities_at_level"][lvl_key] as Array):
-			full_kit.append(aid)
-	var max_mp: int = int(job.get("stat_modifiers", {}).get("max_mp", 1))
+	var job_id: String = str(ctx["job_id"])
+	var kit: Array = ctx["kit"]
+	var full_kit: Array = ctx["full_kit"]
+	var max_mp: int = int(ctx["max_mp"])
 	var mp_cost_sum: int = 0
 	for a in rule.get("actions", []):
 		var atype: String = str(a.get("type", ""))
