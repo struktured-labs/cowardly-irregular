@@ -61,8 +61,10 @@ echo "═══ publish_all: $TAG ═══"
 # run the suite sandboxed, which is correct and merely slower. Only report it.
 EVIDENCE="$(./tools/tag_gate_evidence.sh "$TAG" 2>/dev/null)"
 case "$EVIDENCE" in
-    "VERDICT=SKIP "*) echo "[pub] evidence: ${EVIDENCE#VERDICT=SKIP }" ;;
-    *)               echo "[pub] evidence: NO SKIP TOKEN — the chains will run the suite sandboxed"
+    "VERDICT=SKIP "*) EVIDENCE_STATE="gated (suite may be skipped in the chains)"
+                     echo "[pub] evidence: ${EVIDENCE#VERDICT=SKIP }" ;;
+    *)               EVIDENCE_STATE="NOT gated — the chains will run the suite sandboxed"
+                     echo "[pub] evidence: NO SKIP TOKEN — the chains will run the suite sandboxed"
                      echo "[pub]           ${EVIDENCE:-<no output>}" ;;
 esac
 
@@ -99,7 +101,21 @@ SAVES_BEFORE="$(_saves_cksum)"
 echo "[pub] his saves before: ${SAVES_BEFORE}"
 
 if [ "$CHECK_ONLY" -eq 1 ]; then
-    echo "[pub] --check: all verifications passed, stopping before publish."
+    # NAME WHAT RAN, AND CARRY THE ONE RESULT THAT IS REPORTED RATHER THAN ENFORCED.
+    #
+    # This line used to read "all verifications passed". It was byte-identical for a gated tag
+    # and for a tag carrying NO gate evidence at all — demonstrated end-to-end on a clean tree
+    # with an ungated annotated tag, both printing the same sentence and exiting 0. The verdict
+    # was right (no SKIP token simply means the chains run the suite sandboxed, the safe path);
+    # the sentence was not. "All" is unbounded, and it covered a step that only REPORTS.
+    #
+    # The general tell, which is cheaper than imagining a violating input: A LABEL THAT CANNOT
+    # CHANGE WHEN ITS INPUT CHANGES IS NOT REPORTING THAT INPUT. Vary each thing the summary
+    # claims to cover; if the text is invariant, the claim is decoration.
+    echo "[pub] --check: version identity OK · tree identity OK · saves baseline recorded."
+    echo "[pub]          tag evidence: ${EVIDENCE_STATE}"
+    echo "[pub]          NOT checked here: prebuilds, supersession, and every chain gate."
+    echo "[pub]          Stopping before publish."
     exit 0
 fi
 
