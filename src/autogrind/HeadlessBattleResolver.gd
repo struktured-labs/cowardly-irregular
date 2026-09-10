@@ -77,9 +77,14 @@ func resolve_battle(player_party: Array, enemy_party: Array) -> Dictionary:
 		bm = _get_autoload("BattleManager")
 	var _bm_player_backup: Array = []
 	var _bm_enemy_backup: Array = []
+	## `turn` / TURN_COUNT rule conditions read BattleManager.current_round, whose only writers are
+	## on the live path — so a grind evaluated them against a frozen number and every turn-gated
+	## rule was permanently true or permanently false. Borrow and restore it like the parties.
+	var _bm_round_backup: int = 0
 	if bm:
 		_bm_player_backup = bm.player_party.duplicate()
 		_bm_enemy_backup = bm.enemy_party.duplicate()
+		_bm_round_backup = bm.current_round
 		bm.player_party.clear()
 		bm.enemy_party.clear()
 		for c in _player_party:
@@ -89,6 +94,8 @@ func resolve_battle(player_party: Array, enemy_party: Array) -> Dictionary:
 
 	while _current_round < MAX_ROUNDS:
 		_current_round += 1
+		if bm:
+			bm.current_round = _current_round
 
 		_tick_round_start()
 
@@ -101,22 +108,23 @@ func resolve_battle(player_party: Array, enemy_party: Array) -> Dictionary:
 
 			if _all_dead(_enemy_party):
 				if bm:
-					_restore_bm(bm, _bm_player_backup, _bm_enemy_backup)
+					_restore_bm(bm, _bm_player_backup, _bm_enemy_backup, _bm_round_backup)
 				return _build_results(true)
 			if _all_dead(_player_party):
 				if bm:
-					_restore_bm(bm, _bm_player_backup, _bm_enemy_backup)
+					_restore_bm(bm, _bm_player_backup, _bm_enemy_backup, _bm_round_backup)
 				return _build_results(false)
 
 	# Cadence #19: MAX_ROUNDS exhaustion used to _build_results(false) silently — no log, no diagnostic. A player rule facing an unkillable enemy (healing boss, wrong element, undertuned party) would grind to a halt reporting defeats forever with no reason. Now: log + push_warning + termination_reason in results so callers can distinguish "died fair and square" from "battle timed out".
 	_log("Battle exhausted MAX_ROUNDS=%d without resolution — treating as defeat" % MAX_ROUNDS)
 	push_warning("[HeadlessBattleResolver] Battle stalemated at MAX_ROUNDS=%d — party may be undertuned for this encounter, or enemy has a heal/regen loop this ruleset can't break" % MAX_ROUNDS)
 	if bm:
-		_restore_bm(bm, _bm_player_backup, _bm_enemy_backup)
+		_restore_bm(bm, _bm_player_backup, _bm_enemy_backup, _bm_round_backup)
 	return _build_results(false, "stalemate")
 
 
-func _restore_bm(bm, player_backup: Array, enemy_backup: Array) -> void:
+func _restore_bm(bm, player_backup: Array, enemy_backup: Array, round_backup: int = 0) -> void:
+	bm.current_round = round_backup
 	bm.player_party.clear()
 	bm.enemy_party.clear()
 	for c in player_backup:
