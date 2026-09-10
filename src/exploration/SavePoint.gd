@@ -34,7 +34,27 @@ static func player_at_any(tree: SceneTree) -> bool:
 	return false
 
 
+## Mode 7 warps world-space text; the save prompt is read standing on the crystal.
+const FLAT_INDICATOR_OFFSET := Vector2(-56, -28)
+const FLAT_INDICATOR_FONT: int = 10
+var _prompt_layer: CanvasLayer
+
+
+func _drive_save_prompt() -> void:
+	if _indicator == null:
+		return
+	if InteractGeometry.is_mode7():
+		if _prompt_layer == null:
+			_prompt_layer = Mode7Prompt.lift(self, _indicator)
+		if _indicator.visible:
+			Mode7Prompt.place(_indicator, get_viewport_rect().size, Mode7Prompt.ROW_ACTION)
+	elif _prompt_layer != null:
+		Mode7Prompt.drop(self, _prompt_layer, _indicator, FLAT_INDICATOR_OFFSET, FLAT_INDICATOR_FONT)
+		_prompt_layer = null
+
+
 func _process(delta: float) -> void:
+	_drive_save_prompt()
 	# Pulsing glow
 	_glow_timer += delta * 2.0
 	var pulse = 0.7 + 0.3 * sin(_glow_timer)
@@ -95,11 +115,12 @@ func _setup_indicator() -> void:
 	_indicator = Label.new()
 	_indicator.text = _indicator_text()
 	_indicator.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_indicator.position = Vector2(-56, -28)
+	_indicator.position = FLAT_INDICATOR_OFFSET
 	_indicator.size = Vector2(112, 14)
 	_indicator.add_theme_font_size_override("font_size", 10)
 	_indicator.add_theme_color_override("font_color", Color(0.7, 0.85, 1.0))
 	_indicator.visible = false
+	Mode7Prompt.pin_above_sprites(_indicator)
 	_indicator.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_indicator)
 
@@ -225,7 +246,12 @@ func _show_save_confirmation() -> void:
 	confirm.add_theme_font_size_override("font_size", 14)
 	confirm.add_theme_color_override("font_color", Color(0.4, 1.0, 0.5))
 	confirm.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	Mode7Prompt.pin_above_sprites(confirm)
 	add_child(confirm)
+	# The confirmation is the one piece of feedback that a save happened; it cannot be a warped smear.
+	if InteractGeometry.is_mode7():
+		Mode7Prompt.lift(self, confirm)
+		Mode7Prompt.place(confirm, get_viewport_rect().size, Mode7Prompt.ROW_POPUP)
 
 	# Float up and fade out
 	var tween = create_tween()

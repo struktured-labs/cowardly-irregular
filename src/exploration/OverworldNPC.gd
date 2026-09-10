@@ -318,7 +318,27 @@ static func _load_persona_cache() -> void:
 			_persona_cache[str(key)] = v
 
 
+## Mode 7 warps world-space text; the name of whoever you are standing next to belongs on screen.
+const FLAT_NAME_OFFSET := Vector2(-40, -24)
+const FLAT_NAME_FONT: int = 10
+var _prompt_layer: CanvasLayer
+
+
+func _drive_name_prompt() -> void:
+	if name_label == null:
+		return
+	if InteractGeometry.is_mode7():
+		if _prompt_layer == null:
+			_prompt_layer = Mode7Prompt.lift(self, name_label)
+		if name_label.visible:
+			Mode7Prompt.place(name_label, get_viewport_rect().size, Mode7Prompt.ROW_INFO)
+	elif _prompt_layer != null:
+		Mode7Prompt.drop(self, _prompt_layer, name_label, FLAT_NAME_OFFSET, FLAT_NAME_FONT)
+		_prompt_layer = null
+
+
 func _process(delta: float) -> void:
+	_drive_name_prompt()
 	if _is_dancing and npc_type == "dancer":
 		_dance_timer += delta
 		if _dance_timer >= DANCE_SPEED:
@@ -954,7 +974,7 @@ func _setup_name_label() -> void:
 	name_label = Label.new()
 	name_label.text = npc_name
 	name_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	name_label.position = Vector2(-40, -24)
+	name_label.position = FLAT_NAME_OFFSET
 	name_label.size = Vector2(80, 20)
 	name_label.add_theme_font_size_override("font_size", 10)
 	name_label.add_theme_color_override("font_color", Color.WHITE)
@@ -962,6 +982,7 @@ func _setup_name_label() -> void:
 	name_label.add_theme_constant_override("shadow_offset_x", 1)
 	name_label.add_theme_constant_override("shadow_offset_y", 1)
 	name_label.visible = false
+	Mode7Prompt.pin_above_sprites(name_label)
 	add_child(name_label)
 
 
