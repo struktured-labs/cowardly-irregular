@@ -15,10 +15,26 @@ extends GutTest
 ## parties; anything reading the parties during the window sees []; an error between clear
 ## and restore leaves the live battle with no combatants.
 ##
-## Measured instead: `_evaluate_grid_rule` and `_evaluate_condition` read ZERO live state.
-## So pure evaluation answers the same question with nothing to restore and nothing to race.
+## Measured instead: `_evaluate_grid_rule` dispatches without touching the live parties, and
+## every condition the probe CANNOT honestly decide is refused by name rather than guessed. So
+## the readout answers with nothing to restore and nothing to race. (This paragraph said the
+## evaluators "read ZERO live state" until 2026-09-10; they never did — see the renamed guard
+## below for what is actually true and why the design survives it.)
 
 const EDITOR := "res://src/ui/autobattle/AutobattleGridEditor.gd"
+
+
+## Whole-line comments removed before scanning. The checks below mean "no CODE in this region
+## touches BattleManager"; a comment EXPLAINING why a condition reads it is documentation, and a
+## scanner that cannot tell prose from the defect it describes punishes writing the explanation
+## down. Only lines that are entirely a comment are dropped, so nothing on a code line can hide.
+func _code_only(region: String) -> String:
+	var kept: PackedStringArray = []
+	for line in region.split("\n"):
+		if line.strip_edges().begins_with("#"):
+			continue
+		kept.append(line)
+	return "\n".join(kept)
 
 
 func _editor() -> Node:
@@ -40,24 +56,35 @@ func test_simulate_never_touches_the_live_battle_manager() -> void:
 	assert_gt(start, -1, "_open_simulate must exist")
 	var stop := src.find("func _open_rename_profile")
 	assert_gt(stop, start, "the simulate block must be bounded, or the region below is wrong")
-	var region := src.substr(start, stop - start)
+	var region := _code_only(src.substr(start, stop - start))
 	assert_gt(region.length(), 400,
 		"the parsed region must be substantial — a truncated region satisfies the absence checks below without reading the code they defend")
+	assert_true(src.substr(start, stop - start).contains("BattleManager"),
+		"control: the raw region DOES mention BattleManager in prose, so a green below proves the comment stripper ran rather than that the token is absent")
 	assert_false(region.contains("HeadlessBattleResolver"),
 		"Simulate must not run a battle — the resolver mutates the LIVE BattleManager parties")
 	assert_false(region.contains("BattleManager"),
 		"Simulate must not read or write BattleManager state; rule evaluation is pure")
 
 
-func test_the_evaluators_it_relies_on_are_still_pure() -> void:
-	# The premise. If rule evaluation ever starts reading live parties, the pure-evaluation
-	# design silently becomes wrong and Simulate would report against an empty battlefield.
+func test_the_rule_dispatcher_does_not_read_live_parties() -> void:
+	# NAMED FOR WHAT IT CHECKS (2026-09-10). It was called "the evaluators are still pure" and
+	# the header claimed rule evaluation reads ZERO live state — but the window below stops at
+	# _evaluate_grid_condition, which is the function holding EVERY live read: turn reads
+	# BattleManager.current_round, is_night and weather read GameState, and the battlefield
+	# conditions call _get_enemies_for / _get_allies_for. The predicate was sound about the
+	# dispatcher and the label asserted the premise of the whole feature.
+	#
+	# The premise is false and the design is still correct, because Simulate REFUSES what the
+	# probe cannot decide rather than guessing. That refusal is the real invariant, and it is
+	# guarded by the classification ratchet in
+	# test_autobattle_simulate_classifies_every_condition_regression.
 	var src := FileAccess.get_file_as_string("res://src/autobattle/AutobattleSystem.gd")
 	var start := src.find("func _evaluate_grid_rule")
 	var stop := src.find("func _evaluate_grid_condition")
 	assert_gt(start, -1, "_evaluate_grid_rule must exist")
 	assert_gt(stop, start, "the region must be bounded by the NEXT function, not a distant one — a wide window swept in unrelated helpers that legitimately read live parties")
-	var region := src.substr(start, stop - start)
+	var region := _code_only(src.substr(start, stop - start))
 	assert_false(region.contains("_get_enemies_for"),
 		"rule evaluation must stay free of live-party reads, or Simulate's pure probe diverges from the real executor")
 	assert_false(region.contains("_get_allies_for"),

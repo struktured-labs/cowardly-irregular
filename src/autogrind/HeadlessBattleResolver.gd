@@ -745,6 +745,17 @@ func _resolve_ability(caster, ability_id: String, targets: Array) -> void:
 					var restored = target.restore_mp(max(1, mp_amount))
 					_log("%s restores %d MP to %s" % [caster.combatant_name, restored, target.combatant_name])
 
+		"revival":
+			## Mirrors BattleManager._execute_revival_ability:5470-5477 — authored
+			## revive_percentage of max_hp, living targets skipped. Routed through
+			## Combatant.revive so a permakilled PC stays dead in a grind too.
+			var revive_pct := float(ability.get("revive_percentage", 50))
+			for target in targets:
+				if target == null or not is_instance_valid(target) or target.is_alive:
+					continue
+				target.revive(int(target.max_hp * revive_pct / 100.0))
+				_log("%s revives %s with %d HP" % [caster.combatant_name, target.combatant_name, target.current_hp])
+
 		"support", "song", "status":
 			## BattleManager:4424 groups these three in one arm; headless had only "support", so
 			## every song fell to the `_:` damage default below — battle_hymn cost the ally it

@@ -1047,6 +1047,8 @@ func _format_condition(condition: Dictionary) -> String:
 			return "%s %s %d" % [str(condition.get("item_id", "Item")).capitalize(), op, value]
 		"setup_complete":
 			return "Setup Done"
+		"ally_dead":
+			return "ALLY DOWN"
 		"is_night":
 			return "IS NIGHT"
 		"weather":
@@ -2808,8 +2810,38 @@ func _delete_current_cell() -> void:
 ## restore and nothing to race.
 func _open_simulate() -> void:
 	var rules: Array = AutobattleSystem.get_character_script(character_id).get("rules", [])
-	_simulate_panel = _build_simulate_panel(_simulate_report(rules))
+	var lines: Array[String] = _simulate_report(rules)
+	lines.append_array(_observed_report(rules))
+	_simulate_panel = _build_simulate_panel(lines)
 	add_child(_simulate_panel)
+
+
+## What actually happened, beside what Simulate predicts. A rule can look perfect in simulation
+## and never fire in a real fight — every autogrind defect found on 2026-09-09/10 was invisible
+## for exactly that reason.
+func _observed_report(rules: Array) -> Array[String]:
+	var out: Array[String] = []
+	if rules.is_empty():
+		return out
+	var turns: int = AutobattleSystem.get_rule_eval_count(character_id)
+	out.append("")
+	## A zero needs its denominator. "fired 0 times" across zero turns is not evidence of a dead
+	## rule, and reporting it as one would manufacture the false alarm this panel exists to avoid.
+	if turns <= 0:
+		out.append("OBSERVED — no turns recorded yet. Fight or grind, then reopen.")
+		return out
+	out.append("OBSERVED — %d turn%s this session" % [turns, "" if turns == 1 else "s"])
+	var fired: Dictionary = AutobattleSystem.get_rule_fire_counts(character_id)
+	for i in range(rules.size()):
+		var n: int = int(fired.get(i, 0))
+		var enabled: bool = bool((rules[i] as Dictionary).get("enabled", true))
+		if not enabled:
+			out.append("  rule %d  disabled" % [i + 1])
+		elif n == 0:
+			out.append("  rule %d  never fired" % [i + 1])
+		else:
+			out.append("  rule %d  fired %d time%s" % [i + 1, n, "" if n == 1 else "s"])
+	return out
 
 
 func _build_simulate_panel(lines: Array[String]) -> Control:
@@ -2859,14 +2891,38 @@ func _simulate_states() -> Array:
 const _BATTLEFIELD_CONDITIONS: Array[String] = [
 	"enemy_count", "enemy_has_status", "enemy_hp_percent",
 	"ally_count", "ally_has_status", "ally_hp_percent", "ally_mp_percent",
+	"ally_dead",
+]
+
+## `turn` reads BattleManager.current_round, which outside a fight still holds the LAST battle's
+## final round. Answering from it is not a guess about an unknown — it is a confident answer from
+## another fight's leftovers, so two players with identical rules get different readouts.
+const _ROUND_CONDITIONS: Array[String] = ["turn"]
+
+## Everything the scratch probe can honestly decide. The three lists together must cover
+## CONDITION_TYPES exactly — a condition in none of them is one this readout would GUESS at,
+## which is the defect the battlefield list was created to prevent.
+const _PROBE_DECIDABLE: Array[String] = [
+	"hp_percent", "mp_percent", "ap", "has_status", "has_buff", "not_has_buff",
+	"setup_complete", "item_count", "is_night", "weather", "always",
 ]
 
 
 func _rule_needs_battlefield(rule: Dictionary) -> bool:
+	return _undecidable_reason(rule) != ""
+
+
+## Why this rule cannot be simulated, or "" when it can. Returning the REASON rather than a bool
+## so the readout can say which kind of unknown it hit — "can't be simulated" with no cause reads
+## as a tool failure rather than a fact about the rule.
+func _undecidable_reason(rule: Dictionary) -> String:
 	for c in (rule.get("conditions", []) as Array):
-		if str((c as Dictionary).get("type", "")) in _BATTLEFIELD_CONDITIONS:
-			return true
-	return false
+		var t: String = str((c as Dictionary).get("type", ""))
+		if t in _BATTLEFIELD_CONDITIONS:
+			return "depends on the battlefield (enemy/ally state) — can't be simulated"
+		if t in _ROUND_CONDITIONS:
+			return "depends on which round of the fight — can't be simulated from here"
+	return ""
 
 
 ## One line per sampled state: which rule wins, and what it does.
@@ -2879,11 +2935,14 @@ func _simulate_report(rules: Array) -> Array[String]:
 		var probe: Combatant = _simulate_probe(state)
 		var matched: int = -1
 		var blocked: int = -1
+		var blocked_reason: String = ""
 		for i in range(rules.size()):
 			var rule: Dictionary = rules[i]
 			if not bool(rule.get("enabled", true)):
 				continue
-			if _rule_needs_battlefield(rule):
+			var why: String = _undecidable_reason(rule)
+			if why != "":
+				blocked_reason = why
 				# Cannot be decided without a real fight, and every rule below it is
 				# unreachable until this one is settled — first-match-wins.
 				blocked = i
@@ -2892,7 +2951,7 @@ func _simulate_report(rules: Array) -> Array[String]:
 				matched = i
 				break
 		if blocked >= 0:
-			out.append("%s  ->  rule %d depends on the battlefield (enemy/ally state) — can't be simulated" % [state["label"], blocked + 1])
+			out.append("%s  ->  rule %d %s" % [state["label"], blocked + 1, blocked_reason])
 			continue
 		if matched < 0:
 			out.append("%s  ->  no rule matches — falls back to a basic attack" % state["label"])
@@ -2912,6 +2971,11 @@ func _simulate_probe(state: Dictionary) -> Combatant:
 		c.max_hp = combatant.max_hp
 		c.max_mp = combatant.max_mp
 		c.learned_abilities = combatant.learned_abilities.duplicate()
+		## item_count reads the CASTER's bag. Without this the probe carried none, so every
+		## "hp < 30 AND potions > 0 -> use potion" rule read as never-firing with a full bag —
+		## and 12 of the 15 shipped templates gate on item_count.
+		for item_id in combatant.inventory.keys():
+			c.inventory[item_id] = combatant.inventory[item_id]
 	else:
 		c.combatant_name = character_name
 		c.max_hp = 100

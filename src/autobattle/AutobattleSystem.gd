@@ -95,6 +95,7 @@ const CONDITION_TYPES = {
 	"ally_has_status": "Ally Has Status",
 	"enemy_has_status": "Enemy Has Status",
 	"ally_mp_percent": "Ally MP %",
+	"ally_dead": "Ally Is Down",
 	"is_night": "Is Night",
 	"weather": "Weather Is",
 	"has_buff": "Has Buff",
@@ -140,6 +141,31 @@ func _ready() -> void:
 	_load_character_scripts()
 
 
+## Session-scoped observed rule usage, character_id -> {rule_index: times fired} and
+## character_id -> turns the script was consulted. Never persisted: the question is "did this
+## rule fire in the fights I just ran", which a saved total cannot answer.
+var _rule_fire_counts: Dictionary = {}
+var _rule_eval_counts: Dictionary = {}
+
+
+func get_rule_fire_counts(character_id: String) -> Dictionary:
+	return (_rule_fire_counts.get(character_id, {}) as Dictionary).duplicate()
+
+
+## Turns this character's script was consulted — the denominator for a zero.
+func get_rule_eval_count(character_id: String) -> int:
+	return int(_rule_eval_counts.get(character_id, 0))
+
+
+func reset_rule_fire_counts(character_id: String = "") -> void:
+	if character_id == "":
+		_rule_fire_counts.clear()
+		_rule_eval_counts.clear()
+		return
+	_rule_fire_counts.erase(character_id)
+	_rule_eval_counts.erase(character_id)
+
+
 func execute_grid_autobattle(combatant: Combatant) -> Array[Dictionary]:
 	"""Execute autobattle for a combatant using their character script.
 	Returns array of actions (1-4) for Advance mode."""
@@ -150,11 +176,19 @@ func execute_grid_autobattle(combatant: Combatant) -> Array[Dictionary]:
 	if script.is_empty() or not script.has("rules"):
 		return [_get_default_action(combatant)]
 
+	## Observed counters. Simulate predicts; nothing told the player what actually happened, which
+	## is why a rule that never fires is invisible. The turn count is the denominator: 0 fires
+	## across 0 turns means "not measured yet", not "dead".
+	_rule_eval_counts[character_id] = int(_rule_eval_counts.get(character_id, 0)) + 1
+
 	# Evaluate rules in order (first match wins)
 	var rule_idx = 0
 	for rule in script["rules"]:
 		if _evaluate_grid_rule(combatant, rule):
 			var actions = _rule_to_actions(combatant, rule)
+			var fired: Dictionary = _rule_fire_counts.get(character_id, {})
+			fired[rule_idx] = int(fired.get(rule_idx, 0)) + 1
+			_rule_fire_counts[character_id] = fired
 			script_executed.emit(combatant, rule, actions)
 			return actions
 		rule_idx += 1
@@ -289,6 +323,13 @@ func _evaluate_grid_condition(combatant: Combatant, condition: Dictionary) -> bo
 				if buff.get("stat", "") == stat:
 					return false
 			return true
+
+		"ally_dead":
+			# NULLARY, same grammar discipline as is_night below: no operator, no value, nothing the
+			# Rule Composer can malform. Before this the only way to notice a death was ally_count,
+			# which needs the player to know their own party size — "someone fell" is what a revival
+			# rule actually means, and it is party-size independent.
+			return _get_dead_allies_for(combatant).size() > 0
 
 		"is_night":
 			# msg 2916/2959 (cowir-ai grammar ruling): NULLARY and night-band ONLY — no operator, no value, no dusk. Truth condition is exactly GameState.is_night(), because shipping a rule vocabulary term whose meaning diverges from the identically-named engine method is a lying name: the player reads `is_night`, reasons from observed game behaviour, and gets a rule that fires on a band they didn't expect. If "at dusk" is ever wanted it's a SECOND nullary sibling (is_dusk), never a band parameter — a parameterized band can be malformed by the Rule Composer LLM ("midnight"), a nullary cannot.
@@ -598,6 +639,16 @@ func _resolve_ability_targets(combatant: Combatant, ability_id: String, target_t
 				return _get_all_alive_allies(combatant)
 			if ab_target == "all_enemies":
 				return _get_enemies_for(combatant)
+			## `dead_ally` is the ONLY target_type whose subject is excluded by the normal ally
+			## helpers — _get_allies_for filters is_alive, so lowest_hp_ally can never return a
+			## corpse and every revival rule aimed itself at a living member. Live skips living
+			## targets (BattleManager:5473), so raise was inert in BOTH engines.
+			if ab_target == "dead_ally":
+				var fallen: Array[Combatant] = _get_dead_allies_for(combatant)
+				var one: Array[Combatant] = []
+				if fallen.size() > 0:
+					one.append(fallen[0])
+				return one
 	# "Exploit Weakness": aim this ability at the enemy weak to its own element.
 	if target_type == "weakest_to_ability":
 		var element: String = ""
@@ -750,6 +801,10 @@ func set_character_script(character_id: String, script: Dictionary) -> void:
 	var profiles = data.get("profiles", [])
 	if active_idx < profiles.size():
 		profiles[active_idx]["script"] = script
+	## Observed counts are keyed by rule INDEX, and editing the grid renumbers them — insert a
+	## rule at the top and every count silently describes a different rule. Drop them with the
+	## edit; a stale count is worse than none, because it reads as evidence.
+	reset_rule_fire_counts(character_id)
 	_save_character_profiles()
 	character_script_changed.emit(character_id)
 
@@ -2060,6 +2115,20 @@ func _get_enemies_for(combatant: Combatant) -> Array[Combatant]:
 	var is_player = combatant in bm.player_party
 	var enemy_party = bm.enemy_party if is_player else bm.player_party
 	return enemy_party.filter(func(e): return e.is_alive)
+
+
+func _get_dead_allies_for(combatant: Combatant) -> Array[Combatant]:
+	"""Fallen members of the combatant's own party — the one group the alive-filtered helpers hide."""
+	var bm = get_node_or_null("/root/BattleManager")
+	if not bm:
+		return []
+	var is_player = combatant in bm.player_party
+	var party = bm.player_party if is_player else bm.enemy_party
+	var out: Array[Combatant] = []
+	for a in party:
+		if a != null and is_instance_valid(a) and not a.is_alive:
+			out.append(a)
+	return out
 
 
 func _get_allies_for(combatant: Combatant) -> Array[Combatant]:
