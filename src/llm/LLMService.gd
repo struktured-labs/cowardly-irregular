@@ -753,7 +753,16 @@ func _get_cache(key: String) -> Variant:
 		return null
 	var entry: Dictionary = _cache[key]
 	var age: float = Time.get_unix_time_from_system() - float(entry.get("ts", 0.0))
-	if age > CACHE_TTL_SECONDS:
+	# A NEGATIVE age means the stamp is in the future — the system clock moved
+	# backwards mid-session (NTP correction, DST, manual change). `age > TTL` is
+	# then false and the entry NEVER expires, so a stale response is served for as
+	# long as the lag persists. Evict instead: re-querying is the correct fallback
+	# and costs one request. Third and mildest instance of the signed-threshold
+	# class found in this lane today — the other two (conversation-reward backstop,
+	# rebalance cadence) read from PERSISTED state and disabled whole features;
+	# this cache is in-memory and cleared on scene change, so it only costs
+	# freshness.
+	if age < 0.0 or age > CACHE_TTL_SECONDS:
 		_cache.erase(key)
 		return null
 	return entry.get("text", null)
