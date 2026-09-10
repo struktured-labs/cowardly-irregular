@@ -559,6 +559,7 @@ func _fetch_combined_reply() -> Dictionary:
 		DialoguePrompts.MAX_CHOICES,
 		_quest_state_lines,
 		_party_state,
+		_memory_lines,
 	)
 
 	_set_thinking(true)

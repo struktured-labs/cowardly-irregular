@@ -156,3 +156,84 @@ func test_opening_prompt_asks_the_npc_not_to_recap() -> void:
 		"Theron", "elder", "Harmonia Village", [], [], "", {}, ["something"])
 	assert_true(prompt.find("Do not quote them back") != -1,
 		"without this the model recites the transcript and the NPC reads as a database")
+
+
+# ── the reply path: memory reached the greeting only ──────────────────────────
+#
+# Shipped with the SAME defect the file warns about one line above where the fix
+# goes: "Milo v2: the reply path dropped the voice notes the opening path
+# threads." Memory reached build_npc_opening and not build_combined_reply, so an
+# NPC referenced your history in its first line and lost it for every follow-up —
+# and the exchange cap runs to 10, so that is one line in up to ten.
+
+func test_reply_prompt_carries_memory_too() -> void:
+	var prompt: String = DP.build_combined_reply(
+		"Theron", "elder", "Harmonia Village", [], "prior line", "player said", 4,
+		[], {}, ["I'm hunting the ember wyrm."])
+	assert_true(prompt.find("spoken with this traveler before") != -1,
+		"the reply path must emit the memory block — without it the NPC forgets you after its greeting")
+	assert_true(prompt.find("I'm hunting the ember wyrm.") != -1,
+		"and the remembered line itself must appear in the reply prompt")
+
+
+func test_reply_prompt_without_memory_is_unchanged() -> void:
+	var prompt: String = DP.build_combined_reply(
+		"Theron", "elder", "Harmonia Village", [], "prior line", "player said", 4)
+	assert_eq(prompt.find("spoken with this traveler before"), -1,
+		"a first meeting must not claim a shared history on the reply path either")
+	assert_true(prompt.find("Persona: elder") != -1,
+		"CONTROL: the base reply prompt shape is intact, so the assertion above is about memory and not a broken builder")
+
+
+func test_both_prompt_paths_agree_on_the_memory_block() -> void:
+	## The Milo fix's own lesson generalised: the two paths must not drift again.
+	var lines: Array = ["I'm hunting the ember wyrm."]
+	var opening: String = DP.build_npc_opening(
+		"Theron", "elder", "Harmonia Village", [], [], "", {}, lines)
+	var reply: String = DP.build_combined_reply(
+		"Theron", "elder", "Harmonia Village", [], "prior", "player said", 4, [], {}, lines)
+	for marker in ["spoken with this traveler before", "Do not quote them back", "I'm hunting the ember wyrm."]:
+		assert_true(opening.find(marker) != -1, "opening path must carry '%s'" % marker)
+		assert_true(reply.find(marker) != -1, "reply path must carry '%s' — the paths drifted once already" % marker)
+
+
+func test_source_dynamic_conversation_passes_memory_to_both_builders() -> void:
+	## Pinned by ARGUMENT POSITION, not by a formatted line: a source pin that
+	## matches ", _memory_lines)" silently means "must be the LAST argument", which
+	## breaks on a correct append and passes a misordered call that ends there.
+	var src: String = FileAccess.get_file_as_string("res://src/llm/DynamicConversation.gd")
+	assert_false(src.is_empty(), "CONTROL: DynamicConversation source must load")
+	var opening_args: Array = _call_args(src, "DialoguePrompts.build_npc_opening(")
+	var reply_args: Array = _call_args(src, "DialoguePrompts.build_combined_reply(")
+	assert_gte(opening_args.size(), 8, "build_npc_opening must receive at least 8 args")
+	assert_eq(opening_args[7], "_memory_lines", "memory must be the 8th arg to build_npc_opening")
+	assert_gte(reply_args.size(), 10, "build_combined_reply must receive at least 10 args")
+	assert_eq(reply_args[9], "_memory_lines", "memory must be the 10th arg to build_combined_reply")
+
+
+## Positional args of the first `needle` call, tolerating line breaks and nesting.
+func _call_args(src: String, needle: String) -> Array:
+	var start: int = src.find(needle)
+	if start == -1:
+		return []
+	var i: int = start + needle.length()
+	var depth: int = 1
+	var buf: String = ""
+	var args: Array = []
+	while i < src.length():
+		var c: String = src[i]
+		if c == "(" or c == "[" or c == "{":
+			depth += 1
+		elif c == ")" or c == "]" or c == "}":
+			depth -= 1
+			if depth == 0:
+				break
+		if depth == 1 and c == ",":
+			args.append(buf.strip_edges())
+			buf = ""
+		else:
+			buf += c
+		i += 1
+	if buf.strip_edges() != "":
+		args.append(buf.strip_edges())
+	return args
