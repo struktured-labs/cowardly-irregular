@@ -66,6 +66,23 @@ screenshot rather than an accurate one, the shot is the Fight-or-Leave dialogue,
 overworld sprite** — the dialogue is UI, drawn at readable size, and it is the part of the
 feature a player actually interacts with.
 
+### `field_elite_prompt_medieval.png`
+**The shot that actually sells the mechanic.** Walking into a field elite opens the game's own
+choice menu — *Fight* / *Leave it* — with the input hints spelled out for keyboard, gamepad and
+mouse. The elite is unfairly strong on purpose, so the encounter being declinable is the whole
+design, and this is the frame that shows it. The world dims behind it with the knight and the
+purple tell still visible below.
+
+Captured `.293`, 2026-09-10. **How it was produced, stated because it matters:**
+`RoamingMonster._present_elite_prompt()` is called directly rather than by walking the player
+into the collider. That is the same method contact reaches, building the same menu with the
+same two options — the frame is one a player can produce, and nothing in the capture
+constructs UI the game would not. It does not exercise the collision path.
+
+⚠️ The panel sits at the top of the screen, which is the game's own layout, and the dim makes
+the elite harder to see than in the overworld frame. The two shots are complements: one shows
+the encounter in the world, this one shows what you can do about it.
+
 ### `field_elite_steampunk.png`
 A field ELITE — a brass golem loose in the Clockwork Dominion, aura up, and the game telling
 you in purple exactly what you think it is: *"It is watching you."* Walking into one opens a
