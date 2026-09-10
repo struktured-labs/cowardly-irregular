@@ -92,7 +92,11 @@ const SCHEMA_PARTY_LINE: Dictionary = {
 const SCHEMA_RULE_COMPOSITION: Dictionary = {
 	"name":        "String",
 	"description": "String",
-	"rules_json":  "String",
+	# Presence is required; the TYPE deliberately is not. Models emit the rule list
+	# as a nested array far more readily than as an encoded string (measured: 20 of
+	# 20 local-llama3 replies used an array), and pinning "String" here rejected
+	# every one of them before validate_rule_composition could read it.
+	"rules_json":  "Variant",
 }
 
 
@@ -847,7 +851,10 @@ static func build_rule_composition(domain: String, prompt_text: String, current_
 		+ "  description: 1 sentence, in-character\n"
 		+ "  rules_json: the FULL rule list, as a JSON string. Each rule is\n"
 		+ "    {conditions: [...], actions: [...], enabled: true}\n"
-		+ "    conditions and actions must use only the verbs listed above.\n\n"
+		+ "    conditions and actions must use only the verbs listed above, AND every\n"
+		+ "    'target' must be one of the Targets values above, VERBATIM.\n"
+		+ "    There is no 'weakest_enemy' — for the weakest foe use lowest_hp_enemy.\n"
+		+ "    (weakest_to_ability means the enemy weak to the ability's ELEMENT.)\n\n"
 		+ "Only emit the JSON. No commentary."
 	)
 
@@ -1082,8 +1089,11 @@ static func validate_party_line(raw: Variant) -> Dictionary:
 static func validate_rule_composition(reply: Dictionary, _domain: String) -> Dictionary:
 	var name: String = str(reply.get("name", "")).strip_edges()
 	var desc: String = str(reply.get("description", "")).strip_edges()
-	var rules_json: String = str(reply.get("rules_json", ""))
-	var parsed: Variant = JSON.parse_string(rules_json)
+	# Accept both shapes: the encoded string the prompt asks for, and the nested
+	# array models actually produce. Anything else stays a parse failure.
+	var raw_rules: Variant = reply.get("rules_json", "")
+	var parsed: Variant = raw_rules if typeof(raw_rules) == TYPE_ARRAY \
+		else JSON.parse_string(str(raw_rules))
 	var rules: Array = []
 	var parse_ok: bool = typeof(parsed) == TYPE_ARRAY
 	if parse_ok:

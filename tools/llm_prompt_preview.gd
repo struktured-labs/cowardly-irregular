@@ -34,6 +34,11 @@ func _init() -> void:
 				"Elder Theron", "a weary village elder who has seen too much",
 				"Harmonia Village", events, "You return to me, battered and worn.",
 				"What do you know of the wyrm?", 4, quest, party, memory, tod)
+		"rules":
+			out = DP.build_rule_composition(
+				"autobattle",
+				"Heal whoever is hurt worst when they drop under 40%, cure poison if anyone has it, otherwise hit the weakest enemy.",
+				[])
 		"signoff":
 			out = DP.build_npc_sign_off(
 				"Elder Theron", "a weary village elder who has seen too much",

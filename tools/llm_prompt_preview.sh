@@ -15,7 +15,7 @@ cd "$(dirname "$0")/.."
 KIND="opening"; ASK=0; PASS=()
 for a in "$@"; do
   case "$a" in
-    opening|reply|signoff|intent|party) KIND="$a" ;;
+    opening|reply|signoff|intent|party|rules) KIND="$a" ;;
     --ask) ASK=1 ;;
     *) PASS+=("$a") ;;
   esac
@@ -45,6 +45,23 @@ if ! curl -sS -m 5 -o /dev/null http://localhost:11434/api/tags; then
   echo "" >&2; echo "--ask: no local Ollama on 11434; prompt printed above only." >&2
   exit 0
 fi
+# rules mode scores replies through the REAL pipeline (guard -> validate_rule_composition
+# -> AutobattleSystem.validate_rule) rather than eyeballing them. Scoring a rule
+# composition by hand reads a shape the game never sees: the contract nests the
+# rule list inside rules_json, and LLMService repairs truncated replies first.
+if [ "$KIND" = "rules" ]; then
+  N="${RULE_SAMPLES:-10}"
+  rm -rf tmp/replies_live; mkdir -p tmp/replies_live
+  echo ""
+  echo "===== $MODEL, $N samples, scored through the shipping pipeline ====="
+  python3 tools/_rule_sample_fetch.py "$TMP" "$MODEL" "$N"
+  XDG_DATA_HOME="$PWD/tmp/xdg" godot --headless --audio-driver Dummy \
+    --script tools/rule_composition_validate.gd -- live >/dev/null 2>&1
+  if [ -s tmp/rulebench_live.txt ]; then cat tmp/rulebench_live.txt; else
+    echo "scoring produced nothing - the pipeline may have changed shape." >&2; exit 3; fi
+  exit 0
+fi
+
 echo ""
 echo "===== $MODEL SAYS (3 samples) ====="
 python3 - "$TMP" "$MODEL" <<'PY'
