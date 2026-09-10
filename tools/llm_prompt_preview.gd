@@ -39,6 +39,32 @@ func _init() -> void:
 				"Elder Theron", "a weary village elder who has seen too much",
 				"Harmonia Village", events, "You return to me, battered and worn.",
 				"I must go.")
+		"intent":
+			out = DP.build_boss_intent("Chancellor Mordaine", {
+				"persona": "The usurper. Cold, procedural, certain the throne is a calculation.",
+				"phase": 2,
+				"boss_hp_pct": 48.0, "boss_mp_pct": 70.0, "boss_ap": 2,
+				"boss_status": [],
+				"party": [
+					{"name": "Rilla", "job_id": "cleric", "hp_pct": 22.0, "mp_pct": 40.0,
+					 "ap": 0, "is_alive": true, "status": ["poison"]},
+					{"name": "Bram", "job_id": "fighter", "hp_pct": 90.0, "mp_pct": 100.0,
+					 "ap": 1, "is_alive": true, "status": []},
+				],
+				"recent_actions": [
+					{"kind": "party_action", "actor": "bram", "ability_id": "cleave", "target": "single_enemy", "damage": 0},
+					{"kind": "party_action", "actor": "rilla", "ability_id": "cure", "target": "lowest_hp_ally", "damage": 0},
+					{"kind": "party_action", "actor": "bram", "ability_id": "cleave", "target": "single_enemy", "damage": 0},
+				],
+				"available_intents": ["aggress", "turtle", "exploit_pattern"],
+				"time_of_day": "night",
+				"party_automation": "scripted",
+				"party_scripts": [{
+					"name": "Rilla", "job_id": "cleric",
+					"rules": "1. IF ally_hp_percent < 40 THEN cure (lowest_hp_ally)\n2. IF always THEN attack (lowest_hp_enemy)",
+				}],
+				"learned_patterns_counter": "focus_healer",
+			})
 		_:
 			out = DP.build_npc_opening(
 				"Elder Theron", "a weary village elder who has seen too much",

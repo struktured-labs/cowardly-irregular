@@ -639,7 +639,15 @@ static func build_boss_intent(
 		+ _format_time_of_day(str(ctx.get("time_of_day", "")))
 		+ _format_party_automation(str(ctx.get("party_automation", "")))
 		+ "Your state: HP %d%%, MP %d%%, AP %d, status: %s.\n" % [int(hp_pct), int(mp_pct), ap, boss_status_tag]
-		+ "Party state:\n%s\n" % party_block
+		# "Party state" alone read as the boss's OWN side. Measured against llama3,
+		# 5 samples: 3 reasons had Mordaine protecting and healing the player's
+		# characters ("Protect Rilla and buy time for Bram to recover"), and all 5
+		# chose turtle against a 22%-HP cleric — the board an aggressive intent
+		# exists for. The model was not confused about the rules, it was confused
+		# about WHOSE SIDE IT WAS ON, which nothing in the prompt said.
+		+ "THE ADVENTURING PARTY BELOW ARE YOUR ENEMIES. You are fighting them; you\n"
+		+ "do not command, protect or heal them. Their weakness is your opportunity.\n"
+		+ "Enemy party state:\n%s\n" % party_block
 		+ "Recent exchange (oldest → newest):\n%s\n" % recent_block
 	)
 	# The party's authored automation, as prose. Falls back to the lead-PC JSON.

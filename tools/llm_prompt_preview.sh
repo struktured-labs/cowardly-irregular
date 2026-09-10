@@ -15,7 +15,7 @@ cd "$(dirname "$0")/.."
 KIND="opening"; ASK=0; PASS=()
 for a in "$@"; do
   case "$a" in
-    opening|reply|signoff) KIND="$a" ;;
+    opening|reply|signoff|intent) KIND="$a" ;;
     --ask) ASK=1 ;;
     *) PASS+=("$a") ;;
   esac
