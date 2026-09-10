@@ -43,18 +43,30 @@ Godot already writes down what it owes, per file:
 So the question "did the build come out whole" has an exact answer with no dial in it, and a
 missing artifact is named rather than inferred from a number moving.
 
-Verified on v3.33.293-alpha's real stage: 1230 non-excluded .import files declaring 2458
-artifacts, 281 .gd -> 281 .gdc, 7 .tscn -> 7 .scn, 0 missing. Coverage 2746 of 3326 stored
-entries (82.6%), against 161 (4.8%) before.
+Verified on v3.33.293-alpha's real exports:
+
+    Web    1229 imported + 281 .gdc + 7 .scn = 1517 owed, 0 missing, of 3326 stored (45.6%)
+    Linux  1519 owed, 0 missing, of 3329 stored
+    Windows Desktop  same as Linux
+
+⚠️ I FIRST PUBLISHED 2746 OWED AND "82.6% COVERAGE". Both were wrong, inflated almost exactly
+2x, and the cause is worth keeping: an .import declares its artifact TWICE — once as `path=`
+and once inside `dest_files=[...]` — so a bare `"res://…"` scan counted every asset in both
+places. The tell was a control: deleting ONE line from a real export log reported "2 thing(s)
+missing", the same artifact listed twice. A doubled count is invisible in the clean case,
+because 0 missing is 0 either way; it only surfaces when something actually breaks.
+
+Fixed by scoping to the dest_files block and deduping per file. Against the previous music
+guard's 161 entries (4.8%) this is still a 9.4x widening — it is simply not 82.6%.
 
 WHAT IT DOES NOT COVER, stated so the number is not read as "everything"
 -----------------------------------------------------------------------
-The remaining ~17% is engine and project furniture the export synthesises rather than derives
-from a source file — project.godot, the exported scene bundles' own index entries, shader
-caches. Those have no per-file declaration to check against, so they are OUT of scope rather
-than silently assumed fine.
+The uncovered ~54% is engine and project furniture the export synthesises rather than derives
+from a source file — project.godot, exported scene bundles' own index entries, shader caches,
+and the .import sidecars themselves. None has a per-file declaration to check against, so they
+are OUT of scope rather than silently assumed fine.
 
-Usage:  check_pck_complete.py <stage-dir> <export-log>
+Usage:  check_pck_complete.py <stage-dir> <export-log> [preset-name]
         check_pck_complete.py --selftest
 Exit:   0 complete · 4 something the export owed is missing · 2 could not evaluate
 """
@@ -64,11 +76,25 @@ import re
 import sys
 import tempfile
 
+class Unevaluable(Exception):
+    """Cannot evaluate — distinct from 'evaluated and found incomplete'.
+
+    Previously these paths used `raise Unevaluable(msg)`, which exits 1. The selftest caught
+    the exception and MAPPED it to 2 itself, so the suite asserted an exit code the shipped
+    program never produced. The test agreed with an intention rather than with the binary.
+    """
+
+
 STORED_RE = re.compile(r'Storing File: res://(\S+)')
+# dest_files ONLY. An .import declares the same artifact in `path=` AND in `dest_files=`,
+# so a bare `"res://…"` scan counts every asset TWICE — measured: one deleted log line
+# reported "2 thing(s) missing", the same artifact listed twice, and the owed total was
+# inflated from 1375 to 2750. dest_files is the contractual line: what this source PRODUCES.
+DEST_LINE_RE = re.compile(r'dest_files\s*=\s*\[([^\]]*)\]')
 DEST_RE = re.compile(r'"res://([^"]+)"')
 
 
-def _exclusions(stage):
+def _exclusions(stage, preset="Web"):
     """The Web preset's exclude_filter, with the parse ASSERTED.
 
     str.find returns -1 on a miss and Python slices happily with it, so an unasserted parse
@@ -77,15 +103,19 @@ def _exclusions(stage):
     """
     p = os.path.join(stage, "export_presets.cfg")
     if not os.path.isfile(p):
-        raise SystemExit(f"[pck] BLOCKED: {p} not found — cannot derive what the export owes.")
+        raise Unevaluable(f"[pck] BLOCKED: {p} not found — cannot derive what the export owes.")
     s = open(p, encoding="utf-8", errors="replace").read()
-    i = s.find('name="Web"')
+    # EXACT preset name. "Web", "Linux" and "Windows Desktop" are distinct strings, but a
+    # prefix search would be a live hazard the day someone adds "Web (debug)" — and the
+    # failure would be silent, deriving the wrong preset's exclusions and then reporting a
+    # confident completeness verdict against them.
+    i = s.find(f'name="{preset}"')
     j = s.find('exclude_filter="', i)
     k = s.find('"', j + 16)
     if i < 0 or j < 0 or k < 0:
-        raise SystemExit(
-            f'[pck] BLOCKED: could not locate the Web preset\'s exclude_filter in {p} '
-            f'(name="Web" at {i}, exclude_filter at {j}, closing quote at {k}). '
+        raise Unevaluable(
+            f'[pck] BLOCKED: could not locate the {preset} preset\'s exclude_filter in {p} '
+            f'(name="{preset}" at {i}, exclude_filter at {j}, closing quote at {k}). '
             f'Fix this parse rather than letting it derive from garbage.')
     return [x.strip() for x in s[j + 16:k].split(",") if x.strip()]
 
@@ -94,15 +124,15 @@ def _is_excluded(rel, pats):
     return any(fnmatch.fnmatch(rel, p) or rel.startswith(p.rstrip('*')) for p in pats)
 
 
-def evaluate(stage, logpath):
-    pats = _exclusions(stage)
+def evaluate(stage, logpath, preset="Web"):
+    pats = _exclusions(stage, preset)
     if not os.path.isfile(logpath):
-        raise SystemExit(f"[pck] BLOCKED: export log {logpath} not found — an absent log is "
+        raise Unevaluable(f"[pck] BLOCKED: export log {logpath} not found — an absent log is "
                          f"not an empty one, and neither is evidence of a complete pck.")
     log = open(logpath, encoding="utf-8", errors="replace").read()
     stored = set(STORED_RE.findall(log))
     if not stored:
-        raise SystemExit("[pck] BLOCKED: the export log lists no stored files at all. That is a "
+        raise Unevaluable("[pck] BLOCKED: the export log lists no stored files at all. That is a "
                          "broken log or a failed export, not a complete build.")
 
     owed, missing = 0, []
@@ -117,11 +147,15 @@ def evaluate(stage, logpath):
             if _is_excluded(rel, pats) or _is_excluded(rel[:-7], pats):
                 continue
             txt = open(os.path.join(root, f), encoding="utf-8", errors="replace").read()
-            for dest in DEST_RE.findall(txt):
-                if dest.startswith('.godot/imported/'):
-                    owed += 1
-                    if dest not in stored:
-                        missing.append(f"{dest}   (owed by {rel})")
+            dests = set()
+            for block in DEST_LINE_RE.findall(txt):
+                for dest in DEST_RE.findall(block):
+                    if dest.startswith('.godot/imported/'):
+                        dests.add(dest)
+            for dest in sorted(dests):
+                owed += 1
+                if dest not in stored:
+                    missing.append(f"{dest}   (owed by {rel})")
 
     # 2. scripts and scenes — a 1:1 mapping, so a COUNT is exact here rather than a proxy
     counts = {}
@@ -174,8 +208,8 @@ def selftest():
         nonlocal passed, failed, saw_ok, saw_block
         try:
             got = fn()
-        except SystemExit as e:
-            got = 2 if not isinstance(e.code, int) else e.code
+        except Unevaluable:
+            got = 2   # the SAME mapping main() applies; see Unevaluable's docstring
         if got == 0:
             saw_ok = True
         if got == 4:
@@ -278,7 +312,12 @@ def selftest():
 if __name__ == "__main__":
     if len(sys.argv) > 1 and sys.argv[1] == "--selftest":
         sys.exit(selftest())
-    if len(sys.argv) != 3:
-        print(__doc__.strip().splitlines()[-3], file=sys.stderr)
+    if len(sys.argv) not in (3, 4):
+        print("usage: check_pck_complete.py <stage-dir> <export-log> [preset-name]",
+              file=sys.stderr)
         sys.exit(2)
-    sys.exit(evaluate(sys.argv[1], sys.argv[2]))
+    try:
+        sys.exit(evaluate(sys.argv[1], sys.argv[2], sys.argv[3] if len(sys.argv) == 4 else "Web"))
+    except Unevaluable as e:
+        print(str(e), file=sys.stderr)
+        sys.exit(2)
