@@ -2810,8 +2810,38 @@ func _delete_current_cell() -> void:
 ## restore and nothing to race.
 func _open_simulate() -> void:
 	var rules: Array = AutobattleSystem.get_character_script(character_id).get("rules", [])
-	_simulate_panel = _build_simulate_panel(_simulate_report(rules))
+	var lines: Array[String] = _simulate_report(rules)
+	lines.append_array(_observed_report(rules))
+	_simulate_panel = _build_simulate_panel(lines)
 	add_child(_simulate_panel)
+
+
+## What actually happened, beside what Simulate predicts. A rule can look perfect in simulation
+## and never fire in a real fight — every autogrind defect found on 2026-09-09/10 was invisible
+## for exactly that reason.
+func _observed_report(rules: Array) -> Array[String]:
+	var out: Array[String] = []
+	if rules.is_empty():
+		return out
+	var turns: int = AutobattleSystem.get_rule_eval_count(character_id)
+	out.append("")
+	## A zero needs its denominator. "fired 0 times" across zero turns is not evidence of a dead
+	## rule, and reporting it as one would manufacture the false alarm this panel exists to avoid.
+	if turns <= 0:
+		out.append("OBSERVED — no turns recorded yet. Fight or grind, then reopen.")
+		return out
+	out.append("OBSERVED — %d turn%s this session" % [turns, "" if turns == 1 else "s"])
+	var fired: Dictionary = AutobattleSystem.get_rule_fire_counts(character_id)
+	for i in range(rules.size()):
+		var n: int = int(fired.get(i, 0))
+		var enabled: bool = bool((rules[i] as Dictionary).get("enabled", true))
+		if not enabled:
+			out.append("  rule %d  disabled" % [i + 1])
+		elif n == 0:
+			out.append("  rule %d  never fired" % [i + 1])
+		else:
+			out.append("  rule %d  fired %d time%s" % [i + 1, n, "" if n == 1 else "s"])
+	return out
 
 
 func _build_simulate_panel(lines: Array[String]) -> Control:

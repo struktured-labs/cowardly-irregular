@@ -141,6 +141,31 @@ func _ready() -> void:
 	_load_character_scripts()
 
 
+## Session-scoped observed rule usage, character_id -> {rule_index: times fired} and
+## character_id -> turns the script was consulted. Never persisted: the question is "did this
+## rule fire in the fights I just ran", which a saved total cannot answer.
+var _rule_fire_counts: Dictionary = {}
+var _rule_eval_counts: Dictionary = {}
+
+
+func get_rule_fire_counts(character_id: String) -> Dictionary:
+	return (_rule_fire_counts.get(character_id, {}) as Dictionary).duplicate()
+
+
+## Turns this character's script was consulted — the denominator for a zero.
+func get_rule_eval_count(character_id: String) -> int:
+	return int(_rule_eval_counts.get(character_id, 0))
+
+
+func reset_rule_fire_counts(character_id: String = "") -> void:
+	if character_id == "":
+		_rule_fire_counts.clear()
+		_rule_eval_counts.clear()
+		return
+	_rule_fire_counts.erase(character_id)
+	_rule_eval_counts.erase(character_id)
+
+
 func execute_grid_autobattle(combatant: Combatant) -> Array[Dictionary]:
 	"""Execute autobattle for a combatant using their character script.
 	Returns array of actions (1-4) for Advance mode."""
@@ -151,11 +176,19 @@ func execute_grid_autobattle(combatant: Combatant) -> Array[Dictionary]:
 	if script.is_empty() or not script.has("rules"):
 		return [_get_default_action(combatant)]
 
+	## Observed counters. Simulate predicts; nothing told the player what actually happened, which
+	## is why a rule that never fires is invisible. The turn count is the denominator: 0 fires
+	## across 0 turns means "not measured yet", not "dead".
+	_rule_eval_counts[character_id] = int(_rule_eval_counts.get(character_id, 0)) + 1
+
 	# Evaluate rules in order (first match wins)
 	var rule_idx = 0
 	for rule in script["rules"]:
 		if _evaluate_grid_rule(combatant, rule):
 			var actions = _rule_to_actions(combatant, rule)
+			var fired: Dictionary = _rule_fire_counts.get(character_id, {})
+			fired[rule_idx] = int(fired.get(rule_idx, 0)) + 1
+			_rule_fire_counts[character_id] = fired
 			script_executed.emit(combatant, rule, actions)
 			return actions
 		rule_idx += 1
@@ -768,6 +801,10 @@ func set_character_script(character_id: String, script: Dictionary) -> void:
 	var profiles = data.get("profiles", [])
 	if active_idx < profiles.size():
 		profiles[active_idx]["script"] = script
+	## Observed counts are keyed by rule INDEX, and editing the grid renumbers them — insert a
+	## rule at the top and every count silently describes a different rule. Drop them with the
+	## edit; a stale count is worse than none, because it reads as evidence.
+	reset_rule_fire_counts(character_id)
 	_save_character_profiles()
 	character_script_changed.emit(character_id)
 
