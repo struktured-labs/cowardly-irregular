@@ -598,6 +598,16 @@ func _resolve_ability_targets(combatant: Combatant, ability_id: String, target_t
 				return _get_all_alive_allies(combatant)
 			if ab_target == "all_enemies":
 				return _get_enemies_for(combatant)
+			## `dead_ally` is the ONLY target_type whose subject is excluded by the normal ally
+			## helpers — _get_allies_for filters is_alive, so lowest_hp_ally can never return a
+			## corpse and every revival rule aimed itself at a living member. Live skips living
+			## targets (BattleManager:5473), so raise was inert in BOTH engines.
+			if ab_target == "dead_ally":
+				var fallen: Array[Combatant] = _get_dead_allies_for(combatant)
+				var one: Array[Combatant] = []
+				if fallen.size() > 0:
+					one.append(fallen[0])
+				return one
 	# "Exploit Weakness": aim this ability at the enemy weak to its own element.
 	if target_type == "weakest_to_ability":
 		var element: String = ""
@@ -2060,6 +2070,20 @@ func _get_enemies_for(combatant: Combatant) -> Array[Combatant]:
 	var is_player = combatant in bm.player_party
 	var enemy_party = bm.enemy_party if is_player else bm.player_party
 	return enemy_party.filter(func(e): return e.is_alive)
+
+
+func _get_dead_allies_for(combatant: Combatant) -> Array[Combatant]:
+	"""Fallen members of the combatant's own party — the one group the alive-filtered helpers hide."""
+	var bm = get_node_or_null("/root/BattleManager")
+	if not bm:
+		return []
+	var is_player = combatant in bm.player_party
+	var party = bm.player_party if is_player else bm.enemy_party
+	var out: Array[Combatant] = []
+	for a in party:
+		if a != null and is_instance_valid(a) and not a.is_alive:
+			out.append(a)
+	return out
 
 
 func _get_allies_for(combatant: Combatant) -> Array[Combatant]:
