@@ -6087,7 +6087,12 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 			var threat_class: String = str(ability.get("threat_class", ""))
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive:
-					target.add_buff("Empower", buff_stat, stat_modifier, duration, threat_class)
+					## Labelled per ABILITY, not "Empower". add_buff dedupes on the effect name, so one
+					## shared label collapsed every masterite_* buff into a single entry keeping the
+					## FIRST one's stat — and the arbiter's "do I have an attack buff?" and the
+					## tempo's "do I have a speed buff?" could never be satisfied. Both re-cast their
+					## stance every turn and never attacked.
+					target.add_buff(str(ability.get("name", "Empower")), buff_stat, stat_modifier, duration, threat_class)
 					battle_log_message.emit("[color=cyan]%s is empowered![/color] (%s +%d%% for %d turns)" % [target.combatant_name, buff_stat.to_upper(), int((stat_modifier - 1.0) * 100), duration])
 		"debuff":
 			# Generic stat debuff (masterite_* family). Reads the stat field
@@ -6095,7 +6100,10 @@ func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: A
 			var debuff_stat = str(ability.get("stat", "attack"))
 			for target in targets:
 				if target and is_instance_valid(target) and target.is_alive and randf() < success_rate:
-					target.add_debuff("Sap", debuff_stat, stat_modifier, duration)
+					## Per ABILITY, same reason as the buff arm above: add_debuff dedupes on the effect
+					## name, so one shared "Sap" collapsed slow, time_tax and resource_cut into a
+					## single entry keeping the first one's stat.
+					target.add_debuff(str(ability.get("name", "Sap")), debuff_stat, stat_modifier, duration)
 					battle_log_message.emit("[color=%s]%s is sapped![/color] (%s -%d%% for %d turns)" % [AccessibilityPalette.penalty_bbcode(), target.combatant_name, debuff_stat.to_upper(), int((1.0 - stat_modifier) * 100), duration])
 		# Tick 351: added sleep/poison/burn/confuse/fear/silence/curse to
 		# the simple-status arm. These are referenced by abilities.json
