@@ -30,7 +30,15 @@ const WORLDS := [
 	{"name": "futuristic", "path": "res://src/exploration/FuturisticOverworld.gd", "from": Vector2(4624, 960), "edge_y": 768.0},
 ]
 ## The player's own clearance shows up in every measurement and is not part of the displacement.
-const CLEARANCE_TOLERANCE := 12.0
+## ⚠️ THIS BOUND IS FROM THE CONTRACT, NOT THE CORPUS (cowir-sprites' rule, 2026-09-10: a bound from
+## the contract survives the corpus changing, a bound from the corpus does not). OverworldPlayer sets
+## `shape.radius = 4.0` and `safe_margin = 4.0`, so 8.0 is the entire clearance a body can add to any
+## measurement. It shipped at 12.0, which I picked to sit comfortably above the observed 7.6 px
+## residual — a number taken from the population, wearing a comment that claimed it came from the
+## player. At 12 a world could drift 4 px further than anything the contract can explain and still
+## pass. The measured residual is 7.6 against a bound of 8.0, and that tightness is the point: the
+## residual IS the clearance, so there is nothing left over to hide a real regression in.
+const CLEARANCE_TOLERANCE := 8.0
 
 
 func _overshoot(entry: Dictionary) -> float:
