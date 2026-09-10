@@ -133,10 +133,20 @@ var _last_consideration_ts: int = 0
 ## proposed | failed_*.
 func consider(trigger_type: String, context: Dictionary) -> bool:
 	var now: int = int(Time.get_unix_time_from_system())
-	if _last_consideration_ts > 0 \
-			and (now - _last_consideration_ts) < int(min_consideration_interval_sec):
+	var elapsed: int = now - _last_consideration_ts
+	# A FUTURE-dated stamp is not a baseline. last_consideration_ts persists in the
+	# save and is WALL CLOCK, so loading a save written under a clock that is ahead
+	# makes this subtraction negative — and `< interval` then throttles for the
+	# whole offset. Measured: 6h ahead (an ordinary dual-boot RTC mismatch) disables
+	# the daemon for six hours of play; a badly wrong clock disables it for a year.
+	# from_dict's max(0, raw_ts) guards a NEGATIVE stored value and not a future one.
+	# Same shape as the conversation-reward backstop fixed 2026-09-10: a signed
+	# subtraction thresholded in one direction only.
+	if elapsed < 0:
+		elapsed = int(min_consideration_interval_sec)
+	if _last_consideration_ts > 0 and elapsed < int(min_consideration_interval_sec):
 		print("[REBALANCE] throttled (%ds since last) — trigger=%s" % [
-			now - _last_consideration_ts, trigger_type])
+			elapsed, trigger_type])
 		return false
 	_last_consideration_ts = now
 	# Stub proposal — what the LLM-driven version will eventually return.

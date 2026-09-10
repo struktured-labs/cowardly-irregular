@@ -133,3 +133,58 @@ func test_both_apply_paths_route_through_the_bound() -> void:
 		"expected one definition plus BOTH writers (try_auto_apply and force_apply)")
 	assert_eq(src.count("gs.game_constants[constant_name] = after"), 2,
 		"CONTROL: there are exactly two sites that write a constant, so 2 callers covers them")
+
+
+# ── the throttle is a signed subtraction too ──────────────────────────────────
+#
+# Second instance of the SAME class in this lane in one day. consider() gates on
+# `now - _last_consideration_ts < interval`, where the stamp is WALL CLOCK and
+# PERSISTS in the save. Load a save written under a clock that is ahead and the
+# subtraction goes negative, so `< interval` throttles for the entire offset.
+#
+# Measured before the fix: 6h ahead (an ordinary dual-boot RTC mismatch) disabled
+# the daemon for six hours of play; a year ahead disabled it for a year.
+# from_dict's max(0, raw_ts) guards a NEGATIVE stored value, not a future one.
+
+func _daemon_with_stamp(offset_sec: int):
+	var d = RD.new()
+	d.from_dict({
+		"pending": [], "applied": [],
+		"last_consideration_ts": int(Time.get_unix_time_from_system()) + offset_sec,
+	})
+	return d
+
+
+func test_a_save_from_a_clock_that_is_ahead_does_not_disable_the_daemon() -> void:
+	var d = _daemon_with_stamp(21600)  # 6 hours ahead
+	assert_true(d.consider(RD.TRIGGER_BOSS_DEFEAT, {}),
+		"a future-dated stamp is not a baseline — throttling on it disabled the daemon for six hours")
+
+
+func test_a_wildly_future_stamp_does_not_disable_it_either() -> void:
+	var d = _daemon_with_stamp(31536000)  # a year
+	assert_true(d.consider(RD.TRIGGER_PARTY_WIPE, {}),
+		"the lockout scales with the offset, so a badly wrong clock disabled the daemon for a year")
+
+
+func test_an_ordinary_recent_consideration_still_throttles() -> void:
+	## CONTROL, and the reason this is not "turn the throttle off": a stamp from
+	## ten seconds ago must still refuse, or the fix has removed the cadence guard
+	## rather than repaired its sign.
+	var d = _daemon_with_stamp(-10)  # ten seconds AGO
+	assert_false(d.consider(RD.TRIGGER_LEVEL_UP, {}),
+		"a consideration ten seconds ago must still be throttled")
+
+
+func test_a_stamp_past_the_interval_is_allowed() -> void:
+	## CONTROL the other way: the throttle must still EXPIRE normally.
+	var d = _daemon_with_stamp(-120)  # two minutes ago, interval is 60
+	assert_true(d.consider(RD.TRIGGER_AREA_ENTERED, {}),
+		"past the interval the daemon must consider again — otherwise it never fires at all")
+
+
+func test_a_fresh_daemon_considers_immediately() -> void:
+	## CONTROL: stamp 0 means never considered, guarded by `_last_consideration_ts > 0`.
+	var d = RD.new()
+	assert_true(d.consider(RD.TRIGGER_MANUAL, {}),
+		"a daemon that has never considered must not be throttled by its initial zero")
