@@ -9,6 +9,16 @@ extends GutTest
 ## "x", the content is authored, shipped, and unreachable — and the failure renders as the gate
 ## simply staying shut, which is what a gate is supposed to look like.
 ##
+## ⚠️ THE FILENAME CLAIMS MORE THAN THE INSTRUMENT COMPUTES, and that is recorded here rather than
+## fixed by a rename because the gap is the useful part. "can open" is a claim about PLAY; what runs
+## below is "every gate flag has a WRITER SOMEWHERE IN THE SOURCE". A writer existing does not make
+## it reachable -- the cutscene that sets a flag could itself be gated on a flag nothing sets, and
+## this would still pass. cowir-main named the mechanism the same evening after publishing a sweep
+## predicate ("unreachable by ANY path") phrased more broadly than the scanner under it: the broader
+## a claim sounds, the less anyone interrogates the code beneath it, so an over-broad name does not
+## merely fail to describe the instrument, it CONCEALS the gap. Read this as: every gate flag has a
+## writer. Nothing more.
+
 ## WHAT THIS FOUND WHEN IT WAS WRITTEN: nothing. Twelve gate flags in src/exploration and src/maps,
 ## twelve writers, every name matching exactly. That is the result being pinned.
 ##
