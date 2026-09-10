@@ -1850,7 +1850,16 @@ const SESSION_SCOPED_CONDITIONS := [
 ## Party-derived, answerable in principle, but the probe carries no inventory — copying one is a
 ## bigger change than this feature warrants. Stated as what it IS rather than as session scope,
 ## so the reason is true and CAN expire when someone models it.
-const PROBE_UNMODELLED_CONDITIONS := ["inventory_items"]
+const PROBE_UNMODELLED_CONDITIONS := ["inventory_items", "member_status"]
+
+## Everything the sampled parties CAN answer. The three lists together must cover
+## PARTY_CONDITION_TYPES exactly — a type in none of them is one this preview answers from a probe
+## that cannot hold the state, which is how member_status reported "no rule matches" in all four
+## states while the probe carried no statuses at all and never could.
+const PROBE_DECIDABLE_CONDITIONS := [
+	"party_hp_avg", "party_mp_avg", "party_hp_min", "alive_count",
+	"member_dead", "member_hp", "member_mp", "reached_level", "always",
+]
 
 
 ## Sampled party situations, so a player sees their own thresholds fire rather than one snapshot.
@@ -1889,6 +1898,19 @@ func _explain_probe_party(state: Dictionary) -> Array:
 	return out
 
 
+## Why this rule cannot be previewed, or "" when it can. Session scope and unmodelled state are
+## different facts and were rendered with one sentence: an inventory_items rule was told it "needs
+## session progress (battles, corruption, time)", which is not why it was withheld.
+func _explain_blocked_reason(rule: Dictionary) -> String:
+	for c in rule.get("conditions", []):
+		var t: String = str((c as Dictionary).get("type", ""))
+		if SESSION_SCOPED_CONDITIONS.has(t):
+			return "needs session progress (battles, corruption, time) — not shown here"
+		if PROBE_UNMODELLED_CONDITIONS.has(t):
+			return "depends on %s, which this preview does not model — not shown here" % t
+	return ""
+
+
 func _rule_needs_unmodelled_state(rule: Dictionary) -> bool:
 	for c in rule.get("conditions", []):
 		if PROBE_UNMODELLED_CONDITIONS.has(str((c as Dictionary).get("type", ""))):
@@ -1914,18 +1936,21 @@ func explain_rules_report() -> Array:
 		var probe: Array = _explain_probe_party(state)
 		var matched: int = -1
 		var blocked: int = -1
+		var blocked_reason: String = ""
 		for i in range(rules.size()):
 			var rule: Dictionary = rules[i]
 			if not bool(rule.get("enabled", true)):
 				continue
-			if _rule_needs_session_state(rule) or _rule_needs_unmodelled_state(rule):
+			var why: String = _explain_blocked_reason(rule)
+			if why != "":
 				blocked = i
+				blocked_reason = why
 				break
 			if AutogrindSystem._evaluate_party_rule(probe, rule):
 				matched = i
 				break
 		if blocked >= 0:
-			out.append("%s  ->  rule %d needs session progress (battles, corruption, time) — not shown here" % [str(state["label"]), blocked + 1])
+			out.append("%s  ->  rule %d %s" % [str(state["label"]), blocked + 1, blocked_reason])
 		elif matched < 0:
 			out.append("%s  ->  no rule matches — the grind continues" % str(state["label"]))
 		else:
