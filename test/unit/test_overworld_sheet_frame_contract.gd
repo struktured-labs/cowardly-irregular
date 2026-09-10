@@ -200,3 +200,45 @@ func test_the_probe_can_see_a_uniformly_empty_sheet() -> void:
 	assert_eq(int(cells[0]["n"]), 0, "CONTROL: the blank sheet must measure 0 opaque px")
 	assert_eq(med, 0.0, "CONTROL: its median is 0, so the relative arm has nothing to divide by")
 	assert_lt(int(cells[0]["n"]), MIN_OPAQUE_PX_PER_FRAME, "CONTROL: the absolute floor must catch it")
+
+
+## No two monsters may share an overworld sheet, byte for byte.
+##
+## HELD UNTIL 2026-09-09, deliberately. When this was first proposed the population was 84 distinct
+## images across 85 sheets: dark_knight and shadow_knight were the same file, so the W1 medieval
+## field elite -- the one monster the design says a player stops and stares at -- rendered in the
+## field as an ordinary guard while its battle sheet showed something else. Landing a red test then
+## would have put a knowingly-failing assertion in the suite, which is worse than no assertion: it
+## trains people to read red as normal. cowir-sprites shipped the sheet, the population went 85/85,
+## and the ratchet lands green on the same fold.
+##
+## It can only get stricter. A new monster brings a new image or it fails here, and the failure names
+## both ids -- which is the actual diagnosis, since a shared sheet is invisible in game (the sprite
+## renders, it is just the wrong character).
+func test_no_two_monsters_share_an_overworld_sheet() -> void:
+	var sheets := _sheets()
+	assert_gt(sheets.size(), 50,
+		"CONTROL: only %d overworld sheets found -- the scan is broken and the zero below is free" % sheets.size())
+
+	var by_hash := {}
+	var hashed := 0
+	for f in sheets:
+		var bytes := FileAccess.get_file_as_bytes("%s/%s" % [OVERWORLD_DIR, f])
+		if bytes.is_empty():
+			continue
+		hashed += 1
+		var key: String = FileAccess.get_sha256("%s/%s" % [OVERWORLD_DIR, f])
+		if not by_hash.has(key):
+			by_hash[key] = []
+		(by_hash[key] as Array).append(f.get_basename())
+
+	assert_eq(hashed, sheets.size(), "hashed %d of %d sheets" % [hashed, sheets.size()])
+	var shared: Array = []
+	for key in by_hash:
+		var ids: Array = by_hash[key]
+		if ids.size() > 1:
+			ids.sort()
+			shared.append(", ".join(ids))
+	shared.sort()
+	assert_eq(shared, [],
+		"two monsters render as the same character on the overworld -- the sprite draws, so nothing looks broken: %s" % str(shared))
