@@ -19,6 +19,36 @@ its name does not start with `rel-`. One `rm -rf` from gone, and the same hour I
 
 The PNGs are the bulk; the markdown is the value.
 
+## ⚠️ THE BRANCH IS CANONICAL. THE LANE WORKTREE COPY IS A MIRROR.
+
+There are two copies of this directory: this one (on `store-assets`, versioned) and a
+gitignored one in the lane worktree. **They diverged within two hours of this file being
+written, and this file caused it** — the refresh procedure below originally read "copy from
+the lane worktree into the branch", so I edited PNGs in both places and captions only here.
+
+    lane worktree   CAPTIONS.md 9026 B · 7 caption headings
+    this branch     CAPTIONS.md 12633 B · 9 headings, + PROVENANCE.md + MANIFEST.txt
+
+Nothing detected it. The lane copy is the one you reach for by habit, and it was the stale
+one — an ignored working copy silently disagreeing with the versioned original, which is the
+second failure mode of [ignored means unbacked]: not just unbacked, but *unbacked and wrong*.
+
+**Edit HERE. Mirror outward, never inward.** The lane copy exists so the shot tooling and eye
+checks have something local to look at; it is downstream.
+
+## Detecting drift
+
+`tools/verify_store_artifact.sh --compare` already does exactly this job — set comparison
+plus per-file checksums, selftested both directions. No second tool:
+
+```sh
+tools/verify_store_artifact.sh --compare <lane>/itch-assets <branch>/itch-assets lane branch
+# exit 0 identical · 5 they have drifted, naming which files
+```
+
+Verified 2026-09-10: it reported the drift above (exit 5, naming CAPTIONS.md and the two
+branch-only files), and reported `43 file(s), every checksum matches` after the sync.
+
 ## Branch policy
 
 `store-assets` is an ARCHIVE branch. **Do not fold it into `main`** — the `.gitignore` entry on
