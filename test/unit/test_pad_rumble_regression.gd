@@ -121,6 +121,35 @@ func test_the_toggle_is_reachable_in_settings() -> void:
 	assert_false(list.contains("\"zzq_not_a_flag\""), "CONTROL: this scan can report a flag ABSENT")
 
 
+## TURNING IT ON MUST BUZZ ONCE. Without this a player cannot distinguish "my pad has no force
+## feedback" from "the feature is broken", and neither can I — I shipped rumble unable to verify it
+## fires on his hardware, which is a question he should be able to answer in one button press.
+func test_turning_it_on_confirms_through_the_real_path() -> void:
+	var src := FileAccess.get_file_as_string("res://src/ui/SettingsMenu.gd")
+	var at := src.find("begins_with(\"fx_\")")
+	assert_gt(at, -1, "the fx toggle handler must exist")
+	var stop := src.find("\n\telif ", at + 1)
+	var body := src.substr(at, (stop - at) if stop > at else -1)
+	assert_true(body.contains("BattleJuice.rumble("),
+		"toggling rumble ON must fire the REAL rumble path — a bespoke test buzz would prove only " +
+		"that the test buzz works, not that battle rumble does")
+	# Match the CONJUNCTION, not the bare token: `fx_now` appears three more times in this same
+	# handler (declaration, store, display), so contains("fx_now") is true with the guard deleted.
+	# It was — the mutation survived and the assert was hollow.
+	assert_true(body.contains("fx_key == \"rumble\" and fx_now"),
+		"and only when turning it ON — buzzing as you switch it OFF is the joke version")
+
+
+## THE PRECONDITION THAT MAKES THE CONFIRMATION POSSIBLE. rumble() consults battle_tier(); if
+## exploration ever became an OFF tier the confirmation would be silently swallowed and the toggle
+## would look broken on a perfectly good pad.
+func test_the_confirmation_is_not_swallowed_by_the_tier() -> void:
+	assert_ne(BattleJuice.presentation_tier(1.0, false, false), BattleJuice.Tier.OFF,
+		"at normal speed the tier must not be OFF, or Settings could never confirm anything")
+	assert_true(BattleJuice.should_rumble(0.7),
+		"a deliberate confirmation at normal speed must pass every gate")
+
+
 ## Calling it with no pad attached must be a silent no-op, which is also every headless run.
 func test_no_pad_is_a_silent_no_op() -> void:
 	assert_true(Input.get_connected_joypads().is_empty(),

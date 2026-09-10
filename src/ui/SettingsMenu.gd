@@ -1201,6 +1201,10 @@ func _adjust_setting(delta: int) -> void:
 			var fx_ss = get_node_or_null("/root/SaveSystem")
 			if fx_ss and fx_ss.has_method("save_settings"):
 				fx_ss.save_settings()
+			# Turning rumble ON buzzes once through the REAL path — the only way a player can tell
+			# "my pad has no force feedback" from "the feature is broken" without asking us.
+			if fx_key == "rumble" and fx_now and BattleJuice:
+				BattleJuice.rumble(0.7)
 		if SoundManager:
 			SoundManager.play_ui("menu_move")
 	elif item["id"] == "dash_always_on":
