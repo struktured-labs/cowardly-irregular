@@ -87,7 +87,18 @@ func _start_probe() -> void:
 	var method: int = _probe_method()
 	var err: int = _probe_request.request(url, PackedStringArray(), method, "")
 	if err != OK:
-		# Could not even kick off the probe — leave _ready_flag false.
+		# The request never started (malformed or empty base_url, bad host), so
+		# _on_probe_completed will NEVER fire. Leaving _first_probe_done false
+		# made _maybe_refresh_probe's `not _first_probe_done` guard return early
+		# FOREVER: the backend stayed unavailable for the whole session, silently,
+		# recoverable only by re-applying the config — which is exactly the
+		# "I had to enable/re-enable LLM for it to trigger" struktured reported
+		# on 2026-09-07. Mark the attempt CONCLUDED so the retry path is armed and
+		# the 30s re-probe the warning below promises actually happens.
+		if not _first_probe_done:
+			push_warning("[HTTPBackend] probe could not start for %s (error %d) — check base_url. Retrying every %ds; no restart needed once it is valid." % [url, err, int(PROBE_INTERVAL_SEC)])
+		_first_probe_done = true
+		_last_probe_msec = Time.get_ticks_msec()
 		_cleanup_probe()
 
 
