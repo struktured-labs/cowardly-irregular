@@ -290,6 +290,12 @@ var _battle_action_log: Array[Dictionary] = []  # Log every player action per ba
 ## action outruns the whole queue while priority actions still sort against each other.
 const PRIORITY_OFFSET: float = 1000.0
 
+## The ability types an archetype's UTILITY slot may select, in ONE place — three filters carried
+## three hand-written copies. `buff` and `defensive` are authored by NO ability in the game; they are
+## kept and LABELLED rather than deleted, so the next reader cannot mistake them for live vocabulary
+## the way `debuff`/`status` were mistaken for years (test_the_debuffer_archetype_is_unreachable).
+const UTILITY_ABILITY_TYPES: Array[String] = ["support", "song", "summon", "buff", "defensive"]
+
 const ACTION_SPEEDS = {
 	"attack": 5,
 	"ability": 10,
@@ -2426,7 +2432,7 @@ func _ai_debuffer(combatant: Combatant, abilities: Array, alive_allies: Array, a
 ## storm_gathering, whose own comment says "without this the telegraph never lands", and two
 ## Spotlight Duel minibosses. Returns {} when the roll declines, so callers fall through unchanged.
 func _ai_utility_action(combatant: Combatant, abilities: Array, alive_enemies: Array, chance: float) -> Dictionary:
-	var utility: Array = abilities.filter(func(a): return a.get("type", "") in ["buff", "support", "defensive", "song", "summon"])
+	var utility: Array = abilities.filter(func(a): return a.get("type", "") in UTILITY_ABILITY_TYPES)
 	## These are OPENERS, not spam. As a flat per-turn roll the slot cost the common roster ~21% of
 	## its damage output — measured as party HP lost over 25 rounds — because a howl or a web_shot
 	## deals nothing and add_buff only refreshes a duration. Each utility ability fires at most once
@@ -2484,7 +2490,8 @@ func _ai_tank(combatant: Combatant, abilities: Array, alive_allies: Array, alive
 	## "summon" joins the utility pool and "magic" the offensive one, because this filter was
 	## PERMISSION where it meant PREFERENCE: Pyrroth and Glacius classify as tanks and their breath
 	## is magic, so neither dragon could ever pick it. Same for the Rat King's summons.
-	var defensive_abilities = abilities.filter(func(a): return a.get("type", "") in ["buff", "support", "defensive", "summon"])
+	## Unified with the shared list; it gains `song`, which no monster in the roster authors.
+	var defensive_abilities = abilities.filter(func(a): return a.get("type", "") in UTILITY_ABILITY_TYPES)
 	var physical_abilities = abilities.filter(func(a): return a.get("type", "") in ["physical", "magic"])
 
 	# Use defensive/buff ability if available (40% chance)
