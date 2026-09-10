@@ -34,6 +34,9 @@ const CAM_OFFSET := Vector2(20.0, 150.0)
 ## PLAYER dominates the frame. The subject of the screenshot cannot be seen in it. Position
 ## was never the problem and no amount of offset tuning fixes a scale problem.
 const DEFAULT_ZOOM := 1.0
+## Mirrors RoamingMonster.ELITE_FIGHT. If the wording changes there, this shot dies loudly
+## rather than photographing a menu whose contents it never checked.
+const ELITE_FIGHT_TEXT := "Fight"
 
 ## Which overworld to shoot. Passed after `--`, e.g. `-s tools/store_shot_elite.gd -- steampunk`.
 ## The species is NOT overridden to match: field_elites.json maps world -> species, and
@@ -195,6 +198,63 @@ func _init() -> void:
 		fa.close()
 	print("[SHOT] field_elite_%s %d B (%dx%d)%s" % [world, sz, img.get_width(), img.get_height(),
 		"  ⚠ SUSPECT: likely an empty void" if sz < VOID_BYTES else ""])
+
+	# ── optional second frame: the Fight / Leave it choice ──────────────────
+	# `-- <world> [offx offy] [zoom] prompt`
+	#
+	# WHY THIS SHOT EXISTS. The overworld frame above is an accurate picture of the feature
+	# and a poor advertisement for it: at overworld zoom the elite is ~30px of dark armour on
+	# dark green, and a 2.0x camera zoom makes it worse rather than better (the tell leaves
+	# the frame). The part of this feature a player actually INTERACTS with is the choice —
+	# "walking into one opens a choice, Fight or Leave it, so the encounter is always yours
+	# to decline" — and that is UI, drawn at readable size whatever the world zoom is.
+	#
+	# HONESTY ABOUT THE PATH: this calls RoamingMonster._present_elite_prompt() directly
+	# rather than walking the player into the collider. It is the same method body_entered
+	# reaches, building the same DialogueChoiceMenu with the same two options, so the frame
+	# is one a player can produce. It is NOT a synthesised menu — nothing here constructs UI
+	# that the game would not. Driving real contact would additionally exercise the collision
+	# path, which this shot does not claim to cover.
+	if not _wants_prompt(user_args):
+		quit(0)
+		return
+	if not elite.has_method("_present_elite_prompt"):
+		_die("RoamingMonster._present_elite_prompt absent — the choice entry point moved")
+		return
+	# Deliberately NOT awaited: present() builds its UI and then blocks on input, so calling
+	# it without await leaves the menu on screen, which is the whole point.
+	elite._present_elite_prompt()
+	for i in range(30):
+		await process_frame
+
+	var menu_layer: Node = null
+	for c in root.get_children():
+		if c is CanvasLayer and int(c.layer) == 96:
+			menu_layer = c
+			break
+	if menu_layer == null:
+		_die("no CanvasLayer at layer 96 — the elite prompt did not open, so there is nothing to photograph")
+		return
+	# Frame-check the CHOICE ROW, not the first Control found. The first Control under this
+	# layer is the full-screen dim rect, whose origin is (0, 0) — trivially "in frame" even if
+	# the panel itself were entirely off-screen. Reporting that would be a check that cannot
+	# fail, which is the defect this framing report exists to prevent. The subject of the shot
+	# is the word "Fight".
+	var row: Node = _find_label_with_text(menu_layer, ELITE_FIGHT_TEXT)
+	if row == null:
+		_die("no Label containing \"%s\" under the prompt layer — the menu opened but did not render its choices. Labels present: %s" % [ELITE_FIGHT_TEXT, str(_label_texts(menu_layer, []))])
+		return
+	_report_framing("choice row \"%s\"" % ELITE_FIGHT_TEXT, row, root)
+
+	var img2 := root.get_texture().get_image()
+	var path2 := "res://tmp/marketing/field_elite_prompt_%s.png" % world
+	img2.save_png(path2)
+	var fa2 := FileAccess.open(path2, FileAccess.READ)
+	var sz2 := fa2.get_length() if fa2 else 0
+	if fa2:
+		fa2.close()
+	print("[SHOT] field_elite_prompt_%s %d B (%dx%d)%s" % [world, sz2, img2.get_width(), img2.get_height(),
+		"  ⚠ SUSPECT: likely an empty void" if sz2 < VOID_BYTES else ""])
 	quit(0)
 
 
@@ -205,6 +265,43 @@ func _find_elite(sp) -> Node:
 		if is_instance_valid(m) and m.get("elite") == true:
 			return m
 	return null
+
+
+## Did the caller ask for the choice frame? Matched by VALUE anywhere in the user args rather
+## than by position, so it cannot be silently swallowed by an omitted offset or zoom.
+func _wants_prompt(args: PackedStringArray) -> bool:
+	for a in args:
+		if str(a) == "prompt":
+			return true
+	return false
+
+
+## The row Label carrying this text, anywhere under a node. Naming the SUBJECT rather than
+## taking whatever Control appears first: the dim rect would satisfy "a Control exists" and
+## sits at (0, 0), so a framing report against it can never say OUT OF FRAME.
+## CONTAINS, not equals. The selected row renders with a cursor glyph — "▸ Fight" — so an
+## exact match found nothing on the REAL menu and killed the capture. Caught by running the
+## unmutated script beside the mutated one: BOTH failed, which is what says the check is wrong
+## rather than the subject missing. A control that only ever fires on the mutant proves the
+## detector works; running the honest case is what proves it does not over-fire.
+func _find_label_with_text(n: Node, want: String) -> Node:
+	for c in n.get_children():
+		if c is Label and str((c as Label).text).find(want) >= 0:
+			return c
+		var deeper := _find_label_with_text(c, want)
+		if deeper != null:
+			return deeper
+	return null
+
+
+## Every Label under a node, for diagnostics when the search above comes up empty. An error
+## that says "not found" without saying what WAS there sends the reader to the wrong place.
+func _label_texts(n: Node, acc: Array) -> Array:
+	for c in n.get_children():
+		if c is Label:
+			acc.append(str((c as Label).text))
+		_label_texts(c, acc)
+	return acc
 
 
 ## Is a node actually inside the captured frame? The shot is what ships, so "in the viewport
