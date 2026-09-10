@@ -95,3 +95,71 @@ func test_the_probe_can_see_a_chest_inside_a_wall() -> void:
 	q.collision_mask = 1
 	assert_false(vp.world_2d.direct_space_state.intersect_shape(q, 1).is_empty(),
 		"CONTROL: a point known to sit in terrain must report an overlap, or every clear result above is free")
+
+
+## A signpost you cannot get within reading distance of is a sign nobody can read.
+##
+## Swept 2026-09-10 across the five Mode 7 worlds: 86 interactive entities (signposts, overworld NPCs,
+## wanderers). Fourteen of them SIT INSIDE terrain collision — and thirteen are fine, because you
+## read a sign from beside it, not from on top of it. Exactly one, W1's "→ Grimhollow / Dark Lands"
+## at (50,15), had no standable cell within two tiles in any direction.
+##
+## 🔑 THAT RATIO IS THE REASON THIS TEST ASKS WHAT IT ASKS. The strict form — "no interactive entity
+## may overlap terrain" — would have condemned fourteen things, thirteen of them working, and the
+## fix for each would have been to move something that did not need moving. The property that
+## matters is not where the entity sits but whether a player can get to it, which is the same
+## outcome-versus-property distinction that made the prop guard pass over sealed village walkways
+## this morning: the strict version of a rule is not the safe version of it.
+func test_every_interactive_entity_can_be_reached() -> void:
+	var stranded: Array = []
+	var worlds_built := 0
+	var entities := 0
+	var interactive := ["Signpost", "OverworldNPC", "WanderingNPC"]
+
+	for label in WORLDS:
+		if label == "abstract":
+			continue  # W6 runs no Mode 7 and has no displaced clone to strand anything against
+		var vp := SubViewport.new()
+		vp.size = Vector2i(64, 64)
+		vp.world_2d = World2D.new()
+		add_child_autofree(vp)
+		var w = load(WORLDS[label]).new()
+		vp.add_child(w)
+		await get_tree().physics_frame
+		await get_tree().physics_frame
+		worlds_built += 1
+		var space := vp.world_2d.direct_space_state
+		var shape := CircleShape2D.new()
+		shape.radius = BODY_RADIUS
+		var step: float = float(int(w.MAP_SCALE) * int(w.TILE_SIZE))
+
+		var stack: Array = [w]
+		while not stack.is_empty():
+			var n = stack.pop_back()
+			for c in n.get_children():
+				stack.append(c)
+			if not (n is Node2D) or n.get_script() == null:
+				continue
+			if not (str(n.get_script().resource_path).get_file().get_basename() in interactive):
+				continue
+			entities += 1
+			var pos: Vector2 = (n as Node2D).global_position
+			var reachable := false
+			for dy in range(-2, 3):
+				for dx in range(-2, 3):
+					if reachable:
+						continue
+					var q := PhysicsShapeQueryParameters2D.new()
+					q.shape = shape
+					q.transform = Transform2D(0.0, pos + Vector2(dx * step, dy * step))
+					q.collision_mask = 1
+					if space.intersect_shape(q, 1).is_empty():
+						reachable = true
+			if not reachable:
+				stranded.append("%s/%s at %s" % [label, str(n.get_script().resource_path).get_file().get_basename(), str(Vector2i(int(pos.x / step), int(pos.y / step)))])
+	stranded.sort()
+
+	assert_gt(worlds_built, 4, "built %d Mode 7 worlds" % worlds_built)
+	assert_gt(entities, 60, "CONTROL: only %d interactive entities swept -- the scan is broken and the zero below is free" % entities)
+	assert_eq(stranded, [],
+		"an interactive entity has no standable cell within two tiles -- the player can see it and can never reach it: %s" % str(stranded))

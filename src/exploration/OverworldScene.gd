@@ -954,7 +954,9 @@ func _place_signposts() -> void:
 		{"pos": Vector2(35, 20), "text": "↑ Whispering Cave"},
 		# Central crossroads
 		{"pos": Vector2(30, 15), "text": "↑ Eldertree / ← Frosthold"},
-		{"pos": Vector2(50, 15), "text": "→ Grimhollow / Dark Lands"},
+		# (50,15) was unreachable — no cell within two tiles of it lets a body stand, so the sign could
+		# never be read. (48,17) is the nearest standable cell, physics-verified.
+		{"pos": Vector2(48, 17), "text": "→ Grimhollow / Dark Lands"},
 		# Southern crossroads
 		{"pos": Vector2(25, 40), "text": "↓ Sandrift / Desert"},
 		{"pos": Vector2(40, 48), "text": "↓ Bridge / Portal South"},
