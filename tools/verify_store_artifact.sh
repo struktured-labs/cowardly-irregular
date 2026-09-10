@@ -22,9 +22,18 @@
 # LOCAL directory, before butler decides what to send. The game would simply not load, and
 # every gate we own would be green.
 #
-# FIRST RUN, 2026-09-10, against the live web channel at v3.33.293-alpha:
-#   9 files, 206.83 MiB fetched · file set identical · all 9 cksums identical to the local
-#   build. The store serves exactly what we built — now measured rather than assumed.
+# FIRST RUN, 2026-09-10, against ALL THREE live channels at v3.33.293-alpha:
+#   web      9 files, 206.83 MiB · set identical · all 9 cksums identical
+#   linux    1 file,  327,626,960 B · cksum 665032545  identical
+#   windows  1 file,  355,459,072 B · cksum 2465118453 identical
+#   The store serves exactly what we built — measured rather than assumed, for the first time
+#   in 36 publishes. Desktop is one self-contained binary per channel (the pck is embedded),
+#   so the SET comparison there is trivial and the checksum is doing all the work.
+#
+#   CONTROL on the real fetch path, not just on compare(): fetching the WINDOWS channel and
+#   comparing it against the LINUX build reports both directions — .x86_64 in local not on
+#   store, .exe on store not in local — exit 5. The selftest exercises compare() only, so
+#   without this the fetch half had never been shown capable of failing.
 #
 # COST, stated because it is why this is NOT wired into every publish:
 #   a full fetch is ~207 MiB for web and ~312 MiB for a desktop channel. At an hourly publish
@@ -110,9 +119,13 @@ compare() {
     if [ "$rc" -eq 0 ]; then
         echo "[store-verify] identical: ${na} file(s), every checksum matches"
         echo "[store-verify]   the store serves exactly what we built"
-    else
+    elif [ "$diff_files" -gt 0 ]; then
         echo "[store-verify] ${diff_files} file(s) differ in content" >&2
     fi
+    # Deliberately silent when rc!=0 and diff_files==0. The cross-channel control printed
+    # "0 file(s) differ in content" underneath two BLOCKED set-difference lines — accurate
+    # (no file was present on both sides to disagree) and readable as reassurance by anyone
+    # skimming for a number. A zero next to a failure is the wrong thing to volunteer.
     return $rc
 }
 
