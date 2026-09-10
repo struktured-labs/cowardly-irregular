@@ -373,15 +373,13 @@ func _physics_process(delta: float) -> void:
 			_update_sprite()
 		return
 
-	var input_dir = Vector2.ZERO
-	if Input.is_action_pressed("ui_left"):
-		input_dir.x -= 1
-	if Input.is_action_pressed("ui_right"):
-		input_dir.x += 1
-	if Input.is_action_pressed("ui_up"):
-		input_dir.y -= 1
-	if Input.is_action_pressed("ui_down"):
-		input_dir.y += 1
+	# Analog stick threshold. The ui_* actions carry Godot's DEFAULT 0.5 deadzone, so on a pad the
+	# stick did nothing until pushed past halfway — measured, not guessed. get_vector takes its own
+	# deadzone and does NOT mutate the action, so MENUS KEEP 0.5 and only walking responds sooner.
+	# Speed is unchanged: the magnitude is discarded by the normalize() below, and keyboard/d-pad
+	# report full deflection either way. One number to revert if the feel is wrong.
+	const MOVE_DEADZONE := 0.25
+	var input_dir = Input.get_vector("ui_left", "ui_right", "ui_up", "ui_down", MOVE_DEADZONE)
 
 	# Click-to-move: when no keyboard/gamepad direction is held AND the
 	# input layer (_unhandled_input) flagged a click target, derive an
