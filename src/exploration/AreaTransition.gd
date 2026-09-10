@@ -173,6 +173,10 @@ func _setup_indicator() -> void:
 	_indicator_label.add_theme_color_override("font_shadow_color", Color.BLACK)
 	_indicator_label.add_theme_constant_override("shadow_offset_x", 1)
 	_indicator_label.add_theme_constant_override("shadow_offset_y", 1)
+	# The prompt is an affordance, not scenery: you arrive standing IN the exit zone, so without this
+	# the player sprite is drawn over the middle of "Enter Village" in every interior in the game.
+	_indicator_label.z_index = 100
+	_indicator_label.z_as_relative = false
 	add_child(_indicator_label)
 
 

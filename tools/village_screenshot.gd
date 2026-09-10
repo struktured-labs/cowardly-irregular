@@ -20,7 +20,8 @@ func _init() -> void:
 	var scene: Node = null
 	for path in ["res://src/maps/villages/%sVillage.tscn" % stem, "res://src/maps/villages/%s.tscn" % stem,
 			"res://src/maps/villages/%sVillage.gd" % stem, "res://src/maps/villages/%s.gd" % stem,
-			"res://src/maps/dungeons/%s.gd" % stem]:
+			"res://src/maps/dungeons/%s.gd" % stem,
+			"res://src/maps/interiors/%s.gd" % stem]:
 		if not ResourceLoader.exists(path):
 			continue
 		var res = load(path)
