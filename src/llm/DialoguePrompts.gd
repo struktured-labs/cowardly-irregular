@@ -769,13 +769,24 @@ static func build_party_line(
 	var event_hint: String = _party_line_event_hint(event_kind, event_data)
 	var moods: String = ", ".join(PARTY_LINE_MOODS)
 
+	# Guarded: with no authored phrases the heading used to render over an empty
+	# list. Mild noise under the old one-line label, actively confusing under this
+	# one — "Do NOT output any of them" with nothing listed.
+	var voice_block: String = ""
+	if signature_phrases.size() > 0:
+		voice_block = (
+			"Signature phrases — these are EXAMPLES OF VOICE, not lines to say. Do NOT\n"
+			+ "output any of them, or a lightly reworded version. Write a NEW line this\n"
+			+ "character would say, in that register, about THIS moment:\n"
+			+ sig_block
+		)
+
 	return (
 		"You voice %s, the party's %s, in the meta-aware JRPG 'Cowardly Irregular'.\n" % [speaker_name, speaker_job]
 		+ "Stay rigorously in character. Persona:\n"
 		+ "  %s\n" % persona
 		+ personality_block
-		+ "Signature phrases (use the rhythm — do NOT copy verbatim every turn):\n"
-		+ sig_block
+		+ voice_block
 		+ "\n"
 		+ "Your state: HP %d%%, MP %d%%, status: %s.\n" % [int(hp_pct), int(mp_pct), status_tag]
 		+ "Party state:\n%s\n" % party_block

@@ -39,6 +39,30 @@ func _init() -> void:
 				"Elder Theron", "a weary village elder who has seen too much",
 				"Harmonia Village", events, "You return to me, battered and worn.",
 				"I must go.")
+		"party":
+			# Keys verified against PartyCombatLineContext.to_dict — every key the
+			# formatter reads is produced there, checked rather than assumed.
+			# Persona and phrases lifted VERBATIM from data/job_personas.json — a
+			# preview seeded with invented data misleads about what the model sees.
+			out = DP.build_party_line(
+				"You are Sister Veridian, a Watchful Cleric of the Liturgical Order of the Eternal Loop — an old sect that believes this entire JRPG is sacred scripture and every encounter is a verse to be read carefully. You catalogue the party by their wounds, not their names: Fighter is \"the bruised shoulder,\" Mage is \"the singed sleeve,\" Rogue is \"the new limp.\" Kind but firm, you speak in clipped liturgical cadence — short blessings, longer rebukes. You distrust autobattle scripts that skip prayers. You know the white magic IS the engine clamping HP values and you find that beautiful. Staff held two-handed. Never panicked. Always counting turns like rosary beads.",
+				["The Loop provides. Hold still.", "Wounds are just save points the body forgot.", "Stitched. Logged. Forgiven.", "Mercy is a stat. Mine is capped."],
+				{
+				"event_kind": "big_hit_taken",
+				"speaker_name": "Rilla", "speaker_job_id": "cleric",
+				"speaker_hp_pct": 22.0, "speaker_mp_pct": 40.0,
+				"speaker_status": ["poison"],
+				"speaker_personality": "Cautious",
+				"party": [
+					{"name": "Rilla", "job_id": "cleric", "hp_pct": 22.0, "is_alive": true},
+					{"name": "Bram", "job_id": "fighter", "hp_pct": 90.0, "is_alive": true},
+				],
+				"enemies": [{"name": "Chancellor Mordaine", "hp_pct": 48.0}],
+				"recent_actions": [
+					{"kind": "party_action", "actor": "bram", "ability_id": "cleave", "target": "single_enemy", "damage": 0},
+				],
+				"event_data": {"damage": 340, "is_crit": true},
+			})
 		"intent":
 			out = DP.build_boss_intent("Chancellor Mordaine", {
 				"persona": "The usurper. Cold, procedural, certain the throne is a calculation.",
