@@ -3287,7 +3287,8 @@ func _paste_share_code() -> void:
 		if PartyChatSystem:
 			PartyChatSystem.fire_event_flag("event_flag_share_code_used")
 	else:
-		_flash_status("Share code valid but could not apply", Color.YELLOW)
+		var why := ScriptShareManager.last_import_reason()
+		_flash_status("Rejected: %s" % (why if why != "" else "no reason reported"), Color.YELLOW)
 		SoundManager.play_ui("menu_error")
 
 

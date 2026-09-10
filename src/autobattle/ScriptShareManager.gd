@@ -167,6 +167,23 @@ static func import_file(filename: String) -> Dictionary:
 ## shared script may have been authored for a different character/job). Returns
 ## the flattened error list ([] = clean). Guards against a hand-edited, malformed,
 ## or newer-version shared script silently misbehaving at runtime once applied.
+## Why the last import was refused, for the UI to show. The appliers return bool and pushed the
+## real reason to push_warning — the log the player never reads — so both paste paths said
+## "Share code valid but could not apply", which is self-contradictory AND actionless while the
+## rule index and the offending field were already computed one frame earlier.
+static var last_import_errors: Array = []
+
+
+## First refusal reason in player-facing form, or "" when the last import succeeded.
+static func last_import_reason() -> String:
+	if last_import_errors.is_empty():
+		return ""
+	var first: String = str(last_import_errors[0])
+	if last_import_errors.size() > 1:
+		return "%s (+%d more)" % [first, last_import_errors.size() - 1]
+	return first
+
+
 static func validate_imported_script(script: Dictionary) -> Array:
 	var errors: Array = []
 	if not script.has("rules"):
@@ -189,8 +206,10 @@ static func apply_character_script(character_id: String, data: Dictionary) -> bo
 		var script = data.get("script", {})
 		if script.is_empty():
 			return false
+		last_import_errors = []
 		var errs := validate_imported_script(script)
 		if not errs.is_empty():
+			last_import_errors = errs
 			push_warning("[SHARE] Rejected import for %s — %d invalid rule(s): %s" % [character_id, errs.size(), str(errs)])
 			return false
 		AutobattleSystem.set_character_script(character_id, script)
@@ -252,8 +271,10 @@ static func apply_autogrind_rules(data: Dictionary) -> bool:
 	var rules = data.get("rules", [])
 	if rules.is_empty():
 		return false
+	last_import_errors = []
 	var errs := validate_imported_autogrind_rules(rules)
 	if not errs.is_empty():
+		last_import_errors = errs
 		push_warning("[SHARE] Rejected autogrind import — %d invalid rule(s): %s" % [errs.size(), str(errs)])
 		return false
 	# Defense-in-depth: the choke point revalidates. If it rejects after our pre-check passed the validators drifted — surface it instead of lying to the user.

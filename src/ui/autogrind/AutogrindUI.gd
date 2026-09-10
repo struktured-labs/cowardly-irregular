@@ -2293,7 +2293,10 @@ func _paste_rules_share_code() -> void:
 		_log_message("[color=%s]Autogrind rules applied from share code (%d rules).[/color]" % [AccessibilityPalette.bonus_bbcode(), data.get("rules", []).size()])
 		SoundManager.play_ui("menu_select")
 	else:
-		_log_message("[color=yellow]Share code valid but could not apply.[/color]")
+		## Say WHY. The reason was computed by the validator and thrown away; "valid but could not
+		## apply" tells the player the code is fine and also that it is not.
+		var why := ScriptShareManager.last_import_reason()
+		_log_message("[color=yellow]Share code rejected: %s[/color]" % (why if why != "" else "no reason reported"))
 		SoundManager.play_ui("menu_error")
 
 
