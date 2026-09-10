@@ -560,6 +560,7 @@ func _fetch_combined_reply() -> Dictionary:
 		_quest_state_lines,
 		_party_state,
 		_memory_lines,
+		_resolve_time_of_day(),
 	)
 
 	_set_thinking(true)

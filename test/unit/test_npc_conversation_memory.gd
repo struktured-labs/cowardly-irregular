@@ -185,17 +185,55 @@ func test_reply_prompt_without_memory_is_unchanged() -> void:
 		"CONTROL: the base reply prompt shape is intact, so the assertion above is about memory and not a broken builder")
 
 
-func test_both_prompt_paths_agree_on_the_memory_block() -> void:
-	## The Milo fix's own lesson generalised: the two paths must not drift again.
-	var lines: Array = ["I'm hunting the ember wyrm."]
+func test_both_prompt_paths_carry_every_context_block() -> void:
+	## GENERALISED from a memory-only parity check. The same drift between these
+	## two builders has shipped three times — quest_state_lines (2026-09-07),
+	## memory (2026-09-10), time_of_day (2026-09-10) — each fixed one block at a
+	## time. This asserts the PAIR, so a fourth feature threaded into the opening
+	## and not the reply reds here instead of shipping.
+	##
+	## Two builders with overlapping parameter lists and no shared assembly is the
+	## real hazard. Until they share assembly, this is the guard.
+	var quest: Array = ["I have a chapter drafted. It is Chapter Three."]
+	var party: Dictionary = {
+		"members": [{"name": "Rilla", "job": "cleric", "condition": "badly hurt (20% health)"}],
+		"gold": 12,
+	}
+	var memory: Array = ["I'm hunting the ember wyrm."]
 	var opening: String = DP.build_npc_opening(
-		"Theron", "elder", "Harmonia Village", [], [], "", {}, lines)
+		"Theron", "elder", "Harmonia Village", [], quest, "night", party, memory)
 	var reply: String = DP.build_combined_reply(
-		"Theron", "elder", "Harmonia Village", [], "prior", "player said", 4, [], {}, lines)
-	for marker in ["spoken with this traveler before", "Do not quote them back", "I'm hunting the ember wyrm."]:
-		assert_true(opening.find(marker) != -1, "opening path must carry '%s'" % marker)
-		assert_true(reply.find(marker) != -1, "reply path must carry '%s' — the paths drifted once already" % marker)
+		"Theron", "elder", "Harmonia Village", [], "prior", "player said", 4,
+		quest, party, memory, "night")
+	# One marker per context block, each unique to that block's formatter.
+	var markers := {
+		"quest voice": "Chapter Three",
+		"party condition": "badly hurt",
+		"party gold": "12",
+		"memory": "ember wyrm",
+		"memory instruction": "Do not quote them back",
+		"time of day": "night",
+	}
+	for label in markers:
+		var needle: String = str(markers[label])
+		assert_true(opening.find(needle) != -1,
+			"opening path must carry %s ('%s')" % [label, needle])
+		assert_true(reply.find(needle) != -1,
+			"reply path must carry %s ('%s') — this pair has drifted three times" % [label, needle])
 
+
+func test_neither_path_invents_context_it_was_not_given() -> void:
+	## The discriminator. Without it the test above would pass on a builder that
+	## hardcoded every marker into its template.
+	var opening: String = DP.build_npc_opening(
+		"Theron", "elder", "Harmonia Village", [], [], "", {}, [])
+	var reply: String = DP.build_combined_reply(
+		"Theron", "elder", "Harmonia Village", [], "prior", "player said", 4)
+	for needle in ["Chapter Three", "badly hurt", "ember wyrm", "spoken with this traveler before"]:
+		assert_eq(opening.find(needle), -1,
+			"opening must not emit '%s' when given no such context" % needle)
+		assert_eq(reply.find(needle), -1,
+			"reply must not emit '%s' when given no such context" % needle)
 
 func test_source_dynamic_conversation_passes_memory_to_both_builders() -> void:
 	## Pinned by ARGUMENT POSITION, not by a formatted line: a source pin that

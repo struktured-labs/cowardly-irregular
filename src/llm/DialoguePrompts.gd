@@ -456,7 +456,12 @@ static func build_combined_reply(
 	quest_state_lines: Array = [],
 	party_state: Dictionary = {},
 	memory_lines: Array = [],
+	time_of_day: String = "",
 ) -> String:
+	# ⚠️ time_of_day is LAST here and 6th in build_npc_opening. Appended rather
+	# than aligned because 9 callers pass these positionally; the parity test
+	# enforces that both paths EMIT the same blocks, which is the property that
+	# actually broke twice — the order never did.
 	var count: int = clampi(num_choices, 1, MAX_CHOICES)
 	var ctx_block: String = _format_events(recent_events, CONTEXT_EVENTS)
 	# Milo v2: the reply path dropped the voice notes the opening path threads.
@@ -464,6 +469,7 @@ static func build_combined_reply(
 	# referenced your history in its greeting and lost it for every follow-up.
 	var voice_block: String = _format_quest_state_voice(quest_state_lines)
 	var memory_block: String = _format_memory(memory_lines)
+	var time_block: String = _format_time_of_day(time_of_day)
 	var party_block: String = _format_party_state(party_state)
 
 	var history_block: String = ""
@@ -482,6 +488,7 @@ static func build_combined_reply(
 		+ history_block
 		+ party_block
 		+ memory_block
+		+ time_block
 		+ ctx_block
 		+ voice_block
 		+ "\n"
