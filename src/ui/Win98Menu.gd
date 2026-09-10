@@ -1494,7 +1494,21 @@ func _update_hint_bar() -> void:
 	var root = _get_root_menu()
 	var n: int = root._queued_actions.size()
 	if n > 0:
-		label.text = "[A] Confirm  ·  [B]/[L] Undo last  ·  queued %d/%d" % [n, root._max_queue_size]
+		# struktured 2026-09-10: "if you OVER advanced and just want to commit your choices, there
+		# should be one button to do that — otherwise you have to cancel and reselect, its awkward."
+		# The button exists and is HOLD L. It was advertised nowhere, and the row that WAS advertised
+		# — [A] Confirm — submits the queue PLUS the highlighted item, so reaching for it adds the
+		# extra action he was trying not to take. Both are named now, and named for what they DO.
+		var g_ok: String = "A"
+		var g_no: String = "B"
+		if InputProfileManager:
+			var a := InputProfileManager.glyph_for_action("ui_accept")
+			var b := InputProfileManager.glyph_for_action("ui_cancel")
+			if a != "?":
+				g_ok = a
+			if b != "?":
+				g_no = b
+		label.text = "%s Add+Commit  ·  HOLD L Commit  ·  tap L/%s Undo  ·  queued %d/%d" % [g_ok, g_no, n, root._max_queue_size]
 	else:
 		label.text = hint_text()
 

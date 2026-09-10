@@ -31,9 +31,15 @@ func test_hint_swaps_with_queue_and_restores() -> void:
 	menu._queued_actions.append({"id": "attack_0"})
 	menu._queued_actions.append({"id": "attack_0"})
 	menu._update_hint_bar()
-	assert_true(label.text.contains("Undo last"),
+	assert_true(label.text.contains("Undo"),
 		"queued state must advertise the undo control")
 	assert_true(label.text.contains("2/"), "queue count must display")
+	# struktured 2026-09-10: hold-L commits the queue as-is and was advertised NOWHERE, while the
+	# advertised [A] submits the queue PLUS the highlighted item — the extra action he was avoiding.
+	assert_true(label.text.contains("HOLD L"),
+		"the queued hint must name the commit-as-is gesture: %s" % label.text)
+	assert_true(label.text.contains("Add+Commit"),
+		"and must not call the add-one-more path plain 'Confirm': %s" % label.text)
 	menu._queued_actions.clear()
 	menu._update_hint_bar()
 	assert_eq(label.text, Win98MenuScript.hint_text(),
@@ -49,7 +55,7 @@ func test_menu_close_restores_default_hint() -> void:
 	host.add_child(menu)
 	menu._queued_actions.append({"id": "attack_0"})
 	menu._update_hint_bar()
-	assert_true(label.text.contains("Undo last"))
+	assert_true(label.text.contains("Undo"))
 	host.remove_child(menu)
 	menu.free()
 	assert_eq(label.text, Win98MenuScript.hint_text(),
