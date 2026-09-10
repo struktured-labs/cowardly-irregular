@@ -290,6 +290,12 @@ var _battle_action_log: Array[Dictionary] = []  # Log every player action per ba
 ## action outruns the whole queue while priority actions still sort against each other.
 const PRIORITY_OFFSET: float = 1000.0
 
+## The ability types an archetype's UTILITY slot may select, in ONE place — three filters carried
+## three hand-written copies. `buff` and `defensive` are authored by NO ability in the game; they are
+## kept and LABELLED rather than deleted, so the next reader cannot mistake them for live vocabulary
+## the way `debuff`/`status` were mistaken for years (test_the_debuffer_archetype_is_unreachable).
+const UTILITY_ABILITY_TYPES: Array[String] = ["support", "song", "summon", "buff", "defensive"]
+
 const ACTION_SPEEDS = {
 	"attack": 5,
 	"ability": 10,
@@ -2345,6 +2351,10 @@ func _ai_caster(combatant: Combatant, abilities: Array, alive_enemies: Array) ->
 	var cast_chance: float = 0.75 * float(bias.get("attack_weight", 1.0))
 	cast_chance = clampf(cast_chance, 0.1, 0.99)
 
+	var caster_utility: Dictionary = _ai_utility_action(combatant, abilities, alive_enemies, 0.2)
+	if not caster_utility.is_empty():
+		return caster_utility
+
 	# 75% chance (intent-biased) to cast a spell if MP allows
 	if magic_abilities.size() > 0 and randf() < cast_chance:
 		# Prefer spells that exploit target weaknesses
@@ -2417,6 +2427,40 @@ func _ai_debuffer(combatant: Combatant, abilities: Array, alive_allies: Array, a
 	return {"type": "attack", "combatant": combatant, "target": target, "speed": _compute_action_speed(combatant, "attack")}
 
 
+## Shared utility slot. _ai_tank had one; assassin, brute and caster did not, so 25 monsters
+## carried support abilities no archetype they reach could ever select — including Voltharion's
+## storm_gathering, whose own comment says "without this the telegraph never lands", and two
+## Spotlight Duel minibosses. Returns {} when the roll declines, so callers fall through unchanged.
+func _ai_utility_action(combatant: Combatant, abilities: Array, alive_enemies: Array, chance: float) -> Dictionary:
+	var utility: Array = abilities.filter(func(a): return a.get("type", "") in UTILITY_ABILITY_TYPES)
+	## These are OPENERS, not spam. As a flat per-turn roll the slot cost the common roster ~21% of
+	## its damage output — measured as party HP lost over 25 rounds — because a howl or a web_shot
+	## deals nothing and add_buff only refreshes a duration. Each utility ability fires at most once
+	## per combatant per battle, so a wolf howls and then fights, and Voltharion's storm_gathering
+	## telegraphs instead of stuttering.
+	var spent: Dictionary = combatant.get_meta("_utility_spent", {})
+	utility = utility.filter(func(a): return not spent.has(str(a.get("id", ""))))
+	if utility.is_empty() or randf() >= chance:
+		return {}
+	var pick: Dictionary = utility[randi() % utility.size()]
+	spent[str(pick.get("id", ""))] = true
+	combatant.set_meta("_utility_spent", spent)
+	## These three archetypes are handed enemies, not allies. An enemy-facing debuff goes to an
+	## enemy; anything else — self-buff, ally-buff with no ally list here, summon — goes to the
+	## caster. I first passed alive_enemies into a parameter named alive_allies, which would have
+	## aimed a self-buff at the party.
+	var target: Combatant = combatant
+	if str(pick.get("target_type", "self")).contains("enemy") and not alive_enemies.is_empty():
+		target = alive_enemies[randi() % alive_enemies.size()]
+	return {
+		"type": "ability",
+		"combatant": combatant,
+		"ability_id": pick.get("id", ""),
+		"targets": [target],
+		"speed": _compute_action_speed(combatant, "ability", pick)
+	}
+
+
 ## Caster ordering: raw power, doubled when an enemy is weak to the spell's element. Combatant's
 ## field is elemental_weaknesses, not weaknesses — a prior typo silently errored at runtime here.
 func _caster_spell_score(spell: Dictionary, alive_enemies: Array) -> float:
@@ -2446,7 +2490,8 @@ func _ai_tank(combatant: Combatant, abilities: Array, alive_allies: Array, alive
 	## "summon" joins the utility pool and "magic" the offensive one, because this filter was
 	## PERMISSION where it meant PREFERENCE: Pyrroth and Glacius classify as tanks and their breath
 	## is magic, so neither dragon could ever pick it. Same for the Rat King's summons.
-	var defensive_abilities = abilities.filter(func(a): return a.get("type", "") in ["buff", "support", "defensive", "summon"])
+	## Unified with the shared list; it gains `song`, which no monster in the roster authors.
+	var defensive_abilities = abilities.filter(func(a): return a.get("type", "") in UTILITY_ABILITY_TYPES)
 	var physical_abilities = abilities.filter(func(a): return a.get("type", "") in ["physical", "magic"])
 
 	# Use defensive/buff ability if available (40% chance)
@@ -2504,6 +2549,10 @@ func _ai_assassin(combatant: Combatant, abilities: Array, alive_enemies: Array) 
 			lowest_hp_pct = hp_pct
 			target = enemy
 
+	var assassin_utility: Dictionary = _ai_utility_action(combatant, abilities, alive_enemies, 0.25)
+	if not assassin_utility.is_empty():
+		return assassin_utility
+
 	# Use strongest offensive ability on wounded target (60% chance)
 	if offensive_abilities.size() > 0 and randf() < 0.6:
 		offensive_abilities.sort_custom(func(a, b): return _ability_power(a) > _ability_power(b))
@@ -2521,6 +2570,10 @@ func _ai_assassin(combatant: Combatant, abilities: Array, alive_enemies: Array) 
 
 func _ai_brute(combatant: Combatant, abilities: Array, alive_enemies: Array) -> Dictionary:
 	"""Brute AI: mostly physical attacks, occasionally use abilities"""
+	var brute_utility: Dictionary = _ai_utility_action(combatant, abilities, alive_enemies, 0.2)
+	if not brute_utility.is_empty():
+		return brute_utility
+
 	# 30% chance to use offensive ability
 	if randf() < 0.3:
 		var offensive_abilities = abilities.filter(

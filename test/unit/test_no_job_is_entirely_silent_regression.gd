@@ -23,6 +23,17 @@ extends GutTest
 ## Measured on origin/main ceeedf00: EIGHT of fourteen jobs. The Bard was noticed because
 ## struktured plays one. The other seven have the identical defect and nobody had looked.
 ##
+## ⚠️ VOICED IS NOT SELECTED. This file reads the ability -> cue MAPPING and nothing else.
+## It cannot tell whether the game ever ASKS for that ability, and on 2026-09-09 four cues
+## turned out to be provably right about sounds for actions that never happen: rat_swarm and
+## royal_summon are correctly mapped and the Rat King cannot select them, because `summon`
+## is in no AI archetype's vocabulary; raise and flee are both inert in a grind.
+## @cowir-battle's rule, earned by retracting their own fix — A TEST THAT CALLS THE REPAIRED
+## FUNCTION DIRECTLY CANNOT TELL EITHER; reachability is not a property you can observe from
+## inside the thing you are reaching. So a class leaving BASELINE means its abilities now MAP
+## to real cues. It does not mean a player will ever hear one. Selection lives in
+## BattleManager's archetype filters and in autogrind, not here.
+##
 ## ⚠️ THIS IS ONE CHANNEL, NOT A CHARACTER CERTIFICATE. Do not quote a green run here as
 ## "the class is verified". On 2026-09-09 five lanes independently enumerated "the channels
 ## a character can be broken in" and EVERY list was presentation-only — art, animation, vfx,
