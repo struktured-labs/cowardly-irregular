@@ -782,7 +782,7 @@ func _place_treasure_chests() -> void:
 		# (5,2) was INSIDE MOUNTAIN — impassable, so that chest could never be opened. Moved to the
 		# only genuine sealed pocket on the map: a four-tile sand spit north of the pinch at (126,7).
 		# Id kept despite the name no longer fitting; it is a save flag for "already opened".
-		{"id": "w1_secret_ice_hollow", "pos": Vector2(24, 9), "type": "item", "item": "x_potion", "amount": 2},
+		{"id": "w1_secret_ice_hollow", "pos": Vector2(126, 5), "type": "item", "item": "x_potion", "amount": 2},
 		# (81,51) is open forest and always was after the re-author — a fine find, not a secret.
 		{"id": "w1_secret_magma_vault", "pos": Vector2(81, 51), "type": "gold", "gold": 999},
 	]
@@ -810,13 +810,17 @@ func _place_hidden_passages() -> void:
 	## were both unreachable, and (81,50) had become open forest, so the wall sealed nothing and
 	## stood in the woods like scenery. The comment above them still said "at the H map markers";
 	## the map's two H markers are at (12,4) and (162,100) and both seal zero cells.
-	## EMPTY ON PURPOSE, and the reason is a Mode 7 constraint nobody had written down: the terrain
-	## collider is a clone displaced +140.6 px = 4.4 TILES, so a player standing at row N collides
-	## against row N-4.4. Any pocket SHALLOWER than five tiles is therefore unenterable — you are
-	## blocked by whatever lies beyond it while still outside. W1's only articulation point seals
-	## exactly four tiles (measured with tools/find_secret_pockets.py), so the map currently has
-	## nowhere a hidden passage can hide anything. Carving a 6-deep pocket would give it one.
-	var passages: Array = []
+	## ⚠️ THE DEPTH RULE ABOVE THIS LINE WAS WRONG FOR ONE HOUR AND THE UNITS ARE WHY. The clone is
+	## displaced 140.6 px, which is 4.4 WORLD TILES but only 2.2 MAP CELLS — MAP_SCALE is 2, so one
+	## painted cell is two world tiles. I measured 4.4, wrote "any pocket shallower than five tiles",
+	## and applied it to a map measured in cells, which condemned a four-cell pocket that is
+	## comfortably deeper than 2.2. The walk that "proved" it unenterable had the same bug: it
+	## started at world tile (126,12) when it meant map cell (126,12), which is a different place.
+	## Re-walked with the conversion right, a body goes from cell (126,12) up to (126,4.2) — through
+	## the pinch and into the pocket. The secret works.
+	var passages = [
+		{"id": "w1_ice_hollow", "pos": Vector2(126, 7), "disguise": "mountain"},
+	]
 	for p in passages:
 		var passage = HiddenPassage.new()
 		passage.passage_id = p["id"]
