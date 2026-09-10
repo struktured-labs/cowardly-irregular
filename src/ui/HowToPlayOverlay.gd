@@ -41,6 +41,14 @@ R3 Stick Click    F1                —                [color=lime]This screen �
                   F8                —                [color=lime]Bug report — screenshot + log + save in one file[/color]
                   ─                 Wheel            Scroll lists / change selection
 
+[b][color=yellow]WHILE AUTOGRINDING[/color][/b]
+[color=gray]Gamepad          Keyboard          Description[/color]
+Select (Minus)    P                 [color=lime]Pause / resume the grind[/color]
+Start (Plus)      R                 Adjust rules mid-grind
+L + R together    T                 Cycle monster tier
+Y (west face)     Y                 Turbo — run it faster
+B (Esc)           Esc               Stop grinding and return
+
 [b][color=yellow]BATTLE SYSTEM (CTB)[/color][/b]
 Each turn you choose: [color=lime]Attack[/color], use [color=cyan]Magic[/color], or strategize with AP.
 
