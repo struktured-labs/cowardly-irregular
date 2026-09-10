@@ -113,8 +113,25 @@ interiors across the first world. `title_screen.png` is the source for the provi
   elevation does not build outside GameLoop's map setup.
 - **`brasston_lift` — DROPPED.** The village renders fine but the brass work-deck lift, the
   entire reason for the shot, is not in frame.
-- **Elevator mid-ride** — still owed. Needs `VillageElevator.interact()` driven through an
-  actual ride; scene instantiation cannot produce it.
+- **Elevator mid-ride — DROPPED, and now for a measured reason rather than an unmet one.**
+  It was right that scene instantiation cannot produce it: the car only exists inside
+  `interact()`. `tools/store_shot_elevator.gd` now drives a real ride and captures on measured
+  progress (`distance(car, origin) / span`, window 0.30-0.70) rather than on a timer. It works
+  — and it establishes that the shot cannot:
+
+  ```
+  [SHOT] rider: moved 0.0px of 64.0 (car has moved 19.9px)
+  ```
+
+  `interact()` tweens the CAR and calls `player.teleport(destination)` only AFTER the tween
+  finishes, so **mid-ride the pad slides by itself while the rider stands at the bottom.** With
+  a 64px (two-tile) span, a 32x32 procedurally-drawn pad and no shaft or motion cue, a still
+  frame reads as a loose tile drifting, not as riding a lift. Nothing framing or zoom can fix;
+  it would need an animation, or a rider who is on the car during the ride.
+
+  Filed for whoever owns exploration: the rider not being on the car for those 0.35s is a
+  polish detail, not a bug — the teleport lands correctly — but it is why this feature has no
+  still image.
 
 ## ✅ RESOLVED (was: 🐞 `dark_knight` has no sprite)
 
