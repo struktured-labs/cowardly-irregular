@@ -29,6 +29,7 @@ static func build_text() -> String:
 		g_ok = InputProfileManager.glyph_for_action("ui_accept")
 		g_no = InputProfileManager.glyph_for_action("ui_cancel")
 	return TitleScreen.build_confirm_cancel_rows(g_ok, g_no) + """
+Y (west face)     Shift             —                [color=lime]Run — hold to move 1.7x faster[/color]
 L Shoulder        L Key             —                Defer / Party Chat
 R Shoulder        R Key             —                Advance (queue action)
 Start (Plus)      F5                —                Open Autobattle Editor
