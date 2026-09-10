@@ -387,15 +387,7 @@ func build_command_menu_items_with_targets(combatant: Combatant) -> Array:
 				can_combo_magic = false
 			if effective_ap < 4:
 				can_limit = false
-			# Collect magic elements for combo check
-			var job_id: String = m.job.get("id", "") if m.job else ""
-			if not job_id.is_empty():
-				for ability_id in JobSystem.get_job_abilities(job_id):
-					var ability: Dictionary = JobSystem.get_ability(ability_id)
-					if ability.get("type", "") == "magic" and ability.has("element"):
-						var elem: String = ability["element"]
-						if elem not in combo_elements:
-							combo_elements.append(elem)
+		combo_elements = combo_elements_for(alive_party)
 		# Need >= 2 distinct elements for combo magic
 		if combo_elements.size() < 2:
 			can_combo_magic = false
@@ -799,6 +791,28 @@ func _build_attack_item(combatant: Combatant, alive_enemies: Array[Combatant], c
 
 
 # Tick 192: derive a compact effect+scope hint from ability data so per-job Free Move labels self-document. Returns "" for unknown shapes (label stays bare).
+## Distinct magic elements the party can actually cast, for the Combo Magic gate.
+##
+## Reads each member's KNOWN abilities, not their job's base kit. get_job_abilities returns only
+## job["abilities"] — it skips level unlocks, learned, purchased and the secondary job — so a Fighter
+## who bought Fire, or anyone lending a secondary caster's kit, contributed nothing and Combo Magic
+## stayed greyed out for a party that could genuinely fuse. struktured 2026-09-06: provenance is
+## irrelevant, one predicate everywhere.
+static func combo_elements_for(members: Array) -> Array[String]:
+	var out: Array[String] = []
+	for m in members:
+		if m == null or not is_instance_valid(m) or not m.has_method("get_known_abilities"):
+			continue
+		for ability_id in m.get_known_abilities():
+			var ability: Dictionary = JobSystem.get_ability(str(ability_id))
+			if str(ability.get("type", "")) != "magic" or not ability.has("element"):
+				continue
+			var elem: String = str(ability["element"])
+			if elem != "" and not out.has(elem):
+				out.append(elem)
+	return out
+
+
 func _free_move_hint(ability: Dictionary) -> String:
 	if ability.is_empty():
 		return ""
