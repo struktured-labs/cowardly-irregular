@@ -197,6 +197,11 @@ func _place_treasure_chests() -> void:
 		{"id": "w6_remnant_gold", "pos": Vector2(22, 18), "type": "gold", "gold": 2000},
 		# Threshold (north) — void's edge
 		{"id": "w6_threshold_phoenix", "pos": Vector2(19, 4), "type": "item", "item": "phoenix_down", "amount": 4},
+		# Behind the disguised wall at (60,5) — the only sealed pocket in six worlds that a body can
+		# actually walk into. Placed at (60,3) because that is where a probe walking north from (60,9)
+		# comes to rest, having passed THROUGH the passage cell; the pocket analysis suggested (77,12)
+		# and I could not verify that cell is inside the sealed set rather than open ground.
+		{"id": "w6_absence_elixir", "pos": Vector2(60, 3), "type": "item", "item": "elixir", "amount": 3},
 	]
 	for c in chests:
 		var chest = TreasureChestScript.new()
@@ -210,6 +215,20 @@ func _place_treasure_chests() -> void:
 			chest.contents_id = c["item"]
 			chest.contents_amount = c["amount"]
 		add_child(chest)
+	_place_hidden_passages()
+
+
+## W6 is the only world with a pocket a player can reach through a disguised wall. W1's is the sand
+## pinch at (126,7); W2/W3/W5 have none (their generators close every dead end); W4's one candidate
+## at (110,62) looks sealed on the map and a body walking north stops in the doorway, so it is not a
+## secret, it is a wall with a gap drawn in it.
+func _place_hidden_passages() -> void:
+	const HiddenPassageScript = preload("res://src/exploration/HiddenPassage.gd")
+	var passage = HiddenPassageScript.new()
+	passage.passage_id = "w6_absence"
+	passage.disguise = "cave"
+	passage.position = Vector2(60 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, 5 * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2)
+	add_child(passage)
 
 
 func _place_save_point() -> void:
