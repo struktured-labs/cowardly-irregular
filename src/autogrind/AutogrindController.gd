@@ -643,6 +643,8 @@ func get_grind_stats() -> Dictionary:
 		"total_gold": sys_stats.get("total_gold", 0),
 		"total_items": _count_total_items(),
 		"collapse_count": AutogrindSystem.collapse_count,
+		"meta_bosses_spawned": AutogrindSystem.meta_bosses_spawned,
+		"meta_bosses_defeated": AutogrindSystem.meta_bosses_defeated,
 		"post_collapse_debuff_battles": AutogrindSystem.post_collapse_debuff_battles,
 		"permadead": AutogrindSystem.permadead_characters.duplicate(),
 		"time_multiplier": AutogrindSystem.get_time_multiplier(),

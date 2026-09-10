@@ -112,6 +112,12 @@ var meta_boss_spawn_chance: float = 0.0  # Increases with corruption
 
 ## System collapse tracking
 var collapse_count: int = 0                    # How many times collapse has occurred
+## Meta bosses had NO counter at all, so the session Summary could not report them and the console
+## was the only surface that ever mentioned one. A boss spawned during a headless grind with the
+## console closed was invisible at the moment AND at session end — a design pillar the player could
+## grind straight past. collapse_count at least reached the Summary.
+var meta_bosses_spawned: int = 0
+var meta_bosses_defeated: int = 0
 var post_collapse_debuff_battles: int = 0      # Remaining battles with reduced max_efficiency
 
 ## Permadeath persistence — names of permanently dead characters (loaded/saved via user://autogrind/)
@@ -825,6 +831,8 @@ func start_autogrind(party: Array[Combatant], enemy_template: Dictionary, config
 	_wire_smart_interrupt_signals(party)
 	efficiency_multiplier = 1.0
 	monster_adaptation_level = 0.0
+	meta_bosses_spawned = 0
+	meta_bosses_defeated = 0
 	meta_corruption_level = 0.0
 	meta_boss_spawn_chance = 0.0
 
@@ -1211,6 +1219,7 @@ func _spawn_meta_boss() -> Dictionary:
 	Returns the enemy data dictionary so AutogrindController can launch a real battle.
 	Does NOT stop the grind — the caller decides what to do with the result."""
 	var boss_data := build_meta_boss_enemy_data(false)
+	meta_bosses_spawned += 1
 	meta_boss_spawned.emit(boss_data.get("name", "Meta-Boss"))
 	print("[AUTOGRIND] META-BOSS SPAWNED: %s (HP: %d)" % [boss_data["name"], boss_data["max_hp"]])
 	return boss_data
@@ -1229,6 +1238,7 @@ func _generate_meta_boss_name() -> String:
 func on_meta_boss_victory(boss_data: Dictionary) -> void:
 	"""Called by AutogrindController after the party defeats a meta-boss.
 	Reduces corruption and awards bonus rewards."""
+	meta_bosses_defeated += 1
 	var corruption_reduction := 0.5 + meta_corruption_level * 0.1
 	meta_corruption_level = maxf(0.0, meta_corruption_level - corruption_reduction)
 	print("[AUTOGRIND] Meta-boss defeated! Corruption reduced by %.2f (now %.2f)" % [
