@@ -38,8 +38,18 @@ func _five_action_rule() -> Dictionary:
 	return {"conditions": [{"type": "always"}], "actions": actions}
 
 func test_the_grid_editor_offers_a_fifth_slot() -> void:
-	assert_gte(GridEditor.MAX_ACTIONS, BattleManagerScript.FULL_BANK_ACTIONS,
-		"the editor must be able to author what a full bank can spend — %d vs %d" % [GridEditor.MAX_ACTIONS, BattleManagerScript.FULL_BANK_ACTIONS])
+	## ⚠️ WAS assert_gte, AND THE UNCHECKED DIRECTION IS A REAL DEFECT — measured, not reasoned:
+	## set the editor to 6 and this still passed, while _apply_full_bank_rule keeps 5. A player
+	## authors six actions, the editor accepts them, the save succeeds, and the sixth silently never
+	## happens. Too FEW slots makes the fifth unauthorable; too MANY makes an authored action vanish.
+	## Both are bugs, so the assertion is exact.
+	##
+	## cowir-music's tell, which would have caught this by reading: the contract sentence is "the
+	## editor offers exactly what a full bank spends" — a sentence about equality — and my assertion
+	## expressed an inequality. When the sentence and the assert disagree about shape, the assert is
+	## the one that is wrong.
+	assert_eq(GridEditor.MAX_ACTIONS, BattleManagerScript.FULL_BANK_ACTIONS,
+		"the editor must offer exactly what a full bank spends — editor %d vs bank %d" % [GridEditor.MAX_ACTIONS, BattleManagerScript.FULL_BANK_ACTIONS])
 
 func test_rule_validation_accepts_five_actions() -> void:
 	var errors: Array = AutobattleSystem.validate_rule(_five_action_rule())
