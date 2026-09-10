@@ -25,6 +25,15 @@ const VOID_BYTES := 20000
 ## Shifts the view down so the elite, which the ground plane's projection pushes well below
 ## the player, lands in frame. Measured against the rendered result, not derived.
 const CAM_OFFSET := Vector2(20.0, 150.0)
+## Camera magnification. 1.0 reproduces every shot taken before 2026-09-10 exactly, so this
+## argument cannot silently change an existing capture — it has to be asked for.
+##
+## WHY IT EXISTS: field_elite_medieval.png (shot .239-era, after dark_knight finally got its
+## overworld sheet) frames the elite correctly and is still a poor store image, because at
+## overworld zoom the elite is roughly 20px of dark armour against dark green grass and the
+## PLAYER dominates the frame. The subject of the screenshot cannot be seen in it. Position
+## was never the problem and no amount of offset tuning fixes a scale problem.
+const DEFAULT_ZOOM := 1.0
 
 ## Which overworld to shoot. Passed after `--`, e.g. `-s tools/store_shot_elite.gd -- steampunk`.
 ## The species is NOT overridden to match: field_elites.json maps world -> species, and
@@ -121,6 +130,17 @@ func _init() -> void:
 	var off := Vector2(ALERT_RADIUS * 0.6, -20.0)
 	if user_args.size() > 2:
 		off = Vector2(float(user_args[1]), float(user_args[2]))
+	# `-- <world> [offx offy] [zoom]`. A bad or absent value falls back to DEFAULT_ZOOM rather
+	# than to 0, which would collapse the viewport and render nothing while still exiting 0.
+	var zoom_f := DEFAULT_ZOOM
+	if user_args.size() > 3:
+		zoom_f = float(user_args[3])
+	elif user_args.size() == 2:
+		zoom_f = float(user_args[1])
+	if zoom_f <= 0.0:
+		print("[SHOT] zoom %s is not positive — falling back to %s" % [str(zoom_f), str(DEFAULT_ZOOM)])
+		zoom_f = DEFAULT_ZOOM
+	print("[SHOT] camera zoom: %sx" % str(zoom_f))
 	var target: Vector2 = ow.player.global_position + off
 	# Screen position is what matters and the overworld does not map world->screen linearly
 	# (the ground is drawn on a skewed plane), so report both and let the offset be tuned
@@ -143,10 +163,12 @@ func _init() -> void:
 		# the frame did not move. offset is not recomputed by the follow logic, so it sticks.
 		if cam2:
 			cam2.offset = CAM_OFFSET
+			cam2.zoom = Vector2(zoom_f, zoom_f)
 		await process_frame
 	elite.global_position = target
 	if cam2:
 		cam2.offset = CAM_OFFSET
+		cam2.zoom = Vector2(zoom_f, zoom_f)
 
 	var tell = elite.get_node_or_null("MoodTell")
 	if tell == null:
@@ -155,7 +177,14 @@ func _init() -> void:
 		print("[SHOT] ⚠ MoodTell is HIDDEN (dist=%.1f, ALERT_RADIUS=%.1f) — the shot will not show the prompt"
 			% [elite.global_position.distance_to(ow.player.global_position), ALERT_RADIUS])
 	else:
-		print("[SHOT] tell visible: \"%s\"" % str(tell.text))
+		# `tell.visible` is a NODE PROPERTY. It says the distance gate fired, NOT that the
+		# label lands inside the captured frame — and the old line printed "tell visible"
+		# either way. Demonstrated 2026-09-10: a 2.0x zoom run printed "tell visible" on an
+		# image with no tell in it at all. The reader takes that line as "the prompt is in
+		# the shot", which is the one thing it never measured.
+		print("[SHOT] tell node visible (distance gate fired): \"%s\"" % str(tell.text))
+	_report_framing("tell", tell, root)
+	_report_framing("elite", elite, root)
 
 	var img := root.get_texture().get_image()
 	var path := "res://tmp/marketing/field_elite_%s.png" % world
@@ -176,6 +205,23 @@ func _find_elite(sp) -> Node:
 		if is_instance_valid(m) and m.get("elite") == true:
 			return m
 	return null
+
+
+## Is a node actually inside the captured frame? The shot is what ships, so "in the viewport
+## rect" is the property that matters and node.visible is not it. Reports rather than dies:
+## a badly framed shot is still worth writing to disk so a human can look at it — but the log
+## must not call it good.
+func _report_framing(label: String, node: Node, tree_root: Window) -> void:
+	if node == null or not (node is CanvasItem):
+		print("[SHOT] %s framing: UNKNOWN (not a CanvasItem)" % label)
+		return
+	var ci := node as CanvasItem
+	var pos: Vector2 = ci.get_global_transform_with_canvas().origin
+	var size: Vector2 = Vector2(tree_root.get_texture().get_width(), tree_root.get_texture().get_height())
+	var inside := pos.x >= 0.0 and pos.y >= 0.0 and pos.x <= size.x and pos.y <= size.y
+	print("[SHOT] %s framing: screen=(%.0f, %.0f) frame=%dx%d -> %s" % [
+		label, pos.x, pos.y, int(size.x), int(size.y),
+		"IN FRAME" if inside else "⚠ OUT OF FRAME — the subject is not in the picture"])
 
 
 func _die(msg: String) -> void:
