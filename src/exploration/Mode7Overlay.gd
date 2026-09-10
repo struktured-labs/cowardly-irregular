@@ -97,6 +97,24 @@ const WORLD_PRESETS: Dictionary = {
 	# "abstract" intentionally omitted — W6 disables Mode 7 entirely
 }
 
+## Off-map fill reaches past the widest half-view so nothing beyond the ColorRect is ever sampled.
+const VOID_MARGIN: int = 1600
+
+
+## Colour outside the map rect: the horizon band's own lower edge, so the world dissolves into its sky instead of ending at a slab.
+static func void_color(world_id: String) -> Color:
+	var sky := Color(0.55, 0.65, 0.85)
+	var fog := Color(0.50, 0.60, 0.78)
+	var strength := 0.45
+	if WORLD_PRESETS.has(world_id):
+		var preset: Dictionary = WORLD_PRESETS[world_id]
+		if preset.has("void_color"):
+			return preset["void_color"]
+		sky = preset.get("sky_bottom", sky)
+		fog = preset.get("fog_color", fog)
+		strength = float(preset.get("fog_strength", strength))
+	return sky.lerp(fog, clampf(strength, 0.0, 1.0))
+
 var _mode7_layer: CanvasLayer
 var _player_overlay_layer: CanvasLayer
 var _player_overlay_sprite: Sprite2D

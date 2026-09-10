@@ -356,8 +356,8 @@ func _setup_scene() -> void:
 	var bg = ColorRect.new()
 	bg.name = "Background"
 	bg.color = Color(0.96, 0.96, 0.97)
-	bg.size = Vector2(MAP_WIDTH * TILE_SIZE + 400, MAP_HEIGHT * TILE_SIZE + 400)
-	bg.position = Vector2(-200, -200)
+	bg.size = Vector2(MAP_WIDTH * TILE_SIZE + Mode7Overlay.VOID_MARGIN * 2, MAP_HEIGHT * TILE_SIZE + Mode7Overlay.VOID_MARGIN * 2)
+	bg.position = Vector2(-Mode7Overlay.VOID_MARGIN, -Mode7Overlay.VOID_MARGIN)
 	bg.z_index = -10
 	add_child(bg)
 

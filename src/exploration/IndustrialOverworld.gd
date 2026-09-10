@@ -348,9 +348,10 @@ func _setup_scene() -> void:
 	# Background behind tilemap (dark smoggy industrial sky)
 	var bg = ColorRect.new()
 	bg.name = "Background"
-	bg.color = Color(0.14, 0.12, 0.10)  # Dark soot-brown
-	bg.size = Vector2(MAP_WIDTH * TILE_SIZE + 400, MAP_HEIGHT * TILE_SIZE + 400)
-	bg.position = Vector2(-200, -200)
+	# Off-map used to be near-black: a hard slab of void wherever the view cleared the map edge.
+	bg.color = Mode7Overlay.void_color("industrial")
+	bg.size = Vector2(MAP_WIDTH * TILE_SIZE + Mode7Overlay.VOID_MARGIN * 2, MAP_HEIGHT * TILE_SIZE + Mode7Overlay.VOID_MARGIN * 2)
+	bg.position = Vector2(-Mode7Overlay.VOID_MARGIN, -Mode7Overlay.VOID_MARGIN)
 	bg.z_index = -10
 	add_child(bg)
 
