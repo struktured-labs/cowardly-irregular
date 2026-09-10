@@ -48,6 +48,22 @@ const SHORT_NAMES: Dictionary = {
 	"ironhaven_entrance": "Iron",
 	"steampunk_portal": "Portal",
 	"backwards_warren_cave": "Warren",
+	# W2-W6 landed with ZERO named markers -- every dot on five of the six minimaps was anonymous,
+	# villages included. Keys chosen by which spawn points a transition or objective READS; the
+	# write-only ones are arrival points and are not places you travel to.
+	"maple_heights_entrance": "Maple",
+	"brasston_entrance": "Brasston",
+	"station": "Station",
+	"rail_yard": "Rail Yard",
+	"rivet_row_entrance": "Rivet",
+	"node_prime_entrance": "Node",
+	"server_farm": "Servers",
+	"vertex_entrance": "Vertex",
+	"the_question": "Question",
+	# W2's objective arrow points here once the Warden falls, so the player is SENT to it -- it is a
+	# destination whatever its key says. Named generically because the key (from_industrial) describes
+	# where you arrive FROM, and I did not want to invent a place name from a spawn key.
+	"from_industrial": "Portal",
 }
 
 
@@ -94,6 +110,10 @@ func setup(parent: Node, player: Node2D, map_w: int, map_h: int, tile_size: int,
 		var dot_type = _get_dot_type(key)
 		var color = DOT_COLORS.get(dot_type, Color(0.7, 0.7, 0.7))
 		var label_text = SHORT_NAMES.get(key, "")
+		# An unnamed key is an ARRIVAL point (where you land coming back), not a place you travel to.
+		# Drawing them put an anonymous dot beside every dragon cave and one under the player himself.
+		if label_text == "":
+			continue
 		_add_dot(pos, color, label_text)
 
 	# Player dot (on top)
