@@ -114,7 +114,20 @@ func test_every_interactive_entity_can_be_reached() -> void:
 	var stranded: Array = []
 	var worlds_built := 0
 	var entities := 0
-	var interactive := ["Signpost", "OverworldNPC", "WanderingNPC"]
+	## SavePoint added 2026-09-10 with ZERO instances failing, on cowir-sprites' argument that zero
+	## instances is a reason not to claim a discovery and NOT a reason to skip the arm — and that the
+	## axis that decides is CONSEQUENCE, not probability. A stranded signpost is a line of flavour text
+	## nobody reads. A stranded save point is one save point per world, the only one, and losing it
+	## means a player cannot save on that map at all. Same zero today; not the same thing to be wrong
+	## about. Each world ships exactly one, which is why this is worth an arm it has never fired on.
+	## ⚠️ NOT ARMED ON A SAVE POINT SPECIFICALLY, and I would rather say so than imply otherwise. I
+	## tried: moved W2's save point to map cell (1,1) expecting Failing 1, and got green — because
+	## (1,1) IS reachable. The displaced collider clone sits 2.2 cells lower than the painted map, so
+	## the top rows of every Mode 7 world have no collision above them and a corner is open ground.
+	## What IS proven: the sweep sees SavePoints (one per world, five found), and the mechanism fires
+	## — moving W1's signpost back to (50,15) returns Failing 1 naming it. A proven mechanism extended
+	## to a detected type, not a fired arm.
+	var interactive := ["Signpost", "OverworldNPC", "WanderingNPC", "SavePoint"]
 
 	for label in WORLDS:
 		if label == "abstract":
