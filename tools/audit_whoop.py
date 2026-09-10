@@ -66,6 +66,8 @@ PINNED = [
     # ability_physical. Synthesised, so the sha256 here is what stops a later regenerate.
     "ability_song", "ability_summon", "ability_revive",
     "ability_poison", "ability_earth", "ability_wind", "ability_arcane",
+    # the two world heals, no longer borrowing the base (2026-09-10)
+    "w2_ability_heal", "w3_ability_heal",
     "ability_mp_restore", "ability_flee",
     "advance_flourish_2", "advance_flourish_3", "advance_flourish_4", "advance_flourish_5",
     # The two per-job press ladders whose DIRECTION is the joke: fighter ascends, rogue INVERTS

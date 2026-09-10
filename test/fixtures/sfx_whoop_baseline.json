@@ -573,6 +573,36 @@
       "sha256": "98d85148e60c6f82f15ff457c7288b7df04c3498bbdf525fb423ff041ce11532",
       "file": "assets/audio/sfx/ability_arcane.ogg"
     },
+    "w2_ability_heal": {
+      "early_hz": 7469.5,
+      "late_hz": 7466.0,
+      "rms_db": -19.3,
+      "low_hz": 7162.8,
+      "high_hz": 7655.8,
+      "sweep": 1.07,
+      "rho_time": -0.13,
+      "rho_energy": -0.22,
+      "direction": "fall",
+      "whoops": false,
+      "gate_widened": false,
+      "sha256": "84a320771535d4fb76ea41d68293ba51d25d25abc73521e3224d5de572b705e9",
+      "file": "assets/audio/sfx/w2_ability_heal.ogg"
+    },
+    "w3_ability_heal": {
+      "early_hz": 6556.5,
+      "late_hz": 7240.4,
+      "rms_db": -27.5,
+      "low_hz": 6556.5,
+      "high_hz": 7240.4,
+      "sweep": 1.1,
+      "rho_time": 1.0,
+      "rho_energy": -0.8,
+      "direction": "rise",
+      "whoops": false,
+      "gate_widened": false,
+      "sha256": "ac998d206d57cae3826fb3fa6cb05b93af5775c8865c7e37f4dbbdbd06ad0cf9",
+      "file": "assets/audio/sfx/w3_ability_heal.ogg"
+    },
     "ability_mp_restore": {
       "early_hz": 1483.5,
       "late_hz": 1654.5,

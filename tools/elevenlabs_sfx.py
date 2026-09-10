@@ -117,6 +117,22 @@ def generate_sfx(
         print(f"  REFUSE   {key}: source-locked to `{src}` — run that, not this")
         return False
 
+    # A key whose `file` is not named after it writes over ANOTHER cue's asset. 2026-09-10: I ran
+    # this on w2_ability_heal and w3_ability_heal while both still pointed at
+    # assets/audio/sfx/ability_heal.ogg — the W1 angelic choir — and it cheerfully overwrote the
+    # base cue TWICE, reporting "OK w2_ability_heal: ability_heal.ogg". The filename was in the
+    # success line the whole time. Nothing else in the pipeline would have caught it before commit
+    # except the whoop baseline's sha256 pin, which is a ratchet, not a stop.
+    #
+    # Borrowing an asset is a legitimate manifest state (an unauthored world variant points at its
+    # base until someone pays the debt) — so the fix is not to forbid it, it is to refuse to
+    # GENERATE into it. Repoint the entry at its own file first; that is what paying the debt means.
+    stem = Path(entry["file"]).stem
+    if stem != key:
+        print(f"  REFUSE   {key}: writes to `{entry['file']}` — that is {stem}'s asset, not {key}'s.")
+        print(f"           Point {key} at assets/audio/sfx/{key}.ogg first, or you overwrite {stem}.")
+        return False
+
     prompt = entry["prompt"]
     duration = entry.get("duration_seconds", 1.0)
     influence = entry.get("prompt_influence", 0.3)

@@ -1973,8 +1973,8 @@
       "prompt_influence": 0.7
     },
     "w2_ability_heal": {
-      "file": "assets/audio/sfx/ability_heal.ogg",
-      "prompt": "Garden hose spraying gently onto grass, warm suburban afternoon air, soft sprinkler hiss settling into calm — smooth and continuous with no birdsong and no chirping and no tinkling. NOT YET GENERATED: this entry still points at ability_heal.ogg (the W1 choir). The prompt was rewritten 2026-09-09 because it requested wind chimes TINKLING — the exact texture struktured rejected on the W1 cure, recorded in ability_heal's own prompt.",
+      "file": "assets/audio/sfx/w2_ability_heal.ogg",
+      "prompt": "Garden hose spraying gently onto grass, warm suburban afternoon air, soft sprinkler hiss settling into calm — smooth and continuous with no birdsong and no chirping and no tinkling.",
       "duration_seconds": 1.2,
       "prompt_influence": 0.7,
       "note": "repointed 2026-08-30: generated asset was a literal bird chirp (>8.8kHz mean peak, >82% energy above 4kHz). struktured: no animal noises on ability SFX unless the ability is animal-themed."
@@ -2016,8 +2016,8 @@
       "prompt_influence": 0.7
     },
     "w3_ability_heal": {
-      "file": "assets/audio/sfx/ability_heal.ogg",
-      "prompt": "Gentle steam release with ticking clockwork music box, warm brass pipes humming, steampunk healing apparatus — smooth and sustained with no birdsong and no chirping and no tinkling. NOT YET GENERATED: this entry still points at ability_heal.ogg (the W1 choir). 34 of 36 world-variant keys have their own asset; this and w2_ability_heal are the two exceptions. Pinned by test_world_heal_variants_are_still_owed.",
+      "file": "assets/audio/sfx/w3_ability_heal.ogg",
+      "prompt": "Gentle steam release with ticking clockwork music box, warm brass pipes humming, steampunk healing apparatus — smooth and sustained with no birdsong and no chirping and no tinkling.",
       "duration_seconds": 1.2,
       "prompt_influence": 0.7,
       "note": "repointed 2026-08-30: generated asset was a literal bird chirp (>8.8kHz mean peak, >82% energy above 4kHz). struktured: no animal noises on ability SFX unless the ability is animal-themed."
