@@ -245,6 +245,7 @@ func _place_wanderers() -> void:
 	var wanderers = [
 		{
 			"name": "Process_42",
+			"archetype": "young_man",
 			"dialogue": "I'm just passing through. Literally. I'm a process.",
 			"color": Color(0.2, 0.5, 0.6),
 			"path": [Vector2(20, 15), Vector2(25, 15), Vector2(25, 20), Vector2(20, 20)],
@@ -255,6 +256,7 @@ func _place_wanderers() -> void:
 		},
 		{
 			"name": "Legacy Code",
+			"archetype": "old_man",
 			"dialogue": "They keep trying to deprecate me. I keep running.",
 			"color": Color(0.4, 0.6, 0.3),
 			"path": [Vector2(35, 30), Vector2(40, 30), Vector2(40, 35), Vector2(35, 35)],
@@ -269,6 +271,7 @@ func _place_wanderers() -> void:
 		npc.npc_name = w["name"]
 		npc.dialogue = w["dialogue"]
 		npc.sprite_color = w["color"]
+		npc.sprite_archetype = str(w.get("archetype", ""))
 		if w.has("hints"):
 			npc.dialogue_hints = w["hints"]
 		var patrol: Array[Vector2] = []

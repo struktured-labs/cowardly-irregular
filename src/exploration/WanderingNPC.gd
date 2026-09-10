@@ -222,7 +222,7 @@ func _setup_sprite() -> void:
 ## Slice the archetype sheet into a (direction, frame) cache.
 ## Returns true on success, false if asset missing/malformed.
 func _try_load_archetype() -> bool:
-	var path = "res://assets/sprites/npcs/%s/overworld.png" % sprite_archetype
+	var path = HybridSpriteLoader.npc_overworld_path(sprite_archetype)
 	if not ResourceLoader.exists(path):
 		return false
 	var tex = load(path) as Texture2D

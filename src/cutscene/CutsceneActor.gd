@@ -49,7 +49,7 @@ static func build(id: String, spec: Dictionary) -> CutsceneActor:
 		sheet_path = HybridSpriteLoader.job_asset_path(
 			str(spec.get("job", "fighter")), "overworld", HybridSpriteLoader.current_world_suffix())
 	else:
-		sheet_path = "res://assets/sprites/npcs/%s/overworld.png" % str(spec.get("archetype", "young_man"))
+		sheet_path = HybridSpriteLoader.npc_overworld_path(str(spec.get("archetype", "young_man")))
 	if not a._load_sheet(sheet_path):
 		# The fallback fills the SAME _frames dict a real load does, so nothing
 		# downstream can tell a missing sheet from a present one — the scene

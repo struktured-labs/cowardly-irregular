@@ -260,13 +260,15 @@ func _place_landmarks() -> void:
 
 func _place_wanderers() -> void:
 	var wanderers = [
-		{"name": "?", "dialogue": "...", "color": Color(0.7, 0.7, 0.7), "path": [Vector2(15, 15), Vector2(20, 15), Vector2(20, 20), Vector2(15, 20)]},
+		{"name": "?",
+			"archetype": "ghost", "dialogue": "...", "color": Color(0.7, 0.7, 0.7), "path": [Vector2(15, 15), Vector2(20, 15), Vector2(20, 20), Vector2(15, 20)]},
 	]
 	for w in wanderers:
 		var npc = WanderingNPC.new()
 		npc.npc_name = w["name"]
 		npc.dialogue = w["dialogue"]
 		npc.sprite_color = w["color"]
+		npc.sprite_archetype = str(w.get("archetype", ""))
 		var patrol: Array[Vector2] = []
 		for pt in w["path"]:
 			patrol.append(Vector2(pt.x * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2, pt.y * MAP_SCALE * TILE_SIZE + TILE_SIZE / 2))
