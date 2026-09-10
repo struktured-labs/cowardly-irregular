@@ -1782,6 +1782,11 @@ func _find_restorative_caster(party: Array) -> Dictionary:
 ## (heal_amount / mp_amount) — reading `power` is the field-mismatch class this engine has now hit
 ## three times. Returns a reason rather than failing silently: a rule that never fires is the
 ## hardest kind to debug from the console.
+## Target words that mean "the ally who most needs it" rather than naming a member. Anything else
+## is a member key and still fails LOUDLY, so a typo'd member name is not silently swallowed.
+const GENERIC_ALLY_TARGETS := ["lowest_hp_ally", "lowest_hp", "ally", "all", "all_allies", "party", "any"]
+
+
 func _member_ability_apply(caster, ability_id: String, target_key: String) -> Dictionary:
 	if caster == null:
 		return {"ok": false, "reason": "caster not in party"}
@@ -1804,10 +1809,18 @@ func _member_ability_apply(caster, ability_id: String, target_key: String) -> Di
 	if caster.current_mp < cost:
 		return {"ok": false, "reason": "%s lacks MP for %s" % [caster.combatant_name, ability_id]}
 
-	## Default target: the ally who most needs it. Explicit `target` wins when the rule names one.
-	var target = _resolve_member(grind_party, target_key) if target_key != "" else _lowest_hp_ally()
+	## Default target: the ally who most needs it. A `target` naming a MEMBER wins; a target using
+	## the generic ally vocabulary means the default, because that is what the grammar promises —
+	## "defaults to the lowest-HP living ally" reads as a value, and DialoguePrompts carries the
+	## autobattle target words (lowest_hp_ally, self, all_allies) in the same file, so a composer
+	## emitting one produced a rule that validated clean and silently did nothing.
+	var want := target_key.to_lower()
+	var target = _lowest_hp_ally() if target_key == "" or want in GENERIC_ALLY_TARGETS \
+		else _resolve_member(grind_party, target_key)
 	if target == null:
-		return {"ok": false, "reason": "no valid target"}
+		if target_key != "" and not want in GENERIC_ALLY_TARGETS:
+			return {"ok": false, "reason": "target '%s' names no party member" % target_key}
+		return {"ok": false, "reason": "no living ally to target"}
 
 	var heal := int(ability.get("heal_amount", 0))
 	var mp_amt := int(ability.get("mp_amount", 0))

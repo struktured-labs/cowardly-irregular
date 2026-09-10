@@ -252,7 +252,10 @@ Actions. type is one of:
   stop_grinding, heal_party, restore_mp, flee_battle, switch_profile, member_ability
 switch_profile requires character_id (PC id string) and profile_index (int).
 member_ability takes "member" (job id such as "cleric", or a character name), "ability" (an
-ability id that member knows), and an optional "target" (defaults to the lowest-HP living ally).
+ability id that member knows), and an optional "target". A target names ANOTHER MEMBER the same
+way "member" does; omit it, or use "lowest_hp_ally", for the ally who most needs it. Autobattle
+target words other than lowest_hp_ally (self, all_allies, lowest_hp_enemy) are NOT member keys
+and do not belong here.
 Use it for "have <member> cast <ability>"; heal_party spends POTIONS, member_ability spends MP.
 
 Canonical example:
