@@ -4862,22 +4862,33 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 
-	if event is InputEventKey and event.pressed and not event.echo:
-		# R key = Defer (skip turn, gain AP) during selection
-		if event.keycode == KEY_R and is_player_selecting and current:
-			_close_win98_menu()
-			## Tick 174: defer log emit moved into BattleManager.
-			## player_defer so every caller path gets it once. Don't
-			## re-emit here.
-			BattleManager.player_defer()
-			get_viewport().set_input_as_handled()
-			return
+	# struktured 2026-09-10, reporting the queue-commit ask: "which is R… or should be R… one should
+	# be L one should be R". He could not remember because THESE TWO WERE INVERTED: raw KEY_R called
+	# player_defer() and raw KEY_L logged "Use R to queue actions", against project.godot
+	# (battle_defer = L, battle_advance = R) and against the hint bar's "[L] Defer · [R] Advance".
+	#
+	# Reachable, not dead: Win98Menu._input consumes both actions, but ONLY while a menu exists —
+	# and the branch below this one reopens the menu precisely because "closed while selecting" is a
+	# real state. With no menu, this ran, and the keyboard did the opposite of the bar.
+	#
+	# Now on the ACTIONS, so a pad's L/R and L2/R2 reach them too and a Controls rebind follows.
+	if is_player_selecting and current and event.is_action_pressed("battle_defer") and not event.is_echo():
+		_close_win98_menu()
+		## Tick 174: defer log emit moved into BattleManager.player_defer so every caller path gets
+		## it once. Don't re-emit here.
+		BattleManager.player_defer()
+		get_viewport().set_input_as_handled()
+		return
 
-		# L key = Advance hint (actual advancing handled by menu)
-		if event.keycode == KEY_L and is_player_selecting:
-			log_message("[color=yellow]Use R to queue actions (Advance)![/color]")
-			get_viewport().set_input_as_handled()
-			return
+	# Advance queues through the menu, so reopen it rather than printing an instruction. Pressing
+	# the Advance control and being told to press the Advance control is the shape he reported.
+	if is_player_selecting and current and event.is_action_pressed("battle_advance") and not event.is_echo():
+		if use_win98_menus and (not active_win98_menu or not is_instance_valid(active_win98_menu)):
+			_show_win98_command_menu(current)
+		get_viewport().set_input_as_handled()
+		return
+
+	if event is InputEventKey and event.pressed and not event.echo:
 
 		# Reopen menu on Space/Enter/Z if menu is closed
 		if use_win98_menus and is_player_selecting and current:
