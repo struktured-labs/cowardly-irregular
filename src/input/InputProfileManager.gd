@@ -310,9 +310,17 @@ func _replace_joypad_buttons(action: String, button_indices: Array) -> void:
 func set_custom_binding(action: String, button_indices: Array) -> void:
 	if action not in REMAPPABLE_ACTIONS:
 		return
+	# A rebind on a stock profile stored the button and NEVER applied it: this InputMap write was
+	# gated on already being Custom, and nothing switched. Measured — Standard, rebind ui_accept to
+	# 3: custom_bindings holds [3], InputMap still reports [1], and the saved profile stays
+	# "Standard" so the choice is discarded on restart too.
+	if active_profile != "Custom":
+		# Seed from the profile the player is ON, not from _ready's Standard copy, or their other
+		# bindings silently revert — an SN30 player rebinding one button would lose the rest.
+		custom_bindings = get_profile_bindings(active_profile).duplicate(true)
+		active_profile = "Custom"
 	custom_bindings[action] = button_indices
-	if active_profile == "Custom":
-		_replace_joypad_buttons(action, button_indices)
+	_replace_joypad_buttons(action, button_indices)
 	save_config()
 
 
@@ -528,10 +536,17 @@ func load_config() -> void:
 			if not (action in REMAPPABLE_ACTIONS):
 				push_warning("[InputProfileManager] Saved custom binding for '%s' ignored — not a remappable action. Its persisted button choice is being dropped silently otherwise." % str(action))
 				continue
+			# JSON has no integers, so a loaded index is a FLOAT. Coerce at the boundary: FACE_GLYPHS
+			# is int-keyed and `.get(3.0)` MISSES, so a rebind that survived a restart rendered "?"
+			# in the F1 reference, the hint bar and every cutscene prompt. Measured: int 3 -> "Ⓨ",
+			# float 3.0 -> "?". Same class as the typed-array save coercion in CLAUDE.md.
 			var val = data["custom_bindings"][action]
+			var coerced: Array = []
 			if val is Array:
-				custom_bindings[action] = val
+				for x in val:
+					coerced.append(int(x))
 			else:
-				custom_bindings[action] = [int(val)]
+				coerced.append(int(val))
+			custom_bindings[action] = coerced
 
 	print("[InputProfileManager] Config loaded (profile: %s)" % active_profile)
