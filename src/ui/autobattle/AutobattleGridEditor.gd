@@ -2557,10 +2557,22 @@ func _get_character_abilities() -> Array:
 	"""Get the abilities available to the current character — the same list battle shows (incl. the secondary job's kit)."""
 	if combatant and combatant.has_method("get_known_abilities"):
 		var abilities = []
+		var seen := {}
 		for ability_id in combatant.get_known_abilities():
 			var ability = JobSystem.get_ability(ability_id)
 			if not ability.is_empty():
 				abilities.append({"id": ability_id, "name": ability.get("name", ability_id)})
+				seen[ability_id] = true
+		## get_known_abilities omits free_move where knows_ability includes it, and a rule has no
+		## free-move row — so the ability action is the only way to script Pray/Channel, and the
+		## shipped preset catalog already ships five rules that do. The battle command menu builds
+		## its own Free Move row separately, so this list is the only place the omission bites.
+		var fm: Dictionary = combatant.job.get("free_move", {}) if combatant.job else {}
+		var fm_id: String = str(fm.get("ability_id", ""))
+		if fm_id != "" and not seen.has(fm_id):
+			var fm_ability = JobSystem.get_ability(fm_id)
+			if not fm_ability.is_empty():
+				abilities.append({"id": fm_id, "name": fm_ability.get("name", fm_id)})
 		return abilities
 	return []
 
