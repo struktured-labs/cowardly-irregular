@@ -46,7 +46,7 @@ const CONDITION_TYPES = [
 	{"id": "member_injured", "label": "New Injury", "has_value": false, "default_op": "==", "default_value": 0},
 	{"id": "member_hp", "label": "Member HP%", "has_value": true, "default_op": "<", "default_value": 30},
 	{"id": "member_mp", "label": "Member MP%", "has_value": true, "default_op": "<", "default_value": 20},
-	{"id": "member_status", "label": "Member Status", "has_value": false, "default_op": "==", "default_value": 0},
+	{"id": "member_status", "label": "Member Status", "has_value": false, "default_op": "==", "default_value": "poison"},
 	{"id": "battles_done", "label": "Battles", "has_value": true, "default_op": ">=", "default_value": 50},
 	{"id": "win_streak", "label": "Win Streak", "has_value": true, "default_op": ">=", "default_value": 20},
 	{"id": "corruption", "label": "Corruption", "has_value": true, "default_op": ">=", "default_value": 3.0},
@@ -1440,6 +1440,7 @@ func _options_ring_spec() -> Dictionary:
 			{"id": "explain_rules", "label": "Explain These Rules"},
 			{"id": "cycle_member", "label": "Cycle Member: %s" % _cursor_member_label()},
 			{"id": "cycle_ability", "label": "Cycle Ability: %s" % _cursor_ability_label()},
+			{"id": "cycle_status", "label": "Cycle Status: %s" % _cursor_status_label()},
 			{"id": "preset_casual", "label": "Preset: Casual          (1)"},
 			{"id": "preset_standard", "label": "Preset: Standard        (2)"},
 			{"id": "preset_hardcore", "label": "Preset: Hardcore        (3)"},
@@ -1473,6 +1474,8 @@ func _commit_autogrind_option(chosen_id: String) -> void:
 			_cycle_member_on_cursor_cell()
 		"cycle_ability":
 			_cycle_ability_on_cursor_cell()
+		"cycle_status":
+			_cycle_status_on_cursor_cell()
 		"preset_casual":
 			_apply_preset("casual")
 		"preset_standard":
@@ -1719,6 +1722,32 @@ func _cursor_member_label() -> String:
 		return "n/a"
 	var who := str(d.get("member", ""))
 	return "Any" if who == "" else who.capitalize()
+
+
+## Afflictions worth stopping a grind for. Every entry is guarded against BattleScene's
+## STATUS_ICON_CONFIG by test, so the ring can never offer a status the game cannot even show.
+const MEMBER_STATUS_RING := [
+	"poison", "burn", "blind", "silence", "stun", "sleep", "confuse", "curse", "charm", "slow",
+]
+
+
+func _cursor_status_label() -> String:
+	var d := _cursor_cell_dict()
+	if d.is_empty() or str(d.get("type", "")) != "member_status":
+		return "n/a"
+	return str(d.get("value", "?"))
+
+
+## member_status carries the status NAME in `value` (the evaluator reads it there, and the LLM
+## grammar says so). The console had no way to set it: the type table declared has_value false
+## with default_value 0, so a console-authored rule asked has_status("0") and could never fire.
+func _cycle_status_on_cursor_cell() -> void:
+	var d := _cursor_cell_dict()
+	if d.is_empty() or str(d.get("type", "")) != "member_status":
+		return
+	var idx := MEMBER_STATUS_RING.find(str(d.get("value", "")))
+	d["value"] = MEMBER_STATUS_RING[(idx + 1) % MEMBER_STATUS_RING.size()]
+	_refresh_grid()
 
 
 func _cursor_ability_label() -> String:
