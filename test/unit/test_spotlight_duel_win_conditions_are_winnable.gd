@@ -9,8 +9,17 @@ extends GutTest
 ## one producer, and no other content exercises the path. If the Bard's songs stopped incrementing
 ## the stack counter, the duel would simply never end and it would read as the boss being unkillable.
 ##
-## Both are winnable today. These drive the real ability path and the real evaluator rather than
-## asserting the data is shaped right.
+## Both are winnable today — but the two tests are NOT the same strength, and the docstring above
+## originally implied they were. Stating the difference rather than letting "end-to-end" cover both:
+##
+##   BARD    end-to-end. Drives _execute_ability with a real lullaby, so the song arm, the sway
+##           hook and the meta counter all have to work for it to pass.
+##   CLERIC  evaluator-level ONLY. It sets current_round by hand and asks the evaluator. It does
+##           NOT run eight rounds of a real battle, so it cannot see anything that would stop the
+##           round counter advancing — which is precisely the defect shape that would make the
+##           duel unwinnable. Running it for real needs a live battle loop and a survivable party;
+##           that is a bigger fixture than this file, and naming the gap is more honest than
+##           implying it is covered.
 
 const BattleManagerScript = preload("res://src/battle/BattleManager.gd")
 
