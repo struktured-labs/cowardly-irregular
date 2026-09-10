@@ -757,13 +757,13 @@ func _place_treasure_chests() -> void:
 	const TreasureChestScript = preload("res://src/exploration/TreasureChest.gd")
 	var chests = [
 		# Near Harmonia Village — early game help
-		{"id": "w1_village_potion", "pos": Vector2(10, 24), "type": "item", "item": "potion", "amount": 3},
-		{"id": "w1_village_gold", "pos": Vector2(12, 27), "type": "gold", "gold": 150},
+		{"id": "w1_village_potion", "pos": Vector2(6, 50), "type": "item", "item": "potion", "amount": 3},
+		{"id": "w1_village_gold", "pos": Vector2(8, 48), "type": "gold", "gold": 150},
 		# Forest path — reward for exploring north
 		{"id": "w1_forest_ether", "pos": Vector2(32, 8), "type": "item", "item": "ether", "amount": 2},
-		{"id": "w1_forest_antidote", "pos": Vector2(38, 12), "type": "item", "item": "antidote", "amount": 3},
+		{"id": "w1_forest_antidote", "pos": Vector2(40, 12), "type": "item", "item": "antidote", "amount": 3},
 		# Near cave entrance — preparation supplies
-		{"id": "w1_cave_hipotion", "pos": Vector2(6, 20), "type": "item", "item": "hi_potion", "amount": 2},
+		{"id": "w1_cave_hipotion", "pos": Vector2(4, 40), "type": "item", "item": "hi_potion", "amount": 2},
 		# Central crossroads — off the beaten path
 		{"id": "w1_central_gold", "pos": Vector2(45, 18), "type": "gold", "gold": 300},
 		{"id": "w1_central_phoenix", "pos": Vector2(50, 30), "type": "item", "item": "phoenix_down", "amount": 1},
@@ -773,8 +773,17 @@ func _place_treasure_chests() -> void:
 		{"id": "w1_iron_gold", "pos": Vector2(80, 56), "type": "gold", "gold": 500},
 		# Swamp region — hidden reward
 		{"id": "w1_swamp_remedy", "pos": Vector2(72, 8), "type": "item", "item": "remedy", "amount": 2},
-		# Secret-passage pockets — sealed behind HiddenPassage walls
-		{"id": "w1_secret_ice_hollow", "pos": Vector2(5, 2), "type": "item", "item": "x_potion", "amount": 2},
+		# FOUR MORE were stranded by the same re-author and found by the guard written for the two
+		# below: village_potion and village_gold were inside mountain, cave_hipotion inside mountain,
+		# forest_antidote in WATER. Each is re-anchored on the landmark its own id names — the village
+		# at (8,50), the whispering cave at (6,40), a forest patch — rather than on the nearest open
+		# cell, which twice would have put two chests on the same tile.
+		# The 200x140 re-author moved the land under both of these and nobody re-derived them.
+		# (5,2) was INSIDE MOUNTAIN — impassable, so that chest could never be opened. Moved to the
+		# only genuine sealed pocket on the map: a four-tile sand spit north of the pinch at (126,7).
+		# Id kept despite the name no longer fitting; it is a save flag for "already opened".
+		{"id": "w1_secret_ice_hollow", "pos": Vector2(126, 3), "type": "item", "item": "x_potion", "amount": 2},
+		# (81,51) is open forest and always was after the re-author — a fine find, not a secret.
 		{"id": "w1_secret_magma_vault", "pos": Vector2(81, 51), "type": "gold", "gold": 999},
 	]
 	for c in chests:
@@ -794,11 +803,15 @@ func _place_treasure_chests() -> void:
 
 
 func _place_hidden_passages() -> void:
-	## Disguised wall sections at the H map markers — each seals a
-	## secret pocket carved into the mountain clusters above.
+	## A disguised wall is only a secret where removing that cell SEALS something. Measured on the
+	## current map with tools/find_secret_pockets.py: exactly one cell in W1 qualifies, the sand
+	## pinch at (126,7) that cuts off four tiles of beach. The two coordinates authored here predate
+	## the 200x140 re-author — (6,2) had become solid mountain, so the wall and the chest behind it
+	## were both unreachable, and (81,50) had become open forest, so the wall sealed nothing and
+	## stood in the woods like scenery. The comment above them still said "at the H map markers";
+	## the map's two H markers are at (12,4) and (162,100) and both seal zero cells.
 	var passages = [
-		{"id": "w1_ice_hollow", "pos": Vector2(6, 2), "disguise": "mountain"},
-		{"id": "w1_magma_vault", "pos": Vector2(81, 50), "disguise": "mountain"},
+		{"id": "w1_ice_hollow", "pos": Vector2(126, 7), "disguise": "mountain"},
 	]
 	for p in passages:
 		var passage = HiddenPassage.new()
