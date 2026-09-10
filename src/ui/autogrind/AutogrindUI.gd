@@ -1987,6 +1987,33 @@ func explain_rules_report() -> Array:
 		for c in probe:
 			if c != null:
 				c.free()
+	out.append_array(_observed_rules_report())
+	return out
+
+
+## What the rules ACTUALLY did, beside what the sampled states predict. A grind rule can look right
+## in the preview and never fire in a real session — stop_grinding did exactly that.
+func _observed_rules_report() -> Array:
+	var out: Array = []
+	if rules.is_empty():
+		return out
+	var evals: int = AutogrindSystem.get_rule_eval_count()
+	out.append("")
+	## A zero needs its denominator. "never fired" across zero evaluations is not evidence of a dead
+	## rule, and reporting it as one manufactures the false alarm this preview exists to avoid.
+	if evals <= 0:
+		out.append("OBSERVED — no grind rounds recorded yet. Run a grind, then reopen.")
+		return out
+	out.append("OBSERVED — %d rule check%s this session" % [evals, "" if evals == 1 else "s"])
+	var fired: Dictionary = AutogrindSystem.get_rule_fire_counts()
+	for i in range(rules.size()):
+		var n: int = int(fired.get(i, 0))
+		if not bool((rules[i] as Dictionary).get("enabled", true)):
+			out.append("  rule %d  disabled" % [i + 1])
+		elif n == 0:
+			out.append("  rule %d  never fired" % [i + 1])
+		else:
+			out.append("  rule %d  fired %d time%s" % [i + 1, n, "" if n == 1 else "s"])
 	return out
 
 

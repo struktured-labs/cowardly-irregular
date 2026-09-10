@@ -1617,6 +1617,9 @@ func set_autogrind_rules(rules: Array) -> bool:
 	if not errors.is_empty():
 		push_warning("[AUTOGRIND] set_autogrind_rules REJECTED — %d invalid rule(s), no mutation: %s" % [errors.size(), str(errors)])
 		return false
+	## Counts key on rule INDEX and editing renumbers them — insert a rule at the top and every
+	## stored count silently describes a different rule. A stale count reads as evidence.
+	reset_rule_fire_counts()
 	_ensure_autogrind_profiles()
 	var active_idx = autogrind_profiles.get("active", 0)
 	var profiles = autogrind_profiles.get("profiles", [])
@@ -1728,16 +1731,42 @@ func delete_autogrind_profile(index: int) -> bool:
 ## AUTOGRIND RULE EVALUATION
 ## ═══════════════════════════════════════════════════════════════════════
 
+## Session-scoped observed usage: rule_index -> times it won, plus the evaluations that produced
+## them. Never persisted — the question is "did this fire in the grind I just ran".
+var _rule_fire_counts: Dictionary = {}
+var _rule_eval_count: int = 0
+
+
+func get_rule_fire_counts() -> Dictionary:
+	return _rule_fire_counts.duplicate()
+
+
+## Evaluations since the counts were last reset — the denominator for a zero.
+func get_rule_eval_count() -> int:
+	return _rule_eval_count
+
+
+func reset_rule_fire_counts() -> void:
+	_rule_fire_counts.clear()
+	_rule_eval_count = 0
+
+
 func evaluate_autogrind_rules(party: Array) -> Dictionary:
 	"""Evaluate autogrind rules against current party state.
 	Returns the first matching rule's action set, or empty dict if none match."""
 	var rules = get_autogrind_rules()
+	## Observed usage. The console predicts what rules WOULD do and nothing said what they DID —
+	## which is how a stop_grinding rule stayed inert without anyone noticing. The evaluation count
+	## is the denominator: 0 fires across 0 evaluations means "not measured", not "dead".
+	_rule_eval_count += 1
 
-	for rule in rules:
+	for i in range(rules.size()):
+		var rule: Dictionary = rules[i]
 		if not rule.get("enabled", true):
 			continue
 
 		if _evaluate_party_rule(party, rule):
+			_rule_fire_counts[i] = int(_rule_fire_counts.get(i, 0)) + 1
 			return rule
 
 	return {}
