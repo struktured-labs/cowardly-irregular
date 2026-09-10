@@ -95,6 +95,7 @@ const CONDITION_TYPES = {
 	"ally_has_status": "Ally Has Status",
 	"enemy_has_status": "Enemy Has Status",
 	"ally_mp_percent": "Ally MP %",
+	"ally_dead": "Ally Is Down",
 	"is_night": "Is Night",
 	"weather": "Weather Is",
 	"has_buff": "Has Buff",
@@ -289,6 +290,13 @@ func _evaluate_grid_condition(combatant: Combatant, condition: Dictionary) -> bo
 				if buff.get("stat", "") == stat:
 					return false
 			return true
+
+		"ally_dead":
+			# NULLARY, same grammar discipline as is_night below: no operator, no value, nothing the
+			# Rule Composer can malform. Before this the only way to notice a death was ally_count,
+			# which needs the player to know their own party size — "someone fell" is what a revival
+			# rule actually means, and it is party-size independent.
+			return _get_dead_allies_for(combatant).size() > 0
 
 		"is_night":
 			# msg 2916/2959 (cowir-ai grammar ruling): NULLARY and night-band ONLY — no operator, no value, no dusk. Truth condition is exactly GameState.is_night(), because shipping a rule vocabulary term whose meaning diverges from the identically-named engine method is a lying name: the player reads `is_night`, reasons from observed game behaviour, and gets a rule that fires on a band they didn't expect. If "at dusk" is ever wanted it's a SECOND nullary sibling (is_dusk), never a band parameter — a parameterized band can be malformed by the Rule Composer LLM ("midnight"), a nullary cannot.
