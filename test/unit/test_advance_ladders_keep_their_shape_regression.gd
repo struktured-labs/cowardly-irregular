@@ -29,9 +29,13 @@ func _cues() -> Dictionary:
 
 
 func _ladder(job: String) -> Array:
+	## Rungs 3..5 — the escalation the 2026-09-09 work is about. Rungs 1-2 are not required here
+	## because advance_mage_2 is deliberately unpinned (a documented detector artifact, see
+	## tools/audit_whoop.py), and asserting a level for it would be asserting a number nothing
+	## measures rather than a property anyone chose.
 	var cues := _cues()
 	var out: Array = []
-	for n in range(1, 6):
+	for n in range(3, 6):
 		var k := "advance_%s_%d" % [job, n]
 		if not cues.has(k):
 			return []
@@ -39,36 +43,45 @@ func _ladder(job: String) -> Array:
 	return out
 
 
+func _rung(job: String, n: int) -> float:
+	var cues := _cues()
+	var k := "advance_%s_%d" % [job, n]
+	return float((cues.get(k, {}) as Dictionary).get("rms_db", 0.0)) if cues.has(k) else 0.0
+
+
 func test_both_ladders_are_pinned_with_levels() -> void:
 	## PREMISE: without rms_db every shape assertion below reads 0.0 and passes trivially.
-	for job in ["fighter", "rogue"]:
+	for job in ["fighter", "rogue", "cleric", "mage", "bard"]:
 		var l := _ladder(job)
-		assert_eq(l.size(), 5, "%s ladder is not fully pinned in the baseline — re-run tools/audit_whoop.py --write" % job)
+		assert_eq(l.size(), 3, "%s rungs 3-5 are not pinned in the baseline — re-run tools/audit_whoop.py --write" % job)
 		for v in l:
 			assert_lt(float(v), 0.0, "%s ladder has a 0.0 rms_db — the baseline predates rms recording and this guard is inert" % job)
 
 
 func test_the_fighter_ladder_ascends_at_the_new_rungs() -> void:
-	var l := _ladder("fighter")
-	assert_eq(l.size(), 5, "control: fighter ladder incomplete")
-	if l.size() < 5:
-		return
-	assert_gt(l[3], l[2], "fighter press 4 (%.1f dB) must be LOUDER than press 3 (%.1f) — the steel ladder escalates" % [l[3], l[2]])
-	assert_gt(l[4], l[3], "fighter press 5 (%.1f dB) must be LOUDER than press 4 (%.1f)" % [l[4], l[3]])
-	assert_gt(l[4] - l[3], l[3] - l[2],
-		"the 4->5 step (%.1f dB) must be the biggest — the fifth action is the new thing and has to land as one" % [l[4] - l[3]])
+	## All FOUR ascending ladders, not just the fighter — cleric/mage/bard gained rungs 4-5 on
+	## 2026-09-10 and the same shape has to hold for each.
+	for job in ["fighter", "cleric", "mage", "bard"]:
+		var l := _ladder(job)
+		assert_eq(l.size(), 3, "control: %s rungs 3-5 incomplete" % job)
+		if l.size() < 3:
+			continue
+		assert_gt(l[1], l[0], "%s press 4 (%.1f dB) must be LOUDER than press 3 (%.1f)" % [job, l[1], l[0]])
+		assert_gt(l[2], l[1], "%s press 5 (%.1f dB) must be LOUDER than press 4 (%.1f)" % [job, l[2], l[1]])
+		assert_gt(l[2] - l[1], l[1] - l[0],
+			"%s: the 4->5 step (%.1f dB) must be the biggest — the fifth action is the new thing and has to land as one" % [job, l[2] - l[1]])
 
 
 func test_the_rogue_ladder_still_INVERTS() -> void:
 	## THE LOAD-BEARING ONE. Normalising this ladder is the well-meant change that kills the joke.
 	var l := _ladder("rogue")
-	assert_eq(l.size(), 5, "control: rogue ladder incomplete")
-	if l.size() < 5:
+	assert_eq(l.size(), 3, "control: rogue rungs 3-5 incomplete")
+	if l.size() < 3:
 		return
-	assert_lt(l[3], l[2], "rogue press 4 (%.1f dB) must be QUIETER than press 3 (%.1f) — more commitment sounds like less, and struktured likes this ladder as it is" % [l[3], l[2]])
-	assert_lt(l[4], l[3], "rogue press 5 (%.1f dB) must be QUIETER than press 4 (%.1f)" % [l[4], l[3]])
-	assert_lt(l[4], l[0] - 6.0,
-		"rogue press 5 (%.1f dB) must be well below press 1 (%.1f) — if the ladder has been flattened the inversion is gone" % [l[4], l[0]])
+	assert_lt(l[1], l[0], "rogue press 4 (%.1f dB) must be QUIETER than press 3 (%.1f) — more commitment sounds like less, and struktured likes this ladder as it is" % [l[1], l[0]])
+	assert_lt(l[2], l[1], "rogue press 5 (%.1f dB) must be QUIETER than press 4 (%.1f)" % [l[2], l[1]])
+	assert_lt(l[2], _rung("rogue", 1) - 6.0,
+		"rogue press 5 (%.1f dB) must be well below press 1 (%.1f) — if the ladder has been flattened the inversion is gone" % [l[2], _rung("rogue", 1)])
 
 
 func test_the_two_ladders_disagree_in_direction() -> void:
@@ -76,8 +89,8 @@ func test_the_two_ladders_disagree_in_direction() -> void:
 	## same way, one of them has been "fixed" to match the other.
 	var f := _ladder("fighter")
 	var r := _ladder("rogue")
-	if f.size() < 5 or r.size() < 5:
+	if f.size() < 3 or r.size() < 3:
 		fail_test("control: both ladders must be pinned for this comparison")
 		return
-	assert_gt(f[4] - f[0], 0.0, "fighter must end LOUDER than it started")
-	assert_lt(r[4] - r[0], 0.0, "rogue must end QUIETER than it started")
+	assert_gt(f[2] - _rung("fighter", 1), 0.0, "fighter must end LOUDER than it started")
+	assert_lt(r[2] - _rung("rogue", 1), 0.0, "rogue must end QUIETER than it started")

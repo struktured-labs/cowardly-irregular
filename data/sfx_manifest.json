@@ -255,6 +255,22 @@
       "prompt_influence": 0.0,
       "fallback_to": "advance_queue"
     },
+    "advance_bard_4": {
+      "file": "assets/audio/sfx/advance_bard_4.ogg",
+      "prompt": "Bard advance press 4 — the UNWRITTEN CHORD sustains and a SECOND VOICE joins over it. Press 3 was her alone; this is not. LMMS/FluidR3 nylon lute (24) + choir aahs (52). MASTERED to the ladder: level is a mix decision, not a render decision — see test_advance_ladders_keep_their_shape_regression.",
+      "duration_seconds": 3.05,
+      "prompt_influence": 0.8,
+      "source": "lmms_sf2_fluidr3",
+      "fallback_to": "advance_queue"
+    },
+    "advance_bard_5": {
+      "file": "assets/audio/sfx/advance_bard_5.ogg",
+      "prompt": "Bard advance press 5 — full ensemble bloom: lute from C3, three choir voices entering in sequence, strings underneath. The whole band arrives. LMMS/FluidR3. MASTERED to the ladder: level is a mix decision, not a render decision — see test_advance_ladders_keep_their_shape_regression.",
+      "duration_seconds": 3.3,
+      "prompt_influence": 0.8,
+      "source": "lmms_sf2_fluidr3",
+      "fallback_to": "advance_queue"
+    },
     "advance_cleric_1": {
       "file": "assets/audio/sfx/advance_cleric_1.ogg",
       "source": "lmms_sf2_fluidr3",
@@ -277,6 +293,22 @@
       "prompt": "Cleric advance press 3 full ham — tiny pause, then the suspension RESOLVES: full C-major chord (organ + choir Aahs) + a bright tubular-bell peal ringing out (spectral-verified C-E-G-C-E). 'Teaches wounds to be over with.' Tier 3/3, ~-12 dB.",
       "duration_seconds": 2.45,
       "prompt_influence": 0.0,
+      "fallback_to": "advance_queue"
+    },
+    "advance_cleric_4": {
+      "file": "assets/audio/sfx/advance_cleric_4.ogg",
+      "prompt": "Cleric advance press 4 — the pause is GONE. Press 1-3 shortened it each time; here the chord arrives already resolved, C-major with an added 9th over full organ and a single bell. She has stopped hesitating. LMMS/FluidR3, organ patch 19 + tubular bells 14. MASTERED to the ladder: level is a mix decision, not a render decision — see test_advance_ladders_keep_their_shape_regression.",
+      "duration_seconds": 3.04,
+      "prompt_influence": 0.8,
+      "source": "lmms_sf2_fluidr3",
+      "fallback_to": "advance_queue"
+    },
+    "advance_cleric_5": {
+      "file": "assets/audio/sfx/advance_cleric_5.ogg",
+      "prompt": "Cleric advance press 5 — the resolution BLOOMS: octave-doubled organ from C3 up, voices entering in sequence, two bells. Widest and longest rung; the 4->5 step is the largest in the ladder. LMMS/FluidR3. MASTERED to the ladder: level is a mix decision, not a render decision — see test_advance_ladders_keep_their_shape_regression.",
+      "duration_seconds": 3.63,
+      "prompt_influence": 0.8,
+      "source": "lmms_sf2_fluidr3",
       "fallback_to": "advance_queue"
     },
     "advance_fighter_1": {
@@ -369,6 +401,22 @@
       "prompt": "Mage advance press 3 full ham — an ascending cascade of celesta computations (C-E-G-B), the LAST one self-corrects (C#6 wrong -> D6 right) and rings out. Tier 3/3, ~-11 dB.",
       "duration_seconds": 1.7,
       "prompt_influence": 0.0,
+      "fallback_to": "advance_queue"
+    },
+    "advance_mage_4": {
+      "file": "assets/audio/sfx/advance_mage_4.ogg",
+      "prompt": "Mage advance press 4 — the cascade OVERRUNS. Press 3 climbed C-E-G-B and stopped; this one carries past B into D6, landing late and louder — one computation too many. LMMS/FluidR3 celesta (patch 8). MASTERED to the ladder: level is a mix decision, not a render decision — see test_advance_ladders_keep_their_shape_regression.",
+      "duration_seconds": 2.69,
+      "prompt_influence": 0.8,
+      "source": "lmms_sf2_fluidr3",
+      "fallback_to": "advance_queue"
+    },
+    "advance_mage_5": {
+      "file": "assets/audio/sfx/advance_mage_5.ogg",
+      "prompt": "Mage advance press 5 — the cascade runs away entirely: C5 up to C7 in eight steps with no pause to check, landing on a struck C3+C4. He is no longer verifying, only computing. LMMS/FluidR3 celesta + piano. MASTERED to the ladder: level is a mix decision, not a render decision — see test_advance_ladders_keep_their_shape_regression.",
+      "duration_seconds": 2.96,
+      "prompt_influence": 0.8,
+      "source": "lmms_sf2_fluidr3",
       "fallback_to": "advance_queue"
     },
     "advance_queue": {
