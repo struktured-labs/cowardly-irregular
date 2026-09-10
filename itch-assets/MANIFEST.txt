@@ -1,4 +1,4 @@
-itch-assets/CAPTIONS.md 4183184450 12633
+itch-assets/CAPTIONS.md 4026782963 14388
 itch-assets/PROVENANCE.md 855814262 3554
 itch-assets/cover-test/CONTACT_SHEET_actual_display_size.png 3224145343 168211
 itch-assets/cover-test/COVER_FINAL_OPTIONS.png 3375616178 251892

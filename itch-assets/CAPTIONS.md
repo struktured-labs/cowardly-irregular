@@ -27,6 +27,19 @@ overlay tint and rain are both alpha 0.2 and the rain only covers the top ~150px
 bright daytime background it is invisible. The shot is honest but the weather is doing more
 mechanically than the frame shows.
 
+### `battle.png`
+The same five-job battle with the weather off and the command menu open on **`Auto >`**, tooltip
+legible: *"Run this character's autobattle script, edit it, or delegate every turn."* Turn order
+bottom-left, full party stats right, and the banter running underneath — Cleric on the ledger of
+injuries, Fighter answering *"My turn. Hand on the stick, not the script."*
+
+📌 **For whoever picks the final set: this may be the stronger LEAD.** `battle_storm` leads today
+and carries my own caveat that its weather "reads only as that text tag" over a bright sky. This
+frame has no such gap between what it shows and what it claims — the autobattle hook, the thing
+that makes this combat system unusual, is spelled out in a tooltip a reader can actually read. I
+have placed it second rather than reordering the lead unilaterally; swapping 01 and 02 is a
+one-line change to this file and the gallery tool will follow.
+
 ### `infernal_grotto_f3.png` — **the one I would pick second**
 Floor 3 of 5 in the Infernal Grotto, lit only by what you're carrying. A chest, a pressure
 plate, and a line of flavour text that does more character work than any screenshot caption
@@ -94,8 +107,15 @@ one. See "Not in this set" for the related sprite bug.
 
 ### Baseline set (shot 2026-08-30, still current)
 `harmonia_village` · `ironhaven_village` · `frosthold_village` · `sandrift_village` ·
-`inn_interior` · `tavern_interior` · `shop_interior` · `whispering_cave` — villages and
-interiors across the first world. `title_screen.png` is the source for the provisional cover.
+`eldertree_village` · `grimhollow_village` · `inn_interior` · `tavern_interior` ·
+`shop_interior` · `whispering_cave` — villages and interiors across the first world.
+`title_screen.png` is the source for the provisional cover.
+
+`eldertree_village` is here because the masterite silhouette fix at `.267` restored it (see
+below); it had a restoration but never a POSITION, which is how it shipped for a day without
+one. `grimhollow_village` carries the Witch's Hut and the Lantern Debt Office door prompts —
+good flavour naming — but it is the sparsest of the village frames, with large plain brick
+areas and the player half-cut at the bottom edge. Last of the villages on purpose.
 
 ---
 
@@ -178,7 +198,10 @@ and Eldertree 44% in file size from the 2026-09-06 elevation pass, but neither r
 differently in a storefront frame. The reason to ship them anyway is that a screenshot from a
 build two weeks behind misrepresents what a buyer downloads.
 
-### `eldertree_village` — DROPPED AGAIN
+### `eldertree_village` — DROPPED AGAIN *(superseded — see the `.267` section below)*
+> ⚠️ **This verdict was REVERSED.** The masterite silhouette fix at `v3.33.267-alpha` restored
+> this shot to the set; the heading is kept as the record of what was wrong and why it took two
+> drops to find. It ships, and it is positioned with the villages above.
 Roughly twelve identical armed NPCs stand in a rigid 4x4 formation across the middle of the
 frame, and the canopy tier the village is named for is not visible. I dropped the `.239`
 capture for this and it is unchanged at `.262`.
