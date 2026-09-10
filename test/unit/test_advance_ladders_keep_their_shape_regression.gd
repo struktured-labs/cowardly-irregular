@@ -84,6 +84,42 @@ func test_the_rogue_ladder_still_INVERTS() -> void:
 		"rogue press 5 (%.1f dB) must be well below press 1 (%.1f) — if the ladder has been flattened the inversion is gone" % [l[2], _rung("rogue", 1)])
 
 
+func test_no_ladder_step_is_absurd_in_EITHER_direction() -> void:
+	## ⛔ THE FAR SIDE. Every other assertion here is one-sided — "louder than", "quieter than" —
+	## which is correct for a DIRECTIONAL claim and blind to magnitude. cowir-autogrind's split
+	## (2026-09-10) is the reason this exists: only PRECONDITIONS may be one-sided; for a SUBJECT the
+	## opposite excursion is usually a bug too. A press 5 thirty dB above press 4 is deafening and a
+	## rogue press 5 forty dB down is inaudible, and both would sail through every assert above.
+	##
+	## Bounds are generous by design — this catches a mastering target typo'd by an order of
+	## magnitude, not a taste difference. The ladders currently step 0.3-4.5 dB.
+	var worst := 0.0
+	var offenders: Array = []
+	var checked := 0
+	for job in ["fighter", "rogue", "cleric", "mage", "bard"]:
+		var l := _ladder(job)
+		if l.size() < 3:
+			continue
+		for i in range(1, l.size()):
+			var step: float = absf(l[i] - l[i - 1])
+			checked += 1
+			worst = maxf(worst, step)
+			if step > 12.0:
+				offenders.append("%s rung %d->%d: %.1f dB" % [job, i + 2, i + 3, step])
+			if step < 0.2:
+				offenders.append("%s rung %d->%d: %.1f dB — flat, the escalation is not audible" % [job, i + 2, i + 3, step])
+	assert_gte(checked, 10, "control: only %d steps measured across five ladders — expected at least 10" % checked)
+	assert_lt(worst, 12.0, "largest step is %.1f dB" % worst)
+	assert_eq(offenders.size(), 0, "ladder step(s) outside the audible-but-sane band: %s" % [offenders])
+	## And the total span, so a ladder cannot creep out of range one small step at a time.
+	for job in ["fighter", "rogue", "cleric", "mage", "bard"]:
+		var l := _ladder(job)
+		if l.size() < 3:
+			continue
+		assert_lt(absf(l[l.size() - 1] - l[0]), 20.0,
+			"%s spans %.1f dB across rungs 3-5 — that is a mix error, not an escalation" % [job, absf(l[l.size() - 1] - l[0])])
+
+
 func test_the_two_ladders_disagree_in_direction() -> void:
 	## The pair is the point: same mechanic, opposite reading, per character. If both ever run the
 	## same way, one of them has been "fixed" to match the other.
