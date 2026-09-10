@@ -59,8 +59,15 @@ func test_win98_menu_wires_depth_and_fallback() -> void:
 	assert_true("func _play_advance_sound(depth: int = 1)" in src, "depth param")
 	assert_true("advance_%s_%d" in src, "per-job key format")
 	assert_true("clampi(depth, 1, 3)" in src, "depth clamped to authored tiers")
-	var fn := src.substr(src.find("func _play_advance_sound"))
-	assert_true("play_battle(\"advance_queue\")" in fn.substr(0, 600),
+	## ⚠️ This read a fixed 600-char window from the function header. Adding a legitimate branch
+	## above the fallback (the >rung-3 escalation, 2026-09-10) pushed the fallback past char 600 and
+	## reded a guard whose subject was untouched — while a genuine removal parked at char 601 would
+	## have passed. It measured LENGTH where it meant SCOPE. Bounded by the function now.
+	var start: int = src.find("func _play_advance_sound")
+	assert_gt(start, -1, "CONTROL: located the press-sound picker")
+	var stop: int = src.find("\nfunc ", start + 10)
+	var fn: String = src.substr(start, stop - start) if stop > start else src.substr(start)
+	assert_true("play_battle(\"advance_queue\")" in fn,
 		"unknown job/tier must fall back to the arcade credit")
 	assert_true("_play_advance_sound(root._queued_actions.size())" in src,
 		"queue caller passes post-press depth")

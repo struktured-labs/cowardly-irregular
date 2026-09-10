@@ -537,6 +537,16 @@ func _play_expand_sound() -> void:
 func _play_advance_sound(depth: int = 1) -> void:
 	"""Play sound when queueing an action (Advance mode)"""
 	# Per-job escalation ladder (struktured-approved, all 5 starters: fighter/cleric/rogue/mage/bard); jobs without a ladder key fall back to the arcade credit.
+	## The per-job ladder has THREE rungs and the queue now goes to five, so presses 4 and 5 both
+	## landed on rung 3 — the top of the ladder went flat exactly where Full Bank made it matter
+	## most (cowir-sfx caught this). Above rung 3 the escalating flourish family carries the climb
+	## instead: it already scales 2..5 and its 4→5 step is the largest by construction. Falls back
+	## to the clamped job rung wherever those cues are not in the manifest yet.
+	if depth > 3:
+		var esc := "advance_flourish_%d" % clampi(depth, 4, 5)
+		if SoundManager._sfx_manifest.has(esc):
+			SoundManager.play_battle(esc)
+			return
 	var key := "advance_%s_%d" % [_character_class, clampi(depth, 1, 3)]
 	if SoundManager._sfx_manifest.has(key):
 		SoundManager.play_battle(key)

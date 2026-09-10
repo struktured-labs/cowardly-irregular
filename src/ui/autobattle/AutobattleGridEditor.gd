@@ -66,7 +66,7 @@ const ACTION_COLOR = Color(0.3, 0.4, 0.2)
 const CONNECTOR_COLOR = Color(0.6, 0.6, 0.7)
 const CURSOR_COLOR = Color(1.0, 1.0, 0.3)
 const MAX_CONDITIONS = 3  # Max AND conditions per rule
-const MAX_ACTIONS = 4  # Max actions per rule
+const MAX_ACTIONS = 5  # Max actions per rule  # fifth slot fires only at a full bank (+4 AP); truncated to 4 below it
 const MAX_RULES = 32  # Cap OR rule rows so scripts stay bounded (still scrollable)
 const GRID_BASE_POS = Vector2(120, 50)  # Anchor for _grid_container before scroll offset
 
