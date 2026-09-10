@@ -15,6 +15,25 @@ extends GutTest
 ##   same line          -> `is_action_pressed(x) or keycode == KEY_Y` is an OR, not a shadow
 ##   earlier has is_echo -> that branch declines echo repeats, so the later one is reachable for them
 
+## ⚠️ SCOPE, WITH THE COVERAGE MEASURED 2026-09-10 rather than described:
+##
+##   input handlers written as elif CHAINS        11  ← this instrument fits
+##   written as sequential `if … return`          22  ← OUTSIDE it, incl. GameLoop and BattleScene
+##
+## It models a chain as if/elif. A handler written as consecutive `if …: return` guards shadows the
+## same way — whichever matches first exits — but every `if` here starts a FRESH chain and clears
+## the claims, so two thirds of the corpus is unscanned. **THIS CHECKS 11 OF 33 HANDLERS.**
+##
+## It also does not see: action shadowed by action, keycode shadowed by keycode, or CROSS-NODE
+## shadowing (another scene's _input consuming first) — which is how the R/L inversion survived.
+##
+## I tried widening it to variable-assigned claims (`var is_cancel_pressed = is_action_pressed(...)`
+## then `if is_cancel_pressed:`) and the widening was INERT — mutation proved it twice. The first
+## failure was my MUTATION (planted above the claim, where nothing shadows); the second was the
+## instrument, and it exposed the chain model as the real limit. Reverted rather than shipped: a
+## guard that looks wider and is not is worse than a narrow one that says so.
+## See feedback_label_broader_than_predicate.
+
 const SRC_DIRS := ["res://src"]
 
 

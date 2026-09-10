@@ -14,6 +14,12 @@ extends GutTest
 ## through EITHER a keyboard or a pad binding, so the test never has to guess which kind it is;
 ## that keeps a wrong guess from inventing a failure.
 
+## ⚠️ SCOPE: "every legend claim" means every claim in the FOUR FILES below, not every legend in
+## the game — a screen whose legend lives elsewhere is unswept and reads as covered. And this is
+## blind to ORDERING: a claim resolves if the file COMPARES that keycode anywhere, so a handler
+## shadowed by an earlier branch passes here. That gap is real and cost the Shift+R rename
+## (2026-09-09); test_no_shadowed_key_handler_regression is the instrument that sees it.
+
 const LEGEND_FILES := [
 	"res://src/ui/SaveScreen.gd",
 	"res://src/ui/VirtualKeyboard.gd",
