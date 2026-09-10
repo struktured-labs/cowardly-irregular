@@ -368,6 +368,30 @@ static func build_npc_opening_topical(
 ## farewell explicitly, threads the conversation tail so the goodbye actually
 ## reacts to what was just said, and reuses the SCHEMA_NPC_OPENING shape so
 ## validate_npc_opening still applies.
+## ⛔ DELIBERATELY DOES NOT TAKE THE SHARED CONTEXT BLOCKS, and this is measured
+## rather than an oversight — the other three builders drifted into carrying them
+## one at a time, so the absence here looks identical to that drift and has twice
+## been re-opened as a bug.
+##
+## A/B against llama3, 8 samples each, identical scenario (party barely standing,
+## one member DOWNED, 7 gold, night, prior meeting remembered):
+##
+##                        control 781B   +context 1447B
+##   party wound              0/8            3/8
+##   memory / the wyrm        3/8            0/8
+##   poverty (7 gold)         0/8            0/8
+##   night                    0/8            0/8
+##
+## Context did not make the farewell MORE specific, it DISPLACED one specificity
+## with another — three concrete references either way for 85% more prompt. And
+## the thing it displaced was the better beat: the control reaches for the wyrm
+## the player actually killed, which it gets from recent_events, which it already
+## has. Gold and time of day were never used in a goodbye under either prompt.
+##
+## A farewell is a closed form; the model reaches for the stock blessing and
+## decorates it with ONE detail whatever you hand it. Re-run
+## tools/llm_prompt_preview.sh signoff --ask before re-opening this; n=8 is small
+## and a different model may not behave the same way.
 static func build_npc_sign_off(
 	npc_name: String,
 	npc_persona: String,
