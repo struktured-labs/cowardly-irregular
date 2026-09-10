@@ -18,6 +18,16 @@ func test_laddered_jobs_have_all_three_tiers() -> void:
 			var entry: Dictionary = SoundManager._sfx_manifest.get(key, {})
 			assert_eq(str(entry.get("fallback_to", "")), "advance_queue",
 				"%s must fall back to the arcade credit if its asset ever goes missing" % key)
+	## Tiers 4 and 5 are OPTIONAL per job (fighter and rogue have them as of 2026-09-09; the three
+	## LMMS ladders do not yet, and the walk-down handles that). But any that DO exist must keep the
+	## family's fallback convention, or a missing asset drops to silence instead of the arcade credit.
+	for job in LADDERED_JOBS:
+		for i in [4, 5]:
+			var late := "advance_%s_%d" % [job, i]
+			if not SoundManager._sfx_manifest.has(late):
+				continue
+			assert_eq(str((SoundManager._sfx_manifest.get(late, {}) as Dictionary).get("fallback_to", "")), "advance_queue",
+				"%s is authored — it must carry the same fallback_to as tiers 1-3" % late)
 
 
 func test_ladder_ogg_assets_are_real_audio_on_disk() -> void:
@@ -58,16 +68,18 @@ func test_win98_menu_wires_depth_and_fallback() -> void:
 	var src := FileAccess.get_file_as_string("res://src/ui/Win98Menu.gd")
 	assert_true("func _play_advance_sound(depth: int = 1)" in src, "depth param")
 	assert_true("advance_%s_%d" in src, "per-job key format")
-	assert_true("clampi(depth, 1, 3)" in src, "depth clamped to authored tiers")
-	## ⚠️ This read a fixed 600-char window from the function header. Adding a legitimate branch
-	## above the fallback (the >rung-3 escalation, 2026-09-10) pushed the fallback past char 600 and
-	## reded a guard whose subject was untouched — while a genuine removal parked at char 601 would
-	## have passed. It measured LENGTH where it meant SCOPE. Bounded by the function now.
-	var start: int = src.find("func _play_advance_sound")
-	assert_gt(start, -1, "CONTROL: located the press-sound picker")
-	var stop: int = src.find("\nfunc ", start + 10)
-	var fn: String = src.substr(start, stop - start) if stop > start else src.substr(start)
-	assert_true("play_battle(\"advance_queue\")" in fn,
+	## 2026-09-09: the bound moved 3 -> 5 (struktured made Advance SOMETIMES 5 actions and ruled
+	## "we need a new sound for 4th time you advance"), and the fixed clamp became a WALK-DOWN.
+	## A fixed clamp of 5 would have been worse than the old 3 for any job with a short ladder —
+	## the key would miss and drop to the arcade credit, losing that job's voice entirely.
+	## These asserts pin the PROPERTY (bounded, walks down, still falls back) rather than the
+	## literal expression they used to pin, which is what broke when the implementation improved.
+	assert_true("clampi(depth, 1, 5)" in src, "depth bounded to the authored ceiling (5)")
+	assert_true("while rung >= 1:" in src, "must WALK DOWN to the highest rung this job actually has")
+	var fn := src.substr(src.find("func _play_advance_sound"))
+	var fn_end := fn.find("\nfunc ", 1)
+	var body := fn.substr(0, fn_end) if fn_end > 0 else fn
+	assert_true("play_battle(\"advance_queue\")" in body,
 		"unknown job/tier must fall back to the arcade credit")
 	assert_true("_play_advance_sound(root._queued_actions.size())" in src,
 		"queue caller passes post-press depth")

@@ -77,22 +77,26 @@ func test_the_sfx_cues_are_named_per_step_for_the_audio_lane() -> void:
 	assert_string_contains(src, "full_bank_unleash", "and the full bank gets its own cue, not a louder fifth")
 
 func test_the_press_ladder_does_not_go_flat_at_the_top() -> void:
-	## cowir-sfx's catch. The per-job press ladder has THREE rungs (advance_<job>_1..3, clamped), and
-	## the queue now goes to FIVE — so presses 4 and 5 both landed on rung 3. The top went flat
-	## exactly where Full Bank made it matter most. Above rung 3 the escalating flourish family
-	## carries the climb; below it the per-job identity is unchanged.
+	## The per-job press ladder was clamped to THREE rungs while the queue now goes to FIVE, so
+	## presses 4 and 5 both replayed rung 3 — flat exactly where Full Bank made it matter.
+	##
+	## ⚠️ ASSERTS THE PROPERTY, NOT MY MECHANISM, and that distinction cost me the argument. My fix
+	## sent presses above rung 3 to the non-job advance_flourish cues; cowir-sfx's walks DOWN to the
+	## highest rung each job actually has. Theirs is better — mine lost the per-job voice at exactly
+	## the depths that matter most, and a fixed clamp of 5 would drop a short-laddered job to the
+	## arcade credit entirely. My first version of this test asserted "advance_flourish_%d is in the
+	## function", which would have RED-FLAGGED the better implementation. A guard written around one
+	## solution votes against every other one.
 	var src := FileAccess.get_file_as_string("res://src/ui/Win98Menu.gd")
 	assert_gt(src.length(), 1000, "CONTROL: read Win98Menu")
 	var i: int = src.find("func _play_advance_sound")
 	assert_gt(i, -1, "CONTROL: located the press-sound picker")
 	var j: int = src.find("\nfunc ", i + 10)
 	var body: String = src.substr(i, j - i) if j > i else src.substr(i)
-	assert_string_contains(body, "advance_flourish_%d",
-		"presses above the third rung must reach the escalating family, not re-play rung 3")
-	assert_string_contains(body, "clampi(depth, 1, 3)",
-		"CONTROL: the per-job ladder still clamps to its three rungs below that")
-	assert_string_contains(body, "_sfx_manifest.has(esc)",
-		"and it must fall back when those cues are not in the manifest yet — an unresolvable key is silence")
+	assert_false(body.contains("clampi(depth, 1, 3)"),
+		"a hard clamp at rung 3 makes presses 4 and 5 replay rung 3 — the top of the ladder goes flat")
+	assert_string_contains(body, "advance_queue",
+		"and whatever it does above rung 3 must still fall back to the arcade credit rather than to silence")
 
 func test_the_full_bank_beat_is_not_spawned_twice() -> void:
 	## It rides BattleManager.full_bank_unleashed. An earlier draft ALSO called the handler directly

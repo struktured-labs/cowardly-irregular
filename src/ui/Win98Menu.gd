@@ -536,19 +536,27 @@ func _play_expand_sound() -> void:
 
 func _play_advance_sound(depth: int = 1) -> void:
 	"""Play sound when queueing an action (Advance mode)"""
+	## cowir-sfx's WALK-DOWN, taken over my own escalation branch (2026-09-10). Mine sent presses
+	## above rung 3 to the non-job flourish cues, which fixed the flat top and LOST the per-job voice
+	## at exactly the depths that matter most. Theirs walks down to the highest rung each job
+	## actually has: a 3-rung job behaves exactly as before, a 5-rung job gets all five, and no job
+	## ever falls through to the arcade credit for want of a key it was never going to have.
 	# Per-job escalation ladder (struktured-approved, all 5 starters: fighter/cleric/rogue/mage/bard); jobs without a ladder key fall back to the arcade credit.
-	## The per-job ladder has THREE rungs and the queue now goes to five, so presses 4 and 5 both
-	## landed on rung 3 — the top of the ladder went flat exactly where Full Bank made it matter
-	## most (cowir-sfx caught this). Above rung 3 the escalating flourish family carries the climb
-	## instead: it already scales 2..5 and its 4→5 step is the largest by construction. Falls back
-	## to the clamped job rung wherever those cues are not in the manifest yet.
-	if depth > 3:
-		var esc := "advance_flourish_%d" % clampi(depth, 4, 5)
-		if SoundManager._sfx_manifest.has(esc):
-			SoundManager.play_battle(esc)
-			return
-	var key := "advance_%s_%d" % [_character_class, clampi(depth, 1, 3)]
-	if SoundManager._sfx_manifest.has(key):
+	# Walk DOWN to the highest rung this job actually has, rather than clamping to a fixed 3.
+	# The cap was 4 and the clamp was 3, so press 4 always replayed the press-3 "full ham" cue;
+	# struktured made it SOMETIMES 5 (2026-09-09) and ruled "we need a new sound for 4th time you
+	# advance". A fixed clamp of 5 would have been WORSE than the old one for any job whose ladder
+	# is short — the key would miss and drop to the arcade credit, losing that job's voice entirely.
+	# Walking down means a job with 3 rungs behaves exactly as before and a job with 5 gets all 5.
+	var rung := clampi(depth, 1, 5)
+	var key := ""
+	while rung >= 1:
+		var candidate := "advance_%s_%d" % [_character_class, rung]
+		if SoundManager._sfx_manifest.has(candidate):
+			key = candidate
+			break
+		rung -= 1
+	if key != "":
 		SoundManager.play_battle(key)
 	else:
 		SoundManager.play_battle("advance_queue")
