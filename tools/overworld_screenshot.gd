@@ -6,6 +6,7 @@ extends SceneTree
 func _init() -> void:
 	var world := "medieval"
 	var at := Vector2(2880, 1280)
+	var move := false
 	var walk := true
 	var tag := "edge"
 	var zoom := 0.0
@@ -16,6 +17,7 @@ func _init() -> void:
 			var p := a.get_slice("=", 1).split(",")
 			if p.size() == 2:
 				at = Vector2(float(p[0]), float(p[1]))
+				move = true
 		elif a.begins_with("--tag="):
 			tag = a.get_slice("=", 1)
 		elif a.begins_with("--zoom="):
@@ -62,7 +64,11 @@ func _init() -> void:
 		push_error("scene exposes no player")
 		quit(3)
 		return
-	p.global_position = at
+	# Omit --at to survey a world where its own spawn put the player.
+	if move:
+		p.global_position = at
+	else:
+		at = p.global_position
 	for i in range(4):
 		await process_frame
 
