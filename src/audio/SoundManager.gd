@@ -1540,6 +1540,26 @@ func _generate_glitch(playback: AudioStreamGeneratorPlayback, samples: int, freq
 ## or a procedural arm. play_music crossfades the CURRENT track out before it
 ## resolves, so an unknown id leaves the scene silent rather than unchanged;
 ## callers that would rather keep the existing music check this first.
+## The Web preset drops 54 music files while the manifest that lists them ships intact.
+func music_is_available(track_id: String) -> bool:
+	_load_music_manifest()
+	var entry: Variant = _music_manifest.get(track_id, {})
+	if not (entry is Dictionary):
+		return true
+	var path: String = str((entry as Dictionary).get("file", ""))
+	## No file at all means a procedural path owns this id, and those always play.
+	if path == "":
+		return true
+	if not path.begins_with("res://"):
+		path = "res://" + path
+	## load() rather than ResourceLoader.exists(): the latter reports FALSE for
+	## resources that ARE present in a web PCK (see _try_play_from_manifest).
+	if load(path) != null:
+		return true
+	## Absent from this build. Only ids with a procedural arm still make sound.
+	return track_id.begins_with("battle_") or track_id.begins_with("boss")
+
+
 static func has_music_track(track: String) -> bool:
 	if track == "":
 		return false
