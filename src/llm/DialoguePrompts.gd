@@ -283,6 +283,33 @@ const FALLBACK_RULE_COMPOSITION: Dictionary = {
 ##   recent_events  — Array[Dictionary] from EventLog.recent(); may be empty
 ##
 ## Returns a prompt String ready for LLMService.complete_json().
+## The ONE place the shared context blocks are assembled, in ONE order.
+##
+## Three features drifted between build_npc_opening and build_combined_reply
+## because each builder assembled these by hand from its own parameter list:
+## quest_state_lines (2026-09-07), memory and time_of_day (2026-09-10). Every
+## repair fixed one block and left the next to be found the same way.
+##
+## A builder that calls this cannot carry a block the other lacks, so the class
+## is closed by construction rather than by a guard noticing after the fact.
+## Reply-specific text (its conversation history) is concatenated by the caller
+## around this, not passed in — this returns only what BOTH paths must share.
+static func _context_blocks(
+	recent_events: Array,
+	quest_state_lines: Array,
+	time_of_day: String,
+	party_state: Dictionary,
+	memory_lines: Array,
+) -> String:
+	return (
+		_format_time_of_day(time_of_day)
+		+ _format_party_state(party_state)
+		+ _format_memory(memory_lines)
+		+ _format_events(recent_events, CONTEXT_EVENTS)
+		+ _format_quest_state_voice(quest_state_lines)
+	)
+
+
 static func build_npc_opening(
 	npc_name: String,
 	npc_persona: String,
@@ -293,11 +320,8 @@ static func build_npc_opening(
 	party_state: Dictionary = {},
 	memory_lines: Array = [],
 ) -> String:
-	var ctx_block: String = _format_events(recent_events, CONTEXT_EVENTS)
-	var voice_block: String = _format_quest_state_voice(quest_state_lines)
-	var time_block: String = _format_time_of_day(time_of_day)
-	var party_block: String = _format_party_state(party_state)
-	var memory_block: String = _format_memory(memory_lines)
+	var context: String = _context_blocks(
+		recent_events, quest_state_lines, time_of_day, party_state, memory_lines)
 
 	return (
 		"You are writing dialogue for a meta-aware JRPG called 'Cowardly Irregular'.\n"
@@ -306,11 +330,7 @@ static func build_npc_opening(
 		+ "NPC: %s\n" % npc_name
 		+ "Persona: %s\n" % npc_persona
 		+ "Location: %s\n" % location
-		+ time_block
-		+ party_block
-		+ memory_block
-		+ ctx_block
-		+ voice_block
+		+ context
 		+ "\n"
 		+ "Rules:\n"
 		+ "- Stay in character; no modern slang unless the setting demands it.\n"
@@ -463,14 +483,11 @@ static func build_combined_reply(
 	# enforces that both paths EMIT the same blocks, which is the property that
 	# actually broke twice — the order never did.
 	var count: int = clampi(num_choices, 1, MAX_CHOICES)
-	var ctx_block: String = _format_events(recent_events, CONTEXT_EVENTS)
-	# Milo v2: the reply path dropped the voice notes the opening path threads.
-	# Memory arrived with the SAME defect, one line below this warning: an NPC
-	# referenced your history in its greeting and lost it for every follow-up.
-	var voice_block: String = _format_quest_state_voice(quest_state_lines)
-	var memory_block: String = _format_memory(memory_lines)
-	var time_block: String = _format_time_of_day(time_of_day)
-	var party_block: String = _format_party_state(party_state)
+	# Milo v2 dropped the voice notes here; memory and time_of_day each arrived
+	# with the same defect. All three assembled by hand from this parameter list.
+	# _context_blocks is now the single path, so a fourth cannot go missing.
+	var context: String = _context_blocks(
+		recent_events, quest_state_lines, time_of_day, party_state, memory_lines)
 
 	var history_block: String = ""
 	if last_npc_line.strip_edges() != "":
@@ -486,11 +503,7 @@ static func build_combined_reply(
 		+ "Persona: %s\n" % npc_persona
 		+ "Location: %s\n" % location
 		+ history_block
-		+ party_block
-		+ memory_block
-		+ time_block
-		+ ctx_block
-		+ voice_block
+		+ context
 		+ "\n"
 		+ "Rules:\n"
 		+ "- The NPC reply must react to the player's specific words; max %d characters.\n" % MAX_LINE_CHARS

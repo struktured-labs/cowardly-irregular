@@ -275,3 +275,39 @@ func _call_args(src: String, needle: String) -> Array:
 	if buf.strip_edges() != "":
 		args.append(buf.strip_edges())
 	return args
+
+
+func test_memory_and_time_do_not_run_together_in_the_reply() -> void:
+	## Latent until both features existed: the reply emitted memory then time, and
+	## _format_memory does not end with a newline while _format_time_of_day does not
+	## begin with one — so a returning player talking at a named hour got
+	## "...half-remembered chat.Time of day: night" glued into one line. The opening
+	## never had it because time came first there. Fixed by _context_blocks giving
+	## both paths one order; pinned so a future reorder cannot bring it back.
+	var prompt: String = DP.build_combined_reply(
+		"Theron", "elder", "Harmonia Village", [], "prior", "said", 4,
+		[], {}, ["I'm hunting the ember wyrm."], "night")
+	assert_eq(prompt.find("chat.Time of day"), -1,
+		"the memory instruction must not run into the time-of-day line")
+	assert_true(prompt.find("Time of day: night") != -1,
+		"CONTROL: the time line must still be present, or the assertion above passes vacuously")
+	assert_true(prompt.find("half-remembered chat.") != -1,
+		"CONTROL: the memory instruction must still be present too")
+
+
+func test_both_builders_assemble_context_through_one_path() -> void:
+	## The structural fix behind all of it. Three features drifted because each
+	## builder assembled these by hand; if either stops calling _context_blocks,
+	## the next one can drift again and the parity test would only notice after
+	## someone adds a sixth block.
+	var src: String = FileAccess.get_file_as_string("res://src/llm/DialoguePrompts.gd")
+	assert_false(src.is_empty(), "CONTROL: source must load")
+	assert_eq(src.count("_context_blocks("), 3,
+		"expected one definition plus exactly two callers (opening and reply)")
+	for builder in ["build_npc_opening", "build_combined_reply"]:
+		var start: int = src.find("static func %s(" % builder)
+		assert_gt(start, -1, "CONTROL: %s must exist" % builder)
+		var next_fn: int = src.find("\nstatic func ", start + 10)
+		var body: String = src.substr(start, next_fn - start if next_fn > start else -1)
+		assert_true(body.find("_context_blocks(") != -1,
+			"%s must assemble shared context through _context_blocks, not by hand" % builder)
