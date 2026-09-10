@@ -267,7 +267,10 @@ func _setup_npcs() -> void:
 		"You know, your equipment could be AUGMENTED.",
 		"A few modifications and that sword of yours could hum like a turbine.",
 		"Vesper at the Forge does excellent work. Tell her Sprocket sent you.",
-		"She'll still overcharge you, but at least she'll be polite about it."
+		"She'll still overcharge you, but at least she'll be polite about it.",
+		"You're seven seconds late, by the way. My fault — I didn't allow for the crossing.",
+		"Everything here runs on the Grand Schedule. The Regulator set it up. Years ago, or always.",
+		"I've spent three years asking who wrote its first rule. The Schedule simply has one."
 	])
 	# Without this the quest is UNSTARTABLE — QuestSystem matches npc_id to giver.npc_id.
 	sprocket.npc_id = "sprocket_brasston"
@@ -280,7 +283,10 @@ func _setup_npcs() -> void:
 		"But I notice THINGS. Things in the pipes.",
 		"Movements. Echoes. Shadows that go the wrong way.",
 		"The engineers say it's 'pressure differentials'.",
-		"I say something LIVES down there. Been there since the gears were new."
+		"I say something LIVES down there. Been there since the gears were new.",
+		"I was late once. Seven seconds. The Mechanism compensated — I still don't know how.",
+		"Been exactly on time since. Not because I have to be.",
+		"Because I want to know whether it's me keeping the Schedule, or the Schedule keeping me."
 	])
 	# Without this the quest is UNSTARTABLE — QuestSystem matches npc_id to giver.npc_id.
 	lamplighter.npc_id = "clem_lamplighter"
