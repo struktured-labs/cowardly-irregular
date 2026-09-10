@@ -303,6 +303,34 @@
       "prompt_influence": 0.0,
       "fallback_to": "advance_queue"
     },
+    "advance_flourish_2": {
+      "file": "assets/audio/sfx/advance_flourish_2.ogg",
+      "prompt": "SYNTHESISED — advance flourish at 2 queued actions. ONE sound getting more committed across 2..5, parameterised from a single voice so the family cannot drift into five different sounds. Run the tool.",
+      "duration_seconds": 0.34,
+      "prompt_influence": 0.8,
+      "source": "tools/gen_chiptune_sfx.py advance_flourish_2"
+    },
+    "advance_flourish_3": {
+      "file": "assets/audio/sfx/advance_flourish_3.ogg",
+      "prompt": "SYNTHESISED — advance flourish at 3 queued actions. See advance_flourish_2.",
+      "duration_seconds": 0.42,
+      "prompt_influence": 0.8,
+      "source": "tools/gen_chiptune_sfx.py advance_flourish_3"
+    },
+    "advance_flourish_4": {
+      "file": "assets/audio/sfx/advance_flourish_4.ogg",
+      "prompt": "SYNTHESISED — advance flourish at 4 queued actions. See advance_flourish_2.",
+      "duration_seconds": 0.52,
+      "prompt_influence": 0.8,
+      "source": "tools/gen_chiptune_sfx.py advance_flourish_4"
+    },
+    "advance_flourish_5": {
+      "file": "assets/audio/sfx/advance_flourish_5.ogg",
+      "prompt": "SYNTHESISED — advance flourish at 5 queued actions (struktured 2026-09-09: 4 actions becomes SOMETIMES 5). The 4->5 step is the LARGEST by construction — +1.9 dB rms and +0.26s against +1.1/+0.10 for 3->4 — because the visuals put their biggest jump there. Octave-lower root and a sixth voice, not one more increment. Run the tool.",
+      "duration_seconds": 0.78,
+      "prompt_influence": 0.8,
+      "source": "tools/gen_chiptune_sfx.py advance_flourish_5"
+    },
     "advance_mage_1": {
       "file": "assets/audio/sfx/advance_mage_1.ogg",
       "source": "lmms_sf2_fluidr3",
@@ -999,6 +1027,13 @@
       "duration_seconds": 1.2,
       "prompt_influence": 0.7,
       "source": "tools/gen_chiptune_sfx.py shadow_strike"
+    },
+    "full_bank_unleash": {
+      "file": "assets/audio/sfx/full_bank_unleash.ogg",
+      "prompt": "SYNTHESISED — the bank EMPTYING, deliberately NOT a louder advance_flourish_5. They fire together: the flourish is the character winding up, this is the discharge. Struck together with no stagger, rooted an octave below the flourish so the two occupy different space — measured 617Hz centroid apart. Run the tool.",
+      "duration_seconds": 0.85,
+      "prompt_influence": 0.8,
+      "source": "tools/gen_chiptune_sfx.py full_bank_unleash"
     },
     "goblin_fanfare": {
       "file": "assets/audio/sfx/goblin_fanfare.ogg",

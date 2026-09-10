@@ -67,6 +67,8 @@ PINNED = [
     "ability_song", "ability_summon", "ability_revive",
     "ability_poison", "ability_earth", "ability_wind", "ability_arcane",
     "ability_mp_restore", "ability_flee",
+    "advance_flourish_2", "advance_flourish_3", "advance_flourish_4", "advance_flourish_5",
+    "full_bank_unleash",
     "status_cured",
     "ability_riff",
 ]
