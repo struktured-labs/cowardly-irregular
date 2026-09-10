@@ -104,8 +104,14 @@ func test_eviction_drops_the_least_recently_spoken_to() -> void:
 		CM.remember(_gs, "npc_%d" % i, ["line %d" % i])
 	CM.remember(_gs, "npc_0", ["spoke to npc_0 again, most recently"])
 	CM.remember(_gs, "overflow_npc", ["this one pushes the store over"])
-	assert_ne(CM.recall(_gs, "npc_0"), [],
-		"npc_0 was spoken to most recently and must survive eviction")
+	# Exact, not "non-empty": per cowir-autogrind 2026-09-10, a SUBJECT assertion
+	# closes both directions. assert_ne would pass on a survivor holding the WRONG
+	# line, or on two lines where eviction should have left one.
+	var survivor: Array = CM.recall(_gs, "npc_0")
+	assert_eq(survivor.size(), 1,
+		"npc_0 was spoken to most recently and must survive eviction with exactly its one line")
+	assert_eq(str(survivor[0]), "spoke to npc_0 again, most recently",
+		"and it must be the line from the most recent visit, not the evicted earlier one")
 	assert_eq(CM.recall(_gs, "npc_1"), [],
 		"npc_1 is now the least-recently-spoken-to and is the one that should go")
 
