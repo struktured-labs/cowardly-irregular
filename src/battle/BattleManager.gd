@@ -5488,7 +5488,10 @@ func _execute_revival_ability(caster: Combatant, ability: Dictionary, targets: A
 func _execute_support_ability(caster: Combatant, ability: Dictionary, targets: Array) -> void:
 	var effect = ability.get("effect", "")
 	var duration = ability.get("duration", 3)
-	var stat_modifier = ability.get("stat_modifier", 1.0)
+	## The generic buff/debuff arms (the masterite_* family) author `modifier`, not `stat_modifier`,
+	## so every one of them applied at 1.0 — mathematically inert, and the log announced "+0%".
+	## No ability authors BOTH keys, so the fallback is unambiguous.
+	var stat_modifier = ability.get("stat_modifier", ability.get("modifier", 1.0))
 	var success_rate = ability.get("success_rate", 1.0)
 
 	## Tick 441: encore passive — passives.json authors
