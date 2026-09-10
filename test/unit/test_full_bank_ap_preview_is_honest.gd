@@ -31,10 +31,15 @@ func _preview_body() -> String:
 
 func test_the_preview_discounts_the_free_fifth_action() -> void:
 	var body := _preview_body()
-	assert_string_contains(body, "BattleManager.FULL_BANK_ACTIONS",
-		"the preview must know how many actions a full bank buys")
-	assert_string_contains(body, "billed = queued_count - 1",
-		"and bill one fewer than it queues — otherwise it reports a cost the turn does not charge")
+	## ⚠️ REWRITTEN. This asserted `billed = queued_count - 1` — the menu's own inline arithmetic at
+	## the time — and then RED-FLAGGED my own better fix an hour later, when all three readouts moved
+	## to the shared BattleManager.billed_ap authority. Second time today a guard I wrote around one
+	## implementation voted against a superior one; the first was cowir-sfx's walk-down. Asserting
+	## the PROPERTY: the preview must not do its own subtraction, whatever the authority is called.
+	assert_string_contains(body, "BattleManager.billed_ap(",
+		"the preview must ask the one authority what the turn costs")
+	assert_false(body.contains("_current_ap - queued_count"),
+		"and must not keep a private subtraction — that copy reported a cost the turn does not charge")
 
 func test_the_arithmetic_matches_the_engine() -> void:
 	## The engine side, so the two cannot drift: five actions from +4 nets 4 AP spent, leaving 0.
@@ -70,7 +75,10 @@ func test_a_short_queue_at_a_full_bank_is_billed_in_full() -> void:
 	## The discriminator. Only the FIFTH action is free — if the discount applied to any queue at
 	## +4, a two-action Advance would preview as costing one and the whole economy would drift.
 	var body := _preview_body()
-	assert_string_contains(body, "queued_count >= BattleManager.FULL_BANK_ACTIONS",
+	## The gate moved into billed_ap with the rest; the menu's job is to ASK, so this pins the
+	## authority's shape rather than the caller's.
+	var mgr := FileAccess.get_file_as_string("res://src/battle/BattleManager.gd")
+	assert_string_contains(mgr, "queued >= FULL_BANK_ACTIONS",
 		"the discount must be gated on a full FIVE-action queue, not merely on having the AP")
 
 func test_the_full_bank_is_telegraphed_before_the_first_press() -> void:
