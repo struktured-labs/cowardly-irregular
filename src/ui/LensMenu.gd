@@ -99,6 +99,11 @@ func _build_ui() -> void:
 	_refresh()
 
 
+	# Right-click closes, matching the convention on 29 other screens.
+	MenuMouseHelper.add_right_click_cancel(self, func() -> void:
+		closed.emit()
+		queue_free())
+
 func _build_row(index: int, y: float) -> Dictionary:
 	var holder := Control.new()
 	holder.position = Vector2(12, y)

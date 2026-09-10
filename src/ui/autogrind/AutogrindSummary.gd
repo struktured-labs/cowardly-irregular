@@ -233,6 +233,10 @@ func _build_ui() -> void:
 
 
 ## Tick 135: thin wrapper around ItemNameResolver.
+	# Right-click dismisses, matching the convention on 29 other screens.
+	MenuMouseHelper.add_right_click_cancel(self, func() -> void:
+		dismissed.emit())
+
 func _resolve_item_display_name(item_id: String) -> String:
 	return ItemNameResolver.resolve(item_id)
 
