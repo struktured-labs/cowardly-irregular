@@ -716,6 +716,16 @@ func _ensure_farewell(choices: Array[String]) -> void:
 
 func _is_farewell(choice: String) -> bool:
 	var lower: String = choice.strip_edges().to_lower()
+	# A QUESTION IS NEVER A GOODBYE, whatever it opens with. These are prefix
+	# matches, so "Take care of that wound — how did you get it?" and "I should go
+	# looking for the dragon. Where is its lair?" both read as exits and end the
+	# conversation the player was trying to continue. The first is a line the model
+	# is MORE likely to write since party condition reached the prompt.
+	# Direction matters: a missed farewell costs one extra turn, and the player
+	# still has B and the guaranteed exit option. A false farewell cannot be undone
+	# — it ends the conversation, banks the memory and settles the reward claim.
+	if lower.ends_with("?"):
+		return false
 	return (
 		lower == "farewell." or
 		lower == "farewell" or
