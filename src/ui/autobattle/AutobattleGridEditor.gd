@@ -3282,7 +3282,11 @@ func _paste_share_code() -> void:
 		return
 	if ScriptShareManager.apply_character_script(character_id, data):
 		_reload_applied_script()
-		_flash_status("Share code applied to %s" % character_name, Color.LIME)
+		var adv := ScriptShareManager.last_import_advisory_text()
+		if adv != "":
+			_flash_status("Applied, but %s" % adv, Color.YELLOW)
+		else:
+			_flash_status("Share code applied to %s" % character_name, Color.LIME)
 		SoundManager.play_ui("menu_select")
 		if PartyChatSystem:
 			PartyChatSystem.fire_event_flag("event_flag_share_code_used")

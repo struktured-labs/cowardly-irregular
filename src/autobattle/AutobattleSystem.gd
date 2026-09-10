@@ -436,7 +436,15 @@ func validate_rule(rule: Dictionary, deep_check_character_id: String = "") -> Ar
 ## validate_rule(rule, character_id). Per-rule scope is deliberately STRICTER
 ## than the preset catalog's whole-script lint (no earlier-refill-rule
 ## credit): stricter = safer for LLM-composed output.
-func _deep_check_rule(rule: Dictionary, character_id: String) -> Array[String]:
+## Reachability-only slice, for UNTRUSTED imports. The MP-guard arm below is an authoring-STYLE
+## rule — deliberately strict for LLM output — and it fires on ordinary hand-written rules like
+## "hp < 50 -> cure". Surfacing it on every shared code would train players to ignore advisories,
+## so an import asks only "can this rule fire for this character AT ALL".
+func deep_check_reachability(rule: Dictionary, character_id: String) -> Array[String]:
+	return _deep_check_rule(rule, character_id, true)
+
+
+func _deep_check_rule(rule: Dictionary, character_id: String, reachability_only: bool = false) -> Array[String]:
 	var errors: Array[String] = []
 	var job_id: String = _resolve_job_for_character(character_id)
 	var job: Dictionary = JobSystem.get_job(job_id)
@@ -481,7 +489,7 @@ func _deep_check_rule(rule: Dictionary, character_id: String) -> Array[String]:
 			var iid: String = str(a.get("id", ""))
 			if ItemSystem.get_item(iid).is_empty():
 				errors.append("unknown item '%s'" % iid)
-	if mp_cost_sum > 0 and max_mp > 0:
+	if not reachability_only and mp_cost_sum > 0 and max_mp > 0:
 		var need_pct: int = ceili(float(mp_cost_sum) / float(max_mp) * 100.0)
 		var guarded: bool = false
 		for c in rule.get("conditions", []):

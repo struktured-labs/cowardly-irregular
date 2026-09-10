@@ -173,6 +173,12 @@ static func import_file(filename: String) -> Dictionary:
 ## rule index and the offending field were already computed one frame earlier.
 static var last_import_errors: Array = []
 
+## Rules that IMPORTED but will not fire for THIS character — a share code is written against the
+## sender's progression, so an ability outside the receiver's kit fizzles a turn at runtime. Advisory
+## rather than a refusal on purpose: rejecting these would break legitimate sharing between players
+## at different progression, which is the whole point of a share code.
+static var last_import_advisories: Array = []
+
 
 ## First refusal reason in player-facing form, or "" when the last import succeeded.
 static func last_import_reason() -> String:
@@ -201,19 +207,52 @@ static func validate_imported_script(script: Dictionary) -> Array:
 	return errors
 
 
+## Reachability check per rule, AFTER grammar validation passed. The share path had the character_id
+## in hand and never used it — so the STRONGEST check ran on the most trusted source (our own
+## composer) and not on the least trusted (a stranger's clipboard). Reachability ONLY: the deep
+## check's MP-guard arm is authoring style and fires on ordinary rules, which would make every
+## shared code arrive with a warning and teach players to dismiss them.
+static func _deep_advisories(script: Dictionary, character_id: String) -> Array:
+	var out: Array = []
+	var rules: Array = script.get("rules", [])
+	for i in range(rules.size()):
+		for e in AutobattleSystem.deep_check_reachability(rules[i], character_id):
+			var msg: String = str(e)
+			## A job the deep check cannot resolve is a tooling limit, not a defect in the rule.
+			if msg.begins_with("cannot resolve job"):
+				continue
+			out.append("rule %d: %s" % [i, msg])
+	return out
+
+
+## Rules that imported but will not fire for this character, in player-facing form.
+static func last_import_advisory_text() -> String:
+	if last_import_advisories.is_empty():
+		return ""
+	var first: String = str(last_import_advisories[0])
+	if last_import_advisories.size() > 1:
+		return "%s (+%d more)" % [first, last_import_advisories.size() - 1]
+	return first
+
+
 static func apply_character_script(character_id: String, data: Dictionary) -> bool:
 	if data.get("type") == "autobattle_script":
 		var script = data.get("script", {})
 		if script.is_empty():
 			return false
 		last_import_errors = []
+		last_import_advisories = []
 		var errs := validate_imported_script(script)
 		if not errs.is_empty():
 			last_import_errors = errs
 			push_warning("[SHARE] Rejected import for %s — %d invalid rule(s): %s" % [character_id, errs.size(), str(errs)])
 			return false
 		AutobattleSystem.set_character_script(character_id, script)
-		print("[SHARE] Applied script to %s" % character_id)
+		last_import_advisories = _deep_advisories(script, character_id)
+		if not last_import_advisories.is_empty():
+			print("[SHARE] Applied to %s with %d advisory(ies)" % [character_id, last_import_advisories.size()])
+		else:
+			print("[SHARE] Applied script to %s" % character_id)
 		return true
 
 	if data.get("type") == "autobattle_bundle":
