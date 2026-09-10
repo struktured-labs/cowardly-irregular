@@ -65,6 +65,18 @@ func test_the_right_stick_changes_a_condition_value() -> void:
 		"the right stick must change the value — a pad had no route to it in the pillar screen")
 
 
+## DIRECTION, not just change. `assert_ne` and `absf` are sign-blind: inverting this editor's delta
+## left all six of this file's tests green — measured here, not inferred from the autogrind twin.
+func test_right_raises_and_left_lowers() -> void:
+	_seed_rule(50)
+	_ed._input(_stick(1.0))
+	assert_gt(_value(), 50.0, "pushing RIGHT must RAISE the value, not merely change it")
+	_seed_rule(50)
+	_ed._input(_stick(0.0))  # centre re-arms the latch, else the push below is swallowed
+	_ed._input(_stick(-1.0))
+	assert_lt(_value(), 50.0, "pushing LEFT must LOWER it — the other half of the same contract")
+
+
 ## An axis repeats every frame while held; without a latch one push runs the value to its cap.
 func test_one_push_is_one_step_and_centre_re_arms() -> void:
 	_seed_rule(50)

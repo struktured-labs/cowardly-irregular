@@ -67,6 +67,19 @@ func test_the_right_stick_changes_a_condition_value() -> void:
 		"pushing the right stick must change the condition's value — a pad had no route to it at all")
 
 
+## DIRECTION, not just change. `assert_ne` and `absf` are sign-blind: inverting the dial's delta
+## left this whole file green — measured, both editors. An inverted dial is the R/L inversion again,
+## a control doing the opposite of what it says, and it is invisible to a magnitude-only assert.
+func test_right_raises_and_left_lowers() -> void:
+	_seed_rule(50)
+	_ed._input(_stick(JOY_AXIS_RIGHT_X, 1.0))
+	assert_gt(_value(), 50.0, "pushing RIGHT must RAISE the value, not merely change it")
+	_seed_rule(50)
+	_ed._input(_stick(JOY_AXIS_RIGHT_X, 0.0))  # centre re-arms the latch, else the push below is swallowed
+	_ed._input(_stick(JOY_AXIS_RIGHT_X, -1.0))
+	assert_lt(_value(), 50.0, "pushing LEFT must LOWER it — the other half of the same contract")
+
+
 ## An axis repeats EVERY FRAME while held. Without a latch one push runs the value to its cap.
 func test_one_push_is_one_step_not_one_per_frame() -> void:
 	_seed_rule(50)
