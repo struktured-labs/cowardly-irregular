@@ -9,8 +9,21 @@ extends GutTest
 ## reports bugs in prose ("I tried a lot of keys"); the one feature built to replace that with an
 ## artifact was undiscoverable.
 ##
-## This asserts the OVERLAY LISTS every global F-key GameLoop binds, in both directions, so the
-## next global key added is caught by the guard rather than by nobody.
+## ⚠️ SCOPE, STATED TO MATCH THE INSTRUMENT: this checks GLOBAL **F-KEYS ONLY** — the regex is
+## `keycode == KEY_F<digits>`. GameLoop also binds ESCAPE, P, T, X and Y globally and this sees
+## NONE of them. The filename says "every global key" and that is broader than what runs.
+##
+## This class is `feedback_label_broader_than_predicate` (2026-08-05), and its first line is why
+## none of my controls caught it: A CONTROL TESTS THE EXPRESSION, AND THE EXPRESSION IS FINE. The
+## regex correctly finds every F-key; the fabricated-key control correctly reports absence. Both
+## true, and neither touches the gap between "every global key" and "every F-key".
+##
+## Recorded because cowir-main demonstrated the cost again on 2026-09-10: a predicate phrased more
+## broadly than its implementation ("unreachable by ANY path", over a scanner that followed two of
+## three link kinds) CONCEALS the gap, because broad-sounding language deters anyone from reading
+## the code beneath it. An honest narrow claim gets interrogated; a confident wide one does not.
+##
+## So: next global NON-F key added is NOT caught by this. That is a gap to fill, not a covered case.
 
 const GL := "res://src/GameLoop.gd"
 const OVERLAY := "res://src/ui/HowToPlayOverlay.gd"

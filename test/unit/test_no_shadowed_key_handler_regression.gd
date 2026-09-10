@@ -15,6 +15,11 @@ extends GutTest
 ##   same line          -> `is_action_pressed(x) or keycode == KEY_Y` is an OR, not a shadow
 ##   earlier has is_echo -> that branch declines echo repeats, so the later one is reachable for them
 
+## ⚠️ SCOPE: detects ONE shadowing shape — a `keycode == KEY_X` branch sitting below an
+## `is_action_pressed()` branch whose action claims X. It does NOT see: action shadowed by action,
+## keycode shadowed by keycode, or a branch made unreachable by an early `return` above it. The
+## test name reads broader than that, and a broad name is what stops the next reader checking.
+
 const SRC_DIRS := ["res://src"]
 
 
