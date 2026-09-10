@@ -24,6 +24,7 @@ extends GutTest
 
 const DC := preload("res://src/llm/DynamicConversation.gd")
 const DCM := preload("res://src/llm/DialogueChoiceMenu.gd")
+const DC_SCRIPT := preload("res://src/llm/DynamicConversation.gd")
 
 var _dc = null
 
@@ -112,3 +113,66 @@ func test_cancel_is_distinguishable_from_a_real_choice() -> void:
 	## may equal the sentinel, or a cancel and a goodbye become the same event.
 	assert_false(_dc._is_farewell(DCM.CHOICE_CANCELLED),
 		"the cancel sentinel must not itself read as a farewell line")
+
+
+# ── the exit slot was eating a generated choice ───────────────────────────────
+#
+# _ensure_farewell appends an exit when there is room and REPLACES the last
+# choice when there is not. The model was asked for the full MAX_CHOICES, and
+# measured against live llama3 (5 samples of the reply prompt) it returned 4
+# distinct choices every time and an exit ZERO times — so the fourth was
+# discarded on every turn.
+#
+# The prompt asks for choices "covering a range of tones: curious, cautious,
+# friendly, direct" and one tone was then dropped before the player saw it.
+# Requesting MAX_CHOICES - 1 costs nothing: the menu is the same size and every
+# line the model writes survives.
+
+func test_the_exit_slot_is_reserved_rather_than_taken_from_the_model() -> void:
+	assert_eq(DC_SCRIPT.REQUESTED_CHOICES, DialoguePrompts.MAX_CHOICES - 1,
+		"one slot must be reserved for the exit, or the model's last choice is replaced")
+
+
+func test_a_full_generated_set_survives_intact() -> void:
+	var generated: Array[String] = []
+	for i in range(DC_SCRIPT.REQUESTED_CHOICES):
+		generated.append("Generated option %d?" % i)
+	var before: Array = generated.duplicate()
+	_dc._ensure_farewell(generated)
+	assert_eq(generated.size(), DialoguePrompts.MAX_CHOICES,
+		"the menu the player sees must still be MAX_CHOICES")
+	for line in before:
+		assert_true(generated.has(line),
+			"'%s' must survive — reserving the slot exists so nothing generated is dropped" % line)
+
+
+func test_the_menu_still_ends_with_a_usable_exit() -> void:
+	var generated: Array[String] = []
+	for i in range(DC_SCRIPT.REQUESTED_CHOICES):
+		generated.append("Generated option %d?" % i)
+	_dc._ensure_farewell(generated)
+	assert_true(_dc._is_farewell(generated[-1]),
+		"the reserved slot must actually hold an exit the loop recognises")
+
+
+func test_a_model_that_writes_its_own_exit_is_not_double_counted() -> void:
+	## CONTROL: if the model does produce an exit, no second one is appended and
+	## the menu stays under capacity rather than growing.
+	var generated: Array[String] = ["What of the wyrm?", "Tell me more.", "Farewell."]
+	_dc._ensure_farewell(generated)
+	assert_eq(generated.size(), 3,
+		"an exit already present must not trigger another — the menu must not grow")
+
+
+func test_over_capacity_input_still_replaces_rather_than_overflowing() -> void:
+	## CONTROL: the replace branch must survive, because a future caller could
+	## still hand over a full set. Reserving the slot removes the CAUSE, not the
+	## guard.
+	var generated: Array[String] = []
+	for i in range(DialoguePrompts.MAX_CHOICES):
+		generated.append("Question %d?" % i)
+	_dc._ensure_farewell(generated)
+	assert_eq(generated.size(), DialoguePrompts.MAX_CHOICES,
+		"capacity must still be respected if a full set arrives")
+	assert_true(_dc._is_farewell(generated[-1]),
+		"and an exit must still be guaranteed in that case")
