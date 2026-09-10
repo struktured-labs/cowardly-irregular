@@ -8,6 +8,7 @@ func _init() -> void:
 	var at := Vector2(2880, 1280)
 	var walk := true
 	var tag := "edge"
+	var zoom := 0.0
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--world="):
 			world = a.get_slice("=", 1)
@@ -17,6 +18,8 @@ func _init() -> void:
 				at = Vector2(float(p[0]), float(p[1]))
 		elif a.begins_with("--tag="):
 			tag = a.get_slice("=", 1)
+		elif a.begins_with("--zoom="):
+			zoom = float(a.get_slice("=", 1))
 		elif a == "--no-walk":
 			walk = false
 	# Autoloads land after _init, same as the village harness.
@@ -35,11 +38,25 @@ func _init() -> void:
 		push_error("unknown world %s" % world)
 		quit(2)
 		return
-	var scene = load(paths[world]).new()
+	# Prefer a .tscn when the world has one; the 2026-08-22 renderer used it and only W1 has one.
+	var scene: Node = null
+	var packed_path: String = paths[world].replace(".gd", ".tscn")
+	if ResourceLoader.exists(packed_path):
+		var packed = load(packed_path)
+		if packed is PackedScene:
+			scene = packed.instantiate()
+	if scene == null:
+		scene = load(paths[world]).new()
 	root.add_child(scene)
 	for i in range(6):
 		await process_frame
 
+	if zoom > 0.0:
+		var cam: Camera2D = scene.get_node_or_null("OverworldPlayer/Camera")
+		if cam == null and "camera" in scene:
+			cam = scene.camera
+		if cam != null:
+			cam.zoom = Vector2(zoom, zoom)
 	var p = scene.get("player")
 	if p == null:
 		push_error("scene exposes no player")
