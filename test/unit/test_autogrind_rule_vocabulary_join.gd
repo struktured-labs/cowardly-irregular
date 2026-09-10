@@ -191,11 +191,28 @@ func test_operator_control() -> void:
 func test_validate_rule_accepts_a_rule_built_from_every_vocabulary_entry() -> void:
 	# End-to-end on the choke point: the grammar must accept what the grammar declares.
 	# Catches a validator that grew a stricter rule than its own vocabulary table.
+	#
+	# 2026-09-10: the payload is now built from the type's OWN classification instead of giving
+	# every type a numeric 1. That version asserted member_status carrying a NUMBER was valid —
+	# the exact rule the console shipped, permanently false because the evaluator reads the status
+	# NAME from `value`. Deriving the payload keeps the join honest in both directions: every
+	# declared type must be constructible, using the payload kind it declares.
+	var checked := 0
 	for ctype in _sys.PARTY_CONDITION_TYPES.keys():
+		var t := str(ctype)
+		var cond: Dictionary = {"type": t}
+		if _sys.NAMED_VALUE_CONDITIONS.has(t):
+			cond["value"] = "poison"
+		elif _sys.NUMERIC_CONDITIONS.has(t):
+			cond["op"] = "<"
+			cond["value"] = 1
 		var rule: Dictionary = {
-			"conditions": [{"type": str(ctype), "op": "<", "value": 1}],
+			"conditions": [cond],
 			"actions": [{"type": "stop_grinding"}],
 		}
 		var errors: Array = _sys.validate_rule(rule)
+		checked += 1
 		assert_eq(errors.size(), 0,
-			"validate_rule rejected a rule using '%s', which is in its own PARTY_CONDITION_TYPES table: %s" % [str(ctype), str(errors)])
+			"validate_rule rejected a rule using '%s', which is in its own PARTY_CONDITION_TYPES table: %s" % [t, str(errors)])
+	assert_eq(checked, _sys.PARTY_CONDITION_TYPES.size(),
+		"every declared condition type must have been constructed and checked, not skipped")
