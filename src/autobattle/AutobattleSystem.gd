@@ -355,6 +355,28 @@ func _evaluate_grid_condition(combatant: Combatant, condition: Dictionary) -> bo
 	return false
 
 
+## Conditions whose payload field carries the SUBJECT of the test. Absence never fails loudly: the
+## evaluator's "" default makes has_status/item_count/has_buff permanently FALSE, and not_has_buff
+## permanently TRUE — and an always-true condition shadows every rule below it under
+## first-match-wins, so a missing `stat` silently disables the rest of the script.
+const CONDITION_REQUIRED_FIELD := {
+	"has_status": "status",
+	"ally_has_status": "status",
+	"enemy_has_status": "status",
+	"item_count": "item_id",
+	"has_buff": "stat",
+	"not_has_buff": "stat",
+	"weather": "weather",
+}
+
+## Conditions carrying no payload beyond op/value. With the map above this must cover
+## CONDITION_TYPES exactly — a type in neither is one validate_rule waves through unexamined.
+const CONDITION_NO_PAYLOAD := [
+	"hp_percent", "mp_percent", "ap", "enemy_hp_percent", "ally_hp_percent", "ally_mp_percent",
+	"turn", "enemy_count", "ally_count", "setup_complete", "is_night", "ally_dead", "always",
+]
+
+
 func validate_rule(rule: Dictionary, deep_check_character_id: String = "") -> Array[String]:
 	var errors: Array[String] = []
 	if not rule.has("conditions"):
@@ -377,6 +399,12 @@ func validate_rule(rule: Dictionary, deep_check_character_id: String = "") -> Ar
 			continue
 		if c.has("op") and not OPERATORS.has(str(c["op"])):
 			errors.append("unknown operator: '%s'" % c["op"])
+		## The field must be PRESENT, before weather's stronger vocabulary check below. Six of the
+		## seven were unchecked: a status rule with no `status`, an item rule with no `item_id`.
+		if CONDITION_REQUIRED_FIELD.has(ctype):
+			var need: String = str(CONDITION_REQUIRED_FIELD[ctype])
+			if str(c.get(need, "")).strip_edges() == "":
+				errors.append("condition '%s' requires '%s' — without it the evaluator compares against \"\" and the rule can never match (not_has_buff instead matches ALWAYS, hiding every rule below it)" % [ctype, need])
 		# Weather values validate against the flat vocabulary so an LLM-composed or
 		# hand-typed bad value fails at decode, not silently-never-fires in battle.
 		if ctype == "weather" and not GameState.all_weather_conditions().has(str(c.get("weather", ""))):
