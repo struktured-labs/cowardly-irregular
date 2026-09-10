@@ -26,6 +26,21 @@ extends GutTest
 ## display, not the audio engine, and overstating it is the thing this file
 ## exists to prevent.
 ##
+## 🔑 AND IT DOUBLE-DUTIES AS THE "YOU FORGOT --import" GUARD, which I only
+## noticed when cowir-controller pointed out that "⚠️ needs --import at the
+## fold" in a commit message is a REMINDER WEARING A RULE'S CLOTHES — it works
+## only if the person folding at 3am reads it. This one is structural instead.
+## Demonstrated 2026-09-10 by building the real hazard rather than reasoning:
+##     new OGG on disk + import cache still holding the OLD audio
+##        -> FAILS, naming the track and both durations
+##     after --import
+##        -> passes
+## Because load() returns what Godot IMPORTED, not what is on disk, a fold that
+## skips the import reads the stale length against a fresh manifest. My first
+## simulation had it backwards (old file, new cache) and passed — which is
+## correct behaviour and proves nothing, so the arm that matters is the one
+## above.
+##
 ## Godot can settle it without ffprobe: the imported AudioStream knows its own
 ## length. That makes this a CONTENT check, not a bookkeeping one — it compares
 ## the manifest against the audio the engine will actually play, so it also
