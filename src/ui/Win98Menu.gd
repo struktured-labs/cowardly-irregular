@@ -1531,9 +1531,7 @@ func _update_ap_label() -> void:
 	## at 0. A cost readout that overstates the cost suppresses the exact move the mechanic exists
 	## to reward, and the player has no way to discover it is wrong.
 	var full_bank: bool = _current_ap >= BattleManager.FULL_BANK_AP
-	var billed: int = queued_count
-	if full_bank and queued_count >= BattleManager.FULL_BANK_ACTIONS:
-		billed = queued_count - 1
+	var billed: int = BattleManager.billed_ap(_current_ap, queued_count)
 
 	if queued_count == 0:
 		if full_bank:

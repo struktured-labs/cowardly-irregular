@@ -1841,6 +1841,16 @@ func player_defer() -> bool:
 	_end_selection_turn()
 	return true
 
+## What a queue of N actions actually COSTS at this AP — the fifth is free at a full bank. Every
+## readout must ask this rather than computing `queued` itself: the menu and the party panel each
+## had their own subtraction, and both told the player a full-bank turn ends at -1 when it ends at 0.
+## One authority, three surfaces (Win98Menu, BattleUIManager, and the queue cap below).
+static func billed_ap(current_ap: int, queued: int) -> int:
+	if current_ap >= FULL_BANK_AP and queued >= FULL_BANK_ACTIONS:
+		return queued - 1
+	return queued
+
+
 ## ONE rule for both queueing paths (manual menu, autobattle script). A fifth action is honoured
 ## only at a full bank and is stamped so _execute_advance can refund it; anything over the cap
 ## below a full bank is truncated rather than refused, so a 5-action script still fires at +3.
