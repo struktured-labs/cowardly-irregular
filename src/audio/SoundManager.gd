@@ -2104,6 +2104,9 @@ func _start_battle_music() -> void:
 	var suffix = _get_current_world_suffix()
 	if _try_play_from_manifest("battle_" + suffix):
 		return
+	## battle_<suffix> is web-excluded in W4-W6; generating is 8.5s on the main thread.
+	if suffix != "medieval" and _try_play_from_manifest("battle_medieval"):
+		return
 
 	if _music_cache.has("battle_generic"):
 		_music_player.stream = _music_cache["battle_generic"]
@@ -2815,6 +2818,9 @@ func _start_boss_music() -> void:
 	_music_playing = true
 	var suffix = _get_current_world_suffix()
 	if _try_play_from_manifest("boss_" + suffix):
+		return
+	## boss_<suffix> is web-excluded in W4-W6; generating is 2.1s on the main thread.
+	if suffix != "medieval" and _try_play_from_manifest("boss_medieval"):
 		return
 
 	# Generate music buffer (16 bars at 150 BPM - faster, more intense)
@@ -6685,6 +6691,9 @@ func _start_industrial_battle_music() -> void:
 	_music_playing = true
 	if _try_play_from_manifest("battle_industrial"):
 		return
+	## web-excluded; generating is 1.6s on the main thread.
+	if _try_play_from_manifest("battle_medieval"):
+		return
 	print("[MUSIC] Playing industrial battle theme")
 
 	var sample_rate = 22050
@@ -6882,6 +6891,9 @@ func _start_digital_battle_music() -> void:
 	   Fast arpeggios, digital distortion, Tron/Matrix vibes."""
 	_music_playing = true
 	if _try_play_from_manifest("battle_digital"):
+		return
+	## web-excluded; generating is 1.4s on the main thread.
+	if _try_play_from_manifest("battle_medieval"):
 		return
 	print("[MUSIC] Playing digital battle theme")
 
