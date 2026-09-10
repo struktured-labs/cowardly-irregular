@@ -14,6 +14,9 @@ var _bg: ColorRect
 var _player_dot: ColorRect
 var _dots: Array[ColorRect] = []
 var _label_rects: Array[Rect2] = []
+## Marker footprints, reserved BEFORE any label is placed so a label never lands on a dot.
+var _marker_rects: Array[Rect2] = []
+var _labels: Array[Label] = []
 var _player_ref: Node2D
 var _map_width: float
 var _map_height: float
@@ -100,21 +103,26 @@ func setup(parent: Node, player: Node2D, map_w: int, map_h: int, tile_size: int,
 	inner.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_canvas.add_child(inner)
 
-	# Transition dots with labels
+	# TWO PASSES ON PURPOSE. Every marker footprint is reserved before the first label is placed,
+	# because a label placed in pass one cannot avoid a dot that pass one has not drawn yet — that is
+	# how "Rivet" ended up underneath W4's objective marker.
+	var pending: Array = []
 	for key in transitions:
 		var pos: Vector2 = transitions[key]
 		if pos == Vector2.ZERO:
 			continue
 		if key == "castle_harmonia_entrance":
 			continue  # alias of castle_entrance at the same position — one gold dot, not two stacked
-		var dot_type = _get_dot_type(key)
-		var color = DOT_COLORS.get(dot_type, Color(0.7, 0.7, 0.7))
 		var label_text = SHORT_NAMES.get(key, "")
 		# An unnamed key is an ARRIVAL point (where you land coming back), not a place you travel to.
 		# Drawing them put an anonymous dot beside every dragon cave and one under the player himself.
 		if label_text == "":
 			continue
-		_add_dot(pos, color, label_text)
+		var dot_type = _get_dot_type(key)
+		var color = DOT_COLORS.get(dot_type, Color(0.7, 0.7, 0.7))
+		pending.append({"map_pos": _add_dot(pos, color), "text": label_text, "color": color})
+	for e in pending:
+		_place_poi_label(e["map_pos"], e["text"], e["color"])
 
 	# Player dot (on top)
 	_player_dot = ColorRect.new()
@@ -171,7 +179,8 @@ func _get_dot_type(key: String) -> String:
 	return "village"
 
 
-func _add_dot(world_pos: Vector2, color: Color, label_text: String = "") -> void:
+## Draws the marker and RESERVES its footprint; returns the map-space centre for the label pass.
+func _add_dot(world_pos: Vector2, color: Color) -> Vector2:
 	var dot = ColorRect.new()
 	dot.color = color
 	dot.size = Vector2(DOT_SIZE, DOT_SIZE)
@@ -181,9 +190,8 @@ func _add_dot(world_pos: Vector2, color: Color, label_text: String = "") -> void
 	dot.position = map_pos - Vector2(DOT_SIZE / 2, DOT_SIZE / 2)
 	_canvas.add_child(dot)
 	_dots.append(dot)
-
-	if label_text != "":
-		_place_poi_label(map_pos, label_text, color)
+	_marker_rects.append(Rect2(dot.position, dot.size))
+	return map_pos
 
 
 func _place_poi_label(map_pos: Vector2, label_text: String, color: Color) -> void:
@@ -209,11 +217,17 @@ func _place_poi_label(map_pos: Vector2, label_text: String, color: Color) -> voi
 	lbl.position = pos
 	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_canvas.add_child(lbl)
+	_labels.append(lbl)
 
 
+## A label must clear other labels AND every marker footprint — a name sitting on top of a dot is
+## as unreadable as two names on top of each other, and the dot is the thing it is naming.
 func _overlaps_placed_label(r: Rect2) -> bool:
 	for placed in _label_rects:
 		if placed.intersects(r):
+			return true
+	for m in _marker_rects:
+		if m.intersects(r):
 			return true
 	return false
 
@@ -237,6 +251,38 @@ func set_objective(world_pos: Vector2) -> void:
 		_canvas.add_child(_objective_dot)
 	var map_pos = _world_to_minimap(_objective_pos)
 	_objective_dot.position = map_pos - Vector2(OBJECTIVE_DOT_SIZE / 2, OBJECTIVE_DOT_SIZE / 2)
+	_nudge_labels_off(Rect2(_objective_dot.position, _objective_dot.size))
+
+
+## The objective marker arrives AFTER the labels are placed and moves as the objective changes, so it
+## cannot be reserved up front like the fixed dots. Push any name it lands on out from under it
+## instead — it is the biggest marker on the panel and it was covering "Rivet" on W4.
+func _nudge_labels_off(marker: Rect2) -> void:
+	for i in range(_labels.size()):
+		if i >= _label_rects.size():
+			break
+		var r: Rect2 = _label_rects[i]
+		if not r.intersects(marker):
+			continue
+		var panel := Rect2(_bg.position + Vector2(4, 4), Vector2(MAP_SIZE, MAP_SIZE))
+		var moved := r
+		var guard := 0
+		while guard < 8 and (moved.intersects(marker) or _overlaps_other_label(moved, i)):
+			moved.position.y += r.size.y
+			if moved.position.y + moved.size.y > panel.end.y:
+				moved.position.y = panel.position.y
+			guard += 1
+		if guard >= 8:
+			continue  # nowhere clear to put it; leave it where the author placed it
+		_label_rects[i] = moved
+		_labels[i].position = moved.position
+
+
+func _overlaps_other_label(r: Rect2, skip: int) -> bool:
+	for j in range(_label_rects.size()):
+		if j != skip and _label_rects[j].intersects(r):
+			return true
+	return false
 
 
 func update(player_pos: Vector2) -> void:

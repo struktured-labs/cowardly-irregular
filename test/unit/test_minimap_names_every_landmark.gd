@@ -88,3 +88,48 @@ func test_the_scan_can_tell_a_landmark_from_an_arrival_point() -> void:
 	assert_true((pair[0] as Dictionary).has("suburban_portal"), "CONTROL: W1 must declare suburban_portal")
 	assert_false((pair[1] as Dictionary).has("suburban_portal"), "CONTROL: W1 must never READ suburban_portal; if it does, this control is stale rather than the code being wrong")
 	assert_true((pair[1] as Dictionary).has("cave_entrance"), "CONTROL: a real landmark must read as READ")
+
+
+## A name sitting on top of a marker is as unreadable as two names on top of each other — and the
+## marker is the thing the name belongs to. W4 shipped with "Rivet" underneath the gold objective
+## dot, because labels were placed in the same pass that drew the dots (so a label could not avoid a
+## marker that did not exist yet) and the objective marker is added later still.
+func test_no_minimap_label_sits_on_a_marker() -> void:
+	var overlaps: Array = []
+	var worlds_built := 0
+	var labels_seen := 0
+	var markers_seen := 0
+
+	for label in WORLDS:
+		var vp := SubViewport.new()
+		vp.size = Vector2i(64, 64)
+		vp.world_2d = World2D.new()
+		add_child_autofree(vp)
+		var w = load(WORLDS[label]).new()
+		vp.add_child(w)
+		await get_tree().physics_frame
+		await get_tree().process_frame
+		var mm = w.get("_minimap")
+		if mm == null:
+			continue
+		worlds_built += 1
+		var rects: Array = mm.get("_label_rects")
+		var markers: Array = mm.get("_marker_rects")
+		var texts: Array = mm.get("_labels")
+		labels_seen += rects.size()
+		markers_seen += markers.size()
+		var obj = mm.get("_objective_dot")
+		var all_markers: Array = markers.duplicate()
+		if obj != null:
+			all_markers.append(Rect2(obj.position, obj.size))
+		for i in range(rects.size()):
+			for m in all_markers:
+				if (rects[i] as Rect2).intersects(m):
+					var t: String = str(texts[i].text) if i < texts.size() else "?"
+					overlaps.append("%s/%s" % [label, t])
+	overlaps.sort()
+
+	assert_eq(worlds_built, WORLDS.size(), "built %d of %d minimaps" % [worlds_built, WORLDS.size()])
+	assert_gt(labels_seen, 15, "CONTROL: only %d labels placed across six worlds -- any zero below is free" % labels_seen)
+	assert_gt(markers_seen, 15, "CONTROL: only %d markers reserved -- the overlap test has nothing to hit" % markers_seen)
+	assert_eq(overlaps, [], "a minimap name is drawn on top of a marker: %s" % str(overlaps))
