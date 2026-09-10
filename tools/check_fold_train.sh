@@ -135,24 +135,37 @@ train() {
 
     # selftests on the merged tree
     ( cd "$wt" && for b in "${mine[@]}"; do git merge --no-edit -q "origin/$b" >/dev/null 2>&1; done )
-    local failed=0 ran=0 t out
-    for t in "$wt"/tools/*.sh; do
-        [ -x "$t" ] || continue
-        grep -q -- '--selftest' "$t" 2>/dev/null || continue
-        out="$( cd "$wt" && "./tools/$(basename "$t")" --selftest 2>&1 )"
-        printf '[train]   %-30s %s\n' "$(basename "$t")" "$(printf '%s' "$out" | grep -a 'selftest:' | tail -1)"
-        printf '%s' "$out" | grep -aq 'selftest: [0-9]* passed, 0 failed' || failed=$((failed+1))
-        ran=$((ran+1))
-    done
-    for t in "$wt"/tools/*.py; do
+    # THREE BUCKETS, because "could not evaluate" is not "failed" and neither is "passed".
+    # The first version counted any suite without a parseable "N passed, 0 failed" line as
+    # FAILING, and immediately red-flagged tools/audit_whoop.py — another lane's tool, which
+    # uses "selftest: PASS" and needs a python module absent from this box. It was not broken;
+    # my predicate was. But an unevaluable suite must not be silently dropped either: it is
+    # reported, named, and counted separately so it cannot be mistaken for a pass.
+    local failed=0 ran=0 unknown=0 t out ec base cmd
+    for t in "$wt"/tools/*.sh "$wt"/tools/*.py; do
         [ -f "$t" ] || continue
+        base="$(basename "$t")"
         grep -q -- '--selftest' "$t" 2>/dev/null || continue
-        out="$( cd "$wt" && python3 "tools/$(basename "$t")" --selftest 2>&1 )"
-        printf '[train]   %-30s %s\n' "$(basename "$t")" "$(printf '%s' "$out" | grep -a 'selftest:' | tail -1)"
-        printf '%s' "$out" | grep -aq 'selftest: [0-9]* passed, 0 failed' || failed=$((failed+1))
-        ran=$((ran+1))
+        case "$base" in *.py) cmd="python3 tools/$base" ;; *) [ -x "$t" ] || continue; cmd="./tools/$base" ;; esac
+        out="$( cd "$wt" && $cmd --selftest 2>&1 )"; ec=$?
+        if printf '%s' "$out" | grep -aq 'selftest: [0-9]* passed, 0 failed'; then
+            printf '[train]   PASS    %-28s %s\n' "$base" "$(printf '%s' "$out" | grep -a 'selftest:' | tail -1)"
+            ran=$((ran+1))
+        elif printf '%s' "$out" | grep -aq 'selftest: [0-9]* passed, [0-9]* failed'; then
+            printf '[train]   FAIL    %-28s %s\n' "$base" "$(printf '%s' "$out" | grep -a 'selftest:' | tail -1)" >&2
+            failed=$((failed+1)); ran=$((ran+1))
+        else
+            printf '[train]   UNKNOWN %-28s exit %s, no parseable result (%s)\n' "$base" "$ec" \
+                "$(printf '%s' "$out" | tail -1 | cut -c1-52)"
+            unknown=$((unknown+1))
+        fi
     done
-    echo "[train] ${ran} selftest suite(s) run on the merged tree, ${failed} failing"
+    echo "[train] ${ran} suite(s) evaluated, ${failed} failing, ${unknown} unevaluable"
+    if [ "$unknown" -gt 0 ]; then
+        echo "[train]   unevaluable suites are NOT counted as passing. They are another lane's"
+        echo "[train]   format or a missing dependency on this box — check them by hand before"
+        echo "[train]   treating this run as complete."
+    fi
     if [ "$ran" -eq 0 ]; then
         echo "[train] ⛔ BLOCKED: no selftests found on the merged tree. Zero suites passing is" >&2
         echo "        not the same as zero suites failing." >&2
