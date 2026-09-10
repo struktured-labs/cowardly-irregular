@@ -256,6 +256,11 @@ func _load_rules() -> void:
 		]
 
 
+## Collapses this console has already told the player about, and any it owes them on reopen.
+var _collapses_reported: int = 0
+var _pending_collapse_catchup: int = 0
+
+
 func _connect_autogrind_signals() -> void:
 	if AutogrindSystem.battle_completed.is_connected(_on_battle_completed):
 		return
@@ -265,6 +270,26 @@ func _connect_autogrind_signals() -> void:
 	AutogrindSystem.interrupt_triggered.connect(_on_interrupt_triggered)
 	AutogrindSystem.meta_boss_spawned.connect(_on_meta_boss_spawned)
 	AutogrindSystem.system_collapse.connect(_on_system_collapse)
+	## Closing the console DISCONNECTS every autogrind signal, and this UI is the ONLY listener for
+	## system_collapse. A collapse that fires while the player is watching the overworld therefore
+	## announced itself to nobody — the dramatic beat of a design pillar, delivered to a
+	## disconnected handler. collapse_count survives, so report what was missed on reopen.
+	var seen_now: int = AutogrindSystem.collapse_count
+	if seen_now > _collapses_reported:
+		_pending_collapse_catchup = seen_now - _collapses_reported
+		_collapses_reported = seen_now
+
+
+## Deferred on purpose: _connect_autogrind_signals runs BEFORE _build_ui, and _log_message
+## silently no-ops while _battle_log does not exist — logging here would compute the catch-up and
+## throw it away, which is the defect this whole message exists to fix.
+func _flush_collapse_catchup() -> void:
+	if _pending_collapse_catchup <= 0:
+		return
+	var n: int = _pending_collapse_catchup
+	_pending_collapse_catchup = 0
+	_log_message("[color=%s]=== %d SYSTEM COLLAPSE%s happened while this console was closed (total: %d) ===[/color]" % [
+		AccessibilityPalette.penalty_bbcode(), n, "" if n == 1 else "S", AutogrindSystem.collapse_count])
 
 
 func _disconnect_autogrind_signals() -> void:
@@ -321,6 +346,7 @@ func _build_ui() -> void:
 	_build_footer(vp_size)
 
 	_update_cursor()
+	_flush_collapse_catchup()
 
 
 func _build_header(vp_size: Vector2) -> void:
@@ -2920,6 +2946,7 @@ func _on_meta_boss_spawned(boss_name: String) -> void:
 
 
 func _on_system_collapse() -> void:
+	_collapses_reported = AutogrindSystem.collapse_count
 	_log_message("[color=%s]=== SYSTEM COLLAPSE! Reality is fragmenting... ===[/color]" % AccessibilityPalette.penalty_bbcode())
 	if _monitor and is_instance_valid(_monitor):
 		_monitor.add_highlight("SYSTEM COLLAPSE (#%d)!" % AutogrindSystem.collapse_count, "danger")
