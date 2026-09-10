@@ -1121,7 +1121,11 @@ static func _format_memory(memory_lines: Array) -> String:
 		"\n\nYou have spoken with this traveler before. Last time, they said to you:\n"
 		+ "\n".join(rows)
 		+ "\nYou may acknowledge having met them. Do not quote them back or recap the"
-		+ " conversation — carry it the way a person carries a half-remembered chat."
+		# Trailing newline is the CONTRACT, not decoration: every other block
+		# formatter ends with one, and this was the only exception — so whatever
+		# followed memory glued onto its last sentence. Fixed once here rather
+		# than by choosing an order that happens to be safe.
+		+ " conversation — carry it the way a person carries a half-remembered chat.\n"
 	)
 
 

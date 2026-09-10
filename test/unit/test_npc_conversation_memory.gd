@@ -311,3 +311,56 @@ func test_both_builders_assemble_context_through_one_path() -> void:
 		var body: String = src.substr(start, next_fn - start if next_fn > start else -1)
 		assert_true(body.find("_context_blocks(") != -1,
 			"%s must assemble shared context through _context_blocks, not by hand" % builder)
+
+
+func test_every_context_block_formatter_ends_with_a_newline() -> void:
+	## THE CONTRACT, enforced instead of relied upon.
+	##
+	## _format_memory was the only one of five that did not end with a newline,
+	## and _format_time_of_day is the only one that does not BEGIN with one — so
+	## memory-then-time was the unique pair that glued, and it is exactly the pair
+	## that shipped. I fixed that instance by reordering; this makes any order
+	## safe, which is the difference between a fix and a class being closed.
+	var party: Dictionary = {
+		"members": [{"name": "Rilla", "job": "cleric", "condition": "badly hurt (20% health)"}],
+		"gold": 12,
+	}
+	var blocks := {
+		"_format_time_of_day": DP._format_time_of_day("night"),
+		"_format_party_state": DP._format_party_state(party),
+		"_format_memory": DP._format_memory(["I'm hunting the ember wyrm."]),
+		"_format_events": DP._format_events([{"type": "boss", "summary": "Boss Pyrroth defeated"}], 3),
+		"_format_quest_state_voice": DP._format_quest_state_voice(["It is Chapter Three."]),
+	}
+	var checked: int = 0
+	for name in blocks:
+		var s: String = str(blocks[name])
+		assert_false(s.is_empty(),
+			"CONTROL: %s must produce output for this sample, or its contract is untested" % name)
+		assert_true(s.ends_with("\n"),
+			"%s must end with a newline — whatever block follows it otherwise runs onto its last line" % name)
+		checked += 1
+	assert_eq(checked, 5, "CONTROL: all five shared block formatters must have been exercised")
+
+
+func test_no_block_junction_glues_in_any_order() -> void:
+	## The outcome the contract buys, asserted on rendered prompts rather than on
+	## the formatters: no rendered line may contain a section header mid-line.
+	var party: Dictionary = {"members": [{"name": "Rilla", "job": "cleric", "condition": "unhurt"}], "gold": 12}
+	var headers: Array = ["Time of day:", "The party standing in front of you:",
+		"You have spoken with this traveler before", "Recent events:"]
+	var prompts := {
+		"opening": DP.build_npc_opening("Theron", "elder", "Harmonia",
+			[{"type": "boss", "summary": "Pyrroth defeated"}],
+			["It is Chapter Three."], "night", party, ["I'm hunting the ember wyrm."]),
+		"reply": DP.build_combined_reply("Theron", "elder", "Harmonia",
+			[{"type": "boss", "summary": "Pyrroth defeated"}], "prior", "said", 4,
+			["It is Chapter Three."], party, ["I'm hunting the ember wyrm."], "night"),
+	}
+	for which in prompts:
+		var lines: PackedStringArray = str(prompts[which]).split("\n")
+		for line in lines:
+			for h in headers:
+				var idx: int = str(line).find(str(h))
+				assert_true(idx <= 0,
+					"%s prompt glues '%s' into the middle of a line: %s" % [which, h, JSON.stringify(line)])
