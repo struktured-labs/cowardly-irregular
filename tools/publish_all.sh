@@ -29,6 +29,7 @@
 #   tools/publish_all.sh <tag>            publish it
 #   tools/publish_all.sh --check <tag>    run every verification and STOP before publishing
 #   tools/publish_all.sh --rollback <tag> deliberately republish a SUPERSEDED tag
+#   tools/publish_all.sh --dry-run <tag>  run all three chains, publish NOTHING
 #
 # Exit: 0 published · 1 a channel red · 2 verification failed · 3 superseded, re-run with the
 #       tag named in the message · 4 prebuild failed
@@ -38,6 +39,7 @@ cd "$(cd "$(dirname "$0")/.." && pwd)"
 
 CHECK_ONLY=0
 ROLLBACK=0
+DRY_RUN=0
 while [ $# -gt 0 ]; do
     case "${1:-}" in
         --check)    CHECK_ONLY=1; shift ;;
@@ -48,6 +50,12 @@ while [ $# -gt 0 ]; do
         # mechanism and the recovery path were the same switch. This is the recovery path,
         # and it is opt-in, loud, and still subject to every other verification.
         --rollback) ROLLBACK=1; shift ;;
+        # Run all three chains to completion and publish NOTHING. --check verifies the TAG;
+        # this verifies the BUILD. They answer different questions and the gap between them is
+        # where every web RED this week lived: the tag was gated, the version matched, the tree
+        # was clean, and the web chain still died at gate 2 three days running. There was no
+        # way to learn that except by attempting a publish.
+        --dry-run)  DRY_RUN=1; shift ;;
         *)          break ;;
     esac
 done
@@ -225,7 +233,16 @@ for CH in linux windows web; do
         *)   SCRIPT=./tools/deploy_${CH}.sh ;;
     esac
     echo "[pub] ─── ${CH} ───"
-    "$SCRIPT" --publish "$TAG" > "tmp/publish_all_${CH}.log" 2>&1
+    # The ONLY difference between a dry run and a publish is this flag. Publishing is opt-in
+    # by construction in every deploy_*.sh — without --publish they run every gate and stop at
+    # gate 4 — so a dry run is not a separate code path that could drift from the real one. It
+    # is the same path with the last step withheld, which is the only kind of rehearsal worth
+    # having.
+    if [ "$DRY_RUN" -eq 1 ]; then
+        "$SCRIPT" "$TAG" > "tmp/publish_all_${CH}.log" 2>&1
+    else
+        "$SCRIPT" --publish "$TAG" > "tmp/publish_all_${CH}.log" 2>&1
+    fi
     EC=$?
     if [ "$EC" -ne 0 ]; then
         echo "[pub] RED on ${CH} (exit ${EC}) — STOPPING. Published so far: ${PUBLISHED:-none}" >&2
@@ -235,10 +252,25 @@ for CH in linux windows web; do
         exit 1
     fi
     PUBLISHED="${PUBLISHED}${PUBLISHED:+ }${CH}"
-    grep -a 'LIVE:' "tmp/publish_all_${CH}.log" | tail -1
+    if [ "$DRY_RUN" -eq 1 ]; then
+        # Do not grep for LIVE: on a dry run — there is none, and `tail -1` of an empty grep
+        # prints nothing, which would read as a quiet success rather than as "did not publish".
+        echo "[pub] ${CH}: all gates GREEN, nothing published"
+    else
+        grep -a 'LIVE:' "tmp/publish_all_${CH}.log" | tail -1
+    fi
 done
 
 # ── 6. verify against butler, not against our own logs ───────────────────────
+if [ "$DRY_RUN" -eq 1 ]; then
+    echo "[pub] ─── dry run complete ───"
+    echo "[pub] all three chains GREEN for ${TAG}. NOTHING WAS PUBLISHED."
+    echo "[pub] the store is still on whatever it was — verify with tools/store_status.sh"
+    echo "[pub] his saves: $(_saves_cksum)  (before: ${SAVES_BEFORE})"
+    echo "[pub] to publish for real: tools/publish_all.sh ${TAG}"
+    exit 0
+fi
+
 echo "[pub] ─── verification ───"
 butler status struktured/cowardly-irregular 2>&1 | grep -aE 'CHANNEL|linux|windows|^\| web'
 
