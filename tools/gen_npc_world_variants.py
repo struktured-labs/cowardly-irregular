@@ -80,6 +80,10 @@ def gen_one(client: OpenAI, arch: str, world: str, quality: str) -> Path | None:
     )
     raw = Image.open(io.BytesIO(base64.b64decode(resp.data[0].b64_json))).convert("RGBA")
     TMP.mkdir(parents=True, exist_ok=True)
+    # KEEP THESE until the sheets are reviewed and accepted. An ASSEMBLY bug is recoverable from
+    # the raw for free; a GENERATION bug is not. assemble_game_grid had a subject-destroying
+    # double-chromakey until 2026-09-09, and 40 of this run's 116 sheets came out with the body
+    # keyed off their side rows — unrecoverable only because tmp/ had been cleaned by then.
     raw.save(TMP / f"{arch}_{world}_raw.png")
     ow.assemble_game_grid(raw, target=32).save(out)
     register(arch, world)
