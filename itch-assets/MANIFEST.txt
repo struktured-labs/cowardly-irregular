@@ -1,4 +1,4 @@
-itch-assets/CAPTIONS.md 3225501405 9026
+itch-assets/CAPTIONS.md 1353397152 10487
 itch-assets/PROVENANCE.md 2429137724 2014
 itch-assets/cover-test/CONTACT_SHEET_actual_display_size.png 3224145343 168211
 itch-assets/cover-test/COVER_FINAL_OPTIONS.png 3375616178 251892
@@ -23,7 +23,7 @@ itch-assets/eldertree_tile_bug_crop.png 2897233908 32412
 itch-assets/screenshots/battle.png 2682315680 153385
 itch-assets/screenshots/battle_storm.png 3439368808 156670
 itch-assets/screenshots/eldertree_village.png 645838891 79594
-itch-assets/screenshots/field_elite_medieval.png 3655086297 1082794
+itch-assets/screenshots/field_elite_medieval.png 942400944 1125674
 itch-assets/screenshots/field_elite_steampunk.png 4280933371 716558
 itch-assets/screenshots/frosthold_village.png 719005543 83598
 itch-assets/screenshots/grimhollow_spiral.png 881773162 92843

@@ -47,6 +47,25 @@ Grimhollow, the sunken swamp hamlet. The village proper sits in a pit; the switc
 on the right are the spiral descent down to it, and the mossy green cliff faces are derived
 geometry, not hand-drawn tiles. Two shopfronts and an interact prompt are live in frame.
 
+### `field_elite_medieval.png`
+The World-1 field elite — a dark knight standing in Eldertree Forest with the purple tell
+reading *"It is watching you."* This is the elite a new player actually meets, in the world
+they start in. Walking into one opens a choice, Fight or Leave it, so the encounter is always
+yours to decline.
+
+Re-shot at `.293` on 2026-09-10, after `dark_knight` finally got its own overworld sheet
+(`cd6e84b8`). The frame it replaces was taken while the sheet was newer and rougher; the
+knight now reads as armour rather than as a dark smudge, and the tell is legible.
+
+⚠️ **Honest note, and it is the same one the steampunk shot carries.** At overworld zoom the
+elite is still small — perhaps 30px of dark armour against dark green. I tried a 2x camera
+zoom to fix exactly this and it made the shot worse: the elite barely grew and the purple
+tell left the frame entirely (measured, screen y = -68). Zoom magnifies about the camera
+centre and the framing offset was tuned at 1x. **If this feature ever needs a flattering
+screenshot rather than an accurate one, the shot is the Fight-or-Leave dialogue, not the
+overworld sprite** — the dialogue is UI, drawn at readable size, and it is the part of the
+feature a player actually interacts with.
+
 ### `field_elite_steampunk.png`
 A field ELITE — a brass golem loose in the Clockwork Dominion, aura up, and the game telling
 you in purple exactly what you think it is: *"It is watching you."* Walking into one opens a
@@ -80,9 +99,13 @@ interiors across the first world. `title_screen.png` is the source for the provi
 - **Elevator mid-ride** — still owed. Needs `VillageElevator.interact()` driven through an
   actual ride; scene instantiation cannot produce it.
 
-## 🐞 Bug found while shooting: `dark_knight` has no sprite
+## ✅ RESOLVED (was: 🐞 `dark_knight` has no sprite)
 
-The World-1 field elite renders as a **solid magenta placeholder box**. Measured across the
+**Fixed. Sheet landed `3caff5d6` (2026-09-07, v3.33.228-alpha) and was improved at `cd6e84b8`
+(2026-09-09, shipped in `.291`). `field_elite_medieval.png` is now in this set, re-shot at
+`.293` on 2026-09-10.** The text below is kept as the record of what was wrong.
+
+The World-1 field elite rendered as a **solid magenta placeholder box**. Measured across the
 whole roster, with controls in both directions:
 
 ```
@@ -95,10 +118,9 @@ optimization_itself  OK (2)                    abstract
 controls: goblin OK(2)  skeleton OK(4)  bat OK(9)  zzz_no_such_monster -> none (expected)
 ```
 
-Five of six are fine; the missing one is the only elite a new player can meet. Fix is a
-single asset: `assets/sprites/monsters/dark_knight.png` at overworld roamer scale. The W1
-elite shot is blocked until then — which is why the elite above is shot in the steampunk
-world, where the species that belongs there actually has art.
+Five of six were fine; the missing one was the only elite a new player can meet. The fix was
+a single asset at overworld roamer scale. The W1 elite shot was blocked until then, which is
+why `field_elite_steampunk.png` exists at all — it was the substitute.
 
 ## Provenance
 
