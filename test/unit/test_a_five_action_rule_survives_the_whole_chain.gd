@@ -7,7 +7,13 @@ extends GutTest
 ## a mechanic the game's own thesis excludes. But the fifth slot crosses FOUR independent surfaces,
 ## each of which historically carried its own cap:
 ##
-##   1. the grid editor      MAX_ACTIONS, raised 4 -> 5
+##   1. the grid editor      AutobattleGridEditor.MAX_ACTIONS, raised 4 -> 5
+##
+## ⚠️ THE AUTOGRIND GRID EDITOR IS NOT ONE OF THEM, and I raised its cap too before checking. Its
+## rules are GRIND-level — heal_party, flee_battle, switch_profile, stop_grinding — a vocabulary
+## that never produces a battle Advance. The fifth slot means nothing there, and the comment I left
+## on it ("fires only at a full bank") was simply false. Reverted. Two editors named "grid editor",
+## two disjoint action vocabularies, and only one of them is downstream of this feature.
 ##   2. rule validation      AutobattleSystem.validate_rule
 ##   3. the share codec      ScriptShareManager, COWIR1 export/import
 ##   4. execution            BattleManager._apply_full_bank_rule, and headless
