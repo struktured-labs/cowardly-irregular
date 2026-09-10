@@ -64,6 +64,7 @@ const BATTLE_FX_FLAGS := [
 	["targeting_dim", "Targeting Dim", "Menus step aside while you aim"],
 	["steal_sauce", "Steal Sauce", "Thieves travel with style"],
 	["env_pulse", "Arena Thump", "Heavy hits rattle the scenery"],
+	["rumble", "Pad Rumble", "The controller flinches with you"],
 	["arena_unrest", "Arena Unrest", "Phase-2 bosses unsettle the ground itself"],
 	["victory_flourish", "Victory Flourish", "The win gets a slam, cards, and confetti-adjacent behavior"],
 	["menu_motion", "Menu Motion", "Command menus arrive instead of appearing"],
