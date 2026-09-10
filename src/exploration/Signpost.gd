@@ -5,6 +5,9 @@ class_name Signpost
 ## Shows a sign sprite and popup text when the player is nearby.
 
 const TILE_SIZE: int = 32
+## Authored world-space presentation, restored whenever a map is not running Mode 7.
+const FLAT_OFFSET := Vector2(-40, -32)
+const FLAT_FONT: int = 10
 
 @export var sign_text: String = "→ Village"
 @export var sign_color: Color = Color(0.55, 0.35, 0.15)  # Wood brown
@@ -12,6 +15,8 @@ const TILE_SIZE: int = 32
 var _sprite: Sprite2D
 var _label: Label
 var _player_nearby: bool = false
+## Mode 7 warps every world-space pixel, and a 10px sign label came out as an unreadable smudge.
+var _prompt_layer: CanvasLayer
 
 
 func _ready() -> void:
@@ -75,15 +80,32 @@ func _setup_label() -> void:
 	_label = Label.new()
 	_label.text = sign_text
 	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_label.position = Vector2(-40, -32)
-	_label.add_theme_font_size_override("font_size", 10)
+	_label.position = FLAT_OFFSET
+	_label.add_theme_font_size_override("font_size", FLAT_FONT)
 	_label.add_theme_color_override("font_color", Color(0.95, 0.9, 0.7))
 	_label.add_theme_color_override("font_shadow_color", Color(0.0, 0.0, 0.0, 0.8))
 	_label.add_theme_constant_override("shadow_offset_x", 1)
 	_label.add_theme_constant_override("shadow_offset_y", 1)
 	_label.visible = false
 	_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Without this the sign reads from under the player who walked up to read it.
+	Mode7Prompt.pin_above_sprites(_label)
 	add_child(_label)
+
+
+## Directions are info, not an action, so they take the upper row and never collide with an entrance prompt.
+func _process(_delta: float) -> void:
+	if _label == null:
+		return
+	if InteractGeometry.is_mode7():
+		if _prompt_layer == null:
+			_prompt_layer = Mode7Prompt.lift(self, _label)
+		if _player_nearby:
+			Mode7Prompt.place(_label, get_viewport_rect().size, Mode7Prompt.ROW_INFO)
+	elif _prompt_layer != null:
+		Mode7Prompt.drop(self, _prompt_layer, _label, FLAT_OFFSET, FLAT_FONT)
+		_label.visible = _player_nearby
+		_prompt_layer = null
 
 
 func _on_body_entered(body: Node2D) -> void:
