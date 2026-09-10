@@ -790,7 +790,6 @@ func _build_attack_item(combatant: Combatant, alive_enemies: Array[Combatant], c
 	}
 
 
-# Tick 192: derive a compact effect+scope hint from ability data so per-job Free Move labels self-document. Returns "" for unknown shapes (label stays bare).
 ## Distinct magic elements the party can actually cast, for the Combo Magic gate.
 ##
 ## Reads each member's KNOWN abilities, not their job's base kit. get_job_abilities returns only
@@ -813,6 +812,7 @@ static func combo_elements_for(members: Array) -> Array[String]:
 	return out
 
 
+# Tick 192: derive a compact effect+scope hint from ability data so per-job Free Move labels self-document. Returns "" for unknown shapes (label stays bare).
 func _free_move_hint(ability: Dictionary) -> String:
 	if ability.is_empty():
 		return ""
