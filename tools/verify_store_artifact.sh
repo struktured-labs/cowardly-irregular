@@ -117,8 +117,13 @@ compare() {
     done <<< "$ma"
 
     if [ "$rc" -eq 0 ]; then
+        # The verdict names the two sides it was GIVEN. This line used to read "the store
+        # serves exactly what we built" unconditionally — true for the fetch path it was
+        # written for, and false the first time --compare was pointed at two local
+        # directories, where it announced a store guarantee about a comparison no store took
+        # part in. A hardcoded conclusion is not a verdict, it is a caption.
         echo "[store-verify] identical: ${na} file(s), every checksum matches"
-        echo "[store-verify]   the store serves exactly what we built"
+        echo "[store-verify]   ${alabel} and ${blabel} agree"
     elif [ "$diff_files" -gt 0 ]; then
         echo "[store-verify] ${diff_files} file(s) differ in content" >&2
     fi
