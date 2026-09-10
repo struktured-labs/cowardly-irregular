@@ -170,6 +170,20 @@ func _ready() -> void:
 func _on_joy_connection_changed(_device: int, connected: bool) -> void:
 	if connected and not profile_chosen_by_user:
 		_autodetect_and_apply()
+	_announce_pad_change(connected)
+
+
+## Four systems listened for this signal and NONE told the player. A wireless pad that sleeps
+## mid-battle left them watching a fight they could not control, with nothing on screen saying why.
+func _announce_pad_change(connected: bool) -> void:
+	if DisplayServer.get_name() == "headless":
+		return
+	if connected:
+		Toast.show_success(self, "Controller connected")
+		return
+	# Only when the LAST pad goes — unplugging one of two is not the player losing control.
+	if Input.get_connected_joypads().is_empty():
+		Toast.show_warning(self, "Controller disconnected — keyboard still works")
 
 
 ## Picks a profile from the connected pad's reported name. Standard is the default because Godot/SDL already normalizes conforming devices.
