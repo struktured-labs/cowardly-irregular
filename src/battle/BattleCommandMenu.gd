@@ -146,7 +146,8 @@ func show_win98_command_menu(combatant: Combatant) -> void:
 
 	# Set max queue size and current AP for display
 	var ap_limit = combatant.current_ap + 4
-	var max_queue = mini(4, maxi(1, ap_limit))
+	## Full bank: at +4 the queue opens to five — one character can cover the whole party.
+	var max_queue = BattleManager.FULL_BANK_ACTIONS if combatant.current_ap >= BattleManager.FULL_BANK_AP else mini(BattleManager.ADVANCE_CAP, maxi(1, ap_limit))
 	_scene.active_win98_menu.set_max_queue_size(max_queue)
 	_scene.active_win98_menu.set_current_ap(combatant.current_ap)
 

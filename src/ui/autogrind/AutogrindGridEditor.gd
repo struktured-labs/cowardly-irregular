@@ -57,7 +57,7 @@ const ROW_SPACING = 24
 const CONNECTOR_WIDTH = 40
 const CURSOR_COLOR = Color(1.0, 1.0, 0.3)
 const MAX_CONDITIONS = 3
-const MAX_ACTIONS = 4
+const MAX_ACTIONS = 5  # fifth slot fires only at a full bank (+4 AP); truncated to 4 below it
 
 ## Party-themed color scheme (dark green/amber - system-level feel)
 const PARTY_STYLE = {

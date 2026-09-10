@@ -5,6 +5,8 @@ extends Node
 
 signal battle_started()
 signal battle_ended(victory: bool)
+## A full-bank Advance is about to execute — the flourish + SFX moment (BattleScene, cowir-sfx).
+signal full_bank_unleashed(combatant: Combatant, action_count: int)
 ## Fires next to the "The Glow" flag ratchet (drop with <10% base chance). Signal so autogrind can listen without plumbing drops through GameLoop.
 signal rare_drop_found(item_id: String, base_chance: float)
 signal selection_phase_started()
@@ -295,6 +297,13 @@ const PRIORITY_OFFSET: float = 1000.0
 ## kept and LABELLED rather than deleted, so the next reader cannot mistake them for live vocabulary
 ## the way `debuff`/`status` were mistaken for years (test_the_debuffer_archetype_is_unreachable).
 const UTILITY_ABILITY_TYPES: Array[String] = ["support", "song", "summon", "buff", "defensive"]
+
+## FULL BANK (struktured 2026-09-10, design B): at +4 AP an Advance takes FIVE actions for four AP —
+## a full bank covers the full party. Fixes the stranded fifth member AND the dead fourth defer,
+## which until now bought nothing but debt-avoidance. Players only for now; enemies keep their cap.
+const FULL_BANK_AP: int = 4
+const FULL_BANK_ACTIONS: int = 5
+const ADVANCE_CAP: int = 4
 
 const ACTION_SPEEDS = {
 	"attack": 5,
@@ -1832,6 +1841,18 @@ func player_defer() -> bool:
 	_end_selection_turn()
 	return true
 
+## ONE rule for both queueing paths (manual menu, autobattle script). A fifth action is honoured
+## only at a full bank and is stamped so _execute_advance can refund it; anything over the cap
+## below a full bank is truncated rather than refused, so a 5-action script still fires at +3.
+func _apply_full_bank_rule(combatant: Combatant, actions: Array) -> Dictionary:
+	var kept: Array = actions.duplicate()
+	var full_bank: bool = combatant != null and combatant.current_ap >= FULL_BANK_AP
+	var cap: int = FULL_BANK_ACTIONS if full_bank else ADVANCE_CAP
+	if kept.size() > cap:
+		kept = kept.slice(0, cap)
+	return {"actions": kept, "full_bank": full_bank and kept.size() == FULL_BANK_ACTIONS}
+
+
 func player_advance(actions: Array[Dictionary]) -> void:
 	"""Queue Advance action (multiple actions in sequence, each costs 1 AP)"""
 	if not _check_player_selecting_state("player_advance"):
@@ -1845,14 +1866,17 @@ func player_advance(actions: Array[Dictionary]) -> void:
 
 	# Mark this as an advance with all actions
 	# Each action will cost 1 AP when executed (first cancels natural gain, rest go to debt)
+	var ruled: Dictionary = _apply_full_bank_rule(current_combatant, actions)
 	var advance_action = {
 		"type": "advance",
 		"combatant": current_combatant,
-		"actions": actions,
+		"actions": ruled["actions"],
+		"full_bank": ruled["full_bank"],
 		"speed": _compute_action_speed(current_combatant, "attack")  # Use attack speed as base
 	}
 	_queue_action(advance_action)
-	print("%s chooses to advance (%d actions, will cost %d AP)" % [current_combatant.combatant_name, actions.size(), actions.size()])
+	var n: int = (ruled["actions"] as Array).size()
+	print("%s chooses to advance (%d actions, will cost %d AP)" % [current_combatant.combatant_name, n, n - (1 if ruled["full_bank"] else 0)])
 	_end_selection_turn()
 
 
@@ -4042,7 +4066,19 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 	# Bug fix (2026-04-30): removed the extra gain_ap(1).
 	print("%s advances with %d actions!" % [combatant.combatant_name, actions.size()])
 	# was print-only — Defer logs its stance (v3.32.90), so Advance's header should too (parity for the AP-spend pair)
-	battle_log_message.emit("[color=orange]⚡ %s advances — %d actions this turn![/color]" % [combatant.combatant_name, actions.size()])
+	var full_bank: bool = bool(advance_action.get("full_bank", false))
+	## ⛔ action_executing was emitted for attack, ability and the status skips — never for advance.
+	## So BattleScene's "advance" arm (added this morning for bespoke queue art) has NEVER fired,
+	## and the flourish below would have shipped just as dead. Emitting it here is what makes both
+	## reachable; the sub-actions still emit their own as they execute.
+	action_executing.emit(combatant, {
+		"type": "advance", "actions": actions, "full_bank": full_bank,
+	})
+	if full_bank:
+		battle_log_message.emit("[color=gold]★ FULL BANK — %s unleashes %d actions, the fifth is free! ★[/color]" % [combatant.combatant_name, actions.size()])
+		full_bank_unleashed.emit(combatant, actions.size())
+	else:
+		battle_log_message.emit("[color=orange]⚡ %s advances — %d actions this turn![/color]" % [combatant.combatant_name, actions.size()])
 
 	# Execute all actions in sequence (each will spend 1 AP)
 	for action in actions:
@@ -4076,6 +4112,11 @@ func _execute_advance(combatant: Combatant, advance_action: Dictionary) -> void:
 			await get_tree().create_timer(_consume_presentation_hold(0.075)).timeout
 		if not is_instance_valid(self):
 			return
+
+	## The fifth action was spent like the other four (each executor charges 1); refund it here
+	## so a full-bank Advance nets 4 AP. After, not before: gain_ap at the +4 cap is a no-op.
+	if full_bank and is_instance_valid(combatant) and combatant.is_alive:
+		combatant.gain_ap(1)
 
 	# Continue to next action — same double-scaling fix as the inner loop above.
 	if turbo_mode:
@@ -7349,15 +7390,17 @@ func _process_grid_autobattle(combatant: Combatant) -> void:
 		single["speed"] = _compute_action_speed(combatant, single.get("type", "attack"))
 		_queue_action(single)
 	else:
-		# Queue as advance
+		# Queue as advance — same full-bank rule as the manual menu, so scripts are never weaker
+		var ruled: Dictionary = _apply_full_bank_rule(combatant, advance_actions)
 		var advance_action = {
 			"type": "advance",
 			"combatant": combatant,
-			"actions": advance_actions,
+			"actions": ruled["actions"],
+			"full_bank": ruled["full_bank"],
 			"speed": _compute_action_speed(combatant, "attack")
 		}
 		_queue_action(advance_action)
-		print("%s (autobattle) advances with %d actions" % [combatant.combatant_name, advance_actions.size()])
+		print("%s (autobattle) advances with %d actions" % [combatant.combatant_name, (ruled["actions"] as Array).size()])
 
 	_end_selection_turn()
 
