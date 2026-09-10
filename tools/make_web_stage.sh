@@ -196,5 +196,26 @@ echo "[stage] music files packed: ${PACKED} (expected ${EXPECT})"
     echo "[stage] BLOCKED: only ${PACKED} music files packed, expected >= ${EXPECT}." >&2
     echo "        The pck shrank because content was DROPPED, not compressed." >&2; exit 4; }
 
+# ── the pck must contain everything the export OWES ─────────────────────────
+# The size gate above is one-sided: it blocks a pck that is too BIG. A pck that LOST content
+# shrinks, so it passes with MORE headroom and prints a better number. The music assert just
+# above covers 161 of 3326 stored entries (4.8%); sprites, cutscenes, scripts and every
+# imported asset were unguarded.
+#
+# This is not a floor. A floor from the last good build is residual-only calibration — it
+# blesses any dropout smaller than historical churn and goes stale the moment content lands.
+# Godot already declares what it owes per file (.import dest_files, .gd -> .gdc, .tscn ->
+# .scn), so the check derives the obligation and NAMES what is missing.
+if [ -f tools/check_pck_complete.py ]; then
+    if ! python3 tools/check_pck_complete.py "$STAGE" tmp/stage_export.log; then
+        echo "[stage] BLOCKED: the pck is missing content the export owed — see above." >&2
+        exit 4
+    fi
+else
+    echo "[stage] BLOCKED: tools/check_pck_complete.py missing. Refusing to ship a pck whose" >&2
+    echo "        completeness nothing has checked beyond its size." >&2
+    exit 4
+fi
+
 echo "[stage] masters untouched: $(find assets/audio/music -name '*.ogg' | wc -l) tracks still at 96k in assets/"
 echo "[stage] artifact: ${STAGE}/builds/web/  — nothing published."
