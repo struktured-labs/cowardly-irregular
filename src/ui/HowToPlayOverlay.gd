@@ -39,6 +39,7 @@ R3 Stick Click    F1                —                [color=lime]This screen �
                   F2                —                Quick Save
                   F3                —                Quick Load
                   F12               —                Screenshot
+                  F11               —                Live pad readout — button + axis numbers
                   F8                —                [color=lime]Bug report — screenshot + log + save in one file[/color]
                   ─                 Wheel            Scroll lists / change selection
 

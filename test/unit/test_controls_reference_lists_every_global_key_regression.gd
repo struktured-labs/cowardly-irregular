@@ -165,3 +165,42 @@ func test_no_exemption_is_stale() -> void:
 	assert_eq(inert, [] as Array[String],
 		"an exemption names an action project.godot no longer declares — delete it: %s"
 		% [", ".join(inert)])
+
+
+## ─────────────────────────────────────────────────────────────────────────────────────────────
+## CORPUS WIDENED (2026-09-10). The arms above scan GameLoop.gd ONLY, and that is exactly how F11
+## hid: GamepadDiagnostic binds it in its OWN _input, so the file the ratchet reads never mentioned
+## it. F11 opens the live pad readout — button and axis numbers — which is the single most useful
+## screen for a pad whose mode switch moves its button indices, and it was surfaced only inside a
+## NO-SDL-MAPPING warning row that a working pad never sees.
+##
+## This is the scope note above being narrowed by one measured case, not a claim that the file/key
+## gap is closed: non-F global keys are still unscanned, and other scenes may bind their own.
+
+const F_KEY_BINDERS := [
+	"res://src/GameLoop.gd",
+	"res://src/ui/GamepadDiagnostic.gd",
+]
+
+
+## Every global F-key bound in ANY of the scanned files must appear in the reference.
+func test_every_bound_f_key_in_the_corpus_is_advertised() -> void:
+	var reference := HowToPlayOverlay.build_text()
+	var found: Array[String] = []
+	var missing: Array[String] = []
+	var re := RegEx.create_from_string("keycode\\s*==\\s*(KEY_F\\d+)\\b")
+	for path in F_KEY_BINDERS:
+		var src := FileAccess.get_file_as_string(path)
+		assert_gt(src.length(), 0, "corpus file must be readable: %s" % path)
+		for m in re.search_all(src):
+			var key: String = m.get_string(1).replace("KEY_", "")
+			if not found.has(key):
+				found.append(key)
+			if not reference.contains(key) and not missing.has(key):
+				missing.append(key)
+	assert_gt(found.size(), 3, "PRECONDITION: the corpus must yield real F-key bindings")
+	assert_true(found.has("F11"),
+		"CONTROL: F11 must be found — it is the binding this widening was added for, and if the " +
+		"scan cannot see it the widening is inert")
+	assert_eq(missing, [] as Array[String],
+		"an F-key is bound but named nowhere the player reads: %s" % [", ".join(missing)])
