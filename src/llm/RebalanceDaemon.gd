@@ -77,6 +77,22 @@ const SAFE_DELTA_MAX: float = 1.15
 ## goes to review even if deltas are in the safe band.
 const AUTO_APPLY_CONFIDENCE: float = 0.7
 
+## CUMULATIVE bound, measured 2026-09-10. SAFE_DELTA_MIN/MAX bound ONE application
+## and nothing bounded the total, so applies compound: at the band edge 10 reach
+## 4.05x the authored value, 20 reach 16.37x, 50 reach 1083x — and downward 50
+## reach 0.0003x, which makes grinding impossible. The dials are exp_multiplier /
+## gold_multiplier / encounter_rate, the whole economy, and game_constants
+## persists to the save. Triggers are area-entered, party-wipe, boss-defeat and
+## level-up, so twenty applications is an ordinary playthrough.
+##
+## Deliberately the SAME authored pair, applied to total drift from the AUTHORED
+## DEFAULT rather than to a single step — a bound from the contract
+## (GameState.DEFAULT_GAME_CONSTANTS) rather than from whatever the value happens
+## to be, so it cannot be walked outward one application at a time. Widening the
+## daemon's reach is one edit here and struktured's call, not mine.
+const CUMULATIVE_DELTA_MIN: float = SAFE_DELTA_MIN
+const CUMULATIVE_DELTA_MAX: float = SAFE_DELTA_MAX
+
 
 ## Safelist of game_constants the daemon is allowed to nudge. Anything
 ## outside this list gets rejected at apply time — no surprise edits
@@ -305,13 +321,15 @@ func try_auto_apply(proposal_idx: int) -> String:
 		var multiplier: float = float(d.get("multiplier", 1.0))
 		if gs.game_constants.has(constant_name):
 			var before: float = float(gs.game_constants[constant_name])
-			var after: float = before * multiplier
+			var requested: float = before * multiplier
+			var after: float = _clamp_to_authored_band(gs, constant_name, requested)
 			gs.game_constants[constant_name] = after
 			applied_changes.append({
 				"constant":   constant_name,
 				"before":     before,
 				"after":      after,
 				"multiplier": multiplier,
+				"clamped":    not is_equal_approx(after, requested),
 			})
 	proposal["status"] = "applied"
 	proposal["applied_changes"] = applied_changes
@@ -355,13 +373,15 @@ func force_apply(proposal_idx: int) -> String:
 		var multiplier: float = float(d.get("multiplier", 1.0))
 		if gs.game_constants.has(constant_name):
 			var before: float = float(gs.game_constants[constant_name])
-			var after: float = before * multiplier
+			var requested: float = before * multiplier
+			var after: float = _clamp_to_authored_band(gs, constant_name, requested)
 			gs.game_constants[constant_name] = after
 			applied_changes.append({
 				"constant":   constant_name,
 				"before":     before,
 				"after":      after,
 				"multiplier": multiplier,
+				"clamped":    not is_equal_approx(after, requested),
 			})
 	proposal["status"] = "applied"
 	proposal["applied_changes"] = applied_changes
@@ -553,3 +573,19 @@ func from_dict(data: Dictionary) -> void:
 		applied.pop_front()
 	var raw_ts: int = int(data.get("last_consideration_ts", 0))
 	_last_consideration_ts = max(0, raw_ts)
+
+
+## Hold a constant within CUMULATIVE_DELTA of its AUTHORED default.
+##
+## Falls back to the CURRENT value when the default is unknown, which refuses the
+## change rather than permitting it: this persists to the save, so an unknown
+## baseline that allows the write is the runaway direction of the same false zero
+## the conversation-reward backstop had.
+func _clamp_to_authored_band(gs: Node, constant_name: String, requested: float) -> float:
+	if not ("DEFAULT_GAME_CONSTANTS" in gs):
+		return float(gs.game_constants.get(constant_name, requested))
+	var defaults: Dictionary = gs.DEFAULT_GAME_CONSTANTS
+	if not defaults.has(constant_name):
+		return float(gs.game_constants.get(constant_name, requested))
+	var baseline: float = float(defaults[constant_name])
+	return clampf(requested, baseline * CUMULATIVE_DELTA_MIN, baseline * CUMULATIVE_DELTA_MAX)
