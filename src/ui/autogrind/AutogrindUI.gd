@@ -1961,6 +1961,7 @@ func explain_rules_report() -> Array:
 	if rules.is_empty():
 		out.append("No rules — the grind runs until you stop it.")
 		return out
+	var winners: Dictionary = {}
 	for state in _explain_states():
 		var probe: Array = _explain_probe_party(state)
 		var matched: int = -1
@@ -1984,16 +1985,18 @@ func explain_rules_report() -> Array:
 			out.append("%s  ->  no rule matches — the grind continues" % str(state["label"]))
 		else:
 			out.append("%s  ->  rule %d fires: %s" % [str(state["label"]), matched + 1, _explain_actions(rules[matched])])
+		if matched >= 0:
+			winners[matched] = true
 		for c in probe:
 			if c != null:
 				c.free()
-	out.append_array(_observed_rules_report())
+	out.append_array(_observed_rules_report(winners))
 	return out
 
 
 ## What the rules ACTUALLY did, beside what the sampled states predict. A grind rule can look right
 ## in the preview and never fire in a real session — stop_grinding did exactly that.
-func _observed_rules_report() -> Array:
+func _observed_rules_report(preview_winners: Dictionary = {}) -> Array:
 	var out: Array = []
 	if rules.is_empty():
 		return out
@@ -2011,7 +2014,14 @@ func _observed_rules_report() -> Array:
 		if not bool((rules[i] as Dictionary).get("enabled", true)):
 			out.append("  rule %d  disabled" % [i + 1])
 		elif n == 0:
-			out.append("  rule %d  never fired" % [i + 1])
+			## Correlate the two halves. "Never fired" alone cannot tell the player whether the
+			## situation simply never arose or the rule cannot win at all — and those need
+			## different fixes. The preview already computed who wins in each sampled state, so
+			## this costs nothing and invents no data.
+			if preview_winners.has(i):
+				out.append("  rule %d  never fired (but it DOES win in a sampled state — the situation has not come up yet)" % [i + 1])
+			else:
+				out.append("  rule %d  never fired, and wins in NO sampled state either" % [i + 1])
 		else:
 			out.append("  rule %d  fired %d time%s" % [i + 1, n, "" if n == 1 else "s"])
 	return out

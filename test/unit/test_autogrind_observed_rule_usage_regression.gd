@@ -116,3 +116,43 @@ func test_editing_the_rules_discards_counts_that_would_describe_other_rules() ->
 	assert_eq(_ags.get_rule_eval_count(), 0,
 		"editing must discard counts measured against the old numbering")
 	assert_eq(_ags.get_rule_fire_counts().size(), 0, "per-rule counts too, not just the denominator")
+
+
+func test_a_zero_is_distinguished_from_a_rule_that_cannot_win_at_all() -> void:
+	## "Never fired" is two different problems wearing one sentence, and they need opposite fixes:
+	##   the situation has not arisen  -> the rule is fine, keep grinding
+	##   it wins in no state we can simulate -> the rule is wrong, edit it
+	## The preview already knows which rules win in the sampled states, so correlating the two
+	## halves costs nothing and invents no data.
+	_ags.set_autogrind_rules([
+		## Wins at the 25%-HP sampled state, but never with a healthy party in front of it.
+		{"conditions": [{"type": "party_hp_avg", "op": "<", "value": 30}],
+		 "actions": [{"type": "stop_grinding"}], "enabled": true},
+		## Needs five alive; the fixture party is two. Wins nowhere, sampled or real.
+		{"conditions": [{"type": "alive_count", "op": ">=", "value": 5}],
+		 "actions": [{"type": "heal_party"}], "enabled": true},
+	])
+	_ui.rules = _ags.get_autogrind_rules()
+	## Evaluate against a HEALTHY party so neither rule actually fires.
+	_ags.evaluate_autogrind_rules(_party())
+	var counts: Dictionary = _ags.get_rule_fire_counts()
+	assert_eq(int(counts.get(0, 0)), 0, "precondition: rule 1 did not fire against a healthy party")
+	assert_eq(int(counts.get(1, 0)), 0, "precondition: rule 2 did not fire either")
+
+	var report := _report()
+	assert_true(report.contains("rule 1  never fired (but it DOES win in a sampled state"),
+		"a rule that works but has not come up must be reported as WAITING, not broken: %s" % report)
+	assert_true(report.contains("rule 2  never fired, and wins in NO sampled state"),
+		"a rule that cannot win anywhere must be called out as such: %s" % report)
+
+
+func test_the_correlation_does_not_fire_on_a_rule_that_DID_run() -> void:
+	## Control: a rule with a non-zero count must show its count, not either zero-message.
+	_ags.set_autogrind_rules([{"conditions": [{"type": "always"}],
+		"actions": [{"type": "heal_party"}], "enabled": true}])
+	_ui.rules = _ags.get_autogrind_rules()
+	_ags.evaluate_autogrind_rules(_party())
+	var report := _report()
+	assert_true(report.contains("rule 1  fired"), "a rule that ran reports its count: %s" % report)
+	assert_false(report.contains("never fired"),
+		"and must not also carry a never-fired message: %s" % report)
