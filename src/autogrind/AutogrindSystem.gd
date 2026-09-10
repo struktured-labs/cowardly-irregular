@@ -281,6 +281,22 @@ func get_learned_patterns_for_region(region_id: String) -> Dictionary:
 	return learned_patterns[region_id]
 
 
+## Conditions whose `value` is compared as a NUMBER. The three sets below must cover
+## PARTY_CONDITION_TYPES exactly — a type in none of them is one validate_rule waves through
+## without ever looking at its payload, which is how member_status shipped permanently false.
+const NUMERIC_CONDITIONS := [
+	"party_hp_avg", "party_mp_avg", "party_hp_min", "alive_count", "battles_done",
+	"corruption", "efficiency", "member_hp", "member_mp", "win_streak", "time_elapsed",
+	"inventory_items", "reached_level",
+]
+
+## Conditions that take no value at all — asking for one would reject correct rules.
+const NULLARY_CONDITIONS := ["member_dead", "member_injured", "ability_learned", "rare_item_found", "always"]
+
+## Conditions whose `value` is a name rather than a magnitude.
+const NAMED_VALUE_CONDITIONS := ["member_status"]
+
+
 func validate_rule(rule: Dictionary) -> Array[String]:
 	## Accepts against PARTY_CONDITION_TYPES / OPERATORS / AUTOGRIND_ACTION_TYPES below, the single source of truth.
 	var errors: Array[String] = []
@@ -304,6 +320,22 @@ func validate_rule(rule: Dictionary) -> Array[String]:
 			continue
 		if c.has("op") and not OPERATORS.has(str(c["op"])):
 			errors.append("unknown operator: '%s'" % c["op"])
+		## PAYLOAD, not just the type name. A rule whose type is spelled right and whose value is
+		## the wrong SHAPE validated clean and then never fired — member_status carried the
+		## console's numeric default and asked has_status("0") on every character forever.
+		if ctype == "member_status":
+			var status_name: Variant = c.get("value", "")
+			if typeof(status_name) != TYPE_STRING or str(status_name).strip_edges() == "":
+				errors.append("condition 'member_status' needs the status NAME in 'value' (got %s) — a number can never match" % [status_name])
+		elif NUMERIC_CONDITIONS.has(ctype) and c.has("value"):
+			## Only a value of the WRONG TYPE is an error. An ABSENT one defaults to 0, which is a
+			## legal comparison — rejecting it would fail the minimal type-acceptance shapes the
+			## picker and the vocabulary tests legitimately build, and that is stricter than the
+			## defect this check exists for. member_status above is the opposite case: its default
+			## is unusable, so absence there IS the bug.
+			var v: Variant = c["value"]
+			if not (typeof(v) == TYPE_INT or typeof(v) == TYPE_FLOAT):
+				errors.append("condition '%s' needs a numeric 'value' (got %s)" % [ctype, v])
 	for a in rule["actions"]:
 		if typeof(a) != TYPE_DICTIONARY:
 			errors.append("action must be a dictionary: %s" % [a])

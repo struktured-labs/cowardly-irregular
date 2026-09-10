@@ -97,9 +97,21 @@ func test_the_table_minimal_shape_validates_for_every_member_type() -> void:
 	## The picker and the LLM composer build a rule from the type table alone, with NO member.
 	## An earlier draft REQUIRED member and this is the ratchet that caught it (fleet gate,
 	## 2026-09-06): a type that its own table cannot construct is unauthorable.
-	for t in ["member_hp", "member_mp", "member_status", "member_dead"]:
+	## 2026-09-10: the minimal shape is PER TYPE. This loop gave every type a numeric 30, which
+	## asserted that member_status carrying a NUMBER was a valid rule — and that is exactly the
+	## rule the console shipped, permanently false because the evaluator reads the status NAME
+	## from `value`. The payload validator caught this test encoding the bug.
+	var minimal := {
+		"member_hp": {"op": "<", "value": 30},
+		"member_mp": {"op": "<", "value": 30},
+		"member_status": {"value": "poison"},
+		"member_dead": {},
+	}
+	for t in minimal.keys():
+		var cond: Dictionary = {"type": t}
+		cond.merge(minimal[t])
 		var errs: Array = _system.validate_rule({
-			"conditions": [{"type": t, "op": "<", "value": 30}],
+			"conditions": [cond],
 			"actions": [{"type": "stop_grinding"}]
 		})
 		assert_eq(errs.size(), 0,
