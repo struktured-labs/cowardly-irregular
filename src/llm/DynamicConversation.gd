@@ -318,12 +318,16 @@ func _do_player_turn(player: Node) -> void:
 	# moment _do_player_turn returned, leaving _fetch_npc_reply with nothing
 	# to react to (regression noted in plan slice item 5).
 	_last_player_line = chosen if chosen != CHOICE_CANCELLED else ""
-	if _last_player_line != "":
-		_player_lines.append(_last_player_line)
 
 	if chosen == CHOICE_CANCELLED or _is_farewell(chosen):
 		_state = State.DONE
 		return
+
+	# Remembered only past the farewell check. A goodbye is how you LEAVE a
+	# conversation, not something you would recognise being reminded you said —
+	# and it is always LAST, so it otherwise took a slot of the two we keep.
+	if _last_player_line != "":
+		_player_lines.append(_last_player_line)
 
 	# Player made a real choice — advance to NPC reply.
 	_state = State.NPC_REPLY
