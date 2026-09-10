@@ -6132,6 +6132,9 @@ func _start_industrial_music() -> void:
 	print("[MUSIC] Playing industrial theme")
 	if _play_area_wav_cached("industrial"):
 		return
+	## overworld_industrial is web-excluded; generating the fallback is 1.9s of main-thread GDScript.
+	if _try_play_from_manifest("overworld_medieval"):
+		return
 
 	var sample_rate = 22050
 	var bpm = 110.0  # Steady, relentless machine tempo
@@ -6254,6 +6257,9 @@ func _start_futuristic_music() -> void:
 		return
 	print("[MUSIC] Playing futuristic digital theme")
 	if _play_area_wav_cached("futuristic"):
+		return
+	## overworld_digital is web-excluded; generating the fallback is 3.8s of main-thread GDScript.
+	if _try_play_from_manifest("overworld_medieval"):
 		return
 
 	var sample_rate = 22050
@@ -7256,6 +7262,9 @@ func _start_abstract_music() -> void:
 		return
 	print("[MUSIC] Playing abstract void theme")
 	if _play_area_wav_cached("abstract"):
+		return
+	## overworld_abstract is web-excluded; generating the fallback is 19.9s of main-thread GDScript.
+	if _try_play_from_manifest("overworld_medieval"):
 		return
 
 	var sample_rate = 22050
