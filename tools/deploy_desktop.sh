@@ -533,13 +533,20 @@ echo "[${PLAT}] booted to title screen · script errors during boot: ${BOOT_ERRS
 #
 # That isolation is ASSERTED below, not trusted. If it ever stops holding, this
 # gate must fail rather than quietly play the game against real save data.
-if [ "$PLAT" = "linux" ]; then
+if [ "$PLAT" = "linux" ] || [ "$PLAT" = "windows" ]; then
     if ! command -v xvfb-run >/dev/null; then
         # Loudly skipped, never silently: a smoke that does not run must not look
         # like a smoke that passed.
         echo "[${PLAT}] gate 3b: SKIPPED — xvfb-run absent, combat is UNVERIFIED" >&2
+    elif [ "$PLAT" = "windows" ] && ! command -v wine >/dev/null; then
+        echo "[${PLAT}] gate 3b: SKIPPED — wine absent, combat is UNVERIFIED" >&2
     else
         echo "[${PLAT}] gate 3b: combat smoke (isolated profile)"
+        # THE ISOLATOR DIFFERS BY PLATFORM, and that is the whole reason windows was skipped.
+        # A linux build resolves user:// from $HOME, so redirecting HOME relocates the profile.
+        # A wine build resolves it through %APPDATA% INSIDE THE WINEPREFIX, so HOME redirection
+        # is the wrong lever there — a throwaway prefix is the right one, and it is stricter:
+        # the sandbox is a whole fake Windows, not just a relocated directory.
         SMOKE_HOME="$(pwd)/tmp/smoke_home"
         rm -rf "$SMOKE_HOME"; mkdir -p "$SMOKE_HOME"
         # CONTENT, not a count. The previous baseline was `find | wc -l`, which cannot see a
@@ -555,8 +562,16 @@ if [ "$PLAT" = "linux" ]; then
         fi
         REAL_SIG_BEFORE="$(./tools/check_profile_untouched.sh --sig "$USERDATA")"
         REAL_N_BEFORE=$(find "$USERDATA" -type f 2>/dev/null | wc -l)
-        HOME="$SMOKE_HOME" timeout 600 xvfb-run -a "$BIN" -- --battle-smoke \
-            > "tmp/${PLAT}_battle.log" 2>&1 &
+        if [ "$PLAT" = "windows" ]; then
+            # 900s, not 600: creating a fresh WINEPREFIX dominates the first minutes and is
+            # not the game being slow. Measured 2026-09-10 — prefix creation, then engine
+            # banner, [GAME] Started, Battle commenced, and a clean exit 0.
+            ( cd "$OUT_DIR" && WINEPREFIX="$SMOKE_HOME" timeout 900 xvfb-run -a \
+                wine "./${ARTIFACT}" -- --battle-smoke ) > "tmp/${PLAT}_battle.log" 2>&1 &
+        else
+            HOME="$SMOKE_HOME" timeout 600 xvfb-run -a "$BIN" -- --battle-smoke \
+                > "tmp/${PLAT}_battle.log" 2>&1 &
+        fi
         SEC=0; wait $! || SEC=$?
         # Isolation first: a leak matters more than a failed battle. The sandbox is passed so
         # the RED can distinguish "he was playing during the deploy" from "the redirect did
@@ -572,7 +587,11 @@ if [ "$PLAT" = "linux" ]; then
             grep -aiE "SCRIPT ERROR|Failed to load|Parse Error" "tmp/${PLAT}_battle.log" | head -5 >&2 || true
             exit 3
         fi
-        SHOTS=$(find "$SMOKE_HOME" -name '*.png' 2>/dev/null | wc -l)
+        # Scoped to the game's own user:// tree so the number means the same thing on both
+        # platforms: screenshots THIS RUN wrote. An unscoped find over a WINEPREFIX counts
+        # whatever wine ships as well — measured 0 on wine-10.0, which is a fact about this
+        # wine build and not a property to rely on.
+        SHOTS=$(find "$SMOKE_HOME" -ipath '*app_userdata*' -name '*.png' 2>/dev/null | wc -l)
         # SAY WHAT WAS CHECKED. "fought a real battle" overstated a marker test: the gate
         # greps for "Battle commenced", which proves combat STARTED, not that it ran to a
         # conclusion. And "profile untouched" is now a signature comparison rather than a
@@ -586,7 +605,7 @@ if [ "$PLAT" = "linux" ]; then
         echo "[${PLAT}] his profile: ${REAL_N_BEFORE} files total; signature verified unchanged over all of them except user://logs/ (see [profile] line above for the covered count)"
     fi
 else
-    echo "[${PLAT}] gate 3b: SKIPPED — combat smoke is linux-only (wine+xvfb unverified)"
+    echo "[${PLAT}] gate 3b: SKIPPED — no combat smoke defined for platform '${PLAT}'"
 fi
 
 # ── gate 4: publish, only if explicitly asked ───────────────────────────────
