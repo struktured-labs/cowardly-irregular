@@ -590,6 +590,18 @@ def _refuse_if_degenerate(voice, y):
     peak = float(np.max(np.abs(y))) if len(y) else 0.0
     peak_db = 20.0 * math.log10(peak + 1e-12)
     live = float((np.abs(y) > 10 ** (-60.0 / 20.0)).mean()) if len(y) else 0.0
+    # ⛔ THE OTHER DIRECTION. This checked only "too quiet" — a one-sided test on a two-sided
+    # quantity, which cowir-music named on 2026-09-10 after a signed wrap metric scored 19 dead-air
+    # loops as BEST IN CORPUS: a blind direction is not a gap in coverage, it is a FALSE CLEAN.
+    # A voice that saturates produces a clipped square wall, which is just as much a broken render
+    # as silence and would have sailed through. Every voice here normalises then scales by <= 0.95,
+    # so a correct render never pins the rail; >1% of samples at full scale means the maths ran away.
+    clipped = float(np.mean(np.abs(y) >= 0.999)) if len(y) else 0.0
+    if clipped > 0.01:
+        raise SystemExit(
+            "REFUSED to write %s: %.1f%% of samples are at full scale — the render is CLIPPED.\n"
+            "Every voice normalises then scales by <= 0.95, so a correct one never pins the rail.\n"
+            "Fix the voice; do NOT add a limiter here to hide it." % (voice, clipped * 100.0))
     if peak_db < -20.0 or live < 0.05:
         raise SystemExit(
             "REFUSED to write %s: peak %.1f dBFS, %.1f%% of samples above -60 dBFS.\n"
