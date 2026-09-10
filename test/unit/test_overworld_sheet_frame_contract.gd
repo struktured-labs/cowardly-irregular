@@ -242,3 +242,61 @@ func test_no_two_monsters_share_an_overworld_sheet() -> void:
 	shared.sort()
 	assert_eq(shared, [],
 		"two monsters render as the same character on the overworld -- the sprite draws, so nothing looks broken: %s" % str(shared))
+
+
+## The occupancy sweep above has arms on the MIN side only, which makes it blind to the OPPOSITE
+## failure of the same chromakey: not keying the background out at all. cowir-music hit this class
+## in audio on 2026-09-10 -- a signed loop-seam metric thresholded on one sign, where 19 beds with
+## silent heads scored BEST IN CORPUS and one was concealing a real +21 dB fade underneath.
+##
+## Honest scope: unlike theirs, this is a LATENT gap, not an observed false clean. Measured across
+## all 85 sheets the fullest frame is 69% opaque (dark_knight) and nothing exceeds 95%, so no sheet
+## is hiding here today. The arm is added because over-keying and under-keying are the two failure
+## modes of one cleanup step and I shipped the over-keying one 24h ago.
+##
+## The ceiling is NOT taken from the population -- that would be the residual-only calibration this
+## file's sibling guard already got wrong once. It comes from the FORMAT CONTRACT: these frames are
+## composited over terrain via region_rect, so a frame with no transparent pixels cannot be a sprite
+## with a background keyed out. It would render as a solid square regardless of what the corpus does.
+const MAX_OPAQUE_FRACTION_PER_FRAME := 0.99
+
+
+func test_no_overworld_frame_is_fully_opaque() -> void:
+	var frame := test_both_consumers_crop_with_the_same_frame_size()
+	var sheets := _sheets()
+	assert_gt(sheets.size(), 50, "CONTROL: only %d sheets found -- the scan is broken" % sheets.size())
+
+	var solid: Array = []
+	var fullest := 0.0
+	var cap := int(float(frame.x * frame.y) * MAX_OPAQUE_FRACTION_PER_FRAME)
+	for f in sheets:
+		var img := Image.load_from_file("%s/%s" % [OVERWORLD_DIR, f])
+		if img == null:
+			continue
+		for c in _frame_occupancy(img, frame):
+			var n: int = int(c["n"])
+			fullest = max(fullest, float(n) / float(frame.x * frame.y))
+			if n > cap:
+				solid.append("%s frame (col %d,row %d) is %d/%d opaque -- background not keyed out" % [
+					f, c["at"].x, c["at"].y, n, frame.x * frame.y])
+
+	assert_lt(fullest, 1.0,
+		"CONTROL: the fullest frame in the corpus measured 100% opaque -- either a real defect or the alpha probe is stuck")
+	assert_eq(solid, [],
+		"a frame with no transparent pixels renders as a solid square over the terrain: %s" % str(solid))
+
+
+func test_the_probe_can_see_an_unkeyed_frame() -> void:
+	# CONTROL: the mirror of the emptied-frame control -- a sheet whose background survived cleanup.
+	var img := Image.create(128, 128, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	for y in range(96, 128):
+		for x in range(96, 128):
+			img.set_pixel(x, y, Color(0.2, 0.2, 0.2, 1))
+	var cells := _frame_occupancy(img, Vector2i(32, 32))
+	var last: Dictionary = cells[cells.size() - 1]
+	assert_eq(int(last["n"]), 1024, "CONTROL: the unkeyed frame must measure fully opaque")
+	assert_gt(int(last["n"]), int(1024.0 * MAX_OPAQUE_FRACTION_PER_FRAME),
+		"CONTROL: a fully-opaque frame must exceed the ceiling the sweep applies")
+	assert_lt(int(cells[0]["n"]), MIN_OPAQUE_PX_PER_FRAME,
+		"CONTROL: and the MIN arm still fires on this same sheet's empty frames -- the two arms are independent")
