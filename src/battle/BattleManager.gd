@@ -7960,23 +7960,29 @@ func _bias_by_intent(intent_id: String, masterite_type: String = "") -> Dictiona
 	# Mordaine bias table — applied to *any* boss that uses these intents
 	# (the masterite_type arg is for masterite-specific scaling, optional).
 	#
-	# SCOPE, ruled 2026-07-29 (cowir-ai msg-3345/3348, cowir-battle msg-3357):
-	# 26 authored intents across the dragons and duel minibosses reach no arm
-	# here, and that is NOT a missing-arm bug. Every ability-weight key below
-	# (attack_weight / iron_guard / crushing_blow / endurance_test) is read
-	# ONLY inside _make_masterite_decision, entered via has_meta("masterite").
-	# Dragons and Mordaine do not AUTHOR the masterite key at all (absent, not
-	# false — they diverge if someone later writes masterite:true expecting the
-	# key to exist), so has_meta is false and counter_action_chance is the
-	# only key they can ever read. Adding arms for them is inert — verified by
-	# a commit that did exactly that, passed six assertions and three
-	# mutations, and changed nothing (withdrawn e1fd88e5).
+	# SCOPE, ruled 2026-07-29 (cowir-ai msg-3345/3348, cowir-battle msg-3357),
+	# CORRECTED 2026-09-10 by measurement — the note below was FALSE WHEN
+	# WRITTEN and its wrongest sentence is the one it was written to settle.
 	#
-	# So the intent layer is DIALOGUE-FIRST for non-masterites by construction:
-	# it selects which taunt fires, not how the boss weights abilities. Making
-	# it mechanical means teaching the generic AI ladder to read these keys —
-	# a feature touching every non-masterite boss, not a bugfix. Struktured's
-	# call; do not re-file it as a defect.
+	# It said every ability-weight key is read ONLY inside
+	# _make_masterite_decision, and concluded the intent layer is
+	# "DIALOGUE-FIRST for non-masterites by construction". _ai_caster has read
+	# attack_weight unconditionally since c2ae4e1b (2026-06-14) — six weeks
+	# BEFORE that note. Nothing expired; the reader was already there and the
+	# consumer was never grepped, so no rot check could have caught it.
+	#
+	# MEASURED, 400 rolls per intent against the real decision path
+	# (test_boss_intent_changes_caster_behaviour): Mordaine classifies caster
+	# and his spell rate is 0.99 under "aggress" vs 0.42 under "turtle" — a
+	# 2.3x swing the LLM chooses. So the intent layer IS mechanical, for every
+	# caster-classified boss, today.
+	#
+	# What survives: the 26-count is right, and the conclusion holds for the
+	# four DRAGONS — they author none of the three attack_weight-armed intents
+	# (aggress / turtle / exploit_pattern). Mordaine authors all three and is
+	# the only W1 boss that does, which is why the note read as true.
+	# ⚠️ Giving a dragon an armed intent is therefore a DESIGN change, not a
+	# data tweak: it makes that fight mechanically intent-driven. Pinned.
 	#
 	# The duels are unaffected: their mechanics run through counter_abilities /
 	# steal_response / first_steal_guaranteed and the Prismatic Construct's
