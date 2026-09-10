@@ -763,14 +763,14 @@ func _place_treasure_chests() -> void:
 		{"id": "w1_forest_ether", "pos": Vector2(32, 8), "type": "item", "item": "ether", "amount": 2},
 		{"id": "w1_forest_antidote", "pos": Vector2(40, 12), "type": "item", "item": "antidote", "amount": 3},
 		# Near cave entrance — preparation supplies
-		{"id": "w1_cave_hipotion", "pos": Vector2(4, 40), "type": "item", "item": "hi_potion", "amount": 2},
+		{"id": "w1_cave_hipotion", "pos": Vector2(7, 41), "type": "item", "item": "hi_potion", "amount": 2},
 		# Central crossroads — off the beaten path
 		{"id": "w1_central_gold", "pos": Vector2(45, 18), "type": "gold", "gold": 300},
 		{"id": "w1_central_phoenix", "pos": Vector2(50, 30), "type": "item", "item": "phoenix_down", "amount": 1},
 		# Desert approach — dangerous territory reward
 		{"id": "w1_desert_elixir", "pos": Vector2(18, 48), "type": "item", "item": "elixir", "amount": 1},
 		# Near Ironhaven — endgame area
-		{"id": "w1_iron_gold", "pos": Vector2(80, 56), "type": "gold", "gold": 500},
+		{"id": "w1_iron_gold", "pos": Vector2(82, 58), "type": "gold", "gold": 500},
 		# Swamp region — hidden reward
 		{"id": "w1_swamp_remedy", "pos": Vector2(72, 8), "type": "item", "item": "remedy", "amount": 2},
 		# FOUR MORE were stranded by the same re-author and found by the guard written for the two
@@ -782,7 +782,7 @@ func _place_treasure_chests() -> void:
 		# (5,2) was INSIDE MOUNTAIN — impassable, so that chest could never be opened. Moved to the
 		# only genuine sealed pocket on the map: a four-tile sand spit north of the pinch at (126,7).
 		# Id kept despite the name no longer fitting; it is a save flag for "already opened".
-		{"id": "w1_secret_ice_hollow", "pos": Vector2(126, 3), "type": "item", "item": "x_potion", "amount": 2},
+		{"id": "w1_secret_ice_hollow", "pos": Vector2(24, 9), "type": "item", "item": "x_potion", "amount": 2},
 		# (81,51) is open forest and always was after the re-author — a fine find, not a secret.
 		{"id": "w1_secret_magma_vault", "pos": Vector2(81, 51), "type": "gold", "gold": 999},
 	]
@@ -810,9 +810,13 @@ func _place_hidden_passages() -> void:
 	## were both unreachable, and (81,50) had become open forest, so the wall sealed nothing and
 	## stood in the woods like scenery. The comment above them still said "at the H map markers";
 	## the map's two H markers are at (12,4) and (162,100) and both seal zero cells.
-	var passages = [
-		{"id": "w1_ice_hollow", "pos": Vector2(126, 7), "disguise": "mountain"},
-	]
+	## EMPTY ON PURPOSE, and the reason is a Mode 7 constraint nobody had written down: the terrain
+	## collider is a clone displaced +140.6 px = 4.4 TILES, so a player standing at row N collides
+	## against row N-4.4. Any pocket SHALLOWER than five tiles is therefore unenterable — you are
+	## blocked by whatever lies beyond it while still outside. W1's only articulation point seals
+	## exactly four tiles (measured with tools/find_secret_pockets.py), so the map currently has
+	## nowhere a hidden passage can hide anything. Carving a 6-deep pocket would give it one.
+	var passages: Array = []
 	for p in passages:
 		var passage = HiddenPassage.new()
 		passage.passage_id = p["id"]

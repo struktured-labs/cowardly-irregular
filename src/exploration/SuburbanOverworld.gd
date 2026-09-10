@@ -172,7 +172,10 @@ func _place_treasure_chests() -> void:
 	var chests = [
 		# Residential — backyard loot
 		{"id": "w2_backyard_potion", "pos": Vector2(4, 7), "type": "item", "item": "hi_potion", "amount": 3},
-		{"id": "w2_backyard_gold", "pos": Vector2(44, 4), "type": "gold", "gold": 200},
+		# One-cell nudges, each verified by a PHYSICS QUERY rather than by reading the map: these sat
+		# inside terrain collision and could never be opened. The Mode 7 collider clone is displaced
+		# 4.4 tiles, so no map-space check can tell you where a body actually fits.
+		{"id": "w2_backyard_gold", "pos": Vector2(42, 2), "type": "gold", "gold": 200},
 		# Strip mall — vending machine finds
 		{"id": "w2_mall_ether", "pos": Vector2(18, 17), "type": "item", "item": "ether", "amount": 3},
 		{"id": "w2_mall_antidote", "pos": Vector2(30, 18), "type": "item", "item": "antidote", "amount": 4},
