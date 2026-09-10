@@ -47,7 +47,10 @@ from PIL import Image
 
 REPO = Path(__file__).resolve().parent.parent
 DRIVE_LOCAL = REPO / "assets" / "sprites" / "drive_archive" / "Game graphics - Characters"
-GAME_JOBS = Path(os.environ.get("GAME_REPO", "/home/struktured/projects/cowardly-irregular-artist-ship")) / "assets" / "sprites" / "jobs"
+# Default to THIS checkout. The old default named a specific sibling worktree, and step 6
+# writes there — a bare run deployed into a tree it did not own. Override with GAME_REPO.
+GAME_REPO = Path(os.environ.get("GAME_REPO", REPO))
+GAME_JOBS = GAME_REPO / "assets" / "sprites" / "jobs"
 TMP = REPO / "tmp" / "overworld_gpt_image"
 TMP.mkdir(parents=True, exist_ok=True)
 
@@ -463,17 +466,40 @@ def export_idle_frame(ase_path: Path, idle_tag: str, out_png: Path) -> None:
     )
 
 
-def get_proc_gen_chibi(job: str, out_png: Path) -> bool:
-    """Recover the proc-gen 128x128 chibi reference from git HEAD of the game repo."""
-    game_repo = Path(os.environ.get("GAME_REPO", "/home/struktured/projects/cowardly-irregular-artist-ship"))
-    rel = f"assets/sprites/jobs/{job}/overworld.png"
+def _git_show_png(rel: str, out_png: Path) -> bool:
+    """Recover a tracked PNG from git HEAD of the game repo. HEAD, not the worktree:
+    a reference has to be the committed art, or a half-finished edit anchors the run."""
     res = subprocess.run(
         ["git", "show", f"HEAD:{rel}"],
-        cwd=game_repo, capture_output=True,
+        cwd=GAME_REPO, capture_output=True,
     )
     if res.returncode != 0:
         return False
     out_png.write_bytes(res.stdout)
+    return True
+
+
+def get_proc_gen_chibi(job: str, out_png: Path) -> bool:
+    """Recover the proc-gen 128x128 chibi reference from git HEAD of the game repo."""
+    return _git_show_png(f"assets/sprites/jobs/{job}/overworld.png", out_png)
+
+
+def export_battle_frame(rel: str, frame: int, out_png: Path) -> bool:
+    """Cut one frame out of a horizontal battle strip as the identity reference.
+    Monsters have no artist .aseprite — their own battle sheet IS the identity anchor."""
+    raw = TMP / "_strip_src.png"
+    if not _git_show_png(rel, raw):
+        return False
+    strip = Image.open(raw).convert("RGBA")
+    fw = strip.height  # battle strips are square-framed: frame width == sheet height
+    if strip.width % fw != 0:
+        print(f"ERROR: {rel} is {strip.size} — not a whole number of {fw}px square frames")
+        return False
+    n = strip.width // fw
+    if not 0 <= frame < n:
+        print(f"ERROR: {rel} has {n} frames; asked for index {frame}")
+        return False
+    strip.crop((frame * fw, 0, (frame + 1) * fw, fw)).save(out_png)
     return True
 
 
@@ -499,10 +525,78 @@ def _pc_from_ase_rel(ase_rel: str) -> str:
     return ase_rel.split("/", 1)[0].lower()
 
 
-# Merged dispatch table — PC jobs first, then NPCs. Names must not collide.
-ENTITY_SOURCES: dict[str, dict] = {**JOB_SOURCES, **NPC_SOURCES}
-assert len(ENTITY_SOURCES) == len(JOB_SOURCES) + len(NPC_SOURCES), \
-    "JOB_SOURCES and NPC_SOURCES must not share keys"
+# Monsters — the same two-reference pattern, both references sourced differently.
+# Identity is the monster's OWN battle strip (no artist .aseprite exists); format is an
+# existing 128x128 overworld monster grid rather than a PC's chibi.
+#
+# Game-side deploy:  assets/sprites/monsters/overworld/<key>.png   (FLAT, not <key>/overworld.png)
+# Drive aseprite:    cowir/assets/sprites/Game graphics - Monsters/<MONSTER>/claude/
+MONSTER_SOURCES = {
+    "dark_knight": {
+        "identity_rel": "assets/sprites/monsters/dark_knight.png",
+        "identity_frame": 0,
+        # skeleton is the format anchor because its four rows genuinely DIFFER — front,
+        # two profiles and a real back view. Most monster sheets repeat one pose 4x.
+        "format_rel": "assets/sprites/monsters/overworld/skeleton.png",
+        "drive_dir": "DARK_KNIGHT/claude",
+        "drive_root": "Monsters",
+        "dest_root": "monsters/overworld",
+        "dest_flat": True,
+        "char_desc": (
+            "towering armoured sentinel in near-black weathered plate mail, a tattered "
+            "dark cloak, and a heavy greatsword held POINT-DOWN and PLANTED in the ground "
+            "in front of it with both gauntlets resting on the pommel. Its face is a "
+            "featureless black helm with a narrow visor slit lit by a VIOLET glow — the "
+            "violet eye-slit is the only bright colour anywhere on the figure and must "
+            "stay visible in every frame. It stands at rest, motionless and watching, "
+            "never mid-charge and never with the sword raised"
+        ),
+        # RoamingMonster holds col 0 whenever _dir is zero and _face_player() re-frames to
+        # (row, 0) — a stationary field elite renders col 0 of all FOUR rows and nothing else.
+        # The walk strides are format filler here; the four resting poses are the whole asset.
+        "prompt_extra": (
+            "\n\nCRITICAL for this subject: it is a STATIONARY sentinel that turns in place "
+            "to watch the player. Column 0 of every row is the pose that will actually be "
+            "displayed — make all four column-0 frames a complete, symmetrical, weight-on-both-"
+            "feet standing guard pose with the greatsword planted, and make row 3's column 0 an "
+            "unmistakable view from BEHIND (back of the helm, cloak falling down the back, no "
+            "visor and no violet glow visible from the rear). The four rows must be four clearly "
+            "DIFFERENT viewing angles, not the same pose repeated."
+        ),
+    },
+}
+
+
+# Merged dispatch table — PC jobs, then NPCs, then monsters. Names must not collide.
+ENTITY_SOURCES: dict[str, dict] = {**JOB_SOURCES, **NPC_SOURCES, **MONSTER_SOURCES}
+assert len(ENTITY_SOURCES) == len(JOB_SOURCES) + len(NPC_SOURCES) + len(MONSTER_SOURCES), \
+    "JOB_SOURCES, NPC_SOURCES and MONSTER_SOURCES must not share keys"
+
+
+def refuse_hollow_grid(grid: Image.Image, entity: str, target: int = 32) -> None:
+    """Refuse to write a sheet whose frames are empty. A keyed-out subject leaves a file with
+    the right name, size and frame count, so nothing downstream notices; the 2026-09-09
+    dark_knight run deployed 13-94 px frames and looked like a success in every log line.
+    Thresholds match test_overworld_sheet_frame_contract: relative to the sheet's own median
+    (catches a partial wipe) plus an absolute floor (catches a uniform one, where the median
+    is empty too and the ratio reads a healthy 1.0)."""
+    cols, rows = grid.width // target, grid.height // target
+    a = grid.convert("RGBA").split()[3]
+    ns = []
+    for r in range(rows):
+        for c in range(cols):
+            cell = a.crop((c * target, r * target, (c + 1) * target, (r + 1) * target))
+            ns.append(((r, c), sum(1 for v in cell.getdata() if v > 10)))
+    counts = sorted(n for _, n in ns)
+    med = counts[len(counts) // 2] if len(counts) % 2 else (counts[len(counts) // 2 - 1] + counts[len(counts) // 2]) / 2
+    bad = [f"({c},{r})={n}px" for (r, c), n in ns
+           if n < 32 or (med > 0 and n / med < 0.35)]
+    if bad:
+        raise SystemExit(
+            f"REFUSING to write {entity}: {len(bad)} of {len(ns)} frames are empty "
+            f"(median {int(med)}px) -- {', '.join(bad[:8])}. The art was lost in assembly, "
+            f"not in generation; inspect the raw before spending another call."
+        )
 
 
 def grid_to_strip(grid: Image.Image) -> Image.Image:
@@ -589,9 +683,19 @@ def _binarize_alpha(img: Image.Image, threshold: int = 128) -> Image.Image:
     return Image.merge("RGBA", (r, g, b, a))
 
 
-def _cell_to_chibi(cell: Image.Image, target: int = 32) -> Image.Image:
-    """Strip near-white BG, square-pad, downscale to target×target chibi (LANCZOS→NEAREST), binarize alpha."""
-    cell = _strip_white_bg(cell.copy())
+def _cell_to_chibi(cell: Image.Image, target: int = 32, *, strip: bool = True) -> Image.Image:
+    """Strip near-white BG, square-pad, downscale to target×target chibi (LANCZOS→NEAREST), binarize alpha.
+
+    strip=False for a cell cut from an ALREADY-stripped band. Re-keying a narrow cell is not
+    idempotent and can wipe the subject: _strip_white_bg seeds from the four corners, and a
+    241px-wide crop around a near-black figure can put a CORNER on the figure's own cloak.
+    The seed is then near-black, `diff <= color_tol` marks every dark pixel in the cell as
+    background, and the component reaches the border — so the whole figure is keyed out.
+    Measured on dark_knight: the same figure kept 2658 of ~59000 px through the second strip
+    while the band-wide strip left it perfectly intact. The existing alpha==0 corner guard
+    does not cover this: the poisoned corner is opaque, just dark."""
+    if strip:
+        cell = _strip_white_bg(cell.copy())
     bbox = cell.getbbox()
     if bbox:
         cell = cell.crop(bbox)
@@ -680,6 +784,45 @@ def _detect_chibi_x_ranges(row_band: Image.Image, min_blob_width: int = 40) -> l
     return out if len(out) >= 2 else [full]
 
 
+def _detect_row_bands(raw: Image.Image, expected: int = 3, min_band_h: int = 20) -> list[tuple[int, int]] | None:
+    """Row bands from CONTENT gaps rather than an equal split of the canvas.
+
+    This is a SCALE fix, not a correctness one — the subject-wiping bug that led here was
+    _cell_to_chibi's second chromakey, fixed separately. An equal split assumes the model
+    centres each row in its third; measured on the dark_knight run content sat at y 46-391 /
+    416-759 / 776-1024 against assumed 0-341 / 341-682 / 682-1023. A band that does not hug
+    its row carries dead space into _cell_to_chibi's square-pad, and the figure is shrunk to
+    fit it: row 2 came out 492/470/483 opaque px on equal bands versus 706/680/693 on these,
+    the same art at 43% more pixels. Returns None when the gap structure does not yield
+    exactly `expected` bands, so the caller keeps the equal split rather than guessing.
+    """
+    a = _strip_white_bg(raw.copy()).split()[3]
+    W, H = raw.size
+    px = a.load()
+    filled = [any(px[x, y] > 10 for x in range(0, W, 2)) for y in range(H)]
+    bands: list[tuple[int, int]] = []
+    run: int | None = None
+    for y, v in enumerate(filled):
+        if v and run is None:
+            run = y
+        elif not v and run is not None:
+            bands.append((run, y))
+            run = None
+    if run is not None:
+        bands.append((run, H))
+    bands = [b for b in bands if b[1] - b[0] >= min_band_h]
+    if len(bands) != expected:
+        return None
+    # Grow each band into its neighbouring gap so outlines are not clipped, without
+    # letting two bands overlap.
+    out: list[tuple[int, int]] = []
+    for i, (y0, y1) in enumerate(bands):
+        top = 0 if i == 0 else (bands[i - 1][1] + y0) // 2
+        bot = H if i == len(bands) - 1 else (y1 + bands[i + 1][0]) // 2
+        out.append((top, bot))
+    return out
+
+
 def _extract_row_chibis(raw: Image.Image, y0: int, y1: int, target: int = 32) -> list[Image.Image]:
     """
     Detect chibi positions in a horizontal band and return a target×target chibi for each.
@@ -694,7 +837,8 @@ def _extract_row_chibis(raw: Image.Image, y0: int, y1: int, target: int = 32) ->
         pad = 8
         x0p = max(0, x0 - pad)
         x1p = min(raw.width, x1 + pad)
-        chibis.append(_cell_to_chibi(band.crop((x0p, 0, x1p, band.height)), target))
+        chibis.append(_cell_to_chibi(
+            band_stripped.crop((x0p, 0, x1p, band_stripped.height)), target, strip=False))
     return chibis
 
 
@@ -782,13 +926,16 @@ def assemble_game_grid(raw_1024: Image.Image, target: int = 32, *, head_lock: bo
     H = raw_1024.height
     NUM_ROWS = 3
     row_h = H // NUM_ROWS
+    bands = _detect_row_bands(raw_1024, NUM_ROWS) or [
+        (i * row_h, (i + 1) * row_h) for i in range(NUM_ROWS)
+    ]
     sheet_w = target * 4
     sheet_h = target * 4
 
     grid = Image.new("RGBA", (sheet_w, sheet_h), (0, 0, 0, 0))
 
     # Row 0: walk_down (front)
-    front = _build_4frame_walk(_extract_row_chibis(raw_1024, 0, row_h, target))
+    front = _build_4frame_walk(_extract_row_chibis(raw_1024, *bands[0], target))
     if head_lock:
         front = head_lock_row(front)
     for col, frame in enumerate(front):
@@ -802,7 +949,7 @@ def assemble_game_grid(raw_1024: Image.Image, target: int = 32, *, head_lock: bo
     # produces a left-row whose head is the mirror of the right-row's head,
     # which is also pixel-identical across its own frames. Mirror property
     # asserted by test_overworld_facing_regression.gd is preserved.
-    side = _build_4frame_walk(_extract_row_chibis(raw_1024, row_h, 2 * row_h, target))
+    side = _build_4frame_walk(_extract_row_chibis(raw_1024, *bands[1], target))
     if head_lock:
         side = head_lock_row(side)
     for col, frame in enumerate(side):
@@ -810,7 +957,7 @@ def assemble_game_grid(raw_1024: Image.Image, target: int = 32, *, head_lock: bo
         grid.paste(frame, (col * target, target * 2))
 
     # Row 3: walk_up (back)
-    back = _build_4frame_walk(_extract_row_chibis(raw_1024, 2 * row_h, 3 * row_h, target))
+    back = _build_4frame_walk(_extract_row_chibis(raw_1024, *bands[2], target))
     if head_lock:
         back = head_lock_row(back)
     for col, frame in enumerate(back):
@@ -862,6 +1009,7 @@ def main():
     dest_root = cfg.get("dest_root", DEFAULT_DEST_ROOT)
     drive_root = cfg.get("drive_root", DEFAULT_DRIVE_ROOT)
     is_npc = args.entity in NPC_SOURCES
+    is_monster = args.entity in MONSTER_SOURCES
 
     api_key = os.environ.get("OPENAI_API_KEY", "")
     if not api_key and not args.dry_run:
@@ -883,29 +1031,41 @@ def main():
 
     # 1. Prepare references
     print("[1] preparing references")
-    ase_path = DRIVE_LOCAL / cfg["ase_rel"]
-    if not ase_path.exists():
-        print(f"ERROR: artist source missing: {ase_path}")
-        sys.exit(1)
-    export_idle_frame(ase_path, cfg["idle_tag"], artist_png)
+    if is_monster:
+        # Identity from the monster's own battle strip; format from a sibling overworld grid.
+        if not export_battle_frame(cfg["identity_rel"], cfg["identity_frame"], artist_png):
+            print(f"ERROR: cannot cut identity frame from {cfg['identity_rel']} at game repo HEAD")
+            sys.exit(1)
+        format_src = cfg["format_rel"]
+        if not _git_show_png(format_src, chibi_png):
+            print(f"ERROR: cannot recover format ref {format_src} from game repo HEAD")
+            sys.exit(1)
+    else:
+        ase_path = DRIVE_LOCAL / cfg["ase_rel"]
+        if not ase_path.exists():
+            print(f"ERROR: artist source missing: {ase_path}")
+            sys.exit(1)
+        export_idle_frame(ase_path, cfg["idle_tag"], artist_png)
 
-    # NPCs have no proc-gen overworld of their own — borrow the chibi format
-    # reference from the PC whose ase_rel they're anchored to (e.g. old_man
-    # uses cleric's overworld.png as its scale/angle reference).
-    chibi_ref_job = _pc_from_ase_rel(cfg["ase_rel"]) if is_npc else args.entity
-    if not get_proc_gen_chibi(chibi_ref_job, chibi_png):
-        print(f"ERROR: cannot recover proc-gen chibi ref ({chibi_ref_job}) from game repo HEAD")
-        sys.exit(1)
+        # NPCs have no proc-gen overworld of their own — borrow the chibi format
+        # reference from the PC whose ase_rel they're anchored to (e.g. old_man
+        # uses cleric's overworld.png as its scale/angle reference).
+        chibi_ref_job = _pc_from_ase_rel(cfg["ase_rel"]) if is_npc else args.entity
+        if not get_proc_gen_chibi(chibi_ref_job, chibi_png):
+            print(f"ERROR: cannot recover proc-gen chibi ref ({chibi_ref_job}) from game repo HEAD")
+            sys.exit(1)
+        format_src = f"assets/sprites/jobs/{chibi_ref_job}/overworld.png"
 
     artist_bytes = pad_to_square(Image.open(artist_png), 1024)
     chibi_bytes = pad_to_square(Image.open(chibi_png), 1024)
 
-    prompt = PROMPT_TEMPLATE.format(char_desc=cfg["char_desc"])
+    prompt = PROMPT_TEMPLATE.format(char_desc=cfg["char_desc"]) + cfg.get("prompt_extra", "")
     if args.dry_run:
         print(f"[dry-run] would call gpt-image-1 (quality={args.quality}) with 2 refs:")
         print(f"  ref 1 (identity): {artist_png}")
-        print(f"  ref 2 (format):   {chibi_png}  ← from PC '{chibi_ref_job}'")
-        print(f"  deploy:           assets/sprites/{dest_root}/{args.entity}/overworld.png")
+        print(f"  ref 2 (format):   {chibi_png}  ← {format_src}")
+        leaf = f"{args.entity}.png" if cfg.get("dest_flat") else f"{args.entity}/overworld.png"
+        print(f"  deploy:           {GAME_REPO}/assets/sprites/{dest_root}/{leaf}")
         print(f"  drive:            Game graphics - {drive_root}/{cfg['drive_dir']}/")
         print(f"--- prompt ---\n{prompt}\n--- end prompt ---")
         return
@@ -932,6 +1092,7 @@ def main():
     # 3. Build TWO outputs: 32px game PNG + 64px high-detail master
     print(f"[3] assemble dual outputs (32px game + 64px master)")
     grid_32 = assemble_game_grid(raw_img, target=32)
+    refuse_hollow_grid(grid_32, args.entity)
     grid_32.save(grid_out)
     strip_32 = grid_to_strip(grid_32)
     strip_32.save(strip_out)
@@ -958,8 +1119,10 @@ def main():
         print("[5] skipping upload (--no-upload)")
 
     # 6. Deploy to game
-    dest = Path(os.environ.get("GAME_REPO", "/home/struktured/projects/cowardly-irregular-artist-ship")) \
-        / "assets" / "sprites" / dest_root / args.entity / "overworld.png"
+    # Monsters deploy FLAT (monsters/overworld/<id>.png); jobs and NPCs deploy into a
+    # per-entity dir. The consumer path decides the shape, not the generator.
+    dest = GAME_REPO / "assets" / "sprites" / dest_root / (
+        f"{args.entity}.png" if cfg.get("dest_flat") else f"{args.entity}/overworld.png")
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_bytes(grid_out.read_bytes())
     print(f"[6] deployed → {dest}")
