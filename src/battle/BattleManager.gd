@@ -7977,12 +7977,25 @@ func _bias_by_intent(intent_id: String, masterite_type: String = "") -> Dictiona
 	# 2.3x swing the LLM chooses. So the intent layer IS mechanical, for every
 	# caster-classified boss, today.
 	#
-	# What survives: the 26-count is right, and the conclusion holds for the
-	# four DRAGONS — they author none of the three attack_weight-armed intents
-	# (aggress / turtle / exploit_pattern). Mordaine authors all three and is
-	# the only W1 boss that does, which is why the note read as true.
-	# ⚠️ Giving a dragon an armed intent is therefore a DESIGN change, not a
-	# data tweak: it makes that fight mechanically intent-driven. Pinned.
+	# The 26-count is right. Mordaine authors all three attack_weight-armed
+	# intents (aggress / turtle / exploit_pattern) and is the only W1 boss that
+	# does, which is why the note read as true.
+	#
+	# ⛔ I FIRST WROTE "and the conclusion holds for the four DRAGONS" HERE. It
+	# does not, and I had not measured it — the dragons reach a DIFFERENT key.
+	# _COUNTER_INTENT_TAGS is exactly the six intents they author, and
+	# _resolve_counter_strategy returns the intent id ITSELF for those, so the
+	# counter branch fires with no adaptation_level and no AutogrindSystem
+	# learning: 0.3 x counter_action_chance(2.0) = 0.60.
+	#
+	# 🔴 AND FIVE OF THE SIX THEN PRODUCE NOTHING. _get_counter_action is
+	# entered, its arm finds no ability it can build an action from, returns
+	# empty, and the turn falls through to ordinary AI. Pyrroth, 400 rolls each
+	# (test_dragon_intents_are_mechanical_too): fire/ice/lightning_resist,
+	# focus_healer and defense_boost all 0.000; rotate_aggro 0.600. The three
+	# resist arms filter for an id containing "resist" or "shield" and NO BOSS
+	# OWNS ONE. So the LLM picks from six postures and five do nothing.
+	# Pinned inverted, not fixed — waking them changes five boss fights.
 	#
 	# The duels are unaffected: their mechanics run through counter_abilities /
 	# steal_response / first_steal_guaranteed and the Prismatic Construct's
