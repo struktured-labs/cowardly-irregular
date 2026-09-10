@@ -93,6 +93,15 @@ func test_the_captured_state_ACTUALLY_restores_the_bed() -> void:
 		"the bed was restored as state but nothing is playing — silence after every Limit Break")
 
 
+## ⛔ THIS ARM IS REDUNDANT with test_stinger_resume_over_area_music.gd
+## (2026-07-31), which I did not know existed. Constructed two mutations to find
+## a case that separates them — break the area branch, and let _current_area be
+## set while the DEFERRED music never starts — and BOTH guards fire on BOTH.
+## Not weaker, not stronger: redundant. Kept only because it sits beside the
+## consecutive-stinger arms that are NOT covered elsewhere, and deleting it
+## would leave this file asserting a sequence whose final step is verified in
+## another file. Said plainly so two greens are not read as independent
+## coverage — cowir-main's rule works in this direction too.
 func test_a_stinger_over_AREA_music_restores_it_after_one_frame() -> void:
 	## The OTHER restore path, and the one four stingers actually use.
 	## restore_music_state branches: area != "" -> play_area_music (DEFERRED via

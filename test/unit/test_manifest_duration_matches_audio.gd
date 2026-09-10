@@ -2,6 +2,22 @@ extends GutTest
 
 ## Manifest `duration` must describe the file that actually ships (2026-09-09).
 ##
+## ⛔ OVERLAPS test_music_manifest_duration_matches_stream.gd (2026-07-29), WHICH
+## I DID NOT KNOW EXISTED WHEN I WROTE THIS. That file asserts the same property
+## against the same corpus, and its own header already documents the JukeboxMenu
+## consumer — including the exact command (`grep -rn '"duration"' src/`) — which
+## I spent an hour rediscovering and then wrote up as a correction to my own
+## overstated claim. One `ls test/unit | grep music` would have saved it.
+##
+## MEASURED, so neither gets deleted on a guess (battle_wolf duration -> 0.0
+## with the file intact):
+##     the 2026-07-29 guard   Failing 2   tolerance 2.0s, no 0.0 exemption
+##     this one               Failing 1   tolerance 0.6s
+## Both catch it. What this one ADDS is the tighter tolerance: a 1s drift passes
+## the older guard and fails this one. That is a real but marginal addition, and
+## it is the whole of it — if the tolerances are ever unified, delete this file
+## rather than keeping two.
+##
 ## This drift has happened twice and neither time was visible from inside the
 ## game: tools/trim_loop_seams.py shortened OGGs and left the manifest saying
 ## the old length (107 entries repaired by hand after the 2026-08-26 run), and
