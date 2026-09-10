@@ -176,3 +176,72 @@ func test_every_interactive_entity_can_be_reached() -> void:
 	assert_gt(entities, 60, "CONTROL: only %d interactive entities swept -- the scan is broken and the zero below is free" % entities)
 	assert_eq(stranded, [],
 		"an interactive entity has no standable cell within two tiles -- the player can see it and can never reach it: %s" % str(stranded))
+
+
+## The other 52 chests — villages, interiors, dungeons — were guarded by nothing.
+##
+## The sweep above covers overworld chests, where fourteen were found buried. Everywhere else was
+## simply not looked at. All 52 are fine; this is the negative, pinned.
+##
+## ⚠️ SAMPLE CELL CENTRES, NOT OFFSETS FROM THE CHEST'S OWN ANCHOR. A chest's position is its
+## cell's TOP-LEFT corner in most of this codebase (19 of 28 village chests use a whole-cell x, 9
+## use a .5 centre — there is no single convention), so a probe circle placed AT the anchor straddles
+## two rows. On a ledge whose row above is the map's boundary wall, every offset sample overlaps that
+## wall and three perfectly reachable chests report as buried. That was my first measurement, and the
+## chests it condemned were three I had placed myself hours earlier.
+func test_no_village_or_dungeon_chest_is_unreachable() -> void:
+	var dirs := ["res://src/maps/villages", "res://src/maps/interiors", "res://src/maps/dungeons"]
+	var not_maps := ["BaseVillage.gd", "BaseInterior.gd", "InteriorPlacementSweep.gd", "DragonCave.gd", "BossTrigger.gd"]
+	var unreachable: Array = []
+	var chests := 0
+	var maps := 0
+
+	for d in dirs:
+		var dir := DirAccess.open(d)
+		if dir == null:
+			continue
+		for f in dir.get_files():
+			if not f.ends_with(".gd") or (f in not_maps):
+				continue
+			var vp := SubViewport.new()
+			vp.size = Vector2i(64, 64)
+			vp.world_2d = World2D.new()
+			add_child_autofree(vp)
+			var m = load(d + "/" + f).new()
+			vp.add_child(m)
+			await get_tree().physics_frame
+			await get_tree().physics_frame
+			maps += 1
+			var space := vp.world_2d.direct_space_state
+			var shape := CircleShape2D.new()
+			shape.radius = BODY_RADIUS
+			var stack: Array = [m]
+			while not stack.is_empty():
+				var n = stack.pop_back()
+				for c in n.get_children():
+					stack.append(c)
+				if not (n is Node2D) or n.get_script() == null or not ("chest_id" in n):
+					continue
+				chests += 1
+				var cell := Vector2i(int((n as Node2D).global_position.x) / 32, int((n as Node2D).global_position.y) / 32)
+				# ORTHOGONAL neighbours plus the cell itself — you walk onto or beside a chest, you do
+				# not open one from a diagonal through a wall corner. The 3x3 version needed all NINE
+				# cells blocked to fire, which a village floor makes impossible: burying a chest in the
+				# boundary corner left it green because the floor tile diagonally inside still counted.
+				var standable := 0
+				for off in [Vector2i(0, 0), Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+					var c: Vector2i = cell + off
+					var q := PhysicsShapeQueryParameters2D.new()
+					q.shape = shape
+					q.transform = Transform2D(0.0, Vector2(c.x * 32 + 16, c.y * 32 + 16))
+					q.collision_mask = 1
+					if space.intersect_shape(q, 1).is_empty():
+						standable += 1
+				if standable == 0:
+					unreachable.append("%s/%s at %s" % [f.get_basename(), str(n.chest_id), str(cell)])
+	unreachable.sort()
+
+	assert_gt(maps, 40, "CONTROL: only %d maps built across villages, interiors and dungeons" % maps)
+	assert_gt(chests, 40, "CONTROL: only %d chests found -- the scan is broken and the zero below is free" % chests)
+	assert_eq(unreachable, [],
+		"a chest with no standable cell beside it can never be opened: %s" % str(unreachable))
