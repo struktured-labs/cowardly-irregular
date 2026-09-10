@@ -18,6 +18,12 @@ extends GutTest
 ## a claim sounds, the less anyone interrogates the code beneath it, so an over-broad name does not
 ## merely fail to describe the instrument, it CONCEALS the gap. Read this as: every gate flag has a
 ## writer. Nothing more.
+##
+## The fleet rule for this class is five weeks old and was invisible: feedback_label_broader_than_
+## predicate (2026-08-05), 21 inbound links, not in the index until tonight. Its first line explains
+## why MY OWN CONTROLS DID NOT CATCH IT -- "no control fires, because the control tests the
+## expression, which works". Both controls below are sound and neither can see the gap between the
+## name and the computation, because the computation is correct.
 
 ## WHAT THIS FOUND WHEN IT WAS WRITTEN: nothing. Twelve gate flags in src/exploration and src/maps,
 ## twelve writers, every name matching exactly. That is the result being pinned.
