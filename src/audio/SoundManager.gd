@@ -4817,6 +4817,9 @@ func _start_area_music_deferred(area_type: String) -> void:
 		return
 
 	match area_type:
+		## No arm meant DangerZone fell to `_:` and got hardcoded overworld_medieval.
+		"danger":
+			_start_danger_music()
 		"overworld":
 			_start_overworld_music()
 		"overworld_suburban":
