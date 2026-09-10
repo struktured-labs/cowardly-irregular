@@ -12,15 +12,17 @@ extends GutTest
 ## broken CONVENTION: the gesture that closes 29 screens silently did nothing on 5, which is what
 ## makes a UI feel unfinished rather than broken.
 ##
-## ⚠️ RadialPicker is deliberately EXCLUDED and not merely skipped: it is a pad-first ring drawn
-## OVER an editor whose own background already right-click-closes. Adding one there could close the
-## ring or the editor depending on z-order, and I have not measured which. Left for a targeted pass.
+## RadialPicker was deferred pending a z-order question, then RESOLVED: it sets MOUSE_FILTER_STOP
+## and is added after the editor background, so it CONSUMES a right-click and cannot leak through
+## to the editor's own cancel. Safe, and now included. The deferral was right at the time; the
+## answer came from reading the filter and the child order, not from guessing.
 
 const SCREENS := [
 	"res://src/ui/FormationsMenu.gd",
 	"res://src/ui/LensMenu.gd",
 	"res://src/ui/RebalanceReviewPanel.gd",
 	"res://src/ui/autogrind/AutogrindSummary.gd",
+	"res://src/ui/RadialPicker.gd",
 ]
 
 

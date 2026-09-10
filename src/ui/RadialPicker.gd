@@ -49,6 +49,15 @@ func setup(picker_spec: Dictionary) -> void:
 func _ready() -> void:
 	set_anchors_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
+	# Right-click closes the ring, matching the 33 other screens. SAFE because of the line above:
+	# STOP means the ring CONSUMES the click, so it cannot leak to the editor's own background
+	# right-click-cancel underneath and close the whole editor. Derived from the filter, the child
+	# order (the ring is added after the bg) and this file having zero prior right-click handlers —
+	# not measured by a click, because gui_input needs real GUI picking and a SubViewport harness
+	# does not perform it.
+	MenuMouseHelper.add_right_click_cancel(self, func() -> void:
+		cancelled.emit()
+		queue_free())
 	set_process(true)
 	set_process_unhandled_input(true)
 
