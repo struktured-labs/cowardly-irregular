@@ -17,8 +17,26 @@ extends GutTest
 ## This file is mechanical and cross-cutting on purpose: it asks, of the two wiring
 ## mechanisms a Godot project has, whether the thing being addressed actually exists.
 ##
-##   ARM 1  every /root/Name looked up in src/ is a registered autoload
-##   ARM 2  every signal something CONNECTS to has at least one emitter
+##   ARM 1  every autoload name written as a STRING LITERAL in one of three call shapes
+##          is registered in project.godot
+##   ARM 2  every PROJECT-DECLARED signal something connects to has at least one emitter
+##
+## ⚠️ THOSE PREDICATES ARE DELIBERATELY NARROWER THAN THEY WANT TO BE. ARM 1 said "every
+## /root/Name looked up in src/" until 2026-09-09, which is broader than the scanner under
+## it and reads as if edge cases had been considered. @cowir-main's failure that evening was
+## exactly this and is the reason it is reworded: they published a sweep predicate of
+## "unreachable by ANY path" over a reader that followed two of three link kinds, and
+## observed that the BROADER a predicate sounds, the LESS anyone interrogates the code below
+## it. Conservative-sounding language is not a safety margin; it is camouflage. So this file
+## states the three shapes it matches and nothing wider.
+##
+## THE RESIDUAL, measured rather than waved at: a name ASSEMBLED AT RUNTIME is invisible
+## here. src/autogrind/HeadlessBattleResolver.gd:131 does
+## `tree.root.get_node_or_null("/root/" + name)` inside a _get_autoload(name) helper, and no
+## regex over call sites can resolve `name`. Its seven callers pass four literals —
+## BattleManager, AutobattleSystem, JobSystem, ItemSystem — and all four ARE registered, so
+## the gap is real in principle and empty in fact today. Checked, not assumed; recorded so
+## the next reader knows the shape exists rather than rediscovering it.
 ##
 ## ⚠️ WHAT IT CANNOT DO, stated so a green run is not over-read: it proves the address
 ## resolves, never that the VALUE is right. is_mode7() would pass ARM 1 today and did not
