@@ -6,6 +6,7 @@
     "ability_fire": {
       "early_hz": 1639.8,
       "late_hz": 1767.1,
+      "rms_db": -16.2,
       "low_hz": 1501.5,
       "high_hz": 1818.3,
       "sweep": 1.21,
@@ -20,6 +21,7 @@
     "ability_fire_v2": {
       "early_hz": 1609.9,
       "late_hz": 1642.0,
+      "rms_db": -15.6,
       "low_hz": 1550.9,
       "high_hz": 1733.1,
       "sweep": 1.12,
@@ -34,6 +36,7 @@
     "ability_fire_v3": {
       "early_hz": 1580.9,
       "late_hz": 1445.5,
+      "rms_db": -13.3,
       "low_hz": 1421.4,
       "high_hz": 1642.8,
       "sweep": 1.16,
@@ -48,6 +51,7 @@
     "ability_lightning": {
       "early_hz": 2603.7,
       "late_hz": 2307.6,
+      "rms_db": -16.3,
       "low_hz": 2255.8,
       "high_hz": 2611.0,
       "sweep": 1.16,
@@ -62,6 +66,7 @@
     "ability_lightning_v2": {
       "early_hz": 2224.8,
       "late_hz": 2117.0,
+      "rms_db": -17.4,
       "low_hz": 2021.8,
       "high_hz": 2380.9,
       "sweep": 1.18,
@@ -76,6 +81,7 @@
     "ability_lightning_v3": {
       "early_hz": 2410.6,
       "late_hz": 2032.9,
+      "rms_db": -15.0,
       "low_hz": 2009.2,
       "high_hz": 2447.9,
       "sweep": 1.22,
@@ -90,6 +96,7 @@
     "ability_ice": {
       "early_hz": 2234.4,
       "late_hz": 2113.9,
+      "rms_db": -14.6,
       "low_hz": 2043.5,
       "high_hz": 2291.4,
       "sweep": 1.12,
@@ -104,6 +111,7 @@
     "ability_ice_v2": {
       "early_hz": 2320.4,
       "late_hz": 2256.6,
+      "rms_db": -18.4,
       "low_hz": 2183.9,
       "high_hz": 2345.8,
       "sweep": 1.07,
@@ -118,6 +126,7 @@
     "ability_ice_v3": {
       "early_hz": 1967.9,
       "late_hz": 1662.1,
+      "rms_db": -12.3,
       "low_hz": 1605.0,
       "high_hz": 2083.8,
       "sweep": 1.3,
@@ -132,6 +141,7 @@
     "ability_dark": {
       "early_hz": 1350.3,
       "late_hz": 1206.2,
+      "rms_db": -13.4,
       "low_hz": 1167.0,
       "high_hz": 1381.7,
       "sweep": 1.18,
@@ -146,6 +156,7 @@
     "ability_heal": {
       "early_hz": 1528.9,
       "late_hz": 1295.5,
+      "rms_db": -17.8,
       "low_hz": 1211.6,
       "high_hz": 2121.4,
       "sweep": 1.75,
@@ -160,6 +171,7 @@
     "ability_heal_v2": {
       "early_hz": 1190.7,
       "late_hz": 1195.5,
+      "rms_db": -16.2,
       "low_hz": 1063.2,
       "high_hz": 1300.7,
       "sweep": 1.22,
@@ -174,6 +186,7 @@
     "ability_heal_v3": {
       "early_hz": 586.7,
       "late_hz": 546.3,
+      "rms_db": -14.1,
       "low_hz": 525.8,
       "high_hz": 653.9,
       "sweep": 1.24,
@@ -188,6 +201,7 @@
     "heal": {
       "early_hz": 1241.2,
       "late_hz": 1406.9,
+      "rms_db": -11.9,
       "low_hz": 1074.1,
       "high_hz": 1560.1,
       "sweep": 1.45,
@@ -202,6 +216,7 @@
     "heal_v2": {
       "early_hz": 1693.0,
       "late_hz": 1543.4,
+      "rms_db": -16.0,
       "low_hz": 1461.5,
       "high_hz": 1998.1,
       "sweep": 1.37,
@@ -216,6 +231,7 @@
     "heal_v3": {
       "early_hz": 531.8,
       "late_hz": 564.7,
+      "rms_db": -21.5,
       "low_hz": 465.4,
       "high_hz": 622.0,
       "sweep": 1.34,
@@ -230,6 +246,7 @@
     "formation_shadow_strike": {
       "early_hz": 1132.2,
       "late_hz": 946.9,
+      "rms_db": -12.7,
       "low_hz": 861.3,
       "high_hz": 1153.1,
       "sweep": 1.34,
@@ -244,6 +261,7 @@
     "status_poison": {
       "early_hz": 199.3,
       "late_hz": 226.0,
+      "rms_db": -24.0,
       "low_hz": 158.5,
       "high_hz": 298.4,
       "sweep": 1.88,
@@ -258,6 +276,7 @@
     "status_pacify": {
       "early_hz": 3134.5,
       "late_hz": 2936.7,
+      "rms_db": -29.5,
       "low_hz": 2898.2,
       "high_hz": 3135.2,
       "sweep": 1.08,
@@ -272,6 +291,7 @@
     "strike_fire": {
       "early_hz": 1554.3,
       "late_hz": 1410.3,
+      "rms_db": -11.5,
       "low_hz": 829.0,
       "high_hz": 1826.0,
       "sweep": 2.2,
@@ -286,6 +306,7 @@
     "strike_ice": {
       "early_hz": 4673.6,
       "late_hz": 4415.6,
+      "rms_db": -12.6,
       "low_hz": 4376.5,
       "high_hz": 5131.3,
       "sweep": 1.17,
@@ -300,6 +321,7 @@
     "strike_lightning": {
       "early_hz": 1673.5,
       "late_hz": 1724.9,
+      "rms_db": -14.7,
       "low_hz": 1492.4,
       "high_hz": 1747.4,
       "sweep": 1.17,
@@ -314,6 +336,7 @@
     "strike_dark": {
       "early_hz": 824.0,
       "late_hz": 913.7,
+      "rms_db": -11.8,
       "low_hz": 632.3,
       "high_hz": 927.4,
       "sweep": 1.47,
@@ -328,6 +351,7 @@
     "strike_holy": {
       "early_hz": 2851.1,
       "late_hz": 2422.7,
+      "rms_db": -12.7,
       "low_hz": 2400.0,
       "high_hz": 3211.9,
       "sweep": 1.34,
@@ -342,6 +366,7 @@
     "weakness_flash": {
       "early_hz": 2242.3,
       "late_hz": 3820.9,
+      "rms_db": -15.2,
       "low_hz": 2123.5,
       "high_hz": 4059.4,
       "sweep": 1.91,
@@ -356,6 +381,7 @@
     "purchase_complete": {
       "early_hz": 1844.3,
       "late_hz": 1920.7,
+      "rms_db": -11.5,
       "low_hz": 1724.0,
       "high_hz": 2027.2,
       "sweep": 1.18,
@@ -370,6 +396,7 @@
     "autobattle_open": {
       "early_hz": 1621.5,
       "late_hz": 1646.7,
+      "rms_db": -11.0,
       "low_hz": 1576.4,
       "high_hz": 1698.1,
       "sweep": 1.08,
@@ -384,6 +411,7 @@
     "portal_activate": {
       "early_hz": 1535.1,
       "late_hz": 1601.3,
+      "rms_db": -10.7,
       "low_hz": 1506.2,
       "high_hz": 1648.8,
       "sweep": 1.09,
@@ -398,6 +426,7 @@
     "attack_hit_piano_scythe_crit": {
       "early_hz": 1898.8,
       "late_hz": 1804.8,
+      "rms_db": -13.4,
       "low_hz": 1642.3,
       "high_hz": 1910.5,
       "sweep": 1.16,
@@ -412,6 +441,7 @@
     "autobattle_on": {
       "early_hz": 1684.9,
       "late_hz": 1848.1,
+      "rms_db": -11.5,
       "low_hz": 1666.2,
       "high_hz": 1941.7,
       "sweep": 1.17,
@@ -426,6 +456,7 @@
     "attack_hit_staff": {
       "early_hz": 1385.2,
       "late_hz": 1331.0,
+      "rms_db": -13.9,
       "low_hz": 1272.1,
       "high_hz": 1418.0,
       "sweep": 1.11,
@@ -440,6 +471,7 @@
     "ability_song": {
       "early_hz": 1647.1,
       "late_hz": 1679.9,
+      "rms_db": -12.9,
       "low_hz": 1547.2,
       "high_hz": 1767.6,
       "sweep": 1.14,
@@ -454,6 +486,7 @@
     "ability_summon": {
       "early_hz": 889.2,
       "late_hz": 910.6,
+      "rms_db": -12.9,
       "low_hz": 861.0,
       "high_hz": 981.9,
       "sweep": 1.14,
@@ -468,6 +501,7 @@
     "ability_revive": {
       "early_hz": 1616.7,
       "late_hz": 1557.1,
+      "rms_db": -14.8,
       "low_hz": 1519.9,
       "high_hz": 1693.7,
       "sweep": 1.11,
@@ -482,6 +516,7 @@
     "ability_poison": {
       "early_hz": 1385.1,
       "late_hz": 1105.9,
+      "rms_db": -15.5,
       "low_hz": 947.5,
       "high_hz": 2059.6,
       "sweep": 2.17,
@@ -496,6 +531,7 @@
     "ability_earth": {
       "early_hz": 879.1,
       "late_hz": 941.2,
+      "rms_db": -13.7,
       "low_hz": 826.9,
       "high_hz": 1001.0,
       "sweep": 1.21,
@@ -510,6 +546,7 @@
     "ability_wind": {
       "early_hz": 1532.5,
       "late_hz": 1687.7,
+      "rms_db": -17.6,
       "low_hz": 1479.4,
       "high_hz": 1714.4,
       "sweep": 1.16,
@@ -524,6 +561,7 @@
     "ability_arcane": {
       "early_hz": 1292.6,
       "late_hz": 1307.7,
+      "rms_db": -12.8,
       "low_hz": 1255.4,
       "high_hz": 1330.0,
       "sweep": 1.06,
@@ -538,6 +576,7 @@
     "ability_mp_restore": {
       "early_hz": 1483.5,
       "late_hz": 1654.5,
+      "rms_db": -13.4,
       "low_hz": 1174.3,
       "high_hz": 1683.7,
       "sweep": 1.43,
@@ -552,6 +591,7 @@
     "ability_flee": {
       "early_hz": 1718.8,
       "late_hz": 1323.3,
+      "rms_db": -14.2,
       "low_hz": 1298.3,
       "high_hz": 1766.5,
       "sweep": 1.36,
@@ -566,6 +606,7 @@
     "advance_flourish_2": {
       "early_hz": 1280.9,
       "late_hz": 1233.3,
+      "rms_db": -13.8,
       "low_hz": 1146.7,
       "high_hz": 1367.9,
       "sweep": 1.19,
@@ -580,6 +621,7 @@
     "advance_flourish_3": {
       "early_hz": 1360.0,
       "late_hz": 1420.3,
+      "rms_db": -12.1,
       "low_hz": 1135.8,
       "high_hz": 1476.3,
       "sweep": 1.3,
@@ -594,6 +636,7 @@
     "advance_flourish_4": {
       "early_hz": 1341.0,
       "late_hz": 1468.7,
+      "rms_db": -11.1,
       "low_hz": 1293.0,
       "high_hz": 1537.6,
       "sweep": 1.19,
@@ -608,6 +651,7 @@
     "advance_flourish_5": {
       "early_hz": 1113.3,
       "late_hz": 1292.2,
+      "rms_db": -9.2,
       "low_hz": 1081.2,
       "high_hz": 1344.3,
       "sweep": 1.24,
@@ -619,9 +663,160 @@
       "sha256": "a6cd85665bd506a47d343bd56c169da4dbb2b7166b5534289ee1c456d2cf0313",
       "file": "assets/audio/sfx/advance_flourish_5.ogg"
     },
+    "advance_fighter_1": {
+      "early_hz": 4458.0,
+      "late_hz": 4192.9,
+      "rms_db": -17.6,
+      "low_hz": 4077.5,
+      "high_hz": 4611.0,
+      "sweep": 1.13,
+      "rho_time": -0.43,
+      "rho_energy": 0.77,
+      "direction": "fall",
+      "whoops": false,
+      "gate_widened": false,
+      "sha256": "70f6af7ee76c3ff1cebc051662235f50fce68e3c461debc04538cefe0eec7f1b",
+      "file": "assets/audio/sfx/advance_fighter_1.ogg"
+    },
+    "advance_fighter_2": {
+      "early_hz": 5127.0,
+      "late_hz": 4867.5,
+      "rms_db": -15.0,
+      "low_hz": 4340.4,
+      "high_hz": 5224.9,
+      "sweep": 1.2,
+      "rho_time": -0.52,
+      "rho_energy": -0.68,
+      "direction": "fall",
+      "whoops": false,
+      "gate_widened": false,
+      "sha256": "6223a8cc477189d81d5deba71efe1f9deed66e64f23af8e42f6bc0afaaa95c7b",
+      "file": "assets/audio/sfx/advance_fighter_2.ogg"
+    },
+    "advance_fighter_3": {
+      "early_hz": 5178.8,
+      "late_hz": 3835.9,
+      "rms_db": -14.1,
+      "low_hz": 3487.0,
+      "high_hz": 5267.3,
+      "sweep": 1.51,
+      "rho_time": -0.9,
+      "rho_energy": -0.1,
+      "direction": "fall",
+      "whoops": false,
+      "gate_widened": false,
+      "sha256": "03c54ada731d50b6a6c29eac8f5b6501837a3f719e0715ef6256bf8d5e1cb2c4",
+      "file": "assets/audio/sfx/advance_fighter_3.ogg"
+    },
+    "advance_fighter_4": {
+      "early_hz": 4692.1,
+      "late_hz": 3778.7,
+      "rms_db": -13.7,
+      "low_hz": 3749.9,
+      "high_hz": 5603.9,
+      "sweep": 1.49,
+      "rho_time": -0.43,
+      "rho_energy": 0.5,
+      "direction": "fall",
+      "whoops": false,
+      "gate_widened": false,
+      "sha256": "a6f48e102d04170b508fb664dbd1e801d6c0c3c01f952f4348298bdbc206de84",
+      "file": "assets/audio/sfx/advance_fighter_4.ogg"
+    },
+    "advance_fighter_5": {
+      "early_hz": 1697.0,
+      "late_hz": 218.1,
+      "rms_db": -11.1,
+      "low_hz": 205.4,
+      "high_hz": 1778.8,
+      "sweep": 8.66,
+      "rho_time": -0.98,
+      "rho_energy": 0.84,
+      "direction": "fall",
+      "whoops": false,
+      "gate_widened": false,
+      "sha256": "40d5e2d53dd1eb4ae00a15bdaed41b20e688e8982df2973685187545950472f4",
+      "file": "assets/audio/sfx/advance_fighter_5.ogg"
+    },
+    "advance_rogue_1": {
+      "early_hz": 7574.2,
+      "late_hz": 8715.8,
+      "rms_db": -22.2,
+      "low_hz": 7378.1,
+      "high_hz": 8793.0,
+      "sweep": 1.19,
+      "rho_time": 0.88,
+      "rho_energy": -0.93,
+      "direction": "rise",
+      "whoops": false,
+      "gate_widened": false,
+      "sha256": "04999b6837eb5ac95ddc28d80137d9f8be45739cbd460568341b81cdd62937f4",
+      "file": "assets/audio/sfx/advance_rogue_1.ogg"
+    },
+    "advance_rogue_2": {
+      "early_hz": 7502.0,
+      "late_hz": 8216.7,
+      "rms_db": -23.4,
+      "low_hz": 7502.0,
+      "high_hz": 8263.8,
+      "sweep": 1.1,
+      "rho_time": 0.8,
+      "rho_energy": -0.6,
+      "direction": "rise",
+      "whoops": false,
+      "gate_widened": false,
+      "sha256": "eeaf3139cee3bde216f02d6ca17faf57034c11c723cf704ee40e256fc6eeeac4",
+      "file": "assets/audio/sfx/advance_rogue_2.ogg"
+    },
+    "advance_rogue_3": {
+      "early_hz": 4284.6,
+      "late_hz": 4090.9,
+      "rms_db": -22.3,
+      "low_hz": 2641.3,
+      "high_hz": 7744.5,
+      "sweep": 2.93,
+      "rho_time": 0.27,
+      "rho_energy": 0.09,
+      "direction": "fall",
+      "whoops": false,
+      "gate_widened": true,
+      "sha256": "b9cb2efd42cbf6b082b2e4c29bf8aa62e68ef57055978e37b20f8b0960e9b8a1",
+      "file": "assets/audio/sfx/advance_rogue_3.ogg"
+    },
+    "advance_rogue_4": {
+      "early_hz": 2839.9,
+      "late_hz": 2374.2,
+      "rms_db": -26.6,
+      "low_hz": 1031.6,
+      "high_hz": 4315.7,
+      "sweep": 4.18,
+      "rho_time": -0.16,
+      "rho_energy": 0.49,
+      "direction": "fall",
+      "whoops": false,
+      "gate_widened": false,
+      "sha256": "684fb6e7021167fa993ccac02b9369a146e21c360e3f21d214c9ca2a4faa565e",
+      "file": "assets/audio/sfx/advance_rogue_4.ogg"
+    },
+    "advance_rogue_5": {
+      "early_hz": 4822.0,
+      "late_hz": 3205.7,
+      "rms_db": -31.1,
+      "low_hz": 3205.7,
+      "high_hz": 4822.0,
+      "sweep": 1.5,
+      "rho_time": -1.0,
+      "rho_energy": 0.5,
+      "direction": "fall",
+      "whoops": false,
+      "gate_widened": false,
+      "sha256": "00acb570f20e3256b7f64def47c9cde3cf777df4ae120a2a770c562bb05d4d51",
+      "file": "assets/audio/sfx/advance_rogue_5.ogg"
+    },
     "full_bank_unleash": {
       "early_hz": 970.3,
       "late_hz": 961.7,
+      "rms_db": -11.6,
       "low_hz": 912.2,
       "high_hz": 1010.3,
       "sweep": 1.11,
@@ -636,6 +831,7 @@
     "status_cured": {
       "early_hz": 1721.8,
       "late_hz": 1688.8,
+      "rms_db": -14.8,
       "low_hz": 1687.5,
       "high_hz": 1741.9,
       "sweep": 1.03,
@@ -650,6 +846,7 @@
     "ability_riff": {
       "early_hz": 1065.3,
       "late_hz": 1051.8,
+      "rms_db": -13.8,
       "low_hz": 995.1,
       "high_hz": 1108.4,
       "sweep": 1.11,

@@ -303,6 +303,22 @@
       "prompt_influence": 0.0,
       "fallback_to": "advance_queue"
     },
+    "advance_fighter_4": {
+      "file": "assets/audio/sfx/advance_fighter_4.ogg",
+      "prompt": "Fighter advance press 4 (STEEL) — past the full draw: a heavy shield SLAM against the braced sword, gauntlet grip re-tightening on leather, and a low armoured BOOM settling underneath. Denser and lower than press 3, no new ringing on top — he has stopped drawing and started planting. Dry, close, no reverb tail. MASTERED: alimiter 0.07 then gain to -13.5 dBFS rms — generation controls TEXTURE, not level; the ladder's level is a mix decision.",
+      "duration_seconds": 0.9,
+      "prompt_influence": 0.8,
+      "source": "elevenlabs_foley",
+      "fallback_to": "advance_queue"
+    },
+    "advance_fighter_5": {
+      "file": "assets/audio/sfx/advance_fighter_5.ogg",
+      "prompt": "Fighter advance press 5 (STEEL) — commitment past sense, and DENSE rather than peaky: a continuous roar of grinding steel and crashing plate armour that SUSTAINS for a full second, layered and wall-like with no gaps between impacts, low chest-level rumble throughout. Loud, saturated, close and dry. Not a series of separate hits — one continuous mass of metal. No music, no reverb tail. MASTERED: alimiter 0.15 then gain to -11.0 dBFS rms — same reason.",
+      "duration_seconds": 1.08,
+      "prompt_influence": 0.8,
+      "source": "elevenlabs_foley",
+      "fallback_to": "advance_queue"
+    },
     "advance_flourish_2": {
       "file": "assets/audio/sfx/advance_flourish_2.ogg",
       "prompt": "SYNTHESISED — advance flourish at 2 queued actions. ONE sound getting more committed across 2..5, parameterised from a single voice so the family cannot drift into five different sounds. Run the tool.",
@@ -385,6 +401,22 @@
       "prompt": "Rogue advance press 3 'ham' = the QUIETEST — faint pick + a coin spinning down to rest (spectral-verified metallic settle). Drama as conspicuous quiet, 'the second thing in the room, heard.' Tier 3/3, ~-20 dB. NOTE for cowir-battle: lands best if the engine ducks other audio under it.",
       "duration_seconds": 1.2,
       "prompt_influence": 0.0,
+      "fallback_to": "advance_queue"
+    },
+    "advance_rogue_4": {
+      "file": "assets/audio/sfx/advance_rogue_4.ogg",
+      "prompt": "Rogue advance press 4 — QUIETER STILL, continuing the inversion: cloth shifting against leather, one soft breath, and the faintest brush of a fingertip on metal. The coin is already gone. Very low level, intimate, almost subliminal — deliberately quieter than press 3. MASTERED: gain to -26.5 dBFS rms — the inversion is a LEVEL design and generation will not honour it.",
+      "duration_seconds": 0.67,
+      "prompt_influence": 0.8,
+      "source": "elevenlabs_foley",
+      "fallback_to": "advance_queue"
+    },
+    "advance_rogue_5": {
+      "file": "assets/audio/sfx/advance_rogue_5.ogg",
+      "prompt": "Rogue advance press 5 — the punchline of the inversion: near-total silence with a single tiny tell, one faint lockpick CLICK and nothing else. Maximum commitment sounds like almost nothing at all. The quietest cue in the entire ladder. No music, no body, no tail. MASTERED: gain to -31.0 dBFS rms — quietest cue in the game, deliberately.",
+      "duration_seconds": 0.62,
+      "prompt_influence": 0.8,
+      "source": "elevenlabs_foley",
       "fallback_to": "advance_queue"
     },
     "advance_undo": {

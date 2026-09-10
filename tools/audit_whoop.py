@@ -68,6 +68,10 @@ PINNED = [
     "ability_poison", "ability_earth", "ability_wind", "ability_arcane",
     "ability_mp_restore", "ability_flee",
     "advance_flourish_2", "advance_flourish_3", "advance_flourish_4", "advance_flourish_5",
+    # The two per-job press ladders whose DIRECTION is the joke: fighter ascends, rogue INVERTS
+    # (quieter every press). rms_db is recorded so the GUT side can assert that shape.
+    "advance_fighter_1", "advance_fighter_2", "advance_fighter_3", "advance_fighter_4", "advance_fighter_5",
+    "advance_rogue_1", "advance_rogue_2", "advance_rogue_3", "advance_rogue_4", "advance_rogue_5",
     "full_bank_unleash",
     "status_cured",
     "ability_riff",
@@ -134,6 +138,7 @@ def measure(path, nwin=16, gate_db=-18.0):
         m = measure(path, nwin, gate_db - 12.0)
         m["gate_widened"] = True
         return m
+    rms_db = float(20.0 * np.log10(np.sqrt(np.mean(x ** 2)) + 1e-12))
     lo, hi = float(min(cents)), float(max(cents))
     sweep = hi / max(lo, 1e-9)
     rho_time = _rho(cents, list(range(len(cents))))
@@ -146,6 +151,7 @@ def measure(path, nwin=16, gate_db=-18.0):
     return {
         "early_hz": round(early, 1),
         "late_hz": round(late, 1),
+        "rms_db": round(rms_db, 1),
         "low_hz": round(lo, 1),
         "high_hz": round(hi, 1),
         "sweep": round(sweep, 2),

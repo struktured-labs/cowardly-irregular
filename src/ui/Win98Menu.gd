@@ -537,8 +537,21 @@ func _play_expand_sound() -> void:
 func _play_advance_sound(depth: int = 1) -> void:
 	"""Play sound when queueing an action (Advance mode)"""
 	# Per-job escalation ladder (struktured-approved, all 5 starters: fighter/cleric/rogue/mage/bard); jobs without a ladder key fall back to the arcade credit.
-	var key := "advance_%s_%d" % [_character_class, clampi(depth, 1, 3)]
-	if SoundManager._sfx_manifest.has(key):
+	# Walk DOWN to the highest rung this job actually has, rather than clamping to a fixed 3.
+	# The cap was 4 and the clamp was 3, so press 4 always replayed the press-3 "full ham" cue;
+	# struktured made it SOMETIMES 5 (2026-09-09) and ruled "we need a new sound for 4th time you
+	# advance". A fixed clamp of 5 would have been WORSE than the old one for any job whose ladder
+	# is short — the key would miss and drop to the arcade credit, losing that job's voice entirely.
+	# Walking down means a job with 3 rungs behaves exactly as before and a job with 5 gets all 5.
+	var rung := clampi(depth, 1, 5)
+	var key := ""
+	while rung >= 1:
+		var candidate := "advance_%s_%d" % [_character_class, rung]
+		if SoundManager._sfx_manifest.has(candidate):
+			key = candidate
+			break
+		rung -= 1
+	if key != "":
 		SoundManager.play_battle(key)
 	else:
 		SoundManager.play_battle("advance_queue")
